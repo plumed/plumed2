@@ -51,45 +51,56 @@ namespace isdb {
 
 //+PLUMEDOC ISDB_COLVAR SAXS
 /*
-Calculates SAXS scattered intensity using either the Debye equation.
+Calculates SAXS intensity.
 
-Intensities are calculated for a set of scattering length set using QVALUE keywords that are numbered starting from 0.
-Structure factors can be either assigned using a polynomial expansion to any order using the PARAMETERS keywords;
-automatically assigned to atoms using the ATOMISTIC flag reading a PDB file, a correction for the water density is
-automatically added, with water density that by default is 0.334 but that can be set otherwise using SOLVDENS;
-automatically assigned to Martini pseudo atoms using the MARTINI flag.
-The calculated intensities can be scaled using the SCALEINT keywords. This is applied by rescaling the structure factors.
+SAXS intensities are calculated for a set of scattering vectors using QVALUE keywords that are numbered starting 
+from 1. Form factors can be either assigned using a polynomial expansion to any order by using the PARAMETERS
+keywords or automatically assigned to atoms using the ATOMISTIC flag by reading a PDB file.
+Alternatively to the atomistic representation, two types of coarse-grained mapping are available:
+- MARTINI (based on the 2.2 non-polarizable version). The user should provide a mapping file represented by a PDB 
+file that contains both the all-atom and MARTINI representations;
+- ONEBEAD. The user should provide an all-atom PDB file via MOLINFO before the SAXS instruction. In this case,
+PLUMED computes the COM of every residue and creates a virtual bead on which the SAXS calculations are performed.
+
+Regarding ONEBEAD, it is possible to take into account the solvation layer contribution to the SAXS intensity by 
+adding a correction term just for the solvent accessible residues: the form factor of amino acids that have a SASA 
+(computed via LCPO algorithm) larger than a user-defined threshold are corrected according to a user-defined electron
+density term. SASA stride calculation can be modified using SOLVATION_STRIDE, that by default is set to 100 steps, 
+while the surface cut-off can be modified with SASA_CUTOFF. The maximum QVALUE for ONEBEAD is set to 0.3 \f$\AA^{-1}\f$. 
+The solvent density, that by default is set to 0.334 electrons \f$\AA^{-3}\f$ (bulk water), can be modified using 
+the SOLVDENS keyword.
+
 Experimental reference intensities can be added using the EXPINT keywords.
-By default SAXS is calculated using Debye on CPU, by adding the GPU flag it is possible to solve the equation on a GPU
-if the ARRAYFIRE libraries are installed and correctly linked.
+By default SAXS is calculated using Debye on CPU, by adding the GPU flag it is possible to solve the equation on a 
+GPU if the ARRAYFIRE libraries are installed and correctly linked.
 \ref METAINFERENCE can be activated using DOSCORE and the other relevant keywords.
 
 \par Examples
-in the following example the SAXS intensities are calculated using the single bead per residue approximation. structure factors
-are obtained from the pdb file indicated in the MOLINFO.
+in the following example the SAXS intensities are calculated using the single bead per residue approximation. 
+structure factors are obtained from the pdb file indicated in the MOLINFO.
 
 \plumedfile
-MOLINFO STRUCTURE=template.pdb
+MOLINFO STRUCTURE=template_AA.pdb
 
 SAXS ...
 LABEL=SAXS
 ATOMS=1-355
 ONEBEAD
-QVALUE1=0.02 EXPINT1=1.0902
-QVALUE2=0.05 EXPINT2=0.790632
-QVALUE3=0.08 EXPINT3=0.453808
-QVALUE4=0.11 EXPINT4=0.254737
-QVALUE5=0.14 EXPINT5=0.154928
-QVALUE6=0.17 EXPINT6=0.0921503
-QVALUE7=0.2 EXPINT7=0.052633
-QVALUE8=0.23 EXPINT8=0.0276557
-QVALUE9=0.26 EXPINT9=0.0122775
-QVALUE10=0.29 EXPINT10=0.00880634
-QVALUE11=0.32 EXPINT11=0.0137301
-QVALUE12=0.35 EXPINT12=0.0180036
-QVALUE13=0.38 EXPINT13=0.0193374
-QVALUE14=0.41 EXPINT14=0.0210131
-QVALUE15=0.44 EXPINT15=0.0220506
+SOLVDENS=0.334
+SOLVATION_CORRECTION=0.04
+SOLVATION_STRIDE=1
+SASA_CUTOFF=1.0
+QVALUE1=0.03 EXPINT1=1.0902
+QVALUE2=0.06 EXPINT2=0.790632
+QVALUE3=0.09 EXPINT3=0.453808
+QVALUE4=0.12 EXPINT4=0.254737
+QVALUE5=0.15 EXPINT5=0.154928
+QVALUE6=0.18 EXPINT6=0.0921503
+QVALUE7=0.21 EXPINT7=0.052633
+QVALUE8=0.24 EXPINT8=0.0276557
+QVALUE9=0.27 EXPINT9=0.0122775
+QVALUE10=0.30 EXPINT10=0.00880634
+
 ... SAXS
 
 PRINT ARG=(SAXS\.q-.*),(SAXS\.exp-.*) FILE=colvar STRIDE=1
@@ -118,7 +129,7 @@ private:
          DG_3TE, DG_5TE, DG_TE3, DG_TE5, DT_BB1, DT_BB2, DT_BB3, DT_SC1, DT_SC2, DT_SC3, DT_3TE,
          DT_5TE, DT_TE3, DT_TE5, NMARTINI
        };
-  enum { TRP, TYR, PHE, HIS, HIP, HIE, ARG, LYS, CYS, ASP, GLU, ILE, LEU,
+  enum { TRP, TYR, PHE, HIS, HIP, ARG, LYS, CYS, ASP, GLU, ILE, LEU,
          MET, ASN, PRO, GLN, SER, THR, VAL, ALA, GLY, NONEBEAD
        };
   bool pbc;
@@ -152,7 +163,7 @@ private:
   void calculate_gpu(std::vector<Vector> &pos, std::vector<Vector> &deriv);
   void calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv);
   void getMartiniSFparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter);
-  void getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_wat);
+  void getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv);
   void getOnebeadMapping(const std::vector<AtomNumber> &atoms);
   double calculateASF(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double rho);
   std::map<std::string, std::vector<double> > setupLCPOparam();
@@ -319,8 +330,8 @@ SAXS::SAXS(const ActionOptions&ao):
     FF_tmp_wat.resize(numq,std::vector<long double>(NONEBEAD));
     std::vector<std::vector<long double> > parameter_vac(NONEBEAD);
     std::vector<std::vector<long double> > parameter_mix(NONEBEAD);
-    std::vector<std::vector<long double> > parameter_wat(NONEBEAD);
-    getOnebeadparam(atoms, parameter_vac, parameter_mix, parameter_wat);
+    std::vector<std::vector<long double> > parameter_solv(NONEBEAD);
+    getOnebeadparam(atoms, parameter_vac, parameter_mix, parameter_solv);
     for(unsigned i=0; i<NONEBEAD; ++i) {
       for(unsigned k=0; k<numq; ++k) {
         for(unsigned j=0; j<parameter_vac[i].size(); ++j) {
@@ -329,15 +340,15 @@ SAXS::SAXS(const ActionOptions&ao):
         for(unsigned j=0; j<parameter_mix[i].size(); ++j) {
           FF_tmp_mix[k][i]+= parameter_mix[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
         }
-        for(unsigned j=0; j<parameter_wat[i].size(); ++j) {
-          FF_tmp_wat[k][i]+= parameter_wat[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
+        for(unsigned j=0; j<parameter_solv[i].size(); ++j) {
+          FF_tmp_wat[k][i]+= parameter_solv[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
         }
       }
     }
     for(unsigned i=0; i<nres; ++i) {
       Iq0_vac[i]=parameter_vac[atoi[i]][0];
       Iq0_mix[i]=parameter_mix[atoi[i]][0];
-      Iq0_wat[i]=parameter_wat[atoi[i]][0];
+      Iq0_wat[i]=parameter_solv[atoi[i]][0];
     }
   } else if(martini) {
     //read in parameter std::vector
@@ -2302,536 +2313,512 @@ void SAXS::getMartiniSFparam(const std::vector<AtomNumber> &atoms, std::vector<s
   }
 }
 
-void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_wat)
+void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv)
 {
 
-  parameter_wat[TRP].push_back(60737.602499880035);
-  parameter_wat[TRP].push_back(423.3538118566174);
-  parameter_wat[TRP].push_back(-225729.57942426094);
-  parameter_wat[TRP].push_back(-28863.96508764871);
-  parameter_wat[TRP].push_back(703953.2853844669);
-  parameter_wat[TRP].push_back(-750290.6360569759);
-  parameter_wat[TRP].push_back(243441.79433046127);
+  parameter_solv[TRP].push_back(60737.60249988003);
+  parameter_solv[TRP].push_back(-77.75716755173752);
+  parameter_solv[TRP].push_back(-205962.98557711052);
+  parameter_solv[TRP].push_back(-62013.46984155453);
+  parameter_solv[TRP].push_back(680710.7592231638);
+  parameter_solv[TRP].push_back(-681336.8777362367);
+  parameter_solv[TRP].push_back(211473.65530642506);
 
-  parameter_wat[TYR].push_back(46250.803600118066);
-  parameter_wat[TYR].push_back(-257.310522603269);
-  parameter_wat[TYR].push_back(-132302.7898977298);
-  parameter_wat[TYR].push_back(-50352.95940852235);
-  parameter_wat[TYR].push_back(406079.60996746755);
-  parameter_wat[TYR].push_back(-375410.2955043933);
-  parameter_wat[TYR].push_back(109181.47611497746);
+  parameter_solv[TYR].push_back(46250.80359987982);
+  parameter_solv[TYR].push_back(-45.8287864681578);
+  parameter_solv[TYR].push_back(-143872.91752817619);
+  parameter_solv[TYR].push_back(-39049.68736409533);
+  parameter_solv[TYR].push_back(441321.71874090104);
+  parameter_solv[TYR].push_back(-434478.0972346327);
+  parameter_solv[TYR].push_back(133179.3694641212);
 
-  parameter_wat[PHE].push_back(42407.16489988089);
-  parameter_wat[PHE].push_back(-101.43687190346151);
-  parameter_wat[PHE].push_back(-127120.33522573594);
-  parameter_wat[PHE].push_back(-38973.85574662809);
-  parameter_wat[PHE].push_back(391846.2601350714);
-  parameter_wat[PHE].push_back(-380079.9501473576);
-  parameter_wat[PHE].push_back(115269.28702049167);
+  parameter_solv[PHE].push_back(42407.164900118914);
+  parameter_solv[PHE].push_back(-159.1980754191431);
+  parameter_solv[PHE].push_back(-123847.86192757386);
+  parameter_solv[PHE].push_back(-41797.69041575073);
+  parameter_solv[PHE].push_back(380283.7035277073);
+  parameter_solv[PHE].push_back(-361432.67247521743);
+  parameter_solv[PHE].push_back(107750.64978068044);
 
-  parameter_wat[HIS].push_back(22888.66410011907);
-  parameter_wat[HIS].push_back(-108.02829077408032);
-  parameter_wat[HIS].push_back(-60158.91020245944);
-  parameter_wat[HIS].push_back(-21412.911926812973);
-  parameter_wat[HIS].push_back(175284.75094781365);
-  parameter_wat[HIS].push_back(-160903.34874783095);
-  parameter_wat[HIS].push_back(46623.44919862075);
+  parameter_solv[HIP].push_back(24473.47360011923);
+  parameter_solv[HIP].push_back(-111.64156672747428);
+  parameter_solv[HIP].push_back(-65826.16993707925);
+  parameter_solv[HIP].push_back(-23305.91329798928);
+  parameter_solv[HIP].push_back(194795.11911635034);
+  parameter_solv[HIP].push_back(-180454.49458095312);
+  parameter_solv[HIP].push_back(52699.374196745615);
 
-  parameter_wat[HIP].push_back(24473.47360011933);
-  parameter_wat[HIP].push_back(-113.35936100565031);
-  parameter_wat[HIP].push_back(-65665.4454282035);
-  parameter_wat[HIP].push_back(-23342.641495874075);
-  parameter_wat[HIP].push_back(193991.90099311847);
-  parameter_wat[HIP].push_back(-179359.8105131197);
-  parameter_wat[HIP].push_back(52286.59943451184);
+  parameter_solv[ARG].push_back(34106.70239988039);
+  parameter_solv[ARG].push_back(152.7472727640246);
+  parameter_solv[ARG].push_back(-117086.49392248681);
+  parameter_solv[ARG].push_back(-19664.229479267167);
+  parameter_solv[ARG].push_back(364454.0909203641);
+  parameter_solv[ARG].push_back(-382075.8018312776);
+  parameter_solv[ARG].push_back(122775.75036605193);
 
-  parameter_wat[HIE].push_back(22888.66410011907);
-  parameter_wat[HIE].push_back(-109.76722568752795);
-  parameter_wat[HIE].push_back(-60653.77965364445);
-  parameter_wat[HIE].push_back(-21845.181477770184);
-  parameter_wat[HIE].push_back(178618.98076057335);
-  parameter_wat[HIE].push_back(-164470.42658519786);
-  parameter_wat[HIE].push_back(47778.241548568774);
+  parameter_solv[LYS].push_back(32292.090000118922);
+  parameter_solv[LYS].push_back(-111.97371180593888);
+  parameter_solv[LYS].push_back(-91953.10997619898);
+  parameter_solv[LYS].push_back(-30690.807047993283);
+  parameter_solv[LYS].push_back(282092.40760143084);
+  parameter_solv[LYS].push_back(-269503.2592457489);
+  parameter_solv[LYS].push_back(80777.81552915688);
 
-  parameter_wat[ARG].push_back(34106.702399880836);
-  parameter_wat[ARG].push_back(-31.968033811625222);
-  parameter_wat[ARG].push_back(-108747.89030377955);
-  parameter_wat[ARG].push_back(-30958.904014258027);
-  parameter_wat[ARG].push_back(347163.4357312966);
-  parameter_wat[ARG].push_back(-346276.2882554062);
-  parameter_wat[ARG].push_back(107326.24946733958);
+  parameter_solv[CYS].push_back(11352.902500119093);
+  parameter_solv[CYS].push_back(-45.5226331859686);
+  parameter_solv[CYS].push_back(-20925.085562607524);
+  parameter_solv[CYS].push_back(-5662.685408989286);
+  parameter_solv[CYS].push_back(38559.10376731146);
+  parameter_solv[CYS].push_back(-27885.23426006181);
+  parameter_solv[CYS].push_back(6280.15058191397);
 
-  parameter_wat[LYS].push_back(32292.089999880736);
-  parameter_wat[LYS].push_back(-52.96029474662974);
-  parameter_wat[LYS].push_back(-95909.23116199141);
-  parameter_wat[LYS].push_back(-28184.175529381177);
-  parameter_wat[LYS].push_back(297836.9203652572);
-  parameter_wat[LYS].push_back(-293011.6716266663);
-  parameter_wat[LYS].push_back(89967.65334564191);
+  parameter_solv[ASP].push_back(13511.73760011933);
+  parameter_solv[ASP].push_back(-59.929111107656595);
+  parameter_solv[ASP].push_back(-25849.869639655575);
+  parameter_solv[ASP].push_back(-7541.669448872824);
+  parameter_solv[ASP].push_back(50760.92045144903);
+  parameter_solv[ASP].push_back(-37677.87583269734);
+  parameter_solv[ASP].push_back(8745.7056219399);
 
-  parameter_wat[CYS].push_back(11352.902500119093);
-  parameter_wat[CYS].push_back(-42.586554888239874);
-  parameter_wat[CYS].push_back(-20366.230938482615);
-  parameter_wat[CYS].push_back(-5137.392457690132);
-  parameter_wat[CYS].push_back(34975.323854506074);
-  parameter_wat[CYS].push_back(-24243.22374505194);
-  parameter_wat[CYS].push_back(5152.472178010549);
+  parameter_solv[GLU].push_back(20443.280400119456);
+  parameter_solv[GLU].push_back(-113.77561814283207);
+  parameter_solv[GLU].push_back(-45587.79314626863);
+  parameter_solv[GLU].push_back(-16187.556837331254);
+  parameter_solv[GLU].push_back(112609.65830609271);
+  parameter_solv[GLU].push_back(-93362.05323205091);
+  parameter_solv[GLU].push_back(24519.557866124724);
 
-  parameter_wat[ASP].push_back(13511.73760011934);
-  parameter_wat[ASP].push_back(-62.259809313175644);
-  parameter_wat[ASP].push_back(-26335.159072036455);
-  parameter_wat[ASP].push_back(-8002.9679940827655);
-  parameter_wat[ASP].push_back(54030.09941724955);
-  parameter_wat[ASP].push_back(-41082.18951195315);
-  parameter_wat[ASP].push_back(9822.373386145666);
+  parameter_solv[ILE].push_back(27858.948100119596);
+  parameter_solv[ILE].push_back(-159.27355145839834);
+  parameter_solv[ILE].push_back(-61571.43463039565);
+  parameter_solv[ILE].push_back(-21324.879474559468);
+  parameter_solv[ILE].push_back(144070.7572894681);
+  parameter_solv[ILE].push_back(-115021.81959095894);
+  parameter_solv[ILE].push_back(28939.085108838968);
 
-  parameter_wat[GLU].push_back(20443.28040011943);
-  parameter_wat[GLU].push_back(-114.65211777672742);
-  parameter_wat[GLU].push_back(-45705.214663013714);
-  parameter_wat[GLU].push_back(-16305.612141085105);
-  parameter_wat[GLU].push_back(113297.5758640635);
-  parameter_wat[GLU].push_back(-93999.34286496713);
-  parameter_wat[GLU].push_back(24699.32337589366);
+  parameter_solv[LEU].push_back(27858.948100119596);
+  parameter_solv[LEU].push_back(-165.61892007509647);
+  parameter_solv[LEU].push_back(-62564.568746500125);
+  parameter_solv[LEU].push_back(-22465.332149768525);
+  parameter_solv[LEU].push_back(151616.79489291538);
+  parameter_solv[LEU].push_back(-122905.6119395393);
+  parameter_solv[LEU].push_back(31436.664377885514);
 
-  parameter_wat[ILE].push_back(27858.9481001196);
-  parameter_wat[ILE].push_back(-160.09616278302047);
-  parameter_wat[ILE].push_back(-61355.72128368112);
-  parameter_wat[ILE].push_back(-21237.083952478268);
-  parameter_wat[ILE].push_back(142633.447400751);
-  parameter_wat[ILE].push_back(-113273.08967375412);
-  parameter_wat[ILE].push_back(28319.143796630207);
+  parameter_solv[MET].push_back(25609.60090011981);
+  parameter_solv[MET].push_back(-135.38857843066708);
+  parameter_solv[MET].push_back(-67771.01108177133);
+  parameter_solv[MET].push_back(-25228.934337676077);
+  parameter_solv[MET].push_back(199649.95030712147);
+  parameter_solv[MET].push_back(-182251.94895101967);
+  parameter_solv[MET].push_back(52502.88444247481);
 
-  parameter_wat[LEU].push_back(27858.9481001196);
-  parameter_wat[LEU].push_back(-164.2242755261456);
-  parameter_wat[LEU].push_back(-62269.57074002018);
-  parameter_wat[LEU].push_back(-22164.04215173996);
-  parameter_wat[LEU].push_back(149446.70227598862);
-  parameter_wat[LEU].push_back(-120581.31029609666);
-  parameter_wat[LEU].push_back(30683.935787436156);
+  parameter_solv[ASN].push_back(14376.010000119095);
+  parameter_solv[ASN].push_back(-67.65579048748472);
+  parameter_solv[ASN].push_back(-28302.87809850141);
+  parameter_solv[ASN].push_back(-8577.439830985548);
+  parameter_solv[ASN].push_back(57532.879075695324);
+  parameter_solv[ASN].push_back(-43261.79286366774);
+  parameter_solv[ASN].push_back(10186.448634149085);
 
-  parameter_wat[MET].push_back(25609.60090011981);
-  parameter_wat[MET].push_back(-147.12983069832867);
-  parameter_wat[MET].push_back(-65621.28306656817);
-  parameter_wat[MET].push_back(-24719.313103059052);
-  parameter_wat[MET].push_back(186430.47475376664);
-  parameter_wat[MET].push_back(-165841.9203585998);
-  parameter_wat[MET].push_back(46626.915939594095);
+  parameter_solv[PRO].push_back(16866.21690011944);
+  parameter_solv[PRO].push_back(-70.84327801054884);
+  parameter_solv[PRO].push_back(-31465.84064925844);
+  parameter_solv[PRO].push_back(-8653.3693368317);
+  parameter_solv[PRO].push_back(58032.28250733714);
+  parameter_solv[PRO].push_back(-41521.01146771431);
+  parameter_solv[PRO].push_back(9184.530596102064);
 
-  parameter_wat[ASN].push_back(14376.010000119086);
-  parameter_wat[ASN].push_back(-67.13662191717502);
-  parameter_wat[ASN].push_back(-28168.8210696101);
-  parameter_wat[ASN].push_back(-8448.880455615134);
-  parameter_wat[ASN].push_back(56555.863212460674);
-  parameter_wat[ASN].push_back(-42203.49388869736);
-  parameter_wat[ASN].push_back(9840.827095275834);
+  parameter_solv[GLN].push_back(21503.289600119);
+  parameter_solv[GLN].push_back(-121.30164008960246);
+  parameter_solv[GLN].push_back(-50468.580981118175);
+  parameter_solv[GLN].push_back(-18462.49098408308);
+  parameter_solv[GLN].push_back(132718.44904081387);
+  parameter_solv[GLN].push_back(-113787.22666510186);
+  parameter_solv[GLN].push_back(30920.348610969988);
 
-  parameter_wat[PRO].push_back(16866.21690011945);
-  parameter_wat[PRO].push_back(-77.79313454249083);
-  parameter_wat[PRO].push_back(-32625.357427339673);
-  parameter_wat[PRO].push_back(-9843.651473353346);
-  parameter_wat[PRO].push_back(65875.36925812009);
-  parameter_wat[PRO].push_back(-49499.88311947784);
-  parameter_wat[PRO].push_back(11656.375656878794);
+  parameter_solv[SER].push_back(9181.472400119354);
+  parameter_solv[SER].push_back(-28.77519915767741);
+  parameter_solv[SER].push_back(-15205.543144104717);
+  parameter_solv[SER].push_back(-3377.782176346411);
+  parameter_solv[SER].push_back(23345.555771001076);
+  parameter_solv[SER].push_back(-15312.694356014094);
+  parameter_solv[SER].push_back(3013.8428466148);
 
-  parameter_wat[GLN].push_back(21503.289600119013);
-  parameter_wat[GLN].push_back(-130.80754689004655);
-  parameter_wat[GLN].push_back(-49582.982827439504);
-  parameter_wat[GLN].push_back(-18648.86453544889);
-  parameter_wat[GLN].push_back(128172.37310395157);
-  parameter_wat[GLN].push_back(-107594.15890982642);
-  parameter_wat[GLN].push_back(28581.982123379872);
+  parameter_solv[THR].push_back(15020.953600119403);
+  parameter_solv[THR].push_back(-61.91004832631006);
+  parameter_solv[THR].push_back(-27814.537889259853);
+  parameter_solv[THR].push_back(-7532.227289701552);
+  parameter_solv[THR].push_back(50586.30566118166);
+  parameter_solv[THR].push_back(-35943.866131120165);
+  parameter_solv[THR].push_back(7880.093558764326);
 
-  parameter_wat[SER].push_back(9181.472400119355);
-  parameter_wat[SER].push_back(-29.299114175405876);
-  parameter_wat[SER].push_back(-15273.60177234209);
-  parameter_wat[SER].push_back(-3450.5500428922705);
-  parameter_wat[SER].push_back(23773.483013633984);
-  parameter_wat[SER].push_back(-15717.798552926966);
-  parameter_wat[SER].push_back(3130.6799238799476);
+  parameter_solv[VAL].push_back(19647.628900119355);
+  parameter_solv[VAL].push_back(-89.04983250107853);
+  parameter_solv[VAL].push_back(-38050.09958470928);
+  parameter_solv[VAL].push_back(-10921.427112288537);
+  parameter_solv[VAL].push_back(72774.32322962297);
+  parameter_solv[VAL].push_back(-52689.060152305225);
+  parameter_solv[VAL].push_back(11806.492503632868);
 
-  parameter_wat[THR].push_back(15020.9536001194);
-  parameter_wat[THR].push_back(-59.886795759067695);
-  parameter_wat[THR].push_back(-27450.363696477114);
-  parameter_wat[THR].push_back(-7174.085244900661);
-  parameter_wat[THR].push_back(48176.41855470643);
-  parameter_wat[THR].push_back(-33484.54045901642);
-  parameter_wat[THR].push_back(7115.493498450939);
+  parameter_solv[ALA].push_back(7515.156100119276);
+  parameter_solv[ALA].push_back(-20.226381685697746);
+  parameter_solv[ALA].push_back(-11761.841094237716);
+  parameter_solv[ALA].push_back(-2341.4929468980367);
+  parameter_solv[ALA].push_back(16545.385777961936);
+  parameter_solv[ALA].push_back(-10397.175253025776);
+  parameter_solv[ALA].push_back(1921.5264606725107);
 
-  parameter_wat[VAL].push_back(19647.62890011937);
-  parameter_wat[VAL].push_back(-90.37805699411572);
-  parameter_wat[VAL].push_back(-38295.814997790214);
-  parameter_wat[VAL].push_back(-11134.637603308249);
-  parameter_wat[VAL].push_back(74170.4723318485);
-  parameter_wat[VAL].push_back(-54051.48501366292);
-  parameter_wat[VAL].push_back(12214.226839424213);
+  parameter_solv[GLY].push_back(3594.002500119159);
+  parameter_solv[GLY].push_back(-6.910836154887606);
+  parameter_solv[GLY].push_back(-4937.354220666574);
+  parameter_solv[GLY].push_back(-785.4549468992149);
+  parameter_solv[GLY].push_back(5852.854429532936);
+  parameter_solv[GLY].push_back(-3391.2927115487832);
+  parameter_solv[GLY].push_back(552.3280571490722);
 
-  parameter_wat[ALA].push_back(7515.156100119268);
-  parameter_wat[ALA].push_back(-19.745812003651533);
-  parameter_wat[ALA].push_back(-11691.3749145515);
-  parameter_wat[ALA].push_back(-2278.6778311610356);
-  parameter_wat[ALA].push_back(16179.890625578142);
-  parameter_wat[ALA].push_back(-10070.196793821578);
-  parameter_wat[ALA].push_back(1832.391603539423);
+  parameter_solv[HIS].push_back(22888.664100119073);
+  parameter_solv[HIS].push_back(-133.86265270962434);
+  parameter_solv[HIS].push_back(-57533.51591635819);
+  parameter_solv[HIS].push_back(-21767.293192014684);
+  parameter_solv[HIS].push_back(161255.14120001195);
+  parameter_solv[HIS].push_back(-142176.64081149307);
+  parameter_solv[HIS].push_back(39642.61185646193);
 
-  parameter_wat[GLY].push_back(3594.002500119161);
-  parameter_wat[GLY].push_back(-6.783782713939998);
-  parameter_wat[GLY].push_back(-4918.1541249080265);
-  parameter_wat[GLY].push_back(-769.4829100052555);
-  parameter_wat[GLY].push_back(5761.026162132836);
-  parameter_wat[GLY].push_back(-3312.0647071906815);
-  parameter_wat[GLY].push_back(531.6151440835663);
+  parameter_mix[TRP].push_back(48294.0117571196);
+  parameter_mix[TRP].push_back(-205.45879626487798);
+  parameter_mix[TRP].push_back(-148816.1858118254);
+  parameter_mix[TRP].push_back(-54968.030079609875);
+  parameter_mix[TRP].push_back(491793.79967057955);
+  parameter_mix[TRP].push_back(-476312.9117969879);
+  parameter_mix[TRP].push_back(144159.96165644142);
 
-  parameter_mix[TRP].push_back(48294.011756881504);
-  parameter_mix[TRP].push_back(94.79679625134271);
-  parameter_mix[TRP].push_back(-162545.8333320417);
-  parameter_mix[TRP].push_back(-37693.98947041115);
-  parameter_mix[TRP].push_back(526423.3675952561);
-  parameter_mix[TRP].push_back(-543242.8087968872);
-  parameter_mix[TRP].push_back(172770.31888199487);
+  parameter_mix[TYR].push_back(36984.20240312081);
+  parameter_mix[TYR].push_back(-83.86380083812203);
+  parameter_mix[TYR].push_back(-108820.52211887162);
+  parameter_mix[TYR].push_back(-33934.69818901515);
+  parameter_mix[TYR].push_back(341504.736372253);
+  parameter_mix[TYR].push_back(-334008.1748614056);
+  parameter_mix[TYR].push_back(102033.08077851454);
 
-  parameter_mix[TYR].push_back(36984.202403359115);
-  parameter_mix[TYR].push_back(-222.0017930602204);
-  parameter_mix[TYR].push_back(-99488.96547634256);
-  parameter_mix[TYR].push_back(-39490.02998515562);
-  parameter_mix[TYR].push_back(302058.8500035175);
-  parameter_mix[TYR].push_back(-275632.27775690623);
-  parameter_mix[TYR].push_back(79286.9486152365);
-
-  parameter_mix[PHE].push_back(32119.469231338207);
-  parameter_mix[PHE].push_back(-140.9766666035606);
-  parameter_mix[PHE].push_back(-88429.06372052178);
-  parameter_mix[PHE].push_back(-32440.111797288962);
-  parameter_mix[PHE].push_back(276747.9437420169);
-  parameter_mix[PHE].push_back(-262851.9318112437);
-  parameter_mix[PHE].push_back(78470.28300750244);
-
-  parameter_mix[HIS].push_back(21779.124723299235);
-  parameter_mix[HIS].push_back(-125.81547101114079);
-  parameter_mix[HIS].push_back(-51431.05749165743);
-  parameter_mix[HIS].push_back(-20013.224366191025);
-  parameter_mix[HIS].push_back(144694.92222746916);
-  parameter_mix[HIS].push_back(-127819.49538087688);
-  parameter_mix[HIS].push_back(35763.772645449855);
+  parameter_mix[PHE].push_back(32119.469231338233);
+  parameter_mix[PHE].push_back(-172.96940450568917);
+  parameter_mix[PHE].push_back(-85831.4326887122);
+  parameter_mix[PHE].push_back(-33193.32405438845);
+  parameter_mix[PHE].push_back(262940.64471909316);
+  parameter_mix[PHE].push_back(-243540.06898907054);
+  parameter_mix[PHE].push_back(71084.54387480798);
 
   parameter_mix[HIP].push_back(22833.36414923898);
-  parameter_mix[HIP].push_back(-134.11759532585418);
-  parameter_mix[HIP].push_back(-55189.4285078936);
-  parameter_mix[HIP].push_back(-21799.88197554733);
-  parameter_mix[HIP].push_back(158958.1762264112);
-  parameter_mix[HIP].push_back(-141751.7818363874);
-  parameter_mix[HIP].push_back(39997.324270833735);
+  parameter_mix[HIP].push_back(-134.0493955562186);
+  parameter_mix[HIP].push_back(-55325.55607328898);
+  parameter_mix[HIP].push_back(-21898.314938881984);
+  parameter_mix[HIP].push_back(159995.6912885654);
+  parameter_mix[HIP].push_back(-142968.19796084083);
+  parameter_mix[HIP].push_back(40417.44581470003);
 
-  parameter_mix[HIE].push_back(21779.124723299235);
-  parameter_mix[HIE].push_back(-129.6552781944993);
-  parameter_mix[HIE].push_back(-51660.59291329289);
-  parameter_mix[HIE].push_back(-20412.70089226015);
-  parameter_mix[HIE].push_back(146341.19036764107);
-  parameter_mix[HIE].push_back(-129182.83705926737);
-  parameter_mix[HIE].push_back(36101.78353079046);
+  parameter_mix[ARG].push_back(31385.401600920715);
+  parameter_mix[ARG].push_back(36.114094042884254);
+  parameter_mix[ARG].push_back(-103730.44467490204);
+  parameter_mix[ARG].push_back(-27036.249157905615);
+  parameter_mix[ARG].push_back(347011.0339314942);
+  parameter_mix[ARG].push_back(-358879.9736802336);
+  parameter_mix[ARG].push_back(114432.18361399164);
 
-  parameter_mix[ARG].push_back(31385.401600920548);
-  parameter_mix[ARG].push_back(-107.823749853272);
-  parameter_mix[ARG].push_back(-96081.57737897056);
-  parameter_mix[ARG].push_back(-34356.86448428557);
-  parameter_mix[ARG].push_back(321119.58481540927);
-  parameter_mix[ARG].push_back(-315674.66683333775);
-  parameter_mix[ARG].push_back(96796.44214985141);
-
-  parameter_mix[LYS].push_back(25511.358126718373);
-  parameter_mix[LYS].push_back(-95.24657818372829);
-  parameter_mix[LYS].push_back(-72472.87199806623);
-  parameter_mix[LYS].push_back(-26437.446224277774);
-  parameter_mix[LYS].push_back(237422.12523083566);
-  parameter_mix[LYS].push_back(-231421.26921744435);
-  parameter_mix[LYS].push_back(70582.85782972853);
+  parameter_mix[LYS].push_back(25511.35812671878);
+  parameter_mix[LYS].push_back(-130.4381491986372);
+  parameter_mix[LYS].push_back(-69258.61236879184);
+  parameter_mix[LYS].push_back(-27066.36783798707);
+  parameter_mix[LYS].push_back(220092.65231165203);
+  parameter_mix[LYS].push_back(-207794.5056092443);
+  parameter_mix[LYS].push_back(61665.57004630315);
 
   parameter_mix[CYS].push_back(11505.517261618916);
-  parameter_mix[CYS].push_back(-28.00657295704436);
-  parameter_mix[CYS].push_back(-17568.024889706485);
-  parameter_mix[CYS].push_back(-3208.4239567270556);
-  parameter_mix[CYS].push_back(23190.8240650359);
-  parameter_mix[CYS].push_back(-14025.359913209422);
-  parameter_mix[CYS].push_back(2432.996124564235);
+  parameter_mix[CYS].push_back(-33.60468076978334);
+  parameter_mix[CYS].push_back(-18328.882710004465);
+  parameter_mix[CYS].push_back(-3956.9113649567626);
+  parameter_mix[CYS].push_back(27546.35146501212);
+  parameter_mix[CYS].push_back(-18024.826330595406);
+  parameter_mix[CYS].push_back(3551.2207387570024);
 
-  parameter_mix[ASP].push_back(13713.858501879387);
-  parameter_mix[ASP].push_back(-56.16981725896633);
-  parameter_mix[ASP].push_back(-24467.359478081828);
-  parameter_mix[ASP].push_back(-6842.625685319477);
-  parameter_mix[ASP].push_back(45409.799932497255);
-  parameter_mix[ASP].push_back(-32675.494006878293);
-  parameter_mix[ASP].push_back(7282.116459231734);
+  parameter_mix[ASP].push_back(13713.858501879382);
+  parameter_mix[ASP].push_back(-51.33286241257164);
+  parameter_mix[ASP].push_back(-23807.8549764091);
+  parameter_mix[ASP].push_back(-6153.667315935503);
+  parameter_mix[ASP].push_back(41296.118377286424);
+  parameter_mix[ASP].push_back(-28740.28391184026);
+  parameter_mix[ASP].push_back(6132.671533319127);
 
-  parameter_mix[GLU].push_back(19156.03660739948);
-  parameter_mix[GLU].push_back(-112.77021473479914);
-  parameter_mix[GLU].push_back(-40559.88365261396);
-  parameter_mix[GLU].push_back(-14896.089751789212);
-  parameter_mix[GLU].push_back(97924.20440282047);
-  parameter_mix[GLU].push_back(-78861.69840848455);
-  parameter_mix[GLU].push_back(20003.69595126275);
+  parameter_mix[GLU].push_back(19156.03660739947);
+  parameter_mix[GLU].push_back(-110.90600703589246);
+  parameter_mix[GLU].push_back(-40319.3351514524);
+  parameter_mix[GLU].push_back(-14679.813393816446);
+  parameter_mix[GLU].push_back(96769.28565573556);
+  parameter_mix[GLU].push_back(-77909.09315520026);
+  parameter_mix[GLU].push_back(19770.047062759568);
 
-  parameter_mix[ILE].push_back(20693.062159179222);
-  parameter_mix[ILE].push_back(-101.97290141036149);
-  parameter_mix[ILE].push_back(-40831.78703482502);
-  parameter_mix[ILE].push_back(-12657.594458075528);
-  parameter_mix[ILE].push_back(83296.23989690492);
-  parameter_mix[ILE].push_back(-62017.47308548058);
-  parameter_mix[ILE].push_back(14368.398225275843);
+  parameter_mix[ILE].push_back(20693.06215917923);
+  parameter_mix[ILE].push_back(-102.87208880594848);
+  parameter_mix[ILE].push_back(-41080.44036311675);
+  parameter_mix[ILE].push_back(-12874.439649378206);
+  parameter_mix[ILE].push_back(84947.33147117581);
+  parameter_mix[ILE].push_back(-63779.07871450237);
+  parameter_mix[ILE].push_back(14938.919981690511);
 
-  parameter_mix[LEU].push_back(20693.062159179222);
-  parameter_mix[LEU].push_back(-111.80857619890668);
-  parameter_mix[LEU].push_back(-42131.62507792151);
-  parameter_mix[LEU].push_back(-14009.106219647874);
-  parameter_mix[LEU].push_back(91220.93610257414);
-  parameter_mix[LEU].push_back(-69456.39325237977);
-  parameter_mix[LEU].push_back(16496.74666112724);
+  parameter_mix[LEU].push_back(20693.062159179233);
+  parameter_mix[LEU].push_back(-114.09539845409269);
+  parameter_mix[LEU].push_back(-42417.3431074524);
+  parameter_mix[LEU].push_back(-14393.801090829746);
+  parameter_mix[LEU].push_back(93640.48403643962);
+  parameter_mix[LEU].push_back(-71990.10354816525);
+  parameter_mix[LEU].push_back(17299.01082057651);
 
   parameter_mix[MET].push_back(22400.800002738917);
-  parameter_mix[MET].push_back(-133.76891528562035);
-  parameter_mix[MET].push_back(-50562.14461060515);
-  parameter_mix[MET].push_back(-19092.463028952076);
-  parameter_mix[MET].push_back(131078.39403549655);
-  parameter_mix[MET].push_back(-110255.40033841228);
-  parameter_mix[MET].push_back(29347.828056519662);
+  parameter_mix[MET].push_back(-138.14469221559762);
+  parameter_mix[MET].push_back(-53013.97694299946);
+  parameter_mix[MET].push_back(-21079.899452619244);
+  parameter_mix[MET].push_back(148607.1089339919);
+  parameter_mix[MET].push_back(-129827.63962878387);
+  parameter_mix[MET].push_back(35882.3297822684);
 
-  parameter_mix[ASN].push_back(14384.287416519466);
-  parameter_mix[ASN].push_back(-54.368319093741725);
-  parameter_mix[ASN].push_back(-25264.7008339227);
-  parameter_mix[ASN].push_back(-6505.720384021238);
-  parameter_mix[ASN].push_back(43726.56856322167);
-  parameter_mix[ASN].push_back(-30312.120416038917);
-  parameter_mix[ASN].push_back(6426.928446443609);
+  parameter_mix[ASN].push_back(14384.287416519475);
+  parameter_mix[ASN].push_back(-55.24976731179147);
+  parameter_mix[ASN].push_back(-25372.978199926372);
+  parameter_mix[ASN].push_back(-6646.452004616925);
+  parameter_mix[ASN].push_back(44594.5027556148);
+  parameter_mix[ASN].push_back(-31202.511764907107);
+  parameter_mix[ASN].push_back(6703.764135873442);
 
-  parameter_mix[PRO].push_back(13503.79714565913);
-  parameter_mix[PRO].push_back(-48.81691245595872);
-  parameter_mix[PRO].push_back(-22749.678192064708);
-  parameter_mix[PRO].push_back(-5863.718046448816);
-  parameter_mix[PRO].push_back(39264.569464993685);
-  parameter_mix[PRO].push_back(-27454.474446209842);
-  parameter_mix[PRO].push_back(5909.564112806066);
+  parameter_mix[PRO].push_back(13503.797145659117);
+  parameter_mix[PRO].push_back(-38.58316011847087);
+  parameter_mix[PRO].push_back(-21446.17847324053);
+  parameter_mix[PRO].push_back(-4480.55896170459);
+  parameter_mix[PRO].push_back(31274.287350083254);
+  parameter_mix[PRO].push_back(-19984.249229169505);
+  parameter_mix[PRO].push_back(3782.272312712745);
 
-  parameter_mix[GLN].push_back(19938.237246839024);
-  parameter_mix[GLN].push_back(-125.86788493612829);
-  parameter_mix[GLN].push_back(-43384.69315271189);
-  parameter_mix[GLN].push_back(-16673.856129529086);
-  parameter_mix[GLN].push_back(108716.8543788976);
-  parameter_mix[GLN].push_back(-88501.68147616273);
-  parameter_mix[GLN].push_back(22682.521341667303);
+  parameter_mix[GLN].push_back(19938.23724683901);
+  parameter_mix[GLN].push_back(-121.24884503048865);
+  parameter_mix[GLN].push_back(-43928.589472297834);
+  parameter_mix[GLN].push_back(-16805.069757865473);
+  parameter_mix[GLN].push_back(112831.61348476357);
+  parameter_mix[GLN].push_back(-93979.08819184235);
+  parameter_mix[GLN].push_back(24741.563493163732);
 
   parameter_mix[SER].push_back(8813.67020471935);
-  parameter_mix[SER].push_back(-19.037976334608356);
-  parameter_mix[SER].push_back(-12699.254690509915);
-  parameter_mix[SER].push_back(-2154.45659945185);
-  parameter_mix[SER].push_back(15784.762074798347);
-  parameter_mix[SER].push_back(-9235.432880294426);
-  parameter_mix[SER].push_back(1509.3565114265857);
+  parameter_mix[SER].push_back(-18.291615317790175);
+  parameter_mix[SER].push_back(-12585.074732466266);
+  parameter_mix[SER].push_back(-2064.454891600786);
+  parameter_mix[SER].push_back(15273.905065790364);
+  parameter_mix[SER].push_back(-8813.056005263466);
+  parameter_mix[SER].push_back(1404.9812302289881);
 
-  parameter_mix[THR].push_back(13233.997179639066);
-  parameter_mix[THR].push_back(-37.56509776445388);
-  parameter_mix[THR].push_back(-21203.56789307223);
-  parameter_mix[THR].push_back(-4308.144424843769);
-  parameter_mix[THR].push_back(30208.83306033092);
-  parameter_mix[THR].push_back(-18848.577186687486);
-  parameter_mix[THR].push_back(3411.913197678857);
+  parameter_mix[THR].push_back(13233.997179639062);
+  parameter_mix[THR].push_back(-39.40454157416847);
+  parameter_mix[THR].push_back(-21430.58717233547);
+  parameter_mix[THR].push_back(-4566.332853710876);
+  parameter_mix[THR].push_back(31717.497780073558);
+  parameter_mix[THR].push_back(-20299.614304281313);
+  parameter_mix[THR].push_back(3837.207224537505);
 
-  parameter_mix[VAL].push_back(15135.438016299164);
-  parameter_mix[VAL].push_back(-52.635094911968245);
-  parameter_mix[VAL].push_back(-26030.01153963802);
-  parameter_mix[VAL].push_back(-6179.950964589099);
-  parameter_mix[VAL].push_back(42022.56035826398);
-  parameter_mix[VAL].push_back(-28010.86180138724);
-  parameter_mix[VAL].push_back(5612.649276643284);
+  parameter_mix[VAL].push_back(15135.438016299158);
+  parameter_mix[VAL].push_back(-51.415141550353205);
+  parameter_mix[VAL].push_back(-25859.078442379723);
+  parameter_mix[VAL].push_back(-6007.697291593915);
+  parameter_mix[VAL].push_back(40997.969600345634);
+  parameter_mix[VAL].push_back(-27036.257386814148);
+  parameter_mix[VAL].push_back(5328.922363811635);
 
   parameter_mix[ALA].push_back(6586.942863819189);
-  parameter_mix[ALA].push_back(-10.500985041159272);
-  parameter_mix[ALA].push_back(-8682.564064794862);
-  parameter_mix[ALA].push_back(-1167.7140089940317);
-  parameter_mix[ALA].push_back(9157.822632690133);
-  parameter_mix[ALA].push_back(-4869.150402902164);
-  parameter_mix[ALA].push_back(660.7127436699247);
+  parameter_mix[ALA].push_back(-10.96713559950907);
+  parameter_mix[ALA].push_back(-8758.836131731925);
+  parameter_mix[ALA].push_back(-1223.1723720922605);
+  parameter_mix[ALA].push_back(9475.182453543037);
+  parameter_mix[ALA].push_back(-5124.611191433804);
+  parameter_mix[ALA].push_back(721.7625962949869);
 
-  parameter_mix[GLY].push_back(3596.0718542192735);
-  parameter_mix[GLY].push_back(-3.872148741667527);
-  parameter_mix[GLY].push_back(-4049.533333393464);
-  parameter_mix[GLY].push_back(-426.8550732879424);
-  parameter_mix[GLY].push_back(3595.6814286066124);
-  parameter_mix[GLY].push_back(-1755.3404133215586);
-  parameter_mix[GLY].push_back(199.02655960598142);
+  parameter_mix[GLY].push_back(3596.0718542192762);
+  parameter_mix[GLY].push_back(-4.079285964028122);
+  parameter_mix[GLY].push_back(-4089.4217504382686);
+  parameter_mix[GLY].push_back(-450.9650932154967);
+  parameter_mix[GLY].push_back(3737.026778223427);
+  parameter_mix[GLY].push_back(-1862.9856575810572);
+  parameter_mix[GLY].push_back(222.97288276257262);
 
-  parameter_vac[TRP].push_back(9599.949107129776);
-  parameter_vac[TRP].push_back(-30.858609190810583);
-  parameter_vac[TRP].push_back(-28551.048759771413);
-  parameter_vac[TRP].push_back(-10231.240891996395);
-  parameter_vac[TRP].push_back(96031.95748027436);
-  parameter_vac[TRP].push_back(-94814.69691650089);
-  parameter_vac[TRP].push_back(29200.454883200917);
+  parameter_mix[HIS].push_back(21779.124723299232);
+  parameter_mix[HIS].push_back(-131.4603421188538);
+  parameter_mix[HIS].push_back(-49068.74667421681);
+  parameter_mix[HIS].push_back(-18685.909496392127);
+  parameter_mix[HIS].push_back(127724.60792384286);
+  parameter_mix[HIS].push_back(-107419.22159440348);
+  parameter_mix[HIS].push_back(28577.228634530744);
 
-  parameter_vac[TYR].push_back(7393.553846413058);
-  parameter_vac[TYR].push_back(-47.23837907229961);
-  parameter_vac[TYR].push_back(-18490.21435843763);
-  parameter_vac[TYR].push_back(-7737.360235562757);
-  parameter_vac[TYR].push_back(56063.21994893703);
-  parameter_vac[TYR].push_back(-50556.859582519006);
-  parameter_vac[TYR].push_back(14389.081569421436);
+  parameter_vac[TRP].push_back(9599.949107368187);
+  parameter_vac[TRP].push_back(-66.35331786175249);
+  parameter_vac[TRP].push_back(-26311.640290970638);
+  parameter_vac[TRP].push_back(-11577.314600529338);
+  parameter_vac[TRP].push_back(85847.52554160352);
+  parameter_vac[TRP].push_back(-79417.17065742958);
+  parameter_vac[TRP].push_back(23090.348430572863);
 
-  parameter_vac[PHE].push_back(6081.874997705282);
-  parameter_vac[PHE].push_back(-38.75296096284759);
-  parameter_vac[PHE].push_back(-14795.200710070538);
-  parameter_vac[PHE].push_back(-6406.629771873036);
-  parameter_vac[PHE].push_back(46100.140106722465);
-  parameter_vac[PHE].push_back(-42085.36076230338);
-  parameter_vac[PHE].push_back(12122.907929159559);
+  parameter_vac[TYR].push_back(7393.553846412945);
+  parameter_vac[TYR].push_back(-27.51954035778316);
+  parameter_vac[TYR].push_back(-20329.10485615286);
+  parameter_vac[TYR].push_back(-7444.276340508767);
+  parameter_vac[TYR].push_back(66343.22315132803);
+  parameter_vac[TYR].push_back(-64470.58721639446);
+  parameter_vac[TYR].push_back(19614.63563898146);
 
-  parameter_vac[HIS].push_back(5180.842705000208);
-  parameter_vac[HIS].push_back(-32.89736234246629);
-  parameter_vac[HIS].push_back(-10873.350997276972);
-  parameter_vac[HIS].push_back(-4481.4769197362);
-  parameter_vac[HIS].push_back(29212.72548906728);
-  parameter_vac[HIS].push_back(-24529.701112742892);
-  parameter_vac[HIS].push_back(6495.940243992503);
+  parameter_vac[PHE].push_back(6081.874997705279);
+  parameter_vac[PHE].push_back(-40.474695969500104);
+  parameter_vac[PHE].push_back(-14354.627390498901);
+  parameter_vac[PHE].push_back(-6156.69750315959);
+  parameter_vac[PHE].push_back(42580.84239395237);
+  parameter_vac[PHE].push_back(-37704.09749809582);
+  parameter_vac[PHE].push_back(10543.005717478625);
 
   parameter_vac[HIP].push_back(5325.791987063724);
-  parameter_vac[HIP].push_back(-35.05625337809874);
-  parameter_vac[HIP].push_back(-11441.518343889265);
-  parameter_vac[HIP].push_back(-4859.835770461219);
-  parameter_vac[HIP].push_back(31828.3405173923);
-  parameter_vac[HIP].push_back(-27109.903007338115);
-  parameter_vac[HIP].push_back(7283.467569951606);
+  parameter_vac[HIP].push_back(-35.512112257530156);
+  parameter_vac[HIP].push_back(-11488.443296477566);
+  parameter_vac[HIP].push_back(-4916.724935318093);
+  parameter_vac[HIP].push_back(32134.338675979947);
+  parameter_vac[HIP].push_back(-27388.387595464188);
+  parameter_vac[HIP].push_back(7359.899986748838);
 
-  parameter_vac[HIE].push_back(5180.842705000208);
-  parameter_vac[HIE].push_back(-33.29984675748154);
-  parameter_vac[HIE].push_back(-10872.379635800535);
-  parameter_vac[HIE].push_back(-4493.213445493111);
-  parameter_vac[HIE].push_back(29107.17290177237);
-  parameter_vac[HIE].push_back(-24328.802993028898);
-  parameter_vac[HIE].push_back(6407.227555283756);
+  parameter_vac[ARG].push_back(7220.306892248294);
+  parameter_vac[ARG].push_back(-20.65912886190997);
+  parameter_vac[ARG].push_back(-22700.70129646048);
+  parameter_vac[ARG].push_back(-8696.901551172636);
+  parameter_vac[ARG].push_back(83641.36257312517);
+  parameter_vac[ARG].push_back(-85237.33676336925);
+  parameter_vac[ARG].push_back(26899.162688310953);
 
-  parameter_vac[ARG].push_back(7220.306892486492);
-  parameter_vac[ARG].push_back(-45.02676906795456);
-  parameter_vac[ARG].push_back(-20987.6312443252);
-  parameter_vac[ARG].push_back(-9443.110444762371);
-  parameter_vac[ARG].push_back(74884.77524133732);
-  parameter_vac[ARG].push_back(-72540.00466456635);
-  parameter_vac[ARG].push_back(21959.97615859096);
-
-  parameter_vac[LYS].push_back(5038.613120729024);
-  parameter_vac[LYS].push_back(-30.37838672252398);
-  parameter_vac[LYS].push_back(-13422.897999177683);
-  parameter_vac[LYS].push_back(-6053.389263987596);
-  parameter_vac[LYS].push_back(46835.63074102061);
-  parameter_vac[LYS].push_back(-45089.04698246694);
-  parameter_vac[LYS].push_back(13600.678970015228);
+  parameter_vac[LYS].push_back(5038.613120729022);
+  parameter_vac[LYS].push_back(-34.08366887546492);
+  parameter_vac[LYS].push_back(-12812.921120433106);
+  parameter_vac[LYS].push_back(-5843.761329082788);
+  parameter_vac[LYS].push_back(42419.08427856609);
+  parameter_vac[LYS].push_back(-39460.49038159249);
+  parameter_vac[LYS].push_back(11542.320830663035);
 
   parameter_vac[CYS].push_back(2915.0458981763995);
-  parameter_vac[CYS].push_back(-3.595827832254589);
-  parameter_vac[CYS].push_back(-3592.4507607863125);
-  parameter_vac[CYS].push_back(-394.23885715070753);
-  parameter_vac[CYS].push_back(3348.1185401489765);
-  parameter_vac[CYS].push_back(-1606.9293130024218);
-  parameter_vac[CYS].push_back(166.6775491017609);
+  parameter_vac[CYS].push_back(-5.380571839804511);
+  parameter_vac[CYS].push_back(-3865.366285883624);
+  parameter_vac[CYS].push_back(-602.3275271136284);
+  parameter_vac[CYS].push_back(4524.133086072617);
+  parameter_vac[CYS].push_back(-2537.87137720241);
+  parameter_vac[CYS].push_back(381.52870758240016);
 
-  parameter_vac[ASP].push_back(3479.7507282248966);
-  parameter_vac[ASP].push_back(-12.005347430085758);
-  parameter_vac[ASP].push_back(-5600.883991352643);
-  parameter_vac[ASP].push_back(-1389.3777545609155);
-  parameter_vac[ASP].push_back(9245.650898756234);
-  parameter_vac[ASP].push_back(-6156.207160613609);
-  parameter_vac[ASP].push_back(1218.5833934642021);
+  parameter_vac[ASP].push_back(3479.750728224898);
+  parameter_vac[ASP].push_back(-10.33897891836596);
+  parameter_vac[ASP].push_back(-5382.628188436401);
+  parameter_vac[ASP].push_back(-1183.8060939576694);
+  parameter_vac[ASP].push_back(8100.082378727997);
+  parameter_vac[ASP].push_back(-5162.630696148773);
+  parameter_vac[ASP].push_back(958.993022379732);
 
-  parameter_vac[GLU].push_back(4487.461543955492);
-  parameter_vac[GLU].push_back(-27.373885533538896);
-  parameter_vac[GLU].push_back(-8941.928757023);
-  parameter_vac[GLU].push_back(-3371.688026217654);
-  parameter_vac[GLU].push_back(21083.486308601627);
-  parameter_vac[GLU].push_back(-16307.701537949622);
-  parameter_vac[GLU].push_back(3909.6886537322757);
+  parameter_vac[GLU].push_back(4487.461543955491);
+  parameter_vac[GLU].push_back(-26.671865751817936);
+  parameter_vac[GLU].push_back(-8829.738168429001);
+  parameter_vac[GLU].push_back(-3297.668395415257);
+  parameter_vac[GLU].push_back(20686.457747123466);
+  parameter_vac[GLU].push_back(-16030.814134196151);
+  parameter_vac[GLU].push_back(3858.4457728083275);
 
-  parameter_vac[ILE].push_back(3842.5968201937767);
-  parameter_vac[ILE].push_back(-13.4621492233332);
-  parameter_vac[ILE].push_back(-6414.466724440508);
-  parameter_vac[ILE].push_back(-1580.0124125764848);
-  parameter_vac[ILE].push_back(10618.037884226278);
-  parameter_vac[ILE].push_back(-7154.041016270302);
-  parameter_vac[ILE].push_back(1452.4947569272492);
+  parameter_vac[ILE].push_back(3842.5968201937776);
+  parameter_vac[ILE].push_back(-13.848165050578492);
+  parameter_vac[ILE].push_back(-6480.062699452774);
+  parameter_vac[ILE].push_back(-1636.3888925440413);
+  parameter_vac[ILE].push_back(10967.333210698738);
+  parameter_vac[ILE].push_back(-7483.704914714421);
+  parameter_vac[ILE].push_back(1548.5696047594895);
 
-  parameter_vac[LEU].push_back(3842.5968201937767);
-  parameter_vac[LEU].push_back(-15.681457814419176);
-  parameter_vac[LEU].push_back(-6771.789004604622);
-  parameter_vac[LEU].push_back(-1845.1900416951112);
-  parameter_vac[LEU].push_back(12139.114106034092);
-  parameter_vac[LEU].push_back(-8383.262864959117);
-  parameter_vac[LEU].push_back(1747.4810835193168);
+  parameter_vac[LEU].push_back(3842.5968201937785);
+  parameter_vac[LEU].push_back(-16.2745108270949);
+  parameter_vac[LEU].push_back(-6807.110269770606);
+  parameter_vac[LEU].push_back(-1926.6303434106014);
+  parameter_vac[LEU].push_back(12577.952756390941);
+  parameter_vac[LEU].push_back(-8829.40489330961);
+  parameter_vac[LEU].push_back(1882.919316016889);
 
-  parameter_vac[MET].push_back(4898.51289296739);
-  parameter_vac[MET].push_back(-25.18325080293945);
-  parameter_vac[MET].push_back(-9467.48983449123);
-  parameter_vac[MET].push_back(-3202.202778951768);
-  parameter_vac[MET].push_back(20961.877825984124);
-  parameter_vac[MET].push_back(-16179.791857572387);
-  parameter_vac[MET].push_back(3909.4934716887474);
+  parameter_vac[MET].push_back(4898.512892967389);
+  parameter_vac[MET].push_back(-30.588244886468207);
+  parameter_vac[MET].push_back(-10159.093665859045);
+  parameter_vac[MET].push_back(-4025.0261508449653);
+  parameter_vac[MET].push_back(26007.394369425827);
+  parameter_vac[MET].push_back(-21199.218680206573);
+  parameter_vac[MET].push_back(5423.004225853842);
 
-  parameter_vac[ASN].push_back(3598.142399811549);
-  parameter_vac[ASN].push_back(-10.193740412650593);
-  parameter_vac[ASN].push_back(-5570.433196260574);
-  parameter_vac[ASN].push_back(-1166.3919144288564);
-  parameter_vac[ASN].push_back(8108.239221259332);
-  parameter_vac[ASN].push_back(-5084.052169945779);
-  parameter_vac[ASN].push_back(922.5084812557318);
+  parameter_vac[ASN].push_back(3598.1423998115492);
+  parameter_vac[ASN].push_back(-10.357995638888545);
+  parameter_vac[ASN].push_back(-5565.603011562138);
+  parameter_vac[ASN].push_back(-1190.3294930971967);
+  parameter_vac[ASN].push_back(8227.920711951123);
+  parameter_vac[ASN].push_back(-5222.61541118056);
+  parameter_vac[ASN].push_back(968.593406702772);
 
-  parameter_vac[PRO].push_back(2702.925890807491);
-  parameter_vac[PRO].push_back(-6.344885973773661);
-  parameter_vac[PRO].push_back(-3723.804313180885);
-  parameter_vac[PRO].push_back(-725.0774829994464);
-  parameter_vac[PRO].push_back(5083.307369521012);
-  parameter_vac[PRO].push_back(-3153.6282584491305);
-  parameter_vac[PRO].push_back(568.1054247577542);
+  parameter_vac[PRO].push_back(2702.925890807494);
+  parameter_vac[PRO].push_back(-4.11690159421177);
+  parameter_vac[PRO].push_back(-3395.325331307625);
+  parameter_vac[PRO].push_back(-458.95242128002894);
+  parameter_vac[PRO].push_back(3584.3640448715823);
+  parameter_vac[PRO].push_back(-1921.4140769384692);
+  parameter_vac[PRO].push_back(267.08577848319516);
 
-  parameter_vac[GLN].push_back(4621.773132292558);
-  parameter_vac[GLN].push_back(-29.611357037564705);
-  parameter_vac[GLN].push_back(-9427.140597349113);
-  parameter_vac[GLN].push_back(-3666.620711439403);
-  parameter_vac[GLN].push_back(22875.745472246173);
-  parameter_vac[GLN].push_back(-17863.872805261297);
-  parameter_vac[GLN].push_back(4325.335756697777);
+  parameter_vac[GLN].push_back(4621.773132292556);
+  parameter_vac[GLN].push_back(-29.511778489038818);
+  parameter_vac[GLN].push_back(-9486.077450010192);
+  parameter_vac[GLN].push_back(-3768.5756897489828);
+  parameter_vac[GLN].push_back(23828.07111260487);
+  parameter_vac[GLN].push_back(-19110.205836780202);
+  parameter_vac[GLN].push_back(4791.718204894083);
 
-  parameter_vac[SER].push_back(2115.150465404398);
-  parameter_vac[SER].push_back(-2.608961844911164);
-  parameter_vac[SER].push_back(-2535.4783055939965);
-  parameter_vac[SER].push_back(-285.24778630312363);
-  parameter_vac[SER].push_back(2385.5343165459967);
-  parameter_vac[SER].push_back(-1156.9360917654067);
-  parameter_vac[SER].push_back(122.17917481954323);
+  parameter_vac[SER].push_back(2115.1504654043965);
+  parameter_vac[SER].push_back(-2.4158378234251234);
+  parameter_vac[SER].push_back(-2488.1131972903822);
+  parameter_vac[SER].push_back(-263.64072945387693);
+  parameter_vac[SER].push_back(2251.376687850687);
+  parameter_vac[SER].push_back(-1066.0790768852626);
+  parameter_vac[SER].push_back(105.5155397911316);
 
-  parameter_vac[THR].push_back(2914.906170715884);
-  parameter_vac[THR].push_back(-4.775628956452242);
-  parameter_vac[THR].push_back(-3871.750382748967);
-  parameter_vac[THR].push_back(-527.0206564434785);
-  parameter_vac[THR].push_back(4136.791177465494);
-  parameter_vac[THR].push_back(-2169.9772449584666);
-  parameter_vac[THR].push_back(279.42678356526335);
+  parameter_vac[THR].push_back(2914.9061707158835);
+  parameter_vac[THR].push_back(-5.032844592364407);
+  parameter_vac[THR].push_back(-3903.2546253886653);
+  parameter_vac[THR].push_back(-559.4734271244915);
+  parameter_vac[THR].push_back(4315.044828297787);
+  parameter_vac[THR].push_back(-2331.211908177365);
+  parameter_vac[THR].push_back(323.76849758109853);
 
-  parameter_vac[VAL].push_back(2914.8744247581994);
-  parameter_vac[VAL].push_back(-6.0787188044112375);
-  parameter_vac[VAL].push_back(-4122.984089016234);
-  parameter_vac[VAL].push_back(-684.3239695392286);
-  parameter_vac[VAL].push_back(5048.30676770002);
-  parameter_vac[VAL].push_back(-2909.0035370830888);
-  parameter_vac[VAL].push_back(460.72939731819946);
+  parameter_vac[VAL].push_back(2914.8744247581953);
+  parameter_vac[VAL].push_back(-5.847217106105881);
+  parameter_vac[VAL].push_back(-4096.370479502377);
+  parameter_vac[VAL].push_back(-655.2917606620404);
+  parameter_vac[VAL].push_back(4888.77261250007);
+  parameter_vac[VAL].push_back(-2765.7552774385167);
+  parameter_vac[VAL].push_back(421.9081598033515);
 
-  parameter_vac[ALA].push_back(1443.3438146824442);
-  parameter_vac[ALA].push_back(-1.079460116756403);
-  parameter_vac[ALA].push_back(-1483.196871651843);
-  parameter_vac[ALA].push_back(-116.4910603548198);
-  parameter_vac[ALA].push_back(1109.6163998427003);
-  parameter_vac[ALA].push_back(-462.4259514425249);
-  parameter_vac[ALA].push_back(28.21768859752687);
+  parameter_vac[ALA].push_back(1443.3438146824446);
+  parameter_vac[ALA].push_back(-1.1234573178567506);
+  parameter_vac[ALA].push_back(-1492.4547663363514);
+  parameter_vac[ALA].push_back(-121.47935619968672);
+  parameter_vac[ALA].push_back(1139.689871538201);
+  parameter_vac[ALA].push_back(-483.8336547914466);
+  parameter_vac[ALA].push_back(32.48231950404626);
 
-  parameter_vac[GLY].push_back(899.5356000422943);
-  parameter_vac[GLY].push_back(-0.4467373920268132);
-  parameter_vac[GLY].push_back(-765.5891570102108);
-  parameter_vac[GLY].push_back(-48.00532220136316);
-  parameter_vac[GLY].push_back(493.4938562562617);
-  parameter_vac[GLY].push_back(-189.2220341648864);
-  parameter_vac[GLY].push_back(7.284562232361592);
+  parameter_vac[GLY].push_back(899.5356000422925);
+  parameter_vac[GLY].push_back(-0.5200880084066986);
+  parameter_vac[GLY].push_back(-787.5892053280859);
+  parameter_vac[GLY].push_back(-56.07596224884467);
+  parameter_vac[GLY].push_back(546.4212287680981);
+  parameter_vac[GLY].push_back(-222.2667666932616);
+  parameter_vac[GLY].push_back(12.474587265791476);
+
+  parameter_vac[HIS].push_back(5180.842705000207);
+  parameter_vac[HIS].push_back(-29.578973475252766);
+  parameter_vac[HIS].push_back(-10323.417251934066);
+  parameter_vac[HIS].push_back(-3788.977215582307);
+  parameter_vac[HIS].push_back(24427.720792289427);
+  parameter_vac[HIS].push_back(-19307.35836837878);
+  parameter_vac[HIS].push_back(4780.831414992477);
 
   auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   if( moldat ) {
@@ -2859,14 +2846,14 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std
       } else if(Rname=="HID") {
         atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=HIS;
       } else if(Rname=="HIE") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=HIE;
+        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=HIS;
       } else if(Rname=="HIP") {
         atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=HIP;
         // CHARMM NAMING FOR PROTONATION STATES OF HISTIDINE
       } else if(Rname=="HSD") {
         atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=HIS;
       } else if(Rname=="HSE") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=HIE;
+        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=HIS;
       } else if(Rname=="HSP") {
         atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=HIP;
       } else if(Rname=="ILE") {
