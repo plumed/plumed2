@@ -94,13 +94,12 @@ Exception::Exception()
     msg+="\n********** END STACK DUMP **********\n";
   }
 #endif
-  msg+="\n+++ PLUMED error";
 }
 
 Exception& Exception::operator<<(const std::string&msg)
 {
   if(msg.length()>0) {
-    if(note) this->msg +="\n+++ message follows +++\n";
+    if(note) this->msg +="\n";
     this->msg +=msg;
     note=false;
   }
@@ -112,7 +111,7 @@ Exception& Exception::operator<<(const Location&loc)
   if(loc.file) {
     char cline[1000];
     std::sprintf(cline,"%u",loc.line);
-    this->msg += "\n+++ at ";
+    this->msg += "\n(";
     try {
       this->msg += simplify(loc.file);
     } catch(...) {
@@ -120,8 +119,9 @@ Exception& Exception::operator<<(const Location&loc)
     }
     this->msg += ":";
     this->msg += cline;
+    this->msg += ")";
     if(loc.pretty && loc.pretty[0]) {
-      this->msg += ", function ";
+      this->msg += " ";
       this->msg += loc.pretty;
     }
   }

@@ -120,6 +120,48 @@ namespace PLMD {
     throw std::ios_base::failure(what);
   }
 
+  if(words[0]=="int") {
+    int value=0;
+    if(words.size()>1) Tools::convert(words[1],value);
+    throw value;
+  }
+
+  if(words[0]=="test_nested1") {
+    try {
+      throw Exception(std::string("inner ")+what);
+    } catch(...) {
+      try {
+        std::throw_with_nested(Exception(std::string("middle ")+what));
+      } catch(...) {
+        std::throw_with_nested(Exception(std::string("outer ")+what));
+      }
+    }
+  }
+
+  if(words[0]=="test_nested2") {
+    try {
+      throw std::bad_alloc();
+    } catch(...) {
+      try {
+        std::throw_with_nested(Exception(std::string("middle ")+what));
+      } catch(...) {
+        std::throw_with_nested(Exception(std::string("outer ")+what));
+      }
+    }
+  }
+
+  if(words[0]=="test_nested3") {
+    try {
+      throw "inner";
+    } catch(...) {
+      try {
+        std::throw_with_nested(Exception(std::string("middle ")+what));
+      } catch(...) {
+        std::throw_with_nested(Exception(std::string("outer ")+what));
+      }
+    }
+  }
+
   plumed_error() << "unknown exception " << what;
 }
 
@@ -399,7 +441,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         break;
       case cmd_getApiVersion:
         CHECK_NOTNULL(val,word);
-        val.set(int(9));
+        val.set(int(10));
         break;
       // commands which can be used only before initialization:
       case cmd_init:
@@ -515,6 +557,12 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_throw:
         CHECK_NOTNULL(val,word);
         testThrow(val.get<const char*>());
+      /* ADDED WITH API==10 */
+      case cmd_setNestedExceptions:
+        CHECK_NOTNULL(val,word);
+        if(val.get<int>()!=0) nestedExceptions=true;
+        else nestedExceptions=false;
+        break;
       /* STOP API */
       case cmd_setMDEngine:
         CHECK_NOTINIT(initialized,word);
@@ -619,12 +667,17 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       }
     }
 
-  } catch (const std::exception &e) {
+  } catch (...) {
     if(log.isOpen()) {
-      log<<"\n\n################################################################################\n\n";
-      log<<e.what();
-      log<<"\n\n################################################################################\n\n";
-      log.flush();
+      try {
+        log<<"\n################################################################################\n";
+        log<<Tools::concatenateExceptionMessages();
+        log<<"\n################################################################################\n";
+        log.flush();
+      } catch(...) {
+        // ignore errors here.
+        // in any case, we are rethrowing this below
+      }
     }
     throw;
   }
@@ -863,39 +916,43 @@ void PlumedMain::justCalculate() {
 // calculate the active actions in order (assuming *backward* dependence)
   for(const auto & pp : actionSet) {
     Action* p(pp.get());
-    if(p->isActive()) {
+    try {
+      if(p->isActive()) {
 // Stopwatch is stopped when sw goes out of scope.
 // We explicitly declare a Stopwatch::Handler here to allow for conditional initialization.
-      Stopwatch::Handler sw;
-      if(detailedTimers) {
-        std::string actionNumberLabel;
-        Tools::convert(iaction,actionNumberLabel);
-        const unsigned m=actionSet.size();
-        unsigned k=0; unsigned n=1; while(n<m) { n*=10; k++; }
-        const int pad=k-actionNumberLabel.length();
-        for(int i=0; i<pad; i++) actionNumberLabel=" "+actionNumberLabel;
-        sw=stopwatch.startStop("4A "+actionNumberLabel+" "+p->getLabel());
+        Stopwatch::Handler sw;
+        if(detailedTimers) {
+          std::string actionNumberLabel;
+          Tools::convert(iaction,actionNumberLabel);
+          const unsigned m=actionSet.size();
+          unsigned k=0; unsigned n=1; while(n<m) { n*=10; k++; }
+          const int pad=k-actionNumberLabel.length();
+          for(int i=0; i<pad; i++) actionNumberLabel=" "+actionNumberLabel;
+          sw=stopwatch.startStop("4A "+actionNumberLabel+" "+p->getLabel());
+        }
+        ActionWithValue*av=dynamic_cast<ActionWithValue*>(p);
+        ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(p);
+        {
+          if(av) av->clearInputForces();
+          if(av) av->clearDerivatives();
+        }
+        {
+          if(aa) aa->clearOutputForces();
+          if(aa) if(aa->isActive()) aa->retrieveAtoms();
+        }
+        if(p->checkNumericalDerivatives()) p->calculateNumericalDerivatives();
+        else p->calculate();
+        // This retrieves components called bias
+        if(av) {
+          bias+=av->getOutputQuantity("bias");
+          work+=av->getOutputQuantity("work");
+          av->setGradientsIfNeeded();
+        }
+        ActionWithVirtualAtom*avv=dynamic_cast<ActionWithVirtualAtom*>(p);
+        if(avv)avv->setGradientsIfNeeded();
       }
-      ActionWithValue*av=dynamic_cast<ActionWithValue*>(p);
-      ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(p);
-      {
-        if(av) av->clearInputForces();
-        if(av) av->clearDerivatives();
-      }
-      {
-        if(aa) aa->clearOutputForces();
-        if(aa) if(aa->isActive()) aa->retrieveAtoms();
-      }
-      if(p->checkNumericalDerivatives()) p->calculateNumericalDerivatives();
-      else p->calculate();
-      // This retrieves components called bias
-      if(av) {
-        bias+=av->getOutputQuantity("bias");
-        work+=av->getOutputQuantity("work");
-        av->setGradientsIfNeeded();
-      }
-      ActionWithVirtualAtom*avv=dynamic_cast<ActionWithVirtualAtom*>(p);
-      if(avv)avv->setGradientsIfNeeded();
+    } catch(...) {
+      plumed_error_nested() << "An error happened while calculating " << p->getLabel();
     }
     iaction++;
   }
