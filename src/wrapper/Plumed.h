@@ -903,10 +903,12 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_set_bad_alloc(plumed_error*erro
 }
 
 /** Recursive merge (for internal usage) */
-__PLUMED_WRAPPER_STATIC_INLINE void plumed_error_recursive_merge(plumed_error* error,char*buffer,const char*join) __PLUMED_WRAPPER_CXX_NOEXCEPT {
-  if(error->nested) plumed_error_recursive_merge(error->nested,buffer,join);
-  __PLUMED_WRAPPER_STD strcat(buffer,plumed_error_what(*error));
-  __PLUMED_WRAPPER_STD strcat(buffer,join);
+__PLUMED_WRAPPER_STATIC_INLINE void plumed_error_recursive_merge(plumed_error* error,char*buffer,const char*join,__PLUMED_WRAPPER_STD size_t*len) __PLUMED_WRAPPER_CXX_NOEXCEPT {
+  if(error->nested) plumed_error_recursive_merge(error->nested,buffer,join,len);
+  __PLUMED_WRAPPER_STD strncat(buffer,plumed_error_what(*error),*len);
+  *len -= __PLUMED_WRAPPER_STD strlen(plumed_error_what(*error));
+  __PLUMED_WRAPPER_STD strncat(buffer,join,*len);
+  *len -= __PLUMED_WRAPPER_STD strlen(join);
 }
 
 /** Merge with nested exceptions */
@@ -942,8 +944,11 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_merge_with_nested(plumed_error*
        function.
     */
     assert(error->nested);
-    plumed_error_recursive_merge(error->nested,new_buffer,join);
-    __PLUMED_WRAPPER_STD strcat(new_buffer,plumed_error_what(*error));
+    plumed_error_recursive_merge(error->nested,new_buffer,join,&len);
+    __PLUMED_WRAPPER_STD strncat(new_buffer,plumed_error_what(*error),len);
+    len -= __PLUMED_WRAPPER_STD strlen(plumed_error_what(*error));
+    /* we keep track of length of buffer for safety */
+    assert(len==0);
   }
   error->what=new_buffer;
 
