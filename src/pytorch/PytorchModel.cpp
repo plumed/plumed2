@@ -31,7 +31,6 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include <fstream>
 #include <cmath>
 
-
 // We have to do a backward compatability hack for <1.10
 // https://discuss.pytorch.org/t/how-to-check-libtorch-version/77709/4
 // Basically, the check in torch::jit::freeze
