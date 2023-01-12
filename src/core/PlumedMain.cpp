@@ -209,7 +209,8 @@ PlumedMain::PlumedMain():
   doCheckPoint(false),
   stopNow(false),
   novirial(false),
-  detailedTimers(false)
+  detailedTimers(false),
+  gpuDeviceId(-1)
 {
   increaseReferenceCounter();
   log.link(comm);
@@ -550,6 +551,14 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
           auto nt=val.get<unsigned>();
           if(nt==0) nt=1;
           OpenMP::setNumThreads(nt);
+        }
+        break;
+      /* ADDED WITH API==10 */
+      case cmd_setGpuDeviceId:
+        CHECK_NOTNULL(val,word);
+        {
+          auto id=val.get<int>();
+          if(id>=0) gpuDeviceId=id;
         }
         break;
       /* ADDED WITH API==6 */

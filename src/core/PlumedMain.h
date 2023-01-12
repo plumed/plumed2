@@ -195,7 +195,6 @@ private:
 /// Flag for checkpointig
   bool doCheckPoint;
 
-
 private:
 /// Forward declaration.
   ForwardDecl<TypesafePtr> stopFlag_fwd;
@@ -214,6 +213,9 @@ public:
 
 /// Flag to switch on detailed timers
   bool detailedTimers;
+
+/// GpuDevice Identifier
+  int gpuDeviceId;
 
 /// Generic map string -> double
 /// intended to pass information across Actions
@@ -419,6 +421,8 @@ public:
   void setEndPlumed();
 /// Get the value of the end plumed flag
   bool getEndPlumed() const ;
+/// Get the value of the gpuDeviceId 
+  int getGpuDeviceId() const ;
 /// Call error handler.
 /// Should only be called from \ref plumed_plumedmain_cmd().
 /// If the error handler was not set, returns false.
@@ -509,6 +513,11 @@ void PlumedMain::setEndPlumed() {
 inline
 bool PlumedMain::getEndPlumed() const {
   return endPlumed;
+}
+
+inline
+int PlumedMain::getGpuDeviceId() const {
+  return gpuDeviceId;
 }
 
 inline

@@ -1771,7 +1771,11 @@ int Mdrunner::mdrunner()
           plumed_cmd(plumedmain,"getApiVersion",&pversion);
           if(pversion>5) {
              int nth = gmx_omp_nthreads_get(emntDefault);
-             if(pversion>5) plumed_cmd(plumedmain,"setNumOMPthreads",&nth);
+             plumed_cmd(plumedmain,"setNumOMPthreads",&nth);
+          }
+          /* set GPU device id */
+          if(pversion>9) {
+             plumed_cmd(plumedmain,"setGpuDeviceId", &deviceId);
           }
         }
         /* END PLUMED */
