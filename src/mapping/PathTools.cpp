@@ -31,6 +31,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <cmath>
 
 namespace PLMD {
 namespace mapping {
@@ -193,7 +194,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
       printf("FINAL DISTANCE BETWEEN FRAME %u AND %u IS %f \n",i-1,i,len );
       mean+=len;
     }
-    printf("SUGGESTED LAMBDA PARAMETER IS THUS %f \n",2.3/mean/static_cast<double>( frames.size()-1 ) );
+    printf("SUGGESTED LAMBDA PARAMETER IS THUS %f \n",2.3/pow(mean/static_cast<double>( frames.size()-1 ), 2) );
 
     // Delete all the frames
     OFile ofile; ofile.open(ofilename);
