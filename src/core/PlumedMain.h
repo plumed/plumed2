@@ -421,7 +421,7 @@ public:
   void setEndPlumed();
 /// Get the value of the end plumed flag
   bool getEndPlumed() const ;
-/// Get the value of the gpuDeviceId 
+/// Get the value of the gpuDeviceId
   int getGpuDeviceId() const ;
 /// Call error handler.
 /// Should only be called from \ref plumed_plumedmain_cmd().
