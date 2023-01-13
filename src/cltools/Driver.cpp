@@ -548,6 +548,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
       }
       if(use_molfile==true) {
 #ifdef __PLUMED_HAS_MOLFILE_PLUGINS
+        std::unique_ptr<std::lock_guard<std::mutex>> lck;
+        if(api->is_reentrant==VMDPLUGIN_THREADUNSAFE) lck=Tools::molfile_lock();
         h_in = api->open_file_read(trajectoryFile.c_str(), trajectory_fmt.c_str(), &natoms);
         if(natoms==MOLFILE_NUMATOMS_UNKNOWN) {
           if(command_line_natoms>=0) natoms=command_line_natoms;
@@ -626,6 +628,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     if(!noatoms&&!parseOnly) {
       if(use_molfile==true) {
 #ifdef __PLUMED_HAS_MOLFILE_PLUGINS
+        std::unique_ptr<std::lock_guard<std::mutex>> lck;
+        if(api->is_reentrant==VMDPLUGIN_THREADUNSAFE) lck=Tools::molfile_lock();
         int rc;
         rc = api->read_next_timestep(h_in, natoms, &ts_in);
         if(rc==MOLFILE_EOF) {
@@ -1078,7 +1082,11 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   if(fp && fp!=in)fclose(fp);
   if(xd) xdrfile::xdrfile_close(xd);
 #ifdef __PLUMED_HAS_MOLFILE_PLUGINS
-  if(h_in) api->close_file_read(h_in);
+  if(h_in) {
+    std::unique_ptr<std::lock_guard<std::mutex>> lck;
+    if(api->is_reentrant==VMDPLUGIN_THREADUNSAFE) lck=Tools::molfile_lock();
+    api->close_file_read(h_in);
+  }
 #endif
   if(grex_log) fclose(grex_log);
 

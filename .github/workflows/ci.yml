@@ -26,14 +26,14 @@ jobs:
         - -debug-mpi-
         - -intel-
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/cache@v2
+    - uses: actions/checkout@v3
+    - uses: actions/cache@v3
       with:
         path: ~/.ccache
         key: ccache-reset1-linux${{ matrix.variant }}hash-${{ github.sha }}
         restore-keys: ccache-reset1-linux${{ matrix.variant }}hash-
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: 3.7
     - name: Set paths
@@ -99,7 +99,7 @@ jobs:
     - name: Install lcov
       if: contains( matrix.variant, '-coverage-' )
       run: |
-        .ci/install.lcov v1.15
+        .ci/install.lcov v1.16
         echo "PLUMED_CONFIG=$PLUMED_CONFIG --disable-external-lapack --disable-external-blas --enable-gcov CXXFLAGS=-O" >> $GITHUB_ENV
         # make sure all tests are run
         echo "PLUMED_ALL_TESTS=yes" >> $GITHUB_ENV
@@ -180,7 +180,7 @@ jobs:
   codecheck:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Set path
       run: |
          echo "$HOME/opt/bin" >> $GITHUB_PATH
@@ -194,6 +194,9 @@ jobs:
       run: |
         # this is required so as to have all the include files in place
         # notice that this is done automatically in build
+        # first make sure that dirslinks are generated for all modules
+        ./configure --enable-modules=all
+        # then generate the links
         make -C src/lib/ dirslinks
         make codecheck
 
@@ -201,7 +204,7 @@ jobs:
   centos7:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Build and run tests
       run: |
         make -C docker centos7
@@ -210,7 +213,7 @@ jobs:
   fedora36:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Build and run tests
       run: |
         make -C docker fedora36
@@ -219,7 +222,7 @@ jobs:
   rocky8:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Build and run tests
       run: |
         make -C docker rocky8
@@ -234,8 +237,8 @@ jobs:
     env:
       PYVERS: "py37 py38 py39 py310"
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/cache@v2
+    - uses: actions/checkout@v3
+    - uses: actions/cache@v3
       with:
         path: ~/.macports-ci-ccache
         key: ccache-macports-${{ matrix.variant }}-${{ github.sha }}
@@ -269,7 +272,7 @@ jobs:
   macsimple:
     runs-on: macos-11
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Set paths
       run: |
         echo "$HOME/opt/bin" >> $GITHUB_PATH
@@ -297,7 +300,7 @@ jobs:
         os: [ubuntu-20.04 , macos-11]
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Install conda
       run: |
         curl -LO https://raw.githubusercontent.com/GiovanniBussi/conda-ci/master/conda-ci

@@ -138,6 +138,7 @@ private:
   unsigned nl_update;
   int firstStepFlag;
   double Ti;
+  // cppcheck-suppress duplInheritedMember
   std::vector<AtomNumber> atoms;
   vector < vector < std::string > > AtomResidueName;
   vector < vector < double > > LCPOparam;

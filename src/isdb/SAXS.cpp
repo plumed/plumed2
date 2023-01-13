@@ -21,8 +21,9 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 /*
  This class was originally written by Alexander Jussupow
- Extension for the middleman algorithm by Max Muehlbauer
- Martini beads strucutre factor for Nucleic Acids by Cristina Paissoni
+ Arrayfire implementation by Alexander Jussupow and CC
+ Extension for the middleman algorithm (now removed) by Max Muehlbauer
+ Refactoring for hySAXS Martini beads structure factor for Nucleic Acids by Cristina Paissoni
 */
 
 #include "MetainferenceBase.h"
@@ -33,6 +34,8 @@
 #include "tools/Pbc.h"
 
 #include <map>
+#include <iterator>
+#include <iostream>
 
 #ifdef __PLUMED_HAS_ARRAYFIRE
 #include <arrayfire.h>
@@ -48,49 +51,59 @@ namespace isdb {
 
 //+PLUMEDOC ISDB_COLVAR SAXS
 /*
-Calculates SAXS scattered intensity using either the Debye equation.
+Calculates SAXS intensity.
 
-Intensities are calculated for a set of scattering length set using QVALUE keywords that are numbered starting from 0.
-Structure factors can be either assigned using a polynomial expansion to any order using the PARAMETERS keywords;
-automatically assigned to atoms using the ATOMISTIC flag reading a PDB file, a correction for the water density is
-automatically added, with water density that by default is 0.334 but that can be set otherwise using WATERDENS;
-automatically assigned to Martini pseudo atoms using the MARTINI flag.
-The calculated intensities can be scaled using the SCALEINT keywords. This is applied by rescaling the structure factors.
+SAXS intensities are calculated for a set of scattering vectors using QVALUE keywords that are numbered starting
+from 1. Form factors can be either assigned using a polynomial expansion to any order by using the PARAMETERS
+keywords or automatically assigned to atoms using the ATOMISTIC flag by reading a PDB file.
+Alternatively to the atomistic representation, two types of coarse-grained mapping are available:
+- MARTINI (based on the 2.2 non-polarizable version). The user should provide a mapping file represented by a PDB
+file that contains both the all-atom and MARTINI representations;
+- ONEBEAD. The user should provide an all-atom PDB file via MOLINFO before the SAXS instruction. In this case,
+PLUMED computes the COM of every residue and creates a virtual bead on which the SAXS calculations are performed.
+
+Regarding ONEBEAD, it is possible to take into account the solvation layer contribution to the SAXS intensity by
+adding a correction term just for the solvent accessible residues: the form factor of amino acids that have a SASA
+(computed via LCPO algorithm) larger than a user-defined threshold are corrected according to a user-defined electron
+density term. SASA stride calculation can be modified using SOLVATION_STRIDE, that by default is set to 100 steps,
+while the surface cut-off can be modified with SASA_CUTOFF. The maximum QVALUE for ONEBEAD is set to 0.3 \f$\AA^{-1}\f$.
+The solvent density, that by default is set to 0.334 electrons \f$\AA^{-3}\f$ (bulk water), can be modified using
+the SOLVDENS keyword.
+
 Experimental reference intensities can be added using the EXPINT keywords.
-By default SAXS is calculated using Debye on CPU, by adding the GPU flag it is possible to solve the equation on a GPU
-if the ARRAYFIRE libraries are installed and correctly linked.
+By default SAXS is calculated using Debye on CPU, by adding the GPU flag it is possible to solve the equation on a
+GPU if the ARRAYFIRE libraries are installed and correctly linked.
 \ref METAINFERENCE can be activated using DOSCORE and the other relevant keywords.
 
 \par Examples
-in the following example the saxs intensities for a martini model are calculated. structure factors
-are obtained from the pdb file indicated in the MOLINFO.
+in the following example the SAXS intensities are calculated using the single bead per residue approximation.
+structure factors are obtained from the pdb file indicated in the MOLINFO.
 
 \plumedfile
-MOLINFO STRUCTURE=template.pdb
+MOLINFO STRUCTURE=template_AA.pdb
 
 SAXS ...
-LABEL=saxs
+LABEL=SAXS
 ATOMS=1-355
-SCALEINT=3920000
-MARTINI
-QVALUE1=0.02 EXPINT1=1.0902
-QVALUE2=0.05 EXPINT2=0.790632
-QVALUE3=0.08 EXPINT3=0.453808
-QVALUE4=0.11 EXPINT4=0.254737
-QVALUE5=0.14 EXPINT5=0.154928
-QVALUE6=0.17 EXPINT6=0.0921503
-QVALUE7=0.2 EXPINT7=0.052633
-QVALUE8=0.23 EXPINT8=0.0276557
-QVALUE9=0.26 EXPINT9=0.0122775
-QVALUE10=0.29 EXPINT10=0.00880634
-QVALUE11=0.32 EXPINT11=0.0137301
-QVALUE12=0.35 EXPINT12=0.0180036
-QVALUE13=0.38 EXPINT13=0.0193374
-QVALUE14=0.41 EXPINT14=0.0210131
-QVALUE15=0.44 EXPINT15=0.0220506
+ONEBEAD
+SOLVDENS=0.334
+SOLVATION_CORRECTION=0.04
+SOLVATION_STRIDE=1
+SASA_CUTOFF=1.0
+QVALUE1=0.03 EXPINT1=1.0902
+QVALUE2=0.06 EXPINT2=0.790632
+QVALUE3=0.09 EXPINT3=0.453808
+QVALUE4=0.12 EXPINT4=0.254737
+QVALUE5=0.15 EXPINT5=0.154928
+QVALUE6=0.18 EXPINT6=0.0921503
+QVALUE7=0.21 EXPINT7=0.052633
+QVALUE8=0.24 EXPINT8=0.0276557
+QVALUE9=0.27 EXPINT9=0.0122775
+QVALUE10=0.30 EXPINT10=0.00880634
+
 ... SAXS
 
-PRINT ARG=(saxs\.q-.*),(saxs\.exp-.*) FILE=colvar STRIDE=1
+PRINT ARG=(SAXS\.q-.*),(SAXS\.exp-.*) FILE=colvar STRIDE=1
 
 \endplumedfile
 
@@ -116,20 +129,47 @@ private:
          DG_3TE, DG_5TE, DG_TE3, DG_TE5, DT_BB1, DT_BB2, DT_BB3, DT_SC1, DT_SC2, DT_SC3, DT_3TE,
          DT_5TE, DT_TE3, DT_TE5, NMARTINI
        };
-  bool                       pbc;
-  bool                       serial;
-  bool                       gpu;
-  int                        deviceid;
-  std::vector<unsigned>           atoi;
-  std::vector<double>             q_list;
-  std::vector<double>             FF_rank;
-  std::vector<std::vector<double> >    FF_value;
-  std::vector<std::vector<float> >     FFf_value;
+  enum { TRP, TYR, PHE, HIS, HIP, ARG, LYS, CYS, ASP, GLU, ILE, LEU,
+         MET, ASN, PRO, GLN, SER, THR, VAL, ALA, GLY, NONEBEAD
+       };
+  bool pbc;
+  bool serial;
+  bool gpu;
+  bool onebead;
+  bool isFirstStep;
+  int  deviceid;
+  unsigned nres;
+  std::vector<unsigned> atoi;
+  std::vector<unsigned> atoms_per_bead;
+  std::vector<double>   atoms_masses;
+  std::vector<double>   q_list;
+  std::vector<double>   FF_rank;
+  std::vector<std::vector<double> > FF_value_vacuum;
+  std::vector<std::vector<double> > FF_value_water;
+  std::vector<std::vector<double> > FF_value_mixed;
+  std::vector<std::vector<double> > FF_value;
+  std::vector<std::vector<float> >  FFf_value;
 
-  void calculate_gpu(std::vector<Vector> &deriv);
-  void calculate_cpu(std::vector<Vector> &deriv);
+  std::vector<std::vector<double> > LCPOparam;
+  std::vector<unsigned> residue_atom;
+
+  double rho, rho_corr, sasa_cutoff;
+  unsigned solv_stride;
+  std::vector<double> Iq0_vac;
+  std::vector<double> Iq0_wat;
+  std::vector<double> Iq0_mix;
+  double Iq0;
+
+  void calculate_gpu(std::vector<Vector> &pos, std::vector<Vector> &deriv);
+  void calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv);
   void getMartiniSFparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter);
+  void getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv);
+  void getOnebeadMapping(const std::vector<AtomNumber> &atoms);
   double calculateASF(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double rho);
+  std::map<std::string, std::vector<double> > setupLCPOparam();
+  void readLCPOparam(const std::vector<std::vector<std::string> > &AtomResidueName, unsigned natoms);
+  void calcNlist(std::vector<std::vector<int> > &Nlist);
+  void sasa_calculate(std::vector<bool> &solv_res);
 
 public:
   static void registerKeywords( Keywords& keys );
@@ -145,16 +185,19 @@ void SAXS::registerKeywords(Keywords& keys) {
   MetainferenceBase::registerKeywords(keys);
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
-  keys.add("compulsory","DEVICEID","0","Identifier of the GPU to be used");
+  keys.add("compulsory","DEVICEID","-1","Identifier of the GPU to be used");
   keys.addFlag("GPU",false,"calculate SAXS using ARRAYFIRE on an accelerator device");
   keys.addFlag("ATOMISTIC",false,"calculate SAXS for an atomistic model");
   keys.addFlag("MARTINI",false,"calculate SAXS for a Martini model");
+  keys.addFlag("ONEBEAD",false,"calculate SAXS for a single bead model");
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
   keys.add("numbered","QVALUE","Selected scattering lengths in Angstrom are given as QVALUE1, QVALUE2, ... .");
   keys.add("numbered","PARAMETERS","Used parameter Keywords like PARAMETERS1, PARAMETERS2. These are used to calculate the structure factor for the \\f$i\\f$th atom/bead.");
-  keys.add("compulsory","WATERDENS","0.334","Density of the water to be used for the correction of atomistic structure factors.");
+  keys.add("compulsory","SOLVDENS","0.334","Density of the water to be used for the correction of atomistic structure factors. (ONEBEAD only)");
+  keys.add("compulsory","SOLVATION_CORRECTION","0.0","Hydration layer electron density correction.");
+  keys.add("compulsory","SASA_CUTOFF","1.0","SASA value to consider a residue as exposed to the solvent.");
   keys.add("numbered","EXPINT","Add an experimental value for each q value.");
-  keys.add("compulsory","SCALEINT","1.0","SCALING value of the calculated data. Useful to simplify the comparison.");
+  keys.add("compulsory","SOLVATION_STRIDE","100","Number of steps between every new check of the residues solvation via LCPO estimate.");
   keys.addOutputComponent("q","default","the # SAXS of q");
   keys.addOutputComponent("exp","EXPINT","the # experimental intensity");
 }
@@ -164,11 +207,13 @@ SAXS::SAXS(const ActionOptions&ao):
   pbc(true),
   serial(false),
   gpu(false),
-  deviceid(0)
+  onebead(false),
+  isFirstStep(true),
+  deviceid(-1)
 {
   std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
-  const unsigned size = atoms.size();
+  unsigned size = atoms.size();
 
   parseFlag("SERIAL",serial);
 
@@ -185,44 +230,85 @@ SAXS::SAXS(const ActionOptions&ao):
 
   parse("DEVICEID",deviceid);
 #ifdef  __PLUMED_HAS_ARRAYFIRE
-  if(gpu) {
+  if(gpu&&comm.Get_rank()==0) {
+    // if not set try to check the one set by the API
+    if(deviceid==-1) deviceid=plumed.getGpuDeviceId();
+    // if still not set use 0
+    if(deviceid==-1) deviceid=0;
     af::setDevice(deviceid);
     af::info();
   }
 #endif
+
+  bool atomistic=false;
+  parseFlag("ATOMISTIC",atomistic);
+  if(atomistic) log.printf("  using atomistic structure factors\n");
+  bool martini=false;
+  parseFlag("MARTINI",martini);
+  if(martini) log.printf("  using Martini structure factors\n");
+  onebead=false;
+  parseFlag("ONEBEAD",onebead);
+  if(martini) log.printf("  using Single Bead structure factors\n");
+
+  if(martini&&atomistic) error("You cannot use MARTINI and ATOMISTIC at the same time");
+  if(martini&&onebead) error("You cannot use MARTINI and ONEBEAD at the same time");
+  if(onebead&&atomistic) error("You cannot use ONEBEAD and ATOMISTIC at the same time");
 
   unsigned ntarget=0;
   for(unsigned i=0;; ++i) {
     double t_list;
     if( !parseNumbered( "QVALUE", i+1, t_list) ) break;
     if(t_list<=0.) error("QVALUE cannot be less or equal to zero!\n");
+    if(onebead&&t_list>0.3) error("For ONEBEAD mapping QVALUE must be smaller or equal to 0.3.");
     q_list.push_back(t_list);
     ntarget++;
   }
   const unsigned numq = ntarget;
 
-  for(unsigned i=0; i<numq; i++) {
+  for(unsigned i=0; i<numq; ++i) {
     if(q_list[i]==0.) error("it is not possible to set q=0\n");
     if(i>0&&q_list[i]<q_list[i-1]) error("QVALUE must be in ascending order");
     log.printf("  my q: %lf \n",q_list[i]);
   }
 
-  bool atomistic=false;
-  parseFlag("ATOMISTIC",atomistic);
-  bool martini=false;
-  parseFlag("MARTINI",martini);
+  rho = 0.334;
+  parse("SOLVDENS", rho);
+  log.printf("  Solvent density of %lf\n", rho);
 
-  if(martini&&atomistic) error("You cannot use MARTINI and ATOMISTIC at the same time");
+  solv_stride = 100;
+  parse("SOLVATION_STRIDE", solv_stride);
+  if(onebead) log.printf("  SASA calculated every %u steps\n", solv_stride);
 
-  double rho = 0.334;
-  parse("WATERDENS", rho);
+  double correction = 0.00;
+  parse("SOLVATION_CORRECTION", correction);
+  if(correction>0&&!onebead) error("SOLVATION_CORRECTION can only be used with ONEBEAD");
+  rho_corr=rho-correction;
+  if(onebead) log.printf("  SASA Solvation density correction set to: %lf\n", rho_corr);
 
-  double Iq0=0;
+  sasa_cutoff = 1.0;
+  parse("SASA_CUTOFF", sasa_cutoff);
+  if(sasa_cutoff <= 0.) error("SASA_CUTOFF must be greater than 0.");
+
+  // Here we perform the preliminary mapping for onebead representation
+  if(onebead) {
+    LCPOparam.resize(size);
+    getOnebeadMapping(atoms);
+    Iq0_vac.resize(nres);
+    Iq0_wat.resize(nres);
+    Iq0_mix.resize(nres);
+    atoi.resize(nres);
+  } else {
+    atoi.resize(size);
+  }
+
+  Iq0=0;
   std::vector<std::vector<long double> > FF_tmp;
-  atoi.resize(size);
-  if(!atomistic&&!martini) {
+  std::vector<std::vector<long double> > FF_tmp_vac;
+  std::vector<std::vector<long double> > FF_tmp_mix;
+  std::vector<std::vector<long double> > FF_tmp_wat;
+  std::vector<std::vector<long double> > parameter;
+  if(!atomistic&&!martini&&!onebead) {
     //read in parameter std::vector
-    std::vector<std::vector<long double> > parameter;
     parameter.resize(size);
     ntarget=0;
     for(unsigned i=0; i<size; ++i) {
@@ -240,10 +326,37 @@ SAXS::SAXS(const ActionOptions&ao):
       }
     }
     for(unsigned i=0; i<size; ++i) Iq0+=parameter[i][0];
+    Iq0 *= Iq0;
+  } else if(onebead) {
+    //read in parameter std::vector
+    FF_tmp_vac.resize(numq,std::vector<long double>(NONEBEAD));
+    FF_tmp_mix.resize(numq,std::vector<long double>(NONEBEAD));
+    FF_tmp_wat.resize(numq,std::vector<long double>(NONEBEAD));
+    std::vector<std::vector<long double> > parameter_vac(NONEBEAD);
+    std::vector<std::vector<long double> > parameter_mix(NONEBEAD);
+    std::vector<std::vector<long double> > parameter_solv(NONEBEAD);
+    getOnebeadparam(atoms, parameter_vac, parameter_mix, parameter_solv);
+    for(unsigned i=0; i<NONEBEAD; ++i) {
+      for(unsigned k=0; k<numq; ++k) {
+        for(unsigned j=0; j<parameter_vac[i].size(); ++j) {
+          FF_tmp_vac[k][i]+= parameter_vac[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
+        }
+        for(unsigned j=0; j<parameter_mix[i].size(); ++j) {
+          FF_tmp_mix[k][i]+= parameter_mix[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
+        }
+        for(unsigned j=0; j<parameter_solv[i].size(); ++j) {
+          FF_tmp_wat[k][i]+= parameter_solv[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
+        }
+      }
+    }
+    for(unsigned i=0; i<nres; ++i) {
+      Iq0_vac[i]=parameter_vac[atoi[i]][0];
+      Iq0_mix[i]=parameter_mix[atoi[i]][0];
+      Iq0_wat[i]=parameter_solv[atoi[i]][0];
+    }
   } else if(martini) {
     //read in parameter std::vector
     FF_tmp.resize(numq,std::vector<long double>(NMARTINI));
-    std::vector<std::vector<long double> > parameter;
     parameter.resize(NMARTINI);
     getMartiniSFparam(atoms, parameter);
     for(unsigned i=0; i<NMARTINI; ++i) {
@@ -254,11 +367,12 @@ SAXS::SAXS(const ActionOptions&ao):
       }
     }
     for(unsigned i=0; i<size; ++i) Iq0+=parameter[atoi[i]][0];
+    Iq0 *= Iq0;
   } else if(atomistic) {
     FF_tmp.resize(numq,std::vector<long double>(NTT));
     Iq0=calculateASF(atoms, FF_tmp, rho);
+    Iq0 *= Iq0;
   }
-  double scale_int = Iq0*Iq0;
 
   std::vector<double> expint;
   expint.resize( numq );
@@ -272,41 +386,64 @@ SAXS::SAXS(const ActionOptions&ao):
   if(ntarget==numq) exp=true;
   if(getDoScore()&&!exp) error("with DOSCORE you need to set the EXPINT values");
 
-  double tmp_scale_int=1.;
-  parse("SCALEINT",tmp_scale_int);
-
-  if(tmp_scale_int!=1) scale_int /= tmp_scale_int;
-  else {
-    if(exp) scale_int /= expint[0];
-  }
-
   if(!gpu) {
     FF_rank.resize(numq);
-    unsigned n_atom_types=size;
-    if(atomistic) n_atom_types=NTT;
-    else if(martini) n_atom_types=NMARTINI;
-    FF_value.resize(n_atom_types,std::vector<double>(numq));
+    unsigned n_atom_types;
+    if(onebead) {
+      FF_value.resize(nres,std::vector<double>(numq));
+      n_atom_types=NONEBEAD;
+      FF_value_vacuum.resize(n_atom_types,std::vector<double>(numq));
+      FF_value_water.resize(n_atom_types,std::vector<double>(numq));
+      FF_value_mixed.resize(n_atom_types,std::vector<double>(numq));
+    } else {
+      FF_value.resize(size,std::vector<double>(numq));
+    }
     for(unsigned k=0; k<numq; ++k) {
-      for(unsigned i=0; i<n_atom_types; i++) FF_value[i][k] = static_cast<double>(FF_tmp[k][i])/std::sqrt(scale_int);
-      for(unsigned i=0; i<size; i++) FF_rank[k] += FF_value[atoi[i]][k]*FF_value[atoi[i]][k];
+      if(!onebead) {
+        for(unsigned i=0; i<size; ++i) FF_value[i][k] = static_cast<double>(FF_tmp[k][atoi[i]])/(std::sqrt(Iq0));
+        for(unsigned i=0; i<size; ++i) FF_rank[k] += FF_value[i][k]*FF_value[i][k];
+      } else {
+        for(unsigned i=0; i<n_atom_types; ++i) {
+          FF_value_vacuum[i][k] = static_cast<double>(FF_tmp_vac[k][i]);
+          FF_value_mixed[i][k] = static_cast<double>(FF_tmp_mix[k][i]);
+          FF_value_water[i][k] = static_cast<double>(FF_tmp_wat[k][i]);
+        }
+      }
     }
   } else {
-    FFf_value.resize(numq,std::vector<float>(size));
+    unsigned n_atom_types;
+    if(onebead) {
+      FFf_value.resize(numq,std::vector<float>(nres));
+      n_atom_types=NONEBEAD;
+      FF_value_vacuum.resize(n_atom_types,std::vector<double>(numq));
+      FF_value_water.resize(n_atom_types,std::vector<double>(numq));
+      FF_value_mixed.resize(n_atom_types,std::vector<double>(numq));
+    } else {
+      FFf_value.resize(numq,std::vector<float>(size));
+    }
     for(unsigned k=0; k<numq; ++k) {
-      for(unsigned i=0; i<size; i++) {
-        FFf_value[k][i] = static_cast<float>(FF_tmp[k][atoi[i]])/std::sqrt(scale_int);
+      if(!onebead) {
+        for(unsigned i=0; i<size; ++i) {
+          FFf_value[k][i] = static_cast<float>(FF_tmp[k][atoi[i]])/(std::sqrt(Iq0));
+        }
+      } else {
+        for(unsigned i=0; i<n_atom_types; ++i) {
+          FF_value_vacuum[i][k] = static_cast<double>(FF_tmp_vac[k][i]);
+          FF_value_mixed[i][k] = static_cast<double>(FF_tmp_mix[k][i]);
+          FF_value_water[i][k] = static_cast<double>(FF_tmp_wat[k][i]);
+        }
       }
     }
   }
 
   if(!getDoScore()) {
-    for(unsigned i=0; i<numq; i++) {
+    for(unsigned i=0; i<numq; ++i) {
       std::string num; Tools::convert(i,num);
       addComponentWithDerivatives("q-"+num);
       componentIsNotPeriodic("q-"+num);
     }
     if(exp) {
-      for(unsigned i=0; i<numq; i++) {
+      for(unsigned i=0; i<numq; ++i) {
         std::string num; Tools::convert(i,num);
         addComponent("exp-"+num);
         componentIsNotPeriodic("exp-"+num);
@@ -315,12 +452,12 @@ SAXS::SAXS(const ActionOptions&ao):
       }
     }
   } else {
-    for(unsigned i=0; i<numq; i++) {
+    for(unsigned i=0; i<numq; ++i) {
       std::string num; Tools::convert(i,num);
       addComponent("q-"+num);
       componentIsNotPeriodic("q-"+num);
     }
-    for(unsigned i=0; i<numq; i++) {
+    for(unsigned i=0; i<numq; ++i) {
       std::string num; Tools::convert(i,num);
       addComponent("exp-"+num);
       componentIsNotPeriodic("exp-"+num);
@@ -342,10 +479,12 @@ SAXS::SAXS(const ActionOptions&ao):
     log<<plumed.cite("Fraser, MacRae, Suzuki, J. Appl. Crystallogr., 11, 693–694 (1978).");
     log<<plumed.cite("Brown, Fox, Maslen, O'Keefe, Willis, International Tables for Crystallography C, 554–595 (International Union of Crystallography, 2006).");
   }
+
   log<< plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)");
   log<<"\n";
 
   requestAtoms(atoms, false);
+
   if(getDoScore()) {
     setParameters(expint);
     Initialise(numq);
@@ -354,10 +493,79 @@ SAXS::SAXS(const ActionOptions&ao):
   checkRead();
 }
 
-void SAXS::calculate_gpu(std::vector<Vector> &deriv)
+//calculates SASA neighbor list
+void SAXS::calcNlist(std::vector<std::vector<int> > &Nlist)
+{
+  unsigned natoms = getNumberOfAtoms();
+  for(unsigned i = 0; i < natoms; ++i) {
+    if (LCPOparam[i].size()>0) {
+      for (unsigned j = 0; j < i; ++j) {
+        if (LCPOparam[j].size()>0) {
+          double Delta_ij_mod = modulo(delta(getPosition(i), getPosition(j)))*10.;
+          double overlapD = LCPOparam[i][0]+LCPOparam[j][0];
+          if(Delta_ij_mod < overlapD) {
+            Nlist.at(i).push_back(j);
+            Nlist.at(j).push_back(i);
+          }
+        }
+      }
+    }
+  }
+
+}
+
+//calculates SASA according to LCPO algorithm
+void SAXS::sasa_calculate(std::vector<bool> &solv_res)
+{
+  unsigned natoms = getNumberOfAtoms();
+  std::vector<std::vector<int> > Nlist(natoms);
+  calcNlist(Nlist);
+  std::vector<double> sasares(nres, 0.);
+
+  for(unsigned i = 0; i < natoms; ++i) {
+    if(LCPOparam[i].size()>1) {
+      if(LCPOparam[i][1]>0.0) {
+        double Aij = 0.0;
+        double Aijk = 0.0;
+        double Ajk = 0.0;
+        double ri = LCPOparam[i][0];
+        double S1 = 4.*M_PI*ri*ri;
+        for (unsigned j = 0; j < Nlist[i].size(); ++j) {
+          double d_ij = modulo(delta( getPosition(i), getPosition(Nlist[i][j]) ))*10.;
+          double rj = LCPOparam[Nlist[i][j]][0];
+          double Aijt = (2.*M_PI*ri*(ri-d_ij/2.-((ri*ri-rj*rj)/(2.*d_ij))));
+          double Ajkt = 0.0;
+          for (unsigned k = 0; k < Nlist[Nlist[i][j]].size(); ++k) {
+            if (std::find (Nlist[i].begin(), Nlist[i].end(), Nlist[Nlist[i][j]][k]) !=  Nlist[i].end()) {
+              double d_jk = modulo(delta( getPosition(Nlist[i][j]), getPosition(Nlist[Nlist[i][j]][k]) ))*10.;
+              double rk = LCPOparam[Nlist[Nlist[i][j]][k]][0];
+              double sjk =  (2.*M_PI*rj*(rj-d_jk/2.-((rj*rj-rk*rk)/(2.*d_jk))));
+              Ajkt += sjk;
+            }
+          }
+          Aijk += (Aijt * Ajkt);
+          Aij += Aijt;
+          Ajk += Ajkt;
+        }
+        double sasai = (LCPOparam[i][1]*S1+LCPOparam[i][2]*Aij+LCPOparam[i][3]*Ajk+LCPOparam[i][4]*Aijk);
+        if (sasai > 0 ) {
+          sasares[residue_atom[i]] += sasai/100.;
+        }
+      }
+    }
+  }
+  for(unsigned i=0; i<nres; ++i) {
+    if(sasares[i]>sasa_cutoff) solv_res[i] = 1;
+    else solv_res[i] = 0;
+  }
+}
+
+void SAXS::calculate_gpu(std::vector<Vector> &pos, std::vector<Vector> &deriv)
 {
 #ifdef __PLUMED_HAS_ARRAYFIRE
-  const unsigned size = getNumberOfAtoms();
+  unsigned size;
+  if(onebead) size = nres;
+  else size = getNumberOfAtoms();
   const unsigned numq = q_list.size();
 
   std::vector<float> sum;
@@ -371,8 +579,8 @@ void SAXS::calculate_gpu(std::vector<Vector> &deriv)
     std::vector<float> posi;
     posi.resize(3*size);
     #pragma omp parallel for num_threads(OpenMP::getNumThreads())
-    for (unsigned i=0; i<size; i++) {
-      const Vector tmp = getPosition(i);
+    for (unsigned i=0; i<size; ++i) {
+      const Vector tmp = pos[i];
       posi[3*i]   = static_cast<float>(tmp[0]);
       posi[3*i+1] = static_cast<float>(tmp[1]);
       posi[3*i+2] = static_cast<float>(tmp[2]);
@@ -383,7 +591,7 @@ void SAXS::calculate_gpu(std::vector<Vector> &deriv)
     // 3,size,1,1
     af::array pos_a = af::array(3, size, &posi.front());
     // size,3,1,1
-    pos_a = af::moddims(pos_a.T(), size, 1, 3);
+    pos_a = af::moddims(pos_a.T(), size, 3, 1);
     // size,3,1,1
     af::array pos_b = pos_a(af::span, af::span);
     // size,1,3,1
@@ -392,7 +600,15 @@ void SAXS::calculate_gpu(std::vector<Vector> &deriv)
     pos_b = af::moddims(pos_b, 1, size, 3);
 
     // size,size,3,1
-    af::array xyz_dist = af::tile(pos_a, 1, size, 1) - af::tile(pos_b, size, 1, 1);
+    af::array pos_a_t = af::tile(pos_a, 1, size, 1);
+    // size,size,3,1: for some reason we need this
+    pos_a_t = af::moddims(pos_a_t, size, size, 3);
+    // size,size,3,1
+    af::array pos_b_t = af::tile(pos_b, size, 1, 1);
+    // size,size,3,1: for some reason we need this
+    pos_b_t = af::moddims(pos_b_t, size, size, 3);
+    // size,size,3,1
+    af::array xyz_dist = pos_a_t - pos_b_t;
     // size,size,1,1
     af::array square = af::sum(xyz_dist*xyz_dist,2);
     // size,size,1,1
@@ -406,7 +622,7 @@ void SAXS::calculate_gpu(std::vector<Vector> &deriv)
     // numq,size,3,1
     af::array deriv_device = af::constant(0, numq, size, 3, f32);
 
-    for (unsigned k=0; k<numq; k++) {
+    for (unsigned k=0; k<numq; ++k) {
       // calculate FF matrix
       // size,1,1,1
       af::array AFF_value(size, &FFf_value[k].front());
@@ -442,12 +658,12 @@ void SAXS::calculate_gpu(std::vector<Vector> &deriv)
   comm.Bcast(dd, 0);
   comm.Bcast(sum, 0);
 
-  for(unsigned k=0; k<numq; k++) {
+  for(unsigned k=0; k<numq; ++k) {
     std::string num; Tools::convert(k,num);
     Value* val=getPntrToComponent("q-"+num);
     val->set(sum[k]);
     if(getDoScore()) setCalcData(k, sum[k]);
-    for(unsigned i=0; i<size; i++) {
+    for(unsigned i=0; i<size; ++i) {
       const unsigned di = k*size*3+i*3;
       deriv[k*size+i] = Vector(2.*dd[di+0],2.*dd[di+1],2.*dd[di+2]);
     }
@@ -455,9 +671,11 @@ void SAXS::calculate_gpu(std::vector<Vector> &deriv)
 #endif
 }
 
-void SAXS::calculate_cpu(std::vector<Vector> &deriv)
+void SAXS::calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv)
 {
-  const unsigned size = getNumberOfAtoms();
+  unsigned size;
+  if(onebead) size = nres;
+  else size = getNumberOfAtoms();
   const unsigned numq = q_list.size();
 
   unsigned stride = comm.Get_size();
@@ -466,7 +684,6 @@ void SAXS::calculate_cpu(std::vector<Vector> &deriv)
     stride = 1;
     rank   = 0;
   }
-
   std::vector<double> sum(numq,0);
   unsigned nt=OpenMP::getNumThreads();
   #pragma omp parallel num_threads(nt)
@@ -475,15 +692,15 @@ void SAXS::calculate_cpu(std::vector<Vector> &deriv)
     std::vector<double> omp_sum(numq,0);
     #pragma omp for nowait
     for (unsigned i=rank; i<size-1; i+=stride) {
-      Vector posi = getPosition(i);
-      for (unsigned j=i+1; j<size ; j++) {
-        Vector c_distances = delta(posi,getPosition(j));
+      Vector posi = pos[i];
+      for (unsigned j=i+1; j<size ; ++j) {
+        Vector c_distances = delta(posi,pos[j]);
         double m_distances = c_distances.modulo();
         c_distances = c_distances/m_distances/m_distances;
-        for (unsigned k=0; k<numq; k++) {
+        for (unsigned k=0; k<numq; ++k) {
           unsigned kdx=k*size;
           double qdist = q_list[k]*m_distances;
-          double FFF = 2.*FF_value[atoi[i]][k]*FF_value[atoi[j]][k];
+          double FFF = 2.*FF_value[i][k]*FF_value[j][k];
           double tsq = std::sin(qdist)/qdist;
           double tcq = std::cos(qdist);
           double tmp = FFF*(tcq-tsq);
@@ -495,15 +712,15 @@ void SAXS::calculate_cpu(std::vector<Vector> &deriv)
           } else {
             deriv[kdx+i] -= dd;
             deriv[kdx+j] += dd;
-            sum[k]       += FFF*tsq;
+            sum[k] += FFF*tsq;
           }
         }
       }
     }
     #pragma omp critical
     if(nt>1) {
-      for(unsigned i=0; i<deriv.size(); i++) deriv[i]+=omp_deriv[i];
-      for(unsigned k=0; k<numq; k++) sum[k]+=omp_sum[k];
+      for(unsigned i=0; i<deriv.size(); ++i) deriv[i]+=omp_deriv[i];
+      for(unsigned k=0; k<numq; ++k) sum[k]+=omp_sum[k];
     }
   }
 
@@ -512,7 +729,7 @@ void SAXS::calculate_cpu(std::vector<Vector> &deriv)
     comm.Sum(&sum[0], numq);
   }
 
-  for (unsigned k=0; k<numq; k++) {
+  for (unsigned k=0; k<numq; ++k) {
     sum[k]+=FF_rank[k];
     std::string num; Tools::convert(k,num);
     Value* val=getPntrToComponent("q-"+num);
@@ -528,9 +745,84 @@ void SAXS::calculate()
   const size_t size = getNumberOfAtoms();
   const size_t numq = q_list.size();
 
-  std::vector<Vector> deriv(numq*size);
-  if(gpu) calculate_gpu(deriv);
-  else calculate_cpu(deriv);
+  // these are the derivatives associated to the coarse graining
+  std::vector<Vector> aa_deriv(size);
+
+  size_t beads_size = size;
+  if(onebead) beads_size = nres;
+  // these are the derivatives particle,q
+  std::vector<Vector> bd_deriv(numq*beads_size);
+
+  std::vector<Vector> beads_pos(beads_size);
+  if(onebead) {
+    // mapping
+    unsigned atom_id = 0;
+    for(unsigned i=0; i<nres; ++i) {
+      /* calculate center and derivatives */
+      double sum_mass = 0.;
+      Vector sum_pos = Vector(0,0,0);
+      for(unsigned j=0; j<atoms_per_bead[i]; ++j) {
+        aa_deriv[atom_id] = Vector(atoms_masses[atom_id],atoms_masses[atom_id],atoms_masses[atom_id]);
+        sum_pos += atoms_masses[atom_id] * getPosition(atom_id); // getPosition(first_atom+atom_id)
+        sum_mass += atoms_masses[atom_id];
+        // Here I update the atom_id to stay sync'd with masses vector
+        atom_id++;
+      }
+      beads_pos[i] = sum_pos/sum_mass;
+      for(unsigned j=atom_id-atoms_per_bead[i]; j<atom_id; ++j) {
+        aa_deriv[j] /= sum_mass;
+      }
+    }
+    // SASA
+    std::vector<bool> solv_res(nres, 0);
+    if(getStep()%solv_stride == 0 || isFirstStep) {
+      isFirstStep = 0;
+      if(rho_corr!=rho) sasa_calculate(solv_res);
+      Iq0=0.;
+      for(unsigned i=0; i<nres; ++i) {
+        if(solv_res[i] == 1 ) {
+          Iq0 += std::sqrt((Iq0_vac[i]+(rho_corr*rho_corr)*Iq0_wat[i]-rho_corr*Iq0_mix[i]));
+        } else {
+          Iq0 += std::sqrt((Iq0_vac[i]+(rho*rho)*Iq0_wat[i]-rho*Iq0_mix[i]));
+        }
+      }
+      // Form Factors
+      for(unsigned k=0; k<numq; ++k) {
+        for(unsigned i=0; i<nres; ++i) {
+          if(!gpu) {
+            if(solv_res[i] == 0) { // buried
+              FF_value[i][k] = std::sqrt(FF_value_vacuum[atoi[i]][k] + rho*rho*FF_value_water[atoi[i]][k] - rho*FF_value_mixed[atoi[i]][k])/Iq0;
+            } else { // surface
+              FF_value[i][k] = std::sqrt(FF_value_vacuum[atoi[i]][k] + rho_corr*rho_corr*FF_value_water[atoi[i]][k] - rho_corr*FF_value_mixed[atoi[i]][k])/Iq0;
+            }
+          } else {
+            if(solv_res[i] == 0) { // buried
+              FFf_value[k][i] = static_cast<float>(std::sqrt(FF_value_vacuum[atoi[i]][k] + rho*rho*FF_value_water[atoi[i]][k] - rho*FF_value_mixed[atoi[i]][k])/Iq0);
+            } else { // surface
+              FFf_value[k][i] = static_cast<float>(std::sqrt(FF_value_vacuum[atoi[i]][k] + rho_corr*rho_corr*FF_value_water[atoi[i]][k] - rho_corr*FF_value_mixed[atoi[i]][k])/Iq0);
+            }
+          }
+        }
+      }
+      if(!gpu) {
+        for(unsigned k=0; k<numq; ++k) {
+          FF_rank[k]=0.;
+          for(unsigned i=0; i<nres; ++i) {
+            FF_rank[k]+=FF_value[i][k]*FF_value[i][k];
+          }
+        }
+      }
+    }
+    // not ONEBEAD
+  } else {
+    for(unsigned i=0; i<size; ++i) {
+      beads_pos[i] = getPosition(i);
+    }
+    aa_deriv = std::vector<Vector>(size,(Vector(1,1,1)));
+  }
+
+  if(gpu) calculate_gpu(beads_pos, bd_deriv);
+  else calculate_cpu(beads_pos, bd_deriv);
 
   if(getDoScore()) {
     /* Metainference */
@@ -538,22 +830,31 @@ void SAXS::calculate()
     setScore(score);
   }
 
-  for (unsigned k=0; k<numq; k++) {
-    const unsigned kdx=k*size;
+  for (unsigned k=0; k<numq; ++k) {
+    const unsigned kdx=k*beads_size;
     Tensor deriv_box;
     Value* val;
     if(!getDoScore()) {
       std::string num; Tools::convert(k,num);
       val=getPntrToComponent("q-"+num);
-      for(unsigned i=0; i<size; i++) {
-        setAtomsDerivatives(val, i, deriv[kdx+i]);
-        deriv_box += Tensor(getPosition(i),deriv[kdx+i]);
+
+      for(unsigned i=0; i<beads_size; ++i) {
+        setAtomsDerivatives(val, i, Vector(aa_deriv[i][0]*bd_deriv[kdx+i][0], \
+                                           aa_deriv[i][1]*bd_deriv[kdx+i][1], \
+                                           aa_deriv[i][2]*bd_deriv[kdx+i][2]) );
+        deriv_box += Tensor(getPosition(i),Vector(aa_deriv[i][0]*bd_deriv[kdx+i][0], \
+                            aa_deriv[i][1]*bd_deriv[kdx+i][1], \
+                            aa_deriv[i][2]*bd_deriv[kdx+i][2]) );
       }
     } else {
       val=getPntrToComponent("score");
-      for(unsigned i=0; i<size; i++) {
-        setAtomsDerivatives(val, i, deriv[kdx+i]*getMetaDer(k));
-        deriv_box += Tensor(getPosition(i),deriv[kdx+i]*getMetaDer(k));
+      for(unsigned i=0; i<beads_size; ++i) {
+        setAtomsDerivatives(val, i, Vector(aa_deriv[i][0]*bd_deriv[kdx+i][0]*getMetaDer(k),
+                                           aa_deriv[i][1]*bd_deriv[kdx+i][1]*getMetaDer(k),
+                                           aa_deriv[i][2]*bd_deriv[kdx+i][2]*getMetaDer(k)) );
+        deriv_box += Tensor(getPosition(i),Vector(aa_deriv[i][0]*bd_deriv[kdx+i][0]*getMetaDer(k),
+                            aa_deriv[i][1]*bd_deriv[kdx+i][1]*getMetaDer(k),
+                            aa_deriv[i][2]*bd_deriv[kdx+i][2]*getMetaDer(k)) );
       }
     }
     setBoxDerivatives(val, -deriv_box);
@@ -563,6 +864,56 @@ void SAXS::calculate()
 void SAXS::update() {
   // write status file
   if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) writeStatus();
+}
+
+void SAXS::getOnebeadMapping(const std::vector<AtomNumber> &atoms) {
+  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+  if( moldat ) {
+    log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
+    // RC: Here we assume that we are with a continuous sequence; maybe we can extend it to
+    // discontinuous ones.
+    unsigned first_res = moldat->getResidueNumber(atoms[0]);
+    nres = moldat->getResidueNumber(atoms[atoms.size()-1]) - moldat->getResidueNumber(atoms[0]) + 1;
+    atoms_per_bead.resize(nres);
+    atoms_masses.resize(atoms.size());
+    residue_atom.resize(atoms.size());       //@MOD: add vector resize
+    std::vector<std::vector<std::string> > AtomResidueName;
+    AtomResidueName.resize(2);
+
+    log.printf("  Onebead residue mapping on %u residues\n", nres);
+
+    for(unsigned i=0; i<atoms.size(); ++i) {
+      atoms_per_bead[moldat->getResidueNumber(atoms[i])-first_res]++;
+      std::string Aname = moldat->getAtomName(atoms[i]);
+      std::string Rname = moldat->getResidueName(atoms[i]);
+      AtomResidueName[0].push_back(Aname);
+      AtomResidueName[1].push_back(Rname);
+      residue_atom[i] = moldat->getResidueNumber(atoms[i])-first_res;
+      char type;
+      char first = Aname.at(0);
+
+      // We assume that element symbol is first letter, if not a number
+      if (!isdigit(first)) {
+        type = first;
+        // otherwise is the second
+      } else {
+        type = Aname.at(1);
+      }
+
+      if (type == 'H') atoms_masses[i] = 1.008;
+      else if (type == 'C') atoms_masses[i] = 12.011;
+      else if (type == 'N') atoms_masses[i] = 14.007;
+      else if (type == 'O') atoms_masses[i] = 15.999;
+      else if (type == 'S') atoms_masses[i] = 32.065;
+      else if (type == 'P') atoms_masses[i] = 30.974;
+      else {
+        error("Unknown element in mass extraction\n");
+      }
+    }
+    readLCPOparam(AtomResidueName, atoms.size());
+  } else {
+    error("MOLINFO DATA not found\n");
+  }
 }
 
 void SAXS::getMartiniSFparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter)
@@ -1966,6 +2317,578 @@ void SAXS::getMartiniSFparam(const std::vector<AtomNumber> &atoms, std::vector<s
   }
 }
 
+void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv)
+{
+
+  parameter_solv[TRP].push_back(60737.60249988003);
+  parameter_solv[TRP].push_back(-77.75716755173752);
+  parameter_solv[TRP].push_back(-205962.98557711052);
+  parameter_solv[TRP].push_back(-62013.46984155453);
+  parameter_solv[TRP].push_back(680710.7592231638);
+  parameter_solv[TRP].push_back(-681336.8777362367);
+  parameter_solv[TRP].push_back(211473.65530642506);
+
+  parameter_solv[TYR].push_back(46250.80359987982);
+  parameter_solv[TYR].push_back(-45.8287864681578);
+  parameter_solv[TYR].push_back(-143872.91752817619);
+  parameter_solv[TYR].push_back(-39049.68736409533);
+  parameter_solv[TYR].push_back(441321.71874090104);
+  parameter_solv[TYR].push_back(-434478.0972346327);
+  parameter_solv[TYR].push_back(133179.3694641212);
+
+  parameter_solv[PHE].push_back(42407.164900118914);
+  parameter_solv[PHE].push_back(-159.1980754191431);
+  parameter_solv[PHE].push_back(-123847.86192757386);
+  parameter_solv[PHE].push_back(-41797.69041575073);
+  parameter_solv[PHE].push_back(380283.7035277073);
+  parameter_solv[PHE].push_back(-361432.67247521743);
+  parameter_solv[PHE].push_back(107750.64978068044);
+
+  parameter_solv[HIP].push_back(24473.47360011923);
+  parameter_solv[HIP].push_back(-111.64156672747428);
+  parameter_solv[HIP].push_back(-65826.16993707925);
+  parameter_solv[HIP].push_back(-23305.91329798928);
+  parameter_solv[HIP].push_back(194795.11911635034);
+  parameter_solv[HIP].push_back(-180454.49458095312);
+  parameter_solv[HIP].push_back(52699.374196745615);
+
+  parameter_solv[ARG].push_back(34106.70239988039);
+  parameter_solv[ARG].push_back(152.7472727640246);
+  parameter_solv[ARG].push_back(-117086.49392248681);
+  parameter_solv[ARG].push_back(-19664.229479267167);
+  parameter_solv[ARG].push_back(364454.0909203641);
+  parameter_solv[ARG].push_back(-382075.8018312776);
+  parameter_solv[ARG].push_back(122775.75036605193);
+
+  parameter_solv[LYS].push_back(32292.090000118922);
+  parameter_solv[LYS].push_back(-111.97371180593888);
+  parameter_solv[LYS].push_back(-91953.10997619898);
+  parameter_solv[LYS].push_back(-30690.807047993283);
+  parameter_solv[LYS].push_back(282092.40760143084);
+  parameter_solv[LYS].push_back(-269503.2592457489);
+  parameter_solv[LYS].push_back(80777.81552915688);
+
+  parameter_solv[CYS].push_back(11352.902500119093);
+  parameter_solv[CYS].push_back(-45.5226331859686);
+  parameter_solv[CYS].push_back(-20925.085562607524);
+  parameter_solv[CYS].push_back(-5662.685408989286);
+  parameter_solv[CYS].push_back(38559.10376731146);
+  parameter_solv[CYS].push_back(-27885.23426006181);
+  parameter_solv[CYS].push_back(6280.15058191397);
+
+  parameter_solv[ASP].push_back(13511.73760011933);
+  parameter_solv[ASP].push_back(-59.929111107656595);
+  parameter_solv[ASP].push_back(-25849.869639655575);
+  parameter_solv[ASP].push_back(-7541.669448872824);
+  parameter_solv[ASP].push_back(50760.92045144903);
+  parameter_solv[ASP].push_back(-37677.87583269734);
+  parameter_solv[ASP].push_back(8745.7056219399);
+
+  parameter_solv[GLU].push_back(20443.280400119456);
+  parameter_solv[GLU].push_back(-113.77561814283207);
+  parameter_solv[GLU].push_back(-45587.79314626863);
+  parameter_solv[GLU].push_back(-16187.556837331254);
+  parameter_solv[GLU].push_back(112609.65830609271);
+  parameter_solv[GLU].push_back(-93362.05323205091);
+  parameter_solv[GLU].push_back(24519.557866124724);
+
+  parameter_solv[ILE].push_back(27858.948100119596);
+  parameter_solv[ILE].push_back(-159.27355145839834);
+  parameter_solv[ILE].push_back(-61571.43463039565);
+  parameter_solv[ILE].push_back(-21324.879474559468);
+  parameter_solv[ILE].push_back(144070.7572894681);
+  parameter_solv[ILE].push_back(-115021.81959095894);
+  parameter_solv[ILE].push_back(28939.085108838968);
+
+  parameter_solv[LEU].push_back(27858.948100119596);
+  parameter_solv[LEU].push_back(-165.61892007509647);
+  parameter_solv[LEU].push_back(-62564.568746500125);
+  parameter_solv[LEU].push_back(-22465.332149768525);
+  parameter_solv[LEU].push_back(151616.79489291538);
+  parameter_solv[LEU].push_back(-122905.6119395393);
+  parameter_solv[LEU].push_back(31436.664377885514);
+
+  parameter_solv[MET].push_back(25609.60090011981);
+  parameter_solv[MET].push_back(-135.38857843066708);
+  parameter_solv[MET].push_back(-67771.01108177133);
+  parameter_solv[MET].push_back(-25228.934337676077);
+  parameter_solv[MET].push_back(199649.95030712147);
+  parameter_solv[MET].push_back(-182251.94895101967);
+  parameter_solv[MET].push_back(52502.88444247481);
+
+  parameter_solv[ASN].push_back(14376.010000119095);
+  parameter_solv[ASN].push_back(-67.65579048748472);
+  parameter_solv[ASN].push_back(-28302.87809850141);
+  parameter_solv[ASN].push_back(-8577.439830985548);
+  parameter_solv[ASN].push_back(57532.879075695324);
+  parameter_solv[ASN].push_back(-43261.79286366774);
+  parameter_solv[ASN].push_back(10186.448634149085);
+
+  parameter_solv[PRO].push_back(16866.21690011944);
+  parameter_solv[PRO].push_back(-70.84327801054884);
+  parameter_solv[PRO].push_back(-31465.84064925844);
+  parameter_solv[PRO].push_back(-8653.3693368317);
+  parameter_solv[PRO].push_back(58032.28250733714);
+  parameter_solv[PRO].push_back(-41521.01146771431);
+  parameter_solv[PRO].push_back(9184.530596102064);
+
+  parameter_solv[GLN].push_back(21503.289600119);
+  parameter_solv[GLN].push_back(-121.30164008960246);
+  parameter_solv[GLN].push_back(-50468.580981118175);
+  parameter_solv[GLN].push_back(-18462.49098408308);
+  parameter_solv[GLN].push_back(132718.44904081387);
+  parameter_solv[GLN].push_back(-113787.22666510186);
+  parameter_solv[GLN].push_back(30920.348610969988);
+
+  parameter_solv[SER].push_back(9181.472400119354);
+  parameter_solv[SER].push_back(-28.77519915767741);
+  parameter_solv[SER].push_back(-15205.543144104717);
+  parameter_solv[SER].push_back(-3377.782176346411);
+  parameter_solv[SER].push_back(23345.555771001076);
+  parameter_solv[SER].push_back(-15312.694356014094);
+  parameter_solv[SER].push_back(3013.8428466148);
+
+  parameter_solv[THR].push_back(15020.953600119403);
+  parameter_solv[THR].push_back(-61.91004832631006);
+  parameter_solv[THR].push_back(-27814.537889259853);
+  parameter_solv[THR].push_back(-7532.227289701552);
+  parameter_solv[THR].push_back(50586.30566118166);
+  parameter_solv[THR].push_back(-35943.866131120165);
+  parameter_solv[THR].push_back(7880.093558764326);
+
+  parameter_solv[VAL].push_back(19647.628900119355);
+  parameter_solv[VAL].push_back(-89.04983250107853);
+  parameter_solv[VAL].push_back(-38050.09958470928);
+  parameter_solv[VAL].push_back(-10921.427112288537);
+  parameter_solv[VAL].push_back(72774.32322962297);
+  parameter_solv[VAL].push_back(-52689.060152305225);
+  parameter_solv[VAL].push_back(11806.492503632868);
+
+  parameter_solv[ALA].push_back(7515.156100119276);
+  parameter_solv[ALA].push_back(-20.226381685697746);
+  parameter_solv[ALA].push_back(-11761.841094237716);
+  parameter_solv[ALA].push_back(-2341.4929468980367);
+  parameter_solv[ALA].push_back(16545.385777961936);
+  parameter_solv[ALA].push_back(-10397.175253025776);
+  parameter_solv[ALA].push_back(1921.5264606725107);
+
+  parameter_solv[GLY].push_back(3594.002500119159);
+  parameter_solv[GLY].push_back(-6.910836154887606);
+  parameter_solv[GLY].push_back(-4937.354220666574);
+  parameter_solv[GLY].push_back(-785.4549468992149);
+  parameter_solv[GLY].push_back(5852.854429532936);
+  parameter_solv[GLY].push_back(-3391.2927115487832);
+  parameter_solv[GLY].push_back(552.3280571490722);
+
+  parameter_solv[HIS].push_back(22888.664100119073);
+  parameter_solv[HIS].push_back(-133.86265270962434);
+  parameter_solv[HIS].push_back(-57533.51591635819);
+  parameter_solv[HIS].push_back(-21767.293192014684);
+  parameter_solv[HIS].push_back(161255.14120001195);
+  parameter_solv[HIS].push_back(-142176.64081149307);
+  parameter_solv[HIS].push_back(39642.61185646193);
+
+  parameter_mix[TRP].push_back(48294.0117571196);
+  parameter_mix[TRP].push_back(-205.45879626487798);
+  parameter_mix[TRP].push_back(-148816.1858118254);
+  parameter_mix[TRP].push_back(-54968.030079609875);
+  parameter_mix[TRP].push_back(491793.79967057955);
+  parameter_mix[TRP].push_back(-476312.9117969879);
+  parameter_mix[TRP].push_back(144159.96165644142);
+
+  parameter_mix[TYR].push_back(36984.20240312081);
+  parameter_mix[TYR].push_back(-83.86380083812203);
+  parameter_mix[TYR].push_back(-108820.52211887162);
+  parameter_mix[TYR].push_back(-33934.69818901515);
+  parameter_mix[TYR].push_back(341504.736372253);
+  parameter_mix[TYR].push_back(-334008.1748614056);
+  parameter_mix[TYR].push_back(102033.08077851454);
+
+  parameter_mix[PHE].push_back(32119.469231338233);
+  parameter_mix[PHE].push_back(-172.96940450568917);
+  parameter_mix[PHE].push_back(-85831.4326887122);
+  parameter_mix[PHE].push_back(-33193.32405438845);
+  parameter_mix[PHE].push_back(262940.64471909316);
+  parameter_mix[PHE].push_back(-243540.06898907054);
+  parameter_mix[PHE].push_back(71084.54387480798);
+
+  parameter_mix[HIP].push_back(22833.36414923898);
+  parameter_mix[HIP].push_back(-134.0493955562186);
+  parameter_mix[HIP].push_back(-55325.55607328898);
+  parameter_mix[HIP].push_back(-21898.314938881984);
+  parameter_mix[HIP].push_back(159995.6912885654);
+  parameter_mix[HIP].push_back(-142968.19796084083);
+  parameter_mix[HIP].push_back(40417.44581470003);
+
+  parameter_mix[ARG].push_back(31385.401600920715);
+  parameter_mix[ARG].push_back(36.114094042884254);
+  parameter_mix[ARG].push_back(-103730.44467490204);
+  parameter_mix[ARG].push_back(-27036.249157905615);
+  parameter_mix[ARG].push_back(347011.0339314942);
+  parameter_mix[ARG].push_back(-358879.9736802336);
+  parameter_mix[ARG].push_back(114432.18361399164);
+
+  parameter_mix[LYS].push_back(25511.35812671878);
+  parameter_mix[LYS].push_back(-130.4381491986372);
+  parameter_mix[LYS].push_back(-69258.61236879184);
+  parameter_mix[LYS].push_back(-27066.36783798707);
+  parameter_mix[LYS].push_back(220092.65231165203);
+  parameter_mix[LYS].push_back(-207794.5056092443);
+  parameter_mix[LYS].push_back(61665.57004630315);
+
+  parameter_mix[CYS].push_back(11505.517261618916);
+  parameter_mix[CYS].push_back(-33.60468076978334);
+  parameter_mix[CYS].push_back(-18328.882710004465);
+  parameter_mix[CYS].push_back(-3956.9113649567626);
+  parameter_mix[CYS].push_back(27546.35146501212);
+  parameter_mix[CYS].push_back(-18024.826330595406);
+  parameter_mix[CYS].push_back(3551.2207387570024);
+
+  parameter_mix[ASP].push_back(13713.858501879382);
+  parameter_mix[ASP].push_back(-51.33286241257164);
+  parameter_mix[ASP].push_back(-23807.8549764091);
+  parameter_mix[ASP].push_back(-6153.667315935503);
+  parameter_mix[ASP].push_back(41296.118377286424);
+  parameter_mix[ASP].push_back(-28740.28391184026);
+  parameter_mix[ASP].push_back(6132.671533319127);
+
+  parameter_mix[GLU].push_back(19156.03660739947);
+  parameter_mix[GLU].push_back(-110.90600703589246);
+  parameter_mix[GLU].push_back(-40319.3351514524);
+  parameter_mix[GLU].push_back(-14679.813393816446);
+  parameter_mix[GLU].push_back(96769.28565573556);
+  parameter_mix[GLU].push_back(-77909.09315520026);
+  parameter_mix[GLU].push_back(19770.047062759568);
+
+  parameter_mix[ILE].push_back(20693.06215917923);
+  parameter_mix[ILE].push_back(-102.87208880594848);
+  parameter_mix[ILE].push_back(-41080.44036311675);
+  parameter_mix[ILE].push_back(-12874.439649378206);
+  parameter_mix[ILE].push_back(84947.33147117581);
+  parameter_mix[ILE].push_back(-63779.07871450237);
+  parameter_mix[ILE].push_back(14938.919981690511);
+
+  parameter_mix[LEU].push_back(20693.062159179233);
+  parameter_mix[LEU].push_back(-114.09539845409269);
+  parameter_mix[LEU].push_back(-42417.3431074524);
+  parameter_mix[LEU].push_back(-14393.801090829746);
+  parameter_mix[LEU].push_back(93640.48403643962);
+  parameter_mix[LEU].push_back(-71990.10354816525);
+  parameter_mix[LEU].push_back(17299.01082057651);
+
+  parameter_mix[MET].push_back(22400.800002738917);
+  parameter_mix[MET].push_back(-138.14469221559762);
+  parameter_mix[MET].push_back(-53013.97694299946);
+  parameter_mix[MET].push_back(-21079.899452619244);
+  parameter_mix[MET].push_back(148607.1089339919);
+  parameter_mix[MET].push_back(-129827.63962878387);
+  parameter_mix[MET].push_back(35882.3297822684);
+
+  parameter_mix[ASN].push_back(14384.287416519475);
+  parameter_mix[ASN].push_back(-55.24976731179147);
+  parameter_mix[ASN].push_back(-25372.978199926372);
+  parameter_mix[ASN].push_back(-6646.452004616925);
+  parameter_mix[ASN].push_back(44594.5027556148);
+  parameter_mix[ASN].push_back(-31202.511764907107);
+  parameter_mix[ASN].push_back(6703.764135873442);
+
+  parameter_mix[PRO].push_back(13503.797145659117);
+  parameter_mix[PRO].push_back(-38.58316011847087);
+  parameter_mix[PRO].push_back(-21446.17847324053);
+  parameter_mix[PRO].push_back(-4480.55896170459);
+  parameter_mix[PRO].push_back(31274.287350083254);
+  parameter_mix[PRO].push_back(-19984.249229169505);
+  parameter_mix[PRO].push_back(3782.272312712745);
+
+  parameter_mix[GLN].push_back(19938.23724683901);
+  parameter_mix[GLN].push_back(-121.24884503048865);
+  parameter_mix[GLN].push_back(-43928.589472297834);
+  parameter_mix[GLN].push_back(-16805.069757865473);
+  parameter_mix[GLN].push_back(112831.61348476357);
+  parameter_mix[GLN].push_back(-93979.08819184235);
+  parameter_mix[GLN].push_back(24741.563493163732);
+
+  parameter_mix[SER].push_back(8813.67020471935);
+  parameter_mix[SER].push_back(-18.291615317790175);
+  parameter_mix[SER].push_back(-12585.074732466266);
+  parameter_mix[SER].push_back(-2064.454891600786);
+  parameter_mix[SER].push_back(15273.905065790364);
+  parameter_mix[SER].push_back(-8813.056005263466);
+  parameter_mix[SER].push_back(1404.9812302289881);
+
+  parameter_mix[THR].push_back(13233.997179639062);
+  parameter_mix[THR].push_back(-39.40454157416847);
+  parameter_mix[THR].push_back(-21430.58717233547);
+  parameter_mix[THR].push_back(-4566.332853710876);
+  parameter_mix[THR].push_back(31717.497780073558);
+  parameter_mix[THR].push_back(-20299.614304281313);
+  parameter_mix[THR].push_back(3837.207224537505);
+
+  parameter_mix[VAL].push_back(15135.438016299158);
+  parameter_mix[VAL].push_back(-51.415141550353205);
+  parameter_mix[VAL].push_back(-25859.078442379723);
+  parameter_mix[VAL].push_back(-6007.697291593915);
+  parameter_mix[VAL].push_back(40997.969600345634);
+  parameter_mix[VAL].push_back(-27036.257386814148);
+  parameter_mix[VAL].push_back(5328.922363811635);
+
+  parameter_mix[ALA].push_back(6586.942863819189);
+  parameter_mix[ALA].push_back(-10.96713559950907);
+  parameter_mix[ALA].push_back(-8758.836131731925);
+  parameter_mix[ALA].push_back(-1223.1723720922605);
+  parameter_mix[ALA].push_back(9475.182453543037);
+  parameter_mix[ALA].push_back(-5124.611191433804);
+  parameter_mix[ALA].push_back(721.7625962949869);
+
+  parameter_mix[GLY].push_back(3596.0718542192762);
+  parameter_mix[GLY].push_back(-4.079285964028122);
+  parameter_mix[GLY].push_back(-4089.4217504382686);
+  parameter_mix[GLY].push_back(-450.9650932154967);
+  parameter_mix[GLY].push_back(3737.026778223427);
+  parameter_mix[GLY].push_back(-1862.9856575810572);
+  parameter_mix[GLY].push_back(222.97288276257262);
+
+  parameter_mix[HIS].push_back(21779.124723299232);
+  parameter_mix[HIS].push_back(-131.4603421188538);
+  parameter_mix[HIS].push_back(-49068.74667421681);
+  parameter_mix[HIS].push_back(-18685.909496392127);
+  parameter_mix[HIS].push_back(127724.60792384286);
+  parameter_mix[HIS].push_back(-107419.22159440348);
+  parameter_mix[HIS].push_back(28577.228634530744);
+
+  parameter_vac[TRP].push_back(9599.949107368187);
+  parameter_vac[TRP].push_back(-66.35331786175249);
+  parameter_vac[TRP].push_back(-26311.640290970638);
+  parameter_vac[TRP].push_back(-11577.314600529338);
+  parameter_vac[TRP].push_back(85847.52554160352);
+  parameter_vac[TRP].push_back(-79417.17065742958);
+  parameter_vac[TRP].push_back(23090.348430572863);
+
+  parameter_vac[TYR].push_back(7393.553846412945);
+  parameter_vac[TYR].push_back(-27.51954035778316);
+  parameter_vac[TYR].push_back(-20329.10485615286);
+  parameter_vac[TYR].push_back(-7444.276340508767);
+  parameter_vac[TYR].push_back(66343.22315132803);
+  parameter_vac[TYR].push_back(-64470.58721639446);
+  parameter_vac[TYR].push_back(19614.63563898146);
+
+  parameter_vac[PHE].push_back(6081.874997705279);
+  parameter_vac[PHE].push_back(-40.474695969500104);
+  parameter_vac[PHE].push_back(-14354.627390498901);
+  parameter_vac[PHE].push_back(-6156.69750315959);
+  parameter_vac[PHE].push_back(42580.84239395237);
+  parameter_vac[PHE].push_back(-37704.09749809582);
+  parameter_vac[PHE].push_back(10543.005717478625);
+
+  parameter_vac[HIP].push_back(5325.791987063724);
+  parameter_vac[HIP].push_back(-35.512112257530156);
+  parameter_vac[HIP].push_back(-11488.443296477566);
+  parameter_vac[HIP].push_back(-4916.724935318093);
+  parameter_vac[HIP].push_back(32134.338675979947);
+  parameter_vac[HIP].push_back(-27388.387595464188);
+  parameter_vac[HIP].push_back(7359.899986748838);
+
+  parameter_vac[ARG].push_back(7220.306892248294);
+  parameter_vac[ARG].push_back(-20.65912886190997);
+  parameter_vac[ARG].push_back(-22700.70129646048);
+  parameter_vac[ARG].push_back(-8696.901551172636);
+  parameter_vac[ARG].push_back(83641.36257312517);
+  parameter_vac[ARG].push_back(-85237.33676336925);
+  parameter_vac[ARG].push_back(26899.162688310953);
+
+  parameter_vac[LYS].push_back(5038.613120729022);
+  parameter_vac[LYS].push_back(-34.08366887546492);
+  parameter_vac[LYS].push_back(-12812.921120433106);
+  parameter_vac[LYS].push_back(-5843.761329082788);
+  parameter_vac[LYS].push_back(42419.08427856609);
+  parameter_vac[LYS].push_back(-39460.49038159249);
+  parameter_vac[LYS].push_back(11542.320830663035);
+
+  parameter_vac[CYS].push_back(2915.0458981763995);
+  parameter_vac[CYS].push_back(-5.380571839804511);
+  parameter_vac[CYS].push_back(-3865.366285883624);
+  parameter_vac[CYS].push_back(-602.3275271136284);
+  parameter_vac[CYS].push_back(4524.133086072617);
+  parameter_vac[CYS].push_back(-2537.87137720241);
+  parameter_vac[CYS].push_back(381.52870758240016);
+
+  parameter_vac[ASP].push_back(3479.750728224898);
+  parameter_vac[ASP].push_back(-10.33897891836596);
+  parameter_vac[ASP].push_back(-5382.628188436401);
+  parameter_vac[ASP].push_back(-1183.8060939576694);
+  parameter_vac[ASP].push_back(8100.082378727997);
+  parameter_vac[ASP].push_back(-5162.630696148773);
+  parameter_vac[ASP].push_back(958.993022379732);
+
+  parameter_vac[GLU].push_back(4487.461543955491);
+  parameter_vac[GLU].push_back(-26.671865751817936);
+  parameter_vac[GLU].push_back(-8829.738168429001);
+  parameter_vac[GLU].push_back(-3297.668395415257);
+  parameter_vac[GLU].push_back(20686.457747123466);
+  parameter_vac[GLU].push_back(-16030.814134196151);
+  parameter_vac[GLU].push_back(3858.4457728083275);
+
+  parameter_vac[ILE].push_back(3842.5968201937776);
+  parameter_vac[ILE].push_back(-13.848165050578492);
+  parameter_vac[ILE].push_back(-6480.062699452774);
+  parameter_vac[ILE].push_back(-1636.3888925440413);
+  parameter_vac[ILE].push_back(10967.333210698738);
+  parameter_vac[ILE].push_back(-7483.704914714421);
+  parameter_vac[ILE].push_back(1548.5696047594895);
+
+  parameter_vac[LEU].push_back(3842.5968201937785);
+  parameter_vac[LEU].push_back(-16.2745108270949);
+  parameter_vac[LEU].push_back(-6807.110269770606);
+  parameter_vac[LEU].push_back(-1926.6303434106014);
+  parameter_vac[LEU].push_back(12577.952756390941);
+  parameter_vac[LEU].push_back(-8829.40489330961);
+  parameter_vac[LEU].push_back(1882.919316016889);
+
+  parameter_vac[MET].push_back(4898.512892967389);
+  parameter_vac[MET].push_back(-30.588244886468207);
+  parameter_vac[MET].push_back(-10159.093665859045);
+  parameter_vac[MET].push_back(-4025.0261508449653);
+  parameter_vac[MET].push_back(26007.394369425827);
+  parameter_vac[MET].push_back(-21199.218680206573);
+  parameter_vac[MET].push_back(5423.004225853842);
+
+  parameter_vac[ASN].push_back(3598.1423998115492);
+  parameter_vac[ASN].push_back(-10.357995638888545);
+  parameter_vac[ASN].push_back(-5565.603011562138);
+  parameter_vac[ASN].push_back(-1190.3294930971967);
+  parameter_vac[ASN].push_back(8227.920711951123);
+  parameter_vac[ASN].push_back(-5222.61541118056);
+  parameter_vac[ASN].push_back(968.593406702772);
+
+  parameter_vac[PRO].push_back(2702.925890807494);
+  parameter_vac[PRO].push_back(-4.11690159421177);
+  parameter_vac[PRO].push_back(-3395.325331307625);
+  parameter_vac[PRO].push_back(-458.95242128002894);
+  parameter_vac[PRO].push_back(3584.3640448715823);
+  parameter_vac[PRO].push_back(-1921.4140769384692);
+  parameter_vac[PRO].push_back(267.08577848319516);
+
+  parameter_vac[GLN].push_back(4621.773132292556);
+  parameter_vac[GLN].push_back(-29.511778489038818);
+  parameter_vac[GLN].push_back(-9486.077450010192);
+  parameter_vac[GLN].push_back(-3768.5756897489828);
+  parameter_vac[GLN].push_back(23828.07111260487);
+  parameter_vac[GLN].push_back(-19110.205836780202);
+  parameter_vac[GLN].push_back(4791.718204894083);
+
+  parameter_vac[SER].push_back(2115.1504654043965);
+  parameter_vac[SER].push_back(-2.4158378234251234);
+  parameter_vac[SER].push_back(-2488.1131972903822);
+  parameter_vac[SER].push_back(-263.64072945387693);
+  parameter_vac[SER].push_back(2251.376687850687);
+  parameter_vac[SER].push_back(-1066.0790768852626);
+  parameter_vac[SER].push_back(105.5155397911316);
+
+  parameter_vac[THR].push_back(2914.9061707158835);
+  parameter_vac[THR].push_back(-5.032844592364407);
+  parameter_vac[THR].push_back(-3903.2546253886653);
+  parameter_vac[THR].push_back(-559.4734271244915);
+  parameter_vac[THR].push_back(4315.044828297787);
+  parameter_vac[THR].push_back(-2331.211908177365);
+  parameter_vac[THR].push_back(323.76849758109853);
+
+  parameter_vac[VAL].push_back(2914.8744247581953);
+  parameter_vac[VAL].push_back(-5.847217106105881);
+  parameter_vac[VAL].push_back(-4096.370479502377);
+  parameter_vac[VAL].push_back(-655.2917606620404);
+  parameter_vac[VAL].push_back(4888.77261250007);
+  parameter_vac[VAL].push_back(-2765.7552774385167);
+  parameter_vac[VAL].push_back(421.9081598033515);
+
+  parameter_vac[ALA].push_back(1443.3438146824446);
+  parameter_vac[ALA].push_back(-1.1234573178567506);
+  parameter_vac[ALA].push_back(-1492.4547663363514);
+  parameter_vac[ALA].push_back(-121.47935619968672);
+  parameter_vac[ALA].push_back(1139.689871538201);
+  parameter_vac[ALA].push_back(-483.8336547914466);
+  parameter_vac[ALA].push_back(32.48231950404626);
+
+  parameter_vac[GLY].push_back(899.5356000422925);
+  parameter_vac[GLY].push_back(-0.5200880084066986);
+  parameter_vac[GLY].push_back(-787.5892053280859);
+  parameter_vac[GLY].push_back(-56.07596224884467);
+  parameter_vac[GLY].push_back(546.4212287680981);
+  parameter_vac[GLY].push_back(-222.2667666932616);
+  parameter_vac[GLY].push_back(12.474587265791476);
+
+  parameter_vac[HIS].push_back(5180.842705000207);
+  parameter_vac[HIS].push_back(-29.578973475252766);
+  parameter_vac[HIS].push_back(-10323.417251934066);
+  parameter_vac[HIS].push_back(-3788.977215582307);
+  parameter_vac[HIS].push_back(24427.720792289427);
+  parameter_vac[HIS].push_back(-19307.35836837878);
+  parameter_vac[HIS].push_back(4780.831414992477);
+
+  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+  if( moldat ) {
+    unsigned init_resnum = moldat -> getResidueNumber(atoms[0]);
+    for(unsigned i=0; i<atoms.size(); ++i) {
+      std::string Rname = moldat->getResidueName(atoms[i]);
+      if(Rname=="ALA") {
+        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=ALA;
+      } else if(Rname=="ARG") {
+        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=ARG;
+      } else if(Rname=="ASN") {
+        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=ASN;
+      } else if(Rname=="ASP") {
+        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=ASP;
+      } else if(Rname=="CYS") {
+        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=CYS;
+      } else if(Rname=="GLN") {
+        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=GLN;
+      } else if(Rname=="GLU") {
+        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=GLU;
+      } else if(Rname=="GLY") {
+        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=GLY;
+      } else if(Rname=="HIS") {
+        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=HIS;
+      } else if(Rname=="HID") {
+        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=HIS;
+      } else if(Rname=="HIE") {
+        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=HIS;
+      } else if(Rname=="HIP") {
+        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=HIP;
+        // CHARMM NAMING FOR PROTONATION STATES OF HISTIDINE
+      } else if(Rname=="HSD") {
+        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=HIS;
+      } else if(Rname=="HSE") {
+        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=HIS;
+      } else if(Rname=="HSP") {
+        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=HIP;
+      } else if(Rname=="ILE") {
+        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=ILE;
+      } else if(Rname=="LEU") {
+        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=LEU;
+      } else if(Rname=="LYS") {
+        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=LYS;
+      } else if(Rname=="MET") {
+        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=MET;
+      } else if(Rname=="PHE") {
+        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=PHE;
+      } else if(Rname=="PRO") {
+        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=PRO;
+      } else if(Rname=="SER") {
+        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=SER;
+      } else if(Rname=="THR") {
+        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=THR;
+      } else if(Rname=="TRP") {
+        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=TRP;
+      } else if(Rname=="TYR") {
+        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=TYR;
+      } else if(Rname=="VAL") {
+        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=VAL;
+      } else error("Residue not known: "+Rname);
+    }
+  } else {
+    error("MOLINFO DATA not found\n");
+  }
+}
+
 double SAXS::calculateASF(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double rho)
 {
   std::map<std::string, unsigned> AA_map;
@@ -2028,7 +2951,7 @@ double SAXS::calculateASF(const std::vector<AtomNumber> &atoms, std::vector<std:
   if( moldat ) {
     log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
     // cycle over the atom types
-    for(unsigned i=0; i<NTT; i++) {
+    for(unsigned i=0; i<NTT; ++i) {
       const double volr = std::pow(param_v[i], (2.0/3.0)) /(4. * M_PI);
       // cycle over q
       for(unsigned k=0; k<q_list.size(); ++k) {
@@ -2036,7 +2959,7 @@ double SAXS::calculateASF(const std::vector<AtomNumber> &atoms, std::vector<std:
         const double s = q / (4. * M_PI);
         FF_tmp[k][i] = param_c[i];
         // SUM [a_i * EXP( - b_i * (q/4pi)^2 )] Waasmaier and Kirfel (1995)
-        for(unsigned j=0; j<4; j++) {
+        for(unsigned j=0; j<4; ++j) {
           FF_tmp[k][i] += param_a[i][j]*std::exp(-param_b[i][j]*s*s);
         }
         // subtract solvation: rho * v_i * EXP( (- v_i^(2/3) / (4pi)) * q^2  ) // since  D in Fraser 1978 is 2*s
@@ -2061,7 +2984,7 @@ double SAXS::calculateASF(const std::vector<AtomNumber> &atoms, std::vector<std:
       if(AA_map.find(type_s) != AA_map.end()) {
         const unsigned index=AA_map[type_s];
         atoi[i] = AA_map[type_s];
-        for(unsigned j=0; j<4; j++) Iq0 += param_a[index][j];
+        for(unsigned j=0; j<4; ++j) Iq0 += param_a[index][j];
         Iq0 = Iq0 -rho*param_v[index] + param_c[index];
       } else {
         error("Wrong atom type "+type_s+" from atom name "+name+"\n");
@@ -2074,5 +2997,404 @@ double SAXS::calculateASF(const std::vector<AtomNumber> &atoms, std::vector<std:
   return Iq0;
 }
 
+std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
+  std::map<std::string, std::vector<double> > lcpomap;
+
+  //We arbitrarily set OC1 as the charged oxygen.
+
+  lcpomap["ALA_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["ALA_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
+  lcpomap["ALA_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["ALA_O"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["ALA_CB"] = { 1.7,  0.77887,  -0.28063,  -0.0012968,  0.00039328};
+  lcpomap["ALA_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["ALA_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["ALA_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["ALA_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+
+  lcpomap["ASP_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["ASP_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
+  lcpomap["ASP_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["ASP_O"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["ASP_CB"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["ASP_CG"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["ASP_OD1"] = { 1.6,  0.77914,  -0.25262,  -0.0016056,  0.00035071};
+  lcpomap["ASP_OD2"] = { 1.6,  0.77914,  -0.25262,  -0.0016056,  0.00035071};
+  lcpomap["ASP_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["ASP_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["ASP_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["ASP_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+
+  lcpomap["ASN_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["ASN_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
+  lcpomap["ASN_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["ASN_O"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["ASN_CB"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["ASN_CG"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["ASN_OD1"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["ASN_ND2"] = { 1.65,  0.73511,  -0.22116,  -0.00089148,  0.0002523};
+  lcpomap["ASN_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["ASN_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["ASN_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["ASN_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+
+  lcpomap["ARG_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["ARG_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
+  lcpomap["ARG_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["ARG_O"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["ARG_CB"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["ARG_CG"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["ARG_CD"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["ARG_NE"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["ARG_NH1"] = { 1.65,  0.73511,  -0.22116,  -0.00089148,  0.0002523};
+  lcpomap["ARG_NH2"] = { 1.65,  0.73511,  -0.22116,  -0.00089148,  0.0002523};
+  lcpomap["ARG_CZ"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["ARG_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["ARG_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["ARG_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["ARG_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+
+  lcpomap["CYS_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["CYS_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
+  lcpomap["CYS_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["CYS_O"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["CYS_CB"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["CYS_SG"] = { 1.9,  0.54581,  -0.19477,  -0.0012873,  0.00029247};
+  lcpomap["CYS_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["CYS_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["CYS_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["CYS_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+
+  lcpomap["GLU_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["GLU_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
+  lcpomap["GLU_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["GLU_O"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["GLU_CB"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["GLU_CG"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["GLU_CD"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["GLU_OE1"] = { 1.6,  0.77914,  -0.25262,  -0.0016056,  0.00035071};
+  lcpomap["GLU_OE2"] = { 1.6,  0.77914,  -0.25262,  -0.0016056,  0.00035071};
+  lcpomap["GLU_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["GLU_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["GLU_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["GLU_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+
+  lcpomap["GLN_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["GLN_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
+  lcpomap["GLN_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["GLN_O"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["GLN_CB"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["GLN_CG"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["GLN_CD"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["GLN_OE1"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["GLN_NE2"] = { 1.65,  0.73511,  -0.22116,  -0.00089148,  0.0002523};
+  lcpomap["GLN_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["GLN_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["GLN_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["GLN_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+
+  lcpomap["GLY_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["GLY_CA"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["GLY_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["GLY_O"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["GLY_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["GLY_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["GLY_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["GLY_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+
+  lcpomap["HIS_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["HIS_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
+  lcpomap["HIS_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["HIS_O"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["HIS_CB"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["HIS_CG"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["HIS_ND1"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["HIS_CE1"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
+  lcpomap["HIS_NE2"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["HIS_CD2"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
+  lcpomap["HIS_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["HIS_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+
+  lcpomap["HIE_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["HIE_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
+  lcpomap["HIE_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["HIE_O"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["HIE_CB"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["HIE_CG"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["HIE_ND1"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["HIE_CE1"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
+  lcpomap["HIE_NE2"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["HIE_CD2"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
+  lcpomap["HIE_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["HIE_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+
+  lcpomap["HSE_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["HSE_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
+  lcpomap["HSE_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["HSE_O"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["HSE_CB"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["HSE_CG"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["HSE_ND1"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["HSE_CE1"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
+  lcpomap["HSE_NE2"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["HSE_CD2"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
+  lcpomap["HSE_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["HSE_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+
+  lcpomap["HID_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["HID_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
+  lcpomap["HID_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["HID_O"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["HID_CB"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["HID_CG"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["HID_ND1"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["HID_CE1"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
+  lcpomap["HID_NE2"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["HID_CD2"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
+  lcpomap["HID_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["HID_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+
+  lcpomap["HSD_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["HSD_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
+  lcpomap["HSD_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["HSD_O"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["HSD_CB"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["HSD_CG"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["HSD_ND1"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["HSD_CE1"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
+  lcpomap["HSD_NE2"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["HSD_CD2"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
+  lcpomap["HSD_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["HSD_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+
+  lcpomap["HIP_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["HIP_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
+  lcpomap["HIP_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["HIP_O"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["HIP_CB"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["HIP_CG"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["HIP_ND1"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["HIP_CE1"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
+  lcpomap["HIP_NE2"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["HIP_CD2"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
+  lcpomap["HIP_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["HIP_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+
+  lcpomap["HSP_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["HSP_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
+  lcpomap["HSP_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["HSP_O"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["HSP_CB"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["HSP_CG"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["HSP_ND1"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["HSP_CE1"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
+  lcpomap["HSP_NE2"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["HSP_CD2"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
+  lcpomap["HSP_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["HSP_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+
+  lcpomap["ILE_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["ILE_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
+  lcpomap["ILE_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["ILE_O"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["ILE_CB"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
+  lcpomap["ILE_CG2"] = { 1.7,  0.77887,  -0.28063,  -0.0012968,  0.00039328};
+  lcpomap["ILE_CG1"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["ILE_CD1"] = { 1.7,  0.77887,  -0.28063,  -0.0012968,  0.00039328};
+  lcpomap["ILE_CD"] = { 1.7,  0.77887,  -0.28063,  -0.0012968,  0.00039328};
+  lcpomap["ILE_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["ILE_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["ILE_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["ILE_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+
+  lcpomap["LEU_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["LEU_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
+  lcpomap["LEU_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["LEU_O"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["LEU_CB"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["LEU_CG"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
+  lcpomap["LEU_CD1"] = { 1.7,  0.77887,  -0.28063,  -0.0012968,  0.00039328};
+  lcpomap["LEU_CD2"] = { 1.7,  0.77887,  -0.28063,  -0.0012968,  0.00039328};
+  lcpomap["LEU_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["LEU_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["LEU_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["LEU_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+
+  lcpomap["LYS_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["LYS_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
+  lcpomap["LYS_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["LYS_O"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["LYS_CB"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["LYS_CG"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["LYS_CD"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["LYS_CE"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["LYS_NZ"] = { 1.65,  0.73511,  -0.22116,  -0.00089148,  0.0002523};
+  lcpomap["LYS_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["LYS_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["LYS_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["LYS_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+
+  lcpomap["MET_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["MET_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
+  lcpomap["MET_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["MET_O"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["MET_CB"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["MET_CG"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["MET_SD"] = { 1.9,  0.54581,  -0.19477,  -0.0012873,  0.00029247};
+  lcpomap["MET_CE"] = { 1.7,  0.77887,  -0.28063,  -0.0012968,  0.00039328};
+  lcpomap["MET_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["MET_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["MET_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["MET_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+
+  lcpomap["PHE_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["PHE_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
+  lcpomap["PHE_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["PHE_O"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["PHE_CB"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["PHE_CG"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["PHE_CD1"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
+  lcpomap["PHE_CE1"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
+  lcpomap["PHE_CZ"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
+  lcpomap["PHE_CE2"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
+  lcpomap["PHE_CD2"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
+  lcpomap["PHE_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["PHE_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["PHE_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["PHE_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+
+  lcpomap["PRO_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["PRO_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
+  lcpomap["PRO_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["PRO_O"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["PRO_CB"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["PRO_CG"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["PRO_CD"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["PRO_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["PRO_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["PRO_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["PRO_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+
+  lcpomap["SER_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["SER_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
+  lcpomap["SER_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["SER_O"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["SER_CB"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["SER_OG"] = { 1.6,  0.77914,  -0.25262,  -0.0016056,  0.00035071};
+  lcpomap["SER_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["SER_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["SER_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["SER_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+
+  lcpomap["THR_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["THR_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
+  lcpomap["THR_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["THR_O"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["THR_CB"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
+  lcpomap["THR_CG2"] = { 1.7,  0.77887,  -0.28063,  -0.0012968,  0.00039328};
+  lcpomap["THR_OG1"] = { 1.6,  0.77914,  -0.25262,  -0.0016056,  0.00035071};
+  lcpomap["THR_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["THR_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["THR_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["THR_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+
+  lcpomap["TRP_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["TRP_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
+  lcpomap["TRP_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["TRP_O"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["TRP_CB"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["TRP_CG"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["TRP_CD1"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
+  lcpomap["TRP_NE1"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["TRP_CE2"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["TRP_CZ2"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
+  lcpomap["TRP_CH2"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
+  lcpomap["TRP_CZ3"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
+  lcpomap["TRP_CE3"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
+  lcpomap["TRP_CD2"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["TRP_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["TRP_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["TRP_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["TRP_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+
+  lcpomap["TYR_N"] = { 1.65,  0.062577,  -0.017874,  -8.312e-05,  1.9849e-05};
+  lcpomap["TYR_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
+  lcpomap["TYR_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["TYR_O"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["TYR_CB"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["TYR_CG"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["TYR_CD1"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
+  lcpomap["TYR_CE1"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
+  lcpomap["TYR_CZ"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["TYR_OH"] = { 1.6,  0.77914,  -0.25262,  -0.0016056,  0.00035071};
+  lcpomap["TYR_CE2"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
+  lcpomap["TYR_CD2"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
+  lcpomap["TYR_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["TYR_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["TYR_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["TYR_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+
+  lcpomap["VAL_N"] = { 1.65,  0.062577,  -0.017874,  -8.312e-05,  1.9849e-05};
+  lcpomap["VAL_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
+  lcpomap["VAL_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["VAL_O"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["VAL_CB"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
+  lcpomap["VAL_CG1"] = { 1.7,  0.77887,  -0.28063,  -0.0012968,  0.00039328};
+  lcpomap["VAL_CG2"] = { 1.7,  0.77887,  -0.28063,  -0.0012968,  0.00039328};
+  lcpomap["VAL_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["VAL_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["VAL_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["VAL_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+
+  return lcpomap;
 }
+
+//assigns LCPO parameters to each atom reading from database
+void SAXS::readLCPOparam(const std::vector<std::vector<std::string> > &AtomResidueName, unsigned natoms)
+{
+  std::map<std::string, std::vector<double> > lcpomap = setupLCPOparam();
+
+  for(unsigned i=0; i<natoms; ++i)
+  {
+    if ((AtomResidueName[0][i][0]=='O') || (AtomResidueName[0][i][0]=='N') || (AtomResidueName[0][i][0]=='C') || (AtomResidueName[0][i][0]=='S')) {
+      std::string identifier = AtomResidueName[1][i]+"_"+AtomResidueName[0][i];
+      std::vector<double> LCPOparamVector = lcpomap.at(identifier);
+      double rs = 0.14;
+      LCPOparam[i].push_back(LCPOparamVector[0]+rs*10.);
+      LCPOparam[i].push_back(LCPOparamVector[1]);
+      LCPOparam[i].push_back(LCPOparamVector[2]);
+      LCPOparam[i].push_back(LCPOparamVector[3]);
+      LCPOparam[i].push_back(LCPOparamVector[4]);
+    }
+  }
+
+  for(unsigned i=0; i<natoms; ++i) {
+    if (LCPOparam[i].size()==0 ) {
+      if ((AtomResidueName[0][i][0]=='O') || (AtomResidueName[0][i][0]=='N') || (AtomResidueName[0][i][0]=='C') || (AtomResidueName[0][i][0]=='S')) {
+        std::cout << "Could not find LCPO paramaters for atom " << AtomResidueName[0][i] << " of residue " << AtomResidueName[1][i] << std::endl;
+        error ("missing LCPO parameters\n");
+      }
+    }
+  }
+
+  if (AtomResidueName[0][0] == "N") {
+    LCPOparam[0][1] = 7.3511e-01;
+    LCPOparam[0][2] = -2.2116e-01;
+    LCPOparam[0][3] = -8.9148e-04;
+    LCPOparam[0][4] = 2.5230e-04;
+  }
+
+  if (AtomResidueName[0][natoms-1] == "O") {
+    LCPOparam[natoms-1][1] = 8.8857e-01;
+    LCPOparam[natoms-1][2] = -3.3421e-01;
+    LCPOparam[natoms-1][3] = -1.8683e-03;
+    LCPOparam[natoms-1][4] = 4.9372e-04;
+  }
 }
+
+
+}//namespace isdb
+}//namespace PLMD
+
+
+

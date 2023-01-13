@@ -31,6 +31,7 @@
 #include <stack>
 #include <memory>
 #include <map>
+#include <atomic>
 
 // !!!!!!!!!!!!!!!!!!!!!!    DANGER   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
 // THE FOLLOWING ARE DEFINITIONS WHICH ARE NECESSARY FOR DYNAMIC LOADING OF THE PLUMED KERNEL:
@@ -108,6 +109,8 @@ private:
   } plumed_error_handler;
 
   plumed_error_handler error_handler= {NULL,NULL};
+
+  bool nestedExceptions=false;
 
 /// Forward declaration.
   ForwardDecl<DLLoader> dlloader_fwd;
@@ -192,7 +195,6 @@ private:
 /// Flag for checkpointig
   bool doCheckPoint;
 
-
 private:
 /// Forward declaration.
   ForwardDecl<TypesafePtr> stopFlag_fwd;
@@ -211,6 +213,9 @@ public:
 
 /// Flag to switch on detailed timers
   bool detailedTimers;
+
+/// GpuDevice Identifier
+  int gpuDeviceId;
 
 /// Generic map string -> double
 /// intended to pass information across Actions
@@ -416,10 +421,25 @@ public:
   void setEndPlumed();
 /// Get the value of the end plumed flag
   bool getEndPlumed() const ;
+/// Get the value of the gpuDeviceId
+  int getGpuDeviceId() const ;
 /// Call error handler.
 /// Should only be called from \ref plumed_plumedmain_cmd().
 /// If the error handler was not set, returns false.
   bool callErrorHandler(int code,const char* msg)const;
+private:
+  std::atomic<unsigned> referenceCounter{};
+public:
+/// Atomically increase reference counter and return the new value
+  unsigned increaseReferenceCounter() noexcept;
+/// Atomically decrease reference counter and return the new value
+  unsigned decreaseReferenceCounter() noexcept;
+/// Report the reference counter
+  unsigned useCountReferenceCounter() const noexcept;
+  void enableNestedExceptions();
+  bool getNestedExceptions()const {
+    return nestedExceptions;
+  }
 };
 
 /////
@@ -493,6 +513,11 @@ void PlumedMain::setEndPlumed() {
 inline
 bool PlumedMain::getEndPlumed() const {
   return endPlumed;
+}
+
+inline
+int PlumedMain::getGpuDeviceId() const {
+  return gpuDeviceId;
 }
 
 inline
