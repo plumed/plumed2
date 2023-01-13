@@ -185,7 +185,7 @@ void SAXS::registerKeywords(Keywords& keys) {
   MetainferenceBase::registerKeywords(keys);
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
-  keys.add("compulsory","DEVICEID","0","Identifier of the GPU to be used");
+  keys.add("compulsory","DEVICEID","-1","Identifier of the GPU to be used");
   keys.addFlag("GPU",false,"calculate SAXS using ARRAYFIRE on an accelerator device");
   keys.addFlag("ATOMISTIC",false,"calculate SAXS for an atomistic model");
   keys.addFlag("MARTINI",false,"calculate SAXS for a Martini model");
@@ -209,7 +209,7 @@ SAXS::SAXS(const ActionOptions&ao):
   gpu(false),
   onebead(false),
   isFirstStep(true),
-  deviceid(0)
+  deviceid(-1)
 {
   std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
@@ -230,7 +230,11 @@ SAXS::SAXS(const ActionOptions&ao):
 
   parse("DEVICEID",deviceid);
 #ifdef  __PLUMED_HAS_ARRAYFIRE
-  if(gpu) {
+  if(gpu&&comm.Get_rank()==0) {
+    // if not set try to check the one set by the API
+    if(deviceid==-1) deviceid=plumed.getGpuDeviceId();
+    // if still not set use 0
+    if(deviceid==-1) deviceid=0;
     af::setDevice(deviceid);
     af::info();
   }
