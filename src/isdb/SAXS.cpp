@@ -66,8 +66,9 @@ Regarding ONEBEAD, it is possible to take into account the solvation layer contr
 adding a correction term just for the solvent accessible residues: the form factor of amino acids that have a SASA
 (computed via LCPO algorithm) larger than a user-defined threshold are corrected according to a user-defined electron
 density term. SASA stride calculation can be modified using SOLVATION_STRIDE, that by default is set to 100 steps,
-while the surface cut-off can be modified with SASA_CUTOFF. The maximum QVALUE for ONEBEAD is set to 0.3 \f$\AA^{-1}\f$.
-The solvent density, that by default is set to 0.334 electrons \f$\AA^{-3}\f$ (bulk water), can be modified using
+while the surface cut-off can be modified with SASA_CUTOFF.
+The maximum QVALUE for ONEBEAD is set to 0.3 inverse angstroms.
+The solvent density, that by default is set to 0.334 electrons per cubic angstrom (bulk water), can be modified using
 the SOLVDENS keyword.
 
 Experimental reference intensities can be added using the EXPINT keywords.
@@ -283,7 +284,7 @@ SAXS::SAXS(const ActionOptions&ao):
   parse("SOLVATION_CORRECTION", correction);
   if(correction>0&&!onebead) error("SOLVATION_CORRECTION can only be used with ONEBEAD");
   rho_corr=rho-correction;
-  if(onebead) log.printf("  SASA Solvation density correction set to: %lf\n", rho_corr);
+  if(onebead) log.printf("  SASA Solvation density correction set to: %lf\n", correction);
 
   sasa_cutoff = 1.0;
   parse("SASA_CUTOFF", sasa_cutoff);
@@ -876,7 +877,7 @@ void SAXS::getOnebeadMapping(const std::vector<AtomNumber> &atoms) {
     nres = moldat->getResidueNumber(atoms[atoms.size()-1]) - moldat->getResidueNumber(atoms[0]) + 1;
     atoms_per_bead.resize(nres);
     atoms_masses.resize(atoms.size());
-    residue_atom.resize(atoms.size());       //@MOD: add vector resize
+    residue_atom.resize(atoms.size());
     std::vector<std::vector<std::string> > AtomResidueName;
     AtomResidueName.resize(2);
 
