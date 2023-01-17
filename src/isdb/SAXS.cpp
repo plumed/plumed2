@@ -40,6 +40,13 @@
 #ifdef __PLUMED_HAS_ARRAYFIRE
 #include <arrayfire.h>
 #include <af/util.h>
+#ifdef __PLUMED_HAS_ARRAYFIRE_CUDA
+#include <cuda_runtime.h>
+#include <cublas_v2.h>
+#include <af/cuda.h>
+#elif __PLUMED_HAS_ARRAYFIRE_OCL
+#include <af/opencl.h>
+#endif
 #endif
 
 #ifndef M_PI
@@ -236,7 +243,13 @@ SAXS::SAXS(const ActionOptions&ao):
     if(deviceid==-1) deviceid=plumed.getGpuDeviceId();
     // if still not set use 0
     if(deviceid==-1) deviceid=0;
+#ifdef  __PLUMED_HAS_ARRAYFIRE_CUDA
+    af::setDevice(afcu::getNativeId(deviceid));
+#elif   __PLUMED_HAS_ARRAYFIRE_OCL
+    af::setDevice(afcl::getNativeId(deviceid));
+#else
     af::setDevice(deviceid);
+#endif
     af::info();
   }
 #endif
@@ -588,7 +601,13 @@ void SAXS::calculate_gpu(std::vector<Vector> &pos, std::vector<Vector> &deriv)
     }
 
     // create array a and b containing atomic coordinates
+#ifdef  __PLUMED_HAS_ARRAYFIRE_CUDA
+    af::setDevice(afcu::getNativeId(deviceid));
+#elif   __PLUMED_HAS_ARRAYFIRE_OCL
+    af::setDevice(afcl::getNativeId(deviceid));
+#else
     af::setDevice(deviceid);
+#endif
     // 3,size,1,1
     af::array pos_a = af::array(3, size, &posi.front());
     // size,3,1,1
@@ -839,23 +858,49 @@ void SAXS::calculate()
       std::string num; Tools::convert(k,num);
       val=getPntrToComponent("q-"+num);
 
+      unsigned atom_id=0;
       for(unsigned i=0; i<beads_size; ++i) {
-        setAtomsDerivatives(val, i, Vector(aa_deriv[i][0]*bd_deriv[kdx+i][0], \
-                                           aa_deriv[i][1]*bd_deriv[kdx+i][1], \
-                                           aa_deriv[i][2]*bd_deriv[kdx+i][2]) );
-        deriv_box += Tensor(getPosition(i),Vector(aa_deriv[i][0]*bd_deriv[kdx+i][0], \
-                            aa_deriv[i][1]*bd_deriv[kdx+i][1], \
-                            aa_deriv[i][2]*bd_deriv[kdx+i][2]) );
+        if(onebead) {
+          for(unsigned j=0; j<atoms_per_bead[i]; ++j) {
+            setAtomsDerivatives(val, atom_id, Vector(aa_deriv[atom_id][0]*bd_deriv[kdx+i][0], \
+                                aa_deriv[atom_id][1]*bd_deriv[kdx+i][1], \
+                                aa_deriv[atom_id][2]*bd_deriv[kdx+i][2]) );
+            deriv_box += Tensor(getPosition(atom_id),Vector(aa_deriv[atom_id][0]*bd_deriv[kdx+i][0], \
+                                aa_deriv[atom_id][1]*bd_deriv[kdx+i][1], \
+                                aa_deriv[atom_id][2]*bd_deriv[kdx+i][2]) );
+            atom_id++;
+          }
+        } else {
+          setAtomsDerivatives(val, i, Vector(aa_deriv[i][0]*bd_deriv[kdx+i][0], \
+                                             aa_deriv[i][1]*bd_deriv[kdx+i][1], \
+                                             aa_deriv[i][2]*bd_deriv[kdx+i][2]) );
+          deriv_box += Tensor(getPosition(i),Vector(aa_deriv[i][0]*bd_deriv[kdx+i][0], \
+                              aa_deriv[i][1]*bd_deriv[kdx+i][1], \
+                              aa_deriv[i][2]*bd_deriv[kdx+i][2]) );
+        }
       }
     } else {
       val=getPntrToComponent("score");
+      unsigned atom_id=0;
       for(unsigned i=0; i<beads_size; ++i) {
-        setAtomsDerivatives(val, i, Vector(aa_deriv[i][0]*bd_deriv[kdx+i][0]*getMetaDer(k),
-                                           aa_deriv[i][1]*bd_deriv[kdx+i][1]*getMetaDer(k),
-                                           aa_deriv[i][2]*bd_deriv[kdx+i][2]*getMetaDer(k)) );
-        deriv_box += Tensor(getPosition(i),Vector(aa_deriv[i][0]*bd_deriv[kdx+i][0]*getMetaDer(k),
-                            aa_deriv[i][1]*bd_deriv[kdx+i][1]*getMetaDer(k),
-                            aa_deriv[i][2]*bd_deriv[kdx+i][2]*getMetaDer(k)) );
+        if(onebead) {
+          for(unsigned j=0; j<atoms_per_bead[i]; ++j) {
+            setAtomsDerivatives(val, atom_id, Vector(aa_deriv[atom_id][0]*bd_deriv[kdx+i][0]*getMetaDer(k),
+                                aa_deriv[atom_id][1]*bd_deriv[kdx+i][1]*getMetaDer(k),
+                                aa_deriv[atom_id][2]*bd_deriv[kdx+i][2]*getMetaDer(k)) );
+            deriv_box += Tensor(getPosition(atom_id),Vector(aa_deriv[atom_id][0]*bd_deriv[kdx+i][0]*getMetaDer(k),
+                                aa_deriv[atom_id][1]*bd_deriv[kdx+i][1]*getMetaDer(k),
+                                aa_deriv[atom_id][2]*bd_deriv[kdx+i][2]*getMetaDer(k)) );
+            atom_id++;
+          }
+        } else {
+          setAtomsDerivatives(val, i, Vector(aa_deriv[i][0]*bd_deriv[kdx+i][0]*getMetaDer(k),
+                                             aa_deriv[i][1]*bd_deriv[kdx+i][1]*getMetaDer(k),
+                                             aa_deriv[i][2]*bd_deriv[kdx+i][2]*getMetaDer(k)) );
+          deriv_box += Tensor(getPosition(i),Vector(aa_deriv[i][0]*bd_deriv[kdx+i][0]*getMetaDer(k),
+                              aa_deriv[i][1]*bd_deriv[kdx+i][1]*getMetaDer(k),
+                              aa_deriv[i][2]*bd_deriv[kdx+i][2]*getMetaDer(k)) );
+        }
       }
     }
     setBoxDerivatives(val, -deriv_box);
