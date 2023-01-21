@@ -24,6 +24,7 @@
  Arrayfire implementation by Alexander Jussupow and CC
  Extension for the middleman algorithm (now removed) by Max Muehlbauer
  Refactoring for hySAXS Martini beads structure factor for Nucleic Acids by Cristina Paissoni
+ Refactoring for hySAXS OneBead structure factor with solvent conrrection by Federico Ballabio and Riccardo Capelli
 */
 
 #include "MetainferenceBase.h"
@@ -858,9 +859,9 @@ void SAXS::calculate()
       std::string num; Tools::convert(k,num);
       val=getPntrToComponent("q-"+num);
 
-      unsigned atom_id=0;
-      for(unsigned i=0; i<beads_size; ++i) {
-        if(onebead) {
+      if(onebead) {
+        unsigned atom_id=0;
+        for(unsigned i=0; i<beads_size; ++i) {
           for(unsigned j=0; j<atoms_per_bead[i]; ++j) {
             setAtomsDerivatives(val, atom_id, Vector(aa_deriv[atom_id][0]*bd_deriv[kdx+i][0], \
                                 aa_deriv[atom_id][1]*bd_deriv[kdx+i][1], \
@@ -870,20 +871,22 @@ void SAXS::calculate()
                                 aa_deriv[atom_id][2]*bd_deriv[kdx+i][2]) );
             atom_id++;
           }
-        } else {
-          setAtomsDerivatives(val, i, Vector(aa_deriv[i][0]*bd_deriv[kdx+i][0], \
-                                             aa_deriv[i][1]*bd_deriv[kdx+i][1], \
-                                             aa_deriv[i][2]*bd_deriv[kdx+i][2]) );
-          deriv_box += Tensor(getPosition(i),Vector(aa_deriv[i][0]*bd_deriv[kdx+i][0], \
-                              aa_deriv[i][1]*bd_deriv[kdx+i][1], \
-                              aa_deriv[i][2]*bd_deriv[kdx+i][2]) );
+        }
+      } else {
+        for(unsigned i=0; i<beads_size; ++i) {
+          setAtomsDerivatives(val, i, Vector(bd_deriv[kdx+i][0], \
+                                             bd_deriv[kdx+i][1], \
+                                             bd_deriv[kdx+i][2]) );
+          deriv_box += Tensor(getPosition(i),Vector(bd_deriv[kdx+i][0], \
+                              bd_deriv[kdx+i][1], \
+                              bd_deriv[kdx+i][2]) );
         }
       }
     } else {
       val=getPntrToComponent("score");
-      unsigned atom_id=0;
-      for(unsigned i=0; i<beads_size; ++i) {
-        if(onebead) {
+      if(onebead) {
+        unsigned atom_id=0;
+        for(unsigned i=0; i<beads_size; ++i) {
           for(unsigned j=0; j<atoms_per_bead[i]; ++j) {
             setAtomsDerivatives(val, atom_id, Vector(aa_deriv[atom_id][0]*bd_deriv[kdx+i][0]*getMetaDer(k),
                                 aa_deriv[atom_id][1]*bd_deriv[kdx+i][1]*getMetaDer(k),
@@ -893,13 +896,15 @@ void SAXS::calculate()
                                 aa_deriv[atom_id][2]*bd_deriv[kdx+i][2]*getMetaDer(k)) );
             atom_id++;
           }
-        } else {
-          setAtomsDerivatives(val, i, Vector(aa_deriv[i][0]*bd_deriv[kdx+i][0]*getMetaDer(k),
-                                             aa_deriv[i][1]*bd_deriv[kdx+i][1]*getMetaDer(k),
-                                             aa_deriv[i][2]*bd_deriv[kdx+i][2]*getMetaDer(k)) );
-          deriv_box += Tensor(getPosition(i),Vector(aa_deriv[i][0]*bd_deriv[kdx+i][0]*getMetaDer(k),
-                              aa_deriv[i][1]*bd_deriv[kdx+i][1]*getMetaDer(k),
-                              aa_deriv[i][2]*bd_deriv[kdx+i][2]*getMetaDer(k)) );
+        }
+      } else {
+        for(unsigned i=0; i<beads_size; ++i) {
+          setAtomsDerivatives(val, i, Vector(bd_deriv[kdx+i][0]*getMetaDer(k),
+                                             bd_deriv[kdx+i][1]*getMetaDer(k),
+                                             bd_deriv[kdx+i][2]*getMetaDer(k)) );
+          deriv_box += Tensor(getPosition(i),Vector(bd_deriv[kdx+i][0]*getMetaDer(k),
+                              bd_deriv[kdx+i][1]*getMetaDer(k),
+                              bd_deriv[kdx+i][2]*getMetaDer(k)) );
         }
       }
     }
