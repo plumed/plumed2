@@ -252,7 +252,7 @@ void SAXS::registerKeywords(Keywords& keys) {
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
   keys.add("numbered","QVALUE","Selected scattering lengths in Angstrom are given as QVALUE1, QVALUE2, ... .");
   keys.add("numbered","PARAMETERS","Used parameter Keywords like PARAMETERS1, PARAMETERS2. These are used to calculate the structure factor for the \\f$i\\f$th atom/bead.");
-  keys.add("compulsory","DEUTER_CONC","0.","FRACTION OF DEUTERATED SOLVENT");
+  keys.add("compulsory","DEUTER_CONC","0.","Fraction of deuterated solvent");
   keys.add("compulsory","SOLVDENS","0.334","Density of the water to be used for the correction of atomistic structure factors.");
   keys.add("compulsory","SOLVATION_CORRECTION","0.0","Hydration layer electron density correction (ONEBEAD only).");
   keys.add("compulsory","SASA_CUTOFF","1.0","SASA value to consider a residue as exposed to the solvent (ONEBEAD only).");
