@@ -3133,7 +3133,7 @@ double SAXS::calculateASFsans(const std::vector<AtomNumber> &atoms, std::vector<
   param_b[P] =  0.51;   param_v[P] = 5.73;
   param_b[S] =  0.28;   param_v[S] = 19.86;
 
-  double solv_sc_length = 0.1*(param_b[O] + 2.*((1. - deuter_conc) * param_b[H] + deuter_conc * 0.667));
+  double solv_sc_length = 0.1*(param_b[O] + 2.*((1. - deuter_conc) * param_b[H] + deuter_conc * 0.667)); // per water electron (10 electrons)
 
   auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
 
@@ -3148,7 +3148,7 @@ double SAXS::calculateASFsans(const std::vector<AtomNumber> &atoms, std::vector<
         const double q = q_list[k];
         FF_tmp[k][i] = param_b[i];
         // subtract solvation: rho * v_i * EXP( (- v_i^(2/3) / (4pi)) * q^2  ) // since  D in Fraser 1978 is 2*s
-        FF_tmp[k][i] -= solv_sc_length*param_v[i]*std::exp(-volr*q*q);
+        FF_tmp[k][i] -= solv_sc_length*rho*param_v[i]*std::exp(-volr*q*q);
       }
     }
     // cycle over the atoms to assign the atom type and calculate I0
@@ -3169,7 +3169,7 @@ double SAXS::calculateASFsans(const std::vector<AtomNumber> &atoms, std::vector<
       if(AA_map.find(type_s) != AA_map.end()) {
         const unsigned index=AA_map[type_s];
         atoi[i] = AA_map[type_s];
-        Iq0 += param_b[index]-solv_sc_length*param_v[index];
+        Iq0 += param_b[index]-solv_sc_length*rho*param_v[index];
       } else {
         error("Wrong atom type "+type_s+" from atom name "+name+"\n");
       }
