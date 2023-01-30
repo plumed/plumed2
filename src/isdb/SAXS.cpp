@@ -119,6 +119,52 @@ PRINT ARG=(SAXS\.q-.*),(SAXS\.exp-.*) FILE=colvar STRIDE=1
 */
 //+ENDPLUMEDOC
 
+//+PLUMEDOC ISDB_COLVAR SANS
+/*
+Calculates SANS intensity.
+
+SANS intensities are calculated for a set of scattering vectors using QVALUE keywords that are numbered starting
+from 1. Form factors can be either assigned using a polynomial expansion to any order by using the PARAMETERS
+keywords or automatically assigned to atoms using the ATOMISTIC flag by reading a PDB file.
+
+The concentration of deuterared water can be set con DEUTER_CONC, the default value is 0.
+
+Experimental reference intensities can be added using the EXPINT keywords.
+By default SANS is calculated using Debye on CPU, by adding the GPU flag it is possible to solve the equation on a
+GPU if the ARRAYFIRE libraries are installed and correctly linked.
+\ref METAINFERENCE can be activated using DOSCORE and the other relevant keywords.
+
+\par Examples
+in the following example the SANS intensities are calculated using the single bead per residue approximation.
+structure factors are obtained from the pdb file indicated in the MOLINFO.
+
+\plumedfile
+MOLINFO STRUCTURE=template_AA.pdb
+
+SANS ...
+LABEL=SANS
+ATOMS=1-355
+ATOMISTIC
+DEUTER_CONC=0.48
+QVALUE1=0.03 EXPINT1=1.0902
+QVALUE2=0.06 EXPINT2=0.790632
+QVALUE3=0.09 EXPINT3=0.453808
+QVALUE4=0.12 EXPINT4=0.254737
+QVALUE5=0.15 EXPINT5=0.154928
+QVALUE6=0.18 EXPINT6=0.0921503
+QVALUE7=0.21 EXPINT7=0.052633
+QVALUE8=0.24 EXPINT8=0.0276557
+QVALUE9=0.27 EXPINT9=0.0122775
+QVALUE10=0.30 EXPINT10=0.00880634
+... SANS
+
+PRINT ARG=(SANS\.q-.*),(SANS\.exp-.*) FILE=colvar STRIDE=1
+
+\endplumedfile
+
+*/
+//+ENDPLUMEDOC
+
 class SAXS :
   public MetainferenceBase
 {
@@ -141,6 +187,7 @@ private:
   enum { TRP, TYR, PHE, HIS, HIP, ARG, LYS, CYS, ASP, GLU, ILE, LEU,
          MET, ASN, PRO, GLN, SER, THR, VAL, ALA, GLY, NONEBEAD
        };
+  bool saxs;
   bool pbc;
   bool serial;
   bool gpu;
@@ -163,6 +210,7 @@ private:
   std::vector<unsigned> residue_atom;
 
   double rho, rho_corr, sasa_cutoff;
+  double deuter_conc;
   unsigned solv_stride;
   std::vector<double> Iq0_vac;
   std::vector<double> Iq0_wat;
@@ -175,6 +223,7 @@ private:
   void getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv);
   void getOnebeadMapping(const std::vector<AtomNumber> &atoms);
   double calculateASF(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double rho);
+  double calculateASFsans(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double deuter_conc);
   std::map<std::string, std::vector<double> > setupLCPOparam();
   void readLCPOparam(const std::vector<std::vector<std::string> > &AtomResidueName, unsigned natoms);
   void calcNlist(std::vector<std::vector<int> > &Nlist);
@@ -188,6 +237,7 @@ public:
 };
 
 PLUMED_REGISTER_ACTION(SAXS,"SAXS")
+PLUMED_REGISTER_ACTION(SAXS,"SANS")
 
 void SAXS::registerKeywords(Keywords& keys) {
   componentsAreNotOptional(keys);
@@ -202,17 +252,19 @@ void SAXS::registerKeywords(Keywords& keys) {
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
   keys.add("numbered","QVALUE","Selected scattering lengths in Angstrom are given as QVALUE1, QVALUE2, ... .");
   keys.add("numbered","PARAMETERS","Used parameter Keywords like PARAMETERS1, PARAMETERS2. These are used to calculate the structure factor for the \\f$i\\f$th atom/bead.");
-  keys.add("compulsory","SOLVDENS","0.334","Density of the water to be used for the correction of atomistic structure factors. (ONEBEAD only)");
-  keys.add("compulsory","SOLVATION_CORRECTION","0.0","Hydration layer electron density correction.");
-  keys.add("compulsory","SASA_CUTOFF","1.0","SASA value to consider a residue as exposed to the solvent.");
+  keys.add("compulsory","DEUTER_CONC","0.","FRACTION OF DEUTERATED SOLVENT");
+  keys.add("compulsory","SOLVDENS","0.334","Density of the water to be used for the correction of atomistic structure factors.");
+  keys.add("compulsory","SOLVATION_CORRECTION","0.0","Hydration layer electron density correction (ONEBEAD only).");
+  keys.add("compulsory","SASA_CUTOFF","1.0","SASA value to consider a residue as exposed to the solvent (ONEBEAD only).");
   keys.add("numbered","EXPINT","Add an experimental value for each q value.");
-  keys.add("compulsory","SOLVATION_STRIDE","100","Number of steps between every new check of the residues solvation via LCPO estimate.");
+  keys.add("compulsory","SOLVATION_STRIDE","100","Number of steps between every new check of the residues solvation via LCPO estimate (ONEBEAD only).");
   keys.addOutputComponent("q","default","the # SAXS of q");
   keys.addOutputComponent("exp","EXPINT","the # experimental intensity");
 }
 
 SAXS::SAXS(const ActionOptions&ao):
   PLUMED_METAINF_INIT(ao),
+  saxs(true),
   pbc(true),
   serial(false),
   gpu(false),
@@ -220,6 +272,9 @@ SAXS::SAXS(const ActionOptions&ao):
   isFirstStep(true),
   deviceid(-1)
 {
+  if( getName().find("SAXS")!=std::string::npos) { saxs=true; }
+  else if( getName().find("SANS")!=std::string::npos) { saxs=false; }
+
   std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   unsigned size = atoms.size();
@@ -268,6 +323,7 @@ SAXS::SAXS(const ActionOptions&ao):
   if(martini&&atomistic) error("You cannot use MARTINI and ATOMISTIC at the same time");
   if(martini&&onebead) error("You cannot use MARTINI and ONEBEAD at the same time");
   if(onebead&&atomistic) error("You cannot use ONEBEAD and ATOMISTIC at the same time");
+  if((martini||onebead)&&(!saxs)) error("MARTINI or ONEBEAD cannot be used with SANS");
 
   unsigned ntarget=0;
   for(unsigned i=0;; ++i) {
@@ -285,6 +341,10 @@ SAXS::SAXS(const ActionOptions&ao):
     if(i>0&&q_list[i]<q_list[i-1]) error("QVALUE must be in ascending order");
     log.printf("  my q: %lf \n",q_list[i]);
   }
+
+  deuter_conc = 0.;
+  parse("DEUTER_CONC", deuter_conc);
+  log.printf("  Solvent density of %lf\n", deuter_conc);
 
   rho = 0.334;
   parse("SOLVDENS", rho);
@@ -385,7 +445,8 @@ SAXS::SAXS(const ActionOptions&ao):
     Iq0 *= Iq0;
   } else if(atomistic) {
     FF_tmp.resize(numq,std::vector<long double>(NTT));
-    Iq0=calculateASF(atoms, FF_tmp, rho);
+    if(saxs) Iq0=calculateASF(atoms, FF_tmp, rho);
+    else Iq0=calculateASFsans(atoms, FF_tmp, deuter_conc);
     Iq0 *= Iq0;
   }
 
@@ -3037,6 +3098,78 @@ double SAXS::calculateASF(const std::vector<AtomNumber> &atoms, std::vector<std:
         atoi[i] = AA_map[type_s];
         for(unsigned j=0; j<4; ++j) Iq0 += param_a[index][j];
         Iq0 = Iq0 -rho*param_v[index] + param_c[index];
+      } else {
+        error("Wrong atom type "+type_s+" from atom name "+name+"\n");
+      }
+    }
+  } else {
+    error("MOLINFO DATA not found\n");
+  }
+
+  return Iq0;
+}
+
+double SAXS::calculateASFsans(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double deuter_conc)
+{
+  std::map<std::string, unsigned> AA_map;
+  AA_map["H"] = H;
+  AA_map["C"] = C;
+  AA_map["N"] = N;
+  AA_map["O"] = O;
+  AA_map["P"] = P;
+  AA_map["S"] = S;
+
+  std::vector<double> param_b;
+  std::vector<double> param_v;
+
+  param_b.resize(NTT);
+  param_v.resize(NTT);
+
+  param_b[H] = -0.374; param_v[H] = 5.15;
+  //param_b[D] = 0.667;
+  param_b[C] =  0.665;  param_v[C] = 16.44;
+  param_b[N] =  0.94;   param_v[N] = 2.49;
+  param_b[O] =  0.580;  param_v[O] = 9.13;
+  param_b[P] =  0.51;   param_v[P] = 5.73;
+  param_b[S] =  0.28;   param_v[S] = 19.86;
+
+  double solv_sc_length = 0.1*(param_b[O] + 2.*((1. - deuter_conc) * param_b[H] + deuter_conc * 0.667));
+
+  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+
+  double Iq0=0.;
+  if( moldat ) {
+    log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
+    // cycle over the atom types
+    for(unsigned i=0; i<NTT; ++i) {
+      double volr = std::pow(param_v[i], (2.0/3.0)) /(4. * M_PI);
+      // cycle over q
+      for(unsigned k=0; k<q_list.size(); ++k) {
+        const double q = q_list[k];
+        FF_tmp[k][i] = param_b[i];
+        // subtract solvation: rho * v_i * EXP( (- v_i^(2/3) / (4pi)) * q^2  ) // since  D in Fraser 1978 is 2*s
+        FF_tmp[k][i] -= solv_sc_length*param_v[i]*std::exp(-volr*q*q);
+      }
+    }
+    // cycle over the atoms to assign the atom type and calculate I0
+    for(unsigned i=0; i<atoms.size(); ++i) {
+      // get atom name
+      std::string name = moldat->getAtomName(atoms[i]);
+      char type;
+      // get atom type
+      char first = name.at(0);
+      // GOLDEN RULE: type is first letter, if not a number
+      if (!isdigit(first)) {
+        type = first;
+        // otherwise is the second
+      } else {
+        type = name.at(1);
+      }
+      std::string type_s = std::string(1,type);
+      if(AA_map.find(type_s) != AA_map.end()) {
+        const unsigned index=AA_map[type_s];
+        atoi[i] = AA_map[type_s];
+        Iq0 += param_b[index]-solv_sc_length*param_v[index];
       } else {
         error("Wrong atom type "+type_s+" from atom name "+name+"\n");
       }
