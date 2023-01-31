@@ -127,7 +127,7 @@ SANS intensities are calculated for a set of scattering vectors using QVALUE key
 from 1. Form factors can be either assigned using a polynomial expansion to any order by using the PARAMETERS
 keywords or automatically assigned to atoms using the ATOMISTIC flag by reading a PDB file.
 
-The concentration of deuterared water can be set con DEUTER_CONC, the default value is 0.
+The fraction of deuterated water can be set with DEUTER_CONC, the default value is 0.
 
 Experimental reference intensities can be added using the EXPINT keywords.
 By default SANS is calculated using Debye on CPU, by adding the GPU flag it is possible to solve the equation on a
@@ -135,8 +135,8 @@ GPU if the ARRAYFIRE libraries are installed and correctly linked.
 \ref METAINFERENCE can be activated using DOSCORE and the other relevant keywords.
 
 \par Examples
-in the following example the SANS intensities are calculated using the single bead per residue approximation.
-structure factors are obtained from the pdb file indicated in the MOLINFO.
+in the following example the SANS intensities are calculated using default scattering lengths with atom nuclei detected
+from the pdb file indicated in the MOLINFO. The fraction of deuterated water is set to 0.48.
 
 \plumedfile
 MOLINFO STRUCTURE=template_AA.pdb
