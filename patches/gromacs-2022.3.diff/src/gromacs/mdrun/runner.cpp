@@ -1194,12 +1194,6 @@ int Mdrunner::mdrunner()
         extendStateWithOriresHistory(mtop, *inputrec, globalState.get());
     }
 
-    auto deform = prepareBoxDeformation(globalState != nullptr ? globalState->box : box,
-                                        MASTER(cr) ? DDRole::Master : DDRole::Agent,
-                                        PAR(cr) ? NumRanks::Multiple : NumRanks::Single,
-                                        cr->mpi_comm_mygroup,
-                                        *inputrec);
-
 #if GMX_FAHCORE
     /* We have to remember the generation's first step before reading checkpoint.
        This way, we can report to the F@H core both the generation's first step
@@ -1418,7 +1412,7 @@ int Mdrunner::mdrunner()
         }
     }
 
-    // Produce the task assignment for this rank - done after DD is constructed
+    // Produce the task assignment for all ranks on this node - done after DD is constructed
     GpuTaskAssignments gpuTaskAssignments = GpuTaskAssignmentsBuilder::build(
             availableDevices,
             userGpuTaskAssignment,
@@ -1436,7 +1430,8 @@ int Mdrunner::mdrunner()
             // algorithm is active, but currently does not.
             EEL_PME(inputrec->coulombtype) && thisRankHasDuty(cr, DUTY_PME));
 
-    // Get the device handles for the modules, nullptr when no task is assigned.
+    // Get the device handle for the modules on this rank, nullptr
+    // when no task is assigned.
     int                deviceId   = -1;
     DeviceInformation* deviceInfo = gpuTaskAssignments.initDevice(&deviceId);
 
@@ -1695,8 +1690,9 @@ int Mdrunner::mdrunner()
                                   cr,
                                   &mdrunOptions.checkpointOptions.period);
 
-    const bool               thisRankHasPmeGpuTask = gpuTaskAssignments.thisRankHasPmeGpuTask();
-    std::unique_ptr<MDAtoms> mdAtoms;
+    const bool thisRankHasPmeGpuTask = gpuTaskAssignments.thisRankHasPmeGpuTask();
+    std::unique_ptr<BoxDeformation>      deform;
+    std::unique_ptr<MDAtoms>             mdAtoms;
     std::unique_ptr<VirtualSitesHandler> vsite;
 
     t_nrnb nrnb;
@@ -1729,6 +1725,12 @@ int Mdrunner::mdrunner()
             fr->fcdata->orires = std::make_unique<t_oriresdata>(
                     fplog, mtop, *inputrec, ms, globalState.get(), &atomSets);
         }
+
+        deform = prepareBoxDeformation(globalState != nullptr ? globalState->box : box,
+                                       MASTER(cr) ? DDRole::Master : DDRole::Agent,
+                                       PAR(cr) ? NumRanks::Multiple : NumRanks::Single,
+                                       cr->mpi_comm_mygroup,
+                                       *inputrec);
 
         // Save a handle to device stream manager to use elsewhere in the code
         // TODO: Forcerec is not a correct place to store it.
@@ -2133,8 +2135,21 @@ int Mdrunner::mdrunner()
           plumed_cmd(plumedmain,"getApiVersion",&pversion);
           if(pversion>5) {
              int nth = gmx_omp_nthreads_get(ModuleMultiThread::Default);
-             if(pversion>5) plumed_cmd(plumedmain,"setNumOMPthreads",&nth);
+             plumed_cmd(plumedmain,"setNumOMPthreads",&nth);
           }
+          /* set GPU device id */
+          if(pversion>9) {
+             plumed_cmd(plumedmain,"setGpuDeviceId", &deviceId);
+          }
+          if(useGpuForUpdate) {
+             GMX_LOG(mdlog.warning)
+                .asParagraph()
+                .appendTextFormatted(
+                        "This simulation is resident on GPU (-update gpu)\n"
+                        "but also runs PLUMED (-plumed ). Unless plumed actions are performed\n" 
+                        "only on neighbour list search and/or file writing steps, this will lead to WRONG RESULTS.\n" 
+                        "Stop it and run it again with -update cpu.\n");
+          } 
         }
         /* END PLUMED */
 
