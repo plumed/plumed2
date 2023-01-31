@@ -1771,8 +1771,21 @@ int Mdrunner::mdrunner()
           plumed_cmd(plumedmain,"getApiVersion",&pversion);
           if(pversion>5) {
              int nth = gmx_omp_nthreads_get(emntDefault);
-             if(pversion>5) plumed_cmd(plumedmain,"setNumOMPthreads",&nth);
+             plumed_cmd(plumedmain,"setNumOMPthreads",&nth);
           }
+          /* set GPU device id */
+          if(pversion>9) {
+             plumed_cmd(plumedmain,"setGpuDeviceId", &deviceId);
+          }
+          if(useGpuForUpdate) {
+             GMX_LOG(mdlog.warning)
+                .asParagraph()
+                .appendTextFormatted(
+                        "This simulation is resident on GPU (-update gpu)\n"
+                        "but also runs PLUMED (-plumed ). Unless plumed actions are performed\n" 
+                        "only on neighbour list search and/or file writing steps, this will lead to WRONG RESULTS.\n" 
+                        "Stop it and run it again with -update cpu.\n");
+          } 
         }
         /* END PLUMED */
 
