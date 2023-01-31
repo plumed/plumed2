@@ -308,6 +308,7 @@ void Keywords::print_template(const std::string& actionname, bool include_option
     }
   }
   std::printf("\n");
+  std::flush(std::cout);
 }
 
 void Keywords::print_vim() const {
