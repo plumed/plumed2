@@ -344,7 +344,7 @@ SAXS::SAXS(const ActionOptions&ao):
 
   deuter_conc = 0.;
   parse("DEUTER_CONC", deuter_conc);
-  log.printf("  Solvent density of %lf\n", deuter_conc);
+  log.printf("  Solvent deuterium fraction of %lf\n", deuter_conc);
 
   rho = 0.334;
   parse("SOLVDENS", rho);
