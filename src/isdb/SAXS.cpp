@@ -873,15 +873,15 @@ void SAXS::calculate()
         for(unsigned i=0; i<nres; ++i) {
           if(!gpu) {
             if(solv_res[i] == 0) { // buried
-              FF_value[i][k] = std::sqrt(FF_value_vacuum[atoi[i]][k] + rho*rho*FF_value_water[atoi[i]][k] - rho*FF_value_mixed[atoi[i]][k])/Iq0;
+              FF_value[i][k] = std::sqrt(std::fabs(FF_value_vacuum[atoi[i]][k] + rho*rho*FF_value_water[atoi[i]][k] - rho*FF_value_mixed[atoi[i]][k]))/Iq0;
             } else { // surface
-              FF_value[i][k] = std::sqrt(FF_value_vacuum[atoi[i]][k] + rho_corr*rho_corr*FF_value_water[atoi[i]][k] - rho_corr*FF_value_mixed[atoi[i]][k])/Iq0;
+              FF_value[i][k] = std::sqrt(std::fabs(FF_value_vacuum[atoi[i]][k] + rho_corr*rho_corr*FF_value_water[atoi[i]][k] - rho_corr*FF_value_mixed[atoi[i]][k]))/Iq0;
             }
           } else {
             if(solv_res[i] == 0) { // buried
-              FFf_value[k][i] = static_cast<float>(std::sqrt(FF_value_vacuum[atoi[i]][k] + rho*rho*FF_value_water[atoi[i]][k] - rho*FF_value_mixed[atoi[i]][k])/Iq0);
+              FFf_value[k][i] = static_cast<float>(std::sqrt(std::fabs(FF_value_vacuum[atoi[i]][k] + rho*rho*FF_value_water[atoi[i]][k] - rho*FF_value_mixed[atoi[i]][k]))/Iq0);
             } else { // surface
-              FFf_value[k][i] = static_cast<float>(std::sqrt(FF_value_vacuum[atoi[i]][k] + rho_corr*rho_corr*FF_value_water[atoi[i]][k] - rho_corr*FF_value_mixed[atoi[i]][k])/Iq0);
+              FFf_value[k][i] = static_cast<float>(std::sqrt(std::fabs(FF_value_vacuum[atoi[i]][k] + rho_corr*rho_corr*FF_value_water[atoi[i]][k] - rho_corr*FF_value_mixed[atoi[i]][k]))/Iq0);
             }
           }
         }
