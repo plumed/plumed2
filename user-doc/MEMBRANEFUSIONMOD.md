@@ -6,7 +6,7 @@ authors: Ary Lautaro Di Bartolo, Diego Masone
 reference: \cite DiBartolo2022 \cite Hub2017 \cite Hub2021 \cite Poojari2021
 -->
 
-## Overview
+\section Overview
 
 Membrane fusion process, when two separate membranes merge, is crucial in life. The fusion of lipid bilayers follows a series of discrete steps with two relevant intermediates: hemifusion structures and fusion pores. The hemifusion structures mix lipids from the involved membranes without cargo exchange, while the fusion pore require an aqueous channel to connect the contents.
 
@@ -14,11 +14,11 @@ To study the hemifusion stage computationally, Hub and Awasthi developed a CV th
 
 Then, to nucleate and expand the fusion pore, based on Hub's work  in single lipid bilayers \cite Hub2021, Di Bartolo and Masone implemented two others CVs to nucleate and expand fusion pores.
 
-## Installation 
+\section Installation 
 
 This module is not installed by default. Add '\-\-enable-modules=membranefusion' to your './configure' command when building PLUMED to enable these features.
 
-## Usage
+\section Usage
 
 This module contains three CVs to:
 
@@ -26,7 +26,7 @@ This module contains three CVs to:
 - Nucleate a fusion pore: \ref FUSIONPORENUCLEATIONP
 - Expand a fusion pore: \ref FUSIONPOREEXPANSIONP
 
-## Module Contents
+\section Module Contents
 - \subpage MEMBRANEFUSIONMODColvar
 
 \page MEMBRANEFUSIONMODColvar CVs Documentation
