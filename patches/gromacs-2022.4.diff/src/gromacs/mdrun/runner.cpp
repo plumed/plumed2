@@ -175,6 +175,16 @@
 #include "replicaexchange.h"
 #include "simulatorbuilder.h"
 
+/* PLUMED */
+#include "../../../Plumed.h"
+int    plumedswitch;
+plumed plumedmain; 
+/* END PLUMED */
+
+/* PLUMED HREX */
+int plumed_hrex;
+/* END PLUMED HREX */
+
 namespace gmx
 {
 
@@ -1026,7 +1036,7 @@ int Mdrunner::mdrunner()
                                                               replExParams,
                                                               nullptr,
                                                               doEssentialDynamics,
-                                                              membedHolder.doMembed());
+                                                              membedHolder.doMembed() && (plumedswitch==0) /* PLUMED */);
 
     // Now the number of ranks is known to all ranks, and each knows
     // the inputrec read by the master rank. The ranks can now all run
@@ -1183,12 +1193,6 @@ int Mdrunner::mdrunner()
     {
         extendStateWithOriresHistory(mtop, *inputrec, globalState.get());
     }
-
-    auto deform = prepareBoxDeformation(globalState != nullptr ? globalState->box : box,
-                                        MASTER(cr) ? DDRole::Master : DDRole::Agent,
-                                        PAR(cr) ? NumRanks::Multiple : NumRanks::Single,
-                                        cr->mpi_comm_mygroup,
-                                        *inputrec);
 
 #if GMX_FAHCORE
     /* We have to remember the generation's first step before reading checkpoint.
@@ -1408,7 +1412,7 @@ int Mdrunner::mdrunner()
         }
     }
 
-    // Produce the task assignment for this rank - done after DD is constructed
+    // Produce the task assignment for all ranks on this node - done after DD is constructed
     GpuTaskAssignments gpuTaskAssignments = GpuTaskAssignmentsBuilder::build(
             availableDevices,
             userGpuTaskAssignment,
@@ -1426,7 +1430,8 @@ int Mdrunner::mdrunner()
             // algorithm is active, but currently does not.
             EEL_PME(inputrec->coulombtype) && thisRankHasDuty(cr, DUTY_PME));
 
-    // Get the device handles for the modules, nullptr when no task is assigned.
+    // Get the device handle for the modules on this rank, nullptr
+    // when no task is assigned.
     int                deviceId   = -1;
     DeviceInformation* deviceInfo = gpuTaskAssignments.initDevice(&deviceId);
 
@@ -1685,8 +1690,9 @@ int Mdrunner::mdrunner()
                                   cr,
                                   &mdrunOptions.checkpointOptions.period);
 
-    const bool               thisRankHasPmeGpuTask = gpuTaskAssignments.thisRankHasPmeGpuTask();
-    std::unique_ptr<MDAtoms> mdAtoms;
+    const bool thisRankHasPmeGpuTask = gpuTaskAssignments.thisRankHasPmeGpuTask();
+    std::unique_ptr<BoxDeformation>      deform;
+    std::unique_ptr<MDAtoms>             mdAtoms;
     std::unique_ptr<VirtualSitesHandler> vsite;
 
     t_nrnb nrnb;
@@ -1719,6 +1725,12 @@ int Mdrunner::mdrunner()
             fr->fcdata->orires = std::make_unique<t_oriresdata>(
                     fplog, mtop, *inputrec, ms, globalState.get(), &atomSets);
         }
+
+        deform = prepareBoxDeformation(globalState != nullptr ? globalState->box : box,
+                                       MASTER(cr) ? DDRole::Master : DDRole::Agent,
+                                       PAR(cr) ? NumRanks::Multiple : NumRanks::Single,
+                                       cr->mpi_comm_mygroup,
+                                       *inputrec);
 
         // Save a handle to device stream manager to use elsewhere in the code
         // TODO: Forcerec is not a correct place to store it.
@@ -2115,6 +2127,32 @@ int Mdrunner::mdrunner()
         simulatorBuilder.add(BoxDeformationHandle(deform.get()));
         simulatorBuilder.add(std::move(modularSimulatorCheckpointData));
 
+        /* PLUMED */
+        if(plumedswitch){
+          if(useModularSimulator) gmx_fatal(FARGS, "PLUMED is not yet compatible with GROMACS new modular simulator");
+          /* detect plumed API version */
+          int pversion=0;
+          plumed_cmd(plumedmain,"getApiVersion",&pversion);
+          if(pversion>5) {
+             int nth = gmx_omp_nthreads_get(ModuleMultiThread::Default);
+             plumed_cmd(plumedmain,"setNumOMPthreads",&nth);
+          }
+          /* set GPU device id */
+          if(pversion>9) {
+             plumed_cmd(plumedmain,"setGpuDeviceId", &deviceId);
+          }
+          if(useGpuForUpdate) {
+             GMX_LOG(mdlog.warning)
+                .asParagraph()
+                .appendTextFormatted(
+                        "This simulation is resident on GPU (-update gpu)\n"
+                        "but also runs PLUMED (-plumed ). Unless plumed actions are performed\n" 
+                        "only on neighbour list search and/or file writing steps, this will lead to WRONG RESULTS.\n" 
+                        "Stop it and run it again with -update cpu.\n");
+          } 
+        }
+        /* END PLUMED */
+
         // build and run simulator object based on user-input
         auto simulator = simulatorBuilder.build(useModularSimulator);
         simulator->run();
@@ -2226,6 +2264,12 @@ int Mdrunner::mdrunner()
     /* Does what it says */
     print_date_and_time(fplog, cr->nodeid, "Finished mdrun", gmx_gettime());
     walltime_accounting_destroy(walltime_accounting);
+
+    /* PLUMED */
+    if(plumedswitch){
+      plumed_finalize(plumedmain);
+    }
+    /* END PLUMED */
 
     // Ensure log file content is written
     if (logFileHandle)
