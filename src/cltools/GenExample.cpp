@@ -327,7 +327,7 @@ void GenExample::printExampleInput( const std::vector<std::vector<std::string> >
               } else if( hyph!=std::string::npos ) {
                 ofile<<keys.getOutputComponentDescription(tname.substr(0,hyph))<<"  This is the "<<tname.substr(hyph+1)<<"th of these quantities";
               } else ofile<<keys.getOutputComponentDescription(tname);
-              ofile<<"</td></tr>";
+              ofile<<"</td></tr>"<<std::endl;
             }
             ofile<<"</table>"<<std::endl;
           }
