@@ -105,8 +105,8 @@ gawk -v version="$version" '{
     print "   }"
     print "</script>"
   } else print
-}' $file |
-gawk -v mpirun="$mpirun" -f ../../plumed-syntax.awk > $file.tmp
+}' $file > tmp
+gawk -v mpirun="$mpirun" -f ../../plumed-syntax.awk tmp > $file.tmp
 if [ $? -ne 0 ]; then
    echo "ERROR IN RUNNING PLUMED SYNTAX COMMAND ON " $file
    exit
