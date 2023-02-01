@@ -20,7 +20,8 @@ jobs:
       fail-fast: false
       matrix:
         variant:
-        - -doc-mpi-
+        - -doc-
+        - -mpi-
         - -coverage-mpi-
         - -debug-
         - -debug-mpi-
@@ -144,6 +145,7 @@ jobs:
         make nmcheck
         ccache -s -M 100M
     - name: Run tests
+      if: ${{ ! contains( matrix.variant, '-doc-' ) }}
       run: |
          (while true; do  # see https://github.com/actions/virtual-environments/issues/1860
               df -h
