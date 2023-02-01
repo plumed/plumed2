@@ -66,7 +66,7 @@ cd build
 for file in ../../html/*.html
 do
 echo final processing of html for file: $file
-gawk -v version="$version" '{
+script -c gawk -v version="$version" '{
   if(match($0,"<span>Main&#160;Page</span>")){
     sub("Main","Home",$0);
     sub("Page","("version")",$0);
@@ -106,7 +106,7 @@ gawk -v version="$version" '{
     print "</script>"
   } else print
 }' $file |
-gawk -v mpirun="$mpirun" -f ../../plumed-syntax.awk > $file.tmp
+gawk -v mpirun="$mpirun" -f ../../plumed-syntax.awk -f $file.tmp
 if [ $? -ne 0 ]; then
    echo "ERROR IN RUNNING PLUMED SYNTAX COMMAND ON " $file
    exit
