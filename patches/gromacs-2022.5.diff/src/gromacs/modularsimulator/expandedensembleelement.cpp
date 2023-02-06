@@ -61,13 +61,15 @@ void ExpandedEnsembleElement::apply(Step step, bool doLambdaStep, bool doLog)
 {
     if (doLambdaStep)
     {
+        real realFepState = 0; /* PLUMED */ 
         const int newFepState =
                 expandedEnsembleUpdateLambdaState(fplog_,
                                                   inputrec_,
                                                   energyData_->enerdata(),
                                                   freeEnergyPerturbationData_->currentFEPState(),
                                                   dfhist_.get(),
-                                                  step);
+                                                  step,
+                                                  &realFepState); /* PLUMED */
         // Set new state at next step
         fepStateSetting_->setNewState(newFepState, step + 1);
     }
@@ -98,7 +100,7 @@ void ExpandedEnsembleElement::elementSetup()
 
 void ExpandedEnsembleElement::scheduleTask(Step step, Time /*unused*/, const RegisterRunFunction& registerRunFunction)
 {
-    const bool isFirstStep  = (step == initialStep_);
+    const bool isFirstStep  = (step == initialStep_ && !restoredFromCheckpoint_);
     const bool doLambdaStep = (do_per_step(step, frequency_) && !isFirstStep);
     const bool doLog        = (isMasterRank_ && step == nextLogWritingStep_ && (fplog_ != nullptr));
 
