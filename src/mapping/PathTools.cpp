@@ -191,9 +191,9 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
     for(unsigned i=1; i<frames.size(); ++i) {
       double len = frames[i]->calc( frames[i-1]->getReferencePositions(), fake_pbc, vals_ptr, frames[i-1]->getReferenceArguments(), mypack, false );
       printf("FINAL DISTANCE BETWEEN FRAME %u AND %u IS %f \n",i-1,i,len );
-      mean+=len;
+      mean+=len*len;
     }
-    printf("SUGGESTED LAMBDA PARAMETER IS THUS %f \n",2.3/mean/static_cast<double>( frames.size()-1 ) );
+    printf("SUGGESTED LAMBDA PARAMETER IS THUS %f \n",2.3/(mean/static_cast<double>( frames.size()-1 )) );
 
     // Delete all the frames
     OFile ofile; ofile.open(ofilename);
