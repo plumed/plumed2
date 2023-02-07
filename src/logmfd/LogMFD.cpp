@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Copyright (c) 2022
+Copyright (c) 2019
 National Institute of Advanced Industrial Science and Technology (AIST), Japan.
 This file contains module for LogMFD method proposed by Tetsuya Morishita(AIST).
 
