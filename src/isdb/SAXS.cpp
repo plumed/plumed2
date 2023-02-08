@@ -345,7 +345,7 @@ SAXS::SAXS(const ActionOptions&ao):
   if(martini) log.printf("  using Martini structure factors\n");
   onebead=false;
   parseFlag("ONEBEAD",onebead);
-  if(martini) log.printf("  using Single Bead structure factors\n");
+  if(onebead) log.printf("  using Single Bead structure factors\n");
 
   if(martini&&atomistic) error("You cannot use MARTINI and ATOMISTIC at the same time");
   if(martini&&onebead) error("You cannot use MARTINI and ONEBEAD at the same time");
