@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017-2022 The plumed team
+   Copyright (c) 2017-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -125,18 +125,18 @@ Calculates SANS intensity.
 
 SANS intensities are calculated for a set of scattering vectors using QVALUE keywords that are numbered starting
 from 1. Form factors are automatically assigned to atoms using the ATOMISTIC flag by reading a PDB file or, alternatively,
-a ONEBEAD implementation is available, but it is necessary use the MOLINFO instruction before the initialization of 
-SANS directive. Regarding ONEBEAD, it is possible to take into account the solvation layer contribution to the 
-SANS intensity by adding a correction term just for the solvent accessible residues: the form factor of amino 
-acids that have a SASA (computed via LCPO algorithm) larger than a user-defined threshold are corrected according 
-to a user-defined term. SASA stride calculation can be modified using SOLVATION_STRIDE, that by default is set to 
-100 steps, while the surface cut-off can be modified with SASA_CUTOFF. In ONEBEAD implementation the deuteration of 
-the solvent-exposed residues is chosen with a probability equal to the deuterium concentration in the buffer. 
-The deuterated residues are updated with a stride equal to SOLVATION_STRIDE. The fraction of deuterated water 
+a ONEBEAD implementation is available, but it is necessary use the MOLINFO instruction before the initialization of
+SANS directive. Regarding ONEBEAD, it is possible to take into account the solvation layer contribution to the
+SANS intensity by adding a correction term just for the solvent accessible residues: the form factor of amino
+acids that have a SASA (computed via LCPO algorithm) larger than a user-defined threshold are corrected according
+to a user-defined term. SASA stride calculation can be modified using SOLVATION_STRIDE, that by default is set to
+100 steps, while the surface cut-off can be modified with SASA_CUTOFF. In ONEBEAD implementation the deuteration of
+the solvent-exposed residues is chosen with a probability equal to the deuterium concentration in the buffer.
+The deuterated residues are updated with a stride equal to SOLVATION_STRIDE. The fraction of deuterated water
 can be set with DEUTER_CONC, the default value is 0.
 
-PLEASE NOTE: at the moment, we DO NOT explicitly take into account deuterated residues in the ATOMISTIC representation, 
-but we correct the solvent contribution via the DEUTER_CONC keyword. 
+PLEASE NOTE: at the moment, we DO NOT explicitly take into account deuterated residues in the ATOMISTIC representation,
+but we correct the solvent contribution via the DEUTER_CONC keyword.
 
 Experimental reference intensities can be added using the EXPINT keywords.
 By default SANS is calculated using Debye on CPU, by adding the GPU flag it is possible to solve the equation on a
@@ -220,7 +220,7 @@ private:
   std::vector<std::vector<double> > FF_value_mixed_H;
   std::vector<std::vector<double> > FF_value_vacuum_D;
   std::vector<std::vector<double> > FF_value_solv_D;
-  std::vector<std::vector<double> > FF_value_mixed_D;    
+  std::vector<std::vector<double> > FF_value_mixed_D;
 
   std::vector<std::vector<double> > LCPOparam;
   std::vector<unsigned> residue_atom;
@@ -239,7 +239,7 @@ private:
   std::vector<double> Iq0_mix_H;
   std::vector<double> Iq0_vac_D;
   std::vector<double> Iq0_solv_D;
-  std::vector<double> Iq0_mix_D;   
+  std::vector<double> Iq0_mix_D;
 
   void calculate_gpu(std::vector<Vector> &pos, std::vector<Vector> &deriv);
   void calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv);
@@ -253,7 +253,7 @@ private:
   void sasa_calculate(std::vector<bool> &solv_res);
   //SANS:
   void getOnebeadparam_sansH(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_H, std::vector<std::vector<long double> > &parameter_mix_H, std::vector<std::vector<long double> > &parameter_solv_H);
-  void getOnebeadparam_sansD(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_D, std::vector<std::vector<long double> > &parameter_mix_D, std::vector<std::vector<long double> > &parameter_solv_D);  
+  void getOnebeadparam_sansD(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_D, std::vector<std::vector<long double> > &parameter_mix_D, std::vector<std::vector<long double> > &parameter_solv_D);
   double calculateASFsans(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double deuter_conc);
 
 public:
@@ -408,7 +408,7 @@ SAXS::SAXS(const ActionOptions&ao):
       Iq0_mix_H.resize(nres);
       Iq0_vac_D.resize(nres);
       Iq0_solv_D.resize(nres);
-      Iq0_mix_D.resize(nres); 
+      Iq0_mix_D.resize(nres);
     }
     atoi.resize(nres);
   } else {
@@ -494,7 +494,7 @@ SAXS::SAXS(const ActionOptions&ao):
       std::vector<std::vector<long double> > parameter_mix_D(NONEBEAD);
       std::vector<std::vector<long double> > parameter_solv_D(NONEBEAD);
       getOnebeadparam_sansH(atoms, parameter_vac_H, parameter_mix_H, parameter_solv_H);
-      getOnebeadparam_sansD(atoms, parameter_vac_D, parameter_mix_D, parameter_solv_D);      
+      getOnebeadparam_sansD(atoms, parameter_vac_D, parameter_mix_D, parameter_solv_D);
       for(unsigned i=0; i<NONEBEAD; ++i) {
         for(unsigned k=0; k<numq; ++k) {
           for(unsigned j=0; j<parameter_vac_H[i].size(); ++j) { //same number of parameters
@@ -502,8 +502,8 @@ SAXS::SAXS(const ActionOptions&ao):
             FF_tmp_vac_D[k][i]+= parameter_vac_D[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
           }
           for(unsigned j=0; j<parameter_mix_H[i].size(); ++j) {
-            FF_tmp_mix_H[k][i]+= parameter_mix_H[i][j]*std::pow(static_cast<long double>(q_list[k]),j);          
-            FF_tmp_mix_D[k][i]+= parameter_mix_D[i][j]*std::pow(static_cast<long double>(q_list[k]),j);          
+            FF_tmp_mix_H[k][i]+= parameter_mix_H[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
+            FF_tmp_mix_D[k][i]+= parameter_mix_D[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
           }
           for(unsigned j=0; j<parameter_solv_H[i].size(); ++j) {
             FF_tmp_solv_H[k][i]+= parameter_solv_H[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
@@ -517,7 +517,7 @@ SAXS::SAXS(const ActionOptions&ao):
         Iq0_solv_H[i]=parameter_solv_H[atoi[i]][0];
         Iq0_vac_D[i]=parameter_vac_D[atoi[i]][0];
         Iq0_mix_D[i]=parameter_mix_D[atoi[i]][0];
-        Iq0_solv_D[i]=parameter_solv_D[atoi[i]][0];      
+        Iq0_solv_D[i]=parameter_solv_D[atoi[i]][0];
       }
     }
   } else if(martini) {
@@ -566,10 +566,10 @@ SAXS::SAXS(const ActionOptions&ao):
       } else {
         FF_value_vacuum_H.resize(n_atom_types,std::vector<double>(numq));
         FF_value_solv_H.resize(n_atom_types,std::vector<double>(numq));
-        FF_value_mixed_H.resize(n_atom_types,std::vector<double>(numq));      
+        FF_value_mixed_H.resize(n_atom_types,std::vector<double>(numq));
         FF_value_vacuum_D.resize(n_atom_types,std::vector<double>(numq));
         FF_value_solv_D.resize(n_atom_types,std::vector<double>(numq));
-        FF_value_mixed_D.resize(n_atom_types,std::vector<double>(numq));        
+        FF_value_mixed_D.resize(n_atom_types,std::vector<double>(numq));
       }
     } else {
       FF_value.resize(size,std::vector<double>(numq));
@@ -594,7 +594,7 @@ SAXS::SAXS(const ActionOptions&ao):
             FF_value_mixed_D[i][k] = static_cast<double>(FF_tmp_mix_D[k][i]);
             FF_value_solv_D[i][k] = static_cast<double>(FF_tmp_solv_D[k][i]);
           }
-        }  
+        }
       }
     }
   } else {
@@ -609,7 +609,7 @@ SAXS::SAXS(const ActionOptions&ao):
       } else { //SANS
         FF_value_vacuum_H.resize(n_atom_types,std::vector<double>(numq));
         FF_value_solv_H.resize(n_atom_types,std::vector<double>(numq));
-        FF_value_mixed_H.resize(n_atom_types,std::vector<double>(numq));    
+        FF_value_mixed_H.resize(n_atom_types,std::vector<double>(numq));
         FF_value_vacuum_D.resize(n_atom_types,std::vector<double>(numq));
         FF_value_solv_D.resize(n_atom_types,std::vector<double>(numq));
         FF_value_mixed_D.resize(n_atom_types,std::vector<double>(numq));
@@ -633,12 +633,12 @@ SAXS::SAXS(const ActionOptions&ao):
           for(unsigned i=0; i<n_atom_types; ++i) {
             FF_value_vacuum_H[i][k] = static_cast<double>(FF_tmp_vac_H[k][i]);
             FF_value_mixed_H[i][k] = static_cast<double>(FF_tmp_mix_H[k][i]);
-            FF_value_solv_H[i][k] = static_cast<double>(FF_tmp_solv_H[k][i]);    
+            FF_value_solv_H[i][k] = static_cast<double>(FF_tmp_solv_H[k][i]);
             FF_value_vacuum_D[i][k] = static_cast<double>(FF_tmp_vac_D[k][i]);
             FF_value_mixed_D[i][k] = static_cast<double>(FF_tmp_mix_D[k][i]);
-            FF_value_solv_D[i][k] = static_cast<double>(FF_tmp_solv_D[k][i]);              
+            FF_value_solv_D[i][k] = static_cast<double>(FF_tmp_solv_D[k][i]);
           }
-        }       
+        }
       }
     }
   }
@@ -1038,7 +1038,7 @@ void SAXS::calculate()
         Iq0=0.;
         for(unsigned i=0; i<nres; ++i) {
           if(solv_res[i] == 1 ) {
-            if(rand()/RAND_MAX<deuter_conc){
+            if(rand()/RAND_MAX<deuter_conc) {
               Iq0 += std::sqrt(std::fabs(Iq0_vac_D[i] + rho_sans_corr*rho_sans_corr*Iq0_solv_D[i] - rho_sans_corr*Iq0_mix_D[i]));
               deut_res[i] = 1;
             } else {
@@ -1054,8 +1054,8 @@ void SAXS::calculate()
             if(!gpu) {
               if(solv_res[i] == 0) { // hydrogen
                 FF_value[i][k] = std::sqrt(std::fabs(FF_value_vacuum_H[atoi[i]][k] + rho_sans*rho_sans*FF_value_solv_H[atoi[i]][k] - rho_sans*FF_value_mixed_H[atoi[i]][k]))/Iq0;
-              } else { 
-                if(deut_res[i] == 0){
+              } else {
+                if(deut_res[i] == 0) {
                   FF_value[i][k] = std::sqrt(std::fabs(FF_value_vacuum_H[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_H[atoi[i]][k] - rho_sans_corr*FF_value_mixed_H[atoi[i]][k]))/Iq0;
                 } else {
                   FF_value[i][k] = std::sqrt(std::fabs(FF_value_vacuum_D[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_D[atoi[i]][k] - rho_sans_corr*FF_value_mixed_D[atoi[i]][k]))/Iq0;
@@ -1065,10 +1065,10 @@ void SAXS::calculate()
               if(solv_res[i] == 0) { // hydrogen
                 FFf_value[k][i] = static_cast<float>(std::sqrt(std::fabs(FF_value_vacuum_H[atoi[i]][k] + rho_sans*rho_sans*FF_value_solv_H[atoi[i]][k] - rho_sans*FF_value_mixed_H[atoi[i]][k]))/Iq0);
               } else {
-                if(deut_res[i] == 0){
+                if(deut_res[i] == 0) {
                   FFf_value[k][i] = static_cast<float>(std::sqrt(std::fabs(FF_value_vacuum_H[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_H[atoi[i]][k] - rho_sans_corr*FF_value_mixed_H[atoi[i]][k]))/Iq0);
                 } else {
-                  FFf_value[k][i] = static_cast<float>(std::sqrt(std::fabs(FF_value_vacuum_D[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_D[atoi[i]][k] - rho_sans_corr*FF_value_mixed_D[atoi[i]][k]))/Iq0);                  
+                  FFf_value[k][i] = static_cast<float>(std::sqrt(std::fabs(FF_value_vacuum_D[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_D[atoi[i]][k] - rho_sans_corr*FF_value_mixed_D[atoi[i]][k]))/Iq0);
                 }
               }
             }
@@ -1082,7 +1082,7 @@ void SAXS::calculate()
             }
           }
         }
-      }      
+      }
     }
     // not ONEBEAD
   } else {
@@ -3693,7 +3693,7 @@ void SAXS::getOnebeadparam_sansH(const std::vector<AtomNumber> &atoms, std::vect
   parameter_vac_H[HIS].push_back(-5.674444390934355);
   parameter_vac_H[HIS].push_back(33.4059567406171);
   parameter_vac_H[HIS].push_back(-11.60826210271092);
-  parameter_vac_H[HIS].push_back(-1.7359607560773076);  
+  parameter_vac_H[HIS].push_back(-1.7359607560773076);
 }
 
 void SAXS::getOnebeadparam_sansD(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_D, std::vector<std::vector<long double> > &parameter_mix_D, std::vector<std::vector<long double> > &parameter_solv_D)
@@ -4200,7 +4200,7 @@ void SAXS::getOnebeadparam_sansD(const std::vector<AtomNumber> &atoms, std::vect
   parameter_vac_D[HIS].push_back(-107.85375269366395);
   parameter_vac_D[HIS].push_back(685.7025818759361);
   parameter_vac_D[HIS].push_back(-538.2592043545858);
-  parameter_vac_D[HIS].push_back(132.17357375729733);  
+  parameter_vac_D[HIS].push_back(132.17357375729733);
 }
 
 double SAXS::calculateASF(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double rho)
