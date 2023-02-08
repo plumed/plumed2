@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017-2023 The plumed team
+   Copyright (c) 2017-2022 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,7 +24,7 @@
  Arrayfire implementation by Alexander Jussupow and CC
  Extension for the middleman algorithm (now removed) by Max Muehlbauer
  Refactoring for hySAXS Martini beads structure factor for Nucleic Acids by Cristina Paissoni
- Refactoring for hySAXS OneBead structure factor with solvent conrrection by Federico Ballabio and Riccardo Capelli
+ Refactoring for hySAXS OneBead structure factor with solvent correction by Federico Ballabio and Riccardo Capelli
 */
 
 #include "MetainferenceBase.h"
@@ -124,10 +124,19 @@ PRINT ARG=(SAXS\.q-.*),(SAXS\.exp-.*) FILE=colvar STRIDE=1
 Calculates SANS intensity.
 
 SANS intensities are calculated for a set of scattering vectors using QVALUE keywords that are numbered starting
-from 1. Form factors can be either assigned using a polynomial expansion to any order by using the PARAMETERS
-keywords or automatically assigned to atoms using the ATOMISTIC flag by reading a PDB file.
+from 1. Form factors are automatically assigned to atoms using the ATOMISTIC flag by reading a PDB file or, alternatively,
+a ONEBEAD implementation is available, but it is necessary use the MOLINFO instruction before the initialization of 
+SANS directive. Regarding ONEBEAD, it is possible to take into account the solvation layer contribution to the 
+SANS intensity by adding a correction term just for the solvent accessible residues: the form factor of amino 
+acids that have a SASA (computed via LCPO algorithm) larger than a user-defined threshold are corrected according 
+to a user-defined term. SASA stride calculation can be modified using SOLVATION_STRIDE, that by default is set to 
+100 steps, while the surface cut-off can be modified with SASA_CUTOFF. In ONEBEAD implementation the deuteration of 
+the solvent-exposed residues is chosen with a probability equal to the deuterium concentration in the buffer. 
+The deuterated residues are updated with a stride equal to SOLVATION_STRIDE. The fraction of deuterated water 
+can be set with DEUTER_CONC, the default value is 0.
 
-The fraction of deuterated water can be set with DEUTER_CONC, the default value is 0.
+PLEASE NOTE: at the moment, we DO NOT explicitly take into account deuterated residues in the ATOMISTIC representation, 
+but we correct the solvent contribution via the DEUTER_CONC keyword. 
 
 Experimental reference intensities can be added using the EXPINT keywords.
 By default SANS is calculated using Debye on CPU, by adding the GPU flag it is possible to solve the equation on a
@@ -201,10 +210,17 @@ private:
   std::vector<double>   q_list;
   std::vector<double>   FF_rank;
   std::vector<std::vector<double> > FF_value_vacuum;
-  std::vector<std::vector<double> > FF_value_water;
+  std::vector<std::vector<double> > FF_value_solv;
   std::vector<std::vector<double> > FF_value_mixed;
   std::vector<std::vector<double> > FF_value;
   std::vector<std::vector<float> >  FFf_value;
+  //SANS:
+  std::vector<std::vector<double> > FF_value_vacuum_H;
+  std::vector<std::vector<double> > FF_value_solv_H;
+  std::vector<std::vector<double> > FF_value_mixed_H;
+  std::vector<std::vector<double> > FF_value_vacuum_D;
+  std::vector<std::vector<double> > FF_value_solv_D;
+  std::vector<std::vector<double> > FF_value_mixed_D;    
 
   std::vector<std::vector<double> > LCPOparam;
   std::vector<unsigned> residue_atom;
@@ -213,9 +229,17 @@ private:
   double deuter_conc;
   unsigned solv_stride;
   std::vector<double> Iq0_vac;
-  std::vector<double> Iq0_wat;
+  std::vector<double> Iq0_solv;
   std::vector<double> Iq0_mix;
   double Iq0;
+
+  //SANS:
+  std::vector<double> Iq0_vac_H;
+  std::vector<double> Iq0_solv_H;
+  std::vector<double> Iq0_mix_H;
+  std::vector<double> Iq0_vac_D;
+  std::vector<double> Iq0_solv_D;
+  std::vector<double> Iq0_mix_D;   
 
   void calculate_gpu(std::vector<Vector> &pos, std::vector<Vector> &deriv);
   void calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv);
@@ -223,11 +247,14 @@ private:
   void getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv);
   void getOnebeadMapping(const std::vector<AtomNumber> &atoms);
   double calculateASF(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double rho);
-  double calculateASFsans(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double deuter_conc);
   std::map<std::string, std::vector<double> > setupLCPOparam();
   void readLCPOparam(const std::vector<std::vector<std::string> > &AtomResidueName, unsigned natoms);
   void calcNlist(std::vector<std::vector<int> > &Nlist);
   void sasa_calculate(std::vector<bool> &solv_res);
+  //SANS:
+  void getOnebeadparam_sansH(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_H, std::vector<std::vector<long double> > &parameter_mix_H, std::vector<std::vector<long double> > &parameter_solv_H);
+  void getOnebeadparam_sansD(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_D, std::vector<std::vector<long double> > &parameter_mix_D, std::vector<std::vector<long double> > &parameter_solv_D);  
+  double calculateASFsans(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double deuter_conc);
 
 public:
   static void registerKeywords( Keywords& keys );
@@ -253,7 +280,7 @@ void SAXS::registerKeywords(Keywords& keys) {
   keys.add("numbered","QVALUE","Selected scattering lengths in Angstrom are given as QVALUE1, QVALUE2, ... .");
   keys.add("numbered","PARAMETERS","Used parameter Keywords like PARAMETERS1, PARAMETERS2. These are used to calculate the structure factor for the \\f$i\\f$th atom/bead.");
   keys.add("compulsory","DEUTER_CONC","0.","Fraction of deuterated solvent");
-  keys.add("compulsory","SOLVDENS","0.334","Density of the water to be used for the correction of atomistic structure factors.");
+  keys.add("compulsory","SOLVDENS","0.334","Density of the solvent to be used for the correction of atomistic structure factors.");
   keys.add("compulsory","SOLVATION_CORRECTION","0.0","Hydration layer electron density correction (ONEBEAD only).");
   keys.add("compulsory","SASA_CUTOFF","1.0","SASA value to consider a residue as exposed to the solvent (ONEBEAD only).");
   keys.add("numbered","EXPINT","Add an experimental value for each q value.");
@@ -323,7 +350,8 @@ SAXS::SAXS(const ActionOptions&ao):
   if(martini&&atomistic) error("You cannot use MARTINI and ATOMISTIC at the same time");
   if(martini&&onebead) error("You cannot use MARTINI and ONEBEAD at the same time");
   if(onebead&&atomistic) error("You cannot use ONEBEAD and ATOMISTIC at the same time");
-  if((martini||onebead)&&(!saxs)) error("MARTINI or ONEBEAD cannot be used with SANS");
+  if((martini)&&(!saxs)) error("MARTINI cannot be used with SANS");
+  if((!atomistic)&&(!martini)&&(!onebead)&&(!saxs)) error("External PARAMETERS cannot be used with SANS");
 
   unsigned ntarget=0;
   for(unsigned i=0;; ++i) {
@@ -344,6 +372,7 @@ SAXS::SAXS(const ActionOptions&ao):
 
   deuter_conc = 0.;
   parse("DEUTER_CONC", deuter_conc);
+  if(deuter_conc < 0. || deuter_conc > 1.) error("DEUTER_CONC must be in 0-1 range");
   log.printf("  Solvent deuterium fraction of %lf\n", deuter_conc);
 
   rho = 0.334;
@@ -352,6 +381,7 @@ SAXS::SAXS(const ActionOptions&ao):
 
   solv_stride = 100;
   parse("SOLVATION_STRIDE", solv_stride);
+  if(solv_stride < 1.) error("SOLVATION_STRIDE must be greater than 0.");
   if(onebead) log.printf("  SASA calculated every %u steps\n", solv_stride);
 
   double correction = 0.00;
@@ -368,9 +398,18 @@ SAXS::SAXS(const ActionOptions&ao):
   if(onebead) {
     LCPOparam.resize(size);
     getOnebeadMapping(atoms);
-    Iq0_vac.resize(nres);
-    Iq0_wat.resize(nres);
-    Iq0_mix.resize(nres);
+    if(saxs) {
+      Iq0_vac.resize(nres);
+      Iq0_solv.resize(nres);
+      Iq0_mix.resize(nres);
+    } else { //SANS
+      Iq0_vac_H.resize(nres);
+      Iq0_solv_H.resize(nres);
+      Iq0_mix_H.resize(nres);
+      Iq0_vac_D.resize(nres);
+      Iq0_solv_D.resize(nres);
+      Iq0_mix_D.resize(nres); 
+    }
     atoi.resize(nres);
   } else {
     atoi.resize(size);
@@ -380,8 +419,18 @@ SAXS::SAXS(const ActionOptions&ao):
   std::vector<std::vector<long double> > FF_tmp;
   std::vector<std::vector<long double> > FF_tmp_vac;
   std::vector<std::vector<long double> > FF_tmp_mix;
-  std::vector<std::vector<long double> > FF_tmp_wat;
+  std::vector<std::vector<long double> > FF_tmp_solv;
   std::vector<std::vector<long double> > parameter;
+  //SANS
+  std::vector<std::vector<long double> > FF_tmp_vac_H;
+  std::vector<std::vector<long double> > FF_tmp_mix_H;
+  std::vector<std::vector<long double> > FF_tmp_solv_H;
+  std::vector<std::vector<long double> > FF_tmp_vac_D;
+  std::vector<std::vector<long double> > FF_tmp_mix_D;
+  std::vector<std::vector<long double> > FF_tmp_solv_D;
+  std::vector<std::vector<long double> > parameter_H;
+  std::vector<std::vector<long double> > parameter_D;
+
   if(!atomistic&&!martini&&!onebead) {
     //read in parameter std::vector
     parameter.resize(size);
@@ -403,31 +452,73 @@ SAXS::SAXS(const ActionOptions&ao):
     for(unsigned i=0; i<size; ++i) Iq0+=parameter[i][0];
     Iq0 *= Iq0;
   } else if(onebead) {
-    //read in parameter std::vector
-    FF_tmp_vac.resize(numq,std::vector<long double>(NONEBEAD));
-    FF_tmp_mix.resize(numq,std::vector<long double>(NONEBEAD));
-    FF_tmp_wat.resize(numq,std::vector<long double>(NONEBEAD));
-    std::vector<std::vector<long double> > parameter_vac(NONEBEAD);
-    std::vector<std::vector<long double> > parameter_mix(NONEBEAD);
-    std::vector<std::vector<long double> > parameter_solv(NONEBEAD);
-    getOnebeadparam(atoms, parameter_vac, parameter_mix, parameter_solv);
-    for(unsigned i=0; i<NONEBEAD; ++i) {
-      for(unsigned k=0; k<numq; ++k) {
-        for(unsigned j=0; j<parameter_vac[i].size(); ++j) {
-          FF_tmp_vac[k][i]+= parameter_vac[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
-        }
-        for(unsigned j=0; j<parameter_mix[i].size(); ++j) {
-          FF_tmp_mix[k][i]+= parameter_mix[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
-        }
-        for(unsigned j=0; j<parameter_solv[i].size(); ++j) {
-          FF_tmp_wat[k][i]+= parameter_solv[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
+    if(saxs) {
+      //read in parameter std::vector
+      FF_tmp_vac.resize(numq,std::vector<long double>(NONEBEAD));
+      FF_tmp_mix.resize(numq,std::vector<long double>(NONEBEAD));
+      FF_tmp_solv.resize(numq,std::vector<long double>(NONEBEAD));
+      std::vector<std::vector<long double> > parameter_vac(NONEBEAD);
+      std::vector<std::vector<long double> > parameter_mix(NONEBEAD);
+      std::vector<std::vector<long double> > parameter_solv(NONEBEAD);
+      getOnebeadparam(atoms, parameter_vac, parameter_mix, parameter_solv);
+      for(unsigned i=0; i<NONEBEAD; ++i) {
+        for(unsigned k=0; k<numq; ++k) {
+          for(unsigned j=0; j<parameter_vac[i].size(); ++j) {
+            FF_tmp_vac[k][i]+= parameter_vac[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
+          }
+          for(unsigned j=0; j<parameter_mix[i].size(); ++j) {
+            FF_tmp_mix[k][i]+= parameter_mix[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
+          }
+          for(unsigned j=0; j<parameter_solv[i].size(); ++j) {
+            FF_tmp_solv[k][i]+= parameter_solv[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
+          }
         }
       }
-    }
-    for(unsigned i=0; i<nres; ++i) {
-      Iq0_vac[i]=parameter_vac[atoi[i]][0];
-      Iq0_mix[i]=parameter_mix[atoi[i]][0];
-      Iq0_wat[i]=parameter_solv[atoi[i]][0];
+      for(unsigned i=0; i<nres; ++i) {
+        Iq0_vac[i]=parameter_vac[atoi[i]][0];
+        Iq0_mix[i]=parameter_mix[atoi[i]][0];
+        Iq0_solv[i]=parameter_solv[atoi[i]][0];
+      }
+    } else { //SANS
+      //read in parameter std::vector
+      FF_tmp_vac_H.resize(numq,std::vector<long double>(NONEBEAD));
+      FF_tmp_mix_H.resize(numq,std::vector<long double>(NONEBEAD));
+      FF_tmp_solv_H.resize(numq,std::vector<long double>(NONEBEAD));
+      FF_tmp_vac_D.resize(numq,std::vector<long double>(NONEBEAD));
+      FF_tmp_mix_D.resize(numq,std::vector<long double>(NONEBEAD));
+      FF_tmp_solv_D.resize(numq,std::vector<long double>(NONEBEAD));
+      std::vector<std::vector<long double> > parameter_vac_H(NONEBEAD);
+      std::vector<std::vector<long double> > parameter_mix_H(NONEBEAD);
+      std::vector<std::vector<long double> > parameter_solv_H(NONEBEAD);
+      std::vector<std::vector<long double> > parameter_vac_D(NONEBEAD);
+      std::vector<std::vector<long double> > parameter_mix_D(NONEBEAD);
+      std::vector<std::vector<long double> > parameter_solv_D(NONEBEAD);
+      getOnebeadparam_sansH(atoms, parameter_vac_H, parameter_mix_H, parameter_solv_H);
+      getOnebeadparam_sansD(atoms, parameter_vac_D, parameter_mix_D, parameter_solv_D);      
+      for(unsigned i=0; i<NONEBEAD; ++i) {
+        for(unsigned k=0; k<numq; ++k) {
+          for(unsigned j=0; j<parameter_vac_H[i].size(); ++j) { //same number of parameters
+            FF_tmp_vac_H[k][i]+= parameter_vac_H[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
+            FF_tmp_vac_D[k][i]+= parameter_vac_D[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
+          }
+          for(unsigned j=0; j<parameter_mix_H[i].size(); ++j) {
+            FF_tmp_mix_H[k][i]+= parameter_mix_H[i][j]*std::pow(static_cast<long double>(q_list[k]),j);          
+            FF_tmp_mix_D[k][i]+= parameter_mix_D[i][j]*std::pow(static_cast<long double>(q_list[k]),j);          
+          }
+          for(unsigned j=0; j<parameter_solv_H[i].size(); ++j) {
+            FF_tmp_solv_H[k][i]+= parameter_solv_H[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
+            FF_tmp_solv_D[k][i]+= parameter_solv_D[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
+          }
+        }
+      }
+      for(unsigned i=0; i<nres; ++i) {
+        Iq0_vac_H[i]=parameter_vac_H[atoi[i]][0];
+        Iq0_mix_H[i]=parameter_mix_H[atoi[i]][0];
+        Iq0_solv_H[i]=parameter_solv_H[atoi[i]][0];
+        Iq0_vac_D[i]=parameter_vac_D[atoi[i]][0];
+        Iq0_mix_D[i]=parameter_mix_D[atoi[i]][0];
+        Iq0_solv_D[i]=parameter_solv_D[atoi[i]][0];      
+      }
     }
   } else if(martini) {
     //read in parameter std::vector
@@ -468,9 +559,18 @@ SAXS::SAXS(const ActionOptions&ao):
     if(onebead) {
       FF_value.resize(nres,std::vector<double>(numq));
       n_atom_types=NONEBEAD;
-      FF_value_vacuum.resize(n_atom_types,std::vector<double>(numq));
-      FF_value_water.resize(n_atom_types,std::vector<double>(numq));
-      FF_value_mixed.resize(n_atom_types,std::vector<double>(numq));
+      if(saxs) {
+        FF_value_vacuum.resize(n_atom_types,std::vector<double>(numq));
+        FF_value_solv.resize(n_atom_types,std::vector<double>(numq));
+        FF_value_mixed.resize(n_atom_types,std::vector<double>(numq));
+      } else {
+        FF_value_vacuum_H.resize(n_atom_types,std::vector<double>(numq));
+        FF_value_solv_H.resize(n_atom_types,std::vector<double>(numq));
+        FF_value_mixed_H.resize(n_atom_types,std::vector<double>(numq));      
+        FF_value_vacuum_D.resize(n_atom_types,std::vector<double>(numq));
+        FF_value_solv_D.resize(n_atom_types,std::vector<double>(numq));
+        FF_value_mixed_D.resize(n_atom_types,std::vector<double>(numq));        
+      }
     } else {
       FF_value.resize(size,std::vector<double>(numq));
     }
@@ -479,11 +579,22 @@ SAXS::SAXS(const ActionOptions&ao):
         for(unsigned i=0; i<size; ++i) FF_value[i][k] = static_cast<double>(FF_tmp[k][atoi[i]])/(std::sqrt(Iq0));
         for(unsigned i=0; i<size; ++i) FF_rank[k] += FF_value[i][k]*FF_value[i][k];
       } else {
-        for(unsigned i=0; i<n_atom_types; ++i) {
-          FF_value_vacuum[i][k] = static_cast<double>(FF_tmp_vac[k][i]);
-          FF_value_mixed[i][k] = static_cast<double>(FF_tmp_mix[k][i]);
-          FF_value_water[i][k] = static_cast<double>(FF_tmp_wat[k][i]);
-        }
+        if(saxs) {
+          for(unsigned i=0; i<n_atom_types; ++i) {
+            FF_value_vacuum[i][k] = static_cast<double>(FF_tmp_vac[k][i]);
+            FF_value_mixed[i][k] = static_cast<double>(FF_tmp_mix[k][i]);
+            FF_value_solv[i][k] = static_cast<double>(FF_tmp_solv[k][i]);
+          }
+        } else { //SANS
+          for(unsigned i=0; i<n_atom_types; ++i) {
+            FF_value_vacuum_H[i][k] = static_cast<double>(FF_tmp_vac_H[k][i]);
+            FF_value_mixed_H[i][k] = static_cast<double>(FF_tmp_mix_H[k][i]);
+            FF_value_solv_H[i][k] = static_cast<double>(FF_tmp_solv_H[k][i]);
+            FF_value_vacuum_D[i][k] = static_cast<double>(FF_tmp_vac_D[k][i]);
+            FF_value_mixed_D[i][k] = static_cast<double>(FF_tmp_mix_D[k][i]);
+            FF_value_solv_D[i][k] = static_cast<double>(FF_tmp_solv_D[k][i]);
+          }
+        }  
       }
     }
   } else {
@@ -491,9 +602,18 @@ SAXS::SAXS(const ActionOptions&ao):
     if(onebead) {
       FFf_value.resize(numq,std::vector<float>(nres));
       n_atom_types=NONEBEAD;
-      FF_value_vacuum.resize(n_atom_types,std::vector<double>(numq));
-      FF_value_water.resize(n_atom_types,std::vector<double>(numq));
-      FF_value_mixed.resize(n_atom_types,std::vector<double>(numq));
+      if(saxs) {
+        FF_value_vacuum.resize(n_atom_types,std::vector<double>(numq));
+        FF_value_solv.resize(n_atom_types,std::vector<double>(numq));
+        FF_value_mixed.resize(n_atom_types,std::vector<double>(numq));
+      } else { //SANS
+        FF_value_vacuum_H.resize(n_atom_types,std::vector<double>(numq));
+        FF_value_solv_H.resize(n_atom_types,std::vector<double>(numq));
+        FF_value_mixed_H.resize(n_atom_types,std::vector<double>(numq));    
+        FF_value_vacuum_D.resize(n_atom_types,std::vector<double>(numq));
+        FF_value_solv_D.resize(n_atom_types,std::vector<double>(numq));
+        FF_value_mixed_D.resize(n_atom_types,std::vector<double>(numq));
+      }
     } else {
       FFf_value.resize(numq,std::vector<float>(size));
     }
@@ -503,11 +623,22 @@ SAXS::SAXS(const ActionOptions&ao):
           FFf_value[k][i] = static_cast<float>(FF_tmp[k][atoi[i]])/(std::sqrt(Iq0));
         }
       } else {
-        for(unsigned i=0; i<n_atom_types; ++i) {
-          FF_value_vacuum[i][k] = static_cast<double>(FF_tmp_vac[k][i]);
-          FF_value_mixed[i][k] = static_cast<double>(FF_tmp_mix[k][i]);
-          FF_value_water[i][k] = static_cast<double>(FF_tmp_wat[k][i]);
-        }
+        if(saxs) {
+          for(unsigned i=0; i<n_atom_types; ++i) {
+            FF_value_vacuum[i][k] = static_cast<double>(FF_tmp_vac[k][i]);
+            FF_value_mixed[i][k] = static_cast<double>(FF_tmp_mix[k][i]);
+            FF_value_solv[i][k] = static_cast<double>(FF_tmp_solv[k][i]);
+          }
+        } else { //SANS
+          for(unsigned i=0; i<n_atom_types; ++i) {
+            FF_value_vacuum_H[i][k] = static_cast<double>(FF_tmp_vac_H[k][i]);
+            FF_value_mixed_H[i][k] = static_cast<double>(FF_tmp_mix_H[k][i]);
+            FF_value_solv_H[i][k] = static_cast<double>(FF_tmp_solv_H[k][i]);    
+            FF_value_vacuum_D[i][k] = static_cast<double>(FF_tmp_vac_D[k][i]);
+            FF_value_mixed_D[i][k] = static_cast<double>(FF_tmp_mix_D[k][i]);
+            FF_value_solv_D[i][k] = static_cast<double>(FF_tmp_solv_D[k][i]);              
+          }
+        }       
       }
     }
   }
@@ -857,43 +988,101 @@ void SAXS::calculate()
     }
     // SASA
     std::vector<bool> solv_res(nres, 0);
-    if(getStep()%solv_stride == 0 || isFirstStep) {
-      isFirstStep = 0;
-      if(rho_corr!=rho) sasa_calculate(solv_res);
-      Iq0=0.;
-      for(unsigned i=0; i<nres; ++i) {
-        if(solv_res[i] == 1 ) {
-          Iq0 += std::sqrt((Iq0_vac[i]+(rho_corr*rho_corr)*Iq0_wat[i]-rho_corr*Iq0_mix[i]));
-        } else {
-          Iq0 += std::sqrt((Iq0_vac[i]+(rho*rho)*Iq0_wat[i]-rho*Iq0_mix[i]));
+    if(saxs) {
+      if(getStep()%solv_stride == 0 || isFirstStep) {
+        isFirstStep = 0;
+        if(rho_corr!=rho) sasa_calculate(solv_res);
+        Iq0=0.;
+        for(unsigned i=0; i<nres; ++i) {
+          if(solv_res[i] == 1 ) {
+            Iq0 += std::sqrt((Iq0_vac[i]+(rho_corr*rho_corr)*Iq0_solv[i]-rho_corr*Iq0_mix[i]));
+          } else {
+            Iq0 += std::sqrt((Iq0_vac[i]+(rho*rho)*Iq0_solv[i]-rho*Iq0_mix[i]));
+          }
+        }
+        // Form Factors
+        for(unsigned k=0; k<numq; ++k) {
+          for(unsigned i=0; i<nres; ++i) {
+            if(!gpu) {
+              if(solv_res[i] == 0) { // buried
+                FF_value[i][k] = std::sqrt(std::fabs(FF_value_vacuum[atoi[i]][k] + rho*rho*FF_value_solv[atoi[i]][k] - rho*FF_value_mixed[atoi[i]][k]))/Iq0;
+              } else { // surface
+                FF_value[i][k] = std::sqrt(std::fabs(FF_value_vacuum[atoi[i]][k] + rho_corr*rho_corr*FF_value_solv[atoi[i]][k] - rho_corr*FF_value_mixed[atoi[i]][k]))/Iq0;
+              }
+            } else {
+              if(solv_res[i] == 0) { // buried
+                FFf_value[k][i] = static_cast<float>(std::sqrt(std::fabs(FF_value_vacuum[atoi[i]][k] + rho*rho*FF_value_solv[atoi[i]][k] - rho*FF_value_mixed[atoi[i]][k]))/Iq0);
+              } else { // surface
+                FFf_value[k][i] = static_cast<float>(std::sqrt(std::fabs(FF_value_vacuum[atoi[i]][k] + rho_corr*rho_corr*FF_value_solv[atoi[i]][k] - rho_corr*FF_value_mixed[atoi[i]][k]))/Iq0);
+              }
+            }
+          }
+        }
+        if(!gpu) {
+          for(unsigned k=0; k<numq; ++k) {
+            FF_rank[k]=0.;
+            for(unsigned i=0; i<nres; ++i) {
+              FF_rank[k]+=FF_value[i][k]*FF_value[i][k];
+            }
+          }
         }
       }
-      // Form Factors
-      for(unsigned k=0; k<numq; ++k) {
+    } else { //SANS
+      std::vector<bool> deut_res(nres, 0);
+      double solv_sc_length = 0.1*(0.580 + 2.*((1. - deuter_conc) * (-0.374) + deuter_conc * 0.667)); // per water electron (10 electrons)
+      double rho_sans = rho * solv_sc_length;
+      double rho_sans_corr = rho_corr * solv_sc_length;
+      if(getStep()%solv_stride == 0 || isFirstStep) {
+        isFirstStep = 0;
+        if(deuter_conc!=0.||rho != rho_corr) sasa_calculate(solv_res);
+        Iq0=0.;
         for(unsigned i=0; i<nres; ++i) {
-          if(!gpu) {
-            if(solv_res[i] == 0) { // buried
-              FF_value[i][k] = std::sqrt(std::fabs(FF_value_vacuum[atoi[i]][k] + rho*rho*FF_value_water[atoi[i]][k] - rho*FF_value_mixed[atoi[i]][k]))/Iq0;
-            } else { // surface
-              FF_value[i][k] = std::sqrt(std::fabs(FF_value_vacuum[atoi[i]][k] + rho_corr*rho_corr*FF_value_water[atoi[i]][k] - rho_corr*FF_value_mixed[atoi[i]][k]))/Iq0;
+          if(solv_res[i] == 1 ) {
+            if(rand()/RAND_MAX<deuter_conc){
+              Iq0 += std::sqrt(std::fabs(Iq0_vac_D[i] + rho_sans_corr*rho_sans_corr*Iq0_solv_D[i] - rho_sans_corr*Iq0_mix_D[i]));
+              deut_res[i] = 1;
+            } else {
+              Iq0 += std::sqrt(std::fabs(Iq0_vac_H[i] + rho_sans_corr*rho_sans_corr*Iq0_solv_H[i] - rho_sans_corr*Iq0_mix_H[i]));
             }
           } else {
-            if(solv_res[i] == 0) { // buried
-              FFf_value[k][i] = static_cast<float>(std::sqrt(std::fabs(FF_value_vacuum[atoi[i]][k] + rho*rho*FF_value_water[atoi[i]][k] - rho*FF_value_mixed[atoi[i]][k]))/Iq0);
-            } else { // surface
-              FFf_value[k][i] = static_cast<float>(std::sqrt(std::fabs(FF_value_vacuum[atoi[i]][k] + rho_corr*rho_corr*FF_value_water[atoi[i]][k] - rho_corr*FF_value_mixed[atoi[i]][k]))/Iq0);
+            Iq0 += std::sqrt(std::fabs(Iq0_vac_H[i] + rho_sans*rho_sans*Iq0_solv_H[i] - rho_sans*Iq0_mix_H[i]));
+          }
+        }
+        // Form Factors
+        for(unsigned k=0; k<numq; ++k) {
+          for(unsigned i=0; i<nres; ++i) {
+            if(!gpu) {
+              if(solv_res[i] == 0) { // hydrogen
+                FF_value[i][k] = std::sqrt(std::fabs(FF_value_vacuum_H[atoi[i]][k] + rho_sans*rho_sans*FF_value_solv_H[atoi[i]][k] - rho_sans*FF_value_mixed_H[atoi[i]][k]))/Iq0;
+              } else { 
+                if(deut_res[i] == 0){
+                  FF_value[i][k] = std::sqrt(std::fabs(FF_value_vacuum_H[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_H[atoi[i]][k] - rho_sans_corr*FF_value_mixed_H[atoi[i]][k]))/Iq0;
+                } else {
+                  FF_value[i][k] = std::sqrt(std::fabs(FF_value_vacuum_D[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_D[atoi[i]][k] - rho_sans_corr*FF_value_mixed_D[atoi[i]][k]))/Iq0;
+                }
+              }
+            } else {
+              if(solv_res[i] == 0) { // hydrogen
+                FFf_value[k][i] = static_cast<float>(std::sqrt(std::fabs(FF_value_vacuum_H[atoi[i]][k] + rho_sans*rho_sans*FF_value_solv_H[atoi[i]][k] - rho_sans*FF_value_mixed_H[atoi[i]][k]))/Iq0);
+              } else {
+                if(deut_res[i] == 0){
+                  FFf_value[k][i] = static_cast<float>(std::sqrt(std::fabs(FF_value_vacuum_H[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_H[atoi[i]][k] - rho_sans_corr*FF_value_mixed_H[atoi[i]][k]))/Iq0);
+                } else {
+                  FFf_value[k][i] = static_cast<float>(std::sqrt(std::fabs(FF_value_vacuum_D[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_D[atoi[i]][k] - rho_sans_corr*FF_value_mixed_D[atoi[i]][k]))/Iq0);                  
+                }
+              }
             }
           }
         }
-      }
-      if(!gpu) {
-        for(unsigned k=0; k<numq; ++k) {
-          FF_rank[k]=0.;
-          for(unsigned i=0; i<nres; ++i) {
-            FF_rank[k]+=FF_value[i][k]*FF_value[i][k];
+        if(!gpu) {
+          for(unsigned k=0; k<numq; ++k) {
+            FF_rank[k]=0.;
+            for(unsigned i=0; i<nres; ++i) {
+              FF_rank[k]+=FF_value[i][k]*FF_value[i][k];
+            }
           }
         }
-      }
+      }      
     }
     // not ONEBEAD
   } else {
@@ -2999,6 +3188,1019 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std
   } else {
     error("MOLINFO DATA not found\n");
   }
+}
+
+void SAXS::getOnebeadparam_sansH(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_H, std::vector<std::vector<long double> > &parameter_mix_H, std::vector<std::vector<long double> > &parameter_solv_H)
+{
+  parameter_solv_H[TRP].push_back(60737.60249988011);
+  parameter_solv_H[TRP].push_back(-77.77344118516487);
+  parameter_solv_H[TRP].push_back(-205962.80436572764);
+  parameter_solv_H[TRP].push_back(-62014.18523271781);
+  parameter_solv_H[TRP].push_back(680712.0512548896);
+  parameter_solv_H[TRP].push_back(-681337.967312983);
+  parameter_solv_H[TRP].push_back(211474.00338118695);
+
+  parameter_solv_H[TYR].push_back(46250.803599880084);
+  parameter_solv_H[TYR].push_back(-45.827646837514614);
+  parameter_solv_H[TYR].push_back(-143872.94597686914);
+  parameter_solv_H[TYR].push_back(-39049.51580628132);
+  parameter_solv_H[TYR].push_back(441321.31246635393);
+  parameter_solv_H[TYR].push_back(-434477.6826175059);
+  parameter_solv_H[TYR].push_back(133179.21673104732);
+
+  parameter_solv_H[PHE].push_back(42407.164900118914);
+  parameter_solv_H[PHE].push_back(-159.20054549009086);
+  parameter_solv_H[PHE].push_back(-123847.83591352346);
+  parameter_solv_H[PHE].push_back(-41797.78884558073);
+  parameter_solv_H[PHE].push_back(380283.87543872406);
+  parameter_solv_H[PHE].push_back(-361432.81356389285);
+  parameter_solv_H[PHE].push_back(107750.69385054041);
+
+  parameter_solv_H[HIP].push_back(24473.473600119047);
+  parameter_solv_H[HIP].push_back(-111.6412807124612);
+  parameter_solv_H[HIP].push_back(-65826.17293437096);
+  parameter_solv_H[HIP].push_back(-23305.902022201855);
+  parameter_solv_H[HIP].push_back(194795.09953510275);
+  parameter_solv_H[HIP].push_back(-180454.47859494278);
+  parameter_solv_H[HIP].push_back(52699.36922660704);
+
+  parameter_solv_H[ARG].push_back(34106.70239988039);
+  parameter_solv_H[ARG].push_back(152.74468231268114);
+  parameter_solv_H[ARG].push_back(-117086.46040369231);
+  parameter_solv_H[ARG].push_back(-19664.37512726012);
+  parameter_solv_H[ARG].push_back(364454.3721646173);
+  parameter_solv_H[ARG].push_back(-382076.05102190404);
+  parameter_solv_H[ARG].push_back(122775.83306003918);
+
+  parameter_solv_H[LYS].push_back(32292.09000011877);
+  parameter_solv_H[LYS].push_back(-111.97888350941923);
+  parameter_solv_H[LYS].push_back(-91953.05212591762);
+  parameter_solv_H[LYS].push_back(-30691.03615444628);
+  parameter_solv_H[LYS].push_back(282092.82233263896);
+  parameter_solv_H[LYS].push_back(-269503.6095978623);
+  parameter_solv_H[LYS].push_back(80777.92760273012);
+
+  parameter_solv_H[CYS].push_back(11352.902500119093);
+  parameter_solv_H[CYS].push_back(-45.52255488723637);
+  parameter_solv_H[CYS].push_back(-20925.086525675117);
+  parameter_solv_H[CYS].push_back(-5662.681335644281);
+  parameter_solv_H[CYS].push_back(38559.09602816144);
+  parameter_solv_H[CYS].push_back(-27885.22747486708);
+  parameter_solv_H[CYS].push_back(6280.148346561226);
+
+  parameter_solv_H[ASP].push_back(13511.73760011933);
+  parameter_solv_H[ASP].push_back(-59.92934247210642);
+  parameter_solv_H[ASP].push_back(-25849.867077822244);
+  parameter_solv_H[ASP].push_back(-7541.679510407563);
+  parameter_solv_H[ASP].push_back(50760.93853987092);
+  parameter_solv_H[ASP].push_back(-37677.89102528413);
+  parameter_solv_H[ASP].push_back(8745.710458140105);
+
+  parameter_solv_H[GLU].push_back(20443.280400119456);
+  parameter_solv_H[GLU].push_back(-113.77513581661388);
+  parameter_solv_H[GLU].push_back(-45587.79863958479);
+  parameter_solv_H[GLU].push_back(-16187.534798976243);
+  parameter_solv_H[GLU].push_back(112609.61802147207);
+  parameter_solv_H[GLU].push_back(-93362.01894077536);
+  parameter_solv_H[GLU].push_back(24519.546829431332);
+
+  parameter_solv_H[ILE].push_back(27858.948100119596);
+  parameter_solv_H[ILE].push_back(-159.27394962770595);
+  parameter_solv_H[ILE].push_back(-61571.43025249802);
+  parameter_solv_H[ILE].push_back(-21324.89659912433);
+  parameter_solv_H[ILE].push_back(144070.7880009225);
+  parameter_solv_H[ILE].push_back(-115021.84534734003);
+  parameter_solv_H[ILE].push_back(28939.093300284097);
+
+  parameter_solv_H[LEU].push_back(27858.948100119596);
+  parameter_solv_H[LEU].push_back(-165.61872365361);
+  parameter_solv_H[LEU].push_back(-62564.5706162518);
+  parameter_solv_H[LEU].push_back(-22465.325666767214);
+  parameter_solv_H[LEU].push_back(151616.7844050042);
+  parameter_solv_H[LEU].push_back(-122905.60389771541);
+  parameter_solv_H[LEU].push_back(31436.66201442061);
+
+  parameter_solv_H[MET].push_back(25609.60090011981);
+  parameter_solv_H[MET].push_back(-135.38816369794569);
+  parameter_solv_H[MET].push_back(-67771.01548433342);
+  parameter_solv_H[MET].push_back(-25228.91756660071);
+  parameter_solv_H[MET].push_back(199649.92084565928);
+  parameter_solv_H[MET].push_back(-182251.9246506795);
+  parameter_solv_H[MET].push_back(52502.876819125115);
+
+  parameter_solv_H[ASN].push_back(14376.010000119095);
+  parameter_solv_H[ASN].push_back(-67.65587848183215);
+  parameter_solv_H[ASN].push_back(-28302.877059425664);
+  parameter_solv_H[ASN].push_back(-8577.444107282141);
+  parameter_solv_H[ASN].push_back(57532.88704197217);
+  parameter_solv_H[ASN].push_back(-43261.79974462857);
+  parameter_solv_H[ASN].push_back(10186.450874679671);
+
+  parameter_solv_H[PRO].push_back(16866.21690011944);
+  parameter_solv_H[PRO].push_back(-70.84312112734995);
+  parameter_solv_H[PRO].push_back(-31465.8423531932);
+  parameter_solv_H[PRO].push_back(-8653.362744540535);
+  parameter_solv_H[PRO].push_back(58032.27079924916);
+  parameter_solv_H[PRO].push_back(-41521.001733021694);
+  parameter_solv_H[PRO].push_back(9184.527523759205);
+
+  parameter_solv_H[GLN].push_back(21503.289600119);
+  parameter_solv_H[GLN].push_back(-121.3012777474678);
+  parameter_solv_H[GLN].push_back(-50468.58503443957);
+  parameter_solv_H[GLN].push_back(-18462.47495329696);
+  parameter_solv_H[GLN].push_back(132718.42007501892);
+  parameter_solv_H[GLN].push_back(-113787.20224345029);
+  parameter_solv_H[GLN].push_back(30920.340813688686);
+
+  parameter_solv_H[SER].push_back(9181.47240011935);
+  parameter_solv_H[SER].push_back(-28.775273124392083);
+  parameter_solv_H[SER].push_back(-15205.54229808512);
+  parameter_solv_H[SER].push_back(-3377.785599913673);
+  parameter_solv_H[SER].push_back(23345.562090489493);
+  parameter_solv_H[SER].push_back(-15312.699787471944);
+  parameter_solv_H[SER].push_back(3013.844610647712);
+
+  parameter_solv_H[THR].push_back(15020.953600119403);
+  parameter_solv_H[THR].push_back(-61.909951810375105);
+  parameter_solv_H[THR].push_back(-27814.538986050964);
+  parameter_solv_H[THR].push_back(-7532.222992514079);
+  parameter_solv_H[THR].push_back(50586.29804970814);
+  parameter_solv_H[THR].push_back(-35943.85986777198);
+  parameter_solv_H[THR].push_back(7880.091610023207);
+
+  parameter_solv_H[VAL].push_back(19647.628900119355);
+  parameter_solv_H[VAL].push_back(-89.04968136833762);
+  parameter_solv_H[VAL].push_back(-38050.10118919102);
+  parameter_solv_H[VAL].push_back(-10921.421066774372);
+  parameter_solv_H[VAL].push_back(72774.31277743122);
+  parameter_solv_H[VAL].push_back(-52689.05168504517);
+  parameter_solv_H[VAL].push_back(11806.48989635518);
+
+  parameter_solv_H[ALA].push_back(7515.156100119273);
+  parameter_solv_H[ALA].push_back(-20.226317591188526);
+  parameter_solv_H[ALA].push_back(-11761.841775007797);
+  parameter_solv_H[ALA].push_back(-2341.4903622033885);
+  parameter_solv_H[ALA].push_back(16545.381259883452);
+  parameter_solv_H[ALA].push_back(-10397.171546969075);
+  parameter_solv_H[ALA].push_back(1921.5253045340198);
+
+  parameter_solv_H[GLY].push_back(3594.002500119159);
+  parameter_solv_H[GLY].push_back(-6.910832388009796);
+  parameter_solv_H[GLY].push_back(-4937.3542895091905);
+  parameter_solv_H[GLY].push_back(-785.4545979203357);
+  parameter_solv_H[GLY].push_back(5852.853693316741);
+  parameter_solv_H[GLY].push_back(-3391.2920205126734);
+  parameter_solv_H[GLY].push_back(552.3278183161507);
+
+  parameter_solv_H[HIS].push_back(22888.664100119073);
+  parameter_solv_H[HIS].push_back(-133.86281863999585);
+  parameter_solv_H[HIS].push_back(-57533.51412287858);
+  parameter_solv_H[HIS].push_back(-21767.300111408193);
+  parameter_solv_H[HIS].push_back(161255.15347073504);
+  parameter_solv_H[HIS].push_back(-142176.65100718598);
+  parameter_solv_H[HIS].push_back(39642.61507384587);
+
+  parameter_mix_H[TRP].push_back(2974.6515001192306);
+  parameter_mix_H[TRP].push_back(-18.361939022074825);
+  parameter_mix_H[TRP].push_back(-7284.637435770752);
+  parameter_mix_H[TRP].push_back(-2945.7969900381895);
+  parameter_mix_H[TRP].push_back(21235.01878657283);
+  parameter_mix_H[TRP].push_back(-18909.7406035548);
+  parameter_mix_H[TRP].push_back(5324.324204245179);
+
+  parameter_mix_H[TYR].push_back(2029.7362801192114);
+  parameter_mix_H[TYR].push_back(-6.983186065527884);
+  parameter_mix_H[TYR].push_back(-5041.996113037476);
+  parameter_mix_H[TYR].push_back(-1744.5213085724158);
+  parameter_mix_H[TYR].push_back(15329.420227814338);
+  parameter_mix_H[TYR].push_back(-14648.322529889958);
+  parameter_mix_H[TYR].push_back(4405.608657083287);
+
+  parameter_mix_H[PHE].push_back(1704.6885401192117);
+  parameter_mix_H[PHE].push_back(-10.077274979133408);
+  parameter_mix_H[PHE].push_back(-3769.440088334303);
+  parameter_mix_H[PHE].push_back(-1574.6255694551546);
+  parameter_mix_H[PHE].push_back(10996.32497868798);
+  parameter_mix_H[PHE].push_back(-9840.68281283696);
+  parameter_mix_H[PHE].push_back(2792.098605716682);
+
+  parameter_mix_H[HIP].push_back(1376.0462401192394);
+  parameter_mix_H[HIP].push_back(-8.576320475413144);
+  parameter_mix_H[HIP].push_back(-2796.8327726392167);
+  parameter_mix_H[HIP].push_back(-1165.0473128576);
+  parameter_mix_H[HIP].push_back(7495.063650365717);
+  parameter_mix_H[HIP].push_back(-6331.20422098132);
+  parameter_mix_H[HIP].push_back(1692.637366093312);
+
+  parameter_mix_H[ARG].push_back(1280.940480119178);
+  parameter_mix_H[ARG].push_back(-7.411214928783748);
+  parameter_mix_H[ARG].push_back(-3747.6200569785033);
+  parameter_mix_H[ARG].push_back(-1766.5282176004569);
+  parameter_mix_H[ARG].push_back(14307.817638456267);
+  parameter_mix_H[ARG].push_back(-14297.104122885643);
+  parameter_mix_H[ARG].push_back(4450.526244207772);
+
+  parameter_mix_H[LYS].push_back(570.7272001192143);
+  parameter_mix_H[LYS].push_back(-5.371742288956095);
+  parameter_mix_H[LYS].push_back(-1255.9868267793006);
+  parameter_mix_H[LYS].push_back(-748.3071074443138);
+  parameter_mix_H[LYS].push_back(4534.824932304509);
+  parameter_mix_H[LYS].push_back(-4125.307867230812);
+  parameter_mix_H[LYS].push_back(1178.781491068295);
+
+  parameter_mix_H[CYS].push_back(410.21750011921864);
+  parameter_mix_H[CYS].push_back(-0.7655651758449595);
+  parameter_mix_H[CYS].push_back(-523.8897033718782);
+  parameter_mix_H[CYS].push_back(-89.88478273744425);
+  parameter_mix_H[CYS].push_back(655.3313542467919);
+  parameter_mix_H[CYS].push_back(-407.87897719750896);
+  parameter_mix_H[CYS].push_back(76.50541508448237);
+
+  parameter_mix_H[ASP].push_back(893.6531201192147);
+  parameter_mix_H[ASP].push_back(-3.0756255172248874);
+  parameter_mix_H[ASP].push_back(-1453.1760425275006);
+  parameter_mix_H[ASP].push_back(-365.0424824614137);
+  parameter_mix_H[ASP].push_back(2443.570600976796);
+  parameter_mix_H[ASP].push_back(-1679.8996339740277);
+  parameter_mix_H[ASP].push_back(352.33054461512455);
+
+  parameter_mix_H[GLU].push_back(1075.4955601191884);
+  parameter_mix_H[GLU].push_back(-6.917429973203965);
+  parameter_mix_H[GLU].push_back(-2262.861870389347);
+  parameter_mix_H[GLU].push_back(-909.8078514527992);
+  parameter_mix_H[GLU].push_back(5841.923857549836);
+  parameter_mix_H[GLU].push_back(-4784.620969556751);
+  parameter_mix_H[GLU].push_back(1230.873134652953);
+
+  parameter_mix_H[ILE].push_back(466.0127201192081);
+  parameter_mix_H[ILE].push_back(-0.9323443258150218);
+  parameter_mix_H[ILE].push_back(-576.7178005955719);
+  parameter_mix_H[ILE].push_back(-103.03003361062478);
+  parameter_mix_H[ILE].push_back(706.4269951176641);
+  parameter_mix_H[ILE].push_back(-420.4412859632717);
+  parameter_mix_H[ILE].push_back(71.53175726608731);
+
+  parameter_mix_H[LEU].push_back(466.0127201192081);
+  parameter_mix_H[LEU].push_back(-1.9793605752606065);
+  parameter_mix_H[LEU].push_back(-718.3988478701591);
+  parameter_mix_H[LEU].push_back(-227.36409339012113);
+  parameter_mix_H[LEU].push_back(1389.2058254917304);
+  parameter_mix_H[LEU].push_back(-990.0033118748643);
+  parameter_mix_H[LEU].push_back(213.15736815883042);
+
+  parameter_mix_H[MET].push_back(562.9855401192196);
+  parameter_mix_H[MET].push_back(-3.7994094933771643);
+  parameter_mix_H[MET].push_back(-1139.6331862451661);
+  parameter_mix_H[MET].push_back(-516.6313269725724);
+  parameter_mix_H[MET].push_back(3268.957245190869);
+  parameter_mix_H[MET].push_back(-2809.178864807947);
+  parameter_mix_H[MET].push_back(761.4832732100416);
+
+  parameter_mix_H[ASN].push_back(828.7488001191887);
+  parameter_mix_H[ASN].push_back(-2.1275493073799625);
+  parameter_mix_H[ASN].push_back(-1222.248291388804);
+  parameter_mix_H[ASN].push_back(-238.94210659613537);
+  parameter_mix_H[ASN].push_back(1660.8322402171973);
+  parameter_mix_H[ASN].push_back(-1008.7934996077323);
+  parameter_mix_H[ASN].push_back(173.6082238625797);
+
+  parameter_mix_H[PRO].push_back(578.4409801192146);
+  parameter_mix_H[PRO].push_back(-0.5379505780909722);
+  parameter_mix_H[PRO].push_back(-648.146493857212);
+  parameter_mix_H[PRO].push_back(-56.67223895342921);
+  parameter_mix_H[PRO].push_back(509.88860586987437);
+  parameter_mix_H[PRO].push_back(-214.57871784725265);
+  parameter_mix_H[PRO].push_back(11.99659463759968);
+
+  parameter_mix_H[GLN].push_back(989.2334401191976);
+  parameter_mix_H[GLN].push_back(-6.307760694331967);
+  parameter_mix_H[GLN].push_back(-1971.7067150503622);
+  parameter_mix_H[GLN].push_back(-791.333088386235);
+  parameter_mix_H[GLN].push_back(4900.009768434847);
+  parameter_mix_H[GLN].push_back(-3909.7740976374153);
+  parameter_mix_H[GLN].push_back(975.4952613244343);
+
+  parameter_mix_H[SER].push_back(426.39900011920196);
+  parameter_mix_H[SER].push_back(-0.42304498358319664);
+  parameter_mix_H[SER].push_back(-484.2066027682147);
+  parameter_mix_H[SER].push_back(-45.38968988754228);
+  parameter_mix_H[SER].push_back(401.3420977115044);
+  parameter_mix_H[SER].push_back(-178.0861461692512);
+  parameter_mix_H[SER].push_back(13.540349238730284);
+
+  parameter_mix_H[THR].push_back(525.0470401191992);
+  parameter_mix_H[THR].push_back(-0.7419102811534484);
+  parameter_mix_H[THR].push_back(-652.7134808154495);
+  parameter_mix_H[THR].push_back(-80.39481224407903);
+  parameter_mix_H[THR].push_back(641.5487902728123);
+  parameter_mix_H[THR].push_back(-320.4227667104819);
+  parameter_mix_H[THR].push_back(36.03558531183942);
+
+  parameter_mix_H[VAL].push_back(414.6228601192123);
+  parameter_mix_H[VAL].push_back(-0.35889335250521337);
+  parameter_mix_H[VAL].push_back(-453.11631644097474);
+  parameter_mix_H[VAL].push_back(-36.402101097644284);
+  parameter_mix_H[VAL].push_back(336.24049431626804);
+  parameter_mix_H[VAL].push_back(-127.42235327515239);
+  parameter_mix_H[VAL].push_back(0.8013280923923705);
+
+  parameter_mix_H[ALA].push_back(285.21010011920816);
+  parameter_mix_H[ALA].push_back(-0.1573012439142169);
+  parameter_mix_H[ALA].push_back(-282.8945838800694);
+  parameter_mix_H[ALA].push_back(-16.32030056827785);
+  parameter_mix_H[ALA].push_back(178.065895049598);
+  parameter_mix_H[ALA].push_back(-60.27423229179658);
+  parameter_mix_H[ALA].push_back(-1.4695219304131588);
+
+  parameter_mix_H[GLY].push_back(207.18720011920414);
+  parameter_mix_H[GLY].push_back(-0.1036587134183235);
+  parameter_mix_H[GLY].push_back(-185.70794948240638);
+  parameter_mix_H[GLY].push_back(-11.008101039836257);
+  parameter_mix_H[GLY].push_back(115.30600405624061);
+  parameter_mix_H[GLY].push_back(-42.46629718037158);
+  parameter_mix_H[GLY].push_back(0.9238928987070913);
+
+  parameter_mix_H[HIS].push_back(1443.9117601192354);
+  parameter_mix_H[HIS].push_back(-7.478618745973115);
+  parameter_mix_H[HIS].push_back(-2715.0835155803215);
+  parameter_mix_H[HIS].push_back(-918.5243015382779);
+  parameter_mix_H[HIS].push_back(5821.6258431396);
+  parameter_mix_H[HIS].push_back(-4415.32722209556);
+  parameter_mix_H[HIS].push_back(1044.7044029209756);
+  parameter_vac_H[TRP].push_back(36.42122511920832);
+  parameter_vac_H[TRP].push_back(-0.36925500341767903);
+  parameter_vac_H[TRP].push_back(-51.34228792835503);
+  parameter_vac_H[TRP].push_back(-34.10021080004831);
+  parameter_vac_H[TRP].push_back(132.647034983933);
+  parameter_vac_H[TRP].push_back(-82.89152328934257);
+  parameter_vac_H[TRP].push_back(13.029994092013231);
+
+  parameter_vac_H[TYR].push_back(22.268961119209557);
+  parameter_vac_H[TYR].push_back(-0.1995573892347673);
+  parameter_vac_H[TYR].push_back(-36.54202179838511);
+  parameter_vac_H[TYR].push_back(-23.820801043096694);
+  parameter_vac_H[TYR].push_back(127.46799692275353);
+  parameter_vac_H[TYR].push_back(-107.63783234245744);
+  parameter_vac_H[TYR].push_back(28.180858902960775);
+
+  parameter_vac_H[PHE].push_back(17.131321119209627);
+  parameter_vac_H[PHE].push_back(-0.15766725674246446);
+  parameter_vac_H[PHE].push_back(-19.19964432024534);
+  parameter_vac_H[PHE].push_back(-12.34326882843138);
+  parameter_vac_H[PHE].push_back(38.17216645824474);
+  parameter_vac_H[PHE].push_back(-11.245288857407298);
+  parameter_vac_H[PHE].push_back(-3.8114731300899343);
+
+  parameter_vac_H[HIP].push_back(19.34240411920875);
+  parameter_vac_H[HIP].push_back(-0.13533410292592593);
+  parameter_vac_H[HIP].push_back(-25.924121027387276);
+  parameter_vac_H[HIP].push_back(-12.36586927492752);
+  parameter_vac_H[HIP].push_back(56.75268702111191);
+  parameter_vac_H[HIP].push_back(-31.126240293638094);
+  parameter_vac_H[HIP].push_back(2.749811579250848);
+
+  parameter_vac_H[ARG].push_back(12.027024119209557);
+  parameter_vac_H[ARG].push_back(-0.41927538341868287);
+  parameter_vac_H[ARG].push_back(-22.137566939867042);
+  parameter_vac_H[ARG].push_back(-43.22615008762667);
+  parameter_vac_H[ARG].push_back(165.77466655520323);
+  parameter_vac_H[ARG].push_back(-140.68664871425898);
+  parameter_vac_H[ARG].push_back(36.67401195170306);
+
+  parameter_vac_H[LYS].push_back(2.5217441192093717);
+  parameter_vac_H[LYS].push_back(-0.0032825476242835413);
+  parameter_vac_H[LYS].push_back(14.019071697737793);
+  parameter_vac_H[LYS].push_back(7.8634074595069245);
+  parameter_vac_H[LYS].push_back(-82.44639716451474);
+  parameter_vac_H[LYS].push_back(94.32937851921197);
+  parameter_vac_H[LYS].push_back(-32.324473823417);
+
+  parameter_vac_H[CYS].push_back(3.705624880856525);
+  parameter_vac_H[CYS].push_back(0.005214780840206113);
+  parameter_vac_H[CYS].push_back(1.25680902661715);
+  parameter_vac_H[CYS].push_back(0.5779209425501814);
+  parameter_vac_H[CYS].push_back(-3.716408071089366);
+  parameter_vac_H[CYS].push_back(2.3947518943233117);
+  parameter_vac_H[CYS].push_back(-0.40204949737133333);
+
+  parameter_vac_H[ASP].push_back(14.776336119209605);
+  parameter_vac_H[ASP].push_back(-0.037351220316916435);
+  parameter_vac_H[ASP].push_back(-18.556358387626286);
+  parameter_vac_H[ASP].push_back(-4.1737354794552886);
+  parameter_vac_H[ASP].push_back(28.424721213037405);
+  parameter_vac_H[ASP].push_back(-17.51389895324883);
+  parameter_vac_H[ASP].push_back(2.9729111724708597);
+
+  parameter_vac_H[GLU].push_back(14.145121119208973);
+  parameter_vac_H[GLU].push_back(-0.11468766098213011);
+  parameter_vac_H[GLU].push_back(-26.272637652294613);
+  parameter_vac_H[GLU].push_back(-13.769758826440151);
+  parameter_vac_H[GLU].push_back(80.4575683578491);
+  parameter_vac_H[GLU].push_back(-64.19346347075);
+  parameter_vac_H[GLU].push_back(15.545440117656236);
+
+  parameter_vac_H[ILE].push_back(1.9488158808808775);
+  parameter_vac_H[ILE].push_back(0.05873132133874459);
+  parameter_vac_H[ILE].push_back(12.032778845884135);
+  parameter_vac_H[ILE].push_back(7.148416980612881);
+  parameter_vac_H[ILE].push_back(-41.87377843832961);
+  parameter_vac_H[ILE].push_back(33.96120749582283);
+  parameter_vac_H[ILE].push_back(-8.362535852631256);
+
+  parameter_vac_H[LEU].push_back(1.9488158808977816);
+  parameter_vac_H[LEU].push_back(0.0778305500414777);
+  parameter_vac_H[LEU].push_back(12.333370614594);
+  parameter_vac_H[LEU].push_back(9.449427967560764);
+  parameter_vac_H[LEU].push_back(-52.65457680603262);
+  parameter_vac_H[LEU].push_back(44.681877289399615);
+  parameter_vac_H[LEU].push_back(-11.460498338671227);
+
+  parameter_vac_H[MET].push_back(3.0940808808117652);
+  parameter_vac_H[MET].push_back(0.04903755678213222);
+  parameter_vac_H[MET].push_back(8.981927022922049);
+  parameter_vac_H[MET].push_back(8.654862771879014);
+  parameter_vac_H[MET].push_back(-57.09889409156816);
+  parameter_vac_H[MET].push_back(58.87704775164829);
+  parameter_vac_H[MET].push_back(-18.60431990258862);
+
+  parameter_vac_H[ASN].push_back(11.943936119209074);
+  parameter_vac_H[ASN].push_back(-0.0005000836239497835);
+  parameter_vac_H[ASN].push_back(-9.581236453763157);
+  parameter_vac_H[ASN].push_back(0.16244025786232308);
+  parameter_vac_H[ASN].push_back(2.9276580099749574);
+  parameter_vac_H[ASN].push_back(2.133535783835143);
+  parameter_vac_H[ASN].push_back(-1.5709968820975018);
+
+  parameter_vac_H[PRO].push_back(4.9595288808229245);
+  parameter_vac_H[PRO].push_back(0.017853932680793515);
+  parameter_vac_H[PRO].push_back(4.5421559293101605);
+  parameter_vac_H[PRO].push_back(2.008455612787203);
+  parameter_vac_H[PRO].push_back(-12.444117841318494);
+  parameter_vac_H[PRO].push_back(8.511723688836447);
+  parameter_vac_H[PRO].push_back(-1.6337543903496765);
+
+  parameter_vac_H[GLN].push_back(11.377129119208574);
+  parameter_vac_H[GLN].push_back(-0.0674805307761209);
+  parameter_vac_H[GLN].push_back(-16.56692720411458);
+  parameter_vac_H[GLN].push_back(-6.477707440126834);
+  parameter_vac_H[GLN].push_back(34.78232259512621);
+  parameter_vac_H[GLN].push_back(-19.450886909938312);
+  parameter_vac_H[GLN].push_back(1.944286925108988);
+
+  parameter_vac_H[SER].push_back(4.95062488096605);
+  parameter_vac_H[SER].push_back(0.004676435440506079);
+  parameter_vac_H[SER].push_back(-0.1896653085608564);
+  parameter_vac_H[SER].push_back(0.5142284931977218);
+  parameter_vac_H[SER].push_back(-2.8946087252759893);
+  parameter_vac_H[SER].push_back(2.1031239401634836);
+  parameter_vac_H[SER].push_back(-0.38226443516361713);
+
+  parameter_vac_H[THR].push_back(4.588163880808971);
+  parameter_vac_H[THR].push_back(0.018587905993982613);
+  parameter_vac_H[THR].push_back(3.5289861308270214);
+  parameter_vac_H[THR].push_back(2.0780583604591567);
+  parameter_vac_H[THR].push_back(-12.3802007068414);
+  parameter_vac_H[THR].push_back(8.720986674116094);
+  parameter_vac_H[THR].push_back(-1.683256475122275);
+
+  parameter_vac_H[VAL].push_back(2.187440880853519);
+  parameter_vac_H[VAL].push_back(0.028351524826584255);
+  parameter_vac_H[VAL].push_back(8.36584512491955);
+  parameter_vac_H[VAL].push_back(3.1686206615123926);
+  parameter_vac_H[VAL].push_back(-19.81959917770108);
+  parameter_vac_H[VAL].push_back(13.293003038570571);
+  parameter_vac_H[VAL].push_back(-2.4595257726774125);
+
+  parameter_vac_H[ALA].push_back(2.7060248808167935);
+  parameter_vac_H[ALA].push_back(0.004618897267213416);
+  parameter_vac_H[ALA].push_back(2.4990261487383947);
+  parameter_vac_H[ALA].push_back(0.49579332664340864);
+  parameter_vac_H[ALA].push_back(-3.850400071630347);
+  parameter_vac_H[ALA].push_back(1.9501161562030942);
+  parameter_vac_H[ALA].push_back(-0.18332582719788362);
+
+  parameter_vac_H[GLY].push_back(2.985983880876256);
+  parameter_vac_H[GLY].push_back(0.0005033131808079042);
+  parameter_vac_H[GLY].push_back(-0.42250170279962684);
+  parameter_vac_H[GLY].push_back(0.05620517453257455);
+  parameter_vac_H[GLY].push_back(-0.16801962822020733);
+  parameter_vac_H[GLY].push_back(0.23635459648780555);
+  parameter_vac_H[GLY].push_back(-0.06585244715658795);
+
+  parameter_vac_H[HIS].push_back(22.77198411920933);
+  parameter_vac_H[HIS].push_back(-0.06607491006655417);
+  parameter_vac_H[HIS].push_back(-27.277710268717247);
+  parameter_vac_H[HIS].push_back(-5.674444390934355);
+  parameter_vac_H[HIS].push_back(33.4059567406171);
+  parameter_vac_H[HIS].push_back(-11.60826210271092);
+  parameter_vac_H[HIS].push_back(-1.7359607560773076);  
+}
+
+void SAXS::getOnebeadparam_sansD(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_D, std::vector<std::vector<long double> > &parameter_mix_D, std::vector<std::vector<long double> > &parameter_solv_D)
+{
+  parameter_solv_D[TRP].push_back(60737.60249988011);
+  parameter_solv_D[TRP].push_back(-77.77344118516487);
+  parameter_solv_D[TRP].push_back(-205962.80436572764);
+  parameter_solv_D[TRP].push_back(-62014.18523271781);
+  parameter_solv_D[TRP].push_back(680712.0512548896);
+  parameter_solv_D[TRP].push_back(-681337.967312983);
+  parameter_solv_D[TRP].push_back(211474.00338118695);
+
+  parameter_solv_D[TYR].push_back(46250.803599880084);
+  parameter_solv_D[TYR].push_back(-45.827646837514614);
+  parameter_solv_D[TYR].push_back(-143872.94597686914);
+  parameter_solv_D[TYR].push_back(-39049.51580628132);
+  parameter_solv_D[TYR].push_back(441321.31246635393);
+  parameter_solv_D[TYR].push_back(-434477.6826175059);
+  parameter_solv_D[TYR].push_back(133179.21673104732);
+
+  parameter_solv_D[PHE].push_back(42407.164900118914);
+  parameter_solv_D[PHE].push_back(-159.20054549009086);
+  parameter_solv_D[PHE].push_back(-123847.83591352346);
+  parameter_solv_D[PHE].push_back(-41797.78884558073);
+  parameter_solv_D[PHE].push_back(380283.87543872406);
+  parameter_solv_D[PHE].push_back(-361432.81356389285);
+  parameter_solv_D[PHE].push_back(107750.69385054041);
+
+  parameter_solv_D[HIP].push_back(24473.473600119047);
+  parameter_solv_D[HIP].push_back(-111.6412807124612);
+  parameter_solv_D[HIP].push_back(-65826.17293437096);
+  parameter_solv_D[HIP].push_back(-23305.902022201855);
+  parameter_solv_D[HIP].push_back(194795.09953510275);
+  parameter_solv_D[HIP].push_back(-180454.47859494278);
+  parameter_solv_D[HIP].push_back(52699.36922660704);
+
+  parameter_solv_D[ARG].push_back(34106.70239988039);
+  parameter_solv_D[ARG].push_back(152.74468231268114);
+  parameter_solv_D[ARG].push_back(-117086.46040369231);
+  parameter_solv_D[ARG].push_back(-19664.37512726012);
+  parameter_solv_D[ARG].push_back(364454.3721646173);
+  parameter_solv_D[ARG].push_back(-382076.05102190404);
+  parameter_solv_D[ARG].push_back(122775.83306003918);
+
+  parameter_solv_D[LYS].push_back(32292.09000011877);
+  parameter_solv_D[LYS].push_back(-111.97888350941923);
+  parameter_solv_D[LYS].push_back(-91953.05212591762);
+  parameter_solv_D[LYS].push_back(-30691.03615444628);
+  parameter_solv_D[LYS].push_back(282092.82233263896);
+  parameter_solv_D[LYS].push_back(-269503.6095978623);
+  parameter_solv_D[LYS].push_back(80777.92760273012);
+
+  parameter_solv_D[CYS].push_back(11352.902500119093);
+  parameter_solv_D[CYS].push_back(-45.52255488723637);
+  parameter_solv_D[CYS].push_back(-20925.086525675117);
+  parameter_solv_D[CYS].push_back(-5662.681335644281);
+  parameter_solv_D[CYS].push_back(38559.09602816144);
+  parameter_solv_D[CYS].push_back(-27885.22747486708);
+  parameter_solv_D[CYS].push_back(6280.148346561226);
+
+  parameter_solv_D[ASP].push_back(13511.73760011933);
+  parameter_solv_D[ASP].push_back(-59.92934247210642);
+  parameter_solv_D[ASP].push_back(-25849.867077822244);
+  parameter_solv_D[ASP].push_back(-7541.679510407563);
+  parameter_solv_D[ASP].push_back(50760.93853987092);
+  parameter_solv_D[ASP].push_back(-37677.89102528413);
+  parameter_solv_D[ASP].push_back(8745.710458140105);
+
+  parameter_solv_D[GLU].push_back(20443.280400119456);
+  parameter_solv_D[GLU].push_back(-113.77513581661388);
+  parameter_solv_D[GLU].push_back(-45587.79863958479);
+  parameter_solv_D[GLU].push_back(-16187.534798976243);
+  parameter_solv_D[GLU].push_back(112609.61802147207);
+  parameter_solv_D[GLU].push_back(-93362.01894077536);
+  parameter_solv_D[GLU].push_back(24519.546829431332);
+
+  parameter_solv_D[ILE].push_back(27858.948100119596);
+  parameter_solv_D[ILE].push_back(-159.27394962770595);
+  parameter_solv_D[ILE].push_back(-61571.43025249802);
+  parameter_solv_D[ILE].push_back(-21324.89659912433);
+  parameter_solv_D[ILE].push_back(144070.7880009225);
+  parameter_solv_D[ILE].push_back(-115021.84534734003);
+  parameter_solv_D[ILE].push_back(28939.093300284097);
+
+  parameter_solv_D[LEU].push_back(27858.948100119596);
+  parameter_solv_D[LEU].push_back(-165.61872365361);
+  parameter_solv_D[LEU].push_back(-62564.5706162518);
+  parameter_solv_D[LEU].push_back(-22465.325666767214);
+  parameter_solv_D[LEU].push_back(151616.7844050042);
+  parameter_solv_D[LEU].push_back(-122905.60389771541);
+  parameter_solv_D[LEU].push_back(31436.66201442061);
+
+  parameter_solv_D[MET].push_back(25609.60090011981);
+  parameter_solv_D[MET].push_back(-135.38816369794569);
+  parameter_solv_D[MET].push_back(-67771.01548433342);
+  parameter_solv_D[MET].push_back(-25228.91756660071);
+  parameter_solv_D[MET].push_back(199649.92084565928);
+  parameter_solv_D[MET].push_back(-182251.9246506795);
+  parameter_solv_D[MET].push_back(52502.876819125115);
+
+  parameter_solv_D[ASN].push_back(14376.010000119095);
+  parameter_solv_D[ASN].push_back(-67.65587848183215);
+  parameter_solv_D[ASN].push_back(-28302.877059425664);
+  parameter_solv_D[ASN].push_back(-8577.444107282141);
+  parameter_solv_D[ASN].push_back(57532.88704197217);
+  parameter_solv_D[ASN].push_back(-43261.79974462857);
+  parameter_solv_D[ASN].push_back(10186.450874679671);
+
+  parameter_solv_D[PRO].push_back(16866.21690011944);
+  parameter_solv_D[PRO].push_back(-70.84312112734995);
+  parameter_solv_D[PRO].push_back(-31465.8423531932);
+  parameter_solv_D[PRO].push_back(-8653.362744540535);
+  parameter_solv_D[PRO].push_back(58032.27079924916);
+  parameter_solv_D[PRO].push_back(-41521.001733021694);
+  parameter_solv_D[PRO].push_back(9184.527523759205);
+
+  parameter_solv_D[GLN].push_back(21503.289600119);
+  parameter_solv_D[GLN].push_back(-121.3012777474678);
+  parameter_solv_D[GLN].push_back(-50468.58503443957);
+  parameter_solv_D[GLN].push_back(-18462.47495329696);
+  parameter_solv_D[GLN].push_back(132718.42007501892);
+  parameter_solv_D[GLN].push_back(-113787.20224345029);
+  parameter_solv_D[GLN].push_back(30920.340813688686);
+
+  parameter_solv_D[SER].push_back(9181.47240011935);
+  parameter_solv_D[SER].push_back(-28.775273124392083);
+  parameter_solv_D[SER].push_back(-15205.54229808512);
+  parameter_solv_D[SER].push_back(-3377.785599913673);
+  parameter_solv_D[SER].push_back(23345.562090489493);
+  parameter_solv_D[SER].push_back(-15312.699787471944);
+  parameter_solv_D[SER].push_back(3013.844610647712);
+
+  parameter_solv_D[THR].push_back(15020.953600119403);
+  parameter_solv_D[THR].push_back(-61.909951810375105);
+  parameter_solv_D[THR].push_back(-27814.538986050964);
+  parameter_solv_D[THR].push_back(-7532.222992514079);
+  parameter_solv_D[THR].push_back(50586.29804970814);
+  parameter_solv_D[THR].push_back(-35943.85986777198);
+  parameter_solv_D[THR].push_back(7880.091610023207);
+
+  parameter_solv_D[VAL].push_back(19647.628900119355);
+  parameter_solv_D[VAL].push_back(-89.04968136833762);
+  parameter_solv_D[VAL].push_back(-38050.10118919102);
+  parameter_solv_D[VAL].push_back(-10921.421066774372);
+  parameter_solv_D[VAL].push_back(72774.31277743122);
+  parameter_solv_D[VAL].push_back(-52689.05168504517);
+  parameter_solv_D[VAL].push_back(11806.48989635518);
+
+  parameter_solv_D[ALA].push_back(7515.156100119273);
+  parameter_solv_D[ALA].push_back(-20.226317591188526);
+  parameter_solv_D[ALA].push_back(-11761.841775007797);
+  parameter_solv_D[ALA].push_back(-2341.4903622033885);
+  parameter_solv_D[ALA].push_back(16545.381259883452);
+  parameter_solv_D[ALA].push_back(-10397.171546969075);
+  parameter_solv_D[ALA].push_back(1921.5253045340198);
+
+  parameter_solv_D[GLY].push_back(3594.002500119159);
+  parameter_solv_D[GLY].push_back(-6.910832388009796);
+  parameter_solv_D[GLY].push_back(-4937.3542895091905);
+  parameter_solv_D[GLY].push_back(-785.4545979203357);
+  parameter_solv_D[GLY].push_back(5852.853693316741);
+  parameter_solv_D[GLY].push_back(-3391.2920205126734);
+  parameter_solv_D[GLY].push_back(552.3278183161507);
+
+  parameter_solv_D[HIS].push_back(22888.664100119073);
+  parameter_solv_D[HIS].push_back(-133.86281863999585);
+  parameter_solv_D[HIS].push_back(-57533.51412287858);
+  parameter_solv_D[HIS].push_back(-21767.300111408193);
+  parameter_solv_D[HIS].push_back(161255.15347073504);
+  parameter_solv_D[HIS].push_back(-142176.65100718598);
+  parameter_solv_D[HIS].push_back(39642.61507384587);
+
+  parameter_mix_D[TRP].push_back(8105.740500119327);
+  parameter_mix_D[TRP].push_back(-41.785616935469804);
+  parameter_mix_D[TRP].push_back(-25456.92790554363);
+  parameter_mix_D[TRP].push_back(-10058.20599969184);
+  parameter_mix_D[TRP].push_back(86171.76479108425);
+  parameter_mix_D[TRP].push_back(-83227.63139882773);
+  parameter_mix_D[TRP].push_back(25121.390436258724);
+
+  parameter_mix_D[TYR].push_back(6059.530560118732);
+  parameter_mix_D[TYR].push_back(-24.522695525705736);
+  parameter_mix_D[TYR].push_back(-17180.858815360847);
+  parameter_mix_D[TYR].push_back(-5990.1358528219325);
+  parameter_mix_D[TYR].push_back(52936.46126637543);
+  parameter_mix_D[TYR].push_back(-50150.0042622683);
+  parameter_mix_D[TYR].push_back(14914.553672440441);
+
+  parameter_mix_D[PHE].push_back(5563.404880119222);
+  parameter_mix_D[PHE].push_back(-33.609784645922794);
+  parameter_mix_D[PHE].push_back(-14576.935030777448);
+  parameter_mix_D[PHE].push_back(-5759.170105553782);
+  parameter_mix_D[PHE].push_back(43316.895956549866);
+  parameter_mix_D[PHE].push_back(-39106.58694570862);
+  parameter_mix_D[PHE].push_back(11143.375742877468);
+
+  parameter_mix_D[HIP].push_back(3981.7108801192553);
+  parameter_mix_D[HIP].push_back(-23.788371565946427);
+  parameter_mix_D[HIP].push_back(-9471.73953776056);
+  parameter_mix_D[HIP].push_back(-3690.3981577198365);
+  parameter_mix_D[HIP].push_back(26365.958584217453);
+  parameter_mix_D[HIP].push_back(-23067.58974902849);
+  parameter_mix_D[HIP].push_back(6390.507451097114);
+
+  parameter_mix_D[ARG].push_back(6279.489359881259);
+  parameter_mix_D[ARG].push_back(1.2061878338083583);
+  parameter_mix_D[ARG].push_back(-20305.413937989913);
+  parameter_mix_D[ARG].push_back(-5621.666335222669);
+  parameter_mix_D[ARG].push_back(67341.96785520067);
+  parameter_mix_D[ARG].push_back(-68849.15464591733);
+  parameter_mix_D[ARG].push_back(21773.0630363882);
+
+  parameter_mix_D[LYS].push_back(5434.487400119193);
+  parameter_mix_D[LYS].push_back(-29.32356328987909);
+  parameter_mix_D[LYS].push_back(-14363.66155749977);
+  parameter_mix_D[LYS].push_back(-5650.383128516514);
+  parameter_mix_D[LYS].push_back(44573.73888236887);
+  parameter_mix_D[LYS].push_back(-41515.980945300485);
+  parameter_mix_D[LYS].push_back(12181.965046747513);
+
+  parameter_mix_D[CYS].push_back(1519.4030001192032);
+  parameter_mix_D[CYS].push_back(-3.564386334921097);
+  parameter_mix_D[CYS].push_back(-2275.813167459516);
+  parameter_mix_D[CYS].push_back(-409.54431591328125);
+  parameter_mix_D[CYS].push_back(2969.5412742839258);
+  parameter_mix_D[CYS].push_back(-1798.3157146799638);
+  parameter_mix_D[CYS].push_back(314.568167888235);
+
+  parameter_mix_D[ASP].push_back(1861.6998401191709);
+  parameter_mix_D[ASP].push_back(-5.349780637260551);
+  parameter_mix_D[ASP].push_back(-2960.36741510377);
+  parameter_mix_D[ASP].push_back(-621.8270745040523);
+  parameter_mix_D[ASP].push_back(4334.798300452934);
+  parameter_mix_D[ASP].push_back(-2776.8560521554878);
+  parameter_mix_D[ASP].push_back(527.9777182094936);
+
+  parameter_mix_D[GLU].push_back(2861.6017201192253);
+  parameter_mix_D[GLU].push_back(-13.146456903921809);
+  parameter_mix_D[GLU].push_back(-5393.408563875243);
+  parameter_mix_D[GLU].push_back(-1646.460570818364);
+  parameter_mix_D[GLU].push_back(10884.544923253858);
+  parameter_mix_D[GLU].push_back(-8159.923373048856);
+  parameter_mix_D[GLU].push_back(1914.545660397314);
+
+  parameter_mix_D[ILE].push_back(4288.585540119189);
+  parameter_mix_D[ILE].push_back(-19.937215352880365);
+  parameter_mix_D[ILE].push_back(-8324.540144463375);
+  parameter_mix_D[ILE].push_back(-2431.835931316717);
+  parameter_mix_D[ILE].push_back(16079.9912986194);
+  parameter_mix_D[ILE].push_back(-11637.693060394462);
+  parameter_mix_D[ILE].push_back(2600.8258068480495);
+
+  parameter_mix_D[LEU].push_back(4288.585540119186);
+  parameter_mix_D[LEU].push_back(-21.50343599461759);
+  parameter_mix_D[LEU].push_back(-8479.703435720274);
+  parameter_mix_D[LEU].push_back(-2647.8693829269596);
+  parameter_mix_D[LEU].push_back(17297.18115838578);
+  parameter_mix_D[LEU].push_back(-12826.972408323161);
+  parameter_mix_D[LEU].push_back(2953.1262521615645);
+
+  parameter_mix_D[MET].push_back(3561.6276801191552);
+  parameter_mix_D[MET].push_back(-22.19323392975885);
+  parameter_mix_D[MET].push_back(-8348.33907053846);
+  parameter_mix_D[MET].push_back(-3323.053272414289);
+  parameter_mix_D[MET].push_back(23153.238909304255);
+  parameter_mix_D[MET].push_back(-20091.960440908682);
+  parameter_mix_D[MET].push_back(5518.759669687693);
+
+  parameter_mix_D[ASN].push_back(2326.5396001192003);
+  parameter_mix_D[ASN].push_back(-8.634908921289112);
+  parameter_mix_D[ASN].push_back(-4057.4552636749636);
+  parameter_mix_D[ASN].push_back(-1032.743130124821);
+  parameter_mix_D[ASN].push_back(6957.141592429445);
+  parameter_mix_D[ASN].push_back(-4808.265318722317);
+  parameter_mix_D[ASN].push_back(1016.3944815533755);
+
+  parameter_mix_D[PRO].push_back(2471.1663601191985);
+  parameter_mix_D[PRO].push_back(-6.360795284260088);
+  parameter_mix_D[PRO].push_back(-3825.4533158429153);
+  parameter_mix_D[PRO].push_back(-728.7164844824666);
+  parameter_mix_D[PRO].push_back(5195.036303827973);
+  parameter_mix_D[PRO].push_back(-3183.733716480742);
+  parameter_mix_D[PRO].push_back(563.2376162754107);
+
+  parameter_mix_D[GLN].push_back(3431.669280119236);
+  parameter_mix_D[GLN].push_back(-19.412747205646166);
+  parameter_mix_D[GLN].push_back(-7298.017973002134);
+  parameter_mix_D[GLN].push_back(-2659.3014182337706);
+  parameter_mix_D[GLN].push_back(17890.76595805173);
+  parameter_mix_D[GLN].push_back(-14684.603067192957);
+  parameter_mix_D[GLN].push_back(3814.338335151394);
+
+  parameter_mix_D[SER].push_back(1423.885200119192);
+  parameter_mix_D[SER].push_back(-2.586428606204385);
+  parameter_mix_D[SER].push_back(-1966.7369507188134);
+  parameter_mix_D[SER].push_back(-289.17277383434106);
+  parameter_mix_D[SER].push_back(2209.478296043199);
+  parameter_mix_D[SER].push_back(-1216.1521614944);
+  parameter_mix_D[SER].push_back(177.0615931546754);
+
+  parameter_mix_D[THR].push_back(2311.2364801191825);
+  parameter_mix_D[THR].push_back(-6.258071321531929);
+  parameter_mix_D[THR].push_back(-3656.295629081312);
+  parameter_mix_D[THR].push_back(-716.4013890357804);
+  parameter_mix_D[THR].push_back(5071.656317108832);
+  parameter_mix_D[THR].push_back(-3125.8076789667816);
+  parameter_mix_D[THR].push_back(555.9775741081131);
+
+  parameter_mix_D[VAL].push_back(3041.128320119224);
+  parameter_mix_D[VAL].push_back(-9.314034190716423);
+  parameter_mix_D[VAL].push_back(-5075.684780220629);
+  parameter_mix_D[VAL].push_back(-1070.7083380665008);
+  parameter_mix_D[VAL].push_back(7455.654515006894);
+  parameter_mix_D[VAL].push_back(-4701.19187164774);
+  parameter_mix_D[VAL].push_back(863.4906179388547);
+
+  parameter_mix_D[ALA].push_back(1187.65300011922);
+  parameter_mix_D[ALA].push_back(-1.7011187932116822);
+  parameter_mix_D[ALA].push_back(-1521.0113615359212);
+  parameter_mix_D[ALA].push_back(-187.93745840575576);
+  parameter_mix_D[ALA].push_back(1514.6745873304449);
+  parameter_mix_D[ALA].push_back(-775.3890045113897);
+  parameter_mix_D[ALA].push_back(96.41428177656567);
+
+  parameter_mix_D[GLY].push_back(581.6349001192067);
+  parameter_mix_D[GLY].push_back(-0.5877833598361395);
+  parameter_mix_D[GLY].push_back(-640.0421286186524);
+  parameter_mix_D[GLY].push_back(-64.58515074152534);
+  parameter_mix_D[GLY].push_back(551.9509853583185);
+  parameter_mix_D[GLY].push_back(-264.1522021146006);
+  parameter_mix_D[GLY].push_back(28.36986478439301);
+
+  parameter_mix_D[HIS].push_back(3648.812220119277);
+  parameter_mix_D[HIS].push_back(-22.703075403555548);
+  parameter_mix_D[HIS].push_back(-8260.235189881098);
+  parameter_mix_D[HIS].push_back(-3190.3176569039265);
+  parameter_mix_D[HIS].push_back(21589.074332364213);
+  parameter_mix_D[HIS].push_back(-18108.640157613925);
+  parameter_mix_D[HIS].push_back(4801.237639634437);
+
+  parameter_vac_D[TRP].push_back(270.43802511921314);
+  parameter_vac_D[TRP].push_back(-2.196022464340772);
+  parameter_vac_D[TRP].push_back(-780.9546710244318);
+  parameter_vac_D[TRP].push_back(-371.1573508312626);
+  parameter_vac_D[TRP].push_back(2668.7678731652445);
+  parameter_vac_D[TRP].push_back(-2478.2920954223678);
+  parameter_vac_D[TRP].push_back(722.3731624901676);
+
+  parameter_vac_D[TYR].push_back(198.471744119211);
+  parameter_vac_D[TYR].push_back(-1.236792846228289);
+  parameter_vac_D[TYR].push_back(-508.0448711054671);
+  parameter_vac_D[TYR].push_back(-210.55908129481216);
+  parameter_vac_D[TYR].push_back(1558.3884734212413);
+  parameter_vac_D[TYR].push_back(-1418.36319255665);
+  parameter_vac_D[TYR].push_back(407.21567613893296);
+
+  parameter_vac_D[PHE].push_back(182.46606411921402);
+  parameter_vac_D[PHE].push_back(-1.2708008333861447);
+  parameter_vac_D[PHE].push_back(-424.50905926426054);
+  parameter_vac_D[PHE].push_back(-177.97207825696387);
+  parameter_vac_D[PHE].push_back(1180.839971941918);
+  parameter_vac_D[PHE].push_back(-1004.004765231886);
+  parameter_vac_D[PHE].push_back(269.34384064610344);
+
+  parameter_vac_D[HIP].push_back(161.95107611920753);
+  parameter_vac_D[HIP].push_back(-0.9661246983835707);
+  parameter_vac_D[HIP].push_back(-332.04673226423995);
+  parameter_vac_D[HIP].push_back(-125.41755194926544);
+  parameter_vac_D[HIP].push_back(808.705672166199);
+  parameter_vac_D[HIP].push_back(-648.8340711218191);
+  parameter_vac_D[HIP].push_back(163.71251277400307);
+
+  parameter_vac_D[ARG].push_back(289.0340011192071);
+  parameter_vac_D[ARG].push_back(-1.4195753436279361);
+  parameter_vac_D[ARG].push_back(-836.3864005546434);
+  parameter_vac_D[ARG].push_back(-346.7081039129904);
+  parameter_vac_D[ARG].push_back(2922.003491580559);
+  parameter_vac_D[ARG].push_back(-2864.816533173085);
+  parameter_vac_D[ARG].push_back(877.9525045072293);
+
+  parameter_vac_D[LYS].push_back(228.64464111920753);
+  parameter_vac_D[LYS].push_back(-1.686580749083617);
+  parameter_vac_D[LYS].push_back(-544.8870548339771);
+  parameter_vac_D[LYS].push_back(-252.11087773186324);
+  parameter_vac_D[LYS].push_back(1693.784850493428);
+  parameter_vac_D[LYS].push_back(-1514.2375008160348);
+  parameter_vac_D[LYS].push_back(427.0713155512121);
+
+  parameter_vac_D[CYS].push_back(50.836900116324315);
+  parameter_vac_D[CYS].push_back(-0.040204572899665315);
+  parameter_vac_D[CYS].push_back(-55.592868149339424);
+  parameter_vac_D[CYS].push_back(-4.341359624977117);
+  parameter_vac_D[CYS].push_back(41.55290573185214);
+  parameter_vac_D[CYS].push_back(-17.248208429078456);
+  parameter_vac_D[CYS].push_back(1.0736187172140528);
+
+  parameter_vac_D[ASP].push_back(64.12806411920792);
+  parameter_vac_D[ASP].push_back(-0.08245818875074411);
+  parameter_vac_D[ASP].push_back(-78.95500211069523);
+  parameter_vac_D[ASP].push_back(-9.030157332821238);
+  parameter_vac_D[ASP].push_back(74.72033164806712);
+  parameter_vac_D[ASP].push_back(-36.71042192737952);
+  parameter_vac_D[ASP].push_back(4.0989206257493676);
+
+  parameter_vac_D[GLU].push_back(100.14004911920799);
+  parameter_vac_D[GLU].push_back(-0.28685123265362006);
+  parameter_vac_D[GLU].push_back(-152.44619103423773);
+  parameter_vac_D[GLU].push_back(-32.99432901288321);
+  parameter_vac_D[GLU].push_back(225.5853175183811);
+  parameter_vac_D[GLU].push_back(-144.8489352831419);
+  parameter_vac_D[GLU].push_back(27.49692658880534);
+
+  parameter_vac_D[ILE].push_back(165.04540911921134);
+  parameter_vac_D[ILE].push_back(-0.5061553029227089);
+  parameter_vac_D[ILE].push_back(-275.1890586090823);
+  parameter_vac_D[ILE].push_back(-57.288063177375356);
+  parameter_vac_D[ILE].push_back(398.9780357099449);
+  parameter_vac_D[ILE].push_back(-245.42678814428692);
+  parameter_vac_D[ILE].push_back(42.72941025472001);
+
+  parameter_vac_D[LEU].push_back(165.04540911921134);
+  parameter_vac_D[LEU].push_back(-0.580034983510499);
+  parameter_vac_D[LEU].push_back(-281.30910057877514);
+  parameter_vac_D[LEU].push_back(-66.19427345166183);
+  parameter_vac_D[LEU].push_back(445.19214155995115);
+  parameter_vac_D[LEU].push_back(-287.0653610399624);
+  parameter_vac_D[LEU].push_back(53.86626261066706);
+
+  parameter_vac_D[MET].push_back(123.83238411920684);
+  parameter_vac_D[MET].push_back(-0.7698672022751385);
+  parameter_vac_D[MET].push_back(-251.2481622173618);
+  parameter_vac_D[MET].push_back(-100.67742019193848);
+  parameter_vac_D[MET].push_back(641.1563254731632);
+  parameter_vac_D[MET].push_back(-524.8742634212379);
+  parameter_vac_D[MET].push_back(135.36487813767542);
+
+  parameter_vac_D[ASN].push_back(94.12880411921148);
+  parameter_vac_D[ASN].push_back(-0.22986194121078912);
+  parameter_vac_D[ASN].push_back(-138.78769705028003);
+  parameter_vac_D[ASN].push_back(-25.896846049402594);
+  parameter_vac_D[ASN].push_back(184.55609781654326);
+  parameter_vac_D[ASN].push_back(-110.14043851975404);
+  parameter_vac_D[ASN].push_back(18.388834098004153);
+
+  parameter_vac_D[PRO].push_back(90.51619611920745);
+  parameter_vac_D[PRO].push_back(-0.0977238494110807);
+  parameter_vac_D[PRO].push_back(-109.43531311067846);
+  parameter_vac_D[PRO].push_back(-10.592981104983805);
+  parameter_vac_D[PRO].push_back(93.64863466237733);
+  parameter_vac_D[PRO].push_back(-42.348197720920865);
+  parameter_vac_D[PRO].push_back(3.5854078482704574);
+
+  parameter_vac_D[GLN].push_back(136.91340111920806);
+  parameter_vac_D[GLN].push_back(-0.7259026842220699);
+  parameter_vac_D[GLN].push_back(-257.0347011897067);
+  parameter_vac_D[GLN].push_back(-89.99600255417684);
+  parameter_vac_D[GLN].push_back(570.3890595917421);
+  parameter_vac_D[GLN].push_back(-438.8977029769549);
+  parameter_vac_D[GLN].push_back(105.48846039376491);
+
+  parameter_vac_D[SER].push_back(55.20490011583253);
+  parameter_vac_D[SER].push_back(-0.038078030710377984);
+  parameter_vac_D[SER].push_back(-58.79085960838952);
+  parameter_vac_D[SER].push_back(-4.067364063406562);
+  parameter_vac_D[SER].push_back(41.319899403658475);
+  parameter_vac_D[SER].push_back(-15.865682241288962);
+  parameter_vac_D[SER].push_back(0.5028409006168431);
+
+  parameter_vac_D[THR].push_back(88.90604111920842);
+  parameter_vac_D[THR].push_back(-0.11566717587697625);
+  parameter_vac_D[THR].push_back(-114.4541243837681);
+  parameter_vac_D[THR].push_back(-12.541537413808342);
+  parameter_vac_D[THR].push_back(106.4974738790947);
+  parameter_vac_D[THR].push_back(-50.15009912825225);
+  parameter_vac_D[THR].push_back(4.719349514074467);
+
+  parameter_vac_D[VAL].push_back(117.67910411920792);
+  parameter_vac_D[VAL].push_back(-0.18187311248567883);
+  parameter_vac_D[VAL].push_back(-162.8697844894754);
+  parameter_vac_D[VAL].push_back(-19.769248288711825);
+  parameter_vac_D[VAL].push_back(162.59270939168965);
+  parameter_vac_D[VAL].push_back(-79.37261506441627);
+  parameter_vac_D[VAL].push_back(8.230771959393175);
+
+  parameter_vac_D[ALA].push_back(46.92250011448002);
+  parameter_vac_D[ALA].push_back(-0.020339064649444412);
+  parameter_vac_D[ALA].push_back(-44.41584945233503);
+  parameter_vac_D[ALA].push_back(-2.1483754537886113);
+  parameter_vac_D[ALA].push_back(25.713667829058785);
+  parameter_vac_D[ALA].push_back(-8.222782061575268);
+  parameter_vac_D[ALA].push_back(-0.2521732728817875);
+
+  parameter_vac_D[GLY].push_back(23.532201119209795);
+  parameter_vac_D[GLY].push_back(-0.00628609590047614);
+  parameter_vac_D[GLY].push_back(-17.28421910139733);
+  parameter_vac_D[GLY].push_back(-0.6641226821159686);
+  parameter_vac_D[GLY].push_back(8.536119110048007);
+  parameter_vac_D[GLY].push_back(-2.5438638688361466);
+  parameter_vac_D[GLY].push_back(-0.11165675928832643);
+
+  parameter_vac_D[HIS].push_back(145.41948111920982);
+  parameter_vac_D[HIS].push_back(-0.8548328183368781);
+  parameter_vac_D[HIS].push_back(-290.8653238004162);
+  parameter_vac_D[HIS].push_back(-107.85375269366395);
+  parameter_vac_D[HIS].push_back(685.7025818759361);
+  parameter_vac_D[HIS].push_back(-538.2592043545858);
+  parameter_vac_D[HIS].push_back(132.17357375729733);  
 }
 
 double SAXS::calculateASF(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double rho)
