@@ -192,7 +192,7 @@ private:
   unsigned Natm,Nlist,NLsize;
   double Fvol,Vol0,m_PIVdistance;
   std::string ref_file;
-  NeighborList *nlall;
+  std::unique_ptr<NeighborList> nlall;
   std::vector<SwitchingFunction> sfs;
   std::vector<std:: vector<double> > rPIV;
   std::vector<double> scaling,r00;
@@ -201,15 +201,14 @@ private:
   std::vector<bool> dosort;
   std::vector<Vector> compos;
   std::vector<string> sw;
-  std::vector<NeighborList *> nl;
-  std::vector<NeighborList *> nlcom;
+  std::vector<std::unique_ptr<NeighborList>> nl;
+  std::vector<std::unique_ptr<NeighborList>> nlcom;
   std::vector<Vector> m_deriv;
   Tensor m_virial;
   bool Svol,cross,direct,doneigh,test,CompDer,com;
 public:
   static void registerKeywords( Keywords& keys );
   explicit PIV(const ActionOptions&);
-  ~PIV();
   // active methods:
   virtual void calculate();
   void checkFieldsAllowed() {}
@@ -267,8 +266,8 @@ PIV::PIV(const ActionOptions&ao):
   dosort(std:: vector<bool>(Nlist)),
   compos(std:: vector<Vector>(NLsize)),
   sw(std:: vector<string>(Nlist)),
-  nl(std:: vector<NeighborList *>(Nlist)),
-  nlcom(std:: vector<NeighborList *>(NLsize)),
+  nl(Nlist),
+  nlcom(NLsize),
   m_deriv(std:: vector<Vector>(1)),
   Svol(false),
   cross(true),
@@ -513,19 +512,19 @@ PIV::PIV(const ActionOptions&ao):
     }
     log << "Creating Neighbor Lists \n";
     // WARNING: is nl_cut meaningful here?
-    nlall= new NeighborList(listall,true,pbc,getPbc(),comm,nl_cut[0],nl_st[0]);
+    nlall= Tools::make_unique<NeighborList>(listall,true,pbc,getPbc(),comm,nl_cut[0],nl_st[0]);
     if(com) {
       //Build lists of Atoms for every COM
       for (unsigned i=0; i<compos.size(); i++) {
         // WARNING: is nl_cut meaningful here?
-        nlcom[i]= new NeighborList(comatm[i],true,pbc,getPbc(),comm,nl_cut[0],nl_st[0]);
+        nlcom[i] = Tools::make_unique<NeighborList>(comatm[i],true,pbc,getPbc(),comm,nl_cut[0],nl_st[0]);
       }
     }
     unsigned ncnt=0;
     // Direct blocks AA, BB, CC, ...
     if(direct) {
       for (unsigned j=0; j<Natm; j++) {
-        nl[ncnt]= new NeighborList(Plist[j],true,pbc,getPbc(),comm,nl_cut[j],nl_st[j]);
+        nl[ncnt]= Tools::make_unique<NeighborList>(Plist[j],true,pbc,getPbc(),comm,nl_cut[j],nl_st[j]);
         ncnt+=1;
       }
     }
@@ -533,16 +532,16 @@ PIV::PIV(const ActionOptions&ao):
     if(cross) {
       for (unsigned j=0; j<Natm; j++) {
         for (unsigned i=j+1; i<Natm; i++) {
-          nl[ncnt]= new NeighborList(Plist[i],Plist[j],true,false,pbc,getPbc(),comm,nl_cut[ncnt],nl_st[ncnt]);
+          nl[ncnt]= Tools::make_unique<NeighborList>(Plist[i],Plist[j],true,false,pbc,getPbc(),comm,nl_cut[ncnt],nl_st[ncnt]);
           ncnt+=1;
         }
       }
     }
   } else {
     log << "WARNING: Neighbor List not activated this has not been tested!!  \n";
-    nlall= new NeighborList(listall,true,pbc,getPbc(),comm);
+    nlall= Tools::make_unique<NeighborList>(listall,true,pbc,getPbc(),comm);
     for (unsigned j=0; j<Nlist; j++) {
-      nl[j]= new NeighborList(Plist[j],Plist[j],true,true,pbc,getPbc(),comm);
+      nl[j]= Tools::make_unique<NeighborList>(Plist[j],Plist[j],true,true,pbc,getPbc(),comm);
     }
   }
   // Output Nlist
@@ -703,20 +702,6 @@ PIV::PIV(const ActionOptions&ao):
   // getValue()->setPeridodicity(false);
   // set size of derivative vector
   m_deriv.resize(getNumberOfAtoms());
-}
-
-// The following deallocates pointers
-PIV::~PIV()
-{
-  for (unsigned j=0; j<Nlist; j++) {
-    delete nl[j];
-  }
-  if(com) {
-    for (unsigned j=0; j<NLsize; j++) {
-      delete nlcom[j];
-    }
-  }
-  delete nlall;
 }
 
 void PIV::calculate()
