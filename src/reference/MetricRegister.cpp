@@ -50,7 +50,7 @@ void MetricRegister::add( std::string type, creator_pointer f ) {
   m.insert(std::pair<std::string,creator_pointer>(type,f));
 }
 
-bool MetricRegister::check(std::string type) {
+bool MetricRegister::check(const std::string & type) {
   if( m.count(type)>0 ) return true;
   return false;
 }

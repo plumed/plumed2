@@ -544,7 +544,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         Tools::convert(intercomm.Get_rank(),n);
         std::string testfile=FileBase::appendSuffix(trajectoryFile,"."+n);
         FILE* tmp_fp=fopen(testfile.c_str(),"r");
-        if(tmp_fp) { fclose(tmp_fp); trajectoryFile=testfile.c_str();}
+        if(tmp_fp) { fclose(tmp_fp); trajectoryFile=testfile;}
       }
       if(use_molfile==true) {
 #ifdef __PLUMED_HAS_MOLFILE_PLUGINS

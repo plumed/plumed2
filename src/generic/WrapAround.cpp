@@ -148,6 +148,7 @@ class WrapAround:
   public ActionPilot,
   public ActionAtomistic
 {
+  // cppcheck-suppress duplInheritedMember
   std::vector<AtomNumber> atoms;
   std::vector<AtomNumber> reference;
   unsigned groupby;

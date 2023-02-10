@@ -147,7 +147,7 @@ std::string FileBase::appendSuffix(const std::string&path,const std::string&suff
   if(ext.length()>0) {
     int l=path.length()-(ext.length()+1);
     plumed_assert(l>=0);
-    ret=ret.substr(0,l);
+    ret.resize(l);
   }
   ret+=suffix;
   if(ext.length()>0)ret+="."+ext;

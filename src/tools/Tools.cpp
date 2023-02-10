@@ -269,13 +269,13 @@ bool Tools::getline(FILE* fp,std::string & line) {
 }
 
 void Tools::trim(std::string & s) {
-  size_t n=s.find_last_not_of(" \t");
-  s=s.substr(0,n+1);
+  auto n=s.find_last_not_of(" \t");
+  if(n!=std::string::npos) s.resize(n+1);
 }
 
 void Tools::trimComments(std::string & s) {
-  size_t n=s.find_first_of("#");
-  s=s.substr(0,n);
+  auto n=s.find_first_of("#");
+  if(n!=std::string::npos) s.resize(n);
 }
 
 bool Tools::caseInSensStringCompare(const std::string & str1, const std::string &str2)
