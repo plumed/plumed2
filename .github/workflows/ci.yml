@@ -188,7 +188,7 @@ jobs:
          echo "$HOME/opt/bin" >> $GITHUB_PATH
     - name: Install requirements
       run: |
-        .ci/install.cppcheck 2.7
+        .ci/install.cppcheck 2.10
     - name: Build astyle
       run: |
         make -j 4 -C astyle
