@@ -7,6 +7,15 @@
 
 using namespace PLMD;
 
+class A{
+  const int a;
+public:
+  operator int(){return a;};
+  A(const int a):
+    a(a)
+  {}
+};
+
 // short test to see if MPI surrogate function do what they should
 void small_test_mpi() {
   Communicator comm;
@@ -98,7 +107,8 @@ void test_xyz() {
   cell[4]=100.0;
   cell[8]=100.0;
   int stopflag=0;
-  p.cmd("setNatoms",natoms);
+  A a(natoms);
+  p.cmd("setNatoms",a);
   p.cmd("init",nullptr); // Test this: https://github.com/plumed/plumed2/issues/705
   try {
     p.cmd("setStopFlag",stopflag);
