@@ -2098,12 +2098,15 @@ private:
 private:
   /// Small class that wraps plumed_safeptr in order to make its initialization easier
   class SafePtr {
-    /// non copyable
+    /// non copyable (copy would require managing buffer, could be added in the future if needed)
     SafePtr(const SafePtr&);
-    /// non assignable
+    /// non assignable (assignment would require managing buffer, could be added in the future if needed)
     SafePtr& operator=(SafePtr const&);
   public:
     plumed_safeptr safe;
+    /// This buffer holds a copy of the data when they are passed by value.
+    /// The size is sufficient to hold any primitive type.
+    char buffer[32];
     /// Default constructor, nullptr
     SafePtr() __PLUMED_WRAPPER_CXX_NOEXCEPT {
       safe.ptr=__PLUMED_WRAPPER_CXX_NULLPTR;
@@ -2111,10 +2114,12 @@ private:
       safe.shape=__PLUMED_WRAPPER_CXX_NULLPTR;
       safe.flags=0x10000*2;
       safe.opt=__PLUMED_WRAPPER_CXX_NULLPTR;
+      buffer[0]='\0';
     }
 
     SafePtr(const plumed_safeptr & safe,__PLUMED_WRAPPER_STD size_t nelem=0, const __PLUMED_WRAPPER_STD size_t* shape=__PLUMED_WRAPPER_CXX_NULLPTR) __PLUMED_WRAPPER_CXX_NOEXCEPT {
       this->safe=safe;
+      buffer[0]='\0';
       if(nelem>0) this->safe.nelem=nelem;
       if(shape) this->safe.shape=const_cast<__PLUMED_WRAPPER_STD size_t*>(shape);
     }
@@ -2127,6 +2132,7 @@ private:
       safe.shape=nullptr;
       safe.flags=0x10000*2;
       safe.opt=nullptr;
+      buffer[0]='\0';
       (void) nelem;
       (void) shape;
     }
@@ -2140,6 +2146,7 @@ private:
     safe.shape=const_cast<__PLUMED_WRAPPER_STD size_t*>(shape); \
     safe.flags=flags_; \
     safe.opt=__PLUMED_WRAPPER_CXX_NULLPTR; \
+    buffer[0]='\0'; \
   }
 
 /// Macro that uses __PLUMED_WRAPPER_SAFEPTR_INNER to generate constructors with
@@ -2160,14 +2167,16 @@ private:
 /// allow pass-by-value
 #define __PLUMED_WRAPPER_SAFEPTR_SIZED(type,code) \
   __PLUMED_WRAPPER_SAFEPTR(type,code,sizeof(type)) \
-  SafePtr(type& val, __PLUMED_WRAPPER_STD size_t nelem, const __PLUMED_WRAPPER_STD size_t* shape) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
+  SafePtr(type val, __PLUMED_WRAPPER_STD size_t nelem, const __PLUMED_WRAPPER_STD size_t* shape) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
+    assert(sizeof(type)<=32); \
     (void) nelem; \
     (void) shape; \
-    safe.ptr=& val; \
+    safe.ptr=buffer; \
     safe.nelem=1; \
     safe.shape=__PLUMED_WRAPPER_CXX_NULLPTR; \
     safe.flags=sizeof(type) | (0x10000*(code)) | (0x2000000*1); \
     safe.opt=__PLUMED_WRAPPER_CXX_NULLPTR; \
+    __PLUMED_WRAPPER_STD memcpy(buffer,&val,sizeof(type)); \
   }
 
 /// Here we create all the required instances
