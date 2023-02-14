@@ -2106,6 +2106,12 @@ private:
     plumed_safeptr safe;
     /// This buffer holds a copy of the data when they are passed by value.
     /// The size is sufficient to hold any primitive type.
+    /// Notice that the buffer is required to enable conversions (e.g., passing a class that can be converted to int)
+    /// and, at the same time, allow the object to exist after SafePtr constructor has completed.
+    /// A perhaps cleaner implementation would require a base class containing
+    /// the plumed_safeptr object, derived classes depending on the
+    /// argument type as a template parameter, and overloaded functions
+    /// returning this derived class.
     char buffer[32];
     /// Default constructor, nullptr
     SafePtr() __PLUMED_WRAPPER_CXX_NOEXCEPT {
