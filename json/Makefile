@@ -23,7 +23,7 @@ else
 
 all:
 	./get_action_list.sh > action_list
-	../src/lib/plumed gen_json --actions action_list > syntax.json
+	../src/lib/plumed --no-mpi gen_json --actions action_list > syntax.json
 
 endif
 
