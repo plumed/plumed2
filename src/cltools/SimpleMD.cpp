@@ -144,7 +144,7 @@ private:
     parse("tstep",tstep);
     std::string frictionstr; parse("friction",frictionstr);
     if( tempstr!="NVE" ) {
-      if(frictionstr=="off") { std::fprintf(stderr,"Specify friction for thermostat\n"); std::exit(1); }
+      if(frictionstr=="off") error("Specify friction for thermostat");
       Tools::convert(frictionstr,friction);
     }
     parse("forcecutoff",forcecutoff);
@@ -156,34 +156,19 @@ private:
 
     // Read in stuff with sanity checks
     parse("inputfile",inputfile);
-    if(inputfile.length()==0) {
-      std::fprintf(stderr,"Specify input file\n");
-      std::exit(1);
-    }
+    if(inputfile.length()==0) error("Specify input file");
     parse("outputfile",outputfile);
-    if(outputfile.length()==0) {
-      std::fprintf(stderr,"Specify output file\n");
-      std::exit(1);
-    }
+    if(outputfile.length()==0) error("Specify output file");
     std::string nconfstr; parse("nconfig",nconfstr);
     std::sscanf(nconfstr.c_str(),"%100d %255s",&nconfig,buffer1);
     trajfile=buffer1;
-    if(trajfile.length()==0) {
-      std::fprintf(stderr,"Specify traj file\n");
-      std::exit(1);
-    }
+    if(trajfile.length()==0) error("Specify traj file");
     std::string nstatstr; parse("nstat",nstatstr);
     std::sscanf(nstatstr.c_str(),"%100d %255s",&nstat,buffer1);
     statfile=buffer1;
-    if(statfile.length()==0) {
-      std::fprintf(stderr,"Specify stat file\n");
-      std::exit(1);
-    }
+    if(statfile.length()==0) error("Specify stat file");
     parse("ndim",ndim);
-    if(ndim<1 || ndim>3) {
-      std::fprintf(stderr,"ndim should be 1,2 or 3\n");
-      std::exit(1);
-    }
+    if(ndim<1 || ndim>3) error("ndim should be 1,2 or 3");
     std::string w;
     parse("wrapatoms",w);
     wrapatoms=false;
@@ -193,10 +178,7 @@ private:
   void read_natoms(const std::string & inputfile,int & natoms) {
 // read the number of atoms in file "input.xyz"
     FILE* fp=fopen(inputfile.c_str(),"r");
-    if(!fp) {
-      std::fprintf(stderr,"ERROR: file %s not found\n",inputfile.c_str());
-      std::exit(1);
-    }
+    if(!fp) error(std::string("file ") + inputfile + std::string(" not found"));
 
 // call fclose when fp goes out of scope
     auto deleter=[](FILE* f) { fclose(f); };
@@ -210,10 +192,7 @@ private:
 // read positions and cell from a file called inputfile
 // natoms (input variable) and number of atoms in the file should be consistent
     FILE* fp=fopen(inputfile.c_str(),"r");
-    if(!fp) {
-      std::fprintf(stderr,"ERROR: file %s not found\n",inputfile.c_str());
-      std::exit(1);
-    }
+    if(!fp) error(std::string("file ") + inputfile + std::string(" not found"));
 // call fclose when fp goes out of scope
     auto deleter=[](FILE* f) { fclose(f); };
     std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
