@@ -24,6 +24,7 @@
 #include "AtomNumber.h"
 #include <cstdlib>
 #include <cstring>
+#include <cstdio>
 
 namespace PLMD {
 
@@ -108,10 +109,9 @@ void Communicator::Abort(int errorcode) {
   if(initialized()) {
     MPI_Abort(communicator,errorcode);
   }
-  std::exit(errorcode);
-#else
-  std::exit(errorcode);
 #endif
+  std::fprintf(stderr,"aborting with error code %d\n",errorcode);
+  std::abort();
 }
 
 void Communicator::Bcast(Data data,int root) {
