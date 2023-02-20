@@ -97,7 +97,7 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
     // Handle conversion of action names to links
     std::cout<<"    \"hyperlink\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/";
     std::transform(action.begin(), action.end(), action.begin(), [](unsigned char c) { return std::tolower(c); });
-    for(unsigned n=0;; ++n) {
+    while(true) {
       std::size_t und=action.find_first_of("_");
       if( und==std::string::npos ) break;
       std::string first=action.substr(0,und);
