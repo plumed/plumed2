@@ -297,8 +297,6 @@ PRINT STRIDE=100 FILE=COLVAR ARG=cv,opes.*
 
 struct exploration { static const bool explore=true; };
 typedef OPESmetad<exploration> OPESmetad_e;
-// For some reason, this is not seen correctly by cppcheck
-// cppcheck-suppress unknownMacro
 PLUMED_REGISTER_ACTION(OPESmetad_e,"OPES_METAD_EXPLORE")
 
 template <class mode>

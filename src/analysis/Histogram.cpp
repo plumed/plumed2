@@ -344,7 +344,6 @@ void Histogram::turnOnDerivatives() {
   for(unsigned i=0; i<myvessels.size(); ++i) {
     multicolvar::MultiColvarBase* mbase=dynamic_cast<multicolvar::MultiColvarBase*>( myvessels[i] );
     if( !mbase ) error("do not know how to get histogram derivatives for actions of type " + myvessels[i]->getName() );
-    // cppcheck-suppress nullPointerRedundantCheck
     tmp_atoms = mbase->getAbsoluteIndexes();
     for(unsigned j=0; j<tmp_atoms.size(); ++j) all_atoms.push_back( tmp_atoms[j] );
     // Make a tempory multi value so we can avoid vector resizing
