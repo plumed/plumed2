@@ -58,16 +58,17 @@ size_t OFile::llwrite(const char*ptr,size_t s) {
       r=std::fwrite(ptr,1,s,fp);
     }
   }
+  if(comm) {
 //  This barrier is apparently useless since it comes
 //  just before a Bcast.
 //
 //  Anyway, it looks like it is solving an issue that appeared on
 //  TRAVIS (at least on my laptop) so I add it here.
 //  GB
-  if(comm) comm->Barrier();
+    comm->Barrier();
+    comm->Bcast(r,0);
+  }
 
-
-  if(comm) comm->Bcast(r,0);
   return r;
 }
 
