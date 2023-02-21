@@ -486,7 +486,7 @@ EMMI::EMMI(const ActionOptions&ao):
     if(dsigma>0 && MCstride_<=0) error("you must specify a positive MC_STRIDE");
     // status file parameters
     parse("WRITE_STRIDE", statusstride_);
-    if(statusstride_<=0) error("you must specify a positive WRITE_STRIDE");
+    if(statusstride_==0) error("you must specify a positive WRITE_STRIDE");
     parse("STATUS_FILE",  statusfilename_);
     if(statusfilename_=="") statusfilename_ = "MISTATUS"+getLabel();
     else                    statusfilename_ = statusfilename_+getLabel();
@@ -543,7 +543,7 @@ EMMI::EMMI(const ActionOptions&ao):
   parse("NL_CUTOFF",nl_cutoff_);
   if(nl_cutoff_<=0.0) error("NL_CUTOFF should be explicitly specified and positive");
   parse("NL_STRIDE",nl_stride_);
-  if(nl_stride_<=0) error("NL_STRIDE should be explicitly specified and positive");
+  if(nl_stride_==0) error("NL_STRIDE should be explicitly specified and positive");
 
   // averaging or not
   parseFlag("NO_AVER",no_aver_);
