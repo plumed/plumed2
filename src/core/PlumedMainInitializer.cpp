@@ -231,7 +231,8 @@ static void translate_current(plumed_nothrow_handler_x nothrow,void**nested=null
   } catch(const std::exception & e) {
     if(!msg) msg=e.what();
     nothrow.handler(nothrow.ptr,10000,msg,opt);
-  } catch(const char* msg) {
+  } catch(const char* m) {
+    if(!msg) msg=m;
     nothrow.handler(nothrow.ptr,10000,msg,opt);
   } catch(const std::string & s) {
     if(!msg) msg=s.c_str();
