@@ -7,14 +7,14 @@ are done in plumed may feel unfamiliar to developers in the scientific community
 if our experience is anything to go by, are more used to programming in non-object
 oriented languages.  For this reason we have tried in what follows to explain how
 we have used the features of object oriented programming in plumed 2.  We
-hope that this guide is helpful and appologize in advance to any developers
+hope that this guide is helpful and apologize in advance to any developers
 who feel patronized.     
 
 \section intro Object oriented programming
 
 The main objective in object oriented programming is to write code that is more 
 resilient to bugs.  There are two ways that object oriented programing allows
-us to acchieve these aims:
+us to achieve these aims:
 
 - In object oriented programs one generally needs fewer lines of code
 - Object oriented programming allows us to use the compiler to do many more checks of the code 
@@ -52,7 +52,7 @@ double f( double x, struct fparams myparams );
 \endverbatim
 
 <b>
-Nevertheless for reasons that will hopefully become clear as you read this document every bias, 
+Nevertheless for reasons that will hopefully become clear as you read this document, every bias, 
 colvar and function that is implemented in plumed 2 is inside its own separate class.
 </b>
 
