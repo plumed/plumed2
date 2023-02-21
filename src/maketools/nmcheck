@@ -6,10 +6,26 @@
 
 LIST=$(nm -C "$@" 2>/dev/null | grep " u " | grep -v "boost::" | grep -v "c10::" | grep -v "std::_Sp_make_shared_tag")
 
+FAILED=
+
 if test -n "$LIST" ;
 then
   echo "WARNING: there are unique global symbols"
   echo "$LIST"
   echo "see https://github.com/plumed/plumed2/issues/549"
+  FAILED=yes
+fi
+
+LIST=$(for file in */*.o ; do nm -C $file 2>/dev/null | grep "U _exit" && echo $file ; done)
+
+if test -n "$LIST" ;
+then
+  echo "WARNING: there are calls to exit, please replace them with exceptions or abort"
+  echo "$LIST"
+  FAILED=yes
+fi
+
+if test -n "$FAILED" ;
+then
   exit 1
 fi
