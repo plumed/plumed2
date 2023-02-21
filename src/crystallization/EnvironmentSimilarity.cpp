@@ -280,7 +280,7 @@ double EnvironmentSimilarity::compute( const unsigned& tindex, multicolvar::Atom
   if (environments_.size()==1 && atomNames_.empty() ) {
     // One reference environment case - no atom names
     for(unsigned i=1; i<myatoms.getNumberOfAtoms(); ++i) {
-      Vector& distance=myatoms.getPosition(i);
+      const Vector& distance=myatoms.getPosition(i);
       double d2;
       if ( (d2=distance[0]*distance[0])<rcut2_ &&
            (d2+=distance[1]*distance[1])<rcut2_ &&
@@ -300,7 +300,7 @@ double EnvironmentSimilarity::compute( const unsigned& tindex, multicolvar::Atom
     std::vector<double> values(environments_.size()); //value for each template
     // First time calculate sums
     for(unsigned i=1; i<myatoms.getNumberOfAtoms(); ++i) {
-      Vector& distance=myatoms.getPosition(i);
+      const Vector& distance=myatoms.getPosition(i);
       double d2;
       if ( (d2=distance[0]*distance[0])<rcut2_ &&
            (d2+=distance[1]*distance[1])<rcut2_ &&
@@ -323,7 +323,7 @@ double EnvironmentSimilarity::compute( const unsigned& tindex, multicolvar::Atom
     }
     // Second time find derivatives
     for(unsigned i=1; i<myatoms.getNumberOfAtoms(); ++i) {
-      Vector& distance=myatoms.getPosition(i);
+      const Vector& distance=myatoms.getPosition(i);
       double d2;
       if ( (d2=distance[0]*distance[0])<rcut2_ &&
            (d2+=distance[1]*distance[1])<rcut2_ &&
@@ -346,7 +346,7 @@ double EnvironmentSimilarity::compute( const unsigned& tindex, multicolvar::Atom
     std::vector<double> values(environments_.size()); //value for each template
     // First time calculate sums
     for(unsigned i=1; i<myatoms.getNumberOfAtoms(); ++i) {
-      Vector& distance=myatoms.getPosition(i);
+      const Vector& distance=myatoms.getPosition(i);
       double d2;
       if ( (d2=distance[0]*distance[0])<rcut2_ &&
            (d2+=distance[1]*distance[1])<rcut2_ &&
@@ -371,7 +371,7 @@ double EnvironmentSimilarity::compute( const unsigned& tindex, multicolvar::Atom
     }
     // Second time find derivatives
     for(unsigned i=1; i<myatoms.getNumberOfAtoms(); ++i) {
-      Vector& distance=myatoms.getPosition(i);
+      const Vector& distance=myatoms.getPosition(i);
       double d2;
       if ( (d2=distance[0]*distance[0])<rcut2_ &&
            (d2+=distance[1]*distance[1])<rcut2_ &&

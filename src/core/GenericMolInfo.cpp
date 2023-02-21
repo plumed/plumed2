@@ -280,7 +280,7 @@ void GenericMolInfo::interpretSymbol( const std::string& symbol, std::vector<Ato
         }
         words.erase(words.begin());
         atoms.resize(0);
-        for(auto & w : words) {
+        for(const auto & w : words) {
           int n;
           if(w.empty()) continue;
           Tools::convert(w,n);

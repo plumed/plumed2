@@ -223,9 +223,9 @@ void WrapAround::calculate() {
       closest = i/groupby;
     } else {
       for(unsigned j=0; j<reference.size(); ++j) {
-        Vector & second (modifyGlobalPosition(reference[j]));
-        Vector distance=pbcDistance(first,second);
-        double distance2=modulo2(distance);
+        const Vector & second (modifyGlobalPosition(reference[j]));
+        const Vector distance=pbcDistance(first,second);
+        const double distance2=modulo2(distance);
         if(distance2<mindist2) {
           mindist2=distance2;
           closest=j;
