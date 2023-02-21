@@ -87,7 +87,7 @@ private:
   /// The data in the matrix
   std::vector<T> data;
 public:
-  Matrix(const unsigned nr=0, const unsigned nc=0 )  : sz(nr*nc), rw(nr), cl(nc), data(nr*nc) {}
+  explicit Matrix(const unsigned nr=0, const unsigned nc=0 )  : sz(nr*nc), rw(nr), cl(nc), data(nr*nc) {}
   Matrix(const Matrix<T>& t) : sz(t.sz), rw(t.rw), cl(t.cl), data(t.data) {}
   /// Resize the matrix
   void resize( const unsigned nr, const unsigned nc ) { rw=nr; cl=nc; sz=nr*nc; data.resize(sz); }

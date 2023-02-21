@@ -1815,7 +1815,7 @@ private:
     plumed_error&e;
     finalize_plumed_error(const finalize_plumed_error&); //not implemented
   public:
-    finalize_plumed_error(plumed_error&e):
+    __PLUMED_WRAPPER_CXX_EXPLICIT finalize_plumed_error(plumed_error&e):
       e(e)
     {}
     ~finalize_plumed_error() {
@@ -2123,7 +2123,7 @@ private:
       buffer[0]='\0';
     }
 
-    SafePtr(const plumed_safeptr & safe,__PLUMED_WRAPPER_STD size_t nelem=0, const __PLUMED_WRAPPER_STD size_t* shape=__PLUMED_WRAPPER_CXX_NULLPTR) __PLUMED_WRAPPER_CXX_NOEXCEPT {
+    __PLUMED_WRAPPER_CXX_EXPLICIT SafePtr(const plumed_safeptr & safe,__PLUMED_WRAPPER_STD size_t nelem=0, const __PLUMED_WRAPPER_STD size_t* shape=__PLUMED_WRAPPER_CXX_NULLPTR) __PLUMED_WRAPPER_CXX_NOEXCEPT {
       this->safe=safe;
       buffer[0]='\0';
       if(nelem>0) this->safe.nelem=nelem;

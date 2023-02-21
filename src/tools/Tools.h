@@ -273,7 +273,7 @@ public:
     {
       typename C::const_iterator fwdIt,endIt;
 
-      Entry(C const& v) : fwdIt(v.begin()), endIt(v.end()) {}
+      explicit Entry(C const& v) : fwdIt(v.begin()), endIt(v.end()) {}
       /// check if this vector still contains something to be pushed
       explicit operator bool () const { return fwdIt != endIt; }
       /// to allow using a priority_queu, which selects the highest element.
