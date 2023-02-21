@@ -245,7 +245,7 @@ double PAMM::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatom
 Vector PAMM::getCentralAtom() {
   // Who knows how this should work
   plumed_error();
-  return Vector(1.0,0.0,0.0);
+  // return Vector(1.0,0.0,0.0);
 }
 
 }
