@@ -52,7 +52,7 @@ plumed simplemd < in
 The following is an example of an input file for a simplemd calculation. This file
 instructs simplemd to do 50 steps of MD at a temperature of 0.722
 \verbatim
-nputfile input.xyz
+inputfile input.xyz
 outputfile output.xyz
 temperature 0.722
 tstep 0.005
