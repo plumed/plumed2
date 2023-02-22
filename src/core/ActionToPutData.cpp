@@ -122,7 +122,7 @@ void ActionToPutData::transferFixedValue() {
 }
 
 void ActionToPutData::wait() {
-   if( fixed || !wasset ) { return; } plumed_assert( wasset ); 
+   dataCanBeSet=false; if( fixed || !wasset ) { return; } plumed_assert( wasset ); 
    mydata->share_data( 0, getPntrToValue()->getNumberOfValues(), getPntrToValue() );
 }
 

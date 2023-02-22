@@ -357,6 +357,8 @@ void DomainDecomposition::share(const bool& getallatoms, const std::set<AtomNumb
 }
 
 void DomainDecomposition::wait() {
+  for(const auto & ip : inputs) ip->dataCanBeSet=false; 
+
   if(dd && shuffledAtoms>0) {
     int ndata=0; std::vector<Value*> values_to_set;
     for(const auto & ip : inputs) {

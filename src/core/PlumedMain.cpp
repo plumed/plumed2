@@ -606,12 +606,24 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         *(static_cast<int*>(val))=(actionRegister().check(words[1]) ? 1:0);
         break;
       case cmd_setExtraCV:
+      {
         CHECK_NOTNULL(val,word); plumed_assert(nw==2);
-        setInputValue( words[1], 1, val ); 
+        bool usecv = false;
+        for(const auto & p : inputs) {
+           if( p->getLabel()==words[1] ) { usecv=true; break; }
+        }
+        if( usecv ) setInputValue( words[1], 1, val ); 
+      }
         break;
       case cmd_setExtraCVForce:
+      {
         CHECK_NOTNULL(val,word); plumed_assert(nw==2);
-        setInputForce( words[1], val ); 
+        bool usecv = false;
+        for(const auto & p : inputs) {
+           if( p->getLabel()==words[1] ) { usecv=true; break; }
+        }
+        if( usecv ) setInputForce( words[1], val ); 
+      }
         break;
       case cmd_GREX:
         if(!grex) grex=Tools::make_unique<GREX>(*this);

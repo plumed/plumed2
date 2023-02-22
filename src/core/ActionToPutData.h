@@ -73,7 +73,7 @@ public:
 /// This transfers a constant value across from the MD code
   void transferFixedValue();
 /// Share the data
-  void share() override { dataCanBeSet=false; }
+  void share() override {}
   void shareAll() override {}
 /// Get the data to share
   virtual void wait();
