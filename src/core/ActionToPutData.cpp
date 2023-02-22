@@ -95,7 +95,7 @@ void ActionToPutData::updateUnits( const Units& MDUnits, const Units& units ) {
   else if( unit==m ) vunits = MDUnits.getMass()/units.getMass();
   else if( unit==q ) vunits = MDUnits.getCharge()/units.getCharge();
   else if( unit==t ) vunits = MDUnits.getTime()/units.getTime();
-  mydata->setUnit(vunits); if( fixed ) transferFixedValue();
+  mydata->setUnit(vunits); if( fixed ) transferFixedValue( vunits );
   if( funit==eng ) mydata->setForceUnit(units.getEnergy()/MDUnits.getEnergy());
   else if( funit==d ) mydata->setForceUnit((units.getEnergy()/MDUnits.getEnergy())*vunits);
 }
@@ -116,7 +116,7 @@ bool ActionToPutData::setForcePointer( const std::string& name, void* val ) {
    mydata->setForcePointer(val); return true;
 }
 
-void ActionToPutData::transferFixedValue() {
+void ActionToPutData::transferFixedValue( const double& unit ) {
    plumed_assert( fixed ); if( !wasset ) return;
    mydata->share_data( 0, getPntrToValue()->getNumberOfValues(), getPntrToValue() );
 }

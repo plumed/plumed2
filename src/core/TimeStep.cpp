@@ -33,6 +33,7 @@ public:
   static void registerKeywords( Keywords& keys );
 /// Set the value pointer
   bool setValuePointer( const std::string& name, void* val ) override ;
+  void transferFixedValue( const double& unit ) override ;
 };
 
 
@@ -54,14 +55,23 @@ void TimeStep::registerKeywords( Keywords& keys ) {
 
 bool TimeStep::setValuePointer( const std::string& name, void* val ) {
   if( name!=getLabel() ) return false;
+  wasset=true; plumed_massert( dataCanBeSet, "set " + getLabel() + " cannot be set at this time"); 
   timestep = MD2double(val);  
 // The following is to avoid extra digits in case the MD code uses floats
 // e.g.: float f=0.002 when converted to double becomes 0.002000000094995
 // To avoid this, we keep only up to 6 significant digits after first one
   double magnitude=std::pow(10,std::floor(std::log10(timestep)));
   timestep=std::floor(timestep/magnitude*1e6)/1e6*magnitude;
-  return ActionToPutData::setValuePointer( name, &timestep );
+  return true; 
 }
+
+void TimeStep::transferFixedValue( const double& unit ) {
+   plumed_assert( fixed ); if( !wasset ) return;
+// We have to transfer the value here as we store the data as a double in PLUMED in order to 
+// overcome all the stuff about extra digits in the above comment
+   getPntrToValue()->set( unit*timestep );
+}  
+
 
 }
 

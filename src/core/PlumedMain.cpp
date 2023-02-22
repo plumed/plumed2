@@ -500,7 +500,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         cmd("createValue timestep: TIMESTEP");
         ActionToPutData* ts = actionSet.selectWithLabel<ActionToPutData*>("timestep");
         if( !ts->setValuePointer("timestep", val ) ) plumed_error();
-        ts->transferFixedValue(); 
+        ts->transferFixedValue( MDUnits.getTime()/units.getTime() ); 
       }
         break;
       /* ADDED WITH API==2 */
@@ -511,7 +511,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         cmd("createValue KbT: PUT CONSTANT PERIODIC=NO UNIT=energy");
         ActionToPutData* kb = actionSet.selectWithLabel<ActionToPutData*>("KbT");
         if( !kb->setValuePointer("KbT", val ) ) plumed_error();
-        kb->transferFixedValue(); 
+        kb->transferFixedValue( MDUnits.getEnergy()/units.getEnergy() ); 
       }
         break;
       /* ADDED WITH API==3 */

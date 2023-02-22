@@ -32,6 +32,7 @@ class ActionToPutData :
 public ActionForInterface 
 {
 friend class PlumedMain;
+friend class TimeStep;
 friend class DomainDecomposition;
 private:
 /// Are we not applying forces on this values
@@ -71,7 +72,7 @@ public:
 /// And this gets the number of forces that need to be rescaled
   unsigned getNumberOfForcesToRescale() const override ;
 /// This transfers a constant value across from the MD code
-  void transferFixedValue();
+  virtual void transferFixedValue( const double& unit );
 /// Share the data
   void share() override {}
   void shareAll() override {}
