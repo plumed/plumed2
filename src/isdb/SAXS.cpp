@@ -23,16 +23,18 @@
  This class was originally written by Alexander Jussupow
  Arrayfire implementation by Alexander Jussupow and CC
  Extension for the middleman algorithm (now removed) by Max Muehlbauer
- Refactoring for hySAXS Martini beads structure factor for Nucleic Acids by Cristina Paissoni
- Refactoring for hySAXS OneBead structure factor with solvent correction by Federico Ballabio and Riccardo Capelli
+ Refactoring for hySAXS Martini form factors for Nucleic Acids by Cristina Paissoni
+ Refactoring for hySAS OneBead form factors with solvent correction by Federico Ballabio and Riccardo Capelli
 */
 
 #include "MetainferenceBase.h"
 #include "core/ActionRegister.h"
 #include "core/ActionSet.h"
 #include "core/GenericMolInfo.h"
+#include "tools/MolDataClass.h"
 #include "tools/Communicator.h"
 #include "tools/Pbc.h"
+#include "tools/PDB.h"
 
 #include <map>
 #include <iterator>
@@ -85,8 +87,8 @@ GPU if the ARRAYFIRE libraries are installed and correctly linked.
 \ref METAINFERENCE can be activated using DOSCORE and the other relevant keywords.
 
 \par Examples
-in the following example the SAXS intensities are calculated using the single bead per residue approximation.
-structure factors are obtained from the pdb file indicated in the MOLINFO.
+in the following example the SAXS intensities are calculated using one bead per residue approximation.
+Form factors are selected depending on the pdb file indicated in the MOLINFO.
 
 \plumedfile
 MOLINFO STRUCTURE=template_AA.pdb
@@ -194,13 +196,15 @@ private:
          DT_5TE, DT_TE3, DT_TE5, NMARTINI
        };
   enum { TRP, TYR, PHE, HIS, HIP, ARG, LYS, CYS, ASP, GLU, ILE, LEU,
-         MET, ASN, PRO, GLN, SER, THR, VAL, ALA, GLY, NONEBEAD
+         MET, ASN, PRO, GLN, SER, THR, VAL, ALA, GLY, 
+	     NUC_A, NUC_C, NUC_T, NUC_G, NUC_U, BB_DNA, BB_DNA_T, BB_RNA, BB_RNA_T, NONEBEAD
        };
   bool saxs;
   bool pbc;
   bool serial;
   bool gpu;
   bool onebead;
+  std::string template_name;
   bool isFirstStep;
   int  deviceid;
   unsigned nres;
@@ -243,10 +247,10 @@ private:
 
   void calculate_gpu(std::vector<Vector> &pos, std::vector<Vector> &deriv);
   void calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv);
-  void getMartiniSFparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter);
-  void getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv);
+  void getMartiniFFparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter);
+  void getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv, std::vector<unsigned> residue_atom);
   void getOnebeadMapping(const std::vector<AtomNumber> &atoms);
-  double calculateASF(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double rho);
+  double calculateAFF(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double rho);
   std::map<std::string, std::vector<double> > setupLCPOparam();
   void readLCPOparam(const std::vector<std::vector<std::string> > &AtomResidueName, unsigned natoms);
   void calcNlist(std::vector<std::vector<int> > &Nlist);
@@ -254,7 +258,7 @@ private:
   //SANS:
   void getOnebeadparam_sansH(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_H, std::vector<std::vector<long double> > &parameter_mix_H, std::vector<std::vector<long double> > &parameter_solv_H);
   void getOnebeadparam_sansD(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_D, std::vector<std::vector<long double> > &parameter_mix_D, std::vector<std::vector<long double> > &parameter_solv_D);
-  double calculateASFsans(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double deuter_conc);
+  double calculateAFFsans(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double deuter_conc);
 
 public:
   static void registerKeywords( Keywords& keys );
@@ -276,15 +280,17 @@ void SAXS::registerKeywords(Keywords& keys) {
   keys.addFlag("ATOMISTIC",false,"calculate SAXS for an atomistic model");
   keys.addFlag("MARTINI",false,"calculate SAXS for a Martini model");
   keys.addFlag("ONEBEAD",false,"calculate SAXS for a single bead model");
+  keys.add("compulsory","TEMPLATE","template.pdb","A PDB file is required for Onebead mapping.");
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
-  keys.add("numbered","QVALUE","Selected scattering lengths in Angstrom are given as QVALUE1, QVALUE2, ... .");
-  keys.add("numbered","PARAMETERS","Used parameter Keywords like PARAMETERS1, PARAMETERS2. These are used to calculate the structure factor for the \\f$i\\f$th atom/bead.");
+  keys.add("numbered","QVALUE","Selected scattering lengths in inverse angstroms are given as QVALUE1, QVALUE2, ... .");
+  keys.add("numbered","PARAMETERS","Used parameter Keywords like PARAMETERS1, PARAMETERS2. These are used to calculate the form factor for the \\f$i\\f$th atom/bead.");
   keys.add("compulsory","DEUTER_CONC","0.","Fraction of deuterated solvent");
-  keys.add("compulsory","SOLVDENS","0.334","Density of the solvent to be used for the correction of atomistic structure factors.");
+  keys.add("compulsory","SOLVDENS","0.334","Density of the solvent to be used for the correction of atomistic form factors.");
   keys.add("compulsory","SOLVATION_CORRECTION","0.0","Hydration layer electron density correction (ONEBEAD only).");
   keys.add("compulsory","SASA_CUTOFF","1.0","SASA value to consider a residue as exposed to the solvent (ONEBEAD only).");
   keys.add("numbered","EXPINT","Add an experimental value for each q value.");
-  keys.add("compulsory","SOLVATION_STRIDE","100","Number of steps between every new check of the residues solvation via LCPO estimate (ONEBEAD only).");
+  keys.add("compulsory","SOLVATION_STRIDE","100","Number of steps between every new residues solvation estimation via LCPO (ONEBEAD only).");
+  keys.add("compulsory","SCALE_EXPINT","1.0","Scaling value for experimental data normalization.");
   keys.addOutputComponent("q","default","the # SAXS of q");
   keys.addOutputComponent("exp","EXPINT","the # experimental intensity");
 }
@@ -339,13 +345,16 @@ SAXS::SAXS(const ActionOptions&ao):
 
   bool atomistic=false;
   parseFlag("ATOMISTIC",atomistic);
-  if(atomistic) log.printf("  using atomistic structure factors\n");
+  if(atomistic) log.printf("  using atomistic form factors\n");
   bool martini=false;
   parseFlag("MARTINI",martini);
-  if(martini) log.printf("  using Martini structure factors\n");
+  if(martini) log.printf("  using Martini form factors\n");
   onebead=false;
   parseFlag("ONEBEAD",onebead);
-  if(onebead) log.printf("  using Single Bead structure factors\n");
+  if(onebead) {
+    log.printf("  using Onebead form factors\n");
+    parse("TEMPLATE",template_name);
+  }
 
   if(martini&&atomistic) error("You cannot use MARTINI and ATOMISTIC at the same time");
   if(martini&&onebead) error("You cannot use MARTINI and ONEBEAD at the same time");
@@ -378,6 +387,9 @@ SAXS::SAXS(const ActionOptions&ao):
   rho = 0.334;
   parse("SOLVDENS", rho);
   log.printf("  Solvent density of %lf\n", rho);
+
+  double scale_expint=1.;
+  parse("SCALE_EXPINT",scale_expint);
 
   solv_stride = 100;
   parse("SOLVATION_STRIDE", solv_stride);
@@ -460,7 +472,7 @@ SAXS::SAXS(const ActionOptions&ao):
       std::vector<std::vector<long double> > parameter_vac(NONEBEAD);
       std::vector<std::vector<long double> > parameter_mix(NONEBEAD);
       std::vector<std::vector<long double> > parameter_solv(NONEBEAD);
-      getOnebeadparam(atoms, parameter_vac, parameter_mix, parameter_solv);
+      getOnebeadparam(atoms, parameter_vac, parameter_mix, parameter_solv,residue_atom);
       for(unsigned i=0; i<NONEBEAD; ++i) {
         for(unsigned k=0; k<numq; ++k) {
           for(unsigned j=0; j<parameter_vac[i].size(); ++j) {
@@ -524,7 +536,7 @@ SAXS::SAXS(const ActionOptions&ao):
     //read in parameter std::vector
     FF_tmp.resize(numq,std::vector<long double>(NMARTINI));
     parameter.resize(NMARTINI);
-    getMartiniSFparam(atoms, parameter);
+    getMartiniFFparam(atoms, parameter);
     for(unsigned i=0; i<NMARTINI; ++i) {
       for(unsigned k=0; k<numq; ++k) {
         for(unsigned j=0; j<parameter[i].size(); ++j) {
@@ -536,8 +548,8 @@ SAXS::SAXS(const ActionOptions&ao):
     Iq0 *= Iq0;
   } else if(atomistic) {
     FF_tmp.resize(numq,std::vector<long double>(NTT));
-    if(saxs) Iq0=calculateASF(atoms, FF_tmp, rho);
-    else Iq0=calculateASFsans(atoms, FF_tmp, deuter_conc);
+    if(saxs) Iq0=calculateAFF(atoms, FF_tmp, rho);
+    else Iq0=calculateAFFsans(atoms, FF_tmp, deuter_conc);
     Iq0 *= Iq0;
   }
 
@@ -548,6 +560,7 @@ SAXS::SAXS(const ActionOptions&ao):
     if( !parseNumbered( "EXPINT", i+1, expint[i] ) ) break;
     ntarget++;
   }
+  std::transform(expint.begin(), expint.begin() + ntarget, expint.begin(), [scale_expint](double x) { return x / scale_expint; });
   bool exp=false;
   if(ntarget!=numq && ntarget!=0) error("found wrong number of EXPINT values");
   if(ntarget==numq) exp=true;
@@ -978,7 +991,7 @@ void SAXS::calculate()
         aa_deriv[atom_id] = Vector(atoms_masses[atom_id],atoms_masses[atom_id],atoms_masses[atom_id]);
         sum_pos += atoms_masses[atom_id] * getPosition(atom_id); // getPosition(first_atom+atom_id)
         sum_mass += atoms_masses[atom_id];
-        // Here I update the atom_id to stay sync'd with masses vector
+        // atom_id is updated to stay in sync with masses vector
         atom_id++;
       }
       beads_pos[i] = sum_pos/sum_mass;
@@ -1168,47 +1181,91 @@ void SAXS::update() {
 }
 
 void SAXS::getOnebeadMapping(const std::vector<AtomNumber> &atoms) {
+  // Here we read the chain information
+  PDB pdb;
+  if( !pdb.read(template_name,plumed.getAtoms().usingNaturalUnits(),1.) ) plumed_merror("missing input file " + template_name);
+  std::vector<std::string> chains; pdb.getChainNames( chains );
+  std::vector<bool> isprotein_chain(chains.size(),0);
+  std::vector<unsigned> res_per_chain(chains.size(),0);
+  std::vector<unsigned> cumulative_res_per_chain(chains.size()+1,0); // to have a mock chain N+1
+  std::vector<AtomNumber> chain_start(chains.size()+1); // to have a mock chain N+1
+
+  for (unsigned i=0;i<chains.size();++i){
+    unsigned start,end; 
+    AtomNumber astart,aend;
+    std::string errmsg;
+    pdb.getResidueRange( chains[i], start, end, errmsg );
+    res_per_chain[i]=end-start+1;
+    for (unsigned j=0;j<=i;++j){
+      pdb.getAtomRange( chains[j], astart, aend, errmsg );
+      if(MolDataClass::allowedResidue("dna",pdb.getResidueName(astart))||MolDataClass::allowedResidue("rna",pdb.getResidueName(astart))){
+        cumulative_res_per_chain[i+1] += 2*res_per_chain[j];
+	isprotein_chain[j]=0;
+      } else {
+        cumulative_res_per_chain[i+1] += res_per_chain[j];
+	isprotein_chain[j]=1;
+      }
+    }
+    pdb.getAtomRange( chains[i], astart, aend, errmsg );
+    chain_start[i] = astart;
+    chain_start[i+1].setIndex(aend.index()+1);
+  }
+
+  nres = cumulative_res_per_chain[chains.size()];
+  atoms_per_bead.resize(nres); 
+  atoms_masses.resize(atoms.size());
+  residue_atom.resize(atoms.size());
   auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+  std::vector<std::vector<std::string> > AtomResidueName;
   if( moldat ) {
     log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
-    // RC: Here we assume that we are with a continuous sequence; maybe we can extend it to
-    // discontinuous ones.
-    unsigned first_res = moldat->getResidueNumber(atoms[0]);
-    nres = moldat->getResidueNumber(atoms[atoms.size()-1]) - moldat->getResidueNumber(atoms[0]) + 1;
-    atoms_per_bead.resize(nres);
-    atoms_masses.resize(atoms.size());
-    residue_atom.resize(atoms.size());
-    std::vector<std::vector<std::string> > AtomResidueName;
-    AtomResidueName.resize(2);
-
-    log.printf("  Onebead residue mapping on %u residues\n", nres);
-
-    for(unsigned i=0; i<atoms.size(); ++i) {
-      atoms_per_bead[moldat->getResidueNumber(atoms[i])-first_res]++;
-      std::string Aname = moldat->getAtomName(atoms[i]);
-      std::string Rname = moldat->getResidueName(atoms[i]);
-      AtomResidueName[0].push_back(Aname);
-      AtomResidueName[1].push_back(Rname);
-      residue_atom[i] = moldat->getResidueNumber(atoms[i])-first_res;
-      char type;
-      char first = Aname.at(0);
-
-      // We assume that element symbol is first letter, if not a number
-      if (!isdigit(first)) {
-        type = first;
+    for (unsigned ch_id=0;ch_id<chains.size();++ch_id){
+      unsigned first_res = moldat->getResidueNumber(chain_start[ch_id]);
+      AtomResidueName.resize(2);
+      log.printf("  Onebead residue mapping on %u residues for chain ID %d\n", res_per_chain[ch_id], ch_id);
+      for(unsigned i=chain_start[ch_id].index(); i<chain_start[ch_id+1].index(); ++i) {
+        std::string Aname = moldat->getAtomName(atoms[i]);
+        std::string Rname = moldat->getResidueName(atoms[i]);
+        AtomResidueName[0].push_back(Aname);
+        AtomResidueName[1].push_back(Rname);
+        if(isprotein_chain[ch_id]){
+	      atoms_per_bead[moldat->getResidueNumber(atoms[i])-first_res+cumulative_res_per_chain[ch_id]]++;
+          residue_atom[i] = moldat->getResidueNumber(atoms[i])-first_res+cumulative_res_per_chain[ch_id];
+	    } 
+	    else {
+	      //check for backbone and sidechain in nucleic acids
+	      if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+	         Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" || 
+	         Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+	         Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+	         Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+	         Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){
+            atoms_per_bead[(moldat->getResidueNumber(atoms[i])-first_res)*2 + cumulative_res_per_chain[ch_id]]++;
+            residue_atom[i] = (moldat->getResidueNumber(atoms[i])-first_res)*2 + cumulative_res_per_chain[ch_id];
+	      }
+	      else {
+            atoms_per_bead[(moldat->getResidueNumber(atoms[i])-first_res)*2 + 1 + cumulative_res_per_chain[ch_id]]++;
+            residue_atom[i] = (moldat->getResidueNumber(atoms[i])-first_res)*2 + 1 +cumulative_res_per_chain[ch_id];
+	      }
+	    }
+        char type;
+        char first = Aname.at(0);
+        // We assume that element symbol is first letter, if not a number
+        if (!isdigit(first)) {
+          type = first;
         // otherwise is the second
-      } else {
-        type = Aname.at(1);
-      }
-
-      if (type == 'H') atoms_masses[i] = 1.008;
-      else if (type == 'C') atoms_masses[i] = 12.011;
-      else if (type == 'N') atoms_masses[i] = 14.007;
-      else if (type == 'O') atoms_masses[i] = 15.999;
-      else if (type == 'S') atoms_masses[i] = 32.065;
-      else if (type == 'P') atoms_masses[i] = 30.974;
-      else {
-        error("Unknown element in mass extraction\n");
+        } else {
+          type = Aname.at(1);
+        }
+        if (type == 'H') atoms_masses[i] = 1.008;
+        else if (type == 'C') atoms_masses[i] = 12.011;
+        else if (type == 'N') atoms_masses[i] = 14.007;
+        else if (type == 'O') atoms_masses[i] = 15.999;
+        else if (type == 'S') atoms_masses[i] = 32.065;
+        else if (type == 'P') atoms_masses[i] = 30.974;
+        else {
+          error("Unknown element in mass extraction\n");
+        }	
       }
     }
     readLCPOparam(AtomResidueName, atoms.size());
@@ -1217,7 +1274,7 @@ void SAXS::getOnebeadMapping(const std::vector<AtomNumber> &atoms) {
   }
 }
 
-void SAXS::getMartiniSFparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter)
+void SAXS::getMartiniFFparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter)
 {
   parameter[ALA_BB].push_back(9.045);
   parameter[ALA_BB].push_back(-0.098114);
@@ -2618,7 +2675,7 @@ void SAXS::getMartiniSFparam(const std::vector<AtomNumber> &atoms, std::vector<s
   }
 }
 
-void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv)
+void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv, std::vector<unsigned> residue_atom)
 {
 
   parameter_solv[TRP].push_back(60737.60249988003);
@@ -3125,64 +3182,549 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std
   parameter_vac[HIS].push_back(-19307.35836837878);
   parameter_vac[HIS].push_back(4780.831414992477);
 
+  //NUCLEIC ACIDS
+
+  parameter_solv[BB_DNA].push_back(29058.794048259362);
+  parameter_solv[BB_DNA].push_back(-163.90176335172552);
+  parameter_solv[BB_DNA].push_back(-72448.65451349212);
+  parameter_solv[BB_DNA].push_back(-27133.44556190471);
+  parameter_solv[BB_DNA].push_back(202903.4156791921);
+  parameter_solv[BB_DNA].push_back(-179712.90127901718);
+  parameter_solv[BB_DNA].push_back(50376.13482553027);
+
+  parameter_solv[BB_DNA_T].push_back(22737.624100119025);
+  parameter_solv[BB_DNA_T].push_back(-102.72714886664163);
+  parameter_solv[BB_DNA_T].push_back(-43685.329677789705);
+  parameter_solv[BB_DNA_T].push_back(-12564.259374093454);
+  parameter_solv[BB_DNA_T].push_back(83454.87540484876);
+  parameter_solv[BB_DNA_T].push_back(-60367.15652138888);
+  parameter_solv[BB_DNA_T].push_back(13507.33372986899);
+
+  parameter_solv[BB_RNA].push_back(32029.71842497462);
+  parameter_solv[BB_RNA].push_back(-140.693173545175);
+  parameter_solv[BB_RNA].push_back(-85763.45734623617);
+  parameter_solv[BB_RNA].push_back(-30042.38278248406);
+  parameter_solv[BB_RNA].push_back(253350.7778563679);
+  parameter_solv[BB_RNA].push_back(-235352.9406536495);
+  parameter_solv[BB_RNA].push_back(68941.90521759259);
+
+  parameter_solv[BB_RNA_T].push_back(25574.406400119024);
+  parameter_solv[BB_RNA_T].push_back(-132.03433541174888);
+  parameter_solv[BB_RNA_T].push_back(-52143.42667897374);
+  parameter_solv[BB_RNA_T].push_back(-16688.13425337558);
+  parameter_solv[BB_RNA_T].push_back(110317.06058702814);
+  parameter_solv[BB_RNA_T].push_back(-83753.7710820843);
+  parameter_solv[BB_RNA_T].push_back(19887.133560665752);
+
+  parameter_solv[NUC_A].push_back(13282.562500119211);
+  parameter_solv[NUC_A].push_back(-76.4512418150107);
+  parameter_solv[NUC_A].push_back(-28376.06993975573);
+  parameter_solv[NUC_A].push_back(-9972.910778631242);
+  parameter_solv[NUC_A].push_back(65873.8634277666);
+  parameter_solv[NUC_A].push_back(-52064.33493584656);
+  parameter_solv[NUC_A].push_back(12931.608991480814);
+
+  parameter_solv[NUC_C].push_back(10600.76160011891);
+  parameter_solv[NUC_C].push_back(-49.1671820468823);
+  parameter_solv[NUC_C].push_back(-20239.837635314965);
+  parameter_solv[NUC_C].push_back(-6020.289884557556);
+  parameter_solv[NUC_C].push_back(39632.19729555643);
+  parameter_solv[NUC_C].push_back(-28954.82953079656);
+  parameter_solv[NUC_C].push_back(6551.552568872256);
+
+  parameter_solv[NUC_G].push_back(15470.384400119929);
+  parameter_solv[NUC_G].push_back(-93.80217149938235);
+  parameter_solv[NUC_G].push_back(-36188.71011289895);
+  parameter_solv[NUC_G].push_back(-13717.940902527609);
+  parameter_solv[NUC_G].push_back(95660.40349471728);
+  parameter_solv[NUC_G].push_back(-81264.7013881852);
+  parameter_solv[NUC_G].push_back(21842.6444458418);
+
+  parameter_solv[NUC_T].push_back(17210.81610011936);
+  parameter_solv[NUC_T].push_back(-93.10189802920198);
+  parameter_solv[NUC_T].push_back(-36466.51927689958);
+  parameter_solv[NUC_T].push_back(-12425.556157169323);
+  parameter_solv[NUC_T].push_back(83847.42780892516);
+  parameter_solv[NUC_T].push_back(-66735.64997846575);
+  parameter_solv[NUC_T].push_back(16757.346398750706);
+
+  parameter_solv[NUC_U].push_back(10909.802500119395);
+  parameter_solv[NUC_U].push_back(-46.177012959269156);
+  parameter_solv[NUC_U].push_back(-20149.661906446432);
+  parameter_solv[NUC_U].push_back(-5590.224343622286);
+  parameter_solv[NUC_U].push_back(37169.156234764625);
+  parameter_solv[NUC_U].push_back(-26475.511196594205);
+  parameter_solv[NUC_U].push_back(5808.163719968646);
+
+  parameter_mix[BB_DNA].push_back(31417.210878019756);
+  parameter_mix[BB_DNA].push_back(-225.35152563190917);
+  parameter_mix[BB_DNA].push_back(-77222.5236172451);
+  parameter_mix[BB_DNA].push_back(-32952.643470954165);
+  parameter_mix[BB_DNA].push_back(223711.01723782741);
+  parameter_mix[BB_DNA].push_back(-194545.67145813679);
+  parameter_mix[BB_DNA].push_back(53382.038254287465);
+
+  parameter_mix[BB_DNA_T].push_back(18696.097442039274);
+  parameter_mix[BB_DNA_T].push_back(-56.29408880833801);
+  parameter_mix[BB_DNA_T].push_back(-30486.108599707615);
+  parameter_mix[BB_DNA_T].push_back(-6524.195857141153);
+  parameter_mix[BB_DNA_T].push_back(45280.801426864426);
+  parameter_mix[BB_DNA_T].push_back(-29007.986165679937);
+  parameter_mix[BB_DNA_T].push_back(5488.566965501818);
+
+  parameter_mix[BB_RNA].push_back(35804.726831403445);
+  parameter_mix[BB_RNA].push_back(-231.20987833988966);
+  parameter_mix[BB_RNA].push_back(-95658.57231330329);
+  parameter_mix[BB_RNA].push_back(-40611.43002046368);
+  parameter_mix[BB_RNA].push_back(303070.3169122729);
+  parameter_mix[BB_RNA].push_back(-279758.57389241207);
+  parameter_mix[BB_RNA].push_back(81354.700424647);
+
+  parameter_mix[BB_RNA_T].push_back(22386.632764279162);
+  parameter_mix[BB_RNA_T].push_back(-85.76357131061273);
+  parameter_mix[BB_RNA_T].push_back(-39499.12778052851);
+  parameter_mix[BB_RNA_T].push_back(-10231.656265149017);
+  parameter_mix[BB_RNA_T].push_back(68497.34012231101);
+  parameter_mix[BB_RNA_T].push_back(-47452.566152065985);
+  parameter_mix[BB_RNA_T].push_back(10043.018582060682);
+
+  parameter_mix[NUC_A].push_back(15897.31116611889);
+  parameter_mix[NUC_A].push_back(-67.86385836889977);
+  parameter_mix[NUC_A].push_back(-28851.754660618037);
+  parameter_mix[NUC_A].push_back(-8144.431688164017);
+  parameter_mix[NUC_A].push_back(53606.39083087141);
+  parameter_mix[NUC_A].push_back(-38083.512438618265);
+  parameter_mix[NUC_A].push_back(8293.4710801009);
+
+  parameter_mix[NUC_C].push_back(11733.282887159898);
+  parameter_mix[NUC_C].push_back(-38.76782336605739);
+  parameter_mix[NUC_C].push_back(-19318.8695615639);
+  parameter_mix[NUC_C].push_back(-4507.922720906114);
+  parameter_mix[NUC_C].push_back(30576.622743462478);
+  parameter_mix[NUC_C].push_back(-20132.493222325884);
+  parameter_mix[NUC_C].push_back(3947.8759531451587);
+
+  parameter_mix[NUC_G].push_back(19146.612417237815);
+  parameter_mix[NUC_G].push_back(-102.37300139672753);
+  parameter_mix[NUC_G].push_back(-38719.482723324);
+  parameter_mix[NUC_G].push_back(-13238.503233795162);
+  parameter_mix[NUC_G].push_back(87311.68970397109);
+  parameter_mix[NUC_G].push_back(-68367.31594619181);
+  parameter_mix[NUC_G].push_back(16816.093414604587);
+
+  parameter_mix[NUC_T].push_back(17050.440260819163);
+  parameter_mix[NUC_T].push_back(-76.33750600643374);
+  parameter_mix[NUC_T].push_back(-31849.53909671501);
+  parameter_mix[NUC_T].push_back(-9484.498992751434);
+  parameter_mix[NUC_T].push_back(62881.895771680494);
+  parameter_mix[NUC_T].push_back(-46531.948557759);
+  parameter_mix[NUC_T].push_back(10734.19632988482);
+
+  parameter_mix[NUC_U].push_back(11904.095265219024);
+  parameter_mix[NUC_U].push_back(-34.67490795356871);
+  parameter_mix[NUC_U].push_back(-18842.25061300054);
+  parameter_mix[NUC_U].push_back(-3993.0905792808558);
+  parameter_mix[NUC_U].push_back(27663.472346340215);
+  parameter_mix[NUC_U].push_back(-17577.245647333217);
+  parameter_mix[NUC_U].push_back(3273.1436479347813);
+
+  parameter_vac[BB_DNA].push_back(8492.187935178288);
+  parameter_vac[BB_DNA].push_back(-62.34823298223726);
+  parameter_vac[BB_DNA].push_back(-18616.231303173976);
+  parameter_vac[BB_DNA].push_back(-8049.8631745937155);
+  parameter_vac[BB_DNA].push_back(50460.29181663689);
+  parameter_vac[BB_DNA].push_back(-41358.23782550479);
+  parameter_vac[BB_DNA].push_back(10593.14190032583);
+
+  parameter_vac[BB_DNA_T].push_back(3843.234214262163);
+  parameter_vac[BB_DNA_T].push_back(-6.423078416284451);
+  parameter_vac[BB_DNA_T].push_back(-5112.121638696313);
+  parameter_vac[BB_DNA_T].push_back(-713.8373583426671);
+  parameter_vac[BB_DNA_T].push_back(5547.545382516272);
+  parameter_vac[BB_DNA_T].push_back(-2973.5659871174234);
+  parameter_vac[BB_DNA_T].push_back(407.2789106630427);
+
+  parameter_vac[BB_RNA].push_back(10006.299302908385);
+  parameter_vac[BB_RNA].push_back(-80.3658887489301);
+  parameter_vac[BB_RNA].push_back(-24677.655509815195);
+  parameter_vac[BB_RNA].push_back(-11895.70609276621);
+  parameter_vac[BB_RNA].push_back(79171.29759202032);
+  parameter_vac[BB_RNA].push_back(-70822.65791263926);
+  parameter_vac[BB_RNA].push_back(19929.78505662073);
+
+  parameter_vac[BB_RNA_T].push_back(4899.051406033406);
+  parameter_vac[BB_RNA_T].push_back(-12.295884124653027);
+  parameter_vac[BB_RNA_T].push_back(-7278.7430174360425);
+  parameter_vac[BB_RNA_T].push_back(-1402.9588129822223);
+  parameter_vac[BB_RNA_T].push_back(9923.559764495292);
+  parameter_vac[BB_RNA_T].push_back(-6088.6721919494685);
+  parameter_vac[BB_RNA_T].push_back(1075.8668297369268);
+
+  parameter_vac[NUC_A].push_back(4756.697028810353);
+  parameter_vac[NUC_A].push_back(-12.158940777596825);
+  parameter_vac[NUC_A].push_back(-7106.473423381665);
+  parameter_vac[NUC_A].push_back(-1376.2951856687541);
+  parameter_vac[NUC_A].push_back(9747.132258354424);
+  parameter_vac[NUC_A].push_back(-5900.026639464405);
+  parameter_vac[NUC_A].push_back(1004.6226396273622);
+                    
+  parameter_vac[NUC_C].push_back(3246.6989756746507);
+  parameter_vac[NUC_C].push_back(-6.125037784865955);
+  parameter_vac[NUC_C].push_back(-4280.673165723341);
+  parameter_vac[NUC_C].push_back(-684.0183023949685);
+  parameter_vac[NUC_C].push_back(5077.066099690227);
+  parameter_vac[NUC_C].push_back(-2870.3223802413463);
+  parameter_vac[NUC_C].push_back(434.514123417136);
+                    
+  parameter_vac[NUC_G].push_back(5924.105658596057);
+  parameter_vac[NUC_G].push_back(-23.098867183298587);
+  parameter_vac[NUC_G].push_back(-10149.694299018556);
+  parameter_vac[NUC_G].push_back(-2753.032928954016);
+  parameter_vac[NUC_G].push_back(18240.022217495694);
+  parameter_vac[NUC_G].push_back(-12749.8676324882);
+  parameter_vac[NUC_G].push_back(2715.5080722412);
+                    
+  parameter_vac[NUC_T].push_back(4222.889713694404);
+  parameter_vac[NUC_T].push_back(-12.15861456306705);
+  parameter_vac[NUC_T].push_back(-6395.502897894041);
+  parameter_vac[NUC_T].push_back(-1421.3942549301019);
+  parameter_vac[NUC_T].push_back(9757.061008720137);
+  parameter_vac[NUC_T].push_back(-6399.630933839128);
+  parameter_vac[NUC_T].push_back(1258.987422560543);
+                    
+  parameter_vac[NUC_U].push_back(3247.251361465539);
+  parameter_vac[NUC_U].push_back(-5.210937918455019);
+  parameter_vac[NUC_U].push_back(-4125.152407621087);
+  parameter_vac[NUC_U].push_back(-575.1762725336071);
+  parameter_vac[NUC_U].push_back(4457.601885104328);
+  parameter_vac[NUC_U].push_back(-2368.68091734053);
+  parameter_vac[NUC_U].push_back(313.22936400021354);
+ 
   auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   if( moldat ) {
-    unsigned init_resnum = moldat -> getResidueNumber(atoms[0]);
+    log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
     for(unsigned i=0; i<atoms.size(); ++i) {
+      std::string Aname = moldat->getAtomName(atoms[i]);
       std::string Rname = moldat->getResidueName(atoms[i]);
       if(Rname=="ALA") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=ALA;
+        atoi[residue_atom[i]]=ALA;
       } else if(Rname=="ARG") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=ARG;
+        atoi[residue_atom[i]]=ARG;
       } else if(Rname=="ASN") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=ASN;
+        atoi[residue_atom[i]]=ASN;
       } else if(Rname=="ASP") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=ASP;
+        atoi[residue_atom[i]]=ASP;
       } else if(Rname=="CYS") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=CYS;
+        atoi[residue_atom[i]]=CYS;
       } else if(Rname=="GLN") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=GLN;
+        atoi[residue_atom[i]]=GLN;
       } else if(Rname=="GLU") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=GLU;
+        atoi[residue_atom[i]]=GLU;
       } else if(Rname=="GLY") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=GLY;
+        atoi[residue_atom[i]]=GLY;
       } else if(Rname=="HIS") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=HIS;
+        atoi[residue_atom[i]]=HIS;
       } else if(Rname=="HID") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=HIS;
+        atoi[residue_atom[i]]=HIS;
       } else if(Rname=="HIE") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=HIS;
+        atoi[residue_atom[i]]=HIS;
       } else if(Rname=="HIP") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=HIP;
+        atoi[residue_atom[i]]=HIP;
         // CHARMM NAMING FOR PROTONATION STATES OF HISTIDINE
       } else if(Rname=="HSD") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=HIS;
+        atoi[residue_atom[i]]=HIS;
       } else if(Rname=="HSE") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=HIS;
+        atoi[residue_atom[i]]=HIS;
       } else if(Rname=="HSP") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=HIP;
+        atoi[residue_atom[i]]=HIP;
       } else if(Rname=="ILE") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=ILE;
+        atoi[residue_atom[i]]=ILE;
       } else if(Rname=="LEU") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=LEU;
+        atoi[residue_atom[i]]=LEU;
       } else if(Rname=="LYS") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=LYS;
+        atoi[residue_atom[i]]=LYS;
       } else if(Rname=="MET") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=MET;
+        atoi[residue_atom[i]]=MET;
       } else if(Rname=="PHE") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=PHE;
+        atoi[residue_atom[i]]=PHE;
       } else if(Rname=="PRO") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=PRO;
+        atoi[residue_atom[i]]=PRO;
       } else if(Rname=="SER") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=SER;
+        atoi[residue_atom[i]]=SER;
       } else if(Rname=="THR") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=THR;
+        atoi[residue_atom[i]]=THR;
       } else if(Rname=="TRP") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=TRP;
+        atoi[residue_atom[i]]=TRP;
       } else if(Rname=="TYR") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=TYR;
+        atoi[residue_atom[i]]=TYR;
       } else if(Rname=="VAL") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=VAL;
+        atoi[residue_atom[i]]=VAL;
+      }
+      // NUCLEIC ACIDS
+        else if(Rname=="G") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_G;
+          }
+      } else if(Rname=="G3") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_G;
+          }
+      } else if(Rname=="G5") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA_T;
+          } else {
+            atoi[residue_atom[i]]=NUC_G;
+          }
+       } else if(Rname=="U") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_U;
+          }
+      } else if(Rname=="U3") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_U;
+          }
+      } else if(Rname=="U5") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA_T;
+          } else {
+            atoi[residue_atom[i]]=NUC_U;
+          }
+       } else if(Rname=="A") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_A;
+          }
+      } else if(Rname=="A3") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_A;
+          }
+      } else if(Rname=="A5") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA_T;
+          } else {
+            atoi[residue_atom[i]]=NUC_A;
+          }
+       } else if(Rname=="C") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_C;
+          }
+      } else if(Rname=="C3") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_C;
+          }
+      } else if(Rname=="C5") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA_T;
+          } else {
+            atoi[residue_atom[i]]=NUC_C;
+          }
+       } else if(Rname=="DG") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_G;
+          }
+      } else if(Rname=="DG3") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_G;
+          }
+      } else if(Rname=="DG5") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA_T;
+          } else {
+            atoi[residue_atom[i]]=NUC_G;
+          }
+       } else if(Rname=="DT") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_T;
+          }
+      } else if(Rname=="DT3") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_T;
+          }
+      } else if(Rname=="DT5") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA_T;
+          } else {
+            atoi[residue_atom[i]]=NUC_T;
+          }
+       } else if(Rname=="DA") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_A;
+          }
+      } else if(Rname=="DA3") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_A;
+          }
+      } else if(Rname=="DA5") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA_T;
+          } else {
+            atoi[residue_atom[i]]=NUC_A;
+          }
+       } else if(Rname=="DC") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_C;
+          }
+      } else if(Rname=="DC3") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_C;
+          }
+      } else if(Rname=="DC5") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA_T;
+          } else {
+            atoi[residue_atom[i]]=NUC_C;
+          }
       } else error("Residue not known: "+Rname);
     }
   } else {
@@ -3694,6 +4236,224 @@ void SAXS::getOnebeadparam_sansH(const std::vector<AtomNumber> &atoms, std::vect
   parameter_vac_H[HIS].push_back(33.4059567406171);
   parameter_vac_H[HIS].push_back(-11.60826210271092);
   parameter_vac_H[HIS].push_back(-1.7359607560773076);
+
+  //NUCLEIC ACIDS
+  
+  parameter_solv_H[BB_DNA].push_back(29058.794048259362);
+  parameter_solv_H[BB_DNA].push_back(-163.90176335172552);
+  parameter_solv_H[BB_DNA].push_back(-72448.65451349212);
+  parameter_solv_H[BB_DNA].push_back(-27133.44556190471);
+  parameter_solv_H[BB_DNA].push_back(202903.4156791921);
+  parameter_solv_H[BB_DNA].push_back(-179712.90127901718);
+  parameter_solv_H[BB_DNA].push_back(50376.13482553027);
+
+  parameter_solv_H[BB_DNA_T].push_back(22737.624100119025);
+  parameter_solv_H[BB_DNA_T].push_back(-102.72714886664163);
+  parameter_solv_H[BB_DNA_T].push_back(-43685.329677789705);
+  parameter_solv_H[BB_DNA_T].push_back(-12564.259374093454);
+  parameter_solv_H[BB_DNA_T].push_back(83454.87540484876);
+  parameter_solv_H[BB_DNA_T].push_back(-60367.15652138888);
+  parameter_solv_H[BB_DNA_T].push_back(13507.33372986899);
+
+  parameter_solv_H[BB_RNA].push_back(32029.71842497462);
+  parameter_solv_H[BB_RNA].push_back(-140.693173545175);
+  parameter_solv_H[BB_RNA].push_back(-85763.45734623617);
+  parameter_solv_H[BB_RNA].push_back(-30042.38278248406);
+  parameter_solv_H[BB_RNA].push_back(253350.7778563679);
+  parameter_solv_H[BB_RNA].push_back(-235352.9406536495);
+  parameter_solv_H[BB_RNA].push_back(68941.90521759259);
+
+  parameter_solv_H[BB_RNA_T].push_back(25574.406400119024);
+  parameter_solv_H[BB_RNA_T].push_back(-132.03433541174888);
+  parameter_solv_H[BB_RNA_T].push_back(-52143.42667897374);
+  parameter_solv_H[BB_RNA_T].push_back(-16688.13425337558);
+  parameter_solv_H[BB_RNA_T].push_back(110317.06058702814);
+  parameter_solv_H[BB_RNA_T].push_back(-83753.7710820843);
+  parameter_solv_H[BB_RNA_T].push_back(19887.133560665752);
+
+  parameter_solv_H[NUC_A].push_back(13282.562500119211);
+  parameter_solv_H[NUC_A].push_back(-76.4512418150107);
+  parameter_solv_H[NUC_A].push_back(-28376.06993975573);
+  parameter_solv_H[NUC_A].push_back(-9972.910778631242);
+  parameter_solv_H[NUC_A].push_back(65873.8634277666);
+  parameter_solv_H[NUC_A].push_back(-52064.33493584656);
+  parameter_solv_H[NUC_A].push_back(12931.608991480814);
+
+  parameter_solv_H[NUC_C].push_back(10600.76160011891);
+  parameter_solv_H[NUC_C].push_back(-49.1671820468823);
+  parameter_solv_H[NUC_C].push_back(-20239.837635314965);
+  parameter_solv_H[NUC_C].push_back(-6020.289884557556);
+  parameter_solv_H[NUC_C].push_back(39632.19729555643);
+  parameter_solv_H[NUC_C].push_back(-28954.82953079656);
+  parameter_solv_H[NUC_C].push_back(6551.552568872256);
+
+  parameter_solv_H[NUC_G].push_back(15470.384400119929);
+  parameter_solv_H[NUC_G].push_back(-93.80217149938235);
+  parameter_solv_H[NUC_G].push_back(-36188.71011289895);
+  parameter_solv_H[NUC_G].push_back(-13717.940902527609);
+  parameter_solv_H[NUC_G].push_back(95660.40349471728);
+  parameter_solv_H[NUC_G].push_back(-81264.7013881852);
+  parameter_solv_H[NUC_G].push_back(21842.6444458418);
+
+  parameter_solv_H[NUC_T].push_back(17210.81610011936);
+  parameter_solv_H[NUC_T].push_back(-93.10189802920198);
+  parameter_solv_H[NUC_T].push_back(-36466.51927689958);
+  parameter_solv_H[NUC_T].push_back(-12425.556157169323);
+  parameter_solv_H[NUC_T].push_back(83847.42780892516);
+  parameter_solv_H[NUC_T].push_back(-66735.64997846575);
+  parameter_solv_H[NUC_T].push_back(16757.346398750706);
+
+  parameter_solv_H[NUC_U].push_back(10909.802500119395);
+  parameter_solv_H[NUC_U].push_back(-46.177012959269156);
+  parameter_solv_H[NUC_U].push_back(-20149.661906446432);
+  parameter_solv_H[NUC_U].push_back(-5590.224343622286);
+  parameter_solv_H[NUC_U].push_back(37169.156234764625);
+  parameter_solv_H[NUC_U].push_back(-26475.511196594205);
+  parameter_solv_H[NUC_U].push_back(5808.163719968646);
+
+  parameter_mix_H[BB_DNA].push_back(1382.5675331576558);
+  parameter_mix_H[BB_DNA].push_back(-10.079652903339039);
+  parameter_mix_H[BB_DNA].push_back(-3149.885372273241);
+  parameter_mix_H[BB_DNA].push_back(-1408.2485264532588);
+  parameter_mix_H[BB_DNA].push_back(9167.850543975013);
+  parameter_mix_H[BB_DNA].push_back(-7914.647312276974);
+  parameter_mix_H[BB_DNA].push_back(2153.2081513103158);
+
+  parameter_mix_H[BB_DNA_T].push_back(625.1753399657849);
+  parameter_mix_H[BB_DNA_T].push_back(0.2691706617748245);
+  parameter_mix_H[BB_DNA_T].push_back(-582.872135042);
+  parameter_mix_H[BB_DNA_T].push_back(46.512408351374326);
+  parameter_mix_H[BB_DNA_T].push_back(-58.93886949899106);
+  parameter_mix_H[BB_DNA_T].push_back(307.2972033608504);
+  parameter_mix_H[BB_DNA_T].push_back(-131.71996309259958);
+
+  parameter_mix_H[BB_RNA].push_back(1675.7101860207026);
+  parameter_mix_H[BB_RNA].push_back(-11.371181866016386);
+  parameter_mix_H[BB_RNA].push_back(-4125.824180966551);
+  parameter_mix_H[BB_RNA].push_back(-1849.8157011661763);
+  parameter_mix_H[BB_RNA].push_back(13091.800086252764);
+  parameter_mix_H[BB_RNA].push_back(-11979.839393444918);
+  parameter_mix_H[BB_RNA].push_back(3456.6284929612243);
+
+  parameter_mix_H[BB_RNA_T].push_back(848.5355201165233);
+  parameter_mix_H[BB_RNA_T].push_back(-0.49988747194713545);
+  parameter_mix_H[BB_RNA_T].push_back(-976.6568864613773);
+  parameter_mix_H[BB_RNA_T].push_back(-33.47700443278712);
+  parameter_mix_H[BB_RNA_T].push_back(478.6672005063209);
+  parameter_mix_H[BB_RNA_T].push_back(14.832845433053324);
+  parameter_mix_H[BB_RNA_T].push_back(-96.01417891454489);
+
+  parameter_mix_H[NUC_A].push_back(1504.9345001191857);
+  parameter_mix_H[NUC_A].push_back(-3.5306888572960036);
+  parameter_mix_H[NUC_A].push_back(-2234.3933571433295);
+  parameter_mix_H[NUC_A].push_back(-380.02552138152777);
+  parameter_mix_H[NUC_A].push_back(2726.278025286178);
+  parameter_mix_H[NUC_A].push_back(-1490.8825763154205);
+  parameter_mix_H[NUC_A].push_back(199.75011133681994);
+
+  parameter_mix_H[NUC_C].push_back(939.818880119217);
+  parameter_mix_H[NUC_C].push_back(-1.4896453390358966);
+  parameter_mix_H[NUC_C].push_back(-1244.5544002570496);
+  parameter_mix_H[NUC_C].push_back(-161.39807673303426);
+  parameter_mix_H[NUC_C].push_back(1276.3623950134195);
+  parameter_mix_H[NUC_C].push_back(-643.3092218228552);
+  parameter_mix_H[NUC_C].push_back(72.76020382604116);
+
+  parameter_mix_H[NUC_G].push_back(1768.4348401191983);
+  parameter_mix_H[NUC_G].push_back(-6.505649866616307);
+  parameter_mix_H[NUC_G].push_back(-2919.4284317003558);
+  parameter_mix_H[NUC_G].push_back(-701.2801052658525);
+  parameter_mix_H[NUC_G].push_back(4464.774614717144);
+  parameter_mix_H[NUC_G].push_back(-2733.2844372652958);
+  parameter_mix_H[NUC_G].push_back(458.1531889137626);
+
+  parameter_mix_H[NUC_T].push_back(1179.3981001192033);
+  parameter_mix_H[NUC_T].push_back(-3.203784925275656);
+  parameter_mix_H[NUC_T].push_back(-1821.2554987637977);
+  parameter_mix_H[NUC_T].push_back(-371.0199326644131);
+  parameter_mix_H[NUC_T].push_back(2604.074226688968);
+  parameter_mix_H[NUC_T].push_back(-1648.1965787713077);
+  parameter_mix_H[NUC_T].push_back(307.29621864363673);
+  
+  parameter_mix_H[NUC_U].push_back(956.3442001192267);
+  parameter_mix_H[NUC_U].push_back(-1.7244419263855348);
+  parameter_mix_H[NUC_U].push_back(-1287.9728680572543);
+  parameter_mix_H[NUC_U].push_back(-192.74543950664008);
+  parameter_mix_H[NUC_U].push_back(1459.0676281771237);
+  parameter_mix_H[NUC_U].push_back(-810.0660457870217);
+  parameter_mix_H[NUC_U].push_back(119.81528234719731);  
+
+  parameter_vac_H[BB_DNA].push_back(16.47824739319707);
+  parameter_vac_H[BB_DNA].push_back(-0.09407240414195635);
+  parameter_vac_H[BB_DNA].push_back(-25.19577960439791);
+  parameter_vac_H[BB_DNA].push_back(-8.720133837119477);
+  parameter_vac_H[BB_DNA].push_back(45.75828820803292);
+  parameter_vac_H[BB_DNA].push_back(-23.560119659269077);
+  parameter_vac_H[BB_DNA].push_back(1.4997811398328191);
+
+  parameter_vac_H[BB_DNA_T].push_back(4.297328944539057);
+  parameter_vac_H[BB_DNA_T].push_back(0.0014793971885106835);
+  parameter_vac_H[BB_DNA_T].push_back(1.3961088365255596);
+  parameter_vac_H[BB_DNA_T].push_back(0.08974639858979382);
+  parameter_vac_H[BB_DNA_T].push_back(-1.5198099705167643);
+  parameter_vac_H[BB_DNA_T].push_back(-0.12127122359433723);
+  parameter_vac_H[BB_DNA_T].push_back(0.4134601046223602);
+
+  parameter_vac_H[BB_RNA].push_back(21.92710326793066);
+  parameter_vac_H[BB_RNA].push_back(-0.1781378085092803);
+  parameter_vac_H[BB_RNA].push_back(-40.151467186290965);
+  parameter_vac_H[BB_RNA].push_back(-19.511557053569963);
+  parameter_vac_H[BB_RNA].push_back(106.01786678503125);
+  parameter_vac_H[BB_RNA].push_back(-77.89032048514431);
+  parameter_vac_H[BB_RNA].push_back(16.781509031785077);
+
+  parameter_vac_H[BB_RNA_T].push_back(7.038408898933545);
+  parameter_vac_H[BB_RNA_T].push_back(0.005113444477440946);
+  parameter_vac_H[BB_RNA_T].push_back(-0.9042994750631993);
+  parameter_vac_H[BB_RNA_T].push_back(0.4935381067261203);
+  parameter_vac_H[BB_RNA_T].push_back(-2.6690691632060997);
+  parameter_vac_H[BB_RNA_T].push_back(1.542194674116445);
+  parameter_vac_H[BB_RNA_T].push_back(-0.07620283726003232);
+
+  parameter_vac_H[NUC_A].push_back(42.62784088079008);
+  parameter_vac_H[NUC_A].push_back(0.023029085524956062);
+  parameter_vac_H[NUC_A].push_back(-33.22707177498717);
+  parameter_vac_H[NUC_A].push_back(2.6853748510586977);
+  parameter_vac_H[NUC_A].push_back(-1.6632903056381307);
+  parameter_vac_H[NUC_A].push_back(11.905766364022746);
+  parameter_vac_H[NUC_A].push_back(-4.547083459582616);
+                      
+  parameter_vac_H[NUC_C].push_back(20.830095880790218);
+  parameter_vac_H[NUC_C].push_back(0.01705581077475445);
+  parameter_vac_H[NUC_C].push_back(-8.349724496986925);
+  parameter_vac_H[NUC_C].push_back(1.9324611524563662);
+  parameter_vac_H[NUC_C].push_back(-8.435146583359014);
+  parameter_vac_H[NUC_C].push_back(8.272782028380195);
+  parameter_vac_H[NUC_C].push_back(-1.986670106652034);
+                      
+  parameter_vac_H[NUC_G].push_back(50.537880880793765);
+  parameter_vac_H[NUC_G].push_back(0.024034618710156812);
+  parameter_vac_H[NUC_G].push_back(-47.95043008271434);
+  parameter_vac_H[NUC_G].push_back(3.143321285647373);
+  parameter_vac_H[NUC_G].push_back(4.298065472139521);
+  parameter_vac_H[NUC_G].push_back(15.855562564275637);
+  parameter_vac_H[NUC_G].push_back(-7.827795326112968);
+                      
+  parameter_vac_H[NUC_T].push_back(20.20502488079069);
+  parameter_vac_H[NUC_T].push_back(0.033659966153300004);
+  parameter_vac_H[NUC_T].push_back(-6.057999187718756);
+  parameter_vac_H[NUC_T].push_back(4.146969282504351);
+  parameter_vac_H[NUC_T].push_back(-20.664315319574353);
+  parameter_vac_H[NUC_T].push_back(19.982178623201666);
+  parameter_vac_H[NUC_T].push_back(-5.440921587349457);
+                      
+  parameter_vac_H[NUC_U].push_back(20.958084119209754);
+  parameter_vac_H[NUC_U].push_back(-0.0051641058800526345);
+  parameter_vac_H[NUC_U].push_back(-14.53820782574545);
+  parameter_vac_H[NUC_U].push_back(-0.5276379588249814);
+  parameter_vac_H[NUC_U].push_back(7.060544686769152);
+  parameter_vac_H[NUC_U].push_back(-1.898585198924409);
+  parameter_vac_H[NUC_U].push_back(-0.2150509757998133);  
 }
 
 void SAXS::getOnebeadparam_sansD(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_D, std::vector<std::vector<long double> > &parameter_mix_D, std::vector<std::vector<long double> > &parameter_solv_D)
@@ -4201,9 +4961,227 @@ void SAXS::getOnebeadparam_sansD(const std::vector<AtomNumber> &atoms, std::vect
   parameter_vac_D[HIS].push_back(685.7025818759361);
   parameter_vac_D[HIS].push_back(-538.2592043545858);
   parameter_vac_D[HIS].push_back(132.17357375729733);
+
+  //NUCLEIC ACIDS
+
+  parameter_solv_D[BB_DNA].push_back(29058.794048259362);
+  parameter_solv_D[BB_DNA].push_back(-163.90176335172552);
+  parameter_solv_D[BB_DNA].push_back(-72448.65451349212);
+  parameter_solv_D[BB_DNA].push_back(-27133.44556190471);
+  parameter_solv_D[BB_DNA].push_back(202903.4156791921);
+  parameter_solv_D[BB_DNA].push_back(-179712.90127901718);
+  parameter_solv_D[BB_DNA].push_back(50376.13482553027);
+
+  parameter_solv_D[BB_DNA_T].push_back(22737.624100119025);
+  parameter_solv_D[BB_DNA_T].push_back(-102.72714886664163);
+  parameter_solv_D[BB_DNA_T].push_back(-43685.329677789705);
+  parameter_solv_D[BB_DNA_T].push_back(-12564.259374093454);
+  parameter_solv_D[BB_DNA_T].push_back(83454.87540484876);
+  parameter_solv_D[BB_DNA_T].push_back(-60367.15652138888);
+  parameter_solv_D[BB_DNA_T].push_back(13507.33372986899);
+
+  parameter_solv_D[BB_RNA].push_back(32029.71842497462);
+  parameter_solv_D[BB_RNA].push_back(-140.693173545175);
+  parameter_solv_D[BB_RNA].push_back(-85763.45734623617);
+  parameter_solv_D[BB_RNA].push_back(-30042.38278248406);
+  parameter_solv_D[BB_RNA].push_back(253350.7778563679);
+  parameter_solv_D[BB_RNA].push_back(-235352.9406536495);
+  parameter_solv_D[BB_RNA].push_back(68941.90521759259);
+
+  parameter_solv_D[BB_RNA_T].push_back(25574.406400119024);
+  parameter_solv_D[BB_RNA_T].push_back(-132.03433541174888);
+  parameter_solv_D[BB_RNA_T].push_back(-52143.42667897374);
+  parameter_solv_D[BB_RNA_T].push_back(-16688.13425337558);
+  parameter_solv_D[BB_RNA_T].push_back(110317.06058702814);
+  parameter_solv_D[BB_RNA_T].push_back(-83753.7710820843);
+  parameter_solv_D[BB_RNA_T].push_back(19887.133560665752);
+
+  parameter_solv_D[NUC_A].push_back(13282.562500119211);
+  parameter_solv_D[NUC_A].push_back(-76.4512418150107);
+  parameter_solv_D[NUC_A].push_back(-28376.06993975573);
+  parameter_solv_D[NUC_A].push_back(-9972.910778631242);
+  parameter_solv_D[NUC_A].push_back(65873.8634277666);
+  parameter_solv_D[NUC_A].push_back(-52064.33493584656);
+  parameter_solv_D[NUC_A].push_back(12931.608991480814);
+                       
+  parameter_solv_D[NUC_C].push_back(10600.76160011891);
+  parameter_solv_D[NUC_C].push_back(-49.1671820468823);
+  parameter_solv_D[NUC_C].push_back(-20239.837635314965);
+  parameter_solv_D[NUC_C].push_back(-6020.289884557556);
+  parameter_solv_D[NUC_C].push_back(39632.19729555643);
+  parameter_solv_D[NUC_C].push_back(-28954.82953079656);
+  parameter_solv_D[NUC_C].push_back(6551.552568872256);
+                       
+  parameter_solv_D[NUC_G].push_back(15470.384400119929);
+  parameter_solv_D[NUC_G].push_back(-93.80217149938235);
+  parameter_solv_D[NUC_G].push_back(-36188.71011289895);
+  parameter_solv_D[NUC_G].push_back(-13717.940902527609);
+  parameter_solv_D[NUC_G].push_back(95660.40349471728);
+  parameter_solv_D[NUC_G].push_back(-81264.7013881852);
+  parameter_solv_D[NUC_G].push_back(21842.6444458418);
+                       
+  parameter_solv_D[NUC_T].push_back(17210.81610011936);
+  parameter_solv_D[NUC_T].push_back(-93.10189802920198);
+  parameter_solv_D[NUC_T].push_back(-36466.51927689958);
+  parameter_solv_D[NUC_T].push_back(-12425.556157169323);
+  parameter_solv_D[NUC_T].push_back(83847.42780892516);
+  parameter_solv_D[NUC_T].push_back(-66735.64997846575);
+  parameter_solv_D[NUC_T].push_back(16757.346398750706);
+                       
+  parameter_solv_D[NUC_U].push_back(10909.802500119395);
+  parameter_solv_D[NUC_U].push_back(-46.177012959269156);
+  parameter_solv_D[NUC_U].push_back(-20149.661906446432);
+  parameter_solv_D[NUC_U].push_back(-5590.224343622286);
+  parameter_solv_D[NUC_U].push_back(37169.156234764625);
+  parameter_solv_D[NUC_U].push_back(-26475.511196594205);
+  parameter_solv_D[NUC_U].push_back(5808.163719968646);
+
+  parameter_mix_D[BB_DNA].push_back(3925.1509944955465);
+  parameter_mix_D[BB_DNA].push_back(-23.037082164516175);
+  parameter_mix_D[BB_DNA].push_back(-8587.721421330647);
+  parameter_mix_D[BB_DNA].push_back(-3239.9248619239015);
+  parameter_mix_D[BB_DNA].push_back(21976.774615122114);
+  parameter_mix_D[BB_DNA].push_back(-18396.117770040608);
+  parameter_mix_D[BB_DNA].push_back(4877.683022394562);    
+
+  parameter_mix_D[BB_DNA_T].push_back(3136.73358011921);
+  parameter_mix_D[BB_DNA_T].push_back(-10.023435855160422);
+  parameter_mix_D[BB_DNA_T].push_back(-5208.92166636817);
+  parameter_mix_D[BB_DNA_T].push_back(-1160.440353944022);
+  parameter_mix_D[BB_DNA_T].push_back(7962.5984214487235);
+  parameter_mix_D[BB_DNA_T].push_back(-5149.059857691851);
+  parameter_mix_D[BB_DNA_T].push_back(984.5217027570119);
+
+  parameter_mix_D[BB_RNA].push_back(4299.245017261551);
+  parameter_mix_D[BB_RNA].push_back(-24.228019532060994);
+  parameter_mix_D[BB_RNA].push_back(-10207.653084861204);
+  parameter_mix_D[BB_RNA].push_back(-3953.1845475577225);
+  parameter_mix_D[BB_RNA].push_back(28931.982147212813);
+  parameter_mix_D[BB_RNA].push_back(-25764.079221209533);
+  parameter_mix_D[BB_RNA].push_back(7271.83350611749);
+
+  parameter_mix_D[BB_RNA_T].push_back(3512.1630401192215);
+  parameter_mix_D[BB_RNA_T].push_back(-14.19633477695286);
+  parameter_mix_D[BB_RNA_T].push_back(-6294.560150830983);
+  parameter_mix_D[BB_RNA_T].push_back(-1690.061464529993);
+  parameter_mix_D[BB_RNA_T].push_back(11197.566650984993);
+  parameter_mix_D[BB_RNA_T].push_back(-7810.507589717869);
+  parameter_mix_D[BB_RNA_T].push_back(1663.4177816456274);
+
+  parameter_mix_D[NUC_A].push_back(2464.7365001192284);
+  parameter_mix_D[NUC_A].push_back(-12.127452043228082);
+  parameter_mix_D[NUC_A].push_back(-4710.6612566327485);
+  parameter_mix_D[NUC_A].push_back(-1462.6964144324975);
+  parameter_mix_D[NUC_A].push_back(9451.725576336166);
+  parameter_mix_D[NUC_A].push_back(-6883.018480341064);
+  parameter_mix_D[NUC_A].push_back(1540.1526601031178);
+                      
+  parameter_mix_D[NUC_C].push_back(1797.2697601191687);
+  parameter_mix_D[NUC_C].push_back(-5.9638603816967315);
+  parameter_mix_D[NUC_C].push_back(-2955.0800364365164);
+  parameter_mix_D[NUC_C].push_back(-689.4547434078563);
+  parameter_mix_D[NUC_C].push_back(4665.917583661456);
+  parameter_mix_D[NUC_C].push_back(-3051.461194919018);
+  parameter_mix_D[NUC_C].push_back(590.219845818562);
+                      
+  parameter_mix_D[NUC_G].push_back(2804.2714801190496);
+  parameter_mix_D[NUC_G].push_back(-16.92841926853241);
+  parameter_mix_D[NUC_G].push_back(-5989.907504817204);
+  parameter_mix_D[NUC_G].push_back(-2275.552885725447);
+  parameter_mix_D[NUC_G].push_back(15008.272395931077);
+  parameter_mix_D[NUC_G].push_back(-12287.957381611614);
+  parameter_mix_D[NUC_G].push_back(3173.116274737582);
+                      
+  parameter_mix_D[NUC_T].push_back(2545.0860001192113);
+  parameter_mix_D[NUC_T].push_back(-10.975141620541729);
+  parameter_mix_D[NUC_T].push_back(-4636.058358764444);
+  parameter_mix_D[NUC_T].push_back(-1340.3746388296136);
+  parameter_mix_D[NUC_T].push_back(8850.604320505428);
+  parameter_mix_D[NUC_T].push_back(-6421.852532013675);
+  parameter_mix_D[NUC_T].push_back(1443.371517335905);
+                      
+  parameter_mix_D[NUC_U].push_back(1608.7389001192062);
+  parameter_mix_D[NUC_U].push_back(-3.981671364286256);
+  parameter_mix_D[NUC_U].push_back(-2411.0551018290575);
+  parameter_mix_D[NUC_U].push_back(-451.821872432783);
+  parameter_mix_D[NUC_U].push_back(3220.4320561128593);
+  parameter_mix_D[NUC_U].push_back(-1944.2424379637323);
+  parameter_mix_D[NUC_U].push_back(332.9233838866816);
+
+  parameter_vac_D[BB_DNA].push_back(132.56232361650302);
+  parameter_vac_D[BB_DNA].push_back(-0.7012628045850503);
+  parameter_vac_D[BB_DNA].push_back(-250.9569884128273);
+  parameter_vac_D[BB_DNA].push_back(-88.4064411316658);
+  parameter_vac_D[BB_DNA].push_back(565.0674698052537);
+  parameter_vac_D[BB_DNA].push_back(-440.61214800295573);
+  parameter_vac_D[BB_DNA].push_back(107.87647495353332);
+
+  parameter_vac_D[BB_DNA_T].push_back(108.18080111920679);
+  parameter_vac_D[BB_DNA_T].push_back(-0.2055953690887979);
+  parameter_vac_D[BB_DNA_T].push_back(-150.79248921572346);
+  parameter_vac_D[BB_DNA_T].push_back(-22.700459516383205);
+  parameter_vac_D[BB_DNA_T].push_back(172.25998516555276);
+  parameter_vac_D[BB_DNA_T].push_back(-93.49831248076923);
+  parameter_vac_D[BB_DNA_T].push_back(12.867661230942868);
+
+  parameter_vac_D[BB_RNA].push_back(144.27238132437077);
+  parameter_vac_D[BB_RNA].push_back(-0.8780680496442759);
+  parameter_vac_D[BB_RNA].push_back(-300.3452042647037);
+  parameter_vac_D[BB_RNA].push_back(-121.92484678276962);
+  parameter_vac_D[BB_RNA].push_back(801.6119483661165);
+  parameter_vac_D[BB_RNA].push_back(-680.0454501999604);
+  parameter_vac_D[BB_RNA].push_back(182.89378334705816);
+
+  parameter_vac_D[BB_RNA_T].push_back(120.58236111920614);
+  parameter_vac_D[BB_RNA_T].push_back(-0.3403638182676453);
+  parameter_vac_D[BB_RNA_T].push_back(-186.1102329248631);
+  parameter_vac_D[BB_RNA_T].push_back(-38.50588411925877);
+  parameter_vac_D[BB_RNA_T].push_back(266.30749848843294);
+  parameter_vac_D[BB_RNA_T].push_back(-164.7892142818196);
+  parameter_vac_D[BB_RNA_T].push_back(29.082028288381924);
+
+  parameter_vac_D[NUC_A].push_back(114.34024911921);
+  parameter_vac_D[NUC_A].push_back(-0.413666591719303);
+  parameter_vac_D[NUC_A].push_back(-192.33138384814154);
+  parameter_vac_D[NUC_A].push_back(-46.74428306003768);
+  parameter_vac_D[NUC_A].push_back(312.9511030850069);
+  parameter_vac_D[NUC_A].push_back(-199.63499625315808);
+  parameter_vac_D[NUC_A].push_back(36.159386928215255);
+                      
+  parameter_vac_D[NUC_C].push_back(76.17798411921166);
+  parameter_vac_D[NUC_C].push_back(-0.14444744340261603);
+  parameter_vac_D[NUC_C].push_back(-102.66881202108885);
+  parameter_vac_D[NUC_C].push_back(-15.81375767214741);
+  parameter_vac_D[NUC_C].push_back(119.63435441701304);
+  parameter_vac_D[NUC_C].push_back(-64.22245680799759);
+  parameter_vac_D[NUC_C].push_back(8.351923561271857);
+                      
+  parameter_vac_D[NUC_G].push_back(127.08052911921959);
+  parameter_vac_D[NUC_G].push_back(-0.7137693214489934);
+  parameter_vac_D[NUC_G].push_back(-239.68089266830444);
+  parameter_vac_D[NUC_G].push_back(-88.5399551239358);
+  parameter_vac_D[NUC_G].push_back(556.7457528640539);
+  parameter_vac_D[NUC_G].push_back(-432.04233903674265);
+  parameter_vac_D[NUC_G].push_back(104.41260641821636);
+                      
+  parameter_vac_D[NUC_T].push_back(94.09000011920868);
+  parameter_vac_D[NUC_T].push_back(-0.27147149980458524);
+  parameter_vac_D[NUC_T].push_back(-143.65649702254169);
+  parameter_vac_D[NUC_T].push_back(-30.861235738371906);
+  parameter_vac_D[NUC_T].push_back(212.3643014774958);
+  parameter_vac_D[NUC_T].push_back(-133.06675501066277);
+  parameter_vac_D[NUC_T].push_back(23.951588200687087);
+                      
+  parameter_vac_D[NUC_U].push_back(59.30540111665802);
+  parameter_vac_D[NUC_U].push_back(-0.06146898855314941);
+  parameter_vac_D[NUC_U].push_back(-67.4367796706526);
+  parameter_vac_D[NUC_U].push_back(-6.625254157204868);
+  parameter_vac_D[NUC_U].push_back(58.36993223927308);
+  parameter_vac_D[NUC_U].push_back(-26.230290594990475);
+  parameter_vac_D[NUC_U].push_back(2.0612018169924777);  
 }
 
-double SAXS::calculateASF(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double rho)
+double SAXS::calculateAFF(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double rho)
 {
   std::map<std::string, unsigned> AA_map;
   AA_map["H"] = H;
@@ -4311,7 +5289,7 @@ double SAXS::calculateASF(const std::vector<AtomNumber> &atoms, std::vector<std:
   return Iq0;
 }
 
-double SAXS::calculateASFsans(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double deuter_conc)
+double SAXS::calculateAFFsans(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double deuter_conc)
 {
   std::map<std::string, unsigned> AA_map;
   AA_map["H"] = H;
@@ -4386,7 +5364,7 @@ double SAXS::calculateASFsans(const std::vector<AtomNumber> &atoms, std::vector<
 std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   std::map<std::string, std::vector<double> > lcpomap;
 
-  //We arbitrarily set OC1 as the charged oxygen.
+  //We arbitrarily set OC1/OT1 as the charged oxygen.
 
   lcpomap["ALA_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["ALA_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -4397,6 +5375,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["ALA_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["ALA_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["ALA_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["ALA_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["ASP_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["ASP_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -4410,6 +5389,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["ASP_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["ASP_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["ASP_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["ASP_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["ASN_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["ASN_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -4423,6 +5403,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["ASN_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["ASN_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["ASN_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["ASN_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["ARG_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["ARG_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -4439,6 +5420,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["ARG_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["ARG_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["ARG_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["ARG_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["CYS_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["CYS_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -4450,6 +5432,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["CYS_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["CYS_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["CYS_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["CYS_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["GLU_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["GLU_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -4464,6 +5447,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["GLU_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["GLU_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["GLU_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["GLU_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["GLN_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["GLN_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -4478,6 +5462,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["GLN_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["GLN_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["GLN_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["GLN_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["GLY_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["GLY_CA"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
@@ -4487,6 +5472,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["GLY_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["GLY_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["GLY_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["GLY_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["HIS_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["HIS_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -4500,6 +5486,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["HIS_CD2"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
   lcpomap["HIS_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["HIS_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["HIS_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["HIE_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["HIE_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -4513,6 +5500,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["HIE_CD2"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
   lcpomap["HIE_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["HIE_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["HIE_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["HSE_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["HSE_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -4526,6 +5514,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["HSE_CD2"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
   lcpomap["HSE_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["HSE_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["HSE_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["HID_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["HID_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -4539,6 +5528,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["HID_CD2"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
   lcpomap["HID_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["HID_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["HID_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["HSD_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["HSD_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -4552,6 +5542,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["HSD_CD2"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
   lcpomap["HSD_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["HSD_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["HSD_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["HIP_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["HIP_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -4565,6 +5556,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["HIP_CD2"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
   lcpomap["HIP_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["HIP_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["HIP_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["HSP_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["HSP_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -4578,6 +5570,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["HSP_CD2"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
   lcpomap["HSP_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["HSP_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["HSP_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["ILE_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["ILE_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -4592,6 +5585,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["ILE_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["ILE_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["ILE_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["ILE_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["LEU_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["LEU_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -4605,6 +5599,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["LEU_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["LEU_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["LEU_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["LEU_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["LYS_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["LYS_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -4619,6 +5614,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["LYS_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["LYS_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["LYS_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["LYS_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["MET_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["MET_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -4632,6 +5628,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["MET_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["MET_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["MET_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["MET_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["PHE_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["PHE_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -4648,6 +5645,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["PHE_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["PHE_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["PHE_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["PHE_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["PRO_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["PRO_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -4660,6 +5658,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["PRO_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["PRO_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["PRO_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["PRO_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["SER_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["SER_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -4671,6 +5670,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["SER_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["SER_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["SER_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["SER_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["THR_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["THR_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -4683,6 +5683,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["THR_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["THR_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["THR_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["THR_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["TRP_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["TRP_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -4702,6 +5703,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["TRP_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["TRP_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["TRP_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["TRP_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["TYR_N"] = { 1.65,  0.062577,  -0.017874,  -8.312e-05,  1.9849e-05};
   lcpomap["TYR_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -4719,6 +5721,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["TYR_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["TYR_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["TYR_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["TYR_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["VAL_N"] = { 1.65,  0.062577,  -0.017874,  -8.312e-05,  1.9849e-05};
   lcpomap["VAL_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -4731,6 +5734,534 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["VAL_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["VAL_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["VAL_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["VAL_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+
+  // nucleic acids - WARNING: ONLY AMBER (OL3-rna/ol15-dna) FORMAT
+  
+  lcpomap["A3_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["A3_C2"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["A3_C2'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["A3_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["A3_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["A3_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["A3_C5"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["A3_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["A3_C6"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["A3_C8"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["A3_N1"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["A3_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["A3_N6"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["A3_N7"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["A3_N9"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["A3_O2'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["A3_O3'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["A3_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["A3_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["A3_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["A3_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["A3_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+  
+  lcpomap["A5_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["A5_C2"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["A5_C2'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["A5_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["A5_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["A5_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["A5_C5"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["A5_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["A5_C6"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["A5_C8"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["A5_N1"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["A5_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["A5_N6"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["A5_N7"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["A5_N9"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["A5_O2'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["A5_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["A5_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["A5_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["A5_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["A5_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["A5_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+  
+  lcpomap["A_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["A_C2"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["A_C2'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["A_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["A_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["A_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["A_C5"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["A_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["A_C6"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["A_C8"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["A_N1"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["A_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["A_N6"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["A_N7"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["A_N9"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["A_O2'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["A_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["A_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["A_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["A_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["A_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["A_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+  
+  lcpomap["C3_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["C3_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["C3_C2'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["C3_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["C3_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["C3_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["C3_C5"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["C3_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["C3_C6"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["C3_N1"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["C3_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["C3_N4"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["C3_O2"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["C3_O2'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["C3_O3'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["C3_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["C3_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["C3_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["C3_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["C3_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+  
+  lcpomap["C5_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["C5_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["C5_C2'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["C5_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["C5_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["C5_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["C5_C5"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["C5_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["C5_C6"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["C5_N1"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["C5_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["C5_N4"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["C5_O2"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["C5_O2'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["C5_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["C5_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["C5_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["C5_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["C5_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["C5_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+  
+  lcpomap["C_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["C_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["C_C2'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["C_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["C_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["C_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["C_C5"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["C_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["C_C6"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["C_N1"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["C_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["C_N4"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["C_O2"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["C_O2'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["C_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["C_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["C_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["C_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["C_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["C_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+  
+  lcpomap["DA3_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DA3_C2"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DA3_C2'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DA3_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DA3_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DA3_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DA3_C5"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DA3_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DA3_C6"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DA3_C8"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DA3_N1"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DA3_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DA3_N6"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["DA3_N7"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DA3_N9"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["DA3_O3'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DA3_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DA3_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DA3_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DA3_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DA3_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+
+  lcpomap["DA5_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DA5_C2"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DA5_C2'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DA5_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DA5_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DA5_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DA5_C5"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DA5_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DA5_C6"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DA5_C8"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DA5_N1"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DA5_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DA5_N6"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["DA5_N7"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DA5_N9"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["DA5_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DA5_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DA5_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DA5_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DA5_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DA5_P"]   = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+  
+  lcpomap["DA_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DA_C2"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DA_C2'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DA_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DA_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DA_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DA_C5"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DA_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DA_C6"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DA_C8"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DA_N1"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DA_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DA_N6"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["DA_N7"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DA_N9"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["DA_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DA_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DA_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DA_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DA_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DA_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+  
+  lcpomap["DC3_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DC3_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DC3_C2'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DC3_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DC3_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DC3_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DC3_C5"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DC3_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DC3_C6"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DC3_N1"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["DC3_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DC3_N4"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["DC3_O2"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["DC3_O3'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DC3_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DC3_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DC3_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DC3_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DC3_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+  
+  lcpomap["DC5_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DC5_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DC5_C2'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DC5_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DC5_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DC5_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DC5_C5"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DC5_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DC5_C6"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DC5_N1"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["DC5_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DC5_N4"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["DC5_O2"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["DC5_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DC5_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DC5_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DC5_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DC5_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DC5_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+  
+  lcpomap["DC_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DC_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DC_C2'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DC_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DC_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DC_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DC_C5"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DC_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DC_C6"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DC_N1"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["DC_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DC_N4"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["DC_O2"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["DC_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DC_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DC_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DC_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DC_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DC_P"]   = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+  
+  lcpomap["DG3_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };   
+  lcpomap["DG3_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 }; 
+  lcpomap["DG3_C2'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };    
+  lcpomap["DG3_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };   
+  lcpomap["DG3_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 }; 
+  lcpomap["DG3_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };   
+  lcpomap["DG3_C5"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 }; 
+  lcpomap["DG3_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };    
+  lcpomap["DG3_C6"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 }; 
+  lcpomap["DG3_C8"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };   
+  lcpomap["DG3_N1"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };  
+  lcpomap["DG3_N2"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };   
+  lcpomap["DG3_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };  
+  lcpomap["DG3_N7"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };  
+  lcpomap["DG3_N9"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 }; 
+  lcpomap["DG3_O3'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DG3_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DG3_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DG3_O6"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["DG3_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DG3_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DG3_P"]   = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+  
+  lcpomap["DG5_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };  
+  lcpomap["DG5_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DG5_C2'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };   
+  lcpomap["DG5_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };  
+  lcpomap["DG5_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DG5_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };  
+  lcpomap["DG5_C5"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DG5_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };   
+  lcpomap["DG5_C6"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DG5_C8"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };  
+  lcpomap["DG5_N1"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 }; 
+  lcpomap["DG5_N2"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };  
+  lcpomap["DG5_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 }; 
+  lcpomap["DG5_N7"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 }; 
+  lcpomap["DG5_N9"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["DG5_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DG5_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DG5_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DG5_O6"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["DG5_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DG5_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DG5_P"]   = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+  
+  lcpomap["DG_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DG_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DG_C2'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DG_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DG_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DG_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DG_C5"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DG_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DG_C6"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DG_C8"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DG_N1"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DG_N2"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["DG_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DG_N7"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DG_N9"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["DG_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DG_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DG_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DG_O6"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["DG_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DG_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DG_P"]   = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+  
+  lcpomap["DT3_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DT3_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DT3_C2'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DT3_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DT3_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DT3_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DT3_C5"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DT3_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DT3_C6"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DT3_C7"]  = { 1.7,  0.77887, -0.28063, -1.2968e-03, 3.9328e-04 };
+  lcpomap["DT3_N1"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["DT3_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 }; 
+  lcpomap["DT3_O2"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["DT3_O3'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DT3_O4"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["DT3_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DT3_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DT3_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DT3_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DT3_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+  
+  lcpomap["DT5_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DT5_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DT5_C2'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DT5_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DT5_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DT5_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DT5_C5"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DT5_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DT5_C6"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DT5_C7"]  = { 1.7,  0.77887, -0.28063, -1.2968e-03, 3.9328e-04 };
+  lcpomap["DT5_N1"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["DT5_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DT5_O2"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["DT5_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DT5_O4"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["DT5_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DT5_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DT5_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DT5_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DT5_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+  
+  lcpomap["DT_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DT_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DT_C2'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DT_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DT_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DT_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DT_C5"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DT_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DT_C6"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DT_C7"]  = { 1.7,  0.77887, -0.28063, -1.2968e-03, 3.9328e-04 };
+  lcpomap["DT_N1"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["DT_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DT_O2"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["DT_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DT_O4"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["DT_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DT_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DT_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DT_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DT_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+  
+  lcpomap["G3_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["G3_C2"] = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["G3_C2'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["G3_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["G3_C4"] = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["G3_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["G3_C5"] = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["G3_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["G3_C6"] = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["G3_C8"] = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["G3_N1"] = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["G3_N2"] = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["G3_N3"] = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["G3_N7"] = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["G3_N9"] = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["G3_O2'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["G3_O3'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["G3_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["G3_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["G3_O6"] = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["G3_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["G3_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["G3_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+  
+  lcpomap["G5_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["G5_C2"] = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["G5_C2'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["G5_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["G5_C4"] = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["G5_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["G5_C5"] = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["G5_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["G5_C6"] = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["G5_C8"] = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["G5_N1"] = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["G5_N2"] = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["G5_N3"] = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["G5_N7"] = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["G5_N9"] = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["G5_O2'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["G5_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["G5_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["G5_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["G5_O6"] = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["G5_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["G5_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["G_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+  
+  lcpomap["G_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["G_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["G_C2'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["G_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["G_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["G_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["G_C5"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["G_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["G_C6"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["G_C8"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["G_N1"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["G_N2"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["G_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["G_N7"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["G_N9"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["G_O2'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["G_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["G_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["G_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["G_O6"] = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["G_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["G_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["G_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+  
+  lcpomap["U3_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["U3_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["U3_C2'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["U3_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["U3_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["U3_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["U3_C5"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["U3_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["U3_C6"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["U3_N1"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["U3_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["U3_O2"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["U3_O2'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["U3_O3'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["U3_O4"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["U3_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["U3_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["U3_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["U3_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["U3_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+  
+  lcpomap["U5_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["U5_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["U5_C2'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["U5_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["U5_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["U5_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["U5_C5"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["U5_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["U5_C6"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["U5_N1"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["U5_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["U5_O2"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["U5_O2'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["U5_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["U5_O4"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["U5_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["U5_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["U5_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["U5_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["U5_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+  
+  lcpomap["U_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["U_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["U_C2'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["U_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["U_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["U_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["U_C5"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["U_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["U_C6"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["U_N1"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["U_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["U_O2"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["U_O2'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["U_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["U_O4"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["U_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["U_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["U_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["U_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["U_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   return lcpomap;
 }
@@ -4781,6 +6312,3 @@ void SAXS::readLCPOparam(const std::vector<std::vector<std::string> > &AtomResid
 
 }//namespace isdb
 }//namespace PLMD
-
-
-
