@@ -3403,11 +3403,9 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std
   auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   if( moldat ) {
     log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
-    std::cerr << "TEST!" << std::endl;
     for(unsigned i=0; i<atoms.size(); ++i) {
       std::string Aname = moldat->getAtomName(atoms[i]);
       std::string Rname = moldat->getResidueName(atoms[i]);
-      std::cerr << ">" << Rname << "<" << std::endl;
       if(Rname=="ALA") {
         atoi[residue_atom[i]]=ALA;
       } else if(Rname=="ARG") {
