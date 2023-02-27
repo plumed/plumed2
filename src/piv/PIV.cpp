@@ -615,10 +615,11 @@ PIV::PIV(const ActionOptions&ao):
     for (unsigned j=0; j<Nlist; j++) {
       if(Svol) {
         double r0;
+        std::string old_r0;
         vector<string> data=Tools::getWords(sw[j]);
         data.erase(data.begin());
-        Tools::parse(data,"R_0",r0);
-        std::string old_r0; Tools::convert(r0,old_r0);
+        Tools::parse(data,"R_0",old_r0);
+        Tools::convert(old_r0,r0);
         r0*=Fvol;
         std::string new_r0; Tools::convert(r0,new_r0);
         std::size_t pos = sw[j].find("R_0");
@@ -761,10 +762,11 @@ void PIV::calculate()
     for (unsigned j=0; j<Nlist; j++) {
       if(Svol) {
         double r0;
+        std::string old_r0;
         vector<string> data=Tools::getWords(sw[j]);
         data.erase(data.begin());
-        Tools::parse(data,"R_0",r0);
-        std::string old_r0; Tools::convert(r0,old_r0);
+        Tools::parse(data,"R_0",old_r0);
+        Tools::convert(old_r0,r0);
         r0*=Fvol;
         std::string new_r0; Tools::convert(r0,new_r0);
         std::size_t pos = sw[j].find("R_0");
