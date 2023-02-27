@@ -28,6 +28,7 @@ along with maze. If not, see <https://www.gnu.org/licenses/>.
 
 #include "Optimizer.h"
 #include "core/PlumedMain.h"
+#include "tools/Tools.h"
 
 namespace PLMD {
 namespace maze {
@@ -224,50 +225,50 @@ Optimizer::Optimizer(const ActionOptions& ao)
 
   if (gb_list.size() > 0) {
     if (do_neigh) {
-      neighbor_list_ = new NeighborList(
-        ga_list,
-        gb_list,
-        serial_,
-        do_pair,
-        pbc_,
-        getPbc(),
-        comm,
-        nl_cutoff_,
-        nl_stride_
-      );
+      neighbor_list_ = Tools::make_unique<NeighborList>(
+                         ga_list,
+                         gb_list,
+                         serial_,
+                         do_pair,
+                         pbc_,
+                         getPbc(),
+                         comm,
+                         nl_cutoff_,
+                         nl_stride_
+                       );
     }
     else {
-      neighbor_list_=new NeighborList(
-        ga_list,
-        gb_list,
-        serial_,
-        do_pair,
-        pbc_,
-        getPbc(),
-        comm
-      );
+      neighbor_list_=Tools::make_unique<NeighborList>(
+                       ga_list,
+                       gb_list,
+                       serial_,
+                       do_pair,
+                       pbc_,
+                       getPbc(),
+                       comm
+                     );
     }
   }
   else {
     if (do_neigh) {
-      neighbor_list_ = new NeighborList(
-        ga_list,
-        serial_,
-        pbc_,
-        getPbc(),
-        comm,
-        nl_cutoff_,
-        nl_stride_
-      );
+      neighbor_list_ = Tools::make_unique<NeighborList>(
+                         ga_list,
+                         serial_,
+                         pbc_,
+                         getPbc(),
+                         comm,
+                         nl_cutoff_,
+                         nl_stride_
+                       );
     }
     else {
-      neighbor_list_=new NeighborList(
-        ga_list,
-        serial_,
-        pbc_,
-        getPbc(),
-        comm
-      );
+      neighbor_list_=Tools::make_unique<NeighborList>(
+                       ga_list,
+                       serial_,
+                       pbc_,
+                       getPbc(),
+                       comm
+                     );
     }
   }
 
