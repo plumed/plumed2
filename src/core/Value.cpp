@@ -358,8 +358,8 @@ unsigned Value::getNumberOfColumns() const {
 }
 
 unsigned Value::getRowLength( const unsigned& irow ) const {
-  if( !alwaysstore ) return matindexes[(1+getNumberOfColumns())*irow];
-  return shape[1];
+  if( alwaysstore || matindexes[(1+getNumberOfColumns())*irow]>shape[1] ) return shape[1];
+  return matindexes[(1+getNumberOfColumns())*irow];
 }
  
 unsigned Value::getRowIndex( const unsigned& irow, const unsigned& jind ) const {

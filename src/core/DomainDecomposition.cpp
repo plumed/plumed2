@@ -141,8 +141,6 @@ asyncSent(false)
   std::vector<unsigned> shape(1); shape[0]=natoms; addValue( shape ); setNotPeriodic();
   // Setup the gat index 
   gatindex.resize(natoms); for(unsigned i=0; i<gatindex.size(); i++) gatindex[i]=i;
-  // Turn on the domain decomposition
-  if( Communicator::initialized() ) Set_comm(comm);
   // Now read in the values we are creating here
   for(unsigned i=1;;++i) {
       std::string valname;
@@ -158,6 +156,8 @@ asyncSent(false)
       ActionToPutData* ap=plumed.getActionSet().selectWithLabel<ActionToPutData*>(valname); ap->addDependency( this ); inputs.push_back( ap );
   }
   plumed.readInputLine("Box: PBC");
+  // Turn on the domain decomposition
+  if( Communicator::initialized() ) Set_comm(comm);
 }
 
 void DomainDecomposition::Set_comm(Communicator& comm) {
