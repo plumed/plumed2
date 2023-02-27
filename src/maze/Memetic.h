@@ -52,11 +52,6 @@ public:
   explicit Memetic(const ActionOptions& ao);
 
   /**
-   * Destructor required for deriving classes.
-   */
-  ~Memetic();
-
-  /**
    * Registers PLMD keywords.
    *
    * @param[in] keys Keywords.
