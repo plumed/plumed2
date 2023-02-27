@@ -4454,6 +4454,337 @@ void SAXS::getOnebeadparam_sansH(const std::vector<AtomNumber> &atoms, std::vect
   parameter_vac_H[NUC_U].push_back(7.060544686769152);
   parameter_vac_H[NUC_U].push_back(-1.898585198924409);
   parameter_vac_H[NUC_U].push_back(-0.2150509757998133);  
+
+  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+  if( moldat ) {
+    log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
+    for(unsigned i=0; i<atoms.size(); ++i) {
+      std::string Aname = moldat->getAtomName(atoms[i]);
+      std::string Rname = moldat->getResidueName(atoms[i]);
+      if(Rname=="ALA") {
+        atoi[residue_atom[i]]=ALA;
+      } else if(Rname=="ARG") {
+        atoi[residue_atom[i]]=ARG;
+      } else if(Rname=="ASN") {
+        atoi[residue_atom[i]]=ASN;
+      } else if(Rname=="ASP") {
+        atoi[residue_atom[i]]=ASP;
+      } else if(Rname=="CYS") {
+        atoi[residue_atom[i]]=CYS;
+      } else if(Rname=="GLN") {
+        atoi[residue_atom[i]]=GLN;
+      } else if(Rname=="GLU") {
+        atoi[residue_atom[i]]=GLU;
+      } else if(Rname=="GLY") {
+        atoi[residue_atom[i]]=GLY;
+      } else if(Rname=="HIS") {
+        atoi[residue_atom[i]]=HIS;
+      } else if(Rname=="HID") {
+        atoi[residue_atom[i]]=HIS;
+      } else if(Rname=="HIE") {
+        atoi[residue_atom[i]]=HIS;
+      } else if(Rname=="HIP") {
+        atoi[residue_atom[i]]=HIP;
+        // CHARMM NAMING FOR PROTONATION STATES OF HISTIDINE
+      } else if(Rname=="HSD") {
+        atoi[residue_atom[i]]=HIS;
+      } else if(Rname=="HSE") {
+        atoi[residue_atom[i]]=HIS;
+      } else if(Rname=="HSP") {
+        atoi[residue_atom[i]]=HIP;
+      } else if(Rname=="ILE") {
+        atoi[residue_atom[i]]=ILE;
+      } else if(Rname=="LEU") {
+        atoi[residue_atom[i]]=LEU;
+      } else if(Rname=="LYS") {
+        atoi[residue_atom[i]]=LYS;
+      } else if(Rname=="MET") {
+        atoi[residue_atom[i]]=MET;
+      } else if(Rname=="PHE") {
+        atoi[residue_atom[i]]=PHE;
+      } else if(Rname=="PRO") {
+        atoi[residue_atom[i]]=PRO;
+      } else if(Rname=="SER") {
+        atoi[residue_atom[i]]=SER;
+      } else if(Rname=="THR") {
+        atoi[residue_atom[i]]=THR;
+      } else if(Rname=="TRP") {
+        atoi[residue_atom[i]]=TRP;
+      } else if(Rname=="TYR") {
+        atoi[residue_atom[i]]=TYR;
+      } else if(Rname=="VAL") {
+        atoi[residue_atom[i]]=VAL;
+      }
+      // NUCLEIC ACIDS
+        else if(Rname=="G  ") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_G;
+          }
+      } else if(Rname=="G3 ") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_G;
+          }
+      } else if(Rname=="G5 ") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA_T;
+          } else {
+            atoi[residue_atom[i]]=NUC_G;
+          }
+       } else if(Rname=="U  ") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_U;
+          }
+      } else if(Rname=="U3 ") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_U;
+          }
+      } else if(Rname=="U5 ") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA_T;
+          } else {
+            atoi[residue_atom[i]]=NUC_U;
+          }
+       } else if(Rname=="A  ") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_A;
+          }
+      } else if(Rname=="A3 ") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_A;
+          }
+      } else if(Rname=="A5 ") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA_T;
+          } else {
+            atoi[residue_atom[i]]=NUC_A;
+          }
+       } else if(Rname=="C  ") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_C;
+          }
+      } else if(Rname=="C3 ") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_C;
+          }
+      } else if(Rname=="C5 ") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA_T;
+          } else {
+            atoi[residue_atom[i]]=NUC_C;
+          }
+       } else if(Rname=="DG ") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_G;
+          }
+      } else if(Rname=="DG3") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_G;
+          }
+      } else if(Rname=="DG5") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA_T;
+          } else {
+            atoi[residue_atom[i]]=NUC_G;
+          }
+       } else if(Rname=="DT ") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_T;
+          }
+      } else if(Rname=="DT3") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_T;
+          }
+      } else if(Rname=="DT5") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA_T;
+          } else {
+            atoi[residue_atom[i]]=NUC_T;
+          }
+       } else if(Rname=="DA ") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_A;
+          }
+      } else if(Rname=="DA3") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_A;
+          }
+      } else if(Rname=="DA5") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA_T;
+          } else {
+            atoi[residue_atom[i]]=NUC_A;
+          }
+       } else if(Rname=="DC ") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_C;
+          }
+      } else if(Rname=="DC3") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_C;
+          }
+      } else if(Rname=="DC5") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA_T;
+          } else {
+            atoi[residue_atom[i]]=NUC_C;
+          }
+      } else error("Residue not known: "+Rname);
+    }
+  } else {
+    error("MOLINFO DATA not found\n");
+  }
 }
 
 void SAXS::getOnebeadparam_sansD(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_D, std::vector<std::vector<long double> > &parameter_mix_D, std::vector<std::vector<long double> > &parameter_solv_D)
@@ -5179,6 +5510,337 @@ void SAXS::getOnebeadparam_sansD(const std::vector<AtomNumber> &atoms, std::vect
   parameter_vac_D[NUC_U].push_back(58.36993223927308);
   parameter_vac_D[NUC_U].push_back(-26.230290594990475);
   parameter_vac_D[NUC_U].push_back(2.0612018169924777);  
+
+  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+  if( moldat ) {
+    log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
+    for(unsigned i=0; i<atoms.size(); ++i) {
+      std::string Aname = moldat->getAtomName(atoms[i]);
+      std::string Rname = moldat->getResidueName(atoms[i]);
+      if(Rname=="ALA") {
+        atoi[residue_atom[i]]=ALA;
+      } else if(Rname=="ARG") {
+        atoi[residue_atom[i]]=ARG;
+      } else if(Rname=="ASN") {
+        atoi[residue_atom[i]]=ASN;
+      } else if(Rname=="ASP") {
+        atoi[residue_atom[i]]=ASP;
+      } else if(Rname=="CYS") {
+        atoi[residue_atom[i]]=CYS;
+      } else if(Rname=="GLN") {
+        atoi[residue_atom[i]]=GLN;
+      } else if(Rname=="GLU") {
+        atoi[residue_atom[i]]=GLU;
+      } else if(Rname=="GLY") {
+        atoi[residue_atom[i]]=GLY;
+      } else if(Rname=="HIS") {
+        atoi[residue_atom[i]]=HIS;
+      } else if(Rname=="HID") {
+        atoi[residue_atom[i]]=HIS;
+      } else if(Rname=="HIE") {
+        atoi[residue_atom[i]]=HIS;
+      } else if(Rname=="HIP") {
+        atoi[residue_atom[i]]=HIP;
+        // CHARMM NAMING FOR PROTONATION STATES OF HISTIDINE
+      } else if(Rname=="HSD") {
+        atoi[residue_atom[i]]=HIS;
+      } else if(Rname=="HSE") {
+        atoi[residue_atom[i]]=HIS;
+      } else if(Rname=="HSP") {
+        atoi[residue_atom[i]]=HIP;
+      } else if(Rname=="ILE") {
+        atoi[residue_atom[i]]=ILE;
+      } else if(Rname=="LEU") {
+        atoi[residue_atom[i]]=LEU;
+      } else if(Rname=="LYS") {
+        atoi[residue_atom[i]]=LYS;
+      } else if(Rname=="MET") {
+        atoi[residue_atom[i]]=MET;
+      } else if(Rname=="PHE") {
+        atoi[residue_atom[i]]=PHE;
+      } else if(Rname=="PRO") {
+        atoi[residue_atom[i]]=PRO;
+      } else if(Rname=="SER") {
+        atoi[residue_atom[i]]=SER;
+      } else if(Rname=="THR") {
+        atoi[residue_atom[i]]=THR;
+      } else if(Rname=="TRP") {
+        atoi[residue_atom[i]]=TRP;
+      } else if(Rname=="TYR") {
+        atoi[residue_atom[i]]=TYR;
+      } else if(Rname=="VAL") {
+        atoi[residue_atom[i]]=VAL;
+      }
+      // NUCLEIC ACIDS
+        else if(Rname=="G  ") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_G;
+          }
+      } else if(Rname=="G3 ") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_G;
+          }
+      } else if(Rname=="G5 ") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA_T;
+          } else {
+            atoi[residue_atom[i]]=NUC_G;
+          }
+       } else if(Rname=="U  ") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_U;
+          }
+      } else if(Rname=="U3 ") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_U;
+          }
+      } else if(Rname=="U5 ") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA_T;
+          } else {
+            atoi[residue_atom[i]]=NUC_U;
+          }
+       } else if(Rname=="A  ") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_A;
+          }
+      } else if(Rname=="A3 ") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_A;
+          }
+      } else if(Rname=="A5 ") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA_T;
+          } else {
+            atoi[residue_atom[i]]=NUC_A;
+          }
+       } else if(Rname=="C  ") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_C;
+          }
+      } else if(Rname=="C3 ") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_C;
+          }
+      } else if(Rname=="C5 ") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_RNA_T;
+          } else {
+            atoi[residue_atom[i]]=NUC_C;
+          }
+       } else if(Rname=="DG ") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_G;
+          }
+      } else if(Rname=="DG3") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_G;
+          }
+      } else if(Rname=="DG5") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA_T;
+          } else {
+            atoi[residue_atom[i]]=NUC_G;
+          }
+       } else if(Rname=="DT ") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_T;
+          }
+      } else if(Rname=="DT3") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_T;
+          }
+      } else if(Rname=="DT5") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA_T;
+          } else {
+            atoi[residue_atom[i]]=NUC_T;
+          }
+       } else if(Rname=="DA ") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_A;
+          }
+      } else if(Rname=="DA3") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_A;
+          }
+      } else if(Rname=="DA5") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA_T;
+          } else {
+            atoi[residue_atom[i]]=NUC_A;
+          }
+       } else if(Rname=="DC ") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_C;
+          }
+      } else if(Rname=="DC3") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA;
+          } else {
+            atoi[residue_atom[i]]=NUC_C;
+          }
+      } else if(Rname=="DC5") {
+          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || 
+             Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
+             Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
+             Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
+             Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
+             Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" ){ 
+            atoi[residue_atom[i]]=BB_DNA_T;
+          } else {
+            atoi[residue_atom[i]]=NUC_C;
+          }
+      } else error("Residue not known: "+Rname);
+    }
+  } else {
+    error("MOLINFO DATA not found\n");
+  }
 }
 
 double SAXS::calculateAFF(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double rho)
