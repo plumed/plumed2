@@ -86,8 +86,10 @@ ActionShortcut(ao)
   readInputLine( getShortcutLabel() + "_bmat: DOT ARG1=" + arg_str + " ARG2=" + arg_str );
   // Product of matrices
   readInputLine( getShortcutLabel() + "_dcls: MATHEVAL ARG1=" + getShortcutLabel() + "_dmat.w ARG2=" + getShortcutLabel() + "_bmat FUNC=x*y PERIODIC=NO"); 
+  // Convert matrix to a vector to get highest
+  readInputLine( getShortcutLabel() + "_vdcls: FLATTEN ARG=" + getShortcutLabel() + "_dcls" );
   // And take the highest value
-  readInputLine( getShortcutLabel() + ": HIGHEST ARG=" + getShortcutLabel() + "_dcls");
+  readInputLine( getShortcutLabel() + ": HIGHEST ARG=" + getShortcutLabel() + "_vdcls");
 }
 
 }

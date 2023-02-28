@@ -133,11 +133,11 @@ void Center::registerKeywords( Keywords& keys ) {
    keys.addFlag("SAFE_PHASES",false,"use trignomentric phases when computing position of center but also compute the center in ths usual way and use this when the pbc are not set. "  
                                     "There are two reasons for using this option (1) you are doing something that you know is really weird or (2) you are an idiot");
    keys.addFlag("MASS",false,"calculate the center of mass");
-   keys.addOutputComponent("xcom","default","the x-coordinate of the center");
-   keys.addOutputComponent("ycom","default","the y-coordinate of the center");
-   keys.addOutputComponent("zcom","default","the z-coordinate of the center");
-   keys.addOutputComponent("mass","default","the mass of the center");
-   keys.addOutputComponent("charge","default","the charege of the center");
+//   keys.addOutputComponent("xcom","default","the x-coordinate of the center");
+//   keys.addOutputComponent("ycom","default","the y-coordinate of the center");
+//   keys.addOutputComponent("zcom","default","the z-coordinate of the center");
+//   keys.addOutputComponent("mass","default","the mass of the center");
+//   keys.addOutputComponent("charge","default","the charege of the center");
 }
 
 Center::Center(const ActionOptions& ao):
@@ -155,10 +155,10 @@ ActionShortcut(ao)
     std::string atlist; parse("ATOMS",atlist);
     // Calculate the mass of the vatom
     readInputLine( getShortcutLabel() + "_m: MASSES ATOMS=" + atlist );
-    readInputLine( getShortcutLabel() + "_mass: SUM PERIODIC=NO ARG=" + getShortcutLabel() + "_m" );
+    readInputLine( getShortcutLabel() + "_mass: SUM NO_WILDCARD PERIODIC=NO ARG=" + getShortcutLabel() + "_m" );
     // Calculate the charge of the vatom
     readInputLine( getShortcutLabel() + "_q: CHARGES ATOMS=" + atlist );
-    readInputLine( getShortcutLabel() + "_charge: SUM PERIODIC=NO ARG=" + getShortcutLabel() + "_q" );
+    readInputLine( getShortcutLabel() + "_charge: SUM NO_WILDCARD PERIODIC=NO ARG=" + getShortcutLabel() + "_q" );
     // Retrieve the number of atoms
     ActionWithValue* am = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_m" );
     unsigned nat=am->copyOutput(0)->getNumberOfValues(); 
@@ -183,20 +183,20 @@ ActionShortcut(ao)
     // This computes a center in the conventional way
     if( !phases || safe_phases ) {
         // Calculate the sum of the weights
-        readInputLine( getShortcutLabel() + "_wnorm: SUM PERIODIC=NO ARG=" + wlab );
+        readInputLine( getShortcutLabel() + "_wnorm: SUM NO_WILDCARD PERIODIC=NO ARG=" + wlab );
         // Compute the normalised weights
-        readInputLine( getShortcutLabel() + "_weights: CUSTOM ARG1=" + getShortcutLabel() + "_wnorm ARG2=" + wlab + " FUNC=y/x PERIODIC=NO");   
+        readInputLine( getShortcutLabel() + "_weights: CUSTOM NO_WILDCARD ARG1=" + getShortcutLabel() + "_wnorm ARG2=" + wlab + " FUNC=y/x PERIODIC=NO");   
         // Get the positions into a multicolvar
         if( phases || nopbc ) readInputLine( getShortcutLabel() + "_pos: POSITION NOVIRIAL NOPBC ATOMS=" + atlist );
         else readInputLine( getShortcutLabel() + "_pos: POSITION NOVIRIAL WHOLEMOLECULE ATOMS=" + atlist );
         // Multiply each vector of positions by the weight
-        readInputLine( getShortcutLabel() + "_xwvec: CUSTOM ARG1=" + getShortcutLabel() + "_weights ARG2=" + getShortcutLabel() + "_pos.x FUNC=x*y PERIODIC=NO");
-        readInputLine( getShortcutLabel() + "_ywvec: CUSTOM ARG1=" + getShortcutLabel() + "_weights ARG2=" + getShortcutLabel() + "_pos.y FUNC=x*y PERIODIC=NO");
-        readInputLine( getShortcutLabel() + "_zwvec: CUSTOM ARG1=" + getShortcutLabel() + "_weights ARG2=" + getShortcutLabel() + "_pos.z FUNC=x*y PERIODIC=NO");
+        readInputLine( getShortcutLabel() + "_xwvec: CUSTOM NO_WILDCARD ARG1=" + getShortcutLabel() + "_weights ARG2=" + getShortcutLabel() + "_pos.x FUNC=x*y PERIODIC=NO");
+        readInputLine( getShortcutLabel() + "_ywvec: CUSTOM NO_WILDCARD ARG1=" + getShortcutLabel() + "_weights ARG2=" + getShortcutLabel() + "_pos.y FUNC=x*y PERIODIC=NO");
+        readInputLine( getShortcutLabel() + "_zwvec: CUSTOM NO_WILDCARD ARG1=" + getShortcutLabel() + "_weights ARG2=" + getShortcutLabel() + "_pos.z FUNC=x*y PERIODIC=NO");
         // And sum the weighted vectors
-        readInputLine( getShortcutLabel() + "_x: SUM ARG=" + getShortcutLabel() + "_xwvec PERIODIC=NO");
-        readInputLine( getShortcutLabel() + "_y: SUM ARG=" + getShortcutLabel() + "_ywvec PERIODIC=NO");
-        readInputLine( getShortcutLabel() + "_z: SUM ARG=" + getShortcutLabel() + "_zwvec PERIODIC=NO");
+        readInputLine( getShortcutLabel() + "_x: SUM NO_WILDCARD ARG=" + getShortcutLabel() + "_xwvec PERIODIC=NO");
+        readInputLine( getShortcutLabel() + "_y: SUM NO_WILDCARD ARG=" + getShortcutLabel() + "_ywvec PERIODIC=NO");
+        readInputLine( getShortcutLabel() + "_z: SUM NO_WILDCARD ARG=" + getShortcutLabel() + "_zwvec PERIODIC=NO");
     }
     // This computes a center using the trigonometric phases
     if( phases ) {

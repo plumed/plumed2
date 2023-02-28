@@ -61,6 +61,8 @@ public:
   virtual bool setForcePointer( const std::string& name, void* val ) = 0;
 /// This get the number of forces that need to be rescaled in rescale forces
   virtual unsigned getNumberOfForcesToRescale() const { plumed_merror("no method for rescaling forces for this type of input"); }
+/// Overriding this method from ActionWithValue ensures that taskLists that are set during share are not updated during calculate loop
+  void setupForCalculation( const bool& force=false ) override {}
 /// Get the data
   virtual void share() = 0; 
   virtual void shareAll() = 0;

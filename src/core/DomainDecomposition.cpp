@@ -287,8 +287,6 @@ void DomainDecomposition::share() {
 }
 
 void DomainDecomposition::share(const bool& getallatoms, const std::set<AtomNumber>& unique) {
-  if( !getallatoms && unique.empty() ) return ;
-
   // This retrieves what values we need to get
   int ndata=0; std::vector<Value*> values_to_get;
   if(int(gatindex.size())==getPntrToOutput(0)->getShape()[0] && shuffledAtoms==0) {
@@ -299,9 +297,7 @@ void DomainDecomposition::share(const bool& getallatoms, const std::set<AtomNumb
   } else {
     uniq_index.clear();
     uniq_index.reserve(unique.size());
-    if(shuffledAtoms>0) {
-      for(const auto & p : unique) uniq_index.push_back(g2l[p.index()]);
-    }
+    for(const auto & p : unique) uniq_index.push_back(g2l[p.index()]);
     for(const auto & ip : inputs) {
       if( (!ip->fixed || firststep) && ip->wasset ) { (ip->mydata)->share_data( unique, uniq_index, ip->copyOutput(0) ); values_to_get.push_back(ip->copyOutput(0)); ndata++; }
     }
@@ -414,7 +410,7 @@ void DomainDecomposition::broadcastToDomains( Value* val ) {
 }
 
 void DomainDecomposition::sumOverDomains( Value* val ) {
-  if( dd ) dd.Sum( val->data );
+  if( dd && shuffledAtoms>0 ) dd.Sum( val->data );
 }
 
 const long int& DomainDecomposition::getDdStep() const {

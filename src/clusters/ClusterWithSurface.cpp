@@ -52,7 +52,7 @@ ActionShortcut(ao)
   // Now create a contact matrix
   readInputLine( getShortcutLabel() + "_cmat: CONTACT_MATRIX GROUP=" + atdata + " SWITCH={" + rcut_surf_str +"}" );
   // Now create a custom matrix
-  readInputLine( getShortcutLabel() + "_cwmat: CUSTOM_MATRIX ARG1=" + getShortcutLabel() + "_wnosurf ARG2=" + getShortcutLabel() + "_wnosurf FUNC=max");
+  readInputLine( getShortcutLabel() + "_cwmat: CUSTOM_DOT ARG1=" + getShortcutLabel() + "_wnosurf ARG2=" + getShortcutLabel() + "_wnosurf FUNC=max");
   // Product of matrices
   readInputLine( getShortcutLabel() + "_pmat: MATHEVAL ARG1=" + getShortcutLabel() + "_cmat.w ARG2=" + getShortcutLabel() + "_cwmat FUNC=x*y PERIODIC=NO");
   // DFS clustering

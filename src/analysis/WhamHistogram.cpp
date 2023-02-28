@@ -105,8 +105,10 @@ WhamHistogram::WhamHistogram( const ActionOptions& ao ) :
   std::string stride; parse("STRIDE",stride); 
   // Input for GATHER_REPLICAS
   readInputLine( getShortcutLabel() + "_gather: GATHER_REPLICAS ARG=" + bias );
+  // Put all the replicas in a single vector
+  readInputLine( getShortcutLabel() + "_gatherv: CONCATENATE ARG=" + getShortcutLabel() + "_gather.*");
   // Input for COLLECT_FRAMES
-  readInputLine( getShortcutLabel() + "_collect: COLLECT_FRAMES LOGWEIGHTS=" + getShortcutLabel() + "_gather.* STRIDE=" + stride);
+  readInputLine( getShortcutLabel() + "_collect: COLLECT_FRAMES LOGWEIGHTS=" + getShortcutLabel() + "_gatherv STRIDE=" + stride);
   // Input for WHAM
   std::string temp, tempstr=""; parse("TEMP",temp); if( temp.length()>0 ) tempstr="TEMP=" + temp;
   readInputLine( getShortcutLabel() + "_wham: WHAM ARG=" + getShortcutLabel() + "_collect.logweights " + tempstr );

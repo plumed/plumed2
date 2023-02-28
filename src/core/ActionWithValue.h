@@ -239,7 +239,7 @@ public:
 /// Clear the derivatives of values wrt parameters
   virtual void clearDerivatives( const bool& force=false );
 /// Setup for doing the calculation by getting the atomic positions, clearing the output forces and setting up any task lists
-  void setupForCalculation( const bool& force=false );
+  virtual void setupForCalculation( const bool& force=false );
 /// Calculate the gradients and store them for all the values (need for projections)
   virtual void setGradientsIfNeeded();
 /// Set the value

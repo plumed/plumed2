@@ -497,8 +497,11 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       {
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        cmd("createValue timestep: TIMESTEP");
         ActionToPutData* ts = actionSet.selectWithLabel<ActionToPutData*>("timestep");
+        if( !ts ) {
+            cmd("createValue timestep: TIMESTEP");
+            ts = actionSet.selectWithLabel<ActionToPutData*>("timestep");
+        }
         if( !ts->setValuePointer("timestep", val ) ) plumed_error();
         ts->transferFixedValue( MDUnits.getTime()/units.getTime() ); 
       }

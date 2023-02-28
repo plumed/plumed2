@@ -23,6 +23,7 @@
 #define __PLUMED_core_DataPassingTools_h
 
 #include <string>
+#include <memory>
 #include <map>
 
 namespace PLMD {

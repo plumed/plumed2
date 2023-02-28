@@ -83,7 +83,6 @@ void Sort::registerKeywords(Keywords& keys) {
 
 void Sort::read( ActionWithArguments* action ) {
   scalar_out = action->getNumberOfArguments()==1; nargs = action->getNumberOfArguments(); if( scalar_out ) nargs = action->getPntrToArgument(0)->getNumberOfValues();
-  if( scalar_out && action->getPntrToArgument(0)->getRank()==0 ) action->error("cannot calculate moments if only given one variable"); 
 
   for(unsigned i=0; i<action->getNumberOfArguments(); ++i) {
     if((action->getPntrToArgument(i))->isPeriodic()) action->error("Cannot sort periodic values (check argument "+ (action->getPntrToArgument(i))->getName() +")");
