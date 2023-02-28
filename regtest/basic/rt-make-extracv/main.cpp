@@ -22,10 +22,12 @@ int main(){
   plumed->cmd("readInputLine","d: DISTANCE ATOMS=1,2");
   plumed->cmd("readInputLine","e: EXTRACV NAME=extra");
   plumed->cmd("readInputLine","e2: EXTRACV NAME=extra2");
+  plumed->cmd("readInputLine","e3: EXTRACV NAME=extra3");
   plumed->cmd("readInputLine","PRINT ARG=e FILE=COLVARX");
   plumed->cmd("readInputLine","RESTRAINT ARG=e AT=0 KAPPA=1");
   plumed->cmd("readInputLine","RESTRAINT ARG=d AT=0 KAPPA=1");
   plumed->cmd("readInputLine","RESTRAINT ARG=e2 AT=0 KAPPA=-1");
+  plumed->cmd("readInputLine","PRINT ARG=e3 FILE=extra3 STRIDE=3");
 
   std::ofstream ofs("output");
 
@@ -34,6 +36,8 @@ int main(){
     double extracvf=0.0;
     double extracv2=step;
     double extracvf2=-step;
+    double extracv3=2*step;
+    double extracvf3=0.0;
     plumed->cmd("setStep",step);
     plumed->cmd("setPositions",&positions[0],3*natoms);
     plumed->cmd("setBox",&box[0],9);
@@ -43,6 +47,8 @@ int main(){
     plumed->cmd("setExtraCVForce extra",&extracvf,1);
     plumed->cmd("setExtraCV extra2",&extracv2,1);
     plumed->cmd("setExtraCVForce extra2",&extracvf2,1);
+    plumed->cmd("setExtraCV extra3",&extracv3,1);
+    plumed->cmd("setExtraCVForce extra3",&extracvf3,1);
     plumed->cmd("setMasses",&masses[0],natoms);
 // first compute using modified positions:
     positions[0]=0.5;
@@ -51,6 +57,10 @@ int main(){
     extracvf=0.0;
     extracvf2=0.0;
     plumed->cmd("prepareCalc");
+    int isExtraCV3Needed=0;
+    plumed->cmd("isExtraCVNeeded extra3",&isExtraCV3Needed);
+    ofs<<"extracv3_needed: "<<isExtraCV3Needed<<"\n";
+    if(!isExtraCV3Needed) extracv3=0.0;
     plumed->cmd("performCalcNoUpdate");
     double bias;
     plumed->cmd("getBias",&bias);
