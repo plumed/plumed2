@@ -49,7 +49,10 @@ In order to install the `PYTORCH` module when compiling PLUMED we need to (1) sp
 > ./configure --enable-libtorch --enable-modules=pytorch  
 \endverbatim
 
-**Notes about the linking of LibTorch.**
+\attention
+To verify that the linking of LibTorch is succesful, one should look at the output of the configure command, which should report one of the following lines: `checking libtorch without extra libs.. yes` or `checking libtorch with -ltorch_cpu -lc10... yes`. If not, configure will display a warning (and not an error!) that says: `configure: WARNING: cannot enable __PLUMED_HAS_LIBTORCH`. In this case, it is recommended to examine the output of the above two commands in the config.log file to understand the reason (e.g. it cannot find the required libraries).
+
+**Additional notes**
 - A compiler with C++14 support is required. 
 - If you want to use the pre-cxx11 ABI LibTorch binaries the following flag should be added to the configure: `CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0"`.
 
