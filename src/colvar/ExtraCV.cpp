@@ -87,7 +87,7 @@ unsigned ExtraCV::getNumberOfDerivatives() {
 }
 
 void ExtraCV::prepare() {
-/// \todo: notify Atoms that this is requested
+  atoms.setExtraCVNeeded(name,true);
 }
 
 // calculator

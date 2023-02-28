@@ -118,6 +118,12 @@ public:
 /// Update the value of an extra CV force.
 /// \todo check if this should also be scaled when acting on total energy
   virtual void updateExtraCVForce(const std::string &name,double f)=0;
+/// Inform the MD code that an extra CV is needed
+  virtual void setExtraCVNeeded(const std::string &name,bool needed=true)=0;
+/// Check if an extra CV is needed
+  virtual bool isExtraCVNeeded(const std::string &name) const=0;
+/// Set all extra CV as not needed (at beginning of the step)
+  virtual void resetExtraCVNeeded()=0;
 };
 
 }
