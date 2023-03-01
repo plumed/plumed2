@@ -189,6 +189,8 @@ jobs:
     - name: Install requirements
       run: |
         .ci/install.cppcheck 2.10
+        # it is important that this is the same version used to generate the actual ./configure
+        .ci/install.autoconf 2.69
     - name: Build astyle
       run: |
         make -j 4 -C astyle

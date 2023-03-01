@@ -5,11 +5,15 @@
 # system.
 # If you modify configure.ac, remember to run
 # autoconf and then commit both files to the git repository.
+# Make sure that you are using the same autoconf version that is
+# installed on GitHub Actions see `.github/workflows/ci.yml`
+# and search for `autoconf`. Otherwise, our codecheck job
+# on GitHub Actions will complain.
 
 # we require a recent version
 # notice that autoconf is not necessary on user's machine, but only
 # if one has to update configure.ac
-AC_PREREQ([2.68])
+AC_PREREQ([2.69])
 AC_INIT([PLUMED], [2])
 
 ##################################################################
