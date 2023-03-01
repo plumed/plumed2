@@ -680,6 +680,7 @@ infodir
 docdir
 oldincludedir
 includedir
+runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -808,6 +809,7 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
+runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE_TARNAME}'
@@ -1060,6 +1062,15 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
+  -runstatedir | --runstatedir | --runstatedi | --runstated \
+  | --runstate | --runstat | --runsta | --runst | --runs \
+  | --run | --ru | --r)
+    ac_prev=runstatedir ;;
+  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
+  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
+  | --run=* | --ru=* | --r=*)
+    runstatedir=$ac_optarg ;;
+
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1197,7 +1208,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir
+		libdir localedir mandir runstatedir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1350,6 +1361,7 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
+  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -7568,23 +7580,24 @@ if test $rtld_default = true ; then
     else
       testlibs=""
     fi
-    # check if multiple libraries are required
-    multiple=no
-    if test "" = "true"; then
-      multiple=yes
-    fi
     save_LIBS="$LIBS"
-    for testlib in "" $testlibs
-    do
-      if test -n "$testlib" ; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking RTLD_DEFAULT with -l$testlib" >&5
-$as_echo_n "checking RTLD_DEFAULT with -l$testlib... " >&6; }
-        LIBS="-l$testlib $LIBS"
-      else
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking RTLD_DEFAULT without extra libs" >&5
+
+    # check if multiple libraries are required simultaneously
+    multiple="no"
+    if test "" = "true"; then
+      multiple="yes"
+      all_LIBS=""
+      for testlib in $testlibs;
+      do
+        all_LIBS="$all_LIBS -l$testlib"
+      done
+      testlibs=" " # to check only without libraries, and later with all together
+    fi
+
+    # check without libraries
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking RTLD_DEFAULT without extra libs" >&5
 $as_echo_n "checking RTLD_DEFAULT without extra libs... " >&6; }
-      fi
-      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 #include <dlfcn.h>
@@ -7607,13 +7620,72 @@ $as_echo "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-      if test $found = ok ; then
-        break
+
+    if test "$found" = "ko" ; then
+      if test "$multiple" = "yes" ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking RTLD_DEFAULT with $all_LIBS" >&5
+$as_echo_n "checking RTLD_DEFAULT with $all_LIBS... " >&6; }
+        LIBS="$all_LIBS $LIBS"
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <dlfcn.h>
+int
+main ()
+{
+  void* f=dlsym(RTLD_DEFAULT,"path");
+  return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+              { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+      else
+        for testlib in $testlibs
+        do
+          { $as_echo "$as_me:${as_lineno-$LINENO}: checking RTLD_DEFAULT with -l$testlib" >&5
+$as_echo_n "checking RTLD_DEFAULT with -l$testlib... " >&6; }
+          LIBS="-l$testlib $LIBS"
+          cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <dlfcn.h>
+int
+main ()
+{
+  void* f=dlsym(RTLD_DEFAULT,"path");
+  return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+                { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+          if test $found = ok ; then
+            break
+          fi
+          LIBS="$save_LIBS"
+        done
       fi
-      if test "$multiple" = "no"; then # reset LIBS to initial one, otherwise add new libraries
-        LIBS="$save_LIBS"
-      fi
-    done
+    fi
+
     if test $found = ok ; then
       $as_echo "#define __PLUMED_HAS_RTLD_DEFAULT 1" >>confdefs.h
 
@@ -7774,23 +7846,24 @@ if test $subprocess = true ; then
     else
       testlibs=""
     fi
-    # check if multiple libraries are required
-    multiple=no
-    if test "" = "true"; then
-      multiple=yes
-    fi
     save_LIBS="$LIBS"
-    for testlib in "" $testlibs
-    do
-      if test -n "$testlib" ; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking subprocess with -l$testlib" >&5
-$as_echo_n "checking subprocess with -l$testlib... " >&6; }
-        LIBS="-l$testlib $LIBS"
-      else
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking subprocess without extra libs" >&5
+
+    # check if multiple libraries are required simultaneously
+    multiple="no"
+    if test "" = "true"; then
+      multiple="yes"
+      all_LIBS=""
+      for testlib in $testlibs;
+      do
+        all_LIBS="$all_LIBS -l$testlib"
+      done
+      testlibs=" " # to check only without libraries, and later with all together
+    fi
+
+    # check without libraries
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking subprocess without extra libs" >&5
 $as_echo_n "checking subprocess without extra libs... " >&6; }
-      fi
-      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 /* random program calling all the functions needed to manage a subprocess */
@@ -7836,13 +7909,118 @@ $as_echo "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-      if test $found = ok ; then
-        break
+
+    if test "$found" = "ko" ; then
+      if test "$multiple" = "yes" ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking subprocess with $all_LIBS" >&5
+$as_echo_n "checking subprocess with $all_LIBS... " >&6; }
+        LIBS="$all_LIBS $LIBS"
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* random program calling all the functions needed to manage a subprocess */
+#include <cstdio>
+#include <unistd.h>
+#include <csignal>
+
+int
+main ()
+{
+// notice that [] is required to cheat autoconf
+  int cp[2];
+  FILE* fp;
+  char* arr[3];
+  arr[0]=NULL;
+  arr[1]=NULL;
+  arr[2]=NULL;
+  arr[3]=NULL;
+  if(pipe(cp)>=0)
+  if(fork()>=0)
+  if(close(1)>=0)
+  if(dup(cp[1])>=0) {
+    fp=fdopen(cp[0],"w");
+    execv(arr[0],arr);
+  }
+  auto p=fork();
+  kill(p,SIGINT);
+  kill(p,SIGCONT);
+  kill(p,SIGSTOP);
+  return 0;
+}
+
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+              { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+      else
+        for testlib in $testlibs
+        do
+          { $as_echo "$as_me:${as_lineno-$LINENO}: checking subprocess with -l$testlib" >&5
+$as_echo_n "checking subprocess with -l$testlib... " >&6; }
+          LIBS="-l$testlib $LIBS"
+          cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* random program calling all the functions needed to manage a subprocess */
+#include <cstdio>
+#include <unistd.h>
+#include <csignal>
+
+int
+main ()
+{
+// notice that [] is required to cheat autoconf
+  int cp[2];
+  FILE* fp;
+  char* arr[3];
+  arr[0]=NULL;
+  arr[1]=NULL;
+  arr[2]=NULL;
+  arr[3]=NULL;
+  if(pipe(cp)>=0)
+  if(fork()>=0)
+  if(close(1)>=0)
+  if(dup(cp[1])>=0) {
+    fp=fdopen(cp[0],"w");
+    execv(arr[0],arr);
+  }
+  auto p=fork();
+  kill(p,SIGINT);
+  kill(p,SIGCONT);
+  kill(p,SIGSTOP);
+  return 0;
+}
+
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+                { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+          if test $found = ok ; then
+            break
+          fi
+          LIBS="$save_LIBS"
+        done
       fi
-      if test "$multiple" = "no"; then # reset LIBS to initial one, otherwise add new libraries
-        LIBS="$save_LIBS"
-      fi
-    done
+    fi
+
     if test $found = ok ; then
       $as_echo "#define __PLUMED_HAS_SUBPROCESS 1" >>confdefs.h
 
@@ -8797,23 +8975,24 @@ if test $boost_graph = true ; then
     else
       testlibs=""
     fi
-    # check if multiple libraries are required
-    multiple=no
-    if test "" = "true"; then
-      multiple=yes
-    fi
     save_LIBS="$LIBS"
-    for testlib in "" $testlibs
-    do
-      if test -n "$testlib" ; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking boost graph with -l$testlib" >&5
-$as_echo_n "checking boost graph with -l$testlib... " >&6; }
-        LIBS="-l$testlib $LIBS"
-      else
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking boost graph without extra libs" >&5
+
+    # check if multiple libraries are required simultaneously
+    multiple="no"
+    if test "" = "true"; then
+      multiple="yes"
+      all_LIBS=""
+      for testlib in $testlibs;
+      do
+        all_LIBS="$all_LIBS -l$testlib"
+      done
+      testlibs=" " # to check only without libraries, and later with all together
+    fi
+
+    # check without libraries
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking boost graph without extra libs" >&5
 $as_echo_n "checking boost graph without extra libs... " >&6; }
-      fi
-      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 #include <boost/graph/graph_utility.hpp>
@@ -8838,13 +9017,76 @@ $as_echo "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-      if test $found = ok ; then
-        break
+
+    if test "$found" = "ko" ; then
+      if test "$multiple" = "yes" ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking boost graph with $all_LIBS" >&5
+$as_echo_n "checking boost graph with $all_LIBS... " >&6; }
+        LIBS="$all_LIBS $LIBS"
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <boost/graph/graph_utility.hpp>
+#include <boost/graph/adjacency_matrix.hpp>
+int
+main ()
+{
+  boost::adjacency_matrix<boost::directedS> a(1);
+  ;
+  return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+              { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+      else
+        for testlib in $testlibs
+        do
+          { $as_echo "$as_me:${as_lineno-$LINENO}: checking boost graph with -l$testlib" >&5
+$as_echo_n "checking boost graph with -l$testlib... " >&6; }
+          LIBS="-l$testlib $LIBS"
+          cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <boost/graph/graph_utility.hpp>
+#include <boost/graph/adjacency_matrix.hpp>
+int
+main ()
+{
+  boost::adjacency_matrix<boost::directedS> a(1);
+  ;
+  return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+                { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+          if test $found = ok ; then
+            break
+          fi
+          LIBS="$save_LIBS"
+        done
       fi
-      if test "$multiple" = "no"; then # reset LIBS to initial one, otherwise add new libraries
-        LIBS="$save_LIBS"
-      fi
-    done
+    fi
+
     if test $found = ok ; then
       $as_echo "#define __PLUMED_HAS_BOOST_GRAPH 1" >>confdefs.h
 
@@ -8866,23 +9108,24 @@ if test $boost_serialization = true ; then
     else
       testlibs=""
     fi
-    # check if multiple libraries are required
-    multiple=no
-    if test "" = "true"; then
-      multiple=yes
-    fi
     save_LIBS="$LIBS"
-    for testlib in "" $testlibs
-    do
-      if test -n "$testlib" ; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking boost serialization with -l$testlib" >&5
-$as_echo_n "checking boost serialization with -l$testlib... " >&6; }
-        LIBS="-l$testlib $LIBS"
-      else
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking boost serialization without extra libs" >&5
+
+    # check if multiple libraries are required simultaneously
+    multiple="no"
+    if test "" = "true"; then
+      multiple="yes"
+      all_LIBS=""
+      for testlib in $testlibs;
+      do
+        all_LIBS="$all_LIBS -l$testlib"
+      done
+      testlibs=" " # to check only without libraries, and later with all together
+    fi
+
+    # check without libraries
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking boost serialization without extra libs" >&5
 $as_echo_n "checking boost serialization without extra libs... " >&6; }
-      fi
-      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 #include <fstream>
@@ -8905,13 +9148,72 @@ $as_echo "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-      if test $found = ok ; then
-        break
+
+    if test "$found" = "ko" ; then
+      if test "$multiple" = "yes" ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking boost serialization with $all_LIBS" >&5
+$as_echo_n "checking boost serialization with $all_LIBS... " >&6; }
+        LIBS="$all_LIBS $LIBS"
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <fstream>
+#include <boost/archive/text_oarchive.hpp>
+int main() {
+    std::ofstream ofs("filename");
+    boost::archive::text_oarchive oa(ofs);
+    return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+              { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+      else
+        for testlib in $testlibs
+        do
+          { $as_echo "$as_me:${as_lineno-$LINENO}: checking boost serialization with -l$testlib" >&5
+$as_echo_n "checking boost serialization with -l$testlib... " >&6; }
+          LIBS="-l$testlib $LIBS"
+          cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <fstream>
+#include <boost/archive/text_oarchive.hpp>
+int main() {
+    std::ofstream ofs("filename");
+    boost::archive::text_oarchive oa(ofs);
+    return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+                { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+          if test $found = ok ; then
+            break
+          fi
+          LIBS="$save_LIBS"
+        done
       fi
-      if test "$multiple" = "no"; then # reset LIBS to initial one, otherwise add new libraries
-        LIBS="$save_LIBS"
-      fi
-    done
+    fi
+
     if test $found = ok ; then
       $as_echo "#define __PLUMED_HAS_BOOST_SERIALIZATION 1" >>confdefs.h
 
@@ -9888,23 +10190,24 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
     else
       testlibs=""
     fi
-    # check if multiple libraries are required
-    multiple=no
-    if test "true" = "true"; then
-      multiple=yes
-    fi
     save_LIBS="$LIBS"
-    for testlib in "" $testlibs
-    do
-      if test -n "$testlib" ; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking libtorch with -l$testlib" >&5
-$as_echo_n "checking libtorch with -l$testlib... " >&6; }
-        LIBS="-l$testlib $LIBS"
-      else
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking libtorch without extra libs" >&5
+
+    # check if multiple libraries are required simultaneously
+    multiple="no"
+    if test "true" = "true"; then
+      multiple="yes"
+      all_LIBS=""
+      for testlib in $testlibs;
+      do
+        all_LIBS="$all_LIBS -l$testlib"
+      done
+      testlibs=" " # to check only without libraries, and later with all together
+    fi
+
+    # check without libraries
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking libtorch without extra libs" >&5
 $as_echo_n "checking libtorch without extra libs... " >&6; }
-      fi
-      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 #include <torch/torch.h>
@@ -9926,13 +10229,70 @@ $as_echo "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-      if test $found = ok ; then
-        break
+
+    if test "$found" = "ko" ; then
+      if test "$multiple" = "yes" ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking libtorch with $all_LIBS" >&5
+$as_echo_n "checking libtorch with $all_LIBS... " >&6; }
+        LIBS="$all_LIBS $LIBS"
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <torch/torch.h>
+#include <torch/script.h>
+int main() {
+  torch::Tensor tensor = torch::rand({2, 3});
+  return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+              { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+      else
+        for testlib in $testlibs
+        do
+          { $as_echo "$as_me:${as_lineno-$LINENO}: checking libtorch with -l$testlib" >&5
+$as_echo_n "checking libtorch with -l$testlib... " >&6; }
+          LIBS="-l$testlib $LIBS"
+          cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <torch/torch.h>
+#include <torch/script.h>
+int main() {
+  torch::Tensor tensor = torch::rand({2, 3});
+  return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+                { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+          if test $found = ok ; then
+            break
+          fi
+          LIBS="$save_LIBS"
+        done
       fi
-      if test "$multiple" = "no"; then # reset LIBS to initial one, otherwise add new libraries
-        LIBS="$save_LIBS"
-      fi
-    done
+    fi
+
     if test $found = ok ; then
       $as_echo "#define __PLUMED_HAS_LIBTORCH 1" >>confdefs.h
 

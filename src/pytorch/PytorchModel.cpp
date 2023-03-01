@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Copyright (c) 2022 of Luigi Bonati.
+Copyright (c) 2022-2023 of Luigi Bonati.
 
 The pytorch module is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
