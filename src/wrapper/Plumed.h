@@ -467,14 +467,25 @@
 
   Only used in declarations. Requires C11 _Generic and variadic macros, and so it is
   disabled by default with C++ and pre C11 compilers.
+
+  https://mort.coffee/home/c-compiler-quirks/
 */
 
 #ifndef __PLUMED_WRAPPER_C_TYPESAFE
-#if ! defined(__cplusplus) && __STDC_VERSION__ >= 201112L
-#define __PLUMED_WRAPPER_C_TYPESAFE 1
-#else
-#define __PLUMED_WRAPPER_C_TYPESAFE 0
-#endif
+#  if defined(__STDC_VERSION__)
+#    if ! defined(__cplusplus) && __STDC_VERSION__ >= 201112L
+#      if defined(__GNUC__) && !defined(__clang__)
+#        if (__GNUC__ >= 5 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 9))
+#          define __PLUMED_WRAPPER_C_TYPESAFE 1
+#        endif
+#      else
+#        define __PLUMED_WRAPPER_C_TYPESAFE 1
+#      endif
+#    endif
+#  endif
+#  ifndef __PLUMED_WRAPPER_C_TYPESAFE
+#    define __PLUMED_WRAPPER_C_TYPESAFE 0
+#  endif
 #endif
 
 /*
