@@ -82,6 +82,11 @@ while the surface cut-off can be modified with SASA_CUTOFF.
 The maximum QVALUE for ONEBEAD is set to 0.3 inverse angstroms.
 The solvent density, that by default is set to 0.334 electrons per cubic angstrom (bulk water), can be modified using
 the SOLVDENS keyword.
+ONEBEAD requires an additional PDB file to perform mapping conversion, which must be provided via TEMPLATE keyword.
+This PDB file should only include the atoms for which the SAXS intensity will be computed. For nucleic acids,
+the AMBER OL3 (RNA) and OL15 (DNA) naming is required. By default, the 5' terminus is considered capped with an hydroxyl
+moiety on C5'. If your structure contains a phosphate group at the 5' terminus, you should rename the nucleotide as a
+non-terminal one (e.g., change nucleotide name from DC5 to DC).
 
 Experimental reference intensities can be added using the EXPINT keywords.
 By default SAXS is calculated using Debye on CPU, by adding the GPU flag it is possible to solve the equation on a
@@ -99,10 +104,12 @@ SAXS ...
 LABEL=SAXS
 ATOMS=1-355
 ONEBEAD
+TEMPLATE=template_AA.pdb
 SOLVDENS=0.334
 SOLVATION_CORRECTION=0.04
 SOLVATION_STRIDE=1
 SASA_CUTOFF=1.0
+SCALE_EXPINT=1.4002
 QVALUE1=0.03 EXPINT1=1.0902
 QVALUE2=0.06 EXPINT2=0.790632
 QVALUE3=0.09 EXPINT3=0.453808
@@ -113,7 +120,6 @@ QVALUE7=0.21 EXPINT7=0.052633
 QVALUE8=0.24 EXPINT8=0.0276557
 QVALUE9=0.27 EXPINT9=0.0122775
 QVALUE10=0.30 EXPINT10=0.00880634
-
 ... SAXS
 
 PRINT ARG=(SAXS\.q-.*),(SAXS\.exp-.*) FILE=colvar STRIDE=1
@@ -138,6 +144,11 @@ to a user-defined term. SASA stride calculation can be modified using SOLVATION_
 the solvent-exposed residues is chosen with a probability equal to the deuterium concentration in the buffer.
 The deuterated residues are updated with a stride equal to SOLVATION_STRIDE. The fraction of deuterated water
 can be set with DEUTER_CONC, the default value is 0.
+ONEBEAD requires an additional PDB file to perform mapping conversion, which must be provided via TEMPLATE keyword.
+This PDB file should only include the atoms for which the SANS intensity will be computed. For nucleic acids,
+the AMBER OL3 (RNA) and OL15 (DNA) naming is required. By default, the 5' terminus is considered capped with an hydroxyl
+moiety on C5'. If your structure contains a phosphate group at the 5' terminus, you should rename the nucleotide as a
+non-terminal one (e.g., change nucleotide name from DC5 to DC).
 
 PLEASE NOTE: at the moment, we DO NOT explicitly take into account deuterated residues in the ATOMISTIC representation,
 but we correct the solvent contribution via the DEUTER_CONC keyword.
@@ -158,6 +169,7 @@ SANS ...
 LABEL=SANS
 ATOMS=1-355
 ATOMISTIC
+SCALE_EXPINT=1.4002
 DEUTER_CONC=0.48
 QVALUE1=0.03 EXPINT1=1.0902
 QVALUE2=0.06 EXPINT2=0.790632
@@ -225,7 +237,6 @@ private:
   std::vector<std::vector<double> > FF_value_solv_H;
   std::vector<std::vector<double> > FF_value_mixed_H;
   std::vector<std::vector<double> > FF_value_vacuum_D;
-  std::vector<std::vector<double> > FF_value_solv_D;
   std::vector<std::vector<double> > FF_value_mixed_D;
 
   std::vector<std::vector<double> > LCPOparam;
@@ -244,7 +255,6 @@ private:
   std::vector<double> Iq0_solv_H;
   std::vector<double> Iq0_mix_H;
   std::vector<double> Iq0_vac_D;
-  std::vector<double> Iq0_solv_D;
   std::vector<double> Iq0_mix_D;
 
   void calculate_gpu(std::vector<Vector> &pos, std::vector<Vector> &deriv);
@@ -259,7 +269,7 @@ private:
   void sasa_calculate(std::vector<bool> &solv_res);
   //SANS:
   void getOnebeadparam_sansH(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_H, std::vector<std::vector<long double> > &parameter_mix_H, std::vector<std::vector<long double> > &parameter_solv_H);
-  void getOnebeadparam_sansD(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_D, std::vector<std::vector<long double> > &parameter_mix_D, std::vector<std::vector<long double> > &parameter_solv_D);
+  void getOnebeadparam_sansD(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_D, std::vector<std::vector<long double> > &parameter_mix_D);
   double calculateAFFsans(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double deuter_conc);
 
 public:
@@ -282,17 +292,17 @@ void SAXS::registerKeywords(Keywords& keys) {
   keys.addFlag("ATOMISTIC",false,"calculate SAXS for an atomistic model");
   keys.addFlag("MARTINI",false,"calculate SAXS for a Martini model");
   keys.addFlag("ONEBEAD",false,"calculate SAXS for a single bead model");
-  keys.add("compulsory","TEMPLATE","template.pdb","A PDB file is required for Onebead mapping.");
-  keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
-  keys.add("numbered","QVALUE","Selected scattering lengths in inverse angstroms are given as QVALUE1, QVALUE2, ... .");
-  keys.add("numbered","PARAMETERS","Used parameter Keywords like PARAMETERS1, PARAMETERS2. These are used to calculate the form factor for the \\f$i\\f$th atom/bead.");
+  keys.add("compulsory","TEMPLATE","template.pdb","A PDB file is required for ONEBEAD mapping");
+  keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein");
+  keys.add("numbered","QVALUE","Selected scattering lengths in inverse angstroms are given as QVALUE1, QVALUE2, ...");
+  keys.add("numbered","PARAMETERS","Used parameter Keywords like PARAMETERS1, PARAMETERS2. These are used to calculate the form factor for the \\f$i\\f$th atom/bead");
   keys.add("compulsory","DEUTER_CONC","0.","Fraction of deuterated solvent");
-  keys.add("compulsory","SOLVDENS","0.334","Density of the solvent to be used for the correction of atomistic form factors.");
-  keys.add("compulsory","SOLVATION_CORRECTION","0.0","Hydration layer electron density correction (ONEBEAD only).");
-  keys.add("compulsory","SASA_CUTOFF","1.0","SASA value to consider a residue as exposed to the solvent (ONEBEAD only).");
-  keys.add("numbered","EXPINT","Add an experimental value for each q value.");
-  keys.add("compulsory","SOLVATION_STRIDE","100","Number of steps between every new residues solvation estimation via LCPO (ONEBEAD only).");
-  keys.add("compulsory","SCALE_EXPINT","1.0","Scaling value for experimental data normalization.");
+  keys.add("compulsory","SOLVDENS","0.334","Density of the solvent to be used for the correction of atomistic form factors");
+  keys.add("compulsory","SOLVATION_CORRECTION","0.0","Hydration layer electron density correction (ONEBEAD only)");
+  keys.add("compulsory","SASA_CUTOFF","1.0","SASA value to consider a residue as exposed to the solvent (ONEBEAD only)");
+  keys.add("numbered","EXPINT","Add an experimental value for each q value");
+  keys.add("compulsory","SOLVATION_STRIDE","100","Number of steps between every new residues solvation estimation via LCPO (ONEBEAD only)");
+  keys.add("compulsory","SCALE_EXPINT","1.0","Scaling value for experimental data normalization");
   keys.addOutputComponent("q","default","the # SAXS of q");
   keys.addOutputComponent("exp","EXPINT","the # experimental intensity");
 }
@@ -347,16 +357,13 @@ SAXS::SAXS(const ActionOptions&ao):
 
   bool atomistic=false;
   parseFlag("ATOMISTIC",atomistic);
-  if(atomistic) log.printf("  using atomistic form factors\n");
+  if(atomistic) log.printf("  using ATOMISTIC form factors\n");
   bool martini=false;
   parseFlag("MARTINI",martini);
-  if(martini) log.printf("  using Martini form factors\n");
+  if(martini) log.printf("  using MARTINI form factors\n");
   onebead=false;
   parseFlag("ONEBEAD",onebead);
-  if(onebead) {
-    log.printf("  using Onebead form factors\n");
-    parse("TEMPLATE",template_name);
-  }
+  if(onebead) log.printf("  using ONEBEAD form factors\n");
 
   if(martini&&atomistic) error("You cannot use MARTINI and ATOMISTIC at the same time");
   if(martini&&onebead) error("You cannot use MARTINI and ONEBEAD at the same time");
@@ -369,7 +376,7 @@ SAXS::SAXS(const ActionOptions&ao):
     double t_list;
     if( !parseNumbered( "QVALUE", i+1, t_list) ) break;
     if(t_list<=0.) error("QVALUE cannot be less or equal to zero!\n");
-    if(onebead&&t_list>0.3) error("For ONEBEAD mapping QVALUE must be smaller or equal to 0.3.");
+    if(onebead&&t_list>0.3) error("ONEBEAD mapping QVALUE must be smaller or equal to 0.3");
     q_list.push_back(t_list);
     ntarget++;
   }
@@ -381,32 +388,37 @@ SAXS::SAXS(const ActionOptions&ao):
     log.printf("  my q: %lf \n",q_list[i]);
   }
 
-  deuter_conc = 0.;
-  parse("DEUTER_CONC", deuter_conc);
-  if(deuter_conc < 0. || deuter_conc > 1.) error("DEUTER_CONC must be in 0-1 range");
-  log.printf("  Solvent deuterium fraction of %lf\n", deuter_conc);
-
   rho = 0.334;
   parse("SOLVDENS", rho);
-  log.printf("  Solvent density of %lf\n", rho);
+  log.printf("  Solvent density: %lf\n", rho);
 
   double scale_expint=1.;
   parse("SCALE_EXPINT",scale_expint);
 
-  solv_stride = 100;
-  parse("SOLVATION_STRIDE", solv_stride);
-  if(solv_stride < 1.) error("SOLVATION_STRIDE must be greater than 0.");
-  if(onebead) log.printf("  SASA calculated every %u steps\n", solv_stride);
-
   double correction = 0.00;
   parse("SOLVATION_CORRECTION", correction);
-  if(correction>0&&!onebead) error("SOLVATION_CORRECTION can only be used with ONEBEAD");
   rho_corr=rho-correction;
-  if(onebead) log.printf("  SASA Solvation density correction set to: %lf\n", correction);
+  if(onebead) log.printf("  Solvation density contribution: %lf\n", correction);
+  if((atomistic||martini)&&(rho_corr!=rho)) log.printf("  Solvation density contribution is taken into account in ONEBEAD only\n");
+
+  solv_stride = 100;
+  parse("SOLVATION_STRIDE", solv_stride);
+  if(solv_stride < 1.) error("SOLVATION_STRIDE must be greater than 0");
+  if(onebead&&(rho_corr!=rho)) log.printf("  SASA calculation stride: %u\n", solv_stride);
 
   sasa_cutoff = 1.0;
   parse("SASA_CUTOFF", sasa_cutoff);
-  if(sasa_cutoff <= 0.) error("SASA_CUTOFF must be greater than 0.");
+  if(sasa_cutoff <= 0.) error("SASA_CUTOFF must be greater than 0");
+
+  deuter_conc = 0.;
+  parse("DEUTER_CONC", deuter_conc);
+  if(deuter_conc < 0. || deuter_conc > 1.) error("DEUTER_CONC must be in 0-1 range");
+  if ((atomistic||onebead)&&(!saxs)) log.printf("  Solvent deuterium fraction: %lf/1.000000\n", deuter_conc);
+
+  if(onebead) {
+    parse("TEMPLATE",template_name);
+    log.printf("  Template for ONEBEAD mapping conversion: %s\n", template_name.c_str());
+  }
 
   // Here we perform the preliminary mapping for onebead representation
   if(onebead) {
@@ -421,7 +433,6 @@ SAXS::SAXS(const ActionOptions&ao):
       Iq0_solv_H.resize(nres);
       Iq0_mix_H.resize(nres);
       Iq0_vac_D.resize(nres);
-      Iq0_solv_D.resize(nres);
       Iq0_mix_D.resize(nres);
     }
     atoi.resize(nres);
@@ -441,7 +452,6 @@ SAXS::SAXS(const ActionOptions&ao):
   std::vector<std::vector<long double> > FF_tmp_solv_H;
   std::vector<std::vector<long double> > FF_tmp_vac_D;
   std::vector<std::vector<long double> > FF_tmp_mix_D;
-  std::vector<std::vector<long double> > FF_tmp_solv_D;
   std::vector<std::vector<long double> > parameter_H;
   std::vector<std::vector<long double> > parameter_D;
 
@@ -500,15 +510,13 @@ SAXS::SAXS(const ActionOptions&ao):
       FF_tmp_solv_H.resize(numq,std::vector<long double>(NONEBEAD));
       FF_tmp_vac_D.resize(numq,std::vector<long double>(NONEBEAD));
       FF_tmp_mix_D.resize(numq,std::vector<long double>(NONEBEAD));
-      FF_tmp_solv_D.resize(numq,std::vector<long double>(NONEBEAD));
       std::vector<std::vector<long double> > parameter_vac_H(NONEBEAD);
       std::vector<std::vector<long double> > parameter_mix_H(NONEBEAD);
       std::vector<std::vector<long double> > parameter_solv_H(NONEBEAD);
       std::vector<std::vector<long double> > parameter_vac_D(NONEBEAD);
       std::vector<std::vector<long double> > parameter_mix_D(NONEBEAD);
-      std::vector<std::vector<long double> > parameter_solv_D(NONEBEAD);
       getOnebeadparam_sansH(atoms, parameter_vac_H, parameter_mix_H, parameter_solv_H);
-      getOnebeadparam_sansD(atoms, parameter_vac_D, parameter_mix_D, parameter_solv_D);
+      getOnebeadparam_sansD(atoms, parameter_vac_D, parameter_mix_D);
       for(unsigned i=0; i<NONEBEAD; ++i) {
         for(unsigned k=0; k<numq; ++k) {
           for(unsigned j=0; j<parameter_vac_H[i].size(); ++j) { //same number of parameters
@@ -521,7 +529,6 @@ SAXS::SAXS(const ActionOptions&ao):
           }
           for(unsigned j=0; j<parameter_solv_H[i].size(); ++j) {
             FF_tmp_solv_H[k][i]+= parameter_solv_H[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
-            FF_tmp_solv_D[k][i]+= parameter_solv_D[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
           }
         }
       }
@@ -531,7 +538,6 @@ SAXS::SAXS(const ActionOptions&ao):
         Iq0_solv_H[i]=parameter_solv_H[atoi[i]][0];
         Iq0_vac_D[i]=parameter_vac_D[atoi[i]][0];
         Iq0_mix_D[i]=parameter_mix_D[atoi[i]][0];
-        Iq0_solv_D[i]=parameter_solv_D[atoi[i]][0];
       }
     }
   } else if(martini) {
@@ -583,7 +589,6 @@ SAXS::SAXS(const ActionOptions&ao):
         FF_value_solv_H.resize(n_atom_types,std::vector<double>(numq));
         FF_value_mixed_H.resize(n_atom_types,std::vector<double>(numq));
         FF_value_vacuum_D.resize(n_atom_types,std::vector<double>(numq));
-        FF_value_solv_D.resize(n_atom_types,std::vector<double>(numq));
         FF_value_mixed_D.resize(n_atom_types,std::vector<double>(numq));
       }
     } else {
@@ -607,7 +612,6 @@ SAXS::SAXS(const ActionOptions&ao):
             FF_value_solv_H[i][k] = static_cast<double>(FF_tmp_solv_H[k][i]);
             FF_value_vacuum_D[i][k] = static_cast<double>(FF_tmp_vac_D[k][i]);
             FF_value_mixed_D[i][k] = static_cast<double>(FF_tmp_mix_D[k][i]);
-            FF_value_solv_D[i][k] = static_cast<double>(FF_tmp_solv_D[k][i]);
           }
         }
       }
@@ -626,7 +630,6 @@ SAXS::SAXS(const ActionOptions&ao):
         FF_value_solv_H.resize(n_atom_types,std::vector<double>(numq));
         FF_value_mixed_H.resize(n_atom_types,std::vector<double>(numq));
         FF_value_vacuum_D.resize(n_atom_types,std::vector<double>(numq));
-        FF_value_solv_D.resize(n_atom_types,std::vector<double>(numq));
         FF_value_mixed_D.resize(n_atom_types,std::vector<double>(numq));
       }
     } else {
@@ -651,7 +654,6 @@ SAXS::SAXS(const ActionOptions&ao):
             FF_value_solv_H[i][k] = static_cast<double>(FF_tmp_solv_H[k][i]);
             FF_value_vacuum_D[i][k] = static_cast<double>(FF_tmp_vac_D[k][i]);
             FF_value_mixed_D[i][k] = static_cast<double>(FF_tmp_mix_D[k][i]);
-            FF_value_solv_D[i][k] = static_cast<double>(FF_tmp_solv_D[k][i]);
           }
         }
       }
@@ -1053,7 +1055,7 @@ void SAXS::calculate()
         for(unsigned i=0; i<nres; ++i) {
           if(solv_res[i] == 1 ) {
             if(rand()/RAND_MAX<deuter_conc) {
-              Iq0 += std::sqrt(std::fabs(Iq0_vac_D[i] + rho_sans_corr*rho_sans_corr*Iq0_solv_D[i] - rho_sans_corr*Iq0_mix_D[i]));
+              Iq0 += std::sqrt(std::fabs(Iq0_vac_D[i] + rho_sans_corr*rho_sans_corr*Iq0_solv_H[i] - rho_sans_corr*Iq0_mix_D[i]));
               deut_res[i] = 1;
             } else {
               Iq0 += std::sqrt(std::fabs(Iq0_vac_H[i] + rho_sans_corr*rho_sans_corr*Iq0_solv_H[i] - rho_sans_corr*Iq0_mix_H[i]));
@@ -1072,7 +1074,7 @@ void SAXS::calculate()
                 if(deut_res[i] == 0) {
                   FF_value[i][k] = std::sqrt(std::fabs(FF_value_vacuum_H[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_H[atoi[i]][k] - rho_sans_corr*FF_value_mixed_H[atoi[i]][k]))/Iq0;
                 } else {
-                  FF_value[i][k] = std::sqrt(std::fabs(FF_value_vacuum_D[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_D[atoi[i]][k] - rho_sans_corr*FF_value_mixed_D[atoi[i]][k]))/Iq0;
+                  FF_value[i][k] = std::sqrt(std::fabs(FF_value_vacuum_D[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_H[atoi[i]][k] - rho_sans_corr*FF_value_mixed_D[atoi[i]][k]))/Iq0;
                 }
               }
             } else {
@@ -1082,7 +1084,7 @@ void SAXS::calculate()
                 if(deut_res[i] == 0) {
                   FFf_value[k][i] = static_cast<float>(std::sqrt(std::fabs(FF_value_vacuum_H[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_H[atoi[i]][k] - rho_sans_corr*FF_value_mixed_H[atoi[i]][k]))/Iq0);
                 } else {
-                  FFf_value[k][i] = static_cast<float>(std::sqrt(std::fabs(FF_value_vacuum_D[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_D[atoi[i]][k] - rho_sans_corr*FF_value_mixed_D[atoi[i]][k]))/Iq0);
+                  FFf_value[k][i] = static_cast<float>(std::sqrt(std::fabs(FF_value_vacuum_D[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_H[atoi[i]][k] - rho_sans_corr*FF_value_mixed_D[atoi[i]][k]))/Iq0);
                 }
               }
             }
@@ -1221,11 +1223,10 @@ void SAXS::getOnebeadMapping(const std::vector<AtomNumber> &atoms) {
   auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   std::vector<std::vector<std::string> > AtomResidueName;
   if( moldat ) {
-    log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
     for (unsigned ch_id=0; ch_id<chains.size(); ++ch_id) {
       unsigned first_res = moldat->getResidueNumber(chain_start[ch_id]);
       AtomResidueName.resize(2);
-      log.printf("  Onebead residue mapping on %u residues for chain ID %d\n", res_per_chain[ch_id], ch_id);
+      log.printf("  ONEBEAD residue mapping on %u residues for chain ID %d\n", res_per_chain[ch_id], ch_id);
       for(unsigned i=chain_start[ch_id].index(); i<chain_start[ch_id+1].index(); ++i) {
         std::string Aname = moldat->getAtomName(atoms[i]);
         std::string Rname = moldat->getResidueName(atoms[i]);
@@ -2346,7 +2347,6 @@ void SAXS::getMartiniFFparam(const std::vector<AtomNumber> &atoms, std::vector<s
 
   auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   if( moldat ) {
-    log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
     for(unsigned i=0; i<atoms.size(); ++i) {
       std::string Aname = moldat->getAtomName(atoms[i]);
       std::string Rname = moldat->getResidueName(atoms[i]);
@@ -3406,7 +3406,6 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std
 
   auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   if( moldat ) {
-    log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
     for(unsigned i=0; i<atoms.size(); ++i) {
       std::string Aname = moldat->getAtomName(atoms[i]);
       std::string Rname = moldat->getResidueName(atoms[i]);
@@ -4462,7 +4461,6 @@ void SAXS::getOnebeadparam_sansH(const std::vector<AtomNumber> &atoms, std::vect
 
   auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   if( moldat ) {
-    log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
     for(unsigned i=0; i<atoms.size(); ++i) {
       std::string Aname = moldat->getAtomName(atoms[i]);
       std::string Rname = moldat->getResidueName(atoms[i]);
@@ -4793,176 +4791,8 @@ void SAXS::getOnebeadparam_sansH(const std::vector<AtomNumber> &atoms, std::vect
   }
 }
 
-void SAXS::getOnebeadparam_sansD(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_D, std::vector<std::vector<long double> > &parameter_mix_D, std::vector<std::vector<long double> > &parameter_solv_D)
-{
-  parameter_solv_D[TRP].push_back(60737.60249988011);
-  parameter_solv_D[TRP].push_back(-77.77344118516487);
-  parameter_solv_D[TRP].push_back(-205962.80436572764);
-  parameter_solv_D[TRP].push_back(-62014.18523271781);
-  parameter_solv_D[TRP].push_back(680712.0512548896);
-  parameter_solv_D[TRP].push_back(-681337.967312983);
-  parameter_solv_D[TRP].push_back(211474.00338118695);
-
-  parameter_solv_D[TYR].push_back(46250.803599880084);
-  parameter_solv_D[TYR].push_back(-45.827646837514614);
-  parameter_solv_D[TYR].push_back(-143872.94597686914);
-  parameter_solv_D[TYR].push_back(-39049.51580628132);
-  parameter_solv_D[TYR].push_back(441321.31246635393);
-  parameter_solv_D[TYR].push_back(-434477.6826175059);
-  parameter_solv_D[TYR].push_back(133179.21673104732);
-
-  parameter_solv_D[PHE].push_back(42407.164900118914);
-  parameter_solv_D[PHE].push_back(-159.20054549009086);
-  parameter_solv_D[PHE].push_back(-123847.83591352346);
-  parameter_solv_D[PHE].push_back(-41797.78884558073);
-  parameter_solv_D[PHE].push_back(380283.87543872406);
-  parameter_solv_D[PHE].push_back(-361432.81356389285);
-  parameter_solv_D[PHE].push_back(107750.69385054041);
-
-  parameter_solv_D[HIP].push_back(24473.473600119047);
-  parameter_solv_D[HIP].push_back(-111.6412807124612);
-  parameter_solv_D[HIP].push_back(-65826.17293437096);
-  parameter_solv_D[HIP].push_back(-23305.902022201855);
-  parameter_solv_D[HIP].push_back(194795.09953510275);
-  parameter_solv_D[HIP].push_back(-180454.47859494278);
-  parameter_solv_D[HIP].push_back(52699.36922660704);
-
-  parameter_solv_D[ARG].push_back(34106.70239988039);
-  parameter_solv_D[ARG].push_back(152.74468231268114);
-  parameter_solv_D[ARG].push_back(-117086.46040369231);
-  parameter_solv_D[ARG].push_back(-19664.37512726012);
-  parameter_solv_D[ARG].push_back(364454.3721646173);
-  parameter_solv_D[ARG].push_back(-382076.05102190404);
-  parameter_solv_D[ARG].push_back(122775.83306003918);
-
-  parameter_solv_D[LYS].push_back(32292.09000011877);
-  parameter_solv_D[LYS].push_back(-111.97888350941923);
-  parameter_solv_D[LYS].push_back(-91953.05212591762);
-  parameter_solv_D[LYS].push_back(-30691.03615444628);
-  parameter_solv_D[LYS].push_back(282092.82233263896);
-  parameter_solv_D[LYS].push_back(-269503.6095978623);
-  parameter_solv_D[LYS].push_back(80777.92760273012);
-
-  parameter_solv_D[CYS].push_back(11352.902500119093);
-  parameter_solv_D[CYS].push_back(-45.52255488723637);
-  parameter_solv_D[CYS].push_back(-20925.086525675117);
-  parameter_solv_D[CYS].push_back(-5662.681335644281);
-  parameter_solv_D[CYS].push_back(38559.09602816144);
-  parameter_solv_D[CYS].push_back(-27885.22747486708);
-  parameter_solv_D[CYS].push_back(6280.148346561226);
-
-  parameter_solv_D[ASP].push_back(13511.73760011933);
-  parameter_solv_D[ASP].push_back(-59.92934247210642);
-  parameter_solv_D[ASP].push_back(-25849.867077822244);
-  parameter_solv_D[ASP].push_back(-7541.679510407563);
-  parameter_solv_D[ASP].push_back(50760.93853987092);
-  parameter_solv_D[ASP].push_back(-37677.89102528413);
-  parameter_solv_D[ASP].push_back(8745.710458140105);
-
-  parameter_solv_D[GLU].push_back(20443.280400119456);
-  parameter_solv_D[GLU].push_back(-113.77513581661388);
-  parameter_solv_D[GLU].push_back(-45587.79863958479);
-  parameter_solv_D[GLU].push_back(-16187.534798976243);
-  parameter_solv_D[GLU].push_back(112609.61802147207);
-  parameter_solv_D[GLU].push_back(-93362.01894077536);
-  parameter_solv_D[GLU].push_back(24519.546829431332);
-
-  parameter_solv_D[ILE].push_back(27858.948100119596);
-  parameter_solv_D[ILE].push_back(-159.27394962770595);
-  parameter_solv_D[ILE].push_back(-61571.43025249802);
-  parameter_solv_D[ILE].push_back(-21324.89659912433);
-  parameter_solv_D[ILE].push_back(144070.7880009225);
-  parameter_solv_D[ILE].push_back(-115021.84534734003);
-  parameter_solv_D[ILE].push_back(28939.093300284097);
-
-  parameter_solv_D[LEU].push_back(27858.948100119596);
-  parameter_solv_D[LEU].push_back(-165.61872365361);
-  parameter_solv_D[LEU].push_back(-62564.5706162518);
-  parameter_solv_D[LEU].push_back(-22465.325666767214);
-  parameter_solv_D[LEU].push_back(151616.7844050042);
-  parameter_solv_D[LEU].push_back(-122905.60389771541);
-  parameter_solv_D[LEU].push_back(31436.66201442061);
-
-  parameter_solv_D[MET].push_back(25609.60090011981);
-  parameter_solv_D[MET].push_back(-135.38816369794569);
-  parameter_solv_D[MET].push_back(-67771.01548433342);
-  parameter_solv_D[MET].push_back(-25228.91756660071);
-  parameter_solv_D[MET].push_back(199649.92084565928);
-  parameter_solv_D[MET].push_back(-182251.9246506795);
-  parameter_solv_D[MET].push_back(52502.876819125115);
-
-  parameter_solv_D[ASN].push_back(14376.010000119095);
-  parameter_solv_D[ASN].push_back(-67.65587848183215);
-  parameter_solv_D[ASN].push_back(-28302.877059425664);
-  parameter_solv_D[ASN].push_back(-8577.444107282141);
-  parameter_solv_D[ASN].push_back(57532.88704197217);
-  parameter_solv_D[ASN].push_back(-43261.79974462857);
-  parameter_solv_D[ASN].push_back(10186.450874679671);
-
-  parameter_solv_D[PRO].push_back(16866.21690011944);
-  parameter_solv_D[PRO].push_back(-70.84312112734995);
-  parameter_solv_D[PRO].push_back(-31465.8423531932);
-  parameter_solv_D[PRO].push_back(-8653.362744540535);
-  parameter_solv_D[PRO].push_back(58032.27079924916);
-  parameter_solv_D[PRO].push_back(-41521.001733021694);
-  parameter_solv_D[PRO].push_back(9184.527523759205);
-
-  parameter_solv_D[GLN].push_back(21503.289600119);
-  parameter_solv_D[GLN].push_back(-121.3012777474678);
-  parameter_solv_D[GLN].push_back(-50468.58503443957);
-  parameter_solv_D[GLN].push_back(-18462.47495329696);
-  parameter_solv_D[GLN].push_back(132718.42007501892);
-  parameter_solv_D[GLN].push_back(-113787.20224345029);
-  parameter_solv_D[GLN].push_back(30920.340813688686);
-
-  parameter_solv_D[SER].push_back(9181.47240011935);
-  parameter_solv_D[SER].push_back(-28.775273124392083);
-  parameter_solv_D[SER].push_back(-15205.54229808512);
-  parameter_solv_D[SER].push_back(-3377.785599913673);
-  parameter_solv_D[SER].push_back(23345.562090489493);
-  parameter_solv_D[SER].push_back(-15312.699787471944);
-  parameter_solv_D[SER].push_back(3013.844610647712);
-
-  parameter_solv_D[THR].push_back(15020.953600119403);
-  parameter_solv_D[THR].push_back(-61.909951810375105);
-  parameter_solv_D[THR].push_back(-27814.538986050964);
-  parameter_solv_D[THR].push_back(-7532.222992514079);
-  parameter_solv_D[THR].push_back(50586.29804970814);
-  parameter_solv_D[THR].push_back(-35943.85986777198);
-  parameter_solv_D[THR].push_back(7880.091610023207);
-
-  parameter_solv_D[VAL].push_back(19647.628900119355);
-  parameter_solv_D[VAL].push_back(-89.04968136833762);
-  parameter_solv_D[VAL].push_back(-38050.10118919102);
-  parameter_solv_D[VAL].push_back(-10921.421066774372);
-  parameter_solv_D[VAL].push_back(72774.31277743122);
-  parameter_solv_D[VAL].push_back(-52689.05168504517);
-  parameter_solv_D[VAL].push_back(11806.48989635518);
-
-  parameter_solv_D[ALA].push_back(7515.156100119273);
-  parameter_solv_D[ALA].push_back(-20.226317591188526);
-  parameter_solv_D[ALA].push_back(-11761.841775007797);
-  parameter_solv_D[ALA].push_back(-2341.4903622033885);
-  parameter_solv_D[ALA].push_back(16545.381259883452);
-  parameter_solv_D[ALA].push_back(-10397.171546969075);
-  parameter_solv_D[ALA].push_back(1921.5253045340198);
-
-  parameter_solv_D[GLY].push_back(3594.002500119159);
-  parameter_solv_D[GLY].push_back(-6.910832388009796);
-  parameter_solv_D[GLY].push_back(-4937.3542895091905);
-  parameter_solv_D[GLY].push_back(-785.4545979203357);
-  parameter_solv_D[GLY].push_back(5852.853693316741);
-  parameter_solv_D[GLY].push_back(-3391.2920205126734);
-  parameter_solv_D[GLY].push_back(552.3278183161507);
-
-  parameter_solv_D[HIS].push_back(22888.664100119073);
-  parameter_solv_D[HIS].push_back(-133.86281863999585);
-  parameter_solv_D[HIS].push_back(-57533.51412287858);
-  parameter_solv_D[HIS].push_back(-21767.300111408193);
-  parameter_solv_D[HIS].push_back(161255.15347073504);
-  parameter_solv_D[HIS].push_back(-142176.65100718598);
-  parameter_solv_D[HIS].push_back(39642.61507384587);
-
+void SAXS::getOnebeadparam_sansD(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_D, std::vector<std::vector<long double> > &parameter_mix_D)
+{ // parameter_solv is identical in SAXS/SANS_H/SANS_D since it depends exclusively on param_v. For that reason we kept param_solv only in SAXS and SANS_H.
   parameter_mix_D[TRP].push_back(8105.740500119327);
   parameter_mix_D[TRP].push_back(-41.785616935469804);
   parameter_mix_D[TRP].push_back(-25456.92790554363);
@@ -5301,78 +5131,6 @@ void SAXS::getOnebeadparam_sansD(const std::vector<AtomNumber> &atoms, std::vect
 
   //NUCLEIC ACIDS
 
-  parameter_solv_D[BB_DNA].push_back(29058.794048259362);
-  parameter_solv_D[BB_DNA].push_back(-163.90176335172552);
-  parameter_solv_D[BB_DNA].push_back(-72448.65451349212);
-  parameter_solv_D[BB_DNA].push_back(-27133.44556190471);
-  parameter_solv_D[BB_DNA].push_back(202903.4156791921);
-  parameter_solv_D[BB_DNA].push_back(-179712.90127901718);
-  parameter_solv_D[BB_DNA].push_back(50376.13482553027);
-
-  parameter_solv_D[BB_DNA_T].push_back(22737.624100119025);
-  parameter_solv_D[BB_DNA_T].push_back(-102.72714886664163);
-  parameter_solv_D[BB_DNA_T].push_back(-43685.329677789705);
-  parameter_solv_D[BB_DNA_T].push_back(-12564.259374093454);
-  parameter_solv_D[BB_DNA_T].push_back(83454.87540484876);
-  parameter_solv_D[BB_DNA_T].push_back(-60367.15652138888);
-  parameter_solv_D[BB_DNA_T].push_back(13507.33372986899);
-
-  parameter_solv_D[BB_RNA].push_back(32029.71842497462);
-  parameter_solv_D[BB_RNA].push_back(-140.693173545175);
-  parameter_solv_D[BB_RNA].push_back(-85763.45734623617);
-  parameter_solv_D[BB_RNA].push_back(-30042.38278248406);
-  parameter_solv_D[BB_RNA].push_back(253350.7778563679);
-  parameter_solv_D[BB_RNA].push_back(-235352.9406536495);
-  parameter_solv_D[BB_RNA].push_back(68941.90521759259);
-
-  parameter_solv_D[BB_RNA_T].push_back(25574.406400119024);
-  parameter_solv_D[BB_RNA_T].push_back(-132.03433541174888);
-  parameter_solv_D[BB_RNA_T].push_back(-52143.42667897374);
-  parameter_solv_D[BB_RNA_T].push_back(-16688.13425337558);
-  parameter_solv_D[BB_RNA_T].push_back(110317.06058702814);
-  parameter_solv_D[BB_RNA_T].push_back(-83753.7710820843);
-  parameter_solv_D[BB_RNA_T].push_back(19887.133560665752);
-
-  parameter_solv_D[NUC_A].push_back(13282.562500119211);
-  parameter_solv_D[NUC_A].push_back(-76.4512418150107);
-  parameter_solv_D[NUC_A].push_back(-28376.06993975573);
-  parameter_solv_D[NUC_A].push_back(-9972.910778631242);
-  parameter_solv_D[NUC_A].push_back(65873.8634277666);
-  parameter_solv_D[NUC_A].push_back(-52064.33493584656);
-  parameter_solv_D[NUC_A].push_back(12931.608991480814);
-
-  parameter_solv_D[NUC_C].push_back(10600.76160011891);
-  parameter_solv_D[NUC_C].push_back(-49.1671820468823);
-  parameter_solv_D[NUC_C].push_back(-20239.837635314965);
-  parameter_solv_D[NUC_C].push_back(-6020.289884557556);
-  parameter_solv_D[NUC_C].push_back(39632.19729555643);
-  parameter_solv_D[NUC_C].push_back(-28954.82953079656);
-  parameter_solv_D[NUC_C].push_back(6551.552568872256);
-
-  parameter_solv_D[NUC_G].push_back(15470.384400119929);
-  parameter_solv_D[NUC_G].push_back(-93.80217149938235);
-  parameter_solv_D[NUC_G].push_back(-36188.71011289895);
-  parameter_solv_D[NUC_G].push_back(-13717.940902527609);
-  parameter_solv_D[NUC_G].push_back(95660.40349471728);
-  parameter_solv_D[NUC_G].push_back(-81264.7013881852);
-  parameter_solv_D[NUC_G].push_back(21842.6444458418);
-
-  parameter_solv_D[NUC_T].push_back(17210.81610011936);
-  parameter_solv_D[NUC_T].push_back(-93.10189802920198);
-  parameter_solv_D[NUC_T].push_back(-36466.51927689958);
-  parameter_solv_D[NUC_T].push_back(-12425.556157169323);
-  parameter_solv_D[NUC_T].push_back(83847.42780892516);
-  parameter_solv_D[NUC_T].push_back(-66735.64997846575);
-  parameter_solv_D[NUC_T].push_back(16757.346398750706);
-
-  parameter_solv_D[NUC_U].push_back(10909.802500119395);
-  parameter_solv_D[NUC_U].push_back(-46.177012959269156);
-  parameter_solv_D[NUC_U].push_back(-20149.661906446432);
-  parameter_solv_D[NUC_U].push_back(-5590.224343622286);
-  parameter_solv_D[NUC_U].push_back(37169.156234764625);
-  parameter_solv_D[NUC_U].push_back(-26475.511196594205);
-  parameter_solv_D[NUC_U].push_back(5808.163719968646);
-
   parameter_mix_D[BB_DNA].push_back(3925.1509944955465);
   parameter_mix_D[BB_DNA].push_back(-23.037082164516175);
   parameter_mix_D[BB_DNA].push_back(-8587.721421330647);
@@ -5519,7 +5277,6 @@ void SAXS::getOnebeadparam_sansD(const std::vector<AtomNumber> &atoms, std::vect
 
   auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   if( moldat ) {
-    log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
     for(unsigned i=0; i<atoms.size(); ++i) {
       std::string Aname = moldat->getAtomName(atoms[i]);
       std::string Rname = moldat->getResidueName(atoms[i]);
@@ -5910,7 +5667,6 @@ double SAXS::calculateAFF(const std::vector<AtomNumber> &atoms, std::vector<std:
 
   double Iq0=0.;
   if( moldat ) {
-    log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
     // cycle over the atom types
     for(unsigned i=0; i<NTT; ++i) {
       const double volr = std::pow(param_v[i], (2.0/3.0)) /(4. * M_PI);
@@ -5988,7 +5744,6 @@ double SAXS::calculateAFFsans(const std::vector<AtomNumber> &atoms, std::vector<
 
   double Iq0=0.;
   if( moldat ) {
-    log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
     // cycle over the atom types
     for(unsigned i=0; i<NTT; ++i) {
       double volr = std::pow(param_v[i], (2.0/3.0)) /(4. * M_PI);
