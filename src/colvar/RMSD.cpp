@@ -303,7 +303,7 @@ void RMSD::setReferenceConfiguration( const unsigned& jconf ) {
 // calculator
 void RMSD::calculate() {
   // Align reference configuration and set rmsd data
-  if( !fixed_reference || firsttime ) {
+  if( (getPntrToArgument(1)->getPntrToAction())->getName()=="PUT" || firsttime ) {
       for(unsigned i=0; i<myrmsd.size();++i) setReferenceConfiguration(i);
       firsttime=false;
   }
@@ -416,6 +416,11 @@ void RMSD::apply() {
       if( getPntrToComponent(1)->getRank()==0 && getPntrToComponent(1)->forcesWereAdded() ) getPntrToComponent(1)->applyForce( forcesToApply ); 
   }
   unsigned mm=0; if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( 0, forcesToApply, mm );
+}
+
+void RMSD::update() {
+  if( fixed_reference || !(getPntrToArgument(1)->getPntrToAction())->isActive() ) return ;
+  firsttime=true;   // This ensures that reference path is updated on next step if using AdaptivePath 
 }
 
 }

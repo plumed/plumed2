@@ -54,6 +54,7 @@ public:
   void performTask( const unsigned& task_index, MultiValue& myvals ) const override;
   bool performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
   void apply() override;
+  void update() override;
   static void registerRMSD(Keywords& keys );
   static void registerKeywords(Keywords& keys);
   static void createReferenceConfiguration( const std::string& lab, const std::string& input, PlumedMain& plumed, const unsigned number=0 ); 
