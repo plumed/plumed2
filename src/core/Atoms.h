@@ -238,6 +238,9 @@ public:
   void setExtraCVForce(const std::string &name,const TypesafePtr & p);
   double getExtraCV(const std::string &name);
   void updateExtraCVForce(const std::string &name,double f);
+  void setExtraCVNeeded(const std::string &name,bool needed=true);
+  bool isExtraCVNeeded(const std::string &name) const;
+  void resetExtraCVNeeded();
 };
 
 inline

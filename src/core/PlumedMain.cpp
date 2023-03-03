@@ -644,6 +644,13 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         plumed_assert(nw==2);
         atoms.setExtraCVForce(words[1],val);
         break;
+      /* ADDED WITH API==10 */
+      case cmd_isExtraCVNeeded:
+        CHECK_NOTNULL(val,word);
+        plumed_assert(nw==2);
+        if(atoms.isExtraCVNeeded(words[1])) val.set(int(1));
+        else                                val.set(int(0));
+        break;
       case cmd_GREX:
         if(!grex) grex=Tools::make_unique<GREX>(*this);
         plumed_massert(grex,"error allocating grex");

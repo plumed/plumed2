@@ -74,6 +74,7 @@ class MDAtomsTyped:
   TypesafePtr virial;
   std::map<std::string,TypesafePtr> extraCV;
   std::map<std::string,TypesafePtr> extraCVForce;
+  std::map<std::string,bool> extraCVNeeded;
 public:
   void setm(const TypesafePtr & m) override;
   void setc(const TypesafePtr & m) override;
@@ -100,9 +101,25 @@ public:
       plumed_error() << "Unable to access extra cv named '" << name << "'.\nNotice that extra cvs need to be calculated in the MD code.";
     }
   }
+
   void updateExtraCVForce(const std::string &name,double f) override {
     *extraCVForce[name].template get<T*>()+=static_cast<T>(f);
   }
+
+  void setExtraCVNeeded(const std::string &name,bool needed=true) override {
+    extraCVNeeded[name]=needed;
+  }
+
+  bool isExtraCVNeeded(const std::string &name) const override {
+    auto search=extraCVNeeded.find(name);
+    if(search != extraCVNeeded.end()) return search->second;
+    return false;
+  }
+
+  void resetExtraCVNeeded() override {
+    for(auto & i : extraCVNeeded) i.second=false;
+  }
+
   void MD2double(const TypesafePtr & m,double&d)const override {
     d=double(m.template get<T>());
   }
