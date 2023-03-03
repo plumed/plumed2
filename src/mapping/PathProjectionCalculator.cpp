@@ -23,6 +23,7 @@
 #include "core/ActionWithValue.h"
 #include "core/ActionRegister.h"
 #include "core/ActionSet.h"
+#include "core/PlumedMain.h"
 #include <string.h>
 
 namespace PLMD {
@@ -52,6 +53,10 @@ mypath_obj(NULL)
       ActionWithValue* av = act->plumed.getActionSet().selectWithLabel<ActionWithValue*>( reference_data[i] );
       if( !av || av->getName()!="CONSTANT_VALUE" ) act->error("input " + reference_data[i] + " is not a CONSTANT_VALUE action");
       Value* myval = av->copyOutput(0); refargs.push_back( myval );
+      for(const auto & p : myval->getUserNames()) {
+          colvar::RMSD* myrmsd = act->plumed.getActionSet().selectWithLabel<colvar::RMSD*>(p);
+          if( myrmsd ) { rmsd_objects.push_back( myrmsd ); }
+      }
       if( myval->getRank()==2 && reference_data.size()!=1 ) act->error("should only be one matrix in input to path projection object");
       if( myval->getRank()>0 && myval->getShape()[0]!=refargs[0]->getShape()[0] ) act->error("mismatch in number of reference frames in input to reference_data"); 
   }
@@ -123,6 +128,10 @@ void PathProjectionCalculator::setReferenceConfiguration( const unsigned& iframe
   } else {
       for(unsigned i=0; i<refpos.size(); ++i) refargs[i]->set( iframe, refpos[i] );
   }
+}
+
+void PathProjectionCalculator::updateDepedentRMSDObjects() {
+  for(unsigned i=0; i<rmsd_objects.size(); ++i) rmsd_objects[i]->setReferenceConfigurations();
 } 
 
 }

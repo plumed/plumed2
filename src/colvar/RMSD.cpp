@@ -238,8 +238,7 @@ RMSD::RMSD(const ActionOptions&ao):
       if( getPntrToArgument(1)->getShape()[1]!=3*natoms ) error("mismatch between numbers of in pos and reference");
   }
   // Request the arguments
-  requestArguments( getArguments(), false ); bool unfix; parseFlag("UNFIX",unfix);
-  fixed_reference = getPntrToArgument(1)->getName()=="CONSTANT_VALUE" && !unfix;
+  requestArguments( getArguments(), false ); 
   align.resize( natoms ); parseVector("ALIGN",align);
   displace.resize( natoms ); parseVector("DISPLACE",displace);
 
@@ -281,32 +280,31 @@ RMSD::RMSD(const ActionOptions&ao):
   if( ntasks==1 ) log.printf("  calculating RMSD distance between two sets of %d atoms in vectors %s and %s\n", natoms, getPntrToArgument(1)->getName().c_str(), getPntrToArgument(0)->getName().c_str() );
   else if( getPntrToArgument(1)->getRank()==2 ) log.printf("  calculating RMSD distance of %d sets of atom positions in matrix with label %s from the %d atoms positions in vector with label %s \n", ntasks, getPntrToArgument(1)->getName().c_str(), natoms, getPntrToArgument(0)->getName().c_str()  );
   else log.printf("  calculating RMSD distance of %d atom positions in vector with label %s from %d sets of atom positions in matrix with label %s \n", natoms, getPntrToArgument(1)->getName().c_str(), ntasks, getPntrToArgument(0)->getName().c_str() );
-  if( fixed_reference ) log.printf("  reference configuration is fixed\n");
 
   log.printf("  method for alignment : %s \n",type.c_str() );
   if(squared)log.printf("  chosen to use SQUARED option for MSD instead of RMSD\n");
   else      log.printf("  using periodic boundary conditions\n");
 }
 
-void RMSD::setReferenceConfiguration( const unsigned& jconf ) {
+void RMSD::setReferenceConfigurations() {
   unsigned natoms = getPntrToArgument(1)->getShape()[0] / 3; 
   if( getPntrToArgument(1)->getRank()==2 ) natoms = getPntrToArgument(1)->getShape()[1] / 3;
   Vector center; std::vector<Vector> pos( natoms );
-  for(unsigned i=0; i<pos.size(); ++i) { 
-      for(unsigned j=0; j<3; ++j) pos[i][j] = getPntrToArgument(1)->get( (3*jconf+j)*pos.size() + i ); 
-      center+=pos[i]*align[i];
+  for(unsigned jconf=0; jconf<myrmsd.size(); ++jconf) {
+      center.zero();
+      for(unsigned i=0; i<pos.size(); ++i) { 
+          for(unsigned j=0; j<3; ++j) pos[i][j] = getPntrToArgument(1)->get( (3*jconf+j)*pos.size() + i ); 
+          center+=pos[i]*align[i];
+      }
+      for(unsigned i=0; i<pos.size(); ++i) pos[i] -= center;
+      myrmsd[jconf].clear(); myrmsd[jconf].set(align,displace,pos,type,true,norm_weights); 
   }
-  for(unsigned i=0; i<pos.size(); ++i) pos[i] -= center;
-  myrmsd[jconf].clear(); myrmsd[jconf].set(align,displace,pos,type,true,norm_weights);
 }
 
 // calculator
 void RMSD::calculate() {
   // Align reference configuration and set rmsd data
-  if( (getPntrToArgument(1)->getPntrToAction())->getName()=="PUT" || firsttime ) {
-      for(unsigned i=0; i<myrmsd.size();++i) setReferenceConfiguration(i);
-      firsttime=false;
-  }
+  if( firsttime || !getPntrToArgument(1)->isConstant() ) { setReferenceConfigurations(); firsttime=false; }
   // Now calculate all the RMSD values
   runAllTasks();
 }
@@ -416,11 +414,6 @@ void RMSD::apply() {
       if( getPntrToComponent(1)->getRank()==0 && getPntrToComponent(1)->forcesWereAdded() ) getPntrToComponent(1)->applyForce( forcesToApply ); 
   }
   unsigned mm=0; if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( 0, forcesToApply, mm );
-}
-
-void RMSD::update() {
-  if( fixed_reference || !(getPntrToArgument(1)->getPntrToAction())->isActive() ) return ;
-  firsttime=true;   // This ensures that reference path is updated on next step if using AdaptivePath 
 }
 
 }

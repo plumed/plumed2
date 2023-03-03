@@ -25,6 +25,7 @@
 #include "core/Value.h"
 #include "core/PlumedMain.h"
 #include "tools/Keywords.h"
+#include "colvar/RMSD.h"
 
 namespace PLMD {
 namespace mapping {
@@ -35,6 +36,7 @@ private:
   PlumedMain metric;
   std::vector<double> data;
   std::vector<Value*> refargs;
+  std::vector<colvar::RMSD*> rmsd_objects;
 /// Compute the vector connecting two of the frames in the path
   void computeVectorBetweenFrames( const unsigned& ifrom, const unsigned& ito );
 public:
@@ -47,6 +49,7 @@ public:
 /// Transfer data in and out of the reference configurations (used for reparamerization)
   void getReferenceConfiguration( const unsigned& iframe, std::vector<double>& refpos ) const ;
   void setReferenceConfiguration( const unsigned& iframe, std::vector<double>& refpos );
+  void updateDepedentRMSDObjects();
 };
 
 }

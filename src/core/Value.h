@@ -259,6 +259,7 @@ public:
   void addTasksToCurrentList( const std::set<AtomNumber>& tasks );
   const std::set<AtomNumber>& getTaskList() const ;
   bool performAllTasks() const ;
+  const std::set<std::string>& getUserNames() const ;
 };
 
 inline
@@ -476,6 +477,11 @@ const std::set<AtomNumber>& Value::getTaskList() const {
 inline
 bool Value::performAllTasks() const {
   return !reducedTasks;
+}
+
+inline
+const std::set<std::string>& Value::getUserNames() const {
+  return userdata;
 }
 
 }
