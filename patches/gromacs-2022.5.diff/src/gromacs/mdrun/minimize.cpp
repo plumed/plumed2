@@ -553,13 +553,10 @@ static void init_em(FILE*                fplog,
       plumed_cmd(plumedmain,"setTimestep",&real_delta_t);
       plumed_cmd(plumedmain,"init",nullptr);
 
-      if(PAR(cr)){
-        if(haveDDAtomOrdering(*cr)) {
-          int nat_home = dd_numHomeAtoms(*cr->dd);
-          plumed_cmd(plumedmain,"setAtomsNlocal",&nat_home);
-          plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->globalAtomIndices.data());
-
-        }
+      if(haveDDAtomOrdering(*cr)) {
+        int nat_home = dd_numHomeAtoms(*cr->dd);
+        plumed_cmd(plumedmain,"setAtomsNlocal",&nat_home);
+        plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->globalAtomIndices.data());
       }
     }
     /* END PLUMED */
