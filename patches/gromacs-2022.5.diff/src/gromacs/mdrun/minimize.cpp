@@ -527,7 +527,7 @@ static void init_em(FILE*                fplog,
 
     /* PLUMED */
     if(plumedswitch){
-      if(ms && ms->numSimulations_>1) {
+      if(isMultiSim(ms)) {
         if(MASTER(cr)) plumed_cmd(plumedmain,"GREX setMPIIntercomm",&ms->mastersComm_);
         if(PAR(cr)){
           if(haveDDAtomOrdering(*cr)) {
