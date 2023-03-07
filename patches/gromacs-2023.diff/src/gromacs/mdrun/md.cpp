@@ -801,7 +801,7 @@ void gmx::LegacySimulator::do_md()
         if( (startingBehavior != StartingBehavior::NewSimulation) ) plumed_cmd(plumedmain,"setRestart",&res);
       }
 
-      if(ms && ms->numSimulations_>1) {
+      if(isMultiSim(ms)) {
         if(MAIN(cr)) plumed_cmd(plumedmain,"GREX setMPIIntercomm",&ms->mainRanksComm_);
         if(PAR(cr)){
           if(haveDDAtomOrdering(*cr)) {
