@@ -142,8 +142,8 @@ PLUMED_REGISTER_ACTION(Center,"COM")
 void Center::registerKeywords(Keywords& keys) {
   ActionWithVirtualAtom::registerKeywords(keys);
   keys.add("optional","WEIGHTS","Center is computed as a weighted average.");
-  keys.add("optional","SETCHARGE","Set the charge of the virtual atom to a given value.");
-  keys.add("optional","SETMASS","Set the mass of the virtual atom to a given value.");
+  keys.add("optional","SET_CHARGE","Set the charge of the virtual atom to a given value.");
+  keys.add("optional","SET_MASS","Set the mass of the virtual atom to a given value.");
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("MASS",false,"If set center is mass weighted");
   keys.addFlag("PHASES",false,"Compute center using trigonometric phases");
@@ -168,9 +168,9 @@ Center::Center(const ActionOptions&ao):
   parseFlag("MASS",weight_mass);
   parseFlag("NOPBC",nopbc);
   parseFlag("PHASES",phases);
-  parse("SETCHARGE",charge_);
+  parse("SET_CHARGE",charge_);
   if(!std::isnan(charge_)) isChargeSet_=true;
-  parse("SETMASS",mass_);
+  parse("SET_MASS",mass_);
   if(mass_>0.) isMassSet_=true;
   if(mass_==0.) error("SETMASS must be greater than 0");
   if( getName()=="COM") weight_mass=true;
