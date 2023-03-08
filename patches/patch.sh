@@ -253,7 +253,7 @@ case "$action" in
       exit 1
       fi
     fi
-    if [ -L Plumed.h -o -L Plumed.inc -o -L Plumed.cmake ]
+    if [ -e Plumed.h -o -e Plumed.inc -o -e Plumed.cmake ]
     then
       if ( type -t plumed_before_revert 1>/dev/null || type -t plumed_after_revert 1>/dev/null) && ( type -t plumed_before_patch 1>/dev/null || type -t plumed_after_patch 1>/dev/null)
       then
@@ -340,7 +340,7 @@ case "$action" in
     fi
   ;;
   (save)
-    if [ ! -L Plumed.h -o ! -L Plumed.inc -o ! -L Plumed.cmake ]
+    if [ ! -e Plumed.h -o ! -e Plumed.inc -o ! -e Plumed.cmake ]
     then
       echo "ERROR: I cannot find Plumed.h, Plumed.inc, and Plumed.cmake files. You have likely not patched yet."
       exit 1
@@ -425,7 +425,7 @@ EOF
       test -n "$quiet" || echo "Executing plumed_before_revert function"
       plumed_before_revert
     fi
-    if [ ! -L Plumed.h -o ! -L Plumed.inc -o ! -L Plumed.cmake ]
+    if [ ! -e Plumed.h -o ! -e Plumed.inc -o ! -e Plumed.cmake ]
     then
       echo "WARNING: I cannot find Plumed.h, Plumed.inc, and Plumed.cmake files. You have likely not patched yet."
     else
