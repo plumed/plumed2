@@ -297,6 +297,7 @@ void OFile::backupFile( const std::string& bstring, const std::string& fname ) {
   if(maxbackup>0 && (!comm || comm->Get_rank()==0)) {
     FILE* ff=std::fopen(const_cast<char*>(fname.c_str()),"r");
     if(ff) {
+      // no exception here
       std::fclose(ff);
       std::string backup;
       size_t found=fname.find_last_of("/\\");
@@ -308,6 +309,7 @@ void OFile::backupFile( const std::string& bstring, const std::string& fname ) {
         if(i>maxbackup) plumed_merror("cannot backup file "+file+" maximum number of backup is "+num+"\n");
         backup=directory+bstring +"."+num+"."+file;
         FILE* fff=std::fopen(backup.c_str(),"r");
+        // no exception here
         if(!fff) break;
         else std::fclose(fff);
       }
@@ -358,11 +360,6 @@ OFile& OFile::rewind() {
 // moreover, we can take a backup of the file
   plumed_assert(fp);
   clearFields();
-  if(gzfp) {
-#ifdef __PLUMED_HAS_ZLIB
-    gzclose((gzFile)gzfp);
-#endif
-  } else fclose(fp);
 
   if(!comm || comm->Get_rank()==0) {
     std::string fname=this->path;
@@ -378,9 +375,15 @@ OFile& OFile::rewind() {
 
   if(gzfp) {
 #ifdef __PLUMED_HAS_ZLIB
+    gzclose((gzFile)gzfp);
+    // no exception here
     gzfp=(void*)gzopen(const_cast<char*>(this->path.c_str()),"w9");
 #endif
-  } else fp=std::fopen(const_cast<char*>(path.c_str()),"w");
+  } else {
+    std::fclose(fp);
+    // no exception here
+    fp=std::fopen(const_cast<char*>(path.c_str()),"w");
+  }
   return *this;
 }
 
@@ -389,10 +392,12 @@ FileBase& OFile::flush() {
     if(gzfp) {
 #ifdef __PLUMED_HAS_ZLIB
       gzclose(gzFile(gzfp));
+      // no exception here
       gzfp=(void*)gzopen(const_cast<char*>(path.c_str()),"a");
 #endif
     } else {
-      fclose(fp);
+      std::fclose(fp);
+      // no exception here
       fp=std::fopen(const_cast<char*>(path.c_str()),"a");
     }
   } else {

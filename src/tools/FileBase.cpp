@@ -75,13 +75,19 @@ bool FileBase::FileExist(const std::string& path) {
   bool do_exist=false;
   this->path=appendSuffix(path,getSuffix());
   mode="r";
+  // first try with suffix
   FILE *ff=std::fopen(const_cast<char*>(this->path.c_str()),"r");
+// call fclose when ff goes out of scope
+  auto deleter=[](FILE* f) { if(f) std::fclose(f); };
+  std::unique_ptr<FILE,decltype(deleter)> fp_deleter(ff,deleter);
+
   if(!ff) {
     this->path=path;
+    // then try without suffic
     ff=std::fopen(const_cast<char*>(this->path.c_str()),"r");
     mode="r";
   }
-  if(ff) {do_exist=true; fclose(ff);}
+  if(ff) do_exist=true;
   if(comm) comm->Barrier();
   return do_exist;
 }
@@ -121,7 +127,7 @@ FileBase::FileBase():
 FileBase::~FileBase()
 {
   if(plumed) plumed->eraseFile(*this);
-  if(!cloned && fp)   fclose(fp);
+  if(!cloned && fp)   std::fclose(fp);
 #ifdef __PLUMED_HAS_ZLIB
   if(!cloned && gzfp) gzclose(gzFile(gzfp));
 #endif
