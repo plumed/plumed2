@@ -143,7 +143,10 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   std::string ofilename; parse("--out",ofilename);
   if( ifilename.length()>0 ) {
     std::fprintf(out,"Reparameterising path in file named %s so that all frames are equally spaced \n",ifilename.c_str() );
-    FILE* fp=fopen(ifilename.c_str(),"r");
+    FILE* fp=std::fopen(ifilename.c_str(),"r");
+// call fclose when fp goes out of scope
+    auto deleter=[](FILE* f) { if(f) std::fclose(f); };
+    std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
     bool do_read=true; std::vector<std::unique_ptr<ReferenceConfiguration>> frames;
     while (do_read) {
       PDB mypdb;
