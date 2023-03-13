@@ -232,15 +232,15 @@ xdrfile_open(const char *path, const char *mode)
 	/* make sure XDR files are opened in binary mode... */
 	if(*mode=='w' || *mode=='W') 
     {
-		sprintf(newmode,"wb+");
+		snprintf(newmode,5,"wb+");
 		xdrmode=XDR_ENCODE;
 	} else if(*mode == 'a' || *mode == 'A') 
     {
-		sprintf(newmode,"ab+");
+		snprintf(newmode,5,"ab+");
 		xdrmode = XDR_ENCODE;
 	} else if(*mode == 'r' || *mode == 'R')
     {
-		sprintf(newmode,"rb");
+		snprintf(newmode,5,"rb");
 		xdrmode = XDR_DECODE;
 	} else /* cannot determine mode */
 		return NULL;

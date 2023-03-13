@@ -406,19 +406,19 @@ static int write_raw_pdb_record(FILE *fd, const char *recordname,
   /* If we run out of hexadecimal indices, then we just print     */
   /* asterisks.                                                   */
   if (index < 100000) {
-    sprintf(indexbuf, "%5d", index);
+    snprintf(indexbuf, 32, "%5d", index);
   } else if (index < 1048576) {
-    sprintf(indexbuf, "%05x", index);
+    snprintf(indexbuf, 32, "%05x", index);
   } else {
-    sprintf(indexbuf, "*****");
+    snprintf(indexbuf, 32, "*****");
   }
 
   if (resid < 10000) {
-    sprintf(residbuf, "%4d", resid);
+    snprintf(residbuf, 32, "%4d", resid);
   } else if (resid < 65536) {
-    sprintf(residbuf, "%04x", resid);
+    snprintf(residbuf, 32, "%04x", resid);
   } else { 
-    sprintf(residbuf, "****");
+    snprintf(residbuf, 32, "****");
   }
 
   altlocchar = altloc[0];
