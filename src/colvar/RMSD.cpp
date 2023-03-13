@@ -356,8 +356,8 @@ void RMSD::performTask( const unsigned& task_index, MultiValue& myvals ) const {
          }
       } else {
          Tensor rot; Matrix<std::vector<Vector> > DRotDPos(3,3); std::vector<Vector> centeredpos( natoms ), centeredreference( natoms );
-         r = myrmsd[rmsdno].calc_PCAelements( pos, der, rot, DRotDPos, direction, centeredpos, centeredreference, squared );
-         for(unsigned i=0;i<direction.size();++i) direction[i] = sqrtdisplace[i]*( direction[i] - myrmsd[rmsdno].getReference()[i] );
+         r = myrmsd[rmsdno].calc_PCAelements( pos, der, rot, DRotDPos, direction, centeredpos, centeredreference, squared ); std::vector<Vector> ref( myrmsd[rmsdno].getReference() );
+         for(unsigned i=0;i<direction.size();++i) direction[i] = sqrtdisplace[i]*( direction[i] - ref[i] );
          // Notice that we can adjust the forces here because we are parallelilising the apply loop over the RMSD values we are calculating
          if( dval->forcesWereAdded() ) {
              Tensor trot=rot.transpose(); double prefactor = 1 / static_cast<double>( natoms ); Vector v1; v1.zero();
