@@ -244,7 +244,7 @@ cdef class Plumed:
             elif( val.dtype==np.int_ ) :
                self.cmd_ndarray_long(ckey, val)
             else :
-               raise ValueError("ndarrys should be np.double, np.intc, or np.int_")
+               raise ValueError("ndarrays should be type np.double, np.intc, or np.int_")
             return
          if isinstance(val, array.array) :
             if( (val.typecode=="d" or val.typecode=="f") and val.itemsize==8):
@@ -254,7 +254,7 @@ cdef class Plumed:
             elif( (val.typecode=="l" or val.typecode=="L") ) :
                self.cmd_array_long(ckey, val)
             else :
-               raise ValueError("ndarrays should be double (size=8), int, or long")
+               raise ValueError("arrays should be type double (size=8), int, or long")
             return
          if isinstance(val, str ) :
             py_bytes = val.encode()
