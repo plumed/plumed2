@@ -109,8 +109,9 @@ Exception& Exception::operator<<(const std::string&msg)
 Exception& Exception::operator<<(const Location&loc)
 {
   if(loc.file) {
-    char cline[1000];
-    std::sprintf(cline,"%u",loc.line);
+    const std::size_t clinelen=1000;
+    char cline[clinelen];
+    std::snprintf(cline,clinelen,"%u",loc.line);
     this->msg += "\n(";
     try {
       this->msg += simplify(loc.file);
