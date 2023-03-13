@@ -186,7 +186,7 @@ cdef class Plumed:
          for i in range(len(shape)):
             ashape[i]=shape[i]
          ashape[len(shape)]=0
-         self.cmd_low_level(ckey,&abuffer[0], 0, & ashape[0], sizeof(ashape[0]) + type_real +  type_pointer)
+         self.cmd_low_level(ckey,&abuffer[0], 0, & ashape[0], sizeof(abuffer[0]) + type_real +  type_pointer)
      cdef cmd_ndarray_int(self, ckey, val):
          cdef int [:] abuffer = val.ravel()
          cdef size_t ashape[5]
@@ -195,7 +195,7 @@ cdef class Plumed:
          for i in range(len(shape)):
             ashape[i]=shape[i]
          ashape[len(shape)]=0
-         self.cmd_low_level(ckey,&abuffer[0], 0, & ashape[0], sizeof(ashape[0]) + type_integral +  type_pointer)
+         self.cmd_low_level(ckey,&abuffer[0], 0, & ashape[0], sizeof(abuffer[0]) + type_integral +  type_pointer)
      cdef cmd_ndarray_long(self, ckey, val):
          cdef long [:] abuffer = val.ravel()
          cdef size_t ashape[5]
@@ -204,7 +204,7 @@ cdef class Plumed:
          for i in range(len(shape)):
             ashape[i]=shape[i]
          ashape[len(shape)]=0
-         self.cmd_low_level(ckey,&abuffer[0], 0, & ashape[0], sizeof(ashape[0]) + type_integral +  type_pointer)
+         self.cmd_low_level(ckey,&abuffer[0], 0, & ashape[0], sizeof(abuffer[0]) + type_integral +  type_pointer)
      cdef cmd_array_double(self, ckey, val):
          cdef double [:] abuffer = val
          self.cmd_low_level(ckey,&abuffer[0], len(abuffer), NULL, sizeof(abuffer[0]) + type_real +  type_pointer)
