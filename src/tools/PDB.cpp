@@ -536,9 +536,10 @@ bool PDB::checkForAtom( AtomNumber a ) const {
 }
 
 Log& operator<<(Log& ostr, const PDB&  pdb) {
-  char buffer[1000];
+  const std::size_t bufferlen=1000;
+  char buffer[bufferlen];
   for(unsigned i=0; i<pdb.positions.size(); i++) {
-    std::sprintf(buffer,"ATOM %3u %8.3f %8.3f %8.3f\n",pdb.numbers[i].serial(),pdb.positions[i][0],pdb.positions[i][1],pdb.positions[i][2]);
+    std::snprintf(buffer,bufferlen,"ATOM %3u %8.3f %8.3f %8.3f\n",pdb.numbers[i].serial(),pdb.positions[i][0],pdb.positions[i][1],pdb.positions[i][2]);
     ostr<<buffer;
   }
   return ostr;
