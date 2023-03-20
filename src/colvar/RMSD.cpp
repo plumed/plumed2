@@ -372,10 +372,8 @@ void RMSD::performTask( const unsigned& task_index, MultiValue& myvals ) const {
              }
              for(unsigned a=0; a<3; a++) {
                  for(unsigned b=0; b<3; b++) {
-                     for(unsigned i=0; i<natoms; i++) {
-                         double tmp1=0.; for(unsigned m=0; m<natoms; m++) tmp1+=centeredpos[m][b]*dval->getForce( (task_index*3+a)*natoms + m );
-                         centeredreference[i] += sqrtdisplace[i]*tmp1*DRotDPos[a][b][i];
-                     }
+                     double tmp1=0.; for(unsigned m=0; m<natoms; m++) tmp1+=centeredpos[m][b]*dval->getForce( (task_index*3+a)*natoms + m );
+                     for(unsigned i=0; i<natoms; i++) centeredreference[i] += sqrtdisplace[i]*tmp1*DRotDPos[a][b][i];
                  }
              }
              // Now subtract the current force and add on the true force
