@@ -1,14 +1,14 @@
-a-master-ISDD-3.txt/**
-\page master-ISDD-3 Master ISDD tutorial 2023: Metadynamics simulations with PLUMED
+a-master-ISDD-2.txt/**
+\page master-ISDD-2 Master ISDD tutorial 2023: Metadynamics simulations with PLUMED
 
-\section master-ISDD-3-aims Aim
+\section master-ISDD-2-aims Aim
 
 The aim of this tutorial is to train users to perform and analyze metadynamics simulations with PLUMED.
 This tutorial has been prepared by Max Bonomi (adapting a lot of material from other tutorials) for
 the <a href="http://isddteach.sdv.univ-paris-diderot.fr/fr/accueil.html">Master In Silico Drug Design</a>, held
 at Universite' de Paris on March 6th, 2023.
 
-\section master-ISDD-3-objectives Objectives 
+\section master-ISDD-2-objectives Objectives 
 
 Once this tutorial is completed users will be able to:
 
@@ -18,9 +18,9 @@ Once this tutorial is completed users will be able to:
 - Estimate the error in the reconstructed free energies using block analysis.
 - Assess the convergence of metadynamics simulations.
 
-\section master-ISDD-3-resources Resources
+\section master-ISDD-2-resources Resources
 
-The \tarball{master-ISDD-3} for this tutorial contains the following files:
+The \tarball{master-ISDD-2} for this tutorial contains the following files:
 - `diala.pdb`: a PDB file for alanine dipeptide in vacuo.
 - `topol.tpr`: a GROMACS run (binary) file to perform MD simulations of alanine dipeptide.
 - `do_block_fes.py`: a python script to perform error analysis of metadynamics simulations.
@@ -28,15 +28,15 @@ The \tarball{master-ISDD-3} for this tutorial contains the following files:
 After dowloading the compressed archive to your local machine, you can unpack it using the following command:
 
 \verbatim
-tar xvzf master-ISDD-3.tar.gz
+tar xvzf master-ISDD-2.tar.gz
 \endverbatim
 
-Once unpacked, all the files can be found in the `master-ISDD-3` directory. To keep things clean,
-it is recommended to run each exercise in a separate sub-directory that you can create inside `master-ISDD-3`.
+Once unpacked, all the files can be found in the `master-ISDD-2` directory. To keep things clean,
+it is recommended to run each exercise in a separate sub-directory that you can create inside `master-ISDD-2`.
 
 \note This tutorial has been tested with PLUMED version 2.7.2 and GROMACS version 2019.6.
 
-\section master-ISDD-3-intro Introduction
+\section master-ISDD-2-intro Introduction
 
 In the previous tutorial, we have seen that PLUMED can be used to compute collective variables (CVs) on a pre-calculated
 trajectory. However, PLUMED is most often use to add forces on the CVs during a MD simulation, for example, 
@@ -110,21 +110,21 @@ Additional information can be found in the several review papers on metadynamics
 \endhidden
 
 We will play with a toy system, alanine dipeptide simulated in vacuo using the AMBER99SB-ILDN 
-force field (see Fig. \ref master-ISDD-3-ala-fig).
+force field (see Fig. \ref master-ISDD-2-ala-fig).
 This rather simple molecule is useful to understand data analysis and free-energy methods.
 This system is a nice example because it presents two metastable states separated by a high free-energy barrier.
 It is conventional use to characterize the two states in terms of Ramachandran dihedral angles, which are denoted with \f$ \phi \f$ 
-(phi) and \f$ \psi \f$ (psi) in Fig. \ref master-ISDD-3-transition-fig.
+(phi) and \f$ \psi \f$ (psi) in Fig. \ref master-ISDD-2-transition-fig.
 
-\anchor master-ISDD-3-ala-fig
+\anchor master-ISDD-2-ala-fig
 \image html belfast-2-ala.png "The molecule of the day: alanine dipeptide."
 
-\anchor master-ISDD-3-transition-fig
+\anchor master-ISDD-2-transition-fig
 \image html belfast-2-transition.png "Two metastable states of alanine dipeptide are characterized by their Ramachandran dihedral angles."
 
-\section master-ISDD-3-ex Exercises
+\section master-ISDD-2-ex Exercises
 
-\subsection master-ISDD-3-ex-1 Exercise 1: My first metadynamics simulation
+\subsection master-ISDD-2-ex-1 Exercise 1: My first metadynamics simulation
 
 In this exercise we will setup and perform a well-tempered metadynamics run using the backbone dihedral \f$ \phi \f$
 as collective variable. During the calculation, we will also monitor the behavior of the other backbone dihedral \f$ \psi \f$.
@@ -190,10 +190,10 @@ We can use `gnuplot` to visualize the behavior of the metadynamics CV \f$ \phi \
 gnuplot> p "COLVAR" u 1:2
 \endverbatim
 
-\anchor master-ISDD-3-phi-fig
+\anchor master-ISDD-2-phi-fig
 \image html munster-metad-phi.png "Time evolution of the metadynamics CV during the first 2 ns of a metadynamics simulation of alanine dipeptide in vacuum."
 
-By inspecting Figure \ref master-ISDD-3-phi-fig, we can see that the system is initialized in one of the two metastable
+By inspecting Figure \ref master-ISDD-2-phi-fig, we can see that the system is initialized in one of the two metastable
 states of alanine dipeptide. After a while (t=0.1 ns), the system is pushed
 by the metadynamics bias potential to visit the other local minimum. As the simulation continues,
 the bias potential fills the underlying free-energy landscape, and the system is able to diffuse in the
@@ -214,7 +214,7 @@ the simulation time, the instantaneous value of \f$ \phi \f$, the Gaussian width
 We can use the `HILLS` file to visualize the decrease of the Gaussian height during the simulation,
 according to the well-tempered recipe:
 
-\anchor master-ISDD-3-phihills-fig
+\anchor master-ISDD-2-phihills-fig
 \image html munster-metad-phihills.png "Time evolution of the Gaussian height."
 
 If we look carefully at the scale of the y-axis, we will notice that in the beginning the value
@@ -225,7 +225,7 @@ in well-tempered metadynamics relates the bias potential to the free energy.
 \warning The fact that the Gaussian height is decreasing to zero should not be used as a measure of convergence
 of your metadynamics simulation!
 
-\subsection master-ISDD-3-ex-2 Exercise 2: Estimating the free energy as a function of the metadynamics CVs 
+\subsection master-ISDD-2-ex-2 Exercise 2: Estimating the free energy as a function of the metadynamics CVs 
 
 One can estimate the free energy as a function of the metadynamics CVs directly from the metadynamics
 bias potential. In order to do so, the utility \ref sum_hills can be used to sum the Gaussian kernels
@@ -251,7 +251,7 @@ as well as the boundaries and bin size of the grid, by using the following \ref 
 
 The result should look like this:
 
-\anchor master-ISDD-3-metad-phifes-fig
+\anchor master-ISDD-2-metad-phifes-fig
 \image html munster-metad-phifes.png "Estimate of the free energy as a function of the dihedral phi from a 10ns-long well-tempered metadynamics simulation."
 
 To give a preliminary assessment of the convergence of a metadynamics simulation, one can calculate the estimate of the free energy as a function
@@ -267,19 +267,19 @@ plumed sum_hills --hills HILLS --stride 100 --mintozero
 one free energy is calculated every 100 Gaussian kernels deposited, and the global minimum is set to zero in all profiles.
 The resulting plot should look like the following:
 
-\anchor master-ISDD-3-metad-phifest-fig
+\anchor master-ISDD-2-metad-phifest-fig
 \image html munster-metad-phifest.png "Estimates of the free energy as a function of the dihedral phi calculated every 100 Gaussian kernels deposited."
 
 These two qualitative observations:
-1. the system is diffusing rapidly in the entire CV space (Figure \ref master-ISDD-3-phi-fig) 
-2. the estimated free energy does not significantly change as a function of time (Figure \ref master-ISDD-3-metad-phifest-fig) 
+1. the system is diffusing rapidly in the entire CV space (Figure \ref master-ISDD-2-phi-fig) 
+2. the estimated free energy does not significantly change as a function of time (Figure \ref master-ISDD-2-metad-phifest-fig) 
 
 suggest that the simulation __might__ be converged. 
 
 \warning The two conditions listed above are necessary, but not sufficient to declare convergence.
-For a quantitative analysis of the convergence of metadynamics simulations, please have a look below at \ref master-ISDD-3-ex-4. 
+For a quantitative analysis of the convergence of metadynamics simulations, please have a look below at \ref master-ISDD-2-ex-4. 
 
-\subsection master-ISDD-3-ex-3 Exercise 3: Reweighting (unbiasing) a metadynamics simulation
+\subsection master-ISDD-2-ex-3 Exercise 3: Reweighting (unbiasing) a metadynamics simulation
 
 In the previous exercise we biased \f$\phi\f$ and computed the free energy as a function of
 the same variable directly from the metadynamics bias potential using the \ref sum_hills utility. 
@@ -397,23 +397,23 @@ gnuplot> p "ffpsi.dat" u 1:2 w lp
 \endverbatim
 
 You can now compare the free energies as a function of \f$ \phi \f$ calculated:
-1. directly from the metadynamics bias potential using \ref sum_hills as done in \ref master-ISDD-3-ex-2;
+1. directly from the metadynamics bias potential using \ref sum_hills as done in \ref master-ISDD-2-ex-2;
 2. using the reweighting procedure introduced in this exercise. 
 
-The results should be identical (see Fig. \ref master-ISDD-3-fescomp-fig).
+The results should be identical (see Fig. \ref master-ISDD-2-fescomp-fig).
 
-\anchor master-ISDD-3-fescomp-fig
-\image html master-ISDD-3-fescomp-fig.png "Comparison between the free energy as a function of the dihedral phi calculated from the metadynamics bias potential (bias) and by reweighting (rew)".
+\anchor master-ISDD-2-fescomp-fig
+\image html master-ISDD-2-fescomp-fig.png "Comparison between the free energy as a function of the dihedral phi calculated from the metadynamics bias potential (bias) and by reweighting (rew)".
  
 
-\subsection master-ISDD-3-ex-4 Exercise 4: Estimating the error in free energies using block-analysis
+\subsection master-ISDD-2-ex-4 Exercise 4: Estimating the error in free energies using block-analysis
 
 In the previous exercise, we calculated the _final_ bias \f$ V(s) \f$ on the entire metadynamics trajectory and we used
 this quantity to calculate the correct statistical weight of each frame that we need to reweight the biased simulation.
 In this exercise, we will see how this information can be used to calculate the error in 
 the reconstructed free energies and assess whether our simulation is converged or not.
 Let's first calculate the un-biasing weights \f$w\propto\exp\left(\frac{V(s)}{k_BT}\right)\f$ from the `COLVAR_REWEIGHT` 
-file obtained at the end of \ref master-ISDD-3-ex-3:
+file obtained at the end of \ref master-ISDD-2-ex-3:
 
 \verbatim
 # Find maximum value of bias to avoid numerical errors when calculating the un-biasing weights
@@ -480,14 +480,14 @@ gnuplot> p "err.blocks" u 1:2 w lp
 \endverbatim
 
 As expected, the error increases with the block size until it reaches a plateau in correspondence of a dimension
-of the block that exceeds the correlation between data points (Fig. \ref master-ISDD-3-block-phi).
+of the block that exceeds the correlation between data points (Fig. \ref master-ISDD-2-block-phi).
 
-\anchor master-ISDD-3-block-phi 
+\anchor master-ISDD-2-block-phi 
 \image html trieste-4-block-phi.png "Block analysis of a metadynamics simulation using phi as CV"
 
 __What can we learn from this analysis about the convergence of the metadynamics simulation?__
 
-\section master-ISDD-3-conclusions Conclusions
+\section master-ISDD-2-conclusions Conclusions
 
 In summary, in this tutorial you should have learned how to use PLUMED to:
 - Setup and run a metadynamics calculation.
@@ -497,8 +497,8 @@ In summary, in this tutorial you should have learned how to use PLUMED to:
 
 */
 
-link: @subpage master-ISDD-3
+link: @subpage master-ISDD-2
 
 description: This tutorial explains how to use PLUMED to run metadynamics simulations 
 
-additional-files: master-ISDD-3 
+additional-files: master-ISDD-2 
