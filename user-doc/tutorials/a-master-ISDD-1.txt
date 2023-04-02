@@ -7,7 +7,7 @@ The aim of this tutorial is to introduce users to the PLUMED syntax. We will go 
 and print simple collective variables on a pre-calculated trajectory. This tutorial has been prepared by Max Bonomi 
 (adapting a lot of material from other tutorials and Masterclass) for 
 the <a href="http://isddteach.sdv.univ-paris-diderot.fr/fr/accueil.html">Master In Silico Drug Design</a>, held
-at Universite' de Paris on March 6th, 2023.
+at Université Paris Cité on March 6th, 2023.
 
 \section master-ISDD-1-lo Objectives 
 
