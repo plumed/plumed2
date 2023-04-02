@@ -1,4 +1,4 @@
-/**
+a-master-ISDD-1.txt /**
 \page master-ISDD-1 Master ISDD tutorial 2023: Brief introduction to PLUMED
 
 \section master-ISDD-1-aims Aim
@@ -20,7 +20,7 @@ Once this tutorial is completed, users will be able to:
 
 \section master-ISDD-1-software Software
 
-In this and in the next tutorial, we will use two pieces of software: <a href="https://www.plumed.org">PLUMED</a> version 2.7.2 and
+In this and in the next tutorial, we will use two pieces of software: <a href="https://www.plumed.org">PLUMED</a> version 2.8.2 and
 <a href="http://www.gromacs.org">GROMACS</a> version 2019.6. First, we need to install the software on your machine using `conda`.
 
 \subsection master-ISDD-1-install Installation
@@ -205,7 +205,7 @@ tar xvzf master-ISDD-1.tar.gz
 Once unpacked, all the files can be found in the `master-ISDD-1` directory. To keep things clean, 
 it is recommended to run each exercise in a separate sub-directory that you can create inside `master-ISDD-1`.
 
-\note This tutorial has been tested with PLUMED version 2.7.2.
+\note This tutorial has been tested with PLUMED version 2.8.2.
 
 \section master-ISDD-1-ex Exercises
 
