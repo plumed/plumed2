@@ -16,7 +16,6 @@ Once this tutorial is completed, users will be able to:
 - Write a simple PLUMED input file and use it with the PLUMED \ref driver to analyze a trajectory.
 - Print collective variables such as distances (\ref DISTANCE), torsional angles (\ref TORSION), and gyration radius (\ref GYRATION) using the \ref PRINT action.
 - Use \ref MOLINFO shortcuts.
-- Define and use virtual atoms, such as \ref CENTER.
 
 \section master-ISDD-1-software Software
 
@@ -324,62 +323,11 @@ You can use `gnuplot` to visualize the trajectory of the two CVs calculated with
 and written in the `COLVAR` file.
 __Are the two trajectories identical?__
 
-\subsection master-ISDD-1-ex-3 Exercise 3: Virtual atoms
-
-Sometimes, when calculating a CV, you may not want to use the positions of a number of atoms directly. 
-Instead you may want to define a virtual atom whose position is generated based on the positions 
-of a collection of other atoms. For example you might want to use the center of mass (\ref COM) or
-the geometric center (\ref CENTER) of a group of atoms.
-
-In this exercise, you will learn how to specify virtual atoms and later use them to define a CV.
-Let's start by having a look at the PLUMED input file below.
-
-\plumedfile
-# Geometric center of first residue
-first: CENTER ATOMS=1,2,3,4,5,6,7,8
-# Geometric center of last residue
-last: CENTER ATOMS=427-436
-
-# Distance between centers of first and last residues, with PBCs
-d1: DISTANCE ATOMS=first,last
-# Distance between centers of first and last residues, without PBCs
-d2: DISTANCE ATOMS=first,last NOPBC
-
-# Print the two distances on COLVAR file every step
-PRINT ARG=__FILL__ FILE=COLVAR STRIDE=__FILL__
-\endplumedfile
-
-The file above instructs PLUMED to:
-
-1. calculate the position of the virtual atom `first` as the \ref CENTER of atoms from 1 to 8;
-2. calculate the position of the virtual atom `last` as the \ref CENTER of atoms from 427 to 436;
-3. calculate the distance between the two virtual atoms `first` and `last` and saves it in `d1`;
-4. calculate the distance (ignoring periodic boundary conditions) between the two virtual atom `first` and `last` and saves it in `d2`;
-5. print the content of `d1` and `d2` in the file `COLVAR` for every frame of the trajectory.
-
-Notice that in the input above we have used two different ways of writing the atoms used in the \ref CENTER calculation:
-
-1. `ATOMS=1,2,3,4,5,6,7,8` is the explicit list of the atoms we need;
-2. `ATOMS=427-436` is the range of atoms needed.
-
-Once you have prepared a PLUMED input file containing the above instructions, you can execute it on the trajectory `traj-broken.xtc` 
-by making use of the following command:
-
-\verbatim
-plumed driver --mf_xtc traj-broken.xtc --plumed plumed.dat
-\endverbatim
-
-Let's now analyze the output of the calculation by plotting the time series of the two CVs.
-__Are they identical? What do you think is happening in those frames in which the two CVs are different?__
-
-You can repeat the same analysis on `traj-whole.xtc` and compare with the previous trajectory.
-__Are the results identical?__  
-
 \section master-ISDD-1-conclusions Conclusions
 
 In summary, in this tutorial you should have learned how to use PLUMED to:
 - Analyze previously calculated trajectories using the \ref driver utility.
-- Define virtual atoms and using \ref MOLINFO shortcuts.
+- Define \ref MOLINFO shortcuts.
 
 */
 
