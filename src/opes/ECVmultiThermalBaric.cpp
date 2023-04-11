@@ -327,7 +327,7 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
   log.printf("   and a pressure range from PRESSURE_MIN=%g to PRESSURE_MAX=%g\n",pres_min,pres_max);
   if(pres_min==pres_max)
     log.printf(" +++ WARNING +++ if you only need a multithermal simulation it is more efficient to set it up with ECV_MULTITHERMAL\n");
-  if(geom_spacing_)
+  if(!geom_spacing_)
     log.printf(" -- NO_GEOM_SPACING: inverse temperatures will be linearly spaced\n");
   if(coeff_!=0)
     log.printf(" -- CUT_CORNER: ignoring some high temperature and low pressure values\n");
