@@ -306,7 +306,11 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys)
   keys.use("ARG");
   keys.add("compulsory","TEMP","-1","temperature. If not set, it is taken from MD engine, but not all MD codes provide it");
   keys.add("compulsory","PACE","the frequency for kernel deposition");
-  keys.add("compulsory","SIGMA","ADAPTIVE","the initial widths of the kernels. If not set, adaptive sigma will be used with the given ADAPTIVE_SIGMA_STRIDE");
+  std::string info_sigma("the initial widths of the kernels");
+  if(mode::explore)
+      info_sigma+=", divided by \\f$\\sqrt{\\gamma}\\f$";
+  info_sigma+=". If not set, an adaptive sigma will be used with the given ADAPTIVE_SIGMA_STRIDE";
+  keys.add("compulsory","SIGMA","ADAPTIVE",info_sigma);
   keys.add("compulsory","BARRIER","the free energy barrier to be overcome. It is used to set BIASFACTOR, EPSILON, and KERNEL_CUTOFF to reasonable values");
   keys.add("compulsory","COMPRESSION_THRESHOLD","1","merge kernels if closer than this threshold, in units of sigma");
 //extra options
