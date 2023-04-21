@@ -32,7 +32,7 @@ class Log;
 class Keywords;
 
 /// \ingroup TOOLBOX
-/// Small class to compure switching functions.
+/// Small class to compute switching functions.
 /// Switching functions are created using set() and
 /// then can be used with function calculate() or calculateSqr().
 /// Since this is typically computed on a distance vector,
