@@ -531,7 +531,7 @@ void CZAR:: writeZCountZGrad(const string &filename, bool addition) const {
       fprintf(pGrad, " %.9f", table[j][i]);
     }
     const size_t baseaddr = sampleAddress(pos);
-    const size_t current_sample = samples[baseaddr];
+    const auto& current_sample = samples[baseaddr];
     fprintf(pCount, " %lu\n", current_sample);
     if (current_sample == 0) {
       for (size_t j = 0; j < ndims; ++j) {
