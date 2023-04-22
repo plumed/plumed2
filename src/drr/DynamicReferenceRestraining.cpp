@@ -86,7 +86,7 @@ It may be slow. I only change the Boltzmann constant and output
 precision in it. For new version and issues, please see:
 https://github.com/fhh2626/colvars
 
-After running eABF/DRR, the \ref drr_tool utility can be used to extract the gradients and counts files from .drrstate. Naive(ABF) estimator's result is in .abf.grad and .abf.count files and CZAR estimator's result is in .czar.grad and .czar.count files. The additional .zcount and .zgrad files contain the number of samples of \f$\mathbf{\xi}\f$, and the negative of \f$\mathbf{\xi}\f$-averaged spring forces, respectively, which are mainly for inspecting and debugging purpose. To get PMF, the abf_integrate(https://github.com/Colvars/colvars/tree/master/colvartools) is useful for numerically integrating the .czar.grad file.
+After running eABF/DRR, the \ref drr_tool utility can be used to extract the gradients and counts files from .drrstate. Naive(ABF) estimator's result is in .abf.grad and .abf.count files and CZAR estimator's result is in .czar.grad and .czar.count files. The additional .zcount and .zgrad files contain the number of samples of \f$\boldsymbol{\xi}\f$, and the negative of \f$\boldsymbol{\xi}\f$-averaged spring forces, respectively, which are mainly for inspecting and debugging purpose. To get PMF, the abf_integrate(https://github.com/Colvars/colvars/tree/master/colvartools) is useful for numerically integrating the .czar.grad file.
 
 \par Examples
 
