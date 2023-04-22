@@ -49,12 +49,12 @@ The overall distribution is then given as
 \f[
 p(\mathbf{s}) =
 \prod^{d}_{k} p_{k}(s_{k}) =
-\begin{cases}
+\left\{\begin{array}{ll}
 \prod^{d}_{k} \frac{1}{(b_{k}-a_{k})}
 & \mathrm{if} \ a_{k} \leq s_{k} \leq b_{k} \ \mathrm{for\ all}\ k \\
 \\
 0 & \mathrm{otherwise}
-\end{cases}
+\end{array}\right.
 \f]
 The distribution is thus uniform inside a rectangular for two arguments
 and a cube for a three arguments.
