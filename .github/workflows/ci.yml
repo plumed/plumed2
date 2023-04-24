@@ -151,6 +151,7 @@ jobs:
               df -h
               sleep 15
               done) &
+         export FC="$FC -fallow-argument-mismatch" # this is required with ubuntu 2022 and recent gfortran compilers
          make --no-print-directory -C regtest testclean
          # these can fail for numerical reasons
          make -C regtest checkfail
