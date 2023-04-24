@@ -76,7 +76,14 @@ p(s)=\frac{p_{\mathrm{WT}}(s) \, p_{\mathrm{barrier}}(s)}
 \f]
 where \f$ p_{\mathrm{WT}}(s) \f$ is the well-tempered target distribution and:
 
-MISSING EQUATION TO BE FIXED
+\f[
+p_{\mathrm{barrier}}(s)=
+        \left\{\begin{array}{ll}
+                \frac{1}{C} \: &  \mathrm{if} \: s<s_0 \\
+                \frac{1}{C} e^{-\frac{(s-s_0)^2}{2\sigma^2}} \: &
+\mathrm{if} \: s>s_0\\
+        \end{array}\right.
+\f]
 
 with \f$ C \f$ a normalization factor.
 The files needed for this exercise are in the directory Example1.
