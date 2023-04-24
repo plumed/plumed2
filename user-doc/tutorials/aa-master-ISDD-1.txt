@@ -1,13 +1,13 @@
-/**
-\page master-ISDD-1 Master ISDD tutorial 2021: Brief introduction to PLUMED
+a-master-ISDD-1.txt /**
+\page master-ISDD-1 Master ISDD tutorial 2023: Brief introduction to PLUMED
 
 \section master-ISDD-1-aims Aim
 
 The aim of this tutorial is to introduce users to the PLUMED syntax. We will go through the preparation of input files to calculate
 and print simple collective variables on a pre-calculated trajectory. This tutorial has been prepared by Max Bonomi 
-(adapting a lot of material from other tutorials) for 
+(adapting a lot of material from other tutorials and Masterclass) for 
 the <a href="http://isddteach.sdv.univ-paris-diderot.fr/fr/accueil.html">Master In Silico Drug Design</a>, held
-at Universite' de Paris on October 26th, 2021.
+at Université Paris Cité on March 6th, 2023.
 
 \section master-ISDD-1-lo Objectives 
 
@@ -16,11 +16,10 @@ Once this tutorial is completed, users will be able to:
 - Write a simple PLUMED input file and use it with the PLUMED \ref driver to analyze a trajectory.
 - Print collective variables such as distances (\ref DISTANCE), torsional angles (\ref TORSION), and gyration radius (\ref GYRATION) using the \ref PRINT action.
 - Use \ref MOLINFO shortcuts.
-- Define and use virtual atoms, such as \ref CENTER.
 
 \section master-ISDD-1-software Software
 
-In this and in the next tutorial, we will use two pieces of software: <a href="https://www.plumed.org">PLUMED</a> version 2.7.2 and
+In this and in the next tutorial, we will use two pieces of software: <a href="https://www.plumed.org">PLUMED</a> version 2.8.2 and
 <a href="http://www.gromacs.org">GROMACS</a> version 2019.6. First, we need to install the software on your machine using `conda`.
 
 \subsection master-ISDD-1-install Installation
@@ -52,14 +51,14 @@ Now we can create a `conda` environment for the ISDD tutorial using the followin
 
 \verbatim
 # create environment
-conda create --name ISDD-tutorial-2021
+conda create --name ISDD-tutorial-2023
 \endverbatim
 
 and activate it with:
 
 \verbatim
 # activate environment
-conda activate ISDD-tutorial-2021
+conda activate ISDD-tutorial-2023
 \endverbatim
 
 Finally, we can proceed with the installation of the required software: 
@@ -72,10 +71,10 @@ conda install --strict-channel-priority -c plumed/label/masterclass -c conda-for
 The `--strict-channel-priority` might be necessary in case your `conda` install is configured to download packages from the `bioconda` channel. Indeed, `bioconda` contains a version of GROMACS that is **not** patched with PLUMED and would thus not work here.
 
 Keep in mind that every time you open a new shell, in order to use PLUMED and GROMACS you need to 
-activate the `ISDD-tutorial-2021` environment using the following command:
+activate the `ISDD-tutorial-2023` environment using the following command:
 
 \verbatim
-conda activate ISDD-tutorial-2021
+conda activate ISDD-tutorial-2023
 \endverbatim
 
 \subsection master-ISDD-1-plumed PLUMED overview
@@ -205,7 +204,7 @@ tar xvzf master-ISDD-1.tar.gz
 Once unpacked, all the files can be found in the `master-ISDD-1` directory. To keep things clean, 
 it is recommended to run each exercise in a separate sub-directory that you can create inside `master-ISDD-1`.
 
-\note This tutorial has been tested with PLUMED version 2.7.2.
+\note This tutorial has been tested with PLUMED version 2.8.2.
 
 \section master-ISDD-1-ex Exercises
 
@@ -324,62 +323,11 @@ You can use `gnuplot` to visualize the trajectory of the two CVs calculated with
 and written in the `COLVAR` file.
 __Are the two trajectories identical?__
 
-\subsection master-ISDD-1-ex-3 Exercise 3: Virtual atoms
-
-Sometimes, when calculating a CV, you may not want to use the positions of a number of atoms directly. 
-Instead you may want to define a virtual atom whose position is generated based on the positions 
-of a collection of other atoms. For example you might want to use the center of mass (\ref COM) or
-the geometric center (\ref CENTER) of a group of atoms.
-
-In this exercise, you will learn how to specify virtual atoms and later use them to define a CV.
-Let's start by having a look at the PLUMED input file below.
-
-\plumedfile
-# Geometric center of first residue
-first: CENTER ATOMS=1,2,3,4,5,6,7,8
-# Geometric center of last residue
-last: CENTER ATOMS=427-436
-
-# Distance between centers of first and last residues, with PBCs
-d1: DISTANCE ATOMS=first,last
-# Distance between centers of first and last residues, without PBCs
-d2: DISTANCE ATOMS=first,last NOPBC
-
-# Print the two distances on COLVAR file every step
-PRINT ARG=__FILL__ FILE=COLVAR STRIDE=__FILL__
-\endplumedfile
-
-The file above instructs PLUMED to:
-
-1. calculate the position of the virtual atom `first` as the \ref CENTER of atoms from 1 to 8;
-2. calculate the position of the virtual atom `last` as the \ref CENTER of atoms from 427 to 436;
-3. calculate the distance between the two virtual atoms `first` and `last` and saves it in `d1`;
-4. calculate the distance (ignoring periodic boundary conditions) between the two virtual atom `first` and `last` and saves it in `d2`;
-5. print the content of `d1` and `d2` in the file `COLVAR` for every frame of the trajectory.
-
-Notice that in the input above we have used two different ways of writing the atoms used in the \ref CENTER calculation:
-
-1. `ATOMS=1,2,3,4,5,6,7,8` is the explicit list of the atoms we need;
-2. `ATOMS=427-436` is the range of atoms needed.
-
-Once you have prepared a PLUMED input file containing the above instructions, you can execute it on the trajectory `traj-broken.xtc` 
-by making use of the following command:
-
-\verbatim
-plumed driver --mf_xtc traj-broken.xtc --plumed plumed.dat
-\endverbatim
-
-Let's now analyze the output of the calculation by plotting the time series of the two CVs.
-__Are they identical? What do you think is happening in those frames in which the two CVs are different?__
-
-You can repeat the same analysis on `traj-whole.xtc` and compare with the previous trajectory.
-__Are the results identical?__  
-
 \section master-ISDD-1-conclusions Conclusions
 
 In summary, in this tutorial you should have learned how to use PLUMED to:
 - Analyze previously calculated trajectories using the \ref driver utility.
-- Define virtual atoms and using \ref MOLINFO shortcuts.
+- Define \ref MOLINFO shortcuts.
 
 */
 
