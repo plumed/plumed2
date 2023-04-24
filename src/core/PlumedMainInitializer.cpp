@@ -34,12 +34,10 @@
 #include <ios>
 #include <new>
 #include <typeinfo>
-#ifdef __PLUMED_LIBCXX11
 #include <system_error>
 #include <future>
 #include <memory>
 #include <functional>
-#endif
 #include "tools/TypesafePtr.h"
 #include "tools/Log.h"
 #include "tools/Tools.h"
@@ -144,22 +142,18 @@ static void translate_current(plumed_nothrow_handler_x nothrow,void**nested=null
   } catch(const std::bad_exception & e) {
     if(!msg) msg=e.what();
     nothrow.handler(nothrow.ptr,11500,msg,opt);
-#ifdef __PLUMED_LIBCXX11
   } catch(const std::bad_array_new_length & e) {
     if(!msg) msg=e.what();
     nothrow.handler(nothrow.ptr,11410,msg,opt);
-#endif
   } catch(const std::bad_alloc & e) {
     if(!msg) msg=e.what();
     nothrow.handler(nothrow.ptr,11400,msg,opt);
-#ifdef __PLUMED_LIBCXX11
   } catch(const std::bad_function_call & e) {
     if(!msg) msg=e.what();
     nothrow.handler(nothrow.ptr,11300,msg,opt);
   } catch(const std::bad_weak_ptr & e) {
     if(!msg) msg=e.what();
     nothrow.handler(nothrow.ptr,11200,msg,opt);
-#endif
   } catch(const std::bad_cast & e) {
     if(!msg) msg=e.what();
     nothrow.handler(nothrow.ptr,11100,msg,opt);
@@ -171,7 +165,6 @@ static void translate_current(plumed_nothrow_handler_x nothrow,void**nested=null
     // as soon as we transition to using <regex> it should be straightforward to add
   } catch(const std::ios_base::failure & e) {
     if(!msg) msg=e.what();
-#ifdef __PLUMED_LIBCXX11
     int value=e.code().value();
     opt[2]="c"; // "c" passes the error code.
     opt[3]=&value;
@@ -180,10 +173,8 @@ static void translate_current(plumed_nothrow_handler_x nothrow,void**nested=null
     else if(e.code().category()==std::iostream_category()) nothrow.handler(nothrow.ptr,10232,msg,opt);
     else if(e.code().category()==std::future_category()) nothrow.handler(nothrow.ptr,10233,msg,opt);
     else
-#endif
       // 10239 represents std::ios_base::failure with default constructur
       nothrow.handler(nothrow.ptr,10239,msg,opt);
-#ifdef __PLUMED_LIBCXX11
   } catch(const std::system_error & e) {
     if(!msg) msg=e.what();
     int value=e.code().value();
@@ -195,7 +186,6 @@ static void translate_current(plumed_nothrow_handler_x nothrow,void**nested=null
     else if(e.code().category()==std::future_category()) nothrow.handler(nothrow.ptr,10223,msg,opt);
     // fallback to generic runtime_error
     else nothrow.handler(nothrow.ptr,10200,msg,opt);
-#endif
   } catch(const std::underflow_error &e) {
     if(!msg) msg=e.what();
     nothrow.handler(nothrow.ptr,10215,msg,opt);

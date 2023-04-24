@@ -55,12 +55,10 @@
 #include <typeinfo>
 #include <iostream>
 #include <algorithm>
-#ifdef __PLUMED_LIBCXX11
 #include <system_error>
 #include <future>
 #include <memory>
 #include <functional>
-#endif
 
 
 namespace PLMD {
@@ -76,14 +74,10 @@ namespace PLMD {
   __PLUMED_THROW_MSG(PLMD::Exception);
   __PLUMED_THROW_MSG(PLMD::lepton::Exception);
   __PLUMED_THROW_NOMSG(std::bad_exception);
-#ifdef __PLUMED_LIBCXX11
   __PLUMED_THROW_NOMSG(std::bad_array_new_length);
-#endif
   __PLUMED_THROW_NOMSG(std::bad_alloc);
-#ifdef __PLUMED_LIBCXX11
   __PLUMED_THROW_NOMSG(std::bad_function_call);
   __PLUMED_THROW_NOMSG(std::bad_weak_ptr);
-#endif
   __PLUMED_THROW_NOMSG(std::bad_cast);
   __PLUMED_THROW_NOMSG(std::bad_typeid);
   __PLUMED_THROW_MSG(std::underflow_error);
@@ -96,7 +90,6 @@ namespace PLMD {
   __PLUMED_THROW_MSG(std::invalid_argument);
   __PLUMED_THROW_MSG(std::logic_error);
 
-#ifdef __PLUMED_LIBCXX11
   if(words[0]=="std::system_error") {
     plumed_assert(words.size()>2);
     int error_code;
@@ -106,17 +99,14 @@ namespace PLMD {
     if(words[1]=="std::iostream_category") throw std::system_error(error_code,std::iostream_category(),what);
     if(words[1]=="std::future_category") throw std::system_error(error_code,std::future_category(),what);
   }
-#endif
 
   if(words[0]=="std::ios_base::failure") {
-#ifdef __PLUMED_LIBCXX11
     int error_code=0;
     if(words.size()>2) Tools::convert(words[2],error_code);
     if(words.size()>1 && words[1]=="std::generic_category") throw std::ios_base::failure(what,std::error_code(error_code,std::generic_category()));
     if(words.size()>1 && words[1]=="std::system_category") throw std::ios_base::failure(what,std::error_code(error_code,std::system_category()));
     if(words.size()>1 && words[1]=="std::iostream_category") throw std::ios_base::failure(what,std::error_code(error_code,std::iostream_category()));
     if(words.size()>1 && words[1]=="std::future_category") throw std::ios_base::failure(what,std::error_code(error_code,std::future_category()));
-#endif
     throw std::ios_base::failure(what);
   }
 

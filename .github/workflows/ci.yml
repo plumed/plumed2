@@ -206,15 +206,6 @@ jobs:
         make -C src/lib/ dirslinks
         make codecheck
 
-  # We test on centos7 to make sure we have compatibility with older compilers (gcc 4.8)
-  centos7:
-    runs-on: ubuntu-20.04
-    steps:
-    - uses: actions/checkout@v3
-    - name: Build and run tests
-      run: |
-        make -C docker centos7
-
   # We test on fedora37 to make sure we have compatibility with newer compilers (gcc 12)
   fedora37:
     runs-on: ubuntu-20.04
