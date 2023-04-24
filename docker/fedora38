@@ -1,4 +1,4 @@
-FROM fedora:37
+FROM fedora:38
 
 # note: at variance with centos7, here we have to explicitly install gcc
 # mdtraj 1.9.7 does not compile with python 3.11 unless installed from source
