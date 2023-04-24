@@ -5,7 +5,7 @@
 # NOTE: also libtorch (in particular the c10 library) has unique global symbols [added by luigibonati]
 # NOTE: ubuntu 22 have something in the std library, I remove std:: from the checks (GB)
 
-LIST=$(nm -C "$@" 2>/dev/null | grep " u " | grep -v "boost::" | grep -v "c10::" | grep -v "std::_Sp_make_shared_tag" | grep -v " std::"))
+LIST=$(nm -C "$@" 2>/dev/null | grep " u " | grep -v "boost::" | grep -v "c10::" | grep -v "std::_Sp_make_shared_tag" | grep -v " std::")
 
 FAILED=
 
