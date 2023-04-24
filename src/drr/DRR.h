@@ -339,7 +339,7 @@ public:
   double getkbt() const { return kbt; }
   void setkbt(double p_kbt) { kbt = p_kbt; }
   static CZAR mergewindow(const CZAR &cWA, const CZAR &cWB);
-  void writeZCount(const string &filename, bool addition = false) const;
+  void writeZCountZGrad(const string &filename, bool addition = false) const;
   ~CZAR() {}
 
 private:

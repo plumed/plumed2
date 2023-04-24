@@ -188,7 +188,7 @@ jobs:
          echo "$HOME/opt/bin" >> $GITHUB_PATH
     - name: Install requirements
       run: |
-        .ci/install.cppcheck 2.10.2
+        .ci/install.cppcheck 2.10.3
         # it is important that this is the same version used to generate the actual ./configure
         .ci/install.autoconf 2.69
     - name: Build astyle
