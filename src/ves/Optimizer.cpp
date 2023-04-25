@@ -112,7 +112,7 @@ Optimizer::Optimizer(const ActionOptions&ao):
       pntrs_targetdist_averages[k]->turnOnIterationCounter();
       targetdist_averages_pntrs_.push_back(pntrs_targetdist_averages[k]);
       //
-      auto aux_coeffs_tmp = Tools::make_unique<CoeffsVector>(*pntrs_coeffs[k]);
+      auto aux_coeffs_tmp = std::make_unique<CoeffsVector>(*pntrs_coeffs[k]);
       std::string aux_label = pntrs_coeffs[k]->getLabel();
       if(aux_label.find("coeffs")!=std::string::npos) {
         aux_label.replace(aux_label.find("coeffs"), std::string("coeffs").length(), "aux_coeffs");
@@ -282,7 +282,7 @@ Optimizer::Optimizer(const ActionOptions&ao):
       parse("MONITOR_AVERAGES_GRADIENT_EXP_DECAY",averaging_exp_decay);
       aver_gradient_pntrs_.clear();
       for(unsigned int i=0; i<ncoeffssets_; i++) {
-        auto aver_gradient_tmp = Tools::make_unique<CoeffsVector>(*gradient_pntrs_[i]);
+        auto aver_gradient_tmp = std::make_unique<CoeffsVector>(*gradient_pntrs_[i]);
         aver_gradient_tmp->clear();
         std::string aver_grad_label = aver_gradient_tmp->getLabel();
         if(aver_grad_label.find("gradient")!=std::string::npos) {
@@ -488,7 +488,7 @@ Optimizer::Optimizer(const ActionOptions&ao):
 
     coeffs_mask_pntrs_.resize(ncoeffssets_);
     for(unsigned int i=0; i<ncoeffssets_; i++) {
-      coeffs_mask_pntrs_[i] = Tools::make_unique<CoeffsVector>(*coeffs_pntrs_[i]);
+      coeffs_mask_pntrs_[i] = std::make_unique<CoeffsVector>(*coeffs_pntrs_[i]);
       coeffs_mask_pntrs_[i]->setLabels("mask");
       coeffs_mask_pntrs_[i]->setValues(1.0);
       coeffs_mask_pntrs_[i]->setOutputFmt("%f");
@@ -1123,7 +1123,7 @@ void Optimizer::setupOFiles(std::vector<std::string>& fnames, std::vector<std::u
   plumed_assert(ncoeffssets_>0);
   OFiles.resize(fnames.size());
   for(unsigned int i=0; i<fnames.size(); i++) {
-    OFiles[i] = Tools::make_unique<OFile>();
+    OFiles[i] = std::make_unique<OFile>();
     OFiles[i]->link(*this);
     if(multi_sim_single_files) {
       unsigned int r=0;

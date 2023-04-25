@@ -149,7 +149,7 @@ Read::Read(const ActionOptions&ao):
     }
   }
   if( !cloned_file ) {
-    ifile_ptr=Tools::make_unique<IFile>();
+    ifile_ptr=std::make_unique<IFile>();
     ifile=ifile_ptr.get();
     if( !ifile->FileExist(filename) ) error("could not find file named " + filename);
     ifile->link(*this);
@@ -174,25 +174,25 @@ Read::Read(const ActionOptions&ao):
       ifile->scanFieldList( fieldnames );
       for(unsigned i=0; i<fieldnames.size(); ++i) {
         if( fieldnames[i].substr(0,dot)==label ) {
-          readvals.emplace_back(Tools::make_unique<Value>(this, fieldnames[i], false) ); addComponentWithDerivatives( fieldnames[i].substr(dot+1) );
+          readvals.emplace_back(std::make_unique<Value>(this, fieldnames[i], false) ); addComponentWithDerivatives( fieldnames[i].substr(dot+1) );
           if( ifile->FieldExist("min_" + fieldnames[i]) ) componentIsPeriodic( fieldnames[i].substr(dot+1), "-pi","pi" );
           else componentIsNotPeriodic( fieldnames[i].substr(dot+1) );
         }
       }
     } else {
-      readvals.emplace_back(Tools::make_unique<Value>(this, valread[0], false) ); addComponentWithDerivatives( name );
+      readvals.emplace_back(std::make_unique<Value>(this, valread[0], false) ); addComponentWithDerivatives( name );
       if( ifile->FieldExist("min_" + valread[0]) ) componentIsPeriodic( valread[0].substr(dot+1), "-pi", "pi" );
       else componentIsNotPeriodic( valread[0].substr(dot+1) );
       for(unsigned i=1; i<valread.size(); ++i) {
         if( valread[i].substr(0,dot)!=label ) error("all values must be from the same Action when using READ");;
-        readvals.emplace_back(Tools::make_unique<Value>(this, valread[i], false) ); addComponentWithDerivatives( valread[i].substr(dot+1) );
+        readvals.emplace_back(std::make_unique<Value>(this, valread[i], false) ); addComponentWithDerivatives( valread[i].substr(dot+1) );
         if( ifile->FieldExist("min_" + valread[i]) ) componentIsPeriodic( valread[i].substr(dot+1), "-pi", "pi" );
         else componentIsNotPeriodic( valread[i].substr(dot+1) );
       }
     }
   } else {
     if( valread.size()!=1 ) error("all values must be from the same Action when using READ");
-    readvals.emplace_back(Tools::make_unique<Value>(this, valread[0], false) ); addValueWithDerivatives();
+    readvals.emplace_back(std::make_unique<Value>(this, valread[0], false) ); addValueWithDerivatives();
     if( ifile->FieldExist("min_" + valread[0]) ) setPeriodic( "-pi", "pi" );
     else setNotPeriodic();
     log.printf("  reading value %s and storing as %s\n",valread[0].c_str(),getLabel().c_str() );

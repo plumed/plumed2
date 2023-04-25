@@ -43,7 +43,7 @@ namespace PLMD
 
 
 PlumedHandle::PlumedHandle():
-  local(Tools::make_unique<PlumedMain>())
+  local(std::make_unique<PlumedMain>())
 {
 }
 

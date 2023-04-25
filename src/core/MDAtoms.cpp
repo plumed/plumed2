@@ -393,9 +393,9 @@ void MDAtomsTyped<T>::setc(const TypesafePtr & c) {
 
 std::unique_ptr<MDAtomsBase> MDAtomsBase::create(unsigned p) {
   if(p==sizeof(double)) {
-    return Tools::make_unique<MDAtomsTyped<double>>();
+    return std::make_unique<MDAtomsTyped<double>>();
   } else if (p==sizeof(float)) {
-    return Tools::make_unique<MDAtomsTyped<float>>();
+    return std::make_unique<MDAtomsTyped<float>>();
   }
   plumed_error() << "Cannot create an MD interface with sizeof(real)==" << p;
 }

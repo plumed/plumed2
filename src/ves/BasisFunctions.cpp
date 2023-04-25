@@ -240,10 +240,10 @@ void BasisFunctions::numericalUniformIntegrals() {
   std::vector<std::string> grid_min(1); grid_min[0]=intervalMinStr();
   std::vector<std::string> grid_max(1); grid_max[0]=intervalMaxStr();
   std::vector<unsigned int> grid_bins(1); grid_bins[0]=nbins_;
-  std::vector<std::unique_ptr<Value>> arguments(1); arguments[0]= Tools::make_unique<Value>(nullptr,"arg",false);
+  std::vector<std::unique_ptr<Value>> arguments(1); arguments[0]= std::make_unique<Value>(nullptr,"arg",false);
   if(arePeriodic()) {arguments[0]->setDomain(intervalMinStr(),intervalMaxStr());}
   else {arguments[0]->setNotPeriodic();}
-  auto uniform_grid = Tools::make_unique<Grid>("uniform",Tools::unique2raw(arguments),grid_min,grid_max,grid_bins,false,false);
+  auto uniform_grid = std::make_unique<Grid>("uniform",Tools::unique2raw(arguments),grid_min,grid_max,grid_bins,false,false);
   //
   double inverse_normalization = 1.0/(intervalMax()-intervalMin());
   for(Grid::index_t l=0; l<uniform_grid->getSize(); l++) {
@@ -348,7 +348,7 @@ void BasisFunctions::writeBasisFunctionsToFile(OFile& ofile_values, OFile& ofile
   std::vector<std::string> max(1); max[0]=max_in;
   std::vector<unsigned int> nbins(1); nbins[0]=nbins_in;
   std::vector<std::unique_ptr<Value>> value_pntr(1);
-  value_pntr[0]= Tools::make_unique<Value>(nullptr,"arg",false);
+  value_pntr[0]= std::make_unique<Value>(nullptr,"arg",false);
   if(arePeriodic() && !ignore_periodicity) {value_pntr[0]->setDomain(intervalMinStr(),intervalMaxStr());}
   else {value_pntr[0]->setNotPeriodic();}
   Grid args_grid = Grid("grid",Tools::unique2raw(value_pntr),min,max,nbins,false,false);

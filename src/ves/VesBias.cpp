@@ -317,13 +317,13 @@ void VesBias::useReweightFactorKeywords(Keywords& keys) {
 
 
 void VesBias::addCoeffsSet(const std::vector<std::string>& dimension_labels,const std::vector<unsigned int>& indices_shape) {
-  auto coeffs_pntr_tmp = Tools::make_unique<CoeffsVector>("coeffs",dimension_labels,indices_shape,comm,true);
+  auto coeffs_pntr_tmp = std::make_unique<CoeffsVector>("coeffs",dimension_labels,indices_shape,comm,true);
   initializeCoeffs(std::move(coeffs_pntr_tmp));
 }
 
 
 void VesBias::addCoeffsSet(std::vector<Value*>& args,std::vector<BasisFunctions*>& basisf) {
-  auto coeffs_pntr_tmp = Tools::make_unique<CoeffsVector>("coeffs",args,basisf,comm,true);
+  auto coeffs_pntr_tmp = std::make_unique<CoeffsVector>("coeffs",args,basisf,comm,true);
   initializeCoeffs(std::move(coeffs_pntr_tmp));
 }
 
@@ -346,19 +346,19 @@ void VesBias::initializeCoeffs(std::unique_ptr<CoeffsVector> coeffs_pntr_in) {
   coeffs_pntr_in->setLabels(label);
 
   coeffs_pntrs_.emplace_back(std::move(coeffs_pntr_in));
-  auto aver_ps_tmp = Tools::make_unique<CoeffsVector>(*coeffs_pntrs_.back());
+  auto aver_ps_tmp = std::make_unique<CoeffsVector>(*coeffs_pntrs_.back());
   label = getCoeffsSetLabelString("targetdist_averages",ncoeffssets_);
   aver_ps_tmp->setLabels(label);
   aver_ps_tmp->setValues(0.0);
   targetdist_averages_pntrs_.emplace_back(std::move(aver_ps_tmp));
   //
-  auto gradient_tmp = Tools::make_unique<CoeffsVector>(*coeffs_pntrs_.back());
+  auto gradient_tmp = std::make_unique<CoeffsVector>(*coeffs_pntrs_.back());
   label = getCoeffsSetLabelString("gradient",ncoeffssets_);
   gradient_tmp->setLabels(label);
   gradient_pntrs_.emplace_back(std::move(gradient_tmp));
   //
   label = getCoeffsSetLabelString("hessian",ncoeffssets_);
-  auto hessian_tmp = Tools::make_unique<CoeffsMatrix>(label,coeffs_pntrs_.back().get(),comm,diagonal_hessian_);
+  auto hessian_tmp = std::make_unique<CoeffsMatrix>(label,coeffs_pntrs_.back().get(),comm,diagonal_hessian_);
 
   hessian_pntrs_.emplace_back(std::move(hessian_tmp));
   //
@@ -581,7 +581,7 @@ void VesBias::enableHessian(const bool diagonal_hessian) {
   sampled_cross_averages.clear();
   for (unsigned int i=0; i<ncoeffssets_; i++) {
     std::string label = getCoeffsSetLabelString("hessian",i);
-    hessian_pntrs_[i] = Tools::make_unique<CoeffsMatrix>(label,coeffs_pntrs_[i].get(),comm,diagonal_hessian_);
+    hessian_pntrs_[i] = std::make_unique<CoeffsMatrix>(label,coeffs_pntrs_[i].get(),comm,diagonal_hessian_);
     //
     std::vector<double> cross_aver_sampled_tmp;
     cross_aver_sampled_tmp.assign(hessian_pntrs_[i]->getSize(),0.0);
@@ -596,7 +596,7 @@ void VesBias::disableHessian() {
   sampled_cross_averages.clear();
   for (unsigned int i=0; i<ncoeffssets_; i++) {
     std::string label = getCoeffsSetLabelString("hessian",i);
-    hessian_pntrs_[i] = Tools::make_unique<CoeffsMatrix>(label,coeffs_pntrs_[i].get(),comm,diagonal_hessian_);
+    hessian_pntrs_[i] = std::make_unique<CoeffsMatrix>(label,coeffs_pntrs_[i].get(),comm,diagonal_hessian_);
     //
     std::vector<double> cross_aver_sampled_tmp;
     cross_aver_sampled_tmp.assign(hessian_pntrs_[i]->getSize(),0.0);
@@ -617,7 +617,7 @@ std::string VesBias::getCoeffsSetLabelString(const std::string& type, const unsi
 
 
 std::unique_ptr<OFile> VesBias::getOFile(const std::string& filepath, const bool multi_sim_single_file, const bool enforce_backup) {
-  auto ofile_pntr = Tools::make_unique<OFile>();
+  auto ofile_pntr = std::make_unique<OFile>();
   std::string fp = filepath;
   ofile_pntr->link(*static_cast<Action*>(this));
   if(enforce_backup) {ofile_pntr->enforceBackup();}
@@ -709,7 +709,7 @@ void VesBias::setupBiasCutoff(const double bias_cutoff_value, const double fermi
   std::string swfunc_keywords = "FERMI R_0=" + str_bias_cutoff_value + " FERMI_LAMBDA=" + str_fermi_lambda + " FERMI_EXP_MAX=" + str_fermi_exp_max;
   //
   std::string swfunc_errors="";
-  bias_cutoff_swfunc_pntr_ = Tools::make_unique<FermiSwitchingFunction>();
+  bias_cutoff_swfunc_pntr_ = std::make_unique<FermiSwitchingFunction>();
   bias_cutoff_swfunc_pntr_->set(swfunc_keywords,swfunc_errors);
   if(swfunc_errors.size()>0) {
     plumed_merror("problem with setting up Fermi switching function: " + swfunc_errors);

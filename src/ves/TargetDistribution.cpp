@@ -73,7 +73,7 @@ TargetDistribution::TargetDistribution(const ActionOptions&ao):
     parse("WELLTEMPERED_FACTOR",welltempered_factor);
     //
     if(welltempered_factor>0.0) {
-      auto pntr = Tools::make_unique<WellTemperedModifer>(welltempered_factor);
+      auto pntr = std::make_unique<WellTemperedModifer>(welltempered_factor);
       targetdist_modifer_pntrs_.emplace_back(std::move(pntr));
     }
     else if(welltempered_factor<0.0) {
@@ -168,8 +168,8 @@ void TargetDistribution::setupGrids(const std::vector<Value*>& arguments, const 
   plumed_massert(max.size()==dimension,"TargetDistribution::setupGrids: mismatch between number of values given for grid parameters");
   plumed_massert(nbins.size()==dimension,"TargetDistribution::setupGrids: mismatch between number of values given for grid parameters");
   grid_args_=arguments;
-  targetdist_grid_pntr_ =     Tools::make_unique<Grid>("targetdist",arguments,min,max,nbins,false,false);
-  log_targetdist_grid_pntr_ = Tools::make_unique<Grid>("log_targetdist",arguments,min,max,nbins,false,false);
+  targetdist_grid_pntr_ =     std::make_unique<Grid>("targetdist",arguments,min,max,nbins,false,false);
+  log_targetdist_grid_pntr_ = std::make_unique<Grid>("log_targetdist",arguments,min,max,nbins,false,false);
   setupAdditionalGrids(arguments,min,max,nbins);
 }
 
@@ -221,7 +221,7 @@ Grid TargetDistribution::getMarginalDistributionGrid(Grid* grid_pntr, const std:
   }
   plumed_massert(args.size()==args_index.size(),"getMarginalDistributionGrid: problem with the arguments of the marginal");
   //
-  auto Pw = Tools::make_unique<MarginalWeight>();
+  auto Pw = std::make_unique<MarginalWeight>();
   Grid proj_grid = grid_pntr->project(args,Pw.get());
   Pw.reset();
   //

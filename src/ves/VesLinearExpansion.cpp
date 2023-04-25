@@ -369,7 +369,7 @@ VesLinearExpansion::VesLinearExpansion(const ActionOptions&ao):
   bool coeffs_read = readCoeffsFromFiles();
 
   checkThatTemperatureIsGiven();
-  bias_expansion_pntr_ = Tools::make_unique<LinearBasisSetExpansion>(getLabel(),getBeta(),comm,args_pntrs,basisf_pntrs_,getCoeffsPntr());
+  bias_expansion_pntr_ = std::make_unique<LinearBasisSetExpansion>(getLabel(),getBeta(),comm,args_pntrs,basisf_pntrs_,getCoeffsPntr());
   bias_expansion_pntr_->linkVesBias(this);
   bias_expansion_pntr_->setGridBins(this->getGridBins());
   //

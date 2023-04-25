@@ -686,7 +686,7 @@ MetaD::MetaD(const ActionOptions& ao):
       for(unsigned i=0; i<getNumberOfArguments(); i++) {sigma0max_[i]=-1.;}
     }
 
-    flexbin_=Tools::make_unique<FlexibleBin>(adaptive_,this,sigma0_[0],sigma0min_,sigma0max_);
+    flexbin_=std::make_unique<FlexibleBin>(adaptive_,this,sigma0_[0],sigma0min_,sigma0max_);
   }
 
   // note: HEIGHT is not compulsory, since one could use the TAU keyword, see below
@@ -1176,8 +1176,8 @@ MetaD::MetaD(const ActionOptions& ao):
         }
       }
       std::string funcl=getLabel() + ".bias";
-      if(!sparsegrid) {BiasGrid_=Tools::make_unique<Grid>(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
-      else {BiasGrid_=Tools::make_unique<SparseGrid>(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
+      if(!sparsegrid) {BiasGrid_=std::make_unique<Grid>(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
+      else {BiasGrid_=std::make_unique<SparseGrid>(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
       std::vector<std::string> actualmin=BiasGrid_->getMin();
       std::vector<std::string> actualmax=BiasGrid_->getMax();
       for(unsigned i=0; i<getNumberOfArguments(); i++) {
@@ -1267,7 +1267,7 @@ MetaD::MetaD(const ActionOptions& ao):
         fname = hillsfname;
       }
     }
-    ifiles_.emplace_back(Tools::make_unique<IFile>());
+    ifiles_.emplace_back(std::make_unique<IFile>());
     // this is just a shortcut pointer to the last element:
     IFile *ifile = ifiles_.back().get();
     ifilesnames_.push_back(fname);

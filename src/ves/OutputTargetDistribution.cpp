@@ -150,7 +150,7 @@ OutputTargetDistribution::OutputTargetDistribution(const ActionOptions&ao):
   for(unsigned int i=0; i < nargs; i++) {
     std::string is; Tools::convert(i+1,is);
     if(nargs==1) {is="";}
-    arguments[i]= Tools::make_unique<Value>(nullptr,"arg"+is,false);
+    arguments[i]= std::make_unique<Value>(nullptr,"arg"+is,false);
     if(grid_periodicity[i]=="YES") {
       arguments[i]->setDomain(grid_min[i],grid_max[i]);
     }

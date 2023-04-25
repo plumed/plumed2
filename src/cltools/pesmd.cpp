@@ -181,7 +181,7 @@ public:
     else if( lperiod ) error("invalid dimension for periodic potential must be 1, 2 or 3");
 
     // Create plumed object and initialize
-    auto plumed=Tools::make_unique<PLMD::PlumedMain>();
+    auto plumed=std::make_unique<PLMD::PlumedMain>();
     int s=sizeof(double);
     plumed->cmd("setRealPrecision",&s);
     if(Communicator::initialized()) plumed->cmd("setMPIComm",&pc.Get_comm());

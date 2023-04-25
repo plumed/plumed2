@@ -291,7 +291,7 @@ void DumpAtoms::update() {
     for(int i=0; i<3; i++) for(int j=0; j<3; j++) box[i][j]=lenunit*t(i,j);
 // here we cannot use a std::vector<rvec> since it does not compile.
 // we thus use a std::unique_ptr<rvec[]>
-    auto pos = Tools::make_unique<xdrfile::rvec[]>(natoms);
+    auto pos = std::make_unique<xdrfile::rvec[]>(natoms);
     for(int i=0; i<natoms; i++) for(int j=0; j<3; j++) pos[i][j]=lenunit*getPosition(i)(j);
     if(type=="xtc") {
       write_xtc(xd,natoms,step,time,box,&pos[0],precision);

@@ -799,7 +799,7 @@ void EMMI::read_status()
 {
   double MDtime;
 // open file
-  auto ifile = Tools::make_unique<IFile>();
+  auto ifile = std::make_unique<IFile>();
   ifile->link(*this);
   if(ifile->FileExist(statusfilename_)) {
     ifile->open(statusfilename_);
@@ -1076,7 +1076,7 @@ void EMMI::get_GMM_d(const std::string & GMM_file)
   VectorGeneric<6> cov;
 
 // open file
-  auto ifile=Tools::make_unique<IFile>();
+  auto ifile=std::make_unique<IFile>();
   if(ifile->FileExist(GMM_file)) {
     ifile->open(GMM_file);
     int idcomp;

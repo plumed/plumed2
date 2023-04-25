@@ -449,7 +449,7 @@ Tools::DirectoryChanger::~DirectoryChanger() {
 
 std::unique_ptr<std::lock_guard<std::mutex>> Tools::molfile_lock() {
   static std::mutex mtx;
-  return Tools::make_unique<std::lock_guard<std::mutex>>(mtx);
+  return std::make_unique<std::lock_guard<std::mutex>>(mtx);
 }
 
 /// Internal tool, I am keeping it private for now

@@ -84,7 +84,7 @@ LinearBasisSetExpansion::LinearBasisSetExpansion(
   plumed_massert(bias_coeffs_pntr_->numberOfDimensions()==basisf_pntrs_.size(),"dimension of coeffs does not match with number of basis functions ");
   //
   ncoeffs_ = bias_coeffs_pntr_->numberOfCoeffs();
-  targetdist_averages_pntr_ = Tools::make_unique<CoeffsVector>(*bias_coeffs_pntr_);
+  targetdist_averages_pntr_ = std::make_unique<CoeffsVector>(*bias_coeffs_pntr_);
 
   std::string targetdist_averages_label = bias_coeffs_pntr_->getLabel();
   if(targetdist_averages_label.find("coeffs")!=std::string::npos) {
@@ -142,7 +142,7 @@ void LinearBasisSetExpansion::setGridBins(const unsigned int nbins) {
 
 std::unique_ptr<Grid> LinearBasisSetExpansion::setupGeneralGrid(const std::string& label_suffix, const bool usederiv) {
   bool use_spline = false;
-  auto grid_pntr = Tools::make_unique<Grid>(label_+"."+label_suffix,args_pntrs_,grid_min_,grid_max_,grid_bins_,use_spline,usederiv);
+  auto grid_pntr = std::make_unique<Grid>(label_+"."+label_suffix,args_pntrs_,grid_min_,grid_max_,grid_bins_,use_spline,usederiv);
   return grid_pntr;
 }
 
@@ -308,7 +308,7 @@ void LinearBasisSetExpansion::writeFesGridToFile(OFile& ofile, const bool append
 
 void LinearBasisSetExpansion::writeFesProjGridToFile(const std::vector<std::string>& proj_arg, OFile& ofile, const bool append_file) const {
   plumed_massert(fes_grid_pntr_,"the FES grid is not defined");
-  auto Fw = Tools::make_unique<FesWeight>(beta_);
+  auto Fw = std::make_unique<FesWeight>(beta_);
   Grid proj_grid = fes_grid_pntr_->project(proj_arg,Fw.get());
   proj_grid.setMinToZero();
   if(append_file) {ofile.enforceRestart();}

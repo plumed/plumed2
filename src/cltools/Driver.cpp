@@ -874,7 +874,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         xdrfile::matrix box;
 // here we cannot use a std::vector<rvec> since it does not compile.
 // we thus use a std::unique_ptr<rvec[]>
-        auto pos=Tools::make_unique<xdrfile::rvec[]>(natoms);
+        auto pos=std::make_unique<xdrfile::rvec[]>(natoms);
         float prec,lambda;
         int ret=xdrfile::exdrOK;
         if(trajectory_fmt=="xdr-xtc") ret=xdrfile::read_xtc(xd,natoms,&localstep,&time,box,pos.get(),&prec);

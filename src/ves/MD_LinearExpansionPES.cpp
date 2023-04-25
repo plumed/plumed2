@@ -323,7 +323,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   std::unique_ptr<FILE,decltype(deleter)> file_dummy_deleter(file_dummy,deleter);
   // Note: this should be declared before plumed_bf to make sure the file is closed after plumed_bf has been destroyed
 
-  auto plumed_bf = Tools::make_unique<PLMD::PlumedMain>();
+  auto plumed_bf = std::make_unique<PLMD::PlumedMain>();
   unsigned int nn=1;
   plumed_bf->cmd("setNatoms",&nn);
   plumed_bf->cmd("setLog",file_dummy);
@@ -348,7 +348,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
     basisf_keywords[i] = bf_keyword;
     plumed_bf->readInputLine(bf_keyword+" LABEL="+dim_string_prefix+is);
     basisf_pntrs[i] = plumed_bf->getActionSet().selectWithLabel<BasisFunctions*>(dim_string_prefix+is);
-    args[i] = Tools::make_unique<Value>(nullptr,dim_string_prefix+is,false);
+    args[i] = std::make_unique<Value>(nullptr,dim_string_prefix+is,false);
     args[i]->setNotPeriodic();
     periodic[i] = basisf_pntrs[i]->arePeriodic();
     interval_min[i] = basisf_pntrs[i]->intervalMin();
@@ -356,8 +356,8 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
     interval_range[i] = basisf_pntrs[i]->intervalMax()-basisf_pntrs[i]->intervalMin();
   }
   Communicator comm_dummy;
-  auto coeffs_pntr = Tools::make_unique<CoeffsVector>("pot.coeffs",Tools::unique2raw(args),basisf_pntrs,comm_dummy,false);
-  potential_expansion_pntr = Tools::make_unique<LinearBasisSetExpansion>("potential",1.0/temp,comm_dummy,Tools::unique2raw(args),basisf_pntrs,coeffs_pntr.get());
+  auto coeffs_pntr = std::make_unique<CoeffsVector>("pot.coeffs",Tools::unique2raw(args),basisf_pntrs,comm_dummy,false);
+  potential_expansion_pntr = std::make_unique<LinearBasisSetExpansion>("potential",1.0/temp,comm_dummy,Tools::unique2raw(args),basisf_pntrs,coeffs_pntr.get());
 
   std::string template_coeffs_fname="";
   parse("template_coeffs_file",template_coeffs_fname);
@@ -428,7 +428,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
       std::string is; Tools::convert(i+1,is);
       std::vector<std::string> proj_arg(1);
       proj_arg[0] = dim_string_prefix+is;
-      auto Fw = Tools::make_unique<FesWeight>(1/temp);
+      auto Fw = std::make_unique<FesWeight>(1/temp);
       Grid proj_grid = (potential_expansion_pntr->getPntrToBiasGrid())->project(proj_arg,Fw.get());
       proj_grid.setMinToZero();
 
@@ -508,7 +508,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   }
 
 
-  plumed=Tools::make_unique<PLMD::PlumedMain>();
+  plumed=std::make_unique<PLMD::PlumedMain>();
 
 
 

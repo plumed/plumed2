@@ -437,7 +437,7 @@ private:
     std::unique_ptr<PlumedMain> plumed;
 
 // Commenting the next line it is possible to switch-off plumed
-    plumed=Tools::make_unique<PLMD::PlumedMain>();
+    plumed=std::make_unique<PLMD::PlumedMain>();
 
     if(plumed) plumed->cmd("setRealPrecision",int(sizeof(double)));
 

@@ -642,7 +642,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         else                                val.set(int(0));
         break;
       case cmd_GREX:
-        if(!grex) grex=Tools::make_unique<GREX>(*this);
+        if(!grex) grex=std::make_unique<GREX>(*this);
         plumed_massert(grex,"error allocating grex");
         {
           std::string kk=words[1];
@@ -652,7 +652,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         break;
       case cmd_CLTool:
         CHECK_NOTINIT(initialized,word);
-        if(!cltool) cltool=Tools::make_unique<CLToolMain>();
+        if(!cltool) cltool=std::make_unique<CLToolMain>();
         {
           std::string kk=words[1];
           for(unsigned i=2; i<words.size(); i++) kk+=" "+words[i];
