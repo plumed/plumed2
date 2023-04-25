@@ -733,9 +733,7 @@ enable_external_molfile_plugins
 enable_zlib
 enable_dlopen
 enable_rtld_default
-enable_chdir
 enable_subprocess
-enable_getcwd
 enable_popen
 enable_execinfo
 enable_gsl
@@ -1433,10 +1431,8 @@ Optional Features:
   --enable-zlib           enable search for zlib, default: yes
   --enable-dlopen         enable search for dlopen, default: yes
   --enable-rtld_default   enable search for RTLD_DEFAULT macro, default: yes
-  --enable-chdir          enable search for chdir function, default: yes
   --enable-subprocess     enable search for functions needed to manage a
                           subprocess, default: yes
-  --enable-getcwd         enable search for getcwd function, default: yes
   --enable-popen          enable search for popen, default: yes
   --enable-execinfo       enable search for execinfo, default: yes
   --enable-gsl            enable search for gsl, default: yes
@@ -2983,24 +2979,6 @@ fi
 
 
 
-chdir=
-# Check whether --enable-chdir was given.
-if test "${enable_chdir+set}" = set; then :
-  enableval=$enable_chdir; case "${enableval}" in
-             (yes) chdir=true ;;
-             (no)  chdir=false ;;
-             (*)   as_fn_error $? "wrong argument to --enable-chdir" "$LINENO" 5 ;;
-  esac
-else
-  case "yes" in
-             (yes) chdir=true ;;
-             (no)  chdir=false ;;
-  esac
-
-fi
-
-
-
 subprocess=
 # Check whether --enable-subprocess was given.
 if test "${enable_subprocess+set}" = set; then :
@@ -3013,24 +2991,6 @@ else
   case "yes" in
              (yes) subprocess=true ;;
              (no)  subprocess=false ;;
-  esac
-
-fi
-
-
-
-getcwd=
-# Check whether --enable-getcwd was given.
-if test "${enable_getcwd+set}" = set; then :
-  enableval=$enable_getcwd; case "${enableval}" in
-             (yes) getcwd=true ;;
-             (no)  getcwd=false ;;
-             (*)   as_fn_error $? "wrong argument to --enable-getcwd" "$LINENO" 5 ;;
-  esac
-else
-  case "yes" in
-             (yes) getcwd=true ;;
-             (no)  getcwd=false ;;
   esac
 
 fi
@@ -7437,145 +7397,6 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_RTLD_DEFAULT" >&2;}
 
 fi
 
-if test $chdir = true ; then
-
-    found=ko
-    __PLUMED_HAS_CHDIR=no
-    ac_fn_cxx_check_header_mongrel "$LINENO" "unistd.h" "ac_cv_header_unistd_h" "$ac_includes_default"
-if test "x$ac_cv_header_unistd_h" = xyes; then :
-
-
-  if test "${libsearch}" = true ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing chdir" >&5
-$as_echo_n "checking for library containing chdir... " >&6; }
-if ${ac_cv_search_chdir+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char chdir ();
-int
-main ()
-{
-return chdir ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' ; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_search_chdir=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_chdir+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_chdir+:} false; then :
-
-else
-  ac_cv_search_chdir=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_chdir" >&5
-$as_echo "$ac_cv_search_chdir" >&6; }
-ac_res=$ac_cv_search_chdir
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  found=ok
-fi
-
-  else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing chdir" >&5
-$as_echo_n "checking for library containing chdir... " >&6; }
-if ${ac_cv_search_chdir+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char chdir ();
-int
-main ()
-{
-return chdir ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' ; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_search_chdir=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_chdir+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_chdir+:} false; then :
-
-else
-  ac_cv_search_chdir=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_chdir" >&5
-$as_echo "$ac_cv_search_chdir" >&6; }
-ac_res=$ac_cv_search_chdir
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  found=ok
-fi
-
-  fi
-
-
-fi
-
-
-    if test $found = ok ; then
-       $as_echo "#define __PLUMED_HAS_CHDIR 1" >>confdefs.h
-
-       __PLUMED_HAS_CHDIR=yes
-    else
-       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_CHDIR" >&5
-$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_CHDIR" >&2;}
-    fi
-
-fi
-
 if test $subprocess = true ; then
 
     found=ko
@@ -7768,145 +7589,6 @@ rm -f core conftest.err conftest.$ac_objext \
       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_SUBPROCESS" >&5
 $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_SUBPROCESS" >&2;}
       LIBS="$save_LIBS"
-    fi
-
-fi
-
-if test $getcwd = true ; then
-
-    found=ko
-    __PLUMED_HAS_GETCWD=no
-    ac_fn_cxx_check_header_mongrel "$LINENO" "unistd.h" "ac_cv_header_unistd_h" "$ac_includes_default"
-if test "x$ac_cv_header_unistd_h" = xyes; then :
-
-
-  if test "${libsearch}" = true ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing getcwd" >&5
-$as_echo_n "checking for library containing getcwd... " >&6; }
-if ${ac_cv_search_getcwd+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char getcwd ();
-int
-main ()
-{
-return getcwd ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' ; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_search_getcwd=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_getcwd+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_getcwd+:} false; then :
-
-else
-  ac_cv_search_getcwd=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_getcwd" >&5
-$as_echo "$ac_cv_search_getcwd" >&6; }
-ac_res=$ac_cv_search_getcwd
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  found=ok
-fi
-
-  else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing getcwd" >&5
-$as_echo_n "checking for library containing getcwd... " >&6; }
-if ${ac_cv_search_getcwd+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char getcwd ();
-int
-main ()
-{
-return getcwd ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' ; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_search_getcwd=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_getcwd+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_getcwd+:} false; then :
-
-else
-  ac_cv_search_getcwd=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_getcwd" >&5
-$as_echo "$ac_cv_search_getcwd" >&6; }
-ac_res=$ac_cv_search_getcwd
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  found=ok
-fi
-
-  fi
-
-
-fi
-
-
-    if test $found = ok ; then
-       $as_echo "#define __PLUMED_HAS_GETCWD 1" >>confdefs.h
-
-       __PLUMED_HAS_GETCWD=yes
-    else
-       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_GETCWD" >&5
-$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_GETCWD" >&2;}
     fi
 
 fi

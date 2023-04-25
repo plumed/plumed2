@@ -37,6 +37,7 @@
 #include <cstddef>
 #include <queue>
 #include <mutex>
+#include <filesystem>
 
 namespace PLMD {
 
@@ -208,8 +209,7 @@ public:
 /// In case system calls to change dir are not available it throws an exception.
 /// \warning By construction, changing directory breaks thread safety! Use with care.
   class DirectoryChanger {
-    static const std::size_t buffersize=4096;
-    char cwd[buffersize]= {0};
+    const std::filesystem::path path;
   public:
     explicit DirectoryChanger(const char*path);
     ~DirectoryChanger();
