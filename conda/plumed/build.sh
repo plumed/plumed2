@@ -16,6 +16,11 @@ export CPPFLAGS="-D__PLUMED_DEFAULT_KERNEL=$PREFIX/lib/libplumedKernel$SHLIB_EXT
 # enable optimization
 export CXXFLAGS="${CXXFLAGS//-O2/-O3}"
 
+if [[ $(uname) == "Darwin" ]]; then
+# see https://conda-forge.org/docs/maintainer/knowledge_base.html#newer-c-features-with-old-sdk
+  CXXFLAGS="${CXXFLAGS} -D_LIBCPP_DISABLE_AVAILABILITY"
+fi
+
 # libraries are explicitly listed here due to --disable-libsearch
 export LIBS="-lfftw3 -lgsl -lgslcblas -llapack -lblas -lz $LIBS"
 
