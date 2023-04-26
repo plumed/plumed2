@@ -25,7 +25,6 @@
 #include "IFile.h"
 #include "lepton/Lepton.h"
 #include <cstring>
-#include <dirent.h>
 #include <iostream>
 #include <map>
 #if defined(__PLUMED_HAS_CHDIR) || defined(__PLUMED_HAS_GETCWD)
@@ -33,6 +32,7 @@
 #endif
 
 #include <iomanip>
+#include <filesystem>
 
 namespace PLMD {
 
@@ -358,23 +358,9 @@ void Tools::interpretLabel(std::vector<std::string>&s) {
 }
 
 std::vector<std::string> Tools::ls(const std::string&d) {
-  DIR*dir;
   std::vector<std::string> result;
-  if ((dir=opendir(d.c_str()))) {
-#if defined(__PLUMED_HAS_READDIR_R)
-    struct dirent ent;
-#endif
-    while(true) {
-      struct dirent *res;
-#if defined(__PLUMED_HAS_READDIR_R)
-      readdir_r(dir,&ent,&res);
-#else
-      res=readdir(dir);
-#endif
-      if(!res) break;
-      if(std::string(res->d_name)!="." && std::string(res->d_name)!="..") result.push_back(res->d_name);
-    }
-    closedir (dir);
+  for (auto const& dir_entry : std::filesystem::directory_iterator{d}) {
+    result.push_back(dir_entry.path().filename());
   }
   return result;
 }
