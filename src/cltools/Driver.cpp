@@ -345,7 +345,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   int  grex_stride=0;
   FILE*grex_log=NULL;
 // call fclose when fp goes out of scope
-  auto deleter=[](FILE* f) { if(f) std::fclose(f); };
+  auto deleter=[](auto f) { if(f) std::fclose(f); };
   std::unique_ptr<FILE,decltype(deleter)> grex_log_deleter(grex_log,deleter);
 
   if(debug_grex) {
@@ -552,7 +552,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
   std::unique_ptr<FILE,decltype(deleter)> fp_forces_deleter(fp_forces,deleter);
 
-  auto xdr_deleter=[](xdrfile::XDRFILE* xd) { if(xd) xdrfile::xdrfile_close(xd); };
+  auto xdr_deleter=[](auto xd) { if(xd) xdrfile::xdrfile_close(xd); };
 
   xdrfile::XDRFILE* xd=NULL;
 

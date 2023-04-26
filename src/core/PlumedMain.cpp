@@ -795,7 +795,7 @@ void PlumedMain::readInputLines(const std::string & str) {
   plumed_assert(fp);
 
   // make sure file is closed (and thus deleted) also if an exception occurs
-  auto deleter=[](FILE* fp) { std::fclose(fp); };
+  auto deleter=[](auto fp) { std::fclose(fp); };
   std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
 
   auto ret=std::fputs(str.c_str(),fp);

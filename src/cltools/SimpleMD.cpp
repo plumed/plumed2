@@ -76,7 +76,7 @@ plumed simplemd --help
 // simple static function to close a file
 // defined once here since it's used in many places in this file
 // in addition, this seems the only way to use it in the write_statistics_fp_deleter member
-static void (*deleter)(FILE* f) = [](FILE* f) { if(f) std::fclose(f); };
+static void (*deleter)(FILE* f) = [](auto f) { if(f) std::fclose(f); };
 
 class SimpleMD:
   public PLMD::CLTool

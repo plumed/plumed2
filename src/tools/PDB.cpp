@@ -396,7 +396,7 @@ bool PDB::read(const std::string&file,bool naturalUnits,double scale) {
   FILE* fp=std::fopen(file.c_str(),"r");
   if(!fp) return false;
 // call fclose when exiting this function
-  auto deleter=[](FILE* f) { std::fclose(f); };
+  auto deleter=[](auto f) { std::fclose(f); };
   std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
   readFromFilepointer(fp,naturalUnits,scale);
   return true;
