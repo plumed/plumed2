@@ -491,6 +491,26 @@ AC_MSG_NOTICE([Now we will check compulsory headers and libraries])
 AC_CHECK_HEADER([dirent.h],     [ ], [AC_MSG_ERROR([compulsory header not found])] )
 AC_CHECK_FUNC(  [readdir],      [ ], [AC_MSG_ERROR([compulsory function not found])] )
 
+PLUMED_CHECK_CXX_PACKAGE([filesystem library],[
+#include <filesystem>
+#include <iostream>
+#include <string>
+
+int main(){
+  std::filesystem::path path;
+  for (auto const& dir_entry : std::filesystem::directory_iterator{"a"}) {
+    std::cout<<std::string(dir_entry.path().filename())<<"\n";
+  }
+  return 0;
+}
+  ], [__PLUMED_CXX17_FILESYSTEM], [stdc++fs])
+
+if test "$__PLUMED_CXX17_FILESYSTEM" != yes
+then
+  AC_MSG_ERROR([C++17 filesystem library not supported, please check your compiler])
+fi
+
+
 # Then check for blas. This is a bit complicated because we want to allow
 # either the version with underscore or the one without
 blas_found=

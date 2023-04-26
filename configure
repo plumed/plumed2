@@ -5801,6 +5801,149 @@ else
 fi
 
 
+
+    found=ko
+    __PLUMED_CXX17_FILESYSTEM=no
+    if test "${libsearch}" = true ; then
+      testlibs="stdc++fs"
+    else
+      testlibs=""
+    fi
+    save_LIBS="$LIBS"
+
+    # check if multiple libraries are required simultaneously
+    multiple="no"
+    if test "" = "true"; then
+      multiple="yes"
+      all_LIBS=""
+      for testlib in $testlibs;
+      do
+        all_LIBS="$all_LIBS -l$testlib"
+      done
+      testlibs=" " # to check only without libraries, and later with all together
+    fi
+
+    # check without libraries
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking filesystem library without extra libs" >&5
+$as_echo_n "checking filesystem library without extra libs... " >&6; }
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <filesystem>
+#include <iostream>
+#include <string>
+
+int main(){
+  std::filesystem::path path;
+  for (auto const& dir_entry : std::filesystem::directory_iterator{"a"}) {
+    std::cout<<std::string(dir_entry.path().filename())<<"\n";
+  }
+  return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+          { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+    if test "$found" = "ko" ; then
+      if test "$multiple" = "yes" ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking filesystem library with $all_LIBS" >&5
+$as_echo_n "checking filesystem library with $all_LIBS... " >&6; }
+        LIBS="$all_LIBS $LIBS"
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <filesystem>
+#include <iostream>
+#include <string>
+
+int main(){
+  std::filesystem::path path;
+  for (auto const& dir_entry : std::filesystem::directory_iterator{"a"}) {
+    std::cout<<std::string(dir_entry.path().filename())<<"\n";
+  }
+  return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+              { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+      else
+        for testlib in $testlibs
+        do
+          { $as_echo "$as_me:${as_lineno-$LINENO}: checking filesystem library with -l$testlib" >&5
+$as_echo_n "checking filesystem library with -l$testlib... " >&6; }
+          LIBS="-l$testlib $LIBS"
+          cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <filesystem>
+#include <iostream>
+#include <string>
+
+int main(){
+  std::filesystem::path path;
+  for (auto const& dir_entry : std::filesystem::directory_iterator{"a"}) {
+    std::cout<<std::string(dir_entry.path().filename())<<"\n";
+  }
+  return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+                { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+          if test $found = ok ; then
+            break
+          fi
+          LIBS="$save_LIBS"
+        done
+      fi
+    fi
+
+    if test $found = ok ; then
+      $as_echo "#define __PLUMED_CXX17_FILESYSTEM 1" >>confdefs.h
+
+      __PLUMED_CXX17_FILESYSTEM=yes
+    else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_CXX17_FILESYSTEM" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_CXX17_FILESYSTEM" >&2;}
+      LIBS="$save_LIBS"
+    fi
+
+
+if test "$__PLUMED_CXX17_FILESYSTEM" != yes
+then
+  as_fn_error $? "C++17 filesystem library not supported, please check your compiler" "$LINENO" 5
+fi
+
+
 # Then check for blas. This is a bit complicated because we want to allow
 # either the version with underscore or the one without
 blas_found=
