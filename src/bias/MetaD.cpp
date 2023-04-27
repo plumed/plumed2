@@ -877,7 +877,13 @@ MetaD::MetaD(const ActionOptions& ao):
 
   // MPI version
   parseFlag("WALKERS_MPI",walkers_mpi_);
-
+  
+  ///TODO: set up a test that simulates an external program that trigger this error when MPI is not initialized
+  //If this Action is not compiled with MPI the user is informed and we exit gracefully
+  if(walkers_mpi_)
+    plumed_assert(Communicator::initialized()) << "Invalid walkers configuration: WALKERS_MPI"
+  " flag requires MPI compilation and the correct initialization of the communicator.";
+  
   // Flying Gaussian
   parseFlag("FLYING_GAUSSIAN", flying_);
 
