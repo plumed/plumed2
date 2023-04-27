@@ -93,7 +93,7 @@ Make sure your PDB file is correctly formatted as explained \ref pdbreader "in t
 If only one reference environment is specified then the filename should be given as argument of the keyword REFERENCE.
 If instead several reference environments are given, then they have to be provided in separate pdb files and given as arguments of the
 keywords REFERENCE_1, REFERENCE_2, etc.
-If you have a reference crystal structure configuration you can use the [Environment Finder](https://mybinder.org/v2/gh/PabloPiaggi/EnvironmentFinder/master?urlpath=apps%2FApp.ipynb) app to determine the reference environments that you should use.
+If you have a reference crystal structure configuration you can use the [Environment Finder](https://github.com/PabloPiaggi/EnvironmentFinder) app to determine the reference environments that you should use.
 
 \par Examples
 
