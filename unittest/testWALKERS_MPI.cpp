@@ -30,7 +30,7 @@ int main(int, char**){
     
     //WHEN PLUMED is not compiled with MPI or the MPI routines are not initialized
     std::string expectedMessage="WALKERS_MPI flag requires MPI compilation";
-    if (PLMD::Communicator::PlumedHasMPI){
+    if (PLMD::Communicator::PlumedHasMPI()){
         expectedMessage="WALKERS_MPI needs the communicator correctly initialized";
     }
     try{

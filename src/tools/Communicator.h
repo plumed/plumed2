@@ -122,7 +122,7 @@ class Communicator {
   };
 public:
   ///Runtime acces to the __PLUMED_HAS_MPI definition
-  static const bool PlumedHasMPI;
+  static bool PlumedHasMPI();
 /// Wrapper class for MPI_Status
   class Status {
     int Get_count(MPI_Datatype)const;
