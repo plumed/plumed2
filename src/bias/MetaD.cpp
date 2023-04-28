@@ -880,7 +880,7 @@ MetaD::MetaD(const ActionOptions& ao):
   
   //If this Action is not compiled with MPI the user is informed and we exit gracefully
   if(walkers_mpi_){
-    plumed_assert(Communicator::PlumedHasMPI()) << "Invalid walkers configuration: WALKERS_MPI flag requires MPI compilation";
+    plumed_assert(Communicator::plumedHasMPI()) << "Invalid walkers configuration: WALKERS_MPI flag requires MPI compilation";
     plumed_assert(Communicator::initialized()) << "Invalid walkers configuration: WALKERS_MPI needs the communicator correctly initialized.";
   }
   
