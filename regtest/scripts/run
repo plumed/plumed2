@@ -172,8 +172,10 @@ fi
 
 if $plumed --is-installed ; then
   export PLUMED_KERNEL="$root/../lib${PLUMED_PROGRAM_NAME:-plumed}Kernel.$($plumed info --soext)"
+  export PLUMED_LIB="$root/../lib${PLUMED_PROGRAM_NAME:-plumed}.$($plumed info --soext)"
 else
   export PLUMED_KERNEL="$root/src/lib/libplumedKernel.$($plumed info --soext)"
+  export PLUMED_LIB="$root/src/lib/libplumed.$($plumed info --soext)"
 fi
 if type -t plumed_regtest_before 1>/dev/null ; then
   plumed_regtest_before
@@ -192,6 +194,15 @@ case "$type" in
   ;;
 (sum_hills)
   $mpi $valgrind $plumed sum_hills $arg > out 2> err
+ ;;
+(compiledtest)
+  echo "include ../../../scripts/compiledtest.make" > Makefile
+  $plumed info --configuration > Makefile.conf
+  if ! $plumed --is-installed ; then
+    #create a path to include the plumed/module/file.h
+    ln -s "$root/src" plumed
+  fi
+  $PLUMED_MAKE dotest
  ;;
 (make)
   $plumed info --configuration > Makefile.conf
