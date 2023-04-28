@@ -28,11 +28,11 @@
 
 namespace PLMD {
 
-bool Communicator::plumedHasMPI(){
+bool Communicator::plumedHasMPI() {
 #ifdef __PLUMED_HAS_MPI
-    return true;
+  return true;
 #else
-    return false;
+  return false;
 #endif
 }
 
