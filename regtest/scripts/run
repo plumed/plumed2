@@ -195,15 +195,6 @@ case "$type" in
 (sum_hills)
   $mpi $valgrind $plumed sum_hills $arg > out 2> err
  ;;
-(compiledtest)
-  echo "include ../../../scripts/compiledtest.make" > Makefile
-  $plumed info --configuration > Makefile.conf
-  if ! $plumed --is-installed ; then
-    #create a path to include the plumed/module/file.h
-    ln -s "$root/src" plumed
-  fi
-  $PLUMED_MAKE 2> err
- ;;
 (make)
   $plumed info --configuration > Makefile.conf
   $plumed --is-installed || ln -s "$root/src" plumed
