@@ -1,22 +1,19 @@
 tests := $(patsubst %.cpp,%,$(wildcard *.cpp))
 
-.PHONY: dotest test reset clean valgrind testclean
-
-test:
-	@env PLUMED_MAKE=$(MAKE) ../../scripts/run
+.PHONY: test reset clean valgrind testclean
 
 -include Makefile.conf
 
-
-dotest: $(tests)
-	@for test in $^ ;do \
+test: $(tests)
+	@{ for test in $^ ;do \
 	printf  "%-20s: " "$${test}"; \
 	if ! ./$$test > /dev/null; then echo "fail, run ./$${test} to see the output"; \
 	else echo "success"; fi ;\
-	done
+	done } > output
 
+#-w deactivate the warnings in gcc, these tests are not aimed at catching warnings
 %:%.cpp
-	$(CXX) $(CPPFLAGS) $(ADDCPPFLAGS) $(CXXFLAGS) ${PLUMED_LIB} ${PLUMED_KERNEL} $< -o $@
+	@$(CXX) $(CPPFLAGS) $(ADDCPPFLAGS) $(CXXFLAGS) ${PLUMED_LIB} ${PLUMED_KERNEL} -w $< -o $@
 
 reset:
 	../../scripts/reset

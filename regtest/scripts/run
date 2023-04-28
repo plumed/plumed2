@@ -202,7 +202,7 @@ case "$type" in
     #create a path to include the plumed/module/file.h
     ln -s "$root/src" plumed
   fi
-  $PLUMED_MAKE dotest
+  $PLUMED_MAKE 2> err
  ;;
 (make)
   $plumed info --configuration > Makefile.conf
