@@ -101,14 +101,14 @@ Value* ActionWithValue::copyOutput( const unsigned& n ) const {
 
 // -- HERE WE HAVE THE STUFF FOR THE DEFAULT VALUE -- //
 
-void ActionWithValue::addValue() {
+void ActionWithValue::addValue( const std::vector<unsigned>& shape ) {
   plumed_massert(values.empty(),"You have already added the default value for this action");
-  values.emplace_back(Tools::make_unique<Value>(this,getLabel(), false ) );
+  values.emplace_back(Tools::make_unique<Value>(this,getLabel(), false, shape ) );
 }
 
-void ActionWithValue::addValueWithDerivatives() {
+void ActionWithValue::addValueWithDerivatives( const std::vector<unsigned>& shape ) {
   plumed_massert(values.empty(),"You have already added the default value for this action");
-  values.emplace_back(Tools::make_unique<Value>(this,getLabel(), true ) );
+  values.emplace_back(Tools::make_unique<Value>(this,getLabel(), true, shape ) );
 }
 
 void ActionWithValue::setNotPeriodic() {
@@ -132,7 +132,7 @@ Value* ActionWithValue::getPntrToValue() {
 
 // -- HERE WE HAVE THE STUFF FOR NAMED VALUES / COMPONENTS -- //
 
-void ActionWithValue::addComponent( const std::string& name ) {
+void ActionWithValue::addComponent( const std::string& name, const std::vector<unsigned>& shape ) {
   if( !keywords.outputComponentExists(name,true) ) {
     plumed_merror("a description of component " + name + " has not been added to the manual. Components should be registered like keywords in "
                   "registerKeywords as described in the developer docs.");
@@ -149,7 +149,7 @@ void ActionWithValue::addComponent( const std::string& name ) {
   log.printf(msg.c_str());
 }
 
-void ActionWithValue::addComponentWithDerivatives( const std::string& name ) {
+void ActionWithValue::addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape ) {
   if( !keywords.outputComponentExists(name,true) ) {
     plumed_merror("a description of component " + name + " has not been added to the manual. Components should be registered like keywords in "
                   "registerKeywords as described in the developer doc.");

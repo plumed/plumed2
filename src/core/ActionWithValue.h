@@ -80,9 +80,9 @@ public:
 // -------- The action has one value only  ---------------- //
 
 /// Add a value with the name label
-  void addValue();
+  void addValue( const std::vector<unsigned>& shape=std::vector<unsigned>() );
 /// Add a value with the name label that has derivatives
-  void addValueWithDerivatives();
+  void addValueWithDerivatives( const std::vector<unsigned>& shape=std::vector<unsigned>() );
 /// Set your default value to have no periodicity
   void setNotPeriodic();
 /// Set the value to be periodic with a particular domain
@@ -97,9 +97,9 @@ protected:
 
 public:
 /// Add a value with a name like label.name
-  void addComponent( const std::string& name );
+  void addComponent( const std::string& name, const std::vector<unsigned>& shape=std::vector<unsigned>() );
 /// Add a value with a name like label.name that has derivatives
-  void addComponentWithDerivatives( const std::string& name );
+  void addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape=std::vector<unsigned>() );
 /// Set your value component to have no periodicity
   void componentIsNotPeriodic( const std::string& name );
 /// Set the value to be periodic with a particular domain
@@ -156,7 +156,7 @@ public:
 /// Clear the derivatives of values wrt parameters
   virtual void clearDerivatives();
 /// Calculate the gradients and store them for all the values (need for projections)
-  void setGradientsIfNeeded();
+  virtual void setGradientsIfNeeded();
 /// Set the value
   void setValue(Value*,double);
 /// Check if numerical derivatives should be used
@@ -180,7 +180,7 @@ inline
 double ActionWithValue::getOutputQuantity( const std::string& name ) const {
   std::string thename; thename=getLabel() + "." + name;
   for(unsigned i=0; i<values.size(); ++i) {
-    if( values[i]->name==thename ) return values[i]->value;
+    if( values[i]->name==thename ) return values[i]->get();
   }
   return 0.0;
 }
