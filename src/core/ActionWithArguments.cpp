@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithArguments.h"
 #include "ActionWithValue.h"
+#include "ActionAtomistic.h"
 #include "tools/PDB.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
@@ -306,5 +307,33 @@ double ActionWithArguments::getProjection(unsigned i,unsigned j)const {
 void ActionWithArguments::addForcesOnArguments( const std::vector<double>& forces ) {
   for(unsigned i=0; i<arguments.size(); ++i) arguments[i]->addForce( forces[i] );
 }
+
+bool ActionWithArguments::calculateConstantValues( const bool& haveatoms ) {
+  ActionWithValue* av = dynamic_cast<ActionWithValue*>( this );
+  if( !av || arguments.size()==0 ) return false; 
+  bool constant = true, atoms=false;
+  for(unsigned i=0; i<arguments.size(); ++i) {
+      ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>( arguments[i]->getPntrToAction() );
+      if( aa ) { atoms=true; }
+      if( !arguments[i]->isConstant() ) { constant=false; break; }
+  }            
+  if( constant ) {
+      // Set everything constant first as we need to set the shape
+      for(unsigned i=0; i<av->getNumberOfComponents(); ++i) (av->copyOutput(i))->setConstant();
+      if( !haveatoms ) log.printf("  values stored by this action are computed during startup and stay fixed during the simulation\n");
+      if( atoms ) return haveatoms;
+  } 
+  // Now do the calculation and store the values if we don't need anything from the atoms
+  if( constant && !haveatoms ) {
+      plumed_assert( !atoms ); activate(); calculate(); deactivate();
+      for(unsigned i=0; i<av->getNumberOfComponents(); ++i) {
+         unsigned nv = av->copyOutput(i)->getNumberOfValues();
+         log.printf("  %d values stored in component labelled %s are : ", nv, (av->copyOutput(i))->getName().c_str() );
+         for(unsigned j=0; j<nv; ++j) log.printf(" %f", (av->copyOutput(i))->get(j) );
+         log.printf("\n"); 
+      }
+  }
+  return constant;
+}   
 
 }

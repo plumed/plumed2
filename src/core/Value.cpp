@@ -207,6 +207,7 @@ void Value::set(const unsigned& n, const double& v ) {
 }
 
 void Value::buildDataStore() {
+  if( getRank()==0 ) return;
   storedata=true; setShape( shape );
 }
 

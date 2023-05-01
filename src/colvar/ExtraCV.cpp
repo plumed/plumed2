@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017-2023 The plumed team
+   Copyright (c) 2017-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,10 +19,9 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Colvar.h"
-#include "ActionRegister.h"
+#include "core/ActionShortcut.h"
+#include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 
 namespace PLMD {
 namespace colvar {
@@ -50,51 +49,26 @@ RESTRAINT ARG=l KAPPA=10 AT=3
 //+ENDPLUMEDOC
 
 
-class ExtraCV : public Colvar {
-  std::string name;
+class ExtraCV : public ActionShortcut {
 public:
   explicit ExtraCV(const ActionOptions&);
-// active methods:
-  void prepare() override;
-  void calculate() override;
-  unsigned getNumberOfDerivatives() override;
   static void registerKeywords( Keywords& keys );
 };
 
 PLUMED_REGISTER_ACTION(ExtraCV,"EXTRACV")
 
 ExtraCV::ExtraCV(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao)
+  Action(ao),
+  ActionShortcut(ao)
 {
-  addValueWithDerivatives(); setNotPeriodic();
-  getPntrToValue()->resizeDerivatives(1);
-  parse("NAME",name);
-  log<<"  name: "<<name<<"\n";
-  isExtraCV=true;
-  setExtraCV(name);
+  std::vector<std::string> argn(1); parse("NAME",argn[0]);
+  plumed.cmd("createValue " + argn[0] + ": PUT UNIT=number SHAPE=0 PERIODIC=NO"); 
+  if( getShortcutLabel()!=argn[0] ) readInputLine( getShortcutLabel() + ": COMBINE ARG=" + argn[0] + " PERIODIC=NO");
 }
 
 void ExtraCV::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys );
-  ActionAtomistic::registerKeywords( keys );
-  ActionWithValue::registerKeywords( keys );
-  keys.remove("NUMERICAL_DERIVATIVES");
+  ActionShortcut::registerKeywords( keys );
   keys.add("compulsory","NAME","name of the CV as computed by the MD engine");
-}
-
-unsigned ExtraCV::getNumberOfDerivatives() {
-  return 1;
-}
-
-void ExtraCV::prepare() {
-  atoms.setExtraCVNeeded(name,true);
-}
-
-// calculator
-void ExtraCV::calculate() {
-  double value=plumed.getAtoms().getExtraCV(name);
-  setValue( value );
-  getPntrToComponent(0)->addDerivative(0,1.0);
 }
 
 }

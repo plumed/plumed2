@@ -22,10 +22,12 @@
 #include "PlumedMain.h"
 #include "ActionAtomistic.h"
 #include "ActionPilot.h"
+#include "ActionForInterface.h"
 #include "ActionRegister.h"
 #include "ActionSet.h"
 #include "ActionWithValue.h"
 #include "ActionWithVirtualAtom.h"
+#include "ActionToGetData.h"
 #include "Atoms.h"
 #include "CLToolMain.h"
 #include "ExchangePatterns.h"
@@ -42,7 +44,7 @@
 #include "tools/Stopwatch.h"
 #include "tools/TypesafePtr.h"
 #include "lepton/Exception.h"
-#include "DataFetchingObject.h"
+#include "DataPassingTools.h"
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
@@ -198,7 +200,7 @@ PlumedMain::PlumedMain():
   stopwatch_fwd(log),
   step(0),
   active(false),
-  mydatafetcher(DataFetchingObject::create(sizeof(double),*this)),
+  passtools(DataPassingTools::create(sizeof(double))),
   endPlumed(false),
   atoms_fwd(*this),
   actionSet_fwd(*this),
@@ -349,19 +351,30 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
         step=val.get<int>();
-        atoms.startStep();
+        startStep();
         break;
       case cmd_setStepLong:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
         step=val.get<long int>();
-        atoms.startStep();
+        startStep();
         break;
       case cmd_setStepLongLong:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
         step=val.get<long long int>();
-        atoms.startStep();
+        startStep();
+        break;
+      case cmd_setValue:
+      { 
+        CHECK_INIT(initialized,words[0]); plumed_assert(nw==2); setInputValue( words[1], 0, 1, val );
+      } 
+        break;
+      /* ADDED WITH API=7 */
+      case cmd_setValueForces:
+      { 
+        CHECK_INIT(initialized,words[0]); plumed_assert(nw==2); setInputForce( words[1], val );
+      } 
         break;
       // words used less frequently:
       case cmd_setAtomsNlocal:
@@ -398,21 +411,29 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         break;
       /* ADDED WITH API==6 */
       case cmd_getDataRank:
+      { 
         CHECK_INIT(initialized,words[0]); plumed_assert(nw==2 || nw==3);
-        if( nw==2 ) DataFetchingObject::get_rank( actionSet, words[1], "", val);
-        else DataFetchingObject::get_rank( actionSet, words[1], words[2], val);
+        std::string vtype=""; if( nw==3 ) vtype=" TYPE="+words[2];
+        readInputLine( "grab_" + words[1] + ": GET ARG=" + words[1] + vtype );
+        ActionToGetData* as=actionSet.selectWithLabel<ActionToGetData*>("grab_"+words[1]);
+        plumed_assert( as ); as->get_rank( val );
+      } 
         break;
       /* ADDED WITH API==6 */
       case cmd_getDataShape:
-        CHECK_INIT(initialized,words[0]); plumed_assert(nw==2 || nw==3);
-        if( nw==2 ) DataFetchingObject::get_shape( actionSet, words[1], "", val );
-        else DataFetchingObject::get_shape( actionSet, words[1], words[2], val );
+      { 
+        CHECK_INIT(initialized,words[0]);
+        ActionToGetData* as1=actionSet.selectWithLabel<ActionToGetData*>("grab_"+words[1]);
+        plumed_assert( as1 ); as1->get_shape( val );
+      }
         break;
       /* ADDED WITH API==6 */
       case cmd_setMemoryForData:
+      { 
         CHECK_INIT(initialized,words[0]); plumed_assert(nw==2 || nw==3);
-        if( nw==2 ) mydatafetcher->setData( words[1], "", val );
-        else mydatafetcher->setData( words[1], words[2], val );
+        ActionToGetData* as2=actionSet.selectWithLabel<ActionToGetData*>("grab_"+words[1]);
+        plumed_assert( as2 ); as2->set_memory( val );
+      } 
         break;
       /* ADDED WITH API==6 */
       case cmd_setErrorHandler:
@@ -438,7 +459,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         break;
       case cmd_clear:
         CHECK_INIT(initialized,word);
-        actionSet.clearDelete();
+        actionSet.clearDelete(); inputs.clear();
         break;
       case cmd_getApiVersion:
         CHECK_NOTNULL(val,word);
@@ -453,7 +474,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
         atoms.setRealPrecision(val.get<int>());
-        mydatafetcher=DataFetchingObject::create(val.get<int>(),*this);
+        passtools=DataPassingTools::create(val.get<int>());
         break;
       case cmd_setMDLengthUnits:
         CHECK_NOTINIT(initialized,word);
@@ -505,11 +526,13 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         CHECK_NOTINIT(initialized,word);
         comm.Set_comm(val);
         atoms.setDomainDecomposition(comm);
+        for(const auto & pp : inputs ) pp->Set_comm(comm); 
         break;
       case cmd_setMPIFComm:
         CHECK_NOTINIT(initialized,word);
         comm.Set_fcomm(val);
         atoms.setDomainDecomposition(comm);
+        for(const auto & pp : inputs ) pp->Set_comm(comm);
         break;
       case cmd_setMPImultiSimComm:
         CHECK_NOTINIT(initialized,word);
@@ -635,21 +658,25 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         val.set(int(actionRegister().check(words[1]) ? 1:0));
         break;
       case cmd_setExtraCV:
+      {
         CHECK_NOTNULL(val,word);
         plumed_assert(nw==2);
-        atoms.setExtraCV(words[1],val);
+        if( valueExists(words[1]) ) setInputValue( words[1], 0, 1, val );
+      }
         break;
       case cmd_setExtraCVForce:
-        CHECK_NOTNULL(val,word);
-        plumed_assert(nw==2);
-        atoms.setExtraCVForce(words[1],val);
+      { 
+        CHECK_NOTNULL(val,word); plumed_assert(nw==2);
+        if( valueExists(words[1]) ) setInputForce( words[1], val ); 
+      } 
         break;
       /* ADDED WITH API==10 */
       case cmd_isExtraCVNeeded:
         CHECK_NOTNULL(val,word);
-        plumed_assert(nw==2);
-        if(atoms.isExtraCVNeeded(words[1])) val.set(int(1));
-        else                                val.set(int(0));
+        plumed_assert(nw==2); val.set(int(0));
+        for(const auto & p : inputs) {
+            if( p->getLabel()==words[1] && p->isActive() ) { val.set(int(1)); break; }
+        }
         break;
       case cmd_GREX:
         if(!grex) grex=Tools::make_unique<GREX>(*this);
@@ -668,6 +695,12 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
           for(unsigned i=2; i<words.size(); i++) kk+=" "+words[i];
           cltool->cmd(kk.c_str(),val);
         }
+        break;
+      case cmd_createValue:
+      {                                                
+         std::string inpt; for(unsigned i=1;i<words.size();++i) inpt += " " + words[i];
+         readInputLine( inpt );                        
+      }                                                
         break;
       /* ADDED WITH API==7 */
       case cmd_convert:
@@ -742,6 +775,13 @@ void PlumedMain::init() {
   log<<"Finished setup\n";
 }
 
+void PlumedMain::setupInterfaceActions() {
+  inputs.clear(); std::vector<ActionForInterface*> ap=actionSet.select<ActionForInterface*>();
+  for(unsigned i=0;i<ap.size();++i) {
+      if( ap[i]->getName()=="ENERGY" || ap[i]->getDependencies().size()==0 ) inputs.push_back( ap[i] );
+  } 
+}
+
 void PlumedMain::readInputFile(const std::string & str) {
   plumed_assert(initialized);
   log<<"FILE: "<<str<<"\n";
@@ -760,6 +800,7 @@ void PlumedMain::readInputFile(IFile & ifile) {
   while(Tools::getParsedLine(ifile,words) && !endPlumed) readInputWords(words);
   endPlumed=false;
   pilots=actionSet.select<ActionPilot*>();
+  setupInterfaceActions();
 }
 
 void PlumedMain::readInputLine(const std::string & str) {
@@ -827,6 +868,7 @@ void PlumedMain::readInputWords(const std::vector<std::string> & words) {
   };
 
   pilots=actionSet.select<ActionPilot*>();
+  setupInterfaceActions();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -870,13 +912,16 @@ void PlumedMain::prepareDependencies() {
   }
 
 // for optimization, an "active" flag remains false if no action at all is active
-  active=mydatafetcher->activate();
+  active=false; 
   for(unsigned i=0; i<pilots.size(); ++i) {
     if(pilots[i]->onStep()) {
       pilots[i]->activate();
       active=true;
     }
   };
+
+// This stops the driver calculation if there is not a read action
+  if( !active && !inputsAreActive() ) stopFlag.set(int(1));
 
 // also, if one of them is the total energy, tell to atoms that energy should be collected
   for(const auto & p : actionSet) {
@@ -887,12 +932,21 @@ void PlumedMain::prepareDependencies() {
 
 }
 
+bool PlumedMain::inputsAreActive() const {
+  return true;  // This is tempory while atoms is still in place
+  for(const auto & ip : inputs) {
+      if( ip->onStep() ) return true;
+  } 
+  return false;
+} 
+
 void PlumedMain::shareData() {
 // atom positions are shared (but only if there is something to do)
   if(!active)return;
 // Stopwatch is stopped when sw goes out of scope
   auto sw=stopwatch.startStop("2 Sharing data");
   if(atoms.getNatoms()>0) atoms.share();
+  for(const auto & ip : inputs) ip->share();
 }
 
 void PlumedMain::performCalcNoUpdate() {
@@ -911,7 +965,6 @@ void PlumedMain::performCalc() {
   justCalculate();
   backwardPropagate();
   update();
-  mydatafetcher->finishDataGrab();
 }
 
 void PlumedMain::waitData() {
@@ -919,6 +972,10 @@ void PlumedMain::waitData() {
 // Stopwatch is stopped when sw goes out of scope
   auto sw=stopwatch.startStop("3 Waiting for data");
   if(atoms.getNatoms()>0) atoms.wait();
+  for(const auto & ip : inputs) {
+      if( ip->isActive() && ip->hasBeenSet() ) ip->wait();
+      else if( ip->isActive() ) ip->warning("input requested but this quantity has not been set");
+  }
 }
 
 void PlumedMain::justCalculate() {
@@ -927,6 +984,13 @@ void PlumedMain::justCalculate() {
   auto sw=stopwatch.startStop("4 Calculating (forward loop)");
   bias=0.0;
   work=0.0;
+
+  // Check the input actions to determine if we need to calculate constants that 
+  // depend on masses and charges
+  bool firststep=false;
+  for(const auto & ip : inputs) {
+      if( ip->firststep ) firststep=true;
+  }
 
   int iaction=0;
 // calculate the active actions in order (assuming *backward* dependence)
@@ -964,6 +1028,8 @@ void PlumedMain::justCalculate() {
           work+=av->getOutputQuantity("work");
           av->setGradientsIfNeeded();
         }
+        // This makes all values that depend on the (fixed) masses and charges constant
+        if( firststep ) p->setupConstantValues( true );
         ActionWithVirtualAtom*avv=dynamic_cast<ActionWithVirtualAtom*>(p);
         if(avv)avv->setGradientsIfNeeded();
       }
@@ -1144,6 +1210,44 @@ unsigned PlumedMain::decreaseReferenceCounter() noexcept {
 
 unsigned PlumedMain::useCountReferenceCounter() const noexcept {
   return referenceCounter;
+}
+
+bool PlumedMain::valueExists( const std::string& name ) const {
+  for(const auto & p : inputs) {
+     if( p->getLabel()==name ) return true;
+  }  
+  return false;
+}
+
+void PlumedMain::setInputValue( const std::string& name, const unsigned& start, const unsigned& stride, const TypesafePtr & val ) {
+  bool found=false;
+  for(const auto & pp : inputs) {
+      if( pp->setValuePointer( name, val ) ) { pp->setStart(name, start); pp->setStride(name, stride); found=true; break; }
+  }     
+  plumed_massert( found, "found no action to set named " + name );
+}
+  
+void PlumedMain::setInputForce( const std::string& name, const TypesafePtr & val ) {
+  bool found=false;
+  for(const auto & pp : inputs) {
+      if( pp->setForcePointer( name, val ) ) { found=true; break; }
+  }   
+  plumed_massert( found, "found no action to set named " + name );
+}
+
+void PlumedMain::startStep() {
+  atoms.startStep();
+  for(const auto & ip : inputs) ip->resetForStepStart();
+}
+
+void PlumedMain::writeBinary(std::ostream&o)const {
+  atoms.writeBinary(o);
+  for(const auto & ip : inputs) ip->writeBinary(o);
+}
+
+void PlumedMain::readBinary(std::istream&i) {
+  atoms.readBinary(i);
+  for(const auto & ip : inputs) ip->readBinary(i);
 }
 
 #ifdef __PLUMED_HAS_PYTHON

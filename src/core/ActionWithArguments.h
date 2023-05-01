@@ -84,6 +84,8 @@ public:
   virtual const std::vector<Value*>    & getArguments() const ;
 /// Convert a list of argument names into a list of pointers to the values
   void interpretArgumentList(const std::vector<std::string>& c, std::vector<Value*>&arg);
+/// Used to calculate constant values in startup
+  bool calculateConstantValues( const bool& have_atoms );
 };
 
 

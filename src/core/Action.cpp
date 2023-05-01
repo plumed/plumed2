@@ -20,7 +20,9 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Action.h"
+#include "ActionAtomistic.h"
 #include "ActionWithValue.h"
+#include "ActionWithArguments.h"
 #include "PlumedMain.h"
 #include "tools/Log.h"
 #include "tools/Exception.h"
@@ -62,6 +64,7 @@ Action::Action(const ActionOptions&ao):
   active(false),
   restart(ao.plumed.getRestart()),
   doCheckPoint(ao.plumed.getCPT()),
+  never_activate(false),
   plumed(ao.plumed),
   log(plumed.getLog()),
   comm(plumed.comm),
@@ -69,7 +72,7 @@ Action::Action(const ActionOptions&ao):
   keywords(ao.keys)
 {
   line.erase(line.begin());
-  log.printf("Action %s\n",name.c_str());
+  if( !keywords.exists("NO_ACTION_LOG") ) log.printf("Action %s\n",name.c_str());
 
   if(comm.Get_rank()==0) {
     replica_index=multi_sim_comm.Get_rank();
@@ -83,7 +86,7 @@ Action::Action(const ActionOptions&ao):
     label="@"+s;
   }
   if( plumed.getActionSet().selectWithLabel<Action*>(label) ) error("label " + label + " has been already used");
-  log.printf("  with label %s\n",label.c_str());
+  if( !keywords.exists("NO_ACTION_LOG") ) log.printf("  with label %s\n",label.c_str());
   if ( keywords.exists("UPDATE_FROM") ) parse("UPDATE_FROM",update_from);
   if(update_from!=std::numeric_limits<double>::max()) log.printf("  only update from time %f\n",update_from);
   if ( keywords.exists("UPDATE_UNTIL") ) parse("UPDATE_UNTIL",update_until);
@@ -168,6 +171,8 @@ void Action::addDependency(Action*action) {
 }
 
 void Action::activate() {
+// This is set to true if actions are only need to be computed in setup (during checkRead)  
+  if( never_activate ) return;
 // preparation step is called only the first time an Action is activated.
 // since it could change its dependences (e.g. in an ActionAtomistic which is
 // accessing to a virtual atom), this is done just before dependencies are
@@ -210,7 +215,25 @@ void Action::checkRead() {
     }
     error(msg);
   }
+  setupConstantValues(false);
 }
+
+void Action::setupConstantValues( const bool& have_atoms ) {
+  if( have_atoms ) {
+      // This ensures that we switch off actions that only depend on constant when passed from the 
+      // MD code on the first step
+      ActionAtomistic* at = dynamic_cast<ActionAtomistic*>( this );
+      ActionWithValue* av = dynamic_cast<ActionWithValue*>( this );
+      if( at && av ) {
+          never_activate=true;
+          for(unsigned i=0; i<av->getNumberOfComponents();++i) {
+              if( !av->copyOutput(i)->isConstant() ) { never_activate=false; break; }
+          }
+      }
+  }
+  ActionWithArguments* aa = dynamic_cast<ActionWithArguments*>( this );
+  if(aa) never_activate = aa->calculateConstantValues( have_atoms );
+} 
 
 long long int Action::getStep()const {
   return plumed.getStep();

@@ -314,8 +314,10 @@ bool Value::forcesWereAdded() const {
 
 inline
 double Value::getForce( const unsigned& ival ) const {
+  plumed_dbg_assert( ival<inputForce.size() );
   return inputForce[ival];
 }
+
 /// d2-d1
 inline
 double Value::difference(double d1,double d2)const {

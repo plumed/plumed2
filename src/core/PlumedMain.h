@@ -55,6 +55,7 @@ namespace PLMD {
 
 class ActionAtomistic;
 class ActionPilot;
+class ActionForInterface;
 class Log;
 class Atoms;
 class ActionSet;
@@ -64,9 +65,9 @@ class Stopwatch;
 class Citations;
 class ExchangePatterns;
 class FileBase;
-class DataFetchingObject;
 class TypesafePtr;
 class IFile;
+class DataPassingTools;
 
 /**
 Main plumed object.
@@ -150,9 +151,6 @@ private:
 /// Name of the input file
   std::string plumedDat;
 
-/// Object containing data we would like to grab and pass back
-  std::unique_ptr<DataFetchingObject> mydatafetcher;
-
 /// End of input file.
 /// Set to true to terminate reading
   bool endPlumed;
@@ -166,6 +164,12 @@ private:
   ForwardDecl<ActionSet> actionSet_fwd;
 /// Set of actions found in plumed.dat file
   ActionSet& actionSet=*actionSet_fwd;
+
+/// These are tools to pass data to PLUMED 
+  std::unique_ptr<DataPassingTools> passtools;
+
+/// Vector of actions that are passed data from the MD code
+  std::vector<ActionForInterface*> inputs;
 
 /// Set of Pilot actions.
 /// These are the action the, if they are Pilot::onStep(), can trigger execution
@@ -195,6 +199,11 @@ private:
 /// Flag for checkpointig
   bool doCheckPoint;
 
+/// This sets up the values that are set from the MD code
+  void startStep();
+
+/// This sets up the vector that contains the interface to the MD code
+  void setupInterfaceActions();
 private:
 /// Forward declaration.
   ForwardDecl<TypesafePtr> stopFlag_fwd;
@@ -208,6 +217,15 @@ public:
   std::stack<bool> updateFlags;
 
 public:
+/// This determines if the user has created a value to hold the quantity that is being passed
+  bool valueExists( const std::string& name ) const ;
+
+/// This sets the the value with a particular name to the pointer to the data in the MD code 
+  void setInputValue( const std::string& name, const unsigned& start, const unsigned& stride, const TypesafePtr & val );
+
+/// This sets the the forces with a particular name to the pointer to the data in the MD code 
+  void setInputForce( const std::string& name, const TypesafePtr & val );
+
 /// Flag to switch off virial calculation (for debug and MD codes with no barostat)
   bool novirial;
 
@@ -440,6 +458,11 @@ public:
   bool getNestedExceptions()const {
     return nestedExceptions;
   }
+/// Check if there is active input in the action set
+  bool inputsAreActive() const ;  
+/// Transfer information from input MD code
+  void writeBinary(std::ostream&)const;
+  void readBinary(std::istream&);
 };
 
 /////
