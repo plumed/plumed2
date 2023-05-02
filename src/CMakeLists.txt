@@ -19,18 +19,26 @@ set(dirs ${alldirs})# CACHE INTERNAL FORCE)
 #message("${dirs}")
 #these are the diretory to compile that do not have a module.type inside
 set(coredirs main config wrapper)
-list(REMOVE_ITEM dirs lib include maketools CMakeFiles ${coredirs})
+set(mayBeExternal blas lapack)
+list(REMOVE_ITEM dirs lib include maketools CMakeFiles ${coredirs} ${mayBeExternal})
+
 
 foreach(dir ${coredirs})
     set(module_${dir} ON CACHE INTERNAL "always active core module ${dir}")
 endforeach(dir ${coredirs})
 
+foreach(dir ${mayBeExternal})
+    option(module_${dir} "activate module ${dir}" ON)
+endforeach(dir ${mayBeExternal})
+
+option(all_modules "Activates all modules, if on ignores the values of module_name when compiling" OFF)
+
 foreach(dir ${dirs})
     #this may the set up to be done in personal subdiretctories
     file(STRINGS ${dir}/module.type mt )
-    if(mt STREQUAL "default-off")
+    if(mt STREQUAL "default-off" AND NOT all_modules)
         option(module_${dir} "activate module ${dir}" OFF)
-    elseif(mt STREQUAL "default-on")
+    elseif(mt STREQUAL "default-on" OR (mt STREQUAL "default-off" AND all_modules))
         option(module_${dir} "activate module ${dir}" ON)
     elseif(mt STREQUAL "always")
          set(module_${dir} ON CACHE INTERNAL "always active module ${dir}")
@@ -42,15 +50,13 @@ foreach(dir ${dirs})
     #file(STRINGS ${dir}/Makefile rgx REGEX "USE=.*")
     #STRING(REPLACE "USE=" "" rgx "${rgx}")
     #separate_arguments(rgx)
-    
 endforeach(dir ${dirs})
-
 if(all_modules)
+#forceactivates all modules
     foreach(dir ${dirs})
-        set(module_${dir} ON)   
+        set(module_${dir} ON)
     endforeach(dir ${dirs})
-endif(all_modules)
-
+endif()
 #  --enable-external-molfile-plugins
 #                          enable search for external molfile_plugins, default:
 #                          yes
@@ -59,15 +65,15 @@ option(useExternal_BLAS "enable search for external BLAS, default ON" ON)
 option(useExternal_LAPACK "enable search for external LAPACK, default ON" ON)
 
 foreach(externalLib BLAS LAPACK)
-    string(TOLOWER ${externalLib} externalMod)
+    string(TOLOWER ${externalLib} dir)
     if (useExternal_${externalLib})
         include(Find${externalLib})
     else()
         set(${externalLib}_FOUND OFF)
-        set(module_${externalMod} ON)
+        set(module_${dir} ON CACHE BOOL "activate module ${dir}" FORCE)
     endif(useExternal_${externalLib})
     if (${externalLib}_FOUND)
-        set(module_${externalMod} OFF)
+        set(module_${dir} OFF CACHE BOOL "activate module ${dir}" FORCE)
         #target_compile_options(${PROJECT_NAME} PRIVATE ${BLAS_LINKER_FLAGS})
         #target_link_libraries(${PROJECT_NAME} ${BLAS_LIBRARIES})
 endif ()
@@ -174,3 +180,8 @@ message("LAPACK internal:${module_lapack}")
 #  --enable-af_cpu         enable search for arrayfire_cpu, default: no
 #  --enable-libtorch       enable search for libtorch, default: no
 #  --disable-openmp        do not use OpenMP
+
+#for debugging purpose
+#foreach(dir ${dirs} ${coredirs} ${mayBeExternal})
+#    message("${dir}: ${module_${dir}}")
+#endforeach(dir ${dirs} ${coredirs} ${mayBeExternal})
