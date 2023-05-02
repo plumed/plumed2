@@ -45,25 +45,35 @@ foreach(dir ${dirs})
     
 endforeach(dir ${dirs})
 
+if(all_modules)
+    foreach(dir ${dirs})
+        set(module_${dir} ON)   
+    endforeach(dir ${dirs})
+endif(all_modules)
+
+#  --enable-external-molfile-plugins
+#                          enable search for external molfile_plugins, default:
+#                          yes
+
 option(useExternal_BLAS "enable search for external BLAS, default ON" ON)
 option(useExternal_LAPACK "enable search for external LAPACK, default ON" ON)
-if (useExternal_BLAS)
-    include(FindBLAS)
-endif(useExternal_BLAS)
-if(useExternal_LAPACK)
-    include(FindLAPACK)    
-endif(useExternal_LAPACK)
 
-if (BLAS_FOUND)
-    set(module_blas OFF)    
-    #target_compile_options(${PROJECT_NAME} PRIVATE ${BLAS_LINKER_FLAGS})
-    #target_link_libraries(${PROJECT_NAME} ${BLAS_LIBRARIES})
+foreach(externalLib BLAS LAPACK)
+    string(TOLOWER ${externalLib} externalMod)
+    if (useExternal_${externalLib})
+        include(Find${externalLib})
+    else()
+        set(${externalLib}_FOUND OFF)
+        set(module_${externalMod} ON)
+    endif(useExternal_${externalLib})
+    if (${externalLib}_FOUND)
+        set(module_${externalMod} OFF)
+        #target_compile_options(${PROJECT_NAME} PRIVATE ${BLAS_LINKER_FLAGS})
+        #target_link_libraries(${PROJECT_NAME} ${BLAS_LIBRARIES})
 endif ()
-if (LAPACK_FOUND)
-    set(module_lapack OFF)
-    #target_compile_options(${PROJECT_NAME} PRIVATE ${BLAS_LINKER_FLAGS})
-    #target_link_libraries(${PROJECT_NAME} ${BLAS_LIBRARIES})
-endif ()
+endforeach(externalLib BLAS LAPACK)
+
+
 message("BLAS internal:${module_blas}")
 message("LAPACK internal:${module_lapack}")
 #options ## options are already done
