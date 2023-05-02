@@ -21,7 +21,6 @@ set(dirs ${alldirs})# CACHE INTERNAL FORCE)
 set(coredirs main config wrapper)
 list(REMOVE_ITEM dirs lib include maketools CMakeFiles ${coredirs})
 
-
 foreach(dir ${coredirs})
     set(module_${dir} ON CACHE INTERNAL "always active core module ${dir}")
 endforeach(dir ${coredirs})
@@ -46,14 +45,36 @@ foreach(dir ${dirs})
     
 endforeach(dir ${dirs})
 
-#  --bindir=DIR            user executables [EPREFIX/bin]
-#  --sbindir=DIR           system admin executables [EPREFIX/sbin]
-#  --libexecdir=DIR        program executables [EPREFIX/libexec]
-#  --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
+option(useExternal_BLAS "enable search for external BLAS, default ON" ON)
+option(useExternal_LAPACK "enable search for external LAPACK, default ON" ON)
+if (useExternal_BLAS)
+    include(FindBLAS)
+endif(useExternal_BLAS)
+if(useExternal_LAPACK)
+    include(FindLAPACK)    
+endif(useExternal_LAPACK)
+
+if (BLAS_FOUND)
+    set(module_blas OFF)    
+    #target_compile_options(${PROJECT_NAME} PRIVATE ${BLAS_LINKER_FLAGS})
+    #target_link_libraries(${PROJECT_NAME} ${BLAS_LIBRARIES})
+endif ()
+if (LAPACK_FOUND)
+    set(module_lapack OFF)
+    #target_compile_options(${PROJECT_NAME} PRIVATE ${BLAS_LINKER_FLAGS})
+    #target_link_libraries(${PROJECT_NAME} ${BLAS_LIBRARIES})
+endif ()
+message("BLAS internal:${module_blas}")
+message("LAPACK internal:${module_lapack}")
+#options ## options are already done
+##  --bindir=DIR            user executables [EPREFIX/bin]
+##  --sbindir=DIR           system admin executables [EPREFIX/sbin]
+# --libexecdir=DIR        program executables [EPREFIX/libexec]
+##  --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
 #  --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
 #  --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
-#  --libdir=DIR            object code libraries [EPREFIX/lib]
-#  --includedir=DIR        C header files [PREFIX/include]
+##  --libdir=DIR            object code libraries [EPREFIX/lib]
+##  --includedir=DIR        C header files [PREFIX/include]
 #  --oldincludedir=DIR     C header files for non-gcc [/usr/include]
 #  --datarootdir=DIR       read-only arch.-independent data root [PREFIX/share]
 #  --datadir=DIR           read-only architecture-independent data [DATAROOTDIR]
@@ -75,8 +96,8 @@ endforeach(dir ${dirs})
 #  --disable-option-checking  ignore unrecognized --enable/--with options
 #  --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
 #  --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
-#  --enable-modules        all/none/reset or : separated list such as
-#                          +crystallization:-bias default: reset
+##  --enable-modules        all/none/reset or : separated list such as
+##                          +crystallization:-bias default: reset
 #  --enable-libsearch      enable search for libraries, default: yes
 #  --enable-static-patch   enable allow statically linking plumed, default: yes
 #  --enable-doc            enable documentation, default: yes
@@ -112,9 +133,9 @@ endforeach(dir ${dirs})
 #                          default: yes
 #  --enable-asmjit         enable enable embedded asmjit, default: yes
 #  --enable-mpi            enable search for mpi, default: yes
-#  --enable-external-lapack
-#                          enable search for external lapack, default: yes
-#  --enable-external-blas  enable search for external blas, default: yes
+##  --enable-external-lapack
+##                          enable search for external lapack, default: yes
+##  --enable-external-blas  enable search for external blas, default: yes
 #  --enable-molfile-plugins
 #                          enable use molfile_plugins, default: yes
 #  --enable-external-molfile-plugins
