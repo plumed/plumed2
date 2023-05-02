@@ -1,8 +1,16 @@
 cmake_minimum_required(VERSION 3.20.2)
 
-project(Plumed2 LANGUAGES CXX)
+project(Plumed2 LANGUAGES C CXX)
+
+set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS None Debug Release RelWithDebInfo MinSizeRel)
+#some settingsvalues
+set(program_name "plumed" CACHE STRING "the name of the main executable")
+set(SOEXT "so" CACHE STRING "The extension of dynamic libraries (so/dylib)")
+set_property(CACHE SOEXT PROPERTY STRINGS "so" "dylib")
+
 
 MACRO(SUBDIRLIST result curdir)
+  #This macro is from a lot of posts on stackoverflow
   FILE(GLOB children RELATIVE ${curdir} ${curdir}/*)
   SET(dirlist "")
   FOREACH(child ${children})
@@ -19,11 +27,13 @@ set(dirs ${alldirs})# CACHE INTERNAL FORCE)
 #message("${dirs}")
 #these are the diretory to compile that do not have a module.type inside
 set(coredirs main config wrapper)
+
 set(mayBeExternal blas lapack)
 list(REMOVE_ITEM dirs lib include maketools CMakeFiles ${coredirs} ${mayBeExternal})
 
 
 foreach(dir ${coredirs})
+    add_subdirectory(${dir})
     set(module_${dir} ON CACHE INTERNAL "always active core module ${dir}")
 endforeach(dir ${coredirs})
 
@@ -35,6 +45,9 @@ option(all_modules "Activates all modules, if on ignores the values of module_na
 
 foreach(dir ${dirs})
     #this may the set up to be done in personal subdiretctories
+    #as option(module_${dir} "activate module ${dir}" OFF/ON) directly
+    #in the CMakeLists.txt, and then forced to ON with all_modules, we'll see in
+    #the next iteration
     file(STRINGS ${dir}/module.type mt )
     if(mt STREQUAL "default-off" AND NOT all_modules)
         option(module_${dir} "activate module ${dir}" OFF)
