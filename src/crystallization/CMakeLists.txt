@@ -1,0 +1,32 @@
+#automatically generated CMakeLists.txt, may not work!
+#the variable module_name is set up as a sugar to reduce "copy-paste" errors
+set (module_name "crystallization")
+#Note that the macros here require this directory added as a subdir of plumed/src
+option(module_${module_name} "activate module crystallization" OFF)
+ADDMODULETOKERNEL(${module_name}
+BondOrientation.cpp
+CubicHarmonicBase.cpp
+EnvironmentSimilarity.cpp
+Fccubic.cpp
+Gradient.cpp
+GradientVessel.cpp
+InterMolecularTorsions.cpp
+LocalSteinhardt.cpp
+MoleculeOrientation.cpp
+MoleculePlane.cpp
+OrientationSphere.cpp
+PolymerAngles.cpp
+Q3.cpp
+Q4.cpp
+Q6.cpp
+SimpleCubic.cpp
+SMAC.cpp
+Steinhardt.cpp
+Tetrahedral.cpp
+VectorMean.cpp
+VectorMultiColvar.cpp
+VectorSum.cpp
+)
+ADDMODULEDEPENDENCIES(${module_name}
+core tools vesselbase multicolvar
+)

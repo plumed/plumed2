@@ -23,17 +23,18 @@ MACRO(SUBDIRLIST result curdir)
 ENDMACRO()
 
 set (PLUMED_INCLUDE  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
-MACRO(ADDMODULETOKERNEL module_var module_name)
-    
-    if(${module_var} )
+MACRO(ADDMODULETOKERNEL module_name)
+    #use: ADDMODULETOKERNEL(module_name listOfSources)
+    #Please write the source files explicitly
+    if(${module_${module_name}} )
         set(OTHERARGS ${ARGV})
-        list(REMOVE_ITEM OTHERARGS ${module_var} ${module_name})
+        list(REMOVE_ITEM OTHERARGS ${module_name})
         
         add_library(${module_name} OBJECT ${OTHERARGS} )
         target_include_directories(${module_name} PRIVATE ${PLUMED_INCLUDE})
         list(APPEND modulesDependencies ${module_name})
         set(modulesDependencies ${modulesDependencies} PARENT_SCOPE)
-    endif(${module_var} )
+    endif(${module_${module_name}})
 ENDMACRO(ADDMODULETOKERNEL)
 
 SUBDIRLIST(alldirs ${CMAKE_CURRENT_SOURCE_DIR})# CACHE INTERNAL FORCE)
@@ -59,21 +60,18 @@ endforeach(dir ${mayBeExternal})
 option(all_modules "Activates all modules, if on ignores the values of module_name when compiling" OFF)
 
 foreach(dir ${dirs})
-    #this may the set up to be done in personal subdiretctories
-    #as option(module_${dir} "activate module ${dir}" OFF/ON) directly
-    #in the CMakeLists.txt, and then forced to ON with all_modules, we'll see in
-    #the next iteration
-    file(STRINGS ${dir}/module.type mt )
-    if(mt STREQUAL "default-off" AND NOT all_modules)
-        option(module_${dir} "activate module ${dir}" OFF)
-    elseif(mt STREQUAL "default-on" OR (mt STREQUAL "default-off" AND all_modules))
-        option(module_${dir} "activate module ${dir}" ON)
-    elseif(mt STREQUAL "always")
-         set(module_${dir} ON CACHE INTERNAL "always active module ${dir}")
-    else() 
-        #message( "${dir} ${mt}")
-        message(FATAL_ERROR "module:\"${dir}\" type:\"${mt}\": module type must be \"always\" or \"deafult-on\" or \"default-off\"")
-    endif()
+    add_subdirectory(${dir})
+    # file(STRINGS ${dir}/module.type mt )
+    # if(mt STREQUAL "default-off" AND NOT all_modules)
+    #     option(module_${dir} "activate module ${dir}" OFF)
+    # elseif(mt STREQUAL "default-on" OR (mt STREQUAL "default-off" AND all_modules))
+    #     option(module_${dir} "activate module ${dir}" ON)
+    # elseif(mt STREQUAL "always")
+    #      set(module_${dir} ON CACHE INTERNAL "always active module ${dir}")
+    # else() 
+    #     #message( "${dir} ${mt}")
+    #     message(FATAL_ERROR "module:\"${dir}\" type:\"${mt}\": module type must be \"always\" or \"deafult-on\" or \"default-off\"")
+    # endif()
     #this gets the dependency for the modules
     #file(STRINGS ${dir}/Makefile rgx REGEX "USE=.*")
     #STRING(REPLACE "USE=" "" rgx "${rgx}")
