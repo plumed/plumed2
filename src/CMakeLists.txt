@@ -8,6 +8,7 @@ set(program_name "plumed" CACHE STRING "the name of the main executable")
 set(SOEXT "so" CACHE STRING "The extension of dynamic libraries (so/dylib)")
 set_property(CACHE SOEXT PROPERTY STRINGS "so" "dylib")
 
+set(modulesDependencies "")
 
 MACRO(SUBDIRLIST result curdir)
   #This macro is from a lot of posts on stackoverflow
@@ -20,6 +21,20 @@ MACRO(SUBDIRLIST result curdir)
   ENDFOREACH()
   SET(${result} ${dirlist})
 ENDMACRO()
+
+set (PLUMED_INCLUDE  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+MACRO(ADDMODULETOKERNEL module_var module_name)
+    
+    if(${module_var} )
+        set(OTHERARGS ${ARGV})
+        list(REMOVE_ITEM OTHERARGS ${module_var} ${module_name})
+        
+        add_library(${module_name} OBJECT ${OTHERARGS} )
+        target_include_directories(${module_name} PRIVATE ${PLUMED_INCLUDE})
+        list(APPEND modulesDependencies ${module_name})
+        set(modulesDependencies ${modulesDependencies} PARENT_SCOPE)
+    endif(${module_var} )
+ENDMACRO(ADDMODULETOKERNEL)
 
 SUBDIRLIST(alldirs ${CMAKE_CURRENT_SOURCE_DIR})# CACHE INTERNAL FORCE)
 set(dirs ${alldirs})# CACHE INTERNAL FORCE)
@@ -70,6 +85,11 @@ if(all_modules)
         set(module_${dir} ON)
     endforeach(dir ${dirs})
 endif()
+foreach(dir "colvar")#${dirs})
+    if(module_${dir})
+        add_subdirectory(${dir})
+    endif(module_${dir})        
+endforeach(dir ${dirs})
 #  --enable-external-molfile-plugins
 #                          enable search for external molfile_plugins, default:
 #                          yes
@@ -198,3 +218,19 @@ message("LAPACK internal:${module_lapack}")
 #foreach(dir ${dirs} ${coredirs} ${mayBeExternal})
 #    message("${dir}: ${module_${dir}}")
 #endforeach(dir ${dirs} ${coredirs} ${mayBeExternal})
+
+#these targets build the two libPlumedKernel.so
+
+set(KernelTargets "")
+
+foreach(activeModule ${modulesDependencies})
+    list(APPEND KernelTargets $<TARGET_OBJECTS:${activeModule}>)
+endforeach(activeModule ${modulesDependencies})
+add_library(plumedKernel SHARED ${KernelTargets})
+#add_dependencies(plumedKernel #modulesDependencies
+#)
+#these targets build the libPlumed.so
+add_library(libplumed SHARED $<TARGET_OBJECTS:PlumedWrapper>)
+add_dependencies(libplumed #modulesDependencies
+                PlumedWrapper
+)
