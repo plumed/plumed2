@@ -55,6 +55,7 @@
 !/s2cm
 !/pytorch
 !/membranefusion
+!CMakeLists.txt
 
 # And just ignore these files
 *.xxd
