@@ -22,7 +22,7 @@ MACRO(SUBDIRLIST result curdir)
   SET(${result} ${dirlist})
 ENDMACRO()
 
-set (PLUMED_SRC  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+set (PLUMED_SRC  ${CMAKE_CURRENT_SOURCE_DIR})
 set (PLUMED_MAKETOOLS  ${PLUMED_SRC}/maketools)
 MACRO(ADDMODULETOKERNEL module_name)
     #use: ADDMODULETOKERNEL(module_name listOfSources)

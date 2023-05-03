@@ -26,12 +26,24 @@ ADDMODULEDEPENDENCIES(${module_name}
 core config tools molfile xdrfile
 )
 
+#TODO: this is a workaround, need to be done as add_custom_command
 #add_custom_command(OUTPUT completion.xxd
 execute_process(
-        COMMAND echo "\{ ${PLUMED_MAKETOOLS}/make-scripts-options.sh ; cat completion.sh; \} \| ${PLUMED_MAKETOOLS}/xxd  > ${CMAKE_CURRENT_BINARY_DIR}/completion.xxd"
-        COMMAND_ECHO STDOUT
+        COMMAND ${PLUMED_MAKETOOLS}/make-scripts-options.sh
+        OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/make_scripts_options
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        )
+execute_process(
+        COMMAND cat ${CMAKE_CURRENT_BINARY_DIR}/make_scripts_options ${CMAKE_CURRENT_SOURCE_DIR}/completion.sh    
+        OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/completions
 )
 
+execute_process(
+        COMMAND ${PLUMED_MAKETOOLS}/xxd
+        INPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/completions
+        OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/completion.xxd
+)
+#message("${cat_make_scripts_options} ${cat_completion}")
 message (FATAL_ERROR "cltools has a non standard Makefile (more than 4 lines) you need to modify the CMakeLists.txt!")
 
 #completion.xxd: completion.sh ../../scripts/*.sh ../../patches/*.sh
