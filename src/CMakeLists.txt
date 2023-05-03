@@ -22,7 +22,8 @@ MACRO(SUBDIRLIST result curdir)
   SET(${result} ${dirlist})
 ENDMACRO()
 
-set (PLUMED_INCLUDE  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+set (PLUMED_SRC  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+set (PLUMED_MAKETOOLS  ${PLUMED_SRC}/maketools)
 MACRO(ADDMODULETOKERNEL module_name)
     #use: ADDMODULETOKERNEL(module_name listOfSources)
     #Please write the source files explicitly
@@ -31,11 +32,22 @@ MACRO(ADDMODULETOKERNEL module_name)
         list(REMOVE_ITEM OTHERARGS ${module_name})
         
         add_library(${module_name} OBJECT ${OTHERARGS} )
-        target_include_directories(${module_name} PRIVATE ${PLUMED_INCLUDE})
+        target_include_directories(${module_name} PRIVATE ${PLUMED_SRC})
         list(APPEND modulesDependencies ${module_name})
         set(modulesDependencies ${modulesDependencies} PARENT_SCOPE)
     endif(${module_${module_name}})
 ENDMACRO(ADDMODULETOKERNEL)
+
+MACRO(ADDMODULEDEPENDENCIES module_name)
+    #use: ADDMODULEDEPENDENCIES(module_name listOfModules)
+    #Please write the source files explicitly
+    if(${module_${module_name}} )
+        set(OTHERARGS ${ARGV})
+        list(REMOVE_ITEM OTHERARGS ${module_name})
+        target_link_libraries(${module_name} PRIVATE ${OTHERARGS})
+
+    endif(${module_${module_name}})
+ENDMACRO(ADDMODULEDEPENDENCIES)
 
 SUBDIRLIST(alldirs ${CMAKE_CURRENT_SOURCE_DIR})# CACHE INTERNAL FORCE)
 set(dirs ${alldirs})# CACHE INTERNAL FORCE)
@@ -83,11 +95,6 @@ if(all_modules)
         set(module_${dir} ON)
     endforeach(dir ${dirs})
 endif()
-foreach(dir "colvar")#${dirs})
-    if(module_${dir})
-        add_subdirectory(${dir})
-    endif(module_${dir})        
-endforeach(dir ${dirs})
 #  --enable-external-molfile-plugins
 #                          enable search for external molfile_plugins, default:
 #                          yes
