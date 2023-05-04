@@ -25,7 +25,6 @@ ADDMODULENEEDS(${module_name}
 core config tools molfile xdrfile
 )
 
-
 #get_target_property(t ${module_name} INCLUDE_DIRECTORIES)
 #message("id: ${t}")
 target_include_directories(${module_name} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
