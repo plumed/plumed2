@@ -23,7 +23,11 @@ MACRO(SUBDIRLIST result curdir)
 ENDMACRO()
 
 set (PLUMED_SRC  ${CMAKE_CURRENT_SOURCE_DIR})
-set (PLUMED_MAKETOOLS  ${PLUMED_SRC}/maketools)
+set (PLUMED_MAKETOOLS ${PLUMED_SRC}/maketools )
+cmake_path (GET PLUMED_SRC PARENT_PATH PLUMED_MAIN_DIR)
+set (PLUMED_SCRIPTS ${PLUMED_MAIN_DIR}/scripts)
+set (PLUMED_PATCHES ${PLUMED_MAIN_DIR}/patches)
+
 MACRO(ADDMODULETOKERNEL module_name)
     #use: ADDMODULETOKERNEL(module_name listOfSources)
     #Please write the source files explicitly
@@ -231,11 +235,25 @@ set(KernelTargets "")
 foreach(activeModule ${modulesDependencies})
     list(APPEND KernelTargets $<TARGET_OBJECTS:${activeModule}>)
 endforeach(activeModule ${modulesDependencies})
-add_library(plumedKernel SHARED ${KernelTargets})
-#add_dependencies(plumedKernel #modulesDependencies
-#)
-#these targets build the libPlumed.so
+
+#building the shared libraries with the collected modules
+add_library(libplumedKernel SHARED ${KernelTargets})
+set_target_properties(libplumedKernel
+    PROPERTIES LIBRARY_OUTPUT_NAME ${program_name}Kernel.${SOEXT}
+    )
+
 add_library(libplumed SHARED $<TARGET_OBJECTS:PlumedWrapper>)
-add_dependencies(libplumed #modulesDependencies
+set_target_properties(libplumed
+    PROPERTIES LIBRARY_OUTPUT_NAME ${program_name}.${SOEXT}
+    )
+target_link_libraries(libplumed
+                PlumedWrapper
+)
+
+add_library(libplumedWrapper ARCHIVE $<TARGET_OBJECTS:PlumedWrapper>)
+set_target_properties(libplumedWrapper
+    PROPERTIES LIBRARY_OUTPUT_NAME ${program_name}Wrapper.${SOEXT}
+    )
+    target_link_libraries(libplumedWrapper
                 PlumedWrapper
 )

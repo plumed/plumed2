@@ -25,26 +25,26 @@ completion.xxd
 ADDMODULEDEPENDENCIES(${module_name}
 core config tools molfile xdrfile
 )
-
-#TODO: this is a workaround, need to be done as add_custom_command
-#add_custom_command(OUTPUT completion.xxd
-execute_process(
-        COMMAND ${PLUMED_MAKETOOLS}/make-scripts-options.sh
-        OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/make_scripts_options
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        )
-execute_process(
-        COMMAND cat ${CMAKE_CURRENT_BINARY_DIR}/make_scripts_options ${CMAKE_CURRENT_SOURCE_DIR}/completion.sh    
-        OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/completions
-)
-
-execute_process(
-        COMMAND ${PLUMED_MAKETOOLS}/xxd
-        INPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/completions
-        OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/completion.xxd
-)
-#message("${cat_make_scripts_options} ${cat_completion}")
-message (FATAL_ERROR "cltools has a non standard Makefile (more than 4 lines) you need to modify the CMakeLists.txt!")
-
+#this file once compiled reproduces
 #completion.xxd: completion.sh ../../scripts/*.sh ../../patches/*.sh
-#q	{ ../maketools/make-scripts-options.sh ; cat completion.sh ; }| ../maketools/xxd  > completion.xxd
+#	{ ../maketools/make-scripts-options.sh ; cat completion.sh ; }| ../maketools/xxd  > completion.xxd
+configure_file(completion.xxd.compiler.sh.in completion.xxd.compiler.sh @ONLY)
+#this is used to test completion.xxd.compiler.sh
+#execute_process(
+#        COMMAND bash completion.xxd.compiler.sh
+#        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+#        #OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/completion.xxd
+#)
+
+file(GLOB script_deps ${PLUMED_SCRIPTS}/*.sh)
+file(GLOB patches_deps ${PLUMED_PATCHES}/*.sh)
+
+add_custom_command(OUTPUT completion.xxd
+    DEPENDS completion.sh ${script_deps} ${patches_deps}
+    COMMAND bash completion.xxd.compiler.sh
+    COMMENT "Generationc completion.xxd"
+    #WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+#message("scripts ${script_deps} ${PLUMED_SCRIPTS}")
+#message("patches ${patches_deps} ${PLUMED_PATCHES}")
