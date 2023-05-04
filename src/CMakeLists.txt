@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.20.2)
 
 project(Plumed2 LANGUAGES C CXX)
 
+set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS None Debug Release RelWithDebInfo MinSizeRel)
 #some settingsvalues
 set(program_name "plumed" CACHE STRING "the name of the main executable")
@@ -22,7 +23,7 @@ MACRO(SUBDIRLIST result curdir)
   SET(${result} ${dirlist})
 ENDMACRO()
 
-set (PLUMED_SRC  ${CMAKE_CURRENT_SOURCE_DIR})
+set (PLUMED_SRC ${CMAKE_CURRENT_SOURCE_DIR})
 set (PLUMED_MAKETOOLS ${PLUMED_SRC}/maketools )
 cmake_path (GET PLUMED_SRC PARENT_PATH PLUMED_MAIN_DIR)
 set (PLUMED_SCRIPTS ${PLUMED_MAIN_DIR}/scripts)
@@ -44,13 +45,14 @@ ENDMACRO(ADDMODULETOKERNEL)
 
 MACRO(ADDMODULEDEPENDENCIES module_name)
     #use: ADDMODULEDEPENDENCIES(module_name listOfModules)
-    #Please write the source files explicitly
-    if(${module_${module_name}} )
-        set(OTHERARGS ${ARGV})
-        list(REMOVE_ITEM OTHERARGS ${module_name})
-        target_link_libraries(${module_name} PRIVATE ${OTHERARGS})
-
-    endif(${module_${module_name}})
+    set(OTHERARGS ${ARGV})
+    list(REMOVE_ITEM OTHERARGS ${module_name})
+    set(moduleNeeds_${module_name} ${OTHERARGS} PARENT_SCOPE)
+    #if(${module_${module_name}} )
+    #    set(OTHERARGS ${ARGV})
+    #    list(REMOVE_ITEM OTHERARGS ${module_name})
+    #    target_link_libraries(${module_name} PRIVATE ${OTHERARGS})
+    #endif(${module_${module_name}})
 ENDMACRO(ADDMODULEDEPENDENCIES)
 
 SUBDIRLIST(alldirs ${CMAKE_CURRENT_SOURCE_DIR})# CACHE INTERNAL FORCE)
@@ -77,31 +79,13 @@ option(all_modules "Activates all modules, if on ignores the values of module_na
 
 foreach(dir ${dirs})
     add_subdirectory(${dir})
-    # file(STRINGS ${dir}/module.type mt )
-    # if(mt STREQUAL "default-off" AND NOT all_modules)
-    #     option(module_${dir} "activate module ${dir}" OFF)
-    # elseif(mt STREQUAL "default-on" OR (mt STREQUAL "default-off" AND all_modules))
-    #     option(module_${dir} "activate module ${dir}" ON)
-    # elseif(mt STREQUAL "always")
-    #      set(module_${dir} ON CACHE INTERNAL "always active module ${dir}")
-    # else() 
-    #     #message( "${dir} ${mt}")
-    #     message(FATAL_ERROR "module:\"${dir}\" type:\"${mt}\": module type must be \"always\" or \"deafult-on\" or \"default-off\"")
-    # endif()
-    #this gets the dependency for the modules
-    #file(STRINGS ${dir}/Makefile rgx REGEX "USE=.*")
-    #STRING(REPLACE "USE=" "" rgx "${rgx}")
-    #separate_arguments(rgx)
 endforeach(dir ${dirs})
 if(all_modules)
-#forceactivates all modules
+    #forceactivates all modules
     foreach(dir ${dirs})
         set(module_${dir} ON)
     endforeach(dir ${dirs})
 endif()
-#  --enable-external-molfile-plugins
-#                          enable search for external molfile_plugins, default:
-#                          yes
 
 option(useExternal_BLAS "enable search for external BLAS, default ON" ON)
 option(useExternal_LAPACK "enable search for external LAPACK, default ON" ON)
@@ -228,8 +212,31 @@ message("LAPACK internal:${module_lapack}")
 #    message("${dir}: ${module_${dir}}")
 #endforeach(dir ${dirs} ${coredirs} ${mayBeExternal})
 
-#these targets build the two libPlumedKernel.so
+#check module dependencies
+foreach(dir ${dirs})
+    if(${module_${dir}})
+        set(notFound "")
+        #message("${dir} ${moduleNeeds_${dir}}")
+        foreach(otherModule ${moduleNeeds_${dir}})
+            if (NOT module_${otherModule})
+                list(FIND mayBeExternal ${otherModule} isExternal)
+                if(${isExternal})
+                    string(TOUPPER ${otherModule} capsName)
+                    if(${capsName}_FOUND)
+                        continue()
+                    endif(${capsName}_FOUND)
+                endif(${isExternal})
+                list(APPEND notFound ${otherModule})
+            endif(NOT module_${otherModule})
+        endforeach(otherModule moduleNeeds_${dir})
+        if (notFound)
+            message(FATAL_ERROR "Module \"${dir}\" needs the following modules active: ${notFound}")
+        endif(notFound)
+        unset(notFound)
+    endif(${module_${dir}})
+endforeach(dir ${dirs})
 
+#these targets build the two libPlumedKernel.so
 set(KernelTargets "")
 
 foreach(activeModule ${modulesDependencies})
@@ -250,7 +257,7 @@ target_link_libraries(libplumed
                 PlumedWrapper
 )
 
-add_library(libplumedWrapper ARCHIVE $<TARGET_OBJECTS:PlumedWrapper>)
+add_library(libplumedWrapper STATIC $<TARGET_OBJECTS:PlumedWrapper>)
 set_target_properties(libplumedWrapper
     PROPERTIES LIBRARY_OUTPUT_NAME ${program_name}Wrapper.${SOEXT}
     )
