@@ -43,16 +43,25 @@ MACRO(ADDMODULETOKERNEL module_name)
     endif(${module_${module_name}})
 ENDMACRO(ADDMODULETOKERNEL)
 
-MACRO(ADDMODULEDEPENDENCIES module_name)
-    #use: ADDMODULEDEPENDENCIES(module_name listOfModules)
+MACRO(ADDMODULENEEDS module_name)
+    #use: ADDMODULENEEDS(module_name listOfModules)
+
     set(OTHERARGS ${ARGV})
     list(REMOVE_ITEM OTHERARGS ${module_name})
     set(moduleNeeds_${module_name} ${OTHERARGS} PARENT_SCOPE)
-    #if(${module_${module_name}} )
-    #    set(OTHERARGS ${ARGV})
-    #    list(REMOVE_ITEM OTHERARGS ${module_name})
-    #    target_link_libraries(${module_name} PRIVATE ${OTHERARGS})
-    #endif(${module_${module_name}})
+    
+ENDMACRO(ADDMODULENEEDS module_name)
+
+MACRO(ADDMODULEDEPENDENCIES)
+    #use: ADDMODULENEEDS(module_name listOfModules)
+    #adds the module on which this depends on (for compile definitions and so on)
+    #NB you may create circular dependencies
+    #NB this is particularly experimental
+    if(${module_${module_name}} )
+        set(OTHERARGS ${ARGV})
+        list(REMOVE_ITEM OTHERARGS ${module_name})
+        target_link_libraries(${module_name} PRIVATE ${OTHERARGS})
+    endif(${module_${module_name}})
 ENDMACRO(ADDMODULEDEPENDENCIES)
 
 SUBDIRLIST(alldirs ${CMAKE_CURRENT_SOURCE_DIR})# CACHE INTERNAL FORCE)

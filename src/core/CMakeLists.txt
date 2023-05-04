@@ -1,8 +1,7 @@
-#automatically generated CMakeLists.txt, may not work!
 #the variable module_name is set up as a sugar to reduce "copy-paste" errors
 set (module_name "core")
 #Note that the macros here require this directory added as a subdir of plumed/src
-set(module_${module_name} ON CACHE INTERNAL "always active module core")
+set(module_${module_name} ON CACHE INTERNAL "always active module ${module_name}")
 ADDMODULETOKERNEL(${module_name}
 ActionAnyorder.cpp
 ActionAtomistic.cpp
@@ -36,7 +35,7 @@ PlumedMainMap.inc PlumedMainEnum.inc
 GREXMap.inc GREXEnum.inc
 CLToolMainMap.inc CLToolMainEnum.inc
 )
-ADDMODULEDEPENDENCIES(${module_name}
+ADDMODULENEEDS(${module_name}
 config tools lepton
 )
 
