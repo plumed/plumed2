@@ -62,7 +62,7 @@ set(dirs ${alldirs})# CACHE INTERNAL FORCE)
 #these are the diretory to compile that do not have a module.type inside
 set(coredirs main config wrapper)
 
-set(mayBeExternal blas lapack)
+set(mayBeExternal blas lapack molfile)
 list(REMOVE_ITEM dirs lib include maketools CMakeFiles ${coredirs} ${mayBeExternal})
 
 

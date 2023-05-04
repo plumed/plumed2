@@ -20,11 +20,18 @@ PdbRenumber.cpp
 pesmd.cpp
 SimpleMD.cpp
 SumHills.cpp
+#generated file
 completion.xxd
 )
 ADDMODULEDEPENDENCIES(${module_name}
 core config tools molfile xdrfile
 )
+
+get_target_property(t ${module_name} INCLUDE_DIRECTORIES)
+message("id: ${t}")
+target_include_directories(${module_name} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+get_target_property(t ${module_name} INCLUDE_DIRECTORIES)
+message("id: ${t}")
 #this file once compiled reproduces
 #completion.xxd: completion.sh ../../scripts/*.sh ../../patches/*.sh
 #	{ ../maketools/make-scripts-options.sh ; cat completion.sh ; }| ../maketools/xxd  > completion.xxd
