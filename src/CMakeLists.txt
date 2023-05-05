@@ -26,7 +26,7 @@ set(modulesDependencies "")
 #Setting up global options
 ################################################################################
 
-add_compile_options(-fPIC)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 ################################################################################
 #Macro definitions

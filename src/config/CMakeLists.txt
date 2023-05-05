@@ -1,5 +1,6 @@
-# set(module_name config)
-# set(module_${module_name} ON CACHE INTERNAL "always active core module ${module_name}")
+set(module_name config)
+#this is not a module, this is set up to make easier the dependency interface
+set(module_${module_name} ON CACHE INTERNAL "always active core module ${module_name}")
 #SOEXT is set in ./src
 set(ISINSTALLED "true")
 #must go to /lib/plumed
