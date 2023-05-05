@@ -9,8 +9,28 @@ set(program_name "plumed" CACHE STRING "the name of the main executable")
 set(SOEXT "so" CACHE STRING "The extension of dynamic libraries (so/dylib)")
 set_property(CACHE SOEXT PROPERTY STRINGS "so" "dylib")
 
+set (PLUMED_SRC ${CMAKE_CURRENT_SOURCE_DIR})
+set (PLUMED_MAKETOOLS ${PLUMED_SRC}/maketools )
+cmake_path (GET PLUMED_SRC PARENT_PATH PLUMED_MAIN_DIR)
+set (PLUMED_SCRIPTS ${PLUMED_MAIN_DIR}/scripts)
+set (PLUMED_PATCHES ${PLUMED_MAIN_DIR}/patches)
+
+option(all_modules "Activates all modules, if on ignores the values of module_name when compiling" OFF)
+option(useExternal_BLAS "enable search for external BLAS, default ON" ON)
+option(useExternal_LAPACK "enable search for external LAPACK, default ON" ON)
+option(useExternal_MOLFILE "enable search for external LAPACK, default OFF" OFF)
+
 set(modulesDependencies "")
 
+################################################################################
+#Setting up global options
+################################################################################
+
+add_compile_options(-fPIC)
+
+################################################################################
+#Macro definitions
+################################################################################
 MACRO(SUBDIRLIST result curdir)
   #This macro is from a lot of posts on stackoverflow
   FILE(GLOB children RELATIVE ${curdir} ${curdir}/*)
@@ -22,12 +42,6 @@ MACRO(SUBDIRLIST result curdir)
   ENDFOREACH()
   SET(${result} ${dirlist})
 ENDMACRO()
-
-set (PLUMED_SRC ${CMAKE_CURRENT_SOURCE_DIR})
-set (PLUMED_MAKETOOLS ${PLUMED_SRC}/maketools )
-cmake_path (GET PLUMED_SRC PARENT_PATH PLUMED_MAIN_DIR)
-set (PLUMED_SCRIPTS ${PLUMED_MAIN_DIR}/scripts)
-set (PLUMED_PATCHES ${PLUMED_MAIN_DIR}/patches)
 
 MACRO(ADDMODULETOKERNEL module_name)
     #use: ADDMODULETOKERNEL(module_name listOfSources)
@@ -50,9 +64,9 @@ MACRO(ADDMODULENEEDS module_name)
     list(REMOVE_ITEM OTHERARGS ${module_name})
     set(moduleNeeds_${module_name} ${OTHERARGS} PARENT_SCOPE)
     
-ENDMACRO(ADDMODULENEEDS module_name)
+ENDMACRO(ADDMODULENEEDS)
 
-MACRO(ADDMODULEDEPENDENCIES)
+MACRO(ADDMODULEDEPENDENCIES module_name)
     #use: ADDMODULENEEDS(module_name listOfModules)
     #adds the module on which this depends on (for compile definitions and so on)
     #NB you may create circular dependencies
@@ -60,63 +74,61 @@ MACRO(ADDMODULEDEPENDENCIES)
     if(${module_${module_name}} )
         set(OTHERARGS ${ARGV})
         list(REMOVE_ITEM OTHERARGS ${module_name})
-        target_link_libraries(${module_name} PRIVATE ${OTHERARGS})
+        message("${module_name} is linked with ${OTHERARGS}")
+        target_link_libraries(${module_name} PUBLIC ${OTHERARGS})
     endif(${module_${module_name}})
 ENDMACRO(ADDMODULEDEPENDENCIES)
 
+################################################################################
+#Setting up Modules
+################################################################################
+
 SUBDIRLIST(alldirs ${CMAKE_CURRENT_SOURCE_DIR})# CACHE INTERNAL FORCE)
 set(dirs ${alldirs})# CACHE INTERNAL FORCE)
-#message("${alldirs}")
-#message("${dirs}")
+#directories that do not contain modules
+set(utildirs lib include maketools cmake)
 #these are the diretory to compile that do not have a module.type inside
-set(coredirs main config wrapper)
-
+set(execDirs main config wrapper)
+#these are directory with codes that may be external
 set(mayBeExternal blas lapack molfile)
-list(REMOVE_ITEM dirs lib include maketools CMakeFiles ${coredirs} ${mayBeExternal})
+list(REMOVE_ITEM dirs ${utildirs} ${execDirs} ${mayBeExternal})
 
-
-foreach(dir ${coredirs})
+foreach(dir ${execDirs})
     add_subdirectory(${dir})
-    set(module_${dir} ON CACHE INTERNAL "always active core module ${dir}")
-endforeach(dir ${coredirs})
-
-foreach(dir ${mayBeExternal})
-    option(module_${dir} "activate module ${dir}" ON)
-endforeach(dir ${mayBeExternal})
-
-option(all_modules "Activates all modules, if on ignores the values of module_name when compiling" OFF)
+endforeach(dir ${execDirs})
 
 foreach(dir ${dirs})
     add_subdirectory(${dir})
 endforeach(dir ${dirs})
 if(all_modules)
-    #forceactivates all modules
+    message("All module will be forced ON")
     foreach(dir ${dirs})
         set(module_${dir} ON)
     endforeach(dir ${dirs})
 endif()
 
-option(useExternal_BLAS "enable search for external BLAS, default ON" ON)
-option(useExternal_LAPACK "enable search for external LAPACK, default ON" ON)
-
-foreach(externalLib BLAS LAPACK)
-    string(TOLOWER ${externalLib} dir)
+message("Checking if it is possible to find external alternatives for modules:")
+#needed for FindMOLFILE
+set (CMAKE_MODULE_PATH ${PLUMED_SRC}/cmake)
+foreach(dir ${mayBeExternal})
+    #todo port the maybe external to the single modules
+    string(TOUPPER ${dir} externalLib)
     if (useExternal_${externalLib})
-        include(Find${externalLib})
-    else()
-        set(${externalLib}_FOUND OFF)
-        set(module_${dir} ON CACHE BOOL "activate module ${dir}" FORCE)
-    endif(useExternal_${externalLib})
+        find_package(${externalLib})
+    endif (useExternal_${externalLib})
+    
     if (${externalLib}_FOUND)
         set(module_${dir} OFF CACHE BOOL "activate module ${dir}" FORCE)
+        #add_library(${dir} ALIAS ${externalLib}:${externalLib})
         #target_compile_options(${PROJECT_NAME} PRIVATE ${BLAS_LINKER_FLAGS})
         #target_link_libraries(${PROJECT_NAME} ${BLAS_LIBRARIES})
-endif ()
-endforeach(externalLib BLAS LAPACK)
+    else()
+        add_subdirectory(${dir})
+        set(${externalLib}_FOUND OFF)
+    endif (${externalLib}_FOUND)
+    message(" ${dir} internal: ${module_${dir}}")    
+endforeach(dir ${mayBeExternal})
 
-
-message("BLAS internal:${module_blas}")
-message("LAPACK internal:${module_lapack}")
 #options ## options are already done
 ##  --bindir=DIR            user executables [EPREFIX/bin]
 ##  --sbindir=DIR           system admin executables [EPREFIX/sbin]
@@ -217,9 +229,9 @@ message("LAPACK internal:${module_lapack}")
 #  --disable-openmp        do not use OpenMP
 
 #for debugging purpose
-#foreach(dir ${dirs} ${coredirs} ${mayBeExternal})
+#foreach(dir ${dirs} ${execDirs} ${mayBeExternal})
 #    message("${dir}: ${module_${dir}}")
-#endforeach(dir ${dirs} ${coredirs} ${mayBeExternal})
+#endforeach(dir ${dirs} ${execDirs} ${mayBeExternal})
 
 #check module dependencies
 foreach(dir ${dirs})
@@ -236,14 +248,21 @@ foreach(dir ${dirs})
                     endif(${capsName}_FOUND)
                 endif(${isExternal})
                 list(APPEND notFound ${otherModule})
+                set (modulesDependenciesProblems ON)
             endif(NOT module_${otherModule})
         endforeach(otherModule moduleNeeds_${dir})
         if (notFound)
-            message(FATAL_ERROR "Module \"${dir}\" needs the following modules active: ${notFound}")
+            message(SEND_ERROR "Module \"${dir}\" needs the following modules active: ${notFound}")
         endif(notFound)
         unset(notFound)
     endif(${module_${dir}})
 endforeach(dir ${dirs})
+if (${modulesDependenciesProblems})
+    message(FATAL_ERROR "Problems in module dependencies")
+endif(${modulesDependenciesProblems})
+################################################################################
+#Setting up the main libraries
+################################################################################
 
 #these targets build the two libPlumedKernel.so
 set(KernelTargets "")
@@ -273,3 +292,61 @@ set_target_properties(libplumedWrapper
     target_link_libraries(libplumedWrapper
                 PlumedWrapper
 )
+
+function(print_target_property target_name property)
+    get_target_property(t ${target_name} ${property})
+    message("${target_name} <${property}>: ${t}")
+    unset(t)    
+endfunction(print_target_property)
+
+#print_target_property(cltools COMPILE_DEFINITIONS)
+#print_target_property(molfile COMPILE_DEFINITIONS)
+
+#TODO move this in a better place:
+IF(${OPT_DEBUGWARNINGS})
+    if(MSVC)
+      add_compile_options(/W4 /WX)
+    else()
+      add_compile_options(
+          -Wall
+          -Wextra
+          -Wshadow
+          -Wnon-virtual-dtor
+          -Wold-style-cast
+          -Wcast-align
+          -Wunused
+          -Woverloaded-virtual
+          -Wpedantic
+          -Wconversion
+          -Wsign-conversion
+          -Wnull-dereference
+          -Wdouble-promotion
+          -Wformat=2
+          -Wduplicated-cond
+          -Wduplicated-branches
+          -Wlogical-op
+          -Wuseless-cast
+          #-Wlifetime
+          )
+    endif()
+endif()
+#Warnings
+#-Wall
+#-Wextra # reasonable and standard
+#-Wshadow # warn the user if a variable declaration shadows one from a# parent context
+#-Wnon-virtual-dtor # warn the user if a class with virtual functions has a# non-virtual destructor.
+#-Wold-style-cast # warn for c-style casts
+#-Wcast-align # warn for potential performance problem casts
+#-Wunused # warn on anything being unused
+#-Woverloaded-virtual # warn if you overload (not override) a virtual func
+#-Wpedantic # warn if non-standard C++ is used
+#-Wconversion # warn on type conversions that may lose data
+#-Wsign-conversion # warn on sign conversions
+#-Wnull-dereference # warn if a null dereference is detected
+#-Wdouble-promotion # warn if float is implicit promoted to double
+#-Wformat=2 # warn on security issues around functions that format output# (ie printf)
+#-Wduplicated-cond # warn if if / else chain has duplicated conditions
+#-Wduplicated-branches # warn if if / else branches have duplicated code
+#-Wlogical-op # warn about logical operations being used where bitwise were# probably wanted
+#-Wuseless-cast # warn if you perform a cast to the same type
+#-Wlifetime # ///
