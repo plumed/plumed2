@@ -32,7 +32,7 @@ PLUMED_REGISTER_ACTION(ActionToPutData,"PUT")
 void ActionToPutData::registerKeywords(Keywords& keys){
   ActionForInterface::registerKeywords( keys );
   keys.add("compulsory","SHAPE","0","the shape of the value that is being passed to PLUMED");
-  keys.add("compulsory","UNIT","the unit of the quantity that is being passed to PLUMED through this value.  Can be either number, energy, length, mass or charge");
+  keys.add("compulsory","UNIT","the unit of the quantity that is being passed to PLUMED through this value.  Can be either number, energy, time, length, mass or charge");
   keys.add("compulsory","FORCE_UNIT","default","the units to use for the force");
   keys.add("compulsory","PERIODIC","if the value being passed to plumed is periodic then you should specify the periodicity of the function.  If the value "
                                    "is not periodic you must state this using PERIODIC=NO.  Positions are passed with PERIODIC=NO even though special methods are used "
@@ -103,20 +103,20 @@ void ActionToPutData::updateUnits( const Units& MDUnits, const Units& units ) {
   else if( unit==m ) vunits = MDUnits.getMass()/units.getMass();
   else if( unit==q ) vunits = MDUnits.getCharge()/units.getCharge();
   else if( unit==t ) vunits = MDUnits.getTime()/units.getTime();
-  mydata->setUnit(vunits); if( fixed ) transferFixedValue( vunits );
+  mydata->setUnit(vunits); if( fixed && wasset ) mydata->share_data( 0, getPntrToValue()->getNumberOfValues(), getPntrToValue() );
   if( funit==eng ) mydata->setForceUnit(units.getEnergy()/MDUnits.getEnergy());
   else if( funit==d ) mydata->setForceUnit((units.getEnergy()/MDUnits.getEnergy())*vunits);
-}
-
-double ActionToPutData::MD2double( void* val ) const {
-  return mydata->MD2double(val);
 }
 
 bool ActionToPutData::setValuePointer( const std::string& name, const TypesafePtr & val ) {
    if( name!=getLabel() ) return false;
    wasset=true; plumed_massert( dataCanBeSet, "set " + getLabel() + " cannot be set at this time");
-   if( !from_domains ) mydata->setValuePointer(val,getPntrToComponent(0)->getShape(),true); 
-   else mydata->setValuePointer(val,std::vector<unsigned>(), true);
+   if( !from_domains ) {
+       if( fixed && getPntrToComponent(0)->getRank()==0 ) {
+           mydata->saveValueAsDouble( val ); 
+           mydata->share_data( 0, getPntrToValue()->getNumberOfValues(), getPntrToValue() );
+       } else mydata->setValuePointer(val,getPntrToComponent(0)->getShape(),true); 
+   } else mydata->setValuePointer(val,std::vector<unsigned>(), true);
    return true;
 }
 
@@ -126,11 +126,6 @@ bool ActionToPutData::setForcePointer( const std::string& name, const TypesafePt
    if( !from_domains ) mydata->setForcePointer(val,getPntrToComponent(0)->getShape());
    else mydata->setForcePointer(val,std::vector<unsigned>()); 
    return true;
-}
-
-void ActionToPutData::transferFixedValue( const double& unit ) {
-   plumed_assert( fixed ); if( !wasset ) return;
-   mydata->share_data( 0, getPntrToValue()->getNumberOfValues(), getPntrToValue() );
 }
 
 void ActionToPutData::wait() {

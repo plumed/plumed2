@@ -42,6 +42,9 @@ private:
 public:
 /// This convers a number from the MD code into a double
   double MD2double(const TypesafePtr &) const override ;
+/// This is used when you want to save the passed object to a double variable in PLUMED rather than the pointer
+/// this can be used even when you don't pass a pointer from the MD code
+  void saveValueAsDouble( const TypesafePtr & val ) override;
 /// Set the pointer to the value
   void setValuePointer( const TypesafePtr & p, const std::vector<unsigned>& shape, const bool& isconst ) override;
 /// Set the pointer to the force
@@ -77,6 +80,18 @@ double DataPassingObjectTyped<T>::MD2double(const TypesafePtr & m) const {
 }
 
 template <class T>
+void DataPassingObjectTyped<T>::saveValueAsDouble( const TypesafePtr & val ) {
+  hasbackup=true; bvalue=double(val.template get<T>());
+  // The following is to avoid extra digits in case the MD code uses floats
+  // e.g.: float f=0.002 when converted to double becomes 0.002000000094995
+  // To avoid this, we keep only up to 6 significant digits after first one
+  if( sizeof(T)<=4) {
+      double magnitude=std::pow(10,std::floor(std::log10(bvalue)));
+      bvalue=std::round(bvalue/magnitude*1e6)/1e6*magnitude;
+  }
+}
+
+template <class T>
 void DataPassingObjectTyped<T>::setValuePointer( const TypesafePtr & val, const std::vector<unsigned>& shape, const bool& isconst ) {
    if( shape.size()==0 ) {
        if( isconst ) val.get<const T*>(); else val.get<T*>();  // just check type and discard pointer
@@ -106,15 +121,8 @@ void DataPassingObjectTyped<T>::setData( Value* value ) {
 template <class T>
 void DataPassingObjectTyped<T>::share_data( const unsigned& j, const unsigned& k, Value* value ) {
   if( value->getRank()==0 ) { 
-      double vval = double(v.template get<T>());
-      // The following is to avoid extra digits in case the MD code uses floats
-       // e.g.: float f=0.002 when converted to double becomes 0.002000000094995
-       // To avoid this, we keep only up to 6 significant digits after first one
-       if( sizeof(T)<=4) {
-           double magnitude=std::pow(10,std::floor(std::log10(vval)));
-           vval=std::round(vval/magnitude*1e6)/1e6*magnitude;
-       }
-      value->set( 0, unit*vval ); 
+      if( hasbackup ) value->set( 0, unit*bvalue );
+      else value->set( 0, unit*double(v.template get<T>()) ); 
       return; 
   }
   std::vector<unsigned> s(value->getShape()); if( s.size()==1 ) s[0]=k-j;

@@ -41,9 +41,12 @@ protected:
   double unit;
 /// The units of the force on this quantity
   double funit;
+/// The backup value of the quantity (used if the value is passed directly)
+  bool hasbackup;
+  double bvalue;
 public:
   static std::unique_ptr<DataPassingObject> create(unsigned n);
-  explicit DataPassingObject() : stride(1), unit(1), funit(1) {}
+  explicit DataPassingObject() : stride(1), unit(1), funit(1), hasbackup(false), bvalue(0) {}
 /// Convert what comes from the MD code to a double
   virtual double MD2double(const TypesafePtr & m) const=0;
 ///
@@ -54,6 +57,9 @@ public:
   void setUnit( const double& u ) { unit=u; }
 /// Set the unit for the force
   void setForceUnit( const double& u ) { funit=u; }
+/// This is used when you want to save the passed object to a double variable in PLUMED rather than the pointer
+/// this can be used even when you don't pass a pointer from the MD code
+  virtual void saveValueAsDouble( const TypesafePtr & val )=0;
 /// Set the pointer to the value 
   virtual void setValuePointer( const TypesafePtr & val, const std::vector<unsigned>& shape, const bool& isconst )=0;
 /// Set the pointer to the force

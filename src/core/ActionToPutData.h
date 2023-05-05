@@ -52,8 +52,6 @@ private:
 protected:
 /// Setup the units of the input value
   void setUnit( const std::string& unitstr, const std::string& funitstr );
-/// Conver a void pointer that is passed by the MD code to a double
-  double MD2double( void* val ) const ;
 public:
   static void registerKeywords(Keywords& keys);
   explicit ActionToPutData(const ActionOptions&ao);
@@ -75,8 +73,6 @@ public:
   void setAtomsContiguous(int start) override {}
 /// And this gets the number of forces that need to be rescaled
   unsigned getNumberOfForcesToRescale() const override ;
-/// This transfers a constant value across from the MD code
-  virtual void transferFixedValue( const double& unit );
 /// Share the data
   void share() override {}
   void shareAll() override {}

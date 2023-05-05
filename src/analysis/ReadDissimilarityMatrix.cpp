@@ -92,7 +92,7 @@ ReadDissimilarityMatrix::ReadDissimilarityMatrix( const ActionOptions& ao ):
   std::vector<ActionSetup*> setupActions=plumed.getActionSet().select<ActionSetup*>();
   std::vector<ActionForInterface*> interActions=plumed.getActionSet().select<ActionForInterface*>();
   if( my_input_data && (plumed.getActionSet().size()-setupActions.size()-interActions.size())!=1 ) error("should only be this action and the READ_ANALYSIS_FRAMES command in the input file");
-  if( !my_input_data && plumed.getActionSet().size()!=0 ) error("read dissimilarity matrix command must be at top of input file");
+  if( !my_input_data && plumed.getActionSet().size()!=interActions.size() ) error("read dissimilarity matrix command must be at top of input file");
 
   parse("FILE",fname);
   log.printf("  reading dissimilarity matrix from file %s \n",fname.c_str() );

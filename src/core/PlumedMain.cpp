@@ -564,9 +564,16 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         }
         break;
       case cmd_setTimestep:
+      {
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setTimeStep(val);
+        ActionToPutData* ts = actionSet.selectWithLabel<ActionToPutData*>("timestep");
+        if( !ts ) {
+            readInputLine("timestep: PUT UNIT=time PERIODIC=NO CONSTANT", true);
+            ts = actionSet.selectWithLabel<ActionToPutData*>("timestep");
+        }
+        if( !ts->setValuePointer("timestep", val ) ) plumed_error();
+      }
         break;
       /* ADDED WITH API==2 */
       case cmd_setKbT:
@@ -782,7 +789,8 @@ void PlumedMain::init() {
     plumedDat="";
   }
   setUnits( atoms.usingNaturalUnits(), atoms.getUnits() );
-  log.printf("Timestep: %f\n",atoms.getTimeStep());
+  ActionToPutData* ts = actionSet.selectWithLabel<ActionToPutData*>("timestep");
+  if(ts) log.printf("Timestep: %f\n",(ts->copyOutput(0))->get());
   if(atoms.getKbT()>0.0)
     log.printf("KbT: %f\n",atoms.getKbT());
   else {
