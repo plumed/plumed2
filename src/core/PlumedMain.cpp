@@ -577,9 +577,13 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         break;
       /* ADDED WITH API==2 */
       case cmd_setKbT:
+      {
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setKbT(val);
+        readInputLine("kBT: PUT CONSTANT PERIODIC=NO UNIT=energy", true);
+        ActionToPutData* kb = actionSet.selectWithLabel<ActionToPutData*>("kBT");
+        if( !kb->setValuePointer("kBT", val ) ) plumed_error();
+      }
         break;
       /* ADDED WITH API==3 */
       case cmd_setRestart:
@@ -791,8 +795,9 @@ void PlumedMain::init() {
   setUnits( atoms.usingNaturalUnits(), atoms.getUnits() );
   ActionToPutData* ts = actionSet.selectWithLabel<ActionToPutData*>("timestep");
   if(ts) log.printf("Timestep: %f\n",(ts->copyOutput(0))->get());
-  if(atoms.getKbT()>0.0)
-    log.printf("KbT: %f\n",atoms.getKbT());
+  ActionToPutData* kb = actionSet.selectWithLabel<ActionToPutData*>("KbT");
+  if(kb)
+    log.printf("KbT: %f\n",(kb->copyOutput(0))->get());
   else {
     log.printf("KbT has not been set by the MD engine\n");
     log.printf("It should be set by hand where needed\n");

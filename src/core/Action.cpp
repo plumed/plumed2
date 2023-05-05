@@ -252,7 +252,24 @@ double Action::getTimeStep()const {
   return timestep;
 }
 
-
+double Action::getkBT() {
+  double temp=-1.0; 
+  if( keywords.exists("TEMP") ) parse("TEMP",temp);
+  if(temp>=0.0 && keywords.style("TEMP","optional") ) return plumed.getAtoms().getKBoltzmann()*temp;
+  ActionForInterface* kb=plumed.getActionSet().selectWithLabel<ActionForInterface*>("kBT");
+  double kbt=0; if(kb) kbt=(kb->copyOutput(0))->get();
+  if( temp>=0 && keywords.style("TEMP","compulsory") ) {
+      double kB=plumed.getAtoms().getKBoltzmann();
+      if( kbt>0 && std::abs(kbt-kB*temp)>1e-4) {
+          std::string strt1, strt2; Tools::convert( temp, strt1 ); Tools::convert( kbt/kB, strt2 );
+          warning("using TEMP=" + strt1 + " while MD engine uses " + strt2 + "\n"); 
+      }
+      kbt = kB*temp;
+      plumed_massert(kbt>0,"your MD engine does not pass the temperature to plumed, you must specify it using TEMP");
+      return kbt; 
+  }
+  return kbt;
+}
 
 void Action::exit(int c) {
   plumed.exit(c);

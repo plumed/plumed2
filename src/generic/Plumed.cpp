@@ -289,7 +289,7 @@ API([&]() {
   double masunits=plumed.getAtoms().getUnits().getMass();
   if(root) p.cmd("setMDMassUnits",&masunits);
 
-  double kbt=plumed.getAtoms().getKbT();
+  double kbt=getkBT();
   if(root) p.cmd("setKbT",&kbt);
 
   int res=0;

@@ -574,7 +574,7 @@ void SASA_LCPO::computeDeltaG() {
   }
 
   double T;
-  T = plumed.getAtoms().getKbT()/plumed.getAtoms().getKBoltzmann();
+  T = getkBT()/plumed.getAtoms().getKBoltzmann();
 
   if (T != Ti) {
     for(unsigned i=0; i<natoms; i++) {

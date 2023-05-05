@@ -601,7 +601,7 @@ LogMFD::LogMFD( const ActionOptions& ao ):
   parse("INTERVAL",interval);
   parse("DELTA_T",delta_t);
   parse("THERMOSTAT",thermostat);
-  parse("TEMP",kbt); // read as temperature
+  kbt = getkBT(); // read as temperature
   parse("TEMPPD",kbtpd); // read as temperature
 
   parse("TAMD",TAMD);
@@ -631,13 +631,6 @@ LogMFD::LogMFD( const ActionOptions& ao ):
   }
   else {
     work = 0.0;
-  }
-
-  if( kbt>=0.0 ) {
-    kbt *= plumed.getAtoms().getKBoltzmann();
-  }
-  else {
-    kbt = plumed.getAtoms().getKbT();
   }
 
   if( kbtpd>=0.0 ) {

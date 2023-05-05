@@ -260,10 +260,7 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
   stride_=pace_;  //if no STRIDE is passed, then Lagrangian multipliers willbe printed at each update
   parse("PRINT_STRIDE",stride_);
   if(stride_<=0 ) error("frequency for Lagrangian multipliers printing (STRIDE) is nonsensical");
-  simtemp=0.;
-  parse("TEMP",simtemp);
-  if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
-  else simtemp=plumed.getAtoms().getKbT();
+  simtemp=getkBT();
   parseFlag("REWEIGHT",reweight);
   if(simtemp<=0 && reweight) error("Set the temperature (TEMP) if you want to do reweighting.");
 

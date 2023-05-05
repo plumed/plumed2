@@ -398,8 +398,6 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   parseVector("EXTTEMP", etemp);
   parseVector("KAPPA", kappa);
   parseVector("REFLECTINGWALL", reflectingWall);
-  double temp = -1.0;
-  parse("TEMP", temp);
   parse("FULLSAMPLES", fullsamples);
   parseVector("MAXFACTOR", maxFactors);
   parse("OUTPUTFREQ", outputfreq);
@@ -427,14 +425,10 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
       withExternalFict = true;
     }
   }
-  if (temp >= 0.0)
-    kbt = plumed.getAtoms().getKBoltzmann() * temp;
-  else {
-    kbt = plumed.getAtoms().getKbT();
-    if (kbt <= std::numeric_limits<double>::epsilon()) {
-      error("eABF/DRR: It seems the MD engine does not setup the temperature correctly for PLUMED."
-            "Please set it by the TEMP keyword manually.");
-    }
+  kbt = getKbT();
+  if (kbt <= std::numeric_limits<double>::epsilon()) {
+    error("eABF/DRR: It seems the MD engine does not setup the temperature correctly for PLUMED."
+          "Please set it by the TEMP keyword manually.");
   }
   if (fullsamples < 0.5) {
     fullsamples = 500.0;

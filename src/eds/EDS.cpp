@@ -387,7 +387,7 @@ EDS::EDS(const ActionOptions &ao) : PLUMED_BIAS_INIT(ao),
   parseVector("FIXED", target_coupling_);
   parseVector("INIT", set_coupling_);
   parse("PERIOD", update_period_);
-  parse("TEMP", temp);
+  kbt_ = getkBT();
   parse("SEED", seed_);
   parse("MULTI_PROP", multi_prop_);
   parse("LM_MIXING", lm_mixing_par_);
@@ -533,11 +533,6 @@ EDS::EDS(const ActionOptions &ao) : PLUMED_BIAS_INIT(ao),
   }
   else
   {
-
-    if (temp >= 0.0)
-      kbt_ = plumed.getAtoms().getKBoltzmann() * temp;
-    else
-      kbt_ = plumed.getAtoms().getKbT();
 
     // in driver, this results in kbt of 0
     if (kbt_ == 0)

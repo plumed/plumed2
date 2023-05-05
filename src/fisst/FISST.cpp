@@ -269,8 +269,7 @@ FISST::FISST(const ActionOptions&ao):
     readInRestart();
   } else {
 
-    if(! kbt_ > 0.0)
-      kbt_ = plumed.getAtoms().getKbT();
+    if(! kbt_ > 0.0) kbt_=getkBT();
 
     //in driver, this results in kbt of 0
     if(kbt_ == 0) {

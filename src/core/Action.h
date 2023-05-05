@@ -119,6 +119,11 @@ public:
 /// Clear the dependence list for this Action
   void clearDependencies();
 
+/// Get the value of kBT by either reading the TEMP keyword
+/// and multiplying the temperature by Boltzmann's constant 
+/// or get it fro the MD code
+  double getkBT();
+
 /// Return the present timestep
   long long int getStep()const;
 

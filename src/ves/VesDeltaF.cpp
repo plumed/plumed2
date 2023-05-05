@@ -226,14 +226,8 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
 {
 //set beta
   const double Kb=plumed.getAtoms().getKBoltzmann();
-  double temp=0;
-  parse("TEMP",temp);
-  double KbT=Kb*temp;
-  if(KbT==0)
-  {
-    KbT=plumed.getAtoms().getKbT();
-    plumed_massert(KbT>0,"your MD engine does not pass the temperature to plumed, you must specify it using TEMP");
-  }
+  double KbT=getkBT();
+  plumed_massert(KbT>0,"your MD engine does not pass the temperature to plumed, you must specify it using TEMP");
   beta_=1.0/KbT;
 
 //initialize probability grids using local free energies

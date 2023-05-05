@@ -369,16 +369,7 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
 
 //set kbt_
   const double kB=plumed.getAtoms().getKBoltzmann();
-  kbt_=plumed.getAtoms().getKbT();
-  double temp=-1;
-  parse("TEMP",temp);
-  if(temp>0)
-  {
-    if(kbt_>0 && std::abs(kbt_-kB*temp)>1e-4)
-      log.printf(" +++ WARNING +++ using TEMP=%g while MD engine uses %g\n",temp,kbt_/kB);
-    kbt_=kB*temp;
-  }
-  plumed_massert(kbt_>0,"your MD engine does not pass the temperature to plumed, you must specify it using TEMP");
+  kbt_=getkBT();
 
 //other compulsory input
   parse("PACE",stride_);
