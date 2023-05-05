@@ -28,6 +28,7 @@
 #include "ActionWithValue.h"
 #include "ActionWithVirtualAtom.h"
 #include "ActionToGetData.h"
+#include "ActionToPutData.h"
 #include "Atoms.h"
 #include "CLToolMain.h"
 #include "ExchangePatterns.h"
@@ -196,6 +197,7 @@ static CountInstances countInstances;
 
 PlumedMain::PlumedMain():
   initialized(false),
+  MDEngine("mdcode"),
 // automatically write on log in destructor
   stopwatch_fwd(log),
   step(0),
@@ -263,7 +265,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_setBox:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setBox(val);
+        setInputValue( "Box", 0, 1, val ); 
         break;
       case cmd_setPositions:
         CHECK_INIT(initialized,word);
@@ -292,7 +294,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_setVirial:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setVirial(val);
+        setInputForce("Box",val);
         break;
       case cmd_setEnergy:
         CHECK_INIT(initialized,word);
@@ -458,8 +460,16 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         readInputLines(val.get<const char*>());
         break;
       case cmd_clear:
+      {
         CHECK_INIT(initialized,word);
+        int natoms = atoms.getNatoms();
         actionSet.clearDelete(); inputs.clear();
+        if( natoms>0 ) {
+            std::string str_natoms; Tools::convert( natoms, str_natoms );
+            if( natoms>0 ) readInputLine( MDEngine + ": DOMAIN_DECOMPOSITION NATOMS=" + str_natoms );
+        }
+        setUnits( atoms.usingNaturalUnits(), atoms.getUnits() );
+      }
         break;
       case cmd_getApiVersion:
         CHECK_NOTNULL(val,word);
@@ -514,8 +524,15 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         atoms.setMDNaturalUnits(true);
         break;
       case cmd_setNoVirial:
-        CHECK_NOTINIT(initialized,word);
-        novirial=true;
+        {
+           CHECK_NOTINIT(initialized,word);
+           ActionToPutData* ap=actionSet.selectWithLabel<ActionToPutData*>("Box");
+           if( ap ) ap->noforce=true;
+           else {
+              ActionForInterface* af = actionSet.selectWithLabel<ActionForInterface*>(MDEngine);
+              if( af ) plumed_merror("setNoVirial should be called after number of atoms have been set");
+           }
+        }
         break;
       case cmd_setPlumedDat:
         CHECK_NOTINIT(initialized,word);
@@ -539,9 +556,12 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         multi_sim_comm.Set_comm(val);
         break;
       case cmd_setNatoms:
-        CHECK_NOTINIT(initialized,word);
-        CHECK_NOTNULL(val,word);
-        atoms.setNatoms(val.get<int>());
+        {
+          CHECK_NOTINIT(initialized,word);
+          CHECK_NOTNULL(val,word);
+          int natoms = val.get<int>(); atoms.setNatoms(natoms); std::string str_natoms; Tools::convert( natoms, str_natoms );
+          if( natoms>0 ) readInputLine( MDEngine + ": DOMAIN_DECOMPOSITION NATOMS=" + str_natoms, true );
+        }
         break;
       case cmd_setTimestep:
         CHECK_NOTINIT(initialized,word);
@@ -761,7 +781,7 @@ void PlumedMain::init() {
     readInputFile(plumedDat);
     plumedDat="";
   }
-  atoms.updateUnits();
+  setUnits( atoms.usingNaturalUnits(), atoms.getUnits() );
   log.printf("Timestep: %f\n",atoms.getTimeStep());
   if(atoms.getKbT()>0.0)
     log.printf("KbT: %f\n",atoms.getKbT());
@@ -797,18 +817,18 @@ void PlumedMain::readInputFile(const std::string & str) {
 
 void PlumedMain::readInputFile(IFile & ifile) {
   std::vector<std::string> words;
-  while(Tools::getParsedLine(ifile,words) && !endPlumed) readInputWords(words);
+  while(Tools::getParsedLine(ifile,words) && !endPlumed) readInputWords(words,false);
   endPlumed=false;
   pilots=actionSet.select<ActionPilot*>();
   setupInterfaceActions();
 }
 
-void PlumedMain::readInputLine(const std::string & str) {
-  plumed_assert(initialized);
+void PlumedMain::readInputLine(const std::string & str, const bool& before_init) {
+  if( !before_init ) plumed_assert(initialized); 
   if(str.empty()) return;
   std::vector<std::string> words=Tools::getWords(str);
   citations.clear();
-  readInputWords(words);
+  readInputWords(words,before_init);
   if(!citations.empty()) {
     log<<"Relevant bibliography:\n";
     log<<citations;
@@ -844,8 +864,8 @@ void PlumedMain::readInputLines(const std::string & str) {
   log<<"END FILE: (temporary)\n";
 }
 
-void PlumedMain::readInputWords(const std::vector<std::string> & words) {
-  plumed_assert(initialized);
+void PlumedMain::readInputWords(const std::vector<std::string> & words, const bool& before_init) {
+  if( !before_init ) plumed_assert(initialized);
   if(words.empty())return;
   else if(words[0]=="_SET_SUFFIX") {
     plumed_assert(words.size()==2);
@@ -1233,6 +1253,12 @@ void PlumedMain::setInputForce( const std::string& name, const TypesafePtr & val
       if( pp->setForcePointer( name, val ) ) { found=true; break; }
   }   
   plumed_massert( found, "found no action to set named " + name );
+}
+
+void PlumedMain::setUnits( const bool& natural, const Units& u ) {
+  atoms.updateUnits();
+  std::vector<ActionToPutData*> idata = actionSet.select<ActionToPutData*>();
+  for(const auto & ip : idata) ip->updateUnits( atoms.getMDUnits(), u );
 }
 
 void PlumedMain::startStep() {

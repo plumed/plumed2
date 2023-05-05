@@ -45,6 +45,7 @@ class ActionWithValue;
 /// you are implementing please feel free to use it.
 class Value {
   friend class ActionWithValue;
+  friend class DomainDecomposition;
 /// This copies the contents of a value into a second value (just the derivatives and value)
   friend void copy( const Value& val1, Value& val2 );
 /// This copies the contents of a value into a second value (but second value is a pointer)
@@ -139,7 +140,9 @@ public:
 /// Clear the input force on the variable
   void clearInputForce();
 /// Add some force on this value
-  void  addForce(double f);
+  void addForce(double f);
+/// Add some force on the ival th component of this value 
+  void addForce( const unsigned& ival, double f );
 /// Get the value of the force on this colvar
   double getForce( const unsigned& ival=0 ) const ;
 /// Apply the forces to the derivatives using the chain rule (if there are no forces this routine returns false)
@@ -306,6 +309,14 @@ void Value::addForce(double f) {
   hasForce=true;
   inputForce[0]+=f;
 }
+
+inline
+void Value::addForce(const unsigned& ival, double f) {
+  plumed_dbg_massert(hasDerivatives(),"forces can only be added to values with derivatives");
+  plumed_dbg_massert(ival<inputForce.size(),"too few components in value to add force");
+  hasForce=true; 
+  inputForce[ival]+=f;
+} 
 
 inline
 bool Value::forcesWereAdded() const {

@@ -48,9 +48,9 @@ class ActionAtomistic :
   std::vector<AtomNumber>  unique_local;
   std::vector<Vector>   positions;       // positions of the needed atoms
   double                energy;
+  Value*                boxValue;
   ForwardDecl<Pbc>      pbc_fwd;
   Pbc&                  pbc=*pbc_fwd;
-  Tensor                virial;
   std::vector<double>   masses;
   bool                  chargesWereSet;
   std::vector<double>   charges;
@@ -104,14 +104,16 @@ public:
   Vector & modifyGlobalForce(AtomNumber);
 /// Get modifiable virial
 /// Should be used by action that need to modify the stored virial
-  Tensor & modifyGlobalVirial();
+//  Tensor & modifyGlobalVirial();
 /// Get modifiable PBC
 /// Should be used by action that need to modify the stored box
-  Pbc & modifyGlobalPbc();
+//  Pbc & modifyGlobalPbc();
 /// Get box shape
   const Tensor & getBox()const;
 /// Get the array of all positions
   const std::vector<Vector> & getPositions()const;
+/// Get the virial that is acting
+  Tensor getVirial() const ;
 /// Get energy
   const double & getEnergy()const;
 /// Get mass of i-th atom
@@ -121,7 +123,7 @@ public:
 /// Get a reference to forces array
   std::vector<Vector> & modifyForces();
 /// Get a reference to virial array
-  Tensor & modifyVirial();
+//  Tensor & modifyVirial();
 /// Get a reference to force on energy
   double & modifyForceOnEnergy();
 /// Get a reference to force on extraCV
@@ -213,10 +215,10 @@ Vector & ActionAtomistic::modifyGlobalForce(AtomNumber i) {
   return atoms.forces[i.index()];
 }
 
-inline
-Tensor & ActionAtomistic::modifyGlobalVirial() {
-  return atoms.virial;
-}
+//inline
+//Tensor & ActionAtomistic::modifyGlobalVirial() {
+//  return atoms.virial;
+//}
 
 inline
 double ActionAtomistic::getMass(int i)const {
@@ -259,10 +261,10 @@ std::vector<Vector> & ActionAtomistic::modifyForces() {
   return forces;
 }
 
-inline
-Tensor & ActionAtomistic::modifyVirial() {
-  return virial;
-}
+//inline
+//Tensor & ActionAtomistic::modifyVirial() {
+//  return virial;
+//}
 
 inline
 double & ActionAtomistic::modifyForceOnEnergy() {
@@ -304,10 +306,10 @@ unsigned ActionAtomistic::getTotAtoms()const {
   return atoms.positions.size();
 }
 
-inline
-Pbc & ActionAtomistic::modifyGlobalPbc() {
-  return atoms.pbc;
-}
+// inline
+// Pbc & ActionAtomistic::modifyGlobalPbc() {
+//   return atoms.pbc;
+// }
 
 inline
 void ActionAtomistic::setExtraCV(const std::string &name) {

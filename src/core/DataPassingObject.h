@@ -55,9 +55,9 @@ public:
 /// Set the unit for the force
   void setForceUnit( const double& u ) { funit=u; }
 /// Set the pointer to the value 
-  virtual void setValuePointer( const TypesafePtr & val, const bool& isconst )=0;
+  virtual void setValuePointer( const TypesafePtr & val, const std::vector<unsigned>& shape, const bool& isconst )=0;
 /// Set the pointer to the force
-  virtual void setForcePointer( const TypesafePtr & val )=0;
+  virtual void setForcePointer( const TypesafePtr & val, const std::vector<unsigned>& shape )=0;
 /// Share the data and put it in the value from sequential data
   virtual void share_data( const unsigned& j, const unsigned& k, Value* value )=0; 
 /// Share the data and put it in the value from a scattered data

@@ -38,17 +38,19 @@ void ActionToPutData::registerKeywords(Keywords& keys){
                                    "is not periodic you must state this using PERIODIC=NO.  Positions are passed with PERIODIC=NO even though special methods are used "
                                    "to deal with pbc");
   keys.addFlag("CONSTANT",false,"does this quantity not depend on time");
+  keys.addFlag("FROM_DOMAINS",false,"is this quantity passed through the domain decomposition object");
 }
 
 ActionToPutData::ActionToPutData(const ActionOptions&ao):
 Action(ao),
 ActionForInterface(ao),
 noforce(false),
-fixed(getName()=="TIMESTEP"),
+fixed(false),
+from_domains(false),
 dataCanBeSet(true),
 mydata(DataPassingObject::create(plumed.getAtoms().getRealPrecision()))
 {
-   if( getName()!="ENERGY" && getName()!="PBC" && getName()!="TIMESTEP" ) {
+   if( getName()!="ENERGY" && getName()!="PBC" ) {
        std::vector<unsigned> shape; parseVector("SHAPE",shape);
        if( shape.size()==1 && shape[0]==0 ) { shape.resize(0); addValue( shape ); }
        else { addValue( shape ); }    
@@ -65,6 +67,7 @@ mydata(DataPassingObject::create(plumed.getAtoms().getRealPrecision()))
        else  error("input to PERIODIC keyword does not make sense");
 
        parseFlag("CONSTANT",fixed); if( fixed ) { noforce=true; copyOutput(0)->setConstant(); } 
+       parseFlag("FROM_DOMAINS",from_domains);
    }
 }
 
@@ -112,13 +115,17 @@ double ActionToPutData::MD2double( void* val ) const {
 bool ActionToPutData::setValuePointer( const std::string& name, const TypesafePtr & val ) {
    if( name!=getLabel() ) return false;
    wasset=true; plumed_massert( dataCanBeSet, "set " + getLabel() + " cannot be set at this time");
-   mydata->setValuePointer(val,true); return true;
+   if( !from_domains ) mydata->setValuePointer(val,getPntrToComponent(0)->getShape(),true); 
+   else mydata->setValuePointer(val,std::vector<unsigned>(), true);
+   return true;
 }
 
 bool ActionToPutData::setForcePointer( const std::string& name, const TypesafePtr & val ) {
    if( name!=getLabel() ) return false;
    plumed_massert( dataCanBeSet, "force on " + getLabel() + " cannot be set at this time");
-   mydata->setForcePointer(val); return true;
+   if( !from_domains ) mydata->setForcePointer(val,getPntrToComponent(0)->getShape());
+   else mydata->setForcePointer(val,std::vector<unsigned>()); 
+   return true;
 }
 
 void ActionToPutData::transferFixedValue( const double& unit ) {

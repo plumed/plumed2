@@ -58,7 +58,7 @@ ActionWithValue::ActionWithValue(const ActionOptions&ao):
   numericalDerivatives(false)
 {
   if( keywords.exists("NUMERICAL_DERIVATIVES") ) parseFlag("NUMERICAL_DERIVATIVES",numericalDerivatives);
-  if(numericalDerivatives) log.printf("  using numerical derivatives\n");
+  if(!keywords.exists("NO_ACTION_LOG") && numericalDerivatives) log.printf("  using numerical derivatives\n");
 }
 
 ActionWithValue::~ActionWithValue() {

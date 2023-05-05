@@ -22,6 +22,7 @@
 #include "ActionWithArguments.h"
 #include "ActionWithValue.h"
 #include "ActionAtomistic.h"
+#include "ActionForInterface.h"
 #include "tools/PDB.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
@@ -143,6 +144,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
           std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
           if( all.empty() ) error("your input file is not telling plumed to calculate anything");
           for(unsigned j=0; j<all.size(); j++) {
+            ActionForInterface* ap=dynamic_cast<ActionForInterface*>( all[j] ); if( ap ) continue; 
             for(int k=0; k<all[j]->getNumberOfComponents(); ++k) arg.push_back(all[j]->copyOutput(k));
           }
         } else if ( name=="*") {
@@ -186,6 +188,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
           std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
           if( all.empty() ) error("your input file is not telling plumed to calculate anything");
           for(unsigned j=0; j<all.size(); j++) {
+            ActionForInterface* ap=dynamic_cast<ActionForInterface*>( all[j] ); if( ap ) continue; 
             for(int k=0; k<all[j]->getNumberOfComponents(); ++k) arg.push_back(all[j]->copyOutput(k));
           }
         } else {

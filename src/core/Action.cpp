@@ -23,6 +23,7 @@
 #include "ActionAtomistic.h"
 #include "ActionWithValue.h"
 #include "ActionWithArguments.h"
+#include "ActionForInterface.h"
 #include "PlumedMain.h"
 #include "tools/Log.h"
 #include "tools/Exception.h"
@@ -80,17 +81,16 @@ Action::Action(const ActionOptions&ao):
   comm.Bcast(replica_index,0);
 
   if ( keywords.exists("LABEL") ) { parse("LABEL",label); }
-
   if(label.length()==0) {
-    std::string s; Tools::convert(plumed.getActionSet().size(),s);
+    std::string s; Tools::convert(plumed.getActionSet().size()-plumed.getActionSet().select<ActionForInterface*>().size(),s);
     label="@"+s;
   }
   if( plumed.getActionSet().selectWithLabel<Action*>(label) ) error("label " + label + " has been already used");
   if( !keywords.exists("NO_ACTION_LOG") ) log.printf("  with label %s\n",label.c_str());
   if ( keywords.exists("UPDATE_FROM") ) parse("UPDATE_FROM",update_from);
-  if(update_from!=std::numeric_limits<double>::max()) log.printf("  only update from time %f\n",update_from);
+  if( !keywords.exists("NO_ACTION_LOG") && update_from!=std::numeric_limits<double>::max()) log.printf("  only update from time %f\n",update_from);
   if ( keywords.exists("UPDATE_UNTIL") ) parse("UPDATE_UNTIL",update_until);
-  if(update_until!=std::numeric_limits<double>::max()) log.printf("  only update until time %f\n",update_until);
+  if( !keywords.exists("NO_ACTION_LOG") && update_until!=std::numeric_limits<double>::max()) log.printf("  only update until time %f\n",update_until);
   if ( keywords.exists("RESTART") ) {
     std::string srestart="AUTO";
     parse("RESTART",srestart);
@@ -225,7 +225,7 @@ void Action::setupConstantValues( const bool& have_atoms ) {
       ActionAtomistic* at = dynamic_cast<ActionAtomistic*>( this );
       ActionWithValue* av = dynamic_cast<ActionWithValue*>( this );
       if( at && av ) {
-          never_activate=true;
+          never_activate=av->getNumberOfComponents()>0;
           for(unsigned i=0; i<av->getNumberOfComponents();++i) {
               if( !av->copyOutput(i)->isConstant() ) { never_activate=false; break; }
           }
@@ -262,7 +262,7 @@ void Action::prepare() {
 }
 
 [[noreturn]] void Action::error( const std::string & msg ) const {
-  log.printf("ERROR in input to action %s with label %s : %s \n \n", name.c_str(), label.c_str(), msg.c_str() );
+  if( !keywords.exists("NO_ACTION_LOG") ) log.printf("ERROR in input to action %s with label %s : %s \n \n", name.c_str(), label.c_str(), msg.c_str() );
   plumed_merror("ERROR in input to action " + name + " with label " + label + " : " + msg );
 }
 

@@ -212,28 +212,16 @@ void Sprint::calculate() {
 }
 
 void Sprint::apply() {
-  std::vector<Vector>&   f(modifyForces());
-  Tensor&           v(modifyVirial());
-  unsigned          nat=getNumberOfAtoms();
-
+  bool hasforce=false;
   std::vector<double> forces( 3*getNumberOfAtoms() + 9 );
+  std::vector<double> fforces( 3*getNumberOfAtoms() + 9, 0 );
   for(int i=0; i<getNumberOfComponents(); ++i) {
     if( getPntrToComponent(i)->applyForce( forces ) ) {
-      for(unsigned j=0; j<nat; ++j) {
-        f[j][0]+=forces[3*j+0];
-        f[j][1]+=forces[3*j+1];
-        f[j][2]+=forces[3*j+2];
-      }
-      v(0,0)+=forces[3*nat+0];
-      v(0,1)+=forces[3*nat+1];
-      v(0,2)+=forces[3*nat+2];
-      v(1,0)+=forces[3*nat+3];
-      v(1,1)+=forces[3*nat+4];
-      v(1,2)+=forces[3*nat+5];
-      v(2,0)+=forces[3*nat+6];
-      v(2,1)+=forces[3*nat+7];
-      v(2,2)+=forces[3*nat+8];
+      hasforce=true; for(unsigned j=0; j<fforces.size(); ++j) fforces[j] += forces[j];
     }
+  }
+  if( hasforce ) {
+      unsigned ind=0; setForcesOnAtoms( fforces, ind );
   }
 }
 

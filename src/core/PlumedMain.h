@@ -67,6 +67,7 @@ class ExchangePatterns;
 class FileBase;
 class TypesafePtr;
 class IFile;
+class Units;
 class DataPassingTools;
 
 /**
@@ -226,6 +227,9 @@ public:
 /// This sets the the forces with a particular name to the pointer to the data in the MD code 
   void setInputForce( const std::string& name, const TypesafePtr & val );
 
+/// This updates the units of the input quantities
+  void setUnits( const bool& natural, const Units& u );
+
 /// Flag to switch off virial calculation (for debug and MD codes with no barostat)
   bool novirial;
 
@@ -283,14 +287,14 @@ public:
     Read an input string.
     \param str name of the string
   */
-  void readInputWords(const std::vector<std::string> &  str);
+  void readInputWords(const std::vector<std::string> &  str, const bool& before_init);
 
   /**
     Read an input string.
     \param str name of the string
     At variance with readInputWords(), this is splitting the string into words
   */
-  void readInputLine(const std::string & str);
+  void readInputLine(const std::string & str, const bool& before_init=false);
 
   /**
     Read an input buffer.

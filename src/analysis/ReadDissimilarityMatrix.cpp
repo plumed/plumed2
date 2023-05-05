@@ -27,6 +27,7 @@
 #include "core/ActionSet.h"
 #include "core/ActionRegister.h"
 #include "core/ActionSetup.h"
+#include "core/ActionForInterface.h"
 #include "tools/IFile.h"
 
 //+PLUMEDOC ANALYSIS READ_DISSIMILARITY_MATRIX
@@ -89,7 +90,8 @@ ReadDissimilarityMatrix::ReadDissimilarityMatrix( const ActionOptions& ao ):
 {
   setStride(1); // Set the stride equal to one to ensure we don't get stuck in an infinite loop
   std::vector<ActionSetup*> setupActions=plumed.getActionSet().select<ActionSetup*>();
-  if( my_input_data && (plumed.getActionSet().size()-setupActions.size())!=1 ) error("should only be this action and the READ_ANALYSIS_FRAMES command in the input file");
+  std::vector<ActionForInterface*> interActions=plumed.getActionSet().select<ActionForInterface*>();
+  if( my_input_data && (plumed.getActionSet().size()-setupActions.size()-interActions.size())!=1 ) error("should only be this action and the READ_ANALYSIS_FRAMES command in the input file");
   if( !my_input_data && plumed.getActionSet().size()!=0 ) error("read dissimilarity matrix command must be at top of input file");
 
   parse("FILE",fname);

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2023 The plumed team
+   Copyright (c) 2012-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,30 +19,39 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ActionSetup.h"
-#include "ActionForInterface.h"
-#include "PlumedMain.h"
-#include "ActionSet.h"
-#include "tools/Exception.h"
-#include "ActionAnyorder.h"
+#ifndef __PLUMED_core_PbcAction_h
+#define __PLUMED_core_PbcAction_h
+
+#include "ActionToPutData.h"
+#include "tools/ForwardDecl.h"
+
+#include <vector>
+#include <string>
 
 namespace PLMD {
 
-ActionSetup::ActionSetup(const ActionOptions&ao):
-  Action(ao)
-{
-  const ActionSet& actionset(plumed.getActionSet());
-  for(const auto & p : actionset) {
-// check that all the preceding actions are ActionSetup
-    if( !dynamic_cast<ActionSetup*>(p.get()) && !dynamic_cast<ActionForInterface*>(p.get()) && !dynamic_cast<ActionAnyorder*>(p.get()) ) {
-        error("Action " + getLabel() + " is a setup action, and should be only preceded by other setup actions or by actions that can be used in any order.");
-    }
-  }
+class Pbc;
+
+class PbcAction : public ActionToPutData {
+friend class ActionAtomistic;
+private:
+  ActionForInterface* interface;
+  ForwardDecl<Pbc> pbc_fwd;
+  Pbc&   pbc=*pbc_fwd;
+  void setPbc();
+public:
+  explicit PbcAction(const ActionOptions&);
+// active methods:
+  static void registerKeywords( Keywords& keys );
+  Pbc& getPbc();
+  void wait() override;
+  void readBinary(std::istream&i) override;
+};
+
+inline
+Pbc& PbcAction::getPbc() {
+  return pbc;
 }
 
-void ActionSetup::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords(keys);
-  keys.remove("LABEL");
 }
-
-}
+#endif

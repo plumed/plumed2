@@ -727,7 +727,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         std::map<std::string,std::vector<std::string> > data;
         IFile ifile; ifile.open(plumedFile); std::vector<std::string> words;
         while( Tools::getParsedLine(ifile,words) && !p.getEndPlumed() ) {
-          p.readInputWords(words); Action* aa=p.getActionSet()[p.getActionSet().size()-1].get();
+          p.readInputWords(words,false); Action* aa=p.getActionSet()[p.getActionSet().size()-1].get();
           ActionWithValue* av=dynamic_cast<ActionWithValue*>(aa);
           if( av && aa->getDefaultString().length()>0 ) {
             std::vector<std::string> def; def.push_back( "defaults " + aa->getDefaultString() );

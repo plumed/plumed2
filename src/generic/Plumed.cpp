@@ -395,14 +395,10 @@ void Plumed::calculate() {
 
 void Plumed::apply() {
   Tools::DirectoryChanger directoryChanger(directory.c_str());
-  auto & f(modifyForces());
-  for(unsigned i=0; i<getNumberOfAtoms(); i++) {
-    f[i][0]+=forces[3*i+0];
-    f[i][1]+=forces[3*i+1];
-    f[i][2]+=forces[3*i+2];
-  }
-  auto & v(modifyVirial());
-  v+=virial;
+  std::vector<double> fforces( forces.size() + 9, 0 );
+  for(unsigned i=0; i<forces.size(); i++) fforces[i] += forces[i]; 
+  for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) fforces[forces.size()+3*i+j] = virial[i][j];
+  unsigned ind=0; setForcesOnAtoms( fforces, ind );
 }
 
 void Plumed::update() {

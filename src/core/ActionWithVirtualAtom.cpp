@@ -43,11 +43,18 @@ ActionWithVirtualAtom::~ActionWithVirtualAtom() {
 }
 
 void ActionWithVirtualAtom::apply() {
+  std::vector<double> fforce( 3*getNumberOfAtoms() + 9 );
   Vector & f(atoms.forces[index.index()]);
-  for(unsigned i=0; i<getNumberOfAtoms(); i++) modifyForces()[i]=matmul(derivatives[i],f);
-  Tensor & v(modifyVirial());
+  for(unsigned i=0; i<getNumberOfAtoms(); i++) {
+      Vector force = matmul(derivatives[i],f);
+      fforce[3*i+0] = force[0];
+      fforce[3*i+1] = force[1];
+      fforce[3*i+2] = force[2];
+  }
+  Tensor v; v.zero();
   for(unsigned i=0; i<3; i++) v+=boxDerivatives[i]*f[i];
-  f.zero(); // after propagating the force to the atoms used to compute the vatom, we reset this to zero
+  for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) fforce[3*getNumberOfAtoms() + 3*i + j] = v[i][j];
+  unsigned ind=0; setForcesOnAtoms( fforce, ind ); f.zero(); // after propagating the force to the atoms used to compute the vatom, we reset this to zero
   // this is necessary to avoid double counting if then one tries to compute the total force on the c.o.m. of the system.
   // notice that this is currently done in FIT_TO_TEMPLATE
 }

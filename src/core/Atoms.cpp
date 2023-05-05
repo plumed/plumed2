@@ -370,10 +370,10 @@ void Atoms::updateForces() {
     if(!unique_serial && int(gatindex.size())==natoms && shuffledAtoms==0) mdatoms->updateForces(gatindex,forces);
     else mdatoms->updateForces(unique,uniq_index,forces);
   }
-  if( !plumed.novirial && dd.Get_rank()==0 ) {
-    plumed_assert( virialHasBeenSet );
-    mdatoms->updateVirial(virial);
-  }
+  // if( !plumed.novirial && dd.Get_rank()==0 ) {
+  //   plumed_assert( virialHasBeenSet );
+  //   mdatoms->updateVirial(virial);
+  // }
 }
 
 void Atoms::setNatoms(int n) {

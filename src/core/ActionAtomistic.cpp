@@ -23,6 +23,7 @@
 #include "PlumedMain.h"
 #include "ActionSet.h"
 #include "GenericMolInfo.h"
+#include "PbcAction.h"
 #include <vector>
 #include <string>
 #include "ActionWithValue.h"
@@ -42,11 +43,14 @@ ActionAtomistic::~ActionAtomistic() {
 
 ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
   Action(ao),
+  boxValue(NULL),
   lockRequestAtoms(false),
   donotretrieve(false),
   donotforce(false),
   atoms(plumed.getAtoms())
 {
+  ActionWithValue* bv = plumed.getActionSet().selectWithLabel<ActionWithValue*>("Box");
+  if( bv ) boxValue=bv->copyOutput(0);
   atoms.add(this);
 //  if(atoms.getNatoms()==0) error("Cannot perform calculations involving atoms without atoms");
 }
@@ -67,6 +71,7 @@ void ActionAtomistic::requestAtoms(const std::vector<AtomNumber> & a, const bool
   int n=atoms.positions.size();
   if(clearDep) clearDependencies();
   unique.clear();
+  if( boxValue ) addDependency( boxValue->getPntrToAction() );
   for(unsigned i=0; i<indexes.size(); i++) {
     if(indexes[i].index()>=n) { std::string num; Tools::convert( indexes[i].serial(),num ); error("atom " + num + " out of range"); }
     if(atoms.isVirtualAtom(indexes[i])) addDependency(atoms.getVirtualAtomsAction(indexes[i]));
@@ -221,7 +226,10 @@ void ActionAtomistic::interpretAtomList(std::vector<std::string>& strings, std::
 }
 
 void ActionAtomistic::retrieveAtoms() {
-  pbc=atoms.pbc;
+  if( boxValue ) {
+      PbcAction* pbca = dynamic_cast<PbcAction*>( boxValue->getPntrToAction() );
+      plumed_assert( pbca ); pbc=pbca->pbc;
+  }
   Colvar*cc=dynamic_cast<Colvar*>(this);
   if(cc && cc->checkIsEnergy()) energy=atoms.getEnergy();
   if(donotretrieve) return;
@@ -241,30 +249,26 @@ void ActionAtomistic::setForcesOnAtoms(const std::vector<double>& forcesToApply,
     forces[i][1]=forcesToApply[ind]; ind++;
     forces[i][2]=forcesToApply[ind]; ind++;
   }
-  virial(0,0)=forcesToApply[ind]; ind++;
-  virial(0,1)=forcesToApply[ind]; ind++;
-  virial(0,2)=forcesToApply[ind]; ind++;
-  virial(1,0)=forcesToApply[ind]; ind++;
-  virial(1,1)=forcesToApply[ind]; ind++;
-  virial(1,2)=forcesToApply[ind]; ind++;
-  virial(2,0)=forcesToApply[ind]; ind++;
-  virial(2,1)=forcesToApply[ind]; ind++;
-  virial(2,2)=forcesToApply[ind];
-  plumed_dbg_assert( ind+1==forcesToApply.size());
+  for(unsigned i=0;i<9;++i) {
+     plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
+     boxValue->addForce( i, forcesToApply[ind] ); ind++;
+  }
+}
+
+Tensor ActionAtomistic::getVirial() const {
+  Tensor vir; for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) vir[i][j] = boxValue->getForce(3*i+j);
+  return vir;
 }
 
 void ActionAtomistic::applyForces() {
   if(donotforce) return;
   std::vector<Vector>& f(atoms.forces);
-  Tensor& v(atoms.virial);
   for(unsigned j=0; j<indexes.size(); j++) f[indexes[j].index()]+=forces[j];
-  v+=virial;
   atoms.forceOnEnergy+=forceOnEnergy;
   if(extraCV.length()>0) atoms.updateExtraCVForce(extraCV,forceOnExtraCV);
 }
 
 void ActionAtomistic::clearOutputForces() {
-  virial.zero();
   if(donotforce) return;
   Tools::set_to_zero(forces);
   forceOnEnergy=0.0;

@@ -39,6 +39,8 @@ private:
   bool noforce;
 /// Is this quantity fixed
   bool fixed;
+/// Is this quantity passed from the domains
+  bool from_domains;
 /// Are we allowed to set data at this time
   bool dataCanBeSet;
 /// The unit of the value that has been passed to plumed

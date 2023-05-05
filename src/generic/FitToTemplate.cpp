@@ -32,6 +32,7 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/GenericMolInfo.h"
+#include "core/PbcAction.h"
 #include "tools/PDB.h"
 #include "tools/Pbc.h"
 
@@ -188,8 +189,9 @@ class FitToTemplate:
   std::vector<Vector> ddistdpos;
   std::vector<Vector> centeredpositions;
   Vector center_positions;
-
-
+  // Copy of the box value
+  Value* boxValue;
+  PbcAction* pbc_action;
 public:
   explicit FitToTemplate(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
@@ -286,6 +288,9 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
   // this is required so as to allow modifyGlobalForce() to return correct
   // also for forces that are not owned (and thus not zeored) by all processors.
   allowToAccessGlobalForces();
+  pbc_action=plumed.getActionSet().selectWithLabel<PbcAction*>("Box");
+  if( !pbc_action ) error("cannot align box has not been set");
+  boxValue=pbc_action->copyOutput(0);
 }
 
 
@@ -316,8 +321,8 @@ void FitToTemplate::calculate() {
       ato=matmul(rotation,ato-center_positions)+center;
     }
 // rotate box
-    Pbc & pbc(modifyGlobalPbc());
-    pbc.setBox(matmul(pbc.getBox(),transpose(rotation)));
+    Pbc& pbc(pbc_action->getPbc());
+    pbc.setBox(matmul(pbc_action->getPbc().getBox(),transpose(rotation)));
   }
 
 }
@@ -328,8 +333,8 @@ void FitToTemplate::apply() {
     for(unsigned i=0; i<getTotAtoms(); i++) {
       totForce+=modifyGlobalForce(AtomNumber::index(i));
     }
-    Tensor & vv(modifyGlobalVirial());
-    vv+=Tensor(center,totForce);
+    Tensor vv=Tensor(center,totForce);
+    for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) boxValue->addForce( 3*i+j, vv(i,j) );
     for(unsigned i=0; i<aligned.size(); ++i) {
       Vector & ff(modifyGlobalForce(aligned[i]));
       ff-=totForce*weights[i];
@@ -343,7 +348,8 @@ void FitToTemplate::apply() {
 // accumulate rotated c.o.m. forces - this is already in the non rotated reference frame
       totForce+=f;
     }
-    Tensor& virial(modifyGlobalVirial());
+    Tensor virial;
+    for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) virial[i][j] = boxValue->getForce( 3*i+j );
 // notice that an extra Tensor(center,matmul(rotation,totForce)) is required to
 // compute the derivatives of the rotation with respect to center
     Tensor ww=matmul(transpose(rotation),virial+Tensor(center,matmul(rotation,totForce)));
@@ -366,7 +372,8 @@ void FitToTemplate::apply() {
       virial+=extProduct(getPosition(i),g);
     }
 // finally, correction to the virial
-    virial+=extProduct(matmul(transpose(rotation),center),totForce);
+    boxValue->clearInputForce(); virial+=extProduct(matmul(transpose(rotation),center),totForce);
+    for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) boxValue->addForce( 3*i+j, virial(i,j) ); 
   }
 }
 

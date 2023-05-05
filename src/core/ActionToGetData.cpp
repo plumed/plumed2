@@ -65,7 +65,7 @@ void ActionToGetData::get_shape( const TypesafePtr & dims ) {
 }
 
 void ActionToGetData::set_memory( const TypesafePtr & val ) {
-   mydata->setValuePointer(val,false);
+  mydata->setValuePointer(val,getPntrToArgument(0)->getShape(),false);
 }
 
 void ActionToGetData::calculate() {
