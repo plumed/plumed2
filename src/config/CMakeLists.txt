@@ -18,10 +18,22 @@ set (includedir "xxxxNAxxxx")
 set (program_name "xxxxNAxxxx")
 configure_file(Config.inc.in Config.inc)
 
-add_library(Config OBJECT Config.cpp)
-add_library(ConfigInstall OBJECT ConfigInstall.cpp)
-target_include_directories(Config PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-target_include_directories(ConfigInstall PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+#TODO: verify if the version number are not set
+configure_file(version.h.in version.h)
+
+add_library(Config OBJECT Config.cpp Makefile.conf.xxd)
+add_library(ConfigInstall OBJECT ConfigInstall.cpp Makefile.conf.xxd)
+target_include_directories(Config PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(ConfigInstall PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+
+configure_file(Makefile.conf.xxd.compiler.sh.in Makefile.conf.xxd.compiler.sh @ONLY)
+configure_file(${PLUMED_MAIN_DIR}/Makefile.conf.in Makefile.cmakeMocked.conf @ONLY)
+add_custom_command(OUTPUT Makefile.conf.xxd
+    DEPENDS ${PLUMED_MAIN_DIR}/Makefile.conf.in
+    COMMAND bash Makefile.conf.xxd.compiler.sh
+    COMMENT "Generationc completion.xxd"
+    #WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
 function(print_target_property target_name property)
     get_target_property(t ${target_name} ${property})
     message("${target_name} <${property}>: ${t}")

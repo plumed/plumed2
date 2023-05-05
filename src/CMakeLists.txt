@@ -119,9 +119,11 @@ foreach(dir ${mayBeExternal})
     
     if (${externalLib}_FOUND)
         set(module_${dir} OFF CACHE BOOL "activate module ${dir}" FORCE)
+        add_library(${dir} INTERFACE)
+
         #add_library(${dir} ALIAS ${externalLib}:${externalLib})
         #target_compile_options(${PROJECT_NAME} PRIVATE ${BLAS_LINKER_FLAGS})
-        #target_link_libraries(${PROJECT_NAME} ${BLAS_LIBRARIES})
+        target_link_libraries(${dir} INTERFACE ${externalLib}::${externalLib})
     else()
         add_subdirectory(${dir})
         set(${externalLib}_FOUND OFF)
@@ -274,23 +276,32 @@ endforeach(activeModule ${modulesDependencies})
 #building the shared libraries with the collected modules
 add_library(libplumedKernel SHARED ${KernelTargets})
 set_target_properties(libplumedKernel
-    PROPERTIES LIBRARY_OUTPUT_NAME ${program_name}Kernel.${SOEXT}
+    PROPERTIES 
+        LIBRARY_OUTPUT_NAME ${program_name}Kernel
+        SUFFIX .${SOEXT}
     )
+
 
 add_library(libplumed SHARED $<TARGET_OBJECTS:PlumedWrapper>)
 set_target_properties(libplumed
-    PROPERTIES LIBRARY_OUTPUT_NAME ${program_name}.${SOEXT}
+    PROPERTIES
+        LIBRARY_OUTPUT_NAME ${program_name}
+        SUFFIX .${SOEXT}
     )
 target_link_libraries(libplumed
-                PlumedWrapper
+    PlumedWrapper
+    ConfigInstall
 )
 
 add_library(libplumedWrapper STATIC $<TARGET_OBJECTS:PlumedWrapper>)
 set_target_properties(libplumedWrapper
-    PROPERTIES LIBRARY_OUTPUT_NAME ${program_name}Wrapper.${SOEXT}
+    PROPERTIES
+        LIBRARY_OUTPUT_NAME ${program_name}Wrapper
+        ARCHIVE_OUTPUT_NAME ${program_name}Wrapper
     )
-    target_link_libraries(libplumedWrapper
-                PlumedWrapper
+target_link_libraries(libplumedWrapper
+    PlumedWrapper
+    ConfigInstall
 )
 
 function(print_target_property target_name property)
