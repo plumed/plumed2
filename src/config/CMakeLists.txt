@@ -1,4 +1,5 @@
-
+# set(module_name config)
+# set(module_${module_name} ON CACHE INTERNAL "always active core module ${module_name}")
 #SOEXT is set in ./src
 set(ISINSTALLED "true")
 #must go to /lib/plumed
@@ -18,3 +19,11 @@ configure_file(Config.inc.in Config.inc)
 
 add_library(Config OBJECT Config.cpp)
 add_library(ConfigInstall OBJECT ConfigInstall.cpp)
+target_include_directories(Config PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(ConfigInstall PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+function(print_target_property target_name property)
+    get_target_property(t ${target_name} ${property})
+    message("${target_name} <${property}>: ${t}")
+    unset(t)    
+endfunction(print_target_property)
+print_target_property(ConfigInstall INCLUDE_DIRECTORIES)

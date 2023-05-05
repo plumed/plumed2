@@ -39,15 +39,19 @@ ADDMODULENEEDS(${module_name}
 config tools lepton
 )
 
+#ADDMODULEDEPENDENCIES(${module_name}
+#    tools #commenting this avoids circular references error
+#)
+
 #execute_process(
 #        COMMAND bash ${PLUMED_MAKETOOLS}/makecmd_cmake map "${CMAKE_CURRENT_SOURCE_DIR}/PlumedMain.cpp"  PlumedMainMap.inc
 #        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 #)
-
+target_include_directories(${module_name} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 MACRO(CREATEINC cppFile type outputFile)
     add_custom_command(OUTPUT ${outputFile}
         DEPENDS ${cppFile}
-        COMMAND bash ${PLUMED_MAKETOOLS}/makecmd_cmake map "${CMAKE_CURRENT_SOURCE_DIR}/${cppFile}"  ${outputFile}
+        COMMAND bash ${PLUMED_MAKETOOLS}/makecmd_cmake ${type} "${CMAKE_CURRENT_SOURCE_DIR}/${cppFile}"  ${outputFile}
         COMMENT "Generating ${outputFile}"
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     )

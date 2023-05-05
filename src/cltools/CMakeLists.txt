@@ -24,6 +24,9 @@ completion.xxd
 ADDMODULENEEDS(${module_name}
 core config tools molfile xdrfile
 )
+ADDMODULEDEPENDENCIES(${module_name}
+    molfile
+)
 
 #get_target_property(t ${module_name} INCLUDE_DIRECTORIES)
 #message("id: ${t}")

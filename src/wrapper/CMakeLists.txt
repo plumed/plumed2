@@ -1,3 +1,5 @@
+# set(module_name wrapper)
+# set(module_${module_name} ON CACHE INTERNAL "always active core module ${module_name}")
 add_library(PlumedStaticWrapper OBJECT PlumedStatic.cpp)
 add_library(PlumedWrapper OBJECT Plumed.c)
 
