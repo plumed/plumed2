@@ -27,6 +27,8 @@
 //+PLUMEDOC ANALYSIS GET
 /*
 
+\par Examples
+
 */
 //+ENDPLUMEDOC
 

@@ -305,14 +305,12 @@ void Value::clearDerivatives() {
 
 inline
 void Value::addForce(double f) {
-  plumed_dbg_massert(hasDerivatives(),"forces can only be added to values with derivatives");
   hasForce=true;
   inputForce[0]+=f;
 }
 
 inline
 void Value::addForce(const unsigned& ival, double f) {
-  plumed_dbg_massert(hasDerivatives(),"forces can only be added to values with derivatives");
   plumed_dbg_massert(ival<inputForce.size(),"too few components in value to add force");
   hasForce=true;
   inputForce[ival]+=f;

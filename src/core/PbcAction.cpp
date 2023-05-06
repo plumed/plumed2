@@ -28,6 +28,8 @@
 //+PLUMEDOC ANALYSIS PBC
 /*
 
+\par Examples
+
 */
 //+ENDPLUMEDOC
 

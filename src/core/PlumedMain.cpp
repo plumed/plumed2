@@ -560,7 +560,8 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
         int natoms = val.get<int>(); atoms.setNatoms(natoms); std::string str_natoms; Tools::convert( natoms, str_natoms );
-        if( natoms>0 ) readInputLine( MDEngine + ": DOMAIN_DECOMPOSITION NATOMS=" + str_natoms, true );
+        ActionForInterface* dd=actionSet.selectWithLabel<ActionToPutData*>(MDEngine);
+        if( !dd && natoms>0 ) readInputLine( MDEngine + ": DOMAIN_DECOMPOSITION NATOMS=" + str_natoms, true );
       }
       break;
       case cmd_setTimestep:

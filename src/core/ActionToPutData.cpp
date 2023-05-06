@@ -28,6 +28,8 @@
 //+PLUMEDOC ANALYSIS PUT
 /*
 
+\par Examples
+
 */
 //+ENDPLUMEDOC
 

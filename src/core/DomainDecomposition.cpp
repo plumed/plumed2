@@ -30,6 +30,8 @@
 //+PLUMEDOC ANALYSIS DOMAIN_DECOMPOSITION
 /*
 
+\par Examples
+
 */
 //+ENDPLUMEDOC
 
