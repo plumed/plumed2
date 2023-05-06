@@ -120,7 +120,7 @@ public:
   void clearDependencies();
 
 /// Get the value of kBT by either reading the TEMP keyword
-/// and multiplying the temperature by Boltzmann's constant 
+/// and multiplying the temperature by Boltzmann's constant
 /// or get it fro the MD code
   double getkBT();
 
@@ -190,7 +190,7 @@ public:
 /// a final Action has been initialized
   void checkRead();
 
-/// This calculates any values that are constant and ensures 
+/// This calculates any values that are constant and ensures
 /// that we don't calculate these actions on every timestep
   void setupConstantValues( const bool& have_atoms );
 

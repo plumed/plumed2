@@ -166,7 +166,7 @@ private:
 /// Set of actions found in plumed.dat file
   ActionSet& actionSet=*actionSet_fwd;
 
-/// These are tools to pass data to PLUMED 
+/// These are tools to pass data to PLUMED
   std::unique_ptr<DataPassingTools> passtools;
 
 /// Vector of actions that are passed data from the MD code
@@ -221,10 +221,10 @@ public:
 /// This determines if the user has created a value to hold the quantity that is being passed
   bool valueExists( const std::string& name ) const ;
 
-/// This sets the the value with a particular name to the pointer to the data in the MD code 
+/// This sets the the value with a particular name to the pointer to the data in the MD code
   void setInputValue( const std::string& name, const unsigned& start, const unsigned& stride, const TypesafePtr & val );
 
-/// This sets the the forces with a particular name to the pointer to the data in the MD code 
+/// This sets the the forces with a particular name to the pointer to the data in the MD code
   void setInputForce( const std::string& name, const TypesafePtr & val );
 
 /// This updates the units of the input quantities
@@ -463,7 +463,7 @@ public:
     return nestedExceptions;
   }
 /// Check if there is active input in the action set
-  bool inputsAreActive() const ;  
+  bool inputsAreActive() const ;
 /// Transfer information from input MD code
   void writeBinary(std::ostream&)const;
   void readBinary(std::istream&);

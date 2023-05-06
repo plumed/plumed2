@@ -129,7 +129,7 @@ ResetCell::ResetCell(const ActionOptions&ao):
 
   pbc_action=plumed.getActionSet().selectWithLabel<PbcAction*>("Box");
   if( !pbc_action ) error("cannot reset cell if box has not been set");
-  boxValue=pbc_action->copyOutput(0); 
+  boxValue=pbc_action->copyOutput(0);
 }
 
 
@@ -188,13 +188,13 @@ void ResetCell::apply() {
 // of the virial matrix equal to their symmetric ones.
 // GB
   Tensor virial;
-  for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) virial[i][j]=boxValue->getForce( 3*i+j );
+  for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) virial[i][j]=boxValue->getForce( 3*i+j );
   virial[0][1]=virial[1][0];
   virial[0][2]=virial[2][0];
   virial[1][2]=virial[2][1];
 // rotate back virial
   virial=matmul(transpose(rotation),matmul(virial,rotation)); boxValue->clearInputForce();
-  for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) boxValue->addForce( 3*i+j, virial(i,j) );
+  for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) boxValue->addForce( 3*i+j, virial(i,j) );
 
 
 }

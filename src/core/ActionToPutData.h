@@ -28,12 +28,12 @@
 
 namespace PLMD {
 
-class ActionToPutData : 
-public ActionForInterface 
+class ActionToPutData :
+  public ActionForInterface
 {
-friend class PlumedMain;
-friend class TimeStep;
-friend class DomainDecomposition;
+  friend class PlumedMain;
+  friend class TimeStep;
+  friend class DomainDecomposition;
 private:
 /// Are we not applying forces on this values
   bool noforce;
@@ -44,9 +44,9 @@ private:
 /// Are we allowed to set data at this time
   bool dataCanBeSet;
 /// The unit of the value that has been passed to plumed
-  enum{n,e,l,m,q,t} unit;
+  enum {n,e,l,m,q,t} unit;
 /// The unit to to use for the force
-  enum{d,eng} funit;
+  enum {d,eng} funit;
 /// This holds the pointer that we getting data from
   std::unique_ptr<DataPassingObject> mydata;
 protected:
@@ -63,7 +63,7 @@ public:
   void updateUnits( const Units& MDUnits, const Units& units );
 /// This is called at the start of the step
   void resetForStepStart() override { dataCanBeSet = true; }
-/// These are the actions that set the pointers to the approrpiate values 
+/// These are the actions that set the pointers to the approrpiate values
   virtual bool setValuePointer( const std::string& name, const TypesafePtr & val ) override ;
   bool setForcePointer( const std::string& name, const TypesafePtr & val ) override ;
 /// There are no atoms n local to set here

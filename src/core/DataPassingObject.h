@@ -37,7 +37,7 @@ protected:
   unsigned start;
 /// The spacing between values in the input arrays
   unsigned stride;
-/// The units of the quantity 
+/// The units of the quantity
   double unit;
 /// The units of the force on this quantity
   double funit;
@@ -46,7 +46,7 @@ protected:
   double bvalue;
 public:
   static std::unique_ptr<DataPassingObject> create(unsigned n);
-  explicit DataPassingObject() : stride(1), unit(1), funit(1), hasbackup(false), bvalue(0) {}
+  explicit DataPassingObject() : start(0), stride(1), unit(1), funit(1), hasbackup(false), bvalue(0) {}
 /// Convert what comes from the MD code to a double
   virtual double MD2double(const TypesafePtr & m) const=0;
 ///
@@ -60,12 +60,12 @@ public:
 /// This is used when you want to save the passed object to a double variable in PLUMED rather than the pointer
 /// this can be used even when you don't pass a pointer from the MD code
   virtual void saveValueAsDouble( const TypesafePtr & val )=0;
-/// Set the pointer to the value 
+/// Set the pointer to the value
   virtual void setValuePointer( const TypesafePtr & val, const std::vector<unsigned>& shape, const bool& isconst )=0;
 /// Set the pointer to the force
   virtual void setForcePointer( const TypesafePtr & val, const std::vector<unsigned>& shape )=0;
 /// Share the data and put it in the value from sequential data
-  virtual void share_data( const unsigned& j, const unsigned& k, Value* value )=0; 
+  virtual void share_data( const unsigned& j, const unsigned& k, Value* value )=0;
 /// Share the data and put it in the value from a scattered data
   virtual void share_data( const std::set<AtomNumber>&index, const std::vector<unsigned>& i, Value* value )=0;
 /// Pass the force from the value to the output value

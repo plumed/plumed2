@@ -265,7 +265,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_setBox:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        setInputValue( "Box", 0, 1, val ); 
+        setInputValue( "Box", 0, 1, val );
         break;
       case cmd_setPositions:
         CHECK_INIT(initialized,word);
@@ -368,16 +368,16 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         startStep();
         break;
       case cmd_setValue:
-      { 
+      {
         CHECK_INIT(initialized,words[0]); plumed_assert(nw==2); setInputValue( words[1], 0, 1, val );
-      } 
-        break;
+      }
+      break;
       /* ADDED WITH API=7 */
       case cmd_setValueForces:
-      { 
+      {
         CHECK_INIT(initialized,words[0]); plumed_assert(nw==2); setInputForce( words[1], val );
-      } 
-        break;
+      }
+      break;
       // words used less frequently:
       case cmd_setAtomsNlocal:
         CHECK_INIT(initialized,word);
@@ -413,30 +413,30 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         break;
       /* ADDED WITH API==6 */
       case cmd_getDataRank:
-      { 
+      {
         CHECK_INIT(initialized,words[0]); plumed_assert(nw==2 || nw==3);
         std::string vtype=""; if( nw==3 ) vtype=" TYPE="+words[2];
         readInputLine( "grab_" + words[1] + ": GET ARG=" + words[1] + vtype );
         ActionToGetData* as=actionSet.selectWithLabel<ActionToGetData*>("grab_"+words[1]);
         plumed_assert( as ); as->get_rank( val );
-      } 
-        break;
+      }
+      break;
       /* ADDED WITH API==6 */
       case cmd_getDataShape:
-      { 
+      {
         CHECK_INIT(initialized,words[0]);
         ActionToGetData* as1=actionSet.selectWithLabel<ActionToGetData*>("grab_"+words[1]);
         plumed_assert( as1 ); as1->get_shape( val );
       }
-        break;
+      break;
       /* ADDED WITH API==6 */
       case cmd_setMemoryForData:
-      { 
+      {
         CHECK_INIT(initialized,words[0]); plumed_assert(nw==2 || nw==3);
         ActionToGetData* as2=actionSet.selectWithLabel<ActionToGetData*>("grab_"+words[1]);
         plumed_assert( as2 ); as2->set_memory( val );
-      } 
-        break;
+      }
+      break;
       /* ADDED WITH API==6 */
       case cmd_setErrorHandler:
       {
@@ -465,12 +465,12 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         int natoms = atoms.getNatoms();
         actionSet.clearDelete(); inputs.clear();
         if( natoms>0 ) {
-            std::string str_natoms; Tools::convert( natoms, str_natoms );
-            if( natoms>0 ) readInputLine( MDEngine + ": DOMAIN_DECOMPOSITION NATOMS=" + str_natoms );
+          std::string str_natoms; Tools::convert( natoms, str_natoms );
+          readInputLine( MDEngine + ": DOMAIN_DECOMPOSITION NATOMS=" + str_natoms );
         }
         setUnits( atoms.usingNaturalUnits(), atoms.getUnits() );
       }
-        break;
+      break;
       case cmd_getApiVersion:
         CHECK_NOTNULL(val,word);
         val.set(int(10));
@@ -524,16 +524,16 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         atoms.setMDNaturalUnits(true);
         break;
       case cmd_setNoVirial:
-        {
-           CHECK_NOTINIT(initialized,word);
-           ActionToPutData* ap=actionSet.selectWithLabel<ActionToPutData*>("Box");
-           if( ap ) ap->noforce=true;
-           else {
-              ActionForInterface* af = actionSet.selectWithLabel<ActionForInterface*>(MDEngine);
-              if( af ) plumed_merror("setNoVirial should be called after number of atoms have been set");
-           }
+      {
+        CHECK_NOTINIT(initialized,word);
+        ActionToPutData* ap=actionSet.selectWithLabel<ActionToPutData*>("Box");
+        if( ap ) ap->noforce=true;
+        else {
+          ActionForInterface* af = actionSet.selectWithLabel<ActionForInterface*>(MDEngine);
+          if( af ) plumed_merror("setNoVirial should be called after number of atoms have been set");
         }
-        break;
+      }
+      break;
       case cmd_setPlumedDat:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
@@ -543,7 +543,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         CHECK_NOTINIT(initialized,word);
         comm.Set_comm(val);
         atoms.setDomainDecomposition(comm);
-        for(const auto & pp : inputs ) pp->Set_comm(comm); 
+        for(const auto & pp : inputs ) pp->Set_comm(comm);
         break;
       case cmd_setMPIFComm:
         CHECK_NOTINIT(initialized,word);
@@ -556,25 +556,25 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         multi_sim_comm.Set_comm(val);
         break;
       case cmd_setNatoms:
-        {
-          CHECK_NOTINIT(initialized,word);
-          CHECK_NOTNULL(val,word);
-          int natoms = val.get<int>(); atoms.setNatoms(natoms); std::string str_natoms; Tools::convert( natoms, str_natoms );
-          if( natoms>0 ) readInputLine( MDEngine + ": DOMAIN_DECOMPOSITION NATOMS=" + str_natoms, true );
-        }
-        break;
+      {
+        CHECK_NOTINIT(initialized,word);
+        CHECK_NOTNULL(val,word);
+        int natoms = val.get<int>(); atoms.setNatoms(natoms); std::string str_natoms; Tools::convert( natoms, str_natoms );
+        if( natoms>0 ) readInputLine( MDEngine + ": DOMAIN_DECOMPOSITION NATOMS=" + str_natoms, true );
+      }
+      break;
       case cmd_setTimestep:
       {
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
         ActionToPutData* ts = actionSet.selectWithLabel<ActionToPutData*>("timestep");
         if( !ts ) {
-            readInputLine("timestep: PUT UNIT=time PERIODIC=NO CONSTANT", true);
-            ts = actionSet.selectWithLabel<ActionToPutData*>("timestep");
+          readInputLine("timestep: PUT UNIT=time PERIODIC=NO CONSTANT", true);
+          ts = actionSet.selectWithLabel<ActionToPutData*>("timestep");
         }
         if( !ts->setValuePointer("timestep", val ) ) plumed_error();
       }
-        break;
+      break;
       /* ADDED WITH API==2 */
       case cmd_setKbT:
       {
@@ -584,7 +584,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         ActionToPutData* kb = actionSet.selectWithLabel<ActionToPutData*>("kBT");
         if( !kb->setValuePointer("kBT", val ) ) plumed_error();
       }
-        break;
+      break;
       /* ADDED WITH API==3 */
       case cmd_setRestart:
         CHECK_NOTINIT(initialized,word);
@@ -694,19 +694,19 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         plumed_assert(nw==2);
         if( valueExists(words[1]) ) setInputValue( words[1], 0, 1, val );
       }
-        break;
+      break;
       case cmd_setExtraCVForce:
-      { 
+      {
         CHECK_NOTNULL(val,word); plumed_assert(nw==2);
-        if( valueExists(words[1]) ) setInputForce( words[1], val ); 
-      } 
-        break;
+        if( valueExists(words[1]) ) setInputForce( words[1], val );
+      }
+      break;
       /* ADDED WITH API==10 */
       case cmd_isExtraCVNeeded:
         CHECK_NOTNULL(val,word);
         plumed_assert(nw==2); val.set(int(0));
         for(const auto & p : inputs) {
-            if( p->getLabel()==words[1] && p->isActive() ) { val.set(int(1)); break; }
+          if( p->getLabel()==words[1] && p->isActive() ) { val.set(int(1)); break; }
         }
         break;
       case cmd_GREX:
@@ -728,11 +728,11 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         }
         break;
       case cmd_createValue:
-      {                                                
-         std::string inpt; for(unsigned i=1;i<words.size();++i) inpt += " " + words[i];
-         readInputLine( inpt );                        
-      }                                                
-        break;
+      {
+        std::string inpt; for(unsigned i=1; i<words.size(); ++i) inpt += " " + words[i];
+        readInputLine( inpt );
+      }
+      break;
       /* ADDED WITH API==7 */
       case cmd_convert:
       {
@@ -810,9 +810,9 @@ void PlumedMain::init() {
 
 void PlumedMain::setupInterfaceActions() {
   inputs.clear(); std::vector<ActionForInterface*> ap=actionSet.select<ActionForInterface*>();
-  for(unsigned i=0;i<ap.size();++i) {
-      if( ap[i]->getName()=="ENERGY" || ap[i]->getDependencies().size()==0 ) inputs.push_back( ap[i] );
-  } 
+  for(unsigned i=0; i<ap.size(); ++i) {
+    if( ap[i]->getName()=="ENERGY" || ap[i]->getDependencies().size()==0 ) inputs.push_back( ap[i] );
+  }
 }
 
 void PlumedMain::readInputFile(const std::string & str) {
@@ -837,7 +837,7 @@ void PlumedMain::readInputFile(IFile & ifile) {
 }
 
 void PlumedMain::readInputLine(const std::string & str, const bool& before_init) {
-  if( !before_init ) plumed_assert(initialized); 
+  if( !before_init ) plumed_assert(initialized);
   if(str.empty()) return;
   std::vector<std::string> words=Tools::getWords(str);
   citations.clear();
@@ -945,7 +945,7 @@ void PlumedMain::prepareDependencies() {
   }
 
 // for optimization, an "active" flag remains false if no action at all is active
-  active=false; 
+  active=false;
   for(unsigned i=0; i<pilots.size(); ++i) {
     if(pilots[i]->onStep()) {
       pilots[i]->activate();
@@ -968,10 +968,10 @@ void PlumedMain::prepareDependencies() {
 bool PlumedMain::inputsAreActive() const {
   return true;  // This is tempory while atoms is still in place
   for(const auto & ip : inputs) {
-      if( ip->onStep() ) return true;
-  } 
+    if( ip->onStep() ) return true;
+  }
   return false;
-} 
+}
 
 void PlumedMain::shareData() {
 // atom positions are shared (but only if there is something to do)
@@ -1006,8 +1006,8 @@ void PlumedMain::waitData() {
   auto sw=stopwatch.startStop("3 Waiting for data");
   if(atoms.getNatoms()>0) atoms.wait();
   for(const auto & ip : inputs) {
-      if( ip->isActive() && ip->hasBeenSet() ) ip->wait();
-      else if( ip->isActive() ) ip->warning("input requested but this quantity has not been set");
+    if( ip->isActive() && ip->hasBeenSet() ) ip->wait();
+    else if( ip->isActive() ) ip->warning("input requested but this quantity has not been set");
   }
 }
 
@@ -1018,11 +1018,11 @@ void PlumedMain::justCalculate() {
   bias=0.0;
   work=0.0;
 
-  // Check the input actions to determine if we need to calculate constants that 
+  // Check the input actions to determine if we need to calculate constants that
   // depend on masses and charges
   bool firststep=false;
   for(const auto & ip : inputs) {
-      if( ip->firststep ) firststep=true;
+    if( ip->firststep ) firststep=true;
   }
 
   int iaction=0;
@@ -1247,24 +1247,24 @@ unsigned PlumedMain::useCountReferenceCounter() const noexcept {
 
 bool PlumedMain::valueExists( const std::string& name ) const {
   for(const auto & p : inputs) {
-     if( p->getLabel()==name ) return true;
-  }  
+    if( p->getLabel()==name ) return true;
+  }
   return false;
 }
 
 void PlumedMain::setInputValue( const std::string& name, const unsigned& start, const unsigned& stride, const TypesafePtr & val ) {
   bool found=false;
   for(const auto & pp : inputs) {
-      if( pp->setValuePointer( name, val ) ) { pp->setStart(name, start); pp->setStride(name, stride); found=true; break; }
-  }     
+    if( pp->setValuePointer( name, val ) ) { pp->setStart(name, start); pp->setStride(name, stride); found=true; break; }
+  }
   plumed_massert( found, "found no action to set named " + name );
 }
-  
+
 void PlumedMain::setInputForce( const std::string& name, const TypesafePtr & val ) {
   bool found=false;
   for(const auto & pp : inputs) {
-      if( pp->setForcePointer( name, val ) ) { found=true; break; }
-  }   
+    if( pp->setForcePointer( name, val ) ) { found=true; break; }
+  }
   plumed_massert( found, "found no action to set named " + name );
 }
 

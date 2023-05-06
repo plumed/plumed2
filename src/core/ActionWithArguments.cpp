@@ -144,7 +144,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
           std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
           if( all.empty() ) error("your input file is not telling plumed to calculate anything");
           for(unsigned j=0; j<all.size(); j++) {
-            ActionForInterface* ap=dynamic_cast<ActionForInterface*>( all[j] ); if( ap ) continue; 
+            ActionForInterface* ap=dynamic_cast<ActionForInterface*>( all[j] ); if( ap ) continue;
             for(int k=0; k<all[j]->getNumberOfComponents(); ++k) arg.push_back(all[j]->copyOutput(k));
           }
         } else if ( name=="*") {
@@ -188,7 +188,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
           std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
           if( all.empty() ) error("your input file is not telling plumed to calculate anything");
           for(unsigned j=0; j<all.size(); j++) {
-            ActionForInterface* ap=dynamic_cast<ActionForInterface*>( all[j] ); if( ap ) continue; 
+            ActionForInterface* ap=dynamic_cast<ActionForInterface*>( all[j] ); if( ap ) continue;
             for(int k=0; k<all[j]->getNumberOfComponents(); ++k) arg.push_back(all[j]->copyOutput(k));
           }
         } else {
@@ -313,30 +313,30 @@ void ActionWithArguments::addForcesOnArguments( const std::vector<double>& force
 
 bool ActionWithArguments::calculateConstantValues( const bool& haveatoms ) {
   ActionWithValue* av = dynamic_cast<ActionWithValue*>( this );
-  if( !av || arguments.size()==0 ) return false; 
+  if( !av || arguments.size()==0 ) return false;
   bool constant = true, atoms=false;
   for(unsigned i=0; i<arguments.size(); ++i) {
-      ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>( arguments[i]->getPntrToAction() );
-      if( aa ) { atoms=true; }
-      if( !arguments[i]->isConstant() ) { constant=false; break; }
-  }            
+    ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>( arguments[i]->getPntrToAction() );
+    if( aa ) { atoms=true; }
+    if( !arguments[i]->isConstant() ) { constant=false; break; }
+  }
   if( constant ) {
-      // Set everything constant first as we need to set the shape
-      for(unsigned i=0; i<av->getNumberOfComponents(); ++i) (av->copyOutput(i))->setConstant();
-      if( !haveatoms ) log.printf("  values stored by this action are computed during startup and stay fixed during the simulation\n");
-      if( atoms ) return haveatoms;
-  } 
+    // Set everything constant first as we need to set the shape
+    for(unsigned i=0; i<av->getNumberOfComponents(); ++i) (av->copyOutput(i))->setConstant();
+    if( !haveatoms ) log.printf("  values stored by this action are computed during startup and stay fixed during the simulation\n");
+    if( atoms ) return haveatoms;
+  }
   // Now do the calculation and store the values if we don't need anything from the atoms
   if( constant && !haveatoms ) {
-      plumed_assert( !atoms ); activate(); calculate(); deactivate();
-      for(unsigned i=0; i<av->getNumberOfComponents(); ++i) {
-         unsigned nv = av->copyOutput(i)->getNumberOfValues();
-         log.printf("  %d values stored in component labelled %s are : ", nv, (av->copyOutput(i))->getName().c_str() );
-         for(unsigned j=0; j<nv; ++j) log.printf(" %f", (av->copyOutput(i))->get(j) );
-         log.printf("\n"); 
-      }
+    plumed_assert( !atoms ); activate(); calculate(); deactivate();
+    for(unsigned i=0; i<av->getNumberOfComponents(); ++i) {
+      unsigned nv = av->copyOutput(i)->getNumberOfValues();
+      log.printf("  %d values stored in component labelled %s are : ", nv, (av->copyOutput(i))->getName().c_str() );
+      for(unsigned j=0; j<nv; ++j) log.printf(" %f", (av->copyOutput(i))->get(j) );
+      log.printf("\n");
+    }
   }
   return constant;
-}   
+}
 
 }

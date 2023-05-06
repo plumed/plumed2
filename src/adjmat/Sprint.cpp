@@ -221,7 +221,7 @@ void Sprint::apply() {
     }
   }
   if( hasforce ) {
-      unsigned ind=0; setForcesOnAtoms( fforces, ind );
+    unsigned ind=0; setForcesOnAtoms( fforces, ind );
   }
 }
 

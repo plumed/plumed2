@@ -25,6 +25,12 @@
 #include "ActionSet.h"
 #include "ActionRegister.h"
 
+//+PLUMEDOC ANALYSIS PBC
+/*
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 
 PLUMED_REGISTER_ACTION(PbcAction,"PBC")
@@ -39,22 +45,22 @@ PbcAction::PbcAction(const ActionOptions&ao):
   ActionToPutData(ao),
   interface(NULL)
 {
-  std::vector<unsigned> shape(2); shape[0]=shape[1]=3; 
-  addValue( shape ); setNotPeriodic(); setUnit( "length", "energy" ); 
+  std::vector<unsigned> shape(2); shape[0]=shape[1]=3;
+  addValue( shape ); setNotPeriodic(); setUnit( "length", "energy" );
   getPntrToValue()->buildDataStore();
 
   std::vector<ActionForInterface*> allput=plumed.getActionSet().select<ActionForInterface*>();
-  for(unsigned i=0;i<allput.size();++i) {
-      ActionToPutData* ap = dynamic_cast<ActionToPutData*>( allput[i] );
-      if( !ap && !interface ) interface = allput[i];
-      else if( !ap && interface ) warning("found more than one interface so don't know how to broadcast cell"); 
+  for(unsigned i=0; i<allput.size(); ++i) {
+    ActionToPutData* ap = dynamic_cast<ActionToPutData*>( allput[i] );
+    if( !ap && !interface ) interface = allput[i];
+    else if( !ap && interface ) warning("found more than one interface so don't know how to broadcast cell");
   }
 }
 
 
 void PbcAction::setPbc() {
   Tensor box; if( interface ) interface->broadcastToDomains( getPntrToValue() );
-  for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) box(i,j) = getPntrToValue()->get(3*i+j);
+  for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) box(i,j) = getPntrToValue()->get(3*i+j);
   pbc.setBox(box);
 }
 

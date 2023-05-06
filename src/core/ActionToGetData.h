@@ -28,14 +28,14 @@
 
 namespace PLMD {
 
-class ActionToGetData : 
-public ActionPilot,
-public ActionWithArguments 
+class ActionToGetData :
+  public ActionPilot,
+  public ActionWithArguments
 {
 private:
 /// What do you want to collect to pass back to python
   enum {val,deriv,force} gtype;
-/// This holds the pointer that we are setting 
+/// This holds the pointer that we are setting
   std::unique_ptr<DataPassingObject> mydata;
 /// This temporarily holds the data so it can be passed out
   std::vector<double> data;
@@ -50,7 +50,7 @@ public:
   void set_memory( const TypesafePtr & val );
 /// Actually set the values for the output
   void calculate();
-  void apply(){}
+  void apply() {}
 };
 
 }

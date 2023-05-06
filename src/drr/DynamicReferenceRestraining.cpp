@@ -425,7 +425,7 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
       withExternalFict = true;
     }
   }
-  kbt = getKbT();
+  kbt = getkBT();
   if (kbt <= std::numeric_limits<double>::epsilon()) {
     error("eABF/DRR: It seems the MD engine does not setup the temperature correctly for PLUMED."
           "Please set it by the TEMP keyword manually.");

@@ -227,8 +227,8 @@ void ActionAtomistic::interpretAtomList(std::vector<std::string>& strings, std::
 
 void ActionAtomistic::retrieveAtoms() {
   if( boxValue ) {
-      PbcAction* pbca = dynamic_cast<PbcAction*>( boxValue->getPntrToAction() );
-      plumed_assert( pbca ); pbc=pbca->pbc;
+    PbcAction* pbca = dynamic_cast<PbcAction*>( boxValue->getPntrToAction() );
+    plumed_assert( pbca ); pbc=pbca->pbc;
   }
   Colvar*cc=dynamic_cast<Colvar*>(this);
   if(cc && cc->checkIsEnergy()) energy=atoms.getEnergy();
@@ -249,9 +249,9 @@ void ActionAtomistic::setForcesOnAtoms(const std::vector<double>& forcesToApply,
     forces[i][1]=forcesToApply[ind]; ind++;
     forces[i][2]=forcesToApply[ind]; ind++;
   }
-  for(unsigned i=0;i<9;++i) {
-     plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
-     boxValue->addForce( i, forcesToApply[ind] ); ind++;
+  for(unsigned i=0; i<9; ++i) {
+    plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
+    boxValue->addForce( i, forcesToApply[ind] ); ind++;
   }
 }
 

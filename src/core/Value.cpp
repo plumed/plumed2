@@ -90,15 +90,15 @@ void Value::setShape( const std::vector<unsigned>&ss ) {
   for(unsigned i=0; i<shape.size(); ++i) { tot = tot*ss[i]; shape[i]=ss[i]; }
 
   if( shape.size()>0 && hasDeriv ) {
-      // This is for grids
-      data.resize( tot*action->getNumberOfDerivatives() );
-  } else if( shape.size()==0 ) { 
-      // This is for scalars 
-      data.resize(1); inputForce.resize(1);
+    // This is for grids
+    data.resize( tot*action->getNumberOfDerivatives() );
+  } else if( shape.size()==0 ) {
+    // This is for scalars
+    data.resize(1); inputForce.resize(1);
   } else if( storedata ) {
-      // This is for vectors and matrices
-      data.resize( tot ); inputForce.resize( tot );
-  } 
+    // This is for vectors and matrices
+    data.resize( tot ); inputForce.resize( tot );
+  }
 }
 
 void Value::setupPeriodicity() {
@@ -213,12 +213,12 @@ void Value::buildDataStore() {
 
 void Value::setConstant() {
   constant=true; storedata=true; setShape( shape );
-} 
+}
 
 void Value::writeBinary(std::ostream&o) const {
   o.write(reinterpret_cast<const char*>(&data[0]),data.size()*sizeof(double));
 }
-  
+
 void Value::readBinary(std::istream&i) {
   i.read(reinterpret_cast<char*>(&data[0]),data.size()*sizeof(double));
 }

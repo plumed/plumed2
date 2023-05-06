@@ -87,7 +87,7 @@ void Colvar::apply() {
   } else if( isEnergy ) {
     std::vector<double> forces(1);
     if(getPntrToComponent(0)->applyForce(forces)) modifyForceOnEnergy()+=forces[0];
-  } 
+  }
   // else if( isExtraCV ) {
   //   std::vector<double> forces(1);
   //   if(getPntrToComponent(0)->applyForce(forces)) modifyForceOnExtraCV()+=forces[0];

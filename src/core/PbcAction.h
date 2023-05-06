@@ -33,7 +33,7 @@ namespace PLMD {
 class Pbc;
 
 class PbcAction : public ActionToPutData {
-friend class ActionAtomistic;
+  friend class ActionAtomistic;
 private:
   ActionForInterface* interface;
   ForwardDecl<Pbc> pbc_fwd;

@@ -46,10 +46,10 @@ void ActionWithVirtualAtom::apply() {
   std::vector<double> fforce( 3*getNumberOfAtoms() + 9 );
   Vector & f(atoms.forces[index.index()]);
   for(unsigned i=0; i<getNumberOfAtoms(); i++) {
-      Vector force = matmul(derivatives[i],f);
-      fforce[3*i+0] = force[0];
-      fforce[3*i+1] = force[1];
-      fforce[3*i+2] = force[2];
+    Vector force = matmul(derivatives[i],f);
+    fforce[3*i+0] = force[0];
+    fforce[3*i+1] = force[1];
+    fforce[3*i+2] = force[2];
   }
   Tensor v; v.zero();
   for(unsigned i=0; i<3; i++) v+=boxDerivatives[i]*f[i];

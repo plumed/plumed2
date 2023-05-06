@@ -28,11 +28,11 @@
 namespace PLMD {
 
 class ActionForInterface : public ActionWithValue {
-friend class Atoms;
-friend class PlumedMain;
+  friend class Atoms;
+  friend class PlumedMain;
 protected:
 // Is this the first step
-  bool firststep;  
+  bool firststep;
 /// Have the forces in this action been scaled by another action
   bool wasscaled;
 /// Action has been set
@@ -42,8 +42,8 @@ protected:
 public:
   static void registerKeywords(Keywords& keys);
   explicit ActionForInterface(const ActionOptions&ao);
-/// Override clear the input data 
-  void clearDerivatives( const bool& force ){}
+/// Override clear the input data
+  void clearDerivatives( const bool& force ) {}
 /// Override the need to deal with gradients
   void setGradientsIfNeeded() override {}
 /// Check if the value has been set
@@ -65,7 +65,7 @@ public:
 /// Overriding this method from ActionWithValue ensures that taskLists that are set during share are not updated during calculate loop
 //  void setupForCalculation( const bool& force=false ) override {}
 /// Get the data
-  virtual void share() = 0; 
+  virtual void share() = 0;
   virtual void shareAll() = 0;
 /// Get the data to share
   virtual void wait() = 0;

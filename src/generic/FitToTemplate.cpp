@@ -334,7 +334,7 @@ void FitToTemplate::apply() {
       totForce+=modifyGlobalForce(AtomNumber::index(i));
     }
     Tensor vv=Tensor(center,totForce);
-    for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) boxValue->addForce( 3*i+j, vv(i,j) );
+    for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) boxValue->addForce( 3*i+j, vv(i,j) );
     for(unsigned i=0; i<aligned.size(); ++i) {
       Vector & ff(modifyGlobalForce(aligned[i]));
       ff-=totForce*weights[i];
@@ -349,7 +349,7 @@ void FitToTemplate::apply() {
       totForce+=f;
     }
     Tensor virial;
-    for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) virial[i][j] = boxValue->getForce( 3*i+j );
+    for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) virial[i][j] = boxValue->getForce( 3*i+j );
 // notice that an extra Tensor(center,matmul(rotation,totForce)) is required to
 // compute the derivatives of the rotation with respect to center
     Tensor ww=matmul(transpose(rotation),virial+Tensor(center,matmul(rotation,totForce)));
@@ -373,7 +373,7 @@ void FitToTemplate::apply() {
     }
 // finally, correction to the virial
     boxValue->clearInputForce(); virial+=extProduct(matmul(transpose(rotation),center),totForce);
-    for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) boxValue->addForce( 3*i+j, virial(i,j) ); 
+    for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) boxValue->addForce( 3*i+j, virial(i,j) );
   }
 }
 

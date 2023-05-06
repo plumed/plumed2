@@ -176,7 +176,7 @@ void Action::addDependency(Action*action) {
 }
 
 void Action::activate() {
-// This is set to true if actions are only need to be computed in setup (during checkRead)  
+// This is set to true if actions are only need to be computed in setup (during checkRead)
   if( never_activate ) return;
 // preparation step is called only the first time an Action is activated.
 // since it could change its dependences (e.g. in an ActionAtomistic which is
@@ -225,20 +225,20 @@ void Action::checkRead() {
 
 void Action::setupConstantValues( const bool& have_atoms ) {
   if( have_atoms ) {
-      // This ensures that we switch off actions that only depend on constant when passed from the 
-      // MD code on the first step
-      ActionAtomistic* at = dynamic_cast<ActionAtomistic*>( this );
-      ActionWithValue* av = dynamic_cast<ActionWithValue*>( this );
-      if( at && av ) {
-          never_activate=av->getNumberOfComponents()>0;
-          for(unsigned i=0; i<av->getNumberOfComponents();++i) {
-              if( !av->copyOutput(i)->isConstant() ) { never_activate=false; break; }
-          }
+    // This ensures that we switch off actions that only depend on constant when passed from the
+    // MD code on the first step
+    ActionAtomistic* at = dynamic_cast<ActionAtomistic*>( this );
+    ActionWithValue* av = dynamic_cast<ActionWithValue*>( this );
+    if( at && av ) {
+      never_activate=av->getNumberOfComponents()>0;
+      for(unsigned i=0; i<av->getNumberOfComponents(); ++i) {
+        if( !av->copyOutput(i)->isConstant() ) { never_activate=false; break; }
       }
+    }
   }
   ActionWithArguments* aa = dynamic_cast<ActionWithArguments*>( this );
   if(aa) never_activate = aa->calculateConstantValues( have_atoms );
-} 
+}
 
 long long int Action::getStep()const {
   return plumed.getStep();
@@ -253,20 +253,20 @@ double Action::getTimeStep()const {
 }
 
 double Action::getkBT() {
-  double temp=-1.0; 
+  double temp=-1.0;
   if( keywords.exists("TEMP") ) parse("TEMP",temp);
   if(temp>=0.0 && keywords.style("TEMP","optional") ) return plumed.getAtoms().getKBoltzmann()*temp;
   ActionForInterface* kb=plumed.getActionSet().selectWithLabel<ActionForInterface*>("kBT");
   double kbt=0; if(kb) kbt=(kb->copyOutput(0))->get();
   if( temp>=0 && keywords.style("TEMP","compulsory") ) {
-      double kB=plumed.getAtoms().getKBoltzmann();
-      if( kbt>0 && std::abs(kbt-kB*temp)>1e-4) {
-          std::string strt1, strt2; Tools::convert( temp, strt1 ); Tools::convert( kbt/kB, strt2 );
-          warning("using TEMP=" + strt1 + " while MD engine uses " + strt2 + "\n"); 
-      }
-      kbt = kB*temp;
-      plumed_massert(kbt>0,"your MD engine does not pass the temperature to plumed, you must specify it using TEMP");
-      return kbt; 
+    double kB=plumed.getAtoms().getKBoltzmann();
+    if( kbt>0 && std::abs(kbt-kB*temp)>1e-4) {
+      std::string strt1, strt2; Tools::convert( temp, strt1 ); Tools::convert( kbt/kB, strt2 );
+      warning("using TEMP=" + strt1 + " while MD engine uses " + strt2 + "\n");
+    }
+    kbt = kB*temp;
+    plumed_massert(kbt>0,"your MD engine does not pass the temperature to plumed, you must specify it using TEMP");
+    return kbt;
   }
   return kbt;
 }

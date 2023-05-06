@@ -27,6 +27,12 @@
 #include "ActionSet.h"
 #include "tools/Communicator.h"
 
+//+PLUMEDOC ANALYSIS DOMAIN_DECOMPOSITION
+/*
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 
 class DomainDecomposition : public ActionForInterface {
@@ -61,7 +67,7 @@ private:
   unsigned shuffledAtoms;
 
   bool asyncSent;
-/// This holds the list of unique atoms 
+/// This holds the list of unique atoms
   std::vector<unsigned> uniq_index;
 /// This holds the list of actions that are set from this action
   std::vector<ActionToPutData*> inputs;
@@ -77,7 +83,7 @@ public:
   bool retrieveRequiredAtoms( const std::vector<int>& g2l );
   void setStart( const std::string& name, const unsigned& sss) override ;
   void setStride( const std::string& name, const unsigned& sss) override ;
-  void resetForStepStart() override ; 
+  void resetForStepStart() override ;
   bool setValuePointer( const std::string& name, const TypesafePtr & ) override ;
   bool setForcePointer( const std::string& name, const TypesafePtr & ) override ;
   unsigned getNumberOfForcesToRescale() const override ;
@@ -123,38 +129,38 @@ void DomainDecomposition::registerKeywords(Keywords& keys) {
   keys.add("numbered","UNIT","unit of the ith value that is being passed through the domain decomposition");
   keys.add("numbered","CONSTANT","is the ith value that is being passed through the domain decomposition constant");
   keys.add("numbered","PERIODIC","if the value being passed to plumed is periodic then you should specify the periodicity of the function.  If the value "
-                                   "is not periodic you must state this using PERIODIC=NO.  Positions are passed with PERIODIC=NO even though special methods are used "
-                                    "to deal with pbc");
+           "is not periodic you must state this using PERIODIC=NO.  Positions are passed with PERIODIC=NO even though special methods are used "
+           "to deal with pbc");
   keys.add("numbered","ROLE","Get the role this value plays in the code can be x/y/z/m/q to signify that this is x, y, z positions of atoms or masses or charges of atoms");
 }
 
 DomainDecomposition::DomainDecomposition(const ActionOptions&ao):
-Action(ao),
-ActionForInterface(ao),
-ddStep(0),
-shuffledAtoms(0),
-asyncSent(false)
+  Action(ao),
+  ActionForInterface(ao),
+  ddStep(0),
+  shuffledAtoms(0),
+  asyncSent(false)
 {
   // Read in the number of atoms
   int natoms; parse("NATOMS",natoms);
   std::string str_natoms; Tools::convert( natoms, str_natoms );
   // Create a value to hold something
   std::vector<unsigned> shape(1); shape[0]=natoms; addValue( shape ); setNotPeriodic();
-  // Setup the gat index 
+  // Setup the gat index
   gatindex.resize(natoms); for(unsigned i=0; i<gatindex.size(); i++) gatindex[i]=i;
   // Now read in the values we are creating here
-  for(unsigned i=1;;++i) {
-      std::string valname;
-      if( !parseNumbered("VALUE",i,valname) ) break;
-      std::string unit; parseNumbered("UNIT",i,unit);
-      std::string constant; parseNumbered("CONSTANT",i,constant);
-      std::string period; parseNumbered("PERIODIC",i,period);
-      std::string role; parseNumbered("ROLE",i,role);
-      if( constant=="True") plumed.readInputLine( valname + ": PUT FROM_DOMAINS CONSTANT SHAPE=" + str_natoms + " UNIT=" + unit + " PERIODIC=" + period + " ROLE=" + role ); 
-      else if( constant=="False") plumed.readInputLine( valname + ": PUT FROM_DOMAINS SHAPE=" + str_natoms + " UNIT=" + unit + " PERIODIC=" + period + " ROLE=" + role );
-      else plumed_merror("missing information on whether value is constant");
-      // And save the list of values that are set from here
-      ActionToPutData* ap=plumed.getActionSet().selectWithLabel<ActionToPutData*>(valname); ap->addDependency( this ); inputs.push_back( ap );
+  for(unsigned i=1;; ++i) {
+    std::string valname;
+    if( !parseNumbered("VALUE",i,valname) ) break;
+    std::string unit; parseNumbered("UNIT",i,unit);
+    std::string constant; parseNumbered("CONSTANT",i,constant);
+    std::string period; parseNumbered("PERIODIC",i,period);
+    std::string role; parseNumbered("ROLE",i,role);
+    if( constant=="True") plumed.readInputLine( valname + ": PUT FROM_DOMAINS CONSTANT SHAPE=" + str_natoms + " UNIT=" + unit + " PERIODIC=" + period + " ROLE=" + role );
+    else if( constant=="False") plumed.readInputLine( valname + ": PUT FROM_DOMAINS SHAPE=" + str_natoms + " UNIT=" + unit + " PERIODIC=" + period + " ROLE=" + role );
+    else plumed_merror("missing information on whether value is constant");
+    // And save the list of values that are set from here
+    ActionToPutData* ap=plumed.getActionSet().selectWithLabel<ActionToPutData*>(valname); ap->addDependency( this ); inputs.push_back( ap );
   }
   plumed.readInputLine("Box: PBC",true);
   // Turn on the domain decomposition
@@ -164,39 +170,39 @@ asyncSent(false)
 void DomainDecomposition::Set_comm(Communicator& comm) {
   dd.enable(comm); setAtomsNlocal(getPntrToComponent(0)->getShape()[0]); setAtomsContiguous(0);
   if( dd.Get_rank()!=0 ) {
-      ActionToPutData* ap=plumed.getActionSet().selectWithLabel<ActionToPutData*>("Box"); ap->noforce=true; 
-  } 
+    ActionToPutData* ap=plumed.getActionSet().selectWithLabel<ActionToPutData*>("Box"); ap->noforce=true;
+  }
 }
 
-void DomainDecomposition::resetForStepStart() { 
-  for(const auto & pp : inputs) pp->resetForStepStart(); 
+void DomainDecomposition::resetForStepStart() {
+  for(const auto & pp : inputs) pp->resetForStepStart();
 }
 
 void DomainDecomposition::setStart( const std::string& name, const unsigned& sss) {
   for(const auto & pp : inputs) {
-      if( pp->getLabel()==name ) { pp->setStart(name, sss); return; }
-  } 
+    if( pp->getLabel()==name ) { pp->setStart(name, sss); return; }
+  }
   plumed_error();
-} 
+}
 
 void DomainDecomposition::setStride( const std::string& name, const unsigned& sss) {
   for(const auto & pp : inputs) {
-      if( pp->getLabel()==name ) { pp->setStride(name, sss); return; }
-  } 
+    if( pp->getLabel()==name ) { pp->setStride(name, sss); return; }
+  }
   plumed_error();
 }
 
 bool DomainDecomposition::setValuePointer( const std::string& name, const TypesafePtr & val ) {
   wasset=true;  // Once the domain decomposition stuff is transferred moved the setting of this to where the g2l vector is setup
   for(const auto & pp : inputs) {
-      if( pp->setValuePointer( name, val ) ) return true; 
+    if( pp->setValuePointer( name, val ) ) return true;
   }
   return false;
 }
 
 bool DomainDecomposition::setForcePointer( const std::string& name, const TypesafePtr & val ) {
   for(const auto & pp : inputs) {
-      if( pp->setForcePointer( name, val ) ) return true;
+    if( pp->setForcePointer( name, val ) ) return true;
   }
   return false;
 }
@@ -262,10 +268,11 @@ bool DomainDecomposition::retrieveRequiredAtoms( const std::vector<int>& g2l ) {
 //  } else {
 //     for(const auto & p : actions ) {
 //         if( !p->isActive() || p->getUnique().empty() ) continue ;
-//         setupCurrentTaskList(); return true ; 
+//         setupCurrentTaskList(); return true ;
 //     }
 //     return false;
 //  }
+  return false;
 }
 
 void DomainDecomposition::shareAll() {
@@ -273,11 +280,11 @@ void DomainDecomposition::shareAll() {
 //      clearTaskLists(); Value* val=copyOutput(0); int natoms = val->getShape()[0];
 //      for(int i=0; i<natoms; ++i) if( g2l[i]>=0 ) val->addTaskToCurrentList( AtomNumber::index(i) );
 //      share( false, val->getTaskList() );
-//  } else { 
-//      setupCurrentTaskList(); 
+//  } else {
+//      setupCurrentTaskList();
 //      std::set<AtomNumber> allatoms; unsigned natoms=getPntrToValue()->getShape()[0];
 //      for(unsigned i=0; i<natoms; ++i) allatoms.insert(AtomNumber::index(i));
-//      share( false, allatoms ); 
+//      share( false, allatoms );
 //  }
 }
 
@@ -287,10 +294,10 @@ void DomainDecomposition::share() {
 // // At first step I scatter all the atoms so as to store their mass and charge
 // // Notice that this works with the assumption that charges and masses are
 // // not changing during the simulation!
-//   if( firststep ) { 
+//   if( firststep ) {
 //       actions = plumed.getActionSet().select<ActionAtomistic*>(); shareAll();
 //   } else { atomsNeeded = retrieveRequiredAtoms( g2l ); }
-// 
+//
 //   // Now we retrieve the atom numbers we need
 //   if( atomsNeeded ) share( getPntrToValue(0)->performAllTasks(), getPntrToValue()->getTaskList() );
 }
@@ -321,9 +328,9 @@ void DomainDecomposition::share(const bool& getallatoms, const std::set<AtomNumb
     int count=0;
     for(const auto & p : unique) {
       dd.indexToBeSent[count]=p.index(); int dpoint=0;
-      for(unsigned i=0;i<values_to_get.size();++i) {
-          dd.positionsToBeSent[ndata*count+dpoint]=values_to_get[i]->get(p.index());
-          dpoint++;
+      for(unsigned i=0; i<values_to_get.size(); ++i) {
+        dd.positionsToBeSent[ndata*count+dpoint]=values_to_get[i]->get(p.index());
+        dpoint++;
       }
       count++;
     }
@@ -352,9 +359,9 @@ void DomainDecomposition::share(const bool& getallatoms, const std::set<AtomNumb
       int tot=displ[n-1]+counts[n-1];
       for(int i=0; i<tot; i++) {
         int dpoint=0;
-        for(unsigned j=0;j<values_to_get.size();++j) {
-            values_to_get[j]->set( dd.indexToBeReceived[i], dd.positionsToBeReceived[ndata*i+dpoint] );
-            dpoint++;
+        for(unsigned j=0; j<values_to_get.size(); ++j) {
+          values_to_get[j]->set( dd.indexToBeReceived[i], dd.positionsToBeReceived[ndata*i+dpoint] );
+          dpoint++;
         }
       }
     }
@@ -362,12 +369,12 @@ void DomainDecomposition::share(const bool& getallatoms, const std::set<AtomNumb
 }
 
 void DomainDecomposition::wait() {
-  for(const auto & ip : inputs) ip->dataCanBeSet=false; 
+  for(const auto & ip : inputs) ip->dataCanBeSet=false;
 
   if(dd && shuffledAtoms>0) {
     int ndata=0; std::vector<Value*> values_to_set;
     for(const auto & ip : inputs) {
-        if( (!ip->fixed || firststep) && ip->wasset ) { values_to_set.push_back(ip->copyOutput(0)); ndata++; }
+      if( (!ip->fixed || firststep) && ip->wasset ) { values_to_set.push_back(ip->copyOutput(0)); ndata++; }
     }
 
 // receive toBeReceived
@@ -382,9 +389,9 @@ void DomainDecomposition::wait() {
       }
       for(int i=0; i<count; i++) {
         int dpoint=0;
-        for(unsigned j=0;j<values_to_set.size();++j) {
-            values_to_set[j]->set(dd.indexToBeReceived[i], dd.positionsToBeReceived[ndata*i+dpoint] );
-            dpoint++;
+        for(unsigned j=0; j<values_to_set.size(); ++j) {
+          values_to_set[j]->set(dd.indexToBeReceived[i], dd.positionsToBeReceived[ndata*i+dpoint] );
+          dpoint++;
         }
       }
       asyncSent=false;
@@ -393,13 +400,13 @@ void DomainDecomposition::wait() {
 }
 
 unsigned DomainDecomposition::getNumberOfForcesToRescale() const {
-  return gatindex.size(); 
+  return gatindex.size();
 }
 
 void DomainDecomposition::apply() {
 //  for(const auto & ip : inputs) {
 //      if( !(ip->getPntrToValue())->forcesWereAdded() || ip->noforce ) {
-//          continue; 
+//          continue;
 //      } else if( ip->wasscaled || (int(gatindex.size())==getPntrToValue()->getShape()[0] && shuffledAtoms==0) ) {
 //          (ip->mydata)->add_force( gatindex, ip->getPntrToValue() );
 //      } else { (ip->mydata)->add_force( getPntrToValue()->taskList, uniq_index, ip->getPntrToValue() ); }
@@ -407,7 +414,7 @@ void DomainDecomposition::apply() {
 }
 
 void DomainDecomposition::writeBinary(std::ostream&o) {
-  for(const auto & ip : inputs) ip->writeBinary(o); 
+  for(const auto & ip : inputs) ip->writeBinary(o);
 }
 
 void DomainDecomposition::readBinary(std::istream&i) {
@@ -425,7 +432,7 @@ void DomainDecomposition::sumOverDomains( Value* val ) {
 const long int& DomainDecomposition::getDdStep() const {
   return ddStep;
 }
-  
+
 const std::vector<int>& DomainDecomposition::getGatindex() const {
   return gatindex;
 }
@@ -436,20 +443,20 @@ void DomainDecomposition::createFullList(int* n) {
     *n=natoms; fullList.resize(natoms);
     for(unsigned i=0; i<natoms; i++) fullList[i]=i;
   } else {
-     std::vector<int> fake; fake.resize(0); 
-     shuffledAtoms=1; retrieveRequiredAtoms( fake ); shuffledAtoms=0;
+    std::vector<int> fake; fake.resize(0);
+    shuffledAtoms=1; retrieveRequiredAtoms( fake ); shuffledAtoms=0;
 //     fullList.resize(0); fullList.reserve( getPntrToValue()->taskList.size() );
 //     for(const auto & p : getPntrToValue()->taskList) fullList.push_back(p.index());
 //     *n=fullList.size();
   }
-} 
+}
 
 void DomainDecomposition::getFullList(int**x) {
   if(!fullList.empty()) *x=&fullList[0];
   else *x=NULL;
 }
 
-void DomainDecomposition::clearFullList() {  
+void DomainDecomposition::clearFullList() {
   fullList.resize(0);
 }
 

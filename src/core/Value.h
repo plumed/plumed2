@@ -141,7 +141,7 @@ public:
   void clearInputForce();
 /// Add some force on this value
   void addForce(double f);
-/// Add some force on the ival th component of this value 
+/// Add some force on the ival th component of this value
   void addForce( const unsigned& ival, double f );
 /// Get the value of the force on this colvar
   double getForce( const unsigned& ival=0 ) const ;
@@ -253,7 +253,7 @@ inline
 unsigned Value::getNumberOfDerivatives() const {
   plumed_massert(hasDeriv,"the derivatives array for this value has zero size");
   if( shape.size()>0 ) return shape.size();
-  return data.size() - 1; 
+  return data.size() - 1;
 }
 
 inline
@@ -314,14 +314,14 @@ inline
 void Value::addForce(const unsigned& ival, double f) {
   plumed_dbg_massert(hasDerivatives(),"forces can only be added to values with derivatives");
   plumed_dbg_massert(ival<inputForce.size(),"too few components in value to add force");
-  hasForce=true; 
+  hasForce=true;
   inputForce[ival]+=f;
-} 
+}
 
 inline
 bool Value::forcesWereAdded() const {
   return hasForce;
-} 
+}
 
 inline
 double Value::getForce( const unsigned& ival ) const {
@@ -361,7 +361,7 @@ double Value::getMaxMinusMin()const {
 inline
 unsigned Value::getRank() const {
   return shape.size();
-} 
+}
 
 inline
 const std::vector<unsigned>& Value::getShape() const {
@@ -374,10 +374,10 @@ unsigned Value::getNumberOfValues() const {
   return size;
 }
 
-inline 
+inline
 bool Value::isConstant() const {
   return constant;
-}  
+}
 
 }
 
