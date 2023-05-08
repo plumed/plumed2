@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20.2)
 
-project(Plumed2 LANGUAGES C CXX)
+project(Plumed2 LANGUAGES C CXX Fortran)
 
 set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS None Debug Release RelWithDebInfo MinSizeRel)
@@ -20,7 +20,7 @@ option(useExternal_BLAS "enable search for external BLAS, default ON" ON)
 option(useExternal_LAPACK "enable search for external LAPACK, default ON" ON)
 option(useExternal_MOLFILE "enable search for external LAPACK, default OFF" OFF)
 
-set(modulesDependencies "")
+set(modulesForKernel "")
 
 ################################################################################
 #Setting up global options
@@ -52,8 +52,8 @@ MACRO(ADDMODULETOKERNEL module_name)
         
         add_library(${module_name} OBJECT ${OTHERARGS} )
         target_include_directories(${module_name} PRIVATE ${PLUMED_SRC})
-        list(APPEND modulesDependencies ${module_name})
-        set(modulesDependencies ${modulesDependencies} PARENT_SCOPE)
+        list(APPEND modulesForKernel ${module_name})
+        set(modulesForKernel ${modulesForKernel} PARENT_SCOPE)
     endif(${module_${module_name}})
 ENDMACRO(ADDMODULETOKERNEL)
 
@@ -97,6 +97,13 @@ foreach(dir ${execDirs})
     add_subdirectory(${dir})
 endforeach(dir ${execDirs})
 
+message("Checking if it is possible to find external alternatives for modules:")
+#needed for FindMOLFILE
+set (CMAKE_MODULE_PATH ${PLUMED_SRC}/cmake)
+foreach(dir ${mayBeExternal})
+    add_subdirectory(${dir})
+endforeach(dir ${mayBeExternal})
+
 foreach(dir ${dirs})
     add_subdirectory(${dir})
 endforeach(dir ${dirs})
@@ -106,30 +113,6 @@ if(all_modules)
         set(module_${dir} ON)
     endforeach(dir ${dirs})
 endif()
-
-message("Checking if it is possible to find external alternatives for modules:")
-#needed for FindMOLFILE
-set (CMAKE_MODULE_PATH ${PLUMED_SRC}/cmake)
-foreach(dir ${mayBeExternal})
-    #todo port the maybe external to the single modules
-    string(TOUPPER ${dir} externalLib)
-    if (useExternal_${externalLib})
-        find_package(${externalLib})
-    endif (useExternal_${externalLib})
-    
-    if (${externalLib}_FOUND)
-        set(module_${dir} OFF CACHE BOOL "activate module ${dir}" FORCE)
-        add_library(${dir} INTERFACE)
-
-        #add_library(${dir} ALIAS ${externalLib}:${externalLib})
-        #target_compile_options(${PROJECT_NAME} PRIVATE ${BLAS_LINKER_FLAGS})
-        target_link_libraries(${dir} INTERFACE ${externalLib}::${externalLib})
-    else()
-        add_subdirectory(${dir})
-        set(${externalLib}_FOUND OFF)
-    endif (${externalLib}_FOUND)
-    message(" ${dir} internal: ${module_${dir}}")    
-endforeach(dir ${mayBeExternal})
 
 #options ## options are already done
 ##  --bindir=DIR            user executables [EPREFIX/bin]
@@ -236,7 +219,7 @@ endforeach(dir ${mayBeExternal})
 #endforeach(dir ${dirs} ${execDirs} ${mayBeExternal})
 
 #check module dependencies
-foreach(dir ${dirs})
+foreach(dir ${dirs} ${mayBeExternal})
     if(${module_${dir}})
         set(notFound "")
         #message("${dir} ${moduleNeeds_${dir}}")
@@ -266,13 +249,13 @@ endif(${modulesDependenciesProblems})
 #Setting up the main libraries
 ################################################################################
 
-#these targets build the two libPlumedKernel.so
 set(KernelTargets "")
 
-foreach(activeModule ${modulesDependencies})
+foreach(activeModule ${modulesForKernel})
     list(APPEND KernelTargets $<TARGET_OBJECTS:${activeModule}>)
-endforeach(activeModule ${modulesDependencies})
+endforeach(activeModule ${modulesForKernel})
 
+#these targets build the two libPlumedKernel.so
 #building the shared libraries with the collected modules
 add_library(libplumedKernel SHARED ${KernelTargets})
 set_target_properties(libplumedKernel
