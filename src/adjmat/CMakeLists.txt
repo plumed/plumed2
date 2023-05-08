@@ -31,5 +31,8 @@ ADDMODULENEEDS(${module_name}
 	core tools vesselbase multicolvar
 )
 ADDMODULEDEPENDENCIES(${module_name}
-	core tools vesselbase multicolvar
+	#core #tools depends on
+	#tools #vesselbase depends on
+	#vesselbase # multicolvar depends on
+	multicolvar
 )

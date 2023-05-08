@@ -40,6 +40,9 @@ config tools lepton
 )
 
 #ADDMODULENEEDS(${module_name}
+#######################################
+#     TODO SOLVE THIS##################
+#######################################
 #    tools #commenting this avoids circular references error
 #)
 

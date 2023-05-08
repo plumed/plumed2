@@ -10,5 +10,5 @@ ADDMODULENEEDS(${module_name}
 	core tools colvar
 )
 ADDMODULEDEPENDENCIES(${module_name}
-	core tools colvar
+	colvar #tools  core
 )

@@ -20,5 +20,7 @@ ADDMODULENEEDS(${module_name}
 	core tools cltools reference vesselbase
 )
 ADDMODULEDEPENDENCIES(${module_name}
-	core tools cltools reference vesselbase
+	cltools #tools core
+	reference #tools core
+	vesselbase #tools core
 )

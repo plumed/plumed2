@@ -13,5 +13,6 @@ ADDMODULENEEDS(${module_name}
 	core tools bias cltools config
 )
 ADDMODULEDEPENDENCIES(${module_name}
-	core tools bias cltools config
+	bias# tools core
+	cltools #config
 )

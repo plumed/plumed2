@@ -40,5 +40,5 @@ ADDMODULENEEDS(${module_name}
 	core reference tools
 )
 ADDMODULEDEPENDENCIES(${module_name}
-	core reference tools
+	reference #tools core
 )

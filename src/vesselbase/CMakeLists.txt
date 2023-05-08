@@ -32,6 +32,5 @@ ADDMODULENEEDS(${module_name}
 	core tools bias analysis
 )
 ADDMODULEDEPENDENCIES(${module_name}
-	#core tools becasue analysis depends on them
-	bias analysis
+	analysis #bias tools core
 )

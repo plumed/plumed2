@@ -21,5 +21,6 @@ ADDMODULENEEDS(${module_name}
 	core tools colvar bias
 )
 ADDMODULEDEPENDENCIES(${module_name}
-	core tools colvar bias
+	colvar #tools core
+	bias #tools core
 )

@@ -10,5 +10,5 @@ ADDMODULENEEDS(${module_name}
 	core function
 )
 ADDMODULEDEPENDENCIES(${module_name}
-	core function
+	function #reference tools core lepton
 )

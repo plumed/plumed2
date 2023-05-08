@@ -22,5 +22,6 @@ ADDMODULENEEDS(${module_name}
 	core tools reference gridtools analysis
 )
 ADDMODULEDEPENDENCIES(${module_name}
-	core tools reference gridtools analysis
+	tools #core
+	gridtools #analysis reference
 )

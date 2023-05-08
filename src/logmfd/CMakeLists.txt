@@ -10,5 +10,5 @@ ADDMODULENEEDS(${module_name}
 	core tools bias
 )
 ADDMODULEDEPENDENCIES(${module_name}
-	core tools bias
+	bias #tools core
 )

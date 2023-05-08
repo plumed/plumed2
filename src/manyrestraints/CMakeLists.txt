@@ -12,5 +12,5 @@ ADDMODULENEEDS(${module_name}
 	core tools vesselbase
 )
 ADDMODULEDEPENDENCIES(${module_name}
-	core tools vesselbase
+	vesselbase #bias tools core
 )

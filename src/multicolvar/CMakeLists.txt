@@ -45,6 +45,5 @@ ADDMODULENEEDS(${module_name}
 	core tools vesselbase gridtools
 )
 ADDMODULEDEPENDENCIES(${module_name}
-	#core tools # non need: becaue a dependency depends on them
-	vesselbase gridtools
+	gridtools #vesselbase bias tools core
 )

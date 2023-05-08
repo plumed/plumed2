@@ -63,5 +63,8 @@ ADDMODULENEEDS(${module_name}
 	bias cltools colvar config core tools lepton
 )
 ADDMODULEDEPENDENCIES(${module_name}
-	bias cltools colvar config core tools lepton
+	#tools #lepton
+	cltools #config
+	colvar #tools core
+	bias #tools core
 )

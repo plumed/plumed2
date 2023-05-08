@@ -14,5 +14,5 @@ ADDMODULENEEDS(${module_name}
 	core tools vesselbase multicolvar adjmat
 )
 ADDMODULEDEPENDENCIES(${module_name}
-	core tools vesselbase multicolvar adjmat
+	adjmat #multicolvar vesselbase bias tools core
 )

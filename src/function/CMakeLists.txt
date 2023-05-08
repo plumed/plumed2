@@ -21,5 +21,6 @@ ADDMODULENEEDS(${module_name}
 	core reference tools lepton
 )
 ADDMODULEDEPENDENCIES(${module_name}
-	core reference tools lepton
+	reference #tools core
+	#tools #lepton
 )

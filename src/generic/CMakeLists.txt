@@ -31,5 +31,6 @@ ADDMODULENEEDS(${module_name}
 	core tools xdrfile
 )
 ADDMODULEDEPENDENCIES(${module_name}
-	core tools xdrfile
+	tools #core
+	xdrfile
 )
