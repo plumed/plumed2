@@ -24,7 +24,7 @@ completion.xxd
 ADDMODULENEEDS(${module_name}
 core config tools molfile xdrfile
 )
-ADDMODULEDEPENDENCIES(${module_name}
+ADDMODULENEEDS(${module_name}
     molfile
 )
 

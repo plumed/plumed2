@@ -9,5 +9,8 @@ ManyRestraintsBase.cpp
 UWalls.cpp
 )
 ADDMODULENEEDS(${module_name}
-core tools vesselbase
+	core tools vesselbase
+)
+ADDMODULEDEPENDENCIES(${module_name}
+	core tools vesselbase
 )

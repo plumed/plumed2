@@ -7,5 +7,8 @@ ADDMODULETOKERNEL(${module_name}
 S2ContactModel.cpp
 )
 ADDMODULENEEDS(${module_name}
-core tools colvar
+	core tools colvar
+)
+ADDMODULEDEPENDENCIES(${module_name}
+	core tools colvar
 )

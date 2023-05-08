@@ -7,5 +7,8 @@ ADDMODULETOKERNEL(${module_name}
 EDS.cpp
 )
 ADDMODULENEEDS(${module_name}
-core tools bias
+	core tools bias
+)
+ADDMODULEDEPENDENCIES(${module_name}
+	core tools bias
 )

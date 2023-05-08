@@ -28,5 +28,8 @@ WholeMolecules.cpp
 WrapAround.cpp
 )
 ADDMODULENEEDS(${module_name}
-core tools xdrfile
+	core tools xdrfile
+)
+ADDMODULEDEPENDENCIES(${module_name}
+	core tools xdrfile
 )

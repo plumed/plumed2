@@ -17,5 +17,8 @@ TrigonometricPathVessel.cpp
 ZpathVessel.cpp
 )
 ADDMODULENEEDS(${module_name}
-core tools cltools reference vesselbase
+	core tools cltools reference vesselbase
+)
+ADDMODULEDEPENDENCIES(${module_name}
+	core tools cltools reference vesselbase
 )

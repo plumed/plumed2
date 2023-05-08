@@ -8,5 +8,8 @@ FPS.cpp
 Funnel.cpp
 )
 ADDMODULENEEDS(${module_name}
-core tools colvar bias
+	core tools colvar bias
+)
+ADDMODULEDEPENDENCIES(${module_name}
+	core tools colvar bias
 )

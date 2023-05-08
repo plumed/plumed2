@@ -26,5 +26,8 @@ WhamHistogram.cpp
 WhamWeights.cpp
 )
 ADDMODULENEEDS(${module_name}
-core tools reference vesselbase gridtools multicolvar bias
+	core tools reference vesselbase gridtools multicolvar bias
+)
+ADDMODULEDEPENDENCIES(${module_name}
+	core tools reference vesselbase gridtools multicolvar bias
 )

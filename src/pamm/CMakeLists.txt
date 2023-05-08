@@ -11,5 +11,8 @@ PAMM.cpp
 PammObject.cpp
 )
 ADDMODULENEEDS(${module_name}
-core tools vesselbase multicolvar adjmat
+	core tools vesselbase multicolvar adjmat
+)
+ADDMODULEDEPENDENCIES(${module_name}
+	core tools vesselbase multicolvar adjmat
 )

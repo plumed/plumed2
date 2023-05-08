@@ -12,8 +12,8 @@ ParsedExpression.cpp
 Parser.cpp
 )
 ADDMODULENEEDS(${module_name}
-    asmjit
+	asmjit
 )
 ADDMODULEDEPENDENCIES(${module_name}
-    asmjit
+	asmjit
 )

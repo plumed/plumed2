@@ -8,5 +8,8 @@ FISST.cpp
 legendre_rule_fast.cpp
 )
 ADDMODULENEEDS(${module_name}
-core tools bias
+	core tools bias
+)
+ADDMODULEDEPENDENCIES(${module_name}
+	core tools bias
 )

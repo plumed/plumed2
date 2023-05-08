@@ -7,5 +7,8 @@ ADDMODULETOKERNEL(${module_name}
 ANN.cpp
 )
 ADDMODULENEEDS(${module_name}
-core function
+	core function
+)
+ADDMODULEDEPENDENCIES(${module_name}
+	core function
 )

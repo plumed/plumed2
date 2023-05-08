@@ -30,5 +30,8 @@ Vessel.cpp
 VesselRegister.cpp
 )
 ADDMODULENEEDS(${module_name}
-core tools bias analysis
+	core tools bias analysis
+)
+ADDMODULEDEPENDENCIES(${module_name}
+	core tools bias analysis
 )

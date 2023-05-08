@@ -19,5 +19,8 @@ SMACOF.cpp
 SmacoffMDS.cpp
 )
 ADDMODULENEEDS(${module_name}
-core tools reference gridtools analysis
+	core tools reference gridtools analysis
+)
+ADDMODULEDEPENDENCIES(${module_name}
+	core tools reference gridtools analysis
 )

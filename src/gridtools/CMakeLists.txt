@@ -25,5 +25,8 @@ IntegrateGrid.cpp
 InterpolateGrid.cpp
 )
 ADDMODULENEEDS(${module_name}
-core tools vesselbase
+	core tools vesselbase
+)
+ADDMODULEDEPENDENCIES(${module_name}
+	core tools vesselbase
 )

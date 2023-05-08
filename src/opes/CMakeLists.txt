@@ -15,5 +15,8 @@ OPESexpanded.cpp
 OPESmetad.cpp
 )
 ADDMODULENEEDS(${module_name}
-bias core tools
+	bias core tools
+)
+ADDMODULEDEPENDENCIES(${module_name}
+	bias core tools
 )

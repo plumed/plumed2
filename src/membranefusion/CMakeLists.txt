@@ -9,5 +9,8 @@ FusionPoreNucleationP.cpp
 MemFusionP.cpp
 )
 ADDMODULENEEDS(${module_name}
-core reference tools colvar
+	core reference tools colvar
+)
+ADDMODULEDEPENDENCIES(${module_name}
+	core reference tools colvar
 )

@@ -9,7 +9,7 @@ ADDMODULENEEDS(${module_name}
     blas
 )
 
-ADDMODULEDEPENDENCIES(${module_name}
+ADDMODULENEEDS(${module_name}
     blas
 )
 

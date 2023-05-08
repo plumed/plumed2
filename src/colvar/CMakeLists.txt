@@ -37,5 +37,8 @@ Torsion.cpp
 Volume.cpp
 )
 ADDMODULENEEDS(${module_name}
-core reference tools
+	core reference tools
+)
+ADDMODULEDEPENDENCIES(${module_name}
+	core reference tools
 )

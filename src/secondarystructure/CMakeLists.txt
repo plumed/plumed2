@@ -10,5 +10,8 @@ ParabetaRMSD.cpp
 SecondaryStructureRMSD.cpp
 )
 ADDMODULENEEDS(${module_name}
-core tools reference vesselbase
+	core tools reference vesselbase
+)
+ADDMODULEDEPENDENCIES(${module_name}
+	core tools reference vesselbase
 )

@@ -43,5 +43,8 @@ XYDistances.cpp
 XYTorsion.cpp
 )
 ADDMODULENEEDS(${module_name}
-core tools vesselbase gridtools
+	core tools vesselbase gridtools
+)
+ADDMODULEDEPENDENCIES(${module_name}
+	core tools vesselbase gridtools
 )

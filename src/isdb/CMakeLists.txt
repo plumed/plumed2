@@ -20,5 +20,8 @@ Select.cpp
 Selector.cpp
 )
 ADDMODULENEEDS(${module_name}
-bias colvar core reference tools function
+	bias colvar core reference tools function
+)
+ADDMODULEDEPENDENCIES(${module_name}
+	bias colvar core reference tools function
 )

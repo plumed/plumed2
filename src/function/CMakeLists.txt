@@ -18,5 +18,8 @@ Stats.cpp
 Target.cpp
 )
 ADDMODULENEEDS(${module_name}
-core reference tools lepton
+	core reference tools lepton
+)
+ADDMODULEDEPENDENCIES(${module_name}
+	core reference tools lepton
 )

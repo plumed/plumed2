@@ -54,8 +54,8 @@ Units.cpp
 Vector.cpp
 )
 ADDMODULENEEDS(${module_name}
-    core lapack lepton
+	core lapack lepton
 )
 ADDMODULEDEPENDENCIES(${module_name}
-    core lapack lepton
+	core lapack lepton
 )

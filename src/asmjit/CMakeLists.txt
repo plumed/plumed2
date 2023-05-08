@@ -36,5 +36,8 @@ x86regalloc.cpp
 zone.cpp
 )
 ADDMODULENEEDS(${module_name}
-
+	
+)
+ADDMODULEDEPENDENCIES(${module_name}
+	
 )

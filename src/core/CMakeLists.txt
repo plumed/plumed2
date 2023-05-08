@@ -39,7 +39,7 @@ ADDMODULENEEDS(${module_name}
 config tools lepton
 )
 
-#ADDMODULEDEPENDENCIES(${module_name}
+#ADDMODULENEEDS(${module_name}
 #    tools #commenting this avoids circular references error
 #)
 

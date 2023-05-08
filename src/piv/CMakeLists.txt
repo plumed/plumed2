@@ -7,5 +7,8 @@ ADDMODULETOKERNEL(${module_name}
 PIV.cpp
 )
 ADDMODULENEEDS(${module_name}
-core tools bias colvar
+	core tools bias colvar
+)
+ADDMODULEDEPENDENCIES(${module_name}
+	core tools bias colvar
 )

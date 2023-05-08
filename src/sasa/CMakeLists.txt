@@ -9,5 +9,8 @@ sasa_HASEL.cpp
 sasa_LCPO.cpp
 )
 ADDMODULENEEDS(${module_name}
-core tools config
+	core tools config  
+)
+ADDMODULEDEPENDENCIES(${module_name}
+	core tools config  
 )

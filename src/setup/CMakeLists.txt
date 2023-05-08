@@ -9,5 +9,8 @@ Restart.cpp
 Units.cpp
 )
 ADDMODULENEEDS(${module_name}
-core tools
+	core tools
+)
+ADDMODULEDEPENDENCIES(${module_name}
+	core tools
 )

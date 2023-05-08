@@ -60,5 +60,8 @@ WaveletCoeffs.cpp
 WaveletGrid.cpp
 )
 ADDMODULENEEDS(${module_name}
-bias cltools colvar config core tools lepton
+	bias cltools colvar config core tools lepton
+)
+ADDMODULEDEPENDENCIES(${module_name}
+	bias cltools colvar config core tools lepton
 )

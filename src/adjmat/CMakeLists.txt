@@ -28,8 +28,8 @@ Sprint.cpp
 TopologyMatrix.cpp
 )
 ADDMODULENEEDS(${module_name}
-core tools vesselbase multicolvar
+	core tools vesselbase multicolvar
 )
-# ADDMODULEDEPENDENCIES(${module_name}
-    # core multicolvar vesselbase tools 
-# )
+ADDMODULEDEPENDENCIES(${module_name}
+	core tools vesselbase multicolvar
+)

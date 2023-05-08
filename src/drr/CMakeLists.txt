@@ -10,5 +10,8 @@ drrtool.cpp
 DynamicReferenceRestraining.cpp
 )
 ADDMODULENEEDS(${module_name}
-core tools bias cltools config
+	core tools bias cltools config
+)
+ADDMODULEDEPENDENCIES(${module_name}
+	core tools bias cltools config
 )
