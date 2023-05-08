@@ -29,5 +29,9 @@ ADDMODULENEEDS(${module_name}
 	core tools reference vesselbase gridtools multicolvar bias
 )
 ADDMODULEDEPENDENCIES(${module_name}
-	core tools reference vesselbase gridtools multicolvar bias
+	core tools
+	reference
+	#TODO: resolve THIS
+	#vesselbase gridtools multicolvar# it does actually depend on them, but it is better to avid cyclic dependencies
+	bias
 )
