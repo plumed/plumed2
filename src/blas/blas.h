@@ -90,7 +90,7 @@ Erik Lindahl, 2008-10-07.
 
 #ifndef __PLUMED_BLAS_RETURNS_FLOAT
 #define __PLUMED_BLAS_RETURNS_FLOAT float
-#endif
+#endif //ifndef __PLUMED_BLAS_RETURNS_FLOAT
 #if ! defined (__PLUMED_HAS_EXTERNAL_BLAS)
 #include "def_internal.h"
 namespace PLMD{
@@ -98,14 +98,14 @@ namespace blas{
 #else
 namespace PLMD{
 namespace blas{
-}
-}
+}/*PLMD*/
+}/*blas*/
 #include "def_external.h"
 extern "C"{
-#endif
+#endif //! defined (__PLUMED_HAS_EXTERNAL_BLAS)
 #if 0
 }
-#endif
+#endif //0
 
 /* Double precision versions */
 double
@@ -245,9 +245,9 @@ int
 }
 #if ! defined (__PLUMED_HAS_EXTERNAL_BLAS)
 }
-#endif
+#endif //! defined (__PLUMED_HAS_EXTERNAL_BLAS)
 
 /*! \endcond */
 
 #endif /* GMX_BLAS_H */
-#endif
+#endif //__PLUMED_blas_blas_h

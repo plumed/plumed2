@@ -94,4 +94,4 @@ Erik Lindahl, 2008-10-07.
 #define plumed_blas_strsm PLMD::blas::PLUMED_BLAS_F77_FUNC(strsm,STRSM)
 /** \ingroup internal-blas */
 #define plumed_blas_isamax PLMD::blas::PLUMED_BLAS_F77_FUNC(isamax,ISAMAX)
-#endif
+#endif //__PLUMED_blas_def_internal_h

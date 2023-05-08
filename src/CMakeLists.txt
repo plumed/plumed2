@@ -16,9 +16,6 @@ set (PLUMED_SCRIPTS ${PLUMED_MAIN_DIR}/scripts)
 set (PLUMED_PATCHES ${PLUMED_MAIN_DIR}/patches)
 
 option(all_modules "Activates all modules, if on ignores the values of module_name when compiling" OFF)
-option(useExternal_BLAS "enable search for external BLAS, default ON" ON)
-option(useExternal_LAPACK "enable search for external LAPACK, default ON" ON)
-option(useExternal_MOLFILE "enable search for external LAPACK, default OFF" OFF)
 
 set(modulesForKernel "")
 
@@ -67,17 +64,25 @@ MACRO(ADDMODULENEEDS module_name)
 ENDMACRO(ADDMODULENEEDS)
 
 MACRO(ADDMODULEDEPENDENCIES module_name)
-    #use: ADDMODULENEEDS(module_name listOfModules)
+    #use: ADDMODULEDEPENDENCIES(module_name listOfModules)
     #adds the module on which this depends on (for compile definitions and so on)
     #NB you may create circular dependencies
     #NB this is particularly experimental
     if(${module_${module_name}} )
         set(OTHERARGS ${ARGV})
         list(REMOVE_ITEM OTHERARGS ${module_name})
-        message("${module_name} is linked with ${OTHERARGS}")
-        target_link_libraries(${module_name} PUBLIC ${OTHERARGS})
+        foreach(lib ${OTHERARGS})
+            #message("${module_name} is linked with ${lib}")
+            target_link_libraries(${module_name} PUBLIC ${lib})
+        endforeach(lib ${OTHERARGS})
     endif(${module_${module_name}})
 ENDMACRO(ADDMODULEDEPENDENCIES)
+
+function(print_target_property target_name property)
+    get_target_property(tempvar ${target_name} ${property})
+    message("${target_name} <${property}>: ${tempvar}")
+    unset(tempvar)    
+endfunction(print_target_property)
 
 ################################################################################
 #Setting up Modules
@@ -264,6 +269,7 @@ set_target_properties(libplumedKernel
         SUFFIX .${SOEXT}
     )
 
+#target_link_libraries(libplumedKernel PUBLIC ${modulesForKernel})
 
 add_library(libplumed SHARED $<TARGET_OBJECTS:PlumedWrapper>)
 set_target_properties(libplumed
@@ -286,12 +292,6 @@ target_link_libraries(libplumedWrapper
     PlumedWrapper
     ConfigInstall
 )
-
-function(print_target_property target_name property)
-    get_target_property(t ${target_name} ${property})
-    message("${target_name} <${property}>: ${t}")
-    unset(t)    
-endfunction(print_target_property)
 
 #print_target_property(cltools COMPILE_DEFINITIONS)
 #print_target_property(molfile COMPILE_DEFINITIONS)
@@ -344,3 +344,16 @@ endif()
 #-Wlogical-op # warn about logical operations being used where bitwise were# probably wanted
 #-Wuseless-cast # warn if you perform a cast to the same type
 #-Wlifetime # ///
+
+# foreach(module_name blas lapack)
+# print_target_property(${module_name} COMPILE_OPTIONS)
+# print_target_property(${module_name} COMPILE_DEFINITIONS)
+# print_target_property(${module_name} INTERFACE_COMPILE_DEFINITIONS)
+# endforeach()
+################################################################################
+#One can also use -DCMAKE_EXPORT_COMPILE_COMMANDS=ON in that case, such that we 
+#have all the commands in the file compile_commands.json without actually 
+#building the sources.
+#-DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+#thanks https://stackoverflow.com/questions/2670121/using-cmake-with-gnu-make-how-can-i-see-the-exact-commands#comment112625585_2673355
+################################################################################

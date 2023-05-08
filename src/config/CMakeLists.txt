@@ -40,9 +40,5 @@ add_custom_command(OUTPUT Makefile.conf.xxd
     COMMENT "Generationc completion.xxd"
     #WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
-function(print_target_property target_name property)
-    get_target_property(t ${target_name} ${property})
-    message("${target_name} <${property}>: ${t}")
-    unset(t)    
-endfunction(print_target_property)
-print_target_property(ConfigInstall INCLUDE_DIRECTORIES)
+
+#print_target_property(ConfigInstall INCLUDE_DIRECTORIES)
