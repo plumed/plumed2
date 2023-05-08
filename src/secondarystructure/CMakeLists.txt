@@ -13,6 +13,6 @@ ADDMODULENEEDS(${module_name}
 	core tools reference vesselbase
 )
 ADDMODULEDEPENDENCIES(${module_name}
-	reference#tools core
-	vesselbase #tools core
+	#reference#tools core
+	vesselbase #analisys tools core reference
 )
