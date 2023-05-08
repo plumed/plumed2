@@ -21,9 +21,15 @@ configure_file(Config.inc.in Config.inc)
 #TODO: verify if the version number are not set
 configure_file(version.h.in version.h)
 
+add_library(config INTERFACE)
+
+#must be set up a target interface config wotj all the definitios
 add_library(Config OBJECT Config.cpp Makefile.conf.xxd)
-add_library(ConfigInstall OBJECT ConfigInstall.cpp Makefile.conf.xxd)
+target_link_libraries(Config INTERFACE config)
 target_include_directories(Config PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+
+add_library(ConfigInstall OBJECT ConfigInstall.cpp Makefile.conf.xxd)
+target_link_libraries(ConfigInstall INTERFACE config)
 target_include_directories(ConfigInstall PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
 
 configure_file(Makefile.conf.xxd.compiler.sh.in Makefile.conf.xxd.compiler.sh @ONLY)
