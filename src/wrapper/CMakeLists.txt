@@ -4,7 +4,7 @@ set(module_${module_name} ON CACHE INTERNAL "always active core module ${module_
 add_library(PlumedStaticWrapper OBJECT PlumedStatic.cpp)
 add_library(PlumedWrapper OBJECT Plumed.c)
 foreach(lib PlumedStaticWrapper PlumedWrapper)
-    target_link_libraries(${lib} config)
+    target_link_libraries(${lib} PUBLIC config)
 endforeach(lib PlumedStaticWrapper PlumedWrapper)
 
 

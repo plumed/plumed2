@@ -140,10 +140,10 @@ set(dirs ${alldirs})# CACHE INTERNAL FORCE)
 #directories that do not contain modules
 set(utildirs lib include maketools cmake)
 #these are the diretory to compile that do not have a module.type inside
-set(execDirs main config wrapper)
+set(execDirs config wrapper) #removed main
 #these are directory with codes that may be external
 set(mayBeExternal blas lapack molfile)
-list(REMOVE_ITEM dirs ${utildirs} ${execDirs} ${mayBeExternal})
+list(REMOVE_ITEM dirs main ${utildirs} ${execDirs} ${mayBeExternal})
 #this is needed for making "all_modules" work
 set(toggabledirs ${dirs})
 list(REMOVE_ITEM toggabledirs core tools lepton blas lapack asmjit)
@@ -199,8 +199,6 @@ endif()
 #  --disable-option-checking  ignore unrecognized --enable/--with options
 #  --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
 #  --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
-##  --enable-modules        all/none/reset or : separated list such as
-##                          +crystallization:-bias default: reset
 #  --enable-libsearch      enable search for libraries, default: yes
 #  --enable-static-patch   enable allow statically linking plumed, default: yes
 #  --enable-doc            enable documentation, default: yes
@@ -210,8 +208,6 @@ endif()
 #  --enable-cxx            11 or 14. To link libraries with headers that need
 #                          this C++ level. Use --enable-cxx=none to remove
 #                          -std=c++ flag
-#  --enable-basic-warnings enable basic warnings, default: yes
-#  --enable-fussy          enable fussy warnings, default: no
 #  --enable-debug-glibcxx  enable enable boundary check, default: no
 #  --enable-shared         enable shared libs, default: yes
 #  --enable-dependency-tracking
@@ -314,10 +310,15 @@ set_target_properties(libplumedKernel
         LIBRARY_OUTPUT_NAME ${program_name}Kernel
         SUFFIX .${SOEXT}
     )
-
 target_link_libraries(libplumedKernel PUBLIC ${modulesForKernel})
 
-add_library(libplumed SHARED $<TARGET_OBJECTS:PlumedWrapper>)
+#add_library(libplumedStatic OBJECT ${KernelTargets})
+#target_link_libraries(libplumedStatic INTERFACE ${modulesForKernel})
+# if (TARGET plumed_bin_static)
+    # target_link_libraries(plumed_bin_static PUBLIC ${modulesForKernel})
+    #target_link_libraries(plumed_bin_static PUBLIC PlumedStaticWrapper)
+# endif (TARGET plumed_bin_static)
+add_library(libplumed SHARED)
 set_target_properties(libplumed
     PROPERTIES
         LIBRARY_OUTPUT_NAME ${program_name}
@@ -328,7 +329,7 @@ target_link_libraries(libplumed
     ConfigInstall
 )
 
-add_library(libplumedWrapper STATIC $<TARGET_OBJECTS:PlumedWrapper>)
+add_library(libplumedWrapper STATIC)
 set_target_properties(libplumedWrapper
     PROPERTIES
         LIBRARY_OUTPUT_NAME ${program_name}Wrapper
@@ -338,6 +339,8 @@ target_link_libraries(libplumedWrapper
     PlumedWrapper
     ConfigInstall
 )
+
+add_subdirectory(main)
 
 #print_target_property(cltools COMPILE_DEFINITIONS)
 #print_target_property(molfile COMPILE_DEFINITIONS)
