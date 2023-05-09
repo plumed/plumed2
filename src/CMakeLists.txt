@@ -39,26 +39,26 @@ if(enable_warnings_fussy)
     if(MSVC)
       add_compile_options(/Wall)
     else()
-      add_compile_options(
-          -Wall
-          -Wextra
-          -Wshadow
-          -Wnon-virtual-dtor
-          -Wold-style-cast
-          -Wcast-align
-          -Wunused
-          -Woverloaded-virtual
-          -Wpedantic
-          -Wconversion
-          -Wsign-conversion
-          -Wnull-dereference
-          -Wdouble-promotion
-          -Wformat=2
-          -Wduplicated-cond
-          -Wduplicated-branches
-          -Wlogical-op
-          -Wuseless-cast
-          #-Wlifetime
+      add_compile_options(        
+        -Wall
+        -Wextra # reasonable and standard
+        -Wshadow # warn the user if a variable declaration shadows one from a# parent context
+        -Wnon-virtual-dtor # warn the user if a class with virtual functions has a# non-virtual destructor.
+        -Wold-style-cast # warn for c-style casts
+        -Wcast-align # warn for potential performance problem casts
+        -Wunused # warn on anything being unused
+        -Woverloaded-virtual # warn if you overload (not override) a virtual func
+        -Wpedantic # warn if non-standard C++ is used
+        -Wconversion # warn on type conversions that may lose data
+        -Wsign-conversion # warn on sign conversions
+        -Wnull-dereference # warn if a null dereference is detected
+        -Wdouble-promotion # warn if float is implicit promoted to double
+        -Wformat=2 # warn on security issues around functions that format output# (ie printf)
+        -Wduplicated-cond # warn if if / else chain has duplicated conditions
+        -Wduplicated-branches # warn if if / else branches have duplicated code
+        -Wlogical-op # warn about logical operations being used where bitwise were# probably wanted
+        -Wuseless-cast # warn if you perform a cast to the same type
+        -Wlifetime # ///
           )
     endif(MSVC)
 endif(enable_warnings_fussy)
@@ -341,27 +341,6 @@ target_link_libraries(libplumedWrapper
 
 #print_target_property(cltools COMPILE_DEFINITIONS)
 #print_target_property(molfile COMPILE_DEFINITIONS)
-
-#Warnings
-#-Wall
-#-Wextra # reasonable and standard
-#-Wshadow # warn the user if a variable declaration shadows one from a# parent context
-#-Wnon-virtual-dtor # warn the user if a class with virtual functions has a# non-virtual destructor.
-#-Wold-style-cast # warn for c-style casts
-#-Wcast-align # warn for potential performance problem casts
-#-Wunused # warn on anything being unused
-#-Woverloaded-virtual # warn if you overload (not override) a virtual func
-#-Wpedantic # warn if non-standard C++ is used
-#-Wconversion # warn on type conversions that may lose data
-#-Wsign-conversion # warn on sign conversions
-#-Wnull-dereference # warn if a null dereference is detected
-#-Wdouble-promotion # warn if float is implicit promoted to double
-#-Wformat=2 # warn on security issues around functions that format output# (ie printf)
-#-Wduplicated-cond # warn if if / else chain has duplicated conditions
-#-Wduplicated-branches # warn if if / else branches have duplicated code
-#-Wlogical-op # warn about logical operations being used where bitwise were# probably wanted
-#-Wuseless-cast # warn if you perform a cast to the same type
-#-Wlifetime # ///
 
 # foreach(module_name blas lapack)
 # print_target_property(${module_name} COMPILE_OPTIONS)
