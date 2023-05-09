@@ -46,7 +46,6 @@ MACRO(ADDMODULETOKERNEL module_name)
     if(${module_${module_name}} )
         set(OTHERARGS ${ARGV})
         list(REMOVE_ITEM OTHERARGS ${module_name})
-        
         add_library(${module_name} OBJECT ${OTHERARGS} )
         target_include_directories(${module_name} PRIVATE ${PLUMED_SRC})
         list(APPEND modulesForKernel ${module_name})
@@ -262,14 +261,14 @@ endforeach(activeModule ${modulesForKernel})
 
 #these targets build the two libPlumedKernel.so
 #building the shared libraries with the collected modules
-add_library(libplumedKernel SHARED ${KernelTargets})
+add_library(libplumedKernel SHARED)
 set_target_properties(libplumedKernel
     PROPERTIES 
         LIBRARY_OUTPUT_NAME ${program_name}Kernel
         SUFFIX .${SOEXT}
     )
 
-#target_link_libraries(libplumedKernel PUBLIC ${modulesForKernel})
+target_link_libraries(libplumedKernel PUBLIC ${modulesForKernel})
 
 add_library(libplumed SHARED $<TARGET_OBJECTS:PlumedWrapper>)
 set_target_properties(libplumed

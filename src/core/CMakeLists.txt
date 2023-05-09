@@ -35,8 +35,13 @@ PlumedMainMap.inc PlumedMainEnum.inc
 GREXMap.inc GREXEnum.inc
 CLToolMainMap.inc CLToolMainEnum.inc
 )
+
 ADDMODULENEEDS(${module_name}
 config tools lepton
+)
+ADDMODULEDEPENDENCIES(${module_name}
+    tools #lepton #lapack #blas
+	
 )
 
 #ADDMODULENEEDS(${module_name}

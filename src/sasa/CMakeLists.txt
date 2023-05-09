@@ -12,6 +12,6 @@ ADDMODULENEEDS(${module_name}
 	core tools config  
 )
 ADDMODULEDEPENDENCIES(${module_name}
-	tools #core
+	core #tools
 	config  
 )

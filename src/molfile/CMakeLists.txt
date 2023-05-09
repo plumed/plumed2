@@ -27,4 +27,4 @@ foreach(sourcefile ${MY_PROJECT_SOURCES})
 endforeach(sourcefile in ${MY_PROJECT_SOURCES})
 
 #this should propagate the compile definition to the main
-target_compile_definitions(${module_name} INTERFACE __PLUMED_HAS_MOLFILE_PLUGINS)
+target_compile_definitions(${module_name} PUBLIC __PLUMED_HAS_MOLFILE_PLUGINS)

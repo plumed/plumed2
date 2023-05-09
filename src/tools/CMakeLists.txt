@@ -57,7 +57,6 @@ ADDMODULENEEDS(${module_name}
 	core lapack lepton
 )
 ADDMODULEDEPENDENCIES(${module_name}
-	core
 	lapack #blas
 	lepton
 )

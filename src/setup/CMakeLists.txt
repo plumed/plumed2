@@ -12,5 +12,5 @@ ADDMODULENEEDS(${module_name}
 	core tools
 )
 ADDMODULEDEPENDENCIES(${module_name}
-	tools #core
+	core #tools
 )
