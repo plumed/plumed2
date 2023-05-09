@@ -22,8 +22,56 @@ set(modulesForKernel "")
 ################################################################################
 #Setting up global options
 ################################################################################
-
+#this may be deactivated when we want to copile something more static
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+#  --enable-basic-warnings enable basic warnings, default: yes
+option(enable_warnings_basic "enable basic warnings" ON)
+if(enable_warnings_basic)
+    if(MSVC)
+      add_compile_options(/W4)
+    else()
+      add_compile_options(-Wall)
+    endif(MSVC)
+endif(enable_warnings_basic)
+#  --enable-fussy          enable fussy warnings, default: no
+option(enable_warnings_fussy "enable fussy warnings" OFF)
+if(enable_warnings_fussy)
+    if(MSVC)
+      add_compile_options(/Wall)
+    else()
+      add_compile_options(
+          -Wall
+          -Wextra
+          -Wshadow
+          -Wnon-virtual-dtor
+          -Wold-style-cast
+          -Wcast-align
+          -Wunused
+          -Woverloaded-virtual
+          -Wpedantic
+          -Wconversion
+          -Wsign-conversion
+          -Wnull-dereference
+          -Wdouble-promotion
+          -Wformat=2
+          -Wduplicated-cond
+          -Wduplicated-branches
+          -Wlogical-op
+          -Wuseless-cast
+          #-Wlifetime
+          )
+    endif(MSVC)
+endif(enable_warnings_fussy)
+option(enable_warnings_errors "enable stop compilation on warnings" OFF)
+if(enable_warnings_errors)
+    if(MSVC)
+      add_compile_options(/WX)
+    else()
+      add_compile_options(-Werror -Wfatal-errors)
+    endif(MSVC)
+endif(enable_warnings_errors)
+#  --enable-fussy          enable fussy warnings, default: no
+
 
 ################################################################################
 #Macro definitions
@@ -96,6 +144,9 @@ set(execDirs main config wrapper)
 #these are directory with codes that may be external
 set(mayBeExternal blas lapack molfile)
 list(REMOVE_ITEM dirs ${utildirs} ${execDirs} ${mayBeExternal})
+#this is needed for making "all_modules" work
+set(toggabledirs ${dirs})
+list(REMOVE_ITEM toggabledirs core tools lepton blas lapack asmjit)
 
 foreach(dir ${execDirs})
     add_subdirectory(${dir})
@@ -113,9 +164,9 @@ foreach(dir ${dirs})
 endforeach(dir ${dirs})
 if(all_modules)
     message("All module will be forced ON")
-    foreach(dir ${dirs})
-        set(module_${dir} ON)
-    endforeach(dir ${dirs})
+    foreach(dir ${toggabledirs})
+        set(module_${dir} ON CACHE BOOL "activate module ${dir}" FORCE)
+    endforeach(dir ${toggabledirs})
 endif()
 
 #options ## options are already done
@@ -185,9 +236,6 @@ endif()
 #                          default: yes
 #  --enable-asmjit         enable enable embedded asmjit, default: yes
 #  --enable-mpi            enable search for mpi, default: yes
-##  --enable-external-lapack
-##                          enable search for external lapack, default: yes
-##  --enable-external-blas  enable search for external blas, default: yes
 #  --enable-molfile-plugins
 #                          enable use molfile_plugins, default: yes
 #  --enable-external-molfile-plugins
@@ -197,7 +245,6 @@ endif()
 #  --enable-readdir-r      enable search for readdir_r (threadsafe), default:
 #                          no
 #  --enable-cregex         enable search for C regular expression, default: yes
-#  --enable-dlopen         enable search for dlopen, default: yes
 #  --enable-rtld_default   enable search for RTLD_DEFAULT macro, default: yes
 #  --enable-chdir          enable search for chdir function, default: yes
 #  --enable-subprocess     enable search for functions needed to manage a
@@ -215,7 +262,7 @@ endif()
 #  --enable-af_cuda        enable search for arrayfire_cuda, default: no
 #  --enable-af_cpu         enable search for arrayfire_cpu, default: no
 #  --enable-libtorch       enable search for libtorch, default: no
-#  --disable-openmp        do not use OpenMP
+
 
 #for debugging purpose
 #foreach(dir ${dirs} ${execDirs} ${mayBeExternal})
@@ -295,34 +342,6 @@ target_link_libraries(libplumedWrapper
 #print_target_property(cltools COMPILE_DEFINITIONS)
 #print_target_property(molfile COMPILE_DEFINITIONS)
 
-#TODO move this in a better place:
-IF(${OPT_DEBUGWARNINGS})
-    if(MSVC)
-      add_compile_options(/W4 /WX)
-    else()
-      add_compile_options(
-          -Wall
-          -Wextra
-          -Wshadow
-          -Wnon-virtual-dtor
-          -Wold-style-cast
-          -Wcast-align
-          -Wunused
-          -Woverloaded-virtual
-          -Wpedantic
-          -Wconversion
-          -Wsign-conversion
-          -Wnull-dereference
-          -Wdouble-promotion
-          -Wformat=2
-          -Wduplicated-cond
-          -Wduplicated-branches
-          -Wlogical-op
-          -Wuseless-cast
-          #-Wlifetime
-          )
-    endif()
-endif()
 #Warnings
 #-Wall
 #-Wextra # reasonable and standard

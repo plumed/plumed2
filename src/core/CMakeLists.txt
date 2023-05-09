@@ -39,9 +39,11 @@ CLToolMainMap.inc CLToolMainEnum.inc
 ADDMODULENEEDS(${module_name}
 config tools lepton
 )
+#tools depends on more modules that define COMPILE_DEFINITIONS, so
+#it is better to make core dependent of tools, and then solve the circularity
+#in a second time
 ADDMODULEDEPENDENCIES(${module_name}
-    tools #lepton #lapack #blas
-	
+    tools #lepton #lapack #blas #config
 )
 
 #ADDMODULENEEDS(${module_name}

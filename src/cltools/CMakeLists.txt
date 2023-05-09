@@ -26,8 +26,7 @@ core config tools molfile xdrfile
 )
 ADDMODULEDEPENDENCIES(${module_name}
     molfile
-    config
-    tools
+    core #tools #config
     xdrfile
 )
 

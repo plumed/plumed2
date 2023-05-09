@@ -59,4 +59,5 @@ ADDMODULENEEDS(${module_name}
 ADDMODULEDEPENDENCIES(${module_name}
 	lapack #blas
 	lepton
+	config
 )
