@@ -304,41 +304,29 @@ endforeach(activeModule ${modulesForKernel})
 
 #these targets build the two libPlumedKernel.so
 #building the shared libraries with the collected modules
-add_library(libplumedKernel SHARED)
-set_target_properties(libplumedKernel
+add_library(sharedplumedKernel SHARED)
+set_target_properties(sharedplumedKernel
     PROPERTIES 
         LIBRARY_OUTPUT_NAME ${program_name}Kernel
-        SUFFIX .${SOEXT}
+        #SUFFIX .${SOEXT} #I think that cmake will set so or dlyb by itself
     )
-target_link_libraries(libplumedKernel PUBLIC ${modulesForKernel})
+target_link_libraries(sharedplumedKernel PUBLIC
+     ${modulesForKernel} # OBJ_KERNEL without config
+     Config #within OBJ_KERNEL
+    )
 
+add_library(archiveplumedKernel STATIC)
+set_target_properties(sharedplumedKernel
+    PROPERTIES 
+        ARCHIVE_OUTPUT_NAME ${program_name}
+        #SUFFIX .${SOEXT}
+    )
+target_link_libraries(archiveplumedKernel PUBLIC
+        ${modulesForKernel} # OBJ_KERNEL without config
+        Config #within OBJ_KERNEL
+    )
 #add_library(libplumedStatic OBJECT ${KernelTargets})
 #target_link_libraries(libplumedStatic INTERFACE ${modulesForKernel})
-# if (TARGET plumed_bin_static)
-    # target_link_libraries(plumed_bin_static PUBLIC ${modulesForKernel})
-    #target_link_libraries(plumed_bin_static PUBLIC PlumedStaticWrapper)
-# endif (TARGET plumed_bin_static)
-add_library(libplumed SHARED)
-set_target_properties(libplumed
-    PROPERTIES
-        LIBRARY_OUTPUT_NAME ${program_name}
-        SUFFIX .${SOEXT}
-    )
-target_link_libraries(libplumed
-    PlumedWrapper
-    Config
-)
-
-add_library(libplumedWrapper STATIC)
-set_target_properties(libplumedWrapper
-    PROPERTIES
-        LIBRARY_OUTPUT_NAME ${program_name}Wrapper
-        ARCHIVE_OUTPUT_NAME ${program_name}Wrapper
-    )
-target_link_libraries(libplumedWrapper
-    PlumedWrapper
-    Config
-)
 
 add_subdirectory(main)
 
