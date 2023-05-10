@@ -42,3 +42,8 @@ target_include_directories(plumed_bin_runtime PRIVATE ${PLUMED_SRC})
 #install(CODE "string(REPLACE \";\" \"\\n\" MY_CMAKE_INSTALL_MANIFEST_CONTENT \"\$\{CMAKE_INSTALL_MANIFEST_FILES\}\")\n\
 #              file(WRITE my_install_manifest.txt \"\$\{MY_CMAKE_INSTALL_MANIFEST_CONTENT\}\")")
 #thanks https://stackoverflow.com/a/66804151
+
+
+#installation
+#here there is an exampe ot multiple installation positions
+#https://cmake.org/cmake/help/v3.2/command/install.html#installing-targets

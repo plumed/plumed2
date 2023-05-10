@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20.2)
 
-project(Plumed2 LANGUAGES C CXX Fortran)
+project(Plumed2 LANGUAGES C CXX)
 
 set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS None Debug Release RelWithDebInfo MinSizeRel)
@@ -316,8 +316,9 @@ target_link_libraries(sharedplumedKernel PUBLIC
     )
 
 add_library(archiveplumedKernel STATIC)
-set_target_properties(sharedplumedKernel
+set_target_properties(archiveplumedKernel
     PROPERTIES 
+        #LIBRARY_OUTPUT_NAME ${program_name}
         ARCHIVE_OUTPUT_NAME ${program_name}
         #SUFFIX .${SOEXT}
     )
