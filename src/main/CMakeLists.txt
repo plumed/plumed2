@@ -10,10 +10,15 @@ set_target_properties(plumed_bin
     )
 target_include_directories(plumed_bin PRIVATE ${PLUMED_SRC})
 #statically linked plumed
-add_executable(plumed_bin_static main.cpp)
-target_link_libraries(plumed_bin_static PUBLIC PlumedStaticWrapper)
-target_link_libraries(plumed_bin_static PUBLIC ${modulesForKernel})
-target_link_libraries(plumed_bin_static PUBLIC ConfigInstall)
+#$(PLUMED_MAIN_STATIC): $(OBJ_MAIN) $(OBJ_KERNEL) $(OBJ_WRAPPER)
+add_executable(plumed_bin_static main.cpp) #$(OBJ_MAIN)
+target_link_libraries(plumed_bin_static PUBLIC PlumedStaticWrapper) #$(OBJ_WRAPPER)
+target_link_libraries(plumed_bin_static PUBLIC ${modulesForKernel}) #$(OBJ_KERNEL) 
+
+target_link_libraries(plumed_bin_static PUBLIC Config) #Options and 
+
+
+
 set_target_properties(plumed_bin_static
     PROPERTIES RUNTIME_OUTPUT_NAME ${program_name}-static
     )
@@ -25,3 +30,8 @@ target_include_directories(plumed_bin_static PRIVATE ${PLUMED_SRC})
     # PROPERTIES RUNTIME_OUTPUT_NAME ${program_name}-runtime
     # )
 # target_include_directories(plumed_bin_runtime PRIVATE ${PLUMED_SRC})
+
+#consider adding install manifest:
+#install(CODE "string(REPLACE \";\" \"\\n\" MY_CMAKE_INSTALL_MANIFEST_CONTENT \"\$\{CMAKE_INSTALL_MANIFEST_FILES\}\")\n\
+#              file(WRITE my_install_manifest.txt \"\$\{MY_CMAKE_INSTALL_MANIFEST_CONTENT\}\")")
+#thanks https://stackoverflow.com/a/66804151

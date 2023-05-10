@@ -1,23 +1,28 @@
 set(module_name config)
 #this is not a module, this is set up to make easier the dependency interface
 set(module_${module_name} ON CACHE INTERNAL "always active core module ${module_name}")
+#set this before or maybe let only one config e
+set(plumed_install_flag ON)
 #SOEXT is set in ./src
+if(plumed_install_flag)
 set(ISINSTALLED "true")
 #must go to /lib/plumed
-set(PLUMED_ROOT ${CMAKE_INSTALL_PREFIX}/${program_name})
-set (htmldir ${htmldir})
-set (includedir ${includedir})
-set (program_name ${program_name})
-set (libdir ${libdir})
-configure_file(Config.inc.in ConfigInstall.inc)
-
-set(ISINSTALLED "false")
-set (PLUMED_ROOT ${CMAKE_SOURCE_DIR})
-set (htmldir "xxxxNAxxxx")
-set (includedir "xxxxNAxxxx")
-set (program_name "xxxxNAxxxx")
-configure_file(Config.inc.in Config.inc)
-
+    set(PLUMED_ROOT ${CMAKE_INSTALL_PREFIX}/${program_name})
+    set (htmldir ${htmldir})
+    set (includedir ${includedir})
+    set (program_name ${program_name})
+    set (libdir ${libdir})
+    configure_file(Config.inc.in ConfigInstall.inc)
+    add_library(Config OBJECT ConfigInstall.cpp Makefile.conf.xxd)
+else()
+    set(ISINSTALLED "false")
+    set (PLUMED_ROOT ${CMAKE_SOURCE_DIR})
+    set (htmldir "xxxxNAxxxx")
+    set (includedir "xxxxNAxxxx")
+    set (program_name "xxxxNAxxxx")
+    configure_file(Config.inc.in Config.inc)
+    add_library(Config OBJECT Config.cpp Makefile.conf.xxd)
+endif(plumed_install_flag)
 #TODO: verify if the version number are not set
 configure_file(version.h.in version.h)
 ################################################################################
@@ -45,14 +50,9 @@ if(enable_openmp)
     endif()
 endif(enable_openmp)
 
-#must be set up a target interface config wotj all the definitios
-add_library(Config OBJECT Config.cpp Makefile.conf.xxd)
 target_link_libraries(Config PUBLIC config)
 target_include_directories(Config PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_library(ConfigInstall OBJECT ConfigInstall.cpp Makefile.conf.xxd)
-target_link_libraries(ConfigInstall PUBLIC config)
-target_include_directories(ConfigInstall PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
 
 configure_file(Makefile.conf.xxd.compiler.sh.in Makefile.conf.xxd.compiler.sh @ONLY)
 configure_file(${PLUMED_MAIN_DIR}/Makefile.conf.in Makefile.cmakeMocked.conf @ONLY)

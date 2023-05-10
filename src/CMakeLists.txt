@@ -326,7 +326,7 @@ set_target_properties(libplumed
     )
 target_link_libraries(libplumed
     PlumedWrapper
-    ConfigInstall
+    Config
 )
 
 add_library(libplumedWrapper STATIC)
@@ -337,7 +337,7 @@ set_target_properties(libplumedWrapper
     )
 target_link_libraries(libplumedWrapper
     PlumedWrapper
-    ConfigInstall
+    Config
 )
 
 add_subdirectory(main)
