@@ -152,9 +152,6 @@ foreach(dir ${execDirs})
     add_subdirectory(${dir})
 endforeach(dir ${execDirs})
 
-message("Checking if it is possible to find external alternatives for modules:")
-#needed for FindMOLFILE
-set (CMAKE_MODULE_PATH ${PLUMED_SRC}/cmake)
 foreach(dir ${mayBeExternal})
     add_subdirectory(${dir})
 endforeach(dir ${mayBeExternal})

@@ -10,7 +10,8 @@ dcdplugin.cpp
 gromacsplugin.cpp
 pdbplugin.cpp
 )
-
+# to find external molfile
+list(APPEND CMAKE_MODULE_PATH "${PLUMED_SRC}/cmake")
 #ADDMODULENEEDS(${module_name}
 #
 #)
