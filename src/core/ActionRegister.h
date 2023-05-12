@@ -29,7 +29,7 @@
 #include "tools/Keywords.h"
 #include <memory>
 
-namespace PLMD {
+namespace PLMD { //{
 
 class Action;
 class ActionOptions;
@@ -88,34 +88,30 @@ ActionRegister& actionRegister();
 
 std::ostream & operator<<(std::ostream &log,const ActionRegister&ar);
 
-}
-
-#define PLUMED_CONCATENATE_DIRECT(s1, s2) s1##s2
-#define PLUMED_CONCATENATE(s1, s2) PLUMED_CONCATENATE_DIRECT(s1, s2)
-#define PLUMED_UNIQUENAME(str) PLUMED_CONCATENATE(str, __LINE__)
-
-
-//in C++20 you we'll make this a concept a change typename in plumedRegisterer
 template<typename T>
-inline constexpr bool isActionType = std::is_base_of<::PLMD::Action, T>::value;
+inline constexpr bool isActionType = std::is_base_of<Action, T>::value;
+//in C++20 you we'll make this a concept
+//template<typename T>
 //concept ActionType = std::is_base_of<::PLMD::Action, T>::value;
-//and the next template will be template<ActionType ActionType>
+//so the template will be template<ActionType ActionType>class ActionRegistration{...}
+//without the explicit need of the static assert
 
-
-///Registerer for actions
+///Each instance of this specialized class represents an action that can be called
+///with  the specified directive.
+///As soon it goes out of scope it will deregister the directive from ActionRegister
 template<typename ActionClass>
-class plumedRegisterer {
-  static ::std::unique_ptr<::PLMD::Action> create(const ::PLMD::ActionOptions&ao) {
-    return ::std::make_unique<ActionClass>(ao);
+class ActionRegistration {
+  static std::unique_ptr<Action> create(const ActionOptions&ao) {
+    return std::make_unique<ActionClass>(ao);
   }
 public:
-  ///On construction will register the ActionClass with the wanted key
-  plumedRegisterer(std::string_view key) {
-    static_assert(isActionType<ActionClass>,"plumedRegisterer accepts only class that inherit from Action");
-    ::PLMD::actionRegister().add(key,create,ActionClass::registerKeywords);
+  ///On construction register the ActionClass with the wanted directive
+  ActionRegistration(std::string_view directive) {
+    static_assert(isActionType<ActionClass>,"ActionRegistration accepts only class that inherit from Action");
+    actionRegister().add(directive.data(),create,ActionClass::registerKeywords);
   }
-  ///On destruction will deregister the ActionClass with the wanted key (useful when you unload a shared object)
-  ~plumedRegisterer() {::PLMD::actionRegister().remove(create);}
+  ///On destruction deregister the ActionClass (useful when you unload a shared object)
+  ~ActionRegistration() {actionRegister().remove(create);}
 };
 
 /// Shortcut for Action registration
@@ -124,8 +120,8 @@ public:
 /// \param classname the name of the class to be registered
 /// \param directive a name of the corresponding directive, do not use a string, the macro will convert it to a string
 /// This macro should be used in the .cpp file of the corresponding class
-#define PLUMED_REGISTER_ACTION(classname,directive) plumedRegisterer<classname> directive##Registerer(#directive);
+#define PLUMED_REGISTER_ACTION(classname,directive) ActionRegistration<classname> directive##Registerer(#directive);
 
-
+} //PLMD /}
 #endif
 
