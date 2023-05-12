@@ -120,7 +120,8 @@ public:
 /// \param classname the name of the class to be registered
 /// \param directive a name of the corresponding directive, do not use a string, the macro will convert it to a string
 /// This macro should be used in the .cpp file of the corresponding class
-#define PLUMED_REGISTER_ACTION(classname,directive) ActionRegistration<classname> directive##Registerer(#directive);
+#define PLUMED_REGISTER_ACTION(classname,directive) \
+  namespace {ActionRegistration<classname> classname##Registerer##__LINE__(directive);}
 
 } //PLMD /}
 #endif
