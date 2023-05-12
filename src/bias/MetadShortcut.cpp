@@ -92,7 +92,7 @@ void MetadShortcut::createMetadBias( const std::string& lab, const std::string& 
       act->readInputLine( lab + "_grid: AVERAGE ARG=" + lab + "_kde NORMALIZATION=false STRIDE=" + pacestr + " LOGWEIGHTS=" + weight_str );
       // Evaluate the instantaneous value of the bias potential 
       std::string eval_str=eval_args[0]; for(unsigned i=1;i<eval_args.size();++i) eval_str += "," + eval_args[i];
-      act->readInputLine( lab + "_bias: EVALUATE_FUNCTION_FROM_GRID GRID=" + lab + "_grid ARG=" + eval_str + truncflag2 );
+      act->readInputLine( lab + "_bias: EVALUATE_FUNCTION_FROM_GRID GRID=" + lab + "_grid ARG=" + eval_str + " " + truncflag2 );
   } else {
       if( eval_args.size()>1 ) {
           for(unsigned i=0; i<eval_args.size();++i) {

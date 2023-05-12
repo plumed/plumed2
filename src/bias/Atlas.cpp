@@ -154,7 +154,7 @@ bb: BIASVALUE ARG=ff
 at: ATLAS ...
 ARG=d1.x,d1.y REFERENCE=cluster.dat PACE=500
 SIGMA=0.20 BIASFACTOR=10 HEIGHT=2.0
-GRID_MAX=6.0 GRID_BIN=600 TEMP=1 TRUNCATE_GRIDS
+GRID_MAX=6.0 GRID_BIN=600 TEMP=1 
 REGULARISE=1E-8
 STATIC_WALL=0.0
 ADAPTIVE_WALL=1.0
@@ -169,7 +169,7 @@ A few explanation are required. Each local potential is estimated on a grid so t
 the method does not scale with \f$t^2\f$. To do so, we need to be sure that the
 grid will cover values of the local CVs for which the PMIs are not zeros. All the points
 that are far from the cluster and for which the PMI is zero can be ignored and not
-saved, hende we discard them with TRUNCATE_GRIDS. REGULARISE is the keyword that set
+saved, hende we discard them. REGULARISE is the keyword that set
 the probability threshold \f$\pi_0\f$. There is only one SIGMA parameter and only
 one GRID declaration since we assume the local CVs to span the same amount of space
 since they are normalized. The STATIC_WALL and ADAPTIVE_WALL control the absence of presence
@@ -222,7 +222,7 @@ HEIGHT=0.5
 TEMP=0.12
 ADAPTIVE_WALL=1.0 STATIC_WALL=0.0
 REGULARISE=1E-12
-GRID_MAX=7.5 GRID_BIN=750 TRUNCATE_GRIDS
+GRID_MAX=7.5 GRID_BIN=750
 ...
 
 PRINT ARG=n4,n5,n6,n7,n8,n9,n10,n11 FMT=%8.4f FILE=colvar STRIDE=500
@@ -257,7 +257,7 @@ at: ATLAS ...
 REFERENCE=cluster_plumed.dat PACE=500
 ARG=t1,t2
 SIGMA=0.10 BIASFACTOR=10 HEIGHT=2.0
-GRID_MAX=5.0 GRID_BIN=500 TEMP=300 TRUNCATE_GRIDS
+GRID_MAX=5.0 GRID_BIN=500 TEMP=300
 REGULARISE=1E-6
 STATIC_WALL=0.0
 ADAPTIVE_WALL=1.0
@@ -308,7 +308,6 @@ void Atlas::registerKeywords(Keywords& keys) {
   keys.add("compulsory","STATIC_WALL","the force constant of the wall applied outside the GMM");
   keys.add("compulsory","ADAPTIVE_WALL","the force constant of the wall applied outside the GMM");
   keys.add("optional","TEMP","the system temperature - this is only needed if you are doing well-tempered metadynamics");
-  keys.addFlag("TRUNCATE_GRIDS",false,"set all histograms equal to zero outside specified range");
   keys.add("compulsory","THETA_FILE","THETA","print a file containing the kernel values with this name");
   keys.add("compulsory","LOWD_CVS_FILE","LOWD_CVS","print a file containing the values of the low dimensional CVs");
 }
@@ -318,7 +317,6 @@ Action(ao),
 ActionShortcut(ao)
 {
   // Read the reference file and determine how many clusters we have
-  bool truncate=false; parseFlag("TRUNCATE_GRIDS",truncate);
   std::string ktype, argstr; parse("ARG",argstr); std::vector<unsigned> neigv; std::vector<bool> resid;
   std::string fname; parse("REFERENCE",fname); std::vector<double> weights;
   IFile ifile; ifile.open(fname); ifile.allowIgnoredFields(); double h;
@@ -421,7 +419,7 @@ ActionShortcut(ao)
   readInputLine( ccinput + ppwrs );
 
   // Setup the histograms that will store the bias potential for each basin and compute the instantaneous bias from each basin
-  std::string truncflag1="", truncflag2=""; if( truncate ) { truncflag1="IGNORE_IF_OUT_OF_RANGE"; truncflag2="ZERO_OUTSIDE_GRID_RANGE"; }
+  std::string truncflag1="IGNORE_IF_OUT_OF_RANGE", truncflag2="ZERO_OUTSIDE_GRID_RANGE"; 
   std::string gmax, grid_nbins, pacestr, hstring; std::vector<std::string> sigma(1); std::vector<std::string> kargs,eargs,tgmin,tgmax,tgbins;
   parse("GRID_MAX",gmax); parse("GRID_BIN",grid_nbins); parse("SIGMA",sigma[0]); parse("PACE",pacestr);
   // Build the histograms for the bias potential
@@ -483,6 +481,7 @@ ActionShortcut(ao)
               }
           }
       }
+      printf("CHECK FLAGS %s %s \n", truncflag1.c_str(), truncflag2.c_str() );
       MetadShortcut::createMetadBias( getShortcutLabel() + "-" + num, pacestr, kargs, eargs, tgmin, tgmax, tgbins, hstring, truncflag1, truncflag2, this );
   }
 
