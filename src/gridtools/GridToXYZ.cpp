@@ -47,7 +47,7 @@ public:
   void printGrid( OFile& ofile ) const override;
 };
 
-PLUMED_REGISTER_ACTION(GridToXYZ,GRID_TO_XYZ)
+PLUMED_REGISTER_ACTION(GridToXYZ,"GRID_TO_XYZ")
 
 void GridToXYZ::registerKeywords( Keywords& keys ) {
   GridPrintingBase::registerKeywords( keys );

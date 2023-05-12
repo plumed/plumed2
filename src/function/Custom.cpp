@@ -176,7 +176,7 @@ public:
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(Custom,CUSTOM)
+PLUMED_REGISTER_ACTION(Custom,"CUSTOM")
 
 //+PLUMEDOC FUNCTION MATHEVAL
 /*
@@ -206,7 +206,7 @@ class Matheval :
   public Custom {
 };
 
-PLUMED_REGISTER_ACTION(Custom,MATHEVAL)
+PLUMED_REGISTER_ACTION(Custom,"MATHEVAL")
 
 void Custom::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);

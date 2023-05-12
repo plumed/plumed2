@@ -104,7 +104,7 @@ public:
                             const double& ood_df, const double& ood_sw, multicolvar::AtomValuePack& myatoms ) const;
 };
 
-PLUMED_REGISTER_ACTION(HBondMatrix,HBOND_MATRIX)
+PLUMED_REGISTER_ACTION(HBondMatrix,"HBOND_MATRIX")
 
 void HBondMatrix::registerKeywords( Keywords& keys ) {
   AdjacencyMatrixBase::registerKeywords( keys );

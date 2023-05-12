@@ -56,7 +56,7 @@ public:
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(Template,TEMPLATE)
+PLUMED_REGISTER_ACTION(Template,"TEMPLATE")
 
 void Template::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);

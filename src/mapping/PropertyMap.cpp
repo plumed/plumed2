@@ -101,7 +101,7 @@ public:
   explicit PropertyMap(const ActionOptions&);
 };
 
-PLUMED_REGISTER_ACTION(PropertyMap,GPROPERTYMAP)
+PLUMED_REGISTER_ACTION(PropertyMap,"GPROPERTYMAP")
 
 void PropertyMap::registerKeywords( Keywords& keys ) {
   PathBase::registerKeywords( keys );

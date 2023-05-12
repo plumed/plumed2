@@ -146,7 +146,7 @@ public:
   void printGrid( OFile& ofile ) const override;
 };
 
-PLUMED_REGISTER_ACTION(DumpGrid,DUMPGRID)
+PLUMED_REGISTER_ACTION(DumpGrid,"DUMPGRID")
 
 void DumpGrid::registerKeywords( Keywords& keys ) {
   GridPrintingBase::registerKeywords( keys );

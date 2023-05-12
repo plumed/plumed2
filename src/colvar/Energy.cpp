@@ -72,7 +72,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(Energy,ENERGY)
+PLUMED_REGISTER_ACTION(Energy,"ENERGY")
 
 Energy::Energy(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao)

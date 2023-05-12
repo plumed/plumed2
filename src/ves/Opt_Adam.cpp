@@ -72,7 +72,7 @@ inline
 CoeffsVector& Opt_Adam::VarmaxCoeffs(const unsigned int coeffs_id) const {return *varmax_coeffs_pntrs_[coeffs_id];}
 
 
-PLUMED_REGISTER_ACTION(Opt_Adam,OPT_ADAM)
+PLUMED_REGISTER_ACTION(Opt_Adam,"OPT_ADAM")
 
 
 void Opt_Adam::registerKeywords(Keywords& keys) {

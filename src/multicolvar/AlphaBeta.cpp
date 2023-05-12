@@ -103,7 +103,7 @@ public:
   bool isPeriodic() override { return false; }
 };
 
-PLUMED_REGISTER_ACTION(AlphaBeta,ALPHABETA)
+PLUMED_REGISTER_ACTION(AlphaBeta,"ALPHABETA")
 
 void AlphaBeta::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );

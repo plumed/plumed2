@@ -195,7 +195,7 @@ private:
 };
 
 // Register OPTIMIZER_BIAS as a keyword for PLUMED2 input files.
-PLUMED_REGISTER_ACTION(OptimizerBias, MAZE_OPTIMIZER_BIAS)
+PLUMED_REGISTER_ACTION(OptimizerBias,  "MAZE_OPTIMIZER_BIAS")
 
 void OptimizerBias::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);

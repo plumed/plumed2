@@ -183,9 +183,9 @@ public:
   explicit Q6( const ActionOptions& ao );
 };
 
-PLUMED_REGISTER_ACTION(Q6,Q6)
+PLUMED_REGISTER_ACTION(Q6,"Q6")
 typedef LocalSteinhardt<Q6> LOCAL_Q6;
-PLUMED_REGISTER_ACTION(LOCAL_Q6,LOCAL_Q6)
+PLUMED_REGISTER_ACTION(LOCAL_Q6,"LOCAL_Q6")
 
 void Q6::registerKeywords( Keywords& keys ) {
   Steinhardt::registerKeywords( keys );

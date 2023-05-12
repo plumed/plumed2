@@ -140,7 +140,7 @@ END
 */
 //+ENDPLUMEDOC
 
-PLUMED_REGISTER_ACTION(MultiRMSD,MULTI_RMSD)
+PLUMED_REGISTER_ACTION(MultiRMSD,"MULTI_RMSD")
 
 void MultiRMSD::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);

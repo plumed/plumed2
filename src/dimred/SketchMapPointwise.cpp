@@ -47,7 +47,7 @@ public:
   void minimise( Matrix<double>& ) override;
 };
 
-PLUMED_REGISTER_ACTION(SketchMapPointwise,SKETCHMAP_POINTWISE)
+PLUMED_REGISTER_ACTION(SketchMapPointwise,"SKETCHMAP_POINTWISE")
 
 void SketchMapPointwise::registerKeywords( Keywords& keys ) {
   SketchMapBase::registerKeywords( keys );

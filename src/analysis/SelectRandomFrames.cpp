@@ -44,7 +44,7 @@ public:
   void selectLandmarks() override;
 };
 
-PLUMED_REGISTER_ACTION(SelectRandomFrames,LANDMARK_SELECT_RANDOM)
+PLUMED_REGISTER_ACTION(SelectRandomFrames,"LANDMARK_SELECT_RANDOM")
 
 void SelectRandomFrames::registerKeywords( Keywords& keys ) {
   LandmarkSelectionBase::registerKeywords(keys);

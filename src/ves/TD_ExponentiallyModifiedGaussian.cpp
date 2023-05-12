@@ -116,7 +116,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(TD_ExponentiallyModifiedGaussian,TD_EXPONENTIALLY_MODIFIED_GAUSSIAN)
+PLUMED_REGISTER_ACTION(TD_ExponentiallyModifiedGaussian,"TD_EXPONENTIALLY_MODIFIED_GAUSSIAN")
 
 
 void TD_ExponentiallyModifiedGaussian::registerKeywords(Keywords& keys) {

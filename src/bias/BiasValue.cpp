@@ -79,7 +79,7 @@ public:
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(BiasValue,BIASVALUE)
+PLUMED_REGISTER_ACTION(BiasValue,"BIASVALUE")
 
 void BiasValue::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);

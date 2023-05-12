@@ -123,7 +123,7 @@ public:
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(FuncPathGeneral, FUNCPATHGENERAL)
+PLUMED_REGISTER_ACTION(FuncPathGeneral,  "FUNCPATHGENERAL")
 
 void FuncPathGeneral::loadReference() {
   IFile input;

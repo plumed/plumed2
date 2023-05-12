@@ -29,7 +29,7 @@
 #include "tools/Keywords.h"
 #include <memory>
 
-namespace PLMD { //{
+namespace PLMD {
 
 class Action;
 class ActionOptions;
@@ -114,6 +114,9 @@ public:
   ~ActionRegistration() {actionRegister().remove(create);}
 };
 
+#define PLUMED_CONCATENATE_DIRECT(s1, s2) s1##s2
+#define PLUMED_CONCATENATE(s1, s2) PLUMED_CONCATENATE_DIRECT(s1, s2)
+
 /// Shortcut for Action registration
 /// \relates PLMD::ActionRegister
 /// For easier registration, this file also provides a macro PLUMED_REGISTER_ACTION.
@@ -121,8 +124,8 @@ public:
 /// \param directive a name of the corresponding directive, do not use a string, the macro will convert it to a string
 /// This macro should be used in the .cpp file of the corresponding class
 #define PLUMED_REGISTER_ACTION(classname,directive) \
-  namespace {ActionRegistration<classname> classname##Registerer##__LINE__(directive);}
+  namespace {::PLMD::ActionRegistration<classname> PLUMED_CONCATENATE(classname##Registerer,__LINE__)(directive);}
 
-} //PLMD /}
+} //PLMD
 #endif
 

@@ -64,7 +64,7 @@ public:
   ~DumpProjections();
 };
 
-PLUMED_REGISTER_ACTION(DumpProjections,DUMPPROJECTIONS)
+PLUMED_REGISTER_ACTION(DumpProjections,"DUMPPROJECTIONS")
 
 void DumpProjections::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys);

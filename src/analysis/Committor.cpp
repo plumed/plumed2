@@ -74,7 +74,7 @@ public:
   void apply() override {}
 };
 
-PLUMED_REGISTER_ACTION(Committor,COMMITTOR)
+PLUMED_REGISTER_ACTION(Committor,"COMMITTOR")
 
 void Committor::registerKeywords( Keywords& keys ) {
   Action::registerKeywords(keys);

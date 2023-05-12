@@ -495,7 +495,7 @@ public:
   void update() override;
 };
 
-PLUMED_REGISTER_ACTION(CS2Backbone,CS2BACKBONE)
+PLUMED_REGISTER_ACTION(CS2Backbone,"CS2BACKBONE")
 
 void CS2Backbone::registerKeywords( Keywords& keys ) {
   componentsAreNotOptional(keys);

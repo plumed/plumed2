@@ -75,7 +75,7 @@ public:
   double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const override;
 };
 
-PLUMED_REGISTER_ACTION(VolumeInEnvelope,INENVELOPE)
+PLUMED_REGISTER_ACTION(VolumeInEnvelope,"INENVELOPE")
 
 void VolumeInEnvelope::registerKeywords( Keywords& keys ) {
   ActionVolume::registerKeywords( keys ); keys.remove("SIGMA");

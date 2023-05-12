@@ -94,7 +94,7 @@ public:
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(PropertyMap,PROPERTYMAP)
+PLUMED_REGISTER_ACTION(PropertyMap,"PROPERTYMAP")
 
 void PropertyMap::registerKeywords(Keywords& keys) {
   PathMSDBase::registerKeywords(keys);

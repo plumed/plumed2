@@ -60,7 +60,7 @@ public:
   void apply() override;
 };
 
-PLUMED_REGISTER_ACTION(Debug,DEBUG)
+PLUMED_REGISTER_ACTION(Debug,"DEBUG")
 
 void Debug::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );

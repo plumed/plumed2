@@ -173,7 +173,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(TD_Gaussian,TD_GAUSSIAN)
+PLUMED_REGISTER_ACTION(TD_Gaussian,"TD_GAUSSIAN")
 
 
 void TD_Gaussian::registerKeywords(Keywords& keys) {

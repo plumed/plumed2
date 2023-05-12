@@ -69,7 +69,7 @@ public:
   bool isPeriodic() override { return false; }
 };
 
-PLUMED_REGISTER_ACTION(InPlaneDistances,INPLANEDISTANCES)
+PLUMED_REGISTER_ACTION(InPlaneDistances,"INPLANEDISTANCES")
 
 void InPlaneDistances::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );

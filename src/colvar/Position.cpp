@@ -81,7 +81,7 @@ public:
   void calculate() override;
 };
 
-PLUMED_REGISTER_ACTION(Position,POSITION)
+PLUMED_REGISTER_ACTION(Position,"POSITION")
 
 void Position::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );

@@ -196,7 +196,7 @@ public:
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(FuncSumHills,FUNCSUMHILLS)
+PLUMED_REGISTER_ACTION(FuncSumHills,"FUNCSUMHILLS")
 
 void FuncSumHills::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);

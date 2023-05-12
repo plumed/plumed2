@@ -77,7 +77,7 @@ public:
   std::vector<float> tensor_to_vector(const torch::Tensor& x);
 };
 
-PLUMED_REGISTER_ACTION(PytorchModel,PYTORCH_MODEL)
+PLUMED_REGISTER_ACTION(PytorchModel,"PYTORCH_MODEL")
 
 void PytorchModel::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);

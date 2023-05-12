@@ -229,7 +229,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(TD_MultithermalMultibaric,TD_MULTITHERMAL_MULTIBARIC)
+PLUMED_REGISTER_ACTION(TD_MultithermalMultibaric,"TD_MULTITHERMAL_MULTIBARIC")
 
 
 void TD_MultithermalMultibaric::registerKeywords(Keywords& keys) {

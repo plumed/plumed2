@@ -177,7 +177,7 @@ public:
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(VesDeltaF,VES_DELTA_F)
+PLUMED_REGISTER_ACTION(VesDeltaF,"VES_DELTA_F")
 
 void VesDeltaF::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);

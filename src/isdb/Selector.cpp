@@ -69,7 +69,7 @@ public:
   void apply() override {}
 };
 
-PLUMED_REGISTER_ACTION(Selector,SELECTOR)
+PLUMED_REGISTER_ACTION(Selector,"SELECTOR")
 
 void Selector::registerKeywords( Keywords& keys ) {
   Action::registerKeywords(keys);

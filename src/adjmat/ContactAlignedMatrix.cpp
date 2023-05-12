@@ -84,7 +84,7 @@ public:
                                 Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const override;
 };
 
-PLUMED_REGISTER_ACTION(ContactAlignedMatrix,ALIGNED_MATRIX)
+PLUMED_REGISTER_ACTION(ContactAlignedMatrix,"ALIGNED_MATRIX")
 
 void ContactAlignedMatrix::registerKeywords( Keywords& keys ) {
   AlignedMatrixBase::registerKeywords( keys );

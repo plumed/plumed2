@@ -217,8 +217,8 @@ public:
   void update() override;
 };
 
-PLUMED_REGISTER_ACTION(RDC,RDC)
-PLUMED_REGISTER_ACTION(RDC,PCS)
+PLUMED_REGISTER_ACTION(RDC,"RDC")
+PLUMED_REGISTER_ACTION(RDC,"PCS")
 
 void RDC::registerKeywords( Keywords& keys ) {
   componentsAreNotOptional(keys);

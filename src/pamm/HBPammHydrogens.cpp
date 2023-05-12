@@ -57,7 +57,7 @@ public:
   bool isPeriodic() override { return false; }
 };
 
-PLUMED_REGISTER_ACTION(HBPammHydrogens,HBPAMM_SH)
+PLUMED_REGISTER_ACTION(HBPammHydrogens,"HBPAMM_SH")
 
 void HBPammHydrogens::registerKeywords( Keywords& keys ) {
   multicolvar::MultiColvarBase::registerKeywords( keys );

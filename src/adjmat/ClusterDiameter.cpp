@@ -77,7 +77,7 @@ public:
   void turnOnDerivatives() override;
 };
 
-PLUMED_REGISTER_ACTION(ClusterDiameter,CLUSTER_DIAMETER)
+PLUMED_REGISTER_ACTION(ClusterDiameter,"CLUSTER_DIAMETER")
 
 void ClusterDiameter::registerKeywords( Keywords& keys ) {
   ClusterAnalysisBase::registerKeywords( keys );

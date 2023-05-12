@@ -87,7 +87,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(Combine,COMBINE)
+PLUMED_REGISTER_ACTION(Combine,"COMBINE")
 
 void Combine::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);

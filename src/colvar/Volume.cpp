@@ -51,7 +51,7 @@ public:
   static void registerKeywords( Keywords& keys );
 };
 
-PLUMED_REGISTER_ACTION(Volume,VOLUME)
+PLUMED_REGISTER_ACTION(Volume,"VOLUME")
 
 Volume::Volume(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao)

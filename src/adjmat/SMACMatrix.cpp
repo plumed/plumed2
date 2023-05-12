@@ -92,7 +92,7 @@ public:
                                 Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const override;
 };
 
-PLUMED_REGISTER_ACTION(SMACMatrix,SMAC_MATRIX)
+PLUMED_REGISTER_ACTION(SMACMatrix,"SMAC_MATRIX")
 
 void SMACMatrix::registerKeywords( Keywords& keys ) {
   AlignedMatrixBase::registerKeywords( keys );

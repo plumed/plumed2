@@ -91,7 +91,7 @@ public:
   explicit AlphaRMSD(const ActionOptions&);
 };
 
-PLUMED_REGISTER_ACTION(AlphaRMSD,ALPHARMSD)
+PLUMED_REGISTER_ACTION(AlphaRMSD,"ALPHARMSD")
 
 void AlphaRMSD::registerKeywords( Keywords& keys ) {
   SecondaryStructureRMSD::registerKeywords( keys );

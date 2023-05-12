@@ -80,7 +80,7 @@ public:
   double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const override;
 };
 
-PLUMED_REGISTER_ACTION(ContactMatrix,CONTACT_MATRIX)
+PLUMED_REGISTER_ACTION(ContactMatrix,"CONTACT_MATRIX")
 
 void ContactMatrix::registerKeywords( Keywords& keys ) {
   AdjacencyMatrixBase::registerKeywords( keys );

@@ -100,7 +100,7 @@ public:
   bool isPeriodic() override { return false; }
 };
 
-PLUMED_REGISTER_ACTION(LocalAverage,LOCAL_AVERAGE)
+PLUMED_REGISTER_ACTION(LocalAverage,"LOCAL_AVERAGE")
 
 void LocalAverage::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );

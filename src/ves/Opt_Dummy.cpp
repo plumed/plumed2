@@ -82,7 +82,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(Opt_Dummy,OPT_DUMMY)
+PLUMED_REGISTER_ACTION(Opt_Dummy,"OPT_DUMMY")
 
 
 void Opt_Dummy::registerKeywords(Keywords& keys) {

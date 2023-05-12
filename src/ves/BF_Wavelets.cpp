@@ -215,7 +215,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(BF_Wavelets,BF_WAVELETS)
+PLUMED_REGISTER_ACTION(BF_Wavelets,"BF_WAVELETS")
 
 
 void BF_Wavelets::registerKeywords(Keywords& keys) {

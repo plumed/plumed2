@@ -92,7 +92,7 @@ public:
   explicit AntibetaRMSD(const ActionOptions&);
 };
 
-PLUMED_REGISTER_ACTION(AntibetaRMSD,ANTIBETARMSD)
+PLUMED_REGISTER_ACTION(AntibetaRMSD,"ANTIBETARMSD")
 
 void AntibetaRMSD::registerKeywords( Keywords& keys ) {
   SecondaryStructureRMSD::registerKeywords( keys );

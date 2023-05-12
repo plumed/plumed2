@@ -88,7 +88,7 @@ public:
   static void registerKeywords( Keywords& keys );
 };
 
-PLUMED_REGISTER_ACTION(Angle,ANGLE)
+PLUMED_REGISTER_ACTION(Angle,"ANGLE")
 
 void Angle::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords(keys);

@@ -75,7 +75,7 @@ public:
   double getLogWeight() override;
 };
 
-PLUMED_REGISTER_ACTION(ReweightBias,REWEIGHT_BIAS)
+PLUMED_REGISTER_ACTION(ReweightBias,"REWEIGHT_BIAS")
 
 void ReweightBias::registerKeywords(Keywords& keys ) {
   ReweightBase::registerKeywords( keys ); keys.remove("ARG");

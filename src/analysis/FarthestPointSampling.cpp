@@ -44,7 +44,7 @@ public:
   void selectLandmarks() override;
 };
 
-PLUMED_REGISTER_ACTION(FarthestPointSampling,LANDMARK_SELECT_FPS)
+PLUMED_REGISTER_ACTION(FarthestPointSampling,"LANDMARK_SELECT_FPS")
 
 void FarthestPointSampling::registerKeywords( Keywords& keys ) {
   LandmarkSelectionBase::registerKeywords(keys);

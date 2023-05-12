@@ -137,7 +137,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(TD_ProductCombination,TD_PRODUCT_COMBINATION)
+PLUMED_REGISTER_ACTION(TD_ProductCombination,"TD_PRODUCT_COMBINATION")
 
 
 void TD_ProductCombination::registerKeywords(Keywords& keys) {

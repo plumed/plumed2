@@ -263,7 +263,7 @@ compilation will exclude it from plumed.
 
 typedef PLMD::GenericMolInfo MolInfo;
 
-PLUMED_REGISTER_ACTION(MolInfo,MOLINFO)
+PLUMED_REGISTER_ACTION(MolInfo,"MOLINFO")
 
 }
 }

@@ -317,7 +317,7 @@ public:
   static void registerKeywords( Keywords& keys );
 };
 
-PLUMED_REGISTER_ACTION(VesLinearExpansion,VES_LINEAR_EXPANSION)
+PLUMED_REGISTER_ACTION(VesLinearExpansion,"VES_LINEAR_EXPANSION")
 
 void VesLinearExpansion::registerKeywords( Keywords& keys ) {
   VesBias::registerKeywords(keys);

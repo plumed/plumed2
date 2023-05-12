@@ -215,7 +215,7 @@ public:
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(FuncPathMSD,FUNCPATHMSD)
+PLUMED_REGISTER_ACTION(FuncPathMSD,"FUNCPATHMSD")
 
 void FuncPathMSD::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);

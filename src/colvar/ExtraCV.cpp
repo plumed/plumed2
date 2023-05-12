@@ -61,7 +61,7 @@ public:
   static void registerKeywords( Keywords& keys );
 };
 
-PLUMED_REGISTER_ACTION(ExtraCV,EXTRACV)
+PLUMED_REGISTER_ACTION(ExtraCV,"EXTRACV")
 
 ExtraCV::ExtraCV(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao)

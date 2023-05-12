@@ -198,7 +198,7 @@ public:
   unsigned getNumberOfDerivatives() override {plumed_merror("You should not call this function");};
 };
 
-PLUMED_REGISTER_ACTION(FitToTemplate,FIT_TO_TEMPLATE)
+PLUMED_REGISTER_ACTION(FitToTemplate,"FIT_TO_TEMPLATE")
 
 void FitToTemplate::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );

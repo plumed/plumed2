@@ -61,7 +61,7 @@ public:
   void normalizeVectorDerivatives( MultiValue& myvals ) const override;
 };
 
-PLUMED_REGISTER_ACTION(MoleculeOrientation,MOLECULES)
+PLUMED_REGISTER_ACTION(MoleculeOrientation,"MOLECULES")
 
 void MoleculeOrientation::registerKeywords( Keywords& keys ) {
   VectorMultiColvar::registerKeywords( keys ); keys.use("MEAN"); keys.use("VMEAN");

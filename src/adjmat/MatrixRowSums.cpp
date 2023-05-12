@@ -72,7 +72,7 @@ public:
   double compute( const unsigned& tinded, multicolvar::AtomValuePack& myatoms ) const override;
 };
 
-PLUMED_REGISTER_ACTION(MatrixRowSums,ROWSUMS)
+PLUMED_REGISTER_ACTION(MatrixRowSums,"ROWSUMS")
 
 void MatrixRowSums::registerKeywords( Keywords& keys ) {
   ActionWithInputMatrix::registerKeywords( keys );

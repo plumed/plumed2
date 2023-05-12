@@ -82,7 +82,7 @@ public:
   void retrieveDomain( std::string& min, std::string& max ) override { min="-pi"; max="pi"; }
 };
 
-PLUMED_REGISTER_ACTION(Torsions,TORSIONS)
+PLUMED_REGISTER_ACTION(Torsions,"TORSIONS")
 
 void Torsions::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );

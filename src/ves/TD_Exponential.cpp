@@ -81,7 +81,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(TD_Exponential,TD_EXPONENTIAL)
+PLUMED_REGISTER_ACTION(TD_Exponential,"TD_EXPONENTIAL")
 
 
 void TD_Exponential::registerKeywords(Keywords& keys) {

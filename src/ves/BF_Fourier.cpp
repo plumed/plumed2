@@ -92,7 +92,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(BF_Fourier,BF_FOURIER)
+PLUMED_REGISTER_ACTION(BF_Fourier,"BF_FOURIER")
 
 
 void BF_Fourier::registerKeywords(Keywords& keys) {

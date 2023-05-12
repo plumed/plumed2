@@ -55,7 +55,7 @@ public:
   void performAnalysis();
 };
 
-PLUMED_REGISTER_ACTION(OutputPCAProjection,OUTPUT_PCA_PROJECTION)
+PLUMED_REGISTER_ACTION(OutputPCAProjection,"OUTPUT_PCA_PROJECTION")
 
 void OutputPCAProjection::registerKeywords( Keywords& keys ) {
   analysis::AnalysisBase::registerKeywords( keys );

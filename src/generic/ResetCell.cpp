@@ -103,7 +103,7 @@ public:
   void apply() override;
 };
 
-PLUMED_REGISTER_ACTION(ResetCell,RESET_CELL)
+PLUMED_REGISTER_ACTION(ResetCell,"RESET_CELL")
 
 void ResetCell::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );

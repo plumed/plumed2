@@ -109,7 +109,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(TD_VonMises,TD_VONMISES)
+PLUMED_REGISTER_ACTION(TD_VonMises,"TD_VONMISES")
 
 
 void TD_VonMises::registerKeywords(Keywords& keys) {

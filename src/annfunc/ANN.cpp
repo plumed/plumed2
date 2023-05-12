@@ -107,7 +107,7 @@ public:
   void back_prop(vector<vector<double> >& derivatives_of_each_layer, int index_of_output_component);
 };
 
-PLUMED_REGISTER_ACTION(ANN,ANN)
+PLUMED_REGISTER_ACTION(ANN,"ANN")
 
 void ANN::registerKeywords( Keywords& keys ) {
   Function::registerKeywords(keys);

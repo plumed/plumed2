@@ -242,7 +242,7 @@ public:
   bool is_file_exist(const char *fileName);
 };
 
-PLUMED_REGISTER_ACTION(DynamicReferenceRestraining, DRR)
+PLUMED_REGISTER_ACTION(DynamicReferenceRestraining,  "DRR")
 
 void DynamicReferenceRestraining::registerKeywords(Keywords &keys) {
   Bias::registerKeywords(keys);

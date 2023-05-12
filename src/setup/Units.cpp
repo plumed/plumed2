@@ -95,7 +95,7 @@ public:
   explicit Units(const ActionOptions&ao);
 };
 
-PLUMED_REGISTER_ACTION(Units,UNITS)
+PLUMED_REGISTER_ACTION(Units,"UNITS")
 
 void Units::registerKeywords( Keywords& keys ) {
   ActionSetup::registerKeywords(keys);

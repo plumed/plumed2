@@ -96,7 +96,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(BF_CubicBsplines,BF_CUBIC_B_SPLINES)
+PLUMED_REGISTER_ACTION(BF_CubicBsplines,"BF_CUBIC_B_SPLINES")
 
 // See DOI 10.1007/s10614-007-9092-4 for more information;
 

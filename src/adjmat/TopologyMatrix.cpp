@@ -75,7 +75,7 @@ public:
                                HistogramBead& bead, multicolvar::AtomValuePack& myatoms ) const ;
 };
 
-PLUMED_REGISTER_ACTION(TopologyMatrix,TOPOLOGY_MATRIX)
+PLUMED_REGISTER_ACTION(TopologyMatrix,"TOPOLOGY_MATRIX")
 
 void TopologyMatrix::registerKeywords( Keywords& keys ) {
   AdjacencyMatrixBase::registerKeywords( keys );

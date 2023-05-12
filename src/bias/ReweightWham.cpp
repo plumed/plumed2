@@ -93,7 +93,7 @@ public:
   double getWeight( const unsigned& iweight ) const override;
 };
 
-PLUMED_REGISTER_ACTION(ReweightWham,REWEIGHT_WHAM)
+PLUMED_REGISTER_ACTION(ReweightWham,"REWEIGHT_WHAM")
 
 void ReweightWham::registerKeywords(Keywords& keys ) {
   ReweightBase::registerKeywords( keys ); keys.remove("ARG");

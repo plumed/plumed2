@@ -76,7 +76,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(Piecewise,PIECEWISE)
+PLUMED_REGISTER_ACTION(Piecewise,"PIECEWISE")
 
 void Piecewise::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);

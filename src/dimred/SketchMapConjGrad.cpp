@@ -44,7 +44,7 @@ public:
   void minimise( Matrix<double>& ) override;
 };
 
-PLUMED_REGISTER_ACTION(SketchMapConjGrad,SKETCHMAP_CONJGRAD)
+PLUMED_REGISTER_ACTION(SketchMapConjGrad,"SKETCHMAP_CONJGRAD")
 
 void SketchMapConjGrad::registerKeywords( Keywords& keys ) {
   SketchMapBase::registerKeywords( keys );

@@ -47,7 +47,7 @@ public:
   void selectLandmarks() override;
 };
 
-PLUMED_REGISTER_ACTION(LandmarkStaged,LANDMARK_SELECT_STAGED)
+PLUMED_REGISTER_ACTION(LandmarkStaged,"LANDMARK_SELECT_STAGED")
 
 void LandmarkStaged::registerKeywords( Keywords& keys ) {
   LandmarkSelectionBase::registerKeywords(keys);

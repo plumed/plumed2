@@ -78,7 +78,7 @@ public:
   explicit WhamHistogram( const ActionOptions& );
 };
 
-PLUMED_REGISTER_ACTION(WhamHistogram,WHAM_HISTOGRAM)
+PLUMED_REGISTER_ACTION(WhamHistogram,"WHAM_HISTOGRAM")
 
 void WhamHistogram::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );

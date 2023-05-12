@@ -93,7 +93,7 @@ public:
   void update() override;
 };
 
-PLUMED_REGISTER_ACTION(DumpMassCharge,DUMPMASSCHARGE)
+PLUMED_REGISTER_ACTION(DumpMassCharge,"DUMPMASSCHARGE")
 
 void DumpMassCharge::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );

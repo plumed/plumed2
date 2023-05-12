@@ -95,7 +95,7 @@ public:
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(PathMSD,PATHMSD)
+PLUMED_REGISTER_ACTION(PathMSD,"PATHMSD")
 
 void PathMSD::registerKeywords(Keywords& keys) {
   PathMSDBase::registerKeywords(keys);

@@ -78,7 +78,7 @@ public:
   static void registerKeywords( Keywords& keys );
 };
 
-PLUMED_REGISTER_ACTION(S2ContactModel,S2CM)
+PLUMED_REGISTER_ACTION(S2ContactModel,"S2CM")
 
 void S2ContactModel::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords(keys);

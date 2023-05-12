@@ -117,7 +117,7 @@ private:
 };
 
 // Register MAZE_SIMULATED_ANNEALING.
-PLUMED_REGISTER_ACTION(Simulated_Annealing, MAZE_SIMULATED_ANNEALING)
+PLUMED_REGISTER_ACTION(Simulated_Annealing,  "MAZE_SIMULATED_ANNEALING")
 
 void Simulated_Annealing::registerKeywords(Keywords& keys) {
   Optimizer::registerKeywords(keys);

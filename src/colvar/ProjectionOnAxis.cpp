@@ -76,7 +76,7 @@ public:
   static void registerKeywords( Keywords& keys );
 };
 
-PLUMED_REGISTER_ACTION(ProjectionOnAxis,PROJECTION_ON_AXIS)
+PLUMED_REGISTER_ACTION(ProjectionOnAxis,"PROJECTION_ON_AXIS")
 
 void ProjectionOnAxis::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords(keys);

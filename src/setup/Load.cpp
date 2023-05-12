@@ -101,7 +101,7 @@ public:
   explicit Load(const ActionOptions&ao);
 };
 
-PLUMED_REGISTER_ACTION(Load,LOAD)
+PLUMED_REGISTER_ACTION(Load,"LOAD")
 
 void Load::registerKeywords( Keywords& keys ) {
   ActionSetup::registerKeywords(keys);

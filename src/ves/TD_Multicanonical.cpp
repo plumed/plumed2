@@ -157,7 +157,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(TD_Multicanonical,TD_MULTICANONICAL)
+PLUMED_REGISTER_ACTION(TD_Multicanonical,"TD_MULTICANONICAL")
 
 
 void TD_Multicanonical::registerKeywords(Keywords& keys) {

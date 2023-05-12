@@ -115,7 +115,7 @@ public:
   void apply() override {}
 };
 
-PLUMED_REGISTER_ACTION(WholeMolecules,WHOLEMOLECULES)
+PLUMED_REGISTER_ACTION(WholeMolecules,"WHOLEMOLECULES")
 
 void WholeMolecules::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );

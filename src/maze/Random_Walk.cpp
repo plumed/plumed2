@@ -94,7 +94,7 @@ public:
 };
 
 // Register MAZE_RANDOM_WALK.
-PLUMED_REGISTER_ACTION(Random_Walk, MAZE_RANDOM_WALK)
+PLUMED_REGISTER_ACTION(Random_Walk,  "MAZE_RANDOM_WALK")
 
 void Random_Walk::registerKeywords(Keywords& keys) {
   Optimizer::registerKeywords(keys);

@@ -455,7 +455,7 @@ private:
   }
 };
 
-PLUMED_REGISTER_ACTION(LogMFD,LOGMFD)
+PLUMED_REGISTER_ACTION(LogMFD,"LOGMFD")
 
 /**
    \brief instruction of parameters for Plumed manual.

@@ -47,7 +47,7 @@ public:
   void performTask( const unsigned&, const unsigned&, MultiValue& ) const override { plumed_error(); }
 };
 
-PLUMED_REGISTER_ACTION(PrintDissimilarityMatrix,PRINT_DISSIMILARITY_MATRIX)
+PLUMED_REGISTER_ACTION(PrintDissimilarityMatrix,"PRINT_DISSIMILARITY_MATRIX")
 
 void PrintDissimilarityMatrix::registerKeywords( Keywords& keys ) {
   AnalysisBase::registerKeywords( keys );

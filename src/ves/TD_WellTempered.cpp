@@ -110,7 +110,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(TD_WellTempered,TD_WELLTEMPERED)
+PLUMED_REGISTER_ACTION(TD_WellTempered,"TD_WELLTEMPERED")
 
 
 void TD_WellTempered::registerKeywords(Keywords& keys) {

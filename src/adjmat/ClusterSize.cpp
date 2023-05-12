@@ -76,7 +76,7 @@ public:
   void turnOnDerivatives() override;
 };
 
-PLUMED_REGISTER_ACTION(ClusterSize,CLUSTER_NATOMS)
+PLUMED_REGISTER_ACTION(ClusterSize,"CLUSTER_NATOMS")
 
 void ClusterSize::registerKeywords( Keywords& keys ) {
   ClusterAnalysisBase::registerKeywords( keys );

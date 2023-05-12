@@ -51,7 +51,7 @@ public:
   unsigned getNumberOfDerivatives() override { return 0; }
 };
 
-PLUMED_REGISTER_ACTION(Time,TIME)
+PLUMED_REGISTER_ACTION(Time,"TIME")
 
 void Time::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );

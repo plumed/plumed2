@@ -140,7 +140,7 @@ private:
 
 };
 
-PLUMED_REGISTER_ACTION(Dimer, DIMER)
+PLUMED_REGISTER_ACTION(Dimer,  "DIMER")
 
 
 

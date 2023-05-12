@@ -100,7 +100,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(TD_ProductDistribution,TD_PRODUCT_DISTRIBUTION)
+PLUMED_REGISTER_ACTION(TD_ProductDistribution,"TD_PRODUCT_DISTRIBUTION")
 
 
 void TD_ProductDistribution::registerKeywords(Keywords& keys) {

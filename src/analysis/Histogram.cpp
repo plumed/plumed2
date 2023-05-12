@@ -220,7 +220,7 @@ public:
   void apply() override;
 };
 
-PLUMED_REGISTER_ACTION(Histogram,HISTOGRAM)
+PLUMED_REGISTER_ACTION(Histogram,"HISTOGRAM")
 
 void Histogram::registerKeywords( Keywords& keys ) {
   gridtools::ActionWithGrid::registerKeywords( keys ); keys.use("ARG"); keys.remove("NORMALIZATION");

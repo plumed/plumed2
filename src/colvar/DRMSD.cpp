@@ -119,7 +119,7 @@ public:
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(DRMSD,DRMSD)
+PLUMED_REGISTER_ACTION(DRMSD,"DRMSD")
 
 void DRMSD::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);

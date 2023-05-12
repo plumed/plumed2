@@ -160,7 +160,7 @@ public:
   void apply() override {}
 };
 
-PLUMED_REGISTER_ACTION(WrapAround,WRAPAROUND)
+PLUMED_REGISTER_ACTION(WrapAround,"WRAPAROUND")
 
 void WrapAround::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );

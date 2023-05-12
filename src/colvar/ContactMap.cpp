@@ -115,7 +115,7 @@ public:
   void checkFieldsAllowed() override {}
 };
 
-PLUMED_REGISTER_ACTION(ContactMap,CONTACTMAP)
+PLUMED_REGISTER_ACTION(ContactMap,"CONTACTMAP")
 
 void ContactMap::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );

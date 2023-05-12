@@ -71,7 +71,7 @@ public:
   void performTask( const unsigned&, const unsigned&, MultiValue& ) const override;
 };
 
-PLUMED_REGISTER_ACTION(ClusterProperties,CLUSTER_PROPERTIES)
+PLUMED_REGISTER_ACTION(ClusterProperties,"CLUSTER_PROPERTIES")
 
 void ClusterProperties::registerKeywords( Keywords& keys ) {
   ClusterAnalysisBase::registerKeywords( keys );

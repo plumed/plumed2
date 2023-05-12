@@ -91,7 +91,7 @@ public:
   void performClustering() override;
 };
 
-PLUMED_REGISTER_ACTION(DFSClustering,DFSCLUSTERING)
+PLUMED_REGISTER_ACTION(DFSClustering,"DFSCLUSTERING")
 
 void DFSClustering::registerKeywords( Keywords& keys ) {
   ClusteringBase::registerKeywords( keys );

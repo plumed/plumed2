@@ -143,7 +143,7 @@ public:
   ~TD_Custom() {};
 };
 
-PLUMED_REGISTER_ACTION(TD_Custom,TD_CUSTOM)
+PLUMED_REGISTER_ACTION(TD_Custom,"TD_CUSTOM")
 
 
 void TD_Custom::registerKeywords(Keywords& keys) {

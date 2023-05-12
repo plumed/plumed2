@@ -79,7 +79,7 @@ public:
   void update() override;
 };
 
-PLUMED_REGISTER_ACTION(NOE,NOE)
+PLUMED_REGISTER_ACTION(NOE,"NOE")
 
 void NOE::registerKeywords( Keywords& keys ) {
   componentsAreNotOptional(keys);

@@ -136,7 +136,7 @@ public:
   double calculateCoordinationPrefactor( const double& coord, double& df ) const override;
 };
 
-PLUMED_REGISTER_ACTION(SMAC,SMAC)
+PLUMED_REGISTER_ACTION(SMAC,"SMAC")
 
 void SMAC::registerKeywords( Keywords& keys ) {
   OrientationSphere::registerKeywords(keys);

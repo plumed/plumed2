@@ -93,7 +93,7 @@ public:
   explicit ParabetaRMSD(const ActionOptions&);
 };
 
-PLUMED_REGISTER_ACTION(ParabetaRMSD,PARABETARMSD)
+PLUMED_REGISTER_ACTION(ParabetaRMSD,"PARABETARMSD")
 
 void ParabetaRMSD::registerKeywords( Keywords& keys ) {
   SecondaryStructureRMSD::registerKeywords( keys );

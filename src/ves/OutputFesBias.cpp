@@ -107,7 +107,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(OutputFesBias,VES_OUTPUT_FES)
+PLUMED_REGISTER_ACTION(OutputFesBias,"VES_OUTPUT_FES")
 
 
 void OutputFesBias::registerKeywords(Keywords& keys) {

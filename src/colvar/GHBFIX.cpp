@@ -82,7 +82,7 @@ public:
   double pairing(double distance,double&dfunc,unsigned i,unsigned j)const override;
 };
 
-PLUMED_REGISTER_ACTION(GHBFIX,GHBFIX)
+PLUMED_REGISTER_ACTION(GHBFIX,"GHBFIX")
 
 void GHBFIX::registerKeywords( Keywords& keys ) {
   CoordinationBase::registerKeywords(keys);

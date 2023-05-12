@@ -89,7 +89,7 @@ public:
   bool isPeriodic() override { return false; }
 };
 
-PLUMED_REGISTER_ACTION(DihedralCorrelation,DIHCOR)
+PLUMED_REGISTER_ACTION(DihedralCorrelation,"DIHCOR")
 
 void DihedralCorrelation::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );

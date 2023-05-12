@@ -85,7 +85,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(LocalEnsemble,LOCALENSEMBLE)
+PLUMED_REGISTER_ACTION(LocalEnsemble,"LOCALENSEMBLE")
 
 void LocalEnsemble::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);

@@ -95,7 +95,7 @@ public:
   Vector getPositionOfAtomForLinkCells( const unsigned& taskIndex ) const override;
 };
 
-PLUMED_REGISTER_ACTION(ClusterWithSurface,CLUSTER_WITHSURFACE)
+PLUMED_REGISTER_ACTION(ClusterWithSurface,"CLUSTER_WITHSURFACE")
 
 void ClusterWithSurface::registerKeywords( Keywords& keys ) {
   ClusteringBase::registerKeywords( keys );

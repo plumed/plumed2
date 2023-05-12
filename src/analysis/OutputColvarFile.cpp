@@ -57,7 +57,7 @@ public:
   void performAnalysis() override;
 };
 
-PLUMED_REGISTER_ACTION(OutputColvarFile,OUTPUT_ANALYSIS_DATA_TO_COLVAR)
+PLUMED_REGISTER_ACTION(OutputColvarFile,"OUTPUT_ANALYSIS_DATA_TO_COLVAR")
 
 void OutputColvarFile::registerKeywords( Keywords& keys ) {
   AnalysisBase::registerKeywords( keys ); keys.use("ARG");

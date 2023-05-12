@@ -160,7 +160,7 @@ public:
   double convert_lambda(const std::string &type,double lold);
   void check_lambda_boundaries(const std::string &err_type,double &l);
 };
-PLUMED_REGISTER_ACTION(MaxEnt,MAXENT)
+PLUMED_REGISTER_ACTION(MaxEnt,"MAXENT")
 
 void MaxEnt::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);

@@ -68,7 +68,7 @@ public:
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(Dipole,DIPOLE)
+PLUMED_REGISTER_ACTION(Dipole,"DIPOLE")
 
 void Dipole::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);

@@ -58,7 +58,7 @@ public:
   bool checkForConnection( const std::vector<double>& myvals ) const { return !(myvals[1]>epsilon); }
 };
 
-PLUMED_REGISTER_ACTION(HBPammMatrix,HBPAMM_MATRIX)
+PLUMED_REGISTER_ACTION(HBPammMatrix,"HBPAMM_MATRIX")
 
 void HBPammMatrix::registerKeywords( Keywords& keys ) {
   adjmat::AdjacencyMatrixBase::registerKeywords( keys );

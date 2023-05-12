@@ -140,7 +140,7 @@ public:
 //			const string& funcl);
 };
 
-PLUMED_REGISTER_ACTION(Funnel,FUNNEL)
+PLUMED_REGISTER_ACTION(Funnel,"FUNNEL")
 
 void Funnel::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);

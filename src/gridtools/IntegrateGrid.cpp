@@ -41,7 +41,7 @@ public:
   void compute( const unsigned& current, MultiValue& myvals ) const override;
 };
 
-PLUMED_REGISTER_ACTION(IntegrateGrid,INTEGRATE_GRID)
+PLUMED_REGISTER_ACTION(IntegrateGrid,"INTEGRATE_GRID")
 
 void IntegrateGrid::registerKeywords( Keywords& keys ) {
   ActionWithIntegral::registerKeywords( keys );

@@ -92,7 +92,7 @@ public:
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(ABMD,ABMD)
+PLUMED_REGISTER_ACTION(ABMD,"ABMD")
 
 void ABMD::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);

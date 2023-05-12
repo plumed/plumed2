@@ -97,7 +97,7 @@ public:
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(Torsion,TORSION)
+PLUMED_REGISTER_ACTION(Torsion,"TORSION")
 
 void Torsion::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords( keys );

@@ -95,7 +95,7 @@ public:
   explicit Restart(const ActionOptions&ao);
 };
 
-PLUMED_REGISTER_ACTION(Restart,RESTART)
+PLUMED_REGISTER_ACTION(Restart,"RESTART")
 
 void Restart::registerKeywords( Keywords& keys ) {
   ActionSetup::registerKeywords(keys);

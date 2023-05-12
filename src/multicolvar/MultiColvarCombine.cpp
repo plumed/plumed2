@@ -50,7 +50,7 @@ public:
   bool isPeriodic() override { return false; }
 };
 
-PLUMED_REGISTER_ACTION(MultiColvarCombine,MCOLV_COMBINE)
+PLUMED_REGISTER_ACTION(MultiColvarCombine,"MCOLV_COMBINE")
 
 void MultiColvarCombine::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );

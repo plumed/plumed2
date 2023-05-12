@@ -118,7 +118,7 @@ public:
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(External,EXTERNAL)
+PLUMED_REGISTER_ACTION(External,"EXTERNAL")
 
 void External::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);

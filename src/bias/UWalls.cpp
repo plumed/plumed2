@@ -72,7 +72,7 @@ public:
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(UWalls,UPPER_WALLS)
+PLUMED_REGISTER_ACTION(UWalls,"UPPER_WALLS")
 
 void UWalls::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);

@@ -119,7 +119,7 @@ public:
   void compute( const unsigned& current, MultiValue& myvals ) const override;
 };
 
-PLUMED_REGISTER_ACTION(FindSphericalContour,FIND_SPHERICAL_CONTOUR)
+PLUMED_REGISTER_ACTION(FindSphericalContour,"FIND_SPHERICAL_CONTOUR")
 
 void FindSphericalContour::registerKeywords( Keywords& keys ) {
   ContourFindingBase::registerKeywords( keys );

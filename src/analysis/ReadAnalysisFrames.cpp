@@ -36,7 +36,7 @@ This allows you to convert a trajectory and a dissimilarity matrix into a dissim
 namespace PLMD {
 namespace analysis {
 
-PLUMED_REGISTER_ACTION(ReadAnalysisFrames,COLLECT_FRAMES)
+PLUMED_REGISTER_ACTION(ReadAnalysisFrames,"COLLECT_FRAMES")
 
 void ReadAnalysisFrames::registerKeywords( Keywords& keys ) {
   AnalysisBase::registerKeywords( keys );
