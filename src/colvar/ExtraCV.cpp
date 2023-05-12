@@ -62,7 +62,7 @@ ExtraCV::ExtraCV(const ActionOptions&ao):
   ActionShortcut(ao)
 {
   std::vector<std::string> argn(1); parse("NAME",argn[0]);
-  plumed.cmd("createValue " + argn[0] + ": PUT UNIT=number SHAPE=0 PERIODIC=NO");
+  readInputLine( argn[0] + ": PUT UNIT=number SHAPE=0 PERIODIC=NO");
   if( getShortcutLabel()!=argn[0] ) readInputLine( getShortcutLabel() + ": COMBINE ARG=" + argn[0] + " PERIODIC=NO");
 }
 

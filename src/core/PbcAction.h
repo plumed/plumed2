@@ -31,11 +31,12 @@
 namespace PLMD {
 
 class Pbc;
+class DomainDecomposition;
 
 class PbcAction : public ActionToPutData {
   friend class ActionAtomistic;
 private:
-  ActionForInterface* interface;
+  DomainDecomposition* interface;
   ForwardDecl<Pbc> pbc_fwd;
   Pbc&   pbc=*pbc_fwd;
   void setPbc();

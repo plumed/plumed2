@@ -66,16 +66,15 @@ public:
 /// These are the actions that set the pointers to the approrpiate values
   virtual bool setValuePointer( const std::string& name, const TypesafePtr & val ) override ;
   bool setForcePointer( const std::string& name, const TypesafePtr & val ) override ;
-/// There are no atoms n local to set here
+///
   void Set_comm(Communicator& comm) override {}
-  void setAtomsNlocal(int n) override {}
-  void setAtomsGatindex(int*g,bool fortran) override {}
-  void setAtomsContiguous(int start) override {}
 /// And this gets the number of forces that need to be rescaled
   unsigned getNumberOfForcesToRescale() const override ;
 /// Share the data
   void share() override {}
   void shareAll() override {}
+///
+  void getLocalValues( std::vector<double>& vals ) const ;
 /// Get the data to share
   virtual void wait();
 /// Actually set the values for the output

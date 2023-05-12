@@ -64,14 +64,16 @@ public:
   virtual void setValuePointer( const TypesafePtr & val, const std::vector<unsigned>& shape, const bool& isconst )=0;
 /// Set the pointer to the force
   virtual void setForcePointer( const TypesafePtr & val, const std::vector<unsigned>& shape )=0;
+/// This gets the data in the pointer and passes it to the output value
+  virtual void share_data( std::vector<double>& values ) const = 0;
 /// Share the data and put it in the value from sequential data
   virtual void share_data( const unsigned& j, const unsigned& k, Value* value )=0;
 /// Share the data and put it in the value from a scattered data
-  virtual void share_data( const std::set<AtomNumber>&index, const std::vector<unsigned>& i, Value* value )=0;
+  virtual void share_data( const std::vector<AtomNumber>&index, const std::vector<unsigned>& i, Value* value )=0;
 /// Pass the force from the value to the output value
   virtual void add_force( Value* vv )=0;
   virtual void add_force( const std::vector<int>& index, Value* value )=0;
-  virtual void add_force( const std::set<AtomNumber>& index, const std::vector<unsigned>& i, Value* value )=0;
+  virtual void add_force( const std::vector<AtomNumber>& index, const std::vector<unsigned>& i, Value* value )=0;
 /// Rescale the forces that were passed
   virtual void rescale_force( const unsigned& n, const double& factor, Value* value )=0;
 /// This transfers everything to the output

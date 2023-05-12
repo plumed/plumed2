@@ -43,7 +43,7 @@ public:
   static void registerKeywords(Keywords& keys);
   explicit ActionForInterface(const ActionOptions&ao);
 /// Override clear the input data
-  void clearDerivatives( const bool& force ) {}
+  void clearDerivatives() override {}
 /// Override the need to deal with gradients
   void setGradientsIfNeeded() override {}
 /// Check if the value has been set
@@ -71,24 +71,10 @@ public:
   virtual void wait() = 0;
 /// Actually set the values for the output
   void calculate() override { firststep=false; wasscaled=false; }
+  virtual void Set_comm(Communicator& comm) = 0;
 /// For replica exchange
   virtual void writeBinary(std::ostream&o) = 0;
   virtual void readBinary(std::istream&i) = 0;
-/// This sets the number of local atoms
-  virtual void setAtomsNlocal(int n) = 0;
-  virtual void setAtomsGatindex(int*g,bool fortran) = 0 ;
-  virtual void setAtomsContiguous(int start) = 0 ;
-/// These are used by the Pbc and Energy actions to sum the energy over the interface
-  virtual void Set_comm(Communicator& comm) = 0;
-  virtual void broadcastToDomains( Value* val ) {}
-  virtual void sumOverDomains( Value* val ) {}
-  virtual const long int& getDdStep() const { plumed_merror("should not be in this function"); }
-  virtual const std::vector<int>& getGatindex() const { plumed_merror("should not be in this function"); }
-///
-  virtual bool hasFullList() const { return false; }
-  virtual void createFullList(int*) { plumed_error(); }
-  virtual void getFullList(int**) { plumed_error(); }
-  virtual void clearFullList() { plumed_error(); }
   virtual bool onStep() const = 0;
   std::string getRole() const ;
 };

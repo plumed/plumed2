@@ -49,14 +49,16 @@ public:
   void setValuePointer( const TypesafePtr & p, const std::vector<unsigned>& shape, const bool& isconst ) override;
 /// Set the pointer to the force
   void setForcePointer( const TypesafePtr & p, const std::vector<unsigned>& shape ) override;
+/// This gets the data in the pointer and passes it to the output value
+  void share_data( std::vector<double>& values ) const override ;
 /// Share the data and put it in the value from sequential data
   void share_data( const unsigned& j, const unsigned& k, Value* value ) override;
 /// Share the data and put it in the value from a scattered data
-  void share_data( const std::set<AtomNumber>&index, const std::vector<unsigned>& i, Value* value ) override;
+  void share_data( const std::vector<AtomNumber>&index, const std::vector<unsigned>& i, Value* value ) override;
 /// Pass the force from the value to the output value
   void add_force( Value* vv ) override;
   void add_force( const std::vector<int>& index, Value* value ) override;
-  void add_force( const std::set<AtomNumber>& index, const std::vector<unsigned>& i, Value* value ) override;
+  void add_force( const std::vector<AtomNumber>& index, const std::vector<unsigned>& i, Value* value ) override;
 /// Rescale the force on the output value
   void rescale_force( const unsigned& n, const double& factor, Value* value ) override;
 /// This transfers everything to the output
@@ -128,12 +130,26 @@ void DataPassingObjectTyped<T>::share_data( const unsigned& j, const unsigned& k
   std::vector<unsigned> s(value->getShape()); if( s.size()==1 ) s[0]=k-j;
   const T* pp; getPointer( v, s, start, stride, pp );
   #pragma omp parallel for num_threads(value->getGoodNumThreads(j,k))
-  for(unsigned i=j; i<k; ++i) { value->set( i, unit*pp[i*stride] ); }
+  for(unsigned i=j; i<k; ++i) value->set( i, unit*pp[i*stride] ); 
 }
 
 template <class T>
-void DataPassingObjectTyped<T>::share_data( const std::set<AtomNumber>&index, const std::vector<unsigned>& i, Value* value ) {
-  plumed_assert( value->getRank()==1 ); std::vector<unsigned> s(1,index.size()); const T* pp; getPointer( v, s, start, stride, pp );
+void DataPassingObjectTyped<T>::share_data( std::vector<double>& values ) const {
+  std::vector<unsigned> maxel(1,values.size()); const T* pp; getPointer( v, maxel, start, stride, pp );
+  #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(values))
+  for(unsigned i=0; i<values.size(); ++i) values[i]=unit*pp[i*stride];
+}
+
+template <class T>
+void DataPassingObjectTyped<T>::share_data( const std::vector<AtomNumber>&index, const std::vector<unsigned>& i, Value* value ) {
+  plumed_dbg_assert( value->getRank()==1 ); std::vector<unsigned> maxel(1,index.size());
+#ifndef NDEBUG
+// bounds are only checked in debug mode since they require this extra step that is potentially expensive
+  maxel[0]=(i.size()>0?*std::max_element(i.begin(),i.end())+1:0);
+#else
+  maxel[0]=0;
+#endif
+  const T* pp; getPointer( v, maxel, start, stride, pp );
   // cannot be parallelized with omp because access to data is not ordered
   unsigned k=0; for(const auto & p : index) { value->set( p.index(), unit*pp[i[k]*stride] ); k++; }
 }
@@ -154,8 +170,15 @@ void DataPassingObjectTyped<T>::add_force( const std::vector<int>& index, Value*
 }
 
 template <class T>
-void DataPassingObjectTyped<T>::add_force( const std::set<AtomNumber>& index, const std::vector<unsigned>& i, Value* value ) {
-  plumed_assert( value->getRank()==1 ); std::vector<unsigned> s(1,index.size()); T* pp; getPointer( f, s, start, stride, pp );
+void DataPassingObjectTyped<T>::add_force( const std::vector<AtomNumber>& index, const std::vector<unsigned>& i, Value* value ) {
+  plumed_dbg_assert( value->getRank()==1 ); std::vector<unsigned> maxel(1,index.size()); 
+#ifndef NDEBUG
+// bounds are only checked in debug mode since they require this extra step that is potentially expensive
+  maxel[0]=(i.size()>0?*std::max_element(i.begin(),i.end())+1:0);
+#else
+  maxel[0]=0;
+#endif
+  T* pp; getPointer( f, maxel, start, stride, pp );
   unsigned k=0; for(const auto & p : index) { pp[stride*i[k]] += funit*T(value->getForce(p.index())); k++; }
 }
 

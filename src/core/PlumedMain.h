@@ -323,6 +323,11 @@ public:
   */
   void prepareDependencies();
   /**
+    Ensure that all the atoms are shared.
+    This is used in GREX to ensure that we transfer all the positions from the MD code to PLUMED.
+  */
+  void shareAll();
+  /**
     Share the needed atoms.
     In asynchronous implementations, this method sends the required atoms to all the plumed processes,
     without waiting for the communication to complete.

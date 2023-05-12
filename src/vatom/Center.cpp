@@ -230,7 +230,7 @@ void Center::calculate() {
 
   std::vector<Tensor> deriv(getNumberOfAtoms());
   for(unsigned i=0; i<getNumberOfAtoms(); i++) mass+=getMass(i);
-  if( plumed.getAtoms().chargesWereSet() && !isChargeSet_) {
+  if( chargesWereSet && !isChargeSet_) {
     double charge(0.0);
     for(unsigned i=0; i<getNumberOfAtoms(); i++) charge+=getCharge(i);
     setCharge(charge);

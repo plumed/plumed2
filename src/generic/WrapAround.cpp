@@ -216,14 +216,14 @@ WrapAround::WrapAround(const ActionOptions&ao):
 
 void WrapAround::calculate() {
   for(unsigned i=0; i<atoms.size(); i+=groupby) {
-    Vector & first (modifyGlobalPosition(atoms[i]));
+    Vector second, first=getGlobalPosition(atoms[i]);
     double mindist2=std::numeric_limits<double>::max();
     int closest=-1;
     if(pair_) {
       closest = i/groupby;
     } else {
       for(unsigned j=0; j<reference.size(); ++j) {
-        const Vector & second (modifyGlobalPosition(reference[j]));
+        second=getGlobalPosition(reference[j]);
         const Vector distance=pbcDistance(first,second);
         const double distance2=modulo2(distance);
         if(distance2<mindist2) {
@@ -233,13 +233,13 @@ void WrapAround::calculate() {
       }
       plumed_massert(closest>=0,"closest not found");
     }
-    Vector & second (modifyGlobalPosition(reference[closest]));
+    second=getGlobalPosition(reference[closest]);
 // place first atom of the group
-    first=second+pbcDistance(second,first);
+    first=second+pbcDistance(second,first); setGlobalPosition(atoms[i],first);
 // then place other atoms close to the first of the group
     for(unsigned j=1; j<groupby; j++) {
-      Vector & second (modifyGlobalPosition(atoms[i+j]));
-      second=first+pbcDistance(first,second);
+      second=getGlobalPosition(atoms[i+j]);
+      setGlobalPosition( atoms[i+j], first+pbcDistance(first,second) );
     }
   }
 }

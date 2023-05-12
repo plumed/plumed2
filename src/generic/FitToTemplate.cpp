@@ -287,7 +287,6 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
 
   // this is required so as to allow modifyGlobalForce() to return correct
   // also for forces that are not owned (and thus not zeored) by all processors.
-  allowToAccessGlobalForces();
   pbc_action=plumed.getActionSet().selectWithLabel<PbcAction*>("Box");
   if( !pbc_action ) error("cannot align box has not been set");
   boxValue=pbc_action->copyOutput(0);
@@ -308,8 +307,8 @@ void FitToTemplate::calculate() {
     shift=center-cc;
     setValue(shift.modulo());
     for(unsigned i=0; i<getTotAtoms(); i++) {
-      Vector & ato (modifyGlobalPosition(AtomNumber::index(i)));
-      ato+=shift;
+      Vector ato=getGlobalPosition(AtomNumber::index(i));
+      setGlobalPosition(AtomNumber::index(i),ato+shift);
     }
   }
   else if( type=="OPTIMAL" or type=="OPTIMAL-FAST") {
@@ -317,36 +316,31 @@ void FitToTemplate::calculate() {
     double r=rmsd->calc_FitElements( getPositions(), rotation,  drotdpos, centeredpositions, center_positions);
     setValue(r);
     for(unsigned i=0; i<getTotAtoms(); i++) {
-      Vector & ato (modifyGlobalPosition(AtomNumber::index(i)));
-      ato=matmul(rotation,ato-center_positions)+center;
+      Vector ato=getGlobalPosition(AtomNumber::index(i));
+      setGlobalPosition(AtomNumber::index(i),matmul(rotation,ato-center_positions)+center);
     }
 // rotate box
     Pbc& pbc(pbc_action->getPbc());
     pbc.setBox(matmul(pbc_action->getPbc().getBox(),transpose(rotation)));
   }
-
 }
 
 void FitToTemplate::apply() {
   if (type=="SIMPLE") {
     Vector totForce;
-    for(unsigned i=0; i<getTotAtoms(); i++) {
-      totForce+=modifyGlobalForce(AtomNumber::index(i));
-    }
+    for(unsigned i=0; i<getTotAtoms(); i++) { totForce+=getForce(AtomNumber::index(i)); }
     Tensor vv=Tensor(center,totForce);
     for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) boxValue->addForce( 3*i+j, vv(i,j) );
-    for(unsigned i=0; i<aligned.size(); ++i) {
-      Vector & ff(modifyGlobalForce(aligned[i]));
-      ff-=totForce*weights[i];
-    }
+    for(unsigned i=0; i<aligned.size(); ++i) { addForce( aligned[i], -totForce*weights[i]); }
   } else if ( type=="OPTIMAL" or type=="OPTIMAL-FAST") {
     Vector totForce;
     for(unsigned i=0; i<getTotAtoms(); i++) {
-      Vector & f(modifyGlobalForce(AtomNumber::index(i)));
+      Vector f=getForce(AtomNumber::index(i));
 // rotate back forces
-      f=matmul(transpose(rotation),f);
+      Vector nf=matmul(transpose(rotation),f);
+      addForce(AtomNumber::index(i), nf-f);
 // accumulate rotated c.o.m. forces - this is already in the non rotated reference frame
-      totForce+=f;
+      totForce+=nf;
     }
     Tensor virial;
     for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) virial[i][j] = boxValue->getForce( 3*i+j );
@@ -365,7 +359,7 @@ void FitToTemplate::apply() {
         g[k]=(d(0,0)+d(1,1)+d(2,2));
       }
 // here is the extra contribution
-      modifyGlobalForce(aligned[i])+=-g-weights[i]*totForce;
+      addForce( aligned[i], -g-weights[i]*totForce );
 // here it the contribution to the virial
 // notice that here we can use absolute positions since, for the alignment to be defined,
 // positions should be in one well defined periodic image

@@ -33,6 +33,7 @@
 #include "CLToolMain.h"
 #include "ExchangePatterns.h"
 #include "GREX.h"
+#include "DomainDecomposition.h"
 #include "config/Config.h"
 #include "tools/Citations.h"
 #include "tools/Communicator.h"
@@ -269,27 +270,29 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         break;
       case cmd_setPositions:
         CHECK_INIT(initialized,word);
-        atoms.setPositions(val);
+        setInputValue("posx", 0, 3, val );
+        setInputValue("posy", 1, 3, val );
+        setInputValue("posz", 2, 3, val );
         break;
       case cmd_setMasses:
         CHECK_INIT(initialized,word);
-        atoms.setMasses(val);
+        setInputValue("Masses", 0, 1, val );
         break;
       case cmd_setCharges:
         CHECK_INIT(initialized,word);
-        atoms.setCharges(val);
+        setInputValue("Charges", 0, 1, val);
         break;
       case cmd_setPositionsX:
         CHECK_INIT(initialized,word);
-        atoms.setPositions(val,0);
+        setInputValue("posx", 0, 1, val);
         break;
       case cmd_setPositionsY:
         CHECK_INIT(initialized,word);
-        atoms.setPositions(val,1);
+        setInputValue("posy", 0, 1, val);
         break;
       case cmd_setPositionsZ:
         CHECK_INIT(initialized,word);
-        atoms.setPositions(val,2);
+        setInputValue("posz", 0, 1, val);
         break;
       case cmd_setVirial:
         CHECK_INIT(initialized,word);
@@ -303,19 +306,21 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         break;
       case cmd_setForces:
         CHECK_INIT(initialized,word);
-        atoms.setForces(val);
+        setInputForce("posx",val);
+        setInputForce("posy",val);
+        setInputForce("posz",val);
         break;
       case cmd_setForcesX:
         CHECK_INIT(initialized,word);
-        atoms.setForces(val,0);
+        setInputForce("posx",val);
         break;
       case cmd_setForcesY:
         CHECK_INIT(initialized,word);
-        atoms.setForces(val,1);
+        setInputForce("posy",val);
         break;
       case cmd_setForcesZ:
         CHECK_INIT(initialized,word);
-        atoms.setForces(val,2);
+        setInputForce("posz",val);
         break;
       case cmd_calc:
         CHECK_INIT(initialized,word);
@@ -382,34 +387,59 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_setAtomsNlocal:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setAtomsNlocal(val.get<int>());
+        for(const auto & pp : inputs ) {
+            DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
+            if( dd ) dd->setAtomsNlocal(val.get<int>());
+        }
         break;
       case cmd_setAtomsGatindex:
         CHECK_INIT(initialized,word);
-        atoms.setAtomsGatindex(val,false);
+        for(const auto & pp : inputs ) {
+            DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
+            if( dd ) dd->setAtomsGatindex(val,false);
+        }
         break;
       case cmd_setAtomsFGatindex:
         CHECK_INIT(initialized,word);
-        atoms.setAtomsGatindex(val,true);
+        for(const auto & pp : inputs ) {
+            DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
+            if( dd ) dd->setAtomsGatindex(val,false);
+        }
         break;
       case cmd_setAtomsContiguous:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setAtomsContiguous(val.get<int>());
+        for(const auto & pp : inputs ) {
+            DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
+            if( dd ) dd->setAtomsContiguous(val.get<int>());
+        }
         break;
       case cmd_createFullList:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.createFullList(val);
+        for(const auto & pp : inputs ) {
+            DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
+            if( dd ) dd->createFullList(val);
+        }
         break;
       case cmd_getFullList:
+      {
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.getFullList(val);
+        unsigned nlists=0;
+        for(const auto & pp : inputs ) {
+            DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
+            if( dd ) { dd->getFullList(val); nlists++; }
+        }
+        plumed_assert( nlists==1 );
+      }
         break;
       case cmd_clearFullList:
         CHECK_INIT(initialized,word);
-        atoms.clearFullList();
+        for(const auto & pp : inputs ) {
+            DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
+            if( dd ) dd->clearFullList();
+        } 
         break;
       /* ADDED WITH API==6 */
       case cmd_getDataRank:
@@ -462,11 +492,19 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_clear:
       {
         CHECK_INIT(initialized,word);
-        int natoms = atoms.getNatoms();
+        int natoms = 0; 
+        ActionForInterface* ai = actionSet.selectWithLabel<ActionForInterface*>("posx");
+        if( ai ) natoms = ai->copyOutput(0)->getShape()[0];
         actionSet.clearDelete(); inputs.clear();
         if( natoms>0 ) {
           std::string str_natoms; Tools::convert( natoms, str_natoms );
-          readInputLine( MDEngine + ": DOMAIN_DECOMPOSITION NATOMS=" + str_natoms );
+          readInputLine( MDEngine + ": DOMAIN_DECOMPOSITION NATOMS=" + str_natoms +
+                                    " VALUE1=posx UNIT1=length PERIODIC1=NO CONSTANT1=False ROLE1=x" +
+                                    " VALUE2=posy UNIT2=length PERIODIC2=NO CONSTANT2=False ROLE2=y" +
+                                    " VALUE3=posz UNIT3=length PERIODIC3=NO CONSTANT3=False ROLE3=z" +
+                                    " VALUE4=Masses UNIT4=mass PERIODIC4=NO CONSTANT4=True ROLE4=m" +
+                                    " VALUE5=Charges UNIT5=charge PERIODIC5=NO CONSTANT5=True ROLE5=q");
+
         }
         setUnits( atoms.usingNaturalUnits(), atoms.getUnits() );
       }
@@ -542,13 +580,11 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_setMPIComm:
         CHECK_NOTINIT(initialized,word);
         comm.Set_comm(val);
-        atoms.setDomainDecomposition(comm);
         for(const auto & pp : inputs ) pp->Set_comm(comm);
         break;
       case cmd_setMPIFComm:
         CHECK_NOTINIT(initialized,word);
         comm.Set_fcomm(val);
-        atoms.setDomainDecomposition(comm);
         for(const auto & pp : inputs ) pp->Set_comm(comm);
         break;
       case cmd_setMPImultiSimComm:
@@ -561,7 +597,12 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         CHECK_NOTNULL(val,word);
         int natoms = val.get<int>(); atoms.setNatoms(natoms); std::string str_natoms; Tools::convert( natoms, str_natoms );
         ActionForInterface* dd=actionSet.selectWithLabel<ActionForInterface*>(MDEngine);
-        if( !dd && natoms>0 ) readInputLine( MDEngine + ": DOMAIN_DECOMPOSITION NATOMS=" + str_natoms, true );
+        if( !dd && natoms>0 ) readInputLine( MDEngine + ": DOMAIN_DECOMPOSITION NATOMS=" + str_natoms +  +
+                                                        " VALUE1=posx UNIT1=length PERIODIC1=NO CONSTANT1=False ROLE1=x" +
+                                                        " VALUE2=posy UNIT2=length PERIODIC2=NO CONSTANT2=False ROLE2=y" +
+                                                        " VALUE3=posz UNIT3=length PERIODIC3=NO CONSTANT3=False ROLE3=z" +
+                                                        " VALUE4=Masses UNIT4=mass PERIODIC4=NO CONSTANT4=True ROLE4=m" +
+                                                        " VALUE5=Charges UNIT5=charge PERIODIC5=NO CONSTANT5=True ROLE5=q", true );
       }
       break;
       case cmd_setTimestep:
@@ -728,11 +769,6 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
           cltool->cmd(kk.c_str(),val);
         }
         break;
-      case cmd_createValue:
-      {
-        std::string inpt; for(unsigned i=1; i<words.size(); ++i) inpt += " " + words[i];
-        readInputLine( inpt );
-      }
       break;
       /* ADDED WITH API==7 */
       case cmd_convert:
@@ -974,12 +1010,15 @@ bool PlumedMain::inputsAreActive() const {
   return false;
 }
 
+void PlumedMain::shareAll() {
+  for(const auto & ip : inputs) ip->shareAll();
+}
+
 void PlumedMain::shareData() {
 // atom positions are shared (but only if there is something to do)
   if(!active)return;
 // Stopwatch is stopped when sw goes out of scope
   auto sw=stopwatch.startStop("2 Sharing data");
-  if(atoms.getNatoms()>0) atoms.share();
   for(const auto & ip : inputs) ip->share();
 }
 
@@ -1005,7 +1044,6 @@ void PlumedMain::waitData() {
   if(!active)return;
 // Stopwatch is stopped when sw goes out of scope
   auto sw=stopwatch.startStop("3 Waiting for data");
-  if(atoms.getNatoms()>0) atoms.wait();
   for(const auto & ip : inputs) {
     if( ip->isActive() && ip->hasBeenSet() ) ip->wait();
     else if( ip->isActive() ) ip->warning("input requested but this quantity has not been set");
@@ -1051,7 +1089,6 @@ void PlumedMain::justCalculate() {
           if(av) av->clearDerivatives();
         }
         {
-          if(aa) aa->clearOutputForces();
           if(aa) if(aa->isActive()) aa->retrieveAtoms();
         }
         if(p->checkNumericalDerivatives()) p->calculateNumericalDerivatives();
@@ -1103,10 +1140,6 @@ void PlumedMain::backwardPropagate() {
       }
 
       p->apply();
-      ActionAtomistic*a=dynamic_cast<ActionAtomistic*>(p);
-// still ActionAtomistic has a special treatment, since they may need to add forces on atoms
-      if(a) a->applyForces();
-
     }
     iaction++;
   }
@@ -1115,8 +1148,6 @@ void PlumedMain::backwardPropagate() {
 // We explicitly declare a Stopwatch::Handler here to allow for conditional initialization.
   Stopwatch::Handler sw1;
   if(detailedTimers) sw1=stopwatch.startStop("5B Update forces");
-// this is updating the MD copy of the forces
-  if(atoms.getNatoms()>0) atoms.updateForces();
 }
 
 void PlumedMain::update() {

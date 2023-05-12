@@ -43,14 +43,30 @@ ActionAtomistic::~ActionAtomistic() {
 
 ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
   Action(ao),
+  unique_local_needs_update(true),
   boxValue(NULL),
   lockRequestAtoms(false),
   donotretrieve(false),
   donotforce(false),
-  atoms(plumed.getAtoms())
+  atoms(plumed.getAtoms()),
+  chargesWereSet(false)
 {
   ActionWithValue* bv = plumed.getActionSet().selectWithLabel<ActionWithValue*>("Box");
   if( bv ) boxValue=bv->copyOutput(0);
+  // We now get all the information about atoms that are lying about
+  std::vector<ActionWithValue*> vatoms = plumed.getActionSet().select<ActionWithValue*>();
+  for(const auto & vv : vatoms ) {
+     ActionToPutData* ap = dynamic_cast<ActionToPutData*>(vv);
+     if( ap ) {
+         if( ap->getRole()=="x" ) xpos.push_back( ap->copyOutput(0) );
+         if( ap->getRole()=="y" ) ypos.push_back( ap->copyOutput(0) );
+         if( ap->getRole()=="z" ) zpos.push_back( ap->copyOutput(0) );
+         if( ap->getRole()=="m" ) masv.push_back( ap->copyOutput(0) );
+         if( ap->getRole()=="q" ) chargev.push_back( ap->copyOutput(0) );
+     }
+  }
+  if( xpos.size()!=ypos.size() || xpos.size()!=zpos.size() || xpos.size()!=masv.size() || xpos.size()!=chargev.size() )
+      error("mismatch between value arrays");
   atoms.add(this);
 //  if(atoms.getNatoms()==0) error("Cannot perform calculations involving atoms without atoms");
 }
@@ -68,19 +84,28 @@ void ActionAtomistic::requestAtoms(const std::vector<AtomNumber> & a, const bool
   forces.resize(nat);
   masses.resize(nat);
   charges.resize(nat);
+//  int n=0; for(unsigned i=0;i<xpos.size();++i) n += xpos[i]->getNumberOfValues();
   int n=atoms.positions.size();
   if(clearDep) clearDependencies();
-  unique.clear();
+  unique.clear(); std::vector<bool> requirements( xpos.size(), false );
   if( boxValue ) addDependency( boxValue->getPntrToAction() );
   for(unsigned i=0; i<indexes.size(); i++) {
     if(indexes[i].index()>=n) { std::string num; Tools::convert( indexes[i].serial(),num ); error("atom " + num + " out of range"); }
     if(atoms.isVirtualAtom(indexes[i])) addDependency(atoms.getVirtualAtomsAction(indexes[i]));
 // only real atoms are requested to lower level Atoms class
-    else unique.push_back(indexes[i]);
+    else { unique.push_back(indexes[i]); requirements[0] = true; }
   }
+  // Add the dependencies to the actions that we require
   Tools::removeDuplicates(unique);
-  updateUniqueLocal();
-  atoms.unique.clear();
+  for(unsigned i=0; i<requirements.size(); ++i ) {
+      if( !requirements[i] ) continue;
+      addDependency( xpos[i]->getPntrToAction() ); 
+      addDependency( ypos[i]->getPntrToAction() ); 
+      addDependency( zpos[i]->getPntrToAction() ); 
+      addDependency( masv[i]->getPntrToAction() ); 
+      addDependency( chargev[i]->getPntrToAction() ); 
+  }
+  unique_local_needs_update=true;
 }
 
 Vector ActionAtomistic::pbcDistance(const Vector &v1,const Vector &v2)const {
@@ -232,23 +257,38 @@ void ActionAtomistic::retrieveAtoms() {
   }
   Colvar*cc=dynamic_cast<Colvar*>(this);
   if(cc && cc->checkIsEnergy()) energy=atoms.getEnergy();
-  if(donotretrieve) return;
-  chargesWereSet=atoms.chargesWereSet();
-  const std::vector<Vector> & p(atoms.positions);
-  const std::vector<double> & c(atoms.charges);
-  const std::vector<double> & m(atoms.masses);
-  for(unsigned j=0; j<indexes.size(); j++) positions[j]=p[indexes[j].index()];
-  for(unsigned j=0; j<indexes.size(); j++) charges[j]=c[indexes[j].index()];
-  for(unsigned j=0; j<indexes.size(); j++) masses[j]=m[indexes[j].index()];
+  if( donotretrieve || indexes.size()==0 ) return;
+  ActionToPutData* cv = dynamic_cast<ActionToPutData*>( chargev[0]->getPntrToAction() );
+  chargesWereSet=cv->hasBeenSet();
+  for(unsigned j=0; j<indexes.size(); j++) {
+      if(atoms.isVirtualAtom(indexes[j])) {
+         positions[j]=atoms.positions[indexes[j].index()];
+         charges[j]=atoms.charges[indexes[j].index()];
+         masses[j]=atoms.masses[indexes[j].index()];
+      } else {
+         positions[j][0] = xpos[0]->get(indexes[j].index());
+         positions[j][1] = ypos[0]->get(indexes[j].index());
+         positions[j][2] = zpos[0]->get(indexes[j].index());
+         charges[j] = chargev[0]->get(indexes[j].index());
+         masses[j] = masv[0]->get(indexes[j].index());   
+      }
+  }
 }
 
 void ActionAtomistic::setForcesOnAtoms(const std::vector<double>& forcesToApply, unsigned ind) {
-  if(donotforce) return;
+  if( donotforce || (indexes.size()==0 && getName()!="FIXEDATOM") ) return;
   for(unsigned i=0; i<indexes.size(); ++i) {
-    forces[i][0]=forcesToApply[ind]; ind++;
-    forces[i][1]=forcesToApply[ind]; ind++;
-    forces[i][2]=forcesToApply[ind]; ind++;
+    Vector ff; 
+    for(unsigned k=0; k<3; ++k) {
+        plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
+        ff[k]=forcesToApply[ind]; ind++;
+    }
+    addForce( indexes[i], ff );
   }
+  setForcesOnCell( forcesToApply, ind );
+}
+
+void ActionAtomistic::setForcesOnCell(const std::vector<double>& forcesToApply, unsigned ind) {
   for(unsigned i=0; i<9; ++i) {
     plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
     boxValue->addForce( i, forcesToApply[ind] ); ind++;
@@ -259,22 +299,6 @@ Tensor ActionAtomistic::getVirial() const {
   Tensor vir; for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) vir[i][j] = boxValue->getForce(3*i+j);
   return vir;
 }
-
-void ActionAtomistic::applyForces() {
-  if(donotforce) return;
-  std::vector<Vector>& f(atoms.forces);
-  for(unsigned j=0; j<indexes.size(); j++) f[indexes[j].index()]+=forces[j];
-  atoms.forceOnEnergy+=forceOnEnergy;
-  if(extraCV.length()>0) atoms.updateExtraCVForce(extraCV,forceOnExtraCV);
-}
-
-void ActionAtomistic::clearOutputForces() {
-  if(donotforce) return;
-  Tools::set_to_zero(forces);
-  forceOnEnergy=0.0;
-  forceOnExtraCV=0.0;
-}
-
 
 void ActionAtomistic::readAtomsFromPDB(const PDB& pdb) {
   Colvar*cc=dynamic_cast<Colvar*>(this);
@@ -289,6 +313,26 @@ void ActionAtomistic::readAtomsFromPDB(const PDB& pdb) {
   for(unsigned j=0; j<indexes.size(); j++) masses[j]=pdb.getOccupancy()[indexes[j].index()];
 }
 
+unsigned ActionAtomistic::getTotAtoms()const {
+  return atoms.positions.size();
+}
+
+Vector ActionAtomistic::getGlobalPosition(const AtomNumber& i) const {
+  if( atoms.isVirtualAtom(i) ) return atoms.positions[i.index()];
+  Vector pos; 
+  pos[0]=xpos[0]->get(i.index()); 
+  pos[1]=ypos[0]->get(i.index());  
+  pos[2]=zpos[0]->get(i.index());
+  return pos; 
+}     
+
+void ActionAtomistic::setGlobalPosition(const AtomNumber& i, const Vector& pos ) {
+  if( atoms.isVirtualAtom(i) ) { atoms.positions[i.index()] = pos; return; }
+  xpos[0]->set(i.index(),pos[0]); 
+  ypos[0]->set(i.index(),pos[1]); 
+  zpos[0]->set(i.index(),pos[2]);
+}
+
 void ActionAtomistic::makeWhole() {
   for(unsigned j=0; j<positions.size()-1; ++j) {
     const Vector & first (positions[j]);
@@ -297,15 +341,34 @@ void ActionAtomistic::makeWhole() {
   }
 }
 
-void ActionAtomistic::updateUniqueLocal() {
-  if(atoms.dd && atoms.shuffledAtoms>0) {
-    unique_local.clear();
-    for(auto pp=unique.begin(); pp!=unique.end(); ++pp) {
-      if(atoms.g2l[pp->index()]>=0) unique_local.push_back(*pp); // already sorted
-    }
-  } else {
-    unique_local=unique; // copy
+Vector ActionAtomistic::getForce( const AtomNumber& i ) const {
+  if( atoms.isVirtualAtom(i) ) return atoms.forces[i.index()];
+  Vector f;
+  f[0]=xpos[0]->getForce( i.index() );
+  f[1]=ypos[0]->getForce( i.index() );
+  f[2]=zpos[0]->getForce( i.index() );
+  return f;
+}
+
+void ActionAtomistic::addForce( const AtomNumber& i, const Vector& f ) {
+  if( atoms.isVirtualAtom(i) ) {
+      atoms.forces[i.index()] += f;
+  } else { 
+      xpos[0]->addForce( i.index(), f[0] );
+      ypos[0]->addForce( i.index(), f[1] );
+      zpos[0]->addForce( i.index(), f[2] );
   }
+}
+
+const std::vector<AtomNumber> & ActionAtomistic::getUniqueLocal( const bool& useunique, const std::vector<int>& g2l ) {
+  if( useunique ) return unique;
+  if( !unique_local_needs_update ) return unique_local;
+  // Update unique local if it needs an update
+  unique_local_needs_update=false; unique_local.clear();
+  for(auto pp=unique.begin(); pp!=unique.end(); ++pp) {
+    if(g2l[pp->index()]>=0) unique_local.push_back(*pp); // already sorted
+  }
+  return unique_local;
 }
 
 }

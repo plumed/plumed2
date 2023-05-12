@@ -136,6 +136,10 @@ bool ActionToPutData::setForcePointer( const std::string& name, const TypesafePt
   return true;
 }
 
+void ActionToPutData::getLocalValues( std::vector<double>& vals ) const {
+  mydata->share_data( vals );
+}
+
 void ActionToPutData::wait() {
   dataCanBeSet=false; if( fixed || !wasset ) { return; } plumed_assert( wasset );
   mydata->share_data( 0, getPntrToValue()->getNumberOfValues(), getPntrToValue() );

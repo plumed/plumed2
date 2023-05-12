@@ -192,7 +192,7 @@ void Atoms::share() {
       if(actions[i]->isActive()) {
         if(!actions[i]->getUnique().empty()) {
           // unique are the local atoms
-          vectors.push_back(&actions[i]->getUniqueLocal());
+          //vectors.push_back(&actions[i]->getUniqueLocal());
         }
       }
     }
@@ -449,10 +449,10 @@ void Atoms::setAtomsGatindex(const TypesafePtr & g,bool fortran) {
   }
   for(unsigned i=0; i<gatindex.size(); i++) g2l[gatindex[i]]=i;
 
-  for(unsigned i=0; i<actions.size(); i++) {
-    // keep in unique only those atoms that are local
-    actions[i]->updateUniqueLocal();
-  }
+//  for(unsigned i=0; i<actions.size(); i++) {
+//    // keep in unique only those atoms that are local
+//    actions[i]->updateUniqueLocal();
+//  }
   unique.clear();
 }
 
@@ -462,10 +462,10 @@ void Atoms::setAtomsContiguous(int start) {
   for(unsigned i=0; i<g2l.size(); i++) g2l[i]=-1;
   for(unsigned i=0; i<gatindex.size(); i++) g2l[gatindex[i]]=i;
   if(gatindex.size()<natoms) shuffledAtoms=1;
-  for(unsigned i=0; i<actions.size(); i++) {
-    // keep in unique only those atoms that are local
-    actions[i]->updateUniqueLocal();
-  }
+//  for(unsigned i=0; i<actions.size(); i++) {
+//    // keep in unique only those atoms that are local
+//    actions[i]->updateUniqueLocal();
+//  }
   unique.clear();
 }
 

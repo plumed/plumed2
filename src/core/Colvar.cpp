@@ -83,7 +83,9 @@ void Colvar::apply() {
     }
 
     if(ncp>4*comm.Get_size()) comm.Sum(&f[0],3*nat+9);
-    unsigned ind=0; setForcesOnAtoms( f, ind );
+    unsigned ind=0;
+    if( nat>0 ) setForcesOnAtoms( f, ind );
+    else setForcesOnCell( f, ind );
   } else if( isEnergy ) {
     std::vector<double> forces(1);
     if(getPntrToComponent(0)->applyForce(forces)) modifyForceOnEnergy()+=forces[0];

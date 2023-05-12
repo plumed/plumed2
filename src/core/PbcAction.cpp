@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "PbcAction.h"
+#include "DomainDecomposition.h"
 #include "tools/Pbc.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
@@ -50,17 +51,15 @@ PbcAction::PbcAction(const ActionOptions&ao):
   std::vector<unsigned> shape(2); shape[0]=shape[1]=3;
   addValue( shape ); setNotPeriodic(); setUnit( "length", "energy" );
   getPntrToValue()->buildDataStore();
-
-  std::vector<ActionForInterface*> allput=plumed.getActionSet().select<ActionForInterface*>();
-  for(unsigned i=0; i<allput.size(); ++i) {
-    ActionToPutData* ap = dynamic_cast<ActionToPutData*>( allput[i] );
-    if( !ap && !interface ) interface = allput[i];
-    else if( !ap && interface ) warning("found more than one interface so don't know how to broadcast cell");
-  }
 }
 
 
 void PbcAction::setPbc() {
+  if( !interface ) {
+      std::vector<DomainDecomposition*> allput=plumed.getActionSet().select<DomainDecomposition*>();
+      if( allput.size()>1 ) warning("found more than one interface so don't know how to broadcast cell");
+      interface = allput[0];
+  }
   Tensor box; if( interface ) interface->broadcastToDomains( getPntrToValue() );
   for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) box(i,j) = getPntrToValue()->get(3*i+j);
   pbc.setBox(box);

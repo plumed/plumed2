@@ -227,13 +227,13 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
 void WholeMolecules::calculate() {
   for(unsigned i=0; i<groups.size(); ++i) {
     if(addref) {
-      Vector & first (modifyGlobalPosition(groups[i][0]));
-      first = refs[i]+pbcDistance(refs[i],first);
+      Vector first = getGlobalPosition(groups[i][0]);
+      setGlobalPosition( groups[i][0], refs[i]+pbcDistance(refs[i],first) );
     }
     for(unsigned j=0; j<groups[i].size()-1; ++j) {
-      const Vector & first (getGlobalPosition(roots[i][j]));
-      Vector & second (modifyGlobalPosition(groups[i][j+1]));
-      second=first+pbcDistance(first,second);
+      Vector first=getGlobalPosition(roots[i][j]);
+      Vector second=getGlobalPosition(groups[i][j+1]);
+      setGlobalPosition(groups[i][j+1], first+pbcDistance(first,second) );
     }
   }
 }
