@@ -103,7 +103,7 @@ public:
   void update() override;
 };
 
-PLUMED_REGISTER_ACTION(JCoupling,  "JCOUPLING")
+PLUMED_REGISTER_ACTION(JCoupling, "JCOUPLING")
 
 void JCoupling::registerKeywords(Keywords& keys) {
   componentsAreNotOptional(keys);
