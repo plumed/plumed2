@@ -59,7 +59,7 @@ l: MAZE_LOSS PARAMS=1,1,1
 //+ENDPLUMEDOC
 
 // Registers the LOSS action.
-PLUMED_REGISTER_ACTION(Loss,  "MAZE_LOSS")
+PLUMED_REGISTER_ACTION(Loss, "MAZE_LOSS")
 
 void Loss::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);

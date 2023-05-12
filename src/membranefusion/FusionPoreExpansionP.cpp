@@ -82,7 +82,7 @@ public:
   static void registerKeywords(Keywords &keys);
 };
 
-PLUMED_REGISTER_ACTION(fusionPoreExpansionP,  "FUSIONPOREEXPANSIONP")
+PLUMED_REGISTER_ACTION(fusionPoreExpansionP, "FUSIONPOREEXPANSIONP")
 
 void fusionPoreExpansionP::registerKeywords(Keywords &keys)
 {

@@ -102,7 +102,7 @@ private:
 };
 
 // Register MAZE_STEERED_MD.
-PLUMED_REGISTER_ACTION(Steered_MD,  "MAZE_STEERED_MD")
+PLUMED_REGISTER_ACTION(Steered_MD, "MAZE_STEERED_MD")
 
 void Steered_MD::registerKeywords(Keywords& keys) {
   Optimizer::registerKeywords(keys);
