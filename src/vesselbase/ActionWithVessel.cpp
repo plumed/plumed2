@@ -127,7 +127,7 @@ void ActionWithVessel::addVessel( std::unique_ptr<Vessel> vv_ptr ) {
 
 BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ) {
   VesselOptions da("","",0,"",this);
-  auto bv=Tools::make_unique<BridgeVessel>(da);
+  auto bv=std::make_unique<BridgeVessel>(da);
   bv->setOutputAction( tome );
   tome->actionIsBridged=true; dertime_can_be_off=false;
 // store this pointer in order to return it later.
@@ -146,7 +146,7 @@ StoreDataVessel* ActionWithVessel::buildDataStashes( ActionWithVessel* actionTha
   }
 
   VesselOptions da("","",0,"",this);
-  auto mm=Tools::make_unique<StoreDataVessel>(da);
+  auto mm=std::make_unique<StoreDataVessel>(da);
   if( actionThatUses ) mm->addActionThatUses( actionThatUses );
   addVessel(std::move(mm));
 

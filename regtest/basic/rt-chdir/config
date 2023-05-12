@@ -1,0 +1,8 @@
+type=make
+
+function plumed_regtest_before() {
+mkdir aa
+touch aa/xx
+touch aa/yy
+}
+

@@ -126,7 +126,7 @@ NOE::NOE(const ActionOptions&ao):
   }
   if(nga.size()!=ngb.size()) error("There should be the same number of GROUPA and GROUPB keywords");
   // Create neighbour lists
-  nl=Tools::make_unique<NeighborList>(ga_lista,gb_lista,false,true,pbc,getPbc(),comm);
+  nl=std::make_unique<NeighborList>(ga_lista,gb_lista,false,true,pbc,getPbc(),comm);
 
   // Optionally add an experimental value (like with RDCs)
   std::vector<double> noedist;

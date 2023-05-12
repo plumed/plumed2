@@ -90,7 +90,7 @@ std::ostream & operator<<(std::ostream &log,const CLToolRegister&ar);
 /// This macro should be used in the .cpp file of the corresponding class
 #define PLUMED_REGISTER_CLTOOL(classname,directive) \
   namespace { class classname##RegisterMe{ \
-    static std::unique_ptr<PLMD::CLTool> create(const PLMD::CLToolOptions&ao){return PLMD::Tools::make_unique<classname>(ao);} \
+    static std::unique_ptr<PLMD::CLTool> create(const PLMD::CLToolOptions&ao){return std::make_unique<classname>(ao);} \
   public: \
     classname##RegisterMe(){PLMD::cltoolRegister().add(directive,create,classname::registerKeywords);} \
     ~classname##RegisterMe(){PLMD::cltoolRegister().remove(create);} \

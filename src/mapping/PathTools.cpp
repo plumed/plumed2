@@ -145,7 +145,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
     std::fprintf(out,"Reparameterising path in file named %s so that all frames are equally spaced \n",ifilename.c_str() );
     FILE* fp=std::fopen(ifilename.c_str(),"r");
 // call fclose when fp goes out of scope
-    auto deleter=[](FILE* f) { if(f) std::fclose(f); };
+    auto deleter=[](auto f) { if(f) std::fclose(f); };
     std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
     bool do_read=true; std::vector<std::unique_ptr<ReferenceConfiguration>> frames;
     while (do_read) {
@@ -176,7 +176,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
     // Generate stuff to reparameterize
     Pbc fake_pbc; std::vector<std::unique_ptr<Value>> vals;
     for(unsigned i=0; i<frames[0]->getNumberOfReferenceArguments(); ++i) {
-      vals.emplace_back(Tools::make_unique<Value>()); vals[vals.size()-1]->setNotPeriodic();
+      vals.emplace_back(std::make_unique<Value>()); vals[vals.size()-1]->setNotPeriodic();
     }
 
     // temporary pointes used to make the conversion once
@@ -221,7 +221,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   {
     FILE* fp2=std::fopen(istart.c_str(),"r");
 // call fclose when fp goes out of scope
-    auto deleter=[](FILE* f) { std::fclose(f); };
+    auto deleter=[](auto f) { std::fclose(f); };
     std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp2,deleter);
     if( istart.length()==0 ) error("input is missing use --istart + --iend or --path");
     if( !mystartpdb.readFromFilepointer(fp2,false,0.1) ) error("could not read fila " + istart);
@@ -234,7 +234,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   {
     FILE* fp1=std::fopen(iend.c_str(),"r");
 // call fclose when fp goes out of scope
-    auto deleter=[](FILE* f) { std::fclose(f); };
+    auto deleter=[](auto f) { std::fclose(f); };
     std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp1,deleter);
     if( iend.length()==0 ) error("input is missing using --istart + --iend or --path");
     if( !myendpdb.readFromFilepointer(fp1,false,0.1) ) error("could not read fila " + iend);
@@ -258,7 +258,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   Pbc fpbc;
   std::vector<std::unique_ptr<Value>> args;
   for(unsigned i=0; i<eframe->getNumberOfReferenceArguments(); ++i) {
-    args.emplace_back(Tools::make_unique<Value>()); args[args.size()-1]->setNotPeriodic();
+    args.emplace_back(std::make_unique<Value>()); args[args.size()-1]->setNotPeriodic();
   }
 
   // convert pointer once:

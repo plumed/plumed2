@@ -185,10 +185,10 @@ S2ContactModel::S2ContactModel(const ActionOptions&ao):
 
   bool dopair=false;
   if(doneigh) {
-    nl=Tools::make_unique<NeighborList>(main_atoms,heavy_atoms,serial_,dopair,pbc_,getPbc(),comm,nl_cut,nl_st);
+    nl=std::make_unique<NeighborList>(main_atoms,heavy_atoms,serial_,dopair,pbc_,getPbc(),comm,nl_cut,nl_st);
   }
   else {
-    nl=Tools::make_unique<NeighborList>(main_atoms,heavy_atoms,serial_,dopair,pbc_,getPbc(),comm);
+    nl=std::make_unique<NeighborList>(main_atoms,heavy_atoms,serial_,dopair,pbc_,getPbc(),comm);
   }
 
   requestAtoms(nl->getFullAtomList());

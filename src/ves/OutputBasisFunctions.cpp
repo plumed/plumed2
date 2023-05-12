@@ -187,7 +187,7 @@ OutputBasisFunctions::OutputBasisFunctions(const ActionOptions&ao):
   std::vector<std::string> grid_max(1); grid_max[0]=bf_pntrs[0]->intervalMaxStr();
   std::vector<unsigned int> grid_bins(1); grid_bins[0]=nbins;
   std::vector<std::unique_ptr<Value>> arguments(1);
-  arguments[0]= Tools::make_unique<Value>(nullptr,"arg",false);
+  arguments[0]= std::make_unique<Value>(nullptr,"arg",false);
   if(bf_pntrs[0]->arePeriodic() && !ignore_periodicity) {
     arguments[0]->setDomain(bf_pntrs[0]->intervalMinStr(),bf_pntrs[0]->intervalMaxStr());
   }

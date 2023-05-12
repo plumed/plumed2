@@ -345,7 +345,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   int  grex_stride=0;
   FILE*grex_log=NULL;
 // call fclose when fp goes out of scope
-  auto deleter=[](FILE* f) { if(f) std::fclose(f); };
+  auto deleter=[](auto f) { if(f) std::fclose(f); };
   std::unique_ptr<FILE,decltype(deleter)> grex_log_deleter(grex_log,deleter);
 
   if(debug_grex) {
@@ -552,7 +552,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
   std::unique_ptr<FILE,decltype(deleter)> fp_forces_deleter(fp_forces,deleter);
 
-  auto xdr_deleter=[](xdrfile::XDRFILE* xd) { if(xd) xdrfile::xdrfile_close(xd); };
+  auto xdr_deleter=[](auto xd) { if(xd) xdrfile::xdrfile_close(xd); };
 
   xdrfile::XDRFILE* xd=NULL;
 
@@ -874,7 +874,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         xdrfile::matrix box;
 // here we cannot use a std::vector<rvec> since it does not compile.
 // we thus use a std::unique_ptr<rvec[]>
-        auto pos=Tools::make_unique<xdrfile::rvec[]>(natoms);
+        auto pos=std::make_unique<xdrfile::rvec[]>(natoms);
         float prec,lambda;
         int ret=xdrfile::exdrOK;
         if(trajectory_fmt=="xdr-xtc") ret=xdrfile::read_xtc(xd,natoms,&localstep,&time,box,pos.get(),&prec);

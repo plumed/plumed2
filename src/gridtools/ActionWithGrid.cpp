@@ -59,11 +59,11 @@ std::unique_ptr<GridVessel> ActionWithGrid::createGrid( const std::string& type,
   vesselbase::VesselOptions dar( da, keys );
   std::unique_ptr<GridVessel> grid;
   if( type=="histogram" ) {
-    grid=Tools::make_unique<HistogramOnGrid>(dar);
+    grid=std::make_unique<HistogramOnGrid>(dar);
   } else if( type=="average" ) {
-    grid=Tools::make_unique<AverageOnGrid>(dar);
+    grid=std::make_unique<AverageOnGrid>(dar);
   } else if( type=="grid" ) {
-    grid=Tools::make_unique<GridVessel>(dar);
+    grid=std::make_unique<GridVessel>(dar);
   } else {
     plumed_merror("no way to create grid of type " + type );
   }

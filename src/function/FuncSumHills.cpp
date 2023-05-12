@@ -66,7 +66,7 @@ public:
 FilesHandler::FilesHandler(const std::vector<std::string> &filenames, const bool &parallelread, Action &action, Log &mylog ):filenames(filenames),log(&mylog),parallelread(parallelread),beingread(0),isopen(false) {
   this->action=&action;
   for(unsigned i=0; i<filenames.size(); i++) {
-    auto ifile=Tools::make_unique<IFile>();
+    auto ifile=std::make_unique<IFile>();
     ifile->link(action);
     plumed_massert((ifile->FileExist(filenames[i])), "the file "+filenames[i]+" does not exist " );
     ifiles.emplace_back(std::move(ifile));
@@ -454,7 +454,7 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
     // check if the files exists
     if(integratehills) {
       checkFilesAreExisting(hillsFiles);
-      biasrep=Tools::make_unique<BiasRepresentation>(tmphillsvalues,comm, gmin, gmax, gbin, doInt, lowI_, uppI_);
+      biasrep=std::make_unique<BiasRepresentation>(tmphillsvalues,comm, gmin, gmax, gbin, doInt, lowI_, uppI_);
       if(negativebias) {
         biasrep->setRescaledToBias(true);
         log<<"  required the -bias instead of the free energy \n";
@@ -477,7 +477,7 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
     // the list of the collective variable one want to consider
     if(integratehisto) {
       checkFilesAreExisting(histoFiles);
-      historep=Tools::make_unique<BiasRepresentation>(tmphistovalues,comm,gmin,gmax,gbin,histoSigma);
+      historep=std::make_unique<BiasRepresentation>(tmphistovalues,comm,gmin,gmax,gbin,histoSigma);
     }
 
     // decide how to source hills ( serial/parallel )
@@ -490,8 +490,8 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
     std::unique_ptr<FilesHandler> hillsHandler;
     std::unique_ptr<FilesHandler> histoHandler;
 
-    if(integratehills)	hillsHandler=Tools::make_unique<FilesHandler>(hillsFiles,parallelread,*this, log);
-    if(integratehisto)	histoHandler=Tools::make_unique<FilesHandler>(histoFiles,parallelread,*this, log);
+    if(integratehills)	hillsHandler=std::make_unique<FilesHandler>(hillsFiles,parallelread,*this, log);
+    if(integratehisto)	histoHandler=std::make_unique<FilesHandler>(histoFiles,parallelread,*this, log);
 
 // Stopwatch is logged when it goes out of scope
     Stopwatch sw(log);
@@ -622,7 +622,7 @@ void FuncSumHills::calculate() {
 
 bool FuncSumHills::checkFilesAreExisting(const std::vector<std::string> & hills ) {
   plumed_massert(hills.size()!=0,"the number of  files provided should be at least one" );
-  auto ifile=Tools::make_unique<IFile>();
+  auto ifile=std::make_unique<IFile>();
   ifile->link(*this);
   for(unsigned i=0; i< hills.size(); i++) {
     plumed_massert(ifile->FileExist(hills[i]),"missing file "+hills[i]);

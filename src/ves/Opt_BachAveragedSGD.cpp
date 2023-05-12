@@ -241,7 +241,7 @@ Opt_BachAveragedSGD::Opt_BachAveragedSGD(const ActionOptions&ao):
   parse("COMBINED_GRADIENT_FMT",combinedgradient_fmt);
   if(combinedgradient_fnames.size()>0) {
     for(unsigned int i=0; i<numberOfCoeffsSets(); i++) {
-      auto combinedgradient_tmp = Tools::make_unique<CoeffsVector>(*getGradientPntrs()[i]);
+      auto combinedgradient_tmp = std::make_unique<CoeffsVector>(*getGradientPntrs()[i]);
       std::string label = getGradientPntrs()[i]->getLabel();
       if(label.find("gradient")!=std::string::npos) {
         label.replace(label.find("gradient"), std::string("gradient").length(), "combined_gradient");

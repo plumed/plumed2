@@ -94,7 +94,7 @@ void BiasRepresentation::addGrid(const std::vector<std::string> & gmin, const st
   plumed_massert(hasgrid==false,"to build the grid you should not having the grid in this bias representation");
   std::string ss; ss="file.free";
   std::vector<Value*> vv; for(unsigned i=0; i<values.size(); i++) vv.push_back(values[i]);
-  BiasGrid_=Tools::make_unique<Grid>(ss,vv,gmin,gmax,nbin,false,true);
+  BiasGrid_=std::make_unique<Grid>(ss,vv,gmin,gmax,nbin,false,true);
   hasgrid=true;
 }
 
@@ -137,7 +137,7 @@ std::unique_ptr<KernelFunctions> BiasRepresentation::readFromPoint(IFile *ifile)
     ifile->scanField(names[i],cc[i]);
   }
   double h=1.0;
-  return Tools::make_unique<KernelFunctions>(cc,histosigma,"stretched-gaussian","DIAGONAL",h);
+  return std::make_unique<KernelFunctions>(cc,histosigma,"stretched-gaussian","DIAGONAL",h);
 }
 
 void BiasRepresentation::pushKernel( IFile *ifile ) {

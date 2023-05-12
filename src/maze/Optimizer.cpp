@@ -225,7 +225,7 @@ Optimizer::Optimizer(const ActionOptions& ao)
 
   if (gb_list.size() > 0) {
     if (do_neigh) {
-      neighbor_list_ = Tools::make_unique<NeighborList>(
+      neighbor_list_ = std::make_unique<NeighborList>(
                          ga_list,
                          gb_list,
                          serial_,
@@ -238,7 +238,7 @@ Optimizer::Optimizer(const ActionOptions& ao)
                        );
     }
     else {
-      neighbor_list_=Tools::make_unique<NeighborList>(
+      neighbor_list_=std::make_unique<NeighborList>(
                        ga_list,
                        gb_list,
                        serial_,
@@ -251,7 +251,7 @@ Optimizer::Optimizer(const ActionOptions& ao)
   }
   else {
     if (do_neigh) {
-      neighbor_list_ = Tools::make_unique<NeighborList>(
+      neighbor_list_ = std::make_unique<NeighborList>(
                          ga_list,
                          serial_,
                          pbc_,
@@ -262,7 +262,7 @@ Optimizer::Optimizer(const ActionOptions& ao)
                        );
     }
     else {
-      neighbor_list_=Tools::make_unique<NeighborList>(
+      neighbor_list_=std::make_unique<NeighborList>(
                        ga_list,
                        serial_,
                        pbc_,

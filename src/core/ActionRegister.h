@@ -112,7 +112,7 @@ std::ostream & operator<<(std::ostream &log,const ActionRegister&ar);
 /**
 #define PLUMED_REGISTER_ACTION(classname,directive) \
   namespace { class PLUMED_UNIQUENAME(classname##RegisterMe){ \
-    static std::unique_ptr<PLMD::Action> create(const PLMD::ActionOptions&ao){return PLMD::Tools::make_unique<classname>(ao);} \
+    static std::unique_ptr<PLMD::Action> create(const PLMD::ActionOptions&ao){return std::make_unique<classname>(ao);} \
   public: \
     PLUMED_UNIQUENAME(classname##RegisterMe)(){PLMD::actionRegister().add(directive,create,classname::registerKeywords);} \
     ~PLUMED_UNIQUENAME(classname##RegisterMe)(){PLMD::actionRegister().remove(create);} \

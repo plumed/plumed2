@@ -34,12 +34,11 @@
 #include <ios>
 #include <new>
 #include <typeinfo>
-#ifdef __PLUMED_LIBCXX11
 #include <system_error>
 #include <future>
 #include <memory>
 #include <functional>
-#endif
+#include <regex>
 #include "tools/TypesafePtr.h"
 #include "tools/Log.h"
 #include "tools/Tools.h"
@@ -144,34 +143,43 @@ static void translate_current(plumed_nothrow_handler_x nothrow,void**nested=null
   } catch(const std::bad_exception & e) {
     if(!msg) msg=e.what();
     nothrow.handler(nothrow.ptr,11500,msg,opt);
-#ifdef __PLUMED_LIBCXX11
   } catch(const std::bad_array_new_length & e) {
     if(!msg) msg=e.what();
     nothrow.handler(nothrow.ptr,11410,msg,opt);
-#endif
   } catch(const std::bad_alloc & e) {
     if(!msg) msg=e.what();
     nothrow.handler(nothrow.ptr,11400,msg,opt);
-#ifdef __PLUMED_LIBCXX11
   } catch(const std::bad_function_call & e) {
     if(!msg) msg=e.what();
     nothrow.handler(nothrow.ptr,11300,msg,opt);
   } catch(const std::bad_weak_ptr & e) {
     if(!msg) msg=e.what();
     nothrow.handler(nothrow.ptr,11200,msg,opt);
-#endif
   } catch(const std::bad_cast & e) {
     if(!msg) msg=e.what();
     nothrow.handler(nothrow.ptr,11100,msg,opt);
   } catch(const std::bad_typeid & e) {
     if(!msg) msg=e.what();
     nothrow.handler(nothrow.ptr,11000,msg,opt);
-    // not implemented yet: std::regex_error
-    // we do not allow regex yet due to portability problems with gcc 4.8
-    // as soon as we transition to using <regex> it should be straightforward to add
+  } catch(const std::regex_error & e) {
+    if(!msg) msg=e.what();
+    if(e.code()==std::regex_constants::error_collate) nothrow.handler(nothrow.ptr,10240,msg,opt);
+    else if(e.code()==std::regex_constants::error_ctype) nothrow.handler(nothrow.ptr,10241,msg,opt);
+    else if(e.code()==std::regex_constants::error_escape) nothrow.handler(nothrow.ptr,10242,msg,opt);
+    else if(e.code()==std::regex_constants::error_backref) nothrow.handler(nothrow.ptr,10243,msg,opt);
+    else if(e.code()==std::regex_constants::error_brack) nothrow.handler(nothrow.ptr,10244,msg,opt);
+    else if(e.code()==std::regex_constants::error_paren) nothrow.handler(nothrow.ptr,10245,msg,opt);
+    else if(e.code()==std::regex_constants::error_brace) nothrow.handler(nothrow.ptr,10246,msg,opt);
+    else if(e.code()==std::regex_constants::error_badbrace) nothrow.handler(nothrow.ptr,10247,msg,opt);
+    else if(e.code()==std::regex_constants::error_range) nothrow.handler(nothrow.ptr,10248,msg,opt);
+    else if(e.code()==std::regex_constants::error_space) nothrow.handler(nothrow.ptr,10249,msg,opt);
+    else if(e.code()==std::regex_constants::error_badrepeat) nothrow.handler(nothrow.ptr,10250,msg,opt);
+    else if(e.code()==std::regex_constants::error_complexity) nothrow.handler(nothrow.ptr,10251,msg,opt);
+    else if(e.code()==std::regex_constants::error_stack) nothrow.handler(nothrow.ptr,10252,msg,opt);
+    // fallback to generic runtime_error
+    else nothrow.handler(nothrow.ptr,10200,msg,opt);
   } catch(const std::ios_base::failure & e) {
     if(!msg) msg=e.what();
-#ifdef __PLUMED_LIBCXX11
     int value=e.code().value();
     opt[2]="c"; // "c" passes the error code.
     opt[3]=&value;
@@ -180,10 +188,8 @@ static void translate_current(plumed_nothrow_handler_x nothrow,void**nested=null
     else if(e.code().category()==std::iostream_category()) nothrow.handler(nothrow.ptr,10232,msg,opt);
     else if(e.code().category()==std::future_category()) nothrow.handler(nothrow.ptr,10233,msg,opt);
     else
-#endif
       // 10239 represents std::ios_base::failure with default constructur
       nothrow.handler(nothrow.ptr,10239,msg,opt);
-#ifdef __PLUMED_LIBCXX11
   } catch(const std::system_error & e) {
     if(!msg) msg=e.what();
     int value=e.code().value();
@@ -195,7 +201,6 @@ static void translate_current(plumed_nothrow_handler_x nothrow,void**nested=null
     else if(e.code().category()==std::future_category()) nothrow.handler(nothrow.ptr,10223,msg,opt);
     // fallback to generic runtime_error
     else nothrow.handler(nothrow.ptr,10200,msg,opt);
-#endif
   } catch(const std::underflow_error &e) {
     if(!msg) msg=e.what();
     nothrow.handler(nothrow.ptr,10215,msg,opt);

@@ -164,7 +164,7 @@ TD_Grid::TD_Grid(const ActionOptions& ao):
   setDimension(arglabels.size());
   std::vector<std::unique_ptr<Value>> arguments(arglabels.size());
   for(unsigned int i=0; i < arglabels.size(); i++) {
-    arguments[i]= Tools::make_unique<Value>(nullptr,arglabels[i],false);
+    arguments[i]= std::make_unique<Value>(nullptr,arglabels[i],false);
     if(argperiodic[i]) {
       arguments[i]->setDomain(argmin[i],argmax[i]);
     }
