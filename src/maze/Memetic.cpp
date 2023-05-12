@@ -80,7 +80,7 @@ The neighbor list can be turned on by providing the NLIST keyword.
 /**
  * Register MAZE_MEMETIC_SAMPLING.
  */
-PLUMED_REGISTER_ACTION(Memetic, "MAZE_MEMETIC_SAMPLING")
+PLUMED_REGISTER_ACTION(Memetic, MAZE_MEMETIC_SAMPLING)
 
 void Memetic::registerKeywords(Keywords& keys) {
   Optimizer::registerKeywords(keys);

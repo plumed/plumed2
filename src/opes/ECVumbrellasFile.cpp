@@ -93,7 +93,7 @@ public:
   void initECVs_restart(const std::vector<std::string>&) override;
 };
 
-PLUMED_REGISTER_ACTION(ECVumbrellasFile,"ECV_UMBRELLAS_FILE")
+PLUMED_REGISTER_ACTION(ECVumbrellasFile,ECV_UMBRELLAS_FILE)
 
 void ECVumbrellasFile::registerKeywords(Keywords& keys)
 {

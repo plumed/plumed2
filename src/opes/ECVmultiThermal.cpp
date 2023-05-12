@@ -100,7 +100,7 @@ public:
   void initECVs_restart(const std::vector<std::string>&) override;
 };
 
-PLUMED_REGISTER_ACTION(ECVmultiCanonical,"ECV_MULTITHERMAL")
+PLUMED_REGISTER_ACTION(ECVmultiCanonical,ECV_MULTITHERMAL)
 
 void ECVmultiCanonical::registerKeywords(Keywords& keys)
 {

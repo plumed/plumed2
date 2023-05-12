@@ -86,7 +86,7 @@ public:
   static void registerKeywords(Keywords &keys);
 };
 
-PLUMED_REGISTER_ACTION(memFusionP, "MEMFUSIONP")
+PLUMED_REGISTER_ACTION(memFusionP, MEMFUSIONP)
 
 void memFusionP::registerKeywords(Keywords &keys)
 {

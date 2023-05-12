@@ -87,7 +87,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(BF_Powers,"BF_POWERS")
+PLUMED_REGISTER_ACTION(BF_Powers,BF_POWERS)
 
 
 void BF_Powers::registerKeywords(Keywords& keys) {

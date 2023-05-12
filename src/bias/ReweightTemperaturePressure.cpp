@@ -187,7 +187,7 @@ public:
   double getLogWeight() override;
 };
 
-PLUMED_REGISTER_ACTION(ReweightTemperaturePressure,"REWEIGHT_TEMP_PRESS")
+PLUMED_REGISTER_ACTION(ReweightTemperaturePressure,REWEIGHT_TEMP_PRESS)
 
 void ReweightTemperaturePressure::registerKeywords(Keywords& keys ) {
   ReweightBase::registerKeywords( keys );

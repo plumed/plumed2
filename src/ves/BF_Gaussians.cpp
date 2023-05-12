@@ -111,7 +111,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(BF_Gaussians,"BF_GAUSSIANS")
+PLUMED_REGISTER_ACTION(BF_Gaussians,BF_GAUSSIANS)
 
 
 void BF_Gaussians::registerKeywords(Keywords& keys) {

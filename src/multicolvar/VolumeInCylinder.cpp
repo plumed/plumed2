@@ -84,7 +84,7 @@ public:
   double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const override;
 };
 
-PLUMED_REGISTER_ACTION(VolumeInCylinder,"INCYLINDER")
+PLUMED_REGISTER_ACTION(VolumeInCylinder,INCYLINDER)
 
 void VolumeInCylinder::registerKeywords( Keywords& keys ) {
   ActionVolume::registerKeywords( keys );

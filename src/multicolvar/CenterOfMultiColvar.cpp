@@ -93,7 +93,7 @@ public:
   void calculate() override;
 };
 
-PLUMED_REGISTER_ACTION(CenterOfMultiColvar,"CENTER_OF_MULTICOLVAR")
+PLUMED_REGISTER_ACTION(CenterOfMultiColvar,CENTER_OF_MULTICOLVAR)
 
 void CenterOfMultiColvar::registerKeywords(Keywords& keys) {
   ActionWithVirtualAtom::registerKeywords(keys);

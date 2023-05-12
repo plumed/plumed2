@@ -124,7 +124,7 @@ public:
   double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const override;
 };
 
-PLUMED_REGISTER_ACTION(VolumeCavity,"CAVITY")
+PLUMED_REGISTER_ACTION(VolumeCavity,CAVITY)
 
 void VolumeCavity::registerKeywords( Keywords& keys ) {
   ActionVolume::registerKeywords( keys );

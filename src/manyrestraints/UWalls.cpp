@@ -72,7 +72,7 @@ public:
   double calcPotential( const double& val, double& df ) const override;
 };
 
-PLUMED_REGISTER_ACTION(UWalls,"UWALLS")
+PLUMED_REGISTER_ACTION(UWalls,UWALLS)
 
 void UWalls::registerKeywords( Keywords& keys ) {
   ManyRestraintsBase::registerKeywords( keys );

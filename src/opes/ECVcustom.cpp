@@ -82,7 +82,7 @@ public:
   void initECVs_restart(const std::vector<std::string>&) override;
 };
 
-PLUMED_REGISTER_ACTION(ECVcustom,"ECV_CUSTOM")
+PLUMED_REGISTER_ACTION(ECVcustom,ECV_CUSTOM)
 
 void ECVcustom::registerKeywords(Keywords& keys)
 {

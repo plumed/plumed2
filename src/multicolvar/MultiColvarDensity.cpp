@@ -104,7 +104,7 @@ public:
   void apply() override {}
 };
 
-PLUMED_REGISTER_ACTION(MultiColvarDensity,"MULTICOLVARDENS")
+PLUMED_REGISTER_ACTION(MultiColvarDensity,MULTICOLVARDENS)
 
 void MultiColvarDensity::registerKeywords( Keywords& keys ) {
   gridtools::ActionWithGrid::registerKeywords( keys );

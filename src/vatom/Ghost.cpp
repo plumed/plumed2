@@ -59,7 +59,7 @@ public:
   static void registerKeywords( Keywords& keys );
 };
 
-PLUMED_REGISTER_ACTION(Ghost,"GHOST")
+PLUMED_REGISTER_ACTION(Ghost,GHOST)
 
 void Ghost::registerKeywords(Keywords& keys) {
   ActionWithVirtualAtom::registerKeywords(keys);

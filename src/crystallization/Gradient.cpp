@@ -59,7 +59,7 @@ PRINT ARG=s2 FILE=colvar
 */
 //+ENDPLUMEDOC
 
-PLUMED_REGISTER_ACTION(Gradient,"GRADIENT")
+PLUMED_REGISTER_ACTION(Gradient,GRADIENT)
 
 void Gradient::registerKeywords( Keywords& keys ) {
   VolumeGradientBase::registerKeywords( keys );

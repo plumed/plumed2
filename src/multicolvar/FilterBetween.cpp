@@ -144,8 +144,8 @@ public:
   double applyFilter( const double& val, double& df ) const override;
 };
 
-PLUMED_REGISTER_ACTION(FilterBetween,"MFILTER_BETWEEN")
-PLUMED_REGISTER_ACTION(FilterBetween,"MTRANSFORM_BETWEEN")
+PLUMED_REGISTER_ACTION(FilterBetween,MFILTER_BETWEEN)
+PLUMED_REGISTER_ACTION(FilterBetween,MTRANSFORM_BETWEEN)
 
 void FilterBetween::registerKeywords( Keywords& keys ) {
   MultiColvarFilter::registerKeywords( keys );

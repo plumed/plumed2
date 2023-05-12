@@ -80,7 +80,7 @@ public:
   void performTask( const unsigned&, const unsigned&, MultiValue& ) const override;
 };
 
-PLUMED_REGISTER_ACTION(ClusterDistribution,"CLUSTER_DISTRIBUTION")
+PLUMED_REGISTER_ACTION(ClusterDistribution,CLUSTER_DISTRIBUTION)
 
 void ClusterDistribution::registerKeywords( Keywords& keys ) {
   ClusterAnalysisBase::registerKeywords( keys );

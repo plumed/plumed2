@@ -45,7 +45,7 @@ public:
   void calculateVector( multicolvar::AtomValuePack& myatoms ) const override;
 };
 
-PLUMED_REGISTER_ACTION(MoleculePlane,"PLANES")
+PLUMED_REGISTER_ACTION(MoleculePlane,PLANES)
 
 void MoleculePlane::registerKeywords( Keywords& keys ) {
   VectorMultiColvar::registerKeywords( keys ); keys.use("VMEAN");

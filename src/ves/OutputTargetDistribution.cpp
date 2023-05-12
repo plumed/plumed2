@@ -89,7 +89,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(OutputTargetDistribution,"VES_OUTPUT_TARGET_DISTRIBUTION")
+PLUMED_REGISTER_ACTION(OutputTargetDistribution,VES_OUTPUT_TARGET_DISTRIBUTION)
 
 void OutputTargetDistribution::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys);

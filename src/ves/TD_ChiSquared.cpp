@@ -88,7 +88,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(TD_ChiSquared,"TD_CHISQUARED")
+PLUMED_REGISTER_ACTION(TD_ChiSquared,TD_CHISQUARED)
 
 
 void TD_ChiSquared::registerKeywords(Keywords& keys) {

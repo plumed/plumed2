@@ -184,7 +184,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(TD_Uniform,"TD_UNIFORM")
+PLUMED_REGISTER_ACTION(TD_Uniform,TD_UNIFORM)
 
 
 void TD_Uniform::registerKeywords(Keywords& keys) {

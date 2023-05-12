@@ -78,7 +78,7 @@ public:
   void runFinalJobs() override;
 };
 
-PLUMED_REGISTER_ACTION(ConvertToFES,"CONVERT_TO_FES")
+PLUMED_REGISTER_ACTION(ConvertToFES,CONVERT_TO_FES)
 
 void ConvertToFES::registerKeywords( Keywords& keys ) {
   ActionWithInputGrid::registerKeywords( keys );

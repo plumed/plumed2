@@ -83,7 +83,7 @@ public:
   bool isPeriodic() override { return false; }
 };
 
-PLUMED_REGISTER_ACTION(NumberOfLinks,"NLINKS")
+PLUMED_REGISTER_ACTION(NumberOfLinks,NLINKS)
 
 void NumberOfLinks::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );

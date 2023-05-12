@@ -99,7 +99,7 @@ public:
   void calculate() override;
 };
 
-PLUMED_REGISTER_ACTION(EEFSolv,"EEFSOLV")
+PLUMED_REGISTER_ACTION(EEFSolv,EEFSOLV)
 
 void EEFSolv::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);

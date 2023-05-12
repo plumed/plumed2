@@ -76,7 +76,7 @@ public:
   }
 };
 
-PLUMED_REGISTER_ACTION(Flush,"FLUSH")
+PLUMED_REGISTER_ACTION(Flush,FLUSH)
 
 void Flush::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );

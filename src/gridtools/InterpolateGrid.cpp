@@ -59,7 +59,7 @@ public:
   bool isPeriodic() override { return false; }
 };
 
-PLUMED_REGISTER_ACTION(InterpolateGrid,"INTERPOLATE_GRID")
+PLUMED_REGISTER_ACTION(InterpolateGrid,INTERPOLATE_GRID)
 
 void InterpolateGrid::registerKeywords( Keywords& keys ) {
   ActionWithInputGrid::registerKeywords( keys );

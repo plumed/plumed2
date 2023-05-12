@@ -105,7 +105,7 @@ public:
   void turnOnDerivatives() override;
 };
 
-PLUMED_REGISTER_ACTION(Read,"READ")
+PLUMED_REGISTER_ACTION(Read,READ)
 
 void Read::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys);

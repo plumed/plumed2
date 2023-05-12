@@ -68,7 +68,7 @@ public:
   ~DumpDerivatives();
 };
 
-PLUMED_REGISTER_ACTION(DumpDerivatives,"DUMPDERIVATIVES")
+PLUMED_REGISTER_ACTION(DumpDerivatives,DUMPDERIVATIVES)
 
 void DumpDerivatives::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys);

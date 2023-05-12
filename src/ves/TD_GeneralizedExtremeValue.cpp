@@ -109,7 +109,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(TD_GeneralizedExtremeValue,"TD_GENERALIZED_EXTREME_VALUE")
+PLUMED_REGISTER_ACTION(TD_GeneralizedExtremeValue,TD_GENERALIZED_EXTREME_VALUE)
 
 
 void TD_GeneralizedExtremeValue::registerKeywords(Keywords& keys) {

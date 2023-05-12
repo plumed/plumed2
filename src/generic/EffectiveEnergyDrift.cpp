@@ -120,7 +120,7 @@ public:
   void update() override;
 };
 
-PLUMED_REGISTER_ACTION(EffectiveEnergyDrift,"EFFECTIVE_ENERGY_DRIFT")
+PLUMED_REGISTER_ACTION(EffectiveEnergyDrift,EFFECTIVE_ENERGY_DRIFT)
 
 void EffectiveEnergyDrift::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );

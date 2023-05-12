@@ -194,7 +194,7 @@ public:
   void apply() override;
 };
 
-PLUMED_REGISTER_ACTION(PCAVars,"PCAVARS")
+PLUMED_REGISTER_ACTION(PCAVars,PCAVARS)
 
 void PCAVars::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );

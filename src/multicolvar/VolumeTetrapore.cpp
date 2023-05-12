@@ -132,7 +132,7 @@ public:
   double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const override;
 };
 
-PLUMED_REGISTER_ACTION(VolumeTetrapore,"TETRAHEDRALPORE")
+PLUMED_REGISTER_ACTION(VolumeTetrapore,TETRAHEDRALPORE)
 
 void VolumeTetrapore::registerKeywords( Keywords& keys ) {
   ActionVolume::registerKeywords( keys );

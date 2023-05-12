@@ -94,7 +94,7 @@ public:
   static void registerKeywords( Keywords& keys );
 };
 
-PLUMED_REGISTER_ACTION(FixedAtom,"FIXEDATOM")
+PLUMED_REGISTER_ACTION(FixedAtom,FIXEDATOM)
 
 void FixedAtom::registerKeywords(Keywords& keys) {
   ActionWithVirtualAtom::registerKeywords(keys);

@@ -132,7 +132,7 @@ public:
   bool isPeriodic() override { return false; }
 };
 
-PLUMED_REGISTER_ACTION(Distances,"DISTANCES")
+PLUMED_REGISTER_ACTION(Distances,DISTANCES)
 
 void Distances::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );

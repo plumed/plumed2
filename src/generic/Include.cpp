@@ -157,7 +157,7 @@ public:
   void apply() override {}
 };
 
-PLUMED_REGISTER_ACTION(Include,"INCLUDE")
+PLUMED_REGISTER_ACTION(Include,INCLUDE)
 
 void Include::registerKeywords( Keywords& keys ) {
   Action::registerKeywords(keys);

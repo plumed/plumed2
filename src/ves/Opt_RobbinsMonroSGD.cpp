@@ -51,7 +51,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(Opt_RobbinsMonroSGD,"OPT_ROBBINS_MONRO_SGD")
+PLUMED_REGISTER_ACTION(Opt_RobbinsMonroSGD,OPT_ROBBINS_MONRO_SGD)
 
 
 void Opt_RobbinsMonroSGD::registerKeywords(Keywords& keys) {

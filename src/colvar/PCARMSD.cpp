@@ -100,7 +100,7 @@ ENDMDL
 */
 //+ENDPLUMEDOC
 
-PLUMED_REGISTER_ACTION(PCARMSD,"PCARMSD")
+PLUMED_REGISTER_ACTION(PCARMSD,PCARMSD)
 
 void PCARMSD::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);

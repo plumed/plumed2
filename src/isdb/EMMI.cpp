@@ -381,7 +381,7 @@ void EMMI::setBoxDerivatives(Value* v,const Tensor&d) {
   v->addDerivative(noa+3*nat+8,d(2,2));
 }
 
-PLUMED_REGISTER_ACTION(EMMI,"EMMI")
+PLUMED_REGISTER_ACTION(EMMI,EMMI)
 
 void EMMI::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );

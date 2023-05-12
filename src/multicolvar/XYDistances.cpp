@@ -107,9 +107,9 @@ public:
   bool isPeriodic() override { return false; }
 };
 
-PLUMED_REGISTER_ACTION(XYDistances,"XYDISTANCES")
-PLUMED_REGISTER_ACTION(XYDistances,"XZDISTANCES")
-PLUMED_REGISTER_ACTION(XYDistances,"YZDISTANCES")
+PLUMED_REGISTER_ACTION(XYDistances,XYDISTANCES)
+PLUMED_REGISTER_ACTION(XYDistances,XZDISTANCES)
+PLUMED_REGISTER_ACTION(XYDistances,YZDISTANCES)
 
 void XYDistances::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );

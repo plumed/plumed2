@@ -65,7 +65,7 @@ public:
   void getValueForTask( const unsigned& iatom, std::vector<double>& vals );
 };
 
-PLUMED_REGISTER_ACTION(Density,"DENSITY")
+PLUMED_REGISTER_ACTION(Density,DENSITY)
 
 void Density::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );

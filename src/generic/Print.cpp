@@ -92,7 +92,7 @@ public:
   ~Print();
 };
 
-PLUMED_REGISTER_ACTION(Print,"PRINT")
+PLUMED_REGISTER_ACTION(Print,PRINT)
 
 void Print::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys);

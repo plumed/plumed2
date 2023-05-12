@@ -253,7 +253,7 @@ public:
 
 struct convergence { static const bool explore=false; };
 typedef OPESmetad<convergence> OPESmetad_c;
-PLUMED_REGISTER_ACTION(OPESmetad_c,"OPES_METAD")
+PLUMED_REGISTER_ACTION(OPESmetad_c,OPES_METAD)
 
 //OPES_METAD_EXPLORE is very similar from the point of view of the code,
 //but conceptually it is better to make it a separate BIAS action
@@ -297,7 +297,7 @@ PRINT STRIDE=100 FILE=COLVAR ARG=cv,opes.*
 
 struct exploration { static const bool explore=true; };
 typedef OPESmetad<exploration> OPESmetad_e;
-PLUMED_REGISTER_ACTION(OPESmetad_e,"OPES_METAD_EXPLORE")
+PLUMED_REGISTER_ACTION(OPESmetad_e,OPES_METAD_EXPLORE)
 
 template <class mode>
 void OPESmetad<mode>::registerKeywords(Keywords& keys)

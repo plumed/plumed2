@@ -46,7 +46,7 @@ public:
   void minimise( Matrix<double>& ) override;
 };
 
-PLUMED_REGISTER_ACTION(SketchMapSmacof,"SKETCHMAP_SMACOF")
+PLUMED_REGISTER_ACTION(SketchMapSmacof,SKETCHMAP_SMACOF)
 
 void SketchMapSmacof::registerKeywords( Keywords& keys ) {
   SketchMapBase::registerKeywords( keys );

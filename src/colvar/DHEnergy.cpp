@@ -72,7 +72,7 @@ public:
   double pairing(double distance,double&dfunc,unsigned i,unsigned j)const override;
 };
 
-PLUMED_REGISTER_ACTION(DHEnergy,"DHENERGY")
+PLUMED_REGISTER_ACTION(DHEnergy,DHENERGY)
 
 void DHEnergy::registerKeywords( Keywords& keys ) {
   CoordinationBase::registerKeywords(keys);

@@ -104,7 +104,7 @@ public:
   void accumulateAverage( MultiValue& myvals ) const override;
 };
 
-PLUMED_REGISTER_ACTION(Average,"AVERAGE")
+PLUMED_REGISTER_ACTION(Average,AVERAGE)
 
 void Average::registerKeywords( Keywords& keys ) {
   vesselbase::ActionWithAveraging::registerKeywords( keys ); keys.use("ARG");

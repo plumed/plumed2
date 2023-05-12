@@ -40,7 +40,7 @@ public:
   explicit SketchMap( const ActionOptions& );
 };
 
-PLUMED_REGISTER_ACTION(SketchMap,"SKETCH_MAP")
+PLUMED_REGISTER_ACTION(SketchMap,SKETCH_MAP)
 
 void SketchMap::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );

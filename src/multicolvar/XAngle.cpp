@@ -96,9 +96,9 @@ public:
   bool isPeriodic() override { return false; }
 };
 
-PLUMED_REGISTER_ACTION(XAngles,"XANGLES")
-PLUMED_REGISTER_ACTION(XAngles,"YANGLES")
-PLUMED_REGISTER_ACTION(XAngles,"ZANGLES")
+PLUMED_REGISTER_ACTION(XAngles,XANGLES)
+PLUMED_REGISTER_ACTION(XAngles,YANGLES)
+PLUMED_REGISTER_ACTION(XAngles,ZANGLES)
 
 void XAngles::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );

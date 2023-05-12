@@ -70,7 +70,7 @@ public:
   bool isPeriodic() override { return false; }
 };
 
-PLUMED_REGISTER_ACTION(Bridge,"BRIDGE")
+PLUMED_REGISTER_ACTION(Bridge,BRIDGE)
 
 void Bridge::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );

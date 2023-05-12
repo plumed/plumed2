@@ -105,7 +105,7 @@ public:
   void apply() override;
 };
 
-PLUMED_REGISTER_ACTION(Sprint,"SPRINT")
+PLUMED_REGISTER_ACTION(Sprint,SPRINT)
 
 void Sprint::registerKeywords( Keywords& keys ) {
   ActionWithInputMatrix::registerKeywords( keys );

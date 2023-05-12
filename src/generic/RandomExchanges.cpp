@@ -80,7 +80,7 @@ public:
   void apply() override {}
 };
 
-PLUMED_REGISTER_ACTION(RandomExchanges,"RANDOM_EXCHANGES")
+PLUMED_REGISTER_ACTION(RandomExchanges,RANDOM_EXCHANGES)
 
 void RandomExchanges::registerKeywords( Keywords& keys ) {
   Action::registerKeywords(keys);

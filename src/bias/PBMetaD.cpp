@@ -329,7 +329,7 @@ public:
   bool checkNeedsGradients()const override;
 };
 
-PLUMED_REGISTER_ACTION(PBMetaD,"PBMETAD")
+PLUMED_REGISTER_ACTION(PBMetaD,PBMETAD)
 
 void PBMetaD::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);

@@ -103,7 +103,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(BF_Legendre,"BF_LEGENDRE")
+PLUMED_REGISTER_ACTION(BF_Legendre,BF_LEGENDRE)
 
 
 void BF_Legendre::registerKeywords(Keywords& keys) {

@@ -148,7 +148,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(TD_LinearCombination,"TD_LINEAR_COMBINATION")
+PLUMED_REGISTER_ACTION(TD_LinearCombination,TD_LINEAR_COMBINATION)
 
 
 void TD_LinearCombination::registerKeywords(Keywords& keys) {

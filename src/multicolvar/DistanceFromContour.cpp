@@ -97,7 +97,7 @@ public:
   void apply() override;
 };
 
-PLUMED_REGISTER_ACTION(DistanceFromContour,"DISTANCE_FROM_CONTOUR")
+PLUMED_REGISTER_ACTION(DistanceFromContour,DISTANCE_FROM_CONTOUR)
 
 void DistanceFromContour::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );

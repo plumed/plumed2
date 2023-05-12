@@ -136,7 +136,7 @@ public:
   explicit Path(const ActionOptions&);
 };
 
-PLUMED_REGISTER_ACTION(Path,"PATH")
+PLUMED_REGISTER_ACTION(Path,PATH)
 
 void Path::registerKeywords( Keywords& keys ) {
   PathBase::registerKeywords( keys ); keys.remove("PROPERTY");

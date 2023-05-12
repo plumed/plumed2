@@ -107,7 +107,7 @@ public:
   void initECVs_restart(const std::vector<std::string>&) override;
 };
 
-PLUMED_REGISTER_ACTION(ECVmultiThermalBaric,"ECV_MULTITHERMAL_MULTIBARIC")
+PLUMED_REGISTER_ACTION(ECVmultiThermalBaric,ECV_MULTITHERMAL_MULTIBARIC)
 
 void ECVmultiThermalBaric::registerKeywords(Keywords& keys)
 {

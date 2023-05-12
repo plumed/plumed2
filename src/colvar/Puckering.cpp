@@ -78,7 +78,7 @@ public:
   void calculate6m();
 };
 
-PLUMED_REGISTER_ACTION(Puckering,"PUCKERING")
+PLUMED_REGISTER_ACTION(Puckering,PUCKERING)
 
 void Puckering::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords( keys );

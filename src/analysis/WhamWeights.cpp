@@ -72,7 +72,7 @@ public:
   explicit WhamWeights( const ActionOptions& );
 };
 
-PLUMED_REGISTER_ACTION(WhamWeights,"WHAM_WEIGHTS")
+PLUMED_REGISTER_ACTION(WhamWeights,WHAM_WEIGHTS)
 
 void WhamWeights::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys ); keys.remove("LABEL");

@@ -196,7 +196,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(Opt_BachAveragedSGD,"OPT_AVERAGED_SGD")
+PLUMED_REGISTER_ACTION(Opt_BachAveragedSGD,OPT_AVERAGED_SGD)
 
 
 void Opt_BachAveragedSGD::registerKeywords(Keywords& keys) {

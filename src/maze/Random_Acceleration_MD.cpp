@@ -109,7 +109,7 @@ private:
 };
 
 // Register MAZE_RANDOM_ACCELERATION_MD.
-PLUMED_REGISTER_ACTION(Random_Acceleration_MD, "MAZE_RANDOM_ACCELERATION_MD")
+PLUMED_REGISTER_ACTION(Random_Acceleration_MD, MAZE_RANDOM_ACCELERATION_MD)
 
 void Random_Acceleration_MD::registerKeywords(Keywords& keys) {
   Optimizer::registerKeywords(keys);

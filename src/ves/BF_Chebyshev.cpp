@@ -96,7 +96,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(BF_Chebyshev,"BF_CHEBYSHEV")
+PLUMED_REGISTER_ACTION(BF_Chebyshev,BF_CHEBYSHEV)
 
 
 void BF_Chebyshev::registerKeywords(Keywords& keys) {

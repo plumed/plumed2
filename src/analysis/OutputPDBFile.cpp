@@ -53,7 +53,7 @@ public:
   void performAnalysis() override;
 };
 
-PLUMED_REGISTER_ACTION(OutputPDBFile,"OUTPUT_ANALYSIS_DATA_TO_PDB")
+PLUMED_REGISTER_ACTION(OutputPDBFile,OUTPUT_ANALYSIS_DATA_TO_PDB)
 
 void OutputPDBFile::registerKeywords( Keywords& keys ) {
   AnalysisBase::registerKeywords( keys );

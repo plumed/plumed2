@@ -105,7 +105,7 @@ public:
   static void registerKeywords(Keywords& keys );
 };
 
-PLUMED_REGISTER_ACTION(Target,"TARGET")
+PLUMED_REGISTER_ACTION(Target,TARGET)
 
 void Target::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);

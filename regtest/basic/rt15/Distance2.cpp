@@ -40,7 +40,7 @@ public:
   virtual void calculate();
 };
 
-PLUMED_REGISTER_ACTION(Distance,"DISTANCE2")
+PLUMED_REGISTER_ACTION(Distance,DISTANCE2)
 
 void Distance::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords( keys );

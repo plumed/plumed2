@@ -176,7 +176,7 @@ public:
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(OPESexpanded,"OPES_EXPANDED")
+PLUMED_REGISTER_ACTION(OPESexpanded,OPES_EXPANDED)
 
 void OPESexpanded::registerKeywords(Keywords& keys)
 {

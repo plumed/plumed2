@@ -62,7 +62,7 @@ public:
   void apply() override {}
 };
 
-PLUMED_REGISTER_ACTION(EndPlumed,"ENDPLUMED")
+PLUMED_REGISTER_ACTION(EndPlumed,ENDPLUMED)
 
 void EndPlumed::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );

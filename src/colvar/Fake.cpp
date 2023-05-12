@@ -47,7 +47,7 @@ public:
   void calculate() override;
 };
 
-PLUMED_REGISTER_ACTION(ColvarFake,"FAKE")
+PLUMED_REGISTER_ACTION(ColvarFake,FAKE)
 
 void ColvarFake::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );

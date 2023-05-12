@@ -162,7 +162,7 @@ public:
   virtual void calculate();
 };
 
-PLUMED_REGISTER_ACTION(SASA_HASEL,"SASA_HASEL")
+PLUMED_REGISTER_ACTION(SASA_HASEL,SASA_HASEL)
 
 void SASA_HASEL::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);

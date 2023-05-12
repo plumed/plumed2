@@ -136,8 +136,8 @@ public:
   double applyFilter( const double& val, double& df ) const override;
 };
 
-PLUMED_REGISTER_ACTION(FilterMore,"MFILTER_MORE")
-PLUMED_REGISTER_ACTION(FilterMore,"MTRANSFORM_MORE")
+PLUMED_REGISTER_ACTION(FilterMore,MFILTER_MORE)
+PLUMED_REGISTER_ACTION(FilterMore,MTRANSFORM_MORE)
 
 void FilterMore::registerKeywords( Keywords& keys ) {
   MultiColvarFilter::registerKeywords( keys );

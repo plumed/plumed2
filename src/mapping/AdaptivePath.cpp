@@ -110,7 +110,7 @@ public:
   void update() override;
 };
 
-PLUMED_REGISTER_ACTION(AdaptivePath,"ADAPTIVE_PATH")
+PLUMED_REGISTER_ACTION(AdaptivePath,ADAPTIVE_PATH)
 
 void AdaptivePath::registerKeywords( Keywords& keys ) {
   Mapping::registerKeywords( keys ); keys.remove("PROPERTY");

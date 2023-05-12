@@ -66,7 +66,7 @@ public:
   ~DumpForces();
 };
 
-PLUMED_REGISTER_ACTION(DumpForces,"DUMPFORCES")
+PLUMED_REGISTER_ACTION(DumpForces,DUMPFORCES)
 
 void DumpForces::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys);

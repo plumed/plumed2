@@ -93,7 +93,7 @@ public:
   void retrieveDomain( std::string& min, std::string& max ) { min="-pi"; max="+pi"; }
 };
 
-PLUMED_REGISTER_ACTION(InterMolecularTorsions,"INTERMOLECULARTORSIONS")
+PLUMED_REGISTER_ACTION(InterMolecularTorsions,INTERMOLECULARTORSIONS)
 
 void InterMolecularTorsions::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );

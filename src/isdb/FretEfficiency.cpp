@@ -90,7 +90,7 @@ public:
   void calculate() override;
 };
 
-PLUMED_REGISTER_ACTION(FretEfficiency,"FRET")
+PLUMED_REGISTER_ACTION(FretEfficiency,FRET)
 
 void FretEfficiency::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );

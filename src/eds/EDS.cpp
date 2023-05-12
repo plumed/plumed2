@@ -277,7 +277,7 @@ public:
   ~EDS();
 };
 
-PLUMED_REGISTER_ACTION(EDS, "EDS")
+PLUMED_REGISTER_ACTION(EDS, EDS)
 
 void EDS::registerKeywords(Keywords &keys)
 {

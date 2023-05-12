@@ -73,7 +73,7 @@ public:
   void performTask( const unsigned&, const unsigned&, MultiValue& ) const override { plumed_error(); }
 };
 
-PLUMED_REGISTER_ACTION(ReadDissimilarityMatrix,"READ_DISSIMILARITY_MATRIX")
+PLUMED_REGISTER_ACTION(ReadDissimilarityMatrix,READ_DISSIMILARITY_MATRIX)
 
 void ReadDissimilarityMatrix::registerKeywords( Keywords& keys ) {
   AnalysisBase::registerKeywords( keys );

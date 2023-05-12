@@ -63,7 +63,7 @@ public:
   double getWeight( const unsigned& idata ) override;
 };
 
-PLUMED_REGISTER_ACTION(SketchMapRead,"SKETCHMAP_READ")
+PLUMED_REGISTER_ACTION(SketchMapRead,SKETCHMAP_READ)
 
 void SketchMapRead::registerKeywords( Keywords& keys ) {
   SketchMapBase::registerKeywords( keys ); keys.remove("USE_OUTPUT_DATA_FROM");

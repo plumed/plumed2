@@ -80,7 +80,7 @@ public:
   double calculateCubicHarmonic( const Vector& distance, const double& d2, Vector& myder ) const override;
 };
 
-PLUMED_REGISTER_ACTION(Tetrahedral,"TETRAHEDRAL")
+PLUMED_REGISTER_ACTION(Tetrahedral,TETRAHEDRAL)
 
 void Tetrahedral::registerKeywords( Keywords& keys ) {
   CubicHarmonicBase::registerKeywords( keys );

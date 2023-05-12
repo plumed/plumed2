@@ -115,7 +115,7 @@ public:
 
 using namespace std;
 
-PLUMED_REGISTER_ACTION(FUNNEL_PS,"FUNNEL_PS")
+PLUMED_REGISTER_ACTION(FUNNEL_PS,FUNNEL_PS)
 
 void FUNNEL_PS::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords( keys );

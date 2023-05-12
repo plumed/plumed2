@@ -93,7 +93,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(OutputBasisFunctions,"VES_OUTPUT_BASISFUNCTIONS")
+PLUMED_REGISTER_ACTION(OutputBasisFunctions,VES_OUTPUT_BASISFUNCTIONS)
 
 void OutputBasisFunctions::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys);

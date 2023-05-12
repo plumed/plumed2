@@ -67,7 +67,7 @@ public:
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(Restraint,"RESTRAINT")
+PLUMED_REGISTER_ACTION(Restraint,RESTRAINT)
 
 void Restraint::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);

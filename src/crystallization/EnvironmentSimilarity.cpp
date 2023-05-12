@@ -214,7 +214,7 @@ public:
   void parseReferenceEnvironments( std::vector<std::vector<Vector>>& environments,  std::vector<std::vector<std::string>>& environmentsAtomNames, double& max_dist);
 };
 
-PLUMED_REGISTER_ACTION(EnvironmentSimilarity,"ENVIRONMENTSIMILARITY")
+PLUMED_REGISTER_ACTION(EnvironmentSimilarity,ENVIRONMENTSIMILARITY)
 
 void EnvironmentSimilarity::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );

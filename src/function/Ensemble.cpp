@@ -68,7 +68,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(Ensemble,"ENSEMBLE")
+PLUMED_REGISTER_ACTION(Ensemble,ENSEMBLE)
 
 void Ensemble::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);

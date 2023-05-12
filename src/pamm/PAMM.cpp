@@ -129,7 +129,7 @@ public:
   bool isPeriodic() override { return false; }
 };
 
-PLUMED_REGISTER_ACTION(PAMM,"PAMM")
+PLUMED_REGISTER_ACTION(PAMM,PAMM)
 
 void PAMM::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );

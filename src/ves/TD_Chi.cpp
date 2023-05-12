@@ -88,7 +88,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(TD_Chi,"TD_CHI")
+PLUMED_REGISTER_ACTION(TD_Chi,TD_CHI)
 
 
 void TD_Chi::registerKeywords(Keywords& keys) {

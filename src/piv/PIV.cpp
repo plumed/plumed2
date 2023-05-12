@@ -231,7 +231,7 @@ public:
   void checkFieldsAllowed() {}
 };
 
-PLUMED_REGISTER_ACTION(PIV,"PIV")
+PLUMED_REGISTER_ACTION(PIV,PIV)
 
 void PIV::registerKeywords( Keywords& keys )
 {

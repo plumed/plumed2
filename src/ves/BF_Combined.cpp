@@ -74,7 +74,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(BF_Combined,"BF_COMBINED")
+PLUMED_REGISTER_ACTION(BF_Combined,BF_COMBINED)
 
 
 void BF_Combined::registerKeywords(Keywords& keys) {

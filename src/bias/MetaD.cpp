@@ -519,7 +519,7 @@ public:
   bool checkNeedsGradients()const override;
 };
 
-PLUMED_REGISTER_ACTION(MetaD,"METAD")
+PLUMED_REGISTER_ACTION(MetaD,METAD)
 
 void MetaD::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);

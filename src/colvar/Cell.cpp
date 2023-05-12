@@ -55,7 +55,7 @@ public:
   static void registerKeywords( Keywords& keys );
 };
 
-PLUMED_REGISTER_ACTION(Cell,"CELL")
+PLUMED_REGISTER_ACTION(Cell,CELL)
 
 Cell::Cell(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao)

@@ -46,7 +46,7 @@ public:
   void selectLandmarks() override;
 };
 
-PLUMED_REGISTER_ACTION(ReselectLandmarks,"RESELECT_LANDMARKS")
+PLUMED_REGISTER_ACTION(ReselectLandmarks,RESELECT_LANDMARKS)
 
 void ReselectLandmarks::registerKeywords( Keywords& keys ) {
   LandmarkSelectionBase::registerKeywords(keys);

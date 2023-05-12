@@ -41,7 +41,7 @@ public:
   void selectLandmarks() override;
 };
 
-PLUMED_REGISTER_ACTION(SelectWithStride,"LANDMARK_SELECT_STRIDE")
+PLUMED_REGISTER_ACTION(SelectWithStride,LANDMARK_SELECT_STRIDE)
 
 void SelectWithStride::registerKeywords( Keywords& keys ) {
   LandmarkSelectionBase::registerKeywords( keys );

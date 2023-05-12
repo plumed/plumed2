@@ -140,7 +140,7 @@ public:
   void update() override ;
 };
 
-PLUMED_REGISTER_ACTION(DumpAtoms,"DUMPATOMS")
+PLUMED_REGISTER_ACTION(DumpAtoms,DUMPATOMS)
 
 void DumpAtoms::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );

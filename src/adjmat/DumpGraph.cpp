@@ -60,7 +60,7 @@ public:
   void update() override;
 };
 
-PLUMED_REGISTER_ACTION(DumpGraph,"DUMPGRAPH")
+PLUMED_REGISTER_ACTION(DumpGraph,DUMPGRAPH)
 
 void DumpGraph::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionPilot::registerKeywords( keys );

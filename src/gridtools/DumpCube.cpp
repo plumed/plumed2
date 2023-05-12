@@ -70,7 +70,7 @@ public:
   void printGrid( OFile& ofile ) const override;
 };
 
-PLUMED_REGISTER_ACTION(DumpCube,"DUMPCUBE")
+PLUMED_REGISTER_ACTION(DumpCube,DUMPCUBE)
 
 void DumpCube::registerKeywords( Keywords& keys ) {
   GridPrintingBase::registerKeywords( keys );

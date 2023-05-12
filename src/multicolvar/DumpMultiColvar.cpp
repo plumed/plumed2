@@ -80,7 +80,7 @@ public:
   void update() override;
 };
 
-PLUMED_REGISTER_ACTION(DumpMultiColvar,"DUMPMULTICOLVAR")
+PLUMED_REGISTER_ACTION(DumpMultiColvar,DUMPMULTICOLVAR)
 
 void DumpMultiColvar::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );

@@ -114,7 +114,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(TD_Grid,"TD_GRID")
+PLUMED_REGISTER_ACTION(TD_Grid,TD_GRID)
 
 
 void TD_Grid::registerKeywords(Keywords& keys) {

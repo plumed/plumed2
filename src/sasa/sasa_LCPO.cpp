@@ -160,7 +160,7 @@ public:
   virtual void calculate();
 };
 
-PLUMED_REGISTER_ACTION(SASA_LCPO,"SASA_LCPO")
+PLUMED_REGISTER_ACTION(SASA_LCPO,SASA_LCPO)
 
 void SASA_LCPO::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);

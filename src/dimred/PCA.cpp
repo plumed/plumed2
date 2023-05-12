@@ -97,7 +97,7 @@ OUTPUT_PCA_PROJECTION USE_OUTPUT_DATA_FROM=pca STRIDE=100 FILE=PCA-comp.pdb
 namespace PLMD {
 namespace dimred {
 
-PLUMED_REGISTER_ACTION(PCA,"PCA")
+PLUMED_REGISTER_ACTION(PCA,PCA)
 
 void PCA::registerKeywords( Keywords& keys ) {
   DimensionalityReductionBase::registerKeywords( keys ); keys.use("ARG"); keys.reset_style("ARG","optional");

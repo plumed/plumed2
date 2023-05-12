@@ -61,7 +61,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(Sort,"SORT")
+PLUMED_REGISTER_ACTION(Sort,SORT)
 
 void Sort::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);

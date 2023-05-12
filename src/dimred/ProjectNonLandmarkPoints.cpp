@@ -66,7 +66,7 @@ public:
   void performTask( const unsigned&, const unsigned&, MultiValue& ) const { plumed_error(); }
 };
 
-PLUMED_REGISTER_ACTION(ProjectNonLandmarkPoints,"PROJECT_ALL_ANALYSIS_DATA")
+PLUMED_REGISTER_ACTION(ProjectNonLandmarkPoints,PROJECT_ALL_ANALYSIS_DATA)
 
 void ProjectNonLandmarkPoints::registerKeywords( Keywords& keys ) {
   analysis::AnalysisBase::registerKeywords( keys );

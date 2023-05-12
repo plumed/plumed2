@@ -73,7 +73,7 @@ public:
                                 Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const override;
 };
 
-PLUMED_REGISTER_ACTION(PolymerAngles,"POLYMER_ANGLES")
+PLUMED_REGISTER_ACTION(PolymerAngles,POLYMER_ANGLES)
 
 void PolymerAngles::registerKeywords( Keywords& keys ) {
   OrientationSphere::registerKeywords(keys);

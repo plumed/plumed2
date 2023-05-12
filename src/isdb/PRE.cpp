@@ -86,7 +86,7 @@ public:
   void update() override;
 };
 
-PLUMED_REGISTER_ACTION(PRE,"PRE")
+PLUMED_REGISTER_ACTION(PRE,PRE)
 
 void PRE::registerKeywords( Keywords& keys ) {
   componentsAreNotOptional(keys);

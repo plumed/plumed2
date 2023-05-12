@@ -92,7 +92,7 @@ public:
   bool isPeriodic() override { return false; }
 };
 
-PLUMED_REGISTER_ACTION(CoordinationNumbers,"COORDINATIONNUMBER")
+PLUMED_REGISTER_ACTION(CoordinationNumbers,COORDINATIONNUMBER)
 
 void CoordinationNumbers::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );

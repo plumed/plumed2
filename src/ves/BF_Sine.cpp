@@ -90,7 +90,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(BF_Sine,"BF_SINE")
+PLUMED_REGISTER_ACTION(BF_Sine,BF_SINE)
 
 
 void BF_Sine::registerKeywords(Keywords& keys) {

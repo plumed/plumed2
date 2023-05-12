@@ -282,7 +282,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(Metainference,"METAINFERENCE")
+PLUMED_REGISTER_ACTION(Metainference,METAINFERENCE)
 
 void Metainference::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);

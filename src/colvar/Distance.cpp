@@ -115,7 +115,7 @@ public:
   void calculate() override;
 };
 
-PLUMED_REGISTER_ACTION(Distance,"DISTANCE")
+PLUMED_REGISTER_ACTION(Distance,DISTANCE)
 
 void Distance::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );

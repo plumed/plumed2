@@ -159,7 +159,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(Rescale,"RESCALE")
+PLUMED_REGISTER_ACTION(Rescale,RESCALE)
 
 void Rescale::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);

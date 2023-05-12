@@ -164,7 +164,7 @@ public:
   ~FISST();
 };
 
-PLUMED_REGISTER_ACTION(FISST,"FISST")
+PLUMED_REGISTER_ACTION(FISST,FISST)
 
 void FISST::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);

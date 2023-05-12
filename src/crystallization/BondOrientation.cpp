@@ -47,7 +47,7 @@ public:
   void calculateVector( multicolvar::AtomValuePack& myatoms ) const override;
 };
 
-PLUMED_REGISTER_ACTION(BondOrientation,"BOND_DIRECTIONS")
+PLUMED_REGISTER_ACTION(BondOrientation,BOND_DIRECTIONS)
 
 void BondOrientation::registerKeywords( Keywords& keys ) {
   VectorMultiColvar::registerKeywords( keys );

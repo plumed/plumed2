@@ -169,7 +169,7 @@ public:
   }
 };
 
-PLUMED_REGISTER_ACTION(Plumed,"PLUMED")
+PLUMED_REGISTER_ACTION(Plumed,PLUMED)
 
 void Plumed::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );

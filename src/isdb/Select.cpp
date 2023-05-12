@@ -74,7 +74,7 @@ public:
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(Select,"SELECT")
+PLUMED_REGISTER_ACTION(Select,SELECT)
 
 void Select::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);

@@ -126,7 +126,7 @@ public:
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(ExtendedLagrangian,"EXTENDED_LAGRANGIAN")
+PLUMED_REGISTER_ACTION(ExtendedLagrangian,EXTENDED_LAGRANGIAN)
 
 void ExtendedLagrangian::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);

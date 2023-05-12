@@ -86,7 +86,7 @@ public:
   void update() override;
 };
 
-PLUMED_REGISTER_ACTION(OutputCluster,"OUTPUT_CLUSTER")
+PLUMED_REGISTER_ACTION(OutputCluster,OUTPUT_CLUSTER)
 
 void OutputCluster::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );

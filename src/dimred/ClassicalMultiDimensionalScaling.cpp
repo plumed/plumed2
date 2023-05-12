@@ -166,7 +166,7 @@ public:
   void calculateProjections( const Matrix<double>&, Matrix<double>& ) override;
 };
 
-PLUMED_REGISTER_ACTION(ClassicalMultiDimensionalScaling,"CLASSICAL_MDS")
+PLUMED_REGISTER_ACTION(ClassicalMultiDimensionalScaling,CLASSICAL_MDS)
 
 void ClassicalMultiDimensionalScaling::registerKeywords( Keywords& keys ) {
   DimensionalityReductionBase::registerKeywords( keys );

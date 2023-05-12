@@ -111,7 +111,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(TD_GeneralizedNormal,"TD_GENERALIZED_NORMAL")
+PLUMED_REGISTER_ACTION(TD_GeneralizedNormal,TD_GENERALIZED_NORMAL)
 
 
 void TD_GeneralizedNormal::registerKeywords(Keywords& keys) {

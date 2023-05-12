@@ -72,7 +72,7 @@ public:
   double getLogWeight() override;
 };
 
-PLUMED_REGISTER_ACTION(ReweightMetad,"REWEIGHT_METAD")
+PLUMED_REGISTER_ACTION(ReweightMetad,REWEIGHT_METAD)
 
 void ReweightMetad::registerKeywords(Keywords& keys ) {
   ReweightBase::registerKeywords( keys ); keys.remove("ARG");

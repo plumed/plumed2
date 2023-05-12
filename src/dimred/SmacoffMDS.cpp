@@ -45,7 +45,7 @@ public:
   void calculateProjections( const Matrix<double>&, Matrix<double>& ) override;
 };
 
-PLUMED_REGISTER_ACTION(SmacofMDS,"SMACOF_MDS")
+PLUMED_REGISTER_ACTION(SmacofMDS,SMACOF_MDS)
 
 void SmacofMDS::registerKeywords( Keywords& keys ) {
   DimensionalityReductionBase::registerKeywords( keys );

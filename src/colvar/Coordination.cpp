@@ -102,7 +102,7 @@ public:
   double pairing(double distance,double&dfunc,unsigned i,unsigned j)const override;
 };
 
-PLUMED_REGISTER_ACTION(Coordination,"COORDINATION")
+PLUMED_REGISTER_ACTION(Coordination,COORDINATION)
 
 void Coordination::registerKeywords( Keywords& keys ) {
   CoordinationBase::registerKeywords(keys);

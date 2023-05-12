@@ -113,7 +113,7 @@ public:
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(ERMSD,"ERMSD")
+PLUMED_REGISTER_ACTION(ERMSD,ERMSD)
 
 void ERMSD::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);

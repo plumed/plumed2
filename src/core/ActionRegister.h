@@ -27,6 +27,7 @@
 #include <set>
 #include <iosfwd>
 #include "tools/Keywords.h"
+#include "tools/Tools.h"
 #include <memory>
 
 namespace PLMD {
@@ -62,6 +63,14 @@ public:
 /// \param cp A pointer to a function which creates an object of that class
 /// \param kp A pointer to a function which returns the allowed keywords
   void add(std::string key,creator_pointer cp,keywords_pointer kp);
+  template<typename PLMDActionType>
+  void add(const std::string& key){
+  this->add(key,
+  [](const PLMD::ActionOptions&ao)->std::unique_ptr<PLMD::Action> {
+    return PLMD::Tools::make_unique<PLMDActionType>(ao);
+    },
+    PLMDActionType::registerKeywords);
+  }
 /// Verify if a directive is present in the register
   bool check(const std::string & action);
 /// Create an Action of the type indicated in the options
@@ -100,6 +109,7 @@ std::ostream & operator<<(std::ostream &log,const ActionRegister&ar);
 /// \param classname the name of the class to be registered
 /// \param directive a string containing the corresponding directive
 /// This macro should be used in the .cpp file of the corresponding class
+/**
 #define PLUMED_REGISTER_ACTION(classname,directive) \
   namespace { class PLUMED_UNIQUENAME(classname##RegisterMe){ \
     static std::unique_ptr<PLMD::Action> create(const PLMD::ActionOptions&ao){return PLMD::Tools::make_unique<classname>(ao);} \
@@ -107,7 +117,45 @@ std::ostream & operator<<(std::ostream &log,const ActionRegister&ar);
     PLUMED_UNIQUENAME(classname##RegisterMe)(){PLMD::actionRegister().add(directive,create,classname::registerKeywords);} \
     ~PLUMED_UNIQUENAME(classname##RegisterMe)(){PLMD::actionRegister().remove(create);} \
   } PLUMED_UNIQUENAME(classname##RegisterMe); }
+* /
+namespace PLMD{
+//namespace actionSetup{
+template<typename ActionType>
+void myregisterAction(const std::string& key){
+  PLMD::actionRegister().add(key,
+  [](const PLMD::ActionOptions&ao)->std::unique_ptr<PLMD::Action> {
+    return PLMD::Tools::make_unique<ActionType>(ao);
+    },
+    ActionType::registerKeywords);
+}
+//}
+}*/
+/*
+#define PLUMED_REGISTER_ACTION(classname,directive) \
+  template<>\
+  ::PLMD::PLMD::actionRegister()<classname>(directive);
+*/
+//in C++20 you we'll make this a concept a change typename in plumedRegisterer
+template<typename T>
+inline constexpr bool isActionType = std::is_base_of<::PLMD::Action, T>::value;
+//concept ActionType = std::is_base_of<::PLMD::Action, T>::value;
+//and the next template will be template<ActionType ActionType>
 
+template<typename ActionClass>
+class plumedRegisterer{ 
+    static ::std::unique_ptr<::PLMD::Action> create(const ::PLMD::ActionOptions&ao){
+      return ::PLMD::Tools::make_unique<ActionClass>(ao);
+      } 
+  public: 
+    plumedRegisterer(std::string directive){
+      static_assert(isActionType<ActionClass>,"plumedRegisterer accepts only class that inherit from Action");
+      ::PLMD::actionRegister().add(directive,create,ActionClass::registerKeywords);
+      }
+    ~plumedRegisterer(){::PLMD::actionRegister().remove(create);} 
+};
+
+#define PLUMED_REGISTER_ACTION(classname,directive) plumedRegisterer<classname> directive##Registerer(#directive); 
+  
 
 #endif
 

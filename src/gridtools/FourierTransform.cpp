@@ -84,7 +84,7 @@ public:
   bool isPeriodic() override { return false; }
 };
 
-PLUMED_REGISTER_ACTION(FourierTransform,"FOURIER_TRANSFORM")
+PLUMED_REGISTER_ACTION(FourierTransform,FOURIER_TRANSFORM)
 
 void FourierTransform::registerKeywords( Keywords& keys ) {
   ActionWithInputGrid::registerKeywords( keys ); keys.remove("BANDWIDTH"); keys.remove("KERNEL");

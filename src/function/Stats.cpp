@@ -67,7 +67,7 @@ public:
 };
 
 
-PLUMED_REGISTER_ACTION(Stats,"STATS")
+PLUMED_REGISTER_ACTION(Stats,STATS)
 
 void Stats::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);

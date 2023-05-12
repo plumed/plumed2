@@ -94,7 +94,7 @@ public:
   ~UpdateIf();
 };
 
-PLUMED_REGISTER_ACTION(UpdateIf,"UPDATE_IF")
+PLUMED_REGISTER_ACTION(UpdateIf,UPDATE_IF)
 
 void UpdateIf::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys);

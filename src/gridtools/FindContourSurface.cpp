@@ -103,7 +103,7 @@ public:
   void finishAveraging() override;
 };
 
-PLUMED_REGISTER_ACTION(FindContourSurface,"FIND_CONTOUR_SURFACE")
+PLUMED_REGISTER_ACTION(FindContourSurface,FIND_CONTOUR_SURFACE)
 
 void FindContourSurface::registerKeywords( Keywords& keys ) {
   ContourFindingBase::registerKeywords( keys );

@@ -120,7 +120,7 @@ private:
   void do_regression_zero(const std::vector<double> &mean);
 };
 
-PLUMED_REGISTER_ACTION(Caliber,"CALIBER")
+PLUMED_REGISTER_ACTION(Caliber,CALIBER)
 
 void Caliber::registerKeywords( Keywords& keys ) {
   Bias::registerKeywords(keys);

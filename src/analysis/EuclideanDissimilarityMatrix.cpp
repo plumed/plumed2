@@ -57,7 +57,7 @@ public:
   void performTask( const unsigned&, const unsigned&, MultiValue& ) const override { plumed_error(); }
 };
 
-PLUMED_REGISTER_ACTION(EuclideanDissimilarityMatrix,"EUCLIDEAN_DISSIMILARITIES")
+PLUMED_REGISTER_ACTION(PLMD::analysis::EuclideanDissimilarityMatrix,EUCLIDEAN_DISSIMILARITIES)
 
 void EuclideanDissimilarityMatrix::registerKeywords( Keywords& keys ) {
   AnalysisBase::registerKeywords( keys ); keys.use("ARG"); keys.reset_style("ARG","optional");

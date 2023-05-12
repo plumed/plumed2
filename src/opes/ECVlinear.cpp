@@ -92,7 +92,7 @@ public:
   void initECVs_restart(const std::vector<std::string>&) override;
 };
 
-PLUMED_REGISTER_ACTION(ECVlinear,"ECV_LINEAR")
+PLUMED_REGISTER_ACTION(ECVlinear,ECV_LINEAR)
 
 void ECVlinear::registerKeywords(Keywords& keys)
 {

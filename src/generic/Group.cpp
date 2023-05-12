@@ -140,7 +140,7 @@ public:
   void apply() override {}
 };
 
-PLUMED_REGISTER_ACTION(Group,"GROUP")
+PLUMED_REGISTER_ACTION(Group,GROUP)
 
 Group::Group(const ActionOptions&ao):
   Action(ao),

@@ -66,7 +66,7 @@ public:
   static void registerKeywords( Keywords& keys );
 };
 
-PLUMED_REGISTER_ACTION(Constant,"CONSTANT")
+PLUMED_REGISTER_ACTION(Constant,CONSTANT)
 
 Constant::Constant(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao)
