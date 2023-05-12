@@ -121,7 +121,7 @@ public:
 /// \relates PLMD::ActionRegister
 /// For easier registration, this file also provides a macro PLUMED_REGISTER_ACTION.
 /// \param classname the name of the class to be registered
-/// \param directive a name of the corresponding directive, do not use a string, the macro will convert it to a string
+/// \param directive a string containing the corresponding directive
 /// This macro should be used in the .cpp file of the corresponding class
 #define PLUMED_REGISTER_ACTION(classname,directive) \
   namespace {::PLMD::ActionRegistration<classname> PLUMED_CONCATENATE(classname##Registerer,__LINE__)(directive);}
