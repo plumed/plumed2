@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017-2020 The plumed team
+   Copyright (c) 2017-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -62,7 +62,7 @@ ExtraCV::ExtraCV(const ActionOptions&ao):
   ActionShortcut(ao)
 {
   std::vector<std::string> argn(1); parse("NAME",argn[0]);
-  readInputLine( argn[0] + ": PUT UNIT=number SHAPE=0 PERIODIC=NO");
+  readInputLine( argn[0] + ": PUT UNIT=number SHAPE=0 MUTABLE PERIODIC=NO");
   if( getShortcutLabel()!=argn[0] ) readInputLine( getShortcutLabel() + ": COMBINE ARG=" + argn[0] + " PERIODIC=NO");
 }
 

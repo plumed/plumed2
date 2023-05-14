@@ -214,6 +214,7 @@ PlumedMain::PlumedMain():
   doCheckPoint(false),
   stopNow(false),
   novirial(false),
+  name_of_energy(""),
   detailedTimers(false),
   gpuDeviceId(-1)
 {
@@ -302,7 +303,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_setEnergy:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setEnergy(val);
+        if( name_of_energy!="" ) setInputValue( name_of_energy, 0, 1,  val );
         break;
       case cmd_setForces:
         CHECK_INIT(initialized,word);
@@ -715,10 +716,17 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         runJobsAtEndOfCalculation();
         break;
       case cmd_isEnergyNeeded:
+      {
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        if(atoms.isEnergyNeeded()) val.set(int(1));
-        else                       val.set(int(0));
+        if( name_of_energy =="" ) {
+            val.set(int(0));
+        } else {
+            ActionToPutData* ap=actionSet.selectWithLabel<ActionToPutData*>(name_of_energy);
+            if(ap->isActive()) val.set(int(1));
+            else               val.set(int(0));
+        }
+      }
         break;
       case cmd_getBias:
         CHECK_INIT(initialized,word);
@@ -1320,6 +1328,10 @@ void PlumedMain::readBinary(std::istream&i) {
   atoms.readBinary(i);
   for(const auto & ip : inputs) ip->readBinary(i);
 }
+
+void PlumedMain::setEnergyValue( const std::string& name ) {
+  name_of_energy = name; 
+}   
 
 #ifdef __PLUMED_HAS_PYTHON
 // This is here to stop cppcheck throwing an error

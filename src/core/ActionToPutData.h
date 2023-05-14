@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017-2020 The plumed team
+   Copyright (c) 2017-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -41,6 +41,8 @@ private:
   bool fixed;
 /// Is this quantity passed from the domains
   bool from_domains;
+/// Is PLUMED allowed to change the value of this pointer
+  bool resetable;
 /// Are we allowed to set data at this time
   bool dataCanBeSet;
 /// The unit of the value that has been passed to plumed

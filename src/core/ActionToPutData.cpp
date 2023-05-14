@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017-2020 The plumed team
+   Copyright (c) 2017-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -47,6 +47,7 @@ void ActionToPutData::registerKeywords(Keywords& keys) {
            "to deal with pbc");
   keys.addFlag("CONSTANT",false,"does this quantity not depend on time");
   keys.addFlag("FROM_DOMAINS",false,"is this quantity passed through the domain decomposition object");
+  keys.addFlag("MUTABLE",false,"can plumed change the value of the pointer that is passed from the MD code");
 }
 
 ActionToPutData::ActionToPutData(const ActionOptions&ao):
@@ -75,7 +76,7 @@ ActionToPutData::ActionToPutData(const ActionOptions&ao):
     else  error("input to PERIODIC keyword does not make sense");
 
     parseFlag("CONSTANT",fixed); if( fixed ) { noforce=true; copyOutput(0)->setConstant(); }
-    parseFlag("FROM_DOMAINS",from_domains);
+    parseFlag("FROM_DOMAINS",from_domains); parseFlag("MUTABLE",resetable);
   }
 }
 
@@ -120,11 +121,11 @@ bool ActionToPutData::setValuePointer( const std::string& name, const TypesafePt
   if( name!=getLabel() ) return false;
   wasset=true; plumed_massert( dataCanBeSet, "set " + getLabel() + " cannot be set at this time");
   if( !from_domains ) {
-    if( fixed && getPntrToComponent(0)->getRank()==0 ) {
+    if( !resetable && getPntrToComponent(0)->getRank()==0 ) {
       mydata->saveValueAsDouble( val );
-      mydata->share_data( 0, getPntrToValue()->getNumberOfValues(), getPntrToValue() );
-    } else mydata->setValuePointer(val,getPntrToComponent(0)->getShape(),true);
-  } else mydata->setValuePointer(val,std::vector<unsigned>(), true);
+      if( fixed ) mydata->share_data( 0, getPntrToValue()->getNumberOfValues(), getPntrToValue() );
+    } else mydata->setValuePointer(val,getPntrToComponent(0)->getShape(), !resetable);
+  } else mydata->setValuePointer(val,std::vector<unsigned>(), !resetable);
   return true;
 }
 
