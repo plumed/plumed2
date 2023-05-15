@@ -98,7 +98,7 @@ inline constexpr bool isActionType = std::is_base_of<Action, T>::value;
 
 ///Each instance of this specialized class represents an action that can be called
 ///with  the specified directive.
-///As soon it goes out of scope it will deregister the directive from ActionRegister
+///As soon it goes out of scope it will deregister the directive from the singleton ActionRegister
 template<typename ActionClass>
 class ActionRegistration {
   static std::unique_ptr<Action> create(const ActionOptions&ao) {
@@ -107,12 +107,14 @@ class ActionRegistration {
 public:
   ///On construction register the ActionClass with the wanted directive
   ActionRegistration(std::string_view directive) {
-    static_assert(isActionType<ActionClass>,"ActionRegistration accepts only class that inherit from Action");
+    static_assert(isActionType<ActionClass>,
+                  "ActionRegistration accepts only class that inherit from Action");
     actionRegister().add(directive.data(),create,ActionClass::registerKeywords);
   }
   ///On destruction deregister the ActionClass (useful when you unload a shared object)
   ~ActionRegistration() {actionRegister().remove(create);}
 };
+} //PLMD
 
 #define PLUMED_CONCATENATE_DIRECT(s1, s2) s1##s2
 #define PLUMED_CONCATENATE(s1, s2) PLUMED_CONCATENATE_DIRECT(s1, s2)
@@ -124,8 +126,7 @@ public:
 /// \param directive a string containing the corresponding directive
 /// This macro should be used in the .cpp file of the corresponding class
 #define PLUMED_REGISTER_ACTION(classname,directive) \
-  namespace {::PLMD::ActionRegistration<classname> PLUMED_CONCATENATE(classname##Registerer,__LINE__)(directive);}
-
-} //PLMD
+  namespace {::PLMD::ActionRegistration<classname> \
+             PLUMED_CONCATENATE(classname##Registerer,__LINE__)(directive);}
 #endif
 
