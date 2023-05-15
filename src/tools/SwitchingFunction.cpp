@@ -36,7 +36,7 @@ Functions that measure whether values are less than a certain quantity.
 
 Switching functions \f$s(r)\f$ take a minimum of one input parameter \f$r_0\f$.
 For \f$r \le d_0 \quad s(r)=1.0\f$ while for \f$r > d_0\f$ the function decays smoothly to 0.
-The various switching functions available in plumed differ in terms of how this decay is performed.
+The various switching functions available in PLUMED differ in terms of how this decay is performed.
 
 Where there is an accepted convention in the literature (e.g. \ref COORDINATION) on the form of the
 switching function we use the convention as the default.  However, the flexibility to use different
@@ -47,7 +47,7 @@ takes an input with the following form:
 KEYWORD={TYPE <list of parameters>}
 \endverbatim
 
-The following table contains a list of the various switching functions that are available in plumed 2
+The following table contains a list of the various switching functions that are available in PLUMED 2
 together with an example input.
 
 <table align=center frame=void width=95%% cellpadding=5%%>
@@ -110,10 +110,11 @@ s(r) = 1 - \tanh\left( \frac{ r - d_0 }{ r_0 } \right)
 </td> <td> </td>
 </tr> <tr>
 <td> COSINUS </td> <td>
-\f$
-s(r) &= 1  & if r<=d0
-s(r) &= 0.5 \left( \cos ( \frac{ r - d_0 }{ r_0 } * PI ) + 1 \right) & if d0<r<=d0+r0
-s(r) &= 0  & if r> d0+r0
+\f$s(r) =\left\{\begin{array}{ll}
+   1                                                           & \mathrm{if } r \leq d_0 \\
+   0.5 \left( \cos ( \frac{ r - d_0 }{ r_0 } \pi ) + 1 \right) & \mathrm{if } d_0 < r\leq d_0 + r_0 \\
+   0                                                           & \mathrm{if } r < d_0 + r_0
+  \end{array}\right.
 \f$
 </td> <td>
 {COSINUS R_0=\f$r_0\f$ D_0=\f$d_0\f$}

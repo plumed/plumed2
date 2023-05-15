@@ -15,7 +15,7 @@ env:
 
 jobs:
   linux:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -47,6 +47,8 @@ jobs:
         echo "LIBRARY_PATH=$HOME/opt/lib:$LIBRARY_PATH" >> $GITHUB_ENV
         echo "LD_LIBRARY_PATH=$HOME/opt/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
         echo "PYTHONPATH=$HOME/opt/lib/plumed/python:$PYTHONPATH" >> $GITHUB_ENV
+        # this is to avoid errors on ubuntu 22. this is overridden in intel build
+        echo "FC=gfortran -fallow-argument-mismatch" >> $GITHUB_ENV
     - name: Install generic packages
       run: |
         sudo apt-get update -qq
@@ -188,7 +190,7 @@ jobs:
          echo "$HOME/opt/bin" >> $GITHUB_PATH
     - name: Install requirements
       run: |
-        .ci/install.cppcheck 2.10.2
+        .ci/install.cppcheck 2.10.3
         # it is important that this is the same version used to generate the actual ./configure
         .ci/install.autoconf 2.69
     - name: Build astyle

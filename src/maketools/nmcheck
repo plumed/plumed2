@@ -2,9 +2,10 @@
 
 # NOTE: boost have unique global symbols and using them would make plumed lib not unloadable
 # NOTE: also shared_ptr in some GNU library version has the same problem :-( This seems not solvable.
+# NOTE: ubuntu 22 have something in the std library, I remove std:: from the checks (GB)
 # NOTE: also libtorch (in particular the c10 library) has unique global symbols [added by luigibonati]
 
-LIST=$(nm -C "$@" 2>/dev/null | grep " u " | grep -v "boost::" | grep -v "c10::" | grep -v "std::_Sp_make_shared_tag")
+LIST=$(nm -C "$@" 2>/dev/null | grep " u " | grep -v "boost::" | grep -v "c10::" | grep -v "std::_Sp_make_shared_tag" | grep -v " std::")
 
 FAILED=
 
