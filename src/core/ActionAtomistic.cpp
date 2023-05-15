@@ -27,7 +27,7 @@
 #include <vector>
 #include <string>
 #include "ActionWithValue.h"
-#include "Colvar.h"
+#include "Group.h"
 #include "ActionWithVirtualAtom.h"
 #include "tools/Exception.h"
 #include "Atoms.h"
@@ -192,11 +192,11 @@ void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::ve
   } else {
     if ( !parseNumberedVector(key,num,strings) ) return;
   }
-  interpretAtomList( strings, t );
+  t.resize(0); interpretAtomList( strings, t );
 }
 
 void ActionAtomistic::interpretAtomList(std::vector<std::string>& strings, std::vector<AtomNumber> &t) {
-  Tools::interpretRanges(strings); t.resize(0);
+  Tools::interpretRanges(strings);
   for(unsigned i=0; i<strings.size(); ++i) {
     AtomNumber atom;
     bool ok=Tools::convertNoexcept(strings[i],atom); // this is converting strings to AtomNumbers
@@ -227,10 +227,16 @@ void ActionAtomistic::interpretAtomList(std::vector<std::string>& strings, std::
     }
 // here we check if the atom name is the name of a group
     if(!ok) {
-      if(atoms.groups.count(strings[i])) {
-        const auto m=atoms.groups.find(strings[i]);
-        t.insert(t.end(),m->second.begin(),m->second.end());
-        ok=true;
+      Group* mygrp=plumed.getActionSet().selectWithLabel<Group*>(strings[i]);
+      if(mygrp) {
+        std::vector<std::string> grp_str( mygrp->getGroupAtoms() );
+        interpretAtomList( grp_str, t ); ok=true;
+      } else {
+        Group* mygrp2=plumed.getActionSet().selectWithLabel<Group*>(strings[i]+"_grp");
+        if(mygrp2) {
+           std::vector<std::string> grp_str( mygrp2->getGroupAtoms() );
+           interpretAtomList( grp_str, t ); ok=true;
+        }
       }
     }
 // here we check if the atom name is the name of an added virtual atom
@@ -255,8 +261,6 @@ void ActionAtomistic::retrieveAtoms() {
     PbcAction* pbca = dynamic_cast<PbcAction*>( boxValue->getPntrToAction() );
     plumed_assert( pbca ); pbc=pbca->pbc;
   }
-  Colvar*cc=dynamic_cast<Colvar*>(this);
-  if(cc && cc->checkIsEnergy()) energy=atoms.getEnergy();
   if( donotretrieve || indexes.size()==0 ) return;
   ActionToPutData* cv = dynamic_cast<ActionToPutData*>( chargev[0]->getPntrToAction() );
   chargesWereSet=cv->hasBeenSet();
@@ -301,8 +305,6 @@ Tensor ActionAtomistic::getVirial() const {
 }
 
 void ActionAtomistic::readAtomsFromPDB(const PDB& pdb) {
-  Colvar*cc=dynamic_cast<Colvar*>(this);
-  if(cc && cc->checkIsEnergy()) error("can't read energies from pdb files");
 
   for(unsigned j=0; j<indexes.size(); j++) {
     if( indexes[j].index()>pdb.size() ) error("there are not enough atoms in the input pdb file");
