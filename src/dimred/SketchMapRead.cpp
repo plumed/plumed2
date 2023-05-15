@@ -24,7 +24,6 @@
 #include "reference/ReferenceConfiguration.h"
 #include "reference/MetricRegister.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include "tools/PDB.h"
 
 //+PLUMEDOC DIMRED SKETCHMAP_READ
@@ -107,7 +106,7 @@ SketchMapRead::SketchMapRead( const ActionOptions& ao ):
   while (do_read) {
     PDB inpdb;
     // Read the pdb file
-    do_read=inpdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
+    do_read=inpdb.readFromFilepointer(fp,usingNaturalUnits(),0.1/getUnits().getLength());
     // Break if we are done
     if( !do_read ) break ;
     // Check for required properties

@@ -30,7 +30,6 @@
 #include "ActionRegister.h"
 #include "tools/PDB.h"
 #include "tools/ERMSD.h"
-#include "core/Atoms.h"
 
 namespace PLMD {
 namespace colvar {
@@ -159,7 +158,7 @@ ERMSD::ERMSD(const ActionOptions&ao):
 
   // read everything in ang and transform to nm if we are not in natural units
   PDB pdb;
-  if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) )
+  if( !pdb.read(reference,usingNaturalUnits(),0.1/getUnits().getLength()) )
     error("missing input file " + reference );
   // store target_ distance
   std::vector <Vector> reference_positions;
@@ -175,7 +174,7 @@ ERMSD::ERMSD(const ActionOptions&ao):
 // shift to count from zero
   for(unsigned i=0; i<pairs_.size(); ++i) pairs_[i]--;
 
-  ermsd.setReference(reference_positions,pairs_,cutoff/atoms.getUnits().getLength());
+  ermsd.setReference(reference_positions,pairs_,cutoff/getUnits().getLength());
 
   requestAtoms(atoms_);
   derivs.resize(natoms);
@@ -203,7 +202,7 @@ void ERMSD::calculate() {
 // Notice that this might have problems when having 2 RNA molecules (hybridization).
 
   ermsdist=ermsd.calculate(getPositions(),fake_pbc,derivs,virial);
-  const double scale=atoms.getUnits().getLength();
+  const double scale=getUnits().getLength();
   setValue(ermsdist*scale);
 
   for(unsigned i=0; i<derivs.size(); ++i) {setAtomsDerivatives(i,derivs[i]*scale);}

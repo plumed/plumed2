@@ -26,7 +26,6 @@
 #include "tools/PDB.h"
 #include "tools/Matrix.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 
 namespace PLMD {
 namespace mapping {
@@ -80,7 +79,7 @@ Mapping::Mapping(const ActionOptions&ao):
   bool do_read=true; unsigned nfram=0; double wnorm=0., ww;
   while (do_read) {
     // Read the pdb file
-    PDB mypdb; do_read=mypdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
+    PDB mypdb; do_read=mypdb.readFromFilepointer(fp,usingNaturalUnits(),0.1/getUnits().getLength());
     // Break if we are done
     if( !do_read ) break ;
     // Check for required properties

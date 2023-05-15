@@ -25,7 +25,6 @@
 #include "core/ActionRegister.h"
 #include "tools/Grid.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include <cfloat>
 
 
@@ -248,8 +247,8 @@ void TD_Multicanonical::updateGrid() {
       // In this variant we find the minimum and maximum relevant potential energies.
       // Using this information we construct a uniform target distribution in between these two.
       double beta = getBeta();
-      double beta_prime_min = 1./(plumed.getAtoms().getKBoltzmann()*min_temp_);
-      double beta_prime_max = 1./(plumed.getAtoms().getKBoltzmann()*max_temp_);
+      double beta_prime_min = 1./(getKBoltzmann()*min_temp_);
+      double beta_prime_max = 1./(getKBoltzmann()*max_temp_);
       plumed_massert(getFesGridPntr()!=NULL,"the FES grid has to be linked to use TD_Multicanonical!");
       // Find minimum of F(U) at temperature min
       double minval=DBL_MAX;
@@ -363,8 +362,8 @@ void TD_Multicanonical::updateGrid() {
       // In this variant we find for each temperature the relevant region of potential energy and order parameter.
       // The target distribution will be the union of the relevant regions at all temperatures in the temperature interval.
       double beta = getBeta();
-      double beta_prime_min = 1./(plumed.getAtoms().getKBoltzmann()*min_temp_);
-      double beta_prime_max = 1./(plumed.getAtoms().getKBoltzmann()*max_temp_);
+      double beta_prime_min = 1./(getKBoltzmann()*min_temp_);
+      double beta_prime_max = 1./(getKBoltzmann()*max_temp_);
       plumed_massert(getFesGridPntr()!=NULL,"the FES grid has to be linked to use TD_Multicanonical!");
       // Set all to zero
       for(Grid::index_t l=0; l<targetDistGrid().getSize(); l++) {

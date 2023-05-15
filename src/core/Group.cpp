@@ -27,7 +27,6 @@
 #include "ActionWithVirtualAtom.h"
 #include "tools/IFile.h"
 #include "tools/Tools.h"
-#include "Atoms.h"
 #include <string>
 #include <vector>
 #include <algorithm>

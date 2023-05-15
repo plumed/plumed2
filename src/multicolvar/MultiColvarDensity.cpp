@@ -21,10 +21,9 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
 #include "tools/Pbc.h"
-#include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include "tools/Units.h"
 #include <cstdio>
+#include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "MultiColvarBase.h"
 #include "gridtools/ActionWithGrid.h"
@@ -235,8 +234,8 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
 
   // Enusre units for cube files are set correctly
   if( !fractional ) {
-    if( plumed.getAtoms().usingNaturalUnits() ) mygrid->setCubeUnits( 1.0/0.5292 );
-    else mygrid->setCubeUnits( plumed.getAtoms().getUnits().getLength()/.05929 );
+    if( usingNaturalUnits() ) mygrid->setCubeUnits( 1.0/0.5292 );
+    else mygrid->setCubeUnits( getUnits().getLength()/.05929 );
   }
 
   checkRead(); requestAtoms(atom);

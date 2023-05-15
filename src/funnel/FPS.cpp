@@ -14,8 +14,6 @@
 #include <vector>
 #include "tools/Tools.h"
 #include "tools/PDB.h"
-#include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include <iostream>
 #include "tools/RMSD.h"
 
@@ -152,7 +150,7 @@ FUNNEL_PS::FUNNEL_PS(const ActionOptions&ao):
   checkRead();
 
   // read everything in ang and transform to nm if we are not in natural units
-  if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/ActionAtomistic::atoms.getUnits().getLength()) )
+  if( !pdb.read(reference,usingNaturalUnits(),0.1/getUnits().getLength()) )
     error("missing input file " + reference );
 
   bool remove_com=true;

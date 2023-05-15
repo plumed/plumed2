@@ -25,7 +25,6 @@
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
-#include "core/Atoms.h"
 #include "core/GenericMolInfo.h"
 #include "tools/PDB.h"
 
@@ -90,8 +89,8 @@ void OutputPDBFile::performAnalysis() {
     afile.printf("DESCRIPTION: analysis data from calculation done by %s at time %f \n",getLabel().c_str(),getTime() );
     if( dissimilaritiesWereSet() ) afile.printf("REMARK %s \n", getDissimilarityInstruction().c_str() );
     afile.printf(descr.c_str(),getWeight(j) ); getStoredData(j,false).transferDataToPDB( mypdb );
-    if( plumed.getAtoms().usingNaturalUnits() ) mypdb.print( 1.0, mymoldat, afile, fmt );
-    else mypdb.print( plumed.getAtoms().getUnits().getLength()/0.1, mymoldat, afile, fmt );
+    if( usingNaturalUnits() ) mypdb.print( 1.0, mymoldat, afile, fmt );
+    else mypdb.print( getUnits().getLength()/0.1, mymoldat, afile, fmt );
   }
   afile.close();
 }

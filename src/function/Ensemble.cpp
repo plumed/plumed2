@@ -21,8 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Function.h"
 #include "ActionRegister.h"
-#include "core/PlumedMain.h"
-#include "core/Atoms.h"
+#include "tools/Communicator.h"
 
 namespace PLMD {
 namespace function {

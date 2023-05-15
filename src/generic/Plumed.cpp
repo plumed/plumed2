@@ -244,7 +244,7 @@ API([&]() {
     }
   }
 
-  int natoms=plumed.getAtoms().getNatoms();
+  int natoms=getTotAtoms();
 
   plumed_assert(getStride()==1) << "currently only supports STRIDE=1";
 
@@ -275,18 +275,18 @@ API([&]() {
 
   if(root) p.cmd("setMDEngine","plumed");
 
-  double engunits=plumed.getAtoms().getUnits().getEnergy();
+  double engunits=getUnits().getEnergy();
   if(root) p.cmd("setMDEnergyUnits",&engunits);
 
-  double lenunits=plumed.getAtoms().getUnits().getLength();
+  double lenunits=getUnits().getLength();
   if(root) p.cmd("setMDLengthUnits",&lenunits);
 
-  double timunits=plumed.getAtoms().getUnits().getTime();
+  double timunits=getUnits().getTime();
   if(root) p.cmd("setMDTimeUnits",&timunits);
 
-  double chaunits=plumed.getAtoms().getUnits().getCharge();
+  double chaunits=getUnits().getCharge();
   if(root) p.cmd("setMDChargeUnits",&chaunits);
-  double masunits=plumed.getAtoms().getUnits().getMass();
+  double masunits=getUnits().getMass();
   if(root) p.cmd("setMDMassUnits",&masunits);
 
   double kbt=getkBT();

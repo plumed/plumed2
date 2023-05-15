@@ -21,7 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Bias.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include "core/ActionRegister.h"
 #include "core/ActionWithValue.h"
 #include "tools/Communicator.h"

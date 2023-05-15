@@ -108,7 +108,7 @@ public:
   void createFullList(const TypesafePtr & x);
   void getFullList(const TypesafePtr & x);
   void clearFullList();
-  bool onStep() const override { return copyOutput(0)->getShape()[0]>0; }
+  bool onStep() const override { return getNumberOfAtoms()>0; }
   unsigned getNumberOfAtoms() const;
 };
 

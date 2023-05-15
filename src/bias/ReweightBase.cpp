@@ -20,8 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ReweightBase.h"
-#include "core/PlumedMain.h"
-#include "core/Atoms.h"
 
 namespace PLMD {
 namespace bias {

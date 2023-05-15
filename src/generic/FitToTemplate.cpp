@@ -28,7 +28,6 @@
 #include "tools/AtomNumber.h"
 #include "tools/Tools.h"
 #include "tools/RMSD.h"
-#include "core/Atoms.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/GenericMolInfo.h"
@@ -231,7 +230,7 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
   PDB pdb;
 
   // read everything in ang and transform to nm if we are not in natural units
-  if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) )
+  if( !pdb.read(reference,usingNaturalUnits(),0.1/getUnits().getLength()) )
     error("missing input file " + reference );
 
   requestAtoms(pdb.getAtomNumbers());

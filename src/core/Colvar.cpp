@@ -29,9 +29,7 @@ namespace PLMD {
 Colvar::Colvar(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao),
-  ActionWithValue(ao),
-  isEnergy(false),
-  isExtraCV(false)
+  ActionWithValue(ao)
 {
 }
 
@@ -43,7 +41,6 @@ void Colvar::registerKeywords( Keywords& keys ) {
 }
 
 void Colvar::requestAtoms(const std::vector<AtomNumber> & a) {
-  plumed_massert(!isEnergy,"request atoms should not be called if this is energy");
 // Tell actionAtomistic what atoms we are getting
   ActionAtomistic::requestAtoms(a);
 // Resize the derivatives of all atoms
@@ -65,35 +62,26 @@ void Colvar::apply() {
   unsigned nt=OpenMP::getNumThreads();
   if(nt>ncp/(4*stride)) nt=1;
 
-  if(!isEnergy && !isExtraCV) {
-    #pragma omp parallel num_threads(nt)
-    {
-      std::vector<double> omp_f(3*nat+9,0);
-      std::vector<double> forces(3*nat+9);
-      #pragma omp for
-      for(unsigned i=rank; i<ncp; i+=stride) {
-        if(getPntrToComponent(i)->applyForce(forces)) {
-          for(unsigned j=0; j<forces.size(); ++j) omp_f[j]+=forces[j];
-        }
-      }
-      #pragma omp critical
-      {
-        for(unsigned j=0; j<f.size(); ++j) f[j]+=omp_f[j];
+  #pragma omp parallel num_threads(nt)
+  {
+    std::vector<double> omp_f(3*nat+9,0);
+    std::vector<double> forces(3*nat+9);
+    #pragma omp for
+    for(unsigned i=rank; i<ncp; i+=stride) {
+      if(getPntrToComponent(i)->applyForce(forces)) {
+        for(unsigned j=0; j<forces.size(); ++j) omp_f[j]+=forces[j];
       }
     }
-
-    if(ncp>4*comm.Get_size()) comm.Sum(&f[0],3*nat+9);
-    unsigned ind=0;
-    if( nat>0 ) setForcesOnAtoms( f, ind );
-    else setForcesOnCell( f, ind );
-  } else if( isEnergy ) {
-    std::vector<double> forces(1);
-    if(getPntrToComponent(0)->applyForce(forces)) modifyForceOnEnergy()+=forces[0];
+    #pragma omp critical
+    {
+      for(unsigned j=0; j<f.size(); ++j) f[j]+=omp_f[j];
+    }
   }
-  // else if( isExtraCV ) {
-  //   std::vector<double> forces(1);
-  //   if(getPntrToComponent(0)->applyForce(forces)) modifyForceOnExtraCV()+=forces[0];
-  // }
+
+  if(ncp>4*comm.Get_size()) comm.Sum(&f[0],3*nat+9);
+  unsigned ind=0;
+  if( nat>0 ) setForcesOnAtoms( f, ind );
+  else setForcesOnCell( f, ind );
 }
 
 void Colvar::setBoxDerivativesNoPbc(Value* v) {

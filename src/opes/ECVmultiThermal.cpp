@@ -18,8 +18,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ExpansionCVs.h"
 #include "core/ActionRegister.h"
-#include "core/PlumedMain.h"
-#include "core/Atoms.h"
 
 namespace PLMD {
 namespace opes {
@@ -122,7 +120,7 @@ ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao)
   plumed_massert(getNumberOfArguments()==1,"only the internal energy should be given as ARG");
 
 //set temp0
-  const double temp0=kbt_/plumed.getAtoms().getKBoltzmann();
+  const double temp0=kbt_/getKBoltzmann();
 
 //parse temp range
   double temp_min=-1;
@@ -212,7 +210,7 @@ const double * ECVmultiCanonical::getPntrToDerECVs(unsigned j)
 std::vector<std::string> ECVmultiCanonical::getLambdas() const
 {
   plumed_massert(!todoAutomatic_,"cannot access lambdas before initializing them");
-  const double temp0=kbt_/plumed.getAtoms().getKBoltzmann();
+  const double temp0=kbt_/getKBoltzmann();
   std::vector<std::string> lambdas(derECVs_.size());
   for(unsigned k=0; k<derECVs_.size(); k++)
   {

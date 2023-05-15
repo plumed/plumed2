@@ -21,7 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "SecondaryStructureRMSD.h"
 #include "core/ActionRegister.h"
-#include "core/PlumedMain.h"
 
 namespace PLMD {
 namespace secondarystructure {
@@ -151,7 +150,7 @@ AlphaRMSD::AlphaRMSD(const ActionOptions&ao):
   reference[28] = Vector(-1.663, -0.171, -4.475 ); // C
   reference[29] = Vector(-1.916, -0.296, -5.673 ); // O
   // Store the secondary structure ( last number makes sure we convert to internal units nm )
-  setSecondaryStructure( reference, 0.17/atoms.getUnits().getLength(), 0.1/atoms.getUnits().getLength() );
+  setSecondaryStructure( reference, 0.17/getUnits().getLength(), 0.1/getUnits().getLength() );
 }
 
 }

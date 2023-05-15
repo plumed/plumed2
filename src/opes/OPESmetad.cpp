@@ -19,7 +19,6 @@
 #include "bias/Bias.h"
 #include "core/PlumedMain.h"
 #include "core/ActionRegister.h"
-#include "core/Atoms.h"
 #include "tools/Communicator.h"
 #include "tools/File.h"
 #include "tools/OpenMP.h"
@@ -368,7 +367,7 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   std::string error_in_input2(" could not be read correctly");
 
 //set kbt_
-  const double kB=plumed.getAtoms().getKBoltzmann();
+  const double kB=getKBoltzmann();
   kbt_=getkBT();
 
 //other compulsory input

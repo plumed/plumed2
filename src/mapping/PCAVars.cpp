@@ -241,7 +241,7 @@ PCAVars::PCAVars(const ActionOptions& ao):
   while (do_read) {
     PDB mypdb;
     // Read the pdb file
-    do_read=mypdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
+    do_read=mypdb.readFromFilepointer(fp,usingNaturalUnits(),0.1/getUnits().getLength());
     // Fix argument names
     if(do_read) {
       if( nfram==0 ) {

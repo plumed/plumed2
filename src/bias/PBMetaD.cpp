@@ -23,7 +23,6 @@
 #include "ActionRegister.h"
 #include "core/ActionSet.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include "core/FlexibleBin.h"
 #include "tools/Exception.h"
 #include "tools/Grid.h"
@@ -31,6 +30,7 @@
 #include "tools/OpenMP.h"
 #include "tools/Random.h"
 #include "tools/File.h"
+#include "tools/Communicator.h"
 #include <ctime>
 #include <numeric>
 #if defined(__PLUMED_HAS_GETCWD)

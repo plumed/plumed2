@@ -25,7 +25,6 @@
 #include "tools/Pbc.h"
 #include "tools/File.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include "tools/Units.h"
 #include <cstdio>
 #include <memory>
@@ -209,8 +208,8 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
     if(myunit.getLength()!=1.0 && type=="gro") error("gro files should be in nm");
     if(myunit.getLength()!=1.0 && type=="xtc") error("xtc files should be in nm");
     if(myunit.getLength()!=1.0 && type=="trr") error("trr files should be in nm");
-    lenunit=plumed.getAtoms().getUnits().getLength()/myunit.getLength();
-  } else if(type=="gro" || type=="xtc" || type=="trr") lenunit=plumed.getAtoms().getUnits().getLength();
+    lenunit=getUnits().getLength()/myunit.getLength();
+  } else if(type=="gro" || type=="xtc" || type=="trr") lenunit=getUnits().getLength();
   else lenunit=1.0;
 
   checkRead();
@@ -263,7 +262,7 @@ void DumpAtoms::update() {
     }
   } else if(type=="gro") {
     const Tensor & t(getPbc().getBox());
-    of.printf("Made with PLUMED t=%f\n",getTime()/plumed.getAtoms().getUnits().getTime());
+    of.printf("Made with PLUMED t=%f\n",getTime()/getUnits().getTime());
     of.printf("%d\n",getNumberOfAtoms());
     for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
       const char* defname="X";
@@ -286,7 +285,7 @@ void DumpAtoms::update() {
     const Tensor & t(getPbc().getBox());
     int natoms=getNumberOfAtoms();
     int step=getStep();
-    float time=getTime()/plumed.getAtoms().getUnits().getTime();
+    float time=getTime()/getUnits().getTime();
     float precision=Tools::fastpow(10.0,iprecision);
     for(int i=0; i<3; i++) for(int j=0; j<3; j++) box[i][j]=lenunit*t(i,j);
 // here we cannot use a std::vector<rvec> since it does not compile.

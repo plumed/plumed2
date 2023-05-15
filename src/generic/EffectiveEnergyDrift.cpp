@@ -34,7 +34,6 @@
 #include "core/ActionToPutData.h"
 #include "core/PbcAction.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 
 #include "tools/File.h"
 #include "tools/Pbc.h"

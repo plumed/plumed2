@@ -32,7 +32,6 @@
 #include "tools/Communicator.h"
 #include "core/ActionSet.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include "tools/File.h"
 
 

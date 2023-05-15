@@ -249,7 +249,7 @@ void AdaptivePath::update() {
       pathfile.printf("REMARK TYPE=%s\n", myconfs[i]->getName().c_str() );
       mypdb.setAtomPositions( myconfs[i]->getReferencePositions() );
       for(unsigned j=0; j<getNumberOfArguments(); ++j) mypdb.setArgumentValue( getPntrToArgument(j)->getName(), myconfs[i]->getReferenceArgument(j) );
-      mypdb.print( atoms.getUnits().getLength()/0.1, mymoldat, pathfile, ofmt );
+      mypdb.print( getUnits().getLength()/0.1, mymoldat, pathfile, ofmt );
     }
     pathfile.flush();
   }

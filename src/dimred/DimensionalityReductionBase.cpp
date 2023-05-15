@@ -22,7 +22,6 @@
 #include "DimensionalityReductionBase.h"
 #include "reference/ReferenceConfiguration.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 
 namespace PLMD {
 namespace dimred {

@@ -20,12 +20,10 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
-#include "core/PlumedMain.h"
 #include "ActionRegister.h"
 #include "tools/PDB.h"
 #include "reference/MultiDomainRMSD.h"
 #include "reference/MetricRegister.h"
-#include "core/Atoms.h"
 
 namespace PLMD {
 namespace colvar {
@@ -165,7 +163,7 @@ MultiRMSD::MultiRMSD(const ActionOptions&ao):
   PDB pdb;
 
   // read everything in ang and transform to nm if we are not in natural units
-  if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) )
+  if( !pdb.read(reference,usingNaturalUnits(),0.1/getUnits().getLength()) )
     error("missing input file " + reference );
 
   rmsd=metricRegister().create<MultiDomainRMSD>(type,pdb);

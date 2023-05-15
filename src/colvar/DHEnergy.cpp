@@ -23,7 +23,6 @@
 #include "tools/SwitchingFunction.h"
 #include "ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 
 namespace PLMD {
 namespace colvar {
@@ -115,9 +114,9 @@ DHEnergy::DHEnergy(const ActionOptions&ao):
   parse("TEMP",T);
   parse("EPSILON",epsilon);
   checkRead();
-  if( plumed.getAtoms().usingNaturalUnits() ) error("DHENERGY cannot be used for calculations performed with natural units");
-  constant=138.935458111/atoms.getUnits().getEnergy()/atoms.getUnits().getLength()*atoms.getUnits().getCharge()*atoms.getUnits().getCharge();
-  k=std::sqrt(I/(epsilon*T))*502.903741125*atoms.getUnits().getLength();
+  if( usingNaturalUnits() ) error("DHENERGY cannot be used for calculations performed with natural units");
+  constant=138.935458111/getUnits().getEnergy()/getUnits().getLength()*getUnits().getCharge()*getUnits().getCharge();
+  k=std::sqrt(I/(epsilon*T))*502.903741125*getUnits().getLength();
   checkRead();
   log<<"  with solvent dielectric constant "<<epsilon<<"\n";
   log<<"  at temperature "<<T<<" K\n";

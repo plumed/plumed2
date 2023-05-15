@@ -255,11 +255,11 @@ double Action::getTimeStep()const {
 double Action::getkBT() {
   double temp=-1.0;
   if( keywords.exists("TEMP") ) parse("TEMP",temp);
-  if(temp>=0.0 && keywords.style("TEMP","optional") ) return plumed.getAtoms().getKBoltzmann()*temp;
+  if(temp>=0.0 && keywords.style("TEMP","optional") ) return getKBoltzmann()*temp;
   ActionForInterface* kb=plumed.getActionSet().selectWithLabel<ActionForInterface*>("kBT");
   double kbt=0; if(kb) kbt=(kb->copyOutput(0))->get();
   if( temp>=0 && keywords.style("TEMP","compulsory") ) {
-    double kB=plumed.getAtoms().getKBoltzmann();
+    double kB=getKBoltzmann();
     if( kbt>0 && std::abs(kbt-kB*temp)>1e-4) {
       std::string strt1, strt2; Tools::convert( temp, strt1 ); Tools::convert( kbt/kB, strt2 );
       warning("using TEMP=" + strt1 + " while MD engine uses " + strt2 + "\n");
@@ -319,9 +319,23 @@ bool Action::checkUpdate()const {
   else return false;
 }
 
-bool Action::getCPT()const {
+bool Action::getCPT() const {
   return plumed.getCPT();
 }
+
+const Units& Action::getUnits() const {
+  return plumed.getAtoms().getUnits(); 
+}
+
+bool Action::usingNaturalUnits() const {
+  return plumed.getAtoms().usingNaturalUnits();
+}
+
+double Action::getKBoltzmann() const {
+  if( usingNaturalUnits() ) return 1.0;
+  else return kBoltzmann/getUnits().getEnergy();
+}
+
 
 }
 

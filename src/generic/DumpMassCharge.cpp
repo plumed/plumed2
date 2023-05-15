@@ -24,7 +24,6 @@
 #include "core/ActionRegister.h"
 #include "tools/File.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 
 namespace PLMD
 {

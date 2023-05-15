@@ -20,8 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
-#include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include "ActionWithInputGrid.h"
 
 //+PLUMEDOC GRIDANALYSIS CONVERT_TO_FES

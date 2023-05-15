@@ -18,8 +18,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ExpansionCVs.h"
 #include "core/ActionRegister.h"
-#include "core/PlumedMain.h"
-#include "core/Atoms.h"
 
 namespace PLMD {
 namespace opes {
@@ -143,7 +141,7 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
   plumed_massert(getNumberOfArguments()==2,"ENERGY and VOLUME should be given as ARG");
 
 //set temp0
-  const double kB=plumed.getAtoms().getKBoltzmann();
+  const double kB=getKBoltzmann();
   const double temp0=kbt_/kB;
 
 //parse temp range
@@ -400,7 +398,7 @@ std::vector<std::string> ECVmultiThermalBaric::getLambdas() const
 
   plumed_massert(!todoAutomatic_beta_ && !todoAutomatic_pres_,"cannot access lambdas before initializing them");
   std::vector<std::string> lambdas;
-  const double kB=plumed.getAtoms().getKBoltzmann();
+  const double kB=getKBoltzmann();
   for(unsigned k=0; k<derECVs_beta_.size(); k++)
   {
     const double kB_temp_k=kbt_/(derECVs_beta_[k]*kbt_+1);

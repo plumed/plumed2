@@ -25,7 +25,6 @@
 #include "core/ActionRegister.h"
 #include "tools/Grid.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include <cfloat>
 
 
@@ -327,8 +326,8 @@ void TD_MultithermalMultibaric::updateGrid() {
     targetDistGrid().scaleAllValuesAndDerivatives(1.0/norm);
   } else {
     double beta = getBeta();
-    double beta_prime_min = 1./(plumed.getAtoms().getKBoltzmann()*min_temp_);
-    double beta_prime_max = 1./(plumed.getAtoms().getKBoltzmann()*max_temp_);
+    double beta_prime_min = 1./(getKBoltzmann()*min_temp_);
+    double beta_prime_max = 1./(getKBoltzmann()*max_temp_);
     plumed_massert(getFesGridPntr()!=NULL,"the FES grid has to be linked to use TD_MultithermalMultibaric!");
     // Set all to current epsilon value
     for(Grid::index_t l=0; l<targetDistGrid().getSize(); l++) {

@@ -23,11 +23,11 @@
 #include "bias/Bias.h"
 #include "bias/ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include "core/Value.h"
 #include "tools/File.h"
 #include "tools/OpenMP.h"
 #include "tools/Random.h"
+#include "tools/Communicator.h"
 #include <chrono>
 #include <numeric>
 

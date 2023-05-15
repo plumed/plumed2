@@ -1186,7 +1186,7 @@ void SAXS::update() {
 void SAXS::getOnebeadMapping(const std::vector<AtomNumber> &atoms) {
   // Here we read the chain information
   PDB pdb;
-  if( !pdb.read(template_name,plumed.getAtoms().usingNaturalUnits(),1.) ) plumed_merror("missing input file " + template_name);
+  if( !pdb.read(template_name,usingNaturalUnits(),1.) ) plumed_merror("missing input file " + template_name);
   std::vector<std::string> chains; pdb.getChainNames( chains );
   std::vector<bool> isprotein_chain(chains.size(),0);
   std::vector<unsigned> res_per_chain(chains.size(),0);

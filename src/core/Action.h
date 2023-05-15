@@ -26,6 +26,7 @@
 #include <set>
 #include "tools/Keywords.h"
 #include "tools/Tools.h"
+#include "tools/Units.h"
 #include "tools/Log.h"
 
 namespace PLMD {
@@ -79,6 +80,14 @@ class Action {
 
 /// Save the timestep here
   double timestep;
+
+protected:
+/// Get the units that we are operating in
+  const Units& getUnits() const;
+/// Are we using natural units
+  bool usingNaturalUnits()const;
+/// Get the value of Boltzmann's constant
+  double getKBoltzmann()const;
 public:
 
 /// Check if action should be updated.

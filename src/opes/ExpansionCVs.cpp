@@ -19,8 +19,6 @@
 #include "ExpansionCVs.h"
 
 #include "tools/OpenMP.h"
-#include "core/PlumedMain.h"
-#include "core/Atoms.h"
 
 namespace PLMD {
 namespace opes {
@@ -42,7 +40,7 @@ ExpansionCVs::ExpansionCVs(const ActionOptions&ao)
   , totNumECVs_(0)
 {
 //set kbt_
-  const double kB=plumed.getAtoms().getKBoltzmann();
+  const double kB=getKBoltzmann();
   kbt_=getkBT();
   log.printf("  temperature = %g, beta = %g\n",kbt_/kB,1./kbt_);
 

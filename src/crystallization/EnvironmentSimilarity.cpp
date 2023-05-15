@@ -507,7 +507,7 @@ void EnvironmentSimilarity::parseReferenceEnvironments( std::vector<std::vector<
       // Case with one reference environment
       environments.resize(1); environmentsAtomNames.resize(1);
       PDB pdb;
-      if( !pdb.read(reffile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength()) )
+      if( !pdb.read(reffile,usingNaturalUnits(),0.1/getUnits().getLength()) )
         error("missing input file " + reffile );
       unsigned natoms=pdb.getPositions().size();
       environments[0].resize( natoms ); environmentsAtomNames[0].resize( natoms );
@@ -521,7 +521,7 @@ void EnvironmentSimilarity::parseReferenceEnvironments( std::vector<std::vector<
       for(unsigned int i=1;; i++) {
         if(!parseNumbered("REFERENCE_",i,reffile) ) {break;}
         PDB pdb;
-        if( !pdb.read(reffile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength()) )
+        if( !pdb.read(reffile,usingNaturalUnits(),0.1/getUnits().getLength()) )
           error("missing input file " + reffile );
         unsigned natoms=pdb.getPositions().size();
         std::vector<Vector> environment; std::vector<std::string> environmentAtomNames;
@@ -543,7 +543,7 @@ void EnvironmentSimilarity::parseReferenceEnvironments( std::vector<std::vector<
     parse("ATOM_NAMES_FILE",atomNamesFile);
     if (!atomNamesFile.empty()) {
       PDB pdb;
-      if( !pdb.read(atomNamesFile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength()) )
+      if( !pdb.read(atomNamesFile,usingNaturalUnits(),0.1/getUnits().getLength()) )
         error("missing input file " + atomNamesFile);
       unsigned natoms=pdb.getPositions().size();
       atomNames_.resize( natoms );

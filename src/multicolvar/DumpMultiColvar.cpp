@@ -24,8 +24,6 @@
 #include "core/ActionRegister.h"
 #include "tools/Pbc.h"
 #include "tools/File.h"
-#include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include "tools/Units.h"
 #include <cstdio>
 #include "core/GenericMolInfo.h"
@@ -132,7 +130,7 @@ DumpMultiColvar::DumpMultiColvar(const ActionOptions&ao):
   std::string unitname; parse("UNITS",unitname);
   if(unitname!="PLUMED") {
     Units myunit; myunit.setLength(unitname);
-    lenunit=plumed.getAtoms().getUnits().getLength()/myunit.getLength();
+    lenunit=getUnits().getLength()/myunit.getLength();
   }
   else lenunit=1.0;
 

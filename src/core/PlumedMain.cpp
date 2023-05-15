@@ -1011,7 +1011,6 @@ void PlumedMain::prepareDependencies() {
 }
 
 bool PlumedMain::inputsAreActive() const {
-  return true;  // This is tempory while atoms is still in place
   for(const auto & ip : inputs) {
     if( ip->onStep() ) return true;
   }

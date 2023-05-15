@@ -23,7 +23,6 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/GenericMolInfo.h"
-#include "core/Atoms.h"
 #include "vesselbase/Vessel.h"
 #include "reference/MetricRegister.h"
 #include "reference/SingleDomainRMSD.h"
@@ -148,7 +147,7 @@ void SecondaryStructureRMSD::addColvar( const std::vector<unsigned>& newatoms ) 
 
 void SecondaryStructureRMSD::setSecondaryStructure( std::vector<Vector>& structure, double bondlength, double units ) {
   // If we are in natural units get conversion factor from nm into natural length units
-  if( plumed.getAtoms().usingNaturalUnits() ) {
+  if( usingNaturalUnits() ) {
     error("cannot use this collective variable when using natural units");
   }
   plumed_massert( !(align_strands && align_atom_1==0 && align_atom_2==0), "you must use setAtomsFromStrands with strands cutoff");

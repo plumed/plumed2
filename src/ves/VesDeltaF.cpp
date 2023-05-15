@@ -23,7 +23,6 @@
 #include "bias/Bias.h"
 #include "core/PlumedMain.h"
 #include "core/ActionRegister.h"
-#include "core/Atoms.h"
 #include "tools/Communicator.h"
 #include "tools/Grid.h"
 #include "tools/File.h"
@@ -225,7 +224,7 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
   , work_(0)
 {
 //set beta
-  const double Kb=plumed.getAtoms().getKBoltzmann();
+  const double Kb=getKBoltzmann();
   double KbT=getkBT();
   plumed_massert(KbT>0,"your MD engine does not pass the temperature to plumed, you must specify it using TEMP");
   beta_=1.0/KbT;

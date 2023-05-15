@@ -371,8 +371,7 @@ replica.out.1
 
 #include "bias/Bias.h"
 #include "core/ActionRegister.h"
-#include "core/Atoms.h"
-#include "core/PlumedMain.h"
+#include "tools/Communicator.h"
 
 #include <iostream>
 
@@ -634,7 +633,7 @@ LogMFD::LogMFD( const ActionOptions& ao ):
   }
 
   if( kbtpd>=0.0 ) {
-    kbtpd *= plumed.getAtoms().getKBoltzmann();
+    kbtpd *= getKBoltzmann();
   }
   else {
     kbtpd = kbt;
@@ -943,7 +942,7 @@ void LogMFD::update() {
   // record log for fictitious variables
   if( multi_sim_comm.Get_rank()==0 && comm.Get_rank()==0 ) {
     const double ekin = calcEkin();
-    const double temp = 2.0*ekin/getNumberOfArguments()/plumed.getAtoms().getKBoltzmann();
+    const double temp = 2.0*ekin/getNumberOfArguments()/getKBoltzmann();
 
     FILE *outlog = std::fopen("logmfd.out", "a");
     fprintf(outlog, "%*d", 8, (int)(getStep()-step_initial)/interval);
