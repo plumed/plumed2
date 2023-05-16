@@ -558,6 +558,10 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   parseFlag("WALKERS_MPI",walkers_mpi);
   if(walkers_mpi)
   {
+    //If this Action is not compiled with MPI the user is informed and we exit gracefully
+    plumed_massert(Communicator::plumedHasMPI(),"Invalid walkers configuration: WALKERS_MPI flag requires MPI compilation");
+    plumed_massert(Communicator::initialized(),"Invalid walkers configuration: WALKERS_MPI needs the communicator correctly initialized.");
+
     if(comm.Get_rank()==0)//multi_sim_comm works on first rank only
     {
       NumWalkers_=multi_sim_comm.Get_size();
