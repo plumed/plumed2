@@ -11,9 +11,10 @@ include ../maketools/make.module
 # Workaround conda bugs on OSX
 #  - stack size not allowed when making dylib
 #  - need to pass export_dynamic to linker  https://bugs.python.org/issue21122
-remove_flags := -Wl,-stack_size,1000000
-add_flags := -fno-lto  -Wl,-export_dynamic -undefined dynamic_lookup 
-PYTHON_LDFLAGS_SO := $(subst $(remove_flags),,$(shell python3-config --ldflags)) $(add_flags)
+#remove_flags := -Wl,-stack_size,1000000
+#add_flags := -fno-lto  -Wl,-export_dynamic -undefined dynamic_lookup 
+#PYTHON_LDFLAGS_SO := $(subst $(remove_flags),,$(shell python3-config --ldflags)) $(add_flags)
+PYTHON_LDFLAGS_SO := $(shell python3-config --ldflags --embed)  -Wl,-export_dynamic  -undefined dynamic_lookup 
 
 # You may or may not want to pass this to the linking command. If you
 # do, you are giving an hint as to where to find the kernel at
