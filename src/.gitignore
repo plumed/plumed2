@@ -48,17 +48,12 @@
 !/header.sh
 !/release.sh
 !/astyle.sh
-<<<<<<< HEAD
-!/pycv
-
-=======
 !/funnel
 !/fisst
 !/sasa
 !/xdrfile
 !/s2cm
->>>>>>> v2.8.0
-
+!/pycv
 # And just ignore these files
 *.xxd
 /*.on

@@ -32,6 +32,7 @@
 !/tools
 !/sasa
 !/s2cm
+!/pycv
 # These files we just want to ignore completely
 tmp
 report.txt
