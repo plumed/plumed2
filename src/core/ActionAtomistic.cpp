@@ -279,7 +279,7 @@ void ActionAtomistic::retrieveAtoms() {
   }
 }
 
-void ActionAtomistic::setForcesOnAtoms(const std::vector<double>& forcesToApply, unsigned ind) {
+void ActionAtomistic::setForcesOnAtoms(const std::vector<double>& forcesToApply, unsigned& ind) {
   if( donotforce || (indexes.size()==0 && getName()!="FIXEDATOM") ) return;
   for(unsigned i=0; i<indexes.size(); ++i) {
     Vector ff; 
@@ -292,7 +292,7 @@ void ActionAtomistic::setForcesOnAtoms(const std::vector<double>& forcesToApply,
   setForcesOnCell( forcesToApply, ind );
 }
 
-void ActionAtomistic::setForcesOnCell(const std::vector<double>& forcesToApply, unsigned ind) {
+void ActionAtomistic::setForcesOnCell(const std::vector<double>& forcesToApply, unsigned& ind) {
   for(unsigned i=0; i<9; ++i) {
     plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
     boxValue->addForce( i, forcesToApply[ind] ); ind++;

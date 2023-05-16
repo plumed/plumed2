@@ -48,40 +48,10 @@ void Colvar::requestAtoms(const std::vector<AtomNumber> & a) {
 }
 
 void Colvar::apply() {
-  const unsigned    nat=getNumberOfAtoms();
-  const unsigned    ncp=getNumberOfComponents();
-
-  unsigned stride=1;
-  unsigned rank=0;
-  if(ncp>4*comm.Get_size()) {
-    stride=comm.Get_size();
-    rank=comm.Get_rank();
-  }
-
-  std::vector<double> f(3*nat+9,0);
-  unsigned nt=OpenMP::getNumThreads();
-  if(nt>ncp/(4*stride)) nt=1;
-
-  #pragma omp parallel num_threads(nt)
-  {
-    std::vector<double> omp_f(3*nat+9,0);
-    std::vector<double> forces(3*nat+9);
-    #pragma omp for
-    for(unsigned i=rank; i<ncp; i+=stride) {
-      if(getPntrToComponent(i)->applyForce(forces)) {
-        for(unsigned j=0; j<forces.size(); ++j) omp_f[j]+=forces[j];
-      }
-    }
-    #pragma omp critical
-    {
-      for(unsigned j=0; j<f.size(); ++j) f[j]+=omp_f[j];
-    }
-  }
-
-  if(ncp>4*comm.Get_size()) comm.Sum(&f[0],3*nat+9);
+  if( !checkForForces() ) return ;
   unsigned ind=0;
-  if( nat>0 ) setForcesOnAtoms( f, ind );
-  else setForcesOnCell( f, ind );
+  if( getNumberOfAtoms()>0 ) setForcesOnAtoms( getForcesToApply(), ind );
+  else setForcesOnCell( getForcesToApply(), ind );
 }
 
 void Colvar::setBoxDerivativesNoPbc(Value* v) {

@@ -1081,7 +1081,7 @@ void MultiColvarBase::applyPbc(std::vector<Vector>& dlist, unsigned int max_inde
 }
 
 void MultiColvarBase::apply() {
-  if( getForcesFromVessels( forcesToApply ) ) setForcesOnAtoms( forcesToApply );
+  unsigned ind=0; if( getForcesFromVessels( forcesToApply ) ) setForcesOnAtoms( forcesToApply, ind );
 }
 
 }

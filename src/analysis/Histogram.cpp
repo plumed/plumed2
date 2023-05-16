@@ -525,7 +525,7 @@ void Histogram::apply() {
     tbase += myvessels[i]->getNumberOfDerivatives();
   }
   // And set the final forces on the atoms
-  setForcesOnAtoms( finalForces );
+  unsigned ind=0; setForcesOnAtoms( finalForces, ind );
   // Reset everything for next regular loop
   in_apply=false;
 }

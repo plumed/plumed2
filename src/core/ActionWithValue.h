@@ -69,6 +69,8 @@ class ActionWithValue :
 private:
 /// An array containing the values for this action
   std::vector<std::unique_ptr<Value>> values;
+/// A vector that is used to hold the forces that we will apply on the input quantities
+  std::vector<double> forcesForApply;
 /// Are we skipping the calculation of the derivatives
   bool noderiv;
 /// Are we using numerical derivatives to differentiate
@@ -109,6 +111,10 @@ protected:
   Value* getPntrToComponent(int i);
 /// Return a pointer to the value by name
   Value* getPntrToComponent(const std::string& name);
+/// Accumulate the forces from the Values
+  bool checkForForces();
+/// Get the forces to apply
+  const std::vector<double>& getForcesToApply() const;
 public:
   explicit ActionWithValue(const ActionOptions&ao);
   ~ActionWithValue();
@@ -211,6 +217,11 @@ bool ActionWithValue::checkNumericalDerivatives() const {
 inline
 bool ActionWithValue::doNotCalculateDerivatives() const {
   return noderiv;
+}
+
+inline
+const std::vector<double>& ActionWithValue::getForcesToApply() const {
+  return forcesForApply;
 }
 
 

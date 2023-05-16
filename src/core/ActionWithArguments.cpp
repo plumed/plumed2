@@ -307,8 +307,8 @@ double ActionWithArguments::getProjection(unsigned i,unsigned j)const {
   return Value::projection(*v1,*v2);
 }
 
-void ActionWithArguments::addForcesOnArguments( const std::vector<double>& forces ) {
-  for(unsigned i=0; i<arguments.size(); ++i) arguments[i]->addForce( forces[i] );
+void ActionWithArguments::addForcesOnArguments( const unsigned& argstart, const std::vector<double>& forces, unsigned& ind  ) {
+  for(unsigned i=0; i<arguments.size(); ++i) { arguments[i]->addForce( forces[i] ); ind++; }
 }
 
 bool ActionWithArguments::calculateConstantValues( const bool& haveatoms ) {

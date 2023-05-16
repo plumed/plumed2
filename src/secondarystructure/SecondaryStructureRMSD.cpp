@@ -260,7 +260,7 @@ void SecondaryStructureRMSD::performTask( const unsigned& task_index, const unsi
 }
 
 void SecondaryStructureRMSD::apply() {
-  if( getForcesFromVessels( forcesToApply ) ) setForcesOnAtoms( forcesToApply );
+  unsigned ind=0; if( getForcesFromVessels( forcesToApply ) ) setForcesOnAtoms( forcesToApply, ind );
 }
 
 }

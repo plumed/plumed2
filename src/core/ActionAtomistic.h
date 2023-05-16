@@ -136,9 +136,9 @@ public:
 /// Get reference to Pbc
   const Pbc & getPbc() const;
 /// Add the forces to the atoms
-  void setForcesOnAtoms( const std::vector<double>& forcesToApply, unsigned ind=0 );
+  void setForcesOnAtoms( const std::vector<double>& forcesToApply, unsigned& ind );
 /// Add the virial forces
-  void setForcesOnCell(const std::vector<double>& forcesToApply, unsigned ind);
+  void setForcesOnCell(const std::vector<double>& forcesToApply, unsigned& ind);
 /// Skip atom retrieval - use with care.
 /// If this function is called during initialization, then atoms are
 /// not going to be retrieved. Can be used for optimization. Notice that

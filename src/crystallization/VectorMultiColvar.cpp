@@ -109,7 +109,7 @@ void VectorMultiColvar::addForcesOnAtoms( const std::vector<double>& inforces ) 
   std::vector<double> oldforces( getNumberOfDerivatives() );
   getForcesFromVessels( oldforces );
   for(unsigned i=0; i<getNumberOfDerivatives(); ++i) oldforces[i]+=inforces[i];
-  setForcesOnAtoms( oldforces );
+  unsigned ind=0; setForcesOnAtoms( oldforces, ind );
 }
 
 }
