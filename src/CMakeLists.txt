@@ -234,7 +234,6 @@ endif()
 #  --enable-external-molfile-plugins
 #                          enable search for external molfile_plugins, default:
 #                          yes
-#  --enable-zlib           enable search for zlib, default: yes
 #  --enable-readdir-r      enable search for readdir_r (threadsafe), default:
 #                          no
 #  --enable-cregex         enable search for C regular expression, default: yes
