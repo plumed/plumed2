@@ -23,11 +23,10 @@
 #define __PLUMED_core_ActionWithVirtualAtom_h
 
 #include "ActionAtomistic.h"
+#include "ActionWithValue.h"
 #include "tools/AtomNumber.h"
 #include "tools/Vector.h"
 #include "tools/Tensor.h"
-#include "Atoms.h"
-#include <array>
 
 namespace PLMD {
 
@@ -39,13 +38,9 @@ Inherit from here if you are calculating the position of a virtual atom (eg a ce
 /// Class to add a single virtual atom to the system.
 /// (it might be extended to add multiple virtual atoms).
 class ActionWithVirtualAtom:
-  public ActionAtomistic
+  public ActionAtomistic,
+  public ActionWithValue
 {
-  const AtomNumber index;
-  std::vector<Tensor> derivatives;
-  std::array<Tensor,3> boxDerivatives;
-  std::map<AtomNumber,Tensor> gradients;
-  void apply() override;
 protected:
 /// Set position of the virtual atom
   void setPosition(const Vector &);
@@ -53,12 +48,12 @@ protected:
   void setMass(double);
 /// Set its charge
   void setCharge(double);
-/// Request atoms on which the calculation depends
+/// Request the atoms on which the calculation demands
   void requestAtoms(const std::vector<AtomNumber> & a);
 /// Set the derivatives of virtual atom coordinate wrt atoms on which it dependes
   void setAtomsDerivatives(const std::vector<Tensor> &d);
 /// Set the box derivatives.
-/// This should be an array of size 3. First index corresponds
+/// This should be a vector of size 3. First index corresponds
 /// to the components of the virtual atom.
 /// Notice that this routine subtract the trivial term coming from cell deformation
 /// since this term is already implicitly included. Indeed, if the vatom
@@ -66,7 +61,7 @@ protected:
 /// to call this function (implicit term is fine) (e.g. vatom::COM and vatom::Center).
 /// On the other hand if the vatom position is a non-linear function of atomic coordinates this
 /// should be called (see vatom::Ghost).
-  void setBoxDerivatives(const std::array<Tensor,3> &d);
+  void setBoxDerivatives(const std::vector<Tensor> &d);
 /// Set box derivatives automatically.
 /// It should be called after the settomsDerivatives has been used for all
 /// single atoms.
@@ -75,44 +70,42 @@ protected:
 ///          in the same periodic image.
   void setBoxDerivativesNoPbc();
 public:
-  void setGradients();
-  const std::map<AtomNumber,Tensor> & getGradients()const;
 /// Return the atom id of the corresponding virtual atom
   AtomNumber getIndex()const;
   explicit ActionWithVirtualAtom(const ActionOptions&ao);
-  ~ActionWithVirtualAtom();
   static void registerKeywords(Keywords& keys);
-  void setGradientsIfNeeded();
+  virtual unsigned getNumberOfDerivatives();
+  virtual void apply();
 };
 
 inline
-AtomNumber ActionWithVirtualAtom::getIndex()const {
-  return index;
+unsigned ActionWithVirtualAtom::getNumberOfDerivatives() {
+  return 3*getNumberOfAtoms()+9;
 }
 
 inline
 void ActionWithVirtualAtom::setPosition(const Vector & pos) {
-  atoms.positions[index.index()]=pos;
+  for(unsigned i=0; i<3; ++i) getPntrToComponent(i)->set(pos[i]);
 }
 
 inline
 void ActionWithVirtualAtom::setMass(double m) {
-  atoms.masses[index.index()]=m;
+  getPntrToComponent("mass")->set(m);
 }
 
 inline
 void ActionWithVirtualAtom::setCharge(double c) {
-  atoms.charges[index.index()]=c;
+  getPntrToComponent("charge")->set(c);
 }
 
 inline
 void ActionWithVirtualAtom::setAtomsDerivatives(const std::vector<Tensor> &d) {
-  derivatives=d;
-}
-
-inline
-const std::map<AtomNumber,Tensor> & ActionWithVirtualAtom::getGradients()const {
-  return gradients;
+  for(unsigned i=0; i<3; ++i) {
+      Value* myval=getPntrToComponent(i);
+      for(unsigned j=0; j<getNumberOfAtoms(); ++j) {
+          for(unsigned k=0; k<3; ++k) myval->setDerivative( 3*j + k, d[j][k][i] );
+      } 
+  }
 }
 
 }

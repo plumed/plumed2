@@ -23,6 +23,7 @@
 #include "ActionWithValue.h"
 #include "ActionAtomistic.h"
 #include "ActionForInterface.h"
+#include "ActionWithVirtualAtom.h"
 #include "tools/PDB.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
@@ -188,6 +189,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
           std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
           if( all.empty() ) error("your input file is not telling plumed to calculate anything");
           for(unsigned j=0; j<all.size(); j++) {
+            ActionWithVirtualAtom* av=dynamic_cast<ActionWithVirtualAtom*>( all[j] ); if( av ) continue;
             ActionForInterface* ap=dynamic_cast<ActionForInterface*>( all[j] ); if( ap && all[j]->getName()!="ENERGY" ) continue;
             for(int k=0; k<all[j]->getNumberOfComponents(); ++k) arg.push_back(all[j]->copyOutput(k));
           }
@@ -310,6 +312,25 @@ double ActionWithArguments::getProjection(unsigned i,unsigned j)const {
 void ActionWithArguments::addForcesOnArguments( const unsigned& argstart, const std::vector<double>& forces, unsigned& ind  ) {
   for(unsigned i=0; i<arguments.size(); ++i) { arguments[i]->addForce( forces[i] ); ind++; }
 }
+
+void ActionWithArguments::setGradients( Value* myval, unsigned& start ) const {
+  if( !myval->hasDeriv ) return; plumed_assert( myval->getRank()==0 );
+
+  bool scalar=true;
+  for(unsigned i=0; i<arguments.size(); ++i ) {
+      if( arguments[i]->getRank()!=0 ) { scalar=false; break; }
+  } 
+  if( !scalar ) {
+       bool constant=true;
+       for(unsigned i=0; i<arguments.size(); ++i ) {
+           if( !arguments[i]->isConstant() ) { constant=false; break; }
+           else start += arguments[i]->getNumberOfValues();
+       }
+       if( !constant ) error("cannot set gradient as unable to handle non-constant actions that take vectors/matrices/grids in input");
+  }
+  // Now pass the gradients 
+  for(unsigned i=0; i<arguments.size(); ++i ) arguments[i]->passGradients( myval->getDerivative(i), myval->gradients );
+} 
 
 bool ActionWithArguments::calculateConstantValues( const bool& haveatoms ) {
   ActionWithValue* av = dynamic_cast<ActionWithValue*>( this );

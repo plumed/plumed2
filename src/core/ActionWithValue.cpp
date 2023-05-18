@@ -20,6 +20,8 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithValue.h"
+#include "ActionWithArguments.h"
+#include "ActionAtomistic.h"
 #include "tools/Exception.h"
 #include "tools/OpenMP.h"
 #include "tools/Communicator.h"
@@ -205,7 +207,14 @@ void ActionWithValue::componentIsPeriodic( const std::string& name, const std::s
 
 void ActionWithValue::setGradientsIfNeeded() {
   if(isOptionOn("GRADIENTS")) {
-    for(unsigned i=0; i<values.size(); i++) values[i]->setGradients();
+    ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>(this);
+    if(aa) {
+        for(unsigned i=0; i<values.size(); i++) { unsigned start=0; values[i]->gradients.clear(); values[i]->setGradients( aa, start ); }
+    } else {
+        ActionWithArguments* aarg = dynamic_cast<ActionWithArguments*>( this );
+        if( !aarg ) plumed_merror( "failing in " + getLabel() );
+        for(unsigned i=0; i<values.size(); i++) { unsigned start=0; values[i]->gradients.clear(); aarg->setGradients( values[i].get(), start ); }
+    } 
   }
 }
 

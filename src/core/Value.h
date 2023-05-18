@@ -33,6 +33,7 @@
 namespace PLMD {
 
 class ActionWithValue;
+class ActionAtomistic;
 
 /// \ingroup TOOLBOX
 /// A class for holding the value of a function together with its derivatives.
@@ -45,6 +46,7 @@ class ActionWithValue;
 /// you are implementing please feel free to use it.
 class Value {
   friend class ActionWithValue;
+  friend class ActionWithArguments;
   friend class DomainDecomposition;
 /// This copies the contents of a value into a second value (just the derivatives and value)
   friend void copy( const Value& val1, Value& val2 );
@@ -158,7 +160,9 @@ public:
 /// Get the difference between max and minimum of domain
   double getMaxMinusMin()const;
 /// This sets up the gradients
-  void setGradients();
+  void setGradients( ActionAtomistic* aa, unsigned& start );
+/// This passes gradients from one action to another
+  void passGradients( const double& der, std::map<AtomNumber,Vector>& g ) const ;
   static double projection(const Value&,const Value&);
 /// Get the rank of the object that is contained in this value
   unsigned getRank() const ;

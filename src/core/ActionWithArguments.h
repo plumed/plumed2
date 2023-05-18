@@ -86,6 +86,8 @@ public:
   void interpretArgumentList(const std::vector<std::string>& c, std::vector<Value*>&arg);
 /// Used to calculate constant values in startup
   bool calculateConstantValues( const bool& have_atoms );
+/// Get the gradient for this action
+  void setGradients( Value* myval, unsigned& start ) const ;
 };
 
 

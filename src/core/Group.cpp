@@ -227,7 +227,8 @@ void Group::registerKeywords( Keywords& keys ) {
 std::vector<std::string> Group::getGroupAtoms() const {
   std::vector<std::string> atoms_str(atoms.size());
   for(unsigned i=0;i<atoms.size(); ++i) { 
-      if( plumed.getAtoms().isVirtualAtom(atoms[i]) ) atoms_str[i] = plumed.getAtoms().getVirtualAtomsAction(atoms[i])->getLabel();
+      unsigned nn, k; getValueIndices( atoms[i], nn, k );
+      if( xpos[nn]->getNumberOfValues()==1 ) atoms_str[i] = (xpos[nn]->getPntrToAction())->getLabel();
       else { Tools::convert( atoms[i].serial(), atoms_str[i] ); }
   }
   return atoms_str;

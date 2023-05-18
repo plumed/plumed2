@@ -149,36 +149,20 @@ void Value::getDomain(double&minout,double&maxout) const {
   maxout=max;
 }
 
-void Value::setGradients() {
+void Value::setGradients( ActionAtomistic* aa, unsigned& start ) {
   // Can't do gradients if we don't have derivatives
   if( !hasDeriv ) return;
-  gradients.clear();
-  ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(action);
-  ActionWithArguments*aw=dynamic_cast<ActionWithArguments*>(action);
-  if(aa) {
-    const Atoms&atoms((aa->plumed).getAtoms());
-    for(unsigned j=0; j<aa->getNumberOfAtoms(); ++j) {
-      AtomNumber an=aa->getAbsoluteIndex(j);
-      if(atoms.isVirtualAtom(an)) {
-        const ActionWithVirtualAtom* a=atoms.getVirtualAtomsAction(an);
-        for(const auto & p : a->getGradients()) {
-// controllare l'ordine del matmul:
-          gradients[p.first]+=matmul(Vector(data[1+3*j],data[1+3*j+1],data[1+3*j+2]),p.second);
-        }
-      } else {
-        for(unsigned i=0; i<3; i++) gradients[an][i]+=data[1+3*j+i];
-      }
-    }
-  } else if(aw) {
-    std::vector<Value*> values=aw->getArguments();
-    for(unsigned j=0; j<data.size()-1; j++) {
-      for(const auto & p : values[j]->gradients) {
-        AtomNumber iatom=p.first;
-        gradients[iatom]+=p.second*data[1+j];
-      }
-    }
-  } else plumed_error();
-}
+  plumed_assert( shape.size()==0 );
+  for(unsigned j=0; j<aa->getNumberOfAtoms(); ++j) {
+      Vector der(data[1+start+3*j],data[1+start+3*j+1],data[1+start+3*j+2]);
+      aa->getGradient( j, der, gradients );
+  }
+  start += aa->getNumberOfAtoms();
+} 
+  
+void Value::passGradients( const double& der, std::map<AtomNumber,Vector>& g ) const {
+  for(const auto & p : gradients) { AtomNumber iatom=p.first; g[iatom] += p.second*der; }
+} 
 
 double Value::projection(const Value& v1,const Value&v2) {
   double proj=0.0;

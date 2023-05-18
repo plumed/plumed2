@@ -40,6 +40,7 @@ class PDB;
 class ActionAtomistic :
   virtual public Action
 {
+  friend class Group;
   friend class DomainDecomposition;
 
   std::vector<AtomNumber> indexes;         // the set of needed atoms
@@ -68,10 +69,10 @@ class ActionAtomistic :
 
 /// Values that hold information about atom positions and charges
   std::vector<Value*>   xpos, ypos, zpos, masv, chargev;  
+/// Used to interpret whether this index is a virtual atom or a real atom
+  void getValueIndices( const AtomNumber& i, unsigned& valno, unsigned& k ) const ;
   const std::vector<AtomNumber> & getUniqueLocal( const bool& useunique, const std::vector<int>& g2l );
 protected:
-  Atoms&                atoms;
-
   bool                  chargesWereSet;
   void setExtraCV(const std::string &name);
 
@@ -156,7 +157,6 @@ public:
 // virtual functions:
 
   explicit ActionAtomistic(const ActionOptions&ao);
-  ~ActionAtomistic();
 
   static void registerKeywords( Keywords& keys );
 
@@ -174,6 +174,8 @@ public:
 /// Read in an input file containing atom positions and calculate the action for the atomic
 /// configuration therin
   void readAtomsFromPDB( const PDB& pdb ) override;
+/// Transfer the gradients 
+  void getGradient( const unsigned& ind, Vector& deriv, std::map<AtomNumber,Vector>& gradients ) const ;
 };
 
 inline
