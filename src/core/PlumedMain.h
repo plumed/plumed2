@@ -478,6 +478,12 @@ public:
   void readBinary(std::istream&);
 /// Used to set the name of the action that holds the energy
   void setEnergyValue( const std::string& name );
+/// Get the real preicision
+  int getRealPrecision() const;
+/// Are we using natural units 
+  bool usingNaturalUnits() const ;
+/// Get the units that are being used
+  const Units& getUnits();
 };
 
 /////

@@ -27,6 +27,7 @@
 #include "core/ActionSet.h"
 #include "core/PlumedMain.h"
 #include "core/GenericMolInfo.h"
+#include "tools/Communicator.h"
 #include "tools/OpenMP.h"
 #include <initializer_list>
 

@@ -26,7 +26,6 @@
 #include "ActionWithVirtualAtom.h"
 #include "tools/Exception.h"
 #include "tools/OpenMP.h"
-#include "Atoms.h"
 #include "PlumedMain.h"
 
 namespace PLMD {

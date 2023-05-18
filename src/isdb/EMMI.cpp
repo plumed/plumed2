@@ -25,6 +25,7 @@
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "tools/Matrix.h"
+#include "tools/Communicator.h"
 #include "core/GenericMolInfo.h"
 #include "core/ActionSet.h"
 #include "tools/File.h"

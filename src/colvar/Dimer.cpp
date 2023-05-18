@@ -22,6 +22,7 @@
 #include "Colvar.h"
 #include "ActionRegister.h"
 #include "core/PlumedMain.h"
+#include "tools/Communicator.h"
 
 namespace PLMD {
 namespace colvar {

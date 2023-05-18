@@ -22,7 +22,6 @@
 #include "ActionToGetData.h"
 #include "ActionRegister.h"
 #include "PlumedMain.h"
-#include "Atoms.h"
 
 //+PLUMEDOC ANALYSIS GET
 /*
@@ -47,7 +46,7 @@ ActionToGetData::ActionToGetData(const ActionOptions&ao):
   Action(ao),
   ActionPilot(ao),
   ActionWithArguments(ao),
-  mydata(DataPassingObject::create(plumed.getAtoms().getRealPrecision()))
+  mydata(DataPassingObject::create(plumed.getRealPrecision()))
 {
   std::string type; parse("TYPE",type);
   if( type=="value" ) gtype=val;

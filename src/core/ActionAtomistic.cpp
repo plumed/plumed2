@@ -30,7 +30,6 @@
 #include "Group.h"
 #include "ActionWithVirtualAtom.h"
 #include "tools/Exception.h"
-#include "Atoms.h"
 #include "tools/Pbc.h"
 #include "tools/PDB.h"
 

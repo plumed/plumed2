@@ -813,7 +813,6 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
 void PlumedMain::init() {
 // check that initialization just happens once
   initialized=true;
-  atoms.init();
   if(!log.isOpen()) log.link(stdout);
   log<<"PLUMED is starting\n";
   log<<"Version: "<<config::getVersionLong()<<" (git: "<<config::getVersionGit()<<") "
@@ -826,7 +825,7 @@ void PlumedMain::init() {
   log<<"Root: "<<config::getPlumedRoot()<<"\n";
   log<<"For installed feature, see "<<config::getPlumedRoot() + "/src/config/config.txt\n";
   log.printf("Molecular dynamics engine: %s\n",MDEngine.c_str());
-  log.printf("Precision of reals: %d\n",atoms.getRealPrecision());
+  log.printf("Precision of reals: %d\n",passtools->getRealPrecision());
   log.printf("Running over %d %s\n",comm.Get_size(),(comm.Get_size()>1?"nodes":"node"));
   log<<"Number of threads: "<<OpenMP::getNumThreads()<<"\n";
   log<<"Cache line size: "<<OpenMP::getCachelineSize()<<"\n";
@@ -1308,28 +1307,36 @@ void PlumedMain::setInputForce( const std::string& name, const TypesafePtr & val
 }
 
 void PlumedMain::setUnits( const bool& natural, const Units& u ) {
-  atoms.updateUnits();
   std::vector<ActionToPutData*> idata = actionSet.select<ActionToPutData*>();
   for(const auto & ip : idata) ip->updateUnits( atoms.getMDUnits(), u );
 }
 
 void PlumedMain::startStep() {
-  atoms.startStep();
   for(const auto & ip : inputs) ip->resetForStepStart();
 }
 
 void PlumedMain::writeBinary(std::ostream&o)const {
-  atoms.writeBinary(o);
   for(const auto & ip : inputs) ip->writeBinary(o);
 }
 
 void PlumedMain::readBinary(std::istream&i) {
-  atoms.readBinary(i);
   for(const auto & ip : inputs) ip->readBinary(i);
 }
 
 void PlumedMain::setEnergyValue( const std::string& name ) {
   name_of_energy = name; 
+}
+
+int PlumedMain::getRealPrecision() const {
+  return passtools->getRealPrecision(); 
+} 
+
+bool PlumedMain::usingNaturalUnits() const {
+  return passtools->usingNaturalUnits;
+}
+
+const Units& PlumedMain::getUnits() {
+  return passtools->units;
 }   
 
 #ifdef __PLUMED_HAS_PYTHON

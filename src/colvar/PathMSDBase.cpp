@@ -23,6 +23,7 @@
 #include "Colvar.h"
 #include "ActionRegister.h"
 #include "core/PlumedMain.h"
+#include "tools/Communicator.h"
 #include "tools/PDB.h"
 #include "tools/RMSD.h"
 #include "tools/Tools.h"

@@ -25,6 +25,7 @@
 #include "core/ActionRegister.h"
 #include "tools/Tools.h"
 #include "tools/PlumedHandle.h"
+#include "tools/Communicator.h"
 #include "core/PlumedMain.h"
 #include <cstring>
 #ifdef __PLUMED_HAS_DLOPEN

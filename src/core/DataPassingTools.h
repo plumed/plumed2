@@ -25,12 +25,20 @@
 #include <string>
 #include <memory>
 #include <map>
+#include "tools/Units.h"
 
 namespace PLMD {
 
 class PlumedMain;
 
 class DataPassingTools {
+friend class PlumedMain;
+private:
+/// The units used in the MD code and PLUMED
+  Units units;
+  Units MDUnits;
+/// Is the code using natural units
+  bool usingNaturalUnits;
 public:
   static std::unique_ptr<DataPassingTools> create(unsigned n);
   virtual int getRealPrecision() const = 0;

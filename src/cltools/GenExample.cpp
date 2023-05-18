@@ -29,6 +29,7 @@
 #include "core/ActionShortcut.h"
 #include "core/ActionSet.h"
 #include "core/PlumedMain.h"
+#include "tools/Communicator.h"
 #include "tools/IFile.h"
 #include <cstdio>
 #include <string>

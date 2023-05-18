@@ -25,6 +25,7 @@
 #include "core/ActionWithValue.h"
 #include "core/ActionAtomistic.h"
 #include "core/ActionWithArguments.h"
+#include "tools/Communicator.h"
 #include "core/PlumedMain.h"
 #include "tools/Random.h"
 #include "tools/OpenMP.h"

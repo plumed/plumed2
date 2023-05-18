@@ -40,6 +40,7 @@
 #include "tools/Pbc.h"
 #include "tools/PDB.h"
 #include "tools/Torsion.h"
+#include "tools/Communicator.h"
 
 namespace PLMD {
 namespace isdb {

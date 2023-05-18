@@ -23,7 +23,6 @@
 #include "ActionRegister.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
-#include "Atoms.h"
 
 //+PLUMEDOC ANALYSIS PUT
 /*
@@ -57,7 +56,7 @@ ActionToPutData::ActionToPutData(const ActionOptions&ao):
   fixed(false),
   from_domains(false),
   dataCanBeSet(true),
-  mydata(DataPassingObject::create(plumed.getAtoms().getRealPrecision()))
+  mydata(DataPassingObject::create(plumed.getRealPrecision()))
 {
   if( getName()!="ENERGY" && getName()!="PBC" ) {
     std::vector<unsigned> shape; parseVector("SHAPE",shape);

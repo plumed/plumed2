@@ -22,6 +22,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include "tools/SwitchingFunction.h"
 #include "tools/PDB.h"
 #include "tools/Pbc.h"
+#include "tools/Communicator.h"
 #include "tools/Stopwatch.h"
 #include "core/ActionSet.h"
 
