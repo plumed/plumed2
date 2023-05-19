@@ -27,7 +27,7 @@
 #include "PlumedMain.h"
 #include "tools/Log.h"
 #include "tools/Exception.h"
-#include "Atoms.h"
+#include "tools/Communicator.h"
 #include "ActionSet.h"
 #include <iostream>
 
@@ -324,11 +324,11 @@ bool Action::getCPT() const {
 }
 
 const Units& Action::getUnits() const {
-  return plumed.getAtoms().getUnits(); 
+  return plumed.getUnits(); 
 }
 
 bool Action::usingNaturalUnits() const {
-  return plumed.getAtoms().usingNaturalUnits();
+  return plumed.usingNaturalUnits();
 }
 
 double Action::getKBoltzmann() const {

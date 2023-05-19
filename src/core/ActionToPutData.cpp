@@ -93,6 +93,15 @@ void ActionToPutData::setUnit( const std::string& unitstr, const std::string& fu
   else error( funitstr + " is not a valid input force unit");
 }
 
+std::string ActionToPutData::getUnitName() const {
+  if( unit==e ) return "energy"; 
+  if( unit==l ) return "length"; 
+  if( unit==m ) return "mass"; 
+  if( unit==q ) return "charge"; 
+  if( unit==t ) return "time";
+  plumed_error(); 
+}
+
 void ActionToPutData::setStart( const std::string& name, const unsigned& sss) {
   plumed_assert( name==getLabel() ); mydata->setStart(sss);
 }
@@ -101,19 +110,14 @@ void ActionToPutData::setStride( const std::string& name, const unsigned& sss ) 
   plumed_assert( name==getLabel() ); mydata->setStride(sss);
 }
 
-void ActionToPutData::updateUnits( const Units& MDUnits, const Units& units ) {
+void ActionToPutData::updateUnits( DataPassingTools* passtools ) {
   // Don't need to do anythign if this is just a number
   if( unit==n ) return ;
 
-  double vunits=1;
-  if( unit==e ) vunits = MDUnits.getEnergy()/units.getEnergy();
-  else if( unit==l ) vunits = MDUnits.getLength()/units.getLength();
-  else if( unit==m ) vunits = MDUnits.getMass()/units.getMass();
-  else if( unit==q ) vunits = MDUnits.getCharge()/units.getCharge();
-  else if( unit==t ) vunits = MDUnits.getTime()/units.getTime();
+  double vunits=passtools->getUnitConversion( getUnitName() );
   mydata->setUnit(vunits); if( fixed && wasset ) mydata->share_data( 0, getPntrToValue()->getNumberOfValues(), getPntrToValue() );
-  if( funit==eng ) mydata->setForceUnit(units.getEnergy()/MDUnits.getEnergy());
-  else if( funit==d ) mydata->setForceUnit((units.getEnergy()/MDUnits.getEnergy())*vunits);
+  if( funit==eng ) mydata->setForceUnit( 1/passtools->getUnitConversion("energy")); 
+  else if( funit==d ) mydata->setForceUnit(1/passtools->getUnitConversion("energy")*vunits);
 }
 
 bool ActionToPutData::setValuePointer( const std::string& name, const TypesafePtr & val ) {

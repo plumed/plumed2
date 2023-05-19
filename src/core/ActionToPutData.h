@@ -25,6 +25,7 @@
 #include "ActionForInterface.h"
 #include "DataPassingObject.h"
 #include "tools/Units.h"
+#include "DataPassingTools.h"
 
 namespace PLMD {
 
@@ -51,6 +52,8 @@ private:
   enum {d,eng} funit;
 /// This holds the pointer that we getting data from
   std::unique_ptr<DataPassingObject> mydata;
+/// Convert the enum contaning the unit into the name of the unit
+  std::string getUnitName() const ;
 protected:
 /// Setup the units of the input value
   void setUnit( const std::string& unitstr, const std::string& funitstr );
@@ -62,7 +65,7 @@ public:
 /// This resets the stride in the collection object
   void setStride( const std::string& name, const unsigned& sss ) override;
 /// Update the units on the input data
-  void updateUnits( const Units& MDUnits, const Units& units );
+  void updateUnits( DataPassingTools* passtools );
 /// This is called at the start of the step
   void resetForStepStart() override { dataCanBeSet = true; }
 /// These are the actions that set the pointers to the approrpiate values

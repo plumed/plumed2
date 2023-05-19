@@ -29,7 +29,6 @@
 #include "ActionWithVirtualAtom.h"
 #include "ActionToGetData.h"
 #include "ActionToPutData.h"
-#include "Atoms.h"
 #include "CLToolMain.h"
 #include "ExchangePatterns.h"
 #include "GREX.h"
@@ -205,7 +204,6 @@ PlumedMain::PlumedMain():
   active(false),
   passtools(DataPassingTools::create(sizeof(double))),
   endPlumed(false),
-  atoms_fwd(*this),
   actionSet_fwd(*this),
   bias(0.0),
   work(0.0),
@@ -218,6 +216,7 @@ PlumedMain::PlumedMain():
   detailedTimers(false),
   gpuDeviceId(-1)
 {
+  passtools->usingNaturalUnits=false;
   increaseReferenceCounter();
   log.link(comm);
   log.setLinePrefix("PLUMED: ");
@@ -493,12 +492,14 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_clear:
       {
         CHECK_INIT(initialized,word);
-        int natoms = 0; 
-        ActionForInterface* ai = actionSet.selectWithLabel<ActionForInterface*>("posx");
-        if( ai ) natoms = ai->copyOutput(0)->getShape()[0];
+        std::vector<int> natoms; 
+        for(const auto & pp : inputs ) {
+            DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
+            if ( dd ) natoms.push_back( dd->getNumberOfAtoms() );
+        }
         actionSet.clearDelete(); inputs.clear();
-        if( natoms>0 ) {
-          std::string str_natoms; Tools::convert( natoms, str_natoms );
+        for(unsigned i=0;i<natoms.size(); ++i) {
+          std::string str_natoms; Tools::convert( natoms[i], str_natoms );
           readInputLine( MDEngine + ": DOMAIN_DECOMPOSITION NATOMS=" + str_natoms +
                                     " VALUE1=posx UNIT1=length PERIODIC1=NO CONSTANT1=False ROLE1=x" +
                                     " VALUE2=posy UNIT2=length PERIODIC2=NO CONSTANT2=False ROLE2=y" +
@@ -507,7 +508,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
                                     " VALUE5=Charges UNIT5=charge PERIODIC5=NO CONSTANT5=True ROLE5=q");
 
         }
-        setUnits( atoms.usingNaturalUnits(), atoms.getUnits() );
+        setUnits( passtools->usingNaturalUnits, passtools->units );
       }
       break;
       case cmd_getApiVersion:
@@ -522,45 +523,40 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_setRealPrecision:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setRealPrecision(val.get<int>());
         passtools=DataPassingTools::create(val.get<int>());
+        passtools->usingNaturalUnits=false;
         break;
       case cmd_setMDLengthUnits:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.MD2double(val,d);
-        atoms.setMDLengthUnits(d);
+        passtools->MDUnits.setLength(passtools->MD2double(val));
         break;
       case cmd_setMDChargeUnits:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.MD2double(val,d);
-        atoms.setMDChargeUnits(d);
+        passtools->MDUnits.setCharge(passtools->MD2double(val));
         break;
       case cmd_setMDMassUnits:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.MD2double(val,d);
-        atoms.setMDMassUnits(d);
+        passtools->MDUnits.setMass(passtools->MD2double(val));
         break;
       case cmd_setMDEnergyUnits:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.MD2double(val,d);
-        atoms.setMDEnergyUnits(d);
+        passtools->MDUnits.setEnergy(passtools->MD2double(val));
         break;
       case cmd_setMDTimeUnits:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.MD2double(val,d);
-        atoms.setMDTimeUnits(d);
+        passtools->MDUnits.setTime(passtools->MD2double(val));
         break;
       case cmd_setNaturalUnits:
         // set the boltzman constant for MD in natural units (kb=1)
         // only needed in LJ codes if the MD is passing temperatures to plumed (so, not yet...)
         // use as cmd("setNaturalUnits")
         CHECK_NOTINIT(initialized,word);
-        atoms.setMDNaturalUnits(true);
+        passtools->usingNaturalUnits=true;
         break;
       case cmd_setNoVirial:
       {
@@ -596,7 +592,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       {
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        int natoms = val.get<int>(); atoms.setNatoms(natoms); std::string str_natoms; Tools::convert( natoms, str_natoms );
+        int natoms = val.get<int>(); std::string str_natoms; Tools::convert( natoms, str_natoms );
         ActionForInterface* dd=actionSet.selectWithLabel<ActionForInterface*>(MDEngine);
         if( !dd && natoms>0 ) readInputLine( MDEngine + ": DOMAIN_DECOMPOSITION NATOMS=" + str_natoms +  +
                                                         " VALUE1=posx UNIT1=length PERIODIC1=NO CONSTANT1=False ROLE1=x" +
@@ -731,7 +727,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_getBias:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.double2MD(getBias()/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy()),val);
+        plumedQuantityToMD( "energy", getBias(), val );
         break;
       case cmd_checkAction:
         CHECK_NOTNULL(val,word);
@@ -783,7 +779,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       {
         double v;
         plumed_assert(words.size()==2);
-        if(Tools::convertNoexcept(words[1],v)) atoms.double2MD(v,val);
+        if(Tools::convertNoexcept(words[1],v)) passtools->double2MD(v,val);
       }
       break;
       default:
@@ -829,14 +825,17 @@ void PlumedMain::init() {
   log.printf("Running over %d %s\n",comm.Get_size(),(comm.Get_size()>1?"nodes":"node"));
   log<<"Number of threads: "<<OpenMP::getNumThreads()<<"\n";
   log<<"Cache line size: "<<OpenMP::getCachelineSize()<<"\n";
-  log.printf("Number of atoms: %d\n",atoms.getNatoms());
+  for(const auto & pp : inputs ) {
+      DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
+      if ( dd ) log.printf("Number of atoms: %d\n",dd->getNumberOfAtoms());
+  }
   if(grex) log.printf("GROMACS-like replica exchange is on\n");
   log.printf("File suffix: %s\n",getSuffix().c_str());
   if(plumedDat.length()>0) {
     readInputFile(plumedDat);
     plumedDat="";
   }
-  setUnits( atoms.usingNaturalUnits(), atoms.getUnits() );
+  setUnits( passtools->usingNaturalUnits, passtools->units );
   ActionToPutData* ts = actionSet.selectWithLabel<ActionToPutData*>("timestep");
   if(ts) log.printf("Timestep: %f\n",(ts->copyOutput(0))->get());
   ActionToPutData* kb = actionSet.selectWithLabel<ActionToPutData*>("KbT");
@@ -1307,8 +1306,9 @@ void PlumedMain::setInputForce( const std::string& name, const TypesafePtr & val
 }
 
 void PlumedMain::setUnits( const bool& natural, const Units& u ) {
+  passtools->usingNaturalUnits = natural; passtools->units=u;
   std::vector<ActionToPutData*> idata = actionSet.select<ActionToPutData*>();
-  for(const auto & ip : idata) ip->updateUnits( atoms.getMDUnits(), u );
+  for(const auto & ip : idata) ip->updateUnits( passtools.get() );
 }
 
 void PlumedMain::startStep() {
@@ -1337,7 +1337,16 @@ bool PlumedMain::usingNaturalUnits() const {
 
 const Units& PlumedMain::getUnits() {
   return passtools->units;
-}   
+}
+
+void PlumedMain::plumedQuantityToMD( const std::string& unit, const double& eng, const TypesafePtr & m) const {
+  passtools->double2MD( eng/passtools->getUnitConversion(unit),m );
+}
+
+double PlumedMain::MDQuantityToPLUMED( const std::string& unit, const TypesafePtr & m) const {
+  double x=passtools->MD2double(m);
+  return x*passtools->getUnitConversion(unit); 
+}  
 
 #ifdef __PLUMED_HAS_PYTHON
 // This is here to stop cppcheck throwing an error

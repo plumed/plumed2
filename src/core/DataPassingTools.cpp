@@ -25,12 +25,22 @@
 
 namespace PLMD {
 
+double DataPassingTools::getUnitConversion( const std::string& unit ) const {
+  if( unit=="energy" ) return MDUnits.getEnergy()/units.getEnergy();
+  if( unit=="length" ) return MDUnits.getLength()/units.getLength();
+  if( unit=="mass" ) return  MDUnits.getMass()/units.getMass();
+  if( unit=="charge" ) return MDUnits.getCharge()/units.getCharge();
+  if( unit=="time" ) return MDUnits.getTime()/units.getTime();
+  if( unit=="number" ) return 1;
+  plumed_error();
+}
+
 template <class T>
 class DataPassingToolsTyped : public DataPassingTools {
 public:
   int getRealPrecision() const override;
-  double MD2double(const void*)const override;
-  void double2MD(const double&d,void*m) const override;
+  double MD2double(const TypesafePtr & m)const override;
+  void double2MD(const double&d,const TypesafePtr & m) const override;
 };
 
 std::unique_ptr<DataPassingTools> DataPassingTools::create(unsigned n) {
@@ -50,13 +60,13 @@ int DataPassingToolsTyped<T>::getRealPrecision() const {
 }
 
 template <class T>
-double DataPassingToolsTyped<T>::MD2double(const void*m) const {
-  double d=double(*(static_cast<const T*>(m))); return d;
+double DataPassingToolsTyped<T>::MD2double(const TypesafePtr & m) const {
+  return double(m.template get<T>());
 }
 
 template <class T>
-void DataPassingToolsTyped<T>::double2MD(const double&d,void*m) const {
-  *(static_cast<T*>(m))=T(d);
+void DataPassingToolsTyped<T>::double2MD(const double&d,const TypesafePtr & m) const {
+  m.set(T(d));
 }
 
 }

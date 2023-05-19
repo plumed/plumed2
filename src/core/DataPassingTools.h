@@ -25,6 +25,7 @@
 #include <string>
 #include <memory>
 #include <map>
+#include "tools/TypesafePtr.h"
 #include "tools/Units.h"
 
 namespace PLMD {
@@ -42,8 +43,9 @@ private:
 public:
   static std::unique_ptr<DataPassingTools> create(unsigned n);
   virtual int getRealPrecision() const = 0;
-  virtual double MD2double(const void*) const=0;
-  virtual void double2MD(const double&,void*) const=0;
+  double getUnitConversion( const std::string& unit ) const ;
+  virtual double MD2double(const TypesafePtr & m) const=0;
+  virtual void double2MD(const double&,const TypesafePtr & m) const=0;
 };
 
 }

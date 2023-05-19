@@ -157,11 +157,6 @@ private:
   bool endPlumed;
 
 /// Forward declaration.
-  ForwardDecl<Atoms> atoms_fwd;
-/// Object containing information about atoms (such as positions,...).
-  Atoms&    atoms=*atoms_fwd;           // atomic coordinates
-
-/// Forward declaration.
   ForwardDecl<ActionSet> actionSet_fwd;
 /// Set of actions found in plumed.dat file
   ActionSet& actionSet=*actionSet_fwd;
@@ -388,8 +383,6 @@ public:
     makes sures they are done
   */
   void runJobsAtEndOfCalculation();
-/// Reference to atoms object
-  Atoms& getAtoms();
 /// Reference to the list of Action's
   const ActionSet & getActionSet()const;
 /// Referenge to the log stream
@@ -484,6 +477,11 @@ public:
   bool usingNaturalUnits() const ;
 /// Get the units that are being used
   const Units& getUnits();
+/// Take an energy that is calculated by PLUMED and pass it to a typesafe pointer 
+/// that the MD code can access.
+  void plumedQuantityToMD( const std::string& unit, const double& eng, const TypesafePtr & m) const ;
+/// Take a typesafe pointer from the MD code and convert it to a double
+  double MDQuantityToPLUMED( const std::string& unit, const TypesafePtr & m) const ;
 };
 
 /////
@@ -492,11 +490,6 @@ public:
 inline
 const ActionSet & PlumedMain::getActionSet()const {
   return actionSet;
-}
-
-inline
-Atoms& PlumedMain::getAtoms() {
-  return atoms;
 }
 
 inline
