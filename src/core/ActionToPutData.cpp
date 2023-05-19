@@ -55,6 +55,7 @@ ActionToPutData::ActionToPutData(const ActionOptions&ao):
   noforce(false),
   fixed(false),
   from_domains(false),
+  resetable(false),
   dataCanBeSet(true),
   mydata(DataPassingObject::create(plumed.getRealPrecision()))
 {
