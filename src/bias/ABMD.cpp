@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Bias.h"
 #include "tools/Random.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include <ctime>
 
 namespace PLMD {
