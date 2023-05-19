@@ -25,14 +25,6 @@
 #include "ActionForInterface.h"
 #include "tools/Communicator.h"
 
-//+PLUMEDOC ANALYSIS DOMAIN_DECOMPOSITION
-/*
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
 namespace PLMD {
 
 class ActionToPutData;
