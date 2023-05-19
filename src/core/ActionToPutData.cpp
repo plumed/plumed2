@@ -94,12 +94,12 @@ void ActionToPutData::setUnit( const std::string& unitstr, const std::string& fu
 }
 
 std::string ActionToPutData::getUnitName() const {
-  if( unit==e ) return "energy"; 
-  if( unit==l ) return "length"; 
-  if( unit==m ) return "mass"; 
-  if( unit==q ) return "charge"; 
+  if( unit==e ) return "energy";
+  if( unit==l ) return "length";
+  if( unit==m ) return "mass";
+  if( unit==q ) return "charge";
   if( unit==t ) return "time";
-  plumed_error(); 
+  plumed_error();
 }
 
 void ActionToPutData::setStart( const std::string& name, const unsigned& sss) {
@@ -116,7 +116,7 @@ void ActionToPutData::updateUnits( DataPassingTools* passtools ) {
 
   double vunits=passtools->getUnitConversion( getUnitName() );
   mydata->setUnit(vunits); if( fixed && wasset ) mydata->share_data( 0, getPntrToValue()->getNumberOfValues(), getPntrToValue() );
-  if( funit==eng ) mydata->setForceUnit( 1/passtools->getUnitConversion("energy")); 
+  if( funit==eng ) mydata->setForceUnit( 1/passtools->getUnitConversion("energy"));
   else if( funit==d ) mydata->setForceUnit(1/passtools->getUnitConversion("energy")*vunits);
 }
 

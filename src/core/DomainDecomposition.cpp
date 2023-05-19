@@ -199,7 +199,7 @@ void DomainDecomposition::setAtomsGatindex(const TypesafePtr & g,bool fortran) {
   if(dd) dd.Sum(shuffledAtoms);
   for(unsigned i=0; i<gatindex.size(); i++) g2l[gatindex[i]]=i;
   // keep in unique only those atoms that are local
-  for(unsigned i=0; i<actions.size(); i++) actions[i]->unique_local_needs_update=true; 
+  for(unsigned i=0; i<actions.size(); i++) actions[i]->unique_local_needs_update=true;
   unique.clear();
 }
 
@@ -232,8 +232,8 @@ void DomainDecomposition::share() {
   // Notice that this works with the assumption that charges and masses are
   // not changing during the simulation!
   if( firststep ) {
-      actions = plumed.getActionSet().select<ActionAtomistic*>(); 
-      shareAll(); return;
+    actions = plumed.getActionSet().select<ActionAtomistic*>();
+    shareAll(); return;
   }
 
   if(!getenvForceUnique() || !std::strcmp(getenvForceUnique(),"auto")) {
@@ -255,25 +255,25 @@ void DomainDecomposition::share() {
   }
 
   if(unique_serial || !(int(gatindex.size())==getNumberOfAtoms() && shuffledAtoms==0)) {
-     std::vector<const std::vector<AtomNumber>*> vectors;
-     vectors.reserve(actions.size());
-     for(unsigned i=0; i<actions.size(); i++) {
-       if(actions[i]->isActive()) {
-         if(!actions[i]->getUnique().empty()) {
-           // unique are the local atoms
-           vectors.push_back(&actions[i]->getUniqueLocal( !(dd && shuffledAtoms>0), g2l ));
-         }
-       }
-     }
-     if(!vectors.empty()) atomsNeeded=true;
-     unique.clear();
-     Tools::mergeSortedVectors(vectors,unique,getenvMergeVectorsPriorityQueue());
-  } else {
-     for(unsigned i=0; i<actions.size(); i++) {
+    std::vector<const std::vector<AtomNumber>*> vectors;
+    vectors.reserve(actions.size());
+    for(unsigned i=0; i<actions.size(); i++) {
       if(actions[i]->isActive()) {
-         if(!actions[i]->getUnique().empty()) { atomsNeeded=true; }
+        if(!actions[i]->getUnique().empty()) {
+          // unique are the local atoms
+          vectors.push_back(&actions[i]->getUniqueLocal( !(dd && shuffledAtoms>0), g2l ));
+        }
       }
-     }
+    }
+    if(!vectors.empty()) atomsNeeded=true;
+    unique.clear();
+    Tools::mergeSortedVectors(vectors,unique,getenvMergeVectorsPriorityQueue());
+  } else {
+    for(unsigned i=0; i<actions.size(); i++) {
+      if(actions[i]->isActive()) {
+        if(!actions[i]->getUnique().empty()) { atomsNeeded=true; }
+      }
+    }
   }
 
   // Now we retrieve the atom numbers we need
@@ -285,7 +285,7 @@ void DomainDecomposition::share(const std::vector<AtomNumber>& unique) {
   int ndata=0; std::vector<Value*> values_to_get;
   if(!(int(gatindex.size())==getNumberOfAtoms() && shuffledAtoms==0)) {
     uniq_index.resize(unique.size());
-    for(unsigned i=0; i<unique.size(); i++) uniq_index[i]=g2l[unique[i].index()]; 
+    for(unsigned i=0; i<unique.size(); i++) uniq_index[i]=g2l[unique[i].index()];
     for(const auto & ip : inputs) {
       if( (!ip->fixed || firststep) && ip->wasset ) { (ip->mydata)->share_data( unique, uniq_index, ip->copyOutput(0) ); values_to_get.push_back(ip->copyOutput(0)); ndata++; }
     }
@@ -388,11 +388,11 @@ unsigned DomainDecomposition::getNumberOfForcesToRescale() const {
 
 void DomainDecomposition::apply() {
   for(const auto & ip : inputs) {
-      if( !(ip->getPntrToValue())->forcesWereAdded() || ip->noforce ) {
-          continue;
-      } else if( ip->wasscaled || (int(gatindex.size())==getNumberOfAtoms() && shuffledAtoms==0) ) {
-          (ip->mydata)->add_force( gatindex, ip->getPntrToValue() );
-      } else { (ip->mydata)->add_force( unique, uniq_index, ip->getPntrToValue() ); }
+    if( !(ip->getPntrToValue())->forcesWereAdded() || ip->noforce ) {
+      continue;
+    } else if( ip->wasscaled || (int(gatindex.size())==getNumberOfAtoms() && shuffledAtoms==0) ) {
+      (ip->mydata)->add_force( gatindex, ip->getPntrToValue() );
+    } else { (ip->mydata)->add_force( unique, uniq_index, ip->getPntrToValue() ); }
   }
 }
 

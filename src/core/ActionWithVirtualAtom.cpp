@@ -60,10 +60,10 @@ void ActionWithVirtualAtom::apply() {
 void ActionWithVirtualAtom::setBoxDerivatives(const std::vector<Tensor> &d) {
   plumed_assert(d.size()==3); unsigned nbase = 3*getNumberOfAtoms();
   for(unsigned i=0; i<3; ++i) {
-      Value* myval = getPntrToComponent(i);
-      for(unsigned j=0; j<3; ++j) {
-          for(unsigned k=0; k<3; ++k) myval->setDerivative( nbase + 3*j + k, d[i][j][k] );
-      }
+    Value* myval = getPntrToComponent(i);
+    for(unsigned j=0; j<3; ++j) {
+      for(unsigned k=0; k<3; ++k) myval->setDerivative( nbase + 3*j + k, d[i][j][k] );
+    }
   }
 // Subtract the trivial part coming from a distorsion applied to the ghost atom first.
 // Notice that this part alone should exactly cancel the already accumulated virial

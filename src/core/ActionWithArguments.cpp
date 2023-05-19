@@ -318,19 +318,19 @@ void ActionWithArguments::setGradients( Value* myval, unsigned& start ) const {
 
   bool scalar=true;
   for(unsigned i=0; i<arguments.size(); ++i ) {
-      if( arguments[i]->getRank()!=0 ) { scalar=false; break; }
-  } 
-  if( !scalar ) {
-       bool constant=true;
-       for(unsigned i=0; i<arguments.size(); ++i ) {
-           if( !arguments[i]->isConstant() ) { constant=false; break; }
-           else start += arguments[i]->getNumberOfValues();
-       }
-       if( !constant ) error("cannot set gradient as unable to handle non-constant actions that take vectors/matrices/grids in input");
+    if( arguments[i]->getRank()!=0 ) { scalar=false; break; }
   }
-  // Now pass the gradients 
+  if( !scalar ) {
+    bool constant=true;
+    for(unsigned i=0; i<arguments.size(); ++i ) {
+      if( !arguments[i]->isConstant() ) { constant=false; break; }
+      else start += arguments[i]->getNumberOfValues();
+    }
+    if( !constant ) error("cannot set gradient as unable to handle non-constant actions that take vectors/matrices/grids in input");
+  }
+  // Now pass the gradients
   for(unsigned i=0; i<arguments.size(); ++i ) arguments[i]->passGradients( myval->getDerivative(i), myval->gradients );
-} 
+}
 
 bool ActionWithArguments::calculateConstantValues( const bool& haveatoms ) {
   ActionWithValue* av = dynamic_cast<ActionWithValue*>( this );

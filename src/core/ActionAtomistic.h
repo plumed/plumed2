@@ -67,7 +67,7 @@ class ActionAtomistic :
   bool                  donotforce;
 
 /// Values that hold information about atom positions and charges
-  std::vector<Value*>   xpos, ypos, zpos, masv, chargev;  
+  std::vector<Value*>   xpos, ypos, zpos, masv, chargev;
 /// Used to interpret whether this index is a virtual atom or a real atom
   void getValueIndices( const AtomNumber& i, unsigned& valno, unsigned& k ) const ;
   const std::vector<AtomNumber> & getUniqueLocal( const bool& useunique, const std::vector<int>& g2l );
@@ -93,7 +93,7 @@ public:
 /// Modify position of i-th atom (access by absolute AtomNumber).
 /// \warning Should be only used by actions that need to modify the shared position array.
 ///          This array is insensitive to local changes such as makeWhole(), numerical derivatives, etc.
-  void setGlobalPosition(const AtomNumber& , const Vector& pos);
+  void setGlobalPosition(const AtomNumber&, const Vector& pos);
 /// Get total number of atoms, including virtual ones.
 /// Can be used to make a loop on modifyGlobalPosition or getGlobalPosition.
   unsigned getTotAtoms()const;
@@ -173,7 +173,7 @@ public:
 /// Read in an input file containing atom positions and calculate the action for the atomic
 /// configuration therin
   void readAtomsFromPDB( const PDB& pdb ) override;
-/// Transfer the gradients 
+/// Transfer the gradients
   void getGradient( const unsigned& ind, Vector& deriv, std::map<AtomNumber,Vector>& gradients ) const ;
 };
 

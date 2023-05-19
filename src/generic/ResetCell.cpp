@@ -171,8 +171,8 @@ void ResetCell::apply() {
 // rotate back forces
   for(unsigned i=0; i<getTotAtoms(); i++) {
     Vector f=getForce(AtomNumber::index(i));
-    Vector nf=matmul(transpose(rotation),f); 
-    addForce(AtomNumber::index(i), nf-f ); 
+    Vector nf=matmul(transpose(rotation),f);
+    addForce(AtomNumber::index(i), nf-f );
   }
 
 // I have no mathematical derivation for this.

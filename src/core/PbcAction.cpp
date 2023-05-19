@@ -56,9 +56,9 @@ PbcAction::PbcAction(const ActionOptions&ao):
 
 void PbcAction::setPbc() {
   if( !interface ) {
-      std::vector<DomainDecomposition*> allput=plumed.getActionSet().select<DomainDecomposition*>();
-      if( allput.size()>1 ) warning("found more than one interface so don't know how to broadcast cell");
-      interface = allput[0];
+    std::vector<DomainDecomposition*> allput=plumed.getActionSet().select<DomainDecomposition*>();
+    if( allput.size()>1 ) warning("found more than one interface so don't know how to broadcast cell");
+    interface = allput[0];
   }
   Tensor box; if( interface ) interface->broadcastToDomains( getPntrToValue() );
   for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) box(i,j) = getPntrToValue()->get(3*i+j);

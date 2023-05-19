@@ -153,15 +153,15 @@ void Value::setGradients( ActionAtomistic* aa, unsigned& start ) {
   if( !hasDeriv ) return;
   plumed_assert( shape.size()==0 );
   for(unsigned j=0; j<aa->getNumberOfAtoms(); ++j) {
-      Vector der(data[1+start+3*j],data[1+start+3*j+1],data[1+start+3*j+2]);
-      aa->getGradient( j, der, gradients );
+    Vector der(data[1+start+3*j],data[1+start+3*j+1],data[1+start+3*j+2]);
+    aa->getGradient( j, der, gradients );
   }
   start += aa->getNumberOfAtoms();
-} 
-  
+}
+
 void Value::passGradients( const double& der, std::map<AtomNumber,Vector>& g ) const {
   for(const auto & p : gradients) { AtomNumber iatom=p.first; g[iatom] += p.second*der; }
-} 
+}
 
 double Value::projection(const Value& v1,const Value&v2) {
   double proj=0.0;

@@ -114,7 +114,7 @@ class EffectiveEnergyDrift:
   bool ensemble;
   PbcAction* pbc_action;
   DomainDecomposition* domains;
-  ActionToPutData* posx; 
+  ActionToPutData* posx;
   ActionToPutData* posy;
   ActionToPutData* posz;
 public:
@@ -204,9 +204,9 @@ EffectiveEnergyDrift::EffectiveEnergyDrift(const ActionOptions&ao):
   domains = ddact[0];
   std::vector<ActionToPutData*> inputs=plumed.getActionSet().select<ActionToPutData*>();
   for(const auto & pp : inputs ) {
-      if( pp->getRole()=="x" ) posx = pp;
-      if( pp->getRole()=="y" ) posy = pp;
-      if( pp->getRole()=="z" ) posz = pp;
+    if( pp->getRole()=="x" ) posx = pp;
+    if( pp->getRole()=="y" ) posy = pp;
+    if( pp->getRole()=="z" ) posz = pp;
   }
   plumed_assert( posx && posy && posz );
   //resize the received buffers
@@ -220,22 +220,22 @@ EffectiveEnergyDrift::~EffectiveEnergyDrift() {
 }
 
 void EffectiveEnergyDrift::update() {
-  Pbc & tpbc(pbc_action->getPbc()); bool pbc=tpbc.isSet(); 
+  Pbc & tpbc(pbc_action->getPbc()); bool pbc=tpbc.isSet();
 
   //retrieve data of local atoms
   const std::vector<int>& gatindex = domains->getGatindex();
   nLocalAtoms = gatindex.size();
   xpositions.resize( gatindex.size() ); posx->getLocalValues( xpositions );
   ypositions.resize( gatindex.size() ); posy->getLocalValues( ypositions );
-  zpositions.resize( gatindex.size() ); posz->getLocalValues( zpositions ); 
+  zpositions.resize( gatindex.size() ); posz->getLocalValues( zpositions );
   positions.resize( gatindex.size() ); forces.resize( gatindex.size() );
   for(unsigned i=0; i<gatindex.size(); ++i ) {
-      positions[i][0] = xpositions[i];
-      positions[i][1] = ypositions[i];
-      positions[i][2] = zpositions[i]; 
-      forces[i][0] = (posx->copyOutput(0))->getForce( gatindex[i] );
-      forces[i][1] = (posy->copyOutput(0))->getForce( gatindex[i] );
-      forces[i][2] = (posz->copyOutput(0))->getForce( gatindex[i] );
+    positions[i][0] = xpositions[i];
+    positions[i][1] = ypositions[i];
+    positions[i][2] = zpositions[i];
+    forces[i][0] = (posx->copyOutput(0))->getForce( gatindex[i] );
+    forces[i][1] = (posy->copyOutput(0))->getForce( gatindex[i] );
+    forces[i][2] = (posz->copyOutput(0))->getForce( gatindex[i] );
   }
   if(pbc) {
     Tensor B=tpbc.getBox();
@@ -246,7 +246,7 @@ void EffectiveEnergyDrift::update() {
       forces[i]=matmul(B,forces[i]);
     }
     box=B; Tensor virial; Value* boxValue = pbc_action->copyOutput(0);
-    for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) virial[i][j]=boxValue->getForce(3*i+j);
+    for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) virial[i][j]=boxValue->getForce(3*i+j);
     fbox=matmul(transpose(inverse(box)),virial);
   }
 

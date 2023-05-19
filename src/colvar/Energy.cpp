@@ -62,7 +62,7 @@ PRINT ARG=ene
 
 
 class Energy : public ActionToPutData {
-private: 
+private:
 /// This is used to sum the data
   DomainDecomposition* interface;
 /// This is the list of forces that must be scaled
@@ -83,7 +83,7 @@ Energy::Energy(const ActionOptions&ao):
   ActionToPutData(ao),
   interface(NULL)
 {
-  plumed.setEnergyValue( getLabel() ); std::vector<unsigned> shape; 
+  plumed.setEnergyValue( getLabel() ); std::vector<unsigned> shape;
   addValue( shape ); setNotPeriodic(); setUnit( "energy", "default" );
   ActionToPutData* px=plumed.getActionSet().selectWithLabel< ActionToPutData*>("posx");
   plumed_assert(px); forces_to_scale.push_back(px); addDependency( px );
@@ -100,21 +100,21 @@ Energy::Energy(const ActionOptions&ao):
 }
 
 void Energy::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys ); 
+  Action::registerKeywords( keys );
 }
 
 void Energy::wait() {
   if( !interface ) {
-      std::vector<DomainDecomposition*> allput=plumed.getActionSet().select<DomainDecomposition*>();
-      if( allput.size()>1 ) warning("found more than one interface so don't know how to sum energy");
-      interface = allput[0];
+    std::vector<DomainDecomposition*> allput=plumed.getActionSet().select<DomainDecomposition*>();
+    if( allput.size()>1 ) warning("found more than one interface so don't know how to sum energy");
+    interface = allput[0];
   }
   ActionToPutData::wait(); if( interface ) interface->sumOverDomains( copyOutput(0) );
 }
 
 void Energy::apply() {
   if( getPntrToValue()->forcesWereAdded() ) {
-      for(unsigned i=0;i<forces_to_scale.size();++i) forces_to_scale[i]->rescaleForces( 1.- getPntrToValue()->getForce(0));
+    for(unsigned i=0; i<forces_to_scale.size(); ++i) forces_to_scale[i]->rescaleForces( 1.- getPntrToValue()->getForce(0));
   }
 }
 

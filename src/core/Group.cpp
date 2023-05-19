@@ -226,10 +226,10 @@ void Group::registerKeywords( Keywords& keys ) {
 
 std::vector<std::string> Group::getGroupAtoms() const {
   std::vector<std::string> atoms_str(atoms.size());
-  for(unsigned i=0;i<atoms.size(); ++i) { 
-      unsigned nn, k; getValueIndices( atoms[i], nn, k );
-      if( xpos[nn]->getNumberOfValues()==1 ) atoms_str[i] = (xpos[nn]->getPntrToAction())->getLabel();
-      else { Tools::convert( atoms[i].serial(), atoms_str[i] ); }
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    unsigned nn, k; getValueIndices( atoms[i], nn, k );
+    if( xpos[nn]->getNumberOfValues()==1 ) atoms_str[i] = (xpos[nn]->getPntrToAction())->getLabel();
+    else { Tools::convert( atoms[i].serial(), atoms_str[i] ); }
   }
   return atoms_str;
 }

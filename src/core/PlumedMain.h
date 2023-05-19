@@ -473,11 +473,11 @@ public:
   void setEnergyValue( const std::string& name );
 /// Get the real preicision
   int getRealPrecision() const;
-/// Are we using natural units 
+/// Are we using natural units
   bool usingNaturalUnits() const ;
 /// Get the units that are being used
   const Units& getUnits();
-/// Take an energy that is calculated by PLUMED and pass it to a typesafe pointer 
+/// Take an energy that is calculated by PLUMED and pass it to a typesafe pointer
 /// that the MD code can access.
   void plumedQuantityToMD( const std::string& unit, const double& eng, const TypesafePtr & m) const ;
 /// Take a typesafe pointer from the MD code and convert it to a double

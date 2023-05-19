@@ -324,7 +324,7 @@ bool Action::getCPT() const {
 }
 
 const Units& Action::getUnits() const {
-  return plumed.getUnits(); 
+  return plumed.getUnits();
 }
 
 bool Action::usingNaturalUnits() const {

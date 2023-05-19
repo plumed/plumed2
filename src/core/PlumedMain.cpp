@@ -388,38 +388,38 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
         for(const auto & pp : inputs ) {
-            DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
-            if( dd ) dd->setAtomsNlocal(val.get<int>());
+          DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
+          if( dd ) dd->setAtomsNlocal(val.get<int>());
         }
         break;
       case cmd_setAtomsGatindex:
         CHECK_INIT(initialized,word);
         for(const auto & pp : inputs ) {
-            DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
-            if( dd ) dd->setAtomsGatindex(val,false);
+          DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
+          if( dd ) dd->setAtomsGatindex(val,false);
         }
         break;
       case cmd_setAtomsFGatindex:
         CHECK_INIT(initialized,word);
         for(const auto & pp : inputs ) {
-            DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
-            if( dd ) dd->setAtomsGatindex(val,false);
+          DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
+          if( dd ) dd->setAtomsGatindex(val,false);
         }
         break;
       case cmd_setAtomsContiguous:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
         for(const auto & pp : inputs ) {
-            DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
-            if( dd ) dd->setAtomsContiguous(val.get<int>());
+          DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
+          if( dd ) dd->setAtomsContiguous(val.get<int>());
         }
         break;
       case cmd_createFullList:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
         for(const auto & pp : inputs ) {
-            DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
-            if( dd ) dd->createFullList(val);
+          DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
+          if( dd ) dd->createFullList(val);
         }
         break;
       case cmd_getFullList:
@@ -428,18 +428,18 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         CHECK_NOTNULL(val,word);
         unsigned nlists=0;
         for(const auto & pp : inputs ) {
-            DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
-            if( dd ) { dd->getFullList(val); nlists++; }
+          DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
+          if( dd ) { dd->getFullList(val); nlists++; }
         }
         plumed_assert( nlists==1 );
       }
-        break;
+      break;
       case cmd_clearFullList:
         CHECK_INIT(initialized,word);
         for(const auto & pp : inputs ) {
-            DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
-            if( dd ) dd->clearFullList();
-        } 
+          DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
+          if( dd ) dd->clearFullList();
+        }
         break;
       /* ADDED WITH API==6 */
       case cmd_getDataRank:
@@ -492,20 +492,20 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_clear:
       {
         CHECK_INIT(initialized,word);
-        std::vector<int> natoms; 
+        std::vector<int> natoms;
         for(const auto & pp : inputs ) {
-            DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
-            if ( dd ) natoms.push_back( dd->getNumberOfAtoms() );
+          DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
+          if ( dd ) natoms.push_back( dd->getNumberOfAtoms() );
         }
         actionSet.clearDelete(); inputs.clear();
-        for(unsigned i=0;i<natoms.size(); ++i) {
+        for(unsigned i=0; i<natoms.size(); ++i) {
           std::string str_natoms; Tools::convert( natoms[i], str_natoms );
           readInputLine( MDEngine + ": DOMAIN_DECOMPOSITION NATOMS=" + str_natoms +
-                                    " VALUE1=posx UNIT1=length PERIODIC1=NO CONSTANT1=False ROLE1=x" +
-                                    " VALUE2=posy UNIT2=length PERIODIC2=NO CONSTANT2=False ROLE2=y" +
-                                    " VALUE3=posz UNIT3=length PERIODIC3=NO CONSTANT3=False ROLE3=z" +
-                                    " VALUE4=Masses UNIT4=mass PERIODIC4=NO CONSTANT4=True ROLE4=m" +
-                                    " VALUE5=Charges UNIT5=charge PERIODIC5=NO CONSTANT5=True ROLE5=q");
+                         " VALUE1=posx UNIT1=length PERIODIC1=NO CONSTANT1=False ROLE1=x" +
+                         " VALUE2=posy UNIT2=length PERIODIC2=NO CONSTANT2=False ROLE2=y" +
+                         " VALUE3=posz UNIT3=length PERIODIC3=NO CONSTANT3=False ROLE3=z" +
+                         " VALUE4=Masses UNIT4=mass PERIODIC4=NO CONSTANT4=True ROLE4=m" +
+                         " VALUE5=Charges UNIT5=charge PERIODIC5=NO CONSTANT5=True ROLE5=q");
 
         }
         setUnits( passtools->usingNaturalUnits, passtools->units );
@@ -595,11 +595,11 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         int natoms = val.get<int>(); std::string str_natoms; Tools::convert( natoms, str_natoms );
         ActionForInterface* dd=actionSet.selectWithLabel<ActionForInterface*>(MDEngine);
         if( !dd && natoms>0 ) readInputLine( MDEngine + ": DOMAIN_DECOMPOSITION NATOMS=" + str_natoms +  +
-                                                        " VALUE1=posx UNIT1=length PERIODIC1=NO CONSTANT1=False ROLE1=x" +
-                                                        " VALUE2=posy UNIT2=length PERIODIC2=NO CONSTANT2=False ROLE2=y" +
-                                                        " VALUE3=posz UNIT3=length PERIODIC3=NO CONSTANT3=False ROLE3=z" +
-                                                        " VALUE4=Masses UNIT4=mass PERIODIC4=NO CONSTANT4=True ROLE4=m" +
-                                                        " VALUE5=Charges UNIT5=charge PERIODIC5=NO CONSTANT5=True ROLE5=q", true );
+                                               " VALUE1=posx UNIT1=length PERIODIC1=NO CONSTANT1=False ROLE1=x" +
+                                               " VALUE2=posy UNIT2=length PERIODIC2=NO CONSTANT2=False ROLE2=y" +
+                                               " VALUE3=posz UNIT3=length PERIODIC3=NO CONSTANT3=False ROLE3=z" +
+                                               " VALUE4=Masses UNIT4=mass PERIODIC4=NO CONSTANT4=True ROLE4=m" +
+                                               " VALUE5=Charges UNIT5=charge PERIODIC5=NO CONSTANT5=True ROLE5=q", true );
       }
       break;
       case cmd_setTimestep:
@@ -716,14 +716,14 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
         if( name_of_energy =="" ) {
-            val.set(int(0));
+          val.set(int(0));
         } else {
-            ActionToPutData* ap=actionSet.selectWithLabel<ActionToPutData*>(name_of_energy);
-            if(ap->isActive()) val.set(int(1));
-            else               val.set(int(0));
+          ActionToPutData* ap=actionSet.selectWithLabel<ActionToPutData*>(name_of_energy);
+          if(ap->isActive()) val.set(int(1));
+          else               val.set(int(0));
         }
       }
-        break;
+      break;
       case cmd_getBias:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
@@ -773,7 +773,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
           cltool->cmd(kk.c_str(),val);
         }
         break;
-      break;
+        break;
       /* ADDED WITH API==7 */
       case cmd_convert:
       {
@@ -826,8 +826,8 @@ void PlumedMain::init() {
   log<<"Number of threads: "<<OpenMP::getNumThreads()<<"\n";
   log<<"Cache line size: "<<OpenMP::getCachelineSize()<<"\n";
   for(const auto & pp : inputs ) {
-      DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
-      if ( dd ) log.printf("Number of atoms: %d\n",dd->getNumberOfAtoms());
+    DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
+    if ( dd ) log.printf("Number of atoms: %d\n",dd->getNumberOfAtoms());
   }
   if(grex) log.printf("GROMACS-like replica exchange is on\n");
   log.printf("File suffix: %s\n",getSuffix().c_str());
@@ -1324,12 +1324,12 @@ void PlumedMain::readBinary(std::istream&i) {
 }
 
 void PlumedMain::setEnergyValue( const std::string& name ) {
-  name_of_energy = name; 
+  name_of_energy = name;
 }
 
 int PlumedMain::getRealPrecision() const {
-  return passtools->getRealPrecision(); 
-} 
+  return passtools->getRealPrecision();
+}
 
 bool PlumedMain::usingNaturalUnits() const {
   return passtools->usingNaturalUnits;
@@ -1345,8 +1345,8 @@ void PlumedMain::plumedQuantityToMD( const std::string& unit, const double& eng,
 
 double PlumedMain::MDQuantityToPLUMED( const std::string& unit, const TypesafePtr & m) const {
   double x=passtools->MD2double(m);
-  return x*passtools->getUnitConversion(unit); 
-}  
+  return x*passtools->getUnitConversion(unit);
+}
 
 #ifdef __PLUMED_HAS_PYTHON
 // This is here to stop cppcheck throwing an error

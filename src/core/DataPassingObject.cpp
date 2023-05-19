@@ -130,7 +130,7 @@ void DataPassingObjectTyped<T>::share_data( const unsigned& j, const unsigned& k
   std::vector<unsigned> s(value->getShape()); if( s.size()==1 ) s[0]=k-j;
   const T* pp; getPointer( v, s, start, stride, pp );
   #pragma omp parallel for num_threads(value->getGoodNumThreads(j,k))
-  for(unsigned i=j; i<k; ++i) value->set( i, unit*pp[i*stride] ); 
+  for(unsigned i=j; i<k; ++i) value->set( i, unit*pp[i*stride] );
 }
 
 template <class T>
@@ -171,7 +171,7 @@ void DataPassingObjectTyped<T>::add_force( const std::vector<int>& index, Value*
 
 template <class T>
 void DataPassingObjectTyped<T>::add_force( const std::vector<AtomNumber>& index, const std::vector<unsigned>& i, Value* value ) {
-  plumed_dbg_assert( value->getRank()==1 ); std::vector<unsigned> maxel(1,index.size()); 
+  plumed_dbg_assert( value->getRank()==1 ); std::vector<unsigned> maxel(1,index.size());
 #ifndef NDEBUG
 // bounds are only checked in debug mode since they require this extra step that is potentially expensive
   maxel[0]=(i.size()>0?*std::max_element(i.begin(),i.end())+1:0);

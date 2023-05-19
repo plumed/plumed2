@@ -122,8 +122,8 @@ DumpMassCharge::DumpMassCharge(const ActionOptions&ao):
   parseAtomList("ATOMS",atoms);
 
   if(atoms.size()==0) {
-     std::vector<std::string> strvec(1);
-     strvec[0]="@mdatoms"; interpretAtomList( strvec, atoms );
+    std::vector<std::string> strvec(1);
+    strvec[0]="@mdatoms"; interpretAtomList( strvec, atoms );
   }
 
   bool only_masses = false;

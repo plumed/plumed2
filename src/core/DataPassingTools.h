@@ -33,7 +33,7 @@ namespace PLMD {
 class PlumedMain;
 
 class DataPassingTools {
-friend class PlumedMain;
+  friend class PlumedMain;
 private:
 /// The units used in the MD code and PLUMED
   Units units;

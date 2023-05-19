@@ -209,12 +209,12 @@ void ActionWithValue::setGradientsIfNeeded() {
   if(isOptionOn("GRADIENTS")) {
     ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>(this);
     if(aa) {
-        for(unsigned i=0; i<values.size(); i++) { unsigned start=0; values[i]->gradients.clear(); values[i]->setGradients( aa, start ); }
+      for(unsigned i=0; i<values.size(); i++) { unsigned start=0; values[i]->gradients.clear(); values[i]->setGradients( aa, start ); }
     } else {
-        ActionWithArguments* aarg = dynamic_cast<ActionWithArguments*>( this );
-        if( !aarg ) plumed_merror( "failing in " + getLabel() );
-        for(unsigned i=0; i<values.size(); i++) { unsigned start=0; values[i]->gradients.clear(); aarg->setGradients( values[i].get(), start ); }
-    } 
+      ActionWithArguments* aarg = dynamic_cast<ActionWithArguments*>( this );
+      if( !aarg ) plumed_merror( "failing in " + getLabel() );
+      for(unsigned i=0; i<values.size(); i++) { unsigned start=0; values[i]->gradients.clear(); aarg->setGradients( values[i].get(), start ); }
+    }
   }
 }
 
@@ -248,26 +248,26 @@ bool ActionWithValue::checkForForces() {
   // Make sure forces to apply is empty of forces
   if( forcesForApply.size()!=nder ) forcesForApply.resize( nder );
   std::fill(forcesForApply.begin(),forcesForApply.end(),0);
-                                 
-  unsigned stride=1;             
+
+  unsigned stride=1;
   unsigned rank=0;
   if(ncp>4*comm.Get_size()) {
     stride=comm.Get_size();
     rank=comm.Get_rank();
   }
-   
+
   unsigned nt=OpenMP::getNumThreads();
   if(nt>ncp/(4*stride)) nt=1;
 
   unsigned at_least_one_forced=0;
   #pragma omp parallel num_threads(nt)
-  {                              
+  {
     std::vector<double> omp_f(nder,0);
     std::vector<double> forces(nder);
     #pragma omp for
     for(unsigned i=rank; i<ncp; i+=stride) {
       if(getPntrToComponent(i)->applyForce(forces)) {
-        at_least_one_forced+=1;  
+        at_least_one_forced+=1;
         for(unsigned j=0; j<forces.size(); ++j) omp_f[j]+=forces[j];
       }
     }
@@ -276,7 +276,7 @@ bool ActionWithValue::checkForForces() {
       for(unsigned j=0; j<forcesForApply.size(); ++j) forcesForApply[j]+=omp_f[j];
     }
   }
-  
+
   if(ncp>4*comm.Get_size()) { comm.Sum(&forcesForApply[0],nder); comm.Sum(at_least_one_forced); }
   return at_least_one_forced>0;
 }
