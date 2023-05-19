@@ -19,7 +19,7 @@ freely, subject to the following restrictions:
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 #include "Sasa.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/GenericMolInfo.h"
 #include "core/ActionSet.h"

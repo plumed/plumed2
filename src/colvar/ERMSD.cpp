@@ -27,7 +27,7 @@
 
 #include "Colvar.h"
 #include "core/PlumedMain.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "tools/PDB.h"
 #include "tools/ERMSD.h"
 #include "core/Atoms.h"

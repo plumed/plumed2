@@ -23,7 +23,7 @@
 #define __PLUMED_colvar_PathMSDBase_h
 
 #include "Colvar.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 
 #include "tools/PDB.h"
 #include "tools/RMSD.h"
