@@ -90,7 +90,8 @@ DomainDecomposition::DomainDecomposition(const ActionOptions&ao):
   ActionForInterface(ao),
   ddStep(0),
   shuffledAtoms(0),
-  asyncSent(false)
+  asyncSent(false),
+  unique_serial(false)
 {
   // Read in the number of atoms
   int natoms; parse("NATOMS",natoms);

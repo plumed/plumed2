@@ -62,7 +62,7 @@ private:
   unsigned shuffledAtoms;
 
   bool asyncSent;
-  bool unique_serial=false; // use unique in serial mode
+  bool unique_serial; // use unique in serial mode
 /// This holds the list of unique atoms
   std::vector<AtomNumber> unique;
   std::vector<unsigned> uniq_index;

@@ -57,6 +57,7 @@ ActionToPutData::ActionToPutData(const ActionOptions&ao):
   from_domains(false),
   resetable(false),
   dataCanBeSet(true),
+  unit(n),
   mydata(DataPassingObject::create(plumed.getRealPrecision()))
 {
   if( getName()!="ENERGY" && getName()!="PBC" ) {
