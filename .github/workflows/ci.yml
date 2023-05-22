@@ -134,7 +134,9 @@ jobs:
         echo "CXX=mpic++" >> $GITHUB_ENV
         echo "OMPI_MCA_btl_base_warn_component_unused=0" >> $GITHUB_ENV
         echo "OMPI_MCA_btl_base_verbose=0" >> $GITHUB_ENV
-        echo "MPIEXEC=mpirun --oversubscribe" >> $GITHUB_ENV
+        echo "OMPI_MCA_plm=isolated" >> $GITHUB_ENV
+        echo "OMPI_MCA_btl_vader_single_copy_mechanism=none" >> $GITHUB_ENV
+        echo "OMPI_MCA_rmaps_base_oversubscribe=yes" >> $GITHUB_ENV
         pip install --user mpi4py
         python -c "import mpi4py"
     - name: Build PLUMED
@@ -206,23 +208,21 @@ jobs:
         make -C src/lib/ dirslinks
         make codecheck
 
-  # We test on fedora37 to make sure we have compatibility with newer compilers (gcc 12)
-  fedora37:
-    runs-on: ubuntu-20.04
+  docker:
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        # fedora38 (gcc 13)
+        # rockylinux8
+        variant:
+        - fedora38
+        - rocky8
     steps:
     - uses: actions/checkout@v3
     - name: Build and run tests
       run: |
-        make -C docker fedora37
-
-  # We test on rockylinux8 as well
-  rocky8:
-    runs-on: ubuntu-20.04
-    steps:
-    - uses: actions/checkout@v3
-    - name: Build and run tests
-      run: |
-        make -C docker rocky8
+        make -C docker ${{ matrix.variant }}
 
   macports:
     runs-on: macos-11
