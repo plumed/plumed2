@@ -45,6 +45,7 @@ As far as we know, the following MD codes can be used with PLUMED out of the box
 - [DFTB+](https://www.dftbplus.org/), since release 20.1.
 - [Metalwalls](https://gitlab.com/ampere2/metalwalls)
 - [ASE](https://wiki.fysik.dtu.dk/ase/)
+- [GPUMD](https://gpumd.org/)
 
 Please refer to the documentation of the MD code to know how to use it with the latest PLUMED release.
 If you maintain another MD code that is PLUMED-ready let us know and we will add it to this list.
