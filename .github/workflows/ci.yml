@@ -208,32 +208,23 @@ jobs:
         make -C src/lib/ dirslinks
         make codecheck
 
-  # We test on centos7 to make sure we have compatibility with older compilers (gcc 4.8)
-  centos7:
-    runs-on: ubuntu-20.04
+  docker:
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        # centos7 (gcc 4.8)
+        # fedora38 (gcc 13)
+        # rockylinux8
+        variant:
+        - centos7
+        - fedora38
+        - rocky8
     steps:
     - uses: actions/checkout@v3
     - name: Build and run tests
       run: |
-        make -C docker centos7
-
-  # We test on fedora38 to make sure we have compatibility with newer compilers (gcc 13)
-  fedora38:
-    runs-on: ubuntu-20.04
-    steps:
-    - uses: actions/checkout@v3
-    - name: Build and run tests
-      run: |
-        make -C docker fedora38
-
-  # We test on rockylinux8 as well
-  rocky8:
-    runs-on: ubuntu-20.04
-    steps:
-    - uses: actions/checkout@v3
-    - name: Build and run tests
-      run: |
-        make -C docker rocky8
+        make -C docker ${{ matrix.variant }}
 
   macports:
     runs-on: macos-11
