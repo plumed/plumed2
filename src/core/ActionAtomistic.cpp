@@ -35,6 +35,10 @@
 
 namespace PLMD {
 
+ActionAtomistic::~ActionAtomistic() {
+// empty destructor to delete unique_ptr
+}
+
 ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
   Action(ao),
   unique_local_needs_update(true),

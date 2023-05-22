@@ -86,13 +86,13 @@ public:
   void share() override ;
   void shareAll() override ;
   void wait() override ;
-  void writeBinary(std::ostream&o);
-  void readBinary(std::istream&i);
+  void writeBinary(std::ostream&o) override ;
+  void readBinary(std::istream&i) override ;
   void apply() override ;
   void setAtomsNlocal(int n);
   void setAtomsGatindex(const TypesafePtr & g,bool fortran);
   void setAtomsContiguous(int start);
-  void Set_comm(Communicator& comm);
+  void Set_comm(Communicator& comm) override ;
   void broadcastToDomains( Value* val );
   void sumOverDomains( Value* val );
   const long int& getDdStep() const ;

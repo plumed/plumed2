@@ -90,7 +90,7 @@ void Value::setShape( const std::vector<unsigned>&ss ) {
 
   if( shape.size()>0 && hasDeriv ) {
     // This is for grids
-    std::size_t ndata = tot*action->getNumberOfDerivatives(); 
+    std::size_t ndata = tot*action->getNumberOfDerivatives();
     data.resize( ndata );
   } else if( shape.size()==0 ) {
     // This is for scalars

@@ -156,7 +156,7 @@ public:
 // virtual functions:
 
   explicit ActionAtomistic(const ActionOptions&ao);
-
+  ~ActionAtomistic();
   static void registerKeywords( Keywords& keys );
 
 /// N.B. only pass an ActionWithValue to this routine if you know exactly what you

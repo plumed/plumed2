@@ -202,8 +202,8 @@ PlumedMain::PlumedMain():
   stopwatch_fwd(log),
   step(0),
   active(false),
-  passtools(DataPassingTools::create(sizeof(double))),
   endPlumed(false),
+  passtools(DataPassingTools::create(sizeof(double))),
   actionSet_fwd(*this),
   bias(0.0),
   work(0.0),
@@ -211,8 +211,8 @@ PlumedMain::PlumedMain():
   restart(false),
   doCheckPoint(false),
   stopNow(false),
-  novirial(false),
   name_of_energy(""),
+  novirial(false),
   detailedTimers(false),
   gpuDeviceId(-1)
 {
@@ -259,7 +259,6 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       // do nothing
     } else {
       int iword=-1;
-      double d;
       const auto it=word_map.find(words[0]);
       if(it!=word_map.end()) iword=it->second;
       switch(iword) {

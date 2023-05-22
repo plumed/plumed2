@@ -81,9 +81,9 @@ public:
 ///
   void getLocalValues( std::vector<double>& vals ) const ;
 /// Get the data to share
-  virtual void wait();
+  virtual void wait() override ;
 /// Actually set the values for the output
-  virtual void apply();
+  virtual void apply() override ;
   void rescaleForces( const double& alpha );
 /// For replica exchange
   void writeBinary(std::ostream&o) override;
