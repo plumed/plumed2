@@ -171,7 +171,7 @@ void DomainDecomposition::setAtomsNlocal(int n) {
 // we make sure they are non-zero-sized so as to
 // avoid errors when doing boundary check
     if(n==0) n++;
-    unsigned nvals = inputs.size(), natoms = getNumberOfAtoms();
+    std::size_t nvals = inputs.size(), natoms = getNumberOfAtoms();
     dd.positionsToBeSent.resize(n*nvals,0.0);
     dd.positionsToBeReceived.resize(natoms*nvals,0.0);
     dd.indexToBeSent.resize(n,0);
