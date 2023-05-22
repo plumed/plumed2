@@ -17,7 +17,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #ifdef __PLUMED_HAS_BOOST_SERIALIZATION
 #include "cltools/CLTool.h"
-#include "cltools/CLToolRegister.h"
+#include "core/CLToolRegister.h"
 #include "config/Config.h"
 #include "core/ActionRegister.h"
 #include "DRR.h"

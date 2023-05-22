@@ -48,10 +48,9 @@
 #include <mpi.h>
 #endif
 
-namespace PLMD
-{
-namespace ves
-{
+
+namespace PLMD {
+namespace ves {
 
 //+PLUMEDOC VES_TOOLS ves_md_linearexpansion
 /*
@@ -133,328 +132,278 @@ PRINT ARG=p.x,p.y,ene FILE=colvar.data FMT=%8.4f
 */
 //+ENDPLUMEDOC
 
-class MD_LinearExpansionPES : public PLMD::CLTool
-{
+class MD_LinearExpansionPES : public PLMD::CLTool {
 public:
-  std::string description() const override { return "MD of a one particle on a linear expansion PES"; }
-  static void registerKeywords(Keywords &keys);
-  explicit MD_LinearExpansionPES(const CLToolOptions &co);
-  int main(FILE *in, FILE *out, PLMD::Communicator &pc) override;
-
+  std::string description() const override {return "MD of a one particle on a linear expansion PES";}
+  static void registerKeywords( Keywords& keys );
+  explicit MD_LinearExpansionPES( const CLToolOptions& co );
+  int main( FILE* in, FILE* out, PLMD::Communicator& pc) override;
 private:
   size_t dim;
   std::string dim_string_prefix;
   std::unique_ptr<LinearBasisSetExpansion> potential_expansion_pntr;
   //
-  double calc_energy(const std::vector<Vector> &, std::vector<Vector> &);
-  double calc_temp(const std::vector<Vector> &);
+  double calc_energy( const std::vector<Vector>&, std::vector<Vector>& );
+  double calc_temp( const std::vector<Vector>& );
 };
 
-PLUMED_REGISTER_CLTOOL(MD_LinearExpansionPES, "ves_md_linearexpansion")
+PLUMED_REGISTER_CLTOOL(MD_LinearExpansionPES,"ves_md_linearexpansion")
 
-void MD_LinearExpansionPES::registerKeywords(Keywords &keys)
-{
-  CLTool::registerKeywords(keys);
-  keys.add("compulsory", "nstep", "10", "The number of steps of dynamics you want to run.");
-  keys.add("compulsory", "tstep", "0.005", "The integration timestep.");
-  keys.add("compulsory", "temperature", "1.0", "The temperature to perform the simulation at. For multiple replica you can give a separate value for each replica.");
-  keys.add("compulsory", "friction", "10.", "The friction of the Langevin thermostat. For multiple replica you can give a separate value for each replica.");
-  keys.add("compulsory", "random_seed", "5293818", "Value of random number seed.");
-  keys.add("compulsory", "plumed_input", "plumed.dat", "The name of the plumed input file(s). For multiple replica you can give a separate value for each replica.");
-  keys.add("compulsory", "dimension", "1", "Number of dimensions, supports 1 to 3.");
-  keys.add("compulsory", "initial_position", "Initial position of the particle. For multiple replica you can give a separate value for each replica.");
-  keys.add("compulsory", "replicas", "1", "Number of replicas.");
-  keys.add("compulsory", "basis_functions_1", "Basis functions for dimension 1.");
-  keys.add("optional", "basis_functions_2", "Basis functions for dimension 2 if needed.");
-  keys.add("optional", "basis_functions_3", "Basis functions for dimension 3 if needed.");
-  keys.add("compulsory", "input_coeffs", "potential-coeffs.in.data", "Filename of the input coefficient file for the potential. For multiple replica you can give a separate value for each replica.");
-  keys.add("compulsory", "output_coeffs", "potential-coeffs.out.data", "Filename of the output coefficient file for the potential.");
-  keys.add("compulsory", "output_coeffs_fmt", "%30.16e", "Format of the output coefficient file for the potential. Useful for regtests.");
-  keys.add("optional", "coeffs_prefactor", "prefactor for multiplying the coefficients with. For multiple replica you can give a separate value for each replica.");
-  keys.add("optional", "template_coeffs_file", "only generate a template coefficient file with the filename given and exit.");
-  keys.add("compulsory", "output_potential_grid", "100", "The number of grid points used for the potential and histogram output files.");
-  keys.add("compulsory", "output_potential", "potential.data", "Filename of the potential output file.");
-  keys.add("compulsory", "output_histogram", "histogram.data", "Filename of the histogram output file.");
+void MD_LinearExpansionPES::registerKeywords( Keywords& keys ) {
+  CLTool::registerKeywords( keys );
+  keys.add("compulsory","nstep","10","The number of steps of dynamics you want to run.");
+  keys.add("compulsory","tstep","0.005","The integration timestep.");
+  keys.add("compulsory","temperature","1.0","The temperature to perform the simulation at. For multiple replica you can give a separate value for each replica.");
+  keys.add("compulsory","friction","10.","The friction of the Langevin thermostat. For multiple replica you can give a separate value for each replica.");
+  keys.add("compulsory","random_seed","5293818","Value of random number seed.");
+  keys.add("compulsory","plumed_input","plumed.dat","The name of the plumed input file(s). For multiple replica you can give a separate value for each replica.");
+  keys.add("compulsory","dimension","1","Number of dimensions, supports 1 to 3.");
+  keys.add("compulsory","initial_position","Initial position of the particle. For multiple replica you can give a separate value for each replica.");
+  keys.add("compulsory","replicas","1","Number of replicas.");
+  keys.add("compulsory","basis_functions_1","Basis functions for dimension 1.");
+  keys.add("optional","basis_functions_2","Basis functions for dimension 2 if needed.");
+  keys.add("optional","basis_functions_3","Basis functions for dimension 3 if needed.");
+  keys.add("compulsory","input_coeffs","potential-coeffs.in.data","Filename of the input coefficient file for the potential. For multiple replica you can give a separate value for each replica.");
+  keys.add("compulsory","output_coeffs","potential-coeffs.out.data","Filename of the output coefficient file for the potential.");
+  keys.add("compulsory","output_coeffs_fmt","%30.16e","Format of the output coefficient file for the potential. Useful for regtests.");
+  keys.add("optional","coeffs_prefactor","prefactor for multiplying the coefficients with. For multiple replica you can give a separate value for each replica.");
+  keys.add("optional","template_coeffs_file","only generate a template coefficient file with the filename given and exit.");
+  keys.add("compulsory","output_potential_grid","100","The number of grid points used for the potential and histogram output files.");
+  keys.add("compulsory","output_potential","potential.data","Filename of the potential output file.");
+  keys.add("compulsory","output_histogram","histogram.data","Filename of the histogram output file.");
 }
 
-MD_LinearExpansionPES::MD_LinearExpansionPES(const CLToolOptions &co) : CLTool(co),
+
+MD_LinearExpansionPES::MD_LinearExpansionPES( const CLToolOptions& co ):
+  CLTool(co),
   dim(0),
   dim_string_prefix("dim")
 {
-  inputdata = ifile; // commandline;
+  inputdata=ifile; //commandline;
 }
 
-inline double MD_LinearExpansionPES::calc_energy(const std::vector<Vector> &pos, std::vector<Vector> &forces)
-{
+inline
+double MD_LinearExpansionPES::calc_energy( const std::vector<Vector>& pos, std::vector<Vector>& forces) {
   std::vector<double> pos_tmp(dim);
-  std::vector<double> forces_tmp(dim, 0.0);
-  for (unsigned int j = 0; j < dim; ++j)
-  {
-    pos_tmp[j] = pos[0][j];
+  std::vector<double> forces_tmp(dim,0.0);
+  for(unsigned int j=0; j<dim; ++j) {
+    pos_tmp[j]=pos[0][j];
   }
   bool all_inside = true;
-  double potential = potential_expansion_pntr->getBiasAndForces(pos_tmp, all_inside, forces_tmp);
-  for (unsigned int j = 0; j < dim; ++j)
-  {
+  double potential = potential_expansion_pntr->getBiasAndForces(pos_tmp,all_inside,forces_tmp);
+  for(unsigned int j=0; j<dim; ++j) {
     forces[0][j] = forces_tmp[j];
   }
   return potential;
 }
 
-inline double MD_LinearExpansionPES::calc_temp(const std::vector<Vector> &vel)
-{
-  double total_KE = 0.0;
+
+inline
+double MD_LinearExpansionPES::calc_temp( const std::vector<Vector>& vel) {
+  double total_KE=0.0;
   //! Double the total kinetic energy of the system
-  for (unsigned int j = 0; j < dim; ++j)
-  {
-    total_KE += vel[0][j] * vel[0][j];
+  for(unsigned int j=0; j<dim; ++j) {
+    total_KE+=vel[0][j]*vel[0][j];
   }
-  return total_KE / (double)dim; // total_KE is actually 2*KE
+  return total_KE / (double) dim; // total_KE is actually 2*KE
 }
 
-int MD_LinearExpansionPES::main(FILE *in, FILE *out, PLMD::Communicator &pc)
-{
+int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   int plumedWantsToStop;
   Random random;
-  unsigned int stepWrite = 1000;
+  unsigned int stepWrite=1000;
 
   std::unique_ptr<PLMD::PlumedMain> plumed;
 
   size_t replicas;
   unsigned int coresPerReplica;
-  parse("replicas", replicas);
-  if (replicas == 1)
-  {
+  parse("replicas",replicas);
+  if(replicas==1) {
     coresPerReplica = pc.Get_size();
-  }
-  else
-  {
-    if (pc.Get_size() % replicas != 0)
-    {
+  } else {
+    if(pc.Get_size()%replicas!=0) {
       error("the number of MPI processes is not a multiple of the number of replicas.");
     }
-    coresPerReplica = pc.Get_size() / replicas;
+    coresPerReplica = pc.Get_size()/replicas;
   }
   // create intra and inter communicators
   Communicator intra, inter;
-  if (Communicator::initialized())
-  {
-    int iworld = (pc.Get_rank() / coresPerReplica);
-    pc.Split(iworld, 0, intra);
-    pc.Split(intra.Get_rank(), 0, inter);
+  if(Communicator::initialized()) {
+    int iworld=(pc.Get_rank() / coresPerReplica);
+    pc.Split(iworld,0,intra);
+    pc.Split(intra.Get_rank(),0,inter);
   }
 
   long long unsigned int nsteps;
-  parse("nstep", nsteps);
+  parse("nstep",nsteps);
   double tstep;
-  parse("tstep", tstep);
+  parse("tstep",tstep);
   // initialize to solve a cppcheck 1.86 warning
-  double temp = 0.0;
+  double temp=0.0;
   std::vector<double> temps_vec(0);
-  parseVector("temperature", temps_vec);
-  if (temps_vec.size() == 1)
-  {
+  parseVector("temperature",temps_vec);
+  if(temps_vec.size()==1) {
     temp = temps_vec[0];
   }
-  else if (replicas > 1 && temps_vec.size() == replicas)
-  {
+  else if(replicas > 1 && temps_vec.size()==replicas) {
     temp = temps_vec[inter.Get_rank()];
   }
-  else
-  {
+  else {
     error("problem with temperature keyword, you need to give either one value or a value for each replica.");
   }
   //
   double friction;
   std::vector<double> frictions_vec(0);
-  parseVector("friction", frictions_vec);
-  if (frictions_vec.size() == 1)
-  {
+  parseVector("friction",frictions_vec);
+  if(frictions_vec.size()==1) {
     friction = frictions_vec[0];
   }
-  else if (frictions_vec.size() == replicas)
-  {
+  else if(frictions_vec.size()==replicas) {
     friction = frictions_vec[inter.Get_rank()];
   }
-  else
-  {
+  else {
     error("problem with friction keyword, you need to give either one value or a value for each replica.");
   }
   //
   int seed;
   std::vector<int> seeds_vec(0);
-  parseVector("random_seed", seeds_vec);
-  for (unsigned int i = 0; i < seeds_vec.size(); i++)
-  {
-    if (seeds_vec[i] > 0)
-    {
-      seeds_vec[i] = -seeds_vec[i];
-    }
+  parseVector("random_seed",seeds_vec);
+  for(unsigned int i=0; i<seeds_vec.size(); i++) {
+    if(seeds_vec[i]>0) {seeds_vec[i] = -seeds_vec[i];}
   }
-  if (replicas == 1)
-  {
-    if (seeds_vec.size() > 1)
-    {
-      error("problem with random_seed keyword, for a single replica you should only give one value");
-    }
+  if(replicas==1) {
+    if(seeds_vec.size()>1) {error("problem with random_seed keyword, for a single replica you should only give one value");}
     seed = seeds_vec[0];
   }
-  else
-  {
-    if (seeds_vec.size() != 1 && seeds_vec.size() != replicas)
-    {
+  else {
+    if(seeds_vec.size()!=1 && seeds_vec.size()!=replicas) {
       error("problem with random_seed keyword, for multiple replicas you should give either one value or a separate value for each replica");
     }
-    if (seeds_vec.size() == 1)
-    {
+    if(seeds_vec.size()==1) {
       seeds_vec.resize(replicas);
-      for (unsigned int i = 1; i < seeds_vec.size(); i++)
-      {
-        seeds_vec[i] = seeds_vec[0] + i;
-      }
+      for(unsigned int i=1; i<seeds_vec.size(); i++) {seeds_vec[i] = seeds_vec[0] + i;}
     }
     seed = seeds_vec[inter.Get_rank()];
   }
 
   //
-  parse("dimension", dim);
+  parse("dimension",dim);
 
   std::vector<std::string> plumed_inputfiles;
-  parseVector("plumed_input", plumed_inputfiles);
-  if (plumed_inputfiles.size() != 1 && plumed_inputfiles.size() != replicas)
-  {
+  parseVector("plumed_input",plumed_inputfiles);
+  if(plumed_inputfiles.size()!=1 && plumed_inputfiles.size()!=replicas) {
     error("in plumed_input you should either give one file or separate files for each replica.");
   }
 
   std::vector<Vector> initPos(replicas);
   std::vector<double> initPosTmp;
-  parseVector("initial_position", initPosTmp);
-  if (initPosTmp.size() == dim)
-  {
-    for (unsigned int i = 0; i < replicas; i++)
-    {
-      for (unsigned int k = 0; k < dim; k++)
-      {
-        initPos[i][k] = initPosTmp[k];
+  parseVector("initial_position",initPosTmp);
+  if(initPosTmp.size()==dim) {
+    for(unsigned int i=0; i<replicas; i++) {
+      for(unsigned int k=0; k<dim; k++) {
+        initPos[i][k]=initPosTmp[k];
       }
     }
   }
-  else if (initPosTmp.size() == dim * replicas)
-  {
-    for (unsigned int i = 0; i < replicas; i++)
-    {
-      for (unsigned int k = 0; k < dim; k++)
-      {
-        initPos[i][k] = initPosTmp[i * dim + k];
+  else if(initPosTmp.size()==dim*replicas) {
+    for(unsigned int i=0; i<replicas; i++) {
+      for(unsigned int k=0; k<dim; k++) {
+        initPos[i][k]=initPosTmp[i*dim+k];
       }
     }
   }
-  else
-  {
+  else {
     error("problem with initial_position keyword, you need to give either one value or a value for each replica.");
   }
 
-  auto deleter = [](FILE *f)
-  { fclose(f); };
-  FILE *file_dummy = fopen("/dev/null", "w+");
+  auto deleter=[](FILE* f) { fclose(f); };
+  FILE* file_dummy = fopen("/dev/null","w+");
   plumed_assert(file_dummy);
   // call fclose when file_dummy_deleter goes out of scope
-  std::unique_ptr<FILE, decltype(deleter)> file_dummy_deleter(file_dummy, deleter);
+  std::unique_ptr<FILE,decltype(deleter)> file_dummy_deleter(file_dummy,deleter);
   // Note: this should be declared before plumed_bf to make sure the file is closed after plumed_bf has been destroyed
 
   auto plumed_bf = Tools::make_unique<PLMD::PlumedMain>();
-  unsigned int nn = 1;
-  plumed_bf->cmd("setNatoms", &nn);
-  plumed_bf->cmd("setLog", file_dummy);
-  plumed_bf->cmd("init", &nn);
-  std::vector<BasisFunctions *> basisf_pntrs(dim);
+  unsigned int nn=1;
+  plumed_bf->cmd("setNatoms",&nn);
+  plumed_bf->cmd("setLog",file_dummy);
+  plumed_bf->cmd("init",&nn);
+  std::vector<BasisFunctions*> basisf_pntrs(dim);
   std::vector<std::string> basisf_keywords(dim);
   std::vector<std::unique_ptr<Value>> args(dim);
   std::vector<bool> periodic(dim);
   std::vector<double> interval_min(dim);
   std::vector<double> interval_max(dim);
   std::vector<double> interval_range(dim);
-  for (unsigned int i = 0; i < dim; i++)
-  {
+  for(unsigned int i=0; i<dim; i++) {
     std::string bf_keyword;
-    std::string is;
-    Tools::convert(i + 1, is);
-    parse("basis_functions_" + is, bf_keyword);
-    if (bf_keyword.size() == 0)
-    {
-      error("basis_functions_" + is + " is needed");
+    std::string is; Tools::convert(i+1,is);
+    parse("basis_functions_"+is,bf_keyword);
+    if(bf_keyword.size()==0) {
+      error("basis_functions_"+is+" is needed");
     }
-    if (bf_keyword.at(0) == '{' && bf_keyword.at(bf_keyword.size() - 1) == '}')
-    {
-      bf_keyword = bf_keyword.substr(1, bf_keyword.size() - 2);
+    if(bf_keyword.at(0)=='{' && bf_keyword.at(bf_keyword.size()-1)=='}') {
+      bf_keyword = bf_keyword.substr(1,bf_keyword.size()-2);
     }
     basisf_keywords[i] = bf_keyword;
-    plumed_bf->readInputLine(bf_keyword + " LABEL=" + dim_string_prefix + is);
-    basisf_pntrs[i] = plumed_bf->getActionSet().selectWithLabel<BasisFunctions *>(dim_string_prefix + is);
-    args[i] = Tools::make_unique<Value>(nullptr, dim_string_prefix + is, false);
+    plumed_bf->readInputLine(bf_keyword+" LABEL="+dim_string_prefix+is);
+    basisf_pntrs[i] = plumed_bf->getActionSet().selectWithLabel<BasisFunctions*>(dim_string_prefix+is);
+    args[i] = Tools::make_unique<Value>(nullptr,dim_string_prefix+is,false);
     args[i]->setNotPeriodic();
     periodic[i] = basisf_pntrs[i]->arePeriodic();
     interval_min[i] = basisf_pntrs[i]->intervalMin();
     interval_max[i] = basisf_pntrs[i]->intervalMax();
-    interval_range[i] = basisf_pntrs[i]->intervalMax() - basisf_pntrs[i]->intervalMin();
+    interval_range[i] = basisf_pntrs[i]->intervalMax()-basisf_pntrs[i]->intervalMin();
   }
   Communicator comm_dummy;
-  auto coeffs_pntr = Tools::make_unique<CoeffsVector>("pot.coeffs", Tools::unique2raw(args), basisf_pntrs, comm_dummy, false);
-  potential_expansion_pntr = Tools::make_unique<LinearBasisSetExpansion>("potential", 1.0 / temp, comm_dummy, Tools::unique2raw(args), basisf_pntrs, coeffs_pntr.get());
+  auto coeffs_pntr = Tools::make_unique<CoeffsVector>("pot.coeffs",Tools::unique2raw(args),basisf_pntrs,comm_dummy,false);
+  potential_expansion_pntr = Tools::make_unique<LinearBasisSetExpansion>("potential",1.0/temp,comm_dummy,Tools::unique2raw(args),basisf_pntrs,coeffs_pntr.get());
 
-  std::string template_coeffs_fname = "";
-  parse("template_coeffs_file", template_coeffs_fname);
-  if (template_coeffs_fname.size() > 0)
-  {
+  std::string template_coeffs_fname="";
+  parse("template_coeffs_file",template_coeffs_fname);
+  if(template_coeffs_fname.size()>0) {
     OFile ofile_coeffstmpl;
     ofile_coeffstmpl.link(pc);
     ofile_coeffstmpl.open(template_coeffs_fname);
-    coeffs_pntr->writeToFile(ofile_coeffstmpl, true);
+    coeffs_pntr->writeToFile(ofile_coeffstmpl,true);
     ofile_coeffstmpl.close();
     std::printf("Only generating a template coefficient file - Should stop now.");
     return 0;
   }
 
   std::vector<std::string> input_coeffs_fnames(0);
-  parseVector("input_coeffs", input_coeffs_fnames);
+  parseVector("input_coeffs",input_coeffs_fnames);
   std::string input_coeffs_fname;
   bool diff_input_coeffs = false;
-  if (input_coeffs_fnames.size() == 1)
-  {
+  if(input_coeffs_fnames.size()==1) {
     input_coeffs_fname = input_coeffs_fnames[0];
   }
-  else if (replicas > 1 && input_coeffs_fnames.size() == replicas)
-  {
+  else if(replicas > 1 && input_coeffs_fnames.size()==replicas) {
     diff_input_coeffs = true;
     input_coeffs_fname = input_coeffs_fnames[inter.Get_rank()];
   }
-  else
-  {
+  else {
     error("problem with coeffs_file keyword, you need to give either one value or a value for each replica.");
   }
-  coeffs_pntr->readFromFile(input_coeffs_fname, true, true);
+  coeffs_pntr->readFromFile(input_coeffs_fname,true,true);
   std::vector<double> coeffs_prefactors(0);
-  parseVector("coeffs_prefactor", coeffs_prefactors);
-  if (coeffs_prefactors.size() > 0)
-  {
+  parseVector("coeffs_prefactor",coeffs_prefactors);
+  if(coeffs_prefactors.size()>0) {
     double coeffs_prefactor = 1.0;
-    if (coeffs_prefactors.size() == 1)
-    {
+    if(coeffs_prefactors.size()==1) {
       coeffs_prefactor = coeffs_prefactors[0];
     }
-    else if (replicas > 1 && coeffs_prefactors.size() == replicas)
-    {
+    else if(replicas > 1 && coeffs_prefactors.size()==replicas) {
       diff_input_coeffs = true;
       coeffs_prefactor = coeffs_prefactors[inter.Get_rank()];
     }
-    else
-    {
+    else {
       error("problem with coeffs_prefactor keyword, you need to give either one value or a value for each replica.");
     }
     coeffs_pntr->scaleAllValues(coeffs_prefactor);
   }
   unsigned int pot_grid_bins;
-  parse("output_potential_grid", pot_grid_bins);
+  parse("output_potential_grid",pot_grid_bins);
   potential_expansion_pntr->setGridBins(pot_grid_bins);
   potential_expansion_pntr->setupBiasGrid(false);
   potential_expansion_pntr->updateBiasGrid();
@@ -464,30 +413,26 @@ int MD_LinearExpansionPES::main(FILE *in, FILE *out, PLMD::Communicator &pc)
   OFile ofile_potential;
   ofile_potential.link(pc);
   std::string output_potential_fname;
-  parse("output_potential", output_potential_fname);
-  if (diff_input_coeffs)
-  {
+  parse("output_potential",output_potential_fname);
+  if(diff_input_coeffs) {
     ofile_potential.link(intra);
     std::string suffix;
-    Tools::convert(inter.Get_rank(), suffix);
-    output_potential_fname = FileBase::appendSuffix(output_potential_fname, "." + suffix);
+    Tools::convert(inter.Get_rank(),suffix);
+    output_potential_fname = FileBase::appendSuffix(output_potential_fname,"."+suffix);
   }
   ofile_potential.open(output_potential_fname);
   potential_expansion_pntr->writeBiasGridToFile(ofile_potential);
   ofile_potential.close();
-  if (dim > 1)
-  {
-    for (unsigned int i = 0; i < dim; i++)
-    {
-      std::string is;
-      Tools::convert(i + 1, is);
+  if(dim>1) {
+    for(unsigned int i=0; i<dim; i++) {
+      std::string is; Tools::convert(i+1,is);
       std::vector<std::string> proj_arg(1);
-      proj_arg[0] = dim_string_prefix + is;
-      auto Fw = Tools::make_unique<FesWeight>(1 / temp);
-      Grid proj_grid = (potential_expansion_pntr->getPntrToBiasGrid())->project(proj_arg, Fw.get());
+      proj_arg[0] = dim_string_prefix+is;
+      auto Fw = Tools::make_unique<FesWeight>(1/temp);
+      Grid proj_grid = (potential_expansion_pntr->getPntrToBiasGrid())->project(proj_arg,Fw.get());
       proj_grid.setMinToZero();
 
-      std::string output_potential_proj_fname = FileBase::appendSuffix(output_potential_fname, "." + dim_string_prefix + is);
+      std::string output_potential_proj_fname = FileBase::appendSuffix(output_potential_fname,"."+dim_string_prefix+is);
       OFile ofile_potential_proj;
       ofile_potential_proj.link(pc);
       ofile_potential_proj.open(output_potential_proj_fname);
@@ -496,291 +441,238 @@ int MD_LinearExpansionPES::main(FILE *in, FILE *out, PLMD::Communicator &pc)
     }
   }
 
+
   Grid histo_grid(*potential_expansion_pntr->getPntrToBiasGrid());
   std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(&histo_grid);
-  double norm = 0.0;
-  for (Grid::index_t i = 0; i < histo_grid.getSize(); i++)
-  {
-    double value = integration_weights[i] * exp(-histo_grid.getValue(i) / temp);
+  double norm=0.0;
+  for(Grid::index_t i=0; i<histo_grid.getSize(); i++) {
+    double value = integration_weights[i]*exp(-histo_grid.getValue(i)/temp);
     norm += value;
-    histo_grid.setValue(i, value);
+    histo_grid.setValue(i,value);
   }
-  histo_grid.scaleAllValuesAndDerivatives(1.0 / norm);
+  histo_grid.scaleAllValuesAndDerivatives(1.0/norm);
   OFile ofile_histogram;
   ofile_histogram.link(pc);
   std::string output_histogram_fname;
-  parse("output_histogram", output_histogram_fname);
-  if (diff_input_coeffs || temps_vec.size() > 1)
-  {
+  parse("output_histogram",output_histogram_fname);
+  if(diff_input_coeffs || temps_vec.size()>1) {
     ofile_histogram.link(intra);
     std::string suffix;
-    Tools::convert(inter.Get_rank(), suffix);
-    output_histogram_fname = FileBase::appendSuffix(output_histogram_fname, "." + suffix);
+    Tools::convert(inter.Get_rank(),suffix);
+    output_histogram_fname = FileBase::appendSuffix(output_histogram_fname,"."+suffix);
   }
   ofile_histogram.open(output_histogram_fname);
   histo_grid.writeToFile(ofile_histogram);
   ofile_histogram.close();
 
   std::string output_coeffs_fname;
-  parse("output_coeffs", output_coeffs_fname);
+  parse("output_coeffs",output_coeffs_fname);
   std::string output_coeffs_fmt;
-  parse("output_coeffs_fmt", output_coeffs_fmt);
+  parse("output_coeffs_fmt",output_coeffs_fmt);
   coeffs_pntr->setOutputFmt(output_coeffs_fmt);
   OFile ofile_coeffsout;
   ofile_coeffsout.link(pc);
-  if (diff_input_coeffs)
-  {
+  if(diff_input_coeffs) {
     ofile_coeffsout.link(intra);
     std::string suffix;
-    Tools::convert(inter.Get_rank(), suffix);
-    output_coeffs_fname = FileBase::appendSuffix(output_coeffs_fname, "." + suffix);
+    Tools::convert(inter.Get_rank(),suffix);
+    output_coeffs_fname = FileBase::appendSuffix(output_coeffs_fname,"."+suffix);
   }
   ofile_coeffsout.open(output_coeffs_fname);
-  coeffs_pntr->writeToFile(ofile_coeffsout, true);
+  coeffs_pntr->writeToFile(ofile_coeffsout,true);
   ofile_coeffsout.close();
 
-  if (pc.Get_rank() == 0)
-  {
-    std::fprintf(out, "Replicas                              %zu\n", replicas);
-    std::fprintf(out, "Cores per replica                     %u\n", coresPerReplica);
-    std::fprintf(out, "Number of steps                       %llu\n", nsteps);
-    std::fprintf(out, "Timestep                              %f\n", tstep);
-    std::fprintf(out, "Temperature                           %f", temps_vec[0]);
-    for (unsigned int i = 1; i < temps_vec.size(); i++)
-    {
-      std::fprintf(out, ",%f", temps_vec[i]);
+  if(pc.Get_rank() == 0) {
+    std::fprintf(out,"Replicas                              %zu\n",replicas);
+    std::fprintf(out,"Cores per replica                     %u\n",coresPerReplica);
+    std::fprintf(out,"Number of steps                       %llu\n",nsteps);
+    std::fprintf(out,"Timestep                              %f\n",tstep);
+    std::fprintf(out,"Temperature                           %f",temps_vec[0]);
+    for(unsigned int i=1; i<temps_vec.size(); i++) {std::fprintf(out,",%f",temps_vec[i]);}
+    std::fprintf(out,"\n");
+    std::fprintf(out,"Friction                              %f",frictions_vec[0]);
+    for(unsigned int i=1; i<frictions_vec.size(); i++) {std::fprintf(out,",%f",frictions_vec[i]);}
+    std::fprintf(out,"\n");
+    std::fprintf(out,"Random seed                           %d",seeds_vec[0]);
+    for(unsigned int i=1; i<seeds_vec.size(); i++) {std::fprintf(out,",%d",seeds_vec[i]);}
+    std::fprintf(out,"\n");
+    std::fprintf(out,"Dimensions                            %zu\n",dim);
+    for(unsigned int i=0; i<dim; i++) {
+      std::fprintf(out,"Basis Function %u                      %s\n",i+1,basisf_keywords[i].c_str());
     }
-    std::fprintf(out, "\n");
-    std::fprintf(out, "Friction                              %f", frictions_vec[0]);
-    for (unsigned int i = 1; i < frictions_vec.size(); i++)
-    {
-      std::fprintf(out, ",%f", frictions_vec[i]);
-    }
-    std::fprintf(out, "\n");
-    std::fprintf(out, "Random seed                           %d", seeds_vec[0]);
-    for (unsigned int i = 1; i < seeds_vec.size(); i++)
-    {
-      std::fprintf(out, ",%d", seeds_vec[i]);
-    }
-    std::fprintf(out, "\n");
-    std::fprintf(out, "Dimensions                            %zu\n", dim);
-    for (unsigned int i = 0; i < dim; i++)
-    {
-      std::fprintf(out, "Basis Function %u                      %s\n", i + 1, basisf_keywords[i].c_str());
-    }
-    std::fprintf(out, "PLUMED input                          %s", plumed_inputfiles[0].c_str());
-    for (unsigned int i = 1; i < plumed_inputfiles.size(); i++)
-    {
-      std::fprintf(out, ",%s", plumed_inputfiles[i].c_str());
-    }
-    std::fprintf(out, "\n");
-    std::fprintf(out, "kBoltzmann taken as 1, use NATURAL_UNITS in the plumed input\n");
-    if (diff_input_coeffs)
-    {
-      std::fprintf(out, "using different coefficients for each replica\n");
-    }
+    std::fprintf(out,"PLUMED input                          %s",plumed_inputfiles[0].c_str());
+    for(unsigned int i=1; i<plumed_inputfiles.size(); i++) {std::fprintf(out,",%s",plumed_inputfiles[i].c_str());}
+    std::fprintf(out,"\n");
+    std::fprintf(out,"kBoltzmann taken as 1, use NATURAL_UNITS in the plumed input\n");
+    if(diff_input_coeffs) {std::fprintf(out,"using different coefficients for each replica\n");}
   }
 
-  plumed = Tools::make_unique<PLMD::PlumedMain>();
 
-  if (plumed)
-  {
-    int s = sizeof(double);
-    plumed->cmd("setRealPrecision", &s);
-    if (replicas > 1)
-    {
-      if (Communicator::initialized())
-      {
-        plumed->cmd("GREX setMPIIntracomm", &intra.Get_comm());
-        if (intra.Get_rank() == 0)
-        {
-          plumed->cmd("GREX setMPIIntercomm", &inter.Get_comm());
+  plumed=Tools::make_unique<PLMD::PlumedMain>();
+
+
+
+  if(plumed) {
+    int s=sizeof(double);
+    plumed->cmd("setRealPrecision",&s);
+    if(replicas>1) {
+      if (Communicator::initialized()) {
+        plumed->cmd("GREX setMPIIntracomm",&intra.Get_comm());
+        if (intra.Get_rank()==0) {
+          plumed->cmd("GREX setMPIIntercomm",&inter.Get_comm());
         }
         plumed->cmd("GREX init");
-        plumed->cmd("setMPIComm", &intra.Get_comm());
-      }
-      else
-      {
+        plumed->cmd("setMPIComm",&intra.Get_comm());
+      } else {
         error("More than 1 replica but no MPI");
       }
-    }
-    else
-    {
-      if (Communicator::initialized())
-        plumed->cmd("setMPIComm", &pc.Get_comm());
+    } else {
+      if(Communicator::initialized()) plumed->cmd("setMPIComm",&pc.Get_comm());
     }
   }
 
   std::string plumed_logfile = "plumed.log";
   std::string stats_filename = "stats.out";
   std::string plumed_input = plumed_inputfiles[0];
-  if (inter.Get_size() > 1)
-  {
+  if(inter.Get_size()>1) {
     std::string suffix;
-    Tools::convert(inter.Get_rank(), suffix);
-    plumed_logfile = FileBase::appendSuffix(plumed_logfile, "." + suffix);
-    stats_filename = FileBase::appendSuffix(stats_filename, "." + suffix);
-    if (plumed_inputfiles.size() > 1)
-    {
+    Tools::convert(inter.Get_rank(),suffix);
+    plumed_logfile = FileBase::appendSuffix(plumed_logfile,"."+suffix);
+    stats_filename = FileBase::appendSuffix(stats_filename,"."+suffix);
+    if(plumed_inputfiles.size()>1) {
       plumed_input = plumed_inputfiles[inter.Get_rank()];
     }
   }
 
-  if (plumed)
-  {
+  if(plumed) {
     plumed->cmd("setNoVirial");
-    int natoms = 1;
-    plumed->cmd("setNatoms", &natoms);
-    plumed->cmd("setMDEngine", "mdrunner_linearexpansion");
-    plumed->cmd("setTimestep", &tstep);
-    plumed->cmd("setPlumedDat", plumed_input.c_str());
-    plumed->cmd("setLogFile", plumed_logfile.c_str());
-    plumed->cmd("setKbT", &temp);
-    double energyunits = 1.0;
-    plumed->cmd("setMDEnergyUnits", &energyunits);
+    int natoms=1;
+    plumed->cmd("setNatoms",&natoms);
+    plumed->cmd("setMDEngine","mdrunner_linearexpansion");
+    plumed->cmd("setTimestep",&tstep);
+    plumed->cmd("setPlumedDat",plumed_input.c_str());
+    plumed->cmd("setLogFile",plumed_logfile.c_str());
+    plumed->cmd("setKbT",&temp);
+    double energyunits=1.0;
+    plumed->cmd("setMDEnergyUnits",&energyunits);
     plumed->cmd("init");
   }
 
   // Setup random number generator
   random.setSeed(seed);
 
-  double potential, therm_eng = 0;
-  std::vector<double> masses(1, 1);
+  double potential, therm_eng=0; std::vector<double> masses(1,1);
   std::vector<Vector> positions(1), velocities(1), forces(1);
-  for (unsigned int k = 0; k < dim; k++)
-  {
+  for(unsigned int k=0; k<dim; k++) {
     positions[0][k] = initPos[inter.Get_rank()][k];
-    if (periodic[k])
-    {
-      positions[0][k] = positions[0][k] - floor((positions[0][k] - interval_min[k]) / interval_range[k]) * interval_range[k];
+    if(periodic[k]) {
+      positions[0][k] = positions[0][k] - floor((positions[0][k]-interval_min[k])/interval_range[k])*interval_range[k];
     }
-    else
-    {
-      if (positions[0][k] > interval_max[k])
-      {
-        positions[0][k] = interval_max[k];
-      }
-      if (positions[0][k] < interval_min[k])
-      {
-        positions[0][k] = interval_min[k];
-      }
+    else {
+      if(positions[0][k]>interval_max[k]) {positions[0][k]=interval_max[k];}
+      if(positions[0][k]<interval_min[k]) {positions[0][k]=interval_min[k];}
     }
   }
 
-  for (unsigned k = 0; k < dim; ++k)
-  {
-    velocities[0][k] = random.Gaussian() * sqrt(temp);
+
+  for(unsigned k=0; k<dim; ++k) {
+    velocities[0][k]=random.Gaussian() * sqrt( temp );
   }
 
-  potential = calc_energy(positions, forces);
-  double ttt = calc_temp(velocities);
+  potential=calc_energy(positions,forces); double ttt=calc_temp(velocities);
 
-  FILE *fp = fopen(stats_filename.c_str(), "w+");
+  FILE* fp=fopen(stats_filename.c_str(),"w+");
   // call fclose when fp_deleter goes out of scope
-  std::unique_ptr<FILE, decltype(deleter)> fp_deleter(fp, deleter);
+  std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
 
-  double conserved = potential + 1.5 * ttt + therm_eng;
-  // std::fprintf(fp,"%d %f %f %f %f %f %f %f %f \n", 0, 0., positions[0][0], positions[0][1], positions[0][2], conserved, ttt, potential, therm_eng );
-  if (intra.Get_rank() == 0)
-  {
-    std::fprintf(fp, "%d %f %f %f %f %f %f %f %f \n", 0, 0., positions[0][0], positions[0][1], positions[0][2], conserved, ttt, potential, therm_eng);
+  double conserved = potential+1.5*ttt+therm_eng;
+  //std::fprintf(fp,"%d %f %f %f %f %f %f %f %f \n", 0, 0., positions[0][0], positions[0][1], positions[0][2], conserved, ttt, potential, therm_eng );
+  if( intra.Get_rank()==0 ) {
+    std::fprintf(fp,"%d %f %f %f %f %f %f %f %f \n", 0, 0., positions[0][0], positions[0][1], positions[0][2], conserved, ttt, potential, therm_eng );
   }
 
-  if (plumed)
-  {
+  if(plumed) {
     long long unsigned int step_tmp = 0;
-    plumed->cmd("setStepLongLong", &step_tmp);
-    plumed->cmd("setMasses", &masses[0]);
-    plumed->cmd("setForces", &forces[0][0]);
-    plumed->cmd("setEnergy", &potential);
-    plumed->cmd("setPositions", &positions[0][0]);
+    plumed->cmd("setStepLongLong",&step_tmp);
+    plumed->cmd("setMasses",&masses[0]);
+    plumed->cmd("setForces",&forces[0][0]);
+    plumed->cmd("setEnergy",&potential);
+    plumed->cmd("setPositions",&positions[0][0]);
     plumed->cmd("calc");
   }
 
-  for (long long unsigned int istep = 0; istep < nsteps; ++istep)
-  {
-    // if( istep%20==0 && pc.Get_rank()==0 ) printf("Doing step %llu\n",istep);
+  for(long long unsigned int istep=0; istep<nsteps; ++istep) {
+    //if( istep%20==0 && pc.Get_rank()==0 ) printf("Doing step %llu\n",istep);
 
     // Langevin thermostat
-    double lscale = exp(-0.5 * tstep * friction); // exp(-0.5*tstep/friction);
-    double lrand = sqrt((1. - lscale * lscale) * temp);
-    for (unsigned k = 0; k < dim; ++k)
-    {
-      therm_eng = therm_eng + 0.5 * velocities[0][k] * velocities[0][k];
-      velocities[0][k] = lscale * velocities[0][k] + lrand * random.Gaussian();
-      therm_eng = therm_eng - 0.5 * velocities[0][k] * velocities[0][k];
+    double lscale=exp(-0.5*tstep*friction); //exp(-0.5*tstep/friction);
+    double lrand=sqrt((1.-lscale*lscale)*temp);
+    for(unsigned k=0; k<dim; ++k) {
+      therm_eng=therm_eng+0.5*velocities[0][k]*velocities[0][k];
+      velocities[0][k]=lscale*velocities[0][k]+lrand*random.Gaussian();
+      therm_eng=therm_eng-0.5*velocities[0][k]*velocities[0][k];
     }
 
     // First step of velocity verlet
-    for (unsigned k = 0; k < dim; ++k)
-    {
-      velocities[0][k] = velocities[0][k] + 0.5 * tstep * forces[0][k];
-      positions[0][k] = positions[0][k] + tstep * velocities[0][k];
+    for(unsigned k=0; k<dim; ++k) {
+      velocities[0][k] = velocities[0][k] + 0.5*tstep*forces[0][k];
+      positions[0][k] = positions[0][k] + tstep*velocities[0][k];
 
-      if (periodic[k])
-      {
-        positions[0][k] = positions[0][k] - floor((positions[0][k] - interval_min[k]) / interval_range[k]) * interval_range[k];
+      if(periodic[k]) {
+        positions[0][k] = positions[0][k] - floor((positions[0][k]-interval_min[k])/interval_range[k])*interval_range[k];
       }
-      else
-      {
-        if (positions[0][k] > interval_max[k])
-        {
-          positions[0][k] = interval_max[k];
-          velocities[0][k] = -std::abs(velocities[0][k]);
+      else {
+        if(positions[0][k]>interval_max[k]) {
+          positions[0][k]=interval_max[k];
+          velocities[0][k]=-std::abs(velocities[0][k]);
         }
-        if (positions[0][k] < interval_min[k])
-        {
-          positions[0][k] = interval_min[k];
-          velocities[0][k] = -std::abs(velocities[0][k]);
+        if(positions[0][k]<interval_min[k]) {
+          positions[0][k]=interval_min[k];
+          velocities[0][k]=-std::abs(velocities[0][k]);
         }
       }
     }
 
-    potential = calc_energy(positions, forces);
+    potential=calc_energy(positions,forces);
 
-    if (plumed)
-    {
-      long long unsigned int istepplusone = istep + 1;
-      plumedWantsToStop = 0;
-      plumed->cmd("setStepLongLong", &istepplusone);
-      plumed->cmd("setMasses", &masses[0]);
-      plumed->cmd("setForces", &forces[0][0]);
-      plumed->cmd("setEnergy", &potential);
-      plumed->cmd("setPositions", &positions[0][0]);
-      plumed->cmd("setStopFlag", &plumedWantsToStop);
+    if(plumed) {
+      long long unsigned int istepplusone=istep+1;
+      plumedWantsToStop=0;
+      plumed->cmd("setStepLongLong",&istepplusone);
+      plumed->cmd("setMasses",&masses[0]);
+      plumed->cmd("setForces",&forces[0][0]);
+      plumed->cmd("setEnergy",&potential);
+      plumed->cmd("setPositions",&positions[0][0]);
+      plumed->cmd("setStopFlag",&plumedWantsToStop);
       plumed->cmd("calc");
-      // if(istep%2000==0) plumed->cmd("writeCheckPointFile");
-      if (plumedWantsToStop)
-        nsteps = istep;
+      //if(istep%2000==0) plumed->cmd("writeCheckPointFile");
+      if(plumedWantsToStop) nsteps=istep;
     }
 
     // Second step of velocity verlet
-    for (unsigned k = 0; k < dim; ++k)
-    {
-      velocities[0][k] = velocities[0][k] + 0.5 * tstep * forces[0][k];
+    for(unsigned k=0; k<dim; ++k) {
+      velocities[0][k] = velocities[0][k] + 0.5*tstep*forces[0][k];
     }
 
     // Langevin thermostat
-    lscale = exp(-0.5 * tstep * friction); // exp(-0.5*tstep/friction);
-    lrand = sqrt((1. - lscale * lscale) * temp);
-    for (unsigned k = 0; k < dim; ++k)
-    {
-      therm_eng = therm_eng + 0.5 * velocities[0][k] * velocities[0][k];
-      velocities[0][k] = lscale * velocities[0][k] + lrand * random.Gaussian();
-      therm_eng = therm_eng - 0.5 * velocities[0][k] * velocities[0][k];
+    lscale=exp(-0.5*tstep*friction); //exp(-0.5*tstep/friction);
+    lrand=sqrt((1.-lscale*lscale)*temp);
+    for(unsigned k=0; k<dim; ++k) {
+      therm_eng=therm_eng+0.5*velocities[0][k]*velocities[0][k];
+      velocities[0][k]=lscale*velocities[0][k]+lrand*random.Gaussian();
+      therm_eng=therm_eng-0.5*velocities[0][k]*velocities[0][k];
     }
 
     // Print everything
-    ttt = calc_temp(velocities);
-    conserved = potential + 1.5 * ttt + therm_eng;
-    if ((intra.Get_rank() == 0) && ((istep % stepWrite) == 0))
-    {
-      std::fprintf(fp, "%llu %f %f %f %f %f %f %f %f \n", istep, istep * tstep, positions[0][0], positions[0][1], positions[0][2], conserved, ttt, potential, therm_eng);
+    ttt = calc_temp( velocities );
+    conserved = potential+1.5*ttt+therm_eng;
+    if( (intra.Get_rank()==0) && ((istep % stepWrite)==0) ) {
+      std::fprintf(fp,"%llu %f %f %f %f %f %f %f %f \n", istep, istep*tstep, positions[0][0], positions[0][1], positions[0][2], conserved, ttt, potential, therm_eng );
     }
   }
 
-  // printf("Rank: %d, Size: %d \n", pc.Get_rank(), pc.Get_size() );
-  // printf("Rank: %d, Size: %d, MultiSimCommRank: %d, MultiSimCommSize: %d \n", pc.Get_rank(), pc.Get_size(), multi_sim_comm.Get_rank(), multi_sim_comm.Get_size() );
+  //printf("Rank: %d, Size: %d \n", pc.Get_rank(), pc.Get_size() );
+  //printf("Rank: %d, Size: %d, MultiSimCommRank: %d, MultiSimCommSize: %d \n", pc.Get_rank(), pc.Get_size(), multi_sim_comm.Get_rank(), multi_sim_comm.Get_size() );
 
   return 0;
 }
