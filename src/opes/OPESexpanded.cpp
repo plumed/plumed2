@@ -819,7 +819,7 @@ void OPESexpanded::init_fromObs() //This could probably be faster and/or require
     }
     for(unsigned i=0; i<deltaF_.size(); i++)
     {
-      const double diff_i=(-getExpansion(i)+deltaF_[i]/kbt_);
+      const long double diff_i=(-getExpansion(i)+deltaF_[i]/kbt_);
       deltaF_[i]-=kbt_*(std::log1p(std::exp(diff_i)/t)+std::log1p(-1./(1.+t)));
     }
   }
