@@ -147,7 +147,7 @@ unsigned ExpansionCVs::estimateNumSteps(const double left_side,const double righ
   auto get_neff_HWHM=[](const double side,const std::vector<double>& obs) //HWHM = half width at half maximum. neff is in general not symmetric
   {
     //func: Neff/N-0.5 is a function between -0.5 and 0.5
-    auto func=[](const long double delta,const std::vector<double>& obs)
+    auto func=[](const double delta,const std::vector<double>& obs)
     {
       double sum_w=0;
       double sum_w2=0;
