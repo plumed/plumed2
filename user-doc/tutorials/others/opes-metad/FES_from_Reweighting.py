@@ -87,98 +87,98 @@ else:
   sys.exit(error%('only 1D and 2D are supported'))
 # get cvs
 with open(filename,'r') as f:
-    fields=f.readline().split()
-    if fields[1]!='FIELDS':
-      sys.exit(error%('no FIELDS found in "%s"'%filename))
+  fields=f.readline().split()
+  if fields[1]!='FIELDS':
+    sys.exit(error%('no FIELDS found in "%s"'%filename))
+  try:
+    col_x=int(args_cv.split(',')[0])-1
+    name_cv_x=fields[col_x+2]
+  except ValueError:
+    col_x=-1
+    name_cv_x=args_cv.split(',')[0]
+    for i in range(len(fields)):
+      if fields[i]==name_cv_x:
+        col_x=i-2
+    if col_x==-1:
+      sys.exit(error%('cv "%s" not found'%name_cv_x))
+  if dim2:
     try:
-      col_x=int(args_cv.split(',')[0])-1
-      name_cv_x=fields[col_x+2]
+      col_y=int(args_cv.split(',')[1])-1
+      name_cv_y=fields[col_y+2]
     except ValueError:
-      col_x=-1
-      name_cv_x=args_cv.split(',')[0]
+      col_y=-1
+      name_cv_y=args_cv.split(',')[1]
       for i in range(len(fields)):
-        if fields[i]==name_cv_x:
-          col_x=i-2
-      if col_x==-1:
-        sys.exit(error%('cv "%s" not found'%name_cv_x))
-    if dim2:
-      try:
-        col_y=int(args_cv.split(',')[1])-1
-        name_cv_y=fields[col_y+2]
-      except ValueError:
-        col_y=-1
-        name_cv_y=args_cv.split(',')[1]
-        for i in range(len(fields)):
-          if fields[i]==name_cv_y:
-            col_y=i-2
-        if col_y==-1:
-          sys.exit(error%('cv "%s" not found'%name_cv_y))
-# get bias
-    if args_bias=='NO' or args_bias=='no':
+        if fields[i]==name_cv_y:
+          col_y=i-2
+      if col_y==-1:
+        sys.exit(error%('cv "%s" not found'%name_cv_y))
+  # get bias
+  if args_bias=='NO' or args_bias=='no':
+    col_bias=[]
+  else:
+    try:
+      col_bias=[int(col)-1 for col in args_bias.split(',')]
+    except ValueError:
       col_bias=[]
-    else:
-      try:
-        col_bias=[int(col)-1 for col in args_bias.split(',')]
-      except ValueError:
-        col_bias=[]
-        if args_bias=='.bias':
+      if args_bias=='.bias':
+        for i in range(len(fields)):
+          if fields[i].find('.bias')!=-1 or fields[i].find('.rbias')!=-1:
+            col_bias.append(i-2)
+      else:
+        for j in range(len(args_bias.split(','))):
           for i in range(len(fields)):
-            if fields[i].find('.bias')!=-1 or fields[i].find('.rbias')!=-1:
+            if fields[i]==args_bias.split(',')[j]:
               col_bias.append(i-2)
-        else:
-          for j in range(len(args_bias.split(','))):
-            for i in range(len(fields)):
-              if fields[i]==args_bias.split(',')[j]:
-                col_bias.append(i-2)
-          if len(col_bias)!=len(args_bias.split(',')):
-            sys.exit(error%('found %d matching biases, but %d were requested. Use columns number to avoid ambiguity'%(len(col_bias),len(args_bias.split(',')))))
-    print(' using cv "%s" found at column %d'%(name_cv_x,col_x+1))
-    if dim2:
-      print(' using cv "%s" found at column %d'%(name_cv_y,col_y+1))
-    if len(col_bias)==0:
-      print(' no bias')
-    for col in col_bias:
-      print(' using bias "%s" found at column %d'%(fields[col+2],col+1))
-# get periodicity
-    period_x=0
-    period_y=0
-    header_lines=1
-    line=f.readline().split()
-    while line[0]=='#!':
-      header_lines+=1
-      if line[2]=='min_'+name_cv_x:
-        if line[3]=='-pi':
-          grid_min_x=-np.pi
-        else:
-          grid_min_x=float(line[3])
-        line=f.readline().split()
-        header_lines+=1
-        if line[2]!='max_'+name_cv_x:
-          sys.exit(error%('min_%s was found, but not max_%s !'%(name_cv_x,name_cv_x)))
-        if line[3]=='pi':
-          grid_max_x=np.pi
-        else:
-          grid_max_x=float(line[3])
-        period_x=grid_max_x-grid_min_x
-        if calc_der:
-          sys.exit(error%('derivatives not supported with periodic CVs, remove --der option'))
-      if dim2 and line[2]=='min_'+name_cv_y:
-        if line[3]=='-pi':
-          grid_min_y=-np.pi
-        else:
-          grid_min_y=float(line[3])
-        line=f.readline().split()
-        header_lines+=1
-        if line[2]!='max_'+name_cv_y:
-          sys.exit(error%('min_%s was found, but not max_%s !'%(name_cv_y,name_cv_y)))
-        if line[3]=='pi':
-          grid_max_y=np.pi
-        else:
-          grid_max_y=float(line[3])
-        period_y=grid_max_y-grid_min_y
-        if calc_der:
-          sys.exit(error%('derivatives not supported with periodic CVs, remove --der option'))
+        if len(col_bias)!=len(args_bias.split(',')):
+          sys.exit(error%('found %d matching biases, but %d were requested. Use columns number to avoid ambiguity'%(len(col_bias),len(args_bias.split(',')))))
+  print(' using cv "%s" found at column %d'%(name_cv_x,col_x+1))
+  if dim2:
+    print(' using cv "%s" found at column %d'%(name_cv_y,col_y+1))
+  if len(col_bias)==0:
+    print(' no bias')
+  for col in col_bias:
+    print(' using bias "%s" found at column %d'%(fields[col+2],col+1))
+  # get periodicity
+  period_x=0
+  period_y=0
+  header_lines=1
+  line=f.readline().split()
+  while line[0]=='#!':
+    header_lines+=1
+    if line[2]=='min_'+name_cv_x:
+      if line[3]=='-pi':
+        grid_min_x=-np.pi
+      else:
+        grid_min_x=float(line[3])
       line=f.readline().split()
+      header_lines+=1
+      if line[2]!='max_'+name_cv_x:
+        sys.exit(error%('min_%s was found, but not max_%s !'%(name_cv_x,name_cv_x)))
+      if line[3]=='pi':
+        grid_max_x=np.pi
+      else:
+        grid_max_x=float(line[3])
+      period_x=grid_max_x-grid_min_x
+      if calc_der:
+        sys.exit(error%('derivatives not supported with periodic CVs, remove --der option'))
+    if dim2 and line[2]=='min_'+name_cv_y:
+      if line[3]=='-pi':
+        grid_min_y=-np.pi
+      else:
+        grid_min_y=float(line[3])
+      line=f.readline().split()
+      header_lines+=1
+      if line[2]!='max_'+name_cv_y:
+        sys.exit(error%('min_%s was found, but not max_%s !'%(name_cv_y,name_cv_y)))
+      if line[3]=='pi':
+        grid_max_y=np.pi
+      else:
+        grid_max_y=float(line[3])
+      period_y=grid_max_y-grid_min_y
+      if calc_der:
+        sys.exit(error%('derivatives not supported with periodic CVs, remove --der option'))
+    line=f.readline().split()
 skipme=header_lines+args_skiprows
 # get sigma
 sigma_x=float(args_sigma.split(',')[0])
@@ -325,47 +325,47 @@ def printFES(outfilename):
     deltaF=fesB-fesA
 #actual printing
   with open(outfilename,'w') as f:
-      fields='#! FIELDS '+name_cv_x
+    fields='#! FIELDS '+name_cv_x
+    if dim2:
+      fields+=' '+name_cv_y
+    fields+=' file.free'
+    if calc_der:
+      fields+=' der_'+name_cv_x
       if dim2:
-        fields+=' '+name_cv_y
-      fields+=' file.free'
-      if calc_der:
-        fields+=' der_'+name_cv_x
-        if dim2:
-          fields+=' der_'+name_cv_y
-      f.write(fields+'\n')
-      f.write('#! SET sample_size %d\n'%size)
-      f.write('#! SET effective_sample_size %g\n'%effsize)
-      if calc_deltaF:
-        f.write('#! SET DeltaF %g\n'%(deltaF))
-      f.write('#! SET min_'+name_cv_x+' %g\n'%(grid_min_x))
-      f.write('#! SET max_'+name_cv_x+' %g\n'%(grid_max_x))
-      f.write('#! SET nbins_'+name_cv_x+' %g\n'%(grid_bin_x))
-      if period_x==0:
-        f.write('#! SET periodic_'+name_cv_x+' false\n')
+        fields+=' der_'+name_cv_y
+    f.write(fields+'\n')
+    f.write('#! SET sample_size %d\n'%size)
+    f.write('#! SET effective_sample_size %g\n'%effsize)
+    if calc_deltaF:
+      f.write('#! SET DeltaF %g\n'%(deltaF))
+    f.write('#! SET min_'+name_cv_x+' %g\n'%(grid_min_x))
+    f.write('#! SET max_'+name_cv_x+' %g\n'%(grid_max_x))
+    f.write('#! SET nbins_'+name_cv_x+' %g\n'%(grid_bin_x))
+    if period_x==0:
+      f.write('#! SET periodic_'+name_cv_x+' false\n')
+    else:
+      f.write('#! SET periodic_'+name_cv_x+' true\n')
+    if not dim2:
+      for i in range(grid_bin_x):
+        line=(fmt+'  '+fmt)%(grid_cv_x[i],fes[i]-shift)
+        if calc_der:
+          line+=(' '+fmt)%(der_fes_x[i])
+        f.write(line+'\n')
+    else:
+      f.write('#! SET min_'+name_cv_y+' %g\n'%(grid_min_y))
+      f.write('#! SET max_'+name_cv_y+' %g\n'%(grid_max_y))
+      f.write('#! SET nbins_'+name_cv_y+' %g\n'%(grid_bin_y))
+      if period_y==0:
+        f.write('#! SET periodic_'+name_cv_y+' false\n')
       else:
-        f.write('#! SET periodic_'+name_cv_x+' true\n')
-      if not dim2:
-        for i in range(grid_bin_x):
-          line=(fmt+'  '+fmt)%(grid_cv_x[i],fes[i]-shift)
+        f.write('#! SET periodic_'+name_cv_y+' true\n')
+      for i in range(grid_bin_x):
+        for j in range(grid_bin_y):
+          line=(fmt+' '+fmt+'  '+fmt)%(x[i,j],y[i,j],fes[i,j]-shift)
           if calc_der:
-            line+=(' '+fmt)%(der_fes_x[i])
+            line+=(' '+fmt+' '+fmt)%(der_fes_x[i,j],der_fes_y[i,j])
           f.write(line+'\n')
-      else:
-        f.write('#! SET min_'+name_cv_y+' %g\n'%(grid_min_y))
-        f.write('#! SET max_'+name_cv_y+' %g\n'%(grid_max_y))
-        f.write('#! SET nbins_'+name_cv_y+' %g\n'%(grid_bin_y))
-        if period_y==0:
-          f.write('#! SET periodic_'+name_cv_y+' false\n')
-        else:
-          f.write('#! SET periodic_'+name_cv_y+' true\n')
-        for i in range(grid_bin_x):
-          for j in range(grid_bin_y):
-            line=(fmt+' '+fmt+'  '+fmt)%(x[i,j],y[i,j],fes[i,j]-shift)
-            if calc_der:
-              line+=(' '+fmt+' '+fmt)%(der_fes_x[i,j],der_fes_y[i,j])
-            f.write(line+'\n')
-          f.write('\n')
+        f.write('\n')
 
 ### Calculate FES ###
 # on single grid point
@@ -473,37 +473,37 @@ if block_av:
     deltaF=fesB-fesA
 # actual printing
   with open(outfile,'w') as f:
-      fields='#! FIELDS '+name_cv_x
-      if dim2:
-        fields+=' '+name_cv_y
-      fields+=' file.free uncertainty'
-      f.write(fields+'\n')
-      f.write('#! SET sample_size %d\n'%size)
-      f.write('#! SET effective_sample_size %g\n'%effsize)
-      if calc_deltaF:
-        f.write('#! SET DeltaF %g\n'%(deltaF))
-      f.write('#! SET blocks_num %d\n'%blocks_num)
-      f.write('#! SET blocks_effective_num %g\n'%blocks_neff)
-      f.write('#! SET min_'+name_cv_x+' %g\n'%(grid_min_x))
-      f.write('#! SET max_'+name_cv_x+' %g\n'%(grid_max_x))
-      f.write('#! SET nbins_'+name_cv_x+' %g\n'%(grid_bin_x))
-      if period_x==0:
-        f.write('#! SET periodic_'+name_cv_x+' false\n')
+    fields='#! FIELDS '+name_cv_x
+    if dim2:
+      fields+=' '+name_cv_y
+    fields+=' file.free uncertainty'
+    f.write(fields+'\n')
+    f.write('#! SET sample_size %d\n'%size)
+    f.write('#! SET effective_sample_size %g\n'%effsize)
+    if calc_deltaF:
+      f.write('#! SET DeltaF %g\n'%(deltaF))
+    f.write('#! SET blocks_num %d\n'%blocks_num)
+    f.write('#! SET blocks_effective_num %g\n'%blocks_neff)
+    f.write('#! SET min_'+name_cv_x+' %g\n'%(grid_min_x))
+    f.write('#! SET max_'+name_cv_x+' %g\n'%(grid_max_x))
+    f.write('#! SET nbins_'+name_cv_x+' %g\n'%(grid_bin_x))
+    if period_x==0:
+      f.write('#! SET periodic_'+name_cv_x+' false\n')
+    else:
+      f.write('#! SET periodic_'+name_cv_x+' true\n')
+    if not dim2:
+      for i in range(grid_bin_x):
+        f.write((fmt+'  '+fmt+' '+fmt+'\n')%(grid_cv_x[i],fes[i],fes_err[i]))
+    else:
+      f.write('#! SET min_'+name_cv_y+' %g\n'%(grid_min_y))
+      f.write('#! SET max_'+name_cv_y+' %g\n'%(grid_max_y))
+      f.write('#! SET nbins_'+name_cv_y+' %g\n'%(grid_bin_y))
+      if period_y==0:
+        f.write('#! SET periodic_'+name_cv_y+' false\n')
       else:
-        f.write('#! SET periodic_'+name_cv_x+' true\n')
-      if not dim2:
-        for i in range(grid_bin_x):
-          f.write((fmt+'  '+fmt+' '+fmt+'\n')%(grid_cv_x[i],fes[i],fes_err[i]))
-      else:
-        f.write('#! SET min_'+name_cv_y+' %g\n'%(grid_min_y))
-        f.write('#! SET max_'+name_cv_y+' %g\n'%(grid_max_y))
-        f.write('#! SET nbins_'+name_cv_y+' %g\n'%(grid_bin_y))
-        if period_y==0:
-          f.write('#! SET periodic_'+name_cv_y+' false\n')
-        else:
-          f.write('#! SET periodic_'+name_cv_y+' true\n')
-        for i in range(grid_bin_x):
-          for j in range(grid_bin_y):
-            f.write((fmt+' '+fmt+'  '+fmt+' '+fmt+'\n')%(x[i,j],y[i,j],fes[i,j],fes_err[i,j]))
-          f.write('\n')
+        f.write('#! SET periodic_'+name_cv_y+' true\n')
+      for i in range(grid_bin_x):
+        for j in range(grid_bin_y):
+          f.write((fmt+' '+fmt+'  '+fmt+' '+fmt+'\n')%(x[i,j],y[i,j],fes[i,j],fes_err[i,j]))
+        f.write('\n')
 print('                              ')
