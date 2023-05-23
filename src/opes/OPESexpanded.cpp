@@ -820,7 +820,7 @@ void OPESexpanded::init_fromObs() //This could probably be faster and/or require
     for(unsigned i=0; i<deltaF_.size(); i++)
     {
       const long double diff_i=(-getExpansion(i)+deltaF_[i]/kbt_);
-      deltaF_[i]-=kbt_*(std::log1p(std::exp(diff_i)/t)+std::log1p(-1./(1.+t)));
+      deltaF_[i]-=kbt_*(std::log1p(std::exp(diff_i-std::log(t)))+std::log1p(-1./(1.+t)));
     }
   }
   obs_cvs_.clear();
@@ -902,14 +902,14 @@ void OPESexpanded::updateDeltaF(double bias)
 {
   plumed_dbg_massert(counter_>0,"deltaF_ must be initialized");
   counter_++;
-  const double increment=kbt_*std::log1p(std::exp(static_cast<long double>(bias-rct_)/kbt_)/(counter_-1.));
+  const double increment=kbt_*std::log1p(std::exp(static_cast<long double>(bias-rct_)/kbt_-std::log(counter_-1.)));
   #pragma omp parallel num_threads(NumOMP_)
   {
     #pragma omp for
     for(unsigned i=0; i<deltaF_.size(); i++)
     {
       const long double diff_i=(-getExpansion(i)+(bias-rct_+deltaF_[i])/kbt_);
-      deltaF_[i]+=increment-kbt_*std::log1p(std::exp(diff_i)/(counter_-1.));
+      deltaF_[i]+=increment-kbt_*std::log1p(std::exp(diff_i-std::log(counter_-1.)));
     }
   }
   rct_+=increment+kbt_*std::log1p(-1./counter_);
