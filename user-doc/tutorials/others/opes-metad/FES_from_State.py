@@ -6,8 +6,8 @@
 import sys
 import argparse
 import numpy as np
-import pandas as pd #much faster reading from file
-do_bck=False #requires the bck.meup.sh script
+import pandas as pd
+do_bck=False #backup files in plumed style
 if do_bck:
   bck_script='bck.meup.sh' #e.g. place the script in your ~/bin
   import subprocess
@@ -66,11 +66,15 @@ explore='unset'
 
 ### Get data ###
 # get data and check number of stored states
-data=pd.read_table(filename,sep='\s+',header=None)
+try:
+  import datatable #datatable is faster than pandas, but less common
+  data=datatable.fread(filename,header=False).to_numpy()
+except ImportError:
+  data=pd.read_table(filename,sep='\s+',header=None).to_numpy()
 fields_pos=[]
-tot_lines=len(data.iloc[:,1])
+tot_lines=data.shape[0]
 for i in range(tot_lines):
-  if data.iloc[i,1]=='FIELDS':
+  if data[i,1]=='FIELDS':
     fields_pos.append(i)
 if len(fields_pos)==0:
   sys.exit(' no FIELDS found in file "'+filename+'"')
@@ -87,15 +91,15 @@ for n in range(len(fields_pos)-1):
   print('   working...   0% of {:.0%}'.format(n/(len(fields_pos)-1)),end='\r')
   l=fields_pos[n]
   dim2=False
-  if len(data.iloc[l,:])==6:
-    name_cv_x=data.iloc[l,3]
-  elif len(data.iloc[l,:])==8:
+  if len(data[l,:])==6:
+    name_cv_x=data[l,3]
+  elif len(data[l,:])==8:
     dim2=True
-    name_cv_x=data.iloc[l,3]
-    name_cv_y=data.iloc[l,4]
+    name_cv_x=data[l,3]
+    name_cv_y=data[l,4]
   else:
     sys.exit(' wrong number of FIELDS in file "'+filename+'": only 1 or 2 dimensional bias are supported')
-  action=data.iloc[l+1,3]
+  action=data[l+1,3]
   if action=="OPES_METAD_state":
     if explore!='no':
       explore='no'
@@ -106,77 +110,77 @@ for n in range(len(fields_pos)-1):
       print(' building free energy from OPES_METAD_EXPLORE')
   else:
     sys.exit(' This script works only with OPES_METAD_state and OPES_METAD_EXPLORE_state')
-  if data.iloc[l+2,2]!='biasfactor':
+  if data[l+2,2]!='biasfactor':
     sys.exit(' biasfactor not found!')
   sf=1 #scaling factor for explore mode
   if explore=='yes':
-    sf=float(data.iloc[l+2,3])
-  if data.iloc[l+3,2]!='epsilon':
+    sf=float(data[l+2,3])
+  if data[l+3,2]!='epsilon':
     sys.exit(' epsilon not found!')
-  epsilon=float(data.iloc[l+3,3])
-  if data.iloc[l+4,2]!='kernel_cutoff':
+  epsilon=float(data[l+3,3])
+  if data[l+4,2]!='kernel_cutoff':
     sys.exit(' kernel_cutoff not found!')
-  cutoff=float(data.iloc[l+4,3])
+  cutoff=float(data[l+4,3])
   val_at_cutoff=np.exp(-0.5*cutoff**2)
-  if data.iloc[l+6,2]!='zed':
+  if data[l+6,2]!='zed':
     sys.exit(' zed not found!')
-  Zed=float(data.iloc[l+6,3])
+  Zed=float(data[l+6,3])
   if explore=='no':
-    if data.iloc[l+7,2]!='sum_weights':
+    if data[l+7,2]!='sum_weights':
       sys.exit(' sum_weights not found!')
-    Zed*=float(data.iloc[l+7,3])
+    Zed*=float(data[l+7,3])
   if explore=='yes':
-    if data.iloc[l+9,2]!='counter':
+    if data[l+9,2]!='counter':
       sys.exit(' counter not found!')
-    Zed*=float(data.iloc[l+9,3])
+    Zed*=float(data[l+9,3])
   l+=10 #there are always at least 10 header lines
 # get periodicity
   period_x=0
   period_y=0
-  while data.iloc[l,0]=='#!':
-    if data.iloc[l,2]=='min_'+name_cv_x:
-      if data.iloc[l,3]=='-pi':
+  while data[l,0]=='#!':
+    if data[l,2]=='min_'+name_cv_x:
+      if data[l,3]=='-pi':
         grid_min_x=-np.pi
       else:
-        grid_min_x=float(data.iloc[l,3])
+        grid_min_x=float(data[l,3])
       l+=1
-      if data.iloc[l,2]!='max_'+name_cv_x:
+      if data[l,2]!='max_'+name_cv_x:
         sys.exit(' min_%s was found, but not max_%s !'%(name_cv_x,name_cv_x))
-      if data.iloc[l,3]=='pi':
+      if data[l,3]=='pi':
         grid_max_x=np.pi
       else:
-        grid_max_x=float(data.iloc[l,3])
+        grid_max_x=float(data[l,3])
       period_x=grid_max_x-grid_min_x
       if calc_der:
         sys.exit(' derivatives not supported with periodic CVs, remove --der option')
-    if dim2 and data.iloc[l,2]=='min_'+name_cv_y:
-      if data.iloc[l,3]=='-pi':
+    if dim2 and data[l,2]=='min_'+name_cv_y:
+      if data[l,3]=='-pi':
         grid_min_y=-np.pi
       else:
-        grid_min_y=float(data.iloc[l,3])
+        grid_min_y=float(data[l,3])
       l+=1
-      if data.iloc[l,2]!='max_'+name_cv_y:
+      if data[l,2]!='max_'+name_cv_y:
         sys.exit(' min_%s was found, but not max_%s !'%(name_cv_y,name_cv_y))
-      if data.iloc[l,3]=='pi':
+      if data[l,3]=='pi':
         grid_max_y=np.pi
       else:
-        grid_max_y=float(data.iloc[l,3])
+        grid_max_y=float(data[l,3])
       period_y=grid_max_y-grid_min_y
       if calc_der:
         sys.exit(' derivatives not supported with periodic CVs, remove --der option')
     l+=1
   if l==fields_pos[-1]:
     sys.exit(' missing data!')
-# get kernels
-  center_x=np.array(data.iloc[l:fields_pos[n+1],1],dtype=float)
+# get kernels #TODO avoid this conversion
+  center_x=np.array(data[l:fields_pos[n+1],1],dtype=float)
   if dim2:
-    center_y=np.array(data.iloc[l:fields_pos[n+1],2],dtype=float)
-    sigma_x=np.array(data.iloc[l:fields_pos[n+1],3],dtype=float)
-    sigma_y=np.array(data.iloc[l:fields_pos[n+1],4],dtype=float)
-    height=np.array(data.iloc[l:fields_pos[n+1],5],dtype=float)
+    center_y=np.array(data[l:fields_pos[n+1],2],dtype=float)
+    sigma_x=np.array(data[l:fields_pos[n+1],3],dtype=float)
+    sigma_y=np.array(data[l:fields_pos[n+1],4],dtype=float)
+    height=np.array(data[l:fields_pos[n+1],5],dtype=float)
   else:
-    sigma_x=np.array(data.iloc[l:fields_pos[n+1],2],dtype=float)
-    height=np.array(data.iloc[l:fields_pos[n+1],3],dtype=float)
+    sigma_x=np.array(data[l:fields_pos[n+1],2],dtype=float)
+    height=np.array(data[l:fields_pos[n+1],3],dtype=float)
 
 ### Prepare the grid ###
   grid_bin_x=int(args.grid_bin.split(',')[0])
@@ -305,44 +309,43 @@ for n in range(len(fields_pos)-1):
     cmd=subprocess.Popen(bck_script+' -i '+outfile,shell=True)
     cmd.wait()
 # actual print
-  f=open(outfile,'w')
-  fields='#! FIELDS '+name_cv_x
-  if dim2:
-    fields+=' '+name_cv_y
-  fields+=' file.free'
-  if calc_der:
-    fields+=' der_'+name_cv_x
+  with open(outfile,'w') as f:
+    fields='#! FIELDS '+name_cv_x
     if dim2:
-      fields+=' der_'+name_cv_y
-  f.write(fields+'\n')
-  if calc_deltaF:
-    f.write('#! SET DeltaF %g\n'%(deltaF))
-  f.write('#! SET min_'+name_cv_x+' %g\n'%(grid_min_x))
-  f.write('#! SET max_'+name_cv_x+' %g\n'%(grid_max_x))
-  f.write('#! SET nbins_'+name_cv_x+' %g\n'%(grid_bin_x))
-  if period_x==0:
-    f.write('#! SET periodic_'+name_cv_x+' false\n')
-  else:
-    f.write('#! SET periodic_'+name_cv_x+' true\n')
-  if not dim2:
-    for i in range(grid_bin_x):
-      line=(fmt+'  '+fmt)%(grid_cv_x[i],fes[i])
-      if calc_der:
-        line+=(' '+fmt)%(der_fes_x[i])
-      f.write(line+'\n')
-  else:
-    f.write('#! SET min_'+name_cv_y+' %g\n'%(grid_min_y))
-    f.write('#! SET max_'+name_cv_y+' %g\n'%(grid_max_y))
-    f.write('#! SET nbins_'+name_cv_y+' %g\n'%(grid_bin_y))
-    if period_y==0:
-      f.write('#! SET periodic_'+name_cv_y+' false\n')
+      fields+=' '+name_cv_y
+    fields+=' file.free'
+    if calc_der:
+      fields+=' der_'+name_cv_x
+      if dim2:
+        fields+=' der_'+name_cv_y
+    f.write(fields+'\n')
+    if calc_deltaF:
+      f.write('#! SET DeltaF %g\n'%(deltaF))
+    f.write('#! SET min_'+name_cv_x+' %g\n'%(grid_min_x))
+    f.write('#! SET max_'+name_cv_x+' %g\n'%(grid_max_x))
+    f.write('#! SET nbins_'+name_cv_x+' %g\n'%(grid_bin_x))
+    if period_x==0:
+      f.write('#! SET periodic_'+name_cv_x+' false\n')
     else:
-      f.write('#! SET periodic_'+name_cv_y+' true\n')
-    for i in range(grid_bin_y):
-      for j in range(grid_bin_x):
-        line=(fmt+' '+fmt+'  '+fmt)%(x[i,j],y[i,j],fes[i,j])
+      f.write('#! SET periodic_'+name_cv_x+' true\n')
+    if not dim2:
+      for i in range(grid_bin_x):
+        line=(fmt+'  '+fmt)%(grid_cv_x[i],fes[i])
         if calc_der:
-          line+=(' '+fmt+' '+fmt)%(der_fes_x[i,j],der_fes_y[i,j])
+          line+=(' '+fmt)%(der_fes_x[i])
         f.write(line+'\n')
-      f.write('\n')
-  f.close()
+    else:
+      f.write('#! SET min_'+name_cv_y+' %g\n'%(grid_min_y))
+      f.write('#! SET max_'+name_cv_y+' %g\n'%(grid_max_y))
+      f.write('#! SET nbins_'+name_cv_y+' %g\n'%(grid_bin_y))
+      if period_y==0:
+        f.write('#! SET periodic_'+name_cv_y+' false\n')
+      else:
+        f.write('#! SET periodic_'+name_cv_y+' true\n')
+      for i in range(grid_bin_y):
+        for j in range(grid_bin_x):
+          line=(fmt+' '+fmt+'  '+fmt)%(x[i,j],y[i,j],fes[i,j])
+          if calc_der:
+            line+=(' '+fmt+' '+fmt)%(der_fes_x[i,j],der_fes_y[i,j])
+          f.write(line+'\n')
+        f.write('\n')
