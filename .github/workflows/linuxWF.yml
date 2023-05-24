@@ -1,0 +1,183 @@
+name: linuxCI
+
+on:
+  workflow_call:
+
+env:
+# on CI, better dump stack trace in case there is an error
+  PLUMED_STACK_TRACE: yes
+# use two threads for openMP tests
+  PLUMED_NUM_THREADS: 2
+# these are used to build required packages
+  CC: gcc
+  CXX: g++
+
+jobs:
+  linux:
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        variant:
+        - -doc-mpi-
+        - -mpi-
+        - -coverage-mpi-
+        - -debug-
+        - -debug-mpi-
+        - -intel-
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/cache@v3
+      with:
+        path: ~/.ccache
+        key: ccache-reset1-linux${{ matrix.variant }}hash-${{ github.sha }}
+        restore-keys: ccache-reset1-linux${{ matrix.variant }}hash-
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.7
+    - name: Set paths
+      run: |
+        echo "$HOME/opt/bin" >> $GITHUB_PATH
+        # path required for pytest:
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+        echo "CPATH=$HOME/opt/include:$CPATH" >> $GITHUB_ENV
+        echo "INCLUDE=$HOME/opt/include:$INCLUDE" >> $GITHUB_ENV
+        echo "LIBRARY_PATH=$HOME/opt/lib:$LIBRARY_PATH" >> $GITHUB_ENV
+        echo "LD_LIBRARY_PATH=$HOME/opt/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+        echo "PYTHONPATH=$HOME/opt/lib/plumed/python:$PYTHONPATH" >> $GITHUB_ENV
+        # this is to avoid errors on ubuntu 22. this is overridden in intel build
+        echo "FC=gfortran -fallow-argument-mismatch" >> $GITHUB_ENV
+    - name: Install generic packages
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y libatlas-base-dev
+        sudo apt-get install -y libfftw3-dev
+        sudo apt-get install -y gsl-bin
+        sudo apt-get install -y libgsl0-dev
+        sudo apt-get install -y ccache
+    - name: Install system boost
+      if: ${{ ! contains( matrix.variant, '-debug-' ) }}
+      run: |
+        sudo apt-get install -y libboost-serialization-dev
+    - name: Install boost with debug flags
+      if: contains( matrix.variant, '-debug-' )
+      run: |
+        .ci/install.boost
+    - name: Install python packages needed for tests
+      run: |
+        python -m pip install --upgrade pip
+        pip install --user Cython
+        pip install --user numpy
+        pip install --user pytest
+        pip install --user six ;
+        pip install --user pandas ;
+        pip install --user mdtraj ;
+        pip install --user MDAnalysis ;
+        python -c "import MDAnalysis" ;
+        python -c "import mdtraj" ;
+    - name: Install Libtorch
+      if: ${{ ! contains( matrix.variant, '-debug-' ) }} # libtorch is not compiled with GLIBCXX_DEBUG
+      run: |
+        # added by luigibonati
+        mkdir -p $HOME/opt/
+        cd $HOME/opt/ # GB: install in $HOME/opt/libtorch
+        wget --no-check-certificate https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-1.13.1%2Bcpu.zip ;
+        unzip libtorch-cxx11-abi-shared-with-deps-1.13.1+cpu.zip ;
+        echo "LIBRARY_PATH=$PWD/libtorch/lib:$LIBRARY_PATH" >> $GITHUB_ENV
+        echo "LD_LIBRARY_PATH=$PWD/libtorch/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+        echo "CPATH=$PWD/libtorch/include/torch/csrc/api/include/:$PWD/libtorch/include/:$PWD/libtorch/include/torch:$CPATH" >> $GITHUB_ENV
+        echo "INCLUDE=$PWD/libtorch/include/torch/csrc/api/include/:$PWD/libtorch/include/:$PWD/libtorch/include/torch:$INCLUDE" >> $GITHUB_ENV
+        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-libtorch" >> $GITHUB_ENV
+    - name: Install Doxygen
+      if: contains( matrix.variant, '-doc-' )
+      run: |
+        sudo apt-get install -y graphviz
+        sudo apt-get install -y doxygen-latex
+        .ci/install.doxygen Release_1_8_17
+        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-pdfdoc" >> $GITHUB_ENV
+        # make sure all tests are run
+        echo "PLUMED_ALL_TESTS=yes" >> $GITHUB_ENV
+    - name: Install lcov
+      if: contains( matrix.variant, '-coverage-' )
+      run: |
+        .ci/install.lcov v1.16
+        echo "PLUMED_CONFIG=$PLUMED_CONFIG --disable-external-lapack --disable-external-blas --enable-gcov CXXFLAGS=-O" >> $GITHUB_ENV
+        # make sure all tests are run
+        echo "PLUMED_ALL_TESTS=yes" >> $GITHUB_ENV
+    - name: Setup debug flags
+      if: contains( matrix.variant, '-debug-' )
+      run: |
+        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-debug --enable-debug-glibcxx" >> $GITHUB_ENV
+    - name: Install INTEL compiler
+      # install INTEL at last since it modifies CC and CXX
+      if: contains( matrix.variant, '-intel-' )
+      run: |
+        wget https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB
+        sudo apt-key add GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB
+        rm GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB
+        echo "deb https://apt.repos.intel.com/oneapi all main" | sudo tee /etc/apt/sources.list.d/oneAPI.list
+        sudo apt-get update
+        sudo apt-get install intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic intel-oneapi-mkl intel-oneapi-mkl-devel intel-oneapi-compiler-fortran
+        source /opt/intel/oneapi/setvars.sh
+        printenv >> $GITHUB_ENV
+        echo "CXX=icpc" >> $GITHUB_ENV
+        echo "CC=icc" >> $GITHUB_ENV
+        echo "FC=ifort" >> $GITHUB_ENV
+    - name: Install MPI
+      # install MPI at last since it modifies CC and CXX
+      if: contains( matrix.variant, '-mpi-' )
+      run: |
+        sudo apt-get install -y libopenmpi-dev openmpi-bin
+        echo "CC=mpicc" >> $GITHUB_ENV
+        echo "CXX=mpic++" >> $GITHUB_ENV
+        echo "OMPI_MCA_btl_base_warn_component_unused=0" >> $GITHUB_ENV
+        echo "OMPI_MCA_btl_base_verbose=0" >> $GITHUB_ENV
+        echo "OMPI_MCA_plm=isolated" >> $GITHUB_ENV
+        echo "OMPI_MCA_btl_vader_single_copy_mechanism=none" >> $GITHUB_ENV
+        echo "OMPI_MCA_rmaps_base_oversubscribe=yes" >> $GITHUB_ENV
+        pip install --user mpi4py
+        python -c "import mpi4py"
+    - name: Build PLUMED
+      run: |
+        ccache -s -M 100M
+        ./configure CXX="ccache $CXX" --enable-boost_serialization --disable-dependency-tracking --enable-modules=all LDFLAGS=-Wl,-rpath,$LD_LIBRARY_PATH $PLUMED_CONFIG --prefix="$HOME/opt"
+        make -j 4
+        make install
+        # check for global symbols, see https://github.com/plumed/plumed2/issues/549
+        make nmcheck
+        ccache -s -M 100M
+    - name: Run tests
+      if: ${{ ! contains( matrix.variant, '-doc-mpi-' ) }}
+      run: |
+         (while true; do  # see https://github.com/actions/virtual-environments/issues/1860
+              df -h
+              sleep 15
+              done) &
+         make --no-print-directory -C regtest testclean
+         # these can fail for numerical reasons
+         make -C regtest checkfail
+    - name: Run python tests
+      run: |
+         cd python
+         pytest -v
+    - name: Build doc
+      env:
+        GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
+      if: contains( matrix.variant, '-doc-' )
+      run: |
+         make doc >/dev/null
+    - name: Coverage
+      env:
+        GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
+      if: contains( matrix.variant, '-coverage-' )
+      run: |
+         make -C developer-doc coverage
+         .ci/push coverage
+         bash <(curl -s https://codecov.io/bash) > /dev/null
+    - name: Push doc
+      if: contains( matrix.variant, '-doc-' )
+      env:
+        GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
+      run: |
+         .ci/push doc

@@ -1,0 +1,81 @@
+name: macCI
+
+on:
+  workflow_call:
+
+env:
+# on CI, better dump stack trace in case there is an error
+  PLUMED_STACK_TRACE: yes
+# use two threads for openMP tests
+  PLUMED_NUM_THREADS: 2
+# these are used to build required packages
+  CC: gcc
+  CXX: g++
+
+jobs:
+
+  macports:
+    runs-on: macos-11
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [ "" , "+allmodules" ]
+        # see https://github.community/t/how-to-conditionally-include-exclude-items-in-matrix-eg-based-on-branch/16853/6 for possible exclusions
+    env:
+      PYVERS: "py37 py38 py39 py310"
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/cache@v3
+      with:
+        path: ~/.macports-ci-ccache
+        key: ccache-macports-${{ matrix.variant }}-${{ github.sha }}
+        restore-keys: ccache-macports-${{ matrix.variant }}-
+    - name: Install MacPorts
+      run: |
+        wget https://raw.githubusercontent.com/GiovanniBussi/macports-ci/master/macports-ci
+        source ./macports-ci install
+        source ./macports-ci ccache
+    - name: Build local Portfile
+      run: |
+        make macports
+        source ./macports-ci localports macports
+    - name: Build PLUMED
+      run: |
+        sudo port -N -k install plumed ${{ matrix.variant }}
+        plumed config show
+        for p in $PYVERS ; do
+          sudo port -N install $p-plumed
+        done
+        source ./macports-ci ccache --save
+    - name: Run tests
+      run: |
+        sudo port -N -d test plumed ${{ matrix.variant }}
+    - name: Run python tests
+      run: |
+        for p in $PYVERS ; do
+          sudo port test $p-plumed
+        done
+
+  macsimple:
+    runs-on: macos-11
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set paths
+      run: |
+        echo "$HOME/opt/bin" >> $GITHUB_PATH
+        echo "CPATH=$HOME/opt/include:$CPATH" >> $GITHUB_ENV
+        echo "INCLUDE=$HOME/opt/include:$INCLUDE" >> $GITHUB_ENV
+        echo "LIBRARY_PATH=$HOME/opt/lib:$LIBRARY_PATH" >> $GITHUB_ENV
+        echo "LD_LIBRARY_PATH=$HOME/opt/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+    - name: Build PLUMED
+      run: |
+        brew update > /dev/null
+        brew install gawk
+        ./configure --disable-dependency-tracking --prefix="$HOME/opt"
+        make -j 4
+        make install
+    - name: Run tests
+      run: |
+         make --no-print-directory -C regtest
+         # these can fail for numerical reasons
+         make -C regtest checkfail

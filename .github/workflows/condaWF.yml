@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  workflow_call:
+
+env:
+# on CI, better dump stack trace in case there is an error
+  PLUMED_STACK_TRACE: yes
+# use two threads for openMP tests
+  PLUMED_NUM_THREADS: 2
+# these are used to build required packages
+  CC: gcc
+  CXX: g++
+
+jobs:
+
+  conda:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04 , macos-11]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install conda
+      run: |
+        curl -LO https://raw.githubusercontent.com/GiovanniBussi/conda-ci/master/conda-ci
+        source ./conda-ci install
+        source ./conda-ci install-conda-build
+    - name: Build PLUMED
+      run: |
+        source activate base
+        export VERSION=none
+        if [[ $GITHUB_REF == "refs/tags/"* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/}
+          VERSION=${VERSION//-/_}
+          VERSION=${VERSION#v}
+        fi
+        make -C conda
+    - name: Deploy
+      env:
+        CONDA_UPLOAD_TOKEN: ${{ secrets.CONDA_UPLOAD_TOKEN }}
+      if: ${{ startsWith( github.ref , 'refs/tags/' ) }}
+      run: |
+        source activate base
+        export CONDA_LABEL=tag
+        make -C conda upload
