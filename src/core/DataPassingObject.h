@@ -47,6 +47,8 @@ protected:
 public:
   static std::unique_ptr<DataPassingObject> create(unsigned n);
   explicit DataPassingObject() : start(0), stride(1), unit(1), funit(1), hasbackup(false), bvalue(0) {}
+  /// Virtual destructor, just to allow inheritance.
+  virtual ~DataPassingObject() {}
 /// Convert what comes from the MD code to a double
   virtual double MD2double(const TypesafePtr & m) const=0;
 ///

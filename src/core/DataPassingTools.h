@@ -41,6 +41,8 @@ private:
 /// Is the code using natural units
   bool usingNaturalUnits;
 public:
+/// Virtual destructor, just to allow inheritance.
+  virtual ~DataPassingTools() {}
   static std::unique_ptr<DataPassingTools> create(unsigned n);
   virtual int getRealPrecision() const = 0;
   double getUnitConversion( const std::string& unit ) const ;
