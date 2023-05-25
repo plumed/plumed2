@@ -85,7 +85,7 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
 }
 
 void Value::setShape( const std::vector<unsigned>&ss ) {
-  unsigned tot=1; shape.resize( ss.size() );
+  std::size_t tot=1; shape.resize( ss.size() );
   for(unsigned i=0; i<shape.size(); ++i) { tot = tot*ss[i]; shape[i]=ss[i]; }
 
   if( shape.size()>0 && hasDeriv ) {
@@ -183,11 +183,11 @@ ActionWithValue* Value::getPntrToAction() {
   return action;
 }
 
-void Value::set(const unsigned& n, const double& v ) {
+void Value::set(const std::size_t& n, const double& v ) {
   value_set=true;
   if( getRank()==0 ) { plumed_assert( n==0 ); data[n]=v; applyPeriodicity(n); }
   else if( !hasDeriv ) { plumed_dbg_massert( n<data.size(), "failing in " + getName() ); data[n]=v; applyPeriodicity(n); }
-  else { std::size_t ind = n*(1+action->getNumberOfDerivatives()); data[ind] = v; }
+  else { data[n*(1+action->getNumberOfDerivatives())] = v; }
 }
 
 void Value::buildDataStore() {

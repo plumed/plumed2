@@ -104,11 +104,11 @@ public:
 /// Set the value of the function
   void set(double);
 /// Set the value of the stored data
-  void set(const unsigned& n, const double& v );
+  void set(const std::size_t& n, const double& v );
 /// Add something to the value of the function
   void add(double);
 /// Get the value of the function
-  double get( const unsigned& ival=0 ) const;
+  double get( const std::size_t& ival=0 ) const;
 /// Find out if the value has been set
   bool valueHasBeenSet() const;
 /// Check if the value is periodic
@@ -144,9 +144,9 @@ public:
 /// Add some force on this value
   void addForce(double f);
 /// Add some force on the ival th component of this value
-  void addForce( const unsigned& ival, double f );
+  void addForce( const std::size_t& ival, double f );
 /// Get the value of the force on this colvar
-  double getForce( const unsigned& ival=0 ) const ;
+  double getForce( const std::size_t& ival=0 ) const ;
 /// Apply the forces to the derivatives using the chain rule (if there are no forces this routine returns false)
   bool applyForce( std::vector<double>& forces ) const ;
 /// Calculate the difference between the instantaneous value of the function and some other point: other_point-inst_val
@@ -239,7 +239,7 @@ void Value::add(double v) {
 }
 
 inline
-double Value::get( const unsigned& ival )const {
+double Value::get( const std::size_t& ival )const {
   return data[ival];
 }
 
@@ -314,7 +314,7 @@ void Value::addForce(double f) {
 }
 
 inline
-void Value::addForce(const unsigned& ival, double f) {
+void Value::addForce(const std::size_t& ival, double f) {
   plumed_dbg_massert(ival<inputForce.size(),"too few components in value to add force");
   hasForce=true;
   inputForce[ival]+=f;
@@ -326,7 +326,7 @@ bool Value::forcesWereAdded() const {
 }
 
 inline
-double Value::getForce( const unsigned& ival ) const {
+double Value::getForce( const std::size_t& ival ) const {
   plumed_dbg_assert( ival<inputForce.size() );
   return inputForce[ival];
 }

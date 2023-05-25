@@ -72,7 +72,6 @@ ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
   }
   if( xpos.size()!=ypos.size() || xpos.size()!=zpos.size() || xpos.size()!=masv.size() || xpos.size()!=chargev.size() )
     error("mismatch between value arrays");
-//  if(atoms.getNatoms()==0) error("Cannot perform calculations involving atoms without atoms");
 }
 
 void ActionAtomistic::registerKeywords( Keywords& keys ) {
@@ -88,7 +87,6 @@ void ActionAtomistic::requestAtoms(const std::vector<AtomNumber> & a, const bool
   forces.resize(nat);
   masses.resize(nat);
   charges.resize(nat);
-//  int n=0; for(unsigned i=0;i<xpos.size();++i) n += xpos[i]->getNumberOfValues();
   int n=getTotAtoms();
   if(clearDep) clearDependencies();
   unique.clear(); std::vector<bool> requirements( xpos.size(), false );
@@ -272,7 +270,7 @@ void ActionAtomistic::retrieveAtoms() {
   }
   if( donotretrieve || indexes.size()==0 ) return;
   ActionToPutData* cv = dynamic_cast<ActionToPutData*>( chargev[0]->getPntrToAction() );
-  chargesWereSet=cv->hasBeenSet();
+  if(cv) chargesWereSet=cv->hasBeenSet();
   for(unsigned j=0; j<indexes.size(); j++) {
     unsigned nn, kk; getValueIndices( indexes[j], nn, kk );
     positions[j][0] = xpos[nn]->get(kk);
