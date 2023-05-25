@@ -24,7 +24,11 @@ else
 all:
 	./get_action_list.sh > action_list
 	../src/lib/plumed --no-mpi gen_json --actions action_list > syntax.json
+ifeq (, $(shell which jq))
+	@echo Could not find jq executable so unable to test if syntax.json is valid json.  Consider running sudo apt-get install jq
+else
 	jq syntax.json
+endif
 
 endif
 
