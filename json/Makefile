@@ -24,6 +24,7 @@ else
 all:
 	./get_action_list.sh > action_list
 	../src/lib/plumed --no-mpi gen_json --actions action_list > syntax.json
+	jq syntax.json
 
 endif
 
