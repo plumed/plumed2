@@ -35,6 +35,7 @@ Value::Value():
   value_set(false),
   hasForce(false),
   constant(false),
+  calcOnUpdate(false),
   storedata(false),
   shape(std::vector<unsigned>()),
   hasDeriv(true),
@@ -52,6 +53,7 @@ Value::Value(const std::string& name):
   value_set(false),
   hasForce(false),
   constant(false),
+  calcOnUpdate(false),
   name(name),
   storedata(false),
   shape(std::vector<unsigned>()),
@@ -71,6 +73,7 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   value_set(false),
   hasForce(false),
   constant(false),
+  calcOnUpdate(false),
   name(name),
   storedata(false),
   hasDeriv(withderiv),
@@ -118,7 +121,7 @@ bool Value::isPeriodic()const {
 }
 
 bool Value::applyForce(std::vector<double>& forces ) const {
-  if( !hasForce || constant ) return false;
+  if( !hasForce || constant || calcOnUpdate ) return false;
   plumed_dbg_massert( data.size()-1==forces.size()," forces array has wrong size" );
   const unsigned N=data.size()-1;
   for(unsigned i=0; i<N; ++i) forces[i]=inputForce[0]*data[1+i];

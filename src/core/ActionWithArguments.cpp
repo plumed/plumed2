@@ -238,6 +238,8 @@ void ActionWithArguments::requestArguments(const std::vector<Value*> &arg) {
     plumed_massert(action,"cannot find action named (in requestArguments - this is weird)" + name);
     addDependency(action);
   }
+  ActionWithValue* av=dynamic_cast<ActionWithValue*>(this);
+  if(av) av->firststep=true;
 }
 
 void ActionWithArguments::requestExtraDependencies(const std::vector<Value*> &extra) {

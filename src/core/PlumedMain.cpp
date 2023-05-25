@@ -1087,6 +1087,7 @@ void PlumedMain::justCalculate() {
           sw=stopwatch.startStop("4A "+actionNumberLabel+" "+p->getLabel());
         }
         ActionWithValue*av=dynamic_cast<ActionWithValue*>(p);
+        if( av && av->calculateOnUpdate() ) continue ;
         ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(p);
         {
           if(av) av->clearInputForces();
@@ -1164,7 +1165,11 @@ void PlumedMain::update() {
   updateFlags.push(true);
   for(const auto & p : actionSet) {
     p->beforeUpdate();
-    if(p->isActive() && p->checkUpdate() && updateFlagsTop()) p->update();
+    if(p->isActive() && p->checkUpdate() && updateFlagsTop()) {
+       ActionWithValue* av=dynamic_cast<ActionWithValue*>(p.get());
+       if( av && av->calculateOnUpdate() ) p->calculate();
+       else p->update();
+    }
   }
   while(!updateFlags.empty()) updateFlags.pop();
   if(!updateFlags.empty()) plumed_merror("non matching changes in the update flags");
@@ -1265,7 +1270,9 @@ void PlumedMain::stop() {
 
 void PlumedMain::runJobsAtEndOfCalculation() {
   for(const auto & p : actionSet) {
-    p->runFinalJobs();
+    ActionWithValue* av=dynamic_cast<ActionWithValue*>(p.get());
+    if( av && av->calculateOnUpdate() ) p->calculate();
+    else p->runFinalJobs();
   }
 }
 

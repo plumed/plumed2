@@ -57,6 +57,7 @@ void ActionWithValue::useCustomisableComponents(Keywords& keys) {
 
 ActionWithValue::ActionWithValue(const ActionOptions&ao):
   Action(ao),
+  firststep(true),
   noderiv(true),
   numericalDerivatives(false)
 {
@@ -238,6 +239,26 @@ Value* ActionWithValue::getPntrToComponent( const std::string& name ) {
 Value* ActionWithValue::getPntrToComponent( int n ) {
   plumed_dbg_massert(n<values.size(),"you have requested a pointer that is out of bounds");
   return values[n].get();
+}
+
+bool ActionWithValue::calculateOnUpdate() {
+  if( firststep ) {
+      ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>(this);
+      if(aa) {
+         const std::vector<Value*> & args(aa->getArguments());
+         for(const auto & p : args ) {
+             if( p->calcOnUpdate ) {
+                 for(unsigned i=0; i<values.size(); ++i) values[i]->calcOnUpdate=true;
+                 break;
+             }
+         }
+      }
+      firststep=false;
+  }
+  for(unsigned i=0; i<values.size(); ++i) {
+      if( values[i]->calcOnUpdate ) return true;
+  }
+  return false;   
 }
 
 bool ActionWithValue::checkForForces() {

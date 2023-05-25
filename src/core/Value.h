@@ -71,6 +71,8 @@ private:
   bool hasForce;
 /// This flag is used if the value is a constant
   bool constant;
+/// This value should only be calculated on update
+  bool calcOnUpdate;
 /// The derivatives of the quantity stored in value
   std::map<AtomNumber,Vector> gradients;
 /// The name of this quantiy
@@ -302,7 +304,7 @@ void Value::clearInputForce() {
 
 inline
 void Value::clearDerivatives() {
-  if( constant ) return;
+  if( constant || calcOnUpdate ) return;
   value_set=false;
   if( data.size()>1 ) std::fill(data.begin()+1, data.end(), 0);
 }
