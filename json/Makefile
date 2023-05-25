@@ -27,7 +27,7 @@ all:
 ifeq (, $(shell which jq))
 	@echo Could not find jq executable so unable to test if syntax.json is valid json.  Consider running sudo apt-get install jq
 else
-	jq syntax.json
+	cat syntax.json | jq empty
 endif
 
 endif
