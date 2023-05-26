@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
+#include "ColvarShortcut.h"
 #include "ActionRegister.h"
 #include "tools/Angle.h"
 
@@ -88,11 +89,14 @@ public:
   static void registerKeywords( Keywords& keys );
 };
 
-PLUMED_REGISTER_ACTION(Angle,"ANGLE")
+typedef ColvarShortcut<Angle> AngleShortcut;
+PLUMED_REGISTER_ACTION(AngleShortcut,"ANGLE")
+PLUMED_REGISTER_ACTION(Angle,"ANGLE_SCALAR")
 
 void Angle::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords(keys);
   keys.add("atoms","ATOMS","the list of atoms involved in this collective variable (either 3 or 4 atoms)");
+  keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
 }
 
 Angle::Angle(const ActionOptions&ao):

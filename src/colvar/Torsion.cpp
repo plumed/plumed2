@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
+#include "ColvarShortcut.h"
 #include "ActionRegister.h"
 #include "tools/Torsion.h"
 
@@ -97,7 +98,9 @@ public:
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(Torsion,"TORSION")
+typedef ColvarShortcut<Torsion> TorsionShortcut;
+PLUMED_REGISTER_ACTION(TorsionShortcut,"TORSION")
+PLUMED_REGISTER_ACTION(Torsion,"TORSION_SCALAR")
 
 void Torsion::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords( keys );
@@ -106,6 +109,7 @@ void Torsion::registerKeywords(Keywords& keys) {
   keys.add("atoms-2","VECTOR1","two atoms that define a vector.  You can use this in combination with VECTOR2 and AXIS");
   keys.add("atoms-2","VECTOR2","two atoms that define a vector.  You can use this in combination with VECTOR1 and AXIS");
   keys.addFlag("COSINE",false,"calculate cosine instead of dihedral");
+  keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
 }
 
 Torsion::Torsion(const ActionOptions&ao):

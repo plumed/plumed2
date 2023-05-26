@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
+#include "ColvarShortcut.h"
 #include "ActionRegister.h"
 
 namespace PLMD {
@@ -68,7 +69,9 @@ public:
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(Dipole,"DIPOLE")
+typedef ColvarShortcut<Dipole> DipoleShortcut;
+PLUMED_REGISTER_ACTION(DipoleShortcut,"DIPOLE")
+PLUMED_REGISTER_ACTION(Dipole,"DIPOLE_SCALAR")
 
 void Dipole::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);
@@ -77,6 +80,7 @@ void Dipole::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("x","COMPONENTS","the x-component of the dipole");
   keys.addOutputComponent("y","COMPONENTS","the y-component of the dipole");
   keys.addOutputComponent("z","COMPONENTS","the z-component of the dipole");
+  keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
 }
 
 Dipole::Dipole(const ActionOptions&ao):

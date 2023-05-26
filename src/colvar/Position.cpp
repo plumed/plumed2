@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
+#include "ColvarShortcut.h"
 #include "ActionRegister.h"
 #include "tools/Pbc.h"
 
@@ -81,7 +82,9 @@ public:
   void calculate() override;
 };
 
-PLUMED_REGISTER_ACTION(Position,"POSITION")
+typedef ColvarShortcut<Position> PositionShortcut;
+PLUMED_REGISTER_ACTION(PositionShortcut,"POSITION")
+PLUMED_REGISTER_ACTION(Position,"POSITION_SCALAR")
 
 void Position::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
@@ -94,6 +97,7 @@ void Position::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("a","SCALED_COMPONENTS","the normalized projection on the first lattice vector of the atom position");
   keys.addOutputComponent("b","SCALED_COMPONENTS","the normalized projection on the second lattice vector of the atom position");
   keys.addOutputComponent("c","SCALED_COMPONENTS","the normalized projection on the third lattice vector of the atom position");
+  keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
 }
 
 Position::Position(const ActionOptions&ao):
