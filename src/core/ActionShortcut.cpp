@@ -64,4 +64,15 @@ std::vector<std::string> ActionShortcut::getSavedInputLines() const {
   return savedInputLines;
 }
 
+std::string ActionShortcut::convertInputLineToString() {
+  std::string output;
+  for(auto p=line.begin(); p!=line.end(); ++p) {
+      if( (*p).find(" " )!=std::string::npos ) {
+          std::size_t eq = (*p).find_first_of("=");
+          output += " " + (*p).substr(0,eq) + "={" + (*p).substr(eq+1) + "}";
+      } else output += " " + (*p);
+  }
+  line.resize(0); return output;
+}
+
 }

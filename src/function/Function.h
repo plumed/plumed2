@@ -43,6 +43,7 @@ protected:
   void setDerivative(Value*,int,double);
   void addValueWithDerivatives();
   void addComponentWithDerivatives( const std::string& name );
+  double getArgument( const unsigned& iarg );
 public:
   explicit Function(const ActionOptions&);
   virtual ~Function() {}
@@ -63,7 +64,16 @@ void Function::setDerivative(int i,double d) {
 
 inline
 unsigned Function::getNumberOfDerivatives() {
-  return getNumberOfArguments();
+  unsigned narg=0;
+  for(unsigned i=0;i<getNumberOfArguments();++i) {
+      if( getPntrToArgument(i)->getRank()==0 ) narg++;
+  }
+  return narg;
+}
+
+inline
+double Function::getArgument( const unsigned& iarg ) {
+ return getPntrToArgument(iarg)->get();
 }
 
 }

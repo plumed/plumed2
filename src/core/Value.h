@@ -90,6 +90,8 @@ private:
   double min,max;
   double max_minus_min;
   double inv_max_minus_min;
+/// Is the derivative of this quantity zero when the value is zero
+  bool derivativeIsZeroWhenValueIsZero;
 /// Complete the setup of the periodicity
   void setupPeriodicity();
 // bring value within PBCs
@@ -184,6 +186,10 @@ public:
   void setConstant();
 /// Check if forces have been added on this value
   bool forcesWereAdded() const ;
+/// Set a bool that tells us if the derivative is zero when the value is zero true
+  void setDerivativeIsZeroWhenValueIsZero();
+/// Return a bool that tells us if the derivative is zero when the value is zero
+  bool isDerivativeZeroWhenValueIsZero() const ;
 };
 
 void copy( const Value& val1, Value& val2 );
@@ -383,7 +389,16 @@ bool Value::isConstant() const {
   return constant;
 }
 
+inline
+void Value::setDerivativeIsZeroWhenValueIsZero() {
+  derivativeIsZeroWhenValueIsZero=true;
 }
 
+inline
+bool Value::isDerivativeZeroWhenValueIsZero() const {
+  return derivativeIsZeroWhenValueIsZero;
+}
+
+}
 #endif
 

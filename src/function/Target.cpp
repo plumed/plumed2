@@ -22,6 +22,7 @@
 #include "Function.h"
 #include "ActionRegister.h"
 #include "tools/PDB.h"
+#include "core/PlumedMain.h"
 #include "reference/MetricRegister.h"
 #include "reference/ArgumentOnlyDistance.h"
 
@@ -139,7 +140,7 @@ Target::Target(const ActionOptions&ao):
 
   // Get the arguments
   std::vector<Value*> myargs;
-  interpretArgumentList( args_to_retrieve, myargs );
+  interpretArgumentList( args_to_retrieve, plumed.getActionSet(), this, myargs );
   requestArguments( myargs );
 
   // Now create packs

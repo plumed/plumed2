@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2018-2023 The plumed team
+   Copyright (c) 2014-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,39 +19,35 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_core_ActionShortcut_h
-#define __PLUMED_core_ActionShortcut_h
-
-#include "Action.h"
+#include "core/ActionRegister.h"
+#include "core/ActionShortcut.h"
 
 namespace PLMD {
+namespace function {
 
-/**
-\ingroup MULTIINHERIT
-Action used to create a command that expands to multiple PLMD::Action commands when read in during input
-*/
-class ActionShortcut :
-  public virtual Action {
-private:
-  std::string shortcutlabel;
-  std::vector<std::string> savedInputLines;
+class Product : public ActionShortcut {
 public:
-  const std::string & getShortcutLabel() const ;
   static void registerKeywords( Keywords& keys );
-/// Constructor
-  explicit ActionShortcut(const ActionOptions&ao);
-/// Read a line of input and create appropriate actions
-  void readInputLine( const std::string& input );
-/// Do nothing.
-  void calculate() override {}
-/// Do nothing.
-  void apply() override {}
-/// Get the lines of the shortcut that were read in
-  std::vector<std::string> getSavedInputLines() const ;
-/// Take everything that was input to this action and convert it to a string
-  std::string convertInputLineToString();
+  explicit Product(const ActionOptions&ao);
 };
 
+PLUMED_REGISTER_ACTION(Product,"PRODUCT")
+
+void Product::registerKeywords( Keywords& keys ) {
+  ActionShortcut::registerKeywords(keys);
+  keys.add("compulsory","ARG","The point that we are calculating the distance from");
 }
 
-#endif
+Product::Product( const ActionOptions& ao):
+Action(ao),
+ActionShortcut(ao)
+{ 
+  std::string arg; parse("ARG",arg); 
+  readInputLine( getShortcutLabel() + "_vec: CONCATENATE ARG=" + arg );
+  readInputLine( getShortcutLabel() + "_logs: MATHEVAL ARG1=" + getShortcutLabel() + "_vec FUNC=log(x) PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_logsum: SUM ARG=" + getShortcutLabel() + "_logs PERIODIC=NO");
+  readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_logsum FUNC=exp(x) PERIODIC=NO");
+}
+
+}
+}

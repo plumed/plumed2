@@ -139,7 +139,7 @@ SketchMapRead::SketchMapRead( const ActionOptions& ao ):
     }
     if( !found ) { fargs.push_back( args[i] ); }
   }
-  interpretArgumentList( fargs, req_args ); mypdb.setArgumentNames( fargs ); requestArguments( req_args );
+  interpretArgumentList( fargs, plumed.getActionSet(), this, req_args ); mypdb.setArgumentNames( fargs ); requestArguments( req_args );
 
   if(nfram==0 ) error("no reference configurations were specified");
   log.printf(" found %u configurations in file %s\n",nfram,ifilename.c_str() );

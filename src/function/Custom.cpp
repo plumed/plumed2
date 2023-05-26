@@ -19,9 +19,12 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#include "Custom.h"
 #include "ActionRegister.h"
-#include "Function.h"
-#include "lepton/Lepton.h"
+#include "FunctionShortcut.h"
+#include "FunctionOfScalar.h"
+#include "tools/OpenMP.h"
+#include "tools/LeptonCall.h"
 
 namespace PLMD {
 namespace function {
@@ -158,25 +161,12 @@ progression (S) and distance (Z) variables \cite perez2015atp.
 */
 //+ENDPLUMEDOC
 
-
-class Custom :
-  public Function
-{
-  lepton::CompiledExpression expression;
-  std::vector<lepton::CompiledExpression> expression_deriv;
-  std::vector<std::string> var;
-  std::string func;
-  std::vector<double> values;
-  std::vector<char*> names;
-  std::vector<double*> lepton_ref;
-  std::vector<double*> lepton_ref_deriv;
-public:
-  explicit Custom(const ActionOptions&);
-  void calculate() override;
-  static void registerKeywords(Keywords& keys);
-};
-
-PLUMED_REGISTER_ACTION(Custom,"CUSTOM")
+typedef FunctionShortcut<Custom> CustomShortcut;
+PLUMED_REGISTER_ACTION(CustomShortcut,"CUSTOM")
+PLUMED_REGISTER_ACTION(CustomShortcut,"MATHEVAL")
+typedef FunctionOfScalar<Custom> ScalarCustom;
+PLUMED_REGISTER_ACTION(ScalarCustom,"CUSTOM_SCALAR")
+PLUMED_REGISTER_ACTION(ScalarCustom,"MATHEVAL_SCALAR")
 
 //+PLUMEDOC FUNCTION MATHEVAL
 /*
@@ -202,94 +192,98 @@ RESTRAINT ARG=d AT=0.5 KAPPA=10.0
 */
 //+ENDPLUMEDOC
 
-class Matheval :
-  public Custom {
-};
-
-PLUMED_REGISTER_ACTION(Custom,"MATHEVAL")
-
 void Custom::registerKeywords(Keywords& keys) {
-  Function::registerKeywords(keys);
-  keys.use("ARG"); keys.use("PERIODIC");
+  keys.use("PERIODIC");
   keys.add("compulsory","FUNC","the function you wish to evaluate");
   keys.add("optional","VAR","the names to give each of the arguments in the function.  If you have up to three arguments in your function you can use x, y and z to refer to them.  Otherwise you must use this flag to give your variables names.");
 }
 
-Custom::Custom(const ActionOptions&ao):
-  Action(ao),
-  Function(ao),
-  expression_deriv(getNumberOfArguments()),
-  values(getNumberOfArguments()),
-  names(getNumberOfArguments()),
-  lepton_ref(getNumberOfArguments(),nullptr),
-  lepton_ref_deriv(getNumberOfArguments()*getNumberOfArguments(),nullptr)
-{
-  parseVector("VAR",var);
+void Custom::read( ActionWithArguments* action ) {
+  // Read in the variables
+  std::vector<std::string> var; parseVector(action,"VAR",var); parse(action,"FUNC",func);
   if(var.size()==0) {
-    var.resize(getNumberOfArguments());
-    if(getNumberOfArguments()>3)
-      error("Using more than 3 arguments you should explicitly write their names with VAR");
+    var.resize(action->getNumberOfArguments());
+    if(var.size()>3) action->error("Using more than 3 arguments you should explicitly write their names with VAR");
     if(var.size()>0) var[0]="x";
     if(var.size()>1) var[1]="y";
     if(var.size()>2) var[2]="z";
   }
-  if(var.size()!=getNumberOfArguments())
-    error("Size of VAR array should be the same as number of arguments");
-  parse("FUNC",func);
-  addValueWithDerivatives();
-  checkRead();
-
-  log.printf("  with function : %s\n",func.c_str());
-  log.printf("  with variables :");
-  for(unsigned i=0; i<var.size(); i++) log.printf(" %s",var[i].c_str());
-  log.printf("\n");
-
-  lepton::ParsedExpression pe=lepton::Parser::parse(func).optimize(lepton::Constants());
-  log<<"  function as parsed by lepton: "<<pe<<"\n";
-  expression=pe.createCompiledExpression();
-  for(auto &p: expression.getVariables()) {
-    if(std::find(var.begin(),var.end(),p)==var.end()) {
-      error("variable " + p + " is not defined");
-    }
-  }
-  log<<"  derivatives as computed by lepton:\n";
-  for(unsigned i=0; i<getNumberOfArguments(); i++) {
-    lepton::ParsedExpression pe=lepton::Parser::parse(func).differentiate(var[i]).optimize(lepton::Constants());
-    log<<"    "<<pe<<"\n";
-    expression_deriv[i]=pe.createCompiledExpression();
-  }
-
-  for(unsigned i=0; i<getNumberOfArguments(); i++) {
-    try {
-      lepton_ref[i]=&expression.getVariableReference(var[i]);
-    } catch(const PLMD::lepton::Exception& exc) {
-// this is necessary since in some cases lepton things a variable is not present even though it is present
-// e.g. func=0*x
-    }
-  }
-  for(unsigned i=0; i<getNumberOfArguments(); i++) {
-    for(unsigned j=0; j<getNumberOfArguments(); j++) {
-      try {
-        lepton_ref_deriv[i*getNumberOfArguments()+j]=&expression_deriv[i].getVariableReference(var[j]);
-      } catch(const PLMD::lepton::Exception& exc) {
-// this is necessary since in some cases lepton things a variable is not present even though it is present
-// e.g. func=0*x
+  if(var.size()!=action->getNumberOfArguments()) action->error("Size of VAR array should be the same as number of arguments");
+  // Check for operations that are not multiplication (this can probably be done much more cleverly)
+  bool onlymultiplication = func.find("*")!=std::string::npos;
+  // Find first bracket in expression
+  if( func.find("(")!=std::string::npos ) {
+     std::size_t br = func.find_first_of("("); std::string subexpr=func.substr(0,br); onlymultiplication = func.find("*")!=std::string::npos;
+     if( subexpr.find("/")!=std::string::npos ) { std::size_t sl = func.find_first_of("/"); subexpr=subexpr.substr(0,sl); } 
+     if( subexpr.find("+")!=std::string::npos || subexpr.find("-")!=std::string::npos ) onlymultiplication=false;
+     // Now work out which vars are in multiplication
+     if( onlymultiplication ) {
+         for(unsigned i=0;i<var.size();++i) {
+             if( subexpr.find(var[i])!=std::string::npos && 
+                 action->getPntrToArgument(i)->isDerivativeZeroWhenValueIsZero() ) check_multiplication_vars.push_back(i);
+         }
+     }
+  } else if( func.find("/")!=std::string::npos ) {
+      onlymultiplication=true; if( func.find("+")!=std::string::npos || func.find("-")!=std::string::npos ) onlymultiplication=false;
+      if( onlymultiplication ) {
+         std::size_t br = func.find_first_of("/"); std::string subexpr=func.substr(0,br); 
+         for(unsigned i=0;i<var.size();++i) {
+             if( subexpr.find(var[i])!=std::string::npos &&
+                 action->getPntrToArgument(i)->isDerivativeZeroWhenValueIsZero() ) check_multiplication_vars.push_back(i);
+         }
+      }    
+  } else if( func.find("+")!=std::string::npos || func.find("-")!=std::string::npos ) {
+      onlymultiplication=false;
+  } else {
+      for(unsigned i=0;i<var.size();++i) {
+          if( action->getPntrToArgument(i)->isDerivativeZeroWhenValueIsZero() ) check_multiplication_vars.push_back(i);
       }
-    }
   }
+  if( check_multiplication_vars.size()>0 ) {
+      action->log.printf("  optimizing implementation as function only involves multiplication \n");
+  }
+
+  action->log.printf("  with function : %s\n",func.c_str());
+  action->log.printf("  with variables :");
+  for(unsigned i=0; i<var.size(); i++) action->log.printf(" %s",var[i].c_str());
+  action->log.printf("\n"); function.set( func, var, action );
 }
 
-void Custom::calculate() {
-  for(unsigned i=0; i<getNumberOfArguments(); i++) {
-    if(lepton_ref[i]) *lepton_ref[i]=getArgument(i);
+bool Custom::getDerivativeZeroIfValueIsZero() const {
+  return check_multiplication_vars.size()>0;
+}
+
+// void Custom::buildTaskList( const std::string& name, const std::set<AtomNumber>& tflags, ActionWithValue* av ) const {
+//   bool found=false; ActionWithArguments* aa = dynamic_cast<ActionWithArguments*>(av); plumed_assert( aa );
+//   for(unsigned i=0;i<check_multiplication_vars.size();++i) {
+//       if( aa->getPntrToArgument(check_multiplication_vars[i])->getName()==name ) { found=true; break; }
+//   }
+//   if( found ) (av->copyOutput(0))->addTasksToCurrentList( tflags );
+// } 
+
+void Custom::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
+  if( args.size()>1 ) {
+      bool allzero;
+      if( check_multiplication_vars.size()>0 ) {
+          allzero=false;
+          for(unsigned i=0; i<check_multiplication_vars.size(); ++i) {
+            if( fabs(args[check_multiplication_vars[i]])<epsilon ) { allzero=true; break; }
+          } 
+      } else {
+          allzero=(fabs(args[0])<epsilon);
+          for(unsigned i=1; i<args.size(); ++i) {
+            if( fabs(args[i])>epsilon ) { allzero=false; break; }
+          }
+      }
+      if( allzero ) {
+          vals[0]=0; for(unsigned i=0; i<args.size(); i++) derivatives(0,i) = 0.0;
+          return;
+      }
   }
-  setValue(expression.evaluate());
-  for(unsigned i=0; i<getNumberOfArguments(); i++) {
-    for(unsigned j=0; j<getNumberOfArguments(); j++) {
-      if(lepton_ref_deriv[i*getNumberOfArguments()+j]) *lepton_ref_deriv[i*getNumberOfArguments()+j]=getArgument(j);
-    }
-    setDerivative(i,expression_deriv[i].evaluate());
-  }
+  vals[0] = function.evaluate( args );
+  if( !noderiv ) {
+      for(unsigned i=0; i<args.size(); i++) derivatives(0,i) = function.evaluateDeriv( i, args );
+  } 
 }
 
 }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2018-2023 The plumed team
+   Copyright (c) 2011-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,39 +19,25 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_core_ActionShortcut_h
-#define __PLUMED_core_ActionShortcut_h
+#ifndef __PLUMED_function_Sum_h
+#define __PLUMED_function_Sum_h
 
-#include "Action.h"
+#include "FunctionTemplateBase.h"
 
 namespace PLMD {
+namespace function {
 
-/**
-\ingroup MULTIINHERIT
-Action used to create a command that expands to multiple PLMD::Action commands when read in during input
-*/
-class ActionShortcut :
-  public virtual Action {
+class Sum : public FunctionTemplateBase {
 private:
-  std::string shortcutlabel;
-  std::vector<std::string> savedInputLines;
+  double prefactor;
 public:
-  const std::string & getShortcutLabel() const ;
-  static void registerKeywords( Keywords& keys );
-/// Constructor
-  explicit ActionShortcut(const ActionOptions&ao);
-/// Read a line of input and create appropriate actions
-  void readInputLine( const std::string& input );
-/// Do nothing.
-  void calculate() override {}
-/// Do nothing.
-  void apply() override {}
-/// Get the lines of the shortcut that were read in
-  std::vector<std::string> getSavedInputLines() const ;
-/// Take everything that was input to this action and convert it to a string
-  std::string convertInputLineToString();
+  void registerKeywords( Keywords& keys ) override;
+  void read( ActionWithArguments* action ) override;
+  bool zeroRank() const override;
+  void setPrefactor( ActionWithArguments* action, const double pref ) override;
+  void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
 };
 
 }
-
+}
 #endif

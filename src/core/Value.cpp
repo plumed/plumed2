@@ -43,7 +43,8 @@ Value::Value():
   min(0.0),
   max(0.0),
   max_minus_min(0.0),
-  inv_max_minus_min(0.0)
+  inv_max_minus_min(0.0),
+  derivativeIsZeroWhenValueIsZero(false)
 {
   data.resize(1); inputForce.resize(1);
 }
@@ -62,7 +63,8 @@ Value::Value(const std::string& name):
   min(0.0),
   max(0.0),
   max_minus_min(0.0),
-  inv_max_minus_min(0.0)
+  inv_max_minus_min(0.0),
+  derivativeIsZeroWhenValueIsZero(false)
 {
   data.resize(1); inputForce.resize(1);
   data[0]=inputForce[0]=0;
@@ -81,7 +83,8 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   min(0.0),
   max(0.0),
   max_minus_min(0.0),
-  inv_max_minus_min(0.0)
+  inv_max_minus_min(0.0),
+  derivativeIsZeroWhenValueIsZero(false)
 {
   if( action ) storedata=action->getName()=="PUT";
   setShape( ss );
