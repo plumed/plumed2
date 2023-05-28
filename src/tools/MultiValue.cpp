@@ -23,25 +23,33 @@
 
 namespace PLMD {
 
-MultiValue::MultiValue( const size_t& nvals, const size_t& nder ):
+MultiValue::MultiValue( const size_t& nvals, const size_t& nder, const size_t& ncols, const size_t& nmat ):
+  task_index(0),
+  task2_index(0),
   values(nvals),
   nderivatives(nder),
   derivatives(nvals*nder),
+  hasderiv(nvals*nder,false),
   tmpval(0),
+  nactive(nvals),
+  active_list(nvals*nder),
   tmpder(nder),
-  atLeastOneSet(false)
+  atLeastOneSet(false),
+  vector_call(false),
+  nmatrix_cols(ncols)
 {
   std::vector<unsigned> myind( nder );
   for(unsigned i=0; i<nder; ++i) myind[i]=i;
   hasDerivatives.createIndexListFromVector( myind );
 }
 
-void MultiValue::resize( const size_t& nvals, const size_t& nder ) {
-  values.resize(nvals); nderivatives=nder; derivatives.resize( nvals*nder );
-  tmpder.resize( nder ); hasDerivatives.clear(); std::vector<unsigned> myind( nder );
+void MultiValue::resize( const size_t& nvals, const size_t& nder, const size_t& ncols, const size_t& nmat ) {
+  values.resize(nvals); nderivatives=nder; derivatives.resize( nvals*nder ); hasderiv.resize(nvals*nder,false);
+  tmpder.resize( nder ); nactive.resize(nvals); active_list.resize(nvals*nder); 
+  hasDerivatives.clear(); std::vector<unsigned> myind( nder );
   for(unsigned i=0; i<nder; ++i) myind[i]=i;
   hasDerivatives.createIndexListFromVector( myind );
-  atLeastOneSet=false;
+  nmatrix_cols=ncols; atLeastOneSet=false;
 }
 
 void MultiValue::clearAll() {

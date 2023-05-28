@@ -22,6 +22,7 @@
 #include "Colvar.h"
 #include "ActionRegister.h"
 #include "ColvarShortcut.h"
+#include "MultiColvarTemplate.h"
 #include "tools/Pbc.h"
 
 namespace PLMD {
@@ -109,16 +110,26 @@ class Distance : public Colvar {
   bool scaled_components;
   bool pbc;
 
+  std::vector<double> value, masses, charges;
+  std::vector<std::vector<Vector> > derivs;
+  std::vector<Tensor> virial;
 public:
   static void registerKeywords( Keywords& keys );
   explicit Distance(const ActionOptions&);
+  static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
+  static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
+  static void calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges, 
+                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, 
+                           std::vector<Tensor>& virial, const ActionAtomistic* aa );
 };
 
 typedef ColvarShortcut<Distance> DistanceShortcut;
 PLUMED_REGISTER_ACTION(DistanceShortcut,"DISTANCE")
 PLUMED_REGISTER_ACTION(Distance,"DISTANCE_SCALAR")
+typedef MultiColvarTemplate<Distance> DistanceMulti;
+PLUMED_REGISTER_ACTION(DistanceMulti,"DISTANCE_VECTOR")
 
 void Distance::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys ); 
@@ -138,92 +149,138 @@ Distance::Distance(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   components(false),
   scaled_components(false),
-  pbc(true)
+  pbc(true),
+  value(1),
+  derivs(1),
+  virial(1)
 {
+  derivs[0].resize(2);
   std::vector<AtomNumber> atoms;
-  parseAtomList("ATOMS",atoms);
+  parseAtomList(-1,atoms,this);
   if(atoms.size()!=2)
     error("Number of specified atoms should be 2");
-  parseFlag("COMPONENTS",components);
-  parseFlag("SCALED_COMPONENTS",scaled_components);
+
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
-  checkRead();
 
-  log.printf("  between atoms %d %d\n",atoms[0].serial(),atoms[1].serial());
   if(pbc) log.printf("  using periodic boundary conditions\n");
   else    log.printf("  without periodic boundary conditions\n");
 
-  if(components && scaled_components) error("COMPONENTS and SCALED_COMPONENTS are not compatible");
-
-  if(components) {
-    addComponentWithDerivatives("x"); componentIsNotPeriodic("x");
-    addComponentWithDerivatives("y"); componentIsNotPeriodic("y");
-    addComponentWithDerivatives("z"); componentIsNotPeriodic("z");
-    log<<"  WARNING: components will not have the proper periodicity - see manual\n";
-  } else if(scaled_components) {
-    addComponentWithDerivatives("a"); componentIsPeriodic("a","-0.5","+0.5");
-    addComponentWithDerivatives("b"); componentIsPeriodic("b","-0.5","+0.5");
-    addComponentWithDerivatives("c"); componentIsPeriodic("c","-0.5","+0.5");
-  } else {
-    addValueWithDerivatives(); setNotPeriodic();
+  unsigned mode = getModeAndSetupValues( this );
+  if(mode==1) components=true; else if(mode==2) scaled_components=true;
+  if( components || scaled_components ) {
+      value.resize(3); derivs.resize(3); virial.resize(3);
+      for(unsigned i=0; i<3; ++i) derivs[i].resize(2); 
   }
-
-
   requestAtoms(atoms);
 }
 
+void Distance::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
+  aa->parseAtomList("ATOMS",num,t);
+  if( t.size()>0 ) aa->log.printf("  between atoms %d %d\n",t[0].serial(),t[1].serial());
+}
+
+unsigned Distance::getModeAndSetupValues( ActionWithValue* av ) {
+  bool c; av->parseFlag("COMPONENTS",c);
+  bool sc; av->parseFlag("SCALED_COMPONENTS",sc);
+  if( c && sc ) av->error("COMPONENTS and SCALED_COMPONENTS are not compatible");
+
+  if(c) {
+    av->addComponentWithDerivatives("x"); av->componentIsNotPeriodic("x");
+    av->addComponentWithDerivatives("y"); av->componentIsNotPeriodic("y");
+    av->addComponentWithDerivatives("z"); av->componentIsNotPeriodic("z");
+    av->log<<"  WARNING: components will not have the proper periodicity - see manual\n";
+    return 1;
+  } else if(sc) {
+    av->addComponentWithDerivatives("a"); av->componentIsPeriodic("a","-0.5","+0.5");
+    av->addComponentWithDerivatives("b"); av->componentIsPeriodic("b","-0.5","+0.5");
+    av->addComponentWithDerivatives("c"); av->componentIsPeriodic("c","-0.5","+0.5");
+    return 2;
+  } 
+  av->addValueWithDerivatives(); av->setNotPeriodic();
+  return 0;
+}
 
 // calculator
 void Distance::calculate() {
 
   if(pbc) makeWhole();
 
-  Vector distance=delta(getPosition(0),getPosition(1));
+  if( components ) {
+      calculateCV( 1, masses, charges, getPositions(), value, derivs, virial, this );
+      Value* valuex=getPntrToComponent("x");
+      Value* valuey=getPntrToComponent("y");
+      Value* valuez=getPntrToComponent("z");
+
+      for(unsigned i=0;i<2;++i) setAtomsDerivatives(valuex,i,derivs[0][i] );
+      setBoxDerivatives(valuex,virial[0]);
+      valuex->set(value[0]);
+
+      for(unsigned i=0;i<2;++i) setAtomsDerivatives(valuey,i,derivs[1][i] );
+      setBoxDerivatives(valuey,virial[1]);
+      valuey->set(value[1]);
+  
+      for(unsigned i=0;i<2;++i) setAtomsDerivatives(valuez,i,derivs[2][i] );
+      setBoxDerivatives(valuez,virial[2]);
+      valuez->set(value[2]);  
+  } else if( scaled_components ) { 
+      calculateCV( 2, masses, charges, getPositions(), value, derivs, virial, this );
+
+      Value* valuea=getPntrToComponent("a");
+      Value* valueb=getPntrToComponent("b");
+      Value* valuec=getPntrToComponent("c");
+      for(unsigned i=0;i<2;++i) setAtomsDerivatives(valuea,i,derivs[0][i] ); 
+      valuea->set(value[0]);
+      for(unsigned i=0;i<2;++i) setAtomsDerivatives(valueb,i,derivs[1][i] );  
+      valueb->set(value[1]);
+      for(unsigned i=0;i<2;++i) setAtomsDerivatives(valuec,i,derivs[2][i] );
+      valuec->set(value[2]);
+  } else  {
+      calculateCV( 0, masses, charges, getPositions(), value, derivs, virial, this ); 
+      for(unsigned i=0;i<2;++i) setAtomsDerivatives(i,derivs[0][i] ); 
+      setBoxDerivatives(virial[0]);
+      setValue           (value[0]); 
+  }
+}   
+
+void Distance::calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges, 
+                            const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
+                            std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
+  Vector distance=delta(pos[0],pos[1]);
   const double value=distance.modulo();
   const double invvalue=1.0/value;
 
-  if(components) {
-    Value* valuex=getPntrToComponent("x");
-    Value* valuey=getPntrToComponent("y");
-    Value* valuez=getPntrToComponent("z");
+  if(mode==1) {
+    derivs[0][0] = Vector(-1,0,0);
+    derivs[0][1] = Vector(+1,0,0);
+    vals[0] = distance[0];
 
-    setAtomsDerivatives (valuex,0,Vector(-1,0,0));
-    setAtomsDerivatives (valuex,1,Vector(+1,0,0));
-    setBoxDerivativesNoPbc(valuex);
-    valuex->set(distance[0]);
+    derivs[1][0] = Vector(0,-1,0);
+    derivs[1][1] = Vector(0,+1,0);
+    vals[1] = distance[1];
 
-    setAtomsDerivatives (valuey,0,Vector(0,-1,0));
-    setAtomsDerivatives (valuey,1,Vector(0,+1,0));
-    setBoxDerivativesNoPbc(valuey);
-    valuey->set(distance[1]);
-
-    setAtomsDerivatives (valuez,0,Vector(0,0,-1));
-    setAtomsDerivatives (valuez,1,Vector(0,0,+1));
-    setBoxDerivativesNoPbc(valuez);
-    valuez->set(distance[2]);
-  } else if(scaled_components) {
-    Value* valuea=getPntrToComponent("a");
-    Value* valueb=getPntrToComponent("b");
-    Value* valuec=getPntrToComponent("c");
-    Vector d=getPbc().realToScaled(distance);
-    setAtomsDerivatives (valuea,0,matmul(getPbc().getInvBox(),Vector(-1,0,0)));
-    setAtomsDerivatives (valuea,1,matmul(getPbc().getInvBox(),Vector(+1,0,0)));
-    valuea->set(Tools::pbc(d[0]));
-    setAtomsDerivatives (valueb,0,matmul(getPbc().getInvBox(),Vector(0,-1,0)));
-    setAtomsDerivatives (valueb,1,matmul(getPbc().getInvBox(),Vector(0,+1,0)));
-    valueb->set(Tools::pbc(d[1]));
-    setAtomsDerivatives (valuec,0,matmul(getPbc().getInvBox(),Vector(0,0,-1)));
-    setAtomsDerivatives (valuec,1,matmul(getPbc().getInvBox(),Vector(0,0,+1)));
-    valuec->set(Tools::pbc(d[2]));
+    derivs[2][0] = Vector(0,0,-1);
+    derivs[2][1] = Vector(0,0,+1);
+    vals[2] = distance[2];
+    setBoxDerivativesNoPbc( pos, derivs, virial );
+  } else if(mode==2) {
+    Vector d=aa->getPbc().realToScaled(distance);
+    derivs[0][0] = matmul(aa->getPbc().getInvBox(),Vector(-1,0,0));
+    derivs[0][1] = matmul(aa->getPbc().getInvBox(),Vector(+1,0,0));
+    vals[0] = Tools::pbc(d[0]);
+    derivs[1][0] = matmul(aa->getPbc().getInvBox(),Vector(0,-1,0));
+    derivs[1][1] = matmul(aa->getPbc().getInvBox(),Vector(0,+1,0));
+    vals[1] = Tools::pbc(d[1]);
+    derivs[2][0] = matmul(aa->getPbc().getInvBox(),Vector(0,0,-1));
+    derivs[2][1] = matmul(aa->getPbc().getInvBox(),Vector(0,0,+1));
+    vals[2] = Tools::pbc(d[2]);
   } else {
-    setAtomsDerivatives(0,-invvalue*distance);
-    setAtomsDerivatives(1,invvalue*distance);
-    setBoxDerivativesNoPbc();
-    setValue           (value);
+    derivs[0][0] = -invvalue*distance;
+    derivs[0][1] = invvalue*distance;
+    setBoxDerivativesNoPbc( pos, derivs, virial );
+    vals[0] = value;
   }
-
 }
 
 }

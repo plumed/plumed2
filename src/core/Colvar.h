@@ -66,6 +66,7 @@ public:
   ~Colvar() {}
   static void registerKeywords( Keywords& keys );
   unsigned getNumberOfDerivatives() override;
+  static void setBoxDerivativesNoPbc( const std::vector<Vector>& pos, std::vector<std::vector<Vector> >& derivs, std::vector<Tensor>& virial );
 };
 
 inline

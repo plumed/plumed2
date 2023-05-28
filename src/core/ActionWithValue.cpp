@@ -148,7 +148,7 @@ void ActionWithValue::addComponent( const std::string& name, const std::vector<u
     plumed_massert(values[i]->name!=thename&&name!="bias","Since PLUMED 2.3 the component 'bias' is automatically added to all biases by the general constructor!\n"
                    "Remove the line addComponent(\"bias\") from your bias.");
   }
-  values.emplace_back(Tools::make_unique<Value>(this,thename, false ) );
+  values.emplace_back(Tools::make_unique<Value>(this,thename, false, shape ) );
   std::string msg="  added component to this action:  "+thename+" \n";
   log.printf(msg.c_str());
 }
@@ -165,7 +165,7 @@ void ActionWithValue::addComponentWithDerivatives( const std::string& name, cons
     plumed_massert(values[i]->name!=thename&&name!="bias","Since PLUMED 2.3 the component 'bias' is automatically added to all biases by the general constructor!\n"
                    "Remove the line addComponentWithDerivatives(\"bias\") from your bias.");
   }
-  values.emplace_back(Tools::make_unique<Value>(this,thename, true ) );
+  values.emplace_back(Tools::make_unique<Value>(this,thename, true, shape ) );
   std::string msg="  added component to this action:  "+thename+" \n";
   log.printf(msg.c_str());
 }
@@ -234,6 +234,11 @@ void ActionWithValue::turnOnDerivatives() {
 Value* ActionWithValue::getPntrToComponent( const std::string& name ) {
   int kk=getComponent(name);
   return values[kk].get();
+}
+
+const Value* ActionWithValue::getConstPntrToComponent(int n) const {
+  plumed_dbg_massert(n<values.size(),"you have requested a pointer that is out of bounds");
+  return values[n].get();
 }
 
 Value* ActionWithValue::getPntrToComponent( int n ) {

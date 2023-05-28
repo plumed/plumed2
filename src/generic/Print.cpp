@@ -127,7 +127,10 @@ Print::Print(const ActionOptions&ao):
   parse("FMT",fmt);
   fmt=" "+fmt;
   log.printf("  with format %s\n",fmt.c_str());
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) ofile.setupPrintValue( getPntrToArgument(i) );
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      ofile.setupPrintValue( getPntrToArgument(i) );
+      getPntrToArgument(i)->buildDataStore();
+  }
 /////////////////////////////////////////
 // these are crazy things just for debug:
 // they allow to change regularly the
@@ -165,8 +168,7 @@ void Print::update() {
   ofile.fmtField(" %f");
   ofile.printField("time",getTime());
   for(unsigned i=0; i<getNumberOfArguments(); i++) {
-    ofile.fmtField(fmt);
-    ofile.printField( getPntrToArgument(i), getArgument(i) );
+    ofile.fmtField(fmt); getPntrToArgument(i)->print( ofile );
   }
   ofile.printField();
 }

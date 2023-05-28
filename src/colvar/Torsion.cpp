@@ -22,6 +22,7 @@
 #include "Colvar.h"
 #include "ColvarShortcut.h"
 #include "ActionRegister.h"
+#include "MultiColvarTemplate.h"
 #include "tools/Torsion.h"
 
 namespace PLMD {
@@ -91,23 +92,33 @@ class Torsion : public Colvar {
   bool pbc;
   bool do_cosine;
 
+  std::vector<double> value, masses, charges;
+  std::vector<std::vector<Vector> > derivs;
+  std::vector<Tensor> virial;
 public:
   explicit Torsion(const ActionOptions&);
+  static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
+  static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
+  static void calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges, 
+                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, 
+                           std::vector<Tensor>& virial, const ActionAtomistic* aa );
   static void registerKeywords(Keywords& keys);
 };
 
 typedef ColvarShortcut<Torsion> TorsionShortcut;
 PLUMED_REGISTER_ACTION(TorsionShortcut,"TORSION")
 PLUMED_REGISTER_ACTION(Torsion,"TORSION_SCALAR")
+typedef MultiColvarTemplate<Torsion> TorsionMulti;
+PLUMED_REGISTER_ACTION(TorsionMulti,"TORSION_VECTOR")
 
 void Torsion::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords( keys );
   keys.add("atoms-1","ATOMS","the four atoms involved in the torsional angle");
-  keys.add("atoms-2","AXIS","two atoms that define an axis.  You can use this to find the angle in the plane perpendicular to the axis between the vectors specified using the VECTOR1 and VECTOR2 keywords.");
-  keys.add("atoms-2","VECTOR1","two atoms that define a vector.  You can use this in combination with VECTOR2 and AXIS");
-  keys.add("atoms-2","VECTOR2","two atoms that define a vector.  You can use this in combination with VECTOR1 and AXIS");
+  keys.add("atoms-2","AXIS","two atoms that define an axis.  You can use this to find the angle in the plane perpendicular to the axis between the vectors specified using the VECTORA and VECTORB keywords.");
+  keys.add("atoms-2","VECTORA","two atoms that define a vector.  You can use this in combination with VECTOR2 and AXIS");
+  keys.add("atoms-2","VECTORB","two atoms that define a vector.  You can use this in combination with VECTOR1 and AXIS");
   keys.addFlag("COSINE",false,"calculate cosine instead of dihedral");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
 }
@@ -115,81 +126,97 @@ void Torsion::registerKeywords(Keywords& keys) {
 Torsion::Torsion(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true),
-  do_cosine(false)
+  do_cosine(false),
+  value(1),
+  derivs(1),
+  virial(1)
 {
-  std::vector<AtomNumber> atoms,v1,v2,axis;
-  parseAtomList("ATOMS",atoms);
-  parseAtomList("VECTOR1",v1);
-  parseAtomList("VECTOR2",v2);
-  parseAtomList("AXIS",axis);
-
-  parseFlag("COSINE",do_cosine);
+  derivs[0].resize(6); std::vector<AtomNumber> atoms; parseAtomList(-1,atoms,this);
+  unsigned mode=getModeAndSetupValues(this);
+  if( mode==1 ) do_cosine=true;
 
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
   checkRead();
 
-  if(atoms.size()==4) {
-    if(!(v1.empty() && v2.empty() && axis.empty()))
-      error("ATOMS keyword is not compatible with VECTOR1, VECTOR2 and AXIS keywords");
-    log.printf("  between atoms %d %d %d %d\n",atoms[0].serial(),atoms[1].serial(),atoms[2].serial(),atoms[3].serial());
-    atoms.resize(6);
-    atoms[5]=atoms[3];
-    atoms[4]=atoms[2];
-    atoms[3]=atoms[2];
-    atoms[2]=atoms[1];
-  } else if(atoms.empty()) {
-    if(!(v1.size()==2 && v2.size()==2 && axis.size()==2))
-      error("VECTOR1, VECTOR2 and AXIS should specify 2 atoms each");
-    log.printf("  between lines %d-%d and %d-%d, projected on the plane orthogonal to line %d-%d\n",
-               v1[0].serial(),v1[1].serial(),v2[0].serial(),v2[1].serial(),axis[0].serial(),axis[1].serial());
-    atoms.resize(6);
-    atoms[0]=v1[1];
-    atoms[1]=v1[0];
-    atoms[2]=axis[0];
-    atoms[3]=axis[1];
-    atoms[4]=v2[0];
-    atoms[5]=v2[1];
-  } else error("ATOMS should specify 4 atoms");
-
   if(pbc) log.printf("  using periodic boundary conditions\n");
   else    log.printf("  without periodic boundary conditions\n");
-
-  if(do_cosine) log.printf("  calculating cosine instead of torsion\n");
-
-  addValueWithDerivatives();
-  if(!do_cosine) setPeriodic("-pi","pi");
-  else setNotPeriodic();
   requestAtoms(atoms);
+}
+
+void Torsion::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
+  std::vector<AtomNumber> v1,v2,axis;
+  aa->parseAtomList("ATOMS",num,t);
+  aa->parseAtomList("VECTORA",num,v1);
+  aa->parseAtomList("VECTORB",num,v2);
+  aa->parseAtomList("AXIS",num,axis);
+
+  if(t.size()==4) {
+    if(!(v1.empty() && v2.empty() && axis.empty()))
+      aa->error("ATOMS keyword is not compatible with VECTOR1, VECTOR2 and AXIS keywords");
+    aa->log.printf("  between atoms %d %d %d %d\n",t[0].serial(),t[1].serial(),t[2].serial(),t[3].serial());
+    t.resize(6);
+    t[5]=t[3];
+    t[4]=t[2];
+    t[3]=t[2];
+    t[2]=t[1];
+  } else if(t.empty()) {
+    if( num>0 && v1.empty() && v2.empty() && axis.empty() ) return;
+    if(!(v1.size()==2 && v2.size()==2 && axis.size()==2))
+      aa->error("VECTOR1, VECTOR2 and AXIS should specify 2 atoms each");
+    aa->log.printf("  between lines %d-%d and %d-%d, projected on the plane orthogonal to line %d-%d\n",
+               v1[0].serial(),v1[1].serial(),v2[0].serial(),v2[1].serial(),axis[0].serial(),axis[1].serial());
+    t.resize(6);
+    t[0]=v1[1];
+    t[1]=v1[0];
+    t[2]=axis[0];
+    t[3]=axis[1];
+    t[4]=v2[0];
+    t[5]=v2[1];
+  } else if( t.size()!=4 ) aa->error("ATOMS should specify 4 atoms");
+}
+
+unsigned Torsion::getModeAndSetupValues( ActionWithValue* av ) {
+  bool do_cos; av->parseFlag("COSINE",do_cos);
+  if(do_cos) av->log.printf("  calculating cosine instead of torsion\n");
+
+  av->addValueWithDerivatives(); 
+  if(!do_cos) { av->setPeriodic("-pi","pi"); return 0; }
+  av->setNotPeriodic(); return 1;
 }
 
 // calculator
 void Torsion::calculate() {
-
-  Vector d0,d1,d2;
   if(pbc) makeWhole();
-  d0=delta(getPosition(1),getPosition(0));
-  d1=delta(getPosition(3),getPosition(2));
-  d2=delta(getPosition(5),getPosition(4));
+  if(do_cosine) calculateCV( 1, masses, charges, getPositions(), value, derivs, virial, this );
+  else calculateCV( 0, masses, charges, getPositions(), value, derivs, virial, this );
+  for(unsigned i=0;i<6;++i) setAtomsDerivatives(i,derivs[0][i] );
+  setValue(value[0]); setBoxDerivatives( virial[0] );
+}
+
+void Torsion::calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges, 
+                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, 
+                           std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
+  Vector d0=delta(pos[1],pos[0]);
+  Vector d1=delta(pos[3],pos[2]);
+  Vector d2=delta(pos[5],pos[4]);
   Vector dd0,dd1,dd2;
   PLMD::Torsion t;
-  double torsion=t.compute(d0,d1,d2,dd0,dd1,dd2);
-  if(do_cosine) {
-    dd0 *= -std::sin(torsion);
-    dd1 *= -std::sin(torsion);
-    dd2 *= -std::sin(torsion);
-    torsion = std::cos(torsion);
+  vals[0] = t.compute(d0,d1,d2,dd0,dd1,dd2);
+  if(mode==1) {
+    dd0 *= -std::sin(vals[0]);
+    dd1 *= -std::sin(vals[0]);
+    dd2 *= -std::sin(vals[0]);
+    vals[0] = std::cos(vals[0]);
   }
-  setAtomsDerivatives(0,dd0);
-  setAtomsDerivatives(1,-dd0);
-  setAtomsDerivatives(2,dd1);
-  setAtomsDerivatives(3,-dd1);
-  setAtomsDerivatives(4,dd2);
-  setAtomsDerivatives(5,-dd2);
-
-  setValue           (torsion);
-  setBoxDerivativesNoPbc();
+  derivs[0][0] = dd0;
+  derivs[0][1] = -dd0;
+  derivs[0][2] = dd1;
+  derivs[0][3] = -dd1;
+  derivs[0][4] = dd2;
+  derivs[0][5] = -dd2;
+  setBoxDerivativesNoPbc( pos, derivs, virial );
 }
 
 }

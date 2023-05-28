@@ -26,6 +26,7 @@
 #include "ActionWithVirtualAtom.h"
 #include "tools/Exception.h"
 #include "tools/OpenMP.h"
+#include "tools/OFile.h"
 #include "PlumedMain.h"
 
 namespace PLMD {
@@ -39,6 +40,8 @@ Value::Value():
   storedata(false),
   shape(std::vector<unsigned>()),
   hasDeriv(true),
+  bufstart(0),
+  streampos(0),
   periodicity(unset),
   min(0.0),
   max(0.0),
@@ -59,6 +62,8 @@ Value::Value(const std::string& name):
   storedata(false),
   shape(std::vector<unsigned>()),
   hasDeriv(true),
+  bufstart(0),
+  streampos(0),
   periodicity(unset),
   min(0.0),
   max(0.0),
@@ -79,6 +84,8 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   name(name),
   storedata(false),
   hasDeriv(withderiv),
+  bufstart(0),
+  streampos(0),
   periodicity(unset),
   min(0.0),
   max(0.0),
@@ -211,6 +218,29 @@ void Value::writeBinary(std::ostream&o) const {
 
 void Value::readBinary(std::istream&i) {
   i.read(reinterpret_cast<char*>(&data[0]),data.size()*sizeof(double));
+}
+
+void Value::convertIndexToindices(const std::size_t& index, std::vector<unsigned>& indices ) const {
+  std::size_t kk=index; indices[0]=index%shape[0];
+  for(unsigned i=1; i<shape.size()-1; ++i) {
+    kk=(kk-indices[i-1])/shape[i-1];
+    indices[i]=kk%shape[i];
+  }
+  if(shape.size()>=2) indices[shape.size()-1]=(kk-indices[shape.size()-2])/shape[shape.size()-2];
+}
+
+void Value::print( OFile& ofile ) const {
+  if( isPeriodic() ) { ofile.printField( "min_" + name, str_min ); ofile.printField("max_" + name, str_max ); }
+  if( shape.size()==0 ) {
+    ofile.printField( name, get(0) );
+  } else {
+    std::vector<unsigned> indices( shape.size() );
+    for(unsigned i=0; i<getNumberOfValues(); ++i) {
+      convertIndexToindices( i, indices ); std::string num, fname = name;
+      for(unsigned i=0; i<shape.size(); ++i) { Tools::convert( indices[i]+1, num ); fname += "." + num; }
+      ofile.printField( fname, get(i) );
+    }
+  }   
 }
 
 unsigned Value::getGoodNumThreads( const unsigned& j, const unsigned& k ) const {

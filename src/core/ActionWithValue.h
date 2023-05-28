@@ -87,7 +87,7 @@ public:
 /// Add a value with the name label
   void addValue( const std::vector<unsigned>& shape=std::vector<unsigned>() );
 /// Add a value with the name label that has derivatives
-  void addValueWithDerivatives( const std::vector<unsigned>& shape=std::vector<unsigned>() );
+  virtual void addValueWithDerivatives( const std::vector<unsigned>& shape=std::vector<unsigned>() );
 /// Set your default value to have no periodicity
   void setNotPeriodic();
 /// Set the value to be periodic with a particular domain
@@ -104,7 +104,7 @@ public:
 /// Add a value with a name like label.name
   void addComponent( const std::string& name, const std::vector<unsigned>& shape=std::vector<unsigned>() );
 /// Add a value with a name like label.name that has derivatives
-  void addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape=std::vector<unsigned>() );
+  virtual void addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape=std::vector<unsigned>() );
 /// Set your value component to have no periodicity
   void componentIsNotPeriodic( const std::string& name );
 /// Set the value to be periodic with a particular domain
@@ -112,6 +112,8 @@ public:
 protected:
 /// Return a pointer to the component by index
   Value* getPntrToComponent(int i);
+/// Get a const pointer to the ith component
+  const Value* getConstPntrToComponent(int i) const;
 /// Return a pointer to the value by name
   Value* getPntrToComponent(const std::string& name);
 /// Accumulate the forces from the Values

@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
 #include "ColvarShortcut.h"
+#include "MultiColvarTemplate.h"
 #include "ActionRegister.h"
 #include "tools/Angle.h"
 
@@ -81,17 +82,26 @@ PRINT ARG=b FILE=COLVAR2
 
 class Angle : public Colvar {
   bool pbc;
-
+  std::vector<double> value, masses, charges;
+  std::vector<std::vector<Vector> > derivs;
+  std::vector<Tensor> virial;
 public:
   explicit Angle(const ActionOptions&);
 // active methods:
   void calculate() override;
   static void registerKeywords( Keywords& keys );
+  static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
+  static unsigned getModeAndSetupValues( ActionWithValue* av );
+  static void calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges, 
+                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, 
+                           std::vector<Tensor>& virial, const ActionAtomistic* aa );
 };
 
 typedef ColvarShortcut<Angle> AngleShortcut;
 PLUMED_REGISTER_ACTION(AngleShortcut,"ANGLE")
 PLUMED_REGISTER_ACTION(Angle,"ANGLE_SCALAR")
+typedef MultiColvarTemplate<Angle> AngleMulti;
+PLUMED_REGISTER_ACTION(AngleMulti,"ANGLE_VECTOR")
 
 void Angle::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords(keys);
@@ -99,24 +109,34 @@ void Angle::registerKeywords( Keywords& keys ) {
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
 }
 
-Angle::Angle(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao),
-  pbc(true)
-{
-  std::vector<AtomNumber> atoms;
-  parseAtomList("ATOMS",atoms);
-  bool nopbc=!pbc;
-  parseFlag("NOPBC",nopbc);
-  pbc=!nopbc;
-
+void Angle::parseAtomList( const int& num, std::vector<AtomNumber>& atoms, ActionAtomistic* aa ) {
+  aa->parseAtomList("ATOMS",num,atoms);
   if(atoms.size()==3) {
-    log.printf("  between atoms %d %d %d\n",atoms[0].serial(),atoms[1].serial(),atoms[2].serial());
+    aa->log.printf("  between atoms %d %d %d\n",atoms[0].serial(),atoms[1].serial(),atoms[2].serial());
     atoms.resize(4);
     atoms[3]=atoms[2];
     atoms[2]=atoms[1];
   } else if(atoms.size()==4) {
-    log.printf("  between lines %d-%d and %d-%d\n",atoms[0].serial(),atoms[1].serial(),atoms[2].serial(),atoms[3].serial());
-  } else error("Number of specified atoms should be either 3 or 4");
+    aa->log.printf("  between lines %d-%d and %d-%d\n",atoms[0].serial(),atoms[1].serial(),atoms[2].serial(),atoms[3].serial());
+  } else if( num<0 || atoms.size()>0 ) aa->error("Number of specified atoms should be either 3 or 4");
+}
+
+unsigned Angle::getModeAndSetupValues( ActionWithValue* av ) {
+  av->addValueWithDerivatives(); av->setNotPeriodic(); return 0;
+}
+
+Angle::Angle(const ActionOptions&ao):
+  PLUMED_COLVAR_INIT(ao),
+  pbc(true),
+  value(1),
+  derivs(1),
+  virial(1)
+{
+  derivs[0].resize(4);
+  std::vector<AtomNumber> atoms; parseAtomList( -1, atoms, this );
+  bool nopbc=!pbc;
+  parseFlag("NOPBC",nopbc);
+  pbc=!nopbc;
 
   if(pbc) log.printf("  using periodic boundary conditions\n");
   else    log.printf("  without periodic boundary conditions\n");
@@ -130,19 +150,23 @@ Angle::Angle(const ActionOptions&ao):
 void Angle::calculate() {
 
   if(pbc) makeWhole();
+  calculateCV( 0, masses, charges, getPositions(), value, derivs, virial, this ); 
+  setValue( value[0] );
+  for(unsigned i=0; i<derivs[0].size();++i) setAtomsDerivatives( i, derivs[0][i] );
+  setBoxDerivatives( virial[0] );
+}
 
+void Angle::calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges, 
+                         const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
+                         std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
   Vector dij,dik;
-  dij=delta(getPosition(2),getPosition(3));
-  dik=delta(getPosition(1),getPosition(0));
-  Vector ddij,ddik;
-  PLMD::Angle a;
-  double angle=a.compute(dij,dik,ddij,ddik);
-  setAtomsDerivatives(0,ddik);
-  setAtomsDerivatives(1,-ddik);
-  setAtomsDerivatives(2,-ddij);
-  setAtomsDerivatives(3,ddij);
-  setValue           (angle);
-  setBoxDerivativesNoPbc();
+  dij=delta(pos[2],pos[3]);
+  dik=delta(pos[1],pos[0]);
+  Vector ddij,ddik; PLMD::Angle a;
+  vals[0]=a.compute(dij,dik,ddij,ddik);
+  derivs[0][0]=ddik; derivs[0][1]=-ddik;
+  derivs[0][2]=-ddij; derivs[0][3]=ddij;
+  setBoxDerivativesNoPbc( pos, derivs, virial ); 
 }
 
 }

@@ -54,6 +54,13 @@ void Colvar::apply() {
   else setForcesOnCell( getForcesToApply(), ind );
 }
 
+void Colvar::setBoxDerivativesNoPbc( const std::vector<Vector>& pos, std::vector<std::vector<Vector> >& derivs, std::vector<Tensor>& virial ) {
+  unsigned nat=pos.size();
+  for(unsigned i=0;i<virial.size();++i) {
+      virial[i].zero(); for(unsigned j=0; j<nat; j++) virial[i]-=Tensor(pos[j],derivs[i][j]);
+  }
+}
+
 void Colvar::setBoxDerivativesNoPbc(Value* v) {
   Tensor virial;
   unsigned nat=getNumberOfAtoms();

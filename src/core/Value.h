@@ -32,6 +32,7 @@
 
 namespace PLMD {
 
+class OFile;
 class ActionWithValue;
 class ActionAtomistic;
 
@@ -46,6 +47,7 @@ class ActionAtomistic;
 /// you are implementing please feel free to use it.
 class Value {
   friend class ActionWithValue;
+  friend class ActionWithVector;
   friend class ActionWithArguments;
   friend class DomainDecomposition;
 /// This copies the contents of a value into a second value (just the derivatives and value)
@@ -83,6 +85,8 @@ private:
   std::vector<unsigned> shape;
 /// Does this quanity have derivatives
   bool hasDeriv;
+/// Variables for storing data
+  unsigned bufstart, streampos;
 /// Is this quantity periodic
   enum {unset,periodic,notperiodic} periodicity;
 /// Various quantities that describe the domain of this value
@@ -111,6 +115,8 @@ public:
   void set(const std::size_t& n, const double& v );
 /// Add something to the value of the function
   void add(double);
+/// Add something to the ith element of the data array
+  void add(const std::size_t& n, const double& v );
 /// Get the value of the function
   double get( const std::size_t& ival=0 ) const;
 /// Find out if the value has been set
@@ -190,6 +196,12 @@ public:
   void setDerivativeIsZeroWhenValueIsZero();
 /// Return a bool that tells us if the derivative is zero when the value is zero
   bool isDerivativeZeroWhenValueIsZero() const ;
+///
+  unsigned getPositionInStream() const ;
+/// Convert the input index to its corresponding indices
+  void convertIndexToindices(const std::size_t& index, std::vector<unsigned>& indices ) const ;
+/// Print out all the values in this Value
+  void print( OFile& ofile ) const ;
 };
 
 void copy( const Value& val1, Value& val2 );
@@ -245,6 +257,11 @@ void Value::add(double v) {
   data[0]+=v;
   applyPeriodicity(0);
 }
+
+inline
+void Value::add(const std::size_t& n, const double& v ) {
+  value_set=true; data[n]+=v; applyPeriodicity(n);
+} 
 
 inline
 double Value::get( const std::size_t& ival )const {
@@ -397,6 +414,11 @@ void Value::setDerivativeIsZeroWhenValueIsZero() {
 inline
 bool Value::isDerivativeZeroWhenValueIsZero() const {
   return derivativeIsZeroWhenValueIsZero;
+}
+
+inline
+unsigned Value::getPositionInStream() const {
+  return streampos;
 }
 
 }

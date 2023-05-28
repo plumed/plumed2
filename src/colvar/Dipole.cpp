@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
 #include "ColvarShortcut.h"
+#include "MultiColvarTemplate.h"
 #include "ActionRegister.h"
 
 namespace PLMD {
@@ -63,15 +64,25 @@ class Dipole : public Colvar {
   std::vector<AtomNumber> ga_lista;
   bool components;
   bool nopbc;
+  std::vector<double> value, masses, charges;
+  std::vector<std::vector<Vector> > derivs;
+  std::vector<Tensor> virial;
 public:
   explicit Dipole(const ActionOptions&);
+  static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
+  static unsigned getModeAndSetupValues( ActionWithValue* av );
   void calculate() override;
   static void registerKeywords(Keywords& keys);
+  static void calculateCV( const unsigned& mode, const std::vector<double>& masses, std::vector<double>& charges,
+                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
+                           std::vector<Tensor>& virial, const ActionAtomistic* aa );
 };
 
 typedef ColvarShortcut<Dipole> DipoleShortcut;
 PLUMED_REGISTER_ACTION(DipoleShortcut,"DIPOLE")
 PLUMED_REGISTER_ACTION(Dipole,"DIPOLE_SCALAR")
+typedef MultiColvarTemplate<Dipole> DipoleMulti;
+PLUMED_REGISTER_ACTION(DipoleMulti,"DIPOLE_VECTOR")
 
 void Dipole::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);
@@ -85,77 +96,105 @@ void Dipole::registerKeywords(Keywords& keys) {
 
 Dipole::Dipole(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
-  components(false)
+  components(false),
+  value(1),
+  derivs(1),
+  virial(1)
 {
-  parseAtomList("GROUP",ga_lista);
-  parseFlag("COMPONENTS",components);
+  parseAtomList(-1,ga_lista,this); charges.resize(ga_lista.size());
+  components=(getModeAndSetupValues(this)==1);
+  if( components ) { value.resize(3); derivs.resize(3); virial.resize(3); }
+  for(unsigned i=0; i<derivs.size(); ++i) derivs[i].resize( ga_lista.size() );
   parseFlag("NOPBC",nopbc);
   checkRead();
-  if(components) {
-    addComponentWithDerivatives("x"); componentIsNotPeriodic("x");
-    addComponentWithDerivatives("y"); componentIsNotPeriodic("y");
-    addComponentWithDerivatives("z"); componentIsNotPeriodic("z");
-  } else {
-    addValueWithDerivatives(); setNotPeriodic();
-  }
 
-  log.printf("  of %u atoms\n",static_cast<unsigned>(ga_lista.size()));
-  for(unsigned int i=0; i<ga_lista.size(); ++i) {
-    log.printf("  %d", ga_lista[i].serial());
-  }
-  log.printf("  \n");
   if(nopbc) log.printf("  without periodic boundary conditions\n");
   else      log.printf("  using periodic boundary conditions\n");
 
   requestAtoms(ga_lista);
 }
 
+void Dipole::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
+  aa->parseAtomList("GROUP",num,t);
+  if( t.size()>0 ) {
+      aa->log.printf("  of %u atoms\n",static_cast<unsigned>(t.size()));
+      for(unsigned int i=0; i<t.size(); ++i) {
+        aa->log.printf("  %d", t[i].serial());
+      } 
+      aa->log.printf("  \n");
+  }
+}
+
+unsigned Dipole::getModeAndSetupValues( ActionWithValue* av ) {
+  bool c; av->parseFlag("COMPONENTS",c);
+  if( c ) {
+    av->addComponentWithDerivatives("x"); av->componentIsNotPeriodic("x");
+    av->addComponentWithDerivatives("y"); av->componentIsNotPeriodic("y");
+    av->addComponentWithDerivatives("z"); av->componentIsNotPeriodic("z");
+    return 1;
+  }
+  av->addValueWithDerivatives(); av->setNotPeriodic(); return 0; 
+}
+
 // calculator
 void Dipole::calculate()
 {
   if(!nopbc) makeWhole();
-  double ctot=0.;
   unsigned N=getNumberOfAtoms();
-  std::vector<double> charges(N);
-  Vector dipje;
-
-  for(unsigned i=0; i<N; ++i) {
-    charges[i]=getCharge(i);
-    ctot+=charges[i];
-  }
-  ctot/=(double)N;
-
-  for(unsigned i=0; i<N; ++i) {
-    charges[i]-=ctot;
-    dipje += charges[i]*getPosition(i);
-  }
+  for(unsigned i=0; i<N; ++i) charges[i]=getCharge(i);
 
   if(!components) {
-    double dipole = dipje.modulo();
-    double idip = 1./dipole;
-
-    for(unsigned i=0; i<N; i++) {
-      double dfunc=charges[i]*idip;
-      setAtomsDerivatives(i,dfunc*dipje);
-    }
-    setBoxDerivativesNoPbc();
-    setValue(dipole);
+    calculateCV( 0, masses, charges, getPositions(), value, derivs, virial, this );
+    for(unsigned i=0; i<N; i++) setAtomsDerivatives(i,derivs[0][i]);
+    setBoxDerivatives(virial[0]);
+    setValue(value[0]);
   } else {
+    calculateCV( 1, masses, charges, getPositions(), value, derivs, virial, this );
     Value* valuex=getPntrToComponent("x");
     Value* valuey=getPntrToComponent("y");
     Value* valuez=getPntrToComponent("z");
     for(unsigned i=0; i<N; i++) {
-      setAtomsDerivatives(valuex,i,charges[i]*Vector(1.0,0.0,0.0));
-      setAtomsDerivatives(valuey,i,charges[i]*Vector(0.0,1.0,0.0));
-      setAtomsDerivatives(valuez,i,charges[i]*Vector(0.0,0.0,1.0));
+      setAtomsDerivatives(valuex,i,derivs[0][i]);
+      setAtomsDerivatives(valuey,i,derivs[1][i]);
+      setAtomsDerivatives(valuez,i,derivs[2][i]);
     }
-    setBoxDerivativesNoPbc(valuex);
-    setBoxDerivativesNoPbc(valuey);
-    setBoxDerivativesNoPbc(valuez);
-    valuex->set(dipje[0]);
-    valuey->set(dipje[1]);
-    valuez->set(dipje[2]);
+    setBoxDerivatives(valuex,virial[0]);
+    setBoxDerivatives(valuey,virial[1]);
+    setBoxDerivatives(valuez,virial[2]);
+    valuex->set(value[0]);
+    valuey->set(value[1]);
+    valuez->set(value[2]);
   }
+}
+
+void Dipole::calculateCV( const unsigned& mode, const std::vector<double>& masses, std::vector<double>& charges,
+                          const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
+                          std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
+  unsigned N=pos.size(); double ctot=0.;
+  for(unsigned i=0; i<N; ++i) ctot += charges[i];
+  ctot/=(double)N;
+
+  Vector dipje;
+  for(unsigned i=0; i<N; ++i) {
+    charges[i]-=ctot; dipje += charges[i]*pos[i];
+  }
+
+  if( mode==1 ) {
+     for(unsigned i=0; i<N; i++) {
+       derivs[0][i]=charges[i]*Vector(1.0,0.0,0.0);
+       derivs[1][i]=charges[i]*Vector(0.0,1.0,0.0);
+       derivs[2][i]=charges[i]*Vector(0.0,0.0,1.0);
+     } 
+     for(unsigned i=0; i<3; ++i ) vals[i] = dipje[i]; 
+  } else {
+     vals[0] = dipje.modulo();
+     double idip = 1./vals[0];
+     for(unsigned i=0; i<N; i++) {
+       double dfunc=charges[i]*idip;
+       derivs[0][i] = dfunc*dipje;
+     }
+  }
+  setBoxDerivativesNoPbc( pos, derivs, virial );
 }
 
 }
