@@ -36,28 +36,71 @@ MultiValue::MultiValue( const size_t& nvals, const size_t& nder, const size_t& n
   tmpder(nder),
   atLeastOneSet(false),
   vector_call(false),
+  mat_nindices(nmat,0),
+  mat_indices(nmat),
   nmatrix_cols(ncols)
 {
+  for(unsigned i=0; i<nmat; ++i) mat_indices[i].resize( nder );
+  // This is crap that will be deleted in future
   std::vector<unsigned> myind( nder );
   for(unsigned i=0; i<nder; ++i) myind[i]=i;
   hasDerivatives.createIndexListFromVector( myind );
 }
 
 void MultiValue::resize( const size_t& nvals, const size_t& nder, const size_t& ncols, const size_t& nmat ) {
-  values.resize(nvals); nderivatives=nder; derivatives.resize( nvals*nder ); hasderiv.resize(nvals*nder,false);
-  tmpder.resize( nder ); nactive.resize(nvals); active_list.resize(nvals*nder); 
-  hasDerivatives.clear(); std::vector<unsigned> myind( nder );
+  values.resize(nvals); nderivatives=nder; derivatives.resize( nvals*nder ); 
+  hasderiv.resize(nvals*nder,false); nactive.resize(nvals); active_list.resize(nvals*nder);
+  nmatrix_cols=ncols; matrix_element_nind.resize(nmat); matrix_element_indices.resize(ncols*nmat);
+  matrix_element_stash.resize(ncols*nmat); nindices=0; mat_nindices.resize(nmat,0); mat_indices.resize(nmat);
+  for(unsigned i=0; i<nmat; ++i) mat_indices[i].resize( nder );
+  atLeastOneSet=false;
+  // All crap from here onwards
+  tmpder.resize( nder ); hasDerivatives.clear(); std::vector<unsigned> myind( nder );
   for(unsigned i=0; i<nder; ++i) myind[i]=i;
   hasDerivatives.createIndexListFromVector( myind );
-  nmatrix_cols=ncols; atLeastOneSet=false;
 }
 
-void MultiValue::clearAll() {
-  if( atLeastOneSet && !hasDerivatives.updateComplete() ) hasDerivatives.updateActiveMembers();
-  for(unsigned i=0; i<values.size(); ++i) clear(i);
-  clearTemporyDerivatives(); hasDerivatives.deactivateAll(); atLeastOneSet=false;
+void MultiValue::clearAll( const bool& newversion ) {
+  if( newversion ) {
+      for(unsigned i=0; i<values.size(); ++i) values[i]=0;
+      // Clear matrix indices
+      clearMatrixBookeepingArrays();
+      if( !atLeastOneSet ) return;
+      for(unsigned i=0; i<values.size(); ++i) clearDerivatives(i);
+      atLeastOneSet=false;
+  } else {
+      // This should be deleted once old MultiColvar has gone
+      if( atLeastOneSet && !hasDerivatives.updateComplete() ) hasDerivatives.updateActiveMembers();
+      for(unsigned i=0; i<values.size(); ++i) clear(i);
+      clearTemporyDerivatives(); hasDerivatives.deactivateAll(); atLeastOneSet=false;
+  }
 }
 
+void MultiValue::clearDerivatives( const unsigned& ival ) {
+  values[ival]=0;
+  if( !atLeastOneSet ) return;
+  unsigned base=ival*nderivatives;
+  for(unsigned i=0; i<nactive[ival]; ++i) {
+    unsigned k = base+active_list[base+i]; derivatives[k]=0.; hasderiv[k]=false;
+  }
+  nactive[ival]=0;
+#ifndef NDEBUG
+  for(unsigned i=0; i<nderivatives; ++i) {
+    if( hasderiv[base+i] ) {
+      std::string num1, num2;
+      Tools::convert(ival,num1); Tools::convert(i,num2);
+      plumed_merror("FAILING TO CLEAR VALUE " + num1 + " DERIVATIVE " + num2 + " IS PROBLEMATIC");
+    }
+  }
+#endif
+}
+
+void MultiValue::clearMatrixBookeepingArrays() {
+  for(unsigned i=0; i<mat_nindices.size(); ++i) mat_nindices[i]=0;
+  for(unsigned i=0; i<matrix_element_nind.size(); ++i) matrix_element_nind[i]=0;
+}
+
+// This should be deleted once old MultiColvar has gone
 void MultiValue::clear( const unsigned& ival ) {
   values[ival]=0;
   unsigned base=ival*nderivatives, ndert=hasDerivatives.getNumberActive();

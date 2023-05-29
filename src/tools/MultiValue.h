@@ -54,13 +54,21 @@ private:
   bool atLeastOneSet;
 /// Are we in this for a call on vectors
   bool vector_call;
+  unsigned nindices, nfblock, nsplit;
 /// This allows us to store matrix elements
-  unsigned nmatrix_cols;
+  unsigned nmatrix_cols, nmat_force;
+  bool rerunning_matrix;
+  std::vector<unsigned> matrix_element_nind;
+  std::vector<unsigned> matrix_element_indices;
+  std::vector<double> matrix_element_stash;
+  std::vector<double> matrix_force_stash;
 /// This is a fudge to save on vector resizing in MultiColvar
   std::vector<unsigned> indices, sort_indices;
   std::vector<Vector> tmp_atoms;
   std::vector<std::vector<Vector> > tmp_atom_der;
   std::vector<Tensor> tmp_atom_virial;
+  std::vector<unsigned> mat_nindices;
+  std::vector<std::vector<unsigned> > mat_indices;
   std::vector<std::vector<double> > tmp_vectors;
 public:
   MultiValue( const std::size_t& nvals, const std::size_t& nder, const std::size_t& ncols=0, const std::size_t& nmat=0 );
@@ -104,7 +112,11 @@ public:
 /// Get one of the tempory derivatives
   double getTemporyDerivative( const unsigned& jder ) const ;
 /// Clear all values
-  void clearAll();
+  void clearAll( const bool& newversion=false );
+/// Clear bookeeping arrays for matrix stuff
+  void clearMatrixBookeepingArrays();
+/// Clear the derivatives
+  void clearDerivatives( const unsigned& );  
 /// Clear the tempory derivatives
   void clearTemporyDerivatives();
 /// Clear a value

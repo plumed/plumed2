@@ -100,10 +100,12 @@ DumpDerivatives::DumpDerivatives(const ActionOptions&ao):
   unsigned nargs=getNumberOfArguments();
   if( nargs==0 ) error("no arguments specified");
   (getPntrToArgument(0)->getPntrToAction())->turnOnDerivatives();
+  if( getPntrToArgument(0)->getRank()>0 ) error("cannot dump derivatives of non-scalar objects");
   unsigned npar=getPntrToArgument(0)->getNumberOfDerivatives();
   if( npar==0 ) error("one or more arguments has no derivatives");
   for(unsigned i=1; i<nargs; i++) {
     (getPntrToArgument(i)->getPntrToAction())->turnOnDerivatives();
+    if( getPntrToArgument(i)->getRank()>0 ) error("cannot dump derivatives of non-scalar objects");
     if( npar!=getPntrToArgument(i)->getNumberOfDerivatives() ) error("the number of derivatives must be the same in all values being dumped");
   }
   checkRead();

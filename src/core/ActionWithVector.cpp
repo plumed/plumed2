@@ -287,7 +287,7 @@ void ActionWithVector::runAllTasks() {
     std::vector<double> omp_buffer;
     if( nt>1 ) omp_buffer.resize( bufsize, 0.0 );
     MultiValue myvals( nquantities, nderivatives, ncols, nmatrices );
-    myvals.clearAll();
+    myvals.clearAll(true);
 
     #pragma omp for nowait
     for(unsigned i=rank; i<nactive_tasks; i+=stride) {
@@ -305,7 +305,7 @@ void ActionWithVector::runAllTasks() {
       }
 
       // Clear the value
-      myvals.clearAll();
+      myvals.clearAll(true);
     }
     #pragma omp critical
     if(nt>1) for(unsigned i=0; i<bufsize; ++i) buffer[i]+=omp_buffer[i];
