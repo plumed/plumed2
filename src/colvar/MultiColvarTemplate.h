@@ -151,7 +151,7 @@ void MultiColvarTemplate<T>::performTask( const unsigned& task_index, MultiValue
   // Now transfer the derivatives to the underlying MultiValue
   for(unsigned i=0; i<ablocks.size(); ++i) {
     unsigned base=3*ablocks[i][task_index];
-    for(unsigned j=0; j<getNumberOfComponents(); ++j) {
+    for(int j=0; j<getNumberOfComponents(); ++j) {
         unsigned jval=getConstPntrToComponent(j)->getPositionInStream();
         myvals.addDerivative( jval, base + 0, derivs[j][i][0] );
         myvals.addDerivative( jval, base + 1, derivs[j][i][1] );
@@ -163,7 +163,7 @@ void MultiColvarTemplate<T>::performTask( const unsigned& task_index, MultiValue
       if( ablocks[j][task_index]==ablocks[i][task_index] ) { newi=false; break; }
     }
     if( !newi ) continue;
-    for(unsigned j=0; j<getNumberOfComponents(); ++j) {
+    for(int j=0; j<getNumberOfComponents(); ++j) {
       unsigned jval=getConstPntrToComponent(j)->getPositionInStream();
       myvals.updateIndex( jval, base );
       myvals.updateIndex( jval, base + 1 );
@@ -171,7 +171,7 @@ void MultiColvarTemplate<T>::performTask( const unsigned& task_index, MultiValue
     }
   }
   unsigned nvir=3*getNumberOfAtoms();
-  for(unsigned j=0; j<getNumberOfComponents(); ++j) {
+  for(int j=0; j<getNumberOfComponents(); ++j) {
      unsigned jval=getConstPntrToComponent(j)->getPositionInStream();
      for(unsigned i=0; i<3; ++i) {
          for(unsigned k=0; k<3; ++k) {
