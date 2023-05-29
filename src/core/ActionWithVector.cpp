@@ -335,7 +335,9 @@ void ActionWithVector::getNumberOfTasks( unsigned& ntasks ) {
       else ntasks = getPntrToComponent(0)->getShape()[0]; 
   }
   for(int i=0; i<getNumberOfComponents(); ++i) {
-      if( getPntrToComponent(i)->hasDerivatives() && ntasks!=getPntrToComponent(i)->getNumberOfValues() ) error("mismatched numbers of tasks in streamed quantities");
+      if( getPntrToComponent(i)->getRank()==0 ) { 
+          if( getNumberOfArguments()>1  || ntasks!=getPntrToArgument(0)->getNumberOfValues() ) error("mismatched numbers of tasks in streamed quantities");
+      } else if( getPntrToComponent(i)->hasDerivatives() && ntasks!=getPntrToComponent(i)->getNumberOfValues() ) error("mismatched numbers of tasks in streamed quantities");
       else if( ntasks!=getPntrToComponent(i)->getShape()[0] ) error("mismatched numbers of tasks in streamed quantities");
   }
   if( action_to_do_after ) action_to_do_after->getNumberOfTasks( ntasks );
@@ -410,7 +412,8 @@ void ActionWithVector::finishComputations( const std::vector<double>& buf ) {
             plumed_dbg_assert( bufstart+j<buf.size() ); 
             getPntrToComponent(i)->add( j, buf[bufstart+j] ); 
         }
-      }
+      // Make sure single values are set
+      } else if( getPntrToComponent(i)->getRank()==0 ) getPntrToComponent(i)->set( buf[bufstart] );
       // This gathers derivatives of scalars
       if( !doNotCalculateDerivatives() && getPntrToComponent(i)->hasDeriv && getPntrToComponent(i)->getRank()==0 ) {
         for(unsigned j=0; j<getPntrToComponent(i)->getNumberOfDerivatives(); ++j) getPntrToComponent(i)->setDerivative( j, buf[bufstart+1+j] );
