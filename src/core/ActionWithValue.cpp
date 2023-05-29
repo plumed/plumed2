@@ -73,7 +73,7 @@ void ActionWithValue::clearInputForces() {
   for(unsigned i=0; i<values.size(); i++) values[i]->clearInputForce();
 }
 
-void ActionWithValue::clearDerivatives() {
+void ActionWithValue::clearDerivatives( const bool& force ) {
   unsigned nt = OpenMP::getNumThreads();
   #pragma omp parallel num_threads(nt)
   {

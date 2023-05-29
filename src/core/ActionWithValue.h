@@ -165,7 +165,7 @@ public:
 /// Clear the forces on the values
   void clearInputForces();
 /// Clear the derivatives of values wrt parameters
-  virtual void clearDerivatives();
+  virtual void clearDerivatives( const bool& force=false );
 /// Calculate the gradients and store them for all the values (need for projections)
   virtual void setGradientsIfNeeded();
 /// Set the value

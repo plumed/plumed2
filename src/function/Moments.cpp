@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "FunctionShortcut.h"
 #include "FunctionOfScalar.h"
+#include "FunctionOfVector.h"
 #include "ActionRegister.h"
 #include "FunctionTemplateBase.h"
 
@@ -58,7 +59,8 @@ typedef FunctionShortcut<Moments> MomentsShortcut;
 PLUMED_REGISTER_ACTION(MomentsShortcut,"MOMENTS")
 typedef FunctionOfScalar<Moments> ScalarMoments;
 PLUMED_REGISTER_ACTION(ScalarMoments,"MOMENTS_SCALAR")
-
+typedef FunctionOfVector<Moments> VectorMoments;
+PLUMED_REGISTER_ACTION(VectorMoments,"MOMENTS_VECTOR")
 
 void Moments::registerKeywords(Keywords& keys) {
   keys.add("compulsory","POWERS","calculate the central moments of the distribution of collective variables. "

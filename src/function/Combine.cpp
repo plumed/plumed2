@@ -23,6 +23,7 @@
 #include "FunctionTemplateBase.h"
 #include "FunctionShortcut.h"
 #include "FunctionOfScalar.h"
+#include "FunctionOfVector.h"
 #include "ActionRegister.h"
 
 namespace PLMD {
@@ -79,7 +80,8 @@ typedef FunctionShortcut<Combine> CombineShortcut;
 PLUMED_REGISTER_ACTION(CombineShortcut,"COMBINE")
 typedef FunctionOfScalar<Combine> ScalarCombine;
 PLUMED_REGISTER_ACTION(ScalarCombine,"COMBINE_SCALAR")
-
+typedef FunctionOfVector<Combine> VectorCombine;
+PLUMED_REGISTER_ACTION(VectorCombine,"COMBINE_VECTOR")
 
 void Combine::registerKeywords(Keywords& keys) {
   keys.use("PERIODIC");

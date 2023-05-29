@@ -49,7 +49,7 @@ public:
   void deactivate_task( const unsigned & task_index ) {};
 /// Don't actually clear the derivatives when this is called from plumed main.
 /// They are calculated inside another action and clearing them would be bad
-  void clearDerivatives() override {}
+  void clearDerivatives(const bool& force=false) override {}
 /// Do jobs required before tasks are undertaken
   void doJobsRequiredBeforeTaskList() override;
 /// This actually does the calculation

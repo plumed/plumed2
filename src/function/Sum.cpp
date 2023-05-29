@@ -22,6 +22,7 @@
 #include "Sum.h"
 #include "FunctionShortcut.h"
 #include "FunctionOfScalar.h"
+#include "FunctionOfVector.h"
 #include "core/ActionRegister.h"
 
 namespace PLMD {
@@ -33,6 +34,9 @@ PLUMED_REGISTER_ACTION(SumShortcut,"MEAN")
 typedef FunctionOfScalar<Sum> ScalarSum;
 PLUMED_REGISTER_ACTION(ScalarSum,"SUM_SCALAR")
 PLUMED_REGISTER_ACTION(ScalarSum,"MEAN_SCALAR")
+typedef FunctionOfVector<Sum> VectorSum;
+PLUMED_REGISTER_ACTION(VectorSum,"SUM_VECTOR")
+PLUMED_REGISTER_ACTION(VectorSum,"MEAN_VECTOR")
 
 void Sum::registerKeywords( Keywords& keys ) {
   keys.use("PERIODIC");

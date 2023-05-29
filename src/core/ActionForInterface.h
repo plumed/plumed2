@@ -43,7 +43,7 @@ public:
   static void registerKeywords(Keywords& keys);
   explicit ActionForInterface(const ActionOptions&ao);
 /// Override clear the input data
-  void clearDerivatives() override {}
+  void clearDerivatives(const bool& force=false) override {}
 /// Override the need to deal with gradients
   void setGradientsIfNeeded() override {}
 /// Check if the value has been set

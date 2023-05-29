@@ -23,6 +23,7 @@
 #include "ActionRegister.h"
 #include "FunctionShortcut.h"
 #include "FunctionOfScalar.h"
+#include "FunctionOfVector.h"
 #include "tools/OpenMP.h"
 #include "tools/LeptonCall.h"
 
@@ -167,6 +168,9 @@ PLUMED_REGISTER_ACTION(CustomShortcut,"MATHEVAL")
 typedef FunctionOfScalar<Custom> ScalarCustom;
 PLUMED_REGISTER_ACTION(ScalarCustom,"CUSTOM_SCALAR")
 PLUMED_REGISTER_ACTION(ScalarCustom,"MATHEVAL_SCALAR")
+typedef FunctionOfVector<Custom> VectorCustom;
+PLUMED_REGISTER_ACTION(VectorCustom,"CUSTOM_VECTOR")
+PLUMED_REGISTER_ACTION(VectorCustom,"MATHEVAL_VECTOR")
 
 //+PLUMEDOC FUNCTION MATHEVAL
 /*

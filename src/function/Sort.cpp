@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "FunctionShortcut.h"
 #include "FunctionOfScalar.h"
+#include "FunctionOfVector.h"
 #include "ActionRegister.h"
 #include "FunctionTemplateBase.h"
 
@@ -71,6 +72,8 @@ typedef FunctionShortcut<Sort> SortShortcut;
 PLUMED_REGISTER_ACTION(SortShortcut,"SORT")
 typedef FunctionOfScalar<Sort> ScalarSort;
 PLUMED_REGISTER_ACTION(ScalarSort,"SORT_SCALAR")
+typedef FunctionOfVector<Sort> VectorSort;
+PLUMED_REGISTER_ACTION(VectorSort,"SORT_VECTOR")
 
 void Sort::registerKeywords(Keywords& keys) {
    keys.setComponentsIntroduction("The names of the components in this action will be customized in accordance with the contents of the input file. "

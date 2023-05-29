@@ -22,6 +22,7 @@
 #include "ActionRegister.h"
 #include "FunctionShortcut.h"
 #include "FunctionOfScalar.h"
+#include "FunctionOfVector.h"
 #include "FunctionTemplateBase.h"
 
 namespace PLMD {
@@ -62,6 +63,9 @@ PLUMED_REGISTER_ACTION(HighestShortcut,"LOWEST")
 typedef FunctionOfScalar<Highest> ScalarHighest;
 PLUMED_REGISTER_ACTION(ScalarHighest,"HIGHEST_SCALAR")
 PLUMED_REGISTER_ACTION(ScalarHighest,"LOWEST_SCALAR")
+typedef FunctionOfVector<Highest> VectorHighest;
+PLUMED_REGISTER_ACTION(VectorHighest,"HIGHEST_VECTOR")
+PLUMED_REGISTER_ACTION(VectorHighest,"LOWEST_VECTOR")
 
 void Highest::read( ActionWithArguments* action ) {
   min=action->getName().find("LOWEST")!=std::string::npos; if( !min ) plumed_assert( action->getName().find("HIGHEST")!=std::string::npos ); 

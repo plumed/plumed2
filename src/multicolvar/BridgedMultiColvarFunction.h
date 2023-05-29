@@ -53,7 +53,7 @@ public:
   MultiColvarBase* getPntrToMultiColvar() const ;
 /// Don't actually clear the derivatives when this is called from plumed main.
 /// They are calculated inside another action and clearing them would be bad
-  void clearDerivatives() override {}
+  void clearDerivatives(const bool& force=false) override {}
 /// Check nothing impossible being done with derivatives
   void turnOnDerivatives() override;
 /// Get the number of derivatives for this action
