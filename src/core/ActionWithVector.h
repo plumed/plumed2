@@ -58,8 +58,6 @@ private:
   void getNumberOfStreamedDerivatives( unsigned& nderivatives );
 /// Add this action to the recursive chain
   bool addActionToChain( const std::vector<std::string>& alabels, ActionWithVector* act );
-/// Get every the label of every value that is calculated in this chain
-  void getAllActionLabelsInChain( std::vector<std::string>& mylabels ) const ;
 /// Get the distinct arguments to use for applying derivatives
   ActionWithVector* getFirstNonStream();
 /// Get all the actions we need for this action
@@ -71,8 +69,6 @@ protected:
   std::vector<unsigned> arg_deriv_starts;
 /// The arguments in the input that are distinct
   std::vector<ActionWithValue*> distinct_arguments;
-/// Are we running this command in a chain
-  bool actionInChain() const ;
 /// This sets up the arguments at the start of the calculation
   unsigned buildArgumentStore( const unsigned& argstart );
 /// Get the position of the argument in the streamm and set it if we need to
@@ -85,6 +81,10 @@ public:
   void lockRequests() override;
   void unlockRequests() override;
   void calculateNumericalDerivatives(ActionWithValue* av) override { plumed_merror("cannot calculate numerical derivative for this type of action"); }
+/// Are we running this command in a chain
+  bool actionInChain() const ;
+/// Get every the label of every value that is calculated in this chain
+  void getAllActionLabelsInChain( std::vector<std::string>& mylabels ) const ;
 /// We override clearDerivatives here to prevent data in streams from being deleted
   void clearDerivatives( const bool& force=false ) override;
 /// Get the action that does the calculation

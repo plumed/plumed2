@@ -68,6 +68,7 @@ public:
     return "generate a graph showing how data flows through a PLUMED action set";
   }
   std::string getLabel(const Action* a, const bool& amp=false);
+  std::string getLabel(const std::string& s, const bool& amp=false );
   void printStyle( const unsigned& linkcount, const Value* v, OFile& ofile );
   void printArgumentConnections( const ActionWithArguments* a, unsigned& linkcount, const bool& force, OFile& ofile );
   void printAtomConnections( const ActionAtomistic* a, unsigned& linkcount, const bool& force, OFile& ofile );
@@ -89,7 +90,10 @@ ShowGraph::ShowGraph(const CLToolOptions& co ):
 }
 
 std::string ShowGraph::getLabel(const Action* a, const bool& amp) {
-  std::string s = a->getLabel();
+  return getLabel( a->getLabel(), amp );
+}
+
+std::string ShowGraph::getLabel( const std::string& s, const bool& amp ) {
   if( s.find("@")==std::string::npos ) return s;
   std::size_t p=s.find_first_of("@");
   if( amp ) return "#64;" + s.substr(p+1); 
@@ -207,13 +211,22 @@ int ShowGraph::main(FILE* in, FILE*out,Communicator& pc) {
       ActionWithValue* av=dynamic_cast<ActionWithValue*>(a);
       ActionWithArguments* aaa=dynamic_cast<ActionWithArguments*>(a);
       ActionAtomistic* at=dynamic_cast<ActionAtomistic*>(a);
-      if( !av ) {
-          printAtomConnections( at, linkcount, false, ofile );
-          printArgumentConnections( aaa, linkcount, false, ofile );
+      ActionWithVector* avec=dynamic_cast<ActionWithVector*>(a);
+      // Print out the connections between nodes
+      printAtomConnections( at, linkcount, false, ofile );
+      printArgumentConnections( aaa, linkcount, false, ofile );
+      // Print out the nodes
+      if( avec && !avec->actionInChain() ) {
+          ofile.printf("subgraph sub%s [%s]\n",getLabel(a).c_str(),getLabel(a).c_str());
+          std::vector<std::string> mychain; avec->getAllActionLabelsInChain( mychain );
+          for(unsigned i=0; i<mychain.size(); ++i) {
+              Action* ag=p.getActionSet().selectWithLabel<Action*>(mychain[i]);
+              ofile.printf("%s([\"`label=%s \n %s \n`\"])\n", getLabel(mychain[i]).c_str(), getLabel(mychain[i],true).c_str(), ag->writeInGraph().c_str() );
+          }
+          ofile.printf("end\n");
+      } else if( !av ) {
           ofile.printf("%s(\"`label=%s \n %s \n`\")\n", getLabel(a).c_str(), getLabel(a,true).c_str(), a->writeInGraph().c_str() );
-      } else {
-          printAtomConnections( at, linkcount, false, ofile );
-          printArgumentConnections( aaa, linkcount, false, ofile );
+      } else if( !avec ) {
           ofile.printf("%s([\"`label=%s \n %s \n`\"])\n", getLabel(a).c_str(), getLabel(a,true).c_str(), a->writeInGraph().c_str() );
       }
   }
