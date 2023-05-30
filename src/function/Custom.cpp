@@ -254,7 +254,13 @@ void Custom::read( ActionWithArguments* action ) {
 }
 
 std::string Custom::getGraphInfo( const std::string& name ) const {
-  return FunctionTemplateBase::getGraphInfo( name ) + "\n" + "FUNC=" + func;
+  std::string data = FunctionTemplateBase::getGraphInfo( name ) + + "\n" + "FUNC=";
+  for(unsigned i=0;i<func.length();++i) {
+      std::string ch=""; ch += func[i];
+      if( ch=="*" ) data += "\\*";
+      else data += func[i];
+  }
+  return data; 
 }
 
 bool Custom::getDerivativeZeroIfValueIsZero() const {

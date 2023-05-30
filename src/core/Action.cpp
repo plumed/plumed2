@@ -340,6 +340,13 @@ double Action::getKBoltzmann() const {
   else return kBoltzmann/getUnits().getEnergy();
 }
 
+std::string Action::writeInGraph() const {
+  std::string nam=getName();
+  std::size_t u=nam.find_last_of("_"); std::string sub=nam.substr(u+1);
+  if( sub=="SCALAR" || sub=="VECTOR" || sub=="GRID" ) return nam.substr(0,u);
+  return nam;
+}
+
 
 }
 

@@ -316,7 +316,7 @@ public:
   std::string getDefaultString() const ;
 
 /// Get the info on what to calculate
-  virtual std::string writeInGraph() const { return getName(); }
+  virtual std::string writeInGraph() const ;
 };
 
 /////////////////////
