@@ -85,6 +85,7 @@ class Print :
 public:
   void calculate() override {}
   void prepare() override;
+  std::string writeInGraph() const override;
   explicit Print(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
   void apply() override {}
@@ -145,6 +146,10 @@ Print::Print(const ActionOptions&ao):
   }
 /////////////////////////////////////////
   checkRead();
+}
+
+std::string Print::writeInGraph() const {
+  return getName() + "\n" + "FILE=" + file;
 }
 
 void Print::prepare() {

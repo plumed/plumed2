@@ -314,6 +314,9 @@ public:
 
 /// Get the defaults
   std::string getDefaultString() const ;
+
+/// Get the info on what to calculate
+  virtual std::string writeInGraph() const { return getName(); }
 };
 
 /////////////////////

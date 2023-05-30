@@ -253,6 +253,10 @@ void Custom::read( ActionWithArguments* action ) {
   action->log.printf("\n"); function.set( func, var, action );
 }
 
+std::string Custom::getGraphInfo( const std::string& name ) const {
+  return FunctionTemplateBase::getGraphInfo( name ) + "\n" + "FUNC=" + func;
+}
+
 bool Custom::getDerivativeZeroIfValueIsZero() const {
   return check_multiplication_vars.size()>0;
 }

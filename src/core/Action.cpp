@@ -172,7 +172,11 @@ void Action::parseFlag(const std::string&key,bool & t) {
 }
 
 void Action::addDependency(Action*action) {
-  after.push_back(action);
+  bool found=false;
+  for(const auto & d : after ) {
+      if( action==d ) { found=true; break; }
+  }
+  if( !found ) after.push_back(action);
 }
 
 void Action::activate() {

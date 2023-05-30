@@ -36,6 +36,7 @@ class Custom : public FunctionTemplateBase {
   std::vector<unsigned> check_multiplication_vars;
 public:
   void registerKeywords( Keywords& keys ) override;
+  std::string getGraphInfo( const std::string& lab ) const override;
   void read( ActionWithArguments* action ) override;
   bool getDerivativeZeroIfValueIsZero() const override;
 //  void buildTaskList( const std::string& name, const std::set<AtomNumber>& tflags, ActionWithValue* av ) const override;

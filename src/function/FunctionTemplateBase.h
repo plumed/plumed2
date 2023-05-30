@@ -47,6 +47,7 @@ public:
 ////
   virtual std::vector<std::string> getComponentsPerLabel() const ;
   virtual bool getDerivativeZeroIfValueIsZero() const { return false; } 
+  virtual std::string getGraphInfo( const std::string& lab ) const ;
   virtual void registerKeywords( Keywords& keys ) = 0;
   virtual void read( ActionWithArguments* action ) = 0;
   virtual bool doWithTasks() const { return true; }
@@ -100,6 +101,11 @@ void FunctionTemplateBase::setPeriodicityForOutputs( ActionWithValue* action ) {
       action->setPeriodic( period[0], period[1] );
   } else action->setNotPeriodic();
 }
+
+inline
+std::string FunctionTemplateBase::getGraphInfo( const std::string& name ) const {
+  std::size_t und = name.find_last_of("_"); return name.substr(0,und);
+} 
 
 }
 }

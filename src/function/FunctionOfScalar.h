@@ -45,6 +45,7 @@ public:
   explicit FunctionOfScalar(const ActionOptions&);
   virtual ~FunctionOfScalar() {}
 /// Get the label to write in the graph
+  std::string writeInGraph() const override { return myfunc.getGraphInfo( getName() ); }
   void calculate() override;
   static void registerKeywords(Keywords&);
   void turnOnDerivatives() override;
