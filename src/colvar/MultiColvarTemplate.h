@@ -44,7 +44,6 @@ public:
   void addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape=std::vector<unsigned>() ) override ;
   void performTask( const unsigned&, MultiValue& ) const override ;
   void calculate() override;
-  void apply() override {}
 };
 
 template <class T>

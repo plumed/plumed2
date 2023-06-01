@@ -292,6 +292,7 @@ bool ActionWithValue::checkForForces() {
     std::vector<double> forces(nder);
     #pragma omp for
     for(unsigned i=rank; i<ncp; i+=stride) {
+      plumed_dbg_assert( getPntrToComponent(i)->getRank()==0 );
       if(getPntrToComponent(i)->applyForce(forces)) {
         at_least_one_forced+=1;
         for(unsigned j=0; j<forces.size(); ++j) omp_f[j]+=forces[j];

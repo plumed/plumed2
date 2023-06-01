@@ -66,6 +66,7 @@ PLMD::Action you should use <b> the routines with the word component in the name
 class ActionWithValue :
   public virtual Action
 {
+friend class ActionWithVector;
 friend class ActionWithArguments;
 private:
 /// This finishes setup on first step to check if actions are calculated during update 

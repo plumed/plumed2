@@ -63,8 +63,6 @@ public:
   void calculate() override;
 /// Calculate the function
   void performTask( const unsigned& current, MultiValue& myvals ) const override ;
-/// Add the forces 
-  void apply() override;
 };
 
 template <class T>
@@ -187,27 +185,28 @@ void FunctionOfVector<T>::performTask( const unsigned& current, MultiValue& myva
   // input arguments the only non-constant objects in input are scalars.
   // In that case we can use the non chain version to calculate the derivatives
   // with respect to the scalar.
-  if( actionInChain() && arg_deriv_starts.size()>0 ) {
+  if( actionInChain() ) {
       for(unsigned j=0;j<args.size();++j) {
           unsigned istrn = getArgumentPositionInStream( argstart+j, myvals );
+          unsigned arg_deriv_start = getPntrToArgument(argstart+j)->getArgDerivStart();
           for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
               unsigned kind=myvals.getActiveIndex(istrn,k);
               for(int i=0;i<getNumberOfComponents();++i) {
                   unsigned ostrn=getConstPntrToComponent(i)->getPositionInStream();
-                  myvals.addDerivative( ostrn, arg_deriv_starts[j] + kind, derivatives(i,j)*myvals.getDerivative( istrn, kind ) );
+                  myvals.addDerivative( ostrn, arg_deriv_start + kind, derivatives(i,j)*myvals.getDerivative( istrn, kind ) );
               }
           }
           // Ensure we only store one lot of derivative indices
           bool found=false;
           for(unsigned k=0; k<j; ++k) {
-              if( arg_deriv_starts[k]==arg_deriv_starts[j] ) { found=true; break; }
+              if( getPntrToArgument(argstart+k)->getArgDerivStart()==arg_deriv_start ) { found=true; break; }
           }
           if( found ) continue;
           for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
               unsigned kind=myvals.getActiveIndex(istrn,k);
               for(int i=0;i<getNumberOfComponents();++i) {
                   unsigned ostrn=getConstPntrToComponent(i)->getPositionInStream();
-                  myvals.updateIndex( ostrn, arg_deriv_starts[j] + kind );
+                  myvals.updateIndex( ostrn, arg_deriv_start + kind );
               }
           } 
       }
@@ -286,9 +285,6 @@ void FunctionOfVector<T>::calculate() {
   // This is used if we are doing sorting actions on a single vector
   else if( !myfunc.doWithTasks() ) runSingleTaskCalculation( getPntrToArgument(0), this, myfunc );
 }
-
-template <class T>
-void FunctionOfVector<T>::apply() { }
 
 }
 }

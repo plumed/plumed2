@@ -86,7 +86,7 @@ private:
 /// Does this quanity have derivatives
   bool hasDeriv;
 /// Variables for storing data
-  unsigned bufstart, streampos;
+  unsigned bufstart, streampos, arg_der_start;
 /// Is this quantity periodic
   enum {unset,periodic,notperiodic} periodicity;
 /// Various quantities that describe the domain of this value
@@ -198,6 +198,8 @@ public:
   bool isDerivativeZeroWhenValueIsZero() const ;
 ///
   unsigned getPositionInStream() const ;
+///
+  unsigned getArgDerivStart() const ;
 /// Convert the input index to its corresponding indices
   void convertIndexToindices(const std::size_t& index, std::vector<unsigned>& indices ) const ;
 /// Print out all the values in this Value
@@ -419,6 +421,11 @@ bool Value::isDerivativeZeroWhenValueIsZero() const {
 inline
 unsigned Value::getPositionInStream() const {
   return streampos;
+}
+
+inline
+unsigned Value::getArgDerivStart() const {
+  return arg_der_start;
 }
 
 }

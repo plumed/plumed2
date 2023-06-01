@@ -317,7 +317,12 @@ double ActionWithArguments::getProjection(unsigned i,unsigned j)const {
 }
 
 void ActionWithArguments::addForcesOnArguments( const unsigned& argstart, const std::vector<double>& forces, unsigned& ind  ) {
-  for(unsigned i=0; i<arguments.size(); ++i) { arguments[i]->addForce( forces[i] ); ind++; }
+  for(unsigned i=0; i<arguments.size(); ++i) { 
+      if( arguments[i]->storedata || arguments[i]->getRank()==0 || (arguments[i]->getRank()>0 && arguments[i]->hasDerivatives()) ) {
+          unsigned nvals = arguments[i]->getNumberOfValues();
+          for(unsigned j=0; j<nvals; ++j) { arguments[i]->addForce( j, forces[ind] ); ind++; } 
+      }
+  }
 }
 
 void ActionWithArguments::setGradients( Value* myval, unsigned& start ) const {

@@ -64,7 +64,16 @@ void ActionWithVector::clearDerivatives( const bool& force ) {
   if( action_to_do_after ) action_to_do_after->clearDerivatives( true );
 }
 
+ActionWithVector* ActionWithVector::getFirstActionInChain() {
+  if( !actionInChain() ) return this;
+  return action_to_do_before->getFirstActionInChain();
+}
+
 unsigned ActionWithVector::buildArgumentStore( const unsigned& argstart ) {
+  // Don't use chains for grids
+  for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
+      if( getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->hasDerivatives() ) { done_in_chain=false; break; }
+  }
   if( done_in_chain ) {
       std::vector<std::string> alabels; std::vector<ActionWithVector*> f_actions;
       for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
@@ -76,9 +85,9 @@ unsigned ActionWithVector::buildArgumentStore( const unsigned& argstart ) {
                      
           // If this is calculated in setup we never need to add to chain 
           if( getPntrToArgument(i)->isConstant() ) continue;
-          // Check if 
+          // Find the chain we need to add this to from the arguments
           ActionWithVector* av=dynamic_cast<ActionWithVector*>(getPntrToArgument(i)->getPntrToAction()); plumed_assert( av );
-          found=false; ActionWithVector* myact = av->getActionThatCalculates(); 
+          found=false; ActionWithVector* myact = av->getFirstActionInChain(); 
           for(unsigned j=0; j<f_actions.size(); ++j) {
             if( f_actions[j]==myact ) { found=true; break; }
           }
@@ -101,100 +110,19 @@ unsigned ActionWithVector::buildArgumentStore( const unsigned& argstart ) {
         }
       }
       plumed_massert(added, "could not add action " + getLabel() + " to chain of any of its arguments"); 
-
-      // Setup the distinct arguments and the number of derivatives
-      ActionWithVector* av=dynamic_cast<ActionWithVector*>( getPntrToArgument(argstart)->getPntrToAction() ); plumed_assert( av );
-      if( av->getNumberOfArguments()==0 || av->mustBeTreatedAsDistinctArguments(0) ) distinct_arguments.push_back( av ); 
-      else distinct_arguments.push_back( av->getFirstNonStream() );
-
-      arg_deriv_starts.push_back(0); unsigned nder;
-      if( getPntrToArgument(argstart)->getRank()==0 || getPntrToArgument(0)->storedata ) nder = getPntrToArgument(0)->getNumberOfValues();
-      else nder = distinct_arguments[0]->getNumberOfDerivatives();
-
-      // Now deal with the rest of the arguments
-      for(unsigned i=argstart+1; i<getNumberOfArguments(); ++i) {
-          ActionWithVector* myval; ActionWithVector* av=dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() ); plumed_assert( av );
-          if( av->getNumberOfArguments()==0 || av->mustBeTreatedAsDistinctArguments(0) ) myval = av;
-          else myval = av->getFirstNonStream();
-
-          // Check we haven't already dealt with this argument
-          int argno=-1;
-          for(unsigned j=0; j<distinct_arguments.size(); ++j) {
-            if( myval==distinct_arguments[j] ) { argno=j; break; }
-          }
-          if( argno>=0 ) { arg_deriv_starts.push_back( arg_deriv_starts[argno] ); continue; }
-          // Add if if we haven't dealt with it
-          distinct_arguments.push_back( myval ); arg_deriv_starts.push_back( nder );
-          if( getPntrToArgument(i)->getRank()==0 || getPntrToArgument(i)->storedata ) nder += getPntrToArgument(i)->getNumberOfValues();
-          else nder += myval->getNumberOfDerivatives();
-      }
-      arg_deriv_starts.push_back( nder ); return nder;
+      // And get the number of derivatives
+      unsigned sder=0, nder=0; getFirstActionInChain()->getNumberOfStreamedDerivatives( sder, nder ); return nder;
   } 
   for(unsigned i=argstart; i<getNumberOfArguments(); ++i) { if( getPntrToArgument(i)->getRank()>0 ) getPntrToArgument(i)->buildDataStore(); }
   unsigned nder=0; for(unsigned i=0; i<getNumberOfArguments(); ++i) nder += getPntrToArgument(i)->getNumberOfValues();
   return nder;
 }
 
-bool ActionWithVector::mustBeTreatedAsDistinctArguments( const unsigned& argstart ) {
-  if( !done_in_chain ) return true;
-
-  if( getNumberOfArguments()-argstart==1 ) {
-      ActionWithVector* cal = getActionThatCalculates();
-      if( cal->getNumberOfAtoms()>0 ) return true;
-      return false;
-  } 
-    
-  std::vector<const ActionWithValue*> allvals; 
-  ActionWithVector* av=dynamic_cast<ActionWithVector*>(getPntrToArgument(argstart)->getPntrToAction());
-  if( av ) av->getAllActionsRequired( allvals );
-  for(unsigned j=argstart+1;j<getNumberOfArguments();++j) {
-      std::vector<const ActionWithValue*> tvals; av = dynamic_cast<ActionWithVector*>(getPntrToArgument(j)->getPntrToAction());
-      if( av ) av->getAllActionsRequired( tvals );
-      if( allvals.size()!=tvals.size() ) return true;
-    
-      for(unsigned k=0;k<tvals.size();++k) {
-          if( tvals[k]!=allvals[k] ) return true;
-      } 
-  }       
-  return false;
-} 
-
-void ActionWithVector::getAllActionsRequired( std::vector<const ActionWithValue*>& allvals ) const {
-  if( getNumberOfArguments()==0 ) {
-      bool found = false;
-      for(unsigned k=0;k<allvals.size();++k) {
-          if( allvals[k]==this ) { found=true; break; }
-      }                          
-      if( !found ) allvals.push_back( this );
-  } else {                       
-     for(unsigned j=0;j<getNumberOfArguments();++j) {
-        ActionWithVector* av=dynamic_cast<ActionWithVector*>(getPntrToArgument(j)->getPntrToAction());
-        if(av) av->getAllActionsRequired( allvals );
-        bool found = false;
-        for(unsigned k=0;k<allvals.size();++k) {
-            if( allvals[k]==getPntrToArgument(j)->getPntrToAction() ) { found=true; break; }
-        }
-        if( !found ) allvals.push_back( getPntrToArgument(j)->getPntrToAction() );
-     }
-  }
-}    
-
-ActionWithVector* ActionWithVector::getFirstNonStream() {
-  ActionWithVector* av=dynamic_cast<ActionWithVector*>( getPntrToArgument(0)->getPntrToAction() );
-  if( av->getNumberOfArguments()==0 || av->mustBeTreatedAsDistinctArguments(0) ) return this;
-
-  for(unsigned i=1;i<getNumberOfArguments();++i) {
-      ActionWithVector* aav=dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() ); 
-      if( av!=aav ) return this; 
-  } 
-  return av->getFirstNonStream();
-}
-
 bool ActionWithVector::addActionToChain( const std::vector<std::string>& alabels, ActionWithVector* act ) {
   if( action_to_do_after ) { bool state=action_to_do_after->addActionToChain( alabels, act ); return state; }
 
   // Check action is not already in chain
-  std::vector<std::string> mylabels; getActionThatCalculates()->getAllActionLabelsInChain( mylabels );
+  std::vector<std::string> mylabels; getFirstActionInChain()->getAllActionLabelsInChain( mylabels );
   for(unsigned i=0; i<mylabels.size(); ++i) {
     if( act->getLabel()==mylabels[i] ) return true;
   }                     
@@ -215,7 +143,7 @@ bool ActionWithVector::addActionToChain( const std::vector<std::string>& alabels
     }                            
   }
   // This checks that there is nothing that will cause problems in the chain
-  mylabels.resize(0); getActionThatCalculates()->getAllActionLabelsInChain( mylabels );
+  mylabels.resize(0); getFirstActionInChain()->getAllActionLabelsInChain( mylabels );
   for(unsigned i=0;i<mylabels.size();++i) {
       ActionWithVector* av1=plumed.getActionSet().selectWithLabel<ActionWithVector*>( mylabels[i] ); 
       for(unsigned j=0;j<i;++j) {
@@ -226,13 +154,6 @@ bool ActionWithVector::addActionToChain( const std::vector<std::string>& alabels
   action_to_do_after=act;
   act->action_to_do_before=this;
   return true;
-}
-
-ActionWithVector* ActionWithVector::getActionThatCalculates() {
-  // Return this if we have no dependencies
-  if( !action_to_do_before ) return this;
-  // Recursively go through actiosn before
-  return action_to_do_before->getActionThatCalculates();
 }
 
 void ActionWithVector::getAllActionLabelsInChain( std::vector<std::string>& mylabels ) const {
@@ -279,8 +200,8 @@ void ActionWithVector::runAllTasks() {
   buffer.assign( buffer.size(), 0.0 ); 
   
   // Recover the number of derivatives we require
-  unsigned nderivatives = 0; bool gridsInStream=checkForGrids();
-  if( !doNotCalculateDerivatives() || gridsInStream ) getNumberOfStreamedDerivatives( nderivatives );
+  unsigned sderivatives=0, nderivatives = 0; bool gridsInStream=checkForGrids(nderivatives);
+  if( !doNotCalculateDerivatives() && !gridsInStream ) getNumberOfStreamedDerivatives( sderivatives, nderivatives );
 
   #pragma omp parallel num_threads(nt)
   {
@@ -320,11 +241,13 @@ unsigned ActionWithVector::getArgumentPositionInStream( const unsigned& jder, Mu
   return getPntrToArgument(jder)->getPositionInStream();
 }
 
-bool ActionWithVector::checkForGrids() const {
+bool ActionWithVector::checkForGrids( unsigned& nder ) const {
   for(int i=0; i<getNumberOfComponents(); ++i) {
-    if( getConstPntrToComponent(i)->getRank()>0 && getConstPntrToComponent(i)->hasDerivatives() ) return true;
+    if( getConstPntrToComponent(i)->getRank()>0 && getConstPntrToComponent(i)->hasDerivatives() ) {
+        nder=getConstPntrToComponent(i)->getRank(); return true;
+    }
   }
-  if( action_to_do_after ) return action_to_do_after->checkForGrids();
+  if( action_to_do_after ) return action_to_do_after->checkForGrids(nder);
   return false;
 }
 
@@ -354,17 +277,17 @@ void ActionWithVector::getSizeOfBuffer( const unsigned& nactive_tasks, unsigned&
   if( action_to_do_after ) action_to_do_after->getSizeOfBuffer( nactive_tasks, bufsize );
 }
 
-void ActionWithVector::getNumberOfStreamedDerivatives( unsigned& nderivatives ) {
-  unsigned nnd=0;
-  if( !doNotCalculateDerivatives() ) {
-    nnd = getNumberOfDerivatives();
-  } else {
-    for(int i=0; i<getNumberOfComponents(); ++i) {
-      if( getConstPntrToComponent(i)->getRank()>0 && getConstPntrToComponent(i)->hasDerivatives() ) { nnd = getNumberOfDerivatives(); break; }
-    }
+void ActionWithVector::getNumberOfStreamedDerivatives( unsigned& sderivatives, unsigned& nder ) {
+  for(int i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->arg_der_start=sderivatives;      
+  unsigned nderivatives=nder;
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      if( getPntrToArgument(i)->storedata ) nderivatives += getPntrToArgument(i)->getNumberOfValues();
   }
-  if( nnd>nderivatives ) nderivatives = nnd;
-  if( action_to_do_after ) action_to_do_after->getNumberOfStreamedDerivatives( nderivatives );
+  if( getNumberOfAtoms()>0 ) nderivatives += 3*getNumberOfAtoms() + 9;
+  // Check if any new derivatives were found and update sderivatives if they were
+  if( nder>0 && nderivatives-nder>0 ) sderivatives=nderivatives;
+  // Update nderivatives with the new total of derivatives
+  nder=nderivatives; if( action_to_do_after ) action_to_do_after->getNumberOfStreamedDerivatives( sderivatives, nder );
 } 
 
 void ActionWithVector::runTask( const unsigned& current, MultiValue& myvals ) const {
@@ -422,6 +345,89 @@ void ActionWithVector::finishComputations( const std::vector<double>& buf ) {
     transformFinalValueAndDerivatives( buf ); 
   } 
   if( action_to_do_after ) action_to_do_after->finishComputations( buf );
+}
+
+bool ActionWithVector::checkChainForNonScalarForces() const {
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+    if( getConstPntrToComponent(i)->getRank()>0 && getConstPntrToComponent(i)->forcesWereAdded() ) return true;
+  }
+  if( action_to_do_after ) return action_to_do_after->checkChainForNonScalarForces();
+  return false; 
+}
+
+bool ActionWithVector::checkForForces() {
+  if( getPntrToComponent(0)->getRank()==0 ) return ActionWithValue::checkForForces();
+  else if( actionInChain() ) return false;
+
+  // Check if there are any forces
+  if( !checkChainForNonScalarForces() ) return false;
+
+  // Setup MPI parallel loop
+  unsigned stride=comm.Get_size();
+  unsigned rank=comm.Get_rank();
+  if(serial) { stride=1; rank=0; }
+
+  // Get number of threads for OpenMP
+  unsigned nt=OpenMP::getNumThreads();
+  if( nt*stride*10>nactive_tasks ) nt=nactive_tasks/stride/10;
+  if( nt==0 ) nt=1;
+
+  // Create a vector from the task set 
+  // std::vector<AtomNumber> partialTaskList( av->taskSet.begin(), av->taskSet.end() );
+  // Now determine how big the multivalue needs to be
+  unsigned nquants=0, ncols=0, nmatrices=0;
+  getNumberOfStreamedQuantities( nquants, ncols, nmatrices );
+  // Recover the number of derivatives we require (this should be equal to the number of forces)
+  unsigned sderiv=0, nderiv=0; getNumberOfStreamedDerivatives( sderiv, nderiv );
+  if( forcesForApply.size()!=nderiv ) forcesForApply.resize( nderiv );
+  // Clear force buffer
+  forcesForApply.assign( forcesForApply.size(), 0.0 );
+
+  #pragma omp parallel num_threads(nt)
+  {
+    std::vector<double> omp_forces;
+    if( nt>1 ) omp_forces.resize( forcesForApply.size(), 0.0 );
+    MultiValue myvals( nquants, nderiv, ncols, nmatrices );
+    myvals.clearAll();
+
+    #pragma omp for nowait
+    for(unsigned i=rank; i<nactive_tasks; i+=stride) {
+      // unsigned itask = partialTaskList[i].index();
+      // runTask( itask, myvals );
+      runTask( i, myvals );
+
+      // Now get the forces
+      if( nt>1 ) {
+         // gatherForces( itask, myvals, omp_forces );
+         gatherForces( i, myvals, omp_forces ); 
+      } else {
+         // gatherForces( itask, myvals, forces );
+         gatherForces( i, myvals, omp_forces );
+      }
+
+      myvals.clearAll();
+    }
+    #pragma omp critical
+    if(nt>1) for(unsigned i=0; i<forcesForApply.size(); ++i) forcesForApply[i]+=omp_forces[i];
+  }
+  // MPI Gather on forces
+  if( !serial ) comm.Sum( forcesForApply );
+  return true;
+}
+
+void ActionWithVector::gatherForces( const unsigned& task, const MultiValue& myvals, std::vector<double>& forces ) const {
+
+}
+
+void ActionWithVector::apply() {
+  if( !checkForForces() ) return;
+  // Find the top of the chain and add forces
+  unsigned ind=0; getFirstActionInChain()->addForcesToInput( getForcesToApply(), ind );
+}
+
+void ActionWithVector::addForcesToInput( const std::vector<double>& forcesToApply, unsigned& ind ) {
+  addForcesOnArguments( 0, forcesToApply, ind ); setForcesOnAtoms( forcesToApply, ind );
+  if( action_to_do_after ) action_to_do_after->addForcesToInput( forcesToApply, ind );
 }
 
 }
