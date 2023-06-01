@@ -6,8 +6,6 @@ flowchart BT
 v(["`label=v 
  VOLUME 
 `"])
-v -- Box --> Box
-linkStyle 1 stroke:red,color:red;
 14(["`label=#64;14 
  BIASVALUE 
 `"])
@@ -21,10 +19,6 @@ f2 -- d2.y --> d2
 d2(["`label=d2 
  DISTANCE 
 `"])
-d2 -- Box --> Box
-linkStyle 5 stroke:red,color:red;
-d2 --> MD
-linkStyle 6 stroke:violet,color:violet;
 9(["`label=#64;9 
  BIASVALUE 
 `"])
@@ -37,20 +31,26 @@ f1 -- d1 --> d1
 d1(["`label=d1 
  DISTANCE 
 `"])
-d1 -- Box --> Box
-linkStyle 9 stroke:red,color:red;
-d1 --> MD
-linkStyle 10 stroke:violet,color:violet;
-d1 -- c1 --> c1
-linkStyle 11 stroke:violet,color:violet;
 c1(["`label=c1 
  COM 
 `"])
-c1 -- Box --> Box
-linkStyle 12 stroke:red,color:red;
-c1 --> MD
-linkStyle 13 stroke:violet,color:violet;
 Box{{"`label=Box 
  PBC 
 `"}}
+c1 -- Box --> Box
+linkStyle 6 stroke:red,color:red;
+c1 --> MD
+linkStyle 7 stroke:violet,color:violet;
+d1 -- Box --> Box
+linkStyle 8 stroke:red,color:red;
+d1 --> MD
+linkStyle 9 stroke:violet,color:violet;
+d1 -- c1 --> c1
+linkStyle 10 stroke:violet,color:violet;
+d2 -- Box --> Box
+linkStyle 11 stroke:red,color:red;
+d2 --> MD
+linkStyle 12 stroke:violet,color:violet;
+v -- Box --> Box
+linkStyle 13 stroke:red,color:red;
 MD{{positions from MD}}

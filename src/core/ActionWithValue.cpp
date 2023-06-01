@@ -246,6 +246,13 @@ Value* ActionWithValue::getPntrToComponent( int n ) {
   return values[n].get();
 }
 
+bool ActionWithValue::hasStoredComponents() const {
+  for(unsigned i=0; i<values.size(); ++i ) {
+      if( values[i]->getRank()>0 && (values[i]->storedata || values[i]->hasDerivatives()) ) return true;
+  }
+  return false;
+}
+
 bool ActionWithValue::calculateOnUpdate() {
   if( firststep ) {
       ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>(this);
