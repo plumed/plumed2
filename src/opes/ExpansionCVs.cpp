@@ -144,16 +144,18 @@ unsigned ExpansionCVs::estimateNumSteps(const double left_side,const double righ
     log.printf(" +++ WARNING +++ %s_MIN and %s_MAX are equal to %s, using single step\n",msg.c_str(),msg.c_str(),msg.c_str());
     return 1;
   }
-  auto get_neff_HWHM=[](const double side,const std::vector<double>& obs,const double av_obs) //HWHM = half width at half maximum. neff is in general not symmetric
+  auto get_neff_HWHM=[](const double side,const std::vector<double>& obs) //HWHM = half width at half maximum. neff is in general not symmetric
   {
     //func: Neff/N-0.5 is a function between -0.5 and 0.5
-    auto func=[](const long double delta,const std::vector<double>& obs, const double av_obs)
+    auto func=[](const double delta,const std::vector<double>& obs)
     {
-      long double sum_w=0;
-      long double sum_w2=0;
+      double sum_w=0;
+      double sum_w2=0;
+      //we could avoid recomputing safe_shift every time, but here speed is not a concern
+      const double safe_shift=delta<0?*std::max_element(obs.begin(),obs.end()):*std::min_element(obs.begin(),obs.end());
       for(unsigned t=0; t<obs.size(); t++)
       {
-        const long double w=std::exp(-delta*(obs[t]-av_obs));
+        const double w=std::exp(-delta*(obs[t]-safe_shift)); //robust to overflow
         sum_w+=w;
         sum_w2+=w*w;
       }
@@ -165,7 +167,7 @@ unsigned ExpansionCVs::estimateNumSteps(const double left_side,const double righ
     double a=0; //default is right side case
     double func_a=0.5;
     double b=side;
-    double func_b=func(side,obs,av_obs);
+    double func_b=func(side,obs);
     if(func_b>=0)
       return 0.0; //no zero is present!
     if(b<0) //left side case
@@ -188,24 +190,18 @@ unsigned ExpansionCVs::estimateNumSteps(const double left_side,const double righ
         func_b=func_c;
       }
       c=(a*func_b-b*func_a)/(func_b-func_a);
-      func_c=func(c,obs,av_obs); //func is evaluated only here, it might be expensive
+      func_c=func(c,obs); //func is evaluated only here, it might be expensive
     }
     return std::abs(c);
   };
 
-//set average to zero, for numerical stability
-  double av_obs=0;
-  for(unsigned t=0; t<obs.size(); t++)
-    av_obs+=obs[t];
-  av_obs/=obs.size();
-
 //estimation
   double left_HWHM=0;
   if(left_side!=0)
-    left_HWHM=get_neff_HWHM(left_side,obs,av_obs);
+    left_HWHM=get_neff_HWHM(left_side,obs);
   double right_HWHM=0;
   if(right_side!=0)
-    right_HWHM=get_neff_HWHM(right_side,obs,av_obs);
+    right_HWHM=get_neff_HWHM(right_side,obs);
   if(left_HWHM==0)
   {
     right_HWHM*=2;

@@ -22,55 +22,54 @@ outfile=args.outfile
 tmp_plumed_file=args.tmpname
 
 #get info
-f=open(filename,'r')
-line=f.readline() #fields
-if line.split()[1]!='FIELDS':
-  sys.exit(error%(' no FIELDS found in file "'+filename+'"'))
-if len(line.split())<7:
-  sys.exit(error%(' not enough FIELDS found in file "'+filename+'"'))
-if (len(line.split())-5)%2!=0:
-  sys.exit(error%(' wrong number of FIELDS found in file "'+filename+'"'))
-ncv=int((len(line.split())-5)/2)
-cvname=[]
-for i in range(ncv):
-  cvname.append(line.split()[3+i])
-  if line.split()[3+ncv+i]!='sigma_'+cvname[i]:
-    sys.exit(error%(' expected "sigma_%s" instead of "%s"'%(cvname[i],line.split()[4+i])))
-line=f.readline() #action
-if line.split()[3]=='OPES_METAD_kernels':
-  action='OPES_METAD'
-elif line.split()[3]=='OPES_METAD_EXPLORE_kernels':
-  action='OPES_METAD_EXPLORE'
-else:
-  sys.exit(error%(' this script only works with OPES_METAD or OPES_METAD_EXPLORE KERNELS files'))
-line=f.readline() #biasfactor
-if line.split()[2]!='biasfactor':
-  sys.exit(error%(' biasfactor not found!'))
-biasfactor=line.split()[3]
-line=f.readline() #epsilon
-if line.split()[2]!='epsilon':
-  sys.exit(error%(' epsilon not found!'))
-epsilon=line.split()[3]
-line=f.readline() #kernel_cutoff
-if line.split()[2]!='kernel_cutoff':
-  sys.exit(error%(' kernel_cutoff not found!'))
-kernel_cutoff=line.split()[3]
-line=f.readline() #compression_threshold
-if line.split()[2]!='compression_threshold':
-  sys.exit(error%(' compression_threshold not found!'))
-compression_threshold=line.split()[3]
-periodic=['NO']*ncv
-line=f.readline()
-while line.split()[0]=='#!':
+with open(filename,'r') as f:
+  line=f.readline() #fields
+  if line.split()[1]!='FIELDS':
+    sys.exit(error%(' no FIELDS found in file "'+filename+'"'))
+  if len(line.split())<7:
+    sys.exit(error%(' not enough FIELDS found in file "'+filename+'"'))
+  if (len(line.split())-5)%2!=0:
+    sys.exit(error%(' wrong number of FIELDS found in file "'+filename+'"'))
+  ncv=int((len(line.split())-5)/2)
+  cvname=[]
   for i in range(ncv):
-    if line.split()[2]=='min_'+cvname[i]:
-      periodic[i]=line.split()[3]+','
-      line=f.readline()
-      if line.split()[2]!='max_'+cvname[i]:
-        sys.exit(error%(' periodic CVs should have both min and max value!'))
-      periodic[i]+=line.split()[3]
+    cvname.append(line.split()[3+i])
+    if line.split()[3+ncv+i]!='sigma_'+cvname[i]:
+      sys.exit(error%(' expected "sigma_%s" instead of "%s"'%(cvname[i],line.split()[4+i])))
+  line=f.readline() #action
+  if line.split()[3]=='OPES_METAD_kernels':
+    action='OPES_METAD'
+  elif line.split()[3]=='OPES_METAD_EXPLORE_kernels':
+    action='OPES_METAD_EXPLORE'
+  else:
+    sys.exit(error%(' this script only works with OPES_METAD or OPES_METAD_EXPLORE KERNELS files'))
+  line=f.readline() #biasfactor
+  if line.split()[2]!='biasfactor':
+    sys.exit(error%(' biasfactor not found!'))
+  biasfactor=line.split()[3]
+  line=f.readline() #epsilon
+  if line.split()[2]!='epsilon':
+    sys.exit(error%(' epsilon not found!'))
+  epsilon=line.split()[3]
+  line=f.readline() #kernel_cutoff
+  if line.split()[2]!='kernel_cutoff':
+    sys.exit(error%(' kernel_cutoff not found!'))
+  kernel_cutoff=line.split()[3]
+  line=f.readline() #compression_threshold
+  if line.split()[2]!='compression_threshold':
+    sys.exit(error%(' compression_threshold not found!'))
+  compression_threshold=line.split()[3]
+  periodic=['NO']*ncv
   line=f.readline()
-f.close()
+  while line.split()[0]=='#!':
+    for i in range(ncv):
+      if line.split()[2]=='min_'+cvname[i]:
+        periodic[i]=line.split()[3]+','
+        line=f.readline()
+        if line.split()[2]!='max_'+cvname[i]:
+          sys.exit(error%(' periodic CVs should have both min and max value!'))
+        periodic[i]+=line.split()[3]
+    line=f.readline()
 
 #unfourtunately plumed does not allow for CVs to be named with a dot
 #for now we only support .x .y .z in no periodic CVs
@@ -111,9 +110,8 @@ plumed_input+=' TEMP=1 PACE=1 BARRIER=1 SIGMA=1'
 for ii in range(1,ncv):
   plumed_input+=',1'
 
-f=open(tmp_plumed_file,'w')
-f.write(plumed_input)
-f.close()
+with open(tmp_plumed_file,'w') as f:
+  f.write(plumed_input)
 
 #run driver
 cmd_string=plumed_exe+' driver --noatoms --plumed '+tmp_plumed_file

@@ -24,6 +24,10 @@ COPY plumed2.tgz /home/plumed
 RUN . /etc/bashrc \
  && module load mpi \
  && export OMPI_MCA_btl_base_warn_component_unused=0 \
+ && export OMPI_MCA_btl_base_verbose=0 \
+ && export OMPI_MCA_plm=isolated \
+ && export OMPI_MCA_btl_vader_single_copy_mechanism=none \
+ && export OMPI_MCA_rmaps_base_oversubscribe=yes \
  && export PATH=$HOME/opt/bin:$PATH \
  && export CPATH=$HOME/opt/include:$CPATH \
  && export INCLUDE=$HOME/opt/include:$INCLUDE \
