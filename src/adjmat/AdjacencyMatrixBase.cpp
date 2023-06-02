@@ -20,9 +20,9 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "AdjacencyMatrixBase.h"
-#include "multicolvar/BridgedMultiColvarFunction.h"
-#include "multicolvar/AtomValuePack.h"
-#include "multicolvar/CatomPack.h"
+#include "symfunc/BridgedMultiColvarFunction.h"
+#include "symfunc/AtomValuePack.h"
+#include "symfunc/CatomPack.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 

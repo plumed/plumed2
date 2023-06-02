@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "VectorMultiColvar.h"
-#include "multicolvar/BridgedMultiColvarFunction.h"
+#include "symfunc/BridgedMultiColvarFunction.h"
 
 namespace PLMD {
 namespace crystallization {

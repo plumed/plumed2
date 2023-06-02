@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "multicolvar/MultiColvarBase.h"
-#include "multicolvar/AtomValuePack.h"
+#include "symfunc/MultiColvarBase.h"
+#include "symfunc/AtomValuePack.h"
 #include "core/ActionRegister.h"
 #include "tools/SwitchingFunction.h"
 #include "tools/Torsion.h"

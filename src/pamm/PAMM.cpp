@@ -22,8 +22,8 @@
 #include "core/ActionRegister.h"
 #include "tools/KernelFunctions.h"
 #include "tools/IFile.h"
-#include "multicolvar/MultiColvarBase.h"
-#include "multicolvar/AtomValuePack.h"
+#include "symfunc/MultiColvarBase.h"
+#include "symfunc/AtomValuePack.h"
 #include "PammObject.h"
 
 //+PLUMEDOC MCOLVARF PAMM

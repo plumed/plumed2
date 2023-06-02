@@ -23,7 +23,7 @@
 #define __PLUMED_adjmat_ClusterAnalysisBase_h
 
 #include "ClusteringBase.h"
-#include "multicolvar/MultiColvarBase.h"
+#include "symfunc/MultiColvarBase.h"
 
 namespace PLMD {
 namespace adjmat {

@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "tools/SwitchingFunction.h"
 #include "core/ActionRegister.h"
-#include "multicolvar/AtomValuePack.h"
+#include "symfunc/AtomValuePack.h"
 #include "VectorMultiColvar.h"
 
 //+PLUMEDOC MCOLVAR BOND_DIRECTIONS

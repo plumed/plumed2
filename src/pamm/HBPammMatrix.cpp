@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "adjmat/AdjacencyMatrixBase.h"
-#include "multicolvar/AtomValuePack.h"
+#include "symfunc/AtomValuePack.h"
 #include "HBPammObject.h"
 #include "core/ActionRegister.h"
 #include "tools/KernelFunctions.h"

@@ -22,7 +22,7 @@
 #ifndef __PLUMED_crystallization_Gradient_h
 #define __PLUMED_crystallization_Gradient_h
 
-#include "multicolvar/VolumeGradientBase.h"
+#include "volumes/VolumeGradientBase.h"
 
 namespace PLMD {
 namespace crystallization {

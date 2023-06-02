@@ -22,7 +22,7 @@
 #include "VolumeGradientBase.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
-#include "CatomPack.h"
+#include "symfunc/CatomPack.h"
 
 namespace PLMD {
 namespace multicolvar {

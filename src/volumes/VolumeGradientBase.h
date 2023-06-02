@@ -22,7 +22,7 @@
 #ifndef __PLUMED_multicolvar_VolumeGradientBase_h
 #define __PLUMED_multicolvar_VolumeGradientBase_h
 
-#include "BridgedMultiColvarFunction.h"
+#include "symfunc/BridgedMultiColvarFunction.h"
 
 namespace PLMD {
 namespace multicolvar {

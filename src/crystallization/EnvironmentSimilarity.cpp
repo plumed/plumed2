@@ -24,8 +24,8 @@
    Contributing author: Pablo Piaggi (Princeton University)
 ------------------------------------------------------------------------- */
 
-#include "multicolvar/MultiColvarBase.h"
-#include "multicolvar/AtomValuePack.h"
+#include "symfunc/MultiColvarBase.h"
+#include "symfunc/AtomValuePack.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "tools/PDB.h"

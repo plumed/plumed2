@@ -24,7 +24,7 @@
 #include "gridtools/ActionWithGrid.h"
 #include "vesselbase/ActionWithVessel.h"
 #include "vesselbase/StoreDataVessel.h"
-#include "multicolvar/MultiColvarBase.h"
+#include "symfunc/MultiColvarBase.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 

@@ -22,7 +22,7 @@
 #include "vesselbase/VesselRegister.h"
 #include "vesselbase/FunctionVessel.h"
 #include "vesselbase/ActionWithVessel.h"
-#include "multicolvar/ActionVolume.h"
+#include "volumes/ActionVolume.h"
 #include "VectorMultiColvar.h"
 
 namespace PLMD {

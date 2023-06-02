@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "multicolvar/MultiColvarBase.h"
+#include "symfunc/MultiColvarBase.h"
 #include "HBPammObject.h"
 #include "tools/NeighborList.h"
 #include "core/ActionRegister.h"

@@ -22,8 +22,8 @@
 #ifndef __PLUMED_crystallization_OrientationSphere_h
 #define __PLUMED_crystallization_OrientationSphere_h
 
-#include "multicolvar/MultiColvarBase.h"
-#include "multicolvar/AtomValuePack.h"
+#include "symfunc/MultiColvarBase.h"
+#include "symfunc/AtomValuePack.h"
 #include "tools/SwitchingFunction.h"
 
 namespace PLMD {

@@ -24,7 +24,7 @@
 
 #include "core/ActionWithValue.h"
 #include "core/ActionAtomistic.h"
-#include "multicolvar/MultiColvarBase.h"
+#include "symfunc/MultiColvarBase.h"
 
 namespace PLMD {
 namespace adjmat {

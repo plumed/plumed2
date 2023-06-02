@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithInputMatrix.h"
-#include "multicolvar/AtomValuePack.h"
+#include "symfunc/AtomValuePack.h"
 #include "AdjacencyMatrixVessel.h"
 #include "AdjacencyMatrixBase.h"
 #include "core/ActionRegister.h"

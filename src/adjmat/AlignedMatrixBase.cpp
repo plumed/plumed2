@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "AlignedMatrixBase.h"
-#include "multicolvar/AtomValuePack.h"
+#include "symfunc/AtomValuePack.h"
 #include "tools/SwitchingFunction.h"
 #include "tools/Matrix.h"
 

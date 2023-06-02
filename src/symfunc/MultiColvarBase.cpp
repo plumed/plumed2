@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiColvarBase.h"
-#include "ActionVolume.h"
+#include "volumes/ActionVolume.h"
 #include "MultiColvarFilter.h"
 #include "vesselbase/Vessel.h"
 #include "vesselbase/BridgeVessel.h"

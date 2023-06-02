@@ -23,7 +23,7 @@
 #define __PLUMED_adjmat_AdjacencyMatrixVessel_h
 
 #include "vesselbase/StoreDataVessel.h"
-#include "multicolvar/MultiColvarBase.h"
+#include "symfunc/MultiColvarBase.h"
 
 namespace PLMD {
 namespace adjmat {

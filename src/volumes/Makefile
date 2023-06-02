@@ -1,4 +1,4 @@
-USE=core tools vesselbase symfunc multicolvar adjmat
+USE=core tools vesselbase multicolvar symfunc
 
 # generic makefile
 include ../maketools/make.module

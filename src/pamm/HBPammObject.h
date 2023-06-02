@@ -23,7 +23,7 @@
 #define __PLUMED_pamm_HBPammObject_h
 
 #include "tools/Vector.h"
-#include "multicolvar/AtomValuePack.h"
+#include "symfunc/AtomValuePack.h"
 #include "PammObject.h"
 
 namespace PLMD {

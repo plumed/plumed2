@@ -22,7 +22,7 @@
 #ifndef __PLUMED_adjmat_AdjacencyMatrixBase_h
 #define __PLUMED_adjmat_AdjacencyMatrixBase_h
 
-#include "multicolvar/MultiColvarBase.h"
+#include "symfunc/MultiColvarBase.h"
 #include "AdjacencyMatrixVessel.h"
 
 namespace PLMD {
