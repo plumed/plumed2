@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
 #include "core/PlumedMain.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "tools/PDB.h"
 #include "reference/DRMSD.h"
 #include "reference/MetricRegister.h"

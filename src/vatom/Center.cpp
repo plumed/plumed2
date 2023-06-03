@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithVirtualAtom.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include <cmath>
