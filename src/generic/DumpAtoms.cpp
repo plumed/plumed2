@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionAtomistic.h"
+#include "core/ActionWithArguments.h"
 #include "core/ActionPilot.h"
 #include "core/ActionRegister.h"
 #include "tools/Pbc.h"
@@ -117,6 +118,7 @@ DUMPATOMS STRIDE=10 FILE=file.xtc ATOMS=1-10,c1 PRECISION=7
 
 class DumpAtoms:
   public ActionAtomistic,
+  public ActionWithArguments,
   public ActionPilot
 {
   OFile of;
@@ -134,6 +136,9 @@ public:
   explicit DumpAtoms(const ActionOptions&);
   ~DumpAtoms();
   static void registerKeywords( Keywords& keys );
+  void calculateNumericalDerivatives( ActionWithValue* a=NULL ) override;
+  void lockRequests() override;
+  void unlockRequests() override;
   void calculate() override {}
   void apply() override {}
   void update() override ;
@@ -144,7 +149,8 @@ PLUMED_REGISTER_ACTION(DumpAtoms,"DUMPATOMS")
 void DumpAtoms::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
-  ActionAtomistic::registerKeywords( keys );
+  ActionAtomistic::registerKeywords( keys ); 
+  ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
   keys.add("compulsory","STRIDE","1","the frequency with which the atoms should be output");
   keys.add("atoms", "ATOMS", "the atom indices whose positions you would like to print out");
   keys.add("compulsory", "FILE", "file on which to output coordinates; extension is automatically detected");
@@ -159,6 +165,7 @@ void DumpAtoms::registerKeywords( Keywords& keys ) {
 DumpAtoms::DumpAtoms(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao),
+  ActionWithArguments(ao),
   ActionPilot(ao),
   iprecision(3)
 {
@@ -228,7 +235,18 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
   log.printf("  printing the following atoms in %s :", unitname.c_str() );
   for(unsigned i=0; i<atoms.size(); ++i) log.printf(" %d",atoms[i].serial() );
   log.printf("\n");
-  requestAtoms(atoms);
+
+  if( getNumberOfArguments()>0 ) {
+      if( type!="xyz" ) error("can only print atomic properties when outputting xyz files");
+
+      for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+          if( getPntrToArgument(i)->getRank()!=1 || getPntrToArgument(i)->hasDerivatives() ) error("arguments for xyz output should be vectors");
+          if( getPntrToArgument(i)->getNumberOfValues()!=atoms.size() ) error("number of elements in vector " + getPntrToArgument(i)->getName() + " is not equal to number of atoms output");
+          getPntrToArgument(i)->buildDataStore();
+      }
+  } 
+
+  requestAtoms(atoms, false);
   auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   if( moldat ) {
     log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
@@ -239,6 +257,20 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
     residueNames.resize(atoms.size());
     for(unsigned i=0; i<residueNames.size(); ++i) if(atoms[i].index()<moldat->getPDBsize()) residueNames[i]=moldat->getResidueName(atoms[i]);
   }
+}
+
+void DumpAtoms::calculateNumericalDerivatives( ActionWithValue* a ) {
+  plumed_merror("this should never be called");
+}
+
+void DumpAtoms::lockRequests() {
+  ActionWithArguments::lockRequests();
+  ActionAtomistic::lockRequests();
+}
+
+void DumpAtoms::unlockRequests() {
+  ActionWithArguments::unlockRequests();
+  ActionAtomistic::unlockRequests();
 }
 
 void DumpAtoms::update() {
@@ -258,7 +290,9 @@ void DumpAtoms::update() {
       const char* defname="X";
       const char* name=defname;
       if(names.size()>0) if(names[i].length()>0) name=names[i].c_str();
-      of.printf(("%s "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+"\n").c_str(),name,lenunit*getPosition(i)(0),lenunit*getPosition(i)(1),lenunit*getPosition(i)(2));
+      of.printf(("%s "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz).c_str(),name,lenunit*getPosition(i)(0),lenunit*getPosition(i)(1),lenunit*getPosition(i)(2));
+      for(unsigned j=0; j<getNumberOfArguments(); ++j) of.printf((" "+fmt_xyz).c_str(), getPntrToArgument(j)->get(i) );
+      of.printf("\n");
     }
   } else if(type=="gro") {
     const Tensor & t(getPbc().getBox());

@@ -32,6 +32,7 @@ Action used to create a command that expands to multiple PLMD::Action commands w
 */
 class ActionShortcut :
   public virtual Action {
+friend class ActionSet;
 private:
   std::string shortcutlabel;
   std::vector<std::string> savedInputLines;
@@ -40,6 +41,8 @@ public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
   explicit ActionShortcut(const ActionOptions&ao);
+/// Read keywords
+  void readShortcutKeywords( const Keywords& keys, std::map<std::string,std::string>& keymap );
 /// Read a line of input and create appropriate actions
   void readInputLine( const std::string& input );
 /// Do nothing.
@@ -50,6 +53,8 @@ public:
   std::vector<std::string> getSavedInputLines() const ;
 /// Take everything that was input to this action and convert it to a string
   std::string convertInputLineToString();
+/// This sorts out the reading of arguments from shortcuts
+  void interpretDataLabel( const std::string& mystr, Action* myuser, std::vector<Value*>& args ) const ;
 };
 
 }

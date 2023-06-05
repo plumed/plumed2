@@ -60,6 +60,10 @@ private:
   bool addActionToChain( const std::vector<std::string>& alabels, ActionWithVector* act );
 /// Check the chain for non scalar forces
   bool checkChainForNonScalarForces() const ;
+/// Check if a force has been added on one of the components of this action
+  bool checkComponentsForForce() const ;
+/// Get the tasks that we need for forces
+  void getForceTasks( std::vector<unsigned>& force_tasks ) const ;
 /// Add the gathered forces to the inputs across the whole chain
   void addForcesToInput( const std::vector<double>& forcesToApply, unsigned& ind );
 protected:
@@ -76,12 +80,15 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithVector(const ActionOptions&);
+  virtual ~ActionWithVector() {}
   void lockRequests() override;
   void unlockRequests() override;
-  void calculateNumericalDerivatives(ActionWithValue* av) override { plumed_merror("cannot calculate numerical derivative for this type of action"); }
+  void retrieveAtoms() override;
+  void calculateNumericalDerivatives(ActionWithValue* av) override; 
 /// Are we running this command in a chain
   bool actionInChain() const ;
 /// Return a pointer to the first action in the chain
+  const ActionWithVector* getFirstActionInChain() const ;
   ActionWithVector* getFirstActionInChain();
 /// Get every the label of every value that is calculated in this chain
   void getAllActionLabelsInChain( std::vector<std::string>& mylabels ) const ;
@@ -95,12 +102,12 @@ public:
   virtual void performTask( const unsigned& current, MultiValue& myvals ) const = 0;
 /// Gather the values that we intend to store in the buffer
   virtual void gatherAccumulators( const unsigned& taskCode, const MultiValue& myvals, std::vector<double>& buffer ) const ;
+/// Check if there is a force that needs to be accumulated on the ith task
+  virtual bool checkForTaskForce( const unsigned& itask, const Value* myval ) const ;
 /// Gather the forces on non-scalar quantities
   virtual void gatherForces( const unsigned& i, const MultiValue& myvals, std::vector<double>& forces ) const ;
 /// This is to transfer data from the buffer to the final value
   void finishComputations( const std::vector<double>& buf );
-/// Do any transformations we need to do on the final value after the data has all been gathered
-  virtual void transformFinalValueAndDerivatives( const std::vector<double>& buf  ) {}
 /// Apply the forces on this data
   void apply() override;
 };

@@ -58,15 +58,29 @@ void ActionWithVector::unlockRequests() {
   ActionWithArguments::unlockRequests();
 }
 
+void ActionWithVector::calculateNumericalDerivatives(ActionWithValue* av) {
+  plumed_merror("cannot calculate numerical derivative for action " + getName() + " with label " + getLabel() );
+}
+
 void ActionWithVector::clearDerivatives( const bool& force ) {
   if( !force && actionInChain() ) return;
   ActionWithValue::clearDerivatives();
   if( action_to_do_after ) action_to_do_after->clearDerivatives( true );
 }
 
+const ActionWithVector* ActionWithVector::getFirstActionInChain() const {
+  if( !actionInChain() ) return this;
+  return action_to_do_before->getFirstActionInChain();
+}
+
 ActionWithVector* ActionWithVector::getFirstActionInChain() {
   if( !actionInChain() ) return this;
   return action_to_do_before->getFirstActionInChain();
+}
+
+void ActionWithVector::retrieveAtoms() {
+  ActionAtomistic::retrieveAtoms();
+  if( action_to_do_after ) action_to_do_after->retrieveAtoms();
 }
 
 unsigned ActionWithVector::buildArgumentStore( const unsigned& argstart ) {
@@ -111,7 +125,9 @@ unsigned ActionWithVector::buildArgumentStore( const unsigned& argstart ) {
       }
       plumed_massert(added, "could not add action " + getLabel() + " to chain of any of its arguments"); 
       // And get the number of derivatives
-      unsigned sder=0, nder=0; getFirstActionInChain()->getNumberOfStreamedDerivatives( sder, nder ); return nder;
+      unsigned sder=0, nder=0; 
+      getFirstActionInChain()->getNumberOfStreamedDerivatives( sder, nder ); 
+      return nder;
   } 
   for(unsigned i=argstart; i<getNumberOfArguments(); ++i) { if( getPntrToArgument(i)->getRank()>0 ) getPntrToArgument(i)->buildDataStore(); }
   unsigned nder=0; for(unsigned i=0; i<getNumberOfArguments(); ++i) nder += getPntrToArgument(i)->getNumberOfValues();
@@ -180,6 +196,8 @@ void ActionWithVector::runAllTasks() {
   // Get the number of tasks
   // nactive_tasks = taskSet.size();
   nactive_tasks = ntasks;
+  std::vector<unsigned> partialTaskList( ntasks );
+  for(unsigned i=0; i<ntasks; ++i) partialTaskList[i]=i;
   // Create a vector from the task set 
   // std::vector<AtomNumber> partialTaskList( taskSet.begin(), taskSet.end() );
   // Get number of threads for OpenMP
@@ -213,17 +231,11 @@ void ActionWithVector::runAllTasks() {
     #pragma omp for nowait
     for(unsigned i=rank; i<nactive_tasks; i+=stride) {
       // Calculate the stuff in the loop for this action
-      // runTask( partialTaskList[i].index(), myvals );
-      runTask( i, myvals );
+      runTask( partialTaskList[i], myvals );
 
       // Now transfer the data to the actions that accumulate values from the calculated quantities
-      if( nt>1 ) {
-        // gatherAccumulators( partialTaskList[i].index(), myvals, omp_buffer );
-        gatherAccumulators( i, myvals, omp_buffer );
-      } else {
-        // gatherAccumulators( partialTaskList[i].index(), myvals, buffer );
-        gatherAccumulators( i, myvals, buffer );
-      }
+      if( nt>1 ) gatherAccumulators( partialTaskList[i], myvals, omp_buffer );
+      else gatherAccumulators( partialTaskList[i], myvals, buffer );
 
       // Clear the value
       myvals.clearAll(true);
@@ -231,13 +243,14 @@ void ActionWithVector::runAllTasks() {
     #pragma omp critical
     if(nt>1) for(unsigned i=0; i<bufsize; ++i) buffer[i]+=omp_buffer[i];
   }
+
   // MPI Gather everything
   if( !serial && buffer.size()>0 ) comm.Sum( buffer );
   finishComputations( buffer );
 }
 
 unsigned ActionWithVector::getArgumentPositionInStream( const unsigned& jder, MultiValue& myvals ) const { 
-  if( getPntrToArgument(jder)->storedata ) plumed_merror("You still have to implement setting these values Gareth");
+  if( !getPntrToArgument(jder)->ignoreStoredValue(getFirstActionInChain()->getLabel()) ) plumed_merror("You still have to implement setting these values Gareth");
   return getPntrToArgument(jder)->getPositionInStream();
 }
 
@@ -278,14 +291,16 @@ void ActionWithVector::getSizeOfBuffer( const unsigned& nactive_tasks, unsigned&
 }
 
 void ActionWithVector::getNumberOfStreamedDerivatives( unsigned& sderivatives, unsigned& nder ) {
-  for(int i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->arg_der_start=sderivatives;      
-  unsigned nderivatives=nder;
+  unsigned nderivatives=nder; std::string c=getFirstActionInChain()->getLabel();
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      if( getPntrToArgument(i)->storedata ) nderivatives += getPntrToArgument(i)->getNumberOfValues();
+      if( !getPntrToArgument(i)->ignoreStoredValue(c) ) nderivatives += getPntrToArgument(i)->getNumberOfValues();
   }
   if( getNumberOfAtoms()>0 ) nderivatives += 3*getNumberOfAtoms() + 9;
   // Check if any new derivatives were found and update sderivatives if they were
-  if( nder>0 && nderivatives-nder>0 ) sderivatives=nderivatives;
+  if( nder>0 && nderivatives-nder>0 ) {
+      sderivatives=nder;
+      for(int i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->arg_der_start=sderivatives;
+  }
   // Update nderivatives with the new total of derivatives
   nder=nderivatives; if( action_to_do_after ) action_to_do_after->getNumberOfStreamedDerivatives( sderivatives, nder );
 } 
@@ -342,7 +357,6 @@ void ActionWithVector::finishComputations( const std::vector<double>& buf ) {
         for(unsigned j=0; j<getPntrToComponent(i)->getNumberOfDerivatives(); ++j) getPntrToComponent(i)->setDerivative( j, buf[bufstart+1+j] );
       }
     }
-    transformFinalValueAndDerivatives( buf ); 
   } 
   if( action_to_do_after ) action_to_do_after->finishComputations( buf );
 }
@@ -367,9 +381,13 @@ bool ActionWithVector::checkForForces() {
   unsigned rank=comm.Get_rank();
   if(serial) { stride=1; rank=0; }
 
+  // Get the number of tasks
+  std::vector<unsigned> force_tasks; getForceTasks( force_tasks ); 
+  Tools::removeDuplicates(force_tasks); unsigned nf_tasks=force_tasks.size();
+
   // Get number of threads for OpenMP
   unsigned nt=OpenMP::getNumThreads();
-  if( nt*stride*10>nactive_tasks ) nt=nactive_tasks/stride/10;
+  if( nt*stride*10>nf_tasks ) nt=nf_tasks/stride/10;
   if( nt==0 ) nt=1;
 
   // Create a vector from the task set 
@@ -391,19 +409,12 @@ bool ActionWithVector::checkForForces() {
     myvals.clearAll();
 
     #pragma omp for nowait
-    for(unsigned i=rank; i<nactive_tasks; i+=stride) {
-      // unsigned itask = partialTaskList[i].index();
-      // runTask( itask, myvals );
-      runTask( i, myvals );
+    for(unsigned i=rank; i<nf_tasks; i+=stride) {
+      runTask( force_tasks[i], myvals );
 
       // Now get the forces
-      if( nt>1 ) {
-         // gatherForces( itask, myvals, omp_forces );
-         gatherForces( i, myvals, omp_forces ); 
-      } else {
-         // gatherForces( itask, myvals, forces );
-         gatherForces( i, myvals, omp_forces );
-      }
+      if( nt>1 ) gatherForces( force_tasks[i], myvals, omp_forces ); 
+      else gatherForces( force_tasks[i], myvals, forcesForApply );
 
       myvals.clearAll();
     }
@@ -415,8 +426,48 @@ bool ActionWithVector::checkForForces() {
   return true;
 }
 
-void ActionWithVector::gatherForces( const unsigned& task, const MultiValue& myvals, std::vector<double>& forces ) const {
+bool ActionWithVector::checkComponentsForForce() const {
+  for(unsigned i=0; i<values.size(); ++i) {
+    if( getConstPntrToComponent(i)->forcesWereAdded() ) return true;
+  }
+  return false;
+}
 
+bool ActionWithVector::checkForTaskForce( const unsigned& itask, const Value* myval ) const {
+  return fabs(myval->getForce(itask))>epsilon;
+} 
+
+void ActionWithVector::getForceTasks( std::vector<unsigned>& force_tasks ) const {
+  if( isActive() && checkComponentsForForce() ) {
+      for(unsigned k=0; k<values.size(); ++k) {
+          const Value* myval=getConstPntrToComponent(k);
+          if( myval->getRank()>0 && myval->forcesWereAdded() ) {
+              unsigned nt = myval->getNumberOfValues();
+              if( !myval->hasDerivatives() ) nt = myval->getShape()[0];
+              for(unsigned i=0; i<nt; ++i) {
+                  if( checkForTaskForce(i, myval) ) force_tasks.push_back( i );
+              }
+          }
+      }
+  }
+  if( action_to_do_after ) action_to_do_after->getForceTasks( force_tasks );
+}
+
+void ActionWithVector::gatherForces( const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
+  if( isActive() && checkComponentsForForce() ) {
+      for(unsigned k=0; k<getNumberOfComponents(); ++k) {
+          const Value* myval=getConstPntrToComponent(k);
+          if( myval->getRank()>0 && myval->forcesWereAdded() ) {
+              double fforce = myval->getForce(itask);
+              unsigned sspos = myval->getPositionInStream(); 
+              for(unsigned j=0; j<myvals.getNumberActive(sspos); ++j) {
+                unsigned jder=myvals.getActiveIndex(sspos, j); plumed_dbg_assert( jder<forces.size() );
+                forces[jder] += fforce*myvals.getDerivative( sspos, jder );
+              }
+          }
+      }
+  } 
+  if( action_to_do_after ) action_to_do_after->gatherForces( itask, myvals, forces );
 }
 
 void ActionWithVector::apply() {
@@ -426,7 +477,7 @@ void ActionWithVector::apply() {
 }
 
 void ActionWithVector::addForcesToInput( const std::vector<double>& forcesToApply, unsigned& ind ) {
-  addForcesOnArguments( 0, forcesToApply, ind ); setForcesOnAtoms( forcesToApply, ind );
+  addForcesOnArguments( 0, forcesToApply, ind, getFirstActionInChain()->getLabel() ); setForcesOnAtoms( forcesToApply, ind );
   if( action_to_do_after ) action_to_do_after->addForcesToInput( forcesToApply, ind );
 }
 

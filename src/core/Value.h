@@ -204,6 +204,8 @@ public:
   void convertIndexToindices(const std::size_t& index, std::vector<unsigned>& indices ) const ;
 /// Print out all the values in this Value
   void print( OFile& ofile ) const ;
+/// Are we to ignore the stored value
+  bool ignoreStoredValue(const std::string& n) const ;
 };
 
 void copy( const Value& val1, Value& val2 );

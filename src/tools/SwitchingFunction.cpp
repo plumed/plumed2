@@ -213,6 +213,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   bool dontstretch=false;
   Tools::parseFlag(data,"NOSTRETCH",dontstretch); // this is ignored now
   if(dontstretch) dostretch=false;
+  Tools::parseFlag(data,"RETURN_DERIV",returnderiv);
   double r0;
   if(name=="CUBIC") {
     r0 = dmax - d0;
@@ -490,7 +491,7 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
     dfunc*=invr0;
 // this is because calculate() sets dfunc to the derivative divided times the distance.
 // (I think this is misleading and I would like to modify it - GB)
-    dfunc/=distance;
+    if( !returnderiv ) dfunc/=distance;
   }
 
   result=result*stretch+shift;

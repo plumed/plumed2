@@ -24,6 +24,7 @@
 #include "ActionAtomistic.h"
 #include "ActionForInterface.h"
 #include "ActionWithVirtualAtom.h"
+#include "ActionShortcut.h"
 #include "tools/PDB.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
@@ -149,39 +150,54 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
             for(int k=0; k<all[j]->getNumberOfComponents(); ++k) arg.push_back(all[j]->copyOutput(k));
           }
         } else if ( name=="*") {
-          // Take all the values from an action with a specific name
-          ActionWithValue* action=as.selectWithLabel<ActionWithValue*>(a);
-          if(!action) {
-            std::string str=" (hint! the actions with value in this ActionSet are: ";
-            str+=as.getLabelList<ActionWithValue*>()+")";
-            readact->error("cannot find action named " + a + str);
+          unsigned carg=arg.size();
+          // Take all the values from an action with a specific name 
+          ActionShortcut* shortcut=as.getShortcutActionWithLabel(a);
+          if( shortcut ) shortcut->interpretDataLabel( a + "." + name, readact, arg );
+          if( arg.size()==carg ) {
+              // Take all the values from an action with a specific name
+              ActionWithValue* action=as.selectWithLabel<ActionWithValue*>(a);
+              if(!action) {
+                std::string str=" (hint! the actions with value in this ActionSet are: ";
+                str+=as.getLabelList<ActionWithValue*>()+")";
+                readact->error("cannot find action named " + a + str);
+              }
+              if( action->getNumberOfComponents()==0 ) readact->error("found " + a +".* indicating use all components calculated by action with label " + a + " but this action has no components");
+              for(int k=0; k<action->getNumberOfComponents(); ++k) arg.push_back(action->copyOutput(k));
           }
-          if( action->getNumberOfComponents()==0 ) readact->error("found " + a +".* indicating use all components calculated by action with label " + a + " but this action has no components");
-          for(int k=0; k<action->getNumberOfComponents(); ++k) arg.push_back(action->copyOutput(k));
         } else if ( a=="*" ) {
+          std::vector<ActionShortcut*> shortcuts=as.select<ActionShortcut*>();  
           // Take components from all actions with a specific name
           std::vector<ActionWithValue*> all=as.select<ActionWithValue*>();
           if( all.empty() ) readact->error("your input file is not telling plumed to calculate anything");
+          unsigned carg=arg.size();
+          for(unsigned j=0; j<shortcuts.size(); ++j) {
+              shortcuts[j]->interpretDataLabel( shortcuts[j]->getShortcutLabel() + "." + name, readact, arg );
+          }
           unsigned nval=0;
           for(unsigned j=0; j<all.size(); j++) {
             std::string flab; flab=all[j]->getLabel() + "." + name;
             if( all[j]->exists(flab) ) { arg.push_back(all[j]->copyOutput(flab)); nval++; }
           }
-          if(nval==0) readact->error("found no actions with a component called " + name );
+          if(nval==0 && arg.size()==carg) readact->error("found no actions with a component called " + name );
         } else {
           // Take values with a specific name
           ActionWithValue* action=as.selectWithLabel<ActionWithValue*>(a);
-          if(!action) {
+          ActionShortcut* shortcut=as.getShortcutActionWithLabel(a);
+          if( !shortcut && !action ) {
             std::string str=" (hint! the actions with value in this ActionSet are: ";
             str+=as.getLabelList<ActionWithValue*>()+")";
             readact->error("cannot find action named " + a +str);
+          } else if( action && action->exists(c[i]) ) {
+            arg.push_back(action->copyOutput(c[i]));
+          } else if( shortcut ) {
+              unsigned narg=arg.size(); shortcut->interpretDataLabel( a + "." + name, readact, arg );
+              if( arg.size()==narg ) readact->error("found no element in " + a + " with label " + name );
+          } else {
+              std::string str=" (hint! the components in this actions are: ";
+              str+=action->getComponentsList()+")";
+              readact->error("action " + a + " has no component named " + name + str);
           }
-          if( !(action->exists(c[i])) ) {
-            std::string str=" (hint! the components in this actions are: ";
-            str+=action->getComponentsList()+")";
-            readact->error("action " + a + " has no component named " + name + str);
-          } ;
-          arg.push_back(action->copyOutput(c[i]));
         }
       } else {    // if it doesn't contain a dot
         if(c[i]=="*") {
@@ -316,9 +332,9 @@ double ActionWithArguments::getProjection(unsigned i,unsigned j)const {
   return Value::projection(*v1,*v2);
 }
 
-void ActionWithArguments::addForcesOnArguments( const unsigned& argstart, const std::vector<double>& forces, unsigned& ind  ) {
+void ActionWithArguments::addForcesOnArguments( const unsigned& argstart, const std::vector<double>& forces, unsigned& ind, const std::string& c  ) {
   for(unsigned i=0; i<arguments.size(); ++i) { 
-      if( arguments[i]->storedata || arguments[i]->getRank()==0 || (arguments[i]->getRank()>0 && arguments[i]->hasDerivatives()) ) {
+      if( !arguments[i]->ignoreStoredValue(c) || arguments[i]->getRank()==0 || (arguments[i]->getRank()>0 && arguments[i]->hasDerivatives()) ) {
           unsigned nvals = arguments[i]->getNumberOfValues();
           for(unsigned j=0; j<nvals; ++j) { arguments[i]->addForce( j, forces[ind] ); ind++; } 
       }

@@ -48,10 +48,9 @@ public:
 /// It is static so we can reuse the functionality in FunctionOfMatrix
   static void runSingleTaskCalculation( const Value* arg, ActionWithValue* action, T& f );
   explicit FunctionOfVector(const ActionOptions&);
+  ~FunctionOfVector() {}
 /// Get the size of the task list at the end of the run
   unsigned getNumberOfFinalTasks();
-/// This does some final setup stuff befor ethe first calculate
-  void actionsToDoBeforeFirstCalculate();
 /// Check if derivatives are available
   void turnOnDerivatives() override;
 /// Get the number of derivatives for this action
@@ -149,7 +148,7 @@ nderivatives(0)
 template <class T>
 void FunctionOfVector<T>::turnOnDerivatives() {
   if( !getPntrToComponent(0)->isConstant() && !myfunc.derivativesImplemented() ) error("derivatives have not been implemended for " + getName() );
-  ActionWithValue::turnOnDerivatives(); 
+  ActionWithValue::turnOnDerivatives(); myfunc.setup(this );
 }
 
 template <class T>
@@ -179,7 +178,6 @@ void FunctionOfVector<T>::performTask( const unsigned& current, MultiValue& myva
   for(unsigned i=0;i<vals.size();++i) myvals.addValue( getConstPntrToComponent(i)->getPositionInStream(), vals[i] );
   // Return if we are not computing derivatives
   if( doNotCalculateDerivatives() ) return;
-
   // And now compute the derivatives 
   // Second condition here is only not true if actionInChain()==True if
   // input arguments the only non-constant objects in input are scalars.
@@ -248,11 +246,6 @@ unsigned FunctionOfVector<T>::getNumberOfFinalTasks() {
   // The prefactor for average and sum is set here so the number of input scalars is guaranteed to be correct
   myfunc.setPrefactor( this, 1.0 );
   return nelements;
-}
-
-template <class T>
-void FunctionOfVector<T>::actionsToDoBeforeFirstCalculate() {
-  myfunc.setup( this );
 }
 
 template <class T>

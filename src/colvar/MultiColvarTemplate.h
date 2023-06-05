@@ -137,10 +137,10 @@ void MultiColvarTemplate<T>::performTask( const unsigned& task_index, MultiValue
   std::vector<double> values( getNumberOfComponents() );
   std::vector<Tensor> & virial( myvals.getFirstAtomVirialVector() );
   std::vector<std::vector<Vector> > & derivs( myvals.getFirstAtomDerivativeVector() );
-  if( derivs.size()!=values.size() ) {
-     derivs.resize( values.size() ); virial.resize( values.size() );
-     for(unsigned i=0; i<derivs.size(); ++i) derivs[i].resize( ablocks.size() );   
-  } 
+  if( derivs.size()!=values.size() ) { derivs.resize( values.size() ); virial.resize( values.size() ); } 
+  for(unsigned i=0; i<derivs.size(); ++i) {
+      if( derivs[i].size()<ablocks.size() ) derivs[i].resize( ablocks.size() );
+  }
   // Calculate the CVs using the method in the Colvar
   T::calculateCV( mode, mass, charge, fpositions, values, derivs, virial, this );
   for(unsigned i=0;i<values.size();++i) myvals.setValue( getConstPntrToComponent(i)->getPositionInStream(), values[i] );

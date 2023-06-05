@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2023 The plumed team
+   Copyright (c) 2014-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,16 +19,9 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "symfunc/MultiColvarBase.h"
-#include "symfunc/AtomValuePack.h"
-#include "tools/Torsion.h"
+#include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
-
-#include <string>
-#include <cmath>
-
-namespace PLMD {
-namespace multicolvar {
+#include "MultiColvarShortcuts.h"
 
 //+PLUMEDOC MCOLVAR TORSIONS
 /*
@@ -73,62 +66,30 @@ Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle o
 */
 //+ENDPLUMEDOC
 
-class Torsions : public MultiColvarBase {
+namespace PLMD {
+namespace multicolvar {
+
+class Torsions : public ActionShortcut {
 public:
-  static void registerKeywords( Keywords& keys );
+  static void registerKeywords(Keywords& keys);
   explicit Torsions(const ActionOptions&);
-  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
-  bool isPeriodic() override { return true; }
-  void retrieveDomain( std::string& min, std::string& max ) override { min="-pi"; max="pi"; }
 };
 
 PLUMED_REGISTER_ACTION(Torsions,"TORSIONS")
 
-void Torsions::registerKeywords( Keywords& keys ) {
-  MultiColvarBase::registerKeywords( keys );
-  keys.add("numbered","ATOMS","the atoms involved in each of the torsion angles you wish to calculate. "
-           "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one torsion will be "
-           "calculated for each ATOM keyword you specify (all ATOM keywords should "
-           "provide the indices of four atoms).  The eventual number of quantities calculated by this "
-           "action will depend on what functions of the distribution you choose to calculate.");
-  keys.reset_style("ATOMS","atoms");
-  keys.use("BETWEEN"); keys.use("HISTOGRAM");
+void Torsions::registerKeywords(Keywords& keys) {
+  ActionShortcut::registerKeywords( keys ); MultiColvarShortcuts::shortcutKeywords( keys );
 }
 
-Torsions::Torsions(const ActionOptions&ao):
-  Action(ao),
-  MultiColvarBase(ao)
+Torsions::Torsions(const ActionOptions& ao):
+Action(ao),
+ActionShortcut(ao)
 {
-  // Read in the atoms
-  int natoms=4; std::vector<AtomNumber> all_atoms;
-  readAtomsLikeKeyword( "ATOMS", natoms, all_atoms );
-  setupMultiColvarBase( all_atoms );
-  std::vector<bool> catom_ind(4, false);
-  catom_ind[1]=catom_ind[2]=true;
-  setAtomsForCentralAtom( catom_ind );
-  // Read in the vessels
-  readVesselKeywords();
-  // And check everything has been read in correctly
-  checkRead();
-}
-
-double Torsions::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
-  Vector d0,d1,d2;
-  d0=getSeparation(myatoms.getPosition(1),myatoms.getPosition(0));
-  d1=getSeparation(myatoms.getPosition(2),myatoms.getPosition(1));
-  d2=getSeparation(myatoms.getPosition(3),myatoms.getPosition(2));
-
-  Vector dd0,dd1,dd2; PLMD::Torsion t;
-  double value  = t.compute(d0,d1,d2,dd0,dd1,dd2);
-
-  addAtomDerivatives(1,0,dd0,myatoms);
-  addAtomDerivatives(1,1,dd1-dd0,myatoms);
-  addAtomDerivatives(1,2,dd2-dd1,myatoms);
-  addAtomDerivatives(1,3,-dd2,myatoms);
-
-  myatoms.addBoxDerivatives  (1, -(extProduct(d0,dd0)+extProduct(d1,dd1)+extProduct(d2,dd2)));
-
-  return value;
+  log.printf("Action TORSION\n");
+  log.printf("  with label %s \n", getShortcutLabel().c_str() );
+  readInputLine( getShortcutLabel() + ": TORSION_VECTOR " + convertInputLineToString() );
+  // Add shortcuts to label
+  MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel(), "", this );
 }
 
 }

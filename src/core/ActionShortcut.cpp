@@ -21,6 +21,8 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionShortcut.h"
 #include "PlumedMain.h"
+#include "ActionWithValue.h"
+#include "ActionRegister.h"
 #include "ActionSet.h"
 
 namespace PLMD {
@@ -28,6 +30,27 @@ namespace PLMD {
 void ActionShortcut::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   keys.add("hidden","IS_SHORTCUT","hidden keyword to tell if actions are shortcuts so that example generator can provide expansions of shortcuts");
+}
+
+void ActionShortcut::readShortcutKeywords( const Keywords& keys, std::map<std::string,std::string>& keymap ) {
+  for(unsigned i=0; i<keys.size(); ++i) {
+      std::string t, keyname = keys.get(i);
+      if( keys.style( keyname, "optional") || keys.style( keyname, "compulsory") ) {
+          parse(keyname,t);
+          if( t.length()>0 ) {
+             keymap.insert(std::pair<std::string,std::string>(keyname,t));
+          } else if( keys.numbered( keyname ) ) {
+             for(unsigned i=1;; ++i) {
+               std::string istr; Tools::convert( i, istr );
+               if( !parseNumbered(keyname,i,t) ) break ;
+               keymap.insert(std::pair<std::string,std::string>(keyname + istr,t));
+             }
+          }
+      } else if( keys.style( keyname, "flag") ) {
+          bool found=false; parseFlag(keyname,found);
+          if( found ) keymap.insert(std::pair<std::string,std::string>(keyname,""));
+      } else plumed_merror("shortcut keywords should be optional, compulsory or flags");
+  }
 }
 
 ActionShortcut::ActionShortcut(const ActionOptions&ao):
@@ -73,6 +96,60 @@ std::string ActionShortcut::convertInputLineToString() {
       } else output += " " + (*p);
   }
   line.resize(0); return output;
+}
+
+void ActionShortcut::interpretDataLabel( const std::string& mystr, Action* myuser, std::vector<Value*>& arg ) const {
+  std::size_t dot=mystr.find_first_of('.'); std::string a=mystr.substr(0,dot); std::string name=mystr.substr(dot+1);
+  // Retrieve the keywords for the shortcut
+  Keywords skeys; actionRegister().getKeywords( getName(), skeys );
+  std::vector<std::string> out_comps( skeys.getOutputComponents() ); 
+  // Now get the output components
+  if( name=="*" ) {
+      for(unsigned k=0; k<out_comps.size(); ++k) {
+          if( out_comps[k]=="" ) { 
+              ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a );
+              if( action ) { 
+                  if( action->getNumberOfComponents()!=1 ) myuser->error("action named " + a + " has more than one component");
+                  arg.push_back(action->copyOutput(0));
+              }
+          } else {
+              ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a + "_" + out_comps[k] );
+              if( action ) {
+                  if( action->getNumberOfComponents()!=1 ) myuser->error("action named " + a + "_" + out_comps[k] + " has more than one component");
+                  arg.push_back(action->copyOutput(0));
+              } else {
+                 for(unsigned j=1;; ++j) {
+                     std::string numstr; Tools::convert( j, numstr );
+                     ActionWithValue* act=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a + "_" + out_comps[k] + numstr );
+                     if(!act) break;
+                     for(unsigned n=0; n<act->getNumberOfComponents(); ++n ) arg.push_back(act->copyOutput(n));
+                 }
+              }
+          }
+      }
+  } else {
+      // Check for an action that has action.component 
+      ActionWithValue* act=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a );
+      if( act && act->exists(mystr) ) return;
+      // Get components that are actually actions
+      for(unsigned k=0; k<out_comps.size(); ++k) {
+          if( name.find(out_comps[k])!=std::string::npos ) {
+              if( name==out_comps[k] ) {
+                   ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a + "_" + name );
+                   arg.push_back(action->copyOutput(a+"_"+name));
+              } else {
+                   for(unsigned j=1;; ++j) {
+                       std::string numstr; Tools::convert( j, numstr );
+                       if( name==out_comps[k] + numstr ) {
+                           ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a + "_" + name + numstr );
+                           arg.push_back(action->copyOutput(a+"_"+name+numstr));
+                       } else break;
+                   }
+              }
+              break;
+          }
+      }
+  }
 }
 
 }

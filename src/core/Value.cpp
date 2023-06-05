@@ -23,6 +23,7 @@
 #include "ActionWithValue.h"
 #include "ActionAtomistic.h"
 #include "ActionWithArguments.h"
+#include "ActionWithVector.h"
 #include "ActionWithVirtualAtom.h"
 #include "tools/Exception.h"
 #include "tools/OpenMP.h"
@@ -206,6 +207,13 @@ void Value::set(const std::size_t& n, const double& v ) {
 void Value::buildDataStore() {
   if( getRank()==0 ) return;
   storedata=true; setShape( shape );
+}
+
+bool Value::ignoreStoredValue(const std::string& c) const {
+  if( !storedata ) return true; 
+  ActionWithVector* av=dynamic_cast<ActionWithVector*>(action);
+  if( av ) return (av->getFirstActionInChain())->getLabel()==c;
+  return false;
 }
 
 void Value::setConstant() {

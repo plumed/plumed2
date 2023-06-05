@@ -19,11 +19,9 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "symfunc/MultiColvarBase.h"
-#include "symfunc/AtomValuePack.h"
-#include "tools/Angle.h"
-#include "tools/SwitchingFunction.h"
+#include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
+#include "MultiColvarShortcuts.h"
 
 #include <string>
 #include <cmath>
@@ -31,44 +29,52 @@
 namespace PLMD {
 namespace multicolvar {
 
-//+PLUMEDOC MCOLVAR ANGLES
+//+PLUMEDOC COLVAR ANGLES
 /*
-Calculate functions of the distribution of angles .
+Calculate an angle.
 
-You can use this command to calculate functions such as:
+This command can be used to compute the angle between three atoms. Alternatively
+if four atoms appear in the atom
+specification it calculates the angle between
+two vectors identified by two pairs of atoms.
 
+If _three_ atoms are given, the angle is defined as:
 \f[
- f(x) = \sum_{ijk} g( \theta_{ijk} )
+\theta=\arccos\left(\frac{ {\bf r}_{21}\cdot {\bf r}_{23}}{
+|{\bf r}_{21}| |{\bf r}_{23}|}\right)
+\f]
+Here \f$ {\bf r}_{ij}\f$ is the distance vector among the
+i-th and the j-th listed atom.
+
+If _four_ atoms are given, the angle is defined as:
+\f[
+\theta=\arccos\left(\frac{ {\bf r}_{21}\cdot {\bf r}_{34}}{
+|{\bf r}_{21}| |{\bf r}_{34}|}\right)
 \f]
 
-Alternatively you can use this command to calculate functions such as:
+Notice that angles defined in this way are non-periodic variables and
+their value is limited by definition between 0 and \f$\pi\f$.
 
-\f[
-f(x) = \sum_{ijk} s(r_{ij})s(r_{jk}) g(\theta_{ijk})
-\f]
-
-where \f$s(r)\f$ is a \ref switchingfunction.  This second form means that you can
-use this to calculate functions of the angles in the first coordination sphere of
-an atom / molecule \cite lj-recon.
+The vectors \f$ {\bf r}_{ij}\f$ are by default evaluated taking
+periodic boundary conditions into account.
+This behavior can be changed with the NOPBC flag.
 
 \par Examples
 
-The following example instructs plumed to find the average of two angles and to
-print it to a file
-
+This command tells plumed to calculate the angle between the vector connecting atom 1 to atom 2 and
+the vector connecting atom 2 to atom 3 and to print it on file COLVAR1. At the same time,
+the angle between vector connecting atom 1 to atom 2 and the vector connecting atom 3 to atom 4 is printed
+on file COLVAR2.
 \plumedfile
-ANGLES ATOMS1=1,2,3 ATOMS2=4,5,6 MEAN LABEL=a1
-PRINT ARG=a1.mean FILE=colvar
-\endplumedfile
 
-The following example tells plumed to calculate all angles involving
-at least one atom from GROUPA and two atoms from GROUPB in which the distances
-are less than 1.0. The number of angles between \f$\frac{\pi}{4}\f$ and
-\f$\frac{3\pi}{4}\f$ is then output
+a: ANGLE ATOMS=1,2,3
+# equivalently one could state:
+# a: ANGLE ATOMS=1,2,2,3
 
-\plumedfile
-ANGLES GROUPA=1-10 GROUPB=11-100 BETWEEN={GAUSSIAN LOWER=0.25pi UPPER=0.75pi} SWITCH={GAUSSIAN R_0=1.0} LABEL=a1
-PRINT ARG=a1.between FILE=colvar
+b: ANGLE ATOMS=1,2,3,4
+
+PRINT ARG=a FILE=COLVAR1
+PRINT ARG=b FILE=COLVAR2
 \endplumedfile
 
 This final example instructs plumed to calculate all the angles in the first coordination
@@ -79,38 +85,20 @@ ANGLES GROUP=1-38 HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=pi NBINS=20} SWITCH={GAUSS
 PRINT ARG=a1.* FILE=colvar
 \endplumedfile
 
+
 */
 //+ENDPLUMEDOC
 
-class Angles : public MultiColvarBase {
-private:
-  bool use_sf;
-  double rcut2_1, rcut2_2;
-  SwitchingFunction sf1;
-  SwitchingFunction sf2;
+class Angles : public ActionShortcut {
 public:
-  static void registerKeywords( Keywords& keys );
   explicit Angles(const ActionOptions&);
-/// Updates neighbor list
-  double compute( const unsigned& tindex, AtomValuePack& ) const override;
-/// Returns the number of coordinates of the field
-  double calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& ) const override;
-  bool isPeriodic() override { return false; }
+  static void registerKeywords( Keywords& keys );
 };
 
 PLUMED_REGISTER_ACTION(Angles,"ANGLES")
 
 void Angles::registerKeywords( Keywords& keys ) {
-  MultiColvarBase::registerKeywords( keys );
-  keys.use("MEAN"); keys.use("LESS_THAN");
-  keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MORE_THAN");
-  // Could also add Region here in theory
-  keys.add("numbered","ATOMS","the atoms involved in each of the angles you wish to calculate. "
-           "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one angle will be "
-           "calculated for each ATOM keyword you specify (all ATOM keywords should "
-           "provide the indices of three atoms).  The eventual number of quantities calculated by this "
-           "action will depend on what functions of the distribution you choose to calculate.");
-  keys.reset_style("ATOMS","atoms");
+  ActionShortcut::registerKeywords( keys );
   keys.add("atoms-1","GROUP","Calculate angles for each distinct set of three atoms in the group");
   keys.add("atoms-2","GROUPA","A group of central atoms about which angles should be calculated");
   keys.add("atoms-2","GROUPB","When used in conjunction with GROUPA this keyword instructs plumed "
@@ -120,101 +108,66 @@ void Angles::registerKeywords( Keywords& keys ) {
            "involving one atom from GROUPA, one atom from GROUPB and one atom from "
            "GROUPC are calculated. The GROUPA atoms are assumed to be the central "
            "atoms");
-  keys.add("optional","SWITCH","A switching function that ensures that only angles between atoms that "
-           "are within a certain fixed cutoff are calculated. The following provides "
-           "information on the \\ref switchingfunction that are available.");
-  keys.add("optional","SWITCHA","A switching function on the distance between the atoms in group A and the atoms in "
-           "group B");
-  keys.add("optional","SWITCHB","A switching function on the distance between the atoms in group A and the atoms in "
-           "group B");
-}
+  MultiColvarShortcuts::shortcutKeywords( keys );
+} 
 
 Angles::Angles(const ActionOptions&ao):
-  Action(ao),
-  MultiColvarBase(ao),
-  use_sf(false)
+Action(ao),
+ActionShortcut(ao)
 {
-  std::string sfinput,errors; parse("SWITCH",sfinput);
-  if( sfinput.length()>0 ) {
-    use_sf=true;
-    weightHasDerivatives=true;
-    sf1.set(sfinput,errors);
-    if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
-    sf2.set(sfinput,errors);
-    if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
-    log.printf("  only calculating angles for atoms separated by less than %s\n", sf1.description().c_str() );
-  } else {
-    parse("SWITCHA",sfinput);
-    if(sfinput.length()>0) {
-      use_sf=true;
-      weightHasDerivatives=true;
-      sf1.set(sfinput,errors);
-      if( errors.length()!=0 ) error("problem reading SWITCHA keyword : " + errors );
-      sfinput.clear(); parse("SWITCHB",sfinput);
-      if(sfinput.length()==0) error("found SWITCHA keyword without SWITCHB");
-      sf2.set(sfinput,errors);
-      if( errors.length()!=0 ) error("problem reading SWITCHB keyword : " + errors );
-      log.printf("  only calculating angles when the distance between GROUPA and GROUPB atoms is less than %s\n", sf1.description().c_str() );
-      log.printf("  only calculating angles when the distance between GROUPA and GROUPC atoms is less than %s\n", sf2.description().c_str() );
+  std::vector<std::string> group; parseVector("GROUP",group);
+  std::vector<std::string> groupa; parseVector("GROUPA",groupa);
+  std::vector<std::string> groupb; parseVector("GROUPB",groupb);
+  std::vector<std::string> groupc; parseVector("GROUPC",groupc);
+  if( group.size()>0 ) {
+    if( groupa.size()>0 || groupb.size()>0 || groupc.size()>0 ) error("should only be GROUP keyword in input not GROUPA/GROUPB/GROUPC");
+    Tools::interpretRanges( group ); std::string ainput = getShortcutLabel() + ": ANGLE_VECTOR"; unsigned n=1; 
+    // Not sure if this triple sum makes any sense
+    for(unsigned i=2; i<group.size(); ++i ) {
+      for(unsigned j=1; j<i; ++j ) {
+        for(unsigned k=0; k<j; ++k) {
+          std::string str_n; Tools::convert( n, str_n );
+          ainput += " ATOMS" + str_n + "=" + group[i] + "," + group[j] + "," + group[k]; n++;
+        }
+      }
     }
+    log.printf("Action ANGLE\n");
+    log.printf("  with label %s \n", getShortcutLabel().c_str() ); 
+    readInputLine( ainput );
+  } else if( groupc.size()>0 ) {
+    Tools::interpretRanges( groupa ); Tools::interpretRanges( groupb ); Tools::interpretRanges( groupc );
+    unsigned n=1; std::string ainput = getShortcutLabel() + ": ANGLE_VECTOR";
+    for(unsigned i=0; i<groupa.size(); ++i ) {
+      for(unsigned j=0; j<groupb.size(); ++j ) {
+        for(unsigned k=0; k<groupc.size(); ++k) {
+          std::string str_n; Tools::convert( n, str_n );
+          ainput += " ATOMS" + str_n + "=" + groupb[j] + "," + groupa[i] + "," + groupc[k]; n++;
+        }
+      }
+    }
+    log.printf("Action ANGLE\n");
+    log.printf("  with label %s \n", getShortcutLabel().c_str() );
+    readInputLine( ainput );
+  } else if( groupa.size()>0 ) {
+    Tools::interpretRanges( groupa ); Tools::interpretRanges( groupb );
+    unsigned n=1; std::string ainput; ainput = getShortcutLabel() + ": ANGLE_VECTOR"; 
+    for(unsigned i=0; i<groupa.size(); ++i ) {
+      for(unsigned j=1; j<groupb.size(); ++j ) {
+        for(unsigned k=0; k<j; ++k) {
+          std::string str_n; Tools::convert( n, str_n );
+          ainput += " ATOMS" + str_n + "=" + groupb[j] + "," + groupa[i] + "," + groupb[k]; n++;
+        }
+      }
+    }
+    log.printf("Action ANGLE\n");
+    log.printf("  with label %s \n", getShortcutLabel().c_str() );
+    readInputLine( ainput );
   }
-  // Read in the atoms
-  std::vector<AtomNumber> all_atoms;
-  readGroupKeywords( "GROUP", "GROUPA", "GROUPB", "GROUPC", false, true, all_atoms );
-  if( atom_lab.size()==0 ) readAtomsLikeKeyword( "ATOMS", 3, all_atoms );
-  setupMultiColvarBase( all_atoms );
-  // Set cutoff for link cells
-  if( use_sf ) {
-    setLinkCellCutoff( sf1.get_dmax() );
-    rcut2_1=sf1.get_dmax()*sf1.get_dmax();
-    rcut2_2=sf2.get_dmax()*sf2.get_dmax();
-  }
-
-  // And check everything has been read in correctly
-  checkRead();
-  // Setup stuff for central atom
-  std::vector<bool> catom_ind(3, false); catom_ind[0]=true;
-  setAtomsForCentralAtom( catom_ind );
-}
-
-double Angles::calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& myatoms ) const {
-  if(!use_sf) return 1.0;
-  Vector dij=getSeparation( myatoms.getPosition(0), myatoms.getPosition(2) );
-  Vector dik=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
-
-  double w1, w2, dw1, dw2, wtot;
-  double ldij = dij.modulo2(), ldik = dik.modulo2();
-
-  if( use_sf ) {
-    if( ldij>rcut2_1 || ldik>rcut2_2 ) return 0.0;
-  }
-
-  w1=sf1.calculateSqr( ldij, dw1 );
-  w2=sf2.calculateSqr( ldik, dw2 );
-  wtot=w1*w2; dw1*=weight*w2; dw2*=weight*w1;
-
-  addAtomDerivatives( 0, 1, dw2*dik, myatoms );
-  addAtomDerivatives( 0, 0, -dw1*dij - dw2*dik, myatoms );
-  addAtomDerivatives( 0, 2, dw1*dij, myatoms );
-  myatoms.addBoxDerivatives( 0, (-dw1)*Tensor(dij,dij) + (-dw2)*Tensor(dik,dik) );
-  return wtot;
-}
-
-double Angles::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
-  Vector dij=getSeparation( myatoms.getPosition(0), myatoms.getPosition(2) );
-  Vector dik=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
-
-  Vector ddij,ddik; PLMD::Angle a;
-  double angle=a.compute(dij,dik,ddij,ddik);
-
-  // And finish the calculation
-  addAtomDerivatives( 1, 1, ddik, myatoms );
-  addAtomDerivatives( 1, 0, - ddik - ddij, myatoms );
-  addAtomDerivatives( 1, 2, ddij, myatoms );
-  myatoms.addBoxDerivatives( 1, -(Tensor(dij,ddij)+Tensor(dik,ddik)) );
-
-  return angle;
+  MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel(), "", this );
 }
 
 }
 }
+
+
+
