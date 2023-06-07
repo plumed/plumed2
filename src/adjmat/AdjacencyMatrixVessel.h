@@ -28,7 +28,7 @@
 namespace PLMD {
 namespace adjmat {
 
-class AdjacencyMatrixBase;
+class OldAdjacencyMatrixBase;
 
 // One school of thought would have it that it makes more sense to
 // have the functionality contained within this class in AdjacencyMatrixBase
@@ -37,11 +37,11 @@ class AdjacencyMatrixBase;
 // these features.
 
 class AdjacencyMatrixVessel : public vesselbase::StoreDataVessel {
-  friend class AdjacencyMatrixBase;
+  friend class OldAdjacencyMatrixBase;
   friend class ActionWithInputMatrix;
 private:
 /// Pointer to underlying action
-  AdjacencyMatrixBase* function;
+  OldAdjacencyMatrixBase* function;
 /// Is the matrix symmetric and are we calculating hbonds
   bool symmetric, hbonds;
 public:
@@ -49,7 +49,7 @@ public:
 /// Constructor
   explicit AdjacencyMatrixVessel( const vesselbase::VesselOptions& );
 /// Get the underlying adjacency matrix action object
-  AdjacencyMatrixBase* getMatrixAction();
+  OldAdjacencyMatrixBase* getMatrixAction();
 /// Is an element of the matrix currently active
   bool matrixElementIsActive( const unsigned& ielem, const unsigned& jelem ) const ;
 /// Get the index that a particular element is stored in from the matrix indices

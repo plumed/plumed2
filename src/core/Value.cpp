@@ -43,6 +43,12 @@ Value::Value():
   hasDeriv(true),
   bufstart(0),
   streampos(0),
+  arg_der_start(0),
+  matpos(0),
+  ngrid_der(0),
+  ncols(0),
+  book_start(0),
+  symmetric(false),
   periodicity(unset),
   min(0.0),
   max(0.0),
@@ -65,6 +71,12 @@ Value::Value(const std::string& name):
   hasDeriv(true),
   bufstart(0),
   streampos(0),
+  arg_der_start(0),
+  ngrid_der(0),
+  matpos(0),
+  ncols(0),
+  book_start(0),
+  symmetric(false),
   periodicity(unset),
   min(0.0),
   max(0.0),
@@ -87,6 +99,12 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   hasDeriv(withderiv),
   bufstart(0),
   streampos(0),
+  arg_der_start(0),
+  ngrid_der(0),
+  matpos(0),
+  ncols(0),
+  book_start(0),
+  symmetric(false),
   periodicity(unset),
   min(0.0),
   max(0.0),
@@ -105,11 +123,11 @@ void Value::setShape( const std::vector<unsigned>&ss ) {
   if( shape.size()>0 && hasDeriv ) {
     // This is for grids
     std::size_t ndata = tot*action->getNumberOfDerivatives();
-    data.resize( ndata );
+    data.resize( ndata ); ngrid_der=action->getNumberOfDerivatives();
   } else if( shape.size()==0 ) {
     // This is for scalars
     data.resize(1); inputForce.resize(1);
-  } else if( storedata ) {
+  } else if( storedata && shape.size()<2 ) {
     // This is for vectors and matrices
     data.resize( tot ); inputForce.resize( tot );
   }
@@ -204,9 +222,50 @@ void Value::set(const std::size_t& n, const double& v ) {
   else { data[n*(1+action->getNumberOfDerivatives())] = v; }
 }
 
+double Value::get(const std::size_t& ival, const bool trueind) const {
+  if( hasDeriv ) return data[ival*(1+ngrid_der)];
+#ifdef DNDEBUG 
+  if( action ) plumed_dbg_massert( ival<getNumberOfValues(), "could not get value from " + name );
+#endif
+  if( shape.size()==2 && ncols<shape[1] && trueind ) {
+      unsigned irow = std::floor( ival / shape[1] ), jcol = ival%shape[1];
+      // This is a special treatment for the lower triangular matrices that are used when 
+      // we do ITRE with COLLECT_FRAMES
+      if( ncols==0 ) {
+          if( jcol<=irow ) return data[0.5*irow*(irow+1) + jcol];
+          return 0;
+      }
+      for(unsigned i=0; i<getRowLength(irow); ++i) {
+          if( getRowIndex(irow,i)==jcol ) return data[irow*ncols+i];
+      }
+      return 0.0;
+  }
+  plumed_massert( ival<data.size(), "cannot get value from " + name );
+  return data[ival];
+} 
+
+
 void Value::buildDataStore() {
   if( getRank()==0 ) return;
   storedata=true; setShape( shape );
+}
+
+void Value::reshapeMatrixStore( const unsigned& n ) {
+  plumed_dbg_assert( shape.size()==2 && !hasDeriv );
+  if( !storedata ) return ;
+  ncols=n; unsigned size=shape[0]*n;
+  if( matrix_bookeeping.size()==(size+shape[0]) ) {
+      std::fill(matrix_bookeeping.begin(), matrix_bookeeping.end(), 0);
+      return;
+  }
+  data.resize( size ); inputForce.resize( size );
+  matrix_bookeeping.resize( size + shape[0], 0 );
+  std::fill(matrix_bookeeping.begin(), matrix_bookeeping.end(), 0);
+}
+
+void Value::setPositionInMatrixStash( const unsigned& p ) {
+  plumed_dbg_assert( shape.size()==2 && !hasDeriv );
+  matpos=p;
 }
 
 bool Value::ignoreStoredValue(const std::string& c) const {
@@ -222,6 +281,12 @@ void Value::setConstant() {
 
 void Value::writeBinary(std::ostream&o) const {
   o.write(reinterpret_cast<const char*>(&data[0]),data.size()*sizeof(double));
+}
+
+void Value::setSymmetric( const bool& sym ) {
+  plumed_assert( shape.size()==2 && !hasDeriv );
+  if( sym && shape[0]!=shape[1] ) plumed_merror("non-square matrix cannot be symmetric");
+  symmetric=sym;
 }
 
 void Value::readBinary(std::istream&i) {
@@ -276,5 +341,6 @@ void add( const Value& val1, Value* val2 ) {
   for(unsigned i=0; i<val1.getNumberOfDerivatives(); ++i) val2->addDerivative( i, val1.getDerivative(i) );
   val2->set( val1.get() + val2->get() );
 }
+
 
 }

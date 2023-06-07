@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithInputMatrix.h"
 #include "AdjacencyMatrixVessel.h"
-#include "AdjacencyMatrixBase.h"
+#include "OldAdjacencyMatrixBase.h"
 #include "vesselbase/ActionWithVessel.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"

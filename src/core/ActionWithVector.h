@@ -38,10 +38,10 @@ class ActionWithVector:
 private:
 /// Is the calculation to be done in serial
   bool serial;  
-/// The current number of active tasks
-  unsigned nactive_tasks;
 /// The buffer that we use (we keep a copy here to avoid resizing)
   std::vector<double> buffer;
+/// The list of active tasks
+  std::vector<unsigned> active_tasks;
   /// Action that must be done before this one
   ActionWithVector* action_to_do_before;
 /// Actions that must be done after this one
@@ -52,10 +52,14 @@ private:
   void getNumberOfTasks( unsigned& ntasks );
 ///  Run the task
   void runTask( const unsigned& taskno, MultiValue& myvals ) const ;
+/// Gather the values that we intend to store in the buffer
+  void gatherAccumulators( const unsigned& taskCode, const MultiValue& myvals, std::vector<double>& buffer ) const ;
 /// Get the size of the buffer array that holds the data we are gathering over the MPI loop
   void getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize );
+/// Get the number of quantities in the stream
+  void getNumberOfStreamedQuantities( unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping );
 /// Get the number of derivatives in the stream
-  void getNumberOfStreamedDerivatives( unsigned& sderivatives, unsigned& nderivatives );
+  void getNumberOfStreamedDerivatives( unsigned& nderivatives );
 /// Add this action to the recursive chain
   bool addActionToChain( const std::vector<std::string>& alabels, ActionWithVector* act );
 /// Check the chain for non scalar forces
@@ -69,6 +73,10 @@ private:
 protected:
 /// Assert if this action is part of a chain
   bool done_in_chain;
+/// Run all calculations in serial
+  bool runInSerial() const ;
+/// Get the list of tasks that are active
+  std::vector<unsigned>& getListOfActiveTasks();
 /// This sets up the arguments at the start of the calculation
   unsigned buildArgumentStore( const unsigned& argstart );
 /// Get the position of the argument in the streamm and set it if we need to
@@ -87,6 +95,8 @@ public:
   void calculateNumericalDerivatives(ActionWithValue* av) override; 
 /// Are we running this command in a chain
   bool actionInChain() const ;
+/// This is overwritten within ActionWithMatrix and is used to build the chain of just matrix actions
+  virtual void finishChainBuild( ActionWithVector* act ) {}
 /// Return a pointer to the first action in the chain
   const ActionWithVector* getFirstActionInChain() const ;
   ActionWithVector* getFirstActionInChain();
@@ -96,12 +106,16 @@ public:
   void clearDerivatives( const bool& force=false ) override;
 /// Check if we can be after another ActionWithVector
   virtual bool canBeAfterInChain( ActionWithVector* av ) { return true; }
-/// Get the number of quantities in the stream
-  virtual void getNumberOfStreamedQuantities( unsigned& nquants, unsigned& ncols, unsigned& nmat );
+/// setup the streamed quantities
+  virtual void setupStreamedComponents( unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping );
 /// This we override to perform each individual task
   virtual void performTask( const unsigned& current, MultiValue& myvals ) const = 0;
+/// Gather the data from all the OpenMP threads
+  virtual void gatherThreads( const unsigned& nt, const unsigned& bufsize, const std::vector<double>& omp_buffer, std::vector<double>& buffer, MultiValue& myvals );
+/// Gather all the data from the MPI processes
+  virtual void gatherProcesses( std::vector<double>& buffer );
 /// Gather the values that we intend to store in the buffer
-  virtual void gatherAccumulators( const unsigned& taskCode, const MultiValue& myvals, std::vector<double>& buffer ) const ;
+  virtual void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals, const unsigned& bufstart, std::vector<double>& buffer ) const ;
 /// Check if there is a force that needs to be accumulated on the ith task
   virtual bool checkForTaskForce( const unsigned& itask, const Value* myval ) const ;
 /// Gather the forces on non-scalar quantities
@@ -116,6 +130,11 @@ inline
 bool ActionWithVector::actionInChain() const {
   return (action_to_do_before!=NULL);
 }
+
+inline
+bool ActionWithVector::runInSerial() const {
+  return serial;
+} 
 
 }
 

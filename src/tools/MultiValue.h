@@ -54,29 +54,39 @@ private:
   bool atLeastOneSet;
 /// Are we in this for a call on vectors
   bool vector_call;
-  unsigned nindices, nfblock, nsplit;
+  unsigned nindices, nsplit;
 /// This allows us to store matrix elements
-  unsigned nmatrix_cols, nmat_force;
-  bool rerunning_matrix;
-  std::vector<unsigned> matrix_element_nind;
-  std::vector<unsigned> matrix_element_indices;
-  std::vector<double> matrix_element_stash;
-  std::vector<double> matrix_force_stash;
+  unsigned nmatrix_cols;
+  std::vector<double> matrix_row_stash;
+  std::vector<unsigned> matrix_bookeeping;
+/// These are used to store the indices that have derivatives wrt to at least one
+/// of the elements in a matrix
+  std::vector<unsigned> matrix_row_nderivatives;
+  std::vector<std::vector<unsigned> > matrix_row_derivative_indices;
 /// This is a fudge to save on vector resizing in MultiColvar
   std::vector<unsigned> indices, sort_indices;
   std::vector<Vector> tmp_atoms;
   std::vector<std::vector<Vector> > tmp_atom_der;
   std::vector<Tensor> tmp_atom_virial;
-  std::vector<unsigned> mat_nindices;
-  std::vector<std::vector<unsigned> > mat_indices;
   std::vector<std::vector<double> > tmp_vectors;
 public:
-  MultiValue( const std::size_t& nvals, const std::size_t& nder, const std::size_t& ncols=0, const std::size_t& nmat=0 );
-  void resize( const std::size_t& nvals, const std::size_t& nder, const std::size_t& ncols=0, const std::size_t& nmat=0 );
+  MultiValue( const std::size_t& nvals, const std::size_t& nder, const std::size_t& nmat=0, const std::size_t& maxcol=0, const std::size_t& nbook=0 );
+  void resize( const std::size_t& nvals, const std::size_t& nder, const std::size_t& nmat=0, const std::size_t& maxcol=0, const std::size_t& nbook=0 );
 /// Set the task index prior to the loop
   void setTaskIndex( const std::size_t& tindex );
 ///
   std::size_t getTaskIndex() const ;
+///
+  void setSecondTaskIndex( const std::size_t& tindex );
+/// Get the task index
+  std::size_t getSecondTaskIndex() const ;
+///
+  void setSplitIndex( const std::size_t& nat );
+  std::size_t getSplitIndex() const ;
+///
+  void setNumberOfIndices( const std::size_t& nat );
+  std::size_t getNumberOfIndices() const ;
+///
   std::vector<unsigned>& getIndices();
   std::vector<unsigned>& getSortIndices();
   std::vector<Vector>& getAtomVector();
@@ -113,8 +123,6 @@ public:
   double getTemporyDerivative( const unsigned& jder ) const ;
 /// Clear all values
   void clearAll( const bool& newversion=false );
-/// Clear bookeeping arrays for matrix stuff
-  void clearMatrixBookeepingArrays();
 /// Clear the derivatives
   void clearDerivatives( const unsigned& );  
 /// Clear the tempory derivatives
@@ -150,6 +158,14 @@ public:
   void copyDerivatives( MultiValue& );
 ///
   void quotientRule( const unsigned& nder, const unsigned& oder );
+/// Get the matrix bookeeping array
+  const std::vector<unsigned> & getMatrixBookeeping() const ;
+  void stashMatrixElement( const unsigned& nmat, const unsigned& rowstart, const unsigned& jcol, const double& val );
+  double getStashedMatrixElement( const unsigned& nmat, const unsigned& jcol ) const ;
+/// Get the bookeeping stuff for the derivatives wrt to rows of matrix
+  void setNumberOfMatrixRowDerivatives( const unsigned& nmat, const unsigned& nind );
+  unsigned getNumberOfMatrixRowDerivatives( const unsigned& nmat ) const ;
+  std::vector<unsigned>& getMatrixRowDerivativeIndices( const unsigned& nmat );
 };
 
 inline
@@ -264,6 +280,27 @@ unsigned MultiValue::getActiveIndex( const std::size_t& ival, const std::size_t&
 } 
 
 inline
+void MultiValue::setSplitIndex( const std::size_t& nat ) {
+  nsplit = nat;
+}
+  
+inline
+std::size_t MultiValue::getSplitIndex() const {
+  return nsplit;
+} 
+  
+inline
+void MultiValue::setNumberOfIndices( const std::size_t& nat ) {
+  nindices = nat;
+}
+  
+inline
+std::size_t MultiValue::getNumberOfIndices() const {
+  return nindices;
+} 
+
+
+inline
 bool MultiValue::inVectorCall() const {
   return (nmatrix_cols>0 && vector_call);
 }
@@ -303,6 +340,17 @@ inline
 std::size_t MultiValue::getTaskIndex() const {
   return task_index;
 }
+
+inline 
+void MultiValue::setSecondTaskIndex( const std::size_t& tindex ) {
+  task2_index = tindex; 
+} 
+  
+inline
+std::size_t MultiValue::getSecondTaskIndex() const {
+  return task2_index;
+} 
+
 
 inline
 void MultiValue::updateDynamicList() {
@@ -354,6 +402,40 @@ std::vector<double>& MultiValue::getTemporyVector(const unsigned& ind ) {
   plumed_dbg_assert( ind<tmp_vectors.size() );
   return tmp_vectors[ind];
 }
+
+inline
+void MultiValue::stashMatrixElement( const unsigned& nmat, const unsigned& rowstart, const unsigned& jcol, const double& val ) {
+  plumed_dbg_assert( jcol<nmatrix_cols && rowstart + matrix_bookeeping[rowstart]<matrix_bookeeping.size() && nmatrix_cols*nmat + matrix_bookeeping[rowstart]<matrix_row_stash.size() ); 
+  matrix_bookeeping[rowstart]++; matrix_bookeeping[rowstart + matrix_bookeeping[rowstart]]=jcol; matrix_row_stash[ nmatrix_cols*nmat + jcol] = val; 
+}
+
+inline
+double MultiValue::getStashedMatrixElement( const unsigned& nmat, const unsigned& jcol ) const {
+  plumed_dbg_assert( nmatrix_cols*nmat + jcol<matrix_row_stash.size() );
+  return matrix_row_stash[ nmatrix_cols*nmat + jcol ];
+}
+
+inline
+const std::vector<unsigned> & MultiValue::getMatrixBookeeping() const {
+  return matrix_bookeeping;
+}
+
+inline
+void MultiValue::setNumberOfMatrixRowDerivatives( const unsigned& nmat, const unsigned& nind ) {
+  plumed_dbg_assert( nmat<matrix_row_nderivatives.size() && nind<=matrix_row_nderivatives[nmat].size() );
+  matrix_row_nderivatives[nmat]=nind;
+}
+  
+inline
+unsigned MultiValue::getNumberOfMatrixRowDerivatives( const unsigned& nmat ) const {
+  plumed_dbg_assert( nmat<matrix_row_nderivatives.size() ); return matrix_row_nderivatives[nmat];
+} 
+
+inline
+std::vector<unsigned>& MultiValue::getMatrixRowDerivativeIndices( const unsigned& nmat ) {
+  plumed_dbg_assert( nmat<matrix_row_nderivatives.size() ); return matrix_row_derivative_indices[nmat];
+} 
+
 
 }
 #endif

@@ -22,7 +22,7 @@
 #include "core/ActionPilot.h"
 #include "core/ActionRegister.h"
 #include "AdjacencyMatrixVessel.h"
-#include "AdjacencyMatrixBase.h"
+#include "OldAdjacencyMatrixBase.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "tools/OFile.h"
@@ -80,7 +80,7 @@ DumpGraph::DumpGraph( const ActionOptions& ao):
   mymatrix(NULL)
 {
   parse("MAXCONNECT",maxconnections); std::string mstring; parse("MATRIX",mstring);
-  AdjacencyMatrixBase* mm = plumed.getActionSet().selectWithLabel<AdjacencyMatrixBase*>( mstring );
+  OldAdjacencyMatrixBase* mm = plumed.getActionSet().selectWithLabel<OldAdjacencyMatrixBase*>( mstring );
   if( !mm ) error("found no action in set with label " + mstring + " that calculates matrix");
   log.printf("  printing graph for matrix calculated by action %s\n", mm->getLabel().c_str() );
 

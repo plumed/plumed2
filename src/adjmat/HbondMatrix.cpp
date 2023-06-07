@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "AdjacencyMatrixBase.h"
+#include "OldAdjacencyMatrixBase.h"
 #include "symfunc/AtomValuePack.h"
 #include "core/ActionRegister.h"
 #include "tools/SwitchingFunction.h"
@@ -81,7 +81,7 @@ DUMPMULTICOLVAR DATA=csums FILE=acceptors.xyz
 namespace PLMD {
 namespace adjmat {
 
-class HBondMatrix : public AdjacencyMatrixBase {
+class HBondMatrix : public OldAdjacencyMatrixBase {
 private:
   unsigned ndonor_types;
 /// switching function
@@ -107,7 +107,7 @@ public:
 PLUMED_REGISTER_ACTION(HBondMatrix,"HBOND_MATRIX")
 
 void HBondMatrix::registerKeywords( Keywords& keys ) {
-  AdjacencyMatrixBase::registerKeywords( keys );
+  OldAdjacencyMatrixBase::registerKeywords( keys );
   keys.add("atoms","ATOMS","The list of atoms which can be part of a hydrogen bond.  When this command is used the set of atoms that can donate a "
            "hydrogen bond is assumed to be the same as the set of atoms that can form hydrogen bonds.  The atoms involved must be specified "
            "as a list of labels of \\ref mcolv or labels of a \\ref multicolvarfunction actions.  If you would just like to use "
@@ -137,7 +137,7 @@ void HBondMatrix::registerKeywords( Keywords& keys ) {
 
 HBondMatrix::HBondMatrix( const ActionOptions& ao ):
   Action(ao),
-  AdjacencyMatrixBase(ao)
+  OldAdjacencyMatrixBase(ao)
 {
   readMaxThreeSpeciesMatrix( "ATOMS", "DONORS", "ACCEPTORS", "HYDROGENS", false );
   unsigned nrows, ncols; retrieveTypeDimensions( nrows, ncols, ndonor_types );

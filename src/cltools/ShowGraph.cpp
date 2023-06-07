@@ -231,7 +231,7 @@ int ShowGraph::main(FILE* in, FILE*out,Communicator& pc) {
                          ActionWithVector* c = p.getActionSet().selectWithLabel<ActionWithVector*>( mychain[i] ); plumed_assert(c);
                          if( c->getNumberOfAtoms()>0 || c->hasStoredComponents() ) {
                              for(unsigned j=0; j<avec->getNumberOfComponents(); ++j ) {
-                                 plumed_massert( avec->copyOutput(j)->getRank()==0, "found non zero rank forces in " + avec->getLabel() );
+                                 if( avec->copyOutput(j)->getRank()>0 ) continue;
                                  ofile.printf("%s == %s ==> %s\n", getLabel(avec).c_str(), avec->copyOutput(j)->getName().c_str(), getLabel(c).c_str() ); 
                                  linkcount++;
                              }

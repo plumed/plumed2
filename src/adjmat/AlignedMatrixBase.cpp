@@ -28,7 +28,7 @@ namespace PLMD {
 namespace adjmat {
 
 void AlignedMatrixBase::registerKeywords( Keywords& keys ) {
-  AdjacencyMatrixBase::registerKeywords( keys );
+  OldAdjacencyMatrixBase::registerKeywords( keys );
   keys.add("atoms","ATOMS","The list of molecules for which you would like to calculate the contact matrix.  The molecules involved must "
            "have an orientation so your list will be a list of the labels of \\ref mcolv or \\ref multicolvarfunction "
            "as PLUMED calculates the orientations of molecules within these operations.  Please note also that the majority "
@@ -47,7 +47,7 @@ void AlignedMatrixBase::registerKeywords( Keywords& keys ) {
 
 AlignedMatrixBase::AlignedMatrixBase( const ActionOptions& ao ):
   Action(ao),
-  AdjacencyMatrixBase(ao)
+  OldAdjacencyMatrixBase(ao)
 {
   // Read in the atomic positions
   readMaxTwoSpeciesMatrix( "ATOMS", "ATOMSA", "ATOMSB", true );

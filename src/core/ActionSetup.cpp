@@ -31,12 +31,14 @@ namespace PLMD {
 ActionSetup::ActionSetup(const ActionOptions&ao):
   Action(ao)
 {
-  const ActionSet& actionset(plumed.getActionSet());
-  for(const auto & p : actionset) {
-// check that all the preceding actions are ActionSetup
-    if( !dynamic_cast<ActionSetup*>(p.get()) && !dynamic_cast<ActionForInterface*>(p.get()) && !dynamic_cast<ActionAnyorder*>(p.get()) ) {
-      error("Action " + getLabel() + " is a setup action, and should be only preceded by other setup actions or by actions that can be used in any order.");
-    }
+  if( !keywords.exists("LABEL") ) {
+       const ActionSet& actionset(plumed.getActionSet());
+       for(const auto & p : actionset) {
+         // check that all the preceding actions are ActionSetup
+         if( !dynamic_cast<ActionSetup*>(p.get()) && !dynamic_cast<ActionForInterface*>(p.get()) && !dynamic_cast<ActionAnyorder*>(p.get()) ) {
+           error("Action " + getLabel() + " is a setup action, and should be only preceded by other setup actions or by actions that can be used in any order.");
+         }
+       }
   }
 }
 

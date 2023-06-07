@@ -22,7 +22,7 @@
 #include "ActionWithInputMatrix.h"
 #include "symfunc/AtomValuePack.h"
 #include "AdjacencyMatrixVessel.h"
-#include "AdjacencyMatrixBase.h"
+#include "OldAdjacencyMatrixBase.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"

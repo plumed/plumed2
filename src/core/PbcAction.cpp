@@ -50,7 +50,7 @@ PbcAction::PbcAction(const ActionOptions&ao):
 {
   std::vector<unsigned> shape(2); shape[0]=shape[1]=3;
   addValue( shape ); setNotPeriodic(); setUnit( "length", "energy" );
-  getPntrToValue()->buildDataStore();
+  getPntrToValue()->buildDataStore(); getPntrToValue()->reshapeMatrixStore(3);
 }
 
 

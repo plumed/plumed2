@@ -23,13 +23,13 @@
 #define __PLUMED_adjmat_AlignedMatrixBase_h
 
 #include "tools/SwitchingFunction.h"
-#include "AdjacencyMatrixBase.h"
+#include "OldAdjacencyMatrixBase.h"
 
 
 namespace PLMD {
 namespace adjmat {
 
-class AlignedMatrixBase : public AdjacencyMatrixBase {
+class AlignedMatrixBase : public OldAdjacencyMatrixBase {
 private:
   unsigned ncol_t;
 /// switching function

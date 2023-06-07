@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "adjmat/AdjacencyMatrixBase.h"
+#include "adjmat/OldAdjacencyMatrixBase.h"
 #include "symfunc/AtomValuePack.h"
 #include "HBPammObject.h"
 #include "core/ActionRegister.h"
@@ -39,7 +39,7 @@ Adjacency matrix in which two electronegative atoms are adjacent if they are hyd
 namespace PLMD {
 namespace pamm {
 
-class HBPammMatrix : public adjmat::AdjacencyMatrixBase {
+class HBPammMatrix : public adjmat::OldAdjacencyMatrixBase {
 private:
   unsigned ndonor_types;
   double regulariser;
@@ -61,7 +61,7 @@ public:
 PLUMED_REGISTER_ACTION(HBPammMatrix,"HBPAMM_MATRIX")
 
 void HBPammMatrix::registerKeywords( Keywords& keys ) {
-  adjmat::AdjacencyMatrixBase::registerKeywords( keys );
+  adjmat::OldAdjacencyMatrixBase::registerKeywords( keys );
   keys.add("atoms-1","SITES","The list of atoms which can be part of a hydrogen bond.  When this command is used the set of atoms that can donate a "
            "hydrogen bond is assumed to be the same as the set of atoms that can form hydrogen bonds.  The atoms involved must be specified "
            "as a list of labels of \\ref mcolv or labels of a \\ref multicolvarfunction actions.  If you would just like to use "
@@ -88,7 +88,7 @@ void HBPammMatrix::registerKeywords( Keywords& keys ) {
 
 HBPammMatrix::HBPammMatrix(const ActionOptions& ao):
   Action(ao),
-  AdjacencyMatrixBase(ao)
+  OldAdjacencyMatrixBase(ao)
 {
   readMaxThreeSpeciesMatrix("SITES", "DONORS", "ACCEPTORS", "HYDROGENS", false );
   // Retrieve dimensions of hbonding matrix and resize

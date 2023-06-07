@@ -86,7 +86,11 @@ private:
 /// Does this quanity have derivatives
   bool hasDeriv;
 /// Variables for storing data
-  unsigned bufstart, streampos, arg_der_start;
+  unsigned bufstart, streampos, arg_der_start, matpos, ngrid_der, ncols, book_start;
+/// If we are storing a matrix is it symmetric?
+  bool symmetric;
+/// This is a bookeeping array that holds the non-zero elements of the "sparse" matrix
+  std::vector<unsigned> matrix_bookeeping;
 /// Is this quantity periodic
   enum {unset,periodic,notperiodic} periodicity;
 /// Various quantities that describe the domain of this value
@@ -118,7 +122,7 @@ public:
 /// Add something to the ith element of the data array
   void add(const std::size_t& n, const double& v );
 /// Get the value of the function
-  double get( const std::size_t& ival=0 ) const;
+  double get( const std::size_t& ival=0, const bool trueind=true ) const;
 /// Find out if the value has been set
   bool valueHasBeenSet() const;
 /// Check if the value is periodic
@@ -180,6 +184,10 @@ public:
   const std::vector<unsigned>& getShape() const ;
 /// This turns on storing of vectors/matrices
   void buildDataStore();
+/// Reshape the storage for sparse matrices
+  void reshapeMatrixStore( const unsigned& n );
+/// Set the symmetric flag equal true for this matrix
+  void setSymmetric( const bool& sym );
 /// Get the total number of scalars that are stored here
   unsigned getNumberOfValues() const ;
 /// Get the number of threads to use when assigning this value
@@ -198,6 +206,12 @@ public:
   bool isDerivativeZeroWhenValueIsZero() const ;
 ///
   unsigned getPositionInStream() const ;
+/// This stuff handles where to look for the start of the row that contains the row of the matrix
+  void setPositionInMatrixStash( const unsigned& p );
+  unsigned getPositionInMatrixStash() const ;
+/// This stuff handles where to keep the bookeeping stuff for storing the sparse matrix
+  void setMatrixBookeepingStart( const unsigned& b );
+  unsigned getMatrixBookeepingStart() const ;
 ///
   unsigned getArgDerivStart() const ;
 /// Convert the input index to its corresponding indices
@@ -206,6 +220,14 @@ public:
   void print( OFile& ofile ) const ;
 /// Are we to ignore the stored value
   bool ignoreStoredValue(const std::string& n) const ;
+/// Set a matrix element to be non zero
+  void setMatrixBookeepingElement( const unsigned& i, const unsigned& n );
+///
+  unsigned getRowLength( const unsigned& irow ) const ;
+///
+  unsigned getRowIndex( const unsigned& irow, const unsigned& jind ) const ;
+/// Are we storing this value
+  bool valueIsStored() const ;
 };
 
 void copy( const Value& val1, Value& val2 );
@@ -266,11 +288,6 @@ inline
 void Value::add(const std::size_t& n, const double& v ) {
   value_set=true; data[n]+=v; applyPeriodicity(n);
 } 
-
-inline
-double Value::get( const std::size_t& ival )const {
-  return data[ival];
-}
 
 inline
 bool Value::valueHasBeenSet() const {
@@ -428,6 +445,44 @@ unsigned Value::getPositionInStream() const {
 inline
 unsigned Value::getArgDerivStart() const {
   return arg_der_start;
+}
+
+inline
+unsigned Value::getPositionInMatrixStash() const {
+  return matpos;
+}
+
+inline
+void Value::setMatrixBookeepingStart( const unsigned& b ) {
+  book_start = b;
+}
+
+inline 
+unsigned Value::getMatrixBookeepingStart() const {
+  return book_start;
+}
+
+inline
+void Value::setMatrixBookeepingElement( const unsigned& i, const unsigned& n ) {
+  plumed_dbg_assert( i<matrix_bookeeping.size() ); 
+  matrix_bookeeping[i]=n;
+}
+
+inline
+bool Value::valueIsStored() const {
+  return storedata;
+}
+
+inline
+unsigned Value::getRowLength( const unsigned& irow ) const {
+  plumed_dbg_assert( (1+ncols)*irow<matrix_bookeeping.size() );
+  return matrix_bookeeping[(1+ncols)*irow];
+}
+
+inline
+unsigned Value::getRowIndex( const unsigned& irow, const unsigned& jind ) const {
+  plumed_dbg_assert( (1+ncols)*irow+1+jind<matrix_bookeeping.size() && jind<matrix_bookeeping[(1+ncols)*irow] );
+  return matrix_bookeeping[(1+ncols)*irow+1+jind];
 }
 
 }

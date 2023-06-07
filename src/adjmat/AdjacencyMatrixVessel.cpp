@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "AdjacencyMatrixVessel.h"
-#include "AdjacencyMatrixBase.h"
+#include "OldAdjacencyMatrixBase.h"
 #include "vesselbase/ActionWithVessel.h"
 
 namespace PLMD {
@@ -35,7 +35,7 @@ void AdjacencyMatrixVessel::registerKeywords( Keywords& keys ) {
 AdjacencyMatrixVessel::AdjacencyMatrixVessel( const vesselbase::VesselOptions& da ):
   StoreDataVessel(da)
 {
-  function=dynamic_cast<AdjacencyMatrixBase*>( getAction() );
+  function=dynamic_cast<OldAdjacencyMatrixBase*>( getAction() );
   plumed_assert( function );
   parseFlag("SYMMETRIC",symmetric); parseFlag("HBONDS",hbonds);
   if( symmetric && hbonds ) error("matrix should be either symmetric or hbonds");
@@ -74,7 +74,7 @@ unsigned AdjacencyMatrixVessel::getStoreIndexFromMatrixIndices( const unsigned& 
   return 0.5*jelem*(jelem-1) + ielem;
 }
 
-AdjacencyMatrixBase* AdjacencyMatrixVessel::getMatrixAction() {
+OldAdjacencyMatrixBase* AdjacencyMatrixVessel::getMatrixAction() {
   return function;
 }
 

@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "AdjacencyMatrixBase.h"
+#include "OldAdjacencyMatrixBase.h"
 #include "symfunc/AtomValuePack.h"
 #include "core/ActionRegister.h"
 #include "tools/SwitchingFunction.h"
@@ -39,7 +39,7 @@ Adjacency matrix in which two atoms are adjacent if they are connected topologic
 namespace PLMD {
 namespace adjmat {
 
-class TopologyMatrix : public AdjacencyMatrixBase {
+class TopologyMatrix : public OldAdjacencyMatrixBase {
 private:
 /// The width to use for the kernel density estimation and the
 /// sizes of the bins to be used in kernel density estimation
@@ -78,7 +78,7 @@ public:
 PLUMED_REGISTER_ACTION(TopologyMatrix,"TOPOLOGY_MATRIX")
 
 void TopologyMatrix::registerKeywords( Keywords& keys ) {
-  AdjacencyMatrixBase::registerKeywords( keys );
+  OldAdjacencyMatrixBase::registerKeywords( keys );
   keys.add("atoms","NODES","The list of atoms for which you would like to calculate the contact matrix.  The atoms involved must be specified "
            "as a list of labels of \\ref mcolv or labels of a \\ref multicolvarfunction actions.  If you would just like to use "
            "the atomic positions you can use a \\ref DENSITY command to specify a group of atoms.  Specifying your atomic positions using labels of "
@@ -98,7 +98,7 @@ void TopologyMatrix::registerKeywords( Keywords& keys ) {
 
 TopologyMatrix::TopologyMatrix( const ActionOptions& ao ):
   Action(ao),
-  AdjacencyMatrixBase(ao),
+  OldAdjacencyMatrixBase(ao),
   maxbins(0)
 {
   readMaxThreeSpeciesMatrix("NODES", "FAKE", "FAKE", "ATOMS", true );

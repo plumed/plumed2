@@ -125,8 +125,8 @@ unsigned ActionWithVector::buildArgumentStore( const unsigned& argstart ) {
       }
       plumed_massert(added, "could not add action " + getLabel() + " to chain of any of its arguments"); 
       // And get the number of derivatives
-      unsigned sder=0, nder=0; 
-      getFirstActionInChain()->getNumberOfStreamedDerivatives( sder, nder ); 
+      unsigned nder=0; 
+      getFirstActionInChain()->getNumberOfStreamedDerivatives( nder ); 
       return nder;
   } 
   for(unsigned i=argstart; i<getNumberOfArguments(); ++i) { if( getPntrToArgument(i)->getRank()>0 ) getPntrToArgument(i)->buildDataStore(); }
@@ -141,7 +141,7 @@ bool ActionWithVector::addActionToChain( const std::vector<std::string>& alabels
   std::vector<std::string> mylabels; getFirstActionInChain()->getAllActionLabelsInChain( mylabels );
   for(unsigned i=0; i<mylabels.size(); ++i) {
     if( act->getLabel()==mylabels[i] ) return true;
-  }                     
+  }
   
   // Check that everything that is required has been calculated
   for(unsigned i=0; i<alabels.size(); ++i) {
@@ -150,8 +150,8 @@ bool ActionWithVector::addActionToChain( const std::vector<std::string>& alabels
       if( alabels[i]==mylabels[j] ) { found=true; break; }
     }
     if( !found ) {
-      ActionWithVector* av=plumed.getActionSet().selectWithLabel<ActionWithVector*>( alabels[i] );
-      bool storingall=true;
+      ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( alabels[i] );
+      plumed_massert( av, "could not cast " + alabels[i] ); bool storingall=true;
       for(int j=0; j<av->getNumberOfComponents(); ++j) {
         if( !(av->getPntrToComponent(j))->storedata ) storingall=false;
       }
@@ -167,8 +167,7 @@ bool ActionWithVector::addActionToChain( const std::vector<std::string>& alabels
           if( !av1->canBeAfterInChain( av2 ) ) error("must calculate " + mylabels[j] + " before " + mylabels[i] );
       }
   }
-  action_to_do_after=act;
-  act->action_to_do_before=this;
+  action_to_do_after=act; act->action_to_do_before=this; getFirstActionInChain()->finishChainBuild( act );
   return true;
 }
 
@@ -181,6 +180,14 @@ void ActionWithVector::getAllActionLabelsInChain( std::vector<std::string>& myla
   if( action_to_do_after ) action_to_do_after->getAllActionLabelsInChain( mylabels );
 }
 
+std::vector<unsigned>& ActionWithVector::getListOfActiveTasks() {
+  // Get the number of tasks
+  unsigned ntasks=0; getNumberOfTasks( ntasks );
+  active_tasks.resize( ntasks );
+  for(unsigned i=0; i<ntasks; ++i) active_tasks[i]=i;
+  return active_tasks;
+}
+
 void ActionWithVector::runAllTasks() {
 // Skip this if this is done elsewhere
   if( action_to_do_before ) return;
@@ -189,17 +196,9 @@ void ActionWithVector::runAllTasks() {
   unsigned rank=comm.Get_rank();
   if(serial) { stride=1; rank=0; }
         
-  // Get the number of tasks
-  unsigned ntasks=0; getNumberOfTasks( ntasks );
-  // Determine if some tasks can be switched off
-  // setTaskFlags( ntasks, taskSet );
-  // Get the number of tasks
-  // nactive_tasks = taskSet.size();
-  nactive_tasks = ntasks;
-  std::vector<unsigned> partialTaskList( ntasks );
-  for(unsigned i=0; i<ntasks; ++i) partialTaskList[i]=i;
-  // Create a vector from the task set 
-  // std::vector<AtomNumber> partialTaskList( taskSet.begin(), taskSet.end() );
+  // Get the list of active tasks
+  std::vector<unsigned> & partialTaskList( getListOfActiveTasks() );
+  unsigned nactive_tasks=partialTaskList.size();
   // Get number of threads for OpenMP
   unsigned nt=OpenMP::getNumThreads();
   if( nt*stride*10>nactive_tasks ) nt=nactive_tasks/stride/10;
@@ -209,8 +208,8 @@ void ActionWithVector::runAllTasks() {
   // prepareForTaskLoop();
   
   // Get the total number of streamed quantities that we need
-  unsigned nquantities = 0, ncols=0, nmatrices=0;
-  getNumberOfStreamedQuantities( nquantities, ncols, nmatrices );
+  unsigned nquants=0, nmatrices=0, maxcol=0, nbooks=0;
+  getNumberOfStreamedQuantities( nquants, nmatrices, maxcol, nbooks ); 
   // Get size for buffer
   unsigned bufsize=0; getSizeOfBuffer( nactive_tasks, bufsize );
   if( buffer.size()!=bufsize ) buffer.resize( bufsize );
@@ -218,14 +217,14 @@ void ActionWithVector::runAllTasks() {
   buffer.assign( buffer.size(), 0.0 ); 
   
   // Recover the number of derivatives we require
-  unsigned sderivatives=0, nderivatives = 0; bool gridsInStream=checkForGrids(nderivatives);
-  if( !doNotCalculateDerivatives() && !gridsInStream ) getNumberOfStreamedDerivatives( sderivatives, nderivatives );
+  unsigned nderivatives = 0; bool gridsInStream=checkForGrids(nderivatives);
+  if( !doNotCalculateDerivatives() && !gridsInStream ) getNumberOfStreamedDerivatives( nderivatives );
 
   #pragma omp parallel num_threads(nt)
   {
     std::vector<double> omp_buffer;
     if( nt>1 ) omp_buffer.resize( bufsize, 0.0 );
-    MultiValue myvals( nquantities, nderivatives, ncols, nmatrices );
+    MultiValue myvals( nquants, nderivatives, nmatrices, maxcol, nbooks ); 
     myvals.clearAll(true);
 
     #pragma omp for nowait
@@ -241,12 +240,20 @@ void ActionWithVector::runAllTasks() {
       myvals.clearAll(true);
     }
     #pragma omp critical
-    if(nt>1) for(unsigned i=0; i<bufsize; ++i) buffer[i]+=omp_buffer[i];
+    gatherThreads( nt, bufsize, omp_buffer, buffer, myvals ); 
   }
 
   // MPI Gather everything
-  if( !serial && buffer.size()>0 ) comm.Sum( buffer );
+  if( !serial && buffer.size()>0 ) gatherProcesses( buffer ); 
   finishComputations( buffer );
+}
+
+void ActionWithVector::gatherThreads( const unsigned& nt, const unsigned& bufsize, const std::vector<double>& omp_buffer, std::vector<double>& buffer, MultiValue& myvals ) {
+  if( nt>1 ) for(unsigned i=0; i<bufsize; ++i) buffer[i]+=omp_buffer[i];
+}
+
+void ActionWithVector::gatherProcesses( std::vector<double>& buffer ) {
+  comm.Sum( buffer );
 }
 
 unsigned ActionWithVector::getArgumentPositionInStream( const unsigned& jder, MultiValue& myvals ) const { 
@@ -279,10 +286,14 @@ void ActionWithVector::getNumberOfTasks( unsigned& ntasks ) {
   if( action_to_do_after ) action_to_do_after->getNumberOfTasks( ntasks );
 }
 
-void ActionWithVector::getNumberOfStreamedQuantities( unsigned& nquants, unsigned& ncols, unsigned& nmat ) {
+void ActionWithVector::setupStreamedComponents( unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping ) {
   for(unsigned i=0; i<getNumberOfArguments(); ++i) { getPntrToArgument(i)->streampos=nquants; nquants++; }
   for(int i=0; i<getNumberOfComponents(); ++i) { getPntrToComponent(i)->streampos=nquants; nquants++; }
-  if( action_to_do_after ) action_to_do_after->getNumberOfStreamedQuantities( nquants, ncols, nmat );
+}
+
+void ActionWithVector::getNumberOfStreamedQuantities( unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping ) {
+  setupStreamedComponents( nquants, nmat, maxcol, nbookeeping ); 
+  if( action_to_do_after ) action_to_do_after->getNumberOfStreamedQuantities( nquants, nmat, maxcol, nbookeeping );
 }
 
 void ActionWithVector::getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize ) {
@@ -290,19 +301,27 @@ void ActionWithVector::getSizeOfBuffer( const unsigned& nactive_tasks, unsigned&
   if( action_to_do_after ) action_to_do_after->getSizeOfBuffer( nactive_tasks, bufsize );
 }
 
-void ActionWithVector::getNumberOfStreamedDerivatives( unsigned& sderivatives, unsigned& nder ) {
+void ActionWithVector::getNumberOfStreamedDerivatives( unsigned& nder ) {
   unsigned nderivatives=nder; std::string c=getFirstActionInChain()->getLabel();
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
       if( !getPntrToArgument(i)->ignoreStoredValue(c) ) nderivatives += getPntrToArgument(i)->getNumberOfValues();
   }
   if( getNumberOfAtoms()>0 ) nderivatives += 3*getNumberOfAtoms() + 9;
-  // Check if any new derivatives were found and update sderivatives if they were
-  if( nder>0 && nderivatives-nder>0 ) {
-      sderivatives=nder;
-      for(int i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->arg_der_start=sderivatives;
+  if( getNumberOfArguments()==0 && nder>0 && nderivatives-nder>0 ) {
+      for(int i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->arg_der_start=nder; 
+  } else if( getNumberOfArguments()>0 ) {
+      unsigned minstart = std::numeric_limits<unsigned>::max();
+      for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+          if( getPntrToArgument(i)->ignoreStoredValue(c) && getPntrToArgument(i)->arg_der_start<minstart ) minstart = getPntrToArgument(i)->arg_der_start;
+      }
+      if( minstart<std::numeric_limits<unsigned>::max() ) {
+          for(int i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->arg_der_start=minstart;
+      } else {
+          for(int i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->arg_der_start=nder;
+      }
   }
   // Update nderivatives with the new total of derivatives
-  nder=nderivatives; if( action_to_do_after ) action_to_do_after->getNumberOfStreamedDerivatives( sderivatives, nder );
+  nder=nderivatives; if( action_to_do_after ) action_to_do_after->getNumberOfStreamedDerivatives( nder );
 } 
 
 void ActionWithVector::runTask( const unsigned& current, MultiValue& myvals ) const {
@@ -328,14 +347,17 @@ void ActionWithVector::gatherAccumulators( const unsigned& taskCode, const Multi
           }
         }
       // This looks after storing of vectors
-      } else if( getConstPntrToComponent(i)->storedata ) {
-        plumed_dbg_assert( getConstPntrToComponent(i)->getRank()==1 && !getConstPntrToComponent(i)->hasDeriv );
-        unsigned vindex = getConstPntrToComponent(i)->bufstart + taskCode; plumed_dbg_massert( vindex<buffer.size(), "failing in " + getLabel() );
-        buffer[vindex] += myvals.get(getConstPntrToComponent(i)->streampos);
-      }
+      } else if( getConstPntrToComponent(i)->storedata ) gatherStoredValue( i, taskCode, myvals, bufstart, buffer );
     }
   }
   if( action_to_do_after ) action_to_do_after->gatherAccumulators( taskCode, myvals, buffer ); 
+}
+
+void ActionWithVector::gatherStoredValue( const unsigned& valindex, const unsigned& taskCode, const MultiValue& myvals,
+                                          const unsigned& bufstart, std::vector<double>& buffer ) const {
+  plumed_dbg_assert( getConstPntrToComponent(valindex)->getRank()==1 && !getConstPntrToComponent(valindex)->hasDeriv );
+  unsigned vindex = getConstPntrToComponent(valindex)->bufstart + taskCode; plumed_dbg_massert( vindex<buffer.size(), "failing in " + getLabel() );
+  buffer[vindex] += myvals.get(getConstPntrToComponent(valindex)->streampos);
 }
 
 void ActionWithVector::finishComputations( const std::vector<double>& buf ) {
@@ -390,13 +412,11 @@ bool ActionWithVector::checkForForces() {
   if( nt*stride*10>nf_tasks ) nt=nf_tasks/stride/10;
   if( nt==0 ) nt=1;
 
-  // Create a vector from the task set 
-  // std::vector<AtomNumber> partialTaskList( av->taskSet.begin(), av->taskSet.end() );
   // Now determine how big the multivalue needs to be
-  unsigned nquants=0, ncols=0, nmatrices=0;
-  getNumberOfStreamedQuantities( nquants, ncols, nmatrices );
+  unsigned nquants=0, nmatrices=0, maxcol=0, nbooks=0;
+  getNumberOfStreamedQuantities( nquants, nmatrices, maxcol, nbooks );
   // Recover the number of derivatives we require (this should be equal to the number of forces)
-  unsigned sderiv=0, nderiv=0; getNumberOfStreamedDerivatives( sderiv, nderiv );
+  unsigned nderiv=0; getNumberOfStreamedDerivatives( nderiv );
   if( forcesForApply.size()!=nderiv ) forcesForApply.resize( nderiv );
   // Clear force buffer
   forcesForApply.assign( forcesForApply.size(), 0.0 );
@@ -405,7 +425,7 @@ bool ActionWithVector::checkForForces() {
   {
     std::vector<double> omp_forces;
     if( nt>1 ) omp_forces.resize( forcesForApply.size(), 0.0 );
-    MultiValue myvals( nquants, nderiv, ncols, nmatrices );
+    MultiValue myvals( nquants, nderiv, nmatrices, maxcol, nbooks );
     myvals.clearAll();
 
     #pragma omp for nowait
