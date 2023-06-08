@@ -31,13 +31,13 @@ then
 fi
 
 if grep -q '^#include "\(bias\|colvar\|function\|sasa\|vatom\)\/ActionRegister.h"' "$file"; then
-   echo "WARNING: using a legacy ActionRegister.h include path"
+   >&2 echo 'WARNING: using a legacy ActionRegister.h include path, please use <<#include "core/ActionRegister.h">>'
    sed 's%^#include ".*/ActionRegister.h"%#include "core/ActionRegister.h"%g' < "$file" > "tmp_${file}"
    file="tmp_${file}"
 fi
 
 if grep -q '^#include "\(cltools\)\/CLToolRegister.h"' "$file"; then
-   echo "WARNING: using a legacy  CLToolRegister.h include path"
+   >&2  echo 'WARNING: using a legacy  CLToolRegister.h include path, please use <<#include "core/CLToolRegister.h">>'
    sed 's%^#include ".*/CLToolRegister.h"%#include "core/CLToolRegister.h"%g' < "$file" > "tmp_${file}"
    file="tmp_${file}"
 fi
