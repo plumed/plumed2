@@ -30,20 +30,22 @@ then
   exit 1
 fi
 
-if grep -qP '^#include "(?!core).*\/ActionRegister.h"' "$file"; then
+if grep -q '^#include "\(bias\|colvar\|function\|sasa\|vatom\)\/ActionRegister.h"' "$file"; then
    echo "WARNING: using a legacy ActionRegister.h include path"
-   sed 's%^#include ".\*/ActionRegister.h"%#include "core/ActionRegister.h"%g' < "$file" > "tmp_${file}"
+   sed 's%^#include ".*/ActionRegister.h"%#include "core/ActionRegister.h"%g' < "$file" > "tmp_${file}"
    file="tmp_${file}"
 fi
 
-if grep -qP '^#include "(?!core).*\/CLToolRegister.h"' "$file"; then
+if grep -q '^#include "\(cltools\)\/CLToolRegister.h"' "$file"; then
    echo "WARNING: using a legacy  CLToolRegister.h include path"
-   sed 's%^#include ".\*/CLToolRegister.h"%#include "core/CLToolRegister.h"%g' < "$file" > "tmp_${file}"
+   sed 's%^#include ".*/CLToolRegister.h"%#include "core/CLToolRegister.h"%g' < "$file" > "tmp_${file}"
    file="tmp_${file}"
 fi
 
 rm -f "$obj" "$lib"
 
+echo "$compile" "$obj" "$file"
+echo "$link_installed" "$lib" "$obj"
 if test "$PLUMED_IS_INSTALLED" = yes ; then
   eval "$compile" "$obj" "$file" && eval "$link_installed" "$lib" "$obj"
 else
