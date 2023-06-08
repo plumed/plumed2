@@ -23,7 +23,7 @@
 
 */
 #include "function/Function.h"
-#include "function/ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 
 namespace PLMD {

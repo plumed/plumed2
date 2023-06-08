@@ -308,7 +308,7 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys)
   keys.add("compulsory","PACE","the frequency for kernel deposition");
   std::string info_sigma("the initial widths of the kernels");
   if(mode::explore)
-    info_sigma+=", divided by \\f$\\sqrt{\\gamma}\\f$";
+    info_sigma+=", divided by the square root of gamma";
   info_sigma+=". If not set, an adaptive sigma will be used with the given ADAPTIVE_SIGMA_STRIDE";
   keys.add("compulsory","SIGMA","ADAPTIVE",info_sigma);
   keys.add("compulsory","BARRIER","the free energy barrier to be overcome. It is used to set BIASFACTOR, EPSILON, and KERNEL_CUTOFF to reasonable values");

@@ -1,0 +1,41 @@
+name: codecheckCI
+
+on:
+  workflow_call:
+
+env:
+# on CI, better dump stack trace in case there is an error
+  PLUMED_STACK_TRACE: yes
+# use two threads for openMP tests
+  PLUMED_NUM_THREADS: 2
+# these are used to build required packages
+  CC: gcc
+  CXX: g++
+
+
+jobs:
+
+  codecheck:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set path
+      run: |
+         echo "$HOME/opt/bin" >> $GITHUB_PATH
+    - name: Install requirements
+      run: |
+        .ci/install.cppcheck 2.10.3
+        # it is important that this is the same version used to generate the actual ./configure
+        .ci/install.autoconf 2.69
+    - name: Build astyle
+      run: |
+        make -j 4 -C astyle
+    - name: Checking code
+      run: |
+        # this is required so as to have all the include files in place
+        # notice that this is done automatically in build
+        # first make sure that dirslinks are generated for all modules
+        ./configure --enable-modules=all
+        # then generate the links
+        make -C src/lib/ dirslinks
+        make codecheck
