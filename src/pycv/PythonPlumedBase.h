@@ -17,7 +17,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef __PLUMED_pycv_PythonPlumedBase_h
 #define __PLUMED_pycv_PythonPlumedBase_h
 
-
+#include <mutex>
 #include <string>
 
 #include <pybind11/embed.h> // everything needed for embedding
@@ -28,27 +28,36 @@ namespace py = pybind11;
 namespace PLMD {
 namespace pycv {
 
-typedef float pycv_t;		// May need to adapt to the build precision?
+using pycv_t = float;		// May need to adapt to the build precision?
 
+///This class act both as a guard for the interpreter and a a case container for the python module and functions
+class PlumedScopedPythonInterpreter final{
+public:
+  PlumedScopedPythonInterpreter();
+  ~PlumedScopedPythonInterpreter();
+private:
+  static int use_count;
+  static std::unique_ptr<py::scoped_interpreter> interpreterGuard;
+  static std::mutex interpreterMutex;
+};
 
 class PythonPlumedBase {
+private:
+  //this must be the first object, since two python objects are instantiated here
+  PlumedScopedPythonInterpreter guard{};
 public:
   const std::string PYTHONCV_CITATION = "Giorgino, (2019). PYCV: a PLUMED 2 Module Enabling the Rapid Prototyping of Collective Variables in Python. Journal of Open Source Software, 4(42), 1773. doi:10.21105/joss.01773";
   const char * BIASING_DISABLED = "PYCV: Gradient was expected as a second return value but is missing. Biasing won't work\n";
-  PythonPlumedBase();
-  // ~PythonPlumedBase();
+  PythonPlumedBase()=default;
+  virtual ~PythonPlumedBase()=default;
 
 protected:
-  py::module py_module;
-  py::object py_fcn;
-
-private:
-  static int use_count;
-
+  py::module py_module{};
+  py::object py_fcn{};
 };
 
-}
-}
+} // namespace pycv 
+} // namespace PLMD
 
 
 #endif

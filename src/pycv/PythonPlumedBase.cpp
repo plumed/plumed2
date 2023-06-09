@@ -16,7 +16,9 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 #include "PythonPlumedBase.h"
-
+#if __cplusplus < 201300
+#include "tools/Tools.h"
+#endif
 #include <pybind11/embed.h> // everything needed for embedding
 #include <pybind11/numpy.h>
 
@@ -37,25 +39,45 @@ namespace pycv {
 // one of the PYCV actions are used.
 // https://pybind11.readthedocs.io/en/stable/reference.html#_CPPv422initialize_interpreterb
 
-int PythonPlumedBase::use_count=0; // static
+int PlumedScopedPythonInterpreter::use_count=0;
+std::unique_ptr<py::scoped_interpreter> PlumedScopedPythonInterpreter::interpreterGuard =
+    nullptr;
+std::mutex PlumedScopedPythonInterpreter::interpreterMutex{};
 
-PythonPlumedBase::PythonPlumedBase() {
-  if(use_count==0) {
-    // std::cout << "------ init" << std::endl;
-    py::initialize_interpreter();
-  } else {
-    // std::cout << "------ reusing" << std::endl;
+PlumedScopedPythonInterpreter::PlumedScopedPythonInterpreter() {
+  std::lock_guard<std::mutex> lk(interpreterMutex);
+  if(use_count==0 && Py_IsInitialized()) {
+    //this should address the "calling pycv within a python interpreter problem"
+    ++use_count;
   }
-  use_count++;
+
+  if(use_count==0){
+    
+    std::cerr<< "------ initialized Python interpreter\n";
+    interpreterGuard = 
+#if __cplusplus < 201300
+    PLMD::Tools::
+#else
+    std::
+#endif
+    make_unique<py::scoped_interpreter>();
+  } else {
+    std::cerr << "------ Python interpreter already initializated\n";
+  }
+  ++use_count;
 }
 
-// Finalization is tricky, because it should happen AFTER the
-// destruction of the derived classes (which contain py::
-// objects). Not doing it.
-
-
+PlumedScopedPythonInterpreter::~PlumedScopedPythonInterpreter(){
+  // Finalization is tricky, because it should happen AFTER the
+  // destruction of the derived classes (which contain py::
+  // objects). Not doing it. <-- trying to address this
+  std::lock_guard<std::mutex> lk(interpreterMutex);
+  --use_count;
+  if(use_count==0) {
+    interpreterGuard.reset(nullptr);
+    std::cerr << "------ Python interpreter finalized\n";
+  }
 }
-}
 
-
-
+} // namespace pycv 
+} // namespace PLMD

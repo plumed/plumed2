@@ -28,9 +28,9 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include <cmath>
 
 
-using namespace std;
 namespace py = pybind11;
-
+using std::string;
+using std::vector;
 
 namespace PLMD {
 namespace pycv {
@@ -213,7 +213,7 @@ class PythonCV : public Colvar,
   // pycv_t *py_X_ptr;    /* For when we want to speed up */
 
   int natoms;
-  bool pbc;
+  bool pbc=false;
 
   void check_dim(py::array_t<pycv_t>);
   void calculateSingleComponent(py::object &);
@@ -222,7 +222,7 @@ class PythonCV : public Colvar,
 public:
   explicit PythonCV(const ActionOptions&);
 // active methods:
-  virtual void calculate();
+  void calculate() override;
   static void registerKeywords( Keywords& keys );
 };
 
@@ -240,9 +240,7 @@ void PythonCV::registerKeywords( Keywords& keys ) {
 }
 
 PythonCV::PythonCV(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao),
-  pbc(false)
-{
+  PLUMED_COLVAR_INIT(ao) {
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   natoms = atoms.size();
@@ -410,8 +408,8 @@ void PythonCV::check_dim(py::array_t<pycv_t> grad) {
 
 
 
-}
-}
+} //pycv
+} //PLMD
 
 
 
