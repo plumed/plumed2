@@ -302,7 +302,7 @@ std::size_t MultiValue::getNumberOfIndices() const {
 
 inline
 bool MultiValue::inVectorCall() const {
-  return (nmatrix_cols>0 && vector_call);
+  return (matrix_row_nderivatives.size()>0 && vector_call);
 }
 
 inline
@@ -422,7 +422,7 @@ const std::vector<unsigned> & MultiValue::getMatrixBookeeping() const {
 
 inline
 void MultiValue::setNumberOfMatrixRowDerivatives( const unsigned& nmat, const unsigned& nind ) {
-  plumed_dbg_assert( nmat<matrix_row_nderivatives.size() && nind<=matrix_row_nderivatives[nmat].size() );
+  plumed_dbg_assert( nmat<matrix_row_nderivatives.size() && nind<=matrix_row_derivative_indices[nmat].size() );
   matrix_row_nderivatives[nmat]=nind;
 }
   

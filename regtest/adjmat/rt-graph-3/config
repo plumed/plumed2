@@ -1,0 +1,2 @@
+type=plumed
+arg="show_graph --plumed plumed.dat --out graph.md" 

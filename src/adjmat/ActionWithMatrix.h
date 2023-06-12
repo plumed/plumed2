@@ -109,7 +109,7 @@ unsigned ActionWithMatrix::getDerivativeStart( const unsigned& jarg ) const {
 
 inline
 void ActionWithMatrix::addDerivativeOnVectorArgument( const unsigned& ival, const unsigned& jarg, const unsigned& jelem, const double& der, MultiValue& myvals ) const {
-  plumed_dbg_assert( imat<getNumberOfArguments() && getPntrToArgument(imat)->getRank()==1 && !getPntrToArgument(imat)->hasDerivatives() );
+  plumed_dbg_assert( jarg<getNumberOfArguments() && getPntrToArgument(jarg)->getRank()==1 && !getPntrToArgument(jarg)->hasDerivatives() );
   unsigned ostrn = getConstPntrToComponent(ival)->getPositionInStream(), vstart=getDerivativeStart(jarg);
   if( getPntrToArgument(jarg)->valueHasBeenSet() ) {
       myvals.addDerivative( ostrn, vstart + jelem, der ); myvals.updateIndex( ostrn, vstart + jelem );
@@ -118,7 +118,7 @@ void ActionWithMatrix::addDerivativeOnVectorArgument( const unsigned& ival, cons
 
 inline
 void ActionWithMatrix::addDerivativeOnMatrixArgument( const unsigned& ival, const unsigned& jarg, const unsigned& irow, const unsigned& jcol, const double& der, MultiValue& myvals ) const {
-  plumed_dbg_assert( imat<getNumberOfArguments() && getPntrToArgument(imat)->getRank()==2 && !getPntrToArgument(imat)->hasDerivatives() );
+  plumed_dbg_assert( jarg<getNumberOfArguments() && getPntrToArgument(jarg)->getRank()==2 && !getPntrToArgument(jarg)->hasDerivatives() );
   unsigned ostrn = getConstPntrToComponent(ival)->getPositionInStream(), vstart=getDerivativeStart(jarg); 
   if( getPntrToArgument(jarg)->valueHasBeenSet() ) {
       unsigned dloc = vstart + irow*getPntrToArgument(jarg)->getShape()[1] + jcol; 

@@ -186,25 +186,25 @@ void FunctionOfVector<T>::performTask( const unsigned& current, MultiValue& myva
   if( actionInChain() ) {
       for(unsigned j=0;j<args.size();++j) {
           unsigned istrn = getArgumentPositionInStream( argstart+j, myvals );
-          unsigned arg_deriv_start = getPntrToArgument(argstart+j)->getArgDerivStart();
+          unsigned arg_deriv_s = arg_deriv_starts[argstart+j];
           for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
               unsigned kind=myvals.getActiveIndex(istrn,k);
               for(int i=0;i<getNumberOfComponents();++i) {
                   unsigned ostrn=getConstPntrToComponent(i)->getPositionInStream();
-                  myvals.addDerivative( ostrn, arg_deriv_start + kind, derivatives(i,j)*myvals.getDerivative( istrn, kind ) );
+                  myvals.addDerivative( ostrn, arg_deriv_s + kind, derivatives(i,j)*myvals.getDerivative( istrn, kind ) );
               }
           }
           // Ensure we only store one lot of derivative indices
           bool found=false;
           for(unsigned k=0; k<j; ++k) {
-              if( getPntrToArgument(argstart+k)->getArgDerivStart()==arg_deriv_start ) { found=true; break; }
+              if( arg_deriv_starts[argstart+k]==arg_deriv_s ) { found=true; break; }
           }
           if( found ) continue;
           for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
               unsigned kind=myvals.getActiveIndex(istrn,k);
               for(int i=0;i<getNumberOfComponents();++i) {
                   unsigned ostrn=getConstPntrToComponent(i)->getPositionInStream();
-                  myvals.updateIndex( ostrn, arg_deriv_start + kind );
+                  myvals.updateIndex( ostrn, arg_deriv_s + kind );
               }
           } 
       }

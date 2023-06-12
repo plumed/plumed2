@@ -108,8 +108,8 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
 
 bool AdjacencyMatrixBase::canBeAfterInChain( ActionWithVector* av ) {
   AdjacencyMatrixBase* ab=dynamic_cast<AdjacencyMatrixBase*>(av);
-  if(ab) doInnerLoop=(ab->getPntrToComponent(0))->getShape()[1]!=getPntrToComponent(0)->getShape()[1]; 
-  if( av->getName()!="MATRIX_MATRIX_PRODUCT" ) return false;
+  if(ab) doInnerLoop=true;
+  // if( av->getName()!="MATRIX_MATRIX_PRODUCT" ) return false;
   return true;
 }
 
@@ -298,6 +298,7 @@ void AdjacencyMatrixBase::performTask( const std::string& controller, const unsi
        matrix_indices[nmat_ind+0]=3*index2+0; matrix_indices[nmat_ind+1]=3*index2+1; matrix_indices[nmat_ind+2]=3*index2+2;
        myvals.setNumberOfMatrixRowDerivatives( nmat, nmat_ind+3 );
   }
+
   // Calculate the components if we need them
   if( components ) {
     unsigned x_index = getConstPntrToComponent(1)->getPositionInStream();
@@ -365,7 +366,7 @@ void AdjacencyMatrixBase::runEndOfRowJobs( const unsigned& ind, const std::vecto
       }
       unsigned virbase = 3*getNumberOfAtoms();
       for(unsigned i=0; i<9; ++i) matrix_indices[nmat_ind+i]=virbase+i;
-      nmat_ind+=9;
+      nmat_ind+=9; plumed_dbg_massert( nmat_ind<=3*getNumberOfAtoms() + 9, "found too many derivatives in " + getLabel() );
       myvals.setNumberOfMatrixRowDerivatives( nmat, nmat_ind );
   }
 }

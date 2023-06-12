@@ -46,6 +46,8 @@ private:
   ActionWithVector* action_to_do_before;
 /// Actions that must be done after this one
   ActionWithVector* action_to_do_after;
+/// Work backwards through the chain to find an action that has either stored arguments or derivatives
+  const ActionWithVector* getActionWithDerivatives() const ;
 /// Check if there are any grids in the stream 
   bool checkForGrids(unsigned& nder) const ;
 /// Find out how many tasks we need to perform in this loop
@@ -59,7 +61,7 @@ private:
 /// Get the number of quantities in the stream
   void getNumberOfStreamedQuantities( unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping );
 /// Get the number of derivatives in the stream
-  void getNumberOfStreamedDerivatives( unsigned& nderivatives );
+  void getNumberOfStreamedDerivatives( unsigned& nderivatives, const std::string& stopat );
 /// Add this action to the recursive chain
   bool addActionToChain( const std::vector<std::string>& alabels, ActionWithVector* act );
 /// Check the chain for non scalar forces
@@ -71,6 +73,8 @@ private:
 /// Add the gathered forces to the inputs across the whole chain
   void addForcesToInput( const std::vector<double>& forcesToApply, unsigned& ind );
 protected:
+/// A vector that contains the start point for the argument derivatives
+  std::vector<unsigned> arg_deriv_starts;
 /// Assert if this action is part of a chain
   bool done_in_chain;
 /// Run all calculations in serial

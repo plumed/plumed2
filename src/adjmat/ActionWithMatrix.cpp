@@ -104,7 +104,7 @@ void ActionWithMatrix::performTask( const unsigned& task_index, MultiValue& myva
 
 void ActionWithMatrix::runTask( const std::string& controller, const unsigned& current, const unsigned colno, MultiValue& myvals ) const {
   double outval=0; myvals.setTaskIndex(current); myvals.setSecondTaskIndex( colno );
-  if( isActive() ) performTask( controller, current, colno, myvals );
+  if( isActive() && (!doInnerLoop || (doInnerLoop && controller==getLabel())) ) performTask( controller, current, colno, myvals );
   bool hasval=false;
   for(int i=0; i<getNumberOfComponents(); ++i) { 
       if( fabs(myvals.get( getConstPntrToComponent(i)->getPositionInStream()) )>0 ) { hasval=true; break; }
