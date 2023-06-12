@@ -83,6 +83,14 @@ void ActionWithVector::retrieveAtoms() {
   if( action_to_do_after ) action_to_do_after->retrieveAtoms();
 }
 
+bool ActionWithVector::hasStoredArguments() const {
+  std::string headstr=getFirstActionInChain()->getLabel();
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      if( !getPntrToArgument(i)->ignoreStoredValue(headstr) ) return true;
+  }
+  return false;
+}
+
 unsigned ActionWithVector::buildArgumentStore( const unsigned& argstart ) {
   // Don't use chains for grids
   for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {

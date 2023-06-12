@@ -182,8 +182,6 @@ public:
   virtual void turnOnDerivatives();
 /// This is used to check if we run calculate during the update step
   virtual bool calculateOnUpdate(); 
-/// Check if there are any stored values 
-  bool hasStoredComponents() const ;
 };
 
 inline
