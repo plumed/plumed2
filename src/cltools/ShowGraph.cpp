@@ -224,7 +224,7 @@ int ShowGraph::main(FILE* in, FILE*out,Communicator& pc) {
              ActionWithVector* avec=dynamic_cast<ActionWithVector*>(a);
              if( avec ) {
                  ActionWithVector* head=avec->getFirstActionInChain();
-                 std::vector<std::string> mychain; head->getAllActionLabelsInChain( mychain );
+                 std::vector<std::string> mychain; head->getAllActionLabelsInChain( mychain ); std::vector<bool> printed(mychain.size(),false);
                  ofile.printf("subgraph sub%s [%s]\n",getLabel(head).c_str(),getLabel(head).c_str());
                  for(unsigned i=0; i<mychain.size(); ++i) {
                      bool drawn=false; 
@@ -233,7 +233,7 @@ int ShowGraph::main(FILE* in, FILE*out,Communicator& pc) {
                      }
                      if( drawn ) continue;
                      ActionWithVector* ag=p.getActionSet().selectWithLabel<ActionWithVector*>(mychain[i]); plumed_assert( ag ); drawn_nodes.push_back( mychain[i] );
-                     ofile.printf("%s([\"label=%s \n %s \n\"])\n", getLabel(mychain[i]).c_str(), getLabel(mychain[i],true).c_str(), ag->writeInGraph().c_str() );
+                     if( !printed[i] ) { drawActionWithVectorNode( ofile, p, ag, mychain, printed ); printed[i]=true; }
                      for(const auto & v : ag->getArguments() ) {
                          bool chain_conn=false;
                          for(unsigned j=0; j<mychain.size(); ++j) {

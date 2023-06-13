@@ -4,12 +4,15 @@ flowchart BT
 "])
 11 -- s --> s
 subgraph subc1 [c1]
+subgraph subc1_mat [c1]
 c1(["label=c1 
  CONTACT_MATRIX 
 "])
 cc(["label=cc 
  MATRIX_VECTOR_PRODUCT 
 "])
+end
+style subc1_mat fill:lightblue
 c1 -. c1.w .-> cc
 linkStyle 1 stroke:red,color:red;
 mtc(["label=mtc 
