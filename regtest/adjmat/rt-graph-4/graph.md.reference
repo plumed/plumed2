@@ -1,61 +1,61 @@
 flowchart BT 
-rr(["`label=rr 
+rr(["label=rr 
  RESTRAINT 
-`"])
+"])
 rr -- ff --> ff
 subgraph subcm_cncn [cm_cncn]
-cm_cncn(["`label=cm_cncn 
+cm_cncn(["label=cm_cncn 
  CONTACT_MATRIX 
-`"])
-cc_cncn(["`label=cc_cncn 
+"])
+cc_cncn(["label=cc_cncn 
  MATRIX_VECTOR_PRODUCT 
-`"])
+"])
 cm_cncn -. cm_cncn.w .-> cc_cncn
 linkStyle 1 stroke:red,color:red;
-mt_cncn(["`label=mt_cncn 
+mt_cncn(["label=mt_cncn 
  MORE_THAN 
-`"])
+"])
 cc_cncn -. cc_cncn .-> mt_cncn
 linkStyle 2 stroke:blue,color:blue;
-cm_cnpb(["`label=cm_cnpb 
+cm_cnpb(["label=cm_cnpb 
  CONTACT_MATRIX 
-`"])
-cc_cnpb(["`label=cc_cnpb 
+"])
+cc_cnpb(["label=cc_cnpb 
  MATRIX_VECTOR_PRODUCT 
-`"])
+"])
 cm_cnpb -. cm_cnpb.w .-> cc_cnpb
 linkStyle 3 stroke:red,color:red;
-mt_cnpb(["`label=mt_cnpb 
+mt_cnpb(["label=mt_cnpb 
  MORE_THAN 
-`"])
+"])
 cc_cnpb -. cc_cnpb .-> mt_cnpb
 linkStyle 4 stroke:blue,color:blue;
-cm_cnI(["`label=cm_cnI 
+cm_cnI(["label=cm_cnI 
  CONTACT_MATRIX 
-`"])
-cc_cnI(["`label=cc_cnI 
+"])
+cc_cnI(["label=cc_cnI 
  MATRIX_VECTOR_PRODUCT 
-`"])
+"])
 cm_cnI -. cm_cnI.w .-> cc_cnI
 linkStyle 5 stroke:red,color:red;
-mt_cnI(["`label=mt_cnI 
+mt_cnI(["label=mt_cnI 
  MORE_THAN 
-`"])
+"])
 cc_cnI -. cc_cnI .-> mt_cnI
 linkStyle 6 stroke:blue,color:blue;
-mm(["`label=mm 
+mm(["label=mm 
  CUSTOM
-FUNC=x\*y\*z 
-`"])
+FUNC=x*y*z 
+"])
 mt_cncn -. mt_cncn .-> mm
 linkStyle 7 stroke:blue,color:blue;
 mt_cnpb -. mt_cnpb .-> mm
 linkStyle 8 stroke:blue,color:blue;
 mt_cnI -. mt_cnI .-> mm
 linkStyle 9 stroke:blue,color:blue;
-ff(["`label=ff 
+ff(["label=ff 
  SUM 
-`"])
+"])
 mm -. mm .-> ff
 linkStyle 10 stroke:blue,color:blue;
 end
@@ -69,9 +69,9 @@ subgraph subcm_cncn [cm_cncn]
 end
 cc_cnI -- ones192 --> ones192
 linkStyle 17 stroke:blue,color:blue;
-ones192(["`label=ones192 
+ones192(["label=ones192 
  CONSTANT 
-`"])
+"])
 subgraph subcm_cncn [cm_cncn]
 end
 cc_cnpb -- ones64 --> ones64
@@ -80,12 +80,12 @@ subgraph subcm_cncn [cm_cncn]
 end
 cc_cncn -- ones64 --> ones64
 linkStyle 19 stroke:blue,color:blue;
-ones64(["`label=ones64 
+ones64(["label=ones64 
  CONSTANT 
-`"])
-Box{{"`label=Box 
+"])
+Box("label=Box 
  PBC 
-`"}}
+")
 cm_cnI -- Box --> Box
 linkStyle 20 stroke:red,color:red;
 cm_cnI --> MD
@@ -98,4 +98,4 @@ cm_cnpb -- Box --> Box
 linkStyle 24 stroke:red,color:red;
 cm_cnpb --> MD
 linkStyle 25 stroke:violet,color:violet;
-MD{{positions from MD}}
+MD(positions from MD)

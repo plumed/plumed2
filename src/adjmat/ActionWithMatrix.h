@@ -29,6 +29,8 @@ namespace adjmat {
 
 class ActionWithMatrix : public ActionWithVector {
 private:
+  ActionWithMatrix* next_action_in_chain;
+  ActionWithMatrix* matrix_to_do_before;
   ActionWithMatrix* matrix_to_do_after;
 /// This holds the bookeeping arrays for sparse matrices
   std::vector<unsigned> matrix_bookeeping;
@@ -45,8 +47,6 @@ private:
 /// Get the start of the derivatives of the jth argument
   unsigned getDerivativeStart( const unsigned& jarg ) const ;
 protected:
-/// This tells us if we need to do the inner loop separately for this action
-  bool doInnerLoop;
 /// This returns the jelem th element of argument ic
   double getArgumentElement( const unsigned& ic, const unsigned& jelem, const MultiValue& myvals ) const ;
 /// This returns an element of a matrix that is passed an argument
@@ -58,6 +58,8 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithMatrix(const ActionOptions&);
+///
+  void getAllActionLabelsInMatrixChain( std::vector<std::string>& mylabels ) const ;
 ///
   void finishChainBuild( ActionWithVector* act );
 /// This should return the number of columns to help with sparse storage of matrices

@@ -1,25 +1,25 @@
 flowchart BT 
-11(["`label=#64;11 
+11(["label=#64;11 
  BIASVALUE 
-`"])
+"])
 11 -- s --> s
 subgraph subc1 [c1]
-c1(["`label=c1 
+c1(["label=c1 
  CONTACT_MATRIX 
-`"])
-cc(["`label=cc 
+"])
+cc(["label=cc 
  MATRIX_VECTOR_PRODUCT 
-`"])
+"])
 c1 -. c1.w .-> cc
 linkStyle 1 stroke:red,color:red;
-mtc(["`label=mtc 
+mtc(["label=mtc 
  MORE_THAN 
-`"])
+"])
 cc -. cc .-> mtc
 linkStyle 2 stroke:blue,color:blue;
-s(["`label=s 
+s(["label=s 
  SUM 
-`"])
+"])
 mtc -. mtc .-> s
 linkStyle 3 stroke:blue,color:blue;
 end
@@ -29,14 +29,14 @@ subgraph subc1 [c1]
 end
 cc -- ones --> ones
 linkStyle 6 stroke:blue,color:blue;
-ones(["`label=ones 
+ones(["label=ones 
  CONSTANT 
-`"])
-Box{{"`label=Box 
+"])
+Box("label=Box 
  PBC 
-`"}}
+")
 c1 -- Box --> Box
 linkStyle 7 stroke:red,color:red;
 c1 --> MD
 linkStyle 8 stroke:violet,color:violet;
-MD{{positions from MD}}
+MD(positions from MD)

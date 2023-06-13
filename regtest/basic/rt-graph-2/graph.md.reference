@@ -1,42 +1,42 @@
 flowchart BT 
-16(["`label=#64;16 
+16(["label=#64;16 
  BIASVALUE 
-`"])
+"])
 16 -- v --> v
-v(["`label=v 
+v(["label=v 
  VOLUME 
-`"])
-14(["`label=#64;14 
+"])
+14(["label=#64;14 
  BIASVALUE 
-`"])
+"])
 14 -- f2 --> f2
-f2(["`label=f2 
+f2(["label=f2 
  CUSTOM
-FUNC=x\*x+x/y 
-`"])
+FUNC=x*x+x/y 
+"])
 f2 -- d2.x --> d2
 f2 -- d2.y --> d2
-d2(["`label=d2 
+d2(["label=d2 
  DISTANCE 
-`"])
-9(["`label=#64;9 
+"])
+9(["label=#64;9 
  BIASVALUE 
-`"])
+"])
 9 -- f1 --> f1
-f1(["`label=f1 
+f1(["label=f1 
  CUSTOM
-FUNC=x\*x 
-`"])
+FUNC=x*x 
+"])
 f1 -- d1 --> d1
-d1(["`label=d1 
+d1(["label=d1 
  DISTANCE 
-`"])
-c1(["`label=c1 
+"])
+c1(["label=c1 
  COM 
-`"])
-Box{{"`label=Box 
+"])
+Box("label=Box 
  PBC 
-`"}}
+")
 c1 -- Box --> Box
 linkStyle 6 stroke:red,color:red;
 c1 --> MD
@@ -53,4 +53,4 @@ d2 --> MD
 linkStyle 12 stroke:violet,color:violet;
 v -- Box --> Box
 linkStyle 13 stroke:red,color:red;
-MD{{positions from MD}}
+MD(positions from MD)

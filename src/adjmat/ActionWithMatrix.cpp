@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithMatrix.h"
+#include "AdjacencyMatrixBase.h"
 
 namespace PLMD {
 namespace adjmat {
@@ -31,9 +32,19 @@ void ActionWithMatrix::registerKeywords( Keywords& keys ) {
 ActionWithMatrix::ActionWithMatrix(const ActionOptions&ao):
   Action(ao),
   ActionWithVector(ao),
-  matrix_to_do_after(NULL),
-  doInnerLoop(false)
+  next_action_in_chain(NULL),
+  matrix_to_do_before(NULL),
+  matrix_to_do_after(NULL)
 {
+}
+
+void ActionWithMatrix::getAllActionLabelsInMatrixChain( std::vector<std::string>& mylabels ) const {
+  bool found=false;
+  for(unsigned i=0; i<mylabels.size(); ++i) {
+    if( getLabel()==mylabels[i] ) { found=true; }
+  }
+  if( !found ) mylabels.push_back( getLabel() );
+  if( matrix_to_do_after ) matrix_to_do_after->getAllActionLabelsInMatrixChain( mylabels );
 }
 
 void ActionWithMatrix::setupStreamedComponents( unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping ) {
@@ -52,9 +63,14 @@ void ActionWithMatrix::setupStreamedComponents( unsigned& nquants, unsigned& nma
 }
 
 void ActionWithMatrix::finishChainBuild( ActionWithVector* act ) {
-   ActionWithMatrix* am=dynamic_cast<ActionWithMatrix*>(act); if(!am) return;
-   if( matrix_to_do_after ) matrix_to_do_after->finishChainBuild( act );
-   else matrix_to_do_after=am;
+   ActionWithMatrix* am=dynamic_cast<ActionWithMatrix*>(act); if( !am ) return;
+   // Build the list that contains everything we are going to loop over in getTotalMatrixBookeepgin and updateAllNeighbourLists
+   if( next_action_in_chain ) next_action_in_chain->finishChainBuild( act );
+   else next_action_in_chain=am;
+   // Build the list of things we are going to loop over in runTask
+   AdjacencyMatrixBase* aa=dynamic_cast<AdjacencyMatrixBase*>(act); if( aa ) return ; 
+   plumed_assert( !matrix_to_do_after ); 
+   matrix_to_do_after=am; am->matrix_to_do_before=this;
 }
 
 void ActionWithMatrix::getTotalMatrixBookeeping( unsigned& nbookeeping ) const {
@@ -63,7 +79,7 @@ void ActionWithMatrix::getTotalMatrixBookeeping( unsigned& nbookeeping ) const {
       if( myval->getRank()!=2 || myval->hasDerivatives() || !myval->valueIsStored() ) continue;
       nbookeeping += myval->getShape()[0]*( 1 + getNumberOfColumns() );
   }
-  if( matrix_to_do_after ) matrix_to_do_after->getTotalMatrixBookeeping( nbookeeping );
+  if( next_action_in_chain ) next_action_in_chain->getTotalMatrixBookeeping( nbookeeping );
 }
 
 void ActionWithMatrix::calculate() {
@@ -78,12 +94,12 @@ void ActionWithMatrix::calculate() {
 }
 
 void ActionWithMatrix::updateAllNeighbourLists() {
-  updateNeighbourList(); if( matrix_to_do_after ) matrix_to_do_after->updateAllNeighbourLists();
+  updateNeighbourList(); if( next_action_in_chain ) next_action_in_chain->updateAllNeighbourLists();
 }
 
 void ActionWithMatrix::performTask( const unsigned& task_index, MultiValue& myvals ) const {
   std::vector<unsigned> & indices( myvals.getIndices() ); 
-  if( !doInnerLoop && actionInChain() ) {
+  if( matrix_to_do_before ) {
       plumed_dbg_assert( myvals.inVectorCall() ); 
       runEndOfRowJobs( task_index, indices, myvals ); 
       return;
@@ -104,7 +120,7 @@ void ActionWithMatrix::performTask( const unsigned& task_index, MultiValue& myva
 
 void ActionWithMatrix::runTask( const std::string& controller, const unsigned& current, const unsigned colno, MultiValue& myvals ) const {
   double outval=0; myvals.setTaskIndex(current); myvals.setSecondTaskIndex( colno );
-  if( isActive() && (!doInnerLoop || (doInnerLoop && controller==getLabel())) ) performTask( controller, current, colno, myvals );
+  if( isActive() ) performTask( controller, current, colno, myvals );
   bool hasval=false;
   for(int i=0; i<getNumberOfComponents(); ++i) { 
       if( fabs(myvals.get( getConstPntrToComponent(i)->getPositionInStream()) )>0 ) { hasval=true; break; }

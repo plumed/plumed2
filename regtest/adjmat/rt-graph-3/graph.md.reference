@@ -1,59 +1,68 @@
 flowchart TB 
-MD{{positions from MD}}
-Box{{"`label=Box 
+MD(positions from MD)
+Box("label=Box 
  PBC 
-`"}}
-Pb("`label=Pb 
+")
+Pb("label=Pb 
  GROUP 
-`")
-I("`label=I 
+")
+I("label=I 
  GROUP 
-`")
-cn("`label=cn 
+")
+cn("label=cn 
  GROUP 
-`")
-ones64(["`label=ones64 
+")
+ones64(["label=ones64 
  CONSTANT 
-`"])
+"])
 Box -- Box --> cm_cncn
 linkStyle 0 stroke:red,color:red;
 MD --> cm_cncn
 linkStyle 1 stroke:violet,color:violet;
 subgraph subcm_cncn [cm_cncn]
-cm_cncn(["`label=cm_cncn 
+subgraph subcm_cncn_mat [cm_cncn]
+cm_cncn(["label=cm_cncn 
  CONTACT_MATRIX 
-`"])
-cc_cncn(["`label=cc_cncn 
+"])
+cc_cncn(["label=cc_cncn 
  MATRIX_VECTOR_PRODUCT 
-`"])
-mt_cncn(["`label=mt_cncn 
+"])
+end
+style subcm_cncn_mat fill:lightblue
+mt_cncn(["label=mt_cncn 
  MORE_THAN 
-`"])
-cm_cnpb(["`label=cm_cnpb 
+"])
+subgraph subcm_cnpb_mat [cm_cnpb]
+cm_cnpb(["label=cm_cnpb 
  CONTACT_MATRIX 
-`"])
-cc_cnpb(["`label=cc_cnpb 
+"])
+cc_cnpb(["label=cc_cnpb 
  MATRIX_VECTOR_PRODUCT 
-`"])
-mt_cnpb(["`label=mt_cnpb 
+"])
+end
+style subcm_cnpb_mat fill:lightblue
+mt_cnpb(["label=mt_cnpb 
  MORE_THAN 
-`"])
-cm_cnI(["`label=cm_cnI 
+"])
+subgraph subcm_cnI_mat [cm_cnI]
+cm_cnI(["label=cm_cnI 
  CONTACT_MATRIX 
-`"])
-cc_cnI(["`label=cc_cnI 
+"])
+cc_cnI(["label=cc_cnI 
  MATRIX_VECTOR_PRODUCT 
-`"])
-mt_cnI(["`label=mt_cnI 
+"])
+end
+style subcm_cnI_mat fill:lightblue
+mt_cnI(["label=mt_cnI 
  MORE_THAN 
-`"])
-mm(["`label=mm 
+"])
+mm(["label=mm 
  CUSTOM
-FUNC=x\*y\*z 
-`"])
-ff(["`label=ff 
+FUNC=x*y*z 
+"])
+ff(["label=ff 
  SUM 
-`"])
+"])
 end
 cm_cncn -- cm_cncn.w --> cc_cncn
 linkStyle 2 stroke:red,color:red;
@@ -71,9 +80,9 @@ ones64 -- ones64 --> cc_cnpb
 linkStyle 8 stroke:blue,color:blue;
 cc_cnpb -- cc_cnpb --> mt_cnpb
 linkStyle 9 stroke:blue,color:blue;
-ones192(["`label=ones192 
+ones192(["label=ones192 
  CONSTANT 
-`"])
+"])
 Box -- Box --> cm_cnI
 linkStyle 10 stroke:red,color:red;
 MD --> cm_cnI
@@ -93,13 +102,13 @@ linkStyle 17 stroke:blue,color:blue;
 mm -- mm --> ff
 linkStyle 18 stroke:blue,color:blue;
 ff -- ff --> rr
-rr(["`label=rr 
+rr(["label=rr 
  RESTRAINT 
-`"])
+"])
 ff -- ff --> 24
 rr -- rr.bias --> 24
 rr -- rr.force2 --> 24
-24("`label=#64;24 
+24("label=#64;24 
  PRINT
 FILE=colvar 
-`")
+")

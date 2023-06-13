@@ -108,7 +108,6 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
 
 bool AdjacencyMatrixBase::canBeAfterInChain( ActionWithVector* av ) {
   AdjacencyMatrixBase* ab=dynamic_cast<AdjacencyMatrixBase*>(av);
-  if(ab) doInnerLoop=true;
   // if( av->getName()!="MATRIX_MATRIX_PRODUCT" ) return false;
   return true;
 }
