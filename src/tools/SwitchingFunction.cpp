@@ -451,7 +451,7 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
       double exprdist=std::exp(rdist2);
       double exprmdist=1.0/exprdist;
       result=1./(1.+exprdist);
-      dfunc=-1.0/(exprmdist+1.0)/(1.+exprdist);
+      dfunc=-beta/(exprmdist+1.0)/(1.+exprdist);
     } else if(type==gaussian) {
       result=std::exp(-0.5*rdist*rdist);
       dfunc=-rdist*result;
@@ -487,7 +487,7 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
       dfunc=expression_deriv[t].evaluate();
     } else plumed_merror("Unknown switching function type");
 // this is for the chain rule:
-    dfunc*=invr0;
+    if(type!=nativeq) dfunc*=invr0;
 // this is because calculate() sets dfunc to the derivative divided times the distance.
 // (I think this is misleading and I would like to modify it - GB)
     dfunc/=distance;
