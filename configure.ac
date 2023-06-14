@@ -905,10 +905,10 @@ if test -f src/pycv.on ; then
       AC_MSG_WARN([disabling PYCV module; see possible reasons above])
       rm src/pycv.on
    else
-      pycv_embedding_ldflags=$("$pycv_python3_config" --ldflags)
+      pycv_embedding_ldflags=$("$pycv_python3_config" --embed --ldflags)
       AC_MSG_NOTICE([adding the following LDFLAGS for Python embedding: $pycv_embedding_ldflags])
       LDFLAGS="$LDFLAGS $pycv_embedding_ldflags"
-      pycv_embedding_cflags=$("$pycv_python3_config" --cflags)
+      pycv_embedding_cflags=$("$pycv_python3_config" --embed --cflags)
       AC_MSG_NOTICE([adding the following CPPFLAGS for Python embedding: $pycv_embedding_cflags])
       CPPFLAGS="$CPPFLAGS $pycv_embedding_cflags"
    fi
