@@ -22,7 +22,7 @@
 #ifndef __PLUMED_adjmat_ClusteringBase_h
 #define __PLUMED_adjmat_ClusteringBase_h
 
-#include "ActionWithInputMatrix.h"
+#include "adjmat/ActionWithInputMatrix.h"
 #include "symfunc/AtomValuePack.h"
 
 namespace PLMD {

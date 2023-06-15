@@ -158,7 +158,7 @@ public:
 /// Add some force on this value
   void addForce(double f);
 /// Add some force on the ival th component of this value
-  void addForce( const std::size_t& ival, double f );
+  void addForce( const std::size_t& ival, double f, const bool trueind=true );
 /// Get the value of the force on this colvar
   double getForce( const std::size_t& ival=0 ) const ;
 /// Apply the forces to the derivatives using the chain rule (if there are no forces this routine returns false)
@@ -226,6 +226,10 @@ public:
   unsigned getRowIndex( const unsigned& irow, const unsigned& jind ) const ;
 /// Are we storing this value
   bool valueIsStored() const ;
+///
+  unsigned getNumberOfColumns() const ;
+///
+  bool isSymmetric() const ;
 };
 
 void copy( const Value& val1, Value& val2 );
@@ -358,13 +362,6 @@ void Value::addForce(double f) {
 }
 
 inline
-void Value::addForce(const std::size_t& ival, double f) {
-  plumed_dbg_massert(ival<inputForce.size(),"too few components in value to add force");
-  hasForce=true;
-  inputForce[ival]+=f;
-}
-
-inline
 bool Value::forcesWereAdded() const {
   return hasForce;
 }
@@ -476,6 +473,16 @@ inline
 unsigned Value::getRowIndex( const unsigned& irow, const unsigned& jind ) const {
   plumed_dbg_assert( (1+ncols)*irow+1+jind<matrix_bookeeping.size() && jind<matrix_bookeeping[(1+ncols)*irow] );
   return matrix_bookeeping[(1+ncols)*irow+1+jind];
+}
+
+inline
+unsigned Value::getNumberOfColumns() const {
+  return ncols;
+}
+
+inline
+bool Value::isSymmetric() const {
+  return symmetric;
 }
 
 }

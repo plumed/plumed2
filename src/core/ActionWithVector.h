@@ -56,6 +56,8 @@ private:
   void runTask( const unsigned& taskno, MultiValue& myvals ) const ;
 /// Gather the values that we intend to store in the buffer
   void gatherAccumulators( const unsigned& taskCode, const MultiValue& myvals, std::vector<double>& buffer ) const ;
+/// Gather the forces on non-scalar quantities
+  void gatherForces( const unsigned& i, const MultiValue& myvals, std::vector<double>& forces ) const ;
 /// Get the size of the buffer array that holds the data we are gathering over the MPI loop
   void getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize );
 /// Get the number of quantities in the stream
@@ -124,8 +126,8 @@ public:
   virtual void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals, const unsigned& bufstart, std::vector<double>& buffer ) const ;
 /// Check if there is a force that needs to be accumulated on the ith task
   virtual bool checkForTaskForce( const unsigned& itask, const Value* myval ) const ;
-/// Gather the forces on non-scalar quantities
-  virtual void gatherForces( const unsigned& i, const MultiValue& myvals, std::vector<double>& forces ) const ;
+/// Gather the forces on a particular value
+  virtual void gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const ;
 /// This is to transfer data from the buffer to the final value
   void finishComputations( const std::vector<double>& buf );
 /// Apply the forces on this data

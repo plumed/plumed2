@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ClusteringBase.h"
-#include "AdjacencyMatrixVessel.h"
+#include "adjmat/AdjacencyMatrixVessel.h"
 #include "core/ActionRegister.h"
 
 #ifdef __PLUMED_HAS_BOOST_GRAPH

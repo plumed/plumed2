@@ -448,7 +448,7 @@ bool ActionWithVector::checkForForces() {
     std::vector<double> omp_forces;
     if( nt>1 ) omp_forces.resize( forcesForApply.size(), 0.0 );
     MultiValue myvals( nquants, nderiv, nmatrices, maxcol, nbooks );
-    myvals.clearAll();
+    myvals.clearAll(true);
 
     #pragma omp for nowait
     for(unsigned i=rank; i<nf_tasks; i+=stride) {
@@ -458,7 +458,7 @@ bool ActionWithVector::checkForForces() {
       if( nt>1 ) gatherForces( force_tasks[i], myvals, omp_forces ); 
       else gatherForces( force_tasks[i], myvals, forcesForApply );
 
-      myvals.clearAll();
+      myvals.clearAll(true);
     }
     #pragma omp critical
     if(nt>1) for(unsigned i=0; i<forcesForApply.size(); ++i) forcesForApply[i]+=omp_forces[i];
@@ -476,6 +476,7 @@ bool ActionWithVector::checkComponentsForForce() const {
 }
 
 bool ActionWithVector::checkForTaskForce( const unsigned& itask, const Value* myval ) const {
+  plumed_dbg_assert( !(myval->getRank()==2 && !myval->hasDerivatives()) );
   return fabs(myval->getForce(itask))>epsilon;
 } 
 
@@ -495,18 +496,21 @@ void ActionWithVector::getForceTasks( std::vector<unsigned>& force_tasks ) const
   if( action_to_do_after ) action_to_do_after->getForceTasks( force_tasks );
 }
 
+void ActionWithVector::gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
+  plumed_dbg_assert( myval->storedata && !(myval->getRank()==2 && !myval->hasDerivatives()) );
+  double fforce = myval->getForce(itask);
+  unsigned sspos = myval->getPositionInStream();
+  for(unsigned j=0; j<myvals.getNumberActive(sspos); ++j) {
+    unsigned jder=myvals.getActiveIndex(sspos, j); plumed_dbg_assert( jder<forces.size() );
+    forces[jder] += fforce*myvals.getDerivative( sspos, jder );
+  }
+}
+
 void ActionWithVector::gatherForces( const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
   if( isActive() && checkComponentsForForce() ) {
       for(unsigned k=0; k<getNumberOfComponents(); ++k) {
           const Value* myval=getConstPntrToComponent(k);
-          if( myval->getRank()>0 && myval->forcesWereAdded() ) {
-              double fforce = myval->getForce(itask);
-              unsigned sspos = myval->getPositionInStream(); 
-              for(unsigned j=0; j<myvals.getNumberActive(sspos); ++j) {
-                unsigned jder=myvals.getActiveIndex(sspos, j); plumed_dbg_assert( jder<forces.size() );
-                forces[jder] += fforce*myvals.getDerivative( sspos, jder );
-              }
-          }
+          if( myval->getRank()>0 && myval->forcesWereAdded() ) gatherForcesOnStoredValue( myval, itask, myvals, forces );
       }
   } 
   if( action_to_do_after ) action_to_do_after->gatherForces( itask, myvals, forces );

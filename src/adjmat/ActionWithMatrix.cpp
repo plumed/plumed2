@@ -132,14 +132,15 @@ void ActionWithMatrix::runTask( const std::string& controller, const unsigned& c
         if( myval->getRank()!=2 || myval->hasDerivatives() || !myval->valueIsStored() ) continue;
         unsigned matindex = myval->getPositionInMatrixStash(), matbook_start = myval->getMatrixBookeepingStart(), col_stash_index = colno;
         if( colno>=myval->getShape()[0] ) col_stash_index = colno - myval->getShape()[0];
+        unsigned rowstart = matbook_start+current*(1+getNumberOfColumns());
         if( myval->forcesWereAdded() ) {
-          // unsigned sind = myval->getPositionInStream(), find = col_stash_index;
-          // if( myval->getNumberOfColumns()<myval->getShape()[1] ) find=myvals.getNumberOfStashedMatrixElements(matindex);
-          // double fforce = myval->getForce( myvals.getTaskIndex()*getNumberOfColumns() + find );
-          // for(unsigned j=0; j<myvals.getNumberActive(sind); ++j) {
-          //   unsigned kindex = myvals.getActiveIndex(sind,j); myvals.addMatrixForce( matindex, kindex, fforce*myvals.getDerivative(sind,kindex ) );
-          // }
-        } else myvals.stashMatrixElement( matindex, matbook_start+current*(1+getNumberOfColumns()), col_stash_index, myvals.get( myval->getPositionInStream() ) );
+          unsigned sind = myval->getPositionInStream(), find = myvals.getMatrixBookeeping()[rowstart];
+          double fforce = myval->getForce( myvals.getTaskIndex()*getNumberOfColumns() + find );
+          for(unsigned j=0; j<myvals.getNumberActive(sind); ++j) {
+              unsigned kindex = myvals.getActiveIndex(sind,j); myvals.addMatrixForce( matindex, kindex, fforce*myvals.getDerivative(sind,kindex ) );
+          }
+        } 
+        myvals.stashMatrixElement( matindex, rowstart, col_stash_index, myvals.get( myval->getPositionInStream() ) );
       } 
   }
   if( matrix_to_do_after ) matrix_to_do_after->runTask( controller, current, colno, myvals );
@@ -189,6 +190,21 @@ void ActionWithMatrix::gatherStoredValue( const unsigned& valindex, const unsign
         buffer[vindex + j] += myvals.getStashedMatrixElement( matind, jind );
       } 
   }
+}
+
+bool ActionWithMatrix::checkForTaskForce( const unsigned& itask, const Value* myval ) const {
+  if( myval->getRank()<2 ) return ActionWithVector::checkForTaskForce( itask, myval );
+  unsigned nelements = myval->getRowLength(itask);
+  for(unsigned j=0; j<nelements; ++j ) {
+      if( fabs( myval->getForce( myval->getRowIndex(itask,j) ) )>epsilon ) return true;
+  } 
+  return false;
+}
+
+void ActionWithMatrix::gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
+  if( myval->getRank()==1 ) { ActionWithVector::gatherForcesOnStoredValue( myval, itask, myvals, forces ); return; }
+  unsigned matind = myval->getPositionInMatrixStash();
+  for(unsigned j=0; j<forces.size(); ++j) forces[j] += myvals.getStashedMatrixForce( matind, j );
 }
 
 void ActionWithMatrix::clearMatrixElements( MultiValue& myvals ) const { 

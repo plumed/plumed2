@@ -58,6 +58,7 @@ private:
 /// This allows us to store matrix elements
   unsigned nmatrix_cols;
   std::vector<double> matrix_row_stash;
+  std::vector<double> matrix_force_stash;
   std::vector<unsigned> matrix_bookeeping;
 /// These are used to store the indices that have derivatives wrt to at least one
 /// of the elements in a matrix
@@ -166,6 +167,9 @@ public:
   void setNumberOfMatrixRowDerivatives( const unsigned& nmat, const unsigned& nind );
   unsigned getNumberOfMatrixRowDerivatives( const unsigned& nmat ) const ;
   std::vector<unsigned>& getMatrixRowDerivativeIndices( const unsigned& nmat );
+/// Stash the forces on the matrix
+  void addMatrixForce( const unsigned& imat, const unsigned& jind, const double& f );
+  double getStashedMatrixForce( const unsigned& imat, const unsigned& jind ) const ;
 };
 
 inline
@@ -434,8 +438,17 @@ unsigned MultiValue::getNumberOfMatrixRowDerivatives( const unsigned& nmat ) con
 inline
 std::vector<unsigned>& MultiValue::getMatrixRowDerivativeIndices( const unsigned& nmat ) {
   plumed_dbg_assert( nmat<matrix_row_nderivatives.size() ); return matrix_row_derivative_indices[nmat];
-} 
+}
 
+inline
+void MultiValue::addMatrixForce( const unsigned& imat, const unsigned& jind, const double& f ) {
+  matrix_force_stash[imat*nderivatives + jind]+=f;
+}
+
+inline
+double MultiValue::getStashedMatrixForce( const unsigned& imat, const unsigned& jind ) const {
+  return matrix_force_stash[imat*nderivatives + jind];
+} 
 
 }
 #endif

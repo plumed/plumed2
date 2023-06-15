@@ -241,6 +241,19 @@ double Value::get(const std::size_t& ival, const bool trueind) const {
   return data[ival];
 } 
 
+void Value::addForce(const std::size_t& iforce, double f, const bool trueind) {
+  hasForce=true;
+  if( shape.size()==2 && !hasDeriv && ncols<shape[1] && trueind ) {
+      unsigned irow = std::floor( iforce / shape[0] ), jcol = iforce%shape[0];
+      for(unsigned i=0; i<getRowLength(irow); ++i) {
+          if( getRowIndex(irow,i)==jcol ) { inputForce[irow*ncols+i]+=f; return; }
+      }
+      plumed_assert( fabs(f)<epsilon ); return;
+  } 
+  plumed_massert( iforce<inputForce.size(), "can't add force to " + name );
+  inputForce[iforce]+=f;
+} 
+
 
 void Value::buildDataStore() {
   if( getRank()==0 ) return;

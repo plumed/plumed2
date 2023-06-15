@@ -20,8 +20,8 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ClusteringBase.h"
-#include "AdjacencyMatrixVessel.h"
-#include "OldAdjacencyMatrixBase.h"
+#include "adjmat/AdjacencyMatrixVessel.h"
+#include "adjmat/OldAdjacencyMatrixBase.h"
 #include "core/ActionRegister.h"
 
 //+PLUMEDOC MATRIXF CLUSTER_WITHSURFACE

@@ -84,6 +84,10 @@ public:
   virtual void updateNeighbourList() {}
 /// Run the calculation
   virtual void calculate() override;
+/// Check if there are forces we need to account for on this task
+  bool checkForTaskForce( const unsigned& itask, const Value* myval ) const override ;
+/// This gathers the force on a particular value
+  void gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const override;
 };
 
 inline 
