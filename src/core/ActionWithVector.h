@@ -79,8 +79,6 @@ protected:
   bool done_in_chain;
 /// Run all calculations in serial
   bool runInSerial() const ;
-/// Get the list of tasks that are active
-  std::vector<unsigned>& getListOfActiveTasks();
 /// This sets up the arguments at the start of the calculation
   unsigned buildArgumentStore( const unsigned& argstart );
 /// Get the position of the argument in the streamm and set it if we need to
@@ -114,6 +112,8 @@ public:
   virtual bool canBeAfterInChain( ActionWithVector* av ) { return true; }
 /// setup the streamed quantities
   virtual void setupStreamedComponents( unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping );
+/// Get the list of tasks that are active
+  virtual std::vector<unsigned>& getListOfActiveTasks();
 /// This we override to perform each individual task
   virtual void performTask( const unsigned& current, MultiValue& myvals ) const = 0;
 /// Gather the data from all the OpenMP threads
