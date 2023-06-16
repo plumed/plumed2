@@ -44,10 +44,8 @@ public:
   static void registerKeywords( Keywords& keys );
 ///
   explicit MatrixOperationBase(const ActionOptions&);
-/// Retrieve all the elements of the matrix that are non zero
-  static void retrieveEdgeList( const Value* myarg, unsigned& nedge, std::vector<std::pair<unsigned,unsigned> >& active, std::vector<double>& elems );
 /// Apply the forces
-  void apply() override;
+  virtual void apply() override;
 /// Get the force on a matrix element
   virtual double getForceOnMatrixElement( const unsigned& jrow, const unsigned& krow ) const = 0 ;
 };

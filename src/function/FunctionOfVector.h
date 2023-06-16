@@ -140,7 +140,10 @@ nderivatives(0)
       if( getPntrToArgument(i)->getRank()==0 ) {
           FunctionOfVector<Sum>* as = dynamic_cast<FunctionOfVector<Sum>*>( getPntrToArgument(i)->getPntrToAction() ); 
           if(as) done_in_chain=false;
-      }  
+      } else {
+          ActionWithVector* av=dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
+          if( !av ) done_in_chain=false;
+      } 
   }
   nderivatives = buildArgumentStore(myfunc.getArgStart()); 
 }

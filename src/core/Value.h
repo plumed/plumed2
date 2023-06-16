@@ -230,6 +230,8 @@ public:
   unsigned getNumberOfColumns() const ;
 ///
   bool isSymmetric() const ;
+/// Retrieve the non-zero edges in a matrix
+  void retrieveEdgeList( unsigned& nedge, std::vector<std::pair<unsigned,unsigned> >& active, std::vector<double>& elems );
 };
 
 void copy( const Value& val1, Value& val2 );

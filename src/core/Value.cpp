@@ -271,6 +271,12 @@ void Value::reshapeMatrixStore( const unsigned& n ) {
   data.resize( size ); inputForce.resize( size );
   matrix_bookeeping.resize( size + shape[0], 0 );
   std::fill(matrix_bookeeping.begin(), matrix_bookeeping.end(), 0);
+  if( ncols>=shape[1] ) {
+      for(unsigned i=0; i<shape[0]; ++i) {
+          matrix_bookeeping[(1+ncols)*i] = shape[1];
+          for(unsigned j=0;j<shape[1];++j) matrix_bookeeping[(1+ncols)*i+1+j]=j;
+      }
+  }
 }
 
 void Value::setPositionInMatrixStash( const unsigned& p ) {
@@ -279,7 +285,7 @@ void Value::setPositionInMatrixStash( const unsigned& p ) {
 }
 
 bool Value::ignoreStoredValue(const std::string& c) const {
-  if( !storedata ) return true; 
+  if( !storedata && shape.size()>0 ) return true; 
   ActionWithVector* av=dynamic_cast<ActionWithVector*>(action);
   if( av ) return (av->getFirstActionInChain())->getLabel()==c;
   return false;
@@ -297,6 +303,22 @@ void Value::setSymmetric( const bool& sym ) {
   plumed_assert( shape.size()==2 && !hasDeriv );
   if( sym && shape[0]!=shape[1] ) plumed_merror("non-square matrix cannot be symmetric");
   symmetric=sym;
+}
+
+void Value::retrieveEdgeList( unsigned& nedge, std::vector<std::pair<unsigned,unsigned> >& active, std::vector<double>& elems ) {
+  nedge=0; plumed_dbg_assert( shape.size()==2 && !hasDeriv );
+  // Check we have enough space to store the edge list
+  if( elems.size()<shape[0]*ncols ) { elems.resize( shape[0]*ncols ); active.resize( shape[0]*ncols ); }
+
+  for(unsigned i=0; i<shape[0]; ++i) {
+      unsigned ncol = getRowLength(i);
+      for(unsigned j=0; j<ncol; ++j) {
+          if( fabs(get(i*ncols+j,false))<epsilon ) continue;
+          if( symmetric && getRowIndex(i,j)>i ) continue;
+          active[nedge].first = i; active[nedge].second = getRowIndex(i,j);
+          elems[nedge] = get(i*ncols+j,false); nedge++;
+      }
+  }
 }
 
 void Value::readBinary(std::istream&i) {

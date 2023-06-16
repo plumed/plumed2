@@ -24,24 +24,6 @@
 namespace PLMD {
 namespace adjmat {
 
-void MatrixOperationBase::retrieveEdgeList( const Value* mat, unsigned& nedge, std::vector<std::pair<unsigned,unsigned> >& active, std::vector<double>& elems ) {
-  nedge=0; plumed_dbg_assert( mat->getRank()==2 && !mat->hasDerivatives() );
-  unsigned nrows = mat->getShape()[0], ncols = mat->getNumberOfColumns();
-  // Check we have enough space to store the edge list
-  if( elems.size()<nrows*ncols ) { elems.resize( nrows*ncols ); active.resize( nrows*ncols ); }
-
-  bool symmetric = mat->isSymmetric();
-  for(unsigned i=0; i<nrows; ++i) {
-      unsigned ncol = mat->getRowLength(i);
-      for(unsigned j=0; j<ncol; ++j) {
-          if( fabs(mat->get(i*ncols+j,false))<epsilon ) continue;
-          if( symmetric && mat->getRowIndex(i,j)>i ) continue;
-          active[nedge].first = i; active[nedge].second = mat->getRowIndex(i,j);
-          elems[nedge] = mat->get(i*ncols+j,false); nedge++;
-      }
-  }
-}
-
 void MatrixOperationBase::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionWithArguments::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
   keys.use("ARG"); keys.remove("NUMERICAL_DERIVATIVES");
@@ -61,7 +43,7 @@ void MatrixOperationBase::retrieveFullMatrix( Matrix<double>& mymatrix ) {
   if( mymatrix.nrows()!=getPntrToArgument(0)->getShape()[0] || mymatrix.nrows()!=getPntrToArgument(0)->getShape()[1] ) {
       mymatrix.resize( getPntrToArgument(0)->getShape()[0], getPntrToArgument(0)->getShape()[1] );
   }
-  unsigned nedge; retrieveEdgeList( getPntrToArgument(0), nedge, pairs, vals  ); mymatrix=0;
+  unsigned nedge; getPntrToArgument(0)->retrieveEdgeList( nedge, pairs, vals  ); mymatrix=0;
   bool symmetric = getPntrToArgument(0)->isSymmetric();
   for(unsigned i=0; i<nedge; ++i ) {
       mymatrix( pairs[i].first, pairs[i].second ) = vals[i];

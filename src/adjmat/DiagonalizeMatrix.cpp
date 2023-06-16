@@ -38,7 +38,7 @@ public:
 /// This is required to set the number of derivatives for the eigenvalues
   unsigned getNumberOfDerivatives() override { return getPntrToArgument(0)->getNumberOfValues(); }
 ///
-  void calculate();
+  void calculate() override ;
 ///
   double getForceOnMatrixElement( const unsigned& jrow, const unsigned& krow ) const override;
 };
