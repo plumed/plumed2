@@ -3645,7 +3645,7 @@ plumed plumed_create_dlopen(const char*path) {
 #ifdef __PLUMED_HAS_DLOPEN
   dlopenmode=RTLD_NOW|RTLD_LOCAL;
 #ifdef RTLD_DEEPBIND
-  dlopenmode=dlopenmode|RTLD_DEEPBIND;
+  if(!__PLUMED_GETENV("PLUMED_LOAD_NODEEPBIND")) dlopenmode=dlopenmode|RTLD_DEEPBIND;
 #endif
 #else
   dlopenmode=0;
