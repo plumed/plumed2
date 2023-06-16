@@ -77,22 +77,23 @@ SAXS instruction. MARTINI requires a mapping scheme consisting of a PDB file tha
 and MARTINI representations, and a bead position file (e.g., bead1: CENTER ATOMS=1,5,7,11,12 WEIGHTS=14,12,12,
 12,16).
 
-ONEBEAD scheme consists in a single-bead per amino acid residue or two-bead for nucleic acid residue (one for the
-backbone, one for the nucleobase). PLUMED creates a virtual bead on which the SAXS calculations are performed,
-centred on the COM of all atoms belonging to the bead. It is possible to account for the contribution of the
-solvation layer to the SAXS intensity by adding a correction term for the solvent accessible beads only: the form
-factors of the amino acids / nucleotide backbones / nucleotide bases with a SASA (computed via LCPO algorithm)
-greater than a threshold are corrected according to an electron density term. Both the surface cut-off threshold
-and the electron density term can be set by the user with SASA_CUTOFF and SOLVATION_CORRECTION keywords. Moreover,
-SASA stride calculation can be modified using SOLVATION_STRIDE, which is set to 100 steps by default.
+ONEBEAD scheme consists in a single-bead per amino acid residue or three-bead for nucleic acid residue (one for
+the phosphate group, one for the pentose sugar, one for the nucleobase). PLUMED creates a virtual bead on which
+the SAXS calculations are performed, centred on the COM of all atoms belonging to the bead. It is possible to
+account for the contribution of the solvation layer to the SAXS intensity by adding a correction term for the
+solvent accessible beads only: the form factors of the amino acids / phosphate groups / pentose sugars /
+nucleobases with a SASA (computed via LCPO algorithm) greater than a threshold are corrected according to an
+electron density term. Both the surface cut-off threshold and the electron density term can be set by the user
+with the SASA_CUTOFF and SOLVATION_CORRECTION keywords. Moreover, SASA stride calculation can be modified using
+SOLVATION_STRIDE, which is set to 100 steps by default.
 ONEBEAD requires an additional PDB file to perform mapping conversion, which must be provided via TEMPLATE
 keyword. This PDB file should only include the atoms for which the SAXS intensity will be computed.
 The AMBER OL3 (RNA) and OL15 (DNA) naming is required for nucleic acids.
-Three bead types are available for DNA and RNA backbones:
-- 5'-end capped with an hydroxyl moiety at C5' (the residue name in the PDB must be followed by "5", e.g., DC5
-or C5 for cytosine in DNA and RNA, respectively);
-- 3'-end (the residue name in the PDB must be followed by "3", e.g., DC3 or C3 for cytosine);
-- sugar-phosphate backbone (e.g. DC or C for cytosine).
+Two additional bead types are available for DNA and RNA besides phosphate group, pentose sugar, and nucleobase: 
+- 5'-end pentose sugar capped with an hydroxyl moiety at C5' (the residue name in the PDB must be followed by
+"5", e.g., DC5 or C5 for cytosine in DNA and RNA, respectively);
+- 3'-end pentose sugar capped with an hydroxyl moiety at C3' (the residue name in the PDB must be followed by
+"3", e.g., DC3 or C3 for cytosine in DNA and RNA, respectively).
 
 Experimental reference intensities can be added using the EXPINT keywords. All these values must be normalised
 to the SAXS intensity at q = 0. To facilitate this operation, the SCALE_EXPINT keyword can be used to provide
@@ -106,9 +107,10 @@ a GPU if the ARRAYFIRE libraries are installed and correctly linked.
 \ref METAINFERENCE can be activated using DOSCORE and the other relevant keywords.
 
 \par Examples
-in the following example the SAXS intensities are calculated using single-bead per residue approximation.
-The form factors are selected according to the PDB file specified in the MOLINFO and the bead mapping conversion is
-performed using to the PDB file indicated by TEMPLATE keyword.
+in the following example the SAXS intensities are calculated using single-bead per residue approximation, with a
+SASA threshold of 1 square nanometer and a solvation term of 0.04. Each experimental intensity is divided by
+1.4002, which is the corresponding theoretical intensity value at q = 0. The form factors are selected according
+to the PDB file specified by TEMPLATE keyword.
 
 \plumedfile
 MOLINFO STRUCTURE=template_AA.pdb
@@ -152,25 +154,26 @@ a ONEBEAD coarse-grained implementation is available.
 
 Both for ATOMISTIC and ONEBEAD the user must provide an all-atom PDB file via MOLINFO before the SANS instruction.
 
-ONEBEAD scheme consists in a single-bead per amino acid residue or two-bead for nucleic acid residue (one for the
-backbone, one for the nucleobase). PLUMED creates a virtual bead on which the SANS calculations are performed,
-centred on the COM of all atoms belonging to the bead. It is possible to account for the contribution of the
-solvation layer to the SANS intensity by adding a correction term for the solvent accessible beads only: the form
-factors of the amino acids / nucleotide backbones / nucleotide bases with a SASA (computed via LCPO algorithm)
-greater than a threshold are corrected according to an electron density term. Both the surface cut-off threshold
-and the electron density term can be set by the user with SASA_CUTOFF and SOLVATION_CORRECTION keywords. Moreover,
-SASA stride calculation can be modified using SOLVATION_STRIDE, which is set to 100 steps by default.
-The deuteration of the solvent-exposed residues is chosen with a probability equal to the deuterium concentration
-in the buffer. The deuterated residues are updated with a stride equal to SOLVATION_STRIDE. The fraction of
-deuterated water can be set with DEUTER_CONC, the default value is 0.
+ONEBEAD scheme consists in a single-bead per amino acid residue or three-bead for nucleic acid residue (one for
+the phosphate group, one for the pentose sugar, one for the nucleobase). PLUMED creates a virtual bead on which
+the SANS calculations are performed, centred on the COM of all atoms belonging to the bead. It is possible to
+account for the contribution of the solvation layer to the SAXS intensity by adding a correction term for the
+solvent accessible beads only: the form factors of the amino acids / phosphate groups / pentose sugars /
+nucleobases with a SASA (computed via LCPO algorithm) greater than a threshold are corrected according to an
+electron density term. Both the surface cut-off threshold and the electron density term can be set by the user
+with the SASA_CUTOFF and SOLVATION_CORRECTION keywords. Moreover, SASA stride calculation can be modified using
+SOLVATION_STRIDE, which is set to 100 steps by default. The deuteration of the solvent-exposed residues is chosen
+with a probability equal to the deuterium concentration in the buffer. The deuterated residues are updated with a
+stride equal to SOLVATION_STRIDE. The fraction of deuterated water can be set with DEUTER_CONC, the default value
+is 0.
 ONEBEAD requires an additional PDB file to perform mapping conversion, which must be provided via TEMPLATE
 keyword. This PDB file should only include the atoms for which the SANS intensity will be computed.
 The AMBER OL3 (RNA) and OL15 (DNA) naming is required for nucleic acids.
-Three bead types are available for DNA and RNA backbones:
-- 5'-end capped with an hydroxyl moiety at C5' (the residue name in the PDB must be followed by "5", e.g., DC5
-or C5 for cytosine in DNA and RNA, respectively);
-- 3'-end (the residue name in the PDB must be followed by "3", e.g., DC3 or C3 for cytosine);
-- sugar-phosphate backbone (e.g. DC or C for cytosine).
+Two additional bead types are available for DNA and RNA besides phosphate group, pentose sugar, and nucleobase:
+- 5'-end pentose sugar capped with an hydroxyl moiety at C5' (the residue name in the PDB must be followed by "5",
+e.g., DC5 or C5 for cytosine in DNA and RNA, respectively);
+- 3'-end pentose sugar capped with an hydroxyl moiety at C3' (the residue name in the PDB must be followed by "3",
+e.g., DC3 or C3 for cytosine in DNA and RNA, respectively).
 
 PLEASE NOTE: at the moment, we DO NOT explicitly take into account deuterated residues in the ATOMISTIC
 representation, but we correct the solvent contribution via the DEUTER_CONC keyword.
@@ -188,7 +191,8 @@ GPU if the ARRAYFIRE libraries are installed and correctly linked.
 
 \par Examples
 in the following example the SANS intensities are calculated at atomistic resolution. The form factors are assigned
-according to the PDB file specified in the MOLINFO. The fraction of deuterated water is set to 0.48.
+according to the PDB file specified in the MOLINFO. Each experimental intensity is divided by 1.4002, which is the
+corresponding theoretical intensity value at q = 0. The deuterated water fraction is set to 48%.
 
 \plumedfile
 MOLINFO STRUCTURE=template_AA.pdb
@@ -237,9 +241,12 @@ private:
          DG_3TE, DG_5TE, DG_TE3, DG_TE5, DT_BB1, DT_BB2, DT_BB3, DT_SC1, DT_SC2, DT_SC3, DT_3TE,
          DT_5TE, DT_TE3, DT_TE5, NMARTINI
        };
-  enum { TRP, TYR, PHE, HIS, HIP, ARG, LYS, CYS, ASP, GLU, ILE, LEU,
-         MET, ASN, PRO, GLN, SER, THR, VAL, ALA, GLY,
-         BASE_A, BASE_C, BASE_T, BASE_G, BASE_U, BB_DNA, BB_DNA_5, BB_DNA_3, BB_RNA, BB_RNA_5, BB_RNA_3, NONEBEAD
+  enum { TRP, TYR, PHE, HIS, HIP, ARG, LYS, CYS, ASP, GLU, ILE, LEU, MET, ASN, PRO, GLN, SER, THR, VAL, ALA, GLY,
+         BASE_A, BASE_C, BASE_T, BASE_G, BASE_U,
+         BB_DNA, BB_DNA_5, BB_DNA_3,
+         BB_RNA, BB_RNA_5, BB_RNA_3,
+         BB_PO2,
+         NONEBEAD
        };
   bool saxs;
   bool pbc;
@@ -260,7 +267,7 @@ private:
   std::vector<std::vector<double> > FF_value_mixed;
   std::vector<std::vector<double> > FF_value;
   std::vector<std::vector<float> >  FFf_value;
-  //SANS:
+  // SANS:
   std::vector<std::vector<double> > FF_value_vacuum_H;
   std::vector<std::vector<double> > FF_value_solv_H;
   std::vector<std::vector<double> > FF_value_mixed_H;
@@ -278,7 +285,7 @@ private:
   std::vector<double> Iq0_mix;
   double Iq0;
 
-  //SANS:
+  // SANS:
   std::vector<double> Iq0_vac_H;
   std::vector<double> Iq0_solv_H;
   std::vector<double> Iq0_mix_H;
@@ -289,13 +296,13 @@ private:
   void calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv);
   void getMartiniFFparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter);
   void getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv, std::vector<unsigned> residue_atom);
-  void getOnebeadMapping(const std::vector<AtomNumber> &atoms);
+  unsigned getOnebeadMapping(const std::vector<AtomNumber> &atoms);
   double calculateAFF(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double rho);
   std::map<std::string, std::vector<double> > setupLCPOparam();
   void readLCPOparam(const std::vector<std::vector<std::string> > &AtomResidueName, unsigned natoms);
   void calcNlist(std::vector<std::vector<int> > &Nlist);
   void sasa_calculate(std::vector<bool> &solv_res);
-  //SANS:
+  // SANS:
   void getOnebeadparam_sansH(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_H, std::vector<std::vector<long double> > &parameter_mix_H, std::vector<std::vector<long double> > &parameter_solv_H);
   void getOnebeadparam_sansD(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_D, std::vector<std::vector<long double> > &parameter_mix_D);
   double calculateAFFsans(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double deuter_conc);
@@ -451,12 +458,12 @@ SAXS::SAXS(const ActionOptions&ao):
   // Here we perform the preliminary mapping for onebead representation
   if(onebead) {
     LCPOparam.resize(size);
-    getOnebeadMapping(atoms);
+    nres = getOnebeadMapping(atoms);
     if(saxs) {
       Iq0_vac.resize(nres);
       Iq0_solv.resize(nres);
       Iq0_mix.resize(nres);
-    } else { //SANS
+    } else { // SANS
       Iq0_vac_H.resize(nres);
       Iq0_solv_H.resize(nres);
       Iq0_mix_H.resize(nres);
@@ -474,7 +481,7 @@ SAXS::SAXS(const ActionOptions&ao):
   std::vector<std::vector<long double> > FF_tmp_mix;
   std::vector<std::vector<long double> > FF_tmp_solv;
   std::vector<std::vector<long double> > parameter;
-  //SANS
+  // SANS
   std::vector<std::vector<long double> > FF_tmp_vac_H;
   std::vector<std::vector<long double> > FF_tmp_mix_H;
   std::vector<std::vector<long double> > FF_tmp_solv_H;
@@ -484,7 +491,7 @@ SAXS::SAXS(const ActionOptions&ao):
   std::vector<std::vector<long double> > parameter_D;
 
   if(!atomistic&&!martini&&!onebead) {
-    //read in parameter std::vector
+    // read in parameter std::vector
     parameter.resize(size);
     ntarget=0;
     for(unsigned i=0; i<size; ++i) {
@@ -505,7 +512,7 @@ SAXS::SAXS(const ActionOptions&ao):
     Iq0 *= Iq0;
   } else if(onebead) {
     if(saxs) {
-      //read in parameter std::vector
+      // read in parameter std::vector
       FF_tmp_vac.resize(numq,std::vector<long double>(NONEBEAD));
       FF_tmp_mix.resize(numq,std::vector<long double>(NONEBEAD));
       FF_tmp_solv.resize(numq,std::vector<long double>(NONEBEAD));
@@ -531,8 +538,8 @@ SAXS::SAXS(const ActionOptions&ao):
         Iq0_mix[i]=parameter_mix[atoi[i]][0];
         Iq0_solv[i]=parameter_solv[atoi[i]][0];
       }
-    } else { //SANS
-      //read in parameter std::vector
+    } else { // SANS
+      // read in parameter std::vector
       FF_tmp_vac_H.resize(numq,std::vector<long double>(NONEBEAD));
       FF_tmp_mix_H.resize(numq,std::vector<long double>(NONEBEAD));
       FF_tmp_solv_H.resize(numq,std::vector<long double>(NONEBEAD));
@@ -547,7 +554,7 @@ SAXS::SAXS(const ActionOptions&ao):
       getOnebeadparam_sansD(atoms, parameter_vac_D, parameter_mix_D);
       for(unsigned i=0; i<NONEBEAD; ++i) {
         for(unsigned k=0; k<numq; ++k) {
-          for(unsigned j=0; j<parameter_vac_H[i].size(); ++j) { //same number of parameters
+          for(unsigned j=0; j<parameter_vac_H[i].size(); ++j) { // same number of parameters
             FF_tmp_vac_H[k][i]+= parameter_vac_H[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
             FF_tmp_vac_D[k][i]+= parameter_vac_D[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
           }
@@ -569,7 +576,7 @@ SAXS::SAXS(const ActionOptions&ao):
       }
     }
   } else if(martini) {
-    //read in parameter std::vector
+    // read in parameter std::vector
     FF_tmp.resize(numq,std::vector<long double>(NMARTINI));
     parameter.resize(NMARTINI);
     getMartiniFFparam(atoms, parameter);
@@ -633,7 +640,7 @@ SAXS::SAXS(const ActionOptions&ao):
             FF_value_mixed[i][k] = static_cast<double>(FF_tmp_mix[k][i]);
             FF_value_solv[i][k] = static_cast<double>(FF_tmp_solv[k][i]);
           }
-        } else { //SANS
+        } else { // SANS
           for(unsigned i=0; i<n_atom_types; ++i) {
             FF_value_vacuum_H[i][k] = static_cast<double>(FF_tmp_vac_H[k][i]);
             FF_value_mixed_H[i][k] = static_cast<double>(FF_tmp_mix_H[k][i]);
@@ -653,7 +660,7 @@ SAXS::SAXS(const ActionOptions&ao):
         FF_value_vacuum.resize(n_atom_types,std::vector<double>(numq));
         FF_value_solv.resize(n_atom_types,std::vector<double>(numq));
         FF_value_mixed.resize(n_atom_types,std::vector<double>(numq));
-      } else { //SANS
+      } else { // SANS
         FF_value_vacuum_H.resize(n_atom_types,std::vector<double>(numq));
         FF_value_solv_H.resize(n_atom_types,std::vector<double>(numq));
         FF_value_mixed_H.resize(n_atom_types,std::vector<double>(numq));
@@ -675,7 +682,7 @@ SAXS::SAXS(const ActionOptions&ao):
             FF_value_mixed[i][k] = static_cast<double>(FF_tmp_mix[k][i]);
             FF_value_solv[i][k] = static_cast<double>(FF_tmp_solv[k][i]);
           }
-        } else { //SANS
+        } else { // SANS
           for(unsigned i=0; i<n_atom_types; ++i) {
             FF_value_vacuum_H[i][k] = static_cast<double>(FF_tmp_vac_H[k][i]);
             FF_value_mixed_H[i][k] = static_cast<double>(FF_tmp_mix_H[k][i]);
@@ -720,7 +727,7 @@ SAXS::SAXS(const ActionOptions&ao):
 
   // convert units to nm^-1
   for(unsigned i=0; i<numq; ++i) {
-    q_list[i]=q_list[i]*10.0;    //factor 10 to convert from A^-1 to nm^-1
+    q_list[i]=q_list[i]*10.0;    // factor 10 to convert from A^-1 to nm^-1
   }
   log<<"  Bibliography ";
   if(martini) {
@@ -745,7 +752,7 @@ SAXS::SAXS(const ActionOptions&ao):
   checkRead();
 }
 
-//calculates SASA neighbor list
+// calculates SASA neighbor list
 void SAXS::calcNlist(std::vector<std::vector<int> > &Nlist)
 {
   unsigned natoms = getNumberOfAtoms();
@@ -766,7 +773,7 @@ void SAXS::calcNlist(std::vector<std::vector<int> > &Nlist)
 
 }
 
-//calculates SASA according to LCPO algorithm
+// calculates SASA according to LCPO algorithm
 void SAXS::sasa_calculate(std::vector<bool> &solv_res)
 {
   unsigned natoms = getNumberOfAtoms();
@@ -1012,22 +1019,21 @@ void SAXS::calculate()
 
   std::vector<Vector> beads_pos(beads_size);
   if(onebead) {
-    // mapping
-    unsigned atom_id = 0;
-    for(unsigned i=0; i<nres; ++i) {
-      /* calculate center and derivatives */
+    for(unsigned resid=0;resid<nres;resid++){
       double sum_mass = 0.;
       Vector sum_pos = Vector(0,0,0);
-      for(unsigned j=0; j<atoms_per_bead[i]; ++j) {
-        aa_deriv[atom_id] = Vector(atoms_masses[atom_id],atoms_masses[atom_id],atoms_masses[atom_id]);
-        sum_pos += atoms_masses[atom_id] * getPosition(atom_id); // getPosition(first_atom+atom_id)
-        sum_mass += atoms_masses[atom_id];
-        // atom_id is updated to stay in sync with masses vector
-        atom_id++;
+      for(unsigned atom_id=0;atom_id<size;atom_id++){
+        if(residue_atom[atom_id] == resid){
+          aa_deriv[atom_id] = Vector(atoms_masses[atom_id],atoms_masses[atom_id],atoms_masses[atom_id]);
+          sum_pos += atoms_masses[atom_id] * getPosition(atom_id); // getPosition(first_atom+atom_id)
+          sum_mass += atoms_masses[atom_id];
+        } 
       }
-      beads_pos[i] = sum_pos/sum_mass;
-      for(unsigned j=atom_id-atoms_per_bead[i]; j<atom_id; ++j) {
-        aa_deriv[j] /= sum_mass;
+      beads_pos[resid] = sum_pos/sum_mass;
+      for(unsigned atom_id=0;atom_id<size;atom_id++){
+        if(residue_atom[atom_id] == resid){
+          aa_deriv[atom_id] /= sum_mass;
+          }
       }
     }
     // SASA
@@ -1071,7 +1077,7 @@ void SAXS::calculate()
           }
         }
       }
-    } else { //SANS
+    } else { // SANS
       std::vector<bool> deut_res(nres, 0);
       double solv_sc_length = 0.1*(0.580 + 2.*((1. - deuter_conc) * (-0.374) + deuter_conc * 0.667)); // per water electron (10 electrons)
       double rho_sans = rho * solv_sc_length;
@@ -1211,78 +1217,35 @@ void SAXS::update() {
   if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) writeStatus();
 }
 
-void SAXS::getOnebeadMapping(const std::vector<AtomNumber> &atoms) {
+unsigned SAXS::getOnebeadMapping(const std::vector<AtomNumber> &atoms) {
   // Here we read the chain information
   PDB pdb;
   if( !pdb.read(template_name,plumed.getAtoms().usingNaturalUnits(),1.) ) plumed_merror("missing input file " + template_name);
   std::vector<std::string> chains; pdb.getChainNames( chains );
-  std::vector<bool> isprotein_chain(chains.size(),0);
-  std::vector<unsigned> res_per_chain(chains.size(),0);
-  std::vector<unsigned> cumulative_res_per_chain(chains.size()+1,0); // to have a mock chain N+1
-  std::vector<AtomNumber> chain_start(chains.size()+1); // to have a mock chain N+1
+  std::vector<std::vector<std::string> > AtomResidueName; 
 
-  for (unsigned i=0; i<chains.size(); ++i) {
-    unsigned start,end;
-    AtomNumber astart,aend;
-    std::string errmsg;
-    pdb.getResidueRange( chains[i], start, end, errmsg );
-    res_per_chain[i]=end-start+1;
-    for (unsigned j=0; j<=i; ++j) {
-      pdb.getAtomRange( chains[j], astart, aend, errmsg );
-      std::string Rname = pdb.getResidueName(astart);
-      Rname.erase(std::remove_if(Rname.begin(), Rname.end(), ::isspace),Rname.end());
-      if(MolDataClass::allowedResidue("dna",Rname)||MolDataClass::allowedResidue("rna",Rname)) {
-        cumulative_res_per_chain[i+1] += 2*res_per_chain[j];
-        isprotein_chain[j]=0;
-      } else {
-        cumulative_res_per_chain[i+1] += res_per_chain[j];
-        isprotein_chain[j]=1;
-      }
-    }
-    pdb.getAtomRange( chains[i], astart, aend, errmsg );
-    chain_start[i] = astart;
-    chain_start[i+1].setIndex(aend.index()+1);
-  }
-
-  nres = cumulative_res_per_chain[chains.size()];
-  atoms_per_bead.resize(nres);
   atoms_masses.resize(atoms.size());
   residue_atom.resize(atoms.size());
-  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
-  std::vector<std::vector<std::string> > AtomResidueName;
-  if( moldat ) {
-    for (unsigned ch_id=0; ch_id<chains.size(); ++ch_id) {
-      unsigned first_res = moldat->getResidueNumber(chain_start[ch_id]);
-      AtomResidueName.resize(2);
-      log.printf("  ONEBEAD residue mapping on %u residues for chain ID %d\n", res_per_chain[ch_id], ch_id);
-      for(unsigned i=chain_start[ch_id].index(); i<chain_start[ch_id+1].index(); ++i) {
-        std::string Aname = moldat->getAtomName(atoms[i]);
-        std::string Rname = moldat->getResidueName(atoms[i]);
-        Rname.erase(std::remove_if(Rname.begin(), Rname.end(), ::isspace),Rname.end());
+
+  // cycle over chains
+  for(unsigned i=0; i<chains.size(); ++i) {
+    unsigned start, end;
+    std::string errmsg;
+    pdb.getResidueRange(chains[i], start, end, errmsg);
+    AtomResidueName.resize(2);
+    // cycle over residues
+    for(unsigned res=start; res<=end; res++) {
+      std::string Rname = pdb.getResidueName(res, chains[i]);
+      Rname.erase(std::remove_if(Rname.begin(), Rname.end(), ::isspace),Rname.end());
+      std::vector<AtomNumber> res_atoms = pdb.getAtomsInResidue(res, chains[i]);
+      unsigned first_time=1;
+      std::vector<std::vector<unsigned> > tmp_residue_atom; tmp_residue_atom.resize(3);
+      // cycle over atoms
+      for(unsigned a=0; a<res_atoms.size(); a++) {
+        // operations shared among all beads
+        std::string Aname=pdb.getAtomName(res_atoms[a]);
         AtomResidueName[0].push_back(Aname);
         AtomResidueName[1].push_back(Rname);
-        if(isprotein_chain[ch_id]) {
-          atoms_per_bead[moldat->getResidueNumber(atoms[i])-first_res+cumulative_res_per_chain[ch_id]]++;
-          residue_atom[i] = moldat->getResidueNumber(atoms[i])-first_res+cumulative_res_per_chain[ch_id];
-        }
-        else {
-          //check for backbone and sidechain in nucleic acids
-          if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-              Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-              Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-              Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-              Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-              Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-              Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-              Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-            atoms_per_bead[(moldat->getResidueNumber(atoms[i])-first_res)*2 + cumulative_res_per_chain[ch_id]]++;
-            residue_atom[i] = (moldat->getResidueNumber(atoms[i])-first_res)*2 + cumulative_res_per_chain[ch_id];
-          }
-          else {
-            atoms_per_bead[(moldat->getResidueNumber(atoms[i])-first_res)*2 + 1 + cumulative_res_per_chain[ch_id]]++;
-            residue_atom[i] = (moldat->getResidueNumber(atoms[i])-first_res)*2 + 1 +cumulative_res_per_chain[ch_id];
-          }
-        }
         char type;
         char first = Aname.at(0);
         // We assume that element symbol is first letter, if not a number
@@ -1292,21 +1255,65 @@ void SAXS::getOnebeadMapping(const std::vector<AtomNumber> &atoms) {
         } else {
           type = Aname.at(1);
         }
-        if (type == 'H') atoms_masses[i] = 1.008;
-        else if (type == 'C') atoms_masses[i] = 12.011;
-        else if (type == 'N') atoms_masses[i] = 14.007;
-        else if (type == 'O') atoms_masses[i] = 15.999;
-        else if (type == 'S') atoms_masses[i] = 32.065;
-        else if (type == 'P') atoms_masses[i] = 30.974;
+        if (type == 'H') atoms_masses[res_atoms[a].index()] = 1.008;
+        else if(type == 'C') atoms_masses[res_atoms[a].index()] = 12.011;
+        else if(type == 'N') atoms_masses[res_atoms[a].index()] = 14.007;
+        else if(type == 'O') atoms_masses[res_atoms[a].index()] = 15.999;
+        else if(type == 'S') atoms_masses[res_atoms[a].index()] = 32.065;
+        else if(type == 'P') atoms_masses[res_atoms[a].index()] = 30.974;
         else {
           error("Unknown element in mass extraction\n");
         }
+        if(pdb.allowedResidue("protein",Rname)) {
+          if(first_time) {
+            atoms_per_bead.push_back(res_atoms.size());
+            first_time = 0;
+          }
+          residue_atom[res_atoms[a].index()] = atoms_per_bead.size()-1;
+        } else {
+          // check for nucleic acids
+          // Pentose bead
+          if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  || Aname=="O3'"  ||
+              Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  || Aname=="C1'"  || Aname=="H5'"  ||
+              Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  || Aname=="H2'"  || Aname=="H2''" ||
+              Aname=="H2'2" || Aname=="H1'"  || Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" ||
+              Aname=="H5'1" || Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T"  ||
+              Aname=="H3T" ) {
+            tmp_residue_atom[0].push_back(res_atoms[a].index());
+          }          
+          // Nucleobase bead
+          else if(Aname=="N1"  || Aname=="N2"  || Aname=="N3"  || Aname=="N4"  || Aname=="N6"  ||
+                  Aname=="N7"  || Aname=="N9"  || Aname=="C2"  || Aname=="C4"  || Aname=="C5"  ||
+                  Aname=="C6"  || Aname=="C7"  || Aname=="C8"  || Aname=="O2"  || Aname=="O4"  ||
+                  Aname=="O6"  || Aname=="H1"  || Aname=="H2"  || Aname=="H3"  || Aname=="H5"  ||
+                  Aname=="H6"  || Aname=="H8"  || Aname=="H21" || Aname=="H22" || Aname=="H41" ||
+                  Aname=="H42" || Aname=="H61" || Aname=="H62" || Aname=="H71" || Aname=="H72" ||
+                  Aname=="H73" ) {
+            tmp_residue_atom[1].push_back(res_atoms[a].index());
+          }
+          // PO2 bead
+          else if(Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || Aname=="O1P" ||
+                  Aname=="O2P" || Aname=="O3P" ) {
+            tmp_residue_atom[2].push_back(res_atoms[a].index());
+          }
+          // error
+          else error("Atom name "+Aname+" cannot be indexed to any bead. Check the PDB.");      
+        }
+      }
+      if(!pdb.allowedResidue("protein",Rname)) {
+        atoms_per_bead.push_back(tmp_residue_atom[0].size());
+        for(unsigned tmp_i=0; tmp_i<tmp_residue_atom[0].size(); tmp_i++) residue_atom[tmp_residue_atom[0][tmp_i]]=atoms_per_bead.size()-1; 
+        atoms_per_bead.push_back(tmp_residue_atom[1].size());
+        for(unsigned tmp_i=0; tmp_i<tmp_residue_atom[1].size(); tmp_i++) residue_atom[tmp_residue_atom[1][tmp_i]]=atoms_per_bead.size()-1; 
+        if(tmp_residue_atom[2].size()>0) {
+          atoms_per_bead.push_back(tmp_residue_atom[2].size()); 
+          for(unsigned tmp_i=0; tmp_i<tmp_residue_atom[2].size(); tmp_i++) residue_atom[tmp_residue_atom[2][tmp_i]]=atoms_per_bead.size()-1; 
+        }
       }
     }
-    readLCPOparam(AtomResidueName, atoms.size());
-  } else {
-    error("MOLINFO DATA not found\n");
   }
+  readLCPOparam(AtomResidueName, atoms.size());
+  return atoms_per_bead.size();
 }
 
 void SAXS::getMartiniFFparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter)
@@ -3216,15 +3223,23 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std
   parameter_vac[HIS].push_back(-19307.35836837878);
   parameter_vac[HIS].push_back(4780.831414992477);
 
-  //NUCLEIC ACIDS
+  // NUCLEIC ACIDS
 
-  parameter_solv[BB_DNA].push_back(28774.336900113623);
-  parameter_solv[BB_DNA].push_back(-163.32669382932528);
-  parameter_solv[BB_DNA].push_back(-71406.8955820105);
-  parameter_solv[BB_DNA].push_back(-26766.760458609122);
-  parameter_solv[BB_DNA].push_back(199117.8013226829);
-  parameter_solv[BB_DNA].push_back(-175842.67051839601);
-  parameter_solv[BB_DNA].push_back(49152.53325972375);
+  parameter_solv[BB_PO2].push_back(575.5201001192197);
+  parameter_solv[BB_PO2].push_back(-0.6126595489733868);
+  parameter_solv[BB_PO2].push_back(-623.3371092254897);
+  parameter_solv[BB_PO2].push_back(-68.05795957022156);
+  parameter_solv[BB_PO2].push_back(561.8052621243662);
+  parameter_solv[BB_PO2].push_back(-283.39573309540344);
+  parameter_solv[BB_PO2].push_back(35.55001698010027); 
+
+  parameter_solv[BB_DNA].push_back(21211.009600118316);
+  parameter_solv[BB_DNA].push_back(-90.18805990529991);
+  parameter_solv[BB_DNA].push_back(-39731.1337351215);
+  parameter_solv[BB_DNA].push_back(-10920.373563712878);
+  parameter_solv[BB_DNA].push_back(72882.21702424977);
+  parameter_solv[BB_DNA].push_back(-51747.487078112754);
+  parameter_solv[BB_DNA].push_back(11308.67842901876);
 
   parameter_solv[BB_DNA_5].push_back(22737.624100119025);
   parameter_solv[BB_DNA_5].push_back(-102.72714886664163);
@@ -3234,37 +3249,37 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std
   parameter_solv[BB_DNA_5].push_back(-60367.15652138888);
   parameter_solv[BB_DNA_5].push_back(13507.33372986899);
 
-  parameter_solv[BB_DNA_3].push_back(30548.048400103493);
-  parameter_solv[BB_DNA_3].push_back(-166.91249728626434);
-  parameter_solv[BB_DNA_3].push_back(-77902.70631844719);
-  parameter_solv[BB_DNA_3].push_back(-29053.198288799904);
-  parameter_solv[BB_DNA_3].push_back(222722.71954118446);
-  parameter_solv[BB_DNA_3].push_back(-199975.20806388272);
-  parameter_solv[BB_DNA_3].push_back(56782.21028776849);
+  parameter_solv[BB_DNA_3].push_back(22737.62410011902);
+  parameter_solv[BB_DNA_3].push_back(-101.57816684452263);
+  parameter_solv[BB_DNA_3].push_back(-43488.53670557616);
+  parameter_solv[BB_DNA_3].push_back(-12345.056184958417);
+  parameter_solv[BB_DNA_3].push_back(81963.5236411489);
+  parameter_solv[BB_DNA_3].push_back(-58791.59443618196);
+  parameter_solv[BB_DNA_3].push_back(13003.199362335576);
 
-  parameter_solv[BB_RNA].push_back(31955.137600104226);
-  parameter_solv[BB_RNA].push_back(-140.10852926001618);
-  parameter_solv[BB_RNA].push_back(-85546.58644134423);
-  parameter_solv[BB_RNA].push_back(-29949.620806061652);
-  parameter_solv[BB_RNA].push_back(252686.93736806375);
-  parameter_solv[BB_RNA].push_back(-234761.3403979253);
-  parameter_solv[BB_RNA].push_back(68775.87040189233);
+  parameter_solv[BB_RNA].push_back(23953.752900120977);
+  parameter_solv[BB_RNA].push_back(-117.35779348824401);
+  parameter_solv[BB_RNA].push_back(-47644.41735332837);
+  parameter_solv[BB_RNA].push_back(-14641.556643789863);
+  parameter_solv[BB_RNA].push_back(96893.48627050382);
+  parameter_solv[BB_RNA].push_back(-72249.62534169314);
+  parameter_solv[BB_RNA].push_back(16792.05552105538);
 
   parameter_solv[BB_RNA_5].push_back(25574.406400119024);
-  parameter_solv[BB_RNA_5].push_back(-131.9964277293373);
-  parameter_solv[BB_RNA_5].push_back(-52136.51404531248);
-  parameter_solv[BB_RNA_5].push_back(-16682.142739176037);
-  parameter_solv[BB_RNA_5].push_back(110278.01921639396);
-  parameter_solv[BB_RNA_5].push_back(-83715.92027818538);
+  parameter_solv[BB_RNA_5].push_back(-131.99642772933734);
+  parameter_solv[BB_RNA_5].push_back(-52136.51404531249);
+  parameter_solv[BB_RNA_5].push_back(-16682.14273917604);
+  parameter_solv[BB_RNA_5].push_back(110278.019216394);
+  parameter_solv[BB_RNA_5].push_back(-83715.92027818545);
   parameter_solv[BB_RNA_5].push_back(19875.891337706045);
 
-  parameter_solv[BB_RNA_3].push_back(33822.888100104596);
-  parameter_solv[BB_RNA_3].push_back(-154.56394345919836);
-  parameter_solv[BB_RNA_3].push_back(-90963.39182741364);
-  parameter_solv[BB_RNA_3].push_back(-32254.28864410809);
-  parameter_solv[BB_RNA_3].push_back(269237.7173303585);
-  parameter_solv[BB_RNA_3].push_back(-249521.94632607108);
-  parameter_solv[BB_RNA_3].push_back(72922.2108577004);
+  parameter_solv[BB_RNA_3].push_back(25574.406400119024);
+  parameter_solv[BB_RNA_3].push_back(-127.96875237036166);
+  parameter_solv[BB_RNA_3].push_back(-51407.183917584385);
+  parameter_solv[BB_RNA_3].push_back(-15922.900669975606);
+  parameter_solv[BB_RNA_3].push_back(105078.58889106264);
+  parameter_solv[BB_RNA_3].push_back(-78289.16276190648);
+  parameter_solv[BB_RNA_3].push_back(18156.83214344118);
 
   parameter_solv[BASE_A].push_back(13282.562500119211);
   parameter_solv[BASE_A].push_back(-76.45124168404048);
@@ -3306,53 +3321,61 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std
   parameter_solv[BASE_U].push_back(-26475.631627167604);
   parameter_solv[BASE_U].push_back(5808.201015156168);
 
-  parameter_mix[BB_DNA].push_back(31417.210878019756);
-  parameter_mix[BB_DNA].push_back(-225.35152563190917);
-  parameter_mix[BB_DNA].push_back(-77222.5236172451);
-  parameter_mix[BB_DNA].push_back(-32952.643470954165);
-  parameter_mix[BB_DNA].push_back(223711.01723782741);
-  parameter_mix[BB_DNA].push_back(-194545.67145813679);
-  parameter_mix[BB_DNA].push_back(53382.038254287465);
+  parameter_mix[BB_PO2].push_back(1487.2888381188868);
+  parameter_mix[BB_PO2].push_back(-0.6155376265599789);
+  parameter_mix[BB_PO2].push_back(-1181.5076027691764);
+  parameter_mix[BB_PO2].push_back(-66.25027450710594);
+  parameter_mix[BB_PO2].push_back(697.0421991965113);
+  parameter_mix[BB_PO2].push_back(-261.8559466354847);
+  parameter_mix[BB_PO2].push_back(9.974337082362194);
 
-  parameter_mix[BB_DNA_5].push_back(18696.097442039274);
-  parameter_mix[BB_DNA_5].push_back(-56.29408880833801);
-  parameter_mix[BB_DNA_5].push_back(-30486.108599707615);
-  parameter_mix[BB_DNA_5].push_back(-6524.195857141153);
-  parameter_mix[BB_DNA_5].push_back(45280.801426864426);
-  parameter_mix[BB_DNA_5].push_back(-29007.986165679937);
+  parameter_mix[BB_DNA].push_back(17766.29474499878);
+  parameter_mix[BB_DNA].push_back(-48.97330188566253);
+  parameter_mix[BB_DNA].push_back(-28199.563596327207);
+  parameter_mix[BB_DNA].push_back(-5623.82085602494);
+  parameter_mix[BB_DNA].push_back(39646.22954828498);
+  parameter_mix[BB_DNA].push_back(-24658.81157651943);
+  parameter_mix[BB_DNA].push_back(4453.73906293146);
+
+  parameter_mix[BB_DNA_5].push_back(18696.09744203927);
+  parameter_mix[BB_DNA_5].push_back(-56.29408880833802);
+  parameter_mix[BB_DNA_5].push_back(-30486.108599707608);
+  parameter_mix[BB_DNA_5].push_back(-6524.195857141158);
+  parameter_mix[BB_DNA_5].push_back(45280.80142686446);
+  parameter_mix[BB_DNA_5].push_back(-29007.98616567993);
   parameter_mix[BB_DNA_5].push_back(5488.566965501818);
 
-  parameter_mix[BB_DNA_3].push_back(32506.256953559383);
-  parameter_mix[BB_DNA_3].push_back(-236.66991335386012);
-  parameter_mix[BB_DNA_3].push_back(-82189.3685513695);
-  parameter_mix[BB_DNA_3].push_back(-35797.59018269508);
-  parameter_mix[BB_DNA_3].push_back(246686.4150106487);
-  parameter_mix[BB_DNA_3].push_back(-218211.76617818634);
-  parameter_mix[BB_DNA_3].push_back(60884.497351217506);
+  parameter_mix[BB_DNA_3].push_back(18696.097442039274);
+  parameter_mix[BB_DNA_3].push_back(-55.5645003501971);
+  parameter_mix[BB_DNA_3].push_back(-30422.262113654506);
+  parameter_mix[BB_DNA_3].push_back(-6409.659659309089);
+  parameter_mix[BB_DNA_3].push_back(44605.76043515699);
+  parameter_mix[BB_DNA_3].push_back(-28295.62152988411);
+  parameter_mix[BB_DNA_3].push_back(5262.5765863484);
 
-  parameter_mix[BB_RNA].push_back(35748.91496003514);
-  parameter_mix[BB_RNA].push_back(-230.5993119016052);
-  parameter_mix[BB_RNA].push_back(-95479.94160974369);
-  parameter_mix[BB_RNA].push_back(-40519.18947290641);
-  parameter_mix[BB_RNA].push_back(302451.2975530196);
-  parameter_mix[BB_RNA].push_back(-279197.99677915656);
-  parameter_mix[BB_RNA].push_back(81195.6590592509);
+  parameter_mix[BB_RNA].push_back(21356.177105457366);
+  parameter_mix[BB_RNA].push_back(-76.73490647754872);
+  parameter_mix[BB_RNA].push_back(-36845.234814782816);
+  parameter_mix[BB_RNA].push_back(-9066.559625582728);
+  parameter_mix[BB_RNA].push_back(61167.998793390485);
+  parameter_mix[BB_RNA].push_back(-41467.23384423218);
+  parameter_mix[BB_RNA].push_back(8518.937793863257);
 
   parameter_mix[BB_RNA_5].push_back(22386.63276427916);
-  parameter_mix[BB_RNA_5].push_back(-85.70426456933492);
-  parameter_mix[BB_RNA_5].push_back(-39490.50298502028);
+  parameter_mix[BB_RNA_5].push_back(-85.70426456933487);
+  parameter_mix[BB_RNA_5].push_back(-39490.50298502025);
   parameter_mix[BB_RNA_5].push_back(-10223.702594972712);
-  parameter_mix[BB_RNA_5].push_back(68450.60459618444);
-  parameter_mix[BB_RNA_5].push_back(-47409.91098159008);
-  parameter_mix[BB_RNA_5].push_back(10031.136138513195);
+  parameter_mix[BB_RNA_5].push_back(68450.60459618448);
+  parameter_mix[BB_RNA_5].push_back(-47409.91098159006);
+  parameter_mix[BB_RNA_5].push_back(10031.136138513202);
 
-  parameter_mix[BB_RNA_3].push_back(37146.62879379633);
-  parameter_mix[BB_RNA_3].push_back(-245.66349087658946);
-  parameter_mix[BB_RNA_3].push_back(-99941.81933481779);
-  parameter_mix[BB_RNA_3].push_back(-42813.488376233785);
-  parameter_mix[BB_RNA_3].push_back(317925.96697820636);
-  parameter_mix[BB_RNA_3].push_back(-293246.16852957854);
-  parameter_mix[BB_RNA_3].push_back(85191.70108027666);
+  parameter_mix[BB_RNA_3].push_back(22386.63276427916);
+  parameter_mix[BB_RNA_3].push_back(-81.93760812351479);
+  parameter_mix[BB_RNA_3].push_back(-39031.70571520093);
+  parameter_mix[BB_RNA_3].push_back(-9666.316086142708);
+  parameter_mix[BB_RNA_3].push_back(65120.07128126262);
+  parameter_mix[BB_RNA_3].push_back(-44110.13603681317);
+  parameter_mix[BB_RNA_3].push_back(9036.76498256983);
 
   parameter_mix[BASE_A].push_back(15897.31116611889);
   parameter_mix[BASE_A].push_back(-67.86385832953485);
@@ -3394,53 +3417,61 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std
   parameter_mix[BASE_U].push_back(-17577.387831701515);
   parameter_mix[BASE_U].push_back(3273.183903219142);
 
-  parameter_vac[BB_DNA].push_back(8462.522728584388);
-  parameter_vac[BB_DNA].push_back(-61.614764705577755);
-  parameter_vac[BB_DNA].push_back(-18456.50588304278);
-  parameter_vac[BB_DNA].push_back(-7921.927957543294);
-  parameter_vac[BB_DNA].push_back(49600.27721476085);
-  parameter_vac[BB_DNA].push_back(-40491.19910978321);
-  parameter_vac[BB_DNA].push_back(10324.210221432275);
+  parameter_vac[BB_PO2].push_back(960.8822037291127);
+  parameter_vac[BB_PO2].push_back(-0.09312135742159174);
+  parameter_vac[BB_PO2].push_back(-469.39643497461844);
+  parameter_vac[BB_PO2].push_back(-9.779346709041985);
+  parameter_vac[BB_PO2].push_back(162.1581550003227);
+  parameter_vac[BB_PO2].push_back(-37.06686233305618);
+  parameter_vac[BB_PO2].push_back(-4.695586672655664);
+
+  parameter_vac[BB_DNA].push_back(3720.2522996838984);
+  parameter_vac[BB_DNA].push_back(-5.4229642176938);
+  parameter_vac[BB_DNA].push_back(-4800.897672711981);
+  parameter_vac[BB_DNA].push_back(-597.2274673070993);
+  parameter_vac[BB_DNA].push_back(4825.908840953665);
+  parameter_vac[BB_DNA].push_back(-2451.397454446564);
+  parameter_vac[BB_DNA].push_back(294.93071756645685);
 
   parameter_vac[BB_DNA_5].push_back(3843.234214262163);
-  parameter_vac[BB_DNA_5].push_back(-6.423078416284451);
-  parameter_vac[BB_DNA_5].push_back(-5112.121638696313);
-  parameter_vac[BB_DNA_5].push_back(-713.8373583426671);
-  parameter_vac[BB_DNA_5].push_back(5547.545382516272);
-  parameter_vac[BB_DNA_5].push_back(-2973.5659871174234);
+  parameter_vac[BB_DNA_5].push_back(-6.423078416284452);
+  parameter_vac[BB_DNA_5].push_back(-5112.1216386963115);
+  parameter_vac[BB_DNA_5].push_back(-713.8373583426668);
+  parameter_vac[BB_DNA_5].push_back(5547.545382516269);
+  parameter_vac[BB_DNA_5].push_back(-2973.5659871174225);
   parameter_vac[BB_DNA_5].push_back(407.2789106630427);
 
-  parameter_vac[BB_DNA_3].push_back(8647.497929341063);
-  parameter_vac[BB_DNA_3].push_back(-66.18825187461383);
-  parameter_vac[BB_DNA_3].push_back(-19452.461922022285);
-  parameter_vac[BB_DNA_3].push_back(-8719.658537402613);
-  parameter_vac[BB_DNA_3].push_back(54962.83463139145);
-  parameter_vac[BB_DNA_3].push_back(-45897.55486857638);
-  parameter_vac[BB_DNA_3].push_back(12001.113806640766);
+  parameter_vac[BB_DNA_3].push_back(3843.234214262163);
+  parameter_vac[BB_DNA_3].push_back(-6.268636561475645);
+  parameter_vac[BB_DNA_3].push_back(-5103.192931218086);
+  parameter_vac[BB_DNA_3].push_back(-693.8705734390547);
+  parameter_vac[BB_DNA_3].push_back(5443.979645097035);
+  parameter_vac[BB_DNA_3].push_back(-2871.4337477324893);
+  parameter_vac[BB_DNA_3].push_back(377.3062915349831);
 
-  parameter_vac[BB_RNA].push_back(9998.274274579766);
-  parameter_vac[BB_RNA].push_back(-80.26497910477308);
-  parameter_vac[BB_RNA].push_back(-24650.093748983854);
-  parameter_vac[BB_RNA].push_back(-11880.327820678367);
-  parameter_vac[BB_RNA].push_back(79069.0832891726);
-  parameter_vac[BB_RNA].push_back(-70728.63647863614);
-  parameter_vac[BB_RNA].push_back(19902.746887496414);
+  parameter_vac[BB_RNA].push_back(4760.071443398374);
+  parameter_vac[BB_RNA].push_back(-11.0990475402486);
+  parameter_vac[BB_RNA].push_back(-6934.713566418421);
+  parameter_vac[BB_RNA].push_back(-1256.5202524085096);
+  parameter_vac[BB_RNA].push_back(9024.962587066922);
+  parameter_vac[BB_RNA].push_back(-5386.842667932241);
+  parameter_vac[BB_RNA].push_back(907.42947751372);
 
-  parameter_vac[BB_RNA_5].push_back(4899.051406033405);
-  parameter_vac[BB_RNA_5].push_back(-12.279240472628237);
-  parameter_vac[BB_RNA_5].push_back(-7276.273570813669);
-  parameter_vac[BB_RNA_5].push_back(-1400.9520839250863);
+  parameter_vac[BB_RNA_5].push_back(4899.051406033406);
+  parameter_vac[BB_RNA_5].push_back(-12.279240472628238);
+  parameter_vac[BB_RNA_5].push_back(-7276.273570813667);
+  parameter_vac[BB_RNA_5].push_back(-1400.9520839250868);
   parameter_vac[BB_RNA_5].push_back(9912.215823228895);
-  parameter_vac[BB_RNA_5].push_back(-6079.25652704041);
-  parameter_vac[BB_RNA_5].push_back(1073.5342817547205);
+  parameter_vac[BB_RNA_5].push_back(-6079.2565270404075);
+  parameter_vac[BB_RNA_5].push_back(1073.53428175472);
 
-  parameter_vac[BB_RNA_3].push_back(10199.247523392218);
-  parameter_vac[BB_RNA_3].push_back(-82.74535115529785);
-  parameter_vac[BB_RNA_3].push_back(-25335.702453394853);
-  parameter_vac[BB_RNA_3].push_back(-12261.211081493808);
-  parameter_vac[BB_RNA_3].push_back(81612.41299888144);
-  parameter_vac[BB_RNA_3].push_back(-73073.37481042754);
-  parameter_vac[BB_RNA_3].push_back(20578.649426013257);
+  parameter_vac[BB_RNA_3].push_back(4899.051406033406);
+  parameter_vac[BB_RNA_3].push_back(-11.642804195148194);
+  parameter_vac[BB_RNA_3].push_back(-7213.774619570996);
+  parameter_vac[BB_RNA_3].push_back(-1317.4463949342964);
+  parameter_vac[BB_RNA_3].push_back(9450.928929264686);
+  parameter_vac[BB_RNA_3].push_back(-5643.856117200917);
+  parameter_vac[BB_RNA_3].push_back(949.4698817407918);
 
   parameter_vac[BASE_A].push_back(4756.697028810353);
   parameter_vac[BASE_A].push_back(-12.158940746852812);
@@ -3482,383 +3513,466 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std
   parameter_vac[BASE_U].push_back(-2368.7250146912766);
   parameter_vac[BASE_U].push_back(313.23997718445014);
 
-  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
-  if( moldat ) {
-    for(unsigned i=0; i<atoms.size(); ++i) {
-      std::string Aname = moldat->getAtomName(atoms[i]);
-      std::string Rname = moldat->getResidueName(atoms[i]);
-      Rname.erase(std::remove_if(Rname.begin(), Rname.end(), ::isspace),Rname.end());
-      if(Rname=="ALA") {
-        atoi[residue_atom[i]]=ALA;
-      } else if(Rname=="ARG") {
-        atoi[residue_atom[i]]=ARG;
-      } else if(Rname=="ASN") {
-        atoi[residue_atom[i]]=ASN;
-      } else if(Rname=="ASP") {
-        atoi[residue_atom[i]]=ASP;
-      } else if(Rname=="CYS") {
-        atoi[residue_atom[i]]=CYS;
-      } else if(Rname=="GLN") {
-        atoi[residue_atom[i]]=GLN;
-      } else if(Rname=="GLU") {
-        atoi[residue_atom[i]]=GLU;
-      } else if(Rname=="GLY") {
-        atoi[residue_atom[i]]=GLY;
-      } else if(Rname=="HIS") {
-        atoi[residue_atom[i]]=HIS;
-      } else if(Rname=="HID") {
-        atoi[residue_atom[i]]=HIS;
-      } else if(Rname=="HIE") {
-        atoi[residue_atom[i]]=HIS;
-      } else if(Rname=="HIP") {
-        atoi[residue_atom[i]]=HIP;
-        // CHARMM NAMING FOR PROTONATION STATES OF HISTIDINE
-      } else if(Rname=="HSD") {
-        atoi[residue_atom[i]]=HIS;
-      } else if(Rname=="HSE") {
-        atoi[residue_atom[i]]=HIS;
-      } else if(Rname=="HSP") {
-        atoi[residue_atom[i]]=HIP;
-      } else if(Rname=="ILE") {
-        atoi[residue_atom[i]]=ILE;
-      } else if(Rname=="LEU") {
-        atoi[residue_atom[i]]=LEU;
-      } else if(Rname=="LYS") {
-        atoi[residue_atom[i]]=LYS;
-      } else if(Rname=="MET") {
-        atoi[residue_atom[i]]=MET;
-      } else if(Rname=="PHE") {
-        atoi[residue_atom[i]]=PHE;
-      } else if(Rname=="PRO") {
-        atoi[residue_atom[i]]=PRO;
-      } else if(Rname=="SER") {
-        atoi[residue_atom[i]]=SER;
-      } else if(Rname=="THR") {
-        atoi[residue_atom[i]]=THR;
-      } else if(Rname=="TRP") {
-        atoi[residue_atom[i]]=TRP;
-      } else if(Rname=="TYR") {
-        atoi[residue_atom[i]]=TYR;
-      } else if(Rname=="VAL") {
-        atoi[residue_atom[i]]=VAL;
-      }
-      // NUCLEIC ACIDS
-      else if(Rname=="G") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA;
-        } else {
-          atoi[residue_atom[i]]=BASE_G;
-        }
-      } else if(Rname=="G3") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA_3;
-        } else {
-          atoi[residue_atom[i]]=BASE_G;
-        }
-      } else if(Rname=="G5") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA_5;
-        } else {
-          atoi[residue_atom[i]]=BASE_G;
-        }
-      } else if(Rname=="U") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA;
-        } else {
-          atoi[residue_atom[i]]=BASE_U;
-        }
-      } else if(Rname=="U3") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA_3;
-        } else {
-          atoi[residue_atom[i]]=BASE_U;
-        }
-      } else if(Rname=="U5") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA_5;
-        } else {
-          atoi[residue_atom[i]]=BASE_U;
-        }
-      } else if(Rname=="A") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA;
-        } else {
-          atoi[residue_atom[i]]=BASE_A;
-        }
-      } else if(Rname=="A3") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA_3;
-        } else {
-          atoi[residue_atom[i]]=BASE_A;
-        }
-      } else if(Rname=="A5") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA_5;
-        } else {
-          atoi[residue_atom[i]]=BASE_A;
-        }
-      } else if(Rname=="C") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA;
-        } else {
-          atoi[residue_atom[i]]=BASE_C;
-        }
-      } else if(Rname=="C3") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA_3;
-        } else {
-          atoi[residue_atom[i]]=BASE_C;
-        }
-      } else if(Rname=="C5") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA_5;
-        } else {
-          atoi[residue_atom[i]]=BASE_C;
-        }
-      } else if(Rname=="DG") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA;
-        } else {
-          atoi[residue_atom[i]]=BASE_G;
-        }
-      } else if(Rname=="DG3") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA_3;
-        } else {
-          atoi[residue_atom[i]]=BASE_G;
-        }
-      } else if(Rname=="DG5") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA_5;
-        } else {
-          atoi[residue_atom[i]]=BASE_G;
-        }
-      } else if(Rname=="DT") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA;
-        } else {
-          atoi[residue_atom[i]]=BASE_T;
-        }
-      } else if(Rname=="DT3") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA_3;
-        } else {
-          atoi[residue_atom[i]]=BASE_T;
-        }
-      } else if(Rname=="DT5") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA_5;
-        } else {
-          atoi[residue_atom[i]]=BASE_T;
-        }
-      } else if(Rname=="DA") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA;
-        } else {
-          atoi[residue_atom[i]]=BASE_A;
-        }
-      } else if(Rname=="DA3") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA_3;
-        } else {
-          atoi[residue_atom[i]]=BASE_A;
-        }
-      } else if(Rname=="DA5") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA_5;
-        } else {
-          atoi[residue_atom[i]]=BASE_A;
-        }
-      } else if(Rname=="DC") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA;
-        } else {
-          atoi[residue_atom[i]]=BASE_C;
-        }
-      } else if(Rname=="DC3") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA_3;
-        } else {
-          atoi[residue_atom[i]]=BASE_C;
-        }
-      } else if(Rname=="DC5") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA_5;
-        } else {
-          atoi[residue_atom[i]]=BASE_C;
-        }
-      } else error("Residue not known: "+Rname);
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    std::string Aname = pdb.getAtomName(atoms[i]);
+    std::string Rname = pdb.getResidueName(atoms[i]);
+    Rname.erase(std::remove_if(Rname.begin(), Rname.end(), ::isspace),Rname.end());
+    if(Rname=="ALA") {
+      atoi[residue_atom[i]]=ALA;
+    } else if(Rname=="ARG") {
+      atoi[residue_atom[i]]=ARG;
+    } else if(Rname=="ASN") {
+      atoi[residue_atom[i]]=ASN;
+    } else if(Rname=="ASP") {
+      atoi[residue_atom[i]]=ASP;
+    } else if(Rname=="CYS") {
+      atoi[residue_atom[i]]=CYS;
+    } else if(Rname=="GLN") {
+      atoi[residue_atom[i]]=GLN;
+    } else if(Rname=="GLU") {
+      atoi[residue_atom[i]]=GLU;
+    } else if(Rname=="GLY") {
+      atoi[residue_atom[i]]=GLY;
+    } else if(Rname=="HIS") {
+      atoi[residue_atom[i]]=HIS;
+    } else if(Rname=="HID") {
+      atoi[residue_atom[i]]=HIS;
+    } else if(Rname=="HIE") {
+      atoi[residue_atom[i]]=HIS;
+    } else if(Rname=="HIP") {
+      atoi[residue_atom[i]]=HIP;
+      // CHARMM NAMING FOR PROTONATION STATES OF HISTIDINE
+    } else if(Rname=="HSD") {
+      atoi[residue_atom[i]]=HIS;
+    } else if(Rname=="HSE") {
+      atoi[residue_atom[i]]=HIS;
+    } else if(Rname=="HSP") {
+      atoi[residue_atom[i]]=HIP;
+    } else if(Rname=="ILE") {
+      atoi[residue_atom[i]]=ILE;
+    } else if(Rname=="LEU") {
+      atoi[residue_atom[i]]=LEU;
+    } else if(Rname=="LYS") {
+      atoi[residue_atom[i]]=LYS;
+    } else if(Rname=="MET") {
+      atoi[residue_atom[i]]=MET;
+    } else if(Rname=="PHE") {
+      atoi[residue_atom[i]]=PHE;
+    } else if(Rname=="PRO") {
+      atoi[residue_atom[i]]=PRO;
+    } else if(Rname=="SER") {
+      atoi[residue_atom[i]]=SER;
+    } else if(Rname=="THR") {
+      atoi[residue_atom[i]]=THR;
+    } else if(Rname=="TRP") {
+      atoi[residue_atom[i]]=TRP;
+    } else if(Rname=="TYR") {
+      atoi[residue_atom[i]]=TYR;
+    } else if(Rname=="VAL") {
+      atoi[residue_atom[i]]=VAL;
     }
-  } else {
-    error("MOLINFO DATA not found\n");
+    // NUCLEIC ACIDS
+    // nucleobases are not automatically populated as an additional check on the health of the PDB.
+    // RNA - G
+    else if(Rname=="G") {
+    if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+        Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+      atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;          
+      } else if( Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - G3
+    } else if(Rname=="G3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'" || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'" || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="H2'1" || Aname=="HO3'"|| Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" ) {
+        atoi[residue_atom[i]]=BB_RNA_3;          
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - G5
+    } else if(Rname=="G5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+          Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+          Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="HO2'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="HO'2" ||
+          Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA_5;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - U
+    } else if(Rname=="U") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;   
+      } else if( Aname=="N1" || Aname=="C2"  || Aname=="O2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="O4"  || Aname=="C5" || Aname=="C6" ||
+                Aname=="H3" || Aname=="H5"  || Aname=="H6") {
+        atoi[residue_atom[i]]=BASE_U;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - U3
+    } else if(Rname=="U3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'" || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'" || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="H2'1" || Aname=="HO3'"|| Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" ) {
+        atoi[residue_atom[i]]=BB_RNA_3; 
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="O2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="O4"  || Aname=="C5" || Aname=="C6" ||
+                Aname=="H3" || Aname=="H5"  || Aname=="H6") {
+        atoi[residue_atom[i]]=BASE_U;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - U5
+    } else if(Rname=="U5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+          Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+          Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="HO2'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="HO'2" ||
+          Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA_5;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="O2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="O4"  || Aname=="C5" || Aname=="C6" ||
+                Aname=="H3" || Aname=="H5"  || Aname=="H6") {
+        atoi[residue_atom[i]]=BASE_U;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - A
+    } else if(Rname=="A") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA; 
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - A3
+    } else if(Rname=="A3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'" || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'" || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="H2'1" || Aname=="HO3'"|| Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" ) {
+        atoi[residue_atom[i]]=BB_RNA_3; 
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - A5
+    } else if(Rname=="A5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+          Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+          Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="HO2'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="HO'2" ||
+          Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA_5;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - C
+    } else if(Rname=="C") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - C3
+    } else if(Rname=="C3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'" || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'" || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="H2'1" || Aname=="HO3'"|| Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" ) {
+        atoi[residue_atom[i]]=BB_RNA_3; 
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - C5
+    } else if(Rname=="C5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+          Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+          Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="HO2'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="HO'2" ||
+          Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA_5;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - G
+    } else if(Rname=="DG") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - G3
+    } else if(Rname=="DG3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO3'" ||
+                Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+                Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA_3;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - G5
+    } else if(Rname=="DG5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  ||  Aname=="C1'" ||
+          Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+          Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+          Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_DNA_5;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - T
+    } else if(Rname=="DT") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1"  || Aname=="C2"  || Aname=="O2"  || Aname=="N3"  ||
+                Aname=="C4"  || Aname=="O4"  || Aname=="C5"  || Aname=="C6"  ||
+                Aname=="C7"  || Aname=="H3"  || Aname=="H6"  || Aname=="H71" ||
+                Aname=="H72" || Aname=="H73" ) {
+        atoi[residue_atom[i]]=BASE_T;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - T3
+    } else if(Rname=="DT3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO3'" ||
+                Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+                Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA_3;
+      } else if(Aname=="N1"  || Aname=="C2"  || Aname=="O2"  || Aname=="N3"  ||
+                Aname=="C4"  || Aname=="O4"  || Aname=="C5"  || Aname=="C6"  ||
+                Aname=="C7"  || Aname=="H3"  || Aname=="H6"  || Aname=="H71" ||
+                Aname=="H72" || Aname=="H73" ) {
+        atoi[residue_atom[i]]=BASE_T;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - T5
+    } else if(Rname=="DT5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  ||  Aname=="C1'" ||
+          Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+          Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+          Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_DNA_5;
+      } else if(Aname=="N1"  || Aname=="C2"  || Aname=="O2"  || Aname=="N3"  ||
+                Aname=="C4"  || Aname=="O4"  || Aname=="C5"  || Aname=="C6"  ||
+                Aname=="C7"  || Aname=="H3"  || Aname=="H6"  || Aname=="H71" ||
+                Aname=="H72" || Aname=="H73" ) {
+        atoi[residue_atom[i]]=BASE_T;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - A
+    } else if(Rname=="DA") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - A3
+    } else if(Rname=="DA3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO3'" ||
+                Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+                Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA_3;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - A5
+    } else if(Rname=="DA5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  ||  Aname=="C1'" ||
+          Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+          Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+          Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_DNA_5;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - C
+    } else if(Rname=="DC") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - C3
+    } else if(Rname=="DC3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO3'" ||
+                Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+                Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA_3;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - C5
+    } else if(Rname=="DC5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  ||  Aname=="C1'" ||
+          Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+          Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+          Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_DNA_5;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    } else error("Residue not known: "+Rname);
   }
 }
 
@@ -4367,55 +4481,64 @@ void SAXS::getOnebeadparam_sansH(const std::vector<AtomNumber> &atoms, std::vect
   parameter_vac_H[HIS].push_back(-11.60826210271092);
   parameter_vac_H[HIS].push_back(-1.7359607560773076);
 
-  //NUCLEIC ACIDS
+  // NUCLEIC ACIDS
 
-  parameter_solv_H[BB_DNA].push_back(28774.336900113623);
-  parameter_solv_H[BB_DNA].push_back(-163.32669382932528);
-  parameter_solv_H[BB_DNA].push_back(-71406.8955820105);
-  parameter_solv_H[BB_DNA].push_back(-26766.760458609122);
-  parameter_solv_H[BB_DNA].push_back(199117.8013226829);
-  parameter_solv_H[BB_DNA].push_back(-175842.67051839601);
-  parameter_solv_H[BB_DNA].push_back(49152.53325972375);
+  // BB_PO2 H and D parameters are identical as there is no H or D in the bead.
+  parameter_solv_H[BB_PO2].push_back(575.5201001192197);
+  parameter_solv_H[BB_PO2].push_back(-0.6126595489733864);
+  parameter_solv_H[BB_PO2].push_back(-623.3371092254899);
+  parameter_solv_H[BB_PO2].push_back(-68.05795957022144);
+  parameter_solv_H[BB_PO2].push_back(561.8052621243661);
+  parameter_solv_H[BB_PO2].push_back(-283.39573309540276);
+  parameter_solv_H[BB_PO2].push_back(35.550016980100295);
+
+  parameter_solv_H[BB_DNA].push_back(21211.009600118316);
+  parameter_solv_H[BB_DNA].push_back(-90.18805990529991);
+  parameter_solv_H[BB_DNA].push_back(-39731.13373512149);
+  parameter_solv_H[BB_DNA].push_back(-10920.373563712872);
+  parameter_solv_H[BB_DNA].push_back(72882.21702424981);
+  parameter_solv_H[BB_DNA].push_back(-51747.487078112776);
+  parameter_solv_H[BB_DNA].push_back(11308.678429018755);
 
   parameter_solv_H[BB_DNA_5].push_back(22737.624100119025);
-  parameter_solv_H[BB_DNA_5].push_back(-102.72714886664163);
-  parameter_solv_H[BB_DNA_5].push_back(-43685.329677789705);
-  parameter_solv_H[BB_DNA_5].push_back(-12564.259374093454);
-  parameter_solv_H[BB_DNA_5].push_back(83454.87540484876);
-  parameter_solv_H[BB_DNA_5].push_back(-60367.15652138888);
-  parameter_solv_H[BB_DNA_5].push_back(13507.33372986899);
+  parameter_solv_H[BB_DNA_5].push_back(-102.72714886664161);
+  parameter_solv_H[BB_DNA_5].push_back(-43685.329677789734);
+  parameter_solv_H[BB_DNA_5].push_back(-12564.25937409345);
+  parameter_solv_H[BB_DNA_5].push_back(83454.87540484878);
+  parameter_solv_H[BB_DNA_5].push_back(-60367.15652138887);
+  parameter_solv_H[BB_DNA_5].push_back(13507.333729868991);
 
-  parameter_solv_H[BB_DNA_3].push_back(30548.048400103493);
-  parameter_solv_H[BB_DNA_3].push_back(-166.91249728626434);
-  parameter_solv_H[BB_DNA_3].push_back(-77902.70631844719);
-  parameter_solv_H[BB_DNA_3].push_back(-29053.198288799904);
-  parameter_solv_H[BB_DNA_3].push_back(222722.71954118446);
-  parameter_solv_H[BB_DNA_3].push_back(-199975.20806388272);
-  parameter_solv_H[BB_DNA_3].push_back(56782.21028776849);
+  parameter_solv_H[BB_DNA_3].push_back(22737.62410011902);
+  parameter_solv_H[BB_DNA_3].push_back(-101.57816684452251);
+  parameter_solv_H[BB_DNA_3].push_back(-43488.536705576145);
+  parameter_solv_H[BB_DNA_3].push_back(-12345.056184958425);
+  parameter_solv_H[BB_DNA_3].push_back(81963.52364114887);
+  parameter_solv_H[BB_DNA_3].push_back(-58791.59443618196);
+  parameter_solv_H[BB_DNA_3].push_back(13003.199362335583);
 
-  parameter_solv_H[BB_RNA].push_back(31955.137600104226);
-  parameter_solv_H[BB_RNA].push_back(-140.10852926001618);
-  parameter_solv_H[BB_RNA].push_back(-85546.58644134423);
-  parameter_solv_H[BB_RNA].push_back(-29949.620806061652);
-  parameter_solv_H[BB_RNA].push_back(252686.93736806375);
-  parameter_solv_H[BB_RNA].push_back(-234761.3403979253);
-  parameter_solv_H[BB_RNA].push_back(68775.87040189233);
+  parameter_solv_H[BB_RNA].push_back(23953.752900120977);
+  parameter_solv_H[BB_RNA].push_back(-117.35779348824417);
+  parameter_solv_H[BB_RNA].push_back(-47644.41735332843);
+  parameter_solv_H[BB_RNA].push_back(-14641.556643789861);
+  parameter_solv_H[BB_RNA].push_back(96893.48627050371);
+  parameter_solv_H[BB_RNA].push_back(-72249.62534169303);
+  parameter_solv_H[BB_RNA].push_back(16792.055521055358);
 
   parameter_solv_H[BB_RNA_5].push_back(25574.406400119024);
-  parameter_solv_H[BB_RNA_5].push_back(-131.9964277293373);
-  parameter_solv_H[BB_RNA_5].push_back(-52136.51404531248);
-  parameter_solv_H[BB_RNA_5].push_back(-16682.142739176037);
-  parameter_solv_H[BB_RNA_5].push_back(110278.01921639396);
-  parameter_solv_H[BB_RNA_5].push_back(-83715.92027818538);
-  parameter_solv_H[BB_RNA_5].push_back(19875.891337706045);
+  parameter_solv_H[BB_RNA_5].push_back(-131.99642772933734);
+  parameter_solv_H[BB_RNA_5].push_back(-52136.51404531251);
+  parameter_solv_H[BB_RNA_5].push_back(-16682.14273917604);
+  parameter_solv_H[BB_RNA_5].push_back(110278.01921639398);
+  parameter_solv_H[BB_RNA_5].push_back(-83715.92027818544);
+  parameter_solv_H[BB_RNA_5].push_back(19875.89133770605);
 
-  parameter_solv_H[BB_RNA_3].push_back(33822.888100104596);
-  parameter_solv_H[BB_RNA_3].push_back(-154.56394345919836);
-  parameter_solv_H[BB_RNA_3].push_back(-90963.39182741364);
-  parameter_solv_H[BB_RNA_3].push_back(-32254.28864410809);
-  parameter_solv_H[BB_RNA_3].push_back(269237.7173303585);
-  parameter_solv_H[BB_RNA_3].push_back(-249521.94632607108);
-  parameter_solv_H[BB_RNA_3].push_back(72922.2108577004);
+  parameter_solv_H[BB_RNA_3].push_back(25574.406400119027);
+  parameter_solv_H[BB_RNA_3].push_back(-127.96875237036166);
+  parameter_solv_H[BB_RNA_3].push_back(-51407.18391758439);
+  parameter_solv_H[BB_RNA_3].push_back(-15922.900669975606);
+  parameter_solv_H[BB_RNA_3].push_back(105078.5888910626);
+  parameter_solv_H[BB_RNA_3].push_back(-78289.16276190645);
+  parameter_solv_H[BB_RNA_3].push_back(18156.832143441192);
 
   parameter_solv_H[BASE_A].push_back(13282.562500119211);
   parameter_solv_H[BASE_A].push_back(-76.45124168404048);
@@ -4457,53 +4580,61 @@ void SAXS::getOnebeadparam_sansH(const std::vector<AtomNumber> &atoms, std::vect
   parameter_solv_H[BASE_U].push_back(-26475.631627167604);
   parameter_solv_H[BASE_U].push_back(5808.201015156168);
 
-  parameter_mix_H[BB_DNA].push_back(1396.7334201191643);
-  parameter_mix_H[BB_DNA].push_back(-10.10837962734853);
-  parameter_mix_H[BB_DNA].push_back(-3170.601759673406);
-  parameter_mix_H[BB_DNA].push_back(-1406.489460031793);
-  parameter_mix_H[BB_DNA].push_back(9149.129298575632);
-  parameter_mix_H[BB_DNA].push_back(-7871.318715291226);
-  parameter_mix_H[BB_DNA].push_back(2134.0948591749543);
+  parameter_mix_H[BB_PO2].push_back(80.12660011920252);
+  parameter_mix_H[BB_PO2].push_back(-0.0278885551982023);
+  parameter_mix_H[BB_PO2].push_back(-60.532194918222984);
+  parameter_mix_H[BB_PO2].push_back(-2.976882903409687);
+  parameter_mix_H[BB_PO2].push_back(33.30645116638125);
+  parameter_mix_H[BB_PO2].push_back(-11.601573219761374);
+  parameter_mix_H[BB_PO2].push_back(0.12551046492022422);
 
-  parameter_mix_H[BB_DNA_5].push_back(625.1753399657849);
+  parameter_mix_H[BB_DNA].push_back(712.7621601191935);
+  parameter_mix_H[BB_DNA].push_back(-0.3228709821198571);
+  parameter_mix_H[BB_DNA].push_back(-784.5118228559945);
+  parameter_mix_H[BB_DNA].push_back(-27.196125702249613);
+  parameter_mix_H[BB_DNA].push_back(410.0185035102729);
+  parameter_mix_H[BB_DNA].push_back(-54.453513369320355);
+  parameter_mix_H[BB_DNA].push_back(-44.85506789237683);
+
+  parameter_mix_H[BB_DNA_5].push_back(625.175339965785);
   parameter_mix_H[BB_DNA_5].push_back(0.2691706617748245);
-  parameter_mix_H[BB_DNA_5].push_back(-582.872135042);
+  parameter_mix_H[BB_DNA_5].push_back(-582.8721350420001);
   parameter_mix_H[BB_DNA_5].push_back(46.512408351374326);
-  parameter_mix_H[BB_DNA_5].push_back(-58.93886949899106);
-  parameter_mix_H[BB_DNA_5].push_back(307.2972033608504);
-  parameter_mix_H[BB_DNA_5].push_back(-131.71996309259958);
+  parameter_mix_H[BB_DNA_5].push_back(-58.93886949899108);
+  parameter_mix_H[BB_DNA_5].push_back(307.29720336085046);
+  parameter_mix_H[BB_DNA_5].push_back(-131.71996309259953);
 
-  parameter_mix_H[BB_DNA_3].push_back(1308.4030801192093);
-  parameter_mix_H[BB_DNA_3].push_back(-9.929256265307254);
-  parameter_mix_H[BB_DNA_3].push_back(-3041.4262588665756);
-  parameter_mix_H[BB_DNA_3].push_back(-1417.4579885476987);
-  parameter_mix_H[BB_DNA_3].push_back(9265.86423905912);
-  parameter_mix_H[BB_DNA_3].push_back(-8141.490975868309);
-  parameter_mix_H[BB_DNA_3].push_back(2253.274378072784);
+  parameter_mix_H[BB_DNA_3].push_back(625.1753399401266);
+  parameter_mix_H[BB_DNA_3].push_back(0.08763234414546289);
+  parameter_mix_H[BB_DNA_3].push_back(-606.8067575087485);
+  parameter_mix_H[BB_DNA_3].push_back(20.84427254872218);
+  parameter_mix_H[BB_DNA_3].push_back(92.53523123608991);
+  parameter_mix_H[BB_DNA_3].push_back(162.04688035654937);
+  parameter_mix_H[BB_DNA_3].push_back(-89.13571774638052);
 
-  parameter_mix_H[BB_RNA].push_back(1679.2714401191288);
-  parameter_mix_H[BB_RNA].push_back(-11.390092673070525);
-  parameter_mix_H[BB_RNA].push_back(-4133.264755322563);
-  parameter_mix_H[BB_RNA].push_back(-1851.9194208974045);
-  parameter_mix_H[BB_RNA].push_back(13105.05119290062);
-  parameter_mix_H[BB_RNA].push_back(-11988.493661660832);
-  parameter_mix_H[BB_RNA].push_back(3458.252858750351);
+  parameter_mix_H[BB_RNA].push_back(936.9775801191857);
+  parameter_mix_H[BB_RNA].push_back(-1.3233686929680253);
+  parameter_mix_H[BB_RNA].push_back(-1212.1627155263773);
+  parameter_mix_H[BB_RNA].push_back(-141.35324744384351);
+  parameter_mix_H[BB_RNA].push_back(1155.8281658363026);
+  parameter_mix_H[BB_RNA].push_back(-548.9340055857343);
+  parameter_mix_H[BB_RNA].push_back(50.81734777881503);
 
   parameter_mix_H[BB_RNA_5].push_back(848.5355201165631);
-  parameter_mix_H[BB_RNA_5].push_back(-0.49570338490120186);
+  parameter_mix_H[BB_RNA_5].push_back(-0.49570338490120175);
   parameter_mix_H[BB_RNA_5].push_back(-976.1033073783973);
-  parameter_mix_H[BB_RNA_5].push_back(-32.94353218798661);
-  parameter_mix_H[BB_RNA_5].push_back(475.6617706192387);
-  parameter_mix_H[BB_RNA_5].push_back(17.519558458242592);
+  parameter_mix_H[BB_RNA_5].push_back(-32.943532187986605);
+  parameter_mix_H[BB_RNA_5].push_back(475.66177061923884);
+  parameter_mix_H[BB_RNA_5].push_back(17.51955845824258);
   parameter_mix_H[BB_RNA_5].push_back(-96.74451972314769);
 
-  parameter_mix_H[BB_RNA_3].push_back(1590.0858601191994);
-  parameter_mix_H[BB_RNA_3].push_back(-10.913225069049624);
-  parameter_mix_H[BB_RNA_3].push_back(-3945.4922950836285);
-  parameter_mix_H[BB_RNA_3].push_back(-1798.4144722665988);
-  parameter_mix_H[BB_RNA_3].push_back(12766.453674766883);
-  parameter_mix_H[BB_RNA_3].push_back(-11764.943844267815);
-  parameter_mix_H[BB_RNA_3].push_back(3415.4472574491174);
+  parameter_mix_H[BB_RNA_3].push_back(848.5355201192122);
+  parameter_mix_H[BB_RNA_3].push_back(-0.8301109354355396);
+  parameter_mix_H[BB_RNA_3].push_back(-1019.9524389785406);
+  parameter_mix_H[BB_RNA_3].push_back(-84.1388451424885);
+  parameter_mix_H[BB_RNA_3].push_back(787.1277245040931);
+  parameter_mix_H[BB_RNA_3].push_back(-294.67807432795627);
+  parameter_mix_H[BB_RNA_3].push_back(-1.3214626461251089);
 
   parameter_mix_H[BASE_A].push_back(1504.9345001191857);
   parameter_mix_H[BASE_A].push_back(-3.5306888452552663);
@@ -4545,53 +4676,61 @@ void SAXS::getOnebeadparam_sansH(const std::vector<AtomNumber> &atoms, std::vect
   parameter_mix_H[BASE_U].push_back(-810.0763075080915);
   parameter_mix_H[BASE_U].push_back(119.81810290248339);
 
-  parameter_vac_H[BB_DNA].push_back(16.47824739319707);
-  parameter_vac_H[BB_DNA].push_back(-0.09407240414195635);
-  parameter_vac_H[BB_DNA].push_back(-25.19577960439791);
-  parameter_vac_H[BB_DNA].push_back(-8.720133837119477);
-  parameter_vac_H[BB_DNA].push_back(45.75828820803292);
-  parameter_vac_H[BB_DNA].push_back(-23.560119659269077);
-  parameter_vac_H[BB_DNA].push_back(1.4997811398328191);
+  parameter_vac_H[BB_PO2].push_back(2.7889001116093275);
+  parameter_vac_H[BB_PO2].push_back(-0.00011178884266113128);
+  parameter_vac_H[BB_PO2].push_back(-1.1702605818380667);
+  parameter_vac_H[BB_PO2].push_back(-0.011278044036819933);
+  parameter_vac_H[BB_PO2].push_back(0.3214006584089025);
+  parameter_vac_H[BB_PO2].push_back(-0.04097165983591666);
+  parameter_vac_H[BB_PO2].push_back(-0.017525098100539722);
 
-  parameter_vac_H[BB_DNA_5].push_back(4.297328944539057);
-  parameter_vac_H[BB_DNA_5].push_back(0.0014793971885106835);
-  parameter_vac_H[BB_DNA_5].push_back(1.3961088365255596);
-  parameter_vac_H[BB_DNA_5].push_back(0.08974639858979382);
+  parameter_vac_H[BB_DNA].push_back(5.987809026456476);
+  parameter_vac_H[BB_DNA].push_back(9.945454528827912e-05);
+  parameter_vac_H[BB_DNA].push_back(-1.1884708569330031);
+  parameter_vac_H[BB_DNA].push_back(-0.007457733256362841);
+  parameter_vac_H[BB_DNA].push_back(0.05666858781418339);
+  parameter_vac_H[BB_DNA].push_back(-0.15158797629971757);
+  parameter_vac_H[BB_DNA].push_back(0.11642340861329734);
+
+  parameter_vac_H[BB_DNA_5].push_back(4.297328944539055);
+  parameter_vac_H[BB_DNA_5].push_back(0.0014793971885106831);
+  parameter_vac_H[BB_DNA_5].push_back(1.3961088365255605);
+  parameter_vac_H[BB_DNA_5].push_back(0.08974639858979384);
   parameter_vac_H[BB_DNA_5].push_back(-1.5198099705167643);
-  parameter_vac_H[BB_DNA_5].push_back(-0.12127122359433723);
-  parameter_vac_H[BB_DNA_5].push_back(0.4134601046223602);
+  parameter_vac_H[BB_DNA_5].push_back(-0.12127122359433733);
+  parameter_vac_H[BB_DNA_5].push_back(0.4134601046223601);
 
-  parameter_vac_H[BB_DNA_3].push_back(14.010049119118174);
-  parameter_vac_H[BB_DNA_3].push_back(-0.05811046547474727);
-  parameter_vac_H[BB_DNA_3].push_back(-16.545738177693);
-  parameter_vac_H[BB_DNA_3].push_back(-3.111450311296651);
-  parameter_vac_H[BB_DNA_3].push_back(9.25026440947942);
-  parameter_vac_H[BB_DNA_3].push_back(11.247306530795633);
-  parameter_vac_H[BB_DNA_3].push_back(-8.847675745407916);
+  parameter_vac_H[BB_DNA_3].push_back(4.297328886488132);
+  parameter_vac_H[BB_DNA_3].push_back(0.0041802954281271905);
+  parameter_vac_H[BB_DNA_3].push_back(1.6065462295705266);
+  parameter_vac_H[BB_DNA_3].push_back(0.4399805535688805);
+  parameter_vac_H[BB_DNA_3].push_back(-3.3806711791929804);
+  parameter_vac_H[BB_DNA_3].push_back(1.6729551563628675);
+  parameter_vac_H[BB_DNA_3].push_back(-0.10911063067909885);
 
-  parameter_vac_H[BB_RNA].push_back(21.92710326793066);
-  parameter_vac_H[BB_RNA].push_back(-0.1781378085092803);
-  parameter_vac_H[BB_RNA].push_back(-40.151467186290965);
-  parameter_vac_H[BB_RNA].push_back(-19.511557053569963);
-  parameter_vac_H[BB_RNA].push_back(106.01786678503125);
-  parameter_vac_H[BB_RNA].push_back(-77.89032048514431);
-  parameter_vac_H[BB_RNA].push_back(16.781509031785077);
+  parameter_vac_H[BB_RNA].push_back(9.162728984394093);
+  parameter_vac_H[BB_RNA].push_back(0.00019952321584579868);
+  parameter_vac_H[BB_RNA].push_back(-4.744748946331966);
+  parameter_vac_H[BB_RNA].push_back(0.025106563403946364);
+  parameter_vac_H[BB_RNA].push_back(1.2302956694109803);
+  parameter_vac_H[BB_RNA].push_back(0.12359062278096915);
+  parameter_vac_H[BB_RNA].push_back(-0.1725633367685285);
 
-  parameter_vac_H[BB_RNA_5].push_back(7.038408898933545);
-  parameter_vac_H[BB_RNA_5].push_back(0.005113444477440946);
-  parameter_vac_H[BB_RNA_5].push_back(-0.9042994750631993);
-  parameter_vac_H[BB_RNA_5].push_back(0.4935381067261203);
-  parameter_vac_H[BB_RNA_5].push_back(-2.6690691632060997);
-  parameter_vac_H[BB_RNA_5].push_back(1.542194674116445);
-  parameter_vac_H[BB_RNA_5].push_back(-0.07620283726003232);
+  parameter_vac_H[BB_RNA_5].push_back(7.038408898671503);
+  parameter_vac_H[BB_RNA_5].push_back(0.005106788424920148);
+  parameter_vac_H[BB_RNA_5].push_back(-0.8981588221803118);
+  parameter_vac_H[BB_RNA_5].push_back(0.4922588155214312);
+  parameter_vac_H[BB_RNA_5].push_back(-2.6667853454023644);
+  parameter_vac_H[BB_RNA_5].push_back(1.533316567240718);
+  parameter_vac_H[BB_RNA_5].push_back(-0.07199604869737707);
 
-  parameter_vac_H[BB_RNA_3].push_back(18.6883291192092);
-  parameter_vac_H[BB_RNA_3].push_back(-0.1333637789613132);
-  parameter_vac_H[BB_RNA_3].push_back(-30.715980967045486);
-  parameter_vac_H[BB_RNA_3].push_back(-13.963028758816783);
-  parameter_vac_H[BB_RNA_3].push_back(74.19445574846841);
-  parameter_vac_H[BB_RNA_3].push_back(-51.02692621649284);
-  parameter_vac_H[BB_RNA_3].push_back(9.748942497516818);
+  parameter_vac_H[BB_RNA_3].push_back(7.038408892621863);
+  parameter_vac_H[BB_RNA_3].push_back(0.002993083907266898);
+  parameter_vac_H[BB_RNA_3].push_back(-1.3626596831098492);
+  parameter_vac_H[BB_RNA_3].push_back(0.3138856961130113);
+  parameter_vac_H[BB_RNA_3].push_back(-1.684185014289391);
+  parameter_vac_H[BB_RNA_3].push_back(1.1862168720864616);
+  parameter_vac_H[BB_RNA_3].push_back(-0.1443894172417523);
 
   parameter_vac_H[BASE_A].push_back(42.62784088079008);
   parameter_vac_H[BASE_A].push_back(0.02302908536431516);
@@ -4633,383 +4772,466 @@ void SAXS::getOnebeadparam_sansH(const std::vector<AtomNumber> &atoms, std::vect
   parameter_vac_H[BASE_U].push_back(-1.8988408480951036);
   parameter_vac_H[BASE_U].push_back(-0.215000567681094);
 
-  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
-  if( moldat ) {
-    for(unsigned i=0; i<atoms.size(); ++i) {
-      std::string Aname = moldat->getAtomName(atoms[i]);
-      std::string Rname = moldat->getResidueName(atoms[i]);
-      Rname.erase(std::remove_if(Rname.begin(), Rname.end(), ::isspace),Rname.end());
-      if(Rname=="ALA") {
-        atoi[residue_atom[i]]=ALA;
-      } else if(Rname=="ARG") {
-        atoi[residue_atom[i]]=ARG;
-      } else if(Rname=="ASN") {
-        atoi[residue_atom[i]]=ASN;
-      } else if(Rname=="ASP") {
-        atoi[residue_atom[i]]=ASP;
-      } else if(Rname=="CYS") {
-        atoi[residue_atom[i]]=CYS;
-      } else if(Rname=="GLN") {
-        atoi[residue_atom[i]]=GLN;
-      } else if(Rname=="GLU") {
-        atoi[residue_atom[i]]=GLU;
-      } else if(Rname=="GLY") {
-        atoi[residue_atom[i]]=GLY;
-      } else if(Rname=="HIS") {
-        atoi[residue_atom[i]]=HIS;
-      } else if(Rname=="HID") {
-        atoi[residue_atom[i]]=HIS;
-      } else if(Rname=="HIE") {
-        atoi[residue_atom[i]]=HIS;
-      } else if(Rname=="HIP") {
-        atoi[residue_atom[i]]=HIP;
-        // CHARMM NAMING FOR PROTONATION STATES OF HISTIDINE
-      } else if(Rname=="HSD") {
-        atoi[residue_atom[i]]=HIS;
-      } else if(Rname=="HSE") {
-        atoi[residue_atom[i]]=HIS;
-      } else if(Rname=="HSP") {
-        atoi[residue_atom[i]]=HIP;
-      } else if(Rname=="ILE") {
-        atoi[residue_atom[i]]=ILE;
-      } else if(Rname=="LEU") {
-        atoi[residue_atom[i]]=LEU;
-      } else if(Rname=="LYS") {
-        atoi[residue_atom[i]]=LYS;
-      } else if(Rname=="MET") {
-        atoi[residue_atom[i]]=MET;
-      } else if(Rname=="PHE") {
-        atoi[residue_atom[i]]=PHE;
-      } else if(Rname=="PRO") {
-        atoi[residue_atom[i]]=PRO;
-      } else if(Rname=="SER") {
-        atoi[residue_atom[i]]=SER;
-      } else if(Rname=="THR") {
-        atoi[residue_atom[i]]=THR;
-      } else if(Rname=="TRP") {
-        atoi[residue_atom[i]]=TRP;
-      } else if(Rname=="TYR") {
-        atoi[residue_atom[i]]=TYR;
-      } else if(Rname=="VAL") {
-        atoi[residue_atom[i]]=VAL;
-      }
-      // NUCLEIC ACIDS
-      else if(Rname=="G") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA;
-        } else {
-          atoi[residue_atom[i]]=BASE_G;
-        }
-      } else if(Rname=="G3") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA_3;
-        } else {
-          atoi[residue_atom[i]]=BASE_G;
-        }
-      } else if(Rname=="G5") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA_5;
-        } else {
-          atoi[residue_atom[i]]=BASE_G;
-        }
-      } else if(Rname=="U") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA;
-        } else {
-          atoi[residue_atom[i]]=BASE_U;
-        }
-      } else if(Rname=="U3") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA_3;
-        } else {
-          atoi[residue_atom[i]]=BASE_U;
-        }
-      } else if(Rname=="U5") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA_5;
-        } else {
-          atoi[residue_atom[i]]=BASE_U;
-        }
-      } else if(Rname=="A") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA;
-        } else {
-          atoi[residue_atom[i]]=BASE_A;
-        }
-      } else if(Rname=="A3") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA_3;
-        } else {
-          atoi[residue_atom[i]]=BASE_A;
-        }
-      } else if(Rname=="A5") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA_5;
-        } else {
-          atoi[residue_atom[i]]=BASE_A;
-        }
-      } else if(Rname=="C") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA;
-        } else {
-          atoi[residue_atom[i]]=BASE_C;
-        }
-      } else if(Rname=="C3") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA_3;
-        } else {
-          atoi[residue_atom[i]]=BASE_C;
-        }
-      } else if(Rname=="C5") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA_5;
-        } else {
-          atoi[residue_atom[i]]=BASE_C;
-        }
-      } else if(Rname=="DG") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA;
-        } else {
-          atoi[residue_atom[i]]=BASE_G;
-        }
-      } else if(Rname=="DG3") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA_3;
-        } else {
-          atoi[residue_atom[i]]=BASE_G;
-        }
-      } else if(Rname=="DG5") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA_5;
-        } else {
-          atoi[residue_atom[i]]=BASE_G;
-        }
-      } else if(Rname=="DT") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA;
-        } else {
-          atoi[residue_atom[i]]=BASE_T;
-        }
-      } else if(Rname=="DT3") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA_3;
-        } else {
-          atoi[residue_atom[i]]=BASE_T;
-        }
-      } else if(Rname=="DT5") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA_5;
-        } else {
-          atoi[residue_atom[i]]=BASE_T;
-        }
-      } else if(Rname=="DA") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA;
-        } else {
-          atoi[residue_atom[i]]=BASE_A;
-        }
-      } else if(Rname=="DA3") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA_3;
-        } else {
-          atoi[residue_atom[i]]=BASE_A;
-        }
-      } else if(Rname=="DA5") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA_5;
-        } else {
-          atoi[residue_atom[i]]=BASE_A;
-        }
-      } else if(Rname=="DC") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA;
-        } else {
-          atoi[residue_atom[i]]=BASE_C;
-        }
-      } else if(Rname=="DC3") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA_3;
-        } else {
-          atoi[residue_atom[i]]=BASE_C;
-        }
-      } else if(Rname=="DC5") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA_5;
-        } else {
-          atoi[residue_atom[i]]=BASE_C;
-        }
-      } else error("Residue not known: "+Rname);
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    std::string Aname = pdb.getAtomName(atoms[i]);
+    std::string Rname = pdb.getResidueName(atoms[i]);
+    Rname.erase(std::remove_if(Rname.begin(), Rname.end(), ::isspace),Rname.end());
+    if(Rname=="ALA") {
+      atoi[residue_atom[i]]=ALA;
+    } else if(Rname=="ARG") {
+      atoi[residue_atom[i]]=ARG;
+    } else if(Rname=="ASN") {
+      atoi[residue_atom[i]]=ASN;
+    } else if(Rname=="ASP") {
+      atoi[residue_atom[i]]=ASP;
+    } else if(Rname=="CYS") {
+      atoi[residue_atom[i]]=CYS;
+    } else if(Rname=="GLN") {
+      atoi[residue_atom[i]]=GLN;
+    } else if(Rname=="GLU") {
+      atoi[residue_atom[i]]=GLU;
+    } else if(Rname=="GLY") {
+      atoi[residue_atom[i]]=GLY;
+    } else if(Rname=="HIS") {
+      atoi[residue_atom[i]]=HIS;
+    } else if(Rname=="HID") {
+      atoi[residue_atom[i]]=HIS;
+    } else if(Rname=="HIE") {
+      atoi[residue_atom[i]]=HIS;
+    } else if(Rname=="HIP") {
+      atoi[residue_atom[i]]=HIP;
+      // CHARMM NAMING FOR PROTONATION STATES OF HISTIDINE
+    } else if(Rname=="HSD") {
+      atoi[residue_atom[i]]=HIS;
+    } else if(Rname=="HSE") {
+      atoi[residue_atom[i]]=HIS;
+    } else if(Rname=="HSP") {
+      atoi[residue_atom[i]]=HIP;
+    } else if(Rname=="ILE") {
+      atoi[residue_atom[i]]=ILE;
+    } else if(Rname=="LEU") {
+      atoi[residue_atom[i]]=LEU;
+    } else if(Rname=="LYS") {
+      atoi[residue_atom[i]]=LYS;
+    } else if(Rname=="MET") {
+      atoi[residue_atom[i]]=MET;
+    } else if(Rname=="PHE") {
+      atoi[residue_atom[i]]=PHE;
+    } else if(Rname=="PRO") {
+      atoi[residue_atom[i]]=PRO;
+    } else if(Rname=="SER") {
+      atoi[residue_atom[i]]=SER;
+    } else if(Rname=="THR") {
+      atoi[residue_atom[i]]=THR;
+    } else if(Rname=="TRP") {
+      atoi[residue_atom[i]]=TRP;
+    } else if(Rname=="TYR") {
+      atoi[residue_atom[i]]=TYR;
+    } else if(Rname=="VAL") {
+      atoi[residue_atom[i]]=VAL;
     }
-  } else {
-    error("MOLINFO DATA not found\n");
+    // NUCLEIC ACIDS
+    // nucleobases are not automatically populated as an additional check on the health of the PDB.
+    // RNA - G
+    else if(Rname=="G") {
+    if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+        Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+      atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;          
+      } else if( Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - G3
+    } else if(Rname=="G3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'" || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'" || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="H2'1" || Aname=="HO3'"|| Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" ) {
+        atoi[residue_atom[i]]=BB_RNA_3;          
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - G5
+    } else if(Rname=="G5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+          Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+          Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="HO2'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="HO'2" ||
+          Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA_5;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - U
+    } else if(Rname=="U") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;   
+      } else if( Aname=="N1" || Aname=="C2"  || Aname=="O2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="O4"  || Aname=="C5" || Aname=="C6" ||
+                Aname=="H3" || Aname=="H5"  || Aname=="H6") {
+        atoi[residue_atom[i]]=BASE_U;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - U3
+    } else if(Rname=="U3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'" || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'" || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="H2'1" || Aname=="HO3'"|| Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" ) {
+        atoi[residue_atom[i]]=BB_RNA_3; 
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="O2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="O4"  || Aname=="C5" || Aname=="C6" ||
+                Aname=="H3" || Aname=="H5"  || Aname=="H6") {
+        atoi[residue_atom[i]]=BASE_U;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - U5
+    } else if(Rname=="U5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+          Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+          Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="HO2'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="HO'2" ||
+          Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA_5;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="O2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="O4"  || Aname=="C5" || Aname=="C6" ||
+                Aname=="H3" || Aname=="H5"  || Aname=="H6") {
+        atoi[residue_atom[i]]=BASE_U;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - A
+    } else if(Rname=="A") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA; 
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - A3
+    } else if(Rname=="A3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'" || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'" || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="H2'1" || Aname=="HO3'"|| Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" ) {
+        atoi[residue_atom[i]]=BB_RNA_3; 
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - A5
+    } else if(Rname=="A5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+          Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+          Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="HO2'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="HO'2" ||
+          Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA_5;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - C
+    } else if(Rname=="C") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - C3
+    } else if(Rname=="C3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'" || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'" || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="H2'1" || Aname=="HO3'"|| Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" ) {
+        atoi[residue_atom[i]]=BB_RNA_3; 
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - C5
+    } else if(Rname=="C5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+          Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+          Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="HO2'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="HO'2" ||
+          Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA_5;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - G
+    } else if(Rname=="DG") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - G3
+    } else if(Rname=="DG3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO3'" ||
+                Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+                Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA_3;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - G5
+    } else if(Rname=="DG5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  ||  Aname=="C1'" ||
+          Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+          Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+          Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_DNA_5;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - T
+    } else if(Rname=="DT") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1"  || Aname=="C2"  || Aname=="O2"  || Aname=="N3"  ||
+                Aname=="C4"  || Aname=="O4"  || Aname=="C5"  || Aname=="C6"  ||
+                Aname=="C7"  || Aname=="H3"  || Aname=="H6"  || Aname=="H71" ||
+                Aname=="H72" || Aname=="H73" ) {
+        atoi[residue_atom[i]]=BASE_T;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - T3
+    } else if(Rname=="DT3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO3'" ||
+                Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+                Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA_3;
+      } else if(Aname=="N1"  || Aname=="C2"  || Aname=="O2"  || Aname=="N3"  ||
+                Aname=="C4"  || Aname=="O4"  || Aname=="C5"  || Aname=="C6"  ||
+                Aname=="C7"  || Aname=="H3"  || Aname=="H6"  || Aname=="H71" ||
+                Aname=="H72" || Aname=="H73" ) {
+        atoi[residue_atom[i]]=BASE_T;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - T5
+    } else if(Rname=="DT5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  ||  Aname=="C1'" ||
+          Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+          Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+          Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_DNA_5;
+      } else if(Aname=="N1"  || Aname=="C2"  || Aname=="O2"  || Aname=="N3"  ||
+                Aname=="C4"  || Aname=="O4"  || Aname=="C5"  || Aname=="C6"  ||
+                Aname=="C7"  || Aname=="H3"  || Aname=="H6"  || Aname=="H71" ||
+                Aname=="H72" || Aname=="H73" ) {
+        atoi[residue_atom[i]]=BASE_T;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - A
+    } else if(Rname=="DA") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - A3
+    } else if(Rname=="DA3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO3'" ||
+                Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+                Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA_3;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - A5
+    } else if(Rname=="DA5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  ||  Aname=="C1'" ||
+          Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+          Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+          Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_DNA_5;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - C
+    } else if(Rname=="DC") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - C3
+    } else if(Rname=="DC3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO3'" ||
+                Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+                Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA_3;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - C5
+    } else if(Rname=="DC5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  ||  Aname=="C1'" ||
+          Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+          Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+          Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_DNA_5;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    } else error("Residue not known: "+Rname);
   }
 }
 
@@ -5351,55 +5573,63 @@ void SAXS::getOnebeadparam_sansD(const std::vector<AtomNumber> &atoms, std::vect
   parameter_vac_D[HIS].push_back(-538.2592043545858);
   parameter_vac_D[HIS].push_back(132.17357375729733);
 
-  //NUCLEIC ACIDS
+  // NUCLEIC ACIDS
 
-  parameter_mix_D[BB_DNA].push_back(3868.9210401193973);
-  parameter_mix_D[BB_DNA].push_back(-22.6110060113337);
-  parameter_mix_D[BB_DNA].push_back(-8411.613179221633);
-  parameter_mix_D[BB_DNA].push_back(-3157.631612117668);
-  parameter_mix_D[BB_DNA].push_back(21349.926977600076);
-  parameter_mix_D[BB_DNA].push_back(-17794.950819239228);
-  parameter_mix_D[BB_DNA].push_back(4696.995001222001);
+  parameter_mix_D[BB_PO2].push_back(80.12660011920252);
+  parameter_mix_D[BB_PO2].push_back(-0.02788855519820236);
+  parameter_mix_D[BB_PO2].push_back(-60.53219491822279);
+  parameter_mix_D[BB_PO2].push_back(-2.9768829034096806);
+  parameter_mix_D[BB_PO2].push_back(33.30645116638123);
+  parameter_mix_D[BB_PO2].push_back(-11.601573219761375);
+  parameter_mix_D[BB_PO2].push_back(0.12551046492022438);
+
+  parameter_mix_D[BB_DNA].push_back(2835.3195201193003);
+  parameter_mix_D[BB_DNA].push_back(-7.954301723608173);
+  parameter_mix_D[BB_DNA].push_back(-4509.325563460958);
+  parameter_mix_D[BB_DNA].push_back(-909.1870692311344);
+  parameter_mix_D[BB_DNA].push_back(6375.156903893768);
+  parameter_mix_D[BB_DNA].push_back(-3956.4787847570715);
+  parameter_mix_D[BB_DNA].push_back(708.9872879613656);
 
   parameter_mix_D[BB_DNA_5].push_back(3136.73358011921);
-  parameter_mix_D[BB_DNA_5].push_back(-10.023435855160422);
-  parameter_mix_D[BB_DNA_5].push_back(-5208.92166636817);
-  parameter_mix_D[BB_DNA_5].push_back(-1160.440353944022);
-  parameter_mix_D[BB_DNA_5].push_back(7962.5984214487235);
-  parameter_mix_D[BB_DNA_5].push_back(-5149.059857691851);
-  parameter_mix_D[BB_DNA_5].push_back(984.5217027570119);
+  parameter_mix_D[BB_DNA_5].push_back(-10.023435855160427);
+  parameter_mix_D[BB_DNA_5].push_back(-5208.921666368173);
+  parameter_mix_D[BB_DNA_5].push_back(-1160.4403539440214);
+  parameter_mix_D[BB_DNA_5].push_back(7962.598421448727);
+  parameter_mix_D[BB_DNA_5].push_back(-5149.059857691847);
+  parameter_mix_D[BB_DNA_5].push_back(984.5217027570121);
 
-  parameter_mix_D[BB_DNA_3].push_back(4219.538760119179);
-  parameter_mix_D[BB_DNA_3].push_back(-25.26777233868911);
-  parameter_mix_D[BB_DNA_3].push_back(-9509.723092461869);
-  parameter_mix_D[BB_DNA_3].push_back(-3670.7650823220056);
-  parameter_mix_D[BB_DNA_3].push_back(25258.589040265484);
-  parameter_mix_D[BB_DNA_3].push_back(-21543.482859998723);
-  parameter_mix_D[BB_DNA_3].push_back(5823.661787950408);
+  parameter_mix_D[BB_DNA_3].push_back(3136.73358011921);
+  parameter_mix_D[BB_DNA_3].push_back(-9.618834865806274);
+  parameter_mix_D[BB_DNA_3].push_back(-5164.249220443828);
+  parameter_mix_D[BB_DNA_3].push_back(-1103.2721475326382);
+  parameter_mix_D[BB_DNA_3].push_back(7633.46089052312);
+  parameter_mix_D[BB_DNA_3].push_back(-4826.171688395644);
+  parameter_mix_D[BB_DNA_3].push_back(888.1820863683546);
 
-  parameter_mix_D[BB_RNA].push_back(4284.519680119678);
-  parameter_mix_D[BB_RNA].push_back(-24.109307417836796);
-  parameter_mix_D[BB_RNA].push_back(-10169.226388658002);
-  parameter_mix_D[BB_RNA].push_back(-3936.9379525189);
-  parameter_mix_D[BB_RNA].push_back(28825.399590000092);
-  parameter_mix_D[BB_RNA].push_back(-25674.670979653278);
-  parameter_mix_D[BB_RNA].push_back(7248.219746953563);
+  parameter_mix_D[BB_RNA].push_back(3192.5955601188807);
+  parameter_mix_D[BB_RNA].push_back(-11.475781582628308);
+  parameter_mix_D[BB_RNA].push_back(-5486.264576931735);
+  parameter_mix_D[BB_RNA].push_back(-1344.2878288415961);
+  parameter_mix_D[BB_RNA].push_back(9035.26109892441);
+  parameter_mix_D[BB_RNA].push_back(-6068.471909763036);
+  parameter_mix_D[BB_RNA].push_back(1226.3696076463866);
 
   parameter_mix_D[BB_RNA_5].push_back(3512.1630401192215);
-  parameter_mix_D[BB_RNA_5].push_back(-14.191020069433973);
-  parameter_mix_D[BB_RNA_5].push_back(-6293.687102187505);
+  parameter_mix_D[BB_RNA_5].push_back(-14.191020069433975);
+  parameter_mix_D[BB_RNA_5].push_back(-6293.687102187508);
   parameter_mix_D[BB_RNA_5].push_back(-1689.3688494490984);
-  parameter_mix_D[BB_RNA_5].push_back(11193.44856682194);
-  parameter_mix_D[BB_RNA_5].push_back(-7806.906439994935);
-  parameter_mix_D[BB_RNA_5].push_back(1662.4594983069849);
+  parameter_mix_D[BB_RNA_5].push_back(11193.448566821942);
+  parameter_mix_D[BB_RNA_5].push_back(-7806.9064399949375);
+  parameter_mix_D[BB_RNA_5].push_back(1662.4594983069844);
 
-  parameter_mix_D[BB_RNA_3].push_back(4653.290820117449);
-  parameter_mix_D[BB_RNA_3].push_back(-27.056759140650083);
-  parameter_mix_D[BB_RNA_3].push_back(-11129.97225588199);
-  parameter_mix_D[BB_RNA_3].push_back(-4342.035075494332);
-  parameter_mix_D[BB_RNA_3].push_back(31491.0115930994);
-  parameter_mix_D[BB_RNA_3].push_back(-27914.64431414978);
-  parameter_mix_D[BB_RNA_3].push_back(7841.101456046262);
+  parameter_mix_D[BB_RNA_3].push_back(3512.1630401192215);
+  parameter_mix_D[BB_RNA_3].push_back(-12.978118135595812);
+  parameter_mix_D[BB_RNA_3].push_back(-6149.290195451877);
+  parameter_mix_D[BB_RNA_3].push_back(-1515.8309761505627);
+  parameter_mix_D[BB_RNA_3].push_back(10176.605450440278);
+  parameter_mix_D[BB_RNA_3].push_back(-6813.250569884159);
+  parameter_mix_D[BB_RNA_3].push_back(1366.823518955858);
 
   parameter_mix_D[BASE_A].push_back(2464.736500119229);
   parameter_mix_D[BASE_A].push_back(-12.127452038444783);
@@ -5441,53 +5671,61 @@ void SAXS::getOnebeadparam_sansD(const std::vector<AtomNumber> &atoms, std::vect
   parameter_mix_D[BASE_U].push_back(-1944.2515577994325);
   parameter_mix_D[BASE_U].push_back(332.9259542628691);
 
-  parameter_vac_D[BB_DNA].push_back(130.05121611920046);
-  parameter_vac_D[BB_DNA].push_back(-0.6766962167877206);
-  parameter_vac_D[BB_DNA].push_back(-244.168062651211);
-  parameter_vac_D[BB_DNA].push_back(-84.86550240270728);
-  parameter_vac_D[BB_DNA].push_back(542.3302188983738);
-  parameter_vac_D[BB_DNA].push_back(-420.15226771601294);
-  parameter_vac_D[BB_DNA].push_back(102.07789617752837);
+  parameter_vac_D[BB_PO2].push_back(2.7889001116093284);
+  parameter_vac_D[BB_PO2].push_back(-0.00011178884266113128);
+  parameter_vac_D[BB_PO2].push_back(-1.1702605818380654);
+  parameter_vac_D[BB_PO2].push_back(-0.011278044036819927);
+  parameter_vac_D[BB_PO2].push_back(0.3214006584089024);
+  parameter_vac_D[BB_PO2].push_back(-0.04097165983591666);
+  parameter_vac_D[BB_PO2].push_back(-0.017525098100539684);
+
+  parameter_vac_D[BB_DNA].push_back(94.75075611920529);
+  parameter_vac_D[BB_DNA].push_back(-0.13973533952241124);
+  parameter_vac_D[BB_DNA].push_back(-123.45402430039046);
+  parameter_vac_D[BB_DNA].push_back(-15.19494522082691);
+  parameter_vac_D[BB_DNA].push_back(123.34749914811465);
+  parameter_vac_D[BB_DNA].push_back(-61.038507985345504);
+  parameter_vac_D[BB_DNA].push_back(6.601587478585944);
 
   parameter_vac_D[BB_DNA_5].push_back(108.18080111920679);
-  parameter_vac_D[BB_DNA_5].push_back(-0.2055953690887979);
-  parameter_vac_D[BB_DNA_5].push_back(-150.79248921572346);
-  parameter_vac_D[BB_DNA_5].push_back(-22.700459516383205);
-  parameter_vac_D[BB_DNA_5].push_back(172.25998516555276);
-  parameter_vac_D[BB_DNA_5].push_back(-93.49831248076923);
+  parameter_vac_D[BB_DNA_5].push_back(-0.2055953690887981);
+  parameter_vac_D[BB_DNA_5].push_back(-150.7924892157235);
+  parameter_vac_D[BB_DNA_5].push_back(-22.700459516383198);
+  parameter_vac_D[BB_DNA_5].push_back(172.2599851655527);
+  parameter_vac_D[BB_DNA_5].push_back(-93.4983124807692);
   parameter_vac_D[BB_DNA_5].push_back(12.867661230942868);
 
-  parameter_vac_D[BB_DNA_3].push_back(145.7090411192057);
-  parameter_vac_D[BB_DNA_3].push_back(-0.8298793572907976);
-  parameter_vac_D[BB_DNA_3].push_back(-286.4999069181501);
-  parameter_vac_D[BB_DNA_3].push_back(-106.94476384941905);
-  parameter_vac_D[BB_DNA_3].push_back(684.1066645755844);
-  parameter_vac_D[BB_DNA_3].push_back(-547.7283373975977);
-  parameter_vac_D[BB_DNA_3].push_back(138.234505092484);
+  parameter_vac_D[BB_DNA_3].push_back(108.18080111920537);
+  parameter_vac_D[BB_DNA_3].push_back(-0.18263717534168372);
+  parameter_vac_D[BB_DNA_3].push_back(-148.5918817744255);
+  parameter_vac_D[BB_DNA_3].push_back(-19.90799847398835);
+  parameter_vac_D[BB_DNA_3].push_back(157.55184203379557);
+  parameter_vac_D[BB_DNA_3].push_back(-80.28471270058103);
+  parameter_vac_D[BB_DNA_3].push_back(9.313712500298278);
 
-  parameter_vac_D[BB_RNA].push_back(143.6162561192155);
-  parameter_vac_D[BB_RNA].push_back(-0.8733854654390785);
-  parameter_vac_D[BB_RNA].push_back(-298.83033895761656);
-  parameter_vac_D[BB_RNA].push_back(-121.34809066855875);
-  parameter_vac_D[BB_RNA].push_back(798.0121230647661);
-  parameter_vac_D[BB_RNA].push_back(-677.2611061963995);
-  parameter_vac_D[BB_RNA].push_back(182.22325898693555);
+  parameter_vac_D[BB_RNA].push_back(106.37859611922117);
+  parameter_vac_D[BB_RNA].push_back(-0.2380766148121975);
+  parameter_vac_D[BB_RNA].push_back(-153.74131338570024);
+  parameter_vac_D[BB_RNA].push_back(-26.415436217574932);
+  parameter_vac_D[BB_RNA].push_back(191.90585451112776);
+  parameter_vac_D[BB_RNA].push_back(-109.61737794316868);
+  parameter_vac_D[BB_RNA].push_back(16.663804191332204);
 
   parameter_vac_D[BB_RNA_5].push_back(120.58236111920618);
   parameter_vac_D[BB_RNA_5].push_back(-0.340258533619014);
   parameter_vac_D[BB_RNA_5].push_back(-186.08333929996334);
-  parameter_vac_D[BB_RNA_5].push_back(-38.49333714764478);
-  parameter_vac_D[BB_RNA_5].push_back(266.2262415641142);
-  parameter_vac_D[BB_RNA_5].push_back(-164.7308847835958);
-  parameter_vac_D[BB_RNA_5].push_back(29.070141576808794);
+  parameter_vac_D[BB_RNA_5].push_back(-38.493337147644795);
+  parameter_vac_D[BB_RNA_5].push_back(266.2262415641144);
+  parameter_vac_D[BB_RNA_5].push_back(-164.73088478359585);
+  parameter_vac_D[BB_RNA_5].push_back(29.07014157680879);
 
-  parameter_vac_D[BB_RNA_3].push_back(160.04780111919848);
-  parameter_vac_D[BB_RNA_3].push_back(-0.990295774653523);
-  parameter_vac_D[BB_RNA_3].push_back(-336.72111324308617);
-  parameter_vac_D[BB_RNA_3].push_back(-135.79885231685657);
-  parameter_vac_D[BB_RNA_3].push_back(888.3450207894709);
-  parameter_vac_D[BB_RNA_3].push_back(-747.3548961289454);
-  parameter_vac_D[BB_RNA_3].push_back(199.17867061449124);
+  parameter_vac_D[BB_RNA_3].push_back(120.5823611192099);
+  parameter_vac_D[BB_RNA_3].push_back(-0.274146129206928);
+  parameter_vac_D[BB_RNA_3].push_back(-179.24499182395388);
+  parameter_vac_D[BB_RNA_3].push_back(-30.315729372259426);
+  parameter_vac_D[BB_RNA_3].push_back(222.2645581367648);
+  parameter_vac_D[BB_RNA_3].push_back(-125.13581171514033);
+  parameter_vac_D[BB_RNA_3].push_back(18.350308154920107);
 
   parameter_vac_D[BASE_A].push_back(114.34024911921);
   parameter_vac_D[BASE_A].push_back(-0.4136665918383359);
@@ -5529,383 +5767,466 @@ void SAXS::getOnebeadparam_sansD(const std::vector<AtomNumber> &atoms, std::vect
   parameter_vac_D[BASE_U].push_back(-26.23044613101723);
   parameter_vac_D[BASE_U].push_back(2.061238351422343);
 
-  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
-  if( moldat ) {
-    for(unsigned i=0; i<atoms.size(); ++i) {
-      std::string Aname = moldat->getAtomName(atoms[i]);
-      std::string Rname = moldat->getResidueName(atoms[i]);
-      Rname.erase(std::remove_if(Rname.begin(), Rname.end(), ::isspace),Rname.end());
-      if(Rname=="ALA") {
-        atoi[residue_atom[i]]=ALA;
-      } else if(Rname=="ARG") {
-        atoi[residue_atom[i]]=ARG;
-      } else if(Rname=="ASN") {
-        atoi[residue_atom[i]]=ASN;
-      } else if(Rname=="ASP") {
-        atoi[residue_atom[i]]=ASP;
-      } else if(Rname=="CYS") {
-        atoi[residue_atom[i]]=CYS;
-      } else if(Rname=="GLN") {
-        atoi[residue_atom[i]]=GLN;
-      } else if(Rname=="GLU") {
-        atoi[residue_atom[i]]=GLU;
-      } else if(Rname=="GLY") {
-        atoi[residue_atom[i]]=GLY;
-      } else if(Rname=="HIS") {
-        atoi[residue_atom[i]]=HIS;
-      } else if(Rname=="HID") {
-        atoi[residue_atom[i]]=HIS;
-      } else if(Rname=="HIE") {
-        atoi[residue_atom[i]]=HIS;
-      } else if(Rname=="HIP") {
-        atoi[residue_atom[i]]=HIP;
-        // CHARMM NAMING FOR PROTONATION STATES OF HISTIDINE
-      } else if(Rname=="HSD") {
-        atoi[residue_atom[i]]=HIS;
-      } else if(Rname=="HSE") {
-        atoi[residue_atom[i]]=HIS;
-      } else if(Rname=="HSP") {
-        atoi[residue_atom[i]]=HIP;
-      } else if(Rname=="ILE") {
-        atoi[residue_atom[i]]=ILE;
-      } else if(Rname=="LEU") {
-        atoi[residue_atom[i]]=LEU;
-      } else if(Rname=="LYS") {
-        atoi[residue_atom[i]]=LYS;
-      } else if(Rname=="MET") {
-        atoi[residue_atom[i]]=MET;
-      } else if(Rname=="PHE") {
-        atoi[residue_atom[i]]=PHE;
-      } else if(Rname=="PRO") {
-        atoi[residue_atom[i]]=PRO;
-      } else if(Rname=="SER") {
-        atoi[residue_atom[i]]=SER;
-      } else if(Rname=="THR") {
-        atoi[residue_atom[i]]=THR;
-      } else if(Rname=="TRP") {
-        atoi[residue_atom[i]]=TRP;
-      } else if(Rname=="TYR") {
-        atoi[residue_atom[i]]=TYR;
-      } else if(Rname=="VAL") {
-        atoi[residue_atom[i]]=VAL;
-      }
-      // NUCLEIC ACIDS
-      else if(Rname=="G") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA;
-        } else {
-          atoi[residue_atom[i]]=BASE_G;
-        }
-      } else if(Rname=="G3") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA_3;
-        } else {
-          atoi[residue_atom[i]]=BASE_G;
-        }
-      } else if(Rname=="G5") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA_5;
-        } else {
-          atoi[residue_atom[i]]=BASE_G;
-        }
-      } else if(Rname=="U") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA;
-        } else {
-          atoi[residue_atom[i]]=BASE_U;
-        }
-      } else if(Rname=="U3") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA_3;
-        } else {
-          atoi[residue_atom[i]]=BASE_U;
-        }
-      } else if(Rname=="U5") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA_5;
-        } else {
-          atoi[residue_atom[i]]=BASE_U;
-        }
-      } else if(Rname=="A") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA;
-        } else {
-          atoi[residue_atom[i]]=BASE_A;
-        }
-      } else if(Rname=="A3") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA_3;
-        } else {
-          atoi[residue_atom[i]]=BASE_A;
-        }
-      } else if(Rname=="A5") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA_5;
-        } else {
-          atoi[residue_atom[i]]=BASE_A;
-        }
-      } else if(Rname=="C") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA;
-        } else {
-          atoi[residue_atom[i]]=BASE_C;
-        }
-      } else if(Rname=="C3") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA_3;
-        } else {
-          atoi[residue_atom[i]]=BASE_C;
-        }
-      } else if(Rname=="C5") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_RNA_5;
-        } else {
-          atoi[residue_atom[i]]=BASE_C;
-        }
-      } else if(Rname=="DG") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA;
-        } else {
-          atoi[residue_atom[i]]=BASE_G;
-        }
-      } else if(Rname=="DG3") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA_3;
-        } else {
-          atoi[residue_atom[i]]=BASE_G;
-        }
-      } else if(Rname=="DG5") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA_5;
-        } else {
-          atoi[residue_atom[i]]=BASE_G;
-        }
-      } else if(Rname=="DT") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA;
-        } else {
-          atoi[residue_atom[i]]=BASE_T;
-        }
-      } else if(Rname=="DT3") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA_3;
-        } else {
-          atoi[residue_atom[i]]=BASE_T;
-        }
-      } else if(Rname=="DT5") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA_5;
-        } else {
-          atoi[residue_atom[i]]=BASE_T;
-        }
-      } else if(Rname=="DA") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA;
-        } else {
-          atoi[residue_atom[i]]=BASE_A;
-        }
-      } else if(Rname=="DA3") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA_3;
-        } else {
-          atoi[residue_atom[i]]=BASE_A;
-        }
-      } else if(Rname=="DA5") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA_5;
-        } else {
-          atoi[residue_atom[i]]=BASE_A;
-        }
-      } else if(Rname=="DC") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA;
-        } else {
-          atoi[residue_atom[i]]=BASE_C;
-        }
-      } else if(Rname=="DC3") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA_3;
-        } else {
-          atoi[residue_atom[i]]=BASE_C;
-        }
-      } else if(Rname=="DC5") {
-        if(Aname=="P" || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-            Aname=="O5'" || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'" ||
-            Aname=="O3'" || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'" ||
-            Aname=="C1'" || Aname=="H5'" || Aname=="H5''" || Aname=="H4'" ||
-            Aname=="H3'" || Aname=="H2'" || Aname=="H2''" || Aname=="H1'" ||
-            Aname=="HO5'"|| Aname=="HO3'"|| Aname=="HO2'" || Aname=="O1P" ||
-            Aname=="O2P" || Aname=="O3P" || Aname=="H5'1" || Aname=="H5'2" ||
-            Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" || Aname=="H3T" ) {
-          atoi[residue_atom[i]]=BB_DNA_5;
-        } else {
-          atoi[residue_atom[i]]=BASE_C;
-        }
-      } else error("Residue not known: "+Rname);
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    std::string Aname = pdb.getAtomName(atoms[i]);
+    std::string Rname = pdb.getResidueName(atoms[i]);
+    Rname.erase(std::remove_if(Rname.begin(), Rname.end(), ::isspace),Rname.end());
+    if(Rname=="ALA") {
+      atoi[residue_atom[i]]=ALA;
+    } else if(Rname=="ARG") {
+      atoi[residue_atom[i]]=ARG;
+    } else if(Rname=="ASN") {
+      atoi[residue_atom[i]]=ASN;
+    } else if(Rname=="ASP") {
+      atoi[residue_atom[i]]=ASP;
+    } else if(Rname=="CYS") {
+      atoi[residue_atom[i]]=CYS;
+    } else if(Rname=="GLN") {
+      atoi[residue_atom[i]]=GLN;
+    } else if(Rname=="GLU") {
+      atoi[residue_atom[i]]=GLU;
+    } else if(Rname=="GLY") {
+      atoi[residue_atom[i]]=GLY;
+    } else if(Rname=="HIS") {
+      atoi[residue_atom[i]]=HIS;
+    } else if(Rname=="HID") {
+      atoi[residue_atom[i]]=HIS;
+    } else if(Rname=="HIE") {
+      atoi[residue_atom[i]]=HIS;
+    } else if(Rname=="HIP") {
+      atoi[residue_atom[i]]=HIP;
+      // CHARMM NAMING FOR PROTONATION STATES OF HISTIDINE
+    } else if(Rname=="HSD") {
+      atoi[residue_atom[i]]=HIS;
+    } else if(Rname=="HSE") {
+      atoi[residue_atom[i]]=HIS;
+    } else if(Rname=="HSP") {
+      atoi[residue_atom[i]]=HIP;
+    } else if(Rname=="ILE") {
+      atoi[residue_atom[i]]=ILE;
+    } else if(Rname=="LEU") {
+      atoi[residue_atom[i]]=LEU;
+    } else if(Rname=="LYS") {
+      atoi[residue_atom[i]]=LYS;
+    } else if(Rname=="MET") {
+      atoi[residue_atom[i]]=MET;
+    } else if(Rname=="PHE") {
+      atoi[residue_atom[i]]=PHE;
+    } else if(Rname=="PRO") {
+      atoi[residue_atom[i]]=PRO;
+    } else if(Rname=="SER") {
+      atoi[residue_atom[i]]=SER;
+    } else if(Rname=="THR") {
+      atoi[residue_atom[i]]=THR;
+    } else if(Rname=="TRP") {
+      atoi[residue_atom[i]]=TRP;
+    } else if(Rname=="TYR") {
+      atoi[residue_atom[i]]=TYR;
+    } else if(Rname=="VAL") {
+      atoi[residue_atom[i]]=VAL;
     }
-  } else {
-    error("MOLINFO DATA not found\n");
+    // NUCLEIC ACIDS
+    // nucleobases are not automatically populated as an additional check on the health of the PDB.
+    // RNA - G
+    else if(Rname=="G") {
+    if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+        Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+      atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;          
+      } else if( Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - G3
+    } else if(Rname=="G3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'" || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'" || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="H2'1" || Aname=="HO3'"|| Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" ) {
+        atoi[residue_atom[i]]=BB_RNA_3;          
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - G5
+    } else if(Rname=="G5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+          Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+          Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="HO2'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="HO'2" ||
+          Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA_5;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - U
+    } else if(Rname=="U") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;   
+      } else if( Aname=="N1" || Aname=="C2"  || Aname=="O2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="O4"  || Aname=="C5" || Aname=="C6" ||
+                Aname=="H3" || Aname=="H5"  || Aname=="H6") {
+        atoi[residue_atom[i]]=BASE_U;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - U3
+    } else if(Rname=="U3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'" || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'" || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="H2'1" || Aname=="HO3'"|| Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" ) {
+        atoi[residue_atom[i]]=BB_RNA_3; 
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="O2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="O4"  || Aname=="C5" || Aname=="C6" ||
+                Aname=="H3" || Aname=="H5"  || Aname=="H6") {
+        atoi[residue_atom[i]]=BASE_U;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - U5
+    } else if(Rname=="U5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+          Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+          Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="HO2'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="HO'2" ||
+          Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA_5;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="O2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="O4"  || Aname=="C5" || Aname=="C6" ||
+                Aname=="H3" || Aname=="H5"  || Aname=="H6") {
+        atoi[residue_atom[i]]=BASE_U;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - A
+    } else if(Rname=="A") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA; 
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - A3
+    } else if(Rname=="A3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'" || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'" || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="H2'1" || Aname=="HO3'"|| Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" ) {
+        atoi[residue_atom[i]]=BB_RNA_3; 
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - A5
+    } else if(Rname=="A5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+          Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+          Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="HO2'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="HO'2" ||
+          Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA_5;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - C
+    } else if(Rname=="C") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - C3
+    } else if(Rname=="C3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'" || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'" || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="H2'1" || Aname=="HO3'"|| Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" ) {
+        atoi[residue_atom[i]]=BB_RNA_3; 
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // RNA - C5
+    } else if(Rname=="C5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+          Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+          Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="HO2'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="HO'2" ||
+          Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA_5;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - G
+    } else if(Rname=="DG") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - G3
+    } else if(Rname=="DG3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO3'" ||
+                Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+                Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA_3;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - G5
+    } else if(Rname=="DG5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  ||  Aname=="C1'" ||
+          Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+          Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+          Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_DNA_5;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - T
+    } else if(Rname=="DT") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1"  || Aname=="C2"  || Aname=="O2"  || Aname=="N3"  ||
+                Aname=="C4"  || Aname=="O4"  || Aname=="C5"  || Aname=="C6"  ||
+                Aname=="C7"  || Aname=="H3"  || Aname=="H6"  || Aname=="H71" ||
+                Aname=="H72" || Aname=="H73" ) {
+        atoi[residue_atom[i]]=BASE_T;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - T3
+    } else if(Rname=="DT3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO3'" ||
+                Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+                Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA_3;
+      } else if(Aname=="N1"  || Aname=="C2"  || Aname=="O2"  || Aname=="N3"  ||
+                Aname=="C4"  || Aname=="O4"  || Aname=="C5"  || Aname=="C6"  ||
+                Aname=="C7"  || Aname=="H3"  || Aname=="H6"  || Aname=="H71" ||
+                Aname=="H72" || Aname=="H73" ) {
+        atoi[residue_atom[i]]=BASE_T;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - T5
+    } else if(Rname=="DT5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  ||  Aname=="C1'" ||
+          Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+          Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+          Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_DNA_5;
+      } else if(Aname=="N1"  || Aname=="C2"  || Aname=="O2"  || Aname=="N3"  ||
+                Aname=="C4"  || Aname=="O4"  || Aname=="C5"  || Aname=="C6"  ||
+                Aname=="C7"  || Aname=="H3"  || Aname=="H6"  || Aname=="H71" ||
+                Aname=="H72" || Aname=="H73" ) {
+        atoi[residue_atom[i]]=BASE_T;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - A
+    } else if(Rname=="DA") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - A3
+    } else if(Rname=="DA3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO3'" ||
+                Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+                Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA_3;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - A5
+    } else if(Rname=="DA5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  ||  Aname=="C1'" ||
+          Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+          Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+          Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_DNA_5;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - C
+    } else if(Rname=="DC") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - C3
+    } else if(Rname=="DC3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO3'" ||
+                Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+                Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA_3;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    // DNA - C5
+    } else if(Rname=="DC5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  ||  Aname=="C1'" ||
+          Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+          Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+          Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_DNA_5;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    } else error("Residue not known: "+Rname);
   }
 }
 
@@ -6033,7 +6354,7 @@ double SAXS::calculateAFFsans(const std::vector<AtomNumber> &atoms, std::vector<
   param_v.resize(NTT);
 
   param_b[H] = -0.374; param_v[H] = 5.15;
-  //param_b[D] = 0.667;
+  // param_b[D] = 0.667;
   param_b[C] =  0.665;  param_v[C] = 16.44;
   param_b[N] =  0.94;   param_v[N] = 2.49;
   param_b[O] =  0.580;  param_v[O] = 9.13;
@@ -6090,7 +6411,7 @@ double SAXS::calculateAFFsans(const std::vector<AtomNumber> &atoms, std::vector<
 std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   std::map<std::string, std::vector<double> > lcpomap;
 
-  //We arbitrarily set OC1/OT1 as the charged oxygen.
+  // We arbitrarily set OC1/OT1 as the charged oxygen.
 
   lcpomap["ALA_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["ALA_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -6515,7 +6836,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["A5_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["A5_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["A5_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["A5_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["A5_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };  
   lcpomap["A5_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   lcpomap["A_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
@@ -6542,7 +6863,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["A_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["A_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["A_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["A_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["A_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };  
   lcpomap["A_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   lcpomap["C3_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
@@ -6567,7 +6888,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["C3_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["C3_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["C3_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["C3_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["C3_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };  
   lcpomap["C3_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   lcpomap["C5_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
@@ -6592,7 +6913,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["C5_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["C5_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["C5_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["C5_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["C5_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };  
   lcpomap["C5_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   lcpomap["C_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
@@ -6617,7 +6938,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["C_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["C_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["C_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["C_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["C_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };  
   lcpomap["C_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   lcpomap["DA3_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
@@ -6643,7 +6964,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["DA3_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["DA3_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["DA3_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["DA3_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DA3_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };  
   lcpomap["DA3_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   lcpomap["DA5_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
@@ -6669,7 +6990,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["DA5_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["DA5_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["DA5_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["DA5_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DA5_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };    
   lcpomap["DA5_P"]   = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   lcpomap["DA_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
@@ -6695,7 +7016,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["DA_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["DA_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["DA_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["DA_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DA_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };    
   lcpomap["DA_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   lcpomap["DC3_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
@@ -6719,7 +7040,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["DC3_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["DC3_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["DC3_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["DC3_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DC3_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };    
   lcpomap["DC3_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   lcpomap["DC5_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
@@ -6743,7 +7064,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["DC5_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["DC5_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["DC5_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["DC5_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DC5_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };    
   lcpomap["DC5_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   lcpomap["DC_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
@@ -6767,7 +7088,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["DC_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["DC_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["DC_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["DC_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DC_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };    
   lcpomap["DC_P"]   = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   lcpomap["DG3_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
@@ -6794,7 +7115,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["DG3_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["DG3_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["DG3_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["DG3_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DG3_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };    
   lcpomap["DG3_P"]   = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   lcpomap["DG5_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
@@ -6821,7 +7142,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["DG5_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["DG5_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["DG5_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["DG5_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DG5_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };    
   lcpomap["DG5_P"]   = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   lcpomap["DG_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
@@ -6848,7 +7169,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["DG_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["DG_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["DG_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["DG_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DG_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };    
   lcpomap["DG_P"]   = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   lcpomap["DT3_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
@@ -6873,7 +7194,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["DT3_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["DT3_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["DT3_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["DT3_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DT3_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };    
   lcpomap["DT3_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   lcpomap["DT5_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
@@ -6898,7 +7219,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["DT5_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["DT5_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["DT5_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["DT5_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DT5_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };    
   lcpomap["DT5_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   lcpomap["DT_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
@@ -6923,7 +7244,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["DT_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["DT_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["DT_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["DT_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DT_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };    
   lcpomap["DT_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   lcpomap["G3_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
@@ -6951,7 +7272,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["G3_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["G3_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["G3_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["G3_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["G3_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };    
   lcpomap["G3_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   lcpomap["G5_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
@@ -6979,7 +7300,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["G5_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["G5_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["G5_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["G5_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["G5_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };    
   lcpomap["G5_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   lcpomap["G_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
@@ -7007,7 +7328,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["G_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["G_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["G_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["G_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["G_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };    
   lcpomap["G_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   lcpomap["U3_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
@@ -7032,7 +7353,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["U3_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["U3_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["U3_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["U3_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["U3_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };    
   lcpomap["U3_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   lcpomap["U5_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
@@ -7057,7 +7378,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["U5_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["U5_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["U5_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["U5_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["U5_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };    
   lcpomap["U5_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   lcpomap["U_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
@@ -7082,13 +7403,13 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["U_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["U_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["U_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["U_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["U_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };    
   lcpomap["U_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   return lcpomap;
 }
 
-//assigns LCPO parameters to each atom reading from database
+// assigns LCPO parameters to each atom reading from database
 void SAXS::readLCPOparam(const std::vector<std::vector<std::string> > &AtomResidueName, unsigned natoms)
 {
   std::map<std::string, std::vector<double> > lcpomap = setupLCPOparam();
