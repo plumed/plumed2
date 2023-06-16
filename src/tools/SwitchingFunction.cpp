@@ -489,7 +489,7 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
 // this is for the chain rule (derivative of rdist):
     dfunc*=invr0;
 // for any future switching functions, be aware that multiplying invr0 is only correct for functions of rdist = (r-d0)/r0.
-     
+
 // this is because calculate() sets dfunc to the derivative divided times the distance.
 // (I think this is misleading and I would like to modify it - GB)
     dfunc/=distance;
