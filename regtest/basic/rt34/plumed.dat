@@ -17,14 +17,14 @@ PRINT ...
 
 DUMPDERIVATIVES ...
   STRIDE=10
-  ARG=drmsd,drmsdn
+  ARG=drmsd
   FILE=DERIVATIVES1 
   FMT=%8.5f
 ... DUMPDERIVATIVES 
 
 DUMPDERIVATIVES ...
   STRIDE=10
-  ARG=drmsdnopbc,drmsdnopbcn
+  ARG=drmsdnopbc
   FILE=DERIVATIVES2
   FMT=%8.5f
 ... DUMPDERIVATIVES
