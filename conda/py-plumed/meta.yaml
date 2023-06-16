@@ -29,7 +29,7 @@ test:
   imports:
     - plumed
   commands:
-    - PLUMED_LOAD_NODEEPBIND=yes python -c "import plumed; p=plumed.Plumed(); print(p)"
+    - python -c "import plumed; p=plumed.Plumed(); print(p)"
 
 about:
   home: http://www.plumed.org/
