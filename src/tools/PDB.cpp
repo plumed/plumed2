@@ -619,7 +619,7 @@ void PDB::print( const double& lunits, GenericMolInfo* mymoldat, OFile& ofile, c
   ofile.printf("END\n");
 }
 
-bool PDB::allowedResidue( const std::string& type, const std::string& residuename ) {
+bool PDB::allowedResidue( const std::string& type, const std::string& residuename ) const {
   if( type=="protein" ) {
     if(residuename=="ALA") return true;
     else if(residuename=="ARG") return true;

@@ -253,7 +253,6 @@ private:
   bool serial;
   bool gpu;
   bool onebead;
-  std::string template_name;
   bool isFirstStep;
   int  deviceid;
   unsigned nres;
@@ -295,16 +294,16 @@ private:
   void calculate_gpu(std::vector<Vector> &pos, std::vector<Vector> &deriv);
   void calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv);
   void getMartiniFFparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter);
-  void getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv, std::vector<unsigned> residue_atom);
-  unsigned getOnebeadMapping(const std::vector<AtomNumber> &atoms);
+  void getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv, std::vector<unsigned> residue_atom);
+  unsigned getOnebeadMapping(const PDB &pdb, const std::vector<AtomNumber> &atoms);
   double calculateAFF(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double rho);
   std::map<std::string, std::vector<double> > setupLCPOparam();
   void readLCPOparam(const std::vector<std::vector<std::string> > &AtomResidueName, unsigned natoms);
   void calcNlist(std::vector<std::vector<int> > &Nlist);
   void sasa_calculate(std::vector<bool> &solv_res);
   // SANS:
-  void getOnebeadparam_sansH(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_H, std::vector<std::vector<long double> > &parameter_mix_H, std::vector<std::vector<long double> > &parameter_solv_H);
-  void getOnebeadparam_sansD(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_D, std::vector<std::vector<long double> > &parameter_mix_D);
+  void getOnebeadparam_sansH(const PDB &pdb, const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_H, std::vector<std::vector<long double> > &parameter_mix_H, std::vector<std::vector<long double> > &parameter_solv_H);
+  void getOnebeadparam_sansD(const PDB &pdb, const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_D, std::vector<std::vector<long double> > &parameter_mix_D);
   double calculateAFFsans(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double deuter_conc);
 
 public:
@@ -450,15 +449,18 @@ SAXS::SAXS(const ActionOptions&ao):
   if(deuter_conc < 0. || deuter_conc > 1.) error("DEUTER_CONC must be in 0-1 range");
   if ((atomistic||onebead)&&(!saxs)) log.printf("  Solvent deuterium fraction: %lf/1.000000\n", deuter_conc);
 
+  PDB pdb;
   if(onebead) {
+    std::string template_name;
     parse("TEMPLATE",template_name);
     log.printf("  Template for ONEBEAD mapping conversion: %s\n", template_name.c_str());
+    if( !pdb.read(template_name,plumed.getAtoms().usingNaturalUnits(),1.) ) plumed_merror("missing input file " + template_name);
   }
 
   // Here we perform the preliminary mapping for onebead representation
   if(onebead) {
     LCPOparam.resize(size);
-    nres = getOnebeadMapping(atoms);
+    nres = getOnebeadMapping(pdb, atoms);
     if(saxs) {
       Iq0_vac.resize(nres);
       Iq0_solv.resize(nres);
@@ -519,7 +521,7 @@ SAXS::SAXS(const ActionOptions&ao):
       std::vector<std::vector<long double> > parameter_vac(NONEBEAD);
       std::vector<std::vector<long double> > parameter_mix(NONEBEAD);
       std::vector<std::vector<long double> > parameter_solv(NONEBEAD);
-      getOnebeadparam(atoms, parameter_vac, parameter_mix, parameter_solv,residue_atom);
+      getOnebeadparam(pdb, atoms, parameter_vac, parameter_mix, parameter_solv,residue_atom);
       for(unsigned i=0; i<NONEBEAD; ++i) {
         for(unsigned k=0; k<numq; ++k) {
           for(unsigned j=0; j<parameter_vac[i].size(); ++j) {
@@ -550,8 +552,8 @@ SAXS::SAXS(const ActionOptions&ao):
       std::vector<std::vector<long double> > parameter_solv_H(NONEBEAD);
       std::vector<std::vector<long double> > parameter_vac_D(NONEBEAD);
       std::vector<std::vector<long double> > parameter_mix_D(NONEBEAD);
-      getOnebeadparam_sansH(atoms, parameter_vac_H, parameter_mix_H, parameter_solv_H);
-      getOnebeadparam_sansD(atoms, parameter_vac_D, parameter_mix_D);
+      getOnebeadparam_sansH(pdb, atoms, parameter_vac_H, parameter_mix_H, parameter_solv_H);
+      getOnebeadparam_sansD(pdb, atoms, parameter_vac_D, parameter_mix_D);
       for(unsigned i=0; i<NONEBEAD; ++i) {
         for(unsigned k=0; k<numq; ++k) {
           for(unsigned j=0; j<parameter_vac_H[i].size(); ++j) { // same number of parameters
@@ -1217,10 +1219,7 @@ void SAXS::update() {
   if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) writeStatus();
 }
 
-unsigned SAXS::getOnebeadMapping(const std::vector<AtomNumber> &atoms) {
-  // Here we read the chain information
-  PDB pdb;
-  if( !pdb.read(template_name,plumed.getAtoms().usingNaturalUnits(),1.) ) plumed_merror("missing input file " + template_name);
+unsigned SAXS::getOnebeadMapping(const PDB &pdb, const std::vector<AtomNumber> &atoms) {
   std::vector<std::string> chains; pdb.getChainNames( chains );
   std::vector<std::vector<std::string> > AtomResidueName;
 
@@ -2716,7 +2715,7 @@ void SAXS::getMartiniFFparam(const std::vector<AtomNumber> &atoms, std::vector<s
   }
 }
 
-void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv, std::vector<unsigned> residue_atom)
+void SAXS::getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv, std::vector<unsigned> residue_atom)
 {
 
   parameter_solv[TRP].push_back(60737.60249988003);
@@ -3976,7 +3975,7 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std
   }
 }
 
-void SAXS::getOnebeadparam_sansH(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_H, std::vector<std::vector<long double> > &parameter_mix_H, std::vector<std::vector<long double> > &parameter_solv_H)
+void SAXS::getOnebeadparam_sansH(const PDB &pdb, const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_H, std::vector<std::vector<long double> > &parameter_mix_H, std::vector<std::vector<long double> > &parameter_solv_H)
 {
   parameter_solv_H[TRP].push_back(60737.60249988011);
   parameter_solv_H[TRP].push_back(-77.77344118516487);
@@ -5235,7 +5234,7 @@ void SAXS::getOnebeadparam_sansH(const std::vector<AtomNumber> &atoms, std::vect
   }
 }
 
-void SAXS::getOnebeadparam_sansD(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_D, std::vector<std::vector<long double> > &parameter_mix_D)
+void SAXS::getOnebeadparam_sansD(const PDB &pdb, const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_D, std::vector<std::vector<long double> > &parameter_mix_D)
 { // parameter_solv is identical in SAXS/SANS_H/SANS_D since it depends exclusively on param_v. For that reason we kept param_solv only in SAXS and SANS_H.
   parameter_mix_D[TRP].push_back(8105.740500119327);
   parameter_mix_D[TRP].push_back(-41.785616935469804);

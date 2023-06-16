@@ -147,7 +147,7 @@ public:
 /// Returns box axis vectors
   const Tensor & getBoxVec()const;
 /// Return true if the residue name is one of the allowed reisude names e.g. one of the 20 amino acids for proteins
-  bool allowedResidue( const std::string& type, const std::string& residuename );
+  bool allowedResidue( const std::string& type, const std::string& residuename ) const;
 };
 
 }
