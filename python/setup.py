@@ -65,6 +65,11 @@ if defaultkernel is not None:
     extra_compile_args.append("-D__PLUMED_DEFAULT_KERNEL=" + os.path.abspath(defaultkernel))
     print( "Hardcoded PLUMED_KERNEL " + os.path.abspath(defaultkernel))
 
+plumed_disable_rtld_deepbind=os.getenv("plumed_disable_rtld_deepbind")
+if plumed_disable_rtld_deepbind is not None:
+    extra_compile_args.append("-D__PLUMED_WRAPPER_ENABLE_RTLD_DEEPBIND=0")
+    print( "Disabling RTLD_DEEPBIND")
+
 # Fixes problem with compiling the PYTHON interface in Mac OS 10.14 and higher.
 # Sets the deployment target to 10.9 when compiling on version 10.9 and above,
 # overriding distutils behaviour to target the Mac OS version python was built for.
