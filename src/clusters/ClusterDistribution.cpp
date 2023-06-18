@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2023 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,10 +19,13 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ClusterAnalysisBase.h"
-#include "adjmat/AdjacencyMatrixVessel.h"
+#include "core/ActionWithValue.h"
+#include "core/ActionWithArguments.h"
 #include "core/ActionRegister.h"
-#include "tools/SwitchingFunction.h"
+#include "core/ActionShortcut.h"
+#include "core/PlumedMain.h"
+#include "multicolvar/MultiColvarShortcuts.h"
+#include "ClusteringBase.h"
 
 //+PLUMEDOC CONCOMP CLUSTER_DISTRIBUTION
 /*
@@ -59,101 +62,111 @@ PRINT ARG=nclust.* FILE=colvar
 */
 //+ENDPLUMEDOC
 
-namespace PLMD {
-namespace adjmat {
 
-class ClusterDistribution : public ClusterAnalysisBase {
+namespace PLMD {
+namespace clusters {
+
+class ClusterDistribution :
+  public ActionWithArguments,
+  public ActionWithValue {
 private:
-  unsigned nderivatives;
-///
-  bool use_switch, inverse;
-//
-  SwitchingFunction sf;
+/// The cluster we are looking for
+  unsigned clustr;
 public:
 /// Create manual
   static void registerKeywords( Keywords& keys );
 /// Constructor
   explicit ClusterDistribution(const ActionOptions&);
+/// The number of derivatives
+  unsigned getNumberOfDerivatives() override ;
 /// Do the calculation
   void calculate() override;
 /// We can use ActionWithVessel to run all the calculation
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override;
+  void apply() override {}
 };
 
-PLUMED_REGISTER_ACTION(ClusterDistribution,"CLUSTER_DISTRIBUTION")
+PLUMED_REGISTER_ACTION(ClusterDistribution,"CLUSTER_DISTRIBUTION_CALC")
 
 void ClusterDistribution::registerKeywords( Keywords& keys ) {
-  ClusterAnalysisBase::registerKeywords( keys );
-  keys.add("compulsory","TRANSFORM","none","the switching function to use to convert the crystallinity parameter to a number between zero and one");
-  keys.addFlag("INVERSE_TRANSFORM",false,"when TRANSFORM appears alone the input symmetry functions, \\f$x\\f$ are transformed used \\f$1-s(x)\\f$ "
-               "where \\f$s(x)\\f$ is a switching function.  When this option is used you instead transform using \\f$s(x)\\f$ only.");
-  keys.use("MORE_THAN"); keys.use("LESS_THAN"); keys.use("BETWEEN");
-  keys.use("HISTOGRAM"); keys.use("ALT_MIN"); keys.use("MIN"); keys.use("MAX");
+  Action::registerKeywords( keys );
+  ActionWithArguments::registerKeywords( keys );
+  ActionWithValue::registerKeywords( keys ); keys.remove("NUMERICAL_DERIVATIVES");
+  keys.add("compulsory","CLUSTERS","the label of the action that does the clustering");
+  keys.add("optional","WEIGHTS","use the vector of values calculated by this action as weights rather than giving each atom a unit weight");
 }
 
 ClusterDistribution::ClusterDistribution(const ActionOptions&ao):
   Action(ao),
-  ClusterAnalysisBase(ao),
-  nderivatives(0)
+  ActionWithArguments(ao),
+  ActionWithValue(ao)
 {
-  use_switch=false;
-  std::string input, errors; parse("TRANSFORM",input);
-  if( input!="none" ) {
-    use_switch=true; sf.set( input, errors );
-    if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
+  // Read in the clustering object
+  std::vector<Value*> clusters; parseArgumentList("CLUSTERS",clusters);
+  if( clusters.size()!=1 ) error("should pass only one matrix to clustering base");
+  ClusteringBase* cc = dynamic_cast<ClusteringBase*>( clusters[0]->getPntrToAction() );
+  if( !cc ) error("input to CLUSTERS keyword should be a clustering action");
+  std::vector<Value*> weights; parseArgumentList("WEIGHTS",weights);
+  if( weights.size()==0 ) {
+    log.printf("  using unit weights in cluster distribution \n");
+  } else if( weights.size()==1 ) {
+    if( weights[0]->getRank()!=1 ) error("input weights has wrong shape");
+    if( weights[0]->getShape()[0]!=clusters[0]->getShape()[0] ) error("mismatch between number of weights and number of atoms");
+    log.printf("  using weights from action with label %s in cluster distribution \n", weights[0]->getName().c_str() );
+    clusters.push_back( weights[0] );
+  } else {
+    error("should have only one argument for weights \n");
   }
-  parseFlag("INVERSE_TRANSFORM",inverse);
-  if( inverse && !use_switch ) error("INVERSE_TRANSFORM option was specified but no TRANSOFRM switching function was given");
+  // Request the arguments
+  requestArguments( clusters );
+  getPntrToArgument(0)->buildDataStore();
+  if( getNumberOfArguments()>1 ) getPntrToArgument(1)->buildDataStore();
+  // Now create the value
+  std::vector<unsigned> shape(1); shape[0]=clusters[0]->getShape()[0];
+  addValue( shape ); setNotPeriodic(); getPntrToValue()->buildDataStore();
+}
 
-  // Create all tasks by copying those from underlying DFS object (which is actually MultiColvar)
-  for(unsigned i=0; i<getNumberOfNodes(); ++i) addTaskToList(i);
-
-  // And now finish the setup of everything in the base
-  std::vector<AtomNumber> fake_atoms; setupMultiColvarBase( fake_atoms );
+unsigned ClusterDistribution::getNumberOfDerivatives() {
+  return 0;
 }
 
 void ClusterDistribution::calculate() {
-  // Activate the relevant tasks
-  nderivatives = getNumberOfDerivatives();
-  deactivateAllTasks();
-  for(unsigned i=0; i<getNumberOfClusters(); ++i) taskFlags[i]=1;
-  lockContributors();
-  // Now do the calculation
-  runAllTasks();
+  plumed_assert( getPntrToArgument(0)->valueHasBeenSet() ); 
+  if( getNumberOfArguments()>1 ) plumed_assert( getPntrToArgument(1)->valueHasBeenSet() );
+  double csize = getPntrToArgument(0)->get(0);
+  for(unsigned i=1; i<getPntrToArgument(0)->getShape()[0]; ++i) {
+     if( getPntrToArgument(0)->get(i)>csize ) csize = getPntrToArgument(0)->get(i);
+  }
+  unsigned ntasks = static_cast<unsigned>( csize );
+  for(unsigned i=0; i<ntasks; ++i) {
+      for(unsigned j=0; j<getPntrToArgument(0)->getShape()[0]; ++j) { 
+          if( fabs(getPntrToArgument(0)->get(j)-i)<epsilon ) {
+              if( getNumberOfArguments()==2 ) getPntrToValue()->add( i, getPntrToArgument(1)->get(j) );
+              else getPntrToValue()->add( i, 1.0 );
+          }
+      }
+  } 
 }
 
-void ClusterDistribution::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
-  std::vector<unsigned> myatoms; retrieveAtomsInCluster( current+1, myatoms );
-  // This deals with filters
-  if( myatoms.size()==1 && !nodeIsActive(myatoms[0]) ) return ;
+class ClusterDistributionShortcut : public ActionShortcut {
+public:
+  static void registerKeywords( Keywords& keys );
+  ClusterDistributionShortcut(const ActionOptions&);
+};
 
-  std::vector<double> vals( getNumberOfQuantities() );
-  MultiValue tvals( getNumberOfQuantities(), nderivatives );
+PLUMED_REGISTER_ACTION(ClusterDistributionShortcut,"CLUSTER_DISTRIBUTION")
 
-  // And this builds everything for this particular atom
-  double vv, df, tval=0;
-  for(unsigned j=0; j<myatoms.size(); ++j) {
-    unsigned i=myatoms[j];
-    getPropertiesOfNode( i, vals );
-    if( use_switch && !inverse ) {
-      vv = 1.0 - sf.calculate( vals[1], df );
-      tval += vals[0]*vv; df=-df*vals[1];
-    } else if( use_switch ) {
-      vv = sf.calculate( vals[1], df );
-      tval += vals[0]*vv; df=df*vals[1];
-    } else {
-      tval += vals[0]*vals[1]; df=1.; vv=vals[1];
-    }
-    if( !doNotCalculateDerivatives() ) {
-      getNodePropertyDerivatives( i, tvals );
-      for(unsigned k=0; k<tvals.getNumberActive(); ++k) {
-        unsigned kat=tvals.getActiveIndex(k);
-        myvals.addDerivative( 1, kat, vals[0]*df*tvals.getDerivative(1,kat) + vv*tvals.getDerivative(0,kat) );
-      }
-      tvals.clearAll();
-    }
-  }
-  myvals.setValue( 0, 1.0 ); myvals.setValue( 1, tval );
+void ClusterDistributionShortcut::registerKeywords( Keywords& keys ) {
+  ActionShortcut::registerKeywords( keys );
+  multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
+}
+
+ClusterDistributionShortcut::ClusterDistributionShortcut(const ActionOptions&ao):
+Action(ao),
+ActionShortcut(ao)
+{
+  std::map<std::string,std::string> keymap; multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );
+  readInputLine( getShortcutLabel() + ": CLUSTER_DISTRIBUTION_CALC " + convertInputLineToString() );
+  multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(),  getShortcutLabel(),  "", keymap, this ); 
 }
 
 }

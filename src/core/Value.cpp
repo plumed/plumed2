@@ -263,20 +263,19 @@ void Value::buildDataStore() {
 void Value::reshapeMatrixStore( const unsigned& n ) {
   plumed_dbg_assert( shape.size()==2 && !hasDeriv );
   if( !storedata ) return ;
-  ncols=n; unsigned size=shape[0]*n;
-  if( matrix_bookeeping.size()==(size+shape[0]) ) {
-      std::fill(matrix_bookeeping.begin(), matrix_bookeeping.end(), 0);
-      return;
-  }
-  data.resize( size ); inputForce.resize( size );
-  matrix_bookeeping.resize( size + shape[0], 0 );
-  std::fill(matrix_bookeeping.begin(), matrix_bookeeping.end(), 0);
-  if( ncols>=shape[1] ) {
-      for(unsigned i=0; i<shape[0]; ++i) {
-          matrix_bookeeping[(1+ncols)*i] = shape[1];
-          for(unsigned j=0;j<shape[1];++j) matrix_bookeeping[(1+ncols)*i+1+j]=j;
+  ncols=n; if( ncols>shape[1] ) ncols=shape[1];
+  unsigned size=shape[0]*ncols;
+  if( matrix_bookeeping.size()!=(size+shape[0]) ) {
+      data.resize( size ); inputForce.resize( size );
+      matrix_bookeeping.resize( size + shape[0], 0 ); 
+      if( ncols>=shape[1] ) {
+          for(unsigned i=0; i<shape[0]; ++i) {
+              matrix_bookeeping[(1+ncols)*i] = shape[1];
+              for(unsigned j=0;j<shape[1];++j) matrix_bookeeping[(1+ncols)*i+1+j]=j;
+          }
       }
   }
+  if( ncols<shape[1] ) std::fill(matrix_bookeeping.begin(), matrix_bookeeping.end(), 0);
 }
 
 void Value::setPositionInMatrixStash( const unsigned& p ) {
@@ -326,12 +325,16 @@ void Value::readBinary(std::istream&i) {
 }
 
 void Value::convertIndexToindices(const std::size_t& index, std::vector<unsigned>& indices ) const {
-  std::size_t kk=index; indices[0]=index%shape[0];
-  for(unsigned i=1; i<shape.size()-1; ++i) {
-    kk=(kk-indices[i-1])/shape[i-1];
-    indices[i]=kk%shape[i];
-  }
-  if(shape.size()>=2) indices[shape.size()-1]=(kk-indices[shape.size()-2])/shape[shape.size()-2];
+  if( hasDeriv || getRank()==1 ) {
+      std::size_t kk=index; indices[0]=index%shape[0];
+      for(unsigned i=1; i<shape.size()-1; ++i) {
+        kk=(kk-indices[i-1])/shape[i-1];
+        indices[i]=kk%shape[i];
+      }
+      if(shape.size()>=2) indices[shape.size()-1]=(kk-indices[shape.size()-2])/shape[shape.size()-2];
+  } else if( getRank()==2 ) {
+      indices[0]=std::floor( index/shape[1] ); indices[1] = index%shape[1];
+  } 
 }
 
 void Value::print( OFile& ofile ) const {

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2023 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ClusterAnalysisBase.h"
+#include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 
 //+PLUMEDOC CONCOMP CLUSTER_DIAMETER
@@ -58,72 +58,38 @@ PRINT ARG=dia FILE=colvar
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace adjmat {
+namespace clusters {
 
-class ClusterDiameter : public ClusterAnalysisBase {
-private:
-/// The cluster we are looking for
-  unsigned clustr;
+class ClusterDiameter : public ActionShortcut {
 public:
-/// Create manual
-  static void registerKeywords( Keywords& keys );
-/// Constructor
+  static void registerKeywords(Keywords& keys);
   explicit ClusterDiameter(const ActionOptions&);
-///
-  void calculate() override;
-///
-  void performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const override;
-///
-  void turnOnDerivatives() override;
 };
 
 PLUMED_REGISTER_ACTION(ClusterDiameter,"CLUSTER_DIAMETER")
 
 void ClusterDiameter::registerKeywords( Keywords& keys ) {
-  ClusterAnalysisBase::registerKeywords( keys );
-  keys.add("compulsory","CLUSTER","1","which cluster would you like to look at 1 is the largest cluster, 2 is the second largest, 3 is the the third largest and so on.");
+  ActionShortcut::registerKeywords( keys );
+  keys.add("optional","ARG","calculate ths radius of the cluster that are in this particular cluster");
+  keys.add("compulsory","ATOMS","the atoms that were used to calculate the matrix that was clustered");
 }
 
-ClusterDiameter::ClusterDiameter(const ActionOptions&ao):
-  Action(ao),
-  ClusterAnalysisBase(ao)
+ClusterDiameter::ClusterDiameter(const ActionOptions& ao):
+Action(ao),
+ActionShortcut(ao)
 {
-  // Find out which cluster we want
-  parse("CLUSTER",clustr);
-
-  if( clustr<1 ) error("cannot look for a cluster larger than the largest cluster");
-  if( clustr>getNumberOfNodes() ) error("cluster selected is invalid - too few atoms in system");
-
-  // Create the task list
-  for(unsigned  i=0; i<getNumberOfNodes(); ++i) {
-    for(unsigned j=0; j<getNumberOfNodes(); ++j) addTaskToList( i*getNumberOfNodes() + j );
-  }
-  // Now create a highest vessel
-  addVessel("HIGHEST", "", -1); std::vector<AtomNumber> fake_atoms; setupMultiColvarBase( fake_atoms );
-}
-
-void ClusterDiameter::turnOnDerivatives() {
-  error("cannot calculate derivatives of cluster radius.  This quantity is not differentiable");
-}
-
-void ClusterDiameter::calculate() {
-  // Retrieve the atoms in the largest cluster
-  std::vector<unsigned> myatoms; retrieveAtomsInCluster( clustr, myatoms );
-  // Activate the relevant tasks
-  deactivateAllTasks();
-  for(unsigned i=1; i<myatoms.size(); ++i) {
-    for(unsigned j=0; j<i; ++j) taskFlags[ myatoms[i]*getNumberOfNodes() + myatoms[j] ] = 1;
-  }
-  lockContributors();
-  // Now do the calculation
-  runAllTasks();
-}
-
-void ClusterDiameter::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
-  unsigned iatom=std::floor(current/getNumberOfNodes()), jatom = current - iatom*getNumberOfNodes();
-  Vector distance=getSeparation( getPosition(iatom), getPosition(jatom) );
-  double dd = distance.modulo();
-  myvals.setValue( 0, 1.0 ); myvals.setValue( 1, dd );
+  // Read in the argument
+  std::string arg_str, atdata; parse("ARG",arg_str); parse("ATOMS",atdata);
+  // Distance matrix
+  readInputLine( getShortcutLabel() + "_dmat: DISTANCE_MATRIX GROUP=" + atdata );
+  // Matrix of bonds in cluster
+  readInputLine( getShortcutLabel() + "_bmat: DOT ARG1=" + arg_str + " ARG2=" + arg_str );
+  // Product of matrices
+  readInputLine( getShortcutLabel() + "_dcls: MATHEVAL ARG1=" + getShortcutLabel() + "_dmat.w ARG2=" + getShortcutLabel() + "_bmat FUNC=x*y PERIODIC=NO"); 
+  // Convert matrix to a vector to get highest
+  readInputLine( getShortcutLabel() + "_vdcls: FLATTEN ARG=" + getShortcutLabel() + "_dcls" );
+  // And take the highest value
+  readInputLine( getShortcutLabel() + ": HIGHEST ARG=" + getShortcutLabel() + "_vdcls");
 }
 
 }

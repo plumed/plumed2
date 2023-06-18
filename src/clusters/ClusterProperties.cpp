@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2023 The plumed team
+   Copyright (c) 2014-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,9 +19,9 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ClusterAnalysisBase.h"
-#include "adjmat/AdjacencyMatrixVessel.h"
+#include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
+#include "multicolvar/MultiColvarShortcuts.h"
 
 //+PLUMEDOC CONCOMP CLUSTER_PROPERTIES
 /*
@@ -54,67 +54,34 @@ PRINT ARG=clust1.* FILE=colvar
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace adjmat {
+namespace clusters {
 
-class ClusterProperties : public ClusterAnalysisBase {
-private:
-/// The cluster we are looking for
-  unsigned clustr;
+class ClusterProperties : public ActionShortcut {
 public:
-/// Create manual
-  static void registerKeywords( Keywords& keys );
-/// Constructor
+  static void registerKeywords(Keywords& keys);
   explicit ClusterProperties(const ActionOptions&);
-/// Do the calculation
-  void calculate() override;
-/// We can use ActionWithVessel to run all the calculation
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override;
 };
 
 PLUMED_REGISTER_ACTION(ClusterProperties,"CLUSTER_PROPERTIES")
 
-void ClusterProperties::registerKeywords( Keywords& keys ) {
-  ClusterAnalysisBase::registerKeywords( keys );
-  keys.add("compulsory","CLUSTER","1","which cluster would you like to look at 1 is the largest cluster, 2 is the second largest, 3 is the the third largest and so on.");
-  keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("LESS_THAN");
-  if( keys.reserved("VMEAN") ) keys.use("VMEAN");
-  if( keys.reserved("VSUM") ) keys.use("VSUM");
-  keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS"); keys.use("ALT_MIN");
-  keys.use("MIN"); keys.use("MAX"); keys.use("SUM"); keys.use("LOWEST"); keys.use("HIGHEST");
+void ClusterProperties::registerKeywords(Keywords& keys){
+  ActionShortcut::registerKeywords( keys );
+  keys.add("optional","ARG","calculate the sum of the arguments calculated by this action for the cluster");
+  multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
 }
 
-ClusterProperties::ClusterProperties(const ActionOptions&ao):
-  Action(ao),
-  ClusterAnalysisBase(ao)
+ClusterProperties::ClusterProperties(const ActionOptions& ao):
+Action(ao),
+ActionShortcut(ao)
 {
-  // Find out which cluster we want
-  parse("CLUSTER",clustr);
-
-  if( clustr<1 ) error("cannot look for a cluster larger than the largest cluster");
-  if( clustr>getNumberOfNodes() ) error("cluster selected is invalid - too few atoms in system");
-
-  // Create all tasks by copying those from underlying DFS object (which is actually MultiColvar)
-  for(unsigned i=0; i<getNumberOfNodes(); ++i) addTaskToList(i);
-
-  // And now finish the setup of everything in the base
-  std::vector<AtomNumber> fake_atoms; setupMultiColvarBase( fake_atoms );
-}
-
-void ClusterProperties::calculate() {
-  // Retrieve the atoms in the largest cluster
-  std::vector<unsigned> myatoms; retrieveAtomsInCluster( clustr, myatoms );
-  // Activate the relevant tasks
-  deactivateAllTasks();
-  for(unsigned i=0; i<myatoms.size(); ++i) taskFlags[myatoms[i]]=1;
-  lockContributors();
-  // Now do the calculation
-  runAllTasks();
-}
-
-void ClusterProperties::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
-  std::vector<double> vals( myvals.getNumberOfValues() ); getPropertiesOfNode( current, vals );
-  if( !doNotCalculateDerivatives() ) getNodePropertyDerivatives( current, myvals );
-  for(unsigned k=0; k<vals.size(); ++k) myvals.setValue( k, vals[k] );
+  // Read the property we are interested in
+  std::string argstr; parse("ARG",argstr);
+  // Read in the shortcut keywords
+  std::map<std::string,std::string> keymap; multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );
+  // Create a cluster weights object
+  readInputLine( getShortcutLabel() + ": CLUSTER_WEIGHTS " + convertInputLineToString() );
+  // Now do the multicolvar bit
+  multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(), argstr, getShortcutLabel(), keymap, this );
 }
 
 }

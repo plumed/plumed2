@@ -39,7 +39,7 @@ private:
 /// This is used to clear up the matrix elements
   void clearMatrixElements( MultiValue& myvals ) const ;
 /// This is used to find the total amount of space we need for storing matrix elements
-  void getTotalMatrixBookeeping( unsigned& stashsize ) const ;
+  void getTotalMatrixBookeeping( unsigned& stashsize );
 /// This transfers the non-zero elements to the Value
   void transferNonZeroMatrixElementsToValues( unsigned& nval, const std::vector<unsigned>& matbook );
 /// This does the calculation of a particular matrix element

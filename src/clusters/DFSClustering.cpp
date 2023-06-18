@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2023 The plumed team
+   Copyright (c) 2014-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ClusteringBase.h"
-#include "adjmat/AdjacencyMatrixVessel.h"
 #include "core/ActionRegister.h"
 
 #ifdef __PLUMED_HAS_BOOST_GRAPH
@@ -65,14 +64,11 @@ PRINT ARG=clust1.* FILE=colvar
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace adjmat {
+namespace clusters {
 
 class DFSClustering : public ClusteringBase {
 private:
-#ifdef __PLUMED_HAS_BOOST_GRAPH
-/// The list of edges in the graph
-  std::vector<std::pair<unsigned,unsigned> > edge_list;
-#else
+#ifndef __PLUMED_HAS_BOOST_GRAPH
 /// The number of neighbors each atom has
   std::vector<unsigned> nneigh;
 /// The adjacency list
@@ -95,34 +91,24 @@ PLUMED_REGISTER_ACTION(DFSClustering,"DFSCLUSTERING")
 
 void DFSClustering::registerKeywords( Keywords& keys ) {
   ClusteringBase::registerKeywords( keys );
-  keys.add("compulsory","MAXCONNECT","0","maximum number of connections that can be formed by any given node in the graph. "
-           "By default this is set equal to zero and the number of connections is set equal to the number "
-           "of nodes.  You only really need to set this if you are working with a very large system and "
-           "memory is at a premium");
 }
 
 DFSClustering::DFSClustering(const ActionOptions&ao):
   Action(ao),
   ClusteringBase(ao)
 {
-  unsigned maxconnections; parse("MAXCONNECT",maxconnections);
-#ifdef __PLUMED_HAS_BOOST_GRAPH
-  if( maxconnections>0 ) edge_list.resize( getNumberOfNodes()*maxconnections );
-  else edge_list.resize(0.5*getNumberOfNodes()*(getNumberOfNodes()-1));
-#else
+#ifndef __PLUMED_HAS_BOOST_GRAPH
   nneigh.resize( getNumberOfNodes() ); color.resize(getNumberOfNodes());
-  if( maxconnections>0 ) adj_list.resize(getNumberOfNodes(),maxconnections);
-  else adj_list.resize(getNumberOfNodes(),getNumberOfNodes());
 #endif
 }
 
 void DFSClustering::performClustering() {
 #ifdef __PLUMED_HAS_BOOST_GRAPH
   // Get the list of edges
-  unsigned nedges=0; getAdjacencyVessel()->retrieveEdgeList( nedges, edge_list );
+  unsigned nedges=0; retrieveEdgeList( 0, nedges );
 
   // Build the graph using boost
-  boost::adjacency_list<boost::vecS,boost::vecS,boost::undirectedS> sg(&edge_list[0],&edge_list[nedges],getNumberOfNodes());
+  boost::adjacency_list<boost::vecS,boost::vecS,boost::undirectedS> sg(&pairs[0],&pairs[nedges],getNumberOfNodes());
 
   // Find the connected components using boost (-1 here for compatibility with non-boost version)
   number_of_cluster=boost::connected_components(sg,&which_cluster[0]) - 1;
@@ -131,7 +117,7 @@ void DFSClustering::performClustering() {
   for(unsigned i=0; i<which_cluster.size(); ++i) cluster_sizes[which_cluster[i]].first++;
 #else
   // Get the adjacency matrix
-  getAdjacencyVessel()->retrieveAdjacencyLists( nneigh, adj_list );
+  retrieveAdjacencyLists( nneigh, adj_list );
 
   // Perform clustering
   number_of_cluster=-1; color.assign(color.size(),0);

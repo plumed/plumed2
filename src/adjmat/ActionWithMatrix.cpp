@@ -57,8 +57,7 @@ void ActionWithMatrix::setupStreamedComponents( unsigned& nquants, unsigned& nma
       if( !myval->valueIsStored() ) continue;
       if( myval->getShape()[1]>maxcol ) maxcol=myval->getShape()[1];
       myval->setMatrixBookeepingStart(nbookeeping);
-      nbookeeping += myval->getShape()[0]*( 1 + getNumberOfColumns() );
-      myval->reshapeMatrixStore( getNumberOfColumns() );
+      nbookeeping += myval->getShape()[0]*( 1 + myval->getNumberOfColumns() );
   }
 }
 
@@ -73,11 +72,12 @@ void ActionWithMatrix::finishChainBuild( ActionWithVector* act ) {
    matrix_to_do_after=am; am->matrix_to_do_before=this;
 }
 
-void ActionWithMatrix::getTotalMatrixBookeeping( unsigned& nbookeeping ) const {
+void ActionWithMatrix::getTotalMatrixBookeeping( unsigned& nbookeeping ) {
   for(int i=0; i<getNumberOfComponents(); ++i) {
-      const Value* myval=getConstPntrToComponent(i);
+      Value* myval=getPntrToComponent(i);
       if( myval->getRank()!=2 || myval->hasDerivatives() || !myval->valueIsStored() ) continue;
-      nbookeeping += myval->getShape()[0]*( 1 + getNumberOfColumns() );
+      myval->reshapeMatrixStore( getNumberOfColumns() );
+      nbookeeping += myval->getShape()[0]*( 1 + myval->getNumberOfColumns() );
   }
   if( next_action_in_chain ) next_action_in_chain->getTotalMatrixBookeeping( nbookeeping );
 }
@@ -132,14 +132,15 @@ void ActionWithMatrix::runTask( const std::string& controller, const unsigned& c
         if( myval->getRank()!=2 || myval->hasDerivatives() || !myval->valueIsStored() ) continue;
         unsigned matindex = myval->getPositionInMatrixStash(), matbook_start = myval->getMatrixBookeepingStart(), col_stash_index = colno;
         if( colno>=myval->getShape()[0] ) col_stash_index = colno - myval->getShape()[0];
-        unsigned rowstart = matbook_start+current*(1+getNumberOfColumns());
+        unsigned rowstart = matbook_start+current*(1+myval->getNumberOfColumns());
         if( myval->forcesWereAdded() ) {
           unsigned sind = myval->getPositionInStream(), find = myvals.getMatrixBookeeping()[rowstart];
-          double fforce = myval->getForce( myvals.getTaskIndex()*getNumberOfColumns() + find );
+          double fforce = myval->getForce( myvals.getTaskIndex()*myval->getNumberOfColumns() + find );
+          if( getNumberOfColumns()>=myval->getShape()[1] ) fforce = myval->getForce( myvals.getTaskIndex()*myval->getShape()[1] + col_stash_index );
           for(unsigned j=0; j<myvals.getNumberActive(sind); ++j) {
               unsigned kindex = myvals.getActiveIndex(sind,j); myvals.addMatrixForce( matindex, kindex, fforce*myvals.getDerivative(sind,kindex ) );
           }
-        } 
+        }
         myvals.stashMatrixElement( matindex, rowstart, col_stash_index, myvals.get( myval->getPositionInStream() ) );
       } 
   }
@@ -161,8 +162,8 @@ void ActionWithMatrix::gatherProcesses( std::vector<double>& buffer ) {
 void ActionWithMatrix::transferNonZeroMatrixElementsToValues( unsigned& nval, const std::vector<unsigned>& matbook ) {
   for(int i=0; i<getNumberOfComponents(); ++i) {
       Value* myval=getPntrToComponent(i);
-      if( myval->getRank()!=2 || myval->hasDerivatives() || !myval->valueIsStored() ) continue;
-      unsigned nelements = myval->getShape()[0]*( 1 + getNumberOfColumns() ); 
+      if( myval->getRank()!=2 || myval->hasDerivatives() || !myval->valueIsStored() || getNumberOfColumns()>=myval->getShape()[1] ) continue;
+      unsigned nelements = myval->getShape()[0]*( 1 + myval->getNumberOfColumns() ); 
       for(unsigned j=0; j<nelements; ++j) myval->setMatrixBookeepingElement( j, matbook[nval+j] );
       nval += nelements;
   }
@@ -172,8 +173,8 @@ void ActionWithMatrix::gatherStoredValue( const unsigned& valindex, const unsign
                                           const unsigned& bufstart, std::vector<double>& buffer ) const {
   if( getConstPntrToComponent(valindex)->getRank()==1 ) { ActionWithVector::gatherStoredValue( valindex, code, myvals, bufstart, buffer ); return; }
   const Value* myval=getConstPntrToComponent(valindex);
-  unsigned ncols = getNumberOfColumns(), matind = myval->getPositionInMatrixStash();
-  unsigned matbook_start = myval->getMatrixBookeepingStart(), vindex = bufstart + code*getNumberOfColumns();
+  unsigned ncols = myval->getNumberOfColumns(), matind = myval->getPositionInMatrixStash();
+  unsigned matbook_start = myval->getMatrixBookeepingStart(), vindex = bufstart + code*myval->getNumberOfColumns();
   const std::vector<unsigned> & matbook( myvals.getMatrixBookeeping() ); unsigned nelements = matbook[matbook_start+code*(1+ncols)];
   if( ncols>=myval->getShape()[1] ) {
        // In this case we store the full matrix

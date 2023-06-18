@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2023 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -20,39 +20,51 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ClusteringBase.h"
-#include "adjmat/OldAdjacencyMatrixBase.h"
-#include "adjmat/AdjacencyMatrixVessel.h"
+#include "core/PlumedMain.h"
 
 namespace PLMD {
-namespace adjmat {
+namespace clusters {
 
 void ClusteringBase::registerKeywords( Keywords& keys ) {
-  ActionWithInputMatrix::registerKeywords( keys );
+  adjmat::MatrixOperationBase::registerKeywords( keys ); keys.use("ARG");
 }
 
 ClusteringBase::ClusteringBase(const ActionOptions&ao):
   Action(ao),
-  ActionWithInputMatrix(ao),
+  adjmat::MatrixOperationBase(ao),
   number_of_cluster(-1)
 {
-  if( getAdjacencyVessel() ) {
-    cluster_sizes.resize(getNumberOfNodes()); which_cluster.resize(getNumberOfNodes());
-    if( getNumberOfNodeTypes()!=1 ) error("should only be running clustering with one base multicolvar in function");
-    if( !getAdjacencyVessel()->undirectedGraph() ) error("input contact matrix is incompatible with clustering");
-  }
-  if( keywords.exists("MATRIX") ) {
-    std::vector<AtomNumber> fake_atoms; setupMultiColvarBase( fake_atoms );
-  }
+  // Do some checks on the input
+  if( getPntrToArgument(0)->getShape()[0]!=getPntrToArgument(0)->getShape()[1] ) error("input matrix should be square"); 
+
+  // Now create a value - this holds the data on which cluster each guy is in
+  std::vector<unsigned> shape(1); shape[0]=getPntrToArgument(0)->getShape()[0];
+  // Build the store here to make sure that next action has all data
+  addValue( shape ); setNotPeriodic(); getPntrToValue()->buildDataStore();
+  // Resize local variables
+  which_cluster.resize( getPntrToArgument(0)->getShape()[0] ); cluster_sizes.resize( getPntrToArgument(0)->getShape()[0] );
 }
 
-void ClusteringBase::turnOnDerivatives() {
-  // Check base multicolvar isn't density probably other things shouldn't be allowed here as well
-  if( (getAdjacencyVessel()->getMatrixAction())->getNumberOfBaseMultiColvars()>0 ) {
-    if( getBaseMultiColvar(0)->isDensity() ) error("DFS clustering cannot be differentiated if base multicolvar is DENSITY");
+void ClusteringBase::retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matrix<unsigned>& adj_list ) {
+  // Make sure we have the edges stored 
+  std::vector<std::pair<unsigned,unsigned> > pairs; std::vector<double> vals;
+  unsigned nedge; getPntrToArgument(0)->retrieveEdgeList( nedge, pairs, vals ); 
+  // Currently everything has zero neighbors
+  for(unsigned i=0; i<nneigh.size(); ++i) nneigh[i]=0;
+  // Resize the adjacency list if it is needed
+  if( adj_list.ncols()!=getPntrToArgument(0)->getNumberOfColumns() ) {
+      unsigned nrows = getPntrToArgument(0)->getShape()[0]; 
+      adj_list.resize( nrows, getPntrToArgument(0)->getNumberOfColumns() );
   }
 
-  // Ensure that derivatives are turned on in base classes
-  ActionWithInputMatrix::turnOnDerivatives();
+  // And set up the adjacency list
+  for(unsigned i=0; i<nedge; ++i) {
+    // Store if atoms are connected
+    unsigned j=pairs[i].first, k=pairs[i].second;
+    if( j==k ) continue; 
+    adj_list(j,nneigh[j])=k; nneigh[j]++;
+    adj_list(k,nneigh[k])=j; nneigh[k]++;
+  }
 }
 
 void ClusteringBase::calculate() {
@@ -62,21 +74,17 @@ void ClusteringBase::calculate() {
   performClustering();
   // Order the clusters in the system by size (this returns ascending order )
   std::sort( cluster_sizes.begin(), cluster_sizes.end() );
-}
-
-void ClusteringBase::retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const {
-  unsigned n=0; myatoms.resize( cluster_sizes[cluster_sizes.size() - clust].first );
-  for(unsigned i=0; i<getNumberOfNodes(); ++i) {
-    if( which_cluster[i]==cluster_sizes[cluster_sizes.size() - clust].second ) { myatoms[n]=i; n++; }
+  // Set the elements of the value to the cluster identies
+  for(unsigned i=0; i<cluster_sizes.size(); ++i) {
+    double this_size = static_cast<double>(cluster_sizes.size()-i);
+    for(unsigned j=0; j<cluster_sizes.size(); ++j) {
+      if( which_cluster[j]==cluster_sizes[i].second ) getPntrToValue()->set( j, this_size );
+    }
   }
 }
 
-bool ClusteringBase::areConnected( const unsigned& iatom, const unsigned& jatom ) const {
-  return getAdjacencyVessel()->nodesAreConnected( iatom, jatom );
-}
-
-double ClusteringBase::getCutoffForConnection() const {
-  return getAdjacencyVessel()->getCutoffForConnection();
+void ClusteringBase::apply() {
+  if( getPntrToComponent(0)->forcesWereAdded() ) error("forces on clustering actions cannot work as clustering is not differentiable"); 
 }
 
 }
