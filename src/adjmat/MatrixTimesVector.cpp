@@ -64,8 +64,9 @@ unsigned MatrixTimesVector::getNumberOfDerivatives() {
 
 void MatrixTimesVector::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {
   unsigned start_n = getPntrToArgument(0)->getShape()[0], size_v = getPntrToArgument(0)->getShape()[1]; 
-  if( indices.size()!=size_v+1 ) indices.resize( size_v+1 );
+  if( indices.size()!=size_v+1 ) indices.resize( size_v + 1 );
   for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + i;
+  myvals.setSplitIndex( size_v + 1 );
 }
 
 void MatrixTimesVector::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {

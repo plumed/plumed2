@@ -65,11 +65,13 @@ void ActionWithMatrix::finishChainBuild( ActionWithVector* act ) {
    ActionWithMatrix* am=dynamic_cast<ActionWithMatrix*>(act); if( !am ) return;
    // Build the list that contains everything we are going to loop over in getTotalMatrixBookeepgin and updateAllNeighbourLists
    if( next_action_in_chain ) next_action_in_chain->finishChainBuild( act );
-   else next_action_in_chain=am;
-   // Build the list of things we are going to loop over in runTask
-   AdjacencyMatrixBase* aa=dynamic_cast<AdjacencyMatrixBase*>(act); if( aa ) return ; 
-   plumed_assert( !matrix_to_do_after ); 
-   matrix_to_do_after=am; am->matrix_to_do_before=this;
+   else {
+      next_action_in_chain=am;
+      // Build the list of things we are going to loop over in runTask
+      AdjacencyMatrixBase* aa=dynamic_cast<AdjacencyMatrixBase*>(act); if( aa ) return ; 
+      plumed_massert( !matrix_to_do_after, "cannot add " + act->getLabel() + " in " + getLabel() + " as have already added " + matrix_to_do_after->getLabel() ); 
+      matrix_to_do_after=am; am->matrix_to_do_before=this;
+   }
 }
 
 void ActionWithMatrix::getTotalMatrixBookeeping( unsigned& nbookeeping ) {
@@ -83,6 +85,7 @@ void ActionWithMatrix::getTotalMatrixBookeeping( unsigned& nbookeeping ) {
 }
 
 void ActionWithMatrix::calculate() {
+  if( actionInChain() ) return ;
   // Update all the neighbour lists
   updateAllNeighbourLists();
   // Setup the matrix indices
@@ -94,7 +97,8 @@ void ActionWithMatrix::calculate() {
 }
 
 void ActionWithMatrix::updateAllNeighbourLists() {
-  updateNeighbourList(); if( next_action_in_chain ) next_action_in_chain->updateAllNeighbourLists();
+  updateNeighbourList(); 
+  if( next_action_in_chain ) next_action_in_chain->updateAllNeighbourLists();
 }
 
 void ActionWithMatrix::performTask( const unsigned& task_index, MultiValue& myvals ) const {
@@ -108,7 +112,7 @@ void ActionWithMatrix::performTask( const unsigned& task_index, MultiValue& myva
 
   // Now loop over the row of the matrix
   unsigned ntwo_atoms = myvals.getSplitIndex();
-  for(unsigned i=0;i<ntwo_atoms;++i) {
+  for(unsigned i=1;i<ntwo_atoms;++i) {
       // This does everything in the stream that is done with single matrix elements
       runTask( getLabel(), task_index, indices[i], myvals );
       // Now clear only elements that are not accumulated over whole row
@@ -156,7 +160,6 @@ void ActionWithMatrix::gatherProcesses( std::vector<double>& buffer ) {
   ActionWithVector::gatherProcesses( buffer );
   if( matrix_bookeeping.size()>0 && !runInSerial() ) comm.Sum( matrix_bookeeping ); 
   unsigned nval=0; transferNonZeroMatrixElementsToValues( nval, matrix_bookeeping );  
-  if( matrix_to_do_after ) matrix_to_do_after->transferNonZeroMatrixElementsToValues( nval, matrix_bookeeping );
 }
 
 void ActionWithMatrix::transferNonZeroMatrixElementsToValues( unsigned& nval, const std::vector<unsigned>& matbook ) {
@@ -167,6 +170,7 @@ void ActionWithMatrix::transferNonZeroMatrixElementsToValues( unsigned& nval, co
       for(unsigned j=0; j<nelements; ++j) myval->setMatrixBookeepingElement( j, matbook[nval+j] );
       nval += nelements;
   }
+  if( next_action_in_chain ) next_action_in_chain->transferNonZeroMatrixElementsToValues( nval, matbook );
 }
 
 void ActionWithMatrix::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
@@ -186,7 +190,7 @@ void ActionWithMatrix::gatherStoredValue( const unsigned& valindex, const unsign
   } else {
       // This is for storing sparse matrices when we can
       for(unsigned j=0; j<nelements; ++j) {
-        unsigned jind = matbook[matbook_start+code*(1+ncols)+1+j]; 
+        unsigned jind = matbook[matbook_start+code*(1+ncols)+1+j];
         plumed_dbg_massert( vindex+j<buffer.size(), "failing in " + getLabel() + " on value " + myval->getName() );
         buffer[vindex + j] += myvals.getStashedMatrixElement( matind, jind );
       } 

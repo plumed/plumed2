@@ -1,4 +1,4 @@
-USE=core tools vesselbase symfunc
+USE=core tools function vesselbase symfunc
 
 # generic makefile
 include ../maketools/make.module

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2023 The plumed team
+   Copyright (c) 2013-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,8 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "MultiColvarBase.h"
-#include "AtomValuePack.h"
+#include "AdjacencyMatrixBase.h"
 #include "tools/SwitchingFunction.h"
 #include "core/ActionRegister.h"
 
@@ -28,9 +27,9 @@
 #include <cmath>
 
 namespace PLMD {
-namespace multicolvar {
+namespace adjmat {
 
-//+PLUMEDOC MCOLVAR BRIDGE
+//+PLUMEDOC MCOLVAR BRIDGE_MATRIX
 /*
 Calculate the number of atoms that bridge two parts of a structure
 
@@ -57,27 +56,24 @@ PRINT ARG=w1 FILE=colvar
 */
 //+ENDPLUMEDOC
 
-class Bridge : public MultiColvarBase {
+class BridgeMatrix : public AdjacencyMatrixBase {
 private:
   Vector dij, dik;
   SwitchingFunction sf1;
   SwitchingFunction sf2;
 public:
   static void registerKeywords( Keywords& keys );
-  explicit Bridge(const ActionOptions&);
+  explicit BridgeMatrix(const ActionOptions&);
 // active methods:
-  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
-  bool isPeriodic() override { return false; }
+  double calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const override;
 };
 
-PLUMED_REGISTER_ACTION(Bridge,"BRIDGE")
+PLUMED_REGISTER_ACTION(BridgeMatrix,"BRIDGE_MATRIX")
 
-void Bridge::registerKeywords( Keywords& keys ) {
-  MultiColvarBase::registerKeywords( keys );
-  keys.add("atoms-2","BRIDGING_ATOMS","The list of atoms that can form the bridge between the two interesting parts "
+void BridgeMatrix::registerKeywords( Keywords& keys ) {
+  AdjacencyMatrixBase::registerKeywords( keys );
+  keys.add("atoms","BRIDGING_ATOMS","The list of atoms that can form the bridge between the two interesting parts "
            "of the structure.");
-  keys.add("atoms-2","GROUPA","The list of atoms that are in the first interesting part of the structure");
-  keys.add("atoms-2","GROUPB","The list of atoms that are in the second interesting part of the structure");
   keys.add("optional","SWITCH","The parameters of the two \\ref switchingfunction in the above formula");
   keys.add("optional","SWITCHA","The \\ref switchingfunction on the distance between bridging atoms and the atoms in "
            "group A");
@@ -85,30 +81,20 @@ void Bridge::registerKeywords( Keywords& keys ) {
            "group B");
 }
 
-Bridge::Bridge(const ActionOptions&ao):
+BridgeMatrix::BridgeMatrix(const ActionOptions&ao):
   Action(ao),
-  MultiColvarBase(ao)
+  AdjacencyMatrixBase(ao)
 {
-  // Read in the atoms
-  std::vector<AtomNumber> all_atoms;
-  readThreeGroups("GROUPA","GROUPB","BRIDGING_ATOMS",false,true,all_atoms);
-  // Setup the multicolvar base
-  setupMultiColvarBase( all_atoms );
-  // Setup Central atom atoms
-  std::vector<bool> catom_ind(3, false); catom_ind[0]=true;
-  setAtomsForCentralAtom( catom_ind );
-
-  std::string sfinput,errors; parse("SWITCH",sfinput);
+  bool oneswitch; std::string sfinput,errors; parse("SWITCH",sfinput);
   if( sfinput.length()>0 ) {
-    sf1.set(sfinput,errors);
+    sf1.set(sfinput,errors); oneswitch=true;
     if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
     sf2.set(sfinput,errors);
     if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
   } else {
     parse("SWITCHA",sfinput);
     if(sfinput.length()>0) {
-      weightHasDerivatives=true;
-      sf1.set(sfinput,errors);
+      sf1.set(sfinput,errors); oneswitch=false;
       if( errors.length()!=0 ) error("problem reading SWITCHA keyword : " + errors );
       sfinput.clear(); parse("SWITCHB",sfinput);
       if(sfinput.length()==0) error("found SWITCHA keyword without SWITCHB");
@@ -122,31 +108,26 @@ Bridge::Bridge(const ActionOptions&ao):
   log.printf("  distance between bridging atoms and atoms in GROUPB must be less than %s\n",sf2.description().c_str());
 
   // Setup link cells
-  setLinkCellCutoff( sf1.get_dmax() + sf2.get_dmax() );
+  setLinkCellCutoff( oneswitch, sf1.get_dmax() + sf2.get_dmax() );
 
-  // And setup the ActionWithVessel
-  if( getNumberOfVessels()!=0 ) error("should not have vessels for this action");
-  std::string fake_input;
-  addVessel( "SUM", fake_input, -1 );  // -1 here means that this value will be named getLabel()
-  readVesselKeywords();
   // And check everything has been read in correctly
   checkRead();
 }
 
-double Bridge::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
-  double tot=0;
-  for(unsigned i=2; i<myatoms.getNumberOfAtoms(); ++i) {
-    Vector dij=getSeparation( myatoms.getPosition(i), myatoms.getPosition(0) );
-    double dw1, w1=sf1.calculateSqr( dij.modulo2(), dw1 );
-    Vector dik=getSeparation( myatoms.getPosition(i), myatoms.getPosition(1) );
-    double dw2, w2=sf2.calculateSqr( dik.modulo2(), dw2 );
+double BridgeMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const {
+  double tot=0; if( pos2.modulo2()<epsilon ) return 0.0;
+  for(unsigned i=0; i<natoms; ++i) {
+    Vector dij= getPosition(i,myvals); double dijm = dij.modulo2();
+    double dw1, w1=sf1.calculateSqr( dijm, dw1 ); if( dijm<epsilon ) { w1=0.0; dw1=0.0; }
+    Vector dik=pbcDistance( getPosition(i,myvals), pos2 ); double dikm=dik.modulo2();
+    double dw2, w2=sf2.calculateSqr( dikm, dw2 ); if( dikm<epsilon ) { w2=0.0; dw2=0.0; }
 
     tot += w1*w2;
     // And finish the calculation
-    addAtomDerivatives( 1, 0,  w2*dw1*dij, myatoms );
-    addAtomDerivatives( 1, 1,  w1*dw2*dik, myatoms );
-    addAtomDerivatives( 1, i, -w1*dw2*dik-w2*dw1*dij, myatoms );
-    myatoms.addBoxDerivatives( 1, w1*(-dw2)*Tensor(dik,dik)+w2*(-dw1)*Tensor(dij,dij) );
+    addAtomDerivatives( 0,  -w2*dw1*dij, myvals );
+    addAtomDerivatives( 1,  w1*dw2*dik, myvals );
+    addThirdAtomDerivatives( i, -w1*dw2*dik+w2*dw1*dij, myvals );
+    addBoxDerivatives( w1*(-dw2)*Tensor(dik,dik)+w2*(-dw1)*Tensor(dij,dij), myvals );
   }
   return tot;
 }

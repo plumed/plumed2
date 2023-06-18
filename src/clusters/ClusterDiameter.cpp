@@ -83,9 +83,9 @@ ActionShortcut(ao)
   // Distance matrix
   readInputLine( getShortcutLabel() + "_dmat: DISTANCE_MATRIX GROUP=" + atdata );
   // Matrix of bonds in cluster
-  readInputLine( getShortcutLabel() + "_bmat: DOT ARG1=" + arg_str + " ARG2=" + arg_str );
+  readInputLine( getShortcutLabel() + "_bmat: OUTER_PRODUCT FUNC=x*y ARG=" + arg_str + "," + arg_str );
   // Product of matrices
-  readInputLine( getShortcutLabel() + "_dcls: MATHEVAL ARG1=" + getShortcutLabel() + "_dmat.w ARG2=" + getShortcutLabel() + "_bmat FUNC=x*y PERIODIC=NO"); 
+  readInputLine( getShortcutLabel() + "_dcls: CUSTOM ARG=" + getShortcutLabel() + "_dmat.w," + getShortcutLabel() + "_bmat FUNC=x*y PERIODIC=NO"); 
   // Convert matrix to a vector to get highest
   readInputLine( getShortcutLabel() + "_vdcls: FLATTEN ARG=" + getShortcutLabel() + "_dcls" );
   // And take the highest value

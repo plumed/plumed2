@@ -306,13 +306,19 @@ bool ActionWithVector::checkForGrids( unsigned& nder ) const {
 
 void ActionWithVector::getNumberOfTasks( unsigned& ntasks ) { 
   if( ntasks==0 ) { 
-      plumed_assert( getNumberOfComponents()>0 && getPntrToComponent(0)->getRank()>0 ); 
-      if( getPntrToComponent(0)->hasDerivatives() ) ntasks = getPntrToComponent(0)->getNumberOfValues();
-      else ntasks = getPntrToComponent(0)->getShape()[0]; 
+      if( getNumberOfArguments()==1 && getNumberOfComponents()==1 && getPntrToComponent(0)->getRank()==0 ) {
+          ntasks = getPntrToArgument(0)->getNumberOfValues();
+      } else {
+          plumed_assert( getNumberOfComponents()>0 && getPntrToComponent(0)->getRank()>0 ); 
+          if( getPntrToComponent(0)->hasDerivatives() ) ntasks = getPntrToComponent(0)->getNumberOfValues();
+          else ntasks = getPntrToComponent(0)->getShape()[0]; 
+      }
   }
   for(int i=0; i<getNumberOfComponents(); ++i) {
       if( getPntrToComponent(i)->getRank()==0 ) { 
-          if( getNumberOfArguments()>1  || ntasks!=getPntrToArgument(0)->getNumberOfValues() ) error("mismatched numbers of tasks in streamed quantities");
+          if( getNumberOfArguments()!=1 ) error("mismatched numbers of tasks in streamed quantities");
+          if( getPntrToArgument(0)->hasDerivatives() && ntasks!=getPntrToArgument(0)->getNumberOfValues() ) error("mismatched numbers of tasks in streamed quantities");
+          else if ( ntasks!=getPntrToArgument(0)->getShape()[0] ) error("mismatched numbers of tasks in streamed quantities");
       } else if( getPntrToComponent(i)->hasDerivatives() && ntasks!=getPntrToComponent(i)->getNumberOfValues() ) error("mismatched numbers of tasks in streamed quantities");
       else if( ntasks!=getPntrToComponent(i)->getShape()[0] ) error("mismatched numbers of tasks in streamed quantities");
   }

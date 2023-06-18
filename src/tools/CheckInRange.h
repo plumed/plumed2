@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2023 The plumed team
+   Copyright (c) 2011-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,33 +19,26 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_pamm_HBPammObject_h
-#define __PLUMED_pamm_HBPammObject_h
+#ifndef __PLUMED_tools_CheckInRange_h
+#define __PLUMED_tools_CheckInRange_h
 
-#include "tools/Vector.h"
-#include "symfunc/AtomValuePack.h"
-#include "PammObject.h"
+#include <vector>
+#include <string>
 
 namespace PLMD {
-namespace pamm {
 
-class HBPammObject {
+/// \ingroup TOOLBOX
+class CheckInRange {
 private:
-/// The Pamm object underlying this HBPamm calculation
-  PammObject mypamm;
-/// Pointer to base class in multicolvar
-  multicolvar::MultiColvarBase* mymulti=nullptr;
+  std::vector<double> lower;
+  std::vector<double> upper;
 public:
-/// Setup the HBPamm object
-  void setup( const std::string& filename, const double& reg, multicolvar::MultiColvarBase* mybase, std::string& errorstr );
-/// Get the cutoff to use throughout
-  double get_cutoff() const ;
-/// Evaluate the HBPamm Object
-  double evaluate( const unsigned& dno, const unsigned& ano, const unsigned& hno,
-                   const Vector& d_da, const double& md_da, multicolvar::AtomValuePack& myatoms ) const ;
+  bool setBounds( const unsigned& n, const std::vector<std::string>& str_lower, const std::vector<std::string>& str_upper, std::string& errors );
+  bool wereSet() const ;
+  std::string report( const std::vector<std::string>& a ) const ;
+  bool check( const std::vector<double>& vals ) const ;
 };
 
-}
 }
 
 #endif

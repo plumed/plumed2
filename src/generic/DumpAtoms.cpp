@@ -27,6 +27,7 @@
 #include "tools/File.h"
 #include "core/PlumedMain.h"
 #include "tools/Units.h"
+#include "tools/CheckInRange.h"
 #include <cstdio>
 #include <memory>
 #include "core/GenericMolInfo.h"
@@ -35,8 +36,7 @@
 #include "xdrfile/xdrfile_trr.h"
 
 
-namespace PLMD
-{
+namespace PLMD {
 namespace generic {
 
 //+PLUMEDOC PRINTANALYSIS DUMPATOMS
@@ -124,6 +124,7 @@ class DumpAtoms:
   OFile of;
   double lenunit;
   int iprecision;
+  CheckInRange bounds;
   std::vector<std::string> names;
   std::vector<unsigned>    residueNumbers;
   std::vector<std::string> residueNames;
@@ -157,6 +158,8 @@ void DumpAtoms::registerKeywords( Keywords& keys ) {
   keys.add("compulsory", "UNITS","PLUMED","the units in which to print out the coordinates. PLUMED means internal PLUMED units");
   keys.add("optional", "PRECISION","The number of digits in trajectory file");
   keys.add("optional", "TYPE","file type, either xyz, gro, xtc, or trr, can override an automatically detected file extension");
+  keys.add("optional","LESS_THAN_OR_EQUAL","when printing with arguments that are vectors only print components of vectors have a value less than or equal to this value");
+  keys.add("optional","GREATER_THAN_OR_EQUAL","when printing with arguments that are vectors only print components of vectors have a value greater than or equal to this value");
   keys.use("RESTART");
   keys.use("UPDATE_FROM");
   keys.use("UPDATE_UNTIL");
@@ -219,7 +222,6 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
   } else if(type=="gro" || type=="xtc" || type=="trr") lenunit=getUnits().getLength();
   else lenunit=1.0;
 
-  checkRead();
   of.link(*this);
   of.open(file);
   std::string path=of.getPath();
@@ -239,11 +241,16 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
   if( getNumberOfArguments()>0 ) {
       if( type!="xyz" ) error("can only print atomic properties when outputting xyz files");
 
+      std::vector<std::string> argnames;
       for(unsigned i=0; i<getNumberOfArguments(); ++i) {
           if( getPntrToArgument(i)->getRank()!=1 || getPntrToArgument(i)->hasDerivatives() ) error("arguments for xyz output should be vectors");
           if( getPntrToArgument(i)->getNumberOfValues()!=atoms.size() ) error("number of elements in vector " + getPntrToArgument(i)->getName() + " is not equal to number of atoms output");
-          getPntrToArgument(i)->buildDataStore();
+          getPntrToArgument(i)->buildDataStore(); argnames.push_back( getPntrToArgument(i)->getName() );
       }
+      std::vector<std::string> str_upper, str_lower; std::string errors; 
+      parseVector("LESS_THAN_OR_EQUAL",str_upper); parseVector("GREATER_THAN_OR_EQUAL",str_lower);
+      if( !bounds.setBounds( getNumberOfArguments(), str_lower, str_upper, errors ) ) error( errors );
+      if( bounds.wereSet() ) log.printf("  %s \n", bounds.report( argnames ).c_str() );
   } 
 
   requestAtoms(atoms, false);
@@ -275,7 +282,12 @@ void DumpAtoms::unlockRequests() {
 
 void DumpAtoms::update() {
   if(type=="xyz") {
-    of.printf("%d\n",getNumberOfAtoms());
+    unsigned nat=0; std::vector<double> args( getNumberOfArguments() ); 
+    for(unsigned i=0; i<getNumberOfAtoms(); ++i)  {
+        for(unsigned j=0;j<getNumberOfArguments();++j) args[j] = getPntrToArgument(j)->get(i);
+        if( bounds.check( args ) ) nat++;
+    }
+    of.printf("%d\n",nat);
     const Tensor & t(getPbc().getBox());
     if(getPbc().isOrthorombic()) {
       of.printf((" "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+"\n").c_str(),lenunit*t(0,0),lenunit*t(1,1),lenunit*t(2,2));
@@ -287,6 +299,8 @@ void DumpAtoms::update() {
                );
     }
     for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
+      for(unsigned j=0;j<getNumberOfArguments();++j) args[j] = getPntrToArgument(j)->get(i);
+      if( !bounds.check(args) ) continue;
       const char* defname="X";
       const char* name=defname;
       if(names.size()>0) if(names[i].length()>0) name=names[i].c_str();

@@ -67,6 +67,7 @@ PLUMED_REGISTER_ACTION(OutputCluster,"OUTPUT_CLUSTER")
 
 void OutputCluster::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
+  keys.add("compulsory","ATOMS","the atoms for which clustering were performed");
   keys.add("compulsory","CLUSTERS","the action that performed the clustering");
   keys.add("compulsory","CLUSTER","1","which cluster would you like to look at 1 is the largest cluster, 2 is the second largest, 3 is the the third largest and so on");
   keys.add("compulsory","STRIDE","1","the frequency with which you would like to output the atoms in the cluster");
@@ -81,7 +82,8 @@ OutputCluster::OutputCluster(const ActionOptions& ao):
   std::string stride; parse("STRIDE",stride);
   std::string clusters; parse("CLUSTERS",clusters);
   std::string filename; parse("FILE",filename); 
-  readInputLine("PRINT_NDX ARG=" + clusters + " FILE=" + filename + " STRIDE=" + stride + " LESS_THAN_OR_EQUAL=" + id + " GREATER_THAN_OR_EQUAL=" + id );
+  std::string atoms; parse("ATOMS",atoms);
+  readInputLine("PRINT_NDX ATOMS=" + atoms + " ARG=" + clusters + " FILE=" + filename + " STRIDE=" + stride + " LESS_THAN_OR_EQUAL=" + id + " GREATER_THAN_OR_EQUAL=" + id );
 }
 
 }
