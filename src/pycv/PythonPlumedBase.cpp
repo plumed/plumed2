@@ -41,7 +41,7 @@ namespace pycv {
 
 int PlumedScopedPythonInterpreter::use_count=0;
 std::unique_ptr<py::scoped_interpreter> PlumedScopedPythonInterpreter::interpreterGuard =
-    nullptr;
+  nullptr;
 std::mutex PlumedScopedPythonInterpreter::interpreterMutex{};
 
 PlumedScopedPythonInterpreter::PlumedScopedPythonInterpreter() {
@@ -51,23 +51,23 @@ PlumedScopedPythonInterpreter::PlumedScopedPythonInterpreter() {
     ++use_count;
   }
 
-  if(use_count==0){
-    
+  if(use_count==0) {
+
     std::cerr<< "------ initialized Python interpreter\n";
-    interpreterGuard = 
+    interpreterGuard =
 #if __cplusplus < 201300
-    PLMD::Tools::
+      PLMD::Tools::
 #else
-    std::
+      std::
 #endif
-    make_unique<py::scoped_interpreter>();
+      make_unique<py::scoped_interpreter>();
   } else {
     std::cerr << "------ Python interpreter already initializated\n";
   }
   ++use_count;
 }
 
-PlumedScopedPythonInterpreter::~PlumedScopedPythonInterpreter(){
+PlumedScopedPythonInterpreter::~PlumedScopedPythonInterpreter() {
   // Finalization is tricky, because it should happen AFTER the
   // destruction of the derived classes (which contain py::
   // objects). Not doing it. <-- trying to address this
@@ -79,5 +79,5 @@ PlumedScopedPythonInterpreter::~PlumedScopedPythonInterpreter(){
   }
 }
 
-} // namespace pycv 
+} // namespace pycv
 } // namespace PLMD

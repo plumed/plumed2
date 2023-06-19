@@ -31,7 +31,7 @@ namespace pycv {
 using pycv_t = float;		// May need to adapt to the build precision?
 
 ///This class act both as a guard for the interpreter and a a case container for the python module and functions
-class PlumedScopedPythonInterpreter final{
+class PlumedScopedPythonInterpreter final {
 public:
   PlumedScopedPythonInterpreter();
   ~PlumedScopedPythonInterpreter();
@@ -52,11 +52,11 @@ public:
   virtual ~PythonPlumedBase()=default;
 
 protected:
-  py::module py_module{};
+  py::module py_module {};
   py::object py_fcn{};
 };
 
-} // namespace pycv 
+} // namespace pycv
 } // namespace PLMD
 
 
