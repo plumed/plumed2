@@ -44,9 +44,9 @@ public:
 
 std::unique_ptr<DataFetchingObject> DataFetchingObject::create(unsigned n, PlumedMain& p) {
   if(n==sizeof(double)) {
-    return std::make_unique<DataFetchingObjectTyped<double>>(p);
+    return Tools::make_unique<DataFetchingObjectTyped<double>>(p);
   } else  if(n==sizeof(float)) {
-    return std::make_unique<DataFetchingObjectTyped<float>>(p);
+    return Tools::make_unique<DataFetchingObjectTyped<float>>(p);
   }
   std::string pp; Tools::convert(n,pp);
   plumed_merror("cannot create an MD interface with sizeof(real)=="+ pp);
