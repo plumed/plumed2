@@ -92,7 +92,7 @@ Required software
 Required software:
 
 * GNU make.
-* C/c++ compiler (c++11 support is required as of version 2.4).
+* C/c++ compiler (c++17 support is required as of version 2.10).
 * A modern version of the `patch` command line tool.
 
 Suggested software (libraries are checked by `./configure` and enabled if available):
