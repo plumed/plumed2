@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
 #include "tools/NeighborList.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "tools/SwitchingFunction.h"
 
 namespace PLMD {

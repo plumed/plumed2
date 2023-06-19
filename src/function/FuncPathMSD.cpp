@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 #include "Function.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 
 namespace PLMD {
 namespace function {

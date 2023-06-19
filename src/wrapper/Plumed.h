@@ -489,6 +489,15 @@
 #endif
 
 /*
+  1: Enable RTLD_DEEPBIND when possible (default)
+  0: Disable RTLD_DEEPBIND
+*/
+
+#ifndef __PLUMED_WRAPPER_ENABLE_RTLD_DEEPBIND
+#define __PLUMED_WRAPPER_ENABLE_RTLD_DEEPBIND 1
+#endif
+
+/*
   1: enable C++ wrapper (default)
   0: disable C++ wrapper
 
@@ -2101,6 +2110,7 @@ private:
     void init(const char* msg) __PLUMED_WRAPPER_CXX_NOEXCEPT {
       this->msg[0]='\0';
       __PLUMED_WRAPPER_STD strncat(this->msg,msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1);
+      this->msg[__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1]='\0';
       if(PlumedGetenvExceptionsDebug() && __PLUMED_WRAPPER_STD strlen(msg) > __PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1) __PLUMED_WRAPPER_STD fprintf(stderr,"+++ WARNING: message will be truncated\n");
     }
   public:
@@ -3548,10 +3558,12 @@ void plumed_retrieve_functions(plumed_plumedmain_function_holder* functions, plu
       if(debug) __PLUMED_FPRINTF(stderr,"|RTLD_GLOBAL");
     }
 #ifdef RTLD_DEEPBIND
+#if __PLUMED_WRAPPER_ENABLE_RTLD_DEEPBIND
     if(!__PLUMED_GETENV("PLUMED_LOAD_NODEEPBIND")) {
       dlopenmode=dlopenmode|RTLD_DEEPBIND;
       if(debug) __PLUMED_FPRINTF(stderr,"|RTLD_DEEPBIND");
     }
+#endif
 #endif
     if(debug) __PLUMED_FPRINTF(stderr," +++\n");
     p=plumed_attempt_dlopen(path,dlopenmode);
@@ -3670,7 +3682,9 @@ plumed plumed_create_dlopen(const char*path) {
 #ifdef __PLUMED_HAS_DLOPEN
   dlopenmode=RTLD_NOW|RTLD_LOCAL;
 #ifdef RTLD_DEEPBIND
-  dlopenmode=dlopenmode|RTLD_DEEPBIND;
+#if __PLUMED_WRAPPER_ENABLE_RTLD_DEEPBIND
+  if(!__PLUMED_GETENV("PLUMED_LOAD_NODEEPBIND")) dlopenmode=dlopenmode|RTLD_DEEPBIND;
+#endif
 #endif
 #else
   dlopenmode=0;

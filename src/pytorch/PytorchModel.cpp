@@ -23,7 +23,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "core/PlumedMain.h"
 #include "function/Function.h"
-#include "function/ActionRegister.h"
+#include "core/ActionRegister.h"
 
 #include <torch/torch.h>
 #include <torch/script.h>
