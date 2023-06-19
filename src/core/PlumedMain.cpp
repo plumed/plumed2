@@ -1030,6 +1030,7 @@ void PlumedMain::performCalcNoUpdate() {
   waitData();
   justCalculate();
   backwardPropagate();
+  resetInputs();
 }
 
 void PlumedMain::performCalcNoForces() {
@@ -1042,6 +1043,7 @@ void PlumedMain::performCalc() {
   justCalculate();
   backwardPropagate();
   update();
+  resetInputs();
 }
 
 void PlumedMain::waitData() {
@@ -1067,6 +1069,7 @@ void PlumedMain::justCalculate() {
   for(const auto & ip : inputs) {
     if( ip->firststep ) firststep=true;
   }
+  if( firststep ) { for(const auto & ip : inputs) ip->firststep=false; }
 
   int iaction=0;
 // calculate the active actions in order (assuming *backward* dependence)
@@ -1118,6 +1121,7 @@ void PlumedMain::justCalculate() {
 void PlumedMain::justApply() {
   backwardPropagate();
   update();
+  resetInputs();
 }
 
 void PlumedMain::backwardPropagate() {
@@ -1216,6 +1220,12 @@ void PlumedMain::load(const std::string& ss) {
     log<<"Here is the new list of available actions\n";
     log<<actionRegister();
   } else plumed_error()<<"While loading library "<< ss << " loading was not enabled, please check if dlopen was found at configure time";
+}
+
+void PlumedMain::resetInputs() {
+  for(const auto & ip : inputs) {
+    if( ip->isActive() && ip->hasBeenSet() ) ip->reset();
+  }
 }
 
 double PlumedMain::getBias() const {

@@ -141,6 +141,8 @@ public:
   double getDerivative(const unsigned n) const;
 /// Clear the input force on the variable
   void clearInputForce();
+/// Special method for clearing forces on variables used by DataPassingObject
+  void clearInputForce( const std::vector<AtomNumber>& index );
 /// Add some force on this value
   void addForce(double f);
 /// Add some force on the ival th component of this value
@@ -296,8 +298,13 @@ void Value::chainRule(double df) {
 
 inline
 void Value::clearInputForce() {
-  hasForce=false;
-  std::fill(inputForce.begin(),inputForce.end(),0);
+  if( !hasForce ) return;
+  hasForce=false; std::fill(inputForce.begin(),inputForce.end(),0);
+}
+
+inline
+void Value::clearInputForce( const std::vector<AtomNumber>& index ) {
+  hasForce=false; for(const auto & p : index) inputForce[p.index()]=0;
 }
 
 inline

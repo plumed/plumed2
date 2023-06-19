@@ -256,6 +256,7 @@ void DomainDecomposition::share() {
   }
 
   if(unique_serial || !(int(gatindex.size())==getNumberOfAtoms() && shuffledAtoms==0)) {
+    // Now reset unique for the new step
     std::vector<const std::vector<AtomNumber>*> vectors;
     vectors.reserve(actions.size());
     for(unsigned i=0; i<actions.size(); i++) {
@@ -397,6 +398,13 @@ void DomainDecomposition::apply() {
   }
 }
 
+void DomainDecomposition::reset() {
+  if( !unique_serial && int(gatindex.size())==getNumberOfAtoms() && shuffledAtoms==0 ) return;
+  // This is an optimisation to ensure that we don't call std::fill over the whole forces
+  // array if there are a small number of atoms passed between the MD code and PLUMED
+  getAllActiveAtoms( unique ); for(const auto & ip : inputs) (ip->copyOutput(0))->clearInputForce( unique );
+}
+
 void DomainDecomposition::writeBinary(std::ostream&o) {
   for(const auto & ip : inputs) ip->writeBinary(o);
 }
@@ -421,6 +429,20 @@ const std::vector<int>& DomainDecomposition::getGatindex() const {
   return gatindex;
 }
 
+void DomainDecomposition::getAllActiveAtoms( std::vector<AtomNumber>& u ) {
+  std::vector<const std::vector<AtomNumber>*> vectors;
+  for(unsigned i=0; i<actions.size(); i++) {
+    if(actions[i]->isActive()) {
+      if(!actions[i]->getUnique().empty()) {
+        // unique are the local atoms
+        vectors.push_back(&actions[i]->getUnique());
+      }
+    }
+  }
+  u.clear();
+  Tools::mergeSortedVectors(vectors,u,getenvMergeVectorsPriorityQueue());
+}
+
 void DomainDecomposition::createFullList(const TypesafePtr & n) {
   if( firststep ) {
     int natoms = getNumberOfAtoms();
@@ -430,20 +452,8 @@ void DomainDecomposition::createFullList(const TypesafePtr & n) {
 // We update here the unique list defined at Atoms::unique.
 // This is not very clear, and probably should be coded differently.
 // Hopefully this fix the longstanding issue with NAMD.
-    unique.clear();
-    std::vector<const std::vector<AtomNumber>*> vectors;
-    for(unsigned i=0; i<actions.size(); i++) {
-      if(actions[i]->isActive()) {
-        if(!actions[i]->getUnique().empty()) {
-          // unique are the local atoms
-          vectors.push_back(&actions[i]->getUnique());
-        }
-      }
-    }
-    unique.clear();
-    Tools::mergeSortedVectors(vectors,unique,getenvMergeVectorsPriorityQueue());
-    fullList.clear();
-    fullList.reserve(unique.size());
+    getAllActiveAtoms( unique );
+    fullList.clear(); fullList.reserve(unique.size());
     for(const auto & p : unique) fullList.push_back(p.index());
     n.set(int(fullList.size()));
   }
