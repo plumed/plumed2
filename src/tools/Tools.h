@@ -215,6 +215,11 @@ public:
     ~DirectoryChanger();
   };
 
+  template<class T, class... Args>
+  static auto make_unique(Args&&... args) {
+    return std::make_unique<T>(args...);
+  }
+
   static void set_to_zero(double*ptr,unsigned n) {
     for(unsigned i=0; i<n; i++) ptr[i]=0.0;
   }
