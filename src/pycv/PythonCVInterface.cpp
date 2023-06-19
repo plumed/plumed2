@@ -67,7 +67,6 @@ public:
   void calculate() override;
   void prepare() override;
   static void registerKeywords( Keywords& keys );
-  unsigned getStep()const;
 };
 
 PLUMED_REGISTER_ACTION(PythonCVInterface,"PYCVINTERFACE")
@@ -279,14 +278,13 @@ void PythonCVInterface::check_dim(py::array_t<pycv_t> grad) {
   }
 }
 
-unsigned PythonCVInterface::getStep()const {
-  return Action::getStep();
-}
 
 } //pycv
 } //PLMD
 
 PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
   py::class_<PLMD::pycv::PythonCVInterface>(m, "PythonCVInterface")
-  .def("getStep", &PLMD::pycv::PythonCVInterface::getStep);
+  .def("getStep", [](PLMD::pycv::PythonCVInterface* self){
+    return self->getStep();
+  });
 }
