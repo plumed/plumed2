@@ -38,6 +38,7 @@
 #include <queue>
 #include <mutex>
 #include <filesystem>
+#include <utility>
 
 namespace PLMD {
 
@@ -217,7 +218,7 @@ public:
 
   template<class T, class... Args>
   static auto make_unique(Args&&... args) {
-    return std::make_unique<T>(args...);
+    return std::make_unique<T>(std::forward<Args>(args)...);
   }
 
   static void set_to_zero(double*ptr,unsigned n) {
