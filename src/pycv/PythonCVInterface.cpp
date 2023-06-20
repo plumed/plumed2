@@ -46,7 +46,6 @@ class PythonCVInterface : public Colvar,
   string calculate_function;
   string prepare_function{PYCV_NOTIMPLEMENTED};
 
-
   vector<string> components;
   int ncomponents;
   int natoms;
@@ -269,17 +268,17 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
     py::class_<PLMD::Vector3d>(m, "Vector3D")
     .def(py::init<>())
     .def(py::init<double,double,double>())
-    .def(py::self + py::self)
+    .def(py::self + py::self)//tested
     .def(py::self - py::self)//tested
     .def(py::self += py::self)
     .def(py::self -= py::self)
     .def(py::self *= float())
     .def(py::self /= float())
-    .def(float() * py::self)
-    .def(py::self * float())
-    .def(-py::self)
-    .def("modulo",&PLMD::Vector3d::modulo)
-    .def("modulo2",&PLMD::Vector3d::modulo2)
+    .def(float() * py::self)//tested
+    .def(py::self * float())//tested
+    .def(-py::self)//tested
+    .def("modulo",&PLMD::Vector3d::modulo)//tested
+    .def("modulo2",&PLMD::Vector3d::modulo2)//tested
     .def("zero",&PLMD::Vector3d::zero)
     .def("__setitem__", [](PLMD::Vector3d &self, unsigned index, double val)
     { self[index] = val; })
@@ -295,7 +294,7 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
     //.def("toNumpy",[](PLMD::Vector3d &self){})
     ;
     m.def("modulo",&PLMD::modulo<3>);//tested
-    m.def("modulo2",&PLMD::modulo2<3>);
+    m.def("modulo2",&PLMD::modulo2<3>);//tested
     m.def("crossProduct",&PLMD::crossProduct);
     m.def("dotProduct",&PLMD::dotProduct<3>);
     m.def("delta",&PLMD::delta<3>);

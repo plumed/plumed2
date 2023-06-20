@@ -1,0 +1,22 @@
+# LOAD FILE=PythonCV.dylib
+
+cvMod: PYCVINTERFACE ATOMS=1,2 IMPORT=pytests CALCULATE=pymod
+cvModOBJ: PYCVINTERFACE ATOMS=1,2 IMPORT=pytests CALCULATE=pymodOBJ
+cvMod2: PYCVINTERFACE ATOMS=1,2 IMPORT=pytests CALCULATE=pymod2
+cvMod2OBJ: PYCVINTERFACE ATOMS=1,2 IMPORT=pytests CALCULATE=pymod2OBJ
+cvAdd: PYCVINTERFACE ATOMS=1,2 IMPORT=pytests CALCULATE=pysum
+cvSub: PYCVINTERFACE ATOMS=1,2 IMPORT=pytests CALCULATE=pysub
+cvMul: PYCVINTERFACE ATOMS=1,2 IMPORT=pytests CALCULATE=pymul
+cvMulfv: PYCVINTERFACE ATOMS=1,2 IMPORT=pytests CALCULATE=pymulfv
+cvNeg: PYCVINTERFACE ATOMS=1 IMPORT=pytests CALCULATE=pyneg
+
+
+PRINT FILE=colvar.out ARG=*
+PRINT FILE=py_mod.out ARG=cvMod,cvModOBJ
+PRINT FILE=py_mod2.out ARG=cvMod2,cvMod2OBJ
+PRINT FILE=py_add.out ARG=cvAdd
+PRINT FILE=py_sub.out ARG=cvSub
+PRINT FILE=py_neg.out ARG=cvNeg
+#these should return the very same result
+PRINT FILE=py_mul.out ARG=cvMul,cvMulfv
+
