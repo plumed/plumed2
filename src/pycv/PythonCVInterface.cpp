@@ -23,7 +23,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <pybind11/embed.h> // everything needed for embedding
 #include <pybind11/numpy.h>
-//#include <pybind11/operators.h>
+#include <pybind11/operators.h>
 
 #include <string>
 #include <cmath>
@@ -105,7 +105,6 @@ PythonCVInterface::PythonCVInterface(const ActionOptions&ao):
   pbc=!nopbc;
 
   checkRead();
-
   log.printf("  will import %s and call function %s with style %s\n",
              import.c_str(), calculate_function.c_str(), style.c_str()     );
   log.printf("  the function will receive an array of %d x 3\n",natoms);
@@ -135,6 +134,7 @@ PythonCVInterface::PythonCVInterface(const ActionOptions&ao):
   // ----------------------------------------
 
   // Initialize the module and function pointer
+  
   py_module = py::module::import(import.c_str());
   py_fcn = py_module.attr(calculate_function.c_str());
 
@@ -185,7 +185,7 @@ void PythonCVInterface::calculate() {
   }
 
 // Call the function
-  py::object r = py_fcn(py_X);
+  py::object r = py_fcn(this);
 
   if(ncomponents>0) {		// MULTIPLE NAMED COMPONENTS
     calculateMultiComponent(r);
@@ -285,9 +285,9 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
   .def("getStep", [](PLMD::pycv::PythonCVInterface* self) {
     return self->getStep();
   })
-  //.def("getPosition",&PLMD::pycv::PythonCVInterface:: getPosition)
+  .def("getPosition",&PLMD::pycv::PythonCVInterface:: getPosition)
   ;
-  /*
+  
     py::class_<PLMD::Vector3d>(m, "Vector3D")
     .def(py::init<>())
     .def(py::init<double,double,double>())
@@ -308,10 +308,16 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
     .def("__getitem__", [](PLMD::Vector3d &self, unsigned index)
     { return self[index]; })
     //.def_property("x", &PLMD::Vector3d::getX, &PLMD::Vector3d::setX)
+    .def("__str__", [](PLMD::Vector3d &self){
+      return "["+std::to_string(self[0])+
+      ", "+std::to_string(self[1])+
+      ", "+std::to_string(self[2])+
+      "]";
+    });
     ;
     m.def("modulo",&PLMD::modulo<3>);
     m.def("modulo2",&PLMD::modulo2<3>);
     m.def("crossProduct",&PLMD::crossProduct);
     m.def("dotProduct",&PLMD::dotProduct<3>);
-    m.def("delta",&PLMD::delta<3>);*/
+    m.def("delta",&PLMD::delta<3>);
 }

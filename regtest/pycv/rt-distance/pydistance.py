@@ -10,14 +10,22 @@ import plumedCommunications
 #import plumedUtilities
 log=open("pydist.log","w")
 
-print("Imported pydist.",file=log)
+print("Imported my pydist.",file=log)
 
-def pydist(x):
+def pydist_(x):
+    #print("call",file=log)
     return 0
 
-def pydist_(action:plumedCommunications.PythonCVInterface):
-    at0=action.getPosition(0)
-    at1=action.getPosition(1)
+def pydist(action:plumedCommunications.PythonCVInterface):
+    print("call",file=log)
+    at0:plumedCommunications.Vector3D=action.getPosition(0)
+    #at0=action.getPosition(0)
+    at1:plumedCommunications.Vector3D=action.getPosition(1)
     
-    d = at0-at1
-    return plumedUtilities.modulo(d)
+    #print(at0,file=log)
+    d = plumedCommunications.modulo(at0-at1)
+    print(f"{at0},{at1},{d}",file=log)
+    
+    #print(f"{at1},{at2}",file=log)
+    return d
+    
