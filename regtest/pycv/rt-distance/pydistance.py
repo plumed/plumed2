@@ -17,14 +17,11 @@ def pydist_(x):
     return 0
 
 def pydist(action:plumedCommunications.PythonCVInterface):
-    print("call",file=log)
-    at0:plumedCommunications.Vector3D=action.getPosition(0)
-    #at0=action.getPosition(0)
-    at1:plumedCommunications.Vector3D=action.getPosition(1)
+    at:list[plumedCommunications.Vector3D]=[action.getPosition(0),action.getPosition(1)]
     
     #print(at0,file=log)
-    d = plumedCommunications.modulo(at0-at1)
-    print(f"{at0},{at1},{d}",file=log)
+    d = plumedCommunications.modulo(at[0]-at[1])
+    print(f"{at[0]},{at[1]},{d}",file=log)
     
     #print(f"{at1},{at2}",file=log)
     return d

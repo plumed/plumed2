@@ -1,6 +1,6 @@
 # LOAD FILE=PythonCV.dylib
 
-cv1: PYCVINTERFACE ATOMS=1,2 IMPORT=pycvPerFrame CALCULATE=cv1 PREPARE=changeAtom
+cv1: PYCVINTERFACE ATOMS=1,2 IMPORT=pycvPerFrame CALCULATE=pydist PREPARE=changeAtom
 
 PRINT FILE=colvar.out ARG=*
 

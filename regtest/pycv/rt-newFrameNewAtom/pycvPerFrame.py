@@ -22,9 +22,10 @@ def changeAtom(plmdAction:plumedCommunications.PythonCVInterface):
     print(toret)
     return toret
     
+def pydist(action:plumedCommunications.PythonCVInterface):
+    at:list[plumedCommunications.Vector3D]=[action.getPosition(0),action.getPosition(1)]
+    
+    d = plumedCommunications.modulo(at[0]-at[1])
+    print(f"{at[0]},{at[1]},{d}",file=log)
 
-def cv1(x):
-    print(x,file=log)           # But don't
-    d = x[0,:]-x[1,:]
-    # If computing a gradient, return it as a 2nd return value.
-    return np.sqrt(np.dot(d,d))
+    return d

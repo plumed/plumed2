@@ -42,7 +42,6 @@ namespace pycv {
 class PythonCVInterface : public Colvar,
   public PythonPlumedBase {
   static constexpr auto PYCV_NOTIMPLEMENTED="PYCV_NOTIMPLEMENTED";
-  string style="NUMPY";
   string import;
   string calculate_function;
   string prepare_function{PYCV_NOTIMPLEMENTED};
@@ -50,10 +49,6 @@ class PythonCVInterface : public Colvar,
 
   vector<string> components;
   int ncomponents;
-
-  py::array_t<pycv_t, py::array::c_style> py_X;
-  // pycv_t *py_X_ptr;    /* For when we want to speed up */
-
   int natoms;
   bool pbc=false;
   bool has_prepare{false};
@@ -75,7 +70,6 @@ PLUMED_REGISTER_ACTION(PythonCVInterface,"PYCVINTERFACE")
 void PythonCVInterface::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   keys.add("atoms","ATOMS","the list of atoms to be passed to the function");
-  keys.add("optional","STYLE","Python types, one of NATIVE, NUMPY or JAX [not implemented]");
   keys.add("compulsory","IMPORT","the python file to import, containing the function");
   keys.add("compulsory","CALCULATE","the function to call as calculate method of a CV");
   //add other callable methods
@@ -92,7 +86,6 @@ PythonCVInterface::PythonCVInterface(const ActionOptions&ao):
   natoms = atoms.size();
   if(natoms==0) error("At least one atom is required");
 
-  parse("STYLE",style);
   parse("IMPORT",import);
   parse("CALCULATE",calculate_function);
   parse("PREPARE",prepare_function);
@@ -105,8 +98,8 @@ PythonCVInterface::PythonCVInterface(const ActionOptions&ao):
   pbc=!nopbc;
 
   checkRead();
-  log.printf("  will import %s and call function %s with style %s\n",
-             import.c_str(), calculate_function.c_str(), style.c_str()     );
+  log.printf("  will import %s and call function %s\n",
+             import.c_str(), calculate_function.c_str());
   log.printf("  the function will receive an array of %d x 3\n",natoms);
   if(ncomponents) {
     log.printf("  it is expected to return dictionaries with %d components\n", ncomponents);
@@ -137,10 +130,6 @@ PythonCVInterface::PythonCVInterface(const ActionOptions&ao):
   
   py_module = py::module::import(import.c_str());
   py_fcn = py_module.attr(calculate_function.c_str());
-
-
-  // ...and the coordinates array
-  py_X = py::array_t<pycv_t>({natoms,3});
   // ^ 2nd template argument may be py::array::c_style if needed
   // py_X_ptr = (pycv_t *) py_X.request().ptr;
   if (prepare_function!=PYCV_NOTIMPLEMENTED) {
@@ -172,17 +161,6 @@ void PythonCVInterface::prepare() {
 void PythonCVInterface::calculate() {
 
   if(pbc) makeWhole();
-
-
-  ///TODO: set up a numpy/VectorGeneric<m> interface
-  // Is there a faster way to get in bulk? We could even wrap a C++ array without copying.
-  // Also, it may be faster to access the pointer rather than use "at"
-  for(int i=0; i<natoms; i++) {
-    Vector xi=getPosition(i);
-    py_X.mutable_at(i,0) = xi[0];
-    py_X.mutable_at(i,1) = xi[1];
-    py_X.mutable_at(i,2) = xi[2];
-  }
 
 // Call the function
   py::object r = py_fcn(this);
@@ -292,7 +270,7 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
     .def(py::init<>())
     .def(py::init<double,double,double>())
     .def(py::self + py::self)
-    .def(py::self - py::self)
+    .def(py::self - py::self)//tested
     .def(py::self += py::self)
     .def(py::self -= py::self)
     .def(py::self *= float())
@@ -313,9 +291,10 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
       ", "+std::to_string(self[1])+
       ", "+std::to_string(self[2])+
       "]";
-    });
+    })
+    //.def("toNumpy",[](PLMD::Vector3d &self){})
     ;
-    m.def("modulo",&PLMD::modulo<3>);
+    m.def("modulo",&PLMD::modulo<3>);//tested
     m.def("modulo2",&PLMD::modulo2<3>);
     m.def("crossProduct",&PLMD::crossProduct);
     m.def("dotProduct",&PLMD::dotProduct<3>);
