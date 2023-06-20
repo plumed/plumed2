@@ -23,6 +23,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <pybind11/embed.h> // everything needed for embedding
 #include <pybind11/numpy.h>
+//#include <pybind11/operators.h>
 
 #include <string>
 #include <cmath>
@@ -147,9 +148,6 @@ PythonCVInterface::PythonCVInterface(const ActionOptions&ao):
   }
 }
 
-
-
-
 void PythonCVInterface::prepare() {
   if(has_prepare) {
     auto prepare_fcn = py_module.attr(prepare_function.c_str());
@@ -186,7 +184,7 @@ void PythonCVInterface::calculate() {
     py_X.mutable_at(i,2) = xi[2];
   }
 
-  // Call the function
+// Call the function
   py::object r = py_fcn(py_X);
 
   if(ncomponents>0) {		// MULTIPLE NAMED COMPONENTS
@@ -284,7 +282,36 @@ void PythonCVInterface::check_dim(py::array_t<pycv_t> grad) {
 
 PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
   py::class_<PLMD::pycv::PythonCVInterface>(m, "PythonCVInterface")
-  .def("getStep", [](PLMD::pycv::PythonCVInterface* self){
+  .def("getStep", [](PLMD::pycv::PythonCVInterface* self) {
     return self->getStep();
-  });
+  })
+  //.def("getPosition",&PLMD::pycv::PythonCVInterface:: getPosition)
+  ;
+  /*
+    py::class_<PLMD::Vector3d>(m, "Vector3D")
+    .def(py::init<>())
+    .def(py::init<double,double,double>())
+    .def(py::self + py::self)
+    .def(py::self - py::self)
+    .def(py::self += py::self)
+    .def(py::self -= py::self)
+    .def(py::self *= float())
+    .def(py::self /= float())
+    .def(float() * py::self)
+    .def(py::self * float())
+    .def(-py::self)
+    .def("modulo",&PLMD::Vector3d::modulo)
+    .def("modulo2",&PLMD::Vector3d::modulo2)
+    .def("zero",&PLMD::Vector3d::zero)
+    .def("__setitem__", [](PLMD::Vector3d &self, unsigned index, double val)
+    { self[index] = val; })
+    .def("__getitem__", [](PLMD::Vector3d &self, unsigned index)
+    { return self[index]; })
+    //.def_property("x", &PLMD::Vector3d::getX, &PLMD::Vector3d::setX)
+    ;
+    m.def("modulo",&PLMD::modulo<3>);
+    m.def("modulo2",&PLMD::modulo2<3>);
+    m.def("crossProduct",&PLMD::crossProduct);
+    m.def("dotProduct",&PLMD::dotProduct<3>);
+    m.def("delta",&PLMD::delta<3>);*/
 }

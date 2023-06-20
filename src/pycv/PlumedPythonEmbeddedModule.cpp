@@ -14,11 +14,17 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+/*
 #include <pybind11/embed.h> // everything needed for embedding
 #include <pybind11/pybind11.h>
-/*
-//move the modume in pythonCV interface
-PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
+#include <pybind11/operators.h>
 
-}
-*/
+#include "tools/Vector.h"
+
+namespace py=pybind11;
+
+PYBIND11_EMBEDDED_MODULE(plumedUtilities, m) {
+
+
+
+}*/
