@@ -43,6 +43,8 @@ class ActionAtomistic :
   friend class DomainDecomposition;
 
   std::vector<AtomNumber> indexes;         // the set of needed atoms
+  std::vector<std::size_t>   value_indices;   // The values that the atoms are from
+  std::vector<std::size_t>   pos_indices;     // The indexes in the values to get the atoms from
 /// unique should be an ordered set since we later create a vector containing the corresponding indexes
   std::vector<AtomNumber>  unique;
 /// unique_local should be an ordered set since we later create a vector containing the corresponding indexes
@@ -69,7 +71,7 @@ class ActionAtomistic :
 /// Values that hold information about atom positions and charges
   std::vector<Value*>   xpos, ypos, zpos, masv, chargev;
 /// Used to interpret whether this index is a virtual atom or a real atom
-  void getValueIndices( const AtomNumber& i, unsigned& valno, unsigned& k ) const ;
+  void getValueIndices( const AtomNumber& i, std::size_t& valno, std::size_t& k ) const ;
   const std::vector<AtomNumber> & getUniqueLocal( const bool& useunique, const std::vector<int>& g2l );
 protected:
   bool                  chargesWereSet;

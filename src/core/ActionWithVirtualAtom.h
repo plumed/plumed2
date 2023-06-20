@@ -90,12 +90,12 @@ void ActionWithVirtualAtom::setPosition(const Vector & pos) {
 
 inline
 void ActionWithVirtualAtom::setMass(double m) {
-  getPntrToComponent("mass")->set(m);
+  getPntrToComponent(3)->set(m);
 }
 
 inline
 void ActionWithVirtualAtom::setCharge(double c) {
-  getPntrToComponent("charge")->set(c);
+  getPntrToComponent(4)->set(c);
 }
 
 inline

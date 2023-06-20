@@ -304,6 +304,7 @@ void Value::clearInputForce() {
 
 inline
 void Value::clearInputForce( const std::vector<AtomNumber>& index ) {
+  if( !hasForce ) return;
   hasForce=false; for(const auto & p : index) inputForce[p.index()]=0;
 }
 

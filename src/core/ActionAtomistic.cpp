@@ -87,15 +87,17 @@ void ActionAtomistic::requestAtoms(const std::vector<AtomNumber> & a, const bool
   forces.resize(nat);
   masses.resize(nat);
   charges.resize(nat);
+  value_indices.resize( a.size() );
+  pos_indices.resize( a.size() );
   int n=getTotAtoms();
   if(clearDep) clearDependencies();
   unique.clear(); std::vector<bool> requirements( xpos.size(), false );
   if( boxValue ) addDependency( boxValue->getPntrToAction() );
   for(unsigned i=0; i<indexes.size(); i++) {
     if(indexes[i].index()>=n) { std::string num; Tools::convert( indexes[i].serial(),num ); error("atom " + num + " out of range"); }
-    unsigned valno, k; getValueIndices( indexes[i], valno, k ); requirements[valno] = true;
-    if( valno==0 ) unique.push_back(indexes[i]);
-    else if( k>0 ) error("action atomistic is not set up to deal with multiple vectors in position input");
+    getValueIndices( indexes[i], value_indices[i], pos_indices[i] ); requirements[value_indices[i]] = true;
+    if( value_indices[i]==0 ) unique.push_back(indexes[i]);
+    else if( pos_indices[i]>0 ) error("action atomistic is not set up to deal with multiple vectors in position input");
   }
   // Add the dependencies to the actions that we require
   Tools::removeDuplicates(unique);
@@ -255,7 +257,7 @@ void ActionAtomistic::interpretAtomList(std::vector<std::string>& strings, std::
   }
 }
 
-void ActionAtomistic::getValueIndices( const AtomNumber& i, unsigned& valno, unsigned& k ) const {
+void ActionAtomistic::getValueIndices( const AtomNumber& i, std::size_t& valno, std::size_t& k ) const {
   valno=0; k = i.index();
   for(unsigned j=0; j<xpos.size(); ++j) {
     if( k<xpos[j]->getNumberOfValues() ) { valno=j; break; }
@@ -272,7 +274,7 @@ void ActionAtomistic::retrieveAtoms() {
   ActionToPutData* cv = dynamic_cast<ActionToPutData*>( chargev[0]->getPntrToAction() );
   if(cv) chargesWereSet=cv->hasBeenSet();
   for(unsigned j=0; j<indexes.size(); j++) {
-    unsigned nn, kk; getValueIndices( indexes[j], nn, kk );
+    std::size_t nn = value_indices[j], kk = pos_indices[j];
     positions[j][0] = xpos[nn]->get(kk);
     positions[j][1] = ypos[nn]->get(kk);
     positions[j][2] = zpos[nn]->get(kk);
@@ -324,7 +326,7 @@ unsigned ActionAtomistic::getTotAtoms()const {
 }
 
 Vector ActionAtomistic::getGlobalPosition(const AtomNumber& i) const {
-  unsigned nn, kk; getValueIndices( i, nn, kk ); Vector pos;
+  std::size_t nn, kk; getValueIndices( i, nn, kk ); Vector pos;
   pos[0]=xpos[nn]->get(kk);
   pos[1]=ypos[nn]->get(kk);
   pos[2]=zpos[nn]->get(kk);
@@ -332,7 +334,7 @@ Vector ActionAtomistic::getGlobalPosition(const AtomNumber& i) const {
 }
 
 void ActionAtomistic::setGlobalPosition(const AtomNumber& i, const Vector& pos ) {
-  unsigned nn, kk; getValueIndices( i, nn, kk );
+  std::size_t nn, kk; getValueIndices( i, nn, kk );
   xpos[nn]->set(kk,pos[0]);
   ypos[nn]->set(kk,pos[1]);
   zpos[nn]->set(kk,pos[2]);
@@ -347,7 +349,7 @@ void ActionAtomistic::makeWhole() {
 }
 
 Vector ActionAtomistic::getForce( const AtomNumber& i ) const {
-  unsigned nn, kk; getValueIndices( i, nn, kk ); Vector f;
+  std::size_t nn, kk; getValueIndices( i, nn, kk ); Vector f;
   f[0]=xpos[nn]->getForce(kk);
   f[1]=ypos[nn]->getForce(kk);
   f[2]=zpos[nn]->getForce(kk);
@@ -355,14 +357,14 @@ Vector ActionAtomistic::getForce( const AtomNumber& i ) const {
 }
 
 void ActionAtomistic::addForce( const AtomNumber& i, const Vector& f ) {
-  unsigned nn, kk; getValueIndices( i, nn, kk );
+  std::size_t nn, kk; getValueIndices( i, nn, kk );
   xpos[nn]->addForce( kk, f[0] );
   ypos[nn]->addForce( kk, f[1] );
   zpos[nn]->addForce( kk, f[2] );
 }
 
 void ActionAtomistic::getGradient( const unsigned& ind, Vector& deriv, std::map<AtomNumber,Vector>& gradients ) const {
-  unsigned nn, kk; getValueIndices( indexes[ind], nn, kk );
+  std::size_t nn, kk; getValueIndices( indexes[ind], nn, kk );
   if( nn==0 ) { gradients[indexes[ind]] += deriv; return; }
   xpos[nn]->passGradients( deriv[0], gradients );
   ypos[nn]->passGradients( deriv[1], gradients );
