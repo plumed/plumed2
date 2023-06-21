@@ -37,12 +37,12 @@ cp "${file}" "${tmpfile}"
 
 if grep -q '^#include "\(bias\|colvar\|function\|sasa\|vatom\)\/ActionRegister.h"' "${tmpfile}"; then
    >&2 echo 'WARNING: using a legacy ActionRegister.h include path, please use <<#include "core/ActionRegister.h">>'
-   sed 's%^#include ".*/ActionRegister.h"%#include "core/ActionRegister.h"%g' -i "${tmpfile}"
+   sed 's%^#include ".*/ActionRegister.h"%#include "core/ActionRegister.h"%g' -i.bak "${tmpfile}"
 fi
 
 if grep -q '^#include "\(cltools\)\/CLToolRegister.h"' "${tmpfile}"; then
    >&2  echo 'WARNING: using a legacy  CLToolRegister.h include path, please use <<#include "core/CLToolRegister.h">>'
-   sed 's%^#include ".*/CLToolRegister.h"%#include "core/CLToolRegister.h"%g' -i "${tmpfile}"
+   sed 's%^#include ".*/CLToolRegister.h"%#include "core/CLToolRegister.h"%g' -i.bak "${tmpfile}"
 fi
 
 rm -f "$obj" "$lib"
@@ -53,4 +53,4 @@ else
   eval "$compile" "$obj" "$tmpfile" && eval "$link_uninstalled" "$lib" "$obj"
 fi
 
-rm -f ${tmpfile}
+rm -f ${tmpfile} ${tmpfile}.bak
