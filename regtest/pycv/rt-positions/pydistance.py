@@ -40,6 +40,5 @@ def pyX(action:plumedCommunications.PythonCVInterface):
 def pyCount(action:plumedCommunications.PythonCVInterface):
     #this tests that this should work also with only one atom in the request
     at:list[plumedCommunications.Vector3D]=action.getPositions()
-    
     #print(at0,file=log)
     return len(at)
