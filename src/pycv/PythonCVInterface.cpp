@@ -257,17 +257,17 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
   py::class_<PLMD::pycv::PythonCVInterface>(m, "PythonCVInterface")
   .def("getStep", [](PLMD::pycv::PythonCVInterface* self) {
     return self->getStep();
-  })
-  .def("getPosition",&PLMD::pycv::PythonCVInterface:: getPosition)
+  },"Returns the current step")
+  .def("getPosition",&PLMD::pycv::PythonCVInterface:: getPosition,
+       "Returns the vector with the position of the requested atom \"i\"",py::arg("i"))
   .def("getPositions",[](PLMD::pycv::PythonCVInterface* self) -> py::list{
     py::list atomList;
     const auto Positions = self->getPositions();
     for(const auto &p: Positions) {
       atomList.append(p);
     }
-
     return atomList;
-  })
+  },"Returns a list of the atomic positions of the requested atoms")
   ;
 
   py::class_<PLMD::Vector3d>(m, "Vector3D")
@@ -282,9 +282,12 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
   .def(float() * py::self)//tested
   .def(py::self * float())//tested
   .def(-py::self)//tested
-  .def("modulo",&PLMD::Vector3d::modulo)//tested
-  .def("modulo2",&PLMD::Vector3d::modulo2)//tested
-  .def("zero",&PLMD::Vector3d::zero)
+  .def("modulo",&PLMD::Vector3d::modulo,
+       "Returns the module of the vector")//tested
+  .def("modulo2",&PLMD::Vector3d::modulo2,
+       "Returns the squared module of the vector")//tested
+  .def("zero",&PLMD::Vector3d::zero,
+       "Set all the vector componets to zero")
   .def("__setitem__", [](PLMD::Vector3d &self, unsigned index, double val)
   { self[index] = val; })
   .def("__getitem__", [](PLMD::Vector3d &self, unsigned index)
@@ -296,11 +299,24 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
            ", "+std::to_string(self[2])+
            "]";
   })
-  //.def("toNumpy",[](PLMD::Vector3d &self){})
+  .def("toArray",[](PLMD::Vector3d &self){
+    py::array_t<double> toret{3};
+    auto t= toret.mutable_unchecked<1>();
+    t(0)=self[0];
+    t(1)=self[1];
+    t(2)=self[2];
+    return toret;
+  },
+        "Returns a numpy[float64] array with shape \"(3,)\"");
   ;
-  m.def("modulo",&PLMD::modulo<3>);//tested
-  m.def("modulo2",&PLMD::modulo2<3>);//tested
-  m.def("crossProduct",&PLMD::crossProduct);
-  m.def("dotProduct",&PLMD::dotProduct<3>);
-  m.def("delta",&PLMD::delta<3>);
+  m.def("modulo",&PLMD::modulo<3>,
+        "Returns the modulo of a Vector3D");//tested
+  m.def("modulo2",&PLMD::modulo2<3>,
+        "Returns the squared module of a Vector3D");//tested
+  m.def("crossProduct",&PLMD::crossProduct,
+        "Returns the cross product of two Vector3D");
+  m.def("dotProduct",&PLMD::dotProduct<3>,
+        "Returns the dot product of two Vector3D");
+  m.def("delta",&PLMD::delta<3>,
+        "Returns the difference of two Vector3D");
 }
