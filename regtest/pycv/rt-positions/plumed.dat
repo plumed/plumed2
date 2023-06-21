@@ -1,0 +1,16 @@
+# LOAD FILE=PythonCV.dylib
+
+cvdist: PYCVINTERFACE ATOMS=1,4 IMPORT=pydistance CALCULATE=pydist
+#this tests that this should work also with only one atom in the request
+cvX1: PYCVINTERFACE ATOMS=1 IMPORT=pydistance CALCULATE=pyX
+cvX4: PYCVINTERFACE ATOMS=4 IMPORT=pydistance CALCULATE=pyX
+
+cvC1: PYCVINTERFACE ATOMS=1 IMPORT=pydistance CALCULATE=pyCount
+cvC2: PYCVINTERFACE ATOMS=1,2 IMPORT=pydistance CALCULATE=pyCount
+cvC3: PYCVINTERFACE ATOMS=1,2,3 IMPORT=pydistance CALCULATE=pyCount
+cvC4: PYCVINTERFACE ATOMS=1,2,3,4 IMPORT=pydistance CALCULATE=pyCount
+
+PRINT FILE=colvar.out ARG=*
+
+
+

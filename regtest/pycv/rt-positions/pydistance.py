@@ -25,4 +25,21 @@ def pydist(action:plumedCommunications.PythonCVInterface):
     
     #print(f"{at1},{at2}",file=log)
     return d
+
+def pyX(action:plumedCommunications.PythonCVInterface):
+    #this tests that this should work also with only one atom in the request
+    at:list[plumedCommunications.Vector3D]=action.getPositions()
     
+    #print(at0,file=log)
+    d = at[0][0]
+
+    
+    #print(f"{at1},{at2}",file=log)
+    return d
+
+def pyCount(action:plumedCommunications.PythonCVInterface):
+    #this tests that this should work also with only one atom in the request
+    at:list[plumedCommunications.Vector3D]=action.getPositions()
+    
+    #print(at0,file=log)
+    return len(at)

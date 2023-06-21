@@ -126,7 +126,7 @@ PythonCVInterface::PythonCVInterface(const ActionOptions&ao):
   // ----------------------------------------
 
   // Initialize the module and function pointer
-  
+
   py_module = py::module::import(import.c_str());
   py_fcn = py_module.attr(calculate_function.c_str());
   // ^ 2nd template argument may be py::array::c_style if needed
@@ -240,8 +240,6 @@ void PythonCVInterface::calculateMultiComponent(py::object &r) {
   }
 }
 
-
-
 // Assert correct gradient shape
 void PythonCVInterface::check_dim(py::array_t<pycv_t> grad) {
   if(grad.ndim() != 2 ||
@@ -252,8 +250,6 @@ void PythonCVInterface::check_dim(py::array_t<pycv_t> grad) {
     error("Python CV returned wrong gradient shape error");
   }
 }
-
-
 } //pycv
 } //PLMD
 
@@ -263,39 +259,48 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
     return self->getStep();
   })
   .def("getPosition",&PLMD::pycv::PythonCVInterface:: getPosition)
+  .def("getPositions",[](PLMD::pycv::PythonCVInterface* self) -> py::list{
+    py::list atomList;
+    const auto Positions = self->getPositions();
+    for(const auto &p: Positions) {
+      atomList.append(p);
+    }
+
+    return atomList;
+  })
   ;
-  
-    py::class_<PLMD::Vector3d>(m, "Vector3D")
-    .def(py::init<>())
-    .def(py::init<double,double,double>())
-    .def(py::self + py::self)//tested
-    .def(py::self - py::self)//tested
-    .def(py::self += py::self)
-    .def(py::self -= py::self)
-    .def(py::self *= float())
-    .def(py::self /= float())
-    .def(float() * py::self)//tested
-    .def(py::self * float())//tested
-    .def(-py::self)//tested
-    .def("modulo",&PLMD::Vector3d::modulo)//tested
-    .def("modulo2",&PLMD::Vector3d::modulo2)//tested
-    .def("zero",&PLMD::Vector3d::zero)
-    .def("__setitem__", [](PLMD::Vector3d &self, unsigned index, double val)
-    { self[index] = val; })
-    .def("__getitem__", [](PLMD::Vector3d &self, unsigned index)
-    { return self[index]; })
-    //.def_property("x", &PLMD::Vector3d::getX, &PLMD::Vector3d::setX)
-    .def("__str__", [](PLMD::Vector3d &self){
-      return "["+std::to_string(self[0])+
-      ", "+std::to_string(self[1])+
-      ", "+std::to_string(self[2])+
-      "]";
-    })
-    //.def("toNumpy",[](PLMD::Vector3d &self){})
-    ;
-    m.def("modulo",&PLMD::modulo<3>);//tested
-    m.def("modulo2",&PLMD::modulo2<3>);//tested
-    m.def("crossProduct",&PLMD::crossProduct);
-    m.def("dotProduct",&PLMD::dotProduct<3>);
-    m.def("delta",&PLMD::delta<3>);
+
+  py::class_<PLMD::Vector3d>(m, "Vector3D")
+  .def(py::init<>())
+  .def(py::init<double,double,double>())
+  .def(py::self + py::self)//tested
+  .def(py::self - py::self)//tested
+  .def(py::self += py::self)
+  .def(py::self -= py::self)
+  .def(py::self *= float())
+  .def(py::self /= float())
+  .def(float() * py::self)//tested
+  .def(py::self * float())//tested
+  .def(-py::self)//tested
+  .def("modulo",&PLMD::Vector3d::modulo)//tested
+  .def("modulo2",&PLMD::Vector3d::modulo2)//tested
+  .def("zero",&PLMD::Vector3d::zero)
+  .def("__setitem__", [](PLMD::Vector3d &self, unsigned index, double val)
+  { self[index] = val; })
+  .def("__getitem__", [](PLMD::Vector3d &self, unsigned index)
+  { return self[index]; })
+  //.def_property("x", &PLMD::Vector3d::getX, &PLMD::Vector3d::setX)
+  .def("__str__", [](PLMD::Vector3d &self) {
+    return "["+std::to_string(self[0])+
+           ", "+std::to_string(self[1])+
+           ", "+std::to_string(self[2])+
+           "]";
+  })
+  //.def("toNumpy",[](PLMD::Vector3d &self){})
+  ;
+  m.def("modulo",&PLMD::modulo<3>);//tested
+  m.def("modulo2",&PLMD::modulo2<3>);//tested
+  m.def("crossProduct",&PLMD::crossProduct);
+  m.def("dotProduct",&PLMD::dotProduct<3>);
+  m.def("delta",&PLMD::delta<3>);
 }
