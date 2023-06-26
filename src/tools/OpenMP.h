@@ -44,7 +44,7 @@ unsigned getCachelineSize();
 template<typename T>
 unsigned getGoodNumThreads(const T* /*getTheType*/,unsigned n) {
   // this is more or less the equivalent of writing "unsigned getGoodNumThreads<T>(unsigned n)"
-  
+
   // a factor two is necessary since there is no guarantee that x is aligned
   // to cache line boundary
   unsigned m=n*sizeof(T)/(2*getCachelineSize());
