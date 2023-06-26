@@ -42,14 +42,18 @@ unsigned getCachelineSize();
 
 /// Get a reasonable number of threads so as to access to an array of size s located at x
 template<typename T>
-unsigned getGoodNumThreads(const T* /*x*/,unsigned n) {
-  //this is more or less the equivalent of writing "unsigned getGoodNumThreads<T>(unsigned n)"
+unsigned getGoodNumThreads(const T* /*getTheType*/,unsigned n) {
+  // this is more or less the equivalent of writing "unsigned getGoodNumThreads<T>(unsigned n)"
+  
   // a factor two is necessary since there is no guarantee that x is aligned
   // to cache line boundary
   unsigned m=n*sizeof(T)/(2*getCachelineSize());
   unsigned numThreads=getNumThreads();
-  if(m>=numThreads) m=numThreads;
-  else m=1;
+  if(m>=numThreads) {
+    m=numThreads;
+  } else {
+    m=1;
+  }
   return m;
 }
 

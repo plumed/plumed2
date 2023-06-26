@@ -42,6 +42,8 @@ struct OpenMPVars {
   }
 private:
   OpenMPVars()=default;
+  OpenMPVars(OpenMPVars&)=delete;
+  OpenMPVars& operator=(OpenMPVars&&)=delete;
 };
 
 void setNumThreads(const unsigned nt) {
