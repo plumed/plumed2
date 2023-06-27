@@ -275,11 +275,11 @@ void ActionAtomistic::retrieveAtoms() {
   if(cv) chargesWereSet=cv->hasBeenSet();
   for(unsigned j=0; j<indexes.size(); j++) {
     std::size_t nn = value_indices[j], kk = pos_indices[j];
-    positions[j][0] = xpos[nn]->get(kk);
-    positions[j][1] = ypos[nn]->get(kk);
-    positions[j][2] = zpos[nn]->get(kk);
-    charges[j] = chargev[nn]->get(kk);
-    masses[j] = masv[nn]->get(kk);
+    positions[j][0] = xpos[nn]->data[kk];
+    positions[j][1] = ypos[nn]->data[kk];
+    positions[j][2] = zpos[nn]->data[kk];
+    charges[j] = chargev[nn]->data[kk];
+    masses[j] = masv[nn]->data[kk];
   }
 }
 
@@ -371,15 +371,13 @@ void ActionAtomistic::getGradient( const unsigned& ind, Vector& deriv, std::map<
   zpos[nn]->passGradients( deriv[2], gradients );
 }
 
-const std::vector<AtomNumber> & ActionAtomistic::getUniqueLocal( const bool& useunique, const std::vector<int>& g2l ) {
-  if( useunique ) return unique;
-  if( !unique_local_needs_update ) return unique_local;
+void ActionAtomistic::updateUniqueLocal( const bool& useunique, const std::vector<int>& g2l ) {
+  if( useunique ) { unique_local=unique; return; }
   // Update unique local if it needs an update
   unique_local_needs_update=false; unique_local.clear();
   for(auto pp=unique.begin(); pp!=unique.end(); ++pp) {
     if(g2l[pp->index()]>=0) unique_local.push_back(*pp); // already sorted
   }
-  return unique_local;
 }
 
 }

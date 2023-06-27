@@ -46,8 +46,11 @@ class ActionAtomistic;
 /// you are implementing please feel free to use it.
 class Value {
   friend class ActionWithValue;
+  friend class ActionAtomistic;
   friend class ActionWithArguments;
   friend class DomainDecomposition;
+  template<typename T>
+  friend class DataPassingObjectTyped;
 /// This copies the contents of a value into a second value (just the derivatives and value)
   friend void copy( const Value& val1, Value& val2 );
 /// This copies the contents of a value into a second value (but second value is a pointer)

@@ -256,6 +256,9 @@ void DomainDecomposition::share() {
   }
 
   if(unique_serial || !(int(gatindex.size())==getNumberOfAtoms() && shuffledAtoms==0)) {
+    for(unsigned i=0; i<actions.size(); i++) {
+      if( actions[i]->unique_local_needs_update ) actions[i]->updateUniqueLocal( !(dd && shuffledAtoms>0), g2l );
+    }
     // Now reset unique for the new step
     std::vector<const std::vector<AtomNumber>*> vectors;
     vectors.reserve(actions.size());
@@ -263,7 +266,7 @@ void DomainDecomposition::share() {
       if(actions[i]->isActive()) {
         if(!actions[i]->getUnique().empty()) {
           // unique are the local atoms
-          vectors.push_back(&actions[i]->getUniqueLocal( !(dd && shuffledAtoms>0), g2l ));
+          vectors.push_back(&actions[i]->getUniqueLocal());
         }
       }
     }

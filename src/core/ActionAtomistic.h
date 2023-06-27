@@ -72,7 +72,7 @@ class ActionAtomistic :
   std::vector<Value*>   xpos, ypos, zpos, masv, chargev;
 /// Used to interpret whether this index is a virtual atom or a real atom
   void getValueIndices( const AtomNumber& i, std::size_t& valno, std::size_t& k ) const ;
-  const std::vector<AtomNumber> & getUniqueLocal( const bool& useunique, const std::vector<int>& g2l );
+  void updateUniqueLocal( const bool& useunique, const std::vector<int>& g2l );
 protected:
   bool                  chargesWereSet;
   void setExtraCV(const std::string &name);
@@ -172,6 +172,7 @@ public:
   void lockRequests() override;
   void unlockRequests() override;
   const std::vector<AtomNumber> & getUnique()const;
+  const std::vector<AtomNumber> & getUniqueLocal()const;
 /// Read in an input file containing atom positions and calculate the action for the atomic
 /// configuration therin
   void readAtomsFromPDB( const PDB& pdb ) override;
@@ -243,6 +244,11 @@ void ActionAtomistic::unlockRequests() {
 inline
 const std::vector<AtomNumber> & ActionAtomistic::getUnique()const {
   return unique;
+}
+
+inline
+const std::vector<AtomNumber> & ActionAtomistic::getUniqueLocal() const {
+  return unique_local;
 }
 
 }
