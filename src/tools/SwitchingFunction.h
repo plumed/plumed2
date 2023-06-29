@@ -43,7 +43,7 @@ class SwitchingFunction {
 /// This is to check that switching function has been initialized
   bool init=false;
 /// Type of function
-  enum {rational,exponential,gaussian,smap,cubic,tanh,cosinus,matheval,leptontype,nativeq} type=rational;
+  enum {rational,exponential,gaussian,smap,cubic,tanh,cosinus,matheval,leptontype,nativeq,cosine,tanh3} type=rational;
 /// Inverse of scaling length.
 /// We store the inverse to avoid a division
   double invr0=0.0;

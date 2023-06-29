@@ -138,22 +138,23 @@ unsigned ActionWithVector::buildArgumentStore( const unsigned& argstart ) {
       for(unsigned i=0; i<getNumberOfArguments(); ++i) {
           // Check if we have already found this action 
           int k=-1; ActionWithVector* iaction=dynamic_cast<ActionWithVector*>(getPntrToArgument(i)->getPntrToAction());
-          if( !iaction ) continue ;
-
-          const ActionWithVector* ider_action=iaction->getActionWithDerivatives();
-          for(unsigned j=0; j<i; ++j) {
-              ActionWithVector* jaction=dynamic_cast<ActionWithVector*>(getPntrToArgument(j)->getPntrToAction());
-              if( jaction->getActionWithDerivatives()==ider_action ) { k=j; break; }
+          if( iaction ) {
+              const ActionWithVector* ider_action=iaction->getActionWithDerivatives();
+              for(unsigned j=0; j<i; ++j) {
+                  ActionWithVector* jaction=dynamic_cast<ActionWithVector*>(getPntrToArgument(j)->getPntrToAction());
+                  if( jaction->getActionWithDerivatives()==ider_action ) { k=j; break; }
+              }
+              if( k>=0 ) { arg_deriv_starts[i] = arg_deriv_starts[k]; continue; }
           }
-          if( k>=0 ) { arg_deriv_starts[i] = arg_deriv_starts[k]; continue; }
           arg_deriv_starts[i] = nder;  
           // Add the total number of derivatives that we have by this point in the chain to nder
-          nder=0; head->getNumberOfStreamedDerivatives( nder, (getPntrToArgument(i)->getPntrToAction())->getLabel() );
+          if( iaction ) { nder=0; head->getNumberOfStreamedDerivatives( nder, (getPntrToArgument(i)->getPntrToAction())->getLabel() ); }
       }
       return nder;
   } 
   for(unsigned i=argstart; i<getNumberOfArguments(); ++i) { if( getPntrToArgument(i)->getRank()>0 ) getPntrToArgument(i)->buildDataStore(); }
-  unsigned nder=0; for(unsigned i=0; i<getNumberOfArguments(); ++i) nder += getPntrToArgument(i)->getNumberOfValues();
+  unsigned nder=0; arg_deriv_starts.resize( getNumberOfArguments() );
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) { arg_deriv_starts[i] = nder; nder += getPntrToArgument(i)->getNumberOfValues(); }
   return nder;
 }
 

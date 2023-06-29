@@ -44,17 +44,15 @@ private:
   void transferNonZeroMatrixElementsToValues( unsigned& nval, const std::vector<unsigned>& matbook );
 /// This does the calculation of a particular matrix element
   void runTask( const std::string& controller, const unsigned& current, const unsigned colno, MultiValue& myvals ) const ;
-/// Get the start of the derivatives of the jth argument
-  unsigned getDerivativeStart( const unsigned& jarg ) const ;
 protected:
 /// This returns the jelem th element of argument ic
   double getArgumentElement( const unsigned& ic, const unsigned& jelem, const MultiValue& myvals ) const ;
 /// This returns an element of a matrix that is passed an argument
   double getElementOfMatrixArgument( const unsigned& imat, const unsigned& irow, const unsigned& jcol, const MultiValue& myvals ) const ;
 /// Add derivatives given the derivative wrt to the input vector element as input
-  void addDerivativeOnVectorArgument( const unsigned& ival, const unsigned& jarg, const unsigned& jelem, const double& der, MultiValue& myvals ) const ;
+  void addDerivativeOnVectorArgument( const bool& inchain, const unsigned& ival, const unsigned& jarg, const unsigned& jelem, const double& der, MultiValue& myvals ) const ;
 /// Add derivatives given the derative wrt to the input matrix element as input
-  void addDerivativeOnMatrixArgument( const unsigned& ival, const unsigned& jarg, const unsigned& irow, const unsigned& jcol, const double& der, MultiValue& myvals ) const ;
+  void addDerivativeOnMatrixArgument( const bool& inchain, const unsigned& ival, const unsigned& jarg, const unsigned& irow, const unsigned& jcol, const double& der, MultiValue& myvals ) const ;
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithMatrix(const ActionOptions&);
@@ -104,29 +102,19 @@ double ActionWithMatrix::getElementOfMatrixArgument( const unsigned& imat, const
 }
 
 inline
-unsigned ActionWithMatrix::getDerivativeStart( const unsigned& jarg ) const {
-  unsigned vstart=0; 
-  for(unsigned i=0; i<jarg; ++i) {
-      if( getPntrToArgument(i)->valueHasBeenSet() ) vstart += getPntrToArgument(i)->getNumberOfValues();
-      else vstart += (getPntrToArgument(i)->getPntrToAction())->getNumberOfDerivatives();
-  }
-  return vstart;
-}
-
-inline
-void ActionWithMatrix::addDerivativeOnVectorArgument( const unsigned& ival, const unsigned& jarg, const unsigned& jelem, const double& der, MultiValue& myvals ) const {
+void ActionWithMatrix::addDerivativeOnVectorArgument( const bool& inchain, const unsigned& ival, const unsigned& jarg, const unsigned& jelem, const double& der, MultiValue& myvals ) const {
   plumed_dbg_assert( jarg<getNumberOfArguments() && getPntrToArgument(jarg)->getRank()==1 && !getPntrToArgument(jarg)->hasDerivatives() );
-  unsigned ostrn = getConstPntrToComponent(ival)->getPositionInStream(), vstart=getDerivativeStart(jarg);
-  if( getPntrToArgument(jarg)->valueHasBeenSet() ) {
+  unsigned ostrn = getConstPntrToComponent(ival)->getPositionInStream(), vstart=arg_deriv_starts[jarg];
+  if( !inchain ) {
       myvals.addDerivative( ostrn, vstart + jelem, der ); myvals.updateIndex( ostrn, vstart + jelem );
   } else plumed_merror("I don't think this is necessary as the vectors we need will be stored");
 }
 
 inline
-void ActionWithMatrix::addDerivativeOnMatrixArgument( const unsigned& ival, const unsigned& jarg, const unsigned& irow, const unsigned& jcol, const double& der, MultiValue& myvals ) const {
+void ActionWithMatrix::addDerivativeOnMatrixArgument( const bool& inchain, const unsigned& ival, const unsigned& jarg, const unsigned& irow, const unsigned& jcol, const double& der, MultiValue& myvals ) const {
   plumed_dbg_assert( jarg<getNumberOfArguments() && getPntrToArgument(jarg)->getRank()==2 && !getPntrToArgument(jarg)->hasDerivatives() );
-  unsigned ostrn = getConstPntrToComponent(ival)->getPositionInStream(), vstart=getDerivativeStart(jarg); 
-  if( getPntrToArgument(jarg)->valueHasBeenSet() ) {
+  unsigned ostrn = getConstPntrToComponent(ival)->getPositionInStream(), vstart=arg_deriv_starts[jarg]; 
+  if( !inchain ) {
       unsigned dloc = vstart + irow*getPntrToArgument(jarg)->getShape()[1] + jcol; 
       myvals.addDerivative( ostrn, dloc, der ); myvals.updateIndex( ostrn, dloc );
   } else {

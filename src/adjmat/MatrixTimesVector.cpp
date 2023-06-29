@@ -27,6 +27,8 @@ namespace adjmat {
 
 class MatrixTimesVector : public ActionWithMatrix {
 private:
+  bool stored_matrix;
+  bool stored_vector;
   unsigned nderivatives;
 public:
   static void registerKeywords( Keywords& keys );
@@ -56,6 +58,9 @@ ActionWithMatrix(ao)
   ActionWithVector* av=dynamic_cast<ActionWithVector*>( getPntrToArgument(0)->getPntrToAction() );
   if( av ) done_in_chain=canBeAfterInChain( av ); 
   nderivatives = buildArgumentStore(0);
+  std::string headstr=getFirstActionInChain()->getLabel();
+  stored_matrix = getPntrToArgument(0)->ignoreStoredValue( headstr );
+  stored_vector = getPntrToArgument(1)->ignoreStoredValue( headstr );
 }
 
 unsigned MatrixTimesVector::getNumberOfDerivatives() {
@@ -77,7 +82,7 @@ void MatrixTimesVector::performTask( const std::string& controller, const unsign
   myvals.addValue( ostrn, matval*vecval );
   // Now lets work out the derivatives
   if( doNotCalculateDerivatives() ) return;
-  addDerivativeOnMatrixArgument( 0, 0, index1, ind2, vecval, myvals ); addDerivativeOnVectorArgument( 0, 1, ind2, matval, myvals );
+  addDerivativeOnMatrixArgument( stored_matrix, 0, 0, index1, ind2, vecval, myvals ); addDerivativeOnVectorArgument( stored_vector, 0, 1, ind2, matval, myvals );
 }
 
 void MatrixTimesVector::runEndOfRowJobs( const unsigned& ind, const std::vector<unsigned> & indices, MultiValue& myvals ) const {

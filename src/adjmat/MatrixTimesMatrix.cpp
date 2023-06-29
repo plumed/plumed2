@@ -28,6 +28,7 @@ namespace adjmat {
 class MatrixTimesMatrix : public ActionWithMatrix {
 private:
   unsigned nderivatives;
+  bool stored_matrix1, stored_matrix2;
 public:
   static void registerKeywords( Keywords& keys );
   explicit MatrixTimesMatrix(const ActionOptions&);
@@ -54,6 +55,9 @@ ActionWithMatrix(ao)
   if( getPntrToArgument(0)->getShape()[1]!=getPntrToArgument(1)->getShape()[0] ) error("number of columns in first matrix does not equal number of rows in second matrix");
   std::vector<unsigned> shape(2); shape[0]=getPntrToArgument(0)->getShape()[0]; shape[1]=getPntrToArgument(1)->getShape()[1];
   addValue( shape ); setNotPeriodic(); nderivatives = buildArgumentStore(0);
+  std::string headstr=getFirstActionInChain()->getLabel();
+  stored_matrix1 = getPntrToArgument(0)->ignoreStoredValue( headstr );
+  stored_matrix2 = getPntrToArgument(1)->ignoreStoredValue( headstr );
 }
 
 unsigned MatrixTimesMatrix::getNumberOfDerivatives() {
@@ -79,8 +83,8 @@ void MatrixTimesMatrix::performTask( const std::string& controller, const unsign
 
       if( doNotCalculateDerivatives() ) continue;
 
-      addDerivativeOnMatrixArgument( 0, 0, index1, i, val2, myvals );
-      addDerivativeOnMatrixArgument( 0, 1, i, ind2, val1, myvals ); 
+      addDerivativeOnMatrixArgument( stored_matrix1, 0, 0, index1, i, val2, myvals );
+      addDerivativeOnMatrixArgument( stored_matrix2, 0, 1, i, ind2, val1, myvals ); 
   }
   // And add this part of the product
   myvals.addValue( ostrn, matval );

@@ -31,6 +31,7 @@ private:
   bool domin, domax;
   LeptonCall function;
   unsigned nderivatives;
+  bool stored_vector1, stored_vector2;
 public:
   static void registerKeywords( Keywords& keys );
   explicit OuterProduct(const ActionOptions&);
@@ -73,6 +74,9 @@ domax(false)
 
   std::vector<unsigned> shape(2); shape[0]=getPntrToArgument(0)->getShape()[0]; shape[1]=getPntrToArgument(1)->getShape()[0];
   addValue( shape ); setNotPeriodic(); nderivatives = buildArgumentStore(0);
+  std::string headstr=getFirstActionInChain()->getLabel();
+  stored_vector1 = getPntrToArgument(0)->ignoreStoredValue( headstr );
+  stored_vector2 = getPntrToArgument(1)->ignoreStoredValue( headstr );
 }
 
 unsigned OuterProduct::getNumberOfDerivatives() {
@@ -90,23 +94,24 @@ void OuterProduct::performTask( const std::string& controller, const unsigned& i
   unsigned ostrn = getConstPntrToComponent(0)->getPositionInStream(), ind2=index2;
   if( index2>=getPntrToArgument(0)->getShape()[0] ) ind2 = index2 - getPntrToArgument(0)->getShape()[0];
 
-  double fval; unsigned jarg = 0, kelem = index1; std::vector<double> args(2);
+  double fval; unsigned jarg = 0, kelem = index1; bool jstore=stored_vector1; 
+  std::vector<double> args(2);
   args[0] = getArgumentElement( 0, index1, myvals );
   args[1] = getArgumentElement( 1, ind2, myvals ); 
   if( domin ) {
-      fval=args[0]; if( args[1]<args[0] ) { fval=args[1]; jarg=1; kelem=ind2; }
+      fval=args[0]; if( args[1]<args[0] ) { fval=args[1]; jarg=1; kelem=ind2; jstore=stored_vector2; }
   } else if( domax ) {
-      fval=args[0]; if( args[1]>args[0] ) { fval=args[1]; jarg=1; kelem=ind2; }
+      fval=args[0]; if( args[1]>args[0] ) { fval=args[1]; jarg=1; kelem=ind2; jstore=stored_vector2; }
   } else { fval=function.evaluate( args ); }
 
   myvals.addValue( ostrn, fval );
   if( doNotCalculateDerivatives() ) return ;
 
   if( domin || domax ) {
-      addDerivativeOnVectorArgument( 0, jarg, kelem, 1.0, myvals );
+      addDerivativeOnVectorArgument( jstore, 0, jarg, kelem, 1.0, myvals );
   } else {
-      addDerivativeOnVectorArgument( 0, 0, index1, function.evaluateDeriv( 0, args ), myvals );
-      addDerivativeOnVectorArgument( 0, 1, ind2, function.evaluateDeriv( 1, args ), myvals );
+      addDerivativeOnVectorArgument( stored_vector1, 0, 0, index1, function.evaluateDeriv( 0, args ), myvals );
+      addDerivativeOnVectorArgument( stored_vector2, 0, 1, ind2, function.evaluateDeriv( 1, args ), myvals );
   }
 }
 

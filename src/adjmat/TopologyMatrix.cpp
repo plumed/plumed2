@@ -123,7 +123,7 @@ TopologyMatrix::TopologyMatrix(const ActionOptions&ao):
 double TopologyMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const {
   // Compute switching function on distance between atoms
   Vector distance = pbcDistance( pos1, pos2 ); double len2 = distance.modulo2();
-  if( len2>switchingFunction.get_dmax2() || len2<epsilon ) return 0.0;
+  if( len2>switchingFunction.get_dmax2() ) return 0.0;
   double dfuncl, sw = switchingFunction.calculateSqr( len2, dfuncl );
 
   // Now run through all sea atoms
@@ -159,7 +159,7 @@ double TopologyMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, 
     double cm = dstart.modulo2() - proj*proj;
 
     // Now calculate the density in the cylinder
-    if( cm<cylinder_sw.get_dmax2() ) {
+    if( cm>0 && cm<cylinder_sw.get_dmax2() ) {
       double dfuncr, val = cylinder_sw.calculateSqr( cm, dfuncr );
       Vector dc1, dc2, dc3, dd1, dd2, dd3, de1, de2, de3;
       if( !doNotCalculateDerivatives() ) {
@@ -234,6 +234,8 @@ double TopologyMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, 
   }
   // Transform the density
   double df, tsw = threshold_switch.calculate( max, df ); 
+  if( fabs(sw*tsw)<epsilon ) return 0;
+
   if( !doNotCalculateDerivatives() ) {
       Vector ader; Tensor vir; Vector ddd = tsw*dfuncl*distance;
       ader[0] = tvals.getDerivative( vout, 3*myvals.getTaskIndex()+0 );
