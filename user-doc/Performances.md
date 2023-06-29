@@ -33,6 +33,8 @@ help in taking the most by using PLUMED for your simulations.
 - \subpage Time
 - \subpage Lepton
 
+Check also this tutorial: \ref performance-optimization
+
 \page GMXGPU GROMACS and PLUMED with GPU
 
 Since version 4.6.x GROMACS can run in an hybrid mode making use of both
