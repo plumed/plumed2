@@ -32,11 +32,11 @@ Defines a wall for the value of one or more collective variables,
 
 The restraining potential starts acting on the system when the value of the CV is greater
 (in the case of UPPER_WALLS) or lower (in the case of LOWER_WALLS) than a certain limit \f$a_i\f$ (AT)
-minus an offset \f$o_i\f$ (OFFSET).
+plus an offset \f$o_i\f$ (OFFSET).
 The expression for the bias due to the wall is given by:
 
 \f$
-  \sum_i {k_i}((x_i-a_i+o_i)/s_i)^e_i
+  \sum_i {k_i}((x_i-a_i-o_i)/s_i)^e_i
 \f$
 
 \f$k_i\f$ (KAPPA) is an energy constant in internal unit of the code, \f$s_i\f$ (EPS) a rescaling factor and
