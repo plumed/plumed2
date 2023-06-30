@@ -162,7 +162,7 @@ const ActionWithVector* ActionWithVector::getActionWithDerivatives() const {
   if( getNumberOfAtoms()>0 ) return this;
   std::string c=getFirstActionInChain()->getLabel();
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      if( !getPntrToArgument(i)->ignoreStoredValue(c) ) return this;
+      if( !getPntrToArgument(i)->ignoreStoredValue(c) && !getPntrToArgument(i)->isConstant() ) return this;
   }
   plumed_assert( action_to_do_before );
   return action_to_do_before->getActionWithDerivatives(); 

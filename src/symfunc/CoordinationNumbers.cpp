@@ -19,11 +19,10 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "MultiColvarBase.h"
-#include "AtomValuePack.h"
+#include "CoordinationNumbers.h"
+#include "multicolvar/MultiColvarShortcuts.h"
 #include "tools/NeighborList.h"
 #include "core/ActionRegister.h"
-#include "tools/SwitchingFunction.h"
 
 #include <string>
 #include <cmath>
@@ -78,21 +77,55 @@ PRINT ARG=cn0.mean,cn1.mean,cn2.mean STRIDE=1 FILE=cn_out
 //+ENDPLUMEDOC
 
 
-class CoordinationNumbers : public MultiColvarBase {
-private:
-  double rcut2;
-  int r_power;
-  SwitchingFunction switchingFunction;
-public:
-  static void registerKeywords( Keywords& keys );
-  explicit CoordinationNumbers(const ActionOptions&);
-// active methods:
-  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
-/// Returns the number of coordinates of the field
-  bool isPeriodic() override { return false; }
-};
-
 PLUMED_REGISTER_ACTION(CoordinationNumbers,"COORDINATIONNUMBER")
+
+void CoordinationNumbers::shortcutKeywords( Keywords& keys ) {
+  ActionShortcut::registerKeywords( keys );
+  keys.add("atoms-3","SPECIES","this keyword is used for colvars such as coordination number. In that context it specifies that plumed should calculate "
+           "one coordination number for each of the atoms specified.  Each of these coordination numbers specifies how many of the "
+           "other specified atoms are within a certain cutoff of the central atom.  You can specify the atoms here as another multicolvar "
+           "action or using a MultiColvarFilter or ActionVolume action.  When you do so the quantity is calculated for those atoms specified "
+           "in the previous multicolvar.  This is useful if you would like to calculate the Steinhardt parameter for those atoms that have a "
+           "coordination number more than four for example");
+  keys.add("atoms-4","SPECIESA","this keyword is used for colvars such as the coordination number.  In that context it species that plumed should calculate "
+           "one coordination number for each of the atoms specified in SPECIESA.  Each of these cooordination numbers specifies how many "
+           "of the atoms specifies using SPECIESB is within the specified cutoff.  As with the species keyword the input can also be specified "
+           "using the label of another multicolvar");
+  keys.add("atoms-4","SPECIESB","this keyword is used for colvars such as the coordination number.  It must appear with SPECIESA.  For a full explanation see "
+           "the documentation for that keyword");
+  keys.add("compulsory","NN","6","The n parameter of the switching function ");
+  keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
+  keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
+  keys.add("compulsory","R_0","The r_0 parameter of the switching function");
+  keys.add("optional","SWITCH","the switching function that it used in the construction of the contact matrix");
+  multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
+}
+
+void CoordinationNumbers::expandMatrix( const bool& components, const std::string& lab, const std::string& sp_str,
+                                        const std::string& spa_str, const std::string& spb_str, ActionShortcut* action ) {
+  if( sp_str.length()==0 && spa_str.length()==0 ) return;
+
+  std::string matinp = lab  + "_mat: CONTACT_MATRIX";
+  if( sp_str.length()>0 ) {
+      matinp += " GROUP=" + sp_str;
+      action->readInputLine( lab + "_grp: GROUP ATOMS=" + sp_str );
+  } else if( spa_str.length()>0 ) {
+      matinp += " GROUPA=" + spa_str + " GROUPB=" + spb_str;
+      action->readInputLine( lab + "_grp: GROUP ATOMS=" + spa_str );
+  }
+ 
+  std::string sw_str; action->parse("SWITCH",sw_str);
+  if( sw_str.length()>0 ) {
+      matinp += " SWITCH={" + sw_str + "}";
+  } else {
+      std::string r0; action->parse("R_0",r0); std::string d0; action->parse("D_0",d0);
+      if( r0.length()==0 ) action->error("missing switching function parameters use SWITCH/R_0");
+      std::string nn; action->parse("NN",nn); std::string mm; action->parse("MM",mm);
+      matinp += " R_0=" + r0 + " D_0=" + d0 + " NN=" + nn + " MM=" + mm;
+  }
+  if( components ) matinp += " COMPONENTS";
+  action->readInputLine( matinp );
+}
 
 void CoordinationNumbers::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );
