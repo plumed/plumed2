@@ -170,11 +170,6 @@ number of atoms are requested to the host MD engine. This is typically true when
 \ref COORDINATION of a small number of atoms (e.g. a ligand) again many atoms (e.g. water).
 When the neighbor list is used, only the water atoms close to the ligand will be requested at each step.
 
-\warning
-Notice that the calculation of the neighbor list is not not parallelized for \ref COORDINATION and \ref DHENERGY.
-As a consequence, if you run
-with many processors and/or OpenMP threads, the neighbor list might even make the calculation slower.
-
 
 \page Openmp OpenMP
 
