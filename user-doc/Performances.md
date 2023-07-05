@@ -82,7 +82,7 @@ mpiexec -np 2 gmx_mpi mdrun -nb gpu -ntomp 2 -pin on -gpu_id 01
 \page Metadyn Metadynamics
 
 Metadynamics can be sped up significantly using grids,
-which are activated setting the GRID_MIN and GRID_MAX keywords of \ref METAD.
+which are activated setting the GRID_MIN and GRID_MAX keywords of \ref METAD and \ref PBMETAD.
 This makes addition of a hill to the list a bit slower (since
 the Gaussian has to be evaluated for many grid points)
 but the evaluation of the potential very fast. Since
@@ -98,7 +98,7 @@ Since PLUMED 2.3 you can also store the grid on a file
 and read it upon restart. This can be particularly
 useful if you perform many restarts and if your hills are large.
 
-For the precise syntax, see \ref METAD
+For the precise syntax, see \ref METAD and \ref PBMETAD
 
 \page MTS Multiple time stepping
 
@@ -220,7 +220,7 @@ This is particularly true for the calculation of beta structures.
 
 The FIRST thing to speed up \ref PARABETARMSD and \ref ANTIBETARMSD is to use the keyword
 STRANDS_CUTOFF (i.e. STRANDS_CUTOFF=1), in this way only a subset of possible fragments, the one
-less than 1. nm apart, are used in the calculation.
+less than 1.0 nm apart, are used in the calculation.
 
 The metric used to calculate the distance from ideal secondary structure elements can also influence 
 the performances, try to use TYPE=OPTIMAL or TYPE=OPTIMAL-FAST instead of TYPE=DRMSD.
