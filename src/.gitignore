@@ -55,6 +55,7 @@
 !/s2cm
 !/pytorch
 !/membranefusion
+!/cudaCoord
 
 # And just ignore these files
 *.xxd
