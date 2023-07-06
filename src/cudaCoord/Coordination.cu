@@ -152,13 +152,13 @@ double CudaCoordination::pairing(double distance,double&/*dfunc*/,unsigned,unsig
 }
 
 __global__ void getCoord(double *ncoord,double *coordinates, unsigned *pairList
-                         double Rsqr) {
+                         double Rsqr, unsigned nat) {
   //blockDIm are the number of threads in your block
   const int i = threadIdx.x + blockIdx.x * blockDim.x;
   unsigned i0= i*2;
   unsigned i1= i*2+1;
   ncoord[i] = 0.0;
-  if (i0 == i1) {
+  if (i0 == i1 || i >=nat) {
     return;
   }
   double dx = coordinates[3 * i0] - coordinates[3 * i1];
@@ -169,10 +169,7 @@ __global__ void getCoord(double *ncoord,double *coordinates, unsigned *pairList
   }
 }
 
-void CudaCoordination::calculate()
-{
-
-
+void CudaCoordination::calculate(){
   Tensor virial;
   std::vector<Vector> deriv(getNumberOfAtoms());
   auto positions = getPositions();
@@ -200,10 +197,10 @@ void CudaCoordination::calculate()
   cudaMemcpy(cudaPairList, &positions[0][0], 2*nextpw2* sizeof(unsigned),
              cudaMemcpyHostToDevice);
   //the occupancy MUST be set up correctly
-  getCoord<<<max(1,nextpw2/256),256>>> getCoord(ncoords,coords, cudaPairList,R_0);
+  getCoord<<<max(1,nextpw2/256),256>>> getCoord(ncoords,coords, cudaPairList,R_0,nat);
   std::vector<double> coordsToSUM(nextpw2);
   cudaMemcpy(&coordsToSUM, ncoords, nextpw2*sizeof(double), cudaMemcpyDeviceToHost);
-  double ncoord=std::accumulate(coordsToSUM.begin(),coordsToSUM.end(),0.0);
+  double ncoord=std::accumulate(coordsToSUM.begin(),coordsToSUM.begin()+nat,0.0);
   //there are no pbcs
   /*
       std::vector<Vector> omp_deriv(getPositions().size());
@@ -252,7 +249,5 @@ void CudaCoordination::calculate()
 
 }
 
-
 } // namespace colvar
-
 } // namespace PLMD
