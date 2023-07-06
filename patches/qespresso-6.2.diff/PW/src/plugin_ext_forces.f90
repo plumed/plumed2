@@ -44,6 +44,7 @@ SUBROUTINE plugin_ext_forces()
              -at_plumed(1,2)*at_plumed(3,3)*at_plumed(2,1) &
              -at_plumed(1,3)*at_plumed(3,1)*at_plumed(2,2) 
       virial=-sigma*volume
+      ! the masses in QE are stored per type, see q-e//Modules/ions_base.f90
       do ia=1,nat
         masses_plumed(ia)=amass(ityp(ia))
       end do
