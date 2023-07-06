@@ -147,13 +147,13 @@ CudaCoordination::CudaCoordination(const ActionOptions&ao):
   log<<"  contacts are counted with cutoff "<<switchingFunction.description()<<"\n";
 }
 
-double CudaCoordination::pairing(double distance,double&/*dfunc*/,unsigned ,unsigned )const {
+double CudaCoordination::pairing(double distance,double&/*dfunc*/,unsigned,unsigned )const {
   return distance;
 }
 
 __global__ void getCoord(double *ncoord,double *coordinates, unsigned *pairList
                          double Rsqr) {
-                          //blockDIm are the number of threads in your block
+  //blockDIm are the number of threads in your block
   const int i = threadIdx.x + blockIdx.x * blockDim.x;
   unsigned i0= i*2;
   unsigned i1= i*2+1;
@@ -172,7 +172,7 @@ __global__ void getCoord(double *ncoord,double *coordinates, unsigned *pairList
 void CudaCoordination::calculate()
 {
 
-  
+
   Tensor virial;
   std::vector<Vector> deriv(getNumberOfAtoms());
   auto positions = getPositions();
@@ -181,71 +181,71 @@ void CudaCoordination::calculate()
     nl->update(getPositions());
   }
   auto pairList = nl->getClosePairs()
-  const unsigned nn=nl->size();
+                  const unsigned nn=nl->size();
   //calculates the closest power of 2 (c++20 will have bit::bit_ceil(nn))
-  size_t nextpw2 = pow(2, ceil(log2(nn))); 
+  size_t nextpw2 = pow(2, ceil(log2(nn)));
   pairList.resize(2*nextpw2);
-  
+
   double *coords;
   double *ncoords;
   unsigned *cudaPairList;
 
   cudaMalloc(&coords, 3 * nat * sizeof(double));
-  cudaMemcpy(coords , &positions[0][0], 3 *nat* sizeof(double),
-               cudaMemcpyHostToDevice);
+  cudaMemcpy(coords, &positions[0][0], 3 *nat* sizeof(double),
+             cudaMemcpyHostToDevice);
 
   cudaMalloc(&ncoords, nextpw2 * sizeof(double));
 
   cudaMalloc(&cudaPairList, 2*nextpw2 * sizeof(unsigned));
-  cudaMemcpy(cudaPairList , &positions[0][0], 2*nextpw2* sizeof(unsigned),
-               cudaMemcpyHostToDevice);
-               //the occupancy MUST be set up correctly
+  cudaMemcpy(cudaPairList, &positions[0][0], 2*nextpw2* sizeof(unsigned),
+             cudaMemcpyHostToDevice);
+  //the occupancy MUST be set up correctly
   getCoord<<<max(1,nextpw2/256),256>>> getCoord(ncoords,coords, cudaPairList,R_0);
   std::vector<double> coordsToSUM(nextpw2);
   cudaMemcpy(&coordsToSUM, ncoords, nextpw2*sizeof(double), cudaMemcpyDeviceToHost);
   double ncoord=std::accumulate(coordsToSUM.begin(),coordsToSUM.end(),0.0);
-                         //there are no pbcs
-/*
-    std::vector<Vector> omp_deriv(getPositions().size());
-    Tensor omp_virial;
+  //there are no pbcs
+  /*
+      std::vector<Vector> omp_deriv(getPositions().size());
+      Tensor omp_virial;
 
-    for(unsigned int i=rank; i<nn; i+=stride) {
+      for(unsigned int i=rank; i<nn; i+=stride) {
 
-      if(pbc) {
-        distance=pbcDistance(getPosition(i0),getPosition(i1));
-      } else {
-        distance=delta(getPosition(i0),getPosition(i1));
+        if(pbc) {
+          distance=pbcDistance(getPosition(i0),getPosition(i1));
+        } else {
+          distance=delta(getPosition(i0),getPosition(i1));
+        }
+
+        double dfunc=0.;
+        ncoord += pairing(distance.modulo2(), dfunc,i0,i1);
+
+        Vector dd(dfunc*distance);
+        Tensor vv(dd,distance);
+        if(nt>1) {
+          omp_deriv[i0]-=dd;
+          omp_deriv[i1]+=dd;
+          omp_virial-=vv;
+        } else {
+          deriv[i0]-=dd;
+          deriv[i1]+=dd;
+          virial-=vv;
+        }
+
       }
-
-      double dfunc=0.;
-      ncoord += pairing(distance.modulo2(), dfunc,i0,i1);
-
-      Vector dd(dfunc*distance);
-      Tensor vv(dd,distance);
+      #pragma omp critical
       if(nt>1) {
-        omp_deriv[i0]-=dd;
-        omp_deriv[i1]+=dd;
-        omp_virial-=vv;
-      } else {
-        deriv[i0]-=dd;
-        deriv[i1]+=dd;
-        virial-=vv;
-      }
+        for(unsigned i=0; i<getPositions().size(); i++) deriv[i]+=omp_deriv[i];
+        virial+=omp_virial;
 
     }
-    #pragma omp critical
-    if(nt>1) {
-      for(unsigned i=0; i<getPositions().size(); i++) deriv[i]+=omp_deriv[i];
-      virial+=omp_virial;
-    
-  }
 
-  if(!serial) {
-    comm.Sum(ncoord);
-    if(!deriv.empty()) comm.Sum(&deriv[0][0],3*deriv.size());
-    comm.Sum(virial);
-  }
-*/
+    if(!serial) {
+      comm.Sum(ncoord);
+      if(!deriv.empty()) comm.Sum(&deriv[0][0],3*deriv.size());
+      comm.Sum(virial);
+    }
+  */
   for(unsigned i=0; i<deriv.size(); ++i) setAtomsDerivatives(i,deriv[i]);
   setValue           (ncoord);
   setBoxDerivatives  (virial);
