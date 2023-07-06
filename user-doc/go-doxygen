@@ -123,6 +123,7 @@ cat > html/menudata.js << EOF
 var menudata={children:[
 {text:'Home ($version)',url:'index.html'},
 {text:'Getting Started',url:'_syntax.html'},
+{text:'Performances',url:'_performances.html'},
 {text:'Tutorials',url:'tutorials.html'},
 {text:'Index of Actions',url:'glossary.html'}]}
 EOF
