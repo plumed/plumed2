@@ -61,7 +61,7 @@ private:
 /// Get the size of the buffer array that holds the data we are gathering over the MPI loop
   void getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize );
 /// Get the number of quantities in the stream
-  void getNumberOfStreamedQuantities( unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping );
+  void getNumberOfStreamedQuantities( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping );
 /// Get the number of derivatives in the stream
   void getNumberOfStreamedDerivatives( unsigned& nderivatives, const std::string& stopat );
 /// Add this action to the recursive chain
@@ -113,7 +113,7 @@ public:
 /// Check if we can be after another ActionWithVector
   virtual bool canBeAfterInChain( ActionWithVector* av ) { return true; }
 /// setup the streamed quantities
-  virtual void setupStreamedComponents( unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping );
+  virtual void setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping );
 /// Get the list of tasks that are active
   virtual std::vector<unsigned>& getListOfActiveTasks();
 /// This we override to perform each individual task

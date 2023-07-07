@@ -56,7 +56,7 @@ public:
 PLUMED_REGISTER_ACTION(HexacticParameter,"HEXACTIC_PARAMETER")
 
 void HexacticParameter::registerKeywords( Keywords& keys ) {
-  multicolvar::CoordinationNumbers::shortcutKeywords( keys );
+  CoordinationNumbers::shortcutKeywords( keys );
   keys.add("compulsory","PLANE","the plane to use when calculating the value of the order parameter should be xy, xz or yz");
   keys.addFlag("VMEAN",false,"calculate the norm of the mean vector.");
   keys.addOutputComponent("_vmean","VMEAN","the norm of the mean vector");
@@ -69,7 +69,7 @@ Action(ao),
 ActionShortcut(ao)
 {
   std::string sp_str, specA, specB; parse("SPECIES",sp_str); parse("SPECIESA",specA); parse("SPECIESB",specB);
-  multicolvar::CoordinationNumbers::expandMatrix( true, getShortcutLabel(), sp_str, specA, specB, this ); 
+  CoordinationNumbers::expandMatrix( true, getShortcutLabel(), sp_str, specA, specB, this ); 
   std::string myplane; parse("PLANE",myplane);
   if( myplane=="xy" ) {
      readInputLine( getShortcutLabel() + ": CYLINDRICAL_HARMONIC_MATRIX DEGREE=6 ARG=" + getShortcutLabel() + "_mat.x," + getShortcutLabel() + "_mat.y," + getShortcutLabel() + "_mat.w" );

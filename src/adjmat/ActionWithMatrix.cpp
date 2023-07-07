@@ -47,8 +47,8 @@ void ActionWithMatrix::getAllActionLabelsInMatrixChain( std::vector<std::string>
   if( matrix_to_do_after ) matrix_to_do_after->getAllActionLabelsInMatrixChain( mylabels );
 }
 
-void ActionWithMatrix::setupStreamedComponents( unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping ) {
-  ActionWithVector::setupStreamedComponents( nquants, nmat, maxcol, nbookeeping );
+void ActionWithMatrix::setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping ) {
+  ActionWithVector::setupStreamedComponents( headstr, nquants, nmat, maxcol, nbookeeping );
 
   for(int i=0; i<getNumberOfComponents(); ++i) {
       Value* myval=getPntrToComponent(i);

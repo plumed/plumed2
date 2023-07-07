@@ -134,12 +134,26 @@ ActionWithMatrix(ao)
   myfunc.setPeriodicityForOutputs( this );
   // We can't do this with if we are dividing a stack by some a product v.v^T product as we need to store the vector
   // In order to do this type of calculation.  There should be a neater fix than this but I can't see it.
+  bool foundneigh=false;
   for(unsigned i=argstart; i<getNumberOfArguments();++i) {
-      if( (getPntrToArgument(i)->getPntrToAction())->getName()=="VSTACK" ) { done_in_chain=false; break; }
+      std::string argname=(getPntrToArgument(i)->getPntrToAction())->getName();
+      if( argname=="VSTACK" ) { done_in_chain=false; break; }
+      else if( argname=="NEIGHBORS" ) { foundneigh=true; break; }
       if( getPntrToArgument(i)->getRank()==0 ) {
           function::FunctionOfVector<function::Sum>* as = dynamic_cast<function::FunctionOfVector<function::Sum>*>( getPntrToArgument(i)->getPntrToAction() );
           if(as) done_in_chain=false;
       }  
+  }
+  // If we are working with neighbors we trick PLUMED into storing ALL the components of the other arguments
+  // in this way we can ensure that the function of the neighbours matrix is in a chain starting from the 
+  // Neighbours matrix action.
+  if( foundneigh ) {
+      for(unsigned i=argstart; i<getNumberOfArguments();++i) {
+         ActionWithValue* av=getPntrToArgument(i)->getPntrToAction();
+         if( av->getName()!="NEIGHBORS" ) {
+             for(unsigned i=0;i<av->getNumberOfComponents();++i) (av->copyOutput(i))->buildDataStore(); 
+         }
+      }
   }
   // Now setup the action in the chain if we can
   nderivatives = buildArgumentStore(myfunc.getArgStart());
@@ -172,7 +186,11 @@ unsigned FunctionOfMatrix<T>::getNumberOfColumns() const {
 
 template <class T>
 void FunctionOfMatrix<T>::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {
-  plumed_error();
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) plumed_assert( getPntrToArgument(i)->getRank()==2 ); 
+  unsigned start_n = getPntrToArgument(0)->getShape()[0], size_v = getPntrToArgument(0)->getShape()[1];
+  if( indices.size()!=size_v+1 ) indices.resize( size_v+1 );
+  for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + i;
+  myvals.setSplitIndex( size_v + 1 );
 }
 
 // template <class T>
@@ -267,6 +285,8 @@ void FunctionOfMatrix<T>::performTask( const std::string& controller, const unsi
 
 template <class T>
 void FunctionOfMatrix<T>::runEndOfRowJobs( const unsigned& ind, const std::vector<unsigned> & indices, MultiValue& myvals ) const {
+  if( doNotCalculateDerivatives() ) return;
+
   unsigned argstart=myfunc.getArgStart();
   if( actionInChain() && getConstPntrToComponent(0)->getRank()==2 ) {
       // This is triggered if we are outputting a matrix

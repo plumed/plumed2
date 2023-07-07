@@ -1,4 +1,4 @@
-#! FIELDS time cn0.mean cn1.mean cn2.mean
+#! FIELDS time cn0_mean cn1_mean cn2_mean
  0.000000 1.171228 1.453038 1.843475
  0.005000 1.166065 1.441594 1.826868
  0.010000 1.172897 1.440122 1.816671

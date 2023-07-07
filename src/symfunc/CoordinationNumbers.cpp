@@ -21,14 +21,15 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "CoordinationNumbers.h"
 #include "multicolvar/MultiColvarShortcuts.h"
-#include "tools/NeighborList.h"
 #include "core/ActionRegister.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
 
 #include <string>
 #include <cmath>
 
 namespace PLMD {
-namespace multicolvar {
+namespace symfunc {
 
 //+PLUMEDOC MCOLVAR COORDINATIONNUMBER
 /*
@@ -78,6 +79,7 @@ PRINT ARG=cn0.mean,cn1.mean,cn2.mean STRIDE=1 FILE=cn_out
 
 
 PLUMED_REGISTER_ACTION(CoordinationNumbers,"COORDINATIONNUMBER")
+PLUMED_REGISTER_ACTION(CoordinationNumbers,"COORDINATION_MOMENTS")
 
 void CoordinationNumbers::shortcutKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
@@ -128,90 +130,44 @@ void CoordinationNumbers::expandMatrix( const bool& components, const std::strin
 }
 
 void CoordinationNumbers::registerKeywords( Keywords& keys ) {
-  MultiColvarBase::registerKeywords( keys );
-  keys.use("SPECIES"); keys.use("SPECIESA"); keys.use("SPECIESB");
-  keys.add("compulsory","NN","6","The n parameter of the switching function ");
-  keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
-  keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
-  keys.add("compulsory","R_0","The r_0 parameter of the switching function");
-  keys.add("optional","R_POWER","Multiply the coordination number function by a power of r, "
-           "as done in White and Voth (see note above, default: no)");
-  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous switching function defined above. "
-           "The following provides information on the \\ref switchingfunction that are available. "
-           "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
-  // Use actionWithDistributionKeywords
-  keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("LESS_THAN"); keys.use("MAX");
-  keys.use("MIN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
-  keys.use("ALT_MIN"); keys.use("LOWEST"); keys.use("HIGHEST");
+  shortcutKeywords( keys );
+  keys.add("compulsory","R_POWER","the power to which you want to raise the distance");
 }
 
-CoordinationNumbers::CoordinationNumbers(const ActionOptions&ao):
-  Action(ao),
-  MultiColvarBase(ao),
-  r_power(0)
+CoordinationNumbers::CoordinationNumbers(const ActionOptions& ao):
+Action(ao),
+ActionShortcut(ao)
 {
-
-  // Read in the switching function
-  std::string sw, errors; parse("SWITCH",sw);
-  if(sw.length()>0) {
-    switchingFunction.set(sw,errors);
-    if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
-  } else {
-    double r_0=-1.0, d_0; int nn, mm;
-    parse("NN",nn); parse("MM",mm);
-    parse("R_0",r_0); parse("D_0",d_0);
-    if( r_0<0.0 ) error("you must set a value for R_0");
-    switchingFunction.set(nn,mm,r_0,d_0);
-
+  // Setup the contract matrix if that is what is needed
+  std::string matlab, sp_str, specA, specB;
+  parse("SPECIES",sp_str); parse("SPECIESA",specA); parse("SPECIESB",specB);
+  if( sp_str.length()>0 || specA.length()>0 ) {
+      matlab = getShortcutLabel() + "_mat.w"; bool comp=false;
+      if( getName()=="COORDINATION_MOMENTS" ) { comp=true; matlab = getShortcutLabel() + "_mat"; }
+      expandMatrix( comp, getShortcutLabel(), sp_str, specA, specB, this );
+  } else error("missing atoms input use SPECIES or SPECIESA/SPECIESB");
+  std::size_t dot = matlab.find_first_of(".");
+  ActionWithValue* mb=plumed.getActionSet().selectWithLabel<ActionWithValue*>( matlab.substr(0,dot) );
+  if( !mb ) error("could not find action with name " + matlab.substr(0,dot) );
+  Value* arg; if( matlab.find(".")!=std::string::npos ) arg=mb->copyOutput( matlab ); else arg=mb->copyOutput(0);
+  if( arg->getRank()!=2 || arg->hasDerivatives() ) error("the input to this action should be a matrix or scalar");
+  // Create vector of ones to multiply input matrix by
+  std::string nones; Tools::convert( arg->getShape()[1], nones ); 
+  readInputLine( getShortcutLabel() + "_ones: ONES SIZE=" + nones );
+  if( getName()=="COORDINATION_MOMENTS" ) {
+      // Calculate the lengths of the vectors
+      std::string r_power; parse("R_POWER",r_power); 
+      readInputLine( getShortcutLabel() + "_pow: CUSTOM ARG1=" + matlab + ".x ARG2=" + matlab + ".y ARG3=" + matlab + ".z ARG4=" + matlab + ".w VAR=x,y,z,w "
+                                        + "PERIODIC=NO FUNC=w*(sqrt(x*x+y*y+z*z)^" + r_power +")");
+      matlab = getShortcutLabel() + "_pow";
   }
-  log.printf("  coordination of central atom and those within %s\n",( switchingFunction.description() ).c_str() );
+  // Calcualte coordination numbers as matrix vector times vector of ones
+  readInputLine( getShortcutLabel() + ": MATRIX_VECTOR_PRODUCT  ARG=" + matlab + "," + getShortcutLabel() + "_ones");
+  // Read in all the shortcut stuff 
+  std::map<std::string,std::string> keymap; multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );
+  multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel(), "", keymap, this );
+} 
 
-  //get cutoff of switching function
-  double rcut = switchingFunction.get_dmax();
-
-  //parse power
-  parse("R_POWER", r_power);
-  if(r_power > 0) {
-    log.printf("  Multiplying switching function by r^%d\n", r_power);
-    double offset = switchingFunction.calculate(rcut*0.9999, rcut2) * std::pow(rcut*0.9999, r_power);
-    log.printf("  You will have a discontinuous jump of %f to 0 near the cutoff of your switching function. "
-               "Consider setting D_MAX or reducing R_POWER if this is large\n", offset);
-  }
-
-  // Set the link cell cutoff
-  setLinkCellCutoff( rcut );
-  rcut2 = rcut * rcut;
-
-  // And setup the ActionWithVessel
-  std::vector<AtomNumber> all_atoms; setupMultiColvarBase( all_atoms ); checkRead();
-}
-
-double CoordinationNumbers::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
-  // Calculate the coordination number
-  double dfunc, sw, d, raised;
-  for(unsigned i=1; i<myatoms.getNumberOfAtoms(); ++i) {
-    Vector& distance=myatoms.getPosition(i);
-    double d2;
-    if ( (d2=distance[0]*distance[0])<rcut2 &&
-         (d2+=distance[1]*distance[1])<rcut2 &&
-         (d2+=distance[2]*distance[2])<rcut2 &&
-         d2>epsilon ) {
-
-      sw = switchingFunction.calculateSqr( d2, dfunc );
-      if(r_power > 0) {
-        d = std::sqrt(d2); raised = std::pow( d, r_power - 1 );
-        accumulateSymmetryFunction( 1, i, sw * raised * d,
-                                    (dfunc * d * raised + sw * r_power * raised / d) * distance,
-                                    (-dfunc * d * raised - sw * r_power * raised / d) * Tensor(distance, distance),
-                                    myatoms );
-      } else {
-        accumulateSymmetryFunction( 1, i, sw, (dfunc)*distance, (-dfunc)*Tensor(distance,distance), myatoms );
-      }
-    }
-  }
-
-  return myatoms.getValue(1);
-}
 
 }
 }

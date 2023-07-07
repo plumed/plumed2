@@ -24,27 +24,17 @@
 
 #include "MultiColvarBase.h"
 #include "core/ActionShortcut.h"
-#include "AtomValuePack.h"
-#include "tools/SwitchingFunction.h"
 
 namespace PLMD {
-namespace multicolvar {
+namespace symfunc {
 
-class CoordinationNumbers : public MultiColvarBase {
-private:
-  double rcut2;
-  int r_power;
-  SwitchingFunction switchingFunction;
+class CoordinationNumbers : public ActionShortcut {
 public:
   static void shortcutKeywords( Keywords& keys );
   static void registerKeywords( Keywords& keys );
   static void expandMatrix( const bool& components, const std::string& lab, const std::string& sp_str,
                             const std::string& spa_str, const std::string& spb_str, ActionShortcut* action );
   explicit CoordinationNumbers(const ActionOptions&);
-// active methods:
-  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
-/// Returns the number of coordinates of the field
-  bool isPeriodic() override { return false; }
 };
 
 }

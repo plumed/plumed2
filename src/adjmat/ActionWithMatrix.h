@@ -63,7 +63,7 @@ public:
 /// This should return the number of columns to help with sparse storage of matrices
   virtual unsigned getNumberOfColumns() const = 0;
 /// This requires some thought
-  void setupStreamedComponents( unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping ) override;
+  void setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping ) override;
 //// This does some setup before we run over the row of the matrix
   virtual void setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const = 0; 
 /// Run over one row of the matrix

@@ -243,7 +243,7 @@ void ActionWithVector::runAllTasks() {
   
   // Get the total number of streamed quantities that we need
   unsigned nquants=0, nmatrices=0, maxcol=0, nbooks=0;
-  getNumberOfStreamedQuantities( nquants, nmatrices, maxcol, nbooks ); 
+  getNumberOfStreamedQuantities( getLabel(), nquants, nmatrices, maxcol, nbooks ); 
   // Get size for buffer
   unsigned bufsize=0; getSizeOfBuffer( nactive_tasks, bufsize );
   if( buffer.size()!=bufsize ) buffer.resize( bufsize );
@@ -326,14 +326,16 @@ void ActionWithVector::getNumberOfTasks( unsigned& ntasks ) {
   if( action_to_do_after ) action_to_do_after->getNumberOfTasks( ntasks );
 }
 
-void ActionWithVector::setupStreamedComponents( unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping ) {
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) { getPntrToArgument(i)->streampos=nquants; nquants++; }
+void ActionWithVector::setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping ) {
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) { 
+      if( !getPntrToArgument(i)->ignoreStoredValue(headstr) ) { getPntrToArgument(i)->streampos=nquants; nquants++; }
+  }
   for(int i=0; i<getNumberOfComponents(); ++i) { getPntrToComponent(i)->streampos=nquants; nquants++; }
 }
 
-void ActionWithVector::getNumberOfStreamedQuantities( unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping ) {
-  setupStreamedComponents( nquants, nmat, maxcol, nbookeeping ); 
-  if( action_to_do_after ) action_to_do_after->getNumberOfStreamedQuantities( nquants, nmat, maxcol, nbookeeping );
+void ActionWithVector::getNumberOfStreamedQuantities( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping ) {
+  setupStreamedComponents( headstr, nquants, nmat, maxcol, nbookeeping ); 
+  if( action_to_do_after ) action_to_do_after->getNumberOfStreamedQuantities( headstr, nquants, nmat, maxcol, nbookeeping );
 }
 
 void ActionWithVector::getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize ) {
@@ -443,7 +445,7 @@ bool ActionWithVector::checkForForces() {
 
   // Now determine how big the multivalue needs to be
   unsigned nquants=0, nmatrices=0, maxcol=0, nbooks=0;
-  getNumberOfStreamedQuantities( nquants, nmatrices, maxcol, nbooks );
+  getNumberOfStreamedQuantities( getLabel(), nquants, nmatrices, maxcol, nbooks );
   // Recover the number of derivatives we require (this should be equal to the number of forces)
   unsigned nderiv=0; getNumberOfStreamedDerivatives( nderiv, "" );
   if( forcesForApply.size()!=nderiv ) forcesForApply.resize( nderiv );
