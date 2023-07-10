@@ -52,6 +52,8 @@ unsigned getGoodNumThreads(const T* /*getTheType*/,unsigned n) {
   if(m>=numThreads) {
     m=numThreads;
   } else {
+    //it is better to use either all the active threads or only one
+    //this solves a performance problem as explained in issue #415
     m=1;
   }
   return m;
