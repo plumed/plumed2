@@ -25,13 +25,14 @@ SUBROUTINE plugin_ext_forces()
   !
   IMPLICIT NONE
   !
-  INTEGER:: i,j
+  INTEGER:: i,j,ia
   REAL(DP) :: at_plumed(3,3)
   REAL(DP) :: virial(3,3)
   REAL(DP) :: volume
   REAL(DP), ALLOCATABLE :: tau_plumed(:,:)
-  REAL(DP) :: masses_plumed(nat) = 0.0_DP
+  REAL(DP) :: masses_plumed(nat)
   !
+  masses_plumed = 0.0_DP
   IF(use_plumed) then
     IF(ionode)THEN
       at_plumed=alat*at;  ! the cell, rescaled properly
