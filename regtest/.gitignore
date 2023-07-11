@@ -33,6 +33,7 @@
 !/s2cm
 !/pytorch
 !/membranefusion
+!/unittest
 # These files we just want to ignore completely
 tmp
 report.txt
