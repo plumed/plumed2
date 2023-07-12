@@ -31,8 +31,13 @@ rm -f "$obj" "$lib"
 
 #nvcc "$2" -Xcompiler -fPIC -c -o "$kernel"
 compile="nvcc -ccbin ${compile}"
-compile=${compile//-Wall/}
-compile=${compile//-pedantic/}
+
+if [[ ${SILENT_CUDA_COMPILATION} ]]; then
+  echo "true"
+  compile=${compile//-Wall/}
+  compile=${compile//-pedantic/}
+fi
+
 for opt in -W -pedantic -f; do
   #echo $compile
   compile=${compile//${opt}/-Xcompiler ${opt}}
@@ -45,11 +50,6 @@ link_installed=${link_installed/-rdynamic/-Xcompiler -rdynamic}
 link_installed=${link_installed/-Wl,/-Xlinker }
 link_installed=${link_installed/-fopenmp/-Xcompiler -fopenmp}
 
-echo ${link_installed}
-link_uninstalled="nvcc -shared${link_uninstalled#*-shared}"
-link_uninstalled=${link_uninstalled/-rdynamic/-Xcompiler -rdynamic}
-link_uninstalled=${link_uninstalled/-Wl,/-Xlinker }
-link_uninstalled=${link_uninstalled/-fopenmp/-Xcompiler -fopenmp}
 if test "$PLUMED_IS_INSTALLED" = yes; then
   eval "$compile" "$obj" "$file" && eval "$link_installed" "$lib" "$obj"
 else
