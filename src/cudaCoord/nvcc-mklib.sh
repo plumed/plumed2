@@ -33,25 +33,29 @@ rm -f "$obj" "$lib"
 compile="nvcc -ccbin ${compile}"
 
 if [[ ${SILENT_CUDA_COMPILATION} ]]; then
-  echo "true"
+  #echo "disabled warning"
   compile=${compile//-Wall/}
   compile=${compile//-pedantic/}
+  #-w suppress the warnings
+  compile=${compile/-c /-w -c }
 fi
 
 for opt in -W -pedantic -f; do
-  #echo $compile
   compile=${compile//${opt}/-Xcompiler ${opt}}
-  #echo $compile
 done
-#compile=${compile/-fPIC/-Xcompiler -fPIC}
 
-link_installed="nvcc -shared${link_installed#*-shared}"
-link_installed=${link_installed/-rdynamic/-Xcompiler -rdynamic}
-link_installed=${link_installed/-Wl,/-Xlinker }
-link_installed=${link_installed/-fopenmp/-Xcompiler -fopenmp}
+link_command=$link_uninstalled
 
-if test "$PLUMED_IS_INSTALLED" = yes; then
-  eval "$compile" "$obj" "$file" && eval "$link_installed" "$lib" "$obj"
-else
-  eval "$compile" "$obj" "$file" && echo "$link_uninstalled" "$lib" "$obj"
+if [[ $PLUMED_IS_INSTALLED = "yes" ]]; then
+  link_command=$link_installed
 fi
+
+link_command="nvcc -shared${link_command#*-shared}"
+link_command=${link_command/-rdynamic/-Xcompiler -rdynamic}
+link_command=${link_command/-Wl,/-Xlinker }
+#link_command=${link_command/-fopenmp/-Xcompiler -fopenmp}
+for opt in -f; do
+  link_command=${link_command//${opt}/-Xcompiler ${opt}}
+done
+
+eval "$compile" "$obj" "$file" && eval "$link_command" "$lib" "$obj"
