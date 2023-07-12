@@ -8,3 +8,4 @@
 !/Makefile
 !/README
 !/module.type
+!nvcc-mklib.sh

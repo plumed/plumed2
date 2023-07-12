@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "colvar/CoordinationBase.h"
 #include "tools/SwitchingFunction.h"
+#include "tools/NeighborList.h"
 #include "core/ActionRegister.h"
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
@@ -95,21 +96,49 @@ PRINT ARG=c1,c2 STRIDE=10
 */
 //+ENDPLUMEDOC
 
-class CudaCoordination : public CoordinationBase {
+//does not inherit from coordination base because nl is private
+class CudaCoordination : public Colvar {
+  bool pbc{true};
+  bool serial{false};
+  std::unique_ptr<NeighborList> nl;
+  bool invalidateList{true};
+  bool firsttime{true};
   SwitchingFunction switchingFunction;
 
 public:
   explicit CudaCoordination(const ActionOptions&);
 // active methods:
   static void registerKeywords( Keywords& keys );
+  void prepare() override;
   void calculate() override;
-  double pairing(double distance,double&dfunc,unsigned i,unsigned j)const override;
+  double pairing(double distance,double&dfunc,unsigned i,unsigned j)const ;
 };
 
-PLUMED_REGISTER_ACTION(Coordination,"CUDACOORDINATION")
+PLUMED_REGISTER_ACTION(CudaCoordination,"CUDACOORDINATION")
 
+void CudaCoordination::prepare() {
+  if(nl->getStride()>0) {
+    if(firsttime || (getStep()%nl->getStride()==0)) {
+      requestAtoms(nl->getFullAtomList());
+      invalidateList=true;
+      firsttime=false;
+    } else {
+      requestAtoms(nl->getReducedAtomList());
+      invalidateList=false;
+      if(getExchangeStep()) error("Neighbor lists should be updated on exchange steps - choose a NL_STRIDE which divides the exchange stride!");
+    }
+    if(getExchangeStep()) firsttime=true;
+  }
+}
 void CudaCoordination::registerKeywords( Keywords& keys ) {
-  CoordinationBase::registerKeywords(keys);
+  Colvar::registerKeywords(keys);
+  keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
+  keys.addFlag("PAIR",false,"Pair only 1st element of the 1st group with 1st element in the second, etc");
+  keys.addFlag("NLIST",false,"Use a neighbor list to speed up the calculation");
+  keys.add("optional","NL_CUTOFF","The cutoff for the neighbor list");
+  keys.add("optional","NL_STRIDE","The frequency with which we are updating the atoms in the neighbor list");
+  keys.add("atoms","GROUPA","First list of atoms");
+  keys.add("atoms","GROUPB","Second list of atoms (if empty, N*(N-1)/2 pairs in GROUPA are counted)");
   keys.add("compulsory","NN","6","The n parameter of the switching function ");
   keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
@@ -120,10 +149,65 @@ void CudaCoordination::registerKeywords( Keywords& keys ) {
 }
 
 CudaCoordination::CudaCoordination(const ActionOptions&ao):
-  Action(ao),
-  CoordinationBase(ao)
+  PLUMED_COLVAR_INIT(ao)
+  
 {
+parseFlag("SERIAL",serial);
 
+  std::vector<AtomNumber> ga_lista,gb_lista;
+  parseAtomList("GROUPA",ga_lista);
+  parseAtomList("GROUPB",gb_lista);
+
+  bool nopbc=!pbc;
+  parseFlag("NOPBC",nopbc);
+  pbc=!nopbc;
+
+// pair stuff
+  bool dopair=false;
+  parseFlag("PAIR",dopair);
+
+// neighbor list stuff
+  bool doneigh=false;
+  double nl_cut=0.0;
+  int nl_st=0;
+  parseFlag("NLIST",doneigh);
+  if(doneigh) {
+    parse("NL_CUTOFF",nl_cut);
+    if(nl_cut<=0.0) error("NL_CUTOFF should be explicitly specified and positive");
+    parse("NL_STRIDE",nl_st);
+    if(nl_st<=0) error("NL_STRIDE should be explicitly specified and positive");
+  }
+
+  addValueWithDerivatives(); setNotPeriodic();
+  if(gb_lista.size()>0) {
+    if(doneigh)  nl=Tools::make_unique<NeighborList>(ga_lista,gb_lista,serial,dopair,pbc,getPbc(),comm,nl_cut,nl_st);
+    else         nl=Tools::make_unique<NeighborList>(ga_lista,gb_lista,serial,dopair,pbc,getPbc(),comm);
+  } else {
+    if(doneigh)  nl=Tools::make_unique<NeighborList>(ga_lista,serial,pbc,getPbc(),comm,nl_cut,nl_st);
+    else         nl=Tools::make_unique<NeighborList>(ga_lista,serial,pbc,getPbc(),comm);
+  }
+
+  requestAtoms(nl->getFullAtomList());
+
+  log.printf("  between two groups of %u and %u atoms\n",static_cast<unsigned>(ga_lista.size()),static_cast<unsigned>(gb_lista.size()));
+  log.printf("  first group:\n");
+  for(unsigned int i=0; i<ga_lista.size(); ++i) {
+    if ( (i+1) % 25 == 0 ) log.printf("  \n");
+    log.printf("  %d", ga_lista[i].serial());
+  }
+  log.printf("  \n  second group:\n");
+  for(unsigned int i=0; i<gb_lista.size(); ++i) {
+    if ( (i+1) % 25 == 0 ) log.printf("  \n");
+    log.printf("  %d", gb_lista[i].serial());
+  }
+  log.printf("  \n");
+  if(pbc) log.printf("  using periodic boundary conditions\n");
+  else    log.printf("  without periodic boundary conditions\n");
+  if(dopair) log.printf("  with PAIR option\n");
+  if(doneigh) {
+    log.printf("  using neighbor lists with\n");
+    log.printf("  update every %d steps and cutoff %f\n",nl_st,nl_cut);
+  }
   std::string sw,errors;
   parse("SWITCH",sw);
   if(sw.length()>0) {
@@ -135,7 +219,7 @@ CudaCoordination::CudaCoordination(const ActionOptions&ao):
     double d0=0.0;
     double r0=0.0;
     parse("R_0",r0);
-    if(r0<=0.0) error("R_0 should be explicitly specified and positive");
+    if(r0<=0.0) {error("R_0 should be explicitly specified and positive");}
     parse("D_0",d0);
     parse("NN",nn);
     parse("MM",mm);
@@ -151,7 +235,7 @@ double CudaCoordination::pairing(double distance,double&/*dfunc*/,unsigned,unsig
   return distance;
 }
 
-__global__ void getCoord(double *ncoord,double *coordinates, unsigned *pairList
+__global__ void getCoord(double *ncoord,double *coordinates, unsigned *pairList,
                          double Rsqr, unsigned nat) {
   //blockDIm are the number of threads in your block
   const int i = threadIdx.x + blockIdx.x * blockDim.x;
@@ -177,8 +261,8 @@ void CudaCoordination::calculate(){
   if(nl->getStride()>0 && invalidateList) {
     nl->update(getPositions());
   }
-  auto pairList = nl->getClosePairs()
-                  const unsigned nn=nl->size();
+  auto pairList = nl->getClosePairs();
+  const unsigned nn=nl->size();
   //calculates the closest power of 2 (c++20 will have bit::bit_ceil(nn))
   size_t nextpw2 = pow(2, ceil(log2(nn)));
   pairList.resize(2*nextpw2);
@@ -197,7 +281,9 @@ void CudaCoordination::calculate(){
   cudaMemcpy(cudaPairList, &positions[0][0], 2*nextpw2* sizeof(unsigned),
              cudaMemcpyHostToDevice);
   //the occupancy MUST be set up correctly
-  getCoord<<<max(1,nextpw2/256),256>>> getCoord(ncoords,coords, cudaPairList,R_0,nat);
+  auto r0 = switchingFunction.get_r0() ;
+  auto ngroups=max(1ul,nextpw2/256);
+  getCoord<<<ngroups,256>>> (ncoords,coords, cudaPairList,r0,nat);
   std::vector<double> coordsToSUM(nextpw2);
   cudaMemcpy(&coordsToSUM, ncoords, nextpw2*sizeof(double), cudaMemcpyDeviceToHost);
   double ncoord=std::accumulate(coordsToSUM.begin(),coordsToSUM.begin()+nat,0.0);
