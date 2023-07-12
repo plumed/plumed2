@@ -111,7 +111,6 @@ public:
   static void registerKeywords( Keywords& keys );
   void prepare() override;
   void calculate() override;
-  double pairing(double distance,double&dfunc,unsigned i,unsigned j)const ;
 };
 
 PLUMED_REGISTER_ACTION(CudaCoordination,"CUDACOORDINATION")
@@ -143,9 +142,61 @@ void CudaCoordination::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
-  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous switching function defined above. "
-           "The following provides information on the \\ref switchingfunction that are available. "
-           "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
+}
+
+//these constant will be used within the kernels
+__constant__ double dmax_2;
+__constant__ double invr0_2;
+__constant__ double stretch;
+__constant__ double shift;
+__constant__ int nn;
+__constant__ int mm;
+
+__device__ double pcuda_fastpow(double base,int expo){
+  if(expo<0) {
+    expo=-expo;
+    base=1.0/base;
+  }
+  double result = 1.0;
+  while (expo) {
+    if (expo & 1){
+      result *= base;
+    }
+    expo >>= 1;
+    base *= base;
+  }
+  return result;
+}
+
+__device__ double pcuda_Rational(double rdist,double&dfunc,int NN, int MM) {
+  double result;
+  if(2*NN==MM) {
+// if 2*N==M, then (1.0-rdist^N)/(1.0-rdist^M) = 1.0/(1.0+rdist^N)
+    double rNdist=pcuda_fastpow(rdist,NN-1);
+    double iden=1.0/(1+rNdist*rdist);
+    dfunc = -NN*rNdist*iden*iden;
+    result = iden;
+  } else {
+    if(rdist>(1.-100.0*epsilon) && rdist<(1+100.0*epsilon)) {
+      result=NN/MM;
+      dfunc=0.5*NN*(NN-MM)/MM;
+    } else {
+      double rNdist=pcuda_fastpow(rdist,NN-1);
+      double rMdist=pcuda_fastpow(rdist,MM-1);
+      double num = 1.-rNdist*rdist;
+      double iden = 1./(1.-rMdist*rdist);
+      double func = num*iden;
+      result = func;
+      dfunc = ((-NN*rNdist*iden)+(func*(iden*MM)*rMdist));
+    }
+  }
+  return result;
+}
+
+__global__ void getpcuda_Rational(double *rdists,double *dfunc,int NN, int MM,double*res) {
+    const int i = threadIdx.x + blockIdx.x * blockDim.x;
+
+    res[i]=pcuda_Rational(rdists[i],dfunc[i],NN,MM);
 }
 
 CudaCoordination::CudaCoordination(const ActionOptions&ao):
@@ -180,11 +231,15 @@ parseFlag("SERIAL",serial);
 
   addValueWithDerivatives(); setNotPeriodic();
   if(gb_lista.size()>0) {
-    if(doneigh)  nl=Tools::make_unique<NeighborList>(ga_lista,gb_lista,serial,dopair,pbc,getPbc(),comm,nl_cut,nl_st);
-    else         nl=Tools::make_unique<NeighborList>(ga_lista,gb_lista,serial,dopair,pbc,getPbc(),comm);
+    if(doneigh)  
+    {nl=Tools::make_unique<NeighborList>(ga_lista,gb_lista,serial,dopair,pbc,getPbc(),comm,nl_cut,nl_st);}
+    else         
+    {nl=Tools::make_unique<NeighborList>(ga_lista,gb_lista,serial,dopair,pbc,getPbc(),comm);}
   } else {
-    if(doneigh)  nl=Tools::make_unique<NeighborList>(ga_lista,serial,pbc,getPbc(),comm,nl_cut,nl_st);
-    else         nl=Tools::make_unique<NeighborList>(ga_lista,serial,pbc,getPbc(),comm);
+    if(doneigh)  
+    {nl=Tools::make_unique<NeighborList>(ga_lista,serial,pbc,getPbc(),comm,nl_cut,nl_st);}
+    else         
+    {nl=Tools::make_unique<NeighborList>(ga_lista,serial,pbc,getPbc(),comm);}
   }
 
   requestAtoms(nl->getFullAtomList());
@@ -209,21 +264,44 @@ parseFlag("SERIAL",serial);
     log.printf("  update every %d steps and cutoff %f\n",nl_st,nl_cut);
   }
   std::string sw,errors;
-  parse("SWITCH",sw);
-  if(sw.length()>0) {
-    switchingFunction.set(sw,errors);
-    if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
-  } else {
-    int nn=6;
-    int mm=0;
-    double d0=0.0;
-    double r0=0.0;
-    parse("R_0",r0);
-    if(r0<=0.0) {error("R_0 should be explicitly specified and positive");}
-    parse("D_0",d0);
-    parse("NN",nn);
-    parse("MM",mm);
-    switchingFunction.set(nn,mm,r0,d0);
+  
+  {
+    int nn_=6;
+    int mm_=0;
+    double d0_=0.0;
+    double r0_=0.0;
+    parse("R_0",r0_);
+    if(r0_<=0.0) {error("R_0 should be explicitly specified and positive");}
+    parse("D_0",d0_);
+    parse("NN",nn_);
+    parse("MM",mm_);
+    
+    cudaMemcpyToSymbol(nn, &nn_, sizeof(int));
+    cudaMemcpyToSymbol(mm, &mm_, sizeof(int));
+    double dmax=d0_+r0_*std::pow(0.00001,1./(nn-mm));
+    double inputs[2] = {0.0,dmax};
+    double *inputsc,*dummy;
+    double *sc;
+    cudaMalloc(&inputsc, 2 *sizeof(double));
+    cudaMalloc(&dummy, 2*sizeof(double));
+    cudaMalloc(&sc, 2*sizeof(double));
+    cudaMemcpy(inputsc, &inputs[0], 2* sizeof(double),
+             cudaMemcpyHostToDevice);
+    getpcuda_Rational<<<1,2>>>(inputsc,dummy,nn,mm,sc);
+    double s[2] ;
+    cudaMemcpy(s, &inputsc, 2* sizeof(double),
+             cudaMemcpyDeviceToHost);
+    cudaFree(inputsc);
+    cudaFree(dummy);
+    cudaFree(sc);
+    
+
+    double stretch_=1.0/(s[0]-s[1]);
+    double shift_=-s[1]*stretch;
+    cudaMemcpyToSymbol(stretch, &stretch_, sizeof(int));
+    cudaMemcpyToSymbol(shift, &shift_, sizeof(int));
+    dmax*=dmax;
+    cudaMemcpyToSymbol(dmax_2, &dmax, sizeof(int));
   }
 
   checkRead();
@@ -231,8 +309,19 @@ parseFlag("SERIAL",serial);
   log<<"  contacts are counted with cutoff "<<switchingFunction.description()<<"\n";
 }
 
-double CudaCoordination::pairing(double distance,double&/*dfunc*/,unsigned,unsigned )const {
-  return distance;
+__device__ double calculateSqr(double distancesq, double& dfunc){
+    double result=0.0;
+    dfunc=0.0;
+    if(distancesq<dmax_2) {
+      const double rdist_2 = distancesq*invr0_2;
+      double result=pcuda_Rational(rdist_2,dfunc,nn/2,mm/2);
+      // chain rule:
+      dfunc*=2*invr0_2;
+      // stretch:
+      result=result*stretch+shift;
+      dfunc*=stretch;
+    }
+    return result;
 }
 
 __global__ void getCoord(double *ncoord,double *coordinates, unsigned *pairList,
@@ -248,9 +337,11 @@ __global__ void getCoord(double *ncoord,double *coordinates, unsigned *pairList,
   double dx = coordinates[3 * i0] - coordinates[3 * i1];
   double dy = coordinates[3 * i0 + 1] - coordinates[3 * i1 + 1];
   double dz = coordinates[3 * i0 + 2] - coordinates[3 * i1 + 2];
-  if ((dx * dx + dy * dy + dz * dz) < Rsqr) {
-    ncoord[i] = 1.0;
-  }
+
+  double dsq=(dx * dx + dy * dy + dz * dz);
+  double dfunc=0.;
+  ncoord[i]= calculateSqr(dsq,dfunc);
+  
 }
 
 void CudaCoordination::calculate(){
@@ -284,51 +375,14 @@ void CudaCoordination::calculate(){
   auto r0 = switchingFunction.get_r0() ;
   auto ngroups=max(1ul,nextpw2/256);
   getCoord<<<ngroups,256>>> (ncoords,coords, cudaPairList,r0,nat);
+
+
+
+ 
   std::vector<double> coordsToSUM(nextpw2);
   cudaMemcpy(&coordsToSUM, ncoords, nextpw2*sizeof(double), cudaMemcpyDeviceToHost);
   double ncoord=std::accumulate(coordsToSUM.begin(),coordsToSUM.begin()+nat,0.0);
-  //there are no pbcs
-  /*
-      std::vector<Vector> omp_deriv(getPositions().size());
-      Tensor omp_virial;
-
-      for(unsigned int i=rank; i<nn; i+=stride) {
-
-        if(pbc) {
-          distance=pbcDistance(getPosition(i0),getPosition(i1));
-        } else {
-          distance=delta(getPosition(i0),getPosition(i1));
-        }
-
-        double dfunc=0.;
-        ncoord += pairing(distance.modulo2(), dfunc,i0,i1);
-
-        Vector dd(dfunc*distance);
-        Tensor vv(dd,distance);
-        if(nt>1) {
-          omp_deriv[i0]-=dd;
-          omp_deriv[i1]+=dd;
-          omp_virial-=vv;
-        } else {
-          deriv[i0]-=dd;
-          deriv[i1]+=dd;
-          virial-=vv;
-        }
-
-      }
-      #pragma omp critical
-      if(nt>1) {
-        for(unsigned i=0; i<getPositions().size(); i++) deriv[i]+=omp_deriv[i];
-        virial+=omp_virial;
-
-    }
-
-    if(!serial) {
-      comm.Sum(ncoord);
-      if(!deriv.empty()) comm.Sum(&deriv[0][0],3*deriv.size());
-      comm.Sum(virial);
-    }
-  */
+  
   for(unsigned i=0; i<deriv.size(); ++i) setAtomsDerivatives(i,deriv[i]);
   setValue           (ncoord);
   setBoxDerivatives  (virial);
