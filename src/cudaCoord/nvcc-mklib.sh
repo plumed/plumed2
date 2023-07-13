@@ -46,7 +46,7 @@ done
 
 link_command=$link_uninstalled
 
-if [[ $PLUMED_IS_INSTALLED = "yes" ]]; then
+if [[ -z ${link_command:+x} ]]; then
   link_command=$link_installed
 fi
 
