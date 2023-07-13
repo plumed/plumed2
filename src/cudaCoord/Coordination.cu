@@ -19,13 +19,17 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "colvar/CoordinationBase.h"
-#include "tools/SwitchingFunction.h"
-#include "tools/NeighborList.h"
-#include "core/ActionRegister.h"
+#include "plumed/colvar/CoordinationBase.h"
+#include "plumed/tools/SwitchingFunction.h"
+#include "plumed/tools/NeighborList.h"
+#include "plumed/core/ActionRegister.h"
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 #include <numeric>
+#include <iostream>
+using std::cerr;
+
+#define dbghere() cerr << __LINE__ 
 
 namespace PLMD {
 namespace colvar {
@@ -145,21 +149,22 @@ void CudaCoordination::registerKeywords( Keywords& keys ) {
 }
 
 //these constant will be used within the kernels
-__constant__ double dmax_2;
-__constant__ double invr0_2;
-__constant__ double stretch;
-__constant__ double shift;
-__constant__ int nn;
-__constant__ int mm;
+__constant__ double cu_dmaxSQ;
+__constant__ double cu_invr0_2;
+__constant__ double cu_stretch;
+__constant__ double cu_shift;
+__constant__ double cu_epsilon;
+__constant__ int cu_nn;
+__constant__ int cu_mm;
 
-__device__ double pcuda_fastpow(double base,int expo){
+__device__ double pcuda_fastpow(double base,int expo) {
   if(expo<0) {
     expo=-expo;
     base=1.0/base;
   }
   double result = 1.0;
   while (expo) {
-    if (expo & 1){
+    if (expo & 1) {
       result *= base;
     }
     expo >>= 1;
@@ -177,15 +182,27 @@ __device__ double pcuda_Rational(double rdist,double&dfunc,int NN, int MM) {
     dfunc = -NN*rNdist*iden*iden;
     result = iden;
   } else {
-    if(rdist>(1.-100.0*epsilon) && rdist<(1+100.0*epsilon)) {
+    if(rdist>(1.-100.0*cu_epsilon) && rdist<(1+100.0*cu_epsilon)) {
       result=NN/MM;
       dfunc=0.5*NN*(NN-MM)/MM;
     } else {
       double rNdist=pcuda_fastpow(rdist,NN-1);
       double rMdist=pcuda_fastpow(rdist,MM-1);
+      printf("CUDA: %i, rMdist: %f = %f^%i \n", 
+      threadIdx.x + blockIdx.x * blockDim.x,
+      rMdist,rdist, MM-1
+       );
       double num = 1.-rNdist*rdist;
-      double iden = 1./(1.-rMdist*rdist);
+      double iden = 1.0/(1.0-rMdist*rdist);
       double func = num*iden;
+      printf("CUDA: %i, num %g=1.-%g*%g\n", 
+      threadIdx.x + blockIdx.x * blockDim.x,
+      num,rNdist,rdist);
+      printf("CUDA: %i, iden %g=1./(1.-%g*%g) =1.0/%g \n", 
+      threadIdx.x + blockIdx.x * blockDim.x,
+      iden,rMdist,rdist, 1.0-rMdist*rdist);
+      printf("CUDA: %i, pcuda_fastpow ,%f-> %f, %f->(%f,%f)%f\n", 
+      threadIdx.x + blockIdx.x * blockDim.x,rdist,rNdist,rMdist, num,iden,func);
       result = func;
       dfunc = ((-NN*rNdist*iden)+(func*(iden*MM)*rMdist));
     }
@@ -193,17 +210,34 @@ __device__ double pcuda_Rational(double rdist,double&dfunc,int NN, int MM) {
   return result;
 }
 
-__global__ void getpcuda_Rational(double *rdists,double *dfunc,int NN, int MM,double*res) {
-    const int i = threadIdx.x + blockIdx.x * blockDim.x;
+__global__ void getpcuda_Rational(double *rdists,double *dfunc,int NN, int MM,
+    double*res) {
+  const int i = threadIdx.x + blockIdx.x * blockDim.x;
+  if(rdists[i]<=0.) {
+    res[i]=1.;
+    dfunc[i]=0.0;
+  }else{
+  res[i]=pcuda_Rational(rdists[i],dfunc[i],NN,MM);
+  }
+  printf("CUDA: %i (%i,%i):: d=%f -> %f\n", i,NN,MM,rdists[i],res[i]);
+  res[i]=i;
+}
 
-    res[i]=pcuda_Rational(rdists[i],dfunc[i],NN,MM);
+
+__global__ void getConst() {
+  printf("Cuda: cu_dmaxSQ = %f\n", cu_dmaxSQ);
+  printf("Cuda: cu_invr0_2 = %f\n", cu_invr0_2);
+  printf("Cuda: cu_stretch = %f\n", cu_stretch);
+  printf("Cuda: cu_shift = %f\n", cu_shift);
+  printf("Cuda: cu_nn = %i\n", cu_nn);
+  printf("Cuda: cu_mm = %i\n", cu_mm);
 }
 
 CudaCoordination::CudaCoordination(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao)
-  
+
 {
-parseFlag("SERIAL",serial);
+  parseFlag("SERIAL",serial);
 
   std::vector<AtomNumber> ga_lista,gb_lista;
   parseAtomList("GROUPA",ga_lista);
@@ -231,14 +265,14 @@ parseFlag("SERIAL",serial);
 
   addValueWithDerivatives(); setNotPeriodic();
   if(gb_lista.size()>0) {
-    if(doneigh)  
+    if(doneigh)
     {nl=Tools::make_unique<NeighborList>(ga_lista,gb_lista,serial,dopair,pbc,getPbc(),comm,nl_cut,nl_st);}
-    else         
+    else
     {nl=Tools::make_unique<NeighborList>(ga_lista,gb_lista,serial,dopair,pbc,getPbc(),comm);}
   } else {
-    if(doneigh)  
+    if(doneigh)
     {nl=Tools::make_unique<NeighborList>(ga_lista,serial,pbc,getPbc(),comm,nl_cut,nl_st);}
-    else         
+    else
     {nl=Tools::make_unique<NeighborList>(ga_lista,serial,pbc,getPbc(),comm);}
   }
 
@@ -264,7 +298,7 @@ parseFlag("SERIAL",serial);
     log.printf("  update every %d steps and cutoff %f\n",nl_st,nl_cut);
   }
   std::string sw,errors;
-  
+
   {
     int nn_=6;
     int mm_=0;
@@ -275,76 +309,95 @@ parseFlag("SERIAL",serial);
     parse("D_0",d0_);
     parse("NN",nn_);
     parse("MM",mm_);
-    
-    cudaMemcpyToSymbol(nn, &nn_, sizeof(int));
-    cudaMemcpyToSymbol(mm, &mm_, sizeof(int));
-    double dmax=d0_+r0_*std::pow(0.00001,1./(nn-mm));
-    double inputs[2] = {0.0,dmax};
-    double *inputsc,*dummy;
-    double *sc;
-    cudaMalloc(&inputsc, 2 *sizeof(double));
-    cudaMalloc(&dummy, 2*sizeof(double));
-    cudaMalloc(&sc, 2*sizeof(double));
-    cudaMemcpy(inputsc, &inputs[0], 2* sizeof(double),
-             cudaMemcpyHostToDevice);
-    getpcuda_Rational<<<1,2>>>(inputsc,dummy,nn,mm,sc);
-    double s[2] ;
-    cudaMemcpy(s, &inputsc, 2* sizeof(double),
-             cudaMemcpyDeviceToHost);
-    cudaFree(inputsc);
-    cudaFree(dummy);
-    cudaFree(sc);
-    
+    if(mm_==0) mm_=2*nn_;
+    cudaMemcpyToSymbol(cu_nn, &nn_, sizeof(int));
+    cudaMemcpyToSymbol(cu_mm, &mm_, sizeof(int));
+    double stretch_=1.0;
+    double shift_=0.0;
+    double dmax=d0_+r0_*std::pow(0.00001,1./(nn_-mm_));
+    constexpr bool dostretch=false;
+    if (dostretch){
+      std::vector<double> inputs = {0.0,dmax};
+      double *inputsc,*dummy;
+      double *sc;
+      cudaMalloc(&inputsc, 2 *sizeof(double));
+      cudaMalloc(&dummy, 2*sizeof(double));
+      cudaMalloc(&sc, 2*sizeof(double));
+      cudaMemcpy(inputsc, inputs.data(), 2* sizeof(double),
+                cudaMemcpyHostToDevice);
+      getpcuda_Rational<<<1,2>>>(inputsc,dummy,nn_,mm_,sc);
+      std::vector<double> s = {0.0,0.0};
+      cudaMemcpy(s.data(), &sc, 2* sizeof(double),
+                cudaMemcpyDeviceToHost);
+      dbghere() 
+      <<"I: "<<inputs[0]<<" "<<inputs[1]
+      <<"\nO: "<<s[0]<<" "<<s[1]
+      <<"\n";
+      cudaFree(inputsc);
+      cudaFree(dummy);
+      cudaFree(sc);
+      stretch_=1.0/(s[0]-s[1]);
+      shift_=-s[1]*cu_stretch;
+    }
+    cudaMemcpyToSymbol(cu_stretch, &stretch_, sizeof(double));
+    cudaMemcpyToSymbol(cu_shift, &shift_, sizeof(double));
+    cudaMemcpyToSymbol(cu_epsilon, &epsilon, sizeof(double));
 
-    double stretch_=1.0/(s[0]-s[1]);
-    double shift_=-s[1]*stretch;
-    cudaMemcpyToSymbol(stretch, &stretch_, sizeof(int));
-    cudaMemcpyToSymbol(shift, &shift_, sizeof(int));
     dmax*=dmax;
-    cudaMemcpyToSymbol(dmax_2, &dmax, sizeof(int));
+    cudaMemcpyToSymbol(cu_dmaxSQ, &dmax, sizeof(double));
+    double invr0_2 = 1.0/r0_;
+    invr0_2*=invr0_2;
+    cudaMemcpyToSymbol(cu_invr0_2, &invr0_2, sizeof(double));
   }
-
   checkRead();
-
+ //  getConst<<<1,1>>>();
   log<<"  contacts are counted with cutoff "<<switchingFunction.description()<<"\n";
 }
 
-__device__ double calculateSqr(double distancesq, double& dfunc){
-    double result=0.0;
-    dfunc=0.0;
-    if(distancesq<dmax_2) {
-      const double rdist_2 = distancesq*invr0_2;
-      double result=pcuda_Rational(rdist_2,dfunc,nn/2,mm/2);
-      // chain rule:
-      dfunc*=2*invr0_2;
-      // stretch:
-      result=result*stretch+shift;
-      dfunc*=stretch;
-    }
-    return result;
+__device__ double calculateSqr(double distancesq, double& dfunc) {
+  double result=0.0;
+  dfunc=0.0;
+  if(distancesq<cu_dmaxSQ) {
+    const double rdist_2 = distancesq*cu_invr0_2;
+    result=pcuda_Rational(rdist_2,dfunc,cu_nn/2,cu_mm/2);
+    // chain rule:
+    dfunc*=2*cu_invr0_2;
+    // cu_stretch:
+    result=result*cu_stretch+cu_shift;
+    dfunc*=cu_stretch;
+  }
+  printf("%f\n",result);
+  return result;
 }
 
 __global__ void getCoord(double *ncoord,double *coordinates, unsigned *pairList,
-                         double Rsqr, unsigned nat) {
+                         unsigned numOfPairs) {
   //blockDIm are the number of threads in your block
   const int i = threadIdx.x + blockIdx.x * blockDim.x;
-  unsigned i0= i*2;
-  unsigned i1= i*2+1;
-  ncoord[i] = 0.0;
-  if (i0 == i1 || i >=nat) {
+  if (i >=numOfPairs) {
+    printf("Cuda: return i=%i>=%i\n", i,numOfPairs);
     return;
   }
-  double dx = coordinates[3 * i0] - coordinates[3 * i1];
-  double dy = coordinates[3 * i0 + 1] - coordinates[3 * i1 + 1];
-  double dz = coordinates[3 * i0 + 2] - coordinates[3 * i1 + 2];
+  unsigned i0= pairList[i*2];
+  unsigned i1= pairList[i*2+1]; 
+  //printf("Cuda: %i,%i %i %i\n", i0 ,i1, i ,numOfPairs);
+  if (i0 == i1) {
+    printf("Cuda: return i0=%i i1=%i\n", i0 ,i1);
+    return;
+  }
+  double dx = 1.0;//coordinates[3 * i0] - coordinates[3 * i1];
+  double dy = 1.0;//coordinates[3 * i0 + 1] - coordinates[3 * i1 + 1];
+  double dz = 1.0;//coordinates[3 * i0 + 2] - coordinates[3 * i1 + 2];
 
   double dsq=(dx * dx + dy * dy + dz * dz);
   double dfunc=0.;
   ncoord[i]= calculateSqr(dsq,dfunc);
-  
+  //printf("Cuda:[%i]->%f\n",i,ncoord[i]);
+  //ncoord[i]= 1;
+  //printf("Cuda: %i,%i %i %i\n", i,threadIdx.x , blockIdx.x,  blockDim.x);
 }
 
-void CudaCoordination::calculate(){
+void CudaCoordination::calculate() {
   Tensor virial;
   std::vector<Vector> deriv(getNumberOfAtoms());
   auto positions = getPositions();
@@ -354,39 +407,46 @@ void CudaCoordination::calculate(){
   }
   auto pairList = nl->getClosePairs();
   const unsigned nn=nl->size();
-  //calculates the closest power of 2 (c++20 will have bit::bit_ceil(nn))
-  size_t nextpw2 = pow(2, ceil(log2(nn)));
-  pairList.resize(2*nextpw2);
+  //note cu_nn shoudl be 1/2 pairList.size()
 
+  //calculates the closest power of 2 (c++20 will have bit::bit_ceil(cu_nn))
+  size_t nextpw2 = pow(2, ceil(log2(cu_nn)));
+  //the occupancy MUST be set up correctly
+  constexpr unsigned nthreads=128;
+  unsigned ngroups=ceil(nextpw2/double(nthreads));
+  //std::cerr <<cu_nn << " " <<pairList.size() << " " <<nextpw2<<"<\n";
+
+  /****************allocating the memory on the GPU****************/
   double *coords;
   double *ncoords;
   unsigned *cudaPairList;
-
   cudaMalloc(&coords, 3 * nat * sizeof(double));
   cudaMemcpy(coords, &positions[0][0], 3 *nat* sizeof(double),
              cudaMemcpyHostToDevice);
-
-  cudaMalloc(&ncoords, nextpw2 * sizeof(double));
-
-  cudaMalloc(&cudaPairList, 2*nextpw2 * sizeof(unsigned));
-  cudaMemcpy(cudaPairList, &positions[0][0], 2*nextpw2* sizeof(unsigned),
+  cudaMalloc(&ncoords, nn * sizeof(double));
+  cudaMalloc(&cudaPairList, 2*nn * sizeof(unsigned));
+  //resizing the pairlist should not be necessary
+  //pairList.resize(2*nextpw2);
+  cudaMemcpy(cudaPairList, pairList.data(), 2*nn* sizeof(unsigned),
              cudaMemcpyHostToDevice);
-  //the occupancy MUST be set up correctly
-  auto r0 = switchingFunction.get_r0() ;
-  auto ngroups=max(1ul,nextpw2/256);
-  getCoord<<<ngroups,256>>> (ncoords,coords, cudaPairList,r0,nat);
-
-
-
- 
-  std::vector<double> coordsToSUM(nextpw2);
-  cudaMemcpy(&coordsToSUM, ncoords, nextpw2*sizeof(double), cudaMemcpyDeviceToHost);
-  double ncoord=std::accumulate(coordsToSUM.begin(),coordsToSUM.begin()+nat,0.0);
   
-  for(unsigned i=0; i<deriv.size(); ++i) setAtomsDerivatives(i,deriv[i]);
+  /****************starting the calculations****************/
+  getCoord<<<1,nthreads>>> (ncoords,coords, cudaPairList,nn);
+  // getCoord<<<2,nthreads>>> (ncoords,coords, cudaPairList,
+  // 500
+  // //nn
+  // );
+  
+  std::vector<double> coordsToSUM(nn);
+  cudaMemcpy(coordsToSUM.data(), ncoords, sizeof(double), cudaMemcpyDeviceToHost);
+  cudaDeviceSynchronize();
+  dbghere() << " "<< coordsToSUM[0]<<"\n";
+  double ncoord=std::accumulate(coordsToSUM.begin(),coordsToSUM.end(),0.0);
+  for(unsigned i=0; i<deriv.size(); ++i) {
+    setAtomsDerivatives(i,deriv[i]);
+  }
   setValue           (ncoord);
   setBoxDerivatives  (virial);
-
 }
 
 } // namespace colvar
