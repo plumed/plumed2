@@ -29,7 +29,7 @@
 #include <iostream>
 using std::cerr;
 
-#define dbghere() cerr << __LINE__ 
+#define dbghere() cerr << __LINE__  << " "
 
 namespace PLMD {
 namespace colvar {
@@ -366,7 +366,7 @@ __device__ double calculateSqr(double distancesq, double& dfunc) {
     result=result*cu_stretch+cu_shift;
     dfunc*=cu_stretch;
   }
-  printf("%f\n",result);
+  //printf("%f\n",result);
   return result;
 }
 
@@ -375,19 +375,19 @@ __global__ void getCoord(double *ncoord,double *coordinates, unsigned *pairList,
   //blockDIm are the number of threads in your block
   const int i = threadIdx.x + blockIdx.x * blockDim.x;
   if (i >=numOfPairs) {
-    printf("Cuda: return i=%i>=%i\n", i,numOfPairs);
+    //printf("Cuda: return i=%i>=%i\n", i,numOfPairs);
     return;
   }
   unsigned i0= pairList[i*2];
   unsigned i1= pairList[i*2+1]; 
   //printf("Cuda: %i,%i %i %i\n", i0 ,i1, i ,numOfPairs);
   if (i0 == i1) {
-    printf("Cuda: return i0=%i i1=%i\n", i0 ,i1);
+    //printf("Cuda: return i0=%i i1=%i\n", i0 ,i1);
     return;
   }
-  double dx = 1.0;//coordinates[3 * i0] - coordinates[3 * i1];
-  double dy = 1.0;//coordinates[3 * i0 + 1] - coordinates[3 * i1 + 1];
-  double dz = 1.0;//coordinates[3 * i0 + 2] - coordinates[3 * i1 + 2];
+  double dx = coordinates[3 * i0/**/] - coordinates[3 * i1/**/];
+  double dy = coordinates[3 * i0 + 1] - coordinates[3 * i1 + 1];
+  double dz = coordinates[3 * i0 + 2] - coordinates[3 * i1 + 2];
 
   double dsq=(dx * dx + dy * dy + dz * dz);
   double dfunc=0.;
@@ -410,10 +410,11 @@ void CudaCoordination::calculate() {
   //note cu_nn shoudl be 1/2 pairList.size()
 
   //calculates the closest power of 2 (c++20 will have bit::bit_ceil(cu_nn))
-  size_t nextpw2 = pow(2, ceil(log2(cu_nn)));
+  size_t nextpw2 = pow(2, ceil(log2(nn)));
   //the occupancy MUST be set up correctly
-  constexpr unsigned nthreads=128;
-  unsigned ngroups=ceil(nextpw2/double(nthreads));
+  constexpr unsigned nthreads=256;
+  unsigned ngroups=ceil(double(nextpw2)/nthreads);
+  dbghere() << ngroups << " "<< nextpw2<<'\n';
   //std::cerr <<cu_nn << " " <<pairList.size() << " " <<nextpw2<<"<\n";
 
   /****************allocating the memory on the GPU****************/
@@ -431,15 +432,15 @@ void CudaCoordination::calculate() {
              cudaMemcpyHostToDevice);
   
   /****************starting the calculations****************/
-  getCoord<<<1,nthreads>>> (ncoords,coords, cudaPairList,nn);
-  // getCoord<<<2,nthreads>>> (ncoords,coords, cudaPairList,
-  // 500
-  // //nn
-  // );
+  //getCoord<<<ngroups,nthreads>>> (ncoords,coords, cudaPairList,nn);
+   getCoord<<<ngroups,nthreads>>> (ncoords,coords, cudaPairList,
+   
+   nn
+   );
   
   std::vector<double> coordsToSUM(nn);
-  cudaMemcpy(coordsToSUM.data(), ncoords, sizeof(double), cudaMemcpyDeviceToHost);
-  cudaDeviceSynchronize();
+  cudaMemcpy(coordsToSUM.data(), ncoords, nn*sizeof(double), cudaMemcpyDeviceToHost);
+  //cudaDeviceSynchronize();
   dbghere() << " "<< coordsToSUM[0]<<"\n";
   double ncoord=std::accumulate(coordsToSUM.begin(),coordsToSUM.end(),0.0);
   for(unsigned i=0; i<deriv.size(); ++i) {
