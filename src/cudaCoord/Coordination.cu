@@ -27,10 +27,11 @@
 #include "device_launch_parameters.h"
 #include <numeric>
 #include <iostream>
+/*
 using std::cerr;
 
 #define dbghere() cerr << __LINE__  << " "
-
+*/
 namespace PLMD {
 namespace colvar {
 
@@ -287,17 +288,21 @@ CudaCoordination::CudaCoordination(const ActionOptions&ao):
   }
   std::string sw,errors;
 
-  {
+  {//loading data to the GPU
     int nn_=6;
     int mm_=0;
     double d0_=0.0;
     double r0_=0.0;
     parse("R_0",r0_);
-    if(r0_<=0.0) {error("R_0 should be explicitly specified and positive");}
+    if(r0_<=0.0) {
+      error("R_0 should be explicitly specified and positive");
+    }
     parse("D_0",d0_);
     parse("NN",nn_);
     parse("MM",mm_);
-    if(mm_==0) mm_=2*nn_;
+    if(mm_==0) {
+      mm_=2*nn_;
+      }
     cudaMemcpyToSymbol(cu_nn, &nn_, sizeof(int));
     cudaMemcpyToSymbol(cu_mm, &mm_, sizeof(int));
     double stretch_=1.0;
@@ -317,10 +322,6 @@ CudaCoordination::CudaCoordination(const ActionOptions&ao):
       std::vector<double> s = {0.0,0.0};
       cudaMemcpy(s.data(), sc, 2* sizeof(double),
                 cudaMemcpyDeviceToHost);
-      dbghere() 
-      <<"I: "<<inputs[0]<<" "<<inputs[1]
-      <<"\nO: "<<s[0]<<" "<<s[1]
-      <<"\n";
       cudaFree(inputsc);
       cudaFree(dummy);
       cudaFree(sc);
@@ -338,7 +339,7 @@ CudaCoordination::CudaCoordination(const ActionOptions&ao):
     cudaMemcpyToSymbol(cu_invr0_2, &invr0_2, sizeof(double));
   }
   checkRead();
-   getConst<<<1,1>>>();
+  // getConst<<<1,1>>>();
   log<<"  contacts are counted with cutoff "<<switchingFunction.description()<<"\n";
 }
 
@@ -358,28 +359,61 @@ __device__ double calculateSqr(double distancesq, double& dfunc) {
   return result;
 }
 
-__global__ void getCoord(double *ncoord,double *coordinates, unsigned *pairList,
-                         unsigned numOfPairs) {
+#define X(I) 3*I
+#define Y(I) 3*I+1
+#define Z(I) 3*I+2
+//
+__global__ void getCoord(
+                        unsigned numOfPairs,
+                        unsigned nat,
+                        double *coordinates,
+                        unsigned *pairList,
+                        double *ncoordOut,
+                        double *derivativeOut,
+                        double *virialOut
+                        ) {
   //blockDIm are the number of threads in your block
-  const int i = threadIdx.x + blockIdx.x * blockDim.x;
+  const unsigned i = threadIdx.x + blockIdx.x * blockDim.x;
   if (i >=numOfPairs) {
-    //printf("Cuda: return i=%i>=%i\n", i,numOfPairs);
     return;
   }
   unsigned i0= pairList[i*2];
   unsigned i1= pairList[i*2+1]; 
-  //printf("Cuda: %i,%i %i %i\n", i0 ,i1, i ,numOfPairs);
   if (i0 == i1) {
-    //printf("Cuda: return i0=%i i1=%i\n", i0 ,i1);
     return;
   }
-  double dx = coordinates[3 * i0/**/] - coordinates[3 * i1/**/];
-  double dy = coordinates[3 * i0 + 1] - coordinates[3 * i1 + 1];
-  double dz = coordinates[3 * i0 + 2] - coordinates[3 * i1 + 2];
+  double d[3]={
+    coordinates[X(i0)] - coordinates[X(i1)],
+    coordinates[Y(i0)] - coordinates[Y(i1)],
+    coordinates[Z(i0)] - coordinates[Z(i1)]
+  };
 
-  double dsq=(dx * dx + dy * dy + dz * dz);
+  double dsq=(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
   double dfunc=0.;
-  ncoord[i]= calculateSqr(dsq,dfunc);
+  ncoordOut[i]= calculateSqr(dsq,dfunc);
+  
+  double dd[3] = {
+    d[0]*dfunc,
+    d[1]*dfunc,
+    d[2]*dfunc
+    };
+
+  //this needs a barrier!
+  derivativeOut[X(i0)+i*nat] -=dd[0];
+  derivativeOut[Y(i0)+i*nat] -=dd[1];
+  derivativeOut[Z(i0)+i*nat] -=dd[2];
+
+  derivativeOut[X(i1)+i*nat] +=dd[0];
+  derivativeOut[Y(i1)+i*nat] +=dd[1];
+  derivativeOut[Z(i1)+i*nat] +=dd[2];
+  
+  for(unsigned ii=0; ii<3; ++ii){
+    for(unsigned jj=0; jj<3; ++jj){
+      virialOut[9*i + ii*3+jj]=-dd[ii]*d[jj];
+    }
+  }
+  
+
   //printf("Cuda:[%i]->%f\n",i,ncoord[i]);
   //ncoord[i]= 1;
   //printf("Cuda: %i,%i %i %i\n", i,threadIdx.x , blockIdx.x,  blockDim.x);
@@ -395,38 +429,41 @@ void CudaCoordination::calculate() {
   }
   auto pairList = nl->getClosePairs();
   const unsigned nn=nl->size();
-  //note cu_nn shoudl be 1/2 pairList.size()
-
-  //calculates the closest power of 2 (c++20 will have bit::bit_ceil(cu_nn))
-  size_t nextpw2 = pow(2, ceil(log2(nn)));
-  //the occupancy MUST be set up correctly
+  
   constexpr unsigned nthreads=256;
-  unsigned ngroups=ceil(double(nextpw2)/nthreads);
-  //std::cerr <<cu_nn << " " <<pairList.size() << " " <<nextpw2<<"<\n";
+  // nextpw2 will be set up when the reduction will be done on the CPU
+  //note nn shoudl be 1/2 pX($1)airList.size()
+  //calculates the closest power of 2 (c++20 will have bit::bit_ceil(cu_nn))
+  const size_t nnToGPU=nn;//pow(2, ceil(log2(nn)));
+  //the occupancy MUST be set up correctly
+  
+  unsigned ngroups=ceil(double(nnToGPU)/nthreads);
+
+  //donw here I am calling all the arrays that goes on the GPU cudaSomething
 
   /****************allocating the memory on the GPU****************/
-  double *coords;
-  double *ncoords;
-  unsigned *cudaPairList;
-  cudaMalloc(&coords, 3 * nat * sizeof(double));
-  cudaMemcpy(coords, &positions[0][0], 3 *nat* sizeof(double),
+  double *cudaCoords;
+  cudaMalloc(&cudaCoords, 3 * nat * sizeof(double));
+  cudaMemcpy(cudaCoords, &positions[0][0], 3 *nat* sizeof(double),
              cudaMemcpyHostToDevice);
-  cudaMalloc(&ncoords, nn * sizeof(double));
-  cudaMalloc(&cudaPairList, 2*nn * sizeof(unsigned));
-  //resizing the pairlist should not be necessary
+  double *cudaCoordination;
+  cudaMalloc(&cudaCoordination, nnToGPU * sizeof(double));
+  unsigned *cudaPairList;
+  cudaMalloc(&cudaPairList, 2*nnToGPU * sizeof(unsigned));
+  //resizing the pairlist should not be necessary (because we are executing the accumulation in the CPU)
   //pairList.resize(2*nextpw2);
   cudaMemcpy(cudaPairList, pairList.data(), 2*nn* sizeof(unsigned),
              cudaMemcpyHostToDevice);
-  
+  double *cudaDev;
+  cudaMalloc(&cudaDev, nnToGPU *3*nat * sizeof(double));
+  double *cudaVirial;
+  cudaMalloc(&cudaVirial, 9*nnToGPU * sizeof(double));
   /****************starting the calculations****************/
-  //getCoord<<<ngroups,nthreads>>> (ncoords,coords, cudaPairList,nn);
-   getCoord<<<ngroups,nthreads>>> (ncoords,coords, cudaPairList,
-   
-   nn
-   );
+  getCoord<<<ngroups,nthreads>>> (nn,nat,cudaCoords,cudaPairList,
+    cudaCoordination,cudaDev,cudaVirial); 
   
   std::vector<double> coordsToSUM(nn);
-  cudaMemcpy(coordsToSUM.data(), ncoords, nn*sizeof(double), cudaMemcpyDeviceToHost);
+  cudaMemcpy(coordsToSUM.data(), cudaCoordination, nn*sizeof(double), cudaMemcpyDeviceToHost);
   double ncoord=std::accumulate(coordsToSUM.begin(),coordsToSUM.end(),0.0);
   for(unsigned i=0; i<deriv.size(); ++i) {
     setAtomsDerivatives(i,deriv[i]);
