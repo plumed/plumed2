@@ -188,21 +188,9 @@ __device__ double pcuda_Rational(double rdist,double&dfunc,int NN, int MM) {
     } else {
       double rNdist=pcuda_fastpow(rdist,NN-1);
       double rMdist=pcuda_fastpow(rdist,MM-1);
-      printf("CUDA: %i, rMdist: %f = %f^%i \n", 
-      threadIdx.x + blockIdx.x * blockDim.x,
-      rMdist,rdist, MM-1
-       );
       double num = 1.-rNdist*rdist;
       double iden = 1.0/(1.0-rMdist*rdist);
       double func = num*iden;
-      printf("CUDA: %i, num %g=1.-%g*%g\n", 
-      threadIdx.x + blockIdx.x * blockDim.x,
-      num,rNdist,rdist);
-      printf("CUDA: %i, iden %g=1./(1.-%g*%g) =1.0/%g \n", 
-      threadIdx.x + blockIdx.x * blockDim.x,
-      iden,rMdist,rdist, 1.0-rMdist*rdist);
-      printf("CUDA: %i, pcuda_fastpow ,%f-> %f, %f->(%f,%f)%f\n", 
-      threadIdx.x + blockIdx.x * blockDim.x,rdist,rNdist,rMdist, num,iden,func);
       result = func;
       dfunc = ((-NN*rNdist*iden)+(func*(iden*MM)*rMdist));
     }
@@ -219,8 +207,7 @@ __global__ void getpcuda_Rational(double *rdists,double *dfunc,int NN, int MM,
   }else{
   res[i]=pcuda_Rational(rdists[i],dfunc[i],NN,MM);
   }
-  printf("CUDA: %i (%i,%i):: d=%f -> %f\n", i,NN,MM,rdists[i],res[i]);
-  res[i]=i;
+  printf("CUDA: %i :: d=%f -> %f, %f\n", i,rdists[i],res[i],dfunc[i]);
 }
 
 
@@ -228,6 +215,7 @@ __global__ void getConst() {
   printf("Cuda: cu_dmaxSQ = %f\n", cu_dmaxSQ);
   printf("Cuda: cu_invr0_2 = %f\n", cu_invr0_2);
   printf("Cuda: cu_stretch = %f\n", cu_stretch);
+  printf("Cuda: cu_epsilon = %f\n", cu_epsilon);
   printf("Cuda: cu_shift = %f\n", cu_shift);
   printf("Cuda: cu_nn = %i\n", cu_nn);
   printf("Cuda: cu_mm = %i\n", cu_mm);
@@ -327,7 +315,7 @@ CudaCoordination::CudaCoordination(const ActionOptions&ao):
                 cudaMemcpyHostToDevice);
       getpcuda_Rational<<<1,2>>>(inputsc,dummy,nn_,mm_,sc);
       std::vector<double> s = {0.0,0.0};
-      cudaMemcpy(s.data(), &sc, 2* sizeof(double),
+      cudaMemcpy(s.data(), sc, 2* sizeof(double),
                 cudaMemcpyDeviceToHost);
       dbghere() 
       <<"I: "<<inputs[0]<<" "<<inputs[1]
@@ -350,7 +338,7 @@ CudaCoordination::CudaCoordination(const ActionOptions&ao):
     cudaMemcpyToSymbol(cu_invr0_2, &invr0_2, sizeof(double));
   }
   checkRead();
- //  getConst<<<1,1>>>();
+   getConst<<<1,1>>>();
   log<<"  contacts are counted with cutoff "<<switchingFunction.description()<<"\n";
 }
 
@@ -414,7 +402,6 @@ void CudaCoordination::calculate() {
   //the occupancy MUST be set up correctly
   constexpr unsigned nthreads=256;
   unsigned ngroups=ceil(double(nextpw2)/nthreads);
-  dbghere() << ngroups << " "<< nextpw2<<'\n';
   //std::cerr <<cu_nn << " " <<pairList.size() << " " <<nextpw2<<"<\n";
 
   /****************allocating the memory on the GPU****************/
@@ -440,8 +427,6 @@ void CudaCoordination::calculate() {
   
   std::vector<double> coordsToSUM(nn);
   cudaMemcpy(coordsToSUM.data(), ncoords, nn*sizeof(double), cudaMemcpyDeviceToHost);
-  //cudaDeviceSynchronize();
-  dbghere() << " "<< coordsToSUM[0]<<"\n";
   double ncoord=std::accumulate(coordsToSUM.begin(),coordsToSUM.end(),0.0);
   for(unsigned i=0; i<deriv.size(); ++i) {
     setAtomsDerivatives(i,deriv[i]);
