@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2023 The plumed team
+   Copyright (c) 2014-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,9 +19,10 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "CubicHarmonicBase.h"
+#include "function/FunctionTemplateBase.h"
+#include "function/FunctionShortcut.h"
+#include "adjmat/FunctionOfMatrix.h"
 #include "core/ActionRegister.h"
-#include "tools/SwitchingFunction.h"
 
 #include <string>
 #include <cmath>
@@ -29,7 +30,7 @@
 using namespace std;
 
 namespace PLMD {
-namespace crystallization {
+namespace symfunc {
 
 //+PLUMEDOC MCOLVAR FCCUBIC
 /*
@@ -72,45 +73,43 @@ PRINT ARG=d.* FILE=colv
 //+ENDPLUMEDOC
 
 
-class Fccubic : public CubicHarmonicBase {
+class Fccubic : public function::FunctionTemplateBase {
 private:
   double alpha, a1, b1;
 public:
-  static void registerKeywords( Keywords& keys );
-  explicit Fccubic(const ActionOptions&);
-  double calculateCubicHarmonic( const Vector& distance, const double& d2, Vector& myder ) const override;
+  void registerKeywords( Keywords& keys ) override;
+  void read( ActionWithArguments* action ) override;
+  void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
 };
 
-PLUMED_REGISTER_ACTION(Fccubic,"FCCUBIC")
+typedef function::FunctionShortcut<Fccubic> FccubicShortcut; 
+PLUMED_REGISTER_ACTION(FccubicShortcut,"FCCCUBIC_FUNC")
+typedef adjmat::FunctionOfMatrix<Fccubic> MatrixFccubic;
+PLUMED_REGISTER_ACTION(MatrixFccubic,"FCCCUBIC_FUNC_MATRIX")
 
 void Fccubic::registerKeywords( Keywords& keys ) {
-  CubicHarmonicBase::registerKeywords( keys );
   keys.add("compulsory","ALPHA","3.0","The alpha parameter of the angular function");
 }
 
-Fccubic::Fccubic(const ActionOptions&ao):
-  Action(ao),
-  CubicHarmonicBase(ao)
-{
+void Fccubic::read( ActionWithArguments* action ) { 
   // Scaling factors such that '1' corresponds to fcc lattice
   // and '0' corresponds to isotropic (liquid)
-  parse("ALPHA",alpha);
+  parse(action,"ALPHA",alpha);
   a1 = 80080. / (2717. + 16*alpha); b1 = 16.*(alpha-143)/(2717+16*alpha);
-  log.printf("  setting alpha parameter equal to %f \n",alpha);
-  // And setup the ActionWithVessel
-  checkRead();
+  action->log.printf("  setting alpha paramter equal to %f \n",alpha);
 }
 
-double Fccubic::calculateCubicHarmonic( const Vector& distance, const double& d2, Vector& myder ) const {
-  double x2 = distance[0]*distance[0];
+void Fccubic::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const { 
+  double x2 = args[0]*args[0];
   double x4 = x2*x2;
 
-  double y2 = distance[1]*distance[1];
+  double y2 = args[1]*args[1];
   double y4 = y2*y2;
 
-  double z2 = distance[2]*distance[2];
+  double z2 = args[2]*args[2];
   double z4 = z2*z2;
 
+  double d2 = x2 + y2 + z2;
   double r8 = pow( d2, 4 );
   double r12 = pow( d2, 6 );
 
@@ -121,11 +120,12 @@ double Fccubic::calculateCubicHarmonic( const Vector& distance, const double& d2
   double t2 = (z2*x4+z2*y4)/r8-alpha*z2*x4*y4/r12;
   double t3 = (2*tmp-alpha*x4*y4*z4/r12)/d2;
 
-  myder[0]=4*a1*distance[0]*(t0-t3);
-  myder[1]=4*a1*distance[1]*(t1-t3);
-  myder[2]=4*a1*distance[2]*(t2-t3);
+  derivatives(0,0)=4*a1*args[0]*(t0-t3);
+  derivatives(0,1)=4*a1*args[1]*(t1-t3);
+  derivatives(0,2)=4*a1*args[2]*(t2-t3);
 
-  return a1*tmp+b1;
+  // Set the value and the derivatives
+  vals[0] = (a1*tmp+b1);
 }
 
 }
