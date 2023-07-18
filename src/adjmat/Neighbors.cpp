@@ -37,6 +37,7 @@ public:
   void setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const ;
   void performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const override;
   void runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const override {}
+  void turnOnDerivatives() override ;
 };
 
 PLUMED_REGISTER_ACTION(Neighbors,"NEIGHBORS")
@@ -72,6 +73,11 @@ Neighbors::Neighbors(const ActionOptions&ao):
   std::vector<unsigned> shape( getPntrToArgument(0)->getShape() );
   addValue( shape ); setNotPeriodic();
   checkRead();
+}
+
+void Neighbors::turnOnDerivatives() {
+  ActionWithValue::turnOnDerivatives();
+  warning("think about whether your symmetry functions are continuous. If the symmetry function can be calculated from distances only then you can use NEIGHBORS. If you calculate angles between vectors or use the vectors directly then the symmetry function computed using NEIGHBORS is not continuous.  It does not make sense to use such CVs when biasing");
 }
 
 unsigned Neighbors::getNumberOfDerivatives() {
