@@ -1,0 +1,2 @@
+type=driver
+arg="--plumed plumed.dat --trajectory-stride 1 --timestep 0.001 --igro traj_lj13.gro --dump-forces forces --dump-forces-fmt=%10.6f "

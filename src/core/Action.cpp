@@ -179,6 +179,14 @@ void Action::addDependency(Action*action) {
   if( !found ) after.push_back(action);
 }
 
+bool Action::checkForDependency( Action* action ) {
+  for(const auto & d : after) {
+    if( action==d ) { return true; }
+    if( d->checkForDependency(action) ) { return true; }
+  }
+  return false;
+}
+
 void Action::activate() {
 // This is set to true if actions are only need to be computed in setup (during checkRead)
   if( never_activate ) return;

@@ -171,7 +171,7 @@ public:
 /// ActionWithArguments and ActionAtomistic
   void calculateAtomicNumericalDerivatives( ActionWithValue* a, const unsigned& startnum );
 
-  virtual void retrieveAtoms();
+  virtual void retrieveAtoms( const bool& force=false );
   void lockRequests() override;
   void unlockRequests() override;
   const std::vector<AtomNumber> & getUnique()const;

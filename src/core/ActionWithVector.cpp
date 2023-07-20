@@ -78,9 +78,10 @@ ActionWithVector* ActionWithVector::getFirstActionInChain() {
   return action_to_do_before->getFirstActionInChain();
 }
 
-void ActionWithVector::retrieveAtoms() {
+void ActionWithVector::retrieveAtoms( const bool& force ) {
+  if( !force && actionInChain() ) return;
   ActionAtomistic::retrieveAtoms();
-  if( action_to_do_after ) action_to_do_after->retrieveAtoms();
+  if( action_to_do_after ) action_to_do_after->retrieveAtoms( true );
 }
 
 bool ActionWithVector::hasStoredArguments() const {
@@ -114,6 +115,10 @@ unsigned ActionWithVector::buildArgumentStore( const unsigned& argstart ) {
             if( f_actions[j]==myact ) { found=true; break; }
           }
           if( !found ) {
+              if( f_actions.size()>0 ) {
+                  if( f_actions[0]->checkForDependency(myact) ) getPntrToArgument(i)->buildDataStore();
+                  if( myact->checkForDependency(f_actions[0]) ) error("cannot deal with arguments in this order. Try swapping argument order");
+              }
               if( !getPntrToArgument(i)->storedata && getPntrToArgument(i)->getRank()>0 ) f_actions.push_back( myact );
           }
       }
@@ -291,8 +296,12 @@ void ActionWithVector::gatherProcesses( std::vector<double>& buffer ) {
 }
 
 unsigned ActionWithVector::getArgumentPositionInStream( const unsigned& jder, MultiValue& myvals ) const { 
-  if( !getPntrToArgument(jder)->ignoreStoredValue(getFirstActionInChain()->getLabel()) ) plumed_merror("You still have to implement setting these values Gareth");
-  return getPntrToArgument(jder)->getPositionInStream();
+  unsigned istrn = getPntrToArgument(jder)->getPositionInStream();
+  if( !getPntrToArgument(jder)->ignoreStoredValue(getFirstActionInChain()->getLabel()) ) {
+      unsigned task_index = myvals.getTaskIndex();
+      myvals.addDerivative( istrn, task_index, 1.0 ); myvals.updateIndex( istrn, task_index );
+  } 
+  return istrn;
 }
 
 bool ActionWithVector::checkForGrids( unsigned& nder ) const {

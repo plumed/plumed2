@@ -263,7 +263,7 @@ void ActionAtomistic::getValueIndices( const AtomNumber& i, unsigned& valno, uns
   }
 }
 
-void ActionAtomistic::retrieveAtoms() {
+void ActionAtomistic::retrieveAtoms( const bool& force ) {
   if( boxValue ) {
     PbcAction* pbca = dynamic_cast<PbcAction*>( boxValue->getPntrToAction() );
     plumed_assert( pbca ); pbc=pbca->pbc;

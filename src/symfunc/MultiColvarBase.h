@@ -162,7 +162,7 @@ public:
 /// Do some setup before the calculation
   void prepare() override;
 /// This is overwritten here in order to make sure that we do not retrieve atoms multiple times
-  void retrieveAtoms() override;
+  void retrieveAtoms( const bool& force=false ) override;
 /// Do the calculation
   void calculate() override;
 /// Calculate numerical derivatives

@@ -1,0 +1,40 @@
+# vim:ft=plumed
+UNITS NATURAL
+
+CENTER ATOMS=1-13 LABEL=com NOPBC
+DISTANCES ORIGIN=com ATOMS=1-13 LABEL=dists NOPBC 
+HIGHEST ARG=dists LABEL=dists_highest
+UPPER_WALLS ARG=dists AT=2.4 KAPPA=100 EXP=4.0 LABEL=uw
+
+# dist2: COMPOSE_VECTOR ARG={dists.w.1.1 dists.w.1.2 dists.w.1.3 dists.w.1.4 dists.w.1.5 dists.w.1.6 dists.w.1.7 dists.w.1.8 dists.w.1.9 dists.w.1.10 dists.w.1.11 dists.w.1.12 dists.w.1.13}
+
+cn: COORDINATIONNUMBER SPECIES=1-13 SWITCH={RATIONAL R_0=1.391 NN=8 MM=16}
+cn2: SELECT_COMPONENTS ARG=cn COMPONENTS=1,2,3,4,5,6,7,8,9,10,11,12,13 
+
+# Changing ARG=cn to ARG=cn2 should give the same result
+RESTRAINT ARG=cn2 AT=5.0,5.0,5.0,5.0,5.0,5.0,5.0,5.0,5.0,5.0,5.0,5.0,5.0 KAPPA=10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0 LABEL=restraint_cn
+
+PRINT ...
+ ARG=dists_highest,uw.bias,restraint_cn.bias
+ STRIDE=100
+ FILE=colvar-en.data
+... PRINT
+
+PRINT ...
+ ARG=cn
+ STRIDE=100
+ FILE=colvar-cn.data
+... PRINT
+
+PRINT ...
+ ARG=cn2
+ STRIDE=100
+ FILE=colvar-cn2.data
+... PRINT
+
+PRINT ...
+ ARG=dists
+ STRIDE=100
+ FILE=colvar-dists.data
+... PRINT
+

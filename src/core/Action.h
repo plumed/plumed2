@@ -125,6 +125,9 @@ public:
 /// Specify that this Action depends on another one
   void addDependency(Action*);
 
+/// Check that this action does not depend on the action in the argument
+  bool checkForDependency(Action*);
+
 /// Clear the dependence list for this Action
   void clearDependencies();
 

@@ -95,7 +95,7 @@ public:
   virtual ~ActionWithVector() {}
   void lockRequests() override;
   void unlockRequests() override;
-  void retrieveAtoms() override;
+  void retrieveAtoms( const bool& force=false ) override;
   void calculateNumericalDerivatives(ActionWithValue* av) override; 
 /// Are we running this command in a chain
   bool actionInChain() const ;

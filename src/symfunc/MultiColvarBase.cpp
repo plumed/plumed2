@@ -786,7 +786,7 @@ void MultiColvarBase::prepare() {
   setup_completed=false; atomsWereRetrieved=false;
 }
 
-void MultiColvarBase::retrieveAtoms() {
+void MultiColvarBase::retrieveAtoms( const bool& force ) {
   if( !atomsWereRetrieved ) { ActionAtomistic::retrieveAtoms(); atomsWereRetrieved=true; }
 }
 
