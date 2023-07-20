@@ -79,18 +79,7 @@ public:
 class SwitchingFunction {
 /// This is to check that switching function has been initialized
   bool init=false;
-/// Type of function
-  enum {rational,exponential,gaussian,smap,cubic,tanh,cosinus,matheval,leptontype,nativeq} type=rational;
-/// Low-level tool to compute rational functions.
-/// It is separated since it is called both by calculate() and calculateSqr()
-  double do_rational(double rdist,double&dfunc,int nn,int mm)const;
   std::unique_ptr<switchContainers::baseSwitch> function;
-/// Set to true for fast rational functions (depending on x**2 only)
-  bool fastrational=false;
-/// Set to true for kernel functions
-  bool fastgaussian=false;
-/// Set to true if lepton only uses x2
-  bool leptonx2=false;
 public:
   static void registerKeywords( Keywords& keys );
 /// Set a "rational" switching function.
