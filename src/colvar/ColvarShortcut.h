@@ -49,6 +49,13 @@ Action(ao),
 ActionShortcut(ao)
 {
   bool scalar=true; unsigned nkeys = keywords.size();
+  if( getName()=="MASS" || getName()=="CHARGE" || getName()=="POSITION" ) {
+      std::string inpt; parse("ATOMS",inpt); 
+      if( inpt.length()>0 ) {
+          readInputLine( getShortcutLabel() + ": " + getName() + "_VECTOR ATOMS=" + inpt + " " + convertInputLineToString() ); 
+          scalar=false;
+      }
+  } 
   for(unsigned i=0; i<nkeys; ++i) {
      if( keywords.style( keywords.get(i), "atoms" ) ) {
          std::string inpt; parseNumbered( keywords.get(i), 2, inpt );

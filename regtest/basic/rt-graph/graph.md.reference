@@ -35,21 +35,21 @@ linkStyle 6 stroke:red,color:red;
 MD --> c1
 linkStyle 7 stroke:violet,color:violet;
 c1(["label=c1 
- CENTER 
+ CENTER_FAST 
 "])
 Box -- Box --> c2
 linkStyle 8 stroke:red,color:red;
 MD --> c2
 linkStyle 9 stroke:violet,color:violet;
 c2(["label=c2 
- CENTER 
+ CENTER_FAST 
 "])
 Box -- Box --> c3
 linkStyle 10 stroke:red,color:red;
 MD --> c3
 linkStyle 11 stroke:violet,color:violet;
 c3(["label=c3 
- CENTER 
+ CENTER_FAST 
 "])
 Box -- Box --> a1
 linkStyle 12 stroke:red,color:red;
@@ -62,8 +62,8 @@ linkStyle 15 stroke:violet,color:violet;
 a1(["label=a1 
  ANGLE 
 "])
-a1 -- a1 --> 12
-12("label=#64;12 
+a1 -- a1 --> 15
+15("label=#64;15 
  PRINT
 FILE=angle 
 ")

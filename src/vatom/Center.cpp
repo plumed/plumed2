@@ -135,7 +135,7 @@ public:
   static void registerKeywords( Keywords& keys );
 };
 
-PLUMED_REGISTER_ACTION(Center,"CENTER")
+PLUMED_REGISTER_ACTION(Center,"CENTER_FAST")
 PLUMED_REGISTER_ACTION(Center,"COM")
 
 void Center::registerKeywords(Keywords& keys) {

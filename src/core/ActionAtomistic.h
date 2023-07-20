@@ -34,6 +34,10 @@ namespace PLMD {
 class Pbc;
 class PDB;
 
+namespace colvar {
+  class SelectMassCharge;
+}
+
 /// \ingroup MULTIINHERIT
 /// Action used to create objects that access the positions of the atoms from the MD code
 class ActionAtomistic :
@@ -41,6 +45,7 @@ class ActionAtomistic :
 {
   friend class Group;
   friend class DomainDecomposition;
+  friend class colvar::SelectMassCharge;
 
   std::vector<AtomNumber> indexes;         // the set of needed atoms
 /// unique should be an ordered set since we later create a vector containing the corresponding indexes

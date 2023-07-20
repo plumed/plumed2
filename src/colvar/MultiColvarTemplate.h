@@ -62,20 +62,27 @@ ActionWithVector(ao),
 mode(0),
 usepbc(true)
 {
-  std::vector<AtomNumber> t, all_atoms;
-  for(int i=1;; ++i ) {
-      T::parseAtomList( i, t, this );
-      if( t.empty() ) break;
+  std::vector<AtomNumber> all_atoms;
+  if( getName()=="POSITION_VECTOR" || getName()=="MASS_VECTOR" || getName()=="CHARGE_VECTOR" ) parseAtomList( "ATOMS", all_atoms );
+  if( all_atoms.size()>0 ) {
+      ablocks.resize(1); ablocks[0].resize( all_atoms.size() );
+      for(unsigned i=0; i<all_atoms.size(); ++i) ablocks[0][i] = i; 
+  } else {
+      std::vector<AtomNumber> t;
+      for(int i=1;; ++i ) {
+          T::parseAtomList( i, t, this );
+          if( t.empty() ) break;
 
-      if( i==1 ) { ablocks.resize(t.size()); }
-      if( t.size()!=ablocks.size() ) {
-        std::string ss; Tools::convert(i,ss);
-        error("ATOMS" + ss + " keyword has the wrong number of atoms");
+          if( i==1 ) { ablocks.resize(t.size()); }
+          if( t.size()!=ablocks.size() ) {
+            std::string ss; Tools::convert(i,ss);
+            error("ATOMS" + ss + " keyword has the wrong number of atoms");
+          }
+          for(unsigned j=0; j<ablocks.size(); ++j) {
+            ablocks[j].push_back( ablocks.size()*(i-1)+j ); all_atoms.push_back( t[j] );
+          }
+          t.resize(0);
       }
-      for(unsigned j=0; j<ablocks.size(); ++j) {
-        ablocks[j].push_back( ablocks.size()*(i-1)+j ); all_atoms.push_back( t[j] );
-      }
-      t.resize(0);
   }
   if( all_atoms.size()==0 ) error("No atoms have been specified"); 
   requestAtoms(all_atoms);

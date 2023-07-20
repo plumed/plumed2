@@ -145,6 +145,12 @@ nderivatives(0)
           if( !av ) done_in_chain=false;
       } 
   }
+  // Don't need to do the calculation in a chain if the input is constant
+  bool allconstant=true; 
+  for(unsigned i=argstart; i<getNumberOfArguments(); ++i) { 
+      if( !getPntrToArgument(i)->isConstant() ) { allconstant=false; break; }
+  }
+  if( allconstant ) done_in_chain=false;
   nderivatives = buildArgumentStore(myfunc.getArgStart()); 
 }
 
