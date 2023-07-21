@@ -58,4 +58,6 @@ for opt in -f; do
   link_command=${link_command//${opt}/-Xcompiler ${opt}}
 done
 
-eval "$compile" "$obj" "$file" && eval "$link_command" "$lib" "$obj"
+eval "$compile" "$obj" "$file" && \
+eval "$compile" "reduction.o" "ndReduction.cu" && \
+eval "$link_command" "$lib" "$obj" "reduction.o"
