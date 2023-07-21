@@ -137,8 +137,7 @@ ActionWithMatrix(ao)
   bool foundneigh=false;
   for(unsigned i=argstart; i<getNumberOfArguments();++i) {
       std::string argname=(getPntrToArgument(i)->getPntrToAction())->getName();
-      if( argname=="VSTACK" ) { done_in_chain=false; break; }
-      else if( argname=="NEIGHBORS" ) { foundneigh=true; break; }
+      if( argname=="NEIGHBORS" ) { foundneigh=true; break; }
       if( getPntrToArgument(i)->getRank()==0 ) {
           function::FunctionOfVector<function::Sum>* as = dynamic_cast<function::FunctionOfVector<function::Sum>*>( getPntrToArgument(i)->getPntrToAction() );
           if(as) done_in_chain=false;

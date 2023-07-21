@@ -62,7 +62,7 @@ void ActionWithMatrix::setupStreamedComponents( const std::string& headstr, unsi
 }
 
 void ActionWithMatrix::finishChainBuild( ActionWithVector* act ) {
-   ActionWithMatrix* am=dynamic_cast<ActionWithMatrix*>(act); if( !am ) return;
+   ActionWithMatrix* am=dynamic_cast<ActionWithMatrix*>(act); if( !am || act==this ) return;
    // Build the list that contains everything we are going to loop over in getTotalMatrixBookeepgin and updateAllNeighbourLists
    if( next_action_in_chain ) next_action_in_chain->finishChainBuild( act );
    else {

@@ -210,6 +210,10 @@ bool ActionWithVector::addActionToChain( const std::vector<std::string>& alabels
   return true;
 }
 
+void ActionWithVector::finishChainBuild( ActionWithVector* act ) {
+  if( action_to_do_after ) action_to_do_after->finishChainBuild( act );
+}
+
 void ActionWithVector::getAllActionLabelsInChain( std::vector<std::string>& mylabels ) const {
   bool found = false ;
   for(unsigned i=0; i<mylabels.size(); ++i) {
@@ -541,6 +545,7 @@ void ActionWithVector::apply() {
 }
 
 void ActionWithVector::addForcesToInput( const std::vector<double>& forcesToApply, unsigned& ind ) {
+  if( ind>=forcesToApply.size() ) return; 
   addForcesOnArguments( 0, forcesToApply, ind, getFirstActionInChain()->getLabel() ); setForcesOnAtoms( forcesToApply, ind );
   if( action_to_do_after ) action_to_do_after->addForcesToInput( forcesToApply, ind );
 }

@@ -110,6 +110,7 @@ ArgsToVatom::ArgsToVatom(const ActionOptions& ao):
   addComponent("mass"); componentIsNotPeriodic("mass"); if( mass[0]->isConstant() ) getPntrToComponent(3)->setConstant();
   addComponent("charge"); componentIsNotPeriodic("charge"); if( charge[0]->isConstant() ) getPntrToComponent(4)->setConstant();
   pbc_action = plumed.getActionSet().selectWithLabel<PbcAction*>("Box");
+  for(unsigned i=0;i<3;++i) getPntrToComponent(i)->resizeDerivatives( getNumberOfArguments() );
 }
 
 void ArgsToVatom::calculate() {

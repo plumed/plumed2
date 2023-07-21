@@ -100,7 +100,7 @@ public:
 /// Are we running this command in a chain
   bool actionInChain() const ;
 /// This is overwritten within ActionWithMatrix and is used to build the chain of just matrix actions
-  virtual void finishChainBuild( ActionWithVector* act ) {}
+  virtual void finishChainBuild( ActionWithVector* act );
 /// Check if there are any stored values in arguments
   bool hasStoredArguments() const ;
 /// Return a pointer to the first action in the chain

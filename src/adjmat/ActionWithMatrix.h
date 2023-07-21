@@ -107,7 +107,14 @@ void ActionWithMatrix::addDerivativeOnVectorArgument( const bool& inchain, const
   unsigned ostrn = getConstPntrToComponent(ival)->getPositionInStream(), vstart=arg_deriv_starts[jarg];
   if( !inchain ) {
       myvals.addDerivative( ostrn, vstart + jelem, der ); myvals.updateIndex( ostrn, vstart + jelem );
-  } else plumed_merror("I don't think this is necessary as the vectors we need will be stored");
+  } else {
+      unsigned istrn = getPntrToArgument(jarg)->getPositionInStream();
+      for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
+          unsigned kind=myvals.getActiveIndex(istrn,k);
+          myvals.addDerivative( ostrn, kind, der*myvals.getDerivative( istrn, kind ) );
+          myvals.updateIndex( ostrn, kind );
+      }
+  }
 }
 
 inline
