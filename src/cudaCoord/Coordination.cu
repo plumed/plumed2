@@ -26,12 +26,14 @@
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 #include <numeric>
+#include <limits>
 #include <iostream>
-/*
+
 using std::cerr;
 
-#define dbghere() cerr << __LINE__  << " "
-*/
+#define vdbg(...) std::cerr << __LINE__ <<":" << #__VA_ARGS__ << " " << (__VA_ARGS__) <<'\n'
+//#define vdbg(...)
+
 namespace PLMD {
 namespace colvar {
 
@@ -101,17 +103,35 @@ PRINT ARG=c1,c2 STRIDE=10
 */
 //+ENDPLUMEDOC
 
+
+//these constant will be used within the kernels
+struct rationalSwitchParameters{
+  double dmaxSQ=std::numeric_limits<double>::max();
+  double invr0_2=1.0;//r0=1
+  double stretch=1.0;
+  double shift=0.0;
+  int nn=6;
+  int mm=12;
+};
+
 //does not inherit from coordination base because nl is private
 class CudaCoordination : public Colvar {
+  std::unique_ptr<NeighborList> nl;
+  ///the pointer to the coordinates on the GPU
+  double *cudaCoords;
+  ///the pointer to the nn list on the GPU
+  unsigned *cudaPairList;
+  SwitchingFunction switchingFunction;
+  rationalSwitchParameters switchingParameters;
+
   bool pbc{true};
   bool serial{false};
-  std::unique_ptr<NeighborList> nl;
   bool invalidateList{true};
   bool firsttime{true};
-  SwitchingFunction switchingFunction;
-
+  void setUpPermanentGPUMemory();
 public:
   explicit CudaCoordination(const ActionOptions&);
+  virtual ~CudaCoordination();
 // active methods:
   static void registerKeywords( Keywords& keys );
   void prepare() override;
@@ -120,14 +140,31 @@ public:
 
 PLUMED_REGISTER_ACTION(CudaCoordination,"CUDACOORDINATION")
 
+void CudaCoordination::setUpPermanentGPUMemory(){
+  auto nat = getPositions().size();
+  cudaFree(cudaCoords);
+  cudaFree(cudaPairList);
+  //coordinates values are updated at each step
+  cudaMalloc(&cudaCoords, 3 * nat * sizeof(double));
+  //the neighbour list will be updated at each request of prepare
+  auto pairList = nl->getClosePairs();
+  const unsigned nn=nl->size();
+  cudaMalloc(&cudaPairList, 2*nn*sizeof(unsigned));
+  cudaMemcpy(cudaPairList, pairList.data(),
+            2*nn* sizeof(unsigned),
+            cudaMemcpyHostToDevice);
+}
+
 void CudaCoordination::prepare() {
   if(nl->getStride()>0) {
     if(firsttime || (getStep()%nl->getStride()==0)) {
       requestAtoms(nl->getFullAtomList());
+      setUpPermanentGPUMemory();
       invalidateList=true;
       firsttime=false;
     } else {
       requestAtoms(nl->getReducedAtomList());
+      setUpPermanentGPUMemory();
       invalidateList=false;
       if(getExchangeStep()) error("Neighbor lists should be updated on exchange steps - choose a NL_STRIDE which divides the exchange stride!");
     }
@@ -150,13 +187,7 @@ void CudaCoordination::registerKeywords( Keywords& keys ) {
 }
 
 //these constant will be used within the kernels
-__constant__ double cu_dmaxSQ;
-__constant__ double cu_invr0_2;
-__constant__ double cu_stretch;
-__constant__ double cu_shift;
 __constant__ double cu_epsilon;
-__constant__ int cu_nn;
-__constant__ int cu_mm;
 
 __device__ double pcuda_fastpow(double base,int expo) {
   if(expo<0) {
@@ -213,13 +244,7 @@ __global__ void getpcuda_Rational(double *rdists,double *dfunc,int NN, int MM,
 
 
 __global__ void getConst() {
-  printf("Cuda: cu_dmaxSQ = %f\n", cu_dmaxSQ);
-  printf("Cuda: cu_invr0_2 = %f\n", cu_invr0_2);
-  printf("Cuda: cu_stretch = %f\n", cu_stretch);
   printf("Cuda: cu_epsilon = %f\n", cu_epsilon);
-  printf("Cuda: cu_shift = %f\n", cu_shift);
-  printf("Cuda: cu_nn = %i\n", cu_nn);
-  printf("Cuda: cu_mm = %i\n", cu_mm);
 }
 
 CudaCoordination::CudaCoordination(const ActionOptions&ao):
@@ -303,12 +328,13 @@ CudaCoordination::CudaCoordination(const ActionOptions&ao):
     if(mm_==0) {
       mm_=2*nn_;
       }
-    cudaMemcpyToSymbol(cu_nn, &nn_, sizeof(int));
-    cudaMemcpyToSymbol(cu_mm, &mm_, sizeof(int));
-    double stretch_=1.0;
-    double shift_=0.0;
+      
+    switchingParameters.nn=nn_;
+    switchingParameters.mm=mm_;
+    switchingParameters.stretch=1.0;
+    switchingParameters.shift=0.0;
     double dmax=d0_+r0_*std::pow(0.00001,1./(nn_-mm_));
-    constexpr bool dostretch=false;
+    constexpr bool dostretch=true;
     if (dostretch){
       std::vector<double> inputs = {0.0,dmax};
       double *inputsc,*dummy;
@@ -325,35 +351,36 @@ CudaCoordination::CudaCoordination(const ActionOptions&ao):
       cudaFree(inputsc);
       cudaFree(dummy);
       cudaFree(sc);
-      stretch_=1.0/(s[0]-s[1]);
-      shift_=-s[1]*cu_stretch;
+      switchingParameters.stretch=1.0/(s[0]-s[1]);
+      switchingParameters.shift=-s[1]*switchingParameters.stretch;
     }
-    cudaMemcpyToSymbol(cu_stretch, &stretch_, sizeof(double));
-    cudaMemcpyToSymbol(cu_shift, &shift_, sizeof(double));
+    
     cudaMemcpyToSymbol(cu_epsilon, &epsilon, sizeof(double));
-
-    dmax*=dmax;
-    cudaMemcpyToSymbol(cu_dmaxSQ, &dmax, sizeof(double));
-    double invr0_2 = 1.0/r0_;
-    invr0_2*=invr0_2;
-    cudaMemcpyToSymbol(cu_invr0_2, &invr0_2, sizeof(double));
+    switchingParameters.dmaxSQ = dmax* dmax;
+    double invr0 = 1.0/r0_;
+    switchingParameters.invr0_2 = invr0*=invr0;
   }
   checkRead();
-  // getConst<<<1,1>>>();
+  setUpPermanentGPUMemory();
   log<<"  contacts are counted with cutoff "<<switchingFunction.description()<<"\n";
 }
 
-__device__ double calculateSqr(double distancesq, double& dfunc) {
+CudaCoordination::~CudaCoordination(){
+  cudaFree(cudaCoords);
+  cudaFree(cudaPairList);
+}
+
+__device__ double calculateSqr(double distancesq, double& dfunc , rationalSwitchParameters switchingParameters) {
   double result=0.0;
   dfunc=0.0;
-  if(distancesq<cu_dmaxSQ) {
-    const double rdist_2 = distancesq*cu_invr0_2;
-    result=pcuda_Rational(rdist_2,dfunc,cu_nn/2,cu_mm/2);
+  if(distancesq<switchingParameters.dmaxSQ) {
+    const double rdist_2 = distancesq*switchingParameters.invr0_2;
+    result=pcuda_Rational(rdist_2,dfunc,switchingParameters.nn/2,switchingParameters.mm/2);
     // chain rule:
-    dfunc*=2*cu_invr0_2;
+    dfunc*=2*switchingParameters.invr0_2;
     // cu_stretch:
-    result=result*cu_stretch+cu_shift;
-    dfunc*=cu_stretch;
+    result=result*switchingParameters.stretch+switchingParameters.shift;
+    dfunc*=switchingParameters.stretch;
   }
   //printf("%f\n",result);
   return result;
@@ -366,6 +393,7 @@ __device__ double calculateSqr(double distancesq, double& dfunc) {
 __global__ void getCoord(
                         unsigned numOfPairs,
                         unsigned nat,
+                        rationalSwitchParameters switchingParameters,
                         double *coordinates,
                         unsigned *pairList,
                         double *ncoordOut,
@@ -390,7 +418,7 @@ __global__ void getCoord(
 
   double dsq=(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
   double dfunc=0.;
-  ncoordOut[i]= calculateSqr(dsq,dfunc);
+  ncoordOut[i]= calculateSqr(dsq,dfunc,switchingParameters);
   
   double dd[3] = {
     d[0]*dfunc,
@@ -442,24 +470,18 @@ void CudaCoordination::calculate() {
   //donw here I am calling all the arrays that goes on the GPU cudaSomething
 
   /****************allocating the memory on the GPU****************/
-  double *cudaCoords;
-  cudaMalloc(&cudaCoords, 3 * nat * sizeof(double));
-  cudaMemcpy(cudaCoords, &positions[0][0], 3 *nat* sizeof(double),
+  
+  cudaMemcpy(this->cudaCoords, &positions[0][0], 3 *nat* sizeof(double),
              cudaMemcpyHostToDevice);
   double *cudaCoordination;
   cudaMalloc(&cudaCoordination, nnToGPU * sizeof(double));
-  unsigned *cudaPairList;
-  cudaMalloc(&cudaPairList, 2*nnToGPU * sizeof(unsigned));
-  //resizing the pairlist should not be necessary (because we are executing the accumulation in the CPU)
-  //pairList.resize(2*nextpw2);
-  cudaMemcpy(cudaPairList, pairList.data(), 2*nn* sizeof(unsigned),
-             cudaMemcpyHostToDevice);
+  
   double *cudaDev;
   cudaMalloc(&cudaDev, nnToGPU *3*nat * sizeof(double));
   double *cudaVirial;
   cudaMalloc(&cudaVirial, 9*nnToGPU * sizeof(double));
   /****************starting the calculations****************/
-  getCoord<<<ngroups,nthreads>>> (nn,nat,cudaCoords,cudaPairList,
+  getCoord<<<ngroups,nthreads>>> (nn,nat,switchingParameters,cudaCoords,cudaPairList,
     cudaCoordination,cudaDev,cudaVirial); 
   
   std::vector<double> coordsToSUM(nn);
@@ -468,6 +490,10 @@ void CudaCoordination::calculate() {
   for(unsigned i=0; i<deriv.size(); ++i) {
     setAtomsDerivatives(i,deriv[i]);
   }
+  cudaFree(cudaCoordination);
+  cudaFree(cudaDev);
+  cudaFree(cudaVirial);
+
   setValue           (ncoord);
   setBoxDerivatives  (virial);
 }
