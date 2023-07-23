@@ -101,6 +101,7 @@ void Position::registerKeywords( Keywords& keys ) {
   componentsAreNotOptional(keys);
   keys.add("atoms","ATOM","the atom number");
   keys.add("atoms","ATOMS","the atom numbers that you would like to use the positions of"); 
+  keys.addFlag("WHOLEMOLECULES",false,"if this is a vector of positions do you want to make the positions into a whole before");
   keys.addFlag("SCALED_COMPONENTS",false,"calculate the a, b and c scaled components of the position separately and store them as label.a, label.b and label.c");
   keys.addOutputComponent("x","default","the x-component of the atom position");
   keys.addOutputComponent("y","default","the y-component of the atom position");

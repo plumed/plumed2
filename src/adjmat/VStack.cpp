@@ -71,6 +71,8 @@ VStack::VStack(const ActionOptions& ao):
   // And create a value to hold the matrix
   std::vector<unsigned> shape(2); shape[0]=nvals; shape[1]=getNumberOfArguments(); addValue( shape );
   if( periodic ) setPeriodic( smin, smax ); else setNotPeriodic();
+  // And store this value
+  getPntrToComponent(0)->buildDataStore(); getPntrToComponent(0)->reshapeMatrixStore( shape[1] );
   // Setup everything so we can build the store
   done_in_chain=true; unsigned nder = buildArgumentStore(0);
   // This checks which values have been stored

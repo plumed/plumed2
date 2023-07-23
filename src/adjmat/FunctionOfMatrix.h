@@ -138,6 +138,8 @@ ActionWithMatrix(ao)
   for(unsigned i=argstart; i<getNumberOfArguments();++i) {
       std::string argname=(getPntrToArgument(i)->getPntrToAction())->getName();
       if( argname=="NEIGHBORS" ) { foundneigh=true; break; }
+      ActionWithVector* av=dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
+      if( !av ) done_in_chain=false;
       if( getPntrToArgument(i)->getRank()==0 ) {
           function::FunctionOfVector<function::Sum>* as = dynamic_cast<function::FunctionOfVector<function::Sum>*>( getPntrToArgument(i)->getPntrToAction() );
           if(as) done_in_chain=false;

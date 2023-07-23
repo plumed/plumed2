@@ -34,6 +34,8 @@ private:
   unsigned mode;
 /// Are we using pbc to calculate the CVs
   bool usepbc;
+/// Do we reassemble the molecule
+  bool wholemolecules;
 /// Blocks of atom numbers
   std::vector< std::vector<unsigned> > ablocks;
 public:
@@ -42,6 +44,7 @@ public:
   unsigned getNumberOfDerivatives() override ;
   void addValueWithDerivatives( const std::vector<unsigned>& shape=std::vector<unsigned>() ) override ;
   void addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape=std::vector<unsigned>() ) override ;
+  void setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping ) override ;
   void performTask( const unsigned&, MultiValue& ) const override ;
   void calculate() override;
 };
@@ -60,7 +63,8 @@ MultiColvarTemplate<T>::MultiColvarTemplate(const ActionOptions&ao):
 Action(ao),
 ActionWithVector(ao),
 mode(0),
-usepbc(true)
+usepbc(true),
+wholemolecules(false)
 {
   std::vector<AtomNumber> all_atoms;
   if( getName()=="POSITION_VECTOR" || getName()=="MASS_VECTOR" || getName()=="CHARGE_VECTOR" ) parseAtomList( "ATOMS", all_atoms );
@@ -90,6 +94,10 @@ usepbc(true)
     bool nopbc=!usepbc; parseFlag("NOPBC",nopbc);
     usepbc=!nopbc;
   }
+  if( keywords.exists("WHOLEMOLECULES") ) {
+    parseFlag("WHOLEMOLECULES",wholemolecules);
+    if( wholemolecules ) usepbc=false;
+  }
   if( usepbc ) log.printf("  using periodic boundary conditions\n");
   else    log.printf("  without periodic boundary conditions\n");
 
@@ -116,6 +124,12 @@ template <class T>
 void MultiColvarTemplate<T>::addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape ) {
   std::vector<unsigned> s(1); s[0]=ablocks[0].size(); addComponent( name, s );
 }   
+
+template <class T>
+void MultiColvarTemplate<T>::setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping ) {
+  if( wholemolecules ) makeWhole();
+  ActionWithVector::setupStreamedComponents( headstr, nquants, nmat, maxcol, nbookeeping );
+}
 
 template <class T>
 void MultiColvarTemplate<T>::performTask( const unsigned& task_index, MultiValue& myvals ) const {

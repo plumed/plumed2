@@ -98,8 +98,8 @@ ActionShortcut(ao)
         // Compute the normalised weights
         readInputLine( getShortcutLabel() + "_weights: CUSTOM ARG=" + getShortcutLabel() + "_wnorm," + wlab + " FUNC=y/x PERIODIC=NO");   
         // Get the positions into a multicolvar
-        if( phases || nopbc ) readInputLine( getShortcutLabel() + "_pos: POSITION NOVIRIAL NOPBC ATOMS=" + atlist );
-        else readInputLine( getShortcutLabel() + "_pos: POSITION NOVIRIAL WHOLEMOLECULE ATOMS=" + atlist );
+        if( phases || nopbc ) readInputLine( getShortcutLabel() + "_pos: POSITION NOPBC ATOMS=" + atlist );
+        else readInputLine( getShortcutLabel() + "_pos: POSITION WHOLEMOLECULES ATOMS=" + atlist );
         // Multiply each vector of positions by the weight
         readInputLine( getShortcutLabel() + "_xwvec: CUSTOM ARG=" + getShortcutLabel() + "_weights," + getShortcutLabel() + "_pos.x FUNC=x*y PERIODIC=NO");
         readInputLine( getShortcutLabel() + "_ywvec: CUSTOM ARG=" + getShortcutLabel() + "_weights," + getShortcutLabel() + "_pos.y FUNC=x*y PERIODIC=NO");
