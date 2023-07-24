@@ -1,18 +1,20 @@
-#include <vector>
-
-#include <random>
-#include <iostream>
-
-
-#include <cassert>
+#include "ndReduction.h"
 
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
+#include <iostream>
 #define vdbg(...) std::cerr << __LINE__ <<":" << #__VA_ARGS__ << " " << (__VA_ARGS__) <<'\n'
 //#define vdbg(...)
 
-using rndengine=std::mt19937;
+// * Grids map to GPUs
+// * Blocks map to the MultiProcessors (MP)
+// * Threads map to Stream Processors (SP)
+// * Warps are groups of (32) threads that execute simultaneously
+
+
+//There are a LOTS of unrolled loop down here,
+//see this https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf to undestand why
 
 template <unsigned numThreads, typename T>
 __device__ void warpReduceND(volatile T* sdata, const unsigned int place, const unsigned int dim){
@@ -142,9 +144,10 @@ __global__ void reduction1D(T *g_idata, T *g_odata, const unsigned int len) {
   }
 }
 
-//c++14 ->template<typename T, std::enable_if_t<std::is_integral_v<T>, bool> = true>
+//after c++14 the template activation will be shorter to write:
+//template<typename T, std::enable_if_t<std::is_integral_v<T>, bool> = true>
 
-///finds the nearest upper multiple of the given reference
+///finds the nearest upper multiple of the given reference (wit non increments)
 template<typename T, 
 typename std::enable_if<std::is_integral<T>::value, bool>::type = true>
   inline T nearestUpperMultipleTo(T number, T reference){
@@ -164,7 +167,7 @@ size_t getIdealGroups(size_t numberOfElements, size_t runningThreads){
 }
 
 template <unsigned numThreads, typename T>
-std::vector<T> reductionCuda1D(const std::vector<T>& in){
+std::vector<T reductionCuda1D(const std::vector<T>& in){
     const auto size = in.size();
     const unsigned ngroups = getIdealGroups(size,numThreads);
   
@@ -227,6 +230,8 @@ std::vector<T> reductionCuda(const std::vector<T>& in, unsigned N){
       
 }
 
+
+
 void tmp(){
   
 std::vector<int> in(0);
@@ -240,3 +245,4 @@ reductionCuda1D<1>(in);
  * pass an already initializated cudavector to be reduced with the needed dimensions
  * 
 */
+
