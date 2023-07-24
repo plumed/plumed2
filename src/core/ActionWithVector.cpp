@@ -95,7 +95,9 @@ bool ActionWithVector::hasStoredArguments() const {
 unsigned ActionWithVector::buildArgumentStore( const unsigned& argstart ) {
   // Don't use chains for grids
   for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
-      if( getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->hasDerivatives() ) { done_in_chain=false; break; }
+      if( getPntrToArgument(i)->isConstant() ) continue; 
+      ActionWithVector* av=dynamic_cast<ActionWithVector*>(getPntrToArgument(i)->getPntrToAction());
+      if( !av || getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->hasDerivatives() ) { done_in_chain=false; break; }
   }
   if( done_in_chain ) {
       std::vector<std::string> alabels; std::vector<ActionWithVector*> f_actions;
@@ -151,10 +153,32 @@ unsigned ActionWithVector::buildArgumentStore( const unsigned& argstart ) {
               }
               if( k>=0 ) { arg_deriv_starts[i] = arg_deriv_starts[k]; continue; }
           }
-          arg_deriv_starts[i] = nder;  
-          // Add the total number of derivatives that we have by this point in the chain to nder
-          if( iaction ) { nder=0; head->getNumberOfStreamedDerivatives( nder, (getPntrToArgument(i)->getPntrToAction())->getLabel() ); }
+
+          if( i>0 ) { 
+              // This is a fudge so that inputs like this work:
+              // c: CONTACT_MATRIX ATOMS=1-100
+              // d: MATRIX_PRODUCT ARG=mat1,mat2
+              // e: CUSTOM ARG=c,d
+              // f: MATRIX_PRODUCT ARG=mat3,mat4
+              // g: CUSTOM ARG=c,f
+              // See symfunc rt-nbonds-q6 for an example
+              // In this example when we set arg_deriv_starts[1] for f in g nder=number of derivatives of c
+              // mder is equal to the number of derivatives by the time you get to f minus the number of derivatives for c
+              unsigned mder=0;
+              ActionWithVector* jaction=dynamic_cast<ActionWithVector*>(getPntrToArgument(i-1)->getPntrToAction());
+              if( !jaction->getNumberOfStoredValues( getPntrToArgument(i-1), mder, getPntrToArgument(i) ) ) mder=0;
+              if( mder>0 ) nder = nder + mder;
+          }
+
+          if( actionInChain() && !getPntrToArgument(i)->ignoreStoredValue(head->getLabel()) ) {
+              arg_deriv_starts[i] = 0; head->getNumberOfStreamedDerivatives( arg_deriv_starts[i], getPntrToArgument(i) );
+          } else {
+              arg_deriv_starts[i] = nder;
+              // Add the total number of derivatives that we have by this point in the chain to nder
+              if( iaction ) { nder=0; head->getNumberOfStreamedDerivatives( nder, getPntrToArgument(i) ); }
+          }
       }
+      nder=0; head->getNumberOfStreamedDerivatives( nder, NULL );
       return nder;
   } 
   for(unsigned i=argstart; i<getNumberOfArguments(); ++i) { if( getPntrToArgument(i)->getRank()>0 ) getPntrToArgument(i)->buildDataStore(); }
@@ -261,7 +285,7 @@ void ActionWithVector::runAllTasks() {
   
   // Recover the number of derivatives we require
   unsigned nderivatives = 0; bool gridsInStream=checkForGrids(nderivatives);
-  if( !doNotCalculateDerivatives() && !gridsInStream ) getNumberOfStreamedDerivatives( nderivatives, "" );
+  if( !doNotCalculateDerivatives() && !gridsInStream ) getNumberOfStreamedDerivatives( nderivatives, NULL );
 
   #pragma omp parallel num_threads(nt)
   {
@@ -297,15 +321,6 @@ void ActionWithVector::gatherThreads( const unsigned& nt, const unsigned& bufsiz
 
 void ActionWithVector::gatherProcesses( std::vector<double>& buffer ) {
   comm.Sum( buffer );
-}
-
-unsigned ActionWithVector::getArgumentPositionInStream( const unsigned& jder, MultiValue& myvals ) const { 
-  unsigned istrn = getPntrToArgument(jder)->getPositionInStream();
-  if( !getPntrToArgument(jder)->ignoreStoredValue(getFirstActionInChain()->getLabel()) ) {
-      unsigned task_index = myvals.getTaskIndex();
-      myvals.addDerivative( istrn, task_index, 1.0 ); myvals.updateIndex( istrn, task_index );
-  } 
-  return istrn;
 }
 
 bool ActionWithVector::checkForGrids( unsigned& nder ) const {
@@ -356,17 +371,36 @@ void ActionWithVector::getSizeOfBuffer( const unsigned& nactive_tasks, unsigned&
   if( action_to_do_after ) action_to_do_after->getSizeOfBuffer( nactive_tasks, bufsize );
 }
 
-void ActionWithVector::getNumberOfStreamedDerivatives( unsigned& nderivatives, const std::string& stopat ) {
+void ActionWithVector::getNumberOfStreamedDerivatives( unsigned& nderivatives, Value* stopat ) {
   std::string c=getFirstActionInChain()->getLabel();
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      if( !getPntrToArgument(i)->ignoreStoredValue(c) ) nderivatives += getPntrToArgument(i)->getNumberOfValues();
+      if( !getPntrToArgument(i)->ignoreStoredValue(c) ) {
+          if( getPntrToArgument(i)==stopat ) return;
+          nderivatives += getPntrToArgument(i)->getNumberOfValues();
+      }
   }
   if( getNumberOfAtoms()>0 ) nderivatives += 3*getNumberOfAtoms() + 9;
   // Don't do the whole chain if we have been told to stop early
-  if( getLabel()==stopat ) return;
+  if( stopat && stopat->getPntrToAction()==this ) return;
 
   if( action_to_do_after ) action_to_do_after->getNumberOfStreamedDerivatives( nderivatives, stopat );
 } 
+
+bool ActionWithVector::getNumberOfStoredValues( Value* startat, unsigned& nvals, Value* stopat ) {
+  if( stopat && stopat->getPntrToAction()==this ) return true;
+
+  std::string c=getFirstActionInChain()->getLabel();
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      if( !getPntrToArgument(i)->ignoreStoredValue(c) ) {
+          if( getPntrToArgument(i)==stopat ) return true;
+          nvals += getPntrToArgument(i)->getNumberOfValues();
+      }
+  } 
+  if( startat->getPntrToAction()!=this && getNumberOfAtoms()>0 ) return false;
+
+  if( action_to_do_after ) return action_to_do_after->getNumberOfStoredValues( startat, nvals, stopat );
+  return false;
+}
 
 void ActionWithVector::runTask( const unsigned& current, MultiValue& myvals ) const {
   if( isActive() ) {
@@ -460,7 +494,7 @@ bool ActionWithVector::checkForForces() {
   unsigned nquants=0, nmatrices=0, maxcol=0, nbooks=0;
   getNumberOfStreamedQuantities( getLabel(), nquants, nmatrices, maxcol, nbooks );
   // Recover the number of derivatives we require (this should be equal to the number of forces)
-  unsigned nderiv=0; getNumberOfStreamedDerivatives( nderiv, "" );
+  unsigned nderiv=0; getNumberOfStreamedDerivatives( nderiv, NULL );
   if( forcesForApply.size()!=nderiv ) forcesForApply.resize( nderiv );
   // Clear force buffer
   forcesForApply.assign( forcesForApply.size(), 0.0 );

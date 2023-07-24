@@ -33,10 +33,14 @@ namespace adjmat {
 template <class T>
 class FunctionOfMatrix : public ActionWithMatrix {
 private:
+/// Is this the first step of the calculation
+  bool firststep;
 /// The function that is being computed
   T myfunc;
 /// The number of derivatives for this action
   unsigned nderivatives;
+/// A vector that tells us if we have stored the input value
+  std::vector<bool> stored_arguments;
 /// The list of actiosn in this chain
   std::vector<std::string> actionsLabelsInChain;
 /// Get the shape of the output matrix
@@ -54,6 +58,8 @@ public:
   unsigned getNumberOfColumns() const override ;
 /// This checks for tasks in the parent class
 //  void buildTaskListFromArgumentRequests( const unsigned& ntasks, bool& reduce, std::set<AtomNumber>& otasks ) override ;
+/// This ensures that we create some bookeeping stuff during the first step
+  void setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping ) override ;
 /// This sets up for the task
   void setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const ;
 /// Calculate the full matrix
@@ -74,7 +80,8 @@ void FunctionOfMatrix<T>::registerKeywords(Keywords& keys ) {
 template <class T>
 FunctionOfMatrix<T>::FunctionOfMatrix(const ActionOptions&ao):
 Action(ao),
-ActionWithMatrix(ao)
+ActionWithMatrix(ao),
+firststep(true)
 {
   if( myfunc.getArgStart()>0 ) error("this has not beeen implemented -- if you are interested email gareth.tribello@gmail.com");
   // Get the shape of the output
@@ -136,6 +143,7 @@ ActionWithMatrix(ao)
   // In order to do this type of calculation.  There should be a neater fix than this but I can't see it.
   bool foundneigh=false;
   for(unsigned i=argstart; i<getNumberOfArguments();++i) {
+      if( getPntrToArgument(i)->isConstant() ) continue ;
       std::string argname=(getPntrToArgument(i)->getPntrToAction())->getName();
       if( argname=="NEIGHBORS" ) { foundneigh=true; break; }
       ActionWithVector* av=dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
@@ -152,7 +160,7 @@ ActionWithMatrix(ao)
       for(unsigned i=argstart; i<getNumberOfArguments();++i) {
          ActionWithValue* av=getPntrToArgument(i)->getPntrToAction();
          if( av->getName()!="NEIGHBORS" ) {
-             for(unsigned i=0;i<av->getNumberOfComponents();++i) (av->copyOutput(i))->buildDataStore(); 
+             for(int i=0;i<av->getNumberOfComponents();++i) (av->copyOutput(i))->buildDataStore(); 
          }
       }
   }
@@ -178,7 +186,8 @@ unsigned FunctionOfMatrix<T>::getNumberOfColumns() const {
      for(unsigned i=argstart;i<getNumberOfArguments();++i) {
          if( getPntrToArgument(i)->getRank()==2 ) {
              ActionWithMatrix* am=dynamic_cast<ActionWithMatrix*>( getPntrToArgument(i)->getPntrToAction() );
-             plumed_assert( am ); return am->getNumberOfColumns();
+             if( am ) return am->getNumberOfColumns();
+             return getPntrToArgument(i)->getShape()[1];
          }
      }
   }
@@ -201,6 +210,19 @@ void FunctionOfMatrix<T>::setupForTask( const unsigned& task_index, std::vector<
 //   // If it is computed outside a chain get the tassks the daughter chain needs
 //   propegateTaskListsForValue( 0, ntasks, reduce, otasks );
 // }
+
+template <class T>
+void FunctionOfMatrix<T>::setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping ) {
+    if( firststep ) {
+      stored_arguments.resize( getNumberOfArguments() );
+      std::string control = getFirstActionInChain()->getLabel();
+      for(unsigned i=0; i<stored_arguments.size(); ++i) {
+          stored_arguments[i] = !getPntrToArgument(i)->ignoreStoredValue( control );
+      }
+      firststep=false;
+  }
+  ActionWithMatrix::setupStreamedComponents( headstr, nquants, nmat, maxcol, nbookeeping );
+}
 
 template <class T>
 void FunctionOfMatrix<T>::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
@@ -233,7 +255,11 @@ void FunctionOfMatrix<T>::performTask( const std::string& controller, const unsi
           unsigned ostrn=getConstPntrToComponent(i)->getPositionInStream();
           for(unsigned j=argstart;j<getNumberOfArguments();++j) {
               if( getPntrToArgument(j)->getRank()==2 ) {
-                  unsigned istrn = getArgumentPositionInStream( j, myvals ); 
+                  unsigned istrn = getPntrToArgument(j)->getPositionInStream();
+                  if( stored_arguments[j] ) {
+                      unsigned task_index = getPntrToArgument(i)->getShape()[1]*index1 + ind2; 
+                      myvals.clearDerivatives(istrn); myvals.addDerivative( istrn, task_index, 1.0 ); myvals.updateIndex( istrn, task_index );
+                  }
                   for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
                       unsigned kind=myvals.getActiveIndex(istrn,k);
                       myvals.addDerivative( ostrn, arg_deriv_starts[j] + kind, derivatives(i,j)*myvals.getDerivative( istrn, kind ) );
@@ -303,10 +329,20 @@ void FunctionOfMatrix<T>::runEndOfRowJobs( const unsigned& ind, const std::vecto
                 if( arg_deriv_starts[j]==arg_deriv_starts[i] ) { found=true; break; }
             } 
             if( found ) continue;
-            unsigned istrn = getPntrToArgument(i)->getPositionInMatrixStash();
-            std::vector<unsigned>& imat_indices( myvals.getMatrixRowDerivativeIndices( istrn ) );
-            for(unsigned k=0; k<myvals.getNumberOfMatrixRowDerivatives( istrn ); ++k) mat_indices[ntot_mat + k] = arg_deriv_starts[i] + imat_indices[k];
-            ntot_mat += myvals.getNumberOfMatrixRowDerivatives( istrn ); 
+
+            if( stored_arguments[i] ) {
+                unsigned tbase = getPntrToArgument(i)->getShape()[1]*ind;
+                for(unsigned k=1; k<indices.size(); ++k) {
+                    unsigned ind2 = indices[k] - getConstPntrToComponent(0)->getShape()[0];
+                    mat_indices[ntot_mat + k - 1] = arg_deriv_starts[i] + tbase + ind2;
+                }
+                ntot_mat += indices.size()-1;
+            } else {
+                unsigned istrn = getPntrToArgument(i)->getPositionInMatrixStash();
+                std::vector<unsigned>& imat_indices( myvals.getMatrixRowDerivativeIndices( istrn ) );
+                for(unsigned k=0; k<myvals.getNumberOfMatrixRowDerivatives( istrn ); ++k) mat_indices[ntot_mat + k] = arg_deriv_starts[i] + imat_indices[k];
+                ntot_mat += myvals.getNumberOfMatrixRowDerivatives( istrn ); 
+            }
           }
           myvals.setNumberOfMatrixRowDerivatives( nmat, ntot_mat );
       }

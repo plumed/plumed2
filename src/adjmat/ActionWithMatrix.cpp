@@ -68,7 +68,7 @@ void ActionWithMatrix::finishChainBuild( ActionWithVector* act ) {
    else {
       next_action_in_chain=am;
       // Build the list of things we are going to loop over in runTask
-      AdjacencyMatrixBase* aa=dynamic_cast<AdjacencyMatrixBase*>(act); if( aa ) return ; 
+      AdjacencyMatrixBase* aa=dynamic_cast<AdjacencyMatrixBase*>(act); if( aa || act->getName()=="VSTACK" ) return ; 
       plumed_massert( !matrix_to_do_after, "cannot add " + act->getLabel() + " in " + getLabel() + " as have already added " + matrix_to_do_after->getLabel() ); 
       matrix_to_do_after=am; am->matrix_to_do_before=this;
    }

@@ -36,7 +36,7 @@ public:
   unsigned getNumberOfColumns() const override { return getConstPntrToComponent(0)->getShape()[1]; }
   void setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const ;
   void performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const override;
-  void runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const override {}
+  void runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const override ;
 };
 
 PLUMED_REGISTER_ACTION(MatrixTimesMatrix,"MATRIX_PRODUCT")
@@ -51,7 +51,7 @@ ActionWithMatrix(ao)
 {
   if( getNumberOfArguments()!=2 ) error("should be two arguments to this action, a matrix and a vector");
   if( getPntrToArgument(0)->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) error("first argument to this action should be a matrix");
-  if( getPntrToArgument(1)->getRank()!=2 || getPntrToArgument(1)->hasDerivatives() ) error("first argument to this action should be a matrix");
+  if( getPntrToArgument(1)->getRank()!=2 || getPntrToArgument(1)->hasDerivatives() ) error("second argument to this action should be a matrix");
   if( getPntrToArgument(0)->getShape()[1]!=getPntrToArgument(1)->getShape()[0] ) error("number of columns in first matrix does not equal number of rows in second matrix");
   std::vector<unsigned> shape(2); shape[0]=getPntrToArgument(0)->getShape()[0]; shape[1]=getPntrToArgument(1)->getShape()[1];
   addValue( shape ); setNotPeriodic(); nderivatives = buildArgumentStore(0);
@@ -88,6 +88,23 @@ void MatrixTimesMatrix::performTask( const std::string& controller, const unsign
   }
   // And add this part of the product
   myvals.addValue( ostrn, matval );
+}
+
+void MatrixTimesMatrix::runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const {
+  if( doNotCalculateDerivatives() || !matrixChainContinues() ) return ;
+
+  unsigned mat1s = ival*getPntrToArgument(0)->getShape()[1]; 
+  unsigned nmult = getPntrToArgument(0)->getShape()[1], ss = getPntrToArgument(1)->getShape()[1];
+  unsigned nmat = getConstPntrToComponent(0)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixRowDerivatives( nmat );
+  std::vector<unsigned>& matrix_indices( myvals.getMatrixRowDerivativeIndices( nmat ) ); unsigned ntwo_atoms = myvals.getSplitIndex();
+  for(unsigned j=0; j<nmult; ++j) {
+      matrix_indices[nmat_ind] = mat1s + j; nmat_ind++;
+      for(unsigned i=1; i<ntwo_atoms; ++i) {
+          unsigned ind2 = indices[i]; if( ind2>=getPntrToArgument(0)->getShape()[0] ) ind2 = indices[i] - getPntrToArgument(0)->getShape()[0];
+          matrix_indices[nmat_ind] = arg_deriv_starts[1] + j*ss + ind2; nmat_ind++;
+      }
+  }
+  myvals.setNumberOfMatrixRowDerivatives( nmat, nmat_ind );
 }
 
 }

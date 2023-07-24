@@ -81,21 +81,22 @@ VStack::VStack(const ActionOptions& ao):
 }
 
 void VStack::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {
-  unsigned nargs = getNumberOfArguments();
+  unsigned nargs = getNumberOfArguments(); unsigned nvals = getPntrToArgument(0)->getShape()[0];
   if( indices.size()!=nargs+1 ) indices.resize( nargs+1 );
-  for(unsigned i=0; i<nargs; ++i) indices[i+1] = i;
+  for(unsigned i=0; i<nargs; ++i) indices[i+1] = nvals + i;
   myvals.setSplitIndex( nargs + 1 );
 }
 
 void VStack::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
-  myvals.addValue( getConstPntrToComponent(0)->getPositionInStream(), getArgumentElement( index2, index1, myvals ) );
+  unsigned ind2 = index2; if( index2>=getPntrToArgument(0)->getShape()[0] ) ind2 = index2 - getPntrToArgument(0)->getShape()[0];
+  myvals.addValue( getConstPntrToComponent(0)->getPositionInStream(), getArgumentElement( ind2, index1, myvals ) );
 
   if( doNotCalculateDerivatives() ) return;  
-  addDerivativeOnVectorArgument( stored[index2], 0, index2, index1, 1.0, myvals );
+  addDerivativeOnVectorArgument( stored[ind2], 0, ind2, index1, 1.0, myvals );
 }
 
 void VStack::runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const { 
-  if( doNotCalculateDerivatives() || !actionInChain() ) return ;
+  if( doNotCalculateDerivatives() || !matrixChainContinues() ) return ;
 
   unsigned nmat = getConstPntrToComponent(0)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixRowDerivatives( nmat );
   std::vector<unsigned>& matrix_indices( myvals.getMatrixRowDerivativeIndices( nmat ) );
@@ -111,7 +112,7 @@ void VStack::runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> 
       for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
           matrix_indices[nmat_ind] = myvals.getActiveIndex(istrn,k); nmat_ind++; 
       }
-  } 
+  }
   myvals.setNumberOfMatrixRowDerivatives( nmat, nmat_ind );
 }
 

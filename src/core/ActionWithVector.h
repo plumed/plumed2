@@ -63,7 +63,9 @@ private:
 /// Get the number of quantities in the stream
   void getNumberOfStreamedQuantities( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping );
 /// Get the number of derivatives in the stream
-  void getNumberOfStreamedDerivatives( unsigned& nderivatives, const std::string& stopat );
+  void getNumberOfStreamedDerivatives( unsigned& nderivatives, Value* stopat );
+/// Get the number of stored values in the stream
+  bool getNumberOfStoredValues( Value* startat, unsigned& nvals, Value* stopat );
 /// Add this action to the recursive chain
   bool addActionToChain( const std::vector<std::string>& alabels, ActionWithVector* act );
 /// Check the chain for non scalar forces
@@ -83,8 +85,6 @@ protected:
   bool runInSerial() const ;
 /// This sets up the arguments at the start of the calculation
   unsigned buildArgumentStore( const unsigned& argstart );
-/// Get the position of the argument in the streamm and set it if we need to
-  unsigned getArgumentPositionInStream( const unsigned& jder, MultiValue& myvals ) const ;
 /// Run all the tasks in the list
   void runAllTasks();  
 /// Accumulate the forces from the Values

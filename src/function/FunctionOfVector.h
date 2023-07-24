@@ -36,12 +36,14 @@ class FunctionOfVector : public ActionWithVector {
 private:
 /// Do the calculation at the end of the run
   bool doAtEnd;
-/// The forces that we get from the values
-  std::vector<double> forcesToApply;
+/// Is this the first time we are doing the calc
+  bool firststep;
 /// The function that is being computed
   T myfunc;
 /// The number of derivatives for this action
   unsigned nderivatives;
+/// A vector that tells us if we have stored the input value
+  std::vector<bool> stored_arguments;
 public:
   static void registerKeywords(Keywords&);
 /// This method is used to run the calculation with functions such as highest/lowest and sort.  
@@ -60,6 +62,8 @@ public:
 /// This builds the task list for the action
   void buildTaskListFromArgumentValues( const std::string& name, const std::set<AtomNumber>& tflags );
   void calculate() override;
+/// This ensures that we create some bookeeping stuff during the first step
+  void setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping ) override ;
 /// Calculate the function
   void performTask( const unsigned& current, MultiValue& myvals ) const override ;
 };
@@ -77,6 +81,7 @@ FunctionOfVector<T>::FunctionOfVector(const ActionOptions&ao):
 Action(ao),
 ActionWithVector(ao),
 doAtEnd(true),
+firststep(true),
 nderivatives(0)
 {
   // Get the shape of the output
@@ -166,6 +171,19 @@ unsigned FunctionOfVector<T>::getNumberOfDerivatives() {
 }
 
 template <class T>
+void FunctionOfVector<T>::setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping ) {
+    if( firststep ) {
+      stored_arguments.resize( getNumberOfArguments() );
+      std::string control = getFirstActionInChain()->getLabel();
+      for(unsigned i=0; i<stored_arguments.size(); ++i) {
+          stored_arguments[i] = !getPntrToArgument(i)->ignoreStoredValue( control );
+      }
+      firststep=false;
+  }
+  ActionWithVector::setupStreamedComponents( headstr, nquants, nmat, maxcol, nbookeeping );
+}
+
+template <class T>
 void FunctionOfVector<T>::performTask( const unsigned& current, MultiValue& myvals ) const {
   unsigned argstart=myfunc.getArgStart(); std::vector<double> args( getNumberOfArguments()-argstart);
   if( actionInChain() ) {
@@ -194,7 +212,11 @@ void FunctionOfVector<T>::performTask( const unsigned& current, MultiValue& myva
   // with respect to the scalar.
   if( actionInChain() ) {
       for(unsigned j=0;j<args.size();++j) {
-          unsigned istrn = getArgumentPositionInStream( argstart+j, myvals );
+          unsigned istrn = getPntrToArgument(j)->getPositionInStream();
+          if( stored_arguments[j] ) { 
+              unsigned task_index = myvals.getTaskIndex();
+              myvals.addDerivative( istrn, task_index, 1.0 ); myvals.updateIndex( istrn, task_index ); 
+          }
           unsigned arg_deriv_s = arg_deriv_starts[argstart+j];
           for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
               unsigned kind=myvals.getActiveIndex(istrn,k);

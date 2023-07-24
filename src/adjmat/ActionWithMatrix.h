@@ -45,6 +45,8 @@ private:
 /// This does the calculation of a particular matrix element
   void runTask( const std::string& controller, const unsigned& current, const unsigned colno, MultiValue& myvals ) const ;
 protected:
+/// Does the matrix chain continue on from this action
+  bool matrixChainContinues() const ;
 /// This returns the jelem th element of argument ic
   double getArgumentElement( const unsigned& ic, const unsigned& jelem, const MultiValue& myvals ) const ;
 /// This returns an element of a matrix that is passed an argument
@@ -88,6 +90,11 @@ public:
   void gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const override;
 };
 
+inline
+bool ActionWithMatrix::matrixChainContinues() const {
+  return matrix_to_do_after!=NULL;
+}
+
 inline 
 double ActionWithMatrix::getArgumentElement( const unsigned& ic, const unsigned& jelem, const MultiValue& myvals ) const {
   if( !getPntrToArgument(ic)->valueHasBeenSet() ) return myvals.get( getPntrToArgument(ic)->getPositionInStream() );
@@ -103,7 +110,7 @@ double ActionWithMatrix::getElementOfMatrixArgument( const unsigned& imat, const
 
 inline
 void ActionWithMatrix::addDerivativeOnVectorArgument( const bool& inchain, const unsigned& ival, const unsigned& jarg, const unsigned& jelem, const double& der, MultiValue& myvals ) const {
-  plumed_dbg_assert( jarg<getNumberOfArguments() && getPntrToArgument(jarg)->getRank()==1 && !getPntrToArgument(jarg)->hasDerivatives() );
+  plumed_dbg_massert( jarg<getNumberOfArguments() && getPntrToArgument(jarg)->getRank()==1 && !getPntrToArgument(jarg)->hasDerivatives(), "failing in action " + getName() + " with label " + getLabel() );
   unsigned ostrn = getConstPntrToComponent(ival)->getPositionInStream(), vstart=arg_deriv_starts[jarg];
   if( !inchain ) {
       myvals.addDerivative( ostrn, vstart + jelem, der ); myvals.updateIndex( ostrn, vstart + jelem );

@@ -292,6 +292,7 @@ bool Value::ignoreStoredValue(const std::string& c) const {
 
 void Value::setConstant() {
   constant=true; storedata=true; setShape( shape );
+  if( getRank()==2 && !hasDeriv ) reshapeMatrixStore( shape[1] );
 }
 
 void Value::writeBinary(std::ostream&o) const {

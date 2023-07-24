@@ -36,7 +36,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit OuterProduct(const ActionOptions&);
   unsigned getNumberOfDerivatives();
-  unsigned getNumberOfColumns() const override { return getConstPntrToComponent(0)->getShape()[0]; }
+  unsigned getNumberOfColumns() const override { return getConstPntrToComponent(0)->getShape()[1]; }
   void setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const ;
   void performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const override;
   void runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const override ;
@@ -113,13 +113,13 @@ void OuterProduct::performTask( const std::string& controller, const unsigned& i
       addDerivativeOnVectorArgument( stored_vector1, 0, 0, index1, function.evaluateDeriv( 0, args ), myvals );
       addDerivativeOnVectorArgument( stored_vector2, 0, 1, ind2, function.evaluateDeriv( 1, args ), myvals );
   }
-  if( doNotCalculateDerivatives() ) return ;
+  if( doNotCalculateDerivatives() || !matrixChainContinues() ) return ;
   unsigned nmat = getConstPntrToComponent(0)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixRowDerivatives( nmat );
   myvals.getMatrixRowDerivativeIndices( nmat )[nmat_ind] = arg_deriv_starts[1] + ind2; myvals.setNumberOfMatrixRowDerivatives( nmat, nmat_ind+1 );
 }
 
 void OuterProduct::runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const {
-  if( doNotCalculateDerivatives() ) return ;
+  if( doNotCalculateDerivatives() || !matrixChainContinues() ) return ;
   unsigned nmat = getConstPntrToComponent(0)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixRowDerivatives( nmat );
   myvals.getMatrixRowDerivativeIndices( nmat )[nmat_ind] = ival; myvals.setNumberOfMatrixRowDerivatives( nmat, nmat_ind+1 );
 }
