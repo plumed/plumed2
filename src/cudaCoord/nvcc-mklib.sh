@@ -59,5 +59,6 @@ for opt in -f; do
 done
 
 eval "$compile" "$obj" "$file" && \
-eval "$compile" "reduction.o" "ndReduction.cu" && \
-eval "$link_command" "$lib" "$obj" "reduction.o"
+eval "$compile" "ndReduction1D.o" "ndReduction1D.cu" && \
+eval "$link_command" "$lib" "ndReduction1D.o" "$obj"
+

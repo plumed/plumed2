@@ -16,6 +16,10 @@
 //There are a LOTS of unrolled loop down here,
 //see this https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf to undestand why
 
+//https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#dim3
+//7.3.2. dim3
+//This type is an integer vector type based on uint3 that is used to specify dimensions. 
+
 template <unsigned numThreads, typename T>
 __device__ void warpReduceND(volatile T* sdata, const unsigned int place, const unsigned int dim){
     if(numThreads >= 64){//compile time
@@ -167,7 +171,7 @@ size_t getIdealGroups(size_t numberOfElements, size_t runningThreads){
 }
 
 template <unsigned numThreads, typename T>
-std::vector<T reductionCuda1D(const std::vector<T>& in){
+std::vector<T> reductionCuda1D(const std::vector<T>& in){
     const auto size = in.size();
     const unsigned ngroups = getIdealGroups(size,numThreads);
   
@@ -237,6 +241,65 @@ void tmp(){
 std::vector<int> in(0);
 reductionCuda<1>(in, 1);
 reductionCuda1D<1>(in);
+}
+
+template <typename T>
+void callReduction1D (T *g_idata, T *g_odata, const unsigned int len, const unsigned blocks, const unsigned nthreads){
+  switch (nthreads) {
+  case 512:
+    reduction1D<512,T><<<blocks,512>>>(g_idata,g_odata, len);
+    break;
+  case 256:
+    reduction1D<256,T><<<blocks,256>>>(g_idata,g_odata, len);
+    break;
+  case 128:
+    reduction1D<128,T><<<blocks,128>>>(g_idata,g_odata, len);
+    break;
+  case 64:
+    reduction1D<64,T><<<blocks,64>>>(g_idata,g_odata, len);
+    break;
+  case 32:
+    reduction1D<32,T><<<blocks,32>>>(g_idata,g_odata, len);
+    break;
+  }
+}
+
+
+size_t decideThreadsPerBlock(unsigned N, unsigned maxNumThreads=512){
+  //this seeks the minimum number of threads to use a sigle block (and end the recursion)
+  size_t dim=32;
+  for (dim=32;dim<512;dim<<=1){
+    if (maxNumThreads < dim) {
+      dim >>=1;
+      break;
+    }
+    if( N < dim){
+      break;
+    }
+  }
+  return 32;
+}
+
+double reduceScalar(double* cudaScalarAddress, unsigned N, unsigned maxNumThreads){
+//we'll proceed to call recursively callreduction1D until N==1:
+  double *reduceOut = cudaScalarAddress;
+  double *reduceIn;
+  while(N>1){
+    reduceIn = reduceOut;
+    reduceOut = nullptr;
+    size_t runningThreads = decideThreadsPerBlock(N,maxNumThreads);
+    auto ngroups=getIdealGroups(N, runningThreads);
+    cudaMalloc(&reduceOut,ngroups  * sizeof(double));
+    callReduction1D (reduceIn, reduceOut, N, ngroups, runningThreads);
+    if (reduceIn != cudaScalarAddress){
+      cudaFree(reduceIn);
+    }
+    N=ngroups;
+  }
+  double toret;
+  cudaMemcpy(&toret, reduceOut, sizeof(double), cudaMemcpyDeviceToHost);
+  cudaFree(reduceOut);
+  return toret;
 }
 
 /**todo:

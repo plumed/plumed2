@@ -23,8 +23,12 @@
 #include "plumed/tools/SwitchingFunction.h"
 #include "plumed/tools/NeighborList.h"
 #include "plumed/core/ActionRegister.h"
+
+#include "ndReduction.h"
+
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
+
 #include <numeric>
 #include <limits>
 #include <iostream>
@@ -484,9 +488,10 @@ void CudaCoordination::calculate() {
   getCoord<<<ngroups,nthreads>>> (nn,nat,switchingParameters,cudaCoords,cudaPairList,
     cudaCoordination,cudaDev,cudaVirial); 
   
-  std::vector<double> coordsToSUM(nn);
-  cudaMemcpy(coordsToSUM.data(), cudaCoordination, nn*sizeof(double), cudaMemcpyDeviceToHost);
-  double ncoord=std::accumulate(coordsToSUM.begin(),coordsToSUM.end(),0.0);
+  //std::vector<double> coordsToSUM(nn);
+  //cudaMemcpy(coordsToSUM.data(), cudaCoordination, nn*sizeof(double), cudaMemcpyDeviceToHost);
+  //double ncoord=std::accumulate(coordsToSUM.begin(),coordsToSUM.end(),0.0);
+  double ncoord=CUDAHELPERS::reduceScalar(cudaCoordination, nn);
   for(unsigned i=0; i<deriv.size(); ++i) {
     setAtomsDerivatives(i,deriv[i]);
   }
