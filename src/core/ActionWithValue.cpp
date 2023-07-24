@@ -43,6 +43,7 @@ void ActionWithValue::registerKeywords(Keywords& keys) {
                                  "label followed by a dot and the name of the quantity required from the list below.");
   keys.addFlag("NUMERICAL_DERIVATIVES", false, "calculate the derivatives for these quantities numerically");
   keys.addFlag("MIX_HISTORY_DEPENDENCE",false,"allow arguments to be a mixture of history-dependent and non-history-dependent quantities");
+  keys.addFlag("FORCE_ALL_TASKS",false,"force this ation to complete all the tasks");
   keys.addFlag("SERIAL",false,"do the calculation in serial.  Do not parallelize");
   keys.addFlag("TIMINGS",false,"output information on the timings of the various parts of the calculation");
 }
@@ -86,6 +87,8 @@ ActionWithValue::ActionWithValue(const ActionOptions&ao):
     parseFlag("TIMINGS",timers);
     if( timers ) { stopwatch.start(); stopwatch.pause(); }
   }
+  if( keywords.exists("FORCE_ALL_TASKS") ) parseFlag("FORCE_ALL_TASKS",force_all_tasks);
+  if( force_all_tasks ) log.printf("  forcing all tasks to be performed\n");
 }
 
 ActionWithValue::~ActionWithValue() {
@@ -229,6 +232,7 @@ void ActionWithValue::setupForCalculation( const bool& force ) {
   // Setup the task lists that tell PLUMED what needs to be calculated
   clearTaskLists();
   if( firststep ) { actionsToDoBeforeFirstCalculate(); firststep=false; }
+  if( force_all_tasks ) return ;
   // Setup the task list for this action
   setupCurrentTaskList(); 
   // Check for users of this value

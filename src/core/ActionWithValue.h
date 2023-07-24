@@ -92,6 +92,8 @@ private:
   bool timers;
 /// Can the input be a mixture of history dependent quantities and non-history dependent quantities
   bool allow_mixed_history_input;
+/// Force the action to always do the full set of tasks
+  bool force_all_tasks;
 /// The stopwatch that times the different parts of the calculation
   ForwardDecl<Stopwatch> stopwatch_fwd;
   Stopwatch& stopwatch=*stopwatch_fwd;
