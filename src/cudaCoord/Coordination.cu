@@ -452,8 +452,7 @@ __global__ void getCoord(
 }
 
 void CudaCoordination::calculate() {
-  Tensor virial;
-  std::vector<Vector> deriv(getNumberOfAtoms());
+  
   auto positions = getPositions();
   auto nat = positions.size();
   if(nl->getStride()>0 && invalidateList) {
@@ -491,7 +490,11 @@ void CudaCoordination::calculate() {
   //std::vector<double> coordsToSUM(nn);
   //cudaMemcpy(coordsToSUM.data(), cudaCoordination, nn*sizeof(double), cudaMemcpyDeviceToHost);
   //double ncoord=std::accumulate(coordsToSUM.begin(),coordsToSUM.end(),0.0);
-  double ncoord=CUDAHELPERS::reduceScalar(cudaCoordination, nn);
+  double ncoord = CUDAHELPERS::reduceScalar(cudaCoordination, nn);
+
+  Tensor virial=CUDAHELPERS::reduceTensor(cudaVirial, nn);;
+  std::vector<Vector> deriv(getNumberOfAtoms());
+
   for(unsigned i=0; i<deriv.size(); ++i) {
     setAtomsDerivatives(i,deriv[i]);
   }

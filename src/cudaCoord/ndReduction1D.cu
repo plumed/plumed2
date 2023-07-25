@@ -1,14 +1,17 @@
 #include "ndReduction.h"
 
-
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
+
+#include "cudaHelpers.cuh"
 
 //std::min is constexpr in c++14
 //#include <algorithm>
 
 #include <iomanip>
 #include <iostream>
+#include <vector>
+#include <numeric>
 #define vdbg(...) std::cerr << std::setw(4) << __LINE__ <<":" << std::setw(20)<< #__VA_ARGS__ << " " << (__VA_ARGS__) <<'\n'
 //#define vdbg(...)
 
@@ -25,63 +28,48 @@
 //7.3.2. dim3
 //This type is an integer vector type based on uint3 that is used to specify dimensions. 
 
-template<class T>
-__device__ constexpr const T& mymin(const T& a, const T& b)
-{
-    return (b < a) ? b : a;
-}
+namespace PLMD {
+namespace CUDAHELPERS {
 
 template <unsigned numThreads, typename T>
 __device__ void warpReduce1D(volatile T* sdata, unsigned int place){
     if(numThreads >= 64){//compile time
-      if(blockIdx.x==0&&threadIdx.x == 0){printf("CUDA: 32-%i\n",numThreads);}
       sdata[place] += sdata[place + 32];
-      }
+    }
     if(numThreads >= 32){//compile time
-      if(blockIdx.x==0&&threadIdx.x == 0){printf("CUDA: 16-%i\n",numThreads);}
-      if(blockIdx.x==0){printf("CUDA: 16 : [%i] %f\n",place,sdata[place]);}
       sdata[place] += sdata[place + 16];
-      }
+    }
     if(numThreads >= 16){//compile time
-      if(blockIdx.x==0&&threadIdx.x == 0){printf("CUDA: 8-%i\n",numThreads);}
       sdata[place] += sdata[place + 8];
-      }
+    }
     if(numThreads >= 8){//compile time
-    if(blockIdx.x==0&&threadIdx.x == 0){printf("CUDA: 4-%i\n",numThreads);}
       sdata[place] += sdata[place + 4];
-      }
+    }
     if(numThreads >= 4){//compile time
-    if(blockIdx.x==0&&threadIdx.x == 0){printf("CUDA: 2-%i\n",numThreads);}
       sdata[place] += sdata[place + 2];
-      }
+    }
     if(numThreads >= 2){//compile time
-    if(blockIdx.x==0&&threadIdx.x == 0){printf("CUDA: 1-%i\n",numThreads);}
       sdata[place] += sdata[place + 1];
-      }
-}
-
-template <typename T>
-__device__ T* shared_memory_proxy()
-{
-    // do we need an __align__() here? I don't think so...
-    extern __shared__ unsigned char memory[];
-    return reinterpret_cast<T*>(memory);
+    }
 }
 
 template <unsigned numThreads, typename T>
 __global__ void reduction1D(T *g_idata, T *g_odata, const unsigned int len) {
   //extern __shared__ T sdata[numThreads];
-  if(blockIdx.x==0&&threadIdx.x == 0){printf("CUDA: start\n");}
   auto sdata = shared_memory_proxy<T>();
-  if(blockIdx.x==0&&threadIdx.x == 0){printf("CUDA: got Mem\n");}
   const unsigned int place = threadIdx.x;
   // each thread loads one element from global to shared mem
   unsigned int i = numThreads*blockIdx.x*2 + place;
   const unsigned int gridSize = numThreads*gridDim.x*2;
   sdata[place] = T(0);
-  if(blockIdx.x==0&&threadIdx.x == 0){printf("CUDA: assigned mem(%i)\n",len);}
-  while (i < len) {
+  //I think this may slow down the loop, but this does not force the user to have
+  //an input that is multiple of the threads, padded with zeros
+  while (i+numThreads < len) {
     sdata[place] += g_idata[i] + g_idata[i+numThreads];
+    i+=gridSize;
+  }
+  while (i < len) {
+    sdata[place] += g_idata[i];
     i+=gridSize;
   }
     
@@ -103,13 +91,10 @@ __global__ void reduction1D(T *g_idata, T *g_odata, const unsigned int len) {
   //Instructions are SIMD synchronous within a warp
   //so no need for __syncthreads(), in the last iterations
   if (threadIdx.x < mymin(32u,numThreads/2)) {
-    if(blockIdx.x==0&&threadIdx.x == 0){printf("CUDA: warpStart\n");}
     warpReduce1D<numThreads>(sdata, place);
-    if(blockIdx.x==0&&threadIdx.x == 0){printf("CUDA: warpStop\n");}
   }
   // write result for this block to global mem
   if (threadIdx.x == 0){
-    if(blockIdx.x==0&&threadIdx.x == 0){printf("CUDA: %f\n",sdata[0] );}
     g_odata[blockIdx.x] = sdata[0];
   }
 }
@@ -122,7 +107,7 @@ template<typename T,
 typename std::enable_if<std::is_integral<T>::value, bool>::type = true>
   inline T nearestUpperMultipleTo(T number, T reference){
     return ((number-1)|(reference-1))+1;
-  }
+}
 
 ///We'll find the ideal number of blocks using the Brent's theorem
 size_t getIdealGroups(size_t numberOfElements, size_t runningThreads){
@@ -172,8 +157,6 @@ size_t decideThreadsPerBlock(unsigned N, unsigned maxNumThreads=512){
   return dim;
 }
 
-namespace PLMD {
-namespace CUDAHELPERS {
 double reduceScalar(double* cudaScalarAddress, unsigned N, unsigned maxNumThreads){
 //we'll proceed to call recursively callreduction1D until N==1:
   double *reduceOut = cudaScalarAddress;
@@ -208,7 +191,7 @@ double reduceScalar(double* cudaScalarAddress, unsigned N, unsigned maxNumThread
 } //namespace CUDAHELPERS
 } //namespace PLMD
 /**todo:
- * @compiletaime request all the possible threads 1 2 4 8 16 32 64 128 256 512
+ * @compiletime request all the possible threads 1 2 4 8 16 32 64 128 256 512
  * create a function that cases the threadsnum
  * pass an already initializated cudavector to be reduced with the needed dimensions
  * 
