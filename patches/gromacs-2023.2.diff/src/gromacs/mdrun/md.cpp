@@ -1139,7 +1139,8 @@ void gmx::LegacySimulator::do_md()
 
         if (plumedswitch && bHREX) {
           // gmx_enerdata_t *hrex_enerd;
-          gmx_enerdata_t hrex_enerd(enerd->grpp.nener, &inputrec->fepvals->all_lambda);
+          int nlambda = enerd->foreignLambdaTerms.numLambdas();
+          gmx_enerdata_t hrex_enerd(enerd->grpp.nener, nlambda == 0 ? nullptr: &inputrec->fepvals->all_lambda);
           int repl  = -1;
           int nrepl = -1;
           if (MAIN(cr)){
