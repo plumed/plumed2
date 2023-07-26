@@ -28,82 +28,9 @@
 namespace PLMD {
 namespace CUDAHELPERS {
 
-template <unsigned numThreads, typename T>
-__device__ void warpReduceND(volatile T* sdata, const unsigned int place, const unsigned int dim){
-    if(numThreads >= 64){//compile time
-      sdata[place] += sdata[place + dim*32];
-      }
-    if(numThreads >= 32){//compile time
-      sdata[place] += sdata[place + dim*16];
-      }
-    if(numThreads >= 16){//compile time
-      sdata[place] += sdata[place + dim*8];
-      }
-    if(numThreads >= 8){//compile time
-      sdata[place] += sdata[place + dim*4];
-      }
-    if(numThreads >= 4){//compile time
-      sdata[place] += sdata[place + dim*2];
-      }
-    if(numThreads >= 2){//compile time
-      sdata[place] += sdata[place + dim];
-      }
-}
 
 template <unsigned numThreads, typename T>
-__global__ void reductionND(T *g_idata, T *g_odata, const unsigned int len) {
-  //playing with this 
-  //https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
-  extern __shared__ T sdata[];
-  const unsigned int coord = blockIdx.y;
-  const unsigned int dim = gridDim.y;
-  const unsigned int place = dim*threadIdx.x+coord;
-  // each thread loads one element from global to shared mem
-  //const unsigned int tid = dim*threadIdx.x+coord;
-  unsigned int i = (numThreads*2)*blockIdx.x*dim + place;
-  const unsigned int gridSize = (numThreads*2)*gridDim.x*dim;
-  sdata[place] = T(0);
-  while (i+numThreads*dim < len) {
-    if (place == 0){
-    printf("CUDA: i %i",i);
-    }
-    sdata[place] += g_idata[i] + g_idata[i+numThreads*dim];
-    i+=gridSize;
-  }
-  while (i < len) {
-    sdata[place] += g_idata[i];
-    i+=gridSize;
-  }
-
-  __syncthreads();
-  // do reduction in shared memory
-  
-  if (numThreads >= 512) {//compile time
-    if (threadIdx.x  < 256) {
-       sdata[place] += sdata[place + 256*dim]; } __syncthreads(); 
-       }
-  if (numThreads >= 256) {//compile time
-    if (threadIdx.x  < 128) {
-       sdata[place] += sdata[place + 128*dim]; } __syncthreads(); 
-       }
-  if (numThreads >= 128) {//compile time
-    if (threadIdx. x < 64) { 
-      sdata[place] += sdata[place + 64*dim]; } __syncthreads();
-       }
-  //Instructions are SIMD synchronous within a warp
-  //so no need for __syncthreads(), in the last iterations
-  if (threadIdx.x < mymin(32u,numThreads/2)) {
-    warpReduceND<numThreads>(sdata, place,dim);
-  }
-  // write result for this block to global mem
-  if (threadIdx.x == 0){
-    printf("CUDA:thread [%i],%i: %i\n",blockIdx.x, threadIdx.y,sdata[threadIdx.y] );
-    g_odata[dim*blockIdx.x+coord] = sdata[coord];
-  }
-}
-
-template <unsigned numThreads, typename T>
-__device__ void warpReduce1D(volatile T* sdata, unsigned int place){
+__device__ void warpReduce(volatile T* sdata, unsigned int place){
     if(numThreads >= 64){//compile time
       sdata[place] += sdata[place + 32];
     }
@@ -122,6 +49,55 @@ __device__ void warpReduce1D(volatile T* sdata, unsigned int place){
     if(numThreads >= 2){//compile time
       sdata[place] += sdata[place + 1];
     }
+}
+
+template <unsigned numThreads, typename T>
+__global__ void reductionND(T *g_idata, T *g_odata, const unsigned int len) {
+  //playing with this 
+  //https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
+  auto sdata = shared_memory_proxy<T>();
+  const unsigned int coord = blockIdx.y;
+  const unsigned int dim = gridDim.y;
+  const unsigned int place = dim*threadIdx.x+coord;
+  const unsigned int totalLen = dim*len;
+  // each thread loads one element from global to shared mem
+  //const unsigned int tid = dim*threadIdx.x+coord;
+  unsigned int i = (numThreads*2)*blockIdx.x*dim + place;
+  const unsigned int gridSize = (numThreads*2)*gridDim.x*dim;
+  sdata[threadIdx.x] = T(0);
+  while (i+numThreads*dim < totalLen) {
+    sdata[threadIdx.x] += g_idata[i] + g_idata[i+numThreads*dim];    
+    i+=gridSize;
+  }
+  while (i < totalLen) {
+    sdata[threadIdx.x] += g_idata[i];
+     i+=gridSize;
+  }
+
+  __syncthreads();
+  // do reduction in shared memory
+  
+  if (numThreads >= 512) {//compile time
+    if (threadIdx.x  < 256) {
+       sdata[threadIdx.x] += sdata[threadIdx.x + 256]; } __syncthreads(); 
+    }
+  if (numThreads >= 256) {//compile time
+    if (threadIdx.x  < 128) {
+       sdata[threadIdx.x] += sdata[threadIdx.x + 128]; } __syncthreads(); 
+    }
+  if (numThreads >= 128) {//compile time
+    if (threadIdx. x < 64) { 
+      sdata[threadIdx.x] += sdata[threadIdx.x + 64]; } __syncthreads();
+    }
+  //Instructions are SIMD synchronous within a warp
+  //so no need for __syncthreads(), in the last iterations
+  if (threadIdx.x < mymin(32u,numThreads/2)) {
+    warpReduce<numThreads>(sdata, threadIdx.x);
+  }
+  // write result for this block to global memory
+  if (threadIdx.x == 0){
+    g_odata[dim*blockIdx.x+coord] = sdata[0];
+  }
 }
 
 template <unsigned numThreads, typename T>
@@ -162,7 +138,7 @@ __global__ void reduction1D(T *g_idata, T *g_odata, const unsigned int len) {
   //Instructions are SIMD synchronous within a warp
   //so no need for __syncthreads(), in the last iterations
   if (threadIdx.x < mymin(32u,numThreads/2)) {
-    warpReduce1D<numThreads>(sdata, place);
+    warpReduce<numThreads>(sdata, place);
   }
   // write result for this block to global mem
   if (threadIdx.x == 0){
@@ -293,7 +269,7 @@ Tensor reduceTensor(double* cudaTensorAddress, unsigned N, unsigned maxNumThread
 //we'll proceed to call recursively callreduction1D until N==1:
   double *reduceOut = cudaTensorAddress;
   double *reduceIn;
-  vdbg("In");
+  vdbg("InTensor");
   while(N>1){
     size_t runningThreads = decideThreadsPerBlock(N,maxNumThreads);
     reduceIn = reduceOut;
