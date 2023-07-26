@@ -486,13 +486,11 @@ void CudaCoordination::calculate() {
   cudaDerivatives.resize(nnToGPU *3*nat);
   cudaVirial.resize(9*nnToGPU);
   //CUDAHELPERS::memoryHolder<double> reductionMemory;
-  double *cudaDev;
-  cudaMalloc(&cudaDev, nnToGPU *3*nat * sizeof(double));
-  //double *cudaVirial;
-  //cudaMalloc(&cudaVirial, 9*nnToGPU * sizeof(double));
+  cudaMemset(cudaDerivatives.getPointer(),0,nnToGPU *3*nat*sizeof(double));
+  cudaMemset(cudaVirial.getPointer(),0,nnToGPU *9*sizeof(double));
   /****************starting the calculations****************/
   getCoord<<<ngroups,nthreads>>> (nn,nat,switchingParameters,cudaCoords,cudaPairList,
-    cudaCoordination,cudaDev,cudaVirial.getPointer()
+    cudaCoordination,cudaDerivatives.getPointer(),cudaVirial.getPointer()
     ); 
   
   //std::vector<double> coordsToSUM(nn);
@@ -502,14 +500,13 @@ void CudaCoordination::calculate() {
 
   Tensor virial=CUDAHELPERS::reduceTensor(cudaVirial.getPointer()
   , nn);
-  std::vector<Vector> deriv = CUDAHELPERS::reduceNVectors(cudaDev,nn,nat);
+  std::vector<Vector> deriv = CUDAHELPERS::reduceNVectors(cudaDerivatives.getPointer(),nn,nat);
 
   for(unsigned i=0; i<deriv.size(); ++i) {
     setAtomsDerivatives(i,deriv[i]);
   }
   cudaFree(cudaCoordination);
-  cudaFree(cudaDev);
-  //cudaFree(cudaVirial);
+
 
   setValue           (ncoord);
   setBoxDerivatives  (virial);
