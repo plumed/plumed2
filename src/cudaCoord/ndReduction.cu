@@ -9,8 +9,9 @@
 #include <iostream>
 #include <vector>
 #include <numeric>
-#define vdbg(...) std::cerr << std::setw(4) << __LINE__ <<":" << std::setw(20)<< #__VA_ARGS__ << " " << (__VA_ARGS__) <<'\n'
-//#define vdbg(...)
+
+//#define vdbg(...) std::cerr << std::setw(4) << __LINE__ <<":" << std::setw(20)<< #__VA_ARGS__ << " " << (__VA_ARGS__) <<'\n'
+#define vdbg(...)
 
 // * Grids map to GPUs
 // * Blocks map to the MultiProcessors (MP)
@@ -217,20 +218,6 @@ double reduceScalar(double* cudaScalarAddress, unsigned N, unsigned maxNumThread
     auto ngroups=getIdealGroups(N, runningThreads);
     cudaMalloc(&reduceOut,ngroups  * sizeof(double));
     callReduction1D (reduceIn, reduceOut, N, ngroups, runningThreads);
-    /*
-    {
-    std::vector<double> coordsToSUM(N);
-    cudaMemcpy(coordsToSUM.data(), reduceIn, N*sizeof(double), cudaMemcpyDeviceToHost);
-    double ncoordIn=std::accumulate(coordsToSUM.begin(),coordsToSUM.end(),0.0);
-    vdbg(ncoordIn);
-    }
-    {
-    std::vector<double> coordsToSUM(ngroups);
-    cudaMemcpy(coordsToSUM.data(), reduceOut, ngroups*sizeof(double), cudaMemcpyDeviceToHost);
-    double ncoordOut=std::accumulate(coordsToSUM.begin(),coordsToSUM.end(),0.0);
-    vdbg(ncoordOut);
-    }
-    */
     if (reduceIn != cudaScalarAddress){
       cudaFree(reduceIn);
     }
@@ -246,72 +233,101 @@ void callReductionND (T *g_idata, T *g_odata, const unsigned int len, const dim3
   const unsigned N = blocks.y;
   switch (nthreads) {
   case 512:
-    reductionND<512,T><<<blocks,512,N*512*sizeof(T)>>>(g_idata,g_odata, len);
+    reductionND<512,T><<<blocks,512,512*sizeof(T)>>>(g_idata,g_odata, len);
     break;
   case 256:
-    reductionND<256,T><<<blocks,256,N*256*sizeof(T)>>>(g_idata,g_odata, len);
+    reductionND<256,T><<<blocks,256,256*sizeof(T)>>>(g_idata,g_odata, len);
     break;
   case 128:
-    reductionND<128,T><<<blocks,128,N*128*sizeof(T)>>>(g_idata,g_odata, len);
+    reductionND<128,T><<<blocks,128,128*sizeof(T)>>>(g_idata,g_odata, len);
     break;
   case 64:
-    reductionND<64, T><<<blocks,64,N*64*sizeof(T)>>>(g_idata,g_odata, len);
+    reductionND<64, T><<<blocks,64,64*sizeof(T)>>>(g_idata,g_odata, len);
     break;
   case 32:
-    reductionND<32, T><<<blocks,32,N*32*sizeof(T)>>>(g_idata,g_odata, len);
+    reductionND<32, T><<<blocks,32,32*sizeof(T)>>>(g_idata,g_odata, len);
     break;
   default:
     plumed_merror("Reduction can be called only with 512, 256, 128, 64 or 32 threads.");
   }
 }
 
-Tensor reduceTensor(double* cudaTensorAddress, unsigned N, unsigned maxNumThreads){
-//we'll proceed to call recursively callreduction1D until N==1:
-  double *reduceOut = cudaTensorAddress;
+std::vector<Vector> reduceNVectors(double* cudaNVectorAddress, unsigned N, unsigned nat, unsigned maxNumThreads){
+  double *reduceOut = cudaNVectorAddress;
   double *reduceIn;
-  vdbg("InTensor");
+  auto dim = nat*3;
+  vdbg("InNVectors");
   while(N>1){
     size_t runningThreads = decideThreadsPerBlock(N,maxNumThreads);
     reduceIn = reduceOut;
     reduceOut = nullptr;
     vdbg(N);
-    vdbg(cudaTensorAddress);
+    vdbg(cudaNVectorAddress);
     vdbg(reduceIn);
     vdbg(reduceOut);
     vdbg(runningThreads);
-    dim3 ngroups(getIdealGroups(N, runningThreads),9);
+    dim3 ngroups(getIdealGroups(N, runningThreads),dim);
     vdbg(ngroups.x);
     vdbg(ngroups.y);
     cudaMalloc(&reduceOut,ngroups.y* ngroups.x  * sizeof(double));
-    vdbg(reduceOut);    
-        {
-    std::vector<double> coordsToSUM(ngroups.y* N);
-    cudaMemcpy(coordsToSUM.data(), reduceIn, ngroups.y* N *sizeof(double), cudaMemcpyDeviceToHost);
-    for (auto j=0u; j< ngroups.y; ++j){
-      double t=0.0;
-    for (auto i=0u; i< N; ++i){
-      t+= coordsToSUM[i*ngroups.y+j];
-    }
-    std::cerr << __LINE__ << " ti= " << t <<"\n";
-    }
-    
-    }
+    vdbg(reduceOut);
+
     callReductionND (reduceIn, reduceOut, N, ngroups, runningThreads);
-    {
-    std::vector<double> coordsToSUM(ngroups.y* ngroups.x);
-    cudaMemcpy(coordsToSUM.data(), reduceOut, ngroups.y* ngroups.x *sizeof(double), cudaMemcpyDeviceToHost);
-    for (auto j=0u; j< ngroups.y; ++j){
-      double t=0.0;
-    for (auto i=0u; i< ngroups.x; ++i){
-      t+= coordsToSUM[i*ngroups.y+j];
-    }
-    std::cerr << __LINE__ << " to= " << t <<"\n";
-    }
-    
-    }
-    
-    if (reduceIn != cudaTensorAddress){
+
+    if (reduceIn != cudaNVectorAddress){
       vdbg("Free reduceIn");
+      cudaFree(reduceIn);
+    }
+    N=ngroups.x;
+  }
+  std::vector<Vector> toret(nat);
+  cudaMemcpy(&toret[0][0], reduceOut, 3*nat*sizeof(double), cudaMemcpyDeviceToHost);
+  cudaFree(reduceOut);
+  vdbg(toret[0]);
+  return toret;
+}
+
+Vector reduceVector(double* cudaVectorAddress, unsigned N, unsigned maxNumThreads){
+///@TODO:This is not tested as now
+//we'll proceed to call recursively callreduction1D until N==1:
+  double *reduceOut = cudaVectorAddress;
+  double *reduceIn;
+  while(N>1){
+    size_t runningThreads = decideThreadsPerBlock(N,maxNumThreads);
+    reduceIn = reduceOut;
+    reduceOut = nullptr;
+    dim3 ngroups(getIdealGroups(N, runningThreads),3);
+    
+    cudaMalloc(&reduceOut,ngroups.y* ngroups.x  * sizeof(double));
+    
+    callReductionND (reduceIn, reduceOut, N, ngroups, runningThreads);
+        
+    if (reduceIn != cudaVectorAddress){
+      cudaFree(reduceIn);
+    }
+    N=ngroups.x;
+  }
+  Vector toret;
+  cudaMemcpy(&toret[0], reduceOut, 3*sizeof(double), cudaMemcpyDeviceToHost);
+  cudaFree(reduceOut);
+  return toret;
+}
+
+Tensor reduceTensor(double* cudaTensorAddress, unsigned N, unsigned maxNumThreads){
+//we'll proceed to call recursively callreduction1D until N==1:
+  double *reduceOut = cudaTensorAddress;
+  double *reduceIn;
+  while(N>1){
+    size_t runningThreads = decideThreadsPerBlock(N,maxNumThreads);
+    reduceIn = reduceOut;
+    reduceOut = nullptr;
+    dim3 ngroups(getIdealGroups(N, runningThreads),9);
+    
+    cudaMalloc(&reduceOut,ngroups.y* ngroups.x  * sizeof(double));
+    
+    callReductionND (reduceIn, reduceOut, N, ngroups, runningThreads);
+        
+    if (reduceIn != cudaTensorAddress){
       cudaFree(reduceIn);
     }
     N=ngroups.x;
@@ -319,7 +335,6 @@ Tensor reduceTensor(double* cudaTensorAddress, unsigned N, unsigned maxNumThread
   Tensor toret;
   cudaMemcpy(&toret[0][0], reduceOut, 9*sizeof(double), cudaMemcpyDeviceToHost);
   cudaFree(reduceOut);
-  vdbg(toret);
   return toret;
 }
 } //namespace CUDAHELPERS

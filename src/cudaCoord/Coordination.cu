@@ -395,7 +395,7 @@ __device__ double calculateSqr(double distancesq, double& dfunc , rationalSwitch
 #define Z(I) 3*I+2
 //
 __global__ void getCoord(
-                        unsigned numOfPairs,
+                        const unsigned numOfPairs,
                         unsigned nat,
                         rationalSwitchParameters switchingParameters,
                         double *coordinates,
@@ -409,15 +409,15 @@ __global__ void getCoord(
   if (i >=numOfPairs) {
     return;
   }
-  unsigned i0= pairList[i*2];
-  unsigned i1= pairList[i*2+1]; 
+  const unsigned i0= pairList[i*2];
+  const unsigned i1= pairList[i*2+1]; 
   if (i0 == i1) {
     return;
   }
   double d[3]={
-    coordinates[X(i0)] - coordinates[X(i1)],
-    coordinates[Y(i0)] - coordinates[Y(i1)],
-    coordinates[Z(i0)] - coordinates[Z(i1)]
+    coordinates[X(i1)] - coordinates[X(i0)],
+    coordinates[Y(i1)] - coordinates[Y(i0)],
+    coordinates[Z(i1)] - coordinates[Z(i0)]
   };
 
   double dsq=(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
@@ -430,14 +430,15 @@ __global__ void getCoord(
     d[2]*dfunc
     };
 
+  nat*=i*3;
   //this needs a barrier!
-  derivativeOut[X(i0)+i*nat] -=dd[0];
-  derivativeOut[Y(i0)+i*nat] -=dd[1];
-  derivativeOut[Z(i0)+i*nat] -=dd[2];
+  derivativeOut[X(i0)+nat] -=dd[0];
+  derivativeOut[Y(i0)+nat] -=dd[1];
+  derivativeOut[Z(i0)+nat] -=dd[2];
 
-  derivativeOut[X(i1)+i*nat] +=dd[0];
-  derivativeOut[Y(i1)+i*nat] +=dd[1];
-  derivativeOut[Z(i1)+i*nat] +=dd[2];
+  derivativeOut[X(i1)+nat] +=dd[0];
+  derivativeOut[Y(i1)+nat] +=dd[1];
+  derivativeOut[Z(i1)+nat] +=dd[2];
   
   for(unsigned ii=0; ii<3; ++ii){
     for(unsigned jj=0; jj<3; ++jj){
@@ -492,8 +493,8 @@ void CudaCoordination::calculate() {
   //double ncoord=std::accumulate(coordsToSUM.begin(),coordsToSUM.end(),0.0);
   double ncoord = CUDAHELPERS::reduceScalar(cudaCoordination, nn);
 
-  Tensor virial=CUDAHELPERS::reduceTensor(cudaVirial, nn);;
-  std::vector<Vector> deriv(getNumberOfAtoms());
+  Tensor virial=CUDAHELPERS::reduceTensor(cudaVirial, nn);
+  std::vector<Vector> deriv = CUDAHELPERS::reduceNVectors(cudaDev,nn,nat);
 
   for(unsigned i=0; i<deriv.size(); ++i) {
     setAtomsDerivatives(i,deriv[i]);
