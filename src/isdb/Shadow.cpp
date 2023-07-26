@@ -37,12 +37,12 @@ namespace isdb {
 //+ENDPLUMEDOC
 
 class Shadow : public Colvar {
-// private stuff  
+// private stuff
   bool isreference_;
   unsigned nupdate_;
   bool pbc_;
   bool first_time_;
-// RMSD object 
+// RMSD object
   PLMD::RMSD rmsd_;
 // parallel stuff
   unsigned size_;
@@ -60,7 +60,7 @@ public:
 PLUMED_REGISTER_ACTION(Shadow,"SHADOW")
 
 void Shadow::registerKeywords( Keywords& keys ) {
-  Colvar::registerKeywords( keys ); 
+  Colvar::registerKeywords( keys );
   keys.add("atoms","ATOMS","atoms for which we calculate the shadow RMSD");
   keys.add("compulsory","UPDATE","stride for updating reference coordinates");
   keys.addFlag("REFERENCE",false,"this is the reference replica");
@@ -76,7 +76,7 @@ Shadow::Shadow(const ActionOptions&ao):
   // update stride
   parse("UPDATE",nupdate_);
 
-  // is this the reference replica 
+  // is this the reference replica
   parseFlag("REFERENCE",isreference_);
 
   // periodic boundary conditions
@@ -110,9 +110,9 @@ Shadow::Shadow(const ActionOptions&ao):
   log.printf("  number of replicas : %d\n", nrep);
   log.printf("  replica id : %d\n", replica);
   if(isreference_) log.printf("  this is the reference replica\n");
- 
+
   // add value and set periodicity
-  addValueWithDerivatives(); setNotPeriodic(); 
+  addValueWithDerivatives(); setNotPeriodic();
 
   // request atoms
   requestAtoms(atoms);
@@ -120,28 +120,28 @@ Shadow::Shadow(const ActionOptions&ao):
 
 void Shadow::update_reference()
 {
- // number of atoms
- unsigned natoms = getNumberOfAtoms();
- // initialize rmsd variables
- std::vector<double> align(natoms,1.0);
- std::vector<double> displace(natoms,1.0);
- std::vector<Vector> reference(natoms);
+// number of atoms
+  unsigned natoms = getNumberOfAtoms();
+// initialize rmsd variables
+  std::vector<double> align(natoms,1.0);
+  std::vector<double> displace(natoms,1.0);
+  std::vector<Vector> reference(natoms);
 
- // first get the reference coordinates
- // if master openmp task
- if(rank_==0){
-   // if reference replica
-   if(isreference_) reference = getPositions();
-   // share coordinates
-   multi_sim_comm.Sum(&reference[0][0], 3*natoms);
- }
- // now intra replica (openmp) communication
- if(size_>1) comm.Sum(&reference[0][0], 3*natoms);
+// first get the reference coordinates
+// if master openmp task
+  if(rank_==0) {
+    // if reference replica
+    if(isreference_) reference = getPositions();
+    // share coordinates
+    multi_sim_comm.Sum(&reference[0][0], 3*natoms);
+  }
+// now intra replica (openmp) communication
+  if(size_>1) comm.Sum(&reference[0][0], 3*natoms);
 
- // clear the rmsd object
- rmsd_.clear();
- // and initialize it
- rmsd_.set(align,displace,reference,"OPTIMAL");
+// clear the rmsd object
+  rmsd_.clear();
+// and initialize it
+  rmsd_.set(align,displace,reference,"OPTIMAL");
 }
 
 void Shadow::calculate()
@@ -150,9 +150,9 @@ void Shadow::calculate()
   if(pbc_) makeWhole();
 
   // if it is time, update reference coordinates
-  if(first_time_ || getStep()%nupdate_==0){
-     update_reference();
-     first_time_ = false;
+  if(first_time_ || getStep()%nupdate_==0) {
+    update_reference();
+    first_time_ = false;
   }
 
   // calculate RMSD and derivatives
@@ -162,8 +162,8 @@ void Shadow::calculate()
   // set RMSD value
   setValue(rmsd);
   // if this is not the reference replica, add derivatives
-  if(!isreference_){
-   for(unsigned i=0; i<getNumberOfAtoms(); ++i) setAtomsDerivatives(i, derivatives[i]);
+  if(!isreference_) {
+    for(unsigned i=0; i<getNumberOfAtoms(); ++i) setAtomsDerivatives(i, derivatives[i]);
   }
   // set virial
   setBoxDerivativesNoPbc();
