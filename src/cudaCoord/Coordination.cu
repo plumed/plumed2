@@ -25,6 +25,7 @@
 #include "plumed/core/ActionRegister.h"
 
 #include "ndReduction.h"
+#include "cudaHelpers.cuh"
 
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
@@ -125,6 +126,9 @@ class CudaCoordination : public Colvar {
   double *cudaCoords;
   ///the pointer to the nn list on the GPU
   unsigned *cudaPairList;
+  CUDAHELPERS::memoryHolder<double> cudaDerivatives;
+  CUDAHELPERS::memoryHolder<double> cudaVirial;
+  CUDAHELPERS::memoryHolder<double> reductionMemory;
   SwitchingFunction switchingFunction;
   rationalSwitchParameters switchingParameters;
 
@@ -479,21 +483,25 @@ void CudaCoordination::calculate() {
              cudaMemcpyHostToDevice);
   double *cudaCoordination;
   cudaMalloc(&cudaCoordination, nnToGPU * sizeof(double));
-  
+  cudaDerivatives.resize(nnToGPU *3*nat);
+  cudaVirial.resize(9*nnToGPU);
+  //CUDAHELPERS::memoryHolder<double> reductionMemory;
   double *cudaDev;
   cudaMalloc(&cudaDev, nnToGPU *3*nat * sizeof(double));
-  double *cudaVirial;
-  cudaMalloc(&cudaVirial, 9*nnToGPU * sizeof(double));
+  //double *cudaVirial;
+  //cudaMalloc(&cudaVirial, 9*nnToGPU * sizeof(double));
   /****************starting the calculations****************/
   getCoord<<<ngroups,nthreads>>> (nn,nat,switchingParameters,cudaCoords,cudaPairList,
-    cudaCoordination,cudaDev,cudaVirial); 
+    cudaCoordination,cudaDev,cudaVirial.getPointer()
+    ); 
   
   //std::vector<double> coordsToSUM(nn);
   //cudaMemcpy(coordsToSUM.data(), cudaCoordination, nn*sizeof(double), cudaMemcpyDeviceToHost);
   //double ncoord=std::accumulate(coordsToSUM.begin(),coordsToSUM.end(),0.0);
   double ncoord = CUDAHELPERS::reduceScalar(cudaCoordination, nn);
 
-  Tensor virial=CUDAHELPERS::reduceTensor(cudaVirial, nn);
+  Tensor virial=CUDAHELPERS::reduceTensor(cudaVirial.getPointer()
+  , nn);
   std::vector<Vector> deriv = CUDAHELPERS::reduceNVectors(cudaDev,nn,nat);
 
   for(unsigned i=0; i<deriv.size(); ++i) {
@@ -501,7 +509,7 @@ void CudaCoordination::calculate() {
   }
   cudaFree(cudaCoordination);
   cudaFree(cudaDev);
-  cudaFree(cudaVirial);
+  //cudaFree(cudaVirial);
 
   setValue           (ncoord);
   setBoxDerivatives  (virial);

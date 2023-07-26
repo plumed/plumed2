@@ -313,6 +313,7 @@ Vector reduceVector(double* cudaVectorAddress, unsigned N, unsigned maxNumThread
   return toret;
 }
 
+//#define vdbg(...) std::cerr << std::setw(4) << __LINE__ <<":" << std::setw(20)<< #__VA_ARGS__ << " " << (__VA_ARGS__) <<'\n'
 Tensor reduceTensor(double* cudaTensorAddress, unsigned N, unsigned maxNumThreads){
 //we'll proceed to call recursively callreduction1D until N==1:
   double *reduceOut = cudaTensorAddress;
@@ -324,7 +325,9 @@ Tensor reduceTensor(double* cudaTensorAddress, unsigned N, unsigned maxNumThread
     dim3 ngroups(getIdealGroups(N, runningThreads),9);
     
     cudaMalloc(&reduceOut,ngroups.y* ngroups.x  * sizeof(double));
-    
+    vdbg(cudaTensorAddress);
+    vdbg(reduceIn);
+    vdbg(reduceOut);
     callReductionND (reduceIn, reduceOut, N, ngroups, runningThreads);
         
     if (reduceIn != cudaTensorAddress){
