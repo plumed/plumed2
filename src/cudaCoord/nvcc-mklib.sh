@@ -30,8 +30,9 @@ fi
 rm -f "$obj" "$lib"
 
 #nvcc "$2" -Xcompiler -fPIC -c -o "$kernel"
-compile="nvcc -ccbin ${compile}"
-
+compile="nvcc -g -ccbin ${compile}"
+#compile=${compile/-O3/-g}
+echo $compile
 if [[ ${SILENT_CUDA_COMPILATION} ]]; then
   #echo "disabled warning"
   compile=${compile//-Wall/}

@@ -23,6 +23,7 @@
 #define __PLUMED_cuda_ndReduction_h
 #include "plumed/tools/Vector.h"
 #include "plumed/tools/Tensor.h"
+#include "cudaHelpers.cuh"
 #include <vector>
 namespace PLMD{
 namespace CUDAHELPERS {
@@ -52,6 +53,11 @@ namespace CUDAHELPERS {
    * @note cudaNVectorAddress is threated as not owned: the user will need to call cudaFree on it!!!
    */
   std::vector<Vector> reduceNVectors(double* cudaNVectorAddress, unsigned N, unsigned nat, unsigned maxNumThreads=512);
+
+//THIS DOES NOT KEEP THE DATA SAFE
+std::vector<Vector> reduceNVectors(memoryHolder<double>& cudaNVectorAddress,
+ memoryHolder<double>& memoryHelper, 
+unsigned N, unsigned nat, unsigned maxNumThreads);
 
   /** @brief reduce the component of a 3 x N vector
    *  @param cudaVectorAddress the pointer to the memory in cuda
@@ -91,6 +97,11 @@ namespace CUDAHELPERS {
    */ 
   Tensor reduceTensor(double* cudaTensorAddress, unsigned N, unsigned maxNumThreads=512);
 
+//THIS DOES NOT KEEP THE DATA SAFE
+Tensor reduceTensor(memoryHolder<double>& cudaTensorAddress,
+ memoryHolder<double>& memoryHelper, 
+unsigned N, unsigned maxNumThreads);
+
   /** @brief reduce the component of a N vector to a scalar
    *  @param cudaScalarAddress the pointer to the memory in cuda
    *  @param N the number of scalar to reduce
@@ -109,6 +120,8 @@ namespace CUDAHELPERS {
    * @note cudaScalarAddress is threated as not owned: the user will need to call cudaFree on it!!!
    */ 
   double reduceScalar(double* cudaScalarAddress, unsigned N, unsigned maxNumThreads=512);
+  double reduceScalar(memoryHolder<double>& cudaScalarAddress,
+ memoryHolder<double>& memoryHelper, unsigned N, unsigned maxNumThreads=512);
 } //namespace CUDAHELPERS
 } //namespace PLMD
 #endif //__PLUMED_cuda_ndReduction_h

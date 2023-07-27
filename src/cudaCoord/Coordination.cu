@@ -123,9 +123,10 @@ struct rationalSwitchParameters{
 class CudaCoordination : public Colvar {
   std::unique_ptr<NeighborList> nl;
   ///the pointer to the coordinates on the GPU
-  double *cudaCoords;
+  CUDAHELPERS::memoryHolder<double>  cudaCoords;
   ///the pointer to the nn list on the GPU
-  unsigned *cudaPairList;
+  CUDAHELPERS::memoryHolder<unsigned>  cudaPairList;
+  CUDAHELPERS::memoryHolder<double> cudaCoordination;
   CUDAHELPERS::memoryHolder<double> cudaDerivatives;
   CUDAHELPERS::memoryHolder<double> cudaVirial;
   CUDAHELPERS::memoryHolder<double> reductionMemory;
@@ -150,17 +151,14 @@ PLUMED_REGISTER_ACTION(CudaCoordination,"CUDACOORDINATION")
 
 void CudaCoordination::setUpPermanentGPUMemory(){
   auto nat = getPositions().size();
-  cudaFree(cudaCoords);
-  cudaFree(cudaPairList);
   //coordinates values are updated at each step
-  cudaMalloc(&cudaCoords, 3 * nat * sizeof(double));
+  cudaCoords.resize(3*nat);
+  
   //the neighbour list will be updated at each request of prepare
   auto pairList = nl->getClosePairs();
   const unsigned nn=nl->size();
-  cudaMalloc(&cudaPairList, 2*nn*sizeof(unsigned));
-  cudaMemcpy(cudaPairList, pairList.data(),
-            2*nn* sizeof(unsigned),
-            cudaMemcpyHostToDevice);
+  cudaPairList.resize(2*nn);
+  cudaPairList.copyToCuda(pairList.data());
 }
 
 void CudaCoordination::prepare() {
@@ -374,8 +372,6 @@ CudaCoordination::CudaCoordination(const ActionOptions&ao):
 }
 
 CudaCoordination::~CudaCoordination(){
-  cudaFree(cudaCoords);
-  cudaFree(cudaPairList);
 }
 
 __device__ double calculateSqr(double distancesq, double& dfunc , rationalSwitchParameters switchingParameters) {
@@ -469,45 +465,49 @@ void CudaCoordination::calculate() {
   constexpr unsigned nthreads=256;
   // nextpw2 will be set up when the reduction will be done on the CPU
   //note nn shoudl be 1/2 pX($1)airList.size()
-  //calculates the closest power of 2 (c++20 will have bit::bit_ceil(cu_nn))
-  const size_t nnToGPU=nn;//pow(2, ceil(log2(nn)));
-  //the occupancy MUST be set up correctly
+    //the occupancy MUST be set up correctly
   
-  unsigned ngroups=ceil(double(nnToGPU)/nthreads);
-
-  //donw here I am calling all the arrays that goes on the GPU cudaSomething
+  unsigned ngroups=ceil(double(nn)/nthreads);
 
   /****************allocating the memory on the GPU****************/
-  
-  cudaMemcpy(this->cudaCoords, &positions[0][0], 3 *nat* sizeof(double),
-             cudaMemcpyHostToDevice);
-  double *cudaCoordination;
-  cudaMalloc(&cudaCoordination, nnToGPU * sizeof(double));
-  cudaDerivatives.resize(nnToGPU *3*nat);
-  cudaVirial.resize(9*nnToGPU);
+  cudaCoords.copyToCuda(&positions[0][0]);
+
+  cudaCoordination.resize(nn);  
+  cudaDerivatives.resize(nn *3*nat);
+  cudaVirial.resize(9*nn);
   //CUDAHELPERS::memoryHolder<double> reductionMemory;
-  cudaMemset(cudaDerivatives.getPointer(),0,nnToGPU *3*nat*sizeof(double));
-  cudaMemset(cudaVirial.getPointer(),0,nnToGPU *9*sizeof(double));
+  cudaMemset(cudaDerivatives.getPointer(),0,nn *3*nat*sizeof(double));
+  cudaMemset(cudaVirial.getPointer(),0,nn *9*sizeof(double));
   /****************starting the calculations****************/
-  getCoord<<<ngroups,nthreads>>> (nn,nat,switchingParameters,cudaCoords,cudaPairList,
-    cudaCoordination,cudaDerivatives.getPointer(),cudaVirial.getPointer()
+  getCoord<<<ngroups,nthreads>>> (nn,nat,switchingParameters,
+    cudaCoords.getPointer(),
+    cudaPairList.getPointer(),
+    cudaCoordination.getPointer(),
+    cudaDerivatives.getPointer(),
+    cudaVirial.getPointer()
     ); 
   
+  //the order of caclulating deriv virial and ncoord is thinked to limit the 
+  //resizing of reductionMemory
+  std::vector<Vector> deriv = 
+   CUDAHELPERS::reduceNVectors(cudaDerivatives,reductionMemory,nn,nat,512);
+
+  Tensor virial=CUDAHELPERS::reduceTensor(
+    //cudaVirial.getPointer(),
+    cudaVirial,reductionMemory,
+    nn,512);
+  
+
   //std::vector<double> coordsToSUM(nn);
   //cudaMemcpy(coordsToSUM.data(), cudaCoordination, nn*sizeof(double), cudaMemcpyDeviceToHost);
   //double ncoord=std::accumulate(coordsToSUM.begin(),coordsToSUM.end(),0.0);
-  double ncoord = CUDAHELPERS::reduceScalar(cudaCoordination, nn);
-
-  Tensor virial=CUDAHELPERS::reduceTensor(cudaVirial.getPointer()
-  , nn);
-  std::vector<Vector> deriv = CUDAHELPERS::reduceNVectors(cudaDerivatives.getPointer(),nn,nat);
+  double ncoord = CUDAHELPERS::reduceScalar(cudaCoordination//.getPointer(),
+  , reductionMemory, nn,512);
 
   for(unsigned i=0; i<deriv.size(); ++i) {
     setAtomsDerivatives(i,deriv[i]);
   }
-  cudaFree(cudaCoordination);
-
-
+  
   setValue           (ncoord);
   setBoxDerivatives  (virial);
 }
