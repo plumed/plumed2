@@ -395,7 +395,10 @@ __device__ double calculateSqr(double distancesq, double& dfunc , rationalSwitch
 #define X(I) 3*I
 #define Y(I) 3*I+1
 #define Z(I) 3*I+2
-//
+
+#define Xd(I) i+ (   I*3 )* numOfPairs
+#define Yd(I) i+ (1 +I*3 )* numOfPairs
+#define Zd(I) i+ (2 +I*3 )* numOfPairs
 __global__ void getCoord(
                         const unsigned numOfPairs,
                         unsigned nat,
@@ -436,13 +439,13 @@ __global__ void getCoord(
 
   nat*=i*3;
   //this needs a barrier!
-  derivativeOut[X(i0)+nat] -=dd[0];
-  derivativeOut[Y(i0)+nat] -=dd[1];
-  derivativeOut[Z(i0)+nat] -=dd[2];
+  derivativeOut[Xd(i0)] -=dd[0];
+  derivativeOut[Yd(i0)] -=dd[1];
+  derivativeOut[Zd(i0)] -=dd[2];
 
-  derivativeOut[X(i1)+nat] +=dd[0];
-  derivativeOut[Y(i1)+nat] +=dd[1];
-  derivativeOut[Z(i1)+nat] +=dd[2];
+  derivativeOut[Xd(i1)] +=dd[0];
+  derivativeOut[Yd(i1)] +=dd[1];
+  derivativeOut[Zd(i1)] +=dd[2];
   
   for(unsigned ii=0; ii<3; ++ii){
     for(unsigned jj=0; jj<3; ++jj){
