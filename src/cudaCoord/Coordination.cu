@@ -129,7 +129,9 @@ class CudaCoordination : public Colvar {
   CUDAHELPERS::memoryHolder<double> cudaCoordination;
   CUDAHELPERS::memoryHolder<double> cudaDerivatives;
   CUDAHELPERS::memoryHolder<double> cudaVirial;
-  CUDAHELPERS::memoryHolder<double> reductionMemory;
+  CUDAHELPERS::memoryHolder<double> reductionMemoryD;
+  CUDAHELPERS::memoryHolder<double> reductionMemoryV;
+  CUDAHELPERS::memoryHolder<double> reductionMemoryS;
   SwitchingFunction switchingFunction;
   rationalSwitchParameters switchingParameters;
 
@@ -406,7 +408,9 @@ __global__ void getCoord(
                         ) {
   //blockDIm are the number of threads in your block
   const unsigned i = threadIdx.x + blockIdx.x * blockDim.x;
+  
   if (i >=numOfPairs) {
+    //Safeguard
     return;
   }
   const unsigned i0= pairList[i*2];
@@ -442,7 +446,7 @@ __global__ void getCoord(
   
   for(unsigned ii=0; ii<3; ++ii){
     for(unsigned jj=0; jj<3; ++jj){
-      virialOut[9*i + ii*3+jj]=-dd[ii]*d[jj];
+      virialOut[i+numOfPairs*(ii*3+jj)]=-dd[ii]*d[jj];
     }
   }
   
@@ -486,7 +490,7 @@ void CudaCoordination::calculate() {
     cudaDerivatives.getPointer(),
     cudaVirial.getPointer()
     ); 
-  
+  /*
   //the order of caclulating deriv virial and ncoord is thinked to limit the 
   //resizing of reductionMemory
   std::vector<Vector> deriv = 
@@ -503,13 +507,18 @@ void CudaCoordination::calculate() {
   //double ncoord=std::accumulate(coordsToSUM.begin(),coordsToSUM.end(),0.0);
   double ncoord = CUDAHELPERS::reduceScalar(cudaCoordination//.getPointer(),
   , reductionMemory, nn,512);
-
-  for(unsigned i=0; i<deriv.size(); ++i) {
-    setAtomsDerivatives(i,deriv[i]);
+*/
+  CUDAHELPERS::DVS ret = CUDAHELPERS::reduceDVS(
+    cudaDerivatives,cudaVirial,cudaCoordination,
+    reductionMemoryD,reductionMemoryV,reductionMemoryS,
+    nn,nat
+  );
+  for(unsigned i=0; i<ret.deriv.size(); ++i) {
+    setAtomsDerivatives(i,ret.deriv[i]);
   }
   
-  setValue           (ncoord);
-  setBoxDerivatives  (virial);
+  setValue           (ret.scalar);
+  setBoxDerivatives  (ret.virial);
 }
 
 } // namespace colvar

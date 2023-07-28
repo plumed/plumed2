@@ -122,6 +122,22 @@ unsigned N, unsigned maxNumThreads);
   double reduceScalar(double* cudaScalarAddress, unsigned N, unsigned maxNumThreads=512);
   double reduceScalar(memoryHolder<double>& cudaScalarAddress,
  memoryHolder<double>& memoryHelper, unsigned N, unsigned maxNumThreads=512);
+
+ struct DVS{
+  std::vector<Vector> deriv;
+  Tensor virial;
+  double scalar;
+  DVS(unsigned nat);
+};
+
+DVS reduceDVS(memoryHolder<double>& cudaD,
+memoryHolder<double>& cudaV,
+memoryHolder<double>& cudaS,
+ memoryHolder<double>& memoryHelperV, 
+ memoryHolder<double>& memoryHelperT, 
+ memoryHolder<double>& memoryHelperS, 
+unsigned N, unsigned nat, unsigned maxNumThreads=512);
+
 } //namespace CUDAHELPERS
 } //namespace PLMD
 #endif //__PLUMED_cuda_ndReduction_h
