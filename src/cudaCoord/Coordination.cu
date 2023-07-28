@@ -132,6 +132,9 @@ class CudaCoordination : public Colvar {
   CUDAHELPERS::memoryHolder<double> reductionMemoryD;
   CUDAHELPERS::memoryHolder<double> reductionMemoryV;
   CUDAHELPERS::memoryHolder<double> reductionMemoryS;
+  cudaStream_t streamV;
+  cudaStream_t streamT;
+  cudaStream_t streamS;
   SwitchingFunction switchingFunction;
   rationalSwitchParameters switchingParameters;
 
@@ -369,11 +372,17 @@ CudaCoordination::CudaCoordination(const ActionOptions&ao):
     switchingParameters.invr0_2 = invr0*=invr0;
   }
   checkRead();
+  cudaStreamCreate(&streamV);
+  cudaStreamCreate(&streamT);
+  cudaStreamCreate(&streamS);
   setUpPermanentGPUMemory();
   log<<"  contacts are counted with cutoff "<<switchingFunction.description()<<"\n";
 }
 
 CudaCoordination::~CudaCoordination(){
+   cudaStreamDestroy(streamV);
+   cudaStreamDestroy(streamT);
+   cudaStreamDestroy(streamS);
 }
 
 __device__ double calculateSqr(double distancesq, double& dfunc , rationalSwitchParameters switchingParameters) {
@@ -446,7 +455,7 @@ __global__ void getCoord(
   derivativeOut[Xd(i1)] +=dd[0];
   derivativeOut[Yd(i1)] +=dd[1];
   derivativeOut[Zd(i1)] +=dd[2];
-  
+
   for(unsigned ii=0; ii<3; ++ii){
     for(unsigned jj=0; jj<3; ++jj){
       virialOut[i+numOfPairs*(ii*3+jj)]=-dd[ii]*d[jj];
@@ -469,7 +478,7 @@ void CudaCoordination::calculate() {
   auto pairList = nl->getClosePairs();
   const unsigned nn=nl->size();
   
-  constexpr unsigned nthreads=256;
+  constexpr unsigned nthreads=512;
   // nextpw2 will be set up when the reduction will be done on the CPU
   //note nn shoudl be 1/2 pX($1)airList.size()
     //the occupancy MUST be set up correctly
@@ -484,7 +493,7 @@ void CudaCoordination::calculate() {
   cudaVirial.resize(9*nn);
   //CUDAHELPERS::memoryHolder<double> reductionMemory;
   cudaMemset(cudaDerivatives.getPointer(),0,nn *3*nat*sizeof(double));
-  cudaMemset(cudaVirial.getPointer(),0,nn *9*sizeof(double));
+  //cudaMemset(cudaVirial.getPointer(),0,nn *9*sizeof(double));
   /****************starting the calculations****************/
   getCoord<<<ngroups,nthreads>>> (nn,nat,switchingParameters,
     cudaCoords.getPointer(),
@@ -514,6 +523,9 @@ void CudaCoordination::calculate() {
   CUDAHELPERS::DVS ret = CUDAHELPERS::reduceDVS(
     cudaDerivatives,cudaVirial,cudaCoordination,
     reductionMemoryD,reductionMemoryV,reductionMemoryS,
+    streamV,
+    streamT,
+    streamS,
     nn,nat
   );
   for(unsigned i=0; i<ret.deriv.size(); ++i) {

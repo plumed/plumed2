@@ -136,6 +136,9 @@ memoryHolder<double>& cudaS,
  memoryHolder<double>& memoryHelperV, 
  memoryHolder<double>& memoryHelperT, 
  memoryHolder<double>& memoryHelperS, 
+cudaStream_t& streamV,
+cudaStream_t& streamT,
+cudaStream_t& streamS,
 unsigned N, unsigned nat, unsigned maxNumThreads=512);
 
 } //namespace CUDAHELPERS
