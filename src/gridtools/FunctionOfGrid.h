@@ -139,7 +139,7 @@ void FunctionOfGrid<T>::getVolumeAndPoints( double& volume, unsigned& npoints, s
   shape.resize( min.size() ); std::vector<unsigned> gnbin( min.size() ); std::vector<bool> gpbc( min.size() );
   std::vector<std::string> ggargn( min.size() ), gmin( min.size() ), gmax( min.size() ); std::string ggtype;
   for(unsigned j=argstart; j<getNumberOfArguments(); ++j) {
-    if( getPntrToArgument(j)->getRank()!=0 ) {
+    if( getPntrToArgument(j)->getRank()!=0 && (getPntrToArgument(j)->getPntrToAction())->getName()!="REFERENCE_GRID" ) {
       if( getPntrToArgument(j)->getNumberOfValues()!=npoints || !getPntrToArgument(j)->hasDerivatives() ) error("mismatch in input arguments");
       (getPntrToArgument(j)->getPntrToAction())->getInfoForGridHeader( ggtype, ggargn, gmin, gmax, gnbin, gspacing, gpbc, false );
       if( gtype!=ggtype ) error("mismatch between grid types");
