@@ -212,7 +212,7 @@ void FunctionOfVector<T>::performTask( const unsigned& current, MultiValue& myva
   // with respect to the scalar.
   if( actionInChain() ) {
       for(unsigned j=0;j<args.size();++j) {
-          unsigned istrn = getPntrToArgument(j)->getPositionInStream();
+          unsigned istrn = getPntrToArgument(argstart+j)->getPositionInStream();
           if( stored_arguments[j] ) { 
               unsigned task_index = myvals.getTaskIndex();
               myvals.addDerivative( istrn, task_index, 1.0 ); myvals.updateIndex( istrn, task_index ); 
@@ -226,9 +226,17 @@ void FunctionOfVector<T>::performTask( const unsigned& current, MultiValue& myva
               }
           }
           // Ensure we only store one lot of derivative indices
-          bool found=false;
+          bool found=false; ActionWithValue* aav=getPntrToArgument(argstart+j)->getPntrToAction();
           for(unsigned k=0; k<j; ++k) {
-              if( arg_deriv_starts[argstart+k]==arg_deriv_s ) { found=true; break; }
+              if( arg_deriv_starts[argstart+k]==arg_deriv_s ) { 
+                  if( getPntrToArgument(argstart+k)->getPntrToAction()!=aav ) {
+                      ActionWithVector* av = dynamic_cast<ActionWithVector*>( getPntrToArgument(argstart+j)->getPntrToAction() );
+                      if( av ) {
+                          for(int i=0;i<getNumberOfComponents();++i) av->updateAdditionalIndices( getConstPntrToComponent(i)->getPositionInStream(), myvals );
+                      }
+                  }
+                  found=true; break; 
+              }
           }
           if( found ) continue;
           for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {

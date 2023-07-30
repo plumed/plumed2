@@ -1,0 +1,26 @@
+UNITS LENGTH=A
+
+cmat: CONTACT_MATRIX ...
+    GROUP=1-250
+    SWITCH={CUSTOM FUNC=sin(pi*x)/(pi*x) R_0=10.5 D_0=0.0}
+    COMPONENTS
+...
+PRINT ARG=cmat.w FILE=cmat FMT=%8.4f
+dist: CUSTOM ARG=cmat.x,cmat.y,cmat.z FUNC=sqrt(x*x+y*y+z*z) PERIODIC=NO
+f1d: CUSTOM ARG=dist,cmat.w FUNC=y*sin(2.070595*x)/(2.070595*x) PERIODIC=NO
+f2d: CUSTOM ARG=dist,cmat.w FUNC=y*sin(3.6*x)/(3.6*x) PERIODIC=NO
+ones: ONES SIZE=250
+symf_i_f1: MATRIX_VECTOR_PRODUCT ARG=f1d,ones 
+symf_i_f2: MATRIX_VECTOR_PRODUCT ARG=f2d,ones
+
+sQ1_i: CUSTOM ARG=symf_i_f1 FUNC=1+x PERIODIC=NO
+sQ2_i: CUSTOM ARG=symf_i_f2 FUNC=1+x PERIODIC=NO
+
+DUMPATOMS ATOMS=1-250 ARG=sQ1_i,sQ2_i FILE=sQ_i.xyz PRECISION=4 
+
+sQ1: MEAN ARG=sQ1_i PERIODIC=NO 
+sQ2: MEAN ARG=sQ2_i PERIODIC=NO 
+
+RESTRAINT ARG=sQ1 AT=2.0 KAPPA=1000 
+
+PRINT ARG=sQ1,sQ2 FILE=colvar.data FMT=%8.4f

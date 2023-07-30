@@ -166,12 +166,16 @@ unsigned ActionWithVector::buildArgumentStore( const unsigned& argstart ) {
               // mder is equal to the number of derivatives by the time you get to f minus the number of derivatives for c
               unsigned mder=0;
               ActionWithVector* jaction=dynamic_cast<ActionWithVector*>(getPntrToArgument(i-1)->getPntrToAction());
-              if( !jaction->getNumberOfStoredValues( getPntrToArgument(i-1), mder, getPntrToArgument(i) ) ) mder=0;
+              if( jaction->action_to_do_after && !(jaction->action_to_do_after)->getNumberOfStoredValues( getPntrToArgument(i-1), mder, getPntrToArgument(i) ) ) mder=0;
               if( mder>0 ) nder = nder + mder;
           }
 
           if( actionInChain() && !getPntrToArgument(i)->ignoreStoredValue(head->getLabel()) ) {
               arg_deriv_starts[i] = 0; head->getNumberOfStreamedDerivatives( arg_deriv_starts[i], getPntrToArgument(i) );
+          } else if( iaction->isInSubChain(nder) ) {
+              arg_deriv_starts[i] = nder; 
+              // Add the total number of derivatives that we have by this point in the chain to nder
+              if( iaction ) { nder=0; head->getNumberOfStreamedDerivatives( nder, getPntrToArgument(i) ); }
           } else {
               arg_deriv_starts[i] = nder;
               // Add the total number of derivatives that we have by this point in the chain to nder

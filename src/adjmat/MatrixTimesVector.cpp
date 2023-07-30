@@ -35,9 +35,11 @@ public:
   explicit MatrixTimesVector(const ActionOptions&);
   unsigned getNumberOfColumns() const override { plumed_error(); }
   unsigned getNumberOfDerivatives();
+  bool isInSubChain( unsigned& nder ) override { nder = arg_deriv_starts[0]; return true; }
   void setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const ;
   void performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const override;
   void runEndOfRowJobs( const unsigned& ind, const std::vector<unsigned> & indices, MultiValue& myvals ) const override ;
+  void updateAdditionalIndices( const unsigned& ostrn, MultiValue& myvals ) const override ;
 };
 
 PLUMED_REGISTER_ACTION(MatrixTimesVector,"MATRIX_VECTOR_PRODUCT")
@@ -55,7 +57,7 @@ ActionWithMatrix(ao)
   if( getPntrToArgument(1)->getRank()!=1 || getPntrToArgument(1)->hasDerivatives() ) error("first argument to this action should be a vector");
   if( getPntrToArgument(0)->getShape()[1]!=getPntrToArgument(1)->getShape()[0] ) error("number of columns in input matrix does not equal number of elements in vector");
   std::vector<unsigned> shape(1); shape[0]=getPntrToArgument(0)->getShape()[0]; addValue( shape ); setNotPeriodic();
-  ActionWithVector* av=dynamic_cast<ActionWithVector*>( getPntrToArgument(0)->getPntrToAction() );
+  ActionWithVector* av=dynamic_cast<ActionWithVector*>( getPntrToArgument(0)->getPntrToAction() ); getPntrToArgument(1)->buildDataStore();
   if( av ) done_in_chain=canBeAfterInChain( av ); 
   nderivatives = buildArgumentStore(0);
   std::string headstr=getFirstActionInChain()->getLabel();
@@ -91,6 +93,11 @@ void MatrixTimesVector::runEndOfRowJobs( const unsigned& ind, const std::vector<
   unsigned istrn = getPntrToArgument(0)->getPositionInMatrixStash();
   std::vector<unsigned>& mat_indices( myvals.getMatrixRowDerivativeIndices( istrn ) );
   for(unsigned i=0; i<myvals.getNumberOfMatrixRowDerivatives(istrn); ++i) myvals.updateIndex( ostrn, mat_indices[i] );
+}
+
+void MatrixTimesVector::updateAdditionalIndices( const unsigned& ostrn, MultiValue& myvals ) const {
+  unsigned nvals = getPntrToArgument(1)->getNumberOfValues();
+  for(unsigned i=0; i<nvals; ++i) myvals.updateIndex( ostrn, arg_deriv_starts[1] + i );
 }
 
 }

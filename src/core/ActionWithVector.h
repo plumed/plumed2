@@ -112,12 +112,16 @@ public:
   void clearDerivatives( const bool& force=false ) override;
 /// Check if we can be after another ActionWithVector
   virtual bool canBeAfterInChain( ActionWithVector* av ) { return true; }
+/// Check if we are in a subchain
+  virtual bool isInSubChain( unsigned& nder ) { return false; }
 /// setup the streamed quantities
   virtual void setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping );
 /// Get the list of tasks that are active
   virtual std::vector<unsigned>& getListOfActiveTasks();
 /// This we override to perform each individual task
   virtual void performTask( const unsigned& current, MultiValue& myvals ) const = 0;
+/// This is used to ensure that all indices are updated when you do local average
+  virtual void updateAdditionalIndices( const unsigned& ostrn, MultiValue& myvals ) const {}
 /// Gather the data from all the OpenMP threads
   virtual void gatherThreads( const unsigned& nt, const unsigned& bufsize, const std::vector<double>& omp_buffer, std::vector<double>& buffer, MultiValue& myvals );
 /// Gather all the data from the MPI processes

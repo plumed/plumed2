@@ -1,0 +1,7 @@
+# Calculate the measure of local crystallinity
+lc: LOCAL_CRYSTALINITY SPECIES=1-64 SWITCH={RATIONAL D_0=3.0 R_0=1.5} GVECTOR1=1,1,1 GVECTOR2=1,0.5,0.5 GVECTOR3=0.5,1.0,1.0 MEAN
+
+BIASVALUE ARG=lc_mean
+
+DUMPATOMS ATOMS=lc ARG=lc PRECISION=4 FILE=orderp.xyz
+PRINT ARG=lc_mean FILE=colvar FMT=%8.4f
