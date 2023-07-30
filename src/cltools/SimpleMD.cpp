@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2022 The plumed team
+   Copyright (c) 2012-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "CLTool.h"
-#include "CLToolRegister.h"
+#include "core/CLToolRegister.h"
 #include "core/PlumedMain.h"
 #include "tools/Vector.h"
 #include "tools/Random.h"
@@ -52,7 +52,7 @@ plumed simplemd < in
 The following is an example of an input file for a simplemd calculation. This file
 instructs simplemd to do 50 steps of MD at a temperature of 0.722
 \verbatim
-nputfile input.xyz
+inputfile input.xyz
 outputfile output.xyz
 temperature 0.722
 tstep 0.005
@@ -73,6 +73,11 @@ plumed simplemd --help
 */
 //+ENDPLUMEDOC
 
+// simple static function to close a file
+// defined once here since it's used in many places in this file
+// in addition, this seems the only way to use it in the write_statistics_fp_deleter member
+static void (*deleter)(FILE* f) = [](FILE* f) { if(f) std::fclose(f); };
+
 class SimpleMD:
   public PLMD::CLTool
 {
@@ -84,6 +89,7 @@ class SimpleMD:
   bool write_statistics_first;
   int write_statistics_last_time_reopened;
   FILE* write_statistics_fp;
+  std::unique_ptr<FILE,decltype(deleter)> write_statistics_fp_deleter{nullptr,deleter};
 
 
 public:
@@ -144,7 +150,7 @@ private:
     parse("tstep",tstep);
     std::string frictionstr; parse("friction",frictionstr);
     if( tempstr!="NVE" ) {
-      if(frictionstr=="off") { std::fprintf(stderr,"Specify friction for thermostat\n"); std::exit(1); }
+      if(frictionstr=="off") error("Specify friction for thermostat");
       Tools::convert(frictionstr,friction);
     }
     parse("forcecutoff",forcecutoff);
@@ -156,34 +162,19 @@ private:
 
     // Read in stuff with sanity checks
     parse("inputfile",inputfile);
-    if(inputfile.length()==0) {
-      std::fprintf(stderr,"Specify input file\n");
-      std::exit(1);
-    }
+    if(inputfile.length()==0) error("Specify input file");
     parse("outputfile",outputfile);
-    if(outputfile.length()==0) {
-      std::fprintf(stderr,"Specify output file\n");
-      std::exit(1);
-    }
+    if(outputfile.length()==0) error("Specify output file");
     std::string nconfstr; parse("nconfig",nconfstr);
     std::sscanf(nconfstr.c_str(),"%100d %255s",&nconfig,buffer1);
     trajfile=buffer1;
-    if(trajfile.length()==0) {
-      std::fprintf(stderr,"Specify traj file\n");
-      std::exit(1);
-    }
+    if(trajfile.length()==0) error("Specify traj file");
     std::string nstatstr; parse("nstat",nstatstr);
     std::sscanf(nstatstr.c_str(),"%100d %255s",&nstat,buffer1);
     statfile=buffer1;
-    if(statfile.length()==0) {
-      std::fprintf(stderr,"Specify stat file\n");
-      std::exit(1);
-    }
+    if(statfile.length()==0) error("Specify stat file");
     parse("ndim",ndim);
-    if(ndim<1 || ndim>3) {
-      std::fprintf(stderr,"ndim should be 1,2 or 3\n");
-      std::exit(1);
-    }
+    if(ndim<1 || ndim>3) error("ndim should be 1,2 or 3");
     std::string w;
     parse("wrapatoms",w);
     wrapatoms=false;
@@ -192,14 +183,10 @@ private:
 
   void read_natoms(const std::string & inputfile,int & natoms) {
 // read the number of atoms in file "input.xyz"
-    FILE* fp=fopen(inputfile.c_str(),"r");
-    if(!fp) {
-      std::fprintf(stderr,"ERROR: file %s not found\n",inputfile.c_str());
-      std::exit(1);
-    }
+    FILE* fp=std::fopen(inputfile.c_str(),"r");
+    if(!fp) error(std::string("file ") + inputfile + std::string(" not found"));
 
 // call fclose when fp goes out of scope
-    auto deleter=[](FILE* f) { fclose(f); };
     std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
 
     int ret=std::fscanf(fp,"%1000d",&natoms);
@@ -209,13 +196,9 @@ private:
   void read_positions(const std::string& inputfile,int natoms,std::vector<Vector>& positions,double cell[3]) {
 // read positions and cell from a file called inputfile
 // natoms (input variable) and number of atoms in the file should be consistent
-    FILE* fp=fopen(inputfile.c_str(),"r");
-    if(!fp) {
-      std::fprintf(stderr,"ERROR: file %s not found\n",inputfile.c_str());
-      std::exit(1);
-    }
+    FILE* fp=std::fopen(inputfile.c_str(),"r");
+    if(!fp) error(std::string("file ") + inputfile + std::string(" not found"));
 // call fclose when fp goes out of scope
-    auto deleter=[](FILE* f) { fclose(f); };
     std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
 
     char buffer[256];
@@ -347,11 +330,14 @@ private:
     Vector pos;
     FILE*fp;
     if(write_positions_first) {
-      fp=fopen(trajfile.c_str(),"w");
+      fp=std::fopen(trajfile.c_str(),"w");
       write_positions_first=false;
     } else {
-      fp=fopen(trajfile.c_str(),"a");
+      fp=std::fopen(trajfile.c_str(),"a");
     }
+    plumed_assert(fp);
+// call fclose when fp goes out of scope
+    std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
     std::fprintf(fp,"%d\n",natoms);
     std::fprintf(fp,"%f %f %f\n",cell[0],cell[1],cell[2]);
     for(int iatom=0; iatom<natoms; iatom++) {
@@ -361,7 +347,6 @@ private:
       else pos=positions[iatom];
       std::fprintf(fp,"Ar %10.7f %10.7f %10.7f\n",pos[0],pos[1],pos[2]);
     }
-    fclose(fp);
   }
 
   void write_final_positions(const std::string& outputfile,int natoms,const std::vector<Vector>& positions,const double cell[3],const bool wrapatoms)
@@ -369,7 +354,10 @@ private:
 // write positions on file outputfile
     Vector pos;
     FILE*fp;
-    fp=fopen(outputfile.c_str(),"w");
+    fp=std::fopen(outputfile.c_str(),"w");
+    plumed_assert(fp);
+// call fclose when fp goes out of scope
+    std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
     std::fprintf(fp,"%d\n",natoms);
     std::fprintf(fp,"%f %f %f\n",cell[0],cell[1],cell[2]);
     for(int iatom=0; iatom<natoms; iatom++) {
@@ -379,7 +367,6 @@ private:
       else pos=positions[iatom];
       std::fprintf(fp,"Ar %10.7f %10.7f %10.7f\n",pos[0],pos[1],pos[2]);
     }
-    fclose(fp);
   }
 
 
@@ -388,13 +375,15 @@ private:
 // write statistics on file statfile
     if(write_statistics_first) {
 // first time this routine is called, open the file
-      write_statistics_fp=fopen(statfile.c_str(),"w");
+      write_statistics_fp=std::fopen(statfile.c_str(),"w");
+      write_statistics_fp_deleter.reset(write_statistics_fp);
       write_statistics_first=false;
     }
     if(istep-write_statistics_last_time_reopened>100) {
 // every 100 steps, reopen the file to flush the buffer
-      fclose(write_statistics_fp);
-      write_statistics_fp=fopen(statfile.c_str(),"a");
+      write_statistics_fp_deleter.reset(nullptr); // close file
+      write_statistics_fp=std::fopen(statfile.c_str(),"a");
+      write_statistics_fp_deleter.reset(write_statistics_fp);
       write_statistics_last_time_reopened=istep;
     }
     std::fprintf(write_statistics_fp,"%d %f %f %f %f %f\n",istep,istep*tstep,2.0*engkin/double(ndim*natoms),engconf,engkin+engconf,engkin+engconf+engint);
@@ -602,9 +591,6 @@ private:
 
 // write final positions
     write_final_positions(outputfile,natoms,positions,cell,wrapatoms);
-
-// close the statistic file if it was open:
-    if(write_statistics_fp) fclose(write_statistics_fp);
 
     return 0;
   }

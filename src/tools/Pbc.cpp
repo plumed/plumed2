@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2022 The plumed team
+   Copyright (c) 2011-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -47,7 +47,7 @@ void Pbc::buildShifts(std::vector<Vector> shifts[2][2][2])const {
   for(int l=-1; l<=1; l++) for(int m=-1; m<=1; m++) for(int n=-1; n<=1; n++) {
 
 // int/double shift vectors
-        int ishift[3]= {l,m,n};
+        const int ishift[3]= {l,m,n};
         Vector dshift(l,m,n);
 
 // count how many components are != 0
@@ -70,7 +70,7 @@ void Pbc::buildShifts(std::vector<Vector> shifts[2][2][2])const {
 // here we start pruning depending on the sign of the scaled coordinate
         for(int i=0; i<2; i++) for(int j=0; j<2; j++) for(int k=0; k<2; k++) {
 
-              int block[3]= {2*i-1,2*j-1,2*k-1};
+              const int block[3]= {2*i-1,2*j-1,2*k-1};
 
 // skip cases where shift would bring too far from origin
               bool skip=false;

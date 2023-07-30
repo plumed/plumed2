@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2020-2022 The plumed team
+   Copyright (c) 2020-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -94,7 +94,7 @@ Make sure your PDB file is correctly formatted as explained \ref pdbreader "in t
 If only one reference environment is specified then the filename should be given as argument of the keyword REFERENCE.
 If instead several reference environments are given, then they have to be provided in separate pdb files and given as arguments of the
 keywords REFERENCE_1, REFERENCE_2, etc.
-If you have a reference crystal structure configuration you can use the [Environment Finder](https://mybinder.org/v2/gh/PabloPiaggi/EnvironmentFinder/master?urlpath=apps%2FApp.ipynb) app to determine the reference environments that you should use.
+If you have a reference crystal structure configuration you can use the [Environment Finder](https://github.com/PabloPiaggi/EnvironmentFinder) app to determine the reference environments that you should use.
 
 If multiple chemical species are involved in the calculation, it is possible to provide the atom types (names) both for atoms in the reference environments and in the simulation box.
 This information is provided in pdb files using the atom name field.
@@ -280,7 +280,7 @@ double EnvironmentSimilarity::compute( const unsigned& tindex, multicolvar::Atom
   if (environments_.size()==1 && atomNames_.empty() ) {
     // One reference environment case - no atom names
     for(unsigned i=1; i<myatoms.getNumberOfAtoms(); ++i) {
-      Vector& distance=myatoms.getPosition(i);
+      const Vector& distance=myatoms.getPosition(i);
       double d2;
       if ( (d2=distance[0]*distance[0])<rcut2_ &&
            (d2+=distance[1]*distance[1])<rcut2_ &&
@@ -300,7 +300,7 @@ double EnvironmentSimilarity::compute( const unsigned& tindex, multicolvar::Atom
     std::vector<double> values(environments_.size()); //value for each template
     // First time calculate sums
     for(unsigned i=1; i<myatoms.getNumberOfAtoms(); ++i) {
-      Vector& distance=myatoms.getPosition(i);
+      const Vector& distance=myatoms.getPosition(i);
       double d2;
       if ( (d2=distance[0]*distance[0])<rcut2_ &&
            (d2+=distance[1]*distance[1])<rcut2_ &&
@@ -323,7 +323,7 @@ double EnvironmentSimilarity::compute( const unsigned& tindex, multicolvar::Atom
     }
     // Second time find derivatives
     for(unsigned i=1; i<myatoms.getNumberOfAtoms(); ++i) {
-      Vector& distance=myatoms.getPosition(i);
+      const Vector& distance=myatoms.getPosition(i);
       double d2;
       if ( (d2=distance[0]*distance[0])<rcut2_ &&
            (d2+=distance[1]*distance[1])<rcut2_ &&
@@ -346,7 +346,7 @@ double EnvironmentSimilarity::compute( const unsigned& tindex, multicolvar::Atom
     std::vector<double> values(environments_.size()); //value for each template
     // First time calculate sums
     for(unsigned i=1; i<myatoms.getNumberOfAtoms(); ++i) {
-      Vector& distance=myatoms.getPosition(i);
+      const Vector& distance=myatoms.getPosition(i);
       double d2;
       if ( (d2=distance[0]*distance[0])<rcut2_ &&
            (d2+=distance[1]*distance[1])<rcut2_ &&
@@ -371,7 +371,7 @@ double EnvironmentSimilarity::compute( const unsigned& tindex, multicolvar::Atom
     }
     // Second time find derivatives
     for(unsigned i=1; i<myatoms.getNumberOfAtoms(); ++i) {
-      Vector& distance=myatoms.getPosition(i);
+      const Vector& distance=myatoms.getPosition(i);
       double d2;
       if ( (d2=distance[0]*distance[0])<rcut2_ &&
            (d2+=distance[1]*distance[1])<rcut2_ &&

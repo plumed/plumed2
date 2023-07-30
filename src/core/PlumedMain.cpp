@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2022 The plumed team
+   Copyright (c) 2011-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -643,6 +643,13 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         CHECK_NOTNULL(val,word);
         plumed_assert(nw==2);
         atoms.setExtraCVForce(words[1],val);
+        break;
+      /* ADDED WITH API==10 */
+      case cmd_isExtraCVNeeded:
+        CHECK_NOTNULL(val,word);
+        plumed_assert(nw==2);
+        if(atoms.isExtraCVNeeded(words[1])) val.set(int(1));
+        else                                val.set(int(0));
         break;
       case cmd_GREX:
         if(!grex) grex=Tools::make_unique<GREX>(*this);

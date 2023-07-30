@@ -1,12 +1,12 @@
-/**
-\page master-ISDD-2 Master ISDD tutorial 2021: Metadynamics simulations with PLUMED
+a-master-ISDD-2.txt/**
+\page master-ISDD-2 Master ISDD tutorial 2023: Metadynamics simulations with PLUMED
 
 \section master-ISDD-2-aims Aim
 
 The aim of this tutorial is to train users to perform and analyze metadynamics simulations with PLUMED.
 This tutorial has been prepared by Max Bonomi (adapting a lot of material from other tutorials) for
 the <a href="http://isddteach.sdv.univ-paris-diderot.fr/fr/accueil.html">Master In Silico Drug Design</a>, held
-at Universite' de Paris on October 26th, 2021.
+at Université Paris Cité on March 6th, 2023.
 
 \section master-ISDD-2-objectives Objectives 
 
@@ -34,7 +34,7 @@ tar xvzf master-ISDD-2.tar.gz
 Once unpacked, all the files can be found in the `master-ISDD-2` directory. To keep things clean,
 it is recommended to run each exercise in a separate sub-directory that you can create inside `master-ISDD-2`.
 
-\note This tutorial has been tested with PLUMED version 2.7.2 and GROMACS version 2019.6.
+\note This tutorial has been tested with PLUMED version 2.8.2 and GROMACS version 2019.6.
 
 \section master-ISDD-2-intro Introduction
 

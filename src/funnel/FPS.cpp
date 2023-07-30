@@ -7,7 +7,7 @@
    Users are free to download, adapt and use the code as long as it is not for commercial purposes.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "colvar/Colvar.h"
-#include "colvar/ActionRegister.h"
+#include "core/ActionRegister.h"
 #include <string>
 #include <cmath>
 #include <cassert>
@@ -98,8 +98,8 @@ class FUNNEL_PS : public Colvar {
   std::vector<AtomNumber> anchor;
   std::vector<AtomNumber> numbers;
   bool pbc;
-  PLMD::RMSD* alignment;
-  PLMD::PDB* pdb;
+  PLMD::RMSD alignment;
+  PLMD::PDB pdb;
   bool squared;
 private:
   vector<double> points;
@@ -111,8 +111,6 @@ public:
 // I need a method in RMSDCoreCalc and these were requested
   std::vector<double> align;
   std::vector<double> displace;
-// It is written no more desctructors, but an expert said it's necessary for imported variables (pdb and alignment) or else memory leak
-  ~FUNNEL_PS();
 };
 
 using namespace std;
@@ -153,32 +151,28 @@ FUNNEL_PS::FUNNEL_PS(const ActionOptions&ao):
   parseAtomList("ANCHOR",anchor);
   checkRead();
 
-  pdb = new PDB();
-
   // read everything in ang and transform to nm if we are not in natural units
-  if( !pdb->read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/ActionAtomistic::atoms.getUnits().getLength()) )
+  if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/ActionAtomistic::atoms.getUnits().getLength()) )
     error("missing input file " + reference );
-
-  alignment = new RMSD();
 
   bool remove_com=true;
   bool normalize_weights=true;
   // here displace is a simple vector of ones
-  align=pdb->getOccupancy();
+  align=pdb.getOccupancy();
   for(unsigned i=0; i<align.size(); i++) {
     align[i]=1.;
   } ;
-  displace=pdb->getBeta();
+  displace=pdb.getBeta();
   for(unsigned i=0; i<displace.size(); i++) {
     displace[i]=1.;
   } ;
   // reset again to reimpose uniform weights (safe to disable this)
-  alignment->set(align,displace,pdb->getPositions(),type,remove_com,normalize_weights);
+  alignment.set(align,displace,pdb.getPositions(),type,remove_com,normalize_weights);
 
 
 
   // Array with inside both the structure to align and the atom to be aligned
-  numbers=pdb->getAtomNumbers();
+  numbers=pdb.getAtomNumbers();
   numbers.push_back(anchor[0]);
   numbers.push_back(ligand_com[0]);
 
@@ -195,11 +189,6 @@ FUNNEL_PS::FUNNEL_PS(const ActionOptions&ao):
 
   requestAtoms( numbers );
 
-}
-
-FUNNEL_PS::~FUNNEL_PS() {
-  delete alignment;
-  delete pdb;
 }
 
 // calculator
@@ -236,12 +225,12 @@ void FUNNEL_PS::calculate() {
   // I call the method calc_FitElements that initializes all feature that I need
   // except for centerreference that I need to calculate from scratch
   // Buffer has no meaning but I had to fulfill the requirements of calc_FitElements
-  double rmsd = alignment->calc_FitElements( sourcePositions, Rotation, drotdpos, buffer, centerpositions, squared);
+  double rmsd = alignment.calc_FitElements( sourcePositions, Rotation, drotdpos, buffer, centerpositions, squared);
 
   // To Plumed developers: it would be interesting to make the functions to calculate centers of mass public or protected
   centerreference.zero();
-  for(unsigned i=0; i<pdb->size(); i++) {
-    centerreference+=pdb->getPositions()[i]*align[i]/align.size();
+  for(unsigned i=0; i<pdb.size(); i++) {
+    centerreference+=pdb.getPositions()[i]*align[i]/align.size();
   }
 
   /*

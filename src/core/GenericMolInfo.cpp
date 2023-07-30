@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2022 The plumed team
+   Copyright (c) 2012-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -280,7 +280,7 @@ void GenericMolInfo::interpretSymbol( const std::string& symbol, std::vector<Ato
         }
         words.erase(words.begin());
         atoms.resize(0);
-        for(auto & w : words) {
+        for(const auto & w : words) {
           int n;
           if(w.empty()) continue;
           Tools::convert(w,n);

@@ -35,6 +35,8 @@ Options:
   -q, --quiet
                     do not write loggin information; useful with -i to print just
                     the patching information
+  -I, --include
+                    use include files rather than symbolic links
   -f, --force
                     force patching (*)
 
@@ -48,6 +50,7 @@ engine=""
 diff=""
 mode=shared
 force=""
+include=""
 newpatch=
 
 multiple_actions=
@@ -91,6 +94,7 @@ do
     (--shared) mode=shared ;;
     (--runtime) mode=runtime ;;
     (--force|-f) force=yes ;;
+    (--include|-I) include=yes ;;
     (--quiet|-q) quiet=yes ;;
     (*)
       echo "ERROR: Unknown option $prefix_option. Use -h for help."
@@ -116,7 +120,7 @@ if [ -z "$action" ] ; then
 fi
 
 if [ "$action" = options ] ; then
-  echo "--help -h --patch -p --save -s --save-originals --revert -R -r --list-engines -l --info -i --new --options --description --engine --mdroot --mode --diff --engine -e --mdroot --root --diff -d --mode -m --new -n --static --shared --runtime --force -f --quiet -q"
+  echo "--help -h --patch -p --save -s --save-originals --revert -R -r --list-engines -l --info -i --new --options --description --engine --mdroot --mode --diff --engine -e --mdroot --root --diff -d --mode -m --new -n --static --shared --runtime --force -f --quiet -q --include"
   exit 0
 fi
 
@@ -253,7 +257,7 @@ case "$action" in
       exit 1
       fi
     fi
-    if [ -L Plumed.h -o -L Plumed.inc -o -L Plumed.cmake ]
+    if [ -e Plumed.h -o -e Plumed.inc -o -e Plumed.cmake ]
     then
       if ( type -t plumed_before_revert 1>/dev/null || type -t plumed_after_revert 1>/dev/null) && ( type -t plumed_before_patch 1>/dev/null || type -t plumed_after_patch 1>/dev/null)
       then
@@ -280,10 +284,17 @@ case "$action" in
       test -n "$quiet" || echo "Executing plumed_before_patch function"
       plumed_before_patch
     fi
-    test -n "$quiet" || echo "Linking Plumed.h, Plumed.inc, and Plumed.cmake ($mode mode)"
-    ln -fs "$PLUMED_INCLUDEDIR/$PLUMED_PROGRAM_NAME/wrapper/Plumed.h" Plumed.h
-    ln -fs "$PLUMED_ROOT/src/lib/Plumed.inc.$mode" Plumed.inc
-    ln -fs "$PLUMED_ROOT/src/lib/Plumed.cmake.$mode" Plumed.cmake
+    if test -n "$include" ; then
+      test -n "$quiet" || echo "Including Plumed.h, Plumed.inc, and Plumed.cmake ($mode mode)"
+      echo "#include \"$PLUMED_INCLUDEDIR/$PLUMED_PROGRAM_NAME/wrapper/Plumed.h\"" > Plumed.h
+      echo "include $PLUMED_ROOT/src/lib/Plumed.inc.$mode" > Plumed.inc
+      echo "include($PLUMED_ROOT/src/lib/Plumed.cmake.$mode)" > Plumed.cmake
+    else
+      test -n "$quiet" || echo "Linking Plumed.h, Plumed.inc, and Plumed.cmake ($mode mode)"
+      ln -fs "$PLUMED_INCLUDEDIR/$PLUMED_PROGRAM_NAME/wrapper/Plumed.h" Plumed.h
+      ln -fs "$PLUMED_ROOT/src/lib/Plumed.inc.$mode" Plumed.inc
+      ln -fs "$PLUMED_ROOT/src/lib/Plumed.cmake.$mode" Plumed.cmake
+    fi
 
     if [ -d "$diff" ]; then
       test -n "$quiet" || echo "Patching with on-the-fly diff from stored originals"
@@ -340,7 +351,7 @@ case "$action" in
     fi
   ;;
   (save)
-    if [ ! -L Plumed.h -o ! -L Plumed.inc -o ! -L Plumed.cmake ]
+    if [ ! -e Plumed.h -o ! -e Plumed.inc -o ! -e Plumed.cmake ]
     then
       echo "ERROR: I cannot find Plumed.h, Plumed.inc, and Plumed.cmake files. You have likely not patched yet."
       exit 1
@@ -425,7 +436,7 @@ EOF
       test -n "$quiet" || echo "Executing plumed_before_revert function"
       plumed_before_revert
     fi
-    if [ ! -L Plumed.h -o ! -L Plumed.inc -o ! -L Plumed.cmake ]
+    if [ ! -e Plumed.h -o ! -e Plumed.inc -o ! -e Plumed.cmake ]
     then
       echo "WARNING: I cannot find Plumed.h, Plumed.inc, and Plumed.cmake files. You have likely not patched yet."
     else

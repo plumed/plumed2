@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2022 The plumed team
+   Copyright (c) 2015-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -34,7 +34,7 @@ private:
 /// The Pamm object underlying this HBPamm calculation
   PammObject mypamm;
 /// Pointer to base class in multicolvar
-  multicolvar::MultiColvarBase* mymulti;
+  multicolvar::MultiColvarBase* mymulti=nullptr;
 public:
 /// Setup the HBPamm object
   void setup( const std::string& filename, const double& reg, multicolvar::MultiColvarBase* mybase, std::string& errorstr );

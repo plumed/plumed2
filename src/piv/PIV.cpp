@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "colvar/Colvar.h"
-#include "colvar/ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/ActionWithVirtualAtom.h"
 #include "tools/NeighborList.h"
@@ -23,6 +23,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include "tools/PDB.h"
 #include "tools/Pbc.h"
 #include "tools/Stopwatch.h"
+#include "core/ActionSet.h"
 
 #include <string>
 #include <cmath>
@@ -192,7 +193,7 @@ private:
   unsigned Natm,Nlist,NLsize;
   double Fvol,Vol0,m_PIVdistance;
   std::string ref_file;
-  NeighborList *nlall;
+  std::unique_ptr<NeighborList> nlall;
   std::vector<SwitchingFunction> sfs;
   std::vector<std:: vector<double> > rPIV;
   std::vector<double> scaling,r00;
@@ -201,15 +202,30 @@ private:
   std::vector<bool> dosort;
   std::vector<Vector> compos;
   std::vector<string> sw;
-  std::vector<NeighborList *> nl;
-  std::vector<NeighborList *> nlcom;
+  std::vector<std::unique_ptr<NeighborList>> nl;
+  std::vector<std::unique_ptr<NeighborList>> nlcom;
   std::vector<Vector> m_deriv;
   Tensor m_virial;
   bool Svol,cross,direct,doneigh,test,CompDer,com;
+
+  /// Local structure, used to store data that should be
+  /// shared across multiple PIV instances
+  struct SharedData {
+    int prev_stp=-1;
+    int init_stp=1;
+    std:: vector<std:: vector<Vector> > prev_pos;
+    std:: vector<std:: vector<double> > cPIV;
+    std:: vector<std:: vector<int> > Atom0;
+    std:: vector<std:: vector<int> > Atom1;
+  };
+  /// Owning pointer. Will only be allocated by the first PIV instance
+  std::unique_ptr<SharedData> sharedData_unique;
+  /// Raw pointer. Will have the same value for all PIV instances
+  SharedData* sharedData=nullptr;
+
 public:
   static void registerKeywords( Keywords& keys );
   explicit PIV(const ActionOptions&);
-  ~PIV();
   // active methods:
   virtual void calculate();
   void checkFieldsAllowed() {}
@@ -267,8 +283,8 @@ PIV::PIV(const ActionOptions&ao):
   dosort(std:: vector<bool>(Nlist)),
   compos(std:: vector<Vector>(NLsize)),
   sw(std:: vector<string>(Nlist)),
-  nl(std:: vector<NeighborList *>(Nlist)),
-  nlcom(std:: vector<NeighborList *>(NLsize)),
+  nl(Nlist),
+  nlcom(NLsize),
   m_deriv(std:: vector<Vector>(1)),
   Svol(false),
   cross(true),
@@ -279,6 +295,28 @@ PIV::PIV(const ActionOptions&ao):
   com(false)
 {
   log << "Starting PIV Constructor\n";
+
+  {
+    // look for another PIV instance previously allocated
+    auto* previous=plumed.getActionSet().selectLatest<PIV*>(this);
+
+    // Uncommenting the following line, it is possible to force
+    // a separate object per instance of the PIB object.
+    // Results are unaffected, but performance is worse.
+    // I think this is the expected behavior. GB
+    // previous=nullptr;
+
+    if(!previous) {
+      // if not found, allocate the shared data struct
+      sharedData_unique=Tools::make_unique<SharedData>();
+      // then set the raw pointer
+      sharedData=sharedData_unique.get();
+    } else {
+      // if found, use the previous raw pointer
+      sharedData=previous->sharedData;
+      log << "(a previous PIV action was found)\n";
+    }
+  }
 
   // Precision on the real-to-integer transformation for the sorting
   parse("PRECISION",Nprec);
@@ -513,19 +551,19 @@ PIV::PIV(const ActionOptions&ao):
     }
     log << "Creating Neighbor Lists \n";
     // WARNING: is nl_cut meaningful here?
-    nlall= new NeighborList(listall,true,pbc,getPbc(),comm,nl_cut[0],nl_st[0]);
+    nlall= Tools::make_unique<NeighborList>(listall,true,pbc,getPbc(),comm,nl_cut[0],nl_st[0]);
     if(com) {
       //Build lists of Atoms for every COM
       for (unsigned i=0; i<compos.size(); i++) {
         // WARNING: is nl_cut meaningful here?
-        nlcom[i]= new NeighborList(comatm[i],true,pbc,getPbc(),comm,nl_cut[0],nl_st[0]);
+        nlcom[i] = Tools::make_unique<NeighborList>(comatm[i],true,pbc,getPbc(),comm,nl_cut[0],nl_st[0]);
       }
     }
     unsigned ncnt=0;
     // Direct blocks AA, BB, CC, ...
     if(direct) {
       for (unsigned j=0; j<Natm; j++) {
-        nl[ncnt]= new NeighborList(Plist[j],true,pbc,getPbc(),comm,nl_cut[j],nl_st[j]);
+        nl[ncnt]= Tools::make_unique<NeighborList>(Plist[j],true,pbc,getPbc(),comm,nl_cut[j],nl_st[j]);
         ncnt+=1;
       }
     }
@@ -533,16 +571,16 @@ PIV::PIV(const ActionOptions&ao):
     if(cross) {
       for (unsigned j=0; j<Natm; j++) {
         for (unsigned i=j+1; i<Natm; i++) {
-          nl[ncnt]= new NeighborList(Plist[i],Plist[j],true,false,pbc,getPbc(),comm,nl_cut[ncnt],nl_st[ncnt]);
+          nl[ncnt]= Tools::make_unique<NeighborList>(Plist[i],Plist[j],true,false,pbc,getPbc(),comm,nl_cut[ncnt],nl_st[ncnt]);
           ncnt+=1;
         }
       }
     }
   } else {
     log << "WARNING: Neighbor List not activated this has not been tested!!  \n";
-    nlall= new NeighborList(listall,true,pbc,getPbc(),comm);
+    nlall= Tools::make_unique<NeighborList>(listall,true,pbc,getPbc(),comm);
     for (unsigned j=0; j<Nlist; j++) {
-      nl[j]= new NeighborList(Plist[j],Plist[j],true,true,pbc,getPbc(),comm);
+      nl[j]= Tools::make_unique<NeighborList>(Plist[j],Plist[j],true,true,pbc,getPbc(),comm);
     }
   }
   // Output Nlist
@@ -615,10 +653,11 @@ PIV::PIV(const ActionOptions&ao):
     for (unsigned j=0; j<Nlist; j++) {
       if(Svol) {
         double r0;
+        std::string old_r0;
         vector<string> data=Tools::getWords(sw[j]);
         data.erase(data.begin());
-        Tools::parse(data,"R_0",r0);
-        std::string old_r0; Tools::convert(r0,old_r0);
+        Tools::parse(data,"R_0",old_r0);
+        Tools::convert(old_r0,r0);
         r0*=Fvol;
         std::string new_r0; Tools::convert(r0,new_r0);
         std::size_t pos = sw[j].find("R_0");
@@ -705,31 +744,28 @@ PIV::PIV(const ActionOptions&ao):
   m_deriv.resize(getNumberOfAtoms());
 }
 
-// The following deallocates pointers
-PIV::~PIV()
-{
-  for (unsigned j=0; j<Nlist; j++) {
-    delete nl[j];
-  }
-  if(com) {
-    for (unsigned j=0; j<NLsize; j++) {
-      delete nlcom[j];
-    }
-  }
-  delete nlall;
-}
-
 void PIV::calculate()
 {
 
   // Local variables
-  // The following are probably needed as static arrays
-  static int prev_stp=-1;
-  static int init_stp=1;
-  static std:: vector<std:: vector<Vector> > prev_pos(Nlist);
-  static std:: vector<std:: vector<double> > cPIV(Nlist);
-  static std:: vector<std:: vector<int> > Atom0(Nlist);
-  static std:: vector<std:: vector<int> > Atom1(Nlist);
+
+  if(sharedData_unique) {
+    // This is executed by the first PIV instance.
+    // We initialize variables with the correct Nlist.
+    sharedData_unique->prev_pos.resize(Nlist);
+    sharedData_unique->cPIV.resize(Nlist);
+    sharedData_unique->Atom0.resize(Nlist);
+    sharedData_unique->Atom1.resize(Nlist);
+  }
+
+  // create references to minimize the impact of the code below
+  auto & prev_stp(sharedData->prev_stp);
+  auto & init_stp(sharedData->init_stp);
+  auto & prev_pos(sharedData->prev_pos);
+  auto & cPIV(sharedData->cPIV);
+  auto & Atom0(sharedData->Atom0);
+  auto & Atom1(sharedData->Atom1);
+
   std:: vector<std:: vector<int> > A0(Nprec);
   std:: vector<std:: vector<int> > A1(Nprec);
   size_t stride=1;
@@ -761,10 +797,11 @@ void PIV::calculate()
     for (unsigned j=0; j<Nlist; j++) {
       if(Svol) {
         double r0;
+        std::string old_r0;
         vector<string> data=Tools::getWords(sw[j]);
         data.erase(data.begin());
-        Tools::parse(data,"R_0",r0);
-        std::string old_r0; Tools::convert(r0,old_r0);
+        Tools::parse(data,"R_0",old_r0);
+        Tools::convert(old_r0,r0);
         r0*=Fvol;
         std::string new_r0; Tools::convert(r0,new_r0);
         std::size_t pos = sw[j].find("R_0");

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2022 The plumed team
+   Copyright (c) 2011-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -146,6 +146,8 @@ public:
   const Vector & getBoxAng()const;
 /// Returns box axis vectors
   const Tensor & getBoxVec()const;
+/// Return true if the residue name is one of the allowed reisude names e.g. one of the 20 amino acids for proteins
+  bool allowedResidue( const std::string& type, const std::string& residuename ) const;
 };
 
 }

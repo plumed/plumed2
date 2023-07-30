@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2022 The plumed team
+   Copyright (c) 2012-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -344,7 +344,6 @@ void Histogram::turnOnDerivatives() {
   for(unsigned i=0; i<myvessels.size(); ++i) {
     multicolvar::MultiColvarBase* mbase=dynamic_cast<multicolvar::MultiColvarBase*>( myvessels[i] );
     if( !mbase ) error("do not know how to get histogram derivatives for actions of type " + myvessels[i]->getName() );
-    // cppcheck-suppress nullPointerRedundantCheck
     tmp_atoms = mbase->getAbsoluteIndexes();
     for(unsigned j=0; j<tmp_atoms.size(); ++j) all_atoms.push_back( tmp_atoms[j] );
     // Make a tempory multi value so we can avoid vector resizing

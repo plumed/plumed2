@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2022 The plumed team
+   Copyright (c) 2016-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "cltools/CLTool.h"
-#include "cltools/CLToolRegister.h"
+#include "core/CLToolRegister.h"
 #include "tools/Tools.h"
 #include "tools/Pbc.h"
 #include "core/Value.h"
@@ -143,7 +143,10 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   std::string ofilename; parse("--out",ofilename);
   if( ifilename.length()>0 ) {
     std::fprintf(out,"Reparameterising path in file named %s so that all frames are equally spaced \n",ifilename.c_str() );
-    FILE* fp=fopen(ifilename.c_str(),"r");
+    FILE* fp=std::fopen(ifilename.c_str(),"r");
+// call fclose when fp goes out of scope
+    auto deleter=[](FILE* f) { if(f) std::fclose(f); };
+    std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
     bool do_read=true; std::vector<std::unique_ptr<ReferenceConfiguration>> frames;
     while (do_read) {
       PDB mypdb;
@@ -191,9 +194,9 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
     for(unsigned i=1; i<frames.size(); ++i) {
       double len = frames[i]->calc( frames[i-1]->getReferencePositions(), fake_pbc, vals_ptr, frames[i-1]->getReferenceArguments(), mypack, false );
       printf("FINAL DISTANCE BETWEEN FRAME %u AND %u IS %f \n",i-1,i,len );
-      mean+=len;
+      mean+=len*len;
     }
-    printf("SUGGESTED LAMBDA PARAMETER IS THUS %f \n",2.3/mean/static_cast<double>( frames.size()-1 ) );
+    printf("SUGGESTED LAMBDA PARAMETER IS THUS %f \n",2.3/(mean/static_cast<double>( frames.size()-1 )) );
 
     // Delete all the frames
     OFile ofile; ofile.open(ofilename);
@@ -213,18 +216,31 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   }
 
 // Read initial frame
-  std::string istart; parse("--start",istart); FILE* fp2=fopen(istart.c_str(),"r"); PDB mystartpdb;
-  if( istart.length()==0 ) error("input is missing use --istart + --iend or --path");
-  if( !mystartpdb.readFromFilepointer(fp2,false,0.1) ) error("could not read fila " + istart);
+  std::string istart; parse("--start",istart);
+  PDB mystartpdb;
+  {
+    FILE* fp2=std::fopen(istart.c_str(),"r");
+// call fclose when fp goes out of scope
+    auto deleter=[](FILE* f) { std::fclose(f); };
+    std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp2,deleter);
+    if( istart.length()==0 ) error("input is missing use --istart + --iend or --path");
+    if( !mystartpdb.readFromFilepointer(fp2,false,0.1) ) error("could not read fila " + istart);
+  }
   auto sframe=metricRegister().create<ReferenceConfiguration>( mtype, mystartpdb );
-  fclose(fp2);
 
 // Read final frame
-  std::string iend; parse("--end",iend); FILE* fp1=fopen(iend.c_str(),"r"); PDB myendpdb;
-  if( iend.length()==0 ) error("input is missing using --istart + --iend or --path");
-  if( !myendpdb.readFromFilepointer(fp1,false,0.1) ) error("could not read fila " + iend);
+  std::string iend; parse("--end",iend);
+  PDB myendpdb;
+  {
+    FILE* fp1=std::fopen(iend.c_str(),"r");
+// call fclose when fp goes out of scope
+    auto deleter=[](FILE* f) { std::fclose(f); };
+    std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp1,deleter);
+    if( iend.length()==0 ) error("input is missing using --istart + --iend or --path");
+    if( !myendpdb.readFromFilepointer(fp1,false,0.1) ) error("could not read fila " + iend);
+  }
   auto eframe=metricRegister().create<ReferenceConfiguration>( mtype, myendpdb );
-  fclose(fp1);
+
 // Get atoms and arg requests
   std::vector<AtomNumber> atoms; std::vector<std::string> arg_names;
   sframe->getAtomRequests( atoms); eframe->getAtomRequests( atoms);

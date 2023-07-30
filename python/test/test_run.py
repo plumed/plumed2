@@ -98,6 +98,11 @@ class Test(unittest.TestCase):
     
     # Create PLUMED object and read input
     p = plumed.Plumed()
+
+    # not really needed, used to check https://github.com/plumed/plumed2/issues/916
+    plumed_version = np.zeros(1, dtype=np.intc)
+    p.cmd( "getApiVersion", plumed_version)
+
     p.cmd("setMDEngine","python")
     p.cmd("setTimestep", 1.)
     p.cmd("setKbT", 1.)

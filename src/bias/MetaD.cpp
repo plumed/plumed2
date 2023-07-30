@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2022 The plumed team
+   Copyright (c) 2011-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Bias.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "core/ActionSet.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
@@ -878,6 +878,12 @@ MetaD::MetaD(const ActionOptions& ao):
   // MPI version
   parseFlag("WALKERS_MPI",walkers_mpi_);
 
+  //If this Action is not compiled with MPI the user is informed and we exit gracefully
+  if(walkers_mpi_) {
+    plumed_assert(Communicator::plumedHasMPI()) << "Invalid walkers configuration: WALKERS_MPI flag requires MPI compilation";
+    plumed_assert(Communicator::initialized()) << "Invalid walkers configuration: WALKERS_MPI needs the communicator correctly initialized.";
+  }
+
   // Flying Gaussian
   parseFlag("FLYING_GAUSSIAN", flying_);
 
@@ -1172,7 +1178,7 @@ MetaD::MetaD(const ActionOptions& ao):
           if(mesh>0.5*sigma0_[i]) log<<"  WARNING: Using a METAD with a Grid Spacing larger than half of the Gaussians width (SIGMA) can produce artifacts\n";
         } else {
           if(sigma0min_[i]<0.) error("When using ADAPTIVE Gaussians on a grid SIGMA_MIN must be specified");
-          if(mesh>0.5*sigma0min_[i]) log<<"  WARNING: to use a METAD with a GRID and ADAPTIVE you need to set a Grid Spacing larger than half of the Gaussians (SIGMA_MIN) \n";
+          if(mesh>0.5*sigma0min_[i]) log<<"  WARNING: to use a METAD with a GRID and ADAPTIVE you need to set a Grid Spacing lower than half of the Gaussians (SIGMA_MIN) \n";
         }
       }
       std::string funcl=getLabel() + ".bias";

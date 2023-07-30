@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2022 The plumed team
+   Copyright (c) 2015-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithVirtualAtom.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "tools/Vector.h"
 #include "tools/Exception.h"
 
@@ -40,7 +40,7 @@ It is also possible to assign a predefined charge or mass to the atom.
 Similar to \ref POSITION this variable is not invariant for translation
 of the system. Adding a force on it can create serious troubles.
 
-Notice that the distance between to atoms created
+Notice that the distance between two atoms created
 using FIXEDATOM is invariant for translation.
 Additionally, if one first align atoms to a reference using \ref FIT_TO_TEMPLATE,
 then it is safe to add further fixed atoms without breaking translational invariance.

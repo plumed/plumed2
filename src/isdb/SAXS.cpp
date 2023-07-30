@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017-2022 The plumed team
+   Copyright (c) 2017-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,23 +23,35 @@
  This class was originally written by Alexander Jussupow
  Arrayfire implementation by Alexander Jussupow and CC
  Extension for the middleman algorithm (now removed) by Max Muehlbauer
- Refactoring for hySAXS Martini beads structure factor for Nucleic Acids by Cristina Paissoni
+ Refactoring for hySAXS Martini form factors for Nucleic Acids by Cristina Paissoni
+ Refactoring for hySAS OneBead form factors with solvent correction by Federico Ballabio and Riccardo Capelli
 */
 
 #include "MetainferenceBase.h"
 #include "core/ActionRegister.h"
 #include "core/ActionSet.h"
 #include "core/GenericMolInfo.h"
+#include "tools/MolDataClass.h"
 #include "tools/Communicator.h"
 #include "tools/Pbc.h"
+#include "tools/PDB.h"
 
 #include <map>
 #include <iterator>
 #include <iostream>
+#include <algorithm>
+#include <cctype>
 
 #ifdef __PLUMED_HAS_ARRAYFIRE
 #include <arrayfire.h>
 #include <af/util.h>
+#ifdef __PLUMED_HAS_ARRAYFIRE_CUDA
+#include <cuda_runtime.h>
+#include <cublas_v2.h>
+#include <af/cuda.h>
+#elif __PLUMED_HAS_ARRAYFIRE_OCL
+#include <af/opencl.h>
+#endif
 #endif
 
 #ifndef M_PI
@@ -53,31 +65,52 @@ namespace isdb {
 /*
 Calculates SAXS intensity.
 
-SAXS intensities are calculated for a set of scattering vectors using QVALUE keywords that are numbered starting
-from 1. Form factors can be either assigned using a polynomial expansion to any order by using the PARAMETERS
-keywords or automatically assigned to atoms using the ATOMISTIC flag by reading a PDB file.
-Alternatively to the atomistic representation, two types of coarse-grained mapping are available:
-- MARTINI (based on the 2.2 non-polarizable version). The user should provide a mapping file represented by a PDB
-file that contains both the all-atom and MARTINI representations;
-- ONEBEAD. The user should provide an all-atom PDB file via MOLINFO before the SAXS instruction. In this case,
-PLUMED computes the COM of every residue and creates a virtual bead on which the SAXS calculations are performed.
+SAXS intensities are calculated for a set of scattering vectors using QVALUE keywords numbered from 1.
+Form factors can be assigned either by polynomial expansion of any order by using the PARAMETERS keywords, or
+automatically matched to atoms using the ATOMISTIC flag by reading a PDB file. Alternatively to the atomistic
+representation, two types of coarse-grained mapping are available:
+- MARTINI.
+- ONEBEAD.
 
-Regarding ONEBEAD, it is possible to take into account the solvation layer contribution to the SAXS intensity by
-adding a correction term just for the solvent accessible residues: the form factor of amino acids that have a SASA
-(computed via LCPO algorithm) larger than a user-defined threshold are corrected according to a user-defined electron
-density term. SASA stride calculation can be modified using SOLVATION_STRIDE, that by default is set to 100 steps,
-while the surface cut-off can be modified with SASA_CUTOFF. The maximum QVALUE for ONEBEAD is set to 0.3 \f$\AA^{-1}\f$.
-The solvent density, that by default is set to 0.334 electrons \f$\AA^{-3}\f$ (bulk water), can be modified using
-the SOLVDENS keyword.
+Whether for PARAMETERS, ATOMISTIC, and ONEBEAD the user must provide an all-atom PDB file via MOLINFO before the
+SAXS instruction. MARTINI requires a mapping scheme consisting of a PDB file that contains both the all-atom
+and MARTINI representations, and a bead position file (e.g., bead1: CENTER ATOMS=1,5,7,11,12 WEIGHTS=14,12,12,
+12,16).
 
-Experimental reference intensities can be added using the EXPINT keywords.
-By default SAXS is calculated using Debye on CPU, by adding the GPU flag it is possible to solve the equation on a
-GPU if the ARRAYFIRE libraries are installed and correctly linked.
+ONEBEAD scheme consists in a single-bead per amino acid residue or three-bead for nucleic acid residue (one for
+the phosphate group, one for the pentose sugar, one for the nucleobase). PLUMED creates a virtual bead on which
+the SAXS calculations are performed, centred on the COM of all atoms belonging to the bead. It is possible to
+account for the contribution of the solvation layer to the SAXS intensity by adding a correction term for the
+solvent accessible beads only: the form factors of the amino acids / phosphate groups / pentose sugars /
+nucleobases with a SASA (computed via LCPO algorithm) greater than a threshold are corrected according to an
+electron density term. Both the surface cut-off threshold and the electron density term can be set by the user
+with the SASA_CUTOFF and SOLVATION_CORRECTION keywords. Moreover, SASA stride calculation can be modified using
+SOLVATION_STRIDE, which is set to 100 steps by default.
+ONEBEAD requires an additional PDB file to perform mapping conversion, which must be provided via TEMPLATE
+keyword. This PDB file should only include the atoms for which the SAXS intensity will be computed.
+The AMBER OL3 (RNA) and OL15 (DNA) naming is required for nucleic acids.
+Two additional bead types are available for DNA and RNA besides phosphate group, pentose sugar, and nucleobase:
+- 5'-end pentose sugar capped with an hydroxyl moiety at C5' (the residue name in the PDB must be followed by
+"5", e.g., DC5 or C5 for cytosine in DNA and RNA, respectively);
+- 3'-end pentose sugar capped with an hydroxyl moiety at C3' (the residue name in the PDB must be followed by
+"3", e.g., DC3 or C3 for cytosine in DNA and RNA, respectively).
+
+Experimental reference intensities can be added using the EXPINT keywords. All these values must be normalised
+to the SAXS intensity at q = 0. To facilitate this operation, the SCALE_EXPINT keyword can be used to provide
+the intensity at q = 0. Each EXPINT is divided by SCALE_EXPINT.
+The maximum QVALUE for ONEBEAD is set to 0.3 inverse angstroms.
+The solvent density, that by default is set to 0.334 electrons per cubic angstrom (bulk water), can be modified
+using the SOLVDENS keyword.
+
+By default SAXS is calculated using Debye on CPU, by adding the GPU flag it is possible to solve the equation on
+a GPU if the ARRAYFIRE libraries are installed and correctly linked.
 \ref METAINFERENCE can be activated using DOSCORE and the other relevant keywords.
 
 \par Examples
-in the following example the SAXS intensities are calculated using the single bead per residue approximation.
-structure factors are obtained from the pdb file indicated in the MOLINFO.
+in the following example the SAXS intensities are calculated using single-bead per residue approximation, with a
+SASA threshold of 1 square nanometer and a solvation term of 0.04. Each experimental intensity is divided by
+1.4002, which is the corresponding theoretical intensity value at q = 0. The form factors are selected according
+to the PDB file specified by TEMPLATE keyword.
 
 \plumedfile
 MOLINFO STRUCTURE=template_AA.pdb
@@ -86,10 +119,12 @@ SAXS ...
 LABEL=SAXS
 ATOMS=1-355
 ONEBEAD
+TEMPLATE=template_AA.pdb
 SOLVDENS=0.334
 SOLVATION_CORRECTION=0.04
 SOLVATION_STRIDE=1
 SASA_CUTOFF=1.0
+SCALE_EXPINT=1.4002
 QVALUE1=0.03 EXPINT1=1.0902
 QVALUE2=0.06 EXPINT2=0.790632
 QVALUE3=0.09 EXPINT3=0.453808
@@ -100,10 +135,87 @@ QVALUE7=0.21 EXPINT7=0.052633
 QVALUE8=0.24 EXPINT8=0.0276557
 QVALUE9=0.27 EXPINT9=0.0122775
 QVALUE10=0.30 EXPINT10=0.00880634
-
 ... SAXS
 
-PRINT ARG=(SAXS\.q-.*),(SAXS\.exp-.*) FILE=colvar STRIDE=1
+PRINT ARG=(SAXS\.q-.*),(SAXS\.exp-.*) FILE=saxsdata STRIDE=1
+
+\endplumedfile
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC ISDB_COLVAR SANS
+/*
+Calculates SANS intensity.
+
+SANS intensities are calculated for a set of scattering vectors using QVALUE keywords numbered from 1.
+Form factors are automatically assigned to atoms using the ATOMISTIC flag by reading a PDB file or, alternatively,
+a ONEBEAD coarse-grained implementation is available.
+
+Both for ATOMISTIC and ONEBEAD the user must provide an all-atom PDB file via MOLINFO before the SANS instruction.
+
+ONEBEAD scheme consists in a single-bead per amino acid residue or three-bead for nucleic acid residue (one for
+the phosphate group, one for the pentose sugar, one for the nucleobase). PLUMED creates a virtual bead on which
+the SANS calculations are performed, centred on the COM of all atoms belonging to the bead. It is possible to
+account for the contribution of the solvation layer to the SAXS intensity by adding a correction term for the
+solvent accessible beads only: the form factors of the amino acids / phosphate groups / pentose sugars /
+nucleobases with a SASA (computed via LCPO algorithm) greater than a threshold are corrected according to an
+electron density term. Both the surface cut-off threshold and the electron density term can be set by the user
+with the SASA_CUTOFF and SOLVATION_CORRECTION keywords. Moreover, SASA stride calculation can be modified using
+SOLVATION_STRIDE, which is set to 100 steps by default. The deuteration of the solvent-exposed residues is chosen
+with a probability equal to the deuterium concentration in the buffer. The deuterated residues are updated with a
+stride equal to SOLVATION_STRIDE. The fraction of deuterated water can be set with DEUTER_CONC, the default value
+is 0.
+ONEBEAD requires an additional PDB file to perform mapping conversion, which must be provided via TEMPLATE
+keyword. This PDB file should only include the atoms for which the SANS intensity will be computed.
+The AMBER OL3 (RNA) and OL15 (DNA) naming is required for nucleic acids.
+Two additional bead types are available for DNA and RNA besides phosphate group, pentose sugar, and nucleobase:
+- 5'-end pentose sugar capped with an hydroxyl moiety at C5' (the residue name in the PDB must be followed by "5",
+e.g., DC5 or C5 for cytosine in DNA and RNA, respectively);
+- 3'-end pentose sugar capped with an hydroxyl moiety at C3' (the residue name in the PDB must be followed by "3",
+e.g., DC3 or C3 for cytosine in DNA and RNA, respectively).
+
+PLEASE NOTE: at the moment, we DO NOT explicitly take into account deuterated residues in the ATOMISTIC
+representation, but we correct the solvent contribution via the DEUTER_CONC keyword.
+
+Experimental reference intensities can be added using the EXPINT keywords. All these values must be normalised
+to the SANS intensity at q = 0. To facilitate this operation, the SCALE_EXPINT keyword can be used to provide
+the intensity at q = 0. Each EXPINT is divided by SCALE_EXPINT.
+The maximum QVALUE for ONEBEAD is set to 0.3 inverse angstroms.
+The solvent density, that by default is set to 0.334 electrons per cubic angstrom (bulk water), can be modified
+using the SOLVDENS keyword.
+
+By default SANS is calculated using Debye on CPU, by adding the GPU flag it is possible to solve the equation on a
+GPU if the ARRAYFIRE libraries are installed and correctly linked.
+\ref METAINFERENCE can be activated using DOSCORE and the other relevant keywords.
+
+\par Examples
+in the following example the SANS intensities are calculated at atomistic resolution. The form factors are assigned
+according to the PDB file specified in the MOLINFO. Each experimental intensity is divided by 1.4002, which is the
+corresponding theoretical intensity value at q = 0. The deuterated water fraction is set to 48%.
+
+\plumedfile
+MOLINFO STRUCTURE=template_AA.pdb
+
+SANS ...
+LABEL=SANS
+ATOMS=1-355
+ATOMISTIC
+SCALE_EXPINT=1.4002
+DEUTER_CONC=0.48
+QVALUE1=0.03 EXPINT1=1.0902
+QVALUE2=0.06 EXPINT2=0.790632
+QVALUE3=0.09 EXPINT3=0.453808
+QVALUE4=0.12 EXPINT4=0.254737
+QVALUE5=0.15 EXPINT5=0.154928
+QVALUE6=0.18 EXPINT6=0.0921503
+QVALUE7=0.21 EXPINT7=0.052633
+QVALUE8=0.24 EXPINT8=0.0276557
+QVALUE9=0.27 EXPINT9=0.0122775
+QVALUE10=0.30 EXPINT10=0.00880634
+... SANS
+
+PRINT ARG=(SANS\.q-.*),(SANS\.exp-.*) FILE=sansdata STRIDE=1
 
 \endplumedfile
 
@@ -129,9 +241,14 @@ private:
          DG_3TE, DG_5TE, DG_TE3, DG_TE5, DT_BB1, DT_BB2, DT_BB3, DT_SC1, DT_SC2, DT_SC3, DT_3TE,
          DT_5TE, DT_TE3, DT_TE5, NMARTINI
        };
-  enum { TRP, TYR, PHE, HIS, HIP, ARG, LYS, CYS, ASP, GLU, ILE, LEU,
-         MET, ASN, PRO, GLN, SER, THR, VAL, ALA, GLY, NONEBEAD
+  enum { TRP, TYR, PHE, HIS, HIP, ARG, LYS, CYS, ASP, GLU, ILE, LEU, MET, ASN, PRO, GLN, SER, THR, VAL, ALA, GLY,
+         BASE_A, BASE_C, BASE_T, BASE_G, BASE_U,
+         BB_DNA, BB_DNA_5, BB_DNA_3,
+         BB_RNA, BB_RNA_5, BB_RNA_3,
+         BB_PO2,
+         NONEBEAD
        };
+  bool saxs;
   bool pbc;
   bool serial;
   bool gpu;
@@ -145,31 +262,49 @@ private:
   std::vector<double>   q_list;
   std::vector<double>   FF_rank;
   std::vector<std::vector<double> > FF_value_vacuum;
-  std::vector<std::vector<double> > FF_value_water;
+  std::vector<std::vector<double> > FF_value_solv;
   std::vector<std::vector<double> > FF_value_mixed;
   std::vector<std::vector<double> > FF_value;
   std::vector<std::vector<float> >  FFf_value;
+  // SANS:
+  std::vector<std::vector<double> > FF_value_vacuum_H;
+  std::vector<std::vector<double> > FF_value_solv_H;
+  std::vector<std::vector<double> > FF_value_mixed_H;
+  std::vector<std::vector<double> > FF_value_vacuum_D;
+  std::vector<std::vector<double> > FF_value_mixed_D;
 
   std::vector<std::vector<double> > LCPOparam;
   std::vector<unsigned> residue_atom;
 
   double rho, rho_corr, sasa_cutoff;
+  double deuter_conc;
   unsigned solv_stride;
   std::vector<double> Iq0_vac;
-  std::vector<double> Iq0_wat;
+  std::vector<double> Iq0_solv;
   std::vector<double> Iq0_mix;
   double Iq0;
 
+  // SANS:
+  std::vector<double> Iq0_vac_H;
+  std::vector<double> Iq0_solv_H;
+  std::vector<double> Iq0_mix_H;
+  std::vector<double> Iq0_vac_D;
+  std::vector<double> Iq0_mix_D;
+
   void calculate_gpu(std::vector<Vector> &pos, std::vector<Vector> &deriv);
   void calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv);
-  void getMartiniSFparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter);
-  void getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv);
-  void getOnebeadMapping(const std::vector<AtomNumber> &atoms);
-  double calculateASF(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double rho);
+  void getMartiniFFparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter);
+  void getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv, std::vector<unsigned> residue_atom);
+  unsigned getOnebeadMapping(const PDB &pdb, const std::vector<AtomNumber> &atoms);
+  double calculateAFF(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double rho);
   std::map<std::string, std::vector<double> > setupLCPOparam();
   void readLCPOparam(const std::vector<std::vector<std::string> > &AtomResidueName, unsigned natoms);
   void calcNlist(std::vector<std::vector<int> > &Nlist);
   void sasa_calculate(std::vector<bool> &solv_res);
+  // SANS:
+  void getOnebeadparam_sansH(const PDB &pdb, const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_H, std::vector<std::vector<long double> > &parameter_mix_H, std::vector<std::vector<long double> > &parameter_solv_H);
+  void getOnebeadparam_sansD(const PDB &pdb, const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_D, std::vector<std::vector<long double> > &parameter_mix_D);
+  double calculateAFFsans(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double deuter_conc);
 
 public:
   static void registerKeywords( Keywords& keys );
@@ -179,6 +314,7 @@ public:
 };
 
 PLUMED_REGISTER_ACTION(SAXS,"SAXS")
+PLUMED_REGISTER_ACTION(SAXS,"SANS")
 
 void SAXS::registerKeywords(Keywords& keys) {
   componentsAreNotOptional(keys);
@@ -190,20 +326,24 @@ void SAXS::registerKeywords(Keywords& keys) {
   keys.addFlag("ATOMISTIC",false,"calculate SAXS for an atomistic model");
   keys.addFlag("MARTINI",false,"calculate SAXS for a Martini model");
   keys.addFlag("ONEBEAD",false,"calculate SAXS for a single bead model");
-  keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
-  keys.add("numbered","QVALUE","Selected scattering lengths in Angstrom are given as QVALUE1, QVALUE2, ... .");
-  keys.add("numbered","PARAMETERS","Used parameter Keywords like PARAMETERS1, PARAMETERS2. These are used to calculate the structure factor for the \\f$i\\f$th atom/bead.");
-  keys.add("compulsory","SOLVDENS","0.334","Density of the water to be used for the correction of atomistic structure factors. (ONEBEAD only)");
-  keys.add("compulsory","SOLVATION_CORRECTION","0.0","Hydration layer electron density correction.");
-  keys.add("compulsory","SASA_CUTOFF","1.0","SASA value to consider a residue as exposed to the solvent.");
-  keys.add("numbered","EXPINT","Add an experimental value for each q value.");
-  keys.add("compulsory","SOLVATION_STRIDE","100","Number of steps between every new check of the residues solvation via LCPO estimate.");
+  keys.add("compulsory","TEMPLATE","template.pdb","A PDB file is required for ONEBEAD mapping");
+  keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein");
+  keys.add("numbered","QVALUE","Selected scattering lengths in inverse angstroms are given as QVALUE1, QVALUE2, ...");
+  keys.add("numbered","PARAMETERS","Used parameter Keywords like PARAMETERS1, PARAMETERS2. These are used to calculate the form factor for the \\f$i\\f$th atom/bead");
+  keys.add("compulsory","DEUTER_CONC","0.","Fraction of deuterated solvent");
+  keys.add("compulsory","SOLVDENS","0.334","Density of the solvent to be used for the correction of atomistic form factors");
+  keys.add("compulsory","SOLVATION_CORRECTION","0.0","Hydration layer electron density correction (ONEBEAD only)");
+  keys.add("compulsory","SASA_CUTOFF","1.0","SASA value to consider a residue as exposed to the solvent (ONEBEAD only)");
+  keys.add("numbered","EXPINT","Add an experimental value for each q value");
+  keys.add("compulsory","SOLVATION_STRIDE","100","Number of steps between every new residues solvation estimation via LCPO (ONEBEAD only)");
+  keys.add("compulsory","SCALE_EXPINT","1.0","Scaling value for experimental data normalization");
   keys.addOutputComponent("q","default","the # SAXS of q");
   keys.addOutputComponent("exp","EXPINT","the # experimental intensity");
 }
 
 SAXS::SAXS(const ActionOptions&ao):
   PLUMED_METAINF_INIT(ao),
+  saxs(true),
   pbc(true),
   serial(false),
   gpu(false),
@@ -211,6 +351,9 @@ SAXS::SAXS(const ActionOptions&ao):
   isFirstStep(true),
   deviceid(-1)
 {
+  if( getName().find("SAXS")!=std::string::npos) { saxs=true; }
+  else if( getName().find("SANS")!=std::string::npos) { saxs=false; }
+
   std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   unsigned size = atoms.size();
@@ -235,31 +378,39 @@ SAXS::SAXS(const ActionOptions&ao):
     if(deviceid==-1) deviceid=plumed.getGpuDeviceId();
     // if still not set use 0
     if(deviceid==-1) deviceid=0;
+#ifdef  __PLUMED_HAS_ARRAYFIRE_CUDA
+    af::setDevice(afcu::getNativeId(deviceid));
+#elif   __PLUMED_HAS_ARRAYFIRE_OCL
+    af::setDevice(afcl::getNativeId(deviceid));
+#else
     af::setDevice(deviceid);
+#endif
     af::info();
   }
 #endif
 
   bool atomistic=false;
   parseFlag("ATOMISTIC",atomistic);
-  if(atomistic) log.printf("  using atomistic structure factors\n");
+  if(atomistic) log.printf("  using ATOMISTIC form factors\n");
   bool martini=false;
   parseFlag("MARTINI",martini);
-  if(martini) log.printf("  using Martini structure factors\n");
+  if(martini) log.printf("  using MARTINI form factors\n");
   onebead=false;
   parseFlag("ONEBEAD",onebead);
-  if(martini) log.printf("  using Single Bead structure factors\n");
+  if(onebead) log.printf("  using ONEBEAD form factors\n");
 
   if(martini&&atomistic) error("You cannot use MARTINI and ATOMISTIC at the same time");
   if(martini&&onebead) error("You cannot use MARTINI and ONEBEAD at the same time");
   if(onebead&&atomistic) error("You cannot use ONEBEAD and ATOMISTIC at the same time");
+  if((martini)&&(!saxs)) error("MARTINI cannot be used with SANS");
+  if((!atomistic)&&(!martini)&&(!onebead)&&(!saxs)) error("External PARAMETERS cannot be used with SANS");
 
   unsigned ntarget=0;
   for(unsigned i=0;; ++i) {
     double t_list;
     if( !parseNumbered( "QVALUE", i+1, t_list) ) break;
     if(t_list<=0.) error("QVALUE cannot be less or equal to zero!\n");
-    if(onebead&&t_list>0.3) error("For ONEBEAD mapping QVALUE must be smaller or equal to 0.3.");
+    if(onebead&&t_list>0.3) error("ONEBEAD mapping QVALUE must be smaller or equal to 0.3");
     q_list.push_back(t_list);
     ntarget++;
   }
@@ -273,29 +424,54 @@ SAXS::SAXS(const ActionOptions&ao):
 
   rho = 0.334;
   parse("SOLVDENS", rho);
-  log.printf("  Solvent density of %lf\n", rho);
+  log.printf("  Solvent density: %lf\n", rho);
 
-  solv_stride = 100;
-  parse("SOLVATION_STRIDE", solv_stride);
-  if(onebead) log.printf("  SASA calculated every %u steps\n", solv_stride);
+  double scale_expint=1.;
+  parse("SCALE_EXPINT",scale_expint);
 
   double correction = 0.00;
   parse("SOLVATION_CORRECTION", correction);
-  if(correction>0&&!onebead) error("SOLVATION_CORRECTION can only be used with ONEBEAD");
   rho_corr=rho-correction;
-  if(onebead) log.printf("  SASA Solvation density correction set to: %lf\n", rho_corr);
+  if(onebead) log.printf("  Solvation density contribution: %lf\n", correction);
+  if((atomistic||martini)&&(rho_corr!=rho)) log.printf("  Solvation density contribution is taken into account in ONEBEAD only\n");
+
+  solv_stride = 100;
+  parse("SOLVATION_STRIDE", solv_stride);
+  if(solv_stride < 1.) error("SOLVATION_STRIDE must be greater than 0");
+  if(onebead&&(rho_corr!=rho)) log.printf("  SASA calculation stride: %u\n", solv_stride);
 
   sasa_cutoff = 1.0;
   parse("SASA_CUTOFF", sasa_cutoff);
-  if(sasa_cutoff <= 0.) error("SASA_CUTOFF must be greater than 0.");
+  if(sasa_cutoff <= 0.) error("SASA_CUTOFF must be greater than 0");
+
+  deuter_conc = 0.;
+  parse("DEUTER_CONC", deuter_conc);
+  if(deuter_conc < 0. || deuter_conc > 1.) error("DEUTER_CONC must be in 0-1 range");
+  if ((atomistic||onebead)&&(!saxs)) log.printf("  Solvent deuterium fraction: %lf/1.000000\n", deuter_conc);
+
+  PDB pdb;
+  if(onebead) {
+    std::string template_name;
+    parse("TEMPLATE",template_name);
+    log.printf("  Template for ONEBEAD mapping conversion: %s\n", template_name.c_str());
+    if( !pdb.read(template_name,plumed.getAtoms().usingNaturalUnits(),1.) ) plumed_merror("missing input file " + template_name);
+  }
 
   // Here we perform the preliminary mapping for onebead representation
   if(onebead) {
     LCPOparam.resize(size);
-    getOnebeadMapping(atoms);
-    Iq0_vac.resize(nres);
-    Iq0_wat.resize(nres);
-    Iq0_mix.resize(nres);
+    nres = getOnebeadMapping(pdb, atoms);
+    if(saxs) {
+      Iq0_vac.resize(nres);
+      Iq0_solv.resize(nres);
+      Iq0_mix.resize(nres);
+    } else { // SANS
+      Iq0_vac_H.resize(nres);
+      Iq0_solv_H.resize(nres);
+      Iq0_mix_H.resize(nres);
+      Iq0_vac_D.resize(nres);
+      Iq0_mix_D.resize(nres);
+    }
     atoi.resize(nres);
   } else {
     atoi.resize(size);
@@ -305,10 +481,19 @@ SAXS::SAXS(const ActionOptions&ao):
   std::vector<std::vector<long double> > FF_tmp;
   std::vector<std::vector<long double> > FF_tmp_vac;
   std::vector<std::vector<long double> > FF_tmp_mix;
-  std::vector<std::vector<long double> > FF_tmp_wat;
+  std::vector<std::vector<long double> > FF_tmp_solv;
   std::vector<std::vector<long double> > parameter;
+  // SANS
+  std::vector<std::vector<long double> > FF_tmp_vac_H;
+  std::vector<std::vector<long double> > FF_tmp_mix_H;
+  std::vector<std::vector<long double> > FF_tmp_solv_H;
+  std::vector<std::vector<long double> > FF_tmp_vac_D;
+  std::vector<std::vector<long double> > FF_tmp_mix_D;
+  std::vector<std::vector<long double> > parameter_H;
+  std::vector<std::vector<long double> > parameter_D;
+
   if(!atomistic&&!martini&&!onebead) {
-    //read in parameter std::vector
+    // read in parameter std::vector
     parameter.resize(size);
     ntarget=0;
     for(unsigned i=0; i<size; ++i) {
@@ -328,37 +513,75 @@ SAXS::SAXS(const ActionOptions&ao):
     for(unsigned i=0; i<size; ++i) Iq0+=parameter[i][0];
     Iq0 *= Iq0;
   } else if(onebead) {
-    //read in parameter std::vector
-    FF_tmp_vac.resize(numq,std::vector<long double>(NONEBEAD));
-    FF_tmp_mix.resize(numq,std::vector<long double>(NONEBEAD));
-    FF_tmp_wat.resize(numq,std::vector<long double>(NONEBEAD));
-    std::vector<std::vector<long double> > parameter_vac(NONEBEAD);
-    std::vector<std::vector<long double> > parameter_mix(NONEBEAD);
-    std::vector<std::vector<long double> > parameter_solv(NONEBEAD);
-    getOnebeadparam(atoms, parameter_vac, parameter_mix, parameter_solv);
-    for(unsigned i=0; i<NONEBEAD; ++i) {
-      for(unsigned k=0; k<numq; ++k) {
-        for(unsigned j=0; j<parameter_vac[i].size(); ++j) {
-          FF_tmp_vac[k][i]+= parameter_vac[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
-        }
-        for(unsigned j=0; j<parameter_mix[i].size(); ++j) {
-          FF_tmp_mix[k][i]+= parameter_mix[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
-        }
-        for(unsigned j=0; j<parameter_solv[i].size(); ++j) {
-          FF_tmp_wat[k][i]+= parameter_solv[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
+    if(saxs) {
+      // read in parameter std::vector
+      FF_tmp_vac.resize(numq,std::vector<long double>(NONEBEAD));
+      FF_tmp_mix.resize(numq,std::vector<long double>(NONEBEAD));
+      FF_tmp_solv.resize(numq,std::vector<long double>(NONEBEAD));
+      std::vector<std::vector<long double> > parameter_vac(NONEBEAD);
+      std::vector<std::vector<long double> > parameter_mix(NONEBEAD);
+      std::vector<std::vector<long double> > parameter_solv(NONEBEAD);
+      getOnebeadparam(pdb, atoms, parameter_vac, parameter_mix, parameter_solv,residue_atom);
+      for(unsigned i=0; i<NONEBEAD; ++i) {
+        for(unsigned k=0; k<numq; ++k) {
+          for(unsigned j=0; j<parameter_vac[i].size(); ++j) {
+            FF_tmp_vac[k][i]+= parameter_vac[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
+          }
+          for(unsigned j=0; j<parameter_mix[i].size(); ++j) {
+            FF_tmp_mix[k][i]+= parameter_mix[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
+          }
+          for(unsigned j=0; j<parameter_solv[i].size(); ++j) {
+            FF_tmp_solv[k][i]+= parameter_solv[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
+          }
         }
       }
-    }
-    for(unsigned i=0; i<nres; ++i) {
-      Iq0_vac[i]=parameter_vac[atoi[i]][0];
-      Iq0_mix[i]=parameter_mix[atoi[i]][0];
-      Iq0_wat[i]=parameter_solv[atoi[i]][0];
+      for(unsigned i=0; i<nres; ++i) {
+        Iq0_vac[i]=parameter_vac[atoi[i]][0];
+        Iq0_mix[i]=parameter_mix[atoi[i]][0];
+        Iq0_solv[i]=parameter_solv[atoi[i]][0];
+      }
+    } else { // SANS
+      // read in parameter std::vector
+      FF_tmp_vac_H.resize(numq,std::vector<long double>(NONEBEAD));
+      FF_tmp_mix_H.resize(numq,std::vector<long double>(NONEBEAD));
+      FF_tmp_solv_H.resize(numq,std::vector<long double>(NONEBEAD));
+      FF_tmp_vac_D.resize(numq,std::vector<long double>(NONEBEAD));
+      FF_tmp_mix_D.resize(numq,std::vector<long double>(NONEBEAD));
+      std::vector<std::vector<long double> > parameter_vac_H(NONEBEAD);
+      std::vector<std::vector<long double> > parameter_mix_H(NONEBEAD);
+      std::vector<std::vector<long double> > parameter_solv_H(NONEBEAD);
+      std::vector<std::vector<long double> > parameter_vac_D(NONEBEAD);
+      std::vector<std::vector<long double> > parameter_mix_D(NONEBEAD);
+      getOnebeadparam_sansH(pdb, atoms, parameter_vac_H, parameter_mix_H, parameter_solv_H);
+      getOnebeadparam_sansD(pdb, atoms, parameter_vac_D, parameter_mix_D);
+      for(unsigned i=0; i<NONEBEAD; ++i) {
+        for(unsigned k=0; k<numq; ++k) {
+          for(unsigned j=0; j<parameter_vac_H[i].size(); ++j) { // same number of parameters
+            FF_tmp_vac_H[k][i]+= parameter_vac_H[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
+            FF_tmp_vac_D[k][i]+= parameter_vac_D[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
+          }
+          for(unsigned j=0; j<parameter_mix_H[i].size(); ++j) {
+            FF_tmp_mix_H[k][i]+= parameter_mix_H[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
+            FF_tmp_mix_D[k][i]+= parameter_mix_D[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
+          }
+          for(unsigned j=0; j<parameter_solv_H[i].size(); ++j) {
+            FF_tmp_solv_H[k][i]+= parameter_solv_H[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
+          }
+        }
+      }
+      for(unsigned i=0; i<nres; ++i) {
+        Iq0_vac_H[i]=parameter_vac_H[atoi[i]][0];
+        Iq0_mix_H[i]=parameter_mix_H[atoi[i]][0];
+        Iq0_solv_H[i]=parameter_solv_H[atoi[i]][0];
+        Iq0_vac_D[i]=parameter_vac_D[atoi[i]][0];
+        Iq0_mix_D[i]=parameter_mix_D[atoi[i]][0];
+      }
     }
   } else if(martini) {
-    //read in parameter std::vector
+    // read in parameter std::vector
     FF_tmp.resize(numq,std::vector<long double>(NMARTINI));
     parameter.resize(NMARTINI);
-    getMartiniSFparam(atoms, parameter);
+    getMartiniFFparam(atoms, parameter);
     for(unsigned i=0; i<NMARTINI; ++i) {
       for(unsigned k=0; k<numq; ++k) {
         for(unsigned j=0; j<parameter[i].size(); ++j) {
@@ -370,7 +593,8 @@ SAXS::SAXS(const ActionOptions&ao):
     Iq0 *= Iq0;
   } else if(atomistic) {
     FF_tmp.resize(numq,std::vector<long double>(NTT));
-    Iq0=calculateASF(atoms, FF_tmp, rho);
+    if(saxs) Iq0=calculateAFF(atoms, FF_tmp, rho);
+    else Iq0=calculateAFFsans(atoms, FF_tmp, deuter_conc);
     Iq0 *= Iq0;
   }
 
@@ -381,6 +605,7 @@ SAXS::SAXS(const ActionOptions&ao):
     if( !parseNumbered( "EXPINT", i+1, expint[i] ) ) break;
     ntarget++;
   }
+  std::transform(expint.begin(), expint.begin() + ntarget, expint.begin(), [scale_expint](double x) { return x / scale_expint; });
   bool exp=false;
   if(ntarget!=numq && ntarget!=0) error("found wrong number of EXPINT values");
   if(ntarget==numq) exp=true;
@@ -392,9 +617,17 @@ SAXS::SAXS(const ActionOptions&ao):
     if(onebead) {
       FF_value.resize(nres,std::vector<double>(numq));
       n_atom_types=NONEBEAD;
-      FF_value_vacuum.resize(n_atom_types,std::vector<double>(numq));
-      FF_value_water.resize(n_atom_types,std::vector<double>(numq));
-      FF_value_mixed.resize(n_atom_types,std::vector<double>(numq));
+      if(saxs) {
+        FF_value_vacuum.resize(n_atom_types,std::vector<double>(numq));
+        FF_value_solv.resize(n_atom_types,std::vector<double>(numq));
+        FF_value_mixed.resize(n_atom_types,std::vector<double>(numq));
+      } else {
+        FF_value_vacuum_H.resize(n_atom_types,std::vector<double>(numq));
+        FF_value_solv_H.resize(n_atom_types,std::vector<double>(numq));
+        FF_value_mixed_H.resize(n_atom_types,std::vector<double>(numq));
+        FF_value_vacuum_D.resize(n_atom_types,std::vector<double>(numq));
+        FF_value_mixed_D.resize(n_atom_types,std::vector<double>(numq));
+      }
     } else {
       FF_value.resize(size,std::vector<double>(numq));
     }
@@ -403,10 +636,20 @@ SAXS::SAXS(const ActionOptions&ao):
         for(unsigned i=0; i<size; ++i) FF_value[i][k] = static_cast<double>(FF_tmp[k][atoi[i]])/(std::sqrt(Iq0));
         for(unsigned i=0; i<size; ++i) FF_rank[k] += FF_value[i][k]*FF_value[i][k];
       } else {
-        for(unsigned i=0; i<n_atom_types; ++i) {
-          FF_value_vacuum[i][k] = static_cast<double>(FF_tmp_vac[k][i]);
-          FF_value_mixed[i][k] = static_cast<double>(FF_tmp_mix[k][i]);
-          FF_value_water[i][k] = static_cast<double>(FF_tmp_wat[k][i]);
+        if(saxs) {
+          for(unsigned i=0; i<n_atom_types; ++i) {
+            FF_value_vacuum[i][k] = static_cast<double>(FF_tmp_vac[k][i]);
+            FF_value_mixed[i][k] = static_cast<double>(FF_tmp_mix[k][i]);
+            FF_value_solv[i][k] = static_cast<double>(FF_tmp_solv[k][i]);
+          }
+        } else { // SANS
+          for(unsigned i=0; i<n_atom_types; ++i) {
+            FF_value_vacuum_H[i][k] = static_cast<double>(FF_tmp_vac_H[k][i]);
+            FF_value_mixed_H[i][k] = static_cast<double>(FF_tmp_mix_H[k][i]);
+            FF_value_solv_H[i][k] = static_cast<double>(FF_tmp_solv_H[k][i]);
+            FF_value_vacuum_D[i][k] = static_cast<double>(FF_tmp_vac_D[k][i]);
+            FF_value_mixed_D[i][k] = static_cast<double>(FF_tmp_mix_D[k][i]);
+          }
         }
       }
     }
@@ -415,9 +658,17 @@ SAXS::SAXS(const ActionOptions&ao):
     if(onebead) {
       FFf_value.resize(numq,std::vector<float>(nres));
       n_atom_types=NONEBEAD;
-      FF_value_vacuum.resize(n_atom_types,std::vector<double>(numq));
-      FF_value_water.resize(n_atom_types,std::vector<double>(numq));
-      FF_value_mixed.resize(n_atom_types,std::vector<double>(numq));
+      if(saxs) {
+        FF_value_vacuum.resize(n_atom_types,std::vector<double>(numq));
+        FF_value_solv.resize(n_atom_types,std::vector<double>(numq));
+        FF_value_mixed.resize(n_atom_types,std::vector<double>(numq));
+      } else { // SANS
+        FF_value_vacuum_H.resize(n_atom_types,std::vector<double>(numq));
+        FF_value_solv_H.resize(n_atom_types,std::vector<double>(numq));
+        FF_value_mixed_H.resize(n_atom_types,std::vector<double>(numq));
+        FF_value_vacuum_D.resize(n_atom_types,std::vector<double>(numq));
+        FF_value_mixed_D.resize(n_atom_types,std::vector<double>(numq));
+      }
     } else {
       FFf_value.resize(numq,std::vector<float>(size));
     }
@@ -427,10 +678,20 @@ SAXS::SAXS(const ActionOptions&ao):
           FFf_value[k][i] = static_cast<float>(FF_tmp[k][atoi[i]])/(std::sqrt(Iq0));
         }
       } else {
-        for(unsigned i=0; i<n_atom_types; ++i) {
-          FF_value_vacuum[i][k] = static_cast<double>(FF_tmp_vac[k][i]);
-          FF_value_mixed[i][k] = static_cast<double>(FF_tmp_mix[k][i]);
-          FF_value_water[i][k] = static_cast<double>(FF_tmp_wat[k][i]);
+        if(saxs) {
+          for(unsigned i=0; i<n_atom_types; ++i) {
+            FF_value_vacuum[i][k] = static_cast<double>(FF_tmp_vac[k][i]);
+            FF_value_mixed[i][k] = static_cast<double>(FF_tmp_mix[k][i]);
+            FF_value_solv[i][k] = static_cast<double>(FF_tmp_solv[k][i]);
+          }
+        } else { // SANS
+          for(unsigned i=0; i<n_atom_types; ++i) {
+            FF_value_vacuum_H[i][k] = static_cast<double>(FF_tmp_vac_H[k][i]);
+            FF_value_mixed_H[i][k] = static_cast<double>(FF_tmp_mix_H[k][i]);
+            FF_value_solv_H[i][k] = static_cast<double>(FF_tmp_solv_H[k][i]);
+            FF_value_vacuum_D[i][k] = static_cast<double>(FF_tmp_vac_D[k][i]);
+            FF_value_mixed_D[i][k] = static_cast<double>(FF_tmp_mix_D[k][i]);
+          }
         }
       }
     }
@@ -468,7 +729,7 @@ SAXS::SAXS(const ActionOptions&ao):
 
   // convert units to nm^-1
   for(unsigned i=0; i<numq; ++i) {
-    q_list[i]=q_list[i]*10.0;    //factor 10 to convert from A^-1 to nm^-1
+    q_list[i]=q_list[i]*10.0;    // factor 10 to convert from A^-1 to nm^-1
   }
   log<<"  Bibliography ";
   if(martini) {
@@ -493,7 +754,7 @@ SAXS::SAXS(const ActionOptions&ao):
   checkRead();
 }
 
-//calculates SASA neighbor list
+// calculates SASA neighbor list
 void SAXS::calcNlist(std::vector<std::vector<int> > &Nlist)
 {
   unsigned natoms = getNumberOfAtoms();
@@ -514,14 +775,13 @@ void SAXS::calcNlist(std::vector<std::vector<int> > &Nlist)
 
 }
 
-//calculates SASA according to LCPO algorithm
+// calculates SASA according to LCPO algorithm
 void SAXS::sasa_calculate(std::vector<bool> &solv_res)
 {
   unsigned natoms = getNumberOfAtoms();
   std::vector<std::vector<int> > Nlist(natoms);
   calcNlist(Nlist);
   std::vector<double> sasares(nres, 0.);
-
   for(unsigned i = 0; i < natoms; ++i) {
     if(LCPOparam[i].size()>1) {
       if(LCPOparam[i][1]>0.0) {
@@ -587,7 +847,13 @@ void SAXS::calculate_gpu(std::vector<Vector> &pos, std::vector<Vector> &deriv)
     }
 
     // create array a and b containing atomic coordinates
+#ifdef  __PLUMED_HAS_ARRAYFIRE_CUDA
+    af::setDevice(afcu::getNativeId(deviceid));
+#elif   __PLUMED_HAS_ARRAYFIRE_OCL
+    af::setDevice(afcl::getNativeId(deviceid));
+#else
     af::setDevice(deviceid);
+#endif
     // 3,size,1,1
     af::array pos_a = af::array(3, size, &posi.front());
     // size,3,1,1
@@ -755,60 +1021,117 @@ void SAXS::calculate()
 
   std::vector<Vector> beads_pos(beads_size);
   if(onebead) {
-    // mapping
-    unsigned atom_id = 0;
-    for(unsigned i=0; i<nres; ++i) {
-      /* calculate center and derivatives */
+    for(unsigned resid=0; resid<nres; resid++) {
       double sum_mass = 0.;
       Vector sum_pos = Vector(0,0,0);
-      for(unsigned j=0; j<atoms_per_bead[i]; ++j) {
-        aa_deriv[atom_id] = Vector(atoms_masses[atom_id],atoms_masses[atom_id],atoms_masses[atom_id]);
-        sum_pos += atoms_masses[atom_id] * getPosition(atom_id); // getPosition(first_atom+atom_id)
-        sum_mass += atoms_masses[atom_id];
-        // Here I update the atom_id to stay sync'd with masses vector
-        atom_id++;
+      for(unsigned atom_id=0; atom_id<size; atom_id++) {
+        if(residue_atom[atom_id] == resid) {
+          aa_deriv[atom_id] = Vector(atoms_masses[atom_id],atoms_masses[atom_id],atoms_masses[atom_id]);
+          sum_pos += atoms_masses[atom_id] * getPosition(atom_id); // getPosition(first_atom+atom_id)
+          sum_mass += atoms_masses[atom_id];
+        }
       }
-      beads_pos[i] = sum_pos/sum_mass;
-      for(unsigned j=atom_id-atoms_per_bead[i]; j<atom_id; ++j) {
-        aa_deriv[j] /= sum_mass;
+      beads_pos[resid] = sum_pos/sum_mass;
+      for(unsigned atom_id=0; atom_id<size; atom_id++) {
+        if(residue_atom[atom_id] == resid) {
+          aa_deriv[atom_id] /= sum_mass;
+        }
       }
     }
     // SASA
     std::vector<bool> solv_res(nres, 0);
-    if(getStep()%solv_stride == 0 || isFirstStep) {
-      isFirstStep = 0;
-      if(rho_corr!=rho) sasa_calculate(solv_res);
-      Iq0=0.;
-      for(unsigned i=0; i<nres; ++i) {
-        if(solv_res[i] == 1 ) {
-          Iq0 += std::sqrt((Iq0_vac[i]+(rho_corr*rho_corr)*Iq0_wat[i]-rho_corr*Iq0_mix[i]));
-        } else {
-          Iq0 += std::sqrt((Iq0_vac[i]+(rho*rho)*Iq0_wat[i]-rho*Iq0_mix[i]));
-        }
-      }
-      // Form Factors
-      for(unsigned k=0; k<numq; ++k) {
+    if(saxs) {
+      if(getStep()%solv_stride == 0 || isFirstStep) {
+        isFirstStep = 0;
+        if(rho_corr!=rho) sasa_calculate(solv_res);
+        Iq0=0.;
         for(unsigned i=0; i<nres; ++i) {
-          if(!gpu) {
-            if(solv_res[i] == 0) { // buried
-              FF_value[i][k] = std::sqrt(FF_value_vacuum[atoi[i]][k] + rho*rho*FF_value_water[atoi[i]][k] - rho*FF_value_mixed[atoi[i]][k])/Iq0;
-            } else { // surface
-              FF_value[i][k] = std::sqrt(FF_value_vacuum[atoi[i]][k] + rho_corr*rho_corr*FF_value_water[atoi[i]][k] - rho_corr*FF_value_mixed[atoi[i]][k])/Iq0;
-            }
+          if(solv_res[i] == 1 ) {
+            Iq0 += std::sqrt((Iq0_vac[i]+(rho_corr*rho_corr)*Iq0_solv[i]-rho_corr*Iq0_mix[i]));
           } else {
-            if(solv_res[i] == 0) { // buried
-              FFf_value[k][i] = static_cast<float>(std::sqrt(FF_value_vacuum[atoi[i]][k] + rho*rho*FF_value_water[atoi[i]][k] - rho*FF_value_mixed[atoi[i]][k])/Iq0);
-            } else { // surface
-              FFf_value[k][i] = static_cast<float>(std::sqrt(FF_value_vacuum[atoi[i]][k] + rho_corr*rho_corr*FF_value_water[atoi[i]][k] - rho_corr*FF_value_mixed[atoi[i]][k])/Iq0);
+            Iq0 += std::sqrt((Iq0_vac[i]+(rho*rho)*Iq0_solv[i]-rho*Iq0_mix[i]));
+          }
+        }
+        // Form Factors
+        for(unsigned k=0; k<numq; ++k) {
+          for(unsigned i=0; i<nres; ++i) {
+            if(!gpu) {
+              if(solv_res[i] == 0) { // buried
+                FF_value[i][k] = std::sqrt(std::fabs(FF_value_vacuum[atoi[i]][k] + rho*rho*FF_value_solv[atoi[i]][k] - rho*FF_value_mixed[atoi[i]][k]))/Iq0;
+              } else { // surface
+                FF_value[i][k] = std::sqrt(std::fabs(FF_value_vacuum[atoi[i]][k] + rho_corr*rho_corr*FF_value_solv[atoi[i]][k] - rho_corr*FF_value_mixed[atoi[i]][k]))/Iq0;
+              }
+            } else {
+              if(solv_res[i] == 0) { // buried
+                FFf_value[k][i] = static_cast<float>(std::sqrt(std::fabs(FF_value_vacuum[atoi[i]][k] + rho*rho*FF_value_solv[atoi[i]][k] - rho*FF_value_mixed[atoi[i]][k]))/Iq0);
+              } else { // surface
+                FFf_value[k][i] = static_cast<float>(std::sqrt(std::fabs(FF_value_vacuum[atoi[i]][k] + rho_corr*rho_corr*FF_value_solv[atoi[i]][k] - rho_corr*FF_value_mixed[atoi[i]][k]))/Iq0);
+              }
+            }
+          }
+        }
+        if(!gpu) {
+          for(unsigned k=0; k<numq; ++k) {
+            FF_rank[k]=0.;
+            for(unsigned i=0; i<nres; ++i) {
+              FF_rank[k]+=FF_value[i][k]*FF_value[i][k];
             }
           }
         }
       }
-      if(!gpu) {
+    } else { // SANS
+      std::vector<bool> deut_res(nres, 0);
+      double solv_sc_length = 0.1*(0.580 + 2.*((1. - deuter_conc) * (-0.374) + deuter_conc * 0.667)); // per water electron (10 electrons)
+      double rho_sans = rho * solv_sc_length;
+      double rho_sans_corr = rho_corr * solv_sc_length;
+      if(getStep()%solv_stride == 0 || isFirstStep) {
+        isFirstStep = 0;
+        if(deuter_conc!=0.||rho != rho_corr) sasa_calculate(solv_res);
+        Iq0=0.;
+        for(unsigned i=0; i<nres; ++i) {
+          if(solv_res[i] == 1 ) {
+            if(rand()/RAND_MAX<deuter_conc) {
+              Iq0 += std::sqrt(std::fabs(Iq0_vac_D[i] + rho_sans_corr*rho_sans_corr*Iq0_solv_H[i] - rho_sans_corr*Iq0_mix_D[i]));
+              deut_res[i] = 1;
+            } else {
+              Iq0 += std::sqrt(std::fabs(Iq0_vac_H[i] + rho_sans_corr*rho_sans_corr*Iq0_solv_H[i] - rho_sans_corr*Iq0_mix_H[i]));
+            }
+          } else {
+            Iq0 += std::sqrt(std::fabs(Iq0_vac_H[i] + rho_sans*rho_sans*Iq0_solv_H[i] - rho_sans*Iq0_mix_H[i]));
+          }
+        }
+        // Form Factors
         for(unsigned k=0; k<numq; ++k) {
-          FF_rank[k]=0.;
           for(unsigned i=0; i<nres; ++i) {
-            FF_rank[k]+=FF_value[i][k]*FF_value[i][k];
+            if(!gpu) {
+              if(solv_res[i] == 0) { // hydrogen
+                FF_value[i][k] = std::sqrt(std::fabs(FF_value_vacuum_H[atoi[i]][k] + rho_sans*rho_sans*FF_value_solv_H[atoi[i]][k] - rho_sans*FF_value_mixed_H[atoi[i]][k]))/Iq0;
+              } else {
+                if(deut_res[i] == 0) {
+                  FF_value[i][k] = std::sqrt(std::fabs(FF_value_vacuum_H[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_H[atoi[i]][k] - rho_sans_corr*FF_value_mixed_H[atoi[i]][k]))/Iq0;
+                } else {
+                  FF_value[i][k] = std::sqrt(std::fabs(FF_value_vacuum_D[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_H[atoi[i]][k] - rho_sans_corr*FF_value_mixed_D[atoi[i]][k]))/Iq0;
+                }
+              }
+            } else {
+              if(solv_res[i] == 0) { // hydrogen
+                FFf_value[k][i] = static_cast<float>(std::sqrt(std::fabs(FF_value_vacuum_H[atoi[i]][k] + rho_sans*rho_sans*FF_value_solv_H[atoi[i]][k] - rho_sans*FF_value_mixed_H[atoi[i]][k]))/Iq0);
+              } else {
+                if(deut_res[i] == 0) {
+                  FFf_value[k][i] = static_cast<float>(std::sqrt(std::fabs(FF_value_vacuum_H[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_H[atoi[i]][k] - rho_sans_corr*FF_value_mixed_H[atoi[i]][k]))/Iq0);
+                } else {
+                  FFf_value[k][i] = static_cast<float>(std::sqrt(std::fabs(FF_value_vacuum_D[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_H[atoi[i]][k] - rho_sans_corr*FF_value_mixed_D[atoi[i]][k]))/Iq0);
+                }
+              }
+            }
+          }
+        }
+        if(!gpu) {
+          for(unsigned k=0; k<numq; ++k) {
+            FF_rank[k]=0.;
+            for(unsigned i=0; i<nres; ++i) {
+              FF_rank[k]+=FF_value[i][k]*FF_value[i][k];
+            }
           }
         }
       }
@@ -838,23 +1161,53 @@ void SAXS::calculate()
       std::string num; Tools::convert(k,num);
       val=getPntrToComponent("q-"+num);
 
-      for(unsigned i=0; i<beads_size; ++i) {
-        setAtomsDerivatives(val, i, Vector(aa_deriv[i][0]*bd_deriv[kdx+i][0], \
-                                           aa_deriv[i][1]*bd_deriv[kdx+i][1], \
-                                           aa_deriv[i][2]*bd_deriv[kdx+i][2]) );
-        deriv_box += Tensor(getPosition(i),Vector(aa_deriv[i][0]*bd_deriv[kdx+i][0], \
-                            aa_deriv[i][1]*bd_deriv[kdx+i][1], \
-                            aa_deriv[i][2]*bd_deriv[kdx+i][2]) );
+      if(onebead) {
+        unsigned atom_id=0;
+        for(unsigned i=0; i<beads_size; ++i) {
+          for(unsigned j=0; j<atoms_per_bead[i]; ++j) {
+            setAtomsDerivatives(val, atom_id, Vector(aa_deriv[atom_id][0]*bd_deriv[kdx+i][0], \
+                                aa_deriv[atom_id][1]*bd_deriv[kdx+i][1], \
+                                aa_deriv[atom_id][2]*bd_deriv[kdx+i][2]) );
+            deriv_box += Tensor(getPosition(atom_id),Vector(aa_deriv[atom_id][0]*bd_deriv[kdx+i][0], \
+                                aa_deriv[atom_id][1]*bd_deriv[kdx+i][1], \
+                                aa_deriv[atom_id][2]*bd_deriv[kdx+i][2]) );
+            atom_id++;
+          }
+        }
+      } else {
+        for(unsigned i=0; i<beads_size; ++i) {
+          setAtomsDerivatives(val, i, Vector(bd_deriv[kdx+i][0], \
+                                             bd_deriv[kdx+i][1], \
+                                             bd_deriv[kdx+i][2]) );
+          deriv_box += Tensor(getPosition(i),Vector(bd_deriv[kdx+i][0], \
+                              bd_deriv[kdx+i][1], \
+                              bd_deriv[kdx+i][2]) );
+        }
       }
     } else {
       val=getPntrToComponent("score");
-      for(unsigned i=0; i<beads_size; ++i) {
-        setAtomsDerivatives(val, i, Vector(aa_deriv[i][0]*bd_deriv[kdx+i][0]*getMetaDer(k),
-                                           aa_deriv[i][1]*bd_deriv[kdx+i][1]*getMetaDer(k),
-                                           aa_deriv[i][2]*bd_deriv[kdx+i][2]*getMetaDer(k)) );
-        deriv_box += Tensor(getPosition(i),Vector(aa_deriv[i][0]*bd_deriv[kdx+i][0]*getMetaDer(k),
-                            aa_deriv[i][1]*bd_deriv[kdx+i][1]*getMetaDer(k),
-                            aa_deriv[i][2]*bd_deriv[kdx+i][2]*getMetaDer(k)) );
+      if(onebead) {
+        unsigned atom_id=0;
+        for(unsigned i=0; i<beads_size; ++i) {
+          for(unsigned j=0; j<atoms_per_bead[i]; ++j) {
+            setAtomsDerivatives(val, atom_id, Vector(aa_deriv[atom_id][0]*bd_deriv[kdx+i][0]*getMetaDer(k),
+                                aa_deriv[atom_id][1]*bd_deriv[kdx+i][1]*getMetaDer(k),
+                                aa_deriv[atom_id][2]*bd_deriv[kdx+i][2]*getMetaDer(k)) );
+            deriv_box += Tensor(getPosition(atom_id),Vector(aa_deriv[atom_id][0]*bd_deriv[kdx+i][0]*getMetaDer(k),
+                                aa_deriv[atom_id][1]*bd_deriv[kdx+i][1]*getMetaDer(k),
+                                aa_deriv[atom_id][2]*bd_deriv[kdx+i][2]*getMetaDer(k)) );
+            atom_id++;
+          }
+        }
+      } else {
+        for(unsigned i=0; i<beads_size; ++i) {
+          setAtomsDerivatives(val, i, Vector(bd_deriv[kdx+i][0]*getMetaDer(k),
+                                             bd_deriv[kdx+i][1]*getMetaDer(k),
+                                             bd_deriv[kdx+i][2]*getMetaDer(k)) );
+          deriv_box += Tensor(getPosition(i),Vector(bd_deriv[kdx+i][0]*getMetaDer(k),
+                              bd_deriv[kdx+i][1]*getMetaDer(k),
+                              bd_deriv[kdx+i][2]*getMetaDer(k)) );
+        }
       }
     }
     setBoxDerivatives(val, -deriv_box);
@@ -866,57 +1219,103 @@ void SAXS::update() {
   if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) writeStatus();
 }
 
-void SAXS::getOnebeadMapping(const std::vector<AtomNumber> &atoms) {
-  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
-  if( moldat ) {
-    log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
-    // RC: Here we assume that we are with a continuous sequence; maybe we can extend it to
-    // discontinuous ones.
-    unsigned first_res = moldat->getResidueNumber(atoms[0]);
-    nres = moldat->getResidueNumber(atoms[atoms.size()-1]) - moldat->getResidueNumber(atoms[0]) + 1;
-    atoms_per_bead.resize(nres);
-    atoms_masses.resize(atoms.size());
-    residue_atom.resize(atoms.size());       //@MOD: add vector resize
-    std::vector<std::vector<std::string> > AtomResidueName;
+unsigned SAXS::getOnebeadMapping(const PDB &pdb, const std::vector<AtomNumber> &atoms) {
+  std::vector<std::string> chains; pdb.getChainNames( chains );
+  std::vector<std::vector<std::string> > AtomResidueName;
+
+  atoms_masses.resize(atoms.size());
+  residue_atom.resize(atoms.size());
+
+  // cycle over chains
+  for(unsigned i=0; i<chains.size(); ++i) {
+    unsigned start, end;
+    std::string errmsg;
+    pdb.getResidueRange(chains[i], start, end, errmsg);
     AtomResidueName.resize(2);
-
-    log.printf("  Onebead residue mapping on %u residues\n", nres);
-
-    for(unsigned i=0; i<atoms.size(); ++i) {
-      atoms_per_bead[moldat->getResidueNumber(atoms[i])-first_res]++;
-      std::string Aname = moldat->getAtomName(atoms[i]);
-      std::string Rname = moldat->getResidueName(atoms[i]);
-      AtomResidueName[0].push_back(Aname);
-      AtomResidueName[1].push_back(Rname);
-      residue_atom[i] = moldat->getResidueNumber(atoms[i])-first_res;
-      char type;
-      char first = Aname.at(0);
-
-      // We assume that element symbol is first letter, if not a number
-      if (!isdigit(first)) {
-        type = first;
-        // otherwise is the second
-      } else {
-        type = Aname.at(1);
+    // cycle over residues
+    for(unsigned res=start; res<=end; res++) {
+      std::string Rname = pdb.getResidueName(res, chains[i]);
+      Rname.erase(std::remove_if(Rname.begin(), Rname.end(), ::isspace),Rname.end());
+      std::vector<AtomNumber> res_atoms = pdb.getAtomsInResidue(res, chains[i]);
+      unsigned first_time=1;
+      std::vector<std::vector<unsigned> > tmp_residue_atom; tmp_residue_atom.resize(3);
+      // cycle over atoms
+      for(unsigned a=0; a<res_atoms.size(); a++) {
+        // operations shared among all beads
+        std::string Aname=pdb.getAtomName(res_atoms[a]);
+        AtomResidueName[0].push_back(Aname);
+        AtomResidueName[1].push_back(Rname);
+        char type;
+        char first = Aname.at(0);
+        // We assume that element symbol is first letter, if not a number
+        if (!isdigit(first)) {
+          type = first;
+          // otherwise is the second
+        } else {
+          type = Aname.at(1);
+        }
+        if (type == 'H') atoms_masses[res_atoms[a].index()] = 1.008;
+        else if(type == 'C') atoms_masses[res_atoms[a].index()] = 12.011;
+        else if(type == 'N') atoms_masses[res_atoms[a].index()] = 14.007;
+        else if(type == 'O') atoms_masses[res_atoms[a].index()] = 15.999;
+        else if(type == 'S') atoms_masses[res_atoms[a].index()] = 32.065;
+        else if(type == 'P') atoms_masses[res_atoms[a].index()] = 30.974;
+        else {
+          error("Unknown element in mass extraction\n");
+        }
+        if(pdb.allowedResidue("protein",Rname)) {
+          if(first_time) {
+            atoms_per_bead.push_back(res_atoms.size());
+            first_time = 0;
+          }
+          residue_atom[res_atoms[a].index()] = atoms_per_bead.size()-1;
+        } else {
+          // check for nucleic acids
+          // Pentose bead
+          if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  || Aname=="O3'"  ||
+              Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  || Aname=="C1'"  || Aname=="H5'"  ||
+              Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  || Aname=="H2'"  || Aname=="H2''" ||
+              Aname=="H2'2" || Aname=="H1'"  || Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" ||
+              Aname=="H5'1" || Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T"  ||
+              Aname=="H3T" ) {
+            tmp_residue_atom[0].push_back(res_atoms[a].index());
+          }
+          // Nucleobase bead
+          else if(Aname=="N1"  || Aname=="N2"  || Aname=="N3"  || Aname=="N4"  || Aname=="N6"  ||
+                  Aname=="N7"  || Aname=="N9"  || Aname=="C2"  || Aname=="C4"  || Aname=="C5"  ||
+                  Aname=="C6"  || Aname=="C7"  || Aname=="C8"  || Aname=="O2"  || Aname=="O4"  ||
+                  Aname=="O6"  || Aname=="H1"  || Aname=="H2"  || Aname=="H3"  || Aname=="H5"  ||
+                  Aname=="H6"  || Aname=="H8"  || Aname=="H21" || Aname=="H22" || Aname=="H41" ||
+                  Aname=="H42" || Aname=="H61" || Aname=="H62" || Aname=="H71" || Aname=="H72" ||
+                  Aname=="H73" ) {
+            tmp_residue_atom[1].push_back(res_atoms[a].index());
+          }
+          // PO2 bead
+          else if(Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || Aname=="O1P" ||
+                  Aname=="O2P" || Aname=="O3P" ) {
+            tmp_residue_atom[2].push_back(res_atoms[a].index());
+          }
+          // error
+          else error("Atom name "+Aname+" cannot be indexed to any bead. Check the PDB.");
+        }
       }
-
-      if (type == 'H') atoms_masses[i] = 1.008;
-      else if (type == 'C') atoms_masses[i] = 12.011;
-      else if (type == 'N') atoms_masses[i] = 14.007;
-      else if (type == 'O') atoms_masses[i] = 15.999;
-      else if (type == 'S') atoms_masses[i] = 32.065;
-      else if (type == 'P') atoms_masses[i] = 30.974;
-      else {
-        error("Unknown element in mass extraction\n");
+      if(!pdb.allowedResidue("protein",Rname)) {
+        atoms_per_bead.push_back(tmp_residue_atom[0].size());
+        for(unsigned tmp_i=0; tmp_i<tmp_residue_atom[0].size(); tmp_i++) residue_atom[tmp_residue_atom[0][tmp_i]]=atoms_per_bead.size()-1;
+        atoms_per_bead.push_back(tmp_residue_atom[1].size());
+        for(unsigned tmp_i=0; tmp_i<tmp_residue_atom[1].size(); tmp_i++) residue_atom[tmp_residue_atom[1][tmp_i]]=atoms_per_bead.size()-1;
+        if(tmp_residue_atom[2].size()>0) {
+          atoms_per_bead.push_back(tmp_residue_atom[2].size());
+          for(unsigned tmp_i=0; tmp_i<tmp_residue_atom[2].size(); tmp_i++) residue_atom[tmp_residue_atom[2][tmp_i]]=atoms_per_bead.size()-1;
+        }
       }
     }
-    readLCPOparam(AtomResidueName, atoms.size());
-  } else {
-    error("MOLINFO DATA not found\n");
   }
+  readLCPOparam(AtomResidueName, atoms.size());
+  return atoms_per_bead.size();
 }
 
-void SAXS::getMartiniSFparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter)
+void SAXS::getMartiniFFparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter)
 {
   parameter[ALA_BB].push_back(9.045);
   parameter[ALA_BB].push_back(-0.098114);
@@ -1984,7 +2383,6 @@ void SAXS::getMartiniSFparam(const std::vector<AtomNumber> &atoms, std::vector<s
 
   auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   if( moldat ) {
-    log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
     for(unsigned i=0; i<atoms.size(); ++i) {
       std::string Aname = moldat->getAtomName(atoms[i]);
       std::string Rname = moldat->getResidueName(atoms[i]);
@@ -2317,7 +2715,7 @@ void SAXS::getMartiniSFparam(const std::vector<AtomNumber> &atoms, std::vector<s
   }
 }
 
-void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv)
+void SAXS::getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv, std::vector<unsigned> residue_atom)
 {
 
   parameter_solv[TRP].push_back(60737.60249988003);
@@ -2824,72 +3222,3014 @@ void SAXS::getOnebeadparam(const std::vector<AtomNumber> &atoms, std::vector<std
   parameter_vac[HIS].push_back(-19307.35836837878);
   parameter_vac[HIS].push_back(4780.831414992477);
 
-  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
-  if( moldat ) {
-    unsigned init_resnum = moldat -> getResidueNumber(atoms[0]);
-    for(unsigned i=0; i<atoms.size(); ++i) {
-      std::string Rname = moldat->getResidueName(atoms[i]);
-      if(Rname=="ALA") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=ALA;
-      } else if(Rname=="ARG") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=ARG;
-      } else if(Rname=="ASN") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=ASN;
-      } else if(Rname=="ASP") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=ASP;
-      } else if(Rname=="CYS") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=CYS;
-      } else if(Rname=="GLN") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=GLN;
-      } else if(Rname=="GLU") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=GLU;
-      } else if(Rname=="GLY") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=GLY;
-      } else if(Rname=="HIS") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=HIS;
-      } else if(Rname=="HID") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=HIS;
-      } else if(Rname=="HIE") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=HIS;
-      } else if(Rname=="HIP") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=HIP;
-        // CHARMM NAMING FOR PROTONATION STATES OF HISTIDINE
-      } else if(Rname=="HSD") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=HIS;
-      } else if(Rname=="HSE") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=HIS;
-      } else if(Rname=="HSP") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=HIP;
-      } else if(Rname=="ILE") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=ILE;
-      } else if(Rname=="LEU") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=LEU;
-      } else if(Rname=="LYS") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=LYS;
-      } else if(Rname=="MET") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=MET;
-      } else if(Rname=="PHE") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=PHE;
-      } else if(Rname=="PRO") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=PRO;
-      } else if(Rname=="SER") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=SER;
-      } else if(Rname=="THR") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=THR;
-      } else if(Rname=="TRP") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=TRP;
-      } else if(Rname=="TYR") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=TYR;
-      } else if(Rname=="VAL") {
-        atoi[moldat->getResidueNumber(atoms[i])-init_resnum]=VAL;
-      } else error("Residue not known: "+Rname);
+  // NUCLEIC ACIDS
+
+  parameter_solv[BB_PO2].push_back(575.5201001192197);
+  parameter_solv[BB_PO2].push_back(-0.6126595489733868);
+  parameter_solv[BB_PO2].push_back(-623.3371092254897);
+  parameter_solv[BB_PO2].push_back(-68.05795957022156);
+  parameter_solv[BB_PO2].push_back(561.8052621243662);
+  parameter_solv[BB_PO2].push_back(-283.39573309540344);
+  parameter_solv[BB_PO2].push_back(35.55001698010027);
+
+  parameter_solv[BB_DNA].push_back(21211.009600118316);
+  parameter_solv[BB_DNA].push_back(-90.18805990529991);
+  parameter_solv[BB_DNA].push_back(-39731.1337351215);
+  parameter_solv[BB_DNA].push_back(-10920.373563712878);
+  parameter_solv[BB_DNA].push_back(72882.21702424977);
+  parameter_solv[BB_DNA].push_back(-51747.487078112754);
+  parameter_solv[BB_DNA].push_back(11308.67842901876);
+
+  parameter_solv[BB_DNA_5].push_back(22737.624100119025);
+  parameter_solv[BB_DNA_5].push_back(-102.72714886664163);
+  parameter_solv[BB_DNA_5].push_back(-43685.329677789705);
+  parameter_solv[BB_DNA_5].push_back(-12564.259374093454);
+  parameter_solv[BB_DNA_5].push_back(83454.87540484876);
+  parameter_solv[BB_DNA_5].push_back(-60367.15652138888);
+  parameter_solv[BB_DNA_5].push_back(13507.33372986899);
+
+  parameter_solv[BB_DNA_3].push_back(22737.62410011902);
+  parameter_solv[BB_DNA_3].push_back(-101.57816684452263);
+  parameter_solv[BB_DNA_3].push_back(-43488.53670557616);
+  parameter_solv[BB_DNA_3].push_back(-12345.056184958417);
+  parameter_solv[BB_DNA_3].push_back(81963.5236411489);
+  parameter_solv[BB_DNA_3].push_back(-58791.59443618196);
+  parameter_solv[BB_DNA_3].push_back(13003.199362335576);
+
+  parameter_solv[BB_RNA].push_back(23953.752900120977);
+  parameter_solv[BB_RNA].push_back(-117.35779348824401);
+  parameter_solv[BB_RNA].push_back(-47644.41735332837);
+  parameter_solv[BB_RNA].push_back(-14641.556643789863);
+  parameter_solv[BB_RNA].push_back(96893.48627050382);
+  parameter_solv[BB_RNA].push_back(-72249.62534169314);
+  parameter_solv[BB_RNA].push_back(16792.05552105538);
+
+  parameter_solv[BB_RNA_5].push_back(25574.406400119024);
+  parameter_solv[BB_RNA_5].push_back(-131.99642772933734);
+  parameter_solv[BB_RNA_5].push_back(-52136.51404531249);
+  parameter_solv[BB_RNA_5].push_back(-16682.14273917604);
+  parameter_solv[BB_RNA_5].push_back(110278.019216394);
+  parameter_solv[BB_RNA_5].push_back(-83715.92027818545);
+  parameter_solv[BB_RNA_5].push_back(19875.891337706045);
+
+  parameter_solv[BB_RNA_3].push_back(25574.406400119024);
+  parameter_solv[BB_RNA_3].push_back(-127.96875237036166);
+  parameter_solv[BB_RNA_3].push_back(-51407.183917584385);
+  parameter_solv[BB_RNA_3].push_back(-15922.900669975606);
+  parameter_solv[BB_RNA_3].push_back(105078.58889106264);
+  parameter_solv[BB_RNA_3].push_back(-78289.16276190648);
+  parameter_solv[BB_RNA_3].push_back(18156.83214344118);
+
+  parameter_solv[BASE_A].push_back(13282.562500119211);
+  parameter_solv[BASE_A].push_back(-76.45124168404048);
+  parameter_solv[BASE_A].push_back(-28376.06994108963);
+  parameter_solv[BASE_A].push_back(-9972.910773722022);
+  parameter_solv[BASE_A].push_back(65873.86341939073);
+  parameter_solv[BASE_A].push_back(-52064.33492910885);
+  parameter_solv[BASE_A].push_back(12931.608989412513);
+
+  parameter_solv[BASE_C].push_back(10600.76160011891);
+  parameter_solv[BASE_C].push_back(-49.1670871249108);
+  parameter_solv[BASE_C].push_back(-20239.818742072875);
+  parameter_solv[BASE_C].push_back(-6020.278780090207);
+  parameter_solv[BASE_C].push_back(39632.13288981881);
+  parameter_solv[BASE_C].push_back(-28954.779736165576);
+  parameter_solv[BASE_C].push_back(6551.541109526305);
+
+  parameter_solv[BASE_G].push_back(15470.384400119934);
+  parameter_solv[BASE_G].push_back(-93.8013620200972);
+  parameter_solv[BASE_G].push_back(-36188.29687013545);
+  parameter_solv[BASE_G].push_back(-13717.685098209471);
+  parameter_solv[BASE_G].push_back(95658.18473657136);
+  parameter_solv[BASE_G].push_back(-81262.37811451119);
+  parameter_solv[BASE_G].push_back(21841.903930943085);
+
+  parameter_solv[BASE_T].push_back(17210.81610011936);
+  parameter_solv[BASE_T].push_back(-93.10189802920208);
+  parameter_solv[BASE_T].push_back(-36466.51927689957);
+  parameter_solv[BASE_T].push_back(-12425.55615716932);
+  parameter_solv[BASE_T].push_back(83847.427808925);
+  parameter_solv[BASE_T].push_back(-66735.64997846584);
+  parameter_solv[BASE_T].push_back(16757.3463987507);
+
+  parameter_solv[BASE_U].push_back(10909.802500119395);
+  parameter_solv[BASE_U].push_back(-46.17712672768298);
+  parameter_solv[BASE_U].push_back(-20149.67695512526);
+  parameter_solv[BASE_U].push_back(-5590.242961204435);
+  parameter_solv[BASE_U].push_back(37169.2740983132);
+  parameter_solv[BASE_U].push_back(-26475.631627167604);
+  parameter_solv[BASE_U].push_back(5808.201015156168);
+
+  parameter_mix[BB_PO2].push_back(1487.2888381188868);
+  parameter_mix[BB_PO2].push_back(-0.6155376265599789);
+  parameter_mix[BB_PO2].push_back(-1181.5076027691764);
+  parameter_mix[BB_PO2].push_back(-66.25027450710594);
+  parameter_mix[BB_PO2].push_back(697.0421991965113);
+  parameter_mix[BB_PO2].push_back(-261.8559466354847);
+  parameter_mix[BB_PO2].push_back(9.974337082362194);
+
+  parameter_mix[BB_DNA].push_back(17766.29474499878);
+  parameter_mix[BB_DNA].push_back(-48.97330188566253);
+  parameter_mix[BB_DNA].push_back(-28199.563596327207);
+  parameter_mix[BB_DNA].push_back(-5623.82085602494);
+  parameter_mix[BB_DNA].push_back(39646.22954828498);
+  parameter_mix[BB_DNA].push_back(-24658.81157651943);
+  parameter_mix[BB_DNA].push_back(4453.73906293146);
+
+  parameter_mix[BB_DNA_5].push_back(18696.09744203927);
+  parameter_mix[BB_DNA_5].push_back(-56.29408880833802);
+  parameter_mix[BB_DNA_5].push_back(-30486.108599707608);
+  parameter_mix[BB_DNA_5].push_back(-6524.195857141158);
+  parameter_mix[BB_DNA_5].push_back(45280.80142686446);
+  parameter_mix[BB_DNA_5].push_back(-29007.98616567993);
+  parameter_mix[BB_DNA_5].push_back(5488.566965501818);
+
+  parameter_mix[BB_DNA_3].push_back(18696.097442039274);
+  parameter_mix[BB_DNA_3].push_back(-55.5645003501971);
+  parameter_mix[BB_DNA_3].push_back(-30422.262113654506);
+  parameter_mix[BB_DNA_3].push_back(-6409.659659309089);
+  parameter_mix[BB_DNA_3].push_back(44605.76043515699);
+  parameter_mix[BB_DNA_3].push_back(-28295.62152988411);
+  parameter_mix[BB_DNA_3].push_back(5262.5765863484);
+
+  parameter_mix[BB_RNA].push_back(21356.177105457366);
+  parameter_mix[BB_RNA].push_back(-76.73490647754872);
+  parameter_mix[BB_RNA].push_back(-36845.234814782816);
+  parameter_mix[BB_RNA].push_back(-9066.559625582728);
+  parameter_mix[BB_RNA].push_back(61167.998793390485);
+  parameter_mix[BB_RNA].push_back(-41467.23384423218);
+  parameter_mix[BB_RNA].push_back(8518.937793863257);
+
+  parameter_mix[BB_RNA_5].push_back(22386.63276427916);
+  parameter_mix[BB_RNA_5].push_back(-85.70426456933487);
+  parameter_mix[BB_RNA_5].push_back(-39490.50298502025);
+  parameter_mix[BB_RNA_5].push_back(-10223.702594972712);
+  parameter_mix[BB_RNA_5].push_back(68450.60459618448);
+  parameter_mix[BB_RNA_5].push_back(-47409.91098159006);
+  parameter_mix[BB_RNA_5].push_back(10031.136138513202);
+
+  parameter_mix[BB_RNA_3].push_back(22386.63276427916);
+  parameter_mix[BB_RNA_3].push_back(-81.93760812351479);
+  parameter_mix[BB_RNA_3].push_back(-39031.70571520093);
+  parameter_mix[BB_RNA_3].push_back(-9666.316086142708);
+  parameter_mix[BB_RNA_3].push_back(65120.07128126262);
+  parameter_mix[BB_RNA_3].push_back(-44110.13603681317);
+  parameter_mix[BB_RNA_3].push_back(9036.76498256983);
+
+  parameter_mix[BASE_A].push_back(15897.31116611889);
+  parameter_mix[BASE_A].push_back(-67.86385832953485);
+  parameter_mix[BASE_A].push_back(-28851.754660951636);
+  parameter_mix[BASE_A].push_back(-8144.431687170413);
+  parameter_mix[BASE_A].push_back(53606.39082954489);
+  parameter_mix[BASE_A].push_back(-38083.51243782253);
+  parameter_mix[BASE_A].push_back(8293.47107993253);
+
+  parameter_mix[BASE_C].push_back(11733.2828871599);
+  parameter_mix[BASE_C].push_back(-38.76775400274115);
+  parameter_mix[BASE_C].push_back(-19318.84666423464);
+  parameter_mix[BASE_C].push_back(-4507.915522704176);
+  parameter_mix[BASE_C].push_back(30576.57671286052);
+  parameter_mix[BASE_C].push_back(-20132.46696910844);
+  parameter_mix[BASE_C].push_back(3947.8727087996162);
+
+  parameter_mix[BASE_G].push_back(19146.612417237808);
+  parameter_mix[BASE_G].push_back(-102.37046638004914);
+  parameter_mix[BASE_G].push_back(-38718.96478190546);
+  parameter_mix[BASE_G].push_back(-13238.106081860074);
+  parameter_mix[BASE_G].push_back(87309.07460288722);
+  parameter_mix[BASE_G].push_back(-68364.82442984737);
+  parameter_mix[BASE_G].push_back(16815.362401369);
+
+  parameter_mix[BASE_T].push_back(17050.440260819163);
+  parameter_mix[BASE_T].push_back(-76.33750600643376);
+  parameter_mix[BASE_T].push_back(-31849.539096715005);
+  parameter_mix[BASE_T].push_back(-9484.498992751434);
+  parameter_mix[BASE_T].push_back(62881.895771680494);
+  parameter_mix[BASE_T].push_back(-46531.948557759024);
+  parameter_mix[BASE_T].push_back(10734.196329884822);
+
+  parameter_mix[BASE_U].push_back(11904.095265219023);
+  parameter_mix[BASE_U].push_back(-34.67511054915295);
+  parameter_mix[BASE_U].push_back(-18842.275003104005);
+  parameter_mix[BASE_U].push_back(-3993.1174764890684);
+  parameter_mix[BASE_U].push_back(27663.625106762345);
+  parameter_mix[BASE_U].push_back(-17577.387831701515);
+  parameter_mix[BASE_U].push_back(3273.183903219142);
+
+  parameter_vac[BB_PO2].push_back(960.8822037291127);
+  parameter_vac[BB_PO2].push_back(-0.09312135742159174);
+  parameter_vac[BB_PO2].push_back(-469.39643497461844);
+  parameter_vac[BB_PO2].push_back(-9.779346709041985);
+  parameter_vac[BB_PO2].push_back(162.1581550003227);
+  parameter_vac[BB_PO2].push_back(-37.06686233305618);
+  parameter_vac[BB_PO2].push_back(-4.695586672655664);
+
+  parameter_vac[BB_DNA].push_back(3720.2522996838984);
+  parameter_vac[BB_DNA].push_back(-5.4229642176938);
+  parameter_vac[BB_DNA].push_back(-4800.897672711981);
+  parameter_vac[BB_DNA].push_back(-597.2274673070993);
+  parameter_vac[BB_DNA].push_back(4825.908840953665);
+  parameter_vac[BB_DNA].push_back(-2451.397454446564);
+  parameter_vac[BB_DNA].push_back(294.93071756645685);
+
+  parameter_vac[BB_DNA_5].push_back(3843.234214262163);
+  parameter_vac[BB_DNA_5].push_back(-6.423078416284452);
+  parameter_vac[BB_DNA_5].push_back(-5112.1216386963115);
+  parameter_vac[BB_DNA_5].push_back(-713.8373583426668);
+  parameter_vac[BB_DNA_5].push_back(5547.545382516269);
+  parameter_vac[BB_DNA_5].push_back(-2973.5659871174225);
+  parameter_vac[BB_DNA_5].push_back(407.2789106630427);
+
+  parameter_vac[BB_DNA_3].push_back(3843.234214262163);
+  parameter_vac[BB_DNA_3].push_back(-6.268636561475645);
+  parameter_vac[BB_DNA_3].push_back(-5103.192931218086);
+  parameter_vac[BB_DNA_3].push_back(-693.8705734390547);
+  parameter_vac[BB_DNA_3].push_back(5443.979645097035);
+  parameter_vac[BB_DNA_3].push_back(-2871.4337477324893);
+  parameter_vac[BB_DNA_3].push_back(377.3062915349831);
+
+  parameter_vac[BB_RNA].push_back(4760.071443398374);
+  parameter_vac[BB_RNA].push_back(-11.0990475402486);
+  parameter_vac[BB_RNA].push_back(-6934.713566418421);
+  parameter_vac[BB_RNA].push_back(-1256.5202524085096);
+  parameter_vac[BB_RNA].push_back(9024.962587066922);
+  parameter_vac[BB_RNA].push_back(-5386.842667932241);
+  parameter_vac[BB_RNA].push_back(907.42947751372);
+
+  parameter_vac[BB_RNA_5].push_back(4899.051406033406);
+  parameter_vac[BB_RNA_5].push_back(-12.279240472628238);
+  parameter_vac[BB_RNA_5].push_back(-7276.273570813667);
+  parameter_vac[BB_RNA_5].push_back(-1400.9520839250868);
+  parameter_vac[BB_RNA_5].push_back(9912.215823228895);
+  parameter_vac[BB_RNA_5].push_back(-6079.2565270404075);
+  parameter_vac[BB_RNA_5].push_back(1073.53428175472);
+
+  parameter_vac[BB_RNA_3].push_back(4899.051406033406);
+  parameter_vac[BB_RNA_3].push_back(-11.642804195148194);
+  parameter_vac[BB_RNA_3].push_back(-7213.774619570996);
+  parameter_vac[BB_RNA_3].push_back(-1317.4463949342964);
+  parameter_vac[BB_RNA_3].push_back(9450.928929264686);
+  parameter_vac[BB_RNA_3].push_back(-5643.856117200917);
+  parameter_vac[BB_RNA_3].push_back(949.4698817407918);
+
+  parameter_vac[BASE_A].push_back(4756.697028810353);
+  parameter_vac[BASE_A].push_back(-12.158940746852812);
+  parameter_vac[BASE_A].push_back(-7106.473423744205);
+  parameter_vac[BASE_A].push_back(-1376.295184173137);
+  parameter_vac[BASE_A].push_back(9747.132255557788);
+  parameter_vac[BASE_A].push_back(-5900.026637038756);
+  parameter_vac[BASE_A].push_back(1004.6226388342955);
+
+  parameter_vac[BASE_C].push_back(3246.698975674651);
+  parameter_vac[BASE_C].push_back(-6.125036521218687);
+  parameter_vac[BASE_C].push_back(-4280.666521437201);
+  parameter_vac[BASE_C].push_back(-684.0183580843932);
+  parameter_vac[BASE_C].push_back(5077.062889522692);
+  parameter_vac[BASE_C].push_back(-2870.3239317750963);
+  parameter_vac[BASE_C].push_back(434.51551177863547);
+
+  parameter_vac[BASE_G].push_back(5924.105658596052);
+  parameter_vac[BASE_G].push_back(-23.097956587232552);
+  parameter_vac[BASE_G].push_back(-10149.526301285418);
+  parameter_vac[BASE_G].push_back(-2752.9166169522528);
+  parameter_vac[BASE_G].push_back(18239.32985385683);
+  parameter_vac[BASE_G].push_back(-12749.277858800957);
+  parameter_vac[BASE_G].push_back(2715.354663787367);
+
+  parameter_vac[BASE_T].push_back(4222.889713694404);
+  parameter_vac[BASE_T].push_back(-12.15861456306705);
+  parameter_vac[BASE_T].push_back(-6395.50289789404);
+  parameter_vac[BASE_T].push_back(-1421.3942549301012);
+  parameter_vac[BASE_T].push_back(9757.061008720135);
+  parameter_vac[BASE_T].push_back(-6399.630933839126);
+  parameter_vac[BASE_T].push_back(1258.9874225605438);
+
+  parameter_vac[BASE_U].push_back(3247.251361465539);
+  parameter_vac[BASE_U].push_back(-5.211020853261115);
+  parameter_vac[BASE_U].push_back(-4125.165310360279);
+  parameter_vac[BASE_U].push_back(-575.1860235473902);
+  parameter_vac[BASE_U].push_back(4457.6562621371495);
+  parameter_vac[BASE_U].push_back(-2368.7250146912766);
+  parameter_vac[BASE_U].push_back(313.23997718445014);
+
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    std::string Aname = pdb.getAtomName(atoms[i]);
+    std::string Rname = pdb.getResidueName(atoms[i]);
+    Rname.erase(std::remove_if(Rname.begin(), Rname.end(), ::isspace),Rname.end());
+    if(Rname=="ALA") {
+      atoi[residue_atom[i]]=ALA;
+    } else if(Rname=="ARG") {
+      atoi[residue_atom[i]]=ARG;
+    } else if(Rname=="ASN") {
+      atoi[residue_atom[i]]=ASN;
+    } else if(Rname=="ASP") {
+      atoi[residue_atom[i]]=ASP;
+    } else if(Rname=="CYS") {
+      atoi[residue_atom[i]]=CYS;
+    } else if(Rname=="GLN") {
+      atoi[residue_atom[i]]=GLN;
+    } else if(Rname=="GLU") {
+      atoi[residue_atom[i]]=GLU;
+    } else if(Rname=="GLY") {
+      atoi[residue_atom[i]]=GLY;
+    } else if(Rname=="HIS") {
+      atoi[residue_atom[i]]=HIS;
+    } else if(Rname=="HID") {
+      atoi[residue_atom[i]]=HIS;
+    } else if(Rname=="HIE") {
+      atoi[residue_atom[i]]=HIS;
+    } else if(Rname=="HIP") {
+      atoi[residue_atom[i]]=HIP;
+      // CHARMM NAMING FOR PROTONATION STATES OF HISTIDINE
+    } else if(Rname=="HSD") {
+      atoi[residue_atom[i]]=HIS;
+    } else if(Rname=="HSE") {
+      atoi[residue_atom[i]]=HIS;
+    } else if(Rname=="HSP") {
+      atoi[residue_atom[i]]=HIP;
+    } else if(Rname=="ILE") {
+      atoi[residue_atom[i]]=ILE;
+    } else if(Rname=="LEU") {
+      atoi[residue_atom[i]]=LEU;
+    } else if(Rname=="LYS") {
+      atoi[residue_atom[i]]=LYS;
+    } else if(Rname=="MET") {
+      atoi[residue_atom[i]]=MET;
+    } else if(Rname=="PHE") {
+      atoi[residue_atom[i]]=PHE;
+    } else if(Rname=="PRO") {
+      atoi[residue_atom[i]]=PRO;
+    } else if(Rname=="SER") {
+      atoi[residue_atom[i]]=SER;
+    } else if(Rname=="THR") {
+      atoi[residue_atom[i]]=THR;
+    } else if(Rname=="TRP") {
+      atoi[residue_atom[i]]=TRP;
+    } else if(Rname=="TYR") {
+      atoi[residue_atom[i]]=TYR;
+    } else if(Rname=="VAL") {
+      atoi[residue_atom[i]]=VAL;
     }
-  } else {
-    error("MOLINFO DATA not found\n");
+    // NUCLEIC ACIDS
+    // nucleobases are not automatically populated as an additional check on the health of the PDB.
+    // RNA - G
+    else if(Rname=="G") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;
+      } else if( Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                 Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                 Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                 Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - G3
+    } else if(Rname=="G3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'" || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'" || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="H2'1" || Aname=="HO3'"|| Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" ) {
+        atoi[residue_atom[i]]=BB_RNA_3;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - G5
+    } else if(Rname=="G5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+          Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+          Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="HO2'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="HO'2" ||
+          Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA_5;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - U
+    } else if(Rname=="U") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;
+      } else if( Aname=="N1" || Aname=="C2"  || Aname=="O2" || Aname=="N3" ||
+                 Aname=="C4" || Aname=="O4"  || Aname=="C5" || Aname=="C6" ||
+                 Aname=="H3" || Aname=="H5"  || Aname=="H6") {
+        atoi[residue_atom[i]]=BASE_U;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - U3
+    } else if(Rname=="U3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'" || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'" || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="H2'1" || Aname=="HO3'"|| Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" ) {
+        atoi[residue_atom[i]]=BB_RNA_3;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="O2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="O4"  || Aname=="C5" || Aname=="C6" ||
+                Aname=="H3" || Aname=="H5"  || Aname=="H6") {
+        atoi[residue_atom[i]]=BASE_U;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - U5
+    } else if(Rname=="U5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+          Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+          Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="HO2'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="HO'2" ||
+          Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA_5;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="O2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="O4"  || Aname=="C5" || Aname=="C6" ||
+                Aname=="H3" || Aname=="H5"  || Aname=="H6") {
+        atoi[residue_atom[i]]=BASE_U;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - A
+    } else if(Rname=="A") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - A3
+    } else if(Rname=="A3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'" || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'" || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="H2'1" || Aname=="HO3'"|| Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" ) {
+        atoi[residue_atom[i]]=BB_RNA_3;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - A5
+    } else if(Rname=="A5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+          Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+          Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="HO2'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="HO'2" ||
+          Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA_5;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - C
+    } else if(Rname=="C") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - C3
+    } else if(Rname=="C3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'" || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'" || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="H2'1" || Aname=="HO3'"|| Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" ) {
+        atoi[residue_atom[i]]=BB_RNA_3;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - C5
+    } else if(Rname=="C5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+          Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+          Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="HO2'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="HO'2" ||
+          Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA_5;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - G
+    } else if(Rname=="DG") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - G3
+    } else if(Rname=="DG3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO3'" ||
+                Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+                Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA_3;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - G5
+    } else if(Rname=="DG5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  ||  Aname=="C1'" ||
+          Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+          Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+          Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_DNA_5;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - T
+    } else if(Rname=="DT") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1"  || Aname=="C2"  || Aname=="O2"  || Aname=="N3"  ||
+                Aname=="C4"  || Aname=="O4"  || Aname=="C5"  || Aname=="C6"  ||
+                Aname=="C7"  || Aname=="H3"  || Aname=="H6"  || Aname=="H71" ||
+                Aname=="H72" || Aname=="H73" ) {
+        atoi[residue_atom[i]]=BASE_T;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - T3
+    } else if(Rname=="DT3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO3'" ||
+                Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+                Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA_3;
+      } else if(Aname=="N1"  || Aname=="C2"  || Aname=="O2"  || Aname=="N3"  ||
+                Aname=="C4"  || Aname=="O4"  || Aname=="C5"  || Aname=="C6"  ||
+                Aname=="C7"  || Aname=="H3"  || Aname=="H6"  || Aname=="H71" ||
+                Aname=="H72" || Aname=="H73" ) {
+        atoi[residue_atom[i]]=BASE_T;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - T5
+    } else if(Rname=="DT5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  ||  Aname=="C1'" ||
+          Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+          Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+          Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_DNA_5;
+      } else if(Aname=="N1"  || Aname=="C2"  || Aname=="O2"  || Aname=="N3"  ||
+                Aname=="C4"  || Aname=="O4"  || Aname=="C5"  || Aname=="C6"  ||
+                Aname=="C7"  || Aname=="H3"  || Aname=="H6"  || Aname=="H71" ||
+                Aname=="H72" || Aname=="H73" ) {
+        atoi[residue_atom[i]]=BASE_T;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - A
+    } else if(Rname=="DA") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - A3
+    } else if(Rname=="DA3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO3'" ||
+                Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+                Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA_3;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - A5
+    } else if(Rname=="DA5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  ||  Aname=="C1'" ||
+          Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+          Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+          Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_DNA_5;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - C
+    } else if(Rname=="DC") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - C3
+    } else if(Rname=="DC3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO3'" ||
+                Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+                Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA_3;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - C5
+    } else if(Rname=="DC5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  ||  Aname=="C1'" ||
+          Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+          Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+          Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_DNA_5;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    } else error("Residue not known: "+Rname);
   }
 }
 
-double SAXS::calculateASF(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double rho)
+void SAXS::getOnebeadparam_sansH(const PDB &pdb, const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_H, std::vector<std::vector<long double> > &parameter_mix_H, std::vector<std::vector<long double> > &parameter_solv_H)
+{
+  parameter_solv_H[TRP].push_back(60737.60249988011);
+  parameter_solv_H[TRP].push_back(-77.77344118516487);
+  parameter_solv_H[TRP].push_back(-205962.80436572764);
+  parameter_solv_H[TRP].push_back(-62014.18523271781);
+  parameter_solv_H[TRP].push_back(680712.0512548896);
+  parameter_solv_H[TRP].push_back(-681337.967312983);
+  parameter_solv_H[TRP].push_back(211474.00338118695);
+
+  parameter_solv_H[TYR].push_back(46250.803599880084);
+  parameter_solv_H[TYR].push_back(-45.827646837514614);
+  parameter_solv_H[TYR].push_back(-143872.94597686914);
+  parameter_solv_H[TYR].push_back(-39049.51580628132);
+  parameter_solv_H[TYR].push_back(441321.31246635393);
+  parameter_solv_H[TYR].push_back(-434477.6826175059);
+  parameter_solv_H[TYR].push_back(133179.21673104732);
+
+  parameter_solv_H[PHE].push_back(42407.164900118914);
+  parameter_solv_H[PHE].push_back(-159.20054549009086);
+  parameter_solv_H[PHE].push_back(-123847.83591352346);
+  parameter_solv_H[PHE].push_back(-41797.78884558073);
+  parameter_solv_H[PHE].push_back(380283.87543872406);
+  parameter_solv_H[PHE].push_back(-361432.81356389285);
+  parameter_solv_H[PHE].push_back(107750.69385054041);
+
+  parameter_solv_H[HIP].push_back(24473.473600119047);
+  parameter_solv_H[HIP].push_back(-111.6412807124612);
+  parameter_solv_H[HIP].push_back(-65826.17293437096);
+  parameter_solv_H[HIP].push_back(-23305.902022201855);
+  parameter_solv_H[HIP].push_back(194795.09953510275);
+  parameter_solv_H[HIP].push_back(-180454.47859494278);
+  parameter_solv_H[HIP].push_back(52699.36922660704);
+
+  parameter_solv_H[ARG].push_back(34106.70239988039);
+  parameter_solv_H[ARG].push_back(152.74468231268114);
+  parameter_solv_H[ARG].push_back(-117086.46040369231);
+  parameter_solv_H[ARG].push_back(-19664.37512726012);
+  parameter_solv_H[ARG].push_back(364454.3721646173);
+  parameter_solv_H[ARG].push_back(-382076.05102190404);
+  parameter_solv_H[ARG].push_back(122775.83306003918);
+
+  parameter_solv_H[LYS].push_back(32292.09000011877);
+  parameter_solv_H[LYS].push_back(-111.97888350941923);
+  parameter_solv_H[LYS].push_back(-91953.05212591762);
+  parameter_solv_H[LYS].push_back(-30691.03615444628);
+  parameter_solv_H[LYS].push_back(282092.82233263896);
+  parameter_solv_H[LYS].push_back(-269503.6095978623);
+  parameter_solv_H[LYS].push_back(80777.92760273012);
+
+  parameter_solv_H[CYS].push_back(11352.902500119093);
+  parameter_solv_H[CYS].push_back(-45.52255488723637);
+  parameter_solv_H[CYS].push_back(-20925.086525675117);
+  parameter_solv_H[CYS].push_back(-5662.681335644281);
+  parameter_solv_H[CYS].push_back(38559.09602816144);
+  parameter_solv_H[CYS].push_back(-27885.22747486708);
+  parameter_solv_H[CYS].push_back(6280.148346561226);
+
+  parameter_solv_H[ASP].push_back(13511.73760011933);
+  parameter_solv_H[ASP].push_back(-59.92934247210642);
+  parameter_solv_H[ASP].push_back(-25849.867077822244);
+  parameter_solv_H[ASP].push_back(-7541.679510407563);
+  parameter_solv_H[ASP].push_back(50760.93853987092);
+  parameter_solv_H[ASP].push_back(-37677.89102528413);
+  parameter_solv_H[ASP].push_back(8745.710458140105);
+
+  parameter_solv_H[GLU].push_back(20443.280400119456);
+  parameter_solv_H[GLU].push_back(-113.77513581661388);
+  parameter_solv_H[GLU].push_back(-45587.79863958479);
+  parameter_solv_H[GLU].push_back(-16187.534798976243);
+  parameter_solv_H[GLU].push_back(112609.61802147207);
+  parameter_solv_H[GLU].push_back(-93362.01894077536);
+  parameter_solv_H[GLU].push_back(24519.546829431332);
+
+  parameter_solv_H[ILE].push_back(27858.948100119596);
+  parameter_solv_H[ILE].push_back(-159.27394962770595);
+  parameter_solv_H[ILE].push_back(-61571.43025249802);
+  parameter_solv_H[ILE].push_back(-21324.89659912433);
+  parameter_solv_H[ILE].push_back(144070.7880009225);
+  parameter_solv_H[ILE].push_back(-115021.84534734003);
+  parameter_solv_H[ILE].push_back(28939.093300284097);
+
+  parameter_solv_H[LEU].push_back(27858.948100119596);
+  parameter_solv_H[LEU].push_back(-165.61872365361);
+  parameter_solv_H[LEU].push_back(-62564.5706162518);
+  parameter_solv_H[LEU].push_back(-22465.325666767214);
+  parameter_solv_H[LEU].push_back(151616.7844050042);
+  parameter_solv_H[LEU].push_back(-122905.60389771541);
+  parameter_solv_H[LEU].push_back(31436.66201442061);
+
+  parameter_solv_H[MET].push_back(25609.60090011981);
+  parameter_solv_H[MET].push_back(-135.38816369794569);
+  parameter_solv_H[MET].push_back(-67771.01548433342);
+  parameter_solv_H[MET].push_back(-25228.91756660071);
+  parameter_solv_H[MET].push_back(199649.92084565928);
+  parameter_solv_H[MET].push_back(-182251.9246506795);
+  parameter_solv_H[MET].push_back(52502.876819125115);
+
+  parameter_solv_H[ASN].push_back(14376.010000119095);
+  parameter_solv_H[ASN].push_back(-67.65587848183215);
+  parameter_solv_H[ASN].push_back(-28302.877059425664);
+  parameter_solv_H[ASN].push_back(-8577.444107282141);
+  parameter_solv_H[ASN].push_back(57532.88704197217);
+  parameter_solv_H[ASN].push_back(-43261.79974462857);
+  parameter_solv_H[ASN].push_back(10186.450874679671);
+
+  parameter_solv_H[PRO].push_back(16866.21690011944);
+  parameter_solv_H[PRO].push_back(-70.84312112734995);
+  parameter_solv_H[PRO].push_back(-31465.8423531932);
+  parameter_solv_H[PRO].push_back(-8653.362744540535);
+  parameter_solv_H[PRO].push_back(58032.27079924916);
+  parameter_solv_H[PRO].push_back(-41521.001733021694);
+  parameter_solv_H[PRO].push_back(9184.527523759205);
+
+  parameter_solv_H[GLN].push_back(21503.289600119);
+  parameter_solv_H[GLN].push_back(-121.3012777474678);
+  parameter_solv_H[GLN].push_back(-50468.58503443957);
+  parameter_solv_H[GLN].push_back(-18462.47495329696);
+  parameter_solv_H[GLN].push_back(132718.42007501892);
+  parameter_solv_H[GLN].push_back(-113787.20224345029);
+  parameter_solv_H[GLN].push_back(30920.340813688686);
+
+  parameter_solv_H[SER].push_back(9181.47240011935);
+  parameter_solv_H[SER].push_back(-28.775273124392083);
+  parameter_solv_H[SER].push_back(-15205.54229808512);
+  parameter_solv_H[SER].push_back(-3377.785599913673);
+  parameter_solv_H[SER].push_back(23345.562090489493);
+  parameter_solv_H[SER].push_back(-15312.699787471944);
+  parameter_solv_H[SER].push_back(3013.844610647712);
+
+  parameter_solv_H[THR].push_back(15020.953600119403);
+  parameter_solv_H[THR].push_back(-61.909951810375105);
+  parameter_solv_H[THR].push_back(-27814.538986050964);
+  parameter_solv_H[THR].push_back(-7532.222992514079);
+  parameter_solv_H[THR].push_back(50586.29804970814);
+  parameter_solv_H[THR].push_back(-35943.85986777198);
+  parameter_solv_H[THR].push_back(7880.091610023207);
+
+  parameter_solv_H[VAL].push_back(19647.628900119355);
+  parameter_solv_H[VAL].push_back(-89.04968136833762);
+  parameter_solv_H[VAL].push_back(-38050.10118919102);
+  parameter_solv_H[VAL].push_back(-10921.421066774372);
+  parameter_solv_H[VAL].push_back(72774.31277743122);
+  parameter_solv_H[VAL].push_back(-52689.05168504517);
+  parameter_solv_H[VAL].push_back(11806.48989635518);
+
+  parameter_solv_H[ALA].push_back(7515.156100119273);
+  parameter_solv_H[ALA].push_back(-20.226317591188526);
+  parameter_solv_H[ALA].push_back(-11761.841775007797);
+  parameter_solv_H[ALA].push_back(-2341.4903622033885);
+  parameter_solv_H[ALA].push_back(16545.381259883452);
+  parameter_solv_H[ALA].push_back(-10397.171546969075);
+  parameter_solv_H[ALA].push_back(1921.5253045340198);
+
+  parameter_solv_H[GLY].push_back(3594.002500119159);
+  parameter_solv_H[GLY].push_back(-6.910832388009796);
+  parameter_solv_H[GLY].push_back(-4937.3542895091905);
+  parameter_solv_H[GLY].push_back(-785.4545979203357);
+  parameter_solv_H[GLY].push_back(5852.853693316741);
+  parameter_solv_H[GLY].push_back(-3391.2920205126734);
+  parameter_solv_H[GLY].push_back(552.3278183161507);
+
+  parameter_solv_H[HIS].push_back(22888.664100119073);
+  parameter_solv_H[HIS].push_back(-133.86281863999585);
+  parameter_solv_H[HIS].push_back(-57533.51412287858);
+  parameter_solv_H[HIS].push_back(-21767.300111408193);
+  parameter_solv_H[HIS].push_back(161255.15347073504);
+  parameter_solv_H[HIS].push_back(-142176.65100718598);
+  parameter_solv_H[HIS].push_back(39642.61507384587);
+
+  parameter_mix_H[TRP].push_back(2974.6515001192306);
+  parameter_mix_H[TRP].push_back(-18.361939022074825);
+  parameter_mix_H[TRP].push_back(-7284.637435770752);
+  parameter_mix_H[TRP].push_back(-2945.7969900381895);
+  parameter_mix_H[TRP].push_back(21235.01878657283);
+  parameter_mix_H[TRP].push_back(-18909.7406035548);
+  parameter_mix_H[TRP].push_back(5324.324204245179);
+
+  parameter_mix_H[TYR].push_back(2029.7362801192114);
+  parameter_mix_H[TYR].push_back(-6.983186065527884);
+  parameter_mix_H[TYR].push_back(-5041.996113037476);
+  parameter_mix_H[TYR].push_back(-1744.5213085724158);
+  parameter_mix_H[TYR].push_back(15329.420227814338);
+  parameter_mix_H[TYR].push_back(-14648.322529889958);
+  parameter_mix_H[TYR].push_back(4405.608657083287);
+
+  parameter_mix_H[PHE].push_back(1704.6885401192117);
+  parameter_mix_H[PHE].push_back(-10.077274979133408);
+  parameter_mix_H[PHE].push_back(-3769.440088334303);
+  parameter_mix_H[PHE].push_back(-1574.6255694551546);
+  parameter_mix_H[PHE].push_back(10996.32497868798);
+  parameter_mix_H[PHE].push_back(-9840.68281283696);
+  parameter_mix_H[PHE].push_back(2792.098605716682);
+
+  parameter_mix_H[HIP].push_back(1376.0462401192394);
+  parameter_mix_H[HIP].push_back(-8.576320475413144);
+  parameter_mix_H[HIP].push_back(-2796.8327726392167);
+  parameter_mix_H[HIP].push_back(-1165.0473128576);
+  parameter_mix_H[HIP].push_back(7495.063650365717);
+  parameter_mix_H[HIP].push_back(-6331.20422098132);
+  parameter_mix_H[HIP].push_back(1692.637366093312);
+
+  parameter_mix_H[ARG].push_back(1280.940480119178);
+  parameter_mix_H[ARG].push_back(-7.411214928783748);
+  parameter_mix_H[ARG].push_back(-3747.6200569785033);
+  parameter_mix_H[ARG].push_back(-1766.5282176004569);
+  parameter_mix_H[ARG].push_back(14307.817638456267);
+  parameter_mix_H[ARG].push_back(-14297.104122885643);
+  parameter_mix_H[ARG].push_back(4450.526244207772);
+
+  parameter_mix_H[LYS].push_back(570.7272001192143);
+  parameter_mix_H[LYS].push_back(-5.371742288956095);
+  parameter_mix_H[LYS].push_back(-1255.9868267793006);
+  parameter_mix_H[LYS].push_back(-748.3071074443138);
+  parameter_mix_H[LYS].push_back(4534.824932304509);
+  parameter_mix_H[LYS].push_back(-4125.307867230812);
+  parameter_mix_H[LYS].push_back(1178.781491068295);
+
+  parameter_mix_H[CYS].push_back(410.21750011921864);
+  parameter_mix_H[CYS].push_back(-0.7655651758449595);
+  parameter_mix_H[CYS].push_back(-523.8897033718782);
+  parameter_mix_H[CYS].push_back(-89.88478273744425);
+  parameter_mix_H[CYS].push_back(655.3313542467919);
+  parameter_mix_H[CYS].push_back(-407.87897719750896);
+  parameter_mix_H[CYS].push_back(76.50541508448237);
+
+  parameter_mix_H[ASP].push_back(893.6531201192147);
+  parameter_mix_H[ASP].push_back(-3.0756255172248874);
+  parameter_mix_H[ASP].push_back(-1453.1760425275006);
+  parameter_mix_H[ASP].push_back(-365.0424824614137);
+  parameter_mix_H[ASP].push_back(2443.570600976796);
+  parameter_mix_H[ASP].push_back(-1679.8996339740277);
+  parameter_mix_H[ASP].push_back(352.33054461512455);
+
+  parameter_mix_H[GLU].push_back(1075.4955601191884);
+  parameter_mix_H[GLU].push_back(-6.917429973203965);
+  parameter_mix_H[GLU].push_back(-2262.861870389347);
+  parameter_mix_H[GLU].push_back(-909.8078514527992);
+  parameter_mix_H[GLU].push_back(5841.923857549836);
+  parameter_mix_H[GLU].push_back(-4784.620969556751);
+  parameter_mix_H[GLU].push_back(1230.873134652953);
+
+  parameter_mix_H[ILE].push_back(466.0127201192081);
+  parameter_mix_H[ILE].push_back(-0.9323443258150218);
+  parameter_mix_H[ILE].push_back(-576.7178005955719);
+  parameter_mix_H[ILE].push_back(-103.03003361062478);
+  parameter_mix_H[ILE].push_back(706.4269951176641);
+  parameter_mix_H[ILE].push_back(-420.4412859632717);
+  parameter_mix_H[ILE].push_back(71.53175726608731);
+
+  parameter_mix_H[LEU].push_back(466.0127201192081);
+  parameter_mix_H[LEU].push_back(-1.9793605752606065);
+  parameter_mix_H[LEU].push_back(-718.3988478701591);
+  parameter_mix_H[LEU].push_back(-227.36409339012113);
+  parameter_mix_H[LEU].push_back(1389.2058254917304);
+  parameter_mix_H[LEU].push_back(-990.0033118748643);
+  parameter_mix_H[LEU].push_back(213.15736815883042);
+
+  parameter_mix_H[MET].push_back(562.9855401192196);
+  parameter_mix_H[MET].push_back(-3.7994094933771643);
+  parameter_mix_H[MET].push_back(-1139.6331862451661);
+  parameter_mix_H[MET].push_back(-516.6313269725724);
+  parameter_mix_H[MET].push_back(3268.957245190869);
+  parameter_mix_H[MET].push_back(-2809.178864807947);
+  parameter_mix_H[MET].push_back(761.4832732100416);
+
+  parameter_mix_H[ASN].push_back(828.7488001191887);
+  parameter_mix_H[ASN].push_back(-2.1275493073799625);
+  parameter_mix_H[ASN].push_back(-1222.248291388804);
+  parameter_mix_H[ASN].push_back(-238.94210659613537);
+  parameter_mix_H[ASN].push_back(1660.8322402171973);
+  parameter_mix_H[ASN].push_back(-1008.7934996077323);
+  parameter_mix_H[ASN].push_back(173.6082238625797);
+
+  parameter_mix_H[PRO].push_back(578.4409801192146);
+  parameter_mix_H[PRO].push_back(-0.5379505780909722);
+  parameter_mix_H[PRO].push_back(-648.146493857212);
+  parameter_mix_H[PRO].push_back(-56.67223895342921);
+  parameter_mix_H[PRO].push_back(509.88860586987437);
+  parameter_mix_H[PRO].push_back(-214.57871784725265);
+  parameter_mix_H[PRO].push_back(11.99659463759968);
+
+  parameter_mix_H[GLN].push_back(989.2334401191976);
+  parameter_mix_H[GLN].push_back(-6.307760694331967);
+  parameter_mix_H[GLN].push_back(-1971.7067150503622);
+  parameter_mix_H[GLN].push_back(-791.333088386235);
+  parameter_mix_H[GLN].push_back(4900.009768434847);
+  parameter_mix_H[GLN].push_back(-3909.7740976374153);
+  parameter_mix_H[GLN].push_back(975.4952613244343);
+
+  parameter_mix_H[SER].push_back(426.39900011920196);
+  parameter_mix_H[SER].push_back(-0.42304498358319664);
+  parameter_mix_H[SER].push_back(-484.2066027682147);
+  parameter_mix_H[SER].push_back(-45.38968988754228);
+  parameter_mix_H[SER].push_back(401.3420977115044);
+  parameter_mix_H[SER].push_back(-178.0861461692512);
+  parameter_mix_H[SER].push_back(13.540349238730284);
+
+  parameter_mix_H[THR].push_back(525.0470401191992);
+  parameter_mix_H[THR].push_back(-0.7419102811534484);
+  parameter_mix_H[THR].push_back(-652.7134808154495);
+  parameter_mix_H[THR].push_back(-80.39481224407903);
+  parameter_mix_H[THR].push_back(641.5487902728123);
+  parameter_mix_H[THR].push_back(-320.4227667104819);
+  parameter_mix_H[THR].push_back(36.03558531183942);
+
+  parameter_mix_H[VAL].push_back(414.6228601192123);
+  parameter_mix_H[VAL].push_back(-0.35889335250521337);
+  parameter_mix_H[VAL].push_back(-453.11631644097474);
+  parameter_mix_H[VAL].push_back(-36.402101097644284);
+  parameter_mix_H[VAL].push_back(336.24049431626804);
+  parameter_mix_H[VAL].push_back(-127.42235327515239);
+  parameter_mix_H[VAL].push_back(0.8013280923923705);
+
+  parameter_mix_H[ALA].push_back(285.21010011920816);
+  parameter_mix_H[ALA].push_back(-0.1573012439142169);
+  parameter_mix_H[ALA].push_back(-282.8945838800694);
+  parameter_mix_H[ALA].push_back(-16.32030056827785);
+  parameter_mix_H[ALA].push_back(178.065895049598);
+  parameter_mix_H[ALA].push_back(-60.27423229179658);
+  parameter_mix_H[ALA].push_back(-1.4695219304131588);
+
+  parameter_mix_H[GLY].push_back(207.18720011920414);
+  parameter_mix_H[GLY].push_back(-0.1036587134183235);
+  parameter_mix_H[GLY].push_back(-185.70794948240638);
+  parameter_mix_H[GLY].push_back(-11.008101039836257);
+  parameter_mix_H[GLY].push_back(115.30600405624061);
+  parameter_mix_H[GLY].push_back(-42.46629718037158);
+  parameter_mix_H[GLY].push_back(0.9238928987070913);
+
+  parameter_mix_H[HIS].push_back(1443.9117601192354);
+  parameter_mix_H[HIS].push_back(-7.478618745973115);
+  parameter_mix_H[HIS].push_back(-2715.0835155803215);
+  parameter_mix_H[HIS].push_back(-918.5243015382779);
+  parameter_mix_H[HIS].push_back(5821.6258431396);
+  parameter_mix_H[HIS].push_back(-4415.32722209556);
+  parameter_mix_H[HIS].push_back(1044.7044029209756);
+  parameter_vac_H[TRP].push_back(36.42122511920832);
+  parameter_vac_H[TRP].push_back(-0.36925500341767903);
+  parameter_vac_H[TRP].push_back(-51.34228792835503);
+  parameter_vac_H[TRP].push_back(-34.10021080004831);
+  parameter_vac_H[TRP].push_back(132.647034983933);
+  parameter_vac_H[TRP].push_back(-82.89152328934257);
+  parameter_vac_H[TRP].push_back(13.029994092013231);
+
+  parameter_vac_H[TYR].push_back(22.268961119209557);
+  parameter_vac_H[TYR].push_back(-0.1995573892347673);
+  parameter_vac_H[TYR].push_back(-36.54202179838511);
+  parameter_vac_H[TYR].push_back(-23.820801043096694);
+  parameter_vac_H[TYR].push_back(127.46799692275353);
+  parameter_vac_H[TYR].push_back(-107.63783234245744);
+  parameter_vac_H[TYR].push_back(28.180858902960775);
+
+  parameter_vac_H[PHE].push_back(17.131321119209627);
+  parameter_vac_H[PHE].push_back(-0.15766725674246446);
+  parameter_vac_H[PHE].push_back(-19.19964432024534);
+  parameter_vac_H[PHE].push_back(-12.34326882843138);
+  parameter_vac_H[PHE].push_back(38.17216645824474);
+  parameter_vac_H[PHE].push_back(-11.245288857407298);
+  parameter_vac_H[PHE].push_back(-3.8114731300899343);
+
+  parameter_vac_H[HIP].push_back(19.34240411920875);
+  parameter_vac_H[HIP].push_back(-0.13533410292592593);
+  parameter_vac_H[HIP].push_back(-25.924121027387276);
+  parameter_vac_H[HIP].push_back(-12.36586927492752);
+  parameter_vac_H[HIP].push_back(56.75268702111191);
+  parameter_vac_H[HIP].push_back(-31.126240293638094);
+  parameter_vac_H[HIP].push_back(2.749811579250848);
+
+  parameter_vac_H[ARG].push_back(12.027024119209557);
+  parameter_vac_H[ARG].push_back(-0.41927538341868287);
+  parameter_vac_H[ARG].push_back(-22.137566939867042);
+  parameter_vac_H[ARG].push_back(-43.22615008762667);
+  parameter_vac_H[ARG].push_back(165.77466655520323);
+  parameter_vac_H[ARG].push_back(-140.68664871425898);
+  parameter_vac_H[ARG].push_back(36.67401195170306);
+
+  parameter_vac_H[LYS].push_back(2.5217441192093717);
+  parameter_vac_H[LYS].push_back(-0.0032825476242835413);
+  parameter_vac_H[LYS].push_back(14.019071697737793);
+  parameter_vac_H[LYS].push_back(7.8634074595069245);
+  parameter_vac_H[LYS].push_back(-82.44639716451474);
+  parameter_vac_H[LYS].push_back(94.32937851921197);
+  parameter_vac_H[LYS].push_back(-32.324473823417);
+
+  parameter_vac_H[CYS].push_back(3.705624880856525);
+  parameter_vac_H[CYS].push_back(0.005214780840206113);
+  parameter_vac_H[CYS].push_back(1.25680902661715);
+  parameter_vac_H[CYS].push_back(0.5779209425501814);
+  parameter_vac_H[CYS].push_back(-3.716408071089366);
+  parameter_vac_H[CYS].push_back(2.3947518943233117);
+  parameter_vac_H[CYS].push_back(-0.40204949737133333);
+
+  parameter_vac_H[ASP].push_back(14.776336119209605);
+  parameter_vac_H[ASP].push_back(-0.037351220316916435);
+  parameter_vac_H[ASP].push_back(-18.556358387626286);
+  parameter_vac_H[ASP].push_back(-4.1737354794552886);
+  parameter_vac_H[ASP].push_back(28.424721213037405);
+  parameter_vac_H[ASP].push_back(-17.51389895324883);
+  parameter_vac_H[ASP].push_back(2.9729111724708597);
+
+  parameter_vac_H[GLU].push_back(14.145121119208973);
+  parameter_vac_H[GLU].push_back(-0.11468766098213011);
+  parameter_vac_H[GLU].push_back(-26.272637652294613);
+  parameter_vac_H[GLU].push_back(-13.769758826440151);
+  parameter_vac_H[GLU].push_back(80.4575683578491);
+  parameter_vac_H[GLU].push_back(-64.19346347075);
+  parameter_vac_H[GLU].push_back(15.545440117656236);
+
+  parameter_vac_H[ILE].push_back(1.9488158808808775);
+  parameter_vac_H[ILE].push_back(0.05873132133874459);
+  parameter_vac_H[ILE].push_back(12.032778845884135);
+  parameter_vac_H[ILE].push_back(7.148416980612881);
+  parameter_vac_H[ILE].push_back(-41.87377843832961);
+  parameter_vac_H[ILE].push_back(33.96120749582283);
+  parameter_vac_H[ILE].push_back(-8.362535852631256);
+
+  parameter_vac_H[LEU].push_back(1.9488158808977816);
+  parameter_vac_H[LEU].push_back(0.0778305500414777);
+  parameter_vac_H[LEU].push_back(12.333370614594);
+  parameter_vac_H[LEU].push_back(9.449427967560764);
+  parameter_vac_H[LEU].push_back(-52.65457680603262);
+  parameter_vac_H[LEU].push_back(44.681877289399615);
+  parameter_vac_H[LEU].push_back(-11.460498338671227);
+
+  parameter_vac_H[MET].push_back(3.0940808808117652);
+  parameter_vac_H[MET].push_back(0.04903755678213222);
+  parameter_vac_H[MET].push_back(8.981927022922049);
+  parameter_vac_H[MET].push_back(8.654862771879014);
+  parameter_vac_H[MET].push_back(-57.09889409156816);
+  parameter_vac_H[MET].push_back(58.87704775164829);
+  parameter_vac_H[MET].push_back(-18.60431990258862);
+
+  parameter_vac_H[ASN].push_back(11.943936119209074);
+  parameter_vac_H[ASN].push_back(-0.0005000836239497835);
+  parameter_vac_H[ASN].push_back(-9.581236453763157);
+  parameter_vac_H[ASN].push_back(0.16244025786232308);
+  parameter_vac_H[ASN].push_back(2.9276580099749574);
+  parameter_vac_H[ASN].push_back(2.133535783835143);
+  parameter_vac_H[ASN].push_back(-1.5709968820975018);
+
+  parameter_vac_H[PRO].push_back(4.9595288808229245);
+  parameter_vac_H[PRO].push_back(0.017853932680793515);
+  parameter_vac_H[PRO].push_back(4.5421559293101605);
+  parameter_vac_H[PRO].push_back(2.008455612787203);
+  parameter_vac_H[PRO].push_back(-12.444117841318494);
+  parameter_vac_H[PRO].push_back(8.511723688836447);
+  parameter_vac_H[PRO].push_back(-1.6337543903496765);
+
+  parameter_vac_H[GLN].push_back(11.377129119208574);
+  parameter_vac_H[GLN].push_back(-0.0674805307761209);
+  parameter_vac_H[GLN].push_back(-16.56692720411458);
+  parameter_vac_H[GLN].push_back(-6.477707440126834);
+  parameter_vac_H[GLN].push_back(34.78232259512621);
+  parameter_vac_H[GLN].push_back(-19.450886909938312);
+  parameter_vac_H[GLN].push_back(1.944286925108988);
+
+  parameter_vac_H[SER].push_back(4.95062488096605);
+  parameter_vac_H[SER].push_back(0.004676435440506079);
+  parameter_vac_H[SER].push_back(-0.1896653085608564);
+  parameter_vac_H[SER].push_back(0.5142284931977218);
+  parameter_vac_H[SER].push_back(-2.8946087252759893);
+  parameter_vac_H[SER].push_back(2.1031239401634836);
+  parameter_vac_H[SER].push_back(-0.38226443516361713);
+
+  parameter_vac_H[THR].push_back(4.588163880808971);
+  parameter_vac_H[THR].push_back(0.018587905993982613);
+  parameter_vac_H[THR].push_back(3.5289861308270214);
+  parameter_vac_H[THR].push_back(2.0780583604591567);
+  parameter_vac_H[THR].push_back(-12.3802007068414);
+  parameter_vac_H[THR].push_back(8.720986674116094);
+  parameter_vac_H[THR].push_back(-1.683256475122275);
+
+  parameter_vac_H[VAL].push_back(2.187440880853519);
+  parameter_vac_H[VAL].push_back(0.028351524826584255);
+  parameter_vac_H[VAL].push_back(8.36584512491955);
+  parameter_vac_H[VAL].push_back(3.1686206615123926);
+  parameter_vac_H[VAL].push_back(-19.81959917770108);
+  parameter_vac_H[VAL].push_back(13.293003038570571);
+  parameter_vac_H[VAL].push_back(-2.4595257726774125);
+
+  parameter_vac_H[ALA].push_back(2.7060248808167935);
+  parameter_vac_H[ALA].push_back(0.004618897267213416);
+  parameter_vac_H[ALA].push_back(2.4990261487383947);
+  parameter_vac_H[ALA].push_back(0.49579332664340864);
+  parameter_vac_H[ALA].push_back(-3.850400071630347);
+  parameter_vac_H[ALA].push_back(1.9501161562030942);
+  parameter_vac_H[ALA].push_back(-0.18332582719788362);
+
+  parameter_vac_H[GLY].push_back(2.985983880876256);
+  parameter_vac_H[GLY].push_back(0.0005033131808079042);
+  parameter_vac_H[GLY].push_back(-0.42250170279962684);
+  parameter_vac_H[GLY].push_back(0.05620517453257455);
+  parameter_vac_H[GLY].push_back(-0.16801962822020733);
+  parameter_vac_H[GLY].push_back(0.23635459648780555);
+  parameter_vac_H[GLY].push_back(-0.06585244715658795);
+
+  parameter_vac_H[HIS].push_back(22.77198411920933);
+  parameter_vac_H[HIS].push_back(-0.06607491006655417);
+  parameter_vac_H[HIS].push_back(-27.277710268717247);
+  parameter_vac_H[HIS].push_back(-5.674444390934355);
+  parameter_vac_H[HIS].push_back(33.4059567406171);
+  parameter_vac_H[HIS].push_back(-11.60826210271092);
+  parameter_vac_H[HIS].push_back(-1.7359607560773076);
+
+  // NUCLEIC ACIDS
+
+  // BB_PO2 H and D parameters are identical as there is no H or D in the bead.
+  parameter_solv_H[BB_PO2].push_back(575.5201001192197);
+  parameter_solv_H[BB_PO2].push_back(-0.6126595489733864);
+  parameter_solv_H[BB_PO2].push_back(-623.3371092254899);
+  parameter_solv_H[BB_PO2].push_back(-68.05795957022144);
+  parameter_solv_H[BB_PO2].push_back(561.8052621243661);
+  parameter_solv_H[BB_PO2].push_back(-283.39573309540276);
+  parameter_solv_H[BB_PO2].push_back(35.550016980100295);
+
+  parameter_solv_H[BB_DNA].push_back(21211.009600118316);
+  parameter_solv_H[BB_DNA].push_back(-90.18805990529991);
+  parameter_solv_H[BB_DNA].push_back(-39731.13373512149);
+  parameter_solv_H[BB_DNA].push_back(-10920.373563712872);
+  parameter_solv_H[BB_DNA].push_back(72882.21702424981);
+  parameter_solv_H[BB_DNA].push_back(-51747.487078112776);
+  parameter_solv_H[BB_DNA].push_back(11308.678429018755);
+
+  parameter_solv_H[BB_DNA_5].push_back(22737.624100119025);
+  parameter_solv_H[BB_DNA_5].push_back(-102.72714886664161);
+  parameter_solv_H[BB_DNA_5].push_back(-43685.329677789734);
+  parameter_solv_H[BB_DNA_5].push_back(-12564.25937409345);
+  parameter_solv_H[BB_DNA_5].push_back(83454.87540484878);
+  parameter_solv_H[BB_DNA_5].push_back(-60367.15652138887);
+  parameter_solv_H[BB_DNA_5].push_back(13507.333729868991);
+
+  parameter_solv_H[BB_DNA_3].push_back(22737.62410011902);
+  parameter_solv_H[BB_DNA_3].push_back(-101.57816684452251);
+  parameter_solv_H[BB_DNA_3].push_back(-43488.536705576145);
+  parameter_solv_H[BB_DNA_3].push_back(-12345.056184958425);
+  parameter_solv_H[BB_DNA_3].push_back(81963.52364114887);
+  parameter_solv_H[BB_DNA_3].push_back(-58791.59443618196);
+  parameter_solv_H[BB_DNA_3].push_back(13003.199362335583);
+
+  parameter_solv_H[BB_RNA].push_back(23953.752900120977);
+  parameter_solv_H[BB_RNA].push_back(-117.35779348824417);
+  parameter_solv_H[BB_RNA].push_back(-47644.41735332843);
+  parameter_solv_H[BB_RNA].push_back(-14641.556643789861);
+  parameter_solv_H[BB_RNA].push_back(96893.48627050371);
+  parameter_solv_H[BB_RNA].push_back(-72249.62534169303);
+  parameter_solv_H[BB_RNA].push_back(16792.055521055358);
+
+  parameter_solv_H[BB_RNA_5].push_back(25574.406400119024);
+  parameter_solv_H[BB_RNA_5].push_back(-131.99642772933734);
+  parameter_solv_H[BB_RNA_5].push_back(-52136.51404531251);
+  parameter_solv_H[BB_RNA_5].push_back(-16682.14273917604);
+  parameter_solv_H[BB_RNA_5].push_back(110278.01921639398);
+  parameter_solv_H[BB_RNA_5].push_back(-83715.92027818544);
+  parameter_solv_H[BB_RNA_5].push_back(19875.89133770605);
+
+  parameter_solv_H[BB_RNA_3].push_back(25574.406400119027);
+  parameter_solv_H[BB_RNA_3].push_back(-127.96875237036166);
+  parameter_solv_H[BB_RNA_3].push_back(-51407.18391758439);
+  parameter_solv_H[BB_RNA_3].push_back(-15922.900669975606);
+  parameter_solv_H[BB_RNA_3].push_back(105078.5888910626);
+  parameter_solv_H[BB_RNA_3].push_back(-78289.16276190645);
+  parameter_solv_H[BB_RNA_3].push_back(18156.832143441192);
+
+  parameter_solv_H[BASE_A].push_back(13282.562500119211);
+  parameter_solv_H[BASE_A].push_back(-76.45124168404048);
+  parameter_solv_H[BASE_A].push_back(-28376.06994108963);
+  parameter_solv_H[BASE_A].push_back(-9972.910773722022);
+  parameter_solv_H[BASE_A].push_back(65873.86341939073);
+  parameter_solv_H[BASE_A].push_back(-52064.33492910885);
+  parameter_solv_H[BASE_A].push_back(12931.608989412513);
+
+  parameter_solv_H[BASE_C].push_back(10600.76160011891);
+  parameter_solv_H[BASE_C].push_back(-49.1670871249108);
+  parameter_solv_H[BASE_C].push_back(-20239.818742072875);
+  parameter_solv_H[BASE_C].push_back(-6020.278780090207);
+  parameter_solv_H[BASE_C].push_back(39632.13288981881);
+  parameter_solv_H[BASE_C].push_back(-28954.779736165576);
+  parameter_solv_H[BASE_C].push_back(6551.541109526305);
+
+  parameter_solv_H[BASE_G].push_back(15470.384400119934);
+  parameter_solv_H[BASE_G].push_back(-93.8013620200972);
+  parameter_solv_H[BASE_G].push_back(-36188.29687013545);
+  parameter_solv_H[BASE_G].push_back(-13717.685098209471);
+  parameter_solv_H[BASE_G].push_back(95658.18473657136);
+  parameter_solv_H[BASE_G].push_back(-81262.37811451119);
+  parameter_solv_H[BASE_G].push_back(21841.903930943085);
+
+  parameter_solv_H[BASE_T].push_back(17210.81610011936);
+  parameter_solv_H[BASE_T].push_back(-93.10189802920208);
+  parameter_solv_H[BASE_T].push_back(-36466.51927689957);
+  parameter_solv_H[BASE_T].push_back(-12425.55615716932);
+  parameter_solv_H[BASE_T].push_back(83847.427808925);
+  parameter_solv_H[BASE_T].push_back(-66735.64997846584);
+  parameter_solv_H[BASE_T].push_back(16757.3463987507);
+
+  parameter_solv_H[BASE_U].push_back(10909.802500119395);
+  parameter_solv_H[BASE_U].push_back(-46.17712672768298);
+  parameter_solv_H[BASE_U].push_back(-20149.67695512526);
+  parameter_solv_H[BASE_U].push_back(-5590.242961204435);
+  parameter_solv_H[BASE_U].push_back(37169.2740983132);
+  parameter_solv_H[BASE_U].push_back(-26475.631627167604);
+  parameter_solv_H[BASE_U].push_back(5808.201015156168);
+
+  parameter_mix_H[BB_PO2].push_back(80.12660011920252);
+  parameter_mix_H[BB_PO2].push_back(-0.0278885551982023);
+  parameter_mix_H[BB_PO2].push_back(-60.532194918222984);
+  parameter_mix_H[BB_PO2].push_back(-2.976882903409687);
+  parameter_mix_H[BB_PO2].push_back(33.30645116638125);
+  parameter_mix_H[BB_PO2].push_back(-11.601573219761374);
+  parameter_mix_H[BB_PO2].push_back(0.12551046492022422);
+
+  parameter_mix_H[BB_DNA].push_back(712.7621601191935);
+  parameter_mix_H[BB_DNA].push_back(-0.3228709821198571);
+  parameter_mix_H[BB_DNA].push_back(-784.5118228559945);
+  parameter_mix_H[BB_DNA].push_back(-27.196125702249613);
+  parameter_mix_H[BB_DNA].push_back(410.0185035102729);
+  parameter_mix_H[BB_DNA].push_back(-54.453513369320355);
+  parameter_mix_H[BB_DNA].push_back(-44.85506789237683);
+
+  parameter_mix_H[BB_DNA_5].push_back(625.175339965785);
+  parameter_mix_H[BB_DNA_5].push_back(0.2691706617748245);
+  parameter_mix_H[BB_DNA_5].push_back(-582.8721350420001);
+  parameter_mix_H[BB_DNA_5].push_back(46.512408351374326);
+  parameter_mix_H[BB_DNA_5].push_back(-58.93886949899108);
+  parameter_mix_H[BB_DNA_5].push_back(307.29720336085046);
+  parameter_mix_H[BB_DNA_5].push_back(-131.71996309259953);
+
+  parameter_mix_H[BB_DNA_3].push_back(625.1753399401266);
+  parameter_mix_H[BB_DNA_3].push_back(0.08763234414546289);
+  parameter_mix_H[BB_DNA_3].push_back(-606.8067575087485);
+  parameter_mix_H[BB_DNA_3].push_back(20.84427254872218);
+  parameter_mix_H[BB_DNA_3].push_back(92.53523123608991);
+  parameter_mix_H[BB_DNA_3].push_back(162.04688035654937);
+  parameter_mix_H[BB_DNA_3].push_back(-89.13571774638052);
+
+  parameter_mix_H[BB_RNA].push_back(936.9775801191857);
+  parameter_mix_H[BB_RNA].push_back(-1.3233686929680253);
+  parameter_mix_H[BB_RNA].push_back(-1212.1627155263773);
+  parameter_mix_H[BB_RNA].push_back(-141.35324744384351);
+  parameter_mix_H[BB_RNA].push_back(1155.8281658363026);
+  parameter_mix_H[BB_RNA].push_back(-548.9340055857343);
+  parameter_mix_H[BB_RNA].push_back(50.81734777881503);
+
+  parameter_mix_H[BB_RNA_5].push_back(848.5355201165631);
+  parameter_mix_H[BB_RNA_5].push_back(-0.49570338490120175);
+  parameter_mix_H[BB_RNA_5].push_back(-976.1033073783973);
+  parameter_mix_H[BB_RNA_5].push_back(-32.943532187986605);
+  parameter_mix_H[BB_RNA_5].push_back(475.66177061923884);
+  parameter_mix_H[BB_RNA_5].push_back(17.51955845824258);
+  parameter_mix_H[BB_RNA_5].push_back(-96.74451972314769);
+
+  parameter_mix_H[BB_RNA_3].push_back(848.5355201192122);
+  parameter_mix_H[BB_RNA_3].push_back(-0.8301109354355396);
+  parameter_mix_H[BB_RNA_3].push_back(-1019.9524389785406);
+  parameter_mix_H[BB_RNA_3].push_back(-84.1388451424885);
+  parameter_mix_H[BB_RNA_3].push_back(787.1277245040931);
+  parameter_mix_H[BB_RNA_3].push_back(-294.67807432795627);
+  parameter_mix_H[BB_RNA_3].push_back(-1.3214626461251089);
+
+  parameter_mix_H[BASE_A].push_back(1504.9345001191857);
+  parameter_mix_H[BASE_A].push_back(-3.5306888452552663);
+  parameter_mix_H[BASE_A].push_back(-2234.3933572775572);
+  parameter_mix_H[BASE_A].push_back(-380.0255208494757);
+  parameter_mix_H[BASE_A].push_back(2726.27802432048);
+  parameter_mix_H[BASE_A].push_back(-1490.8825754968443);
+  parameter_mix_H[BASE_A].push_back(199.7501110740159);
+
+  parameter_mix_H[BASE_C].push_back(939.8188801192172);
+  parameter_mix_H[BASE_C].push_back(-1.489638186262854);
+  parameter_mix_H[BASE_C].push_back(-1244.5515798554075);
+  parameter_mix_H[BASE_C].push_back(-161.3972705672055);
+  parameter_mix_H[BASE_C].push_back(1276.3568466722545);
+  parameter_mix_H[BASE_C].push_back(-643.3057776225742);
+  parameter_mix_H[BASE_C].push_back(72.75963113826273);
+
+  parameter_mix_H[BASE_G].push_back(1768.434840119199);
+  parameter_mix_H[BASE_G].push_back(-6.505347007077434);
+  parameter_mix_H[BASE_G].push_back(-2919.3856777898427);
+  parameter_mix_H[BASE_G].push_back(-701.2456464463938);
+  parameter_mix_H[BASE_G].push_back(4464.594230284102);
+  parameter_mix_H[BASE_G].push_back(-2733.138521295608);
+  parameter_mix_H[BASE_G].push_back(458.1177706235891);
+
+  parameter_mix_H[BASE_T].push_back(1179.3981001192033);
+  parameter_mix_H[BASE_T].push_back(-3.2037849252756527);
+  parameter_mix_H[BASE_T].push_back(-1821.255498763799);
+  parameter_mix_H[BASE_T].push_back(-371.01993266441303);
+  parameter_mix_H[BASE_T].push_back(2604.074226688971);
+  parameter_mix_H[BASE_T].push_back(-1648.1965787713084);
+  parameter_mix_H[BASE_T].push_back(307.2962186436368);
+
+  parameter_mix_H[BASE_U].push_back(956.3442001192266);
+  parameter_mix_H[BASE_U].push_back(-1.724458000760567);
+  parameter_mix_H[BASE_U].push_back(-1287.9746970192687);
+  parameter_mix_H[BASE_U].push_back(-192.74748379510373);
+  parameter_mix_H[BASE_U].push_back(1459.0789258833893);
+  parameter_mix_H[BASE_U].push_back(-810.0763075080915);
+  parameter_mix_H[BASE_U].push_back(119.81810290248339);
+
+  parameter_vac_H[BB_PO2].push_back(2.7889001116093275);
+  parameter_vac_H[BB_PO2].push_back(-0.00011178884266113128);
+  parameter_vac_H[BB_PO2].push_back(-1.1702605818380667);
+  parameter_vac_H[BB_PO2].push_back(-0.011278044036819933);
+  parameter_vac_H[BB_PO2].push_back(0.3214006584089025);
+  parameter_vac_H[BB_PO2].push_back(-0.04097165983591666);
+  parameter_vac_H[BB_PO2].push_back(-0.017525098100539722);
+
+  parameter_vac_H[BB_DNA].push_back(5.987809026456476);
+  parameter_vac_H[BB_DNA].push_back(9.945454528827912e-05);
+  parameter_vac_H[BB_DNA].push_back(-1.1884708569330031);
+  parameter_vac_H[BB_DNA].push_back(-0.007457733256362841);
+  parameter_vac_H[BB_DNA].push_back(0.05666858781418339);
+  parameter_vac_H[BB_DNA].push_back(-0.15158797629971757);
+  parameter_vac_H[BB_DNA].push_back(0.11642340861329734);
+
+  parameter_vac_H[BB_DNA_5].push_back(4.297328944539055);
+  parameter_vac_H[BB_DNA_5].push_back(0.0014793971885106831);
+  parameter_vac_H[BB_DNA_5].push_back(1.3961088365255605);
+  parameter_vac_H[BB_DNA_5].push_back(0.08974639858979384);
+  parameter_vac_H[BB_DNA_5].push_back(-1.5198099705167643);
+  parameter_vac_H[BB_DNA_5].push_back(-0.12127122359433733);
+  parameter_vac_H[BB_DNA_5].push_back(0.4134601046223601);
+
+  parameter_vac_H[BB_DNA_3].push_back(4.297328886488132);
+  parameter_vac_H[BB_DNA_3].push_back(0.0041802954281271905);
+  parameter_vac_H[BB_DNA_3].push_back(1.6065462295705266);
+  parameter_vac_H[BB_DNA_3].push_back(0.4399805535688805);
+  parameter_vac_H[BB_DNA_3].push_back(-3.3806711791929804);
+  parameter_vac_H[BB_DNA_3].push_back(1.6729551563628675);
+  parameter_vac_H[BB_DNA_3].push_back(-0.10911063067909885);
+
+  parameter_vac_H[BB_RNA].push_back(9.162728984394093);
+  parameter_vac_H[BB_RNA].push_back(0.00019952321584579868);
+  parameter_vac_H[BB_RNA].push_back(-4.744748946331966);
+  parameter_vac_H[BB_RNA].push_back(0.025106563403946364);
+  parameter_vac_H[BB_RNA].push_back(1.2302956694109803);
+  parameter_vac_H[BB_RNA].push_back(0.12359062278096915);
+  parameter_vac_H[BB_RNA].push_back(-0.1725633367685285);
+
+  parameter_vac_H[BB_RNA_5].push_back(7.038408898671503);
+  parameter_vac_H[BB_RNA_5].push_back(0.005106788424920148);
+  parameter_vac_H[BB_RNA_5].push_back(-0.8981588221803118);
+  parameter_vac_H[BB_RNA_5].push_back(0.4922588155214312);
+  parameter_vac_H[BB_RNA_5].push_back(-2.6667853454023644);
+  parameter_vac_H[BB_RNA_5].push_back(1.533316567240718);
+  parameter_vac_H[BB_RNA_5].push_back(-0.07199604869737707);
+
+  parameter_vac_H[BB_RNA_3].push_back(7.038408892621863);
+  parameter_vac_H[BB_RNA_3].push_back(0.002993083907266898);
+  parameter_vac_H[BB_RNA_3].push_back(-1.3626596831098492);
+  parameter_vac_H[BB_RNA_3].push_back(0.3138856961130113);
+  parameter_vac_H[BB_RNA_3].push_back(-1.684185014289391);
+  parameter_vac_H[BB_RNA_3].push_back(1.1862168720864616);
+  parameter_vac_H[BB_RNA_3].push_back(-0.1443894172417523);
+
+  parameter_vac_H[BASE_A].push_back(42.62784088079008);
+  parameter_vac_H[BASE_A].push_back(0.02302908536431516);
+  parameter_vac_H[BASE_A].push_back(-33.22707177297222);
+  parameter_vac_H[BASE_A].push_back(2.6853748424439834);
+  parameter_vac_H[BASE_A].push_back(-1.6632902891624768);
+  parameter_vac_H[BASE_A].push_back(11.905766349515268);
+  parameter_vac_H[BASE_A].push_back(-4.547083454788805);
+
+  parameter_vac_H[BASE_C].push_back(20.83009588079022);
+  parameter_vac_H[BASE_C].push_back(0.017055822321768378);
+  parameter_vac_H[BASE_C].push_back(-8.349634734370916);
+  parameter_vac_H[BASE_C].push_back(1.9324634367723073);
+  parameter_vac_H[BASE_C].push_back(-8.435199734060882);
+  parameter_vac_H[BASE_C].push_back(8.272798368731268);
+  parameter_vac_H[BASE_C].push_back(-1.986671440757263);
+
+  parameter_vac_H[BASE_G].push_back(50.53788088079374);
+  parameter_vac_H[BASE_G].push_back(0.024035597617780367);
+  parameter_vac_H[BASE_G].push_back(-47.94916639302998);
+  parameter_vac_H[BASE_G].push_back(3.143375731466498);
+  parameter_vac_H[BASE_G].push_back(4.297009866708155);
+  parameter_vac_H[BASE_G].push_back(15.855448505050578);
+  parameter_vac_H[BASE_G].push_back(-7.827484135873966);
+
+  parameter_vac_H[BASE_T].push_back(20.20502488079069);
+  parameter_vac_H[BASE_T].push_back(0.033659966153300002);
+  parameter_vac_H[BASE_T].push_back(-6.057999187718758);
+  parameter_vac_H[BASE_T].push_back(4.146969282504351);
+  parameter_vac_H[BASE_T].push_back(-20.664315319574357);
+  parameter_vac_H[BASE_T].push_back(19.982178623201648);
+  parameter_vac_H[BASE_T].push_back(-5.440921587349456);
+
+  parameter_vac_H[BASE_U].push_back(20.958084119209754);
+  parameter_vac_H[BASE_U].push_back(-0.005164660707148803);
+  parameter_vac_H[BASE_U].push_back(-14.53831312442302);
+  parameter_vac_H[BASE_U].push_back(-0.5276995756310442);
+  parameter_vac_H[BASE_U].push_back(7.060900707522138);
+  parameter_vac_H[BASE_U].push_back(-1.8988408480951036);
+  parameter_vac_H[BASE_U].push_back(-0.215000567681094);
+
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    std::string Aname = pdb.getAtomName(atoms[i]);
+    std::string Rname = pdb.getResidueName(atoms[i]);
+    Rname.erase(std::remove_if(Rname.begin(), Rname.end(), ::isspace),Rname.end());
+    if(Rname=="ALA") {
+      atoi[residue_atom[i]]=ALA;
+    } else if(Rname=="ARG") {
+      atoi[residue_atom[i]]=ARG;
+    } else if(Rname=="ASN") {
+      atoi[residue_atom[i]]=ASN;
+    } else if(Rname=="ASP") {
+      atoi[residue_atom[i]]=ASP;
+    } else if(Rname=="CYS") {
+      atoi[residue_atom[i]]=CYS;
+    } else if(Rname=="GLN") {
+      atoi[residue_atom[i]]=GLN;
+    } else if(Rname=="GLU") {
+      atoi[residue_atom[i]]=GLU;
+    } else if(Rname=="GLY") {
+      atoi[residue_atom[i]]=GLY;
+    } else if(Rname=="HIS") {
+      atoi[residue_atom[i]]=HIS;
+    } else if(Rname=="HID") {
+      atoi[residue_atom[i]]=HIS;
+    } else if(Rname=="HIE") {
+      atoi[residue_atom[i]]=HIS;
+    } else if(Rname=="HIP") {
+      atoi[residue_atom[i]]=HIP;
+      // CHARMM NAMING FOR PROTONATION STATES OF HISTIDINE
+    } else if(Rname=="HSD") {
+      atoi[residue_atom[i]]=HIS;
+    } else if(Rname=="HSE") {
+      atoi[residue_atom[i]]=HIS;
+    } else if(Rname=="HSP") {
+      atoi[residue_atom[i]]=HIP;
+    } else if(Rname=="ILE") {
+      atoi[residue_atom[i]]=ILE;
+    } else if(Rname=="LEU") {
+      atoi[residue_atom[i]]=LEU;
+    } else if(Rname=="LYS") {
+      atoi[residue_atom[i]]=LYS;
+    } else if(Rname=="MET") {
+      atoi[residue_atom[i]]=MET;
+    } else if(Rname=="PHE") {
+      atoi[residue_atom[i]]=PHE;
+    } else if(Rname=="PRO") {
+      atoi[residue_atom[i]]=PRO;
+    } else if(Rname=="SER") {
+      atoi[residue_atom[i]]=SER;
+    } else if(Rname=="THR") {
+      atoi[residue_atom[i]]=THR;
+    } else if(Rname=="TRP") {
+      atoi[residue_atom[i]]=TRP;
+    } else if(Rname=="TYR") {
+      atoi[residue_atom[i]]=TYR;
+    } else if(Rname=="VAL") {
+      atoi[residue_atom[i]]=VAL;
+    }
+    // NUCLEIC ACIDS
+    // nucleobases are not automatically populated as an additional check on the health of the PDB.
+    // RNA - G
+    else if(Rname=="G") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;
+      } else if( Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                 Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                 Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                 Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - G3
+    } else if(Rname=="G3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'" || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'" || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="H2'1" || Aname=="HO3'"|| Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" ) {
+        atoi[residue_atom[i]]=BB_RNA_3;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - G5
+    } else if(Rname=="G5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+          Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+          Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="HO2'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="HO'2" ||
+          Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA_5;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - U
+    } else if(Rname=="U") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;
+      } else if( Aname=="N1" || Aname=="C2"  || Aname=="O2" || Aname=="N3" ||
+                 Aname=="C4" || Aname=="O4"  || Aname=="C5" || Aname=="C6" ||
+                 Aname=="H3" || Aname=="H5"  || Aname=="H6") {
+        atoi[residue_atom[i]]=BASE_U;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - U3
+    } else if(Rname=="U3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'" || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'" || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="H2'1" || Aname=="HO3'"|| Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" ) {
+        atoi[residue_atom[i]]=BB_RNA_3;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="O2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="O4"  || Aname=="C5" || Aname=="C6" ||
+                Aname=="H3" || Aname=="H5"  || Aname=="H6") {
+        atoi[residue_atom[i]]=BASE_U;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - U5
+    } else if(Rname=="U5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+          Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+          Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="HO2'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="HO'2" ||
+          Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA_5;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="O2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="O4"  || Aname=="C5" || Aname=="C6" ||
+                Aname=="H3" || Aname=="H5"  || Aname=="H6") {
+        atoi[residue_atom[i]]=BASE_U;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - A
+    } else if(Rname=="A") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - A3
+    } else if(Rname=="A3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'" || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'" || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="H2'1" || Aname=="HO3'"|| Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" ) {
+        atoi[residue_atom[i]]=BB_RNA_3;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - A5
+    } else if(Rname=="A5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+          Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+          Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="HO2'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="HO'2" ||
+          Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA_5;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - C
+    } else if(Rname=="C") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - C3
+    } else if(Rname=="C3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'" || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'" || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="H2'1" || Aname=="HO3'"|| Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" ) {
+        atoi[residue_atom[i]]=BB_RNA_3;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - C5
+    } else if(Rname=="C5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+          Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+          Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="HO2'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="HO'2" ||
+          Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA_5;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - G
+    } else if(Rname=="DG") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - G3
+    } else if(Rname=="DG3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO3'" ||
+                Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+                Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA_3;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - G5
+    } else if(Rname=="DG5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  ||  Aname=="C1'" ||
+          Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+          Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+          Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_DNA_5;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - T
+    } else if(Rname=="DT") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1"  || Aname=="C2"  || Aname=="O2"  || Aname=="N3"  ||
+                Aname=="C4"  || Aname=="O4"  || Aname=="C5"  || Aname=="C6"  ||
+                Aname=="C7"  || Aname=="H3"  || Aname=="H6"  || Aname=="H71" ||
+                Aname=="H72" || Aname=="H73" ) {
+        atoi[residue_atom[i]]=BASE_T;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - T3
+    } else if(Rname=="DT3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO3'" ||
+                Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+                Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA_3;
+      } else if(Aname=="N1"  || Aname=="C2"  || Aname=="O2"  || Aname=="N3"  ||
+                Aname=="C4"  || Aname=="O4"  || Aname=="C5"  || Aname=="C6"  ||
+                Aname=="C7"  || Aname=="H3"  || Aname=="H6"  || Aname=="H71" ||
+                Aname=="H72" || Aname=="H73" ) {
+        atoi[residue_atom[i]]=BASE_T;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - T5
+    } else if(Rname=="DT5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  ||  Aname=="C1'" ||
+          Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+          Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+          Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_DNA_5;
+      } else if(Aname=="N1"  || Aname=="C2"  || Aname=="O2"  || Aname=="N3"  ||
+                Aname=="C4"  || Aname=="O4"  || Aname=="C5"  || Aname=="C6"  ||
+                Aname=="C7"  || Aname=="H3"  || Aname=="H6"  || Aname=="H71" ||
+                Aname=="H72" || Aname=="H73" ) {
+        atoi[residue_atom[i]]=BASE_T;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - A
+    } else if(Rname=="DA") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - A3
+    } else if(Rname=="DA3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO3'" ||
+                Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+                Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA_3;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - A5
+    } else if(Rname=="DA5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  ||  Aname=="C1'" ||
+          Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+          Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+          Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_DNA_5;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - C
+    } else if(Rname=="DC") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - C3
+    } else if(Rname=="DC3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO3'" ||
+                Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+                Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA_3;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - C5
+    } else if(Rname=="DC5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  ||  Aname=="C1'" ||
+          Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+          Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+          Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_DNA_5;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    } else error("Residue not known: "+Rname);
+  }
+}
+
+void SAXS::getOnebeadparam_sansD(const PDB &pdb, const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_D, std::vector<std::vector<long double> > &parameter_mix_D)
+{ // parameter_solv is identical in SAXS/SANS_H/SANS_D since it depends exclusively on param_v. For that reason we kept param_solv only in SAXS and SANS_H.
+  parameter_mix_D[TRP].push_back(8105.740500119327);
+  parameter_mix_D[TRP].push_back(-41.785616935469804);
+  parameter_mix_D[TRP].push_back(-25456.92790554363);
+  parameter_mix_D[TRP].push_back(-10058.20599969184);
+  parameter_mix_D[TRP].push_back(86171.76479108425);
+  parameter_mix_D[TRP].push_back(-83227.63139882773);
+  parameter_mix_D[TRP].push_back(25121.390436258724);
+
+  parameter_mix_D[TYR].push_back(6059.530560118732);
+  parameter_mix_D[TYR].push_back(-24.522695525705736);
+  parameter_mix_D[TYR].push_back(-17180.858815360847);
+  parameter_mix_D[TYR].push_back(-5990.1358528219325);
+  parameter_mix_D[TYR].push_back(52936.46126637543);
+  parameter_mix_D[TYR].push_back(-50150.0042622683);
+  parameter_mix_D[TYR].push_back(14914.553672440441);
+
+  parameter_mix_D[PHE].push_back(5563.404880119222);
+  parameter_mix_D[PHE].push_back(-33.609784645922794);
+  parameter_mix_D[PHE].push_back(-14576.935030777448);
+  parameter_mix_D[PHE].push_back(-5759.170105553782);
+  parameter_mix_D[PHE].push_back(43316.895956549866);
+  parameter_mix_D[PHE].push_back(-39106.58694570862);
+  parameter_mix_D[PHE].push_back(11143.375742877468);
+
+  parameter_mix_D[HIP].push_back(3981.7108801192553);
+  parameter_mix_D[HIP].push_back(-23.788371565946427);
+  parameter_mix_D[HIP].push_back(-9471.73953776056);
+  parameter_mix_D[HIP].push_back(-3690.3981577198365);
+  parameter_mix_D[HIP].push_back(26365.958584217453);
+  parameter_mix_D[HIP].push_back(-23067.58974902849);
+  parameter_mix_D[HIP].push_back(6390.507451097114);
+
+  parameter_mix_D[ARG].push_back(6279.489359881259);
+  parameter_mix_D[ARG].push_back(1.2061878338083583);
+  parameter_mix_D[ARG].push_back(-20305.413937989913);
+  parameter_mix_D[ARG].push_back(-5621.666335222669);
+  parameter_mix_D[ARG].push_back(67341.96785520067);
+  parameter_mix_D[ARG].push_back(-68849.15464591733);
+  parameter_mix_D[ARG].push_back(21773.0630363882);
+
+  parameter_mix_D[LYS].push_back(5434.487400119193);
+  parameter_mix_D[LYS].push_back(-29.32356328987909);
+  parameter_mix_D[LYS].push_back(-14363.66155749977);
+  parameter_mix_D[LYS].push_back(-5650.383128516514);
+  parameter_mix_D[LYS].push_back(44573.73888236887);
+  parameter_mix_D[LYS].push_back(-41515.980945300485);
+  parameter_mix_D[LYS].push_back(12181.965046747513);
+
+  parameter_mix_D[CYS].push_back(1519.4030001192032);
+  parameter_mix_D[CYS].push_back(-3.564386334921097);
+  parameter_mix_D[CYS].push_back(-2275.813167459516);
+  parameter_mix_D[CYS].push_back(-409.54431591328125);
+  parameter_mix_D[CYS].push_back(2969.5412742839258);
+  parameter_mix_D[CYS].push_back(-1798.3157146799638);
+  parameter_mix_D[CYS].push_back(314.568167888235);
+
+  parameter_mix_D[ASP].push_back(1861.6998401191709);
+  parameter_mix_D[ASP].push_back(-5.349780637260551);
+  parameter_mix_D[ASP].push_back(-2960.36741510377);
+  parameter_mix_D[ASP].push_back(-621.8270745040523);
+  parameter_mix_D[ASP].push_back(4334.798300452934);
+  parameter_mix_D[ASP].push_back(-2776.8560521554878);
+  parameter_mix_D[ASP].push_back(527.9777182094936);
+
+  parameter_mix_D[GLU].push_back(2861.6017201192253);
+  parameter_mix_D[GLU].push_back(-13.146456903921809);
+  parameter_mix_D[GLU].push_back(-5393.408563875243);
+  parameter_mix_D[GLU].push_back(-1646.460570818364);
+  parameter_mix_D[GLU].push_back(10884.544923253858);
+  parameter_mix_D[GLU].push_back(-8159.923373048856);
+  parameter_mix_D[GLU].push_back(1914.545660397314);
+
+  parameter_mix_D[ILE].push_back(4288.585540119189);
+  parameter_mix_D[ILE].push_back(-19.937215352880365);
+  parameter_mix_D[ILE].push_back(-8324.540144463375);
+  parameter_mix_D[ILE].push_back(-2431.835931316717);
+  parameter_mix_D[ILE].push_back(16079.9912986194);
+  parameter_mix_D[ILE].push_back(-11637.693060394462);
+  parameter_mix_D[ILE].push_back(2600.8258068480495);
+
+  parameter_mix_D[LEU].push_back(4288.585540119186);
+  parameter_mix_D[LEU].push_back(-21.50343599461759);
+  parameter_mix_D[LEU].push_back(-8479.703435720274);
+  parameter_mix_D[LEU].push_back(-2647.8693829269596);
+  parameter_mix_D[LEU].push_back(17297.18115838578);
+  parameter_mix_D[LEU].push_back(-12826.972408323161);
+  parameter_mix_D[LEU].push_back(2953.1262521615645);
+
+  parameter_mix_D[MET].push_back(3561.6276801191552);
+  parameter_mix_D[MET].push_back(-22.19323392975885);
+  parameter_mix_D[MET].push_back(-8348.33907053846);
+  parameter_mix_D[MET].push_back(-3323.053272414289);
+  parameter_mix_D[MET].push_back(23153.238909304255);
+  parameter_mix_D[MET].push_back(-20091.960440908682);
+  parameter_mix_D[MET].push_back(5518.759669687693);
+
+  parameter_mix_D[ASN].push_back(2326.5396001192003);
+  parameter_mix_D[ASN].push_back(-8.634908921289112);
+  parameter_mix_D[ASN].push_back(-4057.4552636749636);
+  parameter_mix_D[ASN].push_back(-1032.743130124821);
+  parameter_mix_D[ASN].push_back(6957.141592429445);
+  parameter_mix_D[ASN].push_back(-4808.265318722317);
+  parameter_mix_D[ASN].push_back(1016.3944815533755);
+
+  parameter_mix_D[PRO].push_back(2471.1663601191985);
+  parameter_mix_D[PRO].push_back(-6.360795284260088);
+  parameter_mix_D[PRO].push_back(-3825.4533158429153);
+  parameter_mix_D[PRO].push_back(-728.7164844824666);
+  parameter_mix_D[PRO].push_back(5195.036303827973);
+  parameter_mix_D[PRO].push_back(-3183.733716480742);
+  parameter_mix_D[PRO].push_back(563.2376162754107);
+
+  parameter_mix_D[GLN].push_back(3431.669280119236);
+  parameter_mix_D[GLN].push_back(-19.412747205646166);
+  parameter_mix_D[GLN].push_back(-7298.017973002134);
+  parameter_mix_D[GLN].push_back(-2659.3014182337706);
+  parameter_mix_D[GLN].push_back(17890.76595805173);
+  parameter_mix_D[GLN].push_back(-14684.603067192957);
+  parameter_mix_D[GLN].push_back(3814.338335151394);
+
+  parameter_mix_D[SER].push_back(1423.885200119192);
+  parameter_mix_D[SER].push_back(-2.586428606204385);
+  parameter_mix_D[SER].push_back(-1966.7369507188134);
+  parameter_mix_D[SER].push_back(-289.17277383434106);
+  parameter_mix_D[SER].push_back(2209.478296043199);
+  parameter_mix_D[SER].push_back(-1216.1521614944);
+  parameter_mix_D[SER].push_back(177.0615931546754);
+
+  parameter_mix_D[THR].push_back(2311.2364801191825);
+  parameter_mix_D[THR].push_back(-6.258071321531929);
+  parameter_mix_D[THR].push_back(-3656.295629081312);
+  parameter_mix_D[THR].push_back(-716.4013890357804);
+  parameter_mix_D[THR].push_back(5071.656317108832);
+  parameter_mix_D[THR].push_back(-3125.8076789667816);
+  parameter_mix_D[THR].push_back(555.9775741081131);
+
+  parameter_mix_D[VAL].push_back(3041.128320119224);
+  parameter_mix_D[VAL].push_back(-9.314034190716423);
+  parameter_mix_D[VAL].push_back(-5075.684780220629);
+  parameter_mix_D[VAL].push_back(-1070.7083380665008);
+  parameter_mix_D[VAL].push_back(7455.654515006894);
+  parameter_mix_D[VAL].push_back(-4701.19187164774);
+  parameter_mix_D[VAL].push_back(863.4906179388547);
+
+  parameter_mix_D[ALA].push_back(1187.65300011922);
+  parameter_mix_D[ALA].push_back(-1.7011187932116822);
+  parameter_mix_D[ALA].push_back(-1521.0113615359212);
+  parameter_mix_D[ALA].push_back(-187.93745840575576);
+  parameter_mix_D[ALA].push_back(1514.6745873304449);
+  parameter_mix_D[ALA].push_back(-775.3890045113897);
+  parameter_mix_D[ALA].push_back(96.41428177656567);
+
+  parameter_mix_D[GLY].push_back(581.6349001192067);
+  parameter_mix_D[GLY].push_back(-0.5877833598361395);
+  parameter_mix_D[GLY].push_back(-640.0421286186524);
+  parameter_mix_D[GLY].push_back(-64.58515074152534);
+  parameter_mix_D[GLY].push_back(551.9509853583185);
+  parameter_mix_D[GLY].push_back(-264.1522021146006);
+  parameter_mix_D[GLY].push_back(28.36986478439301);
+
+  parameter_mix_D[HIS].push_back(3648.812220119277);
+  parameter_mix_D[HIS].push_back(-22.703075403555548);
+  parameter_mix_D[HIS].push_back(-8260.235189881098);
+  parameter_mix_D[HIS].push_back(-3190.3176569039265);
+  parameter_mix_D[HIS].push_back(21589.074332364213);
+  parameter_mix_D[HIS].push_back(-18108.640157613925);
+  parameter_mix_D[HIS].push_back(4801.237639634437);
+
+  parameter_vac_D[TRP].push_back(270.43802511921314);
+  parameter_vac_D[TRP].push_back(-2.196022464340772);
+  parameter_vac_D[TRP].push_back(-780.9546710244318);
+  parameter_vac_D[TRP].push_back(-371.1573508312626);
+  parameter_vac_D[TRP].push_back(2668.7678731652445);
+  parameter_vac_D[TRP].push_back(-2478.2920954223678);
+  parameter_vac_D[TRP].push_back(722.3731624901676);
+
+  parameter_vac_D[TYR].push_back(198.471744119211);
+  parameter_vac_D[TYR].push_back(-1.236792846228289);
+  parameter_vac_D[TYR].push_back(-508.0448711054671);
+  parameter_vac_D[TYR].push_back(-210.55908129481216);
+  parameter_vac_D[TYR].push_back(1558.3884734212413);
+  parameter_vac_D[TYR].push_back(-1418.36319255665);
+  parameter_vac_D[TYR].push_back(407.21567613893296);
+
+  parameter_vac_D[PHE].push_back(182.46606411921402);
+  parameter_vac_D[PHE].push_back(-1.2708008333861447);
+  parameter_vac_D[PHE].push_back(-424.50905926426054);
+  parameter_vac_D[PHE].push_back(-177.97207825696387);
+  parameter_vac_D[PHE].push_back(1180.839971941918);
+  parameter_vac_D[PHE].push_back(-1004.004765231886);
+  parameter_vac_D[PHE].push_back(269.34384064610344);
+
+  parameter_vac_D[HIP].push_back(161.95107611920753);
+  parameter_vac_D[HIP].push_back(-0.9661246983835707);
+  parameter_vac_D[HIP].push_back(-332.04673226423995);
+  parameter_vac_D[HIP].push_back(-125.41755194926544);
+  parameter_vac_D[HIP].push_back(808.705672166199);
+  parameter_vac_D[HIP].push_back(-648.8340711218191);
+  parameter_vac_D[HIP].push_back(163.71251277400307);
+
+  parameter_vac_D[ARG].push_back(289.0340011192071);
+  parameter_vac_D[ARG].push_back(-1.4195753436279361);
+  parameter_vac_D[ARG].push_back(-836.3864005546434);
+  parameter_vac_D[ARG].push_back(-346.7081039129904);
+  parameter_vac_D[ARG].push_back(2922.003491580559);
+  parameter_vac_D[ARG].push_back(-2864.816533173085);
+  parameter_vac_D[ARG].push_back(877.9525045072293);
+
+  parameter_vac_D[LYS].push_back(228.64464111920753);
+  parameter_vac_D[LYS].push_back(-1.686580749083617);
+  parameter_vac_D[LYS].push_back(-544.8870548339771);
+  parameter_vac_D[LYS].push_back(-252.11087773186324);
+  parameter_vac_D[LYS].push_back(1693.784850493428);
+  parameter_vac_D[LYS].push_back(-1514.2375008160348);
+  parameter_vac_D[LYS].push_back(427.0713155512121);
+
+  parameter_vac_D[CYS].push_back(50.836900116324315);
+  parameter_vac_D[CYS].push_back(-0.040204572899665315);
+  parameter_vac_D[CYS].push_back(-55.592868149339424);
+  parameter_vac_D[CYS].push_back(-4.341359624977117);
+  parameter_vac_D[CYS].push_back(41.55290573185214);
+  parameter_vac_D[CYS].push_back(-17.248208429078456);
+  parameter_vac_D[CYS].push_back(1.0736187172140528);
+
+  parameter_vac_D[ASP].push_back(64.12806411920792);
+  parameter_vac_D[ASP].push_back(-0.08245818875074411);
+  parameter_vac_D[ASP].push_back(-78.95500211069523);
+  parameter_vac_D[ASP].push_back(-9.030157332821238);
+  parameter_vac_D[ASP].push_back(74.72033164806712);
+  parameter_vac_D[ASP].push_back(-36.71042192737952);
+  parameter_vac_D[ASP].push_back(4.0989206257493676);
+
+  parameter_vac_D[GLU].push_back(100.14004911920799);
+  parameter_vac_D[GLU].push_back(-0.28685123265362006);
+  parameter_vac_D[GLU].push_back(-152.44619103423773);
+  parameter_vac_D[GLU].push_back(-32.99432901288321);
+  parameter_vac_D[GLU].push_back(225.5853175183811);
+  parameter_vac_D[GLU].push_back(-144.8489352831419);
+  parameter_vac_D[GLU].push_back(27.49692658880534);
+
+  parameter_vac_D[ILE].push_back(165.04540911921134);
+  parameter_vac_D[ILE].push_back(-0.5061553029227089);
+  parameter_vac_D[ILE].push_back(-275.1890586090823);
+  parameter_vac_D[ILE].push_back(-57.288063177375356);
+  parameter_vac_D[ILE].push_back(398.9780357099449);
+  parameter_vac_D[ILE].push_back(-245.42678814428692);
+  parameter_vac_D[ILE].push_back(42.72941025472001);
+
+  parameter_vac_D[LEU].push_back(165.04540911921134);
+  parameter_vac_D[LEU].push_back(-0.580034983510499);
+  parameter_vac_D[LEU].push_back(-281.30910057877514);
+  parameter_vac_D[LEU].push_back(-66.19427345166183);
+  parameter_vac_D[LEU].push_back(445.19214155995115);
+  parameter_vac_D[LEU].push_back(-287.0653610399624);
+  parameter_vac_D[LEU].push_back(53.86626261066706);
+
+  parameter_vac_D[MET].push_back(123.83238411920684);
+  parameter_vac_D[MET].push_back(-0.7698672022751385);
+  parameter_vac_D[MET].push_back(-251.2481622173618);
+  parameter_vac_D[MET].push_back(-100.67742019193848);
+  parameter_vac_D[MET].push_back(641.1563254731632);
+  parameter_vac_D[MET].push_back(-524.8742634212379);
+  parameter_vac_D[MET].push_back(135.36487813767542);
+
+  parameter_vac_D[ASN].push_back(94.12880411921148);
+  parameter_vac_D[ASN].push_back(-0.22986194121078912);
+  parameter_vac_D[ASN].push_back(-138.78769705028003);
+  parameter_vac_D[ASN].push_back(-25.896846049402594);
+  parameter_vac_D[ASN].push_back(184.55609781654326);
+  parameter_vac_D[ASN].push_back(-110.14043851975404);
+  parameter_vac_D[ASN].push_back(18.388834098004153);
+
+  parameter_vac_D[PRO].push_back(90.51619611920745);
+  parameter_vac_D[PRO].push_back(-0.0977238494110807);
+  parameter_vac_D[PRO].push_back(-109.43531311067846);
+  parameter_vac_D[PRO].push_back(-10.592981104983805);
+  parameter_vac_D[PRO].push_back(93.64863466237733);
+  parameter_vac_D[PRO].push_back(-42.348197720920865);
+  parameter_vac_D[PRO].push_back(3.5854078482704574);
+
+  parameter_vac_D[GLN].push_back(136.91340111920806);
+  parameter_vac_D[GLN].push_back(-0.7259026842220699);
+  parameter_vac_D[GLN].push_back(-257.0347011897067);
+  parameter_vac_D[GLN].push_back(-89.99600255417684);
+  parameter_vac_D[GLN].push_back(570.3890595917421);
+  parameter_vac_D[GLN].push_back(-438.8977029769549);
+  parameter_vac_D[GLN].push_back(105.48846039376491);
+
+  parameter_vac_D[SER].push_back(55.20490011583253);
+  parameter_vac_D[SER].push_back(-0.038078030710377984);
+  parameter_vac_D[SER].push_back(-58.79085960838952);
+  parameter_vac_D[SER].push_back(-4.067364063406562);
+  parameter_vac_D[SER].push_back(41.319899403658475);
+  parameter_vac_D[SER].push_back(-15.865682241288962);
+  parameter_vac_D[SER].push_back(0.5028409006168431);
+
+  parameter_vac_D[THR].push_back(88.90604111920842);
+  parameter_vac_D[THR].push_back(-0.11566717587697625);
+  parameter_vac_D[THR].push_back(-114.4541243837681);
+  parameter_vac_D[THR].push_back(-12.541537413808342);
+  parameter_vac_D[THR].push_back(106.4974738790947);
+  parameter_vac_D[THR].push_back(-50.15009912825225);
+  parameter_vac_D[THR].push_back(4.719349514074467);
+
+  parameter_vac_D[VAL].push_back(117.67910411920792);
+  parameter_vac_D[VAL].push_back(-0.18187311248567883);
+  parameter_vac_D[VAL].push_back(-162.8697844894754);
+  parameter_vac_D[VAL].push_back(-19.769248288711825);
+  parameter_vac_D[VAL].push_back(162.59270939168965);
+  parameter_vac_D[VAL].push_back(-79.37261506441627);
+  parameter_vac_D[VAL].push_back(8.230771959393175);
+
+  parameter_vac_D[ALA].push_back(46.92250011448002);
+  parameter_vac_D[ALA].push_back(-0.020339064649444412);
+  parameter_vac_D[ALA].push_back(-44.41584945233503);
+  parameter_vac_D[ALA].push_back(-2.1483754537886113);
+  parameter_vac_D[ALA].push_back(25.713667829058785);
+  parameter_vac_D[ALA].push_back(-8.222782061575268);
+  parameter_vac_D[ALA].push_back(-0.2521732728817875);
+
+  parameter_vac_D[GLY].push_back(23.532201119209795);
+  parameter_vac_D[GLY].push_back(-0.00628609590047614);
+  parameter_vac_D[GLY].push_back(-17.28421910139733);
+  parameter_vac_D[GLY].push_back(-0.6641226821159686);
+  parameter_vac_D[GLY].push_back(8.536119110048007);
+  parameter_vac_D[GLY].push_back(-2.5438638688361466);
+  parameter_vac_D[GLY].push_back(-0.11165675928832643);
+
+  parameter_vac_D[HIS].push_back(145.41948111920982);
+  parameter_vac_D[HIS].push_back(-0.8548328183368781);
+  parameter_vac_D[HIS].push_back(-290.8653238004162);
+  parameter_vac_D[HIS].push_back(-107.85375269366395);
+  parameter_vac_D[HIS].push_back(685.7025818759361);
+  parameter_vac_D[HIS].push_back(-538.2592043545858);
+  parameter_vac_D[HIS].push_back(132.17357375729733);
+
+  // NUCLEIC ACIDS
+
+  parameter_mix_D[BB_PO2].push_back(80.12660011920252);
+  parameter_mix_D[BB_PO2].push_back(-0.02788855519820236);
+  parameter_mix_D[BB_PO2].push_back(-60.53219491822279);
+  parameter_mix_D[BB_PO2].push_back(-2.9768829034096806);
+  parameter_mix_D[BB_PO2].push_back(33.30645116638123);
+  parameter_mix_D[BB_PO2].push_back(-11.601573219761375);
+  parameter_mix_D[BB_PO2].push_back(0.12551046492022438);
+
+  parameter_mix_D[BB_DNA].push_back(2835.3195201193003);
+  parameter_mix_D[BB_DNA].push_back(-7.954301723608173);
+  parameter_mix_D[BB_DNA].push_back(-4509.325563460958);
+  parameter_mix_D[BB_DNA].push_back(-909.1870692311344);
+  parameter_mix_D[BB_DNA].push_back(6375.156903893768);
+  parameter_mix_D[BB_DNA].push_back(-3956.4787847570715);
+  parameter_mix_D[BB_DNA].push_back(708.9872879613656);
+
+  parameter_mix_D[BB_DNA_5].push_back(3136.73358011921);
+  parameter_mix_D[BB_DNA_5].push_back(-10.023435855160427);
+  parameter_mix_D[BB_DNA_5].push_back(-5208.921666368173);
+  parameter_mix_D[BB_DNA_5].push_back(-1160.4403539440214);
+  parameter_mix_D[BB_DNA_5].push_back(7962.598421448727);
+  parameter_mix_D[BB_DNA_5].push_back(-5149.059857691847);
+  parameter_mix_D[BB_DNA_5].push_back(984.5217027570121);
+
+  parameter_mix_D[BB_DNA_3].push_back(3136.73358011921);
+  parameter_mix_D[BB_DNA_3].push_back(-9.618834865806274);
+  parameter_mix_D[BB_DNA_3].push_back(-5164.249220443828);
+  parameter_mix_D[BB_DNA_3].push_back(-1103.2721475326382);
+  parameter_mix_D[BB_DNA_3].push_back(7633.46089052312);
+  parameter_mix_D[BB_DNA_3].push_back(-4826.171688395644);
+  parameter_mix_D[BB_DNA_3].push_back(888.1820863683546);
+
+  parameter_mix_D[BB_RNA].push_back(3192.5955601188807);
+  parameter_mix_D[BB_RNA].push_back(-11.475781582628308);
+  parameter_mix_D[BB_RNA].push_back(-5486.264576931735);
+  parameter_mix_D[BB_RNA].push_back(-1344.2878288415961);
+  parameter_mix_D[BB_RNA].push_back(9035.26109892441);
+  parameter_mix_D[BB_RNA].push_back(-6068.471909763036);
+  parameter_mix_D[BB_RNA].push_back(1226.3696076463866);
+
+  parameter_mix_D[BB_RNA_5].push_back(3512.1630401192215);
+  parameter_mix_D[BB_RNA_5].push_back(-14.191020069433975);
+  parameter_mix_D[BB_RNA_5].push_back(-6293.687102187508);
+  parameter_mix_D[BB_RNA_5].push_back(-1689.3688494490984);
+  parameter_mix_D[BB_RNA_5].push_back(11193.448566821942);
+  parameter_mix_D[BB_RNA_5].push_back(-7806.9064399949375);
+  parameter_mix_D[BB_RNA_5].push_back(1662.4594983069844);
+
+  parameter_mix_D[BB_RNA_3].push_back(3512.1630401192215);
+  parameter_mix_D[BB_RNA_3].push_back(-12.978118135595812);
+  parameter_mix_D[BB_RNA_3].push_back(-6149.290195451877);
+  parameter_mix_D[BB_RNA_3].push_back(-1515.8309761505627);
+  parameter_mix_D[BB_RNA_3].push_back(10176.605450440278);
+  parameter_mix_D[BB_RNA_3].push_back(-6813.250569884159);
+  parameter_mix_D[BB_RNA_3].push_back(1366.823518955858);
+
+  parameter_mix_D[BASE_A].push_back(2464.736500119229);
+  parameter_mix_D[BASE_A].push_back(-12.127452038444783);
+  parameter_mix_D[BASE_A].push_back(-4710.661256689607);
+  parameter_mix_D[BASE_A].push_back(-1462.6964141954452);
+  parameter_mix_D[BASE_A].push_back(9451.725575888277);
+  parameter_mix_D[BASE_A].push_back(-6883.018479948857);
+  parameter_mix_D[BASE_A].push_back(1540.1526599737797);
+
+  parameter_mix_D[BASE_C].push_back(1797.2697601191685);
+  parameter_mix_D[BASE_C].push_back(-5.963855532295215);
+  parameter_mix_D[BASE_C].push_back(-2955.077717756034);
+  parameter_mix_D[BASE_C].push_back(-689.4543508746372);
+  parameter_mix_D[BASE_C].push_back(4665.914740532565);
+  parameter_mix_D[BASE_C].push_back(-3051.4605913706982);
+  parameter_mix_D[BASE_C].push_back(590.2201952719585);
+
+  parameter_mix_D[BASE_G].push_back(2804.271480119049);
+  parameter_mix_D[BASE_G].push_back(-16.928072935469974);
+  parameter_mix_D[BASE_G].push_back(-5989.82519987899);
+  parameter_mix_D[BASE_G].push_back(-2275.490326521775);
+  parameter_mix_D[BASE_G].push_back(15007.832401865428);
+  parameter_mix_D[BASE_G].push_back(-12287.520690325606);
+  parameter_mix_D[BASE_G].push_back(3172.98306575258);
+
+  parameter_mix_D[BASE_T].push_back(2545.0860001192113);
+  parameter_mix_D[BASE_T].push_back(-10.975141620541738);
+  parameter_mix_D[BASE_T].push_back(-4636.058358764447);
+  parameter_mix_D[BASE_T].push_back(-1340.3746388296138);
+  parameter_mix_D[BASE_T].push_back(8850.604320505428);
+  parameter_mix_D[BASE_T].push_back(-6421.852532013674);
+  parameter_mix_D[BASE_T].push_back(1443.371517335904);
+
+  parameter_mix_D[BASE_U].push_back(1608.7389001192062);
+  parameter_mix_D[BASE_U].push_back(-3.9816849036181434);
+  parameter_mix_D[BASE_U].push_back(-2411.056432130769);
+  parameter_mix_D[BASE_U].push_back(-451.8236361945487);
+  parameter_mix_D[BASE_U].push_back(3220.4418252803644);
+  parameter_mix_D[BASE_U].push_back(-1944.2515577994325);
+  parameter_mix_D[BASE_U].push_back(332.9259542628691);
+
+  parameter_vac_D[BB_PO2].push_back(2.7889001116093284);
+  parameter_vac_D[BB_PO2].push_back(-0.00011178884266113128);
+  parameter_vac_D[BB_PO2].push_back(-1.1702605818380654);
+  parameter_vac_D[BB_PO2].push_back(-0.011278044036819927);
+  parameter_vac_D[BB_PO2].push_back(0.3214006584089024);
+  parameter_vac_D[BB_PO2].push_back(-0.04097165983591666);
+  parameter_vac_D[BB_PO2].push_back(-0.017525098100539684);
+
+  parameter_vac_D[BB_DNA].push_back(94.75075611920529);
+  parameter_vac_D[BB_DNA].push_back(-0.13973533952241124);
+  parameter_vac_D[BB_DNA].push_back(-123.45402430039046);
+  parameter_vac_D[BB_DNA].push_back(-15.19494522082691);
+  parameter_vac_D[BB_DNA].push_back(123.34749914811465);
+  parameter_vac_D[BB_DNA].push_back(-61.038507985345504);
+  parameter_vac_D[BB_DNA].push_back(6.601587478585944);
+
+  parameter_vac_D[BB_DNA_5].push_back(108.18080111920679);
+  parameter_vac_D[BB_DNA_5].push_back(-0.2055953690887981);
+  parameter_vac_D[BB_DNA_5].push_back(-150.7924892157235);
+  parameter_vac_D[BB_DNA_5].push_back(-22.700459516383198);
+  parameter_vac_D[BB_DNA_5].push_back(172.2599851655527);
+  parameter_vac_D[BB_DNA_5].push_back(-93.4983124807692);
+  parameter_vac_D[BB_DNA_5].push_back(12.867661230942868);
+
+  parameter_vac_D[BB_DNA_3].push_back(108.18080111920537);
+  parameter_vac_D[BB_DNA_3].push_back(-0.18263717534168372);
+  parameter_vac_D[BB_DNA_3].push_back(-148.5918817744255);
+  parameter_vac_D[BB_DNA_3].push_back(-19.90799847398835);
+  parameter_vac_D[BB_DNA_3].push_back(157.55184203379557);
+  parameter_vac_D[BB_DNA_3].push_back(-80.28471270058103);
+  parameter_vac_D[BB_DNA_3].push_back(9.313712500298278);
+
+  parameter_vac_D[BB_RNA].push_back(106.37859611922117);
+  parameter_vac_D[BB_RNA].push_back(-0.2380766148121975);
+  parameter_vac_D[BB_RNA].push_back(-153.74131338570024);
+  parameter_vac_D[BB_RNA].push_back(-26.415436217574932);
+  parameter_vac_D[BB_RNA].push_back(191.90585451112776);
+  parameter_vac_D[BB_RNA].push_back(-109.61737794316868);
+  parameter_vac_D[BB_RNA].push_back(16.663804191332204);
+
+  parameter_vac_D[BB_RNA_5].push_back(120.58236111920618);
+  parameter_vac_D[BB_RNA_5].push_back(-0.340258533619014);
+  parameter_vac_D[BB_RNA_5].push_back(-186.08333929996334);
+  parameter_vac_D[BB_RNA_5].push_back(-38.493337147644795);
+  parameter_vac_D[BB_RNA_5].push_back(266.2262415641144);
+  parameter_vac_D[BB_RNA_5].push_back(-164.73088478359585);
+  parameter_vac_D[BB_RNA_5].push_back(29.07014157680879);
+
+  parameter_vac_D[BB_RNA_3].push_back(120.5823611192099);
+  parameter_vac_D[BB_RNA_3].push_back(-0.274146129206928);
+  parameter_vac_D[BB_RNA_3].push_back(-179.24499182395388);
+  parameter_vac_D[BB_RNA_3].push_back(-30.315729372259426);
+  parameter_vac_D[BB_RNA_3].push_back(222.2645581367648);
+  parameter_vac_D[BB_RNA_3].push_back(-125.13581171514033);
+  parameter_vac_D[BB_RNA_3].push_back(18.350308154920107);
+
+  parameter_vac_D[BASE_A].push_back(114.34024911921);
+  parameter_vac_D[BASE_A].push_back(-0.4136665918383359);
+  parameter_vac_D[BASE_A].push_back(-192.33138384655922);
+  parameter_vac_D[BASE_A].push_back(-46.74428306691412);
+  parameter_vac_D[BASE_A].push_back(312.9511030981905);
+  parameter_vac_D[BASE_A].push_back(-199.6349962647333);
+  parameter_vac_D[BASE_A].push_back(36.15938693202153);
+
+  parameter_vac_D[BASE_C].push_back(76.17798411921166);
+  parameter_vac_D[BASE_C].push_back(-0.1444475142707445);
+  parameter_vac_D[BASE_C].push_back(-102.66873668949485);
+  parameter_vac_D[BASE_C].push_back(-15.813768367725821);
+  parameter_vac_D[BASE_C].push_back(119.63436338715553);
+  parameter_vac_D[BASE_C].push_back(-64.22251971660583);
+  parameter_vac_D[BASE_C].push_back(8.351952332828862);
+
+  parameter_vac_D[BASE_G].push_back(127.08052911921965);
+  parameter_vac_D[BASE_G].push_back(-0.7137457014712297);
+  parameter_vac_D[BASE_G].push_back(-239.67686838772786);
+  parameter_vac_D[BASE_G].push_back(-88.53661981200943);
+  parameter_vac_D[BASE_G].push_back(556.7254485453866);
+  parameter_vac_D[BASE_G].push_back(-432.0234649577737);
+  parameter_vac_D[BASE_G].push_back(104.407200463848);
+
+  parameter_vac_D[BASE_T].push_back(94.09000011920868);
+  parameter_vac_D[BASE_T].push_back(-0.27147149980458524);
+  parameter_vac_D[BASE_T].push_back(-143.65649702254174);
+  parameter_vac_D[BASE_T].push_back(-30.861235738371892);
+  parameter_vac_D[BASE_T].push_back(212.3643014774958);
+  parameter_vac_D[BASE_T].push_back(-133.06675501066275);
+  parameter_vac_D[BASE_T].push_back(23.951588200687073);
+
+  parameter_vac_D[BASE_U].push_back(59.30540111665979);
+  parameter_vac_D[BASE_U].push_back(-0.06146929846591808);
+  parameter_vac_D[BASE_U].push_back(-67.43680950211682);
+  parameter_vac_D[BASE_U].push_back(-6.625289749170134);
+  parameter_vac_D[BASE_U].push_back(58.37012229348065);
+  parameter_vac_D[BASE_U].push_back(-26.23044613101723);
+  parameter_vac_D[BASE_U].push_back(2.061238351422343);
+
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    std::string Aname = pdb.getAtomName(atoms[i]);
+    std::string Rname = pdb.getResidueName(atoms[i]);
+    Rname.erase(std::remove_if(Rname.begin(), Rname.end(), ::isspace),Rname.end());
+    if(Rname=="ALA") {
+      atoi[residue_atom[i]]=ALA;
+    } else if(Rname=="ARG") {
+      atoi[residue_atom[i]]=ARG;
+    } else if(Rname=="ASN") {
+      atoi[residue_atom[i]]=ASN;
+    } else if(Rname=="ASP") {
+      atoi[residue_atom[i]]=ASP;
+    } else if(Rname=="CYS") {
+      atoi[residue_atom[i]]=CYS;
+    } else if(Rname=="GLN") {
+      atoi[residue_atom[i]]=GLN;
+    } else if(Rname=="GLU") {
+      atoi[residue_atom[i]]=GLU;
+    } else if(Rname=="GLY") {
+      atoi[residue_atom[i]]=GLY;
+    } else if(Rname=="HIS") {
+      atoi[residue_atom[i]]=HIS;
+    } else if(Rname=="HID") {
+      atoi[residue_atom[i]]=HIS;
+    } else if(Rname=="HIE") {
+      atoi[residue_atom[i]]=HIS;
+    } else if(Rname=="HIP") {
+      atoi[residue_atom[i]]=HIP;
+      // CHARMM NAMING FOR PROTONATION STATES OF HISTIDINE
+    } else if(Rname=="HSD") {
+      atoi[residue_atom[i]]=HIS;
+    } else if(Rname=="HSE") {
+      atoi[residue_atom[i]]=HIS;
+    } else if(Rname=="HSP") {
+      atoi[residue_atom[i]]=HIP;
+    } else if(Rname=="ILE") {
+      atoi[residue_atom[i]]=ILE;
+    } else if(Rname=="LEU") {
+      atoi[residue_atom[i]]=LEU;
+    } else if(Rname=="LYS") {
+      atoi[residue_atom[i]]=LYS;
+    } else if(Rname=="MET") {
+      atoi[residue_atom[i]]=MET;
+    } else if(Rname=="PHE") {
+      atoi[residue_atom[i]]=PHE;
+    } else if(Rname=="PRO") {
+      atoi[residue_atom[i]]=PRO;
+    } else if(Rname=="SER") {
+      atoi[residue_atom[i]]=SER;
+    } else if(Rname=="THR") {
+      atoi[residue_atom[i]]=THR;
+    } else if(Rname=="TRP") {
+      atoi[residue_atom[i]]=TRP;
+    } else if(Rname=="TYR") {
+      atoi[residue_atom[i]]=TYR;
+    } else if(Rname=="VAL") {
+      atoi[residue_atom[i]]=VAL;
+    }
+    // NUCLEIC ACIDS
+    // nucleobases are not automatically populated as an additional check on the health of the PDB.
+    // RNA - G
+    else if(Rname=="G") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;
+      } else if( Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                 Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                 Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                 Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - G3
+    } else if(Rname=="G3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'" || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'" || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="H2'1" || Aname=="HO3'"|| Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" ) {
+        atoi[residue_atom[i]]=BB_RNA_3;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - G5
+    } else if(Rname=="G5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+          Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+          Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="HO2'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="HO'2" ||
+          Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA_5;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - U
+    } else if(Rname=="U") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;
+      } else if( Aname=="N1" || Aname=="C2"  || Aname=="O2" || Aname=="N3" ||
+                 Aname=="C4" || Aname=="O4"  || Aname=="C5" || Aname=="C6" ||
+                 Aname=="H3" || Aname=="H5"  || Aname=="H6") {
+        atoi[residue_atom[i]]=BASE_U;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - U3
+    } else if(Rname=="U3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'" || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'" || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="H2'1" || Aname=="HO3'"|| Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" ) {
+        atoi[residue_atom[i]]=BB_RNA_3;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="O2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="O4"  || Aname=="C5" || Aname=="C6" ||
+                Aname=="H3" || Aname=="H5"  || Aname=="H6") {
+        atoi[residue_atom[i]]=BASE_U;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - U5
+    } else if(Rname=="U5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+          Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+          Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="HO2'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="HO'2" ||
+          Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA_5;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="O2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="O4"  || Aname=="C5" || Aname=="C6" ||
+                Aname=="H3" || Aname=="H5"  || Aname=="H6") {
+        atoi[residue_atom[i]]=BASE_U;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - A
+    } else if(Rname=="A") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - A3
+    } else if(Rname=="A3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'" || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'" || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="H2'1" || Aname=="HO3'"|| Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" ) {
+        atoi[residue_atom[i]]=BB_RNA_3;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - A5
+    } else if(Rname=="A5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+          Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+          Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="HO2'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="HO'2" ||
+          Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA_5;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - C
+    } else if(Rname=="C") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - C3
+    } else if(Rname=="C3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'" || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'" || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'" || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'" || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="H2'1" || Aname=="HO3'"|| Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" ) {
+        atoi[residue_atom[i]]=BB_RNA_3;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // RNA - C5
+    } else if(Rname=="C5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+          Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+          Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="HO2'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="HO'2" ||
+          Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA_5;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - G
+    } else if(Rname=="DG") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - G3
+    } else if(Rname=="DG3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO3'" ||
+                Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+                Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA_3;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - G5
+    } else if(Rname=="DG5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  ||  Aname=="C1'" ||
+          Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+          Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+          Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_DNA_5;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - T
+    } else if(Rname=="DT") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1"  || Aname=="C2"  || Aname=="O2"  || Aname=="N3"  ||
+                Aname=="C4"  || Aname=="O4"  || Aname=="C5"  || Aname=="C6"  ||
+                Aname=="C7"  || Aname=="H3"  || Aname=="H6"  || Aname=="H71" ||
+                Aname=="H72" || Aname=="H73" ) {
+        atoi[residue_atom[i]]=BASE_T;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - T3
+    } else if(Rname=="DT3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO3'" ||
+                Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+                Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA_3;
+      } else if(Aname=="N1"  || Aname=="C2"  || Aname=="O2"  || Aname=="N3"  ||
+                Aname=="C4"  || Aname=="O4"  || Aname=="C5"  || Aname=="C6"  ||
+                Aname=="C7"  || Aname=="H3"  || Aname=="H6"  || Aname=="H71" ||
+                Aname=="H72" || Aname=="H73" ) {
+        atoi[residue_atom[i]]=BASE_T;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - T5
+    } else if(Rname=="DT5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  ||  Aname=="C1'" ||
+          Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+          Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+          Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_DNA_5;
+      } else if(Aname=="N1"  || Aname=="C2"  || Aname=="O2"  || Aname=="N3"  ||
+                Aname=="C4"  || Aname=="O4"  || Aname=="C5"  || Aname=="C6"  ||
+                Aname=="C7"  || Aname=="H3"  || Aname=="H6"  || Aname=="H71" ||
+                Aname=="H72" || Aname=="H73" ) {
+        atoi[residue_atom[i]]=BASE_T;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - A
+    } else if(Rname=="DA") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - A3
+    } else if(Rname=="DA3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO3'" ||
+                Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+                Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA_3;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - A5
+    } else if(Rname=="DA5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  ||  Aname=="C1'" ||
+          Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+          Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+          Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_DNA_5;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - C
+    } else if(Rname=="DC") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - C3
+    } else if(Rname=="DC3") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+        atoi [residue_atom[i]]=BB_PO2;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO3'" ||
+                Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+                Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA_3;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      // DNA - C5
+    } else if(Rname=="DC5") {
+      if( Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+          Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  ||  Aname=="C1'" ||
+          Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+          Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+          Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
+          Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_DNA_5;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+    } else error("Residue not known: "+Rname);
+  }
+}
+
+double SAXS::calculateAFF(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double rho)
 {
   std::map<std::string, unsigned> AA_map;
   AA_map["H"] = H;
@@ -2949,7 +6289,6 @@ double SAXS::calculateASF(const std::vector<AtomNumber> &atoms, std::vector<std:
 
   double Iq0=0.;
   if( moldat ) {
-    log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
     // cycle over the atom types
     for(unsigned i=0; i<NTT; ++i) {
       const double volr = std::pow(param_v[i], (2.0/3.0)) /(4. * M_PI);
@@ -2997,10 +6336,81 @@ double SAXS::calculateASF(const std::vector<AtomNumber> &atoms, std::vector<std:
   return Iq0;
 }
 
+double SAXS::calculateAFFsans(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double deuter_conc)
+{
+  std::map<std::string, unsigned> AA_map;
+  AA_map["H"] = H;
+  AA_map["C"] = C;
+  AA_map["N"] = N;
+  AA_map["O"] = O;
+  AA_map["P"] = P;
+  AA_map["S"] = S;
+
+  std::vector<double> param_b;
+  std::vector<double> param_v;
+
+  param_b.resize(NTT);
+  param_v.resize(NTT);
+
+  param_b[H] = -0.374; param_v[H] = 5.15;
+  // param_b[D] = 0.667;
+  param_b[C] =  0.665;  param_v[C] = 16.44;
+  param_b[N] =  0.94;   param_v[N] = 2.49;
+  param_b[O] =  0.580;  param_v[O] = 9.13;
+  param_b[P] =  0.51;   param_v[P] = 5.73;
+  param_b[S] =  0.28;   param_v[S] = 19.86;
+
+  double solv_sc_length = 0.1*(param_b[O] + 2.*((1. - deuter_conc) * param_b[H] + deuter_conc * 0.667)); // per water electron (10 electrons)
+
+  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+
+  double Iq0=0.;
+  if( moldat ) {
+    // cycle over the atom types
+    for(unsigned i=0; i<NTT; ++i) {
+      double volr = std::pow(param_v[i], (2.0/3.0)) /(4. * M_PI);
+      // cycle over q
+      for(unsigned k=0; k<q_list.size(); ++k) {
+        const double q = q_list[k];
+        FF_tmp[k][i] = param_b[i];
+        // subtract solvation: rho * v_i * EXP( (- v_i^(2/3) / (4pi)) * q^2  ) // since  D in Fraser 1978 is 2*s
+        FF_tmp[k][i] -= solv_sc_length*rho*param_v[i]*std::exp(-volr*q*q);
+      }
+    }
+    // cycle over the atoms to assign the atom type and calculate I0
+    for(unsigned i=0; i<atoms.size(); ++i) {
+      // get atom name
+      std::string name = moldat->getAtomName(atoms[i]);
+      char type;
+      // get atom type
+      char first = name.at(0);
+      // GOLDEN RULE: type is first letter, if not a number
+      if (!isdigit(first)) {
+        type = first;
+        // otherwise is the second
+      } else {
+        type = name.at(1);
+      }
+      std::string type_s = std::string(1,type);
+      if(AA_map.find(type_s) != AA_map.end()) {
+        const unsigned index=AA_map[type_s];
+        atoi[i] = AA_map[type_s];
+        Iq0 += param_b[index]-solv_sc_length*rho*param_v[index];
+      } else {
+        error("Wrong atom type "+type_s+" from atom name "+name+"\n");
+      }
+    }
+  } else {
+    error("MOLINFO DATA not found\n");
+  }
+
+  return Iq0;
+}
+
 std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   std::map<std::string, std::vector<double> > lcpomap;
 
-  //We arbitrarily set OC1 as the charged oxygen.
+  // We arbitrarily set OC1/OT1 as the charged oxygen.
 
   lcpomap["ALA_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["ALA_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -3011,6 +6421,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["ALA_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["ALA_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["ALA_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["ALA_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["ASP_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["ASP_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -3024,6 +6435,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["ASP_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["ASP_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["ASP_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["ASP_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["ASN_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["ASN_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -3037,6 +6449,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["ASN_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["ASN_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["ASN_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["ASN_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["ARG_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["ARG_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -3053,6 +6466,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["ARG_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["ARG_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["ARG_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["ARG_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["CYS_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["CYS_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -3064,6 +6478,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["CYS_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["CYS_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["CYS_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["CYS_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["GLU_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["GLU_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -3078,6 +6493,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["GLU_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["GLU_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["GLU_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["GLU_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["GLN_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["GLN_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -3092,6 +6508,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["GLN_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["GLN_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["GLN_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["GLN_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["GLY_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["GLY_CA"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
@@ -3101,6 +6518,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["GLY_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["GLY_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["GLY_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["GLY_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["HIS_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["HIS_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -3114,6 +6532,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["HIS_CD2"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
   lcpomap["HIS_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["HIS_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["HIS_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["HIE_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["HIE_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -3127,6 +6546,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["HIE_CD2"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
   lcpomap["HIE_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["HIE_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["HIE_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["HSE_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["HSE_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -3140,6 +6560,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["HSE_CD2"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
   lcpomap["HSE_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["HSE_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["HSE_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["HID_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["HID_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -3153,6 +6574,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["HID_CD2"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
   lcpomap["HID_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["HID_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["HID_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["HSD_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["HSD_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -3166,6 +6588,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["HSD_CD2"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
   lcpomap["HSD_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["HSD_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["HSD_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["HIP_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["HIP_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -3179,6 +6602,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["HIP_CD2"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
   lcpomap["HIP_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["HIP_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["HIP_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["HSP_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["HSP_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -3192,6 +6616,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["HSP_CD2"] = { 1.7,  0.51245,  -0.15966,  -0.00019781,  0.00016392};
   lcpomap["HSP_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["HSP_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["HSP_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["ILE_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["ILE_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -3206,6 +6631,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["ILE_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["ILE_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["ILE_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["ILE_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["LEU_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["LEU_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -3219,6 +6645,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["LEU_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["LEU_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["LEU_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["LEU_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["LYS_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["LYS_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -3233,6 +6660,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["LYS_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["LYS_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["LYS_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["LYS_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["MET_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["MET_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -3246,6 +6674,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["MET_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["MET_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["MET_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["MET_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["PHE_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["PHE_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -3262,6 +6691,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["PHE_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["PHE_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["PHE_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["PHE_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["PRO_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["PRO_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -3274,6 +6704,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["PRO_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["PRO_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["PRO_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["PRO_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["SER_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["SER_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -3285,6 +6716,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["SER_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["SER_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["SER_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["SER_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["THR_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["THR_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -3297,6 +6729,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["THR_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["THR_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["THR_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["THR_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["TRP_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["TRP_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -3316,6 +6749,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["TRP_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["TRP_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["TRP_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["TRP_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["TYR_N"] = { 1.65,  0.062577,  -0.017874,  -8.312e-05,  1.9849e-05};
   lcpomap["TYR_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -3333,6 +6767,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["TYR_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["TYR_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["TYR_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["TYR_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["VAL_N"] = { 1.65,  0.062577,  -0.017874,  -8.312e-05,  1.9849e-05};
   lcpomap["VAL_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -3345,18 +6780,642 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["VAL_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["VAL_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["VAL_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["VAL_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+
+  // nucleic acids - WARNING: ONLY AMBER (OL3-rna/ol15-dna) FORMAT
+
+  lcpomap["A3_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["A3_C2"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["A3_C2'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["A3_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["A3_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["A3_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["A3_C5"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["A3_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["A3_C6"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["A3_C8"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["A3_N1"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["A3_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["A3_N6"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["A3_N7"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["A3_N9"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["A3_O2'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["A3_O3'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["A3_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["A3_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["A3_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["A3_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["A3_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["A3_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["A3_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["A3_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["A3_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+
+  lcpomap["A5_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["A5_C2"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["A5_C2'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["A5_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["A5_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["A5_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["A5_C5"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["A5_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["A5_C6"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["A5_C8"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["A5_N1"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["A5_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["A5_N6"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["A5_N7"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["A5_N9"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["A5_O2'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["A5_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["A5_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["A5_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["A5_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["A5_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["A5_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["A5_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["A5_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["A5_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["A5_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+
+  lcpomap["A_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["A_C2"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["A_C2'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["A_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["A_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["A_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["A_C5"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["A_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["A_C6"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["A_C8"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["A_N1"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["A_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["A_N6"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["A_N7"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["A_N9"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["A_O2'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["A_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["A_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["A_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["A_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["A_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["A_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["A_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["A_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["A_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["A_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+
+  lcpomap["C3_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["C3_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["C3_C2'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["C3_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["C3_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["C3_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["C3_C5"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["C3_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["C3_C6"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["C3_N1"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["C3_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["C3_N4"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["C3_O2"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["C3_O2'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["C3_O3'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["C3_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["C3_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["C3_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["C3_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["C3_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["C3_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["C3_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["C3_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["C3_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+
+  lcpomap["C5_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["C5_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["C5_C2'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["C5_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["C5_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["C5_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["C5_C5"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["C5_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["C5_C6"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["C5_N1"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["C5_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["C5_N4"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["C5_O2"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["C5_O2'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["C5_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["C5_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["C5_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["C5_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["C5_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["C5_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["C5_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["C5_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["C5_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["C5_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+
+  lcpomap["C_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["C_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["C_C2'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["C_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["C_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["C_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["C_C5"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["C_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["C_C6"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["C_N1"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["C_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["C_N4"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["C_O2"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["C_O2'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["C_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["C_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["C_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["C_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["C_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["C_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["C_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["C_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["C_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["C_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+
+  lcpomap["DA3_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DA3_C2"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DA3_C2'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DA3_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DA3_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DA3_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DA3_C5"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DA3_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DA3_C6"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DA3_C8"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DA3_N1"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DA3_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DA3_N6"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["DA3_N7"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DA3_N9"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["DA3_O3'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DA3_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DA3_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DA3_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DA3_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DA3_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DA3_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DA3_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DA3_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DA3_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+
+  lcpomap["DA5_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DA5_C2"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DA5_C2'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DA5_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DA5_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DA5_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DA5_C5"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DA5_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DA5_C6"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DA5_C8"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DA5_N1"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DA5_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DA5_N6"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["DA5_N7"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DA5_N9"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["DA5_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DA5_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DA5_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DA5_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DA5_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DA5_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DA5_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DA5_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DA5_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DA5_P"]   = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+
+  lcpomap["DA_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DA_C2"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DA_C2'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DA_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DA_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DA_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DA_C5"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DA_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DA_C6"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DA_C8"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DA_N1"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DA_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DA_N6"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["DA_N7"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DA_N9"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["DA_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DA_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DA_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DA_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DA_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DA_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DA_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DA_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DA_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DA_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+
+  lcpomap["DC3_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DC3_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DC3_C2'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DC3_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DC3_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DC3_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DC3_C5"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DC3_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DC3_C6"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DC3_N1"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["DC3_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DC3_N4"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["DC3_O2"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["DC3_O3'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DC3_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DC3_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DC3_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DC3_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DC3_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DC3_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DC3_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DC3_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DC3_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+
+  lcpomap["DC5_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DC5_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DC5_C2'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DC5_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DC5_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DC5_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DC5_C5"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DC5_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DC5_C6"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DC5_N1"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["DC5_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DC5_N4"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["DC5_O2"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["DC5_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DC5_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DC5_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DC5_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DC5_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DC5_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DC5_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DC5_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DC5_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DC5_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+
+  lcpomap["DC_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DC_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DC_C2'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DC_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DC_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DC_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DC_C5"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DC_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DC_C6"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DC_N1"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["DC_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DC_N4"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["DC_O2"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["DC_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DC_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DC_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DC_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DC_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DC_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DC_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DC_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DC_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DC_P"]   = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+
+  lcpomap["DG3_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DG3_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DG3_C2'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DG3_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DG3_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DG3_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DG3_C5"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DG3_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DG3_C6"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DG3_C8"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DG3_N1"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DG3_N2"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["DG3_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DG3_N7"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DG3_N9"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["DG3_O3'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DG3_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DG3_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DG3_O6"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["DG3_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DG3_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DG3_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DG3_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DG3_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DG3_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DG3_P"]   = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+
+  lcpomap["DG5_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DG5_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DG5_C2'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DG5_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DG5_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DG5_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DG5_C5"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DG5_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DG5_C6"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DG5_C8"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DG5_N1"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DG5_N2"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["DG5_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DG5_N7"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DG5_N9"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["DG5_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DG5_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DG5_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DG5_O6"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["DG5_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DG5_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DG5_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DG5_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DG5_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DG5_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DG5_P"]   = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+
+  lcpomap["DG_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DG_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DG_C2'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DG_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DG_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DG_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DG_C5"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DG_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DG_C6"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DG_C8"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DG_N1"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DG_N2"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["DG_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DG_N7"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DG_N9"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["DG_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DG_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DG_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DG_O6"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["DG_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DG_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DG_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DG_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DG_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DG_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DG_P"]   = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+
+  lcpomap["DT3_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DT3_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DT3_C2'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DT3_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DT3_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DT3_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DT3_C5"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DT3_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DT3_C6"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DT3_C7"]  = { 1.7,  0.77887, -0.28063, -1.2968e-03, 3.9328e-04 };
+  lcpomap["DT3_N1"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["DT3_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DT3_O2"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["DT3_O3'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DT3_O4"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["DT3_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DT3_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DT3_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DT3_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DT3_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DT3_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DT3_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DT3_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DT3_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+
+  lcpomap["DT5_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DT5_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DT5_C2'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DT5_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DT5_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DT5_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DT5_C5"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DT5_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DT5_C6"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DT5_C7"]  = { 1.7,  0.77887, -0.28063, -1.2968e-03, 3.9328e-04 };
+  lcpomap["DT5_N1"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["DT5_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DT5_O2"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["DT5_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DT5_O4"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["DT5_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DT5_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DT5_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DT5_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DT5_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DT5_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DT5_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DT5_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DT5_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+
+  lcpomap["DT_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DT_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DT_C2'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DT_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DT_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DT_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DT_C5"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DT_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DT_C6"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DT_C7"]  = { 1.7,  0.77887, -0.28063, -1.2968e-03, 3.9328e-04 };
+  lcpomap["DT_N1"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["DT_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DT_O2"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["DT_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DT_O4"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["DT_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DT_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DT_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DT_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DT_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DT_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DT_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DT_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DT_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+
+  lcpomap["G3_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["G3_C2"] = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["G3_C2'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["G3_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["G3_C4"] = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["G3_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["G3_C5"] = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["G3_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["G3_C6"] = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["G3_C8"] = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["G3_N1"] = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["G3_N2"] = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["G3_N3"] = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["G3_N7"] = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["G3_N9"] = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["G3_O2'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["G3_O3'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["G3_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["G3_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["G3_O6"] = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["G3_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["G3_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["G3_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["G3_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["G3_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["G3_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["G3_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+
+  lcpomap["G5_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["G5_C2"] = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["G5_C2'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["G5_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["G5_C4"] = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["G5_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["G5_C5"] = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["G5_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["G5_C6"] = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["G5_C8"] = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["G5_N1"] = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["G5_N2"] = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["G5_N3"] = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["G5_N7"] = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["G5_N9"] = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["G5_O2'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["G5_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["G5_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["G5_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["G5_O6"] = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["G5_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["G5_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["G5_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["G5_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["G5_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["G5_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["G5_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+
+  lcpomap["G_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["G_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["G_C2'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["G_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["G_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["G_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["G_C5"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["G_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["G_C6"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["G_C8"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["G_N1"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["G_N2"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["G_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["G_N7"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["G_N9"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["G_O2'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["G_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["G_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["G_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["G_O6"] = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["G_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["G_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["G_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["G_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["G_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["G_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["G_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+
+  lcpomap["U3_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["U3_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["U3_C2'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["U3_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["U3_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["U3_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["U3_C5"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["U3_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["U3_C6"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["U3_N1"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["U3_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["U3_O2"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["U3_O2'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["U3_O3'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["U3_O4"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["U3_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["U3_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["U3_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["U3_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["U3_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["U3_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["U3_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["U3_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["U3_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+
+  lcpomap["U5_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["U5_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["U5_C2'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["U5_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["U5_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["U5_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["U5_C5"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["U5_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["U5_C6"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["U5_N1"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["U5_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["U5_O2"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["U5_O2'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["U5_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["U5_O4"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["U5_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["U5_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["U5_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["U5_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["U5_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["U5_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["U5_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["U5_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["U5_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+
+  lcpomap["U_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["U_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["U_C2'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["U_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["U_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["U_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["U_C5"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["U_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["U_C6"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["U_N1"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["U_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["U_O2"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["U_O2'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["U_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["U_O4"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["U_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["U_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["U_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["U_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["U_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["U_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["U_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["U_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["U_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   return lcpomap;
 }
 
-//assigns LCPO parameters to each atom reading from database
+// assigns LCPO parameters to each atom reading from database
 void SAXS::readLCPOparam(const std::vector<std::vector<std::string> > &AtomResidueName, unsigned natoms)
 {
   std::map<std::string, std::vector<double> > lcpomap = setupLCPOparam();
 
   for(unsigned i=0; i<natoms; ++i)
   {
-    if ((AtomResidueName[0][i][0]=='O') || (AtomResidueName[0][i][0]=='N') || (AtomResidueName[0][i][0]=='C') || (AtomResidueName[0][i][0]=='S')) {
+    if ((AtomResidueName[0][i][0]=='O') || (AtomResidueName[0][i][0]=='N') || (AtomResidueName[0][i][0]=='C') || (AtomResidueName[0][i][0]=='S' || (AtomResidueName[0][i][0]=='P'))) {
       std::string identifier = AtomResidueName[1][i]+"_"+AtomResidueName[0][i];
       std::vector<double> LCPOparamVector = lcpomap.at(identifier);
       double rs = 0.14;
@@ -3370,7 +7429,7 @@ void SAXS::readLCPOparam(const std::vector<std::vector<std::string> > &AtomResid
 
   for(unsigned i=0; i<natoms; ++i) {
     if (LCPOparam[i].size()==0 ) {
-      if ((AtomResidueName[0][i][0]=='O') || (AtomResidueName[0][i][0]=='N') || (AtomResidueName[0][i][0]=='C') || (AtomResidueName[0][i][0]=='S')) {
+      if ((AtomResidueName[0][i][0]=='O') || (AtomResidueName[0][i][0]=='N') || (AtomResidueName[0][i][0]=='C') || (AtomResidueName[0][i][0]=='S') || (AtomResidueName[0][i][0]=='P')) {
         std::cout << "Could not find LCPO paramaters for atom " << AtomResidueName[0][i] << " of residue " << AtomResidueName[1][i] << std::endl;
         error ("missing LCPO parameters\n");
       }
@@ -3395,6 +7454,3 @@ void SAXS::readLCPOparam(const std::vector<std::vector<std::string> > &AtomResid
 
 }//namespace isdb
 }//namespace PLMD
-
-
-

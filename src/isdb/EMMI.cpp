@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017-2022 The plumed team
+   Copyright (c) 2017-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -230,7 +230,7 @@ private:
 // calculate model GMM weights and covariances
   std::vector<double> get_GMM_m(std::vector<AtomNumber> &atoms);
 // read data GMM file
-  void get_GMM_d(std::string gmm_file);
+  void get_GMM_d(const std::string & gmm_file);
 // check GMM data
   void check_GMM_d(const VectorGeneric<6> &cov, double w);
 // auxiliary method
@@ -486,7 +486,7 @@ EMMI::EMMI(const ActionOptions&ao):
     if(dsigma>0 && MCstride_<=0) error("you must specify a positive MC_STRIDE");
     // status file parameters
     parse("WRITE_STRIDE", statusstride_);
-    if(statusstride_<=0) error("you must specify a positive WRITE_STRIDE");
+    if(statusstride_==0) error("you must specify a positive WRITE_STRIDE");
     parse("STATUS_FILE",  statusfilename_);
     if(statusfilename_=="") statusfilename_ = "MISTATUS"+getLabel();
     else                    statusfilename_ = statusfilename_+getLabel();
@@ -543,7 +543,7 @@ EMMI::EMMI(const ActionOptions&ao):
   parse("NL_CUTOFF",nl_cutoff_);
   if(nl_cutoff_<=0.0) error("NL_CUTOFF should be explicitly specified and positive");
   parse("NL_STRIDE",nl_stride_);
-  if(nl_stride_<=0) error("NL_STRIDE should be explicitly specified and positive");
+  if(nl_stride_==0) error("NL_STRIDE should be explicitly specified and positive");
 
   // averaging or not
   parseFlag("NO_AVER",no_aver_);
@@ -903,8 +903,8 @@ void EMMI::doMonteCarlo()
       // calculate deviation
       double dev = ( scale_*ovmd_ave_[GMMid]-ovdd_[GMMid] );
       // add to energies
-      old_ene += std::log( 1.0 + 0.5 * dev * dev * old_inv_s2);
-      new_ene += std::log( 1.0 + 0.5 * dev * dev * new_inv_s2);
+      old_ene += std::log1p( 0.5 * dev * dev * old_inv_s2);
+      new_ene += std::log1p( 0.5 * dev * dev * new_inv_s2);
     }
     // final energy calculation: add normalization and prior
     old_ene = kbt_ * ( old_ene + (ng+prior_) * std::log(sigma_[nGMM]) );
@@ -1071,7 +1071,7 @@ void EMMI::check_GMM_d(const VectorGeneric<6> &cov, double w)
 }
 
 // read GMM data file in PLUMED format:
-void EMMI::get_GMM_d(std::string GMM_file)
+void EMMI::get_GMM_d(const std::string & GMM_file)
 {
   VectorGeneric<6> cov;
 
@@ -1717,7 +1717,7 @@ void EMMI::calculate_Outliers()
       // calculate deviation
       double dev = ( scale_*ovmd_ave_[GMMid]-ovdd_[GMMid] ) / sigma_[i];
       // add to group energy
-      eneg += std::log( 1.0 + 0.5 * dev * dev );
+      eneg += std::log1p( 0.5 * dev * dev );
       // store derivative for later
       GMMid_der_[GMMid] = kbt_ / ( 1.0 + 0.5 * dev * dev ) * dev / sigma_[i];
     }

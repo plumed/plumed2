@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2022 The plumed team
+   Copyright (c) 2015-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -115,7 +115,7 @@ void OutputColvarFile::performAnalysis() {
 
   // Print embedding coordinates
   for(unsigned i=0; i<getNumberOfDataPoints(); ++i) {
-    DataCollectionObject& mydata=getStoredData(i, false);
+    const DataCollectionObject& mydata=getStoredData(i, false);
     for(unsigned j=0; j<req_vals.size(); ++j) gfile.printField( req_vals[j], mydata.getArgumentValue(req_vals[j]) );
     gfile.printField( "weight", getWeight(i) ); gfile.printField();
   }

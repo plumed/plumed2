@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2022 The plumed team
+   Copyright (c) 2012-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -109,8 +109,9 @@ Exception& Exception::operator<<(const std::string&msg)
 Exception& Exception::operator<<(const Location&loc)
 {
   if(loc.file) {
-    char cline[1000];
-    std::sprintf(cline,"%u",loc.line);
+    const std::size_t clinelen=1000;
+    char cline[clinelen];
+    std::snprintf(cline,clinelen,"%u",loc.line);
     this->msg += "\n(";
     try {
       this->msg += simplify(loc.file);

@@ -58,9 +58,14 @@ echo "++ Arguments: $arg"
 echo "++ Processors: $mpiprocs"
 
 mpi=env
+
+# this is the executable used for running the tests:
 plumed="${PLUMED_PROGRAM_NAME:-plumed}"
 
-root=$($plumed --no-mpi info --root)
+# this is the executable used for getting the configuration:
+plumed_nompi="$plumed --no-mpi"
+
+root=$($plumed_nompi info --root)
 
 if test -z "$root" ; then
   echo "FAILURE: plumed executable not available"
@@ -76,16 +81,16 @@ cd -
 
 if ((mpiprocs>0)); then
 mpi=""
-if $plumed --no-mpi config -q mpiexec
+if $plumed_nompi config -q mpiexec
 then
-  mpi="$($plumed --no-mpi config mpiexec)"
+  mpi="$($plumed_nompi config mpiexec)"
 fi
 if test -z "$mpi" ; then
   mpi="${PLUMED_MPIRUN:-mpirun}"
 fi
 mpi="$mpi -np $mpiprocs"
 
-if ! $plumed config -q has mpi
+if ! $plumed_nompi config -q has mpi
 then
     if [ "$TRAVIS" = true ] || [ "$GITHUB_ACTIONS" = true ] ; then
       if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
@@ -122,7 +127,7 @@ fi
 for need in $plumed_needs
 do
   echo "Checking for $need"
-  if ! $plumed config -q has $need
+  if ! $plumed_nompi config -q has $need
   then
     if [ "$TRAVIS" = true ] || [ "$GITHUB_ACTIONS" = true ] ; then
       if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
@@ -140,7 +145,7 @@ done
 for module in $plumed_modules
 do
   echo "Checking for $module"
-  if ! $plumed config -q module $module
+  if ! $plumed_nompi config -q module $module
   then
     if [ "$TRAVIS" = true ] || [ "$GITHUB_ACTIONS" = true ] ; then
       if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
@@ -170,10 +175,12 @@ if type -t plumed_custom_skip 1>/dev/null ; then
   fi
 fi
 
-if $plumed --is-installed ; then
-  export PLUMED_KERNEL="$root/../lib${PLUMED_PROGRAM_NAME:-plumed}Kernel.$($plumed info --soext)"
+if $plumed_nompi --is-installed ; then
+  export PLUMED_KERNEL="$root/../lib${PLUMED_PROGRAM_NAME:-plumed}Kernel.$($plumed_nompi info --soext)"
+  export PLUMED_LIB="$root/../lib${PLUMED_PROGRAM_NAME:-plumed}.$($plumed_nompi info --soext)"
 else
-  export PLUMED_KERNEL="$root/src/lib/libplumedKernel.$($plumed info --soext)"
+  export PLUMED_KERNEL="$root/src/lib/libplumedKernel.$($plumed_nompi info --soext)"
+  export PLUMED_LIB="$root/src/lib/libplumed.$($plumed_nompi info --soext)"
 fi
 if type -t plumed_regtest_before 1>/dev/null ; then
   plumed_regtest_before
@@ -194,12 +201,11 @@ case "$type" in
   $mpi $valgrind $plumed sum_hills $arg > out 2> err
  ;;
 (make)
-  $plumed info --configuration > Makefile.conf
-  $plumed --is-installed || ln -s "$root/src" plumed
+  $plumed_nompi --is-installed || ln -s "$root/src" plumed
   if test "$plumed_language" = fortran || test "$plumed_language" = fortran08 || test "$plumed_language" = c ; then
-    cat <($plumed info --configuration) "$root/src/lib/Plumed.inc.shared" ../../../scripts/exe.make > Makefile 
+    cat <($plumed_nompi info --configuration) "$root/src/lib/Plumed.inc.shared" ../../../scripts/exe.make > Makefile 
   else
-    cat <($plumed info --configuration) "$root/src/lib/Plumed.inc.static" ../../../scripts/exe.make > Makefile 
+    cat <($plumed_nompi info --configuration) "$root/src/lib/Plumed.inc.static" ../../../scripts/exe.make > Makefile 
   fi
   if test "$plumed_language" = fortran || test "$plumed_language" = fortran08 ; then
     if make print-fortran | grep "FC=$" 1>/dev/null ; then
@@ -244,7 +250,10 @@ error
 #else
 error
 #endif
+
 int f(int a){
+  int x;
+  x=_Generic( 'a', char: 1, int: 2, long: 3, default: 0);
   return a;
 }
 EOF
@@ -268,7 +277,7 @@ EOF
   ;;
 (python)
 # make sure the right python module is in the path based on plumed root
-  PYTHONPATH="$root/python:$PYTHONPATH" $($plumed config python_bin) $arg > out 2> err
+  PYTHONPATH="$root/python:$PYTHONPATH" $($plumed_nompi config python_bin) $arg > out 2> err
   ;;
 (*) echo "FAILURE: unknown test type" ; exit 1 ;;
 esac

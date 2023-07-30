@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2022 The plumed team
+   Copyright (c) 2015-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -201,7 +201,7 @@ void PAMM::calculateWeight( multicolvar::AtomValuePack& myatoms ) {
     double pref = 1.0 / static_cast<double>( nvars );
     for(unsigned ivar=0; ivar<nvars; ++ivar) {
       // Get the values of derivatives
-      MultiValue& myder=getInputDerivatives( ivar, false, myatoms );
+      const MultiValue& myder=getInputDerivatives( ivar, false, myatoms );
       for(unsigned j=0; j<myder.getNumberActive(); ++j) {
         unsigned jder=myder.getActiveIndex(j);
         myatoms.addDerivative( 0, jder, pref*myder.getDerivative( 0, jder ) );
@@ -245,7 +245,7 @@ double PAMM::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatom
 Vector PAMM::getCentralAtom() {
   // Who knows how this should work
   plumed_error();
-  return Vector(1.0,0.0,0.0);
+  // return Vector(1.0,0.0,0.0);
 }
 
 }

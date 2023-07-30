@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2022 The plumed team
+   Copyright (c) 2011-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -121,6 +121,9 @@ class Communicator {
     }
   };
 public:
+  ///Runtime acces to the __PLUMED_HAS_MPI definition
+  static bool plumedHasMPI();
+
 /// Wrapper class for MPI_Status
   class Status {
     int Get_count(MPI_Datatype)const;

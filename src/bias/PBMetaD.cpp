@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2022 The plumed team
+   Copyright (c) 2015-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Bias.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "core/ActionSet.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
@@ -1095,7 +1095,7 @@ void PBMetaD::calculate()
   // set Forces - set them to zero if SELECTOR is active
   if(do_select_) current_value_ = static_cast<unsigned>(plumed.passMap[selector_]);
 
-  if(!do_select_ || (do_select_ && select_value_==current_value_)) {
+  if(!do_select_ || select_value_==current_value_) {
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
       const double f = - std::exp((-bias[i]+bmin)/kbt_) / (ene) * deriv[i];
       setOutputForce(i, f);
@@ -1130,7 +1130,7 @@ void PBMetaD::update()
     multivariate=false;
   }
 
-  if(nowAddAHill && (!do_select_ || (do_select_ && select_value_==current_value_))) {
+  if(nowAddAHill && (!do_select_ || select_value_==current_value_)) {
     // get all biases and heights
     std::vector<double> cv(getNumberOfArguments());
     std::vector<double> bias(getNumberOfArguments());

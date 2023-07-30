@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2022 The plumed team
+   Copyright (c) 2012-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -228,6 +228,7 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
   std::unique_ptr<gridtools::GridVessel> grid;
   if( mycolv->isDensity() ) grid=createGrid( "histogram", vstring );
   else grid=createGrid( "average", vstring );
+  // cppcheck-suppress danglingLifetime
   mygrid=grid.get();
   // And finish the grid setup
   setAveragingAction( std::move(grid), true );

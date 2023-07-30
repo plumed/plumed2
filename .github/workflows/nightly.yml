@@ -9,7 +9,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest , macos-latest]
-        branch: [v2.6, v2.7, master]
+        branch: [v2.8, v2.9, master]
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2

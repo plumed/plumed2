@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2022 The plumed team
+   Copyright (c) 2014-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,53 +26,47 @@
 
 namespace PLMD {
 
-class OpenMP {
-
-public:
+namespace OpenMP {
 
 /// Set number of threads that can be used by openMP
-  static void setNumThreads(const unsigned nt);
+void setNumThreads(const unsigned nt);
 
 /// Get number of threads that can be used by openMP
-  static unsigned getNumThreads();
+unsigned getNumThreads();
 
 /// Returns a unique thread identification number within the current team
-  static unsigned getThreadNum();
+unsigned getThreadNum();
 
 /// get cacheline size
-  static unsigned getCachelineSize();
+unsigned getCachelineSize();
 
 /// Get a reasonable number of threads so as to access to an array of size s located at x
-  template<typename T>
-  static unsigned getGoodNumThreads(const T*x,unsigned s);
-
-/// Get a reasonable number of threads so as to access to vector v;
-  template<typename T>
-  static unsigned getGoodNumThreads(const std::vector<T> & v);
-
-};
-
 template<typename T>
-unsigned OpenMP::getGoodNumThreads(const T*x,unsigned n) {
-  unsigned long long p=(unsigned long long) x;
-  (void) p; // this is not to have warnings. notice that the pointer location is not used actually.
-// a factor two is necessary since there is no guarantee that x is aligned
-// to cache line boundary
+unsigned getGoodNumThreads(const T* /*getTheType*/,unsigned n) {
+  // this is more or less the equivalent of writing "unsigned getGoodNumThreads<T>(unsigned n)"
+
+  // a factor two is necessary since there is no guarantee that x is aligned
+  // to cache line boundary
   unsigned m=n*sizeof(T)/(2*getCachelineSize());
   unsigned numThreads=getNumThreads();
-  if(m>=numThreads) m=numThreads;
-  else m=1;
+  if(m>=numThreads) {
+    m=numThreads;
+  } else {
+    //it is better to use either all the active threads or only one
+    //this solves a performance problem as explained in issue #415
+    m=1;
+  }
   return m;
 }
 
-
+/// Get a reasonable number of threads so as to access to vector v
 template<typename T>
-unsigned OpenMP::getGoodNumThreads(const std::vector<T> & v) {
+unsigned getGoodNumThreads(const std::vector<T> & v) {
   if(v.size()==0) return 1;
   else return getGoodNumThreads(&v[0],v.size());
 }
 
-
-}
+}//namespace OpenMP
+}//namespace PLMD
 
 #endif

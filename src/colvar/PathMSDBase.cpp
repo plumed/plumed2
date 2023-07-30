@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2022 The plumed team
+   Copyright (c) 2012-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "PathMSDBase.h"
 #include "Colvar.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include "tools/PDB.h"
@@ -63,10 +63,13 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
   parseFlag("NOPBC",nopbc);
 
   // open the file
-  FILE* fp=fopen(reference.c_str(),"r");
-  std::vector<AtomNumber> aaa;
-  if (fp!=NULL)
+  if (FILE* fp=this->fopen(reference.c_str(),"r"))
   {
+// call fclose when exiting this block
+    auto deleter=[this](FILE* f) { this->fclose(f); };
+    std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
+
+    std::vector<AtomNumber> aaa;
     log<<"Opening reference file "<<reference.c_str()<<"\n";
     bool do_read=true;
     unsigned nat=0;
@@ -98,7 +101,6 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
         msdv.push_back(mymsd); // the vector that stores the frames
       } else {break ;}
     }
-    fclose (fp);
     log<<"Found TOTAL "<<nframes<< " PDB in the file "<<reference.c_str()<<" \n";
     if(nframes==0) error("at least one frame expected");
     //set up rmsdRefClose, initialize it to the first structure loaded from reference file

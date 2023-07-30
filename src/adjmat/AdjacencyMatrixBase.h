@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2022 The plumed team
+   Copyright (c) 2015-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -74,7 +74,7 @@ public:
   virtual void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ) = 0;
 /// None of these things are allowed
   bool isPeriodic() { return false; }
-  Vector getCentralAtom() { plumed_merror("cannot find central atoms for adjacency matrix actions"); Vector dum; return dum; }
+  Vector getCentralAtom() { plumed_merror("cannot find central atoms for adjacency matrix actions"); }
 /// Get the atom number
   AtomNumber getAbsoluteIndexOfCentralAtom( const unsigned& i ) const ;
 };

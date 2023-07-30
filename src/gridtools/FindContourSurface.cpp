@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2022 The plumed team
+   Copyright (c) 2016-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -212,11 +212,11 @@ void FindContourSurface::compute( const unsigned& current, MultiValue& myvals ) 
   std::vector<unsigned> neighbours; unsigned num_neighbours; unsigned nfound=0; double minp=0;
   std::vector<unsigned> bins_n( ingrid->getNbin() ); unsigned shiftn=current;
   std::vector<unsigned> ind( ingrid->getDimension() ); std::vector<double> point( ingrid->getDimension() );
-#ifndef DNDEBUG
+#ifndef NDEBUG
   std::vector<unsigned> oind( mygrid->getDimension() ); mygrid->getIndices( current, oind );
 #endif
   for(unsigned i=0; i<bins_n[dir_n]; ++i) {
-#ifndef DNDEBUG
+#ifndef NDEBUG
     std::vector<unsigned> base_ind( ingrid->getDimension() ); ingrid->getIndices( shiftn, base_ind );
     for(unsigned j=0; j<gdirs.size(); ++j) plumed_dbg_assert( base_ind[gdirs[j]]==oind[j] );
 #endif

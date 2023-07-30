@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2022 The plumed team
+   Copyright (c) 2011-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -273,7 +273,7 @@ public:
     {
       typename C::const_iterator fwdIt,endIt;
 
-      Entry(C const& v) : fwdIt(v.begin()), endIt(v.end()) {}
+      explicit Entry(C const& v) : fwdIt(v.begin()), endIt(v.end()) {}
       /// check if this vector still contains something to be pushed
       explicit operator bool () const { return fwdIt != endIt; }
       /// to allow using a priority_queu, which selects the highest element.

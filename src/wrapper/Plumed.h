@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2022 The plumed team
+   Copyright (c) 2011-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -467,14 +467,34 @@
 
   Only used in declarations. Requires C11 _Generic and variadic macros, and so it is
   disabled by default with C++ and pre C11 compilers.
+
+  https://mort.coffee/home/c-compiler-quirks/
 */
 
 #ifndef __PLUMED_WRAPPER_C_TYPESAFE
-#if ! defined(__cplusplus) && __STDC_VERSION__ >= 201112L
-#define __PLUMED_WRAPPER_C_TYPESAFE 1
-#else
-#define __PLUMED_WRAPPER_C_TYPESAFE 0
+#  if defined(__STDC_VERSION__)
+#    if ! defined(__cplusplus) && __STDC_VERSION__ >= 201112L
+#      if defined(__GNUC__) && !defined(__clang__)
+#        if (__GNUC__ >= 5 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 9))
+#          define __PLUMED_WRAPPER_C_TYPESAFE 1
+#        endif
+#      else
+#        define __PLUMED_WRAPPER_C_TYPESAFE 1
+#      endif
+#    endif
+#  endif
+#  ifndef __PLUMED_WRAPPER_C_TYPESAFE
+#    define __PLUMED_WRAPPER_C_TYPESAFE 0
+#  endif
 #endif
+
+/*
+  1: Enable RTLD_DEEPBIND when possible (default)
+  0: Disable RTLD_DEEPBIND
+*/
+
+#ifndef __PLUMED_WRAPPER_ENABLE_RTLD_DEEPBIND
+#define __PLUMED_WRAPPER_ENABLE_RTLD_DEEPBIND 1
 #endif
 
 /*
@@ -1815,7 +1835,7 @@ private:
     plumed_error&e;
     finalize_plumed_error(const finalize_plumed_error&); //not implemented
   public:
-    finalize_plumed_error(plumed_error&e):
+    __PLUMED_WRAPPER_CXX_EXPLICIT finalize_plumed_error(plumed_error&e):
       e(e)
     {}
     ~finalize_plumed_error() {
@@ -2075,16 +2095,17 @@ private:
     __PLUMED_WRAPPER_CXX_EXPLICIT add_buffer_to(const char * msg) __PLUMED_WRAPPER_CXX_NOEXCEPT {
       this->msg[0]='\0';
       __PLUMED_WRAPPER_STD strncat(this->msg,msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1);
+      this->msg[__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1]='\0';
       if(PlumedGetenvExceptionsDebug() && __PLUMED_WRAPPER_STD strlen(msg) > __PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1) __PLUMED_WRAPPER_STD fprintf(stderr,"+++ WARNING: message will be truncated\n");
     }
     add_buffer_to(const add_buffer_to & other) __PLUMED_WRAPPER_CXX_NOEXCEPT {
       msg[0]='\0';
-      __PLUMED_WRAPPER_STD strncat(msg,other.msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1);
+      __PLUMED_WRAPPER_STD memcpy(msg,other.msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER);
     }
     add_buffer_to & operator=(const add_buffer_to & other) __PLUMED_WRAPPER_CXX_NOEXCEPT {
       if(this==&other) return *this;
       msg[0]='\0';
-      __PLUMED_WRAPPER_STD strncat(msg,other.msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1);
+      __PLUMED_WRAPPER_STD memcpy(msg,other.msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER);
       return *this;
     }
     const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {return msg;}
@@ -2106,6 +2127,12 @@ private:
     plumed_safeptr safe;
     /// This buffer holds a copy of the data when they are passed by value.
     /// The size is sufficient to hold any primitive type.
+    /// Notice that the buffer is required to enable conversions (e.g., passing a class that can be converted to int)
+    /// and, at the same time, allow the object to exist after SafePtr constructor has completed.
+    /// A perhaps cleaner implementation would require a base class containing
+    /// the plumed_safeptr object, derived classes depending on the
+    /// argument type as a template parameter, and overloaded functions
+    /// returning this derived class.
     char buffer[32];
     /// Default constructor, nullptr
     SafePtr() __PLUMED_WRAPPER_CXX_NOEXCEPT {
@@ -2117,7 +2144,7 @@ private:
       buffer[0]='\0';
     }
 
-    SafePtr(const plumed_safeptr & safe,__PLUMED_WRAPPER_STD size_t nelem=0, const __PLUMED_WRAPPER_STD size_t* shape=__PLUMED_WRAPPER_CXX_NULLPTR) __PLUMED_WRAPPER_CXX_NOEXCEPT {
+    __PLUMED_WRAPPER_CXX_EXPLICIT SafePtr(const plumed_safeptr & safe,__PLUMED_WRAPPER_STD size_t nelem=0, const __PLUMED_WRAPPER_STD size_t* shape=__PLUMED_WRAPPER_CXX_NULLPTR) __PLUMED_WRAPPER_CXX_NOEXCEPT {
       this->safe=safe;
       buffer[0]='\0';
       if(nelem>0) this->safe.nelem=nelem;
@@ -3505,10 +3532,12 @@ void plumed_retrieve_functions(plumed_plumedmain_function_holder* functions, plu
       if(debug) __PLUMED_FPRINTF(stderr,"|RTLD_GLOBAL");
     }
 #ifdef RTLD_DEEPBIND
+#if __PLUMED_WRAPPER_ENABLE_RTLD_DEEPBIND
     if(!__PLUMED_GETENV("PLUMED_LOAD_NODEEPBIND")) {
       dlopenmode=dlopenmode|RTLD_DEEPBIND;
       if(debug) __PLUMED_FPRINTF(stderr,"|RTLD_DEEPBIND");
     }
+#endif
 #endif
     if(debug) __PLUMED_FPRINTF(stderr," +++\n");
     p=plumed_attempt_dlopen(path,dlopenmode);
@@ -3627,7 +3656,9 @@ plumed plumed_create_dlopen(const char*path) {
 #ifdef __PLUMED_HAS_DLOPEN
   dlopenmode=RTLD_NOW|RTLD_LOCAL;
 #ifdef RTLD_DEEPBIND
-  dlopenmode=dlopenmode|RTLD_DEEPBIND;
+#if __PLUMED_WRAPPER_ENABLE_RTLD_DEEPBIND
+  if(!__PLUMED_GETENV("PLUMED_LOAD_NODEEPBIND")) dlopenmode=dlopenmode|RTLD_DEEPBIND;
+#endif
 #endif
 #else
   dlopenmode=0;

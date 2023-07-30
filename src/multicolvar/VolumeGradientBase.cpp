@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2022 The plumed team
+   Copyright (c) 2014-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -97,6 +97,7 @@ void VolumeGradientBase::setNumberInVolume( const unsigned& ivol, const unsigned
     double ww=outvals.get(0); outvals.setValue(ivol,ww*weight);
     if( derivativesAreRequired() ) {
       plumed_merror("This needs testing");
+#if 0
       CatomPack catom; mcolv->getCentralAtomPack( 0, curr, catom );
       for(unsigned i=0; i<catom.getNumberOfAtomsWithDerivatives(); ++i) {
         unsigned jatom=3*catom.getIndex(i);
@@ -112,11 +113,13 @@ void VolumeGradientBase::setNumberInVolume( const unsigned& ivol, const unsigned
         outvals.addDerivative( ivol, iatom+1, ww*refders[i][1] );
         outvals.addDerivative( ivol, iatom+2, ww*refders[i][2] );
       }
+#endif
     }
   } else {
     double ww=outvals.get(0); outvals.setValue(ivol,ww*weight);
     if( derivativesAreRequired() ) {
       plumed_merror("This needs testing");
+#if 0
       CatomPack catom; mcolv->getCentralAtomPack( 0, curr, catom );
       for(unsigned i=0; i<catom.getNumberOfAtomsWithDerivatives(); ++i) {
         unsigned jatom=3*catom.getIndex(i);
@@ -132,6 +135,7 @@ void VolumeGradientBase::setNumberInVolume( const unsigned& ivol, const unsigned
         outvals.addDerivative( ivol, iatom+1, ww*refders[i][1] );
         outvals.addDerivative( ivol, iatom+2, ww*refders[i][2] );
       }
+#endif
     }
   }
 }

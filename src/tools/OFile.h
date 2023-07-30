@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2022 The plumed team
+   Copyright (c) 2012-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -154,9 +154,9 @@ class OFile:
 /// see link(OFile&)
   OFile* linked;
 /// Internal buffer for printf
-  std::unique_ptr<char[]> buffer_string;
+  std::vector<char> buffer_string;
 /// Internal buffer (generic use)
-  std::unique_ptr<char[]> buffer;
+  std::vector<char> buffer;
 /// Internal buffer length
   int buflen;
 /// This variables stores the actual buffer length

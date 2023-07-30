@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2022 The plumed team
+   Copyright (c) 2013-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -49,7 +49,7 @@ public:
 /// Remove a metric from the register of metrics
   void remove(creator_pointer f);
 /// Verify if a particular metric type is present in the register
-  bool check(std::string type);
+  bool check(const std::string & type);
 /// Create a reference configuration and don't set a point of reference
   template <class T>
   std::unique_ptr<T> create( const std::string& type );

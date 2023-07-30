@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Copyright (c) 2022 of Luigi Bonati and Enrico Trizio.
+Copyright (c) 2022-2023 of Luigi Bonati and Enrico Trizio.
 
 The pytorch module is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
@@ -23,7 +23,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "core/PlumedMain.h"
 #include "function/Function.h"
-#include "function/ActionRegister.h"
+#include "core/ActionRegister.h"
 
 #include <torch/torch.h>
 #include <torch/script.h>

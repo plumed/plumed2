@@ -251,6 +251,10 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
   parseFlag("WALKERS_MPI",walkers_mpi);
   if(walkers_mpi)
   {
+    //If this Action is not compiled with MPI the user is informed and we exit gracefully
+    plumed_massert(Communicator::plumedHasMPI(),"Invalid walkers configuration: WALKERS_MPI flag requires MPI compilation");
+    plumed_massert(Communicator::initialized(),"Invalid walkers configuration: WALKERS_MPI needs the communicator correctly initialized.");
+
     if(comm.Get_rank()==0) //multi_sim_comm works on first rank only
     {
       NumWalkers_=multi_sim_comm.Get_size();
@@ -821,8 +825,11 @@ void OPESexpanded::init_fromObs() //This could probably be faster and/or require
     }
     for(unsigned i=0; i<deltaF_.size(); i++)
     {
-      const double diff_i=(-getExpansion(i)+deltaF_[i]/kbt_);
-      deltaF_[i]-=kbt_*(std::log1p(std::exp(diff_i)/t)+std::log1p(-1./(1.+t)));
+      const double diff_i=(-getExpansion(i)+deltaF_[i]/kbt_-std::log(t));
+      if(diff_i>0) //save exp from overflow
+        deltaF_[i]-=kbt_*(diff_i+std::log1p(std::exp(-diff_i))+std::log1p(-1./(1.+t)));
+      else
+        deltaF_[i]-=kbt_*(std::log1p(std::exp(diff_i))+std::log1p(-1./(1.+t)));
     }
   }
   obs_cvs_.clear();
@@ -904,14 +911,22 @@ void OPESexpanded::updateDeltaF(double bias)
 {
   plumed_dbg_massert(counter_>0,"deltaF_ must be initialized");
   counter_++;
-  const double increment=kbt_*std::log1p(std::exp((bias-rct_)/kbt_)/(counter_-1.));
+  const double arg=(bias-rct_)/kbt_-std::log(counter_-1.);
+  double increment;
+  if(arg>0) //save exp from overflow
+    increment=kbt_*(arg+std::log1p(std::exp(-arg)));
+  else
+    increment=kbt_*(std::log1p(std::exp(arg)));
   #pragma omp parallel num_threads(NumOMP_)
   {
     #pragma omp for
     for(unsigned i=0; i<deltaF_.size(); i++)
     {
-      const double diff_i=(-getExpansion(i)+(bias-rct_+deltaF_[i])/kbt_);
-      deltaF_[i]+=increment-kbt_*std::log1p(std::exp(diff_i)/(counter_-1.));
+      const double diff_i=(-getExpansion(i)+(bias-rct_+deltaF_[i])/kbt_-std::log(counter_-1.));
+      if(diff_i>0) //save exp from overflow
+        deltaF_[i]+=increment-kbt_*(diff_i+std::log1p(std::exp(-diff_i)));
+      else
+        deltaF_[i]+=increment-kbt_*std::log1p(std::exp(diff_i));
     }
   }
   rct_+=increment+kbt_*std::log1p(-1./counter_);

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2022 The plumed team
+   Copyright (c) 2013-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -68,8 +68,13 @@ Mapping::Mapping(const ActionOptions&ao):
 
   // Open reference file
   std::string reference; parse("REFERENCE",reference);
-  FILE* fp=fopen(reference.c_str(),"r");
+
+  FILE* fp=this->fopen(reference.c_str(),"r");
   if(!fp) error("could not open reference file " + reference );
+
+  // call fclose when exiting this block
+  auto deleter=[this](FILE* f) { this->fclose(f); };
+  std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
 
   // Read all reference configurations
   bool do_read=true; unsigned nfram=0; double wnorm=0., ww;
@@ -95,7 +100,6 @@ Mapping::Mapping(const ActionOptions&ao):
     if( !mypdb.getArgumentValue( "WEIGHT", ww ) ) ww=1.0;
     weights.push_back( ww ); wnorm+=ww; nfram++;
   }
-  fclose(fp);
 
   if(nfram==0 ) error("no reference configurations were specified");
   log.printf("  found %u configurations in file %s\n",nfram,reference.c_str() );

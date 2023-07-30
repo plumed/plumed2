@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2022 The plumed team
+   Copyright (c) 2012-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -308,6 +308,7 @@ void Keywords::print_template(const std::string& actionname, bool include_option
     }
   }
   std::printf("\n");
+  std::flush(std::cout);
 }
 
 void Keywords::print_vim() const {

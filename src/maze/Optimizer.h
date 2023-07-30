@@ -37,6 +37,8 @@ along with maze. If not, see <https://www.gnu.org/licenses/>.
 #include "Core.h"
 #include "Loss.h"
 
+#include <memory>
+
 #define PLUMED_OPT_INIT(ao) Action(ao), Optimizer(ao)
 
 namespace PLMD {
@@ -203,7 +205,7 @@ protected:
   unsigned int n_threads_;
 
   //! Neighbor list of ligand-protein atom pairs.
-  NeighborList *neighbor_list_;
+  std::unique_ptr<NeighborList> neighbor_list_;
 
   //! Neighbor list cut-off.
   double nl_cutoff_;

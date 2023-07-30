@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2022 The plumed team
+   Copyright (c) 2012-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -49,7 +49,8 @@ Stopwatch::~Stopwatch() {
 }
 
 std::ostream& Stopwatch::log(std::ostream&os)const {
-  char buffer[1000];
+  const std::size_t bufferlen=1000;
+  char buffer[bufferlen];
   buffer[0]=0;
   for(unsigned i=0; i<40; i++) os<<" ";
   os<<"      Cycles        Total      Average      Minimum      Maximum\n";
@@ -64,7 +65,7 @@ std::ostream& Stopwatch::log(std::ostream&os)const {
     const Watch&t(watches.find(name)->second);
     os<<name;
     for(unsigned i=name.length(); i<40; i++) os<<" ";
-    std::sprintf(buffer,"%12u %12.6f %12.6f %12.6f %12.6f\n", t.cycles, frac*t.total, frac*t.total/t.cycles, frac*t.min,frac*t.max);
+    std::snprintf(buffer,bufferlen,"%12u %12.6f %12.6f %12.6f %12.6f\n", t.cycles, frac*t.total, frac*t.total/t.cycles, frac*t.min,frac*t.max);
     os<<buffer;
   }
   return os;

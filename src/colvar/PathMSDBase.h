@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2022 The plumed team
+   Copyright (c) 2012-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,7 +23,7 @@
 #define __PLUMED_colvar_PathMSDBase_h
 
 #include "Colvar.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 
 #include "tools/PDB.h"
 #include "tools/RMSD.h"

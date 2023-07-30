@@ -76,11 +76,6 @@ public:
   explicit Steered_MD(const ActionOptions& ao);
 
   /**
-   * Destructor.
-   */
-  ~Steered_MD();
-
-  /**
    * Registers PLMD keywords.
    *
    * @param[in] keys PLMD keywords
@@ -154,10 +149,6 @@ Steered_MD::Steered_MD(const ActionOptions& ao)
   addComponent("tdist");
   componentIsNotPeriodic("tdist");
   value_total_dist_ = getPntrToComponent("tdist");
-}
-
-Steered_MD::~Steered_MD() {
-  delete neighbor_list_;
 }
 
 void Steered_MD::optimize() {

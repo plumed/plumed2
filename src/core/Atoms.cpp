@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2022 The plumed team
+   Copyright (c) 2011-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -100,6 +100,7 @@ void Atoms::startStep() {
   collectEnergy=false; energyHasBeenSet=false; positionsHaveBeenSet=0;
   massesHaveBeenSet=false; chargesHaveBeenSet=false; boxHasBeenSet=false;
   forcesHaveBeenSet=0; virialHasBeenSet=false; dataCanBeSet=true;
+  resetExtraCVNeeded();
 }
 
 void Atoms::setBox(const TypesafePtr & p) {
@@ -654,5 +655,18 @@ double Atoms::getExtraCV(const std::string &name) {
 void Atoms::updateExtraCVForce(const std::string &name,double f) {
   mdatoms->updateExtraCVForce(name,f);
 }
+
+void Atoms::setExtraCVNeeded(const std::string &name,bool needed) {
+  mdatoms->setExtraCVNeeded(name,needed);
+}
+
+bool Atoms::isExtraCVNeeded(const std::string &name) const {
+  return mdatoms->isExtraCVNeeded(name);
+}
+
+void Atoms::resetExtraCVNeeded() {
+  mdatoms->resetExtraCVNeeded();
+}
+
 
 }

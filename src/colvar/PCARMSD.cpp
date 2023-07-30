@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2022 The plumed team
+   Copyright (c) 2014-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,7 +22,7 @@
 #include "Colvar.h"
 #include "core/Atoms.h"
 #include "core/PlumedMain.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "tools/PDB.h"
 #include "tools/RMSD.h"
 #include "tools/Tools.h"
@@ -160,14 +160,17 @@ PCARMSD::PCARMSD(const ActionOptions&ao):
   log<<"  Bibliography "<<plumed.cite("Spiwok, Lipovova and Kralova, JPCB, 111, 3073 (2007)  ");
   log<<" "<<plumed.cite( "Sutto, D'Abramo, Gervasio, JCTC, 6, 3640 (2010)");
 
-  // now get the eigenvectors
-  // open the file
-  FILE* fp=fopen(f_eigenvectors.c_str(),"r");
-  std::vector<AtomNumber> aaa;
   unsigned neigenvects;
   neigenvects=0;
-  if (fp!=NULL)
+  // now get the eigenvectors
+  // open the file
+  if (FILE* fp=this->fopen(f_eigenvectors.c_str(),"r"))
   {
+// call fclose when exiting this block
+    auto deleter=[this](FILE* f) { this->fclose(f); };
+    std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
+
+    std::vector<AtomNumber> aaa;
     log<<"  Opening the eigenvectors file "<<f_eigenvectors.c_str()<<"\n";
     bool do_read=true;
     unsigned nat=0;
@@ -187,7 +190,6 @@ PCARMSD::PCARMSD(const ActionOptions&ao):
         eigenvectors.push_back(mypdb.getPositions());
       } else {break ;}
     }
-    fclose (fp);
     log<<"  Found total "<<neigenvects<< " eigenvectors in the file "<<f_eigenvectors.c_str()<<" \n";
     if(neigenvects==0) error("at least one eigenvector is expected");
   }

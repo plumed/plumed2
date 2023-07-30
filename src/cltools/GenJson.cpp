@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2022,2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "CLTool.h"
-#include "CLToolRegister.h"
+#include "core/CLToolRegister.h"
 #include "tools/Tools.h"
 #include "config/Config.h"
 #include "core/ActionRegister.h"
@@ -97,7 +97,7 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
     // Handle conversion of action names to links
     std::cout<<"    \"hyperlink\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/";
     std::transform(action.begin(), action.end(), action.begin(), [](unsigned char c) { return std::tolower(c); });
-    for(unsigned n=0;; ++n) {
+    while(true) {
       std::size_t und=action.find_first_of("_");
       if( und==std::string::npos ) break;
       std::string first=action.substr(0,und);

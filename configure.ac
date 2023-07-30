@@ -5,11 +5,15 @@
 # system.
 # If you modify configure.ac, remember to run
 # autoconf and then commit both files to the git repository.
+# Make sure that you are using the same autoconf version that is
+# installed on GitHub Actions see `.github/workflows/ci.yml`
+# and search for `autoconf`. Otherwise, our codecheck job
+# on GitHub Actions will complain.
 
 # we require a recent version
 # notice that autoconf is not necessary on user's machine, but only
 # if one has to update configure.ac
-AC_PREREQ([2.68])
+AC_PREREQ([2.69])
 AC_INIT([PLUMED], [2])
 
 ##################################################################
@@ -285,6 +289,7 @@ PLUMED_CONFIG_ENABLE([fussy],[fussy warnings],[no])
 PLUMED_CONFIG_ENABLE([debug-glibcxx],[enable boundary check],[no])
 PLUMED_CONFIG_ENABLE([shared],[shared libs],[yes])
 PLUMED_CONFIG_ENABLE([dependency-tracking],[dependency tracking],[yes])
+PLUMED_CONFIG_ENABLE([no-gnu-unique],[a flag to avoid gnu unique symbols],[yes])
 PLUMED_CONFIG_ENABLE([rpath],[store rpath],[no])
 PLUMED_CONFIG_ENABLE([absolute-soname],[store absolute soname (Linux only - this is the default behavior on OSX). Only enable for testing!],[no])
 PLUMED_CONFIG_ENABLE([absolute-install-name],[store absolute relative (OSX only - disable to have a behavior similar to Linux). Only disable for testing!],[yes])
@@ -519,7 +524,10 @@ else
 fi
 
 
-
+if test "$no_gnu_unique" = true
+then
+  PLUMED_CHECK_CXXFLAG([-fno-gnu-unique])
+fi
 
 #### Compulsory libraries ####
 # some of them might be made optional if we find that are not available in some system
@@ -903,9 +911,11 @@ fi
 
 if test "$af_ocl" = true ; then
   PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afopencl])
+  PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE_OCL],[afopencl])
 fi
 if test "$af_cuda" = true ; then
   PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afcuda])
+  PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE_CUDA],[afcuda])
 fi
 if test "$af_cpu" = true ; then
   PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afcpu])

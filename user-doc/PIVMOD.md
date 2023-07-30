@@ -6,17 +6,17 @@ authors: S. Pipolo, F. Pietrucci
 reference: \cite gallet2013structural \cite pipolo2017navigating 
 -->
 
-## Overview
+\section Overview
 
 To be completed
 
-## Installation 
+\section Installation 
 This module is not installed by default. Add '\-\-enable-modules=piv' to your './configure' command when building PLUMED to enable these features.
 
-## Usage
+\section Usage
 Currently, all features of the PIV module are included in a single PIV collective variable: \ref PIV
 
-## Module Contents
+\section Module Contents
 - \subpage PIVMODColvar
 
 \page PIVMODColvar CVs Documentation

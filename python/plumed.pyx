@@ -186,7 +186,7 @@ cdef class Plumed:
          for i in range(len(shape)):
             ashape[i]=shape[i]
          ashape[len(shape)]=0
-         self.cmd_low_level(ckey,&abuffer[0], 0, & ashape[0], sizeof(ashape[0]) + type_real +  type_pointer)
+         self.cmd_low_level(ckey,&abuffer[0], 0, & ashape[0], sizeof(abuffer[0]) + type_real +  type_pointer)
      cdef cmd_ndarray_int(self, ckey, val):
          cdef int [:] abuffer = val.ravel()
          cdef size_t ashape[5]
@@ -195,7 +195,7 @@ cdef class Plumed:
          for i in range(len(shape)):
             ashape[i]=shape[i]
          ashape[len(shape)]=0
-         self.cmd_low_level(ckey,&abuffer[0], 0, & ashape[0], sizeof(ashape[0]) + type_integral +  type_pointer)
+         self.cmd_low_level(ckey,&abuffer[0], 0, & ashape[0], sizeof(abuffer[0]) + type_integral +  type_pointer)
      cdef cmd_ndarray_long(self, ckey, val):
          cdef long [:] abuffer = val.ravel()
          cdef size_t ashape[5]
@@ -204,7 +204,7 @@ cdef class Plumed:
          for i in range(len(shape)):
             ashape[i]=shape[i]
          ashape[len(shape)]=0
-         self.cmd_low_level(ckey,&abuffer[0], 0, & ashape[0], sizeof(ashape[0]) + type_integral +  type_pointer)
+         self.cmd_low_level(ckey,&abuffer[0], 0, & ashape[0], sizeof(abuffer[0]) + type_integral +  type_pointer)
      cdef cmd_array_double(self, ckey, val):
          cdef double [:] abuffer = val
          self.cmd_low_level(ckey,&abuffer[0], len(abuffer), NULL, sizeof(abuffer[0]) + type_real +  type_pointer)
@@ -244,7 +244,7 @@ cdef class Plumed:
             elif( val.dtype==np.int_ ) :
                self.cmd_ndarray_long(ckey, val)
             else :
-               raise ValueError("ndarrys should be np.double, np.intc, or np.int_")
+               raise ValueError("ndarrays should be type np.double, np.intc, or np.int_")
             return
          if isinstance(val, array.array) :
             if( (val.typecode=="d" or val.typecode=="f") and val.itemsize==8):
@@ -254,7 +254,7 @@ cdef class Plumed:
             elif( (val.typecode=="l" or val.typecode=="L") ) :
                self.cmd_array_long(ckey, val)
             else :
-               raise ValueError("ndarrays should be double (size=8), int, or long")
+               raise ValueError("arrays should be type double (size=8), int, or long")
             return
          if isinstance(val, str ) :
             py_bytes = val.encode()

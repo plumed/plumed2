@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2022 The plumed team
+   Copyright (c) 2012-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -160,8 +160,12 @@ bool CLTool::readInputFile( int argc, char**argv, FILE* in, FILE*out ) {
   }
 
   FILE* mystdin=in;
+// call fclose when fp_deleter goes out of scope
+  auto deleter=[](FILE* f) { std::fclose(f); };
+  std::unique_ptr<FILE,decltype(deleter)> fp_deleter(nullptr,deleter);
+
   if(argc==2) {
-    mystdin=fopen(argv[1],"r");
+    mystdin=std::fopen(argv[1],"r");
     if(!mystdin) {
       std::fprintf(stderr,"ERROR: cannot open file %s\n\n",argv[1]);
       std::fprintf(out,"Usage: %s < inputFile \n", name.c_str() );
@@ -169,6 +173,7 @@ bool CLTool::readInputFile( int argc, char**argv, FILE* in, FILE*out ) {
       keywords.print( out );
       return false;
     }
+    fp_deleter.reset(mystdin);
   }
 
   plumed_assert(mystdin);
@@ -195,12 +200,10 @@ bool CLTool::readInputFile( int argc, char**argv, FILE* in, FILE*out ) {
       std::fprintf(out,"Usage: %s < inputFile \n", name.c_str() );
       std::fprintf(out,"inputFile should contain one directive per line.  The directives should come from amongst the following\n\n");
       keywords.print( out );
-      fclose(mystdin);
       return false;
     }
   }
 
-  if(argc==2) fclose(mystdin);
   setRemainingToDefault(out);
   return true;
 }

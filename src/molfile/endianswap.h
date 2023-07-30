@@ -50,7 +50,7 @@ namespace molfile{
  *
  *      $RCSfile: endianswap.h,v $
  *      $Author: johns $       $Locker:  $             $State: Exp $
- *      $Revision: 1.7 $       $Date: 2016/11/28 05:01:53 $
+ *      $Revision: 1.8 $       $Date: 2020/10/21 18:03:15 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -68,9 +68,11 @@ namespace molfile{
 #ifndef ENDIAN_SWAP_H
 #define ENDIAN_SWAP_H
 
+#include <stddef.h>
+
 /* works on unaligned 2-byte quantities */
-static void swap2_unaligned(void *v, long ndata) {
-  long i;
+static void swap2_unaligned(void *v, ptrdiff_t ndata) {
+  ptrdiff_t i;
   char * dataptr = (char *) v;
   char tmp;
 
@@ -83,8 +85,8 @@ static void swap2_unaligned(void *v, long ndata) {
 
 
 /* works on unaligned 4-byte quantities */
-static void swap4_unaligned(void *v, long ndata) {
-  long i;
+static void swap4_unaligned(void *v, ptrdiff_t ndata) {
+  ptrdiff_t i;
   char *dataptr;
   char tmp;
 
@@ -102,9 +104,9 @@ static void swap4_unaligned(void *v, long ndata) {
 
 
 /* works on unaligned 8-byte quantities */
-static void swap8_unaligned(void *v, long ndata) {
+static void swap8_unaligned(void *v, ptrdiff_t ndata) {
   char *data = (char *) v;
-  long i;
+  ptrdiff_t i;
   char byteArray[8];
   char *bytePointer;
 
@@ -133,9 +135,9 @@ static void swap8_unaligned(void *v, long ndata) {
 
 /* Only works with aligned 2-byte quantities, will cause a bus error */
 /* on some platforms if used on unaligned data.                      */
-static void swap2_aligned(void *v, long ndata) {
+static void swap2_aligned(void *v, ptrdiff_t ndata) {
   short *data = (short *) v;
-  long i;
+  ptrdiff_t i;
   short *N; 
 
   for (i=0; i<ndata; i++) {
@@ -147,9 +149,9 @@ static void swap2_aligned(void *v, long ndata) {
 
 /* Only works with aligned 4-byte quantities, will cause a bus error */
 /* on some platforms if used on unaligned data.                      */
-static void swap4_aligned(void *v, long ndata) {
+static void swap4_aligned(void *v, ptrdiff_t ndata) {
   int *data = (int *) v;
-  long i;
+  ptrdiff_t i;
   int *N;
   for (i=0; i<ndata; i++) {
     N = data + i;
@@ -161,12 +163,12 @@ static void swap4_aligned(void *v, long ndata) {
 
 /* Only works with aligned 8-byte quantities, will cause a bus error */
 /* on some platforms if used on unaligned data.                      */
-static void swap8_aligned(void *v, long ndata) {
+static void swap8_aligned(void *v, ptrdiff_t ndata) {
   /* Use int* internally to prevent bugs caused by some compilers */
   /* and hardware that would potentially load data into an FP reg */
   /* and hose everything, such as the old "jmemcpy()" bug in NAMD */
   int *data = (int *) v;  
-  long i;
+  ptrdiff_t i;
   int *N; 
   int t0, t1;
 

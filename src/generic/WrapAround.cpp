@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2020 The plumed team
+   Copyright (c) 2014-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -148,6 +148,7 @@ class WrapAround:
   public ActionPilot,
   public ActionAtomistic
 {
+  // cppcheck-suppress duplInheritedMember
   std::vector<AtomNumber> atoms;
   std::vector<AtomNumber> reference;
   unsigned groupby;
@@ -222,9 +223,9 @@ void WrapAround::calculate() {
       closest = i/groupby;
     } else {
       for(unsigned j=0; j<reference.size(); ++j) {
-        Vector & second (modifyGlobalPosition(reference[j]));
-        Vector distance=pbcDistance(first,second);
-        double distance2=modulo2(distance);
+        const Vector & second (modifyGlobalPosition(reference[j]));
+        const Vector distance=pbcDistance(first,second);
+        const double distance2=modulo2(distance);
         if(distance2<mindist2) {
           mindist2=distance2;
           closest=j;

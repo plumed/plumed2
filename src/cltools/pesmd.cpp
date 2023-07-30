@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2022 The plumed team
+   Copyright (c) 2016-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "CLTool.h"
-#include "CLToolRegister.h"
+#include "core/CLToolRegister.h"
 #include "core/PlumedMain.h"
 #include "tools/Vector.h"
 #include "tools/Random.h"
@@ -139,7 +139,7 @@ private:
     parse("tstep",tstep);
     std::string frictionstr; parse("friction",frictionstr);
     if( tempstr!="NVE" ) {
-      if(frictionstr=="off") { std::fprintf(stderr,"Specify friction for thermostat\n"); std::exit(1); }
+      if(frictionstr=="off") error("pecify friction for thermostat");
       Tools::convert(frictionstr,friction);
     }
     parse("plumed",plumedin); parse("dimension",dim);

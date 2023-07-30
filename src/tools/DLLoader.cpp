@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2022 The plumed team
+   Copyright (c) 2011-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -58,8 +58,8 @@ const std::string & DLLoader::error() {
 
 DLLoader::~DLLoader() {
   auto debug=std::getenv("PLUMED_LOAD_DEBUG");
-  if(debug) std::fprintf(stderr,"delete dlloader\n");
 #ifdef __PLUMED_HAS_DLOPEN
+  if(debug) std::fprintf(stderr,"delete dlloader\n");
   while(!handles.empty()) {
     int ret=dlclose(handles.top());
     if(ret) {
@@ -67,8 +67,8 @@ DLLoader::~DLLoader() {
     }
     handles.pop();
   }
-#endif
   if(debug) std::fprintf(stderr,"end delete dlloader\n");
+#endif
 }
 
 DLLoader::DLLoader() {

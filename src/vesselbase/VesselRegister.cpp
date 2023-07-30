@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2022 The plumed team
+   Copyright (c) 2012-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -57,7 +57,7 @@ void VesselRegister::add(std::string keyword,creator_pointer f,keyword_pointer k
   mk.insert(std::pair<std::string,keyword_pointer>(keyword,ik));
 }
 
-bool VesselRegister::check(std::string key) {
+bool VesselRegister::check(const std::string & key) {
   if( m.count(key)>0 ) return true;
   return false;
 }

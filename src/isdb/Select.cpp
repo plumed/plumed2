@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017-2022 The plumed team
+   Copyright (c) 2017-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,7 +23,7 @@
 
 */
 #include "function/Function.h"
-#include "function/ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 
 namespace PLMD {

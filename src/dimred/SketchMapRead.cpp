@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2022 The plumed team
+   Copyright (c) 2016-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -95,8 +95,12 @@ SketchMapRead::SketchMapRead( const ActionOptions& ao ):
 
   parse("TYPE",mtype); bool skipchecks; parseFlag("DISABLE_CHECKS",skipchecks);
   std::string ifilename; parse("REFERENCE",ifilename);
-  FILE* fp=fopen(ifilename.c_str(),"r");
+  FILE* fp=this->fopen(ifilename.c_str(),"r");
   if(!fp) error("could not open reference file " + ifilename );
+// call fclose when fp goes out of scope
+  auto deleter=[this](FILE* f) { this->fclose(f); };
+  std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
+
 
   // Read in the embedding
   bool do_read=true; double val, ww, wnorm=0, prop; unsigned nfram=0;
@@ -125,7 +129,6 @@ SketchMapRead::SketchMapRead( const ActionOptions& ao ):
     }
     data.push_back( new_data );
   }
-  fclose(fp);
   // Finish the setup of the object by getting the arguments and atoms that are required
   std::vector<AtomNumber> atoms; std::vector<std::string> args;
   for(unsigned i=0; i<myframes.size(); ++i) { weights[i] /= wnorm; myframes[i]->getAtomRequests( atoms, skipchecks ); myframes[i]->getArgumentRequests( args, skipchecks ); }

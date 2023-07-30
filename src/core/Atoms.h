@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2022 The plumed team
+   Copyright (c) 2011-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -238,6 +238,9 @@ public:
   void setExtraCVForce(const std::string &name,const TypesafePtr & p);
   double getExtraCV(const std::string &name);
   void updateExtraCVForce(const std::string &name,double f);
+  void setExtraCVNeeded(const std::string &name,bool needed=true);
+  bool isExtraCVNeeded(const std::string &name) const;
+  void resetExtraCVNeeded();
 };
 
 inline

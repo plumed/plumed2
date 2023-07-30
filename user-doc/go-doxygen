@@ -105,8 +105,8 @@ gawk -v version="$version" '{
     print "   }"
     print "</script>"
   } else print
-}' $file |
-gawk -v mpirun="$mpirun" -f ../../plumed-syntax.awk > $file.tmp
+}' $file > tmp
+gawk -v mpirun="$mpirun" -f ../../plumed-syntax.awk tmp > $file.tmp
 if [ $? -ne 0 ]; then
    echo "ERROR IN RUNNING PLUMED SYNTAX COMMAND ON " $file
    exit
@@ -123,6 +123,7 @@ cat > html/menudata.js << EOF
 var menudata={children:[
 {text:'Home ($version)',url:'index.html'},
 {text:'Getting Started',url:'_syntax.html'},
+{text:'Performances',url:'_performances.html'},
 {text:'Tutorials',url:'tutorials.html'},
 {text:'Index of Actions',url:'glossary.html'}]}
 EOF
