@@ -171,7 +171,101 @@ __global__ void reductionVirial(T *g_idata, T *g_odata, const unsigned int len) 
     
   __syncthreads();
   // do reduction in shared memory
-  reductor<numThreads>(sdata,g_odata,blockIdx.x+vcoord*gridDim.x);
+  reductor<numThreads>(sdata,g_odata,blockIdx.x
+  +
+  vcoord * gridDim.x
+  );
+}
+
+template <unsigned numThreads, typename T>
+__global__ void reductionDerivatives(T *g_idata, T *g_odata,unsigned* nnlist, const unsigned int len) {
+  //we saved the dd in an array x0 x1 x2..,xn-1,y0 y1 y2..,yn-1,z0 z1 z2..,zn-1
+  //virialOut[ii*3+jj]-=d[ii]*d[jj]*dfunc;
+  auto sdata = shared_memory_proxy<T>();
+  const unsigned int xyz = blockIdx.z;
+  const unsigned int place = threadIdx.x;
+  const unsigned int atomId = blockIdx.y;
+  // each thread loads one element from global to shared mem
+  unsigned int i = (2*numThreads)*blockIdx.x + place+blockIdx.y*len;
+  unsigned int nn = (2*numThreads)*blockIdx.x + place;
+  unsigned int dfunc = (2*numThreads)*blockIdx.x + place+3*len;
+  const unsigned int gridSize = (2*numThreads)*gridDim.x;
+  const unsigned int trgt=(1+blockIdx.y) * len;
+  unsigned atomP, atomM;
+  T add, sub;
+  sdata[place] = T(0);
+  //I think this may slow down the loop, but this does not force the user to have
+  //an input that is multiple of the threads, padded with zeros
+  while (nn + numThreads < len) {
+    add=T(0);
+    sub=T(0);
+    atomM=nnlist[nn*2];
+    atomP=nnlist[nn*2+1];
+    if(atomP==atomId){
+      add+=g_idata[i]*g_idata[dfunc];
+    }
+    if(atomM==atomId){
+      sub+=g_idata[i]*g_idata[dfunc];
+    }
+    atomM=nnlist[(nn+numThreads)*2];
+    atomP=nnlist[(nn+numThreads)*2+1];
+    if(atomP==atomId){
+      add+=g_idata[i+numThreads]*g_idata[dfunc+numThreads];
+    }
+    if(atomM==atomId){
+     sub+=g_idata[i+numThreads]*g_idata[dfunc+numThreads];
+    }   
+    sdata[place] += add-sub;
+    //   g_idata[i]*g_idata[dfunc]
+    // + g_idata[i+numThreads]*g_idata[dfunc+numThreads];
+    i+=gridSize;
+    nn+=gridSize;
+    dfunc+=gridSize;
+  }
+  while (nn < len) {
+    add=T(0);
+    sub=T(0);
+    atomM=nnlist[nn*2];
+    atomP=nnlist[nn*2+1];
+    if(atomP==atomId){
+      add+=g_idata[i]*g_idata[dfunc];
+    }
+    if(atomM==atomId){
+      sub+=g_idata[i]*g_idata[dfunc];
+    }
+    if(atomP==atomId || atomM==atomId) {
+      int base=blockIdx.x;
+      int displacementot=3 * gridDim.x * blockIdx.y;
+      int displacementcoord=blockIdx.z * gridDim.x; 
+      //printf("CUDA: %i[%i](%s) %i[-%f] %i[+%f]->%i/%i(%i+%i+%i)\n",
+      printf("CUDA: atmID=%i[nn=%i](%s) -> addr=%i (%i+%i+%i) len=%i\n",
+      atomId,nn,((blockIdx.z==0)?"x":((blockIdx.z==1)?"y":"z")),
+      //atomM,sub,
+      //atomP,add,
+      base+displacementot+displacementcoord,
+      base,
+      //3 * gridDim.x * blockIdx.y,
+      displacementot,
+      displacementcoord,
+      len
+    );}
+    sdata[place] +=add-sub;
+     //g_idata[i]*g_idata[dfunc];
+    i+=gridSize;
+    nn+=gridSize;
+    dfunc+=gridSize;
+  }
+    
+  __syncthreads();
+  // do reduction in shared memory
+  reductor<numThreads>(sdata,g_odata,
+    blockIdx.x //position
+    + 3 * gridDim.x * blockIdx.y // dispacement by atom number 
+    + gridDim.x * blockIdx.z //coordinate (x,y,z) displacement
+  );
+   if(atomId==0 && blockIdx.x==0 && threadIdx.x==0) {
+      printf("CUDA:****  %i %s\n",gridDim.x,((blockIdx.z==0)?"x":((blockIdx.z==1)?"y":"z")));
+   }
 }
 
 //after c++14 the template activation will be shorter to write:
@@ -390,7 +484,6 @@ Vector reduceVector(double* cudaVectorAddress, unsigned N, unsigned maxNumThread
   return toret;
 }
 
-//#define vdbg(...) std::cerr << std::setw(4) << __LINE__ <<":" << std::setw(20)<< #__VA_ARGS__ << " " << (__VA_ARGS__) <<'\n'
 Tensor reduceTensor(memoryHolder<double>&  cudaTensorAddress, 
 memoryHolder<double>& memoryHelper, unsigned N, unsigned maxNumThreads){
 //we'll proceed to call recursively callreduction1D until N==1:
@@ -486,11 +579,36 @@ void callReductionVirial (T *g_idata, T *g_odata, const unsigned int len,
   }
 }
 
+template <typename T>
+void callReductionDerivatives (T *g_idata, T *g_odata, unsigned* nnList, const unsigned int len,
+ const dim3 blocks, const unsigned nthreads,cudaStream_t stream=0){
+  switch (nthreads) {
+  case 512:
+    reductionDerivatives<512,T><<<blocks,512,512*sizeof(T),stream>>>(g_idata,g_odata,nnList, len);
+    break;
+  case 256:
+    reductionDerivatives<256,T><<<blocks,256,256*sizeof(T),stream>>>(g_idata,g_odata,nnList, len);
+    break;
+  case 128:
+    reductionDerivatives<128,T><<<blocks,128,128*sizeof(T),stream>>>(g_idata,g_odata,nnList, len);
+    break;
+  case 64:
+    reductionDerivatives<64, T><<<blocks,64,64*sizeof(T),stream>>>(g_idata,g_odata, nnList,len);
+    break;
+  case 32:
+    reductionDerivatives<32, T><<<blocks,32,32*sizeof(T),stream>>>(g_idata,g_odata, nnList,len);
+    break;
+  default:
+    plumed_merror("Reduction can be called only with 512, 256, 128, 64 or 32 threads.");
+  }
+}
+
+#define vdbg(...) std::cerr << std::setw(4) << __LINE__ <<":" << std::setw(20)<< #__VA_ARGS__ << " " << (__VA_ARGS__) <<'\n'
 //if this is working I might use something similar to the sharedptr/weakptr
 DVS reduceDVS(memoryHolder<double>& derivativeIn,
 memoryHolder<double>& virialIn,
  memoryHolder<double>& scalarIn,
- memoryHolder<unsigned>& /*pairListIn*/,
+ memoryHolder<unsigned>& pairListIn,
  memoryHolder<double>& memoryHelperD,
  memoryHolder<double>& memoryHelperV,
  memoryHolder<double>& memoryHelperS,
@@ -520,23 +638,29 @@ memoryHolder<double>& virialIn,
     std::swap(reduceVirialIn,reduceVirialOut);
     std::swap(reduceScalarIn,reduceSOut);
     unsigned ngroupsS=getIdealGroups(N, runningThreads);
-    //dim3 ngroupsDerivatives(ngroupsS,dim);
+    
     
     reduceDerOut->resize(dim* ngroupsS);
     reduceVirialOut->resize(9* ngroupsS);
     reduceSOut->resize(ngroupsS);
     if (first){
       dim3 ngroupsVirial(ngroupsS,3,3);
+      dim3 ngroupsDerivatives(ngroupsS,nat,3);
+      vdbg(ngroupsDerivatives.x);
+      vdbg(ngroupsDerivatives.y);
+      vdbg(ngroupsDerivatives.z);
       callReductionVirial (reduceDerIn->getPointer(), reduceVirialOut->getPointer(),
         N, ngroupsVirial, runningThreads,streamVirial);
-      //callReductionDerivatives (reduceDerIn->getPointer(), reduceDerOut->getPointer(),pairListIn.getPointer(),
-      //N, ngroupsDerivatives, runningThreads,streamDerivatives);
+      callReductionDerivatives (reduceDerIn->getPointer(), reduceDerOut->getPointer(),
+      pairListIn.getPointer(),
+        N, ngroupsDerivatives, runningThreads,streamDerivatives);
     }else{
       dim3 ngroupsVirial(ngroupsS,9);
-    //callReductionND (reduceDerIn->getPointer(), reduceDerOut->getPointer(),
-    // N, ngroupsDerivatives, runningThreads,streamDerivatives);
-    callReductionND (reduceVirialIn->getPointer(), reduceVirialOut->getPointer(),
-      N, ngroupsVirial, runningThreads,streamVirial);
+      dim3 ngroupsDerivatives(ngroupsS,dim);
+      callReductionND (reduceDerIn->getPointer(), reduceDerOut->getPointer(),
+        N, ngroupsDerivatives, runningThreads,streamDerivatives);
+      callReductionND (reduceVirialIn->getPointer(), reduceVirialOut->getPointer(),
+        N, ngroupsVirial, runningThreads,streamVirial);
     }
     callReduction1D (reduceScalarIn->getPointer(), reduceSOut->getPointer(),
       N, ngroupsS, runningThreads,streamScalar);
@@ -547,7 +671,7 @@ memoryHolder<double>& virialIn,
     vdbg(N);
   }
   DVS toret(nat);
-  //reduceDerOut->copyFromCuda(&toret.deriv[0][0]);
+  reduceDerOut->copyFromCuda(&toret.deriv[0][0]);
   reduceVirialOut->copyFromCuda(&toret.virial[0][0]);
   reduceSOut->copyFromCuda(&toret.scalar);
   return toret;

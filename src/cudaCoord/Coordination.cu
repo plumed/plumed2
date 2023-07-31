@@ -250,12 +250,12 @@ __global__ void getpcuda_Rational(double *rdists,double *dfunc,int NN, int MM,
   }else{
   res[i]=pcuda_Rational(rdists[i],dfunc[i],NN,MM);
   }
-  printf("CUDA: %i :: d=%f -> %f, %f\n", i,rdists[i],res[i],dfunc[i]);
+  //printf("CUDA: %i :: d=%f -> %f, %f\n", i,rdists[i],res[i],dfunc[i]);
 }
 
 
 __global__ void getConst() {
-  printf("Cuda: cu_epsilon = %f\n", cu_epsilon);
+  //printf("Cuda: cu_epsilon = %f\n", cu_epsilon);
 }
 
 CudaCoordination::CudaCoordination(const ActionOptions&ao):
