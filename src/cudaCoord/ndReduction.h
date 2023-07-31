@@ -130,16 +130,42 @@ unsigned N, unsigned maxNumThreads);
   DVS(unsigned nat);
 };
 
-DVS reduceDVS(memoryHolder<double>& cudaD,
-memoryHolder<double>& cudaV,
-memoryHolder<double>& cudaS,
- memoryHolder<double>& memoryHelperV, 
- memoryHolder<double>& memoryHelperT, 
- memoryHolder<double>& memoryHelperS, 
-cudaStream_t& streamV,
-cudaStream_t& streamT,
-cudaStream_t& streamS,
-unsigned N, unsigned nat, unsigned maxNumThreads=512);
+/** @brief reduces the coordination, the derivatives and the virial from a coordination calculation
+  *  @param derivativeIn the 3 * N array to be reduced with the compontent sof the derivatives
+  *  @param scalarIn the N array to be reduced with the values of the coordination
+  *  @param memoryHelperD preallocated GPU memory for speed up (for the derivatives)
+  *  @param memoryHelperV preallocated GPU memory for speed up (for the virial)
+  *  @param memoryHelperS preallocated GPU memory for speed up (for the scalar/coordination)
+  *  @param streamDerivatives preinitializated stream for concurrency (for the derivatives)
+  *  @param streamVirial preinitializated stream for concurrency (for the virial)
+  *  @param streamScalar preinitializated stream for concurrency (for the scalar/coordination)
+  *  @param cudaScalarAddress the pointer to the memory in cuda
+  *  @param N the number of scalar to reduce
+  *  @param nat the number of atoms
+  *  @param maxNumThreads limits the number of threads per block to be used 
+  *  @return the derivative, the virial and the coordination
+  * 
+  * reduceDVS 
+  * The memory helpers will be resized if needed (the memory occupied may be increased but not reduced)
+  * 
+  * The algorithm will decide the best number of threads to be used in 
+  * an extra nthreads * sizeof(double) will be allocated on the GPU,
+  * where nthreads is the total number of threads that will be used
+  * 
+  * @note cudaScalarAddress is threated as not owned: the user will need to call cudaFree on it!!!
+  */ 
+DVS reduceDVS(memoryHolder<double>& derivativeIn,
+ memoryHolder<double>& virialIn,
+ memoryHolder<double>& scalarIn,
+ memoryHolder<unsigned>& pairListIn,
+ memoryHolder<double>& memoryHelperD,
+ memoryHolder<double>& memoryHelperV,
+ memoryHolder<double>& memoryHelperS,
+ cudaStream_t streamDerivatives,
+ cudaStream_t streamVirial,
+ cudaStream_t streamScalar,
+ unsigned N, unsigned nat,
+ unsigned maxNumThreads=512);
 
 } //namespace CUDAHELPERS
 } //namespace PLMD

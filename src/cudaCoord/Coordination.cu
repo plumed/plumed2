@@ -410,13 +410,11 @@ __device__ double calculateSqr(double distancesq, double& dfunc , rationalSwitch
 #define Zd(I) i+ (2 +I*3 )* numOfPairs
 __global__ void getCoord(
                         const unsigned numOfPairs,
-                        unsigned nat,
                         rationalSwitchParameters switchingParameters,
                         double *coordinates,
                         unsigned *pairList,
                         double *ncoordOut,
-                        double *derivativeOut,
-                        double *virialOut
+                        double *ddOut
                         ) {
   //blockDIm are the number of threads in your block
   const unsigned i = threadIdx.x + blockIdx.x * blockDim.x;
@@ -439,31 +437,11 @@ __global__ void getCoord(
   double dsq=(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
   double dfunc=0.;
   ncoordOut[i]= calculateSqr(dsq,dfunc,switchingParameters);
-  
-  double dd[3] = {
-    d[0]*dfunc,
-    d[1]*dfunc,
-    d[2]*dfunc
-    };
 
-  nat*=i*3;
-  //this needs a barrier!
-  derivativeOut[Xd(i0)] -=dd[0];
-  derivativeOut[Yd(i0)] -=dd[1];
-  derivativeOut[Zd(i0)] -=dd[2];
-
-  derivativeOut[Xd(i1)] +=dd[0];
-  derivativeOut[Yd(i1)] +=dd[1];
-  derivativeOut[Zd(i1)] +=dd[2];
-
-  for(unsigned ii=0; ii<3; ++ii){
-    for(unsigned jj=0; jj<3; ++jj){
-      virialOut[i+numOfPairs*(ii*3+jj)]=-dd[ii]*d[jj];
-    }
-  }
-  
-
-  //printf("Cuda:[%i]->%f\n",i,ncoord[i]);
+  ddOut[i] = d[0];
+  ddOut[i+ 1 * numOfPairs] = d[1];
+  ddOut[i+ 2 * numOfPairs] = d[2];
+  ddOut[i+ 3 * numOfPairs] = dfunc;
   //ncoord[i]= 1;
   //printf("Cuda: %i,%i %i %i\n", i,threadIdx.x , blockIdx.x,  blockDim.x);
 }
@@ -489,18 +467,17 @@ void CudaCoordination::calculate() {
   cudaCoords.copyToCuda(&positions[0][0]);
 
   cudaCoordination.resize(nn);  
-  cudaDerivatives.resize(nn *3*nat);
+  cudaDerivatives.resize(nn *4);
   cudaVirial.resize(9*nn);
   //CUDAHELPERS::memoryHolder<double> reductionMemory;
-  cudaMemset(cudaDerivatives.getPointer(),0,nn *3*nat*sizeof(double));
+  //cudaMemset(cudaDerivatives.getPointer(),0,nn *3*sizeof(double));
   //cudaMemset(cudaVirial.getPointer(),0,nn *9*sizeof(double));
   /****************starting the calculations****************/
-  getCoord<<<ngroups,nthreads>>> (nn,nat,switchingParameters,
+  getCoord<<<ngroups,nthreads>>> (nn,switchingParameters,
     cudaCoords.getPointer(),
     cudaPairList.getPointer(),
     cudaCoordination.getPointer(),
-    cudaDerivatives.getPointer(),
-    cudaVirial.getPointer()
+    cudaDerivatives.getPointer()
     ); 
   /*
   //the order of caclulating deriv virial and ncoord is thinked to limit the 
@@ -521,7 +498,10 @@ void CudaCoordination::calculate() {
   , reductionMemory, nn,512);
 */
   CUDAHELPERS::DVS ret = CUDAHELPERS::reduceDVS(
-    cudaDerivatives,cudaVirial,cudaCoordination,
+    cudaDerivatives,
+    cudaVirial,
+    cudaCoordination,
+    cudaPairList,
     reductionMemoryD,reductionMemoryV,reductionMemoryS,
     streamV,
     streamT,
