@@ -259,9 +259,7 @@ __global__ void getConst() {
 }
 
 CudaCoordination::CudaCoordination(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao)
-
-{
+  PLUMED_COLVAR_INIT(ao) {
   parseFlag("SERIAL",serial);
 
   std::vector<AtomNumber> ga_lista,gb_lista;
