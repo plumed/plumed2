@@ -41,6 +41,8 @@ private:
   unsigned nderivatives;
 /// A vector that tells us if we have stored the input value
   std::vector<bool> stored_arguments;
+/// Switch off updating the arguments for this action
+  std::vector<bool> update_arguments;
 /// The list of actiosn in this chain
   std::vector<std::string> actionsLabelsInChain;
 /// Get the shape of the output matrix
@@ -215,9 +217,12 @@ template <class T>
 void FunctionOfMatrix<T>::setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping ) {
     if( firststep ) {
       stored_arguments.resize( getNumberOfArguments() );
+      update_arguments.resize( getNumberOfArguments(), true );
       std::string control = getFirstActionInChain()->getLabel();
       for(unsigned i=0; i<stored_arguments.size(); ++i) {
           stored_arguments[i] = !getPntrToArgument(i)->ignoreStoredValue( control );
+          if( !stored_arguments[i] ) update_arguments[i] = true;
+          else update_arguments[i] = !argumentDependsOn( headstr, this, getPntrToArgument(i) );
       }
       firststep=false;
   }
@@ -272,7 +277,7 @@ void FunctionOfMatrix<T>::performTask( const std::string& controller, const unsi
           for(int i=0;i<getNumberOfComponents();++i) {
               unsigned ostrn=getConstPntrToComponent(i)->getPositionInStream();
               for(unsigned j=argstart;j<getNumberOfArguments();++j) {
-                  if( getPntrToArgument(j)->getRank()==0 ) continue ;
+                  if( !update_arguments[j] || getPntrToArgument(j)->getRank()==0 ) continue ;
                   // Ensure we only store one lot of derivative indices
                   bool found=false;
                   for(unsigned k=0; k<j; ++k) {
@@ -322,7 +327,7 @@ void FunctionOfMatrix<T>::runEndOfRowJobs( const unsigned& ind, const std::vecto
           std::vector<unsigned>& mat_indices( myvals.getMatrixRowDerivativeIndices( nmat ) ); unsigned ntot_mat=0;
           if( mat_indices.size()<nderivatives ) mat_indices.resize( nderivatives );
           for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
-            if( getPntrToArgument(i)->getRank()==0 ) continue ;
+            if( !update_arguments[i] || getPntrToArgument(i)->getRank()==0 ) continue ;
             // Ensure we only store one lot of derivative indices
             bool found=false;
             for(unsigned j=0; j<i; ++j) {

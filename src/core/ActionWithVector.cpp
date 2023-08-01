@@ -92,6 +92,17 @@ bool ActionWithVector::hasStoredArguments() const {
   return false;
 }
 
+bool ActionWithVector::argumentDependsOn( const std::string& headstr, ActionWithVector* faction, Value* thearg ) {
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      if( this!=faction && thearg==getPntrToArgument(i) ) return true;
+      ActionWithVector* av = dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
+      if( av && (av->getFirstActionInChain())->getLabel()==headstr ) { 
+          if( av->argumentDependsOn( headstr, faction, thearg ) ) return true;;
+      }
+  }
+  return false;
+}
+
 unsigned ActionWithVector::buildArgumentStore( const unsigned& argstart ) {
   // Don't use chains for grids
   for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
@@ -166,7 +177,7 @@ unsigned ActionWithVector::buildArgumentStore( const unsigned& argstart ) {
               // mder is equal to the number of derivatives by the time you get to f minus the number of derivatives for c
               unsigned mder=0;
               ActionWithVector* jaction=dynamic_cast<ActionWithVector*>(getPntrToArgument(i-1)->getPntrToAction());
-              if( jaction->action_to_do_after && !(jaction->action_to_do_after)->getNumberOfStoredValues( getPntrToArgument(i-1), mder, getPntrToArgument(i) ) ) mder=0;
+              if( jaction->action_to_do_after && !(jaction->action_to_do_after)->getNumberOfStoredValues( getPntrToArgument(i-1), mder, i, getArguments() ) ) mder=0;
               if( mder>0 ) nder = nder + mder;
           }
 
@@ -390,19 +401,23 @@ void ActionWithVector::getNumberOfStreamedDerivatives( unsigned& nderivatives, V
   if( action_to_do_after ) action_to_do_after->getNumberOfStreamedDerivatives( nderivatives, stopat );
 } 
 
-bool ActionWithVector::getNumberOfStoredValues( Value* startat, unsigned& nvals, Value* stopat ) {
-  if( stopat && (stopat->getPntrToAction()==this || (stopat->getPntrToAction())->checkForDependency(this)) ) return true;
+bool ActionWithVector::getNumberOfStoredValues( Value* startat, unsigned& nvals, const unsigned& astart, const std::vector<Value*>& stopat ) {
+  for(unsigned j=astart; j<stopat.size(); ++j) {
+      if( stopat[j] && (stopat[j]->getPntrToAction()==this || (stopat[j]->getPntrToAction())->checkForDependency(this)) ) return true;
+  }
 
   std::string c=getFirstActionInChain()->getLabel();
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
       if( !getPntrToArgument(i)->ignoreStoredValue(c) ) {
-          if( getPntrToArgument(i)==stopat ) return true;
+          for(unsigned j=astart; j<stopat.size(); ++j) {
+              if( getPntrToArgument(i)==stopat[j] ) return true;
+          }
           nvals += getPntrToArgument(i)->getNumberOfValues();
       }
   } 
   if( startat->getPntrToAction()!=this && getNumberOfAtoms()>0 ) return false;
 
-  if( action_to_do_after ) return action_to_do_after->getNumberOfStoredValues( startat, nvals, stopat );
+  if( action_to_do_after ) return action_to_do_after->getNumberOfStoredValues( startat, nvals, astart, stopat );
   return false;
 }
 

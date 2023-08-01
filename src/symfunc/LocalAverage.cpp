@@ -88,6 +88,8 @@ PRINT ARG=la.* FILE=colvar
 //+ENDPLUMEDOC
 
 class LocalAverage : public ActionShortcut {
+private:
+  std::string getMomentumSymbol( const int& m ) const ;
 public:
   static void registerKeywords( Keywords& keys );
   explicit LocalAverage(const ActionOptions&);
@@ -106,15 +108,59 @@ ActionShortcut(ao)
   std::string sp_str, specA, specB; parse("SPECIES",sp_str); parse("SPECIESA",specA); parse("SPECIESB",specB);
   CoordinationNumbers::expandMatrix( false, getShortcutLabel(), sp_str, specA, specB, this );
   std::map<std::string,std::string> keymap; multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );
-  // Now the sum of coordination numbers times the switching functions
+  if( sp_str.length()>0 ) specA=specB=sp_str;
+  // Calculate the coordination numbers
   ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_mat");
   plumed_assert( av && av->getNumberOfComponents()>0 && (av->copyOutput(0))->getRank()==2 );
   std::string size; Tools::convert( (av->copyOutput(0))->getShape()[1], size );
   readInputLine( getShortcutLabel() + "_ones: ONES SIZE=" + size );
   readInputLine( getShortcutLabel() + "_coord: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_mat.w," + getShortcutLabel() + "_ones" );
-  readInputLine( getShortcutLabel() + "_prod: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_mat.w," + sp_str + " " + convertInputLineToString() );
-  readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_prod," + sp_str + "," + getShortcutLabel() + "_coord  FUNC=(x+y)/(1+z) PERIODIC=NO");
+
+  int l=-1; std::vector<ActionShortcut*> shortcuts=plumed.getActionSet().select<ActionShortcut*>();
+  for(unsigned i=0; i<shortcuts.size(); ++i) {
+      if( specA==shortcuts[i]->getShortcutLabel() ) { 
+          std::string sname = shortcuts[i]->getName();
+          if( sname=="Q1" || sname=="Q3" || sname=="Q4" || sname=="Q6" ) { Tools::convert( sname.substr(1), l ); break; }
+      }
+  }
+
+  if( l>0 ) {
+      std::string vargs;
+      for(int i=-l; i<=l; ++i) {
+          std::string num = getMomentumSymbol(i);
+          if( !plumed.getActionSet().selectWithLabel<ActionWithValue*>(specB + "_rmn-" + num) ) {
+              readInputLine( specB + "_rmn-" + num + ": CUSTOM ARG=" + specB + "_rm-" + num + "," + specB + "_denom FUNC=x/y PERIODIC=NO");
+          }
+          if( !plumed.getActionSet().selectWithLabel<ActionWithValue*>(specB + "_imn-" + num) ) {
+              readInputLine( specB  + "_imn-" + num + ": CUSTOM ARG=" + specB + "_im-" + num + "," + specB  + "_denom FUNC=x/y PERIODIC=NO");
+          }
+          if( i==-l ) vargs = " ARG=" + specB + "_rmn-" + num + "," + specB  + "_imn-" + num; 
+          else vargs += "," +  specB + "_rmn-" + num + "," + specB  + "_imn-" + num;
+      }
+      readInputLine( getShortcutLabel() + "_vstack: VSTACK " + vargs );
+      readInputLine( getShortcutLabel() + "_prod: MATRIX_PRODUCT ARG=" + getShortcutLabel() + "_mat.w," + getShortcutLabel() + "_vstack");
+      std::string twolplusone; Tools::convert( 2*(2*l+1), twolplusone ); readInputLine( getShortcutLabel() + "_lones: ONES SIZE=" + twolplusone );
+      readInputLine( getShortcutLabel() + "_unorm: OUTER_PRODUCT ARG=" + getShortcutLabel() + "_coord," + getShortcutLabel() + "_lones" );
+      readInputLine( getShortcutLabel() + "_av: CUSTOM ARG=" + getShortcutLabel() + "_prod," + getShortcutLabel() + "_vstack," + getShortcutLabel() + "_unorm FUNC=(x+y)/(1+z) PERIODIC=NO");
+      readInputLine( getShortcutLabel() + "_av2: CUSTOM ARG=" + getShortcutLabel() + "_av FUNC=x*x PERIODIC=NO");
+      readInputLine( getShortcutLabel() + "_2: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_av2," + getShortcutLabel() + "_lones");
+      readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_2 FUNC=sqrt(x) PERIODIC=NO");
+  } else {
+      readInputLine( getShortcutLabel() + "_prod: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_mat.w," + sp_str + " " + convertInputLineToString() );
+      readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_prod," + sp_str + "," + getShortcutLabel() + "_coord  FUNC=(x+y)/(1+z) PERIODIC=NO");
+  }
   multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel(), "", keymap, this );
+}
+
+std::string LocalAverage::getMomentumSymbol( const int& m ) const {
+  if( m<0 ) {
+     std::string num; Tools::convert( -1*m, num );
+     return "n" + num;
+  } else if( m>0 ) {
+     std::string num; Tools::convert( m, num );
+     return "p" + num;
+  }
+  return "0"; 
 }
 
 }

@@ -75,16 +75,18 @@ void MatrixTimesMatrix::performTask( const std::string& controller, const unsign
   unsigned ostrn = getConstPntrToComponent(0)->getPositionInStream(), ind2=index2;
   if( index2>=getPntrToArgument(0)->getShape()[0] ) ind2 = index2 - getPntrToArgument(0)->getShape()[0];
 
-  unsigned nmult=getPntrToArgument(0)->getShape()[1]; double matval=0;
+  Value* myarg = getPntrToArgument(0); 
+  unsigned nmult=myarg->getRowLength(index1); double matval=0;
   for(unsigned i=0; i<nmult; ++i) {
-      double val1 = getElementOfMatrixArgument( 0, index1, i, myvals );
-      double val2 = getElementOfMatrixArgument( 1, i, ind2, myvals ); 
+      unsigned kind = myarg->getRowIndex( index1, i );
+      double val1 = getElementOfMatrixArgument( 0, index1, kind, myvals );
+      double val2 = getElementOfMatrixArgument( 1, kind, ind2, myvals ); 
       matval+= val1*val2;
 
       if( doNotCalculateDerivatives() ) continue;
 
-      addDerivativeOnMatrixArgument( stored_matrix1, 0, 0, index1, i, val2, myvals );
-      addDerivativeOnMatrixArgument( stored_matrix2, 0, 1, i, ind2, val1, myvals ); 
+      addDerivativeOnMatrixArgument( stored_matrix1, 0, 0, index1, kind, val2, myvals );
+      addDerivativeOnMatrixArgument( stored_matrix2, 0, 1, kind, ind2, val1, myvals ); 
   }
   // And add this part of the product
   myvals.addValue( ostrn, matval );
