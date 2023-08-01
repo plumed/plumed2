@@ -28,7 +28,7 @@ namespace adjmat {
 
 class OuterProduct : public ActionWithMatrix {
 private:
-  bool domin, domax;
+  bool domin, domax, diagzero;
   LeptonCall function;
   unsigned nderivatives;
   bool stored_vector1, stored_vector2;
@@ -47,6 +47,7 @@ PLUMED_REGISTER_ACTION(OuterProduct,"OUTER_PRODUCT")
 void OuterProduct::registerKeywords( Keywords& keys ) {
   ActionWithMatrix::registerKeywords(keys); keys.use("ARG");
   keys.add("compulsory","FUNC","x*y","the function of the input vectors that should be put in the elements of the outer product");
+  keys.addFlag("ELEMENTS_ON_DIAGONAL_ARE_ZERO",false,"set all diagonal elements to zero");
 }
 
 OuterProduct::OuterProduct(const ActionOptions&ao):
@@ -71,12 +72,15 @@ domax(false)
       std::vector<std::string> var(2); var[0]="x"; var[1]="y";
       function.set( func, var, this );
   }
+  parseFlag("ELEMENTS_ON_DIAGONAL_ARE_ZERO",diagzero); 
+  if( diagzero ) log.printf("  setting diagonal elements equal to zero\n");
 
   std::vector<unsigned> shape(2); shape[0]=getPntrToArgument(0)->getShape()[0]; shape[1]=getPntrToArgument(1)->getShape()[0];
   addValue( shape ); setNotPeriodic(); nderivatives = buildArgumentStore(0);
   std::string headstr=getFirstActionInChain()->getLabel();
   stored_vector1 = getPntrToArgument(0)->ignoreStoredValue( headstr );
   stored_vector2 = getPntrToArgument(1)->ignoreStoredValue( headstr );
+  if( getPntrToArgument(0)->isDerivativeZeroWhenValueIsZero() || getPntrToArgument(1)->isDerivativeZeroWhenValueIsZero() ) getPntrToComponent(0)->setDerivativeIsZeroWhenValueIsZero();
 }
 
 unsigned OuterProduct::getNumberOfDerivatives() {
@@ -85,15 +89,26 @@ unsigned OuterProduct::getNumberOfDerivatives() {
 
 void OuterProduct::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {
   unsigned start_n = getPntrToArgument(0)->getShape()[0], size_v = getPntrToArgument(1)->getShape()[0]; 
-  if( indices.size()!=size_v+1 ) indices.resize( size_v+1 );
-  for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + i;
-  myvals.setSplitIndex( size_v + 1 );
+  if( diagzero ) {
+     if( indices.size()!=size_v ) indices.resize( size_v );
+     unsigned k=1;
+     for(unsigned i=0; i<size_v; ++i) {
+         if( task_index==i ) continue ;
+         indices[k] = size_v + i; k++;
+     }
+     myvals.setSplitIndex( size_v );
+  } else {
+     if( indices.size()!=size_v+1 ) indices.resize( size_v+1 );
+     for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + i;
+     myvals.setSplitIndex( size_v + 1 );
+  }
 }
 
 void OuterProduct::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
   unsigned ostrn = getConstPntrToComponent(0)->getPositionInStream(), ind2=index2;
   if( index2>=getPntrToArgument(0)->getShape()[0] ) ind2 = index2 - getPntrToArgument(0)->getShape()[0];
-
+  if( diagzero && index1==ind2 ) return;
+  
   double fval; unsigned jarg = 0, kelem = index1; bool jstore=stored_vector1; 
   std::vector<double> args(2);
   args[0] = getArgumentElement( 0, index1, myvals );

@@ -391,7 +391,7 @@ void ActionWithVector::getNumberOfStreamedDerivatives( unsigned& nderivatives, V
 } 
 
 bool ActionWithVector::getNumberOfStoredValues( Value* startat, unsigned& nvals, Value* stopat ) {
-  if( stopat && stopat->getPntrToAction()==this ) return true;
+  if( stopat && (stopat->getPntrToAction()==this || (stopat->getPntrToAction())->checkForDependency(this)) ) return true;
 
   std::string c=getFirstActionInChain()->getLabel();
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
