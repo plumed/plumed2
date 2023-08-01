@@ -1,0 +1,15 @@
+# LOAD FILE=PythonCV.dylib
+
+pycvnpbc: PYTHONCV ATOMS=1,4 IMPORT=pycv FUNCTION=cv1 NOPBC
+
+cvnpbc: DISTANCE ATOMS=1,4 NOPBC
+
+pycv: PYTHONCV ATOMS=1,4 IMPORT=pycv FUNCTION=cv1
+
+cv: DISTANCE ATOMS=1,4
+
+diffnpbc: CUSTOM ARG=cvnpbc,pycvnpbc FUNC=y-x PERIODIC=NO 
+diff: CUSTOM ARG=cv,pycv FUNC=y-x PERIODIC=NO 
+
+PRINT ARG=diff,diffnpbc FILE=colvar FMT=%8.4f STRIDE=1
+PRINT ARG=pycv,cv,pycvnpbc,cvnpbc FILE=colvar.out FMT=%8.4f STRIDE=1

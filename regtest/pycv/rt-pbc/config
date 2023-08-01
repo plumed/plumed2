@@ -1,0 +1,4 @@
+
+type=driver
+arg="--plumed plumed.dat --ixyz traj.xyz --dump-forces forces --dump-forces-fmt=%10.6f"
+plumed_modules=pycv
