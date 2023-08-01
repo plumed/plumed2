@@ -135,6 +135,7 @@ class CudaCoordination : public Colvar {
   cudaStream_t streamV;
   cudaStream_t streamT;
   cudaStream_t streamS;
+  unsigned maxNumThreads=512;
   SwitchingFunction switchingFunction;
   rationalSwitchParameters switchingParameters;
 
@@ -189,6 +190,7 @@ void CudaCoordination::registerKeywords( Keywords& keys ) {
   keys.addFlag("NLIST",false,"Use a neighbor list to speed up the calculation");
   keys.add("optional","NL_CUTOFF","The cutoff for the neighbor list");
   keys.add("optional","NL_STRIDE","The frequency with which we are updating the atoms in the neighbor list");
+  keys.add("optional","THREADS","The upper limit of the number of threads");
   keys.add("atoms","GROUPA","First list of atoms");
   keys.add("atoms","GROUPB","Second list of atoms (if empty, N*(N-1)/2 pairs in GROUPA are counted)");
   keys.add("compulsory","NN","6","The n parameter of the switching function ");
@@ -285,7 +287,8 @@ CudaCoordination::CudaCoordination(const ActionOptions&ao):
     parse("NL_STRIDE",nl_st);
     if(nl_st<=0) error("NL_STRIDE should be explicitly specified and positive");
   }
-
+  parse("THREADS",maxNumThreads);
+  if(maxNumThreads<=0) error("THREADS should be positive");
   addValueWithDerivatives(); setNotPeriodic();
   if(gb_lista.size()>0) {
     if(doneigh)
@@ -504,7 +507,8 @@ void CudaCoordination::calculate() {
     streamV,
     streamT,
     streamS,
-    nn,nat
+    nn,nat,
+    maxNumThreads
   );
   for(unsigned i=0; i<ret.deriv.size(); ++i) {
     setAtomsDerivatives(i,ret.deriv[i]);
