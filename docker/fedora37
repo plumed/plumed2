@@ -8,8 +8,8 @@ RUN yum -y update \
  && yum -y install gcc-c++ \
  && yum -y install environment-modules gawk vim wget \
                    lapack-devel blas-devel zlib-devel gsl-devel fftw-devel openmpi-devel boost-devel \
-                   python39 python-devel python39-pip
-RUN python3.9 -m pip install numpy \
+                   python39 python-devel python-pip \
+ && python3.9 -m pip install numpy \
  && python3.9 -m pip install cython \
  && python3.9 -m pip install pandas \
  && python3.9 -m pip install MDAnalysis \
