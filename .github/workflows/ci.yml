@@ -35,7 +35,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: 3.7
+        python-version: 3.9
     - name: Set paths
       run: |
         echo "$HOME/opt/bin" >> $GITHUB_PATH
