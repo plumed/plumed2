@@ -8,7 +8,7 @@ RUN yum -y update \
  && yum -y install gcc-c++ \
  && yum -y install environment-modules gawk vim wget \
                    lapack-devel blas-devel zlib-devel gsl-devel fftw-devel openmpi-devel boost-devel \
-                   python39 python-devel python39-pip \
+                   python39 python-devel python39-pip
 RUN python3.9 -m pip install numpy \
  && python3.9 -m pip install cython \
  && python3.9 -m pip install pandas \
@@ -41,7 +41,7 @@ RUN . /etc/bashrc \
  && tar xzf plumed2.tgz \
  && cd plumed2 \
  && export PYTHONPATH=$PWD/python:$PYTHONPATH \
- && export PYTHON_BIN=python3 \
+ && export PYTHON_BIN=python3.9 \
  && ./configure --enable-modules=all --enable-boost_serialization \
  && make -j 4 \
  && make check
