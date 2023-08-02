@@ -10,7 +10,7 @@ RUN yum -y update \
                    python3 python3-devel python3-pip \
  && pip3 install pillow==8.3.2 \
  && pip3 install numpy==1.19 \
- && pip3 install cython<3 numpy pandas mdtraj \
+ && pip3 install "cython<3" numpy pandas mdtraj \
  && pip3 install "gsd<3" \
  && pip3 install MDAnalysis==1.0.0
 
