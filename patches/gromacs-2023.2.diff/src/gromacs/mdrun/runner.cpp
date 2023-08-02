@@ -72,6 +72,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trrio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/device_stream_manager.h"
@@ -937,6 +938,19 @@ int Mdrunner::mdrunner()
          */
         applyGlobalSimulationState(
                 *inputHolder_.get(), partialDeserializedTpr.get(), globalState.get(), inputrec.get(), &mtop);
+
+        static_assert(sc_trrMaxAtomCount == sc_checkpointMaxAtomCount);
+        if (mtop.natoms > sc_checkpointMaxAtomCount)
+        {
+            gmx_fatal(FARGS,
+                      "System has %d atoms, which is more than can be stored in checkpoint and trr "
+                      "files (max %" PRId64 ")",
+                      mtop.natoms,
+                      sc_checkpointMaxAtomCount);
+        }
+
+        // The XTC format has been updated to support up to 2^31-1 atoms, which is anyway the
+        // largest supported by GROMACS, so no need for any particular check here.
     }
 
     /* Check and update the hardware options for internal consistency */
@@ -1078,11 +1092,12 @@ int Mdrunner::mdrunner()
     // the task-deciding functions and will agree on the result
     // without needing to communicate.
     // The LBFGS minimizer, test-particle insertion, normal modes and shell dynamics don't support DD
+    const bool hasCustomParallelization =
+            (EI_TPI(inputrec->eI) || inputrec->eI == IntegrationAlgorithm::NM);
     const bool canUseDomainDecomposition =
-            !(inputrec->eI == IntegrationAlgorithm::LBFGS || EI_TPI(inputrec->eI)
-              || inputrec->eI == IntegrationAlgorithm::NM
-              || gmx_mtop_particletype_count(mtop)[ParticleType::Shell] > 0);
-    GMX_RELEASE_ASSERT(!PAR(cr) || canUseDomainDecomposition,
+            (inputrec->eI != IntegrationAlgorithm::LBFGS && !hasCustomParallelization
+             && gmx_mtop_particletype_count(mtop)[ParticleType::Shell] == 0);
+    GMX_RELEASE_ASSERT(!PAR(cr) || hasCustomParallelization || canUseDomainDecomposition,
                        "A parallel run should not arrive here without DD support");
 
     int useDDWithSingleRank = -1;
@@ -1455,6 +1470,9 @@ int Mdrunner::mdrunner()
     else
     {
         /* PME, if used, is done on all nodes with 1D decomposition */
+        cr->mpi_comm_mygroup = cr->mpiDefaultCommunicator;
+        cr->mpi_comm_mysim   = cr->mpiDefaultCommunicator;
+
         cr->nnodes     = cr->sizeOfDefaultCommunicator;
         cr->sim_nodeid = cr->rankInDefaultCommunicator;
         cr->nodeid     = cr->rankInDefaultCommunicator;
@@ -2109,7 +2127,7 @@ int Mdrunner::mdrunner()
 
         /* Energy terms and groups */
         gmx_enerdata_t enerd(mtop.groups.groups[SimulationAtomGroupType::EnergyOutput].size(),
-                             inputrec->fepvals->n_lambda);
+                             &inputrec->fepvals->all_lambda);
 
         // cos acceleration is only supported by md, but older tpr
         // files might still combine it with other integrators

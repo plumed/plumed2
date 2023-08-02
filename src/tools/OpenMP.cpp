@@ -29,40 +29,48 @@
 
 namespace PLMD {
 
-
+namespace OpenMP {
+///singleton struct to treat the openMP setting as a global variables, but with a layer of encapsulation
 struct OpenMPVars {
   unsigned cacheline_size=512;
   bool cache_set=false;
   unsigned num_threads=1;
   bool nt_env_set=false;
+  static OpenMPVars & get() {
+    static OpenMPVars vars;
+    return vars;
+  }
+private:
+  OpenMPVars()=default;
+  OpenMPVars(OpenMPVars&)=delete;
+  OpenMPVars& operator=(OpenMPVars&&)=delete;
 };
 
-static OpenMPVars & getOpenMPVars() {
-  static OpenMPVars vars;
-  return vars;
+void setNumThreads(const unsigned nt) {
+  OpenMPVars::get().num_threads=nt;
 }
 
-void OpenMP::setNumThreads(const unsigned nt) {
-  getOpenMPVars().num_threads=nt;
-}
-
-unsigned OpenMP::getCachelineSize() {
-  if(!getOpenMPVars().cache_set) {
-    if(std::getenv("PLUMED_CACHELINE_SIZE")) Tools::convert(std::getenv("PLUMED_CACHELINE_SIZE"),getOpenMPVars().cacheline_size);
-    getOpenMPVars().cache_set = true;
+unsigned getCachelineSize() {
+  if(!OpenMPVars::get().cache_set) {
+    if(std::getenv("PLUMED_CACHELINE_SIZE")) {
+      Tools::convert(std::getenv("PLUMED_CACHELINE_SIZE"),OpenMPVars::get().cacheline_size);
+    }
+    OpenMPVars::get().cache_set = true;
   }
-  return getOpenMPVars().cacheline_size;
+  return OpenMPVars::get().cacheline_size;
 }
 
-unsigned OpenMP::getNumThreads() {
-  if(!getOpenMPVars().nt_env_set) {
-    if(std::getenv("PLUMED_NUM_THREADS")) Tools::convert(std::getenv("PLUMED_NUM_THREADS"),getOpenMPVars().num_threads);
-    getOpenMPVars().nt_env_set = true;
+unsigned getNumThreads() {
+  if(!OpenMPVars::get().nt_env_set) {
+    if(std::getenv("PLUMED_NUM_THREADS")) {
+      Tools::convert(std::getenv("PLUMED_NUM_THREADS"),OpenMPVars::get().num_threads);
+    }
+    OpenMPVars::get().nt_env_set = true;
   }
-  return getOpenMPVars().num_threads;
+  return OpenMPVars::get().num_threads;
 }
 
-unsigned OpenMP::getThreadNum() {
+unsigned getThreadNum() {
 #if defined(_OPENMP)
   return omp_get_thread_num();
 #else
@@ -70,9 +78,5 @@ unsigned OpenMP::getThreadNum() {
 #endif
 }
 
-
-
-}
-
-
-
+}//namespace OpenMP
+}//namespace PLMD

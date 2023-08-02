@@ -734,6 +734,7 @@ static void computeSpecialForces(FILE*                          fplog,
  * \param[in]  stepWork             Step schedule flags
  * \param[in]  xReadyOnDevice       Event synchronizer indicating that the coordinates are ready in the device memory.
  * \param[in]  lambdaQ              The Coulomb lambda of the current state.
+ * \param[in]  useMdGpuGraph        Whether MD GPU Graph is in use.
  * \param[in]  wcycle               The wallcycle structure
  */
 static inline void launchPmeGpuSpread(gmx_pme_t*            pmedata,
@@ -741,6 +742,7 @@ static inline void launchPmeGpuSpread(gmx_pme_t*            pmedata,
                                       const StepWorkload&   stepWork,
                                       GpuEventSynchronizer* xReadyOnDevice,
                                       const real            lambdaQ,
+                                      bool                  useMdGpuGraph,
                                       gmx_wallcycle*        wcycle)
 {
     wallcycle_start(wcycle, WallCycleCounter::PmeGpuMesh);
@@ -748,7 +750,7 @@ static inline void launchPmeGpuSpread(gmx_pme_t*            pmedata,
     bool                           useGpuDirectComm         = false;
     gmx::PmeCoordinateReceiverGpu* pmeCoordinateReceiverGpu = nullptr;
     pme_gpu_launch_spread(
-            pmedata, xReadyOnDevice, wcycle, lambdaQ, useGpuDirectComm, pmeCoordinateReceiverGpu);
+            pmedata, xReadyOnDevice, wcycle, lambdaQ, useGpuDirectComm, pmeCoordinateReceiverGpu, useMdGpuGraph);
     wallcycle_stop(wcycle, WallCycleCounter::PmeGpuMesh);
 }
 
@@ -1574,6 +1576,7 @@ void do_force(FILE*                               fplog,
                            stepWork,
                            localXReadyOnDevice,
                            lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)],
+                           simulationWork.useMdGpuGraph,
                            wcycle);
     }
 
