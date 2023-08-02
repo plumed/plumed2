@@ -74,6 +74,7 @@ class MDAtomsTyped:
   TypesafePtr virial;
   std::map<std::string,TypesafePtr> extraCV;
   std::map<std::string,TypesafePtr> extraCVForce;
+  std::map<std::string,bool> extraCVNeeded;
 public:
   void setm(const TypesafePtr & m) override;
   void setc(const TypesafePtr & m) override;
@@ -100,9 +101,25 @@ public:
       plumed_error() << "Unable to access extra cv named '" << name << "'.\nNotice that extra cvs need to be calculated in the MD code.";
     }
   }
+
   void updateExtraCVForce(const std::string &name,double f) override {
     *extraCVForce[name].template get<T*>()+=static_cast<T>(f);
   }
+
+  void setExtraCVNeeded(const std::string &name,bool needed=true) override {
+    extraCVNeeded[name]=needed;
+  }
+
+  bool isExtraCVNeeded(const std::string &name) const override {
+    auto search=extraCVNeeded.find(name);
+    if(search != extraCVNeeded.end()) return search->second;
+    return false;
+  }
+
+  void resetExtraCVNeeded() override {
+    for(auto & i : extraCVNeeded) i.second=false;
+  }
+
   void MD2double(const TypesafePtr & m,double&d)const override {
     d=double(m.template get<T>());
   }
@@ -121,14 +138,14 @@ public:
   }
   void getBox(Tensor &) const override;
   void getPositions(const std::vector<int>&index,std::vector<Vector>&positions) const override;
-  void getPositions(const std::set<AtomNumber>&index,const std::vector<unsigned>&i,std::vector<Vector>&positions) const override;
+  void getPositions(const std::vector<AtomNumber>&index,const std::vector<unsigned>&i,std::vector<Vector>&positions) const override;
   void getPositions(unsigned j,unsigned k,std::vector<Vector>&positions) const override;
   void getLocalPositions(std::vector<Vector>&p) const override;
   void getMasses(const std::vector<int>&index,std::vector<double>&) const override;
   void getCharges(const std::vector<int>&index,std::vector<double>&) const override;
   void updateVirial(const Tensor&) const override;
   void updateForces(const std::vector<int>&index,const std::vector<Vector>&) override;
-  void updateForces(const std::set<AtomNumber>&index,const std::vector<unsigned>&i,const std::vector<Vector>&forces) override;
+  void updateForces(const std::vector<AtomNumber>&index,const std::vector<unsigned>&i,const std::vector<Vector>&forces) override;
   void rescaleForces(const std::vector<int>&index,double factor) override;
   unsigned  getRealPrecision()const override;
 };
@@ -173,7 +190,7 @@ void MDAtomsTyped<T>::getPositions(const std::vector<int>&index,std::vector<Vect
 }
 
 template <class T>
-void MDAtomsTyped<T>::getPositions(const std::set<AtomNumber>&index,const std::vector<unsigned>&i, std::vector<Vector>&positions)const {
+void MDAtomsTyped<T>::getPositions(const std::vector<AtomNumber>&index,const std::vector<unsigned>&i, std::vector<Vector>&positions)const {
   unsigned stride;
   const T* ppx;
   const T* ppy;
@@ -251,7 +268,7 @@ void MDAtomsTyped<T>::updateVirial(const Tensor&virial)const {
 }
 
 template <class T>
-void MDAtomsTyped<T>::updateForces(const std::set<AtomNumber>&index,const std::vector<unsigned>&i,const std::vector<Vector>&forces) {
+void MDAtomsTyped<T>::updateForces(const std::vector<AtomNumber>&index,const std::vector<unsigned>&i,const std::vector<Vector>&forces) {
   unsigned stride;
   T* ffx;
   T* ffy;

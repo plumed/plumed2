@@ -31,6 +31,8 @@
 !/tools
 !/sasa
 !/s2cm
+!/pytorch
+!/membranefusion
 # These files we just want to ignore completely
 tmp
 report.txt

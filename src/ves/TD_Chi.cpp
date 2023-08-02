@@ -94,8 +94,8 @@ PLUMED_REGISTER_ACTION(TD_Chi,"TD_CHI")
 void TD_Chi::registerKeywords(Keywords& keys) {
   TargetDistribution::registerKeywords(keys);
   keys.add("compulsory","MINIMUM","The minimum of the chi distribution.");
-  keys.add("compulsory","SIGMA","The \\f$\\sigma\\f$ parameter of the chi distribution given as a positive number.");
-  keys.add("compulsory","KAPPA","The \\f$k\\f$ parameter of the chi distribution given as positive integer larger than 1.");
+  keys.add("compulsory","SIGMA","The sigma parameter of the chi distribution given as a positive number.");
+  keys.add("compulsory","KAPPA","The k parameter of the chi distribution given as positive integer larger than 1.");
   keys.use("WELLTEMPERED_FACTOR");
   keys.use("SHIFT_TO_ZERO");
   keys.use("NORMALIZE");

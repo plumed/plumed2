@@ -132,7 +132,7 @@ void Value::setGradients() {
   ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(action);
   ActionWithArguments*aw=dynamic_cast<ActionWithArguments*>(action);
   if(aa) {
-    Atoms&atoms((aa->plumed).getAtoms());
+    const Atoms&atoms((aa->plumed).getAtoms());
     for(unsigned j=0; j<aa->getNumberOfAtoms(); ++j) {
       AtomNumber an=aa->getAbsoluteIndex(j);
       if(atoms.isVirtualAtom(an)) {

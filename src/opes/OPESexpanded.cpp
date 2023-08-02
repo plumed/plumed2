@@ -31,7 +31,9 @@ namespace opes {
 
 //+PLUMEDOC OPES_BIAS OPES_EXPANDED
 /*
-On-the-fly probability enhanced sampling (\ref OPES "OPES") with expanded ensembles target distribution (replica-exchange-like) \cite Invernizzi2020unified.
+On-the-fly probability enhanced sampling with expanded ensembles for the target distribution.
+
+This method is similar to the OPES method (\ref OPES "OPES") with expanded ensembles target distribution (replica-exchange-like) \cite Invernizzi2020unified.
 
 An expanded ensemble is obtained by summing a set of ensembles at slightly different termodynamic conditions, or with slightly different Hamiltonians.
 Such ensembles can be sampled via methods like replica exchange, or this \ref OPES_EXPANDED bias action.
@@ -118,7 +120,7 @@ private:
   unsigned rank_;
   unsigned NumWalkers_;
   unsigned walker_rank_;
-  unsigned long counter_;
+  unsigned long long counter_;
   std::size_t ncv_;
 
   std::vector<const double *> ECVs_;
@@ -184,11 +186,11 @@ void OPESexpanded::registerKeywords(Keywords& keys)
   keys.add("compulsory","PACE","how often the bias is updated");
   keys.add("compulsory","OBSERVATION_STEPS","100","number of unbiased initial PACE steps to collect statistics for initialization");
 //DeltaFs and state files
-  keys.add("compulsory","FILE","DELTAFS","a file with the estimate of the relative \\f$\\Delta F\\f$ for each component of the target and of the global \\f$c(t)\\f$");
+  keys.add("compulsory","FILE","DELTAFS","a file with the estimate of the relative Delta F for each component of the target and of the global c(t)");
   keys.add("compulsory","PRINT_STRIDE","100","stride for printing to DELTAFS file, in units of PACE");
   keys.add("optional","FMT","specify format for DELTAFS file");
-  keys.add("optional","STATE_RFILE","read from this file the \\f$\\Delta F\\f$ estimates and all the info needed to RESTART the simulation");
-  keys.add("optional","STATE_WFILE","write to this file the \\f$\\Delta F\\f$ estimates and all the info needed to RESTART the simulation");
+  keys.add("optional","STATE_RFILE","read from this file the Delta F estimates and all the info needed to RESTART the simulation");
+  keys.add("optional","STATE_WFILE","write to this file the Delta F estimates and all the info needed to RESTART the simulation");
   keys.add("optional","STATE_WSTRIDE","number of MD steps between writing the STATE_WFILE. Default is only on CPT events (but not all MD codes set them)");
   keys.addFlag("STORE_STATES",false,"append to STATE_WFILE instead of ovewriting it each time");
 //miscellaneous
@@ -249,6 +251,10 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
   parseFlag("WALKERS_MPI",walkers_mpi);
   if(walkers_mpi)
   {
+    //If this Action is not compiled with MPI the user is informed and we exit gracefully
+    plumed_massert(Communicator::plumedHasMPI(),"Invalid walkers configuration: WALKERS_MPI flag requires MPI compilation");
+    plumed_massert(Communicator::initialized(),"Invalid walkers configuration: WALKERS_MPI needs the communicator correctly initialized.");
+
     if(comm.Get_rank()==0) //multi_sim_comm works on first rank only
     {
       NumWalkers_=multi_sim_comm.Get_size();
@@ -428,7 +434,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
       plumed_merror("RESTART requested, but file '"+restartFileName+"' was not found!\n  Set RESTART=NO or provide a restart file");
     if(NumWalkers_>1) //make sure that all walkers are doing the same thing
     {
-      std::vector<unsigned long> all_counter(NumWalkers_);
+      std::vector<unsigned long long> all_counter(NumWalkers_);
       if(comm.Get_rank()==0)
         multi_sim_comm.Allgather(counter_,all_counter);
       comm.Bcast(all_counter,0);

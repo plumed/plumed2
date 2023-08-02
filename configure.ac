@@ -5,11 +5,15 @@
 # system.
 # If you modify configure.ac, remember to run
 # autoconf and then commit both files to the git repository.
+# Make sure that you are using the same autoconf version that is
+# installed on GitHub Actions see `.github/workflows/ci.yml`
+# and search for `autoconf`. Otherwise, our codecheck job
+# on GitHub Actions will complain.
 
 # we require a recent version
 # notice that autoconf is not necessary on user's machine, but only
 # if one has to update configure.ac
-AC_PREREQ([2.68])
+AC_PREREQ([2.69])
 AC_INIT([PLUMED], [2])
 
 ##################################################################
@@ -114,11 +118,12 @@ AC_DEFUN([PLUMED_CHECK_PACKAGE], [
     fi
 ])
 
-# PLUMED_CHECK_CXX_PACKAGE(name,program,define[,library])
+# PLUMED_CHECK_CXX_PACKAGE(name,program,define[,library,multiple_libraries])
 # Similar to PLUMED_CHECK_PACKAGE but suitable for checking C++ libraries.
 # Name is just a string used in the configure log
 # program is a string containing a short C++ program that should compiled.
 # If present and necessary, library is also linked.
+# If multiple_libraries is true check the program using all the libraries specified in `library` rather than as alternatives one at a time.
 AC_DEFUN([PLUMED_CHECK_CXX_PACKAGE], [
     found=ko
     $3=no
@@ -127,25 +132,55 @@ AC_DEFUN([PLUMED_CHECK_CXX_PACKAGE], [
     else
       testlibs=""
     fi
-    for testlib in "" $testlibs
-    do
-      save_LIBS="$LIBS"
-      if test -n "$testlib" ; then
-        AC_MSG_CHECKING([$1 with -l$testlib])
-        LIBS="-l$testlib $LIBS"
-      else
-        AC_MSG_CHECKING([$1 without extra libs])
-      fi
-      AC_LINK_IFELSE([AC_LANG_SOURCE([$2])],
+    save_LIBS="$LIBS"
+    
+    # check if multiple libraries are required simultaneously
+    multiple="no"
+    if test "$5" = "true"; then
+      multiple="yes"
+      all_LIBS=""
+      for testlib in $testlibs;
+      do
+        all_LIBS="$all_LIBS -l$testlib"
+      done
+      testlibs=" " # to check only without libraries, and later with all together
+    fi
+
+    # check without libraries
+    AC_MSG_CHECKING([$1 without extra libs])
+    AC_LINK_IFELSE([AC_LANG_SOURCE([$2])],
           [found=ok]
           [AC_MSG_RESULT([yes])],
           [AC_MSG_RESULT([no])]
       )
-      if test $found = ok ; then
-        break
+
+    if test "$found" = "ko" ; then
+      if test "$multiple" = "yes" ; then
+        AC_MSG_CHECKING([$1 with $all_LIBS])
+        LIBS="$all_LIBS $LIBS"
+        AC_LINK_IFELSE([AC_LANG_SOURCE([$2])],
+              [found=ok]
+              [AC_MSG_RESULT([yes])],
+              [AC_MSG_RESULT([no])]
+          )
+      else 
+        for testlib in $testlibs 
+        do
+          AC_MSG_CHECKING([$1 with -l$testlib])
+          LIBS="-l$testlib $LIBS"
+          AC_LINK_IFELSE([AC_LANG_SOURCE([$2])],
+                [found=ok]
+                [AC_MSG_RESULT([yes])],
+                [AC_MSG_RESULT([no])]
+          )
+          if test $found = ok ; then
+            break
+          fi
+          LIBS="$save_LIBS"
+        done
       fi
-      LIBS="$save_LIBS"
-    done
+    fi
+
     if test $found = ok ; then
       AC_DEFINE([$3])
       $3=yes
@@ -286,6 +321,7 @@ PLUMED_CONFIG_ENABLE([python],[search for python],[yes])
 PLUMED_CONFIG_ENABLE([af_ocl],[search for arrayfire_ocl],[no])
 PLUMED_CONFIG_ENABLE([af_cuda],[search for arrayfire_cuda],[no])
 PLUMED_CONFIG_ENABLE([af_cpu],[search for arrayfire_cpu],[no])
+PLUMED_CONFIG_ENABLE([libtorch],[search for libtorch],[no]) #added by luigibonati
 
 AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
 AC_ARG_VAR(STATIC_LIBS,[variables that should be linked statically directly to MD code - configure will add here -ldl if necessary ])
@@ -510,20 +546,20 @@ fi
 
 # first look for blas
 if test "$external_blas" = true ; then
-  AC_MSG_CHECKING([whether dgemv can be linked with no library])
-  AC_LINK_IFELSE([AC_LANG_CALL([], [dgemv])],[
+  AC_MSG_CHECKING([whether dgemv_ can be linked with no library])
+  AC_LINK_IFELSE([AC_LANG_CALL([], [dgemv_])],[
     AC_MSG_RESULT([yes])
-    blas_found=nounderscore
+    blas_found=underscore
     ],[
     AC_MSG_RESULT([no])
     AC_MSG_CHECKING([whether dgemv_ can be linked with no library])
-    AC_LINK_IFELSE([AC_LANG_CALL([], [dgemv_])],[
+    AC_LINK_IFELSE([AC_LANG_CALL([], [dgemv])],[
       AC_MSG_RESULT([yes])
-      blas_found=underscore
+      blas_found=nounderscore
     ],[
       AC_MSG_RESULT([no])
-      PLUMED_SEARCH_LIBS([dgemv],[blas],[blas_found=nounderscore],[
-        PLUMED_SEARCH_LIBS([dgemv_],[blas],[blas_found=underscore])
+      PLUMED_SEARCH_LIBS([dgemv_],[blas],[blas_found=underscore],[
+        PLUMED_SEARCH_LIBS([dgemv],[blas],[blas_found=nounderscore])
       ])
     ])
   ])
@@ -847,18 +883,14 @@ if test $python = true  ; then
   if test -n "$PYTHON_BIN"
   then
     AC_MSG_NOTICE([Python executable is $PYTHON_BIN])
-    AC_MSG_CHECKING([support for required python modules (python3, setuptools, cython, subprocess, os, shutil)])
+    AC_MSG_CHECKING([support for required python modules (python3, setuptools, cython)])
 testimport="
 from setuptools import setup
 from setuptools import Extension
-import subprocess
-import os
-import os.path
-import sys
-from shutil import copyfile
 from Cython.Build import cythonize
+import sys
 if sys.version_info < (3,):
-    raise ImportError('PLUMED 2.6 only supports Python 3')
+    raise ImportError('PLUMED>= 2.6 only supports Python 3')
 "
     if echo "$testimport" | "$PYTHON_BIN" 1>/dev/null 2>/dev/null;  then
        AC_MSG_RESULT([yes])
@@ -875,12 +907,29 @@ fi
 
 if test "$af_ocl" = true ; then
   PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afopencl])
+  PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE_OCL],[afopencl])
 fi
 if test "$af_cuda" = true ; then
   PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afcuda])
+  PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE_CUDA],[afcuda])
 fi
 if test "$af_cpu" = true ; then
   PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afcpu])
+fi
+
+#added by luigibonati
+if test $libtorch = true ; then 
+  # enable c++14 support
+  PLUMED_CHECK_CXXFLAG([-std=c++14])
+  # test program
+  PLUMED_CHECK_CXX_PACKAGE([libtorch],[
+#include <torch/torch.h>
+#include <torch/script.h>
+int main() {
+  torch::Tensor tensor = torch::rand({2, 3});
+  return 0;
+}
+  ], [__PLUMED_HAS_LIBTORCH], [ torch_cpu c10 ], [true])
 fi
 
 # in non-debug mode, add -DNDEBUG

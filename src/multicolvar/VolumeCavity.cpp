@@ -291,7 +291,7 @@ void VolumeCavity::setupRegions() {
     perp=-perp; len_perp=-len_perp;
     for(unsigned i=0; i<3; ++i) dperp[i]*=-1.0;
   }
-  if( len_bi<=0 || len_cross<=0 || len_bi<=0 ) plumed_merror("Invalid box coordinates");
+  if( len_bi<=0 || len_cross<=0 || len_perp<=0 ) plumed_merror("Invalid box coordinates");
 
   // Now derivatives of lengths
   Tensor dd3( Tensor::identity() );

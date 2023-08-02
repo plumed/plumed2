@@ -212,7 +212,7 @@ void Action::checkRead() {
   }
 }
 
-long int Action::getStep()const {
+long long int Action::getStep()const {
   return plumed.getStep();
 }
 

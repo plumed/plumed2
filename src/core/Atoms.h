@@ -30,7 +30,6 @@
 #include "tools/AtomNumber.h"
 #include "tools/ForwardDecl.h"
 #include <vector>
-#include <set>
 #include <map>
 #include <string>
 #include <memory>
@@ -50,7 +49,8 @@ class Atoms
   friend class ActionAtomistic;
   friend class ActionWithVirtualAtom;
   int natoms;
-  std::set<AtomNumber> unique;
+  bool unique_serial=false; // use unique in serial mode
+  std::vector<AtomNumber> unique;
   std::vector<unsigned> uniq_index;
 /// Map global indexes to local indexes
 /// E.g. g2l[i] is the position of atom i in the array passed from the MD engine.
@@ -138,9 +138,9 @@ class Atoms
   };
 
   DomainDecomposition dd;
-  long int ddStep;  //last step in which dd happened
+  long long int ddStep;  //last step in which dd happened
 
-  void share(const std::set<AtomNumber>&);
+  void share(const std::vector<AtomNumber>&);
 
 public:
 
@@ -167,7 +167,7 @@ public:
   int getNatoms()const;
   int getNVirtualAtoms()const;
 
-  const long int& getDdStep()const;
+  const long long int& getDdStep()const;
   const std::vector<int>& getGatindex()const;
   const Pbc& getPbc()const;
   void getLocalMasses(std::vector<double>&);
@@ -238,6 +238,9 @@ public:
   void setExtraCVForce(const std::string &name,const TypesafePtr & p);
   double getExtraCV(const std::string &name);
   void updateExtraCVForce(const std::string &name,double f);
+  void setExtraCVNeeded(const std::string &name,bool needed=true);
+  bool isExtraCVNeeded(const std::string &name) const;
+  void resetExtraCVNeeded();
 };
 
 inline
@@ -251,7 +254,7 @@ int Atoms::getNVirtualAtoms()const {
 }
 
 inline
-const long int& Atoms::getDdStep()const {
+const long long int& Atoms::getDdStep()const {
   return ddStep;
 }
 

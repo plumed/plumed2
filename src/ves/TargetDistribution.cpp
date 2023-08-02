@@ -39,7 +39,7 @@ namespace ves {
 
 void TargetDistribution::registerKeywords( Keywords& keys ) {
   Action::registerKeywords(keys);
-  keys.reserve("optional","WELLTEMPERED_FACTOR","Broaden the target distribution such that it is taken as [p(s)]^(1/\\f$\\gamma\\f$) where \\f$\\gamma\\f$ is the well tempered factor given here. If this option is active the distribution will be automatically normalized.");
+  keys.reserve("optional","WELLTEMPERED_FACTOR","Broaden the target distribution such that it is taken as [p(s)]^(1/gamma) where gamma is the well tempered factor given here. If this option is active the distribution will be automatically normalized.");
   keys.reserveFlag("SHIFT_TO_ZERO",false,"Shift the minimum value of the target distribution to zero. This can for example be used to avoid negative values in the target distribution. If this option is active the distribution will be automatically normalized.");
   keys.reserveFlag("NORMALIZE",false,"Renormalized the target distribution over the intervals on which it is defined to make sure that it is properly normalized to 1. In most cases this should not be needed as the target distributions should be normalized. The code will issue a warning (but still run) if this is needed for some reason.");
 }

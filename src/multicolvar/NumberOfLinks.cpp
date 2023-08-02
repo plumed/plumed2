@@ -29,7 +29,7 @@
 
 //+PLUMEDOC MCOLVARF NLINKS
 /*
-Calculate number of pairs of atoms/molecules that are "linked"
+Calculate number of pairs of atoms/molecules that are linked
 
 In its simplest guise this coordinate calculates a coordination number.  Each pair
 of atoms is assumed "linked" if they are within some cutoff of each other.  In more

@@ -28,7 +28,6 @@
 #include "tools/Pbc.h"
 #include "tools/ForwardDecl.h"
 #include <vector>
-#include <set>
 #include <map>
 
 namespace PLMD {
@@ -44,9 +43,9 @@ class ActionAtomistic :
 
   std::vector<AtomNumber> indexes;         // the set of needed atoms
 /// unique should be an ordered set since we later create a vector containing the corresponding indexes
-  std::set<AtomNumber>  unique;
+  std::vector<AtomNumber>  unique;
 /// unique_local should be an ordered set since we later create a vector containing the corresponding indexes
-  std::set<AtomNumber>  unique_local;
+  std::vector<AtomNumber>  unique_local;
   std::vector<Vector>   positions;       // positions of the needed atoms
   double                energy;
   ForwardDecl<Pbc>      pbc_fwd;
@@ -187,8 +186,8 @@ public:
   void applyForces();
   void lockRequests() override;
   void unlockRequests() override;
-  const std::set<AtomNumber> & getUnique()const;
-  const std::set<AtomNumber> & getUniqueLocal()const;
+  const std::vector<AtomNumber> & getUnique()const;
+  const std::vector<AtomNumber> & getUniqueLocal()const;
 /// Read in an input file containing atom positions and calculate the action for the atomic
 /// configuration therin
   void readAtomsFromPDB( const PDB& pdb ) override;
@@ -291,12 +290,12 @@ void ActionAtomistic::unlockRequests() {
 }
 
 inline
-const std::set<AtomNumber> & ActionAtomistic::getUnique()const {
+const std::vector<AtomNumber> & ActionAtomistic::getUnique()const {
   return unique;
 }
 
 inline
-const std::set<AtomNumber> & ActionAtomistic::getUniqueLocal()const {
+const std::vector<AtomNumber> & ActionAtomistic::getUniqueLocal()const {
   return unique_local;
 }
 

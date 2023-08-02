@@ -57,7 +57,7 @@ void VesselRegister::add(std::string keyword,creator_pointer f,keyword_pointer k
   mk.insert(std::pair<std::string,keyword_pointer>(keyword,ik));
 }
 
-bool VesselRegister::check(std::string key) {
+bool VesselRegister::check(const std::string & key) {
   if( m.count(key)>0 ) return true;
   return false;
 }

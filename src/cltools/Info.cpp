@@ -96,6 +96,7 @@ int Info::main(FILE* in, FILE*out,Communicator& pc) {
   if(printuserdoc) {
     std::string userdoc=config::getPlumedHtmldir()+"/user-doc/html/index.html";
     FILE *ff=std::fopen(userdoc.c_str(),"r");
+    // no exception here
     if(ff) std::fclose(ff);
     else userdoc="http://www.plumed.org/doc-v" + config::getVersion() + "/user-doc/html/index.html";
     std::fprintf(out,"%s\n",userdoc.c_str());
@@ -103,6 +104,7 @@ int Info::main(FILE* in, FILE*out,Communicator& pc) {
   if(printdeveloperdoc) {
     std::string developerdoc=config::getPlumedHtmldir()+"/developer-doc/html/index.html";
     FILE *ff=std::fopen(developerdoc.c_str(),"r");
+    // no exception here
     if(ff) std::fclose(ff);
     else developerdoc="http://www.plumed.org/doc-v" + config::getVersion() + "/developer-doc/html/index.html";
     std::fprintf(out,"%s\n",developerdoc.c_str());

@@ -1,3 +1,6 @@
+// this is to test what happens with a pre C++11 compiler
+// nested exceptions should be merged
+#define __PLUMED_WRAPPER_CXX_ENABLE_NESTED_EXCEPTIONS 0
 #include "plumed/wrapper/Plumed.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -93,12 +96,37 @@ int main(int argc,char*argv[]) {
   fprintf(log,"bias: %lf\n",bias);
 
   fclose(log);
-  fclose(errors);
   plumed_finalize(p);
 
   free(positions);
   free(forces);
   free(masses);
+
+  p=plumed_create();
+
+  plumed_cmd(p,"throw","test_nested1",&error);
+  if(error.code) {
+    try {
+      plumed_error_rethrow(error);
+    } catch(const PLMD::Plumed::Exception &e) {
+      fprintf(errors,"%s\n",e.what());
+    }
+  }
+
+  plumed_cmd(p,"setNestedExceptions",1);
+  plumed_cmd(p,"throw","test_nested1",&error);
+
+  if(error.code) {
+    try {
+      plumed_error_rethrow(error);
+    } catch(const PLMD::Plumed::Exception &e) {
+      fprintf(errors,"%s\n",e.what());
+    }
+  }
+
+  plumed_finalize(p);
+
+  fclose(errors);
 
   return 0;
 }

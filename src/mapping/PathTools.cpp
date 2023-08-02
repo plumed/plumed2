@@ -216,18 +216,31 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   }
 
 // Read initial frame
-  std::string istart; parse("--start",istart); FILE* fp2=fopen(istart.c_str(),"r"); PDB mystartpdb;
-  if( istart.length()==0 ) error("input is missing use --istart + --iend or --path");
-  if( !mystartpdb.readFromFilepointer(fp2,false,0.1) ) error("could not read fila " + istart);
+  std::string istart; parse("--start",istart);
+  PDB mystartpdb;
+  {
+    FILE* fp2=std::fopen(istart.c_str(),"r");
+// call fclose when fp goes out of scope
+    auto deleter=[](FILE* f) { std::fclose(f); };
+    std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp2,deleter);
+    if( istart.length()==0 ) error("input is missing use --istart + --iend or --path");
+    if( !mystartpdb.readFromFilepointer(fp2,false,0.1) ) error("could not read fila " + istart);
+  }
   auto sframe=metricRegister().create<ReferenceConfiguration>( mtype, mystartpdb );
-  fclose(fp2);
 
 // Read final frame
-  std::string iend; parse("--end",iend); FILE* fp1=fopen(iend.c_str(),"r"); PDB myendpdb;
-  if( iend.length()==0 ) error("input is missing using --istart + --iend or --path");
-  if( !myendpdb.readFromFilepointer(fp1,false,0.1) ) error("could not read fila " + iend);
+  std::string iend; parse("--end",iend);
+  PDB myendpdb;
+  {
+    FILE* fp1=std::fopen(iend.c_str(),"r");
+// call fclose when fp goes out of scope
+    auto deleter=[](FILE* f) { std::fclose(f); };
+    std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp1,deleter);
+    if( iend.length()==0 ) error("input is missing using --istart + --iend or --path");
+    if( !myendpdb.readFromFilepointer(fp1,false,0.1) ) error("could not read fila " + iend);
+  }
   auto eframe=metricRegister().create<ReferenceConfiguration>( mtype, myendpdb );
-  fclose(fp1);
+
 // Get atoms and arg requests
   std::vector<AtomNumber> atoms; std::vector<std::string> arg_names;
   sframe->getAtomRequests( atoms); eframe->getAtomRequests( atoms);

@@ -28,16 +28,21 @@ mu3altx: COMBINE ARG=xx3.x COEFFICIENTS=0.833333333 PERIODIC=NO
 mu3alty: COMBINE ARG=xx3.y COEFFICIENTS=0.833333333 PERIODIC=NO
 mu3altz: COMBINE ARG=xx3.z COEFFICIENTS=0.833333333 PERIODIC=NO
 
+c3: CENTER ATOMS=1-5 SET_MASS=1 SET_CHARGE=-2.5
+c4: CENTER ATOMS=6-10 SET_MASS=1 SET_CHARGE=2.5
+
+muv: DIPOLE GROUP=c3,c4
+
 PRINT ...
   STRIDE=2
-  ARG=mu1,mu2,mu1alt,mu2alt,mu3.*,mu3altx,mu3alty,mu3altz
+  ARG=mu1,mu2,mu1alt,mu2alt,mu3.*,mu3altx,mu3alty,mu3altz,muv
   FILE=COLVAR FMT=%6.5f
 ... PRINT
 
 # this writes all physical atoms
 DUMPMASSCHARGE FILE=mc
-# this writes selected atoms (including two virtuals)
-DUMPMASSCHARGE FILE=mc2 ATOMS=1-10,c1,c2
+# this writes selected atoms (including four virtuals)
+DUMPMASSCHARGE FILE=mc2 ATOMS=1-10,c1,c2,c3,c4
 
 ENDPLUMED
 

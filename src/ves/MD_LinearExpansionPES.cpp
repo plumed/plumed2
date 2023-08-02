@@ -234,7 +234,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
     pc.Split(intra.Get_rank(),0,inter);
   }
 
-  unsigned int nsteps;
+  long long unsigned int nsteps;
   parse("nstep",nsteps);
   double tstep;
   parse("tstep",tstep);
@@ -485,7 +485,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   if(pc.Get_rank() == 0) {
     std::fprintf(out,"Replicas                              %zu\n",replicas);
     std::fprintf(out,"Cores per replica                     %u\n",coresPerReplica);
-    std::fprintf(out,"Number of steps                       %u\n",nsteps);
+    std::fprintf(out,"Number of steps                       %llu\n",nsteps);
     std::fprintf(out,"Timestep                              %f\n",tstep);
     std::fprintf(out,"Temperature                           %f",temps_vec[0]);
     for(unsigned int i=1; i<temps_vec.size(); i++) {std::fprintf(out,",%f",temps_vec[i]);}
@@ -592,8 +592,8 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   }
 
   if(plumed) {
-    int step_tmp = 0;
-    plumed->cmd("setStep",&step_tmp);
+    long long unsigned int step_tmp = 0;
+    plumed->cmd("setStepLongLong",&step_tmp);
     plumed->cmd("setMasses",&masses[0]);
     plumed->cmd("setForces",&forces[0][0]);
     plumed->cmd("setEnergy",&potential);
@@ -601,8 +601,8 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
     plumed->cmd("calc");
   }
 
-  for(unsigned int istep=0; istep<nsteps; ++istep) {
-    //if( istep%20==0 && pc.Get_rank()==0 ) printf("Doing step %d\n",istep);
+  for(long long unsigned int istep=0; istep<nsteps; ++istep) {
+    //if( istep%20==0 && pc.Get_rank()==0 ) printf("Doing step %llu\n",istep);
 
     // Langevin thermostat
     double lscale=exp(-0.5*tstep*friction); //exp(-0.5*tstep/friction);
@@ -636,9 +636,9 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
     potential=calc_energy(positions,forces);
 
     if(plumed) {
-      int istepplusone=istep+1;
+      long long unsigned int istepplusone=istep+1;
       plumedWantsToStop=0;
-      plumed->cmd("setStep",&istepplusone);
+      plumed->cmd("setStepLongLong",&istepplusone);
       plumed->cmd("setMasses",&masses[0]);
       plumed->cmd("setForces",&forces[0][0]);
       plumed->cmd("setEnergy",&potential);
@@ -667,7 +667,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
     ttt = calc_temp( velocities );
     conserved = potential+1.5*ttt+therm_eng;
     if( (intra.Get_rank()==0) && ((istep % stepWrite)==0) ) {
-      std::fprintf(fp,"%u %f %f %f %f %f %f %f %f \n", istep, istep*tstep, positions[0][0], positions[0][1], positions[0][2], conserved, ttt, potential, therm_eng );
+      std::fprintf(fp,"%llu %f %f %f %f %f %f %f %f \n", istep, istep*tstep, positions[0][0], positions[0][1], positions[0][2], conserved, ttt, potential, therm_eng );
     }
   }
 

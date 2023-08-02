@@ -1,4 +1,5 @@
 type=make
+export PLUMED_STACK_TRACE=no
 plumed_language=fortran08
 
 function plumed_regtest_after(){

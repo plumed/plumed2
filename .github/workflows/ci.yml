@@ -21,6 +21,7 @@ jobs:
       matrix:
         variant:
         - -doc-mpi-
+        - -mpi-
         - -coverage-mpi-
         - -debug-
         - -debug-mpi-
@@ -39,7 +40,7 @@ jobs:
     - name: Set paths
       run: |
         echo "$HOME/opt/bin" >> $GITHUB_PATH
-        # path required for nosetest:
+        # path required for pytest:
         echo "$HOME/.local/bin" >> $GITHUB_PATH
         echo "CPATH=$HOME/opt/include:$CPATH" >> $GITHUB_ENV
         echo "INCLUDE=$HOME/opt/include:$INCLUDE" >> $GITHUB_ENV
@@ -63,32 +64,45 @@ jobs:
     - name: Install boost with debug flags
       if: contains( matrix.variant, '-debug-' )
       run: |
-        .travis/install.boost
+        .ci/install.boost
     - name: Install python packages needed for tests
       run: |
         python -m pip install --upgrade pip
         pip install --user Cython
         pip install --user numpy
-        pip install --user nose
+        pip install --user pytest
         pip install --user six ;
         pip install --user pandas ;
         pip install --user mdtraj ;
         pip install --user MDAnalysis ;
         python -c "import MDAnalysis" ;
         python -c "import mdtraj" ;
+    - name: Install Libtorch
+      if: ${{ ! contains( matrix.variant, '-debug-' ) }} # libtorch is not compiled with GLIBCXX_DEBUG
+      run: |
+        # added by luigibonati
+        mkdir -p $HOME/opt/
+        cd $HOME/opt/ # GB: install in $HOME/opt/libtorch
+        wget --no-check-certificate https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-1.13.1%2Bcpu.zip ;
+        unzip libtorch-cxx11-abi-shared-with-deps-1.13.1+cpu.zip ;
+        echo "LIBRARY_PATH=$PWD/libtorch/lib:$LIBRARY_PATH" >> $GITHUB_ENV
+        echo "LD_LIBRARY_PATH=$PWD/libtorch/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+        echo "CPATH=$PWD/libtorch/include/torch/csrc/api/include/:$PWD/libtorch/include/:$PWD/libtorch/include/torch:$CPATH" >> $GITHUB_ENV
+        echo "INCLUDE=$PWD/libtorch/include/torch/csrc/api/include/:$PWD/libtorch/include/:$PWD/libtorch/include/torch:$INCLUDE" >> $GITHUB_ENV
+        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-libtorch" >> $GITHUB_ENV
     - name: Install Doxygen
       if: contains( matrix.variant, '-doc-' )
       run: |
         sudo apt-get install -y graphviz
         sudo apt-get install -y doxygen-latex
-        ./.travis/install.doxygen Release_1_8_17
+        .ci/install.doxygen Release_1_8_17
         echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-pdfdoc" >> $GITHUB_ENV
         # make sure all tests are run
         echo "PLUMED_ALL_TESTS=yes" >> $GITHUB_ENV
     - name: Install lcov
       if: contains( matrix.variant, '-coverage-' )
       run: |
-        ./.travis/install.lcov v1.15
+        .ci/install.lcov v1.16
         echo "PLUMED_CONFIG=$PLUMED_CONFIG --disable-external-lapack --disable-external-blas --enable-gcov CXXFLAGS=-O" >> $GITHUB_ENV
         # make sure all tests are run
         echo "PLUMED_ALL_TESTS=yes" >> $GITHUB_ENV
@@ -135,6 +149,7 @@ jobs:
         make nmcheck
         ccache -s -M 100M
     - name: Run tests
+      if: ${{ ! contains( matrix.variant, '-doc-mpi-' ) }}
       run: |
          (while true; do  # see https://github.com/actions/virtual-environments/issues/1860
               df -h
@@ -145,7 +160,8 @@ jobs:
          make -C regtest checkfail
     - name: Run python tests
       run: |
-         nosetests -v -w python
+         cd python
+         pytest -v
     - name: Build doc
       env:
         GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
@@ -158,14 +174,14 @@ jobs:
       if: contains( matrix.variant, '-coverage-' )
       run: |
          make -C developer-doc coverage
-         ./.travis/push coverage
+         .ci/push coverage
          bash <(curl -s https://codecov.io/bash) > /dev/null
     - name: Push doc
       if: contains( matrix.variant, '-doc-' )
       env:
         GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
       run: |
-         ./.travis/push doc
+         .ci/push doc
 
   codecheck:
     runs-on: ubuntu-20.04
@@ -176,7 +192,9 @@ jobs:
          echo "$HOME/opt/bin" >> $GITHUB_PATH
     - name: Install requirements
       run: |
-        ./.travis/install.cppcheck 2.6.2
+        .ci/install.cppcheck 2.10.3
+        # it is important that this is the same version used to generate the actual ./configure
+        .ci/install.autoconf 2.69
     - name: Build astyle
       run: |
         make -j 4 -C astyle
@@ -199,14 +217,23 @@ jobs:
       run: |
         make -C docker centos7
 
-  # We test on fedora34 to make sure we have compatibility with newer compilers (gcc 11)
-  fedora34:
+  # We test on fedora37 to make sure we have compatibility with newer compilers (gcc 12)
+  fedora37:
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v3
     - name: Build and run tests
       run: |
-        make -C docker fedora34
+        make -C docker fedora37
+
+  # We test on rockylinux8 as well
+  rocky8:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build and run tests
+      run: |
+        make -C docker rocky8
 
   macports:
     runs-on: macos-11
@@ -216,7 +243,7 @@ jobs:
         variant: [ "" , "+allmodules" ]
         # see https://github.community/t/how-to-conditionally-include-exclude-items-in-matrix-eg-based-on-branch/16853/6 for possible exclusions
     env:
-      PYVERS: "py37 py38"
+      PYVERS: "py37 py38 py39 py310"
     steps:
     - uses: actions/checkout@v3
     - uses: actions/cache@v3
@@ -244,10 +271,11 @@ jobs:
     - name: Run tests
       run: |
         sudo port -N -d test plumed ${{ matrix.variant }}
-        # NOT WORKING FOR SOME MACPORTS RELATED REASON - GB 28/01/2022
-        #for p in $PYVERS ; do
-        #  sudo port test $p-plumed
-        #done
+    - name: Run python tests
+      run: |
+        for p in $PYVERS ; do
+          sudo port test $p-plumed
+        done
 
   macsimple:
     runs-on: macos-11

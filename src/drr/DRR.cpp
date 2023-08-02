@@ -160,9 +160,9 @@ bool DRRForceGrid::store(const vector<double> &pos, const vector<double> &f,
   if (isInBoundary(pos)) {
     if (nsamples == 0)
       return true;
-    const size_t baseaddr = sampleAddress(pos) * ndims;
-    samples[baseaddr / ndims] += nsamples;
-    auto it_fa = begin(forces) + baseaddr;
+    const size_t baseaddr = sampleAddress(pos);
+    samples[baseaddr] += nsamples;
+    auto it_fa = begin(forces) + baseaddr * ndims;
     std::transform(begin(f), end(f), it_fa, it_fa, std::plus<double>());
     return true;
   } else {
@@ -182,8 +182,8 @@ DRRForceGrid::getAccumulatedForces(const vector<double> &pos) const {
   vector<double> result(ndims, 0);
   if (!isInBoundary(pos))
     return result;
-  const size_t baseaddr = sampleAddress(pos) * ndims;
-  std::copy(begin(forces) + baseaddr, begin(forces) + baseaddr + ndims,
+  const size_t force_addr = sampleAddress(pos) * ndims;
+  std::copy(begin(forces) + force_addr, begin(forces) + force_addr + ndims,
             begin(result));
   return result;
 }
@@ -352,8 +352,8 @@ void DRRForceGrid::write1DPMF(string filename) const {
 }
 
 void DRRForceGrid::writeAll(const string &filename, bool addition) const {
-  string countname = filename + suffix + ".count";
-  string gradname = filename + suffix + ".grad";
+  const string countname = filename + suffix + ".count";
+  const string gradname = filename + suffix + ".grad";
   vector<double> pos(ndims, 0);
   FILE *pGrad, *pCount;
   if (addition) {
@@ -394,7 +394,7 @@ void DRRForceGrid::writeAll(const string &filename, bool addition) const {
 }
 
 void DRRForceGrid::writeDivergence(const string &filename) const {
-  string divname = filename + suffix + ".div";
+  const string divname = filename + suffix + ".div";
   vector<double> pos(ndims, 0);
   FILE *pDiv;
   pDiv = fopen(divname.c_str(), "w");
@@ -509,28 +509,44 @@ CZAR CZAR::mergewindow(const CZAR &cWA, const CZAR &cWB) {
   return result;
 }
 
-void CZAR:: writeZCount(const string &filename, bool addition) const {
-  string countname = filename + ".zcount";
+void CZAR:: writeZCountZGrad(const string &filename, bool addition) const {
+  const string countname = filename + ".zcount";
+  const string gradname = filename + ".zgrad";
   vector<double> pos(ndims, 0);
   FILE *pCount;
+  FILE *pGrad;
   if (addition) {
     pCount = fopen(countname.c_str(), "a");
+    pGrad = fopen(gradname.c_str(), "a");
   } else {
     pCount = fopen(countname.c_str(), "w");
+    pGrad = fopen(gradname.c_str(), "w");
   }
-  char *buffer;
-  buffer = (char *)malloc((sizeof(double)) * sampleSize * ndims);
-  setvbuf(pCount, buffer, _IOFBF, (sizeof(double)) * sampleSize * ndims);
   fwrite(headers.c_str(), sizeof(char), strlen(headers.c_str()), pCount);
+  fwrite(headers.c_str(), sizeof(char), strlen(headers.c_str()), pGrad);
   for (size_t i = 0; i < sampleSize; ++i) {
     for (size_t j = 0; j < ndims; ++j) {
       pos[j] = table[j][i];
       fprintf(pCount, " %.9f", table[j][i]);
+      fprintf(pGrad, " %.9f", table[j][i]);
     }
-    fprintf(pCount, " %lu\n", getCount(pos, true));
+    const size_t baseaddr = sampleAddress(pos);
+    const auto& current_sample = samples[baseaddr];
+    fprintf(pCount, " %lu\n", current_sample);
+    if (current_sample == 0) {
+      for (size_t j = 0; j < ndims; ++j) {
+        fprintf(pGrad, " %.9f", 0.0);
+      }
+    } else {
+      for (size_t j = 0; j < ndims; ++j) {
+        const double grad = -1.0 * forces[baseaddr * ndims + j] / current_sample;
+        fprintf(pGrad, " %.9f", grad / outputunit);
+      }
+    }
+    fprintf(pGrad, "\n");
   }
   fclose(pCount);
-  free(buffer);
+  fclose(pGrad);
 }
 
 }

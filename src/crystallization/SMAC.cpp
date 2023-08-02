@@ -26,7 +26,9 @@
 
 //+PLUMEDOC MCOLVARF SMAC
 /*
-Calculate a variant on the SMAC collective variable discussed in \cite smac-paper
+Calculate a variant on the SMAC collective variable
+
+This variable is discussed in \cite smac-paper
 
 The SMAC collective variable can be used to study the formation of molecular solids
 from either the melt or from solution.  The idea behind this variable is that what

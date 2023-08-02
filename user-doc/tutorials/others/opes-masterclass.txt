@@ -1,0 +1,13 @@
+/**
+\page opes-masterclass PLUMED Masterclass 22.3 OPES method
+
+\section opes-masterclass-link OPES Masterclass
+
+The PLUMED Masterclass 22.3 provides a good overview of the OPES method, it can be found here: \ref masterclass-22-03.
+
+*/
+
+link: @subpage opes-masterclass
+
+description: Link to the PLUMED Masterclass about the OPES method.
+

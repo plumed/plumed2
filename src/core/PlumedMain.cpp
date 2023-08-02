@@ -120,36 +120,77 @@ namespace PLMD {
     throw std::ios_base::failure(what);
   }
 
+  if(words[0]=="int") {
+    int value=0;
+    if(words.size()>1) Tools::convert(words[1],value);
+    throw value;
+  }
+
+  if(words[0]=="test_nested1") {
+    try {
+      throw Exception(std::string("inner ")+what);
+    } catch(...) {
+      try {
+        std::throw_with_nested(Exception(std::string("middle ")+what));
+      } catch(...) {
+        std::throw_with_nested(Exception(std::string("outer ")+what));
+      }
+    }
+  }
+
+  if(words[0]=="test_nested2") {
+    try {
+      throw std::bad_alloc();
+    } catch(...) {
+      try {
+        std::throw_with_nested(Exception(std::string("middle ")+what));
+      } catch(...) {
+        std::throw_with_nested(Exception(std::string("outer ")+what));
+      }
+    }
+  }
+
+  if(words[0]=="test_nested3") {
+    try {
+      throw "inner";
+    } catch(...) {
+      try {
+        std::throw_with_nested(Exception(std::string("middle ")+what));
+      } catch(...) {
+        std::throw_with_nested(Exception(std::string("outer ")+what));
+      }
+    }
+  }
+
   plumed_error() << "unknown exception " << what;
 }
 
-#if 0
-// this is temporarily commented out since it makes
-// multithread calculations fail
 namespace {
-class Register {
-  std::vector<PlumedMain*> instances;
+// This is an internal tool used to count how many PlumedMain objects have been created
+// and if they were correctly destroyed.
+// When using debug options, it leads to a crash
+// Otherwise, it just prints a message
+class CountInstances {
+  std::atomic<int> counter{};
 public:
-  void add(PlumedMain* instance) {
-    instances.push_back(instance);
+  void increase() noexcept {
+    ++counter;
   }
-  void remove(PlumedMain* instance) {
-    auto it = std::find(instances.begin(), instances.end(), instance);
-    if(it==instances.end()) {
-      std::cerr<<"WARNING: internal inconsistency in allocated PlumedMain instances\n";
-    } else {
-      instances.erase(it);
+  void decrease() noexcept {
+    --counter;
+  }
+  ~CountInstances() {
+    if(counter!=0) {
+      std::cerr<<"WARNING: internal inconsistency in allocated PlumedMain instances (" <<counter<< ")\n";
+#ifndef NDEBUG
+      std::abort();
+#endif
     }
   }
-  ~Register() {
-    if(instances.size()>0) std::cerr<<"PLUMED instances was not properly deallocated in your code: "<<instances.size()<<"\n";
-  }
 };
-
-static Register myregister;
-
+static CountInstances countInstances;
 }
-#endif
+
 
 PlumedMain::PlumedMain():
   initialized(false),
@@ -168,16 +209,19 @@ PlumedMain::PlumedMain():
   doCheckPoint(false),
   stopNow(false),
   novirial(false),
-  detailedTimers(false)
+  detailedTimers(false),
+  gpuDeviceId(-1)
 {
+  increaseReferenceCounter();
   log.link(comm);
   log.setLinePrefix("PLUMED: ");
-  //myregister.add(this);
+  // this is at last so as to avoid inconsistencies if an exception is thrown
+  countInstances.increase(); // noexcept
 }
 
 // destructor needed to delete forward declarated objects
 PlumedMain::~PlumedMain() {
-  //myregister.remove(this);
+  countInstances.decrease();
 }
 
 /////////////////////////////////////////////////////////////
@@ -313,6 +357,12 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         step=val.get<long int>();
         atoms.startStep();
         break;
+      case cmd_setStepLongLong:
+        CHECK_INIT(initialized,word);
+        CHECK_NOTNULL(val,word);
+        step=val.get<long long int>();
+        atoms.startStep();
+        break;
       // words used less frequently:
       case cmd_setAtomsNlocal:
         CHECK_INIT(initialized,word);
@@ -392,7 +442,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         break;
       case cmd_getApiVersion:
         CHECK_NOTNULL(val,word);
-        val.set(int(9));
+        val.set(int(10));
         break;
       // commands which can be used only before initialization:
       case cmd_init:
@@ -503,11 +553,25 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
           OpenMP::setNumThreads(nt);
         }
         break;
+      /* ADDED WITH API==10 */
+      case cmd_setGpuDeviceId:
+        CHECK_NOTNULL(val,word);
+        {
+          auto id=val.get<int>();
+          if(id>=0) gpuDeviceId=id;
+        }
+        break;
       /* ADDED WITH API==6 */
       /* only used for testing */
       case cmd_throw:
         CHECK_NOTNULL(val,word);
         testThrow(val.get<const char*>());
+      /* ADDED WITH API==10 */
+      case cmd_setNestedExceptions:
+        CHECK_NOTNULL(val,word);
+        if(val.get<int>()!=0) nestedExceptions=true;
+        else nestedExceptions=false;
+        break;
       /* STOP API */
       case cmd_setMDEngine:
         CHECK_NOTINIT(initialized,word);
@@ -580,6 +644,13 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         plumed_assert(nw==2);
         atoms.setExtraCVForce(words[1],val);
         break;
+      /* ADDED WITH API==10 */
+      case cmd_isExtraCVNeeded:
+        CHECK_NOTNULL(val,word);
+        plumed_assert(nw==2);
+        if(atoms.isExtraCVNeeded(words[1])) val.set(int(1));
+        else                                val.set(int(0));
+        break;
       case cmd_GREX:
         if(!grex) grex=Tools::make_unique<GREX>(*this);
         plumed_massert(grex,"error allocating grex");
@@ -612,12 +683,17 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       }
     }
 
-  } catch (const std::exception &e) {
+  } catch (...) {
     if(log.isOpen()) {
-      log<<"\n\n################################################################################\n\n";
-      log<<e.what();
-      log<<"\n\n################################################################################\n\n";
-      log.flush();
+      try {
+        log<<"\n################################################################################\n";
+        log<<Tools::concatenateExceptionMessages();
+        log<<"\n################################################################################\n";
+        log.flush();
+      } catch(...) {
+        // ignore errors here.
+        // in any case, we are rethrowing this below
+      }
     }
     throw;
   }
@@ -856,39 +932,43 @@ void PlumedMain::justCalculate() {
 // calculate the active actions in order (assuming *backward* dependence)
   for(const auto & pp : actionSet) {
     Action* p(pp.get());
-    if(p->isActive()) {
+    try {
+      if(p->isActive()) {
 // Stopwatch is stopped when sw goes out of scope.
 // We explicitly declare a Stopwatch::Handler here to allow for conditional initialization.
-      Stopwatch::Handler sw;
-      if(detailedTimers) {
-        std::string actionNumberLabel;
-        Tools::convert(iaction,actionNumberLabel);
-        const unsigned m=actionSet.size();
-        unsigned k=0; unsigned n=1; while(n<m) { n*=10; k++; }
-        const int pad=k-actionNumberLabel.length();
-        for(int i=0; i<pad; i++) actionNumberLabel=" "+actionNumberLabel;
-        sw=stopwatch.startStop("4A "+actionNumberLabel+" "+p->getLabel());
+        Stopwatch::Handler sw;
+        if(detailedTimers) {
+          std::string actionNumberLabel;
+          Tools::convert(iaction,actionNumberLabel);
+          const unsigned m=actionSet.size();
+          unsigned k=0; unsigned n=1; while(n<m) { n*=10; k++; }
+          const int pad=k-actionNumberLabel.length();
+          for(int i=0; i<pad; i++) actionNumberLabel=" "+actionNumberLabel;
+          sw=stopwatch.startStop("4A "+actionNumberLabel+" "+p->getLabel());
+        }
+        ActionWithValue*av=dynamic_cast<ActionWithValue*>(p);
+        ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(p);
+        {
+          if(av) av->clearInputForces();
+          if(av) av->clearDerivatives();
+        }
+        {
+          if(aa) aa->clearOutputForces();
+          if(aa) if(aa->isActive()) aa->retrieveAtoms();
+        }
+        if(p->checkNumericalDerivatives()) p->calculateNumericalDerivatives();
+        else p->calculate();
+        // This retrieves components called bias
+        if(av) {
+          bias+=av->getOutputQuantity("bias");
+          work+=av->getOutputQuantity("work");
+          av->setGradientsIfNeeded();
+        }
+        ActionWithVirtualAtom*avv=dynamic_cast<ActionWithVirtualAtom*>(p);
+        if(avv)avv->setGradientsIfNeeded();
       }
-      ActionWithValue*av=dynamic_cast<ActionWithValue*>(p);
-      ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(p);
-      {
-        if(av) av->clearInputForces();
-        if(av) av->clearDerivatives();
-      }
-      {
-        if(aa) aa->clearOutputForces();
-        if(aa) if(aa->isActive()) aa->retrieveAtoms();
-      }
-      if(p->checkNumericalDerivatives()) p->calculateNumericalDerivatives();
-      else p->calculate();
-      // This retrieves components called bias
-      if(av) {
-        bias+=av->getOutputQuantity("bias");
-        work+=av->getOutputQuantity("work");
-        av->setGradientsIfNeeded();
-      }
-      ActionWithVirtualAtom*avv=dynamic_cast<ActionWithVirtualAtom*>(p);
-      if(avv)avv->setGradientsIfNeeded();
+    } catch(...) {
+      plumed_error_nested() << "An error happened while calculating " << p->getLabel();
     }
     iaction++;
   }
@@ -1052,6 +1132,18 @@ void PlumedMain::runJobsAtEndOfCalculation() {
   for(const auto & p : actionSet) {
     p->runFinalJobs();
   }
+}
+
+unsigned PlumedMain::increaseReferenceCounter() noexcept {
+  return ++referenceCounter;
+}
+
+unsigned PlumedMain::decreaseReferenceCounter() noexcept {
+  return --referenceCounter;
+}
+
+unsigned PlumedMain::useCountReferenceCounter() const noexcept {
+  return referenceCounter;
 }
 
 #ifdef __PLUMED_HAS_PYTHON

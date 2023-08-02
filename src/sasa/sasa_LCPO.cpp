@@ -40,7 +40,9 @@ namespace sasa {
 
 //+PLUMEDOC SASAMOD_COLVAR SASA_LCPO
 /*
-Calculates the solvent accessible surface area (SASA) of a protein molecule, or other properties related to it. The atoms for which the SASA is desired should be indicated with the keyword ATOMS, and a pdb file of the protein must be provided in input with the MOLINFO keyword. The LCPO algorithm is used for the calculation (please, read and cite \cite Weiser1999). The radius of the solvent is assumed to be 0.14 nm, which is the radius of water molecules. Using the keyword NL_STRIDE it is also possible to specify the frequency with which the neighbor list for the calculation of the SASA is updated (the default is every 10 steps).
+Calculates the solvent accessible surface area (SASA) of a protein molecule, or other properties related to it.
+
+The atoms for which the SASA is desired should be indicated with the keyword ATOMS, and a pdb file of the protein must be provided in input with the MOLINFO keyword. The LCPO algorithm is used for the calculation (please, read and cite \cite Weiser1999). The radius of the solvent is assumed to be 0.14 nm, which is the radius of water molecules. Using the keyword NL_STRIDE it is also possible to specify the frequency with which the neighbor list for the calculation of the SASA is updated (the default is every 10 steps).
 
 Different properties can be calculated and selected using the TYPE keyword:
 

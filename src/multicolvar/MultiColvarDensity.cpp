@@ -228,6 +228,7 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
   std::unique_ptr<gridtools::GridVessel> grid;
   if( mycolv->isDensity() ) grid=createGrid( "histogram", vstring );
   else grid=createGrid( "average", vstring );
+  // cppcheck-suppress danglingLifetime
   mygrid=grid.get();
   // And finish the grid setup
   setAveragingAction( std::move(grid), true );

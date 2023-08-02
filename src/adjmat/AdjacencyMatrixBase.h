@@ -74,7 +74,7 @@ public:
   virtual void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ) = 0;
 /// None of these things are allowed
   bool isPeriodic() { return false; }
-  Vector getCentralAtom() { plumed_merror("cannot find central atoms for adjacency matrix actions"); Vector dum; return dum; }
+  Vector getCentralAtom() { plumed_merror("cannot find central atoms for adjacency matrix actions"); }
 /// Get the atom number
   AtomNumber getAbsoluteIndexOfCentralAtom( const unsigned& i ) const ;
 };

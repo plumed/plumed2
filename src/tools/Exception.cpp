@@ -28,8 +28,59 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
+#include <vector>
 
 namespace PLMD {
+
+namespace {
+// see https://www.geeksforgeeks.org/simplify-directory-path-unix-like/
+
+// function to simplify a Unix - styled
+// absolute path
+std::string simplify(const std::string & path)
+{
+  // using vector in place of stack
+  std::vector<std::string> v;
+  int n = path.length();
+  std::string ans;
+  for (int i = 0; i < n; i++) {
+    std::string dir = "";
+    // forming the current directory.
+    while (i < n && path[i] != '/') {
+      dir += path[i];
+      i++;
+    }
+
+    // if ".." , we pop.
+    if (dir == "..") {
+      if (!v.empty())
+        v.pop_back();
+    }
+    else if (dir == "." || dir == "") {
+      // do nothing (added for better understanding.)
+    }
+    else {
+      // push the current directory into the vector.
+      v.push_back(dir);
+    }
+  }
+
+  // forming the ans
+  bool first=true;
+  for (auto i : v) {
+    if(!first) ans += "/";
+    first=false;
+    ans += i;
+  }
+
+  // vector is empty
+  if (ans == "")
+    return "/";
+
+  return ans;
+}
+
+}
 
 Exception::Exception()
 {
@@ -43,13 +94,12 @@ Exception::Exception()
     msg+="\n********** END STACK DUMP **********\n";
   }
 #endif
-  msg+="\n+++ PLUMED error";
 }
 
 Exception& Exception::operator<<(const std::string&msg)
 {
   if(msg.length()>0) {
-    if(note) this->msg +="\n+++ message follows +++\n";
+    if(note) this->msg +="\n";
     this->msg +=msg;
     note=false;
   }
@@ -59,14 +109,20 @@ Exception& Exception::operator<<(const std::string&msg)
 Exception& Exception::operator<<(const Location&loc)
 {
   if(loc.file) {
-    char cline[1000];
-    std::sprintf(cline,"%u",loc.line);
-    this->msg += "\n+++ at ";
-    this->msg += loc.file;
+    const std::size_t clinelen=1000;
+    char cline[clinelen];
+    std::snprintf(cline,clinelen,"%u",loc.line);
+    this->msg += "\n(";
+    try {
+      this->msg += simplify(loc.file);
+    } catch(...) {
+      // ignore
+    }
     this->msg += ":";
     this->msg += cline;
+    this->msg += ")";
     if(loc.pretty && loc.pretty[0]) {
-      this->msg += ", function ";
+      this->msg += " ";
       this->msg += loc.pretty;
     }
   }

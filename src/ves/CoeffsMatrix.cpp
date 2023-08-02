@@ -667,11 +667,11 @@ void CoeffsMatrix::writeDataDiagonalToFile(OFile& ofile) {
   for(size_t i=0; i<numberOfCoeffs(); i++) {
     indices=getIndices(i);
     for(unsigned int k=0; k<numberOfDimensions(); k++) {
-      std::sprintf(s1.data(),int_fmt.c_str(),indices[k]);
+      std::snprintf(s1.data(),s1.size(),int_fmt.c_str(),indices[k]);
       ofile.printField(ilabels[k],s1.data());
     }
     ofile.fmtField(" "+getOutputFmt()).printField(field_coeffs,getValue(i,i));
-    std::sprintf(s1.data(),int_fmt.c_str(),i); ofile.printField(field_index,s1.data());
+    std::snprintf(s1.data(),s1.size(),int_fmt.c_str(),i); ofile.printField(field_index,s1.data());
     ofile.printField();
   }
   ofile.fmtField();
@@ -695,9 +695,9 @@ void CoeffsMatrix::writeDataFullToFile(OFile& ofile) {
   //
   for(size_t i=0; i<nrows_; i++) {
     for(size_t j=0; j<ncolumns_; j++) {
-      std::sprintf(s1.data(),int_fmt.c_str(),i);
+      std::snprintf(s1.data(),s1.size(),int_fmt.c_str(),i);
       ofile.printField(field_index_row,s1.data());
-      std::sprintf(s1.data(),int_fmt.c_str(),j);
+      std::snprintf(s1.data(),s1.size(),int_fmt.c_str(),j);
       ofile.printField(field_index_column,s1.data());
       ofile.fmtField(" "+getOutputFmt()).printField(field_coeffs,getValue(i,j));
       ofile.printField();

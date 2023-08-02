@@ -103,10 +103,10 @@ private:
   // Monte Carlo stuff
   std::vector<Random> random;
   unsigned MCsteps_;
-  long unsigned MCaccept_;
-  long unsigned MCacceptScale_;
-  long unsigned MCacceptFT_;
-  long unsigned MCtrial_;
+  long long unsigned MCaccept_;
+  long long unsigned MCacceptScale_;
+  long long unsigned MCacceptFT_;
+  long long unsigned MCtrial_;
   unsigned MCchunksize_;
 
   // output

@@ -202,10 +202,10 @@ class Metainference : public bias::Bias
   // Monte Carlo stuff
   std::vector<Random> random;
   unsigned MCsteps_;
-  long unsigned MCaccept_;
-  long unsigned MCacceptScale_;
-  long unsigned MCacceptFT_;
-  long unsigned MCtrial_;
+  long long unsigned MCaccept_;
+  long long unsigned MCacceptScale_;
+  long long unsigned MCacceptFT_;
+  long long unsigned MCtrial_;
   unsigned MCchunksize_;
 
   // output
@@ -1687,7 +1687,7 @@ void Metainference::do_regression_zero(const std::vector<double> &mean)
 void Metainference::calculate()
 {
   // get step
-  const long int step = getStep();
+  const long long int step = getStep();
 
   unsigned iselect = 0;
   // set the value of selector for  REM-like stuff

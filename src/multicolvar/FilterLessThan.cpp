@@ -25,7 +25,7 @@
 
 //+PLUMEDOC MTRANSFORMS MTRANSFORM_LESS
 /*
-This action can be used to transform the colvar values calculated by a \ref mcolv using a \ref switchingfunction
+This action can be used to transform the colvar values calculated by a multicovar using a switching function
 
 In this action each colvar, \f$s_i\f$, calculated by \ref mcolv is transformed by a \ref switchingfunction function that
 is equal to one if the colvar is less than a certain target value and which is equal to zero otherwise.

@@ -192,7 +192,7 @@ ERMSD::ERMSD(const ActionOptions&ao):
 // calculator
 void ERMSD::calculate() {
 // set derivatives to zero
-  for(unsigned i=0; i<derivs.size(); ++i) {derivs[i].zero();}
+  Tools::set_to_zero(derivs);
   double ermsdist;
   Tensor virial;
 // This is a trick to avoid explicit virial calculation

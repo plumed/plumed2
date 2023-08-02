@@ -32,6 +32,7 @@ void ActionWithValue::registerKeywords(Keywords& keys) {
                                  "below.  These quantities can be referenced elsewhere in the input by using this Action's "
                                  "label followed by a dot and the name of the quantity required from the list below.");
   keys.addFlag("NUMERICAL_DERIVATIVES", false, "calculate the derivatives for these quantities numerically");
+  keys.add("hidden","HAS_VALUES","this is used in json output to determine those actions that have values");
 }
 
 void ActionWithValue::noAnalyticalDerivatives(Keywords& keys) {

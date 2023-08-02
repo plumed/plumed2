@@ -2,3 +2,21 @@
  should be nonzero       20200
  should be zero           0
  should be nonzero       20200
+       20000 F
+std::bad_alloc
+
+The above exception was the direct cause of the following exception:
+
+middle test_nested2
+
+The above exception was the direct cause of the following exception:
+
+outer test_nested2
+ code:       20000 nested: T
+
+outer test_nested2
+ code:       20000 nested: T
+
+middle test_nested2
+ code:       11400 nested: F
+std::bad_alloc

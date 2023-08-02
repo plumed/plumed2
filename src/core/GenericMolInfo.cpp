@@ -126,6 +126,46 @@ GenericMolInfo::GenericMolInfo( const ActionOptions&ao ):
   }
 }
 
+std::map<std::string,std::string> GenericMolInfo::getSpecialKeywords() {
+  std::map<std::string,std::string> mapkeys;
+  mapkeys.insert( std::pair<std::string,std::string>("@mda:","atom selection built using syntax for <a href=\\\"https://docs.mdanalysis.org/stable/documentation_pages/selections.html\\\">MDAnalysis</a>") );
+  mapkeys.insert( std::pair<std::string,std::string>("@mdt:","atom selection built using syntax for <a href=\\\"https://www.mdtraj.org/1.9.8.dev0/index.html\\\">mdtraj</a>") );
+  mapkeys.insert( std::pair<std::string,std::string>("@vmdexec:","atom selection built using syntax for <a href=\\\"https://www.ks.uiuc.edu/Research/vmd/\\\">VMD</a>") );
+  mapkeys.insert( std::pair<std::string,std::string>("@vmd:","atom selection built using syntax for <a href=\\\"https://www.ks.uiuc.edu/Research/vmd/\\\">VMD</a> python module") );
+  mapkeys.insert( std::pair<std::string,std::string>("@nucleic","all atoms that are part of a DNA or RNA molecule") );
+  mapkeys.insert( std::pair<std::string,std::string>("@protein","all atoms that are part of a protein") );
+  mapkeys.insert( std::pair<std::string,std::string>("@water","all water molecules") );
+  mapkeys.insert( std::pair<std::string,std::string>("@ions","all the ions") );
+  mapkeys.insert( std::pair<std::string,std::string>("@hydrogens","all hydrogen atoms") );
+  mapkeys.insert( std::pair<std::string,std::string>("@nonhydrogens","all non hydrogen atoms") );
+  mapkeys.insert( std::pair<std::string,std::string>("@phi-","the four atoms that are required to calculate the phi dihedral for") );
+  mapkeys.insert( std::pair<std::string,std::string>("@psi-","the four atoms that are required to calculate the psi dihedral for") );
+  mapkeys.insert( std::pair<std::string,std::string>("@omega-","the four atoms that are required to calculate the omega dihedral for") );
+  mapkeys.insert( std::pair<std::string,std::string>("@chi1-","the four atoms that are required to calculate the chi1 dihedral for") );
+  mapkeys.insert( std::pair<std::string,std::string>("@chi2-","the four atoms that are required to calculate the chi2 dihedral for") );
+  mapkeys.insert( std::pair<std::string,std::string>("@chi3-","the four atoms that are required to calculate the chi3 dihedral for") );
+  mapkeys.insert( std::pair<std::string,std::string>("@chi4-","the four atoms that are required to calculate the chi4 dihedral for") );
+  mapkeys.insert( std::pair<std::string,std::string>("@chi5-","the four atoms that are required to calculate the chi5 dihedral for") );
+  mapkeys.insert( std::pair<std::string,std::string>("@sidechain-","the protein sidechain atoms in") );
+  mapkeys.insert( std::pair<std::string,std::string>("@back-","the protein/dna/rna backbone atoms in") );
+  mapkeys.insert( std::pair<std::string,std::string>("@alpha-","the four atoms that are required to calculate the alpha backbone dihedral for") );
+  mapkeys.insert( std::pair<std::string,std::string>("@beta-","the four atoms that are required to calculate the beta backbone dihedral for") );
+  mapkeys.insert( std::pair<std::string,std::string>("@gamma-","the four atoms that are required to calculate the gamma backbone dihedral for") );
+  mapkeys.insert( std::pair<std::string,std::string>("@delta-","the four atoms that are required to calculate the delta backbone dihedral for") );
+  mapkeys.insert( std::pair<std::string,std::string>("@epsilon-","the four atoms that are required to calculate the backbone epsilon dihedral for") );
+  mapkeys.insert( std::pair<std::string,std::string>("@zeta-","the four atoms that are required to calculate the zeta backbone dihedral for") );
+  mapkeys.insert( std::pair<std::string,std::string>("@v0-","the four atoms that are required to calculate the v0 sugar dihedral for") );
+  mapkeys.insert( std::pair<std::string,std::string>("@v1-","the four atoms that are required to calculate the v1 sugar dihedral for") );
+  mapkeys.insert( std::pair<std::string,std::string>("@v2-","the four atoms that are required to calculate the v2 sugar dihedral for") );
+  mapkeys.insert( std::pair<std::string,std::string>("@v3-","the four atoms that are required to calculate the v3 sugar dihedral for") );
+  mapkeys.insert( std::pair<std::string,std::string>("@v4-","the four atoms that are required to calculate the v4 sugar dihedral for") );
+  mapkeys.insert( std::pair<std::string,std::string>("@chi-","the four atoms that are required to alcullate the chi dihedral for") );
+  mapkeys.insert( std::pair<std::string,std::string>("@sugar-","the heavy atoms of the sugar in") );
+  mapkeys.insert( std::pair<std::string,std::string>("@base-","the heavy atoms of the base in") );
+  mapkeys.insert( std::pair<std::string,std::string>("@lcs-","an ordered triplet of atoms on the 6-membered ring of the nucleobase in") );
+  return mapkeys;
+}
+
 void GenericMolInfo::getBackbone( std::vector<std::string>& restrings, const std::string& fortype, std::vector< std::vector<AtomNumber> >& backbone ) {
   if( fortype!=mytype ) error("cannot calculate a variable designed for " + fortype + " molecules for molecule type " + mytype );
   if( MolDataClass::numberOfAtomsPerResidueInBackbone( mytype )==0 ) error("backbone is not defined for molecule type " + mytype );
@@ -240,7 +280,7 @@ void GenericMolInfo::interpretSymbol( const std::string& symbol, std::vector<Ato
         }
         words.erase(words.begin());
         atoms.resize(0);
-        for(auto & w : words) {
+        for(const auto & w : words) {
           int n;
           if(w.empty()) continue;
           Tools::convert(w,n);

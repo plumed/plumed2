@@ -73,6 +73,10 @@ the chain identifier must be in the standard PDB format, together with the TER k
 Termini groups like ACE or NME should be removed from the TEMPLATE pdb because they are not recognized by
 CS2BACKBONE.
 
+Atoms indices in the TEMPLATE file should be numbered from 1 to N where N is the number of atoms used in ATOMS.
+This is not a problem for simple cases where atoms goes from 1 to N but is instead something to be carefull in case
+that a terminal group is removed from the PDB file.
+
 In addition to a pdb file one needs to provide a list of chemical shifts to be calculated using one
 file per nucleus type (CAshifts.dat, CBshifts.dat, Cshifts.dat, Hshifts.dat, HAshifts.dat, Nshifts.dat),
 add only the files for the nuclei you need, but each file should include all protein residues.
@@ -330,10 +334,10 @@ public:
       }
 
       bool ok = false;
-      std::string scIdent1 [] = {"COSCALA1", "COSCARG1", "COSCASN1", "COSCASP1", "COSCCYS1", "COSCGLN1", "COSCGLU1",
-                                 "COSCGLY1", "COSCHIS1", "COSCILE1", "COSCLEU1", "COSCLYS1", "COSCMET1", "COSCPHE1",
-                                 "COSCPRO1", "COSCSER1", "COSCTHR1", "COSCTRP1", "COSCTYR1", "COSCVAL1"
-                                };
+      const std::string scIdent1 [] = {"COSCALA1", "COSCARG1", "COSCASN1", "COSCASP1", "COSCCYS1", "COSCGLN1", "COSCGLU1",
+                                       "COSCGLY1", "COSCHIS1", "COSCILE1", "COSCLEU1", "COSCLYS1", "COSCMET1", "COSCPHE1",
+                                       "COSCPRO1", "COSCSER1", "COSCTHR1", "COSCTRP1", "COSCTYR1", "COSCVAL1"
+                                      };
 
       for(unsigned scC = 0; scC < 20; scC++) {
         if(tok[0]==scIdent1[scC]) {
@@ -343,10 +347,10 @@ public:
       }
       if(ok) continue;
 
-      std::string scIdent2 [] = {"COSCALA2", "COSCARG2", "COSCASN2", "COSCASP2", "COSCCYS2", "COSCGLN2", "COSCGLU2",
-                                 "COSCGLY2", "COSCHIS2", "COSCILE2", "COSCLEU2", "COSCLYS2", "COSCMET2", "COSCPHE2",
-                                 "COSCPRO2", "COSCSER2", "COSCTHR2", "COSCTRP2", "COSCTYR2", "COSCVAL2"
-                                };
+      const std::string scIdent2 [] = {"COSCALA2", "COSCARG2", "COSCASN2", "COSCASP2", "COSCCYS2", "COSCGLN2", "COSCGLU2",
+                                       "COSCGLY2", "COSCHIS2", "COSCILE2", "COSCLEU2", "COSCLYS2", "COSCMET2", "COSCPHE2",
+                                       "COSCPRO2", "COSCSER2", "COSCTHR2", "COSCTRP2", "COSCTYR2", "COSCVAL2"
+                                      };
 
       for(unsigned scC = 0; scC < 20; scC++) {
         if(tok[0]==scIdent2[scC]) {

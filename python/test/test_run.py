@@ -36,6 +36,7 @@
 #    
 # PRINT ARG=t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13,t14,t15,t16,t17,t18,t19,t20,t21,t22,t23,t24,t25,t26,t27,t28,t29,t30,t31,t32 FILE=colvar.ref FMT=%8.4f
 
+import unittest
 import numpy as np
 import plumed
 import os
@@ -78,7 +79,8 @@ def create_plumed_var( p, name, command ):
    p.cmd("setMemoryForData " + name, data )
    return data
 
-def runtest():
+class Test(unittest.TestCase):
+  def runtest(self):
     os.system('rm -f bck.*')
     # Output to four decimal places only
     np.set_printoptions(precision=4)
@@ -96,6 +98,11 @@ def runtest():
     
     # Create PLUMED object and read input
     p = plumed.Plumed()
+
+    # not really needed, used to check https://github.com/plumed/plumed2/issues/916
+    plumed_version = np.zeros(1, dtype=np.intc)
+    p.cmd( "getApiVersion", plumed_version)
+
     p.cmd("setMDEngine","python")
     p.cmd("setTimestep", 1.)
     p.cmd("setKbT", 1.)
@@ -157,15 +164,13 @@ def runtest():
         variables = np.array([t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13,t14,t15,t16,t17,t18,t19,t20,t21,t22,t23,t24,t25,t26,t27,t28,t29,t30,t31,t32]).ravel()
         zeros = variables - correct_torsions[step,1:]
         for data in zeros :
-            if abs(data)>1E-4 : of.write("MISMATCH BETWEEN VALUE FROM PLUMED AND VALUE FROM PYTHON")
-            assert abs(data)<=1E-4
-    
+            self.assertAlmostEqual(data,0.0,places=4)
     of.close()
 
-def test():
+  def test(self):
     with cd('test/'):
-        runtest()
+        self.runtest()
 
 if __name__ == "__main__":
-    test()
+    unittest.main()
 

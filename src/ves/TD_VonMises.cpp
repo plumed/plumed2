@@ -115,7 +115,7 @@ PLUMED_REGISTER_ACTION(TD_VonMises,"TD_VONMISES")
 void TD_VonMises::registerKeywords(Keywords& keys) {
   TargetDistribution::registerKeywords(keys);
   keys.add("numbered","CENTER","The centers of the Von Mises distributions.");
-  keys.add("numbered","SIGMA","The \"standard deviations\" of the Von Mises distributions.");
+  keys.add("numbered","SIGMA","The standard deviations of the Von Mises distributions.");
   keys.add("optional","WEIGHTS","The weights of the Von Mises distributions. Have to be as many as the number of centers given with the numbered CENTER keywords. If no weights are given the distributions are weighted equally. The weights are automatically normalized to 1.");
   keys.add("hidden","PERIODS","The periods for each of the dimensions. By default they are 2*pi for each dimension.");
   keys.use("WELLTEMPERED_FACTOR");

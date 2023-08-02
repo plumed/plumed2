@@ -50,7 +50,8 @@ The following list contains the expansion CVs available in the OPES module.
 
 \page OPES_tutorial Tutorials
 
-The following list contains the tutorials available in the OPES module.
+The following list contains the tutorials available for the OPES module.
+Other examples of how to use OPES can be found in the [PLUMED-NEST](https://www.plumed-nest.org/browse.html).
 
 @OPES_TUTORIALS@
 

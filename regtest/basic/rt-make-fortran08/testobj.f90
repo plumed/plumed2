@@ -115,7 +115,9 @@ SUBROUTINE TEST6()
   USE ISO_C_BINDING
   IMPLICIT NONE
   TYPE(PLUMED) :: pippo
-  TYPE(PLUMED_ERROR) :: error
+  TYPE(PLUMED_ERROR), target  :: error
+  TYPE(PLUMED_ERROR), target  :: error2
+  TYPE(PLUMED_ERROR), pointer :: error_nested
   open(10,file="error_codes")
   error%code=-1 ! check if this is overwritten
   call pippo%cmd("init",error=error)
@@ -123,7 +125,7 @@ SUBROUTINE TEST6()
   error%code=-1 ! check if this is overwritten
   call pippo%cmd("initxx",error=error)
   write(10,*) "should be nonzero",error%code
-
+ 
   call plumed_create(pippo) ! reset instance
   error%code=-1 ! check if this is overwritten
   call pippo%cmd("init",error=error)
@@ -131,6 +133,34 @@ SUBROUTINE TEST6()
   error%code=-1 ! check if this is overwritten
   call pippo%cmd("initxx",error=error)
   write(10,*) "should be nonzero",error%code
+ 
+  ! test nested exceptions
+ 
+  ! first, disabled
+   call pippo%cmd_val("throw","test_nested2",error=error)
+  write(10,*) error%code,allocated(error%nested)
+  write(10,'(A)') error%what
+ 
+  ! then, enabled
+  call pippo%cmd_val("setNestedExceptions",1)
+  call pippo%cmd_val("throw","test_nested2",error=error)
+  write(10,*) "code:",error%code,"nested:",allocated(error%nested)
+  write(10,'(A)') error%what
+ 
+ 
+  ! this is a deep copy, not needed in general
+  ! however, the default copy is buggy in gfortran
+  ! and here we test our implementation
+  error2=error
+  error=error2
+ 
+  ! here we write the linked list in forward order
+  error_nested => error
+  do while(allocated(error_nested%nested))
+    error_nested => error_nested%nested
+    write(10,*) "code:",error_nested%code,"nested:",allocated(error_nested%nested)
+    write(10,'(A)') error_nested%what
+  end do
 
   call plumed_create(pippo) ! reset instance
   call pippo%cmd_val("setNatoms",999)

@@ -29,7 +29,9 @@ namespace opes {
 
 //+PLUMEDOC OPES_BIAS OPES_METAD
 /*
-On-the-fly probability enhanced sampling (\ref OPES "OPES") with metadynamics-like target distribution \cite Invernizzi2020rethinking.
+On-the-fly probability enhanced sampling with metadynamics-like target distribution.
+
+This On-the-fly probability enhanced sampling (\ref OPES "OPES") method with metadynamics-like target distribution is described in \cite Invernizzi2020rethinking.
 
 This \ref OPES_METAD action samples target distributions defined via their marginal \f$p^{\text{tg}}(\mathbf{s})\f$ over some collective variables (CVs), \f$\mathbf{s}=\mathbf{s}(\mathbf{x})\f$.
 By default \ref OPES_METAD targets the well-tempered distribution, \f$p^{\text{WT}}(\mathbf{s})\propto [P(\mathbf{s})]^{1/\gamma}\f$, where \f$\gamma\f$ is known as BIASFACTOR.
@@ -172,7 +174,7 @@ private:
   unsigned rank_;
   unsigned NumWalkers_;
   unsigned walker_rank_;
-  unsigned long counter_;
+  unsigned long long counter_;
   std::size_t ncv_;
 
   double kbt_;
@@ -182,7 +184,7 @@ private:
   std::vector<double> sigma0_;
   std::vector<double> sigma_min_;
   unsigned adaptive_sigma_stride_;
-  unsigned long adaptive_counter_;
+  unsigned long long adaptive_counter_;
   std::vector<double> av_cv_;
   std::vector<double> av_M2_;
   bool fixed_sigma_;
@@ -258,7 +260,9 @@ PLUMED_REGISTER_ACTION(OPESmetad_c,"OPES_METAD")
 
 //+PLUMEDOC OPES_BIAS OPES_METAD_EXPLORE
 /*
-On-the-fly probability enhanced sampling (\ref OPES "OPES") with well-tempered target distribution, exploration mode \cite Invernizzi2022explore .
+On-the-fly probability enhanced sampling with well-tempered target distribution in exploreation mode.
+
+On-the-fly probability enhanced sampling with well-tempered target distribution (\ref OPES "OPES") with well-tempered target distribution, exploration mode \cite Invernizzi2022explore .
 
 This \ref OPES_METAD_EXPLORE action samples the well-tempered target distribution, that is defined via its marginal \f$p^{\text{WT}}(\mathbf{s})\propto [P(\mathbf{s})]^{1/\gamma}\f$ over some collective variables (CVs), \f$\mathbf{s}=\mathbf{s}(\mathbf{x})\f$.
 While \ref OPES_METAD does so by estimating the unbiased distribution \f$P(\mathbf{s})\f$, \ref OPES_METAD_EXPLORE instead estimates on-the-fly the target \f$p^{\text{WT}}(\mathbf{s})\f$ and uses it to define the bias.
@@ -293,8 +297,6 @@ PRINT STRIDE=100 FILE=COLVAR ARG=cv,opes.*
 
 struct exploration { static const bool explore=true; };
 typedef OPESmetad<exploration> OPESmetad_e;
-// For some reason, this is not seen correctly by cppcheck
-// cppcheck-suppress unknownMacro
 PLUMED_REGISTER_ACTION(OPESmetad_e,"OPES_METAD_EXPLORE")
 
 template <class mode>
@@ -304,13 +306,17 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys)
   keys.use("ARG");
   keys.add("compulsory","TEMP","-1","temperature. If not set, it is taken from MD engine, but not all MD codes provide it");
   keys.add("compulsory","PACE","the frequency for kernel deposition");
-  keys.add("compulsory","SIGMA","ADAPTIVE","the initial widths of the kernels. If not set, adaptive sigma will be used with the given ADAPTIVE_SIGMA_STRIDE");
+  std::string info_sigma("the initial widths of the kernels");
+  if(mode::explore)
+    info_sigma+=", divided by the square root of gamma";
+  info_sigma+=". If not set, an adaptive sigma will be used with the given ADAPTIVE_SIGMA_STRIDE";
+  keys.add("compulsory","SIGMA","ADAPTIVE",info_sigma);
   keys.add("compulsory","BARRIER","the free energy barrier to be overcome. It is used to set BIASFACTOR, EPSILON, and KERNEL_CUTOFF to reasonable values");
   keys.add("compulsory","COMPRESSION_THRESHOLD","1","merge kernels if closer than this threshold, in units of sigma");
 //extra options
   keys.add("optional","ADAPTIVE_SIGMA_STRIDE","number of steps for measuring adaptive sigma. Default is 10xPACE");
   keys.add("optional","SIGMA_MIN","never reduce SIGMA below this value");
-  std::string info_biasfactor("the \\f$\\gamma\\f$ bias factor used for the well-tempered target distribution. ");
+  std::string info_biasfactor("the gamma bias factor used for the well-tempered target distribution. ");
   if(mode::explore)
     info_biasfactor+="Cannot be 'inf'";
   else
@@ -323,7 +329,7 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys)
   keys.addFlag("NLIST_PACE_RESET",false,"force the reset of the neighbor list at each PACE. Can be useful with WALKERS_MPI");
   keys.addFlag("FIXED_SIGMA",false,"do not decrease sigma as the simulation proceeds. Can be added in a RESTART, to keep in check the number of compressed kernels");
   keys.addFlag("RECURSIVE_MERGE_OFF",false,"do not recursively attempt kernel merging when a new one is added");
-  keys.addFlag("NO_ZED",false,"do not normalize over the explored CV space, \\f$Z_n=1\\f$");
+  keys.addFlag("NO_ZED",false,"do not normalize over the explored CV space, Z_n=1");
 //kernels and state files
   keys.add("compulsory","FILE","KERNELS","a file in which the list of all deposited kernels is stored");
   keys.add("optional","FMT","specify format for KERNELS file");
@@ -343,8 +349,8 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys)
   keys.use("UPDATE_UNTIL");
 
 //output components
-  keys.addOutputComponent("rct","default","estimate of \\f$c(t)\\f$: \\f$\\frac{1}{\\beta}\\log \\langle e^{\\beta V} \\rangle\\f$, should become flat as the simulation converges. Do NOT use for reweighting");
-  keys.addOutputComponent("zed","default","estimate of \\f$Z_n\\f$, should become flat once no new CV-space region is explored");
+  keys.addOutputComponent("rct","default","estimate of c(t). \\f$\\frac{1}{\\beta}\\log \\langle e^{\\beta V} \\rangle\\f$, should become flat as the simulation converges. Do NOT use for reweighting");
+  keys.addOutputComponent("zed","default","estimate of Z_n. should become flat once no new CV-space region is explored");
   keys.addOutputComponent("neff","default","effective sample size");
   keys.addOutputComponent("nker","default","total number of compressed kernels used to represent the bias");
   keys.addOutputComponent("work","CALC_WORK","total accumulated work done by the bias");
@@ -552,6 +558,10 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   parseFlag("WALKERS_MPI",walkers_mpi);
   if(walkers_mpi)
   {
+    //If this Action is not compiled with MPI the user is informed and we exit gracefully
+    plumed_massert(Communicator::plumedHasMPI(),"Invalid walkers configuration: WALKERS_MPI flag requires MPI compilation");
+    plumed_massert(Communicator::initialized(),"Invalid walkers configuration: WALKERS_MPI needs the communicator correctly initialized.");
+
     if(comm.Get_rank()==0)//multi_sim_comm works on first rank only
     {
       NumWalkers_=multi_sim_comm.Get_size();
@@ -746,7 +756,7 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
             comm.Sum(sum_uprob);
           Zed_=sum_uprob/KDEnorm_/kernels_.size();
         }
-        log.printf("    a total of %lu kernels where read, and compressed to %lu\n",counter_-1,kernels_.size());
+        log.printf("    a total of %llu kernels where read, and compressed to %lu\n",counter_-1,kernels_.size());
         convertKernelsToState=true;
       }
       ifile.reset(false);

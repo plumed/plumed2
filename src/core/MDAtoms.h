@@ -27,7 +27,6 @@
 #include "tools/Vector.h"
 #include "tools/AtomNumber.h"
 #include <vector>
-#include <set>
 #include <memory>
 
 namespace PLMD {
@@ -89,7 +88,7 @@ public:
 /// Retrieve all atom positions from index i to index j.
   virtual void getPositions(unsigned i,unsigned j,std::vector<Vector>&p)const=0;
 /// Retrieve all atom positions from atom indices and local indices.
-  virtual void getPositions(const std::set<AtomNumber>&index,const std::vector<unsigned>&i,std::vector<Vector>&p)const=0;
+  virtual void getPositions(const std::vector<AtomNumber>&index,const std::vector<unsigned>&i,std::vector<Vector>&p)const=0;
 /// Retrieve selected masses.
 /// The operation is done in such a way that m[index[i]] is equal to the mass of atom i
   virtual void getMasses(const std::vector<int>&index,std::vector<double>&m)const=0;
@@ -105,7 +104,7 @@ public:
   virtual void updateForces(const std::vector<int>&index,const std::vector<Vector>&f)=0;
 /// Increment the force on selected atoms.
 /// The operation is done only for local atoms used in an action
-  virtual void updateForces(const std::set<AtomNumber>&index,const std::vector<unsigned>&i,const std::vector<Vector>&forces)=0;
+  virtual void updateForces(const std::vector<AtomNumber>&index,const std::vector<unsigned>&i,const std::vector<Vector>&forces)=0;
 /// Rescale all the forces, including the virial.
 /// It is applied to all atoms with local index going from 0 to index.size()-1
   virtual void rescaleForces(const std::vector<int>&index,double factor)=0;
@@ -119,6 +118,12 @@ public:
 /// Update the value of an extra CV force.
 /// \todo check if this should also be scaled when acting on total energy
   virtual void updateExtraCVForce(const std::string &name,double f)=0;
+/// Inform the MD code that an extra CV is needed
+  virtual void setExtraCVNeeded(const std::string &name,bool needed=true)=0;
+/// Check if an extra CV is needed
+  virtual bool isExtraCVNeeded(const std::string &name) const=0;
+/// Set all extra CV as not needed (at beginning of the step)
+  virtual void resetExtraCVNeeded()=0;
 };
 
 }

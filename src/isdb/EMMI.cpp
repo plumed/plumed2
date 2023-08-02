@@ -208,25 +208,25 @@ private:
   std::vector<double> average_weights_;
 
 // write file with model overlap
-  void write_model_overlap(long int step);
+  void write_model_overlap(long long int step);
 // get median of std::vector
   double get_median(std::vector<double> &v);
 // annealing
-  double get_annealing(long int step);
+  double get_annealing(long long int step);
 // do regression
   double scaleEnergy(double s);
   double doRegression();
 // read and write status
   void read_status();
-  void print_status(long int step);
+  void print_status(long long int step);
 // accept or reject
   bool doAccept(double oldE, double newE, double kbt);
 // do MonteCarlo
   void doMonteCarlo();
 // read error file
-  std::vector<double> read_exp_errors(std::string errfile);
+  std::vector<double> read_exp_errors(const std::string & errfile);
 // read experimental overlaps
-  std::vector<double> read_exp_overlaps(std::string ovfile);
+  std::vector<double> read_exp_overlaps(const std::string & ovfile);
 // calculate model GMM weights and covariances
   std::vector<double> get_GMM_m(std::vector<AtomNumber> &atoms);
 // read data GMM file
@@ -486,7 +486,7 @@ EMMI::EMMI(const ActionOptions&ao):
     if(dsigma>0 && MCstride_<=0) error("you must specify a positive MC_STRIDE");
     // status file parameters
     parse("WRITE_STRIDE", statusstride_);
-    if(statusstride_<=0) error("you must specify a positive WRITE_STRIDE");
+    if(statusstride_==0) error("you must specify a positive WRITE_STRIDE");
     parse("STATUS_FILE",  statusfilename_);
     if(statusfilename_=="") statusfilename_ = "MISTATUS"+getLabel();
     else                    statusfilename_ = statusfilename_+getLabel();
@@ -543,7 +543,7 @@ EMMI::EMMI(const ActionOptions&ao):
   parse("NL_CUTOFF",nl_cutoff_);
   if(nl_cutoff_<=0.0) error("NL_CUTOFF should be explicitly specified and positive");
   parse("NL_STRIDE",nl_stride_);
-  if(nl_stride_<=0) error("NL_STRIDE should be explicitly specified and positive");
+  if(nl_stride_==0) error("NL_STRIDE should be explicitly specified and positive");
 
   // averaging or not
   parseFlag("NO_AVER",no_aver_);
@@ -757,7 +757,7 @@ EMMI::EMMI(const ActionOptions&ao):
   log<<"\n";
 }
 
-void EMMI::write_model_overlap(long int step)
+void EMMI::write_model_overlap(long long int step)
 {
   OFile ovfile;
   ovfile.link(*this);
@@ -819,7 +819,7 @@ void EMMI::read_status()
   }
 }
 
-void EMMI::print_status(long int step)
+void EMMI::print_status(long long int step)
 {
 // if first time open the file
   if(first_status_) {
@@ -903,8 +903,8 @@ void EMMI::doMonteCarlo()
       // calculate deviation
       double dev = ( scale_*ovmd_ave_[GMMid]-ovdd_[GMMid] );
       // add to energies
-      old_ene += std::log( 1.0 + 0.5 * dev * dev * old_inv_s2);
-      new_ene += std::log( 1.0 + 0.5 * dev * dev * new_inv_s2);
+      old_ene += std::log1p( 0.5 * dev * dev * old_inv_s2);
+      new_ene += std::log1p( 0.5 * dev * dev * new_inv_s2);
     }
     // final energy calculation: add normalization and prior
     old_ene = kbt_ * ( old_ene + (ng+prior_) * std::log(sigma_[nGMM]) );
@@ -935,7 +935,7 @@ void EMMI::doMonteCarlo()
   getPntrToComponent("sigma-"+num)->set(sigma_[nGMM]);
 }
 
-std::vector<double> EMMI::read_exp_errors(std::string errfile)
+std::vector<double> EMMI::read_exp_errors(const std::string & errfile)
 {
   int nexp, idcomp;
   double err;
@@ -971,7 +971,7 @@ std::vector<double> EMMI::read_exp_errors(std::string errfile)
   return exp_err;
 }
 
-std::vector<double> EMMI::read_exp_overlaps(std::string ovfile)
+std::vector<double> EMMI::read_exp_overlaps(const std::string & ovfile)
 {
   int idcomp;
   double ov;
@@ -1474,7 +1474,7 @@ double EMMI::doRegression()
   return scale_best;
 }
 
-double EMMI::get_annealing(long int step)
+double EMMI::get_annealing(long long int step)
 {
 // default no annealing
   double fact = 1.0;
@@ -1565,7 +1565,7 @@ void EMMI::calculate()
   }
 
   // get time step
-  long int step = getStep();
+  long long int step = getStep();
 
   // do regression
   if(nregres_>0) {
@@ -1717,7 +1717,7 @@ void EMMI::calculate_Outliers()
       // calculate deviation
       double dev = ( scale_*ovmd_ave_[GMMid]-ovdd_[GMMid] ) / sigma_[i];
       // add to group energy
-      eneg += std::log( 1.0 + 0.5 * dev * dev );
+      eneg += std::log1p( 0.5 * dev * dev );
       // store derivative for later
       GMMid_der_[GMMid] = kbt_ / ( 1.0 + 0.5 * dev * dev ) * dev / sigma_[i];
     }

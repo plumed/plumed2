@@ -49,7 +49,7 @@ public:
 /// Remove a metric from the register of metrics
   void remove(creator_pointer f);
 /// Verify if a particular metric type is present in the register
-  bool check(std::string type);
+  bool check(const std::string & type);
 /// Create a reference configuration and don't set a point of reference
   template <class T>
   std::unique_ptr<T> create( const std::string& type );
@@ -91,6 +91,7 @@ std::unique_ptr<T> MetricRegister::create( const std::string& type ) {
   conf.release();
 // notice that I should pass ptr here rather than conf.release(),
 // since the type is different
+// cppcheck-suppress returnDanglingLifetime
   return std::unique_ptr<T>(ptr);
 }
 

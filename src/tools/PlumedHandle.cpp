@@ -35,6 +35,7 @@
 #define __PLUMED_WRAPPER_IMPLEMENTATION 1
 #define __PLUMED_WRAPPER_EXTERN 0
 #define __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE 1
+#define __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE_PLMD_EXCEPTIONS 1
 #include "../wrapper/Plumed.h"
 
 namespace PLMD
@@ -81,21 +82,7 @@ void PlumedHandle::cmd(const std::string & key,const TypesafePtr & ptr) {
     safe.shape=const_cast<std::size_t*>(ptr.getShape());
     safe.flags=ptr.getFlags();
     safe.opt=nullptr;
-    // try/catch needed to remap exceptions in anonymous namespace to standard plumed exceptions
-    // this is necessary otherwise a user would not be able to catch them
-    try {
-      Plumed(loaded).cmd(key.c_str(),safe);
-    } catch(PLMD::Plumed::ExceptionError& e) {
-      throw ExceptionError(e.what());
-    } catch(PLMD::Plumed::ExceptionDebug& e) {
-      throw ExceptionDebug(e.what());
-    } catch(PLMD::Plumed::ExceptionTypeError& e) {
-      throw ExceptionError(e.what());
-    } catch(PLMD::Plumed::LeptonException& e) {
-      throw lepton::Exception(e.what());
-    } catch(PLMD::Plumed::Exception& e) {
-      throw Exception(e.what());
-    }
+    plumed_cmd(plumed_v2c(loaded),key.c_str(),safe);
   } else plumed_error() << "should never arrive here (either one or the other should work)";
 }
 

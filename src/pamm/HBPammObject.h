@@ -34,7 +34,7 @@ private:
 /// The Pamm object underlying this HBPamm calculation
   PammObject mypamm;
 /// Pointer to base class in multicolvar
-  multicolvar::MultiColvarBase* mymulti;
+  multicolvar::MultiColvarBase* mymulti=nullptr;
 public:
 /// Setup the HBPamm object
   void setup( const std::string& filename, const double& reg, multicolvar::MultiColvarBase* mybase, std::string& errorstr );

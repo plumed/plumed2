@@ -22,6 +22,7 @@
 #ifndef __PLUMED_tools_Exception_h
 #define __PLUMED_tools_Exception_h
 
+#include <exception>
 #include <string>
 #include <stdexcept>
 #include <sstream>
@@ -194,6 +195,25 @@ public:
     {}
   };
 
+/// Auxiliary class used to throw exceptions.
+/// It just defines <<= operator so that:
+/// - exceptions can be thrown calling std::throw_with_nested
+///   with a "throw like" syntax
+/// - precedence is the same as the throw operator
+/// (see https://en.cppreference.com/w/cpp/language/operator_precedence)
+  class Throw {
+  public:
+    template <typename E>
+    [[noreturn]] void operator <<=(E&&e) {
+      if(std::current_exception()) {
+        std::throw_with_nested(e);
+      } else {
+        // if not nested, avoid modifying the exception type
+        throw e;
+      }
+    }
+  };
+
 /// Default constructor with no message.
 /// Only records the stack trace.
   Exception();
@@ -316,17 +336,30 @@ public:
 #define __PLUMED_FUNCNAME __func__
 #endif
 
+#ifndef PLUMED_MODULE_DIR
+#define PLUMED_MODULE_DIR ""
+#endif
+
 /// \relates PLMD::Exception
 /// Auxiliary macro that generates a PLMD::Exception::Location object.
 /// Might be useful if we want to use derived exceptions that could
 /// be thrown using `throw DerivedException()<<plumed_here<<" "<<other stuff"`.
 /// It is used in the macros below to throw PLMD::Exception.
-#define plumed_here PLMD::Exception::Location(__FILE__,__LINE__,__PLUMED_FUNCNAME)
+#define plumed_here PLMD::Exception::Location(PLUMED_MODULE_DIR __FILE__,__LINE__,__PLUMED_FUNCNAME)
 
 /// \relates PLMD::Exception
 /// Throw an exception with information about the position in the file.
 /// Messages can be inserted with `plumed_error()<<"message"`.
 #define plumed_error() throw PLMD::ExceptionError() << plumed_here
+
+/// \relates PLMD::Exception
+/// Throw a nested exception with information about the position in the file.
+/// It preliminary checks if we are in a catch block. If so, the caught exception
+/// is rethrown as nested. If not, it throws a normal ExceptionError.
+/// NB in theory we could have just redefined plumed_error to this, but
+/// for some reason cppcheck does not understand that the <<= operator used here is
+/// [[noreturn]] and thus gives many false warnings
+#define plumed_error_nested() PLMD::Exception::Throw() <<= PLMD::ExceptionError() << plumed_here
 
 /// \relates PLMD::Exception
 /// Throw an exception with information about the position in the file
@@ -357,7 +390,7 @@ public:
 
 /// \relates PLMD::Exception
 /// Same as \ref plumed_assert, but only evaluates the condition if NDEBUG is not defined.
-#define plumed_dbg_assert(test) if(!(test)) throw PLMD::ExceptionDebug() << plumed_here << PLMD::Exception::Assertion(#test) << "(this check is enabled only in debug builds)\n"
+#define plumed_dbg_assert(test) if(!(test)) PLMD::Exception::Throw() <<= PLMD::ExceptionDebug() << plumed_here << PLMD::Exception::Assertion(#test) << "(this check is enabled only in debug builds)\n"
 
 /// \relates PLMD::Exception
 /// Same as \ref plumed_massert, but only evaluates the condition if NDEBUG is not defined.

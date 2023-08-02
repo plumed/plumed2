@@ -115,7 +115,7 @@ void OutputColvarFile::performAnalysis() {
 
   // Print embedding coordinates
   for(unsigned i=0; i<getNumberOfDataPoints(); ++i) {
-    DataCollectionObject& mydata=getStoredData(i, false);
+    const DataCollectionObject& mydata=getStoredData(i, false);
     for(unsigned j=0; j<req_vals.size(); ++j) gfile.printField( req_vals[j], mydata.getArgumentValue(req_vals[j]) );
     gfile.printField( "weight", getWeight(i) ); gfile.printField();
   }

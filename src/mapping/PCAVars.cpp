@@ -204,10 +204,7 @@ void PCAVars::registerKeywords( Keywords& keys ) {
   componentsAreNotOptional(keys); keys.use("ARG");
   keys.addOutputComponent("eig","default","the projections on each eigenvalue are stored on values labeled eig-1, eig-2, ...");
   keys.addOutputComponent("residual","default","the distance of the configuration from the linear subspace defined "
-                          "by the vectors, \\f$e_i\\f$, that are contained in the rows of \\f$A\\f$.  In other words this is "
-                          "\\f$\\sqrt( r^2 - \\sum_i [\\mathbf{r}.\\mathbf{e_i}]^2)\\f$ where "
-                          "\\f$r\\f$ is the distance between the instantaneous position and the "
-                          "reference point.");
+                          "by the vectors, eig-1, eig2, ... that are contained in the rows of A.");
   keys.add("compulsory","REFERENCE","a pdb file containing the reference configuration and configurations that define the directions for each eigenvector");
   keys.add("compulsory","TYPE","OPTIMAL","The method we are using for alignment to the reference structure");
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
@@ -230,8 +227,12 @@ PCAVars::PCAVars(const ActionOptions& ao):
 
   // Open reference file
   std::string reference; parse("REFERENCE",reference);
-  FILE* fp=fopen(reference.c_str(),"r");
+  FILE* fp=this->fopen(reference.c_str(),"r");
   if(!fp) error("could not open reference file " + reference );
+
+  // call fclose when exiting this block
+  auto deleter=[this](FILE* f) { this->fclose(f); };
+  std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
 
   // Read all reference configurations
   // MultiReferenceBase myframes( "", false );
@@ -261,7 +262,6 @@ PCAVars::PCAVars(const ActionOptions& ao):
       break;
     }
   }
-  fclose(fp);
 
   if( nfram<=1 ) error("no eigenvectors were specified");
   log.printf("  found %u eigenvectors in file %s \n",nfram-1,reference.c_str() );

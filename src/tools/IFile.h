@@ -77,10 +77,14 @@ public:
   IFile& scanField(const std::string&,int&);
 /// Read a long int field
   IFile& scanField(const std::string&,long int&);
+/// Read a long long int field
+  IFile& scanField(const std::string&,long long int&);
 /// Read a unsigned field
   IFile& scanField(const std::string&,unsigned&);
 /// Read a long unsigned field
   IFile& scanField(const std::string&,long unsigned&);
+/// Read a long long unsigned field
+  IFile& scanField(const std::string&,long long unsigned&);
 /// Read a string field
   IFile& scanField(const std::string&,std::string&);
   /**
