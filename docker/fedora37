@@ -8,7 +8,7 @@ RUN yum -y update \
  && yum -y install gcc-c++ \
  && yum -y install environment-modules gawk vim wget \
                    lapack-devel blas-devel zlib-devel gsl-devel fftw-devel openmpi-devel boost-devel \
-                   python3.9 python3.9-devel python3-pip \
+                   python39 python39-devel python39-pip \
  && pip3 install numpy \
  && pip3 install cython \
  && pip3 install pandas \
