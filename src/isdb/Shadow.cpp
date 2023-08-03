@@ -32,6 +32,8 @@ namespace isdb {
 //+PLUMEDOC ISDB_COLVAR SHADOW
 /*
 
+**TO BE ADDED**
+
 \par Examples
 
 **TO BE ADDED**
