@@ -8,13 +8,12 @@ RUN yum -y group install "Development Tools"
 RUN yum -y install gcc-c++ 
 RUN yum -y install environment-modules gawk vim wget lapack-devel blas-devel \
                    zlib-devel gsl-devel fftw-devel openmpi-devel boost-devel \
-                   python39 python-devel
-RUN python3.9 -m ensurepip --upgrade
-RUN python3.9 -m pip install numpy 
-RUN python3.9 -m pip install cython 
-RUN python3.9 -m pip install pandas 
-RUN python3.9 -m pip install MDAnalysis 
-RUN python3.9 -m pip install mdtraj
+                   python3 python3-devel python3-pip
+RUN pip3 install numpy 
+RUN pip3 install cython
+RUN pip3 install pandas 
+RUN pip3 install MDAnalysis 
+RUN pip3 install mdtraj
 
 RUN useradd -ms /bin/bash plumed
 USER plumed
@@ -42,7 +41,7 @@ RUN . /etc/bashrc \
  && tar xzf plumed2.tgz \
  && cd plumed2 \
  && export PYTHONPATH=$PWD/python:$PYTHONPATH \
- && export PYTHON_BIN=python3.9 \
+ && export PYTHON_BIN=python3 \
  && ./configure --enable-modules=all --enable-boost_serialization \
  && make -j 4 \
  && make check
