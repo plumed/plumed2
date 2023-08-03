@@ -24,6 +24,7 @@
 
 #include "core/ActionWithValue.h"
 #include "core/ActionWithArguments.h"
+#include "core/ActionWithVector.h"
 #include "tools/Matrix.h"
 
 namespace PLMD {
@@ -51,6 +52,8 @@ public:
   virtual void registerKeywords( Keywords& keys ) = 0;
   virtual void read( ActionWithArguments* action ) = 0;
   virtual bool doWithTasks() const { return true; }
+  virtual std::vector<Value*> getArgumentsToCheck( const std::vector<Value*>& args );
+  bool allComponentsRequired( const std::vector<Value*>& args, const std::vector<ActionWithVector*>& actions );
   virtual bool zeroRank() const { return false; }
   virtual void setPeriodicityForOutputs( ActionWithValue* action );
   virtual void setPrefactor( ActionWithArguments* action, const double pref ) {}
@@ -100,6 +103,26 @@ void FunctionTemplateBase::setPeriodicityForOutputs( ActionWithValue* action ) {
       } else if( period.size()!=2 ) action->error("input to PERIODIC keyword does not make sense");
       action->setPeriodic( period[0], period[1] );
   } else action->setNotPeriodic();
+}
+
+inline
+std::vector<Value*> FunctionTemplateBase::getArgumentsToCheck( const std::vector<Value*>& args ) {
+  return args;
+}
+
+inline
+bool FunctionTemplateBase::allComponentsRequired( const std::vector<Value*>& args, const std::vector<ActionWithVector*>& actions ) {
+  std::vector<Value*> checkArgs = getArgumentsToCheck( args );
+  for(unsigned i=0; i<checkArgs.size(); ++i ) {
+      ActionWithVector* av = dynamic_cast<ActionWithVector*>( checkArgs[i]->getPntrToAction() );
+      if( !av ) return false;
+      bool found=false;
+      for(unsigned j=0; j<actions.size(); ++j) {
+          if( actions[j]==av ) { found=true; break; }
+      }
+      if( !found ) return true;
+  }
+  return false;
 }
 
 inline

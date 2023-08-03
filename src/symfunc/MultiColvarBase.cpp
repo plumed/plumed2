@@ -683,8 +683,8 @@ void MultiColvarBase::setupActiveTaskSet( std::vector<unsigned>& active_tasks, c
         if( mys ) continue;
         vesselbase::BridgeVessel* myb=dynamic_cast<vesselbase::BridgeVessel*>( getPntrToVessel(i) );
         if( !myb ) { justVolumes=false; break; }
-        ActionVolume* myv=dynamic_cast<ActionVolume*>( myb->getOutputAction() );
-        if( !myv ) { justVolumes=false; break; }
+        //ActionVolume* myv=dynamic_cast<ActionVolume*>( myb->getOutputAction() );
+        //if( !myv ) { justVolumes=false; break; }
       }
     }
     deactivateAllTasks();
@@ -704,13 +704,13 @@ void MultiColvarBase::setupActiveTaskSet( std::vector<unsigned>& active_tasks, c
       for(unsigned j=0; j<getNumberOfVessels(); ++j) {
         vesselbase::BridgeVessel* myb=dynamic_cast<vesselbase::BridgeVessel*>( getPntrToVessel(j) );
         if( !myb ) continue ;
-        ActionVolume* myv=dynamic_cast<ActionVolume*>( myb->getOutputAction() );
-        if( !myv ) continue ;
-        myv->retrieveAtoms(); myv->setupRegions();
+        //ActionVolume* myv=dynamic_cast<ActionVolume*>( myb->getOutputAction() );
+        // if( !myv ) continue ;
+        //myv->retrieveAtoms(); myv->setupRegions();
 
-        for(unsigned i=0; i<getFullNumberOfTasks(); ++i) {
-          if( myv->inVolumeOfInterest(i) ) taskFlags[i]=1;
-        }
+        // for(unsigned i=0; i<getFullNumberOfTasks(); ++i) {
+        //   if( myv->inVolumeOfInterest(i) ) taskFlags[i]=1;
+        // }
       }
     } else {
       for(unsigned i=0; i<getFullNumberOfTasks(); ++i) taskFlags[i]=1;

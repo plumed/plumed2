@@ -43,6 +43,8 @@ ActionWithVector::ActionWithVector(const ActionOptions&ao):
   serial(false),
   action_to_do_before(NULL),
   action_to_do_after(NULL),
+  reduce_tasks(false),
+  atomsWereRetrieved(false),
   done_in_chain(false)
 {
   if( keywords.exists("SERIAL") ) parseFlag("SERIAL",serial);
@@ -79,8 +81,8 @@ ActionWithVector* ActionWithVector::getFirstActionInChain() {
 }
 
 void ActionWithVector::retrieveAtoms( const bool& force ) {
-  if( !force && actionInChain() ) return;
-  ActionAtomistic::retrieveAtoms();
+  if( !force && actionInChain() || atomsWereRetrieved ) return;
+  ActionAtomistic::retrieveAtoms(); atomsWereRetrieved = !actionInChain();
   if( action_to_do_after ) action_to_do_after->retrieveAtoms( true );
 }
 
@@ -154,40 +156,41 @@ unsigned ActionWithVector::buildArgumentStore( const unsigned& argstart ) {
       ActionWithVector* head=getFirstActionInChain();
       unsigned nder=0; arg_deriv_starts.resize( getNumberOfArguments() ); 
       for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-          // Check if we have already found this action 
-          int k=-1; ActionWithVector* iaction=dynamic_cast<ActionWithVector*>(getPntrToArgument(i)->getPntrToAction());
-          if( iaction ) {
-              const ActionWithVector* ider_action=iaction->getActionWithDerivatives();
-              for(unsigned j=0; j<i; ++j) {
-                  ActionWithVector* jaction=dynamic_cast<ActionWithVector*>(getPntrToArgument(j)->getPntrToAction());
-                  if( jaction->getActionWithDerivatives()==ider_action ) { k=j; break; }
-              }
-              if( k>=0 ) { arg_deriv_starts[i] = arg_deriv_starts[k]; continue; }
-          }
-
-          if( i>0 ) { 
-              // This is a fudge so that inputs like this work:
-              // c: CONTACT_MATRIX ATOMS=1-100
-              // d: MATRIX_PRODUCT ARG=mat1,mat2
-              // e: CUSTOM ARG=c,d
-              // f: MATRIX_PRODUCT ARG=mat3,mat4
-              // g: CUSTOM ARG=c,f
-              // See symfunc rt-nbonds-q6 for an example
-              // In this example when we set arg_deriv_starts[1] for f in g nder=number of derivatives of c
-              // mder is equal to the number of derivatives by the time you get to f minus the number of derivatives for c
-              unsigned mder=0;
-              ActionWithVector* jaction=dynamic_cast<ActionWithVector*>(getPntrToArgument(i-1)->getPntrToAction());
-              if( jaction->action_to_do_after && !(jaction->action_to_do_after)->getNumberOfStoredValues( getPntrToArgument(i-1), mder, i, getArguments() ) ) mder=0;
-              if( mder>0 ) nder = nder + mder;
-          }
-
+          ActionWithVector* iaction=dynamic_cast<ActionWithVector*>(getPntrToArgument(i)->getPntrToAction());
           if( actionInChain() && !getPntrToArgument(i)->ignoreStoredValue(head->getLabel()) ) {
               arg_deriv_starts[i] = 0; head->getNumberOfStreamedDerivatives( arg_deriv_starts[i], getPntrToArgument(i) );
-          } else if( iaction->isInSubChain(nder) ) {
+          } else if( iaction && iaction->isInSubChain(nder) ) {
               arg_deriv_starts[i] = nder; 
               // Add the total number of derivatives that we have by this point in the chain to nder
               if( iaction ) { nder=0; head->getNumberOfStreamedDerivatives( nder, getPntrToArgument(i) ); }
           } else {
+              // Check if we have already found this action 
+              int k=-1; 
+              if( iaction ) {
+                  const ActionWithVector* ider_action=iaction->getActionWithDerivatives();
+                  for(unsigned j=0; j<i; ++j) {
+                      ActionWithVector* jaction=dynamic_cast<ActionWithVector*>(getPntrToArgument(j)->getPntrToAction());
+                      if( jaction->getActionWithDerivatives()==ider_action ) { k=j; break; }
+                  }
+                  if( k>=0 ) { arg_deriv_starts[i] = arg_deriv_starts[k]; continue; }
+              }
+
+              if( i>0 ) { 
+                  // This is a fudge so that inputs like this work:
+                  // c: CONTACT_MATRIX ATOMS=1-100
+                  // d: MATRIX_PRODUCT ARG=mat1,mat2
+                  // e: CUSTOM ARG=c,d
+                  // f: MATRIX_PRODUCT ARG=mat3,mat4
+                  // g: CUSTOM ARG=c,f
+                  // See symfunc rt-nbonds-q6 for an example
+                  // In this example when we set arg_deriv_starts[1] for f in g nder=number of derivatives of c
+                  // mder is equal to the number of derivatives by the time you get to f minus the number of derivatives for c
+                  unsigned mder=0;
+                  ActionWithVector* jaction=dynamic_cast<ActionWithVector*>(getPntrToArgument(i-1)->getPntrToAction());
+                  if( jaction->action_to_do_after && !(jaction->action_to_do_after)->getNumberOfStoredValues( getPntrToArgument(i-1), mder, i, getArguments() ) ) mder=0;
+                  if( mder>0 ) nder = nder + mder;
+              }
+
               arg_deriv_starts[i] = nder;
               // Add the total number of derivatives that we have by this point in the chain to nder
               if( iaction ) { nder=0; head->getNumberOfStreamedDerivatives( nder, getPntrToArgument(i) ); }
@@ -245,8 +248,49 @@ bool ActionWithVector::addActionToChain( const std::vector<std::string>& alabels
           if( !av1->canBeAfterInChain( av2 ) ) error("must calculate " + mylabels[j] + " before " + mylabels[i] );
       }
   }
-  action_to_do_after=act; act->action_to_do_before=this; getFirstActionInChain()->finishChainBuild( act );
+  action_to_do_after=act; act->action_to_do_before=this; ActionWithVector* head = getFirstActionInChain();
+  std::vector<ActionWithVector*> task_reducing_actions; head->canReduceTasks( task_reducing_actions );
+  if( task_reducing_actions.size()>0 ) head->reduce_tasks=true; 
+  head->broadcastThatTasksAreReduced( head );
+  head->finishChainBuild( act );
   return true;
+}
+
+void ActionWithVector::broadcastThatTasksAreReduced( ActionWithVector* aselect ) {
+  std::string c=getFirstActionInChain()->getLabel();
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      if( !getPntrToArgument(i)->ignoreStoredValue(c) ) {
+          ActionWithVector* av = dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
+          if( av ) {
+              bool found=false;
+              ActionWithVector* av_head = av->getFirstActionInChain(); 
+              for(unsigned i=0; i<av_head->task_control_list.size(); ++i) {
+                  if( aselect==av_head->task_control_list[i] ) { found=true; break; }
+              }
+              if( !found ) av_head->task_control_list.insert( av_head->task_control_list.begin(), aselect );
+
+              av_head->reduce_tasks=true; av_head->updateTaskReductionFlag( av_head->reduce_tasks );
+          }
+      }
+  }
+  if( action_to_do_after ) action_to_do_after->broadcastThatTasksAreReduced( aselect );
+}
+
+void ActionWithVector::updateTaskReductionFlag( bool& head_reduce_tasks ) {
+  if( actionInChain() ) {
+      plumed_assert( task_control_list.size()==0 );
+  } else {
+      for(unsigned i=0; i<task_control_list.size(); ++i) {
+          if( !(task_control_list[i]->getFirstActionInChain())->reduce_tasks ) head_reduce_tasks=false;
+      } 
+  }
+  broadcastThatTasksAreReduced( getFirstActionInChain() );
+  if( action_to_do_after ) action_to_do_after->updateTaskReductionFlag( head_reduce_tasks );
+}
+
+void ActionWithVector::canReduceTasks( std::vector<ActionWithVector*>& task_reducing_actions ) {
+  areAllTasksRequired( task_reducing_actions );
+  if( action_to_do_after ) action_to_do_after->canReduceTasks( task_reducing_actions );
 }
 
 void ActionWithVector::finishChainBuild( ActionWithVector* act ) {
@@ -262,11 +306,68 @@ void ActionWithVector::getAllActionLabelsInChain( std::vector<std::string>& myla
   if( action_to_do_after ) action_to_do_after->getAllActionLabelsInChain( mylabels );
 }
 
-std::vector<unsigned>& ActionWithVector::getListOfActiveTasks() {
-  // Get the number of tasks
+void ActionWithVector::taskIsActive( const unsigned& current, int& flag ) const {
+  if( isActive() ) flag = checkTaskStatus( current, flag );
+  if( action_to_do_after ) action_to_do_after->taskIsActive( current, flag );
+}
+
+void ActionWithVector::getAdditionalTasksRequired( ActionWithVector* action, std::vector<unsigned>& atasks ) {
+  for(unsigned i=0; i<task_control_list.size(); ++i ) task_control_list[i]->getAdditionalTasksRequired( action, atasks );
+}
+
+void ActionWithVector::prepare() {
+  active_tasks.resize(0); atomsWereRetrieved=false;
+}
+
+std::vector<unsigned>& ActionWithVector::getListOfActiveTasks( ActionWithVector* action ) {
+  if( active_tasks.size()>0 ) return active_tasks;
   unsigned ntasks=0; getNumberOfTasks( ntasks );
-  active_tasks.resize( ntasks );
-  for(unsigned i=0; i<ntasks; ++i) active_tasks[i]=i;
+
+  unsigned stride=comm.Get_size();
+  unsigned rank=comm.Get_rank(); 
+  if(serial) { stride=1; rank=0; }
+        
+  // Get number of threads for OpenMP
+  unsigned nt=OpenMP::getNumThreads();
+  if( nt*stride*10>ntasks ) nt=ntasks/stride/10;
+  if( nt==0 ) nt=1;
+
+  if( reduce_tasks ) {
+      if( task_control_list.size()>0 ) { 
+          // Get the list of tasks that are active in the action that uses the output of this action
+          for(unsigned i=0; i<task_control_list.size(); ++i) {
+              task_control_list[i]->retrieveAtoms();
+              active_tasks = task_control_list[i]->getListOfActiveTasks( action );
+          }
+          // Now work out else we need from here to calculate the later action
+          getAdditionalTasksRequired( action, active_tasks );
+      } else {
+          std::vector<int> taskFlags( ntasks, -1 ); 
+
+          #pragma omp parallel num_threads(nt)
+          {
+              #pragma omp for nowait
+              for(unsigned i=rank; i<ntasks; i+=stride ) {
+                  taskIsActive( i, taskFlags[i] );
+              }
+          }
+          for(unsigned i=0; i<ntasks; ++i) taskFlags[i] = std::abs( taskFlags[i] );
+          if( !serial ) comm.Sum( taskFlags );
+          
+          unsigned nt=0; 
+          for(unsigned i=0; i<ntasks; ++i) {
+              if( taskFlags[i]>=stride ) nt++;
+          }
+          active_tasks.resize(nt); nt=0;
+          for(unsigned i=0; i<ntasks; ++i) {
+              if( taskFlags[i]>=stride ) { active_tasks[nt]=i; nt++; }
+          }
+          getAdditionalTasksRequired( this, active_tasks );
+      }
+  } else {
+      active_tasks.resize( ntasks );
+      for(unsigned i=0; i<ntasks; ++i) active_tasks[i]=i;
+  }
   return active_tasks;
 }
 
@@ -279,8 +380,9 @@ void ActionWithVector::runAllTasks() {
   if(serial) { stride=1; rank=0; }
         
   // Get the list of active tasks
-  std::vector<unsigned> & partialTaskList( getListOfActiveTasks() );
+  std::vector<unsigned> & partialTaskList( getListOfActiveTasks( this ) );
   unsigned nactive_tasks=partialTaskList.size();
+
   // Get number of threads for OpenMP
   unsigned nt=OpenMP::getNumThreads();
   if( nt*stride*10>nactive_tasks ) nt=nactive_tasks/stride/10;

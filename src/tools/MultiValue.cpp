@@ -99,6 +99,8 @@ void MultiValue::clearDerivatives( const unsigned& ival ) {
       Tools::convert(ival,num1); Tools::convert(i,num2);
       plumed_merror("FAILING TO CLEAR VALUE " + num1 + " DERIVATIVE " + num2 + " IS PROBLEMATIC");
     }
+    // As this is debugging code we hard code an escape here otherwise this check is really expensive
+    if( i>1000 ) return;
   }
 #endif
 }

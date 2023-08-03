@@ -199,17 +199,17 @@ SecondaryStructureRMSD::SecondaryStructureRMSD(const ActionOptions&ao):
   }  
 }
 
-std::vector<unsigned>& SecondaryStructureRMSD::getListOfActiveTasks() {
+void SecondaryStructureRMSD::areAllTasksRequired( std::vector<ActionWithVector*>& task_reducing_actions ) {
+  if( s_cutoff2>0 ) task_reducing_actions.push_back(this);
+}
+
+int SecondaryStructureRMSD::checkTaskStatus( const unsigned& taskno, int& flag ) const {
   if( s_cutoff2>0 ) {
-      ss_tasks.resize(0);
-      for(unsigned i=0; i<getPntrToComponent(0)->getNumberOfValues(); ++i) {
-          Vector distance=pbcDistance( ActionAtomistic::getPosition( getAtomIndex(i,align_atom_1) ),
-                                       ActionAtomistic::getPosition( getAtomIndex(i,align_atom_2) ) );
-          if( distance.modulo2()<s_cutoff2 ) ss_tasks.push_back(i);
-      }
-      return ss_tasks;
-  } 
-  return ActionWithVector::getListOfActiveTasks();
+      Vector distance=pbcDistance( ActionAtomistic::getPosition( getAtomIndex(taskno,align_atom_1) ),
+                                   ActionAtomistic::getPosition( getAtomIndex(taskno,align_atom_2) ) );
+      if( distance.modulo2()<s_cutoff2 ) return 1;
+      return 0;
+  } return flag;
 }
 
 void SecondaryStructureRMSD::calculate() {

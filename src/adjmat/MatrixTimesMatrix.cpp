@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithMatrix.h"
+#include "AdjacencyMatrixBase.h"
 #include "core/ActionRegister.h"
 
 namespace PLMD {
@@ -34,6 +35,7 @@ public:
   explicit MatrixTimesMatrix(const ActionOptions&);
   unsigned getNumberOfDerivatives();
   unsigned getNumberOfColumns() const override { return getConstPntrToComponent(0)->getShape()[1]; }
+  void getAdditionalTasksRequired( ActionWithVector* action, std::vector<unsigned>& atasks ) override ;
   void setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const ;
   void performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const override;
   void runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const override ;
@@ -62,6 +64,13 @@ ActionWithMatrix(ao)
 
 unsigned MatrixTimesMatrix::getNumberOfDerivatives() {
   return nderivatives;
+}
+
+void MatrixTimesMatrix::getAdditionalTasksRequired( ActionWithVector* action, std::vector<unsigned>& atasks ) {
+
+  AdjacencyMatrixBase* adj=dynamic_cast<AdjacencyMatrixBase*>( getPntrToArgument(0)->getPntrToAction() );
+  if( !adj ) return;
+  adj->retrieveAtoms(); adj->getAdditionalTasksRequired( action, atasks );
 }
 
 void MatrixTimesMatrix::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {

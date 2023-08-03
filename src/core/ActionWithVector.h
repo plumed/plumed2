@@ -46,12 +46,12 @@ private:
   ActionWithVector* action_to_do_before;
 /// Actions that must be done after this one
   ActionWithVector* action_to_do_after;
+/// This is the list of actions that control the tasks that we do here
+  std::vector<ActionWithVector*> task_control_list;
 /// Work backwards through the chain to find an action that has either stored arguments or derivatives
   const ActionWithVector* getActionWithDerivatives() const ;
 /// Check if there are any grids in the stream 
   bool checkForGrids(unsigned& nder) const ;
-/// Find out how many tasks we need to perform in this loop
-  void getNumberOfTasks( unsigned& ntasks );
 ///  Run the task
   void runTask( const unsigned& taskno, MultiValue& myvals ) const ;
 /// Gather the values that we intend to store in the buffer
@@ -62,8 +62,6 @@ private:
   void getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize );
 /// Get the number of quantities in the stream
   void getNumberOfStreamedQuantities( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping );
-/// Get the number of derivatives in the stream
-  void getNumberOfStreamedDerivatives( unsigned& nderivatives, Value* stopat );
 /// Get the number of stored values in the stream
   bool getNumberOfStoredValues( Value* startat, unsigned& nvals, const unsigned& astart, const std::vector<Value*>& stopat );
 /// Add this action to the recursive chain
@@ -76,6 +74,18 @@ private:
   void getForceTasks( std::vector<unsigned>& force_tasks ) const ;
 /// Add the gathered forces to the inputs across the whole chain
   void addForcesToInput( const std::vector<double>& forcesToApply, unsigned& ind );
+/// Check if this ation can reduce the number of tasks we perform
+  void canReduceTasks( std::vector<ActionWithVector*>& task_reducing_actions );
+/// Send information to arguments that tasks are reduced in depedent actions
+  void broadcastThatTasksAreReduced( ActionWithVector* aselect );
+/// Turn on task reduction flag in dependent actions
+  void updateTaskReductionFlag( bool& head_reduce_tasks );
+/// Check if a particular task is active at this time
+  void taskIsActive( const unsigned& current, int& flag ) const ;
+/// Are we allowed to reduce the number of tasks being performed
+  bool reduce_tasks;
+/// Were the atoms retrieved in some earlier action
+  bool atomsWereRetrieved;
 protected:
 /// A vector that contains the start point for the argument derivatives
   std::vector<unsigned> arg_deriv_starts;
@@ -83,6 +93,8 @@ protected:
   bool done_in_chain;
 /// Run all calculations in serial
   bool runInSerial() const ;
+/// Get the list of tasks that are active
+  std::vector<unsigned>& getListOfActiveTasks( ActionWithVector* action );
 /// Check if the arguments of this action depend on thearg
   bool argumentDependsOn( const std::string& headstr, ActionWithVector* faction, Value* thearg );
 /// This sets up the arguments at the start of the calculation
@@ -97,6 +109,7 @@ public:
   virtual ~ActionWithVector() {}
   void lockRequests() override;
   void unlockRequests() override;
+  virtual void prepare() override;
   void retrieveAtoms( const bool& force=false ) override;
   void calculateNumericalDerivatives(ActionWithValue* av) override; 
 /// Are we running this command in a chain
@@ -108,24 +121,34 @@ public:
 /// Return a pointer to the first action in the chain
   const ActionWithVector* getFirstActionInChain() const ;
   ActionWithVector* getFirstActionInChain();
+/// Get the number of derivatives in the stream
+  void getNumberOfStreamedDerivatives( unsigned& nderivatives, Value* stopat );
 /// Get every the label of every value that is calculated in this chain
   void getAllActionLabelsInChain( std::vector<std::string>& mylabels ) const ;
 /// We override clearDerivatives here to prevent data in streams from being deleted
   void clearDerivatives( const bool& force=false ) override;
 /// Check if we can be after another ActionWithVector
   virtual bool canBeAfterInChain( ActionWithVector* av ) { return true; }
+/// Do we always need to do all the tasks for this action
+  virtual void areAllTasksRequired( std::vector<ActionWithVector*>& task_reducing_actions ) {}
+/// Find out how many tasks we need to perform in this loop
+  virtual void getNumberOfTasks( unsigned& ntasks );
+/// Check the status of the ith task
+  virtual int checkTaskStatus( const unsigned& taskno, int& flag ) const { return flag; }
 /// Check if we are in a subchain
   virtual bool isInSubChain( unsigned& nder ) { return false; }
+/// Get the additional tasks that are required here
+  virtual void getAdditionalTasksRequired( ActionWithVector* action, std::vector<unsigned>& atasks );
 /// setup the streamed quantities
   virtual void setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping );
-/// Get the list of tasks that are active
-  virtual std::vector<unsigned>& getListOfActiveTasks();
 /// This we override to perform each individual task
   virtual void performTask( const unsigned& current, MultiValue& myvals ) const = 0;
 /// This is used to ensure that all indices are updated when you do local average
   virtual void updateAdditionalIndices( const unsigned& ostrn, MultiValue& myvals ) const {}
 /// Gather the data from all the OpenMP threads
   virtual void gatherThreads( const unsigned& nt, const unsigned& bufsize, const std::vector<double>& omp_buffer, std::vector<double>& buffer, MultiValue& myvals );
+/// Can be used to reduce the number of tasks that are performed when you use an ation from elsewhere
+  virtual void switchTaskReduction( const bool& task_reduction, ActionWithVector* aselect ) {} 
 /// Gather all the data from the MPI processes
   virtual void gatherProcesses( std::vector<double>& buffer );
 /// Gather the values that we intend to store in the buffer

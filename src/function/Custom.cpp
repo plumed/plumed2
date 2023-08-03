@@ -261,13 +261,11 @@ bool Custom::getDerivativeZeroIfValueIsZero() const {
   return check_multiplication_vars.size()>0;
 }
 
-// void Custom::buildTaskList( const std::string& name, const std::set<AtomNumber>& tflags, ActionWithValue* av ) const {
-//   bool found=false; ActionWithArguments* aa = dynamic_cast<ActionWithArguments*>(av); plumed_assert( aa );
-//   for(unsigned i=0;i<check_multiplication_vars.size();++i) {
-//       if( aa->getPntrToArgument(check_multiplication_vars[i])->getName()==name ) { found=true; break; }
-//   }
-//   if( found ) (av->copyOutput(0))->addTasksToCurrentList( tflags );
-// } 
+std::vector<Value*> Custom::getArgumentsToCheck( const std::vector<Value*>& args ) {
+  std::vector<Value*> fargs( check_multiplication_vars.size() ); 
+  for(unsigned i=0;i<check_multiplication_vars.size();++i) fargs[i] = args[check_multiplication_vars[i]];
+  return fargs;
+}
 
 void Custom::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
   if( args.size()>1 ) {

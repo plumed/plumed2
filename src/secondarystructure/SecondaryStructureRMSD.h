@@ -63,7 +63,8 @@ public:
   static void expandShortcut( const bool& uselessthan, const std::string& labout, const std::string& labin, const std::string& ltmap, ActionShortcut* action );
   explicit SecondaryStructureRMSD(const ActionOptions&);
   unsigned getNumberOfDerivatives() override ;
-  std::vector<unsigned>& getListOfActiveTasks() override;
+  void areAllTasksRequired( std::vector<ActionWithVector*>& task_reducing_actions ) override;
+  int checkTaskStatus( const unsigned& taskno, int& flag ) const override;
   void calculate() override;
   void performTask( const unsigned&, MultiValue& ) const override;
 };

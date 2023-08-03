@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2023 The plumed team
+   Copyright (c) 2012-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,14 +19,14 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_multicolvar_ActionVolume_h
-#define __PLUMED_multicolvar_ActionVolume_h
+#ifndef __PLUMED_volumes_ActionVolume_h
+#define __PLUMED_volumes_ActionVolume_h
 
 #include "tools/HistogramBead.h"
-#include "VolumeGradientBase.h"
+#include "core/ActionWithVector.h"
 
 namespace PLMD {
-namespace multicolvar {
+namespace volumes {
 
 /**
 \ingroup INHERIT
@@ -35,10 +35,8 @@ box. You can use this to calculate the number of atoms inside that part or the a
 coordination number inside that part of the cell.
 */
 
-class ActionVolume : public VolumeGradientBase {
+class ActionVolume : public ActionWithVector {
 private:
-/// Number of quantities in use in this colvar
-  unsigned nquantities;
 /// The value of sigma
   double sigma;
 /// Are we interested in the area outside the colvar
@@ -48,23 +46,25 @@ private:
 protected:
   double getSigma() const ;
   std::string getKernelType() const ;
+  Vector getPosition( const unsigned& index ) const ;
+  void requestAtoms( const std::vector<AtomNumber> & a );
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionVolume(const ActionOptions&);
-/// Get the number of quantities that are calculated each time
-  unsigned getNumberOfQuantities() const override;
-/// Calculate whats in the volume
-  void calculateAllVolumes( const unsigned& curr, MultiValue& outvals ) const override;
-/// This calculates whether or not a particular is inside the box of interest
-/// this is used for neighbour list with volumes
-  bool inVolumeOfInterest( const unsigned& curr ) const ;
+  unsigned getNumberOfDerivatives();
+  void areAllTasksRequired( std::vector<ActionWithVector*>& task_reducing_actions ) override;
+  void getNumberOfTasks( unsigned& ntasks ) override ;
+  int checkTaskStatus( const unsigned& taskno, int& flag ) const override;
+  void calculate();
+  virtual void setupRegions() = 0;
+  bool isInSubChain( unsigned& nder ) override ;
+  void performTask( const unsigned&, MultiValue& ) const ;
   virtual double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const=0;
-  unsigned getCentralAtomElementIndex();
 };
 
 inline
-unsigned ActionVolume::getNumberOfQuantities() const {
-  return nquantities;
+unsigned ActionVolume::getNumberOfDerivatives() {
+  return 3*getNumberOfAtoms()+9;
 }
 
 inline
@@ -78,8 +78,9 @@ std::string ActionVolume::getKernelType() const {
 }
 
 inline
-unsigned ActionVolume::getCentralAtomElementIndex() {
-  return 1;
+Vector ActionVolume::getPosition( const unsigned& index ) const {
+  if( getConstPntrToComponent(0)->getRank()==0 ) return ActionAtomistic::getPosition( 1 + index ); 
+  return ActionAtomistic::getPosition( getConstPntrToComponent(0)->getShape()[0] + index );
 }
 
 }

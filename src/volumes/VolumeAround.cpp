@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2023 The plumed team
+   Copyright (c) 2013-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,6 +22,7 @@
 #include "core/ActionRegister.h"
 #include "tools/Pbc.h"
 #include "ActionVolume.h"
+#include "VolumeShortcut.h"
 
 //+PLUMEDOC VOLUMES AROUND
 /*
@@ -64,7 +65,7 @@ AROUND DATA=c ATOM=c1 XLOWER=-2.0 XUPPER=2.0 SIGMA=0.1 MEAN LABEL=s
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace multicolvar {
+namespace volumes {
 
 class VolumeAround : public ActionVolume {
 private:
@@ -80,11 +81,14 @@ public:
   double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const override;
 };
 
-PLUMED_REGISTER_ACTION(VolumeAround,"AROUND")
+PLUMED_REGISTER_ACTION(VolumeAround,"AROUND_CALC")
+char glob_around[] = "AROUND";
+typedef VolumeShortcut<glob_around> VolumeAroundShortcut;
+PLUMED_REGISTER_ACTION(VolumeAroundShortcut,"AROUND")
 
 void VolumeAround::registerKeywords( Keywords& keys ) {
   ActionVolume::registerKeywords( keys );
-  keys.add("atoms","ATOM","the atom whose vicinity we are interested in examining");
+  keys.add("atoms","ORIGIN","the atom whose vicinity we are interested in examining");
   keys.add("compulsory","XLOWER","0.0","the lower boundary in x relative to the x coordinate of the atom (0 indicates use full extent of box).");
   keys.add("compulsory","XUPPER","0.0","the upper boundary in x relative to the x coordinate of the atom (0 indicates use full extent of box).");
   keys.add("compulsory","YLOWER","0.0","the lower boundary in y relative to the y coordinate of the atom (0 indicates use full extent of box).");
@@ -98,7 +102,7 @@ VolumeAround::VolumeAround(const ActionOptions& ao):
   ActionVolume(ao)
 {
   std::vector<AtomNumber> atom;
-  parseAtomList("ATOM",atom);
+  parseAtomList("ORIGIN",atom);
   if( atom.size()!=1 ) error("should only be one atom specified");
   log.printf("  boundaries for region are calculated based on positions of atom : %d\n",atom[0].serial() );
 

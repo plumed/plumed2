@@ -32,6 +32,7 @@ namespace adjmat {
 class AdjacencyMatrixBase : public ActionWithMatrix {
 private:
   bool nopbc, components, read_one_group;
+  bool neighbour_list_updated;
   LinkCells linkcells, threecells;
   std::vector<unsigned> ablocks, threeblocks;
   double nl_cut, nl_cut2;
@@ -51,6 +52,8 @@ public:
   bool canBeAfterInChain( ActionWithVector* av ) override;
   unsigned getNumberOfDerivatives() override ;
   unsigned getNumberOfColumns() const override;
+  void prepare() override;
+  void getAdditionalTasksRequired( ActionWithVector* action, std::vector<unsigned>& atasks ) override ;
   void setupForTask( const unsigned& current, std::vector<unsigned> & indices, MultiValue& myvals ) const override;
   // void setupCurrentTaskList() override;
   void updateNeighbourList() override ;

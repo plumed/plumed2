@@ -47,6 +47,7 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
   Action(ao),
   ActionWithMatrix(ao),
   read_one_group(false),
+  neighbour_list_updated(false),
   linkcells(comm),
   threecells(comm)
 {
@@ -132,15 +133,12 @@ void AdjacencyMatrixBase::setLinkCellCutoff( const bool& symmetric, const double
   threecells.setCutoff( tcut );
 }
 
-// void AdjacencyMatrixBase::setupCurrentTaskList() {
-//   if( nl_stride>1 && getStep()%nl_stride==0 ) {
-//       for(unsigned i=0; i<getPntrToOutput(0)->getShape()[0]; ++i) {
-//           for(unsigned j=0; j<getNumberOfComponents(); ++j) getPntrToOutput(j)->addTaskToCurrentList(AtomNumber::index(i));
-//       } 
-//   } else ActionWithValue::setupCurrentTaskList();
-// }
+void AdjacencyMatrixBase::prepare() {
+  ActionWithVector::prepare(); neighbour_list_updated=false;
+}
 
 void AdjacencyMatrixBase::updateNeighbourList() {
+  neighbour_list_updated=true;
   // Build link cells here so that this is done in stream if it needed in stream
   if( getStep()%nl_stride==0 ) {
       // Build the link cells   
@@ -160,7 +158,7 @@ void AdjacencyMatrixBase::updateNeighbourList() {
       if( nt*stride*10>getConstPntrToComponent(0)->getShape()[0] ) nt=getConstPntrToComponent(0)->getShape()[0]/stride/10;
       if( nt==0 ) nt=1;
       // Create a vector from the input set of tasks
-      std::vector<unsigned> & pTaskList( getListOfActiveTasks() ); 
+      std::vector<unsigned> & pTaskList( getListOfActiveTasks(this) );
 
       #pragma omp parallel num_threads(nt)
       { 
@@ -226,6 +224,25 @@ void AdjacencyMatrixBase::updateNeighbourList() {
       ltmp_pos2[i]=ActionAtomistic::getPosition( threeblocks[i] );
     }
     threecells.buildCellLists( ltmp_pos2, threeblocks, getPbc() );
+  }
+}
+
+void AdjacencyMatrixBase::getAdditionalTasksRequired( ActionWithVector* action, std::vector<unsigned>& atasks ) {
+  if( action==this ) return;
+  // Update the neighbour list
+  updateNeighbourList(); 
+
+  unsigned nactive = atasks.size();
+  std::vector<unsigned> indlist( 1 + ablocks.size() + threeblocks.size() ); 
+  for(unsigned i=0; i<nactive; ++i) {
+      unsigned num = retrieveNeighbours( atasks[i], indlist );
+      for(unsigned j=0; j<num; ++j) {
+          bool found=false;
+          for(unsigned k=0; k<atasks.size(); ++k ) {
+              if( indlist[j]==atasks[k] ) { found=true; break; }
+          }
+          if( !found ) atasks.push_back( indlist[j] );
+      }
   }
 }
 

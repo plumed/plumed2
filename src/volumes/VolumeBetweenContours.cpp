@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017-2023 The plumed team
+   Copyright (c) 2017-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -21,9 +21,10 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
 #include "tools/Pbc.h"
-#include "tools/KernelFunctions.h"
 #include "tools/SwitchingFunction.h"
+#include "tools/LinkCells.h"
 #include "ActionVolume.h"
+#include "VolumeShortcut.h"
 #include <memory>
 
 //+PLUMEDOC VOLUMES INENVELOPE
@@ -58,16 +59,17 @@ PRINT ARG=fi FILE=colvar
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace multicolvar {
+namespace volumes {
 
 class VolumeInEnvelope : public ActionVolume {
 private:
   LinkCells mylinks;
-  std::unique_ptr<KernelFunctions> kernel;
+  double gvol;
   std::vector<std::unique_ptr<Value>> pos;
   std::vector<Vector> ltmp_pos;
   std::vector<unsigned> ltmp_ind;
-  SwitchingFunction sfunc;
+  std::vector<double> bandwidth;
+  SwitchingFunction sfunc, switchingFunction;
 public:
   static void registerKeywords( Keywords& keys );
   explicit VolumeInEnvelope(const ActionOptions& ao);
@@ -75,13 +77,17 @@ public:
   double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const override;
 };
 
-PLUMED_REGISTER_ACTION(VolumeInEnvelope,"INENVELOPE")
+PLUMED_REGISTER_ACTION(VolumeInEnvelope,"INENVELOPE_CALC")
+char glob_contours[] = "INENVELOPE";
+typedef VolumeShortcut<glob_contours> VolumeInEnvelopeShortcut;
+PLUMED_REGISTER_ACTION(VolumeInEnvelopeShortcut,"INENVELOPE")
 
 void VolumeInEnvelope::registerKeywords( Keywords& keys ) {
   ActionVolume::registerKeywords( keys ); keys.remove("SIGMA");
-  keys.add("atoms","ATOMS","the atom whose positions we are constructing a field from");
-  keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density estimation");
-  keys.add("compulsory","CONTOUR","a switching function that tells PLUMED how large the density should be");
+  keys.add("atoms","FIELD_ATOMS","the atom whose positions we are constructing a field from");
+  keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
+  keys.add("compulsory","CONTOUR","a switching funciton that tells PLUMED how large the density should be");
+  keys.add("compulsory","CUTOFF","6.25","the cutoff at which to stop evaluating the kernel functions is set equal to sqrt(2*x)*bandwidth in each direction where x is this number");
 }
 
 VolumeInEnvelope::VolumeInEnvelope(const ActionOptions& ao):
@@ -89,26 +95,28 @@ VolumeInEnvelope::VolumeInEnvelope(const ActionOptions& ao):
   ActionVolume(ao),
   mylinks(comm)
 {
-  std::vector<AtomNumber> atoms; parseAtomList("ATOMS",atoms);
+  std::vector<AtomNumber> atoms; parseAtomList("FIELD_ATOMS",atoms);
   log.printf("  creating density field from atoms : ");
   for(unsigned i=0; i<atoms.size(); ++i) log.printf("%d ",atoms[i].serial() );
   log.printf("\n"); ltmp_ind.resize( atoms.size() ); ltmp_pos.resize( atoms.size() );
   for(unsigned i=0; i<atoms.size(); ++i) ltmp_ind[i]=i;
 
   std::string sw, errors; parse("CONTOUR",sw);
-  if(sw.length()==0) error("missing CONTOURkeyword");
+  if(sw.length()==0) error("missing CONTOUR keyword");
   sfunc.set(sw,errors);
   if( errors.length()!=0 ) error("problem reading RADIUS keyword : " + errors );
   log.printf("  density at atom must be larger than %s \n", ( sfunc.description() ).c_str() );
 
-  std::vector<double> pp(3,0.0), bandwidth(3); parseVector("BANDWIDTH",bandwidth);
+  std::vector<double> pp(3,0.0); bandwidth.resize(3); parseVector("BANDWIDTH",bandwidth);
   log.printf("  using %s kernel with bandwidths %f %f %f \n",getKernelType().c_str(),bandwidth[0],bandwidth[1],bandwidth[2] );
-  kernel=Tools::make_unique<KernelFunctions>( pp, bandwidth, getKernelType(), "DIAGONAL", 1.0 );
-  for(unsigned i=0; i<3; ++i) { pos.emplace_back(Tools::make_unique<Value>()); pos[i]->setNotPeriodic(); }
-  std::vector<double> csupport( kernel->getContinuousSupport() );
-  double maxs = csupport[0];
-  for(unsigned i=1; i<csupport.size(); ++i) {
-    if( csupport[i]>maxs ) maxs = csupport[i];
+  std::string errors2; switchingFunction.set("GAUSSIAN R_0=1.0 NOSTRETCH RETURN_DERIV", errors2 );
+  if( errors2.length()!=0 ) error("problem reading switching function description " + errors2);
+  double det=1; for(unsigned i=0; i<bandwidth.size(); ++i) det*=bandwidth[i]*bandwidth[i];
+  gvol=1.0; if( getKernelType()=="gaussian" ) gvol=pow( 2*pi, 0.5*bandwidth.size() ) * pow( det, 0.5 );
+  else error("cannot use kernel other than gaussian");
+  double dp2cutoff; parse("CUTOFF",dp2cutoff); double maxs =  sqrt(2*dp2cutoff)*bandwidth[0];
+  for(unsigned j=1; j<bandwidth.size(); ++j) {
+    if( sqrt(2*dp2cutoff)*bandwidth[j]>maxs ) maxs=sqrt(2*dp2cutoff)*bandwidth[j];
   }
   checkRead(); requestAtoms(atoms); mylinks.setCutoff( maxs );
 }
@@ -126,13 +134,13 @@ double VolumeInEnvelope::calculateNumberInside( const Vector& cpos, Vector& deri
 
   // convert pointer once
   auto pos_ptr=Tools::unique2raw(pos);
-
   for(unsigned i=1; i<natoms; ++i) {
-    Vector dist = getSeparation( cpos, getPosition( indices[i] ) );
-    for(unsigned j=0; j<3; ++j) pos[j]->set( dist[j] );
-    value += kernel->evaluate( pos_ptr, der, true );
+    Vector dist = pbcDistance( cpos, getPosition( indices[i] ) );
+    double dval=0; for(unsigned j=0;j<3;++j) { der[j] = dist[j]/bandwidth[j]; dval += der[j]*der[j]; } 
+    double dfunc; value += switchingFunction.calculateSqr( dval, dfunc ) / gvol;
+    double tmp = dfunc / gvol, ddd = std::sqrt( dval ); 
     for(unsigned j=0; j<3; ++j) {
-      derivatives[j] -= der[j]; refders[ indices[i] ][j] += der[j]; tder[j]=der[j];
+      derivatives[j] -= tmp*der[j] / ddd; refders[ indices[i] ][j] += tmp*der[j] / ddd; tder[j]=tmp*der[j] / ddd;
     }
     vir -= Tensor( tder, dist );
   }

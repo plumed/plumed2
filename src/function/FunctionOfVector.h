@@ -57,10 +57,11 @@ public:
   void turnOnDerivatives() override;
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives() override ;
+/// Check if all he actions are required
+  void areAllTasksRequired( std::vector<ActionWithVector*>& task_reducing_actions );
 /// Get the label to write in the graph
   std::string writeInGraph() const override { return myfunc.getGraphInfo( getName() ); }
 /// This builds the task list for the action
-  void buildTaskListFromArgumentValues( const std::string& name, const std::set<AtomNumber>& tflags );
   void calculate() override;
 /// This ensures that we create some bookeeping stuff during the first step
   void setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping ) override ;
@@ -288,9 +289,10 @@ unsigned FunctionOfVector<T>::getNumberOfFinalTasks() {
 }
 
 template <class T>
-void FunctionOfVector<T>::buildTaskListFromArgumentValues( const std::string& name, const std::set<AtomNumber>& tflags ) {
-  myfunc.buildTaskList( name, tflags, this );
-}
+void FunctionOfVector<T>::areAllTasksRequired( std::vector<ActionWithVector*>& task_reducing_actions ) {
+  if( task_reducing_actions.size()==0 ) return;
+  if( !myfunc.allComponentsRequired( getArguments(), task_reducing_actions ) ) task_reducing_actions.push_back(this);
+}             
 
 template <class T>
 void FunctionOfVector<T>::runSingleTaskCalculation( const Value* arg, ActionWithValue* action, T& f ) {

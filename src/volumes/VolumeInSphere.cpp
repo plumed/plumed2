@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2023 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,6 +23,7 @@
 #include "tools/Pbc.h"
 #include "tools/SwitchingFunction.h"
 #include "ActionVolume.h"
+#include "VolumeShortcut.h"
 
 //+PLUMEDOC VOLUMES INSPHERE
 /*
@@ -67,7 +68,7 @@ PRINT ARG=d2.* FILE=colvar
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace multicolvar {
+namespace volumes {
 
 class VolumeInSphere : public ActionVolume {
 private:
@@ -80,12 +81,15 @@ public:
   double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const override;
 };
 
-PLUMED_REGISTER_ACTION(VolumeInSphere,"INSPHERE")
+PLUMED_REGISTER_ACTION(VolumeInSphere,"INSPHERE_CALC")
+char glob_sphere[] = "INSPHERE";
+typedef VolumeShortcut<glob_sphere> VolumeInSphereShortcut;
+PLUMED_REGISTER_ACTION(VolumeInSphereShortcut,"INSPHERE")
 
 void VolumeInSphere::registerKeywords( Keywords& keys ) {
   ActionVolume::registerKeywords( keys );
-  keys.add("atoms","ATOM","the atom whose vicinity we are interested in examining");
-  keys.add("compulsory","RADIUS","the switching function that tells us the extent of the spherical region of interest");
+  keys.add("atoms","CENTER","the atom whose vicinity we are interested in examining");
+  keys.add("compulsory","RADIUS","the switching function that tells us the extent of the sphereical region of interest");
   keys.remove("SIGMA");
 }
 
@@ -94,7 +98,7 @@ VolumeInSphere::VolumeInSphere(const ActionOptions& ao):
   ActionVolume(ao)
 {
   std::vector<AtomNumber> atom;
-  parseAtomList("ATOM",atom);
+  parseAtomList("CENTER",atom);
   if( atom.size()!=1 ) error("should only be one atom specified");
   log.printf("  center of sphere is at position of atom : %d\n",atom[0].serial() );
 

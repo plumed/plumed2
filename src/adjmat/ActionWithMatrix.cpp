@@ -199,9 +199,9 @@ void ActionWithMatrix::gatherStoredValue( const unsigned& valindex, const unsign
 
 bool ActionWithMatrix::checkForTaskForce( const unsigned& itask, const Value* myval ) const {
   if( myval->getRank()<2 ) return ActionWithVector::checkForTaskForce( itask, myval );
-  unsigned nelements = myval->getRowLength(itask);
+  unsigned nelements = myval->getRowLength(itask), startr = itask*myval->getNumberOfColumns();
   for(unsigned j=0; j<nelements; ++j ) {
-      if( fabs( myval->getForce( myval->getRowIndex(itask,j) ) )>epsilon ) return true;
+      if( fabs( myval->getForce( startr + j ) )>epsilon ) return true;
   } 
   return false;
 }

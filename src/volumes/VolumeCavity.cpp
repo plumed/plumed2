@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2023 The plumed team
+   Copyright (c) 2014-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -20,9 +20,11 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
+#include "core/PlumedMain.h"
 #include "tools/Units.h"
 #include "tools/Pbc.h"
 #include "ActionVolume.h"
+#include "VolumeShortcut.h"
 
 //+PLUMEDOC VOLUMES CAVITY
 /*
@@ -101,7 +103,7 @@ CAVITY DATA=d1 ATOMS=1,4,5,11 SIGMA=0.1 MEAN MORE_THAN={RATIONAL R_0=4} LABEL=ca
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace multicolvar {
+namespace volumes {
 
 class VolumeCavity : public ActionVolume {
 private:
@@ -122,11 +124,14 @@ public:
   double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const override;
 };
 
-PLUMED_REGISTER_ACTION(VolumeCavity,"CAVITY")
+PLUMED_REGISTER_ACTION(VolumeCavity,"CAVITY_CALC")
+char glob_cavity[] = "CAVITY";
+typedef VolumeShortcut<glob_cavity> VolumeCavityShortcut;
+PLUMED_REGISTER_ACTION(VolumeCavityShortcut,"CAVITY")
 
 void VolumeCavity::registerKeywords( Keywords& keys ) {
   ActionVolume::registerKeywords( keys );
-  keys.add("atoms","ATOMS","the positions of four atoms that define spatial extent of the cavity");
+  keys.add("atoms","BOX","the positions of four atoms that define spatial extent of the cavity");
   keys.addFlag("PRINT_BOX",false,"write out the positions of the corners of the box to an xyz file");
   keys.add("optional","FILE","the file on which to write out the box coordinates");
   keys.add("optional","UNITS","( default=nm ) the units in which to write out the corners of the box");
@@ -144,13 +149,12 @@ VolumeCavity::VolumeCavity(const ActionOptions& ao):
   dcross(3),
   dperp(3)
 {
-  std::vector<AtomNumber> atoms;
-  parseAtomList("ATOMS",atoms);
-  if( atoms.size()!=4 ) error("number of atoms should be equal to four");
+  std::vector<AtomNumber> atoms; parseAtomList("BOX",atoms);
+  if( atoms.size()!=4 ) error("number of atoms in box should be equal to four");
 
   log.printf("  boundaries for region are calculated based on positions of atoms : ");
   for(unsigned i=0; i<atoms.size(); ++i) log.printf("%d ",atoms[i].serial() );
-  log.printf("\n");
+  log.printf("\n"); requestAtoms( atoms );
 
   boxout=false; parseFlag("PRINT_BOX",boxout);
   if(boxout) {
@@ -159,19 +163,16 @@ VolumeCavity::VolumeCavity(const ActionOptions& ao):
     std::string unitname; parse("UNITS",unitname);
     if ( unitname.length()>0 ) {
       Units u; u.setLength(unitname);
-      lenunit=getUnits().getLength()/u.getLength();
+      lenunit=plumed.getUnits().getLength()/u.getLength();
     } else {
       unitname="nm";
     }
     boxfile.link(*this);
-    boxfile.open( boxfname );
+    boxfile.open( boxfname.c_str() );
     log.printf("  printing box coordinates on file named %s in %s \n",boxfname.c_str(), unitname.c_str() );
   }
 
   checkRead();
-  requestAtoms(atoms);
-  // We have to readd the dependency because requestAtoms removes it
-  addDependency( getPntrToMultiColvar() );
 }
 
 VolumeCavity::~VolumeCavity() {
@@ -289,7 +290,7 @@ void VolumeCavity::setupRegions() {
     perp=-perp; len_perp=-len_perp;
     for(unsigned i=0; i<3; ++i) dperp[i]*=-1.0;
   }
-  if( len_bi<=0 || len_cross<=0 || len_perp<=0 ) plumed_merror("Invalid box coordinates");
+  if( len_bi<=0 || len_cross<=0 || len_bi<=0 ) plumed_merror("Invalid box coordinates");
 
   // Now derivatives of lengths
   Tensor dd3( Tensor::identity() );
@@ -313,7 +314,7 @@ void VolumeCavity::setupRegions() {
   jacob(0,0)=bi[0]; jacob(1,0)=bi[1]; jacob(2,0)=bi[2];
   jacob(0,1)=cross[0]; jacob(1,1)=cross[1]; jacob(2,1)=cross[2];
   jacob(0,2)=perp[0]; jacob(1,2)=perp[1]; jacob(2,2)=perp[2];
-  jacob_det = std::fabs( jacob.determinant() );
+  jacob_det = fabs( jacob.determinant() );
 }
 
 void VolumeCavity::update() {

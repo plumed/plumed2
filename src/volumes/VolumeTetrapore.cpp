@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2023 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -20,9 +20,11 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
+#include "core/PlumedMain.h"
 #include "tools/Units.h"
 #include "tools/Pbc.h"
 #include "ActionVolume.h"
+#include "VolumeShortcut.h"
 
 //+PLUMEDOC VOLUMES TETRAHEDRALPORE
 /*
@@ -109,7 +111,7 @@ CAVITY DATA=d1 ATOMS=1,4,5,11 SIGMA=0.1 MEAN MORE_THAN={RATIONAL R_0=4} LABEL=ca
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace multicolvar {
+namespace volumes {
 
 class VolumeTetrapore : public ActionVolume {
 private:
@@ -130,11 +132,14 @@ public:
   double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const override;
 };
 
-PLUMED_REGISTER_ACTION(VolumeTetrapore,"TETRAHEDRALPORE")
+PLUMED_REGISTER_ACTION(VolumeTetrapore,"TETRAHEDRALPORE_CALC")
+char glob_tetrapore[] = "TETRAHEDRALPORE";
+typedef VolumeShortcut<glob_tetrapore> VolumeTetraporeShortcut;
+PLUMED_REGISTER_ACTION(VolumeTetraporeShortcut,"TETRAHEDRALPORE")
 
 void VolumeTetrapore::registerKeywords( Keywords& keys ) {
   ActionVolume::registerKeywords( keys );
-  keys.add("atoms","ATOMS","the positions of four atoms that define spatial extent of the cavity");
+  keys.add("atoms","BOX","the positions of four atoms that define spatial extent of the cavity");
   keys.addFlag("PRINT_BOX",false,"write out the positions of the corners of the box to an xyz file");
   keys.add("optional","FILE","the file on which to write out the box coordinates");
   keys.add("optional","UNITS","( default=nm ) the units in which to write out the corners of the box");
@@ -153,7 +158,7 @@ VolumeTetrapore::VolumeTetrapore(const ActionOptions& ao):
   dperp(3)
 {
   std::vector<AtomNumber> atoms;
-  parseAtomList("ATOMS",atoms);
+  parseAtomList("BOX",atoms);
   if( atoms.size()!=4 ) error("number of atoms should be equal to four");
 
   log.printf("  boundaries for region are calculated based on positions of atoms : ");
@@ -167,19 +172,17 @@ VolumeTetrapore::VolumeTetrapore(const ActionOptions& ao):
     std::string unitname; parse("UNITS",unitname);
     if ( unitname.length()>0 ) {
       Units u; u.setLength(unitname);
-      lenunit=getUnits().getLength()/u.getLength();
+      lenunit=plumed.getUnits().getLength()/u.getLength();
     } else {
       unitname="nm";
     }
     boxfile.link(*this);
-    boxfile.open( boxfname );
+    boxfile.open( boxfname.c_str() );
     log.printf("  printing box coordinates on file named %s in %s \n",boxfname.c_str(), unitname.c_str() );
   }
 
   checkRead();
   requestAtoms(atoms);
-  // We have to readd the dependency because requestAtoms removes it
-  addDependency( getPntrToMultiColvar() );
 }
 
 VolumeTetrapore::~VolumeTetrapore() {
@@ -211,8 +214,8 @@ void VolumeTetrapore::setupRegions() {
   Vector truep = crossProduct( cross, bisector );
 
   // These are our true vectors 45 degrees from bisector
-  bi = std::cos(pi/4.0)*bisector + std::sin(pi/4.0)*truep;
-  perp = std::cos(pi/4.0)*bisector - std::sin(pi/4.0)*truep;
+  bi = cos(pi/4.0)*bisector + sin(pi/4.0)*truep;
+  perp = cos(pi/4.0)*bisector - sin(pi/4.0)*truep;
 
   // And the lengths of the various parts average distance to opposite corners of tetetrahedron
   len_bi = dotProduct( d1, bi ); double len_bi2 = dotProduct( d2, bi ); unsigned lbi=1;
@@ -308,8 +311,8 @@ void VolumeTetrapore::setupRegions() {
 
   // Now convert these to the derivatives of the true axis
   for(unsigned i=0; i<3; ++i) {
-    dbi[i] = std::cos(pi/4.0)*dbisector[i] + std::sin(pi/4.0)*dtruep[i];
-    dperp[i] = std::cos(pi/4.0)*dbisector[i] - std::sin(pi/4.0)*dtruep[i];
+    dbi[i] = cos(pi/4.0)*dbisector[i] + sin(pi/4.0)*dtruep[i];
+    dperp[i] = cos(pi/4.0)*dbisector[i] - sin(pi/4.0)*dtruep[i];
   }
 
   // Ensure that all lengths are positive
@@ -325,7 +328,7 @@ void VolumeTetrapore::setupRegions() {
     perp=-perp; len_perp=-len_perp;
     for(unsigned i=0; i<3; ++i) dperp[i]*=-1.0;
   }
-  if( len_bi<=0 || len_cross<=0 || len_perp<=0 ) plumed_merror("Invalid box coordinates");
+  if( len_bi<=0 || len_cross<=0 || len_bi<=0 ) plumed_merror("Invalid box coordinates");
 
   // Now derivatives of lengths
   Tensor dd3( Tensor::identity() ); Vector ddb2=d1; if( lbi==2 ) ddb2=d2;
@@ -348,7 +351,7 @@ void VolumeTetrapore::setupRegions() {
   jacob(0,0)=bi[0]; jacob(1,0)=bi[1]; jacob(2,0)=bi[2];
   jacob(0,1)=cross[0]; jacob(1,1)=cross[1]; jacob(2,1)=cross[2];
   jacob(0,2)=perp[0]; jacob(1,2)=perp[1]; jacob(2,2)=perp[2];
-  jacob_det = std::fabs( jacob.determinant() );
+  jacob_det = fabs( jacob.determinant() );
 }
 
 void VolumeTetrapore::update() {
