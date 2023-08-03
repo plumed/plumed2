@@ -9,6 +9,7 @@ RUN yum -y install gcc-c++
 RUN yum -y install environment-modules gawk vim wget lapack-devel blas-devel \
                    zlib-devel gsl-devel fftw-devel openmpi-devel boost-devel \
                    python39 python-devel python-pip 
+RUN python3.9 -m ensurepip --upgrade
 RUN python3.9 -m pip install numpy 
 RUN python3.9 -m pip install cython 
 RUN python3.9 -m pip install pandas 
