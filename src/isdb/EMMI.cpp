@@ -230,7 +230,7 @@ private:
 // calculate model GMM weights and covariances
   std::vector<double> get_GMM_m(std::vector<AtomNumber> &atoms);
 // read data GMM file
-  void get_GMM_d(std::string gmm_file);
+  void get_GMM_d(const std::string & gmm_file);
 // check GMM data
   void check_GMM_d(const VectorGeneric<6> &cov, double w);
 // auxiliary method
@@ -1071,7 +1071,7 @@ void EMMI::check_GMM_d(const VectorGeneric<6> &cov, double w)
 }
 
 // read GMM data file in PLUMED format:
-void EMMI::get_GMM_d(std::string GMM_file)
+void EMMI::get_GMM_d(const std::string & GMM_file)
 {
   VectorGeneric<6> cov;
 

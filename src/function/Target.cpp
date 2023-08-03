@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Function.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "tools/PDB.h"
 #include "reference/MetricRegister.h"
 #include "reference/ArgumentOnlyDistance.h"

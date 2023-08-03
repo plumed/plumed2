@@ -715,6 +715,7 @@ enable_fussy
 enable_debug_glibcxx
 enable_shared
 enable_dependency_tracking
+enable_no_gnu_unique
 enable_rpath
 enable_absolute_soname
 enable_absolute_install_name
@@ -1401,6 +1402,8 @@ Optional Features:
   --enable-shared         enable shared libs, default: yes
   --enable-dependency-tracking
                           enable dependency tracking, default: yes
+  --enable-no-gnu-unique  enable a flag to avoid gnu unique symbols, default:
+                          yes
   --enable-rpath          enable store rpath, default: no
   --enable-absolute-soname
                           enable store absolute soname (Linux only - this is
@@ -2719,6 +2722,24 @@ else
   case "yes" in
              (yes) dependency_tracking=true ;;
              (no)  dependency_tracking=false ;;
+  esac
+
+fi
+
+
+
+no_gnu_unique=
+# Check whether --enable-no-gnu-unique was given.
+if test "${enable_no_gnu_unique+set}" = set; then :
+  enableval=$enable_no_gnu_unique; case "${enableval}" in
+             (yes) no_gnu_unique=true ;;
+             (no)  no_gnu_unique=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-no-gnu-unique" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) no_gnu_unique=true ;;
+             (no)  no_gnu_unique=false ;;
   esac
 
 fi
@@ -5398,7 +5419,55 @@ $as_echo "$as_me: dependency tracking enabled" >&6;}
 fi
 
 
+if test "$no_gnu_unique" = true
+then
 
+  save_CXXFLAGS="$CXXFLAGS"
+  CXXFLAGS="$CXXFLAGS -fno-gnu-unique"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -fno-gnu-unique" >&5
+$as_echo_n "checking whether $CXX accepts -fno-gnu-unique... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not linking" >&5
+$as_echo "not linking" >&6; }; CXXFLAGS="$save_CXXFLAGS"
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+fi
 
 #### Compulsory libraries ####
 # some of them might be made optional if we find that are not available in some system
