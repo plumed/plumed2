@@ -31,7 +31,6 @@ namespace isdb {
 
 //+PLUMEDOC ISDB_COLVAR SHADOW
 /*
-
 Communicate atoms positions among replicas and calculate the \ref RMSD with respect to a mother (reference) simulation. 
 
 The option \ref UPDATE allows to specify the stride for communication between mother and replica systems.
@@ -44,7 +43,7 @@ In this example, we perform a simulation of a RNA molecule using two replicas: a
 The mother simulation communicates the coordinates of the RNA backbone to the replica every 100 steps. 
 The RMSD of the replica with respect to the mother is calculated on the RNA backbone atoms and an \ref UPPER_WALLS is applied at 0.2 nm.
 The mother replica contains also the \ref UPPER_WALLS action. However, the forces on the RNA atoms of the mother replica are automatically set to zero
-inside the SHADOW action.
+inside the \ref SHADOW action.
 
 The input file for the mother simulation looks as follows:
 
