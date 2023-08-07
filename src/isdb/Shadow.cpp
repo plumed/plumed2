@@ -149,7 +149,7 @@ Shadow::Shadow(const ActionOptions&ao):
   comm.Sum(&nrep,1);
   comm.Sum(&replica,1);
   // check number of replicas
-  if(nrep<2) error("SHADOW must be used with at least two replicas");
+  //if(nrep<2) error("SHADOW must be used with at least two replicas");
 
   checkRead();
 
