@@ -302,7 +302,7 @@ private:
   std::vector<double> Iq0_mix_H;
   std::vector<double> Iq0_vac_D;
   std::vector<double> Iq0_mix_D;
-  int Nj;
+  unsigned int Nj;
   std::vector<std::vector<double> > qj_list;
   std::vector<std::vector<double> > Rij;
   std::vector<double> sigma_res;
@@ -546,7 +546,7 @@ SAXS::SAXS(const ActionOptions&ao):
     Iq0 *= Iq0;
   } else if (fromfile) {
     // read in parameters from file
-    log.printf("  Reading PARAMETERS from: %s\n", parametersfile.c_str());
+    log.printf("  Reading PARAMETERS from file: %s\n", parametersfile.c_str());
     if (saxs) {
       FF_tmp.resize(numq,std::vector<long double>(size));
       parameter.resize(size);
@@ -557,6 +557,9 @@ SAXS::SAXS(const ActionOptions&ao):
 
       ntarget=0;
       while(ifile.getline(line)) {
+        Tools::ltrim(line);
+        Tools::trimComments(line);
+        if (line.empty()) continue;
         if (ntarget > size) error("PARAMETERSFILE has more PARAMETERS than there are scattering centers");
         std::string num; Tools::convert(ntarget+1,num);
         std::vector<std::string> lineread{line};
@@ -584,6 +587,9 @@ SAXS::SAXS(const ActionOptions&ao):
 
       ntarget=0;
       while(ifile.getline(line)) {
+        Tools::ltrim(line);
+        Tools::trimComments(line);
+        if (line.empty()) continue;
         if (ntarget > size) error("PARAMETERSFILE has more PARAMETERS than there are scattering centers");
         std::string num; Tools::convert(ntarget+1,num);
         std::vector<std::string> lineread{line};
@@ -7624,7 +7630,7 @@ void SAXS::readLCPOparam(const std::vector<std::vector<std::string> > &AtomResid
 
 void SAXS::resolution_function()
 {
-  int numq = q_list.size();
+  unsigned int numq = q_list.size();
 
   // only OpenMP because numq might be smaller than the number of ranks
   unsigned nt=OpenMP::getNumThreads();

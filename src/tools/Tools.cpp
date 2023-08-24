@@ -273,6 +273,14 @@ void Tools::trim(std::string & s) {
   if(n!=std::string::npos) s.resize(n+1);
 }
 
+void Tools::ltrim(std::string & s) {
+  auto n=s.find_first_not_of(" \t");
+  if(n!=std::string::npos) {
+    s = s.substr(n, s.size());
+    s.shrink_to_fit();
+  } 
+}
+
 void Tools::trimComments(std::string & s) {
   auto n=s.find_first_of("#");
   if(n!=std::string::npos) s.resize(n);

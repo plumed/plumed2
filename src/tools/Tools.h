@@ -120,6 +120,8 @@ public:
 /// Convert anything into anything, throwing an exception in case there is an error
 /// Remove trailing blanks
   static void trim(std::string & s);
+/// Remove leading blanks
+  static void ltrim(std::string & s);
 /// Remove trailing comments
   static void trimComments(std::string & s);
 /// Apply pbc for a unitary cell
