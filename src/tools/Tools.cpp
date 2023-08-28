@@ -276,7 +276,7 @@ void Tools::trim(std::string & s) {
 void Tools::ltrim(std::string & s) {
   auto n=s.find_first_not_of(" \t");
   if(n!=std::string::npos) {
-    s = s.substr(n, s.size());
+    s = s.substr(n, s.length()-n);
     s.shrink_to_fit();
   } 
 }

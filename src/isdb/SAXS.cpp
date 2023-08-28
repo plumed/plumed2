@@ -514,7 +514,6 @@ SAXS::SAXS(const ActionOptions&ao):
   std::vector<std::vector<long double> > FF_tmp_vac;
   std::vector<std::vector<long double> > FF_tmp_mix;
   std::vector<std::vector<long double> > FF_tmp_solv;
-  std::vector<std::vector<long double> > parameter;
   // SANS
   std::vector<std::vector<long double> > FF_tmp_vac_H;
   std::vector<std::vector<long double> > FF_tmp_mix_H;
@@ -524,31 +523,54 @@ SAXS::SAXS(const ActionOptions&ao):
   std::vector<std::vector<long double> > parameter_H;
   std::vector<std::vector<long double> > parameter_D;
 
-  if(!atomistic&&!martini&&!onebead&&!fromfile) {
-    // read in parameter std::vector
-    parameter.resize(size);
-    ntarget=0;
-    for(unsigned i=0; i<size; ++i) {
-      if( !parseNumberedVector( "PARAMETERS", i+1, parameter[i]) ) break;
-      ntarget++;
-    }
-    if( ntarget!=size ) error("found wrong number of parameter std::vectors");
-    FF_tmp.resize(numq,std::vector<long double>(size));
-    for(unsigned i=0; i<size; ++i) {
-      atoi[i]=i;
-      for(unsigned k=0; k<numq; ++k) {
-        for(unsigned j=0; j<parameter[i].size(); ++j) {
-          FF_tmp[k][i]+= parameter[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
+  if(!atomistic&&!martini&&!onebead&&!fromfile) { // read PARAMETERS
+    if (saxs) {
+      // read in parameter std::vector
+      std::vector<std::vector<long double> > parameter;
+      parameter.resize(size);
+      ntarget=0;
+      for(unsigned i=0; i<size; ++i) {
+        if( !parseNumberedVector( "PARAMETERS", i+1, parameter[i]) ) break;
+        ntarget++;
+      }
+      if( ntarget!=size ) error("found wrong number of parameter std::vectors");
+      FF_tmp.resize(numq,std::vector<long double>(size));
+      for(unsigned i=0; i<size; ++i) {
+        atoi[i]=i;
+        for(unsigned k=0; k<numq; ++k) {
+          for(unsigned j=0; j<parameter[i].size(); ++j) {
+            FF_tmp[k][i]+= parameter[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
+          }
         }
       }
+      for(unsigned i=0; i<size; ++i) Iq0+=parameter[i][0];
+      Iq0 *= Iq0;
     }
-    for(unsigned i=0; i<size; ++i) Iq0+=parameter[i][0];
-    Iq0 *= Iq0;
+    else { // SANS
+      std::vector<long double> parameter;    
+      parameter.resize(size);
+      ntarget=0;
+      for(unsigned i=0; i<size; ++i) {
+        if( !parseNumbered( "PARAMETERS", i+1, parameter[i]) ) break;
+        ntarget++;
+      }
+      if( ntarget!=size ) error("found wrong number of parameter std::vectors");
+      FF_tmp.resize(numq,std::vector<long double>(size));
+      for(unsigned i=0; i<size; ++i) {
+        atoi[i]=i;
+        for(unsigned k=0; k<numq; ++k) {
+          FF_tmp[k][i]+= parameter[i];
+        }
+      }
+      for(unsigned i=0; i<size; ++i) Iq0+=parameter[i];
+      Iq0 *= Iq0;      
+    }
   } else if (fromfile) {
     // read in parameters from file
     log.printf("  Reading PARAMETERS from file: %s\n", parametersfile.c_str());
     if (saxs) {
       FF_tmp.resize(numq,std::vector<long double>(size));
+      std::vector<std::vector<long double> > parameter;
       parameter.resize(size);
 
       IFile ifile;
@@ -593,7 +615,7 @@ SAXS::SAXS(const ActionOptions&ao):
         if (ntarget > size) error("PARAMETERSFILE has more PARAMETERS than there are scattering centers");
         std::string num; Tools::convert(ntarget+1,num);
         std::vector<std::string> lineread{line};
-        double scatlen;
+        long double scatlen;
         atoi[ntarget]=ntarget;
         if (!Tools::parse(lineread, "PARAMETERS"+num, scatlen, -1)) error("Missing PARAMETERS or PARAMETERS not sorted");
         for(unsigned k=0; k<numq; ++k) {
@@ -673,6 +695,7 @@ SAXS::SAXS(const ActionOptions&ao):
   } else if(martini) {
     // read in parameter std::vector
     FF_tmp.resize(numq,std::vector<long double>(NMARTINI));
+    std::vector<std::vector<long double> > parameter;
     parameter.resize(NMARTINI);
     getMartiniFFparam(atoms, parameter);
     for(unsigned i=0; i<NMARTINI; ++i) {
