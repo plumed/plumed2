@@ -741,6 +741,7 @@ SAXS::SAXS(const ActionOptions&ao):
 
   Nj = 10;
   parse("N", Nj);
+  if (Nj < 2) error("N should be larger than 1");
   if (resolution) log.printf("  Resolution function with N: %d\n", Nj);
 
   if(!gpu) {
@@ -862,6 +863,7 @@ SAXS::SAXS(const ActionOptions&ao):
   // convert units to nm^-1
   for(unsigned i=0; i<numq; ++i) {
     q_list[i]=q_list[i]*10.0;    // factor 10 to convert from A^-1 to nm^-1
+    if (resolution) sigma_res[i]=sigma_res[i]*10.0;
   }
 
   // compute resolution function after converting units
@@ -7653,11 +7655,10 @@ void SAXS::readLCPOparam(const std::vector<std::vector<std::string> > &AtomResid
 
 void SAXS::resolution_function()
 {
-  unsigned int numq = q_list.size();
+  const unsigned numq = q_list.size();
 
   // only OpenMP because numq might be smaller than the number of ranks
-  unsigned nt=OpenMP::getNumThreads();
-  #pragma omp parallel for num_threads(nt)
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for (unsigned i=0; i<numq; i++) {
     double qi = q_list[i];
     double dq = 6*sigma_res[i]/(Nj-1);
