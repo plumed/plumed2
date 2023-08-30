@@ -252,7 +252,7 @@ private:
          BB_PO2,
          NONEBEAD
        };
-  struct SplineCoeffs{
+  struct SplineCoeffs {
     double a;
     double b;
     double c;
@@ -547,7 +547,7 @@ SAXS::SAXS(const ActionOptions&ao):
       Iq0 *= Iq0;
     }
     else { // SANS
-      std::vector<long double> parameter;    
+      std::vector<long double> parameter;
       parameter.resize(size);
       ntarget=0;
       for(unsigned i=0; i<size; ++i) {
@@ -563,7 +563,7 @@ SAXS::SAXS(const ActionOptions&ao):
         }
       }
       for(unsigned i=0; i<size; ++i) Iq0+=parameter[i];
-      Iq0 *= Iq0;      
+      Iq0 *= Iq0;
     }
   } else if (fromfile) {
     // read in parameters from file

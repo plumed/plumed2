@@ -278,7 +278,7 @@ void Tools::ltrim(std::string & s) {
   if(n!=std::string::npos) {
     s = s.substr(n, s.length()-n);
     s.shrink_to_fit();
-  } 
+  }
 }
 
 void Tools::trimComments(std::string & s) {
