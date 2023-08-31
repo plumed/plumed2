@@ -24,6 +24,7 @@
 #include "plumed/tools/NeighborList.h"
 #include "plumed/core/ActionRegister.h"
 
+#include <cusparse_v2.h>
 #include "ndReduction.h"
 #include "cudaHelpers.cuh"
 
@@ -128,13 +129,19 @@ class CudaCoordination : public Colvar {
   CUDAHELPERS::memoryHolder<unsigned>  cudaPairList;
   CUDAHELPERS::memoryHolder<double> cudaCoordination;
   CUDAHELPERS::memoryHolder<double> cudaDerivatives;
+  CUDAHELPERS::memoryHolder<double> cudaDerivatives_sparse;
+  CUDAHELPERS::memoryHolder<int64_t> cudaDerivatives_sparserow;
+  CUDAHELPERS::memoryHolder<int64_t> cudaDerivatives_sparsecols;
   CUDAHELPERS::memoryHolder<double> cudaVirial;
-  CUDAHELPERS::memoryHolder<double> reductionMemoryD;
-  CUDAHELPERS::memoryHolder<double> reductionMemoryV;
-  CUDAHELPERS::memoryHolder<double> reductionMemoryS;
-  cudaStream_t streamV;
-  cudaStream_t streamT;
-  cudaStream_t streamS;
+  CUDAHELPERS::memoryHolder<double> reductionMemoryDerivatives;
+  CUDAHELPERS::memoryHolder<double> bufferDerivatives;
+  CUDAHELPERS::memoryHolder<double> reductionMemoryVirial;
+  CUDAHELPERS::memoryHolder<double> reductionMemoryCoord;
+  CUDAHELPERS::memoryHolder<double> ones;
+  cusparseHandle_t sparseMDevHandle;
+  cudaStream_t streamDerivatives;
+  cudaStream_t streamVirial;
+  cudaStream_t streamCoordination;
   unsigned maxNumThreads=512;
   SwitchingFunction switchingFunction;
   rationalSwitchParameters switchingParameters;
@@ -373,17 +380,21 @@ CudaCoordination::CudaCoordination(const ActionOptions&ao):
     switchingParameters.invr0_2 = invr0*=invr0;
   }
   checkRead();
-  cudaStreamCreate(&streamV);
-  cudaStreamCreate(&streamT);
-  cudaStreamCreate(&streamS);
+  cudaStreamCreate(&streamDerivatives);
+  cudaStreamCreate(&streamVirial);
+  cudaStreamCreate(&streamCoordination);
+  cusparseCreate(&sparseMDevHandle);
+  //cusparseSetPointerMode(sparseMDevHandle, CUSPARSE_POINTER_MODE_HOST or CUSPARSE_POINTER_MODE_DEVICE);
+  cusparseSetStream(sparseMDevHandle, streamDerivatives);
   setUpPermanentGPUMemory();
   log<<"  contacts are counted with cutoff "<<switchingFunction.description()<<"\n";
 }
 
 CudaCoordination::~CudaCoordination(){
-   cudaStreamDestroy(streamV);
-   cudaStreamDestroy(streamT);
-   cudaStreamDestroy(streamS);
+   cudaStreamDestroy(streamDerivatives);
+   cudaStreamDestroy(streamVirial);
+   cudaStreamDestroy(streamCoordination);
+   cusparseDestroy(sparseMDevHandle);
 }
 
 __device__ double calculateSqr(double distancesq, double& dfunc , rationalSwitchParameters switchingParameters) {
@@ -415,7 +426,11 @@ __global__ void getCoord(
                         double *coordinates,
                         unsigned *pairList,
                         double *ncoordOut,
-                        double *ddOut
+                        double *ddOut,
+                        double *ddOut_sparse,
+                        int64_t *sparseRows,
+                        int64_t *sparseCols,
+                        double* ones
                         ) {
   //blockDIm are the number of threads in your block
   const unsigned i = threadIdx.x + blockIdx.x * blockDim.x;
@@ -440,11 +455,25 @@ __global__ void getCoord(
   ncoordOut[i]= calculateSqr(dsq,dfunc,switchingParameters);
 
   ddOut[i] = d[0];
-  ddOut[i+ 1 * numOfPairs] = d[1];
-  ddOut[i+ 2 * numOfPairs] = d[2];
-  ddOut[i+ 3 * numOfPairs] = dfunc;
-  //ncoord[i]= 1;
-  //printf("Cuda: %i,%i %i %i\n", i,threadIdx.x , blockIdx.x,  blockDim.x);
+  ddOut[i + 1 * numOfPairs] = d[1];
+  ddOut[i + 2 * numOfPairs] = d[2];
+  ddOut[i + 3 * numOfPairs] = dfunc;
+  ddOut_sparse[0 + 6 * i] = -d[0] * dfunc;
+  ddOut_sparse[1 + 6 * i] = -d[1] * dfunc;
+  ddOut_sparse[2 + 6 * i] = -d[2] * dfunc;
+  ddOut_sparse[3 + 6 * i] = d[0] * dfunc;
+  ddOut_sparse[4 + 6 * i] = d[1] * dfunc;
+  ddOut_sparse[5 + 6 * i] = d[2] * dfunc;
+  sparseRows[0 + 6 * i] = 3*i0 + 0;
+  sparseRows[1 + 6 * i] = 3*i0 + 1;
+  sparseRows[2 + 6 * i] = 3*i0 + 2;
+  sparseRows[3 + 6 * i] = 3*i1 + 0;
+  sparseRows[4 + 6 * i] = 3*i1 + 1;
+  sparseRows[5 + 6 * i] = 3*i1 + 2;
+  ones[i] = 1.0;
+  sparseCols[i]=6*i;
+  // ncoord[i]= 1;
+  // printf("Cuda: %i,%i %i %i\n", i,threadIdx.x , blockIdx.x,  blockDim.x);
 }
 
 void CudaCoordination::calculate() {
@@ -466,20 +495,52 @@ void CudaCoordination::calculate() {
 
   /****************allocating the memory on the GPU****************/
   cudaCoords.copyToCuda(&positions[0][0]);
-
+  
+  ones.resize(nn);
+  reductionMemoryDerivatives.resize(3*nat);  
   cudaCoordination.resize(nn);  
   cudaDerivatives.resize(nn *4);
-  cudaVirial.resize(9*nn);
+  cudaDerivatives_sparse.resize(nn *6);
+  cudaVirial.resize(nn*9);
+  cudaDerivatives_sparserow.resize(nn*6);
+  cudaDerivatives_sparsecols.resize(nn);
+  cusparseSpMatDescr_t spMatDescr;
+  cusparseDnVecDescr_t dnVecDescr;
+  cusparseDnVecDescr_t outVecDescr;
   //CUDAHELPERS::memoryHolder<double> reductionMemory;
-  //cudaMemset(cudaDerivatives.getPointer(),0,nn *3*sizeof(double));
-  //cudaMemset(cudaVirial.getPointer(),0,nn *9*sizeof(double));
+  //cudaMemset(cudaDerivatives.pointer(),0,nn *3*sizeof(double));
+  //cudaMemset(cudaVirial.pointer(),0,nn *9*sizeof(double));
   /****************starting the calculations****************/
   getCoord<<<ngroups,nthreads>>> (nn,switchingParameters,
-    cudaCoords.getPointer(),
-    cudaPairList.getPointer(),
-    cudaCoordination.getPointer(),
-    cudaDerivatives.getPointer()
-    ); 
+    cudaCoords.pointer(),
+    cudaPairList.pointer(),
+    cudaCoordination.pointer(),
+    cudaDerivatives.pointer(),
+    cudaDerivatives_sparse.pointer(),
+    cudaDerivatives_sparserow.pointer(),
+    cudaDerivatives_sparsecols.pointer(),
+    ones.pointer()
+    );
+    
+    cusparseCreateDnVec(&dnVecDescr,
+                    nn,
+                    ones.pointer(),
+                    CUDA_R_64F);
+    cusparseCreateDnVec(&outVecDescr,
+                    3*nat,
+                    reductionMemoryDerivatives.pointer(),
+                    CUDA_R_64F);
+    cusparseCreateCsc(&spMatDescr,
+                  getPositions().size() * 3,
+                  nn,
+                  nn*6,
+                  cudaDerivatives_sparsecols.pointer(),
+                  cudaDerivatives_sparserow.pointer(),
+                  cudaDerivatives_sparse.pointer(),
+                  CUSPARSE_INDEX_64I,
+                  CUSPARSE_INDEX_64I,
+                  CUSPARSE_INDEX_BASE_ZERO,
+                  CUDA_R_64F);
   /*
   //the order of caclulating deriv virial and ncoord is thinked to limit the 
   //resizing of reductionMemory
@@ -487,7 +548,7 @@ void CudaCoordination::calculate() {
    CUDAHELPERS::reduceNVectors(cudaDerivatives,reductionMemory,nn,nat,512);
 
   Tensor virial=CUDAHELPERS::reduceTensor(
-    //cudaVirial.getPointer(),
+    //cudaVirial.pointer(),
     cudaVirial,reductionMemory,
     nn,512);
   
@@ -495,21 +556,53 @@ void CudaCoordination::calculate() {
   //std::vector<double> coordsToSUM(nn);
   //cudaMemcpy(coordsToSUM.data(), cudaCoordination, nn*sizeof(double), cudaMemcpyDeviceToHost);
   //double ncoord=std::accumulate(coordsToSUM.begin(),coordsToSUM.end(),0.0);
-  double ncoord = CUDAHELPERS::reduceScalar(cudaCoordination//.getPointer(),
+  double ncoord = CUDAHELPERS::reduceScalar(cudaCoordination//.pointer(),
   , reductionMemory, nn,512);
 */
+
   CUDAHELPERS::DVS ret = CUDAHELPERS::reduceDVS(
     cudaDerivatives,
     cudaVirial,
     cudaCoordination,
     cudaPairList,
-    reductionMemoryD,reductionMemoryV,reductionMemoryS,
-    streamV,
-    streamT,
-    streamS,
+    reductionMemoryVirial,
+    reductionMemoryCoord,
+    streamVirial,
+    streamCoordination,
     nn,nat,
     maxNumThreads
   );
+  double one=1.0;
+  double zero=0.0;
+  size_t bufferSize = 0;
+cusparseSpMV_bufferSize(          sparseMDevHandle,
+                        CUSPARSE_OPERATION_NON_TRANSPOSE,
+                        &one,
+                        spMatDescr,  // non-const descriptor supported
+                        dnVecDescr,  // non-const descriptor supported
+                        &zero,
+                        outVecDescr,
+                        CUDA_R_64F,
+                        CUSPARSE_SPMV_ALG_DEFAULT,//may be improved
+                        &bufferSize);
+bufferDerivatives.resize(bufferSize);
+cusparseSpMV(          sparseMDevHandle,
+                        CUSPARSE_OPERATION_NON_TRANSPOSE,
+                        &one,
+                        spMatDescr,  // non-const descriptor supported
+                        dnVecDescr,  // non-const descriptor supported
+                        &zero,
+                        outVecDescr,
+                        CUDA_R_64F,
+                        CUSPARSE_SPMV_ALG_DEFAULT,//may be improved
+                        bufferDerivatives.pointer());
+    
+  //cusparseDnVecGetValues(outVecDescr,**void); returns reductionMemoryDerivatives.pointer()
+   
+  reductionMemoryDerivatives.copyFromCuda(&ret.deriv[0][0]);
+  cusparseDestroySpMat(spMatDescr);
+  cusparseDestroyDnVec(dnVecDescr);
+  cusparseDestroyDnVec(outVecDescr);
   for(unsigned i=0; i<ret.deriv.size(); ++i) {
     setAtomsDerivatives(i,ret.deriv[i]);
   }

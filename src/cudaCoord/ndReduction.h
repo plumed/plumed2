@@ -154,18 +154,17 @@ unsigned N, unsigned maxNumThreads);
   * 
   * @note cudaScalarAddress is threated as not owned: the user will need to call cudaFree on it!!!
   */ 
-DVS reduceDVS(memoryHolder<double>& derivativeIn,
- memoryHolder<double>& virialIn,
- memoryHolder<double>& scalarIn,
- memoryHolder<unsigned>& pairListIn,
- memoryHolder<double>& memoryHelperD,
- memoryHolder<double>& memoryHelperV,
- memoryHolder<double>& memoryHelperS,
- cudaStream_t streamDerivatives,
- cudaStream_t streamVirial,
- cudaStream_t streamScalar,
- unsigned N, unsigned nat,
- unsigned maxNumThreads=512);
+DVS reduceDVS(
+  memoryHolder<double>& derivativeIn,
+  memoryHolder<double>& virialIn,
+  memoryHolder<double>& scalarIn,
+  memoryHolder<unsigned>& pairListIn,
+  memoryHolder<double>& memoryHelperV,
+  memoryHolder<double>& memoryHelperS,
+  cudaStream_t streamVirial,
+  cudaStream_t streamScalar,
+  unsigned N, unsigned nat,
+  unsigned maxNumThreads=512);
 
 } //namespace CUDAHELPERS
 } //namespace PLMD

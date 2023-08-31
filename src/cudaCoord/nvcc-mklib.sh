@@ -61,5 +61,5 @@ done
 
 eval "$compile" "$obj" "$file" && \
 eval "$compile" "ndReduction.o" "ndReduction.cu" && \
-eval "$link_command" "$lib" "ndReduction.o" "$obj"
+eval "$link_command" "$lib" -lcusparse "ndReduction.o" "$obj"
 

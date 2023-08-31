@@ -187,38 +187,11 @@ __global__ void reductionDerivatives(T *g_idata, T *g_odata,unsigned* nnlist, co
   const unsigned int atomId = blockIdx.y;
   // each thread loads one element from global to shared mem
   unsigned int nn = (2*numThreads) * blockIdx.x + place;
-  unsigned int i = /*nn +*/ blockIdx.z * len;
-  unsigned int dfunc = /*nn +*/ 3 * len;
+  const unsigned int i = /*nn +*/ blockIdx.z * len;
+  const unsigned int dfunc = /*nn +*/ 3 * len;
   const unsigned int gridSize = (2*numThreads) * gridDim.x;
 
   sdata[place] = T(0);
-//#define TERNARY_CUDA
-#ifdef TERNARY_CUDA
-  while (nn + numThreads < len) {
-    sdata[place] += (((atomId == nnlist[nn*2+1]) ? 
-      g_idata[nn+i]
-      :
-      ((atomId == nnlist[nn*2]) ? 
-        - g_idata[nn+i]
-        :
-        T(0))))*g_idata[nn+dfunc]
-    
-    + ((atomId == nnlist[(nn+numThreads)*2+1]) ? 
-      g_idata[nn+i+numThreads]
-      :
-        ((atomId == nnlist[(nn+numThreads)*2]) ?
-          -g_idata[nn+i+numThreads]
-          :
-         T(0))) * g_idata[nn+dfunc+numThreads];
-    nn+=gridSize;
-  }
-  while (nn < len) {
-    sdata[place] += (((atomId == nnlist[nn*2+1]) ? g_idata[nn+i]:0 )
-    - ((atomId == nnlist[nn*2]) ? g_idata[nn+i]:0))*g_idata[nn+dfunc];     
-    nn+=gridSize;
-  }
-  
-#else
   //I think this may slow down the loop, but this does not force the user to have
   //an input that is multiple of the threads, padded with zeros
   while (nn + numThreads < len) {
@@ -252,7 +225,6 @@ __global__ void reductionDerivatives(T *g_idata, T *g_odata,unsigned* nnlist, co
     nn+=gridSize;
     //dfunc+=gridSize;
   }
-#endif //TERNARY_CUDA
     
   __syncthreads();
   // do reduction in shared memory
@@ -391,7 +363,7 @@ double reduceScalar(memoryHolder<double>& cudaScalarAddress,
     std::swap(reduceIn,reduceOut);
     auto ngroups=getIdealGroups(N, runningThreads);
     reduceOut->resize(ngroups);
-    callReduction1D (reduceIn->getPointer(), reduceOut->getPointer(), N, ngroups, runningThreads);
+    callReduction1D (reduceIn->pointer(), reduceOut->pointer(), N, ngroups, runningThreads);
     N=ngroups;
   }
   double toret;
@@ -451,7 +423,7 @@ unsigned N, unsigned nat, unsigned maxNumThreads){
     reduceOut->resize(ngroups.y* ngroups.x);
     
 
-    callReductionND (reduceIn->getPointer(), reduceOut->getPointer(), N, ngroups, runningThreads);
+    callReductionND (reduceIn->pointer(), reduceOut->pointer(), N, ngroups, runningThreads);
 
     N=ngroups.x;
   }
@@ -500,7 +472,7 @@ memoryHolder<double>& memoryHelper, unsigned N, unsigned maxNumThreads){
     dim3 ngroups(getIdealGroups(N, runningThreads),9);
     reduceOut->resize(ngroups.y* ngroups.x);
   
-    callReductionND (reduceIn->getPointer(), reduceOut->getPointer(),
+    callReductionND (reduceIn->pointer(), reduceOut->pointer(),
     N, ngroups, runningThreads);
         
     N=ngroups.x;
@@ -614,10 +586,8 @@ DVS reduceDVS(memoryHolder<double>& derivativeIn,
 memoryHolder<double>& virialIn,
  memoryHolder<double>& scalarIn,
  memoryHolder<unsigned>& pairListIn,
- memoryHolder<double>& memoryHelperD,
  memoryHolder<double>& memoryHelperV,
  memoryHolder<double>& memoryHelperS,
- cudaStream_t streamDerivatives,
  cudaStream_t streamVirial,
  cudaStream_t streamScalar,
  unsigned N, unsigned nat,
@@ -629,9 +599,6 @@ memoryHolder<double>& virialIn,
 
   memoryHolder<double>* reduceVirialIn= &memoryHelperV;
   memoryHolder<double>* reduceVirialOut =&virialIn;
-
-  memoryHolder<double>* reduceDerIn= &memoryHelperD;
-  memoryHolder<double>* reduceDerOut =&derivativeIn;
   
   auto dim = nat*3;
   vdbg("InNVectors");
@@ -640,47 +607,27 @@ memoryHolder<double>& virialIn,
   DVS toret(nat);
   while(N>1){
     size_t runningThreads = decideThreadsPerBlock(N,maxNumThreads);
-    std::swap(reduceDerIn,reduceDerOut);
     std::swap(reduceVirialIn,reduceVirialOut);
     std::swap(reduceScalarIn,reduceSOut);
     unsigned ngroupsS=getIdealGroups(N, runningThreads);
     
-    reduceDerOut->resize(dim* ngroupsS);
     reduceVirialOut->resize(9* ngroupsS);
     reduceSOut->resize(ngroupsS);
-    //the calculation is divided in three blocks, because using the streams the
-    //memory copy should be async and so the next caclulatio should be be in 
-    //concurrency with the  data transfer
-    
-    if (first){
-      dim3 ngroupsDerivatives(ngroupsS,nat,3);
-      callReductionDerivatives (reduceDerIn->getPointer(),
-        reduceDerOut->getPointer(),
-        pairListIn.getPointer(),
-        N, ngroupsDerivatives, runningThreads,streamDerivatives);
-    }else{
-      dim3 ngroupsDerivatives(ngroupsS,dim);
-      callReductionND (reduceDerIn->getPointer(), reduceDerOut->getPointer(),
-        N, ngroupsDerivatives, runningThreads, streamDerivatives);
-    }
-    if (ngroupsS==1){
-       reduceDerOut->copyFromCuda(&toret.deriv[0][0],streamDerivatives);
-    }
 
     if (first){
       dim3 ngroupsVirial(ngroupsS,3,3);
-      callReductionVirial (reduceDerIn->getPointer(),
-        reduceVirialOut->getPointer(),
+      callReductionVirial (derivativeIn.pointer(),
+        reduceVirialOut->pointer(),
         N, ngroupsVirial, runningThreads,streamVirial);
     }else{
       dim3 ngroupsVirial(ngroupsS,9);
-      callReductionND (reduceVirialIn->getPointer(), reduceVirialOut->getPointer(),
+      callReductionND (reduceVirialIn->pointer(), reduceVirialOut->pointer(),
         N, ngroupsVirial, runningThreads, streamVirial);
     }
     if (ngroupsS==1){
       reduceVirialOut->copyFromCuda(&toret.virial[0][0],streamVirial);
     }
-    callReduction1D (reduceScalarIn->getPointer(), reduceSOut->getPointer(),
+    callReduction1D (reduceScalarIn->pointer(), reduceSOut->pointer(),
       N, ngroupsS, runningThreads,streamScalar);
     if (ngroupsS==1){
       reduceSOut->copyFromCuda(&toret.scalar,streamScalar);
