@@ -26,9 +26,6 @@
 
 namespace PLMD {
 namespace CUDAHELPERS {
-
-DVS::DVS(unsigned nat): deriv(nat){}
-
 template <unsigned numThreads, typename T>
 __device__ void warpReduce(volatile T* sdata, const unsigned int place){
   //Instructions are SIMD synchronous within a warp
@@ -557,7 +554,7 @@ void callReductionVirial (T *g_idata, T *g_odata, const unsigned int len,
 
 //#define vdbg(...) std::cerr << std::setw(4) << __LINE__ <<":" << std::setw(20)<< #__VA_ARGS__ << " " << (__VA_ARGS__) <<'\n'
 //if this is working I might use something similar to the sharedptr/weakptr
-DVS reduceDVS(memoryHolder<double>& derivativeIn,
+VS reduceVS(memoryHolder<double>& derivativeIn,
  memoryHolder<double>& virialIn,
  memoryHolder<double>& scalarIn,
  memoryHolder<unsigned>& pairListIn,
@@ -578,7 +575,7 @@ DVS reduceDVS(memoryHolder<double>& derivativeIn,
   auto dim = nat*3;
     
   bool first=true;
-  DVS toret(nat);
+  VS toret;
   while(N>1){
     size_t runningThreads = decideThreadsPerBlock(N,maxNumThreads);
     unsigned ngroupsS=getIdealGroups(N, runningThreads);

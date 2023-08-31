@@ -463,25 +463,25 @@ __global__ void getCoord(
   double dsq=(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
   double dfunc=0.;
   ncoordOut[i]= calculateSqr(dsq,switchingParameters, dfunc);
-
+  const int sparsePlace = 6 * i;
   ddOut[i] = d[0];
   ddOut[i + 1 * numOfPairs] = d[1];
   ddOut[i + 2 * numOfPairs] = d[2];
   ddOut[i + 3 * numOfPairs] = dfunc;
-  ddOut_sparse[0 + 6 * i] = -d[0] * dfunc;
-  ddOut_sparse[1 + 6 * i] = -d[1] * dfunc;
-  ddOut_sparse[2 + 6 * i] = -d[2] * dfunc;
-  ddOut_sparse[3 + 6 * i] = d[0] * dfunc;
-  ddOut_sparse[4 + 6 * i] = d[1] * dfunc;
-  ddOut_sparse[5 + 6 * i] = d[2] * dfunc;
-  sparseRows[0 + 6 * i] = 3*i0 + 0;
-  sparseRows[1 + 6 * i] = 3*i0 + 1;
-  sparseRows[2 + 6 * i] = 3*i0 + 2;
-  sparseRows[3 + 6 * i] = 3*i1 + 0;
-  sparseRows[4 + 6 * i] = 3*i1 + 1;
-  sparseRows[5 + 6 * i] = 3*i1 + 2;
+  ddOut_sparse[0 + sparsePlace] = -d[0] * dfunc;
+  ddOut_sparse[1 + sparsePlace] = -d[1] * dfunc;
+  ddOut_sparse[2 + sparsePlace] = -d[2] * dfunc;
+  ddOut_sparse[3 + sparsePlace] = d[0] * dfunc;
+  ddOut_sparse[4 + sparsePlace] = d[1] * dfunc;
+  ddOut_sparse[5 + sparsePlace] = d[2] * dfunc;
+  sparseRows[0 + sparsePlace] = 3 * i0 + 0;
+  sparseRows[1 + sparsePlace] = 3 * i0 + 1;
+  sparseRows[2 + sparsePlace] = 3 * i0 + 2;
+  sparseRows[3 + sparsePlace] = 3 * i1 + 0;
+  sparseRows[4 + sparsePlace] = 3 * i1 + 1;
+  sparseRows[5 + sparsePlace] = 3 * i1 + 2;
   ones[i] = 1.0;
-  sparseCols[i]=6*i;
+  sparseCols[i]=sparsePlace;
   // ncoord[i]= 1;
   // printf("Cuda: %i,%i %i %i\n", i,threadIdx.x , blockIdx.x,  blockDim.x);
 }
@@ -513,7 +513,7 @@ void CudaCoordination::calculate() {
   cudaDerivatives_sparsecols.resize(nn);
   
   /****************starting the calculations****************/
-  getCoord<<<ngroups,nthreads>>> (nn,switchingParameters,
+  getCoord<<<ngroups,nthreads,0,streamDerivatives>>> (nn,switchingParameters,
     cudaCoords.pointer(),
     cudaPairList.pointer(),
     cudaCoordination.pointer(),
@@ -523,6 +523,7 @@ void CudaCoordination::calculate() {
     cudaDerivatives_sparsecols.pointer(),
     ones.pointer()
     );
+  std::vector<Vector> deriv(nat);
   cusparseSpMatDescr_t spMatDescr;
   cusparseDnVecDescr_t dnVecDescr;
   cusparseCreateDnVec(&dnVecDescr,
@@ -555,6 +556,7 @@ void CudaCoordination::calculate() {
                         CUSPARSE_SPMV_ALG_DEFAULT,//may be improved
                         &bufferSize);
 bufferDerivatives.resize(bufferSize);
+//the sparseMDevHandle operation happen in their own stream, so reduceDVS will be run in concurrency
 cusparseSpMV( sparseMDevHandle,
                         CUSPARSE_OPERATION_NON_TRANSPOSE,
                         &one,
@@ -565,7 +567,8 @@ cusparseSpMV( sparseMDevHandle,
                         CUDA_R_64F,
                         CUSPARSE_SPMV_ALG_DEFAULT,//may be improved
                         bufferDerivatives.pointer());
-  CUDAHELPERS::DVS ret = CUDAHELPERS::reduceDVS(
+  //reductionMemoryDerivatives.copyFromCuda(&deriv[0][0],streamDerivatives);
+  CUDAHELPERS::VS ret = CUDAHELPERS::reduceVS(
     cudaDerivatives,
     cudaVirial,
     cudaCoordination,
@@ -577,15 +580,15 @@ cusparseSpMV( sparseMDevHandle,
     nn,nat,
     maxNumThreads
   );
-  
+  reductionMemoryDerivatives.copyFromCuda(&deriv[0][0]);
   //cusparseDnVecGetValues(outVecDescr,**void); returns reductionMemoryDerivatives.pointer()
    
-  reductionMemoryDerivatives.copyFromCuda(&ret.deriv[0][0]);
+  
   cusparseDestroySpMat(spMatDescr);
   cusparseDestroyDnVec(dnVecDescr);
   
-  for(unsigned i=0; i<ret.deriv.size(); ++i) {
-    setAtomsDerivatives(i,ret.deriv[i]);
+  for(unsigned i=0; i<deriv.size(); ++i) {
+    setAtomsDerivatives(i,deriv[i]);
   }
   
   setValue           (ret.scalar);

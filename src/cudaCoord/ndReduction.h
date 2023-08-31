@@ -123,11 +123,9 @@ unsigned N, unsigned maxNumThreads);
   double reduceScalar(memoryHolder<double>& cudaScalarAddress,
  memoryHolder<double>& memoryHelper, unsigned N, unsigned maxNumThreads=512);
 
- struct DVS{
-  std::vector<Vector> deriv;
+ struct VS{
   Tensor virial;
   double scalar;
-  DVS(unsigned nat);
 };
 
 /** @brief reduces the coordination, the derivatives and the virial from a coordination calculation
@@ -154,7 +152,7 @@ unsigned N, unsigned maxNumThreads);
   * 
   * @note cudaScalarAddress is threated as not owned: the user will need to call cudaFree on it!!!
   */ 
-DVS reduceDVS(
+VS reduceVS(
   memoryHolder<double>& derivativeIn,
   memoryHolder<double>& virialIn,
   memoryHolder<double>& scalarIn,
