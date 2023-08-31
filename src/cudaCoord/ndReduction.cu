@@ -27,6 +27,7 @@
 namespace PLMD {
 namespace CUDAHELPERS {
 
+DVS::DVS(unsigned nat): deriv(nat){}
 
 template <unsigned numThreads, typename T>
 __device__ void warpReduce(volatile T* sdata, const unsigned int place){
@@ -482,8 +483,6 @@ memoryHolder<double>& memoryHelper, unsigned N, unsigned maxNumThreads){
   return toret;
 }
 
-DVS::DVS(unsigned nat): deriv(nat){}
-
 template <typename T>
 void callReduction1D (T *g_idata, T *g_odata, const unsigned int len,
  const unsigned blocks, const unsigned nthreads,cudaStream_t stream=0){
@@ -556,59 +555,32 @@ void callReductionVirial (T *g_idata, T *g_odata, const unsigned int len,
   }
 }
 
-template <typename T>
-void callReductionDerivatives (T *g_idata, T *g_odata, unsigned* nnList, const unsigned int len,
- const dim3 blocks, const unsigned nthreads,cudaStream_t stream=0){
-  switch (nthreads) {
-  case 512:
-    reductionDerivatives<512,T><<<blocks,512,512*sizeof(T),stream>>>(g_idata,g_odata,nnList, len);
-    break;
-  case 256:
-    reductionDerivatives<256,T><<<blocks,256,256*sizeof(T),stream>>>(g_idata,g_odata,nnList, len);
-    break;
-  case 128:
-    reductionDerivatives<128,T><<<blocks,128,128*sizeof(T),stream>>>(g_idata,g_odata,nnList, len);
-    break;
-  case 64:
-    reductionDerivatives<64, T><<<blocks,64,64*sizeof(T),stream>>>(g_idata,g_odata, nnList,len);
-    break;
-  case 32:
-    reductionDerivatives<32, T><<<blocks,32,32*sizeof(T),stream>>>(g_idata,g_odata, nnList,len);
-    break;
-  default:
-    plumed_merror("Reduction can be called only with 512, 256, 128, 64 or 32 threads.");
-  }
-}
-
 //#define vdbg(...) std::cerr << std::setw(4) << __LINE__ <<":" << std::setw(20)<< #__VA_ARGS__ << " " << (__VA_ARGS__) <<'\n'
 //if this is working I might use something similar to the sharedptr/weakptr
 DVS reduceDVS(memoryHolder<double>& derivativeIn,
-memoryHolder<double>& virialIn,
+ memoryHolder<double>& virialIn,
  memoryHolder<double>& scalarIn,
  memoryHolder<unsigned>& pairListIn,
  memoryHolder<double>& memoryHelperV,
  memoryHolder<double>& memoryHelperS,
- cudaStream_t streamVirial,
- cudaStream_t streamScalar,
+ const cudaStream_t streamVirial,
+ const cudaStream_t streamScalar,
  unsigned N, unsigned nat,
  unsigned maxNumThreads
 ){
   //the memory is assigned swapped because it will be swapped at each loop iteration
-  memoryHolder<double>* reduceScalarIn= &memoryHelperS;
-  memoryHolder<double>* reduceSOut =&scalarIn;
+  memoryHolder<double>* reduceScalarIn = &scalarIn;
+  memoryHolder<double>* reduceSOut = &memoryHelperS;
 
-  memoryHolder<double>* reduceVirialIn= &memoryHelperV;
-  memoryHolder<double>* reduceVirialOut =&virialIn;
+  memoryHolder<double>* reduceVirialIn = &virialIn;
+  memoryHolder<double>* reduceVirialOut = &memoryHelperV;
   
   auto dim = nat*3;
-  vdbg("InNVectors");
-  
+    
   bool first=true;
   DVS toret(nat);
   while(N>1){
     size_t runningThreads = decideThreadsPerBlock(N,maxNumThreads);
-    std::swap(reduceVirialIn,reduceVirialOut);
-    std::swap(reduceScalarIn,reduceSOut);
     unsigned ngroupsS=getIdealGroups(N, runningThreads);
     
     reduceVirialOut->resize(9* ngroupsS);
@@ -624,18 +596,18 @@ memoryHolder<double>& virialIn,
       callReductionND (reduceVirialIn->pointer(), reduceVirialOut->pointer(),
         N, ngroupsVirial, runningThreads, streamVirial);
     }
-    if (ngroupsS==1){
+    if (ngroupsS==1)
       reduceVirialOut->copyFromCuda(&toret.virial[0][0],streamVirial);
-    }
+    
     callReduction1D (reduceScalarIn->pointer(), reduceSOut->pointer(),
       N, ngroupsS, runningThreads,streamScalar);
-    if (ngroupsS==1){
+    if (ngroupsS==1)
       reduceSOut->copyFromCuda(&toret.scalar,streamScalar);
-    }
+    
+    std::swap(reduceVirialIn,reduceVirialOut);
+    std::swap(reduceScalarIn,reduceSOut);
     first=false;
-    vdbg(N);
     N=ngroupsS;
-    vdbg(N);
   }
   return toret;
 }
