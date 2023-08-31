@@ -142,6 +142,7 @@ class CudaCoordination : public Colvar {
   cudaStream_t streamDerivatives;
   cudaStream_t streamVirial;
   cudaStream_t streamCoordination;
+  cusparseDnVecDescr_t outVecDescr;
   unsigned maxNumThreads=512;
   SwitchingFunction switchingFunction;
   rationalSwitchParameters switchingParameters;
@@ -172,6 +173,11 @@ void CudaCoordination::setUpPermanentGPUMemory(){
   const unsigned nn=nl->size();
   cudaPairList.resize(2*nn);
   cudaPairList.copyToCuda(pairList.data());
+  reductionMemoryDerivatives.resize(3*nat);
+  cusparseCreateDnVec(&outVecDescr,
+                    3*nat,
+                    reductionMemoryDerivatives.pointer(),
+                    CUDA_R_64F);
 }
 
 void CudaCoordination::prepare() {
@@ -209,7 +215,7 @@ void CudaCoordination::registerKeywords( Keywords& keys ) {
 //these constant will be used within the kernels
 __constant__ double cu_epsilon;
 
-__device__ double pcuda_fastpow(double base,int expo) {
+__device__ double pcuda_fastpow(double base, int expo) {
   if(expo<0) {
     expo=-expo;
     base=1.0/base;
@@ -225,7 +231,7 @@ __device__ double pcuda_fastpow(double base,int expo) {
   return result;
 }
 
-__device__ double pcuda_Rational(double rdist,double&dfunc,int NN, int MM) {
+__device__ double pcuda_Rational(const double rdist,int NN, int MM,double&dfunc) {
   double result;
   if(2*NN==MM) {
 // if 2*N==M, then (1.0-rdist^N)/(1.0-rdist^M) = 1.0/(1.0+rdist^N)
@@ -250,14 +256,15 @@ __device__ double pcuda_Rational(double rdist,double&dfunc,int NN, int MM) {
   return result;
 }
 
-__global__ void getpcuda_Rational(double *rdists,double *dfunc,int NN, int MM,
+__global__ void getpcuda_Rational(const double *rdists,const int NN, const int MM,
+    double *dfunc,
     double*res) {
   const int i = threadIdx.x + blockIdx.x * blockDim.x;
   if(rdists[i]<=0.) {
     res[i]=1.;
     dfunc[i]=0.0;
   }else{
-  res[i]=pcuda_Rational(rdists[i],dfunc[i],NN,MM);
+  res[i]=pcuda_Rational(rdists[i],NN,MM,dfunc[i]);
   }
   //printf("CUDA: %i :: d=%f -> %f, %f\n", i,rdists[i],res[i],dfunc[i]);
 }
@@ -363,7 +370,7 @@ CudaCoordination::CudaCoordination(const ActionOptions&ao):
       cudaMalloc(&sc, 2*sizeof(double));
       cudaMemcpy(inputsc, inputs.data(), 2* sizeof(double),
                 cudaMemcpyHostToDevice);
-      getpcuda_Rational<<<1,2>>>(inputsc,dummy,nn_,mm_,sc);
+      getpcuda_Rational<<<1,2>>>(inputsc,nn_,mm_,dummy,sc);
       std::vector<double> s = {0.0,0.0};
       cudaMemcpy(s.data(), sc, 2* sizeof(double),
                 cudaMemcpyDeviceToHost);
@@ -394,15 +401,18 @@ CudaCoordination::~CudaCoordination(){
    cudaStreamDestroy(streamDerivatives);
    cudaStreamDestroy(streamVirial);
    cudaStreamDestroy(streamCoordination);
+   cusparseDestroyDnVec(outVecDescr);
    cusparseDestroy(sparseMDevHandle);
 }
 
-__device__ double calculateSqr(double distancesq, double& dfunc , rationalSwitchParameters switchingParameters) {
+__device__ double calculateSqr(const double distancesq,
+    const rationalSwitchParameters switchingParameters,
+    double& dfunc) {
   double result=0.0;
   dfunc=0.0;
   if(distancesq<switchingParameters.dmaxSQ) {
     const double rdist_2 = distancesq*switchingParameters.invr0_2;
-    result=pcuda_Rational(rdist_2,dfunc,switchingParameters.nn/2,switchingParameters.mm/2);
+    result=pcuda_Rational(rdist_2,switchingParameters.nn/2,switchingParameters.mm/2,dfunc);
     // chain rule:
     dfunc*=2*switchingParameters.invr0_2;
     // cu_stretch:
@@ -422,12 +432,12 @@ __device__ double calculateSqr(double distancesq, double& dfunc , rationalSwitch
 #define Zd(I) i+ (2 +I*3 )* numOfPairs
 __global__ void getCoord(
                         const unsigned numOfPairs,
-                        rationalSwitchParameters switchingParameters,
-                        double *coordinates,
-                        unsigned *pairList,
+                        const rationalSwitchParameters switchingParameters,
+                        const double *coordinates,
+                        const unsigned *pairList,
                         double *ncoordOut,
-                        double *ddOut,
-                        double *ddOut_sparse,
+                        double *ddOut,//will be used for the virial
+                        double *ddOut_sparse,//will be used for the derivatives
                         int64_t *sparseRows,
                         int64_t *sparseCols,
                         double* ones
@@ -452,7 +462,7 @@ __global__ void getCoord(
 
   double dsq=(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
   double dfunc=0.;
-  ncoordOut[i]= calculateSqr(dsq,dfunc,switchingParameters);
+  ncoordOut[i]= calculateSqr(dsq,switchingParameters, dfunc);
 
   ddOut[i] = d[0];
   ddOut[i + 1 * numOfPairs] = d[1];
@@ -487,29 +497,21 @@ void CudaCoordination::calculate() {
   const unsigned nn=nl->size();
   
   constexpr unsigned nthreads=512;
-  // nextpw2 will be set up when the reduction will be done on the CPU
-  //note nn shoudl be 1/2 pX($1)airList.size()
-    //the occupancy MUST be set up correctly
-  
+    
   unsigned ngroups=ceil(double(nn)/nthreads);
 
   /****************allocating the memory on the GPU****************/
   cudaCoords.copyToCuda(&positions[0][0]);
   
   ones.resize(nn);
-  reductionMemoryDerivatives.resize(3*nat);  
   cudaCoordination.resize(nn);  
-  cudaDerivatives.resize(nn *4);
-  cudaDerivatives_sparse.resize(nn *6);
-  cudaVirial.resize(nn*9);
-  cudaDerivatives_sparserow.resize(nn*6);
+  cudaDerivatives.resize(nn * 4);
+  //cudaVirial.resize(nn * 9);//it will be eventually updated in the reduceDVS function
+
+  cudaDerivatives_sparse.resize(nn * 6);
+  cudaDerivatives_sparserow.resize(nn * 6);
   cudaDerivatives_sparsecols.resize(nn);
-  cusparseSpMatDescr_t spMatDescr;
-  cusparseDnVecDescr_t dnVecDescr;
-  cusparseDnVecDescr_t outVecDescr;
-  //CUDAHELPERS::memoryHolder<double> reductionMemory;
-  //cudaMemset(cudaDerivatives.pointer(),0,nn *3*sizeof(double));
-  //cudaMemset(cudaVirial.pointer(),0,nn *9*sizeof(double));
+  
   /****************starting the calculations****************/
   getCoord<<<ngroups,nthreads>>> (nn,switchingParameters,
     cudaCoords.pointer(),
@@ -521,16 +523,14 @@ void CudaCoordination::calculate() {
     cudaDerivatives_sparsecols.pointer(),
     ones.pointer()
     );
-    
-    cusparseCreateDnVec(&dnVecDescr,
-                    nn,
-                    ones.pointer(),
-                    CUDA_R_64F);
-    cusparseCreateDnVec(&outVecDescr,
-                    3*nat,
-                    reductionMemoryDerivatives.pointer(),
-                    CUDA_R_64F);
-    cusparseCreateCsc(&spMatDescr,
+  cusparseSpMatDescr_t spMatDescr;
+  cusparseDnVecDescr_t dnVecDescr;
+  cusparseCreateDnVec(&dnVecDescr,
+                  nn,
+                  ones.pointer(),
+                  CUDA_R_64F);
+  
+  cusparseCreateCsc(&spMatDescr,
                   getPositions().size() * 3,
                   nn,
                   nn*6,
@@ -541,25 +541,30 @@ void CudaCoordination::calculate() {
                   CUSPARSE_INDEX_64I,
                   CUSPARSE_INDEX_BASE_ZERO,
                   CUDA_R_64F);
-  /*
-  //the order of caclulating deriv virial and ncoord is thinked to limit the 
-  //resizing of reductionMemory
-  std::vector<Vector> deriv = 
-   CUDAHELPERS::reduceNVectors(cudaDerivatives,reductionMemory,nn,nat,512);
-
-  Tensor virial=CUDAHELPERS::reduceTensor(
-    //cudaVirial.pointer(),
-    cudaVirial,reductionMemory,
-    nn,512);
-  
-
-  //std::vector<double> coordsToSUM(nn);
-  //cudaMemcpy(coordsToSUM.data(), cudaCoordination, nn*sizeof(double), cudaMemcpyDeviceToHost);
-  //double ncoord=std::accumulate(coordsToSUM.begin(),coordsToSUM.end(),0.0);
-  double ncoord = CUDAHELPERS::reduceScalar(cudaCoordination//.pointer(),
-  , reductionMemory, nn,512);
-*/
-
+  double one=1.0;
+  double zero=0.0;
+  size_t bufferSize = 0;
+  cusparseSpMV_bufferSize( sparseMDevHandle,
+                        CUSPARSE_OPERATION_NON_TRANSPOSE,
+                        &one,
+                        spMatDescr,
+                        dnVecDescr,
+                        &zero,
+                        outVecDescr,
+                        CUDA_R_64F,
+                        CUSPARSE_SPMV_ALG_DEFAULT,//may be improved
+                        &bufferSize);
+bufferDerivatives.resize(bufferSize);
+cusparseSpMV( sparseMDevHandle,
+                        CUSPARSE_OPERATION_NON_TRANSPOSE,
+                        &one,
+                        spMatDescr,
+                        dnVecDescr,
+                        &zero,
+                        outVecDescr,
+                        CUDA_R_64F,
+                        CUSPARSE_SPMV_ALG_DEFAULT,//may be improved
+                        bufferDerivatives.pointer());
   CUDAHELPERS::DVS ret = CUDAHELPERS::reduceDVS(
     cudaDerivatives,
     cudaVirial,
@@ -572,37 +577,13 @@ void CudaCoordination::calculate() {
     nn,nat,
     maxNumThreads
   );
-  double one=1.0;
-  double zero=0.0;
-  size_t bufferSize = 0;
-cusparseSpMV_bufferSize(          sparseMDevHandle,
-                        CUSPARSE_OPERATION_NON_TRANSPOSE,
-                        &one,
-                        spMatDescr,  // non-const descriptor supported
-                        dnVecDescr,  // non-const descriptor supported
-                        &zero,
-                        outVecDescr,
-                        CUDA_R_64F,
-                        CUSPARSE_SPMV_ALG_DEFAULT,//may be improved
-                        &bufferSize);
-bufferDerivatives.resize(bufferSize);
-cusparseSpMV(          sparseMDevHandle,
-                        CUSPARSE_OPERATION_NON_TRANSPOSE,
-                        &one,
-                        spMatDescr,  // non-const descriptor supported
-                        dnVecDescr,  // non-const descriptor supported
-                        &zero,
-                        outVecDescr,
-                        CUDA_R_64F,
-                        CUSPARSE_SPMV_ALG_DEFAULT,//may be improved
-                        bufferDerivatives.pointer());
-    
+  
   //cusparseDnVecGetValues(outVecDescr,**void); returns reductionMemoryDerivatives.pointer()
    
   reductionMemoryDerivatives.copyFromCuda(&ret.deriv[0][0]);
   cusparseDestroySpMat(spMatDescr);
   cusparseDestroyDnVec(dnVecDescr);
-  cusparseDestroyDnVec(outVecDescr);
+  
   for(unsigned i=0; i<ret.deriv.size(); ++i) {
     setAtomsDerivatives(i,ret.deriv[i]);
   }
