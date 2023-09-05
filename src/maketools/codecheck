@@ -34,7 +34,7 @@ if [ $do_cppcheck == true ] ; then
   else
     files="$(echo */*.{h,cpp})"
   fi
-  cppcheck --std=c++11 -j 4 --platform=unix64 --language=c++ \
+  cppcheck --std=c++17 -j 4 --platform=unix64 --language=c++ \
   -U__GNUG__ -U__PLUMED_HAS_EXTERNAL_LAPACK -U__PLUMED_HAS_EXTERNAL_BLAS \
   -UGMX_CYGWIN  -UF77_NO_UNDERSCORE -U_GLIBCXX_DEBUG -DNDEBUG -U__PLUMED_PBC_WHILE  \
   -U__PLUMED_HAS_ASMJIT \

@@ -25,10 +25,7 @@
 #include "PlumedMain.h"
 #include "ActionSet.h"
 #include <iostream>
-#ifdef __PLUMED_HAS_CREGEX
-#include <cstring>
-#include <regex.h>
-#endif
+#include <regex>
 
 namespace PLMD {
 
@@ -70,65 +67,28 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
       unsigned l=c[i].length();
       if(!c[i].compare(l-1,1,")")) {
         // start regex parsing
-#ifdef __PLUMED_HAS_CREGEX
+        bool found_something=false;
         // take the string enclosed in quotes and put in round brackets
         std::string myregex=c[i];
-        //log<<"  Evaluating regexp for this action: "<<myregex<<"\n";
-
-        regex_t reg; // regular expression
-
-        int errcode=regcomp(&reg, myregex.c_str(),REG_EXTENDED|REG_NEWLINE); // compile the regular expression
-        if(errcode) {
-          // one can check the errors asking to regerror
-          size_t errbuf_size = regerror(errcode, &reg, NULL, 0);
-          std::vector<char> errbuf(errbuf_size);
-          regerror(errcode, &reg, errbuf.data(), errbuf_size);
-          plumed_error()<<"Error parsing regular expression: "<<errbuf.data();
-        }
-
-        // call regfree when reg goes out of scope
-        auto deleter=[](regex_t* r) { regfree(r); };
-        std::unique_ptr<regex_t,decltype(deleter)> reg_deleter(&reg,deleter);
-
-        plumed_massert(reg.re_nsub==1,"I can parse with only one subexpression");
-        regmatch_t match;
-        // select all the actions that have a value
         std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
         if( all.empty() ) error("your input file is not telling plumed to calculate anything");
-        bool found_something=false;
-        for(unsigned j=0; j<all.size(); j++) {
-          std::vector<std::string> ss=all[j]->getComponentsVector();
-          for(unsigned  k=0; k<ss.size(); ++k) {
-            unsigned ll=std::strlen(ss[k].c_str())+1;
-            std::vector<char> str(ll);
-            std::strcpy(&str[0],ss[k].c_str());
-            const char *ppstr=&str[0];
-            if(!regexec(&reg, ppstr, reg.re_nsub, &match, 0)) {
-              //log.printf("  Something matched with \"%s\" : ",ss[k].c_str());
-              do {
-                if (match.rm_so != -1) {	/* The regex is matching part of a string */
-                  size_t matchlen = match.rm_eo - match.rm_so;
-                  std::vector<char> submatch(matchlen+1);
-                  std::strncpy(submatch.data(), ppstr+match.rm_so, matchlen+1);
-                  submatch[matchlen]='\0';
-                  //log.printf("  subpattern %s\n", submatch.data());
-                  // this is the match: try to see if it is a valid action
-                  std::string putativeVal(submatch.data());
-                  if( all[j]->exists(putativeVal) ) {
-                    arg.push_back(all[j]->copyOutput(putativeVal));
-                    found_something=true;
-                    //log.printf("  Action %s added! \n",putativeVal.c_str());
-                  }
-                }
-                ppstr += match.rm_eo;	/* Restart from last match */
-              } while(!regexec(&reg,ppstr,reg.re_nsub,&match,0));
+
+        try {
+          std::regex txt_regex(myregex,std::regex::extended);
+          plumed_massert(txt_regex.mark_count()==1,"I can parse with only one subexpression");
+          for(unsigned j=0; j<all.size(); j++) {
+            std::vector<std::string> ss=all[j]->getComponentsVector();
+            for(unsigned  k=0; k<ss.size(); ++k) {
+              if(std::regex_match(ss[k],txt_regex)) {
+                arg.push_back(all[j]->copyOutput(ss[k]));
+                found_something=true;
+              }
             }
           }
+        } catch(std::regex_error & e) {
+          plumed_error()<<"Error parsing regular expression: "<<e.what();
         }
         if(!found_something) plumed_error()<<"There isn't any action matching your regex " << myregex;
-#else
-        plumed_merror("Regexp support not compiled!");
-#endif
       } else {
         plumed_merror("did you want to use regexp to input arguments? enclose it between two round braces (...) with no spaces!");
       }

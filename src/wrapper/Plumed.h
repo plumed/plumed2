@@ -1683,6 +1683,7 @@ __PLUMED_WRAPPER_EXTERN_C_END /*}*/
 #include <future> /* future_category */
 #include <memory> /* bad_weak_ptr */
 #include <functional> /* bad_function_call */
+#include <regex> /* regex_error */
 #endif
 
 #if __cplusplus > 199711L
@@ -1777,6 +1778,21 @@ private:
 #endif
         f(::std::ios_base::failure(msg));
       }
+#if __cplusplus > 199711L && __PLUMED_WRAPPER_LIBCXX11
+      if(h.code==10240) f(add_buffer_to< ::std::regex_error>(::std::regex_error(::std::regex_constants::error_collate),msg));
+      if(h.code==10241) f(add_buffer_to< ::std::regex_error>(::std::regex_error(::std::regex_constants::error_ctype),msg));
+      if(h.code==10242) f(add_buffer_to< ::std::regex_error>(::std::regex_error(::std::regex_constants::error_escape),msg));
+      if(h.code==10243) f(add_buffer_to< ::std::regex_error>(::std::regex_error(::std::regex_constants::error_backref),msg));
+      if(h.code==10244) f(add_buffer_to< ::std::regex_error>(::std::regex_error(::std::regex_constants::error_brack),msg));
+      if(h.code==10245) f(add_buffer_to< ::std::regex_error>(::std::regex_error(::std::regex_constants::error_paren),msg));
+      if(h.code==10246) f(add_buffer_to< ::std::regex_error>(::std::regex_error(::std::regex_constants::error_brace),msg));
+      if(h.code==10247) f(add_buffer_to< ::std::regex_error>(::std::regex_error(::std::regex_constants::error_badbrace),msg));
+      if(h.code==10248) f(add_buffer_to< ::std::regex_error>(::std::regex_error(::std::regex_constants::error_range),msg));
+      if(h.code==10249) f(add_buffer_to< ::std::regex_error>(::std::regex_error(::std::regex_constants::error_space),msg));
+      if(h.code==10250) f(add_buffer_to< ::std::regex_error>(::std::regex_error(::std::regex_constants::error_badrepeat),msg));
+      if(h.code==10251) f(add_buffer_to< ::std::regex_error>(::std::regex_error(::std::regex_constants::error_complexity),msg));
+      if(h.code==10252) f(add_buffer_to< ::std::regex_error>(::std::regex_error(::std::regex_constants::error_stack),msg));
+#endif
       f(::std::runtime_error(msg));
     }
     /* "bad" errors */
@@ -2090,25 +2106,35 @@ private:
   class add_buffer_to:
     public T
   {
-    char msg[__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER]; \
-  public:
-    __PLUMED_WRAPPER_CXX_EXPLICIT add_buffer_to(const char * msg) __PLUMED_WRAPPER_CXX_NOEXCEPT {
+    char msg[__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER];
+    void init(const char* msg) __PLUMED_WRAPPER_CXX_NOEXCEPT {
       this->msg[0]='\0';
       __PLUMED_WRAPPER_STD strncat(this->msg,msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1);
       this->msg[__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1]='\0';
       if(PlumedGetenvExceptionsDebug() && __PLUMED_WRAPPER_STD strlen(msg) > __PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1) __PLUMED_WRAPPER_STD fprintf(stderr,"+++ WARNING: message will be truncated\n");
     }
-    add_buffer_to(const add_buffer_to & other) __PLUMED_WRAPPER_CXX_NOEXCEPT {
-      msg[0]='\0';
-      __PLUMED_WRAPPER_STD memcpy(msg,other.msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER);
+  public:
+    __PLUMED_WRAPPER_CXX_EXPLICIT add_buffer_to(const char * msg) __PLUMED_WRAPPER_CXX_NOEXCEPT {
+      init(msg);
+    }
+  add_buffer_to(const T& base,const char * msg) __PLUMED_WRAPPER_CXX_NOEXCEPT:
+    T(base)
+    {
+      init(msg);
+    }
+  add_buffer_to(const add_buffer_to & other) __PLUMED_WRAPPER_CXX_NOEXCEPT:
+    T(other)
+    {
+      init(other.msg);
     }
     add_buffer_to & operator=(const add_buffer_to & other) __PLUMED_WRAPPER_CXX_NOEXCEPT {
       if(this==&other) return *this;
-      msg[0]='\0';
-      __PLUMED_WRAPPER_STD memcpy(msg,other.msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER);
+      init(other.msg);
       return *this;
     }
-    const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {return msg;}
+    const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {
+      return msg;
+    }
 #if ! (__cplusplus > 199711L)
     /* Destructor should be declared in order to have the correct throw() before C++11 */
     /* see https://stackoverflow.com/questions/50025862/why-is-the-stdexception-destructor-not-noexcept */

@@ -1,8 +1,6 @@
-#ifdef __PLUMED_LIBCXX11
 // In order to correctly catch the thrown C++11 exceptions,
 // we notify the Plumed wrapper that those exceptions are recognized by the compiler.
 #define __PLUMED_WRAPPER_LIBCXX11 1
-#endif
 #include "plumed/tools/Stopwatch.h"
 #include "plumed/wrapper/Plumed.h"
 #include <fstream>
@@ -166,17 +164,27 @@ int main(){
 
 #define TEST_STD_NOMSG(type) try { p.cmd("throw", #type);} catch (type & e ) { }
     TEST_STD_NOMSG(std::bad_cast);
-#ifdef __PLUMED_LIBCXX11
     TEST_STD_NOMSG(std::bad_weak_ptr);
     TEST_STD_NOMSG(std::bad_function_call);
-#endif
     TEST_STD_NOMSG(std::bad_typeid);
     TEST_STD_NOMSG(std::bad_alloc);
-#ifdef __PLUMED_LIBCXX11
     TEST_STD_NOMSG(std::bad_array_new_length);
-#endif
     TEST_STD_NOMSG(std::bad_exception);
 
+#define TEST_REGEX(type) try { p.cmd("throw", "std::regex_error std::regex_constants::error_" #type);} catch (std::regex_error & e) { plumed_assert(e.code()==std::regex_constants::error_ ##type); }
+    TEST_REGEX(collate);
+    TEST_REGEX(ctype);
+    TEST_REGEX(escape);
+    TEST_REGEX(backref);
+    TEST_REGEX(brack);
+    TEST_REGEX(paren);
+    TEST_REGEX(brace);
+    TEST_REGEX(badbrace);
+    TEST_REGEX(range);
+    TEST_REGEX(space);
+    TEST_REGEX(badrepeat);
+    TEST_REGEX(complexity);
+    TEST_REGEX(stack);
 
     try { p.cmd("throw","PLMD::Exception msg"); } catch (PLMD::Plumed::Exception &e) {
     }
@@ -187,7 +195,6 @@ int main(){
     try { p.cmd("throw","PLMD::lepton::Exception msg"); } catch (PLMD::Plumed::LeptonException &e) {
       plumed_assert(std::string(e.what())=="PLMD::lepton::Exception msg");
     }
-#ifdef __PLUMED_LIBCXX11
     try { p.cmd("throw","std::system_error std::generic_category 100"); } catch (std::system_error & e) {
       plumed_assert(e.code().value()==100)<<" value="<<e.code().value();
       plumed_assert(e.code().category()==std::generic_category());
@@ -204,7 +211,6 @@ int main(){
       plumed_assert(e.code().value()==400);
       plumed_assert(e.code().category()==std::future_category());
     }
-#endif
     try { p.cmd("throw","std::ios_base::failure"); } catch (std::ios_base::failure & e) {
     }
 
