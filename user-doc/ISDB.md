@@ -10,8 +10,6 @@ reference: \cite Bonomi:2017cc
 
 The ISDB module contains collective variables, functions and biases originally developed for Integrative Structural and Dynamical Biology. They are related but not limited to the interpretation and modelling of experimental data in molecular modelling.
 
-\section Installation
-
 Some of the functionalities implemented in the ISDB module require the PyTorch C++ APIs (LibTorch) to be linked against PLUMED.
 Currently, these include:
 
