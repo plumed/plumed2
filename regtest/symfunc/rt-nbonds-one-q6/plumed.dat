@@ -3,7 +3,7 @@ q6: Q6 SPECIES=1-64 D_0=3.0 R_0=1.5 NN=12 MEAN
 # Create a normalising matrix
 q6_uones: ONES SIZE=26
 q6_nmat: OUTER_PRODUCT ARG=q6_norm,q6_uones
-udata6: VSTACK ARG=q6_rm-n6,q6_im-n6,q6_rm-n5,q6_im-n5,q6_rm-n4,q6_im-n4,q6_rm-n3,q6_im-n3,q6_rm-n2,q6_im-n2,q6_rm-n1,q6_im-n1,q6_rm-0,q6_im-0,q6_rm-p1,q6_im-p1,q6_rm-p2,q6_im-p2,q6_rm-p3,q6_im-p3,q6_rm-p4,q6_im-p4,q6_rm-p5,q6_im-p5,q6_rm-p6,q6_im-p6
+udata6: VSTACK ARG=q6_sp.*
 data6: CUSTOM ARG=udata6,q6_nmat FUNC=x/y PERIODIC=NO
 data6T: TRANSPOSE ARG=data6 
 

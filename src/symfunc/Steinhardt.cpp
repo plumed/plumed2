@@ -304,14 +304,10 @@ ActionShortcut(ao)
   std::string size; Tools::convert( (av->copyOutput(0))->getShape()[1], size );
   readInputLine( getShortcutLabel() + "_denom_ones: ONES SIZE=" + size );
   readInputLine( getShortcutLabel() + "_denom: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_mat.w," + getShortcutLabel() + "_denom_ones" );
-  std::string snum; Tools::convert( -l, snum ); std::string arg2=getShortcutLabel() + "_denom_ones," + getShortcutLabel() + "_denom_ones"; 
-  for(int i=-l; i<=l; ++i) {
-      snum = getSymbol(i ); 
-      readInputLine( getShortcutLabel() + "_rm-" + snum + ": MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_sh.rm-" + snum + "," + getShortcutLabel() + "_denom_ones" );
-      readInputLine( getShortcutLabel() + "_im-" + snum + ": MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_sh.im-" + snum + "," + getShortcutLabel() + "_denom_ones" );
-  }
+  readInputLine( getShortcutLabel() + "_sp: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_sh.*," + getShortcutLabel() + "_denom_ones");
 
   // If we are doing VMEAN determine sum of vector components
+  std::string snum;
   bool do_vmean; parseFlag("VMEAN",do_vmean);
   bool do_vsum; parseFlag("VSUM",do_vsum);
   if( do_vmean || do_vsum ) {
@@ -319,9 +315,9 @@ ActionShortcut(ao)
     for(int i=-l; i<=l; ++i) {
       snum = getSymbol( i );
       // Real part
-      readInputLine( getShortcutLabel() + "_rmn-" + snum + ": CUSTOM ARG=" + getShortcutLabel() + "_rm-" + snum + "," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+      readInputLine( getShortcutLabel() + "_rmn-" + snum + ": CUSTOM ARG=" + getShortcutLabel() + "_sp.rm-" + snum + "," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
       // Imaginary part
-      readInputLine( getShortcutLabel() + "_imn-" + snum + ": CUSTOM ARG=" + getShortcutLabel() + "_im-" + snum + "," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+      readInputLine( getShortcutLabel() + "_imn-" + snum + ": CUSTOM ARG=" + getShortcutLabel() + "_sp.im-" + snum + "," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
     }
   }
 
@@ -349,7 +345,7 @@ ActionShortcut(ao)
   }
 
   // Now calculate the total length of the vector
-  createVectorNormInput( getShortcutLabel(), getShortcutLabel() + "_norm", l, "_", "m" );
+  createVectorNormInput( getShortcutLabel() + "_sp", getShortcutLabel() + "_norm", l, ".", "m" );
   // And take average
   readInputLine( getShortcutLabel() + "_anorm: CUSTOM ARG=" + getShortcutLabel() + "_norm," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
   multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel() + "_anorm", "", this );

@@ -1,31 +1,31 @@
 q6: Q6 SPECIES=1-64 SWITCH={RATIONAL D_0=3.0 R_0=1.5}
 
-q6_rmn-n6: CUSTOM ARG=q6_rm-n6,q6_denom FUNC=x/y PERIODIC=NO
-q6_imn-n6: CUSTOM ARG=q6_im-n6,q6_denom FUNC=x/y PERIODIC=NO
-q6_rmn-n5: CUSTOM ARG=q6_rm-n5,q6_denom FUNC=x/y PERIODIC=NO
-q6_imn-n5: CUSTOM ARG=q6_im-n5,q6_denom FUNC=x/y PERIODIC=NO
-q6_rmn-n4: CUSTOM ARG=q6_rm-n4,q6_denom FUNC=x/y PERIODIC=NO
-q6_imn-n4: CUSTOM ARG=q6_im-n4,q6_denom FUNC=x/y PERIODIC=NO
-q6_rmn-n3: CUSTOM ARG=q6_rm-n3,q6_denom FUNC=x/y PERIODIC=NO
-q6_imn-n3: CUSTOM ARG=q6_im-n3,q6_denom FUNC=x/y PERIODIC=NO
-q6_rmn-n2: CUSTOM ARG=q6_rm-n2,q6_denom FUNC=x/y PERIODIC=NO
-q6_imn-n2: CUSTOM ARG=q6_im-n2,q6_denom FUNC=x/y PERIODIC=NO
-q6_rmn-n1: CUSTOM ARG=q6_rm-n1,q6_denom FUNC=x/y PERIODIC=NO
-q6_imn-n1: CUSTOM ARG=q6_im-n1,q6_denom FUNC=x/y PERIODIC=NO
-q6_rmn-0: CUSTOM ARG=q6_rm-0,q6_denom FUNC=x/y PERIODIC=NO
-q6_imn-0: CUSTOM ARG=q6_im-0,q6_denom FUNC=x/y PERIODIC=NO
-q6_rmn-p1: CUSTOM ARG=q6_rm-p1,q6_denom FUNC=x/y PERIODIC=NO
-q6_imn-p1: CUSTOM ARG=q6_im-p1,q6_denom FUNC=x/y PERIODIC=NO
-q6_rmn-p2: CUSTOM ARG=q6_rm-p2,q6_denom FUNC=x/y PERIODIC=NO
-q6_imn-p2: CUSTOM ARG=q6_im-p2,q6_denom FUNC=x/y PERIODIC=NO
-q6_rmn-p3: CUSTOM ARG=q6_rm-p3,q6_denom FUNC=x/y PERIODIC=NO
-q6_imn-p3: CUSTOM ARG=q6_im-p3,q6_denom FUNC=x/y PERIODIC=NO
-q6_rmn-p4: CUSTOM ARG=q6_rm-p4,q6_denom FUNC=x/y PERIODIC=NO
-q6_imn-p4: CUSTOM ARG=q6_im-p4,q6_denom FUNC=x/y PERIODIC=NO
-q6_rmn-p5: CUSTOM ARG=q6_rm-p5,q6_denom FUNC=x/y PERIODIC=NO
-q6_imn-p5: CUSTOM ARG=q6_im-p5,q6_denom FUNC=x/y PERIODIC=NO
-q6_rmn-p6: CUSTOM ARG=q6_rm-p6,q6_denom FUNC=x/y PERIODIC=NO
-q6_imn-p6: CUSTOM ARG=q6_im-p6,q6_denom FUNC=x/y PERIODIC=NO
+q6_rmn-n6: CUSTOM ARG=q6_sp.rm-n6,q6_denom FUNC=x/y PERIODIC=NO
+q6_imn-n6: CUSTOM ARG=q6_sp.im-n6,q6_denom FUNC=x/y PERIODIC=NO
+q6_rmn-n5: CUSTOM ARG=q6_sp.rm-n5,q6_denom FUNC=x/y PERIODIC=NO
+q6_imn-n5: CUSTOM ARG=q6_sp.im-n5,q6_denom FUNC=x/y PERIODIC=NO
+q6_rmn-n4: CUSTOM ARG=q6_sp.rm-n4,q6_denom FUNC=x/y PERIODIC=NO
+q6_imn-n4: CUSTOM ARG=q6_sp.im-n4,q6_denom FUNC=x/y PERIODIC=NO
+q6_rmn-n3: CUSTOM ARG=q6_sp.rm-n3,q6_denom FUNC=x/y PERIODIC=NO
+q6_imn-n3: CUSTOM ARG=q6_sp.im-n3,q6_denom FUNC=x/y PERIODIC=NO
+q6_rmn-n2: CUSTOM ARG=q6_sp.rm-n2,q6_denom FUNC=x/y PERIODIC=NO
+q6_imn-n2: CUSTOM ARG=q6_sp.im-n2,q6_denom FUNC=x/y PERIODIC=NO
+q6_rmn-n1: CUSTOM ARG=q6_sp.rm-n1,q6_denom FUNC=x/y PERIODIC=NO
+q6_imn-n1: CUSTOM ARG=q6_sp.im-n1,q6_denom FUNC=x/y PERIODIC=NO
+q6_rmn-0: CUSTOM ARG=q6_sp.rm-0,q6_denom FUNC=x/y PERIODIC=NO
+q6_imn-0: CUSTOM ARG=q6_sp.im-0,q6_denom FUNC=x/y PERIODIC=NO
+q6_rmn-p1: CUSTOM ARG=q6_sp.rm-p1,q6_denom FUNC=x/y PERIODIC=NO
+q6_imn-p1: CUSTOM ARG=q6_sp.im-p1,q6_denom FUNC=x/y PERIODIC=NO
+q6_rmn-p2: CUSTOM ARG=q6_sp.rm-p2,q6_denom FUNC=x/y PERIODIC=NO
+q6_imn-p2: CUSTOM ARG=q6_sp.im-p2,q6_denom FUNC=x/y PERIODIC=NO
+q6_rmn-p3: CUSTOM ARG=q6_sp.rm-p3,q6_denom FUNC=x/y PERIODIC=NO
+q6_imn-p3: CUSTOM ARG=q6_sp.im-p3,q6_denom FUNC=x/y PERIODIC=NO
+q6_rmn-p4: CUSTOM ARG=q6_sp.rm-p4,q6_denom FUNC=x/y PERIODIC=NO
+q6_imn-p4: CUSTOM ARG=q6_sp.im-p4,q6_denom FUNC=x/y PERIODIC=NO
+q6_rmn-p5: CUSTOM ARG=q6_sp.rm-p5,q6_denom FUNC=x/y PERIODIC=NO
+q6_imn-p5: CUSTOM ARG=q6_sp.im-p5,q6_denom FUNC=x/y PERIODIC=NO
+q6_rmn-p6: CUSTOM ARG=q6_sp.rm-p6,q6_denom FUNC=x/y PERIODIC=NO
+q6_imn-p6: CUSTOM ARG=q6_sp.im-p6,q6_denom FUNC=x/y PERIODIC=NO
 
 # Create a matrix to hold all the data
 data6: VSTACK ARG=q6_rmn-n6,q6_imn-n6,q6_rmn-n5,q6_imn-n5,q6_rmn-n4,q6_imn-n4,q6_rmn-n3,q6_imn-n3,q6_rmn-n2,q6_imn-n2,q6_rmn-n1,q6_imn-n1,q6_rmn-0,q6_imn-0,q6_rmn-p1,q6_imn-p1,q6_rmn-p2,q6_imn-p2,q6_rmn-p3,q6_imn-p3,q6_rmn-p4,q6_imn-p4,q6_rmn-p5,q6_imn-p5,q6_rmn-p6,q6_imn-p6

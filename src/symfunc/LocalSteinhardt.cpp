@@ -298,10 +298,10 @@ std::string LocalSteinhardt::getSymbol( const int& m ) const {
 
 std::string LocalSteinhardt::getArgsForStack( const int& l, const std::string& sp_lab ) const {
   std::string numstr; Tools::convert( l, numstr );  
-  std::string data_mat = " ARG=" + sp_lab + "_rm-n" + numstr + "," + sp_lab + "_im-n" + numstr;
+  std::string data_mat = " ARG=" + sp_lab + "_sp.rm-n" + numstr + "," + sp_lab + "_sp.im-n" + numstr;
   for(int i=-l+1; i<=l; ++i) { 
       numstr = getSymbol( i );
-      data_mat += "," + sp_lab + "_rm-" + numstr + "," + sp_lab + "_im-" + numstr; 
+      data_mat += "," + sp_lab + "_sp.rm-" + numstr + "," + sp_lab + "_sp.im-" + numstr; 
   }   
   return data_mat;
 }

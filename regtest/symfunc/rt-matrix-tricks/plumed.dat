@@ -1,23 +1,23 @@
 q4: Q4 SPECIES=1-64 D_0=3.0 R_0=1.5 NN=12 MEAN
 
-nq4_rm-n4: CUSTOM ARG=q4_rm-n4,q4_norm FUNC=x/y PERIODIC=NO
-nq4_im-n4: CUSTOM ARG=q4_im-n4,q4_norm FUNC=x/y PERIODIC=NO
-nq4_rm-n3: CUSTOM ARG=q4_rm-n3,q4_norm FUNC=x/y PERIODIC=NO
-nq4_im-n3: CUSTOM ARG=q4_im-n3,q4_norm FUNC=x/y PERIODIC=NO
-nq4_rm-n2: CUSTOM ARG=q4_rm-n2,q4_norm FUNC=x/y PERIODIC=NO
-nq4_im-n2: CUSTOM ARG=q4_im-n2,q4_norm FUNC=x/y PERIODIC=NO
-nq4_rm-n1: CUSTOM ARG=q4_rm-n1,q4_norm FUNC=x/y PERIODIC=NO
-nq4_im-n1: CUSTOM ARG=q4_im-n1,q4_norm FUNC=x/y PERIODIC=NO
-nq4_rm-0: CUSTOM ARG=q4_rm-0,q4_norm FUNC=x/y PERIODIC=NO
-nq4_im-0: CUSTOM ARG=q4_im-0,q4_norm FUNC=x/y PERIODIC=NO
-nq4_rm-p1: CUSTOM ARG=q4_rm-p1,q4_norm FUNC=x/y PERIODIC=NO
-nq4_im-p1: CUSTOM ARG=q4_im-p1,q4_norm FUNC=x/y PERIODIC=NO
-nq4_rm-p2: CUSTOM ARG=q4_rm-p2,q4_norm FUNC=x/y PERIODIC=NO
-nq4_im-p2: CUSTOM ARG=q4_im-p2,q4_norm FUNC=x/y PERIODIC=NO
-nq4_rm-p3: CUSTOM ARG=q4_rm-p3,q4_norm FUNC=x/y PERIODIC=NO
-nq4_im-p3: CUSTOM ARG=q4_im-p3,q4_norm FUNC=x/y PERIODIC=NO
-nq4_rm-p4: CUSTOM ARG=q4_rm-p4,q4_norm FUNC=x/y PERIODIC=NO
-nq4_im-p4: CUSTOM ARG=q4_im-p4,q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-n4: CUSTOM ARG=q4_sp.rm-n4,q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-n4: CUSTOM ARG=q4_sp.im-n4,q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-n3: CUSTOM ARG=q4_sp.rm-n3,q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-n3: CUSTOM ARG=q4_sp.im-n3,q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-n2: CUSTOM ARG=q4_sp.rm-n2,q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-n2: CUSTOM ARG=q4_sp.im-n2,q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-n1: CUSTOM ARG=q4_sp.rm-n1,q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-n1: CUSTOM ARG=q4_sp.im-n1,q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-0: CUSTOM ARG=q4_sp.rm-0,q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-0: CUSTOM ARG=q4_sp.im-0,q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-p1: CUSTOM ARG=q4_sp.rm-p1,q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-p1: CUSTOM ARG=q4_sp.im-p1,q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-p2: CUSTOM ARG=q4_sp.rm-p2,q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-p2: CUSTOM ARG=q4_sp.im-p2,q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-p3: CUSTOM ARG=q4_sp.rm-p3,q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-p3: CUSTOM ARG=q4_sp.im-p3,q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-p4: CUSTOM ARG=q4_sp.rm-p4,q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-p4: CUSTOM ARG=q4_sp.im-p4,q4_norm FUNC=x/y PERIODIC=NO
 
 data4: VSTACK ARG=nq4_rm-n4,nq4_im-n4,nq4_rm-n3,nq4_im-n3,nq4_rm-n2,nq4_im-n2,nq4_rm-n1,nq4_im-n1,nq4_rm-0,nq4_im-0,nq4_rm-p1,nq4_im-p1,nq4_rm-p2,nq4_im-p2,nq4_rm-p3,nq4_im-p3,nq4_rm-p4,nq4_im-p4
 

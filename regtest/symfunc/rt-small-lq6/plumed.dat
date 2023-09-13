@@ -1,8 +1,8 @@
 q1a: Q1 SPECIESA=1 SPECIESB=2-64 D_0=3.0 R_0=1.5 NN=12 SUM
 q1b: Q1 SPECIESA=2 SPECIESB=1,3-64 D_0=3.0 R_0=1.5 NN=12 SUM
 
-ddA: VSTACK ARG=q1a_rm-n1,q1a_im-n1,q1a_rm-0,q1a_im-0,q1a_rm-p1,q1a_im-p1
-ddBT: VSTACK ARG=q1b_rm-n1,q1b_im-n1,q1b_rm-0,q1b_im-0,q1b_rm-p1,q1b_im-p1
+ddA: VSTACK ARG=q1a_sp.rm-n1,q1a_sp.im-n1,q1a_sp.rm-0,q1a_sp.im-0,q1a_sp.rm-p1,q1a_sp.im-p1
+ddBT: VSTACK ARG=q1b_sp.rm-n1,q1b_sp.im-n1,q1b_sp.rm-0,q1b_sp.im-0,q1b_sp.rm-p1,q1b_sp.im-p1
 ddB: TRANSPOSE ARG=ddBT
 
 con: CONTACT_MATRIX GROUPA=q1a GROUPB=q1b SWITCH={RATIONAL R_0=4}

@@ -27,9 +27,8 @@ namespace adjmat {
 
 class MatrixTimesVector : public ActionWithMatrix {
 private:
-  bool stored_matrix;
-  bool stored_vector;
   unsigned nderivatives;
+  std::vector<bool> stored_arg;
 public:
   static void registerKeywords( Keywords& keys );
   explicit MatrixTimesVector(const ActionOptions&);
@@ -46,23 +45,64 @@ PLUMED_REGISTER_ACTION(MatrixTimesVector,"MATRIX_VECTOR_PRODUCT")
 
 void MatrixTimesVector::registerKeywords( Keywords& keys ) {
   ActionWithMatrix::registerKeywords(keys); keys.use("ARG");
+  ActionWithValue::useCustomisableComponents(keys);
 }
 
 MatrixTimesVector::MatrixTimesVector(const ActionOptions&ao):
 Action(ao),
 ActionWithMatrix(ao)
 {
-  if( getNumberOfArguments()!=2 ) error("should be two arguments to this action, a matrix and a vector");
-  if( getPntrToArgument(0)->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) error("first argument to this action should be a matrix");
-  if( getPntrToArgument(1)->getRank()!=1 || getPntrToArgument(1)->hasDerivatives() ) error("first argument to this action should be a vector");
-  if( getPntrToArgument(0)->getShape()[1]!=getPntrToArgument(1)->getShape()[0] ) error("number of columns in input matrix does not equal number of elements in vector");
-  std::vector<unsigned> shape(1); shape[0]=getPntrToArgument(0)->getShape()[0]; addValue( shape ); setNotPeriodic();
-  ActionWithVector* av=dynamic_cast<ActionWithVector*>( getPntrToArgument(0)->getPntrToAction() ); getPntrToArgument(1)->buildDataStore();
-  if( av ) done_in_chain=canBeAfterInChain( av ); 
-  nderivatives = buildArgumentStore(0);
-  std::string headstr=getFirstActionInChain()->getLabel();
-  stored_matrix = getPntrToArgument(0)->ignoreStoredValue( headstr );
-  stored_vector = getPntrToArgument(1)->ignoreStoredValue( headstr );
+  if( getNumberOfArguments()<2 ) error("Not enough arguments specified"); 
+  unsigned nvectors=0, nmatrices=0;
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      if( getPntrToArgument(i)->hasDerivatives() ) error("arguments should be vectors or matrices");
+      if( getPntrToArgument(i)->getRank()==1 ) nvectors++;
+      if( getPntrToArgument(i)->getRank()==2 ) nmatrices++; 
+  }
+
+  std::vector<unsigned> shape(1); shape[0]=getPntrToArgument(0)->getShape()[0];
+  if( nvectors==1 ) {
+      unsigned n = getNumberOfArguments()-1;
+      for(unsigned i=0; i<n; ++i) { 
+          if( getPntrToArgument(i)->getRank()!=2 || getPntrToArgument(i)->hasDerivatives() ) error("all arguments other than last argument should be matrices");
+          if( getPntrToArgument(i)->getShape()[1]!=getPntrToArgument(n)->getShape()[0] ) error("number of columns in input matrix does not equal number of elements in vector");
+      }
+      if( getPntrToArgument(n)->getRank()!=1 || getPntrToArgument(n)->hasDerivatives() ) error("last argument to this action should be a vector");
+      getPntrToArgument(n)->buildDataStore();
+
+      ActionWithVector* av=dynamic_cast<ActionWithVector*>( getPntrToArgument(0)->getPntrToAction() );
+      if( av ) done_in_chain=canBeAfterInChain( av ); 
+
+      if( getNumberOfArguments()==2 ) {
+          addValue( shape ); setNotPeriodic();
+      } else {
+          for(unsigned i=0; i<getNumberOfArguments()-1; ++i) {
+              std::string name = getPntrToArgument(i)->getName(); 
+              if( name.find_first_of(".")!=std::string::npos ) { std::size_t dot=name.find_first_of("."); name = name.substr(dot+1); }
+              addComponent( name, shape ); componentIsNotPeriodic( name );
+          }
+      }
+  } else if( nmatrices==1 ) {
+      if( getPntrToArgument(0)->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) error("first argument to this action should be a matrix");
+      for(unsigned i=1; i<getNumberOfArguments(); ++i) { 
+          if( getPntrToArgument(i)->getRank()!=1 || getPntrToArgument(i)->hasDerivatives() ) error("all arguments other than first argument should be vectors");
+          if( getPntrToArgument(0)->getShape()[1]!=getPntrToArgument(i)->getShape()[0] ) error("number of columns in input matrix does not equal number of elements in vector");
+          getPntrToArgument(i)->buildDataStore();
+      }
+ 
+      ActionWithVector* av=dynamic_cast<ActionWithVector*>( getPntrToArgument(0)->getPntrToAction() );
+      if( av ) done_in_chain=canBeAfterInChain( av ); 
+
+      for(unsigned i=1; i<getNumberOfArguments(); ++i) {
+          std::string name = getPntrToArgument(i)->getName();
+          if( name.find_first_of(".")!=std::string::npos ) { std::size_t dot=name.find_first_of("."); name = name.substr(dot+1); }
+          addComponent( name, shape ); componentIsNotPeriodic( name );
+      }
+  } else error("You should either have one vector or one matrix in input");
+
+  nderivatives = buildArgumentStore(0); 
+  std::string headstr=getFirstActionInChain()->getLabel(); stored_arg.resize( getNumberOfArguments() );
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) stored_arg[i] = getPntrToArgument(i)->ignoreStoredValue( headstr ); 
 }
 
 unsigned MatrixTimesVector::getNumberOfDerivatives() {
@@ -77,27 +117,55 @@ void MatrixTimesVector::setupForTask( const unsigned& task_index, std::vector<un
 }
 
 void MatrixTimesVector::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
-  unsigned ostrn = getConstPntrToComponent(0)->getPositionInStream(), ind2=index2;
-  if( index2>=getPntrToArgument(0)->getShape()[0] ) ind2 = index2 - getPntrToArgument(0)->getShape()[0];
-  double matval = getElementOfMatrixArgument( 0, index1, ind2, myvals ), vecval=getArgumentElement( 1, ind2, myvals ); 
-  // And add this part of the product
-  myvals.addValue( ostrn, matval*vecval );
-  // Now lets work out the derivatives
-  if( doNotCalculateDerivatives() ) return;
-  addDerivativeOnMatrixArgument( stored_matrix, 0, 0, index1, ind2, vecval, myvals ); addDerivativeOnVectorArgument( stored_vector, 0, 1, ind2, matval, myvals );
+  unsigned ind2 = index2; if( index2>=getPntrToArgument(0)->getShape()[0] ) ind2 = index2 - getPntrToArgument(0)->getShape()[0];
+  if( getPntrToArgument(1)->getRank()==1 ) {
+      for(unsigned i=0; i<getNumberOfArguments()-1; ++i) {
+          unsigned ostrn = getConstPntrToComponent(i)->getPositionInStream();
+          double matval = getElementOfMatrixArgument( 0, index1, ind2, myvals ), vecval=getArgumentElement( i+1, ind2, myvals );
+          // And add this part of the product
+          myvals.addValue( ostrn, matval*vecval );
+          // Now lets work out the derivatives
+          if( doNotCalculateDerivatives() ) continue;
+          addDerivativeOnMatrixArgument( stored_arg[0], i, 0, index1, ind2, vecval, myvals ); addDerivativeOnVectorArgument( stored_arg[i+1], i, i+1, ind2, matval, myvals );
+      } 
+  } else {
+      unsigned n=getNumberOfArguments()-1;
+      for(unsigned i=0; i<getNumberOfArguments()-1; ++i) {
+          unsigned ostrn = getConstPntrToComponent(i)->getPositionInStream(); 
+          double matval = getElementOfMatrixArgument( i, index1, ind2, myvals ), vecval=getArgumentElement( n, ind2, myvals );
+          // And add this part of the product
+          myvals.addValue( ostrn, matval*vecval );
+          // Now lets work out the derivatives
+          if( doNotCalculateDerivatives() ) continue;
+          addDerivativeOnMatrixArgument( stored_arg[i], i, i, index1, ind2, vecval, myvals ); addDerivativeOnVectorArgument( stored_arg[n], i, n, ind2, matval, myvals );
+      }  
+  }
 }
 
 void MatrixTimesVector::runEndOfRowJobs( const unsigned& ind, const std::vector<unsigned> & indices, MultiValue& myvals ) const {
   if( doNotCalculateDerivatives() || !actionInChain() ) return ;
-  unsigned ostrn = getConstPntrToComponent(0)->getPositionInStream();
-  unsigned istrn = getPntrToArgument(0)->getPositionInMatrixStash();
-  std::vector<unsigned>& mat_indices( myvals.getMatrixRowDerivativeIndices( istrn ) );
-  for(unsigned i=0; i<myvals.getNumberOfMatrixRowDerivatives(istrn); ++i) myvals.updateIndex( ostrn, mat_indices[i] );
+
+  if( getPntrToArgument(1)->getRank()==1 ) {
+      unsigned istrn = getPntrToArgument(0)->getPositionInMatrixStash();
+      std::vector<unsigned>& mat_indices( myvals.getMatrixRowDerivativeIndices( istrn ) );
+      for(unsigned j=0; j<getNumberOfComponents(); ++j) {
+          unsigned ostrn = getConstPntrToComponent(j)->getPositionInStream();
+          for(unsigned i=0; i<myvals.getNumberOfMatrixRowDerivatives(istrn); ++i) myvals.updateIndex( ostrn, mat_indices[i] );
+      }
+  } else {
+      for(unsigned j=0; j<getNumberOfComponents(); ++j) {
+          unsigned istrn = getPntrToArgument(j)->getPositionInMatrixStash();
+          unsigned ostrn = getConstPntrToComponent(j)->getPositionInStream();
+          std::vector<unsigned>& mat_indices( myvals.getMatrixRowDerivativeIndices( istrn ) );
+          for(unsigned i=0; i<myvals.getNumberOfMatrixRowDerivatives(istrn); ++i) myvals.updateIndex( ostrn, mat_indices[i] );
+      }
+  }
 }
 
 void MatrixTimesVector::updateAdditionalIndices( const unsigned& ostrn, MultiValue& myvals ) const {
-  unsigned nvals = getPntrToArgument(1)->getNumberOfValues();
-  for(unsigned i=0; i<nvals; ++i) myvals.updateIndex( ostrn, arg_deriv_starts[1] + i );
+  unsigned n = getNumberOfArguments()-1; if( getPntrToArgument(1)->getRank()==1 ) n = 1; 
+  unsigned nvals = getPntrToArgument(n)->getNumberOfValues();
+  for(unsigned i=0; i<nvals; ++i) myvals.updateIndex( ostrn, arg_deriv_starts[n] + i );
 }
 
 }
