@@ -23,6 +23,7 @@
 #include "ActionWithValue.h"
 #include "ActionAtomistic.h"
 #include "ActionForInterface.h"
+#include "ActionWithVector.h"
 #include "ActionWithVirtualAtom.h"
 #include "ActionShortcut.h"
 #include "tools/PDB.h"
@@ -366,7 +367,10 @@ bool ActionWithArguments::calculateConstantValues( const bool& haveatoms ) {
   bool constant = true, atoms=false;
   for(unsigned i=0; i<arguments.size(); ++i) {
     ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>( arguments[i]->getPntrToAction() );
-    if( aa ) { atoms=true; }
+    if( aa ) { 
+        ActionWithVector* av=dynamic_cast<ActionWithVector*>( arguments[i]->getPntrToAction() );
+        if( !av || aa->getNumberOfAtoms()>0 ) atoms=true; 
+    }
     if( !arguments[i]->isConstant() ) { constant=false; break; }
   }
   if( constant ) {

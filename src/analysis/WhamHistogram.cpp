@@ -20,6 +20,8 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionShortcut.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
 #include "core/ActionRegister.h"
 
 namespace PLMD {
@@ -97,25 +99,33 @@ WhamHistogram::WhamHistogram( const ActionOptions& ao ) :
   Action(ao),
   ActionShortcut(ao)
 {
-  // Input for REWEIGHT_WHAM
-  std::string rew_line = getShortcutLabel() + "_weights: REWEIGHT_WHAM";
-  std::string bias; parse("BIAS",bias); rew_line += " ARG=" + bias;
-  std::string temp; parse("TEMP",temp); rew_line += " TEMP=" + temp;
-  readInputLine( rew_line );
+  // Input for collection of weights for WHAM
+  std::string bias; parse("BIAS",bias); 
+  std::string stride; parse("STRIDE",stride); 
+  // Input for GATHER_REPLICAS
+  readInputLine( getShortcutLabel() + "_gather: GATHER_REPLICAS ARG=" + bias );
+  // Put all the replicas in a single vector
+  readInputLine( getShortcutLabel() + "_gatherv: CONCATENATE ARG=" + getShortcutLabel() + "_gather.*");
   // Input for COLLECT_FRAMES
-  std::string col_line = getShortcutLabel() + "_collect: COLLECT_FRAMES LOGWEIGHTS=" + getShortcutLabel() + "_weights";
-  std::string stride; parse("STRIDE",stride); col_line += " STRIDE=" + stride;
-  std::string arg; parse("ARG",arg); col_line += " ARG=" + arg;
-  readInputLine( col_line );
+  readInputLine( getShortcutLabel() + "_collect: COLLECT ARG=" + getShortcutLabel() + "_gatherv STRIDE=" + stride);
+  // Input for WHAM
+  std::string temp, tempstr=""; parse("TEMP",temp); if( temp.length()>0 ) tempstr="TEMP=" + temp;
+  readInputLine( getShortcutLabel() + "_wham: WHAM ARG=" + getShortcutLabel() + "_collect " + tempstr );
+  // Input for COLLECT_FRAMES
+  std::vector<std::string> args; parseVector("ARG",args);std::string argstr;
+  for(unsigned i=0; i<args.size(); ++i) {
+      readInputLine( getShortcutLabel() + "_data_" + args[i] + ": COLLECT ARG=" + args[i] );
+      if( i==0 ) argstr = " ARG="; else argstr += ",";
+      argstr += getShortcutLabel() + "_data_" + args[i];
+  }
   // Input for HISTOGRAM
-  std::string histo_line = getShortcutLabel() + ": HISTOGRAM ARG=" + getShortcutLabel() + "_collect.*";
+  std::string histo_line, bw=""; parse("BANDWIDTH",bw);
+  if( bw!="" ) histo_line += " BANDWIDTH=" + bw;
+  else histo_line += " KERNEL=DISCRETE";
   std::string min; parse("GRID_MIN",min); histo_line += " GRID_MIN=" + min;
   std::string max; parse("GRID_MAX",max); histo_line += " GRID_MAX=" + max;
   std::string bin; parse("GRID_BIN",bin); histo_line += " GRID_BIN=" + bin;
-  std::string bw=""; parse("BANDWIDTH",bw);
-  if( bw!="" ) histo_line += " BANDWIDTH=" + bw;
-  else histo_line += " KERNEL=DISCRETE";
-  readInputLine( histo_line );
+  readInputLine( getShortcutLabel() + ": KDE " + argstr + " HEIGHTS=" + getShortcutLabel() + "_wham" + histo_line );
 }
 
 }

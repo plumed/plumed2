@@ -66,17 +66,22 @@ ActionShortcut::ActionShortcut(const ActionOptions&ao):
 
 void ActionShortcut::readInputLine( const std::string& input ) {
   std::string f_input = input; savedInputLines.push_back( input );
-  if( update_from!=std::numeric_limits<double>::max() ) {
-    std::string ufrom; Tools::convert( update_from, ufrom ); f_input += " UPDATE_FROM=" + ufrom;
-  }
-  if( update_until!=std::numeric_limits<double>::max() ) {
-    std::string util; Tools::convert( update_until, util ); f_input += " UPDATE_UNTIL=" + util;
-  }
   if( keywords.exists("RESTART") ) {
     if( restart ) f_input += " RESTART=YES";
     if( !restart ) f_input += " RESTART=NO";
   }
   plumed.readInputLine( f_input );
+}
+
+std::string ActionShortcut::getUpdateLimits() const {
+  std::string f_input="";
+  if( update_from!=std::numeric_limits<double>::max() ) {
+    std::string ufrom; Tools::convert( update_from, ufrom ); f_input += " UPDATE_FROM=" + ufrom;
+  }   
+  if( update_until!=std::numeric_limits<double>::max() ) {
+    std::string util; Tools::convert( update_until, util ); f_input += " UPDATE_UNTIL=" + util;
+  } 
+  return f_input;
 }
 
 const std::string & ActionShortcut::getShortcutLabel() const {

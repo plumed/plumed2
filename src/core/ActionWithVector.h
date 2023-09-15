@@ -94,6 +94,8 @@ protected:
   std::vector<unsigned> arg_deriv_starts;
 /// Assert if this action is part of a chain
   bool done_in_chain;
+/// This updates whether or not we are using all the task reduction stuff
+  void updateTaskListReductionStatus();
 /// Run all calculations in serial
   bool runInSerial() const ;
 /// Get the list of tasks that are active
@@ -156,6 +158,8 @@ public:
   virtual void gatherProcesses( std::vector<double>& buffer );
 /// Gather the values that we intend to store in the buffer
   virtual void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals, const unsigned& bufstart, std::vector<double>& buffer ) const ;
+/// Get the force tasks that are active for this action
+  virtual void updateForceTasksFromValue( const Value* myval, std::vector<unsigned>& force_tasks ) const ;
 /// Check if there is a force that needs to be accumulated on the ith task
   virtual bool checkForTaskForce( const unsigned& itask, const Value* myval ) const ;
 /// Gather the forces on a particular value

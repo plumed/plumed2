@@ -215,7 +215,7 @@ void FunctionOfVector<T>::performTask( const unsigned& current, MultiValue& myva
       for(unsigned j=0;j<args.size();++j) {
           unsigned istrn = getPntrToArgument(argstart+j)->getPositionInStream();
           if( stored_arguments[j] ) { 
-              unsigned task_index = myvals.getTaskIndex();
+              unsigned task_index = myvals.getTaskIndex(); if( getPntrToArgument(argstart+j)->getRank()==0 ) task_index=0;
               myvals.addDerivative( istrn, task_index, 1.0 ); myvals.updateIndex( istrn, task_index ); 
           }
           unsigned arg_deriv_s = arg_deriv_starts[argstart+j];

@@ -36,6 +36,8 @@ friend class ActionSet;
 private:
   std::string shortcutlabel;
   std::vector<std::string> savedInputLines;
+protected:
+  std::string getUpdateLimits() const ;
 public:
   const std::string & getShortcutLabel() const ;
   static void registerKeywords( Keywords& keys );

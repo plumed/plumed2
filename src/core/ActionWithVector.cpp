@@ -249,12 +249,16 @@ bool ActionWithVector::addActionToChain( const std::vector<std::string>& alabels
           if( !av1->canBeAfterInChain( av2 ) ) error("must calculate " + mylabels[j] + " before " + mylabels[i] );
       }
   }
-  action_to_do_after=act; act->action_to_do_before=this; ActionWithVector* head = getFirstActionInChain();
-  std::vector<ActionWithVector*> task_reducing_actions; head->canReduceTasks( task_reducing_actions );
-  if( task_reducing_actions.size()>0 ) head->reduce_tasks=true; 
-  head->broadcastThatTasksAreReduced( head );
-  head->finishChainBuild( act );
+  action_to_do_after=act; act->action_to_do_before=this; updateTaskListReductionStatus(); 
+  ActionWithVector* head = getFirstActionInChain(); 
+  head->broadcastThatTasksAreReduced( head ); head->finishChainBuild( act );
   return true;
+}
+
+void ActionWithVector::updateTaskListReductionStatus() {
+  ActionWithVector* head = getFirstActionInChain();
+  std::vector<ActionWithVector*> task_reducing_actions; head->canReduceTasks( task_reducing_actions );
+  if( task_reducing_actions.size()>0 ) head->reduce_tasks=true;
 }
 
 void ActionWithVector::broadcastThatTasksAreReduced( ActionWithVector* aselect ) {
@@ -379,7 +383,7 @@ void ActionWithVector::runAllTasks() {
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
   if(serial) { stride=1; rank=0; }
-        
+
   // Get the list of active tasks
   std::vector<unsigned> & partialTaskList( getListOfActiveTasks( this ) );
   unsigned nactive_tasks=partialTaskList.size();
@@ -444,7 +448,7 @@ void ActionWithVector::gatherProcesses( std::vector<double>& buffer ) {
 bool ActionWithVector::checkForGrids( unsigned& nder ) const {
   for(int i=0; i<getNumberOfComponents(); ++i) {
     if( getConstPntrToComponent(i)->getRank()>0 && getConstPntrToComponent(i)->hasDerivatives() ) {
-        nder=getConstPntrToComponent(i)->getRank(); return true;
+        nder=getConstPntrToComponent(i)->getNumberOfGridDerivatives(); return true;
     }
   }
   if( action_to_do_after ) return action_to_do_after->checkForGrids(nder);
@@ -465,9 +469,9 @@ void ActionWithVector::getNumberOfTasks( unsigned& ntasks ) {
       if( getPntrToComponent(i)->getRank()==0 ) { 
           if( getNumberOfArguments()!=1 ) error("mismatched numbers of tasks in streamed quantities");
           if( getPntrToArgument(0)->hasDerivatives() && ntasks!=getPntrToArgument(0)->getNumberOfValues() ) error("mismatched numbers of tasks in streamed quantities");
-          else if ( ntasks!=getPntrToArgument(0)->getShape()[0] ) error("mismatched numbers of tasks in streamed quantities");
+          else if ( !getPntrToArgument(0)->hasDerivatives() && ntasks!=getPntrToArgument(0)->getShape()[0] ) error("mismatched numbers of tasks in streamed quantities");
       } else if( getPntrToComponent(i)->hasDerivatives() && ntasks!=getPntrToComponent(i)->getNumberOfValues() ) error("mismatched numbers of tasks in streamed quantities");
-      else if( ntasks!=getPntrToComponent(i)->getShape()[0] ) error("mismatched numbers of tasks in streamed quantities");
+      else if( !getPntrToComponent(i)->hasDerivatives() && ntasks!=getPntrToComponent(i)->getShape()[0] ) error("mismatched numbers of tasks in streamed quantities");
   }
   if( action_to_do_after ) action_to_do_after->getNumberOfTasks( ntasks );
 }
@@ -569,7 +573,7 @@ void ActionWithVector::finishComputations( const std::vector<double>& buf ) {
       if( (getPntrToComponent(i)->getRank()>0 && getPntrToComponent(i)->hasDerivatives()) || getPntrToComponent(i)->storedata ) {
         unsigned sz_v = getPntrToComponent(i)->data.size();
         for(unsigned j=0; j<sz_v; ++j) { 
-            plumed_dbg_assert( bufstart+j<buf.size() ); 
+            plumed_dbg_assert( bufstart+j<buf.size() );
             getPntrToComponent(i)->add( j, buf[bufstart+j] ); 
         }
       // Make sure single values are set
@@ -658,17 +662,20 @@ bool ActionWithVector::checkForTaskForce( const unsigned& itask, const Value* my
   return fabs(myval->getForce(itask))>epsilon;
 } 
 
+void ActionWithVector::updateForceTasksFromValue( const Value* myval, std::vector<unsigned>& force_tasks ) const {
+  if( myval->getRank()>0 && myval->forcesWereAdded() ) {
+      unsigned nt = myval->getNumberOfValues();
+      if( !myval->hasDerivatives() ) nt = myval->getShape()[0];
+      for(unsigned i=0; i<nt; ++i) {
+          if( checkForTaskForce(i, myval) ) force_tasks.push_back( i );
+      }
+  }
+}
+
 void ActionWithVector::getForceTasks( std::vector<unsigned>& force_tasks ) const {
   if( isActive() && checkComponentsForForce() ) {
       for(unsigned k=0; k<values.size(); ++k) {
-          const Value* myval=getConstPntrToComponent(k);
-          if( myval->getRank()>0 && myval->forcesWereAdded() ) {
-              unsigned nt = myval->getNumberOfValues();
-              if( !myval->hasDerivatives() ) nt = myval->getShape()[0];
-              for(unsigned i=0; i<nt; ++i) {
-                  if( checkForTaskForce(i, myval) ) force_tasks.push_back( i );
-              }
-          }
+          updateForceTasksFromValue( getConstPntrToComponent(k), force_tasks );
       }
   }
   if( action_to_do_after ) action_to_do_after->getForceTasks( force_tasks );

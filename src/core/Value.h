@@ -144,7 +144,7 @@ public:
 /// Set the number of derivatives
   void resizeDerivatives(int n);
 /// Set all the derivatives to zero
-  void clearDerivatives();
+  void clearDerivatives( const bool force=false );
 /// Add some derivative to the ith component of the derivatives array
   void addDerivative(unsigned i,double d);
 /// Set the value of the ith component of the derivatives array
@@ -232,6 +232,16 @@ public:
   bool isSymmetric() const ;
 /// Retrieve the non-zero edges in a matrix
   void retrieveEdgeList( unsigned& nedge, std::vector<std::pair<unsigned,unsigned> >& active, std::vector<double>& elems );
+/// Get the number of derivatives that the grid has
+  unsigned getNumberOfGridDerivatives() const ;
+/// get the derivative of a grid at a point n with resepct to argument j
+  double getGridDerivative(const unsigned& n, const unsigned& j ) const ;
+/// Add the derivatives of the grid to the corner
+  void addGridDerivatives( const unsigned& n, const unsigned& j, const double& val ); 
+/// Set the action to calculate on update
+  void setCalculateOnUpdate();
+/// Add another value to the end of the data vector held by this value.  This is used in COLLECT 
+  void push_back( const double& val );
 };
 
 void copy( const Value& val1, Value& val2 );
@@ -351,8 +361,8 @@ void Value::clearInputForce() {
 }
 
 inline
-void Value::clearDerivatives() {
-  if( constant || calcOnUpdate ) return;
+void Value::clearDerivatives( const bool force ) {
+  if( !force && (constant || calcOnUpdate) ) return;
   value_set=false;
   if( data.size()>1 ) std::fill(data.begin()+1, data.end(), 0);
 }
@@ -485,6 +495,23 @@ unsigned Value::getNumberOfColumns() const {
 inline
 bool Value::isSymmetric() const {
   return symmetric;
+}
+
+inline
+unsigned Value::getNumberOfGridDerivatives() const {
+  return ngrid_der;
+}
+
+inline
+double Value::getGridDerivative(const unsigned& n, const unsigned& j ) const {
+  plumed_dbg_assert( hasDeriv && n*(1+ngrid_der) + 1 + j < data.size() );
+  return data[n*(1+ngrid_der) + 1 + j];
+}
+
+inline
+void Value::addGridDerivatives( const unsigned& n, const unsigned& j, const double& val ) {
+  plumed_dbg_assert( hasDeriv && n*(1+ngrid_der) + 1 + j < data.size() );
+  data[n*(1+ngrid_der) + 1 + j] += val;
 }
 
 }

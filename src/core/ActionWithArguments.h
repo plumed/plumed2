@@ -87,7 +87,7 @@ public:
 /// Convert a list of argument names into a list of pointers to the values
   static void interpretArgumentList(const std::vector<std::string>& c, const ActionSet& as, Action* action, std::vector<Value*>&arg);
 /// Used to calculate constant values in startup
-  bool calculateConstantValues( const bool& have_atoms );
+  virtual bool calculateConstantValues( const bool& have_atoms );
 /// Get the gradient for this action
   void setGradients( Value* myval, unsigned& start ) const ;
 };

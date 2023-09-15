@@ -21,7 +21,8 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "ActionWithInputGrid.h"
+#include "EvaluateGridFunction.h"
+#include "ActionWithGrid.h"
 
 //+PLUMEDOC GRIDANALYSIS INTERPOLATE_GRID
 /*
@@ -50,62 +51,99 @@ DUMPGRID GRID=ii FILE=histo.dat
 namespace PLMD {
 namespace gridtools {
 
-class InterpolateGrid : public ActionWithInputGrid {
+class InterpolateGrid : public ActionWithGrid {
+private:
+  std::vector<unsigned> nbin;
+  std::vector<double> gspacing;
+  EvaluateGridFunction input_grid;
+  GridCoordinatesObject output_grid;
 public:
   static void registerKeywords( Keywords& keys );
   explicit InterpolateGrid(const ActionOptions&ao);
-  unsigned getNumberOfQuantities() const override;
-  void compute( const unsigned& current, MultiValue& myvals ) const override;
-  bool isPeriodic() override { return false; }
+  void setupOnFirstStep() override ;
+  unsigned getNumberOfDerivatives() override ;
+  const GridCoordinatesObject& getGridCoordinatesObject() const override ;
+  std::vector<std::string> getGridCoordinateNames() const override ;
+  void performTask( const unsigned& current, MultiValue& myvals ) const override ;
+  void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
+                          const unsigned& bufstart, std::vector<double>& buffer ) const ;
 };
 
 PLUMED_REGISTER_ACTION(InterpolateGrid,"INTERPOLATE_GRID")
 
 void InterpolateGrid::registerKeywords( Keywords& keys ) {
-  ActionWithInputGrid::registerKeywords( keys );
-  keys.add("optional","GRID_BIN","the number of bins for the grid");
+  ActionWithGrid::registerKeywords( keys );
+  keys.add("optional","GRID_BIN","the number of bins for the grid"); keys.use("ARG");
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
-  keys.remove("KERNEL"); keys.remove("BANDWIDTH");
+  EvaluateGridFunction ii; ii.registerKeywords( keys );
 }
 
 InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
   Action(ao),
-  ActionWithInputGrid(ao)
+  ActionWithGrid(ao)
 {
-  plumed_assert( ingrid->getNumberOfComponents()==1 );
-  if( ingrid->noDerivatives() ) error("cannot interpolate a grid that does not have derivatives");
-  // Create the input from the old string
-  auto grid=createGrid( "grid", "COMPONENTS=" + getLabel() + " " + ingrid->getInputString()  );
-  // notice that createGrid also sets mygrid=grid.get()
+  if( getNumberOfArguments()!=1 ) error("should only be one argument to this action");
+  if( getPntrToArgument(0)->getRank()==0 || !getPntrToArgument(0)->hasDerivatives() ) error("input to this action should be a grid");
 
-  std::vector<unsigned> nbin; parseVector("GRID_BIN",nbin);
-  std::vector<double> gspacing; parseVector("GRID_SPACING",gspacing);
-  if( nbin.size()!=ingrid->getDimension() && gspacing.size()!=ingrid->getDimension() ) {
-    error("GRID_BIN or GRID_SPACING must be set");
+  parseVector("GRID_BIN",nbin); parseVector("GRID_SPACING",gspacing); unsigned dimension = getPntrToArgument(0)->getRank();
+  if( nbin.size()!=dimension && gspacing.size()!=dimension ) error("MIDPOINTS, GRID_BIN or GRID_SPACING must be set");
+  if( nbin.size()==dimension ) {
+    log.printf("  number of bins in grid %d", nbin[0]);
+    for(unsigned i=1; i<nbin.size(); ++i) log.printf(", %d", nbin[i]);
+    log.printf("\n");
+  } else if( gspacing.size()==dimension ) {
+    log.printf("  spacing for bins in grid %f", gspacing[0]);
+    for(unsigned i=1; i<gspacing.size(); ++i) log.printf(", %d", gspacing[i]);
+    log.printf("\n");
   }
-
+  // Create the input grid
+  input_grid.read( this );
   // Need this for creation of tasks
-  grid->setBounds( ingrid->getMin(), ingrid->getMax(), nbin, gspacing );
-  setAveragingAction( std::move(grid), true );
+  output_grid.setup( "flat", input_grid.getPbc(), 0, 0.0 ); 
 
-  // Now create task list
-  for(unsigned i=0; i<mygrid->getNumberOfPoints(); ++i) addTaskToList(i);
-  // And activate all tasks
-  deactivateAllTasks();
-  for(unsigned i=0; i<mygrid->getNumberOfPoints(); ++i) taskFlags[i]=1;
-  lockContributors();
+  // Now add a value
+  std::vector<unsigned> shape( dimension, 1 );
+  addValueWithDerivatives( shape );
+
+  if( getPntrToArgument(0)->isPeriodic() ) {
+    std::string min, max; getPntrToArgument(0)->getDomain( min, max ); setPeriodic( min, max );
+  } else setNotPeriodic();
 }
 
-unsigned InterpolateGrid::getNumberOfQuantities() const {
-  return 2 + ingrid->getDimension();
+void InterpolateGrid::setupOnFirstStep() {
+  ActionWithGrid* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
+  plumed_assert( ag ); const GridCoordinatesObject& mygrid = ag->getGridCoordinatesObject();
+  input_grid.setup( this ); output_grid.setBounds( mygrid.getMin(), mygrid.getMax(), nbin, gspacing );
+  getPntrToComponent(0)->setShape( output_grid.getNbin(true) );
 }
 
-void InterpolateGrid::compute( const unsigned& current, MultiValue& myvals ) const {
-  std::vector<double> pos( mygrid->getDimension() ); mygrid->getGridPointCoordinates( current, pos );
-  std::vector<double> der( mygrid->getDimension() ); double val = getFunctionValueAndDerivatives( pos, der );
-  myvals.setValue( 0, 1.0 ); myvals.setValue(1, val );
-  for(unsigned i=0; i<mygrid->getDimension(); ++i) myvals.setValue( 2+i, der[i] );
+unsigned InterpolateGrid::getNumberOfDerivatives() {
+  return getPntrToArgument(0)->getRank();
 }
+
+const GridCoordinatesObject& InterpolateGrid::getGridCoordinatesObject() const {
+  return output_grid;
+}
+
+std::vector<std::string> InterpolateGrid::getGridCoordinateNames() const {
+  ActionWithGrid* ag = ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
+  plumed_assert( ag ); return ag->getGridCoordinateNames();
+}
+
+void InterpolateGrid::performTask( const unsigned& current, MultiValue& myvals ) const {
+  std::vector<double> pos( output_grid.getDimension() ); output_grid.getGridPointCoordinates( current, pos );
+  std::vector<double> val(1); Matrix<double> der( 1, output_grid.getDimension() ); input_grid.calc( this, pos, val, der );
+  unsigned ostrn = getConstPntrToComponent(0)->getPositionInStream(); myvals.setValue( ostrn, val[0] );
+  for(unsigned i=0; i<output_grid.getDimension(); ++i) { myvals.addDerivative( ostrn, i, der(0,i) ); myvals.updateIndex( ostrn, i ); }
+}
+
+void InterpolateGrid::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
+                                         const unsigned& bufstart, std::vector<double>& buffer ) const {
+  plumed_dbg_assert( valindex==0 ); unsigned ostrn = getConstPntrToComponent(0)->getPositionInStream();
+  unsigned istart = bufstart + (1+output_grid.getDimension())*code; buffer[istart] += myvals.get( ostrn ); 
+  for(unsigned i=0; i<output_grid.getDimension(); ++i) buffer[istart+1+i] += myvals.getDerivative( ostrn, i );
+}
+
 
 }
 }

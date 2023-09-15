@@ -109,7 +109,7 @@ VolumeInEnvelope::VolumeInEnvelope(const ActionOptions& ao):
 
   std::vector<double> pp(3,0.0); bandwidth.resize(3); parseVector("BANDWIDTH",bandwidth);
   log.printf("  using %s kernel with bandwidths %f %f %f \n",getKernelType().c_str(),bandwidth[0],bandwidth[1],bandwidth[2] );
-  std::string errors2; switchingFunction.set("GAUSSIAN R_0=1.0 NOSTRETCH RETURN_DERIV", errors2 );
+  std::string errors2; switchingFunction.set("GAUSSIAN R_0=1.0 NOSTRETCH", errors2 );
   if( errors2.length()!=0 ) error("problem reading switching function description " + errors2);
   double det=1; for(unsigned i=0; i<bandwidth.size(); ++i) det*=bandwidth[i]*bandwidth[i];
   gvol=1.0; if( getKernelType()=="gaussian" ) gvol=pow( 2*pi, 0.5*bandwidth.size() ) * pow( det, 0.5 );
@@ -136,11 +136,10 @@ double VolumeInEnvelope::calculateNumberInside( const Vector& cpos, Vector& deri
   auto pos_ptr=Tools::unique2raw(pos);
   for(unsigned i=1; i<natoms; ++i) {
     Vector dist = pbcDistance( cpos, getPosition( indices[i] ) );
-    double dval=0; for(unsigned j=0;j<3;++j) { der[j] = dist[j]/bandwidth[j]; dval += der[j]*der[j]; } 
-    double dfunc; value += switchingFunction.calculateSqr( dval, dfunc ) / gvol;
-    double tmp = dfunc / gvol, ddd = std::sqrt( dval ); 
+    double dval=0; for(unsigned j=0;j<3;++j) { der[j] = dist[j]/bandwidth[j]; dval += der[j]*der[j]; der[j] = der[j] / bandwidth[j]; } 
+    double dfunc; value += switchingFunction.calculateSqr( dval, dfunc ) / gvol; double tmp = dfunc / gvol; 
     for(unsigned j=0; j<3; ++j) {
-      derivatives[j] -= tmp*der[j] / ddd; refders[ indices[i] ][j] += tmp*der[j] / ddd; tder[j]=tmp*der[j] / ddd;
+      derivatives[j] -= tmp*der[j]; refders[ indices[i] ][j] += tmp*der[j]; tder[j]=tmp*der[j];
     }
     vir -= Tensor( tder, dist );
   }

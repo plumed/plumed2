@@ -23,12 +23,12 @@
 #define __PLUMED_gridtools_ActionWithInputGrid_h
 
 #include "core/ActionPilot.h"
-#include "ActionWithGrid.h"
+#include "OldActionWithGrid.h"
 
 namespace PLMD {
 namespace gridtools {
 
-class ActionWithInputGrid : public ActionWithGrid {
+class ActionWithInputGrid : public OldActionWithGrid {
   friend class DumpGrid;
 private:
   unsigned mycomp;

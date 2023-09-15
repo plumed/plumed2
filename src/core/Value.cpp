@@ -109,7 +109,9 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   inv_max_minus_min(0.0),
   derivativeIsZeroWhenValueIsZero(false)
 {
-  if( action ) storedata=action->getName()=="PUT";
+  if( action ) calcOnUpdate=(action->getName()=="ACCUMULATE" || action->getName()=="COLLECT");
+  if( action ) storedata=action->getName()=="PUT" || calcOnUpdate;
+  if( ss.size() && withderiv ) storedata=true;
   setShape( ss );
 }
 
@@ -119,13 +121,14 @@ void Value::setShape( const std::vector<unsigned>&ss ) {
 
   if( shape.size()>0 && hasDeriv ) {
     // This is for grids
-    std::size_t ndata = tot*action->getNumberOfDerivatives();
-    data.resize( ndata ); ngrid_der=action->getNumberOfDerivatives();
+    std::size_t ndata = tot*(1+action->getNumberOfDerivatives());
+    data.resize( ndata ); inputForce.resize( tot ); 
+    ngrid_der=action->getNumberOfDerivatives();
   } else if( shape.size()==0 ) {
     // This is for scalars
     data.resize(1); inputForce.resize(1);
   } else if( storedata && shape.size()<2 ) {
-    // This is for vectors and matrices
+    // This is for vectors (matrices have special version because we have sparse storage)
     data.resize( tot ); inputForce.resize( tot );
   }
 }
@@ -217,6 +220,11 @@ void Value::set(const std::size_t& n, const double& v ) {
   if( getRank()==0 ) { plumed_assert( n==0 ); data[n]=v; applyPeriodicity(n); }
   else if( !hasDeriv ) { plumed_dbg_massert( n<data.size(), "failing in " + getName() ); data[n]=v; applyPeriodicity(n); }
   else { data[n*(1+action->getNumberOfDerivatives())] = v; }
+}
+
+void Value::push_back( const double& v ) {
+  plumed_dbg_assert( shape.size()==1 );
+  value_set=true; data.push_back(v); shape[0]++;
 }
 
 double Value::get(const std::size_t& ival, const bool trueind) const {
@@ -357,6 +365,10 @@ void Value::print( OFile& ofile ) const {
 
 unsigned Value::getGoodNumThreads( const unsigned& j, const unsigned& k ) const {
   return OpenMP::getGoodNumThreads( &data[j], (k-j) );
+}
+
+void Value::setCalculateOnUpdate() {
+  calcOnUpdate=true;
 }
 
 void copy( const Value& val1, Value& val2 ) {

@@ -87,6 +87,8 @@ class SwitchingFunction {
   bool returnderiv=false;
 /// Set to true for fast rational functions (depending on x**2 only)
   bool fastrational=false;
+/// Set to true for kernel functions
+  bool fastgaussian=false;
 /// Set to true if lepton only uses x2
   bool leptonx2=false;
 public:

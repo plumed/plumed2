@@ -271,8 +271,9 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
 
   }
   else if(name=="EXP") type=exponential;
-  else if(name=="GAUSSIAN") type=gaussian;
-  else if(name=="CUBIC") type=cubic;
+  else if(name=="GAUSSIAN") {
+    type=gaussian; fastgaussian=(!returnderiv && r0==1.0 && d0==0.0 );
+  } else if(name=="CUBIC") type=cubic;
   else if(name=="TANH") type=tanh;
   else if(name=="COSINE"){ 
     type=cosine; dmax=r0+d0; dmax_2=dmax*dmax; dostretch=false;
@@ -417,6 +418,18 @@ double SwitchingFunction::calculateSqr(double distance2,double&dfunc)const {
     double result=do_rational(rdist_2,dfunc,nn/2,mm/2);
 // chain rule:
     dfunc*=2*invr0_2;
+// stretch:
+    result=result*stretch+shift;
+    dfunc*=stretch;
+    return result;
+  } else if( fastgaussian ) {
+    plumed_dbg_assert( !returnderiv );
+    if(distance2>dmax_2) { 
+      dfunc=0.0;
+      return 0.0;
+    }
+    double result = exp(-0.5*distance2);
+    dfunc = -result;
 // stretch:
     result=result*stretch+shift;
     dfunc*=stretch;

@@ -249,7 +249,7 @@ void Action::setupConstantValues( const bool& have_atoms ) {
     }
   }
   ActionWithArguments* aa = dynamic_cast<ActionWithArguments*>( this );
-  if(aa) never_activate = aa->calculateConstantValues( have_atoms );
+  if( aa && aa->getNumberOfArguments()>0 ) never_activate = aa->calculateConstantValues( have_atoms );
 }
 
 long long int Action::getStep()const {
