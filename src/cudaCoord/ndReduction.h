@@ -123,47 +123,22 @@ unsigned N, unsigned maxNumThreads);
   double reduceScalar(memoryHolder<double>& cudaScalarAddress,
  memoryHolder<double>& memoryHelper, unsigned N, unsigned maxNumThreads=512);
 
- struct VS{
-  Tensor virial;
-  double scalar;
-};
+void doReduction1D (double *inputArray,
+ double *outputArray,
+ const unsigned int len,
+ const unsigned blocks,
+ const unsigned nthreads,
+ cudaStream_t stream=0);
 
-/** @brief reduces the coordination, the derivatives and the virial from a coordination calculation
-  *  @param derivativeIn the 3 * N array to be reduced with the compontent sof the derivatives
-  *  @param scalarIn the N array to be reduced with the values of the coordination
-  *  @param memoryHelperD preallocated GPU memory for speed up (for the derivatives)
-  *  @param memoryHelperV preallocated GPU memory for speed up (for the virial)
-  *  @param memoryHelperS preallocated GPU memory for speed up (for the scalar/coordination)
-  *  @param streamDerivatives preinitializated stream for concurrency (for the derivatives)
-  *  @param streamVirial preinitializated stream for concurrency (for the virial)
-  *  @param streamScalar preinitializated stream for concurrency (for the scalar/coordination)
-  *  @param cudaScalarAddress the pointer to the memory in cuda
-  *  @param N the number of scalar to reduce
-  *  @param nat the number of atoms
-  *  @param maxNumThreads limits the number of threads per block to be used 
-  *  @return the derivative, the virial and the coordination
-  * 
-  * reduceDVS 
-  * The memory helpers will be resized if needed (the memory occupied may be increased but not reduced)
-  * 
-  * The algorithm will decide the best number of threads to be used in 
-  * an extra nthreads * sizeof(double) will be allocated on the GPU,
-  * where nthreads is the total number of threads that will be used
-  * 
-  * @note cudaScalarAddress is threated as not owned: the user will need to call cudaFree on it!!!
-  */ 
-VS reduceVS(
-  memoryHolder<double>& derivativeIn,
-  memoryHolder<double>& virialIn,
-  memoryHolder<double>& scalarIn,
-  memoryHolder<unsigned>& pairListIn,
-  memoryHolder<double>& memoryHelperV,
-  memoryHolder<double>& memoryHelperS,
-  cudaStream_t streamVirial,
-  cudaStream_t streamScalar,
-  unsigned N, unsigned nat,
-  unsigned maxNumThreads=512);
+void doReductionND (double *inputArray,
+ double *outputArray,
+ const unsigned int len,
+ const dim3 blocks,
+ const unsigned nthreads,
+ cudaStream_t stream=0);
 
+size_t idealGroups(size_t numberOfElements, size_t runningThreads);
+size_t threadsPerBlock(unsigned N, unsigned maxNumThreads=512);
 } //namespace CUDAHELPERS
 } //namespace PLMD
 #endif //__PLUMED_cuda_ndReduction_h

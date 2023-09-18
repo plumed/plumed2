@@ -11,6 +11,7 @@
 //#define vdbg(...) std::cerr << std::setw(4) << __LINE__ <<":" << std::setw(20)<< #__VA_ARGS__ << " " << (__VA_ARGS__) <<'\n'
 #define vdbg(...)
 
+// Some help for me:
 // * Grids map to GPUs
 // * Blocks map to the MultiProcessors (MP)
 // * Threads map to Stream Processors (SP)
@@ -18,7 +19,8 @@
 
 
 //There are a LOTS of unrolled loop down here,
-//see this https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf to undestand why
+//see this https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
+// to undestand why
 
 //https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#dim3
 //7.3.2. dim3
@@ -27,55 +29,7 @@
 namespace PLMD {
 namespace CUDAHELPERS {
 template <unsigned numThreads, typename T>
-__device__ void warpReduce(volatile T* sdata, const unsigned int place){
-  //Instructions are SIMD synchronous within a warp
-  //so no need for __syncthreads(), in the last iterations
-    if(numThreads >= 64){//compile time
-      sdata[place] += sdata[place + 32];
-    }
-    if(numThreads >= 32){//compile time
-      sdata[place] += sdata[place + 16];
-    }
-    if(numThreads >= 16){//compile time
-      sdata[place] += sdata[place + 8];
-    }
-    if(numThreads >= 8){//compile time
-      sdata[place] += sdata[place + 4];
-    }
-    if(numThreads >= 4){//compile time
-      sdata[place] += sdata[place + 2];
-    }
-    if(numThreads >= 2){//compile time
-      sdata[place] += sdata[place + 1];
-    }
-}
-
-template <unsigned numThreads, typename T>
-__device__ void reductor(volatile T* sdata,T *g_odata,const unsigned int where){
-  const unsigned int tid=threadIdx.x;
-  if (numThreads >= 512) {//compile time
-    if (tid  < 256) {
-       sdata[tid] += sdata[tid + 256]; } __syncthreads(); 
-    }
-  if (numThreads >= 256) {//compile time
-    if (tid  < 128) {
-       sdata[tid] += sdata[tid + 128]; } __syncthreads(); 
-    }
-  if (numThreads >= 128) {//compile time
-    if (threadIdx. x < 64) { 
-      sdata[tid] += sdata[tid + 64]; } __syncthreads();
-    }
-  if (tid < mymin(32u,numThreads/2)) {
-    warpReduce<numThreads>(sdata, tid);
-  }
-  // write result for this block to global memory
-  if (tid == 0){
-    g_odata[where] = sdata[0];    
-  }
-}
-
-template <unsigned numThreads, typename T>
-__global__ void reductionND(const T *g_idata, T *g_odata, const unsigned int len) {
+__global__ void reductionND(const T *inputArray, T *outputArray, const unsigned int len) {
   //playing with this 
   //https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
   auto sdata = shared_memory_proxy<T>();
@@ -90,88 +44,40 @@ __global__ void reductionND(const T *g_idata, T *g_odata, const unsigned int len
 
   sdata[threadIdx.x] = T(0);
   while (i+numThreads < trgt) {
-    sdata[threadIdx.x] += g_idata[i] + g_idata[i+numThreads];
+    sdata[threadIdx.x] += inputArray[i] + inputArray[i+numThreads];
     i+=gridSize;
   }
   while (i < trgt) {
-    sdata[threadIdx.x] += g_idata[i];
+    sdata[threadIdx.x] += inputArray[i];
      i+=gridSize;
   }
 
   __syncthreads();
   // do reduction in shared memory
-  reductor<numThreads>(sdata,g_odata,blockIdx.x+blockIdx.y*gridDim.x);
+  reductor<numThreads>(sdata,outputArray,blockIdx.x+blockIdx.y*gridDim.x);
 }
 
 template <unsigned numThreads, typename T>
-__global__ void reduction1D(T *g_idata, T *g_odata, const unsigned int len) {
+__global__ void reduction1D(T *inputArray, T *outputArray, const unsigned int len) {
   auto sdata = shared_memory_proxy<T>();
   const unsigned int place = threadIdx.x;
   // each thread sums some elements from global to shared memory
   unsigned int i = (2*numThreads)*blockIdx.x + place;
   const unsigned int gridSize = (2*numThreads)*gridDim.x;
   sdata[place] = T(0);
-  //I think this may slow down the loop, but this does not force the user to have
-  //an input that is multiple of the threads, padded with zeros
-  while (i+numThreads < len) {
-    sdata[place] += g_idata[i] + g_idata[i+numThreads];
+  //The double while is for preventig wrong memory
+  while ( i + numThreads < len) {
+    sdata[place] += inputArray[i] + inputArray[i+numThreads];
     i+=gridSize;
   }
   while (i < len) {
-    sdata[place] += g_idata[i];
+    sdata[place] += inputArray[i];
     i+=gridSize;
   }
     
   __syncthreads();
   // do reduction in shared memory
-  reductor<numThreads>(sdata,g_odata,blockIdx.x);
-}
-
-template <unsigned numThreads, typename T>
-__global__ void reductionVirial(T *g_idata, T *g_odata, const unsigned int len) {
-  //we saved the dd in an array x0 x1 x2..,xn-1,y0 y1 y2..,yn-1,z0 z1 z2..,zn-1
-  //virialOut[ii*3+jj]-=d[ii]*d[jj]*dfunc;
-  auto sdata = shared_memory_proxy<T>();
-  const unsigned int ii = blockIdx.y;
-  const unsigned int jj = blockIdx.z;
-  const unsigned int vcoord = ii*3+jj;
-  const unsigned int place = threadIdx.x;
-  // each thread loads one element from global to shared mem
-    
-  // each thread loads one element from global to shared memory
-  const unsigned int diplacementI = ii*len;
-  const unsigned int diplacementJ = jj*len;
-  unsigned int i = (numThreads*2)*blockIdx.x + place + diplacementI;
-  unsigned int j = (numThreads*2)*blockIdx.x + place + diplacementJ;
-  unsigned int dfunc = (numThreads*2)*blockIdx.x + place + 3*len;
-  const unsigned int gridSize = (numThreads*2)*gridDim.x;
-  //the first element is in blockIdx.y*len, the last element to sum in (blockIdx.y+1)*len-1
-  const unsigned int trgt=diplacementI + len;
-
-
-  sdata[place] = T(0);
-  //I think this may slow down the loop, but this does not force the user to have
-  //an input that is multiple of the threads, padded with zeros
-  while (i+numThreads < trgt) {
-    sdata[place] -= g_idata[i]*g_idata[j]*g_idata[dfunc]
-     + g_idata[i+numThreads]*g_idata[j+numThreads]*g_idata[dfunc+numThreads];
-    i+=gridSize;
-    j+=gridSize;
-    dfunc+=gridSize;
-  }
-  while (i < trgt) {
-    sdata[place] -= g_idata[i]*g_idata[j]*g_idata[dfunc];
-    i+=gridSize;
-    j+=gridSize;
-    dfunc+=gridSize;
-  }
-    
-  __syncthreads();
-  // do reduction in shared memory
-  reductor<numThreads>(sdata,g_odata,blockIdx.x
-  +
-  vcoord * gridDim.x
-  );
+  reductor<numThreads>(sdata,outputArray,blockIdx.x);
 }
 
 template <unsigned numThreads, typename T>
@@ -246,7 +152,7 @@ __global__ void reductionDerivatives(T *g_idata, T *g_odata,unsigned* nnlist, co
 //after c++14 the template activation will be shorter to write:
 //template<typename T, std::enable_if_t<std::is_integral_v<T>, bool> = true>
 
-///finds the nearest upper multiple of the given reference (wit non increments)
+///finds the nearest upper multiple of the given reference
 template<typename T, 
 typename std::enable_if<std::is_integral<T>::value, bool>::type = true>
   inline T nearestUpperMultipleTo(T number, T reference){
@@ -254,7 +160,7 @@ typename std::enable_if<std::is_integral<T>::value, bool>::type = true>
 }
 
 ///We'll find the ideal number of blocks using the Brent's theorem
-size_t getIdealGroups(size_t numberOfElements, size_t runningThreads){
+size_t idealGroups(size_t numberOfElements, size_t runningThreads){
     //nearest upper multiple to the numberof threads
     const size_t nnToGPU=nearestUpperMultipleTo(numberOfElements,runningThreads);
     ///Brent’s theorem says each thread should sum O(log n) elements
@@ -266,7 +172,7 @@ size_t getIdealGroups(size_t numberOfElements, size_t runningThreads){
 }
 
 
-size_t decideThreadsPerBlock(unsigned N, unsigned maxNumThreads=512){
+size_t threadsPerBlock(unsigned N, unsigned maxNumThreads){
   //this seeks the minimum number of threads to use a sigle block (and end the recursion)
   size_t dim=32;
   for (dim=32;dim<512;dim<<=1){
@@ -282,22 +188,27 @@ size_t decideThreadsPerBlock(unsigned N, unsigned maxNumThreads=512){
 }
 
 template <typename T>
-void callReduction1D (T *g_idata, T *g_odata, const unsigned int len, const unsigned blocks, const unsigned nthreads){
+void callReduction1D (
+  T *inputArray,
+  T *outputArray,
+  const unsigned int len,
+  const unsigned blocks,
+  const unsigned nthreads){
   switch (nthreads) {
   case 512:
-    reduction1D<512,T><<<blocks,512,512*sizeof(T)>>>(g_idata,g_odata, len);
+    reduction1D<512,T><<<blocks,512,512*sizeof(T)>>>(inputArray,outputArray, len);
     break;
   case 256:
-    reduction1D<256,T><<<blocks,256,256*sizeof(T)>>>(g_idata,g_odata, len);
+    reduction1D<256,T><<<blocks,256,256*sizeof(T)>>>(inputArray,outputArray, len);
     break;
   case 128:
-    reduction1D<128,T><<<blocks,128,128*sizeof(T)>>>(g_idata,g_odata, len);
+    reduction1D<128,T><<<blocks,128,128*sizeof(T)>>>(inputArray,outputArray, len);
     break;
   case 64:
-    reduction1D<64, T><<<blocks,64,64*sizeof(T)>>>(g_idata,g_odata, len);
+    reduction1D<64, T><<<blocks,64,64*sizeof(T)>>>(inputArray,outputArray, len);
     break;
   case 32:
-    reduction1D<32, T><<<blocks,32,32*sizeof(T)>>>(g_idata,g_odata, len);
+    reduction1D<32, T><<<blocks,32,32*sizeof(T)>>>(inputArray,outputArray, len);
     break;
   default:
     plumed_merror("Reduction can be called only with 512, 256, 128, 64 or 32 threads.");
@@ -305,22 +216,26 @@ void callReduction1D (T *g_idata, T *g_odata, const unsigned int len, const unsi
 }
 
 template <typename T>
-void callReductionND (T *g_idata, T *g_odata, const unsigned int len, const dim3 blocks, const unsigned nthreads){
+void callReductionND (T *inputArray,
+  T *outputArray,
+  const unsigned int len,
+  const dim3 blocks,
+  const unsigned nthreads){
     switch (nthreads) {
   case 512:
-    reductionND<512,T><<<blocks,512,512*sizeof(T)>>>(g_idata,g_odata, len);
+    reductionND<512,T><<<blocks,512,512*sizeof(T)>>>(inputArray,outputArray, len);
     break;
   case 256:
-    reductionND<256,T><<<blocks,256,256*sizeof(T)>>>(g_idata,g_odata, len);
+    reductionND<256,T><<<blocks,256,256*sizeof(T)>>>(inputArray,outputArray, len);
     break;
   case 128:
-    reductionND<128,T><<<blocks,128,128*sizeof(T)>>>(g_idata,g_odata, len);
+    reductionND<128,T><<<blocks,128,128*sizeof(T)>>>(inputArray,outputArray, len);
     break;
   case 64:
-    reductionND<64, T><<<blocks,64,64*sizeof(T)>>>(g_idata,g_odata, len);
+    reductionND<64, T><<<blocks,64,64*sizeof(T)>>>(inputArray,outputArray, len);
     break;
   case 32:
-    reductionND<32, T><<<blocks,32,32*sizeof(T)>>>(g_idata,g_odata, len);
+    reductionND<32, T><<<blocks,32,32*sizeof(T)>>>(inputArray,outputArray, len);
     break;
   default:
     plumed_merror("Reduction can be called only with 512, 256, 128, 64 or 32 threads.");
@@ -332,10 +247,10 @@ double reduceScalar(double* cudaScalarAddress, unsigned N, unsigned maxNumThread
   double *reduceOut = cudaScalarAddress;
   double *reduceIn;
   while(N>1){
-    size_t runningThreads = decideThreadsPerBlock(N,maxNumThreads);
+    size_t runningThreads = threadsPerBlock(N,maxNumThreads);
     reduceIn = reduceOut;
     reduceOut = nullptr;
-    auto ngroups=getIdealGroups(N, runningThreads);
+    auto ngroups=idealGroups(N, runningThreads);
     cudaFree(reduceOut);
     cudaMalloc(&reduceOut,ngroups  * sizeof(double));
     callReduction1D (reduceIn, reduceOut, N, ngroups, runningThreads);
@@ -357,9 +272,9 @@ double reduceScalar(memoryHolder<double>& cudaScalarAddress,
   memoryHolder<double>* reduceIn= &memoryHelper;
   memoryHolder<double>* reduceOut =&cudaScalarAddress;
   while(N>1){
-    size_t runningThreads = decideThreadsPerBlock(N,maxNumThreads);
+    size_t runningThreads = threadsPerBlock(N,maxNumThreads);
     std::swap(reduceIn,reduceOut);
-    auto ngroups=getIdealGroups(N, runningThreads);
+    auto ngroups=idealGroups(N, runningThreads);
     reduceOut->resize(ngroups);
     callReduction1D (reduceIn->pointer(), reduceOut->pointer(), N, ngroups, runningThreads);
     N=ngroups;
@@ -373,27 +288,16 @@ std::vector<Vector> reduceNVectors(double* cudaNVectorAddress, unsigned N, unsig
   double *reduceOut = cudaNVectorAddress;
   double *reduceIn;
   auto dim = nat*3;
-  vdbg("InNVectors");
   while(N>1){
-    size_t runningThreads = decideThreadsPerBlock(N,maxNumThreads);
+    size_t runningThreads = threadsPerBlock(N,maxNumThreads);
     reduceIn = reduceOut;
     reduceOut = nullptr;
-    vdbg(N);
-    vdbg(cudaNVectorAddress);
-    vdbg(reduceIn);
-    vdbg(reduceOut);
-    vdbg(runningThreads);
-    dim3 ngroups(getIdealGroups(N, runningThreads),dim);
-    vdbg(ngroups.x);
-    vdbg(ngroups.y);
+    dim3 ngroups(idealGroups(N, runningThreads),dim);
     cudaFree(reduceOut);
     cudaMalloc(&reduceOut,ngroups.y* ngroups.x  * sizeof(double));
-    vdbg(reduceOut);
-
     callReductionND (reduceIn, reduceOut, N, ngroups, runningThreads);
 
     if (reduceIn != cudaNVectorAddress){
-      vdbg("Free reduceIn");
       cudaFree(reduceIn);
     }
     N=ngroups.x;
@@ -401,35 +305,36 @@ std::vector<Vector> reduceNVectors(double* cudaNVectorAddress, unsigned N, unsig
   std::vector<Vector> toret(nat);
   cudaMemcpy(&toret[0][0], reduceOut, 3*nat*sizeof(double), cudaMemcpyDeviceToHost);
   cudaFree(reduceOut);
-  vdbg(toret[0]);
   return toret;
 }
 
 //THIS DOES NOT KEEP THE DATA SAFE
-std::vector<Vector> reduceNVectors(memoryHolder<double>& cudaNVectorAddress,
- memoryHolder<double>& memoryHelper, 
-unsigned N, unsigned nat, unsigned maxNumThreads){
+std::vector<Vector> reduceNVectors(
+  memoryHolder<double>& cudaNVectorAddress,
+  memoryHolder<double>& memoryHelper, 
+  unsigned N,
+  unsigned nat,
+  unsigned maxNumThreads){
   memoryHolder<double>* reduceIn= &memoryHelper;
   memoryHolder<double>* reduceOut =&cudaNVectorAddress;
   
   auto dim = nat*3;
-  vdbg("InNVectors");
   while(N>1){
-    size_t runningThreads = decideThreadsPerBlock(N,maxNumThreads);
+    size_t runningThreads = threadsPerBlock(N,maxNumThreads);
     std::swap(reduceIn,reduceOut);
-    dim3 ngroups(getIdealGroups(N, runningThreads),dim);
+    dim3 ngroups(idealGroups(N, runningThreads),dim);
     reduceOut->resize(ngroups.y* ngroups.x);
-    
-
-    callReductionND (reduceIn->pointer(), reduceOut->pointer(), N, ngroups, runningThreads);
-
+    callReductionND (
+      reduceIn->pointer(),
+      reduceOut->pointer(),
+      N,
+      ngroups,
+      runningThreads);
     N=ngroups.x;
   }
   std::vector<Vector> toret(nat);
   reduceOut->copyFromCuda(&toret[0][0]);
   //cudaMemcpy(&toret[0][0], reduceOut, 3*nat*sizeof(double), cudaMemcpyDeviceToHost);
-  
-  vdbg(toret[0]);
   return toret;
 }
 
@@ -439,10 +344,10 @@ Vector reduceVector(double* cudaVectorAddress, unsigned N, unsigned maxNumThread
   double *reduceOut = cudaVectorAddress;
   double *reduceIn;
   while(N>1){
-    size_t runningThreads = decideThreadsPerBlock(N,maxNumThreads);
+    size_t runningThreads = threadsPerBlock(N,maxNumThreads);
     reduceIn = reduceOut;
     reduceOut = nullptr;
-    dim3 ngroups(getIdealGroups(N, runningThreads),3);
+    dim3 ngroups(idealGroups(N, runningThreads),3);
     cudaFree(reduceOut);
     cudaMalloc(&reduceOut,ngroups.y* ngroups.x  * sizeof(double));
     
@@ -465,9 +370,9 @@ memoryHolder<double>& memoryHelper, unsigned N, unsigned maxNumThreads){
   memoryHolder<double>* reduceIn= &memoryHelper;
   memoryHolder<double>* reduceOut =&cudaTensorAddress;
   while(N>1){
-    size_t runningThreads = decideThreadsPerBlock(N,maxNumThreads);
+    size_t runningThreads = threadsPerBlock(N,maxNumThreads);
     std::swap(reduceIn,reduceOut);
-    dim3 ngroups(getIdealGroups(N, runningThreads),9);
+    dim3 ngroups(idealGroups(N, runningThreads),9);
     reduceOut->resize(ngroups.y* ngroups.x);
   
     callReductionND (reduceIn->pointer(), reduceOut->pointer(),
@@ -481,23 +386,23 @@ memoryHolder<double>& memoryHelper, unsigned N, unsigned maxNumThreads){
 }
 
 template <typename T>
-void callReduction1D (T *g_idata, T *g_odata, const unsigned int len,
+void callReduction1D (T *inputArray, T *outputArray, const unsigned int len,
  const unsigned blocks, const unsigned nthreads,cudaStream_t stream=0){
   switch (nthreads) {
   case 512:
-    reduction1D<512,T><<<blocks,512,512*sizeof(T),stream>>>(g_idata,g_odata, len);
+    reduction1D<512,T><<<blocks,512,512*sizeof(T),stream>>>(inputArray,outputArray, len);
     break;
   case 256:
-    reduction1D<256,T><<<blocks,256,256*sizeof(T),stream>>>(g_idata,g_odata, len);
+    reduction1D<256,T><<<blocks,256,256*sizeof(T),stream>>>(inputArray,outputArray, len);
     break;
   case 128:
-    reduction1D<128,T><<<blocks,128,128*sizeof(T),stream>>>(g_idata,g_odata, len);
+    reduction1D<128,T><<<blocks,128,128*sizeof(T),stream>>>(inputArray,outputArray, len);
     break;
   case 64:
-    reduction1D<64, T><<<blocks,64,64*sizeof(T),stream>>>(g_idata,g_odata, len);
+    reduction1D<64, T><<<blocks,64,64*sizeof(T),stream>>>(inputArray,outputArray, len);
     break;
   case 32:
-    reduction1D<32, T><<<blocks,32,32*sizeof(T),stream>>>(g_idata,g_odata, len);
+    reduction1D<32, T><<<blocks,32,32*sizeof(T),stream>>>(inputArray,outputArray, len);
     break;
   default:
     plumed_merror("Reduction can be called only with 512, 256, 128, 64 or 32 threads.");
@@ -505,111 +410,46 @@ void callReduction1D (T *g_idata, T *g_odata, const unsigned int len,
 }
 
 template <typename T>
-void callReductionND (T *g_idata, T *g_odata, const unsigned int len,
+void callReductionND (T *inputArray, T *outputArray, const unsigned int len,
  const dim3 blocks, const unsigned nthreads,cudaStream_t stream=0){
     switch (nthreads) {
   case 512:
-    reductionND<512,T><<<blocks,512,512*sizeof(T),stream>>>(g_idata,g_odata, len);
+    reductionND<512,T><<<blocks,512,512*sizeof(T),stream>>>(inputArray,outputArray, len);
     break;
   case 256:
-    reductionND<256,T><<<blocks,256,256*sizeof(T),stream>>>(g_idata,g_odata, len);
+    reductionND<256,T><<<blocks,256,256*sizeof(T),stream>>>(inputArray,outputArray, len);
     break;
   case 128:
-    reductionND<128,T><<<blocks,128,128*sizeof(T),stream>>>(g_idata,g_odata, len);
+    reductionND<128,T><<<blocks,128,128*sizeof(T),stream>>>(inputArray,outputArray, len);
     break;
   case 64:
-    reductionND<64, T><<<blocks,64,64*sizeof(T),stream>>>(g_idata,g_odata, len);
+    reductionND<64, T><<<blocks,64,64*sizeof(T),stream>>>(inputArray,outputArray, len);
     break;
   case 32:
-    reductionND<32, T><<<blocks,32,32*sizeof(T),stream>>>(g_idata,g_odata, len);
+    reductionND<32, T><<<blocks,32,32*sizeof(T),stream>>>(inputArray,outputArray, len);
     break;
   default:
     plumed_merror("Reduction can be called only with 512, 256, 128, 64 or 32 threads.");
   }
 }
 
-template <typename T>
-void callReductionVirial (T *g_idata, T *g_odata, const unsigned int len,
- const dim3 blocks, const unsigned nthreads,cudaStream_t stream=0){
-  switch (nthreads) {
-  case 512:
-    reductionVirial<512,T><<<blocks,512,512*sizeof(T),stream>>>(g_idata,g_odata, len);
-    break;
-  case 256:
-    reductionVirial<256,T><<<blocks,256,256*sizeof(T),stream>>>(g_idata,g_odata, len);
-    break;
-  case 128:
-    reductionVirial<128,T><<<blocks,128,128*sizeof(T),stream>>>(g_idata,g_odata, len);
-    break;
-  case 64:
-    reductionVirial<64, T><<<blocks,64,64*sizeof(T),stream>>>(g_idata,g_odata, len);
-    break;
-  case 32:
-    reductionVirial<32, T><<<blocks,32,32*sizeof(T),stream>>>(g_idata,g_odata, len);
-    break;
-  default:
-    plumed_merror("Reduction can be called only with 512, 256, 128, 64 or 32 threads.");
-  }
-}
+void doReduction1D (double *inputArray,
+ double *outputArray,
+ const unsigned int len,
+ const unsigned blocks,
+ const unsigned nthreads,
+ cudaStream_t stream){
+  callReduction1D (inputArray, outputArray, len, blocks, nthreads, stream);
+ }
 
-//#define vdbg(...) std::cerr << std::setw(4) << __LINE__ <<":" << std::setw(20)<< #__VA_ARGS__ << " " << (__VA_ARGS__) <<'\n'
-//if this is working I might use something similar to the sharedptr/weakptr
-VS reduceVS(memoryHolder<double>& derivativeIn,
- memoryHolder<double>& virialIn,
- memoryHolder<double>& scalarIn,
- memoryHolder<unsigned>& pairListIn,
- memoryHolder<double>& memoryHelperV,
- memoryHolder<double>& memoryHelperS,
- const cudaStream_t streamVirial,
- const cudaStream_t streamScalar,
- unsigned N, unsigned nat,
- unsigned maxNumThreads
-){
-  //the memory is assigned swapped because it will be swapped at each loop iteration
-  memoryHolder<double>* reduceScalarIn = &scalarIn;
-  memoryHolder<double>* reduceSOut = &memoryHelperS;
-
-  memoryHolder<double>* reduceVirialIn = &virialIn;
-  memoryHolder<double>* reduceVirialOut = &memoryHelperV;
-  
-  auto dim = nat*3;
-    
-  bool first=true;
-  VS toret;
-  while(N>1){
-    size_t runningThreads = decideThreadsPerBlock(N,maxNumThreads);
-    unsigned ngroupsS=getIdealGroups(N, runningThreads);
-    
-    reduceVirialOut->resize(9* ngroupsS);
-    reduceSOut->resize(ngroupsS);
-
-    if (first){
-      dim3 ngroupsVirial(ngroupsS,3,3);
-      callReductionVirial (derivativeIn.pointer(),
-        reduceVirialOut->pointer(),
-        N, ngroupsVirial, runningThreads,streamVirial);
-    }else{
-      dim3 ngroupsVirial(ngroupsS,9);
-      callReductionND (reduceVirialIn->pointer(), reduceVirialOut->pointer(),
-        N, ngroupsVirial, runningThreads, streamVirial);
-    }
-    if (ngroupsS==1)
-      reduceVirialOut->copyFromCuda(&toret.virial[0][0],streamVirial);
-    
-    callReduction1D (reduceScalarIn->pointer(), reduceSOut->pointer(),
-      N, ngroupsS, runningThreads,streamScalar);
-    if (ngroupsS==1)
-      reduceSOut->copyFromCuda(&toret.scalar,streamScalar);
-    
-    std::swap(reduceVirialIn,reduceVirialOut);
-    std::swap(reduceScalarIn,reduceSOut);
-    first=false;
-    N=ngroupsS;
-  }
-  return toret;
-}
-
-
+void doReductionND (double *inputArray,
+ double *outputArray,
+ const unsigned int len,
+ const dim3 blocks,
+ const unsigned nthreads,
+ cudaStream_t stream){
+  callReductionND (inputArray, outputArray, len, blocks, nthreads, stream);
+ }
 } //namespace CUDAHELPERS
 } //namespace PLMD
 

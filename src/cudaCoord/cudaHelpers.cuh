@@ -140,6 +140,75 @@ namespace CUDAHELPERS {
     b = std::move(t);
   }
 
+// template <unsigned numThreads, typename T>
+// __device__ void warpReduce(volatile T* sdata, const unsigned int place){
+//   //Instructions are SIMD synchronous within a warp
+//   //so no need for __syncthreads(), in the last iterations
+//     if(numThreads >= 64){//compile time
+//       sdata[place] += sdata[place + 32];
+//     }
+//     if(numThreads >= 32){//compile time
+//       sdata[place] += sdata[place + 16];
+//     }
+//     if(numThreads >= 16){//compile time
+//       sdata[place] += sdata[place + 8];
+//     }
+//     if(numThreads >= 8){//compile time
+//       sdata[place] += sdata[place + 4];
+//     }
+//     if(numThreads >= 4){//compile time
+//       sdata[place] += sdata[place + 2];
+//     }
+//     if(numThreads >= 2){//compile time
+//       sdata[place] += sdata[place + 1];
+//     }
+// }
+
+template <unsigned numThreads, typename T>
+__device__ void reductor(volatile T* sdata,T *outputArray,const unsigned int where){
+  const unsigned int tid=threadIdx.x;
+  if (numThreads >= 512) {//compile time
+    if (tid  < 256)
+      sdata[tid] += sdata[tid + 256];
+    __syncthreads(); 
+    }
+  if (numThreads >= 256) {//compile time
+    if (tid  < 128)
+      sdata[tid] += sdata[tid + 128];
+    __syncthreads(); 
+    }
+  if (numThreads >= 128) {//compile time
+    if (tid < 64)
+      sdata[tid] += sdata[tid + 64];
+    __syncthreads();
+    }
+  if (tid < mymin(32u,numThreads/2)) {
+    //warpReduce<numThreads>(sdata, tid);
+    if(numThreads >= 64){//compile time
+      sdata[tid] += sdata[tid + 32];
+    }
+    if(numThreads >= 32){//compile time
+      sdata[tid] += sdata[tid + 16];
+    }
+    if(numThreads >= 16){//compile time
+      sdata[tid] += sdata[tid + 8];
+    }
+    if(numThreads >= 8){//compile time
+      sdata[tid] += sdata[tid + 4];
+    }
+    if(numThreads >= 4){//compile time
+      sdata[tid] += sdata[tid + 2];
+    }
+    if(numThreads >= 2){//compile time
+      sdata[tid] += sdata[tid + 1];
+    }
+  }
+  // write result for this block to global memory
+  if (tid == 0){
+    outputArray[where] = sdata[0];    
+  }
+}
+
 } //namespace CUDAHELPERS
 } //namespace PLMD
 #endif //__PLUMED_cuda_helpers_cuh
