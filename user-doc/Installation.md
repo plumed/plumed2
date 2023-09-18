@@ -40,17 +40,12 @@ discover how to link it.
 
 \section SupportedCompilers Supported compilers
 
-As of PLUMED 2.4, we require a compiler that supports C++11. The following compilers
-(or later versions) should be sufficient:
+As of PLUMED 2.10, we require a compiler that supports C++17.
 
-- gcc 4.8.1
-- clang 3.3
-- intel 15
-
-Notice that the `./configure` script verifies that your compiler supports C++11.
-Some compilers do not declare full support, but implement anyway a number of C++11 features
-sufficient to compile PLUMED (this is the case for instance of intel 15 compiler).
-In case you see a warning about C++11 support during `./configure`
+Notice that the `./configure` script verifies that your compiler supports C++17.
+Some compilers do not declare full support, but implement anyway a number of C++17 features
+sufficient to compile PLUMED.
+In case you see a warning about C++17 support during `./configure`
 please make sure that PLUMED compiles correctly and, if possible, execute the regtests
 (using `make regtest`). Notice that we regularly test a number of compilers on travis-ci,
 and at least those compilers are guaranteed to be able to compile PLUMED correctly.
@@ -594,7 +589,7 @@ take advantage of openMP
 
     > sudo port install plumed +mpich +clang50
 
-Notice that support for c++11 with gcc compilers is someway problematic within MacPorts
+Notice that support for c++17 with gcc compilers is someway problematic within MacPorts
 due to impossibility to use the system c++ library. For this reason, only clang compilers are supported
 (see also [this discussion](https://github.com/macports/macports-ports/pull/1252)).
 

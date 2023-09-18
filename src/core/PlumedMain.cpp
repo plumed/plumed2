@@ -55,12 +55,11 @@
 #include <typeinfo>
 #include <iostream>
 #include <algorithm>
-#ifdef __PLUMED_LIBCXX11
 #include <system_error>
 #include <future>
 #include <memory>
 #include <functional>
-#endif
+#include <regex>
 
 
 namespace PLMD {
@@ -76,14 +75,10 @@ namespace PLMD {
   __PLUMED_THROW_MSG(PLMD::Exception);
   __PLUMED_THROW_MSG(PLMD::lepton::Exception);
   __PLUMED_THROW_NOMSG(std::bad_exception);
-#ifdef __PLUMED_LIBCXX11
   __PLUMED_THROW_NOMSG(std::bad_array_new_length);
-#endif
   __PLUMED_THROW_NOMSG(std::bad_alloc);
-#ifdef __PLUMED_LIBCXX11
   __PLUMED_THROW_NOMSG(std::bad_function_call);
   __PLUMED_THROW_NOMSG(std::bad_weak_ptr);
-#endif
   __PLUMED_THROW_NOMSG(std::bad_cast);
   __PLUMED_THROW_NOMSG(std::bad_typeid);
   __PLUMED_THROW_MSG(std::underflow_error);
@@ -96,7 +91,6 @@ namespace PLMD {
   __PLUMED_THROW_MSG(std::invalid_argument);
   __PLUMED_THROW_MSG(std::logic_error);
 
-#ifdef __PLUMED_LIBCXX11
   if(words[0]=="std::system_error") {
     plumed_assert(words.size()>2);
     int error_code;
@@ -106,17 +100,32 @@ namespace PLMD {
     if(words[1]=="std::iostream_category") throw std::system_error(error_code,std::iostream_category(),what);
     if(words[1]=="std::future_category") throw std::system_error(error_code,std::future_category(),what);
   }
-#endif
+
+#define __PLUMED_THROW_REGEX(name) if(words[1]=="std::regex_constants::error_" #name) throw std::regex_error(std::regex_constants::error_ ##name)
+  if(words[0]=="std::regex_error") {
+    plumed_assert(words.size()>1);
+    __PLUMED_THROW_REGEX(collate);
+    __PLUMED_THROW_REGEX(ctype);
+    __PLUMED_THROW_REGEX(escape);
+    __PLUMED_THROW_REGEX(backref);
+    __PLUMED_THROW_REGEX(brack);
+    __PLUMED_THROW_REGEX(paren);
+    __PLUMED_THROW_REGEX(brace);
+    __PLUMED_THROW_REGEX(badbrace);
+    __PLUMED_THROW_REGEX(range);
+    __PLUMED_THROW_REGEX(space);
+    __PLUMED_THROW_REGEX(badrepeat);
+    __PLUMED_THROW_REGEX(complexity);
+    __PLUMED_THROW_REGEX(stack);
+  }
 
   if(words[0]=="std::ios_base::failure") {
-#ifdef __PLUMED_LIBCXX11
     int error_code=0;
     if(words.size()>2) Tools::convert(words[2],error_code);
     if(words.size()>1 && words[1]=="std::generic_category") throw std::ios_base::failure(what,std::error_code(error_code,std::generic_category()));
     if(words.size()>1 && words[1]=="std::system_category") throw std::ios_base::failure(what,std::error_code(error_code,std::system_category()));
     if(words.size()>1 && words[1]=="std::iostream_category") throw std::ios_base::failure(what,std::error_code(error_code,std::iostream_category()));
     if(words.size()>1 && words[1]=="std::future_category") throw std::ios_base::failure(what,std::error_code(error_code,std::future_category()));
-#endif
     throw std::ios_base::failure(what);
   }
 
@@ -786,7 +795,7 @@ void PlumedMain::readInputLines(const std::string & str) {
   plumed_assert(fp);
 
   // make sure file is closed (and thus deleted) also if an exception occurs
-  auto deleter=[](FILE* fp) { std::fclose(fp); };
+  auto deleter=[](auto fp) { std::fclose(fp); };
   std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
 
   auto ret=std::fputs(str.c_str(),fp);

@@ -19,11 +19,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # centos7 (gcc 4.8)
         # fedora38 (gcc 13)
         # rockylinux8
         variant:
-        - centos7
         - fedora38
         - rocky8
     steps:
