@@ -113,7 +113,7 @@ PytorchModel::PytorchModel(const ActionOptions&ao):
   ss << TORCH_VERSION_MAJOR << "." << TORCH_VERSION_MINOR << "." << TORCH_VERSION_PATCH;
   std::string version;
   ss >> version; // extract into the string.
-  log.printf("LibTorch version: %s \n",version);
+  log.printf(("LibTorch version: "+version+"\n").data());
 
   //number of inputs of the model
   _n_in=getNumberOfArguments();
