@@ -31,21 +31,16 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include <fstream>
 #include <cmath>
 
-// We have to do a backward compatability hack for <1.10
-// https://discuss.pytorch.org/t/how-to-check-libtorch-version/77709/4
-// Basically, the check in torch::jit::freeze
-// (see https://github.com/pytorch/pytorch/blob/dfbd030854359207cb3040b864614affeace11ce/torch/csrc/jit/api/module.cpp#L479)
-// is wrong, and we have ro "reimplement" the function
-// to get around that...
-// it's broken in 1.8 and 1.9
-// BUT the internal logic in the function is wrong in 1.10
-// So we only use torch::jit::freeze in >=1.11
-// credits for this implementation of the hack to the NequIP guys
+// Note: Freezing a ScriptModule (torch::jit::freeze) works only in >=1.11 
+// For 1.8 <= versions <=1.10 we need a hack 
+// (see https://discuss.pytorch.org/t/how-to-check-libtorch-version/77709/4 and also 
+// https://github.com/pytorch/pytorch/blob/dfbd030854359207cb3040b864614affeace11ce/torch/csrc/jit/api/module.cpp#L479)
+// adapted from NequIP https://github.com/mir-group/nequip
 #if (TORCH_VERSION_MAJOR == 1 && TORCH_VERSION_MINOR <= 10)
-#define DO_TORCH_FREEZE_HACK
-// For the hack, need more headers:
-#include <torch/csrc/jit/passes/freeze_module.h>
-#include <torch/csrc/jit/passes/frozen_graph_optimizations.h>
+  #define DO_TORCH_FREEZE_HACK
+  // For the hack, need more headers:
+  #include <torch/csrc/jit/passes/freeze_module.h>
+  #include <torch/csrc/jit/passes/frozen_graph_optimizations.h>
 #endif
 
 using namespace std;
@@ -112,7 +107,13 @@ std::vector<float> PytorchModel::tensor_to_vector(const torch::Tensor& x) {
 PytorchModel::PytorchModel(const ActionOptions&ao):
   Action(ao),
   Function(ao)
-{ //print pytorch version
+{
+  // print libtorch version
+  std::stringstream ss;
+  ss << TORCH_VERSION_MAJOR << "." << TORCH_VERSION_MINOR << "." << TORCH_VERSION_PATCH;
+  std::string version;
+  ss >> version; // extract into the string.
+  log.printf("LibTorch version: %s \n",version);
 
   //number of inputs of the model
   _n_in=getNumberOfArguments();
@@ -121,16 +122,9 @@ PytorchModel::PytorchModel(const ActionOptions&ao):
   std::string fname="model.ptc";
   parse("FILE",fname);
 
-
-  // we create the metatdata dict
-  std::unordered_map<std::string, std::string> metadata = {
-    {"_jit_bailout_depth", ""},
-    {"_jit_fusion_strategy", ""}
-  };
-
   //deserialize the model from file
   try {
-    _model = torch::jit::load(fname, device, metadata);
+    _model = torch::jit::load(fname, device);
   }
 
   //if an error is thrown check if the file exists or not
@@ -139,12 +133,7 @@ PytorchModel::PytorchModel(const ActionOptions&ao):
     bool exist = infile.good();
     infile.close();
     if (exist) {
-      // print libtorch version
-      std::stringstream ss;
-      ss << TORCH_VERSION_MAJOR << "." << TORCH_VERSION_MINOR << "." << TORCH_VERSION_PATCH;
-      std::string version;
-      ss >> version; // extract into the string.
-      plumed_merror("Cannot load FILE: '"+fname+"'. Please check that it is a Pytorch compiled model (exported with 'torch.jit.trace' or 'torch.jit.script') and that the Pytorch version matches the LibTorch one ("+version+").");
+      plumed_merror("Cannot load FILE: '"+fname+"'. Please check that it is a Pytorch compiled model (exported with 'torch.jit.trace' or 'torch.jit.script').");
     }
     else {
       plumed_merror("The FILE: '"+fname+"' does not exist.");
@@ -173,35 +162,7 @@ PytorchModel::PytorchModel(const ActionOptions&ao):
   _model = torch::jit::freeze(_model);
 #endif
 
-#if (TORCH_VERSION_MAJOR == 1 && TORCH_VERSION_MINOR <= 10)
-  // Set JIT bailout to avoid long recompilations for many steps
-  size_t jit_bailout_depth;
-  if (metadata["_jit_bailout_depth"].empty()) {
-    // This is the default used in the Python code
-    jit_bailout_depth = 1;
-  } else {
-    jit_bailout_depth = std::stoi(metadata["_jit_bailout_depth"]);
-  }
-  torch::jit::getBailoutDepth() = jit_bailout_depth;
-#else
-  // In PyTorch >=1.11, this is now set_fusion_strategy
-  torch::jit::FusionStrategy strategy;
-  if (metadata["_jit_fusion_strategy"].empty()) {
-    // This is the default used in the Python code
-    strategy = {{torch::jit::FusionBehavior::DYNAMIC, 0}};
-  } else {
-    std::stringstream strat_stream(metadata["_jit_fusion_strategy"]);
-    std::string fusion_type, fusion_depth;
-    while(std::getline(strat_stream, fusion_type, ',')) {
-      std::getline(strat_stream, fusion_depth, ';');
-      strategy.push_back({fusion_type == "STATIC" ? torch::jit::FusionBehavior::STATIC : torch::jit::FusionBehavior::DYNAMIC, std::stoi(fusion_depth)});
-    }
-  }
-  torch::jit::setFusionStrategy(strategy);
-#endif
-
-// TODO check torch::jit::optimize_for_inference() for more complex models
-// This could speed up the code, it was not available on LTS
+// Optimize model for inference
 #if (TORCH_VERSION_MAJOR == 1 && TORCH_VERSION_MINOR >= 10)
   _model = torch::jit::optimize_for_inference(_model);
 #endif
@@ -225,12 +186,11 @@ PytorchModel::PytorchModel(const ActionOptions&ao):
   }
 
   //print log
-  //log.printf("Pytorch Model Loaded: %s \n",fname);
   log.printf("Number of input: %d \n",_n_in);
   log.printf("Number of outputs: %d \n",_n_out);
   log.printf("  Bibliography: ");
+  log<<plumed.cite("Bonati, Trizio, Rizzi and Parrinello, J. Chem. Phys. 159, 014801 (2023)");
   log<<plumed.cite("Bonati, Rizzi and Parrinello, J. Phys. Chem. Lett. 11, 2998-3004 (2020)");
-  log<<plumed.cite("Trizio and Parrinello, J. Phys. Chem. Lett. 12, 8621-8626 (2021)");
   log.printf("\n");
 
 }
