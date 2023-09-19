@@ -879,15 +879,39 @@ fi
 
 #added by luigibonati
 if test $libtorch = true ; then 
-  # test program
-  PLUMED_CHECK_CXX_PACKAGE([libtorch],[
-#include <torch/torch.h>
-#include <torch/script.h>
-int main() {
-  torch::Tensor tensor = torch::rand({2, 3});
-  return 0;
-}
+  # disable as-needed in linking libraries (both static and shared)
+  PLUMED_CHECK_CXXFLAG([-Wl,--no-as-needed])
+  LDSHARED="$LDSHARED -Wl,--no-as-needed "
+
+  # CUDA and CPU libtorch libs have different libraries
+  # first test CUDA program
+  PLUMED_CHECK_CXX_PACKAGE([libtorch_cuda],[
+    #include <torch/torch.h>
+    #include <torch/script.h>
+    #include <torch/cuda.h>
+    int main() {
+      std::cerr << "CUDA is available: " << torch::cuda::is_available() << std::endl;
+      torch::Tensor tensor = torch::rand({2, 3});
+      torch::Device device = torch::kCPU;
+      device = torch::kCUDA;
+      tensor.to(device);
+      return 0;
+    }
+  ], [__PLUMED_HAS_LIBTORCH], [ torch_cpu c10 c10_cuda torch_cuda ], [true])
+
+  # if not found test CPU version
+  if test "$__PLUMED_HAS_LIBTORCH" = no; then
+  # AC_MSG_NOTICE([CUDA-enabled libtorch not found (or devices not available), trying with CPU version.])
+    PLUMED_CHECK_CXX_PACKAGE([libtorch_cpu],[
+    #include <torch/torch.h>
+    #include <torch/script.h>
+    int main() {
+      torch::Tensor tensor = torch::rand({2, 3});
+      
+      return 0;
+    }
   ], [__PLUMED_HAS_LIBTORCH], [ torch_cpu c10 ], [true])
+  fi
 fi
 
 # in non-debug mode, add -DNDEBUG
