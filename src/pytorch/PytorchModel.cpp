@@ -31,16 +31,16 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include <fstream>
 #include <cmath>
 
-// Note: Freezing a ScriptModule (torch::jit::freeze) works only in >=1.11 
-// For 1.8 <= versions <=1.10 we need a hack 
-// (see https://discuss.pytorch.org/t/how-to-check-libtorch-version/77709/4 and also 
+// Note: Freezing a ScriptModule (torch::jit::freeze) works only in >=1.11
+// For 1.8 <= versions <=1.10 we need a hack
+// (see https://discuss.pytorch.org/t/how-to-check-libtorch-version/77709/4 and also
 // https://github.com/pytorch/pytorch/blob/dfbd030854359207cb3040b864614affeace11ce/torch/csrc/jit/api/module.cpp#L479)
 // adapted from NequIP https://github.com/mir-group/nequip
 #if ( TORCH_VERSION_MAJOR == 2 || TORCH_VERSION_MAJOR == 1 && TORCH_VERSION_MINOR <= 10 )
-  #define DO_TORCH_FREEZE_HACK
-  // For the hack, need more headers:
-  #include <torch/csrc/jit/passes/freeze_module.h>
-  #include <torch/csrc/jit/passes/frozen_graph_optimizations.h>
+#define DO_TORCH_FREEZE_HACK
+// For the hack, need more headers:
+#include <torch/csrc/jit/passes/freeze_module.h>
+#include <torch/csrc/jit/passes/frozen_graph_optimizations.h>
 #endif
 
 using namespace std;
