@@ -36,7 +36,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 // (see https://discuss.pytorch.org/t/how-to-check-libtorch-version/77709/4 and also 
 // https://github.com/pytorch/pytorch/blob/dfbd030854359207cb3040b864614affeace11ce/torch/csrc/jit/api/module.cpp#L479)
 // adapted from NequIP https://github.com/mir-group/nequip
-#if (TORCH_VERSION_MAJOR == 1 && TORCH_VERSION_MINOR <= 10)
+#if ( TORCH_VERSION_MAJOR == 2 || TORCH_VERSION_MAJOR == 1 && TORCH_VERSION_MINOR <= 10 )
   #define DO_TORCH_FREEZE_HACK
   // For the hack, need more headers:
   #include <torch/csrc/jit/passes/freeze_module.h>
@@ -113,7 +113,7 @@ PytorchModel::PytorchModel(const ActionOptions&ao):
   ss << TORCH_VERSION_MAJOR << "." << TORCH_VERSION_MINOR << "." << TORCH_VERSION_PATCH;
   std::string version;
   ss >> version; // extract into the string.
-  log.printf(("LibTorch version: "+version+"\n").data());
+  log.printf(("  LibTorch version: "+version+"\n").data());
 
   //number of inputs of the model
   _n_in=getNumberOfArguments();
@@ -163,12 +163,12 @@ PytorchModel::PytorchModel(const ActionOptions&ao):
 #endif
 
 // Optimize model for inference
-#if (TORCH_VERSION_MAJOR == 1 && TORCH_VERSION_MINOR >= 10)
+#if (TORCH_VERSION_MAJOR == 2 || TORCH_VERSION_MAJOR == 1 && TORCH_VERSION_MINOR >= 10)
   _model = torch::jit::optimize_for_inference(_model);
 #endif
 
   //check the dimension of the output
-  log.printf("Checking output dimension:\n");
+  log.printf("  Checking output dimension:\n");
   std::vector<float> input_test (_n_in);
   torch::Tensor single_input = torch::tensor(input_test).view({1,_n_in});
   single_input = single_input.to(device);
@@ -186,8 +186,8 @@ PytorchModel::PytorchModel(const ActionOptions&ao):
   }
 
   //print log
-  log.printf("Number of input: %d \n",_n_in);
-  log.printf("Number of outputs: %d \n",_n_out);
+  log.printf("  Number of input: %d \n",_n_in);
+  log.printf("  Number of outputs: %d \n",_n_out);
   log.printf("  Bibliography: ");
   log<<plumed.cite("Bonati, Trizio, Rizzi and Parrinello, J. Chem. Phys. 159, 014801 (2023)");
   log<<plumed.cite("Bonati, Rizzi and Parrinello, J. Phys. Chem. Lett. 11, 2998-3004 (2020)");
