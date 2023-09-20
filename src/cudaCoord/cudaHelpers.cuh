@@ -3,7 +3,7 @@
 
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
-
+#include <vector>
 namespace PLMD {
 namespace CUDAHELPERS {
 
@@ -124,6 +124,61 @@ namespace CUDAHELPERS {
         cudaMemcpyDeviceToHost,
         stream);
     }
+
+//*conversions*/
+    //using vector to avoid memory leaks
+    template <typename Y>
+    void/*CUresult*/ copyToCuda(Y* cpupointer){
+      std::vector<T> tempMemory(usedim_);
+      for (auto i=0u; i < usedim_ ; ++i)
+        tempMemory[i] = cpupointer[i];
+      
+      cudaMemcpy(
+        pointer_,
+        tempMemory.data(),
+        usedim_ * sizeof(T),
+        cudaMemcpyHostToDevice);
+    }
+
+    template <typename Y>
+    void/*CUresult*/ copyToCuda(Y* cpupointer,cudaStream_t stream){
+      std::vector<T> tempMemory(usedim_);
+      for (auto i=0u; i < usedim_ ; ++i)
+        tempMemory[i] = cpupointer[i];
+      
+      cudaMemcpyAsync(
+        pointer_,
+        tempMemory.data(),
+        usedim_ * sizeof(T),
+        cudaMemcpyHostToDevice,
+        stream);
+    }
+
+    template <typename Y>
+    void/*CUresult*/ copyFromCuda(Y* cpupointer){
+      std::vector<T> tempMemory(usedim_);
+      cudaMemcpy(
+        tempMemory.data(),
+        pointer_,
+        usedim_ * sizeof(T),
+        cudaMemcpyDeviceToHost);
+      for (auto i=0u; i < usedim_ ; ++i)
+        cpupointer[i] = tempMemory[i];
+    }
+
+    template <typename Y>
+    void/*CUresult*/ copyFromCuda(Y* cpupointer,cudaStream_t stream){
+      std::vector<T> tempMemory(usedim_);
+      cudaMemcpyAsync(
+        tempMemory.data(),
+        pointer_,
+        usedim_ * sizeof(T),
+        cudaMemcpyDeviceToHost,
+        stream);
+      for (auto i=0u; i < usedim_ ; ++i)
+        cpupointer[i] = tempMemory[i];
+    }
+/**/
 
     void swap(memoryHolder &other) {
         std::swap(this->pointer_,other.pointer_);

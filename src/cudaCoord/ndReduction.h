@@ -137,6 +137,20 @@ void doReductionND (double *inputArray,
  const unsigned nthreads,
  cudaStream_t stream=0);
 
+ void doReduction1D (float *inputArray,
+ float *outputArray,
+ const unsigned int len,
+ const unsigned blocks,
+ const unsigned nthreads,
+ cudaStream_t stream=0);
+
+void doReductionND (float *inputArray,
+ float *outputArray,
+ const unsigned int len,
+ const dim3 blocks,
+ const unsigned nthreads,
+ cudaStream_t stream=0);
+
 size_t idealGroups(size_t numberOfElements, size_t runningThreads);
 size_t threadsPerBlock(unsigned N, unsigned maxNumThreads=512);
 } //namespace CUDAHELPERS

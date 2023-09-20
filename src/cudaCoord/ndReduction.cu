@@ -450,6 +450,24 @@ void doReductionND (double *inputArray,
  cudaStream_t stream){
   callReductionND (inputArray, outputArray, len, blocks, nthreads, stream);
  }
+
+ void doReduction1D (float *inputArray,
+ float *outputArray,
+ const unsigned int len,
+ const unsigned blocks,
+ const unsigned nthreads,
+ cudaStream_t stream){
+  callReduction1D (inputArray, outputArray, len, blocks, nthreads, stream);
+ }
+
+void doReductionND (float *inputArray,
+ float *outputArray,
+ const unsigned int len,
+ const dim3 blocks,
+ const unsigned nthreads,
+ cudaStream_t stream){
+  callReductionND (inputArray, outputArray, len, blocks, nthreads, stream);
+ }
 } //namespace CUDAHELPERS
 } //namespace PLMD
 
