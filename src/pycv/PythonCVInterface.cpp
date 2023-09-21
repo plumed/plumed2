@@ -38,7 +38,9 @@ using std::vector;
 namespace PLMD {
 namespace pycv {
 
-
+///TODO: manual "you have to specify ATOMS=something for default atoms"
+///TODO: add interface to pbc
+///TODO: the topology can be assumed fixed and done on the go at each run by loading the pdb in the python code
 class PythonCVInterface : public Colvar,
   public PythonPlumedBase {
   static constexpr auto PYCV_NOTIMPLEMENTED="PYCV_NOTIMPLEMENTED";
@@ -259,7 +261,8 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
     return self->getStep();
   },"Returns the current step")
   .def("getPosition",&PLMD::pycv::PythonCVInterface:: getPosition,
-       "Returns the vector with the position of the requested atom \"i\"",py::arg("i"))
+       "Returns the vector with the position of the requested atom \"i\"th"
+       " atom requested by the action",py::arg("i"))
   .def("getPositions",[](PLMD::pycv::PythonCVInterface* self) -> py::list{
     py::list atomList;
     const auto Positions = self->getPositions();
@@ -267,7 +270,15 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
       atomList.append(p);
     }
     return atomList;
-  },"Returns a list of the atomic positions of the requested atoms")
+  },"Returns a list of the atomic positions of the atoms requested by the action")
+  .def("getPositionsArray",[](PLMD::pycv::PythonCVInterface* self) -> py::array_t<double>{
+    auto nat=self->getPositions().size();
+    py::array_t<double>::ShapeContainer shape({nat,3});
+    py::array_t<double> atomList(shape,
+      &self->getPositions()[0][0]
+    );
+    return atomList;
+  },"Returns a numpy.array that contaisn the atomic positions of the atoms requested by the action")
   ;
 
   py::class_<PLMD::Vector3d>(m, "Vector3D")
@@ -307,7 +318,7 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
     t(2)=self[2];
     return toret;
   },
-        "Returns a numpy[float64] array with shape \"(3,)\"");
+    "Returns a copy of the vector as a numpy[float64] array with shape \"(3,)\"");
   ;
   m.def("modulo",&PLMD::modulo<3>,
         "Returns the modulo of a Vector3D");//tested
