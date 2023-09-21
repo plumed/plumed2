@@ -108,34 +108,44 @@ PRINT ARG=c1,c2 STRIDE=10
 */
 //+ENDPLUMEDOC
 
-
 //these constant will be used within the kernels
+template<typename calculateFloat>
 struct rationalSwitchParameters{
-  double dmaxSQ=std::numeric_limits<double>::max();
-  double invr0_2=1.0;//r0=1
-  double stretch=1.0;
-  double shift=0.0;
+  calculateFloat dmaxSQ=std::numeric_limits<double>::max();
+  calculateFloat invr0_2=1.0;//r0=1
+  calculateFloat stretch=1.0;
+  calculateFloat shift=0.0;
   int nn=6;
   int mm=12;
 };
 
+template<typename T>
+constexpr cudaDataType cudaPrecision(){return 0;}
+template<>
+constexpr cudaDataType cudaPrecision<double>(){return CUDA_R_64F;}
+template<>
+constexpr cudaDataType cudaPrecision<float>(){return CUDA_R_32F;}
+
 //does not inherit from coordination base because nl is private
+template<typename calculateFloat>
 class CudaCoordination : public Colvar {
+  const cudaDataType USE_CUDA_SPARSE_PRECISION = cudaPrecision<calculateFloat>();
+  //constexpr cudaDataType USE_CUDA_SPARSE_PRECISION = precision;
   std::unique_ptr<NeighborList> nl;
   ///the pointer to the coordinates on the GPU
-  CUDAHELPERS::memoryHolder<double>  cudaCoords;
+  CUDAHELPERS::memoryHolder<calculateFloat>  cudaCoords;
   ///the pointer to the nn list on the GPU
   CUDAHELPERS::memoryHolder<unsigned>  cudaPairList;
-  CUDAHELPERS::memoryHolder<double> cudaCoordination;
-  CUDAHELPERS::memoryHolder<double> cudaDerivatives;
-  CUDAHELPERS::memoryHolder<double> cudaDerivatives_sparse;
+  CUDAHELPERS::memoryHolder<calculateFloat> cudaCoordination;
+  CUDAHELPERS::memoryHolder<calculateFloat> cudaDerivatives;
+  CUDAHELPERS::memoryHolder<calculateFloat> cudaDerivatives_sparse;
   CUDAHELPERS::memoryHolder<int64_t> cudaDerivatives_sparserows;
   CUDAHELPERS::memoryHolder<int64_t> cudaDerivatives_sparsecols;
-  CUDAHELPERS::memoryHolder<double> cudaVirial;
-  CUDAHELPERS::memoryHolder<double> resultDerivatives;
-  CUDAHELPERS::memoryHolder<double> bufferDerivatives;
-  CUDAHELPERS::memoryHolder<double> reductionMemoryVirial;
-  CUDAHELPERS::memoryHolder<double> reductionMemoryCoord;
+  CUDAHELPERS::memoryHolder<calculateFloat> cudaVirial;
+  CUDAHELPERS::memoryHolder<calculateFloat> resultDerivatives;
+  CUDAHELPERS::memoryHolder<calculateFloat> bufferDerivatives;
+  CUDAHELPERS::memoryHolder<calculateFloat> reductionMemoryVirial;
+  CUDAHELPERS::memoryHolder<calculateFloat> reductionMemoryCoord;
   
   cusparseHandle_t sparseMDevHandle;
   cusparseDnVecDescr_t outDevDescr;
@@ -145,7 +155,7 @@ class CudaCoordination : public Colvar {
   cudaStream_t streamCoordination;
   unsigned maxNumThreads=512;
   SwitchingFunction switchingFunction;
-  rationalSwitchParameters switchingParameters;
+  rationalSwitchParameters<calculateFloat> switchingParameters;
 
   bool pbc{true};
   bool serial{false};
@@ -160,10 +170,13 @@ public:
   void prepare() override;
   void calculate() override;
 };
+using CudaCoordination_d = CudaCoordination<double>;
+using CudaCoordination_f = CudaCoordination<float>;
+PLUMED_REGISTER_ACTION(CudaCoordination_d, "CUDACOORDINATION")
+PLUMED_REGISTER_ACTION(CudaCoordination_f, "CUDACOORDINATIONFLOAT")
 
-PLUMED_REGISTER_ACTION(CudaCoordination,"CUDACOORDINATION")
-
-void CudaCoordination::setUpPermanentGPUMemory(){
+template<typename calculateFloat>
+void CudaCoordination<calculateFloat>::setUpPermanentGPUMemory(){
   auto nat = getPositions().size();
   //coordinates values are updated at each step
   if ((3*nat) != cudaCoords.size()){
@@ -174,7 +187,7 @@ void CudaCoordination::setUpPermanentGPUMemory(){
     cusparseCreateDnVec(&outDevDescr,
       3*nat,
       resultDerivatives.pointer(),
-      CUDA_R_64F);
+      USE_CUDA_SPARSE_PRECISION);
   }
   //the neighbour list will be updated at each request of prepare
   auto pairList = nl->getClosePairs();
@@ -186,10 +199,11 @@ void CudaCoordination::setUpPermanentGPUMemory(){
   cusparseCreateDnVec(&outDevDescr,
                     3*nat,
                     resultDerivatives.pointer(),
-                    CUDA_R_64F);
+                    USE_CUDA_SPARSE_PRECISION);
 }
 
-void CudaCoordination::prepare() {
+template<typename calculateFloat>
+void CudaCoordination<calculateFloat>::prepare() {
   if(nl->getStride()>0) {
     if(firsttime || (getStep()%nl->getStride()==0)) {
       requestAtoms(nl->getFullAtomList());
@@ -209,7 +223,8 @@ void CudaCoordination::prepare() {
   }
 }
 
-void CudaCoordination::registerKeywords( Keywords& keys ) {
+template<typename calculateFloat>
+void CudaCoordination<calculateFloat>::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords(keys);
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   keys.addFlag("PAIR",false,"Pair only 1st element of the 1st group with 1st "
@@ -229,14 +244,17 @@ void CudaCoordination::registerKeywords( Keywords& keys ) {
 }
 
 //these constant will be used within the kernels
-__constant__ double cu_epsilon;
+//__constant__ calculateFloat cu_epsilon;
+#define cu_epsilon 1e-14
+//^This deserves a more intelligent solution
 
-__device__ double pcuda_fastpow(double base,int expo) {
+template<typename calculateFloat>
+__device__ calculateFloat pcuda_fastpow(calculateFloat base,int expo) {
   if(expo<0) {
     expo=-expo;
     base=1.0/base;
   }
-  double result = 1.0;
+  calculateFloat result = 1.0;
   while (expo) {
     if (expo & 1)
       result *= base;
@@ -246,12 +264,13 @@ __device__ double pcuda_fastpow(double base,int expo) {
   return result;
 }
 
-__device__ double pcuda_Rational(const double rdist,int NN, int MM,double&dfunc) {
-  double result;
+template<typename calculateFloat>
+__device__ calculateFloat pcuda_Rational(const calculateFloat rdist,int NN, int MM,calculateFloat&dfunc) {
+  calculateFloat result;
   if(2*NN==MM) {
 // if 2*N==M, then (1.0-rdist^N)/(1.0-rdist^M) = 1.0/(1.0+rdist^N)
-    double rNdist=pcuda_fastpow(rdist,NN-1);
-    double iden=1.0/(1+rNdist*rdist);
+    calculateFloat rNdist=pcuda_fastpow(rdist,NN-1);
+    calculateFloat iden=1.0/(1+rNdist*rdist);
     dfunc = -NN*rNdist*iden*iden;
     result = iden;
   } else {
@@ -259,11 +278,11 @@ __device__ double pcuda_Rational(const double rdist,int NN, int MM,double&dfunc)
       result=NN/MM;
       dfunc=0.5*NN*(NN-MM)/MM;
     } else {
-      double rNdist=pcuda_fastpow(rdist,NN-1);
-      double rMdist=pcuda_fastpow(rdist,MM-1);
-      double num = 1.-rNdist*rdist;
-      double iden = 1.0/(1.0-rMdist*rdist);
-      double func = num*iden;
+      calculateFloat rNdist=pcuda_fastpow(rdist,NN-1);
+      calculateFloat rMdist=pcuda_fastpow(rdist,MM-1);
+      calculateFloat num = 1.-rNdist*rdist;
+      calculateFloat iden = 1.0/(1.0-rMdist*rdist);
+      calculateFloat func = num*iden;
       result = func;
       dfunc = ((-NN*rNdist*iden)+(func*(iden*MM)*rMdist));
     }
@@ -271,9 +290,10 @@ __device__ double pcuda_Rational(const double rdist,int NN, int MM,double&dfunc)
   return result;
 }
 
-__global__ void getpcuda_Rational(const double *rdists,const int NN, const int MM,
-    double *dfunc,
-    double*res) {
+template<typename calculateFloat>
+__global__ void getpcuda_Rational(const calculateFloat *rdists,const int NN, const int MM,
+    calculateFloat *dfunc,
+    calculateFloat*res) {
   const int i = threadIdx.x + blockIdx.x * blockDim.x;
   if(rdists[i]<=0.) {
     res[i]=1.;
@@ -286,7 +306,8 @@ __global__ void getpcuda_Rational(const double *rdists,const int NN, const int M
 //   printf("Cuda: cu_epsilon = %f\n", cu_epsilon);
 // }
 
-CudaCoordination::CudaCoordination(const ActionOptions&ao):
+template<typename calculateFloat>
+CudaCoordination<calculateFloat>::CudaCoordination(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao) {
   parseFlag("SERIAL",serial);
 
@@ -390,8 +411,8 @@ CudaCoordination::CudaCoordination(const ActionOptions&ao):
   {//loading data to the GPU
     int nn_=6;
     int mm_=0;
-    double d0_=0.0;
-    double r0_=0.0;
+    calculateFloat d0_=0.0;
+    calculateFloat r0_=0.0;
     parse("R_0",r0_);
     if(r0_<=0.0) {
       error("R_0 should be explicitly specified and positive");
@@ -407,20 +428,20 @@ CudaCoordination::CudaCoordination(const ActionOptions&ao):
     switchingParameters.mm=mm_;
     switchingParameters.stretch=1.0;
     switchingParameters.shift=0.0;
-    double dmax=d0_+r0_*std::pow(0.00001,1./(nn_-mm_));
+    calculateFloat dmax=d0_+r0_*std::pow(0.00001,1./(nn_-mm_));
     constexpr bool dostretch=true;
     if (dostretch){
-      std::vector<double> inputs = {0.0,dmax};
-      double *inputsc,*dummy;
-      double *sc;
-      cudaMalloc(&inputsc, 2 *sizeof(double));
-      cudaMalloc(&dummy, 2*sizeof(double));
-      cudaMalloc(&sc, 2*sizeof(double));
-      cudaMemcpy(inputsc, inputs.data(), 2* sizeof(double),
+      std::vector<calculateFloat> inputs = {0.0,dmax};
+      calculateFloat *inputsc,*dummy;
+      calculateFloat *sc;
+      cudaMalloc(&inputsc, 2 *sizeof(calculateFloat));
+      cudaMalloc(&dummy, 2*sizeof(calculateFloat));
+      cudaMalloc(&sc, 2*sizeof(calculateFloat));
+      cudaMemcpy(inputsc, inputs.data(), 2* sizeof(calculateFloat),
                 cudaMemcpyHostToDevice);
       getpcuda_Rational<<<1,2>>>(inputsc,nn_,mm_,dummy,sc);
-      std::vector<double> s = {0.0,0.0};
-      cudaMemcpy(s.data(), sc, 2* sizeof(double),
+      std::vector<calculateFloat> s = {0.0,0.0};
+      cudaMemcpy(s.data(), sc, 2* sizeof(calculateFloat),
                 cudaMemcpyDeviceToHost);
       cudaFree(inputsc);
       cudaFree(dummy);
@@ -429,9 +450,9 @@ CudaCoordination::CudaCoordination(const ActionOptions&ao):
       switchingParameters.shift=-s[1]*switchingParameters.stretch;
     }
     
-    cudaMemcpyToSymbol(cu_epsilon, &epsilon, sizeof(double));
+    //cudaMemcpyToSymbol(cu_epsilon, &epsilon, sizeof(calculateFloat));
     switchingParameters.dmaxSQ = dmax* dmax;
-    double invr0 = 1.0/r0_;
+    calculateFloat invr0 = 1.0/r0_;
     switchingParameters.invr0_2 = invr0*=invr0;
   }
   checkRead();
@@ -445,7 +466,8 @@ CudaCoordination::CudaCoordination(const ActionOptions&ao):
       << switchingFunction.description() << "\n";
 }
 
-CudaCoordination::~CudaCoordination(){
+template<typename calculateFloat>
+CudaCoordination<calculateFloat>::~CudaCoordination(){
   cusparseDestroyDnVec(outDevDescr);
   cusparseDestroy(sparseMDevHandle);
   cudaStreamDestroy(streamDerivatives);
@@ -453,13 +475,14 @@ CudaCoordination::~CudaCoordination(){
   cudaStreamDestroy(streamCoordination);
 }
 
-__device__ double calculateSqr(const double distancesq,
-    const rationalSwitchParameters switchingParameters,
-    double& dfunc) {
-  double result=0.0;
+template<typename calculateFloat>
+__device__ calculateFloat calculateSqr(const calculateFloat distancesq,
+    const rationalSwitchParameters<calculateFloat> switchingParameters,
+    calculateFloat& dfunc) {
+  calculateFloat result=0.0;
   dfunc=0.0;
   if(distancesq<switchingParameters.dmaxSQ) {
-    const double rdist_2 = distancesq*switchingParameters.invr0_2;
+    const calculateFloat rdist_2 = distancesq*switchingParameters.invr0_2;
     result=pcuda_Rational(
       rdist_2,
       switchingParameters.nn/2,
@@ -478,14 +501,15 @@ __device__ double calculateSqr(const double distancesq,
 #define Y(I) 3*I+1
 #define Z(I) 3*I+2
 
+template<typename calculateFloat>
 __global__ void getCoord(
                         const unsigned numOfPairs,
-                        const rationalSwitchParameters switchingParameters,
-                        const double *coordinates,
+                        const rationalSwitchParameters<calculateFloat> switchingParameters,
+                        const calculateFloat *coordinates,
                         const unsigned *pairList,
-                        double *ncoordOut,
-                        double *ddOut,
-                        double *ddOut_sparse,
+                        calculateFloat *ncoordOut,
+                        calculateFloat *ddOut,
+                        calculateFloat *ddOut_sparse,
                         int64_t *sparseRows,
                         int64_t *sparseCols
                         ) {
@@ -501,14 +525,14 @@ __global__ void getCoord(
   if (i0 == i1)
     return;
 
-  double d[3]={
+  calculateFloat d[3]={
     coordinates[X(i1)] - coordinates[X(i0)],
     coordinates[Y(i1)] - coordinates[Y(i0)],
     coordinates[Z(i1)] - coordinates[Z(i0)]
   };
 
-  double dsq=(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
-  double dfunc=0.;
+  calculateFloat dsq=(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+  calculateFloat dfunc=0.;
   ncoordOut[i]= calculateSqr(dsq,switchingParameters, dfunc);
   const int sparsePlace = 6 * i;
   ddOut[i] = d[0];
@@ -603,7 +627,8 @@ void doReductionVirial (T *inputArray, T *outputArray, const unsigned int len,
   }
 }
 
-void CudaCoordination::calculate() {
+template<typename calculateFloat>
+void CudaCoordination<calculateFloat>::calculate() {
   auto positions = getPositions();
   auto nat = positions.size();
 
@@ -652,7 +677,7 @@ void CudaCoordination::calculate() {
     nn,
     //this part of the array contains the nn dfuncs
     cudaDerivatives.pointer()+3*nn,
-    CUDA_R_64F);
+    USE_CUDA_SPARSE_PRECISION);
   cusparseSpMatDescr_t derivativesSparse;
   cusparseCreateCsc(
     &derivativesSparse,
@@ -665,9 +690,9 @@ void CudaCoordination::calculate() {
     CUSPARSE_INDEX_64I,
     CUSPARSE_INDEX_64I,
     CUSPARSE_INDEX_BASE_ZERO,
-    CUDA_R_64F);
-  double one=1.0;
-  double zero=0.0;
+    USE_CUDA_SPARSE_PRECISION);
+  calculateFloat one=1.0;
+  calculateFloat zero=0.0;
   size_t bufferSize = 0;
   //this computes the buffersize
   cusparseSpMV_bufferSize(
@@ -678,7 +703,7 @@ void CudaCoordination::calculate() {
     dfuncDense,
     &zero,
     outDevDescr,
-    CUDA_R_64F,
+    USE_CUDA_SPARSE_PRECISION,
     CUSPARSE_SPMV_ALG_DEFAULT,//may be improved
     &bufferSize);
   bufferDerivatives.resize(bufferSize);
@@ -691,7 +716,7 @@ void CudaCoordination::calculate() {
     dfuncDense,
     &zero,
     outDevDescr,
-    CUDA_R_64F,
+    USE_CUDA_SPARSE_PRECISION,
     CUSPARSE_SPMV_ALG_DEFAULT,//may be improved
     bufferDerivatives.pointer());
   
