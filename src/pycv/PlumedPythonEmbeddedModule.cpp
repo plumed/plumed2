@@ -58,8 +58,28 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
     );
     return atomList;
   },"Returns a numpy.array that contaisn the atomic positions of the atoms requested by the action")
+  .def("getPbc",&PLMD::pycv::PythonCVInterface::getPbc)
   ;
-
+  py::class_<PLMD::Pbc>(m, "PLMDPbc")
+  //.def(py::init<>())
+  .def("apply",[](PLMD::Pbc* self, py::array_t<double>& deltas) -> py::array_t<double>{
+    //TODO:shape check
+    auto accessor = deltas.unchecked<2>(); 
+    auto nat=deltas.shape(0);
+    py::array_t<double> toRet(py::array_t<double>::ShapeContainer({nat,3ul}));
+    auto retAccessor = toRet.mutable_unchecked<2>(); 
+    for (auto i=0u; i < nat;++i){
+      auto t= self->distance(PLMD::Vector(0.0,0.0,0.0),
+        //I think this may be slow, but thys is a prototype
+        PLMD::Vector(accessor(i,0),accessor(i,1),accessor(i,2)),nullptr);
+        retAccessor(i,0) = t[0];
+        retAccessor(i,1) = t[1];
+        retAccessor(i,2) = t[2];
+    }
+    return toRet;
+  },
+  "Apply PBC to a set of positions or distance vectors")
+  ;
   py::class_<PLMD::Vector3d>(m, "Vector3D")
   .def(py::init<>())
   .def(py::init<double,double,double>())
