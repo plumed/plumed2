@@ -24,7 +24,7 @@ PYTHON_LDFLAGS_SO := $(shell python3-config --ldflags --embed)  -Wl,-export_dyna
 
 # LIBPLUMEDKERNEL_SO := $(abspath ../lib/libplumedKernel.$(SOEXT))
 
-PYCV.$(SOEXT): PythonCV.o PythonFunction.o PythonPlumedBase.o
+PYCV.$(SOEXT): PythonCV.o PythonFunction.o PythonPlumedBase.o PythonCVInterface.o PlumedPythonEmbeddedModule.o
 	@$(info  )
 	@$(info Adding the following flags to the usual PLUMED mklib: $(PYTHON_LDFLAGS_SO))
 	@$(info  )
