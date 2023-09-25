@@ -138,9 +138,9 @@ class CudaCoordination : public Colvar {
   CUDAHELPERS::memoryHolder<unsigned>  cudaPairList;
   CUDAHELPERS::memoryHolder<calculateFloat> cudaCoordination;
   CUDAHELPERS::memoryHolder<calculateFloat> cudaDerivatives;
-  CUDAHELPERS::memoryHolder<calculateFloat> cudaDerivatives_sparse;
-  CUDAHELPERS::memoryHolder<int64_t> cudaDerivatives_sparserows;
-  CUDAHELPERS::memoryHolder<int64_t> cudaDerivatives_sparsecols;
+  CUDAHELPERS::memoryHolder<calculateFloat> cudaDerivativesSparseData;
+  CUDAHELPERS::memoryHolder<int64_t> cudaDerivativesSparseRowsIdx;
+  CUDAHELPERS::memoryHolder<int64_t> cudaDerivativesSparseColsIdx;
   CUDAHELPERS::memoryHolder<calculateFloat> cudaVirial;
   CUDAHELPERS::memoryHolder<calculateFloat> resultDerivatives;
   CUDAHELPERS::memoryHolder<calculateFloat> bufferDerivatives;
@@ -153,6 +153,7 @@ class CudaCoordination : public Colvar {
   cudaStream_t streamDerivatives;
   cudaStream_t streamVirial;
   cudaStream_t streamCoordination;
+
   unsigned maxNumThreads=512;
   SwitchingFunction switchingFunction;
   rationalSwitchParameters<calculateFloat> switchingParameters;
@@ -539,12 +540,12 @@ __global__ void getCoord(
   ddOut[i + 1 * numOfPairs] = d[1];
   ddOut[i + 2 * numOfPairs] = d[2];
   ddOut[i + 3 * numOfPairs] = dfunc;
-  ddOut_sparse[0 + sparsePlace] = -d[0];// * dfunc;
-  ddOut_sparse[1 + sparsePlace] = -d[1];// * dfunc;
-  ddOut_sparse[2 + sparsePlace] = -d[2];// * dfunc;
-  ddOut_sparse[3 + sparsePlace] = d[0] ;//* dfunc;
-  ddOut_sparse[4 + sparsePlace] = d[1] ;//* dfunc;
-  ddOut_sparse[5 + sparsePlace] = d[2] ;//* dfunc;
+  ddOut_sparse[0 + sparsePlace] = -d[0]; // * dfunc;
+  ddOut_sparse[1 + sparsePlace] = -d[1]; // * dfunc;
+  ddOut_sparse[2 + sparsePlace] = -d[2]; // * dfunc;
+  ddOut_sparse[3 + sparsePlace] =  d[0]; //* dfunc;
+  ddOut_sparse[4 + sparsePlace] =  d[1]; //* dfunc;
+  ddOut_sparse[5 + sparsePlace] =  d[2]; //* dfunc;
   sparseRows[0 + sparsePlace] = 3 * i0 + 0;
   sparseRows[1 + sparsePlace] = 3 * i0 + 1;
   sparseRows[2 + sparsePlace] = 3 * i0 + 2;
@@ -650,10 +651,10 @@ void CudaCoordination<calculateFloat>::calculate() {
   
   cudaCoordination.resize(nn);  
   cudaDerivatives.resize(nn *4);
-  cudaDerivatives_sparse.resize(nn *6);
+  cudaDerivativesSparseData.resize(nn *6);
   cudaVirial.resize(nn*9);
-  cudaDerivatives_sparserows.resize(nn*6);
-  cudaDerivatives_sparsecols.resize(nn);
+  cudaDerivativesSparseRowsIdx.resize(nn*6);
+  cudaDerivativesSparseColsIdx.resize(nn);
   /**************************starting the calculations*************************/
   //this initializes the memory to be accumulated
   getCoord<<<ngroups,nthreads,0,streamDerivatives>>> (
@@ -663,9 +664,9 @@ void CudaCoordination<calculateFloat>::calculate() {
     cudaPairList.pointer(),
     cudaCoordination.pointer(),
     cudaDerivatives.pointer(),
-    cudaDerivatives_sparse.pointer(),
-    cudaDerivatives_sparserows.pointer(),
-    cudaDerivatives_sparsecols.pointer()
+    cudaDerivativesSparseData.pointer(),
+    cudaDerivativesSparseRowsIdx.pointer(),
+    cudaDerivativesSparseColsIdx.pointer()
   );
   //since the virial and the coordination reduction are on different streams, 
   //this barrier makes sure that the memory is ready for the operations
@@ -684,9 +685,9 @@ void CudaCoordination<calculateFloat>::calculate() {
     getPositions().size() * 3,//rows
     nn,//columns
     nn*6,//non zerp elements
-    cudaDerivatives_sparsecols.pointer(),
-    cudaDerivatives_sparserows.pointer(),
-    cudaDerivatives_sparse.pointer(),
+    cudaDerivativesSparseColsIdx.pointer(),
+    cudaDerivativesSparseRowsIdx.pointer(),
+    cudaDerivativesSparseData.pointer(),
     CUSPARSE_INDEX_64I,
     CUSPARSE_INDEX_64I,
     CUSPARSE_INDEX_BASE_ZERO,
@@ -707,7 +708,7 @@ void CudaCoordination<calculateFloat>::calculate() {
     CUSPARSE_SPMV_ALG_DEFAULT,//may be improved
     &bufferSize);
   bufferDerivatives.resize(bufferSize);
-  cudaStreamSynchronize ( streamDerivatives );
+  //cudaStreamSynchronize ( streamDerivatives );
   cusparseSpMV(
     sparseMDevHandle,
     CUSPARSE_OPERATION_NON_TRANSPOSE,

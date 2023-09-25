@@ -43,9 +43,9 @@ all: Coordination.so
 %.o: %.cu ndReduction.h cudaHelpers.cuh
 	\$(compile) -o \$@  $<
 
-Coordination.so: ndReduction.o Coordination.o CoordinationFloat.o
+Coordination.so: ndReduction.o Coordination.o
 	\$(link) -lcusparse -o \$@ $^
 
 clean:
-	rm Coordination.so ndReduction.o Coordination.o CoordinationFloat.o
+	rm Coordination.so ndReduction.o
 EOF
