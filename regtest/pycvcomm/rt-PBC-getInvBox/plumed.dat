@@ -1,0 +1,14 @@
+# LOAD FILE=PythonCV.dylib
+
+cvPY: ...
+  PYCVINTERFACE 
+  ATOMS=1
+  IMPORT=pyGetBoxes
+  CALCULATE=pyInvBox
+  COMPONENTS=aix,aiy,aiz,bix,biy,biz,cix,ciy,ciz
+...
+
+PRINT FILE=colvar.out ARG=*
+
+
+

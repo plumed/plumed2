@@ -34,14 +34,6 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
   .def("getPosition",&PLMD::pycv::PythonCVInterface:: getPosition,
        "Returns the vector with the position of the \"i\"th"
        " atom requested by the action",py::arg("i"))
-  .def("getPositionArray",
-      [](PLMD::pycv::PythonCVInterface* self, int i) -> py::array_t<double>{
-        py::array_t<double>::ShapeContainer shape({3});
-        py::array_t<double> atom(shape,&self->getPosition(i)[0]);
-        return atom;
-      },
-       "Returns an ndarray with the position of the \"i\"th"
-       " atom requested by the action",py::arg("i"))
   .def("getPositions",[](PLMD::pycv::PythonCVInterface* self) -> py::list{
     py::list atomList;
     const auto Positions = self->getPositions();
@@ -50,6 +42,15 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
     }
     return atomList;
   },"Returns a list of the atomic positions of the atoms requested by the action")
+  .def("getPositionArray",
+      [](PLMD::pycv::PythonCVInterface* self, int i) -> py::array_t<double>{
+        py::array_t<double>::ShapeContainer shape({3});
+        py::array_t<double> atom(shape,&self->getPosition(i)[0]);
+        return atom;
+      },
+       "Returns an ndarray with the position of the \"i\"th"
+       " atom requested by the action",py::arg("i"))
+  
   .def("getPositionsArray",[](PLMD::pycv::PythonCVInterface* self) -> py::array_t<double>{
     auto nat=self->getPositions().size();
     py::array_t<double>::ShapeContainer shape({nat,3});
@@ -58,19 +59,20 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
     );
     return atomList;
   },"Returns a numpy.array that contaisn the atomic positions of the atoms requested by the action")
-  .def("getPbc",&PLMD::pycv::PythonCVInterface::getPbc)
+  .def("getPbc",&PLMD::pycv::PythonCVInterface::getPbc,
+  "returns an interface to the current pbcs")
   ;
   py::class_<PLMD::Pbc>(m, "PLMDPbc")
   //.def(py::init<>())
-  .def("apply",[](PLMD::Pbc* self, py::array_t<double>& deltas) -> py::array_t<double>{
+  .def("apply",[](const PLMD::Pbc* self, py::array_t<double>& deltas) -> py::array_t<double>{
     //TODO:shape check
     auto accessor = deltas.unchecked<2>(); 
     auto nat=deltas.shape(0);
-    py::array_t<double> toRet(py::array_t<double>::ShapeContainer({nat,3ul}));
+    py::array_t<double> toRet({nat,deltas.shape(1)});
     auto retAccessor = toRet.mutable_unchecked<2>(); 
     for (auto i=0u; i < nat;++i){
       auto t= self->distance(PLMD::Vector(0.0,0.0,0.0),
-        //I think this may be slow, but thys is a prototype
+        //I think this may be slow, but serves as a demonstration as a base for the tests
         PLMD::Vector(accessor(i,0),accessor(i,1),accessor(i,2)),nullptr);
         retAccessor(i,0) = t[0];
         retAccessor(i,1) = t[1];
@@ -78,8 +80,34 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
     }
     return toRet;
   },
+#define T3x3toArray() asd
   "Apply PBC to a set of positions or distance vectors")
+  .def("getBox",[](const PLMD::Pbc* self) -> py::array_t<double>{
+    py::array_t<double> toRet({3,3});
+    auto retAccessor = toRet.mutable_unchecked<2>();
+    PLMD::Tensor box=self->getBox();
+    //TODO: optimize for speed:
+    for(unsigned i=0;i<3;++i){
+      for(unsigned j=0;j<3;++j)
+        retAccessor(i,j) = box(i,j);
+    }
+    return toRet;
+  },
+  "Get a numpy array of shape (3,3) with the box vectors")
+  .def("getInvBox",[](const PLMD::Pbc* self) -> py::array_t<double>{
+    py::array_t<double> toRet({3,3});
+    auto retAccessor = toRet.mutable_unchecked<2>();
+    PLMD::Tensor box=self->getInvBox();
+    //TODO: optimize for speed:
+    for(unsigned i=0;i<3;++i){
+      for(unsigned j=0;j<3;++j)
+        retAccessor(i,j) = box(i,j);
+    }
+    return toRet;
+  },
+  "Get a numpy array of shape (3,3) with the inverted box vectors")
   ;
+
   py::class_<PLMD::Vector3d>(m, "Vector3D")
   .def(py::init<>())
   .def(py::init<double,double,double>())
@@ -119,6 +147,7 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
   },
     "Returns a copy of the vector as a numpy[float64] array with shape \"(3,)\"");
   ;
+
   m.def("modulo",&PLMD::modulo<3>,
         "Returns the modulo of a Vector3D");//tested
   m.def("modulo2",&PLMD::modulo2<3>,
