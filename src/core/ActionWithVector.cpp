@@ -308,7 +308,7 @@ void ActionWithVector::getAllActionLabelsInChain( std::vector<std::string>& myla
 
 void ActionWithVector::taskIsActive( const unsigned& current, int& flag ) const {
   if( isActive() ) flag = checkTaskStatus( current, flag );
-  if( action_to_do_after ) action_to_do_after->taskIsActive( current, flag );
+  if( flag<=0 && action_to_do_after ) action_to_do_after->taskIsActive( current, flag );
 }
 
 void ActionWithVector::getAdditionalTasksRequired( ActionWithVector* action, std::vector<unsigned>& atasks ) {
