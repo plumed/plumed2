@@ -49,5 +49,5 @@ public:
   static void registerKeywords( Keywords& keys );
 };
 
-} // namespace pycv 
-} // namespace PLMD 
+} // namespace pycv
+} // namespace PLMD
