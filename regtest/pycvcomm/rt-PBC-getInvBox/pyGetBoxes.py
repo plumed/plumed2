@@ -7,20 +7,21 @@
 
 import numpy as np
 import plumedCommunications
-#import plumedUtilities
-log=open("pydist.log","w")
 
-print("Imported my pydist.",file=log)
+# import plumedUtilities
+log = open("pydist.log", "w")
 
-def pyInvBox(action:plumedCommunications.PythonCVInterface):
-    d = action.getPbc().getInvBox()
-    print(f"{d=}",file=log)
-    ret={}
-    grad={}
-    for i,name in enumerate(["a","b","c"]):
-        for j,coord in enumerate(["x","y","z"]):
-            ret[f"{name}i{coord}"]=d[i,j]
-            grad[f"{name}i{coord}"]=np.zeros((1,3))
-    print(ret,file=log)
-    return ret,grad
-    
+print("Imported my pydist.", file=log)
+
+
+def pyInvBox(action: plumedCommunications.PythonCVInterface):
+    invBox = action.getPbc().getInvBox()
+    print(f"{invBox=}", file=log)
+    ret = {}
+    grad = {}
+    for i, name in enumerate(["a", "b", "c"]):
+        for j, coord in enumerate(["x", "y", "z"]):
+            ret[f"{name}i{coord}"] = invBox[i, j]
+            grad[f"{name}i{coord}"] = np.zeros((1, 3))
+    print(ret, file=log)
+    return ret, grad

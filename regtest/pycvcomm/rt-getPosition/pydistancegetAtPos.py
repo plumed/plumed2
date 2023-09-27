@@ -13,10 +13,11 @@ log = open("pydist.log", "w")
 
 print("Imported my pydist+.", file=log)
 
+
 def pydist(action: plumedCommunications.PythonCVInterface):
     at: list = [
-        action.getPositionArray(0),
-        action.getPositionArray(1),
+        action.getPosition(0),
+        action.getPosition(1),
     ]
     d = at[0] - at[1]
     d = np.linalg.norm(d)

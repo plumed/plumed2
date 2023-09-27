@@ -7,25 +7,26 @@
 
 import numpy as np
 import plumedCommunications
-log=open("pycv.log","w")
 
-print("Imported.",file=log)
+log = open("pycv.log", "w")
 
-def changeAtom(plmdAction:plumedCommunications.PythonCVInterface):
+print("Imported.", file=log)
+
+
+def changeAtom(plmdAction: plumedCommunications.PythonCVInterface):
     print(f"pyCVCALLED")
-    toret={
-        "setAtomRequest":[0,int(plmdAction.getStep())+1]
-    }
-    #this is just for "fun"
+    toret = {"setAtomRequest": [0, int(plmdAction.getStep()) + 1]}
+    # this is just for "fun"
     if plmdAction.getStep() == 3:
-        toret["setAtomRequest"][1]=1
+        toret["setAtomRequest"][1] = 1
     print(toret)
     return toret
-    
-def pydist(action:plumedCommunications.PythonCVInterface):
-    at:list[plumedCommunications.Vector3D]=[action.getPosition(0),action.getPosition(1)]
-    
-    d = plumedCommunications.modulo(at[0]-at[1])
-    print(f"{at[0]},{at[1]},{d}",file=log)
+
+
+def pydist(action: plumedCommunications.PythonCVInterface):
+    at: np.ndarray = action.getPositions()
+    d = at[0] - at[1]
+    d = np.linalg.norm(d)
+    print(f"{at[0]},{at[1]},{d}", file=log)
 
     return d

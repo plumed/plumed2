@@ -14,14 +14,18 @@ log = open("pydist.log", "w")
 print("Imported my pydist.", file=log)
 
 
-def pyBox(action: plumedCommunications.PythonCVInterface):
-    d = action.getPbc().getBox()
-    print(f"{d=}", file=log)
-    ret = {}
-    grad = {}
-    for i, name in enumerate(["a", "b", "c"]):
-        for j, coord in enumerate(["x", "y", "z"]):
-            ret[f"{name}{coord}"] = d[i, j]
-            grad[f"{name}{coord}"] = np.zeros((1, 3))
-    print(ret, file=log)
-    return ret, grad
+def pydist_(x):
+    # print("call",file=log)
+    return 0
+
+
+def pydist(action: plumedCommunications.PythonCVInterface):
+    at: np.ndarray = action.getPositions()
+
+    # print(at0,file=log)
+    d = at[0] - at[1]
+    d = np.linalg.norm(d)
+    print(f"{at[0]},{at[1]},{d}", file=log)
+
+    # print(f"{at1},{at2}",file=log)
+    return d
