@@ -19,45 +19,16 @@ To activate these functionalities, please follow the installation instructions d
 
 \section Installation
 
-\warning 
-Note that Libtorch APIs are still in beta phase regarding stability, so there might be breaking changes in newer versions. Currently, versions between 1.8.* and 1.13.* are supported. Please note that if you want to link a different version it might be necessary to manually specify the required libraries within LIBS in configure. Furthermore, it is advised to use the same version of PyTorch and LibTorch to avoid compatibility issues.
+To compile PLUMED with LibTorch support, please look at the installation instruction about \ref installation-libtorch. 
 
-**Download LibTorch C++ API library**
-
-You can download the pre-built LibTorch library from their <a href="https://pytorch.org/get-started/locally/"> website</a>. For example, the following script downloads the 1.13.1 version (CPU, with C++11 ABI compatibility).
-
-\verbatim
-wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-1.13.1%2Bcpu.zip 
-unzip libtorch-cxx11-abi-shared-with-deps-1.13.1+cpu.zip ; 
-LIBTORCH=${PWD}/libtorch
-\endverbatim
-
-The location of the include and library files need to be exported in the environment. For convenience, we can save them in a file `sourceme.sh` inside the libtorch folder:
-
-\verbatim
-> echo "export CPATH=${LIBTORCH}/include/torch/csrc/api/include/:${LIBTORCH}/include/:${LIBTORCH}/include/torch:$CPATH" >> ${LIBTORCH}/sourceme.sh
-> echo "export INCLUDE=${LIBTORCH}/include/torch/csrc/api/include/:${LIBTORCH}/include/:${LIBTORCH}/include/torch:$INCLUDE" >> ${LIBTORCH}/sourceme.sh
-> echo "export LIBRARY_PATH=${LIBTORCH}/lib:$LIBRARY_PATH" >> ${LIBTORCH}/sourceme.sh
-> echo "export LD_LIBRARY_PATH=${LIBTORCH}/lib:$LD_LIBRARY_PATH" >> ${LIBTORCH}/sourceme.sh
-> . ${LIBTORCH}/sourceme.sh
-\endverbatim
-
-Remember to source the `sourceme.sh` file in your `~/.bashrc` or  `~/.bash_profile` file. 
-
-**Configure PLUMED**
-
-In order to activate the functionalities of ISDB that require libtorch, we need to specify to look for libtorch with `--enable-libtorch`:
+Once LibTorch has been downloaded and the relevant environment variables are set, one can configure PLUMED with the following options:
 
 \verbatim
 > ./configure --enable-libtorch
 \endverbatim
 
-\attention
-To verify that the linking of LibTorch is succesful, one should look at the output of the configure command, which should report one of the following lines: `checking libtorch without extra libs.. yes` or `checking libtorch with -ltorch_cpu -lc10... yes`. If not, configure will display a warning (and not an error!) that says: `configure: WARNING: cannot enable __PLUMED_HAS_LIBTORCH`. In this case, it is recommended to examine the output of the above two commands in the config.log file to understand the reason (e.g. it cannot find the required libraries).
-
-**Additional notes**
-- A compiler with C++14 support is required. 
-- If you want to use the pre-cxx11 ABI LibTorch binaries the following flag should be added to the configure: `CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0"`.
+\warning 
+Libtorch APIs are still in beta phase regarding stability, so there might be breaking changes in newer versions. Currently, versions of PyTorch and LibTorch between 1.8.* and 2.0.0 have been tested.
 
 \section Usage
 
