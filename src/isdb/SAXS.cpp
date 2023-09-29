@@ -88,7 +88,7 @@ solvent accessible beads only: the form factors of the amino acids / phosphate g
 nucleobases with a SASA (computed via LCPO algorithm) greater than a threshold are corrected according to an
 electron density term. Both the surface cut-off threshold and the electron density term can be set by the user
 with the SASA_CUTOFF and SOLVATION_CORRECTION keywords. Moreover, SASA stride calculation can be modified using
-SOLVATION_STRIDE, which is set to 100 steps by default.
+SOLVATION_STRIDE, which is set to 10 steps by default.
 ONEBEAD requires an additional PDB file to perform mapping conversion, which must be provided via TEMPLATE
 keyword. This PDB file should only include the atoms for which the SAXS intensity will be computed.
 The AMBER OL3 (RNA) and OL15 (DNA) naming is required for nucleic acids.
@@ -104,6 +104,9 @@ the intensity at q = 0. Each EXPINT is divided by SCALE_EXPINT.
 The maximum QVALUE for ONEBEAD is set to 0.3 inverse angstroms.
 The solvent density, that by default is set to 0.334 electrons per cubic angstrom (bulk water), can be modified
 using the SOLVDENS keyword.
+
+The ABSOLUTE flag can be used in order to calculate intensities in the absolute scale. It is only available for
+the ATOMISTIC scheme and cannot be used with SCALE_EXPINT.
 
 By default SAXS is calculated using Debye on CPU, by adding the GPU flag it is possible to solve the equation on
 a GPU if the ARRAYFIRE libraries are installed and correctly linked.
@@ -166,7 +169,7 @@ solvent accessible beads only: the form factors of the amino acids / phosphate g
 nucleobases with a SASA (computed via LCPO algorithm) greater than a threshold are corrected according to an
 electron density term. Both the surface cut-off threshold and the electron density term can be set by the user
 with the SASA_CUTOFF and SOLVATION_CORRECTION keywords. Moreover, SASA stride calculation can be modified using
-SOLVATION_STRIDE, which is set to 100 steps by default. The deuteration of the solvent-exposed residues is chosen
+SOLVATION_STRIDE, which is set to 10 steps by default. The deuteration of the solvent-exposed residues is chosen
 with a probability equal to the deuterium concentration in the buffer. The deuterated residues are updated with a
 stride equal to SOLVATION_STRIDE. The fraction of deuterated water can be set with DEUTER_CONC, the default value
 is 0.
@@ -188,6 +191,9 @@ the intensity at q = 0. Each EXPINT is divided by SCALE_EXPINT.
 The maximum QVALUE for ONEBEAD is set to 0.3 inverse angstroms.
 The solvent density, that by default is set to 0.334 electrons per cubic angstrom (bulk water), can be modified
 using the SOLVDENS keyword.
+
+The ABSOLUTE flag can be used in order to calculate intensities in the absolute scale. It is only available for
+the ATOMISTIC scheme and cannot be used with SCALE_EXPINT.
 
 By default SANS is calculated using Debye on CPU, by adding the GPU flag it is possible to solve the equation on a
 GPU if the ARRAYFIRE libraries are installed and correctly linked.
@@ -260,6 +266,7 @@ private:
     double x;
   };
   bool saxs;
+  bool absolute;
   bool pbc;
   bool serial;
   bool gpu;
@@ -339,12 +346,13 @@ PLUMED_REGISTER_ACTION(SAXS,"SANS")
 void SAXS::registerKeywords(Keywords& keys) {
   componentsAreNotOptional(keys);
   MetainferenceBase::registerKeywords(keys);
-  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
+  keys.addFlag("NOPBC",false,"Ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   keys.add("compulsory","DEVICEID","-1","Identifier of the GPU to be used");
-  keys.addFlag("GPU",false,"calculate SAXS using ARRAYFIRE on an accelerator device");
-  keys.addFlag("ATOMISTIC",false,"calculate SAXS for an atomistic model");
-  keys.addFlag("MARTINI",false,"calculate SAXS for a Martini model");
+  keys.addFlag("GPU",false,"Calculate SAXS using ARRAYFIRE on an accelerator device");
+  keys.addFlag("ABSOLUTE",false,"Absolute intensity: the intensities for each q-value are not normalised for the intensity at q=0.");
+  keys.addFlag("ATOMISTIC",false,"Calculate SAXS for an atomistic model");
+  keys.addFlag("MARTINI",false,"Calculate SAXS for a Martini model");
   keys.addFlag("ONEBEAD",false,"calculate SAXS for a single bead model");
   keys.add("compulsory","TEMPLATE","template.pdb","A PDB file is required for ONEBEAD mapping");
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein");
@@ -353,20 +361,21 @@ void SAXS::registerKeywords(Keywords& keys) {
   keys.add("optional","PARAMETERSFILE","Read the PARAMETERS from a file");
   keys.add("compulsory","DEUTER_CONC","0.","Fraction of deuterated solvent");
   keys.add("compulsory","SOLVDENS","0.334","Density of the solvent to be used for the correction of atomistic form factors");
-  keys.add("compulsory","SOLVATION_CORRECTION","0.0","Hydration layer electron density correction (ONEBEAD only)");
+  keys.add("compulsory","SOLVATION_CORRECTION","0.0","Solvation layer electron density correction (ONEBEAD only)");
   keys.add("compulsory","SASA_CUTOFF","1.0","SASA value to consider a residue as exposed to the solvent (ONEBEAD only)");
   keys.add("numbered","EXPINT","Add an experimental value for each q value");
   keys.add("numbered","SIGMARES","Variance of Gaussian distribution describing the deviation in the scattering angle for each q value");
   keys.add("compulsory","N","10","Number of points in the resolution function integral");
-  keys.add("compulsory","SOLVATION_STRIDE","100","Number of steps between every new residues solvation estimation via LCPO (ONEBEAD only)");
+  keys.add("compulsory","SOLVATION_STRIDE","10","Number of steps between every new residues solvation estimation via LCPO (ONEBEAD only)");
   keys.add("compulsory","SCALE_EXPINT","1.0","Scaling value for experimental data normalization");
-  keys.addOutputComponent("q","default","the # SAXS of q");
-  keys.addOutputComponent("exp","EXPINT","the # experimental intensity");
+  keys.addOutputComponent("q","default","The # SAXS of q");
+  keys.addOutputComponent("exp","EXPINT","The # experimental intensity");
 }
 
 SAXS::SAXS(const ActionOptions&ao):
   PLUMED_METAINF_INIT(ao),
   saxs(true),
+  absolute(false),
   pbc(true),
   serial(false),
   gpu(false),
@@ -426,7 +435,7 @@ SAXS::SAXS(const ActionOptions&ao):
   parse("PARAMETERSFILE",parametersfile);
   if (parametersfile.length() != 0) fromfile=true;
   if(fromfile) log.printf("  will read form factors from file\n");
-
+  parseFlag("ABSOLUTE",absolute);
 
   if(martini&&atomistic) error("You cannot use MARTINI and ATOMISTIC at the same time");
   if(martini&&onebead) error("You cannot use MARTINI and ONEBEAD at the same time");
@@ -460,13 +469,16 @@ SAXS::SAXS(const ActionOptions&ao):
   double scale_expint=1.;
   parse("SCALE_EXPINT",scale_expint);
 
+  if((!atomistic&&absolute)||(absolute&&scale_expint!=1)) error("ABSOLUTE can be used only combined with ATOMISTIC without SCALE_EXPINT");
+  if(atomistic) log.printf("  Scale for intensities: %s\n", absolute ? "absolute" : "normalised");
+
   double correction = 0.00;
   parse("SOLVATION_CORRECTION", correction);
   rho_corr=rho-correction;
   if(onebead) log.printf("  Solvation density contribution: %lf\n", correction);
   if((atomistic||martini||fromfile)&&(rho_corr!=rho)) log.printf("  Solvation density contribution is taken into account in ONEBEAD only\n");
 
-  solv_stride = 100;
+  solv_stride = 10;
   parse("SOLVATION_STRIDE", solv_stride);
   if(solv_stride < 1.) error("SOLVATION_STRIDE must be greater than 0");
   if(onebead&&(rho_corr!=rho)) log.printf("  SASA calculation stride: %u\n", solv_stride);
@@ -489,7 +501,7 @@ SAXS::SAXS(const ActionOptions&ao):
     if( !pdb.read(template_name,plumed.getAtoms().usingNaturalUnits(),1.) ) plumed_merror("missing input file " + template_name);
   }
 
-  // Here we perform the preliminary mapping for onebead representation
+  // preliminary mapping for onebead representation
   if(onebead) {
     LCPOparam.resize(size);
     nres = getOnebeadMapping(pdb, atoms);
@@ -523,7 +535,7 @@ SAXS::SAXS(const ActionOptions&ao):
   std::vector<std::vector<long double> > parameter_H;
   std::vector<std::vector<long double> > parameter_D;
 
-  if(!atomistic&&!martini&&!onebead&&!fromfile) { // read PARAMETERS
+  if(!atomistic&&!martini&&!onebead&&!fromfile) { // read PARAMETERS from PLUMED file
     if (saxs) {
       // read in parameter std::vector
       std::vector<std::vector<long double> > parameter;
@@ -565,8 +577,7 @@ SAXS::SAXS(const ActionOptions&ao):
       for(unsigned i=0; i<size; ++i) Iq0+=parameter[i];
       Iq0 *= Iq0;
     }
-  } else if (fromfile) {
-    // read in parameters from file
+  } else if (fromfile) { // read PARAMETERS from user-provided file
     log.printf("  Reading PARAMETERS from file: %s\n", parametersfile.c_str());
     if (saxs) {
       FF_tmp.resize(numq,std::vector<long double>(size));
@@ -629,7 +640,7 @@ SAXS::SAXS(const ActionOptions&ao):
     }
   } else if(onebead) {
     if(saxs) {
-      // read in parameter std::vector
+      // read built-in ONEBEAD parameters
       FF_tmp_vac.resize(numq,std::vector<long double>(NONEBEAD));
       FF_tmp_mix.resize(numq,std::vector<long double>(NONEBEAD));
       FF_tmp_solv.resize(numq,std::vector<long double>(NONEBEAD));
@@ -656,7 +667,7 @@ SAXS::SAXS(const ActionOptions&ao):
         Iq0_solv[i]=parameter_solv[atoi[i]][0];
       }
     } else { // SANS
-      // read in parameter std::vector
+      // read built-in ONEBEAD parameters
       FF_tmp_vac_H.resize(numq,std::vector<long double>(NONEBEAD));
       FF_tmp_mix_H.resize(numq,std::vector<long double>(NONEBEAD));
       FF_tmp_solv_H.resize(numq,std::vector<long double>(NONEBEAD));
@@ -693,7 +704,7 @@ SAXS::SAXS(const ActionOptions&ao):
       }
     }
   } else if(martini) {
-    // read in parameter std::vector
+    // read built-in MARTINI parameters
     FF_tmp.resize(numq,std::vector<long double>(NMARTINI));
     std::vector<std::vector<long double> > parameter;
     parameter.resize(NMARTINI);
@@ -922,15 +933,18 @@ void SAXS::calcNlist(std::vector<std::vector<int> > &Nlist)
 }
 
 // calculates SASA according to LCPO algorithm
-void SAXS::sasa_calculate(std::vector<bool> &solv_res)
-{
+void SAXS::sasa_calculate(std::vector<bool> &solv_res) {
   unsigned natoms = getNumberOfAtoms();
   std::vector<std::vector<int> > Nlist(natoms);
   calcNlist(Nlist);
   std::vector<double> sasares(nres, 0.);
-  for(unsigned i = 0; i < natoms; ++i) {
-    if(LCPOparam[i].size()>1) {
-      if(LCPOparam[i][1]>0.0) {
+
+  #pragma omp parallel num_threads(OpenMP::getNumThreads())
+  {
+    std::vector<double> private_sasares(nres, 0.);
+    #pragma omp for
+    for (unsigned i = 0; i < natoms; ++i) {
+      if (LCPOparam[i].size() > 1 && LCPOparam[i][1] > 0.0) {
         double Aij = 0.0;
         double Aijk = 0.0;
         double Ajk = 0.0;
@@ -954,13 +968,19 @@ void SAXS::sasa_calculate(std::vector<bool> &solv_res)
           Ajk += Ajkt;
         }
         double sasai = (LCPOparam[i][1]*S1+LCPOparam[i][2]*Aij+LCPOparam[i][3]*Ajk+LCPOparam[i][4]*Aijk);
-        if (sasai > 0 ) {
-          sasares[residue_atom[i]] += sasai/100.;
+        if (sasai > 0) {
+          private_sasares[residue_atom[i]] += sasai / 100.0;
         }
       }
     }
+    #pragma omp critical
+    { // combining private_sasares into sasares
+      for (unsigned i = 0; i < nres; ++i) {
+        sasares[i] += private_sasares[i];
+      }
+    }
   }
-  for(unsigned i=0; i<nres; ++i) {
+  for(unsigned i=0; i<nres; ++i) { // updating solv_res based on sasares
     if(sasares[i]>sasa_cutoff) solv_res[i] = 1;
     else solv_res[i] = 0;
   }
@@ -6534,6 +6554,7 @@ double SAXS::calculateAFF(const std::vector<AtomNumber> &atoms, std::vector<std:
   } else {
     error("MOLINFO DATA not found\n");
   }
+  if(absolute) Iq0 = 1;
 
   return Iq0;
 }
@@ -6605,6 +6626,7 @@ double SAXS::calculateAFFsans(const std::vector<AtomNumber> &atoms, std::vector<
   } else {
     error("MOLINFO DATA not found\n");
   }
+  if(absolute) Iq0 = 1;
 
   return Iq0;
 }
