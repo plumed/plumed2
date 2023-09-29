@@ -306,7 +306,7 @@ Then, rebuild plumed.
 
 \subsection installation-libtorch LibTorch
 
-In order to use machine learning models optimized with PyTorch (as in the \ref PYTORCH module) one needs to link the LibTorch C++ library. To do so, one can follow these instructions to download the pre-compiled library and configure PLUMED to use it.
+In order to use machine learning models optimized with PyTorch (as in the \ref PYTORCH module) or specific actions implemented in the \ref PLUMED-ISDB module, one needs to link the LibTorch C++ library. To do so, one can follow these instructions to download the pre-compiled library and configure PLUMED to use it.
 
 \warning 
 Libtorch APIs are still in beta phase, so there might be breaking changes in newer versions. Currently, versions between 1.8.* and 2.0.0 have been tested. Please note that if you want to link a different version it might be necessary to manually specify the required libraries within LIBS in configure. 
@@ -342,7 +342,7 @@ Once the environment variables are set, we can configure PLUMED with the `--enab
 
 **Notes** 
 - In order to activate also the \ref PYTORCH module one needs to add `--enable-modules=pytorch` or `--enable-modules=all`.
-- `--enable-libtorch` will first try first to link the CUDA-enabled library and if it does not found it it will try to link the CPU-only version.
+- `--enable-libtorch` will first try first to link the CUDA-enabled library and if it does not found it will try to link the CPU-only version.
 - To verify that the linking of LibTorch is succesful, one should look at the output of the configure commands: `checking libtorch[cpu/cuda] [without extra libs/with -ltorch_cpu ... ]`.  If any of these commands are succesfull, it will return `... yes`. Otherwise, the configure will display a warning (and not an error!) that says: `configure: WARNING: cannot enable __PLUMED_HAS_LIBTORCH`. In this case, it is recommended to examine the output of the above commands in the config.log file to understand the reason (e.g. it cannot find the required libraries).
 - If you want to use the pre-cxx11 ABI LibTorch binaries (useful for instance when installing it on an HPC cluster) then you should download the related version from PyTorch website (e.g. <a href="https://download.pytorch.org/libtorch/cpu/libtorch-shared-with-deps-2.0.0%2Bcpu.zip"> `libtorch-shared-with-deps-2.0.0%2Bcpu.zip`</a>) and add the following option to the configure: `CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0"`.
 
