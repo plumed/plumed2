@@ -13,7 +13,7 @@ The ISDB module contains collective variables, functions and biases originally d
 Some of the functionalities implemented in the ISDB module require the PyTorch C++ APIs (LibTorch) to be linked against PLUMED.
 Currently, these include:
 
-- list of functionalities
+- \ref EMMIVOX 
 
 To activate these functionalities, please follow the installation instructions detailed below.
 
