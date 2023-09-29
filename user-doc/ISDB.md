@@ -15,11 +15,12 @@ Currently, these include:
 
 - \ref EMMIVOX 
 
-To activate these functionalities, please follow the installation instructions detailed below.
+To activate these functionalities, please follow the installation instructions below.
 
 \section Installation
 
 To compile PLUMED with LibTorch support, please look at the installation instruction about \ref installation-libtorch. 
+It is highly recommened to install the CUDA version of LibTorch to calculate \ref EMMIVOX efficiently on the GPU.
 
 Once LibTorch has been downloaded and the relevant environment variables are set, one can configure PLUMED with the following options:
 
@@ -28,7 +29,7 @@ Once LibTorch has been downloaded and the relevant environment variables are set
 \endverbatim
 
 \warning 
-Libtorch APIs are still in beta phase regarding stability, so there might be breaking changes in newer versions. Currently, versions of PyTorch and LibTorch between 1.8.* and 2.0.0 have been tested.
+Libtorch APIs are still in beta phase regarding stability, so there might be breaking changes in newer versions. Currently, versions of LibTorch between 1.8.* and 2.0.0 have been tested.
 
 \section Usage
 
