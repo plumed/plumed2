@@ -320,7 +320,14 @@ wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-de
 unzip libtorch-cxx11-abi-shared-with-deps-2.0.0+cpu.zip ; 
 \endverbatim
 
-The location of the include and library files need to be exported in the environment:
+If you have a GPU, you might want to use the CUDA-accelerated version of LibTorch. For example, the following script downloads the <a href="https://download.pytorch.org/libtorch/cu117/libtorch-shared-with-deps-2.0.0%2Bcu117.zip"> `libtorch-shared-with-deps-2.0.0%2Bcu117.zip`</a> (2.0.0, GPU, Cuda 11.7, pre-cxx11 ABI binary).
+
+\verbatim
+wget https://download.pytorch.org/libtorch/cu117/libtorch-shared-with-deps-2.0.0%2Bcu117.zip 
+unzip libtorch-shared-with-deps-2.0.0+cu117.zip 
+\endverbatim
+
+In both CPU and GPU cases, the location of the include and library files need to be exported in the environment:
 
 \verbatim
 LIBTORCH=${PWD}/libtorch
