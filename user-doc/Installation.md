@@ -306,7 +306,7 @@ Then, rebuild plumed.
 
 \subsection installation-libtorch LibTorch
 
-In order to use machine learning models optimized with PyTorch (as in the \ref PYTORCH module) or specific actions implemented in the \ref PLUMED-ISDB module, one needs to link the LibTorch C++ library. To do so, one can follow these instructions to download the pre-compiled library and configure PLUMED to use it.
+In order to use machine learning models optimized with PyTorch (as in the \ref PYTORCH module) or specific actions implemented in the \ref ISDB module, one needs to link the LibTorch C++ library. To do so, one can follow these instructions to download the pre-compiled library and configure PLUMED to use it.
 
 \warning 
 Libtorch APIs are still in beta phase, so there might be breaking changes in newer versions. Currently, versions between 1.8.* and 2.0.0 have been tested. Please note that if you want to link a different version it might be necessary to manually specify the required libraries within LIBS in configure. 
