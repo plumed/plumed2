@@ -128,16 +128,9 @@ private:
   bool do_corr_;
 // Monte Carlo stuff
   Random   random_;
-  // Scale Monte Carlo
+  // Scale and Offset
   double scale_;
-  double scale_min_;
-  double scale_max_;
-  double dscale_;
   double offset_;
-  double doffset_;
-  int    MCSstride_;
-  double MCSaccept_;
-  double MCStrials_;
 // Bfact Monte Carlo
   double   dbfact_;
   double   bfactmin_;
@@ -196,8 +189,6 @@ private:
   void get_close_residues();
 // do MonteCarlo for Bfactor
   void doMonteCarloBfact();
-// do MonteCarlo for scale
-  void doMonteCarloScale();
 // calculate model parameters
   std::vector<double> get_Model_param(std::vector<AtomNumber> &atoms);
 // read data file
@@ -259,13 +250,8 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   keys.add("optional","BFACT_SIGMA","Bfactor sigma prior");
   keys.add("optional","BFACT_GROUP","sample Bfactors in groups");
   keys.add("optional","STATUS_FILE","write a file with all the data useful for restart");
-  keys.add("optional","SCALE_MIN","minimum scale");
-  keys.add("optional","SCALE_MAX","maximum scale");
-  keys.add("optional","DSCALE","maximum scale MC move");
   keys.add("optional","SCALE","scale factor");
   keys.add("optional","OFFSET","offset");
-  keys.add("optional","DOFFSET","maximum offset MC move");
-  keys.add("optional","MCSCALE_STRIDE", "scale factor MC stride");
   keys.add("optional","TEMP","temperature");
   keys.add("optional","WRITE_MAP","file with model density");
   keys.add("optional","WRITE_MAP_STRIDE","stride for writing model density to file");
@@ -290,8 +276,7 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   nl_dist_cutoff_(1.0), nl_gauss_cutoff_(3.0), nl_stride_(50),
   first_time_(true), no_aver_(false), do_corr_(false),
-  scale_(1.), dscale_(0.), offset_(0.), doffset_(0.),
-  MCSstride_(1), MCSaccept_(0.), MCStrials_(0.),
+  scale_(1.), offset_(0.),
   dbfact_(0.0), bfactmin_(0.05), bfactmax_(5.0),
   bfactsig_(0.1), bfactnoc_(false), bfactread_(false),
   MCBstride_(1), MCBaccept_(0.), MCBtrials_(0.),
@@ -345,21 +330,9 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   if(temp>0.0) kbt_=plumed.getAtoms().getKBoltzmann()*temp;
   else kbt_=plumed.getAtoms().getKbT();
 
-  // scale MC
+  // scale and offset
   parse("SCALE", scale_);
-  parse("DSCALE",dscale_);
   parse("OFFSET",offset_);
-  parse("DOFFSET",doffset_);
-  // other parameters
-  if(dscale_>0.) {
-    parse("MCSCALE_STRIDE",MCSstride_);
-    parse("SCALE_MIN",scale_min_);
-    parse("SCALE_MAX",scale_max_);
-    // checks
-    if(MCSstride_<=0)  error("you must specify a positive MCSCALE_STRIDE");
-    if(scale_min_<=0.) error("SCALE_MIN must be strictly positive");
-    if(scale_max_<=scale_min_) error("SCALE_MAX must be greater than SCALE_MIN");
-  }
 
   // B-factors MC
   parse("DBFACT",dbfact_);
@@ -439,13 +412,6 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   log.printf("  offset : %lf\n", offset_);
   log.printf("  reading/writing to status file : %s\n", statusfilename_.c_str());
   log.printf("  with stride : %u\n", statusstride_);
-  if(dscale_>0.0) {
-    log.printf("  minimum scale : %lf\n", scale_min_);
-    log.printf("  maximum scale : %lf\n", scale_max_);
-    log.printf("  maximum scale MC move : %lf\n", dscale_);
-    log.printf("  maximum offset MC move : %lf\n", doffset_);
-    log.printf("  stride MC move : %u\n", MCSstride_);
-  }
   if(dbfact_>0) {
     log.printf("  maximum Bfactor MC move : %f\n", dbfact_);
     log.printf("  stride MC move : %u\n", MCBstride_);
@@ -523,7 +489,6 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   addComponent("offset");                componentIsNotPeriodic("offset");
   addComponent("kbt");                   componentIsNotPeriodic("kbt");
   if(dbfact_>0)   {addComponent("accB"); componentIsNotPeriodic("accB");}
-  if(dscale_>0.0) {addComponent("accS"); componentIsNotPeriodic("accS");}
   if(do_corr_)    {addComponent("corr"); componentIsNotPeriodic("corr");}
 
   // initialize random seed
@@ -1255,62 +1220,6 @@ void EMMIVOX::doMonteCarloBfact()
   calculate_fmod();
 }
 
-void EMMIVOX::doMonteCarloScale()
-{
-  // store old energy, scale, and offset
-  double old_ene = ene_;
-  double old_scale = scale_;
-  double old_offset = offset_;
-
-  // propose move in scale
-  double ds = dscale_ * ( 2.0 * random_.RandU01() - 1.0 );
-  double new_scale = scale_ + ds;
-  // check boundaries
-  if(new_scale > scale_max_) {new_scale = 2.0 * scale_max_ - new_scale;}
-  if(new_scale < scale_min_) {new_scale = 2.0 * scale_min_ - new_scale;}
-  // propose move in offset
-  double doff = doffset_ * ( 2.0 * random_.RandU01() - 1.0 );
-  double new_off = offset_ + doff;
-
-  // communicate new_scale and new_off to other replicas
-  if(!no_aver_ && nrep_>1) {
-    if(replica_!=0) {new_scale = 0.0; new_off = 0.0;}
-    multi_sim_comm.Sum(&new_scale, 1);
-    multi_sim_comm.Sum(&new_off, 1);
-  }
-
-  // set new scale and offset
-  scale_ = new_scale;
-  offset_ = new_off;
-  // calculate score
-  calculate_score();
-
-  // accept or reject
-  bool accept = doAccept(old_ene, ene_, kbt_);
-
-  // increment number of trials
-  MCStrials_ += 1.0;
-
-  // communicate decision
-  int do_update = 0;
-  if(accept) do_update = 1;
-  if(!no_aver_ && nrep_>1) {
-    if(replica_!=0) do_update = 0;
-    multi_sim_comm.Sum(&do_update, 1);
-  }
-
-  // in case of acceptance
-  if(do_update==1) {
-    MCSaccept_ += 1.0;
-  } else {
-    // go back to old stuff
-    scale_  = old_scale;
-    offset_ = old_offset;
-    // recalculate energy and derivatives
-    calculate_score();
-  }
-}
-
 // get overlap and derivatives
 double EMMIVOX::get_overlap_der(const Vector &d_m, const Vector &m_m,
                                 const Vector5d &pref, const Vector5d &invs2,
@@ -1594,7 +1503,6 @@ void EMMIVOX::calculate_fmod_gpu()
   long int step = getStep();
   bool do_comm = false;
   if(mapstride_>0 && step%mapstride_==0) do_comm = true;
-  if(dscale_>0    && step%MCSstride_==0) do_comm = true;
   if(dbfact_>0    && step%MCBstride_==0) do_comm = true;
   if(do_corr_) do_comm = true;
   // in case of metainference: already communicated
@@ -1759,17 +1667,6 @@ void EMMIVOX::calculate()
 
   // calculate score
   calculate_score();
-
-  // Monte Carlo on scale
-  if(dscale_>0) {
-    double acc = 0.0;
-    // do Monte Carlo
-    if(step%MCSstride_==0 && !getExchangeStep() && step>0) doMonteCarloScale();
-    // calculate acceptance ratio
-    if(MCStrials_>0) acc = MCSaccept_ / MCStrials_;
-    // set acceptance value
-    getPntrToComponent("accS")->set(acc);
-  }
 
   // set score, virial, and derivatives
   Value* score = getPntrToComponent("scoreb");
