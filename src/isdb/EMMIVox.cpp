@@ -143,8 +143,6 @@ private:
   double   MCBtrials_;
 // residue neighbor list
   std::vector< std::vector<unsigned> > nl_res_;
-  unsigned bfactcount_;
-  unsigned bfactgroup_;
   bool bfactemin_;
 // Martini scattering factors
   bool martini_;
@@ -248,7 +246,6 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   keys.add("optional","BFACT_MAX","Bfactor maximum value");
   keys.add("optional","MCBFACT_STRIDE", "Bfactor MC stride");
   keys.add("optional","BFACT_SIGMA","Bfactor sigma prior");
-  keys.add("optional","BFACT_GROUP","sample Bfactors in groups");
   keys.add("optional","STATUS_FILE","write a file with all the data useful for restart");
   keys.add("optional","SCALE","scale factor");
   keys.add("optional","OFFSET","offset");
@@ -266,7 +263,6 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("scoreb","default","Bayesian score");
   keys.addOutputComponent("scale", "default","scale factor");
   keys.addOutputComponent("offset","default","offset");
-  keys.addOutputComponent("accS",  "default","scale MC acceptance");
   keys.addOutputComponent("accB",  "default", "Bfactor MC acceptance");
   keys.addOutputComponent("kbt",   "default", "temperature in energy unit");
   keys.addOutputComponent("corr",  "CORRELATION", "correlation coefficient");
@@ -279,8 +275,7 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   scale_(1.), offset_(0.),
   dbfact_(0.0), bfactmin_(0.05), bfactmax_(5.0),
   bfactsig_(0.1), bfactnoc_(false), bfactread_(false),
-  MCBstride_(1), MCBaccept_(0.), MCBtrials_(0.),
-  bfactcount_(0), bfactgroup_(1), bfactemin_(false),
+  MCBstride_(1), MCBaccept_(0.), MCBtrials_(0.), bfactemin_(false),
   martini_(false), statusstride_(0), first_status_(true),
   eps_(0.0001), mapstride_(0), gpu_(false)
 {
@@ -345,7 +340,6 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
     parse("MCBFACT_STRIDE",MCBstride_);
     parse("BFACT_MAX",bfactmax_);
     parse("BFACT_SIGMA",bfactsig_);
-    parse("BFACT_GROUP",bfactgroup_);
     parseFlag("BFACT_MINIMIZE",bfactemin_);
     // checks
     if(MCBstride_<=0) error("you must specify a positive MCBFACT_STRIDE");
@@ -1074,10 +1068,10 @@ void EMMIVOX::get_close_residues()
 void EMMIVOX::doMonteCarloBfact()
 {
 // update residue neighbor list
-  if(bfactcount_==0) get_close_residues();
+  get_close_residues();
 
 // cycle over residues/chains
-  for(unsigned ir=bfactcount_; ir<Model_rlist_.size(); ir=ir+bfactgroup_) {
+  for(unsigned ir=0; ir<Model_rlist_.size(); ++ir) {
 
     // key: pair of residue/chain IDs
     std::pair<unsigned,std::string> key = Model_rlist_[ir];
@@ -1208,10 +1202,6 @@ void EMMIVOX::doMonteCarloBfact()
 
   } // end cycle on bfactors
 
-// update offset sampling
-  bfactcount_ += 1;
-// reset if needed
-  if(bfactcount_==bfactgroup_) bfactcount_ = 0;
 // update auxiliary lists (to update pref_gpu_, invs2_gpu_, and cut_ on CPU/GPU)
   get_auxiliary_vectors();
 // update neighbor list (new cut_ + update pref_nl_gpu_ and invs2_nl_gpu_ on GPU)
