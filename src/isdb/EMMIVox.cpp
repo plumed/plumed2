@@ -43,8 +43,6 @@
 #define M_PI           3.14159265358979323846
 #endif
 
-using namespace std;
-
 namespace PLMD {
 namespace isdb {
 
@@ -78,53 +76,53 @@ private:
   double kbt_;
   double kbt0_;
 // model - atom types
-  vector<unsigned> Model_type_;
+  std::vector<unsigned> Model_type_;
 // model - list of atom sigmas - one per atom type
-  vector<Vector5d> Model_s_;
+  std::vector<Vector5d> Model_s_;
 // model - list of atom weights - one per atom type
-  vector<Vector5d> Model_w_;
+  std::vector<Vector5d> Model_w_;
 // model - map between residue/chain IDs and list of atoms
-  map< pair<unsigned,string>, vector<unsigned> > Model_resmap_;
+  std::map< std::pair<unsigned,std::string>, std::vector<unsigned> > Model_resmap_;
 // model - list of residue/chain IDs per atom
-  vector< pair<unsigned,string> > Model_res_;
+  std::vector< std::pair<unsigned,std::string> > Model_res_;
 // model - list of neighboring voxels per atom
-  vector< vector<unsigned> > Model_nb_;
+  std::vector< std::vector<unsigned> > Model_nb_;
 // model - map between residue/chain ID and bfactor
-  map< pair<unsigned, string>, double> Model_b_;
+  std::map< std::pair<unsigned, std::string>, double> Model_b_;
 // model - global list of residue/chain IDs
-  vector< pair<unsigned,string> > Model_rlist_;
+  std::vector< std::pair<unsigned,std::string> > Model_rlist_;
 // model density
-  vector<double> ovmd_;
+  std::vector<double> ovmd_;
 
 // data map - voxel position
-  vector<Vector> Map_m_;
+  std::vector<Vector> Map_m_;
 // data map - density
-  vector<double> ovdd_;
+  std::vector<double> ovdd_;
 // data map - error
-  vector<double> exp_err_;
+  std::vector<double> exp_err_;
 
 // derivatives
-  vector<Vector> ovmd_der_;
-  vector<Vector> atom_der_;
-  vector<double> score_der_;
+  std::vector<Vector> ovmd_der_;
+  std::vector<Vector> atom_der_;
+  std::vector<double> score_der_;
 // constants
   double inv_sqrt2_, sqrt2_pi_, inv_pi2_;
-  vector<Vector5d> pref_;
-  vector<Vector5d> invs2_;
-  vector<Vector5d> cfact_;
-  vector<double> cut_;
+  std::vector<Vector5d> pref_;
+  std::vector<Vector5d> invs2_;
+  std::vector<Vector5d> cfact_;
+  std::vector<double> cut_;
 // metainference
   unsigned nrep_;
   unsigned replica_;
-  vector<double> ismin_;
+  std::vector<double> ismin_;
 // neighbor list
   double nl_dist_cutoff_;
   double nl_gauss_cutoff_;
   unsigned nl_stride_;
   bool first_time_;
-  vector< pair<unsigned,unsigned> > nl_;
-  vector< pair<unsigned,unsigned> > ns_;
-  vector<Vector> refpos_;
+  std::vector< std::pair<unsigned,unsigned> > nl_;
+  std::vector< std::pair<unsigned,unsigned> > ns_;
+  std::vector<Vector> refpos_;
 // averaging
   bool no_aver_;
 // correlation;
@@ -152,7 +150,7 @@ private:
   double   MCBaccept_;
   double   MCBtrials_;
 // residue neighbor list
-  vector< vector<unsigned> > nl_res_;
+  std::vector< std::vector<unsigned> > nl_res_;
   unsigned bfactcount_;
   unsigned bfactgroup_;
   bool bfactemin_;
@@ -160,7 +158,7 @@ private:
   bool martini_;
   // status stuff
   unsigned int statusstride_;
-  string       statusfilename_;
+  std::string       statusfilename_;
   OFile        statusfile_;
   bool         first_status_;
   // total energy and virial
@@ -169,7 +167,7 @@ private:
   double eps_;
   // model density file
   unsigned int mapstride_;
-  string       mapfilename_;
+  std::string       mapfilename_;
   // gpu/libtorch stuff
   bool gpu_;
   torch::Tensor ovmd_gpu_;
@@ -192,7 +190,7 @@ private:
 // write file with model density
   void write_model_density(long int step);
 // get median of vector
-  double get_median(vector<double> v);
+  double get_median(std::vector<double> v);
 // read and write status
   void read_status();
   void print_status(long int step);
@@ -205,9 +203,9 @@ private:
 // do MonteCarlo for scale
   void doMonteCarloScale();
 // calculate model parameters
-  vector<double> get_Model_param(vector<AtomNumber> &atoms);
+  std::vector<double> get_Model_param(std::vector<AtomNumber> &atoms);
 // read data file
-  void get_exp_data(string datafile);
+  void get_exp_data(const std::string &datafile);
 // auxiliary methods
   void prepare_gpu();
   void initialize_Bfactor(double reso);
@@ -236,7 +234,7 @@ private:
 // calculate correlation
   void calculate_corr();
 // Marginal noise
-  double calculate_Marginal(double scale, double offset, vector<double> &score_der);
+  double calculate_Marginal(double scale, double offset, std::vector<double> &score_der);
 
 public:
   static void registerKeywords( Keywords& keys );
@@ -314,11 +312,11 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   inv_pi2_   = 0.5 / M_PI / M_PI;
 
   // list of atoms
-  vector<AtomNumber> atoms;
+  std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS", atoms);
 
   // file with experimental cryo-EM map
-  string datafile;
+  std::string datafile;
   parse("DATA_FILE", datafile);
 
   // neighbor list cutoffs
@@ -490,7 +488,7 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   if(martini_) log.printf("  using Martini scattering factors\n");
 
   // calculate model constant parameters
-  vector<double> Model_w = get_Model_param(atoms);
+  std::vector<double> Model_w = get_Model_param(atoms);
 
   // read experimental map and errors
   get_exp_data(datafile);
@@ -575,7 +573,7 @@ void EMMIVOX::prepare_gpu()
   // 2) put ovdd_ on device_t_
   ovdd_gpu_  = torch::from_blob(ovdd_.data(),  {nd}, torch::kFloat64).to(torch::kFloat32).to(device_t_);
   // 3) put Map_m_ on device_t_
-  vector<double> Map_m_gpu(3*nd);
+  std::vector<double> Map_m_gpu(3*nd);
   #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for(int i=0; i<nd; ++i) {
     Map_m_gpu[i]      = Map_m_[i][0];
@@ -591,7 +589,7 @@ void EMMIVOX::write_model_density(long int step)
   OFile ovfile;
   ovfile.link(*this);
   std::string num; Tools::convert(step,num);
-  string name = mapfilename_+"-"+num;
+  std::string name = mapfilename_+"-"+num;
   ovfile.open(name);
   ovfile.setHeavyFlush();
   ovfile.fmtField("%10.7e ");
@@ -605,7 +603,7 @@ void EMMIVOX::write_model_density(long int step)
   ovfile.close();
 }
 
-double EMMIVOX::get_median(vector<double> v)
+double EMMIVOX::get_median(std::vector<double> v)
 {
 // dimension of vector
   unsigned size = v.size();
@@ -641,8 +639,8 @@ void EMMIVOX::read_status()
         // cycle on residues
         for(unsigned ir=0; ir<Model_rlist_.size(); ++ir) {
           // key: pair of residue/chain IDs
-          pair<unsigned,string> key = Model_rlist_[ir];
-          // convert ires to string
+          std::pair<unsigned,std::string> key = Model_rlist_[ir];
+          // convert ires to std::string
           std::string num; Tools::convert(key.first,num);
           // read entry
           std::string ch = key.second;
@@ -681,10 +679,10 @@ void EMMIVOX::print_status(long int step)
     // cycle on residues
     for(unsigned ir=0; ir<Model_rlist_.size(); ++ir) {
       // key: pair of residue/chain IDs
-      pair<unsigned,string> key = Model_rlist_[ir];
+      std::pair<unsigned,std::string> key = Model_rlist_[ir];
       // bfactor from map
       double bf = Model_b_[key];
-      // convert ires to string
+      // convert ires to std::string
       std::string num; Tools::convert(key.first,num);
       // print entry
       statusfile_.printField("bf-"+num+":"+key.second, bf);
@@ -709,7 +707,7 @@ bool EMMIVOX::doAccept(double oldE, double newE, double kbt)
   return accept;
 }
 
-vector<double> EMMIVOX::get_Model_param(vector<AtomNumber> &atoms)
+std::vector<double> EMMIVOX::get_Model_param(std::vector<AtomNumber> &atoms)
 {
   // check if MOLINFO line is present
   auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
@@ -717,7 +715,7 @@ vector<double> EMMIVOX::get_Model_param(vector<AtomNumber> &atoms)
   log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
 
   // list of weights - one per atom
-  vector<double> Model_w;
+  std::vector<double> Model_w;
   // 5-Gaussians parameters
   // map of atom types to A and B coefficients of scattering factor
   // f(s) = A * exp(-B*s**2)
@@ -725,7 +723,7 @@ vector<double> EMMIVOX::get_Model_param(vector<AtomNumber> &atoms)
   // Elastic atomic scattering factors of electrons for neutral atoms
   // and s up to 6.0 A^-1: as implemented in PLUMED
   // map between an atom type and an index
-  map<string, unsigned> type_map;
+  std::map<std::string, unsigned> type_map;
   // atomistic types
   type_map["C"]=0;  type_map["O"]=1;  type_map["N"]=2;
   type_map["S"]=3;  type_map["P"]=4;  type_map["F"]=5;
@@ -885,9 +883,9 @@ vector<double> EMMIVOX::get_Model_param(vector<AtomNumber> &atoms)
   // cycle on atoms
   for(unsigned i=0; i<atoms.size(); ++i) {
     // get atom name
-    string name = moldat->getAtomName(atoms[i]);
+    std::string name = moldat->getAtomName(atoms[i]);
     // get residue name
-    string resname = moldat->getResidueName(atoms[i]);
+    std::string resname = moldat->getResidueName(atoms[i]);
     // type of atoms/bead
     std::string type_s;
     // Martini model
@@ -905,7 +903,7 @@ vector<double> EMMIVOX::get_Model_param(vector<AtomNumber> &atoms)
       } else {
         type = name.at(1);
       }
-      // convert to string
+      // convert to std::string
       type_s = std::string(1,type);
       // special cases
       if(name=="SOD" || name=="NA" || name =="Na") type_s = "NA";
@@ -925,10 +923,10 @@ vector<double> EMMIVOX::get_Model_param(vector<AtomNumber> &atoms)
       // get residue id
       unsigned ires = moldat->getResidueNumber(atoms[i]);
       // and chain
-      string c ("*");
+      std::string c ("*");
       if(!bfactnoc_) c = moldat->getChainID(atoms[i]);
       // define pair residue/chain IDs
-      pair<unsigned,string> key = make_pair(ires,c);
+      std::pair<unsigned,std::string> key = std::make_pair(ires,c);
       // add to map between residue/chain and list of atoms
       Model_resmap_[key].push_back(i);
       // and global list of residue/chain per atom
@@ -941,7 +939,7 @@ vector<double> EMMIVOX::get_Model_param(vector<AtomNumber> &atoms)
   }
   // create ordered vector of residue-chain IDs
   for(unsigned i=0; i<Model_res_.size(); ++i) {
-    pair<unsigned,string> key = Model_res_[i];
+    std::pair<unsigned,std::string> key = Model_res_[i];
     // search in Model_rlist_
     if(find(Model_rlist_.begin(), Model_rlist_.end(), key) == Model_rlist_.end())
       Model_rlist_.push_back(key);
@@ -951,7 +949,7 @@ vector<double> EMMIVOX::get_Model_param(vector<AtomNumber> &atoms)
 }
 
 // read experimental data file in PLUMED format:
-void EMMIVOX::get_exp_data(string datafile)
+void EMMIVOX::get_exp_data(const std::string &datafile)
 {
   Vector pos;
   double dens, err;
@@ -993,10 +991,10 @@ void EMMIVOX::initialize_Bfactor(double reso)
     // Bfact = A*reso**2+B; with A=6.95408 B=-2.45697/100.0 nm^2
     bfactini = 6.95408*reso*reso - 0.01*2.45697;
     // check for min and max
-    bfactini = min(bfactmax_, max(bfactmin_, bfactini));
+    bfactini = std::min(bfactmax_, std::max(bfactmin_, bfactini));
   }
   // set initial Bfactor
-  for(map< pair<unsigned,string>, double>::iterator it=Model_b_.begin(); it!=Model_b_.end(); ++it) {
+  for(std::map< std::pair<unsigned,std::string>, double>::iterator it=Model_b_.begin(); it!=Model_b_.end(); ++it) {
     it->second = bfactini;
   }
   log.printf("  experimental map resolution : %3.2f\n", reso);
@@ -1023,7 +1021,7 @@ void EMMIVOX::get_auxiliary_vectors()
     // get atom type
     unsigned atype = Model_type_[im];
     // get residue/chain IDs
-    pair<unsigned,string> key = Model_res_[im];
+    std::pair<unsigned,std::string> key = Model_res_[im];
     // get bfactor
     double bfact = Model_b_[key];
     // sigma for 5 gaussians
@@ -1047,7 +1045,7 @@ void EMMIVOX::get_auxiliary_vectors()
     // put into global lists
     pref_[im]  = pref;
     invs2_[im] = invs2;
-    cut_[im] = min(nl_dist_cutoff_, sqrt(n/d)*nl_gauss_cutoff_);
+    cut_[im] = std::min(nl_dist_cutoff_, sqrt(n/d)*nl_gauss_cutoff_);
   }
   // push to GPU
   if(gpu_) push_auxiliary_gpu();
@@ -1057,7 +1055,7 @@ void EMMIVOX::push_auxiliary_gpu()
 {
   // 1) create vector of pref_ and invs2_
   int natoms = Model_type_.size();
-  vector<double> pref(5*natoms), invs2(5*natoms);
+  std::vector<double> pref(5*natoms), invs2(5*natoms);
   #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for(int i=0; i<natoms; ++i) {
     for(int j=0; j<5; ++j) {
@@ -1079,19 +1077,19 @@ void EMMIVOX::get_close_residues()
   #pragma omp parallel num_threads(OpenMP::getNumThreads())
   {
     // private variable
-    vector< vector<unsigned> > nl_res_l(Model_rlist_.size());
+    std::vector< std::vector<unsigned> > nl_res_l(Model_rlist_.size());
     // cycle on residues/chains #1
     #pragma omp for
     for(unsigned i=0; i<Model_rlist_.size()-1; ++i) {
 
       // key1: pair of residue/chain IDs
-      pair<unsigned,string> key1 = Model_rlist_[i];
+      std::pair<unsigned,std::string> key1 = Model_rlist_[i];
 
       // cycle over residues/chains #2
       for(unsigned j=i+1; j<Model_rlist_.size(); ++j) {
 
         // key2: pair of residue/chain IDs
-        pair<unsigned,string> key2 = Model_rlist_[j];
+        std::pair<unsigned,std::string> key2 = Model_rlist_[j];
 
         // set flag neighbor
         bool neigh = false;
@@ -1141,7 +1139,7 @@ void EMMIVOX::doMonteCarloBfact()
   for(unsigned ir=bfactcount_; ir<Model_rlist_.size(); ir=ir+bfactgroup_) {
 
     // key: pair of residue/chain IDs
-    pair<unsigned,string> key = Model_rlist_[ir];
+    std::pair<unsigned,std::string> key = Model_rlist_[ir];
     // old bfactor
     double bfactold = Model_b_[key];
 
@@ -1152,12 +1150,12 @@ void EMMIVOX::doMonteCarloBfact()
     if(bfactnew < bfactmin_) {bfactnew = 2.0*bfactmin_ - bfactnew;}
 
     // useful quantities
-    map<unsigned, double> deltaov;
+    std::map<unsigned, double> deltaov;
 
     #pragma omp parallel num_threads(OpenMP::getNumThreads())
     {
       // private variables
-      map<unsigned, double> deltaov_l;
+      std::map<unsigned, double> deltaov_l;
       #pragma omp for
       // cycle over all the atoms belonging to key (residue/chain)
       for(unsigned ia=0; ia<Model_resmap_[key].size(); ++ia) {
@@ -1188,7 +1186,7 @@ void EMMIVOX::doMonteCarloBfact()
       // add to global list
       #pragma omp critical
       {
-        for(map<unsigned,double>::iterator itov=deltaov_l.begin(); itov!=deltaov_l.end(); ++itov)
+        for(std::map<unsigned,double>::iterator itov=deltaov_l.begin(); itov!=deltaov_l.end(); ++itov)
           deltaov[itov->first] += itov->second;
       }
     }
@@ -1198,7 +1196,7 @@ void EMMIVOX::doMonteCarloBfact()
     double new_ene = 0.0;
 
     // cycle on all affected voxels
-    for(map<unsigned,double>::iterator itov=deltaov.begin(); itov!=deltaov.end(); ++itov) {
+    for(std::map<unsigned,double>::iterator itov=deltaov.begin(); itov!=deltaov.end(); ++itov) {
       // id of the component
       unsigned id = itov->first;
       // new value
@@ -1222,11 +1220,11 @@ void EMMIVOX::doMonteCarloBfact()
     }
 
     // list of neighboring residues
-    vector<unsigned> close = nl_res_[ir];
+    std::vector<unsigned> close = nl_res_[ir];
     // add restraint to keep Bfactors of close residues close
     for(unsigned i=0; i<close.size(); ++i) {
       // residue/chain IDs of neighbor
-      pair<unsigned,string> keyn = Model_rlist_[close[i]];
+      std::pair<unsigned,std::string> keyn = Model_rlist_[close[i]];
       // deviations
       double devold = bfactold - Model_b_[keyn];
       double devnew = bfactnew - Model_b_[keyn];
@@ -1263,7 +1261,7 @@ void EMMIVOX::doMonteCarloBfact()
       // update bfactor
       Model_b_[key] = bfactnew;
       // change all the ovmd_ affected
-      for(map<unsigned,double>::iterator itov=deltaov.begin(); itov!=deltaov.end(); ++itov)
+      for(std::map<unsigned,double>::iterator itov=deltaov.begin(); itov!=deltaov.end(); ++itov)
         ovmd_[itov->first] += itov->second;
     }
 
@@ -1399,7 +1397,7 @@ void EMMIVOX::update_neighbor_sphere()
   #pragma omp parallel num_threads(OpenMP::getNumThreads())
   {
     // private variables
-    vector< pair<unsigned,unsigned> > ns_l;
+    std::vector< std::pair<unsigned,unsigned> > ns_l;
     #pragma omp for
     for(unsigned id=0; id<ovdd_.size(); ++id) {
       // grid point
@@ -1409,7 +1407,7 @@ void EMMIVOX::update_neighbor_sphere()
         // calculate distance
         double dist = delta(getPosition(im), d_m).modulo();
         // add to local list
-        if(dist<=2.0*cut_[im]) ns_l.push_back(make_pair(id,im));
+        if(dist<=2.0*cut_[im]) ns_l.push_back(std::make_pair(id,im));
       }
     }
     // add to global list
@@ -1420,7 +1418,7 @@ void EMMIVOX::update_neighbor_sphere()
 
 bool EMMIVOX::do_neighbor_sphere()
 {
-  vector<double> dist(getPositions().size());
+  std::vector<double> dist(getPositions().size());
   bool update = false;
 
 // calculate displacement
@@ -1448,7 +1446,7 @@ void EMMIVOX::update_neighbor_list()
   #pragma omp parallel num_threads(OpenMP::getNumThreads())
   {
     // private variables
-    vector< pair<unsigned,unsigned> > nl_l;
+    std::vector< std::pair<unsigned,unsigned> > nl_l;
     #pragma omp for
     for(unsigned long long i=0; i<ns_.size(); ++i) {
       // calculate distance
@@ -1474,7 +1472,7 @@ void EMMIVOX::update_neighbor_list()
     #pragma omp parallel num_threads(OpenMP::getNumThreads())
     {
       // private variables
-      vector< vector<unsigned> > Model_nb_l(natoms);
+      std::vector< std::vector<unsigned> > Model_nb_l(natoms);
       #pragma omp for
       for(unsigned long long i=0; i<nl_size; ++i) {
         Model_nb_l[nl_[i].second].push_back(nl_[i].first);
@@ -1497,7 +1495,7 @@ void EMMIVOX::update_gpu()
   // dimension of neighbor list
   long long nl_size = nl_.size();
   // create useful vectors
-  vector<int> nl_id(nl_size), nl_im(nl_size);
+  std::vector<int> nl_id(nl_size), nl_im(nl_size);
   #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for(unsigned long long i=0; i<nl_size; ++i) {
     nl_id[i] = static_cast<int>(nl_[i].first);
@@ -1539,7 +1537,7 @@ void EMMIVOX::calculate_fmod_cpu()
   #pragma omp parallel num_threads(OpenMP::getNumThreads())
   {
     // private variables
-    vector<double> ovmd_l(nd, 0.0);
+    std::vector<double> ovmd_l(nd, 0.0);
     #pragma omp for
     for(unsigned long long i=0; i<nl_.size(); ++i) {
       // get voxel (id) and atom (im) indexes
@@ -1571,7 +1569,7 @@ void EMMIVOX::calculate_fmod_gpu()
   int nd = ovdd_.size();
 
   // fill positions in in parallel
-  vector<double> posg(3*natoms);
+  std::vector<double> posg(3*natoms);
   #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for (int i=0; i<natoms; ++i) {
     // fill vectors
@@ -1605,7 +1603,7 @@ void EMMIVOX::calculate_fmod_gpu()
     // communicate ovmd_gpu_ to CPU [1, nd]
     torch::Tensor ovmd_cpu = ovmd_gpu_.detach().to(torch::kCPU).to(torch::kFloat64);
     // and put them in ovmd_
-    ovmd_ = vector<double>(ovmd_cpu.data_ptr<double>(), ovmd_cpu.data_ptr<double>() + ovmd_cpu.numel());
+    ovmd_ = std::vector<double>(ovmd_cpu.data_ptr<double>(), ovmd_cpu.data_ptr<double>() + ovmd_cpu.numel());
     // sum across replicas
     multi_sim_comm.Sum(&ovmd_[0], nd);
     // and divide by number of replicas
@@ -1629,7 +1627,7 @@ void EMMIVOX::calculate_fmod_gpu()
     // communicate ovmd_gpu_ to CPU [1, nd]
     torch::Tensor ovmd_cpu = ovmd_gpu_.detach().to(torch::kCPU).to(torch::kFloat64);
     // and put them in ovmd_
-    ovmd_ = vector<double>(ovmd_cpu.data_ptr<double>(), ovmd_cpu.data_ptr<double>() + ovmd_cpu.numel());
+    ovmd_ = std::vector<double>(ovmd_cpu.data_ptr<double>(), ovmd_cpu.data_ptr<double>() + ovmd_cpu.numel());
   }
 }
 
@@ -1663,7 +1661,7 @@ void EMMIVOX::calculate_score_cpu()
   #pragma omp parallel num_threads(OpenMP::getNumThreads())
   {
     // private stuff
-    vector<Vector> atom_der_l(natoms, Vector(0,0,0));
+    std::vector<Vector> atom_der_l(natoms, Vector(0,0,0));
     #pragma omp for reduction (sumTensor : virial_)
     for(unsigned long long i=0; i<nl_.size(); ++i) {
       // get voxel (id) and atom (im) indexes
@@ -1726,8 +1724,8 @@ void EMMIVOX::calculate_score_gpu()
   //
   // 2) communicate derivatives to CPU
   torch::Tensor atom_der_cpu = atoms_der_gpu.detach().to(torch::kCPU).to(torch::kFloat64);
-  // convert to vector<double>
-  vector<double> atom_der = vector<double>(atom_der_cpu.data_ptr<double>(), atom_der_cpu.data_ptr<double>() + atom_der_cpu.numel());
+  // convert to std::vector<double>
+  std::vector<double> atom_der = std::vector<double>(atom_der_cpu.data_ptr<double>(), atom_der_cpu.data_ptr<double>() + atom_der_cpu.numel());
   // and put in atom_der_
   #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for(int i=0; i<natoms; ++i) {
@@ -1846,7 +1844,7 @@ void EMMIVOX::calculate_corr()
   getPntrToComponent("corr")->set(cc);
 }
 
-double EMMIVOX::calculate_Marginal(double scale, double offset, vector<double> &score_der)
+double EMMIVOX::calculate_Marginal(double scale, double offset, std::vector<double> &score_der)
 {
   double ene = 0.0;
   // cycle on all the voxels
