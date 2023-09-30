@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2021 The plumed team
+   Copyright (c) 2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -158,7 +158,7 @@ private:
   // model density file
   unsigned int mapstride_;
   std::string       mapfilename_;
-  // gpu/libtorch stuff
+  // Libtorch stuff
   bool gpu_;
   torch::Tensor ovmd_gpu_;
   torch::Tensor ovmd_der_gpu_;
@@ -197,29 +197,20 @@ private:
   void get_auxiliary_vectors();
   void push_auxiliary_gpu();
 // calculate overlap between two Gaussians
-  double get_overlap_der(const Vector &d_m, const Vector &m_m,
-                         const Vector5d &pref, const Vector5d &invs2,
-                         Vector &ov_der);
   double get_overlap(const Vector &d_m, const Vector &m_m,
                      const Vector5d &cfact, const Vector5d &m_s, double bfact);
 // update the neighbor list
   void update_neighbor_list();
-// update the gpu
+// update data on device
   void update_gpu();
 // update the neighbor sphere
   void update_neighbor_sphere();
   bool do_neighbor_sphere();
-// calculate forward model and score on cpu/gpu
+// calculate forward model and score on device
   void calculate_fmod();
-  void calculate_fmod_cpu();
-  void calculate_fmod_gpu();
   void calculate_score();
-  void calculate_score_cpu();
-  void calculate_score_gpu();
 // calculate correlation
   void calculate_corr();
-// Marginal noise
-  double calculate_Marginal(double scale, double offset, std::vector<double> &score_der);
 
 public:
   static void registerKeywords( Keywords& keys );
@@ -397,7 +388,8 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   log.printf("  number of atoms involved : %u\n", atoms.size());
   log.printf("  experimental density map : %s\n", datafile.c_str());
   if(no_aver_) log.printf("  without ensemble averaging\n");
-  if(gpu_) log.printf("  running on GPU \n");
+  if(gpu_) {log.printf("  running on GPU \n");}
+  else {log.printf("  running on CPU \n");}
   if(nl_dist_cutoff_ <1.0e+10) log.printf("  neighbor list distance cutoff : %lf\n", nl_dist_cutoff_);
   if(nl_gauss_cutoff_<1.0e+10) log.printf("  neighbor list Gaussian sigma cutoff : %lf\n", nl_gauss_cutoff_);
   log.printf("  neighbor list update stride : %u\n",  nl_stride_);
@@ -461,7 +453,7 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   }
 
   // prepare gpu stuff: map centers, data, and error
-  if(gpu_) prepare_gpu();
+  prepare_gpu();
 
   // initialize Bfactors
   initialize_Bfactor(reso);
@@ -983,7 +975,7 @@ void EMMIVOX::get_auxiliary_vectors()
     cut_[im] = std::min(nl_dist_cutoff_, sqrt(n/d)*nl_gauss_cutoff_);
   }
   // push to GPU
-  if(gpu_) push_auxiliary_gpu();
+  push_auxiliary_gpu();
 }
 
 void EMMIVOX::push_auxiliary_gpu()
@@ -1210,34 +1202,6 @@ void EMMIVOX::doMonteCarloBfact()
   calculate_fmod();
 }
 
-// get overlap and derivatives
-double EMMIVOX::get_overlap_der(const Vector &d_m, const Vector &m_m,
-                                const Vector5d &pref, const Vector5d &invs2,
-                                Vector &ov_der)
-{
-  // initialize stuff
-  double ov_tot = 0.0;
-  // derivative accumulator
-  double ov_der_p = 0.0;
-  // calculate vector difference
-  Vector md = delta(m_m, d_m);
-  // norm squared
-  double md2 = md[0]*md[0]+md[1]*md[1]+md[2]*md[2];
-  // cycle on 5 Gaussians
-  for(unsigned j=0; j<5; ++j) {
-    // calculate exponent
-    double ov = pref[j] * std::exp(-0.5 * md2 * invs2[j]);
-    // update derivative prefix
-    ov_der_p += ov * invs2[j];
-    // increase total overlap
-    ov_tot += ov;
-  }
-  // set derivative
-  ov_der = ov_der_p * md;
-  // return total overlap
-  return ov_tot;
-}
-
 // get overlap
 double EMMIVOX::get_overlap(const Vector &d_m, const Vector &m_m,
                             const Vector5d &cfact, const Vector5d &m_s, double bfact)
@@ -1361,8 +1325,8 @@ void EMMIVOX::update_neighbor_list()
     }
   }
 
-  // in case, transfer data to gpu
-  if(gpu_) update_gpu();
+  // transfer data to gpu
+  update_gpu();
 }
 
 void EMMIVOX::update_gpu()
@@ -1392,51 +1356,8 @@ void EMMIVOX::prepare()
   if(getExchangeStep()) first_time_=true;
 }
 
-// calculate forward model
-void EMMIVOX::calculate_fmod()
-{
-  if(gpu_) calculate_fmod_gpu();
-  else     calculate_fmod_cpu();
-}
-
-// calculate forward model on cpu
-void EMMIVOX::calculate_fmod_cpu()
-{
-  // number of data points
-  unsigned nd = ovdd_.size();
-
-  // clear density vector
-  for(unsigned i=0; i<nd; ++i) ovmd_[i] = 0.0;
-
-  // we have to cycle over all pairs of atom and voxels in the neighbor list
-  #pragma omp parallel num_threads(OpenMP::getNumThreads())
-  {
-    // private variables
-    std::vector<double> ovmd_l(nd, 0.0);
-    #pragma omp for
-    for(unsigned long long i=0; i<nl_.size(); ++i) {
-      // get voxel (id) and atom (im) indexes
-      unsigned id = nl_[i].first;
-      unsigned im = nl_[i].second;
-      // add density in id
-      ovmd_l[id] += get_overlap_der(Map_m_[id],getPosition(im),pref_[im],invs2_[im],ovmd_der_[i]);
-    }
-    #pragma omp critical
-    for(unsigned i=0; i<nd; ++i) ovmd_[i] += ovmd_l[i];
-  }
-
-  // average density across replicas
-  if(!no_aver_ && nrep_>1) {
-    // sum across replicas
-    multi_sim_comm.Sum(&ovmd_[0], nd);
-    // and divide by number of replicas
-    double escale = 1.0 / static_cast<double>(nrep_);
-    for(unsigned i=0; i<nd; ++i) ovmd_[i] *= escale;
-  }
-}
-
 // calculate forward model on gpu
-void EMMIVOX::calculate_fmod_gpu()
+void EMMIVOX::calculate_fmod()
 {
   // number of atoms
   int natoms = Model_type_.size();
@@ -1507,54 +1428,6 @@ void EMMIVOX::calculate_fmod_gpu()
 
 // calculate score
 void EMMIVOX::calculate_score()
-{
-  if(gpu_) calculate_score_gpu();
-  else     calculate_score_cpu();
-}
-
-// calculate score on cpu
-void EMMIVOX::calculate_score_cpu()
-{
-  // number of atoms
-  unsigned natoms = Model_type_.size();
-
-  // calculate total energy and get derivatives
-  ene_ = calculate_Marginal(scale_, offset_, score_der_);
-
-  // with marginal, simply multiply by number of replicas!
-  if(!no_aver_ && nrep_>1) ene_ *= static_cast<double>(nrep_);
-
-  // clear atom derivatives
-  for(unsigned i=0; i<natoms; ++i) atom_der_[i] = Vector(0,0,0);
-
-  // calculate atom derivatives and virial
-  virial_ = Tensor();
-  // declare omp reduction for Tensors
-  #pragma omp declare reduction( sumTensor : Tensor : omp_out += omp_in )
-
-  #pragma omp parallel num_threads(OpenMP::getNumThreads())
-  {
-    // private stuff
-    std::vector<Vector> atom_der_l(natoms, Vector(0,0,0));
-    #pragma omp for reduction (sumTensor : virial_)
-    for(unsigned long long i=0; i<nl_.size(); ++i) {
-      // get voxel (id) and atom (im) indexes
-      unsigned id = nl_[i].first;
-      unsigned im = nl_[i].second;
-      // chain rule
-      Vector tot_der = score_der_[id] * ovmd_der_[i] * scale_;
-      // increment atom derivatives
-      atom_der_l[im] += tot_der;
-      // and virial
-      virial_ += Tensor(getPosition(im), -tot_der);
-    }
-    #pragma omp critical
-    for(unsigned i=0; i<natoms; ++i) atom_der_[i] += atom_der_l[i];
-  }
-}
-
-// calculate score on gpu
-void EMMIVOX::calculate_score_gpu()
 {
   // number of atoms
   int natoms = Model_type_.size();
@@ -1701,34 +1574,6 @@ void EMMIVOX::calculate_corr()
   getPntrToComponent("corr")->set(cc);
 }
 
-double EMMIVOX::calculate_Marginal(double scale, double offset, std::vector<double> &score_der)
-{
-  double ene = 0.0;
-  // cycle on all the voxels
-  #pragma omp parallel for num_threads(OpenMP::getNumThreads()) reduction( + : ene)
-  for(unsigned id=0; id<ovdd_.size(); ++id) {
-    // get ismin
-    double ismin = ismin_[id];
-    // calculate deviation
-    double dev = scale * ovmd_[id] + offset - ovdd_[id];
-    // check small dev
-    if(dev==0.0) {
-      // add constant to energy
-      ene += -kbt_ * std::log( 0.5 * sqrt2_pi_ * ismin );
-      // set derivative to zero
-      score_der[id] = 0.0;
-    } else {
-      // calculate errf
-      double errf = erf ( dev * inv_sqrt2_ * ismin );
-      // add to energy
-      ene += -kbt_ * std::log( 0.5 * errf / dev );
-      // store derivative for later
-      score_der[id] = -kbt_ * ( sqrt2_pi_*ismin*exp(-0.5*dev*dev*ismin*ismin) - errf/dev ) / errf;
-    }
-  }
-  // return total energy
-  return ene;
-}
 
 }
 }
