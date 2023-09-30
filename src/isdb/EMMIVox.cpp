@@ -1495,7 +1495,7 @@ void EMMIVOX::update_neighbor_list()
 void EMMIVOX::update_gpu()
 {
   // dimension of neighbor list
-  unsigned long long nl_size = nl_.size();
+  long long nl_size = nl_.size();
   // create useful vectors
   vector<int> nl_id(nl_size), nl_im(nl_size);
   #pragma omp parallel for num_threads(OpenMP::getNumThreads())
