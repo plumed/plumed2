@@ -74,7 +74,6 @@ private:
 
 // temperature in kbt
   double kbt_;
-  double kbt0_;
 // model - atom types
   std::vector<unsigned> Model_type_;
 // model - list of atom sigmas - one per atom type
@@ -183,9 +182,6 @@ private:
   torch::Tensor invs2_nl_gpu_;
   torch::Tensor Map_m_nl_gpu_;
   torch::DeviceType device_t_;
-  // annealing stuff
-  unsigned anneal_;
-  double   anneal_kbt_;
 //
 // write file with model density
   void write_model_density(long int step);
@@ -273,8 +269,6 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   keys.add("optional","TEMP","temperature");
   keys.add("optional","WRITE_MAP","file with model density");
   keys.add("optional","WRITE_MAP_STRIDE","stride for writing model density to file");
-  keys.add("optional","ANNEAL","initial annealing in number of steps");
-  keys.add("optional","ANNEAL_TEMP","initial temperature for annealing");
   keys.addFlag("NO_AVER",false,"no ensemble averaging in multi-replica mode");
   keys.addFlag("CORRELATION",false,"calculate correlation coefficient");
   keys.addFlag("GPU",false,"calculate EMMIVOX on GPU with Libtorch");
@@ -303,8 +297,7 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   MCBstride_(1), MCBaccept_(0.), MCBtrials_(0.),
   bfactcount_(0), bfactgroup_(1), bfactemin_(false),
   martini_(false), statusstride_(0), first_status_(true),
-  eps_(0.0001), mapstride_(0), gpu_(false),
-  anneal_(0), anneal_kbt_(0.)
+  eps_(0.0001), mapstride_(0), gpu_(false)
 {
   // set constants
   inv_sqrt2_ = 1.0/sqrt(2.0);
@@ -349,10 +342,8 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   double temp=0.0;
   parse("TEMP",temp);
   // convert temp to kbt
-  if(temp>0.0) kbt0_=plumed.getAtoms().getKBoltzmann()*temp;
-  else kbt0_=plumed.getAtoms().getKbT();
-  // set initial temperature
-  kbt_ = kbt0_;
+  if(temp>0.0) kbt_=plumed.getAtoms().getKBoltzmann()*temp;
+  else kbt_=plumed.getAtoms().getKbT();
 
   // scale MC
   parse("SCALE", scale_);
@@ -416,17 +407,6 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
     gpu_ = false;
   }
 
-  // annealing stuff
-  parse("ANNEAL", anneal_);
-  if(anneal_>0) {
-    // read initial temperature
-    parse("ANNEAL_TEMP", anneal_kbt_);
-    // convert to energy unit
-    anneal_kbt_ *= plumed.getAtoms().getKBoltzmann();
-    // compare with kbt0_
-    if(anneal_kbt_>kbt0_) error("ANNEAL_TEMP must be lower than TEMP");
-  }
-
 // Martini model
   parseFlag("MARTINI",martini_);
 
@@ -473,10 +453,6 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   }
   if(bfactread_) log.printf("  reading Bfactors from file : %s\n", statusfilename_.c_str());
   log.printf("  temperature of the system in energy unit : %f\n", kbt_);
-  if(anneal_>0) {
-    log.printf("  doing annealing for initial number of steps : %u\n", anneal_);
-    log.printf("  initial annealing temperature in energy unit : %f\n", anneal_kbt_);
-  }
   if(nrep_>1) {
     log.printf("  number of replicas for averaging: %u\n", nrep_);
     log.printf("  replica ID : %u\n", replica_);
@@ -1750,15 +1726,7 @@ void EMMIVOX::calculate()
   // get time step
   long int step = getStep();
 
-  // check if doing annealing
-  if(anneal_>0 && step<anneal_) {
-    // set temperature
-    kbt_ = anneal_kbt_ + (kbt0_ - anneal_kbt_) / static_cast<double>(anneal_) * static_cast<double>(step);
-  } else {
-    // reset to input TEMP
-    kbt_ = kbt0_;
-  }
-  // set value
+  // set temperature value
   getPntrToComponent("kbt")->set(kbt_);
 
   // neighbor list update
