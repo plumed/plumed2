@@ -1733,14 +1733,16 @@ void EMMIVOX::calculate_score_gpu()
   }
   //
   // 3) calculate virial on CPU
-  virial_ = Tensor();
+  Tensor virial;
   // declare omp reduction for Tensors
   #pragma omp declare reduction( sumTensor : Tensor : omp_out += omp_in )
 
-  #pragma omp parallel for num_threads(OpenMP::getNumThreads()) reduction (sumTensor : virial_)
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads()) reduction (sumTensor : virial)
   for(int i=0; i<natoms; ++i) {
-    virial_ += Tensor(getPosition(i), -atom_der_[i]);
+    virial += Tensor(getPosition(i), -atom_der_[i]);
   }
+  // store virial
+  virial_ = virial;
 }
 
 void EMMIVOX::calculate()
