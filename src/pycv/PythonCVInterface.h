@@ -30,12 +30,14 @@ class PythonCVInterface : public Colvar,
   std::string import;
   std::string calculate_function;
   std::string prepare_function{PYCV_NOTIMPLEMENTED};
+  std::string update_function{PYCV_NOTIMPLEMENTED};
 
   std::vector<std::string> components;
   int ncomponents;
   int natoms;
   bool pbc=false;
   bool has_prepare{false};
+  bool has_update{false};
 
   void check_dim(py::array_t<pycv_t>);
   void calculateSingleComponent(py::object &);
@@ -46,6 +48,7 @@ public:
 // active methods:
   void calculate() override;
   void prepare() override;
+  void update() override;
   static void registerKeywords( Keywords& keys );
 };
 

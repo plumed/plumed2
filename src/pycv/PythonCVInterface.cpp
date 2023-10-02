@@ -45,7 +45,8 @@ void PythonCVInterface::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","IMPORT","the python file to import, containing the function");
   keys.add("compulsory","CALCULATE","the function to call as calculate method of a CV");
   //add other callable methods
-  keys.add("optional","PREPARE","the function to call as prepare method of the CV");
+  keys.add("optional","PREPARE","the function to call as prepare() method of the CV");
+  keys.add("optional","UPDATE","the function to call as update() method of the CV");
   keys.add("optional","COMPONENTS","if provided, the function will return multiple components, with the names given");
   keys.addOutputComponent("py","COMPONENTS","Each of the components output py the Python code, prefixed by py-");
   // Why is NOPBC not listed here?
@@ -61,6 +62,7 @@ PythonCVInterface::PythonCVInterface(const ActionOptions&ao):
   parse("IMPORT",import);
   parse("CALCULATE",calculate_function);
   parse("PREPARE",prepare_function);
+  parse("UPDATE",update_function);
 
   parseVector("COMPONENTS",components);
   ncomponents=components.size();
@@ -111,7 +113,7 @@ PythonCVInterface::PythonCVInterface(const ActionOptions&ao):
 
 void PythonCVInterface::prepare() {
   if(has_prepare) {
-    auto prepare_fcn = py_module.attr(prepare_function.c_str());
+    auto prepare_fcn = py_module.attr(prepare_function.c_str());py-
     py::dict prepareDict=prepare_fcn(this);
     if (prepareDict.contains("setAtomRequest")) {
       py::tuple t=prepareDict["setAtomRequest"];
@@ -126,6 +128,14 @@ void PythonCVInterface::prepare() {
       std::cout <<"\n";
       requestAtoms(myatoms);
     }
+  }
+}
+
+void PythonCVInterface::update() {
+  if(has_update) {
+    auto update_fcn = py_module.attr(update_function.c_str());
+    py::dict updateDict=update_fcn(this);
+    //See what to do here   
   }
 }
 
