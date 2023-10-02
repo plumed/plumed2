@@ -18,10 +18,8 @@ def pyInvBox(action: plumedCommunications.PythonCVInterface):
     invBox = action.getPbc().getInvBox()
     print(f"{invBox=}", file=log)
     ret = {}
-    grad = {}
     for i, name in enumerate(["a", "b", "c"]):
         for j, coord in enumerate(["x", "y", "z"]):
-            ret[f"{name}i{coord}"] = invBox[i, j]
-            grad[f"{name}i{coord}"] = np.zeros((1, 3))
+            ret[f"{name}i{coord}"] = (invBox[i, j], np.zeros((1, 3)))
     print(ret, file=log)
-    return ret, grad
+    return ret

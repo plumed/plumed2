@@ -21,7 +21,6 @@ def pyBox(action: plumedCommunications.PythonCVInterface):
     grad = {}
     for i, name in enumerate(["a", "b", "c"]):
         for j, coord in enumerate(["x", "y", "z"]):
-            ret[f"{name}{coord}"] = d[i, j]
-            grad[f"{name}{coord}"] = np.zeros((1, 3))
+            ret[f"{name}{coord}"] = (d[i, j],  np.zeros((1, 3)))
     print(ret, file=log)
-    return ret, grad
+    return ret

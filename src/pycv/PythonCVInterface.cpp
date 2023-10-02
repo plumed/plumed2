@@ -177,26 +177,21 @@ void PythonCVInterface::calculateSingleComponent(py::object &r) {
 
 
 void PythonCVInterface::calculateMultiComponent(py::object &r) {
-  if(! py::isinstance<py::tuple>(r)) {        // Is there more than 1 return value?
-    error("Sorry, multi-components needs to return gradients too");
-  }
-
-  // 1st return value: CV dict or array
-  py::list rl=r.cast<py::list>();
-  bool dictstyle=py::isinstance<py::dict>(rl[0]);
+  bool dictstyle=py::isinstance<py::dict>(r);
 
   if(dictstyle) {
-    py::dict vdict=rl[0].cast<py::dict>(); // values
-    py::dict gdict=rl[1].cast<py::dict>(); // gradients
+    py::dict dataDict=r.cast<py::dict>(); // values
 
     for(auto c: components) {
+      
       Value *cv=getPntrToComponent("py-"+c);
 
       const char *cp = c.c_str();
-      pycv_t value = vdict[cp].cast<pycv_t>();
+      auto componentData = dataDict[cp].cast<py::tuple>();
+      pycv_t value = componentData[0].cast<pycv_t>();
       cv->set(value);
 
-      py::array_t<pycv_t> grad(gdict[cp]);
+      py::array_t<pycv_t> grad(componentData[1]);
       check_dim(grad);
 
       for(int i=0; i<natoms; i++) {
