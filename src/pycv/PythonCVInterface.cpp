@@ -27,7 +27,9 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 #include <cmath>
 #include <iostream>
+#include <iomanip>
 
+#define vdbg(...) std::cerr << std::setw(4) << __LINE__ <<":" << std::setw(20)<< #__VA_ARGS__ << " " << (__VA_ARGS__) <<'\n'
 
 namespace py = pybind11;
 
@@ -46,6 +48,7 @@ void PythonCVInterface::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","CALCULATE","the function to call as calculate method of a CV");
   //add other callable methods
   keys.add("optional","PREPARE","the function to call as prepare() method of the CV");
+  keys.add("optional","INIT","the function to call during the construction method of the CV");
   keys.add("optional","UPDATE","the function to call as update() method of the CV");
   keys.add("optional","COMPONENTS","if provided, the function will return multiple components, with the names given");
   keys.addOutputComponent("py","COMPONENTS","Each of the components output py the Python code, prefixed by py-");
@@ -60,9 +63,12 @@ PythonCVInterface::PythonCVInterface(const ActionOptions&ao):
   if(natoms==0) error("At least one atom is required");
 
   parse("IMPORT",import);
+
+
   parse("CALCULATE",calculate_function);
   parse("PREPARE",prepare_function);
   parse("UPDATE",update_function);
+  parse("INIT",init_function);
 
   parseVector("COMPONENTS",components);
   ncomponents=components.size();
@@ -109,11 +115,19 @@ PythonCVInterface::PythonCVInterface(const ActionOptions&ao):
   if (prepare_function!=PYCV_NOTIMPLEMENTED) {
     has_prepare=true;
   }
+  if (update_function!=PYCV_NOTIMPLEMENTED) {
+    has_update=true;
+  }
+  if (init_function!=PYCV_NOTIMPLEMENTED) {
+    vdbg(init_function);
+    auto init_fcn = py_module.attr(init_function.c_str());
+    init_fcn(this);
+  }
 }
 
 void PythonCVInterface::prepare() {
   if(has_prepare) {
-    auto prepare_fcn = py_module.attr(prepare_function.c_str());py-
+    auto prepare_fcn = py_module.attr(prepare_function.c_str());
     py::dict prepareDict=prepare_fcn(this);
     if (prepareDict.contains("setAtomRequest")) {
       py::tuple t=prepareDict["setAtomRequest"];
@@ -135,7 +149,7 @@ void PythonCVInterface::update() {
   if(has_update) {
     auto update_fcn = py_module.attr(update_function.c_str());
     py::dict updateDict=update_fcn(this);
-    //See what to do here   
+    //See what to do here
   }
 }
 
@@ -193,7 +207,7 @@ void PythonCVInterface::calculateMultiComponent(py::object &r) {
     py::dict dataDict=r.cast<py::dict>(); // values
 
     for(auto c: components) {
-      
+
       Value *cv=getPntrToComponent("py-"+c);
 
       const char *cp = c.c_str();

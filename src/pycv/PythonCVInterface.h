@@ -31,8 +31,10 @@ class PythonCVInterface : public Colvar,
   std::string calculate_function;
   std::string prepare_function{PYCV_NOTIMPLEMENTED};
   std::string update_function{PYCV_NOTIMPLEMENTED};
+  std::string init_function{PYCV_NOTIMPLEMENTED};
 
   std::vector<std::string> components;
+
   int ncomponents;
   int natoms;
   bool pbc=false;
@@ -44,6 +46,7 @@ class PythonCVInterface : public Colvar,
   void calculateMultiComponent(py::object &);
 
 public:
+  py::dict dataContainer={};
   explicit PythonCVInterface(const ActionOptions&);
 // active methods:
   void calculate() override;

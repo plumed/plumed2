@@ -29,6 +29,7 @@ using PLMD::pycv::pycv_t;
 
 PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
   py::class_<PLMD::pycv::PythonCVInterface>(m, "PythonCVInterface")
+  .def_readwrite("data",&PLMD::pycv::PythonCVInterface::dataContainer,"Return an accessible dictionary that persist along all the simulation")
   //usin "PLMD::pycv::PythonCVInterface::getStep" instead of the lambda gives compilation errors
   .def("getStep",
        [](PLMD::pycv::PythonCVInterface* self) -> long int{return self->getStep();},
