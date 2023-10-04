@@ -24,7 +24,9 @@ jobs:
         - -coverage-mpi-
         - -debug-
         - -debug-mpi-
-        - -intel-
+# temporarily commented out
+# see https://github.com/plumed/plumed2/issues/976
+#        - -intel-
     steps:
     - uses: actions/checkout@v3
     - uses: actions/cache@v3
