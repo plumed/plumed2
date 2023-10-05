@@ -70,7 +70,7 @@ NeighborList::NeighborList(const std::vector<AtomNumber>& list0, const bool& ser
 
 void NeighborList::initialize() {
   neighbors_.clear();
-  for(unsigned int i=0; i<nallpairs_; ++i) {
+  for(size_t i=0; i<nallpairs_; ++i) {
     neighbors_.push_back(getIndexPair(i));
   }
 }
@@ -79,17 +79,17 @@ std::vector<AtomNumber>& NeighborList::getFullAtomList() {
   return fullatomlist_;
 }
 
-std::pair<unsigned,unsigned> NeighborList::getIndexPair(unsigned ipair) {
-  std::pair<unsigned,unsigned> index;
+std::pair<size_t,size_t> NeighborList::getIndexPair(size_t ipair) {
+  std::pair<size_t,size_t> index;
   if(twolists_ && do_pair_) {
-    index=std::pair<unsigned,unsigned>(ipair,ipair+nlist0_);
+    index=std::pair<size_t,size_t>(ipair,ipair+nlist0_);
   } else if (twolists_ && !do_pair_) {
-    index=std::pair<unsigned,unsigned>(ipair/nlist1_,ipair%nlist1_+nlist0_);
+    index=std::pair<size_t,size_t>(ipair/nlist1_,ipair%nlist1_+nlist0_);
   } else if (!twolists_) {
-    unsigned ii = nallpairs_-1-ipair;
-    unsigned  K = unsigned(std::floor((std::sqrt(double(8*ii+1))+1)/2));
-    unsigned jj = ii-K*(K-1)/2;
-    index=std::pair<unsigned,unsigned>(nlist0_-1-K,nlist0_-1-jj);
+    size_t ii = nallpairs_-1-ipair;
+    size_t  K = size_t(std::floor((std::sqrt(double(8*ii+1))+1)/2));
+    size_t jj = ii-K*(K-1)/2;
+    index=std::pair<size_t,size_t>(nlist0_-1-K,nlist0_-1-jj);
   }
   return index;
 }
@@ -100,24 +100,24 @@ void NeighborList::update(const std::vector<Vector>& positions) {
   // check if positions array has the correct length
   plumed_assert(positions.size()==fullatomlist_.size());
 
-  unsigned stride=comm.Get_size();
-  unsigned rank=comm.Get_rank();
-  unsigned nt=OpenMP::getNumThreads();
+  size_t stride=comm.Get_size();
+  size_t rank=comm.Get_rank();
+  size_t nt=OpenMP::getNumThreads();
   if(serial_) {
     stride=1;
     rank=0;
     nt=1;
   }
-  std::vector<unsigned> local_flat_nl;
+  std::vector<size_t> local_flat_nl;
 
   #pragma omp parallel num_threads(nt)
   {
-    std::vector<unsigned> private_flat_nl;
+    std::vector<size_t> private_flat_nl;
     #pragma omp for nowait
-    for(unsigned int i=rank; i<nallpairs_; i+=stride) {
-      std::pair<unsigned,unsigned> index=getIndexPair(i);
-      unsigned index0=index.first;
-      unsigned index1=index.second;
+    for(size_t i=rank; i<nallpairs_; i+=stride) {
+      std::pair<size_t,size_t> index=getIndexPair(i);
+      size_t index0=index.first;
+      size_t index1=index.second;
       Vector distance;
       if(do_pbc_) {
         distance=pbc_->distance(positions[index0],positions[index1]);
@@ -138,15 +138,15 @@ void NeighborList::update(const std::vector<Vector>& positions) {
   std::vector <int> local_nl_size(stride, 0);
   local_nl_size[rank] = local_flat_nl.size();
   if(!serial_) comm.Sum(&local_nl_size[0], stride);
-  int tot_size = std::accumulate(local_nl_size.begin(), local_nl_size.end(), 0);
+  size_t tot_size = std::accumulate(local_nl_size.begin(), local_nl_size.end(), 0);
   if(tot_size==0) {setRequestList(); return;}
   // merge
-  std::vector<unsigned> merge_nl(tot_size, 0);
+  std::vector<size_t> merge_nl(tot_size, 0);
   // calculate vector of displacement
   std::vector<int> disp(stride);
   disp[0] = 0;
-  int rank_size = 0;
-  for(unsigned i=0; i<stride-1; ++i) {
+  size_t rank_size = 0;
+  for(size_t i=0; i<stride-1; ++i) {
     rank_size += local_nl_size[i];
     disp[i+1] = rank_size;
   }
@@ -155,8 +155,8 @@ void NeighborList::update(const std::vector<Vector>& positions) {
   else merge_nl = local_flat_nl;
   // resize neighbor stuff
   neighbors_.resize(tot_size/2);
-  for(unsigned i=0; i<tot_size/2; i++) {
-    unsigned j=2*i;
+  for(size_t i=0; i<tot_size/2; i++) {
+    size_t j=2*i;
     neighbors_[i] = std::make_pair(merge_nl[j],merge_nl[j+1]);
   }
 
@@ -165,7 +165,7 @@ void NeighborList::update(const std::vector<Vector>& positions) {
 
 void NeighborList::setRequestList() {
   requestlist_.clear();
-  for(unsigned int i=0; i<size(); ++i) {
+  for(size_t i=0; i<size(); ++i) {
     requestlist_.push_back(fullatomlist_[neighbors_[i].first]);
     requestlist_.push_back(fullatomlist_[neighbors_[i].second]);
   }
@@ -174,14 +174,14 @@ void NeighborList::setRequestList() {
 }
 
 std::vector<AtomNumber>& NeighborList::getReducedAtomList() {
-  if(!reduced)for(unsigned int i=0; i<size(); ++i) {
-      unsigned newindex0=0,newindex1=0;
+  if(!reduced)for(size_t i=0; i<size(); ++i) {
+      size_t newindex0=0,newindex1=0;
       AtomNumber index0=fullatomlist_[neighbors_[i].first];
       AtomNumber index1=fullatomlist_[neighbors_[i].second];
 // I exploit the fact that requestlist_ is an ordered vector
       auto p = std::find(requestlist_.begin(), requestlist_.end(), index0); plumed_dbg_assert(p!=requestlist_.end()); newindex0=p-requestlist_.begin();
       p = std::find(requestlist_.begin(), requestlist_.end(), index1); plumed_dbg_assert(p!=requestlist_.end()); newindex1=p-requestlist_.begin();
-      neighbors_[i]=std::pair<unsigned,unsigned>(newindex0,newindex1);
+      neighbors_[i]=std::pair<size_t,size_t>(newindex0,newindex1);
     }
   reduced=true;
   return requestlist_;
@@ -199,23 +199,23 @@ void NeighborList::setLastUpdate(unsigned step) {
   lastupdate_=step;
 }
 
-unsigned NeighborList::size() const {
+size_t NeighborList::size() const {
   return neighbors_.size();
 }
 
-std::pair<unsigned,unsigned> NeighborList::getClosePair(unsigned i) const {
+std::pair<size_t,size_t> NeighborList::getClosePair(size_t i) const {
   return neighbors_[i];
 }
 
-std::pair<AtomNumber,AtomNumber> NeighborList::getClosePairAtomNumber(unsigned i) const {
+std::pair<AtomNumber,AtomNumber> NeighborList::getClosePairAtomNumber(size_t i) const {
   std::pair<AtomNumber,AtomNumber> Aneigh;
   Aneigh=std::pair<AtomNumber,AtomNumber>(fullatomlist_[neighbors_[i].first],fullatomlist_[neighbors_[i].second]);
   return Aneigh;
 }
 
-std::vector<unsigned> NeighborList::getNeighbors(unsigned index) {
-  std::vector<unsigned> neighbors;
-  for(unsigned int i=0; i<size(); ++i) {
+std::vector<size_t> NeighborList::getNeighbors(size_t index) {
+  std::vector<size_t> neighbors;
+  for(size_t i=0; i<size(); ++i) {
     if(neighbors_[i].first==index)  neighbors.push_back(neighbors_[i].second);
     if(neighbors_[i].second==index) neighbors.push_back(neighbors_[i].first);
   }
