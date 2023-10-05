@@ -657,7 +657,7 @@ void CudaCoordination<calculateFloat>::calculate() {
   cudaDerivativesSparseColsIdx.resize(nn);
   /**************************starting the calculations*************************/
   //this initializes the memory to be accumulated
-  getCoord<<<ngroups,nthreads,0,streamDerivatives>>> (
+  getCoord<<<ngroups,nthreads,0,0>>> (
     nn,
     switchingParameters,
     cudaCoords.pointer(),
@@ -672,6 +672,7 @@ void CudaCoordination<calculateFloat>::calculate() {
   //this barrier makes sure that the memory is ready for the operations
   
   /**************************accumulating the results**************************/
+  //TODO: Transpose the matrix and use it as csr
   cusparseDnVecDescr_t dfuncDense;
   cusparseCreateDnVec(
     &dfuncDense,
