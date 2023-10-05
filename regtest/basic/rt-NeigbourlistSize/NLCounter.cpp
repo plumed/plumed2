@@ -40,7 +40,7 @@ public:
   static void registerKeywords( Keywords& keys );
   NLCounter(const ActionOptions&);
 // active methods:
-  virtual void calculate();
+  void calculate() override;
   void prepare() override;
 };
 
