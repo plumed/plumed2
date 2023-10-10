@@ -126,7 +126,7 @@ fixed_width(false)
                   plumed.readInputLine( getLabel() + "_vol: CUSTOM ARG=" + getLabel() + "_bwprod FUNC=(sqrt(x)*" + pstr + ") PERIODIC=NO");
                   if( hasheight ) plumed.readInputLine( getLabel() + "_height: CUSTOM ARG=" + weight_str[0] + "," + getLabel() + "_vol FUNC=x/y PERIODIC=NO");
                   else plumed.readInputLine( getLabel() + "_height: CUSTOM ARG=" + getLabel() + "_vol FUNC=1/x PERIODIC=NO");
-                  weight_str.resize(1); weight_str[0] = getLabel() + "_height";
+                  hasheight=true; weight_str.resize(1); weight_str[0] = getLabel() + "_height";
               }
           } else parse("METRIC",bandwidth);
           weight_str.push_back( bandwidth );
@@ -134,7 +134,7 @@ fixed_width(false)
   }
   if( weight_str.size()>0 ) {
       std::vector<Value*> weight_args; ActionWithArguments::interpretArgumentList( weight_str, plumed.getActionSet(), this, weight_args );
-      hasheight=true; std::vector<Value*> args( getArguments() ); args.push_back( weight_args[0] );
+      std::vector<Value*> args( getArguments() ); args.push_back( weight_args[0] );
       if( weight_args[0]->getNumberOfValues()>1 && numberOfKernels!=weight_args[0]->getNumberOfValues() ) error("mismatch between numbers of values in input arguments and HEIGHTS"); 
 
       if( weight_str.size()==2 ) {
