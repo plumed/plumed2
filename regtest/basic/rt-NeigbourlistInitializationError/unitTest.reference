@@ -1,0 +1,8 @@
+Single list:
+[100000]Exception text: 
+(tools/NeighborList.cpp:98) void PLMD::NeighborList::initialize()
+An error happened while allocating the neighbor list, please decrease the number of atoms used
+Double list, no pairs:
+[100000, 90000]Exception text: 
+(tools/NeighborList.cpp:98) void PLMD::NeighborList::initialize()
+An error happened while allocating the neighbor list, please decrease the number of atoms used

@@ -1,0 +1,144 @@
+Single list:
+[100]Initial number:      pass
+[100]getIndexPair():      pass
+[100]Lastupdate is 0:     pass
+[100]Default stride is 0: pass
+
+Double list, no pairs:
+[100, 100]Initial number:      pass
+[100, 100]getIndexPair():      pass
+[100, 100]Lastupdate is 0:     pass
+[100, 100]Default stride is 0: pass
+
+Double list, with pairs:
+[100, 100]Initial number:      pass
+[100, 100]getIndexPair():      pass
+[100, 100]Lastupdate is 0:     pass
+[100, 100]Default stride is 0: pass
+
+Double list, no pairs:
+[100, 500]Initial number:      pass
+[100, 500]getIndexPair():      pass
+[100, 500]Lastupdate is 0:     pass
+[100, 500]Default stride is 0: pass
+
+Double list, no pairs:
+[100, 1000]Initial number:      pass
+[100, 1000]getIndexPair():      pass
+[100, 1000]Lastupdate is 0:     pass
+[100, 1000]Default stride is 0: pass
+
+Double list, no pairs:
+[100, 10000]Initial number:      pass
+[100, 10000]getIndexPair():      pass
+[100, 10000]Lastupdate is 0:     pass
+[100, 10000]Default stride is 0: pass
+
+Single list:
+[500]Initial number:      pass
+[500]getIndexPair():      pass
+[500]Lastupdate is 0:     pass
+[500]Default stride is 0: pass
+
+Double list, no pairs:
+[500, 100]Initial number:      pass
+[500, 100]getIndexPair():      pass
+[500, 100]Lastupdate is 0:     pass
+[500, 100]Default stride is 0: pass
+
+Double list, no pairs:
+[500, 500]Initial number:      pass
+[500, 500]getIndexPair():      pass
+[500, 500]Lastupdate is 0:     pass
+[500, 500]Default stride is 0: pass
+
+Double list, with pairs:
+[500, 500]Initial number:      pass
+[500, 500]getIndexPair():      pass
+[500, 500]Lastupdate is 0:     pass
+[500, 500]Default stride is 0: pass
+
+Double list, no pairs:
+[500, 1000]Initial number:      pass
+[500, 1000]getIndexPair():      pass
+[500, 1000]Lastupdate is 0:     pass
+[500, 1000]Default stride is 0: pass
+
+Double list, no pairs:
+[500, 10000]Initial number:      pass
+[500, 10000]getIndexPair():      pass
+[500, 10000]Lastupdate is 0:     pass
+[500, 10000]Default stride is 0: pass
+
+Single list:
+[1000]Initial number:      pass
+[1000]getIndexPair():      pass
+[1000]Lastupdate is 0:     pass
+[1000]Default stride is 0: pass
+
+Double list, no pairs:
+[1000, 100]Initial number:      pass
+[1000, 100]getIndexPair():      pass
+[1000, 100]Lastupdate is 0:     pass
+[1000, 100]Default stride is 0: pass
+
+Double list, no pairs:
+[1000, 500]Initial number:      pass
+[1000, 500]getIndexPair():      pass
+[1000, 500]Lastupdate is 0:     pass
+[1000, 500]Default stride is 0: pass
+
+Double list, no pairs:
+[1000, 1000]Initial number:      pass
+[1000, 1000]getIndexPair():      pass
+[1000, 1000]Lastupdate is 0:     pass
+[1000, 1000]Default stride is 0: pass
+
+Double list, with pairs:
+[1000, 1000]Initial number:      pass
+[1000, 1000]getIndexPair():      pass
+[1000, 1000]Lastupdate is 0:     pass
+[1000, 1000]Default stride is 0: pass
+
+Double list, no pairs:
+[1000, 10000]Initial number:      pass
+[1000, 10000]getIndexPair():      pass
+[1000, 10000]Lastupdate is 0:     pass
+[1000, 10000]Default stride is 0: pass
+
+Single list:
+[10000]Initial number:      pass
+[10000]getIndexPair():      pass
+[10000]Lastupdate is 0:     pass
+[10000]Default stride is 0: pass
+
+Double list, no pairs:
+[10000, 100]Initial number:      pass
+[10000, 100]getIndexPair():      pass
+[10000, 100]Lastupdate is 0:     pass
+[10000, 100]Default stride is 0: pass
+
+Double list, no pairs:
+[10000, 500]Initial number:      pass
+[10000, 500]getIndexPair():      pass
+[10000, 500]Lastupdate is 0:     pass
+[10000, 500]Default stride is 0: pass
+
+Double list, no pairs:
+[10000, 1000]Initial number:      pass
+[10000, 1000]getIndexPair():      pass
+[10000, 1000]Lastupdate is 0:     pass
+[10000, 1000]Default stride is 0: pass
+
+Double list, no pairs:
+[10000, 10000]Initial number:      pass
+[10000, 10000]getIndexPair():      pass
+[10000, 10000]Lastupdate is 0:     pass
+[10000, 10000]Default stride is 0: pass
+
+Double list, with pairs:
+[10000, 10000]Initial number:      pass
+[10000, 10000]getIndexPair():      pass
+[10000, 10000]Lastupdate is 0:     pass
+[10000, 10000]Default stride is 0: pass
+
