@@ -1,8 +1,0 @@
-# This is loading a collective variable on the fly:
-LOAD FILE=NLCounter.cpp
-
-d2: NLCOUNTER GROUPA=@mdatoms NL_CUTOFF=1.5 NL_STRIDE=1
-
-PRINT FILE=COLVAR ARG=d2 FMT=%.0f
-
-ENDPLUMED
