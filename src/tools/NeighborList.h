@@ -66,12 +66,18 @@ public:
   NeighborList(const std::vector<PLMD::AtomNumber>& list0,
                const std::vector<PLMD::AtomNumber>& list1,
                const bool& serial,
-               const bool& do_pair, const bool& do_pbc, const PLMD::Pbc& pbc, Communicator &cm,
-               const double& distance=1.0e+30, const unsigned& stride=0);
+               const bool& do_pair,
+               const bool& do_pbc,
+               const PLMD::Pbc& pbc,
+               Communicator &cm,
+               const double& distance=1.0e+30,
+               const unsigned& stride=0);
   NeighborList(const std::vector<PLMD::AtomNumber>& list0,
                const bool& serial,
                const bool& do_pbc,
-               const PLMD::Pbc& pbc, Communicator &cm, const double& distance=1.0e+30,
+               const PLMD::Pbc& pbc,
+               Communicator &cm,
+               const double& distance=1.0e+30,
                const unsigned& stride=0);
   ~NeighborList();
 /// Return the list of all atoms. These are needed to rebuild the neighbor list.
