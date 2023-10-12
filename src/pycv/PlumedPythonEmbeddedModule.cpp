@@ -27,12 +27,16 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 namespace py=pybind11;
 using PLMD::pycv::pycv_t;
 
+//TODO: check masses and charges
+
 PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
   py::class_<PLMD::pycv::PythonCVInterface>(m, "PythonCVInterface")
   .def_readwrite("data",&PLMD::pycv::PythonCVInterface::dataContainer,"Return an accessible dictionary that persist along all the simulation")
   //usin "PLMD::pycv::PythonCVInterface::getStep" instead of the lambda gives compilation errors
   .def("getStep",
-       [](PLMD::pycv::PythonCVInterface* self) -> long int{return self->getStep();},
+       [](PLMD::pycv::PythonCVInterface* self) -> long int{
+        return self->getStep();
+        },
        "Returns the current step")
   .def("getPosition",
   [](PLMD::pycv::PythonCVInterface* self, int i) -> py::array_t<double> {
@@ -43,15 +47,46 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
   "Returns an ndarray with the position of the \"i\"th"
   " atom requested by the action",py::arg("i"))
   .def("getPositions",[](PLMD::pycv::PythonCVInterface* self) -> py::array_t<double> {
-    auto nat=self->getPositions().size();
-    py::array_t<double>::ShapeContainer shape({nat,3});
-    py::array_t<double> atomList(shape,
+      auto nat=self->getPositions().size();
+      py::array_t<double>::ShapeContainer shape({nat,3});
+      py::array_t<double> atomList(shape,
                                  &self->getPositions()[0][0]
                                 );
-    return atomList;
-  },"Returns a numpy.array that contaisn the atomic positions of the atoms requested by the action")
+      return atomList;
+    },
+    "Returns a numpy.array that contaisn the atomic positions of the atoms requested by the action")
   .def("getPbc",&PLMD::pycv::PythonCVInterface::getPbc,
        "returns an interface to the current pbcs")
+  .def("getMass",&PLMD::pycv::PythonCVInterface::getMass,
+       "Returns the mass of the \"i\"th atom requested by the action",
+       py::arg("i"))
+  .def("getMasses",
+    [](PLMD::pycv::PythonCVInterface* self) -> py::array_t<double> {
+      auto nat=self->getPositions().size();
+      py::array_t<double>::ShapeContainer shape({nat});
+      py::array_t<double> masses(shape);
+      auto retAccessor = masses.mutable_unchecked<1>();
+      for (auto i=0u; i < nat; ++i) {
+        retAccessor(i)=self->getMass(i);
+      }
+      return masses;
+    },
+    "Returns and ndarray with the masses of the atoms requested by the action")
+  .def("getCharge",&PLMD::pycv::PythonCVInterface::getCharge,
+       "Returns the charge of the \"i\"th atom requested by the action",
+       py::arg("i"))
+  .def("getCharges",
+    [](PLMD::pycv::PythonCVInterface* self) -> py::array_t<double> {
+      auto nat=self->getPositions().size();
+      py::array_t<double>::ShapeContainer shape({nat});
+      py::array_t<double> charges(shape);
+      auto retAccessor = charges.mutable_unchecked<1>();
+      for (auto i=0u; i < nat; ++i) {
+        retAccessor(i)=self->getCharge(i);
+      }
+      return charges;
+    },
+    "Returns and ndarray with the charges of the atoms requested by the action")
   ;
   py::class_<PLMD::Pbc>(m, "PLMDPbc")
   //.def(py::init<>())
