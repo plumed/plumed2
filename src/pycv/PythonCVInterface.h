@@ -46,7 +46,7 @@ class PythonCVInterface : public Colvar,
   void calculateMultiComponent(py::object &);
 
 public:
-  py::dict dataContainer={};
+  py::dict dataContainer= {};
   explicit PythonCVInterface(const ActionOptions&);
 // active methods:
   void calculate() override;
