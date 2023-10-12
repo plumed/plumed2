@@ -166,7 +166,7 @@ void Quaternion::calculateCV( const unsigned& mode, const std::vector<double>& m
 
 ////////////////////////////////////
 ////////x-vector calculations///////
-  double magx = vec1_comp.modulo(); Vector x = vec1_comp / magx;
+  double magx = vec1_comp.modulo(); Vector xt = vec1_comp / magx;
   std::vector<Tensor> dx(3); double magx3= magx*magx*magx;
   dx[0](0,0) = ( -(vec1_comp[1]*vec1_comp[1]+vec1_comp[2]*vec1_comp[2])/magx3 );   // dx/dx
   dx[0](0,1) = (  vec1_comp[0]*vec1_comp[1]/magx3 );                 // dx/dy
@@ -199,7 +199,7 @@ void Quaternion::calculateCV( const unsigned& mode, const std::vector<double>& m
   fac_derivs[1] = (vec2_comp)/(magx2) - 2*dp*vec1_comp / magx4;
   fac_derivs[2] = (vec1_comp)/(magx2);
   //now multiply fac by unormed x, and subtract it from unormed y, then normalize
-  Vector y = vec2_comp - fac*vec1_comp; std::vector<Tensor> dy(3);
+  Vector yt = vec2_comp - fac*vec1_comp; std::vector<Tensor> dy(3);
   dy[0](0,0) = -1 - fac_derivs[0][0]*vec1_comp[0] + fac;   // dx/dx
   dy[0](0,1) = -fac_derivs[0][0]*vec1_comp[1];             // dx/dy
   dy[0](0,2) = -fac_derivs[0][0]*vec1_comp[2];
@@ -230,25 +230,25 @@ void Quaternion::calculateCV( const unsigned& mode, const std::vector<double>& m
   dy[2](2,1) = -fac_derivs[2][2]*vec1_comp[1];
   dy[2](2,2) = 1 - fac_derivs[2][2]*vec1_comp[2];
   //now normalize, and we have our y vector
-  double magy = y.modulo(); double imagy = 1/magy, magy3 = magy*magy*magy;
-  Tensor multi_y; for(unsigned i=0; i<3; ++i) multi_y.setRow(i, y[i]*y); 
-  y = y / magy; for(unsigned i=0; i<3; ++i) dy[i] = dy[i] / magy - matmul( dy[i], multi_y ) / magy3; 
+  double magy = yt.modulo(); double imagy = 1/magy, magy3 = magy*magy*magy;
+  Tensor multi_y; for(unsigned i=0; i<3; ++i) multi_y.setRow(i, yt[i]*yt); 
+  yt = yt / magy; for(unsigned i=0; i<3; ++i) dy[i] = dy[i] / magy - matmul( dy[i], multi_y ) / magy3; 
 /////////////////////////////////////
 ///////z-vector calculations/////////
 
   //simply cross them to make z
-  Vector z = crossProduct(x,y); std::vector<Tensor> dz(3);
-  dz[0].setRow( 0, crossProduct( dx[0].getRow(0), y ) + crossProduct( x, dy[0].getRow(0) ) );
-  dz[0].setRow( 1, crossProduct( dx[0].getRow(1), y ) + crossProduct( x, dy[0].getRow(1) ) );
-  dz[0].setRow( 2, crossProduct( dx[0].getRow(2), y ) + crossProduct( x, dy[0].getRow(2) ) );
+  Vector zt = crossProduct(xt,yt); std::vector<Tensor> dz(3);
+  dz[0].setRow( 0, crossProduct( dx[0].getRow(0), yt ) + crossProduct( xt, dy[0].getRow(0) ) );
+  dz[0].setRow( 1, crossProduct( dx[0].getRow(1), yt ) + crossProduct( xt, dy[0].getRow(1) ) );
+  dz[0].setRow( 2, crossProduct( dx[0].getRow(2), yt ) + crossProduct( xt, dy[0].getRow(2) ) );
 
-  dz[1].setRow( 0, crossProduct( dx[1].getRow(0), y ) + crossProduct( x, dy[1].getRow(0) ) );
-  dz[1].setRow( 1, crossProduct( dx[1].getRow(1), y ) + crossProduct( x, dy[1].getRow(1) ) );
-  dz[1].setRow( 2, crossProduct( dx[1].getRow(2), y ) + crossProduct( x, dy[1].getRow(2) ) );
+  dz[1].setRow( 0, crossProduct( dx[1].getRow(0), yt ) + crossProduct( xt, dy[1].getRow(0) ) );
+  dz[1].setRow( 1, crossProduct( dx[1].getRow(1), yt ) + crossProduct( xt, dy[1].getRow(1) ) );
+  dz[1].setRow( 2, crossProduct( dx[1].getRow(2), yt ) + crossProduct( xt, dy[1].getRow(2) ) );
 
-  dz[2].setRow( 0, crossProduct( x, dy[2].getRow(0) ) );
-  dz[2].setRow( 1, crossProduct( x, dy[2].getRow(1) ) );
-  dz[2].setRow( 2, crossProduct( x, dy[2].getRow(2) ) );
+  dz[2].setRow( 0, crossProduct( xt, dy[2].getRow(0) ) );
+  dz[2].setRow( 1, crossProduct( xt, dy[2].getRow(1) ) );
+  dz[2].setRow( 2, crossProduct( xt, dy[2].getRow(2) ) );
 
 //the above 9 components form an orthonormal basis, centered on the molecule in question
 //the rotation matrix is generally the inverse of this matrix, and in this case since it is 1) orthogonal and 2) its determinant is 1
@@ -256,20 +256,41 @@ void Quaternion::calculateCV( const unsigned& mode, const std::vector<double>& m
 //we can now convert it to a quaternion, which will then be used to rotate the vector separating 2 molecules - > q1_bar * r_21 * q1, where r21 is the vector separating the atoms
 //r21 is a quaternion with a 0 real part ^^^
 //essentially this rotates the vector into the frame of molecule 1
+
+//QUICKFIX
+//double a,b,c;
+//a=x[0];b=x[1];c=x[2];
+//double d,e,f;
+//d=y[0];e=y[1];f=y[2];
+//double g,h,n;
+//g=z[0];h=z[1];n=z[2];
+//
+//x[0]=a;x[1]=d;x[2]=g;
+//y[0]=b;y[1]=e;y[2]=h;
+//z[0]=c;z[1]=f;z[2]=n;
+//Vector x(xt[0],xt[1],xt[2]);
+//Vector y(yt[0],yt[1],yt[2]);
+//Vector z(zt[0],zt[1],zt[2]);
+//JAKE QUICKFIX
+  Vector x(xt[0],yt[0],zt[0]);
+  Vector y(xt[1],yt[1],zt[1]);
+  Vector z(xt[2],yt[2],zt[2]);
+
   double tr = x[0] + y[1] + z[2]; //trace of the rotation matrix
 
+//aa->log.printf("%f %f %f\n%f %f %f\n%f %f %f\n",x[0],x[1],x[2],y[0],y[1],y[2],z[0],z[1],z[2]);
 //this converts to quaternion
   std::vector<Vector> dS(3); 
-  if (tr > 0) { 
+  if (tr > 0.000001) { 
     double S = sqrt(tr+1.0) * 2; // S=4*qw
     for(unsigned i=0; i<3; ++i) dS[i] = (2/S)*(dx[i].getCol(0) + dy[i].getCol(1) + dz[i].getCol(2));  
     vals[0] = 0.25 * S; for(unsigned i=0; i<3; ++i) derivs[0][i] =0.25*dS[i];
     vals[1] = (z[1] - y[2]) / S;
-    for(unsigned i=0; i<3; ++i) derivs[1][i] = (1/S)*(dz[i].getCol(1) - dy[i].getCol(2)) - (vals[1]/S)*dS[i];
+    for(unsigned i=0; i<3; ++i) derivs[1][i] = (1/S)*(dy[i].getCol(2) - dz[i].getCol(1)) - (vals[1]/S)*dS[i];
     vals[2] = (x[2] - z[0]) / S; 
-    for(unsigned i=0; i<3; ++i) derivs[2][i] = (1/S)*(dx[i].getCol(2) - dz[i].getCol(0)) - (vals[2]/S)*dS[i]; 
+    for(unsigned i=0; i<3; ++i) derivs[2][i] = (1/S)*(dz[i].getCol(0) - dx[i].getCol(2)) - (vals[2]/S)*dS[i]; 
     vals[3] = (y[0] - x[1]) / S; 
-    for(unsigned i=0; i<3; ++i) derivs[3][i] = (1/S)*(dy[i].getCol(0) - dx[i].getCol(1)) - (vals[3]/S)*dS[i];
+    for(unsigned i=0; i<3; ++i) derivs[3][i] = (1/S)*(dx[i].getCol(1) - dy[i].getCol(0)) - (vals[3]/S)*dS[i];
   } else if ((x[0] > y[1])&(x[0] > z[2])) { 
     float S = sqrt(1.0 + x[0] - y[1] - z[2]) * 2; // S=4*qx 
     for(unsigned i=0; i<3; ++i) dS[i] = (2/S)*(dx[i].getCol(0) - dy[i].getCol(1) - dz[i].getCol(2));
@@ -290,7 +311,7 @@ void Quaternion::calculateCV( const unsigned& mode, const std::vector<double>& m
     vals[2] = 0.25 * S; for(unsigned i=0; i<3; ++i) derivs[2][i] =0.25*dS[i];
     vals[3] = (y[2] + z[1]) / S; 
     for(unsigned i=0; i<3; ++i) derivs[3][i] = (1/S)*(dy[i].getCol(2) + dz[i].getCol(1)) - (vals[3]/S)*dS[i]; 
-  } else { 
+  } else {
     float S = sqrt(1.0 + z[2] - x[0] - y[1]) * 2; // S=4*qz
     for(unsigned i=0; i<3; ++i) dS[i] = (2/S)*(-dx[i].getCol(0) - dy[i].getCol(1) + dz[i].getCol(2)); 
     vals[0] = (y[0] - x[1]) / S;
@@ -301,12 +322,16 @@ void Quaternion::calculateCV( const unsigned& mode, const std::vector<double>& m
     for(unsigned i=0; i<3; ++i) derivs[2][i] = (1/S)*(dy[i].getCol(2) + dz[i].getCol(1)) - (vals[2]/S)*dS[i]; 
     vals[3] = 0.25 * S; for(unsigned i=0; i<3; ++i) derivs[3][i] =0.25*dS[i];
   }
+  //JAKE QUICKFIX
+  //if (vals[0] < 0) {vals[0]*=-1;vals[1]*=-1;vals[2]*=-1;vals[3]*=-1;}
   setBoxDerivativesNoPbc( pos, derivs, virial );
+//worked but derivatvies are fucked
+
 //debugging vector calcs
-//log.printf("%f ", x1);
-//log.printf("%f ", x2);
-//log.printf("%f\n", x3);
-//log.printf("%f ", y1);
+//  aa->log.printf("%f ", derivs[0]);
+//  aa->log.printf("%f ", derivs[1]);
+//  aa->log.printf("%f ", derivs[2]);
+//  aa->log.printf("%f\n", derivs[3]);
 //log.printf("%f ", y2);
 //log.printf("%f\n", y3);
 //log.printf("%f ",z1);
