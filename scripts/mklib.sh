@@ -59,7 +59,7 @@ do
   
   rm -f "$obj"
 
-  eval "$compile" "$PLUMED_MKLIB_CFLAGS" "$obj" "$tmpfile" || {
+  eval "$compile" "$PLUMED_MKLIB_CFLAGS" -o "$obj" "$tmpfile" || {
     echo "ERROR: compiling $file"
     exit 1
   }
@@ -70,8 +70,8 @@ do
 done
 
 if test "$PLUMED_IS_INSTALLED" = yes ; then
-  eval "$link_installed" "$PLUMED_MKLIB_LDFLAGS" "$lib" "$objs"
+  eval "$link_installed" "$PLUMED_MKLIB_LDFLAGS" -o "$lib" "$objs"
 else
-  eval "$link_uninstalled" "$PLUMED_MKLIB_LDFLAGS" "$lib" "$objs"
+  eval "$link_uninstalled" "$PLUMED_MKLIB_LDFLAGS" -o "$lib" "$objs"
 fi
 
