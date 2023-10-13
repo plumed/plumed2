@@ -12,45 +12,66 @@ fi
 
 source "$PLUMED_ROOT"/src/config/compile_options.sh
 
-if [ $# != 1 ] || [[ "$1" != *.cpp ]] ;
+if [ $# == 0 ]
 then
   echo "ERROR"
-  echo "type 'plumed mklib file.cpp'"
+  echo "type 'plumed mklib file1.cpp [file2.cpp etc]'"
   exit 1
 fi
 
+lib="${1%%.cpp}".$soext
+rm -f "$lib"
 
-file="$1"
-obj="${file%%.cpp}".o
-lib="${file%%.cpp}".$soext
+objs=""
 
-if [ ! -f "$file" ]
-then
-  echo "ERROR: I cannot find file $file"
-  exit 1
-fi
-#adding a simple tmpfile, to preprocess "in place" the input file,
-#this assumes the user has write permission in the current directory
-#which should be true since we are going to compile and output something here
-tmpfile=$(mktemp ${file%.cpp}.XXXXXX.cpp)
-cp "${file}" "${tmpfile}"
+for file
+do
 
-if grep -q '^#include "\(bias\|colvar\|function\|sasa\|vatom\)\/ActionRegister.h"' "${tmpfile}"; then
-   >&2 echo 'WARNING: using a legacy ActionRegister.h include path, please use <<#include "core/ActionRegister.h">>'
-   sed -i.bak 's%^#include ".*/ActionRegister.h"%#include "core/ActionRegister.h"%g' "${tmpfile}"
-fi
+  if [[ "$file" != *.cpp ]] ;
+  then
+    echo "ERROR"
+    echo "type 'plumed mklib file1.cpp [file2.cpp etc]'"
+    exit 1
+  fi
 
-if grep -q '^#include "\(cltools\)\/CLToolRegister.h"' "${tmpfile}"; then
-   >&2  echo 'WARNING: using a legacy  CLToolRegister.h include path, please use <<#include "core/CLToolRegister.h">>'
-   sed -i.bak 's%^#include ".*/CLToolRegister.h"%#include "core/CLToolRegister.h"%g' "${tmpfile}"
-fi
+  obj="${file%%.cpp}".o
+  
+  if [ ! -f "$file" ]
+  then
+    echo "ERROR: I cannot find file $file"
+    exit 1
+  fi
+  #adding a simple tmpfile, to preprocess "in place" the input file,
+  #this assumes the user has write permission in the current directory
+  #which should be true since we are going to compile and output something here
+  tmpfile=$(mktemp ${file%.cpp}.XXXXXX).cpp
+  cp "${file}" "${tmpfile}"
+  
+  if grep -q '^#include "\(bias\|colvar\|function\|sasa\|vatom\)\/ActionRegister.h"' "${tmpfile}"; then
+     >&2 echo 'WARNING: using a legacy ActionRegister.h include path, please use <<#include "core/ActionRegister.h">>'
+     sed -i.bak 's%^#include ".*/ActionRegister.h"%#include "core/ActionRegister.h"%g' "${tmpfile}"
+  fi
+  
+  if grep -q '^#include "\(cltools\)\/CLToolRegister.h"' "${tmpfile}"; then
+     >&2  echo 'WARNING: using a legacy  CLToolRegister.h include path, please use <<#include "core/CLToolRegister.h">>'
+     sed -i.bak 's%^#include ".*/CLToolRegister.h"%#include "core/CLToolRegister.h"%g' "${tmpfile}"
+  fi
+  
+  rm -f "$obj"
 
-rm -f "$obj" "$lib"
+  eval "$compile" "$PLUMED_MKLIB_CFLAGS" "$obj" "$tmpfile" || {
+    echo "ERROR: compiling $file"
+    exit 1
+  }
+
+  rm -f ${tmpfile} ${tmpfile}.bak
+  objs="$objs $obj"
+
+done
 
 if test "$PLUMED_IS_INSTALLED" = yes ; then
-  eval "$compile" "$obj" "$tmpfile" && eval "$link_installed" "$lib" "$obj"
+  eval "$link_installed" "$PLUMED_MKLIB_LDFLAGS" "$lib" "$objs"
 else
-  eval "$compile" "$obj" "$tmpfile" && eval "$link_uninstalled" "$lib" "$obj"
+  eval "$link_uninstalled" "$PLUMED_MKLIB_LDFLAGS" "$lib" "$objs"
 fi
 
-rm -f ${tmpfile} ${tmpfile}.bak
