@@ -44,7 +44,7 @@ do
   #adding a simple tmpfile, to preprocess "in place" the input file,
   #this assumes the user has write permission in the current directory
   #which should be true since we are going to compile and output something here
-  tmpfile=$(mktemp ${file%.cpp}.XXXXXX).cpp
+  tmpfile=$(mktemp ${file%.cpp}.XXXXXX.cpp)
   cp "${file}" "${tmpfile}"
   
   if grep -q '^#include "\(bias\|colvar\|function\|sasa\|vatom\)\/ActionRegister.h"' "${tmpfile}"; then
@@ -74,4 +74,3 @@ if test "$PLUMED_IS_INSTALLED" = yes ; then
 else
   eval "$link_uninstalled" "$PLUMED_MKLIB_LDFLAGS" -o "$lib" "$objs"
 fi
-
