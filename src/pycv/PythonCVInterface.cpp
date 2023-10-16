@@ -19,7 +19,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include "core/PlumedMain.h"
 #include "colvar/ActionRegister.h"
 #include "tools/Pbc.h"
-
+#include "tools/NeighborList.h"
 #include <pybind11/embed.h> // everything needed for embedding
 #include <pybind11/numpy.h>
 #include <pybind11/operators.h>
@@ -27,7 +27,10 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 #include <cmath>
 #include <iostream>
+#include <iomanip>
 
+#define vdbg(...) std::cerr << std::setw(4) << __LINE__ <<":" << \
+  std::setw(20)<< #__VA_ARGS__ << " " << (__VA_ARGS__) <<'\n'
 
 namespace py = pybind11;
 
@@ -42,6 +45,8 @@ PLUMED_REGISTER_ACTION(PythonCVInterface,"PYCVINTERFACE")
 void PythonCVInterface::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   keys.add("atoms","ATOMS","the list of atoms to be passed to the function");
+  keys.add("atoms","GROUPA","First list of atoms");
+  keys.add("atoms","GROUPB","Second list of atoms (if empty, N*(N-1)/2 pairs in GROUPA are counted)");
   keys.add("compulsory","IMPORT","the python file to import, containing the function");
   keys.add("compulsory","CALCULATE","the function to call as calculate method of a CV");
   //add other callable methods
@@ -53,10 +58,19 @@ void PythonCVInterface::registerKeywords( Keywords& keys ) {
 
 PythonCVInterface::PythonCVInterface(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao) {
-  vector<AtomNumber> atoms;
+  std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
-  natoms = atoms.size();
-  if(natoms==0) error("At least one atom is required");
+  
+  std::vector<AtomNumber> groupA,groupB;
+  parseAtomList("GROUPA",groupA);
+  parseAtomList("GROUPB",groupB);
+  if(atoms.size() !=0 && groupA.size()!=0)
+    error("you can choose only between using the neigbourlist OR the atoms");
+
+  if(atoms.size()==0&& groupA.size()==0 && groupB.size()==0)
+    error("At least one atom is required");
+
+
 
   parse("IMPORT",import);
   parse("CALCULATE",calculate_function);
@@ -93,9 +107,31 @@ PythonCVInterface::PythonCVInterface(const ActionOptions&ao):
     addValueWithDerivatives();
     setNotPeriodic();
   }
-
-  requestAtoms(atoms);
-
+  if(groupA.size()>0){
+    //this is a WIP
+  bool dopair=false;
+  bool serial=false;
+  bool doneigh=false;
+  double nl_cut=0.0;
+  int nl_st=0;
+  //endof WIP
+    if(groupB.size()>0) {
+      if(doneigh)  
+        nl=Tools::make_unique<NeighborList>(groupA,groupB,serial,dopair,pbc,getPbc(),comm,nl_cut,nl_st);
+      else         
+        nl=Tools::make_unique<NeighborList>(groupA,groupB,serial,dopair,pbc,getPbc(),comm);
+    } else {
+      if(doneigh)  
+        nl=Tools::make_unique<NeighborList>(groupA,serial,pbc,getPbc(),comm,nl_cut,nl_st);
+      else         
+        nl=Tools::make_unique<NeighborList>(groupA,serial,pbc,getPbc(),comm);
+    }
+    requestAtoms(nl->getFullAtomList());
+    natoms = getPositions().size();
+  } else {
+    natoms = atoms.size();
+      requestAtoms(atoms);
+  }
   // ----------------------------------------
 
   // Initialize the module and function pointer
@@ -110,6 +146,22 @@ PythonCVInterface::PythonCVInterface(const ActionOptions&ao):
 }
 
 void PythonCVInterface::prepare() {
+  if(nl){
+    if(nl->getStride()>0) {
+      if(firsttime || (getStep()%nl->getStride()==0)) {
+        requestAtoms(nl->getFullAtomList());
+        invalidateList=true;
+        firsttime=false;
+      } else {
+        requestAtoms(nl->getReducedAtomList());
+        invalidateList=false;
+        if(getExchangeStep())
+          error("Neighbor lists should be updated on exchange steps - choose a NL_STRIDE which divides the exchange stride!");
+      }
+      if(getExchangeStep())
+        firsttime=true;
+    }
+  }
   if(has_prepare) {
     auto prepare_fcn = py_module.attr(prepare_function.c_str());
     py::dict prepareDict=prepare_fcn(this);
@@ -131,12 +183,16 @@ void PythonCVInterface::prepare() {
 
 // calculator
 void PythonCVInterface::calculate() {
+  if(nl){
+    if(nl->getStride()>0 && invalidateList) {
+      nl->update(getPositions());
+    }
+  }
+  if(pbc)
+    makeWhole();
 
-  if(pbc) makeWhole();
-
-// Call the function
+  // Call the function
   py::object r = py_fcn(this);
-
   if(ncomponents>0) {		// MULTIPLE NAMED COMPONENTS
     calculateMultiComponent(r);
   } else {			// SINGLE COMPONENT
@@ -217,6 +273,9 @@ void PythonCVInterface::check_dim(py::array_t<pycv_t> grad) {
                natoms, grad.shape(0), grad.shape(1));
     error("Python CV returned wrong gradient shape error");
   }
+}
+NeighborList& PythonCVInterface::getNL(){
+  return *nl;
 }
 } //pycv
 } //PLMD

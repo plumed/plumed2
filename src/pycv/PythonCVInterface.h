@@ -19,6 +19,9 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include "colvar/Colvar.h"
 
 namespace PLMD {
+
+  class NeighborList;
+
 namespace pycv {
 
 ///TODO: manual "you have to specify ATOMS=something for default atoms"
@@ -32,10 +35,13 @@ class PythonCVInterface : public Colvar,
   std::string prepare_function{PYCV_NOTIMPLEMENTED};
 
   std::vector<std::string> components;
+  std::unique_ptr<NeighborList> nl{nullptr};
   int ncomponents;
   int natoms;
-  bool pbc=false;
+  bool pbc{false};
   bool has_prepare{false};
+  bool invalidateList{true};
+  bool firsttime{true};
 
   void check_dim(py::array_t<pycv_t>);
   void calculateSingleComponent(py::object &);
@@ -46,6 +52,7 @@ public:
 // active methods:
   void calculate() override;
   void prepare() override;
+  NeighborList& getNL();
   static void registerKeywords( Keywords& keys );
 };
 

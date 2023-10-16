@@ -20,6 +20,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include <pybind11/operators.h>
 
 #include "tools/Vector.h"
+#include "tools/NeighborList.h"
 
 #include "PythonCVInterface.h"
 #include "PythonPlumedBase.h"
@@ -51,6 +52,8 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
   },"Returns a numpy.array that contaisn the atomic positions of the atoms requested by the action")
   .def("getPbc",&PLMD::pycv::PythonCVInterface::getPbc,
        "returns an interface to the current pbcs")
+  .def("getNeighbourList",&PLMD::pycv::PythonCVInterface::getNL,
+       "returns an interface to the current Neighborlist")
   ;
   py::class_<PLMD::Pbc>(m, "PLMDPbc")
   //.def(py::init<>())
@@ -113,5 +116,24 @@ return toRet;
   },
   "Get a numpy array of shape (3,3) with the inverted box vectors")
 #undef T3x3toArray
+  ;
+  py::class_<PLMD::NeighborList>(m, "PLMDNeighborList")
+  //.def(py::init<>())
+  //https://numpy.org/doc/stable/user/basics.types.html
+  //numpy.uint=unsigned long
+  .def("size",&PLMD::NeighborList::size,"return the number of pairs")
+  .def("getClosePairs",[](const PLMD::NeighborList* self)->py::array_t<unsigned long> {
+    auto ncouples = self->size();
+    py::array_t<unsigned long>::ShapeContainer shape({ncouples,2});
+    py::array_t<unsigned long> couples(shape);
+    auto retAccessor = couples.mutable_unchecked<2>();
+    for(size_t c=0;c< ncouples;++c){
+      retAccessor(c,0) = self->getClosePair(c).first;
+      retAccessor(c,1) = self->getClosePair(c).second;
+    }
+    return couples;
+  },
+
+"get a (NC,2) nd array with the list of couple indexes")
   ;
 }
