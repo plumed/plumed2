@@ -64,7 +64,7 @@ do
     exit 1
   }
 
-  rm -f ${tmpfile} ${tmpfile}.bak
+  rm -f ${tmpfile} ${tmpfile}.bak ${tmpfile%.cpp}
   objs="$objs $obj"
 
 done
