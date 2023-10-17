@@ -25,12 +25,14 @@ SHIFT = 0.0
 def switch(d: np.ndarray) -> np.ndarray:
     ret = np.zeros_like(d)
     dfunc = np.zeros_like(d)
-    WhereToCalc = d <= DMAX
+    WhereToCalc =  d < DMAX# & d > D0
+    #print(f"{dfunc=}", file=log)
+    #not doinf d-D0 for now, so no need for rdist<=0
     rdist = d[WhereToCalc] * INVR0
     rNdist = (rdist) ** (N - 1)
     ret[WhereToCalc] = (1.0 / (1 + rdist * rNdist)) * STRETCH
     ret[WhereToCalc] += SHIFT
-    dfunc[WhereToCalc] = -N * rNdist * ret[WhereToCalc] * ret[WhereToCalc]
+    dfunc[WhereToCalc] = -N * rNdist * ret[WhereToCalc] * ret[WhereToCalc] / d[WhereToCalc]
     dfunc *= STRETCH * INVR0
     return ret, dfunc
 
@@ -46,8 +48,8 @@ mydmax = DMAX
 DMAX += 0.1
 STRETCH, SHIFT = stretchSwitch(mydmax)
 DMAX = mydmax
-
-
+print(f"{N=} {M=} {D0=} {R0=} {INVR0=} {DMAX=} {STRETCH=} {SHIFT=}", file=log)
+      
 def pyCoord(action: plumedCommunications.PythonCVInterface):
     
     atoms = action.getPositions()
@@ -57,20 +59,24 @@ def pyCoord(action: plumedCommunications.PythonCVInterface):
     assert nl.size() == ((nat - 1) * nat) // 2
     pbc = action.getPbc()
     couples = nl.getClosePairs()
+    #from here we are in "pure python"
     d = atoms[couples[:, 0]] - atoms[couples[:, 1]]
+    #print(f"before {d}",file=log)
     d = pbc.apply(d)
+    #print(f"after {d}",file=log)
     dist = np.linalg.norm(d, axis=1)
-
     sw, dfunc = switch(dist)
     dev = np.zeros_like(atoms)
 
     predev = d * dfunc.reshape((-1,1))
-    
     for atomID in range(nat):
         # wherePlus =couples[:, 0]==atomID
         # whereMinus=couples[:, 1]==atomID
         dev[atomID] = np.sum(predev[couples[:, 0] == atomID], axis=0) - np.sum(
             predev[couples[:, 1] == atomID], axis=0
         )
+    virial=np.zeros((3,3))
+    for i in range(predev.shape[0]):
+        virial-=np.outer(predev[i],d[i])
 
-    return np.sum(sw), dev
+    return np.sum(sw), dev, virial
