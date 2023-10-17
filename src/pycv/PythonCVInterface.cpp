@@ -67,10 +67,10 @@ PythonCVInterface::PythonCVInterface(const ActionOptions&ao):
   std::vector<AtomNumber> atoms;
   std::vector<AtomNumber> groupA,groupB;
   parseAtomList("ATOMS",atoms);
-    
+
   parseAtomList("GROUPA",groupA);
   parseAtomList("GROUPB",groupB);
-  
+
   if(atoms.size() !=0 && groupA.size()!=0)
     error("you can choose only between using the neigbourlist OR the atoms");
 
@@ -225,57 +225,57 @@ void PythonCVInterface::calculateSingleComponent(py::object &r) {
     auto rl=r.cast<py::tuple>();
     pycv_t value = rl[0].cast<pycv_t>();
     setValue(value);
-    if (rl.size()>1){
-    // 2nd return value: gradient: numpy array of (natoms, 3)
-    py::array_t<pycv_t> grad(rl[1]);
-    check_dim(grad);
+    if (rl.size()>1) {
+      // 2nd return value: gradient: numpy array of (natoms, 3)
+      py::array_t<pycv_t> grad(rl[1]);
+      check_dim(grad);
 
-    // To optimize, see "direct access"
-    // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
-    for(int i=0; i<natoms; i++) {
-      Vector3d gi(grad.at(i,0),
-                  grad.at(i,1),
-                  grad.at(i,2));
-      setAtomsDerivatives(i,gi);
-    }
-    }if (rl.size()>2){
+      // To optimize, see "direct access"
+      // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
+      for(int i=0; i<natoms; i++) {
+        Vector3d gi(grad.at(i,0),
+                    grad.at(i,1),
+                    grad.at(i,2));
+        setAtomsDerivatives(i,gi);
+      }
+    } if (rl.size()>2) {
       py::array_t<pycv_t> pyBoxDev(rl[2]);
       //expecting the box derivatives
       Tensor boxDev;
       if(pyBoxDev.ndim() == 2 && (
-         pyBoxDev.shape(0) == 3 &&
-         pyBoxDev.shape(1) == 3)  ) { //boxDev is 3x3
+            pyBoxDev.shape(0) == 3 &&
+            pyBoxDev.shape(1) == 3)  ) { //boxDev is 3x3
         boxDev = Tensor({
-pyBoxDev.at(0,0),
-pyBoxDev.at(0,1),
-pyBoxDev.at(0,2),
-pyBoxDev.at(1,0),
-pyBoxDev.at(1,1),
-pyBoxDev.at(1,2),
-pyBoxDev.at(2,0),
-pyBoxDev.at(2,1),
-pyBoxDev.at(2,2)
+          pyBoxDev.at(0,0),
+          pyBoxDev.at(0,1),
+          pyBoxDev.at(0,2),
+          pyBoxDev.at(1,0),
+          pyBoxDev.at(1,1),
+          pyBoxDev.at(1,2),
+          pyBoxDev.at(2,0),
+          pyBoxDev.at(2,1),
+          pyBoxDev.at(2,2)
         });
-         }else if(pyBoxDev.ndim() == 1 && 
-         pyBoxDev.shape(0) == 9 
-         ){
-          boxDev = Tensor({
-pyBoxDev.at(0),
-pyBoxDev.at(1),
-pyBoxDev.at(2),
-pyBoxDev.at(3),
-pyBoxDev.at(4),
-pyBoxDev.at(5),
-pyBoxDev.at(6),
-pyBoxDev.at(7),
-pyBoxDev.at(8)
+      } else if(pyBoxDev.ndim() == 1 &&
+                pyBoxDev.shape(0) == 9
+               ) {
+        boxDev = Tensor({
+          pyBoxDev.at(0),
+          pyBoxDev.at(1),
+          pyBoxDev.at(2),
+          pyBoxDev.at(3),
+          pyBoxDev.at(4),
+          pyBoxDev.at(5),
+          pyBoxDev.at(6),
+          pyBoxDev.at(7),
+          pyBoxDev.at(8)
         });
-         }else{
-    log.printf("Error: wrong shape for the box derivatives return argument: should be (natoms=3,3 or 9), received %ld x %ld\n",
-               natoms, pyBoxDev.shape(0), pyBoxDev.shape(1));
-    error("Python CV returned wrong box derivatives shape error");
-         }
-    setBoxDerivatives  (boxDev);
+      } else {
+        log.printf("Error: wrong shape for the box derivatives return argument: should be (natoms=3,3 or 9), received %ld x %ld\n",
+                   natoms, pyBoxDev.shape(0), pyBoxDev.shape(1));
+        error("Python CV returned wrong box derivatives shape error");
+      }
+      setBoxDerivatives  (boxDev);
     }
   } else {
     // Only value returned. Might be an error as well.

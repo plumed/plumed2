@@ -68,7 +68,8 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
     for (auto i=0u; i < nat; ++i) {
       auto t= self->distance(PLMD::Vector(0.0,0.0,0.0),
                              //I think this may be slow, but serves as a demonstration as a base for the tests
-                             PLMD::Vector(accessor(i,0),accessor(i,1),accessor(i,2)),nullptr);
+                             PLMD::Vector(accessor(i,0),accessor(i,1),accessor(i,2)),
+                             nullptr);
       retAccessor(i,0) = t[0];
       retAccessor(i,1) = t[1];
       retAccessor(i,2) = t[2];
