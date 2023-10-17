@@ -59,11 +59,12 @@ def pyCoord(action: plumedCommunications.PythonCVInterface):
     assert nl.size() == ((nat - 1) * nat) // 2
     pbc = action.getPbc()
     couples = nl.getClosePairs()
-    #from here we are in "pure python"
+    
     d = atoms[couples[:, 0]] - atoms[couples[:, 1]]
     #print(f"before {d}",file=log)
     d = pbc.apply(d)
     #print(f"after {d}",file=log)
+    #from here we are in "pure python"
     dist = np.linalg.norm(d, axis=1)
     sw, dfunc = switch(dist)
     dev = np.zeros_like(atoms)
