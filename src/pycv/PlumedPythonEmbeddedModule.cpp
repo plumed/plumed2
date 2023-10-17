@@ -122,18 +122,19 @@ return toRet;
   //https://numpy.org/doc/stable/user/basics.types.html
   //numpy.uint=unsigned long
   .def("size",&PLMD::NeighborList::size,"return the number of pairs")
+  .def("__len__", &PLMD::NeighborList::size)
   .def("getClosePairs",[](const PLMD::NeighborList* self)->py::array_t<unsigned long> {
     auto ncouples = self->size();
     py::array_t<unsigned long>::ShapeContainer shape({ncouples,2});
     py::array_t<unsigned long> couples(shape);
     auto retAccessor = couples.mutable_unchecked<2>();
-    for(size_t c=0;c< ncouples;++c){
+    for(size_t c=0; c< ncouples; ++c) {
       retAccessor(c,0) = self->getClosePair(c).first;
       retAccessor(c,1) = self->getClosePair(c).second;
     }
     return couples;
   },
 
-"get a (NC,2) nd array with the list of couple indexes")
+  "get a (NC,2) nd array with the list of couple indexes")
   ;
 }

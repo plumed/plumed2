@@ -45,32 +45,37 @@ PLUMED_REGISTER_ACTION(PythonCVInterface,"PYCVINTERFACE")
 void PythonCVInterface::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   keys.add("atoms","ATOMS","the list of atoms to be passed to the function");
+  //NL
   keys.add("atoms","GROUPA","First list of atoms");
   keys.add("atoms","GROUPB","Second list of atoms (if empty, N*(N-1)/2 pairs in GROUPA are counted)");
+  keys.addFlag("PAIR",false,"Pair only 1st element of the 1st group with 1st element in the second, etc");
+  keys.addFlag("NLIST",false,"Use a neighbor list to speed up the calculation");
+  keys.add("optional","NL_CUTOFF","The cutoff for the neighbor list");
+  keys.add("optional","NL_STRIDE","The frequency with which we are updating the atoms in the neighbor list");
+
   keys.add("compulsory","IMPORT","the python file to import, containing the function");
   keys.add("compulsory","CALCULATE","the function to call as calculate method of a CV");
   //add other callable methods
   keys.add("optional","PREPARE","the function to call as prepare method of the CV");
   keys.add("optional","COMPONENTS","if provided, the function will return multiple components, with the names given");
   keys.addOutputComponent("py","COMPONENTS","Each of the components output py the Python code, prefixed by py-");
-  // Why is NOPBC not listed here?
+  // NOPBC is in Colvar!
 }
 
 PythonCVInterface::PythonCVInterface(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao) {
   std::vector<AtomNumber> atoms;
-  parseAtomList("ATOMS",atoms);
-  
   std::vector<AtomNumber> groupA,groupB;
+  parseAtomList("ATOMS",atoms);
+    
   parseAtomList("GROUPA",groupA);
   parseAtomList("GROUPB",groupB);
+  
   if(atoms.size() !=0 && groupA.size()!=0)
     error("you can choose only between using the neigbourlist OR the atoms");
 
   if(atoms.size()==0&& groupA.size()==0 && groupB.size()==0)
     error("At least one atom is required");
-
-
 
   parse("IMPORT",import);
   parse("CALCULATE",calculate_function);
@@ -83,7 +88,6 @@ PythonCVInterface::PythonCVInterface(const ActionOptions&ao):
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
 
-  checkRead();
   log.printf("  will import %s and call function %s\n",
              import.c_str(), calculate_function.c_str());
   log.printf("  the function will receive an array of %d x 3\n",natoms);
@@ -107,31 +111,43 @@ PythonCVInterface::PythonCVInterface(const ActionOptions&ao):
     addValueWithDerivatives();
     setNotPeriodic();
   }
-  if(groupA.size()>0){
+  if(groupA.size()>0) {
+    //parse the NL things only in the NL case
+    bool dopair=false;
+    parseFlag("PAIR",dopair);
     //this is a WIP
-  bool dopair=false;
-  bool serial=false;
-  bool doneigh=false;
-  double nl_cut=0.0;
-  int nl_st=0;
-  //endof WIP
+
+    bool serial=false;
+    bool doneigh=false;
+    double nl_cut=0.0;
+    int nl_st=0;
+    parseFlag("NLIST",doneigh);
+    if(doneigh) {
+      parse("NL_CUTOFF",nl_cut);
+      if(nl_cut<=0.0) error("NL_CUTOFF should be explicitly specified and positive");
+      parse("NL_STRIDE",nl_st);
+      if(nl_st<=0) error("NL_STRIDE should be explicitly specified and positive");
+    }
+    //endof WIP
     if(groupB.size()>0) {
-      if(doneigh)  
+      if(doneigh)
         nl=Tools::make_unique<NeighborList>(groupA,groupB,serial,dopair,pbc,getPbc(),comm,nl_cut,nl_st);
-      else         
+      else
         nl=Tools::make_unique<NeighborList>(groupA,groupB,serial,dopair,pbc,getPbc(),comm);
     } else {
-      if(doneigh)  
+      if(doneigh)
         nl=Tools::make_unique<NeighborList>(groupA,serial,pbc,getPbc(),comm,nl_cut,nl_st);
-      else         
+      else
         nl=Tools::make_unique<NeighborList>(groupA,serial,pbc,getPbc(),comm);
     }
     requestAtoms(nl->getFullAtomList());
     natoms = getPositions().size();
   } else {
     natoms = atoms.size();
-      requestAtoms(atoms);
+    requestAtoms(atoms);
   }
+  //NB: the NL kewywords will be counted as error when using ATOMS
+  checkRead();
   // ----------------------------------------
 
   // Initialize the module and function pointer
@@ -146,7 +162,7 @@ PythonCVInterface::PythonCVInterface(const ActionOptions&ao):
 }
 
 void PythonCVInterface::prepare() {
-  if(nl){
+  if(nl) {
     if(nl->getStride()>0) {
       if(firsttime || (getStep()%nl->getStride()==0)) {
         requestAtoms(nl->getFullAtomList());
@@ -183,7 +199,7 @@ void PythonCVInterface::prepare() {
 
 // calculator
 void PythonCVInterface::calculate() {
-  if(nl){
+  if(nl) {
     if(nl->getStride()>0 && invalidateList) {
       nl->update(getPositions());
     }
@@ -239,7 +255,7 @@ void PythonCVInterface::calculateMultiComponent(py::object &r) {
     py::dict dataDict=r.cast<py::dict>(); // values
 
     for(auto c: components) {
-      
+
       Value *cv=getPntrToComponent("py-"+c);
 
       const char *cp = c.c_str();
@@ -274,7 +290,7 @@ void PythonCVInterface::check_dim(py::array_t<pycv_t> grad) {
     error("Python CV returned wrong gradient shape error");
   }
 }
-NeighborList& PythonCVInterface::getNL(){
+NeighborList& PythonCVInterface::getNL() {
   return *nl;
 }
 } //pycv

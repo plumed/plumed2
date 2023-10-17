@@ -20,7 +20,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace PLMD {
 
-  class NeighborList;
+class NeighborList;
 
 namespace pycv {
 

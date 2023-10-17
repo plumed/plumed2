@@ -1,0 +1,15 @@
+# LOAD FILE=PythonCV.dylib
+
+cvPY: ...
+PYCVINTERFACE 
+GROUPA=1-4
+IMPORT=pyCOORDINATION
+CALCULATE=pyCoord
+...
+
+coord: COORDINATION GROUPA=1-4 R_0=2
+
+PRINT FILE=colvar.out ARG=*
+
+
+
