@@ -212,6 +212,23 @@ case "$type" in
       echo "NOT_APPLICABLE (FC NOT FOUND)"
       exit 0
     fi
+
+    cat > __test_fortran_arg_mismatch.f90 << EOF
+subroutine a()
+  call b(10)
+  call b(10.0)
+end subroutine a
+EOF
+    if ! make test-fortran-arg-mismatch 2>err | grep SUCCESS=YES 1> /dev/null ; then
+      export PLUMED_FORTRAN_FLAGS=-fallow-argument-mismatch
+      if ! make test-fortran-arg-mismatch 2>err| grep SUCCESS=YES 1> /dev/null ; then
+        PLUMED_FORTRAN_FLAGS=""
+      fi
+    fi
+
+    rm -f __test_fortran_arg_mismatch.f90
+    rm -f __test_fortran_arg_mismatch.o
+
     if test "$plumed_language" = fortran08 ; then
       cat > __test_fortran08.f90 << EOF
 module test_fortran08_a
