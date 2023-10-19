@@ -131,7 +131,7 @@ class SimplerCudaCoordination : public Colvar {
   const cudaDataType USE_CUDA_SPARSE_PRECISION =
       cudaPrecision<calculateFloat>();
   // constexpr cudaDataType USE_CUDA_SPARSE_PRECISION = precision;
-  std::unique_ptr<NeighborList> nl;
+  // std::unique_ptr<NeighborList> nl;
   /// the pointer to the coordinates on the GPU
   CUDAHELPERS::memoryHolder<calculateFloat> cudaPositions;
   /// the pointer to the nn list on the GPU
@@ -140,6 +140,7 @@ class SimplerCudaCoordination : public Colvar {
   CUDAHELPERS::memoryHolder<calculateFloat> cudaVirial;
   CUDAHELPERS::memoryHolder<calculateFloat> reductionMemoryVirial;
   CUDAHELPERS::memoryHolder<calculateFloat> reductionMemoryCoord;
+  CUDAHELPERS::memoryHolder<unsigned> cudaTrueIndexes;
 
   cudaStream_t streamDerivatives;
   cudaStream_t streamVirial;
@@ -150,9 +151,9 @@ class SimplerCudaCoordination : public Colvar {
   rationalSwitchParameters<calculateFloat> switchingParameters;
 
   bool pbc{true};
-  bool serial{false};
-  bool invalidateList{true};
-  bool firsttime{true};
+  // bool serial{false};
+  // bool invalidateList{true};
+  // bool firsttime{true};
   void setUpPermanentGPUMemory();
 
 public:
@@ -160,7 +161,7 @@ public:
   virtual ~SimplerCudaCoordination();
   // active methods:
   static void registerKeywords(Keywords &keys);
-  void prepare() override;
+  // void prepare() override;
   void calculate() override;
 };
 using SCudaCoordination_d = SimplerCudaCoordination<double>;
@@ -173,48 +174,54 @@ void SimplerCudaCoordination<calculateFloat>::setUpPermanentGPUMemory() {
   auto nat = getPositions().size();
   cudaPositions.resize(3 * nat);
   cudaDerivatives.resize(3 * nat);
+  cudaTrueIndexes.resize(nat);
+  std::vector<unsigned> trueIndexes(nat);
+  for(size_t i=0;i<nat;++i){
+    trueIndexes[i]=getAbsoluteIndex(i).index();
+  }
+  cudaTrueIndexes.copyToCuda(trueIndexes.data(), streamDerivatives);
 }
 
-template <typename calculateFloat>
-void SimplerCudaCoordination<calculateFloat>::prepare() {
-  if (nl->getStride() > 0) {
-    if (firsttime || (getStep() % nl->getStride() == 0)) {
-      requestAtoms(nl->getFullAtomList());
-      setUpPermanentGPUMemory();
-      invalidateList = true;
-      firsttime = false;
-    } else {
-      requestAtoms(nl->getReducedAtomList());
-      setUpPermanentGPUMemory();
-      invalidateList = false;
-      if (getExchangeStep())
-        error("Neighbor lists should be updated on exchange steps - choose a "
-              "NL_STRIDE which divides the exchange stride!");
-    }
-    if (getExchangeStep())
-      firsttime = true;
-  }
-}
+// template <typename calculateFloat>
+// void SimplerCudaCoordination<calculateFloat>::prepare() {
+//   if (nl->getStride() > 0) {
+//     if (firsttime || (getStep() % nl->getStride() == 0)) {
+//       requestAtoms(nl->getFullAtomList());
+//       setUpPermanentGPUMemory();
+//       invalidateList = true;
+//       firsttime = false;
+//     } else {
+//       requestAtoms(nl->getReducedAtomList());
+//       setUpPermanentGPUMemory();
+//       invalidateList = false;
+//       if (getExchangeStep())
+//         error("Neighbor lists should be updated on exchange steps - choose a "
+//               "NL_STRIDE which divides the exchange stride!");
+//     }
+//     if (getExchangeStep())
+//       firsttime = true;
+//   }
+// }
 
 template <typename calculateFloat>
 void SimplerCudaCoordination<calculateFloat>::registerKeywords(Keywords &keys) {
   Colvar::registerKeywords(keys);
-  keys.addFlag("SERIAL", false,
-               "Perform the calculation in serial - for debug purpose");
-  keys.addFlag("PAIR", false,
-               "Pair only 1st element of the 1st group with 1st "
-               "element in the second, etc");
-  keys.addFlag("NLIST", false,
-               "Use a neighbor list to speed up the calculation");
-  keys.add("optional", "NL_CUTOFF", "The cutoff for the neighbor list");
-  keys.add("optional", "NL_STRIDE",
-           "The frequency with which we are updating the "
-           "atoms in the neighbor list");
+  // keys.addFlag("SERIAL", false,
+  //              "Perform the calculation in serial - for debug purpose");
+  // keys.addFlag("PAIR", false,
+  //              "Pair only 1st element of the 1st group with 1st "
+  //              "element in the second, etc");
+  // keys.addFlag("NLIST", false,
+  //              "Use a neighbor list to speed up the calculation");
+  // keys.add("optional", "NL_CUTOFF", "The cutoff for the neighbor list");
+  // keys.add("optional", "NL_STRIDE",
+  //          "The frequency with which we are updating the "
+  //          "atoms in the neighbor list");
   keys.add("optional", "THREADS", "The upper limit of the number of threads");
   keys.add("atoms", "GROUPA", "First list of atoms");
-  keys.add("atoms", "GROUPB",
-           "Second list of atoms (if empty, N*(N-1)/2 pairs in "
-           "GROUPA are counted)");
+  // keys.add("atoms", "GROUPB",
+  //          "Second list of atoms (if empty, N*(N-1)/2 pairs in "
+  //          "GROUPA are counted)");
   keys.add("compulsory", "NN", "6",
            "The n parameter of the switching function ");
   keys.add("compulsory", "MM", "0",
@@ -292,84 +299,86 @@ template <typename calculateFloat>
 SimplerCudaCoordination<calculateFloat>::SimplerCudaCoordination(
     const ActionOptions &ao)
     : PLUMED_COLVAR_INIT(ao) {
-  parseFlag("SERIAL", serial);
+  // parseFlag("SERIAL", serial);
 
-  std::vector<AtomNumber> GroupA, GroupB;
+  std::vector<AtomNumber> GroupA;
   parseAtomList("GROUPA", GroupA);
-  parseAtomList("GROUPB", GroupB);
+  // std::vector<AtomNumber> GroupB;
+  // parseAtomList("GROUPB", GroupB);
 
   bool nopbc = !pbc;
   parseFlag("NOPBC", nopbc);
   pbc = !nopbc;
 
   // pair stuff
-  bool dopair = false;
-  parseFlag("PAIR", dopair);
+  // bool dopair = false;
+  // parseFlag("PAIR", dopair);
 
-  // neighbor list stuff
-  bool doneigh = false;
-  double nl_cut = 0.0;
-  int nl_st = 0;
-  parseFlag("NLIST", doneigh);
-  if (doneigh) {
-    parse("NL_CUTOFF", nl_cut);
-    if (nl_cut <= 0.0)
-      error("NL_CUTOFF should be explicitly specified and positive");
-    parse("NL_STRIDE", nl_st);
-    if (nl_st <= 0)
-      error("NL_STRIDE should be explicitly specified and positive");
-  }
+  // // neighbor list stuff
+  // bool doneigh = false;
+  // double nl_cut = 0.0;
+  // int nl_st = 0;
+  // parseFlag("NLIST", doneigh);
+  // if (doneigh) {
+  //   parse("NL_CUTOFF", nl_cut);
+  //   if (nl_cut <= 0.0)
+  //     error("NL_CUTOFF should be explicitly specified and positive");
+  //   parse("NL_STRIDE", nl_st);
+  //   if (nl_st <= 0)
+  //     error("NL_STRIDE should be explicitly specified and positive");
+  // }
   parse("THREADS", maxNumThreads);
   if (maxNumThreads <= 0)
     error("THREADS should be positive");
   addValueWithDerivatives();
   setNotPeriodic();
-  if (GroupB.size() > 0) {
-    if (doneigh) {
-      nl = Tools::make_unique<NeighborList>(GroupA, GroupB, serial, dopair, pbc,
-                                            getPbc(), comm, nl_cut, nl_st);
-    } else {
-      nl = Tools::make_unique<NeighborList>(GroupA, GroupB, serial, dopair, pbc,
-                                            getPbc(), comm);
-    }
-  } else {
-    if (doneigh) {
-      nl = Tools::make_unique<NeighborList>(GroupA, serial, pbc, getPbc(), comm,
-                                            nl_cut, nl_st);
-    } else {
-      nl =
-          Tools::make_unique<NeighborList>(GroupA, serial, pbc, getPbc(), comm);
-    }
-  }
+  // if (GroupB.size() > 0) {
+  //   if (doneigh) {
+  //     nl = Tools::make_unique<NeighborList>(GroupA, GroupB, serial, dopair, pbc,
+  //                                           getPbc(), comm, nl_cut, nl_st);
+  //   } else {
+  //     nl = Tools::make_unique<NeighborList>(GroupA, GroupB, serial, dopair, pbc,
+  //                                           getPbc(), comm);
+  //   }
+  // } else {
+  //   if (doneigh) {
+  //     nl = Tools::make_unique<NeighborList>(GroupA, serial, pbc, getPbc(), comm,
+  //                                           nl_cut, nl_st);
+  //   } else {
+  //     nl =
+  //         Tools::make_unique<NeighborList>(GroupA, serial, pbc, getPbc(), comm);
+  //   }
+  // }
 
-  requestAtoms(nl->getFullAtomList());
-
-  log.printf("  between two groups of %u and %u atoms\n",
-             static_cast<unsigned>(GroupA.size()),
-             static_cast<unsigned>(GroupB.size()));
-  log.printf("  first group:\n");
-  for (unsigned int i = 0; i < GroupA.size(); ++i) {
-    if ((i + 1) % 25 == 0)
-      log.printf("  \n");
-    log.printf("  %d", GroupA[i].serial());
-  }
-  log.printf("  \n  second group:\n");
-  for (unsigned int i = 0; i < GroupB.size(); ++i) {
-    if ((i + 1) % 25 == 0)
-      log.printf("  \n");
-    log.printf("  %d", GroupB[i].serial());
-  }
+  // requestAtoms(nl->getFullAtomList());
+  requestAtoms(GroupA);
+  
+  // log.printf("  between two groups of %u and %u atoms\n",
+  //            static_cast<unsigned>(GroupA.size()),
+  //            static_cast<unsigned>(GroupB.size()));
+  // log.printf("  first group:\n");
+  // for (unsigned int i = 0; i < GroupA.size(); ++i) {
+  //   if ((i + 1) % 25 == 0)
+  //     log.printf("  \n");
+  //   log.printf("  %d", GroupA[i].serial());
+  // }
+  // log.printf("  \n  second group:\n");
+  // for (unsigned int i = 0; i < GroupB.size(); ++i) {
+  //   if ((i + 1) % 25 == 0)
+  //     log.printf("  \n");
+  //   log.printf("  %d", GroupB[i].serial());
+  // }
   log.printf("  \n");
   if (pbc)
     log.printf("  using periodic boundary conditions\n");
   else
     log.printf("  without periodic boundary conditions\n");
-  if (dopair)
-    log.printf("  with PAIR option\n");
-  if (doneigh) {
-    log.printf("  using neighbor lists with\n");
-    log.printf("  update every %d steps and cutoff %f\n", nl_st, nl_cut);
-  }
+  // if (dopair)
+  //   log.printf("  with PAIR option\n");
+  // if (doneigh) {
+  //   log.printf("  using neighbor lists with\n");
+  //   log.printf("  update every %d steps and cutoff %f\n", nl_st, nl_cut);
+  // }
   std::string sw, errors;
 
   { // loading data to the GPU
@@ -463,41 +472,46 @@ template <typename calculateFloat>
 __global__ void
 getCoordSimpler(const unsigned nat,
          const rationalSwitchParameters<calculateFloat> switchingParameters,
-         const calculateFloat *coordinates, calculateFloat *ncoordOut,
+         const calculateFloat *coordinates,const unsigned *trueIndexes,
+          calculateFloat *ncoordOut,
          calculateFloat *devOut, calculateFloat *virialOut) {
   // blockDIm are the number of threads in your block
   const unsigned i = threadIdx.x + blockIdx.x * blockDim.x;
+  const unsigned idx = trueIndexes[i];
   //we try working with less global memory possible
   calculateFloat mydevX = 0.0;
   calculateFloat mydevY = 0.0;
   calculateFloat mydevZ = 0.0;
   calculateFloat mycoord = 0.0;
   calculateFloat myVirial[9] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-
+  calculateFloat x=coordinates[X(i)];
+  calculateFloat y=coordinates[Y(i)];
+  calculateFloat z=coordinates[Z(i)];
+  calculateFloat d[3];
   if (i >= nat)
     return;
   for (unsigned j = 0; j < nat; ++j) {
     // const unsigned j = threadIdx.y + blockIdx.y * blockDim.y;
 
     // Safeguard
-    if (i == j)
+    if (idx == trueIndexes[j])
       continue;
     // or may be better to set up an
     // const unsigned xyz = threadIdx.z
     // where the third dim is 0 1 2 ^
 
-    calculateFloat d[3] = {coordinates[X(i)] - coordinates[X(j)],
-                           coordinates[Y(i)] - coordinates[Y(j)],
-                           coordinates[Z(i)] - coordinates[Z(j)]};
+     d[0]=coordinates[X(j)] - x;
+                           d[1]=coordinates[Y(j)] - y;
+                           d[2]=coordinates[Z(j)] - z;
 
     calculateFloat dsq = (d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
     calculateFloat dfunc = 0.;
     calculateFloat coord = calculateSqr(dsq, switchingParameters, dfunc);
+    mydevX -= dfunc * d[0];
+    mydevY -= dfunc * d[1];
+    mydevZ -= dfunc * d[2];
     if (i < j) {
       mycoord += coord;
-      mydevX -= dfunc * d[0];
-      mydevY -= dfunc * d[1];
-      mydevZ -= dfunc * d[2];
       myVirial[0] -= dfunc * d[0] * d[0];
       myVirial[1] -= dfunc * d[0] * d[1];
       myVirial[2] -= dfunc * d[0] * d[2];
@@ -507,10 +521,6 @@ getCoordSimpler(const unsigned nat,
       myVirial[6] -= dfunc * d[2] * d[0];
       myVirial[7] -= dfunc * d[2] * d[1];
       myVirial[8] -= dfunc * d[2] * d[2];
-    } else {
-      mydevX += dfunc * d[0];
-      mydevY += dfunc * d[1];
-      mydevZ += dfunc * d[2];
     }
   }
   // working in global memory ONLY at the end
@@ -538,8 +548,8 @@ void SimplerCudaCoordination<calculateFloat>::calculate() {
   double coordination;
   auto deriv = std::vector<Vector>(nat);
 
-  if (nl->getStride() > 0 && invalidateList)
-    nl->update(getPositions());
+  // if (nl->getStride() > 0 && invalidateList)
+  //   nl->update(getPositions());
 
   constexpr unsigned nthreads = 512;
 
@@ -554,7 +564,8 @@ void SimplerCudaCoordination<calculateFloat>::calculate() {
   // this initializes the memory to be accumulated
   getCoordSimpler<<<ngroups, nthreads, 0, 0>>> (
       nat, switchingParameters, 
-      cudaPositions.pointer(),cudaCoordination.pointer(),
+      cudaPositions.pointer(),cudaTrueIndexes.pointer(),
+      cudaCoordination.pointer(),
       cudaDerivatives.pointer(), cudaVirial.pointer());
   // since the virial and the coordination reduction are on different streams,
   // this barrier makes sure that the memory is ready for the operations
