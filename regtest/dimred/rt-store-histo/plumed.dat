@@ -7,7 +7,7 @@ h: CONSTANT VALUE=0.5
 
 KDE ...
   ARG=m.*
-  HEIGHTS=h
+  VOLUMES=h
   GRID_MIN=-1.0
   GRID_MAX=1.0
   GRID_BIN=100

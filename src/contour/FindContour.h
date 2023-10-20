@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2023 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,26 +19,32 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#ifndef __PLUMED_gridtools_FindContour_h
+#define __PLUMED_gridtools_FindContour_h
+
 #include "ContourFindingBase.h"
 
 namespace PLMD {
-namespace gridtools {
+namespace contour {
 
-void ContourFindingBase::registerKeywords( Keywords& keys ) {
-  ActionWithInputGrid::registerKeywords( keys );
-  keys.add("compulsory","CONTOUR","the value we would like to draw the contour at in the space");
-  keys.remove("KERNEL"); keys.remove("BANDWIDTH");
-}
+class FindContour : public ContourFindingBase {
+friend class DumpContour;
+private:
+  unsigned gbuffer;
+  std::vector<unsigned> active_cells;
+public:
+  static void registerKeywords( Keywords& keys );
+  explicit FindContour(const ActionOptions&ao);
+  void setupValuesOnFirstStep() override;
+  unsigned getNumberOfDerivatives() override ; 
+  void areAllTasksRequired( std::vector<ActionWithVector*>& task_reducing_actions ) override ;
+  void getNumberOfTasks( unsigned& ntasks ) override ;
+  int checkTaskStatus( const unsigned& taskno, int& flag ) const override ;  
+  std::vector<std::string> getGridCoordinateNames() const override { plumed_error(); }
+  const gridtools::GridCoordinatesObject& getGridCoordinatesObject() const override { plumed_error(); }
+  void performTask( const unsigned& current, MultiValue& myvals ) const override;
+};
 
-ContourFindingBase::ContourFindingBase(const ActionOptions&ao):
-  Action(ao),
-  ActionWithInputGrid(ao),
-  mymin(this)
-{
-  if( ingrid->noDerivatives() ) error("cannot find contours if input grid has no derivatives");
-  parse("CONTOUR",contour);
-  log.printf("  calculating dividing surface along which function equals %f \n", contour);
-}
-
 }
 }
+#endif

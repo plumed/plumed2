@@ -127,7 +127,7 @@ ActionShortcut(ao)
     std::string inputLine = convertInputLineToString();
     // Make the kde object for the numerator if needed
     if( hasheights ) { 
-        readInputLine( getShortcutLabel() + "_inumer: KDE HEIGHTS=" + data_str + " " + direction_string + " " + inputLine );
+        readInputLine( getShortcutLabel() + "_inumer: KDE VOLUMES=" + data_str + " " + direction_string + " " + inputLine );
         if( unorm ) { readInputLine( getShortcutLabel() + ": ACCUMULATE ARG=" + getShortcutLabel() + "_inumer STRIDE=" + stride + " CLEAR=" + clear ); return; }
         else readInputLine( getShortcutLabel() + "_numer: ACCUMULATE ARG=" + getShortcutLabel() + "_inumer STRIDE=" + stride + " CLEAR=" + clear ); 
     }

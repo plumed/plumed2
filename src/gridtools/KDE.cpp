@@ -76,6 +76,8 @@ void KDE::registerKeywords( Keywords& keys ) {
   ActionWithGrid::registerKeywords( keys ); keys.use("ARG");
   keys.add("optional","HEIGHTS","this keyword takes the label of an action that calculates a vector of values.  The elements of this vector "
            "are used as weights for the Gaussians.");
+  keys.add("optional","VOLUMES","this keyword take the label of an action that calculates a vector of values.  The elements of this vector "
+           "divided by the volume of the Gaussian are used as weights for the Gaussians");
   // Keywords for KDE
   keys.add("compulsory","GRID_MIN","auto","the lower bounds for the grid");
   keys.add("compulsory","GRID_MAX","auto","the upper bounds for the grid");
@@ -103,9 +105,14 @@ fixed_width(false)
     if( numberOfKernels!=getPntrToArgument(i)->getNumberOfValues() ) error("mismatch between numbers of values in input arguments");
   }
 
-  std::vector<std::string> weight_str; parseVector("HEIGHTS",weight_str); hasheight=(weight_str.size()==1);
+  bool weights_are_volumes=true; std::vector<std::string> weight_str; parseVector("VOLUMES",weight_str); 
+  if( weight_str.size()==0 ) { 
+      parseVector("HEIGHTS",weight_str);
+      if( weight_str.size()>0 ) weights_are_volumes=false; 
+  }
+  hasheight=(weight_str.size()==1); 
   if( weight_str.size()>1 ) error("only one scalar/vector/matrix should be input to HEIGHTS");
- 
+
   if( getName()=="KDE" ) {
       parse("KERNEL",kerneltype);
       if( kerneltype!="DISCRETE" ) {
@@ -120,7 +127,7 @@ fixed_width(false)
               plumed.readInputLine( getLabel() + "_icov: CUSTOM ARG=" + getLabel() + "_cov FUNC=1/x PERIODIC=NO" );
               bandwidth = getLabel() + "_icov";
 
-              if( kerneltype=="gaussian" || kerneltype=="GAUSSIAN" ) {
+              if( (kerneltype=="gaussian" || kerneltype=="GAUSSIAN") && weights_are_volumes ) {
                   std::string pstr; Tools::convert( sqrt(pow(2*pi,bwidths.size())), pstr );
                   plumed.readInputLine( getLabel() + "_bwprod: PRODUCT ARG=" + getLabel() + "_cov");
                   plumed.readInputLine( getLabel() + "_vol: CUSTOM ARG=" + getLabel() + "_bwprod FUNC=(sqrt(x)*" + pstr + ") PERIODIC=NO");
@@ -135,7 +142,7 @@ fixed_width(false)
   if( weight_str.size()>0 ) {
       std::vector<Value*> weight_args; ActionWithArguments::interpretArgumentList( weight_str, plumed.getActionSet(), this, weight_args );
       std::vector<Value*> args( getArguments() ); args.push_back( weight_args[0] );
-      if( weight_args[0]->getNumberOfValues()>1 && numberOfKernels!=weight_args[0]->getNumberOfValues() ) error("mismatch between numbers of values in input arguments and HEIGHTS"); 
+      if( hasheight && weight_args[0]->getNumberOfValues()>1 && numberOfKernels!=weight_args[0]->getNumberOfValues() ) error("mismatch between numbers of values in input arguments and HEIGHTS"); 
 
       if( weight_str.size()==2 ) {
           log.printf("  quantities used for weights are : %s \n", weight_str[0].c_str() );
@@ -154,7 +161,8 @@ fixed_width(false)
   } 
 
   if( getName()=="KDE" ) {
-      bool hasauto=false; parseVector("GRID_MIN",gmin); parseVector("GRID_MAX",gmax);
+      bool hasauto=false; gmin.resize( shape.size() ); gmax.resize( shape.size() ); 
+      parseVector("GRID_MIN",gmin); parseVector("GRID_MAX",gmax);
       for(unsigned i=0; i<gmin.size(); ++i) {
         if( gmin[i]=="auto" ) {
           log.printf("  for %dth coordinate min and max are set from cell directions \n", (i+1) );
@@ -188,13 +196,12 @@ fixed_width(false)
       }
 
       if( nbin.size()!=shape.size() && gspacing.size()!=shape.size() ) error("GRID_BIN or GRID_SPACING must be set");
-
       // Create a value
       std::vector<bool> ipbc( shape.size() );
       for(unsigned i=0; i<shape.size(); ++i) {
         if( getPntrToArgument( i )->isPeriodic() || gmin[i]=="auto" ) ipbc[i]=true;
         else ipbc[i]=false;
-      } 
+      }
       gridobject.setup( "flat", ipbc, 0, 0.0 ); 
   } else {
       if( shape.size()!=3 ) error("should have three coordinates in input to this action");
@@ -335,7 +342,7 @@ void KDE::getNumberOfTasks( unsigned& ntasks ) {
 int KDE::checkTaskStatus( const unsigned& taskno, int& flag ) const {
   if( numberOfKernels>1 ) {
       if( hasheight && getPntrToArgument(gridobject.getDimension())->getRank()>0 
-          && getPntrToArgument(gridobject.getDimension())->get(taskno)<epsilon ) return 0; 
+          && fabs(getPntrToArgument(gridobject.getDimension())->get(taskno))<epsilon ) return 0; 
       return 1;
   } 
   for(unsigned i=0; i<num_neigh; ++i) {

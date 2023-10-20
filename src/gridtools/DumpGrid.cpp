@@ -268,17 +268,27 @@ void DumpGrid::update() {
   plumed_assert( ag ); const GridCoordinatesObject & mygrid = ag->getGridCoordinatesObject();
 
   if( getName()=="DUMPCUBE" ) {
-      double lunit=1.0;
+      double lunit=1.0; std::vector<std::string> argnames( ag->getGridCoordinateNames() );
       
       ofile.printf("PLUMED CUBE FILE\n");
       ofile.printf("OUTER LOOP: X, MIDDLE LOOP: Y, INNER LOOP: Z\n");
       // Number of atoms followed by position of origin (origin set so that center of grid is in center of cell)
-      std::vector<double> extent(3); std::vector<std::string> min( mygrid.getMin() ), max( mygrid.getMax() );
+      bool isdists=true; std::vector<double> extent(3); std::vector<std::string> min( mygrid.getMin() ), max( mygrid.getMax() );
       for(unsigned j=0; j<3; ++j) {
+        if( argnames[j].find(".")!=std::string::npos ) { 
+            std::size_t dot = argnames[j].find(".");
+            std::string name = argnames[j].substr(dot+1);
+            if( name!="x" && name!="y" && name!="z" ) isdists=false;
+        } else isdists=false;
+
         double mind, maxd; Tools::convert( min[j], mind ); Tools::convert( max[j], maxd );
         if( mygrid.isPeriodic(j) ) extent[j]=maxd-mind;
         else { extent[j]=maxd-mind+mygrid.getGridSpacing()[j]; }
       }   
+      if( isdists ) {
+          if( plumed.usingNaturalUnits() ) lunit = 1.0/0.5292;
+          else lunit = plumed.getUnits().getLength()/.05929;
+      }
       std::string ostr = "%d " + fmt + fmt + fmt + "\n"; Value* gval=getPntrToArgument(0);
       ofile.printf(ostr.c_str(),1,-0.5*lunit*extent[0],-0.5*lunit*extent[1],-0.5*lunit*extent[2]);
       ofile.printf(ostr.c_str(),mygrid.getNbin(true)[0],lunit*mygrid.getGridSpacing()[0],0.0,0.0);  // Number of bins in each direction followed by
