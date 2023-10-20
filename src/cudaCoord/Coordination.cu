@@ -261,6 +261,7 @@ void CudaCoordination<calculateFloat>::registerKeywords(Keywords &keys) {
   keys.add("compulsory", "D_0", "0.0",
            "The d_0 parameter of the switching function");
   keys.add("compulsory", "R_0", "The r_0 parameter of the switching function");
+  keys.add("compulsory", "D_MAX","0.0", "The cut off of the switching function");
 }
 
 // these constant will be used within the kernels
@@ -285,15 +286,15 @@ __device__ calculateFloat pcuda_fastpow(calculateFloat base, int expo) {
 }
 
 template <typename calculateFloat>
-__device__ calculateFloat pcuda_Rational(const calculateFloat rdist, int NN,
-                                         int MM, calculateFloat &dfunc) {
+__device__ calculateFloat pcuda_Rational(const calculateFloat rdist, const int NN,
+                                         const int MM, calculateFloat &dfunc) {
   calculateFloat result;
   if (2 * NN == MM) {
     // if 2*N==M, then (1.0-rdist^N)/(1.0-rdist^M) = 1.0/(1.0+rdist^N)
     calculateFloat rNdist = pcuda_fastpow(rdist, NN - 1);
-    calculateFloat iden = 1.0 / (1 + rNdist * rdist);
-    dfunc = -NN * rNdist * iden * iden;
-    result = iden;
+    result = 1.0 / (1 + rNdist * rdist);
+    dfunc = -NN * rNdist * result * result;
+    
   } else {
     if (rdist > (1. - 100.0 * cu_epsilon) && rdist < (1 + 100.0 * cu_epsilon)) {
       result = NN / MM;
@@ -321,6 +322,7 @@ __global__ void getpcuda_Rational(const calculateFloat *rdists, const int NN,
     dfunc[i] = 0.0;
   } else
     res[i] = pcuda_Rational(rdists[i], NN, MM, dfunc[i]);
+    //printf("stretch: %i: %f -> %f\n",i,rdists[i],res[i]);
 }
 
 // __global__ void getConst() {
@@ -437,32 +439,38 @@ CudaCoordination<calculateFloat>::CudaCoordination(
     switchingParameters.mm = mm_;
     switchingParameters.stretch = 1.0;
     switchingParameters.shift = 0.0;
-    calculateFloat dmax = d0_ + r0_ * std::pow(0.00001, 1. / (nn_ - mm_));
+
+    calculateFloat dmax=0.0;
+    parse("D_MAX", dmax);
+    if (dmax == 0.0) {//TODO:check for a "non present flag"
+      //set dmax to where the switch is ~0.00001
+      dmax = d0_ + r0_ * std::pow(0.00001, 1.0 / (nn_ - mm_));
+      // ^This line is equivalent to:
+      // SwitchingFunction tsw;
+      // tsw.set(nn_,mm_,r0_,d0_);
+      // dmax=tsw.get_dmax();
+    }
+    // cudaMemcpyToSymbol(cu_epsilon, &epsilon, sizeof(calculateFloat));
+    switchingParameters.dmaxSQ = dmax * dmax;
+    calculateFloat invr0 = 1.0 / r0_;
+    switchingParameters.invr0_2 = invr0 * invr0;
     constexpr bool dostretch = true;
     if (dostretch) {
-      std::vector<calculateFloat> inputs = {0.0, dmax};
-      calculateFloat *inputsc, *dummy;
-      calculateFloat *sc;
-      cudaMalloc(&inputsc, 2 * sizeof(calculateFloat));
-      cudaMalloc(&dummy, 2 * sizeof(calculateFloat));
-      cudaMalloc(&sc, 2 * sizeof(calculateFloat));
-      cudaMemcpy(inputsc, inputs.data(), 2 * sizeof(calculateFloat),
-                 cudaMemcpyHostToDevice);
-      getpcuda_Rational<<<1, 2>>>(inputsc, nn_, mm_, dummy, sc);
+      std::vector<calculateFloat> inputs = {0.0, dmax*invr0};
+      
+      CUDAHELPERS::memoryHolder<calculateFloat> inputZeroMax(2);
+      inputZeroMax.copyToCuda(inputs.data());
+      CUDAHELPERS::memoryHolder<calculateFloat> dummydfunc(2);
+      CUDAHELPERS::memoryHolder<calculateFloat> resZeroMax(2);
+      
+      getpcuda_Rational<<<1, 2>>>(inputZeroMax.pointer(), nn_, mm_, dummydfunc.pointer(), resZeroMax.pointer());
       std::vector<calculateFloat> s = {0.0, 0.0};
-      cudaMemcpy(s.data(), sc, 2 * sizeof(calculateFloat),
-                 cudaMemcpyDeviceToHost);
-      cudaFree(inputsc);
-      cudaFree(dummy);
-      cudaFree(sc);
+      resZeroMax.copyFromCuda(s.data());
+      
       switchingParameters.stretch = 1.0 / (s[0] - s[1]);
       switchingParameters.shift = -s[1] * switchingParameters.stretch;
     }
 
-    // cudaMemcpyToSymbol(cu_epsilon, &epsilon, sizeof(calculateFloat));
-    switchingParameters.dmaxSQ = dmax * dmax;
-    calculateFloat invr0 = 1.0 / r0_;
-    switchingParameters.invr0_2 = invr0 *= invr0;
   }
 
   checkRead();
@@ -526,16 +534,17 @@ __global__ void getCoord(
     return;
   // we try working with less global memory possible
   const unsigned idx = trueIndexes[i];
+  //local results
   calculateFloat mydevX = 0.0;
   calculateFloat mydevY = 0.0;
   calculateFloat mydevZ = 0.0;
   calculateFloat mycoord = 0.0;
   calculateFloat myVirial[9] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+  //local calculation aid
   calculateFloat x = coordinates[X(i)];
   calculateFloat y = coordinates[Y(i)];
   calculateFloat z = coordinates[Z(i)];
   calculateFloat d[3];
-  //calculateFloat dsq;
   calculateFloat dfunc;
   calculateFloat coord;
   for (unsigned j = 0; j < nat; ++j) {
@@ -562,12 +571,11 @@ __global__ void getCoord(
     }
 
     dfunc = 0.;
-    coord = calculateSqr((d[0] * d[0] + d[1] * d[1] + d[2] * d[2]),
+    coord = calculateSqr(d[0] * d[0] + d[1] * d[1] + d[2] * d[2],
      switchingParameters, dfunc);
     mydevX -= dfunc * d[0];
     mydevY -= dfunc * d[1];
     mydevZ -= dfunc * d[2];
-
     if (i < j) {
       mycoord += coord;
       myVirial[0] -= dfunc * d[0] * d[0];
@@ -598,7 +606,7 @@ __global__ void getCoord(
 }
 
 #define getCoordOrthoPBC getCoord<true>
-#define getCoordNoPBC getCoord<true>
+#define getCoordNoPBC getCoord<false>
 
 template <typename calculateFloat>
 void CudaCoordination<calculateFloat>::calculate() {
