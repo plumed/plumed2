@@ -33,7 +33,7 @@ __global__ void reductionND(const T *inputArray, T *outputArray, const unsigned 
   //playing with this 
   //https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
   auto sdata = shared_memory_proxy<T>();
-  const unsigned int coord = blockIdx.y;
+  //const unsigned int coord = blockIdx.y;
   const unsigned int place = threadIdx.x;
   // each thread loads one element from global to shared memory
   const unsigned int diplacement = blockIdx.y*len;
@@ -468,6 +468,5 @@ void doReductionND (float *inputArray,
  cudaStream_t stream){
   callReductionND (inputArray, outputArray, len, blocks, nthreads, stream);
  }
-} //namespace CUDAHELPERS
-} //namespace PLMD
-
+} // namespace CUDAHELPERS
+} // namespace PLMD

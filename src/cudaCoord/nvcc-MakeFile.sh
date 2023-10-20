@@ -6,10 +6,12 @@ source "$PLUMED_ROOT"/src/config/compile_options.sh
 compile="nvcc -g -ccbin ${compile}"
 #compile=${compile/-O3/-g}
 
+#pendantic adds a unuseful FOR EACH line with
+#"" warning: style of line directive is a GCC extension"
+compile=${compile//-pedantic/}
 if [[ ${SILENT_CUDA_COMPILATION} ]]; then
   #echo "disabled warning"
   compile=${compile//-Wall/}
-  compile=${compile//-pedantic/}
   #-w suppress the warnings
   compile=${compile/-c /-w -c }
 fi
@@ -43,9 +45,9 @@ all: Coordination.so
 %.o: %.cu ndReduction.h cudaHelpers.cuh
 	\$(compile) -o \$@  $<
 
-Coordination.so: ndReduction.o Coordination.o SimplerCoordination.o
-	\$(link) -lcusparse -o \$@ $^
+Coordination.so: ndReduction.o Coordination.o
+	\$(link) -o \$@ $^
 
 clean:
-	rm Coordination.so ndReduction.o SimplerCoordination.o
+	rm Coordination.so ndReduction.o
 EOF
