@@ -87,7 +87,7 @@ PrintNDX::PrintNDX(const ActionOptions&ao):
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
       if( getPntrToArgument(i)->getRank()!=1 || getPntrToArgument(i)->hasDerivatives() ) error("arguments for print ndx should be vector");
       if( getPntrToArgument(i)->getShape()[0]!=all_atoms.size() ) error("mismatch between number of arguments and number of input atoms");
-      getPntrToArgument(i)->buildDataStore(); argnames[i] = getPntrToArgument(i)->getName();
+      getPntrToArgument(i)->buildDataStore(true); argnames[i] = getPntrToArgument(i)->getName();
   }
   log.printf("  printing ndx file containing indices of atoms that have arguments in ranges prescribed below \n");
   log.printf("  full set of atom indices investigated are : ");

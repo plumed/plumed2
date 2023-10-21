@@ -183,7 +183,7 @@ public:
 /// Get the shape of the object that is contained in this value
   const std::vector<unsigned>& getShape() const ;
 /// This turns on storing of vectors/matrices
-  void buildDataStore();
+  void buildDataStore( const bool forprint=false );
 /// Reshape the storage for sparse matrices
   void reshapeMatrixStore( const unsigned& n );
 /// Set the symmetric flag equal true for this matrix

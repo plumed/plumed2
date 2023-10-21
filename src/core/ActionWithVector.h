@@ -35,6 +35,7 @@ class ActionWithVector:
   public ActionWithValue,
   public ActionWithArguments
 {
+friend class Value;
 private:
 /// Is the calculation to be done in serial
   bool serial;  
@@ -82,6 +83,8 @@ private:
   void updateTaskReductionFlag( bool& head_reduce_tasks );
 /// Check if a particular task is active at this time
   void taskIsActive( const unsigned& current, int& flag ) const ;
+/// This is turned on if there is some action that needs all the tasks
+  bool never_reduce_tasks;
 /// Are we allowed to reduce the number of tasks being performed
   bool reduce_tasks;
 /// Were the atoms retrieved in some earlier action

@@ -43,6 +43,7 @@ ActionWithVector::ActionWithVector(const ActionOptions&ao):
   serial(false),
   action_to_do_before(NULL),
   action_to_do_after(NULL),
+  never_reduce_tasks(false),
   reduce_tasks(false),
   atomsWereRetrieved(false),
   done_in_chain(false)
@@ -332,7 +333,7 @@ std::vector<unsigned>& ActionWithVector::getListOfActiveTasks( ActionWithVector*
   if( nt*stride*10>ntasks ) nt=ntasks/stride/10;
   if( nt==0 ) nt=1;
 
-  if( reduce_tasks ) {
+  if( !never_reduce_tasks && reduce_tasks ) {
       if( task_control_list.size()>0 ) { 
           // Get the list of tasks that are active in the action that uses the output of this action
           for(unsigned i=0; i<task_control_list.size(); ++i) {

@@ -255,9 +255,12 @@ void Value::addForce(const std::size_t& iforce, double f, const bool trueind) {
 } 
 
 
-void Value::buildDataStore() {
+void Value::buildDataStore( const bool forprint ) {
   if( getRank()==0 ) return;
   storedata=true; setShape( shape );
+  if( !forprint ) return ;
+  ActionWithVector* av=dynamic_cast<ActionWithVector*>( action );
+  if( av ) (av->getFirstActionInChain())->never_reduce_tasks=true;
 }
 
 void Value::reshapeMatrixStore( const unsigned& n ) {
