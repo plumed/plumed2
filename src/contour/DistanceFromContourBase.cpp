@@ -22,7 +22,7 @@
 #include "DistanceFromContourBase.h"
 
 namespace PLMD {
-namespace multicolvar {
+namespace contour {
 
 void DistanceFromContourBase::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
@@ -48,6 +48,7 @@ DistanceFromContourBase::DistanceFromContourBase( const ActionOptions& ao ):
   if( getNumberOfArguments()>1 ) error("should only use one argument for this action");
   if( getNumberOfArguments()==1 ) {
     if( getPntrToArgument(0)->getRank()!=1 ) error("ARG for distance from contour should be rank one");
+    getPntrToArgument(0)->buildDataStore();
   }
   // Read in the multicolvar/atoms
   std::vector<AtomNumber> atoms; parseAtomList("POSITIONS",atoms);

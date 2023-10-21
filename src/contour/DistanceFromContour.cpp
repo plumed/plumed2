@@ -63,7 +63,7 @@ dc: DISTANCE_FROM_CONTOUR DATA=dens ATOM=1 BANDWIDTH=0.5,0.5,0.5 DIR=z CONTOUR=0
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace multicolvar {
+namespace contour {
 
 class DistanceFromContour : public DistanceFromContourBase {
 private:

@@ -32,7 +32,7 @@ Calculate the perpendicular distance from a Willard-Chandler dividing surface.
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace multicolvar {
+namespace contour {
 
 class DistanceFromSphericalContour : public DistanceFromContourBase {
 public:

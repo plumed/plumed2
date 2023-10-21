@@ -29,7 +29,7 @@
 #include "tools/RootFindingBase.h" 
 
 namespace PLMD {
-namespace multicolvar {
+namespace contour {
 
 class DistanceFromContourBase :
   public ActionWithValue,
