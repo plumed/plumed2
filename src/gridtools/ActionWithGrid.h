@@ -35,7 +35,7 @@ public:
   static void registerKeywords( Keywords& keys );
   static ActionWithGrid* getInputActionWithGrid( Action* action );
   explicit ActionWithGrid(const ActionOptions&ao);
-  void calculate() override ;
+  virtual void calculate() override ;
   virtual std::vector<std::string> getGridCoordinateNames() const = 0;
   virtual const GridCoordinatesObject& getGridCoordinatesObject() const = 0;
   virtual void setupOnFirstStep() = 0;
