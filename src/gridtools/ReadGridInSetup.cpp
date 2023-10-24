@@ -21,12 +21,29 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithGrid.h"
 #include "core/ActionRegister.h"
+#include "lepton/Lepton.h"
 #include "tools/IFile.h"
 
 using namespace std;
 
 namespace PLMD {
 namespace gridtools {
+
+static std::map<string, double> leptonConstants= {
+  {"e", std::exp(1.0)},
+  {"log2e", 1.0/std::log(2.0)},
+  {"log10e", 1.0/std::log(10.0)},
+  {"ln2", std::log(2.0)},
+  {"ln10", std::log(10.0)},
+  {"pi", pi},
+  {"pi_2", pi*0.5},
+  {"pi_4", pi*0.25},
+//  {"1_pi", 1.0/pi},
+//  {"2_pi", 2.0/pi},
+//  {"2_sqrtpi", 2.0/std::sqrt(pi)}, 
+  {"sqrt2", std::sqrt(2.0)},
+  {"sqrt1_2", std::sqrt(0.5)}
+};  
 
 class ReadGridInSetup : public ActionWithGrid {
 private:
@@ -50,6 +67,12 @@ PLUMED_REGISTER_ACTION(ReadGridInSetup,"REFERENCE_GRID")
 void ReadGridInSetup::registerKeywords( Keywords& keys ) {
   ActionWithGrid::registerKeywords(keys); keys.remove("SERIAL");
   keys.add("optional","FUNC","the function to compute on the grid");
+  keys.add("compulsory","GRID_MIN","auto","the lower bounds for the grid");
+  keys.add("compulsory","GRID_MAX","auto","the upper bounds for the grid");
+  keys.add("compulsory","PERIODIC","are the grid directions periodic");
+  keys.add("optional","GRID_BIN","the number of bins for the grid");
+  keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
+  keys.add("optional","VAR","the names to give each of the grid directions in the function.  If you have up to three grid coordinates in your function you can use x, y and z to refer to them.  Otherwise you must use this flag to give your variables names.");
   keys.add("compulsory","FILE","the name of the file that contains the reference data");
   keys.add("compulsory","VALUE","the name of the value that should be read from the grid");
 }
@@ -60,7 +83,86 @@ ReadGridInSetup::ReadGridInSetup(const ActionOptions&ao):
 {
    std::string func; parse("FUNC",func);
    if( func.length()>0 ) {
+       // Read in stuff for grid
+       std::vector<std::string> gmin; parseVector("GRID_MIN",gmin);
+       std::vector<std::string> gmax(gmin.size()); parseVector("GRID_MAX",gmax);
+       std::vector<unsigned> gbin(gmin.size()); parseVector("GRID_BIN",gbin);
+       std::vector<std::string> pbc(gmin.size()); parseVector("PERIODIC",pbc);
+       std::vector<bool> ipbc( pbc.size() );
+       for(unsigned i=0;i<ipbc.size();++i) {
+           if( pbc[i]=="YES" ) ipbc[i]=true;
+           else if( pbc[i]=="NO" ) ipbc[i]=false;
+           else error( pbc[i] + " is not a valid instruction to the PERIODIC keyword");
+       }
 
+       // Read in the variables
+       parseVector("VAR",dernames);
+       if(dernames.size()==0) {
+         dernames.resize(gmin.size());
+         if(gmin.size()>3)
+           error("Using more than 3 arguments you should explicitly write their names with VAR");
+         if(dernames.size()>0) dernames[0]="x";
+         if(dernames.size()>1) dernames[1]="y";
+         if(dernames.size()>2) dernames[2]="z";
+       }
+       if(dernames.size()!=gmin.size()) error("Size of VAR array should be the same as number of grid dimensions");
+
+       // Create the grid and the value of the grid
+       createGridAndValue( "flat", ipbc, 0, gmin, gmax, gbin );
+
+       // Read in stuff for function
+       log.printf("  evaluating function : %s\n",func.c_str());
+       log.printf("  with variables :");
+       for(unsigned i=0; i<dernames.size(); i++) log.printf(" %s",dernames[i].c_str());
+       log.printf("\n");
+       log.printf("  on %d", gbin[0]);
+       for(unsigned i=1;i<gbin.size();++i) log.printf(" by %d \n", gbin[i]);
+       log.printf(" grid of points between (%s", gmin[0].c_str() );
+       for(unsigned i=1;i<gmin.size();++i) log.printf(", %s", gmin[i].c_str() );
+       log.printf(") and (%s", gmax[0].c_str() );
+       for(unsigned i=1;i<gmax.size();++i) log.printf(", %s", gmax[i].c_str() );
+       log.printf(")\n");
+
+       lepton::ParsedExpression pe=lepton::Parser::parse(func).optimize(leptonConstants);
+       log<<"  function as parsed by lepton: "<<pe<<"\n";
+       lepton::CompiledExpression expression=pe.createCompiledExpression();
+       for(auto &p: expression.getVariables()) {
+         if(std::find(dernames.begin(),dernames.end(),p)==dernames.end()) {
+           error("variable " + p + " is not defined");
+         }
+       }
+       log<<"  derivatives as computed by lepton:\n";
+       std::vector<lepton::CompiledExpression> expression_deriv( dernames.size() );
+       for(unsigned i=0; i<dernames.size(); i++) {
+         lepton::ParsedExpression pe=lepton::Parser::parse(func).differentiate(dernames[i]).optimize(leptonConstants);
+         log<<"    "<<pe<<"\n";
+         expression_deriv[i]=pe.createCompiledExpression();
+       }
+       // And finally calculate all the grid points 
+       std::vector<double> dder( dernames.size() ), xx( dernames.size() ); Value* valout=getPntrToComponent(0); 
+       for(unsigned index=0;index<valout->getNumberOfValues();++index) {
+           gridobject.getGridPointCoordinates( index, xx );
+           for(unsigned j=0;j<xx.size();++j) {
+               try {
+                 expression.getVariableReference(dernames[j])=xx[j];
+               } catch(PLMD::lepton::Exception& exc) {
+// this is necessary since in some cases lepton things a variable is not present even though it is present
+// e.g. func=0*x
+               }
+           }
+           valout->set( index, expression.evaluate() );
+           for(unsigned k=0;k<xx.size();++k) {
+               for(unsigned j=0;j<xx.size();++j) {
+                   try {
+                     expression_deriv[k].getVariableReference(dernames[j])=xx[j];
+                   } catch(PLMD::lepton::Exception& exc) {
+// this is necessary since in some cases lepton things a variable is not present even though it is present
+// e.g. func=0*x
+                   }
+               }
+               valout->addGridDerivatives( index, k, expression_deriv[k].evaluate() );
+           }
+       }
    } else {
        std::string valuestr; parse("VALUE",valuestr);
        std::string tstyle, filen; parse("FILE",filen);
@@ -127,8 +229,8 @@ ReadGridInSetup::ReadGridInSetup(const ActionOptions&ao):
          for(unsigned j=0; j<dernames.size(); ++j) ifile.scanField( "d" + valuestr + "_" + dernames[j], dder[j] );  
 
          unsigned index=gridobject.getIndex(xx); if( !flatgrid ) index=i;
-         valout->add( index*(dernames.size()+1), val );
-         for(unsigned j=0; j<dernames.size(); ++j) valout->add( index*(dernames.size()+1)+1+j, dder[j] );  
+         valout->set( index, val );
+         for(unsigned j=0; j<dernames.size(); ++j) valout->addGridDerivatives( index, j, dder[j] );  
          ifile.scanField();
        }
        ifile.close();

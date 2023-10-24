@@ -77,9 +77,6 @@ ActionWithGrid(ao)
       if( getPntrToArgument(i)->getRank()==0 ) continue;
       std::vector<unsigned> s( getPntrToArgument(i)->getShape() );
       if( s.size()!=shape.size() ) error("mismatch between dimensionalities of input grids");
-      for(unsigned j=0; j<shape.size(); ++j) {
-          if( shape[j]!=s[j] ) error("mismatch between sizes of input grids");
-      }
   }
   // Read the input and do some checks
   myfunc.read( this );
@@ -108,6 +105,13 @@ void FunctionOfGrid<T>::setupOnFirstStep() {
   unsigned npoints = getPntrToArgument(0)->getNumberOfValues();
   if( mygrid.getGridType()=="flat" ) {
       std::vector<unsigned> shape( getGridCoordinatesObject().getNbin(true) );
+      for(unsigned i=1; i<getNumberOfArguments(); ++i ) {
+          if( getPntrToArgument(i)->getRank()==0 ) continue;
+          std::vector<unsigned> s( getPntrToArgument(i)->getShape() );
+          for(unsigned j=0; j<shape.size(); ++j) {
+              if( shape[j]!=s[j] ) error("mismatch between sizes of input grids");
+          }
+      }
       for(int i=0; i<getNumberOfComponents(); ++i) {
           if( getPntrToComponent(i)->getRank()>0 ) getPntrToComponent(i)->setShape(shape);
       }
