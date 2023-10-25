@@ -68,7 +68,7 @@ ActionShortcut(ao)
     cutoff = maxr; kernel_data="KERNEL=DISCRETE"; 
     warning("rdf is normalised by dividing by the surface area at the grid value and not by the volume of the bin as it should be with discrete kernels");
   } else { 
-    parse("BANDWIDTH",bandwidth); double rcut; parse("CUTOFF",rcut); kernel_data="KERNEL=" + kernel + " BANDWIDTH=" + bandwidth;
+    parse("BANDWIDTH",bandwidth); double rcut; parse("CUTOFF",rcut); kernel_data="KERNEL=" + kernel + " IGNORE_IF_OUT_OF_RANGE BANDWIDTH=" + bandwidth;
     double bw; Tools::convert( bandwidth, bw ); double fcut; Tools::convert( maxr, fcut ); Tools::convert( fcut + sqrt(2.0*rcut)*bw, cutoff );
   }
 

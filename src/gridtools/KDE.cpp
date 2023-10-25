@@ -221,7 +221,8 @@ fixed_width(false)
   }
   parseFlag("IGNORE_IF_OUT_OF_RANGE",ignore_out_of_bounds);
   if( ignore_out_of_bounds ) log.printf("  ignoring kernels that are outside of grid \n");
-  addValueWithDerivatives( shape ); setNotPeriodic();
+  addValueWithDerivatives( shape ); setNotPeriodic(); 
+  getPntrToComponent(0)->setDerivativeIsZeroWhenValueIsZero();
   // Make sure we store all the arguments
   for(unsigned i=0;i<getNumberOfArguments();++i) getPntrToArgument(i)->buildDataStore();
   // Check for task reduction
