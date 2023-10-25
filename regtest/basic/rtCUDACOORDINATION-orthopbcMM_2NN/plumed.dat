@@ -2,13 +2,14 @@ LOAD FILE=../../../../src/cudaCoord/Coordination.so
 #R_0=1   means automatic dmax=6.81292 > 3 (half box size)
 #R_0=0.4 means automatic dmax=2.72517 < 3 (half box size)
 #using R_0!=1 also tests that no "1" are accidentally slipped into the various 1/r0
+#at time of writing this ONLY even NN and MM work
 
-gpu: CUDACOORDINATION GROUPA=@mdatoms     NN=6 MM=14 R_0=0.4
-gpu512: CUDACOORDINATION GROUPA=@mdatoms  NN=6 MM=14 R_0=0.4 THREADS=512
-gpu256: CUDACOORDINATION GROUPA=@mdatoms  NN=6 MM=14 R_0=0.4 THREADS=256
-gpu128: CUDACOORDINATION GROUPA=@mdatoms  NN=6 MM=14 R_0=0.4 THREADS=128
-gpu64:  CUDACOORDINATION GROUPA=@mdatoms  NN=6 MM=14 R_0=0.4 THREADS=64
-cpu: COORDINATION GROUPA=@mdatoms R_0=0.4 NN=6 MM=14
+gpu: CUDACOORDINATION GROUPA=@mdatoms     NN=6 R_0=0.4
+gpu512: CUDACOORDINATION GROUPA=@mdatoms  NN=6 R_0=0.4 THREADS=512
+gpu256: CUDACOORDINATION GROUPA=@mdatoms  NN=6 R_0=0.4 THREADS=256
+gpu128: CUDACOORDINATION GROUPA=@mdatoms  NN=6 R_0=0.4 THREADS=128
+gpu64:  CUDACOORDINATION GROUPA=@mdatoms  NN=6 R_0=0.4 THREADS=64
+cpu: COORDINATION GROUPA=@mdatoms R_0=0.4 NN=6
 #if the switch is to be explicitly written, then D_MAX is not automatically set!!!
 #SWITCH={RATIONAL R_0=0.4 D_0=0 NN=6} 
 
