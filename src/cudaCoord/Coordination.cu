@@ -258,8 +258,8 @@ void CudaCoordination<calculateFloat>::registerKeywords(Keywords &keys) {
            "The n parameter of the switching function ");
   keys.add("compulsory", "MM", "0",
            "The m parameter of the switching function; 0 implies 2*NN");
-  keys.add("compulsory", "D_0", "0.0",
-           "The d_0 parameter of the switching function");
+  // keys.add("compulsory", "D_0", "0.0",
+  //          "The d_0 parameter of the switching function");
   keys.add("compulsory", "R_0", "The r_0 parameter of the switching function");
   keys.add("compulsory", "D_MAX","0.0", "The cut off of the switching function");
 }
@@ -304,9 +304,8 @@ __device__ calculateFloat pcuda_Rational(const calculateFloat rdist, const int N
       calculateFloat rMdist = pcuda_fastpow(rdist, MM - 1);
       calculateFloat num = 1. - rNdist * rdist;
       calculateFloat iden = 1.0 / (1.0 - rMdist * rdist);
-      calculateFloat func = num * iden;
-      result = func;
-      dfunc = ((-NN * rNdist * iden) + (func * (iden * MM) * rMdist));
+      result = num * iden;
+      dfunc = ((-NN * rNdist * iden) + (result * (iden * MM) * rMdist));
     }
   }
   return result;
@@ -422,18 +421,22 @@ CudaCoordination<calculateFloat>::CudaCoordination(
   { // loading data to the GPU
     int nn_ = 6;
     int mm_ = 0;
+    /***************************D0 is forced to 0!!!***************************/
     calculateFloat d0_ = 0.0;
+    /***************************D0 is forced to 0!!!***************************/
     calculateFloat r0_ = 0.0;
     parse("R_0", r0_);
     if (r0_ <= 0.0) {
       error("R_0 should be explicitly specified and positive");
     }
-    parse("D_0", d0_);
+    // parse("D_0", d0_);
     parse("NN", nn_);
     parse("MM", mm_);
     if (mm_ == 0) {
       mm_ = 2 * nn_;
     }
+    if(mm_%2!=0 || mm_%2!=0 )
+      error(" this implementation only works with both MM and NN even");
 
     switchingParameters.nn = nn_;
     switchingParameters.mm = mm_;
@@ -611,6 +614,10 @@ __global__ void getCoord(
 template <typename calculateFloat>
 void CudaCoordination<calculateFloat>::calculate() {
   auto positions = getPositions();
+  /***************************copying data on the GPU**************************/
+  cudaPositions.copyToCuda(&positions[0][0], streamDerivatives);
+  //this is the first action since is concurrent with the CPU
+  /***************************copying data on the GPU**************************/
   auto nat = positions.size();
 
   Tensor virial;
@@ -625,15 +632,13 @@ void CudaCoordination<calculateFloat>::calculate() {
   unsigned ngroups = ceil(double(nat) / nthreads);
 
   /**********************allocating the memory on the GPU**********************/
-  cudaPositions.copyToCuda(&positions[0][0], streamDerivatives);
-
   cudaCoordination.resize(nat);
   cudaVirial.resize(nat * 9);
   /**************************starting the calculations*************************/
   // this calculates the derivatives and prepare the coordination and the virial
   // for the accumulation
   if (pbc) {
-    //Ortho as now
+    //Only ortho as now
     auto box = getBox();
 
     myPBC.X = box(0, 0);
@@ -641,14 +646,14 @@ void CudaCoordination<calculateFloat>::calculate() {
     myPBC.Z = box(2, 2);
     myPBC.invX = 1.0 / myPBC.X;
     myPBC.invY = 1.0 / myPBC.Y;
-    myPBC.invZ = 1.0 / myPBC.X;
+    myPBC.invZ = 1.0 / myPBC.Z;
 
-    getCoordOrthoPBC<<<ngroups, nthreads, 0, 0>>>(
+    getCoordOrthoPBC<<<ngroups, nthreads, 0, streamDerivatives>>>(
         nat, switchingParameters, myPBC, cudaPositions.pointer(),
         cudaTrueIndexes.pointer(), cudaCoordination.pointer(),
         cudaDerivatives.pointer(), cudaVirial.pointer());
   } else {
-    getCoordNoPBC<<<ngroups, nthreads, 0, 0>>>(
+    getCoordNoPBC<<<ngroups, nthreads, 0, streamDerivatives>>>(
         nat, switchingParameters, myPBC, cudaPositions.pointer(),
         cudaTrueIndexes.pointer(), cudaCoordination.pointer(),
         cudaDerivatives.pointer(), cudaVirial.pointer());
