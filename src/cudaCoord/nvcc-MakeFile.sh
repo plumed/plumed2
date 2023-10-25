@@ -2,8 +2,10 @@
 
 source "$PLUMED_ROOT"/src/config/compile_options.sh
 
-#nvcc "$2" -Xcompiler -fPIC -c -o "$kernel"
-compile="nvcc -g -ccbin ${compile}"
+#tested with nvcc with :"Build cuda_11.7.r11.7/compiler.31442593_0"
+#-dc adds relocatable device code 
+#-dlto Perform link-time optimization of device code. 
+compile="nvcc -g -dc -dlto -ccbin ${compile}"
 #compile=${compile/-O3/-g}
 
 #pendantic adds a unuseful FOR EACH line with
@@ -26,7 +28,7 @@ if [[ -z ${link_command:+x} ]]; then
   link_command=$link_installed
 fi
 
-link_command="nvcc -shared${link_command#*-shared}"
+link_command="nvcc -shared -dlto${link_command#*-shared}"
 link_command=${link_command/-rdynamic/-Xcompiler -rdynamic}
 link_command=${link_command/-Wl,/-Xlinker }
 #link_command=${link_command/-fopenmp/-Xcompiler -fopenmp}

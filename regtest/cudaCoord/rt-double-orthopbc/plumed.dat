@@ -2,6 +2,9 @@ LOAD FILE=../../../../src/cudaCoord/Coordination.so
 #R_0=1   means automatic dmax=6.81292 > 3 (half box size)
 #R_0=0.4 means automatic dmax=2.72517 < 3 (half box size)
 #using R_0!=1 also tests that no "1" are accidentally slipped into the various 1/r0
+#MM=14 tests the MM!=2*NN part of the Coordination
+#at time of writing this ONLY even NN and MM work
+#the trajectory here has 3 different dimensions for x,y and z, so it tests also that
 
 gpu: CUDACOORDINATION GROUPA=@mdatoms     NN=6 MM=14 R_0=0.4
 gpu512: CUDACOORDINATION GROUPA=@mdatoms  NN=6 MM=14 R_0=0.4 THREADS=512
