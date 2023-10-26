@@ -110,7 +110,7 @@ twice faster # since it runs on half of the pairs. PRINT ARG=c1,c2 STRIDE=10
 
 // these constant will be used within the kernels
 template <typename calculateFloat> struct rationalSwitchParameters {
-  calculateFloat dmaxSQ = std::numeric_limits<double>::max();
+  calculateFloat dmaxSQ = std::numeric_limits<calculateFloat>::max();
   calculateFloat invr0_2 = 1.0; // r0=1
   calculateFloat stretch = 1.0;
   calculateFloat shift = 0.0;
