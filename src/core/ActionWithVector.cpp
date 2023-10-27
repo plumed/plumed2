@@ -157,6 +157,8 @@ unsigned ActionWithVector::buildArgumentStore( const unsigned& argstart ) {
       ActionWithVector* head=getFirstActionInChain();
       unsigned nder=0; arg_deriv_starts.resize( getNumberOfArguments() ); 
       for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+          // Ensures that we ignore the grid (first argument) if we are evaluating a function on a grid
+          if( i==0 && getName().find("EVALUATE_FUNCTION_FROM_GRID")!=std::string::npos ) continue ;
           ActionWithVector* iaction=dynamic_cast<ActionWithVector*>(getPntrToArgument(i)->getPntrToAction());
           if( actionInChain() && !getPntrToArgument(i)->ignoreStoredValue(head->getLabel()) ) {
               arg_deriv_starts[i] = 0; head->getNumberOfStreamedDerivatives( arg_deriv_starts[i], getPntrToArgument(i) );
@@ -170,6 +172,7 @@ unsigned ActionWithVector::buildArgumentStore( const unsigned& argstart ) {
               if( iaction ) {
                   const ActionWithVector* ider_action=iaction->getActionWithDerivatives();
                   for(unsigned j=0; j<i; ++j) {
+                      if( j==0 && getName().find("EVALUATE_FUNCTION_FROM_GRID")!=std::string::npos ) continue ;
                       ActionWithVector* jaction=dynamic_cast<ActionWithVector*>(getPntrToArgument(j)->getPntrToAction());
                       if( jaction->getActionWithDerivatives()==ider_action ) { k=j; break; }
                   }
