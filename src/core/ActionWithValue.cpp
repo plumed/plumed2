@@ -69,7 +69,7 @@ ActionWithValue::~ActionWithValue() {
 // empty destructor to delete unique_ptr
 }
 
-void ActionWithValue::clearInputForces() {
+void ActionWithValue::clearInputForces( const bool& force ) {
   for(unsigned i=0; i<values.size(); i++) values[i]->clearInputForce();
 }
 

@@ -71,6 +71,12 @@ void ActionWithVector::clearDerivatives( const bool& force ) {
   if( action_to_do_after ) action_to_do_after->clearDerivatives( true );
 }
 
+void ActionWithVector::clearInputForces( const bool& force ) {
+  if( !force && actionInChain() ) return;
+  ActionWithValue::clearInputForces();
+  if( action_to_do_after ) action_to_do_after->clearInputForces( true );
+}
+
 const ActionWithVector* ActionWithVector::getFirstActionInChain() const {
   if( !actionInChain() ) return this;
   return action_to_do_before->getFirstActionInChain();
@@ -170,11 +176,11 @@ unsigned ActionWithVector::buildArgumentStore( const unsigned& argstart ) {
               // Check if we have already found this action 
               int k=-1; 
               if( iaction ) {
-                  const ActionWithVector* ider_action=iaction->getActionWithDerivatives();
+                  ActionWithVector* ider_action=iaction->getActionWithDerivatives( iaction );
                   for(unsigned j=0; j<i; ++j) {
                       if( j==0 && getName().find("EVALUATE_FUNCTION_FROM_GRID")!=std::string::npos ) continue ;
                       ActionWithVector* jaction=dynamic_cast<ActionWithVector*>(getPntrToArgument(j)->getPntrToAction());
-                      if( jaction->getActionWithDerivatives()==ider_action ) { k=j; break; }
+                      if( jaction->getActionWithDerivatives(jaction)==ider_action || jaction->checkForDependency(ider_action) ) { k=j; break; } 
                   }
                   if( k>=0 ) { arg_deriv_starts[i] = arg_deriv_starts[k]; continue; }
               }
@@ -197,7 +203,15 @@ unsigned ActionWithVector::buildArgumentStore( const unsigned& argstart ) {
 
               arg_deriv_starts[i] = nder;
               // Add the total number of derivatives that we have by this point in the chain to nder
-              if( iaction ) { nder=0; head->getNumberOfStreamedDerivatives( nder, getPntrToArgument(i) ); }
+              if( iaction ) { 
+                  nder=0;
+                  if( (getPntrToArgument(i)->getPntrToAction())->getName().find("DIFFERENCE")!=std::string::npos ) {
+                       ActionWithArguments* aarg=dynamic_cast<ActionWithArguments*>( getPntrToArgument(i)->getPntrToAction() );
+                       plumed_assert( aarg && aarg->getNumberOfArguments()==2 ); 
+                       head->getNumberOfStreamedDerivatives( nder, aarg->getPntrToArgument(0) );
+                       nder += (aarg->getPntrToArgument(1))->getNumberOfValues();
+                  } else head->getNumberOfStreamedDerivatives( nder, getPntrToArgument(i) ); 
+              }
           }
       }
       nder=0; head->getNumberOfStreamedDerivatives( nder, NULL );
@@ -209,19 +223,20 @@ unsigned ActionWithVector::buildArgumentStore( const unsigned& argstart ) {
   return nder;
 }
 
-const ActionWithVector* ActionWithVector::getActionWithDerivatives() const {
-  if( getNumberOfAtoms()>0 ) return this;
-  std::string c=getFirstActionInChain()->getLabel();
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      if( !getPntrToArgument(i)->ignoreStoredValue(c) && !getPntrToArgument(i)->isConstant() ) return this;
+ActionWithVector* ActionWithVector::getActionWithDerivatives( ActionWithVector* depaction ) {
+  if( depaction==this || depaction->checkForDependency(this) ) {
+      if( getNumberOfAtoms()>0 ) return this;
+      std::string c=getFirstActionInChain()->getLabel();
+      for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+          if( !getPntrToArgument(i)->ignoreStoredValue(c) && !getPntrToArgument(i)->isConstant() ) return this;
+      }
   }
   plumed_assert( action_to_do_before );
-  return action_to_do_before->getActionWithDerivatives(); 
+  return action_to_do_before->getActionWithDerivatives(depaction); 
 }
 
 bool ActionWithVector::addActionToChain( const std::vector<std::string>& alabels, ActionWithVector* act ) {
   if( action_to_do_after ) { bool state=action_to_do_after->addActionToChain( alabels, act ); return state; }
-
   // Check action is not already in chain
   std::vector<std::string> mylabels; getFirstActionInChain()->getAllActionLabelsInChain( mylabels );
   for(unsigned i=0; i<mylabels.size(); ++i) {

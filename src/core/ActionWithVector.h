@@ -50,7 +50,7 @@ private:
 /// This is the list of actions that control the tasks that we do here
   std::vector<ActionWithVector*> task_control_list;
 /// Work backwards through the chain to find an action that has either stored arguments or derivatives
-  const ActionWithVector* getActionWithDerivatives() const ;
+  ActionWithVector* getActionWithDerivatives( ActionWithVector* depaction );
 /// Check if there are any grids in the stream 
   bool checkForGrids(unsigned& nder) const ;
 ///  Run the task
@@ -130,6 +130,8 @@ public:
   void getNumberOfStreamedDerivatives( unsigned& nderivatives, Value* stopat );
 /// Get every the label of every value that is calculated in this chain
   void getAllActionLabelsInChain( std::vector<std::string>& mylabels ) const ;
+/// We override clearInputForces here to ensure that forces are deleted from all values
+  void clearInputForces( const bool& force=false ) override;
 /// We override clearDerivatives here to prevent data in streams from being deleted
   void clearDerivatives( const bool& force=false ) override;
 /// Check if we can be after another ActionWithVector

@@ -55,13 +55,16 @@ VStack::VStack(const ActionOptions& ao):
   ActionWithMatrix(ao)
 {
   if( getNumberOfArguments()==0 ) error("no arguments were specificed");
-  if( getPntrToArgument(0)->getRank()!=1 ) error("all arguments should be vectors"); 
-  unsigned nvals=getPntrToArgument(0)->getShape()[0]; bool periodic=false; std::string smin, smax;
+  if( getPntrToArgument(0)->getRank()>1 ) error("all arguments should be vectors"); 
+  unsigned nvals=1; bool periodic=false; std::string smin, smax;
+  if( getPntrToArgument(0)->getRank()==1 ) nvals = getPntrToArgument(0)->getShape()[0]; 
   if( getPntrToArgument(0)->isPeriodic() ) { periodic=true; getPntrToArgument(0)->getDomain( smin, smax ); }
 
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      if( getPntrToArgument(i)->getRank()!=1 || getPntrToArgument(i)->hasDerivatives() ) error("all arguments should be vectors");
-      if( getPntrToArgument(i)->getShape()[0]!=nvals ) error("all input vector should have same number of elements");
+      if( getPntrToArgument(i)->getRank()>1 || (getPntrToArgument(i)->getRank()==1 && getPntrToArgument(i)->hasDerivatives()) ) error("all arguments should be vectors");
+      if( getPntrToArgument(i)->getRank()==0 ) {
+          if( nvals!=1 ) error("all input vector should have same number of elements");
+      } else if( getPntrToArgument(i)->getShape()[0]!=nvals ) error("all input vector should have same number of elements");
       if( periodic ) {
           if( !getPntrToArgument(i)->isPeriodic() ) error("one argument is periodic but " + getPntrToArgument(i)->getName() + " is not periodic");
           std::string tmin, tmax; getPntrToArgument(i)->getDomain( tmin, tmax );
@@ -81,14 +84,14 @@ VStack::VStack(const ActionOptions& ao):
 }
 
 void VStack::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {
-  unsigned nargs = getNumberOfArguments(); unsigned nvals = getPntrToArgument(0)->getShape()[0];
+  unsigned nargs = getNumberOfArguments(); unsigned nvals = getConstPntrToComponent(0)->getShape()[0];
   if( indices.size()!=nargs+1 ) indices.resize( nargs+1 );
   for(unsigned i=0; i<nargs; ++i) indices[i+1] = nvals + i;
   myvals.setSplitIndex( nargs + 1 );
 }
 
 void VStack::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
-  unsigned ind2 = index2; if( index2>=getPntrToArgument(0)->getShape()[0] ) ind2 = index2 - getPntrToArgument(0)->getShape()[0];
+  unsigned ind2 = index2; if( index2>=getConstPntrToComponent(0)->getShape()[0] ) ind2 = index2 - getConstPntrToComponent(0)->getShape()[0];
   myvals.addValue( getConstPntrToComponent(0)->getPositionInStream(), getArgumentElement( ind2, index1, myvals ) );
 
   if( doNotCalculateDerivatives() ) return;  

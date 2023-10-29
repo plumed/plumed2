@@ -21,6 +21,7 @@
 !/maze
 !/multicolvar
 !/python
+!/refdist
 !/secondarystructure
 !/trajectories
 !/scripts

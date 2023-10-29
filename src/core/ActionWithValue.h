@@ -164,7 +164,7 @@ public:
 /// Returns the number of values defined
   int getNumberOfComponents() const ;
 /// Clear the forces on the values
-  void clearInputForces();
+  virtual void clearInputForces( const bool& force=false );
 /// Clear the derivatives of values wrt parameters
   virtual void clearDerivatives( const bool& force=false );
 /// Calculate the gradients and store them for all the values (need for projections)

@@ -35,7 +35,11 @@ ActionWithArguments(ao),
 ActionWithValue(ao)
 {
   if( getNumberOfArguments()!=1 ) error("should only be one argument to this action");
-  if( getPntrToArgument(0)->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) error("input to this argument should be a matrix");
+  if( getPntrToArgument(0)->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) {
+      if( getName()=="TRANSPOSE" ) {
+          if (getPntrToArgument(0)->getRank()!=1 || getPntrToArgument(0)->hasDerivatives() ) error("input to this argument should be a matrix or vector"); 
+      } else error("input to this argument should be a matrix");
+  }
   getPntrToArgument(0)->buildDataStore();
 }
 

@@ -118,8 +118,8 @@ void ActionWithMatrix::addDerivativeOnVectorArgument( const bool& inchain, const
       unsigned istrn = getPntrToArgument(jarg)->getPositionInStream();
       for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
           unsigned kind=myvals.getActiveIndex(istrn,k);
-          myvals.addDerivative( ostrn, kind, der*myvals.getDerivative( istrn, kind ) );
-          myvals.updateIndex( ostrn, kind );
+          myvals.addDerivative( ostrn, arg_deriv_starts[jarg] + kind, der*myvals.getDerivative( istrn, kind ) );
+          myvals.updateIndex( ostrn, arg_deriv_starts[jarg] + kind );
       }
   }
 }
