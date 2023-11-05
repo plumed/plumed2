@@ -64,8 +64,8 @@ ActionShortcut(ao)
       // Create a matrix that can be used to compute the off diagonal elements
       std::string valstr, nrstr; 
       Tools::convert( mav->copyOutput(0)->get(0), valstr ); Tools::convert( nrows, nrstr );
-      std::string diagmet = getShortcutLabel() + "_diagmet: CONSTANT_VALUE VALUES=" + valstr;
-      std::string offdiagmet = getShortcutLabel() + "_offdiagmet: CONSTANT_VALUE NROWS=" + nrstr + " NCOLS=" + nrstr + " VALUES=0";
+      std::string diagmet = getShortcutLabel() + "_diagmet: CONSTANT VALUES=" + valstr;
+      std::string offdiagmet = getShortcutLabel() + "_offdiagmet: CONSTANT NROWS=" + nrstr + " NCOLS=" + nrstr + " VALUES=0";
       for(unsigned i=0;i<nrows;++i) {
           for(unsigned j=0;j<nrows;++j) {
               Tools::convert( mav->copyOutput(0)->get(i*nrows+j), valstr );
@@ -84,25 +84,25 @@ ActionShortcut(ao)
       // Transpose sines to get a row vector
       readInputLine( getShortcutLabel() + "_sinediff: TRANSPOSE ARG=" + getShortcutLabel() + "_sinediffT");
       // Compute the off diagonal elements
-      readInputLine( getShortcutLabel() + "_matvec: DOT ARG=" + getShortcutLabel() + "_offdiagmet," + getShortcutLabel() +"_sinediffT"); 
-      readInputLine( getShortcutLabel() + "_offdiag: DOT DIAGONAL_ELEMENTS_ONLY ARG=" + getShortcutLabel() + "_sinediff," + getShortcutLabel() +"_matvec");
+      readInputLine( getShortcutLabel() + "_matvec: MATRIX_PRODUCT ARG=" + getShortcutLabel() + "_offdiagmet," + getShortcutLabel() +"_sinediffT"); 
+      readInputLine( getShortcutLabel() + "_offdiag: MATRIX_PRODUCT_DIAGONAL ARG=" + getShortcutLabel() + "_sinediff," + getShortcutLabel() +"_matvec");
       // Sort out the metric for the diagonal elements
       std::string metstr2 = getShortcutLabel() + "_diagmet";
       // If this is a matrix we need create a matrix to multiply by
       if( av->copyOutput(0)->getShape()[0]>1 ) {
           // Create some ones   
           std::string ones=" VALUES=1"; for(unsigned i=1; i<av->copyOutput(0)->getShape()[0]; ++i ) ones += ",1";
-          readInputLine( getShortcutLabel() + "_ones: CONSTANT_VALUE " + ones );
+          readInputLine( getShortcutLabel() + "_ones: CONSTANT " + ones );
           // Now do some multiplication to create a matrix that can be multiplied by our "inverse variance" vector
-          readInputLine( getShortcutLabel() + "_" + metstr + ": DOT ARG=" + metstr2 + "," + getShortcutLabel() + "_ones");
+          readInputLine( getShortcutLabel() + "_" + metstr + ": OUTER_PRODUCT ARG=" + metstr2 + "," + getShortcutLabel() + "_ones");
           metstr2 = getShortcutLabel() + "_" + metstr;
       }  
       // Compute the diagonal elements
       readInputLine( getShortcutLabel() + "_prod: CUSTOM ARG=" + getShortcutLabel() + "_scaled," + metstr2 + " FUNC=2*(1-cos(x))*y PERIODIC=NO");
       std::string ncstr; Tools::convert( nrows, ncstr ); Tools::convert( av->copyOutput(0)->getShape()[0], nrstr );
       std::string ones=" VALUES=1"; for(unsigned i=1; i<av->copyOutput(0)->getNumberOfValues(); ++i) ones += ",1";
-      readInputLine( getShortcutLabel() + "_matones: CONSTANT_VALUE NROWS=" + nrstr + " NCOLS=" + ncstr + ones );
-      readInputLine( getShortcutLabel() + "_diag: DOT DIAGONAL_ELEMENTS_ONLY ARG=" + getShortcutLabel() + "_matones," + getShortcutLabel() + "_prod");
+      readInputLine( getShortcutLabel() + "_matones: CONSTANT NROWS=" + nrstr + " NCOLS=" + ncstr + ones );
+      readInputLine( getShortcutLabel() + "_diag: MATRIX_PRODUCT_DIAGONAL ARG=" + getShortcutLabel() + "_matones," + getShortcutLabel() + "_prod");
       // Sum everything
       if( !squared ) readInputLine( getShortcutLabel() + "_2: COMBINE ARG=" + getShortcutLabel() + "_offdiag," + getShortcutLabel() + "_diag PERIODIC=NO");
       else readInputLine( getShortcutLabel() + ": COMBINE ARG=" + getShortcutLabel() + "_offdiag," + getShortcutLabel() + "_diag PERIODIC=NO");

@@ -133,6 +133,15 @@ unsigned ActionWithVector::buildArgumentStore( const unsigned& argstart ) {
           // Find the chain we need to add this to from the arguments
           ActionWithVector* av=dynamic_cast<ActionWithVector*>(getPntrToArgument(i)->getPntrToAction()); plumed_assert( av );
           found=false; ActionWithVector* myact = av->getFirstActionInChain(); 
+          if( getPntrToArgument(i)->getRank()==1 && getPntrToArgument(i)->storedata ) {
+              for(unsigned j=argstart; j<getNumberOfArguments(); ++j) {
+                  ActionWithArguments* aarg=dynamic_cast<ActionWithArguments*>( getPntrToArgument(j)->getPntrToAction() );
+                  if( !aarg || i==j ) continue;
+                  for(unsigned k=0; k<aarg->getNumberOfArguments(); ++k) {
+                      if( aarg->getPntrToArgument(k)==getPntrToArgument(i) ) { done_in_chain=false; return reallyBuildArgumentStore( argstart ); }
+                  }
+              }
+          }
           for(unsigned j=0; j<f_actions.size(); ++j) {
             if( f_actions[j]==myact ) { found=true; break; }
           }
@@ -146,6 +155,25 @@ unsigned ActionWithVector::buildArgumentStore( const unsigned& argstart ) {
       }
       // Now make sure that everything we need is in the chain 
       if( f_actions.size()>0 ) {
+          // Check everything for later f_actions is done before f_actions[0]
+          for(unsigned i=1; i<f_actions.size(); ++i) {
+              ActionWithArguments* aarg = dynamic_cast<ActionWithArguments*>( f_actions[i] );
+              if( !aarg || aarg->getNumberOfArguments()==0 ) continue;
+              for(unsigned j=0; j<aarg->getNumberOfArguments(); ++j) {
+                  if( (aarg->getPntrToArgument(j))->isConstant() ) continue ;
+                  bool found=false; std::string dep_argname = (aarg->getPntrToArgument(j))->getPntrToAction()->getLabel();
+                  for(const auto & pp : plumed.getActionSet()) {
+                      Action* p(pp.get());
+                      // Check if this is the dependency
+                      if( p->getLabel()==dep_argname ) { found=true; break; }
+                      // Check if this is the first of the arguments that will appear in this chain
+                      else if( p->getLabel()==f_actions[0]->getLabel() ) break;
+                  }
+                  if( !found ) { done_in_chain=false; break; }
+              }
+              // Stop trying to add things in the chain if we cannot
+              if( !done_in_chain ) return reallyBuildArgumentStore( argstart );
+          }
           std::vector<std::string> empty(1); empty[0] = f_actions[0]->getLabel();
           for(unsigned i=1; i<f_actions.size(); ++i) f_actions[0]->addActionToChain( empty, f_actions[i] );
       } 
@@ -216,7 +244,11 @@ unsigned ActionWithVector::buildArgumentStore( const unsigned& argstart ) {
       }
       nder=0; head->getNumberOfStreamedDerivatives( nder, NULL );
       return nder;
-  } 
+  }
+  return reallyBuildArgumentStore( argstart ); 
+}
+
+unsigned ActionWithVector::reallyBuildArgumentStore( const unsigned& argstart ) {
   for(unsigned i=argstart; i<getNumberOfArguments(); ++i) { if( getPntrToArgument(i)->getRank()>0 ) getPntrToArgument(i)->buildDataStore(); }
   unsigned nder=0; arg_deriv_starts.resize( getNumberOfArguments() );
   for(unsigned i=0; i<getNumberOfArguments(); ++i) { arg_deriv_starts[i] = nder; nder += getPntrToArgument(i)->getNumberOfValues(); }

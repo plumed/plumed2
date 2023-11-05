@@ -177,7 +177,8 @@ void FunctionOfVector<T>::setupStreamedComponents( const std::string& headstr, u
       stored_arguments.resize( getNumberOfArguments() );
       std::string control = getFirstActionInChain()->getLabel();
       for(unsigned i=0; i<stored_arguments.size(); ++i) {
-          stored_arguments[i] = !getPntrToArgument(i)->ignoreStoredValue( control );
+          if( getPntrToArgument(i)->isConstant() ) stored_arguments[i]=false;
+          else stored_arguments[i] = !getPntrToArgument(i)->ignoreStoredValue( control );
       }
       firststep=false;
   }

@@ -89,6 +89,8 @@ private:
   bool reduce_tasks;
 /// Were the atoms retrieved in some earlier action
   bool atomsWereRetrieved;
+/// This is used to build the argument store when we cannot use the chain
+  unsigned reallyBuildArgumentStore( const unsigned& argstart );
 protected:
 /// A vector that contains the start point for the argument derivatives
   std::vector<unsigned> arg_deriv_starts;

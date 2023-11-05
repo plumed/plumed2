@@ -46,16 +46,24 @@ Action(ao),
 ActionWithVector(ao)
 {
   if( getNumberOfArguments()!=2 ) error("should be two arguments to this action, a matrix and a vector");
-  if( getPntrToArgument(0)->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) error("first argument to this action should be a matrix");
- 
+
+  unsigned ncols;
+  if( getPntrToArgument(0)->getRank()==1 ) {
+      if( getPntrToArgument(0)->hasDerivatives() ) error("first argument to this action should be a vector or matrix");
+      ncols = 1;
+  } else if( getPntrToArgument(0)->getRank()==2 ) {
+      if( getPntrToArgument(0)->hasDerivatives() ) error("first argument to this action should be a matrix");
+      ncols = getPntrToArgument(0)->getShape()[1];
+  } 
+
   if( getPntrToArgument(1)->getRank()==1 ) {
-      if(  getPntrToArgument(1)->hasDerivatives() ) error("second argument to this action should be a vector or matrix");
-      if( getPntrToArgument(0)->getShape()[1]!=getPntrToArgument(1)->getShape()[0] ) error("number of columns in first matrix does not equal number of elements in vector");
+      if( getPntrToArgument(1)->hasDerivatives() ) error("second argument to this action should be a vector or matrix");
+      if( ncols!=getPntrToArgument(1)->getShape()[0] ) error("number of columns in first matrix does not equal number of elements in vector");
       if( getPntrToArgument(0)->getShape()[0]!=1 ) error("matrix output by this action must be square");
       addValueWithDerivatives(); setNotPeriodic();
   } else {
      if( getPntrToArgument(1)->getRank()!=2 || getPntrToArgument(1)->hasDerivatives() ) error("second argument to this action should be a vector or a matrix");
-     if( getPntrToArgument(0)->getShape()[1]!=getPntrToArgument(1)->getShape()[0] ) error("number of columns in first matrix does not equal number of rows in second matrix");
+     if( ncols!=getPntrToArgument(1)->getShape()[0] ) error("number of columns in first matrix does not equal number of rows in second matrix");
      if( getPntrToArgument(0)->getShape()[0]!=getPntrToArgument(1)->getShape()[1] ) error("matrix output by this action must be square");
      std::vector<unsigned> shape(1); shape[0]=getPntrToArgument(0)->getShape()[0]; 
      addValue( shape ); setNotPeriodic();
@@ -65,33 +73,47 @@ ActionWithVector(ao)
 
 unsigned MatrixProductDiagonal::getNumberOfDerivatives() {
   if( doNotCalculateDerivatives() ) return 0;
-  return getPntrToArgument(0)->getShape()[1] + getPntrToArgument(1)->getShape()[0];;
+  return getPntrToArgument(0)->getNumberOfValues() + getPntrToArgument(1)->getNumberOfValues();;
 }
 
 void MatrixProductDiagonal::performTask( const unsigned& task_index, MultiValue& myvals ) const {
   unsigned ostrn = getConstPntrToComponent(0)->getPositionInStream();
   Value* arg1 = getPntrToArgument(0); Value* arg2 = getPntrToArgument(1);
-  unsigned nmult = arg1->getRowLength(task_index);
-  unsigned nrowsA = getPntrToArgument(0)->getShape()[1];
-  unsigned nrowsB = 1; if( getPntrToArgument(1)->getRank()>1 ) nrowsB = getPntrToArgument(1)->getShape()[1];
-  unsigned nvals1 = getPntrToArgument(0)->getNumberOfValues();
+  if( arg1->getRank()==1 ) {
+      double val1 = arg1->get( task_index );
+      double val2 = arg2->get( task_index );
+      myvals.addValue( ostrn, val1*val2 );
 
-  double matval = 0;
-  for(unsigned i=0; i<nmult; ++i) {
-      unsigned kind = arg1->getRowIndex( task_index, i );
-      double val1 = arg1->get( task_index*nrowsA + kind );
-      double val2 = arg2->get( kind*nrowsB + task_index );
-      matval += val1*val2;
+      if( doNotCalculateDerivatives() ) return; 
 
-      if( doNotCalculateDerivatives() ) continue;
+      myvals.addDerivative( ostrn, task_index, val2 );
+      myvals.updateIndex( ostrn, task_index );
+      unsigned nvals = getPntrToArgument(0)->getNumberOfValues();
+      myvals.addDerivative( ostrn, nvals + task_index, val1 ); 
+      myvals.updateIndex( ostrn, nvals + task_index );
+  } else {
+      unsigned nmult = arg1->getRowLength(task_index);
+      unsigned nrowsA = getPntrToArgument(0)->getShape()[1];
+      unsigned nrowsB = 1; if( getPntrToArgument(1)->getRank()>1 ) nrowsB = getPntrToArgument(1)->getShape()[1];
+      unsigned nvals1 = getPntrToArgument(0)->getNumberOfValues();
 
-      myvals.addDerivative( ostrn, task_index*nrowsA + kind, val2 ); 
-      myvals.updateIndex( ostrn, task_index*nrowsA + kind );
-      myvals.addDerivative( ostrn, nvals1 + kind*nrowsB + task_index, val1 ); 
-      myvals.updateIndex( ostrn, nvals1 + kind*nrowsB + task_index );
+      double matval = 0;
+      for(unsigned i=0; i<nmult; ++i) {
+          unsigned kind = arg1->getRowIndex( task_index, i );
+          double val1 = arg1->get( task_index*nrowsA + kind );
+          double val2 = arg2->get( kind*nrowsB + task_index );
+          matval += val1*val2;
+
+          if( doNotCalculateDerivatives() ) continue;
+
+          myvals.addDerivative( ostrn, task_index*nrowsA + kind, val2 ); 
+          myvals.updateIndex( ostrn, task_index*nrowsA + kind );
+          myvals.addDerivative( ostrn, nvals1 + kind*nrowsB + task_index, val1 ); 
+          myvals.updateIndex( ostrn, nvals1 + kind*nrowsB + task_index );
+      }
+      // And add this part of the product
+      myvals.addValue( ostrn, matval );
   }
-  // And add this part of the product
-  myvals.addValue( ostrn, matval );
 }
 
 void MatrixProductDiagonal::calculate() {

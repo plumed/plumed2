@@ -68,11 +68,7 @@ ActionShortcut(ao)
       metstr = getShortcutLabel() + "_" + metstr;
   } 
   // Now do the multiplication
-  if( av->copyOutput(0)->getShape()[0]==1 ) { 
-      // This is a row vector.  If we transpose it we get a column vector and we can use dot of two column vectors (this is a curiosity of PLUMED's implementation of matrix multiplication)
-      readInputLine( getShortcutLabel() + "_sdiff_mat: CUSTOM ARG=" + metstr + "," + getShortcutLabel() +"_diffT FUNC=x*y PERIODIC=NO");
-      readInputLine( getShortcutLabel() + "_sdiff: TRANSPOSE ARG=" + getShortcutLabel() + "_sdiff_mat"); 
-  } else readInputLine( getShortcutLabel() + "_sdiff: CUSTOM ARG=" + metstr + "," + getShortcutLabel() +"_diffT FUNC=x*y PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_sdiff: CUSTOM ARG=" + metstr + "," + getShortcutLabel() +"_diffT FUNC=x*y PERIODIC=NO");
   bool squared; parseFlag("SQUARED",squared); std::string olab = getShortcutLabel(); if( !squared ) olab += "_2";
   readInputLine( olab + ": MATRIX_PRODUCT_DIAGONAL ARG=" + getShortcutLabel() +"_diff," + getShortcutLabel() + "_sdiff");
   if( !squared ) readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_2 FUNC=sqrt(x) PERIODIC=NO");
