@@ -98,6 +98,8 @@ NeighborList::~NeighborList()=default;
 
 void NeighborList::initialize() {
 #ifdef __APPLE__
+  //this mac-only error is here because on my experience the mac tries to page
+  //the memory on the hdd instead of throwing a memory error
   if(!std::getenv("PLUMED_IGNORE_NL_MEMORY_ERROR")) {
     //blocking memory allocation on slightly more than 10 GB of memory
     //that is about 1296000000 pairs (36000 atoms)
