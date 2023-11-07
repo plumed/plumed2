@@ -107,8 +107,8 @@ void NeighborList::initialize() {
     //each pairIDs occupies 64 bit (where unsigned are 32bit integers)
     //4294967296 is max(uint32)+1 and is more than 34 GB (correspond to a system of 65536 atoms)
     if(nallpairs_ > 1296000000 )
-      plumed_merror() << "An error happened while allocating the neighbor "
-                      "list, please decrease the number of atoms used";
+      plumed_merror("An error happened while allocating the neighbor "
+                    "list, please decrease the number of atoms used");
   }
 #endif // __APPLE__
   try {
