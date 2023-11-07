@@ -30,6 +30,11 @@
 #include <algorithm>
 #include <numeric>
 
+#ifdef __APPLE__
+//we are using getenv to give the user the opporunity of suppressing
+//the too many memory killswitch while compiling on mac
+#include <cstdlib>
+#endif //__APPLE__
 namespace PLMD {
 
 NeighborList::NeighborList(const std::vector<AtomNumber>& list0,
@@ -92,13 +97,24 @@ NeighborList::NeighborList(const std::vector<AtomNumber>& list0,
 NeighborList::~NeighborList()=default;
 
 void NeighborList::initialize() {
+#ifdef __APPLE__
+  if(!std::getenv("PLUMED_IGNORE_NL_MEMORY_ERROR")) {
+    //blocking memory allocation on slightly more than 10 GB of memory
+    //that is about 1296000000 pairs (36000 atoms)
+    //36000 * 36000= 1296000000
+    //each pairIDs occupies 64 bit (where unsigned are 32bit integers)
+    if(nallpairs_ > 1296000000 )
+      plumed_merror() << "An error happened while allocating the neighbor "
+                      "list, please decrease the number of atoms used";
+  }
+#endif // __APPLE__
   try {
     neighbors_.resize(nallpairs_);
   } catch (...) {
     plumed_error_nested() << "An error happened while allocating the neighbor "
                           "list, please decrease the number of atoms used";
   }
-  //TODO: test is this accelerate
+  //TODO: test if this is feasible for accelerating the loop
   //#pragma omp parallel for default(shared)
   for(unsigned int i=0; i<nallpairs_; ++i)
     neighbors_[i]=getIndexPair(i);
