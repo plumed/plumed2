@@ -48,7 +48,7 @@ class PythonCVInterface : public Colvar,
   void check_dim(py::array_t<pycv_t>);
   void calculateSingleComponent(py::object &);
   void calculateMultiComponent(py::object &);
-
+  void readReturn(py::object &, Value* );
 public:
   py::dict dataContainer= {};
   explicit PythonCVInterface(const ActionOptions&);

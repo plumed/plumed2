@@ -262,12 +262,16 @@ void PythonCVInterface::calculate() {
 }
 
 void PythonCVInterface::calculateSingleComponent(py::object &r) {
+  readReturn(r, getPntrToValue());
+}
+
+void PythonCVInterface::readReturn(py::object &r, Value* valPtr) {
   // Is there more than 1 return value?
   if (py::isinstance<py::tuple>(r)) {
     // 1st return value: CV
     py::list rl=r.cast<py::list>();
     pycvComm_t value = rl[0].cast<pycvComm_t>();
-    setValue(value);
+    valPtr->set(value);
     if (rl.size() > 1) {
       // 2nd return value: gradient: numpy array of (natoms, 3)
       py::array_t<pycvComm_t> grad(rl[1]);
@@ -277,7 +281,7 @@ void PythonCVInterface::calculateSingleComponent(py::object &r) {
       // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
       for (int i = 0; i < natoms; i++) {
         Vector3d gi(grad.at(i, 0), grad.at(i, 1), grad.at(i, 2));
-        setAtomsDerivatives(i, gi);
+        setAtomsDerivatives(valPtr, i, gi);
       }
     }
     if (rl.size() > 2) {
@@ -301,7 +305,7 @@ void PythonCVInterface::calculateSingleComponent(py::object &r) {
             natoms, pyBoxDev.shape(0), pyBoxDev.shape(1));
         error("Python CV returned wrong box derivatives shape error");
       }
-      setBoxDerivatives(boxDev);
+      setBoxDerivatives(valPtr, boxDev);
     }
   } else {
     // Only value returned. Might be an error as well.
@@ -309,33 +313,22 @@ void PythonCVInterface::calculateSingleComponent(py::object &r) {
     pycvComm_t value = r.cast<pycvComm_t>();
     setValue(value);
   }
+  //TODO: is this ok?
   if (!pbc)
-    setBoxDerivativesNoPbc();
+    setBoxDerivativesNoPbc(valPtr);
 }
+
 
 void PythonCVInterface::calculateMultiComponent(py::object &r) {
   bool dictstyle = py::isinstance<py::dict>(r);
 
   if (dictstyle) {
     py::dict dataDict = r.cast<py::dict>(); // values
-
     for (auto c : components) {
-
-      Value *cv = getPntrToComponent("py-" + c);
-
-      const char *cp = c.c_str();
-      auto componentData = dataDict[cp].cast<py::tuple>();
-      pycvComm_t value = componentData[0].cast<pycvComm_t>();
-      cv->set(value);
-
-      py::array_t<pycvComm_t> grad(componentData[1]);
-      check_dim(grad);
-
-      for (int i = 0; i < natoms; i++) {
-        Vector3d gi(grad.at(i, 0), grad.at(i, 1), grad.at(i, 2));
-        setAtomsDerivatives(cv, i, gi);
-      }
-      setBoxDerivativesNoPbc(cv);
+    
+      auto componentData = dataDict[c.c_str();].cast<py::tuple>();
+    
+      readReturn(componentData, getPntrToComponent("py-" + c));
     }
   } else {
     // In principle one could handle a "list" return case.
