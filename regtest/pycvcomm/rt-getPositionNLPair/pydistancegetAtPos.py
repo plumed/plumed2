@@ -26,6 +26,7 @@ def pydistInPair(action: plumedCommunications.PythonCVInterface):
     x,y,z=[ atoms[pair[0]] - atoms[pair[1]] for pair in nl.getClosePairs()]
     
     zero=np.zeros(atoms.shape)
+    #MUST work with tuple or lists
     return {'x':[x[0],zero],
-            'y':[y[1],zero],
-            'z':[z[2],zero]}
+            'y':(y[1],zero),
+            'z':(z[2],zero)}

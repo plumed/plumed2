@@ -1,9 +1,4 @@
-# This is only a partial example. This function does not compute the
-# gradient, so it is useless for biasing. See the other regression
-# tests for how to auto-grad.
-
-# And, of course, one should not call slow functions (such as print)
-# in the CV calculation.
+#This is a not optimzed implementation of the COORDINATION
 
 import numpy as np
 import plumedCommunications
@@ -42,17 +37,14 @@ def switch(d: np.ndarray) -> np.ndarray:
     return ret, dfunc
 
 
-def stretchSwitch(mydmax):
-    s, _ = switch(np.array([0.0, mydmax]))
+def stretchSwitch():
+    s, _ = jaxSwitch(np.array([0.0, DMAX]))
     stretch = 1 / (s[0] - s[1])
     return stretch, -s[1] * stretch
 
 
 # some juggling for calculationg the stretch
-mydmax = DMAX
-DMAX += 0.1
-STRETCH, SHIFT = stretchSwitch(mydmax)
-DMAX = mydmax
+STRETCH, SHIFT = stretchSwitch()
 print(f"{N=} {M=} {D0=} {R0=} {INVR0=} {DMAX=} {STRETCH=} {SHIFT=}", file=log)
       
 def pyCoord(action: plumedCommunications.PythonCVInterface):

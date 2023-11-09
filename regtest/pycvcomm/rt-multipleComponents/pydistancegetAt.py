@@ -26,6 +26,6 @@ def pydist(action: plumedCommunications.PythonCVInterface):
         grad=np.zeros((nat,3))
         grad[0]=d/val
         grad[j]=-d/val
-        print(f"{rn} {val} {grad}", file=log)
+        #print(f"{rn} {val} {grad}", file=log)
         ret[rn] = (val, grad)
     return ret    

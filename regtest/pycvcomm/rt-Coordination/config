@@ -1,4 +1,2 @@
-
 type=driver
 arg="--plumed plumed.dat --ixyz traj.xyz"
-plumed_modules=pycv

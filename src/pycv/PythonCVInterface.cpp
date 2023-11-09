@@ -267,7 +267,7 @@ void PythonCVInterface::calculateSingleComponent(py::object &r) {
 
 void PythonCVInterface::readReturn(py::object &r, Value* valPtr) {
   // Is there more than 1 return value?
-  if (py::isinstance<py::tuple>(r)) {
+  if (py::isinstance<py::tuple>(r)||py::isinstance<py::list>(r)) {
     // 1st return value: CV
     py::list rl=r.cast<py::list>();
     pycvComm_t value = rl[0].cast<pycvComm_t>();
@@ -325,9 +325,7 @@ void PythonCVInterface::calculateMultiComponent(py::object &r) {
   if (dictstyle) {
     py::dict dataDict = r.cast<py::dict>(); // values
     for (auto c : components) {
-    
-      auto componentData = dataDict[c.c_str();].cast<py::tuple>();
-    
+      py::object componentData = dataDict[c.c_str()];//.cast<py::tuple>();
       readReturn(componentData, getPntrToComponent("py-" + c));
     }
   } else {

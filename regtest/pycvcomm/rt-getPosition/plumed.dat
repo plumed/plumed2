@@ -1,4 +1,4 @@
-# LOAD FILE=PythonCV.dylib
+LOAD FILE=../../../../src/pycv/PythonCVInterface.so
 
 cvPY: PYCVINTERFACE ATOMS=1,4 IMPORT=pydistancegetAtPos CALCULATE=pydist
 
