@@ -311,7 +311,7 @@ void PythonCVInterface::readReturn(py::object &r, Value* valPtr) {
     // Only value returned. Might be an error as well.
     log.printf(BIASING_DISABLED);
     pycvComm_t value = r.cast<pycvComm_t>();
-    setValue(value);
+    valPtr->set(value);
   }
   //TODO: is this ok?
   if (!pbc)

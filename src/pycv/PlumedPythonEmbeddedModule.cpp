@@ -54,6 +54,14 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
        "returns an interface to the current pbcs")
   .def("getNeighbourList",&PLMD::pycv::PythonCVInterface::getNL,
        "returns an interface to the current Neighborlist")
+  .def("getAbsoluteIndex",&PLMD::pycv::PythonCVInterface::getAbsoluteIndex,
+  "returns the absolute index of an atom.",py::arg("i")
+  )
+//   AtomNumber 	getAbsoluteIndex (int i) const
+//  	Get the absolute index of an atom. More...
+ 
+// virtual const std::vector< AtomNumber > & 	getAbsoluteIndexes () const
+//  	Get the vector of absolute indexes. More...
   ;
   py::class_<PLMD::Pbc>(m, "PLMDPbc")
   //.def(py::init<>())
@@ -118,7 +126,7 @@ return toRet;
   "Get a numpy array of shape (3,3) with the inverted box vectors")
 #undef T3x3toArray
   ;
-  py::class_<PLMD::NeighborList>(m, "PLMDNeighborList")
+  py::class_<PLMD::NeighborList>(m, "NeighborList")
   //.def(py::init<>())
   //https://numpy.org/doc/stable/user/basics.types.html
   //numpy.uint=unsigned long
@@ -138,4 +146,15 @@ return toRet;
 
   "get a (NC,2) nd array with the list of couple indexes")
   ;
+py::class_<PLMD::AtomNumber>(m, "AtomNumber")
+.def(py::init<>())
+//
+.def_property("index",
+  static_cast<unsigned(PLMD::AtomNumber::*)()const>(&PLMD::AtomNumber::index),
+ &PLMD::AtomNumber::setIndex,"The index number.")
+.def_property("serial",
+  static_cast<unsigned(PLMD::AtomNumber::*)()const>(&PLMD::AtomNumber::serial),
+ &PLMD::AtomNumber::setSerial,"The index number.")
+;
+
 }
