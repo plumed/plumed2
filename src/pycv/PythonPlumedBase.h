@@ -52,7 +52,7 @@ public:
   virtual ~PythonPlumedBase()=default;
 
 protected:
-  py::module py_module {};
+  py::module_ py_module {};
   py::object py_fcn{};
 };
 

@@ -32,26 +32,30 @@ class PythonCVInterface : public Colvar,
   static constexpr auto PYCV_NOTIMPLEMENTED="PYCV_NOTIMPLEMENTED";
   std::string import;
   std::string calculate_function;
-  std::string prepare_function{PYCV_NOTIMPLEMENTED};
+  std::string prepare_function = PYCV_NOTIMPLEMENTED;
+  std::string update_function = PYCV_NOTIMPLEMENTED;
+  std::string init_function = PYCV_NOTIMPLEMENTED;
 
   std::vector<std::string> components;
   std::unique_ptr<NeighborList> nl{nullptr};
   int ncomponents;
   int natoms;
-  bool pbc{false};
-  bool has_prepare{false};
-  bool invalidateList{true};
-  bool firsttime{true};
-
+  bool pbc=false;
+  bool has_prepare = false;
+  bool has_update = false;
+  bool invalidateList = true;
+  bool firsttime = true;
   void check_dim(py::array_t<pycv_t>);
   void calculateSingleComponent(py::object &);
   void calculateMultiComponent(py::object &);
 
 public:
+  py::dict dataContainer= {};
   explicit PythonCVInterface(const ActionOptions&);
 // active methods:
   void calculate() override;
   void prepare() override;
+  void update() override;
   NeighborList& getNL();
   static void registerKeywords( Keywords& keys );
 };

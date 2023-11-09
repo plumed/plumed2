@@ -8,6 +8,7 @@
 import numpy as np
 import plumedCommunications
 from sys import stderr as log
+from jax import jit
 
 # import plumedUtilities
 print("Imported pyCoord.", file=log)
@@ -15,12 +16,21 @@ print("Imported pyCoord.", file=log)
 N: int = 6
 M: int = 12
 D0: float = 0.0
-R0: float = 2.0
+R0: float = 1.0
 INVR0: float = 1.0 / R0
 DMAX = D0 + R0 * (0.00001 ** (1.0 / (N - M)))
 STRETCH = 1.0
 SHIFT = 0.0
 
+@jit
+def jaxSwitch(d):
+    rdist = d * INVR0
+    rNdist = (rdist) ** (N - 1)
+    ret = (1.0 / (1 + rdist * rNdist)) * STRETCH
+    ret += SHIFT
+    dfunc = -N * rNdist * ret * ret / d
+    dfunc *= STRETCH * INVR0
+    return ret, dfunc
 
 def switch(d: np.ndarray) -> np.ndarray:
     ret = np.zeros_like(d)
@@ -28,12 +38,7 @@ def switch(d: np.ndarray) -> np.ndarray:
     WhereToCalc =  d < DMAX# & d > D0
     #print(f"{dfunc=}", file=log)
     #not doinf d-D0 for now, so no need for rdist<=0
-    rdist = d[WhereToCalc] * INVR0
-    rNdist = (rdist) ** (N - 1)
-    ret[WhereToCalc] = (1.0 / (1 + rdist * rNdist)) * STRETCH
-    ret[WhereToCalc] += SHIFT
-    dfunc[WhereToCalc] = -N * rNdist * ret[WhereToCalc] * ret[WhereToCalc] / d[WhereToCalc]
-    dfunc *= STRETCH * INVR0
+    ret[WhereToCalc], dfunc[WhereToCalc] = jaxSwitch(d)
     return ret, dfunc
 
 
