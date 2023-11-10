@@ -90,7 +90,6 @@ PythonCVInterface::PythonCVInterface(const ActionOptions&ao):
     error("At least one atom is required");
 
   parse("IMPORT",import);
-
   parse("CALCULATE",calculate_function);
   parse("PREPARE",prepare_function);
   parse("UPDATE",update_function);

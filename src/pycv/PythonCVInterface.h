@@ -38,6 +38,7 @@ class PythonCVInterface : public Colvar,
 
   std::vector<std::string> components;
   std::unique_ptr<NeighborList> nl{nullptr};
+
   int ncomponents;
   int natoms;
   bool pbc=false;
@@ -45,10 +46,12 @@ class PythonCVInterface : public Colvar,
   bool has_update = false;
   bool invalidateList = true;
   bool firsttime = true;
+
   void check_dim(py::array_t<pycv_t>);
   void calculateSingleComponent(py::object &);
   void calculateMultiComponent(py::object &);
   void readReturn(py::object &, Value* );
+  
 public:
   py::dict dataContainer= {};
   explicit PythonCVInterface(const ActionOptions&);
@@ -56,6 +59,7 @@ public:
   void calculate() override;
   void prepare() override;
   void update() override;
+
   NeighborList& getNL();
   static void registerKeywords( Keywords& keys );
 };
