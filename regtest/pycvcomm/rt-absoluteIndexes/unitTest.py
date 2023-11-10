@@ -1,10 +1,3 @@
-# This is only a partial example. This function does not compute the
-# gradient, so it is useless for biasing. See the other regression
-# tests for how to auto-grad.
-
-# And, of course, one should not call slow functions (such as print)
-# in the CV calculation.
-
 import plumedCommunications as PLMD
 # import plumedUtilities
 log = open("pydist.log", "w")

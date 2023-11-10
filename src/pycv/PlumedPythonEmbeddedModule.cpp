@@ -68,6 +68,12 @@ py::return_value_policy::reference)*/
 "Get the vector of absolute indexes.",
 py::return_value_policy::reference_internal
 )
+.def("charge", &PLMD::pycv::PythonCVInterface::getCharge,
+"Get charge of i-th atom", py::arg("i")
+)
+.def("mass", &PLMD::pycv::PythonCVInterface::getMass,
+"Get mass of i-th atom", py::arg("i")
+)
   ;
   py::class_<PLMD::Pbc>(m, "PLMDPbc")
   //.def(py::init<>())
