@@ -31,16 +31,20 @@ using PLMD::pycv::pycv_t;
 
 PYBIND11_MAKE_OPAQUE(std::vector<PLMD::AtomNumber>);
 
+#define defGetter(pyfun, cppfun, type, description) \
+  .def(pyfun, [](PLMD::pycv::PythonCVInterface* self) -> type{ \
+    return self->cppfun(); }, description)
+
 PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
   py::bind_vector<std::vector<PLMD::AtomNumber>>(m, "VectorAtomNumber");
   py::class_<PLMD::pycv::PythonCVInterface>(m, "PythonCVInterface")
   .def_readwrite("data",&PLMD::pycv::PythonCVInterface::dataContainer,"Return an accessible dictionary that persist along all the simulation")
   //usin "PLMD::pycv::PythonCVInterface::getStep" instead of the lambda gives compilation errors
-  .def("getStep",
-  [](PLMD::pycv::PythonCVInterface* self) -> long int{
-    return self->getStep();
-  },
-  "Returns the current step")
+  defGetter("getStep",getStep, long int ,"Returns the current step")
+  defGetter("getTime",getTime,double,"Return the present time")
+  defGetter("getTimeStep",getTimeStep,double,"Return the timestep")
+  defGetter("isRestart",getRestart,bool,"Return true if we are doing a restart")
+  defGetter("isExchangeStep",getExchangeStep,bool,"Check if we are on an exchange step")
   .def("getPosition",
   [](PLMD::pycv::PythonCVInterface* self, int i) -> py::array_t<double> {
     py::array_t<double>::ShapeContainer shape({3});
@@ -54,6 +58,12 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
     return self->getPositions().size();
   }, 
 "return the number of atoms"
+)
+  .def_property_readonly("label", 
+  [](PLMD::pycv::PythonCVInterface* self) -> std::string {
+  return self->getLabel();
+  },
+"returns the label"
 )
   .def("getPositions",[](PLMD::pycv::PythonCVInterface* self) -> py::array_t<double> {
     auto nat=self->getPositions().size();
