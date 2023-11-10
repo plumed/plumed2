@@ -49,6 +49,12 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
   },
   "Returns an ndarray with the position of the \"i\"th"
   " atom requested by the action",py::arg("i"))
+  .def_property_readonly("nat", 
+[](PLMD::pycv::PythonCVInterface* self) -> size_t {
+    return self->getPositions().size();
+  }, 
+"return the number of atoms"
+)
   .def("getPositions",[](PLMD::pycv::PythonCVInterface* self) -> py::array_t<double> {
     auto nat=self->getPositions().size();
     py::array_t<double>::ShapeContainer shape({nat,3});
@@ -66,8 +72,8 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
  /*.def("getAbsoluteIndexes", &PLMD::pycv::PythonCVInterface::getAbsoluteIndexes ,
 "Get the vector of absolute indexes.",
 py::return_value_policy::reference)*/
-.def_property_readonly
-("absoluteIndexes", &PLMD::pycv::PythonCVInterface::getAbsoluteIndexes ,
+.def_property_readonly("absoluteIndexes", 
+&PLMD::pycv::PythonCVInterface::getAbsoluteIndexes ,
 "Get the vector of absolute indexes.",
 py::return_value_policy::reference_internal
 )
