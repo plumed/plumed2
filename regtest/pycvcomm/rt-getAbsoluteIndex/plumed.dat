@@ -5,7 +5,7 @@ PYCVINTERFACE
 ATOMS=2,4
 IMPORT=unitTest
 CALCULATE=mypytest
-COMPONENTS=at0,at1
+COMPONENTS=getAbsoluteIndex0index,getAbsoluteIndex0serial,getAbsoluteIndexes1index,getAbsoluteIndexes1serial
 ...
 
 PRINT FILE=colvar.out ARG=*

@@ -5,17 +5,19 @@
 # And, of course, one should not call slow functions (such as print)
 # in the CV calculation.
 
-import numpy as np
 import plumedCommunications as PLMD
-
 # import plumedUtilities
 log = open("pydist.log", "w")
 
 print("Imported my pydist+.", file=log)
 
-
 def mypytest(action: PLMD.PythonCVInterface):
-    
-    print(f"{action.getAbsoluteIndex(0).index=}, {action.getAbsoluteIndex(0).serial=}", file=log)
-
-    return {"at0":action.getAbsoluteIndex(0).index,"at1":action.getAbsoluteIndex(0).serial}
+    ret={"absoluteIndex0index":action.absoluteIndexes[0].index,
+        "absoluteIndex0serial":action.absoluteIndexes[0].serial}
+    indexes = action.absoluteIndexes
+    ret["absoluteIndex1index"]=indexes[1].index
+    ret["absoluteIndex1serial"]=indexes[1].serial
+    #the following lines are guarantee to fail :)
+    #action.absoluteIndexes[0].index=0
+    #indexes[1].index=0
+    return ret

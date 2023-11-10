@@ -18,6 +18,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include <pybind11/embed.h> // everything needed for embedding
 #include <pybind11/pybind11.h>
 #include <pybind11/operators.h>
+#include <pybind11/stl_bind.h>
 
 #include "tools/Vector.h"
 #include "tools/NeighborList.h"
@@ -28,7 +29,11 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 namespace py=pybind11;
 using PLMD::pycv::pycv_t;
 
+PYBIND11_MAKE_OPAQUE(std::vector<PLMD::AtomNumber>);
+
+
 PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
+  py::bind_vector<std::vector<PLMD::AtomNumber>>(m, "VectorAtomNumber");
   py::class_<PLMD::pycv::PythonCVInterface>(m, "PythonCVInterface")
   //usin "PLMD::pycv::PythonCVInterface::getStep" instead of the lambda gives compilation errors
   .def("getStep",
@@ -54,14 +59,15 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
        "returns an interface to the current pbcs")
   .def("getNeighbourList",&PLMD::pycv::PythonCVInterface::getNL,
        "returns an interface to the current Neighborlist")
-  .def("getAbsoluteIndex",&PLMD::pycv::PythonCVInterface::getAbsoluteIndex,
-  "returns the absolute index of an atom.",py::arg("i")
-  )
-//   AtomNumber 	getAbsoluteIndex (int i) const
-//  	Get the absolute index of an atom. More...
- 
-// virtual const std::vector< AtomNumber > & 	getAbsoluteIndexes () const
-//  	Get the vector of absolute indexes. More...
+//https://pybind11.readthedocs.io/en/stable/advanced/functions.html#return-value-policies
+ /*.def("getAbsoluteIndexes", &PLMD::pycv::PythonCVInterface::getAbsoluteIndexes ,
+"Get the vector of absolute indexes.",
+py::return_value_policy::reference)*/
+.def_property_readonly
+("absoluteIndexes", &PLMD::pycv::PythonCVInterface::getAbsoluteIndexes ,
+"Get the vector of absolute indexes.",
+py::return_value_policy::reference_internal
+)
   ;
   py::class_<PLMD::Pbc>(m, "PLMDPbc")
   //.def(py::init<>())
@@ -149,12 +155,12 @@ return toRet;
 py::class_<PLMD::AtomNumber>(m, "AtomNumber")
 .def(py::init<>())
 //
-.def_property("index",
+.def_property_readonly("index",
   static_cast<unsigned(PLMD::AtomNumber::*)()const>(&PLMD::AtomNumber::index),
- &PLMD::AtomNumber::setIndex,"The index number.")
-.def_property("serial",
+ "The index number.")
+.def_property_readonly("serial",
   static_cast<unsigned(PLMD::AtomNumber::*)()const>(&PLMD::AtomNumber::serial),
- &PLMD::AtomNumber::setSerial,"The index number.")
+ "The index number.")
 ;
 
 }
