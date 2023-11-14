@@ -1,4 +1,4 @@
-LOAD FILE=../../../../src/pycv/PythonCVInterface.so
+LOAD FILE=../../../../pycv/PythonCVInterface.so
 
 cvPY: PYCVINTERFACE ATOMS=1,2,4 IMPORT=pydistancegetAt CALCULATE=pydist   COMPONENTS=d01,d02 NOPBC
 
