@@ -51,7 +51,7 @@ class PythonCVInterface : public Colvar,
   void calculateSingleComponent(py::object &);
   void calculateMultiComponent(py::object &);
   void readReturn(py::object &, Value* );
-  
+
 public:
   py::dict dataContainer= {};
   explicit PythonCVInterface(const ActionOptions&);

@@ -32,7 +32,7 @@ using PLMD::pycv::pycv_t;
 PYBIND11_MAKE_OPAQUE(std::vector<PLMD::AtomNumber>);
 
 #define defGetter(pyfun, cppfun, type, description) \
-  .def(pyfun, [](PLMD::pycv::PythonCVInterface* self) -> type{ \
+  def(pyfun, [](PLMD::pycv::PythonCVInterface* self) -> type{ \
     return self->cppfun(); }, description)
 
 PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
@@ -40,11 +40,11 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
   py::class_<PLMD::pycv::PythonCVInterface>(m, "PythonCVInterface")
   .def_readwrite("data",&PLMD::pycv::PythonCVInterface::dataContainer,"Return an accessible dictionary that persist along all the simulation")
   //usin "PLMD::pycv::PythonCVInterface::getStep" instead of the lambda gives compilation errors
-  defGetter("getStep",getStep, long int ,"Returns the current step")
-  defGetter("getTime",getTime,double,"Return the present time")
-  defGetter("getTimeStep",getTimeStep,double,"Return the timestep")
-  defGetter("isRestart",getRestart,bool,"Return true if we are doing a restart")
-  defGetter("isExchangeStep",getExchangeStep,bool,"Check if we are on an exchange step")
+  .defGetter("getStep",getStep, long int,"Returns the current step")
+  .defGetter("getTime",getTime,double,"Return the present time")
+  .defGetter("getTimeStep",getTimeStep,double,"Return the timestep")
+  .defGetter("isRestart",getRestart,bool,"Return true if we are doing a restart")
+  .defGetter("isExchangeStep",getExchangeStep,bool,"Check if we are on an exchange step")
   .def("getPosition",
   [](PLMD::pycv::PythonCVInterface* self, int i) -> py::array_t<double> {
     py::array_t<double>::ShapeContainer shape({3});
@@ -53,18 +53,20 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
   },
   "Returns an ndarray with the position of the \"i\"th"
   " atom requested by the action",py::arg("i"))
-  .def_property_readonly("nat", 
-[](PLMD::pycv::PythonCVInterface* self) -> size_t {
+  .def_property_readonly("nat",
+  [](PLMD::pycv::PythonCVInterface* self) -> size_t {
     return self->getPositions().size();
-  }, 
-"return the number of atoms"
-)
-  .def_property_readonly("label", 
-  [](PLMD::pycv::PythonCVInterface* self) -> std::string {
-  return self->getLabel();
   },
-"returns the label"
-)
+  "return the number of atoms"
+                        )
+  .def_property_readonly("label",
+  [](PLMD::pycv::PythonCVInterface* self) -> std::string {
+    return self->getLabel();
+  },
+  "returns the label")
+  //here I can use &PLMD::pycv::PythonCVInterface::makeWhole because is not in Action
+  // that is inherithed both by withValue and Atomistic
+  .def("makeWhole",&PLMD::pycv::PythonCVInterface::makeWhole,"Make atoms whole, assuming they are in the proper order")
   .def("getPositions",[](PLMD::pycv::PythonCVInterface* self) -> py::array_t<double> {
     auto nat=self->getPositions().size();
     py::array_t<double>::ShapeContainer shape({nat,3});
@@ -79,20 +81,20 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
   .def("getNeighbourList",&PLMD::pycv::PythonCVInterface::getNL,
        "returns an interface to the current Neighborlist")
 //https://pybind11.readthedocs.io/en/stable/advanced/functions.html#return-value-policies
- /*.def("getAbsoluteIndexes", &PLMD::pycv::PythonCVInterface::getAbsoluteIndexes ,
-"Get the vector of absolute indexes.",
-py::return_value_policy::reference)*/
-.def_property_readonly("absoluteIndexes", 
-&PLMD::pycv::PythonCVInterface::getAbsoluteIndexes ,
-"Get the vector of absolute indexes.",
-py::return_value_policy::reference_internal
-)
-.def("charge", &PLMD::pycv::PythonCVInterface::getCharge,
-"Get charge of i-th atom", py::arg("i")
-)
-.def("mass", &PLMD::pycv::PythonCVInterface::getMass,
-"Get mass of i-th atom", py::arg("i")
-)
+  /*.def("getAbsoluteIndexes", &PLMD::pycv::PythonCVInterface::getAbsoluteIndexes ,
+  "Get the vector of absolute indexes.",
+  py::return_value_policy::reference)*/
+  .def_property_readonly("absoluteIndexes",
+                         &PLMD::pycv::PythonCVInterface::getAbsoluteIndexes,
+                         "Get the vector of absolute indexes.",
+                         py::return_value_policy::reference_internal
+                        )
+  .def("charge", &PLMD::pycv::PythonCVInterface::getCharge,
+       "Get charge of i-th atom", py::arg("i")
+      )
+  .def("mass", &PLMD::pycv::PythonCVInterface::getMass,
+       "Get mass of i-th atom", py::arg("i")
+      )
   .def("masses",
   [](PLMD::pycv::PythonCVInterface* self) -> py::array_t<double> {
     auto nat=self->getPositions().size();
@@ -201,15 +203,15 @@ return toRet;
 
   "get a (NC,2) nd array with the list of couple indexes")
   ;
-py::class_<PLMD::AtomNumber>(m, "AtomNumber")
-.def(py::init<>())
+  py::class_<PLMD::AtomNumber>(m, "AtomNumber")
+  .def(py::init<>())
 //
-.def_property_readonly("index",
-  static_cast<unsigned(PLMD::AtomNumber::*)()const>(&PLMD::AtomNumber::index),
- "The index number.")
-.def_property_readonly("serial",
-  static_cast<unsigned(PLMD::AtomNumber::*)()const>(&PLMD::AtomNumber::serial),
- "The index number.")
-;
+  .def_property_readonly("index",
+                         static_cast<unsigned(PLMD::AtomNumber::*)()const>(&PLMD::AtomNumber::index),
+                         "The index number.")
+  .def_property_readonly("serial",
+                         static_cast<unsigned(PLMD::AtomNumber::*)()const>(&PLMD::AtomNumber::serial),
+                         "The index number.")
+  ;
 
 }

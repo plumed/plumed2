@@ -49,25 +49,27 @@ void PythonCVInterface::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   keys.add("atoms","ATOMS","the list of atoms to be passed to the function");
   //NL
-  keys.add("atoms","GROUPA","First list of atoms");
-  keys.add("atoms","GROUPB","Second list of atoms (if empty, N*(N-1)/2 pairs in GROUPA are counted)");
+  keys.add("atoms","GROUPA","First list of atoms for the neighbourlist");
+  keys.add("atoms","GROUPB","Second list of atoms for the neighbourlist (if empty, N*(N-1)/2 pairs in GROUPA are counted)");
   keys.addFlag("PAIR",false,"Pair only 1st element of the 1st group with 1st element in the second, etc");
   keys.addFlag("NLIST",false,"Use a neighbor list to speed up the calculation");
   keys.add("optional","NL_CUTOFF","The cutoff for the neighbor list");
   keys.add("optional","NL_STRIDE","The frequency with which we are updating the atoms in the neighbor list");
-
+  //python components
+  keys.add("optional","COMPONENTS","if provided, the function will return multiple components, with the names given");
+  keys.addOutputComponent("py","COMPONENTS","Each of the components output py the Python code, prefixed by py-");
+  //python calling
   keys.add("compulsory","IMPORT","the python file to import, containing the function");
   keys.add("compulsory","CALCULATE","the function to call as calculate method of a CV");
-  //add other callable methods
+  // pythonadd other callable methods
   keys.add("optional","PREPARE","the function to call as prepare method of the CV");
   keys.add("optional","INIT","the function to call during the construction method of the CV");
   keys.add("optional","UPDATE","the function to call as update() method of the CV");
-  keys.add("optional","COMPONENTS","if provided, the function will return multiple components, with the names given");
-  keys.addOutputComponent("py","COMPONENTS","Each of the components output py the Python code, prefixed by py-");
+
   // NOPBC is in Colvar!
 }
 
-PythonCVInterface::PythonCVInterface(const ActionOptions&ao):
+PythonCVInterface::PythonCVInterface(const ActionOptions&ao)try:
   PLUMED_COLVAR_INIT(ao) {
   std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
@@ -102,14 +104,6 @@ PythonCVInterface::PythonCVInterface(const ActionOptions&ao):
   parseFlag("NOPBC", nopbc);
   pbc = !nopbc;
 
-  log.printf("  will import %s and call function %s\n", import.c_str(),
-             calculate_function.c_str());
-  if (ncomponents)
-    log.printf("  it is expected to return dictionaries with %d components\n",
-               ncomponents);
-  
-  log << "  Bibliography " << plumed.cite(PYTHONCV_CITATION) << "\n";
-
   if (ncomponents) {
     for (auto c : components) {
       auto c_pfx = "py-" + c;
@@ -117,7 +111,7 @@ PythonCVInterface::PythonCVInterface(const ActionOptions&ao):
       componentIsNotPeriodic(c_pfx);
     }
     log << "  WARNING: components will not have a periodicity set - see "
-           "manual\n";
+        "manual\n";
   } else {
     addValueWithDerivatives();
     setNotPeriodic();
@@ -145,7 +139,7 @@ PythonCVInterface::PythonCVInterface(const ActionOptions&ao):
     if (groupB.size() > 0) {
       if (doneigh)
         nl = Tools::make_unique<NeighborList>(
-            groupA, groupB, serial, dopair, pbc, getPbc(), comm, nl_cut, nl_st);
+               groupA, groupB, serial, dopair, pbc, getPbc(), comm, nl_cut, nl_st);
       else
         nl = Tools::make_unique<NeighborList>(groupA, groupB, serial, dopair,
                                               pbc, getPbc(), comm);
@@ -163,30 +157,34 @@ PythonCVInterface::PythonCVInterface(const ActionOptions&ao):
     natoms = atoms.size();
     requestAtoms(atoms);
   }
-  // NB: the NL kewywords will be counted as error when using ATOMS
-  checkRead();
-  // ----------------------------------------
 
-  // Initialize the module and function pointer
-  try {
-    py_module = py::module::import(import.c_str());
-  } catch (const std::exception &e) {
-    vdbg(e.what());
-  }
+  // ----------------------------------------
+  log.printf("  will import %s and call function %s\n", import.c_str(),
+             calculate_function.c_str());
+  if (ncomponents)
+    log.printf("  it is expected to return dictionaries with %d components\n",
+               ncomponents);
+
+  // Initialize the module and function pointers
+  py_module = py::module::import(import.c_str());
   py_fcn = py_module.attr(calculate_function.c_str());
-  // ^ 2nd template argument may be py::array::c_style if needed
-  // py_X_ptr = (pycvComm_t *) py_X.request().ptr;
+
   if (prepare_function!=PYCV_NOTIMPLEMENTED) {
     has_prepare=true;
+    log.printf("  will use %s while calling prepare() before calculate()\n", prepare_function.c_str());
   }
   if (update_function!=PYCV_NOTIMPLEMENTED) {
     has_update=true;
+    log.printf("  will use %s while calling update() after calculate()\n", update_function.c_str());
   }
   if (init_function!=PYCV_NOTIMPLEMENTED) {
-    vdbg(init_function);
     auto init_fcn = py_module.attr(init_function.c_str());
+    log.printf("  will use %s during the initialization\n", init_function.c_str());
     init_fcn(this);
   }
+  log << "  Bibliography " << plumed.cite(PYTHONCV_CITATION) << "\n";
+} catch (const std::exception &e) {
+  vdbg(e.what());
 }
 
 void PythonCVInterface::prepare() {
@@ -224,6 +222,8 @@ void PythonCVInterface::prepare() {
       requestAtoms(myatoms);
     }
   }
+  // NB: the NL kewywords will be counted as error when using ATOMS
+  checkRead();
 }
 
 void PythonCVInterface::update() {
@@ -236,24 +236,20 @@ void PythonCVInterface::update() {
 
 // calculator
 void PythonCVInterface::calculate() {
-  try{
-  if (nl) {
-    if (nl->getStride() > 0 && invalidateList) {
-      nl->update(getPositions());
+  try {
+    if (nl) {
+      if (nl->getStride() > 0 && invalidateList) {
+        nl->update(getPositions());
+      }
     }
-  }
-  // if(pbc)
-  //   makeWhole();
 
-  if(pbc) makeWhole();
-
-  // Call the function
-  py::object r = py_fcn(this);
-  if(ncomponents>0) {		// MULTIPLE NAMED COMPONENTS
-    calculateMultiComponent(r);
-  } else { // SINGLE COMPONENT
-    calculateSingleComponent(r);
-  }
+    // Call the function
+    py::object r = py_fcn(this);
+    if(ncomponents>0) {		// MULTIPLE NAMED COMPONENTS
+      calculateMultiComponent(r);
+    } else { // SINGLE COMPONENT
+      calculateSingleComponent(r);
+    }
   } catch (std::exception &e) {
     std::cerr << e.what() << "\n";
     throw "failure";
@@ -290,18 +286,18 @@ void PythonCVInterface::readReturn(py::object &r, Value* valPtr) {
       if (pyBoxDev.ndim() == 2 &&
           (pyBoxDev.shape(0) == 3 && pyBoxDev.shape(1) == 3)) { // boxDev is 3x3
         boxDev =
-            Tensor({pyBoxDev.at(0, 0), pyBoxDev.at(0, 1), pyBoxDev.at(0, 2),
-                    pyBoxDev.at(1, 0), pyBoxDev.at(1, 1), pyBoxDev.at(1, 2),
-                    pyBoxDev.at(2, 0), pyBoxDev.at(2, 1), pyBoxDev.at(2, 2)});
+          Tensor({pyBoxDev.at(0, 0), pyBoxDev.at(0, 1), pyBoxDev.at(0, 2),
+                  pyBoxDev.at(1, 0), pyBoxDev.at(1, 1), pyBoxDev.at(1, 2),
+                  pyBoxDev.at(2, 0), pyBoxDev.at(2, 1), pyBoxDev.at(2, 2)});
       } else if (pyBoxDev.ndim() == 1 && pyBoxDev.shape(0) == 9) {
         boxDev = Tensor({pyBoxDev.at(0), pyBoxDev.at(1), pyBoxDev.at(2),
                          pyBoxDev.at(3), pyBoxDev.at(4), pyBoxDev.at(5),
                          pyBoxDev.at(6), pyBoxDev.at(7), pyBoxDev.at(8)});
       } else {
         log.printf(
-            "Error: wrong shape for the box derivatives return argument: "
-            "should be (size 3,3 or 9), received %ld x %ld\n",
-            natoms, pyBoxDev.shape(0), pyBoxDev.shape(1));
+          "Error: wrong shape for the box derivatives return argument: "
+          "should be (size 3,3 or 9), received %ld x %ld\n",
+          natoms, pyBoxDev.shape(0), pyBoxDev.shape(1));
         error("Python CV returned wrong box derivatives shape error");
       }
       setBoxDerivatives(valPtr, boxDev);
