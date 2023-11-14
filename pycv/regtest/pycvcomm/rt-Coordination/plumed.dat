@@ -1,0 +1,19 @@
+LOAD FILE=../../../../PythonCVInterface.so
+
+cvPY: ...
+PYCVINTERFACE 
+GROUPA=1-4
+IMPORT=pyCOORDINATION
+CALCULATE=pyCoord
+...
+
+coord: COORDINATION GROUPA=1-4 R_0=1.0
+
+diff: CUSTOM ARG=cvPY,coord FUNC=y-x PERIODIC=NO
+
+DUMPDERIVATIVES ARG=cvPY,coord FILE=deriv FMT=%8.4f
+
+PRINT FILE=colvar.out ARG=*
+
+
+

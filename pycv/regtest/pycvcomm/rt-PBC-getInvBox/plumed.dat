@@ -1,0 +1,11 @@
+LOAD FILE=../../../../PythonCVInterface.so
+
+cvPY: ...
+  PYCVINTERFACE 
+  ATOMS=1
+  IMPORT=pyGetBoxes
+  CALCULATE=pyInvBox
+  COMPONENTS=aix,aiy,aiz,bix,biy,biz,cix,ciy,ciz
+...
+
+PRINT FILE=colvar.out ARG=*

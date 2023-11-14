@@ -1,0 +1,13 @@
+LOAD FILE=../../../../PythonCVInterface.so
+
+cvPY: ...
+PYCVINTERFACE 
+GROUPA=1,1,1 GROUPB=2,3,4 
+IMPORT=pydistancegetAtPos 
+CALCULATE=pydistInPair 
+
+COMPONENTS=x,y,z 
+PAIR
+...
+
+PRINT FILE=colvar.out ARG=*

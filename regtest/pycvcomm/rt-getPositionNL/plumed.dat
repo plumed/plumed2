@@ -1,7 +1,0 @@
-LOAD FILE=../../../../pycv/PythonCVInterface.so
-
-cvPY: PYCVINTERFACE GROUPA=1,4 IMPORT=pydistancegetAtPos CALCULATE=pydist
-
-cvCPP: DISTANCE ATOMS=1,4
-
-PRINT FILE=colvar.out ARG=*
