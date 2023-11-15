@@ -50,7 +50,7 @@ public:
   /// Cleanup
   ~DLLoader();
   /// Load a library, returning its handle
-  void* load(const std::string&);
+  void* load(const std::string&, bool=false);
   /// Returns the last error in dynamic loader
   const std::string & error();
   /// Returns true if the dynamic loader is available (on some systems it may not).
