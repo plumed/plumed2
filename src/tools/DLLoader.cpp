@@ -37,9 +37,13 @@ bool DLLoader::installed() {
 }
 
 
-void* DLLoader::load(const std::string&s) {
+void* DLLoader::load(const std::string&s, const bool useGlobal) {
 #ifdef __PLUMED_HAS_DLOPEN
-  void* p=dlopen(s.c_str(),RTLD_NOW|RTLD_LOCAL);
+  void* p=nullptr;
+  if (useGlobal)
+    p=dlopen(s.c_str(),RTLD_NOW|RTLD_GLOBAL);
+  else
+    p=dlopen(s.c_str(),RTLD_NOW|RTLD_LOCAL);
   if(!p) {
     lastError=dlerror();
   } else {

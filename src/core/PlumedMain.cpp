@@ -1058,38 +1058,42 @@ void PlumedMain::update() {
   }
 }
 
-void PlumedMain::load(const std::string& ss) {
+void PlumedMain::load(const std::string& fileName, const bool loadGlobal) {
   if(DLLoader::installed()) {
-    std::string s=ss;
-    size_t n=s.find_last_of(".");
+    std::string libName=fileName;
+    size_t n=libName.find_last_of(".");
     std::string extension="";
-    std::string base=s;
-    if(n!=std::string::npos && n<s.length()-1) extension=s.substr(n+1);
-    if(n!=std::string::npos && n<s.length())   base=s.substr(0,n);
+    std::string base=libName;
+    if(n!=std::string::npos && n<libName.length()-1)
+      extension=libName.substr(n+1);
+    if(n!=std::string::npos && n<libName.length())
+      base=libName.substr(0,n);
     if(extension=="cpp") {
 // full path command, including environment setup
 // this will work even if plumed is not in the execution path or if it has been
 // installed with a name different from "plumed"
-      std::string cmd=config::getEnvCommand()+" \""+config::getPlumedRoot()+"\"/scripts/mklib.sh "+s;
+      std::string cmd=config::getEnvCommand()+" \""+config::getPlumedRoot()+"\"/scripts/mklib.sh "+libName;
       log<<"Executing: "<<cmd;
       if(comm.Get_size()>0) log<<" (only on master node)";
       log<<"\n";
       if(comm.Get_rank()==0) {
         int ret=std::system(cmd.c_str());
-        if(ret!=0) plumed_error() <<"An error happened while executing command "<<cmd<<"\n";
+        if(ret!=0)
+          plumed_error() <<"An error happened while executing command "<<cmd<<"\n";
       }
       comm.Barrier();
       base="./"+base;
     }
-    s=base+"."+config::getSoExt();
-    void *p=dlloader.load(s);
+    libName=base+"."+config::getSoExt();
+    void *p=dlloader.load(libName,loadGlobal);
     if(!p) {
-      plumed_error()<<"I cannot load library " << ss << " " << dlloader.error();
+      plumed_error()<<"I cannot load library " << fileName << " " << dlloader.error();
     }
-    log<<"Loading shared library "<<s.c_str()<<"\n";
+    log<<"Loading shared library "<<libName.c_str()<<"\n";
     log<<"Here is the new list of available actions\n";
     log<<actionRegister();
-  } else plumed_error()<<"While loading library "<< ss << " loading was not enabled, please check if dlopen was found at configure time";
+  } else
+    plumed_error()<<"While loading library "<< fileName << " loading was not enabled, please check if dlopen was found at configure time";
 }
 
 double PlumedMain::getBias() const {
