@@ -368,7 +368,7 @@ public:
 /// Stop the run
   void exit(int c=0);
 /// Load a shared library
-  void load(const std::string&);
+  void load(const std::string&, bool=false);
 /// Get the suffix string
   const std::string & getSuffix()const;
 /// Set the suffix string
