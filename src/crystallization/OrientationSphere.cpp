@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2021 The plumed team
+   Copyright (c) 2013-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -111,8 +111,8 @@ double OrientationSphere::compute( const unsigned& tindex, multicolvar::AtomValu
     }
   }
   double rdenom, df2, pref=calculateCoordinationPrefactor( denom, df2 );
-  if( fabs(denom)>epsilon ) { rdenom = 1.0 / denom; }
-  else { plumed_assert(fabs(value)<epsilon); rdenom=1.0; }
+  if( std::fabs(denom)>epsilon ) { rdenom = 1.0 / denom; }
+  else { plumed_assert(std::fabs(value)<epsilon); rdenom=1.0; }
 
   // Now divide everything
   double rdenom2=rdenom*rdenom;

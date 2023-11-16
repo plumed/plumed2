@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2020,2021 The plumed team
+   Copyright (c) 2020-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 #include "Function.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "tools/IFile.h"
 #include <limits>
 
@@ -30,7 +30,9 @@ namespace function {
 
 //+PLUMEDOC FUNCTION FUNCPATHGENERAL
 /*
-This function calculates path collective variables (PCVs) using an arbitrary combination of collective variables (see \cite Hovan2019).
+This function calculates path collective variables (PCVs) using an arbitrary combination of collective variables.
+
+The method used to calculate the PCVs that is used in this method is described in \cite Hovan2019.
 
 This variable computes the progress along a given set of frames that is provided in an input file ("s" component) and the distance from them ("z" component).
 The input file could be a colvar file generated with plumed driver on a trajectory containing the frames.

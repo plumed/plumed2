@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2021 The plumed team
+   Copyright (c) 2015-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -70,7 +70,7 @@ void SmacofMDS::calculateProjections( const Matrix<double>& targets, Matrix<doub
   Matrix<double> distances( targets.nrows(), targets.ncols() );
   for(unsigned i=1; i<distances.ncols(); ++i) {
     for(unsigned j=0; j<i; ++j) {
-      distances(i,j)=distances(j,i)=sqrt( targets(i,j) );
+      distances(i,j)=distances(j,i)=std::sqrt( targets(i,j) );
       weights(i,j)=weights(j,i)=getWeight(i)*getWeight(j);
     }
   }

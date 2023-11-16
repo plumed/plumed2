@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2021 The plumed team
+   Copyright (c) 2016-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "CLTool.h"
-#include "CLToolRegister.h"
+#include "core/CLToolRegister.h"
 #include "core/PlumedMain.h"
 #include "tools/Vector.h"
 #include "tools/Random.h"
@@ -139,7 +139,7 @@ private:
     parse("tstep",tstep);
     std::string frictionstr; parse("friction",frictionstr);
     if( tempstr!="NVE" ) {
-      if(frictionstr=="off") { std::fprintf(stderr,"Specify friction for thermostat\n"); exit(1); }
+      if(frictionstr=="off") error("pecify friction for thermostat");
       Tools::convert(frictionstr,friction);
     }
     parse("plumed",plumedin); parse("dimension",dim);
@@ -175,9 +175,9 @@ public:
 
     // Setup box if we have periodic domain
     std::vector<double> box(9, 0.0);
-    if( lperiod && dim==1 ) { box[0]=box[5]=box[9]=periods[0]; }
-    else if( lperiod && dim==2 ) { box[0]=periods[0]; box[5]=box[9]=periods[1]; }
-    else if( lperiod && dim==3 ) { box[0]=periods[0]; box[5]=periods[1]; box[9]=periods[2]; }
+    if( lperiod && dim==1 ) { box[0]=box[4]=box[8]=periods[0]; }
+    else if( lperiod && dim==2 ) { box[0]=periods[0]; box[4]=box[8]=periods[1]; }
+    else if( lperiod && dim==3 ) { box[0]=periods[0]; box[4]=periods[1]; box[8]=periods[2]; }
     else if( lperiod ) error("invalid dimension for periodic potential must be 1, 2 or 3");
 
     // Create plumed object and initialize
@@ -218,7 +218,7 @@ public:
     int istep=0; double zero=0;
     plumed->cmd("setStep",&istep);
     plumed->cmd("setMasses",&masses[0]);
-    for(unsigned i=0; i<forces.size(); ++i) forces[i].zero();
+    Tools::set_to_zero(forces);
     plumed->cmd("setForces",&forces[0][0]);
     plumed->cmd("setEnergy",&zero);
     if( lperiod ) plumed->cmd("setBox",&box[0]);
@@ -258,7 +258,7 @@ public:
       plumedWantsToStop=0;
       plumed->cmd("setStep",&istepplusone);
       plumed->cmd("setMasses",&masses[0]);
-      for(unsigned i=0; i<forces.size(); ++i) forces[i].zero();
+      Tools::set_to_zero(forces);
       plumed->cmd("setForces",&forces[0][0]);
       double fenergy=0.0;
       plumed->cmd("setEnergy",&fenergy);

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2021 The plumed team
+   Copyright (c) 2015-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -48,8 +48,8 @@ void DotProductDistance::read( const PDB& pdb ) {
 double DotProductDistance::calculateArgumentDistance( const std::vector<Value*> & vals, const std::vector<double>& arg,
     ReferenceValuePack& myder, const bool& squared ) const {
   double dot=0.0;
-  for (unsigned long i=0; i<vals.size(); ++i) dot+=getReferenceArgument(i)*arg[i];
-  for (unsigned long i=0; i<vals.size(); ++i) myder.setArgumentDerivatives( i, -getReferenceArgument(i)/dot );
+  for (std::size_t i=0; i<vals.size(); ++i) dot+=getReferenceArgument(i)*arg[i];
+  for (std::size_t i=0; i<vals.size(); ++i) myder.setArgumentDerivatives( i, -getReferenceArgument(i)/dot );
   if(dot==0.0) dot=std::numeric_limits<double>::min();
   return -log(dot);
 }

@@ -28,6 +28,7 @@
 #include "WaveletGrid.h"
 #include "core/ActionRegister.h"
 #include "tools/Exception.h"
+#include "core/PlumedMain.h"
 
 
 namespace PLMD {
@@ -40,8 +41,9 @@ Daubechies Wavelets basis functions.
 
 Note: at the moment only bases with a single level of scaling functions are usable, as multiscale optimization is not yet implemented.
 
-This basis set uses Daubechies Wavelets \cite daubechies_ten_1992 to construct a complete and orthogonal basis.
-It is based on using a pair of functions, the scaling function (or father wavelet) \f$\phi\f$ and the wavelet function (or mother wavelet) \f$\psi\f$.
+This basis set uses Daubechies Wavelets \cite daubechies_ten_1992 to construct a complete and orthogonal basis. See \cite ValssonPampel_Wavelets_2022 for full details.
+
+The basis set is based on using a pair of functions, the scaling function (or father wavelet) \f$\phi\f$ and the wavelet function (or mother wavelet) \f$\psi\f$.
 They are defined via the two-scale relations for scale \f$j\f$ and shift \f$k\f$:
 
 \f{align*}{
@@ -218,13 +220,13 @@ PLUMED_REGISTER_ACTION(BF_Wavelets,"BF_WAVELETS")
 
 void BF_Wavelets::registerKeywords(Keywords& keys) {
   BasisFunctions::registerKeywords(keys);
-  keys.add("compulsory","TYPE","Specify the wavelet type. Currently available are \"DAUBECHIES\" Wavelets with minimum phase and the more symmetric \"SYMLETS\"");
-  keys.add("optional","FUNCTION_LENGTH","The domain size of the individual basis functions (\"length\"). This is used to alter the scaling of the basis functions. By default it is set to the total size of the interval. This also influences the number of actually used basis functions, as all shifted functions that are partially supported in the CV space are used.");
+  keys.add("compulsory","TYPE","Specify the wavelet type. Currently available are DAUBECHIES Wavelets with minimum phase and the more symmetric SYMLETS");
+  keys.add("optional","FUNCTION_LENGTH","The domain size of the individual basis functions. (length) This is used to alter the scaling of the basis functions. By default it is set to the total size of the interval. This also influences the number of actually used basis functions, as all shifted functions that are partially supported in the CV space are used.");
   keys.add("optional","NUM_BF","The number of basis functions that should be used. Includes the constant one and N-1 shifted wavelets within the specified range. Cannot be used together with FUNCTION_LENGTH.");
   keys.add("optional","TAILS_THRESHOLD","The threshold for cutting off tail wavelets as a fraction of the maximum value. All shifted wavelet functions that only have values smaller than the threshold in the bias range will be excluded from the basis set. Defaults to 0 (include all).");
   keys.addFlag("MOTHER_WAVELET", false, "If this flag is set mother wavelets will be used instead of the scaling function (father wavelet). Makes only sense for multiresolution, which is at the moment not usable.");
   keys.add("optional","MIN_GRID_SIZE","The minimal number of grid bins of the Wavelet function. The true number depends also on the used wavelet type and will probably be larger. Defaults to 1000.");
-  keys.addFlag("DUMP_WAVELET_GRID", false, "If this flag is set the grid with the wavelet values will be written to a file called \"wavelet_grid.data\".");
+  keys.addFlag("DUMP_WAVELET_GRID", false, "If this flag is set the grid with the wavelet values will be written to a file.  This file is called wavelet_grid.data.");
   keys.add("optional","WAVELET_FILE_FMT","The number format of the wavelet grid values and derivatives written to file. By default it is %15.8f.\n");
   keys.addFlag("PERIODIC", false, "Use periodic version of basis set.");
   keys.remove("NUMERICAL_INTEGRALS");
@@ -236,6 +238,8 @@ BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
   waveletGrid_(nullptr),
   scale_(0.0)
 {
+  log.printf("  Wavelet basis functions, see and cite ");
+  log << plumed.cite("Pampel and Valsson, J. Chem. Theory Comput. 18, 4127-4141 (2022) - DOI:10.1021/acs.jctc.2c00197");
 
   // parse properties for waveletGrid and set it up
   bool use_mother_wavelet;

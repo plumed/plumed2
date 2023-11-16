@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2021 The plumed team
+   Copyright (c) 2016-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 #include "bias/Bias.h"
-#include "bias/ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include "core/Value.h"
@@ -202,10 +202,10 @@ class Metainference : public bias::Bias
   // Monte Carlo stuff
   std::vector<Random> random;
   unsigned MCsteps_;
-  long unsigned MCaccept_;
-  long unsigned MCacceptScale_;
-  long unsigned MCacceptFT_;
-  long unsigned MCtrial_;
+  long long unsigned MCaccept_;
+  long long unsigned MCacceptScale_;
+  long long unsigned MCacceptFT_;
+  long long unsigned MCtrial_;
   unsigned MCchunksize_;
 
   // output
@@ -934,7 +934,12 @@ double Metainference::getEnergySP(const std::vector<double> &mean, const std::ve
     for(unsigned i=0; i<narg; ++i) {
       const double dev = scale*mean[i]-parameters[i]+offset;
       const double a2 = 0.5*dev*dev + ss2;
-      ene += std::log(2.0*a2/(1.0-std::exp(-a2/sm2)));
+      if(sm2 > 0.0) {
+        ene += std::log(2.0*a2/(1.0-std::exp(-a2/sm2)));
+      }
+      else {
+        ene += std::log(2.0*a2);
+      }
     }
   }
   // add one single Jeffrey's prior and one normalisation per data point
@@ -958,7 +963,12 @@ double Metainference::getEnergySPE(const std::vector<double> &mean, const std::v
       const double sss = sigma[i]*sigma[i] + sm2;
       const double dev = scale*mean[i]-parameters[i]+offset;
       const double a2  = 0.5*dev*dev + ss2;
-      ene += 0.5*std::log(sss) + 0.5*std::log(0.5*M_PI*M_PI/ss2) + std::log(2.0*a2/(1.0-std::exp(-a2/sm2)));
+      if(sm2 > 0.0) {
+        ene += 0.5*std::log(sss) + 0.5*std::log(0.5*M_PI*M_PI/ss2) + std::log(2.0*a2/(1.0-std::exp(-a2/sm2)));
+      }
+      else {
+        ene += 0.5*std::log(sss) + 0.5*std::log(0.5*M_PI*M_PI/ss2) + std::log(2.0*a2);
+      }
       if(doscale_ || doregres_zero_)  ene += 0.5*std::log(sss);
       if(dooffset_) ene += 0.5*std::log(sss);
     }
@@ -1349,10 +1359,15 @@ void Metainference::getEnergyForceSP(const std::vector<double> &mean, const std:
       for(unsigned i=0; i<narg; ++i) {
         const double dev = scale_*mean[i]-parameters[i]+offset_;
         const double a2 = 0.5*dev*dev + ss2;
-        const double t = std::exp(-a2/sm2);
-        const double dt = 1./t;
-        const double dit = 1./(1.-dt);
-        f[i] = -scale_*dev*(dit/sm2 + 1./a2);
+        if(sm2 > 0.0) {
+          const double t = std::exp(-a2/sm2);
+          const double dt = 1./t;
+          const double dit = 1./(1.-dt);
+          f[i] = -scale_*dev*(dit/sm2 + 1./a2);
+        }
+        else {
+          f[i] = -scale_*dev*(1./a2);
+        }
       }
     }
     // collect contribution to forces and energy from other replicas
@@ -1388,10 +1403,15 @@ void Metainference::getEnergyForceSPE(const std::vector<double> &mean, const std
         const double ss2 = sigma_[i]*sigma_[i] + scale2*sm2;
         const double dev = scale_*mean[i]-parameters[i]+offset_;
         const double a2  = 0.5*dev*dev + ss2;
-        const double t   = std::exp(-a2/sm2);
-        const double dt  = 1./t;
-        const double dit = 1./(1.-dt);
-        f[i] = -scale_*dev*(dit/sm2 + 1./a2);
+        if(sm2 > 0.0) {
+          const double t   = std::exp(-a2/sm2);
+          const double dt  = 1./t;
+          const double dit = 1./(1.-dt);
+          f[i] = -scale_*dev*(dit/sm2 + 1./a2);
+        }
+        else {
+          f[i] = -scale_*dev*(1./a2);
+        }
       }
     }
     // collect contribution to forces and energy from other replicas
@@ -1667,7 +1687,7 @@ void Metainference::do_regression_zero(const std::vector<double> &mean)
 void Metainference::calculate()
 {
   // get step
-  const long int step = getStep();
+  const long long int step = getStep();
 
   unsigned iselect = 0;
   // set the value of selector for  REM-like stuff

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2021 The plumed team
+   Copyright (c) 2013-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -121,7 +121,7 @@ double MultiDomainRMSD::calculate( const std::vector<Vector>& pos, const Pbc& pb
   if( !myder.updateComplete() ) myder.updateDynamicLists();
 
   if( !squared ) {
-    totd=sqrt(totd); double xx=0.5/totd;
+    totd=std::sqrt(totd); double xx=0.5/totd;
     myder.scaleAllDerivatives( xx );
   }
   return totd;

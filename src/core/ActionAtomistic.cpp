@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2021 The plumed team
+   Copyright (c) 2011-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -71,8 +71,9 @@ void ActionAtomistic::requestAtoms(const std::vector<AtomNumber> & a, const bool
     if(indexes[i].index()>=n) { std::string num; Tools::convert( indexes[i].serial(),num ); error("atom " + num + " out of range"); }
     if(atoms.isVirtualAtom(indexes[i])) addDependency(atoms.getVirtualAtomsAction(indexes[i]));
 // only real atoms are requested to lower level Atoms class
-    else unique.insert(indexes[i]);
+    else unique.push_back(indexes[i]);
   }
+  Tools::removeDuplicates(unique);
   updateUniqueLocal();
   atoms.unique.clear();
 }
@@ -104,7 +105,7 @@ void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, c
   std::vector<Vector> value(nval*natoms);
   std::vector<Tensor> valuebox(nval);
   std::vector<Vector> savedPositions(natoms);
-  const double delta=sqrt(epsilon);
+  const double delta=std::sqrt(epsilon);
 
   for(int i=0; i<natoms; i++) for(int k=0; k<3; k++) {
       savedPositions[i][k]=positions[i][k];
@@ -265,7 +266,7 @@ void ActionAtomistic::applyForces() {
 void ActionAtomistic::clearOutputForces() {
   virial.zero();
   if(donotforce) return;
-  for(unsigned i=0; i<forces.size(); ++i) forces[i].zero();
+  Tools::set_to_zero(forces);
   forceOnEnergy=0.0;
   forceOnExtraCV=0.0;
 }
@@ -293,13 +294,13 @@ void ActionAtomistic::makeWhole() {
 }
 
 void ActionAtomistic::updateUniqueLocal() {
-  unique_local.clear();
   if(atoms.dd && atoms.shuffledAtoms>0) {
+    unique_local.clear();
     for(auto pp=unique.begin(); pp!=unique.end(); ++pp) {
-      if(atoms.g2l[pp->index()]>=0) unique_local.insert(*pp);
+      if(atoms.g2l[pp->index()]>=0) unique_local.push_back(*pp); // already sorted
     }
   } else {
-    unique_local.insert(unique.begin(),unique.end());
+    unique_local=unique; // copy
   }
 }
 

@@ -642,7 +642,7 @@ http://github.com/plumed/coverage-NAMEOFTHEBRANCH.
 
 Notice that to solve [this issue](https://github.com/plumed/plumed2/issues/239) as of PLUMED 2.3.2 the script that
 pushes the documentation to travis-ci adds special information to remove from search engine results pages from
-unofficial or unsupported branch (see .travis/pushdoc script).
+unofficial or unsupported branch (see .ci/push script).
 
 Bottom line: manual will always be updated after a commit that can pass the tests.
 Twenty minutes or so after your push the manual should be up to date, remember to double check on the web

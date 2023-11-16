@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2021 The plumed team
+   Copyright (c) 2016-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -173,7 +173,7 @@ void FindSphericalContour::compute( const unsigned& current, MultiValue& myvals 
     if( val1*val2<0 ) {
       findContour( direction, contour_point );
       double norm=0; for(unsigned j=0; j<3; ++j) norm += contour_point[j]*contour_point[j];
-      myvals.setValue( 1, sqrt(norm) ); found=true; break;
+      myvals.setValue( 1, std::sqrt(norm) ); found=true; break;
     }
     for(unsigned j=0; j<3; ++j) contour_point[j] = tmp[j];
   }

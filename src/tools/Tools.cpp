@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2021 The plumed team
+   Copyright (c) 2011-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,14 +25,10 @@
 #include "IFile.h"
 #include "lepton/Lepton.h"
 #include <cstring>
-#include <dirent.h>
 #include <iostream>
 #include <map>
-#if defined(__PLUMED_HAS_CHDIR) || defined(__PLUMED_HAS_GETCWD)
-#include <unistd.h>
-#endif
-
 #include <iomanip>
+#include <filesystem>
 
 namespace PLMD {
 
@@ -54,11 +50,19 @@ bool Tools::convertNoexcept(const std::string & str,long int & t) {
   return convertToInt(str,t);
 }
 
+bool Tools::convertNoexcept(const std::string & str,long long int & t) {
+  return convertToInt(str,t);
+}
+
 bool Tools::convertNoexcept(const std::string & str,unsigned & t) {
   return convertToInt(str,t);
 }
 
 bool Tools::convertNoexcept(const std::string & str,long unsigned & t) {
+  return convertToInt(str,t);
+}
+
+bool Tools::convertNoexcept(const std::string & str,long long unsigned & t) {
   return convertToInt(str,t);
 }
 
@@ -261,13 +265,21 @@ bool Tools::getline(FILE* fp,std::string & line) {
 }
 
 void Tools::trim(std::string & s) {
-  size_t n=s.find_last_not_of(" \t");
-  s=s.substr(0,n+1);
+  auto n=s.find_last_not_of(" \t");
+  if(n!=std::string::npos) s.resize(n+1);
+}
+
+void Tools::ltrim(std::string & s) {
+  auto n=s.find_first_not_of(" \t");
+  if(n!=std::string::npos) {
+    s = s.substr(n, s.length()-n);
+    s.shrink_to_fit();
+  }
 }
 
 void Tools::trimComments(std::string & s) {
-  size_t n=s.find_first_of("#");
-  s=s.substr(0,n);
+  auto n=s.find_first_of("#");
+  if(n!=std::string::npos) s.resize(n);
 }
 
 bool Tools::caseInSensStringCompare(const std::string & str1, const std::string &str2)
@@ -350,23 +362,9 @@ void Tools::interpretLabel(std::vector<std::string>&s) {
 }
 
 std::vector<std::string> Tools::ls(const std::string&d) {
-  DIR*dir;
   std::vector<std::string> result;
-  if ((dir=opendir(d.c_str()))) {
-#if defined(__PLUMED_HAS_READDIR_R)
-    struct dirent ent;
-#endif
-    while(true) {
-      struct dirent *res;
-#if defined(__PLUMED_HAS_READDIR_R)
-      readdir_r(dir,&ent,&res);
-#else
-      res=readdir(dir);
-#endif
-      if(!res) break;
-      if(std::string(res->d_name)!="." && std::string(res->d_name)!="..") result.push_back(res->d_name);
-    }
-    closedir (dir);
+  for (auto const& dir_entry : std::filesystem::directory_iterator{d}) {
+    result.push_back(dir_entry.path().filename());
   }
   return result;
 }
@@ -412,31 +410,90 @@ bool Tools::findKeyword(const std::vector<std::string>&line,const std::string&ke
   return false;
 }
 
-Tools::DirectoryChanger::DirectoryChanger(const char*path) {
+Tools::DirectoryChanger::DirectoryChanger(const char*path):
+  path(std::filesystem::current_path())
+{
   if(!path) return;
   if(std::strlen(path)==0) return;
-#ifdef __PLUMED_HAS_GETCWD
-  char* ret=getcwd(cwd,buffersize);
-  plumed_assert(ret)<<"Name of current directory too long, increase buffer size";
-#else
-  plumed_error()<<"You are trying to use DirectoryChanger but your system does not support getcwd";
-#endif
-#ifdef __PLUMED_HAS_CHDIR
-  int r=chdir(path);
-  plumed_assert(r==0) <<"Cannot chdir to directory "<<path<<". The directory must exist!";
-#else
-  plumed_error()<<"You are trying to use DirectoryChanger but your system does not support chdir";
-#endif
+  std::filesystem::current_path(path);
 }
 
 Tools::DirectoryChanger::~DirectoryChanger() {
-#ifdef __PLUMED_HAS_CHDIR
-  if(std::strlen(cwd)==0) return;
-  int ret=chdir(cwd);
-// we cannot put an assertion here (in a destructor) otherwise cppcheck complains
-// we thus just report the problem
-  if(ret!=0) std::fprintf(stderr,"+++ WARNING: cannot cd back to directory %s\n",cwd);
-#endif
+  try {
+    std::filesystem::current_path(path);
+  } catch(std::filesystem::filesystem_error & e) {
+    std::fprintf(stderr,"+++ WARNING: cannot cd back to directory %s\n",path.c_str());
+  }
+}
+
+std::unique_ptr<std::lock_guard<std::mutex>> Tools::molfile_lock() {
+  static std::mutex mtx;
+  return Tools::make_unique<std::lock_guard<std::mutex>>(mtx);
+}
+
+/// Internal tool, I am keeping it private for now
+namespace {
+
+class process_one_exception {
+  std::string & msg;
+  bool first=true;
+  void update() {
+    if(!first) msg+="\n\nThe above exception was the direct cause of the following exception:\n";
+    first=false;
+  }
+public:
+  process_one_exception(std::string & msg):
+    msg(msg)
+  {}
+  void operator()(const std::exception & e) {
+    update();
+    msg+=e.what();
+  }
+  void operator()(const std::string & e) {
+    update();
+    msg+=e;
+  }
+  void operator()(const char* e) {
+    update();
+    msg+=e;
+  }
+};
+
+template<class T>
+static void process_all_exceptions(T&& f) {
+  try {
+    // First throw the current exception
+    throw;
+  } catch(const std::nested_exception & e) {
+    // If nested, we go recursive
+    // notice that we apply function f only if exception is also a std::exception
+    try {
+      e.rethrow_nested();
+    } catch(...) {
+      process_all_exceptions(f);
+    }
+    auto d=dynamic_cast<const std::exception*>(&e);
+    if(d) f(*d);
+  } catch(const std::exception &e) {
+    // If not nested, we end recursion
+    f(e);
+  } catch(const std::string &e) {
+    // If not nested, we end recursion
+    f(e);
+  } catch(const char* e) {
+    // If not nested, we end recursion
+    f(e);
+  } catch(...) {
+    // If not nested and of unknown type, we stop the chain
+  }
+}
+
+}
+
+std::string Tools::concatenateExceptionMessages() {
+  std::string msg;
+  process_all_exceptions(process_one_exception(msg));
+  return msg;
 }
 
 }

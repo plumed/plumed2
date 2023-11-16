@@ -1,0 +1,3 @@
+type=sum_hills
+# this is to test a different name
+arg=" --hills HILLS --fmt %12.7f --idw d1 --kt 0.1"

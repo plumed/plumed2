@@ -1,4 +1,4 @@
-include VERSION
+include PLUMED_VERSION
 include include/Plumed.h
 include plumed.pyx
 include cplumed.pxd

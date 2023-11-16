@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2021 The plumed team
+   Copyright (c) 2012-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -154,9 +154,9 @@ class OFile:
 /// see link(OFile&)
   OFile* linked;
 /// Internal buffer for printf
-  std::unique_ptr<char[]> buffer_string;
+  std::vector<char> buffer_string;
 /// Internal buffer (generic use)
-  std::unique_ptr<char[]> buffer;
+  std::vector<char> buffer;
 /// Internal buffer length
   int buflen;
 /// This variables stores the actual buffer length
@@ -230,8 +230,10 @@ public:
 /// Set the value of a int type field
   OFile& printField(const std::string&,int);
   OFile& printField(const std::string&,long int);
+  OFile& printField(const std::string&,long long int);
   OFile& printField(const std::string&,unsigned);
   OFile& printField(const std::string&,long unsigned);
+  OFile& printField(const std::string&,long long unsigned);
 /// Set the value of a string field
   OFile& printField(const std::string&,const std::string&);
 ///

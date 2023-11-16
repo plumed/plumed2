@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2021 The plumed team
+   Copyright (c) 2012-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -172,6 +172,13 @@ IFile& IFile::scanField(const std::string&name,long int &x) {
   return *this;
 }
 
+IFile& IFile::scanField(const std::string&name,long long int &x) {
+  std::string str;
+  scanField(name,str);
+  if(*this) Tools::convert(str,x);
+  return *this;
+}
+
 IFile& IFile::scanField(const std::string&name,unsigned &x) {
   std::string str;
   scanField(name,str);
@@ -180,6 +187,13 @@ IFile& IFile::scanField(const std::string&name,unsigned &x) {
 }
 
 IFile& IFile::scanField(const std::string&name,long unsigned &x) {
+  std::string str;
+  scanField(name,str);
+  if(*this) Tools::convert(str,x);
+  return *this;
+}
+
+IFile& IFile::scanField(const std::string&name,long long unsigned &x) {
   std::string str;
   scanField(name,str);
   if(*this) Tools::convert(str,x);

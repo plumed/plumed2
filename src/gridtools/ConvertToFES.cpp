@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2021 The plumed team
+   Copyright (c) 2015-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,7 +26,7 @@
 
 //+PLUMEDOC GRIDANALYSIS CONVERT_TO_FES
 /*
-Convert a histogram, \f$H(x)\f$, to a free energy surface using \f$F(x) = -k_B T \ln H(x)\f$.
+Convert a histogram, H(x), to a free energy surface using F(x) = -k_B T ln H(x).
 
 This action allows you to take a free energy surface that was calculated using the \ref HISTOGRAM
 action and to convert it to a free energy surface.  This transformation performed by doing:

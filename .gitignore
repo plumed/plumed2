@@ -13,8 +13,10 @@
 *.exe
 *.gcda
 *.gcno
+*.bak
 a.out
 makefile.dep
+.ipynb_checkpoints
 /Makefile.conf
 /sourceme.sh
 /tmp

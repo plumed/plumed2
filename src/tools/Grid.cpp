@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2021 The plumed team
+   Copyright (c) 2011-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -165,8 +165,7 @@ GridBase::index_t GridBase::getIndex(const std::vector<unsigned> & indices) cons
     if(indices[i]>=nbin_[i]) {
       std::string is;
       Tools::convert(i,is);
-      std::string msg="ERROR: the system is looking for a value outside the grid along the " + is + " ("+getArgNames()[i]+")";
-      plumed_merror(msg+" index!");
+      plumed_error() << "Looking for a value outside the grid along the " << is << " dimension (arg name: "<<getArgNames()[i]<<")";
     }
   index_t index=indices[dimension_-1];
   for(unsigned int i=dimension_-1; i>0; --i) {
@@ -936,13 +935,7 @@ Grid Grid::project(const std::vector<std::string> & proj, WeightBase *ptr2obj ) 
     // the vector vhigh now contains at the beginning the index of the low dimension and -1 for the values that need to be integrated
     double initval=0.;
     projectOnLowDimension(initval,vHigh, ptr2obj);
-    smallgrid.setValue(i,initval);
-  }
-  // reset to zero just for biasing (this option can be evtl enabled in a future...)
-  //double vmin;vmin=-smallgrid.getMinValue()+1;
-  for(unsigned i=0; i<smallgrid.getSize(); i++) {
-    double vv=smallgrid.getValue(i);
-    smallgrid.setValue(i,ptr2obj->projectOuterLoop(vv));
+    smallgrid.setValue(i,ptr2obj->projectOuterLoop(initval));
   }
 
   return smallgrid;

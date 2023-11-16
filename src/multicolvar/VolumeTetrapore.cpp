@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2021 The plumed team
+   Copyright (c) 2015-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -327,7 +327,7 @@ void VolumeTetrapore::setupRegions() {
     perp=-perp; len_perp=-len_perp;
     for(unsigned i=0; i<3; ++i) dperp[i]*=-1.0;
   }
-  if( len_bi<=0 || len_cross<=0 || len_bi<=0 ) plumed_merror("Invalid box coordinates");
+  if( len_bi<=0 || len_cross<=0 || len_perp<=0 ) plumed_merror("Invalid box coordinates");
 
   // Now derivatives of lengths
   Tensor dd3( Tensor::identity() ); Vector ddb2=d1; if( lbi==2 ) ddb2=d2;
@@ -350,7 +350,7 @@ void VolumeTetrapore::setupRegions() {
   jacob(0,0)=bi[0]; jacob(1,0)=bi[1]; jacob(2,0)=bi[2];
   jacob(0,1)=cross[0]; jacob(1,1)=cross[1]; jacob(2,1)=cross[2];
   jacob(0,2)=perp[0]; jacob(1,2)=perp[1]; jacob(2,2)=perp[2];
-  jacob_det = fabs( jacob.determinant() );
+  jacob_det = std::fabs( jacob.determinant() );
 }
 
 void VolumeTetrapore::update() {

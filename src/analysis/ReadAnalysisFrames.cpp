@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2021 The plumed team
+   Copyright (c) 2015-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -122,7 +122,7 @@ void ReadAnalysisFrames::calculateWeights() {
         if(logweights[i]>maxweight) maxweight=logweights[i];
       }
       // Calculate weights (no memory) -- business here with maxweight is to prevent overflows
-      for(unsigned i=0; i<logweights.size(); ++i) weights[i]=exp( logweights[i]-maxweight );
+      for(unsigned i=0; i<logweights.size(); ++i) weights[i]=std::exp( logweights[i]-maxweight );
     }
   }
 }

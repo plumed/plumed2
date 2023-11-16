@@ -1,4 +1,3 @@
-#include "mpi.h"
 #include "plumed/tools/Communicator.h"
 #include "plumed/tools/Tools.h"
 #include "plumed/tools/Vector.h"

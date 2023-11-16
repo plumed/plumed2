@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2021 The plumed team
+   Copyright (c) 2013-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -105,7 +105,7 @@ double DRMSD::calc( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceVal
     drmsd = drmsd * inpairs;
     idrmsd = 2.0 * inpairs;
   } else {
-    drmsd = sqrt( drmsd * inpairs );
+    drmsd = std::sqrt( drmsd * inpairs );
     idrmsd = inpairs / drmsd ;
   }
 

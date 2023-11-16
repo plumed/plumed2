@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2021 The plumed team
+   Copyright (c) 2013-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -43,7 +43,9 @@ namespace generic {
 
 //+PLUMEDOC GENERIC EFFECTIVE_ENERGY_DRIFT
 /*
-Print the effective energy drift described in Ref \cite Ferrarotti2015
+Print the effective energy drift
+
+The method used to calculate the effective energy drift is described in Ref \cite Ferrarotti2015
 
 
 \par Examples
@@ -72,7 +74,7 @@ EFFECTIVE_ENERGY_DRIFT PRINT_STRIDE=100 FILE=eff
 class EffectiveEnergyDrift:
   public ActionPilot {
   OFile output;
-  long int printStride;
+  long long int printStride;
   std::string fmt;
 
   double eed;
@@ -80,7 +82,7 @@ class EffectiveEnergyDrift:
   Atoms& atoms;
   std::vector<ActionWithValue*> biases;
 
-  long int pDdStep;
+  long long int pDdStep;
   int nLocalAtoms;
   int pNLocalAtoms;
   std::vector<int> pGatindex;

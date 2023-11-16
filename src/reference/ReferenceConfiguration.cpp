@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2021 The plumed team
+   Copyright (c) 2013-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -92,7 +92,7 @@ void ReferenceConfiguration::extractDisplacementVector( const std::vector<Vector
       for(unsigned k=0; k<3; ++k) { tmp=mydir.getReferencePositions()[i][k]; norm+=tmp*tmp; }
     }
     for(unsigned i=0; i<mydir.getReferenceArguments().size(); ++i) { tmp=mydir.getReferenceArguments()[i]; norm+=tmp*tmp; }
-    norm = sqrt( norm );
+    norm = std::sqrt( norm );
     // And normalize
     for(unsigned i=0; i<mydir.getReferencePositions().size(); ++i) {
       for(unsigned k=0; k<3; ++k) { mydir.reference_atoms[i][k] /=norm; }
@@ -122,7 +122,7 @@ double distance( const Pbc& pbc, const std::vector<Value*> & vals, ReferenceConf
 #ifndef NDEBUG
   // Check that A - B = B - A
   double dist2=ref2->calc( ref1->getReferencePositions(), pbc, vals, ref1->getReferenceArguments(), myder, squared );
-  plumed_dbg_assert( fabs(dist1-dist2)<epsilon );
+  plumed_dbg_assert( std::fabs(dist1-dist2)<epsilon );
 #endif
   return dist1;
 }

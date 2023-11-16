@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2021 The plumed team
+   Copyright (c) 2014-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,7 +25,7 @@
 
 //+PLUMEDOC MTRANSFORMS MTRANSFORM_BETWEEN
 /*
-This action can be used to transform the colvar values calculated by a MultiColvar using a \ref histogrambead
+This action can be used to transform the colvar values calculated by a MultiColvar using a histogram bead
 
 In this action each colvar, \f$s_i\f$, calculated by MultiColvar is transformed by a \ref histogrambead function that
 is equal to one if the colvar is within a certain range and which is equal to zero otherwise.  In other words, we

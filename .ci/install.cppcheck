@@ -1,0 +1,29 @@
+#! /usr/bin/env bash
+
+set -e
+set -x
+
+cd "$(mktemp -dt plumed.XXXXXX)"
+
+git clone https://github.com/danmar/cppcheck.git
+cd cppcheck
+
+if [ -n "$1" ] ; then
+  echo "installing cppcheck $version"
+  version=$1
+else
+  echo "installing latest doxygen"
+  version=$(git tag | tail -n 1)
+fi
+
+# pick native architecture
+native="$($CC -march=native -Q --help=target | grep "^ *\-march" | awk '{print $2}' | head -n 1)"
+# this is required so that when running the job on a different architecture ccache understand
+# the object file should not be recycled
+
+git checkout $version
+make -j 4 install MATCHCOMPILER=yes FILESDIR="$HOME/opt/share/cppcheck" HAVE_RULES=yes CXXFLAGS="-DNDEBUG -O2 -march=$native -mtune=$native -Wall -Wno-sign-compare -Wno-unused-function" PREFIX="$HOME/opt"
+cd ../
+
+cppcheck --version
+

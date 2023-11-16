@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2021 The plumed team
+   Copyright (c) 2012-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "CLTool.h"
-#include "CLToolRegister.h"
+#include "core/CLToolRegister.h"
 #include "tools/Tools.h"
 #include "core/Action.h"
 #include "core/ActionRegister.h"
@@ -192,7 +192,7 @@ public:
   std::string description()const override;
 /// find a list of variables present, if they are periodic and which is the period
 /// return false if the file does not exist
-  static bool findCvsAndPeriodic(std::string filename, std::vector< std::vector <std::string> > &cvs,std::vector<std::string> &pmin,std::vector<std::string> &pmax, bool &multivariate, std::string &lowI_, std::string &uppI_);
+  static bool findCvsAndPeriodic(const std::string & filename, std::vector< std::vector <std::string> > &cvs,std::vector<std::string> &pmin,std::vector<std::string> &pmax, bool &multivariate, std::string &lowI_, std::string &uppI_);
 };
 
 void CLToolSumHills::registerKeywords( Keywords& keys ) {
@@ -532,7 +532,7 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
   return 0;
 }
 
-bool CLToolSumHills::findCvsAndPeriodic(std::string filename, std::vector< std::vector<std::string>  > &cvs, std::vector<std::string> &pmin,std::vector<std::string> &pmax, bool &multivariate, std::string &lowI_, std::string &uppI_) {
+bool CLToolSumHills::findCvsAndPeriodic(const std::string & filename, std::vector< std::vector<std::string>  > &cvs, std::vector<std::string> &pmin,std::vector<std::string> &pmax, bool &multivariate, std::string &lowI_, std::string &uppI_) {
   IFile ifile;
   ifile.allowIgnoredFields();
   std::vector<std::string> fields;

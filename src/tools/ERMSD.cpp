@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2021 The plumed team
+   Copyright (c) 2016-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -292,7 +292,7 @@ double ERMSD::calculate(const std::vector<Vector> & positions,const Pbc& pbc,\
     }
   }
 
-  ermsd = sqrt(ermsd/nresidues);
+  ermsd = std::sqrt(ermsd/nresidues);
   double iermsd = 1.0/(ermsd*nresidues);
   for(unsigned i=0; i<natoms; ++i) {derivatives[i] *= iermsd;}
 

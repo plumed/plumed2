@@ -137,13 +137,13 @@ if ! test "$VALIDATED" ; then
 else
   update_changelog CHANGES/v$shortversion.md $version $shortversion "$(date '+%b %e, %Y' | sed 's/  / /g')"
   {
-    grep  \# VERSION 
+    grep  \# VERSION.txt 
     echo $version
   } > VERSION.tmp
-  mv VERSION.tmp VERSION
+  mv VERSION.tmp VERSION.txt
   echo "Here's the new VERSION file:"
   echo "***"
-  cat VERSION
+  cat VERSION.txt
   echo "***"
   msg="Release v$version
 "
@@ -152,7 +152,7 @@ else
   echo "I will use the following commands:"
   echo "***"
   echo "git add CHANGES/v$shortversion.md"
-  echo "git add VERSION"
+  echo "git add VERSION.txt"
   echo "git commit --allow-empty -m \"$msg\""
   echo "git tag v$version"
   echo "git push origin v$version"
@@ -160,7 +160,7 @@ else
   echo "***"
   confirm || exit
   git add CHANGES/v$shortversion.md
-  git add VERSION
+  git add VERSION.txt
   git commit --allow-empty -m "$msg"
   git tag v$version
   git push origin v$shortversion v$version

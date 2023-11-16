@@ -273,7 +273,14 @@ of introducing a barrier as done in the example above, in this case we will
 use a uniform target distribution in the interval [0.23:0.6] nm and decaying to
 zero in the interval [0.6:0.8] nm. The expression is:
 
-MISSING EQUATION TO BE FIXED
+\f[
+p(s)=
+        \left\{\begin{array}{ll}
+                \frac{1}{C} \: &  \mathrm{if} \: s<s_0 \\
+                \frac{1}{C} e^{-\frac{(s-s_0)^2}{2\sigma^2}} \: &
+\mathrm{if} \: s>s_0\\
+        \end{array}\right .
+\f]
 
 where \f$ s_0=0.6\f$ nm and \f$ \sigma=0.05\f$.
 To define this \f$ p(s) \f$ in Plumed the input is:

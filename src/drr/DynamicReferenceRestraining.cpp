@@ -45,7 +45,9 @@ namespace drr {
 
 //+PLUMEDOC EABFMOD_BIAS DRR
 /*
-Used to performed extended-system adaptive biasing force(eABF) \cite Lelievre2007 method
+Used to performed extended-system adaptive biasing force(eABF)
+
+This method was introduced in \cite Lelievre2007.  It is used
  on one or more collective variables. This method is also
  called dynamic reference restraining(DRR) \cite Zheng2012 . A detailed description
  of this module can be found at \cite Chen2018 .
@@ -84,7 +86,7 @@ It may be slow. I only change the Boltzmann constant and output
 precision in it. For new version and issues, please see:
 https://github.com/fhh2626/colvars
 
-After running eABF/DRR, the \ref drr_tool utility can be used to extract the gradients and counts files from .drrstate. Naive(ABF) estimator's result is in .abf.grad and .abf.count files and CZAR estimator's result is in .czar.grad and .czar.count files. To get PMF, the abf_integrate(https://github.com/Colvars/colvars/tree/master/colvartools) is useful.
+After running eABF/DRR, the \ref drr_tool utility can be used to extract the gradients and counts files from .drrstate. Naive(ABF) estimator's result is in .abf.grad and .abf.count files and CZAR estimator's result is in .czar.grad and .czar.count files. The additional .zcount and .zgrad files contain the number of samples of \f$\boldsymbol{\xi}\f$, and the negative of \f$\boldsymbol{\xi}\f$-averaged spring forces, respectively, which are mainly for inspecting and debugging purpose. To get PMF, the abf_integrate(https://github.com/Colvars/colvars/tree/master/colvartools) is useful for numerically integrating the .czar.grad file.
 
 \par Examples
 
@@ -352,8 +354,8 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     delim(getNumberOfArguments()), outputname(""), cptname(""),
     outputprefix(""), ndims(getNumberOfArguments()), dt(0.0), kbt(0.0),
     outputfreq(0.0), historyfreq(-1.0), isRestart(false),
-    useCZARestimator(true), useUIestimator(false), textoutput(false),
-    withExternalForce(false), withExternalFict(false), mergeHistoryFiles(false),
+    useCZARestimator(true), useUIestimator(false), mergeHistoryFiles(false),
+    textoutput(false), withExternalForce(false), withExternalFict(false),
     reflectingWall(getNumberOfArguments(), 0),
     maxFactors(getNumberOfArguments(), 1.0)
 {
@@ -722,7 +724,7 @@ void DynamicReferenceRestraining::calculate() {
         ABFGrid.writeAll(outputprefix);
         if (useCZARestimator) {
           CZARestimator.writeAll(outputprefix);
-          CZARestimator.writeZCount(outputprefix);
+          CZARestimator.writeZCountZGrad(outputprefix);
         }
       }
     }
@@ -736,7 +738,7 @@ void DynamicReferenceRestraining::calculate() {
         ABFGrid.writeAll(textfilename, mergeHistoryFiles);
         if (useCZARestimator) {
           CZARestimator.writeAll(textfilename, mergeHistoryFiles);
-          CZARestimator.writeZCount(textfilename, mergeHistoryFiles);
+          CZARestimator.writeZCountZGrad(textfilename, mergeHistoryFiles);
         }
       } else {
         const string filename =

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2021 The plumed team
+   Copyright (c) 2012-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -151,7 +151,7 @@ double Random::Gaussian() {
     rsq=v1*v1+v2*v2;
     if(rsq<1.0 && rsq>0.0) break;
   }
-  double fac=sqrt(-2.*std::log(rsq)/rsq);
+  double fac=std::sqrt(-2.*std::log(rsq)/rsq);
   saveGaussian=v1*fac;
   switchGaussian=true;
   return v2*fac;

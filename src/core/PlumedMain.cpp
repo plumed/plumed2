@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2021 The plumed team
+   Copyright (c) 2011-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -55,12 +55,11 @@
 #include <typeinfo>
 #include <iostream>
 #include <algorithm>
-#ifdef __PLUMED_LIBCXX11
 #include <system_error>
 #include <future>
 #include <memory>
 #include <functional>
-#endif
+#include <regex>
 
 
 namespace PLMD {
@@ -76,14 +75,10 @@ namespace PLMD {
   __PLUMED_THROW_MSG(PLMD::Exception);
   __PLUMED_THROW_MSG(PLMD::lepton::Exception);
   __PLUMED_THROW_NOMSG(std::bad_exception);
-#ifdef __PLUMED_LIBCXX11
   __PLUMED_THROW_NOMSG(std::bad_array_new_length);
-#endif
   __PLUMED_THROW_NOMSG(std::bad_alloc);
-#ifdef __PLUMED_LIBCXX11
   __PLUMED_THROW_NOMSG(std::bad_function_call);
   __PLUMED_THROW_NOMSG(std::bad_weak_ptr);
-#endif
   __PLUMED_THROW_NOMSG(std::bad_cast);
   __PLUMED_THROW_NOMSG(std::bad_typeid);
   __PLUMED_THROW_MSG(std::underflow_error);
@@ -96,7 +91,6 @@ namespace PLMD {
   __PLUMED_THROW_MSG(std::invalid_argument);
   __PLUMED_THROW_MSG(std::logic_error);
 
-#ifdef __PLUMED_LIBCXX11
   if(words[0]=="std::system_error") {
     plumed_assert(words.size()>2);
     int error_code;
@@ -106,46 +100,106 @@ namespace PLMD {
     if(words[1]=="std::iostream_category") throw std::system_error(error_code,std::iostream_category(),what);
     if(words[1]=="std::future_category") throw std::system_error(error_code,std::future_category(),what);
   }
-#endif
+
+#define __PLUMED_THROW_REGEX(name) if(words[1]=="std::regex_constants::error_" #name) throw std::regex_error(std::regex_constants::error_ ##name)
+  if(words[0]=="std::regex_error") {
+    plumed_assert(words.size()>1);
+    __PLUMED_THROW_REGEX(collate);
+    __PLUMED_THROW_REGEX(ctype);
+    __PLUMED_THROW_REGEX(escape);
+    __PLUMED_THROW_REGEX(backref);
+    __PLUMED_THROW_REGEX(brack);
+    __PLUMED_THROW_REGEX(paren);
+    __PLUMED_THROW_REGEX(brace);
+    __PLUMED_THROW_REGEX(badbrace);
+    __PLUMED_THROW_REGEX(range);
+    __PLUMED_THROW_REGEX(space);
+    __PLUMED_THROW_REGEX(badrepeat);
+    __PLUMED_THROW_REGEX(complexity);
+    __PLUMED_THROW_REGEX(stack);
+  }
 
   if(words[0]=="std::ios_base::failure") {
-#ifdef __PLUMED_LIBCXX11
     int error_code=0;
     if(words.size()>2) Tools::convert(words[2],error_code);
     if(words.size()>1 && words[1]=="std::generic_category") throw std::ios_base::failure(what,std::error_code(error_code,std::generic_category()));
     if(words.size()>1 && words[1]=="std::system_category") throw std::ios_base::failure(what,std::error_code(error_code,std::system_category()));
     if(words.size()>1 && words[1]=="std::iostream_category") throw std::ios_base::failure(what,std::error_code(error_code,std::iostream_category()));
     if(words.size()>1 && words[1]=="std::future_category") throw std::ios_base::failure(what,std::error_code(error_code,std::future_category()));
-#endif
     throw std::ios_base::failure(what);
+  }
+
+  if(words[0]=="int") {
+    int value=0;
+    if(words.size()>1) Tools::convert(words[1],value);
+    throw value;
+  }
+
+  if(words[0]=="test_nested1") {
+    try {
+      throw Exception(std::string("inner ")+what);
+    } catch(...) {
+      try {
+        std::throw_with_nested(Exception(std::string("middle ")+what));
+      } catch(...) {
+        std::throw_with_nested(Exception(std::string("outer ")+what));
+      }
+    }
+  }
+
+  if(words[0]=="test_nested2") {
+    try {
+      throw std::bad_alloc();
+    } catch(...) {
+      try {
+        std::throw_with_nested(Exception(std::string("middle ")+what));
+      } catch(...) {
+        std::throw_with_nested(Exception(std::string("outer ")+what));
+      }
+    }
+  }
+
+  if(words[0]=="test_nested3") {
+    try {
+      throw "inner";
+    } catch(...) {
+      try {
+        std::throw_with_nested(Exception(std::string("middle ")+what));
+      } catch(...) {
+        std::throw_with_nested(Exception(std::string("outer ")+what));
+      }
+    }
   }
 
   plumed_error() << "unknown exception " << what;
 }
 
 namespace {
-class Register {
-  std::vector<PlumedMain*> instances;
+// This is an internal tool used to count how many PlumedMain objects have been created
+// and if they were correctly destroyed.
+// When using debug options, it leads to a crash
+// Otherwise, it just prints a message
+class CountInstances {
+  std::atomic<int> counter{};
 public:
-  void add(PlumedMain* instance) {
-    instances.push_back(instance);
+  void increase() noexcept {
+    ++counter;
   }
-  void remove(PlumedMain* instance) {
-    auto it = std::find(instances.begin(), instances.end(), instance);
-    if(it==instances.end()) {
-      std::cerr<<"WARNING: internal inconsistency in allocated PlumedMain instances\n";
-    } else {
-      instances.erase(it);
+  void decrease() noexcept {
+    --counter;
+  }
+  ~CountInstances() {
+    if(counter!=0) {
+      std::cerr<<"WARNING: internal inconsistency in allocated PlumedMain instances (" <<counter<< ")\n";
+#ifndef NDEBUG
+      std::abort();
+#endif
     }
   }
-  ~Register() {
-    if(instances.size()>0) std::cerr<<"PLUMED instances was not properly deallocated in your code: "<<instances.size()<<"\n";
-  }
 };
-
-static Register myregister;
-
+static CountInstances countInstances;
 }
+
 
 PlumedMain::PlumedMain():
   initialized(false),
@@ -164,16 +218,19 @@ PlumedMain::PlumedMain():
   doCheckPoint(false),
   stopNow(false),
   novirial(false),
-  detailedTimers(false)
+  detailedTimers(false),
+  gpuDeviceId(-1)
 {
+  increaseReferenceCounter();
   log.link(comm);
   log.setLinePrefix("PLUMED: ");
-  myregister.add(this);
+  // this is at last so as to avoid inconsistencies if an exception is thrown
+  countInstances.increase(); // noexcept
 }
 
 // destructor needed to delete forward declarated objects
 PlumedMain::~PlumedMain() {
-  myregister.remove(this);
+  countInstances.decrease();
 }
 
 /////////////////////////////////////////////////////////////
@@ -309,6 +366,12 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         step=val.get<long int>();
         atoms.startStep();
         break;
+      case cmd_setStepLongLong:
+        CHECK_INIT(initialized,word);
+        CHECK_NOTNULL(val,word);
+        step=val.get<long long int>();
+        atoms.startStep();
+        break;
       // words used less frequently:
       case cmd_setAtomsNlocal:
         CHECK_INIT(initialized,word);
@@ -388,7 +451,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         break;
       case cmd_getApiVersion:
         CHECK_NOTNULL(val,word);
-        val.set(int(9));
+        val.set(int(10));
         break;
       // commands which can be used only before initialization:
       case cmd_init:
@@ -499,11 +562,25 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
           OpenMP::setNumThreads(nt);
         }
         break;
+      /* ADDED WITH API==10 */
+      case cmd_setGpuDeviceId:
+        CHECK_NOTNULL(val,word);
+        {
+          auto id=val.get<int>();
+          if(id>=0) gpuDeviceId=id;
+        }
+        break;
       /* ADDED WITH API==6 */
       /* only used for testing */
       case cmd_throw:
         CHECK_NOTNULL(val,word);
         testThrow(val.get<const char*>());
+      /* ADDED WITH API==10 */
+      case cmd_setNestedExceptions:
+        CHECK_NOTNULL(val,word);
+        if(val.get<int>()!=0) nestedExceptions=true;
+        else nestedExceptions=false;
+        break;
       /* STOP API */
       case cmd_setMDEngine:
         CHECK_NOTINIT(initialized,word);
@@ -576,6 +653,13 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         plumed_assert(nw==2);
         atoms.setExtraCVForce(words[1],val);
         break;
+      /* ADDED WITH API==10 */
+      case cmd_isExtraCVNeeded:
+        CHECK_NOTNULL(val,word);
+        plumed_assert(nw==2);
+        if(atoms.isExtraCVNeeded(words[1])) val.set(int(1));
+        else                                val.set(int(0));
+        break;
       case cmd_GREX:
         if(!grex) grex=Tools::make_unique<GREX>(*this);
         plumed_massert(grex,"error allocating grex");
@@ -608,12 +692,17 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       }
     }
 
-  } catch (const std::exception &e) {
+  } catch (...) {
     if(log.isOpen()) {
-      log<<"\n\n################################################################################\n\n";
-      log<<e.what();
-      log<<"\n\n################################################################################\n\n";
-      log.flush();
+      try {
+        log<<"\n################################################################################\n";
+        log<<Tools::concatenateExceptionMessages();
+        log<<"\n################################################################################\n";
+        log.flush();
+      } catch(...) {
+        // ignore errors here.
+        // in any case, we are rethrowing this below
+      }
     }
     throw;
   }
@@ -706,7 +795,7 @@ void PlumedMain::readInputLines(const std::string & str) {
   plumed_assert(fp);
 
   // make sure file is closed (and thus deleted) also if an exception occurs
-  auto deleter=[](FILE* fp) { std::fclose(fp); };
+  auto deleter=[](auto fp) { std::fclose(fp); };
   std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
 
   auto ret=std::fputs(str.c_str(),fp);
@@ -852,39 +941,43 @@ void PlumedMain::justCalculate() {
 // calculate the active actions in order (assuming *backward* dependence)
   for(const auto & pp : actionSet) {
     Action* p(pp.get());
-    if(p->isActive()) {
+    try {
+      if(p->isActive()) {
 // Stopwatch is stopped when sw goes out of scope.
 // We explicitly declare a Stopwatch::Handler here to allow for conditional initialization.
-      Stopwatch::Handler sw;
-      if(detailedTimers) {
-        std::string actionNumberLabel;
-        Tools::convert(iaction,actionNumberLabel);
-        const unsigned m=actionSet.size();
-        unsigned k=0; unsigned n=1; while(n<m) { n*=10; k++; }
-        const int pad=k-actionNumberLabel.length();
-        for(int i=0; i<pad; i++) actionNumberLabel=" "+actionNumberLabel;
-        sw=stopwatch.startStop("4A "+actionNumberLabel+" "+p->getLabel());
+        Stopwatch::Handler sw;
+        if(detailedTimers) {
+          std::string actionNumberLabel;
+          Tools::convert(iaction,actionNumberLabel);
+          const unsigned m=actionSet.size();
+          unsigned k=0; unsigned n=1; while(n<m) { n*=10; k++; }
+          const int pad=k-actionNumberLabel.length();
+          for(int i=0; i<pad; i++) actionNumberLabel=" "+actionNumberLabel;
+          sw=stopwatch.startStop("4A "+actionNumberLabel+" "+p->getLabel());
+        }
+        ActionWithValue*av=dynamic_cast<ActionWithValue*>(p);
+        ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(p);
+        {
+          if(av) av->clearInputForces();
+          if(av) av->clearDerivatives();
+        }
+        {
+          if(aa) aa->clearOutputForces();
+          if(aa) if(aa->isActive()) aa->retrieveAtoms();
+        }
+        if(p->checkNumericalDerivatives()) p->calculateNumericalDerivatives();
+        else p->calculate();
+        // This retrieves components called bias
+        if(av) {
+          bias+=av->getOutputQuantity("bias");
+          work+=av->getOutputQuantity("work");
+          av->setGradientsIfNeeded();
+        }
+        ActionWithVirtualAtom*avv=dynamic_cast<ActionWithVirtualAtom*>(p);
+        if(avv)avv->setGradientsIfNeeded();
       }
-      ActionWithValue*av=dynamic_cast<ActionWithValue*>(p);
-      ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(p);
-      {
-        if(av) av->clearInputForces();
-        if(av) av->clearDerivatives();
-      }
-      {
-        if(aa) aa->clearOutputForces();
-        if(aa) if(aa->isActive()) aa->retrieveAtoms();
-      }
-      if(p->checkNumericalDerivatives()) p->calculateNumericalDerivatives();
-      else p->calculate();
-      // This retrieves components called bias
-      if(av) {
-        bias+=av->getOutputQuantity("bias");
-        work+=av->getOutputQuantity("work");
-        av->setGradientsIfNeeded();
-      }
-      ActionWithVirtualAtom*avv=dynamic_cast<ActionWithVirtualAtom*>(p);
-      if(avv)avv->setGradientsIfNeeded();
+    } catch(...) {
+      plumed_error_nested() << "An error happened while calculating " << p->getLabel();
     }
     iaction++;
   }
@@ -965,38 +1058,42 @@ void PlumedMain::update() {
   }
 }
 
-void PlumedMain::load(const std::string& ss) {
+void PlumedMain::load(const std::string& fileName, const bool loadGlobal) {
   if(DLLoader::installed()) {
-    std::string s=ss;
-    size_t n=s.find_last_of(".");
+    std::string libName=fileName;
+    size_t n=libName.find_last_of(".");
     std::string extension="";
-    std::string base=s;
-    if(n!=std::string::npos && n<s.length()-1) extension=s.substr(n+1);
-    if(n!=std::string::npos && n<s.length())   base=s.substr(0,n);
+    std::string base=libName;
+    if(n!=std::string::npos && n<libName.length()-1)
+      extension=libName.substr(n+1);
+    if(n!=std::string::npos && n<libName.length())
+      base=libName.substr(0,n);
     if(extension=="cpp") {
 // full path command, including environment setup
 // this will work even if plumed is not in the execution path or if it has been
 // installed with a name different from "plumed"
-      std::string cmd=config::getEnvCommand()+" \""+config::getPlumedRoot()+"\"/scripts/mklib.sh "+s;
+      std::string cmd=config::getEnvCommand()+" \""+config::getPlumedRoot()+"\"/scripts/mklib.sh "+libName;
       log<<"Executing: "<<cmd;
       if(comm.Get_size()>0) log<<" (only on master node)";
       log<<"\n";
       if(comm.Get_rank()==0) {
         int ret=std::system(cmd.c_str());
-        if(ret!=0) plumed_error() <<"An error happened while executing command "<<cmd<<"\n";
+        if(ret!=0)
+          plumed_error() <<"An error happened while executing command "<<cmd<<"\n";
       }
       comm.Barrier();
       base="./"+base;
     }
-    s=base+"."+config::getSoExt();
-    void *p=dlloader.load(s);
+    libName=base+"."+config::getSoExt();
+    void *p=dlloader.load(libName,loadGlobal);
     if(!p) {
-      plumed_error()<<"I cannot load library " << ss << " " << dlloader.error();
+      plumed_error()<<"I cannot load library " << fileName << " " << dlloader.error();
     }
-    log<<"Loading shared library "<<s.c_str()<<"\n";
+    log<<"Loading shared library "<<libName.c_str()<<"\n";
     log<<"Here is the new list of available actions\n";
     log<<actionRegister();
-  } else plumed_error()<<"While loading library "<< ss << " loading was not enabled, please check if dlopen was found at configure time";
+  } else
+    plumed_error()<<"While loading library "<< fileName << " loading was not enabled, please check if dlopen was found at configure time";
 }
 
 double PlumedMain::getBias() const {
@@ -1048,6 +1145,18 @@ void PlumedMain::runJobsAtEndOfCalculation() {
   for(const auto & p : actionSet) {
     p->runFinalJobs();
   }
+}
+
+unsigned PlumedMain::increaseReferenceCounter() noexcept {
+  return ++referenceCounter;
+}
+
+unsigned PlumedMain::decreaseReferenceCounter() noexcept {
+  return --referenceCounter;
+}
+
+unsigned PlumedMain::useCountReferenceCounter() const noexcept {
+  return referenceCounter;
 }
 
 #ifdef __PLUMED_HAS_PYTHON

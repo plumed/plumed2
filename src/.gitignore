@@ -53,7 +53,8 @@
 !/sasa
 !/xdrfile
 !/s2cm
-!/pycv
+!/pytorch
+!/membranefusion
 # And just ignore these files
 *.xxd
 /*.on

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2018-2021 The plumed team
+   Copyright (c) 2018-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -63,6 +63,9 @@ typedef struct {
   void (*cmd_nothrow)(void*plumed,const char*key,const void*val,plumed_nothrow_handler_x nothrow);
   void (*cmd_safe)(void*plumed,const char*key,plumed_safeptr_x ptr);
   void (*cmd_safe_nothrow)(void*plumed,const char*key,plumed_safeptr_x,plumed_nothrow_handler_x);
+  unsigned (*create_reference)(void*plumed);
+  unsigned (*delete_reference)(void*plumed);
+  unsigned (*use_count)(void*plumed);
 } plumed_symbol_table_type_x;
 
 

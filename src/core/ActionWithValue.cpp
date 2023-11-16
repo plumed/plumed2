@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2021 The plumed team
+   Copyright (c) 2011-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -32,6 +32,7 @@ void ActionWithValue::registerKeywords(Keywords& keys) {
                                  "below.  These quantities can be referenced elsewhere in the input by using this Action's "
                                  "label followed by a dot and the name of the quantity required from the list below.");
   keys.addFlag("NUMERICAL_DERIVATIVES", false, "calculate the derivatives for these quantities numerically");
+  keys.add("hidden","HAS_VALUES","this is used in json output to determine those actions that have values");
 }
 
 void ActionWithValue::noAnalyticalDerivatives(Keywords& keys) {

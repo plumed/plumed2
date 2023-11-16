@@ -81,11 +81,6 @@ public:
   explicit Random_Walk(const ActionOptions& ao);
 
   /**
-   * Destructor.
-   */
-  ~Random_Walk();
-
-  /**
    * Registers PLMD keywords.
    *
    * @param[in] keys PLMD keywords
@@ -118,10 +113,6 @@ Random_Walk::Random_Walk(const ActionOptions& ao)
   start_step_0();
 
   checkRead();
-}
-
-Random_Walk::~Random_Walk() {
-  delete neighbor_list_;
 }
 
 void Random_Walk::optimize() {

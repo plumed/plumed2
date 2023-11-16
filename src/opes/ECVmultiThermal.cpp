@@ -30,8 +30,9 @@ Expand a simulation to sample multiple temperatures simultaneously.
 
 The internal energy \f$U\f$ of of the system should be used as ARG.
 \f[
-  \Delta u_{\beta'}=(\beta-\beta') U\, .
+  \Delta u_{\beta'}=(\beta'-\beta) U\, ,
 \f]
+where \f$\beta'\f$ are the temperatures to be sampled and \f$\beta\f$ is the temperature at which the simulation is conducted.
 In case of fixed volume, the internal energy is simply the potential energy given by the \ref ENERGY colvar\f$U=E\f$, and you will run a multicanonical simulation.
 If instead the simulation is at fixed pressure \f$p\f$, the contribution of the volume must be added \f$U=E+pV\f$ (see example below).
 

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2021 The plumed team
+   Copyright (c) 2015-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -107,10 +107,10 @@ void ProjectNonLandmarkPoints::generateProjection( const unsigned& idat, std::ve
     ispca->getProjection( my_input_data->getStoredData(idat,false), point );
   } else {
     ConjugateGradient<ProjectNonLandmarkPoints> myminimiser( this );
-    unsigned closest=0; double mindist = sqrt( getDissimilarity( mybase->getDataPointIndexInBase(0), idat ) );
+    unsigned closest=0; double mindist = std::sqrt( getDissimilarity( mybase->getDataPointIndexInBase(0), idat ) );
     mybase->setTargetDistance( 0, mindist );
     for(unsigned i=1; i<mybase->getNumberOfDataPoints(); ++i) {
-      double dist = sqrt( getDissimilarity( mybase->getDataPointIndexInBase(i), idat ) );
+      double dist = std::sqrt( getDissimilarity( mybase->getDataPointIndexInBase(i), idat ) );
       mybase->setTargetDistance( i, dist );
       if( dist<mindist ) { mindist=dist; closest=i; }
     }

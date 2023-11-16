@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2021 The plumed team
+   Copyright (c) 2013-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -29,7 +29,7 @@
 
 //+PLUMEDOC MCOLVARF NLINKS
 /*
-Calculate number of pairs of atoms/molecules that are "linked"
+Calculate number of pairs of atoms/molecules that are linked
 
 In its simplest guise this coordinate calculates a coordination number.  Each pair
 of atoms is assumed "linked" if they are within some cutoff of each other.  In more

@@ -2,13 +2,13 @@
 
 This is the developer manual. Please first have a look at the <a href="../../user-doc/html/index.html"> user manual </a>.
 
-Plumed 2 is written in C++ and uses many of the advanced, object-oriented features of this language.  This structure makes the implementation of collective coordinates and free energy methods straightforward.  In fact, it should be possible to implement methods and collective coordinates (CV) by creating a single file and without touching any other part of the code. Futhermore, to implement new methodology does not require one to be some sort of C++ wizzard. Rather, the code has been specifically redisigned to make the implementation of new CVs and new free energy methods straightforward so as to encourage people to implement whatever new functionality they require.  This document serves then to provide an introduction as to how to go about implementing new functionality in plumed. A good starting point is \ref INHERIT as this page contains links to parts of the manual where you can find information on how to go about implementing CV, functions and biases. Another useful page is the \subpage TOOLBOX page, which contains information on the many reusable objects that have been implemented in plumed.  
+Plumed 2 is written in C++ and uses many of the advanced, object-oriented features of this language. This structure makes the implementation of collective coordinates and free energy methods straightforward. In fact, it should be possible to implement methods and collective coordinates (CV) by creating a single file and without touching any other part of the code. Furthermore, to implement new methodology does not require one to be some sort of C++ wizard. Rather, the code has been specifically redesigned to make the implementation of new CVs and new free energy methods straightforward so as to encourage people to implement whatever new functionality they require. This document serves then to provide an introduction as to how to go about implementing new functionality in plumed. A good starting point is \ref INHERIT as this page contains links to parts of the manual where you can find information on how to go about implementing CV, functions and biases. Another useful page is the \subpage TOOLBOX page, which contains information on the many reusable objects that have been implemented in plumed.  
 
 If you want to understand a little more about the code and the way that we use the various features of C++ before you start then we describe this briefly here:
 
 \ref ABriefIntroduction 
 
-And finally, for the developers of MD codes, we provide information as to how to incorperate plumed into your codes here:
+And finally, for the developers of MD codes, we provide information as to how to incorporate plumed into your codes here:
 
 \ref HowToPlumedYourMD
 
@@ -16,16 +16,16 @@ If you would like to contribute new functionalities to PLUMED please read the fo
 
 \ref HowToContributeToPlumed
 
-We ask that contributors endeavor to maintain the portability of plumed by, as much as possible, by only using the STL library and lapack in modifications.  
+We ask that contributors endeavor to maintain the portability of plumed by, as much as possible, using only the STL library and lapack in modifications.  
 If you need to use any less standard library (e.g. Boost, Sockets) please ensure that your functionality is not installed during a default compilation.  
-However, do feel free to provide alternative compilation options that incorperate your functionality.
+However, do feel free to provide alternative compilation options that incorporate your functionality.
 
 Information about C++
 http://www.parashift.com/c++-faq-lite/
 
 \par Code Coverage
 
-This manual might  also contain a detailed analysis of which parts of the PLUMED code have been tested when compiling it.
+This manual might also contain a detailed analysis of which parts of the PLUMED code have been tested when compiling it.
 In case so, you will find it at <a href="../coverage/index.html"> this link </a>.
 If this manual was compiled on Travis-CI, notice that as of PLUMED 2.5 the coverage scan ends up on a separate 
 repository named `github.com/plumed/coverage-branchname`.

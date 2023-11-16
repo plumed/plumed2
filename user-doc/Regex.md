@@ -4,11 +4,6 @@ When you use need to pass many arguments to a PLUMED action, being them
 components of a few collective variables or also multiple collective variables,
 you might find it convenient to use [regular expressions](https://en.wikipedia.org/wiki/Regular_expression).
 
-Since version 2.1, plumed takes advantage of a configuration scripts that
-detects libraries installed on your system. If regex library is found,
-then you will be able to use regular expressions to refer to collective variables
-or function names.
-
 Regular expressions are enclosed in round braces and must not contain spaces (the components 
 names have no spaces indeed, so why use them?).
 

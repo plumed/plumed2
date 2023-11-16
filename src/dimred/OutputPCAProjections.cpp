@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2021 The plumed team
+   Copyright (c) 2016-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -94,7 +94,7 @@ void OutputPCAProjection::performAnalysis() {
   mypdb.setAtomPositions( (mypca->myref)->getReferencePositions() );
   for(unsigned j=0; j<mypca->getArguments().size(); ++j) mypdb.setArgumentValue( (mypca->getArguments()[j])->getName(), (mypca->myref)->getReferenceArgument(j) );
   // And output the first frame
-  afile.open( filename.c_str() ); afile.printf("REMARK TYPE=%s \n", mypca->mtype.c_str() );
+  afile.open( filename ); afile.printf("REMARK TYPE=%s \n", mypca->mtype.c_str() );
   if( plumed.getAtoms().usingNaturalUnits() ) mypdb.print( 1.0, mymoldat, afile, fmt );
   else mypdb.print( atoms.getUnits().getLength()/0.1, mymoldat, afile, fmt );
   // And now output the eigenvectors

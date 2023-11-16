@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2021 The plumed team
+   Copyright (c) 2012-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -20,10 +20,11 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "CLTool.h"
-#include "CLToolRegister.h"
+#include "core/CLToolRegister.h"
 #include "core/PlumedMain.h"
 #include "tools/Vector.h"
 #include "tools/Random.h"
+#include "tools/OpenMP.h"
 #include <string>
 #include <cstdio>
 #include <cmath>
@@ -51,7 +52,7 @@ plumed simplemd < in
 The following is an example of an input file for a simplemd calculation. This file
 instructs simplemd to do 50 steps of MD at a temperature of 0.722
 \verbatim
-nputfile input.xyz
+inputfile input.xyz
 outputfile output.xyz
 temperature 0.722
 tstep 0.005
@@ -72,6 +73,11 @@ plumed simplemd --help
 */
 //+ENDPLUMEDOC
 
+// simple static function to close a file
+// defined once here since it's used in many places in this file
+// in addition, this seems the only way to use it in the write_statistics_fp_deleter member
+static void (*deleter)(FILE* f) = [](auto f) { if(f) std::fclose(f); };
+
 class SimpleMD:
   public PLMD::CLTool
 {
@@ -83,6 +89,7 @@ class SimpleMD:
   bool write_statistics_first;
   int write_statistics_last_time_reopened;
   FILE* write_statistics_fp;
+  std::unique_ptr<FILE,decltype(deleter)> write_statistics_fp_deleter{nullptr,deleter};
 
 
 public:
@@ -91,13 +98,14 @@ public:
     keys.add("compulsory","temperature","NVE","the temperature at which you wish to run the simulation in LJ units");
     keys.add("compulsory","friction","off","The friction (in LJ units) for the Langevin thermostat that is used to keep the temperature constant");
     keys.add("compulsory","tstep","0.005","the integration timestep in LJ units");
+    keys.add("compulsory","epsilon","1.0","LJ parameter");
+    keys.add("compulsory","sigma","1.0","LJ parameter");
     keys.add("compulsory","inputfile","An xyz file containing the initial configuration of the system");
     keys.add("compulsory","forcecutoff","2.5","");
     keys.add("compulsory","listcutoff","3.0","");
     keys.add("compulsory","outputfile","An output xyz file containing the final configuration of the system");
     keys.add("compulsory","nconfig","10","The frequency with which to write configurations to the trajectory file followed by the name of the trajectory file");
     keys.add("compulsory","nstat","1","The frequency with which to write the statistics to the statistics file followed by the name of the statistics file");
-    keys.add("compulsory","maxneighbours","10000","The maximum number of neighbors an atom can have");
     keys.add("compulsory","idum","0","The random number seed");
     keys.add("compulsory","ndim","3","The dimensionality of the system (some interesting LJ clusters are two dimensional)");
     keys.add("compulsory","wrapatoms","false","If true, atomic coordinates are written wrapped in minimal cell");
@@ -129,9 +137,10 @@ private:
              std::string& outputfile,
              std::string& trajfile,
              std::string& statfile,
-             int&    maxneighbours,
              int&    ndim,
-             int&    idum)
+             int&    idum,
+             double& epsilon,
+             double& sigma)
   {
 
     // Read everything from input file
@@ -141,45 +150,31 @@ private:
     parse("tstep",tstep);
     std::string frictionstr; parse("friction",frictionstr);
     if( tempstr!="NVE" ) {
-      if(frictionstr=="off") { std::fprintf(stderr,"Specify friction for thermostat\n"); exit(1); }
+      if(frictionstr=="off") error("Specify friction for thermostat");
       Tools::convert(frictionstr,friction);
     }
     parse("forcecutoff",forcecutoff);
     parse("listcutoff",listcutoff);
     parse("nstep",nstep);
-    parse("maxneighbours",maxneighbours);
     parse("idum",idum);
+    parse("epsilon",epsilon);
+    parse("sigma",sigma);
 
     // Read in stuff with sanity checks
     parse("inputfile",inputfile);
-    if(inputfile.length()==0) {
-      std::fprintf(stderr,"Specify input file\n");
-      exit(1);
-    }
+    if(inputfile.length()==0) error("Specify input file");
     parse("outputfile",outputfile);
-    if(outputfile.length()==0) {
-      std::fprintf(stderr,"Specify output file\n");
-      exit(1);
-    }
+    if(outputfile.length()==0) error("Specify output file");
     std::string nconfstr; parse("nconfig",nconfstr);
     std::sscanf(nconfstr.c_str(),"%100d %255s",&nconfig,buffer1);
     trajfile=buffer1;
-    if(trajfile.length()==0) {
-      std::fprintf(stderr,"Specify traj file\n");
-      exit(1);
-    }
+    if(trajfile.length()==0) error("Specify traj file");
     std::string nstatstr; parse("nstat",nstatstr);
     std::sscanf(nstatstr.c_str(),"%100d %255s",&nstat,buffer1);
     statfile=buffer1;
-    if(statfile.length()==0) {
-      std::fprintf(stderr,"Specify stat file\n");
-      exit(1);
-    }
+    if(statfile.length()==0) error("Specify stat file");
     parse("ndim",ndim);
-    if(ndim<1 || ndim>3) {
-      std::fprintf(stderr,"ndim should be 1,2 or 3\n");
-      exit(1);
-    }
+    if(ndim<1 || ndim>3) error("ndim should be 1,2 or 3");
     std::string w;
     parse("wrapatoms",w);
     wrapatoms=false;
@@ -188,14 +183,10 @@ private:
 
   void read_natoms(const std::string & inputfile,int & natoms) {
 // read the number of atoms in file "input.xyz"
-    FILE* fp=fopen(inputfile.c_str(),"r");
-    if(!fp) {
-      std::fprintf(stderr,"ERROR: file %s not found\n",inputfile.c_str());
-      exit(1);
-    }
+    FILE* fp=std::fopen(inputfile.c_str(),"r");
+    if(!fp) error(std::string("file ") + inputfile + std::string(" not found"));
 
 // call fclose when fp goes out of scope
-    auto deleter=[](FILE* f) { fclose(f); };
     std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
 
     int ret=std::fscanf(fp,"%1000d",&natoms);
@@ -205,13 +196,9 @@ private:
   void read_positions(const std::string& inputfile,int natoms,std::vector<Vector>& positions,double cell[3]) {
 // read positions and cell from a file called inputfile
 // natoms (input variable) and number of atoms in the file should be consistent
-    FILE* fp=fopen(inputfile.c_str(),"r");
-    if(!fp) {
-      std::fprintf(stderr,"ERROR: file %s not found\n",inputfile.c_str());
-      exit(1);
-    }
+    FILE* fp=std::fopen(inputfile.c_str(),"r");
+    if(!fp) error(std::string("file ") + inputfile + std::string(" not found"));
 // call fclose when fp goes out of scope
-    auto deleter=[](FILE* f) { fclose(f); };
     std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
 
     char buffer[256];
@@ -244,90 +231,79 @@ private:
                   const double forcecutoff,bool & recompute)
   {
 // check if the neighbour list have to be recomputed
-    Vector displacement;  // displacement from positions0 to positions
-    double delta2;        // square of the 'skin' thickness
     recompute=false;
-    delta2=(0.5*(listcutoff-forcecutoff))*(0.5*(listcutoff-forcecutoff));
+    auto delta2=(0.5*(listcutoff-forcecutoff))*(0.5*(listcutoff-forcecutoff));
 // if ANY atom moved more than half of the skin thickness, recompute is set to .true.
     for(int iatom=0; iatom<natoms; iatom++) {
-      for(int k=0; k<3; k++) displacement[k]=positions[iatom][k]-positions0[iatom][k];
-      double s=0.0;
-      for(int k=0; k<3; k++) s+=displacement[k]*displacement[k];
-      if(s>delta2) recompute=true;
+      if(modulo2(positions[iatom]-positions0[iatom])>delta2) recompute=true;
     }
   }
 
 
-  void compute_list(const int natoms,const int listsize,const std::vector<Vector>& positions,const double cell[3],const double listcutoff,
-                    std::vector<int>& point,std::vector<int>& list) {
-// see Allen-Tildesey for a definition of point and list
-    Vector distance;     // distance of the two atoms
-    Vector distance_pbc; // minimum-image distance of the two atoms
-    double listcutoff2;  // squared list cutoff
-    listcutoff2=listcutoff*listcutoff;
-    point[0]=0;
+  void compute_list(const int natoms,const std::vector<Vector>& positions,const double cell[3],const double listcutoff,
+                    std::vector<std::vector<int> >& list) {
+    double listcutoff2=listcutoff*listcutoff; // squared list cutoff
+    list.assign(natoms,std::vector<int>());
+    #   pragma omp parallel for num_threads(OpenMP::getNumThreads()) schedule(static,1)
     for(int iatom=0; iatom<natoms-1; iatom++) {
-      point[iatom+1]=point[iatom];
       for(int jatom=iatom+1; jatom<natoms; jatom++) {
-        for(int k=0; k<3; k++) distance[k]=positions[iatom][k]-positions[jatom][k];
+        auto distance=positions[iatom]-positions[jatom];
+        Vector distance_pbc; // minimum-image distance of the two atoms
         pbc(cell,distance,distance_pbc);
 // if the interparticle distance is larger than the cutoff, skip
-        double d2=0; for(int k=0; k<3; k++) d2+=distance_pbc[k]*distance_pbc[k];
-        if(d2>listcutoff2)continue;
-        if(point[iatom+1]>listsize) {
-// too many neighbours
-          std::fprintf(stderr,"%s","Verlet list size exceeded\n");
-          std::fprintf(stderr,"%s","Increase maxneighbours\n");
-          exit(1);
-        }
-        list[point[iatom+1]]=jatom;
-        point[iatom+1]++;
+        if(modulo2(distance_pbc)>listcutoff2)continue;
+        list[iatom].push_back(jatom);
       }
     }
   }
 
-  void compute_forces(const int natoms,const int listsize,const std::vector<Vector>& positions,const double cell[3],
-                      double forcecutoff,const std::vector<int>& point,const std::vector<int>& list,std::vector<Vector>& forces,double & engconf)
+  void compute_forces(const int natoms,double epsilon, double sigma,const std::vector<Vector>& positions,const double cell[3],
+                      double forcecutoff,const std::vector<std::vector<int> >& list,std::vector<Vector>& forces,double & engconf)
   {
-    Vector distance;        // distance of the two atoms
-    Vector distance_pbc;    // minimum-image distance of the two atoms
-    double distance_pbc2;   // squared minimum-image distance
-    double forcecutoff2;    // squared force cutoff
-    Vector f;               // force
-    double engcorrection;   // energy necessary shift the potential avoiding discontinuities
-
-    forcecutoff2=forcecutoff*forcecutoff;
+    double forcecutoff2=forcecutoff*forcecutoff; // squared force cutoff
     engconf=0.0;
+    double engconf_tmp=0.0; // separate variable for reduction (gcc 4.8 does not make reductions on references)
     for(int i=0; i<natoms; i++)for(int k=0; k<3; k++) forces[i][k]=0.0;
-    engcorrection=4.0*(1.0/std::pow(forcecutoff2,6.0)-1.0/std::pow(forcecutoff2,3));
-    for(int iatom=0; iatom<natoms-1; iatom++) {
-      for(int jlist=point[iatom]; jlist<point[iatom+1]; jlist++) {
-        int jatom=list[jlist];
-        for(int k=0; k<3; k++) distance[k]=positions[iatom][k]-positions[jatom][k];
-        pbc(cell,distance,distance_pbc);
-        distance_pbc2=0.0; for(int k=0; k<3; k++) distance_pbc2+=distance_pbc[k]*distance_pbc[k];
+    double engcorrection=4.0*epsilon*(1.0/std::pow(forcecutoff2/(sigma*sigma),6.0)-1.0/std::pow(forcecutoff2/(sigma*sigma),3)); // energy necessary shift the potential avoiding discontinuities
+    #   pragma omp parallel num_threads(OpenMP::getNumThreads())
+    {
+      std::vector<Vector> omp_forces(forces.size());
+      #pragma omp for reduction(+:engconf_tmp) schedule(static,1) nowait
+      for(int iatom=0; iatom<natoms-1; iatom++) {
+        for(int jlist=0; jlist<list[iatom].size(); jlist++) {
+          const int jatom=list[iatom][jlist];
+          auto distance=positions[iatom]-positions[jatom];
+          Vector distance_pbc;    // minimum-image distance of the two atoms
+          pbc(cell,distance,distance_pbc);
+          auto distance_pbc2=modulo2(distance_pbc);   // squared minimum-image distance
 // if the interparticle distance is larger than the cutoff, skip
-        if(distance_pbc2>forcecutoff2) continue;
-        double distance_pbc6=distance_pbc2*distance_pbc2*distance_pbc2;
-        double distance_pbc8=distance_pbc6*distance_pbc2;
-        double distance_pbc12=distance_pbc6*distance_pbc6;
-        double distance_pbc14=distance_pbc12*distance_pbc2;
-        engconf+=4.0*(1.0/distance_pbc12 - 1.0/distance_pbc6) - engcorrection;
-        for(int k=0; k<3; k++) f[k]=2.0*distance_pbc[k]*4.0*(6.0/distance_pbc14-3.0/distance_pbc8);
-// same force on the two atoms, with opposite sign:
-        for(int k=0; k<3; k++) forces[iatom][k]+=f[k];
-        for(int k=0; k<3; k++) forces[jatom][k]-=f[k];
+          if(distance_pbc2>forcecutoff2) continue;
+          auto distance_pbcm2=sigma*sigma/distance_pbc2;
+          auto distance_pbcm6=distance_pbcm2*distance_pbcm2*distance_pbcm2;
+          auto distance_pbcm8=distance_pbcm6*distance_pbcm2;
+          auto distance_pbcm12=distance_pbcm6*distance_pbcm6;
+          auto distance_pbcm14=distance_pbcm12*distance_pbcm2;
+          engconf_tmp+=4.0*epsilon*(distance_pbcm12 - distance_pbcm6) - engcorrection;
+          auto f=24.0*distance_pbc*(2.0*distance_pbcm14-distance_pbcm8)*epsilon/sigma;
+          omp_forces[iatom]+=f;
+          omp_forces[jatom]-=f;
+        }
       }
+      #     pragma omp critical
+      for(unsigned i=0; i<omp_forces.size(); i++) forces[i]+=omp_forces[i];
     }
+
+    engconf=engconf_tmp;
+
   }
 
   void compute_engkin(const int natoms,const std::vector<double>& masses,const std::vector<Vector>& velocities,double & engkin)
   {
 // calculate the kinetic energy from the velocities
     engkin=0.0;
-    for(int iatom=0; iatom<natoms; iatom++)for(int k=0; k<3; k++) {
-        engkin+=0.5*masses[iatom]*velocities[iatom][k]*velocities[iatom][k];
-      }
+    for(int iatom=0; iatom<natoms; iatom++) {
+      engkin+=0.5*masses[iatom]*modulo2(velocities[iatom]);
+    }
   }
 
 
@@ -354,21 +330,23 @@ private:
     Vector pos;
     FILE*fp;
     if(write_positions_first) {
-      fp=fopen(trajfile.c_str(),"w");
+      fp=std::fopen(trajfile.c_str(),"w");
       write_positions_first=false;
     } else {
-      fp=fopen(trajfile.c_str(),"a");
+      fp=std::fopen(trajfile.c_str(),"a");
     }
+    plumed_assert(fp);
+// call fclose when fp goes out of scope
+    std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
     std::fprintf(fp,"%d\n",natoms);
     std::fprintf(fp,"%f %f %f\n",cell[0],cell[1],cell[2]);
     for(int iatom=0; iatom<natoms; iatom++) {
 // usually, it is better not to apply pbc here, so that diffusion
 // is more easily calculated from a trajectory file:
       if(wrapatoms) pbc(cell,positions[iatom],pos);
-      else for(int k=0; k<3; k++) pos[k]=positions[iatom][k];
+      else pos=positions[iatom];
       std::fprintf(fp,"Ar %10.7f %10.7f %10.7f\n",pos[0],pos[1],pos[2]);
     }
-    fclose(fp);
   }
 
   void write_final_positions(const std::string& outputfile,int natoms,const std::vector<Vector>& positions,const double cell[3],const bool wrapatoms)
@@ -376,17 +354,19 @@ private:
 // write positions on file outputfile
     Vector pos;
     FILE*fp;
-    fp=fopen(outputfile.c_str(),"w");
+    fp=std::fopen(outputfile.c_str(),"w");
+    plumed_assert(fp);
+// call fclose when fp goes out of scope
+    std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
     std::fprintf(fp,"%d\n",natoms);
     std::fprintf(fp,"%f %f %f\n",cell[0],cell[1],cell[2]);
     for(int iatom=0; iatom<natoms; iatom++) {
 // usually, it is better not to apply pbc here, so that diffusion
 // is more easily calculated from a trajectory file:
       if(wrapatoms) pbc(cell,positions[iatom],pos);
-      else for(int k=0; k<3; k++) pos[k]=positions[iatom][k];
+      else pos=positions[iatom];
       std::fprintf(fp,"Ar %10.7f %10.7f %10.7f\n",pos[0],pos[1],pos[2]);
     }
-    fclose(fp);
   }
 
 
@@ -395,13 +375,15 @@ private:
 // write statistics on file statfile
     if(write_statistics_first) {
 // first time this routine is called, open the file
-      write_statistics_fp=fopen(statfile.c_str(),"w");
+      write_statistics_fp=std::fopen(statfile.c_str(),"w");
+      write_statistics_fp_deleter.reset(write_statistics_fp);
       write_statistics_first=false;
     }
     if(istep-write_statistics_last_time_reopened>100) {
 // every 100 steps, reopen the file to flush the buffer
-      fclose(write_statistics_fp);
-      write_statistics_fp=fopen(statfile.c_str(),"a");
+      write_statistics_fp_deleter.reset(nullptr); // close file
+      write_statistics_fp=std::fopen(statfile.c_str(),"a");
+      write_statistics_fp_deleter.reset(write_statistics_fp);
       write_statistics_last_time_reopened=istep;
     }
     std::fprintf(write_statistics_fp,"%d %f %f %f %f %f\n",istep,istep*tstep,2.0*engkin/double(ndim*natoms),engconf,engkin+engconf,engkin+engconf+engint);
@@ -420,9 +402,7 @@ private:
 
 // neighbour list variables
 // see Allen and Tildesey book for details
-    int            listsize;     // size of the list array
-    std::vector<int>    list;         // neighbour list
-    std::vector<int>    point;        // pointer to neighbour list
+    std::vector< std::vector<int> >  list; // neighbour list
     std::vector<Vector> positions0;   // reference atomic positions, i.e. positions when the neighbour list
 
 // input parameters
@@ -435,7 +415,6 @@ private:
     int         nstep;             // number of steps
     int         nconfig;           // stride for output of configurations
     int         nstat;             // stride for output of statistics
-    int         maxneighbour;      // maximum average number of neighbours per atom
     int         ndim;              // dimensionality of the system (1, 2, or 3)
     int         idum;              // seed
     int         plumedWantsToStop; // stop flag
@@ -444,6 +423,8 @@ private:
     std::string outputfile;        // name of file with final configuration (xyz)
     std::string trajfile;          // name of the trajectory file (xyz)
     std::string statfile;          // name of the file with statistics
+
+    double      epsilon, sigma;    // LJ parameters
 
     double engkin;                 // kinetic energy
     double engconf;                // configurational energy
@@ -458,15 +439,12 @@ private:
 // Commenting the next line it is possible to switch-off plumed
     plumed=Tools::make_unique<PLMD::PlumedMain>();
 
-    if(plumed) {
-      int s=sizeof(double);
-      plumed->cmd("setRealPrecision",&s);
-    }
+    if(plumed) plumed->cmd("setRealPrecision",int(sizeof(double)));
 
     read_input(temperature,tstep,friction,forcecutoff,
                listcutoff,nstep,nconfig,nstat,
                wrapatoms,inputfile,outputfile,trajfile,statfile,
-               maxneighbour,ndim,idum);
+               ndim,idum,epsilon,sigma);
 
 // number of atoms is read from file inputfile
     read_natoms(inputfile,natoms);
@@ -485,17 +463,14 @@ private:
     std::fprintf(out,"%s %s\n","Trajectory file                  :",trajfile.c_str());
     std::fprintf(out,"%s %d\n","Stride for statistics            :",nstat);
     std::fprintf(out,"%s %s\n","Statistics file                  :",statfile.c_str());
-    std::fprintf(out,"%s %d\n","Max average number of neighbours :",maxneighbour);
     std::fprintf(out,"%s %d\n","Dimensionality                   :",ndim);
     std::fprintf(out,"%s %d\n","Seed                             :",idum);
     std::fprintf(out,"%s %s\n","Are atoms wrapped on output?     :",(wrapatoms?"T":"F"));
+    std::fprintf(out,"%s %f\n","Epsilon                          :",epsilon);
+    std::fprintf(out,"%s %f\n","Sigma                            :",sigma);
 
 // Setting the seed
     random.setSeed(idum);
-
-// Since each atom pair is counted once, the total number of pairs
-// will be half of the number of neighbours times the number of atoms
-    listsize=maxneighbour*natoms/2;
 
 // allocation of dynamical arrays
     positions.resize(natoms);
@@ -503,8 +478,7 @@ private:
     velocities.resize(natoms);
     forces.resize(natoms);
     masses.resize(natoms);
-    point.resize(natoms);
-    list.resize(listsize);
+    list.resize(natoms);
 
 // masses are hard-coded to 1
     for(int i=0; i<natoms; ++i) masses[i]=1.0;
@@ -520,29 +494,29 @@ private:
 
     if(plumed) {
       plumed->cmd("setNoVirial");
-      plumed->cmd("setNatoms",&natoms);
+      plumed->cmd("setNatoms",natoms);
       plumed->cmd("setMDEngine","simpleMD");
-      plumed->cmd("setTimestep",&tstep);
+      plumed->cmd("setTimestep",tstep);
       plumed->cmd("setPlumedDat","plumed.dat");
       int pversion=0;
       plumed->cmd("getApiVersion",&pversion);
 // setting kbT is only implemented with api>1
 // even if not necessary in principle in SimpleMD (which is part of plumed)
 // we leave the check here as a reference
-      if(pversion>1) {
-        plumed->cmd("setKbT",&temperature);
-      }
+      if(pversion>1) plumed->cmd("setKbT",temperature);
       plumed->cmd("init");
     }
 
 // neighbour list are computed, and reference positions are saved
-    compute_list(natoms,listsize,positions,cell,listcutoff,point,list);
+    compute_list(natoms,positions,cell,listcutoff,list);
 
-    std::fprintf(out,"List size: %d\n",point[natoms-1]);
-    for(int iatom=0; iatom<natoms; ++iatom) for(int k=0; k<3; ++k) positions0[iatom][k]=positions[iatom][k];
+    int list_size=0;
+    for(int i=0; i<list.size(); i++) list_size+=list[i].size();
+    std::fprintf(out,"List size: %d\n",list_size);
+    for(int iatom=0; iatom<natoms; ++iatom) positions0[iatom]=positions[iatom];
 
 // forces are computed before starting md
-    compute_forces(natoms,listsize,positions,cell,forcecutoff,point,list,forces,engconf);
+    compute_forces(natoms,epsilon,sigma,positions,cell,forcecutoff,list,forces,engconf);
 
 // remove forces if ndim<3
     if(ndim<3)
@@ -562,32 +536,32 @@ private:
     for(int istep=0; istep<nstep; istep++) {
       thermostat(natoms,ndim,masses,0.5*tstep,friction,temperature,velocities,engint,random);
 
-      for(int iatom=0; iatom<natoms; iatom++) for(int k=0; k<3; k++)
-          velocities[iatom][k]+=forces[iatom][k]*0.5*tstep/masses[iatom];
+      for(int iatom=0; iatom<natoms; iatom++)
+        velocities[iatom]+=forces[iatom]*0.5*tstep/masses[iatom];
 
-      for(int iatom=0; iatom<natoms; iatom++) for(int k=0; k<3; k++)
-          positions[iatom][k]+=velocities[iatom][k]*tstep;
+      for(int iatom=0; iatom<natoms; iatom++)
+        positions[iatom]+=velocities[iatom]*tstep;
 
 // a check is performed to decide whether to recalculate the neighbour list
       check_list(natoms,positions,positions0,listcutoff,forcecutoff,recompute_list);
       if(recompute_list) {
-        compute_list(natoms,listsize,positions,cell,listcutoff,point,list);
-        for(int iatom=0; iatom<natoms; ++iatom) for(int k=0; k<3; ++k) positions0[iatom][k]=positions[iatom][k];
-        std::fprintf(out,"Neighbour list recomputed at step %d\n",istep);
-        std::fprintf(out,"List size: %d\n",point[natoms-1]);
+        compute_list(natoms,positions,cell,listcutoff,list);
+        for(int iatom=0; iatom<natoms; ++iatom) positions0[iatom]=positions[iatom];
+        int list_size=0;
+        for(int i=0; i<list.size(); i++) list_size+=list[i].size();
+        std::fprintf(out,"List size: %d\n",list_size);
       }
 
-      compute_forces(natoms,listsize,positions,cell,forcecutoff,point,list,forces,engconf);
+      compute_forces(natoms,epsilon,sigma,positions,cell,forcecutoff,list,forces,engconf);
 
       if(plumed) {
-        int istepplusone=istep+1;
         plumedWantsToStop=0;
         for(int i=0; i<3; i++)for(int k=0; k<3; k++) cell9[i][k]=0.0;
         for(int i=0; i<3; i++) cell9[i][i]=cell[i];
-        plumed->cmd("setStep",&istepplusone);
+        plumed->cmd("setStep",istep+1);
         plumed->cmd("setMasses",&masses[0]);
         plumed->cmd("setForces",&forces[0][0]);
-        plumed->cmd("setEnergy",&engconf);
+        plumed->cmd("setEnergy",engconf);
         plumed->cmd("setPositions",&positions[0][0]);
         plumed->cmd("setBox",&cell9[0][0]);
         plumed->cmd("setStopFlag",&plumedWantsToStop);
@@ -598,8 +572,8 @@ private:
       if(ndim<3)
         for(int iatom=0; iatom<natoms; ++iatom) for(int k=ndim; k<3; ++k) forces[iatom][k]=0.0;
 
-      for(int iatom=0; iatom<natoms; iatom++) for(int k=0; k<3; k++)
-          velocities[iatom][k]+=forces[iatom][k]*0.5*tstep/masses[iatom];
+      for(int iatom=0; iatom<natoms; iatom++)
+        velocities[iatom]+=forces[iatom]*0.5*tstep/masses[iatom];
 
       thermostat(natoms,ndim,masses,0.5*tstep,friction,temperature,velocities,engint,random);
 
@@ -617,9 +591,6 @@ private:
 
 // write final positions
     write_final_positions(outputfile,natoms,positions,cell,wrapatoms);
-
-// close the statistic file if it was open:
-    if(write_statistics_fp) fclose(write_statistics_fp);
 
     return 0;
   }

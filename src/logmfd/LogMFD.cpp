@@ -38,7 +38,7 @@ The free energy \f$F({\bf X})\f$ as a function of a set of \f$N\f$ collective va
   &\simeq&  - {k_B}T\log \int {\exp \left[ { - \beta \left\{ {{H_{\rm MD}} + \sum\limits_i^N {\frac{{{K_i}}}{2}{{\left( {{s_i}\left( {{\bf q}} \right) - {X_i}} \right)}^2}} } \right\}} \right]} d{\bf{\Gamma }}
 \f}
 
-where \f$\bf{s}\f$ are the CVs, \f$k_B\f$ is Boltzmann constant, \f$\beta=k_BT\f$,
+where \f$\bf{s}\f$ are the CVs, \f$k_B\f$ is Boltzmann constant, \f$\beta=1/k_BT\f$,
 and \f$K_i\f$ is the spring constant which is large enough to invoke
 
 \f[
@@ -82,7 +82,7 @@ where
  Z = \int {\exp \left[ { - \beta \left\{ {{H_{\rm MD}} + \sum\limits_i^N {\frac{{{K_i}}}{2}{{\left( {{s_i}\left( {{\bf q}} \right) - {X_i}} \right)}^2}} } \right\}} \right]} d{\bf{\Gamma }}
 \f]
 
-The mean-force (MF) is practically evaluated by performing a shot-time canonical MD run each time \f${\bf X}\f$ is updated according to the equation of motion for \f${\bf X}\f$.
+The mean-force (MF) is practically evaluated by performing a shot-time canonical MD run of \f$N_m\f$ steps each time \f${\bf X}\f$ is updated according to the equation of motion for \f${\bf X}\f$.
 
 If the canonical average for the MF is effectively converged, the dynamical variables \f${\bf q}\f$ and \f${\bf X}\f$ are decoupled and they evolve adiabatically, which can be exploited for the on-the-fly evaluation of \f$F({\bf X})\f$. I.e., \f$H_{\rm log}\f$ should be a constant of motion in this case, thus \f$F({\bf X})\f$ can be evaluated each time \f${\bf X}\f$ is updated as
 
@@ -146,9 +146,9 @@ where
 \f]
 
 
-With the MF evaluated using the PD approach, reconstructing free energy profiles can be performed more efficiently (requiring less elapsed computing time) in LogPD than with a single MD system in LogMFD. In the case that there exists more than one stable state separated by high energy barriers in the hidden subspace orthogonal to the CV-subspace, LogPD is particularly of use to incorporate all the contributions from such hidden states with appropriate weights (in the limit \f$N_r\to\infty\f$ ).
+With the MF evaluated using the PD approach, free energy profiles can be reconstructed more efficiently (requiring less elapsed computing time) in LogPD than with a single MD system in LogMFD. In the case that there exist more than one stable state separated by high energy barriers in the hidden subspace orthogonal to the CV-subspace, LogPD is particularly of use to incorporate all the contributions from such hidden states with appropriate weights (in the limit \f$N_r\to\infty\f$ ).
 
-Note that LogPD calculations should always be initiated with an equilibrium \f${\bf q}\f$-configuration in each replica, because the Crooks-Jarzynski non-equilibrium work relation is invoked. Also note that LogPD is currently available only with Gromacs, while LogMFD can be performed with LAMMPS, Gromacs, and NAMD.
+Note that LogPD calculations should always be initiated with an equilibrium \f${\bf q}\f$-configuration in each replica, because the Crooks-Jarzynski non-equilibrium work relation is invoked. Also note that LogPD is currently available only with Gromacs, while LogMFD can be performed with LAMMPS, Gromacs, Quantum Espresso, NAMD, and so on.
 
 \section Thermostat Using LogMFD/PD with a thermostat
 
@@ -189,13 +189,29 @@ The velocity scaling algorithm (which is equivalent to the Gaussian isokinetic d
 The following algorithm is introduced to perform isokinetic LogMFD calculations \cite MorishitaVsLogMFD;
 
 \f{eqnarray*}{
-{V_{{X_i}}}\left( {{t_{n + 1}}} \right) &=& V_{X_i}^\prime \left( {{t_n}} \right) + \Delta t\left[ { - \left( {\frac{{\alpha \gamma }}{{\alpha F\left( {{t_n}} \right) + 1}}} \right)\frac{{\partial F\left( {{t_n}} \right)}}{{\partial {X_i}}}} \right]\\
-S\left( {{t_{n + 1}}} \right) &=& \sqrt {\frac{{N{k_B}T}}{{\sum\limits_i {{M_i}V_{{X_i}}^2\left( {{t_{n + 1}}} \right)} }}} \\
-{V_{{X_i}}}^\prime \left( {{t_{n + 1}}} \right) &=& S\left( {{t_{n + 1}}} \right){V_{{X_i}}}\left( {{t_{n + 1}}} \right)\\
-{X_i}\left( {{t_{n + 1}}} \right) &=& {X_i}\left( {{t_n}} \right) + \Delta t V_{X_i}^\prime \left( {{t_{n + 1}}} \right)\\
-{\Psi_{\rm log}}\left( {{t_{n + 1}}} \right) &=& N{k_B}T\log S\left( {{t_{n + 1}}} \right) + {\Psi_{\rm log}}\left( {{t_n}} \right)\\
-F\left( {{t_{n + 1}}} \right) &=& \frac{1}{\alpha} \left[
-    \exp \left\{ \Psi_{\rm log} \left( t_{n+1} \right) / \gamma \right\} - 1 \right]
+{V_{{X_i}}}\left( {{t_{n + 1}}} \right)
+&=&
+ V_{X_i}^\prime \left( {{t_n}} \right) + \Delta t \left[
+  { - \left( {\frac{{\alpha \gamma }}{{\alpha F\left( {{t_n}} \right) + 1}}} \right)
+  \frac{{\partial F\left( {{t_n}} \right)}}{{\partial {X_i}}}}
+ \right]\\
+S\left( {{t_{n + 1}}} \right)
+&=&
+ \sqrt {\frac{{N{k_B}T}}{{\sum\limits_i {{M_i}V_{{X_i}}^2\left( {{t_{n + 1}}} \right)} }}} \\
+{V_{{X_i}}}^\prime \left( {{t_{n + 1}}} \right)
+&=&
+S\left( {{t_{n + 1}}} \right){V_{{X_i}}}\left( {{t_{n + 1}}} \right)\\
+{X_i}\left( {{t_{n + 1}}} \right)
+&=&
+{X_i}\left( {{t_n}} \right) + \Delta t V_{X_i}^\prime \left( {{t_{n + 1}}} \right)\\
+{\Psi_{\rm log}}\left( {{t_{n + 1}}} \right)
+&=&
+N{k_B}T\log S\left( {{t_{n + 1}}} \right) + {\Psi_{\rm log}}\left( {{t_n}} \right)\\
+F\left( {{t_{n + 1}}} \right)
+&=&
+\frac{1}{\alpha} \left[
+  \exp \left\{ \Psi_{\rm log} \left( t_{n+1} \right) / \gamma \right\} - 1
+\right]
 \f}
 
 Note that \f$V_{X_i}^\prime\left( {{t_0}} \right)\f$ is assumed to be initially given, which meets the following relation,
@@ -225,29 +241,27 @@ psi: TORSION ATOMS=7,9,15,17
 LOGMFD ...
 LABEL=logmfd
 ARG=phi,psi
-KAPPA=100.0,100.0
-DELTA_T=0.5
-INTERVAL=500
+KAPPA=1000.0,1000.0
+DELTA_T=1.0
+INTERVAL=200
 TEMP=300.0
-FLOG=5.0
-MFICT=5000000.0,5000000.0
+FLOG=2.0
+MFICT=5000000,5000000
 VFICT=3.5e-4,3.5e-4
 ALPHA=4.0
 THERMOSTAT=NVE
-VETA=0.0
-META=20000.0
-FICT_MAX=3.1,3.1
-FICT_MIN=-3.1,-3.1
+FICT_MAX=3.15,3.15
+FICT_MIN=-3.15,-3.15
 ... LOGMFD
 \endplumedfile
 
 To submit this simulation with Gromacs, use the following command line
 to execute a LogMFD run with Gromacs-MD.
-Here TOPO/topol0.tpr is an input file
+Here topol.tpr is the input file
 which contains atomic coordinates and Gromacs parameters.
 
 \verbatim
-gmx_mpi mdrun -s TOPO/topol0.tpr -plumed
+gmx_mpi mdrun -s topol.tpr -plumed
 \endverbatim
 
 This command will output files named logmfd.out and replica.out.
@@ -259,14 +273,15 @@ logmfd.out
 \verbatim
 # LogMFD
 # CVs : phi psi
-# Mass for CV particles : 5000000.000000000 5000000.000000000
-# Mass for thermostat   :   20000.000000000
-# 1:iter_md, 2:Flog, 3:2*Ekin/gkb[K], 4:eta, 5:Veta,
+# Mass for CV particles : 5000000.000000 5000000.000000
+# Mass for thermostat   :   11923.224809
+# 1:iter_mfd, 2:Flog, 3:2*Ekin/gkb[K], 4:eta, 5:Veta,
 # 6:phi_fict(t), 7:phi_vfict(t), 8:phi_force(t),
 # 9:psi_fict(t), 10:psi_vfict(t), 11:psi_force(t),
-       1       4.99918574     308.24149708       0.00000000       0.00000000      -2.85605938       0.00035002       5.19074544       2.79216364       0.00035000      -0.53762989
-       2       4.99836196     308.26124159       0.00000000       0.00000000      -2.85588436       0.00035005       4.71247605       2.79233863       0.00035000      -0.00532474
-       3       4.99743572     308.28344595       0.00000000       0.00000000      -2.85570932       0.00035007       5.34358230       2.79251363       0.00035000      -0.05119816
+       0       2.000000     308.221983       0.000000       0.000000      -2.442363       0.000350       5.522717       2.426650       0.000350       7.443177
+       1       1.995466     308.475775       0.000000       0.000000      -2.442013       0.000350      -4.406246       2.427000       0.000350      11.531345
+       2       1.992970     308.615664       0.000000       0.000000      -2.441663       0.000350      -3.346513       2.427350       0.000350      15.763196
+       3       1.988619     308.859946       0.000000       0.000000      -2.441313       0.000350       6.463092       2.427701       0.000351       6.975422
 ...
 \endverbatim
 
@@ -275,27 +290,28 @@ The output file replica.out records all collective variables at every MFD step.
 replica.out
 
 \verbatim
-# Replica No. 0 of 1.
-# 1:iter_md, 2:work, 3:weight,
+ Replica No. 0 of 1.
+# 1:iter_mfd, 2:work, 3:weight,
 # 4:phi(q)
 # 5:psi(q)
-       1   -8.142952e-04     1.000000e+00       -2.80432694       2.78661234
-       2   -1.638105e-03     1.000000e+00       -2.80893462       2.79211039
-       3   -2.564398e-03     1.000000e+00       -2.80244854       2.79182665
+       0    0.000000e+00     1.000000e+00       -2.436841       2.434093
+       1   -4.539972e-03     1.000000e+00       -2.446420       2.438531
+       2   -7.038516e-03     1.000000e+00       -2.445010       2.443114
+       3   -1.139672e-02     1.000000e+00       -2.434850       2.434677
 ...
 \endverbatim
 
 \subsection Example-LogPD Example of LogPD
 
 Use the following command line to execute a LogPD run using two MD replicas (note that only Gromacs is currently available for LogPD).
-Here TOPO/topol0.tpr and TOPO/topol1.tpr are input files
-which contain atomic coordinates of each replica and Gromacs parameters.
+Here 0/topol.tpr and 1/topol.tpr are the input files,
+each containing the atomic coordinates for the corresponding replica and Gromacs parameters. All the directories, 0/ and 1/, should contain the same plumed.dat.
 
 \verbatim
-mpirun -np 2 gmx_mpi mdrun -s TOPO/topol -plumed -multi 2
+mpirun -np 2 gmx_mpi mdrun -s topol -plumed -multidir 0 1
 \endverbatim
 
-This command will output files named logmfd.out, replica.out.0 and replica.out.1.
+This command will output files named logmfd.out in 0/, and replica.out.0 and replica.out.1 in 0/ and 1/, respectively.
 
 The output file logmfd.out records free energy and all fictitious dynamical variables at every MFD step.
 
@@ -305,45 +321,48 @@ logmfd.out
 # LogPD, replica parallel of LogMFD
 # number of replica : 2
 # CVs : phi psi
-# Mass for CV particles : 5000000.000000000 5000000.000000000
-# Mass for thermostat   :   20000.000000000
-# 1:iter_md, 2:Flog, 3:2*Ekin/gkb[K], 4:eta, 5:Veta,
+# Mass for CV particles : 5000000.000000 5000000.000000
+# Mass for thermostat   :   11923.224809
+# 1:iter_mfd, 2:Flog, 3:2*Ekin/gkb[K], 4:eta, 5:Veta,
 # 6:phi_fict(t), 7:phi_vfict(t), 8:phi_force(t),
 # 9:psi_fict(t), 10:psi_vfict(t), 11:psi_force(t),
-       1       5.00224715     308.16814691       0.00000000       0.00000000      -0.95937173       0.00034994     -12.91277494       0.78923967       0.00035000       0.07353010
-       2       5.00476934     308.10774854       0.00000000       0.00000000      -0.95919679       0.00034989     -11.20093553       0.78941467       0.00034999      -3.21098229
-       3       5.00702463     308.05376594       0.00000000       0.00000000      -0.95902187       0.00034983     -10.81712171       0.78958965       0.00034998      -2.07196718
+       0       2.000000     308.221983       0.000000       0.000000      -2.417903       0.000350       4.930899       2.451475       0.000350      -3.122024
+       1       1.999367     308.257404       0.000000       0.000000      -2.417552       0.000350       0.851133       2.451825       0.000350      -1.552718
+       2       1.999612     308.243683       0.000000       0.000000      -2.417202       0.000350      -1.588175       2.452175       0.000350       1.601274
+       3       1.999608     308.243922       0.000000       0.000000      -2.416852       0.000350       4.267745       2.452525       0.000350      -4.565621
 ...
 \endverbatim
 
 
-The output file replica.out.0 records all collective variables of replica No.0 at every MFD step.
+The output file replica.out.0 records all collective variables and the Jarzynski weight of replica No.0 at every MFD step.
 
 replica.out.0
 
 \verbatim
 # Replica No. 0 of 2.
-# 1:iter_md, 2:work, 3:weight,
+# 1:iter_mfd, 2:work, 3:weight,
 # 4:phi(q)
 # 5:psi(q)
-       1    1.843110e-03     5.003389e-01       -1.10929125       0.83348865
-       2    3.466179e-03     5.010942e-01       -1.05020764       0.78731283
-       3    4.927870e-03     5.017619e-01       -1.04968867       0.79635198
+       0    0.000000e+00     5.000000e-01       -2.412607       2.446191
+       1   -4.649101e-06     4.994723e-01       -2.421403       2.451318
+       2    1.520985e-03     4.983996e-01       -2.420269       2.455049
+       3    1.588855e-03     4.983392e-01       -2.411081       2.447394
 ...
 \endverbatim
 
-The output file replica.out.1 records all collective variables of replica No.1 at every MFD step.
+The output file replica.out.1 records all collective variables and the Jarzynski weight of replica No.1 at every MFD step.
 
 replica.out.1
 
 \verbatim
 # Replica No. 1 of 2.
-# 1:iter_md, 2:work, 3:weight,
+# 1:iter_mfd, 2:work, 3:weight,
 # 4:phi(q)
 # 5:psi(q)
-       1    2.651173e-03     4.996611e-01       -1.06802968       0.74605205
-       2    6.075530e-03     4.989058e-01       -1.09264741       0.72681448
-       3    9.129358e-03     4.982381e-01       -1.08517238       0.74084241
+       0    0.000000e+00     5.000000e-01       -2.413336       2.450516
+       1   -1.263077e-03     5.005277e-01       -2.412009       2.449229
+       2   -2.295444e-03     5.016004e-01       -2.417322       2.452512
+       3   -2.371507e-03     5.016608e-01       -2.414078       2.448521
 ...
 \endverbatim
 
@@ -368,10 +387,12 @@ namespace logmfd {
  */
 class LogMFD : public Bias {
   bool firsttime;               ///< flag that indicates first MFD step or not.
+  int    step_initial;          ///< initial MD step.
   int    interval;              ///< input parameter, period of MD steps when fictitious dynamical variables are evolved.
   double delta_t;               ///< input parameter, one time step of MFD when fictitious dynamical variables are evolved.
   string thermostat;            ///< input parameter, type of thermostat for canonical dyanamics.
   double kbt;                   ///< k_B*temperature
+  double kbtpd;                   ///< k_B*temperature for PD
 
   int    TAMD;                  ///< input parameter, perform TAMD instead of LogMFD.
   double alpha;                 ///< input parameter, alpha parameter for LogMFD.
@@ -381,6 +402,7 @@ class LogMFD : public Bias {
   std::vector<double> fict_max; ///< input parameter, maximum of each fictitous dynamical variable.
   std::vector<double> fict_min; ///< input parameter, minimum of each fictitous dynamical variable.
 
+
   std::vector<double>  fict;    ///< current values of each fictitous dynamical variable.
   std::vector<double> vfict;    ///< current velocity of each fictitous dynamical variable.
   std::vector<double> mfict;    ///< mass of each fictitous dynamical variable.
@@ -389,12 +411,22 @@ class LogMFD : public Bias {
   double veta;                  ///< current velocity of eta variable of thermostat.
   double meta;                  ///< mass of eta variable of thermostat.
 
-  double flog;                  ///< current free energy
-
-  double hlog;                  ///< value invariant
   double phivs;                 ///< potential used in VS method
   double work;                  ///< current works done by fictitious dynamical variables in this replica.
   double weight;                ///< current weight of this replica.
+  double flog;                  ///< current free energy
+  double hlog;                  ///< value invariant
+
+  struct {
+    std::vector<double>  fict;
+    std::vector<double> vfict;
+    std::vector<double> ffict;
+    double xeta;
+    double veta;
+    double phivs;
+    double work;
+    double weight;
+  } backup;
 
   std::vector<double> ffict;    ///< current force of each fictitous dynamical variable.
   std::vector<double> fict_ave; ///< averaged values of each collective variable.
@@ -411,6 +443,7 @@ public:
   void updateNVE();
   void updateNVT();
   void updateVS();
+  void updateWork();
   void calcMeanForce();
   double calcEkin();
   double calcFlog();
@@ -433,12 +466,14 @@ void LogMFD::registerKeywords(Keywords& keys) {
   keys.add("compulsory","INTERVAL",
            "Period of MD steps (\\f$N_m\\f$) to update fictitious dynamical variables." );
   keys.add("compulsory","DELTA_T",
-           "Time step for the fictitious dynamical variables (MFD step)." );
+           "Time step for the fictitious dynamical variables (DELTA_T=1 often works)." );
   keys.add("compulsory","THERMOSTAT",
            "Type of thermostat for the fictitious dynamical variables. NVE, NVT, VS are available." );
   keys.add("optional","TEMP",
-           "Temperature of the fictitious dynamical variables in LogMFD/PD thermostat. "
-           "If not provided or provided as 0, it will be taken from the temperature of the MD system." );
+           "Target temperature for the fictitious dynamical variables in LogMFD/PD. "
+           "It is recommended to set TEMP to be the same as "
+           "the temperature of the MD system in any thermostated LogMFD/PD run. "
+           "If not provided, it will be taken from the temperature of the MD system (Gromacs only)." );
 
   keys.add("optional","TAMD",
            "When TAMD=1, TAMD/d-AFED calculations can be performed instead of LogMFD. Otherwise, the LogMFD protocol is switched on (default)." );
@@ -452,7 +487,7 @@ void LogMFD::registerKeywords(Keywords& keys) {
            "If not provided or provided as 0, it will be taken as 1/alpha. "
            "If alpha is also not provided, Gamma is set as 0.25, which is a sensible value when the unit of kcal/mol is used." );
   keys.add("compulsory","KAPPA",
-           "Spring constant of the harmonic restraining potential for the fictitious dynamical variables." );
+           "Spring constant of the harmonic restraining potential." );
 
   keys.add("compulsory","FICT_MAX",
            "Maximum values reachable for the fictitious dynamical variables. The variables will elastically bounce back at the boundary (mirror boundary)." );
@@ -464,7 +499,8 @@ void LogMFD::registerKeywords(Keywords& keys) {
            "If not provided, they are set equal to their corresponding CVs for the initial atomic configuration." );
   keys.add("optional","VFICT",
            "The initial velocities of the fictitious dynamical variables. "
-           "If not provided, they will be taken as 0." );
+           "If not provided, they will be taken as 0. "
+           "If THERMOSTAT=VS, they are instead automatically adjusted according to TEMP. "  );
   keys.add("optional","MFICT",
            "Masses of each fictitious dynamical variable. "
            "If not provided, they will be taken as 10000." );
@@ -486,12 +522,21 @@ void LogMFD::registerKeywords(Keywords& keys) {
            "realize \\f$F({\\bf X}(t)) > 0\\f$ at any \\f${\\bf X}(t)\\f$, "
            "resulting in enhanced barrier-crossing. "
            "(The value of \\f$H_{\\rm log}\\f$ is automatically "
-           "set according to FLOG).");
+           "set according to FLOG). "
+           "In fact, \\f$F({\\bf X}(t))\\f$ is correctly "
+           "estimated in PLUMED even when \\f$F({\\bf X}(t)) < 0\\f$ in "
+           "the LogMFD/PD run." );
 
   keys.add("optional","WORK",
            "The initial value of the work done by fictitious dynamical "
            "variables in each replica. "
            "If not provided, it will be taken as 0.");
+
+  keys.add("optional","TEMPPD",
+           "Temperature of the Boltzmann factor in the Jarzynski weight in LogPD (Gromacs only). "
+           "TEMPPD should be the same as the "
+           "temperature of the MD system, while TEMP may be (in principle) different from it. "
+           "If not provided, TEMPPD is set to be the same value as TEMP." );
 
   componentsAreNotOptional(keys);
   keys.addOutputComponent("_fict","default",
@@ -516,17 +561,19 @@ void LogMFD::registerKeywords(Keywords& keys) {
 LogMFD::LogMFD( const ActionOptions& ao ):
   PLUMED_BIAS_INIT(ao),
   firsttime(true),
+  step_initial(0),
   interval(10),
   delta_t(1.0),
   thermostat("NVE"),
   kbt(-1.0),
+  kbtpd(-1.0),
   TAMD(0),
   alpha(0.0),
   gamma(0.0),
   kappa(getNumberOfArguments(),0.0),
   fict_max(getNumberOfArguments(),0.0),
   fict_min(getNumberOfArguments(),0.0),
-  fict (getNumberOfArguments(),0.0),
+  fict (getNumberOfArguments(),-999.0), // -999 means no initial values given in plumed.dat
   vfict(getNumberOfArguments(),0.0),
   mfict(getNumberOfArguments(),10000.0),
   xeta(0.0),
@@ -542,10 +589,20 @@ LogMFD::LogMFD( const ActionOptions& ao ):
   fictValue(getNumberOfArguments(),NULL),
   vfictValue(getNumberOfArguments(),NULL)
 {
+  backup.fict.resize(getNumberOfArguments(),0.0);
+  backup.vfict.resize(getNumberOfArguments(),0.0);
+  backup.ffict.resize(getNumberOfArguments(),0.0);
+  backup.xeta = 0.0;
+  backup.veta = 0.0;
+  backup.phivs = 0.0;
+  backup.work = 0.0;
+  backup.weight = 0.0;
+
   parse("INTERVAL",interval);
   parse("DELTA_T",delta_t);
   parse("THERMOSTAT",thermostat);
   parse("TEMP",kbt); // read as temperature
+  parse("TEMPPD",kbtpd); // read as temperature
 
   parse("TAMD",TAMD);
   parse("ALPHA",alpha);
@@ -581,6 +638,13 @@ LogMFD::LogMFD( const ActionOptions& ao ):
   }
   else {
     kbt = plumed.getAtoms().getKbT();
+  }
+
+  if( kbtpd>=0.0 ) {
+    kbtpd *= plumed.getAtoms().getKBoltzmann();
+  }
+  else {
+    kbtpd = kbt;
   }
 
   if( meta == 0.0 ) {
@@ -667,8 +731,8 @@ LogMFD::LogMFD( const ActionOptions& ao ):
   log.printf("\n");
 
   log.printf("  and kbt                           ");
-  log.printf(" %f",kbt);
-  log.printf("\n");
+  log.printf(" %f\n",kbt);
+  log.printf(" kbt for PD %f\n",kbtpd);
 
   // setup Value* variables
   for(unsigned i=0; i<getNumberOfArguments(); i++) {
@@ -704,9 +768,11 @@ void LogMFD::calculate() {
   if( firsttime ) {
     firsttime = false;
 
+    step_initial = getStep();
+
     // set initial values of fictitious variables if they were not specified.
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      if( fict[i] != 0.0 ) continue;
+      if( fict[i] != -999.0 ) continue; // -999 means no initial values given in plumed.dat
 
       // use the collective variables as the initial of the fictitious variable.
       fict[i] = getArgument(i);
@@ -744,9 +810,20 @@ void LogMFD::calculate() {
       hlog = pot + ekin + ekin_bath;
     }
     else if(thermostat == "VS") {
-      // initial velocities
-      for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-        vfict[i] = sqrt(kbt/mfict[i]);
+      // kinetic energy
+      const double ekin = calcEkin();
+      if( ekin == 0.0 ) { // this means VFICT is not given.
+        // initial velocities
+        for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+          vfict[i] = sqrt(kbt/mfict[i]);
+        }
+      }
+      else {
+        const double nkt = getNumberOfArguments()*kbt;
+        const double svs = sqrt(nkt/ekin/2);
+        for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+          vfict[i] *= svs; // scale velocities
+        }
       }
       // initial VS potential
       phivs = TAMD ? flog : sgn(flog)* gamma*std::log1p( alpha*fabs(flog) );
@@ -778,14 +855,14 @@ void LogMFD::calculate() {
 
       fprintf(outlog, "# Mass for CV particles :");
       for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-        fprintf(outlog, "%18.9f", mfict[i]);
+        fprintf(outlog, "%15.6f", mfict[i]);
       }
       fprintf(outlog, "\n");
 
       fprintf(outlog, "# Mass for thermostat   :");
-      fprintf(outlog, "%18.9f", meta);
+      fprintf(outlog, "%15.6f", meta);
       fprintf(outlog, "\n");
-      fprintf(outlog, "# 1:iter_md, 2:Flog, 3:2*Ekin/gkb[K], 4:eta, 5:Veta,\n");
+      fprintf(outlog, "# 1:iter_mfd, 2:Flog, 3:2*Ekin/gkb[K], 4:eta, 5:Veta,\n");
 
       for(unsigned i=0; i<getNumberOfArguments(); ++i) {
         fprintf(outlog, "# %u:%s_fict(t), %u:%s_vfict(t), %u:%s_force(t),\n",
@@ -793,7 +870,6 @@ void LogMFD::calculate() {
                 7+i*3, getPntrToArgument(i)->getName().c_str(),
                 8+i*3, getPntrToArgument(i)->getName().c_str() );
       }
-
       fclose(outlog);
     }
 
@@ -803,7 +879,7 @@ void LogMFD::calculate() {
       fprintf(outlog2, "# Replica No. %d of %d.\n",
               multi_sim_comm.Get_rank(), multi_sim_comm.Get_size() );
 
-      fprintf(outlog2, "# 1:iter_md, 2:work, 3:weight,\n");
+      fprintf(outlog2, "# 1:iter_mfd, 2:work, 3:weight,\n");
       for(unsigned i=0; i<getNumberOfArguments(); ++i) {
         fprintf(outlog2, "# %u:%s(q)\n",
                 4+i, getPntrToArgument(i)->getName().c_str() );
@@ -815,7 +891,7 @@ void LogMFD::calculate() {
     //    log.printf("LOGMFD thermostat parameters Xeta Veta Meta");
     //    log.printf(" %f %f %f", xeta, veta, meta);
     //    log.printf("\n");
-    //    log.printf("# 1:iter_md, 2:Flog, 3:2*Ekin/gkb[K], 4:eta, 5:Veta,");
+    //    log.printf("# 1:iter_mfd, 2:Flog, 3:2*Ekin/gkb[K], 4:eta, 5:Veta,");
     //    log.printf("# 6:X1(t), 7:V1(t), 8:F1(t), 9:X2(t), 10:V2(t), 11:F2(t), ...");
 
   } // firsttime
@@ -842,6 +918,7 @@ void LogMFD::calculate() {
   setBias(ene);
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     // correct fict so that it is inside [min:max].
+    double tmp = fict[i];
     fict[i] = fictValue[i]->bringBackInPbc(fict[i]);
     fictValue[i]->set(fict[i]);
     vfictValue[i]->set(vfict[i]);
@@ -855,10 +932,54 @@ void LogMFD::calculate() {
    bounces back variables, updates free energy, and record logs.
 */
 void LogMFD::update() {
-  if(getStep() == 0 || getStep()%interval != 0 ) return;
+  if( (getStep()-step_initial)%interval != interval-1 ) return;
+
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    backup.fict[i]  =  fict[i];
+    backup.vfict[i] = vfict[i];
+  }
+  backup.xeta = xeta;
+  backup.veta = veta;
+  backup.phivs = phivs;
+  backup.work = work;
+  backup.weight = weight;
 
   // calc mean force for fictitious variables
   calcMeanForce();
+
+  // record log for fictitious variables
+  if( multi_sim_comm.Get_rank()==0 && comm.Get_rank()==0 ) {
+    const double ekin = calcEkin();
+    const double temp = 2.0*ekin/getNumberOfArguments()/plumed.getAtoms().getKBoltzmann();
+
+    FILE *outlog = std::fopen("logmfd.out", "a");
+    fprintf(outlog, "%*d", 8, (int)(getStep()-step_initial)/interval);
+    fprintf(outlog, "%15.6f", flog);
+    fprintf(outlog, "%15.6f", temp);
+    fprintf(outlog, "%15.6f", xeta);
+    fprintf(outlog, "%15.6f", veta);
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      fprintf(outlog, "%15.6f", fict[i]);
+      fprintf(outlog, "%15.6f", vfict[i]);
+      fprintf(outlog, "%15.6f", ffict[i]);
+    }
+    fprintf(outlog," \n");
+    fclose(outlog);
+  }
+
+  // record log for collective variables
+  if( comm.Get_rank()==0 ) {
+    // the number of replica is added to file name to distingwish replica.
+    FILE *outlog2 = fopen("replica.out", "a");
+    fprintf(outlog2, "%*d", 8, (int)(getStep()-step_initial)/interval);
+    fprintf(outlog2, "%16.6e ", work);
+    fprintf(outlog2, "%16.6e ", weight);
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      fprintf(outlog2, "%15.6f", fict_ave[i]);
+    }
+    fprintf(outlog2," \n");
+    fclose(outlog2);
+  }
 
   // update fictitious variables
   if(thermostat == "NVE") {
@@ -871,55 +992,31 @@ void LogMFD::update() {
     updateVS();
   }
 
-  // bounce back variables if they are beyond their min and max.
+  // update work done by fictitious dynamical variables
+  updateWork();
+
+  // check boundary
+  bool reject = false;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    if(fict[i] > fict_max[i]) {
-      fict[i] = fict_max[i] - (fict[i] - fict_max[i]);
-      vfict[i] *= -1.0;
+    if( fict[i] < fict_min[i] || fict_max[i] < fict[i] ) {
+      reject = true;
+      backup.vfict[i] *= -1.0;
     }
-    if(fict[i] < fict_min[i]) {
-      fict[i] = fict_min[i] + (fict_min[i] - fict[i]);
-      vfict[i] *= -1.0;
+  }
+  if( reject ) {
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      fict[i] = backup.fict[i];
+      vfict[i] = backup.vfict[i];
     }
+    xeta = backup.xeta;
+    veta = backup.veta;
+    phivs = backup.phivs;
+    work = backup.work;
+    weight = backup.weight;
   }
 
   // update free energy
   flog = calcFlog();
-
-  // record log for fictitious variables
-  if( multi_sim_comm.Get_rank()==0 && comm.Get_rank()==0 ) {
-    FILE *outlog = std::fopen("logmfd.out", "a");
-
-    const double ekin = calcEkin();
-    const double temp = 2.0*ekin/getNumberOfArguments()/plumed.getAtoms().getKBoltzmann();
-
-    fprintf(outlog, "%*d", 8, (int)getStep()/interval);
-    fprintf(outlog, "%17.8f", flog);
-    fprintf(outlog, "%17.8f", temp);
-    fprintf(outlog, "%17.8f", xeta);
-    fprintf(outlog, "%17.8f", veta);
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      fprintf(outlog, "%17.8f", fict[i]);
-      fprintf(outlog, "%17.8f", vfict[i]);
-      fprintf(outlog, "%17.8f", ffict[i]);
-    }
-    fprintf(outlog," \n");
-    fclose(outlog);
-  }
-
-  // record log for collective variables
-  if( comm.Get_rank()==0 ) {
-    // the number of replica is added to file name to distingwish replica.
-    FILE *outlog2 = fopen("replica.out", "a");
-    fprintf(outlog2, "%*d", 8, (int)getStep()/interval);
-    fprintf(outlog2, "%16.6e ", work);
-    fprintf(outlog2, "%16.6e ", weight);
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      fprintf(outlog2, "%17.8f", fict_ave[i]);
-    }
-    fprintf(outlog2," \n");
-    fclose(outlog2);
-  }
 
   // reset mean force
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
@@ -960,9 +1057,8 @@ void LogMFD::updateNVT() {
   const double nkt = getNumberOfArguments()*kbt;
 
   // backup vfict
-  std::vector<double> vfict_backup(getNumberOfArguments());
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    vfict_backup[i] = vfict[i];
+    backup.vfict[i] = vfict[i];
   }
 
   const int niter=5;
@@ -971,16 +1067,16 @@ void LogMFD::updateNVT() {
     flog = calcFlog();
     const double clog = calcClog();
 
-    // restore vfict from vfict_backup
-    for(unsigned l=0; l<getNumberOfArguments(); ++l) {
-      vfict[l] = vfict_backup[l];
+    // restore vfict from backup.vfict
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      vfict[i] = backup.vfict[i];
     }
 
-    // evolve vfict from vfict_backup by dt/2
-    for(unsigned m=0; m<getNumberOfArguments(); ++m) {
-      vfict[m] *= exp(-0.25*dt*veta);
-      vfict[m] += 0.5*dt*clog*ffict[m]/mfict[m];
-      vfict[m] *= exp(-0.25*dt*veta);
+    // evolve vfict from backup.vfict by dt/2
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      vfict[i] *= exp(-0.25*dt*veta);
+      vfict[i] += 0.5*dt*clog*ffict[i]/mfict[i];
+      vfict[i] *= exp(-0.25*dt*veta);
     }
   }
 
@@ -1035,6 +1131,17 @@ void LogMFD::updateVS() {
 } // updateVS
 
 /**
+   \brief update work done by fictious variables.
+   \details This function updates work done by ficitious variables.
+ */
+void LogMFD::updateWork() {
+  // accumulate work, it was initialized as 0.0
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    work -= backup.ffict[i] * vfict[i] * delta_t;
+  }
+} // updateWork
+
+/**
    \brief calculate mean force for fictitious variables.
    \details This function calculates mean forces by averaging forces accumulated during one MFD step,
    update work variables done by fictitious variables by one MFD step,
@@ -1044,6 +1151,8 @@ void LogMFD::calcMeanForce() {
   // cale temporal mean force for each CV
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     ffict[i] /= interval;
+    // backup force of replica
+    backup.ffict[i] = ffict[i];
     // average of diff (getArgument(i)-fict[i])
     fict_ave[i] /= interval;
     // average of getArgument(i)
@@ -1051,11 +1160,6 @@ void LogMFD::calcMeanForce() {
 
     // correct fict_ave so that it is inside [min:max].
     fict_ave[i] = fictValue[i]->bringBackInPbc(fict_ave[i]);
-  }
-
-  // accumulate work, it was initialized as 0.0
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    work -= ffict[i] * vfict[i] * delta_t; // modified sign
   }
 
   // for replica parallel
@@ -1066,11 +1170,11 @@ void LogMFD::calcMeanForce() {
 
     // weight of this replica.
     // here, work is reduced by work_min to avoid all exp(-work/kbt)s disconverge
-    if( kbt == 0.0 ) {
+    if( kbtpd == 0.0 ) {
       weight = work==work_min ? 1.0 : 0.0;
     }
     else {
-      weight = exp(-(work-work_min)/kbt);
+      weight = exp(-(work-work_min)/kbtpd);
     }
 
     // normalize the weight
@@ -1083,7 +1187,7 @@ void LogMFD::calcMeanForce() {
       ffict[i] *= weight;
     }
 
-    // mean forces of all replica.
+    // averaged mean forces of all replica.
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
       multi_sim_comm.Sum(ffict[i]);
     }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2021 The plumed team
+   Copyright (c) 2011-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -87,7 +87,7 @@ private:
   /// The data in the matrix
   std::vector<T> data;
 public:
-  Matrix(const unsigned nr=0, const unsigned nc=0 )  : sz(nr*nc), rw(nr), cl(nc), data(nr*nc) {}
+  explicit Matrix(const unsigned nr=0, const unsigned nc=0 )  : sz(nr*nc), rw(nr), cl(nc), data(nr*nc) {}
   Matrix(const Matrix<T>& t) : sz(t.sz), rw(t.rw), cl(t.cl), data(t.data) {}
   /// Resize the matrix
   void resize( const unsigned nr, const unsigned nc ) { rw=nr; cl=nc; sz=nr*nc; data.resize(sz); }
@@ -356,7 +356,7 @@ template <typename T> void cholesky( const Matrix<T>& A, Matrix<T>& B ) {
     for (unsigned k=0; k<i; ++k) D[i]-=L(i,k)*L(i,k)*D[k];
   }
 
-  for(unsigned i=0; i<A.rw; ++i) D[i]=(D[i]>0.?sqrt(D[i]):0.);
+  for(unsigned i=0; i<A.rw; ++i) D[i]=(D[i]>0.?std::sqrt(D[i]):0.);
   if( B.rw!=A.rw || B.cl!=A.cl ) { B.resize( A.rw, A.cl); }
   B=0.; for(unsigned i=0; i<A.rw; ++i) for(unsigned j=0; j<=i; ++j) B(i,j)+=L(i,j)*D[j];
 }

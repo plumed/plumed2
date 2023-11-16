@@ -13,6 +13,7 @@ SOEXT=@SOEXT@
 # LD is used only to link the plumed executable, so should be equivalent to the C++ compiler
 LD=@CXX@ @CXXFLAGS@
 LDSHARED=@LDSHARED@
+LD_MAIN_RUNPATH=@LD_MAIN_RUNPATH@
 GCCDEP=@CXX@
 disable_dependency_tracking=@disable_dependency_tracking@
 prefix=@prefix@

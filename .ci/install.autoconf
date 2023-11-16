@@ -1,0 +1,19 @@
+#! /usr/bin/env bash
+
+set -e
+set -x
+
+cd "$(mktemp -dt plumed.XXXXXX)"
+
+dir=autoconf-$1
+
+wget https://ftp.gnu.org/gnu/autoconf/$dir.tar.gz
+
+tar xzf $dir.tar.gz
+
+cd $dir
+
+./configure --prefix "$HOME/opt"
+make
+make install
+

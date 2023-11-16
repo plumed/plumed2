@@ -18,7 +18,7 @@ clean:
 coverage:
 	lcov -c -d ../src/ --output-file coverage.info
 # remove system headers:
-	lcov -r coverage.info "/opt/*" "/usr/*" -o coverage-full.info
+	lcov -r coverage.info "/opt/*" "/usr/*" "$(HOME)/opt/*" -o coverage-full.info
 # remove third-party libraries
 	lcov -o coverage.info -r coverage-full.info "*/blas/*" "*/lapack/*" "*/molfile/*" "*/lepton/*" "*/asmjit/*" "*/xdrfile/*"
 # generate coverage

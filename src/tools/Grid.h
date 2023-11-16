@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2021 The plumed team
+   Copyright (c) 2011-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -44,9 +44,25 @@ public:
 class BiasWeight:public WeightBase {
 public:
   double beta,invbeta;
+  double shift=0.0;
   explicit BiasWeight(double v) {beta=v; invbeta=1./beta;}
-  double projectInnerLoop(double &input, double &v) override {return  input+exp(beta*v);}
-  double projectOuterLoop(double &v) override {return -invbeta*std::log(v);}
+  //double projectInnerLoop(double &input, double &v) override {return  input+exp(beta*v);}
+  //double projectOuterLoop(double &v) override {return -invbeta*std::log(v);}
+  double projectInnerLoop(double &input, double &v) override {
+    auto betav=beta*v;
+    auto x=betav-shift;
+    if(x>0) {
+      shift=betav;
+      return input*std::exp(-x)+1;
+    } else {
+      return input+std::exp(x);
+    }
+  }
+  double projectOuterLoop(double &v) override {
+    auto res=-invbeta*(std::log(v)+shift);
+    shift=0.0;
+    return res;
+  }
 };
 
 class ProbWeight:public WeightBase {

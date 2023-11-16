@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2018-2021 The plumed team
+   Copyright (c) 2018-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -35,6 +35,7 @@
 #define __PLUMED_WRAPPER_IMPLEMENTATION 1
 #define __PLUMED_WRAPPER_EXTERN 0
 #define __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE 1
+#define __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE_PLMD_EXCEPTIONS 1
 #include "../wrapper/Plumed.h"
 
 namespace PLMD
@@ -80,21 +81,8 @@ void PlumedHandle::cmd(const std::string & key,const TypesafePtr & ptr) {
     safe.nelem=ptr.getNelem();
     safe.shape=const_cast<std::size_t*>(ptr.getShape());
     safe.flags=ptr.getFlags();
-    // try/catch needed to remap exceptions in anonymous namespace to standard plumed exceptions
-    // this is necessary otherwise a user would not be able to catch them
-    try {
-      Plumed(loaded).cmd(key.c_str(),safe);
-    } catch(PLMD::Plumed::ExceptionError& e) {
-      throw ExceptionError(e.what());
-    } catch(PLMD::Plumed::ExceptionDebug& e) {
-      throw ExceptionDebug(e.what());
-    } catch(PLMD::Plumed::ExceptionTypeError& e) {
-      throw ExceptionError(e.what());
-    } catch(PLMD::Plumed::LeptonException& e) {
-      throw lepton::Exception(e.what());
-    } catch(PLMD::Plumed::Exception& e) {
-      throw Exception(e.what());
-    }
+    safe.opt=nullptr;
+    plumed_cmd(plumed_v2c(loaded),key.c_str(),safe);
   } else plumed_error() << "should never arrive here (either one or the other should work)";
 }
 

@@ -15,6 +15,7 @@ int main(int argc,char*argv[]) {
   FILE* log;
   FILE* errors;
   plumed_error error;
+  plumed_error* nested;
 
   errors=fopen("error_codes","w");
 
@@ -34,6 +35,7 @@ int main(int argc,char*argv[]) {
     fprintf(errors,"%d\n",error.code);
     plumed_error_finalize(error);
   }
+  //plumed_gcmd("throw","test_nested1",&error);
   plumed_gcmd("init",0);
   plumed_gfinalize();
 
@@ -93,12 +95,47 @@ int main(int argc,char*argv[]) {
   fprintf(log,"bias: %lf\n",bias);
 
   fclose(log);
-  fclose(errors);
   plumed_finalize(p);
 
   free(positions);
   free(forces);
   free(masses);
 
+
+  fprintf(errors,"%s","*** We now test nested exceptions ***\n");
+  p=plumed_create();
+  plumed_cmd(p,"throw","test_nested1",&error);
+  if(error.code) {
+    // here nested exceptions are disabled.
+    // the thrown exception is already merged
+    fprintf(errors,"%d %s\n",error.code,(error.nested?"nested":"not nested"));
+    fprintf(errors,"%s\n",plumed_error_what(error));
+    plumed_error_merge_with_nested(&error);
+    fprintf(errors,"%d %s\n",error.code,(error.nested?"nested":"not nested"));
+    fprintf(errors,"%s\n",plumed_error_what(error));
+    plumed_error_finalize(error);
+  }
+
+  plumed_cmd(p,"setNestedExceptions",1);
+  plumed_cmd(p,"throw","test_nested1",&error);
+  if(error.code) {
+    // here nested exceptions are enabled.
+    // we can see the effect of merging the exceptions
+    fprintf(errors,"%d %s\n",error.code,(error.nested?"nested":"not nested"));
+    fprintf(errors,"%s\n",plumed_error_what(error));
+    nested=&error;
+    while(nested->nested) {
+      nested=nested->nested;
+      fprintf(errors,"%d %s\n",nested->code,(nested->nested?"nested":"not nested"));
+      fprintf(errors,"%s\n",plumed_error_what(*nested));
+    }
+    plumed_error_merge_with_nested(&error);
+    fprintf(errors,"%d %s\n",error.code,(error.nested?"nested":"not nested"));
+    fprintf(errors,"%s\n",plumed_error_what(error));
+    plumed_error_finalize(error);
+  }
+  plumed_finalize(p);
+
+  fclose(errors);
   return 0;
 }

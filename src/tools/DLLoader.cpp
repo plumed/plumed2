@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2021 The plumed team
+   Copyright (c) 2011-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -37,9 +37,13 @@ bool DLLoader::installed() {
 }
 
 
-void* DLLoader::load(const std::string&s) {
+void* DLLoader::load(const std::string&s, const bool useGlobal) {
 #ifdef __PLUMED_HAS_DLOPEN
-  void* p=dlopen(s.c_str(),RTLD_NOW|RTLD_LOCAL);
+  void* p=nullptr;
+  if (useGlobal)
+    p=dlopen(s.c_str(),RTLD_NOW|RTLD_GLOBAL);
+  else
+    p=dlopen(s.c_str(),RTLD_NOW|RTLD_LOCAL);
   if(!p) {
     lastError=dlerror();
   } else {
@@ -58,8 +62,8 @@ const std::string & DLLoader::error() {
 
 DLLoader::~DLLoader() {
   auto debug=std::getenv("PLUMED_LOAD_DEBUG");
-  if(debug) std::fprintf(stderr,"delete dlloader\n");
 #ifdef __PLUMED_HAS_DLOPEN
+  if(debug) std::fprintf(stderr,"delete dlloader\n");
   while(!handles.empty()) {
     int ret=dlclose(handles.top());
     if(ret) {
@@ -67,8 +71,8 @@ DLLoader::~DLLoader() {
     }
     handles.pop();
   }
-#endif
   if(debug) std::fprintf(stderr,"end delete dlloader\n");
+#endif
 }
 
 DLLoader::DLLoader() {

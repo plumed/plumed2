@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2021 The plumed team
+   Copyright (c) 2015-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -286,7 +286,7 @@ void PRE::calculate()
       tmpratio = pre ; //prova a caso per vedere se lui da problemi
       fact[i] = 1.; //prova a caso per vedere se lui da problemi
     } else {
-      tmpratio = rtwo[i]*exp(-pre*inept) / (rtwo[i]+pre);
+      tmpratio = rtwo[i]*std::exp(-pre*inept) / (rtwo[i]+pre);
       fact[i] = -tmpratio*(inept+1./(rtwo[i]+pre));
     }
     const double ratio = tmpratio;

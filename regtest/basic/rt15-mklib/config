@@ -1,0 +1,25 @@
+type=driver
+plumed_needs="dlopen"
+arg="--plumed plumed.dat --trajectory-stride 10 --timestep 0.005 --ixyz trajectory.xyz"
+
+function plumed_regtest_before(){
+  # find the name of the main executable
+  plumed="${PLUMED_PROGRAM_NAME:-plumed} --no-mpi"
+
+  # find soext
+  root=$(eval $plumed info --root)
+  source "$root"/src/config/compile_options.sh
+
+  # replace soext in the plumed.dat file
+  sed "s/__SOEXT__/$soext/g" plumed.dat.template > plumed.dat
+
+  # testing mklib with multiple arguments
+  eval $plumed mklib Distance2.cpp Distance2b.cpp
+  # notice that the library gets its name from the name of the first cpp file
+  # (Distance2.cpp)
+
+  # move library to make sure plumed does not compile it again from cpp
+  mv Distance2.$soext Distance3.$soext
+
+  # at this point Distance3.$soext is ready to be LOADed
+}

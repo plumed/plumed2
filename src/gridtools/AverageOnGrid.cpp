@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2021 The plumed team
+   Copyright (c) 2016-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -56,7 +56,7 @@ double AverageOnGrid::getGridElement( const unsigned& ipoint, const unsigned& je
   if( noderiv ) return getDataElement( nper*ipoint+jelement ) / getDataElement( nper*(1+ipoint) - 1);
 
   double rdenom = 1.0;
-  if( fabs(getDataElement( nper*(ipoint+1) -(dimension+1) ))>epsilon ) rdenom = 1. / getDataElement( nper*(ipoint+1) - (dimension+1) );
+  if( std::fabs(getDataElement( nper*(ipoint+1) -(dimension+1) ))>epsilon ) rdenom = 1. / getDataElement( nper*(ipoint+1) - (dimension+1) );
 
   unsigned jderiv = jelement%(1+dimension);
   if( jderiv==0 ) return rdenom*getDataElement( nper*ipoint+jelement );

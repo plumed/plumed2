@@ -17,7 +17,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #ifdef __PLUMED_HAS_BOOST_SERIALIZATION
 #include "cltools/CLTool.h"
-#include "cltools/CLToolRegister.h"
+#include "core/CLToolRegister.h"
 #include "config/Config.h"
 #include "core/ActionRegister.h"
 #include "DRR.h"
@@ -160,14 +160,14 @@ void drrtool::extractdrr(const vector<string> &filename) {
       std::cout << "Dumping counts and gradients from grids..." << '\n';
     }
     string outputname(filename[j]);
-    outputname = outputname.substr(0, outputname.length() - suffix.length());
+    outputname.resize(outputname.length() - suffix.length());
     if (verbosity)
       std::cout << "Writing ABF(naive) estimator files..." << '\n';
     abfgrid.writeAll(outputname);
     if (verbosity)
       std::cout << "Writing CZAR estimator files..." << '\n';
     czarestimator.writeAll(outputname);
-    czarestimator.writeZCount(outputname);
+    czarestimator.writeZCountZGrad(outputname);
   }
 }
 
@@ -211,13 +211,13 @@ void drrtool::mergewindows(const vector<string> &filename, string outputname) {
     [&](string s) {return s.substr(0, s.find(suffix));});
     outputname = std::accumulate(std::begin(tmp_name), std::end(tmp_name), string(""),
     [](const string & a, const string & b) {return a + b + "+";});
-    outputname = outputname.substr(0, outputname.size() - 1);
+    outputname.resize(outputname.size() - 1);
     std::cerr << "You have not specified an output filename for the merged"
               << " result, so the default name \"" + outputname
               << "\" is used here, which may yield unexpected behavior.\n";
   }
   cmerged.writeAll(outputname);
-  cmerged.writeZCount(outputname);
+  cmerged.writeZCountZGrad(outputname);
   amerged.writeAll(outputname);
 }
 
@@ -253,7 +253,7 @@ void drrtool::calcDivergence(const vector<string> &filename) {
       std::cout << "Dumping counts and gradients from grids..." << '\n';
     }
     string outputname(filename[j]);
-    outputname = outputname.substr(0, outputname.length() - suffix.length());
+    outputname.resize(outputname.length() - suffix.length());
     abfgrid.writeDivergence(outputname);
     czarestimator.writeDivergence(outputname);
   }

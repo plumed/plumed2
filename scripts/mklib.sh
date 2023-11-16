@@ -12,23 +12,20 @@ fi
 
 source "$PLUMED_ROOT"/src/config/compile_options.sh
 
-# if [ $# != 1 ] || [[ "$1" != *.cpp ]] ;
-# then
-#   echo "ERROR"
-#   echo "type 'plumed mklib file.cpp'"
-#   exit 1
-# fi
-
-
-file="$1"
-obj="${file%%.cpp}".o
-lib="${file%%.cpp}".$soext
-
-if [ ! -f "$file" ]
+if [ $# == 0 ]
 then
-  echo "ERROR: I cannot find file $file"
+  echo "ERROR"
+  echo "type 'plumed mklib file1.cpp [file2.cpp etc]'"
   exit 1
 fi
+
+lib="${1%%.cpp}".$soext
+rm -f "$lib"
+
+objs=""
+
+for file
+do
 
 rm -f "$obj" "$lib"
 objs=""
@@ -55,8 +52,6 @@ do
 
   obj="${file%%.cpp}".o
   
-
-
   if [ ! -f "$file" ]
   then
     echo "ERROR: I cannot find file $file"
@@ -84,13 +79,11 @@ do
   fi
   
   rm -f "$obj"
-  echo $toRemove >> toremove
   eval "$compile" "$PLUMED_MKLIB_CFLAGS" -o "$obj" "$tmpfile" || {
     echo "ERROR: compiling $file"
     exit 1
   }
 
-  #rm -f ${tmpfile} ${tmpfile}.bak
   objs="$objs $obj"
 
 done
@@ -100,6 +93,6 @@ link_command="$link_uninstalled"
 if test "$PLUMED_IS_INSTALLED" = yes ; then
   link_command="$link_installed"
 fi
-link_command="${link_command/ -o/} $PLUMED_MKLIB_LDFLAGS -o"
-eval "$link_command" "$lib" $objs
-echo "$link_command" "$lib" $objs
+link_command="${link_command} "
+eval "$link_command" "$PLUMED_MKLIB_LDFLAGS" -o "$lib" $objs
+echo "$link_command" "$PLUMED_MKLIB_LDFLAGS" -o "$lib" $objs

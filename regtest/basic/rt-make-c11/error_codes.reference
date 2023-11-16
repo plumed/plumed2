@@ -1,3 +1,46 @@
 20300
 20200
 20300
+*** We now test nested exceptions ***
+20000 not nested
+
+inner test_nested1
+
+The above exception was the direct cause of the following exception:
+
+middle test_nested1
+
+The above exception was the direct cause of the following exception:
+
+outer test_nested1
+20000 not nested
+
+inner test_nested1
+
+The above exception was the direct cause of the following exception:
+
+middle test_nested1
+
+The above exception was the direct cause of the following exception:
+
+outer test_nested1
+20000 nested
+
+outer test_nested1
+20000 nested
+
+middle test_nested1
+20000 not nested
+
+inner test_nested1
+20000 not nested
+
+inner test_nested1
+
+The above exception was the direct cause of the following exception:
+
+middle test_nested1
+
+The above exception was the direct cause of the following exception:
+
+outer test_nested1

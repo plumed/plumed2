@@ -1,5 +1,19 @@
 #! /usr/bin/env bash
 # vim:ft=python
+
+
+# WARNING: keep these in synch with the python code below:
+if [ "$#" = 1 ]; then
+  if [ "$1" = "--description" ] ; then
+    echo "create lists of serial atom numbers"
+    exit 0
+  fi
+  if [ "$1" = "--options" ] ; then
+    echo "--description --help -h --options --pdb"
+    exit 0
+  fi
+fi
+
 PYTHON_BIN="${PYTHON_BIN-python}"
 PLUMED_PYTHON_BIN="${PLUMED_PYTHON_BIN-${PYTHON_BIN}}"
 TEMP=$(mktemp -t plumed.XXXXXX)
@@ -98,6 +112,7 @@ for i in range(1,len(sys.argv)):
   if opt=="-h" or opt=="--help":
     print(help)
     sys.exit(0)
+# WARNING: keep these in synch with the bash code above
   elif opt=="--description":
     print("create lists of serial atom numbers")
     sys.exit(0)

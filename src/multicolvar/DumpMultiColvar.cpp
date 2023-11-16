@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2021 The plumed team
+   Copyright (c) 2014-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -103,7 +103,7 @@ DumpMultiColvar::DumpMultiColvar(const ActionOptions&ao):
   readArgument("store");
   mycolv = dynamic_cast<MultiColvarBase*>( getDependencies()[0] );
   plumed_assert( getDependencies().size()==1 );
-  if(!mycolv) error("action labeled " + mycolv->getLabel() + " is not a multicolvar");
+  if(!mycolv) error("action labeled " + getDependencies()[0]->getLabel() + " is not a multicolvar");
   log.printf("  printing colvars calculated by action %s \n",mycolv->getLabel().c_str() );
 
   std::vector<AtomNumber> atom;

@@ -1,8 +1,6 @@
-#ifdef __PLUMED_LIBCXX11
 // In order to correctly catch the thrown C++11 exceptions,
 // we notify the Plumed wrapper that those exceptions are recognized by the compiler.
 #define __PLUMED_WRAPPER_LIBCXX11 1
-#endif
 #include "plumed/tools/Stopwatch.h"
 #include "plumed/wrapper/Plumed.h"
 #include <fstream>
@@ -151,6 +149,8 @@ int main(){
   {
     PLMD::Plumed p;
 
+    p.cmd("setNestedExceptions",1);
+
 #define TEST_STD(type) try { p.cmd("throw", #type " msg"); } catch (type & e ) { plumed_assert(std::string(e.what())== #type " msg"); }
     TEST_STD(std::logic_error);
     TEST_STD(std::invalid_argument);
@@ -164,17 +164,27 @@ int main(){
 
 #define TEST_STD_NOMSG(type) try { p.cmd("throw", #type);} catch (type & e ) { }
     TEST_STD_NOMSG(std::bad_cast);
-#ifdef __PLUMED_LIBCXX11
     TEST_STD_NOMSG(std::bad_weak_ptr);
     TEST_STD_NOMSG(std::bad_function_call);
-#endif
     TEST_STD_NOMSG(std::bad_typeid);
     TEST_STD_NOMSG(std::bad_alloc);
-#ifdef __PLUMED_LIBCXX11
     TEST_STD_NOMSG(std::bad_array_new_length);
-#endif
     TEST_STD_NOMSG(std::bad_exception);
 
+#define TEST_REGEX(type) try { p.cmd("throw", "std::regex_error std::regex_constants::error_" #type);} catch (std::regex_error & e) { plumed_assert(e.code()==std::regex_constants::error_ ##type); }
+    TEST_REGEX(collate);
+    TEST_REGEX(ctype);
+    TEST_REGEX(escape);
+    TEST_REGEX(backref);
+    TEST_REGEX(brack);
+    TEST_REGEX(paren);
+    TEST_REGEX(brace);
+    TEST_REGEX(badbrace);
+    TEST_REGEX(range);
+    TEST_REGEX(space);
+    TEST_REGEX(badrepeat);
+    TEST_REGEX(complexity);
+    TEST_REGEX(stack);
 
     try { p.cmd("throw","PLMD::Exception msg"); } catch (PLMD::Plumed::Exception &e) {
     }
@@ -185,7 +195,6 @@ int main(){
     try { p.cmd("throw","PLMD::lepton::Exception msg"); } catch (PLMD::Plumed::LeptonException &e) {
       plumed_assert(std::string(e.what())=="PLMD::lepton::Exception msg");
     }
-#ifdef __PLUMED_LIBCXX11
     try { p.cmd("throw","std::system_error std::generic_category 100"); } catch (std::system_error & e) {
       plumed_assert(e.code().value()==100)<<" value="<<e.code().value();
       plumed_assert(e.code().category()==std::generic_category());
@@ -202,13 +211,142 @@ int main(){
       plumed_assert(e.code().value()==400);
       plumed_assert(e.code().category()==std::future_category());
     }
-#endif
     try { p.cmd("throw","std::ios_base::failure"); } catch (std::ios_base::failure & e) {
     }
 
     try { p.cmd("throw","unknown_name"); } catch (PLMD::Plumed::Exception &e) {
     }
 
+    
+    {
+      bool ok=true;
+      try {
+        p.cmd("throw","int");
+        ok=false;
+      } catch(const std::bad_exception &e) {
+        std::rethrow_if_nested(e); // this checks that it's not nested anymore
+      }
+      plumed_assert(ok)<<"should not arrive here";
+    }
+
+    {
+      bool ok=true;
+      try {
+        p.cmd("throw","test_nested1");
+        ok=false;
+      } catch(const PLMD::Plumed::Exception &e) {
+        plumed_assert(!std::strcmp(e.what(),"\nouter test_nested1"))<<e.what();
+        bool ok=true;
+        try {
+          std::rethrow_if_nested(e);
+          ok=false;
+        } catch(const PLMD::Plumed::Exception & e) {
+          plumed_assert(!std::strcmp(e.what(),"\nmiddle test_nested1"))<<e.what();
+          bool ok=true;
+          try {
+            std::rethrow_if_nested(e);
+            ok=false;
+          } catch(const PLMD::Plumed::Exception & e) {
+            plumed_assert(!std::strcmp(e.what(),"\ninner test_nested1"))<<e.what();
+            std::rethrow_if_nested(e); // this checks that it's not nested anymore
+          }
+          plumed_assert(ok)<<"should not arrive here";
+        }
+        plumed_assert(ok)<<"should not arrive here";
+      }
+      plumed_assert(ok)<<"should not arrive here";
+    }
+
+    {
+      bool ok=true;
+      try {
+        p.cmd("throw","test_nested2");
+        ok=false;
+      } catch(const PLMD::Plumed::Exception &e) {
+        plumed_assert(!std::strcmp(e.what(),"\nouter test_nested2"))<<e.what();
+        bool ok=true;
+        try {
+          std::rethrow_if_nested(e);
+          ok=false;
+        } catch(const PLMD::Plumed::Exception & e) {
+          plumed_assert(!std::strcmp(e.what(),"\nmiddle test_nested2"))<<e.what();
+          bool ok=true;
+          try {
+            std::rethrow_if_nested(e);
+            ok=false;
+          } catch(const std::bad_alloc & e) {
+            std::rethrow_if_nested(e); // this checks that it's not nested anymore
+          }
+          plumed_assert(ok)<<"should not arrive here";
+        }
+        plumed_assert(ok)<<"should not arrive here";
+      }
+      plumed_assert(ok)<<"should not arrive here";
+    }
+
+    {
+      bool ok=true;
+      try {
+        p.cmd("throw","test_nested3");
+        ok=false;
+      } catch(const PLMD::Plumed::Exception &e) {
+        plumed_assert(!std::strcmp(e.what(),"\nouter test_nested3"))<<e.what();
+        bool ok=true;
+        try {
+          std::rethrow_if_nested(e);
+          ok=false;
+        } catch(const PLMD::Plumed::Exception & e) {
+          plumed_assert(!std::strcmp(e.what(),"\nmiddle test_nested3"))<<e.what();
+          bool ok=true;
+          try {
+            std::rethrow_if_nested(e);
+            ok=false;
+          } catch(const PLMD::Plumed::Exception & e) {
+            plumed_error()<<"should not arrive here";
+          } catch(const std::exception & e) {
+            plumed_assert(!std::strcmp(e.what(),"inner"))<<e.what();
+            std::rethrow_if_nested(e); // this checks that it's not nested anymore
+          }
+          plumed_assert(ok)<<"should not arrive here";
+        }
+        plumed_assert(ok)<<"should not arrive here";
+      }
+      plumed_assert(ok)<<"should not arrive here";
+    }
+
+    p.cmd("setNestedExceptions",0);
+
+    {
+      bool ok=true;
+      try {
+        p.cmd("throw","test_nested1");
+        ok=false;
+      } catch(const PLMD::Plumed::Exception &e) {
+         plumed_assert(!std::strcmp(e.what(),
+           "\ninner test_nested1\n\nThe above exception was the direct cause of the following exception:\n"
+           "\nmiddle test_nested1\n\nThe above exception was the direct cause of the following exception:\n"
+           "\nouter test_nested1"
+         ))<<e.what();
+        std::rethrow_if_nested(e); // this checks that it's not nested anymore
+      }
+      plumed_assert(ok)<<"should not arrive here";
+    }
+
+    {
+      bool ok=true;
+      try {
+        p.cmd("throw","test_nested3");
+        ok=false;
+      } catch(const PLMD::Plumed::Exception &e) {
+         plumed_assert(!std::strcmp(e.what(),
+           "inner\n\nThe above exception was the direct cause of the following exception:\n"
+           "\nmiddle test_nested3\n\nThe above exception was the direct cause of the following exception:\n"
+           "\nouter test_nested3"
+         ))<<e.what();
+        std::rethrow_if_nested(e); // this checks that it's not nested anymore
+      }
+      plumed_assert(ok)<<"should not arrive here";
+    }
   }
 
   return 0;

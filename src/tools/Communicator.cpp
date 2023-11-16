@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2021 The plumed team
+   Copyright (c) 2012-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,8 +24,17 @@
 #include "AtomNumber.h"
 #include <cstdlib>
 #include <cstring>
+#include <cstdio>
 
 namespace PLMD {
+
+bool Communicator::plumedHasMPI() {
+#ifdef __PLUMED_HAS_MPI
+  return true;
+#else
+  return false;
+#endif
+}
 
 Communicator::Communicator()
 #ifdef __PLUMED_HAS_MPI
@@ -108,10 +117,9 @@ void Communicator::Abort(int errorcode) {
   if(initialized()) {
     MPI_Abort(communicator,errorcode);
   }
-  std::exit(errorcode);
-#else
-  std::exit(errorcode);
 #endif
+  std::fprintf(stderr,"aborting with error code %d\n",errorcode);
+  std::abort();
 }
 
 void Communicator::Bcast(Data data,int root) {
@@ -269,6 +277,7 @@ template<> MPI_Datatype Communicator::getMPIType<char>()   { return MPI_CHAR;}
 template<> MPI_Datatype Communicator::getMPIType<unsigned>()   { return MPI_UNSIGNED;}
 template<> MPI_Datatype Communicator::getMPIType<AtomNumber>()   { return MPI_UNSIGNED;}
 template<> MPI_Datatype Communicator::getMPIType<long unsigned>()   { return MPI_UNSIGNED_LONG;}
+template<> MPI_Datatype Communicator::getMPIType<long long unsigned>() { return MPI_UNSIGNED_LONG_LONG;}
 template<> MPI_Datatype Communicator::getMPIType<long double>()   { return MPI_LONG_DOUBLE;}
 #else
 template<> MPI_Datatype Communicator::getMPIType<float>() { return MPI_Datatype();}
@@ -278,6 +287,7 @@ template<> MPI_Datatype Communicator::getMPIType<char>() { return MPI_Datatype()
 template<> MPI_Datatype Communicator::getMPIType<unsigned>() { return MPI_Datatype();}
 template<> MPI_Datatype Communicator::getMPIType<AtomNumber>()   { return MPI_Datatype();}
 template<> MPI_Datatype Communicator::getMPIType<long unsigned>() { return MPI_Datatype();}
+template<> MPI_Datatype Communicator::getMPIType<long long unsigned>() { return MPI_Datatype();}
 template<> MPI_Datatype Communicator::getMPIType<long double>() { return MPI_Datatype();}
 #endif
 

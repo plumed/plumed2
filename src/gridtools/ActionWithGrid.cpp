@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2021 The plumed team
+   Copyright (c) 2016-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -67,6 +67,7 @@ std::unique_ptr<GridVessel> ActionWithGrid::createGrid( const std::string& type,
   } else {
     plumed_merror("no way to create grid of type " + type );
   }
+  // cppcheck-suppress danglingLifetime
   mygrid=grid.get();
   return grid;
 }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2021 The plumed team
+   Copyright (c) 2012-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -106,6 +106,7 @@ PLUMED_REGISTER_ACTION(Load,"LOAD")
 void Load::registerKeywords( Keywords& keys ) {
   ActionSetup::registerKeywords(keys);
   keys.add("compulsory","FILE","file to be loaded");
+  keys.addFlag("GLOBAL",false,"when selected the shared object is LOADed with RTLD_GLOBAL instead of RTLD_LOCAL");
 }
 
 Load::Load(const ActionOptions&ao):
@@ -114,8 +115,10 @@ Load::Load(const ActionOptions&ao):
 {
   std::string f;
   parse("FILE",f);
+  bool loadWithGlobal=false;
+  parseFlag("GLOBAL",loadWithGlobal);
   checkRead();
-  plumed.load(f);
+  plumed.load(f,loadWithGlobal);
 }
 
 }

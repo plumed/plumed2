@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2021 The plumed team
+   Copyright (c) 2012-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -30,6 +30,7 @@
 #include "tools/ForwardDecl.h"
 #include "tools/Subprocess.h"
 #include <memory>
+#include <map>
 
 namespace PLMD {
 
@@ -62,6 +63,7 @@ public:
   void calculate() override {}
   void apply() override {}
   static void registerKeywords( Keywords& keys );
+  static std::map<std::string,std::string> getSpecialKeywords();
   explicit GenericMolInfo(const ActionOptions&ao);
   void getBackbone( std::vector<std::string>& resstrings, const std::string& fortype, std::vector< std::vector<AtomNumber> >& backbone );
   std::string getAtomName(AtomNumber a)const;

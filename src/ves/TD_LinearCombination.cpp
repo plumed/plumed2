@@ -28,6 +28,8 @@
 #include "core/PlumedMain.h"
 #include "tools/Grid.h"
 
+#include <limits>
+
 
 namespace PLMD {
 
@@ -223,6 +225,7 @@ void TD_LinearCombination::updateGrid() {
     for(unsigned int i=0; i<ndist_; i++) {
       value += weights_[i]*grid_pntrs_[i]->getValue(l);
     }
+    if(value==0.0) value=std::numeric_limits<double>::denorm_min();
     targetDistGrid().setValue(l,value);
     logTargetDistGrid().setValue(l,-std::log(value));
   }

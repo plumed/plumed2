@@ -1,0 +1,23 @@
+20300
+20200
+20300
+
+inner test_nested1
+
+The above exception was the direct cause of the following exception:
+
+middle test_nested1
+
+The above exception was the direct cause of the following exception:
+
+outer test_nested1
+
+inner test_nested1
+
+The above exception was the direct cause of the following exception:
+
+middle test_nested1
+
+The above exception was the direct cause of the following exception:
+
+outer test_nested1

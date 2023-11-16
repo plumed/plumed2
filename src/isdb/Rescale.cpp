@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017-2021 The plumed team
+   Copyright (c) 2017-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,7 +23,7 @@
 
 */
 #include "bias/Bias.h"
-#include "bias/ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include "core/Value.h"
@@ -135,8 +135,8 @@ class Rescale : public bias::Bias
   // Monte Carlo stuff
   unsigned MCsteps_;
   unsigned MCstride_;
-  long int MCfirst_;
-  long unsigned MCaccgamma_;
+  long long int MCfirst_;
+  long long unsigned MCaccgamma_;
   // replica stuff
   unsigned nrep_;
   unsigned replica_;
@@ -149,7 +149,7 @@ class Rescale : public bias::Bias
   bool doAccept(double oldE, double newE);
   // read and print bias
   void read_bias();
-  void print_bias(long int step);
+  void print_bias(long long int step);
 
 public:
   explicit Rescale(const ActionOptions&);
@@ -411,7 +411,7 @@ void Rescale::doMonteCarlo(unsigned igamma, double oldE,
   plumed.passMap[selector_]=static_cast<double>(igamma);
 }
 
-void Rescale::print_bias(long int step)
+void Rescale::print_bias(long long int step)
 {
 // if first time open the file
   if(first_bias_) {
@@ -486,7 +486,7 @@ void Rescale::calculate()
   // set values of gamma
   getPntrToComponent("igamma")->set(igamma);
   // get time step
-  long int step = getStep();
+  long long int step = getStep();
   if(MCfirst_==-1) MCfirst_=step;
   // calculate gamma acceptance
   double MCtrials = std::floor(static_cast<double>(step-MCfirst_) / static_cast<double>(MCstride_))+1.0;

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2021 The plumed team
+   Copyright (c) 2012-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "Function.h"
 #include "tools/Exception.h"
 #include "tools/Communicator.h"
@@ -273,7 +273,7 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
       double a,b;
       Tools::convert(gmin[i],a);
       Tools::convert(gmax[i],b);
-      unsigned n=((b-a)/gspacing[i])+1;
+      unsigned n=std::ceil((b-a)/gspacing[i]);
       if(gbin[i]<n) gbin[i]=n;
     }
 

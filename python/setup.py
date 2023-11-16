@@ -40,7 +40,7 @@ def is_platform_mac():
     return sys.platform == 'darwin'
 
 if os.getenv("plumed_macports") is not None:
-    copyfile("../VERSION","VERSION")
+    copyfile("../VERSION.txt","PLUMED_VERSION")
     try:
         os.mkdir("include")
     except OSError:
@@ -53,17 +53,22 @@ if plumedname is None:
 
 plumedversion = os.getenv("plumed_version")
 if plumedversion is None:
-    plumedversion = subprocess.check_output(['grep','-v','#','./VERSION']).decode("utf-8").rstrip()
+    plumedversion = subprocess.check_output(['grep','-v','#','./PLUMED_VERSION']).decode("utf-8").rstrip()
 
 print( "Module name " + plumedname )
 print( "Version number " + plumedversion )
 
-extra_compile_args=['-D__PLUMED_HAS_DLOPEN','-D__PLUMED_WRAPPER_LINK_RUNTIME=1','-D__PLUMED_WRAPPER_CXX=1','-D__PLUMED_WRAPPER_IMPLEMENTATION=1','-D__PLUMED_WRAPPER_EXTERN=0','-D__PLUMED_WRAPPER_CXX_DEFAULT_INVALID=1'] 
+extra_compile_args=['-D__PLUMED_HAS_DLOPEN','-D__PLUMED_WRAPPER_LINK_RUNTIME=1','-D__PLUMED_WRAPPER_IMPLEMENTATION=1','-D__PLUMED_WRAPPER_EXTERN=0']
 
 defaultkernel=os.getenv("plumed_default_kernel")
 if defaultkernel is not None:
     extra_compile_args.append("-D__PLUMED_DEFAULT_KERNEL=" + os.path.abspath(defaultkernel))
     print( "Hardcoded PLUMED_KERNEL " + os.path.abspath(defaultkernel))
+
+plumed_disable_rtld_deepbind=os.getenv("plumed_disable_rtld_deepbind")
+if plumed_disable_rtld_deepbind is not None:
+    extra_compile_args.append("-D__PLUMED_WRAPPER_ENABLE_RTLD_DEEPBIND=0")
+    print( "Disabling RTLD_DEEPBIND")
 
 # Fixes problem with compiling the PYTHON interface in Mac OS 10.14 and higher.
 # Sets the deployment target to 10.9 when compiling on version 10.9 and above,
@@ -97,10 +102,10 @@ try:
 except KeyError:
     pass
 
-# if plumed.cpp is available, do not need cython
+# if plumed.c is available, do not need cython
 if not USE_CYTHON:
-    if not os.path.isfile("plumed.cpp"):
-        print('plumed.cpp not found, cython is needed')
+    if not os.path.isfile("plumed.c"):
+        print('plumed.c not found, cython is needed')
         USE_CYTHON = True
 
 # try to import cython
@@ -113,13 +118,13 @@ if USE_CYTHON:
         print('Error: building ' + plumedname + ' requires cython. Please install it first with pip install cython')
         sys.exit(-1)
 else:
-    print('using available plumed.cpp file')
-    extension="cpp"
+    print('using available plumed.c file')
+    extension="c"
 
 ext_modules=[Extension(
      name=plumedname,
      sources=["plumed." + extension],
-     language="c++",
+     language="c",
      include_dirs=include_dirs,
      extra_compile_args=extra_compile_args
   )]

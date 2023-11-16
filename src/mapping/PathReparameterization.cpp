@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2021 The plumed team
+   Copyright (c) 2016-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -85,7 +85,7 @@ void PathReparameterization::reparameterizePart( const int& istart, const int& i
 
   double prevsum=0.;
   for(unsigned iter=0; iter<MAXCYCLES; ++iter) {
-    if( fabs(sumlen[iend] - prevsum)<=TOL ) break ;
+    if( std::fabs(sumlen[iend] - prevsum)<=TOL ) break ;
     prevsum = sumlen[iend];
     // If no target is set we redistribute length
     if( target<0 ) {

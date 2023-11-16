@@ -30,8 +30,9 @@ Expand a simulation to sample multiple temperatures and pressures.
 
 The potential \ref ENERGY, \f$E\f$, and the \ref VOLUME, \f$V\f$, of the system should be used as ARG.
 \f[
-  \Delta u_{\beta',p'}=(\beta-\beta') E + (\beta p -\beta' p') V\, .
+  \Delta u_{\beta',p'}=(\beta'-\beta) E + (\beta' p' -\beta p) V\, ,
 \f]
+where \f$\beta', p'\f$ are the temperatures and pressures to be sampled, while \f$\beta, p\f$ is the temperature and pressure at which the simulation is conducted.
 
 If instead you wish to sample multiple temperatures and a single pressure, you should use \ref ECV_MULTITHERMAL with as ARG the internal energy \f$U=E+pV\f$.
 
@@ -326,7 +327,7 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
   log.printf("   and a pressure range from PRESSURE_MIN=%g to PRESSURE_MAX=%g\n",pres_min,pres_max);
   if(pres_min==pres_max)
     log.printf(" +++ WARNING +++ if you only need a multithermal simulation it is more efficient to set it up with ECV_MULTITHERMAL\n");
-  if(geom_spacing_)
+  if(!geom_spacing_)
     log.printf(" -- NO_GEOM_SPACING: inverse temperatures will be linearly spaced\n");
   if(coeff_!=0)
     log.printf(" -- CUT_CORNER: ignoring some high temperature and low pressure values\n");
