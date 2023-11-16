@@ -180,10 +180,11 @@ PythonCVInterface::PythonCVInterface(const ActionOptions&ao)try:
   if (init_function!=PYCV_NOTIMPLEMENTED) {
     auto init_fcn = py_module.attr(init_function.c_str());
     log.printf("  will use %s during the initialization\n", init_function.c_str());
-    init_fcn(this);
+    py::dict initDict = init_fcn(this);
   }
   log << "  Bibliography " << plumed.cite(PYTHONCV_CITATION) << "\n";
-} catch (const std::exception &e) {
+} catch (const py::error_already_set &e) {
+  //plumed_merror(e.what());
   vdbg(e.what());
 }
 
@@ -209,6 +210,7 @@ void PythonCVInterface::prepare() {
     auto prepare_fcn = py_module.attr(prepare_function.c_str());
     py::dict prepareDict = prepare_fcn(this);
     if (prepareDict.contains("setAtomRequest")) {
+      //should I use "interpretAtomList"?
       py::tuple t = prepareDict["setAtomRequest"];
       std::vector<PLMD::AtomNumber> myatoms;
       for (const auto &i : t) {
