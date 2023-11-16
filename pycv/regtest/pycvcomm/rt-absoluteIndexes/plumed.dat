@@ -1,4 +1,4 @@
-LOAD FILE=../../../../PythonCVInterface.so
+LOAD GLOBAL FILE=../../../../PythonCVInterface.so
 
 cvPY: ...
 PYCVINTERFACE
