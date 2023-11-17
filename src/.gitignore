@@ -15,11 +15,11 @@
 !/config
 !/contour
 !/core
-!/crystallization
 !/crystdistrib
 !/dimred
 !/drr
 !/eds
+!/envsim
 !/fourier
 !/function
 !/generic
