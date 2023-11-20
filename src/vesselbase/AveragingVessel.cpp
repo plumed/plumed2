@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "AveragingVessel.h"
-#include "ActionWithAveraging.h"
 
 namespace PLMD {
 namespace vesselbase {
@@ -33,10 +32,6 @@ AveragingVessel::AveragingVessel( const vesselbase::VesselOptions& vo ):
   Vessel(vo),
   wascleared(true)
 {
-  if( getAction() ) {
-    ActionWithAveraging* myav = dynamic_cast<ActionWithAveraging*>( getAction() );
-    plumed_assert( myav ); unormalised = myav->ignoreNormalization();
-  }
 }
 
 void AveragingVessel::finish( const std::vector<double>& buffer ) {

@@ -22,7 +22,6 @@
 #ifndef __PLUMED_symfunc_CoordinationNumbers_h
 #define __PLUMED_symfunc_CoordinationNumbers_h
 
-#include "MultiColvarBase.h"
 #include "core/ActionShortcut.h"
 
 namespace PLMD {

@@ -37,7 +37,6 @@ class Stopwatch;
 namespace vesselbase {
 
 class Vessel;
-class BridgeVessel;
 class StoreDataVessel;
 
 /**
@@ -48,12 +47,8 @@ times.  This is used in PLMD::MultiColvar.
 
 class ActionWithVessel : public virtual Action {
   friend class Vessel;
-  friend class ShortcutVessel;
   friend class FunctionVessel;
   friend class StoreDataVessel;
-  friend class BridgeVessel;
-  friend class ActionWithInputVessel;
-  friend class OrderingVessel;
 private:
 /// Do all calculations in serial
   bool serial;
@@ -108,8 +103,6 @@ protected:
 /// Add a vessel to the list of vessels
   void addVessel( const std::string& name, const std::string& input, const int numlab=0 );
   void addVessel( std::unique_ptr<Vessel> vv );
-/// Add a bridging vessel to the list of vessels
-  BridgeVessel* addBridgingVessel( ActionWithVessel* tome );
 /// Complete the setup of this object (this routine must be called after construction of ActionWithValue)
   void readVesselKeywords();
 /// Turn on the derivatives in the vessel
