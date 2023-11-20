@@ -22,6 +22,7 @@
 #include "CoordinationNumbers.h"
 #include "core/ActionShortcut.h"
 #include "multicolvar/MultiColvarShortcuts.h"
+#include "core/ActionWithValue.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/ActionRegister.h"

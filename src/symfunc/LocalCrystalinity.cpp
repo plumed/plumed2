@@ -23,6 +23,7 @@
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
+#include "core/ActionWithValue.h"
 #include "CoordinationNumbers.h"
 #include "multicolvar/MultiColvarShortcuts.h"
 

@@ -22,10 +22,8 @@
 #include "ActionWithVessel.h"
 #include "tools/Communicator.h"
 #include "Vessel.h"
-#include "ShortcutVessel.h"
 #include "StoreDataVessel.h"
 #include "VesselRegister.h"
-#include "BridgeVessel.h"
 #include "FunctionVessel.h"
 #include "StoreDataVessel.h"
 #include "tools/OpenMP.h"
@@ -112,7 +110,6 @@ void ActionWithVessel::addVessel( std::unique_ptr<Vessel> vv_ptr ) {
 // In the original code, the dynamically casted pointer was deleted here.
 // Now that vv_ptr is a unique_ptr, the object will be deleted automatically when
 // exiting this routine.
-  if(dynamic_cast<ShortcutVessel*>(vv_ptr.get())) return;
 
   vv_ptr->checkRead();
 
@@ -123,20 +120,6 @@ void ActionWithVessel::addVessel( std::unique_ptr<Vessel> vv_ptr ) {
 
 // Ownership is transferred to functions
   functions.emplace_back(std::move(vv_ptr));
-}
-
-BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ) {
-  VesselOptions da("","",0,"",this);
-  auto bv=Tools::make_unique<BridgeVessel>(da);
-  bv->setOutputAction( tome );
-  tome->actionIsBridged=true; dertime_can_be_off=false;
-// store this pointer in order to return it later.
-// notice that I cannot access this with functions.tail().get()
-// since functions contains pointers to a different class (Vessel)
-  auto toBeReturned=bv.get();
-  functions.emplace_back( std::move(bv) );
-  resizeFunctions();
-  return toBeReturned;
 }
 
 StoreDataVessel* ActionWithVessel::buildDataStashes( ActionWithVessel* actionThatUses ) {
@@ -226,10 +209,6 @@ void ActionWithVessel::lockContributors() {
     }
   }
   plumed_dbg_assert( n==nactive_tasks );
-  for(unsigned i=0; i<functions.size(); ++i) {
-    BridgeVessel* bb = dynamic_cast<BridgeVessel*>( functions[i].get() );
-    if( bb ) bb->copyTaskFlags();
-  }
   // Resize mydata to accommodate all active tasks
   if( mydata ) mydata->resize();
   contributorsAreUnlocked=false;
