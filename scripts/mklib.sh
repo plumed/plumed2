@@ -2,6 +2,8 @@
 
 if [ "$1" = --description ]; then
   echo "compile one or more *.cpp files into a shared library"
+  echo " you can create and export the variable PLUMED_MKLIB_CFLAGS with some extra compile time flags to be used"
+  echo " you can create and export the variable PLUMED_MKLIB_LDFLAGS with some extra link time flags (and libraries) to be used"
   exit 0
 fi
 
