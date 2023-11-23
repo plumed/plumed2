@@ -25,7 +25,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include <pybind11/embed.h> // everything needed for embedding
 
 namespace PLMD {
-  class Value;
+class Value;
 namespace pycv {
 
 using pycv_t = float;		// May need to adapt to the build precision?

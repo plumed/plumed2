@@ -498,11 +498,11 @@ PythonCVInterface::PythonCVInterface(const ActionOptions&ao)try ://the catch onl
         valueSettings(settings,getPntrToValue());
       } else {
         auto name=std::string(PYCV_COMPONENTPREFIX)
-                            +"-"+py::cast<std::string>(comp.first);
+                  +"-"+py::cast<std::string>(comp.first);
         initializeComponent(dynamic_cast<::PLMD::ActionWithValue&>(*this),
-        name,
+                            name,
                             settings);
-                            valueSettings(settings,getPntrToComponent(name));
+        valueSettings(settings,getPntrToComponent(name));
       }
     }
 

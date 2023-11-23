@@ -14,14 +14,10 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#include "PythonFunction.h"
 
-#include "ActionWithPython.h"
-
-#include "core/PlumedMain.h"
-#include "colvar/Colvar.h"
 #include "core/ActionRegister.h"
-#include "tools/Pbc.h"
-#include "function/Function.h"
+#include "core/PlumedMain.h" // cite
 
 #include <pybind11/embed.h> // everything needed for embedding
 #include <pybind11/numpy.h>
@@ -104,31 +100,14 @@ See \ref CUSTOM for a non-Python equivalent.
 */
 //+ENDPLUMEDOC
 
-class PythonFunction :
-  public function::Function,
-  public ActionWithPython {
-  static constexpr auto PYCV_DEFAULTINIT="plumedInit";
-  static constexpr auto PYCV_DEFAULTCALCULATE="plumedCalculate";
-  ::pybind11::module_ pyModule {};
-  ::pybind11::object pyCalculate{};
-  size_t nargs;
-
-  void check_dim(py::array_t<pycv_t> grad);
-public:
-  explicit PythonFunction(const ActionOptions&);
-// active methods:
-  virtual void calculate();
-  static void registerKeywords( Keywords& keys );
-};
-
 PLUMED_REGISTER_ACTION(PythonFunction,"PYTHONFUNCTION")
 
 void PythonFunction::registerKeywords( Keywords& keys ) {
   Function::registerKeywords( keys );
   keys.use("ARG"); keys.use("PERIODIC");
   keys.add("compulsory","IMPORT","the python file to import, containing the function");
-  keys.add("compulsory","CALCULATE","the function to call");
-
+  keys.add("compulsory","CALCULATE",PYCV_DEFAULTCALCULATE,"the function to call");
+  keys.add("compulsory","INIT",PYCV_DEFAULTINIT,"the function to call during the construction method of the function");
   // Why is NOPBC not listed here?
 }
 
@@ -173,11 +152,11 @@ PythonFunction::PythonFunction(const ActionOptions&ao)try:
     py::dict settingsDict=initDict["Value"];
     initializeValue(dynamic_cast<::PLMD::ActionWithValue&>(*this),settingsDict);
     valueSettings(settingsDict,getPntrToValue());
-    } else {
-      warning("  WARNING: by defaults components periodicity is not set and component is added without derivatives - see manual\n");
-      //this will crash with an error, beacuse periodicity is not explicitly set
-      addValue();
-    
+  } else {
+    warning("  WARNING: by defaults components periodicity is not set and component is added without derivatives - see manual\n");
+    //this will crash with an error, beacuse periodicity is not explicitly set
+    addValue();
+
   }
 
   log.printf("  with function : %s\n",calculateFunName.c_str());
@@ -200,7 +179,7 @@ void PythonFunction::calculate() try {
   }
 
   // Call the function
-  py::object r = pyCalculate(py_arg);
+  py::object r = pyCalculate(this);
 
   // Is there more than 1 return value?
   if(py::isinstance<py::tuple>(r)) {
@@ -243,6 +222,6 @@ void PythonFunction::check_dim(py::array_t<pycv_t> grad) {
   }
 }
 
-}// namespace pycv 
-}// namespace PLMD 
+}// namespace pycv
+}// namespace PLMD
 
