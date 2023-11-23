@@ -14,7 +14,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "PythonPlumedBase.h"
+#include "ActionWithPython.h"
 
 #include "colvar/Colvar.h"
 
@@ -27,41 +27,42 @@ namespace pycv {
 ///TODO: manual "you have to specify ATOMS=something for default atoms"
 ///TODO: add interface to pbc
 ///TODO: the topology can be assumed fixed and done on the go at each run by loading the pdb in the python code
-class PythonCVInterface : public Colvar,
-  public PythonPlumedBase {
+class PythonCVInterface : public Colvar, public ActionWithPython {
   static constexpr auto PYCV_NOTIMPLEMENTED="PYCV_NOTIMPLEMENTED";
-  std::string import;
-  std::string calculate_function;
-  std::string prepare_function = PYCV_NOTIMPLEMENTED;
-  std::string update_function = PYCV_NOTIMPLEMENTED;
-  std::string init_function = PYCV_NOTIMPLEMENTED;
+  static constexpr auto PYCV_DEFAULTINIT="plumedInit";
+  static constexpr auto PYCV_DEFAULTCALCULATE="plumedCalculate";
+  static constexpr std::string_view PYCV_COMPONENTPREFIX="py";
 
-  std::vector<std::string> components;
   std::unique_ptr<NeighborList> nl{nullptr};
 
-  int ncomponents;
-  int natoms;
+  ::pybind11::module_ pyModule {};
+  ::pybind11::object pyCalculate{};
+  ::pybind11::object pyPrepare;
+  ::pybind11::object pyUpdate;
+
   bool pbc=false;
-  bool has_prepare = false;
-  bool has_update = false;
+  bool hasPrepare = false;
+  bool hasUpdate = false;
   bool invalidateList = true;
   bool firsttime = true;
-
-  void check_dim(py::array_t<pycv_t>);
-  void calculateSingleComponent(py::object &);
-  void calculateMultiComponent(py::object &);
-  void readReturn(py::object &, Value* );
-
+  void calculateSingleComponent(pybind11::object &);
+  void calculateMultiComponent(pybind11::object &);
+  void readReturn(const pybind11::object &, Value* );
+  void initializeValue(pybind11::dict &);
+  void initializeComponent(const std::string&,pybind11::dict &);
+  void valueSettings( pybind11::dict &r, Value* valPtr);
 public:
-  py::dict dataContainer= {};
+  ::pybind11::dict dataContainer {};
   explicit PythonCVInterface(const ActionOptions&);
+  static void registerKeywords( Keywords& keys );
 // active methods:
   void calculate() override;
   void prepare() override;
   void update() override;
 
   NeighborList& getNL();
-  static void registerKeywords( Keywords& keys );
+  ///redefinition of parseAtomList to avoid confict between plumed.dat and python options
+  void pyParseAtomList(const char* key, const ::pybind11::dict &initDict, std::vector<AtomNumber> &);
 };
 
 } // namespace pycv

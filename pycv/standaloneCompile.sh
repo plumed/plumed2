@@ -7,11 +7,10 @@ if [ ! -z "$conda_fixup" ]; then
 fi
 
 export  PLUMED_MKLIB_CFLAGS="$(python3-config --cflags --embed) $(python -m pybind11 --includes)"
-#export  PLUMED_MKLIB_CFLAGS="$(python3-config  --cflags --embed) -Ipybind11-2.10.0/include"
+
 export PLUMED_MKLIB_LDFLAGS="$(python3-config --ldflags --embed) $conda_fixup"
 
 echo PLUMED_MKLIB_CFLAGS=$PLUMED_MKLIB_CFLAGS
 echo PLUMED_MKLIB_LDFLAGS=$PLUMED_MKLIB_LDFLAGS
 
-#../lib/plumed mklib PythonCV.cpp PythonFunction.cpp PythonPlumedBase.cpp
-../lib/plumed mklib PythonCVInterface.cpp PythonPlumedBase.cpp PlumedPythonEmbeddedModule.cpp
+plumed mklib PythonCVInterface.cpp ActionWithPython.cpp PlumedPythonEmbeddedModule.cpp

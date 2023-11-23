@@ -14,15 +14,17 @@ log = open("pydist.log", "w")
 
 print("Imported my pydist+.", file=log)
 
+plumedInit = {"Value": plumedCommunications.defaults.COMPONENT_NODEV}
+
 
 def pydist(action: plumedCommunications.PythonCVInterface):
-    #NB: This is not a realistic case of using the neigbour list!!!
-    #cvPY: PYCVINTERFACE GROUPA=1,4 IMPORT=pydistancegetAtPos CALCULATE=pydist
+    # NB: This is not a realistic case of using the neigbour list!!!
+    # cvPY: PYCVINTERFACE GROUPA=1,4 IMPORT=pydistancegetAtPos CALCULATE=pydist
     # ^ using this line should behave like calling "ATOMS=1,4" (with this function)
     atoms = action.getPositions()
     nl = action.getNeighbourList()
     assert nl.size() == 1
-    NLlist=nl.getClosePairs()[0]
+    NLlist = nl.getClosePairs()[0]
 
     d = atoms[NLlist[0]] - atoms[NLlist[1]]
     d = np.linalg.norm(d)

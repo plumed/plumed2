@@ -5,7 +5,6 @@ PYCVINTERFACE
 ATOMS=1,2
 IMPORT=unitTest
 CALCULATE=mypytest
-COMPONENTS=dbefore,dafter
 ...
 
 PRINT FILE=colvar.out ARG=*

@@ -15,10 +15,8 @@ You should have received a copy of the GNU Lesser General Public License
 along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-#include "PythonPlumedBase.h"
-#if __cplusplus < 201300
-#include "tools/Tools.h"
-#endif
+#include "ActionWithPython.h"
+
 #include <pybind11/embed.h> // everything needed for embedding
 #include <pybind11/numpy.h>
 
@@ -39,45 +37,55 @@ namespace pycv {
 // one of the PYCV actions are used.
 // https://pybind11.readthedocs.io/en/stable/reference.html#_CPPv422initialize_interpreterb
 
-int PlumedScopedPythonInterpreter::use_count=0;
+unsigned PlumedScopedPythonInterpreter::use_count=0;
 std::unique_ptr<py::scoped_interpreter> PlumedScopedPythonInterpreter::interpreterGuard =
   nullptr;
 std::mutex PlumedScopedPythonInterpreter::interpreterMutex{};
 
-PlumedScopedPythonInterpreter::PlumedScopedPythonInterpreter() {
+PlumedScopedPythonInterpreter::PlumedScopedPythonInterpreter(::PLMD::Log&outlog)
+  :log(outlog) {
   std::lock_guard<std::mutex> lk(interpreterMutex);
   if(use_count==0 && Py_IsInitialized()) {
-    //this should address the "calling pycv within a python interpreter problem"
+    //this addresses the "calling pycv within a python interpreter problem"
     ++use_count;
   }
 
   if(use_count==0) {
-
     std::cerr<< "------ initialized Python interpreter\n";
-    interpreterGuard =
-#if __cplusplus < 201300
-      PLMD::Tools::
-#else
-      std::
-#endif
-      make_unique<py::scoped_interpreter>();
+    log<< "------ initialized Python interpreter\n";
+    interpreterGuard = std::make_unique<py::scoped_interpreter>();
   } else {
     std::cerr << "------ Python interpreter already initializated\n";
+    log << "------ Python interpreter already initializated\n";
   }
   ++use_count;
 }
 
 PlumedScopedPythonInterpreter::~PlumedScopedPythonInterpreter() {
   // Finalization is tricky, because it should happen AFTER the
-  // destruction of the derived classes (which contain py::
-  // objects). Not doing it. <-- trying to address this
+  // destruction of ALL the python declared variables
   std::lock_guard<std::mutex> lk(interpreterMutex);
   --use_count;
   if(use_count==0) {
     interpreterGuard.reset(nullptr);
     std::cerr << "------ Python interpreter finalized\n";
+    log << "------ Python interpreter finalized\n";
   }
 }
 
+ActionWithPython::ActionWithPython (const ActionOptions&ao)
+  :Action(ao),guard(log) {}
+
+void ActionWithPython::pyParseFlag(const char* key, const ::pybind11::dict &initDict, bool& returnValue) {
+  parseFlag(key, returnValue);
+  if(initDict.contains(key)) {
+    bool defaultRet;
+    keywords.getLogicalDefault(key,defaultRet);
+    if (returnValue!=defaultRet) {
+      error(std::string("you specified the same keyword ").append(key)+ " both in python and in the settings file");
+    }
+    returnValue = initDict[key].cast<bool>();
+  }
+}
 } // namespace pycv
 } // namespace PLMD

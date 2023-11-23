@@ -13,6 +13,8 @@ log = open("pydist.log", "w")
 
 print("Imported my pydist.", file=log)
 
+plumedInit = {"Value": plumedCommunications.defaults.COMPONENT_NODEV}
+
 
 def pydist_(x):
     # print("call",file=log)

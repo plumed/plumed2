@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-#include "PythonPlumedBase.h"
+#include "ActionWithPython.h"
 
 #include "core/PlumedMain.h"
 #include "colvar/Colvar.h"
@@ -108,7 +108,7 @@ See \ref CUSTOM for a non-Python equivalent.
 
 class PythonFunction :
   public function::Function,
-  public PythonPlumedBase {
+  public ActionWithPython {
 
   string import;
   string function_name;

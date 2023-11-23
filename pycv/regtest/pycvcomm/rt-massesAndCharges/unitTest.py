@@ -5,6 +5,15 @@ log = open("pydist.log", "w")
 
 print("Imported my pydist+.", file=log)
 
+plumedInit = {
+    "COMPONENTS": {
+        "mass0": PLMD.defaults.COMPONENT_NODEV,
+        "mass1": PLMD.defaults.COMPONENT_NODEV,
+        "charge0": PLMD.defaults.COMPONENT_NODEV,
+        "charge1": PLMD.defaults.COMPONENT_NODEV,
+    }
+}
+
 
 def mypytest(action: PLMD.PythonCVInterface):
     ret = {

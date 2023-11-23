@@ -12,9 +12,24 @@ import plumedCommunications
 log = open("pydist.log", "w")
 
 print("Imported my pydist.", file=log)
+print(plumedCommunications.defaults.COMPONENT, file=log)
+
+plumedInit = dict(
+    COMPONENTS=dict(
+        aix=plumedCommunications.defaults.COMPONENT,
+        aiy=plumedCommunications.defaults.COMPONENT,
+        aiz=plumedCommunications.defaults.COMPONENT,
+        bix=plumedCommunications.defaults.COMPONENT,
+        biy=plumedCommunications.defaults.COMPONENT,
+        biz=plumedCommunications.defaults.COMPONENT,
+        cix=plumedCommunications.defaults.COMPONENT,
+        ciy=plumedCommunications.defaults.COMPONENT,
+        ciz=plumedCommunications.defaults.COMPONENT,
+    )
+)
 
 
-def pyInvBox(action: plumedCommunications.PythonCVInterface):
+def pyInvBox(action: plumedCommunications.PythonCVInterface):    
     invBox = action.getPbc().getInvBox()
     print(f"{invBox=}", file=log)
     ret = {}

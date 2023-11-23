@@ -24,9 +24,6 @@ rm -f "$lib"
 
 objs=""
 
-for file
-do
-
 rm -f "$obj" "$lib"
 objs=""
 

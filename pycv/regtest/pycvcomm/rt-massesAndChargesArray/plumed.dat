@@ -6,7 +6,6 @@ ATOMS=2,4
 IMPORT=unitTest
 CALCULATE=mypytest
 INIT=myInit
-COMPONENTS=mass0,mass1,charge0,charge1
 ...
 
 #I am returnin booleans

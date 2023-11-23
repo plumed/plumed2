@@ -2,12 +2,11 @@ LOAD GLOBAL FILE=../../../../PythonCVInterface.so
 
 cvPY: ...
 PYCVINTERFACE 
-GROUPA=1-4
 IMPORT=pyCOORDINATION
 CALCULATE=pyCoord
 ...
 
-coord: COORDINATION GROUPA=1-4 R_0=1.0
+coord: COORDINATION GROUPA=@mdatoms,@mdatoms R_0=0.4
 
 diff: CUSTOM ARG=cvPY,coord FUNC=y-x PERIODIC=NO
 

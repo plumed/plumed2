@@ -14,19 +14,25 @@ log = open("pydist.log", "w")
 
 print("Imported my pydist+.", file=log)
 
+plumedInit = {
+    "COMPONENTS": {
+        "x": plumedCommunications.defaults.COMPONENT,
+        "y": plumedCommunications.defaults.COMPONENT,
+        "z": plumedCommunications.defaults.COMPONENT,
+    }
+}
+
 
 def pydistInPair(action: plumedCommunications.PythonCVInterface):
-    #NB: This is not a realistic case of using the neigbour list!!!
-    #cvPY: PYCVINTERFACE GROUPA=1,4 IMPORT=pydistancegetAtPos CALCULATE=pydist
-    
+    # NB: This is not a realistic case of using the neigbour list!!!
+    # cvPY: PYCVINTERFACE GROUPA=1,4 IMPORT=pydistancegetAtPos CALCULATE=pydist
+
     atoms = action.getPositions()
     nl = action.getNeighbourList()
     assert nl.size() == 3
-        
-    x,y,z=[ atoms[pair[0]] - atoms[pair[1]] for pair in nl.getClosePairs()]
-    
-    zero=np.zeros(atoms.shape)
-    #MUST work with tuple or lists
-    return {'x':[x[0],zero],
-            'y':(y[1],zero),
-            'z':(z[2],zero)}
+
+    x, y, z = [atoms[pair[0]] - atoms[pair[1]] for pair in nl.getClosePairs()]
+
+    zero = np.zeros(atoms.shape)
+    # MUST work with tuple or lists
+    return {"x": [x[0], zero], "y": (y[1], zero), "z": (z[2], zero)}

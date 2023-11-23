@@ -13,6 +13,20 @@ log = open("pydist.log", "w")
 
 print("Imported my pydist.", file=log)
 
+plumedInit = {
+    "COMPONENTS": {
+        "ax": plumedCommunications.defaults.COMPONENT,
+        "ay": plumedCommunications.defaults.COMPONENT,
+        "az": plumedCommunications.defaults.COMPONENT,
+        "bx": plumedCommunications.defaults.COMPONENT,
+        "by": plumedCommunications.defaults.COMPONENT,
+        "bz": plumedCommunications.defaults.COMPONENT,
+        "cx": plumedCommunications.defaults.COMPONENT,
+        "cy": plumedCommunications.defaults.COMPONENT,
+        "cz": plumedCommunications.defaults.COMPONENT,
+    }
+}
+
 
 def pyBox(action: plumedCommunications.PythonCVInterface):
     d = action.getPbc().getBox()
@@ -21,6 +35,6 @@ def pyBox(action: plumedCommunications.PythonCVInterface):
     grad = {}
     for i, name in enumerate(["a", "b", "c"]):
         for j, coord in enumerate(["x", "y", "z"]):
-            ret[f"{name}{coord}"] = (d[i, j],  np.zeros((1, 3)))
+            ret[f"{name}{coord}"] = (d[i, j], np.zeros((1, 3)))
     print(ret, file=log)
     return ret
