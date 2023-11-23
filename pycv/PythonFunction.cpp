@@ -19,7 +19,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "core/PlumedMain.h"
 #include "colvar/Colvar.h"
-#include "colvar/ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "tools/Pbc.h"
 #include "function/Function.h"
 
@@ -104,22 +104,18 @@ See \ref CUSTOM for a non-Python equivalent.
 */
 //+ENDPLUMEDOC
 
-
+extern void valueSettings( pybind11::dict &r, Value* valPtr);
 
 class PythonFunction :
   public function::Function,
   public ActionWithPython {
-
-  string import;
-  string function_name;
+  static constexpr auto PYCV_DEFAULTINIT="plumedInit";
+  static constexpr auto PYCV_DEFAULTCALCULATE="plumedCalculate";
+  ::pybind11::module_ pyModule {};
+  ::pybind11::object pyCalculate{};
   size_t nargs;
 
-  py::array_t<pycv_t, py::array::c_style> py_arg;
-
   void check_dim(py::array_t<pycv_t> grad);
-
-
-
 public:
   explicit PythonFunction(const ActionOptions&);
 // active methods:
@@ -133,58 +129,89 @@ void PythonFunction::registerKeywords( Keywords& keys ) {
   Function::registerKeywords( keys );
   keys.use("ARG"); keys.use("PERIODIC");
   keys.add("compulsory","IMPORT","the python file to import, containing the function");
-  keys.add("compulsory","FUNCTION","the function to call");
+  keys.add("compulsory","CALCULATE","the function to call");
 
   // Why is NOPBC not listed here?
 }
 
 // Everything being copied from Custom.cpp
-PythonFunction::PythonFunction(const ActionOptions&ao):
+PythonFunction::PythonFunction(const ActionOptions&ao)try:
   Action(ao),
-  Function(ao)
-  // PLUMED_COLVAR_INIT(ao),
-  // pbc(false)
-{
+         Function(ao),
+  ActionWithPython(ao) {
 
   nargs = getNumberOfArguments();
-
+  //Loading the python module
+  std::string import;
   parse("IMPORT",import);
-  parse("FUNCTION",function_name);
+  std::string calculateFunName;
+  //setting up the calculate function
+  parse("CALCULATE",calculateFunName);
+  log.printf("  will import %s and call function %s\n", import.c_str(),
+             calculateFunName.c_str());
+  // Initialize the module and function pointers
+  pyModule = py::module::import(import.c_str());
+  if (!py::hasattr(pyModule,calculateFunName.c_str())) {
+    error("the function " + calculateFunName + " is not present in "+ import);
+  }
 
-  addValueWithDerivatives();
-  checkRead();
+  pyCalculate = pyModule.attr(calculateFunName.c_str());
+  std::string initFunName;
+  parse("INIT",initFunName);
+  py::dict initDict;
+  if(py::hasattr(pyModule,initFunName.c_str())) {
+    log.printf("  will use %s during the initialization\n", initFunName.c_str());
+    auto initFcn = pyModule.attr(initFunName.c_str());
+    if (py::isinstance<py::dict>(initFcn)) {
+      initDict = initFcn;
+    } else {
+      initDict = initFcn(this);
+    }
+  } else if(initFunName!=PYCV_DEFAULTINIT) {
+    //If the default INIT is not preset, is not a problem
+    error("the function "+ initFunName + " is not present in "+ import);
+  }
+  if(initDict.contains("Value")) {
+    py::dict settingsDict=initDict["Value"];
+    bool withDerivatives=false;
+    if(settingsDict.contains("derivative")) {
+      withDerivatives=settingsDict["derivative"].cast<bool>();
+      if(withDerivatives) {
+        addValueWithDerivatives();
+        log << " WITH derivatives\n";
+      } else {
+        addValue();
+        log << " WITHOUT derivatives\n";
+      }
+      valueSettings(settingsDict,getPntrToValue());
+    } else {
+      warning("  WARNING: by defaults components periodicity is not set and component is added without derivatives - see manual\n");
+      //this will crash with an error, beacuse periodicity is not explicitly set
+      addValue();
+    }
+  }
 
-  log.printf("  with function : %s\n",function_name.c_str());
+  log.printf("  with function : %s\n",calculateFunName.c_str());
 
   log<<"  Bibliography "
      <<plumed.cite(PYTHONCV_CITATION)
      <<"\n";
 
-
-  // ----------------------------------------
-
-  // Initialize the module and function pointer
-  py_module = py::module::import(import.c_str());
-  py_fcn = py_module.attr(function_name.c_str());
-
-
-  // ...and the coordinates array
-  py_arg = py::array_t<pycv_t>(nargs);
-  // ^ 2nd template argument may be py::array::c_style if needed
-  // py_X_ptr = (pycv_t *) py_X.request().ptr;
-
+} catch (const py::error_already_set &e) {
+  plumed_merror(e.what());
+  //vdbg(e.what());
 }
 
 
 // calculator
-void PythonFunction::calculate() {
-
+void PythonFunction::calculate() try {
+  py::array_t<pycv_t, py::array::c_style> py_arg;
   for(size_t i=0; i<nargs; i++) {
     py_arg.mutable_at(i)=getArgument(i);
   }
 
   // Call the function
-  py::object r = py_fcn(py_arg);
+  py::object r = pyCalculate(py_arg);
 
   // Is there more than 1 return value?
   if(py::isinstance<py::tuple>(r)) {
@@ -211,6 +238,9 @@ void PythonFunction::calculate() {
   }
 
 
+} catch (const py::error_already_set &e) {
+  plumed_merror(e.what());
+  //vdbg(e.what());
 }
 
 
@@ -224,10 +254,6 @@ void PythonFunction::check_dim(py::array_t<pycv_t> grad) {
   }
 }
 
-
-
-}
-}
-
-
+}// namespace pycv 
+}// namespace PLMD 
 

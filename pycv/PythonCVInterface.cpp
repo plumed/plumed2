@@ -422,9 +422,10 @@ void PythonCVInterface::registerKeywords( Keywords& keys ) {
 PythonCVInterface::PythonCVInterface(const ActionOptions&ao)try ://the catch only applies to pybind11 things
   PLUMED_COLVAR_INIT(ao),
   ActionWithPython(ao) {
-  //let's check the python things at first
+  //Loading the python module
   std::string import;
   parse("IMPORT",import);
+  //setting up the calculate function
   std::string calculateFunName;
   parse("CALCULATE",calculateFunName);
   log.printf("  will import %s and call function %s\n", import.c_str(),
@@ -618,7 +619,7 @@ void PythonCVInterface::initializeComponent(const std::string&name,py::dict &set
   valueSettings(settingsDict,getPntrToComponent(name));
 }
 
-void PythonCVInterface::valueSettings(py::dict &settings, Value* valPtr) {
+void valueSettings(py::dict &settings, Value* valPtr) {
   if(settings.contains("period")) {
     if (settings["period"].is_none()) {
       valPtr->setNotPeriodic();

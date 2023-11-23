@@ -50,7 +50,6 @@ class PythonCVInterface : public Colvar, public ActionWithPython {
   void readReturn(const pybind11::object &, Value* );
   void initializeValue(pybind11::dict &);
   void initializeComponent(const std::string&,pybind11::dict &);
-  void valueSettings( pybind11::dict &r, Value* valPtr);
 public:
   ::pybind11::dict dataContainer {};
   explicit PythonCVInterface(const ActionOptions&);
@@ -64,6 +63,8 @@ public:
   ///redefinition of parseAtomList to avoid confict between plumed.dat and python options
   void pyParseAtomList(const char* key, const ::pybind11::dict &initDict, std::vector<AtomNumber> &);
 };
+
+void valueSettings( pybind11::dict &r, Value* valPtr);
 
 } // namespace pycv
 } // namespace PLMD
