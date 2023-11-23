@@ -17,6 +17,8 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "ActionWithPython.h"
 
+#include "core/ActionWithValue.h"
+
 #include <pybind11/embed.h> // everything needed for embedding
 #include <pybind11/numpy.h>
 
@@ -87,5 +89,55 @@ void ActionWithPython::pyParseFlag(const char* key, const ::pybind11::dict &init
     returnValue = initDict[key].cast<bool>();
   }
 }
+/******************************************************************************/
+//Value/components init
+void initializeValue(::PLMD::ActionWithValue& action,pybind11::dict &settingsDict) {
+  action.log << "  will have a single component";
+  bool withDerivatives=false;
+  if(settingsDict.contains("derivative")) {
+    withDerivatives=settingsDict["derivative"].cast<bool>();
+  }
+  if(withDerivatives) {
+    action.addValueWithDerivatives();
+    action.log << " WITH derivatives\n";
+  } else {
+    action.addValue();
+    action.log << " WITHOUT derivatives\n";
+  }
+}
+
+
+void initializeComponent(::PLMD::ActionWithValue& action,const std::string&name,py::dict &settingsDict) {
+  bool withDerivatives=false;
+  if(settingsDict.contains("derivative")) {
+    withDerivatives=settingsDict["derivative"].cast<bool>();
+  }
+
+  if(withDerivatives) {
+    action.addComponentWithDerivatives(name);
+    action.log << " WITH derivatives\n";
+  } else {
+    action.addComponent(name);
+    action.log << " WITHOUT derivatives\n";
+  }
+}
+
+void valueSettings(py::dict &settings, Value* valPtr) {
+  if(settings.contains("period")) {
+    if (settings["period"].is_none()) {
+      valPtr->setNotPeriodic();
+    } else {
+      py::tuple t = settings["period"];
+      if(t.size()!=2) {
+        plumed_merror("period must have exactly 2 components");
+      }
+      //the ballad py::str(t[0]).cast<std::string>() is to not care about the type of input of the user
+      std::string min=py::str(t[0]).cast<std::string>();
+      std::string max=py::str(t[1]).cast<std::string>();
+      valPtr->setDomain(min, max);
+    }
+  }
+}
+
 } // namespace pycv
 } // namespace PLMD

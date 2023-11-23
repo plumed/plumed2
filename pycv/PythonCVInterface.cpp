@@ -494,17 +494,22 @@ PythonCVInterface::PythonCVInterface(const ActionOptions&ao)try ://the catch onl
     for(auto comp: components) {
       auto settings = py::cast<py::dict>(comp.second);
       if(components.size()==1) { //a single component
-        initializeValue(settings);
+        initializeValue(dynamic_cast<::PLMD::ActionWithValue&>(*this), settings);
+        valueSettings(settings,getPntrToValue());
       } else {
-        initializeComponent(std::string(PYCV_COMPONENTPREFIX)
-                            +"-"+py::cast<std::string>(comp.first),
+        auto name=std::string(PYCV_COMPONENTPREFIX)
+                            +"-"+py::cast<std::string>(comp.first);
+        initializeComponent(dynamic_cast<::PLMD::ActionWithValue&>(*this),
+        name,
                             settings);
+                            valueSettings(settings,getPntrToComponent(name));
       }
     }
 
   } else if(initDict.contains("Value")) {
     py::dict settingsDict=initDict["Value"];
-    initializeValue(settingsDict);
+    initializeValue(dynamic_cast<::PLMD::ActionWithValue&>(*this),settingsDict);
+    valueSettings(settingsDict,getPntrToValue());
   } else {
     warning("  WARNING: by defaults components periodicity is not set and component is added without derivatives - see manual\n");
     //this will crash with an error, beacuse periodicity is not explicitly set
@@ -586,54 +591,6 @@ PythonCVInterface::PythonCVInterface(const ActionOptions&ao)try ://the catch onl
 } catch (const py::error_already_set &e) {
   plumed_merror(e.what());
   //vdbg(e.what());
-}
-
-void PythonCVInterface::initializeValue(pybind11::dict &settingsDict) {
-  log << "  will have a single component";
-  bool withDerivatives=false;
-  if(settingsDict.contains("derivative")) {
-    withDerivatives=settingsDict["derivative"].cast<bool>();
-  }
-  if(withDerivatives) {
-    addValueWithDerivatives();
-    log << " WITH derivatives\n";
-  } else {
-    addValue();
-    log << " WITHOUT derivatives\n";
-  }
-  valueSettings(settingsDict,getPntrToValue());
-}
-void PythonCVInterface::initializeComponent(const std::string&name,py::dict &settingsDict) {
-  bool withDerivatives=false;
-  if(settingsDict.contains("derivative")) {
-    withDerivatives=settingsDict["derivative"].cast<bool>();
-  }
-
-  if(withDerivatives) {
-    addComponentWithDerivatives(name);
-    log << " WITH derivatives\n";
-  } else {
-    addComponent(name);
-    log << " WITHOUT derivatives\n";
-  }
-  valueSettings(settingsDict,getPntrToComponent(name));
-}
-
-void valueSettings(py::dict &settings, Value* valPtr) {
-  if(settings.contains("period")) {
-    if (settings["period"].is_none()) {
-      valPtr->setNotPeriodic();
-    } else {
-      py::tuple t = settings["period"];
-      if(t.size()!=2) {
-        plumed_merror("period must have exactly 2 components");
-      }
-      //the ballad py::str(t[0]).cast<std::string>() is to not care about the type of input of the user
-      std::string min=py::str(t[0]).cast<std::string>();
-      std::string max=py::str(t[1]).cast<std::string>();
-      valPtr->setDomain(min, max);
-    }
-  }
 }
 
 void PythonCVInterface::prepare() try {

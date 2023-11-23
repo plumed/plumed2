@@ -104,8 +104,6 @@ See \ref CUSTOM for a non-Python equivalent.
 */
 //+ENDPLUMEDOC
 
-extern void valueSettings( pybind11::dict &r, Value* valPtr);
-
 class PythonFunction :
   public function::Function,
   public ActionWithPython {
@@ -173,22 +171,13 @@ PythonFunction::PythonFunction(const ActionOptions&ao)try:
   }
   if(initDict.contains("Value")) {
     py::dict settingsDict=initDict["Value"];
-    bool withDerivatives=false;
-    if(settingsDict.contains("derivative")) {
-      withDerivatives=settingsDict["derivative"].cast<bool>();
-      if(withDerivatives) {
-        addValueWithDerivatives();
-        log << " WITH derivatives\n";
-      } else {
-        addValue();
-        log << " WITHOUT derivatives\n";
-      }
-      valueSettings(settingsDict,getPntrToValue());
+    initializeValue(dynamic_cast<::PLMD::ActionWithValue&>(*this),settingsDict);
+    valueSettings(settingsDict,getPntrToValue());
     } else {
       warning("  WARNING: by defaults components periodicity is not set and component is added without derivatives - see manual\n");
       //this will crash with an error, beacuse periodicity is not explicitly set
       addValue();
-    }
+    
   }
 
   log.printf("  with function : %s\n",calculateFunName.c_str());

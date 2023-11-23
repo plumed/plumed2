@@ -20,11 +20,12 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include <mutex>
 #include <string>
 
-#include "core/ActionAtomistic.h"
+#include "core/Action.h"
 
 #include <pybind11/embed.h> // everything needed for embedding
 
 namespace PLMD {
+  class Value;
 namespace pycv {
 
 using pycv_t = float;		// May need to adapt to the build precision?
@@ -70,6 +71,10 @@ void ActionWithPython::pyParse(
     returnValue = initDict[key].cast<T>();
   }
 }
+
+void initializeValue(::PLMD::ActionWithValue&, pybind11::dict &);
+void initializeComponent(::PLMD::ActionWithValue&,const std::string&,pybind11::dict &);
+void valueSettings( pybind11::dict &r, Value* valPtr);
 
 } // namespace pycv
 } // namespace PLMD
