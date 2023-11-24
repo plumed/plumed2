@@ -100,7 +100,7 @@ See \ref CUSTOM for a non-Python equivalent.
 */
 //+ENDPLUMEDOC
 
-PLUMED_REGISTER_ACTION(PythonFunction,"PYTHONFUNCTION")
+PLUMED_REGISTER_ACTION(PythonFunction,"PYFUNCTION")
 
 void PythonFunction::registerKeywords( Keywords& keys ) {
   Function::registerKeywords( keys );
@@ -173,10 +173,10 @@ PythonFunction::PythonFunction(const ActionOptions&ao)try:
 
 // calculator
 void PythonFunction::calculate() try {
-  py::array_t<pycv_t, py::array::c_style> py_arg;
-  for(size_t i=0; i<nargs; i++) {
-    py_arg.mutable_at(i)=getArgument(i);
-  }
+  // py::array_t<pycv_t, py::array::c_style> py_arg;
+  // for(size_t i=0; i<nargs; i++) {
+  //   py_arg.mutable_at(i)=getArgument(i);
+  // }
 
   // Call the function
   py::object r = pyCalculate(this);

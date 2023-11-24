@@ -25,14 +25,15 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include "tools/NeighborList.h"
 
 #include "PythonCVInterface.h"
+#include "PythonFunction.h"
 
 namespace py=pybind11;
 using PLMD::pycv::pycv_t;
 
 PYBIND11_MAKE_OPAQUE(std::vector<PLMD::AtomNumber>)
 
-#define defGetter(pyfun, cppfun, type, description) \
-  def(pyfun, [](PLMD::pycv::PythonCVInterface* self) -> type{ \
+#define defGetter(pyfun,classname, cppfun, type, description) \
+  def(pyfun, [](classname* self) -> type{ \
     return self->cppfun(); }, description)
 
 PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
@@ -42,12 +43,27 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
   py::bind_vector<std::vector<PLMD::AtomNumber>>(m, "VectorAtomNumber");
   py::class_<PLMD::pycv::PythonCVInterface>(m, "PythonCVInterface")
   .def_readwrite("data",&PLMD::pycv::PythonCVInterface::dataContainer,"Return an accessible dictionary that persist along all the simulation")
+  /***************************Start of Action methods***************************/
   //usin "PLMD::pycv::PythonCVInterface::getStep" instead of the lambda gives compilation errors
-  .defGetter("getStep",getStep, long int,"Returns the current step")
-  .defGetter("getTime",getTime,double,"Return the present time")
-  .defGetter("getTimeStep",getTimeStep,double,"Return the timestep")
-  .defGetter("isRestart",getRestart,bool,"Return true if we are doing a restart")
-  .defGetter("isExchangeStep",getExchangeStep,bool,"Check if we are on an exchange step")
+  .defGetter("getStep",PLMD::pycv::PythonCVInterface,getStep, long int,"Returns the current step")
+  .defGetter("getTime",PLMD::pycv::PythonCVInterface,getTime,double,"Return the present time")
+  .defGetter("getTimeStep",PLMD::pycv::PythonCVInterface,getTimeStep,double,"Return the timestep")
+  .defGetter("isRestart",PLMD::pycv::PythonCVInterface,getRestart,bool,"Return true if we are doing a restart")
+  .defGetter("isExchangeStep",PLMD::pycv::PythonCVInterface,getExchangeStep,bool,"Check if we are on an exchange step")
+  .def_property_readonly("label",
+  [](PLMD::pycv::PythonCVInterface* self) -> std::string {
+    return self->getLabel();
+  },
+  "returns the label")
+  .def("log",[](PLMD::pycv::PythonCVInterface* self, py::object data) {
+    self->log << py::str(data).cast<std::string>();
+  },
+  "put a string in the PLUMED output",py::arg("s"))
+  .def("lognl",[](PLMD::pycv::PythonCVInterface* self, py::object data) {
+    self->log << py::str(data).cast<std::string>()<< "\n";
+  },
+  "put a string in the PLUMED output (it appends a newline)",py::arg("s"))
+  /****************************End of Action methods****************************/
   .def("getPosition",
   [](PLMD::pycv::PythonCVInterface* self, int i) -> py::array_t<double> {
     py::array_t<double>::ShapeContainer shape({3});
@@ -62,11 +78,6 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
   },
   "return the number of atoms"
                         )
-  .def_property_readonly("label",
-  [](PLMD::pycv::PythonCVInterface* self) -> std::string {
-    return self->getLabel();
-  },
-  "returns the label")
   //here I can use &PLMD::pycv::PythonCVInterface::makeWhole because is not in Action
   // that is inherithed both by withValue and Atomistic
   .def("makeWhole",&PLMD::pycv::PythonCVInterface::makeWhole,"Make atoms whole, assuming they are in the proper order")
@@ -79,14 +90,6 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
     return atomList;
   },
   "Returns a numpy.array that contains the atomic positions of the atoms requested by the action")
-  .def("log",[](PLMD::pycv::PythonCVInterface* self, py::object data) {
-    self->log << py::str(data).cast<std::string>();
-  },
-  "put a string in the PLUMED output",py::arg("s"))
-  .def("lognl",[](PLMD::pycv::PythonCVInterface* self, py::object data) {
-    self->log << py::str(data).cast<std::string>()<< "\n";
-  },
-  "put a string in the PLUMED output (it appends a newline)",py::arg("s"))
   .def("getPbc",&PLMD::pycv::PythonCVInterface::getPbc,
        "returns an interface to the current pbcs")
   .def("getNeighbourList",&PLMD::pycv::PythonCVInterface::getNL,
@@ -224,5 +227,31 @@ return toRet;
                          static_cast<unsigned(PLMD::AtomNumber::*)()const>(&PLMD::AtomNumber::serial),
                          "The index number.")
   ;
-
+  py::class_<PLMD::pycv::PythonFunction>(m, "PythonFunction")
+  /***************************Start of Action methods***************************/
+  //usin "PLMD::pycv::PythonCVInterface::getStep" instead of the lambda gives compilation errors
+  .defGetter("getStep",PLMD::pycv::PythonFunction,getStep, long int,"Returns the current step")
+  .defGetter("getTime",PLMD::pycv::PythonFunction,getTime,double,"Return the present time")
+  .defGetter("getTimeStep",PLMD::pycv::PythonFunction,getTimeStep,double,"Return the timestep")
+  .defGetter("isRestart",PLMD::pycv::PythonFunction,getRestart,bool,"Return true if we are doing a restart")
+  .defGetter("isExchangeStep",PLMD::pycv::PythonFunction,getExchangeStep,bool,"Check if we are on an exchange step")
+  .def_property_readonly("label",
+  [](PLMD::pycv::PythonFunction* self) -> std::string {
+    return self->getLabel();
+  },
+  "returns the label")
+  .def("log",[](PLMD::pycv::PythonFunction* self, py::object data) {
+    self->log << py::str(data).cast<std::string>();
+  },
+  "put a string in the PLUMED output",py::arg("s"))
+  .def("lognl",[](PLMD::pycv::PythonFunction* self, py::object data) {
+    self->log << py::str(data).cast<std::string>()<< "\n";
+  },
+  "put a string in the PLUMED output (it appends a newline)",py::arg("s"))
+  /****************************End of Action methods****************************/
+  .def("argument", &PLMD::pycv::PythonFunction::
+  getArgument,"Get value of the of i-th argument", py::arg("i"))
+  .def_property_readonly("nargs", &PLMD::pycv::PythonFunction::
+  getNumberOfArguments,"Get the number of arguments")
+  ;
 }
