@@ -1,0 +1,21 @@
+action label: fPY
+@step 0
+action.getTime()=0.0
+action.getTimeStep()=1.0
+action.isRestart()=False
+action.isExchangeStep()=False
+@step 1
+action.getTime()=1.0
+action.getTimeStep()=1.0
+action.isRestart()=False
+action.isExchangeStep()=False
+@step 2
+action.getTime()=2.0
+action.getTimeStep()=1.0
+action.isRestart()=False
+action.isExchangeStep()=False
+@step 3
+action.getTime()=3.0
+action.getTimeStep()=1.0
+action.isRestart()=False
+action.isExchangeStep()=False
