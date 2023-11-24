@@ -261,5 +261,16 @@ return toRet;
   ,"Retuns a ndarray with the values of the arguments")
   .def_property_readonly("nargs", &PLMD::pycv::PythonFunction::
                          getNumberOfArguments,"Get the number of arguments")
+  .def("difference", &PLMD::pycv::PythonFunction::
+       difference,"Takes the difference taking into account pbc for argument i",
+       py::arg("i"),py::arg("x"),py::arg("y"))
+  .def("bringBackInPbc", &PLMD::pycv::PythonFunction::
+       bringBackInPbc,"Takes one value and brings it back into the pbc of argument i",
+       py::arg("i"),py::arg("x"))
+  //I cannot find a way of testing:
+  // .def("getProjection", &PLMD::pycv::PythonFunction::
+  //      getProjection,"Get the scalar product between the gradients of two variables",
+  //      py::arg("i"),py::arg("j"))
+  //to be added and tested getNumberOfArguments
   ;
 }
