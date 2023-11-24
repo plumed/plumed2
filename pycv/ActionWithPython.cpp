@@ -106,7 +106,6 @@ void initializeValue(::PLMD::ActionWithValue& action,pybind11::dict &settingsDic
   }
 }
 
-
 void initializeComponent(::PLMD::ActionWithValue& action,const std::string&name,py::dict &settingsDict) {
   bool withDerivatives=false;
   if(settingsDict.contains("derivative")) {

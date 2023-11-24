@@ -46,7 +46,6 @@ class PythonCVInterface : public Colvar, public ActionWithPython {
   bool hasUpdate = false;
   bool invalidateList = true;
   bool firsttime = true;
-  void calculateSingleComponent(pybind11::object &);
   void calculateMultiComponent(pybind11::object &);
   void readReturn(const pybind11::object &, Value* );
 public:

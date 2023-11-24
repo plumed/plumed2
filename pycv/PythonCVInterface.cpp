@@ -657,15 +657,11 @@ void PythonCVInterface::calculate() try {
   if(getNumberOfComponents()>1) {		// MULTIPLE NAMED COMPONENTS
     calculateMultiComponent(r);
   } else { // SINGLE COMPONENT
-    calculateSingleComponent(r);
+    readReturn(r, getPntrToValue());
   }
 
 } catch (const py::error_already_set &e) {
   plumed_merror(e.what());
-}
-
-void PythonCVInterface::calculateSingleComponent(py::object &r) {
-  readReturn(r, getPntrToValue());
 }
 
 void PythonCVInterface::readReturn(const py::object &r, Value* valPtr) {
