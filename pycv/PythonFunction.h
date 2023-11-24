@@ -31,6 +31,8 @@ class PythonFunction :
   static constexpr auto PYCV_DEFAULTCALCULATE="plumedCalculate";
   ::pybind11::module_ pyModule {};
   ::pybind11::object pyCalculate{};
+  void calculateMultiComponent(pybind11::object &);
+  void readReturn(const pybind11::object &, Value* );
 public:
   explicit PythonFunction(const ActionOptions&);
 // active methods:

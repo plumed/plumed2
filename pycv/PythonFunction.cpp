@@ -108,6 +108,8 @@ void PythonFunction::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","IMPORT","the python file to import, containing the function");
   keys.add("compulsory","CALCULATE",PYCV_DEFAULTCALCULATE,"the function to call");
   keys.add("compulsory","INIT",PYCV_DEFAULTINIT,"the function to call during the construction method of the function");
+  keys.add("hidden","COMPONENTS","if provided, the function will return multiple components, with the names given");
+  keys.addOutputComponent(PYCV_COMPONENTPREFIX.data(),"COMPONENTS","Each of the components output py the Python code, prefixed by py-");
   // Why is NOPBC not listed here?
 }
 
@@ -148,7 +150,39 @@ PythonFunction::PythonFunction(const ActionOptions&ao)try:
     //If the default INIT is not preset, is not a problem
     error("the function "+ initFunName + " is not present in "+ import);
   }
-  if(initDict.contains("Value")) {
+  {
+    std::vector<std::string> components;
+    parseVector("COMPONENTS", components);
+
+    if (components.size()>1) {
+      error("Please define multiple COMPONENTS from INIT in python.");
+    }
+  }
+
+  if(initDict.contains("COMPONENTS")) {
+    if(initDict.contains("Value")) {
+      error("The initialize dict cannot contain both \"Value\" and \"COMPONENTS\"");
+    }
+    if(!py::isinstance<py::dict>(initDict["COMPONENTS"])) {
+      error("COMPONENTS must be a dictionary using with the name of the components as keys");
+    }
+    py::dict components=initDict["COMPONENTS"];
+    for(auto comp: components) {
+      auto settings = py::cast<py::dict>(comp.second);
+      if(components.size()==1) { //a single component
+        initializeValue(dynamic_cast<::PLMD::ActionWithValue&>(*this), settings);
+        valueSettings(settings,getPntrToValue());
+      } else {
+        auto name=std::string(PYCV_COMPONENTPREFIX)
+                  +"-"+py::cast<std::string>(comp.first);
+        initializeComponent(dynamic_cast<::PLMD::ActionWithValue&>(*this),
+                            name,
+                            settings);
+        valueSettings(settings,getPntrToComponent(name));
+      }
+    }
+
+  } else if(initDict.contains("Value")) {
     py::dict settingsDict=initDict["Value"];
     initializeValue(dynamic_cast<::PLMD::ActionWithValue&>(*this),settingsDict);
     valueSettings(settingsDict,getPntrToValue());
@@ -175,17 +209,26 @@ PythonFunction::PythonFunction(const ActionOptions&ao)try:
 void PythonFunction::calculate() try {
   // Call the function
   py::object r = pyCalculate(this);
-
-  // Is there more than 1 return value?
+  if(getNumberOfComponents()>1) {		// MULTIPLE NAMED COMPONENTS
+    calculateMultiComponent(r);
+  } else { // SINGLE COMPONENT
+     readReturn(r, getPntrToValue());
+  }
+} catch (const py::error_already_set &e) {
+  plumed_merror(e.what());
+  //vdbg(e.what());
+}
+void PythonFunction::readReturn(const py::object &r, Value* valPtr) {
+ // Is there more than 1 return value?
   if (py::isinstance<py::tuple>(r)||py::isinstance<py::list>(r)) {
     // 1st return value: CV
     py::list rl=r.cast<py::list>();
     pycvComm_t value = rl[0].cast<pycvComm_t>();
-    setValue(value);
+    valPtr->set(value);
     if (rl.size() > 1) {
       auto nargs = getNumberOfArguments();
-      if(!getPntrToValue()->hasDerivatives())
-        error(getLabel()+" was declared without derivatives, but python returned with derivatives");
+      if(!valPtr->hasDerivatives())
+        error(valPtr->getName()+" was declared without derivatives, but python returned with derivatives");
       // 2nd return value: gradient: numpy array
       py::array_t<pycvComm_t> grad(rl[1]);
       if(grad.ndim() != 1 || grad.shape(0) != nargs) {
@@ -197,22 +240,39 @@ void PythonFunction::calculate() try {
       // To optimize, see "direct access"
       // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
       for(size_t i=0; i<nargs; i++) {
-        setDerivative(i,grad.at(i));
+        valPtr->setDerivative(i,grad.at(i));
       }
-    } else if (getPntrToValue()->hasDerivatives())
-      plumed_merror(getLabel()+" was declared with derivatives, but python returned none");
+    } else if (valPtr->hasDerivatives())
+      plumed_merror(valPtr->getName()+" was declared with derivatives, but python returned none");
 
   } else {
     // Only value returned. Might be an error as well.
     log.printf(BIASING_DISABLED);
     pycvComm_t value = r.cast<pycvComm_t>();
-    setValue(value);
+    valPtr->set(value);
   }
+}
 
+void PythonFunction::calculateMultiComponent(py::object &r) {
 
-} catch (const py::error_already_set &e) {
-  plumed_merror(e.what());
-  //vdbg(e.what());
+  const auto nc = getNumberOfComponents();
+  if (py::isinstance<py::dict>(r)) {
+    py::dict dataDict = r.cast<py::dict>(); // values
+    for(int i=0; i < nc; ++i) {
+      auto component=getPntrToComponent(i);
+      //get the without "label.prefix-"
+      std::string key=component->getName().substr(
+                        2 + getLabel().size()
+                        +PYCV_COMPONENTPREFIX.size());
+      if (dataDict.contains(key.c_str()))
+        readReturn(dataDict[key.c_str()], component);
+      else
+        error( "python did not returned " + key );
+    }
+  } else {
+    // In principle one could handle a "list" return case.
+    error("Multi-components pyCVs need to return dictionaries");
+  }
 }
 
 }// namespace pycv

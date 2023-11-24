@@ -31,7 +31,7 @@ namespace pycv {
 using pycvComm_t = double;
 static constexpr auto PYTHONCV_CITATION = "Giorgino, (2019). PYCV: a PLUMED 2 Module Enabling the Rapid Prototyping of Collective Variables in Python. Journal of Open Source Software, 4(42), 1773. doi:10.21105/joss.01773";
 static constexpr auto BIASING_DISABLED = "PYCV: Gradient was expected as a second return value but is missing. Biasing won't work\n";
-
+static constexpr std::string_view PYCV_COMPONENTPREFIX="py";
 
 ///This class act both as a guard for the interpreter and a a case container for the python module and functions
 class PlumedScopedPythonInterpreter final {

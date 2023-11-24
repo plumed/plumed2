@@ -33,7 +33,6 @@ class PythonCVInterface : public Colvar, public ActionWithPython {
   static constexpr auto PYCV_NOTIMPLEMENTED="PYCV_NOTIMPLEMENTED";
   static constexpr auto PYCV_DEFAULTINIT="plumedInit";
   static constexpr auto PYCV_DEFAULTCALCULATE="plumedCalculate";
-  static constexpr std::string_view PYCV_COMPONENTPREFIX="py";
 
   std::unique_ptr<NeighborList> nl{nullptr};
 
