@@ -57,11 +57,11 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
   .def("log",[](PLMD::pycv::PythonCVInterface* self, py::object data) {
     self->log << py::str(data).cast<std::string>();
   },
-  "put a string in the PLUMED output",py::arg("s"))
+  "puts a string in the PLUMED output",py::arg("s"))
   .def("lognl",[](PLMD::pycv::PythonCVInterface* self, py::object data) {
     self->log << py::str(data).cast<std::string>()<< "\n";
   },
-  "put a string in the PLUMED output (it appends a newline)",py::arg("s"))
+  "puts a string in the PLUMED output (and appends a newline)",py::arg("s"))
   /****************************End of Action methods****************************/
   .def("getPosition",
   [](PLMD::pycv::PythonCVInterface* self, int i) -> py::array_t<double> {
@@ -242,14 +242,23 @@ return toRet;
   .def("log",[](PLMD::pycv::PythonFunction* self, py::object data) {
     self->log << py::str(data).cast<std::string>();
   },
-  "put a string in the PLUMED output",py::arg("s"))
+  "puts a string in the PLUMED output",py::arg("s"))
   .def("lognl",[](PLMD::pycv::PythonFunction* self, py::object data) {
     self->log << py::str(data).cast<std::string>()<< "\n";
   },
-  "put a string in the PLUMED output (it appends a newline)",py::arg("s"))
+  "puts a string in the PLUMED output (and appends a newline)",py::arg("s"))
   /****************************End of Action methods****************************/
   .def("argument", &PLMD::pycv::PythonFunction::
        getArgument,"Get value of the of i-th argument", py::arg("i"))
+  .def("arguments", [](PLMD::pycv::PythonFunction* self) -> py::array_t<double> {
+    auto nargs=self->getNumberOfArguments();
+    py::array_t<double>::ShapeContainer shape({nargs});
+    py::array_t<double> arguments(shape);
+    for(auto i=0u; i < nargs;++i)
+      arguments.mutable_at(i) = self->getArgument(i);
+    return arguments;
+  }
+       ,"Retuns a ndarray with the values of the arguments")
   .def_property_readonly("nargs", &PLMD::pycv::PythonFunction::
                          getNumberOfArguments,"Get the number of arguments")
   ;
