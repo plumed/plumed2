@@ -31,9 +31,6 @@ class PythonFunction :
   static constexpr auto PYCV_DEFAULTCALCULATE="plumedCalculate";
   ::pybind11::module_ pyModule {};
   ::pybind11::object pyCalculate{};
-  size_t nargs;
-
-  void check_dim(::pybind11::array_t<pycv_t> grad);
 public:
   explicit PythonFunction(const ActionOptions&);
 // active methods:

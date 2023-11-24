@@ -386,7 +386,6 @@ namespace py = pybind11;
 
 using std::string;
 using std::vector;
-using pycvComm_t = double;
 
 namespace PLMD {
 namespace pycv {
@@ -679,7 +678,7 @@ void PythonCVInterface::readReturn(const py::object &r, Value* valPtr) {
     auto natoms = getPositions().size();
     if (rl.size() > 1) {
       if(!valPtr->hasDerivatives())
-        plumed_merror(valPtr->getName()+" was declared without derivatives, but python returned with derivatives");
+        error(valPtr->getName()+" was declared without derivatives, but python returned with derivatives");
       // 2nd return value: gradient: numpy array of (natoms, 3)
       py::array_t<pycvComm_t> grad(rl[1]);
       // Assert correct gradient shape
@@ -687,7 +686,7 @@ void PythonCVInterface::readReturn(const py::object &r, Value* valPtr) {
         log.printf("Error: wrong shape for the gradient return argument: should be "
                    "(natoms=%d,3), received %ld x %ld\n",
                    natoms, grad.shape(0), grad.shape(1));
-        plumed_merror("Python CV returned wrong gradient shape error");
+        error("Python CV returned wrong gradient shape error");
       }
       // To optimize, see "direct access"
       // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
@@ -696,7 +695,7 @@ void PythonCVInterface::readReturn(const py::object &r, Value* valPtr) {
         setAtomsDerivatives(valPtr, i, gi);
       }
     } else if (valPtr->hasDerivatives())
-      plumed_merror(valPtr->getName()+" was declared with derivatives, but python returned none");
+      error(valPtr->getName()+" was declared with derivatives, but python returned none");
 
     if (rl.size() > 2) {
       if(!valPtr->hasDerivatives())
@@ -751,11 +750,11 @@ void PythonCVInterface::calculateMultiComponent(py::object &r) {
       if (dataDict.contains(key.c_str()))
         readReturn(dataDict[key.c_str()], component);
       else
-        plumed_merror( "python did not returned " << key );
+        error( "python did not returned " + key );
     }
   } else {
     // In principle one could handle a "list" return case.
-    error("Sorry, multi-components needs to return dictionaries");
+    error("Multi-components pyCVs need to return dictionaries");
   }
 }
 

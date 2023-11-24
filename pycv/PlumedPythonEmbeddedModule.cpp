@@ -28,7 +28,6 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include "PythonFunction.h"
 
 namespace py=pybind11;
-using PLMD::pycv::pycv_t;
 
 PYBIND11_MAKE_OPAQUE(std::vector<PLMD::AtomNumber>)
 
@@ -250,8 +249,8 @@ return toRet;
   "put a string in the PLUMED output (it appends a newline)",py::arg("s"))
   /****************************End of Action methods****************************/
   .def("argument", &PLMD::pycv::PythonFunction::
-  getArgument,"Get value of the of i-th argument", py::arg("i"))
+       getArgument,"Get value of the of i-th argument", py::arg("i"))
   .def_property_readonly("nargs", &PLMD::pycv::PythonFunction::
-  getNumberOfArguments,"Get the number of arguments")
+                         getNumberOfArguments,"Get the number of arguments")
   ;
 }

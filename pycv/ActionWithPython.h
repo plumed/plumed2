@@ -28,7 +28,7 @@ namespace PLMD {
 class Value;
 namespace pycv {
 
-using pycv_t = float;		// May need to adapt to the build precision?
+using pycvComm_t = double;
 static constexpr auto PYTHONCV_CITATION = "Giorgino, (2019). PYCV: a PLUMED 2 Module Enabling the Rapid Prototyping of Collective Variables in Python. Journal of Open Source Software, 4(42), 1773. doi:10.21105/joss.01773";
 static constexpr auto BIASING_DISABLED = "PYCV: Gradient was expected as a second return value but is missing. Biasing won't work\n";
 

@@ -117,7 +117,7 @@ PythonFunction::PythonFunction(const ActionOptions&ao)try:
          Function(ao),
   ActionWithPython(ao) {
 
-  nargs = getNumberOfArguments();
+  auto nargs = getNumberOfArguments();
   //Loading the python module
   std::string import;
   parse("IMPORT",import);
@@ -173,35 +173,39 @@ PythonFunction::PythonFunction(const ActionOptions&ao)try:
 
 // calculator
 void PythonFunction::calculate() try {
-  // py::array_t<pycv_t, py::array::c_style> py_arg;
-  // for(size_t i=0; i<nargs; i++) {
-  //   py_arg.mutable_at(i)=getArgument(i);
-  // }
-
   // Call the function
   py::object r = pyCalculate(this);
 
   // Is there more than 1 return value?
-  if(py::isinstance<py::tuple>(r)) {
+  if (py::isinstance<py::tuple>(r)||py::isinstance<py::list>(r)) {
     // 1st return value: CV
     py::list rl=r.cast<py::list>();
-    pycv_t value = rl[0].cast<pycv_t>();
+    pycvComm_t value = rl[0].cast<pycvComm_t>();
     setValue(value);
+    if (rl.size() > 1) {
+      auto nargs = getNumberOfArguments();
+      if(!getPntrToValue()->hasDerivatives())
+        error(getLabel()+" was declared without derivatives, but python returned with derivatives");
+      // 2nd return value: gradient: numpy array
+      py::array_t<pycvComm_t> grad(rl[1]);
+      if(grad.ndim() != 1 || grad.shape(0) != nargs) {
+    log.printf("Error: wrong shape for the gradient return argument: should be (nargs=%lu), received %ld \n",
+               (unsigned long) nargs, grad.shape(0));
+    error("PYFUNCTION returned wrong gradient shape error");
+  }
 
-    // 2nd return value: gradient: numpy array
-    py::array_t<pycv_t> grad(rl[1]);
-    check_dim(grad);
-
-    // To optimize, see "direct access"
-    // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
-    for(size_t i=0; i<nargs; i++) {
-      setDerivative(i,grad.at(i));
-    }
+      // To optimize, see "direct access"
+      // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
+      for(size_t i=0; i<nargs; i++) {
+        setDerivative(i,grad.at(i));
+      }
+    } else if (getPntrToValue()->hasDerivatives())
+      plumed_merror(getLabel()+" was declared with derivatives, but python returned none");
 
   } else {
     // Only value returned. Might be an error as well.
     log.printf(BIASING_DISABLED);
-    pycv_t value = r.cast<pycv_t>();
+    pycvComm_t value = r.cast<pycvComm_t>();
     setValue(value);
   }
 
@@ -209,17 +213,6 @@ void PythonFunction::calculate() try {
 } catch (const py::error_already_set &e) {
   plumed_merror(e.what());
   //vdbg(e.what());
-}
-
-
-// Assert correct gradient shape
-void PythonFunction::check_dim(py::array_t<pycv_t> grad) {
-  if(grad.ndim() != 1 ||
-      grad.shape(0) != nargs) {
-    log.printf("Error: wrong shape for the gradient return argument: should be (nargs=%lu), received %ld \n",
-               (unsigned long) nargs, grad.shape(0));
-    error("Python CV returned wrong gradient shape error");
-  }
 }
 
 }// namespace pycv
