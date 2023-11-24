@@ -254,11 +254,11 @@ return toRet;
     auto nargs=self->getNumberOfArguments();
     py::array_t<double>::ShapeContainer shape({nargs});
     py::array_t<double> arguments(shape);
-    for(auto i=0u; i < nargs;++i)
+    for(auto i=0u; i < nargs; ++i)
       arguments.mutable_at(i) = self->getArgument(i);
     return arguments;
   }
-       ,"Retuns a ndarray with the values of the arguments")
+  ,"Retuns a ndarray with the values of the arguments")
   .def_property_readonly("nargs", &PLMD::pycv::PythonFunction::
                          getNumberOfArguments,"Get the number of arguments")
   ;

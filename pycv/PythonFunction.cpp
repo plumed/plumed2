@@ -212,14 +212,14 @@ void PythonFunction::calculate() try {
   if(getNumberOfComponents()>1) {		// MULTIPLE NAMED COMPONENTS
     calculateMultiComponent(r);
   } else { // SINGLE COMPONENT
-     readReturn(r, getPntrToValue());
+    readReturn(r, getPntrToValue());
   }
 } catch (const py::error_already_set &e) {
   plumed_merror(e.what());
   //vdbg(e.what());
 }
 void PythonFunction::readReturn(const py::object &r, Value* valPtr) {
- // Is there more than 1 return value?
+// Is there more than 1 return value?
   if (py::isinstance<py::tuple>(r)||py::isinstance<py::list>(r)) {
     // 1st return value: CV
     py::list rl=r.cast<py::list>();
@@ -232,10 +232,10 @@ void PythonFunction::readReturn(const py::object &r, Value* valPtr) {
       // 2nd return value: gradient: numpy array
       py::array_t<pycvComm_t> grad(rl[1]);
       if(grad.ndim() != 1 || grad.shape(0) != nargs) {
-    log.printf("Error: wrong shape for the gradient return argument: should be (nargs=%lu), received %ld \n",
-               (unsigned long) nargs, grad.shape(0));
-    error("PYFUNCTION returned wrong gradient shape error");
-  }
+        log.printf("Error: wrong shape for the gradient return argument: should be (nargs=%lu), received %ld \n",
+                   (unsigned long) nargs, grad.shape(0));
+        error("PYFUNCTION returned wrong gradient shape error");
+      }
 
       // To optimize, see "direct access"
       // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
