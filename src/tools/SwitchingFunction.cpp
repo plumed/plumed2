@@ -691,6 +691,13 @@ void SwitchingFunction::registerKeywords( Keywords& keys ) {
 
 void SwitchingFunction::set(const std::string & definition,std::string& errormsg) {
   std::vector<std::string> data=Tools::getWords(definition);
+#define CHECKandPARSE(datastring,keyword,variable,errormsg) \
+  if(Tools::findKeyword(datastring,keyword) && !Tools::parse(datastring,keyword,variable))\
+    errormsg="could not parse " keyword; //adiacent strings are automagically concatenated
+#define REQUIREDPARSE(datastring,keyword,variable,errormsg) \
+  if(!Tools::parse(datastring,keyword,variable))\
+    errormsg=keyword " is required for " + name ; //adiacent strings are automagically concatenated
+
   if( data.size()<1 ) {
     errormsg="missing all input for switching function";
     return;
@@ -701,54 +708,47 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   double d0=0.0;
   double dmax=std::numeric_limits<double>::max();
   init=true;
+  CHECKandPARSE(data,"D_0",d0,errormsg);
+  CHECKandPARSE(data,"D_MAX",dmax,errormsg);
 
-  bool present;
-
-  present=Tools::findKeyword(data,"D_0");
-  if(present && !Tools::parse(data,"D_0",d0)) errormsg="could not parse D_0";
-
-  present=Tools::findKeyword(data,"D_MAX");
-  if(present && !Tools::parse(data,"D_MAX",dmax)) errormsg="could not parse D_MAX";
   bool dostretch=false;
   Tools::parseFlag(data,"STRETCH",dostretch); // this is ignored now
   dostretch=true;
   bool dontstretch=false;
   Tools::parseFlag(data,"NOSTRETCH",dontstretch); // this is ignored now
-  if(dontstretch) dostretch=false;
+  if(dontstretch)
+    dostretch=false;
   if(name=="CUBIC") {
     //cubic is the only switch type that only uses d0 and dmax
     function = PLMD::Tools::make_unique<switchContainers::cubicSwitch>(d0,dmax);
   } else {
-    bool found_r0=Tools::parse(data,"R_0",r0);
-    if(!found_r0) {
-      errormsg="R_0 is required";
-    }
+    REQUIREDPARSE(data,"R_0",r0,errormsg);
     if(name=="RATIONAL") {
       int nn=6;
       int mm=0;
-      present=Tools::findKeyword(data,"NN");
-      if(present && !Tools::parse(data,"NN",nn)) errormsg="could not parse NN";
-      present=Tools::findKeyword(data,"MM");
-      if(present && !Tools::parse(data,"MM",mm)) errormsg="could not parse MM";
+      CHECKandPARSE(data,"NN",nn,errormsg);
+      CHECKandPARSE(data,"MM",mm,errormsg);
       function = switchContainers::rationalFactory(d0,dmax,r0,nn,mm);
       //function = PLMD::Tools::make_unique<switchContainers::rationalSwitch>(d0,dmax,r0,nn,mm);
     } else if(name=="SMAP") {
-      int a, b;
-      present=Tools::findKeyword(data,"A");
-      if(present && !Tools::parse(data,"A",a)) errormsg="could not parse A";
-      present=Tools::findKeyword(data,"B");
-      if(present && !Tools::parse(data,"B",b)) errormsg="could not parse B";
+      int a=0;
+      int b=0;
+      //in the original a and b are "default=0",
+      //but you divide by a and b during the initialization!
+      //better an error message than an UB, so no default
+      REQUIREDPARSE(data,"A",a,errormsg);
+      REQUIREDPARSE(data,"B",b,errormsg);
       function = PLMD::Tools::make_unique<switchContainers::smapSwitch>(d0,dmax,r0,a,b);
     } else if(name=="Q") {
       double beta = 50.0;  // nm-1
       double lambda = 1.8; // unitless
       double ref;
-      present=Tools::findKeyword(data,"BETA");
-      if(present && !Tools::parse(data, "BETA", beta)) errormsg="could not parse BETA";
-      present=Tools::findKeyword(data,"LAMBDA");
-      if(present && !Tools::parse(data, "LAMBDA", lambda)) errormsg="could not parse LAMBDA";
-      bool found_ref=Tools::parse(data,"REF",ref); // nm
-      if(!found_ref) errormsg="REF (reference disatance) is required for native Q";
+      CHECKandPARSE(data,"BETA",beta,errormsg);
+      CHECKandPARSE(data,"LAMBDA",lambda,errormsg);
+      REQUIREDPARSE(data,"REF",ref,errormsg);
+      //the original error message was not standard
+      // if(!Tools::parse(data,"REF",ref))
+      //   errormsg="REF (reference distaance) is required for native Q";
       function = PLMD::Tools::make_unique<switchContainers::nativeqSwitch>(d0,dmax,r0,beta,lambda,ref);
     } else if(name=="EXP") {
       function = PLMD::Tools::make_unique<switchContainers::exponentialSwitch>(d0,dmax,r0);
@@ -766,6 +766,8 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
       errormsg="cannot understand switching function type '"+name+"'";
     }
   }
+#undef CHECKandPARSE
+#undef REQUIREDPARSE
 
   if( !data.empty() ) {
     errormsg="found the following rogue keywords in switching function input : ";
