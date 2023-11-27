@@ -271,6 +271,9 @@ class rationalSwitch: public rationalBaseSwitch {
 protected:
   const double preRes;
   const double preDfunc;
+  //PLMD::epsilon in not constexpr
+  static constexpr double moreThanOne=1.0+100.0*std::numeric_limits<double>::epsilon();
+  static constexpr double lessThanOne=1.0-100.0*std::numeric_limits<double>::epsilon();
 public:
   rationalSwitch(double D0,double DMAX, double R0, int N, int M)
     :rationalBaseSwitch(D0,DMAX,R0,N,M),
@@ -284,11 +287,11 @@ protected:
     //result=preRes;
     //dfunc=preDfunc;
     //} else {
-    if(rdist<=(1.0-100.0*epsilon) || rdist>=(1.0+100.0*epsilon)) {
-      double rNdist=Tools::fastpow(rdist,N-1);
-      double rMdist=Tools::fastpow(rdist,M-1);
-      double num = 1.0-rNdist*rdist;
-      double iden = 1.0/(1.0-rMdist*rdist);
+    if(rdist<=(lessThanOne) || rdist>=(moreThanOne)) {
+      const double rNdist=Tools::fastpow(rdist,N-1);
+      const double rMdist=Tools::fastpow(rdist,M-1);
+      const double num = 1.0-rNdist*rdist;
+      const double iden = 1.0/(1.0-rMdist*rdist);
       result = num*iden;
       dfunc = ((result*(iden*M)*rMdist)-(N*rNdist*iden));
     }
@@ -398,7 +401,7 @@ public:
   exponentialSwitch(double D0, double DMAX, double R0)
     :baseSwitch(D0,DMAX,R0,"exponential") {}
 protected:
-  double function(const double rdist,double&dfunc) const override {
+  inline double function(const double rdist,double&dfunc) const override {
     double result = std::exp(-rdist);
     dfunc=-result;
     return result;
@@ -410,7 +413,7 @@ public:
   gaussianSwitch(double D0, double DMAX, double R0)
     :baseSwitch(D0,DMAX,R0,"gaussian") {}
 protected:
-  double function(const double rdist,double&dfunc) const override {
+  inline double function(const double rdist,double&dfunc) const override {
     double result = std::exp(-0.5*rdist*rdist);
     dfunc=-rdist*result;
     return result;
@@ -436,9 +439,9 @@ public:
      c(std::pow(2., static_cast<double>(a)/static_cast<double>(b) ) - 1.0),
      d(-static_cast<double>(b) / static_cast<double>(a)) {}
 protected:
-  double function(const double rdist,double&dfunc) const override {
+  inline double function(const double rdist,double&dfunc) const override {
 
-    double sx=c*Tools::fastpow( rdist, a );
+    const double sx=c*Tools::fastpow( rdist, a );
     double result=std::pow( 1.0 + sx, d );
     dfunc=-b*sx/rdist*result/(1.0+sx);
     return result;
@@ -462,12 +465,12 @@ public:
   }
   ~cubicSwitch()=default;
 protected:
-  double function(const double rdist,double&dfunc) const override {
-    double tmp1 = rdist - 1.0;
-    double tmp2 = 1.0+2.0*rdist;
-    double result = tmp1*tmp1*tmp2;
+  inline double function(const double rdist,double&dfunc) const override {
+    const double tmp1 = rdist - 1.0;
+    const double tmp2 = 1.0+2.0*rdist;
+    //double result = tmp1*tmp1*tmp2;
     dfunc = 2*tmp1*tmp2 + 2*tmp1*tmp1;
-    return result;
+    return tmp1*tmp1*tmp2;
   }
 };
 
@@ -476,12 +479,13 @@ public:
   tanhSwitch(double D0, double DMAX, double R0)
     :baseSwitch(D0,DMAX,R0,"tanh") {}
 protected:
-  double function(const double rdist,double&dfunc) const override {
-    double tmp1 = std::tanh(rdist);
-    double result = 1.0 - tmp1;
+  inline double function(const double rdist,double&dfunc) const override {
+    const double tmp1 = std::tanh(rdist);
+    //const double result = 1.0 - tmp1;
     //dfunc=-(1-tmp1*tmp1);
     dfunc = tmp1 * tmp1 - 1.0;
-    return result;
+    //return result;
+    return 1.0 - tmp1;
   }
 };
 
@@ -490,7 +494,7 @@ public:
   cosinusSwitch(double D0, double DMAX, double R0)
     :baseSwitch(D0,DMAX,R0,"cosinus") {}
 protected:
-  double function(const double rdist,double&dfunc) const override {
+  inline double function(const double rdist,double&dfunc) const override {
     double result = 0.0;
     dfunc=0.0;
     if(rdist<=1.0) {
@@ -513,7 +517,7 @@ protected:
     ostr<<" beta="<<beta<<" lambda="<<lambda<<" ref="<<ref;
     return ostr.str();
   }
-  double function(const double rdist,double&dfunc) const override {return 0.0;  }
+  inline double function(const double rdist,double&dfunc) const override {return 0.0;  }
 public:
   nativeqSwitch(double D0, double DMAX, double R0, double BETA, double LAMBDA,double REF)
     :  baseSwitch(D0,DMAX,R0,"nativeq"),beta(BETA),lambda(LAMBDA),ref(REF) {}
@@ -561,7 +565,7 @@ protected:
     ostr<<" func=" << lepton_func;
     return ostr.str();
   }
-  double function(const double,double&) const override {return 0.0;}
+  inline double function(const double,double&) const override {return 0.0;}
 public:
   leptonSwitch(double D0, double DMAX, double R0, std::string func)
     :baseSwitch(D0,DMAX,R0,"lepton") {
