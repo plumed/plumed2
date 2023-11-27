@@ -32,7 +32,7 @@ namespace PLMD {
 class Log;
 class Keywords;
 namespace switchContainers {
-/// container for the actual switching guntion used by PLMD::SwitchingFunction
+/// container for the actual switching function used by PLMD::SwitchingFunction
 class baseSwitch {
 protected:
   /// Minimum distance (before this, function is one)

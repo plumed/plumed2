@@ -250,6 +250,84 @@ void baseSwitch::removeStretch() {
   shift=0.0;
 }
 
+template<bool isFast, bool n2m>
+class rational : public baseSwitch {
+protected:
+  const int nn=6;
+  const int mm=12;
+  const int nnf;
+  const int mmf;
+  const double preRes;
+  const double preDfunc;
+  static constexpr double moreThanOne=1.0+100.0*std::numeric_limits<double>::epsilon();
+  static constexpr double lessThanOne=1.0-100.0*std::numeric_limits<double>::epsilon();
+  //bool fastrational=false;
+  std::string specificDescription() const override {
+    std::ostringstream ostr;
+    ostr << " nn=" << nn << " mm=" <<mm;
+    return ostr.str();
+  }
+public:
+  rational(double D0,double DMAX, double R0, int N, int M)
+    :baseSwitch(D0,DMAX,R0,"rational"),
+     nn(N),
+     mm([](int m,int n) {if (m==0) {return n*2;} else {return m;}}(M,N)),
+  nnf(nn/2),
+  mmf(mm/2),
+  preRes(static_cast<double>(nn)/mm),
+  preDfunc(0.5*nn*(nn-mm)/static_cast<double>(mm)) {}
+
+
+  static inline double doRational(const double rdist, double&dfunc, const int N,
+                                  const int M,double result=0.0) {
+    //if(rdist>(1.0-100.0*epsilon) && rdist<(1.0+100.0*epsilon)) {
+    //result=preRes;
+    //dfunc=preDfunc;
+    //} else {
+    if constexpr (n2m) {
+      const double rNdist=Tools::fastpow(rdist,N-1);
+      result=1.0/(1.0+rNdist*rdist);
+      dfunc = -N*rNdist*result*result;
+    } else {
+      if(rdist<=(lessThanOne) || rdist>=(moreThanOne)) {
+        const double rNdist=Tools::fastpow(rdist,N-1);
+        const double rMdist=Tools::fastpow(rdist,M-1);
+        const double num = 1.0-rNdist*rdist;
+        const double iden = 1.0/(1.0-rMdist*rdist);
+        result = num*iden;
+        dfunc = ((result*(iden*M)*rMdist)-(N*rNdist*iden));
+      }
+    }
+    return result;
+  }
+  inline double function(double rdist,double&dfunc) const override {
+    //preRes and preDfunc are passed already set
+    dfunc=preDfunc;
+    double result = doRational(rdist,dfunc,nn,mm,preRes);
+    return result;
+  }
+
+  double calculateSqr(double distance2,double&dfunc) const override {
+    if constexpr (isFast) {
+      double result=0.0;
+      dfunc=0.0;
+      if(distance2 <= dmax_2) {
+        const double rdist = distance2*invr0_2;
+        dfunc=preDfunc;
+        result = doRational(rdist,dfunc,nnf,mmf,preRes);
+        dfunc*=2*invr0_2;
+// stretch:
+        result=result*stretch+shift;
+        dfunc*=stretch;
+      }
+      return result;
+    } else {
+      double res= calculate(std::sqrt(distance2),dfunc);//RVO!
+      return res;
+    }
+  }
+};
+/*
 class rationalBaseSwitch: public baseSwitch {
 protected:
   const int nn=6;
@@ -376,23 +454,25 @@ protected:
     return res;
   }
 };
-
+*/
 std::unique_ptr<baseSwitch>
 rationalFactory(double D0,double DMAX, double R0, int N, int M) {
   bool fast = N%2==0 && M%2==0 && D0==0.0;
   //if (M==0) M will automatically became 2*NN
+  //template<bool isFast, bool n2m>
+  //class rational : public baseSwitch
   if(2*N==M || M == 0) {
     if(fast) {
       //fast rational
-      return PLMD::Tools::make_unique<switchContainers::rationalTNMFastSwitch>(D0,DMAX,R0,N,M);
+      return PLMD::Tools::make_unique<switchContainers::rational<true,true>>(D0,DMAX,R0,N,M);
     }
-    return PLMD::Tools::make_unique<switchContainers::rationalTNMSwitch>(D0,DMAX,R0,N,M);
+    return PLMD::Tools::make_unique<switchContainers::rational<false,true>>(D0,DMAX,R0,N,M);
   }
   if(fast) {
     //fast rational
-    return PLMD::Tools::make_unique<switchContainers::rationalFastSwitch>(D0,DMAX,R0,N,M);
+    return PLMD::Tools::make_unique<switchContainers::rational<true,false>>(D0,DMAX,R0,N,M);
   }
-  return PLMD::Tools::make_unique<switchContainers::rationalSwitch>(D0,DMAX,R0,N,M);
+  return PLMD::Tools::make_unique<switchContainers::rational<false,false>>(D0,DMAX,R0,N,M);
 }
 //function =
 
