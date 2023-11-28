@@ -22,7 +22,7 @@ jobs:
         variant: [ "" , "+allmodules" ]
         # see https://github.community/t/how-to-conditionally-include-exclude-items-in-matrix-eg-based-on-branch/16853/6 for possible exclusions
     env:
-      PYVERS: "py38 py39 py310"
+      PYVERS: "py39 py310"
     steps:
     - uses: actions/checkout@v3
     - uses: actions/cache@v3
