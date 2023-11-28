@@ -124,9 +124,9 @@ jobs:
         sudo apt-get install intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic intel-oneapi-mkl intel-oneapi-mkl-devel intel-oneapi-compiler-fortran
         source /opt/intel/oneapi/setvars.sh
         printenv >> $GITHUB_ENV
-        echo "CXX=icpc" >> $GITHUB_ENV
-        echo "CC=icc" >> $GITHUB_ENV
-        echo "FC=ifort" >> $GITHUB_ENV
+        echo "CXX=icpx" >> $GITHUB_ENV
+        echo "CC=icpx" >> $GITHUB_ENV
+        echo "FC=ifx" >> $GITHUB_ENV
     - name: Install MPI
       # install MPI at last since it modifies CC and CXX
       if: contains( matrix.variant, '-mpi-' )
