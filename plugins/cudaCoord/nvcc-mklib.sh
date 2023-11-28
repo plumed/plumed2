@@ -30,7 +30,7 @@ fi
 rm -f "$obj" "$lib"
 
 #nvcc "$2" -Xcompiler -fPIC -c -o "$kernel"
-compile="nvcc -g -ccbin ${compile}"
+compile="nvcc -g -ccbin ${compile} -I$(plumed info --include-dir)"
 #compile=${compile/-O3/-g}
 echo $compile
 if [[ ${SILENT_CUDA_COMPILATION} ]]; then
@@ -51,6 +51,9 @@ if [[ -z ${link_command:+x} ]]; then
   link_command=$link_installed
 fi
 
+compile=${compile//-o*}
+
+link_command=${link_command//-o*}
 link_command="nvcc -shared${link_command#*-shared}"
 link_command=${link_command/-rdynamic/-Xcompiler -rdynamic}
 link_command=${link_command/-Wl,/-Xlinker }
@@ -59,7 +62,7 @@ for opt in -f; do
   link_command=${link_command//${opt}/-Xcompiler ${opt}}
 done
 
-eval "$compile" "$obj" "$file" && \
-eval "$compile" "ndReduction.o" "ndReduction.cu" && \
-eval "$link_command" "$lib" -lcusparse "ndReduction.o" "$obj"
+eval "$compile" -o "$obj" "$file" && \
+eval "$compile" -o "ndReduction.o" "ndReduction.cu" && \
+eval "$link_command" -o "$lib" "ndReduction.o" "$obj"
 

@@ -159,7 +159,7 @@ template <> constexpr cudaDataType cudaPrecision<float>() { return CUDA_R_32F; }
 template <typename calculateFloat>
 class CudaCoordination : public Colvar {
   const cudaDataType USE_CUDA_SPARSE_PRECISION =
-      cudaPrecision<calculateFloat>();
+    cudaPrecision<calculateFloat>();
   // constexpr cudaDataType USE_CUDA_SPARSE_PRECISION = precision;
   // std::unique_ptr<NeighborList> nl;
   /// the pointer to the coordinates on the GPU
@@ -287,14 +287,14 @@ __device__ calculateFloat pcuda_fastpow(calculateFloat base, int expo) {
 
 template <typename calculateFloat>
 __device__ calculateFloat pcuda_Rational(const calculateFloat rdist, const int NN,
-                                         const int MM, calculateFloat &dfunc) {
+    const int MM, calculateFloat &dfunc) {
   calculateFloat result;
   if (2 * NN == MM) {
     // if 2*N==M, then (1.0-rdist^N)/(1.0-rdist^M) = 1.0/(1.0+rdist^N)
     calculateFloat rNdist = pcuda_fastpow(rdist, NN - 1);
     result = 1.0 / (1 + rNdist * rdist);
     dfunc = -NN * rNdist * result * result;
-    
+
   } else {
     if (rdist > (1. - 100.0 * cu_epsilon) && rdist < (1 + 100.0 * cu_epsilon)) {
       result = NN / MM;
@@ -321,7 +321,7 @@ __global__ void getpcuda_Rational(const calculateFloat *rdists, const int NN,
     dfunc[i] = 0.0;
   } else
     res[i] = pcuda_Rational(rdists[i], NN, MM, dfunc[i]);
-    //printf("stretch: %i: %f -> %f\n",i,rdists[i],res[i]);
+  //printf("stretch: %i: %f -> %f\n",i,rdists[i],res[i]);
 }
 
 // __global__ void getConst() {
@@ -330,8 +330,8 @@ __global__ void getpcuda_Rational(const calculateFloat *rdists, const int NN,
 
 template <typename calculateFloat>
 CudaCoordination<calculateFloat>::CudaCoordination(
-    const ActionOptions &ao)
-    : PLUMED_COLVAR_INIT(ao) {
+  const ActionOptions &ao)
+  : PLUMED_COLVAR_INIT(ao) {
   // parseFlag("SERIAL", serial);
 
   std::vector<AtomNumber> GroupA;
@@ -460,16 +460,16 @@ CudaCoordination<calculateFloat>::CudaCoordination(
     constexpr bool dostretch = true;
     if (dostretch) {
       std::vector<calculateFloat> inputs = {0.0, dmax*invr0};
-      
+
       CUDAHELPERS::memoryHolder<calculateFloat> inputZeroMax(2);
       inputZeroMax.copyToCuda(inputs.data());
       CUDAHELPERS::memoryHolder<calculateFloat> dummydfunc(2);
       CUDAHELPERS::memoryHolder<calculateFloat> resZeroMax(2);
-      
+
       getpcuda_Rational<<<1, 2>>>(inputZeroMax.pointer(), nn_, mm_, dummydfunc.pointer(), resZeroMax.pointer());
       std::vector<calculateFloat> s = {0.0, 0.0};
       resZeroMax.copyFromCuda(s.data());
-      
+
       switchingParameters.stretch = 1.0 / (s[0] - s[1]);
       switchingParameters.shift = -s[1] * switchingParameters.stretch;
     }
@@ -526,11 +526,11 @@ calculateSqr(const calculateFloat distancesq,
 
 template <bool usePBC, typename calculateFloat>
 __global__ void getCoord(
-    const unsigned nat,
-    const rationalSwitchParameters<calculateFloat> switchingParameters,
-    const ortoPBCs<calculateFloat> myPBC, const calculateFloat *coordinates,
-    const unsigned *trueIndexes, calculateFloat *ncoordOut,
-    calculateFloat *devOut, calculateFloat *virialOut) {
+  const unsigned nat,
+  const rationalSwitchParameters<calculateFloat> switchingParameters,
+  const ortoPBCs<calculateFloat> myPBC, const calculateFloat *coordinates,
+  const unsigned *trueIndexes, calculateFloat *ncoordOut,
+  calculateFloat *devOut, calculateFloat *virialOut) {
   // blockDIm are the number of threads in your block
   const unsigned i = threadIdx.x + blockIdx.x * blockDim.x;
   if (i >= nat) // blocks are initializated with 'ceil (nat/threads)'
@@ -575,7 +575,7 @@ __global__ void getCoord(
 
     dfunc = 0.;
     coord = calculateSqr(d[0] * d[0] + d[1] * d[1] + d[2] * d[2],
-     switchingParameters, dfunc);
+                         switchingParameters, dfunc);
     mydevX -= dfunc * d[0];
     mydevY -= dfunc * d[1];
     mydevZ -= dfunc * d[2];
@@ -649,14 +649,14 @@ void CudaCoordination<calculateFloat>::calculate() {
     myPBC.invZ = 1.0 / myPBC.Z;
 
     getCoordOrthoPBC<<<ngroups, nthreads, 0, streamDerivatives>>>(
-        nat, switchingParameters, myPBC, cudaPositions.pointer(),
-        cudaTrueIndexes.pointer(), cudaCoordination.pointer(),
-        cudaDerivatives.pointer(), cudaVirial.pointer());
+      nat, switchingParameters, myPBC, cudaPositions.pointer(),
+      cudaTrueIndexes.pointer(), cudaCoordination.pointer(),
+      cudaDerivatives.pointer(), cudaVirial.pointer());
   } else {
     getCoordNoPBC<<<ngroups, nthreads, 0, streamDerivatives>>>(
-        nat, switchingParameters, myPBC, cudaPositions.pointer(),
-        cudaTrueIndexes.pointer(), cudaCoordination.pointer(),
-        cudaDerivatives.pointer(), cudaVirial.pointer());
+      nat, switchingParameters, myPBC, cudaPositions.pointer(),
+      cudaTrueIndexes.pointer(), cudaCoordination.pointer(),
+      cudaDerivatives.pointer(), cudaVirial.pointer());
   }
 
   /**************************accumulating the results**************************/
@@ -681,9 +681,9 @@ void CudaCoordination<calculateFloat>::calculate() {
                                ngroupsVirial, runningThreads, streamVirial);
 
     CUDAHELPERS::doReduction1D(
-        cudaCoordination.pointer(),     // reduceScalarIn->pointer(),
-        reductionMemoryCoord.pointer(), // reduceSOut->pointer(),
-        N, nGroups, runningThreads, streamCoordination);
+      cudaCoordination.pointer(),     // reduceScalarIn->pointer(),
+      reductionMemoryCoord.pointer(), // reduceSOut->pointer(),
+      N, nGroups, runningThreads, streamCoordination);
 
     if (nGroups == 1) {
       reductionMemoryVirial.copyFromCuda(&virial[0][0], streamVirial);
@@ -706,7 +706,7 @@ void CudaCoordination<calculateFloat>::calculate() {
   cudaDeviceSynchronize();
   for (unsigned i = 0; i < deriv.size(); ++i)
     setAtomsDerivatives(i, deriv[i]);
-  
+
 
   setValue(coordination);
   setBoxDerivatives(virial);

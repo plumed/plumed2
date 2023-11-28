@@ -159,7 +159,7 @@ __global__ void reductionDerivatives(T *g_idata, T *g_odata,unsigned* nnlist, co
 
 /// finds the nearest upper multiple of the given reference
 template <typename T, typename std::enable_if<std::is_integral<T>::value,
-                                              bool>::type = true>
+          bool>::type = true>
 inline T nearestUpperMultipleTo(T number, T reference) {
   return ((number - 1) | (reference - 1)) + 1;
 }
@@ -168,14 +168,14 @@ inline T nearestUpperMultipleTo(T number, T reference) {
 size_t idealGroups(size_t numberOfElements, size_t runningThreads) {
   // nearest upper multiple to the numberof threads
   const size_t nnToGPU =
-      nearestUpperMultipleTo(numberOfElements, runningThreads);
+    nearestUpperMultipleTo(numberOfElements, runningThreads);
   /// Brent’s theorem says each thread should sum O(log n) elements
   // const size_t elementsPerThread=log(nnToGPU);
   const size_t expectedTotalThreads = ceil(nnToGPU / log(nnToGPU));
   // hence the blocks should have this size:
   const unsigned ngroups =
-      nearestUpperMultipleTo(expectedTotalThreads, runningThreads) /
-      runningThreads;
+    nearestUpperMultipleTo(expectedTotalThreads, runningThreads) /
+    runningThreads;
   return ngroups;
 }
 
@@ -201,30 +201,30 @@ void callReduction1D(T *inputArray, T *outputArray, const unsigned int len,
   switch (nthreads) {
   case 1024:
     reduction1D<1024, T>
-        <<<blocks, 1024, 1024 * sizeof(T)>>>(inputArray, outputArray, len);
+    <<<blocks, 1024, 1024 * sizeof(T)>>>(inputArray, outputArray, len);
   case 512:
     reduction1D<512, T>
-        <<<blocks, 512, 512 * sizeof(T)>>>(inputArray, outputArray, len);
+    <<<blocks, 512, 512 * sizeof(T)>>>(inputArray, outputArray, len);
     break;
   case 256:
     reduction1D<256, T>
-        <<<blocks, 256, 256 * sizeof(T)>>>(inputArray, outputArray, len);
+    <<<blocks, 256, 256 * sizeof(T)>>>(inputArray, outputArray, len);
     break;
   case 128:
     reduction1D<128, T>
-        <<<blocks, 128, 128 * sizeof(T)>>>(inputArray, outputArray, len);
+    <<<blocks, 128, 128 * sizeof(T)>>>(inputArray, outputArray, len);
     break;
   case 64:
     reduction1D<64, T>
-        <<<blocks, 64, 64 * sizeof(T)>>>(inputArray, outputArray, len);
+    <<<blocks, 64, 64 * sizeof(T)>>>(inputArray, outputArray, len);
     break;
   case 32:
     reduction1D<32, T>
-        <<<blocks, 32, 32 * sizeof(T)>>>(inputArray, outputArray, len);
+    <<<blocks, 32, 32 * sizeof(T)>>>(inputArray, outputArray, len);
     break;
   default:
     plumed_merror(
-        "Reduction can be called only with 512, 256, 128, 64 or 32 threads.");
+      "Reduction can be called only with 512, 256, 128, 64 or 32 threads.");
   }
 }
 
@@ -234,30 +234,30 @@ void callReductionND(T *inputArray, T *outputArray, const unsigned int len,
   switch (nthreads) {
   case 1024:
     reductionND<1024, T>
-        <<<blocks, 1024, 1024 * sizeof(T)>>>(inputArray, outputArray, len);
+    <<<blocks, 1024, 1024 * sizeof(T)>>>(inputArray, outputArray, len);
   case 512:
     reductionND<512, T>
-        <<<blocks, 512, 512 * sizeof(T)>>>(inputArray, outputArray, len);
+    <<<blocks, 512, 512 * sizeof(T)>>>(inputArray, outputArray, len);
     break;
   case 256:
     reductionND<256, T>
-        <<<blocks, 256, 256 * sizeof(T)>>>(inputArray, outputArray, len);
+    <<<blocks, 256, 256 * sizeof(T)>>>(inputArray, outputArray, len);
     break;
   case 128:
     reductionND<128, T>
-        <<<blocks, 128, 128 * sizeof(T)>>>(inputArray, outputArray, len);
+    <<<blocks, 128, 128 * sizeof(T)>>>(inputArray, outputArray, len);
     break;
   case 64:
     reductionND<64, T>
-        <<<blocks, 64, 64 * sizeof(T)>>>(inputArray, outputArray, len);
+    <<<blocks, 64, 64 * sizeof(T)>>>(inputArray, outputArray, len);
     break;
   case 32:
     reductionND<32, T>
-        <<<blocks, 32, 32 * sizeof(T)>>>(inputArray, outputArray, len);
+    <<<blocks, 32, 32 * sizeof(T)>>>(inputArray, outputArray, len);
     break;
   default:
     plumed_merror(
-        "Reduction can be called only with 512, 256, 128, 64 or 32 threads.");
+      "Reduction can be called only with 512, 256, 128, 64 or 32 threads.");
   }
 }
 
@@ -412,30 +412,30 @@ void callReduction1D(T *inputArray, T *outputArray, const unsigned int len,
   switch (nthreads) {
   case 1024:
     reduction1D<1024, T>
-        <<<blocks, 1024, 1024 * sizeof(T)>>>(inputArray, outputArray, len);
+    <<<blocks, 1024, 1024 * sizeof(T)>>>(inputArray, outputArray, len);
   case 512:
     reduction1D<512, T><<<blocks, 512, 512 * sizeof(T), stream>>>(
-        inputArray, outputArray, len);
+      inputArray, outputArray, len);
     break;
   case 256:
     reduction1D<256, T><<<blocks, 256, 256 * sizeof(T), stream>>>(
-        inputArray, outputArray, len);
+      inputArray, outputArray, len);
     break;
   case 128:
     reduction1D<128, T><<<blocks, 128, 128 * sizeof(T), stream>>>(
-        inputArray, outputArray, len);
+      inputArray, outputArray, len);
     break;
   case 64:
     reduction1D<64, T>
-        <<<blocks, 64, 64 * sizeof(T), stream>>>(inputArray, outputArray, len);
+    <<<blocks, 64, 64 * sizeof(T), stream>>>(inputArray, outputArray, len);
     break;
   case 32:
     reduction1D<32, T>
-        <<<blocks, 32, 32 * sizeof(T), stream>>>(inputArray, outputArray, len);
+    <<<blocks, 32, 32 * sizeof(T), stream>>>(inputArray, outputArray, len);
     break;
   default:
     plumed_merror(
-        "Reduction can be called only with 512, 256, 128, 64 or 32 threads.");
+      "Reduction can be called only with 512, 256, 128, 64 or 32 threads.");
   }
 }
 
@@ -446,30 +446,30 @@ void callReductionND(T *inputArray, T *outputArray, const unsigned int len,
   switch (nthreads) {
   case 1024:
     reductionND<1024, T>
-        <<<blocks, 1024, 1024 * sizeof(T)>>>(inputArray, outputArray, len);
+    <<<blocks, 1024, 1024 * sizeof(T)>>>(inputArray, outputArray, len);
   case 512:
     reductionND<512, T><<<blocks, 512, 512 * sizeof(T), stream>>>(
-        inputArray, outputArray, len);
+      inputArray, outputArray, len);
     break;
   case 256:
     reductionND<256, T><<<blocks, 256, 256 * sizeof(T), stream>>>(
-        inputArray, outputArray, len);
+      inputArray, outputArray, len);
     break;
   case 128:
     reductionND<128, T><<<blocks, 128, 128 * sizeof(T), stream>>>(
-        inputArray, outputArray, len);
+      inputArray, outputArray, len);
     break;
   case 64:
     reductionND<64, T>
-        <<<blocks, 64, 64 * sizeof(T), stream>>>(inputArray, outputArray, len);
+    <<<blocks, 64, 64 * sizeof(T), stream>>>(inputArray, outputArray, len);
     break;
   case 32:
     reductionND<32, T>
-        <<<blocks, 32, 32 * sizeof(T), stream>>>(inputArray, outputArray, len);
+    <<<blocks, 32, 32 * sizeof(T), stream>>>(inputArray, outputArray, len);
     break;
   default:
     plumed_merror(
-        "Reduction can be called only with 512, 256, 128, 64 or 32 threads.");
+      "Reduction can be called only with 512, 256, 128, 64 or 32 threads.");
   }
 }
 

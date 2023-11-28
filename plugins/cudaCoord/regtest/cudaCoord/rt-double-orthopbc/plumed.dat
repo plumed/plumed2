@@ -1,4 +1,4 @@
-LOAD FILE=../../../../src/cudaCoord/Coordination.so
+LOAD FILE=../../../../Coordination.so
 #R_0=1   means automatic dmax=6.81292 > 3 (half box size)
 #R_0=0.4 means automatic dmax=2.72517 < 3 (half box size)
 #using R_0!=1 also tests that no "1" are accidentally slipped into the various 1/r0

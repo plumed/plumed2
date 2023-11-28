@@ -40,7 +40,7 @@ public:
   memoryHolder() {}
   memoryHolder(memoryHolder &other) = delete;
   memoryHolder(memoryHolder &&other)
-      : pointer_(other.pointer_), dim_(other.dim_), usedim_(other.usedim_) {
+    : pointer_(other.pointer_), dim_(other.dim_), usedim_(other.usedim_) {
     other.pointer_ = nullptr;
   }
   memoryHolder(const unsigned newDim) : dim_(newDim), usedim_(newDim) {

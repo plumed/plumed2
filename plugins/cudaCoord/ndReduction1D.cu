@@ -26,31 +26,31 @@
 
 //https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#dim3
 //7.3.2. dim3
-//This type is an integer vector type based on uint3 that is used to specify dimensions. 
+//This type is an integer vector type based on uint3 that is used to specify dimensions.
 
 namespace PLMD {
 namespace CUDAHELPERS {
 
 template <unsigned numThreads, typename T>
-__device__ void warpReduce1D(volatile T* sdata, unsigned int place){
-    if(numThreads >= 64){//compile time
-      sdata[place] += sdata[place + 32];
-    }
-    if(numThreads >= 32){//compile time
-      sdata[place] += sdata[place + 16];
-    }
-    if(numThreads >= 16){//compile time
-      sdata[place] += sdata[place + 8];
-    }
-    if(numThreads >= 8){//compile time
-      sdata[place] += sdata[place + 4];
-    }
-    if(numThreads >= 4){//compile time
-      sdata[place] += sdata[place + 2];
-    }
-    if(numThreads >= 2){//compile time
-      sdata[place] += sdata[place + 1];
-    }
+__device__ void warpReduce1D(volatile T* sdata, unsigned int place) {
+  if(numThreads >= 64) { //compile time
+    sdata[place] += sdata[place + 32];
+  }
+  if(numThreads >= 32) { //compile time
+    sdata[place] += sdata[place + 16];
+  }
+  if(numThreads >= 16) { //compile time
+    sdata[place] += sdata[place + 8];
+  }
+  if(numThreads >= 8) { //compile time
+    sdata[place] += sdata[place + 4];
+  }
+  if(numThreads >= 4) { //compile time
+    sdata[place] += sdata[place + 2];
+  }
+  if(numThreads >= 2) { //compile time
+    sdata[place] += sdata[place + 1];
+  }
 }
 
 template <unsigned numThreads, typename T>
@@ -72,29 +72,32 @@ __global__ void reduction1D(T *g_idata, T *g_odata, const unsigned int len) {
     sdata[place] += g_idata[i];
     i+=gridSize;
   }
-    
+
   __syncthreads();
   // do reduction in shared memory
-  
+
   if (numThreads >= 512) {//compile time
     if (threadIdx.x  < 256) {
-       sdata[place] += sdata[place + 256]; } __syncthreads(); 
-       }
+      sdata[place] += sdata[place + 256];
+    } __syncthreads();
+  }
   if (numThreads >= 256) {//compile time
     if (threadIdx.x  < 128) {
-       sdata[place] += sdata[place + 128]; } __syncthreads(); 
-       }
+      sdata[place] += sdata[place + 128];
+    } __syncthreads();
+  }
   if (numThreads >= 128) {//compile time
-    if (threadIdx. x < 64) { 
-      sdata[place] += sdata[place + 64]; } __syncthreads();
-       }
+    if (threadIdx. x < 64) {
+      sdata[place] += sdata[place + 64];
+    } __syncthreads();
+  }
   //Instructions are SIMD synchronous within a warp
   //so no need for __syncthreads(), in the last iterations
   if (threadIdx.x < mymin(32u,numThreads/2)) {
     warpReduce1D<numThreads>(sdata, place);
   }
   // write result for this block to global mem
-  if (threadIdx.x == 0){
+  if (threadIdx.x == 0) {
     g_odata[blockIdx.x] = sdata[0];
   }
 }
@@ -103,26 +106,26 @@ __global__ void reduction1D(T *g_idata, T *g_odata, const unsigned int len) {
 //template<typename T, std::enable_if_t<std::is_integral_v<T>, bool> = true>
 
 ///finds the nearest upper multiple of the given reference (wit non increments)
-template<typename T, 
-typename std::enable_if<std::is_integral<T>::value, bool>::type = true>
-  inline T nearestUpperMultipleTo(T number, T reference){
-    return ((number-1)|(reference-1))+1;
+template<typename T,
+         typename std::enable_if<std::is_integral<T>::value, bool>::type = true>
+inline T nearestUpperMultipleTo(T number, T reference) {
+  return ((number-1)|(reference-1))+1;
 }
 
 ///We'll find the ideal number of blocks using the Brent's theorem
-size_t getIdealGroups(size_t numberOfElements, size_t runningThreads){
-    //nearest upper multiple to the numberof threads
-    const size_t nnToGPU=nearestUpperMultipleTo(numberOfElements,runningThreads);
-    ///Brent’s theorem says each thread should sum O(log n) elements
-    //const size_t elementsPerThread=log(nnToGPU);
-    const size_t expectedTotalThreads = ceil(nnToGPU/log(nnToGPU));
-    //hence the blocks should have this size:
-    const unsigned ngroups = nearestUpperMultipleTo(expectedTotalThreads,runningThreads)/runningThreads;
-    return  ngroups;
+size_t getIdealGroups(size_t numberOfElements, size_t runningThreads) {
+  //nearest upper multiple to the numberof threads
+  const size_t nnToGPU=nearestUpperMultipleTo(numberOfElements,runningThreads);
+  ///Brent’s theorem says each thread should sum O(log n) elements
+  //const size_t elementsPerThread=log(nnToGPU);
+  const size_t expectedTotalThreads = ceil(nnToGPU/log(nnToGPU));
+  //hence the blocks should have this size:
+  const unsigned ngroups = nearestUpperMultipleTo(expectedTotalThreads,runningThreads)/runningThreads;
+  return  ngroups;
 }
 
 template <typename T>
-void callReduction1D (T *g_idata, T *g_odata, const unsigned int len, const unsigned blocks, const unsigned nthreads){
+void callReduction1D (T *g_idata, T *g_odata, const unsigned int len, const unsigned blocks, const unsigned nthreads) {
   switch (nthreads) {
   case 512:
     reduction1D<512,T><<<blocks,512,512*sizeof(T)>>>(g_idata,g_odata, len);
@@ -142,27 +145,27 @@ void callReduction1D (T *g_idata, T *g_odata, const unsigned int len, const unsi
   }
 }
 
-size_t decideThreadsPerBlock(unsigned N, unsigned maxNumThreads=512){
+size_t decideThreadsPerBlock(unsigned N, unsigned maxNumThreads=512) {
   //this seeks the minimum number of threads to use a sigle block (and end the recursion)
   size_t dim=32;
-  for (dim=32;dim<512;dim<<=1){
+  for (dim=32; dim<512; dim<<=1) {
     if (maxNumThreads < dim) {
       dim >>=1;
       break;
     }
-    if( N < dim){
+    if( N < dim) {
       break;
     }
   }
   return dim;
 }
 
-double reduceScalar(double* cudaScalarAddress, unsigned N, unsigned maxNumThreads){
+double reduceScalar(double* cudaScalarAddress, unsigned N, unsigned maxNumThreads) {
 //we'll proceed to call recursively callreduction1D until N==1:
   double *reduceOut = cudaScalarAddress;
   double *reduceIn;
   vdbg("In");
-  while(N>1){
+  while(N>1) {
     size_t runningThreads = decideThreadsPerBlock(N,maxNumThreads);
     reduceIn = reduceOut;
     reduceOut = nullptr;
@@ -176,7 +179,7 @@ double reduceScalar(double* cudaScalarAddress, unsigned N, unsigned maxNumThread
     cudaMalloc(&reduceOut,ngroups  * sizeof(double));
     vdbg(reduceOut);
     callReduction1D (reduceIn, reduceOut, N, ngroups, runningThreads);
-    if (reduceIn != cudaScalarAddress){
+    if (reduceIn != cudaScalarAddress) {
       vdbg("Free reduceIn");
       cudaFree(reduceIn);
     }
@@ -194,6 +197,6 @@ double reduceScalar(double* cudaScalarAddress, unsigned N, unsigned maxNumThread
  * @compiletime request all the possible threads 1 2 4 8 16 32 64 128 256 512
  * create a function that cases the threadsnum
  * pass an already initializated cudavector to be reduced with the needed dimensions
- * 
+ *
 */
 
