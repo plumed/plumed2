@@ -125,7 +125,7 @@ jobs:
         source /opt/intel/oneapi/setvars.sh
         printenv >> $GITHUB_ENV
         echo "CXX=icpx" >> $GITHUB_ENV
-        echo "CC=icpx" >> $GITHUB_ENV
+        echo "CC=icx" >> $GITHUB_ENV
         echo "FC=ifx" >> $GITHUB_ENV
     - name: Install MPI
       # install MPI at last since it modifies CC and CXX
