@@ -122,26 +122,11 @@ ECVlinear::ECVlinear(const ActionOptions&ao)
   if(dimensionless)
     beta0_=1;
 
-//workaround needed for intel compiler
-  bool nan_support=true;
-  const double my_nan_value=-42;
-  if(!std::isnan(std::numeric_limits<double>::quiet_NaN()))
-  {
-    nan_support=false;
-    log.printf(" +++ WARNING +++ do not set LAMBDA_MIN/MAX=%g, see https://github.com/plumed/plumed2/pull/990\n", my_nan_value);
-  }
-  auto isNone=[nan_support,my_nan_value](const double value)
-  {
-    if(nan_support)
-      return std::isnan(value);
-    else
-      return value==my_nan_value;
-  };
-
 //parse lambda info
   parse("LAMBDA",lambda0_);
-  double lambda_min=std::numeric_limits<double>::quiet_NaN();
-  double lambda_max=std::numeric_limits<double>::quiet_NaN();
+  const double myNone=std::numeric_limits<double>::lowest(); //quiet_NaN is not supported by some intel compiler
+  double lambda_min=myNone;
+  double lambda_max=myNone;
   parse("LAMBDA_MIN",lambda_min);
   parse("LAMBDA_MAX",lambda_max);
   unsigned lambda_steps=0;
@@ -156,7 +141,7 @@ ECVlinear::ECVlinear(const ActionOptions&ao)
   if(lambdas.size()>0)
   {
     plumed_massert(lambda_steps==0,"cannot set both LAMBDA_STEPS and LAMBDA_SET_ALL");
-    plumed_massert(isNone(lambda_min) && isNone(lambda_max),"cannot set both LAMBDA_SET_ALL and LAMBDA_MIN/MAX");
+    plumed_massert(lambda_min==myNone && lambda_max==myNone,"cannot set both LAMBDA_SET_ALL and LAMBDA_MIN/MAX");
     plumed_massert(lambdas.size()>=2,"set at least 2 lambdas with LAMBDA_SET_ALL");
     for(unsigned k=0; k<lambdas.size()-1; k++)
       plumed_massert(lambdas[k]<=lambdas[k+1],"LAMBDA_SET_ALL must be properly ordered");
@@ -168,12 +153,12 @@ ECVlinear::ECVlinear(const ActionOptions&ao)
   }
   else
   { //get LAMBDA_MIN and LAMBDA_MAX
-    if(isNone(lambda_min))
+    if(lambda_min==myNone)
     {
       lambda_min=0;
       log.printf("  no LAMBDA_MIN provided, using LAMBDA_MIN = %g\n",lambda_min);
     }
-    if(isNone(lambda_max))
+    if(lambda_max==myNone)
     {
       lambda_max=1;
       log.printf("  no LAMBDA_MAX provided, using LAMBDA_MAX = %g\n",lambda_max);
