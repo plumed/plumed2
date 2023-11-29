@@ -121,7 +121,7 @@ ECVlinear::ECVlinear(const ActionOptions&ao)
   parseFlag("DIMENSIONLESS",dimensionless);
   if(dimensionless)
     beta0_=1;
-  
+
 //workaround needed for intel compiler
   bool nan_support=true;
   const double my_nan_value=-42;

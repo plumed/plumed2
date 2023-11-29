@@ -145,7 +145,7 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
 //set temp0
   const double kB=plumed.getAtoms().getKBoltzmann();
   const double temp0=kbt_/kB;
-  
+
 //workaround needed for intel compiler
   bool nan_support=true;
   const double my_nan_value=-42;
