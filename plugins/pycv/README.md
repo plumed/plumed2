@@ -1,5 +1,4 @@
-The PYCV module for PLUMED 2
-====================================
+# The PYCV module/plugin for PLUMED 2
 
 The [PYCV module](https://giorginolab.github.io/plumed2-pycv) enables
 PLUMED2 Collective Variables (CVs) and arbitrary functions to be
@@ -22,46 +21,79 @@ code is in the `src/pycv` and `regtest/pycv` directories.
 [![plumID:19.075](https://www.plumed-nest.org/eggs/19/075/badge.svg)](https://www.plumed-nest.org/eggs/19/075/)
 
 
-Documentation
-------------------------------------
+## Documentation
 
 The PYCV module defines the following actions:
 
- * `PYTHONCV`, to implement single- and multi-component CVs in Python;
- * `PYTHONFUNCTION`, to implement arbitrary functions.
+ * `PYCVINTERFACE`, to implement single- and multi-component CVs in Python;
+ * `PYFUNCTION`, to implement arbitrary functions.
 
-In both cases, a Python interpreter is first started; the Python file
-indicated in the `IMPORT=` keyword is then imported; from it, an
-user-chosen function (`FUNCTION=`) is called to perform the
-computations at each timestep. Modules can be shared for multiple
-functions, and contain one-time initialization.
+Plumed will start a a Python interpreter.
+Then Plumed will import a python module with the `IMPORT=` keyword, this module
+must contain at least two objects: a calculate function that will be called at
+the `calculate()` step, and an init function or dictionary that will be used at
+time of constructing the pycv.
+The module that can be imported can be a `*.py` file or a directory that contains
+an `__init__.py`, or a module in the your python path.
 
-Transparent auto-differentiation, JIT compilation, and vectorization
-are available through Google's [JAX
-library](https://github.com/google/jax) (recommended).
+`PYCVINTERFACE` will accept also functions during the `prepare()` and `update()`
+steps.
 
-Please see the generated documentation and regression tests.
+`PYCVINTERFACE` will accept also the `ATOMS` keyword (see `DISTANCE` cv)
+**or** a series of keyword relative to the neighbour list (see `COORDINATION` cv).
+If both the flavour of asking atom is used, `PYCVINTERFACE` will raise and error.
+
+The interface to python as anticipated before depends on the following keywords:
+
+| keyword   | description                                  | PYCVINTERFACE | PYFUNCTION |
+|-----------|----------------------------------------------|---------------|------------|
+| IMPORT    | the module to import                         | ✅            | ✅         |
+| INIT      | the function/dict to call/get @ construction | ✅            | ✅         |
+| CALCULATE | the function to call at `calculate()` step   | ✅            | ✅         |
+| PREPARE   | the function to call at `prepare()` step     | ✅            | ❌         |
+| UPDATE    | the function to call at `update()` step      | ✅            | ❌         |
+
+If not specified INIT will default to `"plumedInit` and CALCULATE  to 
+`"plumedCalculate"`, on the other hand, if PREPARE and UPDATE are not present, will be ignored.
+
+## Prerequisites
+## Preparation
+
+For compiling the plugin you just need pybind11 and numpy.
+I always recomend to create and ad-hoc environment for your projects:
+```bash
+python3 -m venv pycvenv
+source ./pycvenv/bin/activate
+pip install -U pip
+pip install -r requirements.txt
+```
+The requirements.txt file is in the home of the plug in
+
+### Standard compilation
+
+If you have a plumed that supports plumed mklib with multiple files
+```bash
+./standaloneCompile.sh
+```
+
+### Developer compilation
+
+This version is slightly more complex, but if are often modifying the cpp files compiles only the modified files. (You'll need to call `./prepareMakeForDevelop.sh` only the first time)
+```bash
+./prepareMakeForDevelop.sh
+make
+```
+
+#### Set up tests
+
+Create a symbolic link to the `scripts` directory in a plumed source and you can execute the tests. Plumed must be runnable to execute tests
+```bash
+ln -s path/to/plumed/source/regtest/scripts .
+make
+```
 
 
-
-
-Prerequisites
-------------------------------------
-
-Python 3 is required. Under OSX, [Homebrew](https://brew.sh)'s Python
-3 package works well. The Conda version is problematic (slow
-compilation, linking failures).
-
-You will also need to install `numpy`, either via `pip3 install
-numpy` or your distribution's packages.
-
-Automatic differentiation examples require the JAX library: install
-it with `pip3 install jax jaxlib`. 
-
-
-
-Installation
-------------------------------------
+## Installation
 
 Follow the usual PLUMED 2 configuration procedure:
 
@@ -87,8 +119,7 @@ Python-specific flags as long as the correct `python3-config`
 executable is in your path.)
 
 
-Quickstart
-------------------------------------
+## Quickstart
 
 Here's a quick example to whet your appetite, following the regression test `rt-jax2`.
 
@@ -130,12 +161,25 @@ def cv1(x):
 
 ```
 
+## EXTRA: JAX
 
+Transparent auto-differentiation, JIT compilation, and vectorization
+are available through Google's [JAX
+library](https://github.com/google/jax) (recommended).
 
+### Install jax:
 
+Go to the original guide in the [jax documenation](https://jax.readthedocs.io/en/latest/installation.html)
 
-Demos and regression tests
-------------------------------------
+jax has different method of installation, and can be accelerated with various different hardware,
+(as stated before, trying to install things in a virtual environment make doing error less costly)
+The command for installing should be similar to:
+ - example if you have a cuda12 compatible device (a wheel for cuda will be installed alognside jax):
+`pip install "jax[cuda12_pip]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html`
+ - example if you have a cuda12 compatible device, and **cuda already installed on your system**:
+`pip install "jax[cuda12_local]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html`
+
+## Demos and regression tests
 
 A number of PLUMED-style regression tests are provided to test and
 demonstrate the package features.
@@ -164,12 +208,7 @@ cd regtest/pycv
 make
 ```
 
-
-
-
-
-Common errors
-------------------------------------
+## Common errors
 
 * Missing modules at run time: you may need to set the `PYTHONHOME`
   environment variable.
@@ -180,27 +219,24 @@ Common errors
 
 
 
-Limitations
-------------------------------------
+## Limitations
 
-Behavior with MPI, and JAX's GPU/TPU offloading are untested.
+- No test have been done with MPI
+- JAX's GPU/TPU offloading are unde.
 
 
 
-Author
-------------------------------------
+## Authors
 
 Toni Giorgino <toni.giorgino@gmail.com>
 
 
-Contributing
-------------------------------------
+## Contributing
 
 Please report bugs and ideas via this repository's *Issues*. 
 
 
-Citation
-------------------------------------
+## Citation
 
 Giorgino T. PYCV: a PLUMED 2 Module Enabling the Rapid Prototyping of
 Collective Variables in Python. The Journal of Open Source Software
@@ -210,12 +246,9 @@ Collective Variables in Python. The Journal of Open Source Software
 [![plumID:19.075](https://www.plumed-nest.org/eggs/19/075/badge.svg)](https://www.plumed-nest.org/eggs/19/075/)
 
 
-Copyright
-------------------------------------
+## Copyright
 
 PYCV is distributed under the LGPL terms: see COPYRIGHT.
 
 PYCV includes the [pybind11](https://github.com/pybind/pybind11)
 library, distributed under its own license terms (BSD-3).
-
-
