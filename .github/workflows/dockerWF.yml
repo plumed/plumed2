@@ -19,10 +19,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # fedora38 (gcc 13)
+        # fedora39 (gcc 13)
         # rockylinux8
         variant:
-        - fedora38
+        - fedora39
         - rocky8
     steps:
     - uses: actions/checkout@v3
