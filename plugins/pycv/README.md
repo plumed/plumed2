@@ -205,13 +205,22 @@ def plumedCalculate(action: PLMD.PythonCVInterface):
 **Only** `PYCVINTERFACE` use the keyword PREPARE to call a function in the `prepare()` step, before `calculate()`
 
 If not specified PREPARE will be ignored.
+Python expect this PREPARE to return a dict.
+
+If that dict contains a key called 'setAtomRequest' with a list of atoms (you can pass a string that will be parsed by plumed like the one in ATOMS) the new list will be requested.
+
 ### Update step: the UPDATE keyword
 **Only** `PYCVINTERFACE` use the keyword UPDATE to call a function in the `update()` step, after `calculate()`
 
 If not specified UPDATE will be ignored.
+Python expect this UPDATE to return a dict.
+
+As now nothing will be done after the python UPDATE call.
+
+You can however act on the `.data` dict or access to all the parameters accessible from python, and for example update a plot or accumulate an histogram or any other thing that may be useful for your analysis/simulation.
 
 ### Getting the manual
-To obtain the reference/manual with all the function and method definitions run the test rt-doc or call `PYFUNCTION` in with: 
+To obtain a <i>**VERY BASIC**</i> reference/manual with all the function and method definitions run the test rt-doc or call `PYFUNCTION` in with: 
 
 **plumed.dat**
 ```
@@ -225,27 +234,15 @@ import plumedCommunications
 import pydoc
 
 def plumedInit(_):
-    #the whole help
-    with open('plumedCommunications.help.txt', 'w') as f:
-        h = pydoc.Helper(output=f)
-        h(plumedCommunications)
-    #the help for the CV interface
-    with open('PythonCVInterface.help.txt', 'w') as f:
-        h = pydoc.Helper(output=f)
-        h(plumedCommunications.PythonCVInterface)
-    #the help for the function interface
-    with open('PythonFunction.help.txt', 'w') as f:
-        h = pydoc.Helper(output=f)
-        h(plumedCommunications.PythonFunction)
-    #the help for the default helper definitions
-    with open('plumedCommunications.defaults.help.txt', 'w') as f:
-        h = pydoc.Helper(output=f)
-        h(plumedCommunications.defaults)
+    pydoc.writedoc(plumedCommunications)
+    pydoc.writedoc(plumedCommunications.defaults)
     return {"Value":plumedCommunications.defaults.COMPONENT_NODEV}
 
 def plumedCalculate(_):
     return 0.0
 ```
+
+---
 
 Here's a quick example to whet your appetite, following the regression test `rt-jax2`.
 
