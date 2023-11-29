@@ -125,8 +125,6 @@ jobs:
         sudo apt-get install intel-basekit intel-hpckit 
         source /opt/intel/oneapi/setvars.sh
         printenv >> $GITHUB_ENV
-        which icx
-        ls /opt/intel/oneapi/compiler/2023.2.2/linux/bin/
         echo "CXX=icpx" >> $GITHUB_ENV
         echo "CC=icx" >> $GITHUB_ENV
         echo "FC=ifx" >> $GITHUB_ENV
