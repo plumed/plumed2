@@ -56,7 +56,6 @@ The interface to python as anticipated before depends on the following keywords:
 If not specified INIT will default to `"plumedInit` and CALCULATE  to 
 `"plumedCalculate"`, on the other hand, if PREPARE and UPDATE are not present, will be ignored.
 
-## Prerequisites
 ## Preparation
 
 For compiling the plugin you just need pybind11 and numpy.
@@ -71,53 +70,38 @@ The requirements.txt file is in the home of the plug in
 
 ### Standard compilation
 
-If you have a plumed that supports plumed mklib with multiple files
+If you have a plumed that supports plumed mklib (that will be release in the 2.10 version, but it is avaiable in the master branch) with multiple files you can simply
 ```bash
 ./standaloneCompile.sh
 ```
 
 ### Developer compilation
 
-This version is slightly more complex, but if are often modifying the cpp files compiles only the modified files. (You'll need to call `./prepareMakeForDevelop.sh` only the first time)
+If your plumed version is inferior to 2.10, or you want to contribute to this module,
+the procedure is slighly more compex:
 ```bash
 ./prepareMakeForDevelop.sh
+```
+will prepare a Make.inc in this directory that will be included by the Makefile.
+Then simply:
+```bash
 make
 ```
 
 #### Set up tests
 
-Create a symbolic link to the `scripts` directory in a plumed source and you can execute the tests. Plumed must be runnable to execute tests
+If you are interested in running the test regarding this plugin you can use the same procedure as with the standard plumed, but in the subdir regtest of this plugin.
+The only requirement is to copy or to create a symbolic link to the `regtest/scripts` directory in a plumed source. Plumed must be runnable to execute tests
 ```bash
+cd regtest
 ln -s path/to/plumed/source/regtest/scripts .
 make
 ```
+### About older Plumed versions
 
-
-## Installation
-
-Follow the usual PLUMED 2 configuration procedure:
-
-```bash
-./configure --enable-modules=+pycv 
-make -j4
-make install   # optional
-```
-
-Please inspect the configure messages to see if any missing dependency
-prevents PYCV from actually being enabled. Verify the successful installation
-with e.g.
-
-    ./src/lib/plumed-static manual --action PYTHONCV
-
-which should return the manual for `PYTHONCV`. (The `plumed-static`
-executable should work even without installation.)
-
-(It is also possible to compile the module as a `LOAD`-able dynamic
-object.  Once in the `src/pycv` directory, issue `make PYCV.so`
-(`PYCV.dylib` under OSX). The compilation step *should* pick
-Python-specific flags as long as the correct `python3-config`
-executable is in your path.)
-
+If you are using an older plumed version you must know that:
+ - On linux the plug-in can be loaded only if `LOAD` support the GLOBAL keyword
+ - mklib won't work, so you'll need to use `./prepareMakeForDevelop.sh`
 
 ## Quickstart
 
