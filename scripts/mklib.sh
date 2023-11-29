@@ -1,7 +1,9 @@
 #! /usr/bin/env bash
 
 if [ "$1" = --description ] ; then
-  echo "compile a .cpp file into a shared library"
+  echo "compile one or more *.cpp files into a shared library"
+  echo " you can create and export the variable PLUMED_MKLIB_CFLAGS with some extra compile time flags to be used"
+  echo " you can create and export the variable PLUMED_MKLIB_LDFLAGS with some extra link time flags (and libraries) to be used"
   exit 0
 fi
 
@@ -10,8 +12,6 @@ if [ "$1" = --options ] ; then
   exit 0
 fi
 
-source "$PLUMED_ROOT"/src/config/compile_options.sh
-
 if [ $# == 0 ]
 then
   echo "ERROR"
@@ -19,9 +19,19 @@ then
   exit 1
 fi
 
+source "$PLUMED_ROOT"/src/config/compile_options.sh
+
 lib="${1%%.cpp}".$soext
 rm -f "$lib"
 
+toRemove=""
+remover() {
+  #if compilation fails or crashes the trap will delete the temporary files
+  for f in $toRemove; do
+    rm -f "${f}"
+  done
+}
+trap "remover" EXIT
 objs=""
 
 for file
@@ -44,9 +54,12 @@ do
   #adding a simple tmpfile, to preprocess "in place" the input file,
   #this assumes the user has write permission in the current directory
   #which should be true since we are going to compile and output something here
-  tmpfile=$(mktemp ${file%.cpp}.XXXXXX).cpp
+  tmpfile=$(mktemp "${file%.cpp}.XXXXXX")
+  mv "${tmpfile}" "${tmpfile}.cpp"
+  tmpfile=${tmpfile}.cpp
   cp "${file}" "${tmpfile}"
-  
+  toRemove="${toRemove} ${tmpfile} ${tmpfile}.bak"
+
   if grep -q '^#include "\(bias\|colvar\|function\|sasa\|vatom\)\/ActionRegister.h"' "${tmpfile}"; then
      >&2 echo 'WARNING: using a legacy ActionRegister.h include path, please use <<#include "core/ActionRegister.h">>'
      sed -i.bak 's%^#include ".*/ActionRegister.h"%#include "core/ActionRegister.h"%g' "${tmpfile}"
@@ -64,14 +77,14 @@ do
     exit 1
   }
 
-  rm -f ${tmpfile} ${tmpfile}.bak ${tmpfile%.cpp}
   objs="$objs $obj"
 
 done
 
-if test "$PLUMED_IS_INSTALLED" = yes ; then
-  eval "$link_installed" "$PLUMED_MKLIB_LDFLAGS" -o "$lib" "$objs"
-else
-  eval "$link_uninstalled" "$PLUMED_MKLIB_LDFLAGS" -o "$lib" "$objs"
+link_command="$link_uninstalled"
+
+if test "$PLUMED_IS_INSTALLED" = yes; then
+  link_command="$link_installed"
 fi
 
+eval "$link_command" "$PLUMED_MKLIB_LDFLAGS" $objs -o "$lib"
