@@ -24,19 +24,6 @@ rm -f "$lib"
 
 objs=""
 
-rm -f "$obj" "$lib"
-objs=""
-
-trap "remover" EXIT
-
-remover(){
-  for f in $toRemove $objs; do
-    rm -fv "${f}"
-  done
-}
-
-toRemove=""
-
 for file
 do
 
@@ -57,12 +44,7 @@ do
   #adding a simple tmpfile, to preprocess "in place" the input file,
   #this assumes the user has write permission in the current directory
   #which should be true since we are going to compile and output something here
-  tmpfile=$(mktemp "${file%.cpp}.XXXXXX")
-  mv "${tmpfile}" "${tmpfile}.cpp"
-  tmpfile=${tmpfile}.cpp
-  toRemove="${toRemove} ${tmpfile} ${tmpfile}.bak"
-  
-  
+  tmpfile=$(mktemp ${file%.cpp}.XXXXXX).cpp
   cp "${file}" "${tmpfile}"
   
   if grep -q '^#include "\(bias\|colvar\|function\|sasa\|vatom\)\/ActionRegister.h"' "${tmpfile}"; then
@@ -76,20 +58,20 @@ do
   fi
   
   rm -f "$obj"
+
   eval "$compile" "$PLUMED_MKLIB_CFLAGS" -o "$obj" "$tmpfile" || {
     echo "ERROR: compiling $file"
     exit 1
   }
 
+  rm -f ${tmpfile} ${tmpfile}.bak ${tmpfile%.cpp}
   objs="$objs $obj"
 
 done
 
-link_command="$link_uninstalled"
-
 if test "$PLUMED_IS_INSTALLED" = yes ; then
-  link_command="$link_installed"
+  eval "$link_installed" "$PLUMED_MKLIB_LDFLAGS" -o "$lib" "$objs"
+else
+  eval "$link_uninstalled" "$PLUMED_MKLIB_LDFLAGS" -o "$lib" "$objs"
 fi
-link_command="${link_command} "
-eval "$link_command" "$PLUMED_MKLIB_LDFLAGS" -o "$lib" $objs
-echo "$link_command" "$PLUMED_MKLIB_LDFLAGS" -o "$lib" $objs
+
