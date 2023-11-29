@@ -100,10 +100,152 @@ make
 ### About older Plumed versions
 
 If you are using an older plumed version you must know that:
- - On linux the plug-in can be loaded only if `LOAD` support the GLOBAL keyword
- - mklib won't work, so you'll need to use `./prepareMakeForDevelop.sh`
+ - On linux the plug-in can be loaded only if `LOAD` supports the `GLOBAL` keyword
+ - mklib won't work (supports only single file compilations), so you'll need to use `./prepareMakeForDevelop.sh`
 
-## Quickstart
+## Some Examples
+
+### Bare minimum
+The minimum invocation can be the following:
+
+**plumed.dat**
+```
+LOAD GLOBAL FILE=path/to/PythonCVInterface.so
+cvPY: PYFUNCTION IMPORT=pycv
+PRINT FILE=colvar.out ARG=*
+```
+
+**pycv.py**
+```python
+import plumedCommunications as PLMD
+plumedInit={"Value":PLMD.defaults.COMPONENT_NODEV}
+
+def plumedCalculate(action: PLMD.PythonFunction):
+    action.lognl("Hello, world!")
+    return 0.0
+```
+This simply prints an "Hello, world!" at each step of the simulation/trajectory.
+
+I am using `PYFUNCTION` because needs less options to be initializated.
+### Initialization: the INIT keyword
+
+Both `PYFUNCTION` and `PYCVINTERFACE` use the keyword INIT to finalize the set up for the action.
+If not specified INIT wil default to `"plumedInit"`.
+INIT instruct plumed to call a function that returns a dict or read directly a dict.
+
+The function must accept a `plumedCommunications.PythonFunction` or a `plumedCommunications.PythonCVInterface` object that can be used to interact with plumed (this will be explained better in the CALCULATE section)
+The init dict must contain at least the "Value" or the "COMPONENTS" keys: 
+ - to the "Value" key must be assigned a value-dict
+ - to  the "COMPONENTS" key must be assigne a dict whose keys are assigned to a value-dict. The keys of the COMPONTENTS-dict will be used as name of the components of the action.
+What I am calling a "value-dict" is a dict with two entries: `{'derivative': bool, 'period': None or [min,max]}` "derivative" simply tells plumed that the component will returns derivatice, the "period" will set up the periodicity for that componentd ("min" an "max" are parsed with lepton, so you can also use strings containing `pi`, `e`, etc...)
+
+To help setting up a value/components plumedCommunications has a submodule defaults that contains 2 possible defaults (see the example): 
+  - `plumedCommunications.defaults.COMPONENT = {'derivative': True, 'period': None}`
+  - `plumedCommunications.defaults.COMPONENT_NODEV = {'derivative': False, 'period': None}`
+ 
+The init dictionary for `PYCVINTERFACE` can contain nearly all the keywords of the input line:
+ - NOPBC -flag, needs True/False explicitly set-
+ - ATOMS
+ - GROUPA
+ - GROUPB
+ - PAIR -flag, needs True/False explicitly set-
+ - NLIST -flag, needs True/False explicitly set-
+ - NL_CUTOFF
+ - NL_STRIDE
+Note that if the keyword is both in the input line of the plumed file and in the init-dict an error will be raised.
+
+Nothe that if you use ATOMS and the NL keywords (GROUPA, GROUPB, PAIR, NLIST, NL_CUTOFF, NL_STRIDE) an error will be raised.
+
+`PYCVINTERFACE` has a  `.data` attribute that is a dict, that can be used to store long term data, this dict will not be accessed by plumed.
+
+```python
+import plumedCommunications as PLMD
+
+def plumedInit(action: PLMD.PythonCVInterface):
+    action.data["count"]=0.0
+    return {"NOPBC": True, "Value": PLMD.defaults.COMPONENT_NODEV}
+
+def plumedCalculate(action: PLMD.PythonCVInterface):
+    #...something is defined...
+    if g(something):
+        action.data["example"]+=1.0
+    return f(something)
+```
+
+### Calculate step: the CALCULATE keyword
+Both `PYFUNCTION` and `PYCVINTERFACE` use the keyword CALCULATE to call a function in the `calculate()` step
+If not specified CALCULATE will default to `"plumedCalculate"`.
+
+Plumed will expect CALCULATE to return either a tuple or a dict:
+ - the tuple can have up to 3 components: `[value, derivative, boxDerivative]`: if "derivative" is set to `True` an error will be raised if the tuple contain only one element, or if contains more than one element in the other case.
+ - in the case of multiple COMPONETS plumed will expect a dict with a key per defined component. Each key  must contain a tuple with the previous criterions.
+
+Instead of a tuple you can return a single float (or a dict of floats), but plumed will complain with a warning.
+
+```python
+import plumedCommunications as PLMD
+
+
+plumedInit = {
+    "COMPONENTS": {
+        "first": PLMD.defaults.COMPONENT_NODEV,
+        "second": {"derivative": True, "period": ["-pi", "pi"]},
+    }
+}
+
+def plumedCalculate(action: PLMD.PythonCVInterface):
+    #...complex calculation are called here...
+    return {
+        "first": [resForFirst],
+        "second": [resForSecond, derivativeForSecond, boxDerivativeForSecond],
+    }
+```
+
+### Prepare step: the PREPARE keyword
+**Only** `PYCVINTERFACE` use the keyword PREPARE to call a function in the `prepare()` step, before `calculate()`
+
+If not specified PREPARE will be ignored.
+### Update step: the UPDATE keyword
+**Only** `PYCVINTERFACE` use the keyword UPDATE to call a function in the `update()` step, after `calculate()`
+
+If not specified UPDATE will be ignored.
+
+### Getting the manual
+To obtain the reference/manual with all the function and method definitions run the test rt-doc or call `PYFUNCTION` in with: 
+
+**plumed.dat**
+```
+LOAD GLOBAL FILE=path/to/PythonCVInterface.so
+PYFUNCTION IMPORT=pycv
+```
+
+**pycv.py**
+```python
+import plumedCommunications
+import pydoc
+
+def plumedInit(_):
+    #the whole help
+    with open('plumedCommunications.help.txt', 'w') as f:
+        h = pydoc.Helper(output=f)
+        h(plumedCommunications)
+    #the help for the CV interface
+    with open('PythonCVInterface.help.txt', 'w') as f:
+        h = pydoc.Helper(output=f)
+        h(plumedCommunications.PythonCVInterface)
+    #the help for the function interface
+    with open('PythonFunction.help.txt', 'w') as f:
+        h = pydoc.Helper(output=f)
+        h(plumedCommunications.PythonFunction)
+    #the help for the default helper definitions
+    with open('plumedCommunications.defaults.help.txt', 'w') as f:
+        h = pydoc.Helper(output=f)
+        h(plumedCommunications.defaults)
+    return {"Value":plumedCommunications.defaults.COMPONENT_NODEV}
+
+def plumedCalculate(_):
+    return 0.0
+```
 
 Here's a quick example to whet your appetite, following the regression test `rt-jax2`.
 
