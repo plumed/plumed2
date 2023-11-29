@@ -152,7 +152,7 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
   if(!std::isnan(std::numeric_limits<double>::quiet_NaN()))
   {
     nan_support=false;
-    log.printf(" +++ WARNING +++ do not set LAMBDA_MIN/MAX=%g, see https://github.com/plumed/plumed2/pull/990\n", my_nan_value);
+    log.printf(" +++ WARNING +++ do not set PRESSURE_MIN/MAX=%g, see https://github.com/plumed/plumed2/pull/990\n", my_nan_value);
   }
   auto isNone=[nan_support,my_nan_value](const double value)
   {
