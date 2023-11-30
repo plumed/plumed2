@@ -222,7 +222,7 @@ def plumedCalculate(action: PLMD.PythonFunction):
 ```
 This simply prints an "Hello, world!" at each step of the simulation/trajectory.
 
-### An example, calculation the gradient with jax
+### An example, gradient calculation with jax
 
 Here's a quick example with calculation of an angle between three atoms
 
@@ -274,7 +274,7 @@ Go to the original guide in the [jax documenation](https://jax.readthedocs.io/en
 jax has different method of installation, and can be accelerated with various different hardware,
 (as stated before, trying to install things in a virtual environment make doing error less costly)
 The command for installing should be similar to:
- - example if you have a cuda12 compatible device (a wheel for cuda will be installed alognside jax):
+ - example if you have a cuda12 compatible device (a wheel for cuda will be installed alongside jax):
 `pip install "jax[cuda12_pip]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html`
  - example if you have a cuda12 compatible device, and **cuda already installed on your system**:
 `pip install "jax[cuda12_local]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html`
