@@ -28,7 +28,7 @@ jobs:
 # see https://github.com/plumed/plumed2/issues/976
 #        - -intel-
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: actions/cache@v3
       with:
         path: ~/.ccache
