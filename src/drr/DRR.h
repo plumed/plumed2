@@ -187,13 +187,13 @@ public:
   /// Write grad file
 //   void writeGrad(string filename) const;
   /// Write 1D pmf file on one dimensional occasion
-  void write1DPMF(string filename) const;
+  void write1DPMF(string filename, const string &fmt="%.9f") const;
   /// Write count file
 //   void writeCount(string filename) const;
   /// Write necessary output file in one function (.grad and .count)
-  void writeAll(const string &filename, bool addition = false) const;
+  void writeAll(const string &filename, const string &fmt="%.9f", bool addition = false) const;
   /// Output divergence (.div) (experimental)
-  void writeDivergence(const string &filename) const;
+  void writeDivergence(const string &filename, const string &fmt="%.9f") const;
   /// merge windows
   static vector<DRRAxis> merge(const vector<DRRAxis> &dA,
                                const vector<DRRAxis> &dB);

@@ -1,4 +1,4 @@
 type=plumed
 plumed_needs=boost_serialization
 plumed_modules=drr
-arg="drr_tool --divergence eabf2dpbc.drrstate"
+arg="drr_tool --divergence eabf2dpbc.drrstate --dump-fmt %.6f"
