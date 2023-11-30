@@ -275,12 +275,32 @@ and the argument:
 `PYCVINTERFACE` works with atoms:
 
 Has the following attributes:
- - `nat` (readonly) Return the number of atoms
- - `absoluteIndexes` (readonly) Get the vector of absolute indexes.
+ - `PythonCVInterface.nat` (readonly) Return the number of atoms
 
-And for getting atom settings
- 
+For getting the atomic data you can call the following functions:
+ - `PythonCVInterface.getPosition(atomID:int)` Returns an ndarray with the position of the atomID-th atom 
+ - `PythonCVInterface.getPositions()` Returns a numpy.array that contains the atomic positions of the atoms 
+ - `PythonCVInterface.mass(atomID:int)` Get mass of atomID-th atom
+ - `PythonCVInterface.masses()` Returns and ndarray with the masses 
+ - `PythonCVInterface.charge(atomID:int)` Get charge of atomID-th atom
+ - `PythonCVInterface.charges()` Returns and ndarray with the charges 
+ - `PythonCVInterface.absoluteIndexes()` Get the npArray of the absolute indexes (like in AtomNumber::index()).
 
+ And in general you can use some support-function from plumed:
+ - `PythonCVInterface.getNeighbourList()` returns an interface to the current Neighborlist
+ - `PythonCVInterface.getPbc()` returns an interface to the current pbcs
+ - `PythonCVInterface.makeWhole()` Make atoms whole, assuming they are in the proper order
+
+`plumedCommunications.Pbc` and `plumedCommunications.NeighborList` are simple methods container to help with the calculations:
+
+`plumedCommunications.Pbc` has the following functions:
+ - `Pbc.apply(d:ndarray)` pply PBC to a set of positions or distance vectors (`d.shape==(n,3)`)
+ - `Pbc.getBox()` Get a numpy array of shape (3,3) with the box vectors
+ - `Pbc.getInvBox()` Get a numpy array of shape (3,3) with the inverted box vectors
+
+`plumedCommunications.NeighborList` has the following functions and attributes:
+- `NeigbourList.getClosePairs()` get the (nl.size,2) nd array with the list of couple indexes
+- `NeigbourList.size` and `len(nl:NeigbourList.size)` give the number of couples
 ---
 
 Here's a quick example to whet your appetite, following the regression test `rt-jax2`.
