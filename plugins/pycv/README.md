@@ -103,30 +103,8 @@ If you are using an older plumed version you must know that:
  - On linux the plug-in can be loaded only if `LOAD` supports the `GLOBAL` keyword
  - mklib won't work (supports only single file compilations), so you'll need to use `./prepareMakeForDevelop.sh`
 
-## Some Examples
+## Getting started
 
-### Bare minimum
-The minimum invocation can be the following:
-
-**plumed.dat**
-```
-LOAD GLOBAL FILE=path/to/PythonCVInterface.so
-cvPY: PYFUNCTION IMPORT=pycv
-PRINT FILE=colvar.out ARG=*
-```
-
-**pycv.py**
-```python
-import plumedCommunications as PLMD
-plumedInit={"Value":PLMD.defaults.COMPONENT_NODEV}
-
-def plumedCalculate(action: PLMD.PythonFunction):
-    action.lognl("Hello, world!")
-    return 0.0
-```
-This simply prints an "Hello, world!" at each step of the simulation/trajectory.
-
-I am using `PYFUNCTION` because needs less options to be initializated.
 ### Initialization: the INIT keyword
 
 Both `PYFUNCTION` and `PYCVINTERFACE` use the keyword INIT to finalize the set up for the action.
@@ -219,110 +197,50 @@ As now nothing will be done after the python UPDATE call.
 
 You can however act on the `.data` dict or access to all the parameters accessible from python, and for example update a plot or accumulate an histogram or any other thing that may be useful for your analysis/simulation.
 
-### Getting the manual
-To obtain a <i>**VERY BASIC**</i> reference/manual with all the function and method definitions, run the test rt-doc or call `PYFUNCTION` in with: 
+## Some Examples
+
+In the following paragraphs I am showing a few examples, for a short description of the python interface look [here](PythonInterface.md)
+
+### Bare minimum
+The minimum invocation can be the following:
 
 **plumed.dat**
 ```
 LOAD GLOBAL FILE=path/to/PythonCVInterface.so
-PYFUNCTION IMPORT=pycv
+cvPY: PYFUNCTION IMPORT=pycv
+PRINT FILE=colvar.out ARG=*
 ```
 
 **pycv.py**
 ```python
-import plumedCommunications
-import pydoc
+import plumedCommunications as PLMD
+plumedInit={"Value":PLMD.defaults.COMPONENT_NODEV}
 
-def plumedInit(_):
-    pydoc.writedoc(plumedCommunications)
-    pydoc.writedoc(plumedCommunications.defaults)
-    return {"Value":plumedCommunications.defaults.COMPONENT_NODEV}
-
-def plumedCalculate(_):
+def plumedCalculate(action: PLMD.PythonFunction):
+    action.lognl("Hello, world!")
     return 0.0
 ```
-With this you'll obtain two basic html files with the documentation (these documentation will show also the pybind11 helper methods)
+This simply prints an "Hello, world!" at each step of the simulation/trajectory.
 
-## Specifics
-In the following section
-### Common interface
-Both `PYFUNCTION` and `PYCVINTERFACE` have the following attribute:
- - `label` (readonly) returns the label
+### An example, calculation the gradient with jax
 
-And the following functions:
- - `log(s:object)` puts a string in the PLUMED output
- - `lognl(s:object)` puts a string in the PLUMED output (and appends a newline)
- - `getStep()` Returns the current step
- - `getTime()` Return the present time
- - `getTimeStep()` Return the timestep
- - `isExchangeStep()` Check if we are on an exchange step
- - `isRestart()` Return true if we are doing a restart
+Here's a quick example with calculation of an angle between three atoms
 
-### PYFUNCTION: arguments
-
-`PYFUNCTION` accepts arguments in the plumed file with the `ARG` keyword, the arguments are then accessible in python with the functions:
- - `PythonFunction.argument(argID:int)` Get value of the of argID-th argument (as `float`)
- - `PythonFunction.arguments()` Retuns a ndarray with the values of the arguments (as `numpy.ndarray[numpy.float64]`)
-
-and the argument:
-- `PythonFunction.nargs` (readonly) Get the number of arguments
-
-`PYFUNCTION` also has a few functions that can be used to interact with the periodicity of the arguments:
- - `PythonFunction.bringBackInPbc(argID:int,x:float)` Takes one value and brings it back into the pbc of argument argID
- - `PythonFunction.difference(argID:int,x:float,y:float)` Takes the difference taking into account pbc for argument argID
-
-### PYCVINTERFACE: atoms, pbc, neigbourlist, makeWhole
-`PYCVINTERFACE` works with atoms:
-
-Has the following attributes:
- - `PythonCVInterface.nat` (readonly) Return the number of atoms
-
-For getting the atomic data you can call the following functions:
- - `PythonCVInterface.getPosition(atomID:int)` Returns an ndarray with the position of the atomID-th atom 
- - `PythonCVInterface.getPositions()` Returns a numpy.array that contains the atomic positions of the atoms 
- - `PythonCVInterface.mass(atomID:int)` Get mass of atomID-th atom
- - `PythonCVInterface.masses()` Returns and ndarray with the masses 
- - `PythonCVInterface.charge(atomID:int)` Get charge of atomID-th atom
- - `PythonCVInterface.charges()` Returns and ndarray with the charges 
- - `PythonCVInterface.absoluteIndexes()` Get the npArray of the absolute indexes (like in AtomNumber::index()).
-
- And in general you can use some support-function from plumed:
- - `PythonCVInterface.getNeighbourList()` returns an interface to the current Neighborlist
- - `PythonCVInterface.getPbc()` returns an interface to the current pbcs
- - `PythonCVInterface.makeWhole()` Make atoms whole, assuming they are in the proper order
-
-`plumedCommunications.Pbc` and `plumedCommunications.NeighborList` are simple methods container to help with the calculations:
-
-`plumedCommunications.Pbc` has the following functions:
- - `Pbc.apply(d:ndarray)` pply PBC to a set of positions or distance vectors (`d.shape==(n,3)`)
- - `Pbc.getBox()` Get a numpy array of shape (3,3) with the box vectors
- - `Pbc.getInvBox()` Get a numpy array of shape (3,3) with the inverted box vectors
-
-`plumedCommunications.NeighborList` has the following functions and attributes:
-- `NeigbourList.getClosePairs()` get the (nl.size,2) nd array with the list of couple indexes
-- `NeigbourList.size` and `len(nl:NeigbourList.size)` give the number of couples
----
-
-Here's a quick example to whet your appetite, following the regression test `rt-jax2`.
-
-    export PLUMED_PROGRAM_NAME=$PWD/src/lib/plumed-static 
-    make -C regtest/pycv/rt-jax2
-
-The files in `regtest/pycv/rt-jax2` are reproduced here:
-
-**File plumed.dat**
+**plumed.dat**
 
 ```
-cv1:  PYTHONCV ATOMS=1,4,3 IMPORT=jaxcv FUNCTION=cv1
+cv1:  PYTHONCV ATOMS=1,4,3 IMPORT=jaxcv CALCULATE=cv1
 ```
 
-**File jaxcv.py**
+**jaxcv.py**
 
 ```py
 # Import the JAX library
 import jax.numpy as np
 from jax import grad, jit, vmap
+import plumedCommunications
 
+plumedInit={"Value": plumedCommunications.defaults.COMPONENT}
 # Implementation of the angle function. @jit really improves speed
 @jit
 def angle(x):
@@ -338,11 +256,11 @@ def angle(x):
 grad_angle = grad(angle)
 
 # The CV function actually called
-def cv1(x):
+def cv1(action):
+    x=action.getPositions()
     return angle(x), grad_angle(x)
 
 ```
-
 ## EXTRA: JAX
 
 Transparent auto-differentiation, JIT compilation, and vectorization
@@ -361,58 +279,17 @@ The command for installing should be similar to:
  - example if you have a cuda12 compatible device, and **cuda already installed on your system**:
 `pip install "jax[cuda12_local]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html`
 
-## Demos and regression tests
-
-A number of PLUMED-style regression tests are provided to test and
-demonstrate the package features.
-
-
-Name   | Feature
--------|------------
-`rt-1` | Basic test (distance of two atoms), pure Python, no gradient
-`rt-2` | CV and gradient explicitly coded, pure Python
-`rt-3` | Multiple PYTHON actions in the same file
-`rt-f1`| Function, pure Python
-`rt-f2`| Function, with JIT and auto-gradient, with MATHEVAL equivalent
-`rt-jax1` | Distance CV with JAX reverse-mode differentiation
-`rt-jax2` | Angle CV with JAX reverse-mode differentiation and JIT decorator
-`rt-jax3` | Radius of curvature, as in [doi:10.1016/j.cpc.2018.02.017](http://doi.org/10.1016/j.cpc.2018.02.017)
-`rt-multi1` | Multi-component CV, pure Python
-`rt-multi2` | Multi-component CV, with JAX reverse-mode differentiation
-
-
-To run:
-
-```bash
-cd [path_to_repository]
-export PLUMED_PROGRAM_NAME=$PWD/src/lib/plumed
-cd regtest/pycv
-make
-```
-
-## Common errors
-
-* Missing modules at run time: you may need to set the `PYTHONHOME`
-  environment variable.
-
-* `uncaught exception [...] The interpreter is already running` This
-  occurs if the module is loaded twice. The most common cause is when
-  it is both built-in in the current kernel, and loaded as a module.
-
-
 
 ## Limitations
 
 - No test have been done with MPI
-- JAX's GPU/TPU offloading are unde.
-
-
+- JAX's GPU/TPU offloading are not 100% testes.
 
 ## Authors
 
-Toni Giorgino <toni.giorgino@gmail.com>
+Original author: Toni Giorgino <toni.giorgino@gmail.com>
 
-
+Daniele Rapetti <Daniele.Rapetti@sissa.it>
 ## Contributing
 
 Please report bugs and ideas via this repository's *Issues*. 
