@@ -944,7 +944,7 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   log.printf("  Bibliography: ");
   log<<plumed.cite("M. Invernizzi and M. Parrinello, J. Phys. Chem. Lett. 11, 2731-2736 (2020)");
   if(mode::explore || adaptive_sigma_)
-    log<<plumed.cite("M. Invernizzi and M. Parrinello, preprint arXiv:2201.09950 (2022)");
+    log<<plumed.cite("M. Invernizzi and M. Parrinello, J. Chem. Theory Comput. 18, 3988-3996 (2022)");
   log.printf("\n");
 }
 

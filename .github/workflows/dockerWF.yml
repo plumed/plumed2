@@ -19,15 +19,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # centos7 (gcc 4.8)
-        # fedora38 (gcc 13)
+        # fedora39 (gcc 13)
         # rockylinux8
         variant:
-        - centos7
-        - fedora38
+        - fedora39
         - rocky8
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Build and run tests
       run: |
         make -C docker ${{ matrix.variant }}

@@ -159,8 +159,9 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
   geom_spacing_=!geom_spacing_;
 //parse pressures
   parse("PRESSURE",pres0_);
-  double pres_min=std::numeric_limits<double>::quiet_NaN(); //-1 might be a meaningful pressure
-  double pres_max=std::numeric_limits<double>::quiet_NaN();
+  const double myNone=std::numeric_limits<double>::lowest(); //quiet_NaN is not supported by some intel compiler
+  double pres_min=myNone; //-1 might be a meaningful pressure
+  double pres_max=myNone;
   parse("PRESSURE_MIN",pres_min);
   parse("PRESSURE_MAX",pres_max);
   unsigned pres_steps=0;
@@ -181,7 +182,7 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
     plumed_massert(temp_steps==0,"cannot set both SET_ALL_TEMP_PRESSURE and TEMP_STEPS");
     plumed_massert(pres_steps==0,"cannot set both SET_ALL_TEMP_PRESSURE and PRESSURE_STEPS");
     plumed_massert(temp_min==-1 && temp_max==-1,"cannot set both SET_ALL_TEMP_PRESSURE and TEMP_MIN/MAX");
-    plumed_massert(std::isnan(pres_min) && std::isnan(pres_max),"cannot set both SET_ALL_TEMP_PRESSURE and PRESSURE_MIN/MAX");
+    plumed_massert(pres_min==myNone && pres_max==myNone,"cannot set both SET_ALL_TEMP_PRESSURE and PRESSURE_MIN/MAX");
     plumed_massert(cut_corner.size()==0,"cannot set both SET_ALL_TEMP_PRESSURE and CUT_CORNER");
 //setup the target temperature-pressure grid
     derECVs_beta_.resize(custom_lambdas_.size());
@@ -257,7 +258,7 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
     if(pres_.size()>0)
     {
       plumed_massert(pres_steps==0,"cannot set both PRESSURE_STEPS and PRESSURE_SET_ALL");
-      plumed_massert(std::isnan(pres_min) && std::isnan(pres_max),"cannot set both PRESSURE_SET_ALL and PRESSURE_MIN/MAX");
+      plumed_massert(pres_min==myNone && pres_max==myNone,"cannot set both PRESSURE_SET_ALL and PRESSURE_MIN/MAX");
       plumed_massert(pres_.size()>=2,"set at least 2 pressures");
       for(unsigned kk=0; kk<pres_.size()-1; kk++)
         plumed_massert(pres_[kk]<=pres_[kk+1],"PRESSURE_SET_ALL must be properly ordered");
@@ -266,12 +267,12 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
     }
     else
     { //get PRESSURE_MIN and PRESSURE_MAX
-      if(std::isnan(pres_min))
+      if(pres_min==myNone)
       {
         pres_min=pres0_;
         log.printf("  no PRESSURE_MIN provided, using PRESSURE_MIN=PRESSURE\n");
       }
-      if(std::isnan(pres_max))
+      if(pres_max==myNone)
       {
         pres_max=pres0_;
         log.printf("  no PRESSURE_MAX provided, using PRESSURE_MAX=PRESSURE\n");

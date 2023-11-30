@@ -40,23 +40,23 @@ namespace PLMD {
 class DLLoader {
   std::stack<void*> handles;
   std::string lastError;
-/// Deleted copy constructor
+  /// Deleted copy constructor
   DLLoader(const DLLoader&) = delete;
-/// Deleted assignment
+  /// Deleted assignment
   DLLoader&operator=(const DLLoader&) = delete;
 public:
-/// Default constructor
+  /// Default constructor
   DLLoader();
-/// Cleanup
+  /// Cleanup
   ~DLLoader();
-/// Load a library, returning its handle
-  void* load(const std::string&);
-/// Returns the last error in dynamic loader
+  /// Load a library, returning its handle
+  void* load(const std::string&, bool=false);
+  /// Returns the last error in dynamic loader
   const std::string & error();
-/// Returns true if the dynamic loader is available (on some systems it may not).
+  /// Returns true if the dynamic loader is available (on some systems it may not).
   static bool installed();
 };
 
-}
+} // namespace PLMD
 
 #endif

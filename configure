@@ -731,13 +731,9 @@ enable_external_blas
 enable_molfile_plugins
 enable_external_molfile_plugins
 enable_zlib
-enable_readdir_r
-enable_cregex
 enable_dlopen
 enable_rtld_default
-enable_chdir
 enable_subprocess
-enable_getcwd
 enable_popen
 enable_execinfo
 enable_gsl
@@ -1393,8 +1389,8 @@ Optional Features:
   --enable-pdfdoc         enable pdf version of the manual, default: no
   --enable-debug          enable debugging, default: no
   --enable-gcov           enable gcov to estimate code coverage, default: no
-  --enable-cxx            11 or 14. To link libraries with headers that need
-                          this C++ level. Use --enable-cxx=none to remove
+  --enable-cxx            17, 20, or 23. To link libraries with headers that
+                          need this C++ level. Use --enable-cxx=none to remove
                           -std=c++ flag
   --enable-basic-warnings enable basic warnings, default: yes
   --enable-fussy          enable fussy warnings, default: no
@@ -1433,15 +1429,10 @@ Optional Features:
                           enable search for external molfile_plugins, default:
                           yes
   --enable-zlib           enable search for zlib, default: yes
-  --enable-readdir-r      enable search for readdir_r (threadsafe), default:
-                          no
-  --enable-cregex         enable search for C regular expression, default: yes
   --enable-dlopen         enable search for dlopen, default: yes
   --enable-rtld_default   enable search for RTLD_DEFAULT macro, default: yes
-  --enable-chdir          enable search for chdir function, default: yes
   --enable-subprocess     enable search for functions needed to manage a
                           subprocess, default: yes
-  --enable-getcwd         enable search for getcwd function, default: yes
   --enable-popen          enable search for popen, default: yes
   --enable-execinfo       enable search for execinfo, default: yes
   --enable-gsl            enable search for gsl, default: yes
@@ -1769,6 +1760,48 @@ fi
 
 } # ac_fn_c_try_link
 
+# ac_fn_cxx_try_run LINENO
+# ------------------------
+# Try to link conftest.$ac_ext, and return whether this succeeded. Assumes
+# that executables *can* be run.
+ac_fn_cxx_try_run ()
+{
+  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
+  if { { ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval ac_try_echo="\"\$as_me:${as_lineno-$LINENO}: $ac_try_echo\""
+$as_echo "$ac_try_echo"; } >&5
+  (eval "$ac_link") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; } && { ac_try='./conftest$ac_exeext'
+  { { case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval ac_try_echo="\"\$as_me:${as_lineno-$LINENO}: $ac_try_echo\""
+$as_echo "$ac_try_echo"; } >&5
+  (eval "$ac_try") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; }; then :
+  ac_retval=0
+else
+  $as_echo "$as_me: program exited with status $ac_status" >&5
+       $as_echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+       ac_retval=$ac_status
+fi
+  rm -rf conftest.dSYM conftest_ipa8_conftest.oo
+  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
+  as_fn_set_status $ac_retval
+
+} # ac_fn_cxx_try_run
+
 # ac_fn_cxx_try_cpp LINENO
 # ------------------------
 # Try to preprocess conftest.$ac_ext, and return whether this succeeded.
@@ -1893,48 +1926,6 @@ fi
 
 } # ac_fn_cxx_check_header_mongrel
 
-# ac_fn_cxx_try_run LINENO
-# ------------------------
-# Try to link conftest.$ac_ext, and return whether this succeeded. Assumes
-# that executables *can* be run.
-ac_fn_cxx_try_run ()
-{
-  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
-  if { { ac_try="$ac_link"
-case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval ac_try_echo="\"\$as_me:${as_lineno-$LINENO}: $ac_try_echo\""
-$as_echo "$ac_try_echo"; } >&5
-  (eval "$ac_link") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; } && { ac_try='./conftest$ac_exeext'
-  { { case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval ac_try_echo="\"\$as_me:${as_lineno-$LINENO}: $ac_try_echo\""
-$as_echo "$ac_try_echo"; } >&5
-  (eval "$ac_try") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; }; then :
-  ac_retval=0
-else
-  $as_echo "$as_me: program exited with status $ac_status" >&5
-       $as_echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-       ac_retval=$ac_status
-fi
-  rm -rf conftest.dSYM conftest_ipa8_conftest.oo
-  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
-  as_fn_set_status $ac_retval
-
-} # ac_fn_cxx_try_run
-
 # ac_fn_cxx_check_header_compile LINENO HEADER VAR INCLUDES
 # ---------------------------------------------------------
 # Tests whether HEADER exists and can be compiled using the include files in
@@ -1965,73 +1956,6 @@ $as_echo "$ac_res" >&6; }
   eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
 
 } # ac_fn_cxx_check_header_compile
-
-# ac_fn_cxx_check_func LINENO FUNC VAR
-# ------------------------------------
-# Tests whether FUNC exists, setting the cache variable VAR accordingly
-ac_fn_cxx_check_func ()
-{
-  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $2" >&5
-$as_echo_n "checking for $2... " >&6; }
-if eval \${$3+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-/* Define $2 to an innocuous variant, in case <limits.h> declares $2.
-   For example, HP-UX 11i <limits.h> declares gettimeofday.  */
-#define $2 innocuous_$2
-
-/* System header to define __stub macros and hopefully few prototypes,
-    which can conflict with char $2 (); below.
-    Prefer <limits.h> to <assert.h> if __STDC__ is defined, since
-    <limits.h> exists even on freestanding compilers.  */
-
-#ifdef __STDC__
-# include <limits.h>
-#else
-# include <assert.h>
-#endif
-
-#undef $2
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char $2 ();
-/* The GNU C library defines this for functions which it implements
-    to always fail with ENOSYS.  Some functions are actually named
-    something starting with __ and the normal name is an alias.  */
-#if defined __stub_$2 || defined __stub___$2
-choke me
-#endif
-
-int
-main ()
-{
-return $2 ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  eval "$3=yes"
-else
-  eval "$3=no"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-fi
-eval ac_res=\$$3
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
-
-} # ac_fn_cxx_check_func
 cat >config.log <<_ACEOF
 This file contains any messages produced by compilers while
 running configure, to aid debugging if configure makes a mistake.
@@ -2622,8 +2546,11 @@ fi
 if test "${enable_cxx+set}" = set; then :
   enableval=$enable_cxx;
     case "${enableval}" in
-    (11) cxx_level=11 ;;
-    (14) cxx_level=14 ;;
+    (11) cxx_level=17 ;;
+    (14) cxx_level=17 ;;
+    (17) cxx_level=17 ;;
+    (20) cxx_level=20 ;;
+    (23) cxx_level=23 ;;
     (none) cxx_level="" ;;
     (*) as_fn_error $? "cxx level not supported" "$LINENO" 5
     esac
@@ -2632,7 +2559,7 @@ $as_echo "$as_me: Selected C++ level: $cxx_level" >&6;}
 
 else
 
-    cxx_level="11"
+    cxx_level="17"
 
 
 fi
@@ -3016,42 +2943,6 @@ fi
 
 
 
-readdir_r=
-# Check whether --enable-readdir-r was given.
-if test "${enable_readdir_r+set}" = set; then :
-  enableval=$enable_readdir_r; case "${enableval}" in
-             (yes) readdir_r=true ;;
-             (no)  readdir_r=false ;;
-             (*)   as_fn_error $? "wrong argument to --enable-readdir-r" "$LINENO" 5 ;;
-  esac
-else
-  case "no" in
-             (yes) readdir_r=true ;;
-             (no)  readdir_r=false ;;
-  esac
-
-fi
-
-
-
-cregex=
-# Check whether --enable-cregex was given.
-if test "${enable_cregex+set}" = set; then :
-  enableval=$enable_cregex; case "${enableval}" in
-             (yes) cregex=true ;;
-             (no)  cregex=false ;;
-             (*)   as_fn_error $? "wrong argument to --enable-cregex" "$LINENO" 5 ;;
-  esac
-else
-  case "yes" in
-             (yes) cregex=true ;;
-             (no)  cregex=false ;;
-  esac
-
-fi
-
-
-
 dlopen=
 # Check whether --enable-dlopen was given.
 if test "${enable_dlopen+set}" = set; then :
@@ -3088,24 +2979,6 @@ fi
 
 
 
-chdir=
-# Check whether --enable-chdir was given.
-if test "${enable_chdir+set}" = set; then :
-  enableval=$enable_chdir; case "${enableval}" in
-             (yes) chdir=true ;;
-             (no)  chdir=false ;;
-             (*)   as_fn_error $? "wrong argument to --enable-chdir" "$LINENO" 5 ;;
-  esac
-else
-  case "yes" in
-             (yes) chdir=true ;;
-             (no)  chdir=false ;;
-  esac
-
-fi
-
-
-
 subprocess=
 # Check whether --enable-subprocess was given.
 if test "${enable_subprocess+set}" = set; then :
@@ -3118,24 +2991,6 @@ else
   case "yes" in
              (yes) subprocess=true ;;
              (no)  subprocess=false ;;
-  esac
-
-fi
-
-
-
-getcwd=
-# Check whether --enable-getcwd was given.
-if test "${enable_getcwd+set}" = set; then :
-  enableval=$enable_getcwd; case "${enableval}" in
-             (yes) getcwd=true ;;
-             (no)  getcwd=false ;;
-             (*)   as_fn_error $? "wrong argument to --enable-getcwd" "$LINENO" 5 ;;
-  esac
-else
-  case "yes" in
-             (yes) getcwd=true ;;
-             (no)  getcwd=false ;;
   esac
 
 fi
@@ -5283,13 +5138,13 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX declares c++11 support" >&5
-$as_echo_n "checking whether $CXX declares c++11 support... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX declares c++17 support" >&5
+$as_echo_n "checking whether $CXX declares c++17 support... " >&6; }
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-#if __cplusplus <= 199711L
-this_compiler_does_not_support_cxx11
+#if __cplusplus < 201703L
+this_compiler_does_not_support_cxx17
 #endif
 
 int
@@ -5303,87 +5158,23 @@ _ACEOF
 if ac_fn_cxx_try_compile "$LINENO"; then :
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; };
-  support_cxx11=true
+  support_cxx17=true
 else
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; } ;
-  support_cxx11=false
+  support_cxx17=false
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
-if test "$support_cxx11" = false
+if test "$support_cxx17" = false
 then
-   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: C++11 support is required as of PLUMED 2.4" >&5
-$as_echo "$as_me: WARNING: C++11 support is required as of PLUMED 2.4" >&2;}
-   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Your compiler appears not to support C++11" >&5
-$as_echo "$as_me: WARNING: Your compiler appears not to support C++11" >&2;}
+   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: C++17 support is required as of PLUMED 2.10" >&5
+$as_echo "$as_me: WARNING: C++17 support is required as of PLUMED 2.10" >&2;}
+   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Your compiler appears not to support C++17" >&5
+$as_echo "$as_me: WARNING: Your compiler appears not to support C++17" >&2;}
    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Please change compiler or make sure that everything works correctly" >&5
 $as_echo "$as_me: WARNING: Please change compiler or make sure that everything works correctly" >&2;}
 fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C++ library supports C++11 exceptions" >&5
-$as_echo_n "checking whether C++ library supports C++11 exceptions... " >&6; }
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#include <new>
-#include <functional>
-#include <memory>
-#include <system_error>
-#include <ios>
-#include <future>
-// capable to catch:
-void func(void) {
-  try{
-  } catch(std::bad_array_new_length &) {
-  } catch(std::bad_function_call &) {
-  } catch(std::bad_weak_ptr &) {
-  } catch(std::ios_base::failure &e) {
-    if(e.code().category()==std::generic_category()) {}
-    else if(e.code().category()==std::system_category()) {}
-    else if(e.code().category()==std::iostream_category()) {}
-    else if(e.code().category()==std::future_category()) {}
-  } catch(std::system_error &e) {
-    if(e.code().category()==std::generic_category()) {}
-    else if(e.code().category()==std::system_category()) {}
-    else if(e.code().category()==std::iostream_category()) {}
-    else if(e.code().category()==std::future_category()) {}
-  }
-// capable to throw:
-  auto a=std::bad_array_new_length();
-  auto b=std::bad_function_call();
-  auto c=std::bad_weak_ptr();
-  auto d=std::system_error(10,std::generic_category(),"msg");
-  auto e=std::system_error(10,std::system_category(),"msg");
-  auto f=std::system_error(10,std::iostream_category(),"msg");
-  auto g=std::system_error(10,std::future_category(),"msg");
-  auto h=std::ios_base::failure("msg",std::error_code(10,std::generic_category()));
-  auto i=std::ios_base::failure("msg",std::error_code(10,std::system_category()));
-  auto j=std::ios_base::failure("msg",std::error_code(10,std::iostream_category()));
-  auto k=std::ios_base::failure("msg",std::error_code(10,std::future_category()));
-}
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_compile "$LINENO"; then :
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; };
-  $as_echo "#define __PLUMED_LIBCXX11 1" >>confdefs.h
-
-
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 
 
@@ -5473,412 +5264,147 @@ fi
 # some of them might be made optional if we find that are not available in some system
 { $as_echo "$as_me:${as_lineno-$LINENO}: Now we will check compulsory headers and libraries" >&5
 $as_echo "$as_me: Now we will check compulsory headers and libraries" >&6;}
-ac_ext=cpp
-ac_cpp='$CXXCPP $CPPFLAGS'
-ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking how to run the C++ preprocessor" >&5
-$as_echo_n "checking how to run the C++ preprocessor... " >&6; }
-if test -z "$CXXCPP"; then
-  if ${ac_cv_prog_CXXCPP+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-      # Double quotes because CXXCPP needs to be expanded
-    for CXXCPP in "$CXX -E" "/lib/cpp"
-    do
-      ac_preproc_ok=false
-for ac_cxx_preproc_warn_flag in '' yes
-do
-  # Use a header file that comes with gcc, so configuring glibc
-  # with a fresh cross-compiler works.
-  # Prefer <limits.h> to <assert.h> if __STDC__ is defined, since
-  # <limits.h> exists even on freestanding compilers.
-  # On the NeXT, cc -E runs the code through the compiler's parser,
-  # not just through cpp. "Syntax error" is here to catch this case.
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#ifdef __STDC__
-# include <limits.h>
-#else
-# include <assert.h>
-#endif
-		     Syntax error
-_ACEOF
-if ac_fn_cxx_try_cpp "$LINENO"; then :
-
-else
-  # Broken: fails on valid input.
-continue
-fi
-rm -f conftest.err conftest.i conftest.$ac_ext
-
-  # OK, works on sane cases.  Now check whether nonexistent headers
-  # can be detected and how.
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <ac_nonexistent.h>
-_ACEOF
-if ac_fn_cxx_try_cpp "$LINENO"; then :
-  # Broken: success on invalid input.
-continue
-else
-  # Passes both tests.
-ac_preproc_ok=:
-break
-fi
-rm -f conftest.err conftest.i conftest.$ac_ext
-
-done
-# Because of `break', _AC_PREPROC_IFELSE's cleaning code was skipped.
-rm -f conftest.i conftest.err conftest.$ac_ext
-if $ac_preproc_ok; then :
-  break
-fi
-
-    done
-    ac_cv_prog_CXXCPP=$CXXCPP
-
-fi
-  CXXCPP=$ac_cv_prog_CXXCPP
-else
-  ac_cv_prog_CXXCPP=$CXXCPP
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $CXXCPP" >&5
-$as_echo "$CXXCPP" >&6; }
-ac_preproc_ok=false
-for ac_cxx_preproc_warn_flag in '' yes
-do
-  # Use a header file that comes with gcc, so configuring glibc
-  # with a fresh cross-compiler works.
-  # Prefer <limits.h> to <assert.h> if __STDC__ is defined, since
-  # <limits.h> exists even on freestanding compilers.
-  # On the NeXT, cc -E runs the code through the compiler's parser,
-  # not just through cpp. "Syntax error" is here to catch this case.
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#ifdef __STDC__
-# include <limits.h>
-#else
-# include <assert.h>
-#endif
-		     Syntax error
-_ACEOF
-if ac_fn_cxx_try_cpp "$LINENO"; then :
-
-else
-  # Broken: fails on valid input.
-continue
-fi
-rm -f conftest.err conftest.i conftest.$ac_ext
-
-  # OK, works on sane cases.  Now check whether nonexistent headers
-  # can be detected and how.
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <ac_nonexistent.h>
-_ACEOF
-if ac_fn_cxx_try_cpp "$LINENO"; then :
-  # Broken: success on invalid input.
-continue
-else
-  # Passes both tests.
-ac_preproc_ok=:
-break
-fi
-rm -f conftest.err conftest.i conftest.$ac_ext
-
-done
-# Because of `break', _AC_PREPROC_IFELSE's cleaning code was skipped.
-rm -f conftest.i conftest.err conftest.$ac_ext
-if $ac_preproc_ok; then :
-
-else
-  { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
-$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error $? "C++ preprocessor \"$CXXCPP\" fails sanity check
-See \`config.log' for more details" "$LINENO" 5; }
-fi
-
-ac_ext=cpp
-ac_cpp='$CXXCPP $CPPFLAGS'
-ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for grep that handles long lines and -e" >&5
-$as_echo_n "checking for grep that handles long lines and -e... " >&6; }
-if ${ac_cv_path_GREP+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  if test -z "$GREP"; then
-  ac_path_GREP_found=false
-  # Loop through the user's path and test for each of PROGNAME-LIST
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH$PATH_SEPARATOR/usr/xpg4/bin
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_prog in grep ggrep; do
-    for ac_exec_ext in '' $ac_executable_extensions; do
-      ac_path_GREP="$as_dir/$ac_prog$ac_exec_ext"
-      as_fn_executable_p "$ac_path_GREP" || continue
-# Check for GNU ac_path_GREP and select it if it is found.
-  # Check for GNU $ac_path_GREP
-case `"$ac_path_GREP" --version 2>&1` in
-*GNU*)
-  ac_cv_path_GREP="$ac_path_GREP" ac_path_GREP_found=:;;
-*)
-  ac_count=0
-  $as_echo_n 0123456789 >"conftest.in"
-  while :
-  do
-    cat "conftest.in" "conftest.in" >"conftest.tmp"
-    mv "conftest.tmp" "conftest.in"
-    cp "conftest.in" "conftest.nl"
-    $as_echo 'GREP' >> "conftest.nl"
-    "$ac_path_GREP" -e 'GREP$' -e '-(cannot match)-' < "conftest.nl" >"conftest.out" 2>/dev/null || break
-    diff "conftest.out" "conftest.nl" >/dev/null 2>&1 || break
-    as_fn_arith $ac_count + 1 && ac_count=$as_val
-    if test $ac_count -gt ${ac_path_GREP_max-0}; then
-      # Best one so far, save it but keep looking for a better one
-      ac_cv_path_GREP="$ac_path_GREP"
-      ac_path_GREP_max=$ac_count
+    found=ko
+    __PLUMED_CXX17_FILESYSTEM=no
+    if test "${libsearch}" = true ; then
+      testlibs="stdc++fs"
+    else
+      testlibs=""
     fi
-    # 10*(2^10) chars as input seems more than enough
-    test $ac_count -gt 10 && break
-  done
-  rm -f conftest.in conftest.tmp conftest.nl conftest.out;;
-esac
+    save_LIBS="$LIBS"
 
-      $ac_path_GREP_found && break 3
-    done
-  done
-  done
-IFS=$as_save_IFS
-  if test -z "$ac_cv_path_GREP"; then
-    as_fn_error $? "no acceptable grep could be found in $PATH$PATH_SEPARATOR/usr/xpg4/bin" "$LINENO" 5
-  fi
-else
-  ac_cv_path_GREP=$GREP
-fi
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_path_GREP" >&5
-$as_echo "$ac_cv_path_GREP" >&6; }
- GREP="$ac_cv_path_GREP"
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for egrep" >&5
-$as_echo_n "checking for egrep... " >&6; }
-if ${ac_cv_path_EGREP+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  if echo a | $GREP -E '(a|b)' >/dev/null 2>&1
-   then ac_cv_path_EGREP="$GREP -E"
-   else
-     if test -z "$EGREP"; then
-  ac_path_EGREP_found=false
-  # Loop through the user's path and test for each of PROGNAME-LIST
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH$PATH_SEPARATOR/usr/xpg4/bin
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_prog in egrep; do
-    for ac_exec_ext in '' $ac_executable_extensions; do
-      ac_path_EGREP="$as_dir/$ac_prog$ac_exec_ext"
-      as_fn_executable_p "$ac_path_EGREP" || continue
-# Check for GNU ac_path_EGREP and select it if it is found.
-  # Check for GNU $ac_path_EGREP
-case `"$ac_path_EGREP" --version 2>&1` in
-*GNU*)
-  ac_cv_path_EGREP="$ac_path_EGREP" ac_path_EGREP_found=:;;
-*)
-  ac_count=0
-  $as_echo_n 0123456789 >"conftest.in"
-  while :
-  do
-    cat "conftest.in" "conftest.in" >"conftest.tmp"
-    mv "conftest.tmp" "conftest.in"
-    cp "conftest.in" "conftest.nl"
-    $as_echo 'EGREP' >> "conftest.nl"
-    "$ac_path_EGREP" 'EGREP$' < "conftest.nl" >"conftest.out" 2>/dev/null || break
-    diff "conftest.out" "conftest.nl" >/dev/null 2>&1 || break
-    as_fn_arith $ac_count + 1 && ac_count=$as_val
-    if test $ac_count -gt ${ac_path_EGREP_max-0}; then
-      # Best one so far, save it but keep looking for a better one
-      ac_cv_path_EGREP="$ac_path_EGREP"
-      ac_path_EGREP_max=$ac_count
+    # check if multiple libraries are required simultaneously
+    multiple="no"
+    if test "" = "true"; then
+      multiple="yes"
+      all_LIBS=""
+      for testlib in $testlibs;
+      do
+        all_LIBS="$all_LIBS -l$testlib"
+      done
+      testlibs=" " # to check only without libraries, and later with all together
     fi
-    # 10*(2^10) chars as input seems more than enough
-    test $ac_count -gt 10 && break
-  done
-  rm -f conftest.in conftest.tmp conftest.nl conftest.out;;
-esac
 
-      $ac_path_EGREP_found && break 3
-    done
-  done
-  done
-IFS=$as_save_IFS
-  if test -z "$ac_cv_path_EGREP"; then
-    as_fn_error $? "no acceptable egrep could be found in $PATH$PATH_SEPARATOR/usr/xpg4/bin" "$LINENO" 5
-  fi
-else
-  ac_cv_path_EGREP=$EGREP
-fi
-
-   fi
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_path_EGREP" >&5
-$as_echo "$ac_cv_path_EGREP" >&6; }
- EGREP="$ac_cv_path_EGREP"
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for ANSI C header files" >&5
-$as_echo_n "checking for ANSI C header files... " >&6; }
-if ${ac_cv_header_stdc+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+    # check without libraries
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking filesystem library without extra libs" >&5
+$as_echo_n "checking filesystem library without extra libs... " >&6; }
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-#include <float.h>
 
-int
-main ()
-{
+#include <filesystem>
+#include <iostream>
+#include <string>
 
-  ;
+int main(){
+  std::filesystem::path path;
+  for (auto const& dir_entry : std::filesystem::directory_iterator{"a"}) {
+    std::cout<<std::string(dir_entry.path().filename())<<"\n";
+  }
   return 0;
 }
-_ACEOF
-if ac_fn_cxx_try_compile "$LINENO"; then :
-  ac_cv_header_stdc=yes
-else
-  ac_cv_header_stdc=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-if test $ac_cv_header_stdc = yes; then
-  # SunOS 4.x string.h does not declare mem*, contrary to ANSI.
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <string.h>
 
 _ACEOF
-if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
-  $EGREP "memchr" >/dev/null 2>&1; then :
-
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+          { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
 else
-  ac_cv_header_stdc=no
-fi
-rm -f conftest*
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
 
 fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
 
-if test $ac_cv_header_stdc = yes; then
-  # ISC 2.0.2 stdlib.h does not declare free, contrary to ANSI.
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+    if test "$found" = "ko" ; then
+      if test "$multiple" = "yes" ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking filesystem library with $all_LIBS" >&5
+$as_echo_n "checking filesystem library with $all_LIBS... " >&6; }
+        LIBS="$all_LIBS $LIBS"
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-#include <stdlib.h>
 
-_ACEOF
-if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
-  $EGREP "free" >/dev/null 2>&1; then :
+#include <filesystem>
+#include <iostream>
+#include <string>
 
-else
-  ac_cv_header_stdc=no
-fi
-rm -f conftest*
-
-fi
-
-if test $ac_cv_header_stdc = yes; then
-  # /bin/cc in Irix-4.0.5 gets non-ANSI ctype macros unless using -ansi.
-  if test "$cross_compiling" = yes; then :
-  :
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <ctype.h>
-#include <stdlib.h>
-#if ((' ' & 0x0FF) == 0x020)
-# define ISLOWER(c) ('a' <= (c) && (c) <= 'z')
-# define TOUPPER(c) (ISLOWER(c) ? 'A' + ((c) - 'a') : (c))
-#else
-# define ISLOWER(c) \
-		   (('a' <= (c) && (c) <= 'i') \
-		     || ('j' <= (c) && (c) <= 'r') \
-		     || ('s' <= (c) && (c) <= 'z'))
-# define TOUPPER(c) (ISLOWER(c) ? ((c) | 0x40) : (c))
-#endif
-
-#define XOR(e, f) (((e) && !(f)) || (!(e) && (f)))
-int
-main ()
-{
-  int i;
-  for (i = 0; i < 256; i++)
-    if (XOR (islower (i), ISLOWER (i))
-	|| toupper (i) != TOUPPER (i))
-      return 2;
+int main(){
+  std::filesystem::path path;
+  for (auto const& dir_entry : std::filesystem::directory_iterator{"a"}) {
+    std::cout<<std::string(dir_entry.path().filename())<<"\n";
+  }
   return 0;
 }
+
 _ACEOF
-if ac_fn_cxx_try_run "$LINENO"; then :
-
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+              { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
 else
-  ac_cv_header_stdc=no
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
 
 fi
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_header_stdc" >&5
-$as_echo "$ac_cv_header_stdc" >&6; }
-if test $ac_cv_header_stdc = yes; then
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+      else
+        for testlib in $testlibs
+        do
+          { $as_echo "$as_me:${as_lineno-$LINENO}: checking filesystem library with -l$testlib" >&5
+$as_echo_n "checking filesystem library with -l$testlib... " >&6; }
+          LIBS="-l$testlib $LIBS"
+          cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
 
-$as_echo "#define STDC_HEADERS 1" >>confdefs.h
+#include <filesystem>
+#include <iostream>
+#include <string>
 
-fi
+int main(){
+  std::filesystem::path path;
+  for (auto const& dir_entry : std::filesystem::directory_iterator{"a"}) {
+    std::cout<<std::string(dir_entry.path().filename())<<"\n";
+  }
+  return 0;
+}
 
-# On IRIX 5.3, sys/types and inttypes.h are conflicting.
-for ac_header in sys/types.h sys/stat.h stdlib.h string.h memory.h strings.h \
-		  inttypes.h stdint.h unistd.h
-do :
-  as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
-ac_fn_cxx_check_header_compile "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default
-"
-if eval test \"x\$"$as_ac_Header"\" = x"yes"; then :
-  cat >>confdefs.h <<_ACEOF
-#define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
 _ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+                { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
 
 fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+          if test $found = ok ; then
+            break
+          fi
+          LIBS="$save_LIBS"
+        done
+      fi
+    fi
 
-done
+    if test $found = ok ; then
+      $as_echo "#define __PLUMED_CXX17_FILESYSTEM 1" >>confdefs.h
+
+      __PLUMED_CXX17_FILESYSTEM=yes
+    else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_CXX17_FILESYSTEM" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_CXX17_FILESYSTEM" >&2;}
+      LIBS="$save_LIBS"
+    fi
 
 
-ac_fn_cxx_check_header_mongrel "$LINENO" "dirent.h" "ac_cv_header_dirent_h" "$ac_includes_default"
-if test "x$ac_cv_header_dirent_h" = xyes; then :
-
-else
-  as_fn_error $? "compulsory header not found" "$LINENO" 5
-fi
-
-
-ac_fn_cxx_check_func "$LINENO" "readdir" "ac_cv_func_readdir"
-if test "x$ac_cv_func_readdir" = xyes; then :
-
-else
-  as_fn_error $? "compulsory function not found" "$LINENO" 5
+if test "$__PLUMED_CXX17_FILESYSTEM" != yes
+then
+  as_fn_error $? "C++17 filesystem library not supported, please check your compiler" "$LINENO" 5
 fi
 
 
@@ -6632,6 +6158,399 @@ $as_echo "#define __PLUMED_HAS_MOLFILE_PLUGINS 1" >>confdefs.h
 
 
   if test "$external_molfile_plugins" = true ; then
+    ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking how to run the C++ preprocessor" >&5
+$as_echo_n "checking how to run the C++ preprocessor... " >&6; }
+if test -z "$CXXCPP"; then
+  if ${ac_cv_prog_CXXCPP+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+      # Double quotes because CXXCPP needs to be expanded
+    for CXXCPP in "$CXX -E" "/lib/cpp"
+    do
+      ac_preproc_ok=false
+for ac_cxx_preproc_warn_flag in '' yes
+do
+  # Use a header file that comes with gcc, so configuring glibc
+  # with a fresh cross-compiler works.
+  # Prefer <limits.h> to <assert.h> if __STDC__ is defined, since
+  # <limits.h> exists even on freestanding compilers.
+  # On the NeXT, cc -E runs the code through the compiler's parser,
+  # not just through cpp. "Syntax error" is here to catch this case.
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#ifdef __STDC__
+# include <limits.h>
+#else
+# include <assert.h>
+#endif
+		     Syntax error
+_ACEOF
+if ac_fn_cxx_try_cpp "$LINENO"; then :
+
+else
+  # Broken: fails on valid input.
+continue
+fi
+rm -f conftest.err conftest.i conftest.$ac_ext
+
+  # OK, works on sane cases.  Now check whether nonexistent headers
+  # can be detected and how.
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <ac_nonexistent.h>
+_ACEOF
+if ac_fn_cxx_try_cpp "$LINENO"; then :
+  # Broken: success on invalid input.
+continue
+else
+  # Passes both tests.
+ac_preproc_ok=:
+break
+fi
+rm -f conftest.err conftest.i conftest.$ac_ext
+
+done
+# Because of `break', _AC_PREPROC_IFELSE's cleaning code was skipped.
+rm -f conftest.i conftest.err conftest.$ac_ext
+if $ac_preproc_ok; then :
+  break
+fi
+
+    done
+    ac_cv_prog_CXXCPP=$CXXCPP
+
+fi
+  CXXCPP=$ac_cv_prog_CXXCPP
+else
+  ac_cv_prog_CXXCPP=$CXXCPP
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $CXXCPP" >&5
+$as_echo "$CXXCPP" >&6; }
+ac_preproc_ok=false
+for ac_cxx_preproc_warn_flag in '' yes
+do
+  # Use a header file that comes with gcc, so configuring glibc
+  # with a fresh cross-compiler works.
+  # Prefer <limits.h> to <assert.h> if __STDC__ is defined, since
+  # <limits.h> exists even on freestanding compilers.
+  # On the NeXT, cc -E runs the code through the compiler's parser,
+  # not just through cpp. "Syntax error" is here to catch this case.
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#ifdef __STDC__
+# include <limits.h>
+#else
+# include <assert.h>
+#endif
+		     Syntax error
+_ACEOF
+if ac_fn_cxx_try_cpp "$LINENO"; then :
+
+else
+  # Broken: fails on valid input.
+continue
+fi
+rm -f conftest.err conftest.i conftest.$ac_ext
+
+  # OK, works on sane cases.  Now check whether nonexistent headers
+  # can be detected and how.
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <ac_nonexistent.h>
+_ACEOF
+if ac_fn_cxx_try_cpp "$LINENO"; then :
+  # Broken: success on invalid input.
+continue
+else
+  # Passes both tests.
+ac_preproc_ok=:
+break
+fi
+rm -f conftest.err conftest.i conftest.$ac_ext
+
+done
+# Because of `break', _AC_PREPROC_IFELSE's cleaning code was skipped.
+rm -f conftest.i conftest.err conftest.$ac_ext
+if $ac_preproc_ok; then :
+
+else
+  { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "C++ preprocessor \"$CXXCPP\" fails sanity check
+See \`config.log' for more details" "$LINENO" 5; }
+fi
+
+ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for grep that handles long lines and -e" >&5
+$as_echo_n "checking for grep that handles long lines and -e... " >&6; }
+if ${ac_cv_path_GREP+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -z "$GREP"; then
+  ac_path_GREP_found=false
+  # Loop through the user's path and test for each of PROGNAME-LIST
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH$PATH_SEPARATOR/usr/xpg4/bin
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_prog in grep ggrep; do
+    for ac_exec_ext in '' $ac_executable_extensions; do
+      ac_path_GREP="$as_dir/$ac_prog$ac_exec_ext"
+      as_fn_executable_p "$ac_path_GREP" || continue
+# Check for GNU ac_path_GREP and select it if it is found.
+  # Check for GNU $ac_path_GREP
+case `"$ac_path_GREP" --version 2>&1` in
+*GNU*)
+  ac_cv_path_GREP="$ac_path_GREP" ac_path_GREP_found=:;;
+*)
+  ac_count=0
+  $as_echo_n 0123456789 >"conftest.in"
+  while :
+  do
+    cat "conftest.in" "conftest.in" >"conftest.tmp"
+    mv "conftest.tmp" "conftest.in"
+    cp "conftest.in" "conftest.nl"
+    $as_echo 'GREP' >> "conftest.nl"
+    "$ac_path_GREP" -e 'GREP$' -e '-(cannot match)-' < "conftest.nl" >"conftest.out" 2>/dev/null || break
+    diff "conftest.out" "conftest.nl" >/dev/null 2>&1 || break
+    as_fn_arith $ac_count + 1 && ac_count=$as_val
+    if test $ac_count -gt ${ac_path_GREP_max-0}; then
+      # Best one so far, save it but keep looking for a better one
+      ac_cv_path_GREP="$ac_path_GREP"
+      ac_path_GREP_max=$ac_count
+    fi
+    # 10*(2^10) chars as input seems more than enough
+    test $ac_count -gt 10 && break
+  done
+  rm -f conftest.in conftest.tmp conftest.nl conftest.out;;
+esac
+
+      $ac_path_GREP_found && break 3
+    done
+  done
+  done
+IFS=$as_save_IFS
+  if test -z "$ac_cv_path_GREP"; then
+    as_fn_error $? "no acceptable grep could be found in $PATH$PATH_SEPARATOR/usr/xpg4/bin" "$LINENO" 5
+  fi
+else
+  ac_cv_path_GREP=$GREP
+fi
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_path_GREP" >&5
+$as_echo "$ac_cv_path_GREP" >&6; }
+ GREP="$ac_cv_path_GREP"
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for egrep" >&5
+$as_echo_n "checking for egrep... " >&6; }
+if ${ac_cv_path_EGREP+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if echo a | $GREP -E '(a|b)' >/dev/null 2>&1
+   then ac_cv_path_EGREP="$GREP -E"
+   else
+     if test -z "$EGREP"; then
+  ac_path_EGREP_found=false
+  # Loop through the user's path and test for each of PROGNAME-LIST
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH$PATH_SEPARATOR/usr/xpg4/bin
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_prog in egrep; do
+    for ac_exec_ext in '' $ac_executable_extensions; do
+      ac_path_EGREP="$as_dir/$ac_prog$ac_exec_ext"
+      as_fn_executable_p "$ac_path_EGREP" || continue
+# Check for GNU ac_path_EGREP and select it if it is found.
+  # Check for GNU $ac_path_EGREP
+case `"$ac_path_EGREP" --version 2>&1` in
+*GNU*)
+  ac_cv_path_EGREP="$ac_path_EGREP" ac_path_EGREP_found=:;;
+*)
+  ac_count=0
+  $as_echo_n 0123456789 >"conftest.in"
+  while :
+  do
+    cat "conftest.in" "conftest.in" >"conftest.tmp"
+    mv "conftest.tmp" "conftest.in"
+    cp "conftest.in" "conftest.nl"
+    $as_echo 'EGREP' >> "conftest.nl"
+    "$ac_path_EGREP" 'EGREP$' < "conftest.nl" >"conftest.out" 2>/dev/null || break
+    diff "conftest.out" "conftest.nl" >/dev/null 2>&1 || break
+    as_fn_arith $ac_count + 1 && ac_count=$as_val
+    if test $ac_count -gt ${ac_path_EGREP_max-0}; then
+      # Best one so far, save it but keep looking for a better one
+      ac_cv_path_EGREP="$ac_path_EGREP"
+      ac_path_EGREP_max=$ac_count
+    fi
+    # 10*(2^10) chars as input seems more than enough
+    test $ac_count -gt 10 && break
+  done
+  rm -f conftest.in conftest.tmp conftest.nl conftest.out;;
+esac
+
+      $ac_path_EGREP_found && break 3
+    done
+  done
+  done
+IFS=$as_save_IFS
+  if test -z "$ac_cv_path_EGREP"; then
+    as_fn_error $? "no acceptable egrep could be found in $PATH$PATH_SEPARATOR/usr/xpg4/bin" "$LINENO" 5
+  fi
+else
+  ac_cv_path_EGREP=$EGREP
+fi
+
+   fi
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_path_EGREP" >&5
+$as_echo "$ac_cv_path_EGREP" >&6; }
+ EGREP="$ac_cv_path_EGREP"
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for ANSI C header files" >&5
+$as_echo_n "checking for ANSI C header files... " >&6; }
+if ${ac_cv_header_stdc+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <stdlib.h>
+#include <stdarg.h>
+#include <string.h>
+#include <float.h>
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  ac_cv_header_stdc=yes
+else
+  ac_cv_header_stdc=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+if test $ac_cv_header_stdc = yes; then
+  # SunOS 4.x string.h does not declare mem*, contrary to ANSI.
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <string.h>
+
+_ACEOF
+if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
+  $EGREP "memchr" >/dev/null 2>&1; then :
+
+else
+  ac_cv_header_stdc=no
+fi
+rm -f conftest*
+
+fi
+
+if test $ac_cv_header_stdc = yes; then
+  # ISC 2.0.2 stdlib.h does not declare free, contrary to ANSI.
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <stdlib.h>
+
+_ACEOF
+if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
+  $EGREP "free" >/dev/null 2>&1; then :
+
+else
+  ac_cv_header_stdc=no
+fi
+rm -f conftest*
+
+fi
+
+if test $ac_cv_header_stdc = yes; then
+  # /bin/cc in Irix-4.0.5 gets non-ANSI ctype macros unless using -ansi.
+  if test "$cross_compiling" = yes; then :
+  :
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <ctype.h>
+#include <stdlib.h>
+#if ((' ' & 0x0FF) == 0x020)
+# define ISLOWER(c) ('a' <= (c) && (c) <= 'z')
+# define TOUPPER(c) (ISLOWER(c) ? 'A' + ((c) - 'a') : (c))
+#else
+# define ISLOWER(c) \
+		   (('a' <= (c) && (c) <= 'i') \
+		     || ('j' <= (c) && (c) <= 'r') \
+		     || ('s' <= (c) && (c) <= 'z'))
+# define TOUPPER(c) (ISLOWER(c) ? ((c) | 0x40) : (c))
+#endif
+
+#define XOR(e, f) (((e) && !(f)) || (!(e) && (f)))
+int
+main ()
+{
+  int i;
+  for (i = 0; i < 256; i++)
+    if (XOR (islower (i), ISLOWER (i))
+	|| toupper (i) != TOUPPER (i))
+      return 2;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_run "$LINENO"; then :
+
+else
+  ac_cv_header_stdc=no
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+
+fi
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_header_stdc" >&5
+$as_echo "$ac_cv_header_stdc" >&6; }
+if test $ac_cv_header_stdc = yes; then
+
+$as_echo "#define STDC_HEADERS 1" >>confdefs.h
+
+fi
+
+# On IRIX 5.3, sys/types and inttypes.h are conflicting.
+for ac_header in sys/types.h sys/stat.h stdlib.h string.h memory.h strings.h \
+		  inttypes.h stdint.h unistd.h
+do :
+  as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
+ac_fn_cxx_check_header_compile "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default
+"
+if eval test \"x\$"$as_ac_Header"\" = x"yes"; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
+_ACEOF
+
+fi
+
+done
+
+
 
     found=ko
     __PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS=no
@@ -7212,283 +7131,6 @@ $as_echo "$as_me: WARNING: cannot link clock_gettime on this Linux, asmjit will 
   fi
 fi
 
-
-if test $readdir_r = true ; then
-
-    found=ko
-    __PLUMED_HAS_READDIR_R=no
-    ac_fn_cxx_check_header_mongrel "$LINENO" "dirent.h" "ac_cv_header_dirent_h" "$ac_includes_default"
-if test "x$ac_cv_header_dirent_h" = xyes; then :
-
-
-  if test "${libsearch}" = true ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing readdir_r" >&5
-$as_echo_n "checking for library containing readdir_r... " >&6; }
-if ${ac_cv_search_readdir_r+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char readdir_r ();
-int
-main ()
-{
-return readdir_r ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' ; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_search_readdir_r=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_readdir_r+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_readdir_r+:} false; then :
-
-else
-  ac_cv_search_readdir_r=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_readdir_r" >&5
-$as_echo "$ac_cv_search_readdir_r" >&6; }
-ac_res=$ac_cv_search_readdir_r
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  found=ok
-fi
-
-  else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing readdir_r" >&5
-$as_echo_n "checking for library containing readdir_r... " >&6; }
-if ${ac_cv_search_readdir_r+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char readdir_r ();
-int
-main ()
-{
-return readdir_r ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' ; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_search_readdir_r=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_readdir_r+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_readdir_r+:} false; then :
-
-else
-  ac_cv_search_readdir_r=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_readdir_r" >&5
-$as_echo "$ac_cv_search_readdir_r" >&6; }
-ac_res=$ac_cv_search_readdir_r
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  found=ok
-fi
-
-  fi
-
-
-fi
-
-
-    if test $found = ok ; then
-       $as_echo "#define __PLUMED_HAS_READDIR_R 1" >>confdefs.h
-
-       __PLUMED_HAS_READDIR_R=yes
-    else
-       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_READDIR_R" >&5
-$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_READDIR_R" >&2;}
-    fi
-
-fi
-if test $cregex = true ; then
-
-    found=ko
-    __PLUMED_HAS_CREGEX=no
-    ac_fn_cxx_check_header_mongrel "$LINENO" "regex.h" "ac_cv_header_regex_h" "$ac_includes_default"
-if test "x$ac_cv_header_regex_h" = xyes; then :
-
-
-  if test "${libsearch}" = true ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing regcomp" >&5
-$as_echo_n "checking for library containing regcomp... " >&6; }
-if ${ac_cv_search_regcomp+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char regcomp ();
-int
-main ()
-{
-return regcomp ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' ; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_search_regcomp=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_regcomp+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_regcomp+:} false; then :
-
-else
-  ac_cv_search_regcomp=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_regcomp" >&5
-$as_echo "$ac_cv_search_regcomp" >&6; }
-ac_res=$ac_cv_search_regcomp
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  found=ok
-fi
-
-  else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing regcomp" >&5
-$as_echo_n "checking for library containing regcomp... " >&6; }
-if ${ac_cv_search_regcomp+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char regcomp ();
-int
-main ()
-{
-return regcomp ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' ; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_search_regcomp=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_regcomp+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_regcomp+:} false; then :
-
-else
-  ac_cv_search_regcomp=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_regcomp" >&5
-$as_echo "$ac_cv_search_regcomp" >&6; }
-ac_res=$ac_cv_search_regcomp
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  found=ok
-fi
-
-  fi
-
-
-fi
-
-
-    if test $found = ok ; then
-       $as_echo "#define __PLUMED_HAS_CREGEX 1" >>confdefs.h
-
-       __PLUMED_HAS_CREGEX=yes
-    else
-       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_CREGEX" >&5
-$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_CREGEX" >&2;}
-    fi
-
-fi
 if test $dlopen = true ; then
 
     found=ko
@@ -7755,145 +7397,6 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_RTLD_DEFAULT" >&2;}
 
 fi
 
-if test $chdir = true ; then
-
-    found=ko
-    __PLUMED_HAS_CHDIR=no
-    ac_fn_cxx_check_header_mongrel "$LINENO" "unistd.h" "ac_cv_header_unistd_h" "$ac_includes_default"
-if test "x$ac_cv_header_unistd_h" = xyes; then :
-
-
-  if test "${libsearch}" = true ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing chdir" >&5
-$as_echo_n "checking for library containing chdir... " >&6; }
-if ${ac_cv_search_chdir+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char chdir ();
-int
-main ()
-{
-return chdir ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' ; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_search_chdir=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_chdir+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_chdir+:} false; then :
-
-else
-  ac_cv_search_chdir=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_chdir" >&5
-$as_echo "$ac_cv_search_chdir" >&6; }
-ac_res=$ac_cv_search_chdir
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  found=ok
-fi
-
-  else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing chdir" >&5
-$as_echo_n "checking for library containing chdir... " >&6; }
-if ${ac_cv_search_chdir+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char chdir ();
-int
-main ()
-{
-return chdir ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' ; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_search_chdir=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_chdir+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_chdir+:} false; then :
-
-else
-  ac_cv_search_chdir=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_chdir" >&5
-$as_echo "$ac_cv_search_chdir" >&6; }
-ac_res=$ac_cv_search_chdir
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  found=ok
-fi
-
-  fi
-
-
-fi
-
-
-    if test $found = ok ; then
-       $as_echo "#define __PLUMED_HAS_CHDIR 1" >>confdefs.h
-
-       __PLUMED_HAS_CHDIR=yes
-    else
-       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_CHDIR" >&5
-$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_CHDIR" >&2;}
-    fi
-
-fi
-
 if test $subprocess = true ; then
 
     found=ko
@@ -8086,145 +7589,6 @@ rm -f core conftest.err conftest.$ac_objext \
       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_SUBPROCESS" >&5
 $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_SUBPROCESS" >&2;}
       LIBS="$save_LIBS"
-    fi
-
-fi
-
-if test $getcwd = true ; then
-
-    found=ko
-    __PLUMED_HAS_GETCWD=no
-    ac_fn_cxx_check_header_mongrel "$LINENO" "unistd.h" "ac_cv_header_unistd_h" "$ac_includes_default"
-if test "x$ac_cv_header_unistd_h" = xyes; then :
-
-
-  if test "${libsearch}" = true ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing getcwd" >&5
-$as_echo_n "checking for library containing getcwd... " >&6; }
-if ${ac_cv_search_getcwd+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char getcwd ();
-int
-main ()
-{
-return getcwd ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' ; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_search_getcwd=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_getcwd+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_getcwd+:} false; then :
-
-else
-  ac_cv_search_getcwd=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_getcwd" >&5
-$as_echo "$ac_cv_search_getcwd" >&6; }
-ac_res=$ac_cv_search_getcwd
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  found=ok
-fi
-
-  else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing getcwd" >&5
-$as_echo_n "checking for library containing getcwd... " >&6; }
-if ${ac_cv_search_getcwd+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char getcwd ();
-int
-main ()
-{
-return getcwd ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' ; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_search_getcwd=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_getcwd+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_getcwd+:} false; then :
-
-else
-  ac_cv_search_getcwd=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_getcwd" >&5
-$as_echo "$ac_cv_search_getcwd" >&6; }
-ac_res=$ac_cv_search_getcwd
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  found=ok
-fi
-
-  fi
-
-
-fi
-
-
-    if test $found = ok ; then
-       $as_echo "#define __PLUMED_HAS_GETCWD 1" >>confdefs.h
-
-       __PLUMED_HAS_GETCWD=yes
-    else
-       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_GETCWD" >&5
-$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_GETCWD" >&2;}
     fi
 
 fi
@@ -10191,12 +9555,12 @@ fi
 
 #added by luigibonati
 if test $libtorch = true ; then
-  # enable c++14 support
+  # disable as-needed in linking libraries (both static and shared)
 
   save_CXXFLAGS="$CXXFLAGS"
-  CXXFLAGS="$CXXFLAGS -std=c++14"
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -std=c++14" >&5
-$as_echo_n "checking whether $CXX accepts -std=c++14... " >&6; }
+  CXXFLAGS="$CXXFLAGS -Wl,--no-as-needed"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -Wl,--no-as-needed" >&5
+$as_echo_n "checking whether $CXX accepts -Wl,--no-as-needed... " >&6; }
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -10238,12 +9602,15 @@ $as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
-  # test program
+  LDSHARED="$LDSHARED -Wl,--no-as-needed "
+
+  # CUDA and CPU libtorch libs have different libraries
+  # first test CUDA program
 
     found=ko
     __PLUMED_HAS_LIBTORCH=no
     if test "${libsearch}" = true ; then
-      testlibs=" torch_cpu c10 "
+      testlibs=" torch_cpu c10 c10_cuda torch_cuda "
     else
       testlibs=""
     fi
@@ -10262,17 +9629,22 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
     fi
 
     # check without libraries
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking libtorch without extra libs" >&5
-$as_echo_n "checking libtorch without extra libs... " >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking libtorch_cuda without extra libs" >&5
+$as_echo_n "checking libtorch_cuda without extra libs... " >&6; }
     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-#include <torch/torch.h>
-#include <torch/script.h>
-int main() {
-  torch::Tensor tensor = torch::rand({2, 3});
-  return 0;
-}
+    #include <torch/torch.h>
+    #include <torch/script.h>
+    #include <torch/cuda.h>
+    int main() {
+      std::cerr << "CUDA is available: " << torch::cuda::is_available() << std::endl;
+      torch::Tensor tensor = torch::rand({2, 3});
+      torch::Device device = torch::kCPU;
+      device = torch::kCUDA;
+      tensor.to(device);
+      return 0;
+    }
 
 _ACEOF
 if ac_fn_cxx_try_link "$LINENO"; then :
@@ -10289,18 +9661,23 @@ rm -f core conftest.err conftest.$ac_objext \
 
     if test "$found" = "ko" ; then
       if test "$multiple" = "yes" ; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking libtorch with $all_LIBS" >&5
-$as_echo_n "checking libtorch with $all_LIBS... " >&6; }
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking libtorch_cuda with $all_LIBS" >&5
+$as_echo_n "checking libtorch_cuda with $all_LIBS... " >&6; }
         LIBS="$all_LIBS $LIBS"
         cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-#include <torch/torch.h>
-#include <torch/script.h>
-int main() {
-  torch::Tensor tensor = torch::rand({2, 3});
-  return 0;
-}
+    #include <torch/torch.h>
+    #include <torch/script.h>
+    #include <torch/cuda.h>
+    int main() {
+      std::cerr << "CUDA is available: " << torch::cuda::is_available() << std::endl;
+      torch::Tensor tensor = torch::rand({2, 3});
+      torch::Device device = torch::kCPU;
+      device = torch::kCUDA;
+      tensor.to(device);
+      return 0;
+    }
 
 _ACEOF
 if ac_fn_cxx_try_link "$LINENO"; then :
@@ -10317,18 +9694,23 @@ rm -f core conftest.err conftest.$ac_objext \
       else
         for testlib in $testlibs
         do
-          { $as_echo "$as_me:${as_lineno-$LINENO}: checking libtorch with -l$testlib" >&5
-$as_echo_n "checking libtorch with -l$testlib... " >&6; }
+          { $as_echo "$as_me:${as_lineno-$LINENO}: checking libtorch_cuda with -l$testlib" >&5
+$as_echo_n "checking libtorch_cuda with -l$testlib... " >&6; }
           LIBS="-l$testlib $LIBS"
           cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-#include <torch/torch.h>
-#include <torch/script.h>
-int main() {
-  torch::Tensor tensor = torch::rand({2, 3});
-  return 0;
-}
+    #include <torch/torch.h>
+    #include <torch/script.h>
+    #include <torch/cuda.h>
+    int main() {
+      std::cerr << "CUDA is available: " << torch::cuda::is_available() << std::endl;
+      torch::Tensor tensor = torch::rand({2, 3});
+      torch::Device device = torch::kCPU;
+      device = torch::kCUDA;
+      tensor.to(device);
+      return 0;
+    }
 
 _ACEOF
 if ac_fn_cxx_try_link "$LINENO"; then :
@@ -10360,6 +9742,135 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_LIBTORCH" >&2;}
       LIBS="$save_LIBS"
     fi
 
+
+  # if not found test CPU version
+  if test "$__PLUMED_HAS_LIBTORCH" = no; then
+  # AC_MSG_NOTICE([CUDA-enabled libtorch not found (or devices not available), trying with CPU version.])
+
+    found=ko
+    __PLUMED_HAS_LIBTORCH=no
+    if test "${libsearch}" = true ; then
+      testlibs=" torch_cpu c10 "
+    else
+      testlibs=""
+    fi
+    save_LIBS="$LIBS"
+
+    # check if multiple libraries are required simultaneously
+    multiple="no"
+    if test "true" = "true"; then
+      multiple="yes"
+      all_LIBS=""
+      for testlib in $testlibs;
+      do
+        all_LIBS="$all_LIBS -l$testlib"
+      done
+      testlibs=" " # to check only without libraries, and later with all together
+    fi
+
+    # check without libraries
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking libtorch_cpu without extra libs" >&5
+$as_echo_n "checking libtorch_cpu without extra libs... " >&6; }
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+    #include <torch/torch.h>
+    #include <torch/script.h>
+    int main() {
+      torch::Tensor tensor = torch::rand({2, 3});
+
+      return 0;
+    }
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+          { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+    if test "$found" = "ko" ; then
+      if test "$multiple" = "yes" ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking libtorch_cpu with $all_LIBS" >&5
+$as_echo_n "checking libtorch_cpu with $all_LIBS... " >&6; }
+        LIBS="$all_LIBS $LIBS"
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+    #include <torch/torch.h>
+    #include <torch/script.h>
+    int main() {
+      torch::Tensor tensor = torch::rand({2, 3});
+
+      return 0;
+    }
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+              { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+      else
+        for testlib in $testlibs
+        do
+          { $as_echo "$as_me:${as_lineno-$LINENO}: checking libtorch_cpu with -l$testlib" >&5
+$as_echo_n "checking libtorch_cpu with -l$testlib... " >&6; }
+          LIBS="-l$testlib $LIBS"
+          cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+    #include <torch/torch.h>
+    #include <torch/script.h>
+    int main() {
+      torch::Tensor tensor = torch::rand({2, 3});
+
+      return 0;
+    }
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+                { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+          if test $found = ok ; then
+            break
+          fi
+          LIBS="$save_LIBS"
+        done
+      fi
+    fi
+
+    if test $found = ok ; then
+      $as_echo "#define __PLUMED_HAS_LIBTORCH 1" >>confdefs.h
+
+      __PLUMED_HAS_LIBTORCH=yes
+    else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_LIBTORCH" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_LIBTORCH" >&2;}
+      LIBS="$save_LIBS"
+    fi
+
+  fi
 fi
 
 # in non-debug mode, add -DNDEBUG

@@ -33,9 +33,6 @@
 #include "tools/File.h"
 #include <ctime>
 #include <numeric>
-#if defined(__PLUMED_HAS_GETCWD)
-#include <unistd.h>
-#endif
 
 namespace PLMD {
 namespace bias {
@@ -1194,18 +1191,14 @@ MetaD::MetaD(const ActionOptions& ao):
       }
     } else {
       // read the grid in input, find the keys
-#ifdef __PLUMED_HAS_GETCWD
       if(walkers_mpi_&&gridreadfilename_.at(0)!='/') {
         //if possible the root replica will share its current folder so that all walkers will read the same file
-        char cwd[4096]= {0};
-        const char* ret=getcwd(cwd,4096);
-        plumed_assert(ret)<<"Name of current directory too long, increase buffer size";
+        const std::string ret = std::filesystem::current_path();
         gridreadfilename_ = "/" + gridreadfilename_;
         gridreadfilename_ = ret + gridreadfilename_;
         if(comm.Get_rank()==0) multi_sim_comm.Bcast(gridreadfilename_,0);
         comm.Bcast(gridreadfilename_,0);
       }
-#endif
       IFile gridfile;
       gridfile.link(*this);
       if(gridfile.FileExist(gridreadfilename_)) {
@@ -1238,18 +1231,14 @@ MetaD::MetaD(const ActionOptions& ao):
     if(result!=0&&result!=mpi_nw_) error("in this WALKERS_MPI run some replica have restarted from GRID while other do not!");
   }
 
-#ifdef __PLUMED_HAS_GETCWD
   if(walkers_mpi_&&mw_dir_==""&&hillsfname.at(0)!='/') {
     //if possible the root replica will share its current folder so that all walkers will read the same file
-    char cwd[4096]= {0};
-    const char* ret=getcwd(cwd,4096);
-    plumed_assert(ret)<<"Name of current directory too long, increase buffer size";
+    const std::string ret = std::filesystem::current_path();
     mw_dir_ = ret;
     mw_dir_ = mw_dir_ + "/";
     if(comm.Get_rank()==0) multi_sim_comm.Bcast(mw_dir_,0);
     comm.Bcast(mw_dir_,0);
   }
-#endif
 
   // creating std::vector of ifile* for hills reading
   // open all files at the beginning and read Gaussians if restarting

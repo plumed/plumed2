@@ -270,18 +270,21 @@ PLUMED_CONFIG_ENABLE([pdfdoc],[pdf version of the manual],[no])
 PLUMED_CONFIG_ENABLE([debug],[debugging],[no])
 PLUMED_CONFIG_ENABLE([gcov],[gcov to estimate code coverage],[no])
 AC_ARG_ENABLE([cxx],
-  AS_HELP_STRING([--enable-cxx], [11 or 14. To link libraries with headers that need this C++ level. Use --enable-cxx=none to remove -std=c++ flag]),
+  AS_HELP_STRING([--enable-cxx], [17, 20, or 23. To link libraries with headers that need this C++ level. Use --enable-cxx=none to remove -std=c++ flag]),
   [
     case "${enableval}" in
-    (11) cxx_level=11 ;;
-    (14) cxx_level=14 ;;
+    (11) cxx_level=17 ;;
+    (14) cxx_level=17 ;;
+    (17) cxx_level=17 ;;
+    (20) cxx_level=20 ;;
+    (23) cxx_level=23 ;;
     (none) cxx_level="" ;;
     (*) AC_MSG_ERROR([cxx level not supported])
     esac
     AC_MSG_NOTICE([Selected C++ level: $cxx_level])
   ],
   [
-    cxx_level="11"
+    cxx_level="17"
   ]
 )
 PLUMED_CONFIG_ENABLE([basic-warnings],[basic warnings],[yes])
@@ -305,13 +308,9 @@ PLUMED_CONFIG_ENABLE([external-blas],[search for external blas],[yes])
 PLUMED_CONFIG_ENABLE([molfile-plugins],[use molfile_plugins],[yes])
 PLUMED_CONFIG_ENABLE([external-molfile-plugins],[search for external molfile_plugins],[yes])
 PLUMED_CONFIG_ENABLE([zlib],[search for zlib],[yes])
-PLUMED_CONFIG_ENABLE([readdir-r],[search for readdir_r (threadsafe)],[no])
-PLUMED_CONFIG_ENABLE([cregex],[search for C regular expression],[yes])
 PLUMED_CONFIG_ENABLE([dlopen],[search for dlopen],[yes])
 PLUMED_CONFIG_ENABLE([rtld_default],[search for RTLD_DEFAULT macro],[yes])
-PLUMED_CONFIG_ENABLE([chdir],[search for chdir function],[yes])
 PLUMED_CONFIG_ENABLE([subprocess],[search for functions needed to manage a subprocess],[yes])
-PLUMED_CONFIG_ENABLE([getcwd],[search for getcwd function],[yes])
 PLUMED_CONFIG_ENABLE([popen],[search for popen],[yes])
 PLUMED_CONFIG_ENABLE([execinfo],[search for execinfo],[yes])
 PLUMED_CONFIG_ENABLE([gsl],[search for gsl],[yes])
@@ -431,69 +430,23 @@ then
   PLUMED_CHECK_CXXFLAG([-Wold-style-cast])
 fi
 
-AC_MSG_CHECKING([whether $CXX declares c++11 support])
+AC_MSG_CHECKING([whether $CXX declares c++17 support])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
-#if __cplusplus <= 199711L
-this_compiler_does_not_support_cxx11
+#if __cplusplus < 201703L
+this_compiler_does_not_support_cxx17
 #endif
 ])],
   [AC_MSG_RESULT([yes])];
-  support_cxx11=true,
+  support_cxx17=true,
   [AC_MSG_RESULT([no]) ;
-  support_cxx11=false])
+  support_cxx17=false])
 
-if test "$support_cxx11" = false
+if test "$support_cxx17" = false
 then
-   AC_MSG_WARN([C++11 support is required as of PLUMED 2.4])
-   AC_MSG_WARN([Your compiler appears not to support C++11])
+   AC_MSG_WARN([C++17 support is required as of PLUMED 2.10])
+   AC_MSG_WARN([Your compiler appears not to support C++17])
    AC_MSG_WARN([Please change compiler or make sure that everything works correctly])
 fi
-
-AC_MSG_CHECKING([whether C++ library supports C++11 exceptions])
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
-#include <new>
-#include <functional>
-#include <memory>
-#include <system_error>
-#include <ios>
-#include <future>
-// capable to catch:
-void func(void) {
-  try{
-  } catch(std::bad_array_new_length &) {
-  } catch(std::bad_function_call &) {
-  } catch(std::bad_weak_ptr &) {
-  } catch(std::ios_base::failure &e) {
-    if(e.code().category()==std::generic_category()) {}
-    else if(e.code().category()==std::system_category()) {}
-    else if(e.code().category()==std::iostream_category()) {}
-    else if(e.code().category()==std::future_category()) {}
-  } catch(std::system_error &e) {
-    if(e.code().category()==std::generic_category()) {}
-    else if(e.code().category()==std::system_category()) {}
-    else if(e.code().category()==std::iostream_category()) {}
-    else if(e.code().category()==std::future_category()) {}
-  }
-// capable to throw:
-  auto a=std::bad_array_new_length();
-  auto b=std::bad_function_call();
-  auto c=std::bad_weak_ptr();
-  auto d=std::system_error(10,std::generic_category(),"msg");
-  auto e=std::system_error(10,std::system_category(),"msg");
-  auto f=std::system_error(10,std::iostream_category(),"msg");
-  auto g=std::system_error(10,std::future_category(),"msg");
-  auto h=std::ios_base::failure("msg",std::error_code(10,std::generic_category()));
-  auto i=std::ios_base::failure("msg",std::error_code(10,std::system_category()));
-  auto j=std::ios_base::failure("msg",std::error_code(10,std::iostream_category()));
-  auto k=std::ios_base::failure("msg",std::error_code(10,std::future_category()));
-}
-])],
-[
-  AC_MSG_RESULT([yes]);
-  AC_DEFINE([__PLUMED_LIBCXX11])
-],
-[AC_MSG_RESULT([no])
-])
 
 AC_SUBST(disable_dependency_tracking)
 
@@ -532,8 +485,26 @@ fi
 #### Compulsory libraries ####
 # some of them might be made optional if we find that are not available in some system
 AC_MSG_NOTICE([Now we will check compulsory headers and libraries])
-AC_CHECK_HEADER([dirent.h],     [ ], [AC_MSG_ERROR([compulsory header not found])] )
-AC_CHECK_FUNC(  [readdir],      [ ], [AC_MSG_ERROR([compulsory function not found])] )
+
+PLUMED_CHECK_CXX_PACKAGE([filesystem library],[
+#include <filesystem>
+#include <iostream>
+#include <string>
+
+int main(){
+  std::filesystem::path path;
+  for (auto const& dir_entry : std::filesystem::directory_iterator{"a"}) {
+    std::cout<<std::string(dir_entry.path().filename())<<"\n";
+  }
+  return 0;
+}
+  ], [__PLUMED_CXX17_FILESYSTEM], [stdc++fs])
+
+if test "$__PLUMED_CXX17_FILESYSTEM" != yes
+then
+  AC_MSG_ERROR([C++17 filesystem library not supported, please check your compiler])
+fi
+
 
 # Then check for blas. This is a bit complicated because we want to allow
 # either the version with underscore or the one without
@@ -756,13 +727,6 @@ if test $asmjit = true ; then
   fi
 fi
 
-
-if test $readdir_r = true ; then
-  PLUMED_CHECK_PACKAGE([dirent.h],[readdir_r],[__PLUMED_HAS_READDIR_R])
-fi
-if test $cregex = true ; then
-  PLUMED_CHECK_PACKAGE([regex.h],[regcomp],[__PLUMED_HAS_CREGEX])
-fi
 if test $dlopen = true ; then
   PLUMED_CHECK_PACKAGE([dlfcn.h],[dlopen],[__PLUMED_HAS_DLOPEN])
 fi
@@ -777,10 +741,6 @@ main ()
   return 0;
 }
   ], [__PLUMED_HAS_RTLD_DEFAULT])
-fi
-
-if test $chdir = true ; then
-  PLUMED_CHECK_PACKAGE([unistd.h],[chdir],[__PLUMED_HAS_CHDIR])
 fi
 
 if test $subprocess = true ; then
@@ -816,10 +776,6 @@ main ()
 }
 
   ], [__PLUMED_HAS_SUBPROCESS])
-fi
-
-if test $getcwd = true ; then
-  PLUMED_CHECK_PACKAGE([unistd.h],[getcwd],[__PLUMED_HAS_GETCWD])
 fi
 
 if test $popen = true ; then
@@ -923,17 +879,39 @@ fi
 
 #added by luigibonati
 if test $libtorch = true ; then 
-  # enable c++14 support
-  PLUMED_CHECK_CXXFLAG([-std=c++14])
-  # test program
-  PLUMED_CHECK_CXX_PACKAGE([libtorch],[
-#include <torch/torch.h>
-#include <torch/script.h>
-int main() {
-  torch::Tensor tensor = torch::rand({2, 3});
-  return 0;
-}
+  # disable as-needed in linking libraries (both static and shared)
+  PLUMED_CHECK_CXXFLAG([-Wl,--no-as-needed])
+  LDSHARED="$LDSHARED -Wl,--no-as-needed "
+
+  # CUDA and CPU libtorch libs have different libraries
+  # first test CUDA program
+  PLUMED_CHECK_CXX_PACKAGE([libtorch_cuda],[
+    #include <torch/torch.h>
+    #include <torch/script.h>
+    #include <torch/cuda.h>
+    int main() {
+      std::cerr << "CUDA is available: " << torch::cuda::is_available() << std::endl;
+      torch::Tensor tensor = torch::rand({2, 3});
+      torch::Device device = torch::kCPU;
+      device = torch::kCUDA;
+      tensor.to(device);
+      return 0;
+    }
+  ], [__PLUMED_HAS_LIBTORCH], [ torch_cpu c10 c10_cuda torch_cuda ], [true])
+
+  # if not found test CPU version
+  if test "$__PLUMED_HAS_LIBTORCH" = no; then
+  # AC_MSG_NOTICE([CUDA-enabled libtorch not found (or devices not available), trying with CPU version.])
+    PLUMED_CHECK_CXX_PACKAGE([libtorch_cpu],[
+    #include <torch/torch.h>
+    #include <torch/script.h>
+    int main() {
+      torch::Tensor tensor = torch::rand({2, 3});
+      
+      return 0;
+    }
   ], [__PLUMED_HAS_LIBTORCH], [ torch_cpu c10 ], [true])
+  fi
 fi
 
 # in non-debug mode, add -DNDEBUG

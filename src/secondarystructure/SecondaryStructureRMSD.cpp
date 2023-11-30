@@ -115,7 +115,8 @@ void SecondaryStructureRMSD::readBackboneAtoms( const std::string& moltype, std:
   std::vector<std::string> resstrings; parseVector( "RESIDUES", resstrings );
   if( !verbose_output ) {
     if(resstrings.size()==0) error("residues are not defined, check the keyword RESIDUES");
-    else if(resstrings[0]=="all") {
+    else if( Tools::caseInSensStringCompare(resstrings[0], "all") ) {
+      resstrings[0]="all";
       log.printf("  examining all possible secondary structure combinations\n");
     } else {
       log.printf("  examining secondary structure in residue positions : %s \n",resstrings[0].c_str() );

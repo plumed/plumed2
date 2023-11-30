@@ -424,6 +424,7 @@
 
 */
 
+
 /* BEGINNING OF DECLARATIONS */
 
 /* SETTING DEFAULT VALUES FOR CONTROL MACROS */
@@ -486,6 +487,15 @@
 #  ifndef __PLUMED_WRAPPER_C_TYPESAFE
 #    define __PLUMED_WRAPPER_C_TYPESAFE 0
 #  endif
+#endif
+
+/*
+  1: Enable RTLD_DEEPBIND when possible (default)
+  0: Disable RTLD_DEEPBIND
+*/
+
+#ifndef __PLUMED_WRAPPER_ENABLE_RTLD_DEEPBIND
+#define __PLUMED_WRAPPER_ENABLE_RTLD_DEEPBIND 1
 #endif
 
 /*
@@ -632,6 +642,14 @@
 
 #ifndef __PLUMED_WRAPPER_LIBCXX11
 #define __PLUMED_WRAPPER_LIBCXX11 0
+#endif
+
+/*
+ By default, assume C++17 compliant library is not available.
+*/
+
+#ifndef __PLUMED_WRAPPER_LIBCXX17
+#define __PLUMED_WRAPPER_LIBCXX17 0
 #endif
 
 /* The following macros are just to define shortcuts */
@@ -826,6 +844,12 @@ typedef struct {
   const void* opt;
 } plumed_safeptr;
 
+/* local structure */
+typedef struct plumed_error_filesystem_path {
+  __PLUMED_WRAPPER_STD size_t numbytes;
+  void* ptr;
+} plumed_error_filesystem_path;
+
 /**
   Small structure that is only defined locally to retrieve errors.
 
@@ -866,6 +890,12 @@ typedef struct plumed_error {
   int code;
   /** error code for system_error */
   int error_code;
+  /** category - for errors */
+  int error_category;
+  /** path1 - for filesystem_error */
+  plumed_error_filesystem_path path1;
+  /** path2 - for filesystem_error */
+  plumed_error_filesystem_path path2;
   /** message */
   const char* what;
   /** the buffer containing the message to be deallocated */
@@ -879,6 +909,11 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_init(plumed_error* error) __PLU
   assert(error);
   error->code=0;
   error->error_code=0;
+  error->error_category=0;
+  error->path1.numbytes=0;
+  error->path1.ptr=__PLUMED_WRAPPER_CXX_NULLPTR;
+  error->path2.numbytes=0;
+  error->path2.ptr=__PLUMED_WRAPPER_CXX_NULLPTR;
   error->what=__PLUMED_WRAPPER_CXX_NULLPTR;
   error->what_buffer=__PLUMED_WRAPPER_CXX_NULLPTR;
   error->nested=__PLUMED_WRAPPER_CXX_NULLPTR;
@@ -890,6 +925,12 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_finalize(plumed_error error) __
   if(error.nested) {
     plumed_error_finalize(*error.nested);
     plumed_free(error.nested);
+  }
+  if(error.path1.ptr) {
+    plumed_free(error.path1.ptr);
+  }
+  if(error.path2.ptr) {
+    plumed_free(error.path2.ptr);
   }
   if(error.what_buffer) {
     plumed_free(error.what_buffer);
@@ -990,6 +1031,7 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_set(void*ptr,int code,const cha
   plumed_error* error;
   __PLUMED_WRAPPER_STD size_t len;
   void*const* options;
+  plumed_error_filesystem_path path;
 
   error=(plumed_error*) ptr;
 
@@ -1016,6 +1058,51 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_set(void*ptr,int code,const cha
       }
       options+=2;
     }
+
+    options=(void*const*)opt;
+    while(*options) {
+      /* C: error_category */
+      if(*((const char*)*options)=='C' && *(options+1)) {
+        error->error_category=*((const int*)*(options+1));
+        break;
+      }
+      options+=2;
+    }
+
+    options=(void*const*)opt;
+    while(*options) {
+      /* path 1 */
+      if(*((const char*)*options)=='p' && *(options+1)) {
+        path=*(plumed_error_filesystem_path*)*(options+1);
+        error->path1.ptr=plumed_malloc(path.numbytes);
+        if(!error->path1.ptr) {
+          plumed_error_set_bad_alloc(error);
+          return;
+        }
+        error->path1.numbytes=path.numbytes;
+        __PLUMED_WRAPPER_STD memcpy(error->path1.ptr,path.ptr,path.numbytes);
+        break;
+      }
+      options+=2;
+    }
+
+    options=(void*const*)opt;
+    while(*options) {
+      /* path 2 */
+      if(*((const char*)*options)=='q' && *(options+1)) {
+        path=*(plumed_error_filesystem_path*)*(options+1);
+        error->path2.ptr=plumed_malloc(path.numbytes);
+        if(!error->path2.ptr) {
+          plumed_error_set_bad_alloc(error);
+          return;
+        }
+        error->path2.numbytes=path.numbytes;
+        __PLUMED_WRAPPER_STD memcpy(error->path2.ptr,path.ptr,path.numbytes);
+        break;
+      }
+      options+=2;
+    }
+
     options=(void*const*)opt;
     while(*options) {
       /* n: nested exception */
@@ -1674,6 +1761,13 @@ __PLUMED_WRAPPER_EXTERN_C_END /*}*/
 #include <future> /* future_category */
 #include <memory> /* bad_weak_ptr */
 #include <functional> /* bad_function_call */
+#include <regex> /* regex_error */
+#endif
+#if __cplusplus >= 201703L && __PLUMED_WRAPPER_LIBCXX17
+#include <any> /* bad_any_cast */
+#include <variant> /* bad_variant_access */
+#include <optional> /* bad_optional_access */
+#include <filesystem> /* filesystem_error */
 #endif
 
 #if __cplusplus > 199711L
@@ -1745,6 +1839,12 @@ private:
       if(h.code>=10110 && h.code<10115) f(::std::domain_error(msg));
       if(h.code>=10115 && h.code<10120) f(::std::length_error(msg));
       if(h.code>=10120 && h.code<10125) f(::std::out_of_range(msg));
+#if __cplusplus >= 201703L && __PLUMED_WRAPPER_LIBCXX17
+      if(h.code==10125) f(add_buffer_to< ::std::future_error>(::std::future_error(::std::future_errc::broken_promise),msg));
+      if(h.code==10126) f(add_buffer_to< ::std::future_error>(::std::future_error(::std::future_errc::future_already_retrieved),msg));
+      if(h.code==10127) f(add_buffer_to< ::std::future_error>(::std::future_error(::std::future_errc::promise_already_satisfied),msg));
+      if(h.code==10128) f(add_buffer_to< ::std::future_error>(::std::future_error(::std::future_errc::no_state),msg));
+#endif
       f(::std::logic_error(msg));
     }
     /* runtime errors */
@@ -1758,6 +1858,40 @@ private:
       if(h.code==10222) f(::std::system_error(h.error_code,::std::iostream_category(),msg));
       if(h.code==10223) f(::std::system_error(h.error_code,::std::future_category(),msg));
 #endif
+#if __cplusplus >= 201703L && __PLUMED_WRAPPER_LIBCXX17
+      if(h.code==10229) {
+        ::std::error_code error_code;
+        if(h.error_category==1) error_code=::std::error_code(h.error_code,::std::generic_category());
+        if(h.error_category==2) error_code=::std::error_code(h.error_code,::std::system_category());
+        if(h.error_category==3) error_code=::std::error_code(h.error_code,::std::iostream_category());
+        if(h.error_category==4) error_code=::std::error_code(h.error_code,::std::future_category());
+
+        if(!h.path1.ptr) {
+          f(::std::filesystem::filesystem_error(msg,error_code));
+        } else if(!h.path2.ptr) {
+          /*
+             In principle native_format is a possible value of an enum,
+             so should be accessible as ::std::filesystem::path::native_format
+             However, some clang versions declare it as enum class. Thus,
+             ::std::filesystem::path::format::native_format is more portable.
+          */
+          f(::std::filesystem::filesystem_error(msg,
+                                                ::std::filesystem::path(::std::filesystem::path::string_type(
+                                                    (::std::filesystem::path::value_type*) h.path1.ptr,h.path1.numbytes/sizeof(::std::filesystem::path::value_type)
+                                                    ),::std::filesystem::path::format::native_format),
+                                                error_code));
+        } else {
+          f(::std::filesystem::filesystem_error(msg,
+                                                ::std::filesystem::path(::std::filesystem::path::string_type(
+                                                    (::std::filesystem::path::value_type*) h.path1.ptr,h.path1.numbytes/sizeof(::std::filesystem::path::value_type)
+                                                    ),::std::filesystem::path::format::native_format),
+                                                ::std::filesystem::path(::std::filesystem::path::string_type(
+                                                    (::std::filesystem::path::value_type*) h.path2.ptr,h.path2.numbytes/sizeof(::std::filesystem::path::value_type)
+                                                    ),::std::filesystem::path::format::native_format),
+                                                error_code));
+        }
+      }
+#endif
       if(h.code>=10230 && h.code<10240) {
 #if __cplusplus > 199711L && __PLUMED_WRAPPER_LIBCXX11
 // These cases are probably useless as it looks like this should always be std::iostream_category
@@ -1768,12 +1902,32 @@ private:
 #endif
         f(::std::ios_base::failure(msg));
       }
+#if __cplusplus > 199711L && __PLUMED_WRAPPER_LIBCXX11
+      if(h.code==10240) f(add_buffer_to< ::std::regex_error>(::std::regex_error(::std::regex_constants::error_collate),msg));
+      if(h.code==10241) f(add_buffer_to< ::std::regex_error>(::std::regex_error(::std::regex_constants::error_ctype),msg));
+      if(h.code==10242) f(add_buffer_to< ::std::regex_error>(::std::regex_error(::std::regex_constants::error_escape),msg));
+      if(h.code==10243) f(add_buffer_to< ::std::regex_error>(::std::regex_error(::std::regex_constants::error_backref),msg));
+      if(h.code==10244) f(add_buffer_to< ::std::regex_error>(::std::regex_error(::std::regex_constants::error_brack),msg));
+      if(h.code==10245) f(add_buffer_to< ::std::regex_error>(::std::regex_error(::std::regex_constants::error_paren),msg));
+      if(h.code==10246) f(add_buffer_to< ::std::regex_error>(::std::regex_error(::std::regex_constants::error_brace),msg));
+      if(h.code==10247) f(add_buffer_to< ::std::regex_error>(::std::regex_error(::std::regex_constants::error_badbrace),msg));
+      if(h.code==10248) f(add_buffer_to< ::std::regex_error>(::std::regex_error(::std::regex_constants::error_range),msg));
+      if(h.code==10249) f(add_buffer_to< ::std::regex_error>(::std::regex_error(::std::regex_constants::error_space),msg));
+      if(h.code==10250) f(add_buffer_to< ::std::regex_error>(::std::regex_error(::std::regex_constants::error_badrepeat),msg));
+      if(h.code==10251) f(add_buffer_to< ::std::regex_error>(::std::regex_error(::std::regex_constants::error_complexity),msg));
+      if(h.code==10252) f(add_buffer_to< ::std::regex_error>(::std::regex_error(::std::regex_constants::error_stack),msg));
+#endif
       f(::std::runtime_error(msg));
     }
     /* "bad" errors */
     /* "< ::" space required in C++ < 11 */
     if(h.code>=11000 && h.code<11100) f(add_buffer_to< ::std::bad_typeid>(msg));
-    if(h.code>=11100 && h.code<11200) f(add_buffer_to< ::std::bad_cast>(msg));
+    if(h.code>=11100 && h.code<11200) {
+#if __cplusplus >= 201703L && __PLUMED_WRAPPER_LIBCXX17
+      if(h.code>=11150) f(add_buffer_to< ::std::bad_any_cast>(msg));
+#endif
+      f(add_buffer_to< ::std::bad_cast>(msg));
+    }
 #if __cplusplus > 199711L && __PLUMED_WRAPPER_LIBCXX11
     if(h.code>=11200 && h.code<11300) f(add_buffer_to< ::std::bad_weak_ptr>(msg));
     if(h.code>=11300 && h.code<11400) f(add_buffer_to< ::std::bad_function_call>(msg));
@@ -1785,6 +1939,10 @@ private:
       f(add_buffer_to< ::std::bad_alloc>(msg));
     }
     if(h.code>=11500 && h.code<11600) f(add_buffer_to< ::std::bad_exception>(msg));
+#if __cplusplus >= 201703L && __PLUMED_WRAPPER_LIBCXX17
+    if(h.code>=11600 && h.code<11700) f(add_buffer_to< ::std::bad_optional_access>(msg));
+    if(h.code>=11700 && h.code<11800) f(add_buffer_to< ::std::bad_variant_access>(msg));
+#endif
     /* lepton error */
     if(h.code>=19900 && h.code<20000) f(Plumed::LeptonException(msg));
     /* plumed exceptions */
@@ -2081,25 +2239,35 @@ private:
   class add_buffer_to:
     public T
   {
-    char msg[__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER]; \
-  public:
-    __PLUMED_WRAPPER_CXX_EXPLICIT add_buffer_to(const char * msg) __PLUMED_WRAPPER_CXX_NOEXCEPT {
+    char msg[__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER];
+    void init(const char* msg) __PLUMED_WRAPPER_CXX_NOEXCEPT {
       this->msg[0]='\0';
       __PLUMED_WRAPPER_STD strncat(this->msg,msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1);
       this->msg[__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1]='\0';
       if(PlumedGetenvExceptionsDebug() && __PLUMED_WRAPPER_STD strlen(msg) > __PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1) __PLUMED_WRAPPER_STD fprintf(stderr,"+++ WARNING: message will be truncated\n");
     }
-    add_buffer_to(const add_buffer_to & other) __PLUMED_WRAPPER_CXX_NOEXCEPT {
-      msg[0]='\0';
-      __PLUMED_WRAPPER_STD memcpy(msg,other.msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER);
+  public:
+    __PLUMED_WRAPPER_CXX_EXPLICIT add_buffer_to(const char * msg) __PLUMED_WRAPPER_CXX_NOEXCEPT {
+      init(msg);
+    }
+  add_buffer_to(const T& base,const char * msg) __PLUMED_WRAPPER_CXX_NOEXCEPT:
+    T(base)
+    {
+      init(msg);
+    }
+  add_buffer_to(const add_buffer_to & other) __PLUMED_WRAPPER_CXX_NOEXCEPT:
+    T(other)
+    {
+      init(other.msg);
     }
     add_buffer_to & operator=(const add_buffer_to & other) __PLUMED_WRAPPER_CXX_NOEXCEPT {
       if(this==&other) return *this;
-      msg[0]='\0';
-      __PLUMED_WRAPPER_STD memcpy(msg,other.msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER);
+      init(other.msg);
       return *this;
     }
-    const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {return msg;}
+    const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {
+      return msg;
+    }
 #if ! (__cplusplus > 199711L)
     /* Destructor should be declared in order to have the correct throw() before C++11 */
     /* see https://stackoverflow.com/questions/50025862/why-is-the-stdexception-destructor-not-noexcept */
@@ -3523,10 +3691,12 @@ void plumed_retrieve_functions(plumed_plumedmain_function_holder* functions, plu
       if(debug) __PLUMED_FPRINTF(stderr,"|RTLD_GLOBAL");
     }
 #ifdef RTLD_DEEPBIND
+#if __PLUMED_WRAPPER_ENABLE_RTLD_DEEPBIND
     if(!__PLUMED_GETENV("PLUMED_LOAD_NODEEPBIND")) {
       dlopenmode=dlopenmode|RTLD_DEEPBIND;
       if(debug) __PLUMED_FPRINTF(stderr,"|RTLD_DEEPBIND");
     }
+#endif
 #endif
     if(debug) __PLUMED_FPRINTF(stderr," +++\n");
     p=plumed_attempt_dlopen(path,dlopenmode);
@@ -3645,7 +3815,9 @@ plumed plumed_create_dlopen(const char*path) {
 #ifdef __PLUMED_HAS_DLOPEN
   dlopenmode=RTLD_NOW|RTLD_LOCAL;
 #ifdef RTLD_DEEPBIND
-  dlopenmode=dlopenmode|RTLD_DEEPBIND;
+#if __PLUMED_WRAPPER_ENABLE_RTLD_DEEPBIND
+  if(!__PLUMED_GETENV("PLUMED_LOAD_NODEEPBIND")) dlopenmode=dlopenmode|RTLD_DEEPBIND;
+#endif
 #endif
 #else
   dlopenmode=0;
