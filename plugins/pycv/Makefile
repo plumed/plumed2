@@ -35,3 +35,6 @@ PythonCVInterface.$(SOEXT): $(OBJS)
 
 clean:
 	rm -f $(OBJS) PythonCVInterface.$(SOEXT)
+
+check: all
+	$(MAKE) -C regtest
