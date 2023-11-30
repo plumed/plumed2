@@ -393,7 +393,7 @@ void DRRForceGrid::writeAll(const string &filename, bool addition) const {
   }
 }
 
-void DRRForceGrid::writeDivergence(const string &filename, const string &fmt="%%.9f") const {
+void DRRForceGrid::writeDivergence(const string &filename, const string &fmt) const {
   const string divname = filename + suffix + ".div";
   std::string fmtv=" "+fmt;
   vector<double> pos(ndims, 0);

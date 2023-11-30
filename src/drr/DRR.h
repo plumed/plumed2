@@ -193,7 +193,7 @@ public:
   /// Write necessary output file in one function (.grad and .count)
   void writeAll(const string &filename, bool addition = false) const;
   /// Output divergence (.div) (experimental)
-  void writeDivergence(const string &filename) const;
+  void writeDivergence(const string &filename, const string &fmt="%.9f") const;
   /// merge windows
   static vector<DRRAxis> merge(const vector<DRRAxis> &dA,
                                const vector<DRRAxis> &dB);

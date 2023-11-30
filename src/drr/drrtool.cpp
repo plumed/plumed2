@@ -77,7 +77,7 @@ public:
   int main(FILE *in, FILE *out, Communicator &pc);
   void extractdrr(const vector<string> &filename);
   void mergewindows(const vector<string> &filename, string outputname);
-  void calcDivergence(const vector<string> &filename);
+  void calcDivergence(const vector<string> &filename, const string &fmt);
   string description() const { return "Extract or merge the drrstate files."; }
 
 private:
@@ -110,8 +110,8 @@ int drrtool::main(FILE *in, FILE *out, Communicator &pc) {
   string unitname;
   parse("--units",unitname);
   units.setEnergy( unitname );
-  std::string dumpFmt("%f");;
-  parse("--dump-fmt",dumpFmt);
+  std::string dumpFmt("%.9f");;
+  parse("--dump-fmt", dumpFmt);
   bool doextract = parseVector("--extract", stateFilesToExtract);
   if (doextract) {
     extractdrr(stateFilesToExtract);
@@ -224,7 +224,7 @@ void drrtool::mergewindows(const vector<string> &filename, string outputname) {
   amerged.writeAll(outputname);
 }
 
-void drrtool::calcDivergence(const vector<string> &filename, const string dumpFmt) {
+void drrtool::calcDivergence(const vector<string> &filename, const string &dumpFmt) {
   #pragma omp parallel for
   for (size_t j = 0; j < filename.size(); ++j) {
     std::ifstream in;
