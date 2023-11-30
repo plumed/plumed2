@@ -64,4 +64,4 @@ public:
 
 } // namespace pycv
 } // namespace PLMD
-#endif __PLUMED_pycv_PythonCVInterface_h
+#endif //__PLUMED_pycv_PythonCVInterface_h

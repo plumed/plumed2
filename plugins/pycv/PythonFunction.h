@@ -41,4 +41,4 @@ public:
 };
 } // namespace pycv
 } // namespace PLMD
-#endif __PLUMED_pycv_PythonFunction_h
+#endif //__PLUMED_pycv_PythonFunction_h
