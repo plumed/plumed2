@@ -39,6 +39,10 @@
 #include <memory>
 #include <functional>
 #include <regex>
+#include <any>
+#include <variant>
+#include <optional>
+#include <filesystem>
 #include "tools/TypesafePtr.h"
 #include "tools/Log.h"
 #include "tools/Tools.h"
@@ -119,7 +123,7 @@ extern "C" {
 /// be called on the nested exception
 /// If msg is not null, it overrides the message. Can be used to build a concatenated message.
 static void translate_current(plumed_nothrow_handler_x nothrow,void**nested=nullptr,const char*msg=nullptr) {
-  const void* opt[5]= {"n",nested,nullptr,nullptr,nullptr};
+  const void* opt[11]= {"n",nested,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
   try {
     // this function needs to be called while catching an exception
     // cppcheck-suppress rethrowNoCurrentException
@@ -140,6 +144,12 @@ static void translate_current(plumed_nothrow_handler_x nothrow,void**nested=null
     if(!msg) msg=e.what();
     nothrow.handler(nothrow.ptr,19900,msg,opt);
     // 11000 to 12000 are "bad exceptions". message will be copied without new allocations
+  } catch(const std::bad_variant_access & e) {
+    if(!msg) msg=e.what();
+    nothrow.handler(nothrow.ptr,11700,msg,opt);
+  } catch(const std::bad_optional_access & e) {
+    if(!msg) msg=e.what();
+    nothrow.handler(nothrow.ptr,11600,msg,opt);
   } catch(const std::bad_exception & e) {
     if(!msg) msg=e.what();
     nothrow.handler(nothrow.ptr,11500,msg,opt);
@@ -155,6 +165,9 @@ static void translate_current(plumed_nothrow_handler_x nothrow,void**nested=null
   } catch(const std::bad_weak_ptr & e) {
     if(!msg) msg=e.what();
     nothrow.handler(nothrow.ptr,11200,msg,opt);
+  } catch(const std::bad_any_cast & e) {
+    if(!msg) msg=e.what();
+    nothrow.handler(nothrow.ptr,11150,msg,opt);
   } catch(const std::bad_cast & e) {
     if(!msg) msg=e.what();
     nothrow.handler(nothrow.ptr,11100,msg,opt);
@@ -178,6 +191,53 @@ static void translate_current(plumed_nothrow_handler_x nothrow,void**nested=null
     else if(e.code()==std::regex_constants::error_stack) nothrow.handler(nothrow.ptr,10252,msg,opt);
     // fallback to generic runtime_error
     else nothrow.handler(nothrow.ptr,10200,msg,opt);
+  } catch(const std::filesystem::filesystem_error & e) {
+    if(!msg) msg=e.what();
+    int value=e.code().value();
+
+    opt[2]="c"; // "c" passes the error code.
+    opt[3]=&value;
+
+    opt[4]="C"; // "C" passes the error category
+    int generic_category=1;
+    int system_category=2;
+    int iostream_category=3;
+    int future_category=4;
+    if(e.code().category()==std::generic_category()) opt[5]=&generic_category;
+    else if(e.code().category()==std::system_category()) opt[5]=&system_category;
+    else if(e.code().category()==std::iostream_category()) opt[5]=&iostream_category;
+    else if(e.code().category()==std::future_category()) opt[5]=&future_category;
+    else opt[5]=nullptr;
+
+    // local class, just needed to propely pass path information
+    // path is stored as a span of bytes.
+    // in theory, could be wchar type (on Windows, not tested),
+    // so we explicitly store the number of bytes
+    struct Path {
+      std::size_t numbytes=0;
+      const void* ptr=nullptr;
+      Path(const std::filesystem::path & path):
+        numbytes(sizeof(std::filesystem::path::value_type)*path.native().length()),
+        ptr(path.c_str())
+      {}
+      Path() = default;
+    };
+
+    opt[6]="p"; // path1
+    Path path1; // declared here since it should survive till the end of this function
+    if(!e.path1().empty()) {
+      path1=Path(e.path1());
+      opt[7]=&path1;
+    }
+
+    opt[8]="q"; // path2
+    Path path2; // declared here since it should survive till the end of this function
+    if(!e.path2().empty()) {
+      path2=Path(e.path2());
+      opt[9]=&path2;
+    }
+
+    nothrow.handler(nothrow.ptr,10229,msg,opt);
   } catch(const std::ios_base::failure & e) {
     if(!msg) msg=e.what();
     int value=e.code().value();
@@ -213,8 +273,14 @@ static void translate_current(plumed_nothrow_handler_x nothrow,void**nested=null
   } catch(const std::runtime_error & e) {
     if(!msg) msg=e.what();
     nothrow.handler(nothrow.ptr,10200,msg,opt);
-    // not implemented yet: std::future_error
-    // not clear how useful it would be.
+  } catch(const std::future_error & e) {
+    if(!msg) msg=e.what();
+    if(e.code()==std::make_error_code(std::future_errc::broken_promise)) nothrow.handler(nothrow.ptr,10125,msg,opt);
+    else if(e.code()==std::make_error_code(std::future_errc::future_already_retrieved)) nothrow.handler(nothrow.ptr,10126,msg,opt);
+    else if(e.code()==std::make_error_code(std::future_errc::promise_already_satisfied)) nothrow.handler(nothrow.ptr,10127,msg,opt);
+    else if(e.code()==std::make_error_code(std::future_errc::no_state)) nothrow.handler(nothrow.ptr,10128,msg,opt);
+    // fallback to generic logic_error
+    else nothrow.handler(nothrow.ptr,10100,msg,opt);
   } catch(const std::out_of_range & e) {
     if(!msg) msg=e.what();
     nothrow.handler(nothrow.ptr,10120,msg,opt);

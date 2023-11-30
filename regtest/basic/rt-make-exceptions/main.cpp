@@ -1,6 +1,7 @@
 // In order to correctly catch the thrown C++11 exceptions,
 // we notify the Plumed wrapper that those exceptions are recognized by the compiler.
 #define __PLUMED_WRAPPER_LIBCXX11 1
+#define __PLUMED_WRAPPER_LIBCXX17 1
 #include "plumed/tools/Stopwatch.h"
 #include "plumed/wrapper/Plumed.h"
 #include <fstream>
@@ -171,6 +172,11 @@ int main(){
     TEST_STD_NOMSG(std::bad_array_new_length);
     TEST_STD_NOMSG(std::bad_exception);
 
+    TEST_STD_NOMSG(std::bad_variant_access);
+    TEST_STD_NOMSG(std::bad_optional_access);
+    TEST_STD_NOMSG(std::bad_any_cast);
+
+
 #define TEST_REGEX(type) try { p.cmd("throw", "std::regex_error std::regex_constants::error_" #type);} catch (std::regex_error & e) { plumed_assert(e.code()==std::regex_constants::error_ ##type); }
     TEST_REGEX(collate);
     TEST_REGEX(ctype);
@@ -185,6 +191,13 @@ int main(){
     TEST_REGEX(badrepeat);
     TEST_REGEX(complexity);
     TEST_REGEX(stack);
+
+#define TEST_FUTURE(type) try { p.cmd("throw", "std::future_error std::future_errc::" #type);} catch (std::future_error & e) { plumed_assert(e.code()==std::make_error_code(std::future_errc::type)); }
+
+    TEST_FUTURE(broken_promise);
+    TEST_FUTURE(future_already_retrieved);
+    TEST_FUTURE(promise_already_satisfied);
+    TEST_FUTURE(no_state);
 
     try { p.cmd("throw","PLMD::Exception msg"); } catch (PLMD::Plumed::Exception &e) {
     }
@@ -212,6 +225,28 @@ int main(){
       plumed_assert(e.code().category()==std::future_category());
     }
     try { p.cmd("throw","std::ios_base::failure"); } catch (std::ios_base::failure & e) {
+    }
+
+    try { p.cmd("throw","std::filesystem::filesystem_error std::generic_category 100 a/b/c x/y/z"); } catch (std::filesystem::filesystem_error & e) {
+      plumed_assert(e.code().value()==100);
+      plumed_assert(e.code().category()==std::generic_category());
+      plumed_assert(!e.path1().empty());
+      plumed_assert(!e.path2().empty());
+      plumed_assert(e.path1().native()=="a/b/c");
+      plumed_assert(e.path2().native()=="x/y/z");
+    }
+    try { p.cmd("throw","std::filesystem::filesystem_error std::generic_category 200 a/b/c"); } catch (std::filesystem::filesystem_error & e) {
+      plumed_assert(e.code().value()==200);
+      plumed_assert(e.code().category()==std::generic_category());
+      plumed_assert(!e.path1().empty());
+      plumed_assert(e.path2().empty());
+      plumed_assert(e.path1().native()=="a/b/c");
+    }
+    try { p.cmd("throw","std::filesystem::filesystem_error std::generic_category 300"); } catch (std::filesystem::filesystem_error & e) {
+      plumed_assert(e.code().value()==300);
+      plumed_assert(e.code().category()==std::generic_category());
+      plumed_assert(e.path1().empty());
+      plumed_assert(e.path2().empty());
     }
 
     try { p.cmd("throw","unknown_name"); } catch (PLMD::Plumed::Exception &e) {
