@@ -29,8 +29,6 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace py=pybind11;
 
-PYBIND11_MAKE_OPAQUE(std::vector<PLMD::AtomNumber>)
-
 #define defGetter(pyfun,classname, cppfun, type, description) \
   def(pyfun, [](classname* self) -> type{ \
     return self->cppfun(); }, description)
@@ -39,7 +37,7 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
   py::module_ defaults = m.def_submodule("defaults", "Submodule with the default definitions");
   defaults.attr("COMPONENT") = py::dict(py::arg("period")=py::none(),py::arg("derivative")=true);
   defaults.attr("COMPONENT_NODEV") = py::dict(py::arg("period")=py::none(),py::arg("derivative")=false);
-  py::bind_vector<std::vector<PLMD::AtomNumber>>(m, "VectorAtomNumber");
+  
   py::class_<PLMD::pycv::PythonCVInterface>(m, "PythonCVInterface")
   .def_readwrite("data",&PLMD::pycv::PythonCVInterface::dataContainer,"Return an accessible dictionary that persist along all the simulation")
   /***************************Start of Action methods***************************/
@@ -97,11 +95,20 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
   /*.def("getAbsoluteIndexes", &PLMD::pycv::PythonCVInterface::getAbsoluteIndexes ,
   "Get the vector of absolute indexes.",
   py::return_value_policy::reference)*/
-  .def_property_readonly("absoluteIndexes",
-                         &PLMD::pycv::PythonCVInterface::getAbsoluteIndexes,
-                         "Get the vector of absolute indexes.",
-                         py::return_value_policy::reference_internal
-                        )
+  //using unsigned: if AtomNumber changes, also this must change
+  .def("absoluteIndexes",[](PLMD::pycv::PythonCVInterface* self) -> py::array_t<unsigned> {
+    auto nat=self->getPositions().size();
+    py::array_t<unsigned>::ShapeContainer shape({nat});
+    py::array_t<unsigned> atomIndexes(shape);
+    auto retAccessor = atomIndexes.mutable_unchecked<1>();
+    for (auto i=0u; i < nat; ++i) {
+      //at time of writing getAbsoluteIndexes returns const std::vector<AtomNumber> &
+      retAccessor(i)=self->getAbsoluteIndexes()[i].index();
+    }
+    return atomIndexes;
+  },
+  "Get the vector of absolute indexes."
+      )
   .def("charge", &PLMD::pycv::PythonCVInterface::getCharge,
        "Get charge of i-th atom", py::arg("i")
       )
@@ -196,6 +203,7 @@ return toRet;
   "Get a numpy array of shape (3,3) with the inverted box vectors")
 #undef T3x3toArray
   ;
+
   py::class_<PLMD::NeighborList>(m, "NeighborList")
   //.def(py::init<>())
   //https://numpy.org/doc/stable/user/basics.types.html
@@ -216,16 +224,7 @@ return toRet;
 
   "get a (NC,2) nd array with the list of couple indexes")
   ;
-  py::class_<PLMD::AtomNumber>(m, "AtomNumber")
-  .def(py::init<>())
-//
-  .def_property_readonly("index",
-                         static_cast<unsigned(PLMD::AtomNumber::*)()const>(&PLMD::AtomNumber::index),
-                         "The index number.")
-  .def_property_readonly("serial",
-                         static_cast<unsigned(PLMD::AtomNumber::*)()const>(&PLMD::AtomNumber::serial),
-                         "The index number.")
-  ;
+
   py::class_<PLMD::pycv::PythonFunction>(m, "PythonFunction")
   /***************************Start of Action methods***************************/
   //usin "PLMD::pycv::PythonCVInterface::getStep" instead of the lambda gives compilation errors

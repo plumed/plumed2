@@ -1,10 +1,9 @@
 import plumedCommunications as PLMD
-
+from plumedCommunications.defaults import COMPONENT_NODEV as nodevnoperiod
 # import plumedUtilities
 log = open("pydist.log", "w")
 
 print("Imported my pydist+.", file=log)
-nodevnoperiod = {"period": None, "derivative": False}
 plumedInit = dict(
     COMPONENTS=dict(
         absoluteIndex0index=nodevnoperiod,
@@ -16,14 +15,13 @@ plumedInit = dict(
 
 
 def mypytest(action: PLMD.PythonCVInterface):
+    #this is the costly way of working:
     ret = {
-        "absoluteIndex0index": action.absoluteIndexes[0].index,
-        "absoluteIndex0serial": action.absoluteIndexes[0].serial,
+        "absoluteIndex0index": action.absoluteIndexes()[0],
+        "absoluteIndex0serial":action.absoluteIndexes()[0]+1,
     }
-    indexes = action.absoluteIndexes
-    ret["absoluteIndex1index"] = indexes[1].index
-    ret["absoluteIndex1serial"] = indexes[1].serial
-    # the following lines are guarantee to fail :)
-    # action.absoluteIndexes[0].index=0
-    # indexes[1].index=0
+    #this should be faster
+    indexes = action.absoluteIndexes()
+    ret["absoluteIndex1index"] = indexes[1]
+    ret["absoluteIndex1serial"] = indexes[1]+1
     return ret

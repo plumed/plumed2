@@ -58,12 +58,8 @@ def pyCoord(action: plumedCommunications.PythonCVInterface):
     assert nl.size() == ((nat - 1) * nat) // 2
     pbc = action.getPbc()
     couples = nl.getClosePairs()
-    absoluteIndexes=[]
-    #not so fast, but speed here is not important
-    for i in action.absoluteIndexes:
-        absoluteIndexes.append(i.index)
-    absoluteIndexes=np.array(absoluteIndexes)
-    #sameIndex = np.where(absoluteIndexes[couples[:, 0]]==absoluteIndexes[couples[:, 1]])
+    absoluteIndexes=action.absoluteIndexes()
+    
     sameIndex = absoluteIndexes[couples[:, 0]]==absoluteIndexes[couples[:, 1]]
     d = atoms[couples[:, 0]] - atoms[couples[:, 1]]
     d = pbc.apply(d)
