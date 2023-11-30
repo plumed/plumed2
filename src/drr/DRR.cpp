@@ -393,8 +393,9 @@ void DRRForceGrid::writeAll(const string &filename, bool addition) const {
   }
 }
 
-void DRRForceGrid::writeDivergence(const string &filename) const {
+void DRRForceGrid::writeDivergence(const string &filename, const string &fmt="%%.9f") const {
   const string divname = filename + suffix + ".div";
+  std::string fmtv=" "+fmt;
   vector<double> pos(ndims, 0);
   FILE *pDiv;
   pDiv = fopen(divname.c_str(), "w");
@@ -402,10 +403,10 @@ void DRRForceGrid::writeDivergence(const string &filename) const {
   for (size_t i = 0; i < sampleSize; ++i) {
     for (size_t j = 0; j < ndims; ++j) {
       pos[j] = table[j][i];
-      fprintf(pDiv, " %.9f", table[j][i]);
+      fprintf(pDiv, fmtv.c_str(), table[j][i]);
     }
     const double divergence = getDivergence(pos);
-    fprintf(pDiv, " %.9f", (divergence / outputunit));
+    fprintf(pDiv, fmtv.c_str(), (divergence / outputunit));
     fprintf(pDiv, "\n");
   }
   fclose(pDiv);
