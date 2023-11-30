@@ -60,6 +60,10 @@
 #include <memory>
 #include <functional>
 #include <regex>
+#include <any>
+#include <optional>
+#include <variant>
+#include <filesystem>
 
 
 namespace PLMD {
@@ -81,6 +85,9 @@ namespace PLMD {
   __PLUMED_THROW_NOMSG(std::bad_weak_ptr);
   __PLUMED_THROW_NOMSG(std::bad_cast);
   __PLUMED_THROW_NOMSG(std::bad_typeid);
+  __PLUMED_THROW_NOMSG(std::bad_variant_access);
+  __PLUMED_THROW_NOMSG(std::bad_optional_access);
+  __PLUMED_THROW_NOMSG(std::bad_any_cast);
   __PLUMED_THROW_MSG(std::underflow_error);
   __PLUMED_THROW_MSG(std::overflow_error);
   __PLUMED_THROW_MSG(std::range_error);
@@ -91,6 +98,8 @@ namespace PLMD {
   __PLUMED_THROW_MSG(std::invalid_argument);
   __PLUMED_THROW_MSG(std::logic_error);
 
+
+
   if(words[0]=="std::system_error") {
     plumed_assert(words.size()>2);
     int error_code;
@@ -99,6 +108,21 @@ namespace PLMD {
     if(words[1]=="std::system_category") throw std::system_error(error_code,std::system_category(),what);
     if(words[1]=="std::iostream_category") throw std::system_error(error_code,std::iostream_category(),what);
     if(words[1]=="std::future_category") throw std::system_error(error_code,std::future_category(),what);
+  }
+
+  if(words[0]=="std::filesystem::filesystem_error") {
+    int error_code;
+    plumed_assert(words.size()>2);
+    Tools::convert(words[2],error_code);
+    std::error_code x_error_code;
+    if(words[1]=="std::generic_category") x_error_code=::std::error_code(error_code,::std::generic_category());
+    if(words[1]=="std::system_category") x_error_code=::std::error_code(error_code,::std::system_category());
+    if(words[1]=="std::iostream_category") x_error_code=::std::error_code(error_code,::std::iostream_category());
+    if(words[1]=="std::future_category") x_error_code=::std::error_code(error_code,::std::future_category());
+
+    if(words.size()<4) throw std::filesystem::filesystem_error(what,x_error_code);
+    if(words.size()<5) throw std::filesystem::filesystem_error(what,std::filesystem::path(words[3]),x_error_code);
+    throw std::filesystem::filesystem_error(what,std::filesystem::path(words[3]),std::filesystem::path(words[4]),x_error_code);
   }
 
 #define __PLUMED_THROW_REGEX(name) if(words[1]=="std::regex_constants::error_" #name) throw std::regex_error(std::regex_constants::error_ ##name)
@@ -117,6 +141,15 @@ namespace PLMD {
     __PLUMED_THROW_REGEX(badrepeat);
     __PLUMED_THROW_REGEX(complexity);
     __PLUMED_THROW_REGEX(stack);
+  }
+
+#define __PLUMED_THROW_FUTURE(name) if(words[1]=="std::future_errc::" #name) throw std::future_error(::std::future_errc::name)
+  if(words[0]=="std::future_error") {
+    plumed_assert(words.size()>1);
+    __PLUMED_THROW_FUTURE(broken_promise);
+    __PLUMED_THROW_FUTURE(future_already_retrieved);
+    __PLUMED_THROW_FUTURE(promise_already_satisfied);
+    __PLUMED_THROW_FUTURE(no_state);
   }
 
   if(words[0]=="std::ios_base::failure") {
