@@ -29,7 +29,8 @@ def pydistInPair(action: plumedCommunications.PythonCVInterface):
 
     atoms = action.getPositions()
     nl = action.getNeighbourList()
-    assert nl.size() == 3
+    assert nl.size == 3
+    assert len(nl) == nl.size
 
     x, y, z = [atoms[pair[0]] - atoms[pair[1]] for pair in nl.getClosePairs()]
 

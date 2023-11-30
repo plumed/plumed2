@@ -23,7 +23,8 @@ def pydist(action: plumedCommunications.PythonCVInterface):
     # ^ using this line should behave like calling "ATOMS=1,4" (with this function)
     atoms = action.getPositions()
     nl = action.getNeighbourList()
-    assert nl.size() == 1
+    assert nl.size == 1
+    assert len(nl) == nl.size
     NLlist = nl.getClosePairs()[0]
 
     d = atoms[NLlist[0]] - atoms[NLlist[1]]

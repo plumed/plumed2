@@ -148,7 +148,7 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
   "Returns and ndarray with the charges of the atoms requested by the action");
 
   /***********************************PLMD::Pbc********************************/
-  py::class_<PLMD::Pbc>(m, "PLMDPbc")
+  py::class_<PLMD::Pbc>(m, "Pbc")
   //.def(py::init<>())
   .def("apply",[](const PLMD::Pbc* self, py::array_t<double>& deltas) -> py::array_t<double> {
     //TODO:shape check
@@ -197,7 +197,7 @@ return toRet;
   //.def(py::init<>())
   //https://numpy.org/doc/stable/user/basics.types.html
   //numpy.uint=unsigned long
-  .def("size",&PLMD::NeighborList::size,"return the number of pairs")
+  .def_property_readonly("size",&PLMD::NeighborList::size,"the number of pairs")
 
   .def("__len__", &PLMD::NeighborList::size)
 

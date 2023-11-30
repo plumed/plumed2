@@ -55,7 +55,7 @@ def pyCoord(action: plumedCommunications.PythonCVInterface):
     nat = atoms.shape[0]
     nl = action.getNeighbourList()
 
-    assert nl.size() == ((nat - 1) * nat) // 2
+    assert nl.size == ((nat - 1) * nat) // 2
     pbc = action.getPbc()
     couples = nl.getClosePairs()
     absoluteIndexes=action.absoluteIndexes()
