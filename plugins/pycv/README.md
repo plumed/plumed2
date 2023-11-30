@@ -220,7 +220,7 @@ As now nothing will be done after the python UPDATE call.
 You can however act on the `.data` dict or access to all the parameters accessible from python, and for example update a plot or accumulate an histogram or any other thing that may be useful for your analysis/simulation.
 
 ### Getting the manual
-To obtain a <i>**VERY BASIC**</i> reference/manual with all the function and method definitions run the test rt-doc or call `PYFUNCTION` in with: 
+To obtain a <i>**VERY BASIC**</i> reference/manual with all the function and method definitions, run the test rt-doc or call `PYFUNCTION` in with: 
 
 **plumed.dat**
 ```
@@ -241,6 +241,45 @@ def plumedInit(_):
 def plumedCalculate(_):
     return 0.0
 ```
+With this you'll obtain two basic html files with the documentation (these documentation will show also the pybind11 helper methods)
+
+## Specifics
+In the following section
+### Common interface
+Both `PYFUNCTION` and `PYCVINTERFACE` have the following attribute:
+ - `label` (readonly) returns the label
+
+And the following functions:
+ - `log(s:object)` puts a string in the PLUMED output
+ - `lognl(s:object)` puts a string in the PLUMED output (and appends a newline)
+ - `getStep()` Returns the current step
+ - `getTime()` Return the present time
+ - `getTimeStep()` Return the timestep
+ - `isExchangeStep()` Check if we are on an exchange step
+ - `isRestart()` Return true if we are doing a restart
+
+### PYFUNCTION: arguments
+
+`PYFUNCTION` accepts arguments in the plumed file with the `ARG` keyword, the arguments are then accessible in python with the functions:
+ - `PythonFunction.argument(argID:int)` Get value of the of argID-th argument (as `float`)
+ - `PythonFunction.arguments()` Retuns a ndarray with the values of the arguments (as `numpy.ndarray[numpy.float64]`)
+
+and the argument:
+- `PythonFunction.nargs` (readonly) Get the number of arguments
+
+`PYFUNCTION` also has a few functions that can be used to interact with the periodicity of the arguments:
+ - `PythonFunction.bringBackInPbc(argID:int,x:float)` Takes one value and brings it back into the pbc of argument argID
+ - `PythonFunction.difference(argID:int,x:float,y:float)` Takes the difference taking into account pbc for argument argID
+
+### PYCVINTERFACE: atoms, pbc, neigbourlist, makeWhole
+`PYCVINTERFACE` works with atoms:
+
+Has the following attributes:
+ - `nat` (readonly) Return the number of atoms
+ - `absoluteIndexes` (readonly) Get the vector of absolute indexes.
+
+And for getting atom settings
+ 
 
 ---
 

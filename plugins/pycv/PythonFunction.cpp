@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Copyright (c) 2019 of Toni Giorgino
+Copyright (c) 2019-2023 of Toni Giorgino, Daniele Rapetti
 
 The pycv module is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
