@@ -33,15 +33,19 @@ namespace py=pybind11;
   def(pyfun, [](classname* self) -> type{ \
     return self->cppfun(); }, description)
 
+//NB: the action methods are written two times due to the diamond inheritance
+
 PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
+  /*******************************default submodule****************************/
   py::module_ defaults = m.def_submodule("defaults", "Submodule with the default definitions");
   defaults.attr("COMPONENT") = py::dict(py::arg("period")=py::none(),py::arg("derivative")=true);
   defaults.attr("COMPONENT_NODEV") = py::dict(py::arg("period")=py::none(),py::arg("derivative")=false);
-  
+
+  /*************************PLMD::pycv::PythonCVInterface**********************/
   py::class_<PLMD::pycv::PythonCVInterface>(m, "PythonCVInterface")
   .def_readwrite("data",&PLMD::pycv::PythonCVInterface::dataContainer,"Return an accessible dictionary that persist along all the simulation")
   /***************************Start of Action methods***************************/
-  //usin "PLMD::pycv::PythonCVInterface::getStep" instead of the lambda gives compilation errors
+  //using "PLMD::pycv::PythonCVInterface::getStep" instead of the lambda gives compilation errors
   .defGetter("getStep",PLMD::pycv::PythonCVInterface,getStep, long int,"Returns the current step")
   .defGetter("getTime",PLMD::pycv::PythonCVInterface,getTime,double,"Return the present time")
   .defGetter("getTimeStep",PLMD::pycv::PythonCVInterface,getTimeStep,double,"Return the timestep")
@@ -60,7 +64,7 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
     self->log << py::str(data).cast<std::string>()<< "\n";
   },
   "puts a string in the PLUMED output (and appends a newline)",py::arg("s"))
-  /****************************End of Action methods****************************/
+  /****************************End of Action methods***************************/
   .def("getPosition",
   [](PLMD::pycv::PythonCVInterface* self, int i) -> py::array_t<double> {
     py::array_t<double>::ShapeContainer shape({3});
@@ -75,6 +79,7 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
   },
   "return the number of atoms"
                         )
+
   //here I can use &PLMD::pycv::PythonCVInterface::makeWhole because is not in Action
   // that is inherithed both by withValue and Atomistic
   .def("makeWhole",&PLMD::pycv::PythonCVInterface::makeWhole,"Make atoms whole, assuming they are in the proper order")
@@ -91,6 +96,7 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
        "returns an interface to the current pbcs")
   .def("getNeighbourList",&PLMD::pycv::PythonCVInterface::getNL,
        "returns an interface to the current Neighborlist")
+
 //https://pybind11.readthedocs.io/en/stable/advanced/functions.html#return-value-policies
   /*.def("getAbsoluteIndexes", &PLMD::pycv::PythonCVInterface::getAbsoluteIndexes ,
   "Get the vector of absolute indexes.",
@@ -107,14 +113,14 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
     }
     return atomIndexes;
   },
-  "Get the vector of absolute indexes."
-      )
+  "Get the vector of absolute indexes.")
+
   .def("charge", &PLMD::pycv::PythonCVInterface::getCharge,
-       "Get charge of i-th atom", py::arg("i")
-      )
+       "Get charge of i-th atom", py::arg("i"))
+
   .def("mass", &PLMD::pycv::PythonCVInterface::getMass,
-       "Get mass of i-th atom", py::arg("i")
-      )
+       "Get mass of i-th atom", py::arg("i"))
+
   .def("masses",
   [](PLMD::pycv::PythonCVInterface* self) -> py::array_t<double> {
     auto nat=self->getPositions().size();
@@ -127,6 +133,7 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
     return masses;
   },
   "Returns and ndarray with the masses of the atoms requested by the action")
+
   .def("charges",
   [](PLMD::pycv::PythonCVInterface* self) -> py::array_t<double> {
     auto nat=self->getPositions().size();
@@ -138,8 +145,9 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
     }
     return charges;
   },
-  "Returns and ndarray with the charges of the atoms requested by the action")
-  ;
+  "Returns and ndarray with the charges of the atoms requested by the action");
+
+  /***********************************PLMD::Pbc********************************/
   py::class_<PLMD::Pbc>(m, "PLMDPbc")
   //.def(py::init<>())
   .def("apply",[](const PLMD::Pbc* self, py::array_t<double>& deltas) -> py::array_t<double> {
@@ -161,6 +169,8 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
     }
     return toRet;
   },
+  "Apply PBC to a set of positions or distance vectors")
+
   //this should be optimized for speed
 #define T3x3toArray( boxGetter ) \
 py::array_t<double> toRet({3,3}); \
@@ -171,45 +181,26 @@ for(unsigned i=0;i<3;++i){ \
     retAccessor(i,j) = box(i, j); \
 } \
 return toRet;
-  "Apply PBC to a set of positions or distance vectors")
   .def("getBox",[](const PLMD::Pbc* self) -> py::array_t<double> {
     T3x3toArray( self->getBox() )
-    /*
-    py::array_t<double> toRet({3,3});
-    auto retAccessor = toRet.mutable_unchecked<2>();
-    PLMD::Tensor box=self->getBox();
-    //TODO: optimize for speed:
-    for(unsigned i=0;i<3;++i){
-      for(unsigned j=0;j<3;++j)
-        retAccessor(i,j) = box(i,j);
-    }
-    return toRet;*/
   },
   "Get a numpy array of shape (3,3) with the box vectors")
+
   .def("getInvBox",[](const PLMD::Pbc* self) -> py::array_t<double> {
     T3x3toArray( self->getInvBox() )
-    /*
-    py::array_t<double> toRet({3,3});
-    auto retAccessor = toRet.mutable_unchecked<2>();
-    PLMD::Tensor box=self->getInvBox();
-    //TODO: optimize for speed:
-    for(unsigned i=0;i<3;++i){
-      for(unsigned j=0;j<3;++j)
-        retAccessor(i,j) = box(i,j);
-    }
-    return toRet;
-    */
   },
-  "Get a numpy array of shape (3,3) with the inverted box vectors")
+  "Get a numpy array of shape (3,3) with the inverted box vectors");
 #undef T3x3toArray
-  ;
 
+  /******************************PLMD::NeighborList****************************/
   py::class_<PLMD::NeighborList>(m, "NeighborList")
   //.def(py::init<>())
   //https://numpy.org/doc/stable/user/basics.types.html
   //numpy.uint=unsigned long
   .def("size",&PLMD::NeighborList::size,"return the number of pairs")
+
   .def("__len__", &PLMD::NeighborList::size)
+
   .def("getClosePairs",[](const PLMD::NeighborList* self)->py::array_t<unsigned long> {
     auto ncouples = self->size();
     py::array_t<unsigned long>::ShapeContainer shape({ncouples,2});
@@ -221,10 +212,9 @@ return toRet;
     }
     return couples;
   },
+  "get a (NC,2) nd array with the list of couple indexes");
 
-  "get a (NC,2) nd array with the list of couple indexes")
-  ;
-
+  /**************************PLMD::pycv::PythonFunction************************/
   py::class_<PLMD::pycv::PythonFunction>(m, "PythonFunction")
   /***************************Start of Action methods***************************/
   //usin "PLMD::pycv::PythonCVInterface::getStep" instead of the lambda gives compilation errors
@@ -238,6 +228,7 @@ return toRet;
     return self->getLabel();
   },
   "returns the label")
+
   .def("log",[](PLMD::pycv::PythonFunction* self, py::object data) {
     self->log << py::str(data).cast<std::string>();
   },
@@ -246,9 +237,11 @@ return toRet;
     self->log << py::str(data).cast<std::string>()<< "\n";
   },
   "puts a string in the PLUMED output (and appends a newline)",py::arg("s"))
-  /****************************End of Action methods****************************/
+
+  /****************************End of Action methods***************************/
   .def("argument", &PLMD::pycv::PythonFunction::
        getArgument,"Get value of the of i-th argument", py::arg("i"))
+
   .def("arguments", [](PLMD::pycv::PythonFunction* self) -> py::array_t<double> {
     auto nargs=self->getNumberOfArguments();
     py::array_t<double>::ShapeContainer shape({nargs});
@@ -258,15 +251,19 @@ return toRet;
     return arguments;
   }
   ,"Retuns a ndarray with the values of the arguments")
+
   .def_property_readonly("nargs", &PLMD::pycv::PythonFunction::
                          getNumberOfArguments,"Get the number of arguments")
+
   .def("difference", &PLMD::pycv::PythonFunction::
        difference,"Takes the difference taking into account pbc for argument i",
        py::arg("i"),py::arg("x"),py::arg("y"))
+
   .def("bringBackInPbc", &PLMD::pycv::PythonFunction::
        bringBackInPbc,"Takes one value and brings it back into the pbc of argument i",
        py::arg("i"),py::arg("x"))
-  //I cannot find a way of testing:
+
+  //I cannot find a way of testing properly this:
   // .def("getProjection", &PLMD::pycv::PythonFunction::
   //      getProjection,"Get the scalar product between the gradients of two variables",
   //      py::arg("i"),py::arg("j"))
