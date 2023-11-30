@@ -334,26 +334,28 @@ DRRForceGrid::getCountsLogDerivative(const vector<double> &pos) const {
   return result;
 }
 
-void DRRForceGrid::write1DPMF(string filename) const {
+void DRRForceGrid::write1DPMF(string filename, const string &fmt) const {
   filename += suffix + ".pmf";
+  std::string fmtv=fmt+" "+fmt+"\n";
   FILE *ppmf;
   ppmf = fopen(filename.c_str(), "w");
   const double w = dimensions[0].binWidth;
   double pmf = 0;
-  fprintf(ppmf, "%.9f %.9f\n", endpoints[0], pmf);
+  fprintf(ppmf, fmtv.c_str(), endpoints[0], pmf);
   for (size_t i = 0; i < dimensions[0].nbins; ++i) {
     vector<double> pos(1, 0);
     pos[0] = table[0][i];
     const vector<double> f = getGradient(pos, true);
     pmf += f[0] * w / outputunit;
-    fprintf(ppmf, "%.9f %.9f\n", endpoints[i + 1], pmf);
+    fprintf(ppmf, fmtv.c_str(), endpoints[i + 1], pmf);
   }
   fclose(ppmf);
 }
 
-void DRRForceGrid::writeAll(const string &filename, bool addition) const {
-  const string countname = filename + suffix + ".count";
-  const string gradname = filename + suffix + ".grad";
+void DRRForceGrid::writeAll(const string &filename, const string &fmt, bool addition) const {
+  const std::string countname = filename + suffix + ".count";
+  const std::string gradname = filename + suffix + ".grad";
+  std::string fmtv=" "+fmt;
   vector<double> pos(ndims, 0);
   FILE *pGrad, *pCount;
   if (addition) {
@@ -374,13 +376,13 @@ void DRRForceGrid::writeAll(const string &filename, bool addition) const {
   for (size_t i = 0; i < sampleSize; ++i) {
     for (size_t j = 0; j < ndims; ++j) {
       pos[j] = table[j][i];
-      fprintf(pGrad, " %.9f", table[j][i]);
-      fprintf(pCount, " %.9f", table[j][i]);
+      fprintf(pGrad, fmtv.c_str(), table[j][i]);
+      fprintf(pCount, fmtv.c_str(), table[j][i]);
     }
     fprintf(pCount, " %lu\n", getCount(pos, true));
     vector<double> f = getGradient(pos, true);
     for (size_t j = 0; j < ndims; ++j) {
-      fprintf(pGrad, " %.9f", (f[j] / outputunit));
+      fprintf(pGrad, fmtv.c_str(), (f[j] / outputunit));
     }
     fprintf(pGrad, "\n");
   }
@@ -389,7 +391,7 @@ void DRRForceGrid::writeAll(const string &filename, bool addition) const {
   free(buffer1);
   free(buffer2);
   if (ndims == 1) {
-    write1DPMF(filename);
+    write1DPMF(filename, fmt);
   }
 }
 
