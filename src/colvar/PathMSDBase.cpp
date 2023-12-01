@@ -270,21 +270,25 @@ void PathMSDBase::calculate() {
   Value* val_z_path=getPntrToComponent("zzz");
 
   std::vector<double> s_path(val_s_path.size()); for(unsigned i=0; i<s_path.size(); i++)s_path[i]=0.;
-  double partition=0.;
-  double tmp;
-
-  // clean vector
-  Tools::set_to_zero(derivs_z);
-
+  double min_distance=1e10;
   for(auto & it : imgVec) {
-    it.similarity=std::exp(-lambda*(it.distance));
+    if(it.distance < min_distance) min_distance=it.distance;
+  }
+
+  double partition=0.;
+  for(auto & it : imgVec) {
+    it.similarity=std::exp(-lambda*(it.distance - min_distance));
     for(unsigned i=0; i<s_path.size(); i++) {
       s_path[i]+=(it.property[i])*it.similarity;
     }
     partition+=it.similarity;
   }
   for(unsigned i=0; i<s_path.size(); i++) { s_path[i]/=partition;  val_s_path[i]->set(s_path[i]) ;}
-  val_z_path->set(-(1./lambda)*std::log(partition));
+  val_z_path->set(-(1./lambda)*std::log(partition) + min_distance);
+
+  // clean vector
+  Tools::set_to_zero(derivs_z);
+  double tmp;
   for(unsigned j=0; j<s_path.size(); j++) {
     // clean up
     Tools::set_to_zero(derivs_s);
