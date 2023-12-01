@@ -20,7 +20,7 @@ endif
 all: PythonCVInterface.$(SOEXT)
 
 #-fvisibility=hidden is needed for pybind11 (to not conflict with different pybind11 versions)
-ActionWithPython.o PythonCVInterface.o PythonFunction.o: PYBIND11FLAG= -fvisibility=hidden
+ActionWithPython.o PythonCVInterface.o PythonFunction.o PlumedPythonEmbeddedModule.o: PYBIND11FLAG= -fvisibility=hidden
 
 %.o: %.cpp $(DEPDIR)/%.d | $(DEPDIR)
 	@echo Compiling object $@

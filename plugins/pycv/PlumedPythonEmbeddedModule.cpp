@@ -85,7 +85,8 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
   .def("makeWhole",&PLMD::pycv::PythonCVInterface::makeWhole,"Make atoms whole, assuming they are in the proper order")
   .def("getPositions",[](PLMD::pycv::PythonCVInterface* self) -> py::array_t<double> {
     auto nat=self->getPositions().size();
-    py::array_t<double>::ShapeContainer shape({nat,3});
+    ///nat and 3 must be the same type: no warning
+    py::array_t<double>::ShapeContainer shape({nat,static_cast<decltype(nat)>(3)});
     py::array_t<double> atomList(shape,
                                  &self->getPositions()[0][0]
                                 );
@@ -107,7 +108,7 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
     py::array_t<unsigned>::ShapeContainer shape({nat});
     py::array_t<unsigned> atomIndexes(shape);
     auto retAccessor = atomIndexes.mutable_unchecked<1>();
-    for (auto i=0u; i < nat; ++i) {
+    for (decltype(nat) i=0; i < nat; ++i) {
       //at time of writing getAbsoluteIndexes returns const std::vector<AtomNumber> &
       retAccessor(i)=self->getAbsoluteIndexes()[i].index();
     }
@@ -127,7 +128,7 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
     py::array_t<double>::ShapeContainer shape({nat});
     py::array_t<double> masses(shape);
     auto retAccessor = masses.mutable_unchecked<1>();
-    for (auto i=0u; i < nat; ++i) {
+    for (decltype(nat) i=0; i < nat; ++i) {
       retAccessor(i)=self->getMass(i);
     }
     return masses;
@@ -140,7 +141,7 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
     py::array_t<double>::ShapeContainer shape({nat});
     py::array_t<double> charges(shape);
     auto retAccessor = charges.mutable_unchecked<1>();
-    for (auto i=0u; i < nat; ++i) {
+    for (decltype(nat) i=0; i < nat; ++i) {
       retAccessor(i)=self->getCharge(i);
     }
     return charges;
@@ -158,7 +159,7 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
     auto nat=deltas.shape(0);
     py::array_t<double> toRet({nat,deltas.shape(1)});
     auto retAccessor = toRet.mutable_unchecked<2>();
-    for (auto i=0u; i < nat; ++i) {
+    for (decltype(nat) i=0; i < nat; ++i) {
       auto t= self->distance(PLMD::Vector(0.0,0.0,0.0),
                              //I think this may be slow, but serves as a demonstration as a base for the tests
                              PLMD::Vector(accessor(i,0),accessor(i,1),accessor(i,2)),

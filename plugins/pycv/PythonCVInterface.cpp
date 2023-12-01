@@ -671,7 +671,8 @@ void PythonCVInterface::readReturn(const py::object &r, Value* valPtr) {
     py::list rl=r.cast<py::list>();
     pycvComm_t value = rl[0].cast<pycvComm_t>();
     valPtr->set(value);
-    auto natoms = getPositions().size();
+    //shape returns long int
+    auto natoms = static_cast<long int > (getPositions().size());
     if (rl.size() > 1) {
       if(!valPtr->hasDerivatives())
         error(valPtr->getName()+" was declared without derivatives, but python returned with derivatives");

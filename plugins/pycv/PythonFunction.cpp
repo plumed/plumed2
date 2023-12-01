@@ -119,7 +119,6 @@ PythonFunction::PythonFunction(const ActionOptions&ao)try:
          Function(ao),
   ActionWithPython(ao) {
 
-  auto nargs = getNumberOfArguments();
   //Loading the python module
   std::string import;
   parse("IMPORT",import);
