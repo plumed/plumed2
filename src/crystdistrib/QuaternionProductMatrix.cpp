@@ -99,48 +99,69 @@ void QuaternionProductMatrix::performTask( const std::string& controller, const 
   quat1[2] *= -1;
   quat1[3] *= -1;
 
+
   double pref=1;
-  //real part of q1*q2
+  double pref2=1;
+  double conj=1;  
+//real part of q1*q2
   for(unsigned i=0; i<4; ++i) { 
-      if( i>0 ) pref=-1;
+      if( i>0 ) {pref=-1; pref2=-1;}
       myvals.addValue( getConstPntrToComponent(0)->getPositionInStream(), pref*quat1[i]*quat2[i] );
       if( doNotCalculateDerivatives() ) continue ; 
-      addDerivativeOnVectorArgument( false, 0, i, index1, pref*quat2[i], myvals );
-      addDerivativeOnVectorArgument( false, 0, 4+i, ind2, pref*quat1[i], myvals );
-  }  
+      if (i>0) conj=-1;
+      addDerivativeOnVectorArgument( false, 0, i, index1, conj*pref*quat2[i], myvals );
+      addDerivativeOnVectorArgument( false, 0, 4+i, ind2, pref2*quat1[i], myvals );
+}  
       //i component
-  pref = 1;
+  pref=1;
+  conj=1;
+  pref2=1;
   for (unsigned i=0; i<4; i++) {
       if(i==3) pref=-1;
       else pref=1;
+      if(i==2) pref2=-1;
+      else pref2=1;
       myvals.addValue( getConstPntrToComponent(1)->getPositionInStream(), pref*quat1[i]*quat2[(5-i)%4]); 
       if( doNotCalculateDerivatives() ) continue ; 
-      addDerivativeOnVectorArgument( false, 1, i, index1, pref*quat2[(5-i)%4], myvals );
-      addDerivativeOnVectorArgument( false, 1, 4+i, ind2, pref*quat1[i], myvals );
-  }   
+      if (i>0) conj=-1;
+      addDerivativeOnVectorArgument( false, 1, i, index1, conj*pref*quat2[(5-i)%4], myvals );
+      addDerivativeOnVectorArgument( false, 1, 4+i, ind2, pref2*quat1[(5-i)%4], myvals );
+ }   
 
       //j component
-  pref = 1;
+  pref=1;
+  conj=1;
+  pref2=1;
   for (unsigned i=0; i<4; i++) {
       if(i==1) pref=-1;
       else pref=1;
+      if (i==3) pref2=-1;
+      else pref2=1;
       myvals.addValue( getConstPntrToComponent(2)->getPositionInStream(), pref*quat1[i]*quat2[(i+2)%4]);
       if( doNotCalculateDerivatives() ) continue ; 
-      addDerivativeOnVectorArgument( false, 2, i, index1, pref*quat2[(i+2)%4], myvals );
-      addDerivativeOnVectorArgument( false, 2, 4+i, ind2, pref*quat1[i], myvals );
-  }
+      if (i>0) conj=-1;
+      addDerivativeOnVectorArgument( false, 2, i, index1, conj*pref*quat2[(i+2)%4], myvals );
+      addDerivativeOnVectorArgument( false, 2, 4+i, ind2, pref2*quat1[(i+2)%4], myvals );
+ }
 
       //k component
-  pref = 1;
+  pref=1;
+  conj=1;
+  pref2=1;
   for (unsigned i=0; i<4; i++) {
       if(i==2) pref=-1;
       else pref=1;
+      if(i==1) pref2=-1;
+      else pref2=1;
       myvals.addValue( getConstPntrToComponent(3)->getPositionInStream(), pref*quat1[i]*quat2[(3-i)]);
       if( doNotCalculateDerivatives() ) continue ; 
-      addDerivativeOnVectorArgument( false, 3, i, index1, pref*quat2[3-i], myvals );
-      addDerivativeOnVectorArgument( false, 3, 4+i, ind2, pref*quat1[i], myvals );
+      if (i>0) conj=-1;
+      addDerivativeOnVectorArgument( false, 3, i, index1, conj*pref*quat2[3-i], myvals );
+      addDerivativeOnVectorArgument( false, 3, 4+i, ind2, pref2*quat1[3-i], myvals );
 
-  }
+}
+
+
 }
 
 void QuaternionProductMatrix::runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const {
