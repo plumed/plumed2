@@ -894,9 +894,9 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
             std::vector<std::string> words;
             words=Tools::getWords(line);
             if(words.size()==3) {
-                Tools::convert(words[0],celld[0]);
-                Tools::convert(words[1],celld[4]);
-                Tools::convert(words[2],celld[8]);
+              Tools::convert(words[0],celld[0]);
+              Tools::convert(words[1],celld[4]);
+              Tools::convert(words[2],celld[8]);
             } else if(words.size()==9) {
               Tools::convert(words[0],celld[0]);
               Tools::convert(words[1],celld[1]);
