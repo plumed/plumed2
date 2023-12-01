@@ -4,6 +4,7 @@ include Make.inc
 #this assumes gcc
 DEPDIR := .deps
 DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
+PYBIND11FLAG = 
 
 OBJS = ActionWithPython.o PythonCVInterface.o PythonFunction.o PlumedPythonEmbeddedModule.o
 
@@ -18,10 +19,13 @@ endif
 
 all: PythonCVInterface.$(SOEXT)
 
+#-fvisibility=hidden is needed for pybind11 (to not conflict with different pybind11 versions)
+ActionWithPython.o PythonCVInterface.o PythonFunction.o: PYBIND11FLAG= -fvisibility=hidden
 
 %.o: %.cpp $(DEPDIR)/%.d | $(DEPDIR)
 	@echo Compiling object $@
-	@$(CXX) -c $(DEPFLAGS) $(CPPFLAGS) $(ADDCPPFLAGS) $(CXXFLAGS) $< -o $@
+	@$(CXX) -c $(DEPFLAGS) $(CPPFLAGS) $(PYBIND11FLAG) $(ADDCPPFLAGS) $(CXXFLAGS) $< -o $@
+
 
 $(DEPDIR): ; @mkdir -p $@
 
