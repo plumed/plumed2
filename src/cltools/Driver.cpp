@@ -894,12 +894,19 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
             std::vector<std::string> words;
             words=Tools::getWords(line);
             if(words.size()==3) {
-              std::sscanf(line.c_str(),"%100lf %100lf %100lf",&celld[0],&celld[4],&celld[8]);
+              Tools::convert(words[0],celld[0]);
+              Tools::convert(words[1],celld[4]);
+              Tools::convert(words[2],celld[8]);
             } else if(words.size()==9) {
-              std::sscanf(line.c_str(),"%100lf %100lf %100lf %100lf %100lf %100lf %100lf %100lf %100lf",
-                          &celld[0], &celld[1], &celld[2],
-                          &celld[3], &celld[4], &celld[5],
-                          &celld[6], &celld[7], &celld[8]);
+              Tools::convert(words[0],celld[0]);
+              Tools::convert(words[1],celld[1]);
+              Tools::convert(words[2],celld[2]);
+              Tools::convert(words[3],celld[3]);
+              Tools::convert(words[4],celld[4]);
+              Tools::convert(words[5],celld[5]);
+              Tools::convert(words[6],celld[6]);
+              Tools::convert(words[7],celld[7]);
+              Tools::convert(words[8],celld[8]);
             } else error("needed box in second line of xyz file");
           } else {			// from command line
             celld=pbc_cli_box;

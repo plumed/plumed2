@@ -1,0 +1,10 @@
+type=make
+
+plumed_regtest_after(){
+  #this discards the lines like
+  #"(tools/NeighborList.cpp:98) void PLMD::NeighborList::initialize()"
+  # in this way if NeighborList.cpp is moved or modified this test won't 
+  #trigger a (false) error
+  awk '/(Single|Double|neighbor) list/{print} 
+       /Exception text/{print}' ./unitTest > unitTest.proc
+}

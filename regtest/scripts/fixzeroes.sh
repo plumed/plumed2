@@ -6,5 +6,6 @@ grep -E '[^[:print:]]' $file 2> /dev/null && exit 0
 
 sed "s/-\(0\.0*0 \)/ \1/g; 
      s/-\(0\.0*0$\)/ \1/g" $file > $file.$$.tmp
-mv $file.$$.tmp $file
+sed "s/-nan/nan/g" $file.$$.tmp > $file.$$.tmp2
+mv $file.$$.tmp2 $file
 

@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_tools_NeighborList_h
+#ifndef __PLUMED_tools_NeighborList_h //{
 #define __PLUMED_tools_NeighborList_h
 
 #include "Vector.h"
@@ -34,35 +34,52 @@ class Communicator;
 
 /// \ingroup TOOLBOX
 /// A class that implements neighbor lists from two lists or a single list of atoms
-class NeighborList
-{
-  bool reduced;
+class NeighborList {
+public:
+  using pairIDs=std::pair<unsigned,unsigned>;
+  using pairAtomNumbers=std::pair<PLMD::AtomNumber,PLMD::AtomNumber>;
+private:
+  bool reduced=false;
   bool serial_;
-  bool do_pair_,do_pbc_,twolists_;
+  bool do_pair_;
+  bool do_pbc_;
+  bool twolists_;
   const PLMD::Pbc* pbc_;
   Communicator& comm;
-  std::vector<PLMD::AtomNumber> fullatomlist_,requestlist_;
-  std::vector<std::pair<unsigned,unsigned> > neighbors_;
+  std::vector<PLMD::AtomNumber> fullatomlist_{};
+  std::vector<PLMD::AtomNumber> requestlist_{};
+  std::vector<pairIDs > neighbors_{};
   double distance_;
-  unsigned stride_,nlist0_,nlist1_,nallpairs_,lastupdate_;
+  size_t nlist0_=0;
+  size_t nlist1_=0;
+  size_t nallpairs_;
+  unsigned stride_=0;
+  unsigned lastupdate_=0;
 /// Initialize the neighbor list with all possible pairs
   void initialize();
 /// Return the pair of indexes in the positions array
 /// of the two atoms forming the i-th pair among all possible pairs
-  std::pair<unsigned,unsigned> getIndexPair(unsigned i);
+  pairIDs getIndexPair(unsigned i);
 /// Extract the list of atoms from the current list of close pairs
   void setRequestList();
 public:
   NeighborList(const std::vector<PLMD::AtomNumber>& list0,
                const std::vector<PLMD::AtomNumber>& list1,
                const bool& serial,
-               const bool& do_pair, const bool& do_pbc, const PLMD::Pbc& pbc, Communicator &cm,
-               const double& distance=1.0e+30, const unsigned& stride=0);
+               const bool& do_pair,
+               const bool& do_pbc,
+               const PLMD::Pbc& pbc,
+               Communicator &cm,
+               const double& distance=1.0e+30,
+               const unsigned& stride=0);
   NeighborList(const std::vector<PLMD::AtomNumber>& list0,
                const bool& serial,
                const bool& do_pbc,
-               const PLMD::Pbc& pbc, Communicator &cm, const double& distance=1.0e+30,
+               const PLMD::Pbc& pbc,
+               Communicator &cm,
+               const double& distance=1.0e+30,
                const unsigned& stride=0);
+  ~NeighborList();
 /// Return the list of all atoms. These are needed to rebuild the neighbor list.
   std::vector<PLMD::AtomNumber>& getFullAtomList();
 /// Update the indexes in the neighbor list to match the
@@ -80,15 +97,16 @@ public:
   void setLastUpdate(unsigned step);
 /// Get the size of the neighbor list
   unsigned size() const;
+/// Get the distance used to create the neighbor list
+  double distance() const;
 /// Get the i-th pair of the neighbor list
-  std::pair<unsigned,unsigned> getClosePair(unsigned i) const;
+  pairIDs getClosePair(unsigned i) const;
 /// Get the list of neighbors of the i-th atom
   std::vector<unsigned> getNeighbors(unsigned i);
-  ~NeighborList() {}
 /// Get the i-th pair of AtomNumbers from the neighbor list
-  std::pair<AtomNumber,AtomNumber> getClosePairAtomNumber(unsigned i) const;
+  pairAtomNumbers getClosePairAtomNumber(unsigned i) const;
 };
 
-}
+} // namespace PLMD
 
-#endif
+#endif //__PLUMED_tools_NeighborList_h }
