@@ -39,13 +39,9 @@ bool DLLoader::installed() {
 }
 
 
-void* DLLoader::load(const std::string&s, const bool useGlobal) {
+void* DLLoader::load(const std::string&s) {
 #ifdef __PLUMED_HAS_DLOPEN
-  void* p=nullptr;
-  if (useGlobal)
-    p=dlopen(s.c_str(),RTLD_NOW|RTLD_GLOBAL);
-  else
-    p=dlopen(s.c_str(),RTLD_NOW|RTLD_LOCAL);
+  void* p=dlopen(s.c_str(),RTLD_NOW|RTLD_LOCAL);
   if(!p) {
     lastError=dlerror();
   } else {
@@ -93,7 +89,7 @@ DLLoader::EnsureGlobalDLOpen::EnsureGlobalDLOpen(const void *symbol) noexcept {
   //      object, then these functions return 0.  In this case, an error
   //      message is not available via dlerror(3).
   if(zeroIsError==0) {
-    plumed_merror() << "Failure in finding any object that contains the symbol "<< symbol;
+    plumed_error() << "Failure in finding any object that contains the symbol "<< symbol;
   }
   // std::cerr << "Path: " << info.dli_fname << "\n";
   //This "promotes" to GLOBAL the object with the symbol pointed by ptr

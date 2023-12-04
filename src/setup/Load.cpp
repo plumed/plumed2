@@ -106,7 +106,6 @@ PLUMED_REGISTER_ACTION(Load,"LOAD")
 void Load::registerKeywords( Keywords& keys ) {
   ActionSetup::registerKeywords(keys);
   keys.add("compulsory","FILE","file to be loaded");
-  keys.addFlag("GLOBAL",false,"when selected the shared object is LOADed with RTLD_GLOBAL instead of RTLD_LOCAL");
 }
 
 Load::Load(const ActionOptions&ao):
@@ -115,10 +114,8 @@ Load::Load(const ActionOptions&ao):
 {
   std::string f;
   parse("FILE",f);
-  bool loadWithGlobal=false;
-  parseFlag("GLOBAL",loadWithGlobal);
   checkRead();
-  plumed.load(f,loadWithGlobal);
+  plumed.load(f);
 }
 
 }
