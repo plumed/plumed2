@@ -1196,6 +1196,10 @@ unsigned PlumedMain::useCountReferenceCounter() const noexcept {
 // This is here to stop cppcheck throwing an error
 #endif
 
+#ifdef __PLUMED_HAS_DLADDR
+// This is here to stop cppcheck throwing an error
+#endif
+
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////

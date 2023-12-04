@@ -732,6 +732,7 @@ enable_molfile_plugins
 enable_external_molfile_plugins
 enable_zlib
 enable_dlopen
+enable_dladdr
 enable_rtld_default
 enable_subprocess
 enable_popen
@@ -1430,6 +1431,7 @@ Optional Features:
                           yes
   --enable-zlib           enable search for zlib, default: yes
   --enable-dlopen         enable search for dlopen, default: yes
+  --enable-dladdr         enable search for dladdr, default: yes
   --enable-rtld_default   enable search for RTLD_DEFAULT macro, default: yes
   --enable-subprocess     enable search for functions needed to manage a
                           subprocess, default: yes
@@ -2955,6 +2957,24 @@ else
   case "yes" in
              (yes) dlopen=true ;;
              (no)  dlopen=false ;;
+  esac
+
+fi
+
+
+
+dladdr=
+# Check whether --enable-dladdr was given.
+if test "${enable_dladdr+set}" = set; then :
+  enableval=$enable_dladdr; case "${enableval}" in
+             (yes) dladdr=true ;;
+             (no)  dladdr=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-dladdr" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) dladdr=true ;;
+             (no)  dladdr=false ;;
   esac
 
 fi
@@ -6739,6 +6759,144 @@ $as_echo "$ac_cv_lib_dl_dlopen" >&6; }
 if test "x$ac_cv_lib_dl_dlopen" = xyes; then :
   STATIC_LIBS="-ldl $STATIC_LIBS" LIBS="-ldl $LIBS"
 fi
+
+
+
+
+    found=ko
+    __PLUMED_HAS_DLADDR=no
+    ac_fn_cxx_check_header_mongrel "$LINENO" "dlfcn.h" "ac_cv_header_dlfcn_h" "$ac_includes_default"
+if test "x$ac_cv_header_dlfcn_h" = xyes; then :
+
+
+  if test "${libsearch}" = true ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing dladdr" >&5
+$as_echo_n "checking for library containing dladdr... " >&6; }
+if ${ac_cv_search_dladdr+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char dladdr ();
+int
+main ()
+{
+return dladdr ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' ; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_search_dladdr=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_dladdr+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_dladdr+:} false; then :
+
+else
+  ac_cv_search_dladdr=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_dladdr" >&5
+$as_echo "$ac_cv_search_dladdr" >&6; }
+ac_res=$ac_cv_search_dladdr
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  found=ok
+fi
+
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing dladdr" >&5
+$as_echo_n "checking for library containing dladdr... " >&6; }
+if ${ac_cv_search_dladdr+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char dladdr ();
+int
+main ()
+{
+return dladdr ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' ; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_search_dladdr=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_dladdr+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_dladdr+:} false; then :
+
+else
+  ac_cv_search_dladdr=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_dladdr" >&5
+$as_echo "$ac_cv_search_dladdr" >&6; }
+ac_res=$ac_cv_search_dladdr
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  found=ok
+fi
+
+  fi
+
+
+fi
+
+
+    if test $found = ok ; then
+       $as_echo "#define __PLUMED_HAS_DLADDR 1" >>confdefs.h
+
+       __PLUMED_HAS_DLADDR=yes
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_DLADDR" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_DLADDR" >&2;}
+    fi
 
 
 mpi_found=ko
