@@ -55,6 +55,16 @@ public:
   const std::string & error();
   /// Returns true if the dynamic loader is available (on some systems it may not).
   static bool installed();
+
+  /// RAII helper for promoting RTLD_LOCAL loaded objects to RTLD_GLOBAL
+  class EnsureGlobalDLOpen {
+    void* handle_=nullptr;
+  public:
+    /// makes sure that object defining ptr is globally available
+    explicit EnsureGlobalDLOpen(const void* symbol) noexcept;
+    /// dlclose the dlopened object
+    ~EnsureGlobalDLOpen();
+  };
 };
 
 } // namespace PLMD

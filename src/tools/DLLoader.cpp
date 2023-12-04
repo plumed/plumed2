@@ -20,6 +20,8 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "DLLoader.h"
+#include "Exception.h"
+
 #include <cstdlib>
 
 #ifdef __PLUMED_HAS_DLOPEN
@@ -77,6 +79,38 @@ DLLoader::~DLLoader() {
 
 DLLoader::DLLoader() {
   // do nothing
+}
+
+DLLoader::EnsureGlobalDLOpen::EnsureGlobalDLOpen(const void *symbol) noexcept {
+
+  // dladddr might be not available
+  // this part should likely be protected in a __PLUMED_HAS_DLADDR ifdef
+#ifdef __PLUMED_HAS_DLOPEN
+  Dl_info info;
+  int zeroIsError=dladdr(symbol, &info);
+  // from the manual:
+  // If the address specified in addr could not be matched to a shared
+  //      object, then these functions return 0.  In this case, an error
+  //      message is not available via dlerror(3).
+  if(zeroIsError==0) {
+    plumed_merror() << "Failure in finding any object that contains the symbol "<< symbol;
+  }
+  // std::cerr << "Path: " << info.dli_fname << "\n";
+  //This "promotes" to GLOBAL the object with the symbol pointed by ptr
+  handle_ = dlopen(info.dli_fname, RTLD_GLOBAL | RTLD_NOW);
+  // std::cerr << "Handle: " << handle << "\n";
+#else
+  //errormessage
+#endif
+
+}
+
+DLLoader::EnsureGlobalDLOpen::~EnsureGlobalDLOpen() {
+#ifdef __PLUMED_HAS_DLOPEN
+  if (handle_) {
+    dlclose(handle_);
+  }
+#endif //__PLUMED_HAS_DLOPEN
 }
 
 
