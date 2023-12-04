@@ -65,7 +65,6 @@
 #include <variant>
 #include <filesystem>
 
-
 namespace PLMD {
 
 /// Small utility just used in this file to throw arbitrary exceptions
@@ -757,6 +756,7 @@ void PlumedMain::init() {
   log<<"\n";
   log<<"For further information see the PLUMED web page at http://www.plumed.org\n";
   log<<"Root: "<<config::getPlumedRoot()<<"\n";
+  log<<"LibraryPath: "<<config::getLibraryPath()<<"\n";
   log<<"For installed feature, see "<<config::getPlumedRoot() + "/src/config/config.txt\n";
   log.printf("Molecular dynamics engine: %s\n",MDEngine.c_str());
   log.printf("Precision of reals: %d\n",atoms.getRealPrecision());
