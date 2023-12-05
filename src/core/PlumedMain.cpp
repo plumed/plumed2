@@ -1091,7 +1091,7 @@ void PlumedMain::update() {
   }
 }
 
-void PlumedMain::load(const std::string& fileName, const bool loadGlobal) {
+void PlumedMain::load(const std::string& fileName) {
   if(DLLoader::installed()) {
     std::string libName=fileName;
     size_t n=libName.find_last_of(".");
@@ -1118,7 +1118,7 @@ void PlumedMain::load(const std::string& fileName, const bool loadGlobal) {
       base="./"+base;
     }
     libName=base+"."+config::getSoExt();
-    void *p=dlloader.load(libName,loadGlobal);
+    void *p=dlloader.load(libName);
     if(!p) {
       plumed_error()<<"I cannot load library " << fileName << " " << dlloader.error();
     }
