@@ -84,7 +84,8 @@ DLLoader::EnsureGlobalDLOpen::EnsureGlobalDLOpen(const void *symbol) noexcept {
   // If the address specified in addr could not be matched to a shared
   //      object, then these functions return 0.  In this case, an error
   //      message is not available via dlerror(3).
-  if(dladdr(symbol, &info)!=0) {
+  int zeroIsError=dladdr(symbol, &info);
+  if(zeroIsError!=0) {
     //This "promotes" to GLOBAL the object with the symbol pointed by ptr
     handle_ = dlopen(info.dli_fname, RTLD_GLOBAL | RTLD_NOW);
   } else {
@@ -92,7 +93,7 @@ DLLoader::EnsureGlobalDLOpen::EnsureGlobalDLOpen(const void *symbol) noexcept {
                  "+++WARNING+++"
                  "Failure in finding any object that contains the symbol %p.\n",
                  symbol);
-    
+
   }
 #else
   std::fprintf(stderr,
