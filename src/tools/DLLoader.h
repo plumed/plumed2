@@ -64,6 +64,9 @@ public:
     explicit EnsureGlobalDLOpen(const void* symbol) noexcept;
     /// dlclose the dlopened object
     ~EnsureGlobalDLOpen();
+    ///Confevert a const reference to a
+    template<typename T> EnsureGlobalDLOpen(const T&p) noexcept
+      : EnsureGlobalDLOpen(reinterpret_cast<const void*>(p)) {}
   };
 };
 
