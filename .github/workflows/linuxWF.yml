@@ -181,7 +181,7 @@ jobs:
       env:
         GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
       run: |
-
+          .ci/push doc
     - name: Compile and test pycv
       if: contains( matrix.variant, '-pycv-' )
       working-directory: ./plugins/pycv/
