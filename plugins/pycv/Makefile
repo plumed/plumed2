@@ -1,5 +1,6 @@
 include Make.inc
 
+.PHONY: clean check all
 #Dependency tracking based on https://make.mad-scientist.net/papers/advanced-auto-dependency-generation/#tldr
 #this assumes gcc
 DEPDIR := .deps
@@ -30,9 +31,11 @@ DEPFILES := $(OBJS:%.o=$(DEPDIR)/%.d)
 $(DEPFILES):
 include $(wildcard $(DEPFILES))
 
+#-Wl,--no-as-needed forces the python library to be linked, without this in a WSL does not work
+#TODO: seems that $PLUMED_KERNEL is not needed, check
 PythonCVInterface.$(SOEXT): $(OBJS)
 	@echo Linking $@
-	$(LDSHARED) $(ADDCLDFLAGS) $(SONAME_OPTION),"$(notdir $@)" $(DYNAMIC_LIBS) $(PLUMED_KERNEL) -o $@ $^
+	$(LDSHARED) $(SONAME_OPTION),"$(notdir $@)" $(DYNAMIC_LIBS) $(PLUMED_KERNEL) -Wl,--no-as-needed $(ADDCLDFLAGS)  $^ -o $@ 
 
 clean:
 	rm -f $(OBJS) PythonCVInterface.$(SOEXT)

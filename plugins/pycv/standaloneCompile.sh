@@ -13,10 +13,11 @@ if ! python3-config --embed >/dev/null 2>/dev/null; then
   exit 1
 fi
 
+#-Wl,--no-as-needed forces the python library to be linked, without this in a WSL does not work
 #-fvisibility=hidden is needed to correct the warnings for the visibility of some pybind11 functionalities
 export  PLUMED_MKLIB_CFLAGS="$(python3-config --cflags --embed) $(python -m pybind11 --includes) -fvisibility=hidden"
 
-export PLUMED_MKLIB_LDFLAGS="$(python3-config --ldflags --embed) $conda_fixup"
+export PLUMED_MKLIB_LDFLAGS="-Wl,--no-as-needed $(python3-config --ldflags --embed) $conda_fixup"
 
 echo PLUMED_MKLIB_CFLAGS=$PLUMED_MKLIB_CFLAGS
 echo PLUMED_MKLIB_LDFLAGS=$PLUMED_MKLIB_LDFLAGS
