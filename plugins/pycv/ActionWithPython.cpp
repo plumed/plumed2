@@ -18,15 +18,20 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include "ActionWithPython.h"
 
 #include "core/ActionWithValue.h"
+#include "tools/DLLoader.h"
 
 #include <pybind11/embed.h> // everything needed for embedding
 #include <pybind11/numpy.h>
+#include <Python.h>
 
 #include <iostream>
 
 
 namespace py = pybind11;
 
+namespace{
+  auto a=PLMD::DLLoader::EnsureGlobalDLOpen(&Py_Initialize);
+}
 
 namespace PLMD {
 namespace pycv {

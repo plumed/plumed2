@@ -31,8 +31,8 @@ $(DEPFILES):
 include $(wildcard $(DEPFILES))
 
 PythonCVInterface.$(SOEXT): $(OBJS)
-	@echo Compiling linking $@
-	@$(LDSHARED) $(ADDCLDFLAGS) $(SONAME_OPTION),"$(notdir $@)" $(DYNAMIC_LIBS) $(PLUMED_KERNEL) -o $@ $^
+	@echo Linking $@
+	$(LDSHARED) $(ADDCLDFLAGS) $(SONAME_OPTION),"$(notdir $@)" $(DYNAMIC_LIBS) $(PLUMED_KERNEL) -o $@ $^
 
 clean:
 	rm -f $(OBJS) PythonCVInterface.$(SOEXT)
