@@ -24,6 +24,7 @@ jobs:
         - -coverage-mpi-
         - -debug-
         - -debug-mpi-
+        - -pycv-mpi-
 # temporarily commented out
 # see https://github.com/plumed/plumed2/issues/976
 #        - -intel-
@@ -148,7 +149,7 @@ jobs:
         make nmcheck
         ccache -s -M 100M
     - name: Run tests
-      if: ${{ ! contains( matrix.variant, '-doc-mpi-' ) }}
+      if: ${{ ! contains( matrix.variant, '-doc-mpi-' ) && ! contains( matrix.variant, '-pycv-mpi-' ) }}
       run: |
          (while true; do  # see https://github.com/actions/virtual-environments/issues/1860
               df -h
@@ -180,4 +181,13 @@ jobs:
       env:
         GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
       run: |
-         .ci/push doc
+
+    - name: Compile and test pycv
+      if: contains( matrix.variant, '-pycv-' )
+      working-directory: ./plugins/pycv/
+      run: |
+            pip install --user pybind11
+            source ../../sourceme.sh
+            ln -s $(realpath ../../regtest/scripts) ./regtest/scripts
+            ./prepareMakeForDevelop.sh
+            make check

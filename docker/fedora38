@@ -43,4 +43,3 @@ RUN . /etc/bashrc \
  && ./configure --enable-modules=all --enable-boost_serialization \
  && make -j 4 \
  && make check
-
