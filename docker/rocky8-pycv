@@ -1,0 +1,11 @@
+FROM plumed:rocky8
+
+RUN source ./.bashrc \
+ && module load mpi \
+ && cd plumed2 \
+ && source ./sourceme.sh \
+ && cd plugins/pycv \
+ && pip3 install --user pybind11  \
+ && ln -s $(realpath ../../regtest/scripts) ./regtest/scripts \
+ && ./prepareMakeForDevelop.sh \
+ && make check
