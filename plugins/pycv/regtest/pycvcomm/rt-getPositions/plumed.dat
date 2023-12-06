@@ -1,0 +1,7 @@
+LOAD GLOBAL FILE=../../../../PythonCVInterface.so
+
+cvPY: PYCVINTERFACE ATOMS=1,4 IMPORT=pydistancegetAt CALCULATE=pydist
+
+cvCPP: DISTANCE ATOMS=1,4
+
+PRINT FILE=colvar.out ARG=*

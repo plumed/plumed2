@@ -1,0 +1,4 @@
+Make.inc
+*.o
+*.so
+env

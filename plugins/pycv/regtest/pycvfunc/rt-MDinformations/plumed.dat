@@ -1,0 +1,11 @@
+LOAD GLOBAL FILE=../../../../PythonCVInterface.so
+
+fPY: ...
+PYFUNCTION
+IMPORT=unitTest
+...
+
+PRINT FILE=colvar.out ARG=*
+
+
+
