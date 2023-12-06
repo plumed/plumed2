@@ -9,13 +9,8 @@ Advantages of using PYCV over standard development of CVs in C++ are:
     extensive mathematical libraries, and no boilerplate;
  2. just-in-time compilation
     occurs transparently: there are no compilation and link delays
-    for code changes;
- 3. CVs may be automatically differentiated in common cases.
-
-The code is organized as a standard PLUMED module: development occurs
-in a [fork of the original
-repository](https://github.com/giorginolab/plumed2-pycv/tree/v2.5.2-pycv/src/pycv). All
-code is in the `src/pycv` and `regtest/pycv` directories.
+    for code changes (using external tools such as JAX);
+ 3. CVs may be automatically differentiated in common cases. (using external tools such as JAX)
 
 [![DOI](https://joss.theoj.org/papers/10.21105/joss.01773/status.svg)](https://doi.org/10.21105/joss.01773)
 [![plumID:19.075](https://www.plumed-nest.org/eggs/19/075/badge.svg)](https://www.plumed-nest.org/eggs/19/075/)
@@ -77,7 +72,7 @@ If you have a plumed that supports plumed mklib (that will be release in the 2.1
 
 ### Developer compilation
 
-If your plumed version is inferior to 2.10, or you want to contribute to this module,
+If you want to contribute to this module,
 the procedure is slighly more compex:
 ```bash
 ./prepareMakeForDevelop.sh
