@@ -1,4 +1,4 @@
-LOAD GLOBAL FILE=../../../../PythonCVInterface.so
+LOAD FILE=../../../../PythonCVInterface.so
 
 d1: DISTANCE ATOMS=1,2
 d2: DISTANCE ATOMS=1,3 

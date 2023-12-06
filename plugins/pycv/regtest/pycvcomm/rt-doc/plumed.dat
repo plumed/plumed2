@@ -1,4 +1,4 @@
-LOAD GLOBAL FILE=../../../../PythonCVInterface.so
+LOAD FILE=../../../../PythonCVInterface.so
 
 cvdist: PYCVINTERFACE IMPORT=pyhelp
 
