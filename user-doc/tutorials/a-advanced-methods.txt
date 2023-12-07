@@ -18,6 +18,11 @@ Once this tutorial is completed users will be able to:
 - Estimate the error in the reconstructed free energies using block analysis.
 - Assess the convergence of metadynamics simulations.
 
+\section advanced-methods-installation Software installation
+
+For this exercise we will need PLUMED 2.9.0 and a special version of GROMACS 2020.7 patched with PLUMED.
+The two software can be installed using the instructions reported <a href="https://github.com/plumed/cecam2023/blob/main/software.md">here</a>.
+
 \section advanced-methods-resources Resources
 
 The \tarball{advanced-methods} for this tutorial contains the following files:
@@ -33,8 +38,6 @@ tar xvzf advanced-methods.tar.gz
 
 Once unpacked, all the files can be found in the `advanced-methods` directory. To keep things clean,
 it is recommended to run each exercise in a separate sub-directory that you can create inside `advanced-methods`.
-
-\note This tutorial has been tested with PLUMED version 2.8.2 and GROMACS version 2019.6.
 
 \section advanced-methods-intro Introduction
 
@@ -178,7 +181,7 @@ This default choice should be reasonable for most applications.
 Once your `plumed.dat` file is complete, you can run a 10-ns long metadynamics simulations with the following command:
 
 \verbatim
-> gmx mdrun -s topol.tpr -nsteps 5000000 -plumed plumed.dat 
+> gmx_mpi mdrun -s topol.tpr -nsteps 5000000 -plumed plumed.dat 
 \endverbatim
 
 During the metadynamics simulation, PLUMED will create two files, named `COLVAR` and `HILLS`.
