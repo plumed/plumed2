@@ -25,7 +25,7 @@ fi
 #-Wl,--no-as-needed forces the python library to be linked, without this in a WSL does not work
 
 #-fvisibility=hidden is needed to correct the warnings for the visibility of some pybind11 functionalities
-export PLUMED_MKLIB_CFLAGS="$(${python_config} --cflags --embed) $(python -m pybind11 --includes) -fvisibility=hidden"
+export PLUMED_MKLIB_CFLAGS="$(${python_config} --cflags --embed) $(${python_bin} -m pybind11 --includes) -fvisibility=hidden"
 
 export PLUMED_MKLIB_LDFLAGS="${PYCV_EXTRA_LDFLAGS} $(${python_config} --ldflags --embed) $conda_fixup"
 
