@@ -35,7 +35,7 @@ include $(wildcard $(DEPFILES))
 #TODO: seems that $PLUMED_KERNEL is not needed, check
 PythonCVInterface.$(SOEXT): $(OBJS)
 	@echo Linking $@
-	$(LDSHARED) $(SONAME_OPTION),"$(notdir $@)" $(DYNAMIC_LIBS) $(PLUMED_KERNEL) -Wl,--no-as-needed $(ADDCLDFLAGS)  $^ -o $@ 
+	$(LDSHARED) $(SONAME_OPTION),"$(notdir $@)" $(DYNAMIC_LIBS) $(PLUMED_KERNEL) $(ADDCLDFLAGS)  $^ -o $@ 
 
 clean:
 	rm -f $(OBJS) PythonCVInterface.$(SOEXT)
