@@ -27,7 +27,7 @@ fi
 #-fvisibility=hidden is needed to correct the warnings for the visibility of some pybind11 functionalities
 export PLUMED_MKLIB_CFLAGS="$(${python_config} --cflags --embed) $(python -m pybind11 --includes) -fvisibility=hidden"
 
-export PLUMED_MKLIB_LDFLAGS="$(PYCV_EXTRA_LDFLAGS) $(${python_config} --ldflags --embed) $conda_fixup"
+export PLUMED_MKLIB_LDFLAGS="${PYCV_EXTRA_LDFLAGS} $(${python_config} --ldflags --embed) $conda_fixup"
 
 echo PLUMED_MKLIB_CFLAGS=$PLUMED_MKLIB_CFLAGS
 echo PLUMED_MKLIB_LDFLAGS=$PLUMED_MKLIB_LDFLAGS

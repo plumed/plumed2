@@ -7,5 +7,5 @@ RUN source /etc/bashrc \
  && cd plugins/pycv \
  && pip3 install pybind11 \
  && ln -s $(realpath ../../regtest/scripts) ./regtest/scripts \
- && ./prepareMakeForDevelop.sh \
+ && python_bin=python3 ./prepareMakeForDevelop.sh \
  && make check

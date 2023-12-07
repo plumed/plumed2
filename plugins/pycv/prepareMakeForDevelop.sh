@@ -25,5 +25,5 @@ fi
   ${plumed_program_name} --no-mpi config makefile_conf
   echo "PLUMED_KERNEL=${PLUMED_KERNEL}"
   echo "ADDCPPFLAGS=$(${python_config} --cflags --embed) $(${python_bin} -m pybind11 --includes) -I$(${plumed_program_name} --no-mpi info --include-dir)/plumed"
-  echo "ADDCLDFLAGS=$(PYCV_EXTRA_LDFLAGS) $(${python_config} --ldflags --embed)"
+  echo "ADDCLDFLAGS=${PYCV_EXTRA_LDFLAGS} $(${python_config} --ldflags --embed)"
 } > Make.inc
