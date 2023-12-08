@@ -11,23 +11,50 @@
 using namespace PLMD;
 
 void run(std::ostream & os, const std::string & name,std::function<void(int)> f,unsigned nthreads=4,unsigned nrepeats=10){
+
+  // vector containing possible error messages from threads
+  std::vector<std::string> msgs(nthreads);
+
+  // wrapper function that catch exceptions and store their messages
+  auto g=[&](int i){
+    try {
+      f(i);
+    } catch(const std::exception& e) {
+      char buffer[1024];
+      std::sprintf(buffer,"(thread %d)\n",i);
+      msgs[i]=std::string(buffer)+e.what();
+    }
+  };
+
   os<<"Test "<<name<<" with OpenMP...\n";
   {
     for(unsigned i=0;i<nrepeats;i++) {
 #if defined(_OPENMP)
 #pragma omp parallel num_threads(nthreads)
-      f(omp_get_thread_num());
+      g(omp_get_thread_num());
 #else
-      f(0);
+      g(0);
 #endif
+      std::string msg;
+      for(unsigned j=0;j<nthreads;j++) if(msgs[j].length()>0) msg+=msgs[j];
+      // one could propagate the exception with plumed_error()<<msg;
+      // I instead just write the error on the os file, which will be shown in diff
+      // This allows running both tests (openmp here and threads below)
+      if(msg.length()>0) os<<"failed with error "<<msg;
+      msg.clear();
     }
   }
   os<<"OK"<<std::endl;
+
   os<<"Test "<<name<<" with C++11 threads...\n";
   for(unsigned i=0;i<nrepeats;i++) {
     std::vector<std::thread> threads;
-    for(unsigned j=0;j<nthreads;j++) threads.emplace_back(std::thread(f,j));
+    for(unsigned j=0;j<nthreads;j++) threads.emplace_back(std::thread(g,j));
     for(unsigned j=0;j<nthreads;j++) threads[j].join();
+    std::string msg;
+    for(unsigned j=0;j<nthreads;j++) if(msgs[j].length()>0) msg+=msgs[j];
+    if(msg.length()>0) os<<"failed with error "<<msg;
+    msg.clear();
   }
   os<<"OK"<<std::endl;
 }
@@ -51,7 +78,7 @@ int main(){
     { // write plumed file
       std::sprintf(buffer,"plumed%d.dat",n);
       auto fp=std::fopen(buffer,"w");
-      std::fprintf(fp,"DUMPATOMS ATOMS=1 FILE=test%d.xyz PRECISION=2\n",n);
+      std::fprintf(fp,"DUMPATOMS ATOMS=1 FILE=test%d.xyz PRECISION=3\n",n);
       std::fclose(fp);
     }
     { // run

@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "DLLoader.h"
+
 #include <cstdlib>
 
 #ifdef __PLUMED_HAS_DLOPEN
@@ -75,5 +76,41 @@ DLLoader::DLLoader() {
   // do nothing
 }
 
+DLLoader::EnsureGlobalDLOpen::EnsureGlobalDLOpen(const void *symbol) noexcept {
+#ifdef __PLUMED_HAS_DLOPEN
+#ifdef __PLUMED_HAS_DLADDR
+  Dl_info info;
+  // from the manual:
+  // If the address specified in addr could not be matched to a shared
+  //      object, then these functions return 0.  In this case, an error
+  //      message is not available via dlerror(3).
+  int zeroIsError=dladdr(symbol, &info);
+  if(zeroIsError!=0) {
+    //This "promotes" to GLOBAL the object with the symbol pointed by ptr
+    handle_ = dlopen(info.dli_fname, RTLD_GLOBAL | RTLD_NOW);
+  } else {
+    std::fprintf(stderr,
+                 "+++WARNING+++"
+                 "Failure in finding any object that contains the symbol %p.\n",
+                 symbol);
 
+  }
+#else
+  std::fprintf(stderr,
+               "+++WARNING+++"
+               "I can't use dladdr for promoting the library containing the symbol %p.\n"
+               "This system seems not to support dladdr",
+               symbol);
+#endif //__PLUMED_HAS_DLADDR
+#endif //__PLUMED_HAS_DLOPEN
 }
+
+DLLoader::EnsureGlobalDLOpen::~EnsureGlobalDLOpen() {
+#ifdef __PLUMED_HAS_DLOPEN
+  if (handle_) {
+    dlclose(handle_);
+  }
+#endif //__PLUMED_HAS_DLOPEN
+}
+
+} // namespace PLMD

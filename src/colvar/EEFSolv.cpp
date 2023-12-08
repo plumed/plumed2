@@ -23,7 +23,7 @@
 /* This class was originally written by Thomas Loehr */
 
 #include "Colvar.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "core/ActionSet.h"
 #include "core/PlumedMain.h"
 #include "core/GenericMolInfo.h"

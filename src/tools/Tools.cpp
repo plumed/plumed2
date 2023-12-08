@@ -25,14 +25,10 @@
 #include "IFile.h"
 #include "lepton/Lepton.h"
 #include <cstring>
-#include <dirent.h>
 #include <iostream>
 #include <map>
-#if defined(__PLUMED_HAS_CHDIR) || defined(__PLUMED_HAS_GETCWD)
-#include <unistd.h>
-#endif
-
 #include <iomanip>
+#include <filesystem>
 
 namespace PLMD {
 
@@ -273,6 +269,14 @@ void Tools::trim(std::string & s) {
   if(n!=std::string::npos) s.resize(n+1);
 }
 
+void Tools::ltrim(std::string & s) {
+  auto n=s.find_first_not_of(" \t");
+  if(n!=std::string::npos) {
+    s = s.substr(n, s.length()-n);
+    s.shrink_to_fit();
+  }
+}
+
 void Tools::trimComments(std::string & s) {
   auto n=s.find_first_of("#");
   if(n!=std::string::npos) s.resize(n);
@@ -358,23 +362,9 @@ void Tools::interpretLabel(std::vector<std::string>&s) {
 }
 
 std::vector<std::string> Tools::ls(const std::string&d) {
-  DIR*dir;
   std::vector<std::string> result;
-  if ((dir=opendir(d.c_str()))) {
-#if defined(__PLUMED_HAS_READDIR_R)
-    struct dirent ent;
-#endif
-    while(true) {
-      struct dirent *res;
-#if defined(__PLUMED_HAS_READDIR_R)
-      readdir_r(dir,&ent,&res);
-#else
-      res=readdir(dir);
-#endif
-      if(!res) break;
-      if(std::string(res->d_name)!="." && std::string(res->d_name)!="..") result.push_back(res->d_name);
-    }
-    closedir (dir);
+  for (auto const& dir_entry : std::filesystem::directory_iterator{d}) {
+    result.push_back(dir_entry.path().filename());
   }
   return result;
 }
@@ -420,31 +410,20 @@ bool Tools::findKeyword(const std::vector<std::string>&line,const std::string&ke
   return false;
 }
 
-Tools::DirectoryChanger::DirectoryChanger(const char*path) {
+Tools::DirectoryChanger::DirectoryChanger(const char*path):
+  path(std::filesystem::current_path())
+{
   if(!path) return;
   if(std::strlen(path)==0) return;
-#ifdef __PLUMED_HAS_GETCWD
-  char* ret=getcwd(cwd,buffersize);
-  plumed_assert(ret)<<"Name of current directory too long, increase buffer size";
-#else
-  plumed_error()<<"You are trying to use DirectoryChanger but your system does not support getcwd";
-#endif
-#ifdef __PLUMED_HAS_CHDIR
-  int r=chdir(path);
-  plumed_assert(r==0) <<"Cannot chdir to directory "<<path<<". The directory must exist!";
-#else
-  plumed_error()<<"You are trying to use DirectoryChanger but your system does not support chdir";
-#endif
+  std::filesystem::current_path(path);
 }
 
 Tools::DirectoryChanger::~DirectoryChanger() {
-#ifdef __PLUMED_HAS_CHDIR
-  if(std::strlen(cwd)==0) return;
-  int ret=chdir(cwd);
-// we cannot put an assertion here (in a destructor) otherwise cppcheck complains
-// we thus just report the problem
-  if(ret!=0) std::fprintf(stderr,"+++ WARNING: cannot cd back to directory %s\n",cwd);
-#endif
+  try {
+    std::filesystem::current_path(path);
+  } catch(std::filesystem::filesystem_error & e) {
+    std::fprintf(stderr,"+++ WARNING: cannot cd back to directory %s\n",path.c_str());
+  }
 }
 
 std::unique_ptr<std::lock_guard<std::mutex>> Tools::molfile_lock() {

@@ -58,13 +58,15 @@
 #include <typeinfo>
 #include <iostream>
 #include <algorithm>
-#ifdef __PLUMED_LIBCXX11
 #include <system_error>
 #include <future>
 #include <memory>
 #include <functional>
-#endif
-
+#include <regex>
+#include <any>
+#include <optional>
+#include <variant>
+#include <filesystem>
 
 namespace PLMD {
 
@@ -79,16 +81,15 @@ namespace PLMD {
   __PLUMED_THROW_MSG(PLMD::Exception);
   __PLUMED_THROW_MSG(PLMD::lepton::Exception);
   __PLUMED_THROW_NOMSG(std::bad_exception);
-#ifdef __PLUMED_LIBCXX11
   __PLUMED_THROW_NOMSG(std::bad_array_new_length);
-#endif
   __PLUMED_THROW_NOMSG(std::bad_alloc);
-#ifdef __PLUMED_LIBCXX11
   __PLUMED_THROW_NOMSG(std::bad_function_call);
   __PLUMED_THROW_NOMSG(std::bad_weak_ptr);
-#endif
   __PLUMED_THROW_NOMSG(std::bad_cast);
   __PLUMED_THROW_NOMSG(std::bad_typeid);
+  __PLUMED_THROW_NOMSG(std::bad_variant_access);
+  __PLUMED_THROW_NOMSG(std::bad_optional_access);
+  __PLUMED_THROW_NOMSG(std::bad_any_cast);
   __PLUMED_THROW_MSG(std::underflow_error);
   __PLUMED_THROW_MSG(std::overflow_error);
   __PLUMED_THROW_MSG(std::range_error);
@@ -99,7 +100,8 @@ namespace PLMD {
   __PLUMED_THROW_MSG(std::invalid_argument);
   __PLUMED_THROW_MSG(std::logic_error);
 
-#ifdef __PLUMED_LIBCXX11
+
+
   if(words[0]=="std::system_error") {
     plumed_assert(words.size()>2);
     int error_code;
@@ -109,17 +111,56 @@ namespace PLMD {
     if(words[1]=="std::iostream_category") throw std::system_error(error_code,std::iostream_category(),what);
     if(words[1]=="std::future_category") throw std::system_error(error_code,std::future_category(),what);
   }
-#endif
+
+  if(words[0]=="std::filesystem::filesystem_error") {
+    int error_code;
+    plumed_assert(words.size()>2);
+    Tools::convert(words[2],error_code);
+    std::error_code x_error_code;
+    if(words[1]=="std::generic_category") x_error_code=::std::error_code(error_code,::std::generic_category());
+    if(words[1]=="std::system_category") x_error_code=::std::error_code(error_code,::std::system_category());
+    if(words[1]=="std::iostream_category") x_error_code=::std::error_code(error_code,::std::iostream_category());
+    if(words[1]=="std::future_category") x_error_code=::std::error_code(error_code,::std::future_category());
+
+    if(words.size()<4) throw std::filesystem::filesystem_error(what,x_error_code);
+    if(words.size()<5) throw std::filesystem::filesystem_error(what,std::filesystem::path(words[3]),x_error_code);
+    throw std::filesystem::filesystem_error(what,std::filesystem::path(words[3]),std::filesystem::path(words[4]),x_error_code);
+  }
+
+#define __PLUMED_THROW_REGEX(name) if(words[1]=="std::regex_constants::error_" #name) throw std::regex_error(std::regex_constants::error_ ##name)
+  if(words[0]=="std::regex_error") {
+    plumed_assert(words.size()>1);
+    __PLUMED_THROW_REGEX(collate);
+    __PLUMED_THROW_REGEX(ctype);
+    __PLUMED_THROW_REGEX(escape);
+    __PLUMED_THROW_REGEX(backref);
+    __PLUMED_THROW_REGEX(brack);
+    __PLUMED_THROW_REGEX(paren);
+    __PLUMED_THROW_REGEX(brace);
+    __PLUMED_THROW_REGEX(badbrace);
+    __PLUMED_THROW_REGEX(range);
+    __PLUMED_THROW_REGEX(space);
+    __PLUMED_THROW_REGEX(badrepeat);
+    __PLUMED_THROW_REGEX(complexity);
+    __PLUMED_THROW_REGEX(stack);
+  }
+
+#define __PLUMED_THROW_FUTURE(name) if(words[1]=="std::future_errc::" #name) throw std::future_error(::std::future_errc::name)
+  if(words[0]=="std::future_error") {
+    plumed_assert(words.size()>1);
+    __PLUMED_THROW_FUTURE(broken_promise);
+    __PLUMED_THROW_FUTURE(future_already_retrieved);
+    __PLUMED_THROW_FUTURE(promise_already_satisfied);
+    __PLUMED_THROW_FUTURE(no_state);
+  }
 
   if(words[0]=="std::ios_base::failure") {
-#ifdef __PLUMED_LIBCXX11
     int error_code=0;
     if(words.size()>2) Tools::convert(words[2],error_code);
     if(words.size()>1 && words[1]=="std::generic_category") throw std::ios_base::failure(what,std::error_code(error_code,std::generic_category()));
     if(words.size()>1 && words[1]=="std::system_category") throw std::ios_base::failure(what,std::error_code(error_code,std::system_category()));
     if(words.size()>1 && words[1]=="std::iostream_category") throw std::ios_base::failure(what,std::error_code(error_code,std::iostream_category()));
     if(words.size()>1 && words[1]=="std::future_category") throw std::ios_base::failure(what,std::error_code(error_code,std::future_category()));
-#endif
     throw std::ios_base::failure(what);
   }
 
@@ -818,6 +859,7 @@ void PlumedMain::init() {
   log<<"\n";
   log<<"For further information see the PLUMED web page at http://www.plumed.org\n";
   log<<"Root: "<<config::getPlumedRoot()<<"\n";
+  log<<"LibraryPath: "<<config::getLibraryPath()<<"\n";
   log<<"For installed feature, see "<<config::getPlumedRoot() + "/src/config/config.txt\n";
   log.printf("Molecular dynamics engine: %s\n",MDEngine.c_str());
   log.printf("Precision of reals: %d\n",passtools->getRealPrecision());
@@ -902,7 +944,7 @@ void PlumedMain::readInputLines(const std::string & str) {
   plumed_assert(fp);
 
   // make sure file is closed (and thus deleted) also if an exception occurs
-  auto deleter=[](FILE* fp) { std::fclose(fp); };
+  auto deleter=[](auto fp) { std::fclose(fp); };
   std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
 
   auto ret=std::fputs(str.c_str(),fp);
@@ -1188,38 +1230,42 @@ void PlumedMain::update() {
   }
 }
 
-void PlumedMain::load(const std::string& ss) {
+void PlumedMain::load(const std::string& fileName) {
   if(DLLoader::installed()) {
-    std::string s=ss;
-    size_t n=s.find_last_of(".");
+    std::string libName=fileName;
+    size_t n=libName.find_last_of(".");
     std::string extension="";
-    std::string base=s;
-    if(n!=std::string::npos && n<s.length()-1) extension=s.substr(n+1);
-    if(n!=std::string::npos && n<s.length())   base=s.substr(0,n);
+    std::string base=libName;
+    if(n!=std::string::npos && n<libName.length()-1)
+      extension=libName.substr(n+1);
+    if(n!=std::string::npos && n<libName.length())
+      base=libName.substr(0,n);
     if(extension=="cpp") {
 // full path command, including environment setup
 // this will work even if plumed is not in the execution path or if it has been
 // installed with a name different from "plumed"
-      std::string cmd=config::getEnvCommand()+" \""+config::getPlumedRoot()+"\"/scripts/mklib.sh "+s;
+      std::string cmd=config::getEnvCommand()+" \""+config::getPlumedRoot()+"\"/scripts/mklib.sh "+libName;
       log<<"Executing: "<<cmd;
       if(comm.Get_size()>0) log<<" (only on master node)";
       log<<"\n";
       if(comm.Get_rank()==0) {
         int ret=std::system(cmd.c_str());
-        if(ret!=0) plumed_error() <<"An error happened while executing command "<<cmd<<"\n";
+        if(ret!=0)
+          plumed_error() <<"An error happened while executing command "<<cmd<<"\n";
       }
       comm.Barrier();
       base="./"+base;
     }
-    s=base+"."+config::getSoExt();
-    void *p=dlloader.load(s);
+    libName=base+"."+config::getSoExt();
+    void *p=dlloader.load(libName);
     if(!p) {
-      plumed_error()<<"I cannot load library " << ss << " " << dlloader.error();
+      plumed_error()<<"I cannot load library " << fileName << " " << dlloader.error();
     }
-    log<<"Loading shared library "<<s.c_str()<<"\n";
+    log<<"Loading shared library "<<libName.c_str()<<"\n";
     log<<"Here is the new list of available actions\n";
     log<<actionRegister();
-  } else plumed_error()<<"While loading library "<< ss << " loading was not enabled, please check if dlopen was found at configure time";
+  } else
+    plumed_error()<<"While loading library "<< fileName << " loading was not enabled, please check if dlopen was found at configure time";
 }
 
 void PlumedMain::resetInputs() {
@@ -1358,6 +1404,10 @@ double PlumedMain::MDQuantityToPLUMED( const std::string& unit, const TypesafePt
 }
 
 #ifdef __PLUMED_HAS_PYTHON
+// This is here to stop cppcheck throwing an error
+#endif
+
+#ifdef __PLUMED_HAS_DLADDR
 // This is here to stop cppcheck throwing an error
 #endif
 

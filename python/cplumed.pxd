@@ -35,10 +35,16 @@ cdef extern from "Plumed.h":
     ctypedef struct plumed_nothrow_handler:
         void* ptr
         void (*handler)(void*,int,const char*,const void*)
+    ctypedef struct plumed_error_filesystem_path:
+        size_t numbytes
+        void* ptr
     ctypedef struct plumed_error:
         int code
         const char* what
         void* nested
+        int error_code
+        plumed_error_filesystem_path path1
+        plumed_error_filesystem_path path2
         # ignore other members
     void plumed_cmd_safe_nothrow(plumed p,const char*key,plumed_safeptr safe,plumed_nothrow_handler nothrow)
     void plumed_error_set(void*ptr,int code,const char*what,const void* opt)

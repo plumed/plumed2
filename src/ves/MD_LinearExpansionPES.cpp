@@ -27,7 +27,7 @@
 #include "GridProjWeights.h"
 
 #include "cltools/CLTool.h"
-#include "cltools/CLToolRegister.h"
+#include "core/CLToolRegister.h"
 #include "tools/Vector.h"
 #include "tools/Random.h"
 #include "tools/Grid.h"

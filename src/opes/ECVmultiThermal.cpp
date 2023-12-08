@@ -77,7 +77,7 @@ Notice that \f$p=0.06022140857\f$ corresponds to 1 bar when using the default PL
 */
 //+ENDPLUMEDOC
 
-class ECVmultiCanonical :
+class ECVmultiThermal :
   public ExpansionCVs
 {
 private:
@@ -88,7 +88,7 @@ private:
   void initECVs();
 
 public:
-  explicit ECVmultiCanonical(const ActionOptions&);
+  explicit ECVmultiThermal(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
   void calculateECVs(const double *) override;
   const double * getPntrToECVs(unsigned) override;
@@ -98,9 +98,9 @@ public:
   void initECVs_restart(const std::vector<std::string>&) override;
 };
 
-PLUMED_REGISTER_ACTION(ECVmultiCanonical,"ECV_MULTITHERMAL")
+PLUMED_REGISTER_ACTION(ECVmultiThermal,"ECV_MULTITHERMAL")
 
-void ECVmultiCanonical::registerKeywords(Keywords& keys)
+void ECVmultiThermal::registerKeywords(Keywords& keys)
 {
   ExpansionCVs::registerKeywords(keys);
   keys.remove("ARG");
@@ -112,7 +112,7 @@ void ECVmultiCanonical::registerKeywords(Keywords& keys)
   keys.addFlag("NO_GEOM_SPACING",false,"do not use geometrical spacing in temperature, but instead linear spacing in inverse temperature");
 }
 
-ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao)
+ECVmultiThermal::ECVmultiThermal(const ActionOptions&ao)
   : Action(ao)
   , ExpansionCVs(ao)
   , todoAutomatic_(false)
@@ -186,28 +186,28 @@ ECVmultiCanonical::ECVmultiCanonical(const ActionOptions&ao)
     log.printf(" -- NO_GEOM_SPACING: inverse temperatures will be linearly spaced\n");
 }
 
-void ECVmultiCanonical::calculateECVs(const double * ene)
+void ECVmultiThermal::calculateECVs(const double * ene)
 {
   for(unsigned k=0; k<derECVs_.size(); k++)
     ECVs_[k]=derECVs_[k]*ene[0];
 // derivatives never change: derECVs_k=(beta_k-beta0)
 }
 
-const double * ECVmultiCanonical::getPntrToECVs(unsigned j)
+const double * ECVmultiThermal::getPntrToECVs(unsigned j)
 {
   plumed_massert(isReady_,"cannot access ECVs before initialization");
   plumed_massert(j==0,getName()+" has only one CV, the ENERGY");
   return &ECVs_[0];
 }
 
-const double * ECVmultiCanonical::getPntrToDerECVs(unsigned j)
+const double * ECVmultiThermal::getPntrToDerECVs(unsigned j)
 {
   plumed_massert(isReady_,"cannot access ECVs before initialization");
   plumed_massert(j==0,getName()+" has only one CV, the ENERGY");
   return &derECVs_[0];
 }
 
-std::vector<std::string> ECVmultiCanonical::getLambdas() const
+std::vector<std::string> ECVmultiThermal::getLambdas() const
 {
   plumed_massert(!todoAutomatic_,"cannot access lambdas before initializing them");
   const double temp0=kbt_/getKBoltzmann();
@@ -221,7 +221,7 @@ std::vector<std::string> ECVmultiCanonical::getLambdas() const
   return lambdas;
 }
 
-void ECVmultiCanonical::initECVs()
+void ECVmultiThermal::initECVs()
 {
   plumed_massert(!isReady_,"initialization should not be called twice");
   plumed_massert(!todoAutomatic_,"this should not happen");
@@ -231,7 +231,7 @@ void ECVmultiCanonical::initECVs()
   log.printf("  *%4lu temperatures for %s\n",derECVs_.size(),getName().c_str());
 }
 
-void ECVmultiCanonical::initECVs_observ(const std::vector<double>& all_obs_cvs,const unsigned ncv,const unsigned index_j)
+void ECVmultiThermal::initECVs_observ(const std::vector<double>& all_obs_cvs,const unsigned ncv,const unsigned index_j)
 {
   if(todoAutomatic_) //estimate the steps in beta from observations
   {
@@ -248,7 +248,7 @@ void ECVmultiCanonical::initECVs_observ(const std::vector<double>& all_obs_cvs,c
   calculateECVs(&all_obs_cvs[index_j]);
 }
 
-void ECVmultiCanonical::initECVs_restart(const std::vector<std::string>& lambdas)
+void ECVmultiThermal::initECVs_restart(const std::vector<std::string>& lambdas)
 {
   std::size_t pos=lambdas[0].find("_");
   plumed_massert(pos==std::string::npos,"this should not happen, only one CV is used in "+getName());

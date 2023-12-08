@@ -20,9 +20,10 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithVirtualAtom.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include <cmath>
+#include <limits>
 
 namespace PLMD {
 namespace vatom {
@@ -151,7 +152,7 @@ void Center::registerKeywords(Keywords& keys) {
 Center::Center(const ActionOptions&ao):
   Action(ao),
   ActionWithVirtualAtom(ao),
-  charge_(nan("")),
+  charge_(std::numeric_limits<double>::lowest()),
   mass_(-1),
   isChargeSet_(false),
   isMassSet_(false),
@@ -168,7 +169,7 @@ Center::Center(const ActionOptions&ao):
   parseFlag("NOPBC",nopbc);
   parseFlag("PHASES",phases);
   parse("SET_CHARGE",charge_);
-  if(!std::isnan(charge_)) isChargeSet_=true;
+  if(charge_!=std::numeric_limits<double>::lowest()) isChargeSet_=true;
   parse("SET_MASS",mass_);
   if(mass_>0.) isMassSet_=true;
   if(mass_==0.) error("SETMASS must be greater than 0");

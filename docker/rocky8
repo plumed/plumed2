@@ -11,7 +11,7 @@ RUN yum -y update \
                    python3 python3-devel python3-pip \
  && pip3 install pillow==8.3.2 \
  && pip3 install numpy==1.19 \
- && pip3 install cython numpy pandas mdtraj \
+ && pip3 install "cython<3" numpy pandas mdtraj \
  && pip3 install MDAnalysis==1.0.0
 
 RUN useradd -ms /bin/bash plumed
@@ -26,7 +26,10 @@ COPY plumed2.tgz /home/plumed
 RUN . /etc/bashrc \
  && module load mpi \
  && export OMPI_MCA_btl_base_warn_component_unused=0 \
- && export MPIEXEC="mpirun --oversubscribe" \
+ && export OMPI_MCA_btl_base_verbose=0 \
+ && export OMPI_MCA_plm=isolated \
+ && export OMPI_MCA_btl_vader_single_copy_mechanism=none \
+ && export OMPI_MCA_rmaps_base_oversubscribe=yes \
  && export PATH=$HOME/opt/bin:$PATH \
  && export CPATH=$HOME/opt/include:$CPATH \
  && export INCLUDE=$HOME/opt/include:$INCLUDE \

@@ -112,11 +112,11 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
 
   bool intra_chain(false), inter_chain(false);
   std::string style; parse("STYLE",style);
-  if( style=="all" ) {
+  if( Tools::caseInSensStringCompare(style, "all") ) {
     intra_chain=true; inter_chain=true;
-  } else if( style=="inter") {
+  } else if( Tools::caseInSensStringCompare(style, "inter") ) {
     intra_chain=false; inter_chain=true;
-  } else if( style=="intra") {
+  } else if( Tools::caseInSensStringCompare(style, "intra") ) {
     intra_chain=true; inter_chain=false;
   } else {
     error( style + " is not a valid directive for the STYLE keyword");
@@ -147,7 +147,7 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
   }
   // This constructs all conceivable sections of antibeta sheet that form between chains
   if( inter_chain ) {
-    if( chains.size()==1 && style!="all" ) error("there is only one chain defined so cannot use inter_chain option");
+    if( chains.size()==1 && !Tools::caseInSensStringCompare(style, "all") ) error("there is only one chain defined so cannot use inter_chain option");
     std::vector<unsigned> nlist(30);
     for(unsigned ichain=1; ichain<chains.size(); ++ichain) {
       unsigned iprev=0; for(unsigned i=0; i<ichain; ++i) iprev+=chains[i];

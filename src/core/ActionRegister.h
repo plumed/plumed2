@@ -88,11 +88,36 @@ ActionRegister& actionRegister();
 
 std::ostream & operator<<(std::ostream &log,const ActionRegister&ar);
 
-}
+template<typename T>
+inline constexpr bool isActionType = std::is_base_of<Action, T>::value;
+//in C++20 you we'll make this a concept
+//template<typename T>
+//concept ActionType = std::is_base_of<::PLMD::Action, T>::value;
+//so the template will be template<ActionType ActionType>class ActionRegistration{...}
+//without the explicit need of the static assert
+
+///Each instance of this specialized class represents an action that can be called
+///with  the specified directive.
+///As soon it goes out of scope it will deregister the directive from the singleton ActionRegister
+template<typename ActionClass>
+class ActionRegistration {
+  static std::unique_ptr<Action> create(const ActionOptions&ao) {
+    return std::make_unique<ActionClass>(ao);
+  }
+public:
+  ///On construction register the ActionClass with the wanted directive
+  ActionRegistration(std::string_view directive) {
+    static_assert(isActionType<ActionClass>,
+                  "ActionRegistration accepts only class that inherit from Action");
+    actionRegister().add(directive.data(),create,ActionClass::registerKeywords);
+  }
+  ///On destruction deregister the ActionClass (useful when you unload a shared object)
+  ~ActionRegistration() {actionRegister().remove(create);}
+};
+} //PLMD
 
 #define PLUMED_CONCATENATE_DIRECT(s1, s2) s1##s2
 #define PLUMED_CONCATENATE(s1, s2) PLUMED_CONCATENATE_DIRECT(s1, s2)
-#define PLUMED_UNIQUENAME(str) PLUMED_CONCATENATE(str, __LINE__)
 
 /// Shortcut for Action registration
 /// \relates PLMD::ActionRegister
@@ -101,13 +126,7 @@ std::ostream & operator<<(std::ostream &log,const ActionRegister&ar);
 /// \param directive a string containing the corresponding directive
 /// This macro should be used in the .cpp file of the corresponding class
 #define PLUMED_REGISTER_ACTION(classname,directive) \
-  namespace { class PLUMED_UNIQUENAME(classname##RegisterMe){ \
-    static std::unique_ptr<PLMD::Action> create(const PLMD::ActionOptions&ao){return PLMD::Tools::make_unique<classname>(ao);} \
-  public: \
-    PLUMED_UNIQUENAME(classname##RegisterMe)(){PLMD::actionRegister().add(directive,create,classname::registerKeywords);} \
-    ~PLUMED_UNIQUENAME(classname##RegisterMe)(){PLMD::actionRegister().remove(create);} \
-  } PLUMED_UNIQUENAME(classname##RegisterMe); }
-
-
+  namespace {::PLMD::ActionRegistration<classname> \
+             PLUMED_CONCATENATE(classname##Registerer,__LINE__)(directive);}
 #endif
 

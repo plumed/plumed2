@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "CLTool.h"
-#include "CLToolRegister.h"
+#include "core/CLToolRegister.h"
 #include "tools/Tools.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
@@ -345,7 +345,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   int  grex_stride=0;
   FILE*grex_log=NULL;
 // call fclose when fp goes out of scope
-  auto deleter=[](FILE* f) { if(f) std::fclose(f); };
+  auto deleter=[](auto f) { if(f) std::fclose(f); };
   std::unique_ptr<FILE,decltype(deleter)> grex_log_deleter(grex_log,deleter);
 
   if(debug_grex) {
@@ -552,7 +552,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
   std::unique_ptr<FILE,decltype(deleter)> fp_forces_deleter(fp_forces,deleter);
 
-  auto xdr_deleter=[](xdrfile::XDRFILE* xd) { if(xd) xdrfile::xdrfile_close(xd); };
+  auto xdr_deleter=[](auto xd) { if(xd) xdrfile::xdrfile_close(xd); };
 
   xdrfile::XDRFILE* xd=NULL;
 
@@ -894,12 +894,19 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
             std::vector<std::string> words;
             words=Tools::getWords(line);
             if(words.size()==3) {
-              std::sscanf(line.c_str(),"%100lf %100lf %100lf",&celld[0],&celld[4],&celld[8]);
+              Tools::convert(words[0],celld[0]);
+              Tools::convert(words[1],celld[4]);
+              Tools::convert(words[2],celld[8]);
             } else if(words.size()==9) {
-              std::sscanf(line.c_str(),"%100lf %100lf %100lf %100lf %100lf %100lf %100lf %100lf %100lf",
-                          &celld[0], &celld[1], &celld[2],
-                          &celld[3], &celld[4], &celld[5],
-                          &celld[6], &celld[7], &celld[8]);
+              Tools::convert(words[0],celld[0]);
+              Tools::convert(words[1],celld[1]);
+              Tools::convert(words[2],celld[2]);
+              Tools::convert(words[3],celld[3]);
+              Tools::convert(words[4],celld[4]);
+              Tools::convert(words[5],celld[5]);
+              Tools::convert(words[6],celld[6]);
+              Tools::convert(words[7],celld[7]);
+              Tools::convert(words[8],celld[8]);
             } else error("needed box in second line of xyz file");
           } else {			// from command line
             celld=pbc_cli_box;

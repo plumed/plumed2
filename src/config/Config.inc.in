@@ -24,6 +24,7 @@
 #include "version.h"
 #include <cstdlib>
 #include <cstring>
+#include <dlfcn.h>
 
 namespace PLMD {
 namespace config {
@@ -175,6 +176,18 @@ std::string getCompilationDate() {
 
 std::string getCompilationTime() {
   return __TIME__;
+}
+
+std::string getLibraryPath() {
+#ifdef __PLUMED_HAS_DLADDR
+  Dl_info info;
+  if(dladdr((void*)getLibraryPath,&info)) {
+    return info.dli_fname;
+  } else {
+    return "";
+  }
+#endif
+
 }
 
 
