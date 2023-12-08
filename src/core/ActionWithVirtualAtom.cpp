@@ -44,7 +44,8 @@ ActionWithVirtualAtom::ActionWithVirtualAtom(const ActionOptions&ao):
   addComponentWithDerivatives("z"); componentIsNotPeriodic("z");
   // Store the derivatives with respect to the virial only even if there are no atoms
   for(unsigned i=0; i<3; ++i) getPntrToComponent(i)->resizeDerivatives(9);
-  addComponent("mass"); componentIsNotPeriodic("mass"); addComponent("charge"); componentIsNotPeriodic("charge");
+  addComponent("mass"); componentIsNotPeriodic("mass"); getPntrToComponent("mass")->isConstant();
+  addComponent("charge"); componentIsNotPeriodic("charge"); getPntrToComponent("charge")->isConstant();
 }
 
 void ActionWithVirtualAtom::requestAtoms(const std::vector<AtomNumber> & a) {

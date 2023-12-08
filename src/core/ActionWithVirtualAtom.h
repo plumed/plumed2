@@ -100,14 +100,16 @@ void ActionWithVirtualAtom::setCharge(double c) {
 
 inline
 void ActionWithVirtualAtom::setAtomsDerivatives(const std::vector<Tensor> &d) {
+  unsigned jj=0;
   Value* xval=getPntrToComponent(0);
   Value* yval=getPntrToComponent(1);
   Value* zval=getPntrToComponent(2);
   for(unsigned j=0; j<getNumberOfAtoms(); ++j) {
     for(unsigned k=0; k<3; ++k) {
-      xval->setDerivative( 3*j + k, d[j][k][0] );
-      yval->setDerivative( 3*j + k, d[j][k][1] );
-      zval->setDerivative( 3*j + k, d[j][k][2] );
+      xval->setDerivative( jj, d[j][k][0] );
+      yval->setDerivative( jj, d[j][k][1] );
+      zval->setDerivative( jj, d[j][k][2] );
+      jj++;
     }
   }
 }
