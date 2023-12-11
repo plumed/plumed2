@@ -52,7 +52,9 @@ class ActionAtomistic :
   Pbc&                  pbc=*pbc_fwd;
   Tensor                virial;
   std::vector<double>   masses;
+public:
   bool                  chargesWereSet;
+private:
   std::vector<double>   charges;
 
   std::vector<Vector>   forces;          // forces on the needed atoms
