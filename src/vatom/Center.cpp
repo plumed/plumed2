@@ -212,17 +212,17 @@ void Center::calculate() {
   if(!nopbc && !dophases) makeWhole();
 
   if( first ) {
-    if( weight_mass ) { 
-        for(unsigned i=0; i<getNumberOfAtoms(); i++) {
-          if(std::isnan(getMass(i))) {
-            error(
-              "You are trying to compute a CENTER or COM but masses are not known.\n"
-              "        If you are using plumed driver, please use the --mc option"
-            );
-          }
+    if( weight_mass ) {
+      for(unsigned i=0; i<getNumberOfAtoms(); i++) {
+        if(std::isnan(getMass(i))) {
+          error(
+            "You are trying to compute a CENTER or COM but masses are not known.\n"
+            "        If you are using plumed driver, please use the --mc option"
+          );
         }
+      }
     }
-    double mass(0.0); 
+    double mass(0.0);
     for(unsigned i=0; i<getNumberOfAtoms(); i++) mass+=getMass(i);
     if( chargesWereSet && !isChargeSet_) {
       double charge(0.0);
@@ -234,13 +234,13 @@ void Center::calculate() {
     if(!isMassSet_) setMass(mass);
 
     if( weight_mass ) {
-        weights.resize( getNumberOfAtoms() );
-        for(unsigned i=0; i<weights.size(); i++) weights[i] = getMass(i) / mass; 
+      weights.resize( getNumberOfAtoms() );
+      for(unsigned i=0; i<weights.size(); i++) weights[i] = getMass(i) / mass;
     } else {
-        double wtot=0.0;
-        for(unsigned i=0; i<weights.size(); i++) wtot+=weights[i];
-        for(unsigned i=0; i<weights.size(); i++) weights[i]=weights[i]/wtot;
-        first=false;
+      double wtot=0.0;
+      for(unsigned i=0; i<weights.size(); i++) wtot+=weights[i];
+      for(unsigned i=0; i<weights.size(); i++) weights[i]=weights[i]/wtot;
+      first=false;
     }
   }
 
