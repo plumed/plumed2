@@ -1,6 +1,6 @@
 # The PYCV module/plugin for PLUMED 2
 
-The [PYCV module](https://giorginolab.github.io/plumed2-pycv) enables
+The PYCV module enables
 PLUMED2 Collective Variables (CVs) and arbitrary functions to be
 defined and auto-differentiated in the Python language.
 
@@ -12,6 +12,7 @@ Advantages of using PYCV over standard development of CVs in C++ are:
     for code changes (using external tools such as JAX);
  3. CVs may be automatically differentiated in common cases. (using external tools such as JAX)
 
+You can see the original PyCV [here](https://giorginolab.github.io/plumed2-pycv)
 [![DOI](https://joss.theoj.org/papers/10.21105/joss.01773/status.svg)](https://doi.org/10.21105/joss.01773)
 [![plumID:19.075](https://www.plumed-nest.org/eggs/19/075/badge.svg)](https://www.plumed-nest.org/eggs/19/075/)
 
