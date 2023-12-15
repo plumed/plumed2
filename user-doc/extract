@@ -231,71 +231,71 @@ EOF
 fi
 
 # Generate links to standard tutorial pages
-for file in ./tutorials/*.txt ; do
-
-    link=`grep link: $file | sed -e 's/link://' | sed -e 's/\@/\\\/'`
-    describe=`grep description: $file | sed -e 's/description://'`
-
-    echo "<tr> <td> $link </td> <td> $describe </td> </tr>" >> automatic/TUTORIALS.list  
-    # This tests the examples in the tutorials
-    splits=`echo $file | sed -e 's/\// /g'`
-    nf=`echo $splits | awk '{print NF}'`
-    fname=`echo $splits | awk -v n=$nf '{print $n}'`
-    cp $file automatic/$fname
-    ./test_examples automatic/$fname
-
-done
-
-# Generate links to old tutorial pages
-for file in ./tutorials/old_tutorials/*.txt ; do
-
-    link=`grep link: $file | sed -e 's/link://' | sed -e 's/\@/\\\/'`
-    describe=`grep description: $file | sed -e 's/description://'`
-
-    echo "<tr> <td> $link </td> <td> $describe </td> </tr>" >> automatic/OLDTUTORIALS.list  
-    # This tests the examples in the tutorials
-    splits=`echo $file | sed -e 's/\// /g'`
-    nf=`echo $splits | awk '{print NF}'`
-    fname=`echo $splits | awk -v n=$nf '{print $n}'`
-    cp $file automatic/$fname 
-    ./test_examples automatic/$fname
-
-done
-
-# Generate links to websites
-for file in ./tutorials/*.site; do
-
-   link=`grep link: $file | sed -e 's/link://'  | sed -e 's/\@/\\\/'`
-   describe=`grep description: $file | sed -e 's/description://'`
-
-   echo "<tr> <td> $link </td> <td> $describe </td> </tr>" >> automatic/WEBSITES.list
-   # This tests the examples in the tutorials
-   splits=`echo $file | sed -e 's/\// /g'`
-   nf=`echo $splits | awk '{print NF}'`
-   fname=`echo $splits | awk -v n=$nf '{print $n}'`
-   cp $file automatic/$fname 
-   ./test_examples automatic/$fname
-
-done
+# for file in ./tutorials/*.txt ; do
+# 
+#     link=`grep link: $file | sed -e 's/link://' | sed -e 's/\@/\\\/'`
+#     describe=`grep description: $file | sed -e 's/description://'`
+# 
+#     echo "<tr> <td> $link </td> <td> $describe </td> </tr>" >> automatic/TUTORIALS.list  
+#     # This tests the examples in the tutorials
+#     splits=`echo $file | sed -e 's/\// /g'`
+#     nf=`echo $splits | awk '{print NF}'`
+#     fname=`echo $splits | awk -v n=$nf '{print $n}'`
+#     cp $file automatic/$fname
+#     ./test_examples automatic/$fname
+# 
+# done
+# 
+# # Generate links to old tutorial pages
+# for file in ./tutorials/old_tutorials/*.txt ; do
+# 
+#     link=`grep link: $file | sed -e 's/link://' | sed -e 's/\@/\\\/'`
+#     describe=`grep description: $file | sed -e 's/description://'`
+# 
+#     echo "<tr> <td> $link </td> <td> $describe </td> </tr>" >> automatic/OLDTUTORIALS.list  
+#     # This tests the examples in the tutorials
+#     splits=`echo $file | sed -e 's/\// /g'`
+#     nf=`echo $splits | awk '{print NF}'`
+#     fname=`echo $splits | awk -v n=$nf '{print $n}'`
+#     cp $file automatic/$fname 
+#     ./test_examples automatic/$fname
+# 
+# done
+# 
+# # Generate links to websites
+# for file in ./tutorials/*.site; do
+# 
+#    link=`grep link: $file | sed -e 's/link://'  | sed -e 's/\@/\\\/'`
+#    describe=`grep description: $file | sed -e 's/description://'`
+# 
+#    echo "<tr> <td> $link </td> <td> $describe </td> </tr>" >> automatic/WEBSITES.list
+#    # This tests the examples in the tutorials
+#    splits=`echo $file | sed -e 's/\// /g'`
+#    nf=`echo $splits | awk '{print NF}'`
+#    fname=`echo $splits | awk -v n=$nf '{print $n}'`
+#    cp $file automatic/$fname 
+#    ./test_examples automatic/$fname
+# 
+# done
 
 # Generate links for module specific tutorials
-for file in ./tutorials/others/*.txt ; do
-
-    arrIN=(${file//.\/tutorials\/others\// }); 
-    temp=$(echo $arrIN | tr "-" "\n"); 
-    modtut=$(echo $temp | awk '{print toupper($1)}')
-
-    link=`grep link: $file | sed -e 's/link://' | sed -e 's/\@/\\\/'`
-    describe=`grep description: $file | sed -e 's/description://'`
-
-    echo "<tr> <td> $link </td> <td> $describe </td> </tr>" >> automatic/"$modtut"_TUTORIALS.list  
-
-    splits=`echo $file | sed -e 's/\// /g'`
-    nf=`echo $splits | awk '{print NF}'`
-    fname=`echo $splits | awk -v n=$nf '{print $n}'`
-    cp $file automatic/$fname 
-   ./test_examples automatic/$fname
-done
+# for file in ./tutorials/others/*.txt ; do
+# 
+#     arrIN=(${file//.\/tutorials\/others\// }); 
+#     temp=$(echo $arrIN | tr "-" "\n"); 
+#     modtut=$(echo $temp | awk '{print toupper($1)}')
+# 
+#     link=`grep link: $file | sed -e 's/link://' | sed -e 's/\@/\\\/'`
+#     describe=`grep description: $file | sed -e 's/description://'`
+# 
+#     echo "<tr> <td> $link </td> <td> $describe </td> </tr>" >> automatic/"$modtut"_TUTORIALS.list  
+# 
+#     splits=`echo $file | sed -e 's/\// /g'`
+#     nf=`echo $splits | awk '{print NF}'`
+#     fname=`echo $splits | awk -v n=$nf '{print $n}'`
+#     cp $file automatic/$fname 
+#    ./test_examples automatic/$fname
+# done
 
 
 # Find what modules the user has installed
@@ -388,7 +388,7 @@ sed -ie 's/<b> --/<b> \\c \\-\\-/g' automatic/*.txt
 rm automatic/*.txte
 
 for file in COLVAR MCOLVAR MFILTERS MTRANSFORMS VOLUMES DCOLVAR MCOLVARF MCOLVARB ANALYSIS LANDMARKS MATRIX MATRIXF CONCOMP REWEIGHTING PRINTANALYSIS BIAS GLOSSARY \
-            DICTIONARY TUTORIALS OLDTUTORIALS WEBSITES FUNCTION TOPOLOGY VATOM GRIDCALC GRIDANALYSIS DIMRED \
+            DICTIONARY WEBSITES FUNCTION TOPOLOGY VATOM GRIDCALC GRIDANALYSIS DIMRED \
             TOOLS
 do
   mv automatic/$file.list automatic/$file.1.list
