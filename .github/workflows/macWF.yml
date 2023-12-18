@@ -15,7 +15,7 @@ env:
 jobs:
 
   macports:
-    runs-on: macos-11
+    runs-on: macos-12
     strategy:
       fail-fast: false
       matrix:
@@ -57,7 +57,7 @@ jobs:
         done
 
   macsimple:
-    runs-on: macos-11
+    runs-on: macos-12
     steps:
     - uses: actions/checkout@v4
     - name: Set paths
