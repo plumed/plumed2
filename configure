@@ -637,6 +637,11 @@ make_doc
 readelf
 LD_MAIN_RUNPATH
 use_debug_glibcxx
+PYTHON_CFLAGS
+PYTHON_LDFLAGS
+PYBIND11_CFLAGS
+PLUMED_CAN_PYCV
+CYTHON_FOUND
 OPENMP_CXXFLAGS
 EGREP
 GREP
@@ -742,6 +747,7 @@ enable_boost_graph
 enable_boost_serialization
 enable_fftw
 enable_python
+enable_pycv
 enable_af_ocl
 enable_af_cuda
 enable_af_cpu
@@ -1443,6 +1449,7 @@ Optional Features:
                           enable search for boost serialization, default: no
   --enable-fftw           enable search for fftw, default: yes
   --enable-python         enable search for python, default: yes
+  --enable-pycv           enable set up the pycv plugin, default: yes
   --enable-af_ocl         enable search for arrayfire_ocl, default: no
   --enable-af_cuda        enable search for arrayfire_cuda, default: no
   --enable-af_cpu         enable search for arrayfire_cpu, default: no
@@ -3143,6 +3150,24 @@ fi
 
 
 
+pycv=
+# Check whether --enable-pycv was given.
+if test "${enable_pycv+set}" = set; then :
+  enableval=$enable_pycv; case "${enableval}" in
+             (yes) pycv=true ;;
+             (no)  pycv=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-pycv" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) pycv=true ;;
+             (no)  pycv=false ;;
+  esac
+
+fi
+
+
+
 af_ocl=
 # Check whether --enable-af_ocl was given.
 if test "${enable_af_ocl+set}" = set; then :
@@ -3214,7 +3239,6 @@ else
 fi
 
  #added by luigibonati
-
 
 
 
@@ -8945,11 +8969,21 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_FFTW" >&2;}
 
 fi
 
-if test $python = true  ; then
+# python executable: if any of CYTHON_FOUND or PLUMED_CAN_PYCV is on will store
+# the python executable
+
+# set if PYTHON_BIN has Cython in its environment
+
+# definitions and variables related to pycv and in general embedding python
+
+
+
+
+
 # if PYTHON_BIN is defined, it is expected to be the full path to python
 # Otherwise, search from a list of names:
-  if test -z "$PYTHON_BIN" ; then
-    for ac_prog in python
+if test -z "$PYTHON_BIN" ; then
+    for ac_prog in python python3
 do
   # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
@@ -8991,14 +9025,54 @@ fi
   test -n "$PYTHON_BIN" && break
 done
 
-  fi
-  if test -n "$PYTHON_BIN"
-  then
+fi
+if test -n "$PYTHON_BIN" ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: Python executable is $PYTHON_BIN" >&5
 $as_echo "$as_me: Python executable is $PYTHON_BIN" >&6;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking support for required python modules (python3, setuptools, cython)" >&5
-$as_echo_n "checking support for required python modules (python3, setuptools, cython)... " >&6; }
-testimport="
+  if test $pycv = true  ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking pycv: support for required python modules (python3, pybind11, numpy)" >&5
+$as_echo_n "checking pycv: support for required python modules (python3, pybind11, numpy)... " >&6; }
+  testimport="
+import numpy
+import pybind11
+#no need to check for python3, if you have python2, you don't have pybind11 (and vice-versa)
+"
+    if echo "$testimport" | "$PYTHON_BIN" 1>/dev/null 2>/dev/null;  then
+
+       pyver=$($PYTHON_BIN -c "import sysconfig;print(sysconfig.get_config_var('VERSION'))")
+       python_config=python${pyver}-config
+
+       if ${python_config} --ldflags --embed 1>/dev/null 2>/dev/null ;then
+          { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+          PYBIND11_CFLAGS="$($PYTHON_BIN -m pybind11 --includes) -fvisibility=hidden"
+          PYTHON_CFLAGS=$(${python_config} --cflags --embed)
+          PYTHON_LDFLAGS=$(${python_config} --ldflags --embed)
+          #TODO: conda_fixup
+          PLUMED_CAN_PYCV=yes
+        else
+          { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+          { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable pycv" >&5
+$as_echo "$as_me: WARNING: cannot enable pycv" >&2;}
+          { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: \"PyCV needs python to be embeddable, please rebuild python\"" >&5
+$as_echo "$as_me: WARNING: \"PyCV needs python to be embeddable, please rebuild python\"" >&2;}
+       fi
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable pycv" >&5
+$as_echo "$as_me: WARNING: cannot enable pycv" >&2;}
+    fi
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable pycv" >&5
+$as_echo "$as_me: WARNING: cannot enable pycv" >&2;}
+  fi
+
+  if test $python = true  ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking python wrapper: support for required python modules (python3, setuptools, cython)" >&5
+$as_echo_n "checking python wrapper: support for required python modules (python3, setuptools, cython)... " >&6; }
+    testimport="
 from setuptools import setup
 from setuptools import Extension
 from Cython.Build import cythonize
@@ -9011,17 +9085,22 @@ if sys.version_info < (3,):
 $as_echo "yes" >&6; }
        $as_echo "#define __PLUMED_HAS_PYTHON 1" >>confdefs.h
 
+       CYTHON_FOUND=yes
     else
        { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable python interface" >&5
 $as_echo "$as_me: WARNING: cannot enable python interface" >&2;}
-       PYTHON_BIN=
     fi
   else
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable python interface" >&5
 $as_echo "$as_me: WARNING: cannot enable python interface" >&2;}
   fi
+fi
+
+if test "${PLUMED_CAN_PYCV}" != yes &&  test "${CYTHON_FOUND}" != yes; then
+  #this deactivate python bin if no package was found
+  PYTHON_BIN=
 fi
 
 if test "$af_ocl" = true ; then
@@ -10061,8 +10140,6 @@ $as_echo "#define _REENTRANT 1" >>confdefs.h
 
 
 # these are libraries that should be linked also to MD engines
-
-# python executable
 
 
 

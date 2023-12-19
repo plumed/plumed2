@@ -1,4 +1,10 @@
-include Make.inc
+# include the machine dependent configuration
+ifneq ($(MAKECMDGOALS),clean)
+  -include ../../Makefile.conf
+	ifndef canPyCV
+  	include ./Makefile.conf
+	endif
+endif
 
 .PHONY: clean check all
 #Dependency tracking based on https://make.mad-scientist.net/papers/advanced-auto-dependency-generation/#tldr
@@ -6,7 +12,8 @@ include Make.inc
 DEPDIR := .deps
 DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
 PYBIND11FLAG = 
-
+ADDCPPFLAGS:=$(python_cf_embedded) $(pybind11_cflags) $(ADDCPPFLAGS)
+ADDCLDFLAGS:=$(ADDCLDFLAGS) $(python_ld_embedded)
 OBJS = ActionWithPython.o PythonCVInterface.o PythonFunction.o PlumedPythonEmbeddedModule.o
 
 ifeq ($(SOEXT),dylib)
@@ -18,6 +25,7 @@ endif
 all: PythonCVInterface.$(SOEXT)
 
 #-fvisibility=hidden is needed for pybind11 (to not conflict with different pybind11 versions)
+#I think I enforced this nearly everywhere I set up a flag for the compiler
 ActionWithPython.o PythonCVInterface.o PythonFunction.o PlumedPythonEmbeddedModule.o: PYBIND11FLAG= -fvisibility=hidden
 
 %.o: %.cpp $(DEPDIR)/%.d | $(DEPDIR)
@@ -35,7 +43,7 @@ include $(wildcard $(DEPFILES))
 #TODO: seems that $PLUMED_KERNEL is not needed, check
 PythonCVInterface.$(SOEXT): $(OBJS)
 	@echo Linking $@
-	$(LDSHARED) $(SONAME_OPTION),"$(notdir $@)" $(DYNAMIC_LIBS) $(PLUMED_KERNEL) $(ADDCLDFLAGS)  $^ -o $@ 
+	$(LDSHARED) $(SONAME_OPTION),"$(notdir $@)" $(DYNAMIC_LIBS) $(PLUMED_KERNEL) $(ADDCLDFLAGS) $^ -o $@ 
 
 clean:
 	rm -f $(OBJS) PythonCVInterface.$(SOEXT)
