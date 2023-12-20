@@ -852,7 +852,7 @@ AC_SUBST(PYTHON_CFLAGS)
 # if PYTHON_BIN is defined, it is expected to be the full path to python
 # Otherwise, search from a list of names:  
 if test -z "$PYTHON_BIN" ; then
-    AC_CHECK_PROGS([PYTHON_BIN],[python python3])
+    AC_CHECK_PROGS([PYTHON_BIN],[python3])
 fi
 if test -n "$PYTHON_BIN" ; then
     AC_MSG_NOTICE([Python executable is $PYTHON_BIN])
