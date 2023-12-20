@@ -29,8 +29,8 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace py = pybind11;
 
-namespace{
-  auto a=PLMD::DLLoader::EnsureGlobalDLOpen(&Py_Initialize);
+namespace {
+auto a=PLMD::DLLoader::EnsureGlobalDLOpen(&Py_Initialize);
 }
 
 namespace PLMD {

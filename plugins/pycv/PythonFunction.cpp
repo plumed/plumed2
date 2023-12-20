@@ -114,109 +114,109 @@ void PythonFunction::registerKeywords( Keywords& keys ) {
 }
 
 // Everything being copied from Custom.cpp
-PythonFunction::PythonFunction(const ActionOptions&ao)try:
+PythonFunction::PythonFunction(const ActionOptions&ao):
   Action(ao),
-         Function(ao),
+  Function(ao),
   ActionWithPython(ao) {
-
-  //Loading the python module
-  std::string import;
-  parse("IMPORT",import);
-  std::string calculateFunName;
-  //setting up the calculate function
-  parse("CALCULATE",calculateFunName);
-  log.printf("  will import %s and call function %s\n", import.c_str(),
-             calculateFunName.c_str());
-  // Initialize the module and function pointers
-  pyModule = py::module::import(import.c_str());
-  if (!py::hasattr(pyModule,calculateFunName.c_str())) {
-    error("the function " + calculateFunName + " is not present in "+ import);
-  }
-
-  pyCalculate = pyModule.attr(calculateFunName.c_str());
-  std::string initFunName;
-  parse("INIT",initFunName);
-  py::dict initDict;
-  if(py::hasattr(pyModule,initFunName.c_str())) {
-    log.printf("  will use %s during the initialization\n", initFunName.c_str());
-    auto initFcn = pyModule.attr(initFunName.c_str());
-    if (py::isinstance<py::dict>(initFcn)) {
-      initDict = initFcn;
-    } else {
-      initDict = initFcn(this);
+  try {
+    //Loading the python module
+    std::string import;
+    parse("IMPORT",import);
+    std::string calculateFunName;
+    //setting up the calculate function
+    parse("CALCULATE",calculateFunName);
+    log.printf("  will import %s and call function %s\n", import.c_str(),
+               calculateFunName.c_str());
+    // Initialize the module and function pointers
+    pyModule = py::module::import(import.c_str());
+    if (!py::hasattr(pyModule,calculateFunName.c_str())) {
+      error("the function " + calculateFunName + " is not present in "+ import);
     }
-  } else if(initFunName!=PYCV_DEFAULTINIT) {
-    //If the default INIT is not preset, is not a problem
-    error("the function "+ initFunName + " is not present in "+ import);
-  }
-  {
-    std::vector<std::string> components;
-    parseVector("COMPONENTS", components);
 
-    if (components.size()>1) {
-      error("Please define multiple COMPONENTS from INIT in python.");
-    }
-  }
-
-  if(initDict.contains("COMPONENTS")) {
-    if(initDict.contains("Value")) {
-      error("The initialize dict cannot contain both \"Value\" and \"COMPONENTS\"");
-    }
-    if(!py::isinstance<py::dict>(initDict["COMPONENTS"])) {
-      error("COMPONENTS must be a dictionary using with the name of the components as keys");
-    }
-    py::dict components=initDict["COMPONENTS"];
-    for(auto comp: components) {
-      auto settings = py::cast<py::dict>(comp.second);
-      if(components.size()==1) { //a single component
-        initializeValue(dynamic_cast<::PLMD::ActionWithValue&>(*this), settings);
-        valueSettings(settings,getPntrToValue());
+    pyCalculate = pyModule.attr(calculateFunName.c_str());
+    std::string initFunName;
+    parse("INIT",initFunName);
+    py::dict initDict;
+    if(py::hasattr(pyModule,initFunName.c_str())) {
+      log.printf("  will use %s during the initialization\n", initFunName.c_str());
+      auto initFcn = pyModule.attr(initFunName.c_str());
+      if (py::isinstance<py::dict>(initFcn)) {
+        initDict = initFcn;
       } else {
-        auto name=std::string(PYCV_COMPONENTPREFIX)
-                  +"-"+py::cast<std::string>(comp.first);
-        initializeComponent(dynamic_cast<::PLMD::ActionWithValue&>(*this),
-                            name,
-                            settings);
-        valueSettings(settings,getPntrToComponent(name));
+        initDict = initFcn(this);
+      }
+    } else if(initFunName!=PYCV_DEFAULTINIT) {
+      //If the default INIT is not preset, is not a problem
+      error("the function "+ initFunName + " is not present in "+ import);
+    }
+    {
+      std::vector<std::string> components;
+      parseVector("COMPONENTS", components);
+      if (components.size()>1) {
+        error("Please define multiple COMPONENTS from INIT in python.");
       }
     }
 
-  } else if(initDict.contains("Value")) {
-    py::dict settingsDict=initDict["Value"];
-    initializeValue(dynamic_cast<::PLMD::ActionWithValue&>(*this),settingsDict);
-    valueSettings(settingsDict,getPntrToValue());
-  } else {
-    warning("  WARNING: by defaults components periodicity is not set and component is added without derivatives - see manual\n");
-    //this will crash with an error, beacuse periodicity is not explicitly set
-    addValue();
+    if(initDict.contains("COMPONENTS")) {
+      if(initDict.contains("Value")) {
+        error("The initialize dict cannot contain both \"Value\" and \"COMPONENTS\"");
+      }
+      if(!py::isinstance<py::dict>(initDict["COMPONENTS"])) {
+        error("COMPONENTS must be a dictionary using with the name of the components as keys");
+      }
+      py::dict components=initDict["COMPONENTS"];
+      for(auto comp: components) {
+        auto settings = py::cast<py::dict>(comp.second);
+        if(components.size()==1) { //a single component
+          initializeValue(dynamic_cast<::PLMD::ActionWithValue&>(*this), settings);
+          valueSettings(settings,getPntrToValue());
+        } else {
+          auto name=std::string(PYCV_COMPONENTPREFIX)
+                    +"-"+py::cast<std::string>(comp.first);
+          initializeComponent(dynamic_cast<::PLMD::ActionWithValue&>(*this),
+                              name,
+                              settings);
+          valueSettings(settings,getPntrToComponent(name));
+        }
+      }
 
+    } else if(initDict.contains("Value")) {
+      py::dict settingsDict=initDict["Value"];
+      initializeValue(dynamic_cast<::PLMD::ActionWithValue&>(*this),settingsDict);
+      valueSettings(settingsDict,getPntrToValue());
+    } else {
+      warning("  WARNING: by defaults components periodicity is not set and component is added without derivatives - see manual\n");
+      //this will crash with an error, beacuse periodicity is not explicitly set
+      addValue();
+    }
+
+    log.printf("  with function : %s\n",calculateFunName.c_str());
+    log<<"  Bibliography "
+       <<plumed.cite(PYTHONCV_CITATION)
+       <<"\n";
+  } catch (const py::error_already_set &e) {
+    error(e.what());
+    //vdbg(e.what());
   }
-
-  log.printf("  with function : %s\n",calculateFunName.c_str());
-
-  log<<"  Bibliography "
-     <<plumed.cite(PYTHONCV_CITATION)
-     <<"\n";
-
-} catch (const py::error_already_set &e) {
-  plumed_merror(e.what());
-  //vdbg(e.what());
 }
 
 
 // calculator
-void PythonFunction::calculate() try {
-  // Call the function
-  py::object r = pyCalculate(this);
-  if(getNumberOfComponents()>1) {		// MULTIPLE NAMED COMPONENTS
-    calculateMultiComponent(r);
-  } else { // SINGLE COMPONENT
-    readReturn(r, getPntrToValue());
+void PythonFunction::calculate() {
+  try {
+    // Call the function
+    py::object r = pyCalculate(this);
+    if(getNumberOfComponents()>1) {		// MULTIPLE NAMED COMPONENTS
+      calculateMultiComponent(r);
+    } else { // SINGLE COMPONENT
+      readReturn(r, getPntrToValue());
+    }
+  } catch (const py::error_already_set &e) {
+    plumed_merror(e.what());
+    //vdbg(e.what());
   }
-} catch (const py::error_already_set &e) {
-  plumed_merror(e.what());
-  //vdbg(e.what());
 }
+
 void PythonFunction::readReturn(const py::object &r, Value* valPtr) {
 // Is there more than 1 return value?
   if (py::isinstance<py::tuple>(r)||py::isinstance<py::list>(r)) {
