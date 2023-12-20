@@ -5,7 +5,7 @@ RUN source /etc/bashrc \
  && cd plumed2 \
  && source ./sourceme.sh \
  && cd plugins/pycv \
- && pip3 install pybind11 \
+ && pip3 install -r requirements.txt \
  && ln -s $(realpath ../../regtest/scripts) ./regtest/scripts \
  && python_bin=python3 ./prepareMakeForDevelop.sh \
  && make check
