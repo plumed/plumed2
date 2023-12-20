@@ -666,7 +666,7 @@ void PythonCVInterface::calculate() {
     }
 
   } catch (const py::error_already_set &e) {
-    plumed_merror(e.what());
+    plumed_error_nested()<<"("<<getLabel()<<") caught a python exception:\n"<<e.what();
   }
 }
 
