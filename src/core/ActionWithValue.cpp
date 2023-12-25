@@ -245,6 +245,17 @@ bool ActionWithValue::checkForForces() {
   unsigned    nder=getNumberOfDerivatives();
   if( ncp==0 || nder==0 ) return false;
 
+  unsigned nvalsWithForce=0;
+  std::vector<double> forces( ncp );
+  std::vector<unsigned> valsToForce( ncp );
+  for(unsigned i=0; i<ncp; ++i) {
+      if( values[i]->hasForce && !values[i]->constant ) {
+          forces[nvalsWithForce]=values[i]->inputForce[0];
+          valsToForce[nvalsWithForce]=i; nvalsWithForce++;
+      }
+  }
+  if( nvalsWithForce==0 ) return false;
+
   // Make sure forces to apply is empty of forces
   if( forcesForApply.size()!=nder ) forcesForApply.resize( nder );
   std::fill(forcesForApply.begin(),forcesForApply.end(),0);
@@ -259,26 +270,24 @@ bool ActionWithValue::checkForForces() {
   unsigned nt=OpenMP::getNumThreads();
   if(nt>ncp/(4*stride)) nt=1;
 
-  unsigned at_least_one_forced=0;
   #pragma omp parallel num_threads(nt)
   {
-    std::vector<double> omp_f(nder,0);
-    std::vector<double> forces(nder);
+    std::vector<double> omp_f;
+    if( nt>1 ) omp_f.resize(nder,0);
     #pragma omp for
-    for(unsigned i=rank; i<ncp; i+=stride) {
-      if(getPntrToComponent(i)->applyForce(forces)) {
-        at_least_one_forced+=1;
-        for(unsigned j=0; j<forces.size(); ++j) omp_f[j]+=forces[j];
-      }
+    for(unsigned i=rank; i<nvalsWithForce; i+=stride) {
+        std::vector<double> & thisderiv( values[valsToForce[i]]->data ); 
+        if( nt>1 ) for(unsigned j=0; j<nder; ++j) omp_f[j] += forces[i]*thisderiv[1+j];
+        else for(unsigned j=0; j<nder; ++j) forcesForApply[j] += forces[i]*thisderiv[1+j];
     }
     #pragma omp critical
     {
-      for(unsigned j=0; j<forcesForApply.size(); ++j) forcesForApply[j]+=omp_f[j];
+      if( nt>1 ) for(unsigned j=0; j<forcesForApply.size(); ++j) forcesForApply[j]+=omp_f[j];
     }
   }
 
-  if(ncp>4*comm.Get_size()) { comm.Sum(&forcesForApply[0],nder); comm.Sum(at_least_one_forced); }
-  return at_least_one_forced>0;
+  if(ncp>4*comm.Get_size()) comm.Sum(&forcesForApply[0],nder);
+  return true;
 }
 
 }
