@@ -286,12 +286,11 @@ void ActionAtomistic::retrieveAtoms() {
 void ActionAtomistic::setForcesOnAtoms(const std::vector<double>& forcesToApply, unsigned& ind) {
   if( donotforce || (indexes.size()==0 && getName()!="FIXEDATOM") ) return;
   for(unsigned i=0; i<indexes.size(); ++i) {
-    Vector ff;
-    for(unsigned k=0; k<3; ++k) {
-      plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
-      ff[k]=forcesToApply[ind]; ind++;
-    }
-    addForce( indexes[i], ff );
+    plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
+    std::size_t nn = value_indices[i], kk = pos_indices[i];
+    xpos[nn]->addForce( kk, forcesToApply[ind] ); ind++; 
+    ypos[nn]->addForce( kk, forcesToApply[ind] ); ind++; 
+    zpos[nn]->addForce( kk, forcesToApply[ind] ); ind++; 
   }
   setForcesOnCell( forcesToApply, ind );
 }
