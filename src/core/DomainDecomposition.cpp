@@ -395,7 +395,7 @@ void DomainDecomposition::apply() {
   for(const auto & ip : inputs) {
     if( !(ip->getPntrToValue())->forcesWereAdded() || ip->noforce ) {
       continue;
-    } else if( ip->wasscaled || (int(gatindex.size())==getNumberOfAtoms() && shuffledAtoms==0) ) {
+    } else if( ip->wasscaled || (!unique_serial && int(gatindex.size())==getNumberOfAtoms() && shuffledAtoms==0) ) {
       (ip->mydata)->add_force( gatindex, ip->getPntrToValue() );
     } else { (ip->mydata)->add_force( unique, uniq_index, ip->getPntrToValue() ); }
   }
