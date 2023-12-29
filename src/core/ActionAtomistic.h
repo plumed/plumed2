@@ -43,6 +43,7 @@ class ActionAtomistic :
   friend class DomainDecomposition;
 
   std::vector<AtomNumber> indexes;         // the set of needed atoms
+  std::vector<std::size_t>   value_depends;   // The list of values that are being used 
   std::vector<std::size_t>   value_indices;   // The values that the atoms are from
   std::vector<std::size_t>   pos_indices;     // The indexes in the values to get the atoms from
 /// unique should be an ordered set since we later create a vector containing the corresponding indexes

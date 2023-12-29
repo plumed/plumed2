@@ -100,9 +100,10 @@ void ActionAtomistic::requestAtoms(const std::vector<AtomNumber> & a, const bool
     else if( pos_indices[i]>0 ) error("action atomistic is not set up to deal with multiple vectors in position input");
   }
   // Add the dependencies to the actions that we require
-  Tools::removeDuplicates(unique);
+  Tools::removeDuplicates(unique); value_depends.resize(0);
   for(unsigned i=0; i<requirements.size(); ++i ) {
     if( !requirements[i] ) continue;
+    value_depends.push_back( i );
     addDependency( xpos[i]->getPntrToAction() );
     addDependency( ypos[i]->getPntrToAction() );
     addDependency( zpos[i]->getPntrToAction() );
@@ -285,12 +286,17 @@ void ActionAtomistic::retrieveAtoms() {
 
 void ActionAtomistic::setForcesOnAtoms(const std::vector<double>& forcesToApply, unsigned& ind) {
   if( donotforce || (indexes.size()==0 && getName()!="FIXEDATOM") ) return;
+  for(unsigned i=0; i<value_depends.size(); ++i) {
+      xpos[value_depends[i]]->hasForce = true;
+      ypos[value_depends[i]]->hasForce = true;
+      zpos[value_depends[i]]->hasForce = true; 
+  }
   for(unsigned i=0; i<indexes.size(); ++i) {
     plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
     std::size_t nn = value_indices[i], kk = pos_indices[i];
-    xpos[nn]->addForce( kk, forcesToApply[ind] ); ind++; 
-    ypos[nn]->addForce( kk, forcesToApply[ind] ); ind++; 
-    zpos[nn]->addForce( kk, forcesToApply[ind] ); ind++; 
+    xpos[nn]->inputForce[kk] += forcesToApply[ind]; ind++; 
+    ypos[nn]->inputForce[kk] += forcesToApply[ind]; ind++; 
+    zpos[nn]->inputForce[kk] += forcesToApply[ind]; ind++; 
   }
   setForcesOnCell( forcesToApply, ind );
 }
