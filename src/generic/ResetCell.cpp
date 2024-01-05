@@ -159,9 +159,11 @@ void ResetCell::calculate() {
   rotation=transpose(matmul(inverse(box),newbox));
 
 // rotate all coordinates
-  for(unsigned i=0; i<getTotAtoms(); i++) {
-    Vector ato=matmul(rotation,getGlobalPosition(AtomNumber::index(i)));
-    setGlobalPosition(AtomNumber::index(i),ato);
+  unsigned nat = getTotAtoms();
+  for(unsigned i=0; i<nat; i++) {
+    std::pair<std::size_t,std::size_t> a = getValueIndices( AtomNumber::index(i));
+    Vector ato=matmul(rotation,getGlobalPosition(a));
+    setGlobalPosition(a,ato);
   }
 // rotate box
   pbc.setBox(newbox);
@@ -169,10 +171,12 @@ void ResetCell::calculate() {
 
 void ResetCell::apply() {
 // rotate back forces
-  for(unsigned i=0; i<getTotAtoms(); i++) {
-    Vector f=getForce(AtomNumber::index(i));
+  unsigned nat = getTotAtoms();
+  for(unsigned i=0; i<nat; i++) {
+    std::pair<std::size_t,std::size_t> a = getValueIndices( AtomNumber::index(i));
+    Vector f=getForce(a);
     Vector nf=matmul(transpose(rotation),f);
-    addForce(AtomNumber::index(i), nf-f );
+    addForce(a, nf-f );
   }
 
 // I have no mathematical derivation for this.

@@ -103,8 +103,8 @@ class WholeMolecules:
   public ActionPilot,
   public ActionAtomistic
 {
-  std::vector<std::vector<AtomNumber> > groups;
-  std::vector<std::vector<AtomNumber> > roots;
+  std::vector<std::vector<std::pair<std::size_t,std::size_t> > > p_groups;
+  std::vector<std::vector<std::pair<std::size_t,std::size_t> > > p_roots;
   std::vector<Vector> refs;
   bool doemst, addref;
 public:
@@ -138,6 +138,8 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
   ActionAtomistic(ao),
   doemst(false), addref(false)
 {
+  std::vector<std::vector<AtomNumber> > groups;
+  std::vector<std::vector<AtomNumber> > roots;
   // parse optional flags
   parseFlag("EMST", doemst);
   parseFlag("ADDREFERENCE", addref);
@@ -216,6 +218,20 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
     merge.insert(merge.end(),groups[i].begin(),groups[i].end());
   }
 
+  // Convert groups to p_groups
+  p_groups.resize( groups.size() );
+  for(unsigned i=0; i<groups.size(); ++i) {
+      p_groups[i].resize( groups[i].size() );
+      for(unsigned j=0; j<groups[i].size(); ++j) p_groups[i][j] = getValueIndices( groups[i][j] );
+  }
+  // Convert roots to p_roots
+  p_roots.resize( roots.size() );
+  for(unsigned i=0; i<roots.size(); ++i) {
+      p_roots[i].resize( roots[i].size() );
+      for(unsigned j=0; j<roots[i].size(); ++j) p_roots[i][j] = getValueIndices( roots[i][j] );
+  }
+
+
   checkRead();
   Tools::removeDuplicates(merge);
   requestAtoms(merge);
@@ -224,15 +240,16 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
 }
 
 void WholeMolecules::calculate() {
-  for(unsigned i=0; i<groups.size(); ++i) {
+  for(unsigned i=0; i<p_groups.size(); ++i) {
+    Vector first = getGlobalPosition(p_groups[i][0]);
     if(addref) {
-      Vector first = getGlobalPosition(groups[i][0]);
-      setGlobalPosition( groups[i][0], refs[i]+pbcDistance(refs[i],first) );
+      first = refs[i]+pbcDistance(refs[i],first);
+      setGlobalPosition( p_groups[i][0], first );
     }
-    for(unsigned j=0; j<groups[i].size()-1; ++j) {
-      Vector first=getGlobalPosition(roots[i][j]);
-      Vector second=getGlobalPosition(groups[i][j+1]);
-      setGlobalPosition(groups[i][j+1], first+pbcDistance(first,second) );
+    for(unsigned j=1; j<p_groups[i].size(); ++j) {
+      Vector second=getGlobalPosition(p_groups[i][j]);
+      first = first+pbcDistance(first,second); 
+      setGlobalPosition(p_groups[i][j], first );
     }
   }
 }

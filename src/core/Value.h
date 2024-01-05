@@ -48,6 +48,7 @@ class Value {
   friend class ActionWithValue;
   friend class ActionAtomistic;
   friend class ActionWithArguments;
+  friend class ActionWithVirtualAtom;
   friend class DomainDecomposition;
   template<typename T>
   friend class DataPassingObjectTyped;

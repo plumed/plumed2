@@ -53,9 +53,34 @@ void ActionWithVirtualAtom::requestAtoms(const std::vector<AtomNumber> & a) {
 }
 
 void ActionWithVirtualAtom::apply() {
-  if( !checkForForces() ) return ;
+  Value* xval=getPntrToComponent(0); 
+  Value* yval=getPntrToComponent(1);
+  Value* zval=getPntrToComponent(2);
+  if( !xval->forcesWereAdded() && !yval->forcesWereAdded() && !zval->forcesWereAdded() ) return ;
+  if( xval->isConstant() && yval->isConstant() && zval->isConstant() ) return;
 
-  unsigned mm=0; setForcesOnAtoms( getForcesToApply(), mm );
+  for(unsigned i=0; i<value_depends.size(); ++i) {
+      xpos[value_depends[i]]->hasForce = true;
+      ypos[value_depends[i]]->hasForce = true;
+      zpos[value_depends[i]]->hasForce = true;
+  }
+  unsigned k=0;
+  double xf = xval->inputForce[0];
+  double yf = yval->inputForce[0];
+  double zf = zval->inputForce[0];
+  for(const auto & a : atom_value_ind) {
+      std::size_t nn = a.first, kk = a.second;
+      xpos[nn]->inputForce[kk] += xf*xval->data[1+k] + yf*yval->data[1+k] + zf*zval->data[1+k]; k++;
+      ypos[nn]->inputForce[kk] += xf*xval->data[1+k] + yf*yval->data[1+k] + zf*zval->data[1+k]; k++;
+      zpos[nn]->inputForce[kk] += xf*xval->data[1+k] + yf*yval->data[1+k] + zf*zval->data[1+k]; k++;
+  }
+  std::vector<double> virial(9);
+  for(unsigned i=0; i<9; ++i) { virial[i] = xf*xval->data[1+k] + yf*yval->data[1+k] + zf*zval->data[1+k]; k++; }
+  unsigned ind = 0; setForcesOnCell( virial, ind );
+  // The above can be achieved using the two functions below.  The code above that is specialised for the ActionWithVirtualAtom
+  // class runs faster than the general code below.
+  // if( !checkForForces() ) return ;
+  // unsigned mm=0; setForcesOnAtoms( getForcesToApply(), mm );
 }
 
 void ActionWithVirtualAtom::setBoxDerivatives(const std::vector<Tensor> &d) {
