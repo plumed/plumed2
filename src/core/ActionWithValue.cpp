@@ -74,6 +74,7 @@ ActionWithValue::ActionWithValue(const ActionOptions&ao):
   serial(false),
   timers(false),
   allow_mixed_history_input(false),
+  force_all_tasks(false),
   nactive_tasks(0),
   action_to_do_before(NULL),
   action_to_do_after(NULL)
