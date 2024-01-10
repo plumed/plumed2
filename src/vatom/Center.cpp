@@ -128,6 +128,7 @@ class Center:
   bool nopbc;
   bool first;
   bool phases;
+  double saved_mass, saved_charge;
 public:
   explicit Center(const ActionOptions&ao);
   void calculate() override;
@@ -164,9 +165,9 @@ Center::Center(const ActionOptions&ao):
   parseFlag("MASS",weight_mass);
   parseFlag("NOPBC",nopbc);
   parseFlag("PHASES",phases);
-  double charge_=std::numeric_limits<double>::lowest(); parse("SET_CHARGE",charge_); setCharge(charge_);
+  double charge_=std::numeric_limits<double>::lowest(); parse("SET_CHARGE",charge_); saved_charge=charge_;
   if(charge_!=std::numeric_limits<double>::lowest()) isChargeSet_=true;
-  double mass_=-1; parse("SET_MASS",mass_); setMass(mass_);
+  double mass_=-1; parse("SET_MASS",mass_); saved_mass=mass_; 
   if(mass_>0.) isMassSet_=true;
   if(mass_==0.) error("SETMASS must be greater than 0");
   if( getName()=="COM") weight_mass=true;
@@ -227,11 +228,11 @@ void Center::calculate() {
     if( chargesWereSet && !isChargeSet_) {
       double charge(0.0);
       for(unsigned i=0; i<getNumberOfAtoms(); i++) charge+=getCharge(i);
-      setCharge(charge);
+      saved_charge=charge;
     } else if( !isChargeSet_ ) {
-      setCharge(0.0);
+      saved_charge=0.0; 
     }
-    if(!isMassSet_) setMass(mass);
+    if(!isMassSet_) saved_mass=mass;
 
     if( weight_mass ) {
       weights.resize( getNumberOfAtoms() );
@@ -243,6 +244,7 @@ void Center::calculate() {
       first=false;
     }
   }
+  setCharge(saved_charge); setMass(saved_mass);
 
   std::vector<Tensor> deriv(getNumberOfAtoms());
 
