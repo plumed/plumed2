@@ -26,6 +26,7 @@
 
 //+PLUMEDOC ANALYSIS PUT
 /*
+Pass data into PLUMED
 
 \par Examples
 

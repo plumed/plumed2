@@ -28,6 +28,7 @@
 
 //+PLUMEDOC ANALYSIS DOMAIN_DECOMPOSITION
 /*
+Pass domain decomposed properties of atoms to PLUMED
 
 \par Examples
 
