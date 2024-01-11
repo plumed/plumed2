@@ -24,6 +24,7 @@
 #include "colvar/Colvar.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
+#include "tools/Communicator.h"
 #include "tools/Matrix.h"
 #include "core/GenericMolInfo.h"
 #include "core/ActionSet.h"
@@ -310,11 +311,7 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   parse("NORM_DENSITY", norm_d);
 
   // temperature
-  double temp=0.0;
-  parse("TEMP",temp);
-  // convert temp to kbt
-  if(temp>0.0) kbt_=plumed.getAtoms().getKBoltzmann()*temp;
-  else kbt_=plumed.getAtoms().getKbT();
+  kbt_ = getKBT();
 
   // scale and offset
   parse("SCALE", scale_);
