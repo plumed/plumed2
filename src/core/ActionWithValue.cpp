@@ -248,9 +248,9 @@ bool ActionWithValue::checkForForces() {
   unsigned nvalsWithForce=0;
   std::vector<unsigned> valsToForce( ncp );
   for(unsigned i=0; i<ncp; ++i) {
-      if( values[i]->hasForce && !values[i]->constant ) {
-          valsToForce[nvalsWithForce]=i; nvalsWithForce++;
-      }
+    if( values[i]->hasForce && !values[i]->constant ) {
+      valsToForce[nvalsWithForce]=i; nvalsWithForce++;
+    }
   }
   if( nvalsWithForce==0 ) return false;
 
@@ -274,10 +274,10 @@ bool ActionWithValue::checkForForces() {
     if( nt>1 ) omp_f.resize(nder,0);
     #pragma omp for
     for(unsigned i=rank; i<nvalsWithForce; i+=stride) {
-        double ff=values[valsToForce[i]]->inputForce[0]; 
-        std::vector<double> & thisderiv( values[valsToForce[i]]->data ); 
-        if( nt>1 ) for(unsigned j=0; j<nder; ++j) omp_f[j] += ff*thisderiv[1+j];
-        else for(unsigned j=0; j<nder; ++j) forcesForApply[j] += ff*thisderiv[1+j];
+      double ff=values[valsToForce[i]]->inputForce[0];
+      std::vector<double> & thisderiv( values[valsToForce[i]]->data );
+      if( nt>1 ) for(unsigned j=0; j<nder; ++j) omp_f[j] += ff*thisderiv[1+j];
+      else for(unsigned j=0; j<nder; ++j) forcesForApply[j] += ff*thisderiv[1+j];
     }
     #pragma omp critical
     {

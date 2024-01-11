@@ -209,7 +209,7 @@ WrapAround::WrapAround(const ActionOptions&ao):
   std::vector<AtomNumber> merged(atoms.size()+reference.size());
   merge(atoms.begin(),atoms.end(),reference.begin(),reference.end(),merged.begin());
   p_atoms.resize( atoms.size() ); for(unsigned i=0; i<atoms.size(); ++i) p_atoms[i] = getValueIndices( atoms[i] );
-  refatoms.resize( reference.size() ); p_reference.resize( reference.size() ); 
+  refatoms.resize( reference.size() ); p_reference.resize( reference.size() );
   for(unsigned i=0; i<reference.size(); ++i) p_reference[i] = getValueIndices( reference[i] );
   Tools::removeDuplicates(merged);
   requestAtoms(merged);

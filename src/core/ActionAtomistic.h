@@ -44,7 +44,7 @@ class ActionAtomistic :
   friend class ActionWithVirtualAtom;
 
   std::vector<AtomNumber> indexes;         // the set of needed atoms
-  std::vector<std::size_t>   value_depends;   // The list of values that are being used 
+  std::vector<std::size_t>   value_depends;   // The list of values that are being used
   std::vector<std::pair<std::size_t, std::size_t > > atom_value_ind;  // The list of values and indices for the atoms that are being used
 /// unique should be an ordered set since we later create a vector containing the corresponding indexes
   std::vector<AtomNumber>  unique;
@@ -76,7 +76,7 @@ protected:
   bool                  chargesWereSet;
   void setExtraCV(const std::string &name);
 /// Used to interpret whether this index is a virtual atom or a real atom
-  std::pair<std::size_t, std::size_t> getValueIndices( const AtomNumber& i ) const ;   
+  std::pair<std::size_t, std::size_t> getValueIndices( const AtomNumber& i ) const ;
 public:
 /// Request an array of atoms.
 /// This method is used to ask for a list of atoms. Atoms

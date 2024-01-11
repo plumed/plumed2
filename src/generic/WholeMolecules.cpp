@@ -221,14 +221,14 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
   // Convert groups to p_groups
   p_groups.resize( groups.size() );
   for(unsigned i=0; i<groups.size(); ++i) {
-      p_groups[i].resize( groups[i].size() );
-      for(unsigned j=0; j<groups[i].size(); ++j) p_groups[i][j] = getValueIndices( groups[i][j] );
+    p_groups[i].resize( groups[i].size() );
+    for(unsigned j=0; j<groups[i].size(); ++j) p_groups[i][j] = getValueIndices( groups[i][j] );
   }
   // Convert roots to p_roots
   p_roots.resize( roots.size() );
   for(unsigned i=0; i<roots.size(); ++i) {
-      p_roots[i].resize( roots[i].size() );
-      for(unsigned j=0; j<roots[i].size(); ++j) p_roots[i][j] = getValueIndices( roots[i][j] );
+    p_roots[i].resize( roots[i].size() );
+    for(unsigned j=0; j<roots[i].size(); ++j) p_roots[i][j] = getValueIndices( roots[i][j] );
   }
 
 
@@ -248,7 +248,7 @@ void WholeMolecules::calculate() {
     }
     for(unsigned j=1; j<p_groups[i].size(); ++j) {
       Vector second=getGlobalPosition(p_groups[i][j]);
-      first = first+pbcDistance(first,second); 
+      first = first+pbcDistance(first,second);
       setGlobalPosition(p_groups[i][j], first );
     }
   }

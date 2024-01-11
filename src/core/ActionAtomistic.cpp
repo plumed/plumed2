@@ -289,16 +289,16 @@ void ActionAtomistic::retrieveAtoms() {
 void ActionAtomistic::setForcesOnAtoms(const std::vector<double>& forcesToApply, unsigned& ind) {
   if( donotforce || (indexes.size()==0 && getName()!="FIXEDATOM") ) return;
   for(unsigned i=0; i<value_depends.size(); ++i) {
-      xpos[value_depends[i]]->hasForce = true;
-      ypos[value_depends[i]]->hasForce = true;
-      zpos[value_depends[i]]->hasForce = true; 
+    xpos[value_depends[i]]->hasForce = true;
+    ypos[value_depends[i]]->hasForce = true;
+    zpos[value_depends[i]]->hasForce = true;
   }
   for(const auto & a : atom_value_ind) {
     plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
     std::size_t nn = a.first, kk = a.second;
-    xpos[nn]->inputForce[kk] += forcesToApply[ind]; ind++; 
-    ypos[nn]->inputForce[kk] += forcesToApply[ind]; ind++; 
-    zpos[nn]->inputForce[kk] += forcesToApply[ind]; ind++; 
+    xpos[nn]->inputForce[kk] += forcesToApply[ind]; ind++;
+    ypos[nn]->inputForce[kk] += forcesToApply[ind]; ind++;
+    zpos[nn]->inputForce[kk] += forcesToApply[ind]; ind++;
   }
   setForcesOnCell( forcesToApply, ind );
 }
@@ -339,7 +339,7 @@ Vector ActionAtomistic::getGlobalPosition(const std::pair<std::size_t,std::size_
   pos[2]=zpos[a.first]->data[a.second];
   return pos;
 }
-  
+
 void ActionAtomistic::setGlobalPosition(const std::pair<std::size_t, std::size_t>& a, const Vector& pos ) {
   xpos[a.first]->data[a.second]=pos[0];
   ypos[a.first]->data[a.second]=pos[1];
@@ -355,7 +355,7 @@ void ActionAtomistic::makeWhole() {
 }
 
 Vector ActionAtomistic::getForce( const std::pair<std::size_t, std::size_t>& a ) const {
-  Vector f; 
+  Vector f;
   f[0]=xpos[a.first]->getForce(a.second);
   f[1]=ypos[a.first]->getForce(a.second);
   f[2]=zpos[a.first]->getForce(a.second);

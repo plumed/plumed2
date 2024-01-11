@@ -331,9 +331,9 @@ void FitToTemplate::calculate() {
 void FitToTemplate::apply() {
   if (type=="SIMPLE") {
     Vector totForce;
-    for(unsigned i=0; i<getTotAtoms(); i++) { 
-        std::pair<std::size_t,std::size_t> a = getValueIndices( AtomNumber::index(i)); 
-        totForce+=getForce(a); 
+    for(unsigned i=0; i<getTotAtoms(); i++) {
+      std::pair<std::size_t,std::size_t> a = getValueIndices( AtomNumber::index(i));
+      totForce+=getForce(a);
     }
     Tensor vv=Tensor(center,totForce);
     for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) boxValue->addForce( 3*i+j, vv(i,j) );
