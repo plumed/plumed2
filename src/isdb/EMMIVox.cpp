@@ -311,7 +311,7 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   parse("NORM_DENSITY", norm_d);
 
   // temperature
-  kbt_ = getKBT();
+  kbt_ = getkBT();
 
   // scale and offset
   parse("SCALE", scale_);
