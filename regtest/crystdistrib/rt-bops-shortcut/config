@@ -1,2 +1,2 @@
 type=driver
-arg="--plumed plumed.dat --mf_xtc em.xtc --mc mcfile --timestep=0.001 --box 82.688,82.711,82.700 --trajectory-stride=25 --dump-forces forces --dump-forces-fmt=%8.4f"
+arg="--plumed plumed.dat --mf_xtc em.xtc --mc mcfile --timestep=0.001 --box 82.688,82.711,82.700 --trajectory-stride=25 --dump-forces forces --dump-forces-fmt=%8.3f"
