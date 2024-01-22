@@ -25,6 +25,7 @@
 #include "OpenMP.h"
 #include <vector>
 #include <limits>
+#include <algorithm>
 
 #define PI 3.14159265358979323846
 
@@ -269,17 +270,22 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     for(auto & e : expression) e=pe.createCompiledExpression();
     lepton_ref.resize(expression.size());
     for(unsigned t=0; t<lepton_ref.size(); t++) {
-      try {
-        lepton_ref[t]=&const_cast<lepton::CompiledExpression*>(&expression[t])->getVariableReference("x");
-      } catch(const PLMD::lepton::Exception& exc) {
-        try {
-          lepton_ref[t]=&const_cast<lepton::CompiledExpression*>(&expression[t])->getVariableReference("x2");
-          leptonx2=true;
-        } catch(const PLMD::lepton::Exception& exc) {
-// this is necessary since in some cases lepton things a variable is not present even though it is present
+      auto vars=expression[t].getVariables();
+      bool found_x=std::find(vars.begin(),vars.end(),"x")!=vars.end();
+      bool found_x2=std::find(vars.begin(),vars.end(),"x2")!=vars.end();
+      if (vars.size()==0) {
+// this is necessary since in some cases lepton thinks a variable is not present even though it is present
 // e.g. func=0*x
-          lepton_ref[t]=nullptr;
-        }
+        lepton_ref[t]=nullptr;
+      } else if(vars.size()==1 && found_x) {
+        lepton_ref[t]=&const_cast<lepton::CompiledExpression*>(&expression[t])->getVariableReference("x");
+      } else if(vars.size()==1 && found_x2) {
+        lepton_ref[t]=&const_cast<lepton::CompiledExpression*>(&expression[t])->getVariableReference("x2");
+        leptonx2=true;
+      } else if(vars.size()==2 && found_x && found_x2) {
+        plumed_error() << "Cannot use simultaneously x and x2 argument in switching function: "<<func;
+      } else {
+        plumed_error() << "Something wrong in the arguments for switching function: "<<func;
       }
     }
     std::string arg="x";
