@@ -108,6 +108,12 @@ int main(){
 // check error in regular expression
   test_line(ofs,plumed,"RESTRAINT ARG=([a) KAPPA=5 AT=0");
 
+// cannot use simultaneously x2 and x
+  test_line(ofs,plumed,"COORDINATION GROUPA=1 GROUPB=2 SWITCH={CUSTOM FUNC=x2+x R_0=1.0}");
+
+// cannot use variables other than x2 or x
+  test_line(ofs,plumed,"COORDINATION GROUPA=1 GROUPB=2 SWITCH={CUSTOM FUNC=c R_0=1.0}");
+
   test_line(ofs,plumed,"EXTERNAL ARG=d FILE=potential LABEL=ext");
   test_line(ofs,plumed,"METAD ARG=d PACE=1 SIGMA=1 HEIGHT=0 FILE=H1 RESTART=WHAT");
   test_line(ofs,plumed,"METAD ARG=d PACE=1 SIGMA=1 TAU=5");
