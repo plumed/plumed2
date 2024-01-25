@@ -25,6 +25,7 @@
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "tools/Matrix.h"
+#include "tools/Communicator.h"
 #include "core/GenericMolInfo.h"
 #include "core/ActionSet.h"
 #include "tools/File.h"
@@ -348,8 +349,8 @@ void EMMI::apply() {
     }
   }
   if( wasforced ) {
-    addForcesOnArguments( forcesToApply );
-    if( getNumberOfAtoms()>0 ) setForcesOnAtoms( forcesToApply, getNumberOfArguments() );
+    unsigned ind=0; addForcesOnArguments( 0, forcesToApply, ind );
+    if( getNumberOfAtoms()>0 ) setForcesOnAtoms( forcesToApply, ind );
   }
 }
 
@@ -505,11 +506,7 @@ EMMI::EMMI(const ActionOptions&ao):
   parse("NORM_DENSITY", norm_d);
 
   // temperature
-  double temp=0.0;
-  parse("TEMP",temp);
-  // convert temp to kbt
-  if(temp>0.0) kbt_=plumed.getAtoms().getKBoltzmann()*temp;
-  else kbt_=plumed.getAtoms().getKbT();
+  kbt_ = getkBT();
 
   // exponent of uncertainty prior
   parse("PRIOR",prior_);

@@ -25,6 +25,7 @@
 #include "core/ActionWithValue.h"
 #include "core/ActionAtomistic.h"
 #include "core/ActionWithArguments.h"
+#include "tools/Communicator.h"
 #include "core/PlumedMain.h"
 #include "tools/Random.h"
 #include "tools/OpenMP.h"
@@ -344,8 +345,8 @@ void MetainferenceBase::apply() {
     }
   }
   if( wasforced ) {
-    addForcesOnArguments( forcesToApply );
-    if( getNumberOfAtoms()>0 ) setForcesOnAtoms( forcesToApply, getNumberOfArguments() );
+    unsigned ind=0; addForcesOnArguments( 0, forcesToApply, ind );
+    if( getNumberOfAtoms()>0 ) setForcesOnAtoms( forcesToApply, ind );
   }
 }
 

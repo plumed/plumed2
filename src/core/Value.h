@@ -33,6 +33,7 @@
 namespace PLMD {
 
 class ActionWithValue;
+class ActionAtomistic;
 
 /// \ingroup TOOLBOX
 /// A class for holding the value of a function together with its derivatives.
@@ -45,6 +46,12 @@ class ActionWithValue;
 /// you are implementing please feel free to use it.
 class Value {
   friend class ActionWithValue;
+  friend class ActionAtomistic;
+  friend class ActionWithArguments;
+  friend class ActionWithVirtualAtom;
+  friend class DomainDecomposition;
+  template<typename T>
+  friend class DataPassingObjectTyped;
 /// This copies the contents of a value into a second value (just the derivatives and value)
   friend void copy( const Value& val1, Value& val2 );
 /// This copies the contents of a value into a second value (but second value is a pointer)
@@ -61,16 +68,21 @@ private:
 /// Had the value been set
   bool value_set;
 /// The value of the quantity
-  double value;
+  std::vector<double> data;
 /// The force acting on this quantity
-  double inputForce;
+  std::vector<double> inputForce;
 /// A flag telling us we have a force acting on this quantity
   bool hasForce;
+/// This flag is used if the value is a constant
+  bool constant;
 /// The derivatives of the quantity stored in value
-  std::vector<double> derivatives;
   std::map<AtomNumber,Vector> gradients;
 /// The name of this quantiy
   std::string name;
+/// Are we storing the data for this value if it is vector or matrix
+  bool storedata;
+/// What is the shape of the value (0 dimensional=scalar, n dimensional with derivatives=grid, 1 dimensional no derivatives=vector, 2 dimensional no derivatives=matrix)
+  std::vector<unsigned> shape;
 /// Does this quanity have derivatives
   bool hasDeriv;
 /// Is this quantity periodic
@@ -83,20 +95,24 @@ private:
 /// Complete the setup of the periodicity
   void setupPeriodicity();
 // bring value within PBCs
-  void applyPeriodicity();
+  void applyPeriodicity( const unsigned& ival );
 public:
 /// A constructor that can be used to make Vectors of values
   Value();
 /// A constructor that can be used to make Vectors of named values
   explicit Value(const std::string& name);
 /// A constructor that is used throughout the code to setup the value poiters
-  Value(ActionWithValue* av, const std::string& name, const bool withderiv);
+  Value(ActionWithValue* av, const std::string& name, const bool withderiv,const std::vector<unsigned>&ss=std::vector<unsigned>());
+/// Set the shape of the Value
+  void setShape( const std::vector<unsigned>&ss );
 /// Set the value of the function
   void set(double);
+/// Set the value of the stored data
+  void set(const std::size_t& n, const double& v );
 /// Add something to the value of the function
   void add(double);
 /// Get the value of the function
-  double get() const;
+  double get( const std::size_t& ival=0 ) const;
 /// Find out if the value has been set
   bool valueHasBeenSet() const;
 /// Check if the value is periodic
@@ -129,10 +145,14 @@ public:
   double getDerivative(const unsigned n) const;
 /// Clear the input force on the variable
   void clearInputForce();
+/// Special method for clearing forces on variables used by DataPassingObject
+  void clearInputForce( const std::vector<AtomNumber>& index );
 /// Add some force on this value
-  void  addForce(double f);
+  void addForce(double f);
+/// Add some force on the ival th component of this value
+  void addForce( const std::size_t& ival, double f );
 /// Get the value of the force on this colvar
-  double getForce() const ;
+  double getForce( const std::size_t& ival=0 ) const ;
 /// Apply the forces to the derivatives using the chain rule (if there are no forces this routine returns false)
   bool applyForce( std::vector<double>& forces ) const ;
 /// Calculate the difference between the instantaneous value of the function and some other point: other_point-inst_val
@@ -146,8 +166,28 @@ public:
 /// Get the difference between max and minimum of domain
   double getMaxMinusMin()const;
 /// This sets up the gradients
-  void setGradients();
+  void setGradients( ActionAtomistic* aa, unsigned& start );
+/// This passes gradients from one action to another
+  void passGradients( const double& der, std::map<AtomNumber,Vector>& g ) const ;
   static double projection(const Value&,const Value&);
+/// Get the rank of the object that is contained in this value
+  unsigned getRank() const ;
+/// Get the shape of the object that is contained in this value
+  const std::vector<unsigned>& getShape() const ;
+/// This turns on storing of vectors/matrices
+  void buildDataStore();
+/// Get the total number of scalars that are stored here
+  unsigned getNumberOfValues() const ;
+/// Get the number of threads to use when assigning this value
+  unsigned getGoodNumThreads( const unsigned& j, const unsigned& k ) const ;
+/// These are used for passing around the data in this value when we are doing replica exchange
+  void writeBinary(std::ostream&o) const ;
+  void readBinary(std::istream&i);
+/// These are used for making constant values
+  bool isConstant() const ;
+  void setConstant();
+/// Check if forces have been added on this value
+  bool forcesWereAdded() const ;
 };
 
 void copy( const Value& val1, Value& val2 );
@@ -155,31 +195,31 @@ void copy( const Value& val1, Value* val2 );
 void add( const Value& val1, Value* valout );
 
 inline
-void Value::applyPeriodicity() {
+void Value::applyPeriodicity(const unsigned& ival) {
   if(periodicity==periodic) {
-    value=min+difference(min,value);
-    if(value<min)value+=max_minus_min;
+    data[ival]=min+difference(min,data[ival]);
+    if(data[ival]<min)data[ival]+=max_minus_min;
   }
 }
 
 inline
 void product( const Value& val1, const Value& val2, Value& valout ) {
-  plumed_assert( val1.derivatives.size()==val2.derivatives.size() );
-  if( valout.derivatives.size()!=val1.derivatives.size() ) valout.resizeDerivatives( val1.derivatives.size() );
+  plumed_assert( val1.getNumberOfDerivatives()==val2.getNumberOfDerivatives() );
+  if( valout.getNumberOfDerivatives()!=val1.getNumberOfDerivatives() ) valout.resizeDerivatives( val1.getNumberOfDerivatives() );
   valout.value_set=false;
   valout.clearDerivatives();
-  double u=val1.value;
-  double v=val2.value;
-  for(unsigned i=0; i<val1.derivatives.size(); ++i) {
-    valout.addDerivative(i, u*val2.derivatives[i] + v*val1.derivatives[i] );
+  double u=val1.get();
+  double v=val2.get();
+  for(unsigned i=0; i<val1.getNumberOfDerivatives(); ++i) {
+    valout.addDerivative(i, u*val2.getDerivative(i) + v*val1.getDerivative(i) );
   }
   valout.set( u*v );
 }
 
 inline
 void quotient( const Value& val1, const Value& val2, Value* valout ) {
-  plumed_assert( val1.derivatives.size()==val2.derivatives.size() );
-  if( valout->derivatives.size()!=val1.derivatives.size() ) valout->resizeDerivatives( val1.derivatives.size() );
+  plumed_assert( val1.getNumberOfDerivatives()==val2.getNumberOfDerivatives());
+  if( valout->getNumberOfDerivatives()!=val1.getNumberOfDerivatives() ) valout->resizeDerivatives( val1.getNumberOfDerivatives() );
   valout->value_set=false;
   valout->clearDerivatives();
   double u=val1.get();
@@ -193,20 +233,20 @@ void quotient( const Value& val1, const Value& val2, Value* valout ) {
 inline
 void Value::set(double v) {
   value_set=true;
-  value=v;
-  applyPeriodicity();
+  data[0]=v;
+  applyPeriodicity(0);
 }
 
 inline
 void Value::add(double v) {
   value_set=true;
-  value+=v;
-  applyPeriodicity();
+  data[0]+=v;
+  applyPeriodicity(0);
 }
 
 inline
-double Value::get()const {
-  return value;
+double Value::get( const std::size_t& ival )const {
+  return data[ival];
 }
 
 inline
@@ -222,13 +262,14 @@ const std::string& Value::getName()const {
 inline
 unsigned Value::getNumberOfDerivatives() const {
   plumed_massert(hasDeriv,"the derivatives array for this value has zero size");
-  return derivatives.size();
+  if( shape.size()>0 ) return shape.size();
+  return data.size() - 1;
 }
 
 inline
 double Value::getDerivative(const unsigned n) const {
-  plumed_dbg_massert(n<derivatives.size(),"you are asking for a derivative that is out of bounds");
-  return derivatives[n];
+  plumed_dbg_massert(n<getNumberOfDerivatives(),"you are asking for a derivative that is out of bounds");
+  return data[1+n];
 }
 
 inline
@@ -238,49 +279,70 @@ bool Value::hasDerivatives() const {
 
 inline
 void Value::resizeDerivatives(int n) {
-  if(hasDeriv) derivatives.resize(n);
+  if( shape.size()>0 ) return;
+  if(hasDeriv) data.resize(1+n);
 }
 
 inline
 void Value::addDerivative(unsigned i,double d) {
-  plumed_dbg_massert(i<derivatives.size(),"derivative is out of bounds");
-  derivatives[i]+=d;
+  plumed_dbg_massert(i<getNumberOfDerivatives(),"derivative is out of bounds");
+  data[1+i]+=d;
 }
 
 inline
 void Value::setDerivative(unsigned i, double d) {
-  plumed_dbg_massert(i<derivatives.size(),"derivative is out of bounds");
-  derivatives[i]=d;
+  plumed_dbg_massert(i<getNumberOfDerivatives(),"derivative is out of bounds");
+  data[1+i]=d;
 }
 
 inline
 void Value::chainRule(double df) {
-  for(unsigned i=0; i<derivatives.size(); ++i) derivatives[i]*=df;
+  for(unsigned i=0; i<getNumberOfDerivatives(); ++i) data[1+i]*=df;
 }
 
 inline
 void Value::clearInputForce() {
-  hasForce=false;
-  inputForce=0.0;
+  if( !hasForce ) return;
+  hasForce=false; std::fill(inputForce.begin(),inputForce.end(),0);
+}
+
+inline
+void Value::clearInputForce( const std::vector<AtomNumber>& index ) {
+  if( !hasForce ) return;
+  hasForce=false; for(const auto & p : index) inputForce[p.index()]=0;
 }
 
 inline
 void Value::clearDerivatives() {
+  if( constant ) return;
   value_set=false;
-  std::fill(derivatives.begin(), derivatives.end(), 0);
+  if( data.size()>1 ) std::fill(data.begin()+1, data.end(), 0);
 }
 
 inline
 void Value::addForce(double f) {
-  plumed_dbg_massert(hasDerivatives(),"forces can only be added to values with derivatives");
   hasForce=true;
-  inputForce+=f;
+  inputForce[0]+=f;
 }
 
 inline
-double Value::getForce() const {
-  return inputForce;
+void Value::addForce(const std::size_t& ival, double f) {
+  plumed_dbg_massert(ival<inputForce.size(),"too few components in value to add force");
+  hasForce=true;
+  inputForce[ival]+=f;
 }
+
+inline
+bool Value::forcesWereAdded() const {
+  return hasForce;
+}
+
+inline
+double Value::getForce( const std::size_t& ival ) const {
+  plumed_dbg_assert( ival<inputForce.size() );
+  return inputForce[ival];
+}
+
 /// d2-d1
 inline
 double Value::difference(double d1,double d2)const {
@@ -308,6 +370,27 @@ inline
 double Value::getMaxMinusMin()const {
   plumed_dbg_assert( periodicity==periodic );
   return max_minus_min;
+}
+
+inline
+unsigned Value::getRank() const {
+  return shape.size();
+}
+
+inline
+const std::vector<unsigned>& Value::getShape() const {
+  return shape;
+}
+
+inline
+unsigned Value::getNumberOfValues() const {
+  unsigned size=1; for(unsigned i=0; i<shape.size(); ++i) size *= shape[i];
+  return size;
+}
+
+inline
+bool Value::isConstant() const {
+  return constant;
 }
 
 }

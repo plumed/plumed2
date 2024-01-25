@@ -32,7 +32,6 @@
 #include "tools/Communicator.h"
 #include "core/ActionSet.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include "tools/File.h"
 
 
@@ -83,14 +82,7 @@ VesBias::VesBias(const ActionOptions&ao):
   log << plumed.cite("Valsson and Parrinello, Phys. Rev. Lett. 113, 090601 (2014)");
   log.printf("\n");
 
-  double temp=0.0;
-  parse("TEMP",temp);
-  if(temp>0.0) {
-    kbt_=plumed.getAtoms().getKBoltzmann()*temp;
-  }
-  else {
-    kbt_=plumed.getAtoms().getKbT();
-  }
+  kbt_=getkBT();
   if(kbt_>0.0) {
     log.printf("  KbT: %f\n",kbt_);
   }

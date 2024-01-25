@@ -20,8 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ReweightBase.h"
-#include "core/PlumedMain.h"
-#include "core/Atoms.h"
 
 namespace PLMD {
 namespace bias {
@@ -40,9 +38,7 @@ ReweightBase::ReweightBase(const ActionOptions&ao):
   ActionWithValue(ao),
   ActionWithArguments(ao)
 {
-  simtemp=0.; parse("TEMP",simtemp);
-  if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
-  else simtemp=plumed.getAtoms().getKbT();
+  simtemp=getkBT();
   if(simtemp==0) error("The MD engine does not pass the temperature to plumed so you have to specify it using TEMP");
   // Create something to hold the weight
   addValue(); setNotPeriodic();

@@ -18,7 +18,6 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include "bias/ReweightBase.h"
 #include "core/ActionAtomistic.h"
 #include "core/ActionRegister.h"
-#include "core/Atoms.h"
 #include "core/PlumedMain.h"
 #include "tools/File.h"
 #include "tools/Matrix.h"
@@ -387,7 +386,7 @@ EDS::EDS(const ActionOptions &ao) : PLUMED_BIAS_INIT(ao),
   parseVector("FIXED", target_coupling_);
   parseVector("INIT", set_coupling_);
   parse("PERIOD", update_period_);
-  parse("TEMP", temp);
+  kbt_ = getkBT();
   parse("SEED", seed_);
   parse("MULTI_PROP", multi_prop_);
   parse("LM_MIXING", lm_mixing_par_);
@@ -533,11 +532,6 @@ EDS::EDS(const ActionOptions &ao) : PLUMED_BIAS_INIT(ao),
   }
   else
   {
-
-    if (temp >= 0.0)
-      kbt_ = plumed.getAtoms().getKBoltzmann() * temp;
-    else
-      kbt_ = plumed.getAtoms().getKbT();
 
     // in driver, this results in kbt of 0
     if (kbt_ == 0)
@@ -999,7 +993,7 @@ void EDS::update_pseudo_virial()
   {
     // checked in setup to ensure this cast is valid.
     ActionAtomistic *cv = dynamic_cast<ActionAtomistic *>(getPntrToArgument(i)->getPntrToAction());
-    Tensor &v(cv->modifyVirial());
+    Tensor v(cv->getVirial());
     Tensor box(cv->getBox());
     const unsigned int natoms = cv->getNumberOfAtoms();
     if (!volume)

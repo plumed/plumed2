@@ -21,6 +21,9 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithArguments.h"
 #include "ActionWithValue.h"
+#include "ActionAtomistic.h"
+#include "ActionForInterface.h"
+#include "ActionWithVirtualAtom.h"
 #include "tools/PDB.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
@@ -102,6 +105,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
           std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
           if( all.empty() ) error("your input file is not telling plumed to calculate anything");
           for(unsigned j=0; j<all.size(); j++) {
+            ActionForInterface* ap=dynamic_cast<ActionForInterface*>( all[j] ); if( ap ) continue;
             for(int k=0; k<all[j]->getNumberOfComponents(); ++k) arg.push_back(all[j]->copyOutput(k));
           }
         } else if ( name=="*") {
@@ -145,6 +149,8 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
           std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
           if( all.empty() ) error("your input file is not telling plumed to calculate anything");
           for(unsigned j=0; j<all.size(); j++) {
+            ActionWithVirtualAtom* av=dynamic_cast<ActionWithVirtualAtom*>( all[j] ); if( av ) continue;
+            ActionForInterface* ap=dynamic_cast<ActionForInterface*>( all[j] ); if( ap && all[j]->getName()!="ENERGY" ) continue;
             for(int k=0; k<all[j]->getNumberOfComponents(); ++k) arg.push_back(all[j]->copyOutput(k));
           }
         } else {
@@ -263,8 +269,55 @@ double ActionWithArguments::getProjection(unsigned i,unsigned j)const {
   return Value::projection(*v1,*v2);
 }
 
-void ActionWithArguments::addForcesOnArguments( const std::vector<double>& forces ) {
-  for(unsigned i=0; i<arguments.size(); ++i) arguments[i]->addForce( forces[i] );
+void ActionWithArguments::addForcesOnArguments( const unsigned& argstart, const std::vector<double>& forces, unsigned& ind  ) {
+  for(unsigned i=0; i<arguments.size(); ++i) { arguments[i]->addForce( forces[i] ); ind++; }
+}
+
+void ActionWithArguments::setGradients( Value* myval, unsigned& start ) const {
+  if( !myval->hasDeriv ) return; plumed_assert( myval->getRank()==0 );
+
+  bool scalar=true;
+  for(unsigned i=0; i<arguments.size(); ++i ) {
+    if( arguments[i]->getRank()!=0 ) { scalar=false; break; }
+  }
+  if( !scalar ) {
+    bool constant=true;
+    for(unsigned i=0; i<arguments.size(); ++i ) {
+      if( !arguments[i]->isConstant() ) { constant=false; break; }
+      else start += arguments[i]->getNumberOfValues();
+    }
+    if( !constant ) error("cannot set gradient as unable to handle non-constant actions that take vectors/matrices/grids in input");
+  }
+  // Now pass the gradients
+  for(unsigned i=0; i<arguments.size(); ++i ) arguments[i]->passGradients( myval->getDerivative(i), myval->gradients );
+}
+
+bool ActionWithArguments::calculateConstantValues( const bool& haveatoms ) {
+  ActionWithValue* av = dynamic_cast<ActionWithValue*>( this );
+  if( !av || arguments.size()==0 ) return false;
+  bool constant = true, atoms=false;
+  for(unsigned i=0; i<arguments.size(); ++i) {
+    ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>( arguments[i]->getPntrToAction() );
+    if( aa ) { atoms=true; }
+    if( !arguments[i]->isConstant() ) { constant=false; break; }
+  }
+  if( constant ) {
+    // Set everything constant first as we need to set the shape
+    for(unsigned i=0; i<av->getNumberOfComponents(); ++i) (av->copyOutput(i))->setConstant();
+    if( !haveatoms ) log.printf("  values stored by this action are computed during startup and stay fixed during the simulation\n");
+    if( atoms ) return haveatoms;
+  }
+  // Now do the calculation and store the values if we don't need anything from the atoms
+  if( constant && !haveatoms ) {
+    plumed_assert( !atoms ); activate(); calculate(); deactivate();
+    for(unsigned i=0; i<av->getNumberOfComponents(); ++i) {
+      unsigned nv = av->copyOutput(i)->getNumberOfValues();
+      log.printf("  %d values stored in component labelled %s are : ", nv, (av->copyOutput(i))->getName().c_str() );
+      for(unsigned j=0; j<nv; ++j) log.printf(" %f", (av->copyOutput(i))->get(j) );
+      log.printf("\n");
+    }
+  }
+  return constant;
 }
 
 }

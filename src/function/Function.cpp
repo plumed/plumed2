@@ -64,38 +64,8 @@ void Function::addComponentWithDerivatives( const std::string& name ) {
 
 void Function::apply()
 {
-  const unsigned noa=getNumberOfArguments();
-  const unsigned ncp=getNumberOfComponents();
-  const unsigned cgs=comm.Get_size();
-
-  std::vector<double> f(noa,0.0);
-
-  unsigned stride=1;
-  unsigned rank=0;
-  if(ncp>4*cgs) {
-    stride=comm.Get_size();
-    rank=comm.Get_rank();
-  }
-
-  unsigned at_least_one_forced=0;
-  #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(f)
-  {
-    std::vector<double> omp_f(noa,0.0);
-    std::vector<double> forces(noa);
-    #pragma omp for reduction( + : at_least_one_forced)
-    for(unsigned i=rank; i<ncp; i+=stride) {
-      if(getPntrToComponent(i)->applyForce(forces)) {
-        at_least_one_forced+=1;
-        for(unsigned j=0; j<noa; j++) omp_f[j]+=forces[j];
-      }
-    }
-    #pragma omp critical
-    for(unsigned j=0; j<noa; j++) f[j]+=omp_f[j];
-  }
-
-  if(noa>0&&ncp>4*cgs) { comm.Sum(&f[0],noa); comm.Sum(at_least_one_forced); }
-
-  if(at_least_one_forced>0) for(unsigned i=0; i<noa; ++i) getPntrToArgument(i)->addForce(f[i]);
+  if( !checkForForces() ) return;
+  unsigned ind=0; addForcesOnArguments( 0, getForcesToApply(), ind );
 }
 
 }

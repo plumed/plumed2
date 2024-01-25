@@ -23,7 +23,6 @@
 #include "core/ActionRegister.h"
 #include "tools/Random.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 
 namespace PLMD {
 namespace bias {
@@ -161,11 +160,7 @@ ExtendedLagrangian::ExtendedLagrangian(const ActionOptions&ao):
   parseVector("TAU",tau);
   parseVector("FRICTION",friction);
   parseVector("KAPPA",kappa);
-  double temp=-1.0;
-  parse("TEMP",temp);
-  if(temp>=0.0) kbt=plumed.getAtoms().getKBoltzmann()*temp;
-  else kbt=plumed.getAtoms().getKbT();
-  checkRead();
+  kbt=getkBT(); checkRead();
 
   log.printf("  with harmonic force constant");
   for(unsigned i=0; i<kappa.size(); i++) log.printf(" %f",kappa[i]);

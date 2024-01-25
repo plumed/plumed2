@@ -19,10 +19,11 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Colvar.h"
-#include "core/ActionRegister.h"
+#include "core/ActionToPutData.h"
+#include "core/DomainDecomposition.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
+#include "core/ActionSet.h"
+#include "core/ActionRegister.h"
 
 namespace PLMD {
 namespace colvar {
@@ -60,28 +61,38 @@ PRINT ARG=ene
 //+ENDPLUMEDOC
 
 
-class Energy : public Colvar {
-
+class Energy : public ActionToPutData {
+private:
+/// This is used to sum the data
+  DomainDecomposition* interface;
+/// This is the list of forces that must be scaled
+  std::vector<ActionToPutData*> forces_to_scale;
 public:
   explicit Energy(const ActionOptions&);
 // active methods:
-  void prepare() override;
-  void calculate() override;
-  unsigned getNumberOfDerivatives() override;
   static void registerKeywords( Keywords& keys );
+  void wait() override;
+  void apply() override;
 };
 
 
 PLUMED_REGISTER_ACTION(Energy,"ENERGY")
 
 Energy::Energy(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao)
+  Action(ao),
+  ActionToPutData(ao),
+  interface(NULL)
 {
-//  if(checkNumericalDerivatives())
-//    error("Cannot use NUMERICAL_DERIVATIVES with ENERGY");
-  isEnergy=true;
-  addValueWithDerivatives(); setNotPeriodic();
-  getPntrToValue()->resizeDerivatives(1);
+  plumed.setEnergyValue( getLabel() ); std::vector<unsigned> shape;
+  addValue( shape ); setNotPeriodic(); setUnit( "energy", "default" );
+  ActionToPutData* px=plumed.getActionSet().selectWithLabel< ActionToPutData*>("posx");
+  plumed_assert(px); forces_to_scale.push_back(px); addDependency( px );
+  ActionToPutData* py=plumed.getActionSet().selectWithLabel< ActionToPutData*>("posy");
+  plumed_assert(py); forces_to_scale.push_back(py); addDependency( py );
+  ActionToPutData* pz=plumed.getActionSet().selectWithLabel< ActionToPutData*>("posz");
+  plumed_assert(pz); forces_to_scale.push_back(pz); addDependency( pz );
+  ActionToPutData* bx=plumed.getActionSet().selectWithLabel< ActionToPutData*>("Box");
+  plumed_assert(bx); forces_to_scale.push_back(bx); addDependency( bx );
   log<<"  Bibliography ";
   log<<plumed.cite("Bartels and Karplus, J. Phys. Chem. B 102, 865 (1998)");
   log<<plumed.cite("Bonomi and Parrinello, J. Comp. Chem. 30, 1615 (2009)");
@@ -90,23 +101,21 @@ Energy::Energy(const ActionOptions&ao):
 
 void Energy::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
-  ActionAtomistic::registerKeywords( keys );
-  ActionWithValue::registerKeywords( keys );
-  keys.remove("NUMERICAL_DERIVATIVES");
 }
 
-unsigned Energy::getNumberOfDerivatives() {
-  return 1;
+void Energy::wait() {
+  if( !interface ) {
+    std::vector<DomainDecomposition*> allput=plumed.getActionSet().select<DomainDecomposition*>();
+    if( allput.size()>1 ) warning("found more than one interface so don't know how to sum energy");
+    interface = allput[0];
+  }
+  ActionToPutData::wait(); if( interface ) interface->sumOverDomains( copyOutput(0) );
 }
 
-void Energy::prepare() {
-  plumed.getAtoms().setCollectEnergy(true);
-}
-
-// calculator
-void Energy::calculate() {
-  setValue( getEnergy() );
-  getPntrToComponent(0)->addDerivative(0,1.0);
+void Energy::apply() {
+  if( getPntrToValue()->forcesWereAdded() ) {
+    for(unsigned i=0; i<forces_to_scale.size(); ++i) forces_to_scale[i]->rescaleForces( 1.- getPntrToValue()->getForce(0));
+  }
 }
 
 }

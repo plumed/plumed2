@@ -385,7 +385,7 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
 //  for(unsigned i=0;i< actioninput.size();i++){
 //    cerr<<"AA "<<actioninput[i]<<endl;
 //  }
-      plumed.readInputWords(actioninput);
+      plumed.readInputWords(actioninput,false);
     }
 
   }
@@ -527,7 +527,7 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
 //  for(unsigned i=0;i< actioninput.size();i++){
 //   cerr<<"AA "<<actioninput[i]<<endl;
 //  }
-  plumed.readInputWords(actioninput);
+  plumed.readInputWords(actioninput,false);
   // if not a grid, then set it up automatically
   return 0;
 }

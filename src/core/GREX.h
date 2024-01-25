@@ -30,7 +30,6 @@
 namespace PLMD {
 
 class PlumedMain;
-class Atoms;
 class Communicator;
 
 class GREX:
@@ -42,7 +41,6 @@ class GREX:
   ForwardDecl<Communicator> intercomm_fwd;
   Communicator& intercomm=*intercomm_fwd;
   PlumedMain& plumedMain;
-  Atoms&      atoms;
   int partner;
   double localDeltaBias;
   double foreignDeltaBias;

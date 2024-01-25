@@ -30,8 +30,10 @@
 #include "core/ActionWithValue.h"
 #include "core/ActionSet.h"
 #include "core/ActionRegister.h"
+#include "core/DomainDecomposition.h"
+#include "core/ActionToPutData.h"
+#include "core/PbcAction.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 
 #include "tools/File.h"
 #include "tools/Pbc.h"
@@ -79,13 +81,15 @@ class EffectiveEnergyDrift:
 
   double eed;
 
-  Atoms& atoms;
   std::vector<ActionWithValue*> biases;
 
   long long int pDdStep;
   int nLocalAtoms;
   int pNLocalAtoms;
   std::vector<int> pGatindex;
+  std::vector<double> xpositions;
+  std::vector<double> ypositions;
+  std::vector<double> zpositions;
   std::vector<Vector> positions;
   std::vector<Vector> pPositions;
   std::vector<Vector> forces;
@@ -108,7 +112,11 @@ class EffectiveEnergyDrift:
   bool isFirstStep;
 
   bool ensemble;
-
+  PbcAction* pbc_action;
+  DomainDecomposition* domains;
+  ActionToPutData* posx;
+  ActionToPutData* posy;
+  ActionToPutData* posz;
 public:
   explicit EffectiveEnergyDrift(const ActionOptions&);
   ~EffectiveEnergyDrift();
@@ -141,11 +149,15 @@ EffectiveEnergyDrift::EffectiveEnergyDrift(const ActionOptions&ao):
   ActionPilot(ao),
   fmt("%f"),
   eed(0.0),
-  atoms(plumed.getAtoms()),
   nProc(plumed.comm.Get_size()),
   initialBias(0.0),
   isFirstStep(true),
-  ensemble(false)
+  ensemble(false),
+  pbc_action(NULL),
+  domains(NULL),
+  posx(NULL),
+  posy(NULL),
+  posz(NULL)
 {
   //stride must be == 1
   if(getStride()!=1) error("EFFECTIVE_ENERGY_DRIFT must have STRIDE=1 to work properly");
@@ -184,10 +196,23 @@ EffectiveEnergyDrift::EffectiveEnergyDrift(const ActionOptions&ao):
   indexDsp.resize(nProc);
   dataCnt.resize(nProc);
   dataDsp.resize(nProc);
+  // Retrieve the box
+  pbc_action=plumed.getActionSet().selectWithLabel<PbcAction*>("Box");
+  // Get the domain decomposition object
+  std::vector<DomainDecomposition*> ddact=plumed.getActionSet().select<DomainDecomposition*>();
+  if( ddact.size()>1 ) warning("found more than one interface so don't know get gatindex");
+  domains = ddact[0];
+  std::vector<ActionToPutData*> inputs=plumed.getActionSet().select<ActionToPutData*>();
+  for(const auto & pp : inputs ) {
+    if( pp->getRole()=="x" ) posx = pp;
+    if( pp->getRole()=="y" ) posy = pp;
+    if( pp->getRole()=="z" ) posz = pp;
+  }
+  plumed_assert( posx && posy && posz );
   //resize the received buffers
-  indexR.resize(atoms.getNatoms());
-  dataR.resize(atoms.getNatoms()*6);
-  backmap.resize(atoms.getNatoms());
+  indexR.resize((posx->copyOutput(0))->getShape()[0]);
+  dataR.resize((posx->copyOutput(0))->getShape()[0]*6);
+  backmap.resize((posx->copyOutput(0))->getShape()[0]);
 }
 
 EffectiveEnergyDrift::~EffectiveEnergyDrift() {
@@ -195,29 +220,40 @@ EffectiveEnergyDrift::~EffectiveEnergyDrift() {
 }
 
 void EffectiveEnergyDrift::update() {
-  bool pbc=atoms.getPbc().isSet();
+  Pbc & tpbc(pbc_action->getPbc()); bool pbc=tpbc.isSet();
 
   //retrieve data of local atoms
-  const std::vector<int>& gatindex = atoms.getGatindex();
+  const std::vector<int>& gatindex = domains->getGatindex();
   nLocalAtoms = gatindex.size();
-  atoms.getLocalPositions(positions);
-  atoms.getLocalForces(forces);
+  xpositions.resize( gatindex.size() ); posx->getLocalValues( xpositions );
+  ypositions.resize( gatindex.size() ); posy->getLocalValues( ypositions );
+  zpositions.resize( gatindex.size() ); posz->getLocalValues( zpositions );
+  positions.resize( gatindex.size() ); forces.resize( gatindex.size() );
+  for(unsigned i=0; i<gatindex.size(); ++i ) {
+    positions[i][0] = xpositions[i];
+    positions[i][1] = ypositions[i];
+    positions[i][2] = zpositions[i];
+    forces[i][0] = (posx->copyOutput(0))->getForce( gatindex[i] );
+    forces[i][1] = (posy->copyOutput(0))->getForce( gatindex[i] );
+    forces[i][2] = (posz->copyOutput(0))->getForce( gatindex[i] );
+  }
   if(pbc) {
-    Tensor B=atoms.getPbc().getBox();
-    Tensor IB=atoms.getPbc().getInvBox();
+    Tensor B=tpbc.getBox();
+    Tensor IB=tpbc.getInvBox();
     #pragma omp parallel for
     for(unsigned i=0; i<positions.size(); ++i) {
       positions[i]=matmul(positions[i],IB);
       forces[i]=matmul(B,forces[i]);
     }
-    box=B;
-    fbox=matmul(transpose(inverse(box)),atoms.getVirial());
+    box=B; Tensor virial; Value* boxValue = pbc_action->copyOutput(0);
+    for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) virial[i][j]=boxValue->getForce(3*i+j);
+    fbox=matmul(transpose(inverse(box)),virial);
   }
 
   //init stored data at the first step
   if(isFirstStep) {
     pDdStep=0;
-    pGatindex = atoms.getGatindex();
+    pGatindex = domains->getGatindex();
     pNLocalAtoms = pGatindex.size();
     pPositions=positions;
     pForces=forces;
@@ -229,7 +265,7 @@ void EffectiveEnergyDrift::update() {
   }
 
   //if the dd has changed we have to reshare the stored data
-  if(pDdStep<atoms.getDdStep() && nLocalAtoms<atoms.getNatoms()) {
+  if(pDdStep<domains->getDdStep() && nLocalAtoms<(posx->copyOutput(0))->getShape()[0]) {
     //prepare the data to be sent
     indexS.resize(pNLocalAtoms);
     dataS.resize(pNLocalAtoms*6);
@@ -323,7 +359,7 @@ void EffectiveEnergyDrift::update() {
   }
 
   //store the data of the current step
-  pDdStep = atoms.getDdStep();
+  pDdStep = domains->getDdStep();
   pNLocalAtoms = nLocalAtoms;
   pPositions.swap(positions);
   pForces.swap(forces);

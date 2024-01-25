@@ -146,7 +146,7 @@ void VolumeGradientBase::addBridgeForces( const std::vector<double>& bb ) {
   for(unsigned i=0; i<bb.size(); ++i) tmpforces[i]=bb[i];
   // Virial contribution is zero
   for(unsigned i=bb.size(); i<bb.size()+9; ++i) tmpforces[i]=0.0;
-  setForcesOnAtoms( tmpforces, 0 );
+  unsigned ind=0; setForcesOnAtoms( tmpforces, ind );
 }
 
 }

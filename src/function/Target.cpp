@@ -24,8 +24,6 @@
 #include "tools/PDB.h"
 #include "reference/MetricRegister.h"
 #include "reference/ArgumentOnlyDistance.h"
-#include "core/Atoms.h"
-#include "core/PlumedMain.h"
 
 namespace PLMD {
 namespace function {
@@ -126,7 +124,7 @@ Target::Target(const ActionOptions&ao):
   std::string type; parse("TYPE",type);
   std::string reference; parse("REFERENCE",reference);
   checkRead(); PDB pdb;
-  if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength()) )
+  if( !pdb.read(reference,usingNaturalUnits(),0.1/getUnits().getLength()) )
     error("missing input file " + reference);
 
   // Use the base ActionWithArguments to expand things like a1.*

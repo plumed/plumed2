@@ -22,7 +22,6 @@
 #include "core/ActionSetup.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include "tools/Exception.h"
 
 namespace PLMD {
@@ -182,19 +181,17 @@ Units::Units(const ActionOptions&ao):
 
   bool natural=false;
   parseFlag("NATURAL",natural);
-  plumed.getAtoms().setNaturalUnits(natural);
 
   checkRead();
 
-  plumed.getAtoms().setUnits(u);
   if(natural) {
     log.printf("  using natural units\n");
   } else {
     log.printf("  using physical units\n");
   }
-  log.printf("  inside PLUMED, Boltzmann constant is %g\n",plumed.getAtoms().getKBoltzmann());
+  log.printf("  inside PLUMED, Boltzmann constant is %g\n",getKBoltzmann());
 
-  plumed.getAtoms().updateUnits();
+  plumed.setUnits(natural,u);
 }
 
 }

@@ -20,11 +20,14 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Action.h"
+#include "ActionAtomistic.h"
 #include "ActionWithValue.h"
+#include "ActionWithArguments.h"
+#include "ActionForInterface.h"
 #include "PlumedMain.h"
 #include "tools/Log.h"
 #include "tools/Exception.h"
-#include "Atoms.h"
+#include "tools/Communicator.h"
 #include "ActionSet.h"
 #include <iostream>
 
@@ -59,17 +62,23 @@ Action::Action(const ActionOptions&ao):
   line(ao.line),
   update_from(std::numeric_limits<double>::max()),
   update_until(std::numeric_limits<double>::max()),
+  timestep(0),
   active(false),
   restart(ao.plumed.getRestart()),
   doCheckPoint(ao.plumed.getCPT()),
+  never_activate(false),
   plumed(ao.plumed),
   log(plumed.getLog()),
   comm(plumed.comm),
   multi_sim_comm(plumed.multi_sim_comm),
   keywords(ao.keys)
 {
+  // Retrieve the timestep and save it
+  ActionWithValue* ts = plumed.getActionSet().selectWithLabel<ActionWithValue*>("timestep");
+  if( ts ) timestep = (ts->copyOutput(0))->get();
+
   line.erase(line.begin());
-  log.printf("Action %s\n",name.c_str());
+  if( !keywords.exists("NO_ACTION_LOG") ) log.printf("Action %s\n",name.c_str());
 
   if(comm.Get_rank()==0) {
     replica_index=multi_sim_comm.Get_rank();
@@ -77,17 +86,16 @@ Action::Action(const ActionOptions&ao):
   comm.Bcast(replica_index,0);
 
   if ( keywords.exists("LABEL") ) { parse("LABEL",label); }
-
   if(label.length()==0) {
-    std::string s; Tools::convert(plumed.getActionSet().size(),s);
+    std::string s; Tools::convert(plumed.getActionSet().size()-plumed.getActionSet().select<ActionForInterface*>().size(),s);
     label="@"+s;
   }
   if( plumed.getActionSet().selectWithLabel<Action*>(label) ) error("label " + label + " has been already used");
-  log.printf("  with label %s\n",label.c_str());
+  if( !keywords.exists("NO_ACTION_LOG") ) log.printf("  with label %s\n",label.c_str());
   if ( keywords.exists("UPDATE_FROM") ) parse("UPDATE_FROM",update_from);
-  if(update_from!=std::numeric_limits<double>::max()) log.printf("  only update from time %f\n",update_from);
+  if( !keywords.exists("NO_ACTION_LOG") && update_from!=std::numeric_limits<double>::max()) log.printf("  only update from time %f\n",update_from);
   if ( keywords.exists("UPDATE_UNTIL") ) parse("UPDATE_UNTIL",update_until);
-  if(update_until!=std::numeric_limits<double>::max()) log.printf("  only update until time %f\n",update_until);
+  if( !keywords.exists("NO_ACTION_LOG") && update_until!=std::numeric_limits<double>::max()) log.printf("  only update until time %f\n",update_until);
   if ( keywords.exists("RESTART") ) {
     std::string srestart="AUTO";
     parse("RESTART",srestart);
@@ -168,6 +176,8 @@ void Action::addDependency(Action*action) {
 }
 
 void Action::activate() {
+// This is set to true if actions are only need to be computed in setup (during checkRead)
+  if( never_activate ) return;
 // preparation step is called only the first time an Action is activated.
 // since it could change its dependences (e.g. in an ActionAtomistic which is
 // accessing to a virtual atom), this is done just before dependencies are
@@ -210,6 +220,24 @@ void Action::checkRead() {
     }
     error(msg);
   }
+  setupConstantValues(false);
+}
+
+void Action::setupConstantValues( const bool& have_atoms ) {
+  if( have_atoms ) {
+    // This ensures that we switch off actions that only depend on constant when passed from the
+    // MD code on the first step
+    ActionAtomistic* at = dynamic_cast<ActionAtomistic*>( this );
+    ActionWithValue* av = dynamic_cast<ActionWithValue*>( this );
+    if( at && av ) {
+      never_activate=av->getNumberOfComponents()>0;
+      for(unsigned i=0; i<av->getNumberOfComponents(); ++i) {
+        if( !av->copyOutput(i)->isConstant() ) { never_activate=false; break; }
+      }
+    }
+  }
+  ActionWithArguments* aa = dynamic_cast<ActionWithArguments*>( this );
+  if(aa) never_activate = aa->calculateConstantValues( have_atoms );
 }
 
 long long int Action::getStep()const {
@@ -217,14 +245,31 @@ long long int Action::getStep()const {
 }
 
 double Action::getTime()const {
-  return plumed.getAtoms().getTimeStep()*getStep();
+  return timestep*getStep();
 }
 
 double Action::getTimeStep()const {
-  return plumed.getAtoms().getTimeStep();
+  return timestep;
 }
 
-
+double Action::getkBT() {
+  double temp=-1.0;
+  if( keywords.exists("TEMP") ) parse("TEMP",temp);
+  if(temp>=0.0 && keywords.style("TEMP","optional") ) return getKBoltzmann()*temp;
+  ActionForInterface* kb=plumed.getActionSet().selectWithLabel<ActionForInterface*>("kBT");
+  double kbt=0; if(kb) kbt=(kb->copyOutput(0))->get();
+  if( temp>=0 && keywords.style("TEMP","compulsory") ) {
+    double kB=getKBoltzmann();
+    if( kbt>0 && std::abs(kbt-kB*temp)>1e-4) {
+      std::string strt1, strt2; Tools::convert( temp, strt1 ); Tools::convert( kbt/kB, strt2 );
+      warning("using TEMP=" + strt1 + " while MD engine uses " + strt2 + "\n");
+    }
+    kbt = kB*temp;
+    plumed_massert(kbt>0,"your MD engine does not pass the temperature to plumed, you must specify it using TEMP");
+    return kbt;
+  }
+  return kbt;
+}
 
 void Action::exit(int c) {
   plumed.exit(c);
@@ -239,7 +284,7 @@ void Action::prepare() {
 }
 
 [[noreturn]] void Action::error( const std::string & msg ) const {
-  log.printf("ERROR in input to action %s with label %s : %s \n \n", name.c_str(), label.c_str(), msg.c_str() );
+  if( !keywords.exists("NO_ACTION_LOG") ) log.printf("ERROR in input to action %s with label %s : %s \n \n", name.c_str(), label.c_str(), msg.c_str() );
   plumed_merror("ERROR in input to action " + name + " with label " + label + " : " + msg );
 }
 
@@ -274,9 +319,23 @@ bool Action::checkUpdate()const {
   else return false;
 }
 
-bool Action::getCPT()const {
+bool Action::getCPT() const {
   return plumed.getCPT();
 }
+
+const Units& Action::getUnits() const {
+  return plumed.getUnits();
+}
+
+bool Action::usingNaturalUnits() const {
+  return plumed.usingNaturalUnits();
+}
+
+double Action::getKBoltzmann() const {
+  if( usingNaturalUnits() ) return 1.0;
+  else return kBoltzmann/getUnits().getEnergy();
+}
+
 
 }
 

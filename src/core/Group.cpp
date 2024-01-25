@@ -19,10 +19,12 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-
-#include "core/ActionRegister.h"
-#include "core/ActionAtomistic.h"
-#include "core/Atoms.h"
+#include "Group.h"
+#include "ActionRegister.h"
+#include "PlumedMain.h"
+#include "Value.h"
+#include "ActionWithValue.h"
+#include "ActionWithVirtualAtom.h"
 #include "tools/IFile.h"
 #include "tools/Tools.h"
 #include <string>
@@ -30,7 +32,6 @@
 #include <algorithm>
 
 namespace PLMD {
-namespace generic {
 
 //+PLUMEDOC GENERIC GROUP
 /*
@@ -128,25 +129,12 @@ DUMPATOMS ATOMS=hy FILE=hy.gro
 */
 //+ENDPLUMEDOC
 
-class Group:
-  public ActionAtomistic
-{
-
-public:
-  explicit Group(const ActionOptions&ao);
-  ~Group();
-  static void registerKeywords( Keywords& keys );
-  void calculate() override {}
-  void apply() override {}
-};
-
 PLUMED_REGISTER_ACTION(Group,"GROUP")
 
 Group::Group(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao)
 {
-  std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   std::string ndxfile,ndxgroup;
   parse("NDX_FILE",ndxfile);
@@ -217,7 +205,6 @@ Group::Group(const ActionOptions&ao):
     Tools::removeDuplicates(atoms);
   }
 
-  this->atoms.insertGroup(getLabel(),atoms);
   log.printf("  list of atoms:");
   for(unsigned i=0; i<atoms.size(); i++) {
     if(i%25==0) log<<"\n";
@@ -237,10 +224,15 @@ void Group::registerKeywords( Keywords& keys ) {
   keys.add("optional", "NDX_GROUP", "the name of the group to be imported (gromacs syntax) - first group found is used by default");
 }
 
-Group::~Group() {
-  atoms.removeGroup(getLabel());
+std::vector<std::string> Group::getGroupAtoms() const {
+  std::vector<std::string> atoms_str(atoms.size());
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    std::pair<std::size_t,std::size_t> a = getValueIndices( atoms[i] );
+    if( xpos[a.first]->getNumberOfValues()==1 ) atoms_str[i] = (xpos[a.first]->getPntrToAction())->getLabel();
+    else { Tools::convert( atoms[i].serial(), atoms_str[i] ); }
+  }
+  return atoms_str;
 }
 
-}
 }
 

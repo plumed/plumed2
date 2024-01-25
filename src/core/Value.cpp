@@ -25,7 +25,7 @@
 #include "ActionWithArguments.h"
 #include "ActionWithVirtualAtom.h"
 #include "tools/Exception.h"
-#include "Atoms.h"
+#include "tools/OpenMP.h"
 #include "PlumedMain.h"
 
 namespace PLMD {
@@ -33,9 +33,10 @@ namespace PLMD {
 Value::Value():
   action(NULL),
   value_set(false),
-  value(0.0),
-  inputForce(0.0),
   hasForce(false),
+  constant(false),
+  storedata(false),
+  shape(std::vector<unsigned>()),
   hasDeriv(true),
   periodicity(unset),
   min(0.0),
@@ -43,15 +44,17 @@ Value::Value():
   max_minus_min(0.0),
   inv_max_minus_min(0.0)
 {
+  data.resize(1); inputForce.resize(1);
 }
 
 Value::Value(const std::string& name):
   action(NULL),
   value_set(false),
-  value(0.0),
-  inputForce(0.0),
   hasForce(false),
+  constant(false),
   name(name),
+  storedata(false),
+  shape(std::vector<unsigned>()),
   hasDeriv(true),
   periodicity(unset),
   min(0.0),
@@ -59,15 +62,17 @@ Value::Value(const std::string& name):
   max_minus_min(0.0),
   inv_max_minus_min(0.0)
 {
+  data.resize(1); inputForce.resize(1);
+  data[0]=inputForce[0]=0;
 }
 
-Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv):
+Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv, const std::vector<unsigned>&ss):
   action(av),
   value_set(false),
-  value(0.0),
-  inputForce(0.0),
   hasForce(false),
+  constant(false),
   name(name),
+  storedata(false),
   hasDeriv(withderiv),
   periodicity(unset),
   min(0.0),
@@ -75,6 +80,25 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv)
   max_minus_min(0.0),
   inv_max_minus_min(0.0)
 {
+  if( action ) storedata=action->getName()=="PUT";
+  setShape( ss );
+}
+
+void Value::setShape( const std::vector<unsigned>&ss ) {
+  std::size_t tot=1; shape.resize( ss.size() );
+  for(unsigned i=0; i<shape.size(); ++i) { tot = tot*ss[i]; shape[i]=ss[i]; }
+
+  if( shape.size()>0 && hasDeriv ) {
+    // This is for grids
+    std::size_t ndata = tot*action->getNumberOfDerivatives();
+    data.resize( ndata );
+  } else if( shape.size()==0 ) {
+    // This is for scalars
+    data.resize(1); inputForce.resize(1);
+  } else if( storedata ) {
+    // This is for vectors and matrices
+    data.resize( tot ); inputForce.resize( tot );
+  }
 }
 
 void Value::setupPeriodicity() {
@@ -94,10 +118,10 @@ bool Value::isPeriodic()const {
 }
 
 bool Value::applyForce(std::vector<double>& forces ) const {
-  if( !hasForce ) return false;
-  plumed_dbg_massert( derivatives.size()==forces.size()," forces array has wrong size" );
-  const unsigned N=derivatives.size();
-  for(unsigned i=0; i<N; ++i) forces[i]=inputForce*derivatives[i];
+  if( !hasForce || constant ) return false;
+  plumed_dbg_massert( data.size()-1==forces.size()," forces array has wrong size" );
+  const unsigned N=data.size()-1;
+  for(unsigned i=0; i<N; ++i) forces[i]=inputForce[0]*data[1+i];
   return true;
 }
 
@@ -125,35 +149,19 @@ void Value::getDomain(double&minout,double&maxout) const {
   maxout=max;
 }
 
-void Value::setGradients() {
+void Value::setGradients( ActionAtomistic* aa, unsigned& start ) {
   // Can't do gradients if we don't have derivatives
   if( !hasDeriv ) return;
-  gradients.clear();
-  ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(action);
-  ActionWithArguments*aw=dynamic_cast<ActionWithArguments*>(action);
-  if(aa) {
-    const Atoms&atoms((aa->plumed).getAtoms());
-    for(unsigned j=0; j<aa->getNumberOfAtoms(); ++j) {
-      AtomNumber an=aa->getAbsoluteIndex(j);
-      if(atoms.isVirtualAtom(an)) {
-        const ActionWithVirtualAtom* a=atoms.getVirtualAtomsAction(an);
-        for(const auto & p : a->getGradients()) {
-// controllare l'ordine del matmul:
-          gradients[p.first]+=matmul(Vector(derivatives[3*j],derivatives[3*j+1],derivatives[3*j+2]),p.second);
-        }
-      } else {
-        for(unsigned i=0; i<3; i++) gradients[an][i]+=derivatives[3*j+i];
-      }
-    }
-  } else if(aw) {
-    std::vector<Value*> values=aw->getArguments();
-    for(unsigned j=0; j<derivatives.size(); j++) {
-      for(const auto & p : values[j]->gradients) {
-        AtomNumber iatom=p.first;
-        gradients[iatom]+=p.second*derivatives[j];
-      }
-    }
-  } else plumed_error();
+  plumed_assert( shape.size()==0 );
+  for(unsigned j=0; j<aa->getNumberOfAtoms(); ++j) {
+    Vector der(data[1+start+3*j],data[1+start+3*j+1],data[1+start+3*j+2]);
+    aa->getGradient( j, der, gradients );
+  }
+  start += aa->getNumberOfAtoms();
+}
+
+void Value::passGradients( const double& der, std::map<AtomNumber,Vector>& g ) const {
+  for(const auto & p : gradients) { AtomNumber iatom=p.first; g[iatom] += p.second*der; }
 }
 
 double Value::projection(const Value& v1,const Value&v2) {
@@ -173,6 +181,34 @@ double Value::projection(const Value& v1,const Value&v2) {
 ActionWithValue* Value::getPntrToAction() {
   plumed_assert( action!=NULL );
   return action;
+}
+
+void Value::set(const std::size_t& n, const double& v ) {
+  value_set=true;
+  if( getRank()==0 ) { plumed_assert( n==0 ); data[n]=v; applyPeriodicity(n); }
+  else if( !hasDeriv ) { plumed_dbg_massert( n<data.size(), "failing in " + getName() ); data[n]=v; applyPeriodicity(n); }
+  else { data[n*(1+action->getNumberOfDerivatives())] = v; }
+}
+
+void Value::buildDataStore() {
+  if( getRank()==0 ) return;
+  storedata=true; setShape( shape );
+}
+
+void Value::setConstant() {
+  constant=true; storedata=true; setShape( shape );
+}
+
+void Value::writeBinary(std::ostream&o) const {
+  o.write(reinterpret_cast<const char*>(&data[0]),data.size()*sizeof(double));
+}
+
+void Value::readBinary(std::istream&i) {
+  i.read(reinterpret_cast<char*>(&data[0]),data.size()*sizeof(double));
+}
+
+unsigned Value::getGoodNumThreads( const unsigned& j, const unsigned& k ) const {
+  return OpenMP::getGoodNumThreads( &data[j], (k-j) );
 }
 
 void copy( const Value& val1, Value& val2 ) {

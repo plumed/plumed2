@@ -70,7 +70,7 @@ public:
   void requestArguments(const std::vector<Value*> &arg);
   void requestExtraDependencies(const std::vector<Value*> &extra);
 /// Add forces to arguments (used in apply)
-  void addForcesOnArguments( const std::vector<double>& forces );
+  void addForcesOnArguments( const unsigned& argstart, const std::vector<double>& forces, unsigned& ind );
 public:
   explicit ActionWithArguments(const ActionOptions&);
   virtual ~ActionWithArguments() {}
@@ -84,6 +84,10 @@ public:
   virtual const std::vector<Value*>    & getArguments() const ;
 /// Convert a list of argument names into a list of pointers to the values
   void interpretArgumentList(const std::vector<std::string>& c, std::vector<Value*>&arg);
+/// Used to calculate constant values in startup
+  bool calculateConstantValues( const bool& have_atoms );
+/// Get the gradient for this action
+  void setGradients( Value* myval, unsigned& start ) const ;
 };
 
 

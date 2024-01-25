@@ -20,9 +20,9 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Function.h"
+#include "tools/Communicator.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 
 namespace PLMD {
 namespace function {
@@ -93,13 +93,10 @@ Ensemble::Ensemble(const ActionOptions&ao):
   power(0)
 {
   parseFlag("REWEIGHT", do_reweight);
-  double temp=0.0;
-  parse("TEMP",temp);
   if(do_reweight) {
-    if(temp>0.0) kbt=plumed.getAtoms().getKBoltzmann()*temp;
-    else kbt=plumed.getAtoms().getKbT();
+    kbt=getkBT();
     if(kbt==0.0) error("Unless the MD engine passes the temperature to plumed, with REWEIGHT you must specify TEMP");
-  }
+  } else { double temp=0.0; parse("TEMP",temp); }
 
   parse("MOMENT",moment);
   if(moment==1) error("MOMENT can be any number but for 0 and 1");

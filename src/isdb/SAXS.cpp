@@ -561,7 +561,7 @@ SAXS::SAXS(const ActionOptions&ao):
     std::string template_name;
     parse("TEMPLATE",template_name);
     log.printf("  Template for ONEBEAD mapping conversion: %s\n", template_name.c_str());
-    if( !pdb.read(template_name,plumed.getAtoms().usingNaturalUnits(),1.) ) plumed_merror("missing input file " + template_name);
+    if( !pdb.read(template_name,usingNaturalUnits(),1.) ) plumed_merror("missing input file " + template_name);
   }
 
   // preliminary mapping for onebead representation

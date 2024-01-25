@@ -25,6 +25,7 @@
 #include "core/ActionRegister.h"
 #include "tools/Tools.h"
 #include "tools/PlumedHandle.h"
+#include "tools/Communicator.h"
 #include "core/PlumedMain.h"
 #include <cstring>
 #ifdef __PLUMED_HAS_DLOPEN
@@ -244,7 +245,7 @@ API([&]() {
     }
   }
 
-  int natoms=plumed.getAtoms().getNatoms();
+  int natoms=getTotAtoms();
 
   plumed_assert(getStride()==1) << "currently only supports STRIDE=1";
 
@@ -275,21 +276,21 @@ API([&]() {
 
   if(root) p.cmd("setMDEngine","plumed");
 
-  double engunits=plumed.getAtoms().getUnits().getEnergy();
+  double engunits=getUnits().getEnergy();
   if(root) p.cmd("setMDEnergyUnits",&engunits);
 
-  double lenunits=plumed.getAtoms().getUnits().getLength();
+  double lenunits=getUnits().getLength();
   if(root) p.cmd("setMDLengthUnits",&lenunits);
 
-  double timunits=plumed.getAtoms().getUnits().getTime();
+  double timunits=getUnits().getTime();
   if(root) p.cmd("setMDTimeUnits",&timunits);
 
-  double chaunits=plumed.getAtoms().getUnits().getCharge();
+  double chaunits=getUnits().getCharge();
   if(root) p.cmd("setMDChargeUnits",&chaunits);
-  double masunits=plumed.getAtoms().getUnits().getMass();
+  double masunits=getUnits().getMass();
   if(root) p.cmd("setMDMassUnits",&masunits);
 
-  double kbt=plumed.getAtoms().getKbT();
+  double kbt=getkBT();
   if(root) p.cmd("setKbT",&kbt);
 
   int res=0;
@@ -395,14 +396,10 @@ void Plumed::calculate() {
 
 void Plumed::apply() {
   Tools::DirectoryChanger directoryChanger(directory.c_str());
-  auto & f(modifyForces());
-  for(unsigned i=0; i<getNumberOfAtoms(); i++) {
-    f[i][0]+=forces[3*i+0];
-    f[i][1]+=forces[3*i+1];
-    f[i][2]+=forces[3*i+2];
-  }
-  auto & v(modifyVirial());
-  v+=virial;
+  std::vector<double> fforces( forces.size() + 9, 0 );
+  for(unsigned i=0; i<forces.size(); i++) fforces[i] += forces[i];
+  for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) fforces[forces.size()+3*i+j] = virial[i][j];
+  unsigned ind=0; setForcesOnAtoms( fforces, ind );
 }
 
 void Plumed::update() {

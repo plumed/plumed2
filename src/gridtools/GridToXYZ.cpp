@@ -21,9 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "GridPrintingBase.h"
 #include "core/ActionRegister.h"
-#include "core/PlumedMain.h"
 #include "tools/OFile.h"
-#include "core/Atoms.h"
 
 namespace PLMD {
 namespace gridtools {
@@ -85,7 +83,7 @@ GridToXYZ::GridToXYZ(const ActionOptions&ao):
   std::string unitname; parse("UNITS",unitname);
   if(unitname!="PLUMED") {
     Units myunit; myunit.setLength(unitname);
-    lenunit=plumed.getAtoms().getUnits().getLength()/myunit.getLength();
+    lenunit=getUnits().getLength()/myunit.getLength();
   }
   else lenunit=1.0;
   checkRead();

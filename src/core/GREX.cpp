@@ -21,7 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "GREX.h"
 #include "PlumedMain.h"
-#include "Atoms.h"
 #include "tools/Tools.h"
 #include "tools/Communicator.h"
 #include <sstream>
@@ -32,7 +31,6 @@ namespace PLMD {
 GREX::GREX(PlumedMain&p):
   initialized(false),
   plumedMain(p),
-  atoms(p.getAtoms()),
   partner(-1), // = unset
   localDeltaBias(0),
   foreignDeltaBias(0),
@@ -128,15 +126,13 @@ void GREX::cmd(const std::string&key,const TypesafePtr & val) {
     case cmd_getLocalDeltaBias:
       CHECK_INIT(initialized,key);
       CHECK_NOTNULL(val,key);
-      atoms.double2MD(localDeltaBias/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy()),val);
+      plumedMain.plumedQuantityToMD("energy",localDeltaBias,val);
       break;
     case cmd_cacheLocalUNow:
       CHECK_INIT(initialized,key);
       CHECK_NOTNULL(val,key);
       {
-        double x;
-        atoms.MD2double(val,x);
-        localUNow=x*(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
+        localUNow=plumedMain.MDQuantityToPLUMED("energy",val);
         intracomm.Sum(localUNow);
       }
       break;
@@ -144,16 +140,14 @@ void GREX::cmd(const std::string&key,const TypesafePtr & val) {
       CHECK_INIT(initialized,key);
       CHECK_NOTNULL(val,key);
       {
-        double x;
-        atoms.MD2double(val,x);
-        localUSwap=x*(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
+        localUSwap=plumedMain.MDQuantityToPLUMED("energy",val);
         intracomm.Sum(localUSwap);
       }
       break;
     case cmd_getForeignDeltaBias:
       CHECK_INIT(initialized,key);
       CHECK_NOTNULL(val,key);
-      atoms.double2MD(foreignDeltaBias/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy()),val);
+      plumedMain.plumedQuantityToMD("energy",foreignDeltaBias,val);
       break;
     case cmd_shareAllDeltaBias:
       CHECK_INIT(initialized,key);
@@ -172,8 +166,7 @@ void GREX::cmd(const std::string&key,const TypesafePtr & val) {
         unsigned rep;
         Tools::convert(words[1],rep);
         plumed_massert(rep<allDeltaBias.size(),"replica index passed to cmd(\"GREX getDeltaBias\") is out of range");
-        double d=allDeltaBias[rep]/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
-        atoms.double2MD(d,val);
+        plumedMain.plumedQuantityToMD("energy",allDeltaBias[rep],val);
       }
       break;
     default:
@@ -186,10 +179,10 @@ void GREX::cmd(const std::string&key,const TypesafePtr & val) {
 void GREX::savePositions() {
   plumedMain.prepareDependencies();
   plumedMain.resetActive(true);
-  atoms.shareAll();
+  plumedMain.shareAll();
   plumedMain.waitData();
   std::ostringstream o;
-  atoms.writeBinary(o);
+  plumedMain.writeBinary(o);
   buffer=o.str();
 }
 
@@ -204,7 +197,7 @@ void GREX::calculate() {
   }
   intracomm.Bcast(rbuf,0);
   std::istringstream i(std::string(&rbuf[0],rbuf.size()));
-  atoms.readBinary(i);
+  plumedMain.readBinary(i);
   plumedMain.setExchangeStep(true);
   plumedMain.prepareDependencies();
   plumedMain.justCalculate();

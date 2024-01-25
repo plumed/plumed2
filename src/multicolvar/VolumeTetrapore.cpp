@@ -20,8 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
-#include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include "tools/Units.h"
 #include "tools/Pbc.h"
 #include "ActionVolume.h"
@@ -169,7 +167,7 @@ VolumeTetrapore::VolumeTetrapore(const ActionOptions& ao):
     std::string unitname; parse("UNITS",unitname);
     if ( unitname.length()>0 ) {
       Units u; u.setLength(unitname);
-      lenunit=plumed.getAtoms().getUnits().getLength()/u.getLength();
+      lenunit=getUnits().getLength()/u.getLength();
     } else {
       unitname="nm";
     }

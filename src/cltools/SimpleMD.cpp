@@ -493,8 +493,8 @@ private:
     randomize_velocities(natoms,ndim,temperature,masses,velocities,random);
 
     if(plumed) {
-      plumed->cmd("setNoVirial");
       plumed->cmd("setNatoms",natoms);
+      plumed->cmd("setNoVirial");
       plumed->cmd("setMDEngine","simpleMD");
       plumed->cmd("setTimestep",tstep);
       plumed->cmd("setPlumedDat","plumed.dat");

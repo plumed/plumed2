@@ -26,6 +26,7 @@
 #include <set>
 #include "tools/Keywords.h"
 #include "tools/Tools.h"
+#include "tools/Units.h"
 #include "tools/Log.h"
 
 namespace PLMD {
@@ -77,6 +78,16 @@ class Action {
 /// Update only until this time.
   double update_until;
 
+/// Save the timestep here
+  double timestep;
+
+protected:
+/// Get the units that we are operating in
+  const Units& getUnits() const;
+/// Are we using natural units
+  bool usingNaturalUnits()const;
+/// Get the value of Boltzmann's constant
+  double getKBoltzmann()const;
 public:
 
 /// Check if action should be updated.
@@ -99,6 +110,8 @@ private:
 
   bool doCheckPoint;
 
+  bool never_activate;
+
 /// The set of default arguments that we are using
   std::string defaults;
 public:
@@ -114,6 +127,11 @@ public:
 
 /// Clear the dependence list for this Action
   void clearDependencies();
+
+/// Get the value of kBT by either reading the TEMP keyword
+/// and multiplying the temperature by Boltzmann's constant
+/// or get it fro the MD code
+  double getkBT();
 
 /// Return the present timestep
   long long int getStep()const;
@@ -180,6 +198,10 @@ public:
 /// This checks if Action::line is empty. It must be called after
 /// a final Action has been initialized
   void checkRead();
+
+/// This calculates any values that are constant and ensures
+/// that we don't calculate these actions on every timestep
+  void setupConstantValues( const bool& have_atoms );
 
   Communicator& comm;
   Communicator& multi_sim_comm;

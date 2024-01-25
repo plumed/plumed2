@@ -29,9 +29,7 @@ namespace PLMD {
 Colvar::Colvar(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao),
-  ActionWithValue(ao),
-  isEnergy(false),
-  isExtraCV(false)
+  ActionWithValue(ao)
 {
 }
 
@@ -43,7 +41,6 @@ void Colvar::registerKeywords( Keywords& keys ) {
 }
 
 void Colvar::requestAtoms(const std::vector<AtomNumber> & a) {
-  plumed_massert(!isEnergy,"request atoms should not be called if this is energy");
 // Tell actionAtomistic what atoms we are getting
   ActionAtomistic::requestAtoms(a);
 // Resize the derivatives of all atoms
@@ -51,66 +48,10 @@ void Colvar::requestAtoms(const std::vector<AtomNumber> & a) {
 }
 
 void Colvar::apply() {
-  std::vector<Vector>&   f(modifyForces());
-  Tensor&           v(modifyVirial());
-  const unsigned    nat=getNumberOfAtoms();
-  const unsigned    ncp=getNumberOfComponents();
-  const unsigned    fsz=f.size();
-
-  unsigned stride=1;
-  unsigned rank=0;
-  if(ncp>4*comm.Get_size()) {
-    stride=comm.Get_size();
-    rank=comm.Get_rank();
-  }
-
-  unsigned nt=OpenMP::getNumThreads();
-  if(nt>ncp/(4*stride)) nt=1;
-
-  if(!isEnergy && !isExtraCV) {
-    #pragma omp parallel num_threads(nt)
-    {
-      std::vector<Vector> omp_f(fsz);
-      Tensor              omp_v;
-      std::vector<double> forces(3*nat+9);
-      #pragma omp for
-      for(unsigned i=rank; i<ncp; i+=stride) {
-        if(getPntrToComponent(i)->applyForce(forces)) {
-          for(unsigned j=0; j<nat; ++j) {
-            omp_f[j][0]+=forces[3*j+0];
-            omp_f[j][1]+=forces[3*j+1];
-            omp_f[j][2]+=forces[3*j+2];
-          }
-          omp_v(0,0)+=forces[3*nat+0];
-          omp_v(0,1)+=forces[3*nat+1];
-          omp_v(0,2)+=forces[3*nat+2];
-          omp_v(1,0)+=forces[3*nat+3];
-          omp_v(1,1)+=forces[3*nat+4];
-          omp_v(1,2)+=forces[3*nat+5];
-          omp_v(2,0)+=forces[3*nat+6];
-          omp_v(2,1)+=forces[3*nat+7];
-          omp_v(2,2)+=forces[3*nat+8];
-        }
-      }
-      #pragma omp critical
-      {
-        for(unsigned j=0; j<nat; ++j) f[j]+=omp_f[j];
-        v+=omp_v;
-      }
-    }
-
-    if(ncp>4*comm.Get_size()) {
-      if(fsz>0) comm.Sum(&f[0][0],3*fsz);
-      comm.Sum(&v[0][0],9);
-    }
-
-  } else if( isEnergy ) {
-    std::vector<double> forces(1);
-    if(getPntrToComponent(0)->applyForce(forces)) modifyForceOnEnergy()+=forces[0];
-  } else if( isExtraCV ) {
-    std::vector<double> forces(1);
-    if(getPntrToComponent(0)->applyForce(forces)) modifyForceOnExtraCV()+=forces[0];
-  }
+  if( !checkForForces() ) return ;
+  unsigned ind=0;
+  if( getNumberOfAtoms()>0 ) setForcesOnAtoms( getForcesToApply(), ind );
+  else setForcesOnCell( getForcesToApply(), ind );
 }
 
 void Colvar::setBoxDerivativesNoPbc(Value* v) {

@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithVirtualAtom.h"
-#include "Atoms.h"
 
 namespace PLMD {
 
@@ -28,81 +27,89 @@ void ActionWithVirtualAtom::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys);
   ActionAtomistic::registerKeywords(keys);
   keys.add("atoms","ATOMS","the list of atoms which are involved the virtual atom's definition");
+  keys.addOutputComponent("x","default","the x coordinate of the virtual atom");
+  keys.addOutputComponent("y","default","the y coordinate of the virtual atom");
+  keys.addOutputComponent("z","default","the z coordinate of the virtual atom");
+  keys.addOutputComponent("mass","default","the mass of the virtual atom");
+  keys.addOutputComponent("charge","default","the charge of the virtual atom");
 }
 
 ActionWithVirtualAtom::ActionWithVirtualAtom(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao),
-  index(atoms.addVirtualAtom(this))
+  ActionWithValue(ao)
 {
-  log<<"  serial associated to this virtual atom is "<<index.serial()<<"\n";
-}
-
-ActionWithVirtualAtom::~ActionWithVirtualAtom() {
-  atoms.removeVirtualAtom(this);
-}
-
-void ActionWithVirtualAtom::apply() {
-  Vector & f(atoms.forces[index.index()]);
-  for(unsigned i=0; i<getNumberOfAtoms(); i++) modifyForces()[i]=matmul(derivatives[i],f);
-  Tensor & v(modifyVirial());
-  for(unsigned i=0; i<3; i++) v+=boxDerivatives[i]*f[i];
-  f.zero(); // after propagating the force to the atoms used to compute the vatom, we reset this to zero
-  // this is necessary to avoid double counting if then one tries to compute the total force on the c.o.m. of the system.
-  // notice that this is currently done in FIT_TO_TEMPLATE
+  addComponentWithDerivatives("x"); componentIsNotPeriodic("x");
+  addComponentWithDerivatives("y"); componentIsNotPeriodic("y");
+  addComponentWithDerivatives("z"); componentIsNotPeriodic("z");
+  // Store the derivatives with respect to the virial only even if there are no atoms
+  for(unsigned i=0; i<3; ++i) getPntrToComponent(i)->resizeDerivatives(9);
+  addComponent("mass"); componentIsNotPeriodic("mass"); getPntrToComponent("mass")->isConstant();
+  addComponent("charge"); componentIsNotPeriodic("charge"); getPntrToComponent("charge")->isConstant();
 }
 
 void ActionWithVirtualAtom::requestAtoms(const std::vector<AtomNumber> & a) {
-  ActionAtomistic::requestAtoms(a);
-  derivatives.resize(a.size());
+  ActionAtomistic::requestAtoms(a); for(unsigned i=0; i<3; ++i) getPntrToComponent(i)->resizeDerivatives(3*a.size()+9);
 }
 
-void ActionWithVirtualAtom::setGradients() {
-  gradients.clear();
-  for(unsigned i=0; i<getNumberOfAtoms(); i++) {
-    AtomNumber an=getAbsoluteIndex(i);
-    // this case if the atom is a virtual one
-    if(atoms.isVirtualAtom(an)) {
-      const ActionWithVirtualAtom* a=atoms.getVirtualAtomsAction(an);
-      for(const auto & p : a->gradients) {
-        gradients[p.first]+=matmul(derivatives[i],p.second);
-      }
-      // this case if the atom is a normal one
-    } else {
-      gradients[an]+=derivatives[i];
+void ActionWithVirtualAtom::apply() {
+  Value* xval=getPntrToComponent(0);
+  Value* yval=getPntrToComponent(1);
+  Value* zval=getPntrToComponent(2);
+  if( !xval->forcesWereAdded() && !yval->forcesWereAdded() && !zval->forcesWereAdded() ) return ;
+  if( xval->isConstant() && yval->isConstant() && zval->isConstant() ) return;
+
+  for(unsigned i=0; i<value_depends.size(); ++i) {
+    xpos[value_depends[i]]->hasForce = true;
+    ypos[value_depends[i]]->hasForce = true;
+    zpos[value_depends[i]]->hasForce = true;
+  }
+  unsigned k=0;
+  double xf = xval->inputForce[0];
+  double yf = yval->inputForce[0];
+  double zf = zval->inputForce[0];
+  for(const auto & a : atom_value_ind) {
+    std::size_t nn = a.first, kk = a.second;
+    xpos[nn]->inputForce[kk] += xf*xval->data[1+k] + yf*yval->data[1+k] + zf*zval->data[1+k]; k++;
+    ypos[nn]->inputForce[kk] += xf*xval->data[1+k] + yf*yval->data[1+k] + zf*zval->data[1+k]; k++;
+    zpos[nn]->inputForce[kk] += xf*xval->data[1+k] + yf*yval->data[1+k] + zf*zval->data[1+k]; k++;
+  }
+  std::vector<double> virial(9);
+  for(unsigned i=0; i<9; ++i) { virial[i] = xf*xval->data[1+k] + yf*yval->data[1+k] + zf*zval->data[1+k]; k++; }
+  unsigned ind = 0; setForcesOnCell( virial, ind );
+  // The above can be achieved using the two functions below.  The code above that is specialised for the ActionWithVirtualAtom
+  // class runs faster than the general code below.
+  // if( !checkForForces() ) return ;
+  // unsigned mm=0; setForcesOnAtoms( getForcesToApply(), mm );
+}
+
+void ActionWithVirtualAtom::setBoxDerivatives(const std::vector<Tensor> &d) {
+  plumed_assert(d.size()==3); unsigned nbase = 3*getNumberOfAtoms();
+  for(unsigned i=0; i<3; ++i) {
+    Value* myval = getPntrToComponent(i);
+    for(unsigned j=0; j<3; ++j) {
+      for(unsigned k=0; k<3; ++k) myval->setDerivative( nbase + 3*j + k, d[i][j][k] );
     }
   }
-}
-
-void ActionWithVirtualAtom::setBoxDerivatives(const std::array<Tensor,3> &d) {
-  boxDerivatives=d;
 // Subtract the trivial part coming from a distorsion applied to the ghost atom first.
 // Notice that this part alone should exactly cancel the already accumulated virial
 // due to forces on this atom.
-  Vector pos=atoms.positions[index.index()];
-  for(unsigned i=0; i<3; i++) for(unsigned j=0; j<3; j++) boxDerivatives[j][i][j]+=pos[i];
+  Vector pos; for(unsigned i=0; i<3; ++i) pos[i] = getPntrToComponent(i)->get();
+  for(unsigned i=0; i<3; i++) for(unsigned j=0; j<3; j++) getPntrToComponent(j)->addDerivative( nbase + 3*i + j, pos[i] );
 }
 
 void ActionWithVirtualAtom::setBoxDerivativesNoPbc() {
-  std::array<Tensor,3> bd;
+  std::vector<Tensor> bd(3);
   for(unsigned i=0; i<3; i++) for(unsigned j=0; j<3; j++) for(unsigned k=0; k<3; k++) {
 // Notice that this expression is very similar to the one used in Colvar::setBoxDerivativesNoPbc().
 // Indeed, we have the negative of a sum over dependent atoms (l) of the external product between positions
 // and derivatives. Notice that this only works only when Pbc have not been used to compute
 // derivatives.
         for(unsigned l=0; l<getNumberOfAtoms(); l++) {
-          bd[k][i][j]-=getPosition(l)[i]*derivatives[l][j][k];
+          bd[k][i][j]-=getPosition(l)[i]*getPntrToComponent(k)->getDerivative(3*l+j);
         }
       }
   setBoxDerivatives(bd);
-}
-
-
-
-void ActionWithVirtualAtom::setGradientsIfNeeded() {
-  if(isOptionOn("GRADIENTS")) {
-    setGradients() ;
-  }
 }
 
 }

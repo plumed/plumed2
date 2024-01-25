@@ -36,9 +36,9 @@ ActionShortcut::ActionShortcut(const ActionOptions&ao):
 {
   std::string s; Tools::convert(plumed.getActionSet().size(),s);
   if( shortcutlabel==("@" + s) ) {
-    std::string t; Tools::convert(plumed.getActionSet().size()+1,t);
+    std::string t; Tools::convert(plumed.getActionSet().size(),t);
     shortcutlabel="@" + t;
-  } else label = ("@" + s);
+  } else label = ("@s" + s);
 }
 
 void ActionShortcut::readInputLine( const std::string& input ) {

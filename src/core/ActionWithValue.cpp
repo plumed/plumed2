@@ -20,8 +20,11 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithValue.h"
+#include "ActionWithArguments.h"
+#include "ActionAtomistic.h"
 #include "tools/Exception.h"
 #include "tools/OpenMP.h"
+#include "tools/Communicator.h"
 
 namespace PLMD {
 
@@ -58,7 +61,7 @@ ActionWithValue::ActionWithValue(const ActionOptions&ao):
   numericalDerivatives(false)
 {
   if( keywords.exists("NUMERICAL_DERIVATIVES") ) parseFlag("NUMERICAL_DERIVATIVES",numericalDerivatives);
-  if(numericalDerivatives) log.printf("  using numerical derivatives\n");
+  if(!keywords.exists("NO_ACTION_LOG") && numericalDerivatives) log.printf("  using numerical derivatives\n");
 }
 
 ActionWithValue::~ActionWithValue() {
@@ -101,14 +104,14 @@ Value* ActionWithValue::copyOutput( const unsigned& n ) const {
 
 // -- HERE WE HAVE THE STUFF FOR THE DEFAULT VALUE -- //
 
-void ActionWithValue::addValue() {
+void ActionWithValue::addValue( const std::vector<unsigned>& shape ) {
   plumed_massert(values.empty(),"You have already added the default value for this action");
-  values.emplace_back(Tools::make_unique<Value>(this,getLabel(), false ) );
+  values.emplace_back(Tools::make_unique<Value>(this,getLabel(), false, shape ) );
 }
 
-void ActionWithValue::addValueWithDerivatives() {
+void ActionWithValue::addValueWithDerivatives( const std::vector<unsigned>& shape ) {
   plumed_massert(values.empty(),"You have already added the default value for this action");
-  values.emplace_back(Tools::make_unique<Value>(this,getLabel(), true ) );
+  values.emplace_back(Tools::make_unique<Value>(this,getLabel(), true, shape ) );
 }
 
 void ActionWithValue::setNotPeriodic() {
@@ -132,7 +135,7 @@ Value* ActionWithValue::getPntrToValue() {
 
 // -- HERE WE HAVE THE STUFF FOR NAMED VALUES / COMPONENTS -- //
 
-void ActionWithValue::addComponent( const std::string& name ) {
+void ActionWithValue::addComponent( const std::string& name, const std::vector<unsigned>& shape ) {
   if( !keywords.outputComponentExists(name,true) ) {
     plumed_merror("a description of component " + name + " has not been added to the manual. Components should be registered like keywords in "
                   "registerKeywords as described in the developer docs.");
@@ -149,7 +152,7 @@ void ActionWithValue::addComponent( const std::string& name ) {
   log.printf(msg.c_str());
 }
 
-void ActionWithValue::addComponentWithDerivatives( const std::string& name ) {
+void ActionWithValue::addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape ) {
   if( !keywords.outputComponentExists(name,true) ) {
     plumed_merror("a description of component " + name + " has not been added to the manual. Components should be registered like keywords in "
                   "registerKeywords as described in the developer doc.");
@@ -204,7 +207,14 @@ void ActionWithValue::componentIsPeriodic( const std::string& name, const std::s
 
 void ActionWithValue::setGradientsIfNeeded() {
   if(isOptionOn("GRADIENTS")) {
-    for(unsigned i=0; i<values.size(); i++) values[i]->setGradients();
+    ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>(this);
+    if(aa) {
+      for(unsigned i=0; i<values.size(); i++) { unsigned start=0; values[i]->gradients.clear(); values[i]->setGradients( aa, start ); }
+    } else {
+      ActionWithArguments* aarg = dynamic_cast<ActionWithArguments*>( this );
+      if( !aarg ) plumed_merror( "failing in " + getLabel() );
+      for(unsigned i=0; i<values.size(); i++) { unsigned start=0; values[i]->gradients.clear(); aarg->setGradients( values[i].get(), start ); }
+    }
   }
 }
 
@@ -228,6 +238,55 @@ Value* ActionWithValue::getPntrToComponent( const std::string& name ) {
 Value* ActionWithValue::getPntrToComponent( int n ) {
   plumed_dbg_massert(n<values.size(),"you have requested a pointer that is out of bounds");
   return values[n].get();
+}
+
+bool ActionWithValue::checkForForces() {
+  const unsigned    ncp=getNumberOfComponents();
+  unsigned    nder=getNumberOfDerivatives();
+  if( ncp==0 || nder==0 ) return false;
+
+  unsigned nvalsWithForce=0;
+  std::vector<unsigned> valsToForce( ncp );
+  for(unsigned i=0; i<ncp; ++i) {
+    if( values[i]->hasForce && !values[i]->constant ) {
+      valsToForce[nvalsWithForce]=i; nvalsWithForce++;
+    }
+  }
+  if( nvalsWithForce==0 ) return false;
+
+  // Make sure forces to apply is empty of forces
+  if( forcesForApply.size()!=nder ) forcesForApply.resize( nder );
+  std::fill(forcesForApply.begin(),forcesForApply.end(),0);
+
+  unsigned stride=1;
+  unsigned rank=0;
+  if(ncp>4*comm.Get_size()) {
+    stride=comm.Get_size();
+    rank=comm.Get_rank();
+  }
+
+  unsigned nt=OpenMP::getNumThreads();
+  if(nt>ncp/(4*stride)) nt=1;
+
+  #pragma omp parallel num_threads(nt)
+  {
+    std::vector<double> omp_f;
+    if( nt>1 ) omp_f.resize(nder,0);
+    #pragma omp for
+    for(unsigned i=rank; i<nvalsWithForce; i+=stride) {
+      double ff=values[valsToForce[i]]->inputForce[0];
+      std::vector<double> & thisderiv( values[valsToForce[i]]->data );
+      if( nt>1 ) for(unsigned j=0; j<nder; ++j) omp_f[j] += ff*thisderiv[1+j];
+      else for(unsigned j=0; j<nder; ++j) forcesForApply[j] += ff*thisderiv[1+j];
+    }
+    #pragma omp critical
+    {
+      if( nt>1 ) for(unsigned j=0; j<forcesForApply.size(); ++j) forcesForApply[j]+=omp_f[j];
+    }
+  }
+
+  if(ncp>4*comm.Get_size()) comm.Sum(&forcesForApply[0],nder);
+  return true;
 }
 
 }

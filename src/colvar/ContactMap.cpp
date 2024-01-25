@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
+#include "tools/Communicator.h"
 #include "tools/NeighborList.h"
 #include "core/ActionRegister.h"
 #include "tools/SwitchingFunction.h"

@@ -23,7 +23,6 @@
 #include "tools/SwitchingFunction.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include "tools/IFile.h"
 
 #include <iostream>
@@ -162,7 +161,7 @@ GHBFIX::GHBFIX(const ActionOptions&ao):
   if(energy_units!="plumed") {
     Units units;
     units.setEnergy(energy_units);
-    for(auto i=0; i<etas.size(); i++) etas[i]*=units.getEnergy()/atoms.getUnits().getEnergy();
+    for(auto i=0; i<etas.size(); i++) etas[i]*=units.getEnergy()/getUnits().getEnergy();
   }
 
 }

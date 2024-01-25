@@ -20,8 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
-#include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include "ActionWithInputGrid.h"
 
 //+PLUMEDOC GRIDANALYSIS CONVERT_TO_FES
@@ -102,9 +100,7 @@ ConvertToFES::ConvertToFES(const ActionOptions&ao):
   grid->setBounds( ingrid->getMin(), ingrid->getMax(), ingrid->getNbin(), fspacing);
   setAveragingAction( std::move(grid), true );
 
-  simtemp=0.; parse("TEMP",simtemp); parseFlag("MINTOZERO",mintozero);
-  if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
-  else simtemp=plumed.getAtoms().getKbT();
+  simtemp=getkBT(); parseFlag("MINTOZERO",mintozero);
   if( simtemp==0 ) error("TEMP not set - use keyword TEMP");
 
   // Now create task list

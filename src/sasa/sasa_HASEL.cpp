@@ -608,7 +608,7 @@ void SASA_HASEL::computeDeltaG() {
   }
 
   double T;
-  T = plumed.getAtoms().getKbT()/plumed.getAtoms().getKBoltzmann();
+  T = getkBT()/getKBoltzmann();
 
   if (T != Ti) {
     for(unsigned i=0; i<natoms; i++) {

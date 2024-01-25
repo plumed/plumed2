@@ -19,8 +19,6 @@
 #include "ExpansionCVs.h"
 
 #include "tools/OpenMP.h"
-#include "core/PlumedMain.h"
-#include "core/Atoms.h"
 
 namespace PLMD {
 namespace opes {
@@ -42,17 +40,8 @@ ExpansionCVs::ExpansionCVs(const ActionOptions&ao)
   , totNumECVs_(0)
 {
 //set kbt_
-  const double kB=plumed.getAtoms().getKBoltzmann();
-  kbt_=plumed.getAtoms().getKbT();
-  double temp=-1;
-  parse("TEMP",temp);
-  if(temp>0)
-  {
-    if(kbt_>0 && std::abs(kbt_-kB*temp)>1e-4)
-      log.printf(" +++ WARNING +++ using TEMP=%g while MD engine uses %g\n",temp,kbt_/kB);
-    kbt_=kB*temp;
-  }
-  plumed_massert(kbt_>0,"your MD engine does not pass the temperature to plumed, you must specify it using TEMP");
+  const double kB=getKBoltzmann();
+  kbt_=getkBT();
   log.printf("  temperature = %g, beta = %g\n",kbt_/kB,1./kbt_);
 
 //set components

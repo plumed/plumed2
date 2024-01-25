@@ -25,7 +25,6 @@
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
-#include "core/Atoms.h"
 #include "core/GenericMolInfo.h"
 #include "tools/PDB.h"
 #include "PCA.h"
@@ -95,15 +94,15 @@ void OutputPCAProjection::performAnalysis() {
   for(unsigned j=0; j<mypca->getArguments().size(); ++j) mypdb.setArgumentValue( (mypca->getArguments()[j])->getName(), (mypca->myref)->getReferenceArgument(j) );
   // And output the first frame
   afile.open( filename ); afile.printf("REMARK TYPE=%s \n", mypca->mtype.c_str() );
-  if( plumed.getAtoms().usingNaturalUnits() ) mypdb.print( 1.0, mymoldat, afile, fmt );
-  else mypdb.print( atoms.getUnits().getLength()/0.1, mymoldat, afile, fmt );
+  if( usingNaturalUnits() ) mypdb.print( 1.0, mymoldat, afile, fmt );
+  else mypdb.print( getUnits().getLength()/0.1, mymoldat, afile, fmt );
   // And now output the eigenvectors
   for(unsigned dim=0; dim<mypca->nlow; ++dim) {
     afile.printf("REMARK TYPE=DIRECTION \n");
     mypdb.setAtomPositions( mypca->directions[dim].getReferencePositions() );
     for(unsigned j=0; j<mypca->getArguments().size(); ++j) mypdb.setArgumentValue( (mypca->getArguments()[j])->getName(), mypca->directions[dim].getReferenceArgument(j) );
-    if( plumed.getAtoms().usingNaturalUnits() ) mypdb.print( 1.0, mymoldat, afile, fmt );
-    else mypdb.print( atoms.getUnits().getLength()/0.1, mymoldat, afile, fmt );
+    if( usingNaturalUnits() ) mypdb.print( 1.0, mymoldat, afile, fmt );
+    else mypdb.print( getUnits().getLength()/0.1, mymoldat, afile, fmt );
   }
   afile.close();
 }

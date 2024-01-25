@@ -16,8 +16,6 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "bias/Bias.h"
 #include "core/ActionRegister.h"
-#include "core/Atoms.h"
-#include "core/PlumedMain.h"
 #include "tools/File.h"
 #include "tools/Matrix.h"
 #include "tools/Random.h"
@@ -269,8 +267,7 @@ FISST::FISST(const ActionOptions&ao):
     readInRestart();
   } else {
 
-    if(! kbt_ > 0.0)
-      kbt_ = plumed.getAtoms().getKbT();
+    if(! kbt_ > 0.0) kbt_=getkBT();
 
     //in driver, this results in kbt of 0
     if(kbt_ == 0) {

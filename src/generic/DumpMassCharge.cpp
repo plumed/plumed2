@@ -24,7 +24,6 @@
 #include "core/ActionRegister.h"
 #include "tools/File.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 
 namespace PLMD
 {
@@ -123,9 +122,8 @@ DumpMassCharge::DumpMassCharge(const ActionOptions&ao):
   parseAtomList("ATOMS",atoms);
 
   if(atoms.size()==0) {
-    for(int i=0; i<plumed.getAtoms().getNatoms(); i++) {
-      atoms.push_back(AtomNumber::index(i));
-    }
+    std::vector<std::string> strvec(1);
+    strvec[0]="@mdatoms"; interpretAtomList( strvec, atoms );
   }
 
   bool only_masses = false;
