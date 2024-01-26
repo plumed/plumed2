@@ -20,8 +20,9 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Function.h"
-#include "ActionRegister.h"
 #include "tools/Communicator.h"
+#include "core/ActionRegister.h"
+#include "core/PlumedMain.h"
 
 namespace PLMD {
 namespace function {

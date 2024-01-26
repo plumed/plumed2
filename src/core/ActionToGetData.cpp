@@ -25,6 +25,7 @@
 
 //+PLUMEDOC ANALYSIS GET
 /*
+Get data from PLUMED for another code
 
 \par Examples
 

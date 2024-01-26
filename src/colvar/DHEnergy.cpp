@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "CoordinationBase.h"
 #include "tools/SwitchingFunction.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 
 namespace PLMD {

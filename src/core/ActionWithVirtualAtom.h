@@ -90,20 +90,26 @@ void ActionWithVirtualAtom::setPosition(const Vector & pos) {
 
 inline
 void ActionWithVirtualAtom::setMass(double m) {
-  getPntrToComponent("mass")->set(m);
+  getPntrToComponent(3)->set(m);
 }
 
 inline
 void ActionWithVirtualAtom::setCharge(double c) {
-  getPntrToComponent("charge")->set(c);
+  getPntrToComponent(4)->set(c);
 }
 
 inline
 void ActionWithVirtualAtom::setAtomsDerivatives(const std::vector<Tensor> &d) {
-  for(unsigned i=0; i<3; ++i) {
-    Value* myval=getPntrToComponent(i);
-    for(unsigned j=0; j<getNumberOfAtoms(); ++j) {
-      for(unsigned k=0; k<3; ++k) myval->setDerivative( 3*j + k, d[j][k][i] );
+  unsigned jj=0;
+  Value* xval=getPntrToComponent(0);
+  Value* yval=getPntrToComponent(1);
+  Value* zval=getPntrToComponent(2);
+  for(unsigned j=0; j<getNumberOfAtoms(); ++j) {
+    for(unsigned k=0; k<3; ++k) {
+      xval->setDerivative( jj, d[j][k][0] );
+      yval->setDerivative( jj, d[j][k][1] );
+      zval->setDerivative( jj, d[j][k][2] );
+      jj++;
     }
   }
 }

@@ -71,6 +71,7 @@ public:
   virtual void wait() = 0;
 /// Actually set the values for the output
   void calculate() override { firststep=false; wasscaled=false; }
+  virtual void reset() {}
   virtual void Set_comm(Communicator& comm) = 0;
 /// For replica exchange
   virtual void writeBinary(std::ostream&o) = 0;

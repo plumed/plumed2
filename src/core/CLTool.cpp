@@ -161,7 +161,7 @@ bool CLTool::readInputFile( int argc, char**argv, FILE* in, FILE*out ) {
 
   FILE* mystdin=in;
 // call fclose when fp_deleter goes out of scope
-  auto deleter=[](FILE* f) { std::fclose(f); };
+  auto deleter=[](auto f) { std::fclose(f); };
   std::unique_ptr<FILE,decltype(deleter)> fp_deleter(nullptr,deleter);
 
   if(argc==2) {

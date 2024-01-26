@@ -130,6 +130,17 @@ cdef class Plumed:
           raise_from = None
         msg = error.what
         what = msg.decode("utf-8")
+
+        # this is likely not working on Windows, where encoding would be different:
+        if error.path1.ptr:
+            path1=(<char*>error.path1.ptr).decode("utf-8")
+        else:
+            path1=None
+        if error.path2.ptr:
+            path2=(<char*>error.path2.ptr).decode("utf-8")
+        else:
+            path2=None
+
         # this map is from cython doc
         if error.code>=20300 and error.code<20400: # PLMD::Plumed::ExceptionTypeError
            raise TypeError(what) from raise_from
@@ -143,6 +154,8 @@ cdef class Plumed:
            raise ValueError(what) from raise_from
         elif error.code>=10105 and error.code<10110: # std::invalid_argument
            raise ValueError(what) from raise_from
+        elif error.code==10229: # filesystem::filesystem_error
+           raise OSError(error.error_code,what,path1,None,path2) from raise_from
         elif error.code>=10230 and error.code<10240: # std::ios_base::failure
            # Unfortunately, in standard C++ we have no way of distinguishing EOF
            # from other errors here; be careful with the exception mask

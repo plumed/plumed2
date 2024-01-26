@@ -40,6 +40,7 @@
 !/volumes
 !/gridtools
 !/clusters
+!/unittest
 # These files we just want to ignore completely
 tmp
 report.txt

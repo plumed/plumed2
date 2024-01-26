@@ -396,7 +396,7 @@ bool PDB::read(const std::string&file,bool naturalUnits,double scale) {
   FILE* fp=std::fopen(file.c_str(),"r");
   if(!fp) return false;
 // call fclose when exiting this function
-  auto deleter=[](FILE* f) { std::fclose(f); };
+  auto deleter=[](auto f) { std::fclose(f); };
   std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
   readFromFilepointer(fp,naturalUnits,scale);
   return true;
@@ -619,6 +619,132 @@ void PDB::print( const double& lunits, GenericMolInfo* mymoldat, OFile& ofile, c
   ofile.printf("END\n");
 }
 
+bool PDB::allowedResidue( const std::string& type, const std::string& residuename ) const {
+  if( type=="protein" ) {
+    if(residuename=="ALA") return true;
+    else if(residuename=="ARG") return true;
+    else if(residuename=="ASN") return true;
+    else if(residuename=="ASP") return true;
+    else if(residuename=="CYS") return true;
+    else if(residuename=="GLN") return true;
+    else if(residuename=="GLU") return true;
+    else if(residuename=="GLY") return true;
+    else if(residuename=="HIS") return true;
+    else if(residuename=="ILE") return true;
+    else if(residuename=="LEU") return true;
+    else if(residuename=="LYS") return true;
+    else if(residuename=="MET") return true;
+    else if(residuename=="PHE") return true;
+    else if(residuename=="PRO") return true;
+    else if(residuename=="SER") return true;
+    else if(residuename=="THR") return true;
+    else if(residuename=="TRP") return true;
+    else if(residuename=="TYR") return true;
+    else if(residuename=="VAL") return true;
+// Terminal groups
+    else if(residuename=="ACE") return true;
+    else if(residuename=="NME") return true;
+    else if(residuename=="NH2") return true;
+// Alternative residue names in common force fields
+    else if(residuename=="GLH") return true; // neutral GLU
+    else if(residuename=="ASH") return true; // neutral ASP
+    else if(residuename=="HID") return true; // HIS-D amber
+    else if(residuename=="HSD") return true; // HIS-D charmm
+    else if(residuename=="HIE") return true; // HIS-E amber
+    else if(residuename=="HSE") return true; // HIS-E charmm
+    else if(residuename=="HIP") return true; // HIS-P amber
+    else if(residuename=="HSP") return true; // HIS-P charmm
+// Weird amino acids
+    else if(residuename=="NLE") return true;
+    else if(residuename=="SFO") return true;
+    else return false;
+  } else if( type=="dna" ) {
+    if(residuename=="A") return true;
+    else if(residuename=="A5") return true;
+    else if(residuename=="A3") return true;
+    else if(residuename=="AN") return true;
+    else if(residuename=="G") return true;
+    else if(residuename=="G5") return true;
+    else if(residuename=="G3") return true;
+    else if(residuename=="GN") return true;
+    else if(residuename=="T") return true;
+    else if(residuename=="T5") return true;
+    else if(residuename=="T3") return true;
+    else if(residuename=="TN") return true;
+    else if(residuename=="C") return true;
+    else if(residuename=="C5") return true;
+    else if(residuename=="C3") return true;
+    else if(residuename=="CN") return true;
+    else if(residuename=="DA") return true;
+    else if(residuename=="DA5") return true;
+    else if(residuename=="DA3") return true;
+    else if(residuename=="DAN") return true;
+    else if(residuename=="DG") return true;
+    else if(residuename=="DG5") return true;
+    else if(residuename=="DG3") return true;
+    else if(residuename=="DGN") return true;
+    else if(residuename=="DT") return true;
+    else if(residuename=="DT5") return true;
+    else if(residuename=="DT3") return true;
+    else if(residuename=="DTN") return true;
+    else if(residuename=="DC") return true;
+    else if(residuename=="DC5") return true;
+    else if(residuename=="DC3") return true;
+    else if(residuename=="DCN") return true;
+    else return false;
+  } else if( type=="rna" ) {
+    if(residuename=="A") return true;
+    else if(residuename=="A5") return true;
+    else if(residuename=="A3") return true;
+    else if(residuename=="AN") return true;
+    else if(residuename=="G") return true;
+    else if(residuename=="G5") return true;
+    else if(residuename=="G3") return true;
+    else if(residuename=="GN") return true;
+    else if(residuename=="U") return true;
+    else if(residuename=="U5") return true;
+    else if(residuename=="U3") return true;
+    else if(residuename=="UN") return true;
+    else if(residuename=="C") return true;
+    else if(residuename=="C5") return true;
+    else if(residuename=="C3") return true;
+    else if(residuename=="CN") return true;
+    else if(residuename=="RA") return true;
+    else if(residuename=="RA5") return true;
+    else if(residuename=="RA3") return true;
+    else if(residuename=="RAN") return true;
+    else if(residuename=="RG") return true;
+    else if(residuename=="RG5") return true;
+    else if(residuename=="RG3") return true;
+    else if(residuename=="RGN") return true;
+    else if(residuename=="RU") return true;
+    else if(residuename=="RU5") return true;
+    else if(residuename=="RU3") return true;
+    else if(residuename=="RUN") return true;
+    else if(residuename=="RC") return true;
+    else if(residuename=="RC5") return true;
+    else if(residuename=="RC3") return true;
+    else if(residuename=="RCN") return true;
+    else return false;
+  } else if( type=="water" ) {
+    if(residuename=="SOL") return true;
+    if(residuename=="WAT") return true;
+    return false;
+  } else if( type=="ion" ) {
+    if(residuename=="IB+") return true;
+    if(residuename=="CA") return true;
+    if(residuename=="CL") return true;
+    if(residuename=="NA") return true;
+    if(residuename=="MG") return true;
+    if(residuename=="K") return true;
+    if(residuename=="RB") return true;
+    if(residuename=="CS") return true;
+    if(residuename=="LI") return true;
+    if(residuename=="ZN") return true;
+    return false;
+  }
+  return false;
+}
 
 }
 

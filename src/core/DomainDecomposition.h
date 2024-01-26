@@ -74,6 +74,8 @@ private:
   std::vector<int> fullList;
 /// This actually does the sharing of the data across the domains
   void share(const std::vector<AtomNumber>& unique);
+/// Get all the atoms in the input that are active at this time
+  void getAllActiveAtoms( std::vector<AtomNumber>& u );
 public:
   static void registerKeywords(Keywords& keys);
   explicit DomainDecomposition(const ActionOptions&ao);
@@ -86,6 +88,7 @@ public:
   void share() override ;
   void shareAll() override ;
   void wait() override ;
+  void reset() override ;
   void writeBinary(std::ostream&o) override ;
   void readBinary(std::istream&i) override ;
   void apply() override ;

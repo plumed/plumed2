@@ -247,6 +247,5 @@ Histogram::Histogram( const ActionOptions& ao ):
   }
 }
 
-
 }
 }

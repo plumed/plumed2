@@ -115,11 +115,11 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
 
   bool intra_chain(false), inter_chain(false);
   std::string style; parse("STYLE",style);
-  if( style=="all" ) {
+  if( Tools::caseInSensStringCompare(style, "all") ) {
     intra_chain=true; inter_chain=true;
-  } else if( style=="inter") {
+  } else if( Tools::caseInSensStringCompare(style, "inter") ) {
     intra_chain=false; inter_chain=true;
-  } else if( style=="intra") {
+  } else if( Tools::caseInSensStringCompare(style, "intra") ) {
     intra_chain=true; inter_chain=false;
   } else {
     error( style + " is not a valid directive for the STYLE keyword");

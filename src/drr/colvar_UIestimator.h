@@ -719,17 +719,17 @@ LOOPEND3:;
     {
       for (int i = 0; i < dimension; i++)
       {
-        ofile << std::fixed << std::setprecision(9) << loop_flag[i] + 0.5 * width[i] << " ";
-        ofile_hist << std::fixed << std::setprecision(9) << loop_flag[i] + 0.5 * width[i] << " ";
-        ofile_count << std::fixed << std::setprecision(9) << loop_flag[i] + 0.5 * width[i] << " ";
+        ofile << std::fixed << std::setprecision(6) << loop_flag[i] + 0.5 * width[i] << " ";
+        ofile_hist << std::fixed << std::setprecision(6) << loop_flag[i] + 0.5 * width[i] << " ";
+        ofile_count << std::fixed << std::setprecision(6) << loop_flag[i] + 0.5 * width[i] << " ";
       }
 
       if (restart == false)
       {
         for (int i = 0; i < dimension; i++)
         {
-          ofile << std::fixed << std::setprecision(9) << grad.get_value(loop_flag)[i] << " ";
-          ofile_hist << std::fixed << std::setprecision(9) << grad.get_value(loop_flag)[i] << " ";
+          ofile << std::fixed << std::setprecision(6) << grad.get_value(loop_flag)[i] << " ";
+          ofile_hist << std::fixed << std::setprecision(6) << grad.get_value(loop_flag)[i] << " ";
         }
         ofile << std::endl;
         ofile_hist << std::endl;
@@ -745,8 +745,8 @@ LOOPEND3:;
             final_grad = grad.get_value(loop_flag)[i];
           else
             final_grad = ((grad.get_value(loop_flag)[i] * count.get_value(loop_flag) + input_grad.get_value(loop_flag)[i] * input_count.get_value(loop_flag)) / total_count_temp);
-          ofile << std::fixed << std::setprecision(9) << final_grad << " ";
-          ofile_hist << std::fixed << std::setprecision(9) << final_grad << " ";
+          ofile << std::fixed << std::setprecision(6) << final_grad << " ";
+          ofile_hist << std::fixed << std::setprecision(6) << final_grad << " ";
         }
         ofile << std::endl;
         ofile_hist << std::endl;

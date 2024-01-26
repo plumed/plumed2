@@ -21,8 +21,8 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
 #include "ColvarShortcut.h"
-#include "ActionRegister.h"
 #include "MultiColvarTemplate.h"
+#include "core/ActionRegister.h"
 #include "tools/Torsion.h"
 
 namespace PLMD {

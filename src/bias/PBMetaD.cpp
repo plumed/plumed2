@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Bias.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "core/ActionSet.h"
 #include "core/PlumedMain.h"
 #include "core/FlexibleBin.h"
@@ -33,9 +33,6 @@
 #include "tools/Communicator.h"
 #include <ctime>
 #include <numeric>
-#if defined(__PLUMED_HAS_GETCWD)
-#include <unistd.h>
-#endif
 
 namespace PLMD {
 namespace bias {

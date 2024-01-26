@@ -40,23 +40,36 @@ namespace PLMD {
 class DLLoader {
   std::stack<void*> handles;
   std::string lastError;
-/// Deleted copy constructor
+  /// Deleted copy constructor
   DLLoader(const DLLoader&) = delete;
-/// Deleted assignment
+  /// Deleted assignment
   DLLoader&operator=(const DLLoader&) = delete;
 public:
-/// Default constructor
+  /// Default constructor
   DLLoader();
-/// Cleanup
+  /// Cleanup
   ~DLLoader();
-/// Load a library, returning its handle
+  /// Load a library, returning its handle
   void* load(const std::string&);
-/// Returns the last error in dynamic loader
+  /// Returns the last error in dynamic loader
   const std::string & error();
-/// Returns true if the dynamic loader is available (on some systems it may not).
+  /// Returns true if the dynamic loader is available (on some systems it may not).
   static bool installed();
+
+  /// RAII helper for promoting RTLD_LOCAL loaded objects to RTLD_GLOBAL
+  class EnsureGlobalDLOpen {
+    void* handle_=nullptr;
+  public:
+    /// makes sure that object defining ptr is globally available
+    explicit EnsureGlobalDLOpen(const void* symbol) noexcept;
+    /// dlclose the dlopened object
+    ~EnsureGlobalDLOpen();
+    ///Confevert a const reference to a
+    template<typename T> EnsureGlobalDLOpen(const T&p) noexcept
+      : EnsureGlobalDLOpen(reinterpret_cast<const void*>(p)) {}
+  };
 };
 
-}
+} // namespace PLMD
 
 #endif

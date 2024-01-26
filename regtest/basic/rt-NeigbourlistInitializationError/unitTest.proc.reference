@@ -1,0 +1,6 @@
+Single list:
+[100000]Exception text: 
+An error happened while allocating the neighbor list, please decrease the number of atoms used
+Double list, no pairs:
+[100000, 90000]Exception text: 
+An error happened while allocating the neighbor list, please decrease the number of atoms used

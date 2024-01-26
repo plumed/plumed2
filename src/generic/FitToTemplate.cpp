@@ -175,7 +175,7 @@ class FitToTemplate:
   std::string type;
   bool nopbc;
   std::vector<double> weights;
-  std::vector<AtomNumber> aligned;
+  std::vector<std::pair<std::size_t,std::size_t> > p_aligned;
   Vector center;
   Vector shift;
   // optimal alignment related stuff
@@ -244,7 +244,8 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
 
   std::vector<Vector> positions=pdb.getPositions();
   weights=pdb.getOccupancy();
-  aligned=pdb.getAtomNumbers();
+  std::vector<AtomNumber> aligned=pdb.getAtomNumbers(); p_aligned.resize( aligned.size() );
+  for(unsigned i=0; i<aligned.size(); ++i) p_aligned[i] = getValueIndices( aligned[i] );
 
 
   // normalize weights
@@ -299,24 +300,27 @@ void FitToTemplate::calculate() {
   if (type=="SIMPLE") {
     Vector cc;
 
-    for(unsigned i=0; i<aligned.size(); ++i) {
+    for(unsigned i=0; i<p_aligned.size(); ++i) {
       cc+=weights[i]*getPosition(i);
     }
 
     shift=center-cc;
     setValue(shift.modulo());
-    for(unsigned i=0; i<getTotAtoms(); i++) {
-      Vector ato=getGlobalPosition(AtomNumber::index(i));
-      setGlobalPosition(AtomNumber::index(i),ato+shift);
+    unsigned nat = getTotAtoms();
+    for(unsigned i=0; i<nat; i++) {
+      std::pair<std::size_t,std::size_t> a = getValueIndices( AtomNumber::index(i));
+      Vector ato=getGlobalPosition(a);
+      setGlobalPosition(a,ato+shift);
     }
   }
   else if( type=="OPTIMAL" or type=="OPTIMAL-FAST") {
     // specific stuff that provides all that is needed
     double r=rmsd->calc_FitElements( getPositions(), rotation,  drotdpos, centeredpositions, center_positions);
-    setValue(r);
-    for(unsigned i=0; i<getTotAtoms(); i++) {
-      Vector ato=getGlobalPosition(AtomNumber::index(i));
-      setGlobalPosition(AtomNumber::index(i),matmul(rotation,ato-center_positions)+center);
+    setValue(r); unsigned nat = getTotAtoms();
+    for(unsigned i=0; i<nat; i++) {
+      std::pair<std::size_t,std::size_t> a = getValueIndices( AtomNumber::index(i));
+      Vector ato=getGlobalPosition(a);
+      setGlobalPosition(a,matmul(rotation,ato-center_positions)+center);
     }
 // rotate box
     Pbc& pbc(pbc_action->getPbc());
@@ -327,17 +331,21 @@ void FitToTemplate::calculate() {
 void FitToTemplate::apply() {
   if (type=="SIMPLE") {
     Vector totForce;
-    for(unsigned i=0; i<getTotAtoms(); i++) { totForce+=getForce(AtomNumber::index(i)); }
+    for(unsigned i=0; i<getTotAtoms(); i++) {
+      std::pair<std::size_t,std::size_t> a = getValueIndices( AtomNumber::index(i));
+      totForce+=getForce(a);
+    }
     Tensor vv=Tensor(center,totForce);
     for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) boxValue->addForce( 3*i+j, vv(i,j) );
-    for(unsigned i=0; i<aligned.size(); ++i) { addForce( aligned[i], -totForce*weights[i]); }
+    for(unsigned i=0; i<p_aligned.size(); ++i) { addForce( p_aligned[i], -totForce*weights[i]); }
   } else if ( type=="OPTIMAL" or type=="OPTIMAL-FAST") {
     Vector totForce;
     for(unsigned i=0; i<getTotAtoms(); i++) {
-      Vector f=getForce(AtomNumber::index(i));
+      std::pair<std::size_t,std::size_t> a = getValueIndices( AtomNumber::index(i));
+      Vector f=getForce(a);
 // rotate back forces
       Vector nf=matmul(transpose(rotation),f);
-      addForce(AtomNumber::index(i), nf-f);
+      addForce(a, nf-f);
 // accumulate rotated c.o.m. forces - this is already in the non rotated reference frame
       totForce+=nf;
     }
@@ -350,7 +358,7 @@ void FitToTemplate::apply() {
     virial=matmul(transpose(rotation),matmul(virial,rotation));
 
 // now we compute the force due to alignment
-    for(unsigned i=0; i<aligned.size(); i++) {
+    for(unsigned i=0; i<p_aligned.size(); i++) {
       Vector g;
       for(unsigned k=0; k<3; k++) {
 // this could be made faster computing only the diagonal of d
@@ -358,7 +366,7 @@ void FitToTemplate::apply() {
         g[k]=(d(0,0)+d(1,1)+d(2,2));
       }
 // here is the extra contribution
-      addForce( aligned[i], -g-weights[i]*totForce );
+      addForce( p_aligned[i], -g-weights[i]*totForce );
 // here it the contribution to the virial
 // notice that here we can use absolute positions since, for the alignment to be defined,
 // positions should be in one well defined periodic image

@@ -107,6 +107,8 @@ bool hasExternalMolfile();
 
 bool hasZlib();
 
+std::string getLibraryPath();
+
 }
 }
 

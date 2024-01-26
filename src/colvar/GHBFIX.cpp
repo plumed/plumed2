@@ -21,7 +21,8 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "CoordinationBase.h"
 #include "tools/SwitchingFunction.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
+#include "core/PlumedMain.h"
 #include "tools/IFile.h"
 
 #include <iostream>

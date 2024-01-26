@@ -148,8 +148,9 @@ class WrapAround:
   public ActionAtomistic
 {
   // cppcheck-suppress duplInheritedMember
-  std::vector<AtomNumber> atoms;
-  std::vector<AtomNumber> reference;
+  std::vector<Vector> refatoms;
+  std::vector<std::pair<std::size_t,std::size_t> > p_atoms;
+  std::vector<std::pair<std::size_t,std::size_t> > p_reference;
   unsigned groupby;
   bool pair_;
 public:
@@ -179,8 +180,8 @@ WrapAround::WrapAround(const ActionOptions&ao):
   groupby(1),
   pair_(false)
 {
-  parseAtomList("ATOMS",atoms);
-  parseAtomList("AROUND",reference);
+  std::vector<AtomNumber> atoms; parseAtomList("ATOMS",atoms);
+  std::vector<AtomNumber> reference; parseAtomList("AROUND",reference);
   parse("GROUPBY",groupby);
   parseFlag("PAIR", pair_);
 
@@ -207,6 +208,9 @@ WrapAround::WrapAround(const ActionOptions&ao):
 
   std::vector<AtomNumber> merged(atoms.size()+reference.size());
   merge(atoms.begin(),atoms.end(),reference.begin(),reference.end(),merged.begin());
+  p_atoms.resize( atoms.size() ); for(unsigned i=0; i<atoms.size(); ++i) p_atoms[i] = getValueIndices( atoms[i] );
+  refatoms.resize( reference.size() ); p_reference.resize( reference.size() );
+  for(unsigned i=0; i<reference.size(); ++i) p_reference[i] = getValueIndices( reference[i] );
   Tools::removeDuplicates(merged);
   requestAtoms(merged);
   doNotRetrieve();
@@ -214,15 +218,17 @@ WrapAround::WrapAround(const ActionOptions&ao):
 }
 
 void WrapAround::calculate() {
-  for(unsigned i=0; i<atoms.size(); i+=groupby) {
-    Vector second, first=getGlobalPosition(atoms[i]);
+  for(unsigned j=0; j<p_reference.size(); ++j) refatoms[j] = getGlobalPosition(p_reference[j]);
+
+  for(unsigned i=0; i<p_atoms.size(); i+=groupby) {
+    Vector second, first=getGlobalPosition(p_atoms[i]);
     double mindist2=std::numeric_limits<double>::max();
     int closest=-1;
     if(pair_) {
       closest = i/groupby;
     } else {
-      for(unsigned j=0; j<reference.size(); ++j) {
-        second=getGlobalPosition(reference[j]);
+      for(unsigned j=0; j<p_reference.size(); ++j) {
+        second=refatoms[j];
         const Vector distance=pbcDistance(first,second);
         const double distance2=modulo2(distance);
         if(distance2<mindist2) {
@@ -232,13 +238,13 @@ void WrapAround::calculate() {
       }
       plumed_massert(closest>=0,"closest not found");
     }
-    second=getGlobalPosition(reference[closest]);
+    second=refatoms[closest];
 // place first atom of the group
-    first=second+pbcDistance(second,first); setGlobalPosition(atoms[i],first);
+    first=second+pbcDistance(second,first); setGlobalPosition(p_atoms[i],first);
 // then place other atoms close to the first of the group
     for(unsigned j=1; j<groupby; j++) {
-      second=getGlobalPosition(atoms[i+j]);
-      setGlobalPosition( atoms[i+j], first+pbcDistance(first,second) );
+      second=getGlobalPosition(p_atoms[i+j]);
+      setGlobalPosition( p_atoms[i+j], first+pbcDistance(first,second) );
     }
   }
 }

@@ -46,8 +46,11 @@ class ActionAtomistic :
   friend class Group;
   friend class DomainDecomposition;
   friend class colvar::SelectMassCharge;
+  friend class ActionWithVirtualAtom;
 
   std::vector<AtomNumber> indexes;         // the set of needed atoms
+  std::vector<std::size_t>   value_depends;   // The list of values that are being used
+  std::vector<std::pair<std::size_t, std::size_t > > atom_value_ind;  // The list of values and indices for the atoms that are being used
 /// unique should be an ordered set since we later create a vector containing the corresponding indexes
   std::vector<AtomNumber>  unique;
 /// unique_local should be an ordered set since we later create a vector containing the corresponding indexes
@@ -73,13 +76,12 @@ class ActionAtomistic :
 
 /// Values that hold information about atom positions and charges
   std::vector<Value*>   xpos, ypos, zpos, masv, chargev;
-/// Used to interpret whether this index is a virtual atom or a real atom
-  void getValueIndices( const AtomNumber& i, unsigned& valno, unsigned& k ) const ;
-  const std::vector<AtomNumber> & getUniqueLocal( const bool& useunique, const std::vector<int>& g2l );
+  void updateUniqueLocal( const bool& useunique, const std::vector<int>& g2l );
 protected:
   bool                  chargesWereSet;
   void setExtraCV(const std::string &name);
-
+/// Used to interpret whether this index is a virtual atom or a real atom
+  std::pair<std::size_t, std::size_t> getValueIndices( const AtomNumber& i ) const ;
 public:
 /// Request an array of atoms.
 /// This method is used to ask for a list of atoms. Atoms
@@ -94,11 +96,11 @@ public:
 /// With direct access to the global atom array.
 /// \warning Should be only used by actions that need to read the shared position array.
 ///          This array is insensitive to local changes such as makeWhole(), numerical derivatives, etc.
-  Vector getGlobalPosition(const AtomNumber& ) const;
+  Vector getGlobalPosition(const std::pair<std::size_t,std::size_t>& ) const ;
 /// Modify position of i-th atom (access by absolute AtomNumber).
 /// \warning Should be only used by actions that need to modify the shared position array.
 ///          This array is insensitive to local changes such as makeWhole(), numerical derivatives, etc.
-  void setGlobalPosition(const AtomNumber&, const Vector& pos);
+  void setGlobalPosition(const std::pair<std::size_t,std::size_t>&, const Vector& pos);
 /// Get total number of atoms, including virtual ones.
 /// Can be used to make a loop on modifyGlobalPosition or getGlobalPosition.
   unsigned getTotAtoms()const;
@@ -115,9 +117,9 @@ public:
 /// Get charge of i-th atom
   double getCharge(int i)const;
 /// Get the force acting on a particular atom
-  Vector getForce( const AtomNumber& i ) const ;
+  Vector getForce( const std::pair<std::size_t, std::size_t>& a ) const ;
 /// Add force to an atom
-  void addForce( const AtomNumber& i, const Vector& f );
+  void addForce( const std::pair<std::size_t, std::size_t>& a, const Vector& f );
 /// Get a reference to force on energy
   double & modifyForceOnEnergy();
 /// Get number of available atoms
@@ -248,6 +250,10 @@ const std::vector<AtomNumber> & ActionAtomistic::getUnique()const {
   return unique;
 }
 
+inline
+const std::vector<AtomNumber> & ActionAtomistic::getUniqueLocal() const {
+  return unique_local;
 }
 
+}
 #endif

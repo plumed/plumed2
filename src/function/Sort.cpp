@@ -22,7 +22,7 @@
 #include "FunctionShortcut.h"
 #include "FunctionOfScalar.h"
 #include "FunctionOfVector.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "FunctionTemplateBase.h"
 
 namespace PLMD {

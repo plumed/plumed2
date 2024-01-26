@@ -382,6 +382,11 @@ public:
     If there are calculations that need to be done at the very end of the calculations this
     makes sures they are done
   */
+  /**
+    This function does clearInputForces for the list of atoms that have a force on them. This
+    is an optimisation to prevent calling std::fill over a large array
+  */
+  void resetInputs();
   void runJobsAtEndOfCalculation();
 /// Reference to the list of Action's
   const ActionSet & getActionSet()const;

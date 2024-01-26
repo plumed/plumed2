@@ -172,7 +172,7 @@ VolumeTetrapore::VolumeTetrapore(const ActionOptions& ao):
     std::string unitname; parse("UNITS",unitname);
     if ( unitname.length()>0 ) {
       Units u; u.setLength(unitname);
-      lenunit=plumed.getUnits().getLength()/u.getLength();
+      lenunit=getUnits().getLength()/u.getLength();
     } else {
       unitname="nm";
     }

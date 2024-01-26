@@ -48,8 +48,12 @@ class ActionAtomistic;
 class Value {
   friend class ActionWithValue;
   friend class ActionWithVector;
+  friend class ActionAtomistic;
   friend class ActionWithArguments;
+  friend class ActionWithVirtualAtom;
   friend class DomainDecomposition;
+  template<typename T>
+  friend class DataPassingObjectTyped;
 /// This copies the contents of a value into a second value (just the derivatives and value)
   friend void copy( const Value& val1, Value& val2 );
 /// This copies the contents of a value into a second value (but second value is a pointer)
@@ -155,6 +159,8 @@ public:
   double getDerivative(const unsigned n) const;
 /// Clear the input force on the variable
   void clearInputForce();
+/// Special method for clearing forces on variables used by DataPassingObject
+  void clearInputForce( const std::vector<AtomNumber>& index );
 /// Add some force on this value
   void addForce(double f);
 /// Add some force on the ival th component of this value
@@ -356,13 +362,14 @@ void Value::chainRule(double df) {
 
 inline
 void Value::clearInputForce() {
-  hasForce=false;
-  std::fill(inputForce.begin(),inputForce.end(),0);
+  if( !hasForce ) return;
+  hasForce=false; std::fill(inputForce.begin(),inputForce.end(),0);
 }
 
 inline
 void Value::clearDerivatives( const bool force ) {
   if( !force && (constant || calcOnUpdate) ) return;
+
   value_set=false;
   if( data.size()>1 ) std::fill(data.begin()+1, data.end(), 0);
 }
@@ -416,6 +423,22 @@ double Value::getMaxMinusMin()const {
 inline
 unsigned Value::getRank() const {
   return shape.size();
+}
+
+inline
+const std::vector<unsigned>& Value::getShape() const {
+  return shape;
+}
+
+inline
+unsigned Value::getNumberOfValues() const {
+  unsigned size=1; for(unsigned i=0; i<shape.size(); ++i) size *= shape[i];
+  return size;
+}
+
+inline
+bool Value::isConstant() const {
+  return constant;
 }
 
 inline

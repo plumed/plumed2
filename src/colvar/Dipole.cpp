@@ -22,7 +22,7 @@
 #include "Colvar.h"
 #include "ColvarShortcut.h"
 #include "MultiColvarTemplate.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 
 namespace PLMD {
 namespace colvar {

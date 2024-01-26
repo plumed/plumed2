@@ -28,6 +28,7 @@
 
 //+PLUMEDOC ANALYSIS PBC
 /*
+Pass the cell vectors into PLUMED.
 
 \par Examples
 

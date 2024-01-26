@@ -24,7 +24,7 @@
 #include "FunctionShortcut.h"
 #include "FunctionOfScalar.h"
 #include "FunctionOfVector.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 
 namespace PLMD {
 namespace function {

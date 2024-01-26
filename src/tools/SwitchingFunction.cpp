@@ -25,6 +25,7 @@
 #include "OpenMP.h"
 #include <vector>
 #include <limits>
+#include <algorithm>
 
 #define PI 3.14159265358979323846
 
@@ -292,17 +293,22 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     for(auto & e : expression) e=pe.createCompiledExpression();
     lepton_ref.resize(expression.size());
     for(unsigned t=0; t<lepton_ref.size(); t++) {
-      try {
-        lepton_ref[t]=&const_cast<lepton::CompiledExpression*>(&expression[t])->getVariableReference("x");
-      } catch(const PLMD::lepton::Exception& exc) {
-        try {
-          lepton_ref[t]=&const_cast<lepton::CompiledExpression*>(&expression[t])->getVariableReference("x2");
-          leptonx2=true;
-        } catch(const PLMD::lepton::Exception& exc) {
-// this is necessary since in some cases lepton things a variable is not present even though it is present
+      auto vars=expression[t].getVariables();
+      bool found_x=std::find(vars.begin(),vars.end(),"x")!=vars.end();
+      bool found_x2=std::find(vars.begin(),vars.end(),"x2")!=vars.end();
+      if (vars.size()==0) {
+// this is necessary since in some cases lepton thinks a variable is not present even though it is present
 // e.g. func=0*x
-          lepton_ref[t]=nullptr;
-        }
+        lepton_ref[t]=nullptr;
+      } else if(vars.size()==1 && found_x) {
+        lepton_ref[t]=&expression[t].getVariableReference("x");
+      } else if(vars.size()==1 && found_x2) {
+        lepton_ref[t]=&expression[t].getVariableReference("x2");
+        leptonx2=true;
+      } else if(vars.size()==2 && found_x && found_x2) {
+        plumed_error() << "Cannot use simultaneously x and x2 argument in switching function: "<<func;
+      } else {
+        plumed_error() << "Something wrong in the arguments for switching function: "<<func;
       }
     }
     std::string arg="x";
@@ -313,7 +319,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     lepton_ref_deriv.resize(expression_deriv.size());
     for(unsigned t=0; t<lepton_ref_deriv.size(); t++) {
       try {
-        lepton_ref_deriv[t]=&const_cast<lepton::CompiledExpression*>(&expression_deriv[t])->getVariableReference(arg);
+        lepton_ref_deriv[t]=&expression_deriv[t].getVariableReference(arg);
       } catch(const PLMD::lepton::Exception& exc) {
 // this is necessary since in some cases lepton things a variable is not present even though it is present
 // e.g. func=3*x
@@ -490,7 +496,7 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
       double exprdist=std::exp(rdist2);
       double exprmdist=1.0/exprdist;
       result=1./(1.+exprdist);
-      dfunc=-1.0/(exprmdist+1.0)/(1.+exprdist);
+      dfunc=-beta/(exprmdist+1.0)/(1.+exprdist)/invr0;
     } else if(type==gaussian) {
       result=std::exp(-0.5*rdist*rdist);
       dfunc=-rdist*result;
@@ -534,8 +540,10 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
       result = tmp2*tmp1;
       dfunc = -3*tmp2*(1-tmp2);
     } else plumed_merror("Unknown switching function type");
-// this is for the chain rule:
+// this is for the chain rule (derivative of rdist):
     dfunc*=invr0;
+// for any future switching functions, be aware that multiplying invr0 is only correct for functions of rdist = (r-d0)/r0.
+
 // this is because calculate() sets dfunc to the derivative divided times the distance.
 // (I think this is misleading and I would like to modify it - GB)
     if( !returnderiv ) dfunc/=distance;

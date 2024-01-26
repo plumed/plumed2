@@ -20,9 +20,9 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
-#include "ActionRegister.h"
 #include "ColvarShortcut.h"
 #include "MultiColvarTemplate.h"
+#include "core/ActionRegister.h"
 #include "tools/Pbc.h"
 
 namespace PLMD {

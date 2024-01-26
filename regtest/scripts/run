@@ -211,9 +211,26 @@ case "$type" in
     if make print-fortran | grep "FC=$" 1>/dev/null ; then
       echo "NOT_APPLICABLE (FC NOT FOUND)"
       exit 0
-    else
-      if test "$plumed_language" = fortran08 ; then
-        cat > __test_fortran08.f90 << EOF
+    fi
+
+    cat > __test_fortran_arg_mismatch.f90 << EOF
+subroutine a()
+  call b(10)
+  call b(10.0)
+end subroutine a
+EOF
+    if ! make test-fortran-arg-mismatch 2>err | grep SUCCESS=YES 1> /dev/null ; then
+      export PLUMED_FORTRAN_FLAGS=-fallow-argument-mismatch
+      if ! make test-fortran-arg-mismatch 2>err| grep SUCCESS=YES 1> /dev/null ; then
+        PLUMED_FORTRAN_FLAGS=""
+      fi
+    fi
+
+    rm -f __test_fortran_arg_mismatch.f90
+    rm -f __test_fortran_arg_mismatch.o
+
+    if test "$plumed_language" = fortran08 ; then
+      cat > __test_fortran08.f90 << EOF
 module test_fortran08_a
 implicit none
 type b
@@ -230,15 +247,14 @@ contains
   end subroutine sub
 end module test_fortran08_a
 EOF
-        if make test-fortran08 2>err | grep SUCCESS=YES 1> /dev/null ; then
-          make exe-fortran08 1>out 2>err
-        else
-          echo "NOT_APPLICABLE (FC does not support f2008)"
-          exit 0
-        fi
+      if make test-fortran08 2>err | grep SUCCESS=YES 1> /dev/null ; then
+        make exe-fortran08 1>out 2>err
       else
-        make exe-fortran 1>out 2> err
+        echo "NOT_APPLICABLE (FC does not support f2008)"
+        exit 0
       fi
+    else
+      make exe-fortran 1>out 2> err
     fi
   elif test "$plumed_language" = c || test "$plumed_language" = c11 ; then
     if test "$plumed_language" = c11 ; then

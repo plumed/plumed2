@@ -123,14 +123,15 @@ void DataPassingObjectTyped<T>::setData( Value* value ) {
 template <class T>
 void DataPassingObjectTyped<T>::share_data( const unsigned& j, const unsigned& k, Value* value ) {
   if( value->getRank()==0 ) {
-    if( hasbackup ) value->set( 0, unit*bvalue );
-    else value->set( 0, unit*double(v.template get<T>()) );
+    if( hasbackup ) value->set( unit*bvalue );
+    else value->set( unit*double(v.template get<T>()) );
     return;
   }
   std::vector<unsigned> s(value->getShape()); if( s.size()==1 ) s[0]=k-j;
   const T* pp; getPointer( v, s, start, stride, pp );
+  std::vector<double> & d=value->data;
   #pragma omp parallel for num_threads(value->getGoodNumThreads(j,k))
-  for(unsigned i=j; i<k; ++i) value->set( i, unit*pp[i*stride] );
+  for(unsigned i=j; i<k; ++i) d[i]=unit*pp[i*stride];
 }
 
 template <class T>
@@ -151,7 +152,7 @@ void DataPassingObjectTyped<T>::share_data( const std::vector<AtomNumber>&index,
 #endif
   const T* pp; getPointer( v, maxel, start, stride, pp );
   // cannot be parallelized with omp because access to data is not ordered
-  unsigned k=0; for(const auto & p : index) { value->set( p.index(), unit*pp[i[k]*stride] ); k++; }
+  unsigned k=0; for(const auto & p : index) { value->data[p.index()]=unit*pp[i[k]*stride]; k++; }
 }
 
 template <class T>

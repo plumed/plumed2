@@ -20,7 +20,8 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
-#include "ActionRegister.h"
+#include "core/PlumedMain.h"
+#include "core/ActionRegister.h"
 #include "tools/PDB.h"
 #include "reference/RMSDBase.h"
 #include "reference/MetricRegister.h"

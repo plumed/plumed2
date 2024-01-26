@@ -210,6 +210,7 @@ private:
   string outputname;
   string cptname;
   string outputprefix;
+  string fmt_;
   const size_t ndims;
   double dt;
   double kbt;
@@ -307,6 +308,7 @@ void DynamicReferenceRestraining::registerKeywords(Keywords &keys) {
   keys.addFlag("MERGEHISTORYFILES", false, "output all historic results "
                "to a single file rather than multiple .drrstate files. "
                "This option is effective only when textOutput is on.");
+  keys.add("optional","FMT","specify format for outfiles files (useful for decrease the number of digits in regtests)");
   componentsAreNotOptional(keys);
   keys.addOutputComponent(
     "_fict", "default",
@@ -351,7 +353,7 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     c1(getNumberOfArguments(), 0.0),
     c2(getNumberOfArguments(), 0.0), mass(getNumberOfArguments(), 0.0),
     delim(getNumberOfArguments()), outputname(""), cptname(""),
-    outputprefix(""), ndims(getNumberOfArguments()), dt(0.0), kbt(0.0),
+    outputprefix(""), fmt_("%.9f"), ndims(getNumberOfArguments()), dt(0.0), kbt(0.0),
     outputfreq(0.0), historyfreq(-1.0), isRestart(false),
     useCZARestimator(true), useUIestimator(false), mergeHistoryFiles(false),
     textoutput(false), withExternalForce(false), withExternalFict(false),
@@ -408,6 +410,7 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   parse("UIRESTARTPREFIX", uirprefix);
   parseArgumentList("EXTERNAL_FORCE", externalForceValue);
   parseArgumentList("EXTERNAL_FICT", externalFictValue);
+  parse("FMT",fmt_);
   if (externalForceValue.empty()) {
     withExternalForce = false;
   } else if (externalForceValue.size() != ndims) {
@@ -714,9 +717,9 @@ void DynamicReferenceRestraining::calculate() {
     if ((step_now % int(outputfreq)) == 0) {
       save(outputname, step_now);
       if (textoutput) {
-        ABFGrid.writeAll(outputprefix);
+        ABFGrid.writeAll(outputprefix, fmt_);
         if (useCZARestimator) {
-          CZARestimator.writeAll(outputprefix);
+          CZARestimator.writeAll(outputprefix, fmt_);
           CZARestimator.writeZCountZGrad(outputprefix);
         }
       }
@@ -728,9 +731,9 @@ void DynamicReferenceRestraining::calculate() {
         save(filename, step_now);
         const string textfilename =
           mergeHistoryFiles ? (outputprefix + ".hist") : (outputprefix + "." + std::to_string(step_now));
-        ABFGrid.writeAll(textfilename, mergeHistoryFiles);
+        ABFGrid.writeAll(textfilename, fmt_, mergeHistoryFiles);
         if (useCZARestimator) {
-          CZARestimator.writeAll(textfilename, mergeHistoryFiles);
+          CZARestimator.writeAll(textfilename, fmt_, mergeHistoryFiles);
           CZARestimator.writeZCountZGrad(textfilename, mergeHistoryFiles);
         }
       } else {

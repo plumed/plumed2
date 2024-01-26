@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
 #include "core/PlumedMain.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "tools/Torsion.h"
 
 namespace PLMD {
