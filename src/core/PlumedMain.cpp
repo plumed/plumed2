@@ -879,7 +879,7 @@ void PlumedMain::init() {
   setUnits( passtools->usingNaturalUnits, passtools->units );
   ActionToPutData* ts = actionSet.selectWithLabel<ActionToPutData*>("timestep");
   if(ts) log.printf("Timestep: %f\n",(ts->copyOutput(0))->get());
-  ActionToPutData* kb = actionSet.selectWithLabel<ActionToPutData*>("KbT");
+  ActionToPutData* kb = actionSet.selectWithLabel<ActionToPutData*>("kBT");
   if(kb)
     log.printf("KbT: %f\n",(kb->copyOutput(0))->get());
   else {
