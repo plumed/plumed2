@@ -268,6 +268,5 @@ return toRet;
   // .def("getProjection", &PLMD::pycv::PythonFunction::
   //      getProjection,"Get the scalar product between the gradients of two variables",
   //      py::arg("i"),py::arg("j"))
-  //to be added and tested getNumberOfArguments
   ;
 }
