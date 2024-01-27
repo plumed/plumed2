@@ -26,6 +26,7 @@
 
 //+PLUMEDOC MATRIX DISTANCE_MATRIX
 /*
+Calculate a matrix of distances
 
 \par Examples
 

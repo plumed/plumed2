@@ -177,6 +177,7 @@ public:
   void lockRequests() override;
   void unlockRequests() override;
   const std::vector<AtomNumber> & getUnique()const;
+  const std::vector<AtomNumber> & getUniqueLocal()const;
 /// Read in an input file containing atom positions and calculate the action for the atomic
 /// configuration therin
   void readAtomsFromPDB( const PDB& pdb ) override;

@@ -22,7 +22,7 @@
 #include "FunctionShortcut.h"
 #include "FunctionOfScalar.h"
 #include "FunctionOfVector.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "FunctionTemplateBase.h"
 
 #include <cmath>
@@ -34,6 +34,7 @@ namespace function {
 
 //+PLUMEDOC FUNCTION MOMENTS
 /*
+Calculate the moments of the distribution of input quantities
 
 \par Examples
 

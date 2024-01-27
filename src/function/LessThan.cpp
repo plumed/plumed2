@@ -22,7 +22,7 @@
 #include "LessThan.h"
 #include "FunctionShortcut.h"
 #include "FunctionOfVector.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 
 #include <cmath>
 

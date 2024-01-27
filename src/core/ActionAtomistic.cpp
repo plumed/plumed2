@@ -383,7 +383,6 @@ void ActionAtomistic::updateUniqueLocal( const bool& useunique, const std::vecto
   for(auto pp=unique.begin(); pp!=unique.end(); ++pp) {
     if(g2l[pp->index()]>=0) unique_local.push_back(*pp); // already sorted
   }
-  return unique_local;
 }
 
 }

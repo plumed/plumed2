@@ -36,6 +36,7 @@ namespace symfunc {
 
 //+PLUMEDOC MCOLVAR LOCAL_CRYSTALINITY
 /*
+Calculate the local crystalinity symmetry function
 
 \par Examples
 

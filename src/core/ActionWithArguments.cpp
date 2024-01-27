@@ -75,8 +75,8 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
         bool found_something=false;
         // take the string enclosed in quotes and put in round brackets
         std::string myregex=c[i];
-        std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
-        if( all.empty() ) error("your input file is not telling plumed to calculate anything");
+        std::vector<ActionWithValue*> all=as.select<ActionWithValue*>();
+        if( all.empty() ) readact->error("your input file is not telling plumed to calculate anything");
 
         try {
           std::regex txt_regex(myregex,std::regex::extended);

@@ -23,7 +23,7 @@
 #include "core/ActionWithArguments.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 
 namespace PLMD {
 namespace bias {

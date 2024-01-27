@@ -367,6 +367,12 @@ void Value::clearInputForce() {
 }
 
 inline
+void Value::clearInputForce( const std::vector<AtomNumber>& index ) {
+  if( !hasForce ) return;
+  hasForce=false; for(const auto & p : index) inputForce[p.index()]=0;
+}
+
+inline
 void Value::clearDerivatives( const bool force ) {
   if( !force && (constant || calcOnUpdate) ) return;
 
@@ -423,22 +429,6 @@ double Value::getMaxMinusMin()const {
 inline
 unsigned Value::getRank() const {
   return shape.size();
-}
-
-inline
-const std::vector<unsigned>& Value::getShape() const {
-  return shape;
-}
-
-inline
-unsigned Value::getNumberOfValues() const {
-  unsigned size=1; for(unsigned i=0; i<shape.size(); ++i) size *= shape[i];
-  return size;
-}
-
-inline
-bool Value::isConstant() const {
-  return constant;
 }
 
 inline

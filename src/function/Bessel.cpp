@@ -23,7 +23,7 @@
 #include "FunctionShortcut.h"
 #include "FunctionOfScalar.h"
 #include "FunctionOfVector.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "tools/SwitchingFunction.h"
 #include <array>
 #include <cmath>

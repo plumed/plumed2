@@ -24,6 +24,7 @@
 
 //+PLUMEDOC REWEIGHTING COVARIANCE_MATRIX
 /*
+Calculate a covariance matix
 
 \par Examples
 

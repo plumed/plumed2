@@ -31,6 +31,7 @@ namespace generic {
 
 //+PLUMEDOC PRINTANALYSIS DUMPVECTOR
 /*
+Print a vector to a file
 
 \par Examples
 

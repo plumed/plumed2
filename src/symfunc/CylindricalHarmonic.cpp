@@ -33,6 +33,7 @@ namespace symfunc {
 
 //+PLUMEDOC MCOLVAR CYLINDRICAL_HARMONIC
 /*
+Calculate the cylindrical harmonic function
 
 \par Examples
 

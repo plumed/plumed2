@@ -33,6 +33,7 @@ namespace symfunc {
 
 //+PLUMEDOC MCOLVAR SPHERICAL_HARMONIC
 /*
+Calculate the values of all the spherical harmonic funtions for a particular value of l.
 
 \par Examples
 
