@@ -101,8 +101,8 @@ public:
   static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
-  static void calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges, 
-                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, 
+  static void calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
+                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
                            std::vector<Tensor>& virial, const ActionAtomistic* aa );
   static void registerKeywords(Keywords& keys);
 };
@@ -166,7 +166,7 @@ void Torsion::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionA
     if(!(v1.size()==2 && v2.size()==2 && axis.size()==2))
       aa->error("VECTOR1, VECTOR2 and AXIS should specify 2 atoms each");
     aa->log.printf("  between lines %d-%d and %d-%d, projected on the plane orthogonal to line %d-%d\n",
-               v1[0].serial(),v1[1].serial(),v2[0].serial(),v2[1].serial(),axis[0].serial(),axis[1].serial());
+                   v1[0].serial(),v1[1].serial(),v2[0].serial(),v2[1].serial(),axis[0].serial(),axis[1].serial());
     t.resize(6);
     t[0]=v1[1];
     t[1]=v1[0];
@@ -181,7 +181,7 @@ unsigned Torsion::getModeAndSetupValues( ActionWithValue* av ) {
   bool do_cos; av->parseFlag("COSINE",do_cos);
   if(do_cos) av->log.printf("  calculating cosine instead of torsion\n");
 
-  av->addValueWithDerivatives(); 
+  av->addValueWithDerivatives();
   if(!do_cos) { av->setPeriodic("-pi","pi"); return 0; }
   av->setNotPeriodic(); return 1;
 }
@@ -191,12 +191,12 @@ void Torsion::calculate() {
   if(pbc) makeWhole();
   if(do_cosine) calculateCV( 1, masses, charges, getPositions(), value, derivs, virial, this );
   else calculateCV( 0, masses, charges, getPositions(), value, derivs, virial, this );
-  for(unsigned i=0;i<6;++i) setAtomsDerivatives(i,derivs[0][i] );
+  for(unsigned i=0; i<6; ++i) setAtomsDerivatives(i,derivs[0][i] );
   setValue(value[0]); setBoxDerivatives( virial[0] );
 }
 
-void Torsion::calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges, 
-                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, 
+void Torsion::calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
+                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
                            std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
   Vector d0=delta(pos[1],pos[0]);
   Vector d1=delta(pos[3],pos[2]);

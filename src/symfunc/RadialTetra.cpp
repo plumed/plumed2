@@ -39,27 +39,27 @@ public:
 PLUMED_REGISTER_ACTION(RadialTetra,"TETRA_RADIAL")
 
 void RadialTetra::registerKeywords( Keywords& keys ) {
-  CoordinationNumbers::shortcutKeywords( keys ); 
+  CoordinationNumbers::shortcutKeywords( keys );
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.add("compulsory","CUTOFF","-1","ignore distances that have a value larger than this cutoff");
   keys.remove("NN"); keys.remove("MM"); keys.remove("D_0"); keys.remove("R_0"); keys.remove("SWITCH");
 }
 
 RadialTetra::RadialTetra( const ActionOptions& ao):
-Action(ao),
-ActionShortcut(ao)
+  Action(ao),
+  ActionShortcut(ao)
 {
   // Read species input and create the matrix
-  bool nopbc; parseFlag("NOPBC",nopbc); 
+  bool nopbc; parseFlag("NOPBC",nopbc);
   std::string pbcstr=""; if( nopbc ) pbcstr = " NOPBC";
   std::string sp_str, rcut; parse("SPECIES",sp_str); parse("CUTOFF",rcut);
   if( sp_str.length()>0 ) {
-     readInputLine( getShortcutLabel() + "_mat: DISTANCE_MATRIX GROUP=" + sp_str + " CUTOFF=" + rcut + pbcstr ); 
+    readInputLine( getShortcutLabel() + "_mat: DISTANCE_MATRIX GROUP=" + sp_str + " CUTOFF=" + rcut + pbcstr );
   } else {
-     std::string specA, specB; parse("SPECIESA",specA); parse("SPECIESB",specB);
-     if( specA.length()==0 ) error("missing input atoms");
-     if( specB.length()==0 ) error("missing SPECIESB keyword");
-     readInputLine( getShortcutLabel() + "_mat: DISTANCE_MATRIX GROUPA=" + specA + " GROUPB=" + specB + " CUTOFF=" + rcut + pbcstr);
+    std::string specA, specB; parse("SPECIESA",specA); parse("SPECIESB",specB);
+    if( specA.length()==0 ) error("missing input atoms");
+    if( specB.length()==0 ) error("missing SPECIESB keyword");
+    readInputLine( getShortcutLabel() + "_mat: DISTANCE_MATRIX GROUPA=" + specA + " GROUPB=" + specB + " CUTOFF=" + rcut + pbcstr);
   }
   // Get the neighbors matrix
   readInputLine( getShortcutLabel() + "_neigh: NEIGHBORS ARG=" + getShortcutLabel() + "_mat.w NLOWEST=4");
@@ -70,7 +70,7 @@ ActionShortcut(ao)
   plumed_assert( av && av->getNumberOfComponents()>0 && (av->copyOutput(0))->getRank()==2 );
   std::string size; Tools::convert( (av->copyOutput(0))->getShape()[1], size );
   readInputLine( getShortcutLabel() + "_ones: ONES SIZE=" + size );
-  readInputLine( getShortcutLabel() + "_sum4: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_near4," + getShortcutLabel() + "_ones"); 
+  readInputLine( getShortcutLabel() + "_sum4: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_near4," + getShortcutLabel() + "_ones");
   // Now compute squares of four nearest distance
   readInputLine( getShortcutLabel() + "_near4_2: CUSTOM ARG1=" + getShortcutLabel() + "_near4 FUNC=x*x PERIODIC=NO");
   // Now compute sum of the squares of the four nearest distances
@@ -79,7 +79,7 @@ ActionShortcut(ao)
   readInputLine( getShortcutLabel() + "_meanr: CUSTOM ARG1=" + getShortcutLabel() + "_sum4 FUNC=0.25*x PERIODIC=NO");
   // Now evaluate the actual per atom CV
   readInputLine( getShortcutLabel() + ": CUSTOM ARG1=" + getShortcutLabel() + "_sum4 ARG2=" + getShortcutLabel() + "_sum4_2 ARG3=" + getShortcutLabel() + "_meanr " +
-                 "FUNC=(1-(y-x*z)/(12*z*z)) PERIODIC=NO"); 
+                 "FUNC=(1-(y-x*z)/(12*z*z)) PERIODIC=NO");
   // And get the things to do with the quantities we have computed
   std::map<std::string,std::string> keymap; multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );
   multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel(), "", keymap, this );

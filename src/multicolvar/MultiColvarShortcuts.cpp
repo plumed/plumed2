@@ -72,28 +72,28 @@ void MultiColvarShortcuts::readShortcutKeywords( std::map<std::string,std::strin
   Keywords keys; shortcutKeywords( keys ); action->readShortcutKeywords( keys, keymap );
 }
 
-void MultiColvarShortcuts::expandFunctions( const std::string& labout, const std::string& argin, const std::string& weights, 
-                                            const std::map<std::string,std::string>& keymap, ActionShortcut* action ) {
+void MultiColvarShortcuts::expandFunctions( const std::string& labout, const std::string& argin, const std::string& weights,
+    const std::map<std::string,std::string>& keymap, ActionShortcut* action ) {
   if( keymap.empty() ) return;
   // Parse LESS_THAN
   if( keymap.count("LESS_THAN") ) {
     std::string sum_arg = labout + "_lt", lt_string = keymap.find("LESS_THAN")->second;
-    action->readInputLine( labout + "_lt: LESS_THAN ARG=" + argin + " SWITCH={" + lt_string + "}"); 
+    action->readInputLine( labout + "_lt: LESS_THAN ARG=" + argin + " SWITCH={" + lt_string + "}");
     if( weights.length()>0 ) {
-        sum_arg = labout + "_wlt";
-        action->readInputLine( labout + "_wlt: MATHEVAL ARG1=" + weights + " ARG2=" + labout + "_lt FUNC=x*y PERIODIC=NO");   
+      sum_arg = labout + "_wlt";
+      action->readInputLine( labout + "_wlt: MATHEVAL ARG1=" + weights + " ARG2=" + labout + "_lt FUNC=x*y PERIODIC=NO");
     }
-    action->readInputLine( labout + "_lessthan: SUM ARG=" + sum_arg + " PERIODIC=NO"); 
+    action->readInputLine( labout + "_lessthan: SUM ARG=" + sum_arg + " PERIODIC=NO");
   }
-  if( keymap.count("LESS_THAN1") ) { 
+  if( keymap.count("LESS_THAN1") ) {
     for(unsigned i=1;; ++i) {
-      std::string istr; Tools::convert( i, istr ); 
+      std::string istr; Tools::convert( i, istr );
       if( !keymap.count("LESS_THAN" + istr ) ) { break; }
       std::string sum_arg = labout + "_lt" + istr, lt_string1 = keymap.find("LESS_THAN" + istr)->second;
-      action->readInputLine( labout + "_lt" + istr + ": LESS_THAN ARG=" + argin + " SWITCH={" + lt_string1 + "}");  
+      action->readInputLine( labout + "_lt" + istr + ": LESS_THAN ARG=" + argin + " SWITCH={" + lt_string1 + "}");
       if( weights.length()>0 ) {
-          sum_arg = labout + "_wlt" + istr;
-          action->readInputLine( labout + "_wlt" + istr + ": MATHEVAL ARG1=" + weights + "ARG2=" + labout + "_lt" + istr + " FUNC=x*y PERIODIC=NO");
+        sum_arg = labout + "_wlt" + istr;
+        action->readInputLine( labout + "_wlt" + istr + ": MATHEVAL ARG1=" + weights + "ARG2=" + labout + "_lt" + istr + " FUNC=x*y PERIODIC=NO");
       }
       action->readInputLine( labout + "_lessthan" + istr + ": SUM ARG=" + sum_arg + " PERIODIC=NO");
     }
@@ -103,20 +103,20 @@ void MultiColvarShortcuts::expandFunctions( const std::string& labout, const std
     std::string sum_arg=labout + "_mt", mt_string = keymap.find("MORE_THAN")->second;
     action->readInputLine( labout + "_mt: MORE_THAN ARG=" + argin + " SWITCH={" + mt_string + "}");
     if( weights.length()>0 ) {
-        sum_arg = labout + "_wmt";
-        action->readInputLine( labout + "_wmt: MATHEVAL ARG1=" + weights + " ARG2=" + labout + "_mt FUNC=x*y PERIODIC=NO" );
+      sum_arg = labout + "_wmt";
+      action->readInputLine( labout + "_wmt: MATHEVAL ARG1=" + weights + " ARG2=" + labout + "_mt FUNC=x*y PERIODIC=NO" );
     }
     action->readInputLine( labout + "_morethan: SUM ARG=" + sum_arg + " PERIODIC=NO");
   }
   if(  keymap.count("MORE_THAN1") ) {
     for(unsigned i=1;; ++i) {
-      std::string istr; Tools::convert( i, istr ); 
+      std::string istr; Tools::convert( i, istr );
       if( !keymap.count("MORE_THAN" + istr ) ) { break; }
       std::string sum_arg = labout + "_mt" + istr, mt_string1 = keymap.find("MORE_THAN" + istr)->second;
-      action->readInputLine( labout + "_mt" + istr + ": MORE_THAN ARG=" + argin + " SWITCH={" + mt_string1 + "}");  
+      action->readInputLine( labout + "_mt" + istr + ": MORE_THAN ARG=" + argin + " SWITCH={" + mt_string1 + "}");
       if( weights.length()>0 ) {
-          sum_arg = labout + "_wmt" + istr;
-          action->readInputLine( labout + "_wmt" + istr + ": MATHEVAL ARG1=" + weights + "ARG2=" + labout + "_lt" + istr + " FUNC=x*y PERIODIC=NO");
+        sum_arg = labout + "_wmt" + istr;
+        action->readInputLine( labout + "_wmt" + istr + ": MATHEVAL ARG1=" + weights + "ARG2=" + labout + "_lt" + istr + " FUNC=x*y PERIODIC=NO");
       }
       action->readInputLine( labout + "_morethan" + istr + ": SUM ARG=" + sum_arg + " PERIODIC=NO");
     }
@@ -137,18 +137,18 @@ void MultiColvarShortcuts::expandFunctions( const std::string& labout, const std
     std::string min_string = keymap.find("MIN")->second;
     std::size_t dd = min_string.find("BETA"); std::string beta_str = min_string.substr(dd+5);
     beta_str.erase(std::remove_if(beta_str.begin(), beta_str.end(), ::isspace), beta_str.end());
-    action->readInputLine( labout + "_me_min: MATHEVAL ARG1=" + argin + " FUNC=exp(" + beta_str + "/x) PERIODIC=NO");  
-    action->readInputLine( labout + "_mec_min: SUM ARG=" + labout + "_me_min PERIODIC=NO"); 
+    action->readInputLine( labout + "_me_min: MATHEVAL ARG1=" + argin + " FUNC=exp(" + beta_str + "/x) PERIODIC=NO");
+    action->readInputLine( labout + "_mec_min: SUM ARG=" + labout + "_me_min PERIODIC=NO");
     action->readInputLine( labout + "_min: MATHEVAL ARG=" + labout + "_mec_min FUNC=" + beta_str + "/log(x) PERIODIC=NO");
   }
   // Parse MAX
   if( keymap.count("MAX") ) {
     if( weights.length()>0 ) plumed_merror("cannot use MAX with this shortcut");
-    std::string max_string = keymap.find("MAX")->second; 
+    std::string max_string = keymap.find("MAX")->second;
     std::size_t dd = max_string.find("BETA"); std::string beta_str = max_string.substr(dd+5);
     beta_str.erase(std::remove_if(beta_str.begin(), beta_str.end(), ::isspace), beta_str.end());
     action->readInputLine( labout + "_me_max: MATHEVAL ARG1=" + argin + " FUNC=exp(x/" + beta_str + ") PERIODIC=NO");
-    action->readInputLine( labout + "_mec_max: SUM ARG=" + labout + "_me_max PERIODIC=NO"); 
+    action->readInputLine( labout + "_mec_max: SUM ARG=" + labout + "_me_max PERIODIC=NO");
     action->readInputLine( labout + "_max: MATHEVAL ARG=" + labout + "_mec_max FUNC=" + beta_str  + "*log(x) PERIODIC=NO");
   }
   // Parse HIGHEST
@@ -159,7 +159,7 @@ void MultiColvarShortcuts::expandFunctions( const std::string& labout, const std
   // Parse LOWEST
   if( keymap.count("LOWEST") ) {
     if( weights.length()>0 ) plumed_merror("cannot use LOWEST with this shortcut");
-    action->readInputLine( labout + "_lowest: LOWEST ARG=" + argin ); 
+    action->readInputLine( labout + "_lowest: LOWEST ARG=" + argin );
   }
   // Parse SUM
   if( keymap.count("SUM") ) {
@@ -188,7 +188,7 @@ void MultiColvarShortcuts::expandFunctions( const std::string& labout, const std
   std::string bt_string1;
   if( keymap.count("BETWEEN1") ) {
     for(unsigned i=1;; ++i) {
-      std::string istr; Tools::convert( i, istr ); 
+      std::string istr; Tools::convert( i, istr );
       if( !keymap.count("BETWEEN" + istr) ) break;
       std::string sum_arg=labout + "_bt" + istr, bt_string1 = keymap.find("BETWEEN" + istr)->second;
       action->readInputLine( labout + "_bt" + istr + ": BETWEEN ARG=" + argin + " SWITCH={" + bt_string1 + "}" );
@@ -219,7 +219,7 @@ void MultiColvarShortcuts::expandFunctions( const std::string& labout, const std
         sum_arg = labout + "_wbt" + istr;
         action->readInputLine( labout + "_wbt" + istr + ": MATHEVAL ARG1=" + weights + " ARG2=" + labout + "_bt" + istr + " FUNC=x*y PERIODIC=NO");
       }
-      action->readInputLine( labout + "_between" + istr + ": SUM ARG=" + sum_arg + " PERIODIC=NO"); 
+      action->readInputLine( labout + "_between" + istr + ": SUM ARG=" + sum_arg + " PERIODIC=NO");
     }
   }
 }

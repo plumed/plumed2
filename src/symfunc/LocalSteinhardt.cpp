@@ -287,33 +287,33 @@ void LocalSteinhardt::registerKeywords( Keywords& keys ) {
 
 std::string LocalSteinhardt::getSymbol( const int& m ) const {
   if( m<0 ) {
-     std::string num; Tools::convert( -1*m, num );
-     return "n" + num;
+    std::string num; Tools::convert( -1*m, num );
+    return "n" + num;
   } else if( m>0 ) {
-     std::string num; Tools::convert( m, num );
-     return "p" + num;
+    std::string num; Tools::convert( m, num );
+    return "p" + num;
   }
-  return "0"; 
+  return "0";
 }
 
 std::string LocalSteinhardt::getArgsForStack( const int& l, const std::string& sp_lab ) const {
-  std::string numstr; Tools::convert( l, numstr );  
+  std::string numstr; Tools::convert( l, numstr );
   std::string data_mat = " ARG=" + sp_lab + "_sp.rm-n" + numstr + "," + sp_lab + "_sp.im-n" + numstr;
-  for(int i=-l+1; i<=l; ++i) { 
-      numstr = getSymbol( i );
-      data_mat += "," + sp_lab + "_sp.rm-" + numstr + "," + sp_lab + "_sp.im-" + numstr; 
-  }   
+  for(int i=-l+1; i<=l; ++i) {
+    numstr = getSymbol( i );
+    data_mat += "," + sp_lab + "_sp.rm-" + numstr + "," + sp_lab + "_sp.im-" + numstr;
+  }
   return data_mat;
 }
 
 LocalSteinhardt::LocalSteinhardt(const ActionOptions& ao):
-Action(ao),
-ActionShortcut(ao)
-{ 
-  // Get the Q value 
+  Action(ao),
+  ActionShortcut(ao)
+{
+  // Get the Q value
   int l; Tools::convert( getName().substr(7), l);
-  // Create a vector filled with ones 
-  std::string twolplusone; Tools::convert( 2*(2*l+1), twolplusone ); 
+  // Create a vector filled with ones
+  std::string twolplusone; Tools::convert( 2*(2*l+1), twolplusone );
   readInputLine( getShortcutLabel() + "_uvec: ONES SIZE=" + twolplusone );
   // Read in species keyword
   std::string sp_str; parse("SPECIES",sp_str);
@@ -322,31 +322,31 @@ ActionShortcut(ao)
     std::vector<std::string> sp_lab = Tools::getWords(sp_str, "\t\n ,");
     // This creates the stash to hold all the vectors
     if( sp_lab.size()==1 ) {
-        // The lengths of all the vectors in a vector
-        readInputLine( getShortcutLabel() + "_nmat: OUTER_PRODUCT ARG=" + sp_lab[0] + "_norm," + getShortcutLabel() + "_uvec");   
-        // The unormalised vectors
-        readInputLine( getShortcutLabel() + "_uvecs: VSTACK" + getArgsForStack( l, sp_lab[0] ) );
+      // The lengths of all the vectors in a vector
+      readInputLine( getShortcutLabel() + "_nmat: OUTER_PRODUCT ARG=" + sp_lab[0] + "_norm," + getShortcutLabel() + "_uvec");
+      // The unormalised vectors
+      readInputLine( getShortcutLabel() + "_uvecs: VSTACK" + getArgsForStack( l, sp_lab[0] ) );
     } else {
-        std::string len_vec = getShortcutLabel() + "_mags: CONCATENATE ARG=" = sp_lab[0] + "_norm"; 
-        for(unsigned i=1;i<sp_lab.size();++i) len_vec += "," + sp_lab[i] + "_norm";
-        // This is the vector that contains all the magnitudes
-        readInputLine( len_vec );
-        std::string concat_str = getShortcutLabel() + "_uvecs: CONCATENATE"; 
-        for(unsigned i=0;i<sp_lab.size();++i) {
-            std::string snum; Tools::convert( i+1, snum ); 
-            concat_str += " MATRIX" + snum + "1=" + getShortcutLabel() + "_uvecs" + snum;
-            readInputLine( getShortcutLabel() + "_uvecs" + snum + ": VSTACK" + getArgsForStack( l, sp_lab[i] ) );
-        }
-        // And the normalising matrix by taking the column vector of magnitudes and multiplying by the row vector of ones
-        readInputLine( getShortcutLabel() + "_nmat: OUTER_PRODUCT ARG=" + getShortcutLabel() + "_mags," + getShortcutLabel() + "_uvec");
-        // The unormalised vectors
-        readInputLine( concat_str );
+      std::string len_vec = getShortcutLabel() + "_mags: CONCATENATE ARG=" = sp_lab[0] + "_norm";
+      for(unsigned i=1; i<sp_lab.size(); ++i) len_vec += "," + sp_lab[i] + "_norm";
+      // This is the vector that contains all the magnitudes
+      readInputLine( len_vec );
+      std::string concat_str = getShortcutLabel() + "_uvecs: CONCATENATE";
+      for(unsigned i=0; i<sp_lab.size(); ++i) {
+        std::string snum; Tools::convert( i+1, snum );
+        concat_str += " MATRIX" + snum + "1=" + getShortcutLabel() + "_uvecs" + snum;
+        readInputLine( getShortcutLabel() + "_uvecs" + snum + ": VSTACK" + getArgsForStack( l, sp_lab[i] ) );
+      }
+      // And the normalising matrix by taking the column vector of magnitudes and multiplying by the row vector of ones
+      readInputLine( getShortcutLabel() + "_nmat: OUTER_PRODUCT ARG=" + getShortcutLabel() + "_mags," + getShortcutLabel() + "_uvec");
+      // The unormalised vectors
+      readInputLine( concat_str );
     }
     // Now normalise all the vectors by doing Hadammard "product" with normalising matrix
     readInputLine( getShortcutLabel() + "_vecs: CUSTOM ARG=" + getShortcutLabel() + "_uvecs," + getShortcutLabel() + "_nmat FUNC=x/y PERIODIC=NO");
-    // And transpose the matrix 
+    // And transpose the matrix
     readInputLine( getShortcutLabel() + "_vecsT: TRANSPOSE ARG=" + getShortcutLabel() + "_vecs" );
-    std::string sw_str; parse("SWITCH",sw_str); readInputLine( getShortcutLabel() + "_cmap: CONTACT_MATRIX GROUP=" + sp_str + " SWITCH={" + sw_str + "}"); 
+    std::string sw_str; parse("SWITCH",sw_str); readInputLine( getShortcutLabel() + "_cmap: CONTACT_MATRIX GROUP=" + sp_str + " SWITCH={" + sw_str + "}");
     // And the matrix of dot products
     readInputLine( getShortcutLabel() + "_dpmat: MATRIX_PRODUCT ARG=" + getShortcutLabel() + "_vecs," + getShortcutLabel() + "_vecsT" );
   } else if( spa_str.length()>0 ) {
@@ -355,49 +355,49 @@ ActionShortcut(ao)
     std::vector<std::string> sp_laba = Tools::getWords(spa_str, "\t\n ,");
     std::vector<std::string> sp_labb = Tools::getWords(spb_str, "\t\n ,");
     if( sp_laba.size()==1 ) {
-        // The matrix that is used for normalising
-        readInputLine( getShortcutLabel() + "_nmatA: OUTER_PRODUCT ARG=" +  sp_laba[0] + "_norm," + getShortcutLabel() + "_uvec");  
-        // The unormalised vectors
-        readInputLine( getShortcutLabel() + "_uvecsA: VSTACK" + getArgsForStack( l, sp_laba[0] ) );
+      // The matrix that is used for normalising
+      readInputLine( getShortcutLabel() + "_nmatA: OUTER_PRODUCT ARG=" +  sp_laba[0] + "_norm," + getShortcutLabel() + "_uvec");
+      // The unormalised vectors
+      readInputLine( getShortcutLabel() + "_uvecsA: VSTACK" + getArgsForStack( l, sp_laba[0] ) );
     } else {
-        std::string len_vec = getShortcutLabel() + "_magsA: CONCATENATE ARG=" + sp_laba[0] + "_norm";
-        for(unsigned i=1;i<sp_laba.size();++i) len_vec += "," + sp_laba[i] + "_norm";
-        //  This is the vector that contains all the magnitudes
-        readInputLine( len_vec );
-        std::string concat_str = getShortcutLabel() + "_uvecsA: CONCATENATE"; 
-        for(unsigned i=0;i<sp_laba.size();++i) {
-            std::string snum; Tools::convert( i+1, snum ); 
-            concat_str += " MATRIX" + snum + "1=" + getShortcutLabel() + "_uvecsA" + snum;
-            readInputLine( getShortcutLabel() + "_uvecsA" + snum + ": VSTACK" + getArgsForStack( l, sp_laba[i] ) );
-        }
-        // And the normalising matrix by taking the column vector of magnitudes and multiplying by the row vector of ones
-        readInputLine( getShortcutLabel() + "_nmatA: OUTER_PRODUCT ARG=" + getShortcutLabel() + "_magsA," + getShortcutLabel() + "_uvec");
-        // The unormalised vector
-        readInputLine( concat_str );
+      std::string len_vec = getShortcutLabel() + "_magsA: CONCATENATE ARG=" + sp_laba[0] + "_norm";
+      for(unsigned i=1; i<sp_laba.size(); ++i) len_vec += "," + sp_laba[i] + "_norm";
+      //  This is the vector that contains all the magnitudes
+      readInputLine( len_vec );
+      std::string concat_str = getShortcutLabel() + "_uvecsA: CONCATENATE";
+      for(unsigned i=0; i<sp_laba.size(); ++i) {
+        std::string snum; Tools::convert( i+1, snum );
+        concat_str += " MATRIX" + snum + "1=" + getShortcutLabel() + "_uvecsA" + snum;
+        readInputLine( getShortcutLabel() + "_uvecsA" + snum + ": VSTACK" + getArgsForStack( l, sp_laba[i] ) );
+      }
+      // And the normalising matrix by taking the column vector of magnitudes and multiplying by the row vector of ones
+      readInputLine( getShortcutLabel() + "_nmatA: OUTER_PRODUCT ARG=" + getShortcutLabel() + "_magsA," + getShortcutLabel() + "_uvec");
+      // The unormalised vector
+      readInputLine( concat_str );
     }
     // Now normalise all the vectors by doing Hadammard "product" with normalising matrix
     readInputLine( getShortcutLabel() + "_vecsA: CUSTOM ARG=" + getShortcutLabel() + "_uvecsA," + getShortcutLabel() + "_nmatA FUNC=x/y PERIODIC=NO");
     // Now do second matrix
     if( sp_labb.size()==1 ) {
-        readInputLine( getShortcutLabel() + "_nmatB: OUTER_PRODUCT ARG=" +  sp_laba[0] + "_norm," + getShortcutLabel() + "_uvec");
-        readInputLine( getShortcutLabel() + "_uvecsBT: VSTACK" + getArgsForStack( l, sp_labb[0] ) );
-        readInputLine( getShortcutLabel() + "_uvecsB: TRANSPOSE ARG=" + getShortcutLabel() + "_uvecsBT");
+      readInputLine( getShortcutLabel() + "_nmatB: OUTER_PRODUCT ARG=" +  sp_laba[0] + "_norm," + getShortcutLabel() + "_uvec");
+      readInputLine( getShortcutLabel() + "_uvecsBT: VSTACK" + getArgsForStack( l, sp_labb[0] ) );
+      readInputLine( getShortcutLabel() + "_uvecsB: TRANSPOSE ARG=" + getShortcutLabel() + "_uvecsBT");
     } else {
-        std::string len_vec = getShortcutLabel() + "_magsB: CONCATENATE ARG=" +  sp_labb[0] + "_norm";
-        for(unsigned i=1;i<sp_labb.size();++i) len_vec += "," + sp_labb[i] + "_norm";
-        //  This is the vector that contains all the magnitudes
-        readInputLine( len_vec ); 
-        std::string concat_str = getShortcutLabel() + "_uvecsB: CONCATENATE"; 
-        for(unsigned i=0;i<sp_labb.size();++i) {
-            std::string snum; Tools::convert( i+1, snum ); 
-            concat_str += " MATRIX1" + snum + "=" + getShortcutLabel() + "_uvecsB" + snum;
-            readInputLine( getShortcutLabel() + "_uvecsBT" + snum + ": VSTACK" + getArgsForStack( l, sp_labb[i] ) );
-            readInputLine( getShortcutLabel() + "_uvecsB" + snum + ": TRANSPOSE ARG=" + getShortcutLabel() + "_uvecsBT" + snum );
-        }
-        // And the normalising matrix 
-        readInputLine( getShortcutLabel() + "_nmatB: OUTER_PRODUCT ARG=" + getShortcutLabel() + "_uvec," + getShortcutLabel() + "_magsB");
-        // The unormalised vectors
-        readInputLine( concat_str );
+      std::string len_vec = getShortcutLabel() + "_magsB: CONCATENATE ARG=" +  sp_labb[0] + "_norm";
+      for(unsigned i=1; i<sp_labb.size(); ++i) len_vec += "," + sp_labb[i] + "_norm";
+      //  This is the vector that contains all the magnitudes
+      readInputLine( len_vec );
+      std::string concat_str = getShortcutLabel() + "_uvecsB: CONCATENATE";
+      for(unsigned i=0; i<sp_labb.size(); ++i) {
+        std::string snum; Tools::convert( i+1, snum );
+        concat_str += " MATRIX1" + snum + "=" + getShortcutLabel() + "_uvecsB" + snum;
+        readInputLine( getShortcutLabel() + "_uvecsBT" + snum + ": VSTACK" + getArgsForStack( l, sp_labb[i] ) );
+        readInputLine( getShortcutLabel() + "_uvecsB" + snum + ": TRANSPOSE ARG=" + getShortcutLabel() + "_uvecsBT" + snum );
+      }
+      // And the normalising matrix
+      readInputLine( getShortcutLabel() + "_nmatB: OUTER_PRODUCT ARG=" + getShortcutLabel() + "_uvec," + getShortcutLabel() + "_magsB");
+      // The unormalised vectors
+      readInputLine( concat_str );
     }
     // Now normalise all the vectors by doing Hadammard "product" with normalising matrix
     readInputLine( getShortcutLabel() + "_vecsB: CUSTOM ARG=" + getShortcutLabel() + "_uvecsB," + getShortcutLabel() + "_nmatB FUNC=x/y PERIODIC=NO");
@@ -416,7 +416,7 @@ ActionShortcut(ao)
   // And just the sum of the coordination numbers
   readInputLine( getShortcutLabel() + "_denom: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_cmap.w," + getShortcutLabel() +"_ones");
   // And matheval to get the final quantity
-  readInputLine( getShortcutLabel() + "_av: CUSTOM ARG=" + getShortcutLabel() + "," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");  
+  readInputLine( getShortcutLabel() + "_av: CUSTOM ARG=" + getShortcutLabel() + "," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
   // And this expands everything
   multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel() + "_av", "", this );
 }

@@ -248,22 +248,22 @@ Value* ActionWithValue::getPntrToComponent( int n ) {
 
 bool ActionWithValue::calculateOnUpdate() {
   if( firststep ) {
-      ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>(this);
-      if(aa) {
-         const std::vector<Value*> & args(aa->getArguments());
-         for(const auto & p : args ) {
-             if( p->calcOnUpdate ) {
-                 for(unsigned i=0; i<values.size(); ++i) values[i]->calcOnUpdate=true;
-                 break;
-             }
-         }
+    ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>(this);
+    if(aa) {
+      const std::vector<Value*> & args(aa->getArguments());
+      for(const auto & p : args ) {
+        if( p->calcOnUpdate ) {
+          for(unsigned i=0; i<values.size(); ++i) values[i]->calcOnUpdate=true;
+          break;
+        }
       }
-      firststep=false;
+    }
+    firststep=false;
   }
   for(unsigned i=0; i<values.size(); ++i) {
-      if( values[i]->calcOnUpdate ) return true;
+    if( values[i]->calcOnUpdate ) return true;
   }
-  return false;   
+  return false;
 }
 
 bool ActionWithValue::checkForForces() {

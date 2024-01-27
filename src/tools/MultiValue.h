@@ -30,7 +30,7 @@
 namespace PLMD {
 
 class MultiValue {
-friend class ActionWithVector;
+  friend class ActionWithVector;
 private:
 /// The index of the task we are currently performing
   std::size_t task_index, task2_index;
@@ -95,8 +95,8 @@ public:
   unsigned getNumberOfValues() const ;
 /// Get the number of derivatives in the stash
   unsigned getNumberOfDerivatives() const ;
-/// Get references to some memory. These vectors allow us to 
-/// avoid doing lots of resizing of vectors in MultiColvarTemplate 
+/// Get references to some memory. These vectors allow us to
+/// avoid doing lots of resizing of vectors in MultiColvarTemplate
   std::vector<Vector>& getFirstAtomVector();
   std::vector<std::vector<Vector> >& getFirstAtomDerivativeVector();
   std::vector<Tensor>& getFirstAtomVirialVector();
@@ -125,7 +125,7 @@ public:
 /// Clear all values
   void clearAll( const bool& newversion=false );
 /// Clear the derivatives
-  void clearDerivatives( const unsigned& );  
+  void clearDerivatives( const unsigned& );
 /// Clear the tempory derivatives
   void clearTemporyDerivatives();
 /// Clear a value
@@ -140,7 +140,7 @@ public:
 ///
   unsigned getNumberActive( const std::size_t& ) const ;
 ///
-  unsigned getActiveIndex( const std::size_t&, const std::size_t& ) const ;  
+  unsigned getActiveIndex( const std::size_t&, const std::size_t& ) const ;
 ///
   void clearActiveMembers( const std::size_t& ival );
   void sortActiveList();
@@ -281,27 +281,27 @@ inline
 unsigned MultiValue::getActiveIndex( const std::size_t& ival, const std::size_t& ind ) const {
   plumed_dbg_assert( ind<nactive[ival] );
   return active_list[nderivatives*ival+ind];
-} 
+}
 
 inline
 void MultiValue::setSplitIndex( const std::size_t& nat ) {
   nsplit = nat;
 }
-  
+
 inline
 std::size_t MultiValue::getSplitIndex() const {
   return nsplit;
-} 
-  
+}
+
 inline
 void MultiValue::setNumberOfIndices( const std::size_t& nat ) {
   nindices = nat;
 }
-  
+
 inline
 std::size_t MultiValue::getNumberOfIndices() const {
   return nindices;
-} 
+}
 
 
 inline
@@ -338,22 +338,22 @@ unsigned MultiValue::getActiveIndex( const unsigned& ind ) const {
 inline
 void MultiValue::setTaskIndex( const std::size_t& tindex ) {
   task_index = tindex;
-} 
+}
 
 inline
 std::size_t MultiValue::getTaskIndex() const {
   return task_index;
 }
 
-inline 
+inline
 void MultiValue::setSecondTaskIndex( const std::size_t& tindex ) {
-  task2_index = tindex; 
-} 
-  
+  task2_index = tindex;
+}
+
 inline
 std::size_t MultiValue::getSecondTaskIndex() const {
   return task2_index;
-} 
+}
 
 
 inline
@@ -396,7 +396,7 @@ std::vector<Tensor>& MultiValue::getFirstAtomVirialVector() {
   return tmp_atom_virial;
 }
 
-inline 
+inline
 void MultiValue::resizeTemporyVector(const unsigned& n ) {
   if( n>tmp_vectors.size() ) tmp_vectors.resize(n);
 }
@@ -409,8 +409,8 @@ std::vector<double>& MultiValue::getTemporyVector(const unsigned& ind ) {
 
 inline
 void MultiValue::stashMatrixElement( const unsigned& nmat, const unsigned& rowstart, const unsigned& jcol, const double& val ) {
-  plumed_dbg_assert( jcol<nmatrix_cols && rowstart + matrix_bookeeping[rowstart]<matrix_bookeeping.size() && nmatrix_cols*nmat + matrix_bookeeping[rowstart]<matrix_row_stash.size() ); 
-  matrix_bookeeping[rowstart]++; matrix_bookeeping[rowstart + matrix_bookeeping[rowstart]]=jcol; matrix_row_stash[ nmatrix_cols*nmat + jcol] = val; 
+  plumed_dbg_assert( jcol<nmatrix_cols && rowstart + matrix_bookeeping[rowstart]<matrix_bookeeping.size() && nmatrix_cols*nmat + matrix_bookeeping[rowstart]<matrix_row_stash.size() );
+  matrix_bookeeping[rowstart]++; matrix_bookeeping[rowstart + matrix_bookeeping[rowstart]]=jcol; matrix_row_stash[ nmatrix_cols*nmat + jcol] = val;
 }
 
 inline
@@ -429,11 +429,11 @@ void MultiValue::setNumberOfMatrixRowDerivatives( const unsigned& nmat, const un
   plumed_dbg_assert( nmat<matrix_row_nderivatives.size() && nind<=matrix_row_derivative_indices[nmat].size() );
   matrix_row_nderivatives[nmat]=nind;
 }
-  
+
 inline
 unsigned MultiValue::getNumberOfMatrixRowDerivatives( const unsigned& nmat ) const {
   plumed_dbg_assert( nmat<matrix_row_nderivatives.size() ); return matrix_row_nderivatives[nmat];
-} 
+}
 
 inline
 std::vector<unsigned>& MultiValue::getMatrixRowDerivativeIndices( const unsigned& nmat ) {
@@ -448,7 +448,7 @@ void MultiValue::addMatrixForce( const unsigned& imat, const unsigned& jind, con
 inline
 double MultiValue::getStashedMatrixForce( const unsigned& imat, const unsigned& jind ) const {
   return matrix_force_stash[imat*nderivatives + jind];
-} 
+}
 
 }
 #endif

@@ -32,7 +32,7 @@ Action used to create a command that expands to multiple PLMD::Action commands w
 */
 class ActionShortcut :
   public virtual Action {
-friend class ActionSet;
+  friend class ActionSet;
 private:
   std::string shortcutlabel;
   std::vector<std::string> savedInputLines;

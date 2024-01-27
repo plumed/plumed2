@@ -96,53 +96,53 @@ void MultiColvarDensity::registerKeywords( Keywords& keys ) {
 }
 
 MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
-Action(ao),
-ActionShortcut(ao)
+  Action(ao),
+  ActionShortcut(ao)
 {
-    // Read in the position of the origin 
-    std::string origin_str; parse("ORIGIN",origin_str);
-    // Read in the quantity we are calculating the density for
-    std::string atoms_str, data_str; parse("ATOMS",atoms_str); parse("DATA",data_str);
-    if( atoms_str.length()==0 && data_str.length()==0 ) error("quantity to calculate the density for was not specified used DATA/ATOMS");
-    // Get the information on the direction for the density
-    std::string dir, direction_string; parse("DIR",dir);
-    if( dir=="x" ) direction_string = "ARG=" + getShortcutLabel() + "_dist.x";
-    else if( dir=="y" ) direction_string = "ARG=" + getShortcutLabel() + "_dist.y";
-    else if( dir=="z" ) direction_string = "ARG=" + getShortcutLabel() + "_dist.z";
-    else if( dir=="xy" ) direction_string = "ARG=" + getShortcutLabel() + "_dist.x," + getShortcutLabel() + "_dist.y";
-    else if( dir=="xz" ) direction_string = "ARG=" + getShortcutLabel() + "_dist.x," + getShortcutLabel() + "_dist.z";
-    else if( dir=="yz" ) direction_string = "ARG=" + getShortcutLabel() + "_dist.y," + getShortcutLabel() + "_dist.z";
-    else if( dir=="xyz" ) direction_string = "ARG=" + getShortcutLabel() + "_dist.x," + getShortcutLabel() + "_dist.y," + getShortcutLabel() + "_dist.z";
-    else error( dir + " is invalid dir specification use x/y/z/xy/xz/yz/xyz");
+  // Read in the position of the origin
+  std::string origin_str; parse("ORIGIN",origin_str);
+  // Read in the quantity we are calculating the density for
+  std::string atoms_str, data_str; parse("ATOMS",atoms_str); parse("DATA",data_str);
+  if( atoms_str.length()==0 && data_str.length()==0 ) error("quantity to calculate the density for was not specified used DATA/ATOMS");
+  // Get the information on the direction for the density
+  std::string dir, direction_string; parse("DIR",dir);
+  if( dir=="x" ) direction_string = "ARG=" + getShortcutLabel() + "_dist.x";
+  else if( dir=="y" ) direction_string = "ARG=" + getShortcutLabel() + "_dist.y";
+  else if( dir=="z" ) direction_string = "ARG=" + getShortcutLabel() + "_dist.z";
+  else if( dir=="xy" ) direction_string = "ARG=" + getShortcutLabel() + "_dist.x," + getShortcutLabel() + "_dist.y";
+  else if( dir=="xz" ) direction_string = "ARG=" + getShortcutLabel() + "_dist.x," + getShortcutLabel() + "_dist.z";
+  else if( dir=="yz" ) direction_string = "ARG=" + getShortcutLabel() + "_dist.y," + getShortcutLabel() + "_dist.z";
+  else if( dir=="xyz" ) direction_string = "ARG=" + getShortcutLabel() + "_dist.x," + getShortcutLabel() + "_dist.y," + getShortcutLabel() + "_dist.z";
+  else error( dir + " is invalid dir specification use x/y/z/xy/xz/yz/xyz");
 
-    // Parse the keymap for this averaging stuff
-    std::string stride, clear; parse("STRIDE",stride); parse("CLEAR",clear); bool unorm; parseFlag("UNORMALIZED",unorm);
-    // Create distance action
-    bool hasheights; std::string dist_words = getShortcutLabel() + "_dist: DISTANCES COMPONENTS ORIGIN=" + origin_str;
-    if( atoms_str.length()>0 ) { hasheights=false; dist_words += " ATOMS=" + atoms_str; }
-    else { hasheights=true; dist_words += " ATOMS=" + data_str; }
-    // plumed_massert( keys.count("ORIGIN"), "you must specify the position of the origin" );
-    readInputLine( dist_words );
+  // Parse the keymap for this averaging stuff
+  std::string stride, clear; parse("STRIDE",stride); parse("CLEAR",clear); bool unorm; parseFlag("UNORMALIZED",unorm);
+  // Create distance action
+  bool hasheights; std::string dist_words = getShortcutLabel() + "_dist: DISTANCES COMPONENTS ORIGIN=" + origin_str;
+  if( atoms_str.length()>0 ) { hasheights=false; dist_words += " ATOMS=" + atoms_str; }
+  else { hasheights=true; dist_words += " ATOMS=" + data_str; }
+  // plumed_massert( keys.count("ORIGIN"), "you must specify the position of the origin" );
+  readInputLine( dist_words );
 
-    std::string inputLine = convertInputLineToString();
-    // Make the kde object for the numerator if needed
-    if( hasheights ) { 
-        readInputLine( getShortcutLabel() + "_inumer: KDE VOLUMES=" + data_str + " " + direction_string + " " + inputLine );
-        if( unorm ) { readInputLine( getShortcutLabel() + ": ACCUMULATE ARG=" + getShortcutLabel() + "_inumer STRIDE=" + stride + " CLEAR=" + clear ); return; }
-        else readInputLine( getShortcutLabel() + "_numer: ACCUMULATE ARG=" + getShortcutLabel() + "_inumer STRIDE=" + stride + " CLEAR=" + clear ); 
-    }
-    // Make the kde object
-    readInputLine( getShortcutLabel() + "_kde: KDE " + inputLine  + " " + direction_string );
-    // Make the division object if it is required
-    if( hasheights && !unorm ) {
-      readInputLine( getShortcutLabel() + "_denom: ACCUMULATE ARG=" + getShortcutLabel() + "_kde STRIDE=" + stride + " CLEAR=" + clear );
-      readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_numer," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
-    } else if( !hasheights ) {
-      readInputLine( getShortcutLabel() + "_weight: ONES SIZE=1" );
-      readInputLine( getShortcutLabel() + "_numer: ACCUMULATE ARG=" + getShortcutLabel() + "_kde STRIDE=" + stride + " CLEAR=" + clear );
-      readInputLine( getShortcutLabel() + "_denom: ACCUMULATE ARG=" + getShortcutLabel() + "_weight STRIDE=" + stride + " CLEAR=" + clear );
-      readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_numer," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
-    }
+  std::string inputLine = convertInputLineToString();
+  // Make the kde object for the numerator if needed
+  if( hasheights ) {
+    readInputLine( getShortcutLabel() + "_inumer: KDE VOLUMES=" + data_str + " " + direction_string + " " + inputLine );
+    if( unorm ) { readInputLine( getShortcutLabel() + ": ACCUMULATE ARG=" + getShortcutLabel() + "_inumer STRIDE=" + stride + " CLEAR=" + clear ); return; }
+    else readInputLine( getShortcutLabel() + "_numer: ACCUMULATE ARG=" + getShortcutLabel() + "_inumer STRIDE=" + stride + " CLEAR=" + clear );
+  }
+  // Make the kde object
+  readInputLine( getShortcutLabel() + "_kde: KDE " + inputLine  + " " + direction_string );
+  // Make the division object if it is required
+  if( hasheights && !unorm ) {
+    readInputLine( getShortcutLabel() + "_denom: ACCUMULATE ARG=" + getShortcutLabel() + "_kde STRIDE=" + stride + " CLEAR=" + clear );
+    readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_numer," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+  } else if( !hasheights ) {
+    readInputLine( getShortcutLabel() + "_weight: ONES SIZE=1" );
+    readInputLine( getShortcutLabel() + "_numer: ACCUMULATE ARG=" + getShortcutLabel() + "_kde STRIDE=" + stride + " CLEAR=" + clear );
+    readInputLine( getShortcutLabel() + "_denom: ACCUMULATE ARG=" + getShortcutLabel() + "_weight STRIDE=" + stride + " CLEAR=" + clear );
+    readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_numer," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+  }
 }
 
 }

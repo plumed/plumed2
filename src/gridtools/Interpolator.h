@@ -23,20 +23,20 @@
 #define __PLUMED_gridtools_Interpolator_h
 
 #include "core/Value.h"
-#include "GridCoordinatesObject.h" 
+#include "GridCoordinatesObject.h"
 
 namespace PLMD {
 namespace gridtools {
 
 class Interpolator {
 private:
-   Value* values;
-   const GridCoordinatesObject& gridobject;
-   
-public: 
-   Interpolator( Value* myval, const GridCoordinatesObject& mygrid ) : values(myval), gridobject(mygrid) {}
-   /// Interpolate the function using splines
-   double splineInterpolation( const std::vector<double>& x, std::vector<double>& der ) const ;
+  Value* values;
+  const GridCoordinatesObject& gridobject;
+
+public:
+  Interpolator( Value* myval, const GridCoordinatesObject& mygrid ) : values(myval), gridobject(mygrid) {}
+  /// Interpolate the function using splines
+  double splineInterpolation( const std::vector<double>& x, std::vector<double>& der ) const ;
 };
 
 }

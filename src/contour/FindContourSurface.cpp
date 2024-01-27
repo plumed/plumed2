@@ -119,25 +119,25 @@ FindContourSurface::FindContourSurface(const ActionOptions&ao):
 {
   if( getPntrToArgument(0)->getRank()<2 ) error("cannot find dividing surface if input grid is one dimensional");
 
-  std::string dir; parse("SEARCHDIR",dir); 
+  std::string dir; parse("SEARCHDIR",dir);
   log.printf("  calculating location of contour on %d dimensional grid \n", getPntrToArgument(0)->getRank()-1 );
   checkRead();
 
-  Value* gval=getPntrToArgument(0); unsigned n=0; 
+  Value* gval=getPntrToArgument(0); unsigned n=0;
   gdirs.resize( gval->getRank()-1 ); gnames.resize( getPntrToArgument(0)->getRank()-1 );
 
   gridtools::ActionWithGrid* ag=dynamic_cast<gridtools::ActionWithGrid*>( gval->getPntrToAction() );
   if( !ag ) error("input argument must be a grid");
   if( getInputGridObject().getGridType()=="fibonacci") error("cannot search for contours in fibonacci grids");
-  std::vector<std::string> argn( ag->getGridCoordinateNames() );  
+  std::vector<std::string> argn( ag->getGridCoordinateNames() );
 
   for(unsigned i=0; i<gval->getRank(); ++i) {
-     if( argn[i]==dir ) {
-       dir_n=i;
-     } else {
-       if( n==gdirs.size() ) error("could not find " + dir + " direction in input grid");
-       gdirs[n]=i; gnames[n]=argn[i]; n++;
-     }
+    if( argn[i]==dir ) {
+      dir_n=i;
+    } else {
+      if( n==gdirs.size() ) error("could not find " + dir + " direction in input grid");
+      gdirs[n]=i; gnames[n]=argn[i]; n++;
+    }
   }
   if( n!=(gval->getRank()-1) ) error("output of grid is not understood");
 
@@ -146,7 +146,7 @@ FindContourSurface::FindContourSurface(const ActionOptions&ao):
   gridcoords.setup( "flat", ipbc, 0, 0.0 );
 
   // Now add a value
-  std::vector<unsigned> shape( getInputGridObject().getDimension()-1 ); 
+  std::vector<unsigned> shape( getInputGridObject().getDimension()-1 );
   addValueWithDerivatives( shape ); setNotPeriodic();
   getPntrToComponent(0)->buildDataStore();
 }
@@ -229,7 +229,7 @@ void FindContourSurface::performTask( const unsigned& current, MultiValue& myval
 }
 
 void FindContourSurface::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
-                                            const unsigned& bufstart, std::vector<double>& buffer ) const {
+    const unsigned& bufstart, std::vector<double>& buffer ) const {
   plumed_dbg_assert( valindex==0 ); unsigned istart = bufstart + (1+gridcoords.getDimension())*code;
   unsigned valout = getConstPntrToComponent(0)->getPositionInStream(); buffer[istart] += myvals.get( valout );
 }

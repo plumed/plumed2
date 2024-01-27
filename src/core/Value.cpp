@@ -122,7 +122,7 @@ void Value::setShape( const std::vector<unsigned>&ss ) {
   if( shape.size()>0 && hasDeriv ) {
     // This is for grids
     std::size_t ndata = tot*(1+action->getNumberOfDerivatives());
-    data.resize( ndata ); inputForce.resize( tot ); 
+    data.resize( ndata ); inputForce.resize( tot );
     ngrid_der=action->getNumberOfDerivatives();
   } else if( shape.size()==0 ) {
     // This is for scalars
@@ -229,38 +229,38 @@ void Value::push_back( const double& v ) {
 
 double Value::get(const std::size_t& ival, const bool trueind) const {
   if( hasDeriv ) return data[ival*(1+ngrid_der)];
-#ifdef DNDEBUG 
+#ifdef DNDEBUG
   if( action ) plumed_dbg_massert( ival<getNumberOfValues(), "could not get value from " + name );
 #endif
   if( shape.size()==2 && ncols<shape[1] && trueind ) {
-      unsigned irow = std::floor( ival / shape[1] ), jcol = ival%shape[1];
-      // This is a special treatment for the lower triangular matrices that are used when 
-      // we do ITRE with COLLECT_FRAMES
-      if( ncols==0 ) {
-          if( jcol<=irow ) return data[0.5*irow*(irow+1) + jcol];
-          return 0;
-      }
-      for(unsigned i=0; i<getRowLength(irow); ++i) {
-          if( getRowIndex(irow,i)==jcol ) return data[irow*ncols+i];
-      }
-      return 0.0;
+    unsigned irow = std::floor( ival / shape[1] ), jcol = ival%shape[1];
+    // This is a special treatment for the lower triangular matrices that are used when
+    // we do ITRE with COLLECT_FRAMES
+    if( ncols==0 ) {
+      if( jcol<=irow ) return data[0.5*irow*(irow+1) + jcol];
+      return 0;
+    }
+    for(unsigned i=0; i<getRowLength(irow); ++i) {
+      if( getRowIndex(irow,i)==jcol ) return data[irow*ncols+i];
+    }
+    return 0.0;
   }
   plumed_massert( ival<data.size(), "cannot get value from " + name );
   return data[ival];
-} 
+}
 
 void Value::addForce(const std::size_t& iforce, double f, const bool trueind) {
   hasForce=true;
   if( shape.size()==2 && !hasDeriv && ncols<shape[1] && trueind ) {
-      unsigned irow = std::floor( iforce / shape[0] ), jcol = iforce%shape[0];
-      for(unsigned i=0; i<getRowLength(irow); ++i) {
-          if( getRowIndex(irow,i)==jcol ) { inputForce[irow*ncols+i]+=f; return; }
-      }
-      plumed_assert( fabs(f)<epsilon ); return;
-  } 
+    unsigned irow = std::floor( iforce / shape[0] ), jcol = iforce%shape[0];
+    for(unsigned i=0; i<getRowLength(irow); ++i) {
+      if( getRowIndex(irow,i)==jcol ) { inputForce[irow*ncols+i]+=f; return; }
+    }
+    plumed_assert( fabs(f)<epsilon ); return;
+  }
   plumed_massert( iforce<inputForce.size(), "can't add force to " + name );
   inputForce[iforce]+=f;
-} 
+}
 
 
 void Value::buildDataStore( const bool forprint ) {
@@ -277,14 +277,14 @@ void Value::reshapeMatrixStore( const unsigned& n ) {
   ncols=n; if( ncols>shape[1] ) ncols=shape[1];
   unsigned size=shape[0]*ncols;
   if( matrix_bookeeping.size()!=(size+shape[0]) ) {
-      data.resize( size ); inputForce.resize( size );
-      matrix_bookeeping.resize( size + shape[0], 0 ); 
-      if( ncols>=shape[1] ) {
-          for(unsigned i=0; i<shape[0]; ++i) {
-              matrix_bookeeping[(1+ncols)*i] = shape[1];
-              for(unsigned j=0;j<shape[1];++j) matrix_bookeeping[(1+ncols)*i+1+j]=j;
-          }
+    data.resize( size ); inputForce.resize( size );
+    matrix_bookeeping.resize( size + shape[0], 0 );
+    if( ncols>=shape[1] ) {
+      for(unsigned i=0; i<shape[0]; ++i) {
+        matrix_bookeeping[(1+ncols)*i] = shape[1];
+        for(unsigned j=0; j<shape[1]; ++j) matrix_bookeeping[(1+ncols)*i+1+j]=j;
       }
+    }
   }
   if( ncols<shape[1] ) std::fill(matrix_bookeeping.begin(), matrix_bookeeping.end(), 0);
 }
@@ -295,7 +295,7 @@ void Value::setPositionInMatrixStash( const unsigned& p ) {
 }
 
 bool Value::ignoreStoredValue(const std::string& c) const {
-  if( !storedata && shape.size()>0 ) return true; 
+  if( !storedata && shape.size()>0 ) return true;
   ActionWithVector* av=dynamic_cast<ActionWithVector*>(action);
   if( av ) return (av->getFirstActionInChain())->getLabel()==c;
   return false;
@@ -322,13 +322,13 @@ void Value::retrieveEdgeList( unsigned& nedge, std::vector<std::pair<unsigned,un
   if( elems.size()<shape[0]*ncols ) { elems.resize( shape[0]*ncols ); active.resize( shape[0]*ncols ); }
 
   for(unsigned i=0; i<shape[0]; ++i) {
-      unsigned ncol = getRowLength(i);
-      for(unsigned j=0; j<ncol; ++j) {
-          if( fabs(get(i*ncols+j,false))<epsilon ) continue;
-          if( symmetric && getRowIndex(i,j)>i ) continue;
-          active[nedge].first = i; active[nedge].second = getRowIndex(i,j);
-          elems[nedge] = get(i*ncols+j,false); nedge++;
-      }
+    unsigned ncol = getRowLength(i);
+    for(unsigned j=0; j<ncol; ++j) {
+      if( fabs(get(i*ncols+j,false))<epsilon ) continue;
+      if( symmetric && getRowIndex(i,j)>i ) continue;
+      active[nedge].first = i; active[nedge].second = getRowIndex(i,j);
+      elems[nedge] = get(i*ncols+j,false); nedge++;
+    }
   }
 }
 
@@ -338,15 +338,15 @@ void Value::readBinary(std::istream&i) {
 
 void Value::convertIndexToindices(const std::size_t& index, std::vector<unsigned>& indices ) const {
   if( hasDeriv || getRank()==1 ) {
-      std::size_t kk=index; indices[0]=index%shape[0];
-      for(unsigned i=1; i<shape.size()-1; ++i) {
-        kk=(kk-indices[i-1])/shape[i-1];
-        indices[i]=kk%shape[i];
-      }
-      if(shape.size()>=2) indices[shape.size()-1]=(kk-indices[shape.size()-2])/shape[shape.size()-2];
+    std::size_t kk=index; indices[0]=index%shape[0];
+    for(unsigned i=1; i<shape.size()-1; ++i) {
+      kk=(kk-indices[i-1])/shape[i-1];
+      indices[i]=kk%shape[i];
+    }
+    if(shape.size()>=2) indices[shape.size()-1]=(kk-indices[shape.size()-2])/shape[shape.size()-2];
   } else if( getRank()==2 ) {
-      indices[0]=std::floor( index/shape[1] ); indices[1] = index%shape[1];
-  } 
+    indices[0]=std::floor( index/shape[1] ); indices[1] = index%shape[1];
+  }
 }
 
 void Value::print( OFile& ofile ) const {
@@ -360,7 +360,7 @@ void Value::print( OFile& ofile ) const {
       for(unsigned i=0; i<shape.size(); ++i) { Tools::convert( indices[i]+1, num ); fname += "." + num; }
       ofile.printField( fname, get(i) );
     }
-  }   
+  }
 }
 
 unsigned Value::getGoodNumThreads( const unsigned& j, const unsigned& k ) const {

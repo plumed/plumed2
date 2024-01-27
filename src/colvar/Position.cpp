@@ -85,8 +85,8 @@ public:
   static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
-  static void calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges, 
-                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, 
+  static void calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
+                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
                            std::vector<Tensor>& virial, const ActionAtomistic* aa );
 };
 
@@ -100,7 +100,7 @@ void Position::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   componentsAreNotOptional(keys);
   keys.add("atoms","ATOM","the atom number");
-  keys.add("atoms","ATOMS","the atom numbers that you would like to use the positions of"); 
+  keys.add("atoms","ATOMS","the atom numbers that you would like to use the positions of");
   keys.addFlag("WHOLEMOLECULES",false,"if this is a vector of positions do you want to make the positions into a whole before");
   keys.addFlag("SCALED_COMPONENTS",false,"calculate the a, b and c scaled components of the position separately and store them as label.a, label.b and label.c");
   keys.addOutputComponent("x","default","the x-component of the atom position");
@@ -120,7 +120,7 @@ Position::Position(const ActionOptions&ao):
   derivs(3),
   virial(3)
 {
-  for(unsigned i=0;i<3;++i) derivs[i].resize(1);
+  for(unsigned i=0; i<3; ++i) derivs[i].resize(1);
   std::vector<AtomNumber> atoms; parseAtomList(-1,atoms,this);
   unsigned mode=getModeAndSetupValues(this);
   if( mode==1 ) scaled_components=true;
@@ -137,7 +137,7 @@ Position::Position(const ActionOptions&ao):
 }
 
 void Position::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
-  aa->parseAtomList("ATOM",num,t); 
+  aa->parseAtomList("ATOM",num,t);
   if( t.size()==1 ) aa->log.printf("  for atom %d\n",t[0].serial());
   else if( num<0 || t.size()!=0 ) aa->error("Number of specified atoms should be 1");
 }
@@ -149,7 +149,7 @@ unsigned Position::getModeAndSetupValues( ActionWithValue* av ) {
     av->addComponentWithDerivatives("b"); av->componentIsPeriodic("b","-0.5","+0.5");
     av->addComponentWithDerivatives("c"); av->componentIsPeriodic("c","-0.5","+0.5");
     return 1;
-  } 
+  }
   av->addComponentWithDerivatives("x"); av->componentIsNotPeriodic("x");
   av->addComponentWithDerivatives("y"); av->componentIsNotPeriodic("y");
   av->addComponentWithDerivatives("z"); av->componentIsNotPeriodic("z");
@@ -198,19 +198,19 @@ void Position::calculate() {
   }
 }
 
-void Position::calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges, 
+void Position::calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
                             const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
                             std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
   if( mode==1 ) {
-      Vector d=aa->getPbc().realToScaled(pos[0]);
-      vals[0]=Tools::pbc(d[0]); vals[1]=Tools::pbc(d[1]); vals[2]=Tools::pbc(d[2]);
-      derivs[0][0]=matmul(aa->getPbc().getInvBox(),Vector(+1,0,0));
-      derivs[1][0]=matmul(aa->getPbc().getInvBox(),Vector(0,+1,0));
-      derivs[2][0]=matmul(aa->getPbc().getInvBox(),Vector(0,0,+1));
+    Vector d=aa->getPbc().realToScaled(pos[0]);
+    vals[0]=Tools::pbc(d[0]); vals[1]=Tools::pbc(d[1]); vals[2]=Tools::pbc(d[2]);
+    derivs[0][0]=matmul(aa->getPbc().getInvBox(),Vector(+1,0,0));
+    derivs[1][0]=matmul(aa->getPbc().getInvBox(),Vector(0,+1,0));
+    derivs[2][0]=matmul(aa->getPbc().getInvBox(),Vector(0,0,+1));
   } else {
-      for(unsigned i=0;i<3;++i) vals[i]=pos[0][i];
-      derivs[0][0]=Vector(+1,0,0); derivs[1][0]=Vector(0,+1,0); derivs[2][0]=Vector(0,0,+1);
-      virial[0]=Tensor(pos[0],Vector(-1,0,0)); virial[1]=Tensor(pos[0],Vector(0,-1,0)); virial[2]=Tensor(pos[0],Vector(0,0,-1));
+    for(unsigned i=0; i<3; ++i) vals[i]=pos[0][i];
+    derivs[0][0]=Vector(+1,0,0); derivs[1][0]=Vector(0,+1,0); derivs[2][0]=Vector(0,0,+1);
+    virial[0]=Tensor(pos[0],Vector(-1,0,0)); virial[1]=Tensor(pos[0],Vector(0,-1,0)); virial[2]=Tensor(pos[0],Vector(0,0,-1));
   }
 }
 

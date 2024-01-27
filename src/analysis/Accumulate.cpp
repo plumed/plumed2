@@ -31,9 +31,9 @@ namespace PLMD {
 namespace analysis {
 
 class Accumulate :
-public ActionWithValue,
-public ActionWithArguments,
-public ActionPilot
+  public ActionWithValue,
+  public ActionWithArguments,
+  public ActionPilot
 {
 private:
   bool clearnextstep;
@@ -57,26 +57,26 @@ void Accumulate::registerKeywords( Keywords& keys ) {
   keys.use("ARG"); keys.use("UPDATE_FROM"); keys.use("UPDATE_UNTIL");
   keys.add("compulsory","STRIDE","1","the frequency with which the data should be collected and added to the quantity being averaged");
   keys.add("compulsory","CLEAR","0","the frequency with which to clear all the accumulated data.  The default value "
-                                    "of 0 implies that all the data will be used and that the grid will never be cleared");
+           "of 0 implies that all the data will be used and that the grid will never be cleared");
 }
 
 Accumulate::Accumulate( const ActionOptions& ao ):
-Action(ao),
-ActionWithValue(ao),
-ActionWithArguments(ao),
-ActionPilot(ao),
-clearnextstep(true)
+  Action(ao),
+  ActionWithValue(ao),
+  ActionWithArguments(ao),
+  ActionPilot(ao),
+  clearnextstep(true)
 {
   if( getNumberOfArguments()!=1 ) error("there should only be one argument to this action");
   if( !getPntrToArgument(0)->hasDerivatives() && getPntrToArgument(0)->getRank()!=0 ) error("input to the accumulate action should be a scalar or a grid");
 
   parse("CLEAR",clearstride);
   if( clearstride>0 ) {
-      if( clearstride%getStride()!=0 ) error("CLEAR parameter must be a multiple of STRIDE");
-      log.printf("  clearing average every %u steps \n",clearstride);
+    if( clearstride%getStride()!=0 ) error("CLEAR parameter must be a multiple of STRIDE");
+    log.printf("  clearing average every %u steps \n",clearstride);
   }
   std::vector<unsigned> shape( getPntrToArgument(0)->getShape() );
-  addValueWithDerivatives( shape ); setNotPeriodic(); 
+  addValueWithDerivatives( shape ); setNotPeriodic();
   if( getPntrToArgument(0)->isPeriodic() ) error("you cannot accumulate a periodic quantity");
 }
 
@@ -86,21 +86,21 @@ unsigned Accumulate::getNumberOfDerivatives() {
 }
 
 void Accumulate::update() {
-  if( clearnextstep ) { 
-      if( getPntrToComponent(0)->getNumberOfValues()!=getPntrToArgument(0)->getNumberOfValues() ) {
-          getPntrToComponent(0)->setShape( getPntrToArgument(0)->getShape() ); 
-      }
-      clearnextstep=false; getPntrToComponent(0)->set(0,0.0); getPntrToComponent(0)->clearDerivatives(true);
+  if( clearnextstep ) {
+    if( getPntrToComponent(0)->getNumberOfValues()!=getPntrToArgument(0)->getNumberOfValues() ) {
+      getPntrToComponent(0)->setShape( getPntrToArgument(0)->getShape() );
+    }
+    clearnextstep=false; getPntrToComponent(0)->set(0,0.0); getPntrToComponent(0)->clearDerivatives(true);
   }
   if( getStep()==0 ) return;
 
   Value* myarg=getPntrToArgument(0); Value* myout = getPntrToComponent(0);
   if( getPntrToArgument(0)->getRank()>0 ) {
-      unsigned nvals = myarg->getNumberOfValues(), nder = myarg->getNumberOfGridDerivatives();
-      for(unsigned i=0; i<nvals; ++i) {
-          myout->set( i, myout->get(i) + myarg->get(i) );
-          for(unsigned j=0; j<nder; ++j) myout->addGridDerivatives( i, j, myarg->getGridDerivative( i, j ) );
-      }
+    unsigned nvals = myarg->getNumberOfValues(), nder = myarg->getNumberOfGridDerivatives();
+    for(unsigned i=0; i<nvals; ++i) {
+      myout->set( i, myout->get(i) + myarg->get(i) );
+      for(unsigned j=0; j<nder; ++j) myout->addGridDerivatives( i, j, myarg->getGridDerivative( i, j ) );
+    }
   } else getPntrToComponent(0)->add( getPntrToArgument(0)->get() );
 
   // Clear if required

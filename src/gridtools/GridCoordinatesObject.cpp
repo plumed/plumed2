@@ -96,7 +96,7 @@ void GridCoordinatesObject::setBounds( const std::vector<std::string>& smin, con
         double range = max[i] - min[i]; nbin[i] = std::round( range / spacing[i]); dx[i]=spacing[i];
         // This check ensures that nbins is set correctly if spacing is set the same as the number of bins
         if( nbin[i]!=binsin[i] ) plumed_merror("mismatch between input spacing and input number of bins");
-      } 
+      }
     } else if( binsin.size()==dimension ) {
       nbin[i]=binsin[i]; dx[i] = ( max[i] - min[i] ) / static_cast<double>( nbin[i] );
     } else if( spacing.size()==dimension ) {
@@ -125,8 +125,8 @@ bool GridCoordinatesObject::inbounds( const std::vector<double>& point ) const {
   if( gtype==fibonacci ) return true;
   plumed_dbg_assert( bounds_set && point.size()==dimension );
   for(unsigned i=0; i<dimension; ++i) {
-      if( pbc[i] ) continue;
-      if( point[i]<min[i] || point[i]>(max[i]-dx[i]) ) return false;
+    if( pbc[i] ) continue;
+    if( point[i]<min[i] || point[i]>(max[i]-dx[i]) ) return false;
   }
   return true;
 }
@@ -240,7 +240,7 @@ void GridCoordinatesObject::getFibonacciCoordinates( const unsigned& ipoint, std
 void GridCoordinatesObject::getSplineNeighbors( const unsigned& mybox, unsigned& nneighbors, std::vector<unsigned>& mysneigh ) const {
   plumed_dbg_assert( gtype==flat ); mysneigh.resize( static_cast<unsigned>(pow(2.,dimension)) );
 
-  unsigned inind; nneighbors = 0; 
+  unsigned inind; nneighbors = 0;
   std::vector<unsigned> tmp_indices( dimension );
   std::vector<unsigned> my_indices( dimension );
   getIndices( mybox, my_indices );

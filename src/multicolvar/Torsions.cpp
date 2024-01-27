@@ -82,8 +82,8 @@ void Torsions::registerKeywords(Keywords& keys) {
 }
 
 Torsions::Torsions(const ActionOptions& ao):
-Action(ao),
-ActionShortcut(ao)
+  Action(ao),
+  ActionShortcut(ao)
 {
   log.printf("Action TORSION\n");
   log.printf("  with label %s \n", getShortcutLabel().c_str() );

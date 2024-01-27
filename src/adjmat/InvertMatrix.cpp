@@ -56,11 +56,11 @@ InvertMatrix::InvertMatrix(const ActionOptions& ao):
   input_is_constant(false)
 {
   if( getPntrToArgument(0)->getShape()[0]!=getPntrToArgument(0)->getShape()[1] ) error("input matrix should be square");
- 
+
   ActionSetup* as = dynamic_cast<ActionSetup*>( getPntrToArgument(0)->getPntrToAction() );
   if(as) input_is_constant=true;
 
-  std::vector<unsigned> shape(2); shape[0]=shape[1]=getPntrToArgument(0)->getShape()[0]; addValue( shape ); 
+  std::vector<unsigned> shape(2); shape[0]=shape[1]=getPntrToArgument(0)->getShape()[0]; addValue( shape );
   setNotPeriodic(); getPntrToComponent(0)->buildDataStore(); getPntrToComponent(0)->reshapeMatrixStore( shape[1] );
   mymatrix.resize( shape[0], shape[1] ); inverse.resize( shape[0], shape[1] );
 }
@@ -74,9 +74,9 @@ void InvertMatrix::calculate() {
   unsigned k = 0; Value* myval=getPntrToComponent(0);
   for(unsigned i=0; i<mymatrix.nrows(); ++i) {
     for(unsigned j=0; j<mymatrix.ncols(); ++j) {
-        myval->set( k, inverse(i,j) ); k++;
+      myval->set( k, inverse(i,j) ); k++;
     }
-  } 
+  }
 
   if( !doNotCalculateDerivatives() && !input_is_constant ) error("derivatives of inverse matrix have not been implemented");
 }

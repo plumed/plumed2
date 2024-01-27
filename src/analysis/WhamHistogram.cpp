@@ -100,8 +100,8 @@ WhamHistogram::WhamHistogram( const ActionOptions& ao ) :
   ActionShortcut(ao)
 {
   // Input for collection of weights for WHAM
-  std::string bias; parse("BIAS",bias); 
-  std::string stride; parse("STRIDE",stride); 
+  std::string bias; parse("BIAS",bias);
+  std::string stride; parse("STRIDE",stride);
   // Input for GATHER_REPLICAS
   readInputLine( getShortcutLabel() + "_gather: GATHER_REPLICAS ARG=" + bias );
   // Put all the replicas in a single vector
@@ -112,11 +112,11 @@ WhamHistogram::WhamHistogram( const ActionOptions& ao ) :
   std::string temp, tempstr=""; parse("TEMP",temp); if( temp.length()>0 ) tempstr="TEMP=" + temp;
   readInputLine( getShortcutLabel() + "_wham: WHAM ARG=" + getShortcutLabel() + "_collect " + tempstr );
   // Input for COLLECT_FRAMES
-  std::vector<std::string> args; parseVector("ARG",args);std::string argstr;
+  std::vector<std::string> args; parseVector("ARG",args); std::string argstr;
   for(unsigned i=0; i<args.size(); ++i) {
-      readInputLine( getShortcutLabel() + "_data_" + args[i] + ": COLLECT ARG=" + args[i] );
-      if( i==0 ) argstr = " ARG="; else argstr += ",";
-      argstr += getShortcutLabel() + "_data_" + args[i];
+    readInputLine( getShortcutLabel() + "_data_" + args[i] + ": COLLECT ARG=" + args[i] );
+    if( i==0 ) argstr = " ARG="; else argstr += ",";
+    argstr += getShortcutLabel() + "_data_" + args[i];
   }
   // Input for HISTOGRAM
   std::string histo_line, bw=""; parse("BANDWIDTH",bw);

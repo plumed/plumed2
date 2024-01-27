@@ -112,28 +112,28 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
           }
         } else if ( name=="*") {
           unsigned carg=arg.size();
-          // Take all the values from an action with a specific name 
+          // Take all the values from an action with a specific name
           ActionShortcut* shortcut=as.getShortcutActionWithLabel(a);
           if( shortcut ) shortcut->interpretDataLabel( a + "." + name, readact, arg );
           if( arg.size()==carg ) {
-              // Take all the values from an action with a specific name
-              ActionWithValue* action=as.selectWithLabel<ActionWithValue*>(a);
-              if(!action) {
-                std::string str=" (hint! the actions with value in this ActionSet are: ";
-                str+=as.getLabelList<ActionWithValue*>()+")";
-                readact->error("cannot find action named " + a + str);
-              }
-              if( action->getNumberOfComponents()==0 ) readact->error("found " + a +".* indicating use all components calculated by action with label " + a + " but this action has no components");
-              for(int k=0; k<action->getNumberOfComponents(); ++k) arg.push_back(action->copyOutput(k));
+            // Take all the values from an action with a specific name
+            ActionWithValue* action=as.selectWithLabel<ActionWithValue*>(a);
+            if(!action) {
+              std::string str=" (hint! the actions with value in this ActionSet are: ";
+              str+=as.getLabelList<ActionWithValue*>()+")";
+              readact->error("cannot find action named " + a + str);
+            }
+            if( action->getNumberOfComponents()==0 ) readact->error("found " + a +".* indicating use all components calculated by action with label " + a + " but this action has no components");
+            for(int k=0; k<action->getNumberOfComponents(); ++k) arg.push_back(action->copyOutput(k));
           }
         } else if ( a=="*" ) {
-          std::vector<ActionShortcut*> shortcuts=as.select<ActionShortcut*>();  
+          std::vector<ActionShortcut*> shortcuts=as.select<ActionShortcut*>();
           // Take components from all actions with a specific name
           std::vector<ActionWithValue*> all=as.select<ActionWithValue*>();
           if( all.empty() ) readact->error("your input file is not telling plumed to calculate anything");
           unsigned carg=arg.size();
           for(unsigned j=0; j<shortcuts.size(); ++j) {
-              shortcuts[j]->interpretDataLabel( shortcuts[j]->getShortcutLabel() + "." + name, readact, arg );
+            shortcuts[j]->interpretDataLabel( shortcuts[j]->getShortcutLabel() + "." + name, readact, arg );
           }
           unsigned nval=0;
           for(unsigned j=0; j<all.size(); j++) {
@@ -152,12 +152,12 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
           } else if( action && action->exists(c[i]) ) {
             arg.push_back(action->copyOutput(c[i]));
           } else if( shortcut ) {
-              unsigned narg=arg.size(); shortcut->interpretDataLabel( a + "." + name, readact, arg );
-              if( arg.size()==narg ) readact->error("found no element in " + a + " with label " + name );
+            unsigned narg=arg.size(); shortcut->interpretDataLabel( a + "." + name, readact, arg );
+            if( arg.size()==narg ) readact->error("found no element in " + a + " with label " + name );
           } else {
-              std::string str=" (hint! the components in this actions are: ";
-              str+=action->getComponentsList()+")";
-              readact->error("action " + a + " has no component named " + name + str);
+            std::string str=" (hint! the components in this actions are: ";
+            str+=action->getComponentsList()+")";
+            readact->error("action " + a + " has no component named " + name + str);
           }
         }
       } else {    // if it doesn't contain a dot
@@ -248,11 +248,11 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
     if(!arg.empty()) {
       log.printf("  with arguments : \n");
       for(unsigned i=0; i<arg.size(); i++) {
-          if( arg[i]->hasDerivatives() && arg[i]->getRank()>0 ) log.printf(" function on grid with label %s \n",arg[i]->getName().c_str());
-          else if( arg[i]->getRank()==2 ) log.printf("   matrix with label %s \n",arg[i]->getName().c_str());
-          else if( arg[i]->getRank()==1 ) log.printf("   vector with label %s \n",arg[i]->getName().c_str());
-          else if( arg[i]->getRank()==0 ) log.printf("   scalar with label %s \n",arg[i]->getName().c_str());
-          else error("type of argument does not make sense");
+        if( arg[i]->hasDerivatives() && arg[i]->getRank()>0 ) log.printf(" function on grid with label %s \n",arg[i]->getName().c_str());
+        else if( arg[i]->getRank()==2 ) log.printf("   matrix with label %s \n",arg[i]->getName().c_str());
+        else if( arg[i]->getRank()==1 ) log.printf("   vector with label %s \n",arg[i]->getName().c_str());
+        else if( arg[i]->getRank()==0 ) log.printf("   scalar with label %s \n",arg[i]->getName().c_str());
+        else error("type of argument does not make sense");
       }
     }
     requestArguments(arg);
@@ -294,12 +294,12 @@ double ActionWithArguments::getProjection(unsigned i,unsigned j)const {
 }
 
 void ActionWithArguments::addForcesOnArguments( const unsigned& argstart, const std::vector<double>& forces, unsigned& ind, const std::string& c  ) {
-  for(unsigned i=0; i<arguments.size(); ++i) { 
-      if( i==0 && getName().find("EVALUATE_FUNCTION_FROM_GRID")!=std::string::npos ) continue ;
-      if( !arguments[i]->ignoreStoredValue(c) || arguments[i]->getRank()==0 || (arguments[i]->getRank()>0 && arguments[i]->hasDerivatives()) ) {
-          unsigned nvals = arguments[i]->getNumberOfValues();
-          for(unsigned j=0; j<nvals; ++j) { arguments[i]->addForce( j, forces[ind] ); ind++; } 
-      }
+  for(unsigned i=0; i<arguments.size(); ++i) {
+    if( i==0 && getName().find("EVALUATE_FUNCTION_FROM_GRID")!=std::string::npos ) continue ;
+    if( !arguments[i]->ignoreStoredValue(c) || arguments[i]->getRank()==0 || (arguments[i]->getRank()>0 && arguments[i]->hasDerivatives()) ) {
+      unsigned nvals = arguments[i]->getNumberOfValues();
+      for(unsigned j=0; j<nvals; ++j) { arguments[i]->addForce( j, forces[ind] ); ind++; }
+    }
   }
 }
 
@@ -328,9 +328,9 @@ bool ActionWithArguments::calculateConstantValues( const bool& haveatoms ) {
   bool constant = true, atoms=false;
   for(unsigned i=0; i<arguments.size(); ++i) {
     ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>( arguments[i]->getPntrToAction() );
-    if( aa ) { 
-        ActionWithVector* av=dynamic_cast<ActionWithVector*>( arguments[i]->getPntrToAction() );
-        if( !av || aa->getNumberOfAtoms()>0 ) atoms=true; 
+    if( aa ) {
+      ActionWithVector* av=dynamic_cast<ActionWithVector*>( arguments[i]->getPntrToAction() );
+      if( !av || aa->getNumberOfAtoms()>0 ) atoms=true;
     }
     if( !arguments[i]->isConstant() ) { constant=false; break; }
   }

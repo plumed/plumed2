@@ -59,7 +59,7 @@ void MoreThan::registerKeywords(Keywords& keys) {
 void MoreThan::read( ActionWithArguments* action ) {
   if( action->getNumberOfArguments()!=1 ) action->error("should only be one argument to more_than actions");
   if( action->getPntrToArgument(0)->isPeriodic() ) action->error("cannot use this function on periodic functions");
-  
+
 
   string sw,errors;
   action->parse("SWITCH",sw);

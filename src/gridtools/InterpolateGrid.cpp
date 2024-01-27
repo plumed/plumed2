@@ -91,7 +91,7 @@ InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
   parseFlag("MIDPOINTS",midpoints); parseVector("GRID_BIN",nbin); parseVector("GRID_SPACING",gspacing); unsigned dimension = getPntrToArgument(0)->getRank();
   if( !midpoints && nbin.size()!=dimension && gspacing.size()!=dimension ) error("MIDPOINTS, GRID_BIN or GRID_SPACING must be set");
   if( midpoints ) {
-    log.printf("  evaluating function at midpoints of cells in input grid\n"); 
+    log.printf("  evaluating function at midpoints of cells in input grid\n");
   } else if( nbin.size()==dimension ) {
     log.printf("  number of bins in grid %d", nbin[0]);
     for(unsigned i=1; i<nbin.size(); ++i) log.printf(", %d", nbin[i]);
@@ -104,7 +104,7 @@ InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
   // Create the input grid
   input_grid.read( this );
   // Need this for creation of tasks
-  output_grid.setup( "flat", input_grid.getPbc(), 0, 0.0 ); 
+  output_grid.setup( "flat", input_grid.getPbc(), 0, 0.0 );
 
   // Now add a value
   std::vector<unsigned> shape( dimension, 0 );
@@ -120,19 +120,19 @@ void InterpolateGrid::setupOnFirstStep() {
   ActionWithGrid* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
   plumed_assert( ag ); const GridCoordinatesObject& mygrid = ag->getGridCoordinatesObject();
   if( midpoints ) {
-      nbin.resize( getPntrToComponent(0)->getRank() );
-      std::vector<std::string> str_min( input_grid.getMin() ), str_max(input_grid.getMax() );
-      for(unsigned i=0; i<nbin.size(); ++i) {
-          double max, min; Tools::convert( str_min[i], min ); Tools::convert( str_max[i], max );
-          min += 0.5*input_grid.getGridSpacing()[i];
-          if( input_grid.getPbc()[i] ) {
-              nbin[i] = input_grid.getNbin()[i]; max += 0.5*input_grid.getGridSpacing()[i];
-          } else {
-              nbin[i] = input_grid.getNbin()[i] - 1; max -= 0.5*input_grid.getGridSpacing()[i];
-          }
-          Tools::convert( min, str_min[i] ); Tools::convert( max, str_max[i] );
+    nbin.resize( getPntrToComponent(0)->getRank() );
+    std::vector<std::string> str_min( input_grid.getMin() ), str_max(input_grid.getMax() );
+    for(unsigned i=0; i<nbin.size(); ++i) {
+      double max, min; Tools::convert( str_min[i], min ); Tools::convert( str_max[i], max );
+      min += 0.5*input_grid.getGridSpacing()[i];
+      if( input_grid.getPbc()[i] ) {
+        nbin[i] = input_grid.getNbin()[i]; max += 0.5*input_grid.getGridSpacing()[i];
+      } else {
+        nbin[i] = input_grid.getNbin()[i] - 1; max -= 0.5*input_grid.getGridSpacing()[i];
       }
-      output_grid.setBounds( str_min, str_max, nbin,  gspacing );
+      Tools::convert( min, str_min[i] ); Tools::convert( max, str_max[i] );
+    }
+    output_grid.setBounds( str_min, str_max, nbin,  gspacing );
   } else output_grid.setBounds( mygrid.getMin(), mygrid.getMax(), nbin, gspacing );
   getPntrToComponent(0)->setShape( output_grid.getNbin(true) );
 }
@@ -158,16 +158,16 @@ void InterpolateGrid::performTask( const unsigned& current, MultiValue& myvals )
 }
 
 void InterpolateGrid::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
-                                         const unsigned& bufstart, std::vector<double>& buffer ) const {
+    const unsigned& bufstart, std::vector<double>& buffer ) const {
   plumed_dbg_assert( valindex==0 ); unsigned ostrn = getConstPntrToComponent(0)->getPositionInStream();
-  unsigned istart = bufstart + (1+output_grid.getDimension())*code; buffer[istart] += myvals.get( ostrn ); 
+  unsigned istart = bufstart + (1+output_grid.getDimension())*code; buffer[istart] += myvals.get( ostrn );
   for(unsigned i=0; i<output_grid.getDimension(); ++i) buffer[istart+1+i] += myvals.getDerivative( ostrn, i );
 }
 
 void InterpolateGrid::gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
   std::vector<double> pos(output_grid.getDimension()); double ff = myval->getForce(itask);
   output_grid.getGridPointCoordinates( itask, pos ); input_grid.applyForce( 0, pos, ff, forces );
-} 
+}
 
 
 }

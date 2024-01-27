@@ -66,22 +66,22 @@ void HexacticParameter::registerKeywords( Keywords& keys ) {
 }
 
 HexacticParameter::HexacticParameter( const ActionOptions& ao):
-Action(ao),
-ActionShortcut(ao)
+  Action(ao),
+  ActionShortcut(ao)
 {
   std::string sp_str, specA, specB; parse("SPECIES",sp_str); parse("SPECIESA",specA); parse("SPECIESB",specB);
-  CoordinationNumbers::expandMatrix( true, getShortcutLabel(), sp_str, specA, specB, this ); 
+  CoordinationNumbers::expandMatrix( true, getShortcutLabel(), sp_str, specA, specB, this );
   std::string myplane; parse("PLANE",myplane);
   if( myplane=="xy" ) {
-     readInputLine( getShortcutLabel() + ": CYLINDRICAL_HARMONIC_MATRIX DEGREE=6 ARG=" + getShortcutLabel() + "_mat.x," + getShortcutLabel() + "_mat.y," + getShortcutLabel() + "_mat.w" );
+    readInputLine( getShortcutLabel() + ": CYLINDRICAL_HARMONIC_MATRIX DEGREE=6 ARG=" + getShortcutLabel() + "_mat.x," + getShortcutLabel() + "_mat.y," + getShortcutLabel() + "_mat.w" );
   } else if( myplane=="xz" ) {
-     readInputLine( getShortcutLabel() + ": CYLINDRICAL_HARMONIC_MATRIX DEGREE=6 ARG=" + getShortcutLabel() + "_mat.x," + getShortcutLabel() + "_mat.z," + getShortcutLabel() + "_mat.w" );
+    readInputLine( getShortcutLabel() + ": CYLINDRICAL_HARMONIC_MATRIX DEGREE=6 ARG=" + getShortcutLabel() + "_mat.x," + getShortcutLabel() + "_mat.z," + getShortcutLabel() + "_mat.w" );
   } else if( myplane=="yz" ) {
-     readInputLine( getShortcutLabel() + ": CYLINDRICAL_HARMONIC_MATRIX DEGREE=6 ARG=" + getShortcutLabel() + "_mat.y," + getShortcutLabel() + "_mat.z," + getShortcutLabel() + "_mat.w" );
+    readInputLine( getShortcutLabel() + ": CYLINDRICAL_HARMONIC_MATRIX DEGREE=6 ARG=" + getShortcutLabel() + "_mat.y," + getShortcutLabel() + "_mat.z," + getShortcutLabel() + "_mat.w" );
   } else error("invalid input for plane -- should be xy, xz or yz");
-  // And coordination number  
+  // And coordination number
   ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_mat");
-  plumed_assert( av && av->getNumberOfComponents()>0 && (av->copyOutput(0))->getRank()==2 ); 
+  plumed_assert( av && av->getNumberOfComponents()>0 && (av->copyOutput(0))->getRank()==2 );
   std::string size; Tools::convert( (av->copyOutput(0))->getShape()[1], size );
   readInputLine( getShortcutLabel() + "_ones: ONES SIZE=" + size );
   readInputLine( getShortcutLabel() + "_rm: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + ".rm," + getShortcutLabel() + "_ones");
@@ -106,9 +106,9 @@ ActionShortcut(ao)
   bool do_vsum; parseFlag("VSUM",do_vsum);
   if( do_vsum ) {
     // Real part
-    readInputLine( getShortcutLabel() + "_rmz: SUM ARG=" + getShortcutLabel() + "_rmn PERIODIC=NO"); 
+    readInputLine( getShortcutLabel() + "_rmz: SUM ARG=" + getShortcutLabel() + "_rmn PERIODIC=NO");
     // Imaginary part
-    readInputLine( getShortcutLabel() + "_imz: SUM ARG=" + getShortcutLabel() + "_imn PERIODIC=NO"); 
+    readInputLine( getShortcutLabel() + "_imz: SUM ARG=" + getShortcutLabel() + "_imn PERIODIC=NO");
     // Now calculate the total length of the vector
     createVectorNormInput( getShortcutLabel(), getShortcutLabel() + "_vsum", "mz" );
   }
@@ -120,7 +120,7 @@ ActionShortcut(ao)
 
 void HexacticParameter::createVectorNormInput( const std::string& ilab, const std::string& olab, const std::string& vlab ) {
   readInputLine( olab + "2: COMBINE PERIODIC=NO ARG1=" + ilab + "_r" + vlab + " ARG2=" + ilab + "_i" + vlab + " POWERS=2,2" );
-  readInputLine( olab + ": CUSTOM ARG1=" + olab + "2 FUNC=sqrt(x) PERIODIC=NO"); 
+  readInputLine( olab + ": CUSTOM ARG1=" + olab + "2 FUNC=sqrt(x) PERIODIC=NO");
 }
 
 }

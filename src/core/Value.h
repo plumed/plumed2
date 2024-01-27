@@ -243,10 +243,10 @@ public:
 /// get the derivative of a grid at a point n with resepct to argument j
   double getGridDerivative(const unsigned& n, const unsigned& j ) const ;
 /// Add the derivatives of the grid to the corner
-  void addGridDerivatives( const unsigned& n, const unsigned& j, const double& val ); 
+  void addGridDerivatives( const unsigned& n, const unsigned& j, const double& val );
 /// Set the action to calculate on update
   void setCalculateOnUpdate();
-/// Add another value to the end of the data vector held by this value.  This is used in COLLECT 
+/// Add another value to the end of the data vector held by this value.  This is used in COLLECT
   void push_back( const double& val );
 };
 
@@ -307,7 +307,7 @@ void Value::add(double v) {
 inline
 void Value::add(const std::size_t& n, const double& v ) {
   value_set=true; data[n]+=v; applyPeriodicity(n);
-} 
+}
 
 inline
 bool Value::valueHasBeenSet() const {
@@ -472,14 +472,14 @@ void Value::setMatrixBookeepingStart( const unsigned& b ) {
   book_start = b;
 }
 
-inline 
+inline
 unsigned Value::getMatrixBookeepingStart() const {
   return book_start;
 }
 
 inline
 void Value::setMatrixBookeepingElement( const unsigned& i, const unsigned& n ) {
-  plumed_dbg_assert( i<matrix_bookeeping.size() ); 
+  plumed_dbg_assert( i<matrix_bookeeping.size() );
   matrix_bookeeping[i]=n;
 }
 

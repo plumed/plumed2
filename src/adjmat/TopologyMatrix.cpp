@@ -198,11 +198,11 @@ double TopologyMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, 
         tvals.addValue( bin, contr*val*eval1*eval2 );
 
         if( !doNotCalculateDerivatives() ) {
-          g1derivf=contr*eval1*eval2*dc1 + val*eval1*eval2*der*dd1 + contr*val*de1; 
+          g1derivf=contr*eval1*eval2*dc1 + val*eval1*eval2*der*dd1 + contr*val*de1;
           tvals.addDerivative( bin, 3*myvals.getTaskIndex()+0, g1derivf[0] );
           tvals.addDerivative( bin, 3*myvals.getTaskIndex()+1, g1derivf[1] );
           tvals.addDerivative( bin, 3*myvals.getTaskIndex()+2, g1derivf[2] );
-          g2derivf=contr*eval1*eval2*dc2 + val*eval1*eval2*der*dd2 + contr*val*de2; 
+          g2derivf=contr*eval1*eval2*dc2 + val*eval1*eval2*der*dd2 + contr*val*de2;
           tvals.addDerivative( bin, 3*myvals.getSecondTaskIndex()+0, g2derivf[0] );
           tvals.addDerivative( bin, 3*myvals.getSecondTaskIndex()+1, g2derivf[1] );
           tvals.addDerivative( bin, 3*myvals.getSecondTaskIndex()+2, g2derivf[2] );
@@ -212,7 +212,7 @@ double TopologyMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, 
           tvals.addDerivative( bin, 3*tindex+1, lderivf[1] );
           tvals.addDerivative( bin, 3*tindex+2, lderivf[2] );
           // Virial
-          vir = - Tensor( d20, g1derivf ) - Tensor( d21, g2derivf ); 
+          vir = - Tensor( d20, g1derivf ) - Tensor( d21, g2derivf );
           unsigned nbase = 3*getNumberOfAtoms();
           tvals.addDerivative( bin, nbase+0, vir(0,0) );
           tvals.addDerivative( bin, nbase+1, vir(0,1) );
@@ -233,37 +233,37 @@ double TopologyMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, 
     if( tvals.get(i)>max ) { max=tvals.get(i); vout=i; }
   }
   // Transform the density
-  double df, tsw = threshold_switch.calculate( max, df ); 
+  double df, tsw = threshold_switch.calculate( max, df );
   if( fabs(sw*tsw)<epsilon ) return 0;
 
   if( !doNotCalculateDerivatives() ) {
-      Vector ader; Tensor vir; Vector ddd = tsw*dfuncl*distance;
-      ader[0] = tvals.getDerivative( vout, 3*myvals.getTaskIndex()+0 );
-      ader[1] = tvals.getDerivative( vout, 3*myvals.getTaskIndex()+1 );
-      ader[2] = tvals.getDerivative( vout, 3*myvals.getTaskIndex()+2 );
-      addAtomDerivatives( 0, sw*df*max*ader - ddd, myvals );
-      ader[0] = tvals.getDerivative( vout, 3*myvals.getSecondTaskIndex()+0 );
-      ader[1] = tvals.getDerivative( vout, 3*myvals.getSecondTaskIndex()+1 );
-      ader[2] = tvals.getDerivative( vout, 3*myvals.getSecondTaskIndex()+2 );
-      addAtomDerivatives( 1, sw*df*max*ader + ddd, myvals );
-      for(unsigned i=0;i<natoms;++i) {
-          unsigned tindex = myvals.getIndices()[ i + myvals.getSplitIndex() ];
-          ader[0] = tvals.getDerivative( vout, 3*tindex+0 );
-          ader[1] = tvals.getDerivative( vout, 3*tindex+1 );
-          ader[2] = tvals.getDerivative( vout, 3*tindex+2 );
-          addThirdAtomDerivatives( i, sw*df*max*ader, myvals );
-      }
-      unsigned nbase = 3*getNumberOfAtoms(); Tensor vird(ddd,distance);
-      vir(0,0) = sw*df*max*tvals.getDerivative( vout, nbase+0 ) - vird(0,0);
-      vir(0,1) = sw*df*max*tvals.getDerivative( vout, nbase+1 ) - vird(0,1);
-      vir(0,2) = sw*df*max*tvals.getDerivative( vout, nbase+2 ) - vird(0,2);
-      vir(1,0) = sw*df*max*tvals.getDerivative( vout, nbase+3 ) - vird(1,0);
-      vir(1,1) = sw*df*max*tvals.getDerivative( vout, nbase+4 ) - vird(1,1);
-      vir(1,2) = sw*df*max*tvals.getDerivative( vout, nbase+5 ) - vird(1,2);
-      vir(2,0) = sw*df*max*tvals.getDerivative( vout, nbase+6 ) - vird(2,0);
-      vir(2,1) = sw*df*max*tvals.getDerivative( vout, nbase+7 ) - vird(2,1);
-      vir(2,2) = sw*df*max*tvals.getDerivative( vout, nbase+8 ) - vird(2,2);
-      addBoxDerivatives( vir, myvals );
+    Vector ader; Tensor vir; Vector ddd = tsw*dfuncl*distance;
+    ader[0] = tvals.getDerivative( vout, 3*myvals.getTaskIndex()+0 );
+    ader[1] = tvals.getDerivative( vout, 3*myvals.getTaskIndex()+1 );
+    ader[2] = tvals.getDerivative( vout, 3*myvals.getTaskIndex()+2 );
+    addAtomDerivatives( 0, sw*df*max*ader - ddd, myvals );
+    ader[0] = tvals.getDerivative( vout, 3*myvals.getSecondTaskIndex()+0 );
+    ader[1] = tvals.getDerivative( vout, 3*myvals.getSecondTaskIndex()+1 );
+    ader[2] = tvals.getDerivative( vout, 3*myvals.getSecondTaskIndex()+2 );
+    addAtomDerivatives( 1, sw*df*max*ader + ddd, myvals );
+    for(unsigned i=0; i<natoms; ++i) {
+      unsigned tindex = myvals.getIndices()[ i + myvals.getSplitIndex() ];
+      ader[0] = tvals.getDerivative( vout, 3*tindex+0 );
+      ader[1] = tvals.getDerivative( vout, 3*tindex+1 );
+      ader[2] = tvals.getDerivative( vout, 3*tindex+2 );
+      addThirdAtomDerivatives( i, sw*df*max*ader, myvals );
+    }
+    unsigned nbase = 3*getNumberOfAtoms(); Tensor vird(ddd,distance);
+    vir(0,0) = sw*df*max*tvals.getDerivative( vout, nbase+0 ) - vird(0,0);
+    vir(0,1) = sw*df*max*tvals.getDerivative( vout, nbase+1 ) - vird(0,1);
+    vir(0,2) = sw*df*max*tvals.getDerivative( vout, nbase+2 ) - vird(0,2);
+    vir(1,0) = sw*df*max*tvals.getDerivative( vout, nbase+3 ) - vird(1,0);
+    vir(1,1) = sw*df*max*tvals.getDerivative( vout, nbase+4 ) - vird(1,1);
+    vir(1,2) = sw*df*max*tvals.getDerivative( vout, nbase+5 ) - vird(1,2);
+    vir(2,0) = sw*df*max*tvals.getDerivative( vout, nbase+6 ) - vird(2,0);
+    vir(2,1) = sw*df*max*tvals.getDerivative( vout, nbase+7 ) - vird(2,1);
+    vir(2,2) = sw*df*max*tvals.getDerivative( vout, nbase+8 ) - vird(2,2);
+    addBoxDerivatives( vir, myvals );
   }
   return sw*tsw;
 }

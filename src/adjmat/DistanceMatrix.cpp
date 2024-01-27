@@ -64,20 +64,20 @@ DistanceMatrix::DistanceMatrix( const ActionOptions& ao ):
   log.printf("  weight is distance between atoms \n");
   parse("CUTOFF",cutoff);
   if( cutoff<0 ) {
-      setLinkCellCutoff( true, std::numeric_limits<double>::max() );
+    setLinkCellCutoff( true, std::numeric_limits<double>::max() );
   } else {
-      log.printf("  ignoring distances that are larger than %f \n", cutoff);
-      setLinkCellCutoff( true, cutoff );
+    log.printf("  ignoring distances that are larger than %f \n", cutoff);
+    setLinkCellCutoff( true, cutoff );
   }
 }
 
 double DistanceMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const {
-  Vector distance = pos2; double mod = distance.modulo(); 
+  Vector distance = pos2; double mod = distance.modulo();
   if( cutoff<0 || mod<cutoff ) {
-      double invd = 1.0/mod;
-      addAtomDerivatives( 0, (-invd)*distance, myvals );
-      addAtomDerivatives( 1, (+invd)*distance, myvals );
-      addBoxDerivatives( (-invd)*Tensor(distance,distance), myvals );
+    double invd = 1.0/mod;
+    addAtomDerivatives( 0, (-invd)*distance, myvals );
+    addAtomDerivatives( 1, (+invd)*distance, myvals );
+    addBoxDerivatives( (-invd)*Tensor(distance,distance), myvals );
   }
   return mod;
 }

@@ -29,7 +29,7 @@ namespace PLMD {
 namespace gridtools {
 
 class FindGridOptimum : public ActionWithGrid {
-private: 
+private:
   bool firsttime;
   bool domin;
   double cgtol;
@@ -49,29 +49,29 @@ public:
 PLUMED_REGISTER_ACTION(FindGridOptimum,"FIND_GRID_MAXIMUM")
 PLUMED_REGISTER_ACTION(FindGridOptimum,"FIND_GRID_MINIMUM")
 
-void FindGridOptimum::registerKeywords( Keywords& keys ){
+void FindGridOptimum::registerKeywords( Keywords& keys ) {
   ActionWithGrid::registerKeywords( keys ); keys.use("ARG");
   keys.addFlag("NOINTERPOL",false,"do not interpolate the function when finding the optimum");
   keys.add("compulsory","CGTOL","1E-4","the tolerance for the conjugate gradient optimization");
   keys.addOutputComponent("optval","default","the value of the function at the optimum");
   keys.addOutputComponent("_opt","default","the values of the arguments of the function at the optimum can be referenced elsewhere in the input file "
-                                           "by using the names of the arguments followed by the string _opt");
+                          "by using the names of the arguments followed by the string _opt");
 }
 
 FindGridOptimum::FindGridOptimum(const ActionOptions&ao):
-Action(ao),
-ActionWithGrid(ao),
-firsttime(true),
-cgtol(0)
-{ 
+  Action(ao),
+  ActionWithGrid(ao),
+  firsttime(true),
+  cgtol(0)
+{
   if( getName()=="FIND_GRID_MAXIMUM" ) domin=false;
   else if( getName()=="FIND_GRID_MINIMUM" ) domin=true;
-  else plumed_error(); 
+  else plumed_error();
   // Create value for this function
   std::vector<std::string> argn( getGridCoordinateNames() );
-  std::vector<unsigned> shape(0); for(unsigned i=0;i<argn.size();++i) addComponent( argn[i] + "_opt", shape ); 
+  std::vector<unsigned> shape(0); for(unsigned i=0; i<argn.size(); ++i) addComponent( argn[i] + "_opt", shape );
   addComponent( "optval", shape ); componentIsNotPeriodic( "optval" );
-  bool nointerpol=false; parseFlag("NOINTERPOL",nointerpol); 
+  bool nointerpol=false; parseFlag("NOINTERPOL",nointerpol);
   if( !nointerpol ) { parse("CGTOL",cgtol); function=Tools::make_unique<Interpolator>( getPntrToArgument(0), getGridCoordinatesObject() ); }
 }
 
@@ -91,37 +91,37 @@ std::vector<std::string> FindGridOptimum::getGridCoordinateNames() const {
 
 double FindGridOptimum::calculateValueAndDerivatives( const std::vector<double>& pp, std::vector<double>& der ) {
   double val = function->splineInterpolation( pp, der );
-  // We normalise the derivatives here and set them so that the linesearch is done over the cell that we know 
+  // We normalise the derivatives here and set them so that the linesearch is done over the cell that we know
   // in the grid that we know the minimum is inside
   std::vector<double> spacing( getGridCoordinatesObject().getGridSpacing() );
-  double norm = 0; for(unsigned i=0;i<der.size();++i) norm += der[i]*der[i];
-  norm = sqrt(norm); for(unsigned i=0;i<der.size();++i) der[i] = spacing[i]*der[i] / norm;
+  double norm = 0; for(unsigned i=0; i<der.size(); ++i) norm += der[i]*der[i];
+  norm = sqrt(norm); for(unsigned i=0; i<der.size(); ++i) der[i] = spacing[i]*der[i] / norm;
   if( domin ) return val;
   // If we are looking for a maximum
-  for(unsigned i=0;i<der.size();++i) der[i] = -der[i];
+  for(unsigned i=0; i<der.size(); ++i) der[i] = -der[i];
   return -val;
 }
 
 void FindGridOptimum::calculate() {
-  const GridCoordinatesObject& ingrid = getGridCoordinatesObject(); Value* gval = getPntrToArgument(0); 
-  std::vector<double> optargs( gval->getRank() ); std::vector<unsigned> gridind( gval->getRank() ); 
+  const GridCoordinatesObject& ingrid = getGridCoordinatesObject(); Value* gval = getPntrToArgument(0);
+  std::vector<double> optargs( gval->getRank() ); std::vector<unsigned> gridind( gval->getRank() );
   double optval=gval->get( 0 ); ingrid.getGridPointCoordinates( 0, gridind, optargs );
   unsigned nval = gval->getNumberOfValues();
-  for(unsigned i=0;i<nval;++i) {
-      double tval = gval->get( i ); 
-      if( domin && (tval<optval || std::isnan(optval)) ) { optval=tval; ingrid.getGridPointCoordinates( i, gridind, optargs ); }
-      if( !domin && (tval>optval || std::isnan(optval)) ) { optval=tval; ingrid.getGridPointCoordinates( i, gridind, optargs ); }
+  for(unsigned i=0; i<nval; ++i) {
+    double tval = gval->get( i );
+    if( domin && (tval<optval || std::isnan(optval)) ) { optval=tval; ingrid.getGridPointCoordinates( i, gridind, optargs ); }
+    if( !domin && (tval>optval || std::isnan(optval)) ) { optval=tval; ingrid.getGridPointCoordinates( i, gridind, optargs ); }
   }
   if( std::isinf(optval) ) return ;
 
   if( std::isnan(optval) ) error("all values on grid are nans");
   // And do conjugate gradient optimisation (because we can!!)
   if( cgtol>0 ) {
-      ConjugateGradient<FindGridOptimum> myminimiser( this );
-      myminimiser.minimise( cgtol, optargs, &FindGridOptimum::calculateValueAndDerivatives );
+    ConjugateGradient<FindGridOptimum> myminimiser( this );
+    myminimiser.minimise( cgtol, optargs, &FindGridOptimum::calculateValueAndDerivatives );
   }
   // And set the final value
-  for(unsigned j=0;j<optargs.size();++j) getPntrToComponent(j)->set( optargs[j] );
+  for(unsigned j=0; j<optargs.size(); ++j) getPntrToComponent(j)->set( optargs[j] );
   std::vector<double> optder( gval->getRank() );
   getPntrToComponent(optargs.size())->set( function->splineInterpolation( optargs, optder ) );
 }

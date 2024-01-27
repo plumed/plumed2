@@ -39,10 +39,10 @@ void Product::registerKeywords( Keywords& keys ) {
 }
 
 Product::Product( const ActionOptions& ao):
-Action(ao),
-ActionShortcut(ao)
-{ 
-  std::string arg; parse("ARG",arg); 
+  Action(ao),
+  ActionShortcut(ao)
+{
+  std::string arg; parse("ARG",arg);
   readInputLine( getShortcutLabel() + "_vec: CONCATENATE ARG=" + arg );
   readInputLine( getShortcutLabel() + "_logs: MATHEVAL ARG1=" + getShortcutLabel() + "_vec FUNC=log(x) PERIODIC=NO");
   readInputLine( getShortcutLabel() + "_logsum: SUM ARG=" + getShortcutLabel() + "_logs PERIODIC=NO");

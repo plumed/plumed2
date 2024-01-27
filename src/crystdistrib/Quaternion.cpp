@@ -30,15 +30,15 @@ namespace crystdistrib {
 /*
 Calculate quaternions for molecules.
 
-The reference frame for the molecule is defined using the positions of three user selected atoms.  From the positions of these atoms, 
+The reference frame for the molecule is defined using the positions of three user selected atoms.  From the positions of these atoms,
 \f$\mathbf{x}_1\f$, \f$\mathbf{x}_2\f$ and \f$\mathbf{x}_3\f$, we define the vectors of the reference frame as:
 
 \f[
 \begin{aligned}
 \mathbf{x} & = \mathbf{x}_2 - \mathbf{x}_1 \\
 \mathbf{y} & = (\mathbf{x}_2 - \mathbf{x}_1) \times (\mathbf{x}_3 - \mathbf{x}_1) \\
-\mathbf{z} & \mathbf{x} \times \mathbf{y} 
-\f] 
+\mathbf{z} & \mathbf{x} \times \mathbf{y}
+\f]
 
 \par Examples
 
@@ -46,14 +46,14 @@ This calculates the quaternions for a molecule with 10 atoms
 
 \plumedfile
 q1: QUATERNION ATOMS1=1,2,3
-PRINT ARG=q1.w,q1.i,q1.j,q1.k FILE=colvar 
+PRINT ARG=q1.w,q1.i,q1.j,q1.k FILE=colvar
 \endplumedfile
 
 This calculate the quaternions for two molecules with 10 atoms
 
 \plumedfile
 q1: QUATERNION ATOMS1=1,2,3 ATOMS=4,5,6
-PRINT ARG=q1.w,q1.i,q1.j,q1.k FILE=colvar 
+PRINT ARG=q1.w,q1.i,q1.j,q1.k FILE=colvar
 \endplumedfile
 
 */
@@ -62,7 +62,7 @@ PRINT ARG=q1.w,q1.i,q1.j,q1.k FILE=colvar
 //simple hamilton/quaternion product, which is just expanding the two quats as expected, then applying the rules for i j k
 //passing 12 references might be a bit silly
 //void QuatProduct(double &a1, double &b1, double &c1, double &d1, double &a2, double &b2, double &c2, double &d2, double &w, double &i, double &j, double &k) {
-//  
+//
 //  w = a1*a2 - b1*b2 - c1*c2 - d1*d2;
 //  i = a1*b2 + b1*a2 + c1*d2 - d1*c2;
 //  j = a1*c2 - b1*d2 + c1*a2 + d1*b2;
@@ -118,7 +118,7 @@ Quaternion::Quaternion(const ActionOptions&ao):
   std::vector<AtomNumber> atoms;
   parseAtomList(-1,atoms,this);
   if(atoms.size()!=3) error("Number of specified atoms should be 3");
-  // please note, I do NO checking if these atoms are in the same molecule at all, so be careful in your input 
+  // please note, I do NO checking if these atoms are in the same molecule at all, so be careful in your input
 
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
@@ -146,11 +146,11 @@ void Quaternion::calculate() {
   if(pbc) makeWhole();
 
   calculateCV( 0, masses, charges, getPositions(), value, derivs, virial, this );
-  for(unsigned j=0;j<4;++j) {
-      Value* valuej=getPntrToComponent(j);
-      for(unsigned i=0;i<3;++i) setAtomsDerivatives(valuej,i,derivs[j][i] );
-      setBoxDerivatives(valuej,virial[j]);
-      valuej->set(value[j]);
+  for(unsigned j=0; j<4; ++j) {
+    Value* valuej=getPntrToComponent(j);
+    for(unsigned i=0; i<3; ++i) setAtomsDerivatives(valuej,i,derivs[j][i] );
+    setBoxDerivatives(valuej,virial[j]);
+    valuej->set(value[j]);
   }
 }
 
@@ -160,18 +160,18 @@ void Quaternion::calculateCV( const unsigned& mode, const std::vector<double>& m
                               std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
   //declarations
   Vector vec1_comp = delta( pos[0], pos[1] ); //components between atom 1 and 2
-  Vector vec2_comp = delta( pos[0], pos[2] ); //components between atom 1 and 3 
+  Vector vec2_comp = delta( pos[0], pos[2] ); //components between atom 1 and 3
 
 ////////x-vector calculations///////
   double magx = vec1_comp.modulo(); Vector xt = vec1_comp / magx;
   std::vector<Tensor> dx(3); double magx3= magx*magx*magx;
-//dx[i] - derivatives of atom i's coordinates 
-  dx[0](0,0) = ( -(vec1_comp[1]*vec1_comp[1]+vec1_comp[2]*vec1_comp[2])/magx3 ); //dx[0]/dx0  
+//dx[i] - derivatives of atom i's coordinates
+  dx[0](0,0) = ( -(vec1_comp[1]*vec1_comp[1]+vec1_comp[2]*vec1_comp[2])/magx3 ); //dx[0]/dx0
   dx[0](0,1) = (  vec1_comp[0]*vec1_comp[1]/magx3 );                 // dx[0]/dy0
   dx[0](0,2) = (  vec1_comp[0]*vec1_comp[2]/magx3 );                 // dx[0]/dz0
   dx[0](1,0) = (  vec1_comp[1]*vec1_comp[0]/magx3 );                 // dx[1]/dx0
   dx[0](1,1) = ( -(vec1_comp[0]*vec1_comp[0]+vec1_comp[2]*vec1_comp[2])/magx3 );   // dx[1]/dy0
-  dx[0](1,2) = (  vec1_comp[1]*vec1_comp[2]/magx3 ); //dx[1]/dz0 
+  dx[0](1,2) = (  vec1_comp[1]*vec1_comp[2]/magx3 ); //dx[1]/dz0
   dx[0](2,0) = (  vec1_comp[2]*vec1_comp[0]/magx3 );//etc
   dx[0](2,1) = (  vec1_comp[2]*vec1_comp[1]/magx3 );
   dx[0](2,2) = ( -(vec1_comp[1]*vec1_comp[1]+vec1_comp[0]*vec1_comp[0])/magx3 );
@@ -184,13 +184,13 @@ void Quaternion::calculateCV( const unsigned& mode, const std::vector<double>& m
   dx[1](1,2) = ( -vec1_comp[1]*vec1_comp[2]/magx3 );
   dx[1](2,0) = ( -vec1_comp[2]*vec1_comp[0]/magx3 );
   dx[1](2,1) = ( -vec1_comp[2]*vec1_comp[1]/magx3 );
-  dx[1](2,2) = ( (vec1_comp[1]*vec1_comp[1]+vec1_comp[0]*vec1_comp[0])/magx3 ); 
+  dx[1](2,2) = ( (vec1_comp[1]*vec1_comp[1]+vec1_comp[0]*vec1_comp[0])/magx3 );
   dx[2].zero();//not atom[2] terms present
 
 ////////y-vector calculations////////
   //project vec2_comp on to vec1_comp
   //first do dot product of unormalized x and unormed y, divided by magnitude of x^2
-  double dp = dotProduct( vec1_comp, vec2_comp ); double magx2=magx*magx; 
+  double dp = dotProduct( vec1_comp, vec2_comp ); double magx2=magx*magx;
   std::vector<Vector> fac_derivs(3); double magx4=magx2*magx2, fac = dp/magx2; //fac meaning factor on front
   fac_derivs[0] = (-vec2_comp - vec1_comp)/magx2 + 2*dp*vec1_comp / magx4;
   fac_derivs[1] = (vec2_comp)/(magx2) - 2*dp*vec1_comp / magx4;
@@ -231,9 +231,9 @@ void Quaternion::calculateCV( const unsigned& mode, const std::vector<double>& m
   Tensor abc; for(unsigned i=0; i<3; ++i) abc.setRow(i, yt);
   Tensor abc_diag; abc_diag.setRow(0, Vector(yt[0], 0, 0)); abc_diag.setRow(1, Vector(0, yt[1], 0)); abc_diag.setRow(2, Vector(0, 0, yt[2]));
   Tensor abc_prod = matmul(abc_diag, abc);
-  for(unsigned i=0; i<3; ++i) dy[i] = dy[i]/magy - matmul(abc_prod, dy[i])/magy3; 
+  for(unsigned i=0; i<3; ++i) dy[i] = dy[i]/magy - matmul(abc_prod, dy[i])/magy3;
   //normalize now, derivatives are with respect to un-normalized y vector
-  yt = yt / magy; 
+  yt = yt / magy;
 
 ///////z-vector calculations/////////
 //comparatively simple
@@ -271,95 +271,95 @@ void Quaternion::calculateCV( const unsigned& mode, const std::vector<double>& m
 //[y[0] y[1] y[2]]
 //[z[0] z[1] z[2]]
 //QUICKFIX to transpose basis
-Vector x(xt[0],yt[0],zt[0]);
-Vector y(xt[1],yt[1],zt[1]);
-Vector z(xt[2],yt[2],zt[2]);
+  Vector x(xt[0],yt[0],zt[0]);
+  Vector y(xt[1],yt[1],zt[1]);
+  Vector z(xt[2],yt[2],zt[2]);
 
 //likewise transposing the tensors into proper form
-std::vector<Tensor> tdx(3);
-std::vector<Tensor> tdy(3);
-std::vector<Tensor> tdz(3);
-for (int i=0;i<3;++i){
-tdx[i].setRow(0, dx[i].getRow(0));
-tdx[i].setRow(1, dy[i].getRow(0));
-tdx[i].setRow(2, dz[i].getRow(0));
+  std::vector<Tensor> tdx(3);
+  std::vector<Tensor> tdy(3);
+  std::vector<Tensor> tdz(3);
+  for (int i=0; i<3; ++i) {
+    tdx[i].setRow(0, dx[i].getRow(0));
+    tdx[i].setRow(1, dy[i].getRow(0));
+    tdx[i].setRow(2, dz[i].getRow(0));
 
-tdy[i].setRow(0, dx[i].getRow(1));
-tdy[i].setRow(1, dy[i].getRow(1));
-tdy[i].setRow(2, dz[i].getRow(1));
+    tdy[i].setRow(0, dx[i].getRow(1));
+    tdy[i].setRow(1, dy[i].getRow(1));
+    tdy[i].setRow(2, dz[i].getRow(1));
 
-tdz[i].setRow(0, dx[i].getRow(2));
-tdz[i].setRow(1, dy[i].getRow(2));
-tdz[i].setRow(2, dz[i].getRow(2));
-}
+    tdz[i].setRow(0, dx[i].getRow(2));
+    tdz[i].setRow(1, dy[i].getRow(2));
+    tdz[i].setRow(2, dz[i].getRow(2));
+  }
 
 //convert to quaternion
-double tr = x[0] + y[1] + z[2] + 1; //trace of the rotation matrix + 1
-  std::vector<Vector> dS(3); 
-  if (tr > 1.0E-8) { //to avoid numerical instability 
+  double tr = x[0] + y[1] + z[2] + 1; //trace of the rotation matrix + 1
+  std::vector<Vector> dS(3);
+  if (tr > 1.0E-8) { //to avoid numerical instability
     double S = 1/(sqrt(tr) * 2); // S=4*qw
-    for(unsigned i=0; i<3; ++i) dS[i] = (-2*S*S*S)*(tdx[i].getRow(0) + tdy[i].getRow(1) + tdz[i].getRow(2));   
-    
-    vals[0] = 0.25 / S; 
+    for(unsigned i=0; i<3; ++i) dS[i] = (-2*S*S*S)*(tdx[i].getRow(0) + tdy[i].getRow(1) + tdz[i].getRow(2));
+
+    vals[0] = 0.25 / S;
     for(unsigned i=0; i<3; ++i) derivs[0][i] =-0.25*dS[i]/(S*S);
-    
+
     vals[1] = (z[1] - y[2]) * S;
     for(unsigned i=0; i<3; ++i) derivs[1][i] = (S)*(tdz[i].getRow(1) - tdy[i].getRow(2)) + (z[1]-y[2])*dS[i];
-    
-    vals[2] = (x[2] - z[0]) * S; 
-    for(unsigned i=0; i<3; ++i) derivs[2][i] = (S)*(tdx[i].getRow(2) - tdz[i].getRow(0)) + (x[2]-z[0])*dS[i]; 
-    
-    vals[3] = (y[0] - x[1]) * S; 
+
+    vals[2] = (x[2] - z[0]) * S;
+    for(unsigned i=0; i<3; ++i) derivs[2][i] = (S)*(tdx[i].getRow(2) - tdz[i].getRow(0)) + (x[2]-z[0])*dS[i];
+
+    vals[3] = (y[0] - x[1]) * S;
     for(unsigned i=0; i<3; ++i) derivs[3][i] = (S)*(tdy[i].getRow(0) - tdx[i].getRow(1)) + (y[0]-x[1])*dS[i];
-  } 
-  else if ((x[0] > y[1])&(x[0] > z[2])) { 
-    float S = sqrt(1.0 + x[0] - y[1] - z[2]) * 2; // S=4*qx 
+  }
+  else if ((x[0] > y[1])&(x[0] > z[2])) {
+    float S = sqrt(1.0 + x[0] - y[1] - z[2]) * 2; // S=4*qx
     for(unsigned i=0; i<3; ++i) dS[i] = (2/S)*(tdx[i].getRow(0) - tdy[i].getRow(1) - tdz[i].getRow(2));
-    
+
     vals[0] = (z[1] - y[2]) / S;
     for(unsigned i=0; i<3; ++i) derivs[0][i] = (1/S)*(tdz[i].getRow(1) - tdy[i].getRow(2)) - (vals[0]/S)*dS[i];
-    
-    vals[1] = 0.25 * S; 
+
+    vals[1] = 0.25 * S;
     for(unsigned i=0; i<3; ++i) derivs[1][i] =0.25*dS[i];
-    
-    vals[2] = (x[1] + y[0]) / S; 
+
+    vals[2] = (x[1] + y[0]) / S;
     for(unsigned i=0; i<3; ++i) derivs[2][i] = (1/S)*(tdx[i].getRow(1) + tdy[i].getRow(0)) - (vals[2]/S)*dS[i];
-    
-    vals[3] = (x[2] + z[0]) / S; 
+
+    vals[3] = (x[2] + z[0]) / S;
     for(unsigned i=0; i<3; ++i) derivs[3][i] = (1/S)*(tdx[i].getRow(2) + tdz[i].getRow(0)) - (vals[3]/S)*dS[i];
-  } 
-  else if (y[1] > z[2]) { 
+  }
+  else if (y[1] > z[2]) {
     float S = sqrt(1.0 + y[1] - x[0] - z[2]) * 2; // S=4*qy
-    for(unsigned i=0; i<3; ++i) dS[i] = (2/S)*( -tdx[i].getRow(0) + tdy[i].getRow(1) - tdz[i].getRow(2)); 
-    
+    for(unsigned i=0; i<3; ++i) dS[i] = (2/S)*( -tdx[i].getRow(0) + tdy[i].getRow(1) - tdz[i].getRow(2));
+
 
     vals[0] = (x[2] - z[0]) / S;
-    for(unsigned i=0; i<3; ++i) derivs[0][i] = (1/S)*(tdx[i].getRow(2) - tdz[i].getRow(0)) - (vals[0]/S)*dS[i]; 
-    
-    vals[1] = (x[1] + y[0]) / S; 
+    for(unsigned i=0; i<3; ++i) derivs[0][i] = (1/S)*(tdx[i].getRow(2) - tdz[i].getRow(0)) - (vals[0]/S)*dS[i];
+
+    vals[1] = (x[1] + y[0]) / S;
     for(unsigned i=0; i<3; ++i) derivs[1][i] = (1/S)*(tdx[i].getRow(1) + tdy[i].getRow(0)) - (vals[1]/S)*dS[i];
-    
-    vals[2] = 0.25 * S; 
+
+    vals[2] = 0.25 * S;
     for(unsigned i=0; i<3; ++i) derivs[2][i] =0.25*dS[i];
-    
-    vals[3] = (y[2] + z[1]) / S; 
-    for(unsigned i=0; i<3; ++i) derivs[3][i] = (1/S)*(tdy[i].getRow(2) + tdz[i].getRow(1)) - (vals[3]/S)*dS[i]; 
-  } 
+
+    vals[3] = (y[2] + z[1]) / S;
+    for(unsigned i=0; i<3; ++i) derivs[3][i] = (1/S)*(tdy[i].getRow(2) + tdz[i].getRow(1)) - (vals[3]/S)*dS[i];
+  }
   else {
     float S = sqrt(1.0 + z[2] - x[0] - y[1]) * 2; // S=4*qz
-    for(unsigned i=0; i<3; ++i) dS[i] = (2/S)*(-tdx[i].getRow(0) - tdy[i].getRow(1) + tdz[i].getRow(2)); 
-    
+    for(unsigned i=0; i<3; ++i) dS[i] = (2/S)*(-tdx[i].getRow(0) - tdy[i].getRow(1) + tdz[i].getRow(2));
+
 
     vals[0] = (y[0] - x[1]) / S;
     for(unsigned i=0; i<3; ++i) derivs[0][i] = (1/S)*(tdy[i].getRow(0) - tdx[i].getRow(1)) - (vals[0]/S)*dS[i];
-    
+
     vals[1] = (x[2] + z[0]) / S;
-    for(unsigned i=0; i<3; ++i) derivs[1][i] = (1/S)*(tdx[i].getRow(2) + tdz[i].getRow(0)) - (vals[1]/S)*dS[i]; 
-    
+    for(unsigned i=0; i<3; ++i) derivs[1][i] = (1/S)*(tdx[i].getRow(2) + tdz[i].getRow(0)) - (vals[1]/S)*dS[i];
+
     vals[2] = (y[2] + z[1]) / S;
-    for(unsigned i=0; i<3; ++i) derivs[2][i] = (1/S)*(tdy[i].getRow(2) + tdz[i].getRow(1)) - (vals[2]/S)*dS[i]; 
-    
-    vals[3] = 0.25 * S; 
+    for(unsigned i=0; i<3; ++i) derivs[2][i] = (1/S)*(tdy[i].getRow(2) + tdz[i].getRow(1)) - (vals[2]/S)*dS[i];
+
+    vals[3] = 0.25 * S;
     for(unsigned i=0; i<3; ++i) derivs[3][i] =0.25*dS[i];
   }
   setBoxDerivativesNoPbc( pos, derivs, virial );

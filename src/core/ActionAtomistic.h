@@ -35,7 +35,7 @@ class Pbc;
 class PDB;
 
 namespace colvar {
-  class SelectMassCharge;
+class SelectMassCharge;
 }
 
 /// \ingroup MULTIINHERIT

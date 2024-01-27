@@ -169,22 +169,22 @@ std::vector<std::string> FourierTransform::getGridCoordinateNames() const {
 }
 
 void FourierTransform::calculate() {
-   if( firsttime ) {
-       gridtools::ActionWithGrid* ag=dynamic_cast<gridtools::ActionWithGrid*>( getPntrToArgument(0)->getPntrToAction() );
-       const gridtools::GridCoordinatesObject & gcoords( ag->getGridCoordinatesObject() );
-       std::vector<double> fspacing; std::vector<unsigned> snbins( getGridCoordinatesObject().getDimension() );
-       std::vector<std::string> smin( gcoords.getDimension() ), smax( gcoords.getDimension() );
-       for(unsigned i=0; i<getGridCoordinatesObject().getDimension(); ++i) {
-         smin[i]=gcoords.getMin()[i]; smax[i]=gcoords.getMax()[i];
-         // Compute k-grid extents
-         double dmin, dmax; snbins[i]=gcoords.getNbin(false)[i];
-         Tools::convert(smin[i],dmin); Tools::convert(smax[i],dmax);
-         dmax=2.0*pi*snbins[i]/( dmax - dmin ); dmin=0.0;
-         Tools::convert(dmin,smin[i]); Tools::convert(dmax,smax[i]);
-       }
-       gridcoords.setBounds( smin, smax, snbins, fspacing ); firsttime=false;
-       for(unsigned i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->setShape( gcoords.getNbin(true) );
-   }
+  if( firsttime ) {
+    gridtools::ActionWithGrid* ag=dynamic_cast<gridtools::ActionWithGrid*>( getPntrToArgument(0)->getPntrToAction() );
+    const gridtools::GridCoordinatesObject & gcoords( ag->getGridCoordinatesObject() );
+    std::vector<double> fspacing; std::vector<unsigned> snbins( getGridCoordinatesObject().getDimension() );
+    std::vector<std::string> smin( gcoords.getDimension() ), smax( gcoords.getDimension() );
+    for(unsigned i=0; i<getGridCoordinatesObject().getDimension(); ++i) {
+      smin[i]=gcoords.getMin()[i]; smax[i]=gcoords.getMax()[i];
+      // Compute k-grid extents
+      double dmin, dmax; snbins[i]=gcoords.getNbin(false)[i];
+      Tools::convert(smin[i],dmin); Tools::convert(smax[i],dmax);
+      dmax=2.0*pi*snbins[i]/( dmax - dmin ); dmin=0.0;
+      Tools::convert(dmin,smin[i]); Tools::convert(dmax,smax[i]);
+    }
+    gridcoords.setBounds( smin, smax, snbins, fspacing ); firsttime=false;
+    for(unsigned i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->setShape( gcoords.getNbin(true) );
+  }
 
 #ifdef __PLUMED_HAS_FFTW
   // *** CHECK CORRECT k-GRID BOUNDARIES ***
@@ -202,8 +202,8 @@ void FourierTransform::calculate() {
   std::vector<std::complex<double> > input_data(fft_dimension), fft_data(fft_dimension);
 
   // Fill real input with the data on the grid
-  Value* arg=getPntrToArgument(0); 
-  unsigned nargs=arg->getNumberOfValues(); 
+  Value* arg=getPntrToArgument(0);
+  unsigned nargs=arg->getNumberOfValues();
   std::vector<unsigned> ind( arg->getRank() );
   for (unsigned i=0; i<arg->getNumberOfValues(); ++i) {
     // Get point indices

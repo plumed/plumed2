@@ -43,7 +43,7 @@ public:
 PLUMED_REGISTER_ACTION(Neighbors,"NEIGHBORS")
 
 void Neighbors::registerKeywords( Keywords& keys ) {
-  ActionWithMatrix::registerKeywords( keys ); keys.use("ARG"); 
+  ActionWithMatrix::registerKeywords( keys ); keys.use("ARG");
   keys.add("compulsory","NLOWEST","0","in each row of the output matrix set the elements that correspond to the n lowest elements in each row of the input matrix equal to one");
   keys.add("compulsory","NHIGHEST","0","in each row of the output matrix set the elements that correspond to the n highest elements in each row of the input matrix equal to one");
 }
@@ -91,10 +91,10 @@ void Neighbors::setupForTask( const unsigned& task_index, std::vector<unsigned>&
 
   unsigned nind=0;
   for(unsigned i=0; i<nbonds; ++i) {
-      unsigned ipos = ncols*task_index + wval->getRowIndex( task_index, i );
-      double weighti = wval->get( ipos );
-      if( weighti<epsilon ) continue ;
-      nind++;
+    unsigned ipos = ncols*task_index + wval->getRowIndex( task_index, i );
+    double weighti = wval->get( ipos );
+    if( weighti<epsilon ) continue ;
+    nind++;
   }
   if( number>nind ) plumed_merror("not enough matrix elements were stored");
 
@@ -102,8 +102,8 @@ void Neighbors::setupForTask( const unsigned& task_index, std::vector<unsigned>&
   std::vector<std::pair<double,unsigned> > rows( nind ); unsigned n=0;
   for(unsigned i=0; i<nbonds; ++i) {
     unsigned iind = wval->getRowIndex( task_index, i );
-    unsigned ipos = ncols*task_index + iind; 
-    double weighti = wval->get( ipos ); 
+    unsigned ipos = ncols*task_index + iind;
+    double weighti = wval->get( ipos );
     if( weighti<epsilon ) continue ;
     rows[n].first=weighti; rows[n].second=iind; n++;
   }
@@ -111,11 +111,11 @@ void Neighbors::setupForTask( const unsigned& task_index, std::vector<unsigned>&
   // Now do the sort and clear all the stored values ready for recompute
   std::sort( rows.begin(), rows.end() );
   // This is to make this action consistent with what in other matrix actions
-  unsigned start_n = getPntrToArgument(0)->getShape()[0]; 
+  unsigned start_n = getPntrToArgument(0)->getShape()[0];
   // And setup the lowest indices, which are the ones we need to calculate
-  for(unsigned i=0; i<number;++i) {
-     indices[i+1] = start_n + rows[nind-1-i].second; 
-     if( lowest ) indices[i+1] = start_n + rows[i].second;
+  for(unsigned i=0; i<number; ++i) {
+    indices[i+1] = start_n + rows[nind-1-i].second;
+    if( lowest ) indices[i+1] = start_n + rows[i].second;
   }
 }
 

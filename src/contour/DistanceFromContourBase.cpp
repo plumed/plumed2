@@ -54,13 +54,13 @@ DistanceFromContourBase::DistanceFromContourBase( const ActionOptions& ao ):
   std::vector<AtomNumber> atoms; parseAtomList("POSITIONS",atoms);
   std::vector<AtomNumber> origin; parseAtomList("ATOM",origin);
   if( origin.size()!=1 ) error("should only specify one atom for origin keyword");
-  std::vector<AtomNumber> center; 
+  std::vector<AtomNumber> center;
   if( keywords.exists("ORIGIN") ) {
     parseAtomList("ORIGIN",center);
     if( center.size()!=1 ) error("should only specify one atom for center keyword");
   }
 
-  if( center.size()==1 ) log.printf("  calculating distance between atom %d and contour along vector connecting it to atom %d \n", origin[0].serial(),center[0].serial() ); 
+  if( center.size()==1 ) log.printf("  calculating distance between atom %d and contour along vector connecting it to atom %d \n", origin[0].serial(),center[0].serial() );
   else log.printf("  calculating distance between atom %d and contour \n", origin[0].serial() );
 
   log.printf("  contour is in field constructed from positions of atoms : ");
@@ -72,10 +72,10 @@ DistanceFromContourBase::DistanceFromContourBase( const ActionOptions& ao ):
     log.printf("\n  all weights are set equal to one \n");
   }
   // Request everything we need
-  active_list.resize( atoms.size(), 0 ); 
+  active_list.resize( atoms.size(), 0 );
   std::vector<Value*> args( getArguments() ); atoms.push_back( origin[0] );
   if( center.size()==1 ) atoms.push_back( center[0] );
-  requestArguments( args ); requestAtoms( atoms ); 
+  requestArguments( args ); requestAtoms( atoms );
   // Fix to request arguments
   if( args.size()==1 ) addDependency( args[0]->getPntrToAction() );
 
@@ -112,15 +112,15 @@ void DistanceFromContourBase::unlockRequests() {
 double DistanceFromContourBase::evaluateKernel( const Vector& cpos, const Vector& apos, std::vector<double>& der ) const {
   Vector distance = pbcDistance( getPosition(getNumberOfAtoms()-1), cpos );
   Vector dist2 = pbcDistance( distance, apos );
-  double dval=0; for(unsigned j=0;j<3;++j) { der[j] = dist2[j]/bw[j]; dval += der[j]*der[j]; } 
+  double dval=0; for(unsigned j=0; j<3; ++j) { der[j] = dist2[j]/bw[j]; dval += der[j]*der[j]; }
   double dfunc, newval = switchingFunction.calculateSqr( dval, dfunc ) / gvol;
-  double tmp = dfunc / gvol; for(unsigned j=0;j<3;++j) der[j] *= -tmp;
+  double tmp = dfunc / gvol; for(unsigned j=0; j<3; ++j) der[j] *= -tmp;
   return newval;
 }
 
 double DistanceFromContourBase::getDifferenceFromContour( const std::vector<double>& x, std::vector<double>& der ) {
   // Transer the position to the local Vector
-  for(unsigned j=0;j<3;++j) pval[j] = x[j]; 
+  for(unsigned j=0; j<3; ++j) pval[j] = x[j];
   // Now find the contour
   double sumk = 0, sumd = 0; std::vector<double> pp(3), ddd(3,0);
   for(unsigned i=0; i<nactive; ++i) {
@@ -132,7 +132,7 @@ double DistanceFromContourBase::getDifferenceFromContour( const std::vector<doub
     } else sumk += newval;
   }
   if( getNumberOfArguments()==0 ) return sumk - contour;
-  if( fabs(sumk)<epsilon ) return -contour; 
+  if( fabs(sumk)<epsilon ) return -contour;
   return (sumk/sumd) - contour;
 }
 

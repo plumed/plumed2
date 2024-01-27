@@ -25,12 +25,12 @@ namespace PLMD {
 namespace gridtools {
 
 ActionWithGrid* ActionWithGrid::getInputActionWithGrid( Action* action ) {
-   ActionWithGrid* ag = dynamic_cast<ActionWithGrid*>( action );
-   if( !ag && action->getName()=="ACCUMULATE" ) {
-       ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>( action );
-       plumed_assert( aa ); ag = dynamic_cast<ActionWithGrid*>( (aa->getPntrToArgument(0))->getPntrToAction() ); 
-   }
-   plumed_assert( ag ); return ag;
+  ActionWithGrid* ag = dynamic_cast<ActionWithGrid*>( action );
+  if( !ag && action->getName()=="ACCUMULATE" ) {
+    ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>( action );
+    plumed_assert( aa ); ag = dynamic_cast<ActionWithGrid*>( (aa->getPntrToArgument(0))->getPntrToAction() );
+  }
+  plumed_assert( ag ); return ag;
 }
 
 void ActionWithGrid::registerKeywords( Keywords& keys ) {
@@ -38,9 +38,9 @@ void ActionWithGrid::registerKeywords( Keywords& keys ) {
 }
 
 ActionWithGrid::ActionWithGrid(const ActionOptions&ao):
-Action(ao),
-ActionWithVector(ao),
-firststep(true)
+  Action(ao),
+  ActionWithVector(ao),
+  firststep(true)
 {
 }
 

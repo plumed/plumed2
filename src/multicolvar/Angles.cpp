@@ -109,11 +109,11 @@ void Angles::registerKeywords( Keywords& keys ) {
            "GROUPC are calculated. The GROUPA atoms are assumed to be the central "
            "atoms");
   MultiColvarShortcuts::shortcutKeywords( keys );
-} 
+}
 
 Angles::Angles(const ActionOptions&ao):
-Action(ao),
-ActionShortcut(ao)
+  Action(ao),
+  ActionShortcut(ao)
 {
   std::vector<std::string> group; parseVector("GROUP",group);
   std::vector<std::string> groupa; parseVector("GROUPA",groupa);
@@ -121,7 +121,7 @@ ActionShortcut(ao)
   std::vector<std::string> groupc; parseVector("GROUPC",groupc);
   if( group.size()>0 ) {
     if( groupa.size()>0 || groupb.size()>0 || groupc.size()>0 ) error("should only be GROUP keyword in input not GROUPA/GROUPB/GROUPC");
-    Tools::interpretRanges( group ); std::string ainput = getShortcutLabel() + ": ANGLE_VECTOR"; unsigned n=1; 
+    Tools::interpretRanges( group ); std::string ainput = getShortcutLabel() + ": ANGLE_VECTOR"; unsigned n=1;
     // Not sure if this triple sum makes any sense
     for(unsigned i=2; i<group.size(); ++i ) {
       for(unsigned j=1; j<i; ++j ) {
@@ -132,7 +132,7 @@ ActionShortcut(ao)
       }
     }
     log.printf("Action ANGLE\n");
-    log.printf("  with label %s \n", getShortcutLabel().c_str() ); 
+    log.printf("  with label %s \n", getShortcutLabel().c_str() );
     readInputLine( ainput );
   } else if( groupc.size()>0 ) {
     Tools::interpretRanges( groupa ); Tools::interpretRanges( groupb ); Tools::interpretRanges( groupc );
@@ -150,7 +150,7 @@ ActionShortcut(ao)
     readInputLine( ainput );
   } else if( groupa.size()>0 ) {
     Tools::interpretRanges( groupa ); Tools::interpretRanges( groupb );
-    unsigned n=1; std::string ainput; ainput = getShortcutLabel() + ": ANGLE_VECTOR"; 
+    unsigned n=1; std::string ainput; ainput = getShortcutLabel() + ": ANGLE_VECTOR";
     for(unsigned i=0; i<groupa.size(); ++i ) {
       for(unsigned j=1; j<groupb.size(); ++j ) {
         for(unsigned k=0; k<j; ++k) {

@@ -84,7 +84,7 @@ PLUMED_REGISTER_ACTION(ScalarPiecewise,"PIECEWISE_SCALAR")
 
 void Piecewise::registerKeywords(Keywords& keys) {
   keys.add("numbered","POINT","This keyword is used to specify the various points in the function above.");
-  keys.reset_style("POINT","compulsory"); 
+  keys.reset_style("POINT","compulsory");
   keys.addOutputComponent("_pfunc","default","one or multiple instances of this quantity can be referenced elsewhere "
                           "in the input file.  These quantities will be named with the arguments of the "
                           "function followed by the character string _pfunc.  These quantities tell the "
@@ -109,7 +109,7 @@ void Piecewise::read( ActionWithArguments* action ) {
 }
 
 void Piecewise::setPeriodicityForOutputs( ActionWithValue* action ) {
-  for(unsigned i=0;i<action->getNumberOfComponents();++i) action->copyOutput(i)->setNotPeriodic();
+  for(unsigned i=0; i<action->getNumberOfComponents(); ++i) action->copyOutput(i)->setNotPeriodic();
 }
 
 void Piecewise::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {

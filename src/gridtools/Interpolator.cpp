@@ -1,25 +1,25 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
    Copyright (c) 2015-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
-  
+
    See http://www.plumed.org for more information.
-  
+
    This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
-   it under the terms of the GNU Lesser General Public License as published by 
+   it under the terms of the GNU Lesser General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
-  
+
    plumed is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU Lesser General Public License for more details.
-  
+
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Interpolator.h" 
+#include "Interpolator.h"
 
 namespace PLMD {
 namespace gridtools {
@@ -38,7 +38,7 @@ double Interpolator::splineInterpolation( const std::vector<double>& x, std::vec
   std::vector<double> xfloor(dimension); gridobject.getGridPointCoordinates( gridobject.getIndex(x), nindices, xfloor );
 
   // loop over neighbors
-  std::vector<unsigned> neigh; unsigned n_neigh; 
+  std::vector<unsigned> neigh; unsigned n_neigh;
   gridobject.getSplineNeighbors( gridobject.getIndex(indices), n_neigh, neigh );
   for(unsigned int ipoint=0; ipoint<n_neigh; ++ipoint) {
     double grid=values->get( neigh[ipoint] );

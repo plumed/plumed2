@@ -149,7 +149,7 @@ FindSphericalContour::FindSphericalContour(const ActionOptions&ao):
   std::vector<bool> ipbc( 3, false ); gridcoords.setup( "fibonacci", ipbc, npoints, 0.0 );
   // Now create a value
   std::vector<unsigned> shape( 3 ); shape[0]=npoints; shape[1]=shape[2]=1;
-  addValueWithDerivatives( shape ); setNotPeriodic(); 
+  addValueWithDerivatives( shape ); setNotPeriodic();
   getPntrToComponent(0)->buildDataStore(); checkRead();
 }
 
@@ -193,7 +193,7 @@ void FindSphericalContour::performTask( const unsigned& current, MultiValue& myv
 }
 
 void FindSphericalContour::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
-                                              const unsigned& bufstart, std::vector<double>& buffer ) const {
+    const unsigned& bufstart, std::vector<double>& buffer ) const {
   plumed_assert( valindex==0 ); unsigned istart = bufstart + (1+gridcoords.getDimension())*code;
   unsigned valout = getConstPntrToComponent(0)->getPositionInStream(); buffer[istart] += myvals.get( valout );
 }

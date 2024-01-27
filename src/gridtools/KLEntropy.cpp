@@ -41,9 +41,9 @@ void KLEntropy::registerKeywords( Keywords& keys ) {
 }
 
 KLEntropy::KLEntropy( const ActionOptions& ao):
-Action(ao),
-ActionShortcut(ao)
-{ 
+  Action(ao),
+  ActionShortcut(ao)
+{
   // Reference grid object
   std::string ref_str, val_str, input_g; parse("VALUE",val_str); parse("REFERENCE",ref_str); parse("ARG",input_g);
   readInputLine( getShortcutLabel() + "_ref: REFERENCE_GRID VALUE=" + val_str + " FILE=" + ref_str );
@@ -51,7 +51,7 @@ ActionShortcut(ao)
   if( input_g=="") plumed_merror("could not find ARG keyword in input to KL_ENTROPY");
   readInputLine( getShortcutLabel()  + "_kl: CUSTOM ARG=" + input_g + "," + getShortcutLabel() + "_ref FUNC=y*log(y/(0.5*(x+y))) PERIODIC=NO");
   // Compute integral
-  readInputLine( getShortcutLabel() + ": INTEGRATE_GRID ARG=" + getShortcutLabel() + "_kl PERIODIC=NO"); 
+  readInputLine( getShortcutLabel() + ": INTEGRATE_GRID ARG=" + getShortcutLabel() + "_kl PERIODIC=NO");
 }
 
 }

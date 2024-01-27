@@ -100,9 +100,9 @@ void DimensionalityReductionBase::performAnalysis() {
     for(unsigned i=0; i<nlow; ++i) getPntrToComponent(i)->setShape( shape );
     for(unsigned idat=0; idat<getNumberOfDataPoints(); ++idat) {
       analysis::DataCollectionObject& myref=AnalysisBase::getStoredData(idat,false); std::string num;
-      for(unsigned i=0; i<nlow; ++i) { 
-          Tools::convert(i+1,num); getPntrToComponent(i)->set( idat, projections(idat,i) ); 
-          myref.setArgument( getLabel() + ".coord-" + num, projections(idat,i) ); 
+      for(unsigned i=0; i<nlow; ++i) {
+        Tools::convert(i+1,num); getPntrToComponent(i)->set( idat, projections(idat,i) );
+        myref.setArgument( getLabel() + ".coord-" + num, projections(idat,i) );
       }
     }
   }

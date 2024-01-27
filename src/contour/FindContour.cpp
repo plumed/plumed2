@@ -104,7 +104,7 @@ FindContour::FindContour(const ActionOptions&ao):
   parse("BUFFER",gbuffer);
   if( gbuffer>0 ) log.printf("  after first step a subset of only %u grid points around where the countour was found will be checked\n",gbuffer);
   checkRead();
-  
+
   gridtools::ActionWithGrid* ag=dynamic_cast<gridtools::ActionWithGrid*>( getPntrToArgument(0)->getPntrToAction() );
   std::vector<std::string> argn( ag->getGridCoordinateNames() );
 
@@ -122,15 +122,15 @@ void FindContour::setupValuesOnFirstStep() {
   active_cells.resize( shape[0] );
 }
 
-unsigned FindContour::getNumberOfDerivatives() { 
-  return 0; 
+unsigned FindContour::getNumberOfDerivatives() {
+  return 0;
 }
 
 void FindContour::areAllTasksRequired( std::vector<ActionWithVector*>& task_reducing_actions ) {
   task_reducing_actions.push_back(this);
 }
 
-void FindContour::getNumberOfTasks( unsigned& ntasks ) { 
+void FindContour::getNumberOfTasks( unsigned& ntasks ) {
   ntasks = active_cells.size();
 
   Value* gval=getPntrToArgument(0);
@@ -138,30 +138,30 @@ void FindContour::getNumberOfTasks( unsigned& ntasks ) {
   std::vector<unsigned> ind( gval->getRank() );
   std::vector<unsigned> ones( gval->getRank(), 1 );
   std::vector<unsigned> nbin( getInputGridObject().getNbin( false ) );
-  unsigned num_neighbours; std::vector<unsigned> neighbours;  
+  unsigned num_neighbours; std::vector<unsigned> neighbours;
 
-  std::fill( active_cells.begin(), active_cells.end(), 0 ); 
+  std::fill( active_cells.begin(), active_cells.end(), 0 );
   for(unsigned i=0; i<npoints; ++i) {
-     // Get the index of the current grid point
-     getInputGridObject().getIndices( i, ind );
-     getInputGridObject().getNeighbors( ind, ones, num_neighbours, neighbours );
-     // Get the value of a point on the grid
-     double val1=gval->get( i ) - contour;
-     bool edge=false;
-     for(unsigned j=0; j<gval->getRank(); ++j) {
-       // Make sure we don't search at the edge of the grid
-       if( !getInputGridObject().isPeriodic(j) && (ind[j]+1)==nbin[j] ) continue;
-       else if( (ind[j]+1)==nbin[j] ) { edge=true; ind[j]=0; }
-       else ind[j]+=1;
-       double val2=gval->get( getInputGridObject().getIndex(ind) ) - contour;
-       if( val1*val2<0 ) active_cells[gval->getRank()*i + j] = 1; 
-       if( getInputGridObject().isPeriodic(j) && edge ) { edge=false; ind[j]=nbin[j]-1; }
-       else ind[j]-=1;
-     }
+    // Get the index of the current grid point
+    getInputGridObject().getIndices( i, ind );
+    getInputGridObject().getNeighbors( ind, ones, num_neighbours, neighbours );
+    // Get the value of a point on the grid
+    double val1=gval->get( i ) - contour;
+    bool edge=false;
+    for(unsigned j=0; j<gval->getRank(); ++j) {
+      // Make sure we don't search at the edge of the grid
+      if( !getInputGridObject().isPeriodic(j) && (ind[j]+1)==nbin[j] ) continue;
+      else if( (ind[j]+1)==nbin[j] ) { edge=true; ind[j]=0; }
+      else ind[j]+=1;
+      double val2=gval->get( getInputGridObject().getIndex(ind) ) - contour;
+      if( val1*val2<0 ) active_cells[gval->getRank()*i + j] = 1;
+      if( getInputGridObject().isPeriodic(j) && edge ) { edge=false; ind[j]=nbin[j]-1; }
+      else ind[j]-=1;
+    }
   }
 }
 
-int FindContour::checkTaskStatus( const unsigned& taskno, int& flag ) const { 
+int FindContour::checkTaskStatus( const unsigned& taskno, int& flag ) const {
   if( active_cells[taskno]>0 ) return 1;
   return 0;
 }

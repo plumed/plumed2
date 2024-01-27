@@ -77,9 +77,9 @@ This observation is important as it is the basis of the binless formulation of W
 namespace PLMD {
 namespace analysis {
 
-class Wham : 
-public ActionWithValue,
-public ActionWithArguments {
+class Wham :
+  public ActionWithValue,
+  public ActionWithArguments {
 private:
   double thresh, simtemp;
   unsigned nreplicas;
@@ -121,15 +121,15 @@ Wham::Wham(const ActionOptions&ao):
 void Wham::calculate() {
   // Retrieve the values that were stored for the biase
   std::vector<double> stored_biases( getPntrToArgument(0)->getNumberOfValues() );
-  for(unsigned i=0;i<stored_biases.size();++i) stored_biases[i] = getPntrToArgument(0)->get(i);
+  for(unsigned i=0; i<stored_biases.size(); ++i) stored_biases[i] = getPntrToArgument(0)->get(i);
   // Get the minimum value of the bias
   double minv = *min_element(std::begin(stored_biases), std::end(stored_biases));
   // Resize final weights array
   plumed_assert( stored_biases.size()%nreplicas==0 );
   std::vector<double> final_weights( stored_biases.size() / nreplicas, 1.0 );
   if( getPntrToComponent(0)->getNumberOfValues()!=final_weights.size() ) {
-      std::vector<unsigned> shape(1); shape[0]=final_weights.size(); getPntrToComponent(0)->setShape( shape );
-  } 
+    std::vector<unsigned> shape(1); shape[0]=final_weights.size(); getPntrToComponent(0)->setShape( shape );
+  }
   // Offset and exponential of the bias
   std::vector<double> expv( stored_biases.size() );
   for(unsigned i=0; i<expv.size(); ++i) expv[i] = exp( (-stored_biases[i]+minv) / simtemp );
@@ -159,8 +159,8 @@ void Wham::calculate() {
       Z[k] /= norm; double d = std::log( Z[k] / oldZ[k] ); change += d*d;
     }
     if( change<thresh ) {
-        for(unsigned j=0; j<final_weights.size(); ++j) getPntrToComponent(0)->set( j, final_weights[j] );
-        return; 
+      for(unsigned j=0; j<final_weights.size(); ++j) getPntrToComponent(0)->set( j, final_weights[j] );
+      return;
     }
   }
   error("Too many iterations in WHAM" );

@@ -35,7 +35,7 @@ ClusteringBase::ClusteringBase(const ActionOptions&ao):
   number_of_cluster(-1)
 {
   // Do some checks on the input
-  if( getPntrToArgument(0)->getShape()[0]!=getPntrToArgument(0)->getShape()[1] ) error("input matrix should be square"); 
+  if( getPntrToArgument(0)->getShape()[0]!=getPntrToArgument(0)->getShape()[1] ) error("input matrix should be square");
 
   // Now create a value - this holds the data on which cluster each guy is in
   std::vector<unsigned> shape(1); shape[0]=getPntrToArgument(0)->getShape()[0];
@@ -46,15 +46,15 @@ ClusteringBase::ClusteringBase(const ActionOptions&ao):
 }
 
 void ClusteringBase::retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matrix<unsigned>& adj_list ) {
-  // Make sure we have the edges stored 
+  // Make sure we have the edges stored
   std::vector<std::pair<unsigned,unsigned> > pairs; std::vector<double> vals;
-  unsigned nedge; getPntrToArgument(0)->retrieveEdgeList( nedge, pairs, vals ); 
+  unsigned nedge; getPntrToArgument(0)->retrieveEdgeList( nedge, pairs, vals );
   // Currently everything has zero neighbors
   for(unsigned i=0; i<nneigh.size(); ++i) nneigh[i]=0;
   // Resize the adjacency list if it is needed
   if( adj_list.ncols()!=getPntrToArgument(0)->getNumberOfColumns() ) {
-      unsigned nrows = getPntrToArgument(0)->getShape()[0]; 
-      adj_list.resize( nrows, getPntrToArgument(0)->getNumberOfColumns() );
+    unsigned nrows = getPntrToArgument(0)->getShape()[0];
+    adj_list.resize( nrows, getPntrToArgument(0)->getNumberOfColumns() );
   }
 
   // And set up the adjacency list
@@ -84,7 +84,7 @@ void ClusteringBase::calculate() {
 }
 
 void ClusteringBase::apply() {
-  if( getPntrToComponent(0)->forcesWereAdded() ) error("forces on clustering actions cannot work as clustering is not differentiable"); 
+  if( getPntrToComponent(0)->forcesWereAdded() ) error("forces on clustering actions cannot work as clustering is not differentiable");
 }
 
 }

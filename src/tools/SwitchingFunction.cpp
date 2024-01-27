@@ -110,13 +110,13 @@ s(r) = 1 - \tanh\left( \frac{ r - d_0 }{ r_0 } \right)
 {TANH R_0=\f$r_0\f$ D_0=\f$d_0\f$}
 </td> <td> </td>
 </tr> <tr>
-<td> COSINE </td> <td> 
+<td> COSINE </td> <td>
 \f$
 s(r) = 0.5\left[ \cos\left( \pi \frac{ r - d_0 }{ r_0 } \right) + 1 \right] \qquad d_{max} = d_0 + r_0
-\f$ 
+\f$
 </td> <td>
 {COSINE R_0=\f$r_0\f$ D_0=\f$d_0\f$}
-</td> <td> </td> 
+</td> <td> </td>
 </tr> <tr>
 <td> TANH3 </td> <td>
 \f$
@@ -276,7 +276,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     type=gaussian; fastgaussian=(!returnderiv && r0==1.0 && d0==0.0 );
   } else if(name=="CUBIC") type=cubic;
   else if(name=="TANH") type=tanh;
-  else if(name=="COSINE"){ 
+  else if(name=="COSINE") {
     type=cosine; dmax=r0+d0; dmax_2=dmax*dmax; dostretch=false;
   }
   else if(name=="TANH3") {
@@ -369,7 +369,7 @@ std::string SwitchingFunction::description() const {
   } else if(type==cosine) {
     ostr<<"cosine";
   } else if(type==tanh3) {
-    ostr<<"tanh3"; 
+    ostr<<"tanh3";
   } else {
     plumed_merror("Unknown switching function type");
   }
@@ -430,7 +430,7 @@ double SwitchingFunction::calculateSqr(double distance2,double&dfunc)const {
     return result;
   } else if( fastgaussian ) {
     plumed_dbg_assert( !returnderiv );
-    if(distance2>dmax_2) { 
+    if(distance2>dmax_2) {
       dfunc=0.0;
       return 0.0;
     }
@@ -530,8 +530,8 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
       if(lepton_ref_deriv[t]) *lepton_ref_deriv[t]=rdist;
       result=expression[t].evaluate();
       dfunc=expression_deriv[t].evaluate();
-    } else if(type==cosine) { 
-      double tmp1=pi*rdist;             
+    } else if(type==cosine) {
+      double tmp1=pi*rdist;
       result = 0.5*( cos(tmp1) + 1 );
       dfunc = -0.5*pi*sin(tmp1);
     } else if(type==tanh3) {

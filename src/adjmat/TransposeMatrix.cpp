@@ -51,8 +51,8 @@ TransposeMatrix::TransposeMatrix(const ActionOptions& ao):
   MatrixOperationBase(ao)
 {
   if( getPntrToArgument(0)->isSymmetric() ) warning("input matrix is symmetric.  Transposing will achieve nothing!");
-  std::vector<unsigned> shape; 
-  if( getPntrToArgument(0)->getRank()==0 ) error("transposing a scalar?"); 
+  std::vector<unsigned> shape;
+  if( getPntrToArgument(0)->getRank()==0 ) error("transposing a scalar?");
   else if( getPntrToArgument(0)->getRank()==1 ) { shape.resize(2); shape[0]=1; shape[1]=getPntrToArgument(0)->getShape()[0]; }
   else if( getPntrToArgument(0)->getShape()[0]==1 ) { shape.resize(1); shape[0] = getPntrToArgument(0)->getShape()[1]; }
   else { shape.resize(2); shape[0]=getPntrToArgument(0)->getShape()[1]; shape[1]=getPntrToArgument(0)->getShape()[0]; }
@@ -64,15 +64,15 @@ void TransposeMatrix::calculate() {
   // Retrieve the non-zero pairs
   Value* myarg=getPntrToArgument(0); Value* myval=getPntrToComponent(0);
   if( myarg->getRank()<=1 || myval->getRank()==1 ) {
-      unsigned nv=myarg->getNumberOfValues();
-      for(unsigned i=0; i<nv; ++i) myval->set( i, myarg->get(i) );
+    unsigned nv=myarg->getNumberOfValues();
+    for(unsigned i=0; i<nv; ++i) myval->set( i, myarg->get(i) );
   } else {
-      std::vector<double> vals; std::vector<std::pair<unsigned,unsigned> > pairs; 
-      std::vector<unsigned> shape( myval->getShape() ); unsigned nedge=0; myarg->retrieveEdgeList( nedge, pairs, vals ); 
-      for(unsigned i=0; i<nedge;++i) myval->set( pairs[i].second*shape[1] + pairs[i].first, vals[i] ); 
-      if( myarg->isSymmetric() ) {
-          for(unsigned i=0; i<nedge;++i) myval->set( pairs[i].first*shape[1] + pairs[i].second, vals[i] );
-      }
+    std::vector<double> vals; std::vector<std::pair<unsigned,unsigned> > pairs;
+    std::vector<unsigned> shape( myval->getShape() ); unsigned nedge=0; myarg->retrieveEdgeList( nedge, pairs, vals );
+    for(unsigned i=0; i<nedge; ++i) myval->set( pairs[i].second*shape[1] + pairs[i].first, vals[i] );
+    if( myarg->isSymmetric() ) {
+      for(unsigned i=0; i<nedge; ++i) myval->set( pairs[i].first*shape[1] + pairs[i].second, vals[i] );
+    }
   }
 }
 
@@ -80,12 +80,12 @@ void TransposeMatrix::apply() {
   if( doNotCalculateDerivatives() ) return;
 
   // Apply force on the matrix
-  if( getPntrToComponent(0)->forcesWereAdded() ) { 
-      Value* myarg=getPntrToArgument(0); Value* myval=getPntrToComponent(0);
-      if( myarg->getRank()<=1 || myval->getRank()==1 ) {
-          unsigned nv=myarg->getNumberOfValues(); 
-          for(unsigned i=0; i<nv; ++i) myarg->addForce( i, myval->getForce(i) );
-      } else MatrixOperationBase::apply();
+  if( getPntrToComponent(0)->forcesWereAdded() ) {
+    Value* myarg=getPntrToArgument(0); Value* myval=getPntrToComponent(0);
+    if( myarg->getRank()<=1 || myval->getRank()==1 ) {
+      unsigned nv=myarg->getNumberOfValues();
+      for(unsigned i=0; i<nv; ++i) myarg->addForce( i, myval->getForce(i) );
+    } else MatrixOperationBase::apply();
   }
 }
 

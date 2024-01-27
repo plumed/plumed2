@@ -43,8 +43,8 @@ void Bridge::registerKeywords(Keywords& keys) {
 }
 
 Bridge::Bridge(const ActionOptions& ao):
-Action(ao),
-ActionShortcut(ao)
+  Action(ao),
+  ActionShortcut(ao)
 {
   // Need to read in switch
   std::string s_inp, sfinput; parse("SWITCH",sfinput); if( sfinput.length()>0 ) s_inp += "SWITCH={" + sfinput +"} ";
@@ -53,7 +53,7 @@ ActionShortcut(ao)
   // Create the matrix object
   readInputLine( getShortcutLabel() + "_mat: BRIDGE_MATRIX " + s_inp + convertInputLineToString() );
   // Add all the elements of the matrix together
-  readInputLine( getShortcutLabel() + ": SUM ARG=" + getShortcutLabel() + "_mat.w PERIODIC=NO"); 
+  readInputLine( getShortcutLabel() + ": SUM ARG=" + getShortcutLabel() + "_mat.w PERIODIC=NO");
 }
 
 }

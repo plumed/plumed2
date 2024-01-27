@@ -76,7 +76,7 @@ public:
   unsigned getNumberOfDerivatives() override ;
 /// Do the calculation
   void calculate() override ;
-/// 
+///
   void apply() override {}
 };
 
@@ -120,7 +120,7 @@ unsigned ClusterWeights::getNumberOfDerivatives() {
 void ClusterWeights::calculate() {
   plumed_assert( getPntrToArgument(0)->valueHasBeenSet() );
   for(unsigned i=0; i<getPntrToArgument(0)->getShape()[0]; ++i) {
-    if( fabs(getPntrToArgument(0)->get(i)-clustr)<epsilon ) getPntrToComponent(0)->set( i, 1.0 ); 
+    if( fabs(getPntrToArgument(0)->get(i)-clustr)<epsilon ) getPntrToComponent(0)->set( i, 1.0 );
   }
 }
 

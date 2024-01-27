@@ -38,9 +38,9 @@ Print a vector to a file
 */
 //+ENDPLUMEDOC
 
-class DumpVector : 
-public ActionWithArguments,
-public ActionPilot {
+class DumpVector :
+  public ActionWithArguments,
+  public ActionPilot {
 private:
   std::string fmt, filename;
   std::vector<unsigned> preps;
@@ -58,7 +58,7 @@ PLUMED_REGISTER_ACTION(DumpVector,"DUMPVECTOR")
 
 void DumpVector::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
-  ActionPilot::registerKeywords( keys ); 
+  ActionPilot::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
   keys.add("compulsory","STRIDE","1","the frequency with which the grid should be output to the file.");
   keys.add("compulsory","FILE","density","the file on which to write the vetors");
@@ -76,14 +76,14 @@ DumpVector::DumpVector(const ActionOptions&ao):
   if( getNumberOfArguments()==0 ) error("found no arguments");
   unsigned nvals = getPntrToArgument(0)->getNumberOfValues();
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      if( getPntrToArgument(i)->getNumberOfValues()!=nvals ) error("all arguments should have same number of values");
-      getPntrToArgument(i)->buildDataStore();
+    if( getPntrToArgument(i)->getNumberOfValues()!=nvals ) error("all arguments should have same number of values");
+    getPntrToArgument(i)->buildDataStore();
   }
   parse("FILE",filename);
   if(filename.length()==0) error("name out output file was not specified");
 
   log.printf("  outputting data with label %s to file named %s",getPntrToArgument(0)->getName().c_str(), filename.c_str() );
-  parse("FMT",fmt); log.printf(" with format %s \n", fmt.c_str() ); fmt = " " + fmt; 
+  parse("FMT",fmt); log.printf(" with format %s \n", fmt.c_str() ); fmt = " " + fmt;
 
   std::string rep_data; parse("REPLICA",rep_data);
   if( rep_data=="all" ) output_for_all_replicas=true;
@@ -99,11 +99,11 @@ DumpVector::DumpVector(const ActionOptions&ao):
 
 void DumpVector::update() {
   if( !output_for_all_replicas ) {
-      bool found=false; unsigned myrep=plumed.multi_sim_comm.Get_rank();
-      for(unsigned i=0; i<preps.size(); ++i) {
-        if( myrep==preps[i] ) { found=true; break; }
-      }
-      if( !found ) return;
+    bool found=false; unsigned myrep=plumed.multi_sim_comm.Get_rank();
+    for(unsigned i=0; i<preps.size(); ++i) {
+      if( myrep==preps[i] ) { found=true; break; }
+    }
+    if( !found ) return;
   }
   OFile ofile; ofile.link(*this);
   ofile.enforceRestart();
@@ -111,15 +111,15 @@ void DumpVector::update() {
 
   unsigned nvals = getPntrToArgument(0)->getNumberOfValues();
   for(unsigned i=0; i<nvals; ++i) {
-      ofile.fmtField(" %f"); 
-      ofile.printField("time",getTime()); 
-      ofile.printField("parameter",int(i));
-      for(unsigned j=0; j<getNumberOfArguments(); j++) {
-        ofile.fmtField(fmt);
-        ofile.printField(getPntrToArgument(j)->getName(),getPntrToArgument(j)->get(i) );
-      }
-      ofile.printField();
-  } 
+    ofile.fmtField(" %f");
+    ofile.printField("time",getTime());
+    ofile.printField("parameter",int(i));
+    for(unsigned j=0; j<getNumberOfArguments(); j++) {
+      ofile.fmtField(fmt);
+      ofile.printField(getPntrToArgument(j)->getName(),getPntrToArgument(j)->get(i) );
+    }
+    ofile.printField();
+  }
 }
 
 }

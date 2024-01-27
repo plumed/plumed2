@@ -29,7 +29,7 @@ namespace gridtools {
 
 class RDF : public ActionShortcut {
 public:
-  static void createX2ReferenceObject( const std::string& lab,  const std::string& grid_setup, const bool& calc_dens, ActionShortcut* action ); 
+  static void createX2ReferenceObject( const std::string& lab,  const std::string& grid_setup, const bool& calc_dens, ActionShortcut* action );
   static void registerKeywords( Keywords& keys );
   explicit RDF(const ActionOptions&ao);
 };

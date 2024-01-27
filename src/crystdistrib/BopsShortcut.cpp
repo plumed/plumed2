@@ -27,13 +27,13 @@
 namespace PLMD {
 namespace crystdistrib {
 
-//+PLUMEDOC COLVAR BOPS 
+//+PLUMEDOC COLVAR BOPS
 /*
 
 */
 //+ENDPLUMEDOC
 
-class BopsShortcut : public ActionShortcut{
+class BopsShortcut : public ActionShortcut {
 public:
   static void registerKeywords( Keywords& keys );
   explicit BopsShortcut(const ActionOptions&);
@@ -67,66 +67,66 @@ BopsShortcut::BopsShortcut(const ActionOptions&ao):
   ActionShortcut(ao)
 {
   // Open a file and read in the kernels
-  double h_dops,h_bops; std::string kfunc, kfunc_dops,kfunc_bops,fname_dops,fname_bops; 
+  double h_dops,h_bops; std::string kfunc, kfunc_dops,kfunc_bops,fname_dops,fname_bops;
   parse("KERNELFILE_DOPS",fname_dops); parse("KERNELFILE_BOPS",fname_bops); IFile ifile_dops, ifile_bops; ifile_dops.open(fname_dops); ifile_bops.open(fname_bops);
   for(unsigned k=0;; ++k) {
-      if( !ifile_dops.scanField("height",h_dops) || !ifile_bops.scanField("height",h_bops) ) break;//checks eof
-      std::string ktype_dops, ktype_bops;  ifile_dops.scanField("kerneltype",ktype_dops); ifile_bops.scanField("kerneltype",ktype_bops); 
-      if( ktype_dops!="gaussian" ) error("cannot process kernels of type " + ktype_dops );//straightup error 
-      if( ktype_bops!="gaussian" ) error("cannot process kernels of type " + ktype_bops );
+    if( !ifile_dops.scanField("height",h_dops) || !ifile_bops.scanField("height",h_bops) ) break;//checks eof
+    std::string ktype_dops, ktype_bops;  ifile_dops.scanField("kerneltype",ktype_dops); ifile_bops.scanField("kerneltype",ktype_bops);
+    if( ktype_dops!="gaussian" ) error("cannot process kernels of type " + ktype_dops );//straightup error
+    if( ktype_bops!="gaussian" ) error("cannot process kernels of type " + ktype_bops );
 
-      double mu_dops, mu_i, mu_j, mu_k; std::string hstr_dops, hstr_bops, smu_dops,smu_i, smu_j, smu_k, sigmastr,kappastr; 
-
-
-      Tools::convert( h_dops, hstr_dops );
-      Tools::convert( h_bops, hstr_bops );
-
-      ifile_dops.scanField("mu",mu_dops); Tools::convert( mu_dops, smu_dops ); 
-      //ifile_bops.scanField("mu_w",mu_w); Tools::convert( mu_w, smu_w ); 
-      ifile_bops.scanField("mu_i",mu_i); Tools::convert( mu_i, smu_i ); 
-      ifile_bops.scanField("mu_j",mu_j); Tools::convert( mu_j, smu_j ); 
-      ifile_bops.scanField("mu_k",mu_k); Tools::convert( mu_k, smu_k ); 
-     
-
-      double sigma,kappa;
-      ifile_dops.scanField("sigma",sigma); Tools::convert( sigma, sigmastr ); 
-      ifile_bops.scanField("kappa",kappa); Tools::convert( kappa, kappastr ); 
+    double mu_dops, mu_i, mu_j, mu_k; std::string hstr_dops, hstr_bops, smu_dops,smu_i, smu_j, smu_k, sigmastr,kappastr;
 
 
+    Tools::convert( h_dops, hstr_dops );
+    Tools::convert( h_bops, hstr_bops );
 
-      ifile_dops.scanField(); /*if( k==0 )*/ kfunc_dops =  hstr_dops; //else kfunc_dops += "+" + hstr; 
-      ifile_bops.scanField(); /*if( k==0 )*/ kfunc_bops =  hstr_bops; //else kfunc_bops += "+" + hstr; 
+    ifile_dops.scanField("mu",mu_dops); Tools::convert( mu_dops, smu_dops );
+    //ifile_bops.scanField("mu_w",mu_w); Tools::convert( mu_w, smu_w );
+    ifile_bops.scanField("mu_i",mu_i); Tools::convert( mu_i, smu_i );
+    ifile_bops.scanField("mu_j",mu_j); Tools::convert( mu_j, smu_j );
+    ifile_bops.scanField("mu_k",mu_k); Tools::convert( mu_k, smu_k );
 
-      kfunc_bops += "*exp(" + kappastr + "*(i*" + smu_i + "+j*" + smu_j + "+k*" + smu_k + "))"; 
-      kfunc_dops += "*exp(-(x-" + smu_dops +")^2/" + "(2*" + sigmastr +"*" +sigmastr + "))"; 
-      if (k==0) kfunc = kfunc_dops + "*" + kfunc_bops; else kfunc+= "+" + kfunc_dops + "*" + kfunc_bops; 
-}
-  std::string sp_str, specA, specB, grpinfo; 
+
+    double sigma,kappa;
+    ifile_dops.scanField("sigma",sigma); Tools::convert( sigma, sigmastr );
+    ifile_bops.scanField("kappa",kappa); Tools::convert( kappa, kappastr );
+
+
+
+    ifile_dops.scanField(); /*if( k==0 )*/ kfunc_dops =  hstr_dops; //else kfunc_dops += "+" + hstr;
+    ifile_bops.scanField(); /*if( k==0 )*/ kfunc_bops =  hstr_bops; //else kfunc_bops += "+" + hstr;
+
+    kfunc_bops += "*exp(" + kappastr + "*(i*" + smu_i + "+j*" + smu_j + "+k*" + smu_k + "))";
+    kfunc_dops += "*exp(-(x-" + smu_dops +")^2/" + "(2*" + sigmastr +"*" +sigmastr + "))";
+    if (k==0) kfunc = kfunc_dops + "*" + kfunc_bops; else kfunc+= "+" + kfunc_dops + "*" + kfunc_bops;
+  }
+  std::string sp_str, specA, specB, grpinfo;
   double cutoff;
   parse("SPECIES",sp_str); parse("SPECIESA",specA); parse("SPECIESB",specB); parse("CUTOFF",cutoff);
   if( sp_str.length()>0 ) {
-      grpinfo="GROUP=" + sp_str;
-  } else {//not sure how to use this 
-      if( specA.length()==0 || specB.length()==0 ) error("no atoms were specified in input use either SPECIES or SPECIESA + SPECIESB");
-      grpinfo="GROUPA=" + specA + " GROUPB=" + specB;
+    grpinfo="GROUP=" + sp_str;
+  } else {//not sure how to use this
+    if( specA.length()==0 || specB.length()==0 ) error("no atoms were specified in input use either SPECIES or SPECIESA + SPECIESB");
+    grpinfo="GROUPA=" + specA + " GROUPB=" + specB;
   }
-  std::string cutstr; Tools::convert( cutoff, cutstr ); 
+  std::string cutstr; Tools::convert( cutoff, cutstr );
   // Setup the contact matrix
 //  std::string switchstr; parse("SWITCH",switchstr);
   readInputLine( getShortcutLabel() + "_cmat: DISTANCE_MATRIX  " + grpinfo + " CUTOFF=" + cutstr + " COMPONENTS");
-   
+
   if( specA.length()==0 ) {
-      std::string quatstr; parse("QUATERNIONS",quatstr);
-      readInputLine( getShortcutLabel() + "_quatprod: QUATERNION_BOND_PRODUCT_MATRIX ARG=" + quatstr + ".*," + getShortcutLabel() + "_cmat.*" );
+    std::string quatstr; parse("QUATERNIONS",quatstr);
+    readInputLine( getShortcutLabel() + "_quatprod: QUATERNION_BOND_PRODUCT_MATRIX ARG=" + quatstr + ".*," + getShortcutLabel() + "_cmat.*" );
   }  else {
-      plumed_error();
+    plumed_error();
   }
-  // 
-  
+  //
+
   ///////////////////
   ///replace/////
-  readInputLine( getShortcutLabel() + "_dist: CUSTOM ARG=" + getShortcutLabel() + "_cmat.x," + getShortcutLabel() + "_cmat.y," + getShortcutLabel() + "_cmat.z " + 
-  "FUNC=sqrt((x^2)+(y^2)+(z^2)) PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_dist: CUSTOM ARG=" + getShortcutLabel() + "_cmat.x," + getShortcutLabel() + "_cmat.y," + getShortcutLabel() + "_cmat.z " +
+                 "FUNC=sqrt((x^2)+(y^2)+(z^2)) PERIODIC=NO");
   readInputLine( getShortcutLabel() + "_kfunc: CUSTOM ARG=" + getShortcutLabel() + "_quatprod.i," + getShortcutLabel() + "_quatprod.j," + getShortcutLabel() + "_quatprod.k,"+ getShortcutLabel() + "_dist " + "VAR=i,j,k,x FUNC=" + kfunc + " PERIODIC=NO");
 
 //replace ^^^ to remove distance hack

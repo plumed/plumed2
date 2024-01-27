@@ -113,8 +113,8 @@ Average::Average( const ActionOptions& ao ):
 
   std::string lw; parse("LOGWEIGHTS",lw); std::string stride, clearstride; parse("STRIDE",stride); parse("CLEAR",clearstride);
   if( lw.length()>0 ) {
-      readInputLine( getShortcutLabel() + "_wsum: COMBINE ARG=" + lw + " PERIODIC=NO");
-      readInputLine( getShortcutLabel() + "_weight: CUSTOM ARG=" + getShortcutLabel() + "_wsum FUNC=exp(x) PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_wsum: COMBINE ARG=" + lw + " PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_weight: CUSTOM ARG=" + getShortcutLabel() + "_wsum FUNC=exp(x) PERIODIC=NO");
   } else readInputLine( getShortcutLabel() + "_weight: ONES SIZE=1" );
 
   std::vector<std::string> arg; parseVector("ARG",arg);
@@ -123,16 +123,16 @@ Average::Average( const ActionOptions& ao ):
 
   readInputLine( getShortcutLabel() + "_denom: ACCUMULATE ARG=" + getShortcutLabel() + "_weight STRIDE=" + stride + " CLEAR=" + clearstride );
   if( vals[0]->isPeriodic() ) {
-      std::string lbound, ubound, pfactor; vals[0]->getDomain( lbound, ubound ); pfactor = "((" + ubound + "-" + lbound + ")/(pi+pi))";
-      readInputLine( getShortcutLabel() + "_sin: CUSTOM ARG=" + arg[0] + "," + getShortcutLabel() + "_weight FUNC=y*sin((x-" + lbound + ")/" + pfactor + ") PERIODIC=NO");
-      readInputLine( getShortcutLabel() + "_cos: CUSTOM ARG=" + arg[0] + "," + getShortcutLabel() + "_weight FUNC=y*cos((x-" + lbound + ")/" + pfactor + ") PERIODIC=NO");
-      readInputLine( getShortcutLabel() + "_sinsum: ACCUMULATE ARG=" + getShortcutLabel() + "_sin STRIDE=" + stride + " CLEAR=" + clearstride );
-      readInputLine( getShortcutLabel() + "_cossum: ACCUMULATE ARG=" + getShortcutLabel() + "_cos STRIDE=" + stride + " CLEAR=" + clearstride );
-      readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_sinsum," + getShortcutLabel() + "_cossum," + getShortcutLabel() + "_denom FUNC=" + lbound + "+" + pfactor + "*atan2(x/z,y/z) PERIODIC=" + lbound +"," + ubound);
+    std::string lbound, ubound, pfactor; vals[0]->getDomain( lbound, ubound ); pfactor = "((" + ubound + "-" + lbound + ")/(pi+pi))";
+    readInputLine( getShortcutLabel() + "_sin: CUSTOM ARG=" + arg[0] + "," + getShortcutLabel() + "_weight FUNC=y*sin((x-" + lbound + ")/" + pfactor + ") PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_cos: CUSTOM ARG=" + arg[0] + "," + getShortcutLabel() + "_weight FUNC=y*cos((x-" + lbound + ")/" + pfactor + ") PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_sinsum: ACCUMULATE ARG=" + getShortcutLabel() + "_sin STRIDE=" + stride + " CLEAR=" + clearstride );
+    readInputLine( getShortcutLabel() + "_cossum: ACCUMULATE ARG=" + getShortcutLabel() + "_cos STRIDE=" + stride + " CLEAR=" + clearstride );
+    readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_sinsum," + getShortcutLabel() + "_cossum," + getShortcutLabel() + "_denom FUNC=" + lbound + "+" + pfactor + "*atan2(x/z,y/z) PERIODIC=" + lbound +"," + ubound);
   } else {
-      readInputLine( getShortcutLabel() + "_prod: CUSTOM ARG=" + arg[0] + "," + getShortcutLabel() + "_weight FUNC=x*y PERIODIC=NO");
-      readInputLine( getShortcutLabel() + "_numer: ACCUMULATE ARG=" + getShortcutLabel() + "_prod STRIDE=" + stride + " CLEAR=" + clearstride  );
-      readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_numer," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_prod: CUSTOM ARG=" + arg[0] + "," + getShortcutLabel() + "_weight FUNC=x*y PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_numer: ACCUMULATE ARG=" + getShortcutLabel() + "_prod STRIDE=" + stride + " CLEAR=" + clearstride  );
+    readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_numer," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
   }
 }
 

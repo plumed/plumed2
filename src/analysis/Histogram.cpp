@@ -216,34 +216,34 @@ Histogram::Histogram( const ActionOptions& ao ):
   std::string normflag; parse("NORMALIZATION",normflag);
   std::string lw; parse("LOGWEIGHTS",lw); std::string stride, clearstride; parse("STRIDE",stride); parse("CLEAR",clearstride);
   if( lw.length()>0 && normflag!="ndata" ) {
-      readInputLine( getShortcutLabel() + "_wsum: COMBINE ARG=" + lw + " PERIODIC=NO");
-      readInputLine( getShortcutLabel() + "_weight: CUSTOM ARG=" + getShortcutLabel() + "_wsum FUNC=exp(x) PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_wsum: COMBINE ARG=" + lw + " PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_weight: CUSTOM ARG=" + getShortcutLabel() + "_wsum FUNC=exp(x) PERIODIC=NO");
   } else readInputLine( getShortcutLabel() + "_weight: ONES SIZE=1" );
 
   std::vector<std::string> arglist; parseVector("ARG",arglist); std::string argstr=arglist[0];
-  for(unsigned i=1; i<arglist.size(); ++i) argstr += "," + arglist[i]; 
+  for(unsigned i=1; i<arglist.size(); ++i) argstr += "," + arglist[i];
   // Get the number of elements that are being used when we calculate the KDE
   ActionWithValue* ab=plumed.getActionSet().selectWithLabel<ActionWithValue*>( arglist[0] );
   plumed_assert( ab ); std::string strnum; Tools::convert( (ab->copyOutput(0))->getNumberOfValues(), strnum );
   if( (ab->copyOutput(0))->getNumberOfValues()==1 ) {
-      // Create the KDE object
-      readInputLine( getShortcutLabel() + "_kde: KDE ARG=" + argstr + " " + convertInputLineToString() );
+    // Create the KDE object
+    readInputLine( getShortcutLabel() + "_kde: KDE ARG=" + argstr + " " + convertInputLineToString() );
   } else {
-      // Create the KDE object
-      readInputLine( getShortcutLabel() + "_kde_u: KDE ARG=" + argstr + " " + convertInputLineToString() );
-      // Normalise the KDE object
-      readInputLine( getShortcutLabel() + "_kde: CUSTOM ARG=" + getShortcutLabel() + "_kde_u PERIODIC=NO FUNC=x/" + strnum );
+    // Create the KDE object
+    readInputLine( getShortcutLabel() + "_kde_u: KDE ARG=" + argstr + " " + convertInputLineToString() );
+    // Normalise the KDE object
+    readInputLine( getShortcutLabel() + "_kde: CUSTOM ARG=" + getShortcutLabel() + "_kde_u PERIODIC=NO FUNC=x/" + strnum );
   }
   // Now get the quantity to accumulate
   readInputLine( getShortcutLabel() + "_kdep: CUSTOM ARG=" + getShortcutLabel() + "_kde," + getShortcutLabel() + "_weight FUNC=x*y PERIODIC=NO");
   // And accumulate the average
-  if( normflag=="false" ) { 
-      readInputLine( getShortcutLabel() + ": ACCUMULATE ARG=" + getShortcutLabel() + "_kdep STRIDE=" + stride + " CLEAR=" + clearstride + " " + getUpdateLimits() );
+  if( normflag=="false" ) {
+    readInputLine( getShortcutLabel() + ": ACCUMULATE ARG=" + getShortcutLabel() + "_kdep STRIDE=" + stride + " CLEAR=" + clearstride + " " + getUpdateLimits() );
   } else {
-      readInputLine( getShortcutLabel() + "_u: ACCUMULATE ARG=" + getShortcutLabel() + "_kdep STRIDE=" + stride + " CLEAR=" + clearstride + " " + getUpdateLimits() ); 
-      readInputLine( getShortcutLabel() + "_nsum: ACCUMULATE ARG=" + getShortcutLabel() + "_weight STRIDE=" + stride + " CLEAR=" + clearstride + " " + getUpdateLimits() );
-      // And divide by the total weight
-      readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_u," + getShortcutLabel() + "_nsum FUNC=x/y PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_u: ACCUMULATE ARG=" + getShortcutLabel() + "_kdep STRIDE=" + stride + " CLEAR=" + clearstride + " " + getUpdateLimits() );
+    readInputLine( getShortcutLabel() + "_nsum: ACCUMULATE ARG=" + getShortcutLabel() + "_weight STRIDE=" + stride + " CLEAR=" + clearstride + " " + getUpdateLimits() );
+    // And divide by the total weight
+    readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_u," + getShortcutLabel() + "_nsum FUNC=x/y PERIODIC=NO");
   }
 }
 

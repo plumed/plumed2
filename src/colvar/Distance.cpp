@@ -120,8 +120,8 @@ public:
   static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
-  static void calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges, 
-                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, 
+  static void calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
+                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
                            std::vector<Tensor>& virial, const ActionAtomistic* aa );
 };
 
@@ -132,7 +132,7 @@ typedef MultiColvarTemplate<Distance> DistanceMulti;
 PLUMED_REGISTER_ACTION(DistanceMulti,"DISTANCE_VECTOR")
 
 void Distance::registerKeywords( Keywords& keys ) {
-  Colvar::registerKeywords( keys ); 
+  Colvar::registerKeywords( keys );
   keys.add("atoms","ATOMS","the pair of atom that we are calculating the distance between");
   keys.addFlag("COMPONENTS",false,"calculate the x, y and z components of the distance separately and store them as label.x, label.y and label.z");
   keys.addFlag("SCALED_COMPONENTS",false,"calculate the a, b and c scaled components of the distance separately and store them as label.a, label.b and label.c");
@@ -170,8 +170,8 @@ Distance::Distance(const ActionOptions&ao):
   unsigned mode = getModeAndSetupValues( this );
   if(mode==1) components=true; else if(mode==2) scaled_components=true;
   if( components || scaled_components ) {
-      value.resize(3); derivs.resize(3); virial.resize(3);
-      for(unsigned i=0; i<3; ++i) derivs[i].resize(2); 
+    value.resize(3); derivs.resize(3); virial.resize(3);
+    for(unsigned i=0; i<3; ++i) derivs[i].resize(2);
   }
   requestAtoms(atoms);
 }
@@ -197,7 +197,7 @@ unsigned Distance::getModeAndSetupValues( ActionWithValue* av ) {
     av->addComponentWithDerivatives("b"); av->componentIsPeriodic("b","-0.5","+0.5");
     av->addComponentWithDerivatives("c"); av->componentIsPeriodic("c","-0.5","+0.5");
     return 2;
-  } 
+  }
   av->addValueWithDerivatives(); av->setNotPeriodic();
   return 0;
 }
@@ -208,43 +208,43 @@ void Distance::calculate() {
   if(pbc) makeWhole();
 
   if( components ) {
-      calculateCV( 1, masses, charges, getPositions(), value, derivs, virial, this );
-      Value* valuex=getPntrToComponent("x");
-      Value* valuey=getPntrToComponent("y");
-      Value* valuez=getPntrToComponent("z");
+    calculateCV( 1, masses, charges, getPositions(), value, derivs, virial, this );
+    Value* valuex=getPntrToComponent("x");
+    Value* valuey=getPntrToComponent("y");
+    Value* valuez=getPntrToComponent("z");
 
-      for(unsigned i=0;i<2;++i) setAtomsDerivatives(valuex,i,derivs[0][i] );
-      setBoxDerivatives(valuex,virial[0]);
-      valuex->set(value[0]);
+    for(unsigned i=0; i<2; ++i) setAtomsDerivatives(valuex,i,derivs[0][i] );
+    setBoxDerivatives(valuex,virial[0]);
+    valuex->set(value[0]);
 
-      for(unsigned i=0;i<2;++i) setAtomsDerivatives(valuey,i,derivs[1][i] );
-      setBoxDerivatives(valuey,virial[1]);
-      valuey->set(value[1]);
-  
-      for(unsigned i=0;i<2;++i) setAtomsDerivatives(valuez,i,derivs[2][i] );
-      setBoxDerivatives(valuez,virial[2]);
-      valuez->set(value[2]);  
-  } else if( scaled_components ) { 
-      calculateCV( 2, masses, charges, getPositions(), value, derivs, virial, this );
+    for(unsigned i=0; i<2; ++i) setAtomsDerivatives(valuey,i,derivs[1][i] );
+    setBoxDerivatives(valuey,virial[1]);
+    valuey->set(value[1]);
 
-      Value* valuea=getPntrToComponent("a");
-      Value* valueb=getPntrToComponent("b");
-      Value* valuec=getPntrToComponent("c");
-      for(unsigned i=0;i<2;++i) setAtomsDerivatives(valuea,i,derivs[0][i] ); 
-      valuea->set(value[0]);
-      for(unsigned i=0;i<2;++i) setAtomsDerivatives(valueb,i,derivs[1][i] );  
-      valueb->set(value[1]);
-      for(unsigned i=0;i<2;++i) setAtomsDerivatives(valuec,i,derivs[2][i] );
-      valuec->set(value[2]);
+    for(unsigned i=0; i<2; ++i) setAtomsDerivatives(valuez,i,derivs[2][i] );
+    setBoxDerivatives(valuez,virial[2]);
+    valuez->set(value[2]);
+  } else if( scaled_components ) {
+    calculateCV( 2, masses, charges, getPositions(), value, derivs, virial, this );
+
+    Value* valuea=getPntrToComponent("a");
+    Value* valueb=getPntrToComponent("b");
+    Value* valuec=getPntrToComponent("c");
+    for(unsigned i=0; i<2; ++i) setAtomsDerivatives(valuea,i,derivs[0][i] );
+    valuea->set(value[0]);
+    for(unsigned i=0; i<2; ++i) setAtomsDerivatives(valueb,i,derivs[1][i] );
+    valueb->set(value[1]);
+    for(unsigned i=0; i<2; ++i) setAtomsDerivatives(valuec,i,derivs[2][i] );
+    valuec->set(value[2]);
   } else  {
-      calculateCV( 0, masses, charges, getPositions(), value, derivs, virial, this ); 
-      for(unsigned i=0;i<2;++i) setAtomsDerivatives(i,derivs[0][i] ); 
-      setBoxDerivatives(virial[0]);
-      setValue           (value[0]); 
+    calculateCV( 0, masses, charges, getPositions(), value, derivs, virial, this );
+    for(unsigned i=0; i<2; ++i) setAtomsDerivatives(i,derivs[0][i] );
+    setBoxDerivatives(virial[0]);
+    setValue           (value[0]);
   }
-}   
+}
 
-void Distance::calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges, 
+void Distance::calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
                             const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
                             std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
   Vector distance=delta(pos[0],pos[1]);

@@ -64,15 +64,15 @@ public:
 
 PLUMED_REGISTER_ACTION(ClusterProperties,"CLUSTER_PROPERTIES")
 
-void ClusterProperties::registerKeywords(Keywords& keys){
+void ClusterProperties::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
   keys.add("optional","ARG","calculate the sum of the arguments calculated by this action for the cluster");
   multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
 }
 
 ClusterProperties::ClusterProperties(const ActionOptions& ao):
-Action(ao),
-ActionShortcut(ao)
+  Action(ao),
+  ActionShortcut(ao)
 {
   // Read the property we are interested in
   std::string argstr; parse("ARG",argstr);

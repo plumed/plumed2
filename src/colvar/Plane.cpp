@@ -102,7 +102,7 @@ Plane::Plane(const ActionOptions&ao):
   derivs(3),
   virial(3)
 {
-  for(unsigned i=0;i<3;++i) derivs[i].resize(4);
+  for(unsigned i=0; i<3; ++i) derivs[i].resize(4);
   std::vector<AtomNumber> atoms; parseAtomList(-1,atoms,this);
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
@@ -121,7 +121,7 @@ void Plane::calculate() {
   if(pbc) makeWhole();
   calculateCV( 0, masses, charges, getPositions(), value, derivs, virial, this );
   setValue( value[0] );
-  for(unsigned i=0; i<derivs[0].size();++i) setAtomsDerivatives( i, derivs[0][i] );
+  for(unsigned i=0; i<derivs[0].size(); ++i) setAtomsDerivatives( i, derivs[0][i] );
   setBoxDerivatives( virial[0] );
 }
 
@@ -136,22 +136,22 @@ void Plane::calculateCV( const unsigned& mode, const std::vector<double>& masses
   derivs[0][1] = crossProduct( Vector(+1.0,0,0), d2 );
   derivs[0][2] = crossProduct( Vector(-1.0,0,0), d1 );
   derivs[0][3] = crossProduct( Vector(+1.0,0,0), d1 );
-  virial[0] = Tensor(d1,crossProduct(Vector(+1.0,0,0), d2)) + Tensor( d2, crossProduct(Vector(-1.0,0,0), d1)); 
-  vals[0] = cp[0]; 
+  virial[0] = Tensor(d1,crossProduct(Vector(+1.0,0,0), d2)) + Tensor( d2, crossProduct(Vector(-1.0,0,0), d1));
+  vals[0] = cp[0];
 
   derivs[1][0] = crossProduct( Vector(0,-1.0,0), d2 );
   derivs[1][1] = crossProduct( Vector(0,+1.0,0), d2 );
   derivs[1][2] = crossProduct( Vector(0,-1.0,0), d1 );
   derivs[1][3] = crossProduct( Vector(0,+1.0,0), d1 );
   virial[1] = Tensor(d1,crossProduct(Vector(0,+1.0,0), d2)) + Tensor( d2, crossProduct(Vector(0,-1.0,0), d1));
-  vals[1] = cp[1]; 
+  vals[1] = cp[1];
 
   derivs[2][0] = crossProduct( Vector(0,0,-1.0), d2 );
   derivs[2][1] = crossProduct( Vector(0,0,+1.0), d2 );
   derivs[2][2] = crossProduct( Vector(0,0,-1.0), d1 );
   derivs[2][3] = crossProduct( Vector(0,0,+1.0), d1 );
   virial[2] = Tensor(d1,crossProduct(Vector(0,0,+1.0), d2)) + Tensor( d2, crossProduct(Vector(0,0,-1.0), d1));
-  vals[2] = cp[2]; 
+  vals[2] = cp[2];
 }
 
 }

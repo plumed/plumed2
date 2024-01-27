@@ -52,47 +52,47 @@ RestraintShortcut::RestraintShortcut(const ActionOptions&ao):
   ActionShortcut(ao)
 {
   // Read in the args
-  std::vector<std::string> args; parseVector("ARG",args); 
+  std::vector<std::string> args; parseVector("ARG",args);
   if( args.size()==0 ) error("found no input arguments");
   std::vector<Value*> vals; ActionWithArguments::interpretArgumentList( args, plumed.getActionSet(), this, vals );
   if( vals.size()==0 ) error("found no input arguments");
 
   // Find the rank
-  unsigned rank=vals[0]->getRank(); 
+  unsigned rank=vals[0]->getRank();
   for(unsigned i=0; i<vals.size(); ++i) {
-      if( vals[i]->getRank()>0 && vals[i]->hasDerivatives() ) error("argument should not be function on grid");
-      if( vals[i]->getRank()!=rank ) error("all arguments should have same rank");
+    if( vals[i]->getRank()>0 && vals[i]->hasDerivatives() ) error("argument should not be function on grid");
+    if( vals[i]->getRank()!=rank ) error("all arguments should have same rank");
   }
   if( rank==0 ) {
-      std::string allargs=args[0]; for(unsigned i=1;i<args.size();++i) allargs += "," + args[i];
-      readInputLine( getShortcutLabel() + ": RESTRAINT_SCALAR ARG=" + allargs + " " + convertInputLineToString() );
-      return;
+    std::string allargs=args[0]; for(unsigned i=1; i<args.size(); ++i) allargs += "," + args[i];
+    readInputLine( getShortcutLabel() + ": RESTRAINT_SCALAR ARG=" + allargs + " " + convertInputLineToString() );
+    return;
   }
 
   std::string stride; parse("STRIDE",stride);
   std::vector<std::string> at; parseVector("AT",at);
   std::vector<std::string> slope(at.size()); parseVector("SLOPE",slope);
   std::vector<std::string> kappa(at.size()); parseVector("KAPPA",kappa);
-  
+
   std::string biasargs, forceargs; bool non_constant_force=false;
-  for(unsigned i=0;i<args.size();++i) {
-      std::string argn=args[i]; std::size_t dot=argn.find_first_of("."); if(dot!=std::string::npos) argn = argn.substr(0,dot) + "_" + argn.substr(dot+1);
-      readInputLine( getShortcutLabel() + "_cv_" + argn + ": COMBINE PERIODIC=NO ARG1=" + args[i] + " PARAMETERS=" + at[i] );
-      double kap; Tools::convert(  kappa[i], kap );
-      if( fabs(kap)>0 ) {
-          non_constant_force = true;
-          readInputLine( getShortcutLabel() + "_harm_" + argn + ": MATHEVAL PERIODIC=NO FUNC=0.5*" + kappa[i] + "*x^2 ARG1=" + getShortcutLabel() + "_cv_" + argn );
-          readInputLine( getShortcutLabel() + "_kap_" + argn + ": SUM PERIODIC=NO ARG=" + getShortcutLabel() + "_harm_" + argn ); 
-          readInputLine( getShortcutLabel() + "_f2_" + argn + ": MATHEVAL PERIODIC=NO FUNC=" + kappa[i] + "*2*x+" + slope[i] + "*" + slope[i] + " ARG1=" + getShortcutLabel() + "_harm_" + argn ); 
-          if( i==0 ) biasargs = "ARG=" + getShortcutLabel() + "_kap_" + argn; else biasargs += "," + getShortcutLabel() + "_kap_" + argn;
-          if( i==0 ) forceargs = "ARG=" + getShortcutLabel() + "_f2_" + argn; else forceargs += "," + getShortcutLabel() + "_f2_" + argn;    
-     }
-     double slo; Tools::convert( slope[i], slo );  
-     if( fabs(slo)>0 ) {
-         readInputLine( getShortcutLabel() + "_linear_" + argn + ": MATHEVAL PERIODIC=NO FUNC=" + slope[i] + "*x ARG1=" + getShortcutLabel() + "_cv_" + argn );
-         readInputLine( getShortcutLabel() + "_slope_" + argn + ": SUM PERIODIC=NO ARG=" + getShortcutLabel() + "_linear_" + argn );
-         if( biasargs.length()==0 ) biasargs = "ARG=" + getShortcutLabel() + "_slope_" + argn; else biasargs += "," + getShortcutLabel() + "_slope_" + argn;
-     }
+  for(unsigned i=0; i<args.size(); ++i) {
+    std::string argn=args[i]; std::size_t dot=argn.find_first_of("."); if(dot!=std::string::npos) argn = argn.substr(0,dot) + "_" + argn.substr(dot+1);
+    readInputLine( getShortcutLabel() + "_cv_" + argn + ": COMBINE PERIODIC=NO ARG1=" + args[i] + " PARAMETERS=" + at[i] );
+    double kap; Tools::convert(  kappa[i], kap );
+    if( fabs(kap)>0 ) {
+      non_constant_force = true;
+      readInputLine( getShortcutLabel() + "_harm_" + argn + ": MATHEVAL PERIODIC=NO FUNC=0.5*" + kappa[i] + "*x^2 ARG1=" + getShortcutLabel() + "_cv_" + argn );
+      readInputLine( getShortcutLabel() + "_kap_" + argn + ": SUM PERIODIC=NO ARG=" + getShortcutLabel() + "_harm_" + argn );
+      readInputLine( getShortcutLabel() + "_f2_" + argn + ": MATHEVAL PERIODIC=NO FUNC=" + kappa[i] + "*2*x+" + slope[i] + "*" + slope[i] + " ARG1=" + getShortcutLabel() + "_harm_" + argn );
+      if( i==0 ) biasargs = "ARG=" + getShortcutLabel() + "_kap_" + argn; else biasargs += "," + getShortcutLabel() + "_kap_" + argn;
+      if( i==0 ) forceargs = "ARG=" + getShortcutLabel() + "_f2_" + argn; else forceargs += "," + getShortcutLabel() + "_f2_" + argn;
+    }
+    double slo; Tools::convert( slope[i], slo );
+    if( fabs(slo)>0 ) {
+      readInputLine( getShortcutLabel() + "_linear_" + argn + ": MATHEVAL PERIODIC=NO FUNC=" + slope[i] + "*x ARG1=" + getShortcutLabel() + "_cv_" + argn );
+      readInputLine( getShortcutLabel() + "_slope_" + argn + ": SUM PERIODIC=NO ARG=" + getShortcutLabel() + "_linear_" + argn );
+      if( biasargs.length()==0 ) biasargs = "ARG=" + getShortcutLabel() + "_slope_" + argn; else biasargs += "," + getShortcutLabel() + "_slope_" + argn;
+    }
   }
   // This is the bias
   readInputLine( getShortcutLabel() + "_bias: COMBINE PERIODIC=NO " + biasargs );

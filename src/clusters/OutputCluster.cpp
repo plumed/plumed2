@@ -77,11 +77,11 @@ void OutputCluster::registerKeywords( Keywords& keys ) {
 OutputCluster::OutputCluster(const ActionOptions& ao):
   Action(ao),
   ActionShortcut(ao)
-{ 
+{
   std::string id; parse("CLUSTER",id);
   std::string stride; parse("STRIDE",stride);
   std::string clusters; parse("CLUSTERS",clusters);
-  std::string filename; parse("FILE",filename); 
+  std::string filename; parse("FILE",filename);
   std::string atoms; parse("ATOMS",atoms);
   readInputLine("PRINT_NDX ATOMS=" + atoms + " ARG=" + clusters + " FILE=" + filename + " STRIDE=" + stride + " LESS_THAN_OR_EQUAL=" + id + " GREATER_THAN_OR_EQUAL=" + id );
 }

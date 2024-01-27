@@ -150,7 +150,7 @@ PLUMED_REGISTER_ACTION(DumpAtoms,"DUMPATOMS")
 void DumpAtoms::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
-  ActionAtomistic::registerKeywords( keys ); 
+  ActionAtomistic::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
   keys.add("compulsory","STRIDE","1","the frequency with which the atoms should be output");
   keys.add("atoms", "ATOMS", "the atom indices whose positions you would like to print out");
@@ -239,19 +239,19 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
   log.printf("\n");
 
   if( getNumberOfArguments()>0 ) {
-      if( type!="xyz" ) error("can only print atomic properties when outputting xyz files");
+    if( type!="xyz" ) error("can only print atomic properties when outputting xyz files");
 
-      std::vector<std::string> argnames;
-      for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-          if( getPntrToArgument(i)->getRank()!=1 || getPntrToArgument(i)->hasDerivatives() ) error("arguments for xyz output should be vectors");
-          if( getPntrToArgument(i)->getNumberOfValues()!=atoms.size() ) error("number of elements in vector " + getPntrToArgument(i)->getName() + " is not equal to number of atoms output");
-          getPntrToArgument(i)->buildDataStore(true); argnames.push_back( getPntrToArgument(i)->getName() );
-      }
-      std::vector<std::string> str_upper, str_lower; std::string errors; 
-      parseVector("LESS_THAN_OR_EQUAL",str_upper); parseVector("GREATER_THAN_OR_EQUAL",str_lower);
-      if( !bounds.setBounds( getNumberOfArguments(), str_lower, str_upper, errors ) ) error( errors );
-      if( bounds.wereSet() ) log.printf("  %s \n", bounds.report( argnames ).c_str() );
-  } 
+    std::vector<std::string> argnames;
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      if( getPntrToArgument(i)->getRank()!=1 || getPntrToArgument(i)->hasDerivatives() ) error("arguments for xyz output should be vectors");
+      if( getPntrToArgument(i)->getNumberOfValues()!=atoms.size() ) error("number of elements in vector " + getPntrToArgument(i)->getName() + " is not equal to number of atoms output");
+      getPntrToArgument(i)->buildDataStore(true); argnames.push_back( getPntrToArgument(i)->getName() );
+    }
+    std::vector<std::string> str_upper, str_lower; std::string errors;
+    parseVector("LESS_THAN_OR_EQUAL",str_upper); parseVector("GREATER_THAN_OR_EQUAL",str_lower);
+    if( !bounds.setBounds( getNumberOfArguments(), str_lower, str_upper, errors ) ) error( errors );
+    if( bounds.wereSet() ) log.printf("  %s \n", bounds.report( argnames ).c_str() );
+  }
 
   requestAtoms(atoms, false);
   auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
@@ -282,10 +282,10 @@ void DumpAtoms::unlockRequests() {
 
 void DumpAtoms::update() {
   if(type=="xyz") {
-    unsigned nat=0; std::vector<double> args( getNumberOfArguments() ); 
+    unsigned nat=0; std::vector<double> args( getNumberOfArguments() );
     for(unsigned i=0; i<getNumberOfAtoms(); ++i)  {
-        for(unsigned j=0;j<getNumberOfArguments();++j) args[j] = getPntrToArgument(j)->get(i);
-        if( bounds.check( args ) ) nat++;
+      for(unsigned j=0; j<getNumberOfArguments(); ++j) args[j] = getPntrToArgument(j)->get(i);
+      if( bounds.check( args ) ) nat++;
     }
     of.printf("%d\n",nat);
     const Tensor & t(getPbc().getBox());
@@ -299,7 +299,7 @@ void DumpAtoms::update() {
                );
     }
     for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
-      for(unsigned j=0;j<getNumberOfArguments();++j) args[j] = getPntrToArgument(j)->get(i);
+      for(unsigned j=0; j<getNumberOfArguments(); ++j) args[j] = getPntrToArgument(j)->get(i);
       if( !bounds.check(args) ) continue;
       const char* defname="X";
       const char* name=defname;

@@ -76,14 +76,14 @@ unsigned SphericalHarmonic::factorial( const unsigned& n ) const {
 void SphericalHarmonic::read( ActionWithArguments* action ) {
   parse(action,"L",tmom);
   action->log.printf("  calculating %dth order spherical harmonic with %s, %s and %s as input \n", tmom, action->getPntrToArgument(0)->getName().c_str(), action->getPntrToArgument(1)->getName().c_str(), action->getPntrToArgument(2)->getName().c_str() );
-  if( action->getNumberOfArguments()==4 ) action->log.printf("  multiplying cylindrical harmonic by weight from %s \n", action->getPntrToArgument(3)->getName().c_str() ); 
+  if( action->getNumberOfArguments()==4 ) action->log.printf("  multiplying cylindrical harmonic by weight from %s \n", action->getPntrToArgument(3)->getName().c_str() );
 
   normaliz.resize( tmom+1 );
   for(unsigned i=0; i<=tmom; ++i) {
     normaliz[i] = sqrt( (2*tmom+1)*factorial(tmom-i)/(4*pi*factorial(tmom+i)) );
     if( i%2==1 ) normaliz[i]*=-1;
-  } 
-  
+  }
+
   coeff_poly.resize( tmom+1 );
   if( tmom==1 ) {
     // Legendre polynomial coefficients of order one
@@ -118,9 +118,9 @@ void SphericalHarmonic::read( ActionWithArguments* action ) {
 }
 
 std::vector<std::string> SphericalHarmonic::getComponentsPerLabel() const {
-  std::vector<std::string> comp; std::string num; 
+  std::vector<std::string> comp; std::string num;
   for(int i=-tmom; i<=tmom; ++i) {
-    Tools::convert(fabs(i),num); 
+    Tools::convert(fabs(i),num);
     if( i<0 ) comp.push_back( "-n" + num );
     else if( i>0 ) comp.push_back( "-p" + num );
     else comp.push_back( "-0");
@@ -130,20 +130,20 @@ std::vector<std::string> SphericalHarmonic::getComponentsPerLabel() const {
 
 void SphericalHarmonic::setPeriodicityForOutputs( ActionWithValue* action ) {
   std::vector<std::string> comp( getComponentsPerLabel() );
-  for(unsigned i=0;i<comp.size();++i) { action->componentIsNotPeriodic("rm" + comp[i]); action->componentIsNotPeriodic("im" + comp[i]); }
+  for(unsigned i=0; i<comp.size(); ++i) { action->componentIsNotPeriodic("rm" + comp[i]); action->componentIsNotPeriodic("im" + comp[i]); }
 }
 
 void SphericalHarmonic::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
   double weight=1; if( args.size()==4 ) weight = args[3];
-  if( weight<epsilon ) return; 
+  if( weight<epsilon ) return;
 
-  double dlen2 = args[0]*args[0]+args[1]*args[1]+args[2]*args[2]; 
+  double dlen2 = args[0]*args[0]+args[1]*args[1]+args[2]*args[2];
   double dlen = sqrt( dlen2 ); double dlen3 = dlen2*dlen;
   double tq6, itq6, dpoly_ass, poly_ass=deriv_poly( 0, args[2]/dlen, dpoly_ass );
   // Derivatives of z/r wrt x, y, z
-  Vector dz; 
-  dz[0] = -( args[2] / dlen3 )*args[0]; 
-  dz[1] = -( args[2] / dlen3 )*args[1]; 
+  Vector dz;
+  dz[0] = -( args[2] / dlen3 )*args[0];
+  dz[1] = -( args[2] / dlen3 )*args[1];
   dz[2] = -( args[2] / dlen3 )*args[2] + (1.0 / dlen);
   // Accumulate for m=0
   vals[tmom] = weight*poly_ass;
@@ -190,14 +190,14 @@ void SphericalHarmonic::calc( const ActionWithArguments* action, const std::vect
     // -m part of vector is just +m part multiplied by (-1.0)**m and multiplied by complex
     // conjugate of Legendre polynomial
     // Real part
-    vals[tmom-m] = pref*weight*tq6; 
+    vals[tmom-m] = pref*weight*tq6;
     addVectorDerivatives( tmom-m, pref*myrealvec, derivatives );
     // Imaginary part
     vals[3*tmom+1-m] = -pref*weight*itq6;
     addVectorDerivatives( 3*tmom+1-m, -pref*myimagvec, derivatives );
     if( args.size()==4 ) {
-        derivatives(tmom+m,3)=tq6; derivatives(3*tmom+1+m, 3)=itq6; 
-        derivatives(tmom-m,3)=pref*tq6; derivatives(3*tmom+1-m, 3)=-pref*itq6; 
+      derivatives(tmom+m,3)=tq6; derivatives(3*tmom+1+m, 3)=itq6;
+      derivatives(tmom-m,3)=pref*tq6; derivatives(3*tmom+1-m, 3)=-pref*itq6;
     }
     // Calculate next power of complex number
     powered *= com1;
@@ -222,7 +222,7 @@ double SphericalHarmonic::deriv_poly( const unsigned& m, const double& val, doub
 }
 
 void SphericalHarmonic::addVectorDerivatives( const unsigned& ival, const Vector& der, Matrix<double>& derivatives ) const {
-  for(unsigned j=0;j<3;++j) derivatives(ival,j) = der[j];
+  for(unsigned j=0; j<3; ++j) derivatives(ival,j) = der[j];
 }
 
 }

@@ -130,21 +130,21 @@ unsigned ClusterDistribution::getNumberOfDerivatives() {
 }
 
 void ClusterDistribution::calculate() {
-  plumed_assert( getPntrToArgument(0)->valueHasBeenSet() ); 
+  plumed_assert( getPntrToArgument(0)->valueHasBeenSet() );
   if( getNumberOfArguments()>1 ) plumed_assert( getPntrToArgument(1)->valueHasBeenSet() );
   double csize = getPntrToArgument(0)->get(0);
   for(unsigned i=1; i<getPntrToArgument(0)->getShape()[0]; ++i) {
-     if( getPntrToArgument(0)->get(i)>csize ) csize = getPntrToArgument(0)->get(i);
+    if( getPntrToArgument(0)->get(i)>csize ) csize = getPntrToArgument(0)->get(i);
   }
   unsigned ntasks = static_cast<unsigned>( csize );
   for(unsigned i=0; i<ntasks; ++i) {
-      for(unsigned j=0; j<getPntrToArgument(0)->getShape()[0]; ++j) { 
-          if( fabs(getPntrToArgument(0)->get(j)-i)<epsilon ) {
-              if( getNumberOfArguments()==2 ) getPntrToValue()->add( i, getPntrToArgument(1)->get(j) );
-              else getPntrToValue()->add( i, 1.0 );
-          }
+    for(unsigned j=0; j<getPntrToArgument(0)->getShape()[0]; ++j) {
+      if( fabs(getPntrToArgument(0)->get(j)-i)<epsilon ) {
+        if( getNumberOfArguments()==2 ) getPntrToValue()->add( i, getPntrToArgument(1)->get(j) );
+        else getPntrToValue()->add( i, 1.0 );
       }
-  } 
+    }
+  }
 }
 
 class ClusterDistributionShortcut : public ActionShortcut {
@@ -161,12 +161,12 @@ void ClusterDistributionShortcut::registerKeywords( Keywords& keys ) {
 }
 
 ClusterDistributionShortcut::ClusterDistributionShortcut(const ActionOptions&ao):
-Action(ao),
-ActionShortcut(ao)
+  Action(ao),
+  ActionShortcut(ao)
 {
   std::map<std::string,std::string> keymap; multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );
   readInputLine( getShortcutLabel() + ": CLUSTER_DISTRIBUTION_CALC " + convertInputLineToString() );
-  multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(),  getShortcutLabel(),  "", keymap, this ); 
+  multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(),  getShortcutLabel(),  "", keymap, this );
 }
 
 }

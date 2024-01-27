@@ -51,24 +51,24 @@ std::string Displacement::fixArgumentDot( const std::string& argin ) {
 }
 
 Displacement::Displacement( const ActionOptions& ao):
-Action(ao),
-ActionShortcut(ao)
-{ 
+  Action(ao),
+  ActionShortcut(ao)
+{
   // Read in argument names
   std::vector<std::string> arg1f, arg2f; parseVector("ARG1",arg1f); parseVector("ARG2",arg2f);
   // Check if one of the input arguments is a reference cluster
   if( arg1f.size()!=arg2f.size() ) error("number of arguments specified to ARG1 should be same as number for ARG2");
 
   if( arg1f.size()==1 ) {
-      Value* val1=getValueWithLabel( arg1f[0] ); Value* val2=getValueWithLabel( arg2f[0] );
-      if( val1->getNumberOfValues()==val2->getNumberOfValues() ) {
-          readInputLine( getShortcutLabel() + "_" + fixArgumentDot(arg1f[0]) + "_diff: DIFFERENCE ARG1=" + arg1f[0] + " ARG2=" + arg2f[0] );
-          readInputLine( getShortcutLabel() + ": TRANSPOSE ARG=" + getShortcutLabel() + "_" + fixArgumentDot(arg1f[0]) + "_diff");
-      } else readInputLine( getShortcutLabel() + ": DIFFERENCE ARG1=" + arg1f[0] + " ARG2=" + arg2f[0] );
+    Value* val1=getValueWithLabel( arg1f[0] ); Value* val2=getValueWithLabel( arg2f[0] );
+    if( val1->getNumberOfValues()==val2->getNumberOfValues() ) {
+      readInputLine( getShortcutLabel() + "_" + fixArgumentDot(arg1f[0]) + "_diff: DIFFERENCE ARG1=" + arg1f[0] + " ARG2=" + arg2f[0] );
+      readInputLine( getShortcutLabel() + ": TRANSPOSE ARG=" + getShortcutLabel() + "_" + fixArgumentDot(arg1f[0]) + "_diff");
+    } else readInputLine( getShortcutLabel() + ": DIFFERENCE ARG1=" + arg1f[0] + " ARG2=" + arg2f[0] );
   } else {
-      for(unsigned i=0;i<arg1f.size();++i) readInputLine( getShortcutLabel() + "_" + fixArgumentDot(arg1f[i]) + "_diff: DIFFERENCE ARG1=" + arg1f[i] + " ARG2=" + arg2f[i] );
-      std::string argdat = "ARG=" + getShortcutLabel() + "_" + fixArgumentDot(arg1f[0]) + "_diff"; for(unsigned i=1;i<arg1f.size();++i) argdat += "," +  getShortcutLabel() + "_" + fixArgumentDot(arg1f[i]) + "_diff";
-      readInputLine( getShortcutLabel() + ": VSTACK " + argdat );
+    for(unsigned i=0; i<arg1f.size(); ++i) readInputLine( getShortcutLabel() + "_" + fixArgumentDot(arg1f[i]) + "_diff: DIFFERENCE ARG1=" + arg1f[i] + " ARG2=" + arg2f[i] );
+    std::string argdat = "ARG=" + getShortcutLabel() + "_" + fixArgumentDot(arg1f[0]) + "_diff"; for(unsigned i=1; i<arg1f.size(); ++i) argdat += "," +  getShortcutLabel() + "_" + fixArgumentDot(arg1f[i]) + "_diff";
+    readInputLine( getShortcutLabel() + ": VSTACK " + argdat );
   }
 }
 

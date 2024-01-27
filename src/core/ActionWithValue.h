@@ -66,10 +66,10 @@ PLMD::Action you should use <b> the routines with the word component in the name
 class ActionWithValue :
   public virtual Action
 {
-friend class ActionWithVector;
-friend class ActionWithArguments;
+  friend class ActionWithVector;
+  friend class ActionWithArguments;
 private:
-/// This finishes setup on first step to check if actions are calculated during update 
+/// This finishes setup on first step to check if actions are calculated during update
   bool firststep;
 /// An array containing the values for this action
   std::vector<std::unique_ptr<Value>> values;
@@ -181,7 +181,7 @@ public:
 /// Activate the calculation of derivatives
   virtual void turnOnDerivatives();
 /// This is used to check if we run calculate during the update step
-  virtual bool calculateOnUpdate(); 
+  virtual bool calculateOnUpdate();
 };
 
 inline

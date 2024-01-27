@@ -66,12 +66,12 @@ DiagonalizeMatrix::DiagonalizeMatrix(const ActionOptions& ao):
     if( eigv.size()==0 ) error("missing input to VECTORS keyword");
     unsigned ivec;
     if( eigv[0]=="all" ) {
-       desired_vectors.resize( getPntrToArgument(0)->getShape()[0] );
-       for(unsigned i=0; i<desired_vectors.size(); ++i) desired_vectors[i] = i + 1;
+      desired_vectors.resize( getPntrToArgument(0)->getShape()[0] );
+      for(unsigned i=0; i<desired_vectors.size(); ++i) desired_vectors[i] = i + 1;
     } else {
-       Tools::convert( eigv[0], ivec );
-       desired_vectors.resize(1); desired_vectors[0]=ivec;  
-    } 
+      Tools::convert( eigv[0], ivec );
+      desired_vectors.resize(1); desired_vectors[0]=ivec;
+    }
   }
 
   std::string num; std::vector<unsigned> eval_shape(0);
@@ -85,19 +85,19 @@ DiagonalizeMatrix::DiagonalizeMatrix(const ActionOptions& ao):
   }
 
   std::vector<unsigned> eigvecs_shape(2); eigvecs_shape[0]=eigvecs_shape[1]=getPntrToArgument(0)->getShape()[0];
-  mymatrix.resize( eigvecs_shape[0], eigvecs_shape[1] ); eigvals.resize( eigvecs_shape[0] ); eigvecs.resize( eigvecs_shape[0], eigvecs_shape[1] ); 
+  mymatrix.resize( eigvecs_shape[0], eigvecs_shape[1] ); eigvals.resize( eigvecs_shape[0] ); eigvecs.resize( eigvecs_shape[0], eigvecs_shape[1] );
 }
 
 void DiagonalizeMatrix::calculate() {
   if( getPntrToArgument(0)->getShape()[0]==0 ) return ;
   // Resize stuff that might need resizing
-  unsigned nvals=getPntrToArgument(0)->getShape()[0]; 
-  if( eigvals.size()!=nvals ) { 
-      mymatrix.resize( nvals, nvals ); eigvals.resize( nvals ); 
-      eigvecs.resize( nvals, nvals ); std::vector<unsigned> shape(1); shape[0]=nvals;
-      for(unsigned i=0; i<desired_vectors.size(); ++i) {
-         if( getPntrToComponent( 2*i+1 )->getShape()[0]!=nvals ) getPntrToComponent( 2*i+1 )->setShape( shape );
-      }
+  unsigned nvals=getPntrToArgument(0)->getShape()[0];
+  if( eigvals.size()!=nvals ) {
+    mymatrix.resize( nvals, nvals ); eigvals.resize( nvals );
+    eigvecs.resize( nvals, nvals ); std::vector<unsigned> shape(1); shape[0]=nvals;
+    for(unsigned i=0; i<desired_vectors.size(); ++i) {
+      if( getPntrToComponent( 2*i+1 )->getShape()[0]!=nvals ) getPntrToComponent( 2*i+1 )->setShape( shape );
+    }
   }
 
   // Retrieve the matrix from input
@@ -117,8 +117,8 @@ double DiagonalizeMatrix::getForceOnMatrixElement( const unsigned& jrow, const u
   for(unsigned i=0; i<desired_vectors.size(); ++i) {
     // Deal with forces on eigenvalues
     if( getConstPntrToComponent(2*i)->forcesWereAdded() ) {
-        unsigned ncol = mymatrix.ncols()-desired_vectors[i]; 
-        ff += getConstPntrToComponent(2*i)->getForce(0)*eigvecs(ncol,jrow)*eigvecs(ncol,kcol);
+      unsigned ncol = mymatrix.ncols()-desired_vectors[i];
+      ff += getConstPntrToComponent(2*i)->getForce(0)*eigvecs(ncol,jrow)*eigvecs(ncol,kcol);
     }
     // And forces on eigenvectors
     if( !getConstPntrToComponent(2*i+1)->forcesWereAdded() ) continue;

@@ -82,7 +82,7 @@ public:
   void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
 };
 
-typedef function::FunctionShortcut<Fccubic> FccubicShortcut; 
+typedef function::FunctionShortcut<Fccubic> FccubicShortcut;
 PLUMED_REGISTER_ACTION(FccubicShortcut,"FCCCUBIC_FUNC")
 typedef adjmat::FunctionOfMatrix<Fccubic> MatrixFccubic;
 PLUMED_REGISTER_ACTION(MatrixFccubic,"FCCCUBIC_FUNC_MATRIX")
@@ -91,7 +91,7 @@ void Fccubic::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","ALPHA","3.0","The alpha parameter of the angular function");
 }
 
-void Fccubic::read( ActionWithArguments* action ) { 
+void Fccubic::read( ActionWithArguments* action ) {
   // Scaling factors such that '1' corresponds to fcc lattice
   // and '0' corresponds to isotropic (liquid)
   parse(action,"ALPHA",alpha);
@@ -99,7 +99,7 @@ void Fccubic::read( ActionWithArguments* action ) {
   action->log.printf("  setting alpha paramter equal to %f \n",alpha);
 }
 
-void Fccubic::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const { 
+void Fccubic::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
   double x2 = args[0]*args[0];
   double x4 = x2*x2;
 

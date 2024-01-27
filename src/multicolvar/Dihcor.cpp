@@ -92,12 +92,12 @@ void Dihcor::registerKeywords( Keywords& keys ) {
 }
 
 Dihcor::Dihcor(const ActionOptions&ao):
-Action(ao),
-ActionShortcut(ao)
+  Action(ao),
+  ActionShortcut(ao)
 {
-  readInputLine( getShortcutLabel() +"_data: DIHEDRAL_CORRELATION " + convertInputLineToString() ); 
+  readInputLine( getShortcutLabel() +"_data: DIHEDRAL_CORRELATION " + convertInputLineToString() );
   readInputLine( getShortcutLabel() + ": SUM ARG=" + getShortcutLabel() + "_data PERIODIC=NO");
-} 
+}
 
 }
 }

@@ -1212,9 +1212,9 @@ void PlumedMain::update() {
   for(const auto & p : actionSet) {
     p->beforeUpdate();
     if(p->isActive() && p->checkUpdate() && updateFlagsTop()) {
-       ActionWithValue* av=dynamic_cast<ActionWithValue*>(p.get());
-       if( av && av->calculateOnUpdate() ) { p->prepare(); p->calculate(); }
-       else p->update();
+      ActionWithValue* av=dynamic_cast<ActionWithValue*>(p.get());
+      if( av && av->calculateOnUpdate() ) { p->prepare(); p->calculate(); }
+      else p->update();
     }
   }
   while(!updateFlags.empty()) updateFlags.pop();

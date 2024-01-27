@@ -55,21 +55,21 @@ VStack::VStack(const ActionOptions& ao):
   ActionWithMatrix(ao)
 {
   if( getNumberOfArguments()==0 ) error("no arguments were specificed");
-  if( getPntrToArgument(0)->getRank()>1 ) error("all arguments should be vectors"); 
+  if( getPntrToArgument(0)->getRank()>1 ) error("all arguments should be vectors");
   unsigned nvals=1; bool periodic=false; std::string smin, smax;
-  if( getPntrToArgument(0)->getRank()==1 ) nvals = getPntrToArgument(0)->getShape()[0]; 
+  if( getPntrToArgument(0)->getRank()==1 ) nvals = getPntrToArgument(0)->getShape()[0];
   if( getPntrToArgument(0)->isPeriodic() ) { periodic=true; getPntrToArgument(0)->getDomain( smin, smax ); }
 
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      if( getPntrToArgument(i)->getRank()>1 || (getPntrToArgument(i)->getRank()==1 && getPntrToArgument(i)->hasDerivatives()) ) error("all arguments should be vectors");
-      if( getPntrToArgument(i)->getRank()==0 ) {
-          if( nvals!=1 ) error("all input vector should have same number of elements");
-      } else if( getPntrToArgument(i)->getShape()[0]!=nvals ) error("all input vector should have same number of elements");
-      if( periodic ) {
-          if( !getPntrToArgument(i)->isPeriodic() ) error("one argument is periodic but " + getPntrToArgument(i)->getName() + " is not periodic");
-          std::string tmin, tmax; getPntrToArgument(i)->getDomain( tmin, tmax );
-          if( tmin!=smin || tmax!=smax ) error("domain of argument " + getPntrToArgument(i)->getName() + " is different from domain for all other arguments");
-      } else if( getPntrToArgument(i)->isPeriodic() ) error("one argument is not periodic but " + getPntrToArgument(i)->getName() + " is periodic");
+    if( getPntrToArgument(i)->getRank()>1 || (getPntrToArgument(i)->getRank()==1 && getPntrToArgument(i)->hasDerivatives()) ) error("all arguments should be vectors");
+    if( getPntrToArgument(i)->getRank()==0 ) {
+      if( nvals!=1 ) error("all input vector should have same number of elements");
+    } else if( getPntrToArgument(i)->getShape()[0]!=nvals ) error("all input vector should have same number of elements");
+    if( periodic ) {
+      if( !getPntrToArgument(i)->isPeriodic() ) error("one argument is periodic but " + getPntrToArgument(i)->getName() + " is not periodic");
+      std::string tmin, tmax; getPntrToArgument(i)->getDomain( tmin, tmax );
+      if( tmin!=smin || tmax!=smax ) error("domain of argument " + getPntrToArgument(i)->getName() + " is different from domain for all other arguments");
+    } else if( getPntrToArgument(i)->isPeriodic() ) error("one argument is not periodic but " + getPntrToArgument(i)->getName() + " is periodic");
   }
   // And create a value to hold the matrix
   std::vector<unsigned> shape(2); shape[0]=nvals; shape[1]=getNumberOfArguments(); addValue( shape );
@@ -94,27 +94,27 @@ void VStack::performTask( const std::string& controller, const unsigned& index1,
   unsigned ind2 = index2; if( index2>=getConstPntrToComponent(0)->getShape()[0] ) ind2 = index2 - getConstPntrToComponent(0)->getShape()[0];
   myvals.addValue( getConstPntrToComponent(0)->getPositionInStream(), getArgumentElement( ind2, index1, myvals ) );
 
-  if( doNotCalculateDerivatives() ) return;  
+  if( doNotCalculateDerivatives() ) return;
   addDerivativeOnVectorArgument( stored[ind2], 0, ind2, index1, 1.0, myvals );
 }
 
-void VStack::runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const { 
+void VStack::runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const {
   if( doNotCalculateDerivatives() || !matrixChainContinues() ) return ;
 
   unsigned nmat = getConstPntrToComponent(0)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixRowDerivatives( nmat );
   std::vector<unsigned>& matrix_indices( myvals.getMatrixRowDerivativeIndices( nmat ) );
   plumed_assert( nmat_ind<matrix_indices.size() );
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      bool found=false; ActionWithValue* iav = getPntrToArgument(i)->getPntrToAction();
-      for(unsigned j=0; j<i; ++j) {
-          if( iav==getPntrToArgument(j)->getPntrToAction() ) { found=true; break; }
-      }
-      if( found ) continue ;
+    bool found=false; ActionWithValue* iav = getPntrToArgument(i)->getPntrToAction();
+    for(unsigned j=0; j<i; ++j) {
+      if( iav==getPntrToArgument(j)->getPntrToAction() ) { found=true; break; }
+    }
+    if( found ) continue ;
 
-      unsigned istrn = getPntrToArgument(i)->getPositionInStream();
-      for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
-          matrix_indices[nmat_ind] = myvals.getActiveIndex(istrn,k); nmat_ind++; 
-      }
+    unsigned istrn = getPntrToArgument(i)->getPositionInStream();
+    for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
+      matrix_indices[nmat_ind] = myvals.getActiveIndex(istrn,k); nmat_ind++;
+    }
   }
   myvals.setNumberOfMatrixRowDerivatives( nmat, nmat_ind );
 }

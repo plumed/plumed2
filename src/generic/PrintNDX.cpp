@@ -85,9 +85,9 @@ PrintNDX::PrintNDX(const ActionOptions&ao):
   std::vector<AtomNumber> all_atoms; parseAtomList("ATOMS",all_atoms); std::vector<std::string> argnames( getNumberOfArguments() );
   requestAtoms( all_atoms, false );
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      if( getPntrToArgument(i)->getRank()!=1 || getPntrToArgument(i)->hasDerivatives() ) error("arguments for print ndx should be vector");
-      if( getPntrToArgument(i)->getShape()[0]!=all_atoms.size() ) error("mismatch between number of arguments and number of input atoms");
-      getPntrToArgument(i)->buildDataStore(true); argnames[i] = getPntrToArgument(i)->getName();
+    if( getPntrToArgument(i)->getRank()!=1 || getPntrToArgument(i)->hasDerivatives() ) error("arguments for print ndx should be vector");
+    if( getPntrToArgument(i)->getShape()[0]!=all_atoms.size() ) error("mismatch between number of arguments and number of input atoms");
+    getPntrToArgument(i)->buildDataStore(true); argnames[i] = getPntrToArgument(i)->getName();
   }
   log.printf("  printing ndx file containing indices of atoms that have arguments in ranges prescribed below \n");
   log.printf("  full set of atom indices investigated are : ");
@@ -109,24 +109,24 @@ std::string PrintNDX::writeInGraph() const {
 void PrintNDX::lockRequests() {
   ActionWithArguments::lockRequests();
   ActionAtomistic::lockRequests();
-} 
+}
 
 void PrintNDX::unlockRequests() {
   ActionWithArguments::unlockRequests();
   ActionAtomistic::unlockRequests();
-} 
+}
 
 void PrintNDX::update() {
   unsigned n=0; std::vector<double> argvals( getNumberOfArguments() );
   ofile.printf("[ %s step %d ] \n", getLabel().c_str(), getStep() );
   for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
-    for(unsigned j=0;j<getNumberOfArguments();++j) argvals[j] = getPntrToArgument(j)->get(i);
+    for(unsigned j=0; j<getNumberOfArguments(); ++j) argvals[j] = getPntrToArgument(j)->get(i);
     if( bounds.check( argvals ) ) {
       ofile.printf("%6d", getAbsoluteIndexes()[i].serial() ); n++;
       if( n%15==0 ) ofile.printf("\n");
-    } 
+    }
   }
-  ofile.printf("\n");   
+  ofile.printf("\n");
 }
 
 }

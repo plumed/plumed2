@@ -53,9 +53,9 @@ MultiValue::MultiValue( const size_t& nvals, const size_t& nder, const size_t& n
 }
 
 void MultiValue::resize( const size_t& nvals, const size_t& nder, const size_t& nmat, const size_t& maxcol, const size_t& nbook ) {
-  values.resize(nvals); nderivatives=nder; derivatives.resize( nvals*nder ); 
+  values.resize(nvals); nderivatives=nder; derivatives.resize( nvals*nder );
   hasderiv.resize(nvals*nder,false); nactive.resize(nvals); active_list.resize(nvals*nder);
-  nmatrix_cols=maxcol; matrix_row_stash.resize(nmat*maxcol,0); matrix_force_stash.resize(nmat*nder,0); matrix_bookeeping.resize(nbook, 0); 
+  nmatrix_cols=maxcol; matrix_row_stash.resize(nmat*maxcol,0); matrix_force_stash.resize(nmat*nder,0); matrix_bookeeping.resize(nbook, 0);
   matrix_row_nderivatives.resize(nmat,0); matrix_row_derivative_indices.resize(nmat); atLeastOneSet=false;
   for(unsigned i=0; i<nmat; ++i) matrix_row_derivative_indices[i].resize( nder );
   // All crap from here onwards
@@ -66,21 +66,21 @@ void MultiValue::resize( const size_t& nvals, const size_t& nder, const size_t& 
 
 void MultiValue::clearAll( const bool& newversion ) {
   if( newversion ) {
-      for(unsigned i=0; i<values.size(); ++i) values[i]=0;
-      // Clear matrix row
-      std::fill( matrix_row_stash.begin(), matrix_row_stash.end(), 0 );
-      // Clear matrix derivative indices
-      std::fill( matrix_row_nderivatives.begin(), matrix_row_nderivatives.end(), 0 ); 
-      // Clear matrix forces
-      std::fill(matrix_force_stash.begin(),matrix_force_stash.end(),0);
-      if( !atLeastOneSet ) return;
-      for(unsigned i=0; i<values.size(); ++i) clearDerivatives(i);
-      atLeastOneSet=false;
+    for(unsigned i=0; i<values.size(); ++i) values[i]=0;
+    // Clear matrix row
+    std::fill( matrix_row_stash.begin(), matrix_row_stash.end(), 0 );
+    // Clear matrix derivative indices
+    std::fill( matrix_row_nderivatives.begin(), matrix_row_nderivatives.end(), 0 );
+    // Clear matrix forces
+    std::fill(matrix_force_stash.begin(),matrix_force_stash.end(),0);
+    if( !atLeastOneSet ) return;
+    for(unsigned i=0; i<values.size(); ++i) clearDerivatives(i);
+    atLeastOneSet=false;
   } else {
-      // This should be deleted once old MultiColvar has gone
-      if( atLeastOneSet && !hasDerivatives.updateComplete() ) hasDerivatives.updateActiveMembers();
-      for(unsigned i=0; i<values.size(); ++i) clear(i);
-      clearTemporyDerivatives(); hasDerivatives.deactivateAll(); atLeastOneSet=false;
+    // This should be deleted once old MultiColvar has gone
+    if( atLeastOneSet && !hasDerivatives.updateComplete() ) hasDerivatives.updateActiveMembers();
+    for(unsigned i=0; i<values.size(); ++i) clear(i);
+    clearTemporyDerivatives(); hasDerivatives.deactivateAll(); atLeastOneSet=false;
   }
 }
 

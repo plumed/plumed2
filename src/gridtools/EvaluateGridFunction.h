@@ -31,14 +31,14 @@ namespace gridtools {
 class EvaluateGridFunction : public function::FunctionTemplateBase {
 private:
 /// Holds the information on the grid
-   GridCoordinatesObject gridobject;
+  GridCoordinatesObject gridobject;
 /// How should we set the value of this function outside the range
-   bool set_zero_outside_range;
+  bool set_zero_outside_range;
 /// How are we doing interpolation
-   enum {spline,linear,floor,ceiling} interpolation_type;
+  enum {spline,linear,floor,ceiling} interpolation_type;
 /// This does the interpolating
-  std::unique_ptr<Interpolator> spline_interpolator; 
-public: 
+  std::unique_ptr<Interpolator> spline_interpolator;
+public:
 /// This is used to setup the input gridobject's bounds with the grid data from values
   void registerKeywords( Keywords& keys ) override ;
   void read( ActionWithArguments* action ) override ;
@@ -83,8 +83,8 @@ const std::vector<double>& EvaluateGridFunction::getGridSpacing() const {
 
 inline
 const GridCoordinatesObject & EvaluateGridFunction::getGridObject() const {
- return gridobject;
-} 
+  return gridobject;
+}
 
 }
 }

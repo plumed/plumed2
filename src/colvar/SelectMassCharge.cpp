@@ -36,8 +36,8 @@ public:
   static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
-  static void calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges, 
-                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, 
+  static void calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
+                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
                            std::vector<Tensor>& virial, const ActionAtomistic* aa );
 };
 
@@ -66,7 +66,7 @@ SelectMassCharge::SelectMassCharge(const ActionOptions&ao):
 }
 
 void SelectMassCharge::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
-  aa->parseAtomList("ATOM",num,t); 
+  aa->parseAtomList("ATOM",num,t);
   if( t.size()==1 ) aa->log.printf("  for atom %d\n",t[0].serial());
   else if( num<0 || t.size()!=0 ) aa->error("Number of specified atoms should be 1");
 }
@@ -75,25 +75,25 @@ unsigned SelectMassCharge::getModeAndSetupValues( ActionWithValue* av ) {
   av->addValueWithDerivatives(); av->setNotPeriodic(); bool constant=true;
   ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>( av ); plumed_assert( aa );
   for(unsigned i=0; i<aa->getNumberOfAtoms(); ++i) {
-      std::pair<std::size_t,std::size_t> p = aa->getValueIndices( aa->getAbsoluteIndex(i) );
-      if( av->getName()=="MASSES" && !aa->masv[p.first]->isConstant() ) constant=false;
-      if( av->getName()=="CHARGES" && !aa->chargev[p.first]->isConstant() ) constant=false;
+    std::pair<std::size_t,std::size_t> p = aa->getValueIndices( aa->getAbsoluteIndex(i) );
+    if( av->getName()=="MASSES" && !aa->masv[p.first]->isConstant() ) constant=false;
+    if( av->getName()=="CHARGES" && !aa->chargev[p.first]->isConstant() ) constant=false;
   }
   if( !constant ) av->error("cannot deal with non-constant " + av->getName() + " values");
-  (av->copyOutput(0))->setConstant(); 
+  (av->copyOutput(0))->setConstant();
   return 0;
 }
 
 // calculator
 void SelectMassCharge::calculate() {
-  std::vector<double> masses(1), charges(1), vals(1); 
+  std::vector<double> masses(1), charges(1), vals(1);
   std::vector<Vector> pos; std::vector<std::vector<Vector> > derivs; std::vector<Tensor> virial;
   calculateCV( 0, masses, charges, pos, vals, derivs, virial, this ); setValue( vals[0] );
 }
 
-void SelectMassCharge::calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges, 
-                            const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                            std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
+void SelectMassCharge::calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
+                                    const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
+                                    std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
   if( aa->getName().find("MASSES")!=std::string::npos ) vals[0]=masses[0];
   else if( aa->chargesWereSet ) vals[0]=charges[0];
 }

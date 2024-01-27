@@ -88,8 +88,8 @@ WhamWeights::WhamWeights( const ActionOptions& ao ) :
   ActionShortcut(ao)
 {
   // Input for collection of weights for WHAM
-  std::string bias; parse("BIAS",bias); 
-  std::string stride; parse("STRIDE",stride); 
+  std::string bias; parse("BIAS",bias);
+  std::string stride; parse("STRIDE",stride);
   // Input for GATHER_REPLICAS
   readInputLine( getShortcutLabel() + "_gather: GATHER_REPLICAS ARG=" + bias );
   // Put all the replicas in a single vector

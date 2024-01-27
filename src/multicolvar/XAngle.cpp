@@ -43,16 +43,16 @@ void XAngle::registerKeywords(Keywords& keys) {
 }
 
 XAngle::XAngle(const ActionOptions& ao):
-Action(ao),
-ActionShortcut(ao)
+  Action(ao),
+  ActionShortcut(ao)
 {
   // Create distances
   std::string dline = getShortcutLabel() + ": DISTANCE_VECTOR COMPONENTS";
-  for(unsigned i=1;;++i) {
-      std::string atstring; parseNumbered("ATOMS",i,atstring);
-      if( atstring.length()==0 ) break;
-      std::string num; Tools::convert( i, num );
-      dline += " ATOMS" + num + "=" + atstring;
+  for(unsigned i=1;; ++i) {
+    std::string atstring; parseNumbered("ATOMS",i,atstring);
+    if( atstring.length()==0 ) break;
+    std::string num; Tools::convert( i, num );
+    dline += " ATOMS" + num + "=" + atstring;
   }
   log.printf("Action DISTANCE\n");
   log.printf("  with label %s \n", getShortcutLabel().c_str() );
@@ -66,7 +66,7 @@ ActionShortcut(ao)
   // Now compute the angles with matheval
   if( getName()=="XANGLES" ) readInputLine( getShortcutLabel() + "_ang: MATHEVAL FUNC=acos(x) PERIODIC=NO ARG1=" + getShortcutLabel() + "_norm_x");
   if( getName()=="YANGLES" ) readInputLine( getShortcutLabel() + "_ang: MATHEVAL FUNC=acos(x) PERIODIC=NO ARG1=" + getShortcutLabel() + "_norm_y");
-  if( getName()=="ZANGLES" ) readInputLine( getShortcutLabel() + "_ang: MATHEVAL FUNC=acos(x) PERIODIC=NO ARG1=" + getShortcutLabel() + "_norm_z");   
+  if( getName()=="ZANGLES" ) readInputLine( getShortcutLabel() + "_ang: MATHEVAL FUNC=acos(x) PERIODIC=NO ARG1=" + getShortcutLabel() + "_norm_z");
   // Add shortcuts to label
   MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel() + "_ang", "", this );
 }

@@ -29,15 +29,15 @@
 namespace PLMD {
 namespace contour {
 
-//+PLUMEDOC GRIDANALYSIS DUMPCONTOUR 
+//+PLUMEDOC GRIDANALYSIS DUMPCONTOUR
 /*
 
 */
 //+ENDPLUMEDOC
 
-class DumpContour : 
-public ActionWithArguments,
-public ActionPilot {
+class DumpContour :
+  public ActionWithArguments,
+  public ActionPilot {
 private:
   std::string fmt, filename;
   std::vector<unsigned> preps;
@@ -55,7 +55,7 @@ PLUMED_REGISTER_ACTION(DumpContour,"DUMPCONTOUR")
 
 void DumpContour::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
-  ActionPilot::registerKeywords( keys ); 
+  ActionPilot::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
   keys.add("compulsory","STRIDE","1","the frequency with which the grid should be output to the file.");
   keys.add("compulsory","FILE","density","the file on which to write the grid.");
@@ -94,15 +94,15 @@ DumpContour::DumpContour(const ActionOptions&ao):
 
 void DumpContour::update() {
   if( !output_for_all_replicas ) {
-      bool found=false; unsigned myrep=plumed.multi_sim_comm.Get_rank();
-      for(unsigned i=0; i<preps.size(); ++i) {
-        if( myrep==preps[i] ) { found=true; break; }
-      }
-      if( !found ) return;
+    bool found=false; unsigned myrep=plumed.multi_sim_comm.Get_rank();
+    for(unsigned i=0; i<preps.size(); ++i) {
+      if( myrep==preps[i] ) { found=true; break; }
+    }
+    if( !found ) return;
   }
   OFile ofile; ofile.link(*this);
-  ofile.setBackupString("analysis"); 
-  ofile.open( filename ); 
+  ofile.setBackupString("analysis");
+  ofile.open( filename );
 
   FindContour* fc=dynamic_cast<FindContour*>( getPntrToArgument(0)->getPntrToAction() );
   unsigned maxp = fc->active_cells.size(), ncomp = fc->getNumberOfComponents();
@@ -110,10 +110,10 @@ void DumpContour::update() {
 
   ofile.printf("%d\n", ntasks ); ofile.printf("Points found on isocontour\n");
   for(unsigned i=0; i<maxp; ++i) {
-      if( fc->active_cells[i]==0 ) continue ;
-      const char* defname="X"; const char* name=defname; ofile.printf("%s", name);
-      for(unsigned j=0; j<ncomp; ++j ) ofile.printf((" " + fmt).c_str(), (fc->copyOutput(j))->get(i)  );
-      ofile.printf("\n"); 
+    if( fc->active_cells[i]==0 ) continue ;
+    const char* defname="X"; const char* name=defname; ofile.printf("%s", name);
+    for(unsigned j=0; j<ncomp; ++j ) ofile.printf((" " + fmt).c_str(), (fc->copyOutput(j))->get(i)  );
+    ofile.printf("\n");
   }
 }
 

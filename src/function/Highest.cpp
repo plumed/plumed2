@@ -47,7 +47,7 @@ This function can be used to find the lowest colvar by magnitude in a set.
 //+ENDPLUMEDOC
 
 class Highest : public FunctionTemplateBase {
-private: 
+private:
   bool min, scalar_out;
 public:
   void registerKeywords( Keywords& keys ) override {}
@@ -68,9 +68,9 @@ PLUMED_REGISTER_ACTION(VectorHighest,"HIGHEST_VECTOR")
 PLUMED_REGISTER_ACTION(VectorHighest,"LOWEST_VECTOR")
 
 void Highest::read( ActionWithArguments* action ) {
-  min=action->getName().find("LOWEST")!=std::string::npos; if( !min ) plumed_assert( action->getName().find("HIGHEST")!=std::string::npos ); 
+  min=action->getName().find("LOWEST")!=std::string::npos; if( !min ) plumed_assert( action->getName().find("HIGHEST")!=std::string::npos );
   for(unsigned i=0; i<action->getNumberOfArguments(); ++i) {
-      if( action->getPntrToArgument(i)->isPeriodic() ) action->error("Cannot sort periodic values (check argument "+ action->getPntrToArgument(i)->getName() +")");
+    if( action->getPntrToArgument(i)->isPeriodic() ) action->error("Cannot sort periodic values (check argument "+ action->getPntrToArgument(i)->getName() +")");
   }
   scalar_out = action->getNumberOfArguments()==1;
   if( scalar_out && action->getPntrToArgument(0)->getRank()==0 ) action->error("sorting a single scalar is trivial");
@@ -78,11 +78,11 @@ void Highest::read( ActionWithArguments* action ) {
 
 void Highest::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
   if( min ) {
-      vals[0] = *std::min_element(args.begin(), args.end());
-      derivatives(0,std::min_element(args.begin(), args.end()) - args.begin()) = 1;
-  } else { 
-      vals[0] = *std::max_element(args.begin(), args.end());
-      derivatives(0,std::max_element(args.begin(), args.end()) - args.begin()) = 1; 
+    vals[0] = *std::min_element(args.begin(), args.end());
+    derivatives(0,std::min_element(args.begin(), args.end()) - args.begin()) = 1;
+  } else {
+    vals[0] = *std::max_element(args.begin(), args.end());
+    derivatives(0,std::max_element(args.begin(), args.end()) - args.begin()) = 1;
   }
 }
 

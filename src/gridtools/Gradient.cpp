@@ -30,7 +30,7 @@ public:
   static void registerKeywords(Keywords& keys);
   explicit Gradient(const ActionOptions&);
 };
-    
+
 PLUMED_REGISTER_ACTION(Gradient,"GRADIENT")
 
 void Gradient::registerKeywords( Keywords& keys ) {
@@ -44,17 +44,17 @@ void Gradient::registerKeywords( Keywords& keys ) {
 }
 
 Gradient::Gradient(const ActionOptions&ao):
-Action(ao),
-ActionShortcut(ao)
+  Action(ao),
+  ActionShortcut(ao)
 {
   std::string atom_str; parse("ATOMS",atom_str);
   std::string dir; parse("DIR",dir);
   std::string origin_str; parse("ORIGIN",origin_str);
-  std::string nbin_str; parse("NBINS",nbin_str); 
+  std::string nbin_str; parse("NBINS",nbin_str);
   std::string band_str; parse("SIGMA",band_str);
   std::string kernel_str; parse("KERNEL",kernel_str);
   // First get positions of all atoms relative to origin
-  readInputLine( getShortcutLabel() + "_dist: DISTANCES ORIGIN=" + origin_str + " ATOMS=" + atom_str + " COMPONENTS"); 
+  readInputLine( getShortcutLabel() + "_dist: DISTANCES ORIGIN=" + origin_str + " ATOMS=" + atom_str + " COMPONENTS");
   // Now constrcut the histograms
   if( dir=="x" || dir=="xy" || dir=="xz" || dir=="xyz" ) {
     readInputLine( getShortcutLabel() + "_xhisto: KDE ARG=" + getShortcutLabel() + "_dist.x GRID_BIN=" + nbin_str + " KERNEL=" + kernel_str + " BANDWIDTH=" + band_str );
@@ -71,7 +71,7 @@ ActionShortcut(ao)
     readInputLine( thislab + ": SUM_GRID ARG=" + thislab + "_x2 PERIODIC=NO");
   }
   if( dir=="z" || dir=="yz" || dir=="xz" || dir=="xyz" ) {
-        readInputLine( getShortcutLabel() + "_zhisto: KDE ARG=" + getShortcutLabel() + "_dist.z GRID_BIN=" + nbin_str + " KERNEL=" + kernel_str + " BANDWIDTH=" + band_str );
+    readInputLine( getShortcutLabel() + "_zhisto: KDE ARG=" + getShortcutLabel() + "_dist.z GRID_BIN=" + nbin_str + " KERNEL=" + kernel_str + " BANDWIDTH=" + band_str );
     std::string thislab = getShortcutLabel() + "_zgrad"; if( dir=="z" ) thislab = getShortcutLabel();
     readInputLine( thislab + "_shift: INTERPOLATE_GRID ARG=" + getShortcutLabel() + "_zhisto INTERPOLATION_TYPE=ceiling MIDPOINTS");
     readInputLine( thislab + "_x2: CUSTOM ARG=" + getShortcutLabel() + "_zhisto," + thislab + "_shift FUNC=(x-y)*(x-y) PERIODIC=NO");

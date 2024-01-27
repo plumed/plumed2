@@ -49,8 +49,8 @@ void TorsionsMatrix::registerKeywords( Keywords& keys ) {
 }
 
 TorsionsMatrix::TorsionsMatrix(const ActionOptions&ao):
-Action(ao),
-ActionWithMatrix(ao)
+  Action(ao),
+  ActionWithMatrix(ao)
 {
   if( getNumberOfArguments()!=2 ) error("should be two arguments to this action, a matrix and a vector");
   if( getPntrToArgument(0)->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) error("first argument to this action should be a matrix");
@@ -71,7 +71,7 @@ ActionWithMatrix(ao)
     if ( (i+1) % 25 == 0 ) log.printf("  \n");
     log.printf("  %d", atoms_b[i].serial()); atoms_a.push_back( atoms_b[i] );
   }
-  log.printf("\n"); requestAtoms( atoms_a, false ); 
+  log.printf("\n"); requestAtoms( atoms_a, false );
 
   std::vector<unsigned> shape(2); shape[0]=getPntrToArgument(0)->getShape()[0]; shape[1]=getPntrToArgument(1)->getShape()[1];
   addValue( shape ); setPeriodic("-pi","pi"); nderivatives = buildArgumentStore(0) + 3*getNumberOfAtoms() + 9;
@@ -85,7 +85,7 @@ unsigned TorsionsMatrix::getNumberOfDerivatives() {
 }
 
 void TorsionsMatrix::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {
-  unsigned start_n = getPntrToArgument(0)->getShape()[0], size_v = getPntrToArgument(1)->getShape()[1]; 
+  unsigned start_n = getPntrToArgument(0)->getShape()[0], size_v = getPntrToArgument(1)->getShape()[1];
   if( indices.size()!=size_v+1 ) indices.resize( size_v+1 );
   for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + i;
   myvals.setSplitIndex( size_v + 1 );
@@ -95,15 +95,15 @@ void TorsionsMatrix::performTask( const std::string& controller, const unsigned&
   unsigned ostrn = getConstPntrToComponent(0)->getPositionInStream(), ind2=index2;
   if( index2>=getPntrToArgument(0)->getShape()[0] ) ind2 = index2 - getPntrToArgument(0)->getShape()[0];
 
-  Vector v1, v2, dv1, dv2, dconn; 
+  Vector v1, v2, dv1, dv2, dconn;
   // Compute the distance connecting the two centers
   Vector conn=pbcDistance( getPosition(index1), getPosition(index2) );
   if( conn.modulo2()<epsilon ) return;
 
   // Get the two vectors
-  for(unsigned i=0; i<3; ++i) { 
-      v1[i] = getElementOfMatrixArgument( 0, index1, i, myvals );
-      v2[i] = getElementOfMatrixArgument( 1, i, ind2, myvals );
+  for(unsigned i=0; i<3; ++i) {
+    v1[i] = getElementOfMatrixArgument( 0, index1, i, myvals );
+    v2[i] = getElementOfMatrixArgument( 1, i, ind2, myvals );
   }
   // Evaluate angle
   Torsion t; double angle = t.compute( v1, conn, v2, dv1, dconn, dv2 );
@@ -113,14 +113,14 @@ void TorsionsMatrix::performTask( const std::string& controller, const unsigned&
 
   // Add the derivatives on the matrices
   for(unsigned i=0; i<3; ++i) {
-      addDerivativeOnMatrixArgument( stored_matrix1, 0, 0, index1, i, dv1[i], myvals );
-      addDerivativeOnMatrixArgument( stored_matrix2, 0, 1, i, ind2, dv2[i], myvals );
+    addDerivativeOnMatrixArgument( stored_matrix1, 0, 0, index1, i, dv1[i], myvals );
+    addDerivativeOnMatrixArgument( stored_matrix2, 0, 1, i, ind2, dv2[i], myvals );
   }
   // And derivatives on positions
-  unsigned narg_derivatives = getPntrToArgument(0)->getNumberOfValues() + getPntrToArgument(1)->getNumberOfValues(); 
+  unsigned narg_derivatives = getPntrToArgument(0)->getNumberOfValues() + getPntrToArgument(1)->getNumberOfValues();
   for(unsigned i=0; i<3; ++i) {
-      myvals.addDerivative( ostrn, narg_derivatives + 3*index1+i, -dconn[i] ); myvals.addDerivative( ostrn, narg_derivatives + 3*index2+i, dconn[i] );
-      myvals.updateIndex( ostrn, narg_derivatives + 3*index1+i ); myvals.updateIndex( ostrn, narg_derivatives + 3*index2+i );
+    myvals.addDerivative( ostrn, narg_derivatives + 3*index1+i, -dconn[i] ); myvals.addDerivative( ostrn, narg_derivatives + 3*index2+i, dconn[i] );
+    myvals.updateIndex( ostrn, narg_derivatives + 3*index1+i ); myvals.updateIndex( ostrn, narg_derivatives + 3*index2+i );
   }
   //And virial
   Tensor vir( -extProduct( conn, dconn ) ); unsigned virbase = narg_derivatives + 3*getNumberOfAtoms();
@@ -135,13 +135,13 @@ void TorsionsMatrix::runEndOfRowJobs( const unsigned& ival, const std::vector<un
   unsigned narg_derivatives = getPntrToArgument(0)->getNumberOfValues() + getPntrToArgument(1)->getNumberOfValues();
   std::vector<unsigned>& matrix_indices( myvals.getMatrixRowDerivativeIndices( nmat ) ); unsigned ntwo_atoms = myvals.getSplitIndex();
   for(unsigned j=0; j<3; ++j) {
-      matrix_indices[nmat_ind] = mat1s + j; nmat_ind++;
-      matrix_indices[nmat_ind] = narg_derivatives + mat1s + j; nmat_ind++;
-      for(unsigned i=1; i<ntwo_atoms; ++i) {
-          unsigned ind2 = indices[i]; if( ind2>=getPntrToArgument(0)->getShape()[0] ) ind2 = indices[i] - getPntrToArgument(0)->getShape()[0];
-          matrix_indices[nmat_ind] = arg_deriv_starts[1] + j*ss + ind2; nmat_ind++;
-          matrix_indices[nmat_ind] = narg_derivatives + 3*indices[i] + j; nmat_ind++;
-      }
+    matrix_indices[nmat_ind] = mat1s + j; nmat_ind++;
+    matrix_indices[nmat_ind] = narg_derivatives + mat1s + j; nmat_ind++;
+    for(unsigned i=1; i<ntwo_atoms; ++i) {
+      unsigned ind2 = indices[i]; if( ind2>=getPntrToArgument(0)->getShape()[0] ) ind2 = indices[i] - getPntrToArgument(0)->getShape()[0];
+      matrix_indices[nmat_ind] = arg_deriv_starts[1] + j*ss + ind2; nmat_ind++;
+      matrix_indices[nmat_ind] = narg_derivatives + 3*indices[i] + j; nmat_ind++;
+    }
   }
   unsigned base = narg_derivatives + 3*getNumberOfAtoms(); for(unsigned j=0; j<9; ++j) { matrix_indices[nmat_ind] = base + j; nmat_ind++; }
   myvals.setNumberOfMatrixRowDerivatives( nmat, nmat_ind );

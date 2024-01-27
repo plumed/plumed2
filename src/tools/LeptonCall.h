@@ -29,15 +29,15 @@ namespace PLMD {
 
 /// \ingroup TOOLBOX
 class LeptonCall {
-private: 
+private:
   unsigned nargs;
   bool allow_extra_args;
 /// Lepton expression.
-/// \warning Since lepton::CompiledExpression is mutable, a vector is necessary for multithreading!  
+/// \warning Since lepton::CompiledExpression is mutable, a vector is necessary for multithreading!
   std::vector<lepton::CompiledExpression> expression;
 /// Lepton expression for derivative
 /// \warning Since lepton::CompiledExpression is mutable, a vector is necessary for multithreading!
-  std::vector<std::vector<lepton::CompiledExpression> > expression_deriv;  
+  std::vector<std::vector<lepton::CompiledExpression> > expression_deriv;
   std::vector<double*> lepton_ref;
   std::vector<double*> lepton_ref_deriv;
 public:
@@ -47,7 +47,7 @@ public:
   double evaluateDeriv( const unsigned& ider, const std::vector<double>& args ) const ;
 };
 
-inline 
+inline
 unsigned LeptonCall::getNumberOfArguments() const {
   return nargs;
 }

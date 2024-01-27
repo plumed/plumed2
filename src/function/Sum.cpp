@@ -41,7 +41,7 @@ PLUMED_REGISTER_ACTION(VectorSum,"MEAN_VECTOR")
 void Sum::registerKeywords( Keywords& keys ) {
   keys.use("PERIODIC");
 }
- 
+
 void Sum::read( ActionWithArguments* action ) {
   if( action->getNumberOfArguments()!=1 ) action->error("should only be one argument to sum actions");
 }

@@ -31,7 +31,7 @@ public:
   explicit Determinant(const ActionOptions&ao);
 };
 
-PLUMED_REGISTER_ACTION(Determinant,"DETERMINANT") 
+PLUMED_REGISTER_ACTION(Determinant,"DETERMINANT")
 
 void Determinant::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords(keys);
@@ -39,12 +39,12 @@ void Determinant::registerKeywords( Keywords& keys ) {
 }
 
 Determinant::Determinant( const ActionOptions& ao):
-Action(ao),
-ActionShortcut(ao)
-{ 
+  Action(ao),
+  ActionShortcut(ao)
+{
   std::string arg; parse("ARG",arg);
   // Compose a vector from the args
-  readInputLine( getShortcutLabel() + "_diag: DIAGONALIZE ARG=" + arg + " VECTORS=all"); 
+  readInputLine( getShortcutLabel() + "_diag: DIAGONALIZE ARG=" + arg + " VECTORS=all");
   // Not sure about the regexp here - check with matrix with more than 10 rows
   readInputLine( getShortcutLabel() + ": PRODUCT ARG=(" + getShortcutLabel() + "_diag\.vals-[0-9])");
 }

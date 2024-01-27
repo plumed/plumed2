@@ -76,8 +76,8 @@ typedef FunctionOfVector<Sort> VectorSort;
 PLUMED_REGISTER_ACTION(VectorSort,"SORT_VECTOR")
 
 void Sort::registerKeywords(Keywords& keys) {
-   keys.setComponentsIntroduction("The names of the components in this action will be customized in accordance with the contents of the input file. "
-                                  "The largest value is called label.1th, the second largest label.2th, the third label.3th and so on"); 
+  keys.setComponentsIntroduction("The names of the components in this action will be customized in accordance with the contents of the input file. "
+                                 "The largest value is called label.1th, the second largest label.2th, the third label.3th and so on");
 }
 
 
@@ -95,10 +95,10 @@ std::vector<std::string> Sort::getComponentsPerLabel() const {
     Tools::convert(i+1,num); comp.push_back( num );
   }
   return comp;
-} 
-  
+}
+
 void Sort::setPeriodicityForOutputs( ActionWithValue* action ) {
-  for(unsigned i=0;i<nargs;++i) { std::string num; Tools::convert(i+1,num); action->componentIsNotPeriodic( num ); }
+  for(unsigned i=0; i<nargs; ++i) { std::string num; Tools::convert(i+1,num); action->componentIsNotPeriodic( num ); }
 }
 
 void Sort::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {

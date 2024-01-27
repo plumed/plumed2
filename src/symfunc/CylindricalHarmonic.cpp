@@ -48,7 +48,7 @@ private:
 public:
   void registerKeywords( Keywords& keys ) override;
   void read( ActionWithArguments* action ) override;
-  void setPeriodicityForOutputs( ActionWithValue* action ) override; 
+  void setPeriodicityForOutputs( ActionWithValue* action ) override;
   void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
 };
 
@@ -74,13 +74,13 @@ void CylindricalHarmonic::setPeriodicityForOutputs( ActionWithValue* action ) {
 }
 
 void CylindricalHarmonic::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
-  double dlen2 = args[0]*args[0] + args[1]*args[1]; double dlen = sqrt( dlen2 ); double dlen3 = dlen2*dlen; 
+  double dlen2 = args[0]*args[0] + args[1]*args[1]; double dlen = sqrt( dlen2 ); double dlen3 = dlen2*dlen;
   std::complex<double> com1( args[0]/dlen,args[1]/dlen ); double weight=1; if( args.size()==3 ) weight=args[2];
   std::complex<double> ppp = pow( com1, tmom-1 ), ii( 0, 1 ); double real_z = real( ppp*com1 ), imag_z = imag( ppp*com1 );
   std::complex<double> dp_x = static_cast<double>(tmom)*ppp*( (1.0/dlen)-(args[0]*args[0])/dlen3-ii*(args[0]*args[1])/dlen3 );
   std::complex<double> dp_y = static_cast<double>(tmom)*ppp*( ii*(1.0/dlen)-(args[0]*args[1])/dlen3-ii*(args[1]*args[1])/dlen3 );
-  vals[0] = weight*real_z; derivatives(0,0) = weight*real(dp_x); derivatives(0,1) = weight*real(dp_y); 
-  vals[1] = weight*imag_z; derivatives(1,0) = weight*imag(dp_x); derivatives(1,1) = weight*imag(dp_y); 
+  vals[0] = weight*real_z; derivatives(0,0) = weight*real(dp_x); derivatives(0,1) = weight*real(dp_y);
+  vals[1] = weight*imag_z; derivatives(1,0) = weight*imag(dp_x); derivatives(1,1) = weight*imag(dp_y);
   if( args.size()==3 ) { derivatives(0,2) = real_z; derivatives(1,2) = imag_z; }
 }
 

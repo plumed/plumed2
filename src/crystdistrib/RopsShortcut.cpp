@@ -27,13 +27,13 @@
 namespace PLMD {
 namespace crystdistrib {
 
-//+PLUMEDOC COLVAR ROPS 
+//+PLUMEDOC COLVAR ROPS
 /*
 
 */
 //+ENDPLUMEDOC
 
-class RopsShortcut : public ActionShortcut{
+class RopsShortcut : public ActionShortcut {
 public:
   static void registerKeywords( Keywords& keys );
   explicit RopsShortcut(const ActionOptions&);
@@ -67,61 +67,61 @@ RopsShortcut::RopsShortcut(const ActionOptions&ao):
   ActionShortcut(ao)
 {
   // Open a file and read in the kernels
-  double h_dops,h_rops; std::string kfunc, kfunc_dops,kfunc_rops,fname_dops,fname_rops; 
+  double h_dops,h_rops; std::string kfunc, kfunc_dops,kfunc_rops,fname_dops,fname_rops;
   parse("KERNELFILE_DOPS",fname_dops); parse("KERNELFILE_ROPS",fname_rops); IFile ifile_dops, ifile_rops; ifile_dops.open(fname_dops); ifile_rops.open(fname_rops);
   for(unsigned k=0;; ++k) {
-      if( !ifile_dops.scanField("height",h_dops) || !ifile_rops.scanField("height",h_rops) ) break;//checks eof
-      std::string ktype_dops, ktype_rops;  ifile_dops.scanField("kerneltype",ktype_dops); ifile_rops.scanField("kerneltype",ktype_rops); 
-      if( ktype_dops!="gaussian" ) error("cannot process kernels of type " + ktype_dops );//straightup error 
-      if( ktype_rops!="gaussian" ) error("cannot process kernels of type " + ktype_rops );
+    if( !ifile_dops.scanField("height",h_dops) || !ifile_rops.scanField("height",h_rops) ) break;//checks eof
+    std::string ktype_dops, ktype_rops;  ifile_dops.scanField("kerneltype",ktype_dops); ifile_rops.scanField("kerneltype",ktype_rops);
+    if( ktype_dops!="gaussian" ) error("cannot process kernels of type " + ktype_dops );//straightup error
+    if( ktype_rops!="gaussian" ) error("cannot process kernels of type " + ktype_rops );
 
-      double mu_dops,mu_w, mu_i, mu_j, mu_k; std::string hstr_dops, hstr_rops, smu_dops,smu_w, smu_i, smu_j, smu_k, sigmastr,kappastr; 
-
-
-      Tools::convert( h_dops, hstr_dops );
-      Tools::convert( h_rops, hstr_rops );
-
-      ifile_dops.scanField("mu",mu_dops); Tools::convert( mu_dops, smu_dops ); 
-      ifile_rops.scanField("mu_w",mu_w); Tools::convert( mu_w, smu_w ); 
-      ifile_rops.scanField("mu_i",mu_i); Tools::convert( mu_i, smu_i ); 
-      ifile_rops.scanField("mu_j",mu_j); Tools::convert( mu_j, smu_j ); 
-      ifile_rops.scanField("mu_k",mu_k); Tools::convert( mu_k, smu_k ); 
-     
-
-      double sigma,kappa;
-      ifile_dops.scanField("sigma",sigma); Tools::convert( sigma, sigmastr ); 
-      ifile_rops.scanField("kappa",kappa); Tools::convert( kappa, kappastr ); 
+    double mu_dops,mu_w, mu_i, mu_j, mu_k; std::string hstr_dops, hstr_rops, smu_dops,smu_w, smu_i, smu_j, smu_k, sigmastr,kappastr;
 
 
+    Tools::convert( h_dops, hstr_dops );
+    Tools::convert( h_rops, hstr_rops );
 
-      ifile_dops.scanField(); /*if( k==0 )*/ kfunc_dops =  hstr_dops; //else kfunc_dops += "+" + hstr; 
-      ifile_rops.scanField(); /*if( k==0 )*/ kfunc_rops =  hstr_rops; //else kfunc_rops += "+" + hstr; 
+    ifile_dops.scanField("mu",mu_dops); Tools::convert( mu_dops, smu_dops );
+    ifile_rops.scanField("mu_w",mu_w); Tools::convert( mu_w, smu_w );
+    ifile_rops.scanField("mu_i",mu_i); Tools::convert( mu_i, smu_i );
+    ifile_rops.scanField("mu_j",mu_j); Tools::convert( mu_j, smu_j );
+    ifile_rops.scanField("mu_k",mu_k); Tools::convert( mu_k, smu_k );
 
-      kfunc_rops += "*exp(" + kappastr + "*(w*" + smu_w + "+i*" + smu_i + "+j*" + smu_j + "+k*" + smu_k + ")^2)"; 
-      kfunc_dops += "*exp(-(x-" + smu_dops +")^2/" + "(2*" + sigmastr +"*" +sigmastr + "))"; 
-      if (k==0) kfunc = kfunc_dops + "*" + kfunc_rops; else kfunc+= "+" + kfunc_dops + "*" + kfunc_rops; 
-}
-  std::string sp_str, specA, specB, grpinfo; 
+
+    double sigma,kappa;
+    ifile_dops.scanField("sigma",sigma); Tools::convert( sigma, sigmastr );
+    ifile_rops.scanField("kappa",kappa); Tools::convert( kappa, kappastr );
+
+
+
+    ifile_dops.scanField(); /*if( k==0 )*/ kfunc_dops =  hstr_dops; //else kfunc_dops += "+" + hstr;
+    ifile_rops.scanField(); /*if( k==0 )*/ kfunc_rops =  hstr_rops; //else kfunc_rops += "+" + hstr;
+
+    kfunc_rops += "*exp(" + kappastr + "*(w*" + smu_w + "+i*" + smu_i + "+j*" + smu_j + "+k*" + smu_k + ")^2)";
+    kfunc_dops += "*exp(-(x-" + smu_dops +")^2/" + "(2*" + sigmastr +"*" +sigmastr + "))";
+    if (k==0) kfunc = kfunc_dops + "*" + kfunc_rops; else kfunc+= "+" + kfunc_dops + "*" + kfunc_rops;
+  }
+  std::string sp_str, specA, specB, grpinfo;
   double cutoff;
   parse("SPECIES",sp_str); parse("SPECIESA",specA); parse("SPECIESB",specB); parse("CUTOFF",cutoff);
   if( sp_str.length()>0 ) {
-      grpinfo="GROUP=" + sp_str;
-  } else {//not sure how to use this 
-      if( specA.length()==0 || specB.length()==0 ) error("no atoms were specified in input use either SPECIES or SPECIESA + SPECIESB");
-      grpinfo="GROUPA=" + specA + " GROUPB=" + specB;
+    grpinfo="GROUP=" + sp_str;
+  } else {//not sure how to use this
+    if( specA.length()==0 || specB.length()==0 ) error("no atoms were specified in input use either SPECIES or SPECIESA + SPECIESB");
+    grpinfo="GROUPA=" + specA + " GROUPB=" + specB;
   }
-  std::string cutstr; Tools::convert( cutoff, cutstr ); 
+  std::string cutstr; Tools::convert( cutoff, cutstr );
   // Setup the contact matrix
 //  std::string switchstr; parse("SWITCH",switchstr);
   readInputLine( getShortcutLabel() + "_cmat: DISTANCE_MATRIX  " + grpinfo + " CUTOFF=" + cutstr);
-   
+
   if( specA.length()==0 ) {
-      std::string quatstr; parse("QUATERNIONS",quatstr);
-      readInputLine( getShortcutLabel() + "_quatprod: QUATERNION_PRODUCT_MATRIX ARG=" + quatstr + ".*," + quatstr + ".*" );
+    std::string quatstr; parse("QUATERNIONS",quatstr);
+    readInputLine( getShortcutLabel() + "_quatprod: QUATERNION_PRODUCT_MATRIX ARG=" + quatstr + ".*," + quatstr + ".*" );
   }  else {
-      plumed_error();
+    plumed_error();
   }
-  // 
+  //
   readInputLine( getShortcutLabel() + "_kfunc: CUSTOM ARG=" + getShortcutLabel() + "_cmat.w,"+ getShortcutLabel() + "_quatprod.* " + "VAR=x,w,i,j,k PERIODIC=NO FUNC=" + kfunc );
   // Element wise product of cmat and kfunc
 //  readInputLine( getShortcutLabel() + "_kdmat: CUSTOM ARG=" + getShortcutLabel() + "_cmat.w," + getShortcutLabel() + "_kfunc FUNC=x*y PERIODIC=NO");

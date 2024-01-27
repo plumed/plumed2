@@ -108,7 +108,7 @@ std::vector<std::string> Moments::getComponentsPerLabel() const {
 }
 
 void Moments::setPeriodicityForOutputs( ActionWithValue* action ) {
-  for(unsigned i=0;i<powers.size();++i) { std::string num; Tools::convert(powers[i],num); action->componentIsNotPeriodic("moment-" + num); }
+  for(unsigned i=0; i<powers.size(); ++i) { std::string num; Tools::convert(powers[i],num); action->componentIsNotPeriodic("moment-" + num); }
 }
 
 void Moments::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
@@ -130,7 +130,7 @@ void Moments::calc( const ActionWithArguments* action, const std::vector<double>
     dev1*=inorm; vals[npow] = 0; double prefactor = powers[npow]*inorm;
     for(unsigned i=0; i<args.size(); ++i) {
       double tmp=arg0->difference( mean, args[i] ); vals[npow] += inorm*pow( tmp, powers[npow] );
-      derivatives(npow,i) = prefactor*(pow( tmp, powers[npow] - 1 ) - dev1); 
+      derivatives(npow,i) = prefactor*(pow( tmp, powers[npow] - 1 ) - dev1);
     }
   }
 }

@@ -35,10 +35,10 @@ class ActionWithVector:
   public ActionWithValue,
   public ActionWithArguments
 {
-friend class Value;
+  friend class Value;
 private:
 /// Is the calculation to be done in serial
-  bool serial;  
+  bool serial;
 /// The buffer that we use (we keep a copy here to avoid resizing)
   std::vector<double> buffer;
 /// The list of active tasks
@@ -51,7 +51,7 @@ private:
   std::vector<ActionWithVector*> task_control_list;
 /// Work backwards through the chain to find an action that has either stored arguments or derivatives
   ActionWithVector* getActionWithDerivatives( ActionWithVector* depaction );
-/// Check if there are any grids in the stream 
+/// Check if there are any grids in the stream
   bool checkForGrids(unsigned& nder) const ;
 ///  Run the task
   void runTask( const unsigned& taskno, MultiValue& myvals ) const ;
@@ -107,7 +107,7 @@ protected:
 /// This sets up the arguments at the start of the calculation
   unsigned buildArgumentStore( const unsigned& argstart );
 /// Run all the tasks in the list
-  void runAllTasks();  
+  void runAllTasks();
 /// Accumulate the forces from the Values
   bool checkForForces();
 public:
@@ -118,7 +118,7 @@ public:
   void unlockRequests() override;
   virtual void prepare() override;
   void retrieveAtoms( const bool& force=false ) override;
-  void calculateNumericalDerivatives(ActionWithValue* av) override; 
+  void calculateNumericalDerivatives(ActionWithValue* av) override;
 /// Are we running this command in a chain
   bool actionInChain() const ;
 /// This is overwritten within ActionWithMatrix and is used to build the chain of just matrix actions
@@ -157,7 +157,7 @@ public:
 /// Gather the data from all the OpenMP threads
   virtual void gatherThreads( const unsigned& nt, const unsigned& bufsize, const std::vector<double>& omp_buffer, std::vector<double>& buffer, MultiValue& myvals );
 /// Can be used to reduce the number of tasks that are performed when you use an ation from elsewhere
-  virtual void switchTaskReduction( const bool& task_reduction, ActionWithVector* aselect ) {} 
+  virtual void switchTaskReduction( const bool& task_reduction, ActionWithVector* aselect ) {}
 /// Gather all the data from the MPI processes
   virtual void gatherProcesses( std::vector<double>& buffer );
 /// Gather the values that we intend to store in the buffer
@@ -182,7 +182,7 @@ bool ActionWithVector::actionInChain() const {
 inline
 bool ActionWithVector::runInSerial() const {
   return serial;
-} 
+}
 
 }
 

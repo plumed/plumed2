@@ -49,20 +49,20 @@ void QuaternionProductMatrix::registerKeywords( Keywords& keys ) {
 }
 
 QuaternionProductMatrix::QuaternionProductMatrix(const ActionOptions&ao):
-Action(ao),
-ActionWithMatrix(ao)
+  Action(ao),
+  ActionWithMatrix(ao)
 {
   if( getNumberOfArguments()!=8 ) error("should be eight arguments to this action.  Four quaternions for each set of atoms.  You can repeat actions");
   unsigned nquat = getPntrToArgument(0)->getNumberOfValues();
   for(unsigned i=0; i<8; ++i) {
-      Value* myarg=getPntrToArgument(i); if( i==4 ) nquat = getPntrToArgument(i)->getNumberOfValues();
-      if( myarg->getRank()!=1 ) error("all arguments to this action should be vectors");
-      if( (myarg->getPntrToAction())->getName()!="QUATERNION_VECTOR" ) error("all arguments to this action should be quaternions");
-      std::string mylab=getPntrToArgument(i)->getName(); std::size_t dot=mylab.find_first_of(".");
-      if( (i==0 || i==4) && mylab.substr(dot+1)!="w" ) error("quaternion arguments are in wrong order");
-      if( (i==1 || i==5) && mylab.substr(dot+1)!="i" ) error("quaternion arguments are in wrong order");
-      if( (i==2 || i==6) && mylab.substr(dot+1)!="j" ) error("quaternion arguments are in wrong order");
-      if( (i==3 || i==7) && mylab.substr(dot+1)!="k" ) error("quaternion arguments are in wrong order");
+    Value* myarg=getPntrToArgument(i); if( i==4 ) nquat = getPntrToArgument(i)->getNumberOfValues();
+    if( myarg->getRank()!=1 ) error("all arguments to this action should be vectors");
+    if( (myarg->getPntrToAction())->getName()!="QUATERNION_VECTOR" ) error("all arguments to this action should be quaternions");
+    std::string mylab=getPntrToArgument(i)->getName(); std::size_t dot=mylab.find_first_of(".");
+    if( (i==0 || i==4) && mylab.substr(dot+1)!="w" ) error("quaternion arguments are in wrong order");
+    if( (i==1 || i==5) && mylab.substr(dot+1)!="i" ) error("quaternion arguments are in wrong order");
+    if( (i==2 || i==6) && mylab.substr(dot+1)!="j" ) error("quaternion arguments are in wrong order");
+    if( (i==3 || i==7) && mylab.substr(dot+1)!="k" ) error("quaternion arguments are in wrong order");
   }
   std::vector<unsigned> shape(2); shape[0]=getPntrToArgument(0)->getShape()[0]; shape[1]=getPntrToArgument(4)->getShape()[0];
   addComponent( "w", shape ); componentIsNotPeriodic("w");
@@ -102,64 +102,64 @@ void QuaternionProductMatrix::performTask( const std::string& controller, const 
 
   double pref=1;
   double pref2=1;
-  double conj=1;  
+  double conj=1;
 //real part of q1*q2
-  for(unsigned i=0; i<4; ++i) { 
-      if( i>0 ) {pref=-1; pref2=-1;}
-      myvals.addValue( getConstPntrToComponent(0)->getPositionInStream(), pref*quat1[i]*quat2[i] );
-      if( doNotCalculateDerivatives() ) continue ; 
-      if (i>0) conj=-1;
-      addDerivativeOnVectorArgument( false, 0, i, index1, conj*pref*quat2[i], myvals );
-      addDerivativeOnVectorArgument( false, 0, 4+i, ind2, pref2*quat1[i], myvals );
-}  
-      //i component
+  for(unsigned i=0; i<4; ++i) {
+    if( i>0 ) {pref=-1; pref2=-1;}
+    myvals.addValue( getConstPntrToComponent(0)->getPositionInStream(), pref*quat1[i]*quat2[i] );
+    if( doNotCalculateDerivatives() ) continue ;
+    if (i>0) conj=-1;
+    addDerivativeOnVectorArgument( false, 0, i, index1, conj*pref*quat2[i], myvals );
+    addDerivativeOnVectorArgument( false, 0, 4+i, ind2, pref2*quat1[i], myvals );
+  }
+  //i component
   pref=1;
   conj=1;
   pref2=1;
   for (unsigned i=0; i<4; i++) {
-      if(i==3) pref=-1;
-      else pref=1;
-      if(i==2) pref2=-1;
-      else pref2=1;
-      myvals.addValue( getConstPntrToComponent(1)->getPositionInStream(), pref*quat1[i]*quat2[(5-i)%4]); 
-      if( doNotCalculateDerivatives() ) continue ; 
-      if (i>0) conj=-1;
-      addDerivativeOnVectorArgument( false, 1, i, index1, conj*pref*quat2[(5-i)%4], myvals );
-      addDerivativeOnVectorArgument( false, 1, 4+i, ind2, pref2*quat1[(5-i)%4], myvals );
- }   
+    if(i==3) pref=-1;
+    else pref=1;
+    if(i==2) pref2=-1;
+    else pref2=1;
+    myvals.addValue( getConstPntrToComponent(1)->getPositionInStream(), pref*quat1[i]*quat2[(5-i)%4]);
+    if( doNotCalculateDerivatives() ) continue ;
+    if (i>0) conj=-1;
+    addDerivativeOnVectorArgument( false, 1, i, index1, conj*pref*quat2[(5-i)%4], myvals );
+    addDerivativeOnVectorArgument( false, 1, 4+i, ind2, pref2*quat1[(5-i)%4], myvals );
+  }
 
-      //j component
+  //j component
   pref=1;
   conj=1;
   pref2=1;
   for (unsigned i=0; i<4; i++) {
-      if(i==1) pref=-1;
-      else pref=1;
-      if (i==3) pref2=-1;
-      else pref2=1;
-      myvals.addValue( getConstPntrToComponent(2)->getPositionInStream(), pref*quat1[i]*quat2[(i+2)%4]);
-      if( doNotCalculateDerivatives() ) continue ; 
-      if (i>0) conj=-1;
-      addDerivativeOnVectorArgument( false, 2, i, index1, conj*pref*quat2[(i+2)%4], myvals );
-      addDerivativeOnVectorArgument( false, 2, 4+i, ind2, pref2*quat1[(i+2)%4], myvals );
- }
+    if(i==1) pref=-1;
+    else pref=1;
+    if (i==3) pref2=-1;
+    else pref2=1;
+    myvals.addValue( getConstPntrToComponent(2)->getPositionInStream(), pref*quat1[i]*quat2[(i+2)%4]);
+    if( doNotCalculateDerivatives() ) continue ;
+    if (i>0) conj=-1;
+    addDerivativeOnVectorArgument( false, 2, i, index1, conj*pref*quat2[(i+2)%4], myvals );
+    addDerivativeOnVectorArgument( false, 2, 4+i, ind2, pref2*quat1[(i+2)%4], myvals );
+  }
 
-      //k component
+  //k component
   pref=1;
   conj=1;
   pref2=1;
   for (unsigned i=0; i<4; i++) {
-      if(i==2) pref=-1;
-      else pref=1;
-      if(i==1) pref2=-1;
-      else pref2=1;
-      myvals.addValue( getConstPntrToComponent(3)->getPositionInStream(), pref*quat1[i]*quat2[(3-i)]);
-      if( doNotCalculateDerivatives() ) continue ; 
-      if (i>0) conj=-1;
-      addDerivativeOnVectorArgument( false, 3, i, index1, conj*pref*quat2[3-i], myvals );
-      addDerivativeOnVectorArgument( false, 3, 4+i, ind2, pref2*quat1[3-i], myvals );
+    if(i==2) pref=-1;
+    else pref=1;
+    if(i==1) pref2=-1;
+    else pref2=1;
+    myvals.addValue( getConstPntrToComponent(3)->getPositionInStream(), pref*quat1[i]*quat2[(3-i)]);
+    if( doNotCalculateDerivatives() ) continue ;
+    if (i>0) conj=-1;
+    addDerivativeOnVectorArgument( false, 3, i, index1, conj*pref*quat2[3-i], myvals );
+    addDerivativeOnVectorArgument( false, 3, 4+i, ind2, pref2*quat1[3-i], myvals );
 
-}
+  }
 
 
 }
@@ -168,18 +168,18 @@ void QuaternionProductMatrix::runEndOfRowJobs( const unsigned& ival, const std::
   if( doNotCalculateDerivatives() || !matrixChainContinues() ) return ;
 
   for(unsigned j=0; j<getNumberOfComponents(); ++j) {
-      unsigned nmat = getConstPntrToComponent(j)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixRowDerivatives( nmat );
-      std::vector<unsigned>& matrix_indices( myvals.getMatrixRowDerivativeIndices( nmat ) ); unsigned ntwo_atoms = myvals.getSplitIndex();
-      // Quaternion for first molecule
-      unsigned base = 0; for(unsigned k=0; k<4; ++k) { matrix_indices[nmat_ind] = base + ival; base += getPntrToArgument(k)->getShape()[0]; nmat_ind++; }
-      // Loop over row of matrix  
-      for(unsigned i=1; i<ntwo_atoms; ++i) {
-          unsigned ind2 = indices[i]; if( ind2>=getPntrToArgument(0)->getShape()[0] ) ind2 = indices[i] - getPntrToArgument(0)->getShape()[0];
-          base = 4*getPntrToArgument(0)->getShape()[0];
-          // Quaternion of second molecule  
-          for(unsigned k=0; k<4; ++k) { matrix_indices[nmat_ind] = base + ind2; base += getPntrToArgument(4+k)->getShape()[0]; nmat_ind++; }
-      }
-      myvals.setNumberOfMatrixRowDerivatives( nmat, nmat_ind );
+    unsigned nmat = getConstPntrToComponent(j)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixRowDerivatives( nmat );
+    std::vector<unsigned>& matrix_indices( myvals.getMatrixRowDerivativeIndices( nmat ) ); unsigned ntwo_atoms = myvals.getSplitIndex();
+    // Quaternion for first molecule
+    unsigned base = 0; for(unsigned k=0; k<4; ++k) { matrix_indices[nmat_ind] = base + ival; base += getPntrToArgument(k)->getShape()[0]; nmat_ind++; }
+    // Loop over row of matrix
+    for(unsigned i=1; i<ntwo_atoms; ++i) {
+      unsigned ind2 = indices[i]; if( ind2>=getPntrToArgument(0)->getShape()[0] ) ind2 = indices[i] - getPntrToArgument(0)->getShape()[0];
+      base = 4*getPntrToArgument(0)->getShape()[0];
+      // Quaternion of second molecule
+      for(unsigned k=0; k<4; ++k) { matrix_indices[nmat_ind] = base + ind2; base += getPntrToArgument(4+k)->getShape()[0]; nmat_ind++; }
+    }
+    myvals.setNumberOfMatrixRowDerivatives( nmat, nmat_ind );
   }
 
 }

@@ -35,13 +35,13 @@ PLUMED_REGISTER_ACTION(ClusterWithSurface,"CLUSTER_WITHSURFACE")
 
 void ClusterWithSurface::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords(keys);
-  keys.add("optional","RCUT_SURF",""); 
+  keys.add("optional","RCUT_SURF","");
   keys.add("compulsory","ATOMS","the atoms that were used to calculate the matrix that was clustered");
 }
 
 ClusterWithSurface::ClusterWithSurface(const ActionOptions& ao):
-Action(ao),
-ActionShortcut(ao)
+  Action(ao),
+  ActionShortcut(ao)
 {
   // Read atoms for contact matrix
   std::string atdata; parse("ATOMS",atdata);
@@ -56,7 +56,7 @@ ActionShortcut(ao)
   // Product of matrices
   readInputLine( getShortcutLabel() + "_pmat: CUSTOM ARG1=" + getShortcutLabel() + "_cmat.w ARG2=" + getShortcutLabel() + "_cwmat FUNC=x*y PERIODIC=NO");
   // DFS clustering
-  readInputLine( getShortcutLabel() + "_clust: DFSCLUSTERING ARG=" + getShortcutLabel() + "_pmat"); 
+  readInputLine( getShortcutLabel() + "_clust: DFSCLUSTERING ARG=" + getShortcutLabel() + "_pmat");
   // And final cluster weights
   readInputLine( getShortcutLabel() + ": CLUSTER_WEIGHTS CLUSTERS=" + getShortcutLabel() + "_clust CLUSTER=1");
 }

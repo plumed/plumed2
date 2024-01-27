@@ -45,9 +45,9 @@ void NormalizedEuclideanDistance::registerKeywords( Keywords& keys ) {
 }
 
 NormalizedEuclideanDistance::NormalizedEuclideanDistance( const ActionOptions& ao):
-Action(ao),
-ActionShortcut(ao)
-{ 
+  Action(ao),
+  ActionShortcut(ao)
+{
   std::string arg1, arg2, metstr; parse("ARG1",arg1); parse("ARG2",arg2); parse("METRIC",metstr);
   // Vectors are in rows here
   readInputLine( getShortcutLabel() + "_diff: DISPLACEMENT ARG1=" + arg1 + " ARG2=" + arg2 );
@@ -57,16 +57,16 @@ ActionShortcut(ao)
   ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_diffT"); plumed_assert( av );
   // If this is a matrix we need create a matrix to multiply by
   if( av->copyOutput(0)->getRank()==2 ) {
-      // Create some ones   
-      std::string nones; Tools::convert( av->copyOutput(0)->getShape()[1], nones );
-      readInputLine( getShortcutLabel() + "_ones: ONES SIZE=" + nones);
-       // Now do some multiplication to create a matrix that can be multiplied by our "inverse variance" vector 
-      if( av->copyOutput(0)->getShape()[0]==1 ) {
-          readInputLine( getShortcutLabel() + "_" + metstr + "T: CUSTOM ARG=" + metstr + "," + getShortcutLabel() + "_ones FUNC=x*y PERIODIC=NO");
-          readInputLine( getShortcutLabel() + "_" + metstr + ": TRANSPOSE ARG=" + getShortcutLabel() + "_" + metstr + "T");
-      } else readInputLine( getShortcutLabel() + "_" + metstr + ": OUTER_PRODUCT ARG=" + metstr + "," + getShortcutLabel() + "_ones");
-      metstr = getShortcutLabel() + "_" + metstr;
-  } 
+    // Create some ones
+    std::string nones; Tools::convert( av->copyOutput(0)->getShape()[1], nones );
+    readInputLine( getShortcutLabel() + "_ones: ONES SIZE=" + nones);
+    // Now do some multiplication to create a matrix that can be multiplied by our "inverse variance" vector
+    if( av->copyOutput(0)->getShape()[0]==1 ) {
+      readInputLine( getShortcutLabel() + "_" + metstr + "T: CUSTOM ARG=" + metstr + "," + getShortcutLabel() + "_ones FUNC=x*y PERIODIC=NO");
+      readInputLine( getShortcutLabel() + "_" + metstr + ": TRANSPOSE ARG=" + getShortcutLabel() + "_" + metstr + "T");
+    } else readInputLine( getShortcutLabel() + "_" + metstr + ": OUTER_PRODUCT ARG=" + metstr + "," + getShortcutLabel() + "_ones");
+    metstr = getShortcutLabel() + "_" + metstr;
+  }
   // Now do the multiplication
   readInputLine( getShortcutLabel() + "_sdiff: CUSTOM ARG=" + metstr + "," + getShortcutLabel() +"_diffT FUNC=x*y PERIODIC=NO");
   bool squared; parseFlag("SQUARED",squared); std::string olab = getShortcutLabel(); if( !squared ) olab += "_2";

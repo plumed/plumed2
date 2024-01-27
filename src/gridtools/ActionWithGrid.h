@@ -31,7 +31,7 @@ namespace gridtools {
 class ActionWithGrid : public ActionWithVector {
 private:
   bool firststep;
-public: 
+public:
   static void registerKeywords( Keywords& keys );
   static ActionWithGrid* getInputActionWithGrid( Action* action );
   explicit ActionWithGrid(const ActionOptions&ao);

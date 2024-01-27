@@ -128,7 +128,7 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
 
   // This constructs all conceivable sections of antibeta sheet in the backbone of the chains
   if( intra_chain ) {
-    unsigned nprevious=0; std::vector<unsigned> nlist(30); 
+    unsigned nprevious=0; std::vector<unsigned> nlist(30);
     for(unsigned i=0; i<chains.size(); ++i) {
       if( chains[i]<40 ) error("segment of backbone is not long enough to form an antiparallel beta hairpin. Each backbone fragment must contain a minimum of 8 residues");
       // Loop over all possible triples in each 8 residue segment of protein
@@ -215,11 +215,11 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
   std::string ref0, ref1, ref2;
   Tools::convert(  reference[0][0], ref0 );
   Tools::convert(  reference[0][1], ref1 );
-  Tools::convert(  reference[0][2], ref2 ); 
+  Tools::convert(  reference[0][2], ref2 );
   std::string structure=" STRUCTURE1=" + ref0 + "," + ref1 + "," + ref2;
   for(unsigned i=1; i<30; ++i) {
-      for(unsigned k=0; k<3; ++k) { Tools::convert( reference[i][k], ref0 ); structure += "," + ref0; }
-  }   
+    for(unsigned k=0; k<3; ++k) { Tools::convert( reference[i][k], ref0 ); structure += "," + ref0; }
+  }
 
   reference[0]=Vector(-1.439, -5.122, -1.144); // N    i
   reference[1]=Vector(-0.816, -3.803, -1.013); // CA
@@ -254,21 +254,21 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
   // Store the secondary structure ( last number makes sure we convert to internal units nm )
   Tools::convert(  reference[0][0], ref0 );
   Tools::convert(  reference[0][1], ref1 );
-  Tools::convert(  reference[0][2], ref2 ); 
+  Tools::convert(  reference[0][2], ref2 );
   structure +=" STRUCTURE2=" + ref0 + "," + ref1 + "," + ref2;
   for(unsigned i=1; i<30; ++i) {
-      for(unsigned k=0; k<3; ++k) { Tools::convert( reference[i][k], ref0 ); structure += "," + ref0; }
-  }   
+    for(unsigned k=0; k<3; ++k) { Tools::convert( reference[i][k], ref0 ); structure += "," + ref0; }
+  }
 
   std::string strands_cutoff; parse("STRANDS_CUTOFF",strands_cutoff);
   if( strands_cutoff.length()>0 ) strands_cutoff=" CUTOFF_ATOMS=6,21 STRANDS_CUTOFF="+strands_cutoff;
   std::string type; parse("TYPE",type); std::string lab = getShortcutLabel() + "_rmsd"; if( uselessthan ) lab = getShortcutLabel();
   readInputLine( lab + ": SECONDARY_STRUCTURE_RMSD BONDLENGTH=0.17" + seglist + structure + " " + atoms + " TYPE=" + type + strands_cutoff);
   if( ltmap.length()>0 ) {
-      // Create the lowest line
-      readInputLine( getShortcutLabel() + "_low: LOWEST ARG1=" + getShortcutLabel() + ".struct-1 ARG2=" + getShortcutLabel() + ".struct-2" );
-      // Create the less than object
-      SecondaryStructureRMSD::expandShortcut( uselessthan, getShortcutLabel(), getShortcutLabel() + "_low", ltmap, this );
+    // Create the lowest line
+    readInputLine( getShortcutLabel() + "_low: LOWEST ARG1=" + getShortcutLabel() + ".struct-1 ARG2=" + getShortcutLabel() + ".struct-2" );
+    // Create the less than object
+    SecondaryStructureRMSD::expandShortcut( uselessthan, getShortcutLabel(), getShortcutLabel() + "_low", ltmap, this );
   }
 }
 

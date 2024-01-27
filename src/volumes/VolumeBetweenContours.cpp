@@ -136,8 +136,8 @@ double VolumeInEnvelope::calculateNumberInside( const Vector& cpos, Vector& deri
   auto pos_ptr=Tools::unique2raw(pos);
   for(unsigned i=1; i<natoms; ++i) {
     Vector dist = pbcDistance( cpos, getPosition( indices[i] ) );
-    double dval=0; for(unsigned j=0;j<3;++j) { der[j] = dist[j]/bandwidth[j]; dval += der[j]*der[j]; der[j] = der[j] / bandwidth[j]; } 
-    double dfunc; value += switchingFunction.calculateSqr( dval, dfunc ) / gvol; double tmp = dfunc / gvol; 
+    double dval=0; for(unsigned j=0; j<3; ++j) { der[j] = dist[j]/bandwidth[j]; dval += der[j]*der[j]; der[j] = der[j] / bandwidth[j]; }
+    double dfunc; value += switchingFunction.calculateSqr( dval, dfunc ) / gvol; double tmp = dfunc / gvol;
     for(unsigned j=0; j<3; ++j) {
       derivatives[j] -= tmp*der[j]; refders[ indices[i] ][j] += tmp*der[j]; tder[j]=tmp*der[j];
     }

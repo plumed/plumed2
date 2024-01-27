@@ -26,7 +26,7 @@
 #include "core/ActionWithValue.h"
 #include "core/ActionWithArguments.h"
 #include "tools/SwitchingFunction.h"
-#include "tools/RootFindingBase.h" 
+#include "tools/RootFindingBase.h"
 
 namespace PLMD {
 namespace contour {

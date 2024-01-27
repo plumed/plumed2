@@ -94,7 +94,7 @@ public:
 PLUMED_REGISTER_ACTION(AlphaRMSD,"ALPHARMSD")
 
 void AlphaRMSD::registerKeywords( Keywords& keys ) {
-  SecondaryStructureRMSD::registerKeywords( keys ); 
+  SecondaryStructureRMSD::registerKeywords( keys );
   keys.remove("ATOMS"); keys.remove("SEGMENT"); keys.remove("BONDLENGTH"); keys.remove("CUTOFF_ATOMS");
   keys.remove("NO_ACTION_LOG"); keys.remove("STRANDS_CUTOFF"); keys.remove("STRUCTURE");
 }
@@ -116,7 +116,7 @@ AlphaRMSD::AlphaRMSD(const ActionOptions&ao):
     if( chains[i]%5!=0 ) error("backbone segment received does not contain a multiple of five residues");
     for(unsigned ires=0; ires<nres-5; ires++) {
       unsigned accum=nprevious + 5*ires; std::string strval, num; Tools::convert( segno, num );
-      Tools::convert( accum, strval ); seglist += " SEGMENT" + num + "=" + strval; 
+      Tools::convert( accum, strval ); seglist += " SEGMENT" + num + "=" + strval;
       for(unsigned k=1; k<30; ++k) { Tools::convert( accum+k, strval ); seglist += "," + strval; }
       segno++;
     }
@@ -155,13 +155,13 @@ AlphaRMSD::AlphaRMSD(const ActionOptions&ao):
   reference[27] = Vector(-1.933, -2.219, -3.074 ); // CB
   reference[28] = Vector(-1.663, -0.171, -4.475 ); // C
   reference[29] = Vector(-1.916, -0.296, -5.673 ); // O
-  std::string ref0, ref1, ref2; 
+  std::string ref0, ref1, ref2;
   Tools::convert(  reference[0][0], ref0 );
   Tools::convert(  reference[0][1], ref1 );
-  Tools::convert(  reference[0][2], ref2 ); 
+  Tools::convert(  reference[0][2], ref2 );
   std::string structure=" STRUCTURE1=" + ref0 + "," + ref1 + "," + ref2;
   for(unsigned i=1; i<30; ++i) {
-      for(unsigned k=0; k<3; ++k) { Tools::convert( reference[i][k], ref0 ); structure += "," + ref0; }
+    for(unsigned k=0; k<3; ++k) { Tools::convert( reference[i][k], ref0 ); structure += "," + ref0; }
   }
 
   std::string type; parse("TYPE",type); std::string lab = getShortcutLabel() + "_rmsd"; if( uselessthan ) lab = getShortcutLabel();

@@ -117,11 +117,11 @@ Dipole::Dipole(const ActionOptions&ao):
 void Dipole::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
   aa->parseAtomList("GROUP",num,t);
   if( t.size()>0 ) {
-      aa->log.printf("  of %u atoms\n",static_cast<unsigned>(t.size()));
-      for(unsigned int i=0; i<t.size(); ++i) {
-        aa->log.printf("  %d", t[i].serial());
-      } 
-      aa->log.printf("  \n");
+    aa->log.printf("  of %u atoms\n",static_cast<unsigned>(t.size()));
+    for(unsigned int i=0; i<t.size(); ++i) {
+      aa->log.printf("  %d", t[i].serial());
+    }
+    aa->log.printf("  \n");
   }
 }
 
@@ -133,7 +133,7 @@ unsigned Dipole::getModeAndSetupValues( ActionWithValue* av ) {
     av->addComponentWithDerivatives("z"); av->componentIsNotPeriodic("z");
     return 1;
   }
-  av->addValueWithDerivatives(); av->setNotPeriodic(); return 0; 
+  av->addValueWithDerivatives(); av->setNotPeriodic(); return 0;
 }
 
 // calculator
@@ -180,19 +180,19 @@ void Dipole::calculateCV( const unsigned& mode, const std::vector<double>& masse
   }
 
   if( mode==1 ) {
-     for(unsigned i=0; i<N; i++) {
-       derivs[0][i]=charges[i]*Vector(1.0,0.0,0.0);
-       derivs[1][i]=charges[i]*Vector(0.0,1.0,0.0);
-       derivs[2][i]=charges[i]*Vector(0.0,0.0,1.0);
-     } 
-     for(unsigned i=0; i<3; ++i ) vals[i] = dipje[i]; 
+    for(unsigned i=0; i<N; i++) {
+      derivs[0][i]=charges[i]*Vector(1.0,0.0,0.0);
+      derivs[1][i]=charges[i]*Vector(0.0,1.0,0.0);
+      derivs[2][i]=charges[i]*Vector(0.0,0.0,1.0);
+    }
+    for(unsigned i=0; i<3; ++i ) vals[i] = dipje[i];
   } else {
-     vals[0] = dipje.modulo();
-     double idip = 1./vals[0];
-     for(unsigned i=0; i<N; i++) {
-       double dfunc=charges[i]*idip;
-       derivs[0][i] = dfunc*dipje;
-     }
+    vals[0] = dipje.modulo();
+    double idip = 1./vals[0];
+    for(unsigned i=0; i<N; i++) {
+      double dfunc=charges[i]*idip;
+      derivs[0][i] = dfunc*dipje;
+    }
   }
   setBoxDerivativesNoPbc( pos, derivs, virial );
 }

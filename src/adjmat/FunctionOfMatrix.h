@@ -81,19 +81,19 @@ void FunctionOfMatrix<T>::registerKeywords(Keywords& keys ) {
 
 template <class T>
 FunctionOfMatrix<T>::FunctionOfMatrix(const ActionOptions&ao):
-Action(ao),
-ActionWithMatrix(ao),
-firststep(true)
+  Action(ao),
+  ActionWithMatrix(ao),
+  firststep(true)
 {
   if( myfunc.getArgStart()>0 ) error("this has not beeen implemented -- if you are interested email gareth.tribello@gmail.com");
   // Get the shape of the output
   std::vector<unsigned> shape( getValueShapeFromArguments() );
   // Check if the output matrix is symmetric
   bool symmetric=true; unsigned argstart=myfunc.getArgStart();
-  for(unsigned i=argstart;i<getNumberOfArguments();++i) {
-      if( getPntrToArgument(i)->getRank()==2 ) {
-          if( !getPntrToArgument(i)->isSymmetric() ){ symmetric=false;  }
-      }                        
+  for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
+    if( getPntrToArgument(i)->getRank()==2 ) {
+      if( !getPntrToArgument(i)->isSymmetric() ) { symmetric=false;  }
+    }
   }
   // Read the input and do some checks
   myfunc.read( this );
@@ -106,65 +106,65 @@ firststep(true)
   // Create the values to hold the output
   std::vector<std::string> str_ind( myfunc.getComponentsPerLabel() );
   if( components.size()==0 && myfunc.zeroRank() && str_ind.size()==0 ) {
-      addValueWithDerivatives( shape ); 
+    addValueWithDerivatives( shape );
   } else if( components.size()==0 && myfunc.zeroRank() ) {
-     for(unsigned j=0;j<str_ind.size();++j) addComponentWithDerivatives( str_ind[j], shape ); 
-  } else if( components.size()==0 && str_ind.size()==0 ) { 
-     addValue( shape ); getPntrToComponent(0)->setSymmetric( symmetric );
+    for(unsigned j=0; j<str_ind.size(); ++j) addComponentWithDerivatives( str_ind[j], shape );
+  } else if( components.size()==0 && str_ind.size()==0 ) {
+    addValue( shape ); getPntrToComponent(0)->setSymmetric( symmetric );
   } else if ( components.size()==0 ) {
-    for(unsigned j=0;j<str_ind.size();++j) { addComponent( str_ind[j], shape ); getPntrToComponent(j)->setSymmetric( symmetric ); }
+    for(unsigned j=0; j<str_ind.size(); ++j) { addComponent( str_ind[j], shape ); getPntrToComponent(j)->setSymmetric( symmetric ); }
   } else {
-    for(unsigned i=0;i<components.size();++i) {
-        if( str_ind.size()>0 ) {
-            for(unsigned j=0;j<str_ind.size();++j) { addComponent( components[i] + str_ind[j], shape ); getPntrToComponent(i*str_ind.size()+j)->setSymmetric( symmetric ); }
-        } else if( components[i].find_first_of("_")!=std::string::npos ) {
-            if( getNumberOfArguments()-argstart==1 ) { addValue( shape ); getPntrToComponent(0)->setSymmetric( symmetric ); }
-            else { 
-              for(unsigned j=argstart; j<getNumberOfArguments(); ++j) {
-                 addComponent( getPntrToArgument(j)->getName() + components[i], shape );
-                 getPntrToComponent(i*(getNumberOfArguments()-argstart)+j-argstart)->setSymmetric( symmetric );
-              } 
-            }
-        } else { addComponent( components[i], shape ); getPntrToComponent(i)->setSymmetric( symmetric ); } 
+    for(unsigned i=0; i<components.size(); ++i) {
+      if( str_ind.size()>0 ) {
+        for(unsigned j=0; j<str_ind.size(); ++j) { addComponent( components[i] + str_ind[j], shape ); getPntrToComponent(i*str_ind.size()+j)->setSymmetric( symmetric ); }
+      } else if( components[i].find_first_of("_")!=std::string::npos ) {
+        if( getNumberOfArguments()-argstart==1 ) { addValue( shape ); getPntrToComponent(0)->setSymmetric( symmetric ); }
+        else {
+          for(unsigned j=argstart; j<getNumberOfArguments(); ++j) {
+            addComponent( getPntrToArgument(j)->getName() + components[i], shape );
+            getPntrToComponent(i*(getNumberOfArguments()-argstart)+j-argstart)->setSymmetric( symmetric );
+          }
+        }
+      } else { addComponent( components[i], shape ); getPntrToComponent(i)->setSymmetric( symmetric ); }
     }
   }
   // Check if this is a timeseries
   // for(unsigned i=argstart; i<getNumberOfArguments();++i) {
-  //   if( getPntrToArgument(i)->isTimeSeries() ) { 
-  //       for(unsigned i=0; i<getNumberOfComponents(); ++i) getPntrToOutput(i)->makeHistoryDependent(); 
+  //   if( getPntrToArgument(i)->isTimeSeries() ) {
+  //       for(unsigned i=0; i<getNumberOfComponents(); ++i) getPntrToOutput(i)->makeHistoryDependent();
   //       break;
   //   }
   // }
   // Check if this can be sped up
   if( myfunc.getDerivativeZeroIfValueIsZero() )  {
-      for(int i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->setDerivativeIsZeroWhenValueIsZero();
+    for(int i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->setDerivativeIsZeroWhenValueIsZero();
   }
   // Set the periodicities of the output components
   myfunc.setPeriodicityForOutputs( this );
   // We can't do this with if we are dividing a stack by some a product v.v^T product as we need to store the vector
   // In order to do this type of calculation.  There should be a neater fix than this but I can't see it.
   bool foundneigh=false;
-  for(unsigned i=argstart; i<getNumberOfArguments();++i) {
-      if( getPntrToArgument(i)->isConstant() ) continue ;
-      std::string argname=(getPntrToArgument(i)->getPntrToAction())->getName();
-      if( argname=="NEIGHBORS" ) { foundneigh=true; break; }
-      ActionWithVector* av=dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
-      if( !av ) done_in_chain=false;
-      if( getPntrToArgument(i)->getRank()==0 ) {
-          function::FunctionOfVector<function::Sum>* as = dynamic_cast<function::FunctionOfVector<function::Sum>*>( getPntrToArgument(i)->getPntrToAction() );
-          if(as) done_in_chain=false;
-      }  
+  for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
+    if( getPntrToArgument(i)->isConstant() ) continue ;
+    std::string argname=(getPntrToArgument(i)->getPntrToAction())->getName();
+    if( argname=="NEIGHBORS" ) { foundneigh=true; break; }
+    ActionWithVector* av=dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
+    if( !av ) done_in_chain=false;
+    if( getPntrToArgument(i)->getRank()==0 ) {
+      function::FunctionOfVector<function::Sum>* as = dynamic_cast<function::FunctionOfVector<function::Sum>*>( getPntrToArgument(i)->getPntrToAction() );
+      if(as) done_in_chain=false;
+    }
   }
   // If we are working with neighbors we trick PLUMED into storing ALL the components of the other arguments
-  // in this way we can ensure that the function of the neighbours matrix is in a chain starting from the 
+  // in this way we can ensure that the function of the neighbours matrix is in a chain starting from the
   // Neighbours matrix action.
   if( foundneigh ) {
-      for(unsigned i=argstart; i<getNumberOfArguments();++i) {
-         ActionWithValue* av=getPntrToArgument(i)->getPntrToAction();
-         if( av->getName()!="NEIGHBORS" ) {
-             for(int i=0;i<av->getNumberOfComponents();++i) (av->copyOutput(i))->buildDataStore(); 
-         }
+    for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
+      ActionWithValue* av=getPntrToArgument(i)->getPntrToAction();
+      if( av->getName()!="NEIGHBORS" ) {
+        for(int i=0; i<av->getNumberOfComponents(); ++i) (av->copyOutput(i))->buildDataStore();
       }
+    }
   }
   // Now setup the action in the chain if we can
   nderivatives = buildArgumentStore(myfunc.getArgStart());
@@ -173,7 +173,7 @@ firststep(true)
 template <class T>
 void FunctionOfMatrix<T>::turnOnDerivatives() {
   if( !myfunc.derivativesImplemented() ) error("derivatives have not been implemended for " + getName() );
-  ActionWithValue::turnOnDerivatives(); myfunc.setup(this); 
+  ActionWithValue::turnOnDerivatives(); myfunc.setup(this);
 }
 
 template <class T>
@@ -184,21 +184,21 @@ unsigned FunctionOfMatrix<T>::getNumberOfDerivatives() {
 template <class T>
 unsigned FunctionOfMatrix<T>::getNumberOfColumns() const {
   if( getConstPntrToComponent(0)->getRank()==2 ) {
-     unsigned argstart=myfunc.getArgStart();
-     for(unsigned i=argstart;i<getNumberOfArguments();++i) {
-         if( getPntrToArgument(i)->getRank()==2 ) {
-             ActionWithMatrix* am=dynamic_cast<ActionWithMatrix*>( getPntrToArgument(i)->getPntrToAction() );
-             if( am ) return am->getNumberOfColumns();
-             return getPntrToArgument(i)->getShape()[1];
-         }
-     }
+    unsigned argstart=myfunc.getArgStart();
+    for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
+      if( getPntrToArgument(i)->getRank()==2 ) {
+        ActionWithMatrix* am=dynamic_cast<ActionWithMatrix*>( getPntrToArgument(i)->getPntrToAction() );
+        if( am ) return am->getNumberOfColumns();
+        return getPntrToArgument(i)->getShape()[1];
+      }
+    }
   }
   plumed_error(); return 0;
 }
 
 template <class T>
 void FunctionOfMatrix<T>::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) plumed_assert( getPntrToArgument(i)->getRank()==2 ); 
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) plumed_assert( getPntrToArgument(i)->getRank()==2 );
   unsigned start_n = getPntrToArgument(0)->getShape()[0], size_v = getPntrToArgument(0)->getShape()[1];
   if( indices.size()!=size_v+1 ) indices.resize( size_v+1 );
   for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + i;
@@ -215,103 +215,103 @@ void FunctionOfMatrix<T>::setupForTask( const unsigned& task_index, std::vector<
 
 template <class T>
 void FunctionOfMatrix<T>::setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping ) {
-    if( firststep ) {
-      stored_arguments.resize( getNumberOfArguments() );
-      update_arguments.resize( getNumberOfArguments(), true );
-      std::string control = getFirstActionInChain()->getLabel();
-      for(unsigned i=0; i<stored_arguments.size(); ++i) {
-          stored_arguments[i] = !getPntrToArgument(i)->ignoreStoredValue( control );
-          if( !stored_arguments[i] ) update_arguments[i] = true;
-          else update_arguments[i] = !argumentDependsOn( headstr, this, getPntrToArgument(i) );
-      }
-      firststep=false;
+  if( firststep ) {
+    stored_arguments.resize( getNumberOfArguments() );
+    update_arguments.resize( getNumberOfArguments(), true );
+    std::string control = getFirstActionInChain()->getLabel();
+    for(unsigned i=0; i<stored_arguments.size(); ++i) {
+      stored_arguments[i] = !getPntrToArgument(i)->ignoreStoredValue( control );
+      if( !stored_arguments[i] ) update_arguments[i] = true;
+      else update_arguments[i] = !argumentDependsOn( headstr, this, getPntrToArgument(i) );
+    }
+    firststep=false;
   }
   ActionWithMatrix::setupStreamedComponents( headstr, nquants, nmat, maxcol, nbookeeping );
 }
 
 template <class T>
 void FunctionOfMatrix<T>::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
-  unsigned argstart=myfunc.getArgStart(); std::vector<double> args( getNumberOfArguments() - argstart ); 
-  unsigned ind2 = index2; 
+  unsigned argstart=myfunc.getArgStart(); std::vector<double> args( getNumberOfArguments() - argstart );
+  unsigned ind2 = index2;
   if( getConstPntrToComponent(0)->getRank()==2 && index2>=getConstPntrToComponent(0)->getShape()[0] ) ind2 = index2 - getConstPntrToComponent(0)->getShape()[0];
   else if( index2>=getPntrToArgument(0)->getShape()[0] ) ind2 = index2 - getPntrToArgument(0)->getShape()[0];
   if( actionInChain() ) {
-      for(unsigned i=argstart;i<getNumberOfArguments();++i) {
-          if( getPntrToArgument(i)->getRank()==0 ) args[i-argstart] = getPntrToArgument(i)->get(); 
-          else if( !getPntrToArgument(i)->valueHasBeenSet() ) args[i-argstart] = myvals.get( getPntrToArgument(i)->getPositionInStream() ); 
-          else args[i-argstart] = getPntrToArgument(i)->get( getPntrToArgument(i)->getShape()[1]*index1 + ind2 );
-      }
+    for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
+      if( getPntrToArgument(i)->getRank()==0 ) args[i-argstart] = getPntrToArgument(i)->get();
+      else if( !getPntrToArgument(i)->valueHasBeenSet() ) args[i-argstart] = myvals.get( getPntrToArgument(i)->getPositionInStream() );
+      else args[i-argstart] = getPntrToArgument(i)->get( getPntrToArgument(i)->getShape()[1]*index1 + ind2 );
+    }
   } else {
-      for(unsigned i=argstart;i<getNumberOfArguments();++i) {
-          if( getPntrToArgument(i)->getRank()==2 ) args[i-argstart]=getPntrToArgument(i)->get( getPntrToArgument(i)->getShape()[1]*index1 + ind2 );
-          else args[i-argstart] = getPntrToArgument(i)->get();
-      }
+    for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
+      if( getPntrToArgument(i)->getRank()==2 ) args[i-argstart]=getPntrToArgument(i)->get( getPntrToArgument(i)->getShape()[1]*index1 + ind2 );
+      else args[i-argstart] = getPntrToArgument(i)->get();
+    }
   }
   // Calculate the function and its derivatives
   std::vector<double> vals( getNumberOfComponents() ); Matrix<double> derivatives( getNumberOfComponents(), getNumberOfArguments()-argstart );
   myfunc.calc( this, args, vals, derivatives );
   // And set the values
-  for(unsigned i=0;i<vals.size();++i) myvals.addValue( getConstPntrToComponent(i)->getPositionInStream(), vals[i] );
+  for(unsigned i=0; i<vals.size(); ++i) myvals.addValue( getConstPntrToComponent(i)->getPositionInStream(), vals[i] );
   // Return if we are not computing derivatives
   if( doNotCalculateDerivatives() ) return;
 
   if( actionInChain() ) {
-      for(int i=0;i<getNumberOfComponents();++i) {
-          unsigned ostrn=getConstPntrToComponent(i)->getPositionInStream();
-          for(unsigned j=argstart;j<getNumberOfArguments();++j) {
-              if( getPntrToArgument(j)->getRank()==2 ) {
-                  unsigned istrn = getPntrToArgument(j)->getPositionInStream();
-                  if( stored_arguments[j] ) {
-                      unsigned task_index = getPntrToArgument(i)->getShape()[1]*index1 + ind2; 
-                      myvals.clearDerivatives(istrn); myvals.addDerivative( istrn, task_index, 1.0 ); myvals.updateIndex( istrn, task_index );
-                  }
-                  for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
-                      unsigned kind=myvals.getActiveIndex(istrn,k);
-                      myvals.addDerivative( ostrn, arg_deriv_starts[j] + kind, derivatives(i,j)*myvals.getDerivative( istrn, kind ) );
-                  }
-              }  
+    for(int i=0; i<getNumberOfComponents(); ++i) {
+      unsigned ostrn=getConstPntrToComponent(i)->getPositionInStream();
+      for(unsigned j=argstart; j<getNumberOfArguments(); ++j) {
+        if( getPntrToArgument(j)->getRank()==2 ) {
+          unsigned istrn = getPntrToArgument(j)->getPositionInStream();
+          if( stored_arguments[j] ) {
+            unsigned task_index = getPntrToArgument(i)->getShape()[1]*index1 + ind2;
+            myvals.clearDerivatives(istrn); myvals.addDerivative( istrn, task_index, 1.0 ); myvals.updateIndex( istrn, task_index );
           }
-      }
-      // If we are computing a matrix we need to update the indices here so that derivatives are calcualted correctly in functions of these
-      if( getConstPntrToComponent(0)->getRank()==2 ) { 
-          for(int i=0;i<getNumberOfComponents();++i) {
-              unsigned ostrn=getConstPntrToComponent(i)->getPositionInStream();
-              for(unsigned j=argstart;j<getNumberOfArguments();++j) {
-                  if( !update_arguments[j] || getPntrToArgument(j)->getRank()==0 ) continue ;
-                  // Ensure we only store one lot of derivative indices
-                  bool found=false;
-                  for(unsigned k=0; k<j; ++k) {
-                      if( arg_deriv_starts[k]==arg_deriv_starts[j] ) { found=true; break; }
-                  }
-                  if( found ) continue;
-                  unsigned istrn = getPntrToArgument(j)->getPositionInStream();
-                  for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
-                      unsigned kind=myvals.getActiveIndex(istrn,k); 
-                      myvals.updateIndex( ostrn, arg_deriv_starts[j] + kind );
-                  }
-              }
+          for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
+            unsigned kind=myvals.getActiveIndex(istrn,k);
+            myvals.addDerivative( ostrn, arg_deriv_starts[j] + kind, derivatives(i,j)*myvals.getDerivative( istrn, kind ) );
           }
+        }
       }
+    }
+    // If we are computing a matrix we need to update the indices here so that derivatives are calcualted correctly in functions of these
+    if( getConstPntrToComponent(0)->getRank()==2 ) {
+      for(int i=0; i<getNumberOfComponents(); ++i) {
+        unsigned ostrn=getConstPntrToComponent(i)->getPositionInStream();
+        for(unsigned j=argstart; j<getNumberOfArguments(); ++j) {
+          if( !update_arguments[j] || getPntrToArgument(j)->getRank()==0 ) continue ;
+          // Ensure we only store one lot of derivative indices
+          bool found=false;
+          for(unsigned k=0; k<j; ++k) {
+            if( arg_deriv_starts[k]==arg_deriv_starts[j] ) { found=true; break; }
+          }
+          if( found ) continue;
+          unsigned istrn = getPntrToArgument(j)->getPositionInStream();
+          for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
+            unsigned kind=myvals.getActiveIndex(istrn,k);
+            myvals.updateIndex( ostrn, arg_deriv_starts[j] + kind );
+          }
+        }
+      }
+    }
   } else {
-      unsigned base=0; ind2 = index2;
-      if( index2>=getConstPntrToComponent(0)->getShape()[0] ) ind2 = index2 - getConstPntrToComponent(0)->getShape()[0];
-      for(unsigned j=argstart;j<getNumberOfArguments();++j) {
-          if( getPntrToArgument(j)->getRank()==2 ) {
-              for(int i=0;i<getNumberOfComponents();++i) {
-                  unsigned ostrn=getConstPntrToComponent(i)->getPositionInStream();
-                  unsigned myind = base + getConstPntrToComponent(i)->getShape()[1]*index1 + ind2;
-                  myvals.addDerivative( ostrn, myind, derivatives(i,j) );
-                  myvals.updateIndex( ostrn, myind ); 
-              }
-          } else {
-              for(int i=0;i<getNumberOfComponents();++i) {
-                  unsigned ostrn=getConstPntrToComponent(i)->getPositionInStream();
-                  myvals.addDerivative( ostrn, base, derivatives(i,j) );
-                  myvals.updateIndex( ostrn, base );
-              }  
-          }
-          base += getPntrToArgument(j)->getNumberOfValues();
+    unsigned base=0; ind2 = index2;
+    if( index2>=getConstPntrToComponent(0)->getShape()[0] ) ind2 = index2 - getConstPntrToComponent(0)->getShape()[0];
+    for(unsigned j=argstart; j<getNumberOfArguments(); ++j) {
+      if( getPntrToArgument(j)->getRank()==2 ) {
+        for(int i=0; i<getNumberOfComponents(); ++i) {
+          unsigned ostrn=getConstPntrToComponent(i)->getPositionInStream();
+          unsigned myind = base + getConstPntrToComponent(i)->getShape()[1]*index1 + ind2;
+          myvals.addDerivative( ostrn, myind, derivatives(i,j) );
+          myvals.updateIndex( ostrn, myind );
+        }
+      } else {
+        for(int i=0; i<getNumberOfComponents(); ++i) {
+          unsigned ostrn=getConstPntrToComponent(i)->getPositionInStream();
+          myvals.addDerivative( ostrn, base, derivatives(i,j) );
+          myvals.updateIndex( ostrn, base );
+        }
       }
+      base += getPntrToArgument(j)->getNumberOfValues();
+    }
   }
 }
 
@@ -321,79 +321,79 @@ void FunctionOfMatrix<T>::runEndOfRowJobs( const unsigned& ind, const std::vecto
 
   unsigned argstart=myfunc.getArgStart();
   if( actionInChain() && getConstPntrToComponent(0)->getRank()==2 ) {
-      // This is triggered if we are outputting a matrix
-      for(int vv=0; vv<getNumberOfComponents(); ++vv) {
-          unsigned nmat = getConstPntrToComponent(vv)->getPositionInMatrixStash();
-          std::vector<unsigned>& mat_indices( myvals.getMatrixRowDerivativeIndices( nmat ) ); unsigned ntot_mat=0;
-          if( mat_indices.size()<nderivatives ) mat_indices.resize( nderivatives );
-          for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
-            if( !update_arguments[i] || getPntrToArgument(i)->getRank()==0 ) continue ;
-            // Ensure we only store one lot of derivative indices
-            bool found=false;
-            for(unsigned j=0; j<i; ++j) {
-                if( arg_deriv_starts[j]==arg_deriv_starts[i] ) { found=true; break; }
-            } 
-            if( found ) continue;
-
-            if( stored_arguments[i] ) {
-                unsigned tbase = getPntrToArgument(i)->getShape()[1]*ind;
-                for(unsigned k=1; k<indices.size(); ++k) {
-                    unsigned ind2 = indices[k] - getConstPntrToComponent(0)->getShape()[0];
-                    mat_indices[ntot_mat + k - 1] = arg_deriv_starts[i] + tbase + ind2;
-                }
-                ntot_mat += indices.size()-1;
-            } else {
-                unsigned istrn = getPntrToArgument(i)->getPositionInMatrixStash();
-                std::vector<unsigned>& imat_indices( myvals.getMatrixRowDerivativeIndices( istrn ) );
-                for(unsigned k=0; k<myvals.getNumberOfMatrixRowDerivatives( istrn ); ++k) mat_indices[ntot_mat + k] = arg_deriv_starts[i] + imat_indices[k];
-                ntot_mat += myvals.getNumberOfMatrixRowDerivatives( istrn ); 
-            }
-          }
-          myvals.setNumberOfMatrixRowDerivatives( nmat, ntot_mat );
-      }
-  } else if( actionInChain() ) {
-      // This is triggered if we are calculating a single scalar in the function
+    // This is triggered if we are outputting a matrix
+    for(int vv=0; vv<getNumberOfComponents(); ++vv) {
+      unsigned nmat = getConstPntrToComponent(vv)->getPositionInMatrixStash();
+      std::vector<unsigned>& mat_indices( myvals.getMatrixRowDerivativeIndices( nmat ) ); unsigned ntot_mat=0;
+      if( mat_indices.size()<nderivatives ) mat_indices.resize( nderivatives );
       for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
-          bool found=false;
-          for(unsigned j=0; j<i; ++j) {
-              if( arg_deriv_starts[j]==arg_deriv_starts[i] ) { found=true; break; }
-          } 
-          if( found ) continue; 
+        if( !update_arguments[i] || getPntrToArgument(i)->getRank()==0 ) continue ;
+        // Ensure we only store one lot of derivative indices
+        bool found=false;
+        for(unsigned j=0; j<i; ++j) {
+          if( arg_deriv_starts[j]==arg_deriv_starts[i] ) { found=true; break; }
+        }
+        if( found ) continue;
+
+        if( stored_arguments[i] ) {
+          unsigned tbase = getPntrToArgument(i)->getShape()[1]*ind;
+          for(unsigned k=1; k<indices.size(); ++k) {
+            unsigned ind2 = indices[k] - getConstPntrToComponent(0)->getShape()[0];
+            mat_indices[ntot_mat + k - 1] = arg_deriv_starts[i] + tbase + ind2;
+          }
+          ntot_mat += indices.size()-1;
+        } else {
           unsigned istrn = getPntrToArgument(i)->getPositionInMatrixStash();
-          std::vector<unsigned>& mat_indices( myvals.getMatrixRowDerivativeIndices( istrn ) );  
-          for(unsigned k=0; k<myvals.getNumberOfMatrixRowDerivatives( istrn ); ++k) {
-              for(int j=0; j<getNumberOfComponents(); ++j) {
-                  unsigned ostrn = getConstPntrToComponent(j)->getPositionInStream();
-                  myvals.updateIndex( ostrn, arg_deriv_starts[i] + mat_indices[k] );
-              }
-          }
+          std::vector<unsigned>& imat_indices( myvals.getMatrixRowDerivativeIndices( istrn ) );
+          for(unsigned k=0; k<myvals.getNumberOfMatrixRowDerivatives( istrn ); ++k) mat_indices[ntot_mat + k] = arg_deriv_starts[i] + imat_indices[k];
+          ntot_mat += myvals.getNumberOfMatrixRowDerivatives( istrn );
+        }
       }
+      myvals.setNumberOfMatrixRowDerivatives( nmat, ntot_mat );
+    }
+  } else if( actionInChain() ) {
+    // This is triggered if we are calculating a single scalar in the function
+    for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
+      bool found=false;
+      for(unsigned j=0; j<i; ++j) {
+        if( arg_deriv_starts[j]==arg_deriv_starts[i] ) { found=true; break; }
+      }
+      if( found ) continue;
+      unsigned istrn = getPntrToArgument(i)->getPositionInMatrixStash();
+      std::vector<unsigned>& mat_indices( myvals.getMatrixRowDerivativeIndices( istrn ) );
+      for(unsigned k=0; k<myvals.getNumberOfMatrixRowDerivatives( istrn ); ++k) {
+        for(int j=0; j<getNumberOfComponents(); ++j) {
+          unsigned ostrn = getConstPntrToComponent(j)->getPositionInStream();
+          myvals.updateIndex( ostrn, arg_deriv_starts[i] + mat_indices[k] );
+        }
+      }
+    }
   } else if( getConstPntrToComponent(0)->getRank()==2 ) {
-      for(int vv=0; vv<getNumberOfComponents(); ++vv) {
-          unsigned nmat = getConstPntrToComponent(vv)->getPositionInMatrixStash();
-          std::vector<unsigned>& mat_indices( myvals.getMatrixRowDerivativeIndices( nmat ) ); unsigned ntot_mat=0;
-          if( mat_indices.size()<nderivatives ) mat_indices.resize( nderivatives );
-          for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
-            if( getPntrToArgument(i)->getRank()==0 ) continue ;
-            unsigned ss = getPntrToArgument(i)->getShape()[1]; unsigned tbase = ss*myvals.getTaskIndex();
-            for(unsigned k=0; k<ss; ++k) mat_indices[ntot_mat + k] = tbase + k;
-            ntot_mat += ss;
-          }
-          myvals.setNumberOfMatrixRowDerivatives( nmat, ntot_mat );
+    for(int vv=0; vv<getNumberOfComponents(); ++vv) {
+      unsigned nmat = getConstPntrToComponent(vv)->getPositionInMatrixStash();
+      std::vector<unsigned>& mat_indices( myvals.getMatrixRowDerivativeIndices( nmat ) ); unsigned ntot_mat=0;
+      if( mat_indices.size()<nderivatives ) mat_indices.resize( nderivatives );
+      for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
+        if( getPntrToArgument(i)->getRank()==0 ) continue ;
+        unsigned ss = getPntrToArgument(i)->getShape()[1]; unsigned tbase = ss*myvals.getTaskIndex();
+        for(unsigned k=0; k<ss; ++k) mat_indices[ntot_mat + k] = tbase + k;
+        ntot_mat += ss;
       }
-  } 
+      myvals.setNumberOfMatrixRowDerivatives( nmat, ntot_mat );
+    }
+  }
 }
 
 template <class T>
-std::vector<unsigned> FunctionOfMatrix<T>::getValueShapeFromArguments() { 
+std::vector<unsigned> FunctionOfMatrix<T>::getValueShapeFromArguments() {
   unsigned argstart=myfunc.getArgStart(); std::vector<unsigned> shape(2); shape[0]=shape[1]=0;
   for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
-      plumed_assert( getPntrToArgument(i)->getRank()==2 || getPntrToArgument(i)->getRank()==0 );
-      if( getPntrToArgument(i)->getRank()==2 ) {
-          if( shape[0]>0 && (getPntrToArgument(i)->getShape()[0]!=shape[0] || getPntrToArgument(i)->getShape()[1]!=shape[1]) ) error("all matrices input should have the same shape");
-          else if( shape[0]==0 ) { shape[0]=getPntrToArgument(i)->getShape()[0]; shape[1]=getPntrToArgument(i)->getShape()[1]; }
-          plumed_assert( !getPntrToArgument(i)->hasDerivatives() );
-      }   
+    plumed_assert( getPntrToArgument(i)->getRank()==2 || getPntrToArgument(i)->getRank()==0 );
+    if( getPntrToArgument(i)->getRank()==2 ) {
+      if( shape[0]>0 && (getPntrToArgument(i)->getShape()[0]!=shape[0] || getPntrToArgument(i)->getShape()[1]!=shape[1]) ) error("all matrices input should have the same shape");
+      else if( shape[0]==0 ) { shape[0]=getPntrToArgument(i)->getShape()[0]; shape[1]=getPntrToArgument(i)->getShape()[1]; }
+      plumed_assert( !getPntrToArgument(i)->hasDerivatives() );
+    }
   }
   myfunc.setPrefactor( this, 1.0 ); return shape;
 }

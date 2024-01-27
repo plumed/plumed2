@@ -120,7 +120,7 @@ void Combine::calc( const ActionWithArguments* action, const std::vector<double>
   for(unsigned i=0; i<coefficients.size(); ++i) {
     double cv = action->difference( i, parameters[i], args[i] );
     vals[0] += coefficients[i]*pow( cv, powers[i] );
-    derivatives(0,i) = coefficients[i]*powers[i]*pow(cv,powers[i]-1.0); 
+    derivatives(0,i) = coefficients[i]*powers[i]*pow(cv,powers[i]-1.0);
   }
 }
 

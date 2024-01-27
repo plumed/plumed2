@@ -45,19 +45,19 @@ void AlphaBeta::registerKeywords(Keywords& keys) {
   keys.add("numbered","ATOMS","the atoms involved for each of the torsions you wish to calculate. "
            "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one torsion will be "
            "calculated for each ATOM keyword you specify");
-  keys.reset_style("ATOMS","atoms"); 
+  keys.reset_style("ATOMS","atoms");
   keys.add("compulsory","REFERENCE","the reference values for each of the torsional angles.  If you use a single REFERENCE value the "
            "same reference value is used for all torsions");
 }
 
 AlphaBeta::AlphaBeta(const ActionOptions& ao):
-Action(ao),
-ActionShortcut(ao)
+  Action(ao),
+  ActionShortcut(ao)
 {
   // Read in the reference value
   std::string refstr; parse("REFERENCE",refstr);
   // Calculate angles
-  readInputLine( getShortcutLabel() + "_torsions: TORSIONS " + convertInputLineToString() ); 
+  readInputLine( getShortcutLabel() + "_torsions: TORSIONS " + convertInputLineToString() );
   // Caculate difference from reference using combine
   readInputLine( getShortcutLabel() + "_comb: COMBINE PARAMETERS=" + refstr + " ARG1=" + getShortcutLabel() + "_torsions PERIODIC=NO" );
   // Now matheval for cosine bit

@@ -45,7 +45,7 @@ public:
 PLUMED_REGISTER_ACTION(DistanceFromSphericalContour,"DISTANCE_FROM_SPHERICAL_CONTOUR")
 
 void DistanceFromSphericalContour::registerKeywords( Keywords& keys ) {
-  DistanceFromContourBase::registerKeywords( keys ); 
+  DistanceFromContourBase::registerKeywords( keys );
   keys.addOutputComponent("dist","default","the distance between the reference atom and the nearest contour");
   keys.addOutputComponent("radius","default","the radial distance from the center of the contour to the edge");
   keys.add("atoms","ORIGIN","The position of the center of the region that the contour encloses");
@@ -69,13 +69,13 @@ void DistanceFromSphericalContour::calculate() {
   Vector dirv = pbcDistance( getPosition(getNumberOfAtoms()-1), getPosition(getNumberOfAtoms()-2) );
   double len=dirv.modulo(); dirv /= len;
   // Now work out which atoms need to be considered explicitly
-  Vector myvec = pbcDistance( getPosition(getNumberOfAtoms()-1), getPosition(0) ); 
-  nactive=1; active_list[0]=0; 
+  Vector myvec = pbcDistance( getPosition(getNumberOfAtoms()-1), getPosition(0) );
+  nactive=1; active_list[0]=0;
   for(unsigned j=1; j<getNumberOfAtoms()-2; ++j) {
     if( getNumberOfArguments()==1 ) {
-        if( getPntrToArgument(0)->get(j)<epsilon ) continue;
+      if( getPntrToArgument(0)->get(j)<epsilon ) continue;
     }
-    active_list[nactive]=j; nactive++; 
+    active_list[nactive]=j; nactive++;
     Vector distance=pbcDistance( getPosition(getNumberOfAtoms()-1), getPosition(j) );
     double dp = dotProduct( distance, dirv ); double cp = distance.modulo2() - dp*dp;
     if( cp<rcut2 ) { active_list[nactive]=j; nactive++; }
@@ -85,13 +85,13 @@ void DistanceFromSphericalContour::calculate() {
   if( 0.5*getBox()(1,1)<hbox ) hbox = 0.5*getBox()(1,1);
   if( 0.5*getBox()(2,2)<hbox ) hbox = 0.5*getBox()(2,2);
   // Set initial guess for position of contour to position of closest molecule in region
-  std::vector<double> pos1(3), dirv2(3); 
-  for(unsigned k=0;k<3;++k){ dirv2[k]=hbox*dirv[k]; pos1[k]=0; }
+  std::vector<double> pos1(3), dirv2(3);
+  for(unsigned k=0; k<3; ++k) { dirv2[k]=hbox*dirv[k]; pos1[k]=0; }
   // Now do a search for the contours
   findContour( dirv2, pos1 );
   // Now find the distance between the center of the sphere and the contour
   double rad = sqrt( pos1[0]*pos1[0] + pos1[1]*pos1[1] + pos1[2]*pos1[2] );
-  // Set the radius 
+  // Set the radius
   getPntrToComponent("radius")->set( rad );
   // Set the distance between the contour and the molecule
   getPntrToComponent("dist")->set( len - rad );

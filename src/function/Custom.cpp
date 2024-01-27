@@ -217,34 +217,34 @@ void Custom::read( ActionWithArguments* action ) {
   bool onlymultiplication = func.find("*")!=std::string::npos;
   // Find first bracket in expression
   if( func.find("(")!=std::string::npos ) {
-     std::size_t br = func.find_first_of("("); std::string subexpr=func.substr(0,br); onlymultiplication = func.find("*")!=std::string::npos;
-     if( subexpr.find("/")!=std::string::npos ) { std::size_t sl = func.find_first_of("/"); subexpr=subexpr.substr(0,sl); } 
-     if( subexpr.find("+")!=std::string::npos || subexpr.find("-")!=std::string::npos ) onlymultiplication=false;
-     // Now work out which vars are in multiplication
-     if( onlymultiplication ) {
-         for(unsigned i=0;i<var.size();++i) {
-             if( subexpr.find(var[i])!=std::string::npos && 
-                 action->getPntrToArgument(i)->isDerivativeZeroWhenValueIsZero() ) check_multiplication_vars.push_back(i);
-         }
-     }
-  } else if( func.find("/")!=std::string::npos ) {
-      onlymultiplication=true; if( func.find("+")!=std::string::npos || func.find("-")!=std::string::npos ) onlymultiplication=false;
-      if( onlymultiplication ) {
-         std::size_t br = func.find_first_of("/"); std::string subexpr=func.substr(0,br); 
-         for(unsigned i=0;i<var.size();++i) {
-             if( subexpr.find(var[i])!=std::string::npos &&
-                 action->getPntrToArgument(i)->isDerivativeZeroWhenValueIsZero() ) check_multiplication_vars.push_back(i);
-         }
-      }    
-  } else if( func.find("+")!=std::string::npos || func.find("-")!=std::string::npos ) {
-      onlymultiplication=false;
-  } else {
-      for(unsigned i=0;i<var.size();++i) {
-          if( action->getPntrToArgument(i)->isDerivativeZeroWhenValueIsZero() ) check_multiplication_vars.push_back(i);
+    std::size_t br = func.find_first_of("("); std::string subexpr=func.substr(0,br); onlymultiplication = func.find("*")!=std::string::npos;
+    if( subexpr.find("/")!=std::string::npos ) { std::size_t sl = func.find_first_of("/"); subexpr=subexpr.substr(0,sl); }
+    if( subexpr.find("+")!=std::string::npos || subexpr.find("-")!=std::string::npos ) onlymultiplication=false;
+    // Now work out which vars are in multiplication
+    if( onlymultiplication ) {
+      for(unsigned i=0; i<var.size(); ++i) {
+        if( subexpr.find(var[i])!=std::string::npos &&
+            action->getPntrToArgument(i)->isDerivativeZeroWhenValueIsZero() ) check_multiplication_vars.push_back(i);
       }
+    }
+  } else if( func.find("/")!=std::string::npos ) {
+    onlymultiplication=true; if( func.find("+")!=std::string::npos || func.find("-")!=std::string::npos ) onlymultiplication=false;
+    if( onlymultiplication ) {
+      std::size_t br = func.find_first_of("/"); std::string subexpr=func.substr(0,br);
+      for(unsigned i=0; i<var.size(); ++i) {
+        if( subexpr.find(var[i])!=std::string::npos &&
+            action->getPntrToArgument(i)->isDerivativeZeroWhenValueIsZero() ) check_multiplication_vars.push_back(i);
+      }
+    }
+  } else if( func.find("+")!=std::string::npos || func.find("-")!=std::string::npos ) {
+    onlymultiplication=false;
+  } else {
+    for(unsigned i=0; i<var.size(); ++i) {
+      if( action->getPntrToArgument(i)->isDerivativeZeroWhenValueIsZero() ) check_multiplication_vars.push_back(i);
+    }
   }
   if( check_multiplication_vars.size()>0 ) {
-      action->log.printf("  optimizing implementation as function only involves multiplication \n");
+    action->log.printf("  optimizing implementation as function only involves multiplication \n");
   }
 
   action->log.printf("  with function : %s\n",func.c_str());
@@ -262,34 +262,34 @@ bool Custom::getDerivativeZeroIfValueIsZero() const {
 }
 
 std::vector<Value*> Custom::getArgumentsToCheck( const std::vector<Value*>& args ) {
-  std::vector<Value*> fargs( check_multiplication_vars.size() ); 
-  for(unsigned i=0;i<check_multiplication_vars.size();++i) fargs[i] = args[check_multiplication_vars[i]];
+  std::vector<Value*> fargs( check_multiplication_vars.size() );
+  for(unsigned i=0; i<check_multiplication_vars.size(); ++i) fargs[i] = args[check_multiplication_vars[i]];
   return fargs;
 }
 
 void Custom::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
   if( args.size()>1 ) {
-      bool allzero;
-      if( check_multiplication_vars.size()>0 ) {
-          allzero=false;
-          for(unsigned i=0; i<check_multiplication_vars.size(); ++i) {
-            if( fabs(args[check_multiplication_vars[i]])<epsilon ) { allzero=true; break; }
-          } 
-      } else {
-          allzero=(fabs(args[0])<epsilon);
-          for(unsigned i=1; i<args.size(); ++i) {
-            if( fabs(args[i])>epsilon ) { allzero=false; break; }
-          }
+    bool allzero;
+    if( check_multiplication_vars.size()>0 ) {
+      allzero=false;
+      for(unsigned i=0; i<check_multiplication_vars.size(); ++i) {
+        if( fabs(args[check_multiplication_vars[i]])<epsilon ) { allzero=true; break; }
       }
-      if( allzero ) {
-          vals[0]=0; for(unsigned i=0; i<args.size(); i++) derivatives(0,i) = 0.0;
-          return;
+    } else {
+      allzero=(fabs(args[0])<epsilon);
+      for(unsigned i=1; i<args.size(); ++i) {
+        if( fabs(args[i])>epsilon ) { allzero=false; break; }
       }
+    }
+    if( allzero ) {
+      vals[0]=0; for(unsigned i=0; i<args.size(); i++) derivatives(0,i) = 0.0;
+      return;
+    }
   }
   vals[0] = function.evaluate( args );
   if( !noderiv ) {
-      for(unsigned i=0; i<args.size(); i++) derivatives(0,i) = function.evaluateDeriv( i, args );
-  } 
+    for(unsigned i=0; i<args.size(); i++) derivatives(0,i) = function.evaluateDeriv( i, args );
+  }
 }
 
 }

@@ -257,7 +257,7 @@ DUMPATOMS ARG=q6_anorm ATOMS=q6 FILE=q6.xyz
 //+ENDPLUMEDOC
 
 class Steinhardt : public ActionShortcut {
-private: 
+private:
   std::string getSymbol( const int& m ) const ;
   void createVectorNormInput( const std::string& ilab, const std::string& olab, const int& l, const std::string& sep, const std::string& vlab );
 public:
@@ -279,8 +279,8 @@ void Steinhardt::registerKeywords( Keywords& keys ) {
 }
 
 Steinhardt::Steinhardt( const ActionOptions& ao):
-Action(ao),
-ActionShortcut(ao)
+  Action(ao),
+  ActionShortcut(ao)
 {
   std::string sp_str, specA, specB; parse("SPECIES",sp_str); parse("SPECIESA",specA); parse("SPECIESB",specB);
   CoordinationNumbers::expandMatrix( true, getShortcutLabel(), sp_str, specA, specB, this ); int l;
@@ -322,9 +322,9 @@ ActionShortcut(ao)
     }
   }
 
-  if( do_vmean ) { 
+  if( do_vmean ) {
     for(int i=-l; i<=l; ++i) {
-      snum = getSymbol( i ); 
+      snum = getSymbol( i );
       // Real part
       readInputLine( getShortcutLabel() + "_rms-" + snum + ": MEAN ARG=" + getShortcutLabel() + "_rmn-" + snum + " PERIODIC=NO");
       // Imaginary part
@@ -337,9 +337,9 @@ ActionShortcut(ao)
     for(int i=-l; i<=l; ++i) {
       snum = getSymbol( i );
       // Real part
-      readInputLine( getShortcutLabel() + "_rmz-" + snum + ": SUM ARG=" + getShortcutLabel() + "_rmn-" + snum + " PERIODIC=NO"); 
+      readInputLine( getShortcutLabel() + "_rmz-" + snum + ": SUM ARG=" + getShortcutLabel() + "_rmn-" + snum + " PERIODIC=NO");
       // Imaginary part
-      readInputLine( getShortcutLabel() + "_imz-" + snum + ": SUM ARG=" + getShortcutLabel() + "_imn-" + snum + " PERIODIC=NO"); 
+      readInputLine( getShortcutLabel() + "_imz-" + snum + ": SUM ARG=" + getShortcutLabel() + "_imn-" + snum + " PERIODIC=NO");
     }
     // Now calculate the total length of the vector
     createVectorNormInput( getShortcutLabel(), getShortcutLabel() + "_vsum", l, "_", "mz" );
@@ -356,7 +356,7 @@ void Steinhardt::createVectorNormInput( const std::string& ilab, const std::stri
   std::string arg_inp, norm_input = olab + "2: COMBINE PERIODIC=NO POWERS=2"; arg_inp = "";
   std::string snum, num; unsigned nn=1;
   for(int i=-l; i<=l; ++i) {
-    snum = getSymbol( i ); Tools::convert( nn, num ); 
+    snum = getSymbol( i ); Tools::convert( nn, num );
     arg_inp += " ARG" + num + "=" + ilab + sep + "r" + vlab + "-" + snum + "";
     nn++; Tools::convert( nn, num );
     arg_inp += " ARG" + num + "=" + ilab + sep + "i" + vlab + "-" + snum + "";
@@ -364,18 +364,18 @@ void Steinhardt::createVectorNormInput( const std::string& ilab, const std::stri
     if( i==-l ) norm_input += ",2"; else norm_input += ",2,2";
   }
   readInputLine( norm_input + arg_inp );
-  readInputLine( olab + ": MATHEVAL ARG=" + olab + "2 FUNC=sqrt(x) PERIODIC=NO"); 
+  readInputLine( olab + ": MATHEVAL ARG=" + olab + "2 FUNC=sqrt(x) PERIODIC=NO");
 }
 
 std::string Steinhardt::getSymbol( const int& m ) const {
   if( m<0 ) {
-     std::string num; Tools::convert( -1*m, num );
-     return "n" + num;
+    std::string num; Tools::convert( -1*m, num );
+    return "n" + num;
   } else if( m>0 ) {
-     std::string num; Tools::convert( m, num );
-     return "p" + num;
-  } 
-  return "0"; 
+    std::string num; Tools::convert( m, num );
+    return "p" + num;
+  }
+  return "0";
 }
 
 }

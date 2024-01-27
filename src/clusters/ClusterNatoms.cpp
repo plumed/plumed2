@@ -33,13 +33,13 @@ public:
 
 PLUMED_REGISTER_ACTION(ClusterNatoms,"CLUSTER_NATOMS")
 
-void ClusterNatoms::registerKeywords(Keywords& keys){
+void ClusterNatoms::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
 }
 
 ClusterNatoms::ClusterNatoms(const ActionOptions& ao):
-Action(ao),
-ActionShortcut(ao)
+  Action(ao),
+  ActionShortcut(ao)
 {
   // Create a cluster weights object
   readInputLine( getShortcutLabel() + "_weights: CLUSTER_WEIGHTS " + convertInputLineToString() );

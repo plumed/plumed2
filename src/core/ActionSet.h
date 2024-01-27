@@ -76,7 +76,7 @@ public:
 /// Typically to be used as selectLatest<Type>(this);
   template <class T>
   T selectLatest(const Action*action)const;
-/// Get any shortcuts with this shortcut label 
+/// Get any shortcuts with this shortcut label
   ActionShortcut* getShortcutActionWithLabel( const std::string& s ) const ;
 };
 

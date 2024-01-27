@@ -140,7 +140,7 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
             nlist[k]=nprevious + ires*5+k;
             nlist[k+15]=nprevious + (jres-2)*5+k;
           }
-          std::string nlstr, num; 
+          std::string nlstr, num;
           Tools::convert( nlist[0], nlstr );
           Tools::convert(k, num); k++;
           seglist += " SEGMENT" + num + "=" + nlstr;
@@ -213,13 +213,13 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
   std::string ref0, ref1, ref2;
   Tools::convert(  reference[0][0], ref0 );
   Tools::convert(  reference[0][1], ref1 );
-  Tools::convert(  reference[0][2], ref2 ); 
+  Tools::convert(  reference[0][2], ref2 );
   std::string structure=" STRUCTURE1=" + ref0 + "," + ref1 + "," + ref2;
   for(unsigned i=1; i<30; ++i) {
-      for(unsigned k=0; k<3; ++k) { Tools::convert( reference[i][k], ref0 ); structure += "," + ref0; }
-  }       
+    for(unsigned k=0; k<3; ++k) { Tools::convert( reference[i][k], ref0 ); structure += "," + ref0; }
+  }
 
-  std::string strands_cutoff; parse("STRANDS_CUTOFF",strands_cutoff); 
+  std::string strands_cutoff; parse("STRANDS_CUTOFF",strands_cutoff);
   if( strands_cutoff.length()>0 ) strands_cutoff=" CUTOFF_ATOMS=6,21 STRANDS_CUTOFF="+strands_cutoff;
   std::string type; parse("TYPE",type); std::string lab = getShortcutLabel() + "_rmsd"; if( uselessthan ) lab = getShortcutLabel();
   readInputLine( lab + ": SECONDARY_STRUCTURE_RMSD BONDLENGTH=0.17" + seglist + structure + " " + atoms + " TYPE=" + type + strands_cutoff);

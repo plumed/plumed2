@@ -26,9 +26,9 @@
 namespace PLMD {
 namespace valtools {
 
-class Flatten : 
-public ActionWithValue,
-public ActionWithArguments {
+class Flatten :
+  public ActionWithValue,
+  public ActionWithArguments {
 public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
@@ -56,8 +56,8 @@ Flatten::Flatten(const ActionOptions& ao):
   if( getNumberOfArguments()!=1 ) error("should only be one argument for this action");
   if( getPntrToArgument(0)->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) error("input to this action should be a matrix");
   getPntrToArgument(0)->buildDataStore(true);
-  std::vector<unsigned> inshape( getPntrToArgument(0)->getShape() ); 
-  std::vector<unsigned> shape( 1 ); shape[0]=inshape[0]*inshape[1]; 
+  std::vector<unsigned> inshape( getPntrToArgument(0)->getShape() );
+  std::vector<unsigned> shape( 1 ); shape[0]=inshape[0]*inshape[1];
   addValue( shape ); setNotPeriodic(); getPntrToComponent(0)->buildDataStore();
 }
 
@@ -67,9 +67,9 @@ void Flatten::calculate() {
   bool symmetric=getPntrToArgument(0)->isSymmetric();
   unsigned nedge=0; getPntrToArgument(0)->retrieveEdgeList( nedge, pairs, vals );
   for(unsigned l=0; l<nedge; ++l ) {
-      unsigned i=pairs[l].first, j=pairs[l].second;
-      myval->set( i*ss + j, vals[l] );
-      if( symmetric ) myval->set( j*ss + i, vals[l] );
+    unsigned i=pairs[l].first, j=pairs[l].second;
+    myval->set( i*ss + j, vals[l] );
+    if( symmetric ) myval->set( j*ss + i, vals[l] );
   }
 }
 

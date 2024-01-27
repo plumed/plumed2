@@ -64,27 +64,27 @@ PLUMED_REGISTER_ACTION(VectorDifference,"DIFFERENCE_VECTOR")
 void Difference::read( ActionWithArguments* action ) {
   if( action->getNumberOfArguments()!=2 ) action->error("should be two arguments to this action");
   if( action->getPntrToArgument(0)->getRank()==action->getPntrToArgument(1)->getRank() ) {
-      std::vector<unsigned> shape( action->getPntrToArgument(0)->getShape() );
-      for(unsigned i=0;i<shape.size();++i) {
-          if( shape[i]!=action->getPntrToArgument(1)->getShape()[i] ) action->error("shapes of input actions do not match");
-      }  
+    std::vector<unsigned> shape( action->getPntrToArgument(0)->getShape() );
+    for(unsigned i=0; i<shape.size(); ++i) {
+      if( shape[i]!=action->getPntrToArgument(1)->getShape()[i] ) action->error("shapes of input actions do not match");
+    }
   }
 
   periodic=false;
   if( action->getPntrToArgument(0)->isPeriodic() ) {
-      periodic=true; action->getPntrToArgument(0)->getDomain( min0, max0 );
-      if( !action->getPntrToArgument(1)->isConstant() && !action->getPntrToArgument(1)->isPeriodic() ) {
-          action->error("period for input variables " + action->getPntrToArgument(0)->getName() + " and " + action->getPntrToArgument(1)->getName() + " should be the same 0"); 
-      }
-      if( !action->getPntrToArgument(1)->isConstant() ) {
-          std::string min1, max1; action->getPntrToArgument(1)->getDomain( min1, max1 );
-          if( min0!=min0 || max0!=max1 ) action->error("domain for input variables should be the same");
-      } else action->getPntrToArgument(1)->setDomain( min0, max0 );
+    periodic=true; action->getPntrToArgument(0)->getDomain( min0, max0 );
+    if( !action->getPntrToArgument(1)->isConstant() && !action->getPntrToArgument(1)->isPeriodic() ) {
+      action->error("period for input variables " + action->getPntrToArgument(0)->getName() + " and " + action->getPntrToArgument(1)->getName() + " should be the same 0");
+    }
+    if( !action->getPntrToArgument(1)->isConstant() ) {
+      std::string min1, max1; action->getPntrToArgument(1)->getDomain( min1, max1 );
+      if( min0!=min0 || max0!=max1 ) action->error("domain for input variables should be the same");
+    } else action->getPntrToArgument(1)->setDomain( min0, max0 );
   } else if( action->getPntrToArgument(1)->isPeriodic() ) {
-      periodic=true; action->getPntrToArgument(1)->getDomain( min0, max0 );
-      if( !action->getPntrToArgument(1)->isConstant() ) {
-          action->error("period for input variables " + action->getPntrToArgument(0)->getName() + " and " + action->getPntrToArgument(1)->getName() + " should be the same 1");
-      } else action->getPntrToArgument(0)->setDomain( min0, max0 );
+    periodic=true; action->getPntrToArgument(1)->getDomain( min0, max0 );
+    if( !action->getPntrToArgument(1)->isConstant() ) {
+      action->error("period for input variables " + action->getPntrToArgument(0)->getName() + " and " + action->getPntrToArgument(1)->getName() + " should be the same 1");
+    } else action->getPntrToArgument(0)->setDomain( min0, max0 );
   }
 }
 

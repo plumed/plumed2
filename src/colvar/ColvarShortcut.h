@@ -37,33 +37,33 @@ public:
 template <class T>
 void ColvarShortcut<T>::registerKeywords(Keywords& keys ) {
   T::registerKeywords( keys ); keys.remove("NO_ACTION_LOG");
-  unsigned nkeys = keys.size(); 
+  unsigned nkeys = keys.size();
   for(unsigned i=0; i<nkeys; ++i) {
-      if( keys.style( keys.get(i), "atoms" ) ) keys.reset_style( keys.get(i), "numbered" );
+    if( keys.style( keys.get(i), "atoms" ) ) keys.reset_style( keys.get(i), "numbered" );
   }
 }
 
 template <class T>
 ColvarShortcut<T>::ColvarShortcut(const ActionOptions&ao):
-Action(ao),
-ActionShortcut(ao)
+  Action(ao),
+  ActionShortcut(ao)
 {
   bool scalar=true; unsigned nkeys = keywords.size();
   if( getName()=="MASS" || getName()=="CHARGE" || getName()=="POSITION" ) {
-      std::string inpt; parse("ATOMS",inpt); 
-      if( inpt.length()>0 ) {
-          readInputLine( getShortcutLabel() + ": " + getName() + "_VECTOR ATOMS=" + inpt + " " + convertInputLineToString() ); 
-          scalar=false;
-      }
-  } 
+    std::string inpt; parse("ATOMS",inpt);
+    if( inpt.length()>0 ) {
+      readInputLine( getShortcutLabel() + ": " + getName() + "_VECTOR ATOMS=" + inpt + " " + convertInputLineToString() );
+      scalar=false;
+    }
+  }
   for(unsigned i=0; i<nkeys; ++i) {
-     if( keywords.style( keywords.get(i), "atoms" ) ) {
-         std::string inpt; parseNumbered( keywords.get(i), 2, inpt );
-         if( inpt.length()>0 ) {
-             readInputLine( getShortcutLabel() + ": " + getName() + "_VECTOR " + keywords.get(i) + "2=" + inpt + " " + convertInputLineToString() );
-             scalar=false; break;
-         }
-     }
+    if( keywords.style( keywords.get(i), "atoms" ) ) {
+      std::string inpt; parseNumbered( keywords.get(i), 2, inpt );
+      if( inpt.length()>0 ) {
+        readInputLine( getShortcutLabel() + ": " + getName() + "_VECTOR " + keywords.get(i) + "2=" + inpt + " " + convertInputLineToString() );
+        scalar=false; break;
+      }
+    }
   }
   if( scalar ) readInputLine( getShortcutLabel() + ": " + getName() + "_SCALAR " + convertInputLineToString() );
 }

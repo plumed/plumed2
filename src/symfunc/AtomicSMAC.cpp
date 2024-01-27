@@ -52,17 +52,17 @@ void AtomicSMAC::registerKeywords(Keywords& keys) {
 }
 
 AtomicSMAC::AtomicSMAC(const ActionOptions& ao):
-Action(ao),
-ActionShortcut(ao)
+  Action(ao),
+  ActionShortcut(ao)
 {
   // Create the matrices
   std::string sw_input; parse("SWITCH",sw_input);
   std::string sp_lab, sp_laba; parse("SPECIES",sp_lab); parse("SPECIESA",sp_laba);
   std::string cmap_input = getShortcutLabel() + "_cmap: CONTACT_MATRIX";
-  if( sp_lab.length()>0 ) { 
+  if( sp_lab.length()>0 ) {
     readInputLine( getShortcutLabel() + "_cmap: CONTACT_MATRIX GROUP=" + sp_lab + " COMPONENTS SWITCH={" + sw_input + "}");
   } else if( sp_laba.length()>0 ) {
-    std::string sp_labb; parse("SPECIESB",sp_labb); 
+    std::string sp_labb; parse("SPECIESB",sp_labb);
     readInputLine( getShortcutLabel() + "_cmap: CONTACT_MATRIX GROUPA=" + sp_laba + " GROUPB=" + sp_labb + " COMPONENTS SWITCH={" + sw_input + "}");
   }
   // Now need the Gaussians
@@ -70,17 +70,17 @@ ActionShortcut(ao)
   for(unsigned i=1;; ++i) {
     std::string kstr_inpt, istr, kern_str; Tools::convert( i, istr );
     if( !parseNumbered("KERNEL",i,kstr_inpt ) ) { break; }
-    std::vector<std::string> words = Tools::getWords(kstr_inpt); 
+    std::vector<std::string> words = Tools::getWords(kstr_inpt);
     if( words[0]=="GAUSSIAN" ) kern_str="gaussian";
     else error("unknown kernel type");
     std::string center, var; Tools::parse(words,"CENTER",center); Tools::parse(words,"SIGMA",var);
     if( mykernels.length()==0 ) mykernels = "exp(-(ajik-" + center + ")^2/(2*" + var + "*" + var + "))";
-    else mykernels = mykernels + "+exp(-(ajik-" + center + ")^2/(2*" + var + "*" + var + "))"; 
+    else mykernels = mykernels + "+exp(-(ajik-" + center + ")^2/(2*" + var + "*" + var + "))";
   }
   // Hard coded switching function on minimum distance here -- should be improved
-  readInputLine( getShortcutLabel() + "_ksum: GSYMFUNC_THREEBODY WEIGHT=" + getShortcutLabel() + "_cmap.w " + 
-                                              "ARG=" + getShortcutLabel() + "_cmap.x," + getShortcutLabel() + "_cmap.y," + getShortcutLabel() + "_cmap.z" 
-                                              " FUNCTION1={FUNC=" + mykernels + " LABEL=n} FUNCTION2={FUNC=1 LABEL=d}" );
+  readInputLine( getShortcutLabel() + "_ksum: GSYMFUNC_THREEBODY WEIGHT=" + getShortcutLabel() + "_cmap.w " +
+                 "ARG=" + getShortcutLabel() + "_cmap.x," + getShortcutLabel() + "_cmap.y," + getShortcutLabel() + "_cmap.z"
+                 " FUNCTION1={FUNC=" + mykernels + " LABEL=n} FUNCTION2={FUNC=1 LABEL=d}" );
   // And just the sum of the coordination numbers
   ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_cmap");
   plumed_assert( av && av->getNumberOfComponents()>0 && (av->copyOutput(0))->getRank()==2 );

@@ -43,7 +43,7 @@ public:
 PLUMED_REGISTER_ACTION(CovarianceMatrix,"COVARIANCE_MATRIX")
 
 void CovarianceMatrix::registerKeywords(Keywords& keys ) {
-  ActionShortcut::registerKeywords( keys ); 
+  ActionShortcut::registerKeywords( keys );
   keys.add("numbered","ARG","the vectors of data from which we are calculating the covariance");
   keys.add("compulsory","WEIGHTS","this keyword takes the label of an action that calculates a vector of values.  The elements of this vector "
            "are used as weights for the input data points.");
@@ -55,23 +55,23 @@ CovarianceMatrix::CovarianceMatrix(const ActionOptions&ao):
   ActionShortcut(ao)
 {
   std::vector<std::string> args; parseVector("ARG",args);
-  unsigned nargs=args.size(); std::string argstr="ARG=" + args[0]; 
-  for(unsigned i=1;i<args.size();++i) argstr += "," + args[i];
+  unsigned nargs=args.size(); std::string argstr="ARG=" + args[0];
+  for(unsigned i=1; i<args.size(); ++i) argstr += "," + args[i];
 
   bool unorm; parseFlag("UNORMALIZED",unorm); std::string wstr; parse("WEIGHTS",wstr);
   if( !unorm ) {
-      // Normalize the weights
-      readInputLine( getShortcutLabel() + "_wsum: SUM ARG=" + wstr + " PERIODIC=NO");
-      readInputLine( getShortcutLabel() + "_weights: CUSTOM ARG=" + wstr + "," + getShortcutLabel() + "_wsum FUNC=x/y PERIODIC=NO");
-      wstr = getShortcutLabel() + "_weights"; 
+    // Normalize the weights
+    readInputLine( getShortcutLabel() + "_wsum: SUM ARG=" + wstr + " PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_weights: CUSTOM ARG=" + wstr + "," + getShortcutLabel() + "_wsum FUNC=x/y PERIODIC=NO");
+    wstr = getShortcutLabel() + "_weights";
   }
   // Make a stack of all the data
   readInputLine( getShortcutLabel() + "_stack: VSTACK " + argstr );
   // And calculate the covariance matrix by first transposing the stack
   readInputLine( getShortcutLabel() + "_stackT: TRANSPOSE ARG=" + getShortcutLabel() + "_stack");
   // Create a matrix that holds all the weights
-  std::string str_nargs; Tools::convert( nargs, str_nargs ); 
-  readInputLine( getShortcutLabel() + "_ones: ONES SIZE=" + str_nargs ); 
+  std::string str_nargs; Tools::convert( nargs, str_nargs );
+  readInputLine( getShortcutLabel() + "_ones: ONES SIZE=" + str_nargs );
   // Now create a matrix that holds all the weights
   readInputLine( getShortcutLabel() + "_matweights: OUTER_PRODUCT ARG=" + getShortcutLabel() + "_ones," + wstr );
   // And multiply the weights by the transpose to get the weighted transpose

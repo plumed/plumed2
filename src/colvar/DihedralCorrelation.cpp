@@ -36,7 +36,7 @@ namespace colvar {
 Measure the correlation between a pair of dihedral angles
 
 
-\par Examples 
+\par Examples
 
 */
 //+ENDPLUMEDOC
@@ -90,11 +90,11 @@ DihedralCorrelation::DihedralCorrelation(const ActionOptions&ao):
 }
 
 void DihedralCorrelation::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
-  aa->parseAtomList("ATOMS",num,t); 
-  if( num<0 && t.size()!=8 ) aa->error("Number of specified atoms should be 8"); 
+  aa->parseAtomList("ATOMS",num,t);
+  if( num<0 && t.size()!=8 ) aa->error("Number of specified atoms should be 8");
   if( t.size()>0 ) {
-      aa->log.printf("  correlation between dihedral angle for atoms %d %d %d %d and atoms %d %d %d %d\n",
-                     t[0].serial(),t[1].serial(),t[2].serial(),t[3].serial(),t[4].serial(),t[5].serial(),t[6].serial(),t[7].serial());
+    aa->log.printf("  correlation between dihedral angle for atoms %d %d %d %d and atoms %d %d %d %d\n",
+                   t[0].serial(),t[1].serial(),t[2].serial(),t[3].serial(),t[4].serial(),t[5].serial(),t[6].serial(),t[7].serial());
   }
 }
 
@@ -103,11 +103,11 @@ unsigned DihedralCorrelation::getModeAndSetupValues( ActionWithValue* av ) {
 }
 
 void DihedralCorrelation::calculate() {
-  
+
   if(pbc) makeWhole();
-  calculateCV( 0, masses, charges, getPositions(), value, derivs, virial, this ); 
-  setValue( value[0] );    
-  for(unsigned i=0; i<derivs[0].size();++i) setAtomsDerivatives( i, derivs[0][i] );
+  calculateCV( 0, masses, charges, getPositions(), value, derivs, virial, this );
+  setValue( value[0] );
+  for(unsigned i=0; i<derivs[0].size(); ++i) setAtomsDerivatives( i, derivs[0][i] );
   setBoxDerivatives( virial[0] );
 }
 
@@ -152,7 +152,7 @@ void DihedralCorrelation::calculateCV( const unsigned& mode, const std::vector<d
   derivs[0][5]=dd21-dd20;
   derivs[0][6]=dd22-dd21;
   derivs[0][7]=-dd22;
-  virial[0] = -(extProduct(d10,dd10)+extProduct(d11,dd11)+extProduct(d12,dd12)) - (extProduct(d20,dd20)+extProduct(d21,dd21)+extProduct(d22,dd22)); 
+  virial[0] = -(extProduct(d10,dd10)+extProduct(d11,dd11)+extProduct(d12,dd12)) - (extProduct(d20,dd20)+extProduct(d21,dd21)+extProduct(d22,dd22));
 }
 
 }

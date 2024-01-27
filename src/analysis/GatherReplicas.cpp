@@ -30,7 +30,7 @@ namespace analysis {
 class GatherReplicas :
   public ActionWithValue,
   public ActionWithArguments {
-private: 
+private:
   unsigned nreplicas;
 public:
   static void registerKeywords( Keywords& keys );
@@ -57,14 +57,14 @@ GatherReplicas::GatherReplicas( const ActionOptions& ao ):
 
   std::vector<unsigned> shape( getPntrToArgument(0)->getShape() );
   std::string min, max; nreplicas=multi_sim_comm.Get_size(); bool periodic=false;
-  if( getPntrToArgument(0)->isPeriodic() ) { periodic=true; getPntrToArgument(0)->getDomain( min, max ); } 
+  if( getPntrToArgument(0)->isPeriodic() ) { periodic=true; getPntrToArgument(0)->getDomain( min, max ); }
 
-  for(unsigned i=0;i<nreplicas;++i) { 
-      std::string num; Tools::convert( i+1, num); 
-      if( getPntrToArgument(0)->hasDerivatives() ) addComponentWithDerivatives( "rep-" + num, shape );
-      else addComponent( "rep-" + num, shape );
-      if( periodic ) componentIsPeriodic( "rep-" + num, min, max ); 
-      else componentIsNotPeriodic( "rep-" + num );
+  for(unsigned i=0; i<nreplicas; ++i) {
+    std::string num; Tools::convert( i+1, num);
+    if( getPntrToArgument(0)->hasDerivatives() ) addComponentWithDerivatives( "rep-" + num, shape );
+    else addComponent( "rep-" + num, shape );
+    if( periodic ) componentIsPeriodic( "rep-" + num, min, max );
+    else componentIsNotPeriodic( "rep-" + num );
   }
 }
 
@@ -73,25 +73,25 @@ unsigned GatherReplicas::getNumberOfDerivatives() {
 }
 
 void GatherReplicas::calculate() {
-  Value* myarg = getPntrToArgument(0); 
+  Value* myarg = getPntrToArgument(0);
   unsigned nvals = myarg->getNumberOfValues(), nder = myarg->getNumberOfDerivatives();
   std::vector<double> dval( nvals*(1+nder) ), datap(nreplicas*nvals*(1+nder) );
   for(unsigned i=0; i<nvals; ++i) {
-      dval[i*(1+nder)] = myarg->get(i);
-      if( myarg->getRank()==0 ) { for(unsigned j=0;j<nder;++j) dval[i*(1+nder)+1+j] = myarg->getDerivative(j); }
-      else if( myarg->hasDerivatives() ) { for(unsigned j=0;j<nder;++j) dval[i*(1+nder)+1+j] = myarg->getGridDerivative( i, j ); }
+    dval[i*(1+nder)] = myarg->get(i);
+    if( myarg->getRank()==0 ) { for(unsigned j=0; j<nder; ++j) dval[i*(1+nder)+1+j] = myarg->getDerivative(j); }
+    else if( myarg->hasDerivatives() ) { for(unsigned j=0; j<nder; ++j) dval[i*(1+nder)+1+j] = myarg->getGridDerivative( i, j ); }
   }
   if(comm.Get_rank()==0) multi_sim_comm.Allgather(dval,datap);
 
   for(unsigned k=0; k<nreplicas; k++) {
-      Value* myout = getPntrToComponent(k); 
-      if( myout->getNumberOfDerivatives()!=myarg->getNumberOfDerivatives() ) myout->resizeDerivatives( myarg->getNumberOfDerivatives() );
-      unsigned sstart=k*nvals*(1+nder);
-      for(unsigned i=0;i<nvals;++i) {
-          myout->set( i, datap[sstart+i*(1+nder)] );
-          if( myarg->getRank()==0 ) { for(unsigned j=0;j<nder;++j) myout->setDerivative( j, dval[i*(1+nder)+1+j] ); }
-          else if( myarg->hasDerivatives() ) { for(unsigned j=0;j<nder;++j) myout->addGridDerivatives( i, j, dval[i*(1+nder)+1+j] ); }
-      }
+    Value* myout = getPntrToComponent(k);
+    if( myout->getNumberOfDerivatives()!=myarg->getNumberOfDerivatives() ) myout->resizeDerivatives( myarg->getNumberOfDerivatives() );
+    unsigned sstart=k*nvals*(1+nder);
+    for(unsigned i=0; i<nvals; ++i) {
+      myout->set( i, datap[sstart+i*(1+nder)] );
+      if( myarg->getRank()==0 ) { for(unsigned j=0; j<nder; ++j) myout->setDerivative( j, dval[i*(1+nder)+1+j] ); }
+      else if( myarg->hasDerivatives() ) { for(unsigned j=0; j<nder; ++j) myout->addGridDerivatives( i, j, dval[i*(1+nder)+1+j] ); }
+    }
   }
 }
 

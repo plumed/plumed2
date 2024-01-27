@@ -50,20 +50,20 @@ void EvaluateFunctionOnGrid::registerKeywords(Keywords& keys ) {
 }
 
 EvaluateFunctionOnGrid::EvaluateFunctionOnGrid(const ActionOptions&ao):
-Action(ao),
-ActionShortcut(ao)
+  Action(ao),
+  ActionShortcut(ao)
 {
   // Get the grid that we are evaluating here
-  std::vector<std::string> gridn(1); parse("GRID",gridn[0]); 
+  std::vector<std::string> gridn(1); parse("GRID",gridn[0]);
   std::vector<Value*> gridv; ActionWithArguments::interpretArgumentList( gridn, plumed.getActionSet(), this, gridv );
   // Read the input arguments from the input file
   std::vector<std::string> argn; parseVector("ARG",argn);
   // Now get the arguments
   ActionWithGrid* ag = dynamic_cast<ActionWithGrid*>( gridv[0]->getPntrToAction() );
   if( !ag ) error("argument to GRID argument is not a grid");
-  if( argn.size()==0 ) { 
-      std::vector<std::string> argn2( ag->getGridCoordinateNames() );
-      argn.resize( argn2.size() ); for(unsigned i=0;i<argn2.size();++i) argn[i]=argn2[i]; 
+  if( argn.size()==0 ) {
+    std::vector<std::string> argn2( ag->getGridCoordinateNames() );
+    argn.resize( argn2.size() ); for(unsigned i=0; i<argn2.size(); ++i) argn[i]=argn2[i];
   }
   if( argn.size()!=gridv[0]->getRank() ) error("found wrong number of arguments in Evaluate function on grid");
   // Now use this information to create a gridobject
@@ -71,7 +71,7 @@ ActionShortcut(ao)
   // Now get the actual values we are using
   std::vector<Value*> vals; ActionWithArguments::interpretArgumentList( argn, plumed.getActionSet(), this, vals );
   if( vals.size()==0 ) error("found no input arguments to function");
-  std::string allargs = gridn[0]; for(unsigned i=0; i<argn.size(); ++i) allargs += "," + argn[i]; 
+  std::string allargs = gridn[0]; for(unsigned i=0; i<argn.size(); ++i) allargs += "," + argn[i];
   function::FunctionShortcut<int>::createAction( this, vals, allargs );
 }
 

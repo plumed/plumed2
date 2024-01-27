@@ -46,9 +46,9 @@ void MahalanobisDistance::registerKeywords( Keywords& keys ) {
 }
 
 MahalanobisDistance::MahalanobisDistance( const ActionOptions& ao):
-Action(ao),
-ActionShortcut(ao)
-{ 
+  Action(ao),
+  ActionShortcut(ao)
+{
   std::string arg1, arg2, metstr; parse("ARG1",arg1); parse("ARG2",arg2); parse("METRIC",metstr);
   // Check on input metric
   ActionWithValue* mav=plumed.getActionSet().selectWithLabel<ActionWithValue*>( metstr );
@@ -59,59 +59,59 @@ ActionShortcut(ao)
   readInputLine( getShortcutLabel() + "_diffT: TRANSPOSE ARG=" + getShortcutLabel() + "_diff");
   bool von_miss, squared; parseFlag("VON_MISSES",von_miss); parseFlag("SQUARED",squared);
   if( von_miss ) {
-      unsigned nrows = mav->copyOutput(0)->getShape()[0];
-      if( mav->copyOutput(0)->getShape()[1]!=nrows ) error("metric is not symmetric"); 
-      // Create a matrix that can be used to compute the off diagonal elements
-      std::string valstr, nrstr; 
-      Tools::convert( mav->copyOutput(0)->get(0), valstr ); Tools::convert( nrows, nrstr );
-      std::string diagmet = getShortcutLabel() + "_diagmet: CONSTANT VALUES=" + valstr;
-      std::string offdiagmet = getShortcutLabel() + "_offdiagmet: CONSTANT NROWS=" + nrstr + " NCOLS=" + nrstr + " VALUES=0";
-      for(unsigned i=0;i<nrows;++i) {
-          for(unsigned j=0;j<nrows;++j) {
-              Tools::convert( mav->copyOutput(0)->get(i*nrows+j), valstr );
-              if( i==j && i>0 ) { offdiagmet += ",0"; diagmet += "," + valstr; }
-              else if( i!=j ) { offdiagmet += "," + valstr; }
-          }
+    unsigned nrows = mav->copyOutput(0)->getShape()[0];
+    if( mav->copyOutput(0)->getShape()[1]!=nrows ) error("metric is not symmetric");
+    // Create a matrix that can be used to compute the off diagonal elements
+    std::string valstr, nrstr;
+    Tools::convert( mav->copyOutput(0)->get(0), valstr ); Tools::convert( nrows, nrstr );
+    std::string diagmet = getShortcutLabel() + "_diagmet: CONSTANT VALUES=" + valstr;
+    std::string offdiagmet = getShortcutLabel() + "_offdiagmet: CONSTANT NROWS=" + nrstr + " NCOLS=" + nrstr + " VALUES=0";
+    for(unsigned i=0; i<nrows; ++i) {
+      for(unsigned j=0; j<nrows; ++j) {
+        Tools::convert( mav->copyOutput(0)->get(i*nrows+j), valstr );
+        if( i==j && i>0 ) { offdiagmet += ",0"; diagmet += "," + valstr; }
+        else if( i!=j ) { offdiagmet += "," + valstr; }
       }
-      readInputLine( diagmet ); readInputLine( offdiagmet );
-      // Compute distances scaled by periods
-      ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_diff" ); plumed_assert( av );
-      if( !av->copyOutput(0)->isPeriodic() ) error("VON_MISSES only works with periodic variables");
-      std::string min, max; av->copyOutput(0)->getDomain(min,max);
-      readInputLine( getShortcutLabel() + "_scaled: CUSTOM ARG=" + getShortcutLabel() + "_diffT FUNC=2*pi*x/(" + max +"-" + min + ") PERIODIC=NO");
-      // We start calculating off-diagonal elements by computing the sines of the scaled differences (this is a column vector)
-      readInputLine( getShortcutLabel() + "_sinediffT: CUSTOM ARG=" + getShortcutLabel() + "_scaled FUNC=sin(x) PERIODIC=NO");
-      // Transpose sines to get a row vector
-      readInputLine( getShortcutLabel() + "_sinediff: TRANSPOSE ARG=" + getShortcutLabel() + "_sinediffT");
-      // Compute the off diagonal elements
-      readInputLine( getShortcutLabel() + "_matvec: MATRIX_PRODUCT ARG=" + getShortcutLabel() + "_offdiagmet," + getShortcutLabel() +"_sinediffT"); 
-      readInputLine( getShortcutLabel() + "_offdiag: MATRIX_PRODUCT_DIAGONAL ARG=" + getShortcutLabel() + "_sinediff," + getShortcutLabel() +"_matvec");
-      // Sort out the metric for the diagonal elements
-      std::string metstr2 = getShortcutLabel() + "_diagmet";
-      // If this is a matrix we need create a matrix to multiply by
-      if( av->copyOutput(0)->getShape()[0]>1 ) {
-          // Create some ones   
-          std::string ones=" VALUES=1"; for(unsigned i=1; i<av->copyOutput(0)->getShape()[0]; ++i ) ones += ",1";
-          readInputLine( getShortcutLabel() + "_ones: CONSTANT " + ones );
-          // Now do some multiplication to create a matrix that can be multiplied by our "inverse variance" vector
-          readInputLine( getShortcutLabel() + "_" + metstr + ": OUTER_PRODUCT ARG=" + metstr2 + "," + getShortcutLabel() + "_ones");
-          metstr2 = getShortcutLabel() + "_" + metstr;
-      }  
-      // Compute the diagonal elements
-      readInputLine( getShortcutLabel() + "_prod: CUSTOM ARG=" + getShortcutLabel() + "_scaled," + metstr2 + " FUNC=2*(1-cos(x))*y PERIODIC=NO");
-      std::string ncstr; Tools::convert( nrows, ncstr ); Tools::convert( av->copyOutput(0)->getShape()[0], nrstr );
-      std::string ones=" VALUES=1"; for(unsigned i=1; i<av->copyOutput(0)->getNumberOfValues(); ++i) ones += ",1";
-      readInputLine( getShortcutLabel() + "_matones: CONSTANT NROWS=" + nrstr + " NCOLS=" + ncstr + ones );
-      readInputLine( getShortcutLabel() + "_diag: MATRIX_PRODUCT_DIAGONAL ARG=" + getShortcutLabel() + "_matones," + getShortcutLabel() + "_prod");
-      // Sum everything
-      if( !squared ) readInputLine( getShortcutLabel() + "_2: COMBINE ARG=" + getShortcutLabel() + "_offdiag," + getShortcutLabel() + "_diag PERIODIC=NO");
-      else readInputLine( getShortcutLabel() + ": COMBINE ARG=" + getShortcutLabel() + "_offdiag," + getShortcutLabel() + "_diag PERIODIC=NO");
+    }
+    readInputLine( diagmet ); readInputLine( offdiagmet );
+    // Compute distances scaled by periods
+    ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_diff" ); plumed_assert( av );
+    if( !av->copyOutput(0)->isPeriodic() ) error("VON_MISSES only works with periodic variables");
+    std::string min, max; av->copyOutput(0)->getDomain(min,max);
+    readInputLine( getShortcutLabel() + "_scaled: CUSTOM ARG=" + getShortcutLabel() + "_diffT FUNC=2*pi*x/(" + max +"-" + min + ") PERIODIC=NO");
+    // We start calculating off-diagonal elements by computing the sines of the scaled differences (this is a column vector)
+    readInputLine( getShortcutLabel() + "_sinediffT: CUSTOM ARG=" + getShortcutLabel() + "_scaled FUNC=sin(x) PERIODIC=NO");
+    // Transpose sines to get a row vector
+    readInputLine( getShortcutLabel() + "_sinediff: TRANSPOSE ARG=" + getShortcutLabel() + "_sinediffT");
+    // Compute the off diagonal elements
+    readInputLine( getShortcutLabel() + "_matvec: MATRIX_PRODUCT ARG=" + getShortcutLabel() + "_offdiagmet," + getShortcutLabel() +"_sinediffT");
+    readInputLine( getShortcutLabel() + "_offdiag: MATRIX_PRODUCT_DIAGONAL ARG=" + getShortcutLabel() + "_sinediff," + getShortcutLabel() +"_matvec");
+    // Sort out the metric for the diagonal elements
+    std::string metstr2 = getShortcutLabel() + "_diagmet";
+    // If this is a matrix we need create a matrix to multiply by
+    if( av->copyOutput(0)->getShape()[0]>1 ) {
+      // Create some ones
+      std::string ones=" VALUES=1"; for(unsigned i=1; i<av->copyOutput(0)->getShape()[0]; ++i ) ones += ",1";
+      readInputLine( getShortcutLabel() + "_ones: CONSTANT " + ones );
+      // Now do some multiplication to create a matrix that can be multiplied by our "inverse variance" vector
+      readInputLine( getShortcutLabel() + "_" + metstr + ": OUTER_PRODUCT ARG=" + metstr2 + "," + getShortcutLabel() + "_ones");
+      metstr2 = getShortcutLabel() + "_" + metstr;
+    }
+    // Compute the diagonal elements
+    readInputLine( getShortcutLabel() + "_prod: CUSTOM ARG=" + getShortcutLabel() + "_scaled," + metstr2 + " FUNC=2*(1-cos(x))*y PERIODIC=NO");
+    std::string ncstr; Tools::convert( nrows, ncstr ); Tools::convert( av->copyOutput(0)->getShape()[0], nrstr );
+    std::string ones=" VALUES=1"; for(unsigned i=1; i<av->copyOutput(0)->getNumberOfValues(); ++i) ones += ",1";
+    readInputLine( getShortcutLabel() + "_matones: CONSTANT NROWS=" + nrstr + " NCOLS=" + ncstr + ones );
+    readInputLine( getShortcutLabel() + "_diag: MATRIX_PRODUCT_DIAGONAL ARG=" + getShortcutLabel() + "_matones," + getShortcutLabel() + "_prod");
+    // Sum everything
+    if( !squared ) readInputLine( getShortcutLabel() + "_2: COMBINE ARG=" + getShortcutLabel() + "_offdiag," + getShortcutLabel() + "_diag PERIODIC=NO");
+    else readInputLine( getShortcutLabel() + ": COMBINE ARG=" + getShortcutLabel() + "_offdiag," + getShortcutLabel() + "_diag PERIODIC=NO");
   } else {
-      ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_diffT" ); plumed_assert( av && av->getNumberOfComponents()==1 ); 
-      if( (av->copyOutput(0))->getRank()==1 ) readInputLine( getShortcutLabel() + "_matvec: MATRIX_VECTOR_PRODUCT ARG=" + metstr + "," + getShortcutLabel() +"_diffT");
-      else readInputLine( getShortcutLabel() + "_matvec: MATRIX_PRODUCT ARG=" + metstr + "," + getShortcutLabel() +"_diffT");
-      std::string olab = getShortcutLabel(); if( !squared ) olab += "_2";
-      readInputLine( olab + ": MATRIX_PRODUCT_DIAGONAL ARG=" + getShortcutLabel() + "_diff," + getShortcutLabel() +"_matvec");
+    ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_diffT" ); plumed_assert( av && av->getNumberOfComponents()==1 );
+    if( (av->copyOutput(0))->getRank()==1 ) readInputLine( getShortcutLabel() + "_matvec: MATRIX_VECTOR_PRODUCT ARG=" + metstr + "," + getShortcutLabel() +"_diffT");
+    else readInputLine( getShortcutLabel() + "_matvec: MATRIX_PRODUCT ARG=" + metstr + "," + getShortcutLabel() +"_diffT");
+    std::string olab = getShortcutLabel(); if( !squared ) olab += "_2";
+    readInputLine( olab + ": MATRIX_PRODUCT_DIAGONAL ARG=" + getShortcutLabel() + "_diff," + getShortcutLabel() +"_matvec");
   }
   if( !squared ) readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_2 FUNC=sqrt(x) PERIODIC=NO");
 }

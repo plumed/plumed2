@@ -56,21 +56,21 @@ Walls::Walls(const ActionOptions&ao):
   // Read the arguments
   std::vector<std::string> args; parseVector("ARG",args);
   if( args.size()==0 ) error("found no input arguments");
-  std::string allargs=args[0]; for(unsigned i=1;i<args.size();++i) allargs += "," + args[i];
+  std::string allargs=args[0]; for(unsigned i=1; i<args.size(); ++i) allargs += "," + args[i];
   std::vector<Value*> vals; ActionWithArguments::interpretArgumentList( args, plumed.getActionSet(), this, vals );
   if( vals.size()==0 ) error("found no input arguments");
 
   // Find the rank
-  unsigned rank=vals[0]->getRank(); 
+  unsigned rank=vals[0]->getRank();
   for(unsigned i=0; i<vals.size(); ++i) {
-      if( vals[i]->getRank()>0 && vals[i]->hasDerivatives() ) error("argument should not be function on grid");
-      if( vals[i]->getRank()!=rank ) error("all arguments should have same rank");
+    if( vals[i]->getRank()>0 && vals[i]->hasDerivatives() ) error("argument should not be function on grid");
+    if( vals[i]->getRank()!=rank ) error("all arguments should have same rank");
   }
   if( rank==0 ) {
-      if( getName()=="UPPER_WALLS") readInputLine( getShortcutLabel() + ": UPPER_WALLS_SCALAR ARG=" + allargs + " " + convertInputLineToString() );
-      else if( getName()=="LOWER_WALLS") readInputLine( getShortcutLabel() + ": LOWER_WALLS_SCALAR ARG=" + allargs + " " + convertInputLineToString() );
-      else plumed_merror( getName() + " is not valid");
-      return;
+    if( getName()=="UPPER_WALLS") readInputLine( getShortcutLabel() + ": UPPER_WALLS_SCALAR ARG=" + allargs + " " + convertInputLineToString() );
+    else if( getName()=="LOWER_WALLS") readInputLine( getShortcutLabel() + ": LOWER_WALLS_SCALAR ARG=" + allargs + " " + convertInputLineToString() );
+    else plumed_merror( getName() + " is not valid");
+    return;
   }
 
   // Note : the sizes of these vectors are checked automatically by parseVector
@@ -79,31 +79,31 @@ Walls::Walls(const ActionOptions&ao):
   std::vector<std::string> eps(kappa.size()); parseVector("EPS",eps);
   std::vector<std::string> exp(kappa.size()); parseVector("EXP",exp);
   std::vector<std::string> at(kappa.size()); parseVector("AT",at);
-  
+
   std::string biasinp, forceinp;
-  for(unsigned i=0;i<args.size();++i) {
-      std::string argn=args[i]; std::size_t dot=argn.find_first_of("."); if(dot!=std::string::npos) argn = argn.substr(0,dot) + "_" + argn.substr(dot+1);  
-      readInputLine( getShortcutLabel() + "_cv_" + argn + ": COMBINE PERIODIC=NO ARG=" + args[i] + " PARAMETERS=" + at[i] );
-      if( getName()=="UPPER_WALLS" ) {
-          readInputLine( getShortcutLabel() + "_scale_" + argn + ": CUSTOM PERIODIC=NO FUNC=(x+" + offset[i] +")/" + eps[i] + " ARG=" + getShortcutLabel() + "_cv_" + argn );
-          readInputLine( getShortcutLabel() + "_pow_" + argn + ": CUSTOM PERIODIC=NO FUNC=step(x)*x^" + exp[i] + " ARG=" + getShortcutLabel() + "_scale_" + argn );
-      } else if( getName()=="LOWER_WALLS" ) {
-          readInputLine( getShortcutLabel() + "_scale_" + argn + ": CUSTOM PERIODIC=NO FUNC=(x-" + offset[i] +")/" + eps[i] + " ARG=" + getShortcutLabel() + "_cv_" + argn );
-          readInputLine( getShortcutLabel() + "_pow_" + argn + ": CUSTOM PERIODIC=NO FUNC=step(-x)*x^" + exp[i] + " ARG=" + getShortcutLabel() + "_scale_" + argn );
-      }
-      readInputLine( getShortcutLabel() + "_v_wall_" + argn + ": CUSTOM PERIODIC=NO FUNC=" + kappa[i] +"*x" + " ARG=" + getShortcutLabel() + "_pow_" + argn );
-      readInputLine( getShortcutLabel() + "_wall_" + argn + ": SUM ARG=" + getShortcutLabel() + "_v_wall_" + argn + " PERIODIC=NO"); 
-      readInputLine( getShortcutLabel() + "_force_" + argn + ": CUSTOM PERIODIC=NO FUNC=" + kappa[i] + "*" + exp[i] + "*x/(y*" + eps[i] + ") " +
-                     "ARG=" + getShortcutLabel() + "_pow_" + argn + "," + getShortcutLabel() + "_scale_" + argn ); 
-      readInputLine( getShortcutLabel() + "_v_force2_" + argn + ": CUSTOM PERIODIC=NO FUNC=x*x ARG=" + getShortcutLabel() + "_force_" + argn );
-      readInputLine( getShortcutLabel() + "_force2_" + argn + ": SUM ARG=" + getShortcutLabel() + "_v_force2_" + argn + " PERIODIC=NO");
-      if(i==0) {
-         biasinp = " ARG=" + getShortcutLabel() + "_wall_" + argn; 
-         forceinp = " ARG=" + getShortcutLabel() + "_force2_" + argn;
-      } else {
-         biasinp += "," + getShortcutLabel() + "_wall_" + argn;
-         forceinp += "," + getShortcutLabel() + "_force2_" + argn;
-      }
+  for(unsigned i=0; i<args.size(); ++i) {
+    std::string argn=args[i]; std::size_t dot=argn.find_first_of("."); if(dot!=std::string::npos) argn = argn.substr(0,dot) + "_" + argn.substr(dot+1);
+    readInputLine( getShortcutLabel() + "_cv_" + argn + ": COMBINE PERIODIC=NO ARG=" + args[i] + " PARAMETERS=" + at[i] );
+    if( getName()=="UPPER_WALLS" ) {
+      readInputLine( getShortcutLabel() + "_scale_" + argn + ": CUSTOM PERIODIC=NO FUNC=(x+" + offset[i] +")/" + eps[i] + " ARG=" + getShortcutLabel() + "_cv_" + argn );
+      readInputLine( getShortcutLabel() + "_pow_" + argn + ": CUSTOM PERIODIC=NO FUNC=step(x)*x^" + exp[i] + " ARG=" + getShortcutLabel() + "_scale_" + argn );
+    } else if( getName()=="LOWER_WALLS" ) {
+      readInputLine( getShortcutLabel() + "_scale_" + argn + ": CUSTOM PERIODIC=NO FUNC=(x-" + offset[i] +")/" + eps[i] + " ARG=" + getShortcutLabel() + "_cv_" + argn );
+      readInputLine( getShortcutLabel() + "_pow_" + argn + ": CUSTOM PERIODIC=NO FUNC=step(-x)*x^" + exp[i] + " ARG=" + getShortcutLabel() + "_scale_" + argn );
+    }
+    readInputLine( getShortcutLabel() + "_v_wall_" + argn + ": CUSTOM PERIODIC=NO FUNC=" + kappa[i] +"*x" + " ARG=" + getShortcutLabel() + "_pow_" + argn );
+    readInputLine( getShortcutLabel() + "_wall_" + argn + ": SUM ARG=" + getShortcutLabel() + "_v_wall_" + argn + " PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_force_" + argn + ": CUSTOM PERIODIC=NO FUNC=" + kappa[i] + "*" + exp[i] + "*x/(y*" + eps[i] + ") " +
+                   "ARG=" + getShortcutLabel() + "_pow_" + argn + "," + getShortcutLabel() + "_scale_" + argn );
+    readInputLine( getShortcutLabel() + "_v_force2_" + argn + ": CUSTOM PERIODIC=NO FUNC=x*x ARG=" + getShortcutLabel() + "_force_" + argn );
+    readInputLine( getShortcutLabel() + "_force2_" + argn + ": SUM ARG=" + getShortcutLabel() + "_v_force2_" + argn + " PERIODIC=NO");
+    if(i==0) {
+      biasinp = " ARG=" + getShortcutLabel() + "_wall_" + argn;
+      forceinp = " ARG=" + getShortcutLabel() + "_force2_" + argn;
+    } else {
+      biasinp += "," + getShortcutLabel() + "_wall_" + argn;
+      forceinp += "," + getShortcutLabel() + "_force2_" + argn;
+    }
   }
   readInputLine( getShortcutLabel() + "_bias: COMBINE PERIODIC=NO " + biasinp );
   readInputLine( "BIASVALUE ARG=" + getShortcutLabel() + "_bias" );
