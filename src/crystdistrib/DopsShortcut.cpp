@@ -29,6 +29,7 @@ namespace crystdistrib {
 
 //+PLUMEDOC COLVAR DOPS
 /*
+Calculate the DOPS order parameter
 
 */
 //+ENDPLUMEDOC
