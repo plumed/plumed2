@@ -80,9 +80,18 @@ PRINT ARG=b FILE=COLVAR2
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC COLVAR ANGLE SCALAR
+//+PLUMEDOC COLVAR ANGLE_SCALAR
 /*
 Calculate an angle.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC COLVAR ANGLE_VECTOR
+/*
+Calculate multiple angles.
 
 \par Examples
 

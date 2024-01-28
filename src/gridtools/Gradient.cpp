@@ -22,7 +22,7 @@
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 
-//+PLUMEDOC MCOLVAR GRADIANT
+//+PLUMEDOC MCOLVAR GRADIENT
 /*
 Calculate the gradient of an input grid
 

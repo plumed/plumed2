@@ -163,7 +163,7 @@ CoordShellVectorFunction::CoordShellVectorFunction(const ActionOptions& ao):
   // Calculate FCC cubic function from bond vectors
   if( getName()=="FCCUBIC" ) {
     std::string alpha; parse("ALPHA",alpha);
-    readInputLine( getShortcutLabel() + "_vfunc: FCCCUBIC_FUNC ARG1=" + matlab + ".x ARG2=" + matlab + ".y ARG3=" + matlab + ".z ALPHA=" + alpha);
+    readInputLine( getShortcutLabel() + "_vfunc: FCCUBIC_FUNC ARG1=" + matlab + ".x ARG2=" + matlab + ".y ARG3=" + matlab + ".z ALPHA=" + alpha);
   } else if( getName()=="TETRAHEDRAL" ) {
     readInputLine( getShortcutLabel() + "_r: CUSTOM ARG1=" + matlab + ".x ARG2=" + matlab + ".y ARG3=" + matlab + ".z PERIODIC=NO FUNC=sqrt(x*x+y*y+z*z)");
     readInputLine( getShortcutLabel() + "_vfunc: CUSTOM ARG1=" + matlab + ".x ARG2=" + matlab + ".y ARG3=" + matlab + ".z ARG4=" + getShortcutLabel() + "_r"

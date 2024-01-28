@@ -39,7 +39,7 @@ Calculate the differences between two scalars
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC FUNCTION DIFFERENCE_SCLALAR
+//+PLUMEDOC FUNCTION DIFFERENCE_SCALAR
 /*
 Calculate the differences between two scalars
 

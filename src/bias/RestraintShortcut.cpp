@@ -76,7 +76,9 @@ RestraintShortcut::RestraintShortcut(const ActionOptions&ao):
 
   std::string biasargs, forceargs; bool non_constant_force=false;
   for(unsigned i=0; i<args.size(); ++i) {
-    std::string argn=args[i]; std::size_t dot=argn.find_first_of("."); if(dot!=std::string::npos) argn = argn.substr(0,dot) + "_" + argn.substr(dot+1);
+    std::string argn; std::size_t dot=args[i].find_first_of("."); 
+    if(dot!=std::string::npos) argn = args[i].substr(0,dot) + "_" + args[i].substr(dot+1);
+    else argn = args[i];
     readInputLine( getShortcutLabel() + "_cv_" + argn + ": COMBINE PERIODIC=NO ARG1=" + args[i] + " PARAMETERS=" + at[i] );
     double kap; Tools::convert(  kappa[i], kap );
     if( fabs(kap)>0 ) {

@@ -27,7 +27,7 @@
 #include "core/PbcAction.h"
 #include "tools/Pbc.h"
 
-//+PLUMEDOC VATOM ARGS2VATOMS
+//+PLUMEDOC VATOM ARGS2VATOM
 /*
 Create a virtual atom from the input scalars
 

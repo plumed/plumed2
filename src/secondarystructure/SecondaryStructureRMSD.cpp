@@ -98,7 +98,8 @@ void SecondaryStructureRMSD::readBackboneAtoms( ActionShortcut* action, PlumedMa
 
   std::vector<std::string> resstrings; action->parseVector( "RESIDUES", resstrings );
   if(resstrings.size()==0) action->error("residues are not defined, check the keyword RESIDUES");
-  else if(resstrings[0]=="all") {
+  else if( Tools::caseInSensStringCompare(resstrings[0], "all") ) {
+    resstrings[0]="all";
     action->log.printf("  examining all possible secondary structure combinations\n");
   } else {
     action->log.printf("  examining secondary structure in residue positions : %s ",resstrings[0].c_str() );

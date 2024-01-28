@@ -82,7 +82,9 @@ Walls::Walls(const ActionOptions&ao):
 
   std::string biasinp, forceinp;
   for(unsigned i=0; i<args.size(); ++i) {
-    std::string argn=args[i]; std::size_t dot=argn.find_first_of("."); if(dot!=std::string::npos) argn = argn.substr(0,dot) + "_" + argn.substr(dot+1);
+    std::string argn; std::size_t dot=args[i].find_first_of("."); 
+    if(dot!=std::string::npos) argn = args[i].substr(0,dot) + "_" + args[i].substr(dot+1);
+    else argn = args[i];
     readInputLine( getShortcutLabel() + "_cv_" + argn + ": COMBINE PERIODIC=NO ARG=" + args[i] + " PARAMETERS=" + at[i] );
     if( getName()=="UPPER_WALLS" ) {
       readInputLine( getShortcutLabel() + "_scale_" + argn + ": CUSTOM PERIODIC=NO FUNC=(x+" + offset[i] +")/" + eps[i] + " ARG=" + getShortcutLabel() + "_cv_" + argn );

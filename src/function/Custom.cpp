@@ -195,7 +195,7 @@ See \ref MATHEVAL
 */
 //+ENDPLUMEDOC
 
-//+PLUMEDOC FUNCTION CUSTOM_SCALAR
+//+PLUMEDOC FUNCTION CUSTOM_VECTOR
 /*
 Calculate a function of a set of input vectors elementwise
 
@@ -262,7 +262,7 @@ void Custom::read( ActionWithArguments* action ) {
   // Find first bracket in expression
   if( func.find("(")!=std::string::npos ) {
     std::size_t br = func.find_first_of("("); std::string subexpr=func.substr(0,br); onlymultiplication = func.find("*")!=std::string::npos;
-    if( subexpr.find("/")!=std::string::npos ) { std::size_t sl = func.find_first_of("/"); subexpr=subexpr.substr(0,sl); }
+    if( subexpr.find("/")!=std::string::npos ) { std::size_t sl = func.find_first_of("/"); std::string aa = subexpr.substr(0,sl); subexpr=aa; }
     if( subexpr.find("+")!=std::string::npos || subexpr.find("-")!=std::string::npos ) onlymultiplication=false;
     // Now work out which vars are in multiplication
     if( onlymultiplication ) {

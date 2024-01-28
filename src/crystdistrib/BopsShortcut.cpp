@@ -31,6 +31,8 @@ namespace crystdistrib {
 /*
 Calculate the BOPS order parameter
 
+\par Examples
+
 */
 //+ENDPLUMEDOC
 

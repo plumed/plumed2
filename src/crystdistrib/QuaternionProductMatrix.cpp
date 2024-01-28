@@ -32,7 +32,7 @@ Calculate the outer product matrix from two vectors of quaternions
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace crystdistrb {
+namespace crystdistrib {
 
 class QuaternionProductMatrix : public adjmat::ActionWithMatrix {
 private:

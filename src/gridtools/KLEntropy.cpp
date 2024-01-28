@@ -22,7 +22,7 @@
 #include "core/ActionRegister.h"
 #include "core/ActionShortcut.h"
 
-//+PLUMEDOC ANALYSIS KDE
+//+PLUMEDOC ANALYSIS KL_ENTROPY
 /*
 Calculate the KL entropy of a distribution
 

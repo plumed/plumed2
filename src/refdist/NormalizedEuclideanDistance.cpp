@@ -25,6 +25,15 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 
+//+PLUMEDOC FUNCTION NORMALIZED_EUCLIDEAN_DISTANCE
+/*
+Calculate the normalised euclidean distance between two points in CV space
+
+\par Examples
+  
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace refdist {
 

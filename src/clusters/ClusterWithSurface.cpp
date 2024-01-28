@@ -22,7 +22,7 @@
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 
-//+PLUMEDOC CONCOMP CLUSTER_WEIGHTS
+//+PLUMEDOC CONCOMP CLUSTER_WITHSURFACE
 /*
 Determine the atoms that are within a certain cutoff of the atoms in a cluster
 

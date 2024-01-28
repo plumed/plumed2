@@ -99,9 +99,9 @@ public:
 };
 
 typedef function::FunctionShortcut<Fccubic> FccubicShortcut;
-PLUMED_REGISTER_ACTION(FccubicShortcut,"FCCCUBIC_FUNC")
+PLUMED_REGISTER_ACTION(FccubicShortcut,"FCCUBIC_FUNC")
 typedef adjmat::FunctionOfMatrix<Fccubic> MatrixFccubic;
-PLUMED_REGISTER_ACTION(MatrixFccubic,"FCCCUBIC_FUNC_MATRIX")
+PLUMED_REGISTER_ACTION(MatrixFccubic,"FCCUBIC_FUNC_MATRIX")
 
 void Fccubic::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","ALPHA","3.0","The alpha parameter of the angular function");

@@ -31,6 +31,8 @@ namespace crystdistrib {
 /*
 Calculate the ROPS order parameter
 
+\par Examples
+
 */
 //+ENDPLUMEDOC
 

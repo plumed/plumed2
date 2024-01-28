@@ -58,7 +58,7 @@ private:
   double deriv_poly( const unsigned& m, const double& val, double& df ) const ;
   void addVectorDerivatives( const unsigned& ival, const Vector& der, Matrix<double>& derivatives ) const ;
 public:
-  void registerKeywords( Keywords& keys );
+  void registerKeywords( Keywords& keys ) override;
   void read( ActionWithArguments* action ) override;
   std::vector<std::string> getComponentsPerLabel() const override;
   void setPeriodicityForOutputs( ActionWithValue* action ) override;
@@ -146,7 +146,7 @@ void SphericalHarmonic::calc( const ActionWithArguments* action, const std::vect
 
   double dlen2 = args[0]*args[0]+args[1]*args[1]+args[2]*args[2];
   double dlen = sqrt( dlen2 ); double dlen3 = dlen2*dlen;
-  double tq6, itq6, dpoly_ass, poly_ass=deriv_poly( 0, args[2]/dlen, dpoly_ass );
+  double dpoly_ass, poly_ass=deriv_poly( 0, args[2]/dlen, dpoly_ass );
   // Derivatives of z/r wrt x, y, z
   Vector dz;
   dz[0] = -( args[2] / dlen3 )*args[0];
@@ -158,7 +158,7 @@ void SphericalHarmonic::calc( const ActionWithArguments* action, const std::vect
   if( args.size()==4 ) derivatives(tmom, 3) = poly_ass;
 
   // The complex number of which we have to take powers
-  std::complex<double> com1( args[0]/dlen,args[1]/dlen ), dp_x, dp_y, dp_z; double md, real_z, imag_z;
+  std::complex<double> com1( args[0]/dlen,args[1]/dlen ), dp_x, dp_y, dp_z;
   std::complex<double> powered = std::complex<double>(1.0,0.0); std::complex<double> ii( 0.0, 1.0 );
   Vector myrealvec, myimagvec, real_dz, imag_dz;
   // Do stuff for all other m values
@@ -166,14 +166,14 @@ void SphericalHarmonic::calc( const ActionWithArguments* action, const std::vect
     // Calculate Legendre Polynomial
     poly_ass=deriv_poly( m, args[2]/dlen, dpoly_ass );
     // Real and imaginary parts of z
-    real_z = real(com1*powered); imag_z = imag(com1*powered);
+    double real_z = real(com1*powered), imag_z = imag(com1*powered);
 
     // Calculate steinhardt parameter
-    tq6=poly_ass*real_z;   // Real part of steinhardt parameter
-    itq6=poly_ass*imag_z;  // Imaginary part of steinhardt parameter
+    double tq6=poly_ass*real_z;   // Real part of steinhardt parameter
+    double itq6=poly_ass*imag_z;  // Imaginary part of steinhardt parameter
 
     // Derivatives wrt ( x/r + iy )^m
-    md=static_cast<double>(m);
+    double md=static_cast<double>(m);
     dp_x = md*powered*( (1.0/dlen)-(args[0]*args[0])/dlen3-ii*(args[0]*args[1])/dlen3 );
     dp_y = md*powered*( ii*(1.0/dlen)-(args[0]*args[1])/dlen3-ii*(args[1]*args[1])/dlen3 );
     dp_z = md*powered*( -(args[0]*args[2])/dlen3-ii*(args[1]*args[2])/dlen3 );
@@ -218,7 +218,7 @@ double SphericalHarmonic::deriv_poly( const unsigned& m, const double& val, doub
 
   double pow=1.0, xi=val, dxi=1.0; df=0.0;
   for(int i=m+1; i<=tmom; ++i) {
-    double fact=1.0;
+    fact=1.0;
     for(unsigned j=i-m+1; j<=i; ++j) fact=fact*j;
     res=res+coeff_poly[i]*fact*xi;
     df = df + pow*coeff_poly[i]*fact*dxi;
