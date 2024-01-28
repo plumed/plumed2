@@ -23,6 +23,15 @@
 #include "AdjacencyMatrixBase.h"
 #include "core/ActionRegister.h"
 
+//+PLUMEDOC MCOLVAR MATRIX_PRODUCT
+/*
+Calculate the product of two matrices
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace adjmat {
 

@@ -22,6 +22,15 @@
 #include "core/ActionWithVector.h"
 #include "core/ActionRegister.h"
 
+//+PLUMEDOC FUNCTION MATRIX_PRODUCT_DIAGONAL
+/*
+Calculate the product of two matrices and return a vector that contains the diagonal elements of the ouptut vector
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace refdist {
 

@@ -23,6 +23,15 @@
 #include "core/ActionRegister.h"
 #include "tools/Torsion.h"
 
+//+PLUMEDOC MCOLVAR TORSIONS_MATRIX
+/*
+Calculate the matrix of torsions between two vectors of molecules
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace adjmat {
 

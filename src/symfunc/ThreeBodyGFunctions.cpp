@@ -27,6 +27,15 @@
 namespace PLMD {
 namespace symfunc {
 
+//+PLUMEDOC COLVAR GSYMFUNC_THREEBODY
+/*
+Calculate functions of the coordinates of the coordinates of all pairs of bonds in the first coordination sphere of an atom
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 class ThreeBodyGFunctions : public ActionWithVector {
 private:
   std::vector<LeptonCall> functions;

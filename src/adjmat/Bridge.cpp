@@ -22,6 +22,15 @@
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 
+//+PLUMEDOC MCOLVAR BRIDGE
+/*
+Calculate a matrix with elements equal to one if there is a bridging atom between the two atoms
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace adjmat {
 

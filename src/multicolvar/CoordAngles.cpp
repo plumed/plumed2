@@ -23,6 +23,16 @@
 #include "core/ActionRegister.h"
 #include "MultiColvarShortcuts.h"
 
+//+PLUMEDOC MCOLVAR COORD_ANGLES
+/*
+Calculate all the angles between bonds in the first coordination spheres of a set of atoms
+
+\par Examples
+
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace multicolvar {
 

@@ -22,6 +22,15 @@
 #include "ActionWithMatrix.h"
 #include "core/ActionRegister.h"
 
+//+PLUMEDOC MCOLVAR MATRIX_VECTOR_PRODUCT
+/*
+Calculate the product of the matrix and the vector
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace adjmat {
 

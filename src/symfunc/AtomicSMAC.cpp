@@ -26,6 +26,15 @@
 #include "core/ActionWithValue.h"
 #include "multicolvar/MultiColvarShortcuts.h"
 
+//+PLUMEDOC MCOLVAR ATOMIC_SMAC
+/*
+Calculate the atomic smac CV
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace symfunc {
 

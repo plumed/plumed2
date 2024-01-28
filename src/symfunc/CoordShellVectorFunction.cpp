@@ -30,10 +30,28 @@
 #include <string>
 #include <cmath>
 
-using namespace std;
-
 namespace PLMD {
 namespace symfunc {
+
+//+PLUMEDOC MCOLVAR COORDINATION_SHELL_FUNCTION
+/*
+Calculate an arbitrary function of all the bond vectors in the first coordination sphere of an atom
+
+\par Examples
+
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC MCOLVAR COORDINATION_SHELL_AVERAGE
+/*
+Calculate an arbitrary function of all the bond vectors in the first coordination sphere of an atom and take an average
+
+\par Examples
+
+
+*/
+//+ENDPLUMEDOC
 
 //+PLUMEDOC MCOLVAR SIMPLECUBIC
 /*

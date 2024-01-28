@@ -27,6 +27,26 @@
 #include "tools/HistogramBead.h"
 #include "tools/SwitchingFunction.h"
 
+//+PLUMEDOC ANALYSIS KDE
+/*
+Create a histogram from the input scalar/vector/matrix using KDE
+
+\par Examples
+
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC ANALYSIS SPHERICAL_KDE
+/*
+Create a histogram from the input scalar/vector/matrix using SPHERICAL_KDE
+
+\par Examples
+
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace gridtools {
 

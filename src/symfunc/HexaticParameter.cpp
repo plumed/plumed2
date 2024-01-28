@@ -29,8 +29,6 @@
 
 #include <complex>
 
-using namespace std;
-
 namespace PLMD {
 namespace symfunc {
 

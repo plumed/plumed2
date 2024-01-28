@@ -22,6 +22,15 @@
 #include "MatrixOperationBase.h"
 #include "core/ActionRegister.h"
 
+//+PLUMEDOC ANALYSIS DIAGONALIZE
+/*
+Calculate the eigenvalues and eigenvectors of a square matrix
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace adjmat {
 

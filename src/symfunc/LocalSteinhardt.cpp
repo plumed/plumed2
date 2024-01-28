@@ -29,6 +29,15 @@
 namespace PLMD {
 namespace symfunc {
 
+//+PLUMEDOC MCOLVARF LOCAL_Q1
+/*
+Calculate the local degree of order around an atoms by taking the average dot product between the \f$q_1\f$ vector on the central atom and the \f$q_3\f$ vector on the atoms in the first coordination sphere.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 //+PLUMEDOC MCOLVARF LOCAL_Q3
 /*
 Calculate the local degree of order around an atoms by taking the average dot product between the \f$q_3\f$ vector on the central atom and the \f$q_3\f$ vector on the atoms in the first coordination sphere.
@@ -327,7 +336,7 @@ LocalSteinhardt::LocalSteinhardt(const ActionOptions& ao):
       // The unormalised vectors
       readInputLine( getShortcutLabel() + "_uvecs: VSTACK" + getArgsForStack( l, sp_lab[0] ) );
     } else {
-      std::string len_vec = getShortcutLabel() + "_mags: CONCATENATE ARG=" = sp_lab[0] + "_norm";
+      std::string len_vec = getShortcutLabel() + "_mags: CONCATENATE ARG=" + sp_lab[0] + "_norm";
       for(unsigned i=1; i<sp_lab.size(); ++i) len_vec += "," + sp_lab[i] + "_norm";
       // This is the vector that contains all the magnitudes
       readInputLine( len_vec );

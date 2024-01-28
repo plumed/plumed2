@@ -27,6 +27,15 @@
 #include "core/PbcAction.h"
 #include "tools/Pbc.h"
 
+//+PLUMEDOC VATOM ARGS2VATOMS
+/*
+Create a virtual atom from the input scalars
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace vatom {
 

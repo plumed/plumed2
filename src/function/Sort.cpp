@@ -53,6 +53,23 @@ PRINT ARG=sort.1,sort.4
 */
 //+ENDPLUMEDOC
 
+//+PLUMEDOC FUNCTION SORT_SCALAR
+/*
+Sort the input scalars in a vector according to their magnitudes
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC FUNCTION SORT_VECTOR
+/*
+Sort the elements in a vector according to their magnitudes
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
 
 class Sort : public FunctionTemplateBase {
 private:

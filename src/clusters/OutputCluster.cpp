@@ -55,7 +55,7 @@ OUTPUT_CLUSTER CLUSTERS=dfs CLUSTER=1 FILE=dfs.dat
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace adjmat {
+namespace clusters {
 
 class OutputCluster : public ActionShortcut {
 public:

@@ -26,14 +26,21 @@
 
 #include <cmath>
 
-using namespace std;
-
 namespace PLMD {
 namespace function {
 
 //+PLUMEDOC FUNCTION MORE_THAN
 /*
 Use a switching function to determine how many of the input variables are more than a certain cutoff.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC FUNCTION MORE_THAN_VECTOR
+/*
+Use a switching function to determine how many of elements in the input vector are more than a certain cutoff.
 
 \par Examples
 
@@ -61,7 +68,7 @@ void MoreThan::read( ActionWithArguments* action ) {
   if( action->getPntrToArgument(0)->isPeriodic() ) action->error("cannot use this function on periodic functions");
 
 
-  string sw,errors;
+  std::string sw,errors;
   action->parse("SWITCH",sw);
   if(sw.length()>0) {
     switchingFunction.set(sw,errors);

@@ -22,6 +22,15 @@
 #include "ActionWithMatrix.h"
 #include "core/ActionRegister.h"
 
+//+PLUMEDOC MCOLVAR VSTACK
+/*
+Create a matrix by stacking vectors together
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace adjmat {
 

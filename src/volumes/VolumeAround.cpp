@@ -64,6 +64,15 @@ AROUND DATA=c ATOM=c1 XLOWER=-2.0 XUPPER=2.0 SIGMA=0.1 MEAN LABEL=s
 */
 //+ENDPLUMEDOC
 
+//+PLUMEDOC MCOLVAR AROUND_CALC
+/*
+Calculate a vector from the input positions with elements equal to one when the positions are in a particular part of the cell and elements equal to zero otherwise
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace volumes {
 

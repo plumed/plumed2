@@ -31,6 +31,9 @@ namespace contour {
 
 //+PLUMEDOC GRIDANALYSIS DUMPCONTOUR
 /*
+Print the contour
+
+\par Examples
 
 */
 //+ENDPLUMEDOC

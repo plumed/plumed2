@@ -29,10 +29,17 @@
 
 #include <complex>
 
-using namespace std;
-
 namespace PLMD {
 namespace symfunc {
+
+//+PLUMEDOC MCOLVAR Q1
+/*
+Calculate 1st order Steinhardt parameters
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
 
 //+PLUMEDOC MCOLVAR Q3
 /*

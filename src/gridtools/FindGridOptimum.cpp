@@ -25,6 +25,24 @@
 #include "EvaluateGridFunction.h"
 #include "Interpolator.h"
 
+//+PLUMEDOC GRIDCALC FIND_GRID_MINIMUM
+/*
+Find the point with the lowest value of the function on the grid
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC GRIDCALC FIND_GRID_MAXIMUM
+/*
+Find the point with the highest value of the function on the grid
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace gridtools {
 

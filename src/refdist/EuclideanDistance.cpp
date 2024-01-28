@@ -25,6 +25,15 @@
 #include "core/ActionSet.h"
 #include "core/ActionWithValue.h"
 
+//+PLUMEDOC MCOLVAR EUCLIDEAN_DISTANCE
+/*
+Calculate the euclidean distance between two vectors of arguments
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace refdist {
 

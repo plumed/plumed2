@@ -26,7 +26,7 @@
 namespace PLMD {
 namespace colvar {
 
-//+PLUMEDOC COLVAR GYRATION
+//+PLUMEDOC COLVAR GYRATION_FAST
 /*
 Calculate the radius of gyration, or other properties related to it.
 

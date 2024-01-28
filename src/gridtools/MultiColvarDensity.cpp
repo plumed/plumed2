@@ -23,7 +23,7 @@
 #include "core/ActionShortcut.h"
 
 namespace PLMD {
-namespace multicolvar {
+namespace gridtools {
 
 //+PLUMEDOC GRIDCALC MULTICOLVARDENS
 /*

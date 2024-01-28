@@ -49,7 +49,8 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
   read_one_group(false),
   neighbour_list_updated(false),
   linkcells(comm),
-  threecells(comm)
+  threecells(comm),
+  natoms_per_list(0)
 {
   std::vector<unsigned> shape(2); std::vector<AtomNumber> t; parseAtomList("GROUP", t );
   if( t.size()==0 ) {

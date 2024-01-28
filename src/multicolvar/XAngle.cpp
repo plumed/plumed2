@@ -23,6 +23,34 @@
 #include "core/ActionRegister.h"
 #include "MultiColvarShortcuts.h"
 
+//+PLUMEDOC COLVAR XANGLES
+/*
+Calculate the angle between an arbitrary vector and the positive x direction
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC COLVAR YANGLES
+/*
+Calculate the angle between an arbitrary vector and the positive y direction
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC COLVAR ZANGLES
+/*
+Calculate the angle between an arbitrary vector and the positive z direction
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+
 namespace PLMD {
 namespace multicolvar {
 

@@ -41,6 +41,26 @@ Measure the correlation between a pair of dihedral angles
 */
 //+ENDPLUMEDOC
 
+//+PLUMEDOC COLVAR DIHEDRAL_CORRELATION_SCALAR
+/*
+Measure the correlation between a multiple pairs of dihedral angles
+
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC COLVAR DIHEDRAL_CORRELATION_VECTOR
+/*
+Measure the correlation between a multiple pairs of dihedral angles
+
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 class DihedralCorrelation : public Colvar {
 private:
   bool pbc;
@@ -92,7 +112,7 @@ DihedralCorrelation::DihedralCorrelation(const ActionOptions&ao):
 void DihedralCorrelation::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
   aa->parseAtomList("ATOMS",num,t);
   if( num<0 && t.size()!=8 ) aa->error("Number of specified atoms should be 8");
-  if( t.size()>0 ) {
+  if( t.size()==8 ) {
     aa->log.printf("  correlation between dihedral angle for atoms %d %d %d %d and atoms %d %d %d %d\n",
                    t[0].serial(),t[1].serial(),t[2].serial(),t[3].serial(),t[4].serial(),t[5].serial(),t[6].serial(),t[7].serial());
   }

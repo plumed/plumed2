@@ -26,6 +26,16 @@
 #include <string>
 #include <cmath>
 
+//+PLUMEDOC MCOLVAR ALPHABETA
+/*
+Calculate the alpha beta CV
+
+\par Examples
+
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace multicolvar {
 

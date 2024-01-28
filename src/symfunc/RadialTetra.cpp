@@ -27,6 +27,15 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 
+//+PLUMEDOC MCOLVAR TETRA_RADIAL
+/*
+Calculate the radial tetra CV
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace symfunc {
 

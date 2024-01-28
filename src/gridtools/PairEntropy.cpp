@@ -23,6 +23,15 @@
 #include "core/ActionRegister.h"
 #include "core/ActionShortcut.h"
 
+//+PLUMEDOC MCOLVAR PAIRENTROPY
+/*
+Calculate the KL Entropy from the radial distribution function
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace gridtools {
 

@@ -23,6 +23,15 @@
 #include "core/ActionSetup.h"
 #include "core/ActionRegister.h"
 
+//+PLUMEDOC MCOLVAR INVERT_MATRIX
+/*
+Calculate the inverse of the input matrix
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace adjmat {
 

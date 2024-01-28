@@ -22,6 +22,15 @@
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 
+//+PLUMEDOC CONCOMP CLUSTER_NATOMS
+/*
+Calculate the number of atoms in the cluster of interest
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace clusters {
 

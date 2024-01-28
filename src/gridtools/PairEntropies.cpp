@@ -23,6 +23,15 @@
 #include "core/ActionRegister.h"
 #include "core/ActionShortcut.h"
 
+//+PLUMEDOC MCOLVAR PAIRENTROPIES
+/*
+Calculate the KL entropy from the RDF around each of the atoms
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace gridtools {
 

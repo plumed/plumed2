@@ -26,14 +26,30 @@
 
 #include <cmath>
 
-using namespace std;
-
 namespace PLMD {
 namespace function {
 
 //+PLUMEDOC FUNCTION BETWEEN
 /*
 Use a switching function to determine how many of the input variables are within a certain range.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC FUNCTION BETWEEN_SCALAR
+/*
+Use a switching function to determine how many of the input variables are within a certain range.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC FUNCTION BETWEEN_VECTOR
+/*
+Use a switching function to determine how many of the input components are within a certain range
 
 \par Examples
 

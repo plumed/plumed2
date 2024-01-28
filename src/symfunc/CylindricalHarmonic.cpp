@@ -26,14 +26,22 @@
 
 #include <complex>
 
-using namespace std;
-
 namespace PLMD {
 namespace symfunc {
 
 //+PLUMEDOC MCOLVAR CYLINDRICAL_HARMONIC
 /*
 Calculate the cylindrical harmonic function
+
+\par Examples
+
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC MCOLVAR CYLINDRICAL_HARMONIC_MATRIX
+/*
+Calculate the cylindrical harmonic function from the elements in two input matrices
 
 \par Examples
 

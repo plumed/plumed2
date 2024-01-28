@@ -61,6 +61,16 @@ PRINT ARG=uwall.bias,lwall.bias
 */
 //+ENDPLUMEDOC
 
+//+PLUMEDOC BIAS LOWER_WALLS_SCALAR
+/*
+Defines a wall for the value of one or more collective variables,
+ which limits the region of the phase space accessible during the simulation.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 class LWalls : public Bias {
   std::vector<double> at;
   std::vector<double> kappa;

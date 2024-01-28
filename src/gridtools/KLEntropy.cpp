@@ -22,6 +22,16 @@
 #include "core/ActionRegister.h"
 #include "core/ActionShortcut.h"
 
+//+PLUMEDOC ANALYSIS KDE
+/*
+Calculate the KL entropy of a distribution
+
+\par Examples
+
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace gridtools {
 

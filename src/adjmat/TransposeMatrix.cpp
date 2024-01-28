@@ -22,6 +22,15 @@
 #include "MatrixOperationBase.h"
 #include "core/ActionRegister.h"
 
+//+PLUMEDOC MCOLVAR TRANSPOSE
+/*
+Calculate the transpose of a matrix
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace adjmat {
 

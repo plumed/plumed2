@@ -25,6 +25,60 @@
 #include "MultiColvarTemplate.h"
 #include "tools/Pbc.h"
 
+//+PLUMEDOC MCOLVAR CHARGE
+/*
+Get the charges of one or multiple atoms
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC MCOLVAR CHARGE_SCALAR
+/*
+Get the charges of one or multiple atoms
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC MCOLVAR CHARGE_VECTOR
+/*
+Get the charges of one or multiple atoms
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC MCOLVAR MASS
+/*
+Get the mass of one or multiple atoms
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC MCOLVAR MASS_SCALAR
+/*
+Get the mass of one or multiple atoms
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC MCOLVAR MASS_VECTOR
+/*
+Get the mass of one or multiple atoms
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace colvar {
 

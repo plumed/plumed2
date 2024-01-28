@@ -80,6 +80,15 @@ PRINT ARG=b FILE=COLVAR2
 */
 //+ENDPLUMEDOC
 
+//+PLUMEDOC COLVAR ANGLE SCALAR
+/*
+Calculate an angle.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 class Angle : public Colvar {
   bool pbc;
   std::vector<double> value, masses, charges;

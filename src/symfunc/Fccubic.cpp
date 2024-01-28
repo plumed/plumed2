@@ -27,10 +27,26 @@
 #include <string>
 #include <cmath>
 
-using namespace std;
-
 namespace PLMD {
 namespace symfunc {
+
+//+PLUMEDOC MCOLVAR FCCUBIC_FUNC
+/*
+Measure how similar the environment around atoms is to that found in a FCC structure.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC MCOLVAR FCCUBIC_FUNC_MATRIX
+/*
+Measure how similar the environment around atoms is to that found in a FCC structure.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
 
 //+PLUMEDOC MCOLVAR FCCUBIC
 /*

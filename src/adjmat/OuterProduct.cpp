@@ -23,6 +23,15 @@
 #include "core/ActionRegister.h"
 #include "tools/LeptonCall.h"
 
+//+PLUMEDOC COLVAR OUTER_PRODUCT
+/*
+Calculate the outer product matrix of two vectors
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace adjmat {
 

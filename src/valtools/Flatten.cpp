@@ -23,6 +23,16 @@
 #include "core/ActionWithArguments.h"
 #include "core/ActionRegister.h"
 
+//+PLUMEDOC FUNCTION FLATTEN
+/*
+Convert a matrix into a vector
+
+\par Examples
+
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace valtools {
 

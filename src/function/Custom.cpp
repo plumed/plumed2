@@ -162,6 +162,50 @@ progression (S) and distance (Z) variables \cite perez2015atp.
 */
 //+ENDPLUMEDOC
 
+//+PLUMEDOC FUNCTION MATHEVAL_SCALAR
+/*
+Calculate a function of a set of input scalars
+
+See \ref MATHEVAL
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC FUNCTION CUSTOM_SCALAR
+/*
+Calculate a function of a set of input scalars
+
+See \ref CUSTOM
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC FUNCTION MATHEVAL_VECTOR
+/*
+Calculate a function of a set of input vectors elementwise
+
+See \ref MATHEVAL
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC FUNCTION CUSTOM_SCALAR
+/*
+Calculate a function of a set of input vectors elementwise
+
+See \ref CUSTOM
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 typedef FunctionShortcut<Custom> CustomShortcut;
 PLUMED_REGISTER_ACTION(CustomShortcut,"CUSTOM")
 PLUMED_REGISTER_ACTION(CustomShortcut,"MATHEVAL")

@@ -100,11 +100,13 @@ Constant::Constant(const ActionOptions&ao):
       Tools::getParsedLine( mfile, words );
       nline=words.size();
     }
-    if( nline==1 ) shape.resize(1);
-    else { shape.resize(2); shape[1]=nline; }
-
-    std::vector<double> tmpdis( shape[1] );
     std::vector<std::vector<double> > dissimilarities;
+    if( nline==1 ) {
+      shape.resize(1);
+      error("invalid matrix in input file");
+    }
+    shape.resize(2); shape[1]=nline;
+    std::vector<double> tmpdis( shape[1] );
     for(unsigned j=0; j<shape[1]; ++j) Tools::convert( words[j], tmpdis[j] );
     dissimilarities.push_back( tmpdis );
 

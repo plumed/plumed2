@@ -27,6 +27,15 @@
 #include "core/ActionSet.h"
 #include "gridtools/ActionWithGrid.h"
 
+//+PLUMEDOC ANALYSIS COLLECT
+/*
+Collect data from the trajectory for later analysis
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace analysis {
 

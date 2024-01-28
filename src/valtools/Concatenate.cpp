@@ -23,6 +23,15 @@
 #include "core/ActionWithArguments.h"
 #include "core/ActionRegister.h"
 
+//+PLUMEDOC MCOLVAR CONCATENATE
+/*
+Join vectors or matrices together
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace valtools {
 

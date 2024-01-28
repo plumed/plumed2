@@ -37,9 +37,45 @@ This function can be used to find the highest colvar by magnitude in a set.
 */
 //+ENDPLUMEDOC
 
+//+PLUMEDOC COLVAR HIGHEST_SCALAR
+/*
+Calculate the highest of a set of sclalar arguments
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC COLVAR HIGHEST_VECTOR
+/*
+Calculate the largest element in a vector of inputs
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 //+PLUMEDOC FUNCTION LOWEST
 /*
 This function can be used to find the lowest colvar by magnitude in a set.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC COLVAR LOWEST_SCALAR
+/*
+Calculate the lowest of a set of sclalar arguments
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC COLVAR LOWEST_VECTOR
+/*
+Calculate the lowest element in a vector of inputs
 
 \par Examples
 

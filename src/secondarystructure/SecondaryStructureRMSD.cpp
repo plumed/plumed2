@@ -26,6 +26,15 @@
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 
+//+PLUMEDOC MCOLVAR SECONDARY_STRUCTURE_RMSD
+/*
+Calclulate the distance between segments of a protein and a reference structure of interest
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace secondarystructure {
 

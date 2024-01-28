@@ -66,6 +66,14 @@ PRINT ARG=pw,ppww.dist1_pfunc,ppww.dist2_pfunc
 */
 //+ENDPLUMEDOC
 
+//+PLUMEDOC FUNCTION PIECEWISE_SCALAR
+/*
+Compute a piece wise straight line through its arguments that passes through a set of ordered control points.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
 
 class Piecewise : public FunctionTemplateBase {
   std::vector<std::pair<double,double> > points;

@@ -27,8 +27,6 @@
 
 #include <cmath>
 
-using namespace std;
-
 namespace PLMD {
 namespace function {
 
@@ -41,6 +39,23 @@ Calculate the moments of the distribution of input quantities
 */
 //+ENDPLUMEDOC
 
+//+PLUMEDOC FUNCTION MOMENTS_SCALAR
+/*
+Calculate the moments of the distribution of input quantities
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC FUNCTION MOMENTS_VECTOR
+/*
+Calculate the moments of the distribution of input vectors
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
 
 class Moments : public FunctionTemplateBase {
   bool isperiodic, scalar_out;

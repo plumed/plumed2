@@ -25,6 +25,61 @@
 #include "FunctionOfVector.h"
 #include "core/ActionRegister.h"
 
+//+PLUMEDOC COLVAR SUM
+/*
+Calculate the sum of the arguments
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC COLVAR SUM_VECTOR
+/*
+Calculate the sum of the elements in a vector
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC COLVAR SUM_SCALAR
+/*
+Calculate the SUM of the set of input scalars
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC COLVAR MEAN
+/*
+Calculate the arithmetic mean of the elements in a vector
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC COLVAR MEAN_SCALAR
+/*
+Calculate the arithmetic mean of the set of input scalars
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC COLVAR MEAN_VECTOR
+/*
+Calculate the arithmetic mean of the elements in a vector
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+
 namespace PLMD {
 namespace function {
 

@@ -27,14 +27,30 @@
 
 #include <cmath>
 
-using namespace std;
-
 namespace PLMD {
 namespace refdist {
 
 //+PLUMEDOC FUNCTION DIFFERENCE
 /*
-Use a switching function to determine how many of the input variables are less than a certain cutoff.
+Calculate the differences between two scalars
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC FUNCTION DIFFERENCE_SCLALAR
+/*
+Calculate the differences between two scalars
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC FUNCTION DIFFERENCE_VECTOR
+/*
+Calculate the differences between the elements of two vectors
 
 \par Examples
 

@@ -22,6 +22,15 @@
 #include "ActionWithMatrix.h"
 #include "core/ActionRegister.h"
 
+//+PLUMEDOC MCOLVAR NEIGHBORS
+/*
+Build a matrix with ones in for the N nearest neighbours of an atom
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace adjmat {
 

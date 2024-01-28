@@ -22,6 +22,15 @@
 #include "core/ActionRegister.h"
 #include "core/ActionShortcut.h"
 
+//+PLUMEDOC FUNCTION PRODUCT
+/*
+Calculate the product of the input quantities
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace function {
 

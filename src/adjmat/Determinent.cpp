@@ -22,6 +22,15 @@
 #include "core/ActionRegister.h"
 #include "core/ActionShortcut.h"
 
+//+PLUMEDOC MCOLVAR DETERMINANT
+/*
+Calculate the determinant of a matrix
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace adjmat {
 

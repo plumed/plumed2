@@ -28,6 +28,15 @@
 #include <string>
 #include <cmath>
 
+//+PLUMEDOC MCOLVAR DISTANCES
+/*
+Calculate the distances between multiple piars of atoms
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace multicolvar {
 

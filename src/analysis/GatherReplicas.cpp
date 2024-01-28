@@ -24,6 +24,16 @@
 #include "core/ActionRegister.h"
 #include "tools/Communicator.h"
 
+//+PLUMEDOC ANALYSIS GATHER_REPLICAS
+/*
+Create a vector that contains the copies of the input quantities from all replicas
+
+\par Examples
+
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace analysis {
 

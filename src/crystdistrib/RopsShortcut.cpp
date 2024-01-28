@@ -27,7 +27,7 @@
 namespace PLMD {
 namespace crystdistrib {
 
-//+PLUMEDOC COLVAR ROPS 
+//+PLUMEDOC COLVAR ROPS
 /*
 Calculate the ROPS order parameter
 

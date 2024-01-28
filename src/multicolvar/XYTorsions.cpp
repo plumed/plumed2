@@ -23,6 +23,60 @@
 #include "core/ActionRegister.h"
 #include "MultiColvarShortcuts.h"
 
+//+PLUMEDOC COLVAR XYTORSIONS
+/*
+Calculate the torsional angle around the x axis between an arbitrary vector and the positive y direction
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC COLVAR XZTORSIONS
+/*
+Calculate the torsional angle around the x axis between an arbitrary vector and the positive z direction
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC COLVAR YXTORSIONS
+/*
+Calculate the torsional angle around the y axis between an arbitrary vector and the positive x direction
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC COLVAR YZTORSIONS
+/*
+Calculate the torsional angle around the y axis between an arbitrary vector and the positive z direction
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC COLVAR ZXTORSIONS
+/*
+Calculate the torsional angle around the z axis between an arbitrary vector and the positive x direction
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC COLVAR ZYTORSIONS
+/*
+Calculate the torsional angle around the z axis between an arbitrary vector and the positive y direction
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace multicolvar {
 

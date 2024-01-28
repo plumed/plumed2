@@ -23,6 +23,15 @@
 #include "core/ActionWithArguments.h"
 #include "core/ActionRegister.h"
 
+//+PLUMEDOC PRINTANALYSIS SELECT_COMPONENTS
+/*
+Create a new value to hold a subset of the components that are in a vector or matrix
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace valtools {
 

@@ -25,6 +25,16 @@
 #include "core/ActionShortcut.h"
 #include "core/ActionWithValue.h"
 
+//+PLUMEDOC MCOLVAR DISPLACEMENT
+/*
+Calculate the displacement vector between the pair of input vectors
+
+\par Examples
+
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace refdist {
 
@@ -32,7 +42,7 @@ class Displacement : public ActionShortcut {
 public:
   static std::string fixArgumentDot( const std::string& argin );
   static void registerKeywords( Keywords& keys );
-  Value* getValueWithLabel( const std::string name ) const ;
+  Value* getValueWithLabel( const std::string& name ) const ;
   explicit Displacement(const ActionOptions&ao);
 };
 
@@ -72,8 +82,9 @@ Displacement::Displacement( const ActionOptions& ao):
   }
 }
 
-Value* Displacement::getValueWithLabel( const std::string name ) const {
-  std::size_t dot=name.find("."); ActionWithValue* vv=plumed.getActionSet().selectWithLabel<ActionWithValue*>( name.substr(0,dot) );
+Value* Displacement::getValueWithLabel( const std::string& name ) const {
+  std::size_t dot=name.find("."); std::string sname = name.substr(0,dot);
+  ActionWithValue* vv=plumed.getActionSet().selectWithLabel<ActionWithValue*>( sname );
   if( !vv ) error("cannot find value with name " + name );
   if( dot==std::string::npos ) return vv->copyOutput(0);
   if( !vv->exists(name) ) error("cannot find value with name " + name );

@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_multicolvar_DistanceFromContourBase_h
-#define __PLUMED_multicolvar_DistanceFromContourBase_h
+#ifndef __PLUMED_contour_DistanceFromContourBase_h
+#define __PLUMED_contour_DistanceFromContourBase_h
 
 #include "core/ActionAtomistic.h"
 #include "core/ActionWithValue.h"

@@ -22,6 +22,15 @@
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 
+//+PLUMEDOC MCOLVAR GRADIANT
+/*
+Calculate the gradient of an input grid
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace gridtools {
 

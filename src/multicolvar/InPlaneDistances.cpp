@@ -26,6 +26,15 @@
 #include <string>
 #include <cmath>
 
+//+PLUMEDOC MCOLVAR INPLANEDISTANCES
+/*
+Calculate the distance between a pair of atoms in the plane
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace multicolvar {
 

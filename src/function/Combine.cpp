@@ -76,6 +76,24 @@ RESTRAINT ARG=c KAPPA=10 AT=0
 */
 //+ENDPLUMEDOC
 
+//+PLUMEDOC FUNCTION COMBINE_SCALAR
+/*
+Calculate a polynomial combination of a set of other variables.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC FUNCTION COMBINE_VECTOR
+/*
+Add together the elements of a set of vectors elementwise
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 typedef FunctionShortcut<Combine> CombineShortcut;
 PLUMED_REGISTER_ACTION(CombineShortcut,"COMBINE")
 typedef FunctionOfScalar<Combine> ScalarCombine;

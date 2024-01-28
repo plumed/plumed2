@@ -44,7 +44,7 @@ class DumpVector :
 private:
   std::string fmt, filename;
   std::vector<unsigned> preps;
-  bool output_for_all_replicas, onefile, xyzfile;
+  bool output_for_all_replicas;
 public:
   static void registerKeywords( Keywords& keys );
   explicit DumpVector(const ActionOptions&ao);

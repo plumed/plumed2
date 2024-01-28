@@ -31,6 +31,8 @@ namespace crystdistrib {
 /*
 Calculate the DOPS order parameter
 
+\par Examples
+
 */
 //+ENDPLUMEDOC
 

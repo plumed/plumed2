@@ -25,6 +25,15 @@
 #include "core/ActionRegister.h"
 #include "tools/CheckInRange.h"
 
+//+PLUMEDOC PRINTANALYSIS PRINT_NDX
+/*
+Print an ndx file
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace generic {
 

@@ -28,14 +28,30 @@
 #include <array>
 #include <cmath>
 
-using namespace std;
-
 namespace PLMD {
 namespace function {
 
 //+PLUMEDOC FUNCTION BESSEL
 /*
 Calculate the value of a Bessel function.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC FUNCTION BESSEL_SCALAR
+/*
+Calculate the value of a Bessel function.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC FUNCTION BESSEL_VECTOR
+/*
+Calculate the bessel function for all the elements in a vector
 
 \par Examples
 

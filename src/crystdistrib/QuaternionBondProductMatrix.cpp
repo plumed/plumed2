@@ -29,6 +29,15 @@
 namespace PLMD {
 namespace crystdistrib {
 
+//+PLUMEDOC MCOLVAR QUATERNION_BOND_PRODUCT_MATRIX
+/*
+Calculate the product between a matrix of quaternions and the bonds
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 class QuaternionBondProductMatrix : public adjmat::ActionWithMatrix {
 private:
   unsigned nderivatives;
@@ -229,7 +238,7 @@ void QuaternionBondProductMatrix::performTask( const std::string& controller, co
 
 //now previous ^ product times quat again, not conjugated
   //real part of q1*q2
-  double tempDot,wf,xf,yf,zf;
+  double tempDot=0,wf=0,xf=0,yf=0,zf=0;
   pref=1;
   pref2=1;
   for(unsigned i=0; i<4; ++i) {

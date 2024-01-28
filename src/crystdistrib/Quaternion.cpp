@@ -59,6 +59,28 @@ PRINT ARG=q1.w,q1.i,q1.j,q1.k FILE=colvar
 */
 //+ENDPLUMEDOC
 
+//+PLUMEDOC COLVAR QUATERNION_SCALAR
+/*
+Calculate a single quaternion
+
+See \ref QUATERNION for more details
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC COLVAR QUATERNION_VECTOR
+/*
+Calculate multiple quaternions
+
+See \ref QUATERNION for more details
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 //simple hamilton/quaternion product, which is just expanding the two quats as expected, then applying the rules for i j k
 //passing 12 references might be a bit silly
 //void QuatProduct(double &a1, double &b1, double &c1, double &d1, double &a2, double &b2, double &c2, double &d2, double &w, double &i, double &j, double &k) {
@@ -68,7 +90,6 @@ PRINT ARG=q1.w,q1.i,q1.j,q1.k FILE=colvar
 //  j = a1*c2 - b1*d2 + c1*a2 + d1*b2;
 //  k = a1*d2 + b1*c2 - c1*b2 + d1*a2;
 //}
-
 //
 //
 //
@@ -130,7 +151,7 @@ Quaternion::Quaternion(const ActionOptions&ao):
 
 void Quaternion::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
   aa->parseAtomList("ATOMS",num,t);
-  if( t.size()>0 ) aa->log.printf("  involving atoms %d %d %d\n",t[0].serial(),t[1].serial(),t[0].serial());
+  if( t.size()==3 ) aa->log.printf("  involving atoms %d %d %d\n",t[0].serial(),t[1].serial(),t[0].serial());
 }
 
 unsigned Quaternion::getModeAndSetupValues( ActionWithValue* av ) {

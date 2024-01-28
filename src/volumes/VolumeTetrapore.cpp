@@ -110,6 +110,15 @@ CAVITY DATA=d1 ATOMS=1,4,5,11 SIGMA=0.1 MEAN MORE_THAN={RATIONAL R_0=4} LABEL=ca
 */
 //+ENDPLUMEDOC
 
+//+PLUMEDOC MCOLVAR TETRAHEDRALPORE_CALC
+/*
+Calculate a vector from the input positions with elements equal to one when the positions are in a particular part of the cell and elements equal to zero otherwise
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace volumes {
 
@@ -177,7 +186,7 @@ VolumeTetrapore::VolumeTetrapore(const ActionOptions& ao):
       unitname="nm";
     }
     boxfile.link(*this);
-    boxfile.open( boxfname.c_str() );
+    boxfile.open( boxfname );
     log.printf("  printing box coordinates on file named %s in %s \n",boxfname.c_str(), unitname.c_str() );
   }
 

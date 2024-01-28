@@ -36,6 +36,32 @@ Adjacency matrix in which two electronegative atoms are adjacent if they are hyd
 */
 //+ENDPLUMEDOC
 
+//+PLUMEDOC COLVAR HBPAMM_SA
+/*
+Calculate the number of hydrogen bonds each acceptor participates in using the HBPamm method
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC COLVAR HBPAMM_SD
+/*
+Calculate the number of hydrogen bonds each donor participates in using the HBPamm method
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC COLVAR HBPAMM_SH
+/*
+Calculate the number of hydrogen bonds each hydrogen participates in using the HBPamm method
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
 
 namespace PLMD {
 namespace pamm {

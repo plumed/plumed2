@@ -22,6 +22,15 @@
 #include "adjmat/ActionWithMatrix.h"
 #include "core/ActionRegister.h"
 
+//+PLUMEDOC MCOLVAR QUATERNION_PRODUCT_MATRIX
+/*
+Calculate the outer product matrix from two vectors of quaternions
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace crystdistrb {
 

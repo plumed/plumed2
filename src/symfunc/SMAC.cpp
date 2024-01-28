@@ -26,6 +26,16 @@
 #include "core/ActionSet.h"
 #include "multicolvar/MultiColvarShortcuts.h"
 
+//+PLUMEDOC MCOLVAR SMAC
+/*
+Calculate the SMAC order parameter for a set of molecules
+
+\par Examples
+
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace symfunc {
 

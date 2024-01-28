@@ -23,6 +23,27 @@
 namespace PLMD {
 namespace colvar {
 
+//+PLUMEDOC COLVAR GYRATION
+/*
+Calculate the radius of gyration, or other properties related to it.
+
+With this version of the command you can use any property you so choose to define the weights that are used when computing the average.
+If you use the mass or if all the atoms are ascribed weights of one PLUMED defaults to \ref GYRATION_FAST
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC MCOLVAR GYRATION_TENSOR
+/*
+Calculate the gyration tensor using a user specified vector of weights
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 class GyrationShortcut : public ActionShortcut {
 public:
   static void registerKeywords( Keywords& keys );

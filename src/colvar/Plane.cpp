@@ -38,7 +38,23 @@ Calculate the plane perpendicular to two vectors in order to represent the orien
 */
 //+ENDPLUMEDOC
 
-using namespace std;
+//+PLUMEDOC COLVAR PLANE_SCALAR
+/*
+Calculate the plane perpendicular to two vectors in order to represent the orientation of a planar molecule.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC COLVAR PLANE_VECTOR
+/*
+Calculate the plane perpendicular to two vectors in order to represent the orientation of a planar molecule multiple times.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
 
 namespace PLMD {
 namespace colvar {

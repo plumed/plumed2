@@ -28,6 +28,69 @@
 #include "function/Custom.h"
 #include "function/Combine.h"
 
+//+PLUMEDOC COLVAR SUM_MATRIX
+/*
+Sum all the elements in a matrix
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC COLVAR LESS_THAN_MATRIX
+/*
+Transform all the elements of a matrix using a switching function that is one when the input value is smaller than a threshold
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC COLVAR MORE_THAN_MATRIX
+/*
+Transform all the elements of a matrix using a switching function that is one when the input value is larger than a threshold
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC COLVAR BETWEEN_MATRIX
+/*
+Transform all the elements of a matrix using a switching function that is oen when the input value is within a particular range
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC COLVAR CUSTOM_MATRIX
+/*
+Calculate an arbitrary function piecewise for one or multiple input matrices.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC COLVAR MATHEVAL_MATRIX
+/*
+Calculate an arbitrary function piecewise for one or multiple input matrices.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC COLVAR COMBINE_MATRIX
+/*
+Calculate the sum of a number of matrices
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace adjmat {
 

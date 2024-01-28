@@ -24,6 +24,15 @@
 #include "CoordinationNumbers.h"
 #include "multicolvar/MultiColvarShortcuts.h"
 
+//+PLUMEDOC MCOLVAR TETRA_ANGULAR
+/*
+Calculate the angular tetra CV
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace symfunc {
 

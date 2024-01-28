@@ -78,6 +78,15 @@ PRINT ARG=cn0.mean,cn1.mean,cn2.mean STRIDE=1 FILE=cn_out
 */
 //+ENDPLUMEDOC
 
+//+PLUMEDOC MCOLVAR COORDINATION_MOMENTS
+/*
+Calculate moments of the distribution of distances in the first coordination sphere
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 
 PLUMED_REGISTER_ACTION(CoordinationNumbers,"COORDINATIONNUMBER")
 PLUMED_REGISTER_ACTION(CoordinationNumbers,"COORDINATION_MOMENTS")

@@ -57,7 +57,7 @@ private:
   SwitchingFunction switchingFunction;
   SwitchingFunction cylinder_sw;
   SwitchingFunction low_sf;
-  double beadrad, lsfmax, binw_mat;
+  double binw_mat;
   SwitchingFunction threshold_switch;
 public:
   static void registerKeywords( Keywords& keys );

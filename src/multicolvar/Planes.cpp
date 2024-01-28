@@ -27,7 +27,14 @@
 #include <string>
 #include <cmath>
 
-using namespace std;
+//+PLUMEDOC MCOLVAR PLANES
+/*
+Calculate the components of the normal to the plane containing three atoms
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
 
 namespace PLMD {
 namespace multicolvar {

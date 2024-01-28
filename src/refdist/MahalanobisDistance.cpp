@@ -25,6 +25,15 @@
 #include "core/ActionShortcut.h"
 #include "core/ActionWithValue.h"
 
+//+PLUMEDOC FUNCTION MAHALANOBIS_DISTANCE
+/*
+Calculate the mahalanobis distance between two points in CV space
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace refdist {
 

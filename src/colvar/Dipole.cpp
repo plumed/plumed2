@@ -60,6 +60,24 @@ on the position) is computed on the geometric center of the group.
 */
 //+ENDPLUMEDOC
 
+//+PLUMEDOC COLVAR DIPOLE_SCALAR
+/*
+Calculate the dipole moment for a group of atoms.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC MCOLVAR DIPOLE_VECTOR
+/*
+Calculate a vector of dipole moments for a set of groups of atoms.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 class Dipole : public Colvar {
   std::vector<AtomNumber> ga_lista;
   bool components;

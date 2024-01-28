@@ -22,6 +22,15 @@
 #include "RDF.h"
 #include "core/ActionRegister.h"
 
+//+PLUMEDOC ANALYSIS RDF
+/*
+Calculate the radial distribution function
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace gridtools {
 

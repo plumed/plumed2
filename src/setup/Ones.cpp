@@ -25,6 +25,15 @@
 namespace PLMD {
 namespace setup {
 
+//+PLUMEDOC COLVAR ONES
+/*
+Create a constant vector with all elements equal to one
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 class Ones : public ActionShortcut {
 public:
   static void registerKeywords(Keywords& keys);

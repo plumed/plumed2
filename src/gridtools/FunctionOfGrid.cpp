@@ -24,6 +24,42 @@
 #include "function/Sum.h"
 #include "function/Custom.h"
 
+//+PLUMEDOC GRIDCALC SUM_GRID
+/*
+Sum the values of all the function at the points on a grid
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC GRIDCALC INTEGRATE_GRID
+/*
+Calculate the numerical integral of the function stored on the grid
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC GRIDCALC CUSTOM_GRID
+/*
+Calculate a function of the grid or grids that are input and return a new grid
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC GRIDCALC MATHEVAL_GRID
+/*
+Calculate a function of the grid or grids that are input and return a new grid
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace gridtools {
 

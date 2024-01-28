@@ -62,6 +62,17 @@ PRINT ARG=nclust.* FILE=colvar
 */
 //+ENDPLUMEDOC
 
+//+PLUMEDOC CONCOMP CLUSTER_DISTRIBUTION_CALC
+/*
+Calculate functions of the distribution of properties in your connected components.
+
+See \ref CLUSTER_DISTRIBUTION
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 
 namespace PLMD {
 namespace clusters {
@@ -69,9 +80,6 @@ namespace clusters {
 class ClusterDistribution :
   public ActionWithArguments,
   public ActionWithValue {
-private:
-/// The cluster we are looking for
-  unsigned clustr;
 public:
 /// Create manual
   static void registerKeywords( Keywords& keys );

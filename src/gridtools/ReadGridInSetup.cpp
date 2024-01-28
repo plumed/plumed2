@@ -24,12 +24,19 @@
 #include "lepton/Lepton.h"
 #include "tools/IFile.h"
 
-using namespace std;
+//+PLUMEDOC GRIDCALC REFERENCE_GRID
+/*
+Setup a constant grid by either reading values from a file or definining a function in input
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
 
 namespace PLMD {
 namespace gridtools {
 
-static std::map<string, double> leptonConstants= {
+static std::map<std::string, double> leptonConstants= {
   {"e", std::exp(1.0)},
   {"log2e", 1.0/std::log(2.0)},
   {"log10e", 1.0/std::log(10.0)},
