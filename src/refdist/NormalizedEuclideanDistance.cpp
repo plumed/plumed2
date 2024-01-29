@@ -30,7 +30,7 @@
 Calculate the normalised euclidean distance between two points in CV space
 
 \par Examples
-  
+
 */
 //+ENDPLUMEDOC
 
