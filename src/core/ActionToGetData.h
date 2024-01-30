@@ -51,6 +51,7 @@ public:
 /// Actually set the values for the output
   void calculate();
   void apply() {}
+  ActionToGetData* castToActionToGetData() noexcept final { return this; }
 };
 
 }

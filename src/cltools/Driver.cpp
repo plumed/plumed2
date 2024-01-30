@@ -728,12 +728,12 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         IFile ifile; ifile.open(plumedFile); std::vector<std::string> words;
         while( Tools::getParsedLine(ifile,words) && !p.getEndPlumed() ) {
           p.readInputWords(words,false); Action* aa=p.getActionSet()[p.getActionSet().size()-1].get();
-          ActionWithValue* av=dynamic_cast<ActionWithValue*>(aa);
+          ActionWithValue* av=aa->castToActionWithValue();
           if( av && aa->getDefaultString().length()>0 ) {
             std::vector<std::string> def; def.push_back( "defaults " + aa->getDefaultString() );
             data[ aa->getLabel() ] = def;
           }
-          ActionShortcut* as=dynamic_cast<ActionShortcut*>( aa );
+          ActionShortcut* as=aa->castToActionShortcut();
           if( as ) {
             if( aa->getDefaultString().length()>0 ) {
               std::vector<std::string> def; def.push_back( "defaults " + aa->getDefaultString() );

@@ -88,6 +88,7 @@ public:
   bool calculateConstantValues( const bool& have_atoms );
 /// Get the gradient for this action
   void setGradients( Value* myval, unsigned& start ) const ;
+  ActionWithArguments* castToActionWithArguments() noexcept final { return this; }
 };
 
 

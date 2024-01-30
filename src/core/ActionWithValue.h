@@ -174,6 +174,7 @@ public:
   virtual unsigned getNumberOfDerivatives()=0;
 /// Activate the calculation of derivatives
   virtual void turnOnDerivatives();
+  ActionWithValue* castToActionWithValue() noexcept final { return this; }
 };
 
 inline

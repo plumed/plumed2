@@ -78,6 +78,7 @@ public:
   virtual void readBinary(std::istream&i) = 0;
   virtual bool onStep() const = 0;
   std::string getRole() const ;
+  ActionForInterface* castToActionForInterface() noexcept final { return this; }
 };
 
 inline

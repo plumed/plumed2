@@ -428,21 +428,21 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
         for(const auto & pp : inputs ) {
-          DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
+          DomainDecomposition* dd=pp->castToDomainDecomposition();
           if( dd ) dd->setAtomsNlocal(val.get<int>());
         }
         break;
       case cmd_setAtomsGatindex:
         CHECK_INIT(initialized,word);
         for(const auto & pp : inputs ) {
-          DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
+          DomainDecomposition* dd=pp->castToDomainDecomposition();
           if( dd ) dd->setAtomsGatindex(val,false);
         }
         break;
       case cmd_setAtomsFGatindex:
         CHECK_INIT(initialized,word);
         for(const auto & pp : inputs ) {
-          DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
+          DomainDecomposition* dd=pp->castToDomainDecomposition();
           if( dd ) dd->setAtomsGatindex(val,false);
         }
         break;
@@ -450,7 +450,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
         for(const auto & pp : inputs ) {
-          DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
+          DomainDecomposition* dd=pp->castToDomainDecomposition();
           if( dd ) dd->setAtomsContiguous(val.get<int>());
         }
         break;
@@ -458,7 +458,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
         for(const auto & pp : inputs ) {
-          DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
+          DomainDecomposition* dd=pp->castToDomainDecomposition();
           if( dd ) dd->createFullList(val);
         }
         break;
@@ -468,7 +468,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         CHECK_NOTNULL(val,word);
         unsigned nlists=0;
         for(const auto & pp : inputs ) {
-          DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
+          DomainDecomposition* dd=pp->castToDomainDecomposition();
           if( dd ) { dd->getFullList(val); nlists++; }
         }
         plumed_assert( nlists==1 );
@@ -477,7 +477,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_clearFullList:
         CHECK_INIT(initialized,word);
         for(const auto & pp : inputs ) {
-          DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
+          DomainDecomposition* dd=pp->castToDomainDecomposition();
           if( dd ) dd->clearFullList();
         }
         break;
@@ -534,7 +534,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         CHECK_INIT(initialized,word);
         std::vector<int> natoms;
         for(const auto & pp : inputs ) {
-          DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
+          DomainDecomposition* dd=pp->castToDomainDecomposition();
           if ( dd ) natoms.push_back( dd->getNumberOfAtoms() );
         }
         actionSet.clearDelete(); inputs.clear();
@@ -867,7 +867,7 @@ void PlumedMain::init() {
   log<<"Number of threads: "<<OpenMP::getNumThreads()<<"\n";
   log<<"Cache line size: "<<OpenMP::getCachelineSize()<<"\n";
   for(const auto & pp : inputs ) {
-    DomainDecomposition* dd=dynamic_cast<DomainDecomposition*>(pp);
+    DomainDecomposition* dd=pp->castToDomainDecomposition();
     if ( dd ) log.printf("Number of atoms: %d\n",dd->getNumberOfAtoms());
   }
   if(grex) log.printf("GROMACS-like replica exchange is on\n");
@@ -1131,8 +1131,8 @@ void PlumedMain::justCalculate() {
           for(int i=0; i<pad; i++) actionNumberLabel=" "+actionNumberLabel;
           sw=stopwatch.startStop("4A "+actionNumberLabel+" "+p->getLabel());
         }
-        ActionWithValue*av=dynamic_cast<ActionWithValue*>(p);
-        ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(p);
+        ActionWithValue*av=p->castToActionWithValue();
+        ActionAtomistic*aa=p->castToActionAtomistic();
         {
           if(av) av->clearInputForces();
           if(av) av->clearDerivatives();
@@ -1150,7 +1150,7 @@ void PlumedMain::justCalculate() {
         }
         // This makes all values that depend on the (fixed) masses and charges constant
         if( firststep ) p->setupConstantValues( true );
-        ActionWithVirtualAtom*avv=dynamic_cast<ActionWithVirtualAtom*>(p);
+        ActionWithVirtualAtom*avv=p->castToActionWithVirtualAtom();
         if(avv)avv->setGradientsIfNeeded();
       }
     } catch(...) {

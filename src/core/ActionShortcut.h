@@ -48,6 +48,7 @@ public:
   void apply() override {}
 /// Get the lines of the shortcut that were read in
   std::vector<std::string> getSavedInputLines() const ;
+  ActionShortcut* castToActionShortcut() noexcept final { return this; }
 };
 
 }

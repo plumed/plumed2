@@ -105,6 +105,7 @@ public:
   void clearFullList();
   bool onStep() const override { return getNumberOfAtoms()>0; }
   unsigned getNumberOfAtoms() const;
+  DomainDecomposition* castToDomainDecomposition() noexcept final { return this; }
 };
 
 }

@@ -207,11 +207,11 @@ void ActionWithValue::componentIsPeriodic( const std::string& name, const std::s
 
 void ActionWithValue::setGradientsIfNeeded() {
   if(isOptionOn("GRADIENTS")) {
-    ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>(this);
+    ActionAtomistic* aa=castToActionAtomistic();
     if(aa) {
       for(unsigned i=0; i<values.size(); i++) { unsigned start=0; values[i]->gradients.clear(); values[i]->setGradients( aa, start ); }
     } else {
-      ActionWithArguments* aarg = dynamic_cast<ActionWithArguments*>( this );
+      ActionWithArguments* aarg = castToActionWithArguments();
       if( !aarg ) plumed_merror( "failing in " + getLabel() );
       for(unsigned i=0; i<values.size(); i++) { unsigned start=0; values[i]->gradients.clear(); aarg->setGradients( values[i].get(), start ); }
     }
@@ -225,7 +225,7 @@ void ActionWithValue::turnOnDerivatives() {
   for(unsigned i=0; i<values.size(); ++i) values[i]->resizeDerivatives( getNumberOfDerivatives() );
   // And turn on the derivatives in all actions on which we are dependent
   for(unsigned i=0; i<getDependencies().size(); ++i) {
-    ActionWithValue* vv=dynamic_cast<ActionWithValue*>( getDependencies()[i] );
+    ActionWithValue* vv=getDependencies()[i]->castToActionWithValue();
     if(vv) vv->turnOnDerivatives();
   }
 }

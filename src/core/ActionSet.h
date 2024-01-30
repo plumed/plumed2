@@ -94,7 +94,7 @@ template <class T>
 T ActionSet::selectWithLabel(const std::string&s)const {
   for(const auto & p : (*this)) {
     T t=dynamic_cast<T>(p.get());
-    if(t && dynamic_cast<Action*>(t)->getLabel()==s) return t;
+    if(t && t->getLabel()==s) return t;
   };
   return NULL;
 }
