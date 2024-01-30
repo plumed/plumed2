@@ -46,6 +46,7 @@
 #include "tools/TypesafePtr.h"
 #include "lepton/Exception.h"
 #include "DataPassingTools.h"
+#include "small_vector/small_vector.h"
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
@@ -273,9 +274,9 @@ PlumedMain::~PlumedMain() {
 /////////////////////////////////////////////////////////////
 //  MAIN INTERPRETER
 
-#define CHECK_INIT(ini,word) plumed_massert(ini,"cmd(\"" + word +"\") should be only used after plumed initialization")
-#define CHECK_NOTINIT(ini,word) plumed_massert(!(ini),"cmd(\"" + word +"\") should be only used before plumed initialization")
-#define CHECK_NOTNULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"" + word + "\")");
+#define CHECK_INIT(ini,word) plumed_assert(ini)<<"cmd(\"" << word << "\") should be only used after plumed initialization"
+#define CHECK_NOTINIT(ini,word) plumed_assert(!(ini))<<"cmd(\"" << word << "\") should be only used before plumed initialization"
+#define CHECK_NOTNULL(val,word) plumed_assert(val)<<"NULL pointer received in cmd(\"" << word << "\")"
 
 
 void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
@@ -290,18 +291,34 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
 #include "PlumedMainMap.inc"
   };
 
+// Static object (initialized once) containing a string_view copy of the map of commands:
+// WARNING: this way of constructing it using string_view's to
+// word_map is only correct because word_map is const.
+// If we want to implement a more general way of accessing (non const)
+// maps using heterogeneous keys, we should have a look at this:
+// https://stackoverflow.com/questions/34596768/stdunordered-mapfind-using-a-type-different-than-the-key-type
+
+  const static auto word_map_view = [](const auto & origin) {
+    std::unordered_map<std::string_view,int> result;
+    for(auto & it : origin) result.emplace(it.first,it.second);
+    return result;
+  }(word_map);
+
   try {
 
     auto ss=stopwatch.startPause();
 
-    std::vector<std::string> words=Tools::getWords(word);
+    gch::small_vector<std::string_view> words;
+    Tools::getWordsSimple(words,word);
+
     unsigned nw=words.size();
     if(nw==0) {
       // do nothing
     } else {
       int iword=-1;
-      const auto it=word_map.find(words[0]);
-      if(it!=word_map.end()) iword=it->second;
+      const auto it=word_map_view.find(words[0]);
+      if(it!=word_map_view.end()) iword=it->second;
+
       switch(iword) {
       case cmd_setBox:
         CHECK_INIT(initialized,word);
@@ -414,13 +431,13 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         break;
       case cmd_setValue:
       {
-        CHECK_INIT(initialized,words[0]); plumed_assert(nw==2); setInputValue( words[1], 0, 1, val );
+        CHECK_INIT(initialized,words[0]); plumed_assert(nw==2); setInputValue( std::string(words[1]), 0, 1, val );
       }
       break;
       /* ADDED WITH API=7 */
       case cmd_setValueForces:
       {
-        CHECK_INIT(initialized,words[0]); plumed_assert(nw==2); setInputForce( words[1], val );
+        CHECK_INIT(initialized,words[0]); plumed_assert(nw==2); setInputForce( std::string(words[1]), val );
       }
       break;
       // words used less frequently:
@@ -485,17 +502,17 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_getDataRank:
       {
         CHECK_INIT(initialized,words[0]); plumed_assert(nw==2 || nw==3);
-        std::string vtype=""; if( nw==3 ) vtype=" TYPE="+words[2];
-        readInputLine( "grab_" + words[1] + ": GET ARG=" + words[1] + vtype );
-        ActionToGetData* as=actionSet.selectWithLabel<ActionToGetData*>("grab_"+words[1]);
+        std::string vtype=""; if( nw==3 ) vtype=" TYPE="+std::string(words[2]);
+        readInputLine( "grab_" + std::string(words[1]) + ": GET ARG=" + std::string(words[1]) + vtype );
+        ActionToGetData* as=actionSet.selectWithLabel<ActionToGetData*>("grab_"+std::string(words[1]));
         plumed_assert( as ); as->get_rank( val );
       }
       break;
       /* ADDED WITH API==6 */
       case cmd_getDataShape:
       {
-        CHECK_INIT(initialized,words[0]);
-        ActionToGetData* as1=actionSet.selectWithLabel<ActionToGetData*>("grab_"+words[1]);
+        CHECK_INIT(initialized,std::string(words[0]));
+        ActionToGetData* as1=actionSet.selectWithLabel<ActionToGetData*>("grab_"+std::string(words[1]));
         plumed_assert( as1 ); as1->get_shape( val );
       }
       break;
@@ -503,7 +520,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_setMemoryForData:
       {
         CHECK_INIT(initialized,words[0]); plumed_assert(nw==2 || nw==3);
-        ActionToGetData* as2=actionSet.selectWithLabel<ActionToGetData*>("grab_"+words[1]);
+        ActionToGetData* as2=actionSet.selectWithLabel<ActionToGetData*>("grab_"+std::string(words[1]));
         plumed_assert( as2 ); as2->set_memory( val );
       }
       break;
@@ -772,19 +789,19 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       case cmd_checkAction:
         CHECK_NOTNULL(val,word);
         plumed_assert(nw==2);
-        val.set(int(actionRegister().check(words[1]) ? 1:0));
+        val.set(int(actionRegister().check(std::string(words[1])) ? 1:0));
         break;
       case cmd_setExtraCV:
       {
         CHECK_NOTNULL(val,word);
         plumed_assert(nw==2);
-        if( valueExists(words[1]) ) setInputValue( words[1], 0, 1, val );
+        if( valueExists(std::string(words[1])) ) setInputValue( std::string(words[1]), 0, 1, val );
       }
       break;
       case cmd_setExtraCVForce:
       {
         CHECK_NOTNULL(val,word); plumed_assert(nw==2);
-        if( valueExists(words[1]) ) setInputForce( words[1], val );
+        if( valueExists(std::string(words[1])) ) setInputForce( std::string(words[1]), val );
       }
       break;
       /* ADDED WITH API==10 */
@@ -799,8 +816,8 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         if(!grex) grex=Tools::make_unique<GREX>(*this);
         plumed_massert(grex,"error allocating grex");
         {
-          std::string kk=words[1];
-          for(unsigned i=2; i<words.size(); i++) kk+=" "+words[i];
+          std::string kk=std::string(words[1]);
+          for(unsigned i=2; i<words.size(); i++) kk+=" "+std::string(words[i]);
           grex->cmd(kk.c_str(),val);
         }
         break;
@@ -808,8 +825,8 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
         CHECK_NOTINIT(initialized,word);
         if(!cltool) cltool=Tools::make_unique<CLToolMain>();
         {
-          std::string kk=words[1];
-          for(unsigned i=2; i<words.size(); i++) kk+=" "+words[i];
+          std::string kk(words[1]);
+          for(unsigned i=2; i<words.size(); i++) kk+=" "+std::string(words[i]);
           cltool->cmd(kk.c_str(),val);
         }
         break;
@@ -819,7 +836,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       {
         double v;
         plumed_assert(words.size()==2);
-        if(Tools::convertNoexcept(words[1],v)) passtools->double2MD(v,val);
+        if(Tools::convertNoexcept(std::string(words[1]),v)) passtools->double2MD(v,val);
       }
       break;
       default:

@@ -208,6 +208,27 @@ std::vector<std::string> Tools::getWords(const std::string & line,const char* se
   return words;
 }
 
+void Tools::getWordsSimple(gch::small_vector<std::string_view> & words,const std::string & line) {
+  words.clear();
+  auto ptr=line.c_str();
+  std::size_t size=0;
+  for(unsigned i=0; i<line.length(); i++) {
+    const bool is_separator=(line[i]==' ');
+    if(!is_separator) {
+      size++;
+    } else if(size==0) {
+      ptr++;
+    } else {
+      words.emplace_back(ptr,size);
+      ptr=&line[i]+1;
+      size=0;
+    }
+  }
+  if(size>0) {
+    words.emplace_back(ptr,size);
+  }
+}
+
 bool Tools::getParsedLine(IFile& ifile,std::vector<std::string> & words, bool trimcomments) {
   std::string line("");
   words.clear();
