@@ -55,6 +55,7 @@ CenterShortcut::CenterShortcut(const ActionOptions& ao):
   bool usemass; parseFlag("MASS",usemass);
   std::vector<std::string> str_weights; parseVector("WEIGHTS",str_weights);
   if( usemass || str_weights.size()==0 || str_weights.size()>1 || (str_weights.size()==1 && str_weights[0]=="@Masses") ) {
+    if( usemass && str_weights.size()!=0 ) error("WEIGHTS and MASS keywords cannot not be used simultaneously");
     std::string wt_str;
     if( str_weights.size()>0 ) {
       wt_str="WEIGHTS=" + str_weights[0]; for(unsigned i=1; i<str_weights.size(); ++i) wt_str += "," + str_weights[i];

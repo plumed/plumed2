@@ -542,14 +542,16 @@ void KDE::gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, 
         for(unsigned i=0; i<num_neigh; ++i) {
           gridobject.getGridPointCoordinates( neighbors[i], gpoint );
           double val = evaluateBeadValue( bead, gpoint, args, height, der ); double fforce = getConstPntrToComponent(0)->getForce( neighbors[i] );
-          if( hasheight ) forces[ args.size()*numberOfKernels + itask ] += val*fforce / height;
+          if( hasheight && getPntrToArgument(args.size())->getRank()==0 ) forces[ args.size()*numberOfKernels ] += val*fforce / height;
+          else if( hasheight ) forces[ args.size()*numberOfKernels + itask ] += val*fforce / height;
           unsigned n=itask; for(unsigned j=0; j<der.size(); ++j) { forces[n] += der[j]*fforce; n += numberOfKernels; }
         }
       } else {
         for(unsigned i=0; i<num_neigh; ++i) {
           gridobject.getGridPointCoordinates( neighbors[i], gpoint );
           double val = evaluateKernel( gpoint, args, height, der ), fforce = getConstPntrToComponent(0)->getForce( neighbors[i] );
-          if( hasheight ) forces[ args.size()*numberOfKernels + itask ] += val*fforce / height;
+          if( hasheight && getPntrToArgument(args.size())->getRank()==0 ) forces[ args.size()*numberOfKernels ] += val*fforce / height;
+          else if( hasheight ) forces[ args.size()*numberOfKernels + itask ] += val*fforce / height;
           unsigned n=itask; for(unsigned j=0; j<der.size(); ++j) { forces[n] += -der[j]*fforce; n += numberOfKernels; }
         }
       }
@@ -558,7 +560,8 @@ void KDE::gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, 
         gridobject.getGridPointCoordinates( neighbors[i], gpoint );
         double dot=0; for(unsigned j=0; j<gpoint.size(); ++j) dot += args[j]*gpoint[j];
         double fforce = myval->getForce( neighbors[i] ); double newval = height*von_misses_norm*exp( von_misses_concentration*dot );
-        if( hasheight ) forces[ args.size()*numberOfKernels + itask ] += newval*fforce / height;
+        if( hasheight && getPntrToArgument(args.size())->getRank()==0 ) forces[ args.size()*numberOfKernels ] += newval*fforce / height;
+        else if( hasheight ) forces[ args.size()*numberOfKernels + itask ] += newval*fforce / height;
         unsigned n=itask; for(unsigned j=0; j<gpoint.size(); ++j) { forces[n] += von_misses_concentration*newval*gpoint[j]*fforce; n += numberOfKernels; }
       }
     }
