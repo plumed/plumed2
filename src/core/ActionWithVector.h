@@ -128,6 +128,8 @@ public:
 /// Return a pointer to the first action in the chain
   const ActionWithVector* getFirstActionInChain() const ;
   ActionWithVector* getFirstActionInChain();
+/// This is overridden in ActionWithMatrix
+  virtual void getAllActionLabelsInMatrixChain( std::vector<std::string>& matchain ) const {}
 /// Get the number of derivatives in the stream
   void getNumberOfStreamedDerivatives( unsigned& nderivatives, Value* stopat );
 /// Get every the label of every value that is calculated in this chain

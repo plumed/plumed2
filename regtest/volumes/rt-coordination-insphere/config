@@ -1,2 +1,3 @@
+plumed_modules=symfunc
 type=driver
 arg="--timestep 0.002 --trajectory-stride 500 --dump-forces forces --mf_xtc some_frames.xtc --dump-forces-fmt %8.4f"

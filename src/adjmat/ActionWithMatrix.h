@@ -59,7 +59,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithMatrix(const ActionOptions&);
 ///
-  void getAllActionLabelsInMatrixChain( std::vector<std::string>& mylabels ) const ;
+  void getAllActionLabelsInMatrixChain( std::vector<std::string>& mylabels ) const override ;
 ///
   void finishChainBuild( ActionWithVector* act );
 /// This should return the number of columns to help with sparse storage of matrices

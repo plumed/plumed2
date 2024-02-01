@@ -30,7 +30,6 @@
 #include "core/ActionToPutData.h"
 #include "core/ActionWithVirtualAtom.h"
 #include "core/ActionWithVector.h"
-#include "adjmat/ActionWithMatrix.h"
 #include <cstdio>
 #include <string>
 #include <iostream>
@@ -157,10 +156,10 @@ void ShowGraph::printAtomConnections( const ActionAtomistic* a, unsigned& linkco
 }
 
 void ShowGraph::drawActionWithVectorNode( OFile& ofile, PlumedMain& p, Action* ag, const std::vector<std::string>& mychain, std::vector<bool>& printed ) {
-  adjmat::ActionWithMatrix* amat=dynamic_cast<adjmat::ActionWithMatrix*>(ag);
-  if( amat ) {
-    ofile.printf("subgraph sub%s_mat [%s]\n",getLabel(amat).c_str(), getLabel(amat).c_str());
-    std::vector<std::string> matchain; amat->getAllActionLabelsInMatrixChain( matchain );
+  ActionWithVector* agg=dynamic_cast<ActionWithVector*>(ag);
+  std::vector<std::string> matchain; agg->getAllActionLabelsInMatrixChain( matchain );
+  if( matchain.size()>0 ) {
+    ofile.printf("subgraph sub%s_mat [%s]\n",getLabel(agg).c_str(), getLabel(agg).c_str());
     for(unsigned j=0; j<matchain.size(); ++j ) {
       Action* agm=p.getActionSet().selectWithLabel<Action*>(matchain[j]);
       for(unsigned k=0; k<mychain.size(); ++k ) {
@@ -169,7 +168,7 @@ void ShowGraph::drawActionWithVectorNode( OFile& ofile, PlumedMain& p, Action* a
       ofile.printf("%s([\"label=%s \n %s \n\"])\n", getLabel(matchain[j]).c_str(), getLabel(matchain[j],true).c_str(), agm->writeInGraph().c_str() );
     }
     ofile.printf("end\n");
-    ofile.printf("style sub%s_mat fill:lightblue\n",getLabel(amat).c_str());
+    ofile.printf("style sub%s_mat fill:lightblue\n",getLabel(ag).c_str());
   } else ofile.printf("%s([\"label=%s \n %s \n\"])\n", getLabel(ag->getLabel()).c_str(), getLabel(ag->getLabel(),true).c_str(), ag->writeInGraph().c_str() );
 }
 
