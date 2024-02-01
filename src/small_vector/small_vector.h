@@ -1415,7 +1415,9 @@ class PLUMED_GCH_EMPTY_BASE allocator_inliner<Allocator, true>
   PLUMED_GCH_CPP20_CONSTEXPR
   void
   maybe_assign (allocator_inliner&& other)
+#if defined(__clang__) || ! defined(__GNUC__) || __GNUC__>=9
   noexcept (noexcept (Allocator::operator= (std::move (other))))
+#endif
   {
     Allocator::operator= (std::move (other));
   }

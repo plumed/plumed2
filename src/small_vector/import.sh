@@ -17,7 +17,11 @@ fi
      if($1=="namespace" && $2=="gch") {
        print "namespace PLMD {"
      }
+     if($1=="noexcept" && $2=="(noexcept" && $3=="(Allocator::operator=" && $4=="(std::move" && $5=="(other))))") fix_gcc=1
+     if(fix_gcc) print("#if defined(__clang__) || ! defined(__GNUC__) || __GNUC__>=9")
      print
+     if(fix_gcc) print("#endif")
+     fix_gcc=0
 
      if($1=="}" && $2=="//" && $3=="namespace" && $4=="gch") {
        print "} // namespace PLMD"
