@@ -166,7 +166,7 @@ void InterpolateGrid::gatherStoredValue( const unsigned& valindex, const unsigne
 
 void InterpolateGrid::gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
   std::vector<double> pos(output_grid.getDimension()); double ff = myval->getForce(itask);
-  output_grid.getGridPointCoordinates( itask, pos ); input_grid.applyForce( 0, pos, ff, forces );
+  output_grid.getGridPointCoordinates( itask, pos ); input_grid.applyForce( this, pos, ff, forces );
 }
 
 
