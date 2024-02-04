@@ -61,7 +61,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit InterpolateGrid(const ActionOptions&ao);
-  void setupOnFirstStep() override ;
+  void setupOnFirstStep( const bool incalc ) override ;
   unsigned getNumberOfDerivatives() override ;
   const GridCoordinatesObject& getGridCoordinatesObject() const override ;
   std::vector<std::string> getGridCoordinateNames() const override ;
@@ -113,28 +113,36 @@ InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
   if( getPntrToArgument(0)->isPeriodic() ) {
     std::string min, max; getPntrToArgument(0)->getDomain( min, max ); setPeriodic( min, max );
   } else setNotPeriodic();
+  setupOnFirstStep( false );
 }
 
-void InterpolateGrid::setupOnFirstStep() {
+void InterpolateGrid::setupOnFirstStep( const bool incalc ) {
   input_grid.setup( this );
   ActionWithGrid* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
   plumed_assert( ag ); const GridCoordinatesObject& mygrid = ag->getGridCoordinatesObject();
   if( midpoints ) {
-    nbin.resize( getPntrToComponent(0)->getRank() );
+    double min, max; nbin.resize( getPntrToComponent(0)->getRank() );
     std::vector<std::string> str_min( input_grid.getMin() ), str_max(input_grid.getMax() );
     for(unsigned i=0; i<nbin.size(); ++i) {
-      double max, min; Tools::convert( str_min[i], min ); Tools::convert( str_max[i], max );
-      min += 0.5*input_grid.getGridSpacing()[i];
-      if( input_grid.getPbc()[i] ) {
-        nbin[i] = input_grid.getNbin()[i]; max += 0.5*input_grid.getGridSpacing()[i];
-      } else {
-        nbin[i] = input_grid.getNbin()[i] - 1; max -= 0.5*input_grid.getGridSpacing()[i];
+      if( incalc ) {
+        Tools::convert( str_min[i], min ); Tools::convert( str_max[i], max );
+        min += 0.5*input_grid.getGridSpacing()[i];
       }
-      Tools::convert( min, str_min[i] ); Tools::convert( max, str_max[i] );
+      if( input_grid.getPbc()[i] ) {
+        nbin[i] = input_grid.getNbin()[i];
+        if( incalc ) max += 0.5*input_grid.getGridSpacing()[i];
+      } else {
+        nbin[i] = input_grid.getNbin()[i] - 1;
+        if( incalc ) max -= 0.5*input_grid.getGridSpacing()[i];
+      }
+      if( incalc ) {
+        Tools::convert( min, str_min[i] ); Tools::convert( max, str_max[i] );
+      }
     }
     output_grid.setBounds( str_min, str_max, nbin,  gspacing );
   } else output_grid.setBounds( mygrid.getMin(), mygrid.getMax(), nbin, gspacing );
   getPntrToComponent(0)->setShape( output_grid.getNbin(true) );
+  if( !incalc ) gspacing.resize(0);
 }
 
 unsigned InterpolateGrid::getNumberOfDerivatives() {

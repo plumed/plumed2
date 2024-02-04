@@ -38,7 +38,7 @@ public:
   static void registerKeywords(Keywords&);
   explicit FunctionOfGrid(const ActionOptions&);
 /// This does setup required on first step
-  void setupOnFirstStep() override ;
+  void setupOnFirstStep( const bool incalc ) override ;
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives() override ;
 /// Get the label to write in the graph
@@ -96,10 +96,11 @@ FunctionOfGrid<T>::FunctionOfGrid(const ActionOptions&ao):
   if( myfunc.getDerivativeZeroIfValueIsZero() )  {
     for(int i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->setDerivativeIsZeroWhenValueIsZero();
   }
+  setupOnFirstStep( false );
 }
 
 template <class T>
-void FunctionOfGrid<T>::setupOnFirstStep() {
+void FunctionOfGrid<T>::setupOnFirstStep( const bool incalc ) {
   double volume = 1.0;
   const GridCoordinatesObject& mygrid = getGridCoordinatesObject();
   unsigned npoints = getPntrToArgument(0)->getNumberOfValues();

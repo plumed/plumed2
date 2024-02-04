@@ -55,7 +55,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit FindGridOptimum(const ActionOptions&ao);
-  void setupOnFirstStep() override { plumed_error(); }
+  void setupOnFirstStep( const bool incalc ) override { plumed_error(); }
   unsigned getNumberOfDerivatives() override ;
   void calculate() override ;
   std::vector<std::string> getGridCoordinateNames() const override ;

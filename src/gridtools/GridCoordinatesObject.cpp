@@ -85,28 +85,35 @@ void GridCoordinatesObject::setBounds( const std::vector<std::string>& smin, con
   str_min.resize( dimension ); str_max.resize( dimension ); nbin.resize( dimension );
   min.resize( dimension ); max.resize( dimension ); dx.resize( dimension ); stride.resize( dimension );
 
-  npoints=1; bounds_set=true;
+  npoints=1; bounds_set=(smin[0]!="auto" && smax[0]!="auto");
+  if( bounds_set ) {
+    for(unsigned i=1; i<dimension; ++i) {
+      if( smin[i]=="auto" || smax[i]=="auto" ) { bounds_set=false; break; }
+    }
+  }
   for(unsigned i=0; i<dimension; ++i) {
     str_min[i]=smin[i]; str_max[i]=smax[i];
-    Tools::convert( str_min[i], min[i] );
-    Tools::convert( str_max[i], max[i] );
+    if( bounds_set ) {
+      Tools::convert( str_min[i], min[i] );
+      Tools::convert( str_max[i], max[i] );
+    }
     if( spacing.size()==dimension && binsin.size()==dimension ) {
       if( spacing[i]==0 ) nbin[i] = binsin[i];
-      else {
+      else if( bounds_set ) {
         double range = max[i] - min[i]; nbin[i] = std::round( range / spacing[i]); dx[i]=spacing[i];
         // This check ensures that nbins is set correctly if spacing is set the same as the number of bins
         if( nbin[i]!=binsin[i] ) plumed_merror("mismatch between input spacing and input number of bins");
       }
     } else if( binsin.size()==dimension ) {
       nbin[i]=binsin[i]; dx[i] = ( max[i] - min[i] ) / static_cast<double>( nbin[i] );
-    } else if( spacing.size()==dimension ) {
+    } else if( spacing.size()==dimension && bounds_set ) {
       nbin[i] = std::floor(( max[i] - min[i] ) / spacing[i]) + 1; dx[i]=spacing[i];
-    } else plumed_error();
+    } else if( bounds_set ) plumed_error();
     if( !pbc[i] ) { max[i] +=dx[i]; nbin[i]+=1; }
     stride[i]=npoints;
     npoints*=nbin[i];
   }
-  if( spacing.size()!=dimension ) {
+  if( spacing.size()!=dimension && bounds_set ) {
     spacing.resize(dimension); for(unsigned i=0; i<dimension; ++i) spacing[i]=dx[i];
   }
 }

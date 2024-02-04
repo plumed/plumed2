@@ -39,7 +39,7 @@ ContourFindingBase::ContourFindingBase(const ActionOptions&ao):
   log.printf("  calculating dividing surface along which function equals %f \n", contour);
 }
 
-void ContourFindingBase::setupOnFirstStep() {
+void ContourFindingBase::setupOnFirstStep( const bool incalc ) {
   function.setup( this ); setupValuesOnFirstStep();
 }
 

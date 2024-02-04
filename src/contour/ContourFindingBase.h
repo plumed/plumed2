@@ -45,7 +45,7 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit ContourFindingBase(const ActionOptions&ao);
-  void setupOnFirstStep() override;
+  void setupOnFirstStep( const bool incalc ) override;
   virtual void setupValuesOnFirstStep() = 0;
 /// Get the contour value
   double getDifferenceFromContour( const std::vector<double>& x, std::vector<double>& der ) const ;

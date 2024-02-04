@@ -78,7 +78,7 @@ public:
   std::vector<std::string> getGridCoordinateNames() const override ;
   const GridCoordinatesObject& getGridCoordinatesObject() const override ;
   unsigned getNumberOfDerivatives() override;
-  void setupOnFirstStep() override ;
+  void setupOnFirstStep( const bool incalc ) override ;
   void getNumberOfTasks( unsigned& ntasks ) override ;
   void areAllTasksRequired( std::vector<ActionWithVector*>& task_reducing_actions ) override ;
   int checkTaskStatus( const unsigned& taskno, int& flag ) const override ;
@@ -246,14 +246,14 @@ KDE::KDE(const ActionOptions&ao):
   // Make sure we store all the arguments
   for(unsigned i=0; i<getNumberOfArguments(); ++i) getPntrToArgument(i)->buildDataStore();
   // Check for task reduction
-  updateTaskListReductionStatus();
+  updateTaskListReductionStatus(); setupOnFirstStep( false );
 }
 
-void KDE::setupOnFirstStep() {
+void KDE::setupOnFirstStep( const bool incalc ) {
   if( getName()=="SPHERICAL_KDE" ) return ;
 
   for(unsigned i=0; i<getNumberOfDerivatives(); ++i) {
-    if( gmin[i]=="auto" ) {
+    if( gmin[i]=="auto" && incalc ) {
       double lcoord, ucoord;
       PbcAction* bv = plumed.getActionSet().selectWithLabel<PbcAction*>("Box"); Tensor box( bv->getPbc().getBox() );
       std::size_t dot = getPntrToArgument(i)->getName().find_first_of(".");
@@ -265,16 +265,18 @@ void KDE::setupOnFirstStep() {
       // And convert to strings for bin and bmax
       Tools::convert( lcoord, gmin[i] ); Tools::convert( ucoord, gmax[i] );
     }
-    grid_diff_value.push_back( Value() );
-    if( gridobject.isPeriodic(i) ) grid_diff_value[i].setDomain( gmin[i], gmax[i] );
-    else grid_diff_value[i].setNotPeriodic();
+    if( incalc ) {
+      grid_diff_value.push_back( Value() );
+      if( gridobject.isPeriodic(i) ) grid_diff_value[i].setDomain( gmin[i], gmax[i] );
+      else grid_diff_value[i].setNotPeriodic();
+    }
   }
   // And setup the grid object
   gridobject.setBounds( gmin, gmax, nbin, gspacing );
   std::vector<unsigned> shape( gridobject.getNbin(true) );
   getPntrToComponent(0)->setShape( shape );
   // And setup the neighbors
-  if( kerneltype!="DISCRETE" && getPntrToArgument(bwargno)->isConstant() ) {
+  if( gmin[0]!="auto" && kerneltype!="DISCRETE" && getPntrToArgument(bwargno)->isConstant() ) {
     fixed_width=true; setupNeighborsVector();
   }
 }

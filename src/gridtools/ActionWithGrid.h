@@ -38,7 +38,7 @@ public:
   virtual void calculate() override ;
   virtual std::vector<std::string> getGridCoordinateNames() const = 0;
   virtual const GridCoordinatesObject& getGridCoordinatesObject() const = 0;
-  virtual void setupOnFirstStep() = 0;
+  virtual void setupOnFirstStep( const bool incalc ) = 0;
 };
 
 }

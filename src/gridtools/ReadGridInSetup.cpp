@@ -63,7 +63,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit ReadGridInSetup(const ActionOptions&ao);
   unsigned getNumberOfDerivatives() override ;
-  void setupOnFirstStep() override { plumed_merror("should not be in ReadGridInSetup setupOnFirstStep" ); }
+  void setupOnFirstStep( const bool incalc ) override { plumed_merror("should not be in ReadGridInSetup setupOnFirstStep" ); }
   void performTask( const unsigned& current, MultiValue& myvals ) const override { plumed_merror("should not be in readGridInSetup performTask"); }
   std::vector<std::string> getGridCoordinateNames() const override ;
   const GridCoordinatesObject& getGridCoordinatesObject() const override ;
