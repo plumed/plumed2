@@ -272,7 +272,7 @@ std::vector<std::string> GridCoordinatesObject::getMax() const {
 }
 
 std::vector<unsigned> GridCoordinatesObject::getNbin( const bool& shape ) const {
-  plumed_dbg_assert( gtype==flat && bounds_set );
+  plumed_dbg_assert( gtype==flat && nbin.size()==dimension );
   std::vector<unsigned> ngrid( dimension );
   for(unsigned i=0; i<dimension; ++i) {
     if( !pbc[i] && !shape ) ngrid[i]=nbin[i] - 1;
