@@ -63,6 +63,18 @@ class Pbc {
 /// a distance vector.
   void buildShifts(std::vector<Vector> shifts[2][2][2])const;
 public:
+  template < int N=3>
+  class MemoryView {
+  
+    double *ptr_;
+    size_t size_;
+    public:
+    MemoryView(double* p, size_t s) :ptr_(p), size_(s){}
+    size_t size()const {return size_;}
+    double * operator[](size_t i) { return ptr_ + i *N;}
+
+  };
+
 /// Constructor
   Pbc();
 /// Compute modulo of (v2-v1), using or not pbc depending on bool pbc.
@@ -71,6 +83,7 @@ public:
 /// if specified, also returns the number of attempted shifts
   Vector distance(const Vector&,const Vector&,int*nshifts=nullptr)const;
 /// Apply PBC to a set of positions or distance vectors
+  void apply(MemoryView<3> dlist, unsigned max_index=0) const;
   void apply(std::vector<Vector>&dlist, unsigned max_index=0) const;
 /// Set the lattice vectors.
 /// b[i][j] is the j-th component of the i-th vector
