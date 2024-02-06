@@ -170,10 +170,16 @@ void Pbc::apply(std::vector<Vector>& dlist, unsigned max_index) const {
       while(dlist[k][2]<=mdiag[2])  dlist[k][2]+=diag[2];
     }
 #else
-    for(unsigned k=0; k<max_index; ++k) for(int i=0; i<3; i++) dlist[k][i]=Tools::pbc(dlist[k][i]*invBox(i,i))*box(i,i);
+    for(unsigned k=0; k<max_index; ++k) {
+      for(int i=0; i<3; i++) {
+        dlist[k][i]=Tools::pbc(dlist[k][i]*invBox(i,i))*box(i,i);
+      }
+    }
 #endif
   } else if(type==generic) {
-    for(unsigned k=0; k<max_index; ++k) dlist[k]=distance(Vector(0.0,0.0,0.0),dlist[k]);
+    for(unsigned k=0; k<max_index; ++k) {
+      dlist[k]=distance(Vector(0.0,0.0,0.0),dlist[k]);
+    }
   } else plumed_merror("unknown pbc type");
 }
 
