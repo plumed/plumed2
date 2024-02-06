@@ -68,10 +68,8 @@ public:
 /// Compute modulo of (v2-v1), using or not pbc depending on bool pbc.
   double distance( const bool pbc, const Vector& v1, const Vector& v2 ) const;
 /// Computes v2-v1, using minimal image convention
-  Vector distance(const Vector& v1,const Vector& v2)const;
-/// version of distance which also returns the number
-/// of attempted shifts
-  Vector distance(const Vector&,const Vector&,int*nshifts)const;
+/// if specified, also returns the number of attempted shifts
+  Vector distance(const Vector&,const Vector&,int*nshifts=nullptr)const;
 /// Apply PBC to a set of positions or distance vectors
   void apply(std::vector<Vector>&dlist, unsigned max_index=0) const;
 /// Set the lattice vectors.
@@ -96,11 +94,6 @@ public:
 /// Returns true if box is set and non zero
   bool isSet()const;
 };
-
-inline
-Vector Pbc::distance(const Vector& v1,const Vector& v2)const {
-  return distance(v1,v2,NULL);
-}
 
 inline
 bool Pbc::isSet()const {
