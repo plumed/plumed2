@@ -392,12 +392,12 @@ double Tools::pbc(double x) {
   while (x<-0.5) x+=1.0;
   return x;
 #else
-  if(std::numeric_limits<int>::round_style == std::round_toward_zero) {
-    const double offset=100.0;
+  if constexpr (std::numeric_limits<int>::round_style == std::round_toward_zero) {
+    constexpr double offset=100.0;
     const double y=x+offset;
     if(y>=0) return y-int(y+0.5);
     else     return y-int(y-0.5);
-  } else if(std::numeric_limits<int>::round_style == std::round_to_nearest) {
+  } else if constexpr (std::numeric_limits<int>::round_style == std::round_to_nearest) {
     return x-int(x);
   } else return x-floor(x+0.5);
 #endif
