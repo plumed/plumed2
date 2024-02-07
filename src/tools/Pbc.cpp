@@ -156,31 +156,7 @@ double Pbc::distance( const bool pbc, const Vector& v1, const Vector& v2 ) const
 }
 
 void Pbc::apply(std::vector<Vector>& dlist, unsigned max_index) const {
-  if (max_index==0) max_index=dlist.size();
-  if(type==unset) {
-    // do nothing
-  } else if(type==orthorombic) {
-#ifdef __PLUMED_PBC_WHILE
-    for(unsigned k=0; k<max_index; ++k) {
-      while(dlist[k][0]>hdiag[0])   dlist[k][0]-=diag[0];
-      while(dlist[k][0]<=mdiag[0])  dlist[k][0]+=diag[0];
-      while(dlist[k][1]>hdiag[1])   dlist[k][1]-=diag[1];
-      while(dlist[k][1]<=mdiag[1])  dlist[k][1]+=diag[1];
-      while(dlist[k][2]>hdiag[2])   dlist[k][2]-=diag[2];
-      while(dlist[k][2]<=mdiag[2])  dlist[k][2]+=diag[2];
-    }
-#else
-    for(unsigned k=0; k<max_index; ++k) {
-      for(int i=0; i<3; i++) {
-        dlist[k][i]=Tools::pbc(dlist[k][i]*invBox(i,i))*box(i,i);
-      }
-    }
-#endif
-  } else if(type==generic) {
-    for(unsigned k=0; k<max_index; ++k) {
-      dlist[k]=distance(Vector(0.0,0.0,0.0),dlist[k]);
-    }
-  } else plumed_merror("unknown pbc type");
+  apply(mdMemoryView< -1,3>(&dlist[0][0],dlist.size()),max_index);
 }
 
 void Pbc::apply(mdMemoryView< -1,3>dlist, unsigned max_index) const {
@@ -215,14 +191,12 @@ void Pbc::apply(mdMemoryView< -1,3>dlist, unsigned max_index) const {
   } else plumed_merror("unknown pbc type");
 }
 
-Vector Pbc::distance(const Vector&v1,const Vector&v2,int*nshifts)const {
-  //move should enforce the move ctor instead of the copy one
-  Vector d=std::move(delta(v1,v2));
-  //I'd like to change the signature to:
-  //because with the original we are calling already a ctor and here would be only 3 subtration and assignments:
-  //need to measure
-  //Vector Pbc::distance(const Vector&v1,Vector d,int*nshifts)const {
-  //d-=v1;
+Vector Pbc::distance(const Vector&v1, Vector d,int*nshifts)const {
+  //d is copy/move constructed
+  //when possible d will be RVOed 
+  //it is equivalent to declare Vector d ad assigning it to the difference
+  //between the inputs
+  d-=v1;
   if(type==unset) {
     // do nothing
   } else if(type==orthorombic) {

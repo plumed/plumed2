@@ -90,7 +90,7 @@ public:
   double distance( const bool pbc, const Vector& v1, const Vector& v2 ) const;
 /// Computes v2-v1, using minimal image convention
 /// if specified, also returns the number of attempted shifts
-  Vector distance(const Vector&,const Vector&,int*nshifts=nullptr)const;
+  Vector distance(const Vector&, Vector,int*nshifts=nullptr)const;
 /// Apply PBC to a set of positions or distance vectors
   void apply(mdMemoryView< -1,3> dlist, unsigned max_index=0) const;
   void apply(std::vector<Vector>&dlist, unsigned max_index=0) const;
