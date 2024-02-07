@@ -29,3 +29,6 @@ jobs:
     - name: Build and run tests
       run: |
         make -C docker ${{ matrix.variant }}
+    - name: PyCV tests
+      run: |
+        make -C docker ${{ matrix.variant }}-pycv

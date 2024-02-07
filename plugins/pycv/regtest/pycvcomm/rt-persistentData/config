@@ -1,0 +1,8 @@
+
+type=driver
+arg="--plumed plumed.dat --ixyz traj.xyz"
+
+#this will showcase that you can import a complex module!!!
+plumed_regtest_before(){
+  cp -r ../pycvPersistentData .
+}

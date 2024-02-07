@@ -1,0 +1,11 @@
+FROM plumed:fedora39
+
+RUN source /etc/bashrc \
+ && module load mpi \
+ && cd plumed2 \
+ && source ./sourceme.sh \
+ && cd plugins/pycv \
+ && pip3 install -r requirements.txt \
+ && ln -s $(realpath ../../regtest/scripts) ./regtest/scripts \
+ && python_bin=python3 ./prepareMakeForDevelop.sh \
+ && make check

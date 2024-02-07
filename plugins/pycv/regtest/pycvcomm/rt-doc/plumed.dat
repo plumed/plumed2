@@ -1,0 +1,5 @@
+LOAD FILE=../../../../PythonCVInterface.so
+
+cvdist: PYCVINTERFACE IMPORT=pyhelp
+
+#PRINT FILE=colvar.out ARG=*
