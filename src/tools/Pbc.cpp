@@ -183,7 +183,7 @@ void Pbc::apply(std::vector<Vector>& dlist, unsigned max_index) const {
   } else plumed_merror("unknown pbc type");
 }
 
-void Pbc::apply(MemoryView<3> dlist, unsigned max_index) const {
+void Pbc::apply(mdMemoryView< -1,3>dlist, unsigned max_index) const {
   if (max_index==0) max_index=dlist.size();
   if(type==unset) {
     // do nothing

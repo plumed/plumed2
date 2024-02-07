@@ -29,6 +29,27 @@
 
 namespace PLMD {
 
+//this more or less mocks c++20 span with fixed size
+template < int N=3>
+  class MemoryView {
+    double *ptr_;
+    public:
+    MemoryView(double* p) :ptr_(p){}
+    constexpr size_t size()const {return N;}
+    double & operator[](size_t i) { return ptr_ [i];}
+  };
+
+//this more or less mocks c++23 mdspan
+template < int N=-1,int STRIDE=3>
+  class mdMemoryView {
+    double *ptr_;
+    size_t size_;
+    public:
+    mdMemoryView(double* p, size_t s) :ptr_(p), size_(s){}
+    size_t size()const {return size_;}
+    MemoryView<STRIDE> operator[](size_t i) { return MemoryView<STRIDE>(ptr_ + i *N);}
+  };
+
 /*
 Tool to deal with periodic boundary conditions.
 
@@ -63,18 +84,6 @@ class Pbc {
 /// a distance vector.
   void buildShifts(std::vector<Vector> shifts[2][2][2])const;
 public:
-  template < int N=3>
-  class MemoryView {
-  
-    double *ptr_;
-    size_t size_;
-    public:
-    MemoryView(double* p, size_t s) :ptr_(p), size_(s){}
-    size_t size()const {return size_;}
-    double * operator[](size_t i) { return ptr_ + i *N;}
-
-  };
-
 /// Constructor
   Pbc();
 /// Compute modulo of (v2-v1), using or not pbc depending on bool pbc.
@@ -83,7 +92,7 @@ public:
 /// if specified, also returns the number of attempted shifts
   Vector distance(const Vector&,const Vector&,int*nshifts=nullptr)const;
 /// Apply PBC to a set of positions or distance vectors
-  void apply(MemoryView<3> dlist, unsigned max_index=0) const;
+  void apply(mdMemoryView< -1,3> dlist, unsigned max_index=0) const;
   void apply(std::vector<Vector>&dlist, unsigned max_index=0) const;
 /// Set the lattice vectors.
 /// b[i][j] is the j-th component of the i-th vector
