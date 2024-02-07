@@ -30,25 +30,33 @@
 namespace PLMD {
 
 //this more or less mocks c++20 span with fixed size
-template < int N=3>
-  class MemoryView {
-    double *ptr_;
-    public:
-    MemoryView(double* p) :ptr_(p){}
-    constexpr size_t size()const {return N;}
-    double & operator[](size_t i) { return ptr_ [i];}
-  };
+template < std::size_t N=3>
+class MemoryView {
+  double *ptr_;
+public:
+  MemoryView(double* p) :ptr_(p) {}
+  constexpr size_t size()const {return N;}
+  constexpr size_t extent = N;
+  double & operator[](size_t i) { return ptr_[i];}
+};
 
-//this more or less mocks c++23 mdspan
-template < int N=-1,int STRIDE=3>
-  class mdMemoryView {
-    double *ptr_;
-    size_t size_;
-    public:
-    mdMemoryView(double* p, size_t s) :ptr_(p), size_(s){}
-    size_t size()const {return size_;}
-    MemoryView<STRIDE> operator[](size_t i) { return MemoryView<STRIDE>(ptr_ + i *N);}
-  };
+//this more or less mocks c++23 mdspan without the fancy multi-indexed operator[]
+//the idea is to take an address that you know to be strided in a certain way and 
+//make it avaiable to any interface (like using the data from a nunmpy.ndarray in
+//a function thought for a std::vector<PLMD::Vector> )
+//the N=-1 is there for mocking the run time size from the span (where a 
+//dynamic extent is size_t(-))
+template < std::size_t N=-1, std::size_t STRIDE=3>
+class mdMemoryView {
+  double *ptr_;
+  size_t size_;
+public:
+  mdMemoryView(double* p, size_t s) :ptr_(p), size_(s) {}
+  size_t size()const {return size_;}
+  constexpr size_t extent = N;
+  constexpr size_t stride = STRIDE;
+  MemoryView<STRIDE> operator[](size_t i) { return MemoryView<STRIDE>(ptr_ + i * STRIDE);}
+};
 
 /*
 Tool to deal with periodic boundary conditions.

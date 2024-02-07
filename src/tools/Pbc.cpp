@@ -159,7 +159,7 @@ void Pbc::apply(std::vector<Vector>& dlist, unsigned max_index) const {
   apply(mdMemoryView< -1,3>(&dlist[0][0],dlist.size()),max_index);
 }
 
-void Pbc::apply(mdMemoryView< -1,3>dlist, unsigned max_index) const {
+void Pbc::apply(mdMemoryView< -1,3> dlist, unsigned max_index) const {
   if (max_index==0) max_index=dlist.size();
   if(type==unset) {
     // do nothing
@@ -183,7 +183,7 @@ void Pbc::apply(mdMemoryView< -1,3>dlist, unsigned max_index) const {
   } else if(type==generic) {
     for(unsigned k=0; k<max_index; ++k) {
       auto t =distance(Vector(0.0,0.0,0.0),
-                         Vector(dlist[k][0],dlist[k][1],dlist[k][2]));
+      {dlist[k][0],dlist[k][1],dlist[k][2]});
       dlist[k][0]  = t[0];
       dlist[k][1]  = t[1];
       dlist[k][2]  = t[2];
@@ -191,9 +191,9 @@ void Pbc::apply(mdMemoryView< -1,3>dlist, unsigned max_index) const {
   } else plumed_merror("unknown pbc type");
 }
 
-Vector Pbc::distance(const Vector&v1, Vector d,int*nshifts)const {
+Vector Pbc::distance(const Vector&v1, Vector d, int*nshifts) const {
   //d is copy/move constructed
-  //when possible d will be RVOed 
+  //when possible d will be RVOed
   //it is equivalent to declare Vector d ad assigning it to the difference
   //between the inputs
   d-=v1;
