@@ -156,10 +156,10 @@ double Pbc::distance( const bool pbc, const Vector& v1, const Vector& v2 ) const
 }
 
 void Pbc::apply(std::vector<Vector>& dlist, unsigned max_index) const {
-  apply(mdMemoryView< -1,3>(&dlist[0][0],dlist.size()),max_index);
+  apply(VectorView(&dlist[0][0],dlist.size()),max_index);
 }
 
-void Pbc::apply(mdMemoryView< -1,3> dlist, unsigned max_index) const {
+void Pbc::apply(VectorView dlist, unsigned max_index) const {
   if (max_index==0) max_index=dlist.size();
   if(type==unset) {
     // do nothing
@@ -182,21 +182,39 @@ void Pbc::apply(mdMemoryView< -1,3> dlist, unsigned max_index) const {
 #endif
   } else if(type==generic) {
     for(unsigned k=0; k<max_index; ++k) {
-      auto t =distance(Vector(0.0,0.0,0.0),
-      {dlist[k][0],dlist[k][1],dlist[k][2]});
-      dlist[k][0]  = t[0];
-      dlist[k][1]  = t[1];
-      dlist[k][2]  = t[2];
+      //I wrote VectorGeneric<3> matmul(const MemoryView<3UL> a,const TensorGeneric<3,3>&b)
+      // by copy-pasting the original vector-tensor, but this is 10% faster... (on gcc9)
+      Vector s=matmul(Vector{dlist[k][0],dlist[k][1],dlist[k][2]},invReduced);
+      // bring to -0.5,+0.5 region in scaled coordinates:
+      for(int i=0; i<3; ++i) {
+        s[i]=Tools::pbc(s[i]);
+      }
+      Vector best(matmul(s,reduced));
+      // check if shifts have to be attempted:
+      if((std::fabs(s[0])+std::fabs(s[1])+std::fabs(s[2])>0.5)) {
+        // list of shifts is specific for that "octant" (depends on signs of s[i]):
+        const std::vector<Vector> & myshifts(shifts[(s[0]>0?1:0)][(s[1]>0?1:0)][(s[2]>0?1:0)]);
+        Vector reference = best;
+        double lbest(modulo2(best));
+        // loop over possible shifts:
+        for(unsigned i=0; i<myshifts.size(); ++i) {
+          Vector trial=reference+myshifts[i];
+          double ltrial=modulo2(trial);
+          if(ltrial<lbest) {
+            lbest=ltrial;
+            best=trial;
+          }
+        }
+      }
+      dlist[k][0]  = best[0];
+      dlist[k][1]  = best[1];
+      dlist[k][2]  = best[2];
     }
   } else plumed_merror("unknown pbc type");
 }
 
-Vector Pbc::distance(const Vector&v1, Vector d, int*nshifts) const {
-  //d is copy/move constructed
-  //when possible d will be RVOed
-  //it is equivalent to declare Vector d ad assigning it to the difference
-  //between the inputs
-  d-=v1;
+Vector Pbc::distance(const Vector&v1,const Vector&v2,int*nshifts)const {
+  Vector d=delta(v1,v2);
   if(type==unset) {
     // do nothing
   } else if(type==orthorombic) {
