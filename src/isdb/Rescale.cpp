@@ -144,7 +144,7 @@ class Rescale : public bias::Bias
   std::string selector_;
 
   // Monte Carlo
-  void doMonteCarlo(unsigned igamma, double oldE, std::vector<double> args, std::vector<double> bargs);
+  void doMonteCarlo(unsigned igamma, double oldE, const std::vector<double> & args, const std::vector<double> & bargs);
   unsigned proposeMove(unsigned x, unsigned xmin, unsigned xmax);
   bool doAccept(double oldE, double newE);
   // read and print bias
@@ -363,7 +363,7 @@ bool Rescale::doAccept(double oldE, double newE)
 }
 
 void Rescale::doMonteCarlo(unsigned igamma, double oldE,
-                           std::vector<double> args, std::vector<double> bargs)
+                           const std::vector<double> & args, const std::vector<double> & bargs)
 {
   double oldB, newB;
 

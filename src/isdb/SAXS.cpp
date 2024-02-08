@@ -379,7 +379,7 @@ private:
   void calculate_gpu(std::vector<Vector> &pos, std::vector<Vector> &deriv);
   void calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv);
   void getMartiniFFparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter);
-  void getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv, std::vector<unsigned> residue_atom);
+  void getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv, const std::vector<unsigned> & residue_atom);
   unsigned getOnebeadMapping(const PDB &pdb, const std::vector<AtomNumber> &atoms);
   double calculateAFF(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double rho);
   std::map<std::string, std::vector<double> > setupLCPOparam();
@@ -3000,7 +3000,7 @@ void SAXS::getMartiniFFparam(const std::vector<AtomNumber> &atoms, std::vector<s
   }
 }
 
-void SAXS::getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv, std::vector<unsigned> residue_atom)
+void SAXS::getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv, const std::vector<unsigned> & residue_atom)
 {
 
   parameter_solv[TRP].push_back(60737.60249988003);

@@ -205,7 +205,7 @@ public:
 // Returns the number of coordinates of the field
   bool isPeriodic() { return false; }
 // Calculates maximum distance in an environment
-  double maxDistance(std::vector<Vector> environment);
+  double maxDistance(const std::vector<Vector> & environment);
   // Parse everything connected to the definition of the reference environments
   // First argument is the array of Vectors that stores the reference environments
   // Second argument is the array of strings that stores the atom names of reference environments
@@ -394,7 +394,7 @@ double EnvironmentSimilarity::compute( const unsigned& tindex, multicolvar::Atom
   }
 }
 
-double EnvironmentSimilarity::maxDistance( std::vector<Vector> environment ) {
+double EnvironmentSimilarity::maxDistance( const std::vector<Vector> & environment ) {
   double max_dist = 0.0;
   for(unsigned i=0; i<environment.size(); ++i) {
     double norm=environment[i].modulo();

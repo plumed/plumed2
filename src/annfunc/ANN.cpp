@@ -137,7 +137,7 @@ ANN::ANN(const ActionOptions&ao):
   parseVector("NUM_NODES", num_nodes);
   parseVector("ACTIVATIONS", activations);
   log.printf("\nactivations = ");
-  for (auto ss: activations) {
+  for (const auto & ss: activations) {
     log.printf("%s, ", ss.c_str());
   }
   log.printf("\nnum_nodes = ");
