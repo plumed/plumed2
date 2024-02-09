@@ -304,8 +304,12 @@ void ActionAtomistic::setForcesOnAtoms(const std::vector<double>& forcesToApply,
 }
 
 void ActionAtomistic::setForcesOnCell(const std::vector<double>& forcesToApply, unsigned& ind) {
+  setForcesOnCell(forcesToApply.data(),forcesToApply.size(),ind);
+}
+
+void ActionAtomistic::setForcesOnCell(const double* forcesToApply, std::size_t size, unsigned& ind) {
   for(unsigned i=0; i<9; ++i) {
-    plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
+    plumed_dbg_massert( ind<size, "problem setting forces in " + getLabel() );
     boxValue->addForce( i, forcesToApply[ind] ); ind++;
   }
 }

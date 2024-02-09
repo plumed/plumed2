@@ -141,6 +141,8 @@ public:
   void setForcesOnAtoms( const std::vector<double>& forcesToApply, unsigned& ind );
 /// Add the virial forces
   void setForcesOnCell(const std::vector<double>& forcesToApply, unsigned& ind);
+/// Add the virial forces (span-like syntax)
+  void setForcesOnCell(const double* forcesToApply, std::size_t size, unsigned& ind);
 /// Skip atom retrieval - use with care.
 /// If this function is called during initialization, then atoms are
 /// not going to be retrieved. Can be used for optimization. Notice that
