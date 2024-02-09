@@ -246,7 +246,7 @@ bool ActionWithValue::checkForForces() {
   if( ncp==0 || nder==0 ) return false;
 
   unsigned nvalsWithForce=0;
-  std::vector<unsigned> valsToForce( ncp );
+  valsToForce.resize(ncp);
   for(unsigned i=0; i<ncp; ++i) {
     if( values[i]->hasForce && !values[i]->constant ) {
       valsToForce[nvalsWithForce]=i; nvalsWithForce++;

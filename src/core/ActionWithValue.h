@@ -72,6 +72,7 @@ private:
   std::vector<std::unique_ptr<Value>> values;
 /// A vector that is used to hold the forces that we will apply on the input quantities
   std::vector<double> forcesForApply;
+  std::vector<unsigned> valsToForce;
 /// Are we skipping the calculation of the derivatives
   bool noderiv;
 /// Are we using numerical derivatives to differentiate
