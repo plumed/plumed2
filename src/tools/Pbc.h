@@ -24,6 +24,7 @@
 
 #include "Vector.h"
 #include "Tensor.h"
+#include "small_vector/small_vector.h"
 #include <vector>
 #include <cstddef>
 
@@ -51,7 +52,7 @@ class Pbc {
 /// List of shifts that should be attempted.
 /// Depending on the sign of the scaled coordinates representing
 /// a distance vector, a different set of shifts must be tried.
-  std::vector<Vector> shifts[2][2][2];
+  gch::small_vector<Vector,27> shifts[2][2][2];
 /// Alternative representation for orthorombic cells.
 /// Not really used, but could be used to optimize search in
 /// orthorombic cells.
@@ -61,7 +62,7 @@ class Pbc {
 /// reset. It allows building a minimal set of shifts
 /// depending on the sign of the scaled coordinates representing
 /// a distance vector.
-  void buildShifts(std::vector<Vector> shifts[2][2][2])const;
+  void buildShifts(gch::small_vector<Vector,27> shifts[2][2][2])const;
 public:
 /// Constructor
   Pbc();
