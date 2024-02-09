@@ -58,4 +58,4 @@ Erik Lindahl, 2008-10-07.
 #define plumed_blas_strmv PLUMED_BLAS_F77_FUNC(strmv,STRMV)
 #define plumed_blas_strsm PLUMED_BLAS_F77_FUNC(strsm,STRSM)
 #define plumed_blas_isamax PLUMED_BLAS_F77_FUNC(isamax,ISAMAX)
-#endif
+#endif //__PLUMED_blas_def_external_h

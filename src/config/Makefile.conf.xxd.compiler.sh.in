@@ -1,0 +1,1 @@
+cat @CMAKE_CURRENT_BINARY_DIR@/Makefile.cmakeMocked.conf | @PLUMED_MAKETOOLS@/xxd > Makefile.conf.xxd

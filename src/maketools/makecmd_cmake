@@ -1,0 +1,5 @@
+#! /usr/bin/env bash
+#workaround to call makecmd with add_custom_command
+SCRIPTPATH=$(dirname "$(realpath -s "$0")")
+
+${SCRIPTPATH}/makecmd "$1" < "$2" > "$3"

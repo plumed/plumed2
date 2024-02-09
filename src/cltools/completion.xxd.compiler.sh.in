@@ -1,0 +1,15 @@
+{
+    #TODO: this may be configured in a more general environment
+    #replaces make-scripts-options.sh
+    for file in @PLUMED_SCRIPTS@/*.sh
+    do
+        name=${file##*/}
+        name=${name%.sh}
+        name=${name//-/_}
+        echo -n "local cmd_keys_${name}=\""
+        echo -n $(PLUMED_ROOT=@PLUMED_MAIN_DIR@ $file --options)
+        echo "\""
+    done
+    #end TODO
+    cat @CMAKE_CURRENT_SOURCE_DIR@/completion.sh
+} | @PLUMED_MAKETOOLS@/xxd > completion.xxd

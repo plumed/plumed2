@@ -2,3 +2,4 @@ core/**
 deps/**
 function/**
 *.o
+!/CMakeLists.txt
