@@ -34,6 +34,13 @@ jobs:
         path: ~/.ccache
         key: ccache-reset1-linux${{ matrix.variant }}hash-${{ github.sha }}
         restore-keys: ccache-reset1-linux${{ matrix.variant }}hash-
+    - name: Removed unused stuff
+      run: |
+        df -h
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /usr/local/lib/android
+        sudo rm -rf /opt/ghc
+        df -h
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
