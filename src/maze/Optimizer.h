@@ -326,6 +326,7 @@ inline double Optimizer::get_opt_value() const {
   return opt_value_;
 }
 
+// cppcheck-suppress passedByValue
 inline void Optimizer::set_opt(Vector opt) {
   opt_=opt;
 }

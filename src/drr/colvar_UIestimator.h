@@ -333,7 +333,7 @@ INITIAL_LOOPEND:
   ~UIestimator() {}
 
   // called from MD engine every step
-  bool update(const int step, std::vector<double> x, std::vector<double> y)
+  bool update(const int step, const std::vector<double> & x, std::vector<double> y)
   {
 
     //std::cout<<"weeeee: :"<<std::endl;

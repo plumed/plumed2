@@ -27,6 +27,7 @@
 #include "tools/Exception.h"
 #include <vector>
 #include <memory>
+#include <cstring>
 
 namespace PLMD {
 
@@ -185,9 +186,13 @@ double ActionWithValue::getOutputQuantity(const unsigned j) const {
 
 inline
 double ActionWithValue::getOutputQuantity( const std::string& name ) const {
-  std::string thename; thename=getLabel() + "." + name;
+  int offset=getLabel().size();
   for(unsigned i=0; i<values.size(); ++i) {
-    if( values[i]->name==thename ) return values[i]->get();
+    const std::string & valname=values[i]->name;
+    if(valname.size()>offset+1 && valname[offset]=='.' ) {
+      plumed_dbg_assert(Tools::startWith(valname,getLabel()));
+      if(!std::strcmp(valname.c_str()+offset+1,name.c_str())) return values[i]->get();
+    }
   }
   return 0.0;
 }

@@ -920,6 +920,7 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_init(plumed_error* error) __PLU
 }
 
 /** Finalize error - should be called when an error is raised to avoid leaks */
+/* cppcheck-suppress passedByValue */
 __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_finalize(plumed_error error) __PLUMED_WRAPPER_CXX_NOEXCEPT {
   if(!error.code) return;
   if(error.nested) {
@@ -938,6 +939,7 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_finalize(plumed_error error) __
 }
 
 /** Access message - more robust than directly accessing what ptr, for future extensibility */
+/* cppcheck-suppress passedByValue */
 __PLUMED_WRAPPER_STATIC_INLINE const char* plumed_error_what(plumed_error error) __PLUMED_WRAPPER_CXX_NOEXCEPT {
   return error.what;
 }
@@ -3742,18 +3744,29 @@ plumed_implementation* plumed_malloc_pimpl() {
     __PLUMED_FPRINTF(stderr,"+++ Allocation error +++\n");
     __PLUMED_WRAPPER_STD abort();
   }
+  /* cppcheck-suppress nullPointerRedundantCheck */
   __PLUMED_WRAPPER_STD memcpy(pimpl->magic,"pLuMEd",6);
+  /* cppcheck-suppress nullPointerRedundantCheck */
   pimpl->refcount=1;
 #if __PLUMED_WRAPPER_DEBUG_REFCOUNT
+  /* cppcheck-suppress nullPointerRedundantCheck */
   __PLUMED_FPRINTF(stderr,"refcount: new at %p\n",(void*)pimpl);
 #endif
+  /* cppcheck-suppress nullPointerRedundantCheck */
   pimpl->dlhandle=__PLUMED_WRAPPER_CXX_NULLPTR;
+  /* cppcheck-suppress nullPointerRedundantCheck */
   pimpl->dlclose=0;
+  /* cppcheck-suppress nullPointerRedundantCheck */
   pimpl->used_plumed_kernel=0;
+  /* cppcheck-suppress nullPointerRedundantCheck */
   pimpl->functions.create=__PLUMED_WRAPPER_CXX_NULLPTR;
+  /* cppcheck-suppress nullPointerRedundantCheck */
   pimpl->functions.cmd=__PLUMED_WRAPPER_CXX_NULLPTR;
+  /* cppcheck-suppress nullPointerRedundantCheck */
   pimpl->functions.finalize=__PLUMED_WRAPPER_CXX_NULLPTR;
+  /* cppcheck-suppress nullPointerRedundantCheck */
   pimpl->table=__PLUMED_WRAPPER_CXX_NULLPTR;
+  /* cppcheck-suppress nullPointerRedundantCheck */
   pimpl->p=__PLUMED_WRAPPER_CXX_NULLPTR;
   return pimpl;
 }

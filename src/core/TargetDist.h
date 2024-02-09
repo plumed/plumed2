@@ -38,8 +38,8 @@ private:
   Log &log;
 public:
   explicit TargetDist(Log& log) : log(log) {}
-  void read( const PDB& pdb, std::vector<Value*> args );
-  void read( const std::vector<double>& targ, std::vector<Value*> ar );
+  void read( const PDB& pdb, const std::vector<Value*> & args );
+  void read( const std::vector<double>& targ, const std::vector<Value*> & ar );
   double calculate( std::vector<double>& derivs );
 };
 

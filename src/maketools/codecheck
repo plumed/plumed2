@@ -39,7 +39,7 @@ if [ $do_cppcheck == true ] ; then
   -UGMX_CYGWIN  -UF77_NO_UNDERSCORE -U_GLIBCXX_DEBUG -DNDEBUG -U__PLUMED_PBC_WHILE  \
   -U__PLUMED_HAS_ASMJIT \
   -D__PLUMED_WRAPPER_CXX_EXPLICIT=explicit \
-  --template='[{file}:{line}] ({severity}) :{id}: {message}' --enable=all --inline-suppr --force \
+  --template='[{file}:{line}] ({severity}) :{id}: {message}' --enable=all --suppress=missingIncludeSystem --inline-suppr --force \
   $files
 fi
 
@@ -97,7 +97,7 @@ echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ## Here I also exclude (style) and (information) messages
 ## perhaps we could keep some of them to make to code cleaner at some point
 ## (the "true" command is necessary so that the script does not fail if some string is not found)
-grep -v "(style)" "${CLEAN_FILE}" | grep -v "(information)" > "${FATAL_FILE}" || true
+grep -v "(style)" "${CLEAN_FILE}" | grep -v "(information)" | grep -v :duplInheritedMember: >> "${FATAL_FILE}" || true
 count=$(cat "${FATAL_FILE}" | wc -l)
 echo 
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
