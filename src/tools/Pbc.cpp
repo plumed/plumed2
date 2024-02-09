@@ -182,8 +182,14 @@ void Pbc::apply(VectorView dlist, unsigned max_index) const {
 #endif
   } else if(type==generic) {
     for(unsigned k=0; k<max_index; ++k) {
-      //I wrote VectorGeneric<3> matmul(const MemoryView<3UL> a,const TensorGeneric<3,3>&b)
-      // by copy-pasting the original vector-tensor, but this is 10% faster... (on gcc9)
+      //Inlining by hand this part of function from distance speeds up by about 20-30%
+      //against the previos version, and 60-80% agains this version non inlined.
+      //I do not think is the `if(nshifts) *nshifts+=myshifts.size();`,
+      //but that the compiler now see how we are juggling with the memory and it 
+      //does its magic
+
+      //I tried writing VectorGeneric<3> matmul(const MemoryView<3UL> a,const TensorGeneric<3,3>&b)
+      // by copy-pasting the original vector-tensor, but slows down this method by 10%... (on gcc9)
       Vector s=matmul(Vector{dlist[k][0],dlist[k][1],dlist[k][2]},invReduced);
       // bring to -0.5,+0.5 region in scaled coordinates:
       for(int i=0; i<3; ++i) {
