@@ -43,10 +43,10 @@ protected:
   void setDerivative(Value*,int,double);
   void addValueWithDerivatives();
   void addComponentWithDerivatives( const std::string& name );
-  double getArgument( const unsigned& iarg );
 public:
   explicit Function(const ActionOptions&);
   virtual ~Function() {}
+  double getArgument( const unsigned& iarg );
   void apply() override;
   static void registerKeywords(Keywords&);
   unsigned getNumberOfDerivatives() override;

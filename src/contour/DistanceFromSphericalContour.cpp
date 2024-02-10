@@ -39,7 +39,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit DistanceFromSphericalContour( const ActionOptions& );
   void calculate();
-  void evaluateDerivatives( const Vector root1, const double& root2 );
+  void evaluateDerivatives( const Vector& root1, const double& root2 );
 };
 
 PLUMED_REGISTER_ACTION(DistanceFromSphericalContour,"DISTANCE_FROM_SPHERICAL_CONTOUR")
@@ -100,7 +100,7 @@ void DistanceFromSphericalContour::calculate() {
   if( !doNotCalculateDerivatives() ) plumed_merror("derivatives not implemented");
 }
 
-void DistanceFromSphericalContour::evaluateDerivatives( const Vector root1, const double& root2 ) {
+void DistanceFromSphericalContour::evaluateDerivatives( const Vector& root1, const double& root2 ) {
   plumed_error();
 }
 

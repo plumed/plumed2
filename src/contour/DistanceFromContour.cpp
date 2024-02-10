@@ -76,7 +76,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit DistanceFromContour( const ActionOptions& );
   void calculate() override;
-  void evaluateDerivatives( const Vector root1, const double& root2 );
+  void evaluateDerivatives( const Vector& root1, const double& root2 );
 };
 
 PLUMED_REGISTER_ACTION(DistanceFromContour,"DISTANCE_FROM_CONTOUR")
@@ -207,7 +207,7 @@ void DistanceFromContour::calculate() {
   }
 }
 
-void DistanceFromContour::evaluateDerivatives( const Vector root1, const double& root2 ) {
+void DistanceFromContour::evaluateDerivatives( const Vector& root1, const double& root2 ) {
   if( getNumberOfArguments()>0 ) plumed_merror("derivatives for phase field distance from contour have not been implemented yet");
 
   Vector origind; origind.zero(); Tensor vir; vir.zero();
