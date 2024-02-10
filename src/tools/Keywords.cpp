@@ -201,7 +201,7 @@ void Keywords::add( const std::string & t, const std::string & k, const std::str
 
 void Keywords::addFlag( const std::string & k, const bool def, const std::string & d ) {
   plumed_massert( !exists(k) && !reserved(k), "keyword " + k + " has already been registered");
-  std::string defstr;
+  std::string defstr; plumed_massert( !def, "the second argument to addFlag must be false " + k );
   if( def ) { defstr="( default=on ) "; } else { defstr="( default=off ) "; }
   types.insert( std::pair<std::string,KeyType>(k,KeyType("flag")) );
   documentation.insert( std::pair<std::string,std::string>(k,defstr + d) );

@@ -215,7 +215,7 @@ void FuncSumHills::registerKeywords(Keywords& keys) {
   keys.add("optional","OUTHISTO"," output file for histogram ");
   keys.add("optional","INITSTRIDE"," stride if you want an initial dump ");
   keys.add("optional","STRIDE"," stride when you do it on the fly ");
-  keys.addFlag("ISCLTOOL",true,"use via plumed command line: calculate at read phase and then go");
+  keys.addFlag("ISCLTOOL",false,"use via plumed command line: calculate at read phase and then go");
   keys.addFlag("PARALLELREAD",false,"read parallel HILLS file");
   keys.addFlag("NEGBIAS",false,"dump  negative bias ( -bias )   instead of the free energy: needed in well tempered with flexible hills ");
   keys.addFlag("NOHISTORY",false,"to be used with INITSTRIDE:  it splits the bias/histogram in pieces without previous history  ");

@@ -51,7 +51,7 @@ void Optimizer::registerKeywords(Keywords& keys) {
 
   keys.addFlag(
     "NLIST",
-    true,
+    false,
     "Use a neighbor list of ligand-protein atom pairs to speed up the "
     "calculating of the distances."
   );
