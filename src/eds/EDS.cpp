@@ -302,7 +302,7 @@ void EDS::registerKeywords(Keywords &keys)
   keys.addFlag("LM", false, "Use Levenberg-Marquadt algorithm along with simultaneous keyword. Otherwise use gradient descent.");
   // temporary suppression, this is likely a bug that should be fixed!
   // cppcheck-suppress incorrectStringBooleanError
-  keys.addFlag("LM_MIXING", "1", "Initial mixing parameter when using Levenberg-Marquadt minimization.");
+  keys.add("compulsory", "LM_MIXING", "1", "Initial mixing parameter when using Levenberg-Marquadt minimization.");
 
   keys.add("optional", "RESTART_FMT", "the format that should be used to output real numbers in EDS restarts");
   keys.add("optional", "OUT_RESTART", "Output file for all information needed to continue EDS simulation. "

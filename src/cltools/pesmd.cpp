@@ -111,7 +111,7 @@ public:
     keys.add("compulsory","idum","0","The random number seed");
     // temporary suppression, this is likely a bug that should be fixed!
     // cppcheck-suppress incorrectStringBooleanError
-    keys.addFlag("periodic","false","are your input coordinates periodic");
+    keys.addFlag("periodic",false,"are your input coordinates periodic");
     keys.add("optional","min","minimum value the coordinates can take for a periodic domain");
     keys.add("optional","max","maximum value the coordinates can take for a periodic domain");
   }
