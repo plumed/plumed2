@@ -88,6 +88,7 @@ std::unique_ptr<T> MetricRegister::create( const std::string& type ) {
 // would have lead to a memory leak.
   if(!ptr ) plumed_merror( type + " metric is not valid in this context");
 // release ownership in order to transfer it to returned pointer
+// cppcheck-suppress ignoredReturnValue
   conf.release();
 // notice that I should pass ptr here rather than conf.release(),
 // since the type is different

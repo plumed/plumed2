@@ -34,12 +34,15 @@ if [ $do_cppcheck == true ] ; then
   else
     files="$(echo */*.{h,cpp})"
   fi
+  # we discard configurations introduced in small_vector because they are many and
+  # get included in many files
   cppcheck --std=c++17 -j 4 --platform=unix64 --language=c++ \
   -U__GNUG__ -U__PLUMED_HAS_EXTERNAL_LAPACK -U__PLUMED_HAS_EXTERNAL_BLAS \
   -UGMX_CYGWIN  -UF77_NO_UNDERSCORE -U_GLIBCXX_DEBUG -DNDEBUG -U__PLUMED_PBC_WHILE  \
   -U__PLUMED_HAS_ASMJIT \
   -D__PLUMED_WRAPPER_CXX_EXPLICIT=explicit \
-  --template='[{file}:{line}] ({severity}) :{id}: {message}' --enable=all --inline-suppr --force \
+  --config-exclude=small_vector/ \
+  --template='[{file}:{line}] ({severity}) :{id}: {message}' --enable=all --suppress=missingIncludeSystem --inline-suppr --force \
   $files
 fi
 
@@ -62,7 +65,7 @@ CLEAN_FILE="$TMPDIR/codecheck.clean"
 
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo "  In the following analysis we exclude:"
-echo "    src/molfile src/lapack src/blas src/lepton src/asmjit src/xdrfile" 
+echo "    src/molfile src/lapack src/blas src/lepton src/asmjit src/xdrfile src/small_vector" 
 echo "  since they are full of false positives"
 cat codecheck.log |
  gawk '{
@@ -82,6 +85,7 @@ cat codecheck.log |
     if(match($0,"[[]lepton/")) next;
     if(match($0,"[[]asmjit/")) next;
     if(match($0,"[[]xdrfile/")) next;
+    if(match($0,"[[]small_vector/")) next;
   }
   print
 }' > "${CLEAN_FILE}"
@@ -96,7 +100,7 @@ echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ## Here I also exclude (style) and (information) messages
 ## perhaps we could keep some of them to make to code cleaner at some point
 ## (the "true" command is necessary so that the script does not fail if some string is not found)
-grep -v "(style)" "${CLEAN_FILE}" | grep -v "(information)" > "${FATAL_FILE}" || true
+grep -v "(style)" "${CLEAN_FILE}" | grep -v "(information)" | grep -v :duplInheritedMember: >> "${FATAL_FILE}" || true
 count=$(cat "${FATAL_FILE}" | wc -l)
 echo 
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"

@@ -1,4 +1,4 @@
-USE=config tools lepton
+USE=config tools lepton small_vector
 
 # generic makefile
 include ../maketools/make.module

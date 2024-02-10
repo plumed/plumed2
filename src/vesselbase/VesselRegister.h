@@ -58,7 +58,7 @@ public:
 /// Verify if a distribution keyword is present in the register
   bool check(const std::string & keyname);
 /// Create a distribution function of the specified type
-  std::unique_ptr<Vessel> create(std::string keyword, const VesselOptions&da);
+  std::unique_ptr<Vessel> create(const std::string & keyword, const VesselOptions&da);
 /// Return the keywords
   Keywords getKeywords();
 };

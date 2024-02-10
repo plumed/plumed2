@@ -89,6 +89,7 @@ public:
   void writeBinary(std::ostream&o) override;
   virtual void readBinary(std::istream&i) override;
   bool onStep() const override { return false; }
+  ActionToPutData* castToActionToPutData() noexcept final { return this; }
 };
 
 }

@@ -1,0 +1,11 @@
+FROM plumed:rocky8
+
+RUN source ./.bashrc \
+ && module load mpi \
+ && cd plumed2 \
+ && source ./sourceme.sh \
+ && cd plugins/pycv \
+ && pip3 install --user -r requirements.txt  \
+ && ln -s $(realpath ../../regtest/scripts) ./regtest/scripts \
+ && python_bin=python3 ./prepareMakeForDevelop.sh \
+ && make check

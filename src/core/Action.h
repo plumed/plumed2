@@ -35,6 +35,15 @@ class PDB;
 class PlumedMain;
 class Communicator;
 class ActionWithValue;
+class ActionWithArguments;
+class ActionAtomistic;
+class ActionWithVirtualAtom;
+class PbcAction;
+class ActionToGetData;
+class ActionToPutData;
+class DomainDecomposition;
+class ActionForInterface;
+class ActionShortcut;
 
 /// This class is used to bring the relevant information to the Action constructor.
 /// Only Action and ActionRegister class can access to its content, which is
@@ -320,6 +329,17 @@ public:
 
 /// Get the info on what to calculate
   virtual std::string writeInGraph() const ;
+/// Specialized casts, to make PlumedMain run faster
+  virtual ActionWithValue* castToActionWithValue() noexcept { return nullptr; }
+  virtual ActionWithArguments* castToActionWithArguments() noexcept { return nullptr; }
+  virtual ActionAtomistic* castToActionAtomistic() noexcept { return nullptr; }
+  virtual ActionWithVirtualAtom* castToActionWithVirtualAtom() noexcept { return nullptr; }
+  virtual PbcAction* castToPbcAction() noexcept { return nullptr; }
+  virtual ActionToPutData* castToActionToPutData() noexcept { return nullptr; }
+  virtual ActionToGetData* castToActionToGetData() noexcept { return nullptr; }
+  virtual DomainDecomposition* castToDomainDecomposition() noexcept { return nullptr; }
+  virtual ActionForInterface* castToActionForInterface() noexcept { return nullptr; }
+  virtual ActionShortcut* castToActionShortcut() noexcept { return nullptr; }
 };
 
 /////////////////////

@@ -1,0 +1,11 @@
+LOAD FILE=../../../../PythonCVInterface.so
+
+cvPY: ...
+PYCVINTERFACE
+IMPORT=unitTest
+...
+
+PRINT FILE=colvar.out ARG=*
+
+
+

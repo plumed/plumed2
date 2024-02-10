@@ -27,7 +27,7 @@
 
 namespace PLMD {
 
-void TargetDist::read( const PDB& pdb, std::vector<Value*> ar ) {
+void TargetDist::read( const PDB& pdb, const std::vector<Value*> & ar ) {
   // Clear values in target actions
   for(unsigned i=0; i<ar.size(); ++i) {
     (ar[i]->getPntrToAction())->clearInputForces();
@@ -47,7 +47,7 @@ void TargetDist::read( const PDB& pdb, std::vector<Value*> ar ) {
   read( targ, ar );
 }
 
-void TargetDist::read( const std::vector<double>& targ, std::vector<Value*> ar ) {
+void TargetDist::read( const std::vector<double>& targ, const std::vector<Value*> & ar ) {
   plumed_assert( targ.size()==ar.size() );
 
   target.resize( ar.size() ); args.resize( ar.size() );

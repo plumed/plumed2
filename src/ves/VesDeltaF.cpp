@@ -250,6 +250,7 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
 // if this throws, g is deleted
     plumed_assert(gg);
 // release ownership in order to transfer it to emplaced pointer
+// cppcheck-suppress ignoredReturnValue
     g.release();
     grid_p_.emplace_back(gg);
   }

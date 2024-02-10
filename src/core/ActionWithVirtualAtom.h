@@ -76,6 +76,7 @@ public:
   static void registerKeywords(Keywords& keys);
   virtual unsigned getNumberOfDerivatives();
   virtual void apply();
+  ActionWithVirtualAtom* castToActionWithVirtualAtom() noexcept final { return this; }
 };
 
 inline

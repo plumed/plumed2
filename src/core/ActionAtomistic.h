@@ -183,6 +183,7 @@ public:
   void readAtomsFromPDB( const PDB& pdb ) override;
 /// Transfer the gradients
   void getGradient( const unsigned& ind, Vector& deriv, std::map<AtomNumber,Vector>& gradients ) const ;
+  ActionAtomistic* castToActionAtomistic() noexcept final { return this; }
 };
 
 inline

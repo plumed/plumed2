@@ -23,7 +23,12 @@
 #include "ActionAtomistic.h"
 #include "ActionWithValue.h"
 #include "ActionWithArguments.h"
+#include "ActionWithVirtualAtom.h"
 #include "ActionForInterface.h"
+#include "DomainDecomposition.h"
+#include "PbcAction.h"
+#include "ActionToPutData.h"
+#include "ActionToGetData.h"
 #include "PlumedMain.h"
 #include "tools/Log.h"
 #include "tools/Exception.h"
@@ -239,8 +244,8 @@ void Action::setupConstantValues( const bool& have_atoms ) {
   if( have_atoms ) {
     // This ensures that we switch off actions that only depend on constant when passed from the
     // MD code on the first step
-    ActionAtomistic* at = dynamic_cast<ActionAtomistic*>( this );
-    ActionWithValue* av = dynamic_cast<ActionWithValue*>( this );
+    ActionAtomistic* at = castToActionAtomistic();
+    ActionWithValue* av = castToActionWithValue();
     if( at && av ) {
       never_activate=av->getNumberOfComponents()>0;
       for(unsigned i=0; i<av->getNumberOfComponents(); ++i) {
@@ -248,8 +253,8 @@ void Action::setupConstantValues( const bool& have_atoms ) {
       }
     }
   }
-  ActionWithArguments* aa = dynamic_cast<ActionWithArguments*>( this );
-  if( aa && aa->getNumberOfArguments()>0 ) never_activate = aa->calculateConstantValues( have_atoms );
+  ActionWithArguments* aa = castToActionWithArguments();
+  if(aa) never_activate = aa->calculateConstantValues( have_atoms );
 }
 
 long long int Action::getStep()const {
@@ -307,7 +312,7 @@ void Action::warning( const std::string & msg ) {
 void Action::calculateFromPDB( const PDB& pdb ) {
   activate();
   for(const auto & p : after) {
-    ActionWithValue*av=dynamic_cast<ActionWithValue*>(p);
+    ActionWithValue*av=castToActionWithValue();
     if(av) { av->clearInputForces(); av->clearDerivatives(); }
     p->readAtomsFromPDB( pdb );
     p->calculate();
@@ -354,7 +359,6 @@ std::string Action::writeInGraph() const {
   if( sub=="SCALAR" || sub=="VECTOR" || sub=="GRID" ) return nam.substr(0,u);
   return nam;
 }
-
 
 }
 

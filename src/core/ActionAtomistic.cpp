@@ -53,7 +53,7 @@ ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
   // We now get all the information about atoms that are lying about
   std::vector<ActionWithValue*> vatoms = plumed.getActionSet().select<ActionWithValue*>();
   for(const auto & vv : vatoms ) {
-    ActionToPutData* ap = dynamic_cast<ActionToPutData*>(vv);
+    ActionToPutData* ap = vv->castToActionToPutData();
     if( ap ) {
       if( ap->getRole()=="x" ) xpos.push_back( ap->copyOutput(0) );
       if( ap->getRole()=="y" ) ypos.push_back( ap->copyOutput(0) );
@@ -61,7 +61,7 @@ ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
       if( ap->getRole()=="m" ) masv.push_back( ap->copyOutput(0) );
       if( ap->getRole()=="q" ) chargev.push_back( ap->copyOutput(0) );
     }
-    ActionWithVirtualAtom* av = dynamic_cast<ActionWithVirtualAtom*>(vv);
+    ActionWithVirtualAtom* av = vv->castToActionWithVirtualAtom();
     if( av || vv->getName()=="ARGS2VATOM" ) {
       xpos.push_back( vv->copyOutput( vv->getLabel() + ".x") );
       ypos.push_back( vv->copyOutput( vv->getLabel() + ".y") );
@@ -130,7 +130,7 @@ void ActionAtomistic::changeBox( const Tensor& newbox ) {
 
 void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, const unsigned& startnum ) {
   if(!a) {
-    a=dynamic_cast<ActionWithValue*>(this);
+    a=castToActionWithValue();
     plumed_massert(a,"only Actions with a value can be differentiated");
   }
 
@@ -268,11 +268,11 @@ std::pair<std::size_t, std::size_t> ActionAtomistic::getValueIndices( const Atom
 
 void ActionAtomistic::retrieveAtoms( const bool& force ) {
   if( boxValue ) {
-    PbcAction* pbca = dynamic_cast<PbcAction*>( boxValue->getPntrToAction() );
+    PbcAction* pbca = boxValue->getPntrToAction()->castToPbcAction();
     plumed_assert( pbca ); pbc=pbca->pbc;
   }
   if( donotretrieve || indexes.size()==0 ) return;
-  ActionToPutData* cv = dynamic_cast<ActionToPutData*>( chargev[0]->getPntrToAction() );
+  ActionToPutData* cv = chargev[0]->getPntrToAction()->castToActionToPutData();
   if(cv) chargesWereSet=cv->hasBeenSet();
   unsigned j = 0;
   for(const auto & a : atom_value_ind) {

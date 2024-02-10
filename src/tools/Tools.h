@@ -25,6 +25,7 @@
 #include "AtomNumber.h"
 #include "Vector.h"
 #include "Tensor.h"
+#include "small_vector/small_vector.h"
 #include <vector>
 #include <string>
 #include <cctype>
@@ -86,6 +87,9 @@ public:
 /// outer parenthesis are processed, to allow nesting them.
 /// parlevel, if not NULL, is increased or decreased according to the number of opened/closed parenthesis
   static std::vector<std::string> getWords(const std::string & line,const char* sep=NULL,int* parlevel=NULL,const char* parenthesis="{", const bool& delete_parenthesis=true);
+/// Faster version
+/// This version does not parse parenthesis and operates on a preallocated small_vector of string_view's
+  static void getWordsSimple(gch::small_vector<std::string_view> & words,const std::string & line);
 /// Get a line from the file pointer ifile
   static bool getline(FILE*,std::string & line);
 /// Get a parsed line from the file pointer ifile

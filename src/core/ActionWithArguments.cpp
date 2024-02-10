@@ -107,7 +107,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
           std::vector<ActionWithValue*> all=as.select<ActionWithValue*>();
           if( all.empty() ) readact->error("your input file is not telling plumed to calculate anything");
           for(unsigned j=0; j<all.size(); j++) {
-            ActionForInterface* ap=dynamic_cast<ActionForInterface*>( all[j] ); if( ap ) continue;
+            ActionForInterface* ap=all[j]->castToActionForInterface(); if( ap ) continue;
             for(int k=0; k<all[j]->getNumberOfComponents(); ++k) arg.push_back(all[j]->copyOutput(k));
           }
         } else if ( name=="*") {
@@ -166,8 +166,8 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
           std::vector<ActionWithValue*> all=as.select<ActionWithValue*>();
           if( all.empty() ) readact->error("your input file is not telling plumed to calculate anything");
           for(unsigned j=0; j<all.size(); j++) {
-            ActionWithVirtualAtom* av=dynamic_cast<ActionWithVirtualAtom*>( all[j] ); if( av ) continue;
-            ActionForInterface* ap=dynamic_cast<ActionForInterface*>( all[j] ); if( ap && all[j]->getName()!="ENERGY" ) continue;
+            ActionWithVirtualAtom* av=all[j]->castToActionWithVirtualAtom(); if( av ) continue;
+            ActionForInterface* ap=all[j]->castToActionForInterface(); if( ap && all[j]->getName()!="ENERGY" ) continue;
             for(int k=0; k<all[j]->getNumberOfComponents(); ++k) arg.push_back(all[j]->copyOutput(k));
           }
         } else {
@@ -261,7 +261,7 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
 
 void ActionWithArguments::calculateNumericalDerivatives( ActionWithValue* a ) {
   if(!a) {
-    a=dynamic_cast<ActionWithValue*>(this);
+    a=castToActionWithValue();
     plumed_massert(a,"cannot compute numerical derivatives for an action without values");
   }
 
@@ -323,11 +323,11 @@ void ActionWithArguments::setGradients( Value* myval, unsigned& start ) const {
 }
 
 bool ActionWithArguments::calculateConstantValues( const bool& haveatoms ) {
-  ActionWithValue* av = dynamic_cast<ActionWithValue*>( this );
+  ActionWithValue* av = castToActionWithValue();
   if( !av || arguments.size()==0 ) return false;
   bool constant = true, atoms=false;
   for(unsigned i=0; i<arguments.size(); ++i) {
-    ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>( arguments[i]->getPntrToAction() );
+    ActionAtomistic* aa=arguments[i]->getPntrToAction()->castToActionAtomistic();
     if( aa ) {
       ActionWithVector* av=dynamic_cast<ActionWithVector*>( arguments[i]->getPntrToAction() );
       if( !av || aa->getNumberOfAtoms()>0 ) atoms=true;

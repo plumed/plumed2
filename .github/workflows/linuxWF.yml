@@ -27,6 +27,7 @@ jobs:
 # temporarily commented out
 # see https://github.com/plumed/plumed2/issues/976
         - -intel-
+        - -pycv-mpi-
     steps:
     - uses: actions/checkout@v4
     - uses: actions/cache@v3
@@ -34,6 +35,13 @@ jobs:
         path: ~/.ccache
         key: ccache-reset1-linux${{ matrix.variant }}hash-${{ github.sha }}
         restore-keys: ccache-reset1-linux${{ matrix.variant }}hash-
+    - name: Removed unused stuff
+      run: |
+        df -h
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /usr/local/lib/android
+        sudo rm -rf /opt/ghc
+        df -h
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
@@ -152,7 +160,7 @@ jobs:
         make nmcheck
         ccache -s -M 100M
     - name: Run tests
-      if: ${{ ! contains( matrix.variant, '-doc-mpi-' ) }}
+      if: ${{ ! contains( matrix.variant, '-doc-mpi-' ) && ! contains( matrix.variant, '-pycv-mpi-' ) }}
       run: |
          (while true; do  # see https://github.com/actions/virtual-environments/issues/1860
               df -h
@@ -185,3 +193,12 @@ jobs:
         GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
       run: |
          .ci/push doc
+    - name: Compile and test pycv
+      if: contains( matrix.variant, '-pycv-' )
+      working-directory: ./plugins/pycv/
+      run: |
+            pip install --user -r requirements.txt
+            source ../../sourceme.sh
+            ln -s $(realpath ../../regtest/scripts) ./regtest/scripts
+            ./prepareMakeForDevelop.sh
+            make check

@@ -2,7 +2,7 @@
 
 To run PLUMED you need to provide one input file. 
 
-You can follow the \ref masterclass-21-1 to learn more about it.
+You can follow the <a href="https://plumed-school.github.io/lessons/21/001/data/NAVIGATION.html">first PLUMED masterclass</a> to learn more about it.
 
 In this input file you specify what it
 is that PLUMED should do during the course of the run.  Typically this will involve calculating 

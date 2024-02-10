@@ -53,6 +53,7 @@ static bool getenvTypesafeDebug() noexcept {
   return res;
 }
 
+// cppcheck-suppress passedByValue
 static void typesafeDebug(const char*key,plumed_safeptr_x safe) noexcept {
   std::fprintf(stderr,"+++ PLUMED_TYPESAFE_DEBUG %s %p %zu",key,safe.ptr,safe.nelem);
   const size_t* shape=safe.shape;

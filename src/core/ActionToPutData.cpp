@@ -160,7 +160,7 @@ void ActionToPutData::apply() {
 
 unsigned ActionToPutData::getNumberOfForcesToRescale() const {
   if( getName()!="ENERGY" || getDependencies().size()>0 ) return copyOutput(0)->getNumberOfValues();
-  plumed_assert( getDependencies().size()==1 ); ActionForInterface* ai = dynamic_cast<ActionForInterface*>( getDependencies()[0] );
+  plumed_assert( getDependencies().size()==1 ); ActionForInterface* ai = getDependencies()[0]->castToActionForInterface();
   return ai->getNumberOfForcesToRescale();
 }
 
