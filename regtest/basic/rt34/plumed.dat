@@ -7,7 +7,7 @@ drmsdnopbcn:  DRMSD REFERENCE=test.pdb LOWER_CUTOFF=0.0 UPPER_CUTOFF=15.0 NOPBC 
 # additional check with short cutoff
 drmsdx1:       DRMSD REFERENCE=test.pdb LOWER_CUTOFF=0.0 UPPER_CUTOFF=0.1
 drmsdx2:       DRMSD REFERENCE=test.pdb LOWER_CUTOFF=0.0 UPPER_CUTOFF=0.2
-PRINT ARG=drmsdx1,drmsdx2 FILE=drmsdx
+PRINT ARG=drmsdx1,drmsdx2 FILE=drmsdx FMT=%8.5f
 
 PRINT ...
   STRIDE=10
@@ -15,18 +15,7 @@ PRINT ...
   FILE=COLVAR FMT=%6.3f
 ... PRINT
 
-DUMPDERIVATIVES ...
-  STRIDE=10
-  ARG=drmsd,drmsdn
-  FILE=DERIVATIVES1 
-  FMT=%8.5f
-... DUMPDERIVATIVES 
-
-DUMPDERIVATIVES ...
-  STRIDE=10
-  ARG=drmsdnopbc,drmsdnopbcn
-  FILE=DERIVATIVES2
-  FMT=%8.5f
-... DUMPDERIVATIVES
+BIASVALUE ARG=drmsd
+BIASVALUE ARG=drmsdnopbc
 
 ENDPLUMED
