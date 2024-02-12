@@ -110,21 +110,6 @@ s(r) = 1 - \tanh\left( \frac{ r - d_0 }{ r_0 } \right)
 {TANH R_0=\f$r_0\f$ D_0=\f$d_0\f$}
 </td> <td> </td>
 </tr> <tr>
-<td> COSINE </td> <td>
-\f$
-s(r) = 0.5\left[ \cos\left( \pi \frac{ r - d_0 }{ r_0 } \right) + 1 \right] \qquad d_{max} = d_0 + r_0
-\f$
-</td> <td>
-{COSINE R_0=\f$r_0\f$ D_0=\f$d_0\f$}
-</td> <td> </td>
-</tr> <tr>
-<td> TANH3 </td> <td>
-\f$
-s(r) = \tanh^3\left( 1 - \frac{ r - d_0}{r_0} \right) \qquad d_{max} = d_0 + r_0
-\f$
-</td> <td>
-{TANH3 R_0=\f$r_0\f$ D_0=\f$d_0\f$}
-</td> <td> </td>
 <td> COSINUS </td> <td>
 \f$s(r) =\left\{\begin{array}{ll}
    1                                                           & \mathrm{if } r \leq d_0 \\
@@ -276,12 +261,6 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     type=gaussian; fastgaussian=(!returnderiv && r0==1.0 && d0==0.0 );
   } else if(name=="CUBIC") type=cubic;
   else if(name=="TANH") type=tanh;
-  else if(name=="COSINE") {
-    type=cosine; dmax=r0+d0; dmax_2=dmax*dmax; dostretch=false;
-  }
-  else if(name=="TANH3") {
-    type=tanh3; dmax=r0+d0; dmax_2=dmax*dmax; dostretch=false;
-  }
   else if(name=="COSINUS") type=cosinus;
   else if((name=="MATHEVAL" || name=="CUSTOM")) {
     type=leptontype;
@@ -366,10 +345,6 @@ std::string SwitchingFunction::description() const {
     ostr<<"cosinus";
   } else if(type==leptontype) {
     ostr<<"lepton";
-  } else if(type==cosine) {
-    ostr<<"cosine";
-  } else if(type==tanh3) {
-    ostr<<"tanh3";
   } else {
     plumed_merror("Unknown switching function type");
   }
@@ -530,15 +505,6 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
       if(lepton_ref_deriv[t]) *lepton_ref_deriv[t]=rdist;
       result=expression[t].evaluate();
       dfunc=expression_deriv[t].evaluate();
-    } else if(type==cosine) {
-      double tmp1=pi*rdist;
-      result = 0.5*( cos(tmp1) + 1 );
-      dfunc = -0.5*pi*sin(tmp1);
-    } else if(type==tanh3) {
-      double tmp1=std::tanh(1-rdist);
-      double tmp2=tmp1*tmp1;
-      result = tmp2*tmp1;
-      dfunc = -3*tmp2*(1-tmp2);
     } else plumed_merror("Unknown switching function type");
 // this is for the chain rule (derivative of rdist):
     dfunc*=invr0;
