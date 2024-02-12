@@ -185,7 +185,7 @@ void Pbc::apply(VectorView dlist, unsigned max_index) const {
       //Inlining by hand this part of function from distance speeds up by about 20-30%
       //against the previos version, and 60-80% agains this version non inlined.
       //I do not think is the `if(nshifts) *nshifts+=myshifts.size();`,
-      //but that the compiler now see how we are juggling with the memory and it 
+      //but that the compiler now see how we are juggling with the memory and it
       //does its magic
 
       //I tried writing VectorGeneric<3> matmul(const MemoryView<3UL> a,const TensorGeneric<3,3>&b)
