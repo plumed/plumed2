@@ -33,7 +33,6 @@
 #include <iostream>
 #include <algorithm>
 #include <memory>
-#include <unordered_map>
 
 namespace PLMD {
 
@@ -48,9 +47,9 @@ CLToolMain::~CLToolMain() {
 // empty destructor to delete unique_ptr
 }
 
-#define CHECK_NULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"CLTool " + word + "\")");
+#define CHECK_NULL(val,word) plumed_assert(val) << "NULL pointer received in cmd(\"CLTool " << word <<  "\"";
 
-void CLToolMain::cmd(const std::string& word,const TypesafePtr & val) {
+void CLToolMain::cmd(std::string_view word,const TypesafePtr & val) {
 
 // Enumerate all possible commands:
   enum {
@@ -58,11 +57,12 @@ void CLToolMain::cmd(const std::string& word,const TypesafePtr & val) {
   };
 
 // Static object (initialized once) containing the map of commands:
-  const static std::unordered_map<std::string, int> word_map = {
+  const static Tools::FastStringUnorderedMap<int> word_map = {
 #include "CLToolMainMap.inc"
   };
 
-  std::vector<std::string> words=Tools::getWords(word);
+  gch::small_vector<std::string_view> words;
+  Tools::getWordsSimple(words,word);
   unsigned nw=words.size();
   if(nw==0) {
     // do nothing
@@ -120,7 +120,7 @@ void CLToolMain::cmd(const std::string& word,const TypesafePtr & val) {
       }
       break;
     default:
-      plumed_merror("cannot interpret cmd(\"CLTool " + word + "\"). check plumed developers manual to see the available commands.");
+      plumed_error() << "cannot interpret cmd(\"CLTool " << word << "\"). check plumed developers manual to see the available commands.";
       break;
     }
   }

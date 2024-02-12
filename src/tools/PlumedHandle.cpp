@@ -72,9 +72,9 @@ PlumedHandle PlumedHandle::dlopen(const char* path) {
   return PlumedHandle(path);
 }
 
-void PlumedHandle::cmd(const std::string & key,const TypesafePtr & ptr) {
+void PlumedHandle::cmd(std::string_view key,const TypesafePtr & ptr) {
   if(local) {
-    local->cmd(key.c_str(),ptr);
+    local->cmd(key,ptr);
   } else if(loaded) {
     plumed_safeptr safe;
     safe.ptr=ptr.getRaw();
@@ -82,7 +82,9 @@ void PlumedHandle::cmd(const std::string & key,const TypesafePtr & ptr) {
     safe.shape=const_cast<std::size_t*>(ptr.getShape());
     safe.flags=ptr.getFlags();
     safe.opt=nullptr;
-    plumed_cmd(plumed_v2c(loaded),key.c_str(),safe);
+    // this is to ensure the string_view is null terminated
+    auto key_string=std::string(key);
+    plumed_cmd(plumed_v2c(loaded),key_string.c_str(),safe);
   } else plumed_error() << "should never arrive here (either one or the other should work)";
 }
 
