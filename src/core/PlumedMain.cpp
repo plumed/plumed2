@@ -1140,13 +1140,11 @@ void PlumedMain::justCalculate() {
 // We explicitly declare a Stopwatch::Handler here to allow for conditional initialization.
         Stopwatch::Handler sw;
         if(detailedTimers) {
-          std::string actionNumberLabel;
-          Tools::convert(iaction,actionNumberLabel);
+          auto actionNumberLabel=std::to_string(iaction);
           const unsigned m=actionSet.size();
           unsigned k=0; unsigned n=1; while(n<m) { n*=10; k++; }
-          const int pad=k-actionNumberLabel.length();
-          for(int i=0; i<pad; i++) actionNumberLabel=" "+actionNumberLabel;
-          sw=stopwatch.startStop("4A "+actionNumberLabel+" "+p->getLabel());
+          auto spaces=std::string(k-actionNumberLabel.length(),' ');
+          sw=stopwatch.startStop("4A " + spaces + actionNumberLabel+" "+p->getLabel());
         }
         ActionWithValue*av=p->castToActionWithValue();
         ActionAtomistic*aa=p->castToActionAtomistic();
@@ -1197,13 +1195,11 @@ void PlumedMain::backwardPropagate() {
 // We explicitly declare a Stopwatch::Handler here to allow for conditional initialization.
       Stopwatch::Handler sw;
       if(detailedTimers) {
-        std::string actionNumberLabel;
-        Tools::convert(iaction,actionNumberLabel);
+        auto actionNumberLabel=std::to_string(iaction);
         const unsigned m=actionSet.size();
         unsigned k=0; unsigned n=1; while(n<m) { n*=10; k++; }
-        const int pad=k-actionNumberLabel.length();
-        for(int i=0; i<pad; i++) actionNumberLabel=" "+actionNumberLabel;
-        sw=stopwatch.startStop("5A "+actionNumberLabel+" "+p->getLabel());
+        auto spaces=std::string(k-actionNumberLabel.length(),' ');
+        sw=stopwatch.startStop("5A " + spaces + actionNumberLabel+" "+p->getLabel());
       }
 
       p->apply();
