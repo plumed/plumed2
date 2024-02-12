@@ -166,7 +166,7 @@ bool Tools::convertNoexcept(const std::string & str,std::string & t) {
   return true;
 }
 
-std::vector<std::string> Tools::getWords(const std::string & line,const char* separators,int * parlevel,const char* parenthesis, const bool& delete_parenthesis) {
+std::vector<std::string> Tools::getWords(std::string_view line,const char* separators,int * parlevel,const char* parenthesis, const bool& delete_parenthesis) {
   plumed_massert(std::strlen(parenthesis)==1,"multiple parenthesis type not available");
   plumed_massert(parenthesis[0]=='(' || parenthesis[0]=='[' || parenthesis[0]=='{',
                  "only ( [ { allowed as parenthesis");
@@ -187,7 +187,7 @@ std::vector<std::string> Tools::getWords(const std::string & line,const char* se
     if( (line[i]==openpar || line[i]==closepar) && delete_parenthesis ) onParenthesis=true;
     if(line[i]==closepar) {
       parenthesisLevel--;
-      plumed_massert(parenthesisLevel>=0,"Extra closed parenthesis in '" + line + "'");
+      plumed_assert(parenthesisLevel>=0) << "Extra closed parenthesis in '" << line << "'";
     }
     if(parenthesisLevel==0) for(unsigned j=0; j<sep.length(); j++) if(line[i]==sep[j]) found=true;
 // If at parenthesis level zero (outer)
@@ -195,22 +195,22 @@ std::vector<std::string> Tools::getWords(const std::string & line,const char* se
     //if(onParenthesis) word.push_back(' ');
     if(line[i]==openpar) parenthesisLevel++;
     if(found && word.length()>0) {
-      if(!parlevel) plumed_massert(parenthesisLevel==0,"Unmatching parenthesis in '" + line + "'");
+      if(!parlevel) plumed_assert(parenthesisLevel==0) << "Unmatching parenthesis in '" << line << "'";
       words.push_back(word);
       word.clear();
     }
   }
   if(word.length()>0) {
-    if(!parlevel) plumed_massert(parenthesisLevel==0,"Unmatching parenthesis in '" + line + "'");
+    if(!parlevel) plumed_assert(parenthesisLevel==0) << "Unmatching parenthesis in '" << line << "'";
     words.push_back(word);
   }
   if(parlevel) *parlevel=parenthesisLevel;
   return words;
 }
 
-void Tools::getWordsSimple(gch::small_vector<std::string_view> & words,const std::string & line) {
+void Tools::getWordsSimple(gch::small_vector<std::string_view> & words,std::string_view line) {
   words.clear();
-  auto ptr=line.c_str();
+  auto ptr=line.data();
   std::size_t size=0;
   for(unsigned i=0; i<line.length(); i++) {
     const bool is_separator=(line[i]==' ');

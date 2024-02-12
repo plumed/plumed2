@@ -279,7 +279,7 @@ PlumedMain::~PlumedMain() {
 #define CHECK_NOTNULL(val,word) plumed_assert(val)<<"NULL pointer received in cmd(\"" << word << "\")"
 
 
-void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
+void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
 
 // Enumerate all possible commands:
   enum {
@@ -840,7 +840,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       }
       break;
       default:
-        plumed_merror("cannot interpret cmd(\"" + word + "\"). check plumed developers manual to see the available commands.");
+        plumed_error() << "cannot interpret cmd(\"" << word << "\"). check plumed developers manual to see the available commands.";
         break;
       }
     }
