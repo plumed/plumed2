@@ -61,7 +61,6 @@ PLUMED_REGISTER_ACTION(Template,"TEMPLATE")
 void Template::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);
   keys.addFlag("TEMPLATE_DEFAULT_OFF_FLAG",false,"flags that are by default not performed should be specified like this");
-  keys.addFlag("TEMPLATE_DEFAULT_ON_FLAG",true,"flags that are by default performed should be specified like this");
   keys.add("compulsory","TEMPLATE_COMPULSORY","all compulsory keywords should be added like this with a description here");
   keys.add("optional","TEMPLATE_OPTIONAL","all optional keywords that have input should be added like a description here");
   keys.add("atoms","ATOMS","the keyword with which you specify what atoms to use should be added like this");

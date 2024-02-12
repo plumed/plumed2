@@ -37,7 +37,7 @@ void ActionWithValue::registerKeywords(Keywords& keys) {
 
 void ActionWithValue::noAnalyticalDerivatives(Keywords& keys) {
   keys.remove("NUMERICAL_DERIVATIVES");
-  keys.addFlag("NUMERICAL_DERIVATIVES",true,"analytical derivatives are not implemented for this keyword so numerical derivatives are always used");
+  keys.addFlag("NUMERICAL_DERIVATIVES",false,"analytical derivatives are not implemented for this keyword so numerical derivatives are always used");
 }
 
 void ActionWithValue::componentsAreNotOptional(Keywords& keys) {
