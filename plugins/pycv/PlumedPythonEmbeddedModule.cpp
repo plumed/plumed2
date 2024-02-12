@@ -151,24 +151,12 @@ PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
   /***********************************PLMD::Pbc********************************/
   py::class_<PLMD::Pbc>(m, "Pbc")
   //.def(py::init<>())
-  .def("apply",[](const PLMD::Pbc* self, py::array_t<double>& deltas) -> py::array_t<double> {
+  .def("apply",[](const PLMD::Pbc* self, py::array_t<double, py::array::c_style | py::array::forcecast>& deltas) -> py::array_t<double> {
     //TODO:shape check
-    //TODO: this may be set up to modify the passed deltas, so no new intialization
+    //TODO: this modifies the passed deltas, so no new intialization
     //      ^this needs to be VERY clear to te user
-    auto accessor = deltas.unchecked<2>();
-    auto nat=deltas.shape(0);
-    py::array_t<double> toRet({nat,deltas.shape(1)});
-    auto retAccessor = toRet.mutable_unchecked<2>();
-    for (decltype(nat) i=0; i < nat; ++i) {
-      auto t= self->distance(PLMD::Vector(0.0,0.0,0.0),
-                             //I think this may be slow, but serves as a demonstration as a base for the tests
-                             PLMD::Vector(accessor(i,0),accessor(i,1),accessor(i,2)),
-                             nullptr);
-      retAccessor(i,0) = t[0];
-      retAccessor(i,1) = t[1];
-      retAccessor(i,2) = t[2];
-    }
-    return toRet;
+    self->apply(PLMD::VectorView(deltas.mutable_unchecked<2>().mutable_data(0,0),deltas.shape(0)));
+    return deltas;
   },
   "Apply PBC to a set of positions or distance vectors")
 
