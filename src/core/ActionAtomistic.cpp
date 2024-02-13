@@ -112,10 +112,6 @@ void ActionAtomistic::requestAtoms(const std::vector<AtomNumber> & a, const bool
   unique_local_needs_update=true;
 }
 
-Vector ActionAtomistic::pbcDistance(const Vector &v1,const Vector &v2)const {
-  return pbc.distance(v1,v2);
-}
-
 void ActionAtomistic::pbcApply(std::vector<Vector>& dlist, unsigned max_index)const {
   pbc.apply(dlist, max_index);
 }

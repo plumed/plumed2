@@ -287,6 +287,10 @@ void ActionAtomistic::addForce( const std::pair<std::size_t, std::size_t>& a, co
   zpos[a.first]->addForce( a.second, f[2] );
 }
 
+inline
+Vector ActionAtomistic::pbcDistance(const Vector &v1,const Vector &v2)const {
+  return pbc.distance(v1,v2);
+}
 
 }
 #endif
