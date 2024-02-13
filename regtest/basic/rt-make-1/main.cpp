@@ -7,13 +7,13 @@
 
 using namespace PLMD;
 
-int run(int boxtype,double* av_nshifts=NULL){
+int run(Stopwatch & sw,int boxtype,double* av_nshifts=NULL){
   Random r;
   int failures=0;
   r.setSeed(-20);
   int nshifts=0;
-  int nbox=1000;
-  int nvec=100;
+  int nbox=128;
+  int nvec=512;
   for(int i=0;i<nbox;i++){
 // random matrix with some zero element
   Tensor box;
@@ -77,20 +77,39 @@ int run(int boxtype,double* av_nshifts=NULL){
 
     Pbc pbc;
     pbc.setBox(box);
+    std::vector<Vector> vv(nvec);
+    std::vector<Vector> result(nvec);
+    std::vector<Vector> result_apply(nvec);
+    std::vector<Vector> reference(nvec);
     for(int j=0;j<nvec;j++){
 // random vector
       Vector v(r.U01()-0.5,r.U01()-0.5,r.U01()-0.5);
       v*=5;
 // set some component to zero
       for(int j=0;j<3;j++) if(r.U01()>0.2) v(j)=0.0;
-// fast version
-      Vector fast=pbc.distance(Vector(0,0,0),v,&nshifts);
-// full search around that
-      Vector full(fast);
-      pbc.fullSearch(full);
-// compare
-      if(std::fabs(modulo2(fast)-modulo2(full))>1e-15) failures++;
+      vv[j]=v;
     }
+
+// fast version
+    sw.start("Fast");
+    for(int j=0;j<nvec;j++) result[j]=pbc.distance(Vector(0,0,0),vv[j],&nshifts);
+    sw.stop("Fast");
+
+// apply version (in-place, vector operation)
+    sw.start("Vector");
+    result_apply=vv;
+    pbc.apply(result_apply);
+    sw.stop("Vector");
+
+    reference=result;
+// full search around that
+    sw.start("Full");
+    for(int j=0;j<nvec;j++) pbc.fullSearch(reference[j]);
+    sw.stop("Full");
+
+// compare
+    for(int j=0;j<nvec;j++) if(std::fabs(modulo2(result[j])-modulo2(result_apply[j]))>1e-15) failures++;
+    for(int j=0;j<nvec;j++) if(std::fabs(modulo2(result[j])-modulo2(reference[j]))>1e-15) failures++;
   }
   if(av_nshifts) *av_nshifts=double(nshifts)/double(nbox*nvec);
   return failures;
@@ -104,7 +123,7 @@ int main(){
   ofs<<std::fixed;
   for(unsigned type=0;type<6;type++){
     double nsh;
-    int err=run(type,&nsh);
+    int err=run(sw,type,&nsh);
     ofs<<"Box type "<<type<<"\n";
     ofs<<"Failures "<<err<<"\n";
     ofs.precision(1);
