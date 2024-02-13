@@ -199,7 +199,7 @@ void Pbc::apply(VectorView dlist, unsigned max_index) const {
       // check if shifts have to be attempted:
       if((std::fabs(s[0])+std::fabs(s[1])+std::fabs(s[2])>0.5)) {
         // list of shifts is specific for that "octant" (depends on signs of s[i]):
-        const std::vector<Vector> & myshifts(shifts[(s[0]>0?1:0)][(s[1]>0?1:0)][(s[2]>0?1:0)]);
+        const auto & myshifts(shifts[(s[0]>0?1:0)][(s[1]>0?1:0)][(s[2]>0?1:0)]);
         Vector reference = best;
         double lbest(modulo2(best));
         // loop over possible shifts:
@@ -248,7 +248,7 @@ Vector Pbc::distance(const Vector&v1,const Vector&v2,int*nshifts)const {
 // check if shifts have to be attempted:
       if((std::fabs(s[0])+std::fabs(s[1])+std::fabs(s[2])>0.5)) {
 // list of shifts is specific for that "octant" (depends on signs of s[i]):
-        const gch::small_vector<Vector,27> & myshifts(shifts[(s[0]>0?1:0)][(s[1]>0?1:0)][(s[2]>0?1:0)]);
+        const auto & myshifts(shifts[(s[0]>0?1:0)][(s[1]>0?1:0)][(s[2]>0?1:0)]);
         Vector best(d);
         double lbest(modulo2(best));
 // loop over possible shifts:
