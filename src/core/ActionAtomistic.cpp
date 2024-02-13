@@ -336,20 +336,6 @@ unsigned ActionAtomistic::getTotAtoms()const {
   return natoms;
 }
 
-Vector ActionAtomistic::getGlobalPosition(const std::pair<std::size_t,std::size_t>& a) const {
-  Vector pos;
-  pos[0]=xpos[a.first]->data[a.second];
-  pos[1]=ypos[a.first]->data[a.second];
-  pos[2]=zpos[a.first]->data[a.second];
-  return pos;
-}
-
-void ActionAtomistic::setGlobalPosition(const std::pair<std::size_t, std::size_t>& a, const Vector& pos ) {
-  xpos[a.first]->data[a.second]=pos[0];
-  ypos[a.first]->data[a.second]=pos[1];
-  zpos[a.first]->data[a.second]=pos[2];
-}
-
 void ActionAtomistic::makeWhole() {
   for(unsigned j=0; j<positions.size()-1; ++j) {
     const Vector & first (positions[j]);
