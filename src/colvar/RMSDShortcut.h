@@ -23,6 +23,7 @@
 #define __PLUMED_colvar_RMSDShortcut_h
 
 #include "core/ActionShortcut.h"
+#include "tools/RMSD.h"
 
 namespace PLMD {
 namespace colvar {
@@ -31,8 +32,14 @@ class RMSDShortcut : public ActionShortcut {
 public:
   static void registerRMSD(Keywords& keys);
   static void registerKeywords(Keywords& keys);
+  static void readAlignAndDisplace( ActionWithArguments* action, const bool& norm_weights, std::vector<double>& align, std::vector<double>& displace, std::vector<double>& sqrtdisplace );
+  static void setReferenceConfiguration( const unsigned& num, const Value* refarg, const std::vector<double>& align, const std::vector<double>& displace, const std::string& type, const bool& norm_weights, PLMD::RMSD& myrmsd ); 
   explicit RMSDShortcut(const ActionOptions&);
-  unsigned createReferenceConfiguration( const std::string& lab, const std::string& input, PlumedMain& plumed, const unsigned& number, const bool& disp );
+  void createPosVector( const std::string& lab, const PDB& pdb );
+  static double calculateDisplacement( const std::string& type, const std::vector<double>& align, const std::vector<double>& displace, const std::vector<double>& sqrtdisplace,
+                                       const std::vector<Vector>& pos, PLMD::RMSD& myrmsd, std::vector<Vector>& direction, std::vector<Vector>& der, const bool& squared );
+  static void addDisplacementForces( const std::string& type, const std::vector<double>& align, const std::vector<double>& displace, const std::vector<double>& sqrtdisplace,
+                                     const std::vector<Vector>& pos, PLMD::RMSD& myrmsd, std::vector<Vector>& direction, std::vector<Vector>& der, Value* myval, const bool& squared );
 };
 
 }

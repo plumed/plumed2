@@ -76,7 +76,7 @@ Mapping::Mapping(const ActionOptions&ao):
   std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
 
   // Read all reference configurations
-  bool do_read=true; unsigned nfram=0; double wnorm=0., ww;
+  bool do_read=true; unsigned nfram=0; double wnorm=0.; std::vector<double> ww(1);
   while (do_read) {
     // Read the pdb file
     PDB mypdb; do_read=mypdb.readFromFilepointer(fp,usingNaturalUnits(),0.1/getUnits().getLength());
@@ -84,10 +84,10 @@ Mapping::Mapping(const ActionOptions&ao):
     if( !do_read ) break ;
     // Check for required properties
     if( !ispath ) {
-      double prop;
+      std::vector<double> prop(1);
       for(std::map<std::string,std::vector<double> >::iterator it=property.begin(); it!=property.end(); ++it) {
         if( !mypdb.getArgumentValue( it->first, prop ) ) error("pdb input does not have contain property named " + it->first );
-        it->second.push_back(prop);
+        it->second.push_back(prop[0]);
       }
     } else {
       property.find("spath")->second.push_back( myframes.size()+1 );
@@ -96,8 +96,8 @@ Mapping::Mapping(const ActionOptions&ao):
     expandArgKeywordInPDB( mypdb );
     // And read the frame
     myframes.emplace_back( metricRegister().create<ReferenceConfiguration>( mtype, mypdb ) );
-    if( !mypdb.getArgumentValue( "WEIGHT", ww ) ) ww=1.0;
-    weights.push_back( ww ); wnorm+=ww; nfram++;
+    if( !mypdb.getArgumentValue( "WEIGHT", ww ) ) ww[0]=1.0;
+    weights.push_back( ww[0] ); wnorm+=ww[0]; nfram++;
   }
 
   if(nfram==0 ) error("no reference configurations were specified");
