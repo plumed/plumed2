@@ -30,6 +30,41 @@
 
 namespace PLMD {
 
+//this more or less mocks c++20 span with fixed size
+template < std::size_t N=3>
+class MemoryView {
+  double *ptr_;
+public:
+  MemoryView(double* p) :ptr_(p) {}
+  constexpr size_t size()const {return N;}
+  static constexpr size_t extent = N;
+  double & operator[](size_t i) { return ptr_[i];}
+  const double & operator[](size_t i) const { return ptr_[i];}
+};
+
+namespace helpers {
+inline constexpr std::size_t dynamic_extent = -1;
+}
+//this more or less mocks c++23 mdspan without the fancy multi-indexed operator[]
+//the idea is to take an address that you know to be strided in a certain way and
+//make it avaiable to any interface (like using the data from a nunmpy.ndarray in
+//a function thought for a std::vector<PLMD::Vector> )
+//the N=-1 is there for mocking the run time size from the span (where a
+//dynamic extent is size_t(-))
+template < std::size_t N=helpers::dynamic_extent, std::size_t STRIDE=3>
+class mdMemoryView {
+  double *ptr_;
+  size_t size_;
+public:
+  mdMemoryView(double* p, size_t s) :ptr_(p), size_(s) {}
+  size_t size()const {return size_;}
+  static constexpr size_t extent = N;
+  static constexpr size_t stride = STRIDE;
+  MemoryView<STRIDE> operator[](size_t i) { return MemoryView<STRIDE>(ptr_ + i * STRIDE);}
+};
+
+using VectorView = mdMemoryView<helpers::dynamic_extent, 3>;
+
 /*
 Tool to deal with periodic boundary conditions.
 
@@ -69,11 +104,10 @@ public:
 /// Compute modulo of (v2-v1), using or not pbc depending on bool pbc.
   double distance( const bool pbc, const Vector& v1, const Vector& v2 ) const;
 /// Computes v2-v1, using minimal image convention
-  Vector distance(const Vector& v1,const Vector& v2)const;
-/// version of distance which also returns the number
-/// of attempted shifts
-  Vector distance(const Vector&,const Vector&,int*nshifts)const;
+/// if specified, also returns the number of attempted shifts
+  Vector distance(const Vector&, const Vector&,int*nshifts=nullptr)const;
 /// Apply PBC to a set of positions or distance vectors
+  void apply(VectorView dlist, unsigned max_index=0) const;
   void apply(std::vector<Vector>&dlist, unsigned max_index=0) const;
 /// Set the lattice vectors.
 /// b[i][j] is the j-th component of the i-th vector
@@ -97,11 +131,6 @@ public:
 /// Returns true if box is set and non zero
   bool isSet()const;
 };
-
-inline
-Vector Pbc::distance(const Vector& v1,const Vector& v2)const {
-  return distance(v1,v2,NULL);
-}
 
 inline
 bool Pbc::isSet()const {
