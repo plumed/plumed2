@@ -231,7 +231,12 @@ const std::vector<double>& ActionWithValue::getForcesToApply() const {
   return forcesForApply;
 }
 
-
+inline
+Value* ActionWithValue::getPntrToValue() {
+  plumed_dbg_massert(values.size()==1,"The number of components is not equal to one");
+  plumed_dbg_massert(values[0]->name==getLabel(), "The value you are trying to retrieve is not the default");
+  return values[0].get();
+}
 
 }
 

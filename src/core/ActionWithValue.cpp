@@ -127,12 +127,6 @@ void ActionWithValue::setPeriodic( const std::string& min, const std::string& ma
   values[0]->setDomain( min, max );
 }
 
-Value* ActionWithValue::getPntrToValue() {
-  plumed_dbg_massert(values.size()==1,"The number of components is not equal to one");
-  plumed_dbg_massert(values[0]->name==getLabel(), "The value you are trying to retrieve is not the default");
-  return values[0].get();
-}
-
 // -- HERE WE HAVE THE STUFF FOR NAMED VALUES / COMPONENTS -- //
 
 void ActionWithValue::addComponent( const std::string& name, const std::vector<unsigned>& shape ) {
