@@ -344,20 +344,6 @@ void ActionAtomistic::makeWhole() {
   }
 }
 
-Vector ActionAtomistic::getForce( const std::pair<std::size_t, std::size_t>& a ) const {
-  Vector f;
-  f[0]=xpos[a.first]->getForce(a.second);
-  f[1]=ypos[a.first]->getForce(a.second);
-  f[2]=zpos[a.first]->getForce(a.second);
-  return f;
-}
-
-void ActionAtomistic::addForce( const std::pair<std::size_t, std::size_t>& a, const Vector& f ) {
-  xpos[a.first]->addForce( a.second, f[0] );
-  ypos[a.first]->addForce( a.second, f[1] );
-  zpos[a.first]->addForce( a.second, f[2] );
-}
-
 void ActionAtomistic::getGradient( const unsigned& ind, Vector& deriv, std::map<AtomNumber,Vector>& gradients ) const {
   std::size_t nn = atom_value_ind[ind].first;
   if( nn==0 ) { gradients[indexes[ind]] += deriv; return; }
