@@ -329,9 +329,10 @@ void FitToTemplate::calculate() {
 }
 
 void FitToTemplate::apply() {
+  auto nat=getTotAtoms();
   if (type=="SIMPLE") {
     Vector totForce;
-    for(unsigned i=0; i<getTotAtoms(); i++) {
+    for(unsigned i=0; i<nat; i++) {
       std::pair<std::size_t,std::size_t> a = getValueIndices( AtomNumber::index(i));
       totForce+=getForce(a);
     }
@@ -340,7 +341,7 @@ void FitToTemplate::apply() {
     for(unsigned i=0; i<p_aligned.size(); ++i) { addForce( p_aligned[i], -totForce*weights[i]); }
   } else if ( type=="OPTIMAL" or type=="OPTIMAL-FAST") {
     Vector totForce;
-    for(unsigned i=0; i<getTotAtoms(); i++) {
+    for(unsigned i=0; i<nat; i++) {
       std::pair<std::size_t,std::size_t> a = getValueIndices( AtomNumber::index(i));
       Vector f=getForce(a);
 // rotate back forces
