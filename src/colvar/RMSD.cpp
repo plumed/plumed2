@@ -155,7 +155,7 @@ END
 */
 //+ENDPLUMEDOC
 
-PLUMED_REGISTER_ACTION(RMSD,"RMSD")
+PLUMED_REGISTER_ACTION(RMSD,"RMSD_SCALAR")
 
 void RMSD::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);
