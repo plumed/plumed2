@@ -74,6 +74,12 @@ distances. It stores privately information about reduced lattice vectors
 class Pbc {
 /// Type of box
   enum {unset,orthorombic,generic} type;
+/// This is the maximum expected size for general boxes.
+/// I found this empirically by manually modifying regtest basic/rt-make-1
+/// Since it uses randomly generated boxes it should be correct.
+/// In any case, this is just used as a hint for small_vector,
+/// which will then switch to heap allocations if more shifts are needed
+  static constexpr unsigned maxshiftsize=6;
 /// Box
   Tensor box;
 /// Inverse box
@@ -87,7 +93,7 @@ class Pbc {
 /// List of shifts that should be attempted.
 /// Depending on the sign of the scaled coordinates representing
 /// a distance vector, a different set of shifts must be tried.
-  gch::small_vector<Vector,27> shifts[2][2][2];
+  gch::small_vector<Vector,maxshiftsize> shifts[2][2][2];
 /// Alternative representation for orthorombic cells.
 /// Not really used, but could be used to optimize search in
 /// orthorombic cells.
@@ -97,7 +103,7 @@ class Pbc {
 /// reset. It allows building a minimal set of shifts
 /// depending on the sign of the scaled coordinates representing
 /// a distance vector.
-  void buildShifts(gch::small_vector<Vector,27> shifts[2][2][2])const;
+  void buildShifts(gch::small_vector<Vector,maxshiftsize> shifts[2][2][2])const;
 public:
 /// Constructor
   Pbc();

@@ -36,7 +36,7 @@ Pbc::Pbc():
   invBox.zero();
 }
 
-void Pbc::buildShifts(gch::small_vector<Vector,27> shifts[2][2][2])const {
+void Pbc::buildShifts(gch::small_vector<Vector,maxshiftsize> shifts[2][2][2])const {
   const double small=1e-28;
 
 // clear all shifts
