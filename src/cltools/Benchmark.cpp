@@ -24,7 +24,7 @@
 #include "tools/Communicator.h"
 #include "tools/Tools.h"
 #include "config/Config.h"
-#include "core/PlumedMain.h"
+#include "tools/PlumedHandle.h"
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -53,6 +53,7 @@ void Benchmark::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","--plumed","plumed.dat","convert the input in this file to the html manual");
   keys.add("compulsory","--natoms","100000","the number of atoms to use for the simulation");
   keys.add("compulsory","--nsteps","2000","number of steps of MD to perform");
+  keys.add("optional","--kernel","path to kernel (default=current kernel)");
 }
 
 Benchmark::Benchmark(const CLToolOptions& co ):
@@ -62,7 +63,13 @@ Benchmark::Benchmark(const CLToolOptions& co ):
 }
 
 int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
-  PlumedMain p;
+  PlumedHandle p([&](){
+    std::string kernel;
+    parse("--kernel",kernel);
+    if(kernel.length()>0) return PlumedHandle::dlopen(kernel.c_str());
+    else return PlumedHandle();
+  }());
+
   if(Communicator::plumedHasMPI()) p.cmd("setMPIComm",&pc.Get_comm());
   p.cmd("setRealPrecision",(int)sizeof(double));
   p.cmd("setMDLengthUnits",1.0);
