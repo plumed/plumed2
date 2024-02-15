@@ -34,6 +34,33 @@
 namespace PLMD {
 namespace cltools {
 
+//+PLUMEDOC TOOLS driver
+/*
+benchmark is a lightweight reimplementation of driver focused on running benchmarks
+
+The main difference wrt driver is that it generates a trajectory in memory rather than reading it
+from a file. This allows to better time the overhead of the plumed library, without including
+the time needed to read the trajectory.
+
+As of now it does not test cases where atoms are scattered over processors (TODO).
+
+It is also possible to load a separate version of the plumed kernel. This enables running
+benchmarks agaist previous plumed versions
+
+\par Examples
+
+\verbatim
+plumed benchmark --plumed plumed.dat
+\endverbatim
+
+\verbatim
+plumed benchmark --plumed plumed.dat --kernel /path/to/libplumedKernel.so
+\endverbatim
+
+*/
+//+ENDPLUMEDOC
+
+
 class Benchmark:
   public CLTool
 {
@@ -63,7 +90,7 @@ Benchmark::Benchmark(const CLToolOptions& co ):
 }
 
 int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
-  PlumedHandle p([&](){
+  PlumedHandle p([&]() {
     std::string kernel;
     parse("--kernel",kernel);
     if(kernel.length()>0) return PlumedHandle::dlopen(kernel.c_str());
@@ -81,7 +108,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   p.cmd("setPlumedDat",plumedFile.c_str());
   p.cmd("setLog",out);
 
-  unsigned nf; parse("--nsteps",nf); 
+  unsigned nf; parse("--nsteps",nf);
   unsigned natoms; parse("--natoms",natoms);
   p.cmd("setNatoms",natoms); p.cmd("init");
   std::vector<double> cell( 9 ), virial( 9 );
@@ -90,16 +117,16 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
 
   int plumedStopCondition=0;
   for(int step=0; step<nf; ++step) {
-      for(unsigned j=0; j<natoms; ++j) pos[j] = Vector(step*j, step*j+1, step*j+2);
-      p.cmd("setStep",step);
-      p.cmd("setStopFlag",&plumedStopCondition);
-      p.cmd("setForces",&forces[0][0],3*natoms);
-      p.cmd("setBox",&cell[0],9);
-      p.cmd("setVirial",&virial[0],9);
-      p.cmd("setPositions",&pos[0][0],3*natoms);
-      p.cmd("setMasses",&masses[0],natoms);
-      p.cmd("setCharges",&charges[0],natoms); 
-      p.cmd("calc");     
+    for(unsigned j=0; j<natoms; ++j) pos[j] = Vector(step*j, step*j+1, step*j+2);
+    p.cmd("setStep",step);
+    p.cmd("setStopFlag",&plumedStopCondition);
+    p.cmd("setForces",&forces[0][0],3*natoms);
+    p.cmd("setBox",&cell[0],9);
+    p.cmd("setVirial",&virial[0],9);
+    p.cmd("setPositions",&pos[0][0],3*natoms);
+    p.cmd("setMasses",&masses[0],natoms);
+    p.cmd("setCharges",&charges[0],natoms);
+    p.cmd("calc");
   }
   return 0;
 }
