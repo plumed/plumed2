@@ -165,7 +165,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
 
   if(shuffled) {
     shuffled_indexes.resize(natoms);
-    for(unsigned i=0;i<natoms;i++) shuffled_indexes[i]=natoms-i-1;
+    for(unsigned i=0; i<natoms; i++) shuffled_indexes[i]=natoms-i-1;
   }
 
   int plumedStopCondition=0;
