@@ -120,6 +120,7 @@ void Benchmark::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","--natoms","100000","the number of atoms to use for the simulation");
   keys.add("compulsory","--nsteps","2000","number of steps of MD to perform (-1 means forever)");
   keys.add("optional","--kernel","path to kernel (default=current kernel)");
+  keys.addFlag("--shuffled",false,"reshuffle atoms");
 }
 
 Benchmark::Benchmark(const CLToolOptions& co ):
@@ -154,8 +155,18 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   std::vector<Vector> pos( natoms ), forces( natoms );
   std::vector<double> masses( natoms, 1 ), charges( natoms, 0 );
 
+  bool shuffled=false;
+  parseFlag("--shuffled",shuffled);
+
 
   SignalHandlerGuard sigIntGuard(SIGINT, signalHandler);
+
+  std::vector<int> shuffled_indexes;
+
+  if(shuffled) {
+    shuffled_indexes.resize(natoms);
+    for(unsigned i=0;i<natoms;i++) shuffled_indexes[i]=natoms-i-1;
+  }
 
   int plumedStopCondition=0;
   for(int step=0; nf<0 || step<nf; ++step) {
@@ -168,6 +179,10 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
     p.cmd("setPositions",&pos[0][0],3*natoms);
     p.cmd("setMasses",&masses[0],natoms);
     p.cmd("setCharges",&charges[0],natoms);
+    if(shuffled) {
+      p.cmd("setAtomsNlocal",natoms);
+      p.cmd("setAtomsGatindex",&shuffled_indexes[0],shuffled_indexes.size());
+    }
     p.cmd("calc");
     if(plumedStopCondition || signalReceived.load()) break;
   }
