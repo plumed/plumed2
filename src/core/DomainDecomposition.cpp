@@ -349,8 +349,7 @@ void DomainDecomposition::share(const std::vector<AtomNumber>& unique) {
       for(int i=0; i<tot; i++) {
         int dpoint=0;
         for(unsigned j=0; j<values_to_get.size(); ++j) {
-          values_to_get[j]->set( dd.indexToBeReceived[i], dd.positionsToBeReceived[ndata*i+dpoint] );
-          dpoint++;
+          values_to_get[j]->data[dd.indexToBeReceived[i]] = dd.positionsToBeReceived[ndata*i+dpoint]; dpoint++;
         }
       }
     }
