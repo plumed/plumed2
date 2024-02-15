@@ -37,7 +37,7 @@
 namespace PLMD {
 namespace cltools {
 
-//+PLUMEDOC TOOLS driver
+//+PLUMEDOC TOOLS benchmark
 /*
 benchmark is a lightweight reimplementation of driver focused on running benchmarks
 
