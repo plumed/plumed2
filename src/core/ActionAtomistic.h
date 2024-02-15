@@ -26,6 +26,7 @@
 #include "tools/Tensor.h"
 #include "tools/Pbc.h"
 #include "tools/ForwardDecl.h"
+#include "Value.h"
 #include <vector>
 #include <map>
 
@@ -252,6 +253,43 @@ const std::vector<AtomNumber> & ActionAtomistic::getUnique()const {
 inline
 const std::vector<AtomNumber> & ActionAtomistic::getUniqueLocal() const {
   return unique_local;
+}
+
+inline
+Vector ActionAtomistic::getGlobalPosition(const std::pair<std::size_t,std::size_t>& a) const {
+  Vector pos;
+  pos[0]=xpos[a.first]->data[a.second];
+  pos[1]=ypos[a.first]->data[a.second];
+  pos[2]=zpos[a.first]->data[a.second];
+  return pos;
+}
+
+inline
+void ActionAtomistic::setGlobalPosition(const std::pair<std::size_t, std::size_t>& a, const Vector& pos ) {
+  xpos[a.first]->data[a.second]=pos[0];
+  ypos[a.first]->data[a.second]=pos[1];
+  zpos[a.first]->data[a.second]=pos[2];
+}
+
+inline
+Vector ActionAtomistic::getForce( const std::pair<std::size_t, std::size_t>& a ) const {
+  Vector f;
+  f[0]=xpos[a.first]->getForce(a.second);
+  f[1]=ypos[a.first]->getForce(a.second);
+  f[2]=zpos[a.first]->getForce(a.second);
+  return f;
+}
+
+inline
+void ActionAtomistic::addForce( const std::pair<std::size_t, std::size_t>& a, const Vector& f ) {
+  xpos[a.first]->addForce( a.second, f[0] );
+  ypos[a.first]->addForce( a.second, f[1] );
+  zpos[a.first]->addForce( a.second, f[2] );
+}
+
+inline
+Vector ActionAtomistic::pbcDistance(const Vector &v1,const Vector &v2)const {
+  return pbc.distance(v1,v2);
 }
 
 }
