@@ -30,6 +30,9 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <atomic>
+#include <csignal>
+#include <cstdio>
 
 namespace PLMD {
 namespace cltools {
@@ -60,6 +63,42 @@ plumed benchmark --plumed plumed.dat --kernel /path/to/libplumedKernel.so
 */
 //+ENDPLUMEDOC
 
+namespace {
+
+std::atomic<bool> signalReceived(false);
+
+class SignalHandlerGuard {
+public:
+  SignalHandlerGuard(int signal, void (*newHandler)(int)) : signal_(signal) {
+    // Store the current handler before setting the new one
+    prevHandler_ = std::signal(signal, newHandler);
+    if (prevHandler_ == SIG_ERR) {
+      throw std::runtime_error("Failed to set signal handler");
+    }
+  }
+
+  ~SignalHandlerGuard() {
+    // Restore the previous handler upon destruction
+    std::signal(signal_, prevHandler_);
+  }
+
+  // Delete copy constructor and assignment operator to prevent copying
+  SignalHandlerGuard(const SignalHandlerGuard&) = delete;
+  SignalHandlerGuard& operator=(const SignalHandlerGuard&) = delete;
+
+private:
+  int signal_;
+  void (*prevHandler_)(int);
+};
+
+extern "C" void signalHandler(int signal) {
+  if (signal == SIGINT) {
+    signalReceived.store(true);
+    fprintf(stderr, "Signal handler called\n");
+  }
+}
+
+}
 
 class Benchmark:
   public CLTool
@@ -79,7 +118,7 @@ void Benchmark::registerKeywords( Keywords& keys ) {
   CLTool::registerKeywords( keys );
   keys.add("compulsory","--plumed","plumed.dat","convert the input in this file to the html manual");
   keys.add("compulsory","--natoms","100000","the number of atoms to use for the simulation");
-  keys.add("compulsory","--nsteps","2000","number of steps of MD to perform");
+  keys.add("compulsory","--nsteps","2000","number of steps of MD to perform (-1 means forever)");
   keys.add("optional","--kernel","path to kernel (default=current kernel)");
 }
 
@@ -108,15 +147,18 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   p.cmd("setPlumedDat",plumedFile.c_str());
   p.cmd("setLog",out);
 
-  unsigned nf; parse("--nsteps",nf);
+  int nf; parse("--nsteps",nf);
   unsigned natoms; parse("--natoms",natoms);
   p.cmd("setNatoms",natoms); p.cmd("init");
   std::vector<double> cell( 9 ), virial( 9 );
   std::vector<Vector> pos( natoms ), forces( natoms );
   std::vector<double> masses( natoms, 1 ), charges( natoms, 0 );
 
+
+  SignalHandlerGuard sigIntGuard(SIGINT, signalHandler);
+
   int plumedStopCondition=0;
-  for(int step=0; step<nf; ++step) {
+  for(int step=0; nf<0 || step<nf; ++step) {
     for(unsigned j=0; j<natoms; ++j) pos[j] = Vector(step*j, step*j+1, step*j+2);
     p.cmd("setStep",step);
     p.cmd("setStopFlag",&plumedStopCondition);
@@ -127,6 +169,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
     p.cmd("setMasses",&masses[0],natoms);
     p.cmd("setCharges",&charges[0],natoms);
     p.cmd("calc");
+    if(plumedStopCondition || signalReceived.load()) break;
   }
   return 0;
 }
