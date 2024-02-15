@@ -63,7 +63,7 @@ Benchmark::Benchmark(const CLToolOptions& co ):
 
 int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   PlumedMain p;
-  p.cmd("setMPIComm",&pc.Get_comm());
+  if(Communicator::plumedHasMPI()) p.cmd("setMPIComm",&pc.Get_comm());
   p.cmd("setRealPrecision",(int)sizeof(double));
   p.cmd("setMDLengthUnits",1.0);
   p.cmd("setMDChargeUnits",1.0);
