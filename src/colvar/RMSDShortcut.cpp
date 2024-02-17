@@ -120,6 +120,7 @@ ActionShortcut(ao)
       readInputLine( getShortcutLabel() + "_ref: PDB2CONSTANT REFERENCE=" + reference + " NUMBER=" + ffnum );
       createPosVector( getShortcutLabel() + "_pos", pdb );
       if( nf==1 && disp ) rmsd_line += "RMSD_DISPLACEMENT_VECTOR ARG=" + getShortcutLabel() + "_pos," + getShortcutLabel() + "_ref";
+      else if( !disp ) rmsd_line += "RMSD_VECTOR ARG=" + getShortcutLabel() + "_pos," + getShortcutLabel() + "_ref";
       // Now align
       std::vector<double> align( pdb.getOccupancy() ); Tools::convert( align[0], num ); rmsd_line += " ALIGN=" + num;
       for(unsigned i=1; i<align.size(); ++i) { Tools::convert( align[i], num ); rmsd_line += "," + num; }

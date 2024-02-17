@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
+#include "core/ActionWithArguments.h"
 #include "core/PlumedMain.h"
 #include "tools/PDB.h"
 
@@ -48,6 +49,7 @@ void PDB2Constant::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
   keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure");
   keys.add("compulsory","NUMBER","0","if there are multiple structures in the pdb file you can specify that you want the RMSD from a specific structure by specifying its place in the file here. If NUMBER=0 then the RMSD from all structures are computed");
+  keys.add("optional","ARG","read this single argument from the input rather than the atomic structure");
 }
 
 PDB2Constant::PDB2Constant(const ActionOptions& ao):
@@ -56,6 +58,9 @@ PDB2Constant::PDB2Constant(const ActionOptions& ao):
 {
   std::string input; parse("REFERENCE",input);
   unsigned frame; parse("NUMBER",frame);
+  std::vector<std::string> argn; parseVector("ARG",argn); std::vector<Value*> theargs;
+  if( argn.size()>0 ) ActionWithArguments::interpretArgumentList( argn, plumed.getActionSet(), this, theargs );
+  if( theargs.size()>1 ) error("can only read one argument at a time from input pdb file"); 
 
   FILE* fp=std::fopen(input.c_str(),"r"); bool do_read=true; std::vector<double> vals;
   if(!fp) plumed_merror("could not open reference file " + input); unsigned natoms=0, nframes=0;
@@ -77,8 +82,14 @@ PDB2Constant::PDB2Constant(const ActionOptions& ao):
          }
          Vector center; center.zero(); for(unsigned i=0;i<mypdb.getPositions().size();++i) center += align[i]*mypdb.getPositions()[i];
 
-         for(unsigned j=0; j<3; ++j) {
-             for(unsigned i=0; i<mypdb.getPositions().size(); ++i) vals.push_back( mypdb.getPositions()[i][j] - center[j] );
+         if( theargs.size()==0 ) {
+             for(unsigned j=0; j<3; ++j) {
+                 for(unsigned i=0; i<mypdb.getPositions().size(); ++i) vals.push_back( mypdb.getPositions()[i][j] - center[j] );
+             }
+         } else { 
+             std::vector<double> argvals( theargs[0]->getNumberOfValues() ); 
+             if( !mypdb.getArgumentValue(argn[0], argvals ) ) error("argument " + argn[0] + " was not set in pdb input");
+             for(unsigned i=0; i<argvals.size(); ++i) vals.push_back( argvals[i] );
          }
      }
      nframes++;
@@ -86,10 +97,10 @@ PDB2Constant::PDB2Constant(const ActionOptions& ao):
   std::fclose(fp); std::string rnum; plumed_assert( vals.size()>0 );
   Tools::convert( vals[0], rnum ); std::string valstr = " VALUES=" + rnum;
   for(unsigned i=1; i<vals.size();++i) { Tools::convert( vals[i], rnum ); valstr += "," + rnum; }
-  if( frame==0 && nframes>1 ) {
-      std::string nc, nr; Tools::convert( nframes, nr ); Tools::convert( 3*natoms, nc );
-      plumed.readInputLine( getShortcutLabel() + ": CONSTANT NROWS=" + nr + " NCOLS=" + nc + valstr );
-  } else plumed.readInputLine( getShortcutLabel() + ": CONSTANT" + valstr );
+  if( frame==0 && nframes>1 && vals.size()/nframes>1 ) {
+      std::string nc, nr; Tools::convert( nframes, nr ); Tools::convert( vals.size()/nframes, nc );
+      readInputLine( getShortcutLabel() + ": CONSTANT NROWS=" + nr + " NCOLS=" + nc + valstr );
+  } else readInputLine( getShortcutLabel() + ": CONSTANT" + valstr );
 }
 
 }

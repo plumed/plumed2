@@ -24,6 +24,7 @@
 #include "core/PlumedMain.h"
 #include "core/ActionWithArguments.h"
 #include "tools/PDB.h"
+#include "Path.h"
 
 using namespace std;
 
@@ -205,16 +206,13 @@ PCAVars::PCAVars( const ActionOptions& ao ):
   std::vector<std::string> argnames; parseVector("ARG",argnames); unsigned nargs=0; std::string instargs, refargs; std::vector<Value*> theargs; 
   if( argnames.size()>0 ) ActionWithArguments::interpretArgumentList( argnames, plumed.getActionSet(), this, theargs );
   for(unsigned i=0; i<theargs.size(); ++i) {
-      std::vector<double> argval( theargs[i]->getNumberOfValues() ); nargs += theargs[i]->getNumberOfValues();
-      if( !pdb.getArgumentValue(argnames[i], argval) ) error("argument " + argnames[i] + " was not set in pdb input");
-      std::string arg_str; Tools::convert( argval[0], arg_str ); 
-      for(unsigned j=1; j<argval.size(); ++j) { std::string nnn; Tools::convert( argval[j], nnn ); arg_str += "," + nnn; } 
-      readInputLine( getShortcutLabel() + "_ref_" + argnames[i] + ": CONSTANT VALUES=" + arg_str );
-      if( i==0 ) { instargs=" ARG1=" + argnames[i]; refargs=" ARG2=" + getShortcutLabel() + "_ref_" + argnames[i]; }
-      else { instargs +="," + argnames[i]; refargs +="," + getShortcutLabel() + "_ref_" + argnames[i]; }
+      std::string iargn = Path::fixArgumentName( theargs[i]->getName() ); nargs += theargs[i]->getNumberOfValues();
+      readInputLine( getShortcutLabel() + "_ref_" + iargn + ": PDB2CONSTANT NUMBER=1 REFERENCE=" + reference + " ARG=" + theargs[i]->getName() );
+      if( i==0 ) { instargs=" ARG1=" + theargs[i]->getName(); refargs=" ARG2=" + getShortcutLabel() + "_ref_" + iargn; }
+      else { instargs +="," + theargs[i]->getName(); refargs +="," + getShortcutLabel() + "_ref_" + iargn; }
   }
-  if( argnames.size()>0 ) readInputLine( getShortcutLabel() + "_argdist: EUCLIDEAN_DISTANCE SQUARED" + instargs + refargs );
-  if( pdb.getPositions().size()>0 && argnames.size()>0 ) {
+  if( theargs.size()>0 ) readInputLine( getShortcutLabel() + "_argdist: EUCLIDEAN_DISTANCE SQUARED" + instargs + refargs );
+  if( pdb.getPositions().size()>0 && theargs.size()>0 ) {
       readInputLine( getShortcutLabel() + ": CONCATENATE ARG=" + getShortcutLabel() + "_at.disp," + getShortcutLabel() + "_argdist_diffT");
       readInputLine( getShortcutLabel() + "_dist: COMBINE ARG=" + getShortcutLabel() + "_at.dist," + getShortcutLabel() + "_argdist PERIODIC=NO");
   } 
@@ -240,7 +238,7 @@ PCAVars::PCAVars( const ActionOptions& ao ):
         unsigned k=0;
         for(unsigned i=0; i<theargs.size(); ++i) {
           std::vector<double> argval( theargs[i]->getNumberOfValues() );
-          if( !mypdb.getArgumentValue(argnames[i], argval) ) error("argument " + argnames[i] + " was not set in pdb input");
+          if( !mypdb.getArgumentValue(theargs[i]->getName(), argval) ) error("argument " + theargs[i]->getName() + " was not set in pdb input");
           for(unsigned j=0; j<argval.size(); ++j) { argdir[k] = argval[j]; norm += argdir[k]*argdir[k]; k++; }
         }
         norm = sqrt( norm ); std::vector<double> normed_coeffs( 3*mypdb.getPositions().size() );
@@ -263,27 +261,27 @@ PCAVars::PCAVars( const ActionOptions& ao ):
                 pvec += "," + coeff1;
             }
             for(unsigned i=0; i<argdir.size(); ++i) { Tools::convert( argdir[i] / norm, coeff1 ); pvec += "," + coeff1; }
-        } else if( argnames.size()>0 ) {
+        } else if( theargs.size()>0 ) {
             Tools::convert( argdir[0] / norm, pvec ); for(unsigned i=1; i<argdir.size(); ++i) { Tools::convert( argdir[i] / norm, coeff1 ); pvec += "," + coeff1; }
         }
 
         // Read in eigenvector
         readInputLine( getShortcutLabel() + "_peig-" + num + ": CONSTANT VALUES=" + pvec );
         // And calculate dot product
-        if( pdb.getPositions().size()>0 && argnames.size()>0 ) {
+        if( pdb.getPositions().size()>0 && theargs.size()>0 ) {
             readInputLine( getShortcutLabel() + "_prodeig-" + num + ": CUSTOM ARG=" + getShortcutLabel() + "_peig-" + num + "," + getShortcutLabel() + " FUNC=x*y PERIODIC=NO");
         } else if( pdb.getPositions().size()>0 ) {
             readInputLine( getShortcutLabel() + "_prodeig-" + num + ": CUSTOM ARG=" + getShortcutLabel() + "_peig-" + num + "," + getShortcutLabel() + "_at.disp FUNC=x*y PERIODIC=NO");
-        } else if( argnames.size()>0 ) {
+        } else if( theargs.size()>0 ) {
             readInputLine( getShortcutLabel() + "_prodeig-" + num + ": CUSTOM ARG=" + getShortcutLabel() + "_peig-" + num + "," + getShortcutLabel() + "_argdist_diffT FUNC=x*y PERIODIC=NO");
         }
         readInputLine( getShortcutLabel() + "_eig-" + num + ": SUM ARG=" + getShortcutLabel() + "_prodeig-" + num + " PERIODIC=NO");
     } else { break; }
   }
   std::fclose(fp); std::string resid_inp;
-  if( pdb.getPositions().size()>0 && argnames.size()>0 ) resid_inp = getShortcutLabel() + "_residual_2: COMBINE PERIODIC=NO ARG=" + getShortcutLabel() + "_dist";
+  if( pdb.getPositions().size()>0 && theargs.size()>0 ) resid_inp = getShortcutLabel() + "_residual_2: COMBINE PERIODIC=NO ARG=" + getShortcutLabel() + "_dist";
   else if( pdb.getPositions().size()>0 ) resid_inp = getShortcutLabel() + "_residual_2: COMBINE PERIODIC=NO ARG=" + getShortcutLabel() + "_at.dist";
-  else if( argnames.size()>0 ) resid_inp = getShortcutLabel() + "_residual_2: COMBINE PERIODIC=NO ARG=" + getShortcutLabel() + "_argdist";
+  else if( theargs.size()>0 ) resid_inp = getShortcutLabel() + "_residual_2: COMBINE PERIODIC=NO ARG=" + getShortcutLabel() + "_argdist";
   for(unsigned i=0;i<nfram-1;++i) {
       std::string num; Tools::convert( i+1, num ); resid_inp += "," + getShortcutLabel() + "_eig-" + num;
   }
