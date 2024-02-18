@@ -14,7 +14,7 @@
 
 Branches and releases
 ---------------------
-
+ 
 Several branches and tags are stored on the git repository.
 
 Branches named `v2.X` correspond to release branches.
