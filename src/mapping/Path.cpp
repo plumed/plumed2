@@ -25,7 +25,6 @@
 #include "core/ActionWithArguments.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
-#include "colvar/RMSDShortcut.h"
 #include "tools/PDB.h"
 
 //+PLUMEDOC COLVAR PATH

@@ -94,10 +94,11 @@ PDB2Constant::PDB2Constant(const ActionOptions& ao):
      }
      nframes++;
   }
+  if( frame>0 ) nframes=1;
   std::fclose(fp); std::string rnum; plumed_assert( vals.size()>0 );
   Tools::convert( vals[0], rnum ); std::string valstr = " VALUES=" + rnum;
   for(unsigned i=1; i<vals.size();++i) { Tools::convert( vals[i], rnum ); valstr += "," + rnum; }
-  if( frame==0 && nframes>1 && vals.size()/nframes>1 ) {
+  if( vals.size()>nframes ) {
       std::string nc, nr; Tools::convert( nframes, nr ); Tools::convert( vals.size()/nframes, nc );
       readInputLine( getShortcutLabel() + ": CONSTANT NROWS=" + nr + " NCOLS=" + nc + valstr );
   } else readInputLine( getShortcutLabel() + ": CONSTANT" + valstr );

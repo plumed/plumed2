@@ -4,18 +4,22 @@ WRAPAROUND ATOMS=1-22 AROUND=f
 
 # wrong:
 PCAVARS REFERENCE=reference.pdb TYPE=SIMPLE LABEL=pcawrong NOPBC
-PRINT ARG=pcawrong_eig-1,pcawrong_eig-2,pcawrong_residual FILE=wrongcolvar FMT=%8.4f
+PRINT ARG=pcawrong_eig,pcawrong_residual FILE=wrongcolvar FMT=%8.4f
 
 PCAVARS REFERENCE=reference.pdb TYPE=SIMPLE LABEL=pca
-PRINT ARG=pca_eig-1,pca_eig-2,pca_residual FILE=colvar FMT=%8.4f
+PRINT ARG=pca.* FILE=colvar FMT=%8.4f
 
+pca_eig-1: SELECT_COMPONENTS ARG=pca_eig COMPONENTS=1
+pca_eig-2: SELECT_COMPONENTS ARG=pca_eig COMPONENTS=2
 BIASVALUE ARG=pca_eig-1
 BIASVALUE ARG=pca_eig-2
 BIASVALUE ARG=pca_residual
 
 PCAVARS REFERENCE=reference.pdb TYPE=OPTIMAL LABEL=pca2
-PRINT ARG=pca2_eig-1,pca2_eig-2,pca2_residual FILE=colvar2 FMT=%8.4f
+PRINT ARG=pca2.* FILE=colvar2 FMT=%8.4f
 
+pca2_eig-1: SELECT_COMPONENTS ARG=pca2_eig COMPONENTS=1
+pca2_eig-2: SELECT_COMPONENTS ARG=pca2_eig COMPONENTS=2
 BIASVALUE ARG=pca2_eig-1
 BIASVALUE ARG=pca2_eig-2
 BIASVALUE ARG=pca2_residual
