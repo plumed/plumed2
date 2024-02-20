@@ -71,6 +71,7 @@ class ActionAtomistic :
   bool                  donotforce;
 
 /// Values that hold information about atom positions and charges
+public: // hack
   std::vector<Value*>   xpos, ypos, zpos, masv, chargev;
   void updateUniqueLocal( const bool& useunique, const std::vector<int>& g2l );
 protected:

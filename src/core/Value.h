@@ -68,7 +68,9 @@ private:
 /// Had the value been set
   bool value_set;
 /// The value of the quantity
+public:
   std::vector<double> data;
+private:
 /// The force acting on this quantity
   std::vector<double> inputForce;
 /// A flag telling us we have a force acting on this quantity
