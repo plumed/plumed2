@@ -246,10 +246,19 @@ void WholeMolecules::calculate() {
       first = refs[i]+pbcDistance(refs[i],first);
       setGlobalPosition( p_groups[i][0], first );
     }
-    for(unsigned j=1; j<p_groups[i].size(); ++j) {
-      Vector second=getGlobalPosition(p_groups[i][j]);
-      first = first+pbcDistance(first,second);
-      setGlobalPosition(p_groups[i][j], first );
+    if(!doemst) {
+      for(unsigned j=1; j<p_groups[i].size(); ++j) {
+        Vector second=getGlobalPosition(p_groups[i][j]);
+        first = first+pbcDistance(first,second);
+        setGlobalPosition(p_groups[i][j], first );
+      }
+    } else {
+      for(unsigned j=1; j<p_groups[i].size(); ++j) {
+        Vector first=getGlobalPosition(p_roots[i][j-1]);
+        Vector second=getGlobalPosition(p_groups[i][j]);
+        second=first+pbcDistance(first,second);
+        setGlobalPosition(p_groups[i][j], second );
+      }
     }
   }
 }
