@@ -106,6 +106,7 @@ class WholeMolecules:
   std::vector<std::vector<std::pair<std::size_t,std::size_t> > > p_groups;
   std::vector<std::vector<std::pair<std::size_t,std::size_t> > > p_roots;
   std::vector<Vector> refs;
+  std::vector<std::vector<unsigned>> iii;
   bool doemst, addref;
 public:
   explicit WholeMolecules(const ActionOptions&ao);
@@ -140,6 +141,7 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
 {
   std::vector<std::vector<AtomNumber> > groups;
   std::vector<std::vector<AtomNumber> > roots;
+
   // parse optional flags
   parseFlag("EMST", doemst);
   parseFlag("ADDREFERENCE", addref);
@@ -220,15 +222,24 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
 
   // Convert groups to p_groups
   p_groups.resize( groups.size() );
+  iii.resize( groups.size() );
   for(unsigned i=0; i<groups.size(); ++i) {
     p_groups[i].resize( groups[i].size() );
-    for(unsigned j=0; j<groups[i].size(); ++j) p_groups[i][j] = getValueIndices( groups[i][j] );
+    iii[i].resize( groups[i].size() );
+    for(unsigned j=0; j<groups[i].size(); ++j) {
+      p_groups[i][j] = getValueIndices( groups[i][j] );
+      iii[i][j]=p_groups[i][j].second;
+      plumed_assert(p_groups[i][j].first==0);
+    }
   }
   // Convert roots to p_roots
   p_roots.resize( roots.size() );
   for(unsigned i=0; i<roots.size(); ++i) {
     p_roots[i].resize( roots[i].size() );
-    for(unsigned j=0; j<roots[i].size(); ++j) p_roots[i][j] = getValueIndices( roots[i][j] );
+    for(unsigned j=0; j<roots[i].size(); ++j) {
+      p_roots[i][j] = getValueIndices( roots[i][j] );
+      plumed_assert(p_roots[i][j].first==0);
+    }
   }
 
 
@@ -239,17 +250,49 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
   doNotForce();
 }
 
+/*
+This is a hacked version of calculate to see where the bottleneck is.
+
+What I tried to do is:
+- assume all atoms are not virtual
+- store the only needed indexes (groups[i][j].second) as unsigned (iii) which are smaller
+  than size_t and might be more cache friendly
+- only access the xxx array (ignoring the yyy and zzz arrays)
+
+None of these allowed me to reach the performance of pre-htt
+
+However, if I completely remove the access to memory (replacing
+XXXXX with YYYYY) then I managed to go down to pre htt performance.
+
+Notice that pbcs are not inlined, so that the code does not care that
+we are doing the same calculation again and again.
+*/
 void WholeMolecules::calculate() {
-  for(unsigned i=0; i<p_groups.size(); ++i) {
-    Vector first = getGlobalPosition(p_groups[i][0]);
-    if(addref) {
-      first = refs[i]+pbcDistance(refs[i],first);
-      setGlobalPosition( p_groups[i][0], first );
-    }
-    for(unsigned j=1; j<p_groups[i].size(); ++j) {
-      Vector second=getGlobalPosition(p_groups[i][j]);
+  // assume data are in the zeroth value
+  auto xxx=xpos[0]->data;
+  auto yyy=ypos[0]->data;
+  auto zzz=zpos[0]->data;
+
+  for(unsigned i=0; i<iii.size(); ++i) {
+    //auto first_index=p_groups[i][0].second;
+    auto first_index=iii[i][0];
+    //Vector first = {xxx[first_index], yyy[first_index], zzz[first_index]};
+    Vector first = {xxx[first_index], 0.0, 0.0};
+    for(unsigned j=1; j<iii[i].size(); ++j) {
+      //auto second_index=p_groups[i][j].second;
+      //auto second_index=iii[i][j];
+      auto second_index=0;
+      //Vector second = {xxx[second_index], yyy[second_index], zzz[second_index]};
+
+// XXXXXX:
+      // Vector second = {xxx[second_index], 0.0, 0.0};
+// YYYYYY:
+      Vector second{0.0,0.0,0.0};
+
       first = first+pbcDistance(first,second);
-      setGlobalPosition(p_groups[i][j], first );
+      //xxx[second_index]=first[0];
+      //yyy[second_index]=first[1];
+      //zzz[second_index]=first[2];
     }
   }
 }
