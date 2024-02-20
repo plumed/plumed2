@@ -364,9 +364,10 @@
 
   Some additional features can be enabled using suitable environment variables. In particular:
   - `PLUMED_LOAD_DEBUG` can be set to report more information about the loading process.
-  - `PLUMED_LOAD_NAMESPACE` can be set to `LOCAL` to load the PLUMED kernel in a separate
-    namespace. The default is global namespace, which is the same behavior of PLUMED <=2.4,
-    and is consistent with what happens when linking PLUMED as a shared library.
+  - `PLUMED_LOAD_NAMESPACE` can be set to choose in which namespace PLUMED is loaded when using runtime
+    loading. As of version 2.10, PLUMED is loaded with RTLD_LOCAL by default. The behavior can be reverted
+    by exporting `PLUMED_LOAD_NAMESPACE=GLOBAL`. The default setting facilitates loading multiple
+    versions of PLUMED simultaneously.
   - `PLUMED_LOAD_NODEEPBIND` can be set to load the PLUMED kernel in not-deepbind mode. Deepbind
     mode implies that the symbols defined in the library are preferred to other symbols with the same name.
     Only works on systems supporting `RTLD_DEEPBIND` and is mostly for debugging purposes.
@@ -3685,12 +3686,12 @@ void plumed_retrieve_functions(plumed_plumedmain_function_holder* functions, plu
     __PLUMED_FPRINTF(stderr,"+++ PLUMED_KERNEL=\"%s\" +++\n",path);
     if(debug) __PLUMED_FPRINTF(stderr,"+++ Loading with mode RTLD_NOW");
     dlopenmode=RTLD_NOW;
-    if(__PLUMED_GETENV("PLUMED_LOAD_NAMESPACE") && !__PLUMED_WRAPPER_STD strcmp(__PLUMED_GETENV("PLUMED_LOAD_NAMESPACE"),"LOCAL")) {
-      dlopenmode=dlopenmode|RTLD_LOCAL;
-      if(debug) __PLUMED_FPRINTF(stderr,"|RTLD_LOCAL");
-    } else {
+    if(__PLUMED_GETENV("PLUMED_LOAD_NAMESPACE") && !__PLUMED_WRAPPER_STD strcmp(__PLUMED_GETENV("PLUMED_LOAD_NAMESPACE"),"GLOBAL")) {
       dlopenmode=dlopenmode|RTLD_GLOBAL;
       if(debug) __PLUMED_FPRINTF(stderr,"|RTLD_GLOBAL");
+    } else {
+      dlopenmode=dlopenmode|RTLD_LOCAL;
+      if(debug) __PLUMED_FPRINTF(stderr,"|RTLD_LOCAL");
     }
 #ifdef RTLD_DEEPBIND
 #if __PLUMED_WRAPPER_ENABLE_RTLD_DEEPBIND
