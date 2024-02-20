@@ -151,7 +151,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   int nf; parse("--nsteps",nf);
   unsigned natoms; parse("--natoms",natoms);
   p.cmd("setNatoms",natoms); p.cmd("init");
-  std::vector<double> cell( 9 ), virial( 9 );
+  std::vector<double> cell( 9,0.0 ), virial( 9 );
   std::vector<Vector> pos( natoms ), forces( natoms );
   std::vector<double> masses( natoms, 1 ), charges( natoms, 0 );
 
