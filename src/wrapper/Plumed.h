@@ -3445,17 +3445,10 @@ void* plumed_attempt_dlopen(const char*path,int mode) {
   void* p;
   char* pc;
   __PLUMED_WRAPPER_STD size_t strlenpath;
-  FILE* fp;
   pathcopy=__PLUMED_WRAPPER_CXX_NULLPTR;
   p=__PLUMED_WRAPPER_CXX_NULLPTR;
   pc=__PLUMED_WRAPPER_CXX_NULLPTR;
   strlenpath=0;
-  fp=__PLUMED_WRAPPER_STD fopen(path,"r");
-  if(!fp) {
-    __PLUMED_FPRINTF(stderr,"+++ File %s does not exist or cannot be read\n",path);
-    return __PLUMED_WRAPPER_CXX_NULLPTR;
-  }
-  __PLUMED_WRAPPER_STD fclose(fp);
   dlerror();
   p=dlopen(path,mode);
   if(!p) {
@@ -3480,13 +3473,6 @@ void* plumed_attempt_dlopen(const char*path,int mode) {
       __PLUMED_WRAPPER_STD memmove(pc, pc+6, __PLUMED_WRAPPER_STD strlen(pc)-5);
       __PLUMED_FPRINTF(stderr,"+++ This error is expected if you are trying to load a kernel <=2.4\n");
       __PLUMED_FPRINTF(stderr,"+++ Trying %s +++\n",pathcopy);
-      fp=__PLUMED_WRAPPER_STD fopen(path,"r");
-      if(!fp) {
-        __PLUMED_FPRINTF(stderr,"+++ File %s does not exist or cannot be read\n",pathcopy);
-        plumed_free(pathcopy);
-        return __PLUMED_WRAPPER_CXX_NULLPTR;
-      }
-      __PLUMED_WRAPPER_STD fclose(fp);
       dlerror();
       p=dlopen(pathcopy,mode);
       if(!p) __PLUMED_FPRINTF(stderr,"+++ An error occurred. Message from dlopen(): %s +++\n",dlerror());
@@ -3680,6 +3666,9 @@ void plumed_retrieve_functions(plumed_plumedmain_function_holder* functions, plu
 #define PLUMED_QUOTE_DIRECT(name) #name
 #define PLUMED_QUOTE(macro) PLUMED_QUOTE_DIRECT(macro)
   if(! (path && (*path) )) path=PLUMED_QUOTE(__PLUMED_DEFAULT_KERNEL);
+#endif
+#if defined(__PLUMED_PROGRAM_NAME) && defined(__PLUMED_SOEXT)
+  if(! (path && (*path) )) path="lib" __PLUMED_PROGRAM_NAME "Kernel." __PLUMED_SOEXT;
 #endif
   if(path && (*path)) {
     __PLUMED_FPRINTF(stderr,"+++ Loading the PLUMED kernel runtime +++\n");

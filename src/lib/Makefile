@@ -507,7 +507,11 @@ endif
 
 
 $(PLUMED_MAIN_RUNTIME): $(OBJ_MAIN) $(OBJ_DYNAMIC_WRAPPER)
+ifeq ($(PLUMED_INSTALL),Install)
+	$(LD) $(LDFLAGS) $^ -o $@ $(LIBS) $(LD_MAIN_RUNPATH)
+else
 	$(LD) $(LDFLAGS) $^ -o $@ $(LIBS)
+endif
 
 ifeq ($(PLUMED_INSTALL),Install)
 
