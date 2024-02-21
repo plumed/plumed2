@@ -2,3 +2,4 @@
 *.so
 *.dylib
 .deps
+Makefile.conf

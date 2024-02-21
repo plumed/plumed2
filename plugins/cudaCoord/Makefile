@@ -21,7 +21,7 @@ else
   SONAME_OPTION:=-Xlinker -soname
 endif
 
-all: Coordination.$(SOEXT)
+all: CudaCoordination.$(SOEXT)
 
 
 %.o: %.cu $(DEPDIR)/%.d | $(DEPDIR)
@@ -34,9 +34,13 @@ DEPFILES := $(OBJS:%.o=$(DEPDIR)/%.d)
 $(DEPFILES):
 include $(wildcard $(DEPFILES))
 
-Coordination.$(SOEXT): $(OBJS)
+CudaCoordination.$(SOEXT): $(OBJS)
 	@echo Linking $@
 	@$(NVCC) $(NVCCLDFLAGS) -ccbin $(LDSHARED)  $(ADDCLDFLAGS) $(SONAME_OPTION),"$(notdir $@)" $(DYNAMIC_LIBS) $(PLUMED_KERNEL) -o $@ $^
 
 clean:
-	@rm -fv $(OBJS) Coordination.$(SOEXT)
+	@rm -fv $(OBJS) CudaCoordination.$(SOEXT)
+
+check: all
+	$(MAKE) -C regtest
+	$(MAKE) -C regtest checkfail
