@@ -19,37 +19,13 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "core/ActionWithVector.h"
+#include "RMSDVector.h"
 #include "core/PlumedMain.h"
 #include "core/ActionRegister.h"
-#include "tools/RMSD.h"
 #include "tools/PDB.h"
 
 namespace PLMD {
 namespace colvar {
-
-class RMSDVector : public ActionWithVector {
-
-  bool firststep;
-  bool squared;
-  bool displacement;
-  bool norm_weights;
-  std::string type;
-  std::vector<PLMD::RMSD> myrmsd;
-  std::vector<double> align, displace, sqrtdisplace;
-  void setReferenceConfigurations();
-  double calculateRMSD( const unsigned& current, std::vector<Vector>& pos, std::vector<Vector>& der, std::vector<Vector>& direction ) const ;
-public:
-  static void registerKeywords(Keywords& keys);
-  explicit RMSDVector(const ActionOptions&);
-  unsigned getNumberOfDerivatives() override ;
-  void performTask( const unsigned& current, MultiValue& myvals ) const override ;
-  void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
-                          const unsigned& bufstart, std::vector<double>& buffer ) const override ;
-  void gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const override ;
-  void calculate() override ;
-  void apply() override ;
-};
 
 PLUMED_REGISTER_ACTION(RMSDVector,"RMSD_VECTOR")
 
@@ -71,8 +47,12 @@ RMSDVector::RMSDVector(const ActionOptions&ao):
   firststep(true)
 {
   if( getPntrToArgument(0)->getRank()!=1 ) error("first argument should be vector");
-  if( getPntrToArgument(1)->getRank()!=2 ) error("second argument should be matrix");
-  if( getPntrToArgument(0)->getNumberOfValues()!=getPntrToArgument(1)->getShape()[1] ) error("mismatch between sizes of input vectors");
+  if( getPntrToArgument(1)->getRank()<1 ) error("second argument should be matrix or a vector");
+  if( getPntrToArgument(1)->getRank()==1 ) {
+      if( getPntrToArgument(0)->getNumberOfValues()!=getPntrToArgument(1)->getNumberOfValues() ) error("mismatch between sizes of input vectors"); 
+  } else if( getPntrToArgument(1)->getRank()==2 ) {
+      if( getPntrToArgument(0)->getNumberOfValues()!=getPntrToArgument(1)->getShape()[1] ) error("mismatch between sizes of input vectors");
+  }
   if( getPntrToArgument(0)->getNumberOfValues()%3!=0 ) error("number of components in input arguments should be multiple of three");
 
   unsigned natoms = getPntrToArgument(0)->getNumberOfValues() / 3;
@@ -100,7 +80,7 @@ RMSDVector::RMSDVector(const ActionOptions&ao):
   
   parseFlag("DISPLACEMENT",displacement);
   bool unorm=false; parseFlag("UNORMALIZED",unorm); norm_weights=!unorm;
-  if( displacement && getPntrToArgument(1)->getShape()[0]==1 ) {
+  if( displacement && (getPntrToArgument(1)->getRank()==1 || getPntrToArgument(1)->getShape()[0]==1) ) {
       addComponentWithDerivatives("dist"); componentIsNotPeriodic("dist");
       std::vector<unsigned> shape( 1, getPntrToArgument(0)->getNumberOfValues() );
       addComponent( "disp", shape ); getPntrToComponent(1)->buildDataStore(); componentIsNotPeriodic("disp"); 
@@ -115,10 +95,13 @@ RMSDVector::RMSDVector(const ActionOptions&ao):
       std::vector<unsigned> shape( 1, getPntrToArgument(1)->getShape()[0] );
       addValue( shape ); setNotPeriodic(); 
   }
-  myrmsd.resize( getPntrToArgument(1)->getShape()[0] );
+  if( getPntrToArgument(1)->getRank()==1 ) myrmsd.resize(1);
+  else myrmsd.resize( getPntrToArgument(1)->getShape()[0] );
 
-  log.printf("  calculating RMSD distance between %d sets of %d atoms. Distance between vector %s of atoms and matrix of configurations in %s\n", 
-                getPntrToArgument(1)->getShape()[0], natoms, getPntrToArgument(0)->getName().c_str(), getPntrToArgument(1)->getName().c_str() );
+  if( getPntrToArgument(1)->getRank()==1 ) log.printf("  calculating RMSD distance between %d atoms. Distance between the avectors of atoms in %s and %s\n",
+                                                      natoms, getPntrToArgument(0)->getName().c_str(), getPntrToArgument(1)->getName().c_str() );
+  else log.printf("  calculating RMSD distance between %d sets of %d atoms. Distance between vector %s of atoms and matrix of configurations in %s\n", 
+                   getPntrToArgument(1)->getShape()[0], natoms, getPntrToArgument(0)->getName().c_str(), getPntrToArgument(1)->getName().c_str() );
   log.printf("  method for alignment : %s \n",type.c_str() );
   if(squared)log.printf("  chosen to use SQUARED option for MSD instead of RMSD\n");
   else      log.printf("  using periodic boundary conditions\n");
@@ -154,10 +137,10 @@ double RMSDVector::calculateRMSD( const unsigned& current, std::vector<Vector>& 
       if( !doNotCalculateDerivatives() && myval->forcesWereAdded() ) {
           Vector comforce; comforce.zero();
           for(unsigned i=0; i<natoms; i++) {
-              for(unsigned k=0; k<3; ++k) comforce[k] += align[i]*myval->getForce( k*natoms + i);
+              for(unsigned k=0; k<3; ++k) comforce[k] += align[i]*myval->getForce( (3*current+k)*natoms + i);
           }
           for(unsigned i=0; i<natoms; i++) {
-              for(unsigned k=0; k<3; ++k) direction[i][k] = myval->getForce( k*natoms + i ) - comforce[k];
+              for(unsigned k=0; k<3; ++k) direction[i][k] = myval->getForce( (3*current+k)*natoms + i ) - comforce[k];
           }
       }
       return r;
@@ -168,17 +151,17 @@ double RMSDVector::calculateRMSD( const unsigned& current, std::vector<Vector>& 
       if( !doNotCalculateDerivatives() && myval->forcesWereAdded() ) {
           Tensor trot=rot.transpose(); double prefactor = 1 / static_cast<double>( natoms ); Vector v1; v1.zero();
           for(unsigned n=0; n<natoms; n++) {
-               Vector ff; for(unsigned k=0; k<3; ++k ) ff[k] = myval->getForce( k*natoms + n );
+               Vector ff; for(unsigned k=0; k<3; ++k ) ff[k] = myval->getForce( (3*current+k)*natoms + n );
                v1+=prefactor*matmul(trot,ff);
           }
           // Notice that we use centreredreference here to accumulate the true forces
           for(unsigned n=0; n<natoms; n++) {
-               Vector ff; for(unsigned k=0; k<3; ++k ) ff[k] = myval->getForce( k*natoms + n );
+               Vector ff; for(unsigned k=0; k<3; ++k ) ff[k] = myval->getForce( (3*current+k)*natoms + n );
                centeredreference[n] = sqrtdisplace[n]*( matmul(trot,ff) - v1 );
           }
           for(unsigned a=0; a<3; a++) {
               for(unsigned b=0; b<3; b++) {
-                  double tmp1=0.; for(unsigned m=0; m<natoms; m++) tmp1+=centeredpos[m][b]*myval->getForce( a*natoms + m );
+                  double tmp1=0.; for(unsigned m=0; m<natoms; m++) tmp1+=centeredpos[m][b]*myval->getForce( (3*current+a)*natoms + m );
                   for(unsigned i=0; i<natoms; i++) centeredreference[i] += sqrtdisplace[i]*tmp1*DRotDPos[a][b][i];
               }
           }
@@ -197,7 +180,7 @@ double RMSDVector::calculateRMSD( const unsigned& current, std::vector<Vector>& 
 // calculator
 void RMSDVector::calculate() {
   if( firststep || !getPntrToArgument(1)->isConstant() ) { setReferenceConfigurations(); firststep=false; }
-  
+
   if( getPntrToComponent(0)->getRank()==0 ) {
       unsigned natoms = getPntrToArgument(0)->getShape()[0] / 3;
       std::vector<Vector> pos( natoms ), der( natoms ), direction( natoms );
@@ -219,9 +202,20 @@ void RMSDVector::calculate() {
   } else runAllTasks();
 }
 
+bool RMSDVector::checkForTaskForce( const unsigned& itask, const Value* myval ) const { 
+  if( myval->getRank()<2 ) return ActionWithVector::checkForTaskForce( itask, myval );
+  unsigned nelements = myval->getShape()[1], startr = itask*nelements;
+  for(unsigned j=0; j<nelements; ++j ) {
+    if( fabs( myval->getForce( startr + j ) )>epsilon ) return true;
+  }
+  return false;
+}
+
 void RMSDVector::apply() {
+  if( doNotCalculateDerivatives() ) return;
+
   if( getPntrToComponent(0)->getRank()==0 ) { 
-      std::vector<double> forces( getNumberOfDerivatives() );
+      std::vector<double> forces( getNumberOfDerivatives(), 0 );
       bool wasforced = getPntrToComponent(0)->applyForce( forces ); 
 
       if( getNumberOfComponents()==2 && getPntrToComponent(1)->forcesWereAdded() ) {

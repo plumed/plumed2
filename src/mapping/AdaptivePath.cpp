@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2023 The plumed team
+   Copyright (c) 2016-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,14 +19,11 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Mapping.h"
-#include "TrigonometricPathVessel.h"
-#include "PathReparameterization.h"
-#include "reference/Direction.h"
+#include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "core/ActionSet.h"
-#include "core/GenericMolInfo.h"
+#include "tools/PDB.h"
+#include "Path.h"
 
 //+PLUMEDOC COLVAR ADAPTIVE_PATH
 /*
@@ -89,170 +86,77 @@ Notice that one can also use RMSD frames in place of arguments like those above.
 namespace PLMD {
 namespace mapping {
 
-class AdaptivePath : public Mapping {
-private:
-  OFile pathfile;
-  std::string ofmt;
-  double fadefact, tolerance;
-  unsigned update_str, wstride;
-  std::vector<unsigned> fixedn;
-  TrigonometricPathVessel* mypathv;
-  std::vector<double> wsum;
-  Direction displacement,displacement2;
-  std::vector<Direction> pdisplacements;
+class AdaptivePath : public ActionShortcut {
 public:
   static void registerKeywords( Keywords& keys );
   explicit AdaptivePath(const ActionOptions&);
-  void calculate() override;
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override;
-  double getLambda() override { return 0.0; }
-  double transformHD( const double& dist, double& df ) const override;
-  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(AdaptivePath,"ADAPTIVE_PATH")
 
 void AdaptivePath::registerKeywords( Keywords& keys ) {
-  Mapping::registerKeywords( keys ); keys.remove("PROPERTY");
+  ActionShortcut::registerKeywords( keys ); Path::registerInputFileKeywords( keys );
+  keys.add("optional","PROPERTY","read in path coordinates by finding option with this label in remark of pdb frames");
   keys.add("compulsory","FIXED","the positions in the list of input frames of the two path nodes whose positions remain fixed during the path optimization");
-  keys.add("compulsory","HALFLIFE","-1","the number of MD steps after which a previously measured path distance weighs only 50% in the average. This option may increase convergence by allowing to forget the memory of a bad initial guess path. The default is to set this to infinity");
+  keys.add("compulsory","HALFLIFE","-1","the number of MD steps after which a previously measured path distance weighs only 50% in the average. This option may increase convergence by allowing to \"forget\" the memory of a bad initial guess path. The default is to set this to infinity");
   keys.add("compulsory","UPDATE","the frequency with which the path should be updated");
   keys.add("compulsory","TOLERANCE","1E-6","the tolerance to use for the path updating algorithm that makes all frames equidistant");
   keys.add("optional","WFILE","file on which to write out the path");
   keys.add("compulsory","FMT","%f","the format to use for output files");
-  keys.add("optional","WSTRIDE","frequency with which to write out the path");
+  keys.add("compulsory","WSTRIDE","frequency with which to write out the path");
 }
 
 AdaptivePath::AdaptivePath(const ActionOptions& ao):
   Action(ao),
-  Mapping(ao),
-  fixedn(2),
-  displacement(ReferenceConfigurationOptions("DIRECTION")),
-  displacement2(ReferenceConfigurationOptions("DIRECTION"))
+  ActionShortcut(ao)
 {
-  setLowMemOption( true ); parseVector("FIXED",fixedn);
-  if( fixedn[0]<1 || fixedn[1]>getNumberOfReferencePoints() ) error("fixed nodes must be in range from 0 to number of nodes");
-  if( fixedn[0]>=fixedn[1] ) error("invalid selection for fixed nodes first index provided must be smaller than second index");
-  log.printf("  fixing position of frames numbered %u and %u \n",fixedn[0],fixedn[1]);
-  fixedn[0]--; fixedn[1]--;   // Set fixed notes with c++ indexing starting from zero
-  parse("UPDATE",update_str); if( update_str<1 ) error("update frequency for path should be greater than or equal to one");
-  log.printf("  updating path every %u MD steps \n",update_str);
-
-  double halflife; parse("HALFLIFE",halflife);
-  if( halflife<0 ) fadefact=1.0;
+  // Read in the arguments
+  std::string type, reference_data, reference; parse("REFERENCE",reference);
+  FILE* fp=std::fopen(reference.c_str(),"r"); PDB mypdb; if(!fp) error("could not open reference file " + reference );
+  bool do_read=mypdb.readFromFilepointer(fp,false,0.1); if( !do_read ) error("missing file " + reference );
+  std::vector<std::string> argnames; parseVector("ARG",argnames); parse("TYPE",type);
+  // Create list of reference configurations that PLUMED will use
+  Path::readInputFrames( reference, type, argnames, true, this, reference_data );
+  // Now get coordinates on spath
+  std::vector<std::string> pnames; parseVector("PROPERTY",pnames); Path::readPropertyInformation( pnames, getShortcutLabel(), reference, this );
+  // Create action that computes the geometric path variables
+  std::string metric; std::string propstr = getShortcutLabel() + "_ind"; if( pnames.size()>0 ) propstr = pnames[0] + "_ref";
+  if( argnames.size()>0 ) readInputLine( getShortcutLabel() + ": GEOMETRIC_PATH ARG=" + getShortcutLabel() + "_data " + " PROPERTY=" + propstr + " REFERENCE=" + reference_data + " METRIC={DIFFERENCE}");
   else {
-    fadefact = exp( -0.693147180559945 / static_cast<double>(halflife) );
-    log.printf("  weight of contribution to frame halves every %f steps \n",halflife);
+     std::string num, align_str, displace_str; Tools::convert( mypdb.getOccupancy()[0], align_str ); Tools::convert( mypdb.getBeta()[0], displace_str );
+     for(unsigned j=1; j<mypdb.getAtomNumbers().size(); ++j ) { Tools::convert( mypdb.getOccupancy()[j], num ); align_str += "," + num; Tools::convert( mypdb.getBeta()[0], num ); displace_str += "," + num; }
+     std::string metric = "RMSD_VECTOR DISPLACEMENT TYPE=" + type + " ALIGN=" + align_str + " DISPLACE=" + displace_str; 
+     readInputLine( getShortcutLabel() + ": GEOMETRIC_PATH ARG=" + getShortcutLabel() + "_data.disp " + " PROPERTY=" +  propstr + " REFERENCE=" + reference_data + " METRIC={" + metric + "}");
   }
+  // Create the object to accumulate the average path displacements
+  std::string update, halflife; parse("HALFLIFE",halflife); parse("UPDATE",update); std::string refframes = " REFERENCE=" + getShortcutLabel() + "_pos"; 
+  if( argnames.size()>0 ) readInputLine( getShortcutLabel() + "_disp: AVERAGE_PATH_DISPLACEMENT ARG=" + getShortcutLabel() + "_data HALFLIFE=" + halflife + " CLEAR=" + update + " METRIC={DIFFERENCE} REFERENCE=" + reference_data );
+  else readInputLine( getShortcutLabel() + "_disp: AVERAGE_PATH_DISPLACEMENT ARG=" + getShortcutLabel() + "_data.disp HALFLIFE=" + halflife + " CLEAR=" + update + " METRIC={" + metric + "} REFERENCE=" + reference_data );
 
-  // Create the list of tasks (and reset projections of frames)
-  PDB mypdb; mypdb.setAtomNumbers( getAbsoluteIndexes() ); mypdb.addBlockEnd( getAbsoluteIndexes().size() );
-  std::vector<std::string> argument_names( getNumberOfArguments() );
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) argument_names[i] = getPntrToArgument(i)->getName();
-  if( argument_names.size()>0 ) mypdb.setArgumentNames( argument_names );
-  displacement.read( mypdb ); displacement2.read( mypdb );
-  for(int i=0; i<getNumberOfReferencePoints(); ++i) {
-    addTaskToList( i ); pdisplacements.push_back( Direction(ReferenceConfigurationOptions("DIRECTION")) );
-    property.find("spath")->second[i] = static_cast<double>( i - static_cast<int>(fixedn[0]) ) / static_cast<double>( fixedn[1] - fixedn[0] );
-    pdisplacements[i].read( mypdb ); wsum.push_back( 0.0 );
-  }
-  plumed_assert( getPropertyValue( fixedn[0], "spath" )==0.0 && getPropertyValue( fixedn[1], "spath" )==1.0 );
-  // And activate them all
-  deactivateAllTasks();
-  for(unsigned i=0; i<getFullNumberOfTasks(); ++i) taskFlags[i]=1;
-  lockContributors();
-
-  // Setup the vessel to hold the trig path
-  std::string input; addVessel("GPATH", input, -1 );
-  readVesselKeywords();
-  // Check that there is only one vessel - the one holding the trig path
-  plumed_dbg_assert( getNumberOfVessels()==1 );
-  // Retrieve the path vessel
-  mypathv = dynamic_cast<TrigonometricPathVessel*>( getPntrToVessel(0) );
-  plumed_assert( mypathv );
+  // Create the object to update the path
+  std::string fixedn; parse("FIXED",fixedn);
+  if( fixedn.length()>0 ) readInputLine("REPARAMETERIZE_PATH DISPLACE_FRAMES=" + getShortcutLabel() + "_disp FIXED=" + fixedn + " STRIDE=" + update + " METRIC={DIFFERENCE} REFERENCE=" + reference_data );
+  else readInputLine("REPARAMETERIZE_PATH DISPLACE_FRAMES=" + getShortcutLabel() + "_disp STRIDE=" + update + " METRIC=" + metric + "} REFERENCE=" + reference_data );
 
   // Information for write out
   std::string wfilename; parse("WFILE",wfilename);
   if( wfilename.length()>0 ) {
-    wstride=0; parse("WSTRIDE",wstride); parse("FMT",ofmt);
-    pathfile.link(*this); pathfile.open( wfilename ); pathfile.setHeavyFlush();
-    if( wstride<update_str ) error("makes no sense to write out path more frequently than update stride");
-    log.printf("  writing path out every %u steps to file named %s with format %s \n",wstride,wfilename.c_str(),ofmt.c_str());
+      // This just gets the atom numbers for output
+      std::string atomstr;
+      if( argnames.size()==0 ) {
+          FILE* fp=std::fopen(reference.c_str(),"r"); double fake_unit=0.1; PDB mypdb; bool do_read=mypdb.readFromFilepointer(fp,false,fake_unit);
+          std::string num; Tools::convert( mypdb.getAtomNumbers()[0].serial(), atomstr );
+          for(unsigned j=1; j<mypdb.getAtomNumbers().size(); ++j ) { Tools::convert( mypdb.getAtomNumbers()[j].serial(), num ); atomstr += "," + num; }
+      } 
+
+      if( wfilename.find(".pdb")==std::string::npos ) error("output must be to a pdb file");
+      std::string ofmt, pframes, wstride; parse("WSTRIDE",wstride); parse("FMT",ofmt); 
+      if( argnames.size()>0 ) {
+          std::string argstr = argnames[0]; for(unsigned i=1; i<argnames.size(); ++i) argstr += "," + argnames[i]; 
+          readInputLine("PRINT DESCRIPTION=PATH STRIDE=" + wstride + " FMT=" + ofmt + " FILE=" + wfilename + " ARG=" + reference_data + " ARG_NAMES=" + argstr );
+      } else readInputLine("PRINT DESCRIPTION=PATH STRIDE=" + wstride + " FMT=" + ofmt + " FILE=" + wfilename + " ARG=" + reference_data + " ATOM_INDICES=" + atomstr );
   }
   log<<"  Bibliography "<<plumed.cite("Diaz Leines and Ensing, Phys. Rev. Lett. 109, 020601 (2012)")<<"\n";
-}
-
-void AdaptivePath::calculate() {
-  runAllTasks();
-}
-
-void AdaptivePath::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
-  // This builds a pack to hold the derivatives
-  ReferenceValuePack mypack( getNumberOfArguments(), getNumberOfAtoms(), myvals );
-  finishPackSetup( current, mypack );
-  // Calculate the distance from the frame
-  double val=calculateDistanceFunction( current, mypack, true );
-  // Put the element value in element zero
-  myvals.setValue( 0, val ); myvals.setValue( 1, 1.0 );
-  return;
-}
-
-double AdaptivePath::transformHD( const double& dist, double& df ) const {
-  df=1.0; return dist;
-}
-
-void AdaptivePath::update() {
-  double weight2 = -1.*mypathv->dx;
-  double weight1 = 1.0 + mypathv->dx;
-  if( weight1>1.0 ) {
-    weight1=1.0; weight2=0.0;
-  } else if( weight2>1.0 ) {
-    weight1=0.0; weight2=1.0;
-  }
-  // Add projections to dispalcement accumulators
-  ReferenceConfiguration* myref = getReferenceConfiguration( mypathv->iclose1 );
-  myref->extractDisplacementVector( getPositions(), getArguments(), mypathv->cargs, false, displacement );
-  getReferenceConfiguration( mypathv->iclose2 )->extractDisplacementVector( myref->getReferencePositions(), getArguments(), myref->getReferenceArguments(), false, displacement2 );
-  displacement.addDirection( -mypathv->dx, displacement2 );
-  pdisplacements[mypathv->iclose1].addDirection( weight1, displacement );
-  pdisplacements[mypathv->iclose2].addDirection( weight2, displacement );
-  // Update weight accumulators
-  wsum[mypathv->iclose1] *= fadefact;
-  wsum[mypathv->iclose2] *= fadefact;
-  wsum[mypathv->iclose1] += weight1;
-  wsum[mypathv->iclose2] += weight2;
-
-  // This does the update of the path if it is time to
-  if( (getStep()>0) && (getStep()%update_str==0) ) {
-    wsum[fixedn[0]]=wsum[fixedn[1]]=0.;
-    for(unsigned inode=0; inode<getNumberOfReferencePoints(); ++inode) {
-      if( wsum[inode]>0 ) {
-        // First displace the node by the weighted direction
-        getReferenceConfiguration( inode )->displaceReferenceConfiguration( 1./wsum[inode], pdisplacements[inode] );
-        // Reset the displacement
-        pdisplacements[inode].zeroDirection();
-      }
-    }
-    // Now ensure all the nodes of the path are equally spaced
-    PathReparameterization myspacings( getPbc(), getArguments(), getAllReferenceConfigurations() );
-    myspacings.reparameterize( fixedn[0], fixedn[1], tolerance );
-  }
-  if( (getStep()>0) && (getStep()%wstride==0) ) {
-    pathfile<<"# PATH AT STEP "<<getStep();
-    pathfile.printf(" TIME %f \n",getTime());
-    std::vector<std::unique_ptr<ReferenceConfiguration>>& myconfs=getAllReferenceConfigurations();
-    auto* mymoldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
-    std::vector<std::string> argument_names( getNumberOfArguments() );
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) argument_names[i] = getPntrToArgument(i)->getName();
-    PDB mypdb; mypdb.setArgumentNames( argument_names );
-    for(unsigned i=0; i<myconfs.size(); ++i) {
-      pathfile.printf("REMARK TYPE=%s\n", myconfs[i]->getName().c_str() );
-      mypdb.setAtomPositions( myconfs[i]->getReferencePositions() );
-      for(unsigned j=0; j<getNumberOfArguments(); ++j) mypdb.setArgumentValue( getPntrToArgument(j)->getName(), myconfs[i]->getReferenceArgument(j) );
-      mypdb.print( getUnits().getLength()/0.1, mymoldat, pathfile, ofmt );
-    }
-    pathfile.flush();
-  }
 }
 
 }

@@ -86,7 +86,16 @@ VStack::VStack(const ActionOptions& ao):
   // And store this value
   getPntrToComponent(0)->buildDataStore(); getPntrToComponent(0)->reshapeMatrixStore( shape[1] );
   // Setup everything so we can build the store
-  done_in_chain=true; unsigned nder = buildArgumentStore(0);
+  done_in_chain=true; ActionWithVector* av=dynamic_cast<ActionWithVector*>( getPntrToArgument(0)->getPntrToAction() );
+  if( av ) {
+      const ActionWithVector* head0 = av->getFirstActionInChain(); 
+      for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+          ActionWithVector* avv=dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
+          if( !avv ) continue;
+          if( head0!=avv->getFirstActionInChain() ) { done_in_chain=false; break; }
+      }
+  }
+  unsigned nder = buildArgumentStore(0);
   // This checks which values have been stored
   stored.resize( getNumberOfArguments() ); std::string headstr=getFirstActionInChain()->getLabel();
   for(unsigned i=0; i<stored.size(); ++i) stored[i] = getPntrToArgument(i)->ignoreStoredValue( headstr );
