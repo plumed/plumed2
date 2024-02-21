@@ -99,4 +99,21 @@ void PlumedHandle::cmd(const std::string & key,const TypesafePtr & ptr) {
   } else plumed_error() << "should never arrive here (either one or the other should work)";
 }
 
+PlumedHandle::PlumedHandle(PlumedHandle && other) noexcept:
+  local(std::move(other.local)),
+  loaded(other.loaded)
+{
+  other.loaded=nullptr;
+}
+
+PlumedHandle & PlumedHandle::operator=(PlumedHandle && other) noexcept {
+  if(this!=&other) {
+    if(loaded) plumed_finalize(plumed_v2c(loaded));
+    local=std::move(other.local);
+    loaded=other.loaded;
+    other.loaded=nullptr;
+  }
+  return *this;
+}
+
 }
