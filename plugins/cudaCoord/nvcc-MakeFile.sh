@@ -30,6 +30,7 @@ fi
       -e 's/-f/-Xcompiler -f/g'
   #prints the rest of the file
   grep -eDYNAMIC_LIBS -eLDFLAGS -eCXXFLAGS Make.tmp -v
-} >Make.inc
+} >Makefile.conf
+
 rm Make.tmp
 #tested with nvcc with :"Build cuda_11.7.r11.7/compiler.31442593_0"

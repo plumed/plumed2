@@ -1,4 +1,4 @@
-include Make.inc
+include ./Makefile.conf
 
 #Dependency tracking based on https://make.mad-scientist.net/papers/advanced-auto-dependency-generation/#tldr
 #this assumes gcc
@@ -10,7 +10,7 @@ NVCC = nvcc
 #-dlto Perform link-time optimization of device code. 
 NVCCCFLAGS = -dc -dlto
 NVCCLDFLAGS = -shared -dlto
-OBJS = Coordination.o ndReduction.o
+OBJS = Coordination.o cudaHelpers.o
 
 ADDCPPFLAGS=$(PLUMED_INCLUDE)
 ADDCLDFLAGS=
@@ -35,7 +35,7 @@ $(DEPFILES):
 include $(wildcard $(DEPFILES))
 
 Coordination.$(SOEXT): $(OBJS)
-	@echo Compiling linking $@
+	@echo Linking $@
 	@$(NVCC) $(NVCCLDFLAGS) -ccbin $(LDSHARED)  $(ADDCLDFLAGS) $(SONAME_OPTION),"$(notdir $@)" $(DYNAMIC_LIBS) $(PLUMED_KERNEL) -o $@ $^
 
 clean:
