@@ -1,6 +1,6 @@
 # The numbers calculated by the following python script are compared with those output from this PLUMED input
 #
-# cmat: CONTACT_MATRIX GROUP=1-64 SWITCH={COSINE R_0=4.5} COMPONENTS
+# cmat: CONTACT_MATRIX GROUP=1-64 SWITCH={CUSTOM R_0=4.5 D_MAX=4.5 FUNC=0.5*(cos(pi*x)+1)} COMPONENTS
 # beh2: GSYMFUNC_TWOBODY ...
 #    WEIGHT=cmat.w VECTORS1=cmat.x VECTORS2=cmat.y VECTORS3=cmat.z
 #    FUNCTION1={FUNC=exp(-(x-3)^2) LABEL=g2}
@@ -71,7 +71,7 @@ p.cmd("setKbT", 1.)
 p.cmd("setNatoms",num_atoms)
 p.cmd("setLogFile","test.log")
 p.cmd("init")
-p.cmd("readInputLine","cmat: CONTACT_MATRIX GROUP=1-64 SWITCH={COSINE R_0=4.5} COMPONENTS")
+p.cmd("readInputLine","cmat: CONTACT_MATRIX GROUP=1-64 SWITCH={CUSTOM R_0=4.5 D_MAX=4.5 FUNC=0.5*(cos(pi*x)+1)} COMPONENTS")
 p.cmd("readInputLine","cmatr: CUSTOM ARG1=cmat.x ARG2=cmat.y ARG3=cmat.z FUNC=sqrt(x*x+y*y+z*z) PERIODIC=NO")
 p.cmd("readInputLine","g2_f: CUSTOM ARG1=cmatr ARG2=cmat.w FUNC=y*exp(-(x-3)^2) PERIODIC=NO")
 p.cmd("readInputLine","ones: ONES SIZE=64")
