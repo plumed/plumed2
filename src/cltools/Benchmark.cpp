@@ -25,14 +25,17 @@
 #include "tools/Tools.h"
 #include "config/Config.h"
 #include "tools/PlumedHandle.h"
+#include "tools/Stopwatch.h"
+#include "tools/Log.h"
 #include <cstdio>
 #include <string>
 #include <vector>
-#include <iostream>
 #include <fstream>
 #include <atomic>
 #include <csignal>
 #include <cstdio>
+#include <random>
+#include <algorithm>
 
 namespace PLMD {
 namespace cltools {
@@ -63,6 +66,8 @@ plumed benchmark --plumed plumed.dat --kernel /path/to/libplumedKernel.so
 */
 //+ENDPLUMEDOC
 
+// We use an anonymous namespace here to avoid clashes with variables
+// declared in other parts of the code
 namespace {
 
 std::atomic<bool> signalReceived(false);
@@ -98,7 +103,34 @@ extern "C" void signalHandler(int signal) {
   }
 }
 
-}
+/// Local structure handling a kernel and the related timers
+struct Kernel {
+  std::string path;
+  PlumedHandle handle;
+  Stopwatch stopwatch;
+  Log* log=nullptr;
+  Kernel(const std::string & path_,Log* log_):
+    path(path_),
+    stopwatch(*log_),
+    log(log_)
+  {
+    if(path_!="this") handle=PlumedHandle::dlopen(path_.c_str());
+  }
+  ~Kernel() {
+    if(log) {
+      (*log)<<"\n";
+      (*log)<<"Kernel: "<<path<<"\n";
+    }
+  }
+  Kernel(Kernel && other):
+    path(std::move(other.path)),
+    handle(std::move(other.handle)),
+    stopwatch(std::move(other.stopwatch)),
+    log(other.log)
+  {
+    other.log=nullptr;
+  }
+};
 
 class Benchmark:
   public CLTool
@@ -120,6 +152,7 @@ void Benchmark::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","--natoms","100000","the number of atoms to use for the simulation");
   keys.add("compulsory","--nsteps","2000","number of steps of MD to perform (-1 means forever)");
   keys.add("optional","--kernel","path to kernel (default=current kernel)");
+  keys.add("optional","--kernels","path to kernels (: separated)");
   keys.addFlag("--shuffled",false,"reshuffle atoms");
 }
 
@@ -129,65 +162,122 @@ Benchmark::Benchmark(const CLToolOptions& co ):
   inputdata=commandline;
 }
 
+
 int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
-  PlumedHandle p([&]() {
-    std::string kernel;
-    parse("--kernel",kernel);
-    if(kernel.length()>0) return PlumedHandle::dlopen(kernel.c_str());
-    else return PlumedHandle();
-  }());
 
-  if(Communicator::plumedHasMPI()) p.cmd("setMPIComm",&pc.Get_comm());
-  p.cmd("setRealPrecision",(int)sizeof(double));
-  p.cmd("setMDLengthUnits",1.0);
-  p.cmd("setMDChargeUnits",1.0);
-  p.cmd("setMDMassUnits",1.0);
-  p.cmd("setMDEngine","benchmarks");
-  p.cmd("setTimestep",1.0);
-  std::string plumedFile; parse("--plumed",plumedFile);
-  p.cmd("setPlumedDat",plumedFile.c_str());
-  p.cmd("setLog",out);
+  Log log;
+  log.link(out);
+  log.setLinePrefix("BENCH:  ");
 
+  std::vector<Kernel> kernels;
+
+  // ensure that kernels vector is destroyed from last to first element upon exit
+  auto kernels_deleter=[](auto f) { while(!f->empty()) f->pop_back();};
+  std::unique_ptr<decltype(kernels),decltype(kernels_deleter)> kernels_deleter_obj(&kernels,kernels_deleter);
+
+
+  std::random_device rd;
+  std::mt19937 g(rd());
+
+  // construct the kernels vector:
+  {
+    std::string path,paths;
+    std::vector<std::string> allpaths;
+    parse("--kernel",path);
+    parse("--kernels",paths);
+    plumed_assert(!(path.length()>0 && paths.length()>0)) << "either use kernel or kernels";
+    if(path.length()>0) {
+      allpaths.push_back(path);
+    } else if(paths.length()>0) {
+      allpaths=Tools::getWords(paths,":");
+    } else {
+      allpaths.push_back("this");
+    }
+
+    // reverse order so that log happens in the forward order:
+    std::reverse(allpaths.begin(),allpaths.end());
+
+    for(auto p : allpaths) kernels.emplace_back(p,&log);
+  }
+
+  // read other flags:
+  bool shuffled=false;
+  parseFlag("--shuffled",shuffled);
   int nf; parse("--nsteps",nf);
   unsigned natoms; parse("--natoms",natoms);
-  p.cmd("setNatoms",natoms); p.cmd("init");
+
+  std::string plumedFile;
+  parse("--plumed",plumedFile);
+
+  std::vector<int> shuffled_indexes;
+
+  // trap signals:
+  SignalHandlerGuard sigIntGuard(SIGINT, signalHandler);
+
+  for(auto & k : kernels) {
+    auto & p(k.handle);
+    auto sw=k.stopwatch.startStop("A Initialization");
+    if(Communicator::plumedHasMPI()) p.cmd("setMPIComm",&pc.Get_comm());
+    p.cmd("setRealPrecision",(int)sizeof(double));
+    p.cmd("setMDLengthUnits",1.0);
+    p.cmd("setMDChargeUnits",1.0);
+    p.cmd("setMDMassUnits",1.0);
+    p.cmd("setMDEngine","benchmarks");
+    p.cmd("setTimestep",1.0);
+    p.cmd("setPlumedDat",plumedFile.c_str());
+    p.cmd("setLog",out);
+    p.cmd("setNatoms",natoms);
+    p.cmd("init");
+  }
+
   std::vector<double> cell( 9 ), virial( 9 );
   std::vector<Vector> pos( natoms ), forces( natoms );
   std::vector<double> masses( natoms, 1 ), charges( natoms, 0 );
 
-  bool shuffled=false;
-  parseFlag("--shuffled",shuffled);
-
-
-  SignalHandlerGuard sigIntGuard(SIGINT, signalHandler);
-
-  std::vector<int> shuffled_indexes;
-
   if(shuffled) {
     shuffled_indexes.resize(natoms);
-    for(unsigned i=0; i<natoms; i++) shuffled_indexes[i]=natoms-i-1;
+    for(unsigned i=0; i<natoms; i++) shuffled_indexes[i]=i;
+    std::shuffle(shuffled_indexes.begin(),shuffled_indexes.end(),g);
   }
 
+  // non owning pointers, used for shuffling the execution order
+  std::vector<Kernel*> kernels_ptr;
+  for(unsigned i=0; i<kernels.size(); i++) kernels_ptr.push_back(&kernels[i]);
+
   int plumedStopCondition=0;
+  bool fast_finish=false;
   for(int step=0; nf<0 || step<nf; ++step) {
+    std::shuffle(kernels_ptr.begin(),kernels_ptr.end(),g);
     for(unsigned j=0; j<natoms; ++j) pos[j] = Vector(step*j, step*j+1, step*j+2);
-    p.cmd("setStep",step);
-    p.cmd("setStopFlag",&plumedStopCondition);
-    p.cmd("setForces",&forces[0][0],3*natoms);
-    p.cmd("setBox",&cell[0],9);
-    p.cmd("setVirial",&virial[0],9);
-    p.cmd("setPositions",&pos[0][0],3*natoms);
-    p.cmd("setMasses",&masses[0],natoms);
-    p.cmd("setCharges",&charges[0],natoms);
-    if(shuffled) {
-      p.cmd("setAtomsNlocal",natoms);
-      p.cmd("setAtomsGatindex",&shuffled_indexes[0],shuffled_indexes.size());
+    for(unsigned i=0; i<kernels_ptr.size(); i++) {
+      auto & p(kernels_ptr[i]->handle);
+
+      const char* sw_name;
+      if(nf<0) sw_name="B Calculation";
+      else if(step<nf/2) sw_name="B1 Calculation part 1";
+      else sw_name="B2 Calculation part 2";
+      auto sw=kernels_ptr[i]->stopwatch.startStop(sw_name);
+      p.cmd("setStep",step);
+      p.cmd("setStopFlag",&plumedStopCondition);
+      p.cmd("setForces",&forces[0][0],3*natoms);
+      p.cmd("setBox",&cell[0],9);
+      p.cmd("setVirial",&virial[0],9);
+      p.cmd("setPositions",&pos[0][0],3*natoms);
+      p.cmd("setMasses",&masses[0],natoms);
+      p.cmd("setCharges",&charges[0],natoms);
+      if(shuffled) {
+        p.cmd("setAtomsNlocal",natoms);
+        p.cmd("setAtomsGatindex",&shuffled_indexes[0],shuffled_indexes.size());
+      }
+      p.cmd("calc");
+      if(plumedStopCondition || signalReceived.load()) fast_finish=true;
     }
-    p.cmd("calc");
-    if(plumedStopCondition || signalReceived.load()) break;
+    if(fast_finish) break;
   }
+
   return 0;
 }
 
+}
 } // End of namespace
 }
