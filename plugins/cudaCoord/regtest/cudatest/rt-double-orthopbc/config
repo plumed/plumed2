@@ -1,6 +1,6 @@
 type=driver
 # this is to test a different name
-arg="--plumed plumed.dat --ixyz trajectory.xyz"
+arg="--plumed plumed.dat --ixyz traj-orthoBig.xyz"
 
 plumed_regtest_after() {
   {
@@ -8,3 +8,4 @@ plumed_regtest_after() {
     awk 'NR>1{print $1, $2, $4-$3} ' <deriv
   } >deriv_delta
 }
+extra_files="../../trajectories/traj-orthoBig.xyz"
