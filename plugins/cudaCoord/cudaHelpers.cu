@@ -11,15 +11,15 @@ size_t idealGroups (const size_t numberOfElements,
                     const size_t runningThreads) {
   // nearest upper multiple to the numberof threads
   const size_t nnToGPU =
-      nearestUpperMultipleTo (numberOfElements, runningThreads);
+    nearestUpperMultipleTo (numberOfElements, runningThreads);
   /// Brent’s theorem says each thread should sum O(log n) elements
   // https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
   // const size_t elementsPerThread=log2(runningThreads);
   const size_t expectedTotalThreads = ceil (nnToGPU / log2 (runningThreads));
   // hence the blocks should have this size:
   const unsigned ngroups =
-      nearestUpperMultipleTo (expectedTotalThreads, runningThreads) /
-      runningThreads;
+    nearestUpperMultipleTo (expectedTotalThreads, runningThreads) /
+    runningThreads;
   return ngroups;
 }
 

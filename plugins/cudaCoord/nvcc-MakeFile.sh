@@ -34,3 +34,4 @@ fi
 
 rm Make.tmp
 #tested with nvcc with :"Build cuda_11.7.r11.7/compiler.31442593_0"
+#and tested with nvcc with :"Build cuda 11.8

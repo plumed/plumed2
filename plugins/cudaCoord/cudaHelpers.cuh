@@ -44,14 +44,14 @@ struct DataInterface {
   // C++ vectors align memory so we can safely use the vector variant of
   // DataInterface
   explicit DataInterface (PLMD::VectorGeneric<n> &vg)
-      : ptr (&vg[0]), size (n) {}
+    : ptr (&vg[0]), size (n) {}
   // TensorGeneric is a "memory map" on an n*m linear array
   // &tg[0][0] gets  the pointer to the first double in memory
   // C++ vectors align memory so we can safely use the vector variant of
   // DataInterface
   template <unsigned n, unsigned m>
   explicit DataInterface (PLMD::TensorGeneric<n, m> &tg)
-      : ptr (&tg[0][0]), size (n * m) {}
+    : ptr (&tg[0][0]), size (n * m) {}
   template <typename T>
   explicit DataInterface (std::vector<T> &vt) : DataInterface (vt[0]) {
     size *= vt.size();
@@ -219,7 +219,7 @@ __global__ void
 reduction1DKernel (int num_valid,        // number if elements to be reduced
                    calculateFloat *d_in, // Tile of input
                    calculateFloat *d_out // Tile aggregate
-) {
+                  ) {
   // Specialize BlockReduce type for our thread block
   using BlockReduceT = cub::BlockReduce<calculateFloat, BLOCK_THREADS>;
   // Shared memory
@@ -248,15 +248,15 @@ void doReduction1D_t (T *inputArray,
     // declaration to end the loop
     if (nthreads == THREADS) {
       reduction1DKernel<T, THREADS, DATAPERTHREAD>
-          <<<blocks, THREADS, THREADS * sizeof (T)>>> (
-              len, inputArray, outputArray);
+      <<<blocks, THREADS, THREADS * sizeof (T)>>> (
+        len, inputArray, outputArray);
     } else {
       doReduction1D_t<DATAPERTHREAD, T, THREADS / 2> (
-          inputArray, outputArray, len, blocks, nthreads);
+        inputArray, outputArray, len, blocks, nthreads);
     }
   } else {
     plumed_merror (
-        "Reduction can be called only with 512, 256, 128, 64 or 32 threads.");
+      "Reduction can be called only with 512, 256, 128, 64 or 32 threads.");
   }
 }
 
@@ -272,15 +272,15 @@ void doReduction1D_t (T *inputArray,
     // declaration to end the loop
     if (nthreads == THREADS) {
       reduction1DKernel<T, THREADS, DATAPERTHREAD>
-          <<<blocks, THREADS, THREADS * sizeof (T), stream>>> (
-              len, inputArray, outputArray);
+      <<<blocks, THREADS, THREADS * sizeof (T), stream>>> (
+        len, inputArray, outputArray);
     } else {
       doReduction1D_t<DATAPERTHREAD, T, THREADS / 2> (
-          inputArray, outputArray, len, blocks, nthreads, stream);
+        inputArray, outputArray, len, blocks, nthreads, stream);
     }
   } else {
     plumed_merror (
-        "Reduction can be called only with 512, 256, 128, 64 or 32 threads.");
+      "Reduction can be called only with 512, 256, 128, 64 or 32 threads.");
   }
 }
 
@@ -292,7 +292,7 @@ void doReduction1D (T *inputArray,
                     const size_t nthreads) {
 
   doReduction1D_t<DATAPERTHREAD> (
-      inputArray, outputArray, len, blocks, nthreads);
+    inputArray, outputArray, len, blocks, nthreads);
 }
 
 template <unsigned DATAPERTHREAD, typename T>
@@ -304,7 +304,7 @@ void doReduction1D (T *inputArray,
                     cudaStream_t stream) {
 
   doReduction1D_t<DATAPERTHREAD> (
-      inputArray, outputArray, len, blocks, nthreads, stream);
+    inputArray, outputArray, len, blocks, nthreads, stream);
 }
 
 template <typename calculateFloat, int BLOCK_THREADS, int ITEMS_PER_THREAD>
@@ -312,7 +312,7 @@ __global__ void
 reductionNDKernel (int num_valid,        // number if elements to be reduced
                    calculateFloat *d_in, // Tile of input
                    calculateFloat *d_out // Tile aggregate
-) {
+                  ) {
   // Specialize BlockReduce type for our thread block
   using BlockReduceT = cub::BlockReduce<calculateFloat, BLOCK_THREADS>;
   // Shared memory
@@ -344,15 +344,15 @@ void doReductionND_t (T *inputArray,
     // declaration to end the loop
     if (nthreads == THREADS) {
       reductionNDKernel<T, THREADS, DATAPERTHREAD>
-          <<<blocks, THREADS, THREADS * sizeof (T)>>> (
-              len, inputArray, outputArray);
+      <<<blocks, THREADS, THREADS * sizeof (T)>>> (
+        len, inputArray, outputArray);
     } else {
       doReductionND_t<DATAPERTHREAD, T, THREADS / 2> (
-          inputArray, outputArray, len, blocks, nthreads);
+        inputArray, outputArray, len, blocks, nthreads);
     }
   } else {
     plumed_merror (
-        "Reduction can be called only with 512, 256, 128, 64 or 32 threads.");
+      "Reduction can be called only with 512, 256, 128, 64 or 32 threads.");
   }
 }
 
@@ -368,15 +368,15 @@ void doReductionND_t (T *inputArray,
     // declaration to end the loop
     if (nthreads == THREADS) {
       reductionNDKernel<T, THREADS, DATAPERTHREAD>
-          <<<blocks, THREADS, THREADS * sizeof (T), stream>>> (
-              len, inputArray, outputArray);
+      <<<blocks, THREADS, THREADS * sizeof (T), stream>>> (
+        len, inputArray, outputArray);
     } else {
       doReductionND_t<DATAPERTHREAD, T, THREADS / 2> (
-          inputArray, outputArray, len, blocks, nthreads, stream);
+        inputArray, outputArray, len, blocks, nthreads, stream);
     }
   } else {
     plumed_merror (
-        "Reduction can be called only with 512, 256, 128, 64 or 32 threads.");
+      "Reduction can be called only with 512, 256, 128, 64 or 32 threads.");
   }
 }
 
@@ -388,7 +388,7 @@ void doReductionND (T *inputArray,
                     const unsigned nthreads) {
 
   doReductionND_t<DATAPERTHREAD> (
-      inputArray, outputArray, len, blocks, nthreads);
+    inputArray, outputArray, len, blocks, nthreads);
 }
 
 template <unsigned DATAPERTHREAD, typename T>
@@ -400,7 +400,7 @@ void doReductionND (T *inputArray,
                     cudaStream_t stream) {
 
   doReductionND_t<DATAPERTHREAD> (
-      inputArray, outputArray, len, blocks, nthreads, stream);
+    inputArray, outputArray, len, blocks, nthreads, stream);
 }
 } // namespace CUDAHELPERS
 #endif //__PLUMED_cuda_helpers_cuh

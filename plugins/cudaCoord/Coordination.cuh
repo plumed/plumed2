@@ -88,7 +88,7 @@ template <> __device__ __forceinline__ float pbcClamp<float> (float x) {
 
 template <typename calculateFloat>
 __device__ __forceinline__ calculateFloat pcuda_fastpow (calculateFloat base,
-                                                         int expo) {
+    int expo) {
   if (expo < 0) {
     expo = -expo;
     base = 1.0 / base;
@@ -161,15 +161,15 @@ __global__ void getpcuda_Rational (const calculateFloat *rdists,
 
 template <typename calculateFloat>
 __device__ __forceinline__ calculateFloat calculateSqr (
-    const calculateFloat distancesq,
-    const rationalSwitchParameters<calculateFloat> switchingParameters,
-    calculateFloat &dfunc) {
+  const calculateFloat distancesq,
+  const rationalSwitchParameters<calculateFloat> switchingParameters,
+  calculateFloat &dfunc) {
   calculateFloat result = 0.0;
   dfunc = 0.0;
   if (distancesq < switchingParameters.dmaxSQ) {
     const calculateFloat rdist_2 = distancesq * switchingParameters.invr0_2;
     result = pcuda_Rational (
-        rdist_2, switchingParameters.nn / 2, switchingParameters.mm / 2, dfunc);
+               rdist_2, switchingParameters.nn / 2, switchingParameters.mm / 2, dfunc);
     // chain rule:
     dfunc *= 2 * switchingParameters.invr0_2;
     // cu_stretch:
