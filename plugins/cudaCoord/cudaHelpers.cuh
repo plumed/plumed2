@@ -1,7 +1,9 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2023 Daniele Rapetti
+   Copyright (c) 2024 Daniele Rapetti, The plumed team
 
-   This file is part of cudaOnPlumed.
+   See http://www.plumed.org for more information.
+
+   This file is part of plumed, version 2.
 
    cudaOnPlumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -14,7 +16,7 @@
    GNU Lesser General Public License for more details.
 
    You should have received a copy of the GNU Lesser General Public License
-   along with cudaOnPlumed.  If not, see <http://www.gnu.org/licenses/>.
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #ifndef __PLUMED_cuda_helpers_cuh
 #define __PLUMED_cuda_helpers_cuh
@@ -38,11 +40,12 @@ struct DataInterface {
   double *ptr = nullptr;
   size_t size = 0;
   DataInterface() = delete;
-  template <unsigned n>
+  
   // VectorGeneric is a "memory map" on an n linear array
   // &vg[0] gets the pointer to the first double in memory
   // C++ vectors align memory so we can safely use the vector variant of
   // DataInterface
+  template <unsigned n>
   explicit DataInterface (PLMD::VectorGeneric<n> &vg)
     : ptr (&vg[0]), size (n) {}
   // TensorGeneric is a "memory map" on an n*m linear array

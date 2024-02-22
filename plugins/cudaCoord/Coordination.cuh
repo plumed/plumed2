@@ -1,7 +1,9 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2023 Daniele Rapetti
+   Copyright (c) 2024 Daniele Rapetti, The plumed team
 
-   This file is part of cudaOnPlumed.
+   See http://www.plumed.org for more information.
+
+   This file is part of plumed, version 2.
 
    cudaOnPlumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -14,7 +16,7 @@
    GNU Lesser General Public License for more details.
 
    You should have received a copy of the GNU Lesser General Public License
-   along with cudaOnPlumed.  If not, see <http://www.gnu.org/licenses/>.
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 #include "cuda_runtime.h"
