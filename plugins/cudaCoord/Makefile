@@ -40,6 +40,7 @@ CudaCoordination.$(SOEXT): $(OBJS)
 
 clean:
 	@rm -fv $(OBJS) CudaCoordination.$(SOEXT)
+	@rm -rf .deps
 
 check: all
 	$(MAKE) -C regtest
