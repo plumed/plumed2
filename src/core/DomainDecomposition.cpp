@@ -397,7 +397,34 @@ void DomainDecomposition::apply() {
       continue;
     } else if( ip->wasscaled || (!unique_serial && int(gatindex.size())==getNumberOfAtoms() && shuffledAtoms==0) ) {
       (ip->mydata)->add_force( gatindex, ip->getPntrToValue() );
-    } else { (ip->mydata)->add_force( unique, uniq_index, ip->getPntrToValue() ); }
+    } else {
+      unsigned nforced_actions=0, nactive_actions=0;
+      for(unsigned i=0; i<actions.size(); ++i) {
+        if( actions[i]->isActive() ) {
+          nactive_actions++;
+          if( actions[i]->hasForce ) nforced_actions++;
+        }
+      }
+      if( nforced_actions<nactive_actions ) {
+        std::vector<const std::vector<AtomNumber>*> vectors;
+        vectors.reserve(nforced_actions);
+        for(unsigned i=0; i<actions.size(); i++) {
+          if( actions[i]->isActive() && actions[i]->hasForce && !actions[i]->getUnique().empty() ) {
+            vectors.push_back(&actions[i]->getUniqueLocal());
+            if( actions[i]->unique_local_needs_update ) actions[i]->updateUniqueLocal( !(dd && shuffledAtoms>0), g2l );
+          }
+        }
+        if(vectors.empty()) return;
+        unique.clear(); Tools::mergeSortedVectors(vectors,unique,getenvMergeVectorsPriorityQueue());
+        uniq_index.resize(unique.size());
+        if(!(int(gatindex.size())==getNumberOfAtoms() && shuffledAtoms==0)) {
+          for(unsigned i=0; i<unique.size(); i++) uniq_index[i]=g2l[unique[i].index()];
+        } else {
+          for(unsigned i=0; i<unique.size(); i++) uniq_index[i]=unique[i].index();
+        }
+      }
+      (ip->mydata)->add_force( unique, uniq_index, ip->getPntrToValue() );
+    }
   }
 }
 

@@ -43,6 +43,7 @@ ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
   Action(ao),
   unique_local_needs_update(true),
   boxValue(NULL),
+  hasForce(false),
   lockRequestAtoms(false),
   donotretrieve(false),
   donotforce(false),
@@ -267,6 +268,7 @@ void ActionAtomistic::retrieveAtoms() {
     PbcAction* pbca = boxValue->getPntrToAction()->castToPbcAction();
     plumed_assert( pbca ); pbc=pbca->pbc;
   }
+  hasForce=false;
   if( donotretrieve || indexes.size()==0 ) return;
   ActionToPutData* cv = chargev[0]->getPntrToAction()->castToActionToPutData();
   if(cv) chargesWereSet=cv->hasBeenSet();
@@ -296,7 +298,7 @@ void ActionAtomistic::setForcesOnAtoms(const std::vector<double>& forcesToApply,
     ypos[nn]->inputForce[kk] += forcesToApply[ind]; ind++;
     zpos[nn]->inputForce[kk] += forcesToApply[ind]; ind++;
   }
-  setForcesOnCell( forcesToApply, ind );
+  setForcesOnCell( forcesToApply, ind ); hasForce=true;
 }
 
 void ActionAtomistic::setForcesOnCell(const std::vector<double>& forcesToApply, unsigned& ind) {
@@ -308,6 +310,7 @@ void ActionAtomistic::setForcesOnCell(const double* forcesToApply, std::size_t s
     plumed_dbg_massert( ind<size, "problem setting forces in " + getLabel() );
     boxValue->addForce( i, forcesToApply[ind] ); ind++;
   }
+  hasForce=true;
 }
 
 Tensor ActionAtomistic::getVirial() const {

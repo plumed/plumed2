@@ -60,6 +60,7 @@ class ActionAtomistic :
   std::vector<double>   masses;
   std::vector<double>   charges;
 
+  bool                  hasForce;
   std::vector<Vector>   forces;          // forces on the needed atoms
   double                forceOnEnergy;
 
@@ -282,6 +283,7 @@ Vector ActionAtomistic::getForce( const std::pair<std::size_t, std::size_t>& a )
 
 inline
 void ActionAtomistic::addForce( const std::pair<std::size_t, std::size_t>& a, const Vector& f ) {
+  hasForce=true;
   xpos[a.first]->addForce( a.second, f[0] );
   ypos[a.first]->addForce( a.second, f[1] );
   zpos[a.first]->addForce( a.second, f[2] );
