@@ -15,5 +15,5 @@ diff64: CUSTOM ARG=gpu64,cpu FUNC=y-x PERIODIC=NO
 PRINT ARG=diff FILE=colvar FMT=%8.4f STRIDE=1
 PRINT ARG=diff512,diff256,diff128,diff64 FILE=threadsDifferences FMT=%8.4f STRIDE=1
 
-DUMPDERIVATIVES ARG=gpu,cpu FILE=deriv FMT=%8.4f
+DUMPDERIVATIVES ARG=gpu,cpu FILE=deriv FMT=%8.5f
 FLUSH STRIDE=1
