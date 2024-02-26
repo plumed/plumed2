@@ -1,0 +1,26 @@
+LOAD FILE=../../../../CudaCoordination.so
+#R_0=1   means automatic dmax=6.81292 > 3 (half box size)
+#R_0=0.4 means automatic dmax=2.72517 < 3 (half box size)
+#using R_0!=1 also tests that no "1" are accidentally slipped into the various 1/r0
+
+gpu: CUDACOORDINATIONFLOAT GROUPA=@mdatoms     NN=6 R_0=0.4
+gpu512: CUDACOORDINATIONFLOAT GROUPA=@mdatoms  NN=6 R_0=0.4 THREADS=512
+gpu256: CUDACOORDINATIONFLOAT GROUPA=@mdatoms  NN=6 R_0=0.4 THREADS=256
+gpu128: CUDACOORDINATIONFLOAT GROUPA=@mdatoms  NN=6 R_0=0.4 THREADS=128
+gpu64:  CUDACOORDINATIONFLOAT GROUPA=@mdatoms  NN=6 R_0=0.4 THREADS=64
+cpu: COORDINATION GROUPA=@mdatoms  R_0=0.4 NN=6 
+#if the switch is to be explicitly written, then D_MAX is not automatically set!!!
+#SWITCH={RATIONAL R_0=0.4 D_0=0 NN=6} 
+
+diff: CUSTOM ARG=gpu,cpu FUNC=y-x PERIODIC=NO
+diff512: CUSTOM ARG=gpu512,cpu FUNC=y-x PERIODIC=NO
+diff256: CUSTOM ARG=gpu256,cpu FUNC=y-x PERIODIC=NO
+diff128: CUSTOM ARG=gpu128,cpu FUNC=y-x PERIODIC=NO
+diff64: CUSTOM ARG=gpu64,cpu FUNC=y-x PERIODIC=NO
+
+PRINT ARG=gpu,cpu FILE=colvars FMT=%8.4f STRIDE=1
+PRINT ARG=diff FILE=colvar FMT=%8.4f STRIDE=1
+PRINT ARG=diff512,diff256,diff128,diff64 FILE=threadsDifferences FMT=%8.4f STRIDE=1
+
+DUMPDERIVATIVES ARG=gpu,cpu FILE=deriv FMT=%8.5f
+FLUSH STRIDE=1
