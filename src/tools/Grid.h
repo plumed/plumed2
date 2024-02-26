@@ -96,8 +96,42 @@ public:
 // typedef unsigned index_t;
 /// Maximum dimension (exaggerated value).
 /// Can be used to replace local std::vectors with std::arrays (allocated on stack).
-  static constexpr std::size_t maxdim=64;
+  static constexpr std::size_t maxdim=16;
+
+
+  class AcceleratorBase {
+  public:
+    static std::unique_ptr<AcceleratorBase> create(unsigned dim);
+    virtual ~AcceleratorBase() = default;
+    virtual unsigned getDimension() const=0;
+    virtual std::vector<GridBase::index_t> getNeighbors(const GridBase& grid, const std::vector<unsigned> & nbin_,const std::vector<bool> & pbc_,const unsigned* indices,std::size_t indices_size, const std::vector<unsigned> &nneigh) const=0;
+    virtual GridBase::index_t getIndex(const GridBase& grid, const std::vector<unsigned> & nbin_, const unsigned* indices,std::size_t indices_size) const=0;
+    virtual void getPoint(const std::vector<double> & min_,const std::vector<double> & dx_, const unsigned* indices,std::size_t indices_size,double* point,std::size_t point_size) const=0;
+    virtual void getIndices(const std::vector<unsigned> & nbin_, GridBase::index_t index, unsigned* indices, std::size_t indices_size) const=0;
+    virtual void getIndices(const std::vector<double> & min_,const std::vector<double> & dx_, const std::vector<double> & x, unsigned* rindex_data,std::size_t rindex_size) const=0;
+  };
+
+  class AcceleratorHandler {
+  public:
+    std::unique_ptr<AcceleratorBase> ptr;
+    AcceleratorHandler(const AcceleratorHandler& other):
+      ptr((other.ptr?AcceleratorBase::create(other.ptr->getDimension()):nullptr))
+    {}
+    AcceleratorHandler & operator=(const AcceleratorHandler & other) {
+      if(this!=&other) {
+        ptr.reset();
+        if(other.ptr) ptr=AcceleratorBase::create(other.ptr->getDimension());
+      }
+      return *this;
+    }
+    AcceleratorHandler() = default;
+    AcceleratorHandler(unsigned dimension):
+      ptr(AcceleratorBase::create(dimension))
+    {}
+  };
+
 protected:
+  AcceleratorHandler accelerator;
   std::string funcname;
   std::vector<std::string> argnames;
   std::vector<std::string> str_min_, str_max_;
@@ -109,7 +143,7 @@ protected:
   bool dospline_, usederiv_;
   std::string fmt_; // format for output
 /// get "neighbors" for spline
-  void getSplineNeighbors(const std::vector<unsigned> & indices, std::vector<index_t>& neigh, unsigned& nneigh )const;
+  unsigned getSplineNeighbors(const unsigned* indices, std::size_t indices_size, index_t* neighbors, std::size_t neighbors_size)const;
 // std::vector<index_t> getSplineNeighbors(const std::vector<unsigned> & indices)const;
 
 
@@ -149,9 +183,12 @@ public:
 
 /// methods to handle grid indices
   void getIndices(index_t index, std::vector<unsigned>& rindex) const;
+  void getIndices(index_t index, unsigned* rindex_data, std::size_t rindex_size) const;
   void getIndices(const std::vector<double> & x, std::vector<unsigned>& rindex) const;
+  void getIndices(const std::vector<double> & x, unsigned* rindex_data,std::size_t rindex_size) const;
   std::vector<unsigned> getIndices(index_t index) const;
   std::vector<unsigned> getIndices(const std::vector<double> & x) const;
+  index_t getIndex(const unsigned* indices,std::size_t indices_size) const;
   index_t getIndex(const std::vector<unsigned> & indices) const;
   index_t getIndex(const std::vector<double> & x) const;
   std::vector<double> getPoint(index_t index) const;
@@ -161,6 +198,8 @@ public:
   void getPoint(index_t index,std::vector<double> & point) const;
   void getPoint(const std::vector<unsigned> & indices,std::vector<double> & point) const;
   void getPoint(const std::vector<double> & x,std::vector<double> & point) const;
+  void getPoint(const unsigned* indices_data,std::size_t indices_size,std::vector<double> & point) const;
+  void getPoint(const unsigned* indices_data,std::size_t indices_size,double* point,std::size_t point_size) const;
 
 /// get neighbors
   std::vector<index_t> getNeighbors(index_t index,const std::vector<unsigned> & neigh) const;
@@ -186,7 +225,8 @@ public:
   double getValue(const std::vector<unsigned> & indices) const;
   double getValue(const std::vector<double> & x) const;
 /// get grid value and derivatives
-  virtual double getValueAndDerivatives(index_t index, std::vector<double>& der) const=0;
+  virtual double getValueAndDerivatives(index_t index, double* der, std::size_t der_size) const=0;
+  double getValueAndDerivatives(index_t index, std::vector<double>& der) const;
   double getValueAndDerivatives(const std::vector<unsigned> & indices, std::vector<double>& der) const;
   double getValueAndDerivatives(const std::vector<double> & x, std::vector<double>& der) const;
 
@@ -215,7 +255,7 @@ public:
 /// dump grid to gaussian cube file
   void writeCubeFile(OFile&, const double& lunit);
 
-  virtual ~GridBase() {}
+  virtual ~GridBase() = default;
 
 /// set output format
   void setOutputFmt(const std::string & ss) {fmt_=ss;}
@@ -262,8 +302,7 @@ public:
 /// get grid value
   double getValue(index_t index) const override;
 /// get grid value and derivatives
-  double getValueAndDerivatives(index_t index, std::vector<double>& der) const override;
-
+  double getValueAndDerivatives(index_t index, double* der, std::size_t der_size) const override;
 /// set grid value
   void setValue(index_t index, double value) override;
 /// set grid value and derivatives
@@ -330,7 +369,7 @@ public:
 /// get grid value
   double getValue(index_t index) const override;
 /// get grid value and derivatives
-  double getValueAndDerivatives(index_t index, std::vector<double>& der) const override;
+  double getValueAndDerivatives(index_t index, double* der, std::size_t der_size) const override;
 
 /// set grid value
   void setValue(index_t index, double value) override;
@@ -348,7 +387,7 @@ public:
 /// dump grid on file
   void writeToFile(OFile&) override;
 
-  virtual ~SparseGrid() {}
+  virtual ~SparseGrid() = default;
 };
 }
 
