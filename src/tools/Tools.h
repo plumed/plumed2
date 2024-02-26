@@ -352,7 +352,7 @@ public:
 
     // see https://stackoverflow.com/questions/34596768/stdunordered-mapfind-using-a-type-different-than-the-key-type
     std::unique_ptr<const char[]> conv(std::string_view str) {
-      std::unique_ptr<char[]> p (new char [str.size()+1]);
+      auto p=std::make_unique<char[]>(str.size()+1);
       std::memcpy(p.get(), str.data(), str.size()+1);
       return p;
     }
