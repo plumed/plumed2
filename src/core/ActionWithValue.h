@@ -187,7 +187,7 @@ double ActionWithValue::getOutputQuantity(const unsigned j) const {
 
 inline
 double ActionWithValue::getOutputQuantity( const std::string& name ) const {
-  int offset=getLabel().size();
+  auto offset=getLabel().size();
   for(unsigned i=0; i<values.size(); ++i) {
     const std::string & valname=values[i]->name;
     if(valname.size()>offset+1 && valname[offset]=='.' ) {
