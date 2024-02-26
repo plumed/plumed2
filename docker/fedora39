@@ -23,7 +23,6 @@ WORKDIR /home/plumed
 COPY plumed2.tgz /home/plumed
 
 # build and test plumed (no install)
-# FC is needed on gfortran 10 to pass regression tests
 RUN . /etc/bashrc \
  && module load mpi \
  && export OMPI_MCA_btl_base_warn_component_unused=0 \
