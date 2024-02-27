@@ -94,7 +94,7 @@ VStack::VStack(const ActionOptions& ao):
           if( !avv ) continue;
           if( head0!=avv->getFirstActionInChain() ) { done_in_chain=false; break; }
       }
-  }
+  } else done_in_chain=false;
   unsigned nder = buildArgumentStore(0);
   // This checks which values have been stored
   stored.resize( getNumberOfArguments() ); std::string headstr=getFirstActionInChain()->getLabel();

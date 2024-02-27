@@ -71,7 +71,7 @@ Action::Action(const ActionOptions&ao):
   active(false),
   restart(ao.plumed.getRestart()),
   doCheckPoint(ao.plumed.getCPT()),
-  never_activate(false),
+  never_activate(name=="CONSTANT"),
   plumed(ao.plumed),
   log(plumed.getLog()),
   comm(plumed.comm),

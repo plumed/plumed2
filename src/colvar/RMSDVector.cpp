@@ -59,6 +59,7 @@ RMSDVector::RMSDVector(const ActionOptions&ao):
   type.assign("SIMPLE"); parse("TYPE",type); parseFlag("SQUARED",squared);
   align.resize( natoms ); parseVector("ALIGN",align);
   displace.resize( natoms ); parseVector("DISPLACE",displace);
+  bool unorm=false; parseFlag("UNORMALIZED",unorm); norm_weights=!unorm;
   double wa=0, wd=0; sqrtdisplace.resize( displace.size() );
   for(unsigned i=0; i<align.size(); ++i) { wa+=align[i]; wd+=displace[i]; }
       
@@ -79,7 +80,6 @@ RMSDVector::RMSDVector(const ActionOptions&ao):
   for(unsigned i=0; i<align.size(); ++i) sqrtdisplace[i] = sqrt(displace[i]);
   
   parseFlag("DISPLACEMENT",displacement);
-  bool unorm=false; parseFlag("UNORMALIZED",unorm); norm_weights=!unorm;
   if( displacement && (getPntrToArgument(1)->getRank()==1 || getPntrToArgument(1)->getShape()[0]==1) ) {
       addComponentWithDerivatives("dist"); componentIsNotPeriodic("dist");
       std::vector<unsigned> shape( 1, getPntrToArgument(0)->getNumberOfValues() );

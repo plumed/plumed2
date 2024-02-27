@@ -51,23 +51,17 @@ mypath_obj(NULL)
   if( mypath_obj ) if( mypath_obj->getRank()!=2 ) act->error("the input to this action should be a matrix");
   // Get the labels for the reference points
   std::vector<std::string> reference_data; act->parseVector("REFERENCE", reference_data);
+  std::vector<colvar::RMSDVector*> allrmsd = act->plumed.getActionSet().select<colvar::RMSDVector*>();
   ActionWithArguments::interpretArgumentList( reference_data, act->plumed.getActionSet(), act, refargs );
   for(unsigned i=0; i<refargs.size(); ++i ) {
+      Action* thisact = refargs[i]->getPntrToAction(); 
+      for(unsigned j=0; j<allrmsd.size(); ++j) {
+          if( allrmsd[j]->checkForDependency(thisact) ) { printf("FOUND DDD %s \n", allrmsd[j]->getLabel().c_str() ); rmsd_objects.push_back( allrmsd[j] ); break; }
+      }
       if( !refargs[i]->isConstant() ) act->error("input" + refargs[i]->getName() + " is not constant");
       if( refargs[i]->getRank()==2 && reference_data.size()!=1 ) act->error("should only be one matrix in input to path projection object");
       if( refargs[i]->getRank()>0 && refargs[i]->getShape()[0]!=refargs[0]->getShape()[0] ) act->error("mismatch in number of reference frames in input to reference_data");
   }
-  // for(unsigned i=0; i<reference_data.size(); ++i) {
-  //     ActionWithValue* av = act->plumed.getActionSet().selectWithLabel<ActionWithValue*>( reference_data[i] );
-  //     if( !av ) act->error("input " + reference_data[i] + " is not a CONSTANT_VALUE action");
-  //     Value* myval = av->copyOutput(0); refargs.push_back( myval );
-  //     for(const auto & p : myval->getUserNames()) {
-  //         colvar::RMSDVector* myrmsd = act->plumed.getActionSet().selectWithLabel<colvar::RMSDVector*>(p);
-  //         if( myrmsd ) { rmsd_objects.push_back( myrmsd ); }
-  //     }
-  //     if( myval->getRank()==2 && reference_data.size()!=1 ) act->error("should only be one matrix in input to path projection object");
-  //     if( myval->getRank()>0 && myval->getShape()[0]!=refargs[0]->getShape()[0] ) act->error("mismatch in number of reference frames in input to reference_data"); 
-  // }
   // Create a plumed main object to compute distances between reference configurations
   int s=sizeof(double);
   metric.cmd("setRealPrecision",&s);
