@@ -56,7 +56,7 @@ mypath_obj(NULL)
   for(unsigned i=0; i<refargs.size(); ++i ) {
       Action* thisact = refargs[i]->getPntrToAction(); 
       for(unsigned j=0; j<allrmsd.size(); ++j) {
-          if( allrmsd[j]->checkForDependency(thisact) ) { printf("FOUND DDD %s \n", allrmsd[j]->getLabel().c_str() ); rmsd_objects.push_back( allrmsd[j] ); break; }
+          if( allrmsd[j]->checkForDependency(thisact) ) { rmsd_objects.push_back( allrmsd[j] ); break; }
       }
       if( !refargs[i]->isConstant() ) act->error("input" + refargs[i]->getName() + " is not constant");
       if( refargs[i]->getRank()==2 && reference_data.size()!=1 ) act->error("should only be one matrix in input to path projection object");
