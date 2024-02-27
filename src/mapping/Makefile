@@ -1,4 +1,4 @@
-USE=core tools colvar reference vesselbase
+USE=core tools colvar 
 
 # generic makefile
 include ../maketools/make.module
