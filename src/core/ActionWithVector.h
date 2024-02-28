@@ -113,7 +113,7 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithVector(const ActionOptions&);
-  virtual ~ActionWithVector() {}
+  virtual ~ActionWithVector(); 
   void lockRequests() override;
   void unlockRequests() override;
   virtual void prepare() override;
