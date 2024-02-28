@@ -234,7 +234,8 @@ Path::Path( const ActionOptions& ao ):
   else { parseVector("PROPERTY",pnames); properties.resize( pnames.size() ); }
   std::string type, reference_data, reference; parse("REFERENCE",reference); 
   std::vector<std::string> argnames; parseVector("ARG",argnames); parse("TYPE",type);
-  readInputFrames( reference, type, argnames, false, this, reference_data );
+  if( type.find("DRMSD")!=std::string::npos ) readInputLine( getShortcutLabel() + "_data: DRMSD SQUARED TYPE=" + type + " REFERENCE=" + reference );   
+  else readInputFrames( reference, type, argnames, false, this, reference_data );
   // Find the shortest distance to the frames
   readInputLine( getShortcutLabel() + "_mindist: LOWEST ARG=" + getShortcutLabel() + "_data");
   // Now create all other parts of the calculation
