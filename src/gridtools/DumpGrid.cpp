@@ -182,8 +182,7 @@ class DumpGrid :
   public ActionPilot {
 private:
   std::string fmt, filename;
-  std::vector<unsigned> preps;
-  bool output_for_all_replicas, onefile, xyzfile;
+  bool onefile, xyzfile;
 public:
   static void registerKeywords( Keywords& keys );
   explicit DumpGrid(const ActionOptions&ao);
@@ -202,7 +201,6 @@ void DumpGrid::registerKeywords( Keywords& keys ) {
   ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
   keys.add("compulsory","STRIDE","1","the frequency with which the grid should be output to the file.");
   keys.add("compulsory","FILE","density","the file on which to write the grid.");
-  keys.add("compulsory","REPLICA","0","the replica for which you would like to output this information");
   keys.add("optional","FMT","the format that should be used to output real numbers");
   keys.addFlag("PRINT_XYZ",false,"output coordinates on fibonacci grid to xyz file");
   keys.addFlag("PRINT_ONE_FILE",false,"output grids one after the other in a single file");
@@ -212,8 +210,7 @@ DumpGrid::DumpGrid(const ActionOptions&ao):
   Action(ao),
   ActionWithArguments(ao),
   ActionPilot(ao),
-  fmt("%f"),
-  output_for_all_replicas(false)
+  fmt("%f")
 {
   if( getNumberOfArguments()!=1 ) error("should only be one argument");
   if( getPntrToArgument(0)->getRank()==0 || !getPntrToArgument(0)->hasDerivatives() ) error("input should be a grid");
@@ -234,27 +231,9 @@ DumpGrid::DumpGrid(const ActionOptions&ao):
   }
   if( onefile ) log.printf("  printing all grids on a single file \n");
   else log.printf("  printing all grids on separate files \n");
-
-  std::string rep_data; parse("REPLICA",rep_data);
-  if( rep_data=="all" ) output_for_all_replicas=true;
-  else { preps.resize(1); Tools::convert( rep_data, preps[0] ); }
-  if( output_for_all_replicas ) log.printf("  outputting files for all replicas \n");
-  else {
-    log.printf("  outputting data for replicas ");
-    for(unsigned i=0; i<preps.size(); ++i) log.printf("%d ", preps[i] );
-  }
-
-  checkRead();
 }
 
 void DumpGrid::update() {
-  if( !output_for_all_replicas ) {
-    bool found=false; unsigned myrep=plumed.multi_sim_comm.Get_rank();
-    for(unsigned i=0; i<preps.size(); ++i) {
-      if( myrep==preps[i] ) { found=true; break; }
-    }
-    if( !found ) return;
-  }
   OFile ofile; ofile.link(*this);
   if( onefile ) {
     ofile.enforceRestart();
