@@ -33,7 +33,7 @@ namespace function {
 class FunctionTemplateBase {
 protected:
 /// Are we using derivatives
-  bool noderiv;
+  bool noderiv = false;
 /// Parse a keyword from the input as a value
   template<class T>
   void parse( Action* action, const std::string&key, T&t );
@@ -43,7 +43,6 @@ protected:
 /// Parse a keyword from the input as a flag
   void parseFlag( Action* action, const std::string&key, bool&t );
 public:
-  explicit FunctionTemplateBase() : noderiv(false) {}
 /// Override this function if you have not implemented the derivatives
   virtual bool derivativesImplemented() { return true; }
 ////
