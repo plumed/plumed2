@@ -23,6 +23,7 @@
 #define __PLUMED_tools_Grid_h
 
 #include <vector>
+#include <array>
 #include <string>
 #include <map>
 #include <cmath>
@@ -155,11 +156,11 @@ public:
   can be used to access the specialized versions. However, this would
   make a GridBase object not copyable. Instead of redefining
   copy constructor and copy assignment for GridBase, which has a lot of
-  members, we use this wrapper class that just manage the lifetime
+  members, we use this wrapper class that just manages the lifetime
   of the underlying Accelerator object.
 
   The underlying object is made accessible through the -> operator,
-  so that oen can simply call functions as accelerator->function.
+  so that one can simply call functions as accelerator->function.
 
   \warning
   Interface might change at any time.
