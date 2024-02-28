@@ -92,6 +92,7 @@ public:
     return neighbors;
   }
 
+  // we are flattening arrays using a column-major order
   GridBase::index_t getIndex(const GridBase& grid, const std::vector<unsigned> & nbin_,const unsigned* indices,std::size_t indices_size) const override {
     for(unsigned int i=0; i<dimension_; i++)
       if(indices[i]>=nbin_[i]) plumed_error() << "Looking for a value outside the grid along the " << i << " dimension (arg name: "<<grid.getArgNames()[i]<<")";
@@ -117,6 +118,7 @@ public:
   }
 
 
+  // we are flattening arrays using a column-major order
   void getIndices(const std::vector<unsigned> & nbin_, GridBase::index_t index, unsigned* indices, std::size_t indices_size) const override {
     plumed_assert(indices_size==dimension_)<<indices_size;
     for(unsigned int i=0; i<dimension_-1; ++i) {
@@ -269,19 +271,9 @@ unsigned GridBase::getDimension() const {
   return dimension_;
 }
 
-// we are flattening arrays using a column-major order
 GridBase::index_t GridBase::getIndex(const unsigned* indices,std::size_t indices_size) const {
-  for(unsigned int i=0; i<dimension_; i++)
-    if(indices[i]>=nbin_[i]) {
-      std::string is;
-      Tools::convert(i,is);
-      plumed_error() << "Looking for a value outside the grid along the " << is << " dimension (arg name: "<<getArgNames()[i]<<")";
-    }
-  index_t index=indices[dimension_-1];
-  for(unsigned int i=dimension_-1; i>0; --i) {
-    index=index*nbin_[i-1]+indices[i-1];
-  }
-  return index;
+  plumed_dbg_assert(accelerator);
+  return accelerator->getIndex(*this,nbin_,indices,indices_size);
 }
 
 GridBase::index_t GridBase::getIndex(const std::vector<unsigned> & indices) const {
@@ -302,7 +294,6 @@ std::vector<unsigned> GridBase::getIndices(index_t index) const {
   return indices;
 }
 
-// we are flattening arrays using a column-major order
 void GridBase::getIndices(index_t index, unsigned* indices, std::size_t indices_size) const {
   plumed_assert(indices_size==dimension_);
   plumed_assert(accelerator);
