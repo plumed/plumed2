@@ -189,7 +189,7 @@ void AdjacencyMatrixBase::updateNeighbourList() {
           }
         } else {
           // Get the positions of all the atoms in the link cells relative to the central atom
-          for(unsigned j=0; j<natoms; ++i) t_atoms[j] = ActionAtomistic::getPosition(indices[j]) - ActionAtomistic::getPosition(indices[0]);
+          for(unsigned j=0; j<natoms; ++j) t_atoms[j] = ActionAtomistic::getPosition(indices[j]) - ActionAtomistic::getPosition(indices[0]);
           if( !nopbc ) pbcApply( t_atoms, natoms );
           // Now construct the neighbor list
           if( nt>1 ) omp_nlist[indices[0]] = 0; else nlist[indices[0]] = 0;
