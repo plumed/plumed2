@@ -86,6 +86,7 @@ class FixedAtom:
   public ActionWithVirtualAtom
 {
   Vector coord;
+  std::vector<Tensor> deriv;
   double mass,charge;
   bool scaled_components;
 public:
@@ -131,7 +132,7 @@ FixedAtom::FixedAtom(const ActionOptions&ao):
 }
 
 void FixedAtom::calculate() {
-  std::vector<Tensor> deriv(getNumberOfAtoms());
+  deriv.resize(getNumberOfAtoms());
   if(scaled_components) {
     setPosition(getPbc().scaledToReal(coord));
   } else {

@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithVirtualAtom.h"
+#include <array>
 
 namespace PLMD {
 
@@ -76,9 +77,9 @@ void ActionWithVirtualAtom::apply() {
     ypos[nn]->inputForce[kk] += xf*xval->data[1+k] + yf*yval->data[1+k] + zf*zval->data[1+k]; k++;
     zpos[nn]->inputForce[kk] += xf*xval->data[1+k] + yf*yval->data[1+k] + zf*zval->data[1+k]; k++;
   }
-  std::vector<double> virial(9);
+  std::array<double,9> virial;
   for(unsigned i=0; i<9; ++i) { virial[i] = xf*xval->data[1+k] + yf*yval->data[1+k] + zf*zval->data[1+k]; k++; }
-  unsigned ind = 0; setForcesOnCell( virial, ind );
+  unsigned ind = 0; setForcesOnCell( virial.data(), virial.size(), ind );
   // The above can be achieved using the two functions below.  The code above that is specialised for the ActionWithVirtualAtom
   // class runs faster than the general code below.
   // if( !checkForForces() ) return ;

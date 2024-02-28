@@ -77,7 +77,7 @@ class PlumedHandle :
 /// Used when using the current kernel in order to avoid unneeded indirections.
   std::unique_ptr<PlumedMain> local;
 /// Pointer to loaded Plumed object;
-  void* const loaded=nullptr;
+  void* loaded=nullptr;
 /// Constructor using the path to a kernel.
 /// I keep it private to avoid confusion wrt the
 /// similar constructor of PLMD::Plumed that accepts a string (conversion from FORTRAN).
@@ -94,9 +94,11 @@ public:
 /// I make it virtual for future extensibility, though this is not necessary now.
   virtual ~PlumedHandle();
 /// Move constructor.
-  PlumedHandle(PlumedHandle &&) = default;
+  PlumedHandle(PlumedHandle && other) noexcept;
+/// Move assignment.
+  PlumedHandle & operator=(PlumedHandle && other) noexcept;
 /// Execute cmd.
-  void cmd(const std::string & key,const TypesafePtr & ptr=nullptr);
+  void cmd(std::string_view key,const TypesafePtr & ptr=nullptr) override;
 /// Bring in the possibility to pass shape/nelem
   using WithCmd::cmd;
 };

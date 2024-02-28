@@ -24,7 +24,6 @@
 #include "tools/Tools.h"
 #include "tools/Communicator.h"
 #include <sstream>
-#include <unordered_map>
 
 namespace PLMD {
 
@@ -45,22 +44,23 @@ GREX::~GREX() {
 // empty destructor to delete unique_ptr
 }
 
-#define CHECK_INIT(ini,word) plumed_massert(ini,"cmd(\"" + word +"\") should be only used after GREX initialization")
-#define CHECK_NOTINIT(ini,word) plumed_massert(!(ini),"cmd(\"" + word +"\") should be only used before GREX initialization")
-#define CHECK_NOTNULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"GREX " + word + "\")");
+#define CHECK_INIT(ini,word) plumed_assert(ini) << "cmd(\"" << word <<"\") should be only used after GREX initialization"
+#define CHECK_NOTINIT(ini,word) plumed_assert(!(ini)) << "cmd(\"" << word <<"\") should be only used before GREX initialization"
+#define CHECK_NOTNULL(val,word) plumed_assert(val) << "NULL pointer received in cmd(\"GREX " << word << "\")"
 
-void GREX::cmd(const std::string&key,const TypesafePtr & val) {
+void GREX::cmd(std::string_view key,const TypesafePtr & val) {
 // Enumerate all possible commands:
   enum {
 #include "GREXEnum.inc"
   };
 
 // Static object (initialized once) containing the map of commands:
-  const static std::unordered_map<std::string, int> word_map = {
+  const static Tools::FastStringUnorderedMap<int> word_map = {
 #include "GREXMap.inc"
   };
 
-  std::vector<std::string> words=Tools::getWords(key);
+  gch::small_vector<std::string_view> words;
+  Tools::getWordsSimple(words,key);
   unsigned nw=words.size();
   if(nw==0) {
     // do nothing
@@ -164,13 +164,13 @@ void GREX::cmd(const std::string&key,const TypesafePtr & val) {
                      "to retrieve bias with cmd(\"GREX getDeltaBias\"), first share it with cmd(\"GREX shareAllDeltaBias\")");
       {
         unsigned rep;
-        Tools::convert(words[1],rep);
+        Tools::convert(std::string(words[1]),rep);
         plumed_massert(rep<allDeltaBias.size(),"replica index passed to cmd(\"GREX getDeltaBias\") is out of range");
         plumedMain.plumedQuantityToMD("energy",allDeltaBias[rep],val);
       }
       break;
     default:
-      plumed_merror("cannot interpret cmd(\" GREX" + key + "\"). check plumed developers manual to see the available commands.");
+      plumed_error() << "cannot interpret cmd(\" GREX" << key << "\"). check plumed developers manual to see the available commands.";
       break;
     }
   }

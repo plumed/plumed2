@@ -40,6 +40,7 @@
 #include <mutex>
 #include <filesystem>
 #include <utility>
+#include <unordered_map>
 
 namespace PLMD {
 
@@ -86,10 +87,10 @@ public:
 /// output, and the text between them is considered as a single word. Only the
 /// outer parenthesis are processed, to allow nesting them.
 /// parlevel, if not NULL, is increased or decreased according to the number of opened/closed parenthesis
-  static std::vector<std::string> getWords(const std::string & line,const char* sep=NULL,int* parlevel=NULL,const char* parenthesis="{", const bool& delete_parenthesis=true);
+  static std::vector<std::string> getWords(std::string_view line,const char* sep=NULL,int* parlevel=NULL,const char* parenthesis="{", const bool& delete_parenthesis=true);
 /// Faster version
 /// This version does not parse parenthesis and operates on a preallocated small_vector of string_view's
-  static void getWordsSimple(gch::small_vector<std::string_view> & words,const std::string & line);
+  static void getWordsSimple(gch::small_vector<std::string_view> & words,std::string_view line);
 /// Get a line from the file pointer ifile
   static bool getline(FILE*,std::string & line);
 /// Get a parsed line from the file pointer ifile
@@ -337,6 +338,61 @@ public:
   /// Build a concatenated exception message.
   /// Should be called with an in-flight exception.
   static std::string concatenateExceptionMessages();
+
+
+  /// Tiny class implementing faster std::string_view access to an unordered_map
+  /// It exposes a limited number of methods of std::unordered_map. Others could be added.
+  /// Importantly, when it is accessed via a std::string_view, the access does not
+  /// require constructing a std::string and is thus faster.
+  /// Deletion would be slower instead. It's not even implemented yet.
+  template<class T>
+  class FastStringUnorderedMap {
+    std::unordered_map<std::string_view,T> map;
+    std::vector<std::unique_ptr<const char[]>> keys;
+
+    // see https://stackoverflow.com/questions/34596768/stdunordered-mapfind-using-a-type-different-than-the-key-type
+    std::unique_ptr<const char[]> conv(std::string_view str) {
+      auto p=std::make_unique<char[]>(str.size()+1);
+      std::memcpy(p.get(), str.data(), str.size()+1);
+      return p;
+    }
+
+  public:
+
+    FastStringUnorderedMap() = default;
+    FastStringUnorderedMap(std::initializer_list<std::pair<const std::string_view,T>> init) {
+      for(const auto & c : init) {
+        (*this)[c.first]=c.second;
+      }
+    }
+
+    T& operator[]( const std::string_view & key ) {
+      auto f=map.find(key);
+      if(f!=map.end()) return f->second;
+      keys.push_back(conv(key));
+      return map[keys.back().get()];
+    }
+
+    auto begin() {
+      return map.begin();
+    }
+    auto end() {
+      return map.end();
+    }
+    auto begin() const {
+      return map.begin();
+    }
+    auto end() const {
+      return map.end();
+    }
+    auto find(const std::string_view & key) {
+      return map.find(key);
+    }
+    auto find(const std::string_view & key) const {
+      return map.find(key);
+    }
+  };
+
 };
 
 template <class T>
@@ -396,12 +452,12 @@ double Tools::pbc(double x) {
   while (x<-0.5) x+=1.0;
   return x;
 #else
-  if(std::numeric_limits<int>::round_style == std::round_toward_zero) {
-    const double offset=100.0;
+  if constexpr (std::numeric_limits<int>::round_style == std::round_toward_zero) {
+    constexpr double offset=100.0;
     const double y=x+offset;
     if(y>=0) return y-int(y+0.5);
     else     return y-int(y-0.5);
-  } else if(std::numeric_limits<int>::round_style == std::round_to_nearest) {
+  } else if constexpr (std::numeric_limits<int>::round_style == std::round_to_nearest) {
     return x-int(x);
   } else return x-floor(x+0.5);
 #endif

@@ -56,7 +56,7 @@ std::ostream& Stopwatch::log(std::ostream&os)const {
   os<<"      Cycles        Total      Average      Minimum      Maximum\n";
 
   std::vector<std::string> names;
-  for(const auto & it : watches) names.push_back(it.first);
+  for(const auto & it : watches) names.emplace_back(it.first);
   std::sort(names.begin(),names.end());
 
   const double frac=1.0/1000000000.0;

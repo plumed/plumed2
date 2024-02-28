@@ -40,7 +40,7 @@ void ActionWithValue::registerKeywords(Keywords& keys) {
 
 void ActionWithValue::noAnalyticalDerivatives(Keywords& keys) {
   keys.remove("NUMERICAL_DERIVATIVES");
-  keys.addFlag("NUMERICAL_DERIVATIVES",true,"analytical derivatives are not implemented for this keyword so numerical derivatives are always used");
+  keys.addFlag("NUMERICAL_DERIVATIVES",false,"analytical derivatives are not implemented for this keyword so numerical derivatives are always used");
 }
 
 void ActionWithValue::componentsAreNotOptional(Keywords& keys) {
@@ -126,12 +126,6 @@ void ActionWithValue::setPeriodic( const std::string& min, const std::string& ma
   plumed_massert(values.size()==1,"The number of components is not equal to one");
   plumed_massert(values[0]->name==getLabel(), "The value you are trying to set is not the default");
   values[0]->setDomain( min, max );
-}
-
-Value* ActionWithValue::getPntrToValue() {
-  plumed_dbg_massert(values.size()==1,"The number of components is not equal to one");
-  plumed_dbg_massert(values[0]->name==getLabel(), "The value you are trying to retrieve is not the default");
-  return values[0].get();
 }
 
 // -- HERE WE HAVE THE STUFF FOR NAMED VALUES / COMPONENTS -- //
@@ -272,7 +266,7 @@ bool ActionWithValue::checkForForces() {
   if( ncp==0 || nder==0 ) return false;
 
   unsigned nvalsWithForce=0;
-  std::vector<unsigned> valsToForce( ncp );
+  valsToForce.resize(ncp);
   for(unsigned i=0; i<ncp; ++i) {
     if( values[i]->hasForce && !values[i]->constant ) {
       valsToForce[nvalsWithForce]=i; nvalsWithForce++;

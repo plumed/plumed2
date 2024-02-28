@@ -112,10 +112,6 @@ void ActionAtomistic::requestAtoms(const std::vector<AtomNumber> & a, const bool
   unique_local_needs_update=true;
 }
 
-Vector ActionAtomistic::pbcDistance(const Vector &v1,const Vector &v2)const {
-  return pbc.distance(v1,v2);
-}
-
 void ActionAtomistic::pbcApply(std::vector<Vector>& dlist, unsigned max_index)const {
   pbc.apply(dlist, max_index);
 }
@@ -304,8 +300,12 @@ void ActionAtomistic::setForcesOnAtoms(const std::vector<double>& forcesToApply,
 }
 
 void ActionAtomistic::setForcesOnCell(const std::vector<double>& forcesToApply, unsigned& ind) {
+  setForcesOnCell(forcesToApply.data(),forcesToApply.size(),ind);
+}
+
+void ActionAtomistic::setForcesOnCell(const double* forcesToApply, std::size_t size, unsigned& ind) {
   for(unsigned i=0; i<9; ++i) {
-    plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
+    plumed_dbg_massert( ind<size, "problem setting forces in " + getLabel() );
     boxValue->addForce( i, forcesToApply[ind] ); ind++;
   }
 }
@@ -332,40 +332,12 @@ unsigned ActionAtomistic::getTotAtoms()const {
   return natoms;
 }
 
-Vector ActionAtomistic::getGlobalPosition(const std::pair<std::size_t,std::size_t>& a) const {
-  Vector pos;
-  pos[0]=xpos[a.first]->data[a.second];
-  pos[1]=ypos[a.first]->data[a.second];
-  pos[2]=zpos[a.first]->data[a.second];
-  return pos;
-}
-
-void ActionAtomistic::setGlobalPosition(const std::pair<std::size_t, std::size_t>& a, const Vector& pos ) {
-  xpos[a.first]->data[a.second]=pos[0];
-  ypos[a.first]->data[a.second]=pos[1];
-  zpos[a.first]->data[a.second]=pos[2];
-}
-
 void ActionAtomistic::makeWhole() {
   for(unsigned j=0; j<positions.size()-1; ++j) {
     const Vector & first (positions[j]);
     Vector & second (positions[j+1]);
     second=first+pbcDistance(first,second);
   }
-}
-
-Vector ActionAtomistic::getForce( const std::pair<std::size_t, std::size_t>& a ) const {
-  Vector f;
-  f[0]=xpos[a.first]->getForce(a.second);
-  f[1]=ypos[a.first]->getForce(a.second);
-  f[2]=zpos[a.first]->getForce(a.second);
-  return f;
-}
-
-void ActionAtomistic::addForce( const std::pair<std::size_t, std::size_t>& a, const Vector& f ) {
-  xpos[a.first]->addForce( a.second, f[0] );
-  ypos[a.first]->addForce( a.second, f[1] );
-  zpos[a.first]->addForce( a.second, f[2] );
 }
 
 void ActionAtomistic::getGradient( const unsigned& ind, Vector& deriv, std::map<AtomNumber,Vector>& gradients ) const {

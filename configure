@@ -10901,6 +10901,14 @@ program_transform_name=`$as_echo "$program_transform_name" | sed "$ac_script"`
 program_transform_name_sh=$(echo "${program_transform_name}" | sed 's:\$\$:$:g')
 program_name=$(echo plumed | sed "$program_transform_name_sh")
 
+cat >>confdefs.h <<_ACEOF
+#define __PLUMED_PROGRAM_NAME "$program_name"
+_ACEOF
+
+cat >>confdefs.h <<_ACEOF
+#define __PLUMED_SOEXT "$SOEXT"
+_ACEOF
+
 
 if test "$(echo "$program_name" | tr 'A-Z' 'a-z')" != "$(echo "$program_name" | tr 'A-Z' 'a-z' | sed 's/wrapper$//')" ; then
   as_fn_error $? "$program_name is not a valid program name (should not terminate with Wrapper)" "$LINENO" 5

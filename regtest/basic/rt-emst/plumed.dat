@@ -1,0 +1,24 @@
+UNITS LENGTH=A
+
+# this will incorrectly reconstruct PBC, and return !=0
+r1: RMSD REFERENCE=ref.pdb
+
+# this is zero in first frame, but non zero in subsequent (shifted) frames
+r2: RMSD REFERENCE=ref.pdb NOPBC
+
+WHOLEMOLECULES ENTITY0=1-123
+DUMPATOMS ATOMS=1-123 FILE=wrong.xyz PRECISION=3
+# these are always non zero, as PBC are wrong here
+r3: RMSD REFERENCE=ref.pdb
+r4: RMSD REFERENCE=ref.pdb NOPBC
+
+MOLINFO STRUCTURE=ref.pdb WHOLE
+WHOLEMOLECULES ENTITY0=1-123 EMST
+DUMPATOMS ATOMS=1-123 FILE=right.xyz PRECISION=3
+# this is non zero (incorrectly reconstructed)
+r5: RMSD REFERENCE=ref.pdb
+# finally, this is always zero
+r6: RMSD REFERENCE=ref.pdb NOPBC
+
+
+PRINT ARG=(r.) FILE=COLVAR

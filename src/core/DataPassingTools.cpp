@@ -45,9 +45,9 @@ public:
 
 std::unique_ptr<DataPassingTools> DataPassingTools::create(unsigned n) {
   if(n==sizeof(double)) {
-    return std::unique_ptr<DataPassingTools>(new DataPassingToolsTyped<double>());
+    return std::make_unique<DataPassingToolsTyped<double>>();
   } else  if(n==sizeof(float)) {
-    return std::unique_ptr<DataPassingTools>(new DataPassingToolsTyped<float>());
+    return std::make_unique<DataPassingToolsTyped<float>>();
   }
   std::string pp; Tools::convert(n,pp);
   plumed_merror("cannot create an MD interface with sizeof(real)=="+ pp);

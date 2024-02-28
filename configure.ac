@@ -1452,6 +1452,8 @@ AC_ARG_PROGRAM
 program_transform_name_sh=$(echo "${program_transform_name}" | sed 's:\$\$:$:g')
 program_name=$(echo plumed | sed "$program_transform_name_sh")
 AC_SUBST(program_name)
+AC_DEFINE_UNQUOTED([__PLUMED_PROGRAM_NAME],["$program_name"])
+AC_DEFINE_UNQUOTED([__PLUMED_SOEXT],["$SOEXT"])
 
 if test "$(echo "$program_name" | tr '[A-Z]' '[a-z]')" != "$(echo "$program_name" | tr '[A-Z]' '[a-z]' | sed 's/wrapper$//')" ; then
   AC_MSG_ERROR([$program_name is not a valid program name (should not terminate with Wrapper)])

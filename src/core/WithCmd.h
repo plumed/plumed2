@@ -24,6 +24,7 @@
 
 #include "tools/TypesafePtr.h"
 #include <string>
+#include <string_view>
 
 namespace PLMD {
 
@@ -32,12 +33,25 @@ namespace PLMD {
 /// cmd() method.
 class WithCmd {
 public:
-  virtual void cmd(const std::string& key,const TypesafePtr & val=nullptr)=0;
-  void cmd(const std::string& key,const TypesafePtr & val,const std::size_t* shape) {
+  /// This is the preferred method as it avoid allocations of temporaries.
+  /// If this is not overridded, it will call the legacy method.
+  virtual void cmd(std::string_view key,const TypesafePtr & val=nullptr) {
+    cmd(std::string(key),val);
+  }
+  /// This is the legacy method we used in older plumed versions, so it is still possible.
+  /// If this is not overridden, it will call the preferred method
+  virtual void cmd(const std::string& key,const TypesafePtr & val=nullptr) {
+    cmd(std::string_view(key),val);
+  }
+  void cmd(std::string_view key,const TypesafePtr & val,const std::size_t* shape) {
     cmd(key,TypesafePtr::setNelemAndShape(val,0,shape));
   }
-  void cmd(const std::string& key,const TypesafePtr & val,std::size_t nelem, const std::size_t* shape=nullptr) {
+  void cmd(std::string_view key,const TypesafePtr & val,std::size_t nelem, const std::size_t* shape=nullptr) {
     cmd(key,TypesafePtr::setNelemAndShape(val,nelem,shape));
+  }
+  /// This is needed to avoid ambiguities
+  void cmd(const char* key,const TypesafePtr & val=nullptr) {
+    cmd(std::string_view(key),val);
   }
   virtual ~WithCmd();
 };

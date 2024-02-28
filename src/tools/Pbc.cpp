@@ -36,7 +36,7 @@ Pbc::Pbc():
   invBox.zero();
 }
 
-void Pbc::buildShifts(std::vector<Vector> shifts[2][2][2])const {
+void Pbc::buildShifts(gch::small_vector<Vector,maxshiftsize> shifts[2][2][2])const {
   const double small=1e-28;
 
 // clear all shifts
@@ -156,6 +156,10 @@ double Pbc::distance( const bool pbc, const Vector& v1, const Vector& v2 ) const
 }
 
 void Pbc::apply(std::vector<Vector>& dlist, unsigned max_index) const {
+  apply(VectorView(&dlist[0][0],dlist.size()),max_index);
+}
+
+void Pbc::apply(VectorView dlist, unsigned max_index) const {
   if (max_index==0) max_index=dlist.size();
   if(type==unset) {
     // do nothing
@@ -170,10 +174,48 @@ void Pbc::apply(std::vector<Vector>& dlist, unsigned max_index) const {
       while(dlist[k][2]<=mdiag[2])  dlist[k][2]+=diag[2];
     }
 #else
-    for(unsigned k=0; k<max_index; ++k) for(int i=0; i<3; i++) dlist[k][i]=Tools::pbc(dlist[k][i]*invBox(i,i))*box(i,i);
+    for(unsigned k=0; k<max_index; ++k) {
+      for(int i=0; i<3; i++) {
+        dlist[k][i]=Tools::pbc(dlist[k][i]*invBox(i,i))*box(i,i);
+      }
+    }
 #endif
   } else if(type==generic) {
-    for(unsigned k=0; k<max_index; ++k) dlist[k]=distance(Vector(0.0,0.0,0.0),dlist[k]);
+    for(unsigned k=0; k<max_index; ++k) {
+      //Inlining by hand this part of function from distance speeds up by about 20-30%
+      //against the previos version, and 60-80% agains this version non inlined.
+      //I do not think is the `if(nshifts) *nshifts+=myshifts.size();`,
+      //but that the compiler now see how we are juggling with the memory and it
+      //does its magic
+
+      //I tried writing VectorGeneric<3> matmul(const MemoryView<3UL> a,const TensorGeneric<3,3>&b)
+      // by copy-pasting the original vector-tensor, but slows down this method by 10%... (on gcc9)
+      Vector s=matmul(Vector{dlist[k][0],dlist[k][1],dlist[k][2]},invReduced);
+      // bring to -0.5,+0.5 region in scaled coordinates:
+      for(int i=0; i<3; ++i) {
+        s[i]=Tools::pbc(s[i]);
+      }
+      Vector best(matmul(s,reduced));
+      // check if shifts have to be attempted:
+      if((std::fabs(s[0])+std::fabs(s[1])+std::fabs(s[2])>0.5)) {
+        // list of shifts is specific for that "octant" (depends on signs of s[i]):
+        const auto & myshifts(shifts[(s[0]>0?1:0)][(s[1]>0?1:0)][(s[2]>0?1:0)]);
+        Vector reference = best;
+        double lbest(modulo2(best));
+        // loop over possible shifts:
+        for(unsigned i=0; i<myshifts.size(); ++i) {
+          Vector trial=reference+myshifts[i];
+          double ltrial=modulo2(trial);
+          if(ltrial<lbest) {
+            lbest=ltrial;
+            best=trial;
+          }
+        }
+      }
+      dlist[k][0]  = best[0];
+      dlist[k][1]  = best[1];
+      dlist[k][2]  = best[2];
+    }
   } else plumed_merror("unknown pbc type");
 }
 
@@ -197,14 +239,16 @@ Vector Pbc::distance(const Vector&v1,const Vector&v2,int*nshifts)const {
 // NOTICE: the check in the previous line, albeit correct, is breaking many regtest
 //         since it does not apply Tools::pbc in many cases. Moreover, it does not
 //         introduce a significant gain. I thus leave it out for the moment.
-    if(true) {
+    if constexpr (true) {
 // bring to -0.5,+0.5 region in scaled coordinates:
-      for(int i=0; i<3; i++) s[i]=Tools::pbc(s[i]);
+      for(int i=0; i<3; i++) {
+        s[i]=Tools::pbc(s[i]);
+      }
       d=matmul(s,reduced);
 // check if shifts have to be attempted:
       if((std::fabs(s[0])+std::fabs(s[1])+std::fabs(s[2])>0.5)) {
 // list of shifts is specific for that "octant" (depends on signs of s[i]):
-        const std::vector<Vector> & myshifts(shifts[(s[0]>0?1:0)][(s[1]>0?1:0)][(s[2]>0?1:0)]);
+        const auto & myshifts(shifts[(s[0]>0?1:0)][(s[1]>0?1:0)][(s[2]>0?1:0)]);
         Vector best(d);
         double lbest(modulo2(best));
 // loop over possible shifts:

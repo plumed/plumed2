@@ -23,6 +23,7 @@
 #include "core/ActionRegister.h"
 #include "tools/Vector.h"
 #include "tools/Exception.h"
+#include <array>
 
 namespace PLMD {
 namespace vatom {
@@ -53,6 +54,7 @@ class Ghost:
   public ActionWithVirtualAtom
 {
   std::vector<double> coord;
+  std::vector<Tensor> deriv;
 public:
   explicit Ghost(const ActionOptions&ao);
   void calculate() override;
@@ -86,12 +88,12 @@ Ghost::Ghost(const ActionOptions&ao):
 
 void Ghost::calculate() {
   Vector pos;
-  std::vector<Tensor> deriv(getNumberOfAtoms());
-  std::vector<Vector> n;
+  deriv.resize(getNumberOfAtoms());
+  std::array<Vector,3> n;
 
 // first versor
   Vector n01 = delta(getPosition(0), getPosition(1));
-  n.push_back(n01/n01.modulo());
+  n[0]=n01/n01.modulo();
 
 // auxiliary vector
   Vector n02 = delta(getPosition(0), getPosition(2));
@@ -99,10 +101,10 @@ void Ghost::calculate() {
 // second versor
   Vector n03 = crossProduct(n[0],n02);
   double n03_norm = n03.modulo();
-  n.push_back(n03/n03_norm);
+  n[1]=n03/n03_norm;
 
 // third versor
-  n.push_back(crossProduct(n[0],n[1]));
+  n[2]=crossProduct(n[0],n[1]);
 
 // origin of the reference system
   pos = getPosition(0);

@@ -300,10 +300,7 @@ void EDS::registerKeywords(Keywords &keys)
   keys.add("optional", "VIRIAL", "Add an update penalty for having non-zero virial contributions. Only makes sense with multiple correlated CVs.");
   keys.add("optional", "LOGWEIGHTS", "Add weights to use for computing statistics. For example, if biasing with metadynamics.");
   keys.addFlag("LM", false, "Use Levenberg-Marquadt algorithm along with simultaneous keyword. Otherwise use gradient descent.");
-  // temporary suppression, this is likely a bug that should be fixed!
-  // cppcheck-suppress incorrectStringBooleanError
-  keys.addFlag("LM_MIXING", "1", "Initial mixing parameter when using Levenberg-Marquadt minimization.");
-
+  keys.add("compulsory", "LM_MIXING", "1", "Initial mixing parameter when using Levenberg-Marquadt minimization.");
   keys.add("optional", "RESTART_FMT", "the format that should be used to output real numbers in EDS restarts");
   keys.add("optional", "OUT_RESTART", "Output file for all information needed to continue EDS simulation. "
            "If you have the RESTART directive set (global or for EDS), this file will be appended to. "

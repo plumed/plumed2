@@ -51,7 +51,6 @@
 #include <cstdio>
 #include <cstring>
 #include <set>
-#include <unordered_map>
 #include <exception>
 #include <stdexcept>
 #include <ios>
@@ -279,7 +278,7 @@ PlumedMain::~PlumedMain() {
 #define CHECK_NOTNULL(val,word) plumed_assert(val)<<"NULL pointer received in cmd(\"" << word << "\")"
 
 
-void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
+void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
 
 // Enumerate all possible commands:
   enum {
@@ -287,22 +286,9 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
   };
 
 // Static object (initialized once) containing the map of commands:
-  const static std::unordered_map<std::string, int> word_map = {
+  const static Tools::FastStringUnorderedMap<int> word_map = {
 #include "PlumedMainMap.inc"
   };
-
-// Static object (initialized once) containing a string_view copy of the map of commands:
-// WARNING: this way of constructing it using string_view's to
-// word_map is only correct because word_map is const.
-// If we want to implement a more general way of accessing (non const)
-// maps using heterogeneous keys, we should have a look at this:
-// https://stackoverflow.com/questions/34596768/stdunordered-mapfind-using-a-type-different-than-the-key-type
-
-  const static auto word_map_view = [](const auto & origin) {
-    std::unordered_map<std::string_view,int> result;
-    for(auto & it : origin) result.emplace(it.first,it.second);
-    return result;
-  }(word_map);
 
   try {
 
@@ -316,8 +302,8 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       // do nothing
     } else {
       int iword=-1;
-      const auto it=word_map_view.find(words[0]);
-      if(it!=word_map_view.end()) iword=it->second;
+      const auto it=word_map.find(words[0]);
+      if(it!=word_map.end()) iword=it->second;
 
       switch(iword) {
       case cmd_setBox:
@@ -840,7 +826,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
       }
       break;
       default:
-        plumed_merror("cannot interpret cmd(\"" + word + "\"). check plumed developers manual to see the available commands.");
+        plumed_error() << "cannot interpret cmd(\"" << word << "\"). check plumed developers manual to see the available commands.";
         break;
       }
     }
@@ -1140,13 +1126,11 @@ void PlumedMain::justCalculate() {
 // We explicitly declare a Stopwatch::Handler here to allow for conditional initialization.
         Stopwatch::Handler sw;
         if(detailedTimers) {
-          std::string actionNumberLabel;
-          Tools::convert(iaction,actionNumberLabel);
+          auto actionNumberLabel=std::to_string(iaction);
           const unsigned m=actionSet.size();
           unsigned k=0; unsigned n=1; while(n<m) { n*=10; k++; }
-          const int pad=k-actionNumberLabel.length();
-          for(int i=0; i<pad; i++) actionNumberLabel=" "+actionNumberLabel;
-          sw=stopwatch.startStop("4A "+actionNumberLabel+" "+p->getLabel());
+          auto spaces=std::string(k-actionNumberLabel.length(),' ');
+          sw=stopwatch.startStop("4A " + spaces + actionNumberLabel+" "+p->getLabel());
         }
         ActionWithValue*av=p->castToActionWithValue();
         if( av && av->calculateOnUpdate() ) continue ;
@@ -1198,13 +1182,11 @@ void PlumedMain::backwardPropagate() {
 // We explicitly declare a Stopwatch::Handler here to allow for conditional initialization.
       Stopwatch::Handler sw;
       if(detailedTimers) {
-        std::string actionNumberLabel;
-        Tools::convert(iaction,actionNumberLabel);
+        auto actionNumberLabel=std::to_string(iaction);
         const unsigned m=actionSet.size();
         unsigned k=0; unsigned n=1; while(n<m) { n*=10; k++; }
-        const int pad=k-actionNumberLabel.length();
-        for(int i=0; i<pad; i++) actionNumberLabel=" "+actionNumberLabel;
-        sw=stopwatch.startStop("5A "+actionNumberLabel+" "+p->getLabel());
+        auto spaces=std::string(k-actionNumberLabel.length(),' ');
+        sw=stopwatch.startStop("5A " + spaces + actionNumberLabel+" "+p->getLabel());
       }
 
       p->apply();

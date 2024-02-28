@@ -23,8 +23,8 @@
 #define __PLUMED_tools_Stopwatch_h
 
 #include "Exception.h"
+#include "Tools.h"
 #include <string>
-#include <unordered_map>
 #include <iosfwd>
 #include <chrono>
 
@@ -249,7 +249,7 @@ private:
 
 /// List of watches.
 /// Each watch is labeled with a string.
-  std::unordered_map<std::string,Watch> watches;
+  Tools::FastStringUnorderedMap<Watch> watches;
 
 /// Log over stream os.
   std::ostream& log(std::ostream& os)const;
@@ -264,24 +264,32 @@ public:
   explicit Stopwatch(Log&log): mylog(&log) {}
 // Destructor.
   ~Stopwatch();
+/// Deleted copy
+  Stopwatch(const Stopwatch&) = delete;
+/// Deleted assignment
+  Stopwatch& operator=(const Stopwatch&) = delete;
+/// Move constructor
+  Stopwatch(Stopwatch&&) noexcept;
+/// Move assignment
+  Stopwatch& operator=(Stopwatch&&) noexcept;
 /// Start timer named "name"
-  Stopwatch& start(const std::string&name=StopwatchEmptyString());
+  Stopwatch& start(const std::string_view&name=StopwatchEmptyString());
 /// Stop timer named "name"
-  Stopwatch& stop(const std::string&name=StopwatchEmptyString());
+  Stopwatch& stop(const std::string_view&name=StopwatchEmptyString());
 /// Pause timer named "name"
-  Stopwatch& pause(const std::string&name=StopwatchEmptyString());
+  Stopwatch& pause(const std::string_view&name=StopwatchEmptyString());
 /// Dump all timers on an ostream
   friend std::ostream& operator<<(std::ostream&,const Stopwatch&);
 /// Start with exception safety, then stop.
 /// Starts the Stopwatch and returns an object that, when goes out of scope,
 /// stops the watch. This allows Stopwatch to be started and stopped in
 /// an exception safe manner.
-  Handler startStop(const std::string&name=StopwatchEmptyString());
+  Handler startStop(const std::string_view&name=StopwatchEmptyString());
 /// Start with exception safety, then pause.
 /// Starts the Stopwatch and returns an object that, when goes out of scope,
 /// pauses the watch. This allows Stopwatch to be started and paused in
 /// an exception safe manner.
-  Handler startPause(const std::string&name=StopwatchEmptyString());
+  Handler startPause(const std::string_view&name=StopwatchEmptyString());
 };
 
 inline
@@ -301,30 +309,30 @@ Stopwatch::Handler::~Handler() {
 }
 
 inline
-Stopwatch& Stopwatch::start(const std::string & name) {
+Stopwatch& Stopwatch::start(const std::string_view & name) {
   watches[name].start();
   return *this;
 }
 
 inline
-Stopwatch& Stopwatch::stop(const std::string & name) {
+Stopwatch& Stopwatch::stop(const std::string_view & name) {
   watches[name].stop();
   return *this;
 }
 
 inline
-Stopwatch& Stopwatch::pause(const std::string & name) {
+Stopwatch& Stopwatch::pause(const std::string_view & name) {
   watches[name].pause();
   return *this;
 }
 
 inline
-Stopwatch::Handler Stopwatch::startStop(const std::string&name) {
+Stopwatch::Handler Stopwatch::startStop(const std::string_view&name) {
   return watches[name].startStop();
 }
 
 inline
-Stopwatch::Handler Stopwatch::startPause(const std::string&name) {
+Stopwatch::Handler Stopwatch::startPause(const std::string_view&name) {
   return watches[name].startPause();
 }
 
@@ -400,6 +408,24 @@ Stopwatch::Handler Stopwatch::Watch::startStop() {
 inline
 Stopwatch::Handler Stopwatch::Watch::startPause() {
   return Handler( this,false );
+}
+
+inline
+Stopwatch::Stopwatch(Stopwatch&& other) noexcept:
+  mylog(other.mylog),
+  watches(std::move(other.watches))
+{
+  other.mylog=nullptr;
+}
+
+inline
+Stopwatch& Stopwatch::operator=(Stopwatch&& other) noexcept {
+  if(this!=&other) {
+    mylog=other.mylog;
+    watches=std::move(other.watches);
+    other.mylog=nullptr;
+  }
+  return *this;
 }
 
 

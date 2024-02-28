@@ -83,6 +83,7 @@ private:
   int rg_type;
   bool use_masses;
   bool nopbc;
+  std::vector<Vector> derivatives;
 public:
   static void registerKeywords(Keywords& keys);
   explicit Gyration(const ActionOptions&);
@@ -176,8 +177,7 @@ void Gyration::calculate() {
   com /= totmass;
 
   double rgyr=0.;
-  std::vector<Vector> derivatives( getNumberOfAtoms() );
-  Tensor virial;
+  derivatives.resize(getNumberOfAtoms());
 
   if(rg_type==RADIUS||rg_type==TRACE) {
     if( use_masses ) {
@@ -185,14 +185,12 @@ void Gyration::calculate() {
         const Vector diff = delta( com, getPosition(i) );
         rgyr          += getMass(i)*diff.modulo2();
         derivatives[i] = diff*getMass(i);
-        virial        -= Tensor(getPosition(i),derivatives[i]);
       }
     } else {
       for(unsigned i=0; i<getNumberOfAtoms(); i++) {
         const Vector diff = delta( com, getPosition(i) );
         rgyr          += diff.modulo2();
         derivatives[i] = diff;
-        virial        -= Tensor(getPosition(i),derivatives[i]);
       }
     }
     double fact;
@@ -205,7 +203,7 @@ void Gyration::calculate() {
     }
     setValue(rgyr);
     for(unsigned i=0; i<getNumberOfAtoms(); i++) setAtomsDerivatives(i,fact*derivatives[i]);
-    setBoxDerivatives(fact*virial);
+    setBoxDerivativesNoPbc();
     return;
   }
 

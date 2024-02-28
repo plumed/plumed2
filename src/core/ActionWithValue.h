@@ -76,6 +76,7 @@ private:
   std::vector<std::unique_ptr<Value>> values;
 /// A vector that is used to hold the forces that we will apply on the input quantities
   std::vector<double> forcesForApply;
+  std::vector<unsigned> valsToForce;
 /// Are we skipping the calculation of the derivatives
   bool noderiv;
 /// Are we using numerical derivatives to differentiate
@@ -194,7 +195,7 @@ double ActionWithValue::getOutputQuantity(const unsigned j) const {
 
 inline
 double ActionWithValue::getOutputQuantity( const std::string& name ) const {
-  int offset=getLabel().size();
+  auto offset=getLabel().size();
   for(unsigned i=0; i<values.size(); ++i) {
     const std::string & valname=values[i]->name;
     if(valname.size()>offset+1 && valname[offset]=='.' ) {
@@ -238,7 +239,12 @@ const std::vector<double>& ActionWithValue::getForcesToApply() const {
   return forcesForApply;
 }
 
-
+inline
+Value* ActionWithValue::getPntrToValue() {
+  plumed_dbg_massert(values.size()==1,"The number of components is not equal to one");
+  plumed_dbg_massert(values[0]->name==getLabel(), "The value you are trying to retrieve is not the default");
+  return values[0].get();
+}
 
 }
 

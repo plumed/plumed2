@@ -131,6 +131,7 @@ class Center:
   std::vector<double> weights;
   std::vector<Tensor> dcenter_sin;
   std::vector<Tensor> dcenter_cos;
+  std::vector<Tensor> deriv;
   bool isChargeSet_;
   bool isMassSet_;
   bool weight_mass;
@@ -253,7 +254,7 @@ void Center::calculate() {
     }
   }
 
-  std::vector<Tensor> deriv(getNumberOfAtoms());
+  deriv.resize(getNumberOfAtoms());
 
   if(dophases) {
     dcenter_sin.resize(getNumberOfAtoms());
