@@ -99,10 +99,45 @@ public:
   static constexpr std::size_t maxdim=16;
 
 
+  /**
+  Auxiliary class for accelerating grid calculations.
+
+  Many functions in the Grid class have loops running over the dimensions.
+  These loops are always with a little number of iterations, so would likely
+  benefit unrolling. Even better, if the compiler knew the dimension a priori
+  it could remove the loops in most common cases (e.g. dimension=1 or 2).
+
+  To obtain this, I added this AcceleratorBase class. Specifically:
+  - Any method in the Grid class that is a bottleneck in performance and
+    has a loop can be moved to this auxiliary class.
+  - The method should be declared here as a pure virtual function
+    of class AcceleratorBase. The implementation instead goes in
+    class Accelerator
+  - Class Accelerator is derived from AcceleratorBase but depends on
+    dimension as a template variable.
+  - The function AcceleratorBase::create takes case of constructing
+    accelerators for each possible value of dimension.
+
+  The trick works because we don't expect dimension to ever be very
+  high. By restricting it to <=16, we can have a limited number of
+  compiled instances. The compiler will choose at runtime which one should
+  be used.
+
+  This class, as well as the derived classes, are expected to be
+  empty. In other words, they only contain the pointer to a virtual
+  table that the compiler will use to call the proper implementation
+  variant, with the correct dimension.
+
+  \warning
+  Interface might change at any time.
+  Do not use this outside of class GridBase and children.
+  */
   class AcceleratorBase {
   public:
+    /// Creates an accelerator with proper dimension
     static std::unique_ptr<AcceleratorBase> create(unsigned dim);
     virtual ~AcceleratorBase() = default;
+    /// Can be used to check which value of dimension was used
     virtual unsigned getDimension() const=0;
     virtual std::vector<GridBase::index_t> getNeighbors(const GridBase& grid, const std::vector<unsigned> & nbin_,const std::vector<bool> & pbc_,const unsigned* indices,std::size_t indices_size, const std::vector<unsigned> &nneigh) const=0;
     virtual GridBase::index_t getIndex(const GridBase& grid, const std::vector<unsigned> & nbin_, const unsigned* indices,std::size_t indices_size) const=0;
@@ -111,20 +146,54 @@ public:
     virtual void getIndices(const std::vector<double> & min_,const std::vector<double> & dx_, const std::vector<double> & x, unsigned* rindex_data,std::size_t rindex_size) const=0;
   };
 
+  /**
+  Auxiliary class for managing AcceleratorBase.
+
+  class GridBase should contain a std::unique_ptr<AcceleratorBase>, which
+  can be used to access the specialized versions. However, this would
+  make a GridBase object not copyable. Instead of redefining
+  copy constructor and copy assignment for GridBase, which has a lot of
+  members, we use this wrapper class that just manage the lifetime
+  of the underlying Accelerator object.
+
+  The underlying object is made accessible through the -> operator,
+  so that oen can simply call functions as accelerator->function.
+
+  \warning
+  Interface might change at any time.
+  Do not use this outside of class GridBase and children.
+  */
   class AcceleratorHandler {
-  public:
+    /// This is the underlying pointer.
     std::unique_ptr<AcceleratorBase> ptr;
+  public:
+    /// Enable access to methods of AcceleratorBase
+    const AcceleratorBase* operator->() const {
+      return ptr.get();
+    }
+    /// Enable access to methods of AcceleratorBase
+    AcceleratorBase* operator->() {
+      return ptr.get();
+    }
+    /// Conversion to bool allows to check if the ptr has been set
+    explicit operator bool() const noexcept {
+      return bool(ptr);
+    }
+    /// Move constructor
     AcceleratorHandler(const AcceleratorHandler& other):
-      ptr((other.ptr?AcceleratorBase::create(other.ptr->getDimension()):nullptr))
+      ptr((other.ptr?AcceleratorBase::create(other->getDimension()):nullptr))
     {}
+    /// Move assignment
     AcceleratorHandler & operator=(const AcceleratorHandler & other) {
       if(this!=&other) {
         ptr.reset();
-        if(other.ptr) ptr=AcceleratorBase::create(other.ptr->getDimension());
+        if(other.ptr) ptr=AcceleratorBase::create(other->getDimension());
       }
       return *this;
     }
+    /// Constructor without arguments result in a non-usable accelerator (dimension is unspecified)
     AcceleratorHandler() = default;
+    /// Constructor with an argument creates an accelerator with a fixed dimensionality
     AcceleratorHandler(unsigned dimension):
       ptr(AcceleratorBase::create(dimension))
     {}
