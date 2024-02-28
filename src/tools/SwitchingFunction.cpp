@@ -214,7 +214,6 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   bool dontstretch=false;
   Tools::parseFlag(data,"NOSTRETCH",dontstretch); // this is ignored now
   if(dontstretch) dostretch=false;
-  Tools::parseFlag(data,"RETURN_DERIV",returnderiv);
   double r0;
   if(name=="CUBIC") {
     r0 = dmax - d0;
@@ -258,7 +257,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   }
   else if(name=="EXP") type=exponential;
   else if(name=="GAUSSIAN") {
-    type=gaussian; fastgaussian=(!returnderiv && r0==1.0 && d0==0.0 );
+    type=gaussian; fastgaussian=( r0==1.0 && d0==0.0 );
   } else if(name=="CUBIC") type=cubic;
   else if(name=="TANH") type=tanh;
   else if(name=="COSINUS") type=cosinus;
@@ -404,7 +403,6 @@ double SwitchingFunction::calculateSqr(double distance2,double&dfunc)const {
     dfunc*=stretch;
     return result;
   } else if( fastgaussian ) {
-    plumed_dbg_assert( !returnderiv );
     if(distance2>dmax_2) {
       dfunc=0.0;
       return 0.0;
@@ -512,7 +510,7 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
 
 // this is because calculate() sets dfunc to the derivative divided times the distance.
 // (I think this is misleading and I would like to modify it - GB)
-    if( !returnderiv ) dfunc/=distance;
+    dfunc/=distance;
   }
 
   result=result*stretch+shift;

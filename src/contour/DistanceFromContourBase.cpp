@@ -81,7 +81,7 @@ DistanceFromContourBase::DistanceFromContourBase( const ActionOptions& ao ):
 
   // Read in details of phase field construction
   parseVector("BANDWIDTH",bw); parse("KERNEL",kerneltype); parse("CONTOUR",contour);
-  std::string errors; switchingFunction.set( kerneltype + " R_0=1.0 NOSTRETCH RETURN_DERIV", errors );
+  std::string errors; switchingFunction.set( kerneltype + " R_0=1.0 NOSTRETCH", errors );
   if( errors.length()!=0 ) error("problem reading switching function description " + errors);
   double det=1; for(unsigned i=0; i<bw.size(); ++i) det*=bw[i]*bw[i];
   gvol=1.0; if( kerneltype=="GAUSSIAN" ) gvol=pow( 2*pi, 0.5*bw.size() ) * pow( det, 0.5 );
