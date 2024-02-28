@@ -58,6 +58,7 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithMatrix(const ActionOptions&);
+  virtual ~ActionWithMatrix();
 ///
   void getAllActionLabelsInMatrixChain( std::vector<std::string>& mylabels ) const override ;
 ///

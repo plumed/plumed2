@@ -38,6 +38,10 @@ ActionWithMatrix::ActionWithMatrix(const ActionOptions&ao):
 {
 }
 
+ActionWithMatrix::~ActionWithMatrix() {
+  if( matrix_to_do_before ) { matrix_to_do_before->matrix_to_do_after=NULL; matrix_to_do_before->next_action_in_chain=NULL; }
+}
+
 void ActionWithMatrix::getAllActionLabelsInMatrixChain( std::vector<std::string>& mylabels ) const {
   bool found=false;
   for(unsigned i=0; i<mylabels.size(); ++i) {

@@ -51,6 +51,10 @@ ActionWithVector::ActionWithVector(const ActionOptions&ao):
   if( keywords.exists("SERIAL") ) parseFlag("SERIAL",serial);
 }
 
+ActionWithVector::~ActionWithVector() {
+  if( action_to_do_before ) action_to_do_before->action_to_do_after=NULL;
+}
+
 void ActionWithVector::lockRequests() {
   ActionAtomistic::lockRequests();
   ActionWithArguments::lockRequests();
