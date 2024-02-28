@@ -106,11 +106,13 @@ extern "C" void signalHandler(int signal) {
 /// Local structure handling a kernel and the related timers
 struct Kernel {
   std::string path;
+  std::string plumed_dat;
   PlumedHandle handle;
   Stopwatch stopwatch;
   Log* log=nullptr;
-  Kernel(const std::string & path_,Log* log_):
+  Kernel(const std::string & path_,const std::string & plumed_dat, Log* log_):
     path(path_),
+    plumed_dat(plumed_dat),
     stopwatch(*log_),
     log(log_)
   {
@@ -120,15 +122,29 @@ struct Kernel {
     if(log) {
       (*log)<<"\n";
       (*log)<<"Kernel: "<<path<<"\n";
+      (*log)<<"Input:  "<<plumed_dat<<"\n";
     }
   }
-  Kernel(Kernel && other):
+  Kernel(Kernel && other) noexcept:
     path(std::move(other.path)),
+    plumed_dat(std::move(other.plumed_dat)),
     handle(std::move(other.handle)),
     stopwatch(std::move(other.stopwatch)),
     log(other.log)
   {
     other.log=nullptr;
+  }
+  Kernel & operator=(Kernel && other) noexcept
+  {
+    if(this != &other) {
+      path=std::move(other.path);
+      plumed_dat=std::move(other.plumed_dat);
+      handle=std::move(other.handle);
+      stopwatch=std::move(other.stopwatch);
+      log=other.log;
+      other.log=nullptr;
+    }
+    return *this;
   }
 };
 
@@ -149,10 +165,9 @@ PLUMED_REGISTER_CLTOOL(Benchmark,"benchmark")
 void Benchmark::registerKeywords( Keywords& keys ) {
   CLTool::registerKeywords( keys );
   keys.add("compulsory","--plumed","plumed.dat","convert the input in this file to the html manual");
+  keys.add("compulsory","--kernel","this","colon separated path(s) to kernel(s)");
   keys.add("compulsory","--natoms","100000","the number of atoms to use for the simulation");
   keys.add("compulsory","--nsteps","2000","number of steps of MD to perform (-1 means forever)");
-  keys.add("optional","--kernel","path to kernel (default=current kernel)");
-  keys.add("optional","--kernels","path to kernels (: separated)");
   keys.addFlag("--shuffled",false,"reshuffle atoms");
 }
 
@@ -181,33 +196,41 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
 
   // construct the kernels vector:
   {
-    std::string path,paths;
     std::vector<std::string> allpaths;
-    parse("--kernel",path);
-    parse("--kernels",paths);
-    plumed_assert(!(path.length()>0 && paths.length()>0)) << "either use kernel or kernels";
-    if(path.length()>0) {
-      allpaths.push_back(path);
-    } else if(paths.length()>0) {
+
+    {
+      std::string paths;
+      parse("--kernel",paths);
       allpaths=Tools::getWords(paths,":");
-    } else {
-      allpaths.push_back("this");
     }
 
-    // reverse order so that log happens in the forward order:
-    std::reverse(allpaths.begin(),allpaths.end());
+    std::vector<std::string> allplumed;
+    {
+      std::string paths;
+      parse("--plumed",paths);
+      allplumed=Tools::getWords(paths,":");
+    }
 
-    for(auto p : allpaths) kernels.emplace_back(p,&log);
+    plumed_assert(allplumed.size()>0 && allpaths.size()>0);
+
+    if(allplumed.size()>1 && allpaths.size()>1 && allplumed.size() != allpaths.size()) {
+      plumed_error() << "--kernel and --plumed should have either one element or the same number of elements";
+    }
+
+    if(allplumed.size()>1 && allpaths.size()==1) for(unsigned i=1; i<allplumed.size(); i++) allpaths.push_back(allpaths[0]);
+    if(allplumed.size()==1 && allpaths.size()>1) for(unsigned i=1; i<allpaths.size(); i++) allplumed.push_back(allplumed[0]);
+
+    for(unsigned i=0; i<allpaths.size(); i++) kernels.emplace_back(allpaths[i],allplumed[i],&log);
   }
+
+  // reverse order so that log happens in the forward order:
+  std::reverse(kernels.begin(),kernels.end());
 
   // read other flags:
   bool shuffled=false;
   parseFlag("--shuffled",shuffled);
   int nf; parse("--nsteps",nf);
   unsigned natoms; parse("--natoms",natoms);
-
-  std::string plumedFile;
-  parse("--plumed",plumedFile);
 
   std::vector<int> shuffled_indexes;
 
@@ -224,7 +247,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
     p.cmd("setMDMassUnits",1.0);
     p.cmd("setMDEngine","benchmarks");
     p.cmd("setTimestep",1.0);
-    p.cmd("setPlumedDat",plumedFile.c_str());
+    p.cmd("setPlumedDat",k.plumed_dat.c_str());
     p.cmd("setLog",out);
     p.cmd("setNatoms",natoms);
     p.cmd("init");
