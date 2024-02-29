@@ -130,8 +130,8 @@ void FindGridOptimum::calculate() {
   }
   // This basically ensures we deal with cases where all points on the grid are infinity as isinf doesn't work on intel compiler
   if( constant ) {
-      if( domin && gval->get(0)>=gval->get(1) ) return;
-      else if( gval->get(0)<=gval->get(1) ) return;
+    if( domin && gval->get(0)>=gval->get(1) ) return;
+    else if( gval->get(0)<=gval->get(1) ) return;
   }
   if( std::isinf(optval) ) { return; }
 
