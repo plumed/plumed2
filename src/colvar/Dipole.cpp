@@ -85,6 +85,9 @@ class Dipole : public Colvar {
   std::vector<double> value, masses, charges;
   std::vector<std::vector<Vector> > derivs;
   std::vector<Tensor> virial;
+  Value* valuex=nullptr;
+  Value* valuey=nullptr;
+  Value* valuez=nullptr;
 public:
   explicit Dipole(const ActionOptions&);
   static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
@@ -121,7 +124,12 @@ Dipole::Dipole(const ActionOptions&ao):
 {
   parseAtomList(-1,ga_lista,this); charges.resize(ga_lista.size());
   components=(getModeAndSetupValues(this)==1);
-  if( components ) { value.resize(3); derivs.resize(3); virial.resize(3); }
+  if( components ) {
+    value.resize(3); derivs.resize(3); virial.resize(3);
+    valuex=getPntrToComponent("x");
+    valuey=getPntrToComponent("y");
+    valuez=getPntrToComponent("z");
+  }
   for(unsigned i=0; i<derivs.size(); ++i) derivs[i].resize( ga_lista.size() );
   parseFlag("NOPBC",nopbc);
   checkRead();
@@ -168,9 +176,6 @@ void Dipole::calculate()
     setValue(value[0]);
   } else {
     calculateCV( 1, masses, charges, getPositions(), value, derivs, virial, this );
-    Value* valuex=getPntrToComponent("x");
-    Value* valuey=getPntrToComponent("y");
-    Value* valuez=getPntrToComponent("z");
     for(unsigned i=0; i<N; i++) {
       setAtomsDerivatives(valuex,i,derivs[0][i]);
       setAtomsDerivatives(valuey,i,derivs[1][i]);
