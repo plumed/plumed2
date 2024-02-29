@@ -1,0 +1,37 @@
+flowchart TB 
+MD(positions from MD)
+Box("label=Box 
+ PBC 
+")
+Box -- Box --> c1
+linkStyle 0 stroke:red,color:red;
+MD --> c1
+linkStyle 1 stroke:violet,color:violet;
+c1(["label=c1 
+ COORDINATION 
+"])
+Box -- Box --> d1
+linkStyle 2 stroke:red,color:red;
+MD --> d1
+linkStyle 3 stroke:violet,color:violet;
+subgraph subd1 [d1]
+d1(["label=d1 
+ DISTANCE 
+"])
+d1l(["label=d1l 
+ LESS_THAN 
+"])
+d1c(["label=d1c 
+ SUM 
+"])
+end
+d1 -- d1 --> d1l
+linkStyle 4 stroke:blue,color:blue;
+d1l -- d1l --> d1c
+linkStyle 5 stroke:blue,color:blue;
+c1 -- c1 --> 7
+d1c -- d1c --> 7
+7("label=#64;7 
+ PRINT
+FILE=colvar 
+")

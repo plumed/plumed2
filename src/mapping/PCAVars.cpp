@@ -280,7 +280,7 @@ PCAVars::PCAVars(const ActionOptions& ao):
     log.printf("\n");
   }
   requestAtoms( atoms ); std::vector<Value*> req_args;
-  interpretArgumentList( args, req_args ); requestArguments( req_args );
+  interpretArgumentList( args, plumed.getActionSet(), this, req_args ); requestArguments( req_args );
 
   // And now check that the atoms/arguments are the same in all the eigenvalues
   for(unsigned i=0; i<myframes.size(); ++i) { myframes[i]->getAtomRequests( atoms, false ); myframes[i]->getArgumentRequests( args, false ); }
@@ -449,7 +449,7 @@ void PCAVars::apply() {
     }
   }
   if( wasforced ) {
-    unsigned ind=0; addForcesOnArguments( 0, forcesToApply, ind );
+    unsigned ind=0; addForcesOnArguments( 0, forcesToApply, ind, getLabel() );
     if( getNumberOfAtoms()>0 ) setForcesOnAtoms( forcesToApply, ind );
   }
 

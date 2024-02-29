@@ -56,6 +56,15 @@ PRINT ARG=restraint.bias
 */
 //+ENDPLUMEDOC
 
+//+PLUMEDOC BIAS RESTRAINT_SCALAR
+/*
+Adds harmonic and/or linear restraints on one or more scalar variables.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 class Restraint : public Bias {
   std::vector<double> at;
   std::vector<double> kappa;
@@ -67,7 +76,7 @@ public:
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(Restraint,"RESTRAINT")
+PLUMED_REGISTER_ACTION(Restraint,"RESTRAINT_SCALAR")
 
 void Restraint::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);

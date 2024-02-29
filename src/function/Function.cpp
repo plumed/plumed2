@@ -44,16 +44,6 @@ void Function::addValueWithDerivatives() {
   plumed_massert( getNumberOfArguments()!=0, "for functions you must requestArguments before adding values");
   ActionWithValue::addValueWithDerivatives();
   getPntrToValue()->resizeDerivatives(getNumberOfArguments());
-
-  if( keywords.exists("PERIODIC") ) {
-    std::vector<std::string> period;
-    parseVector("PERIODIC",period);
-    if(period.size()==1 && period[0]=="NO") {
-      setNotPeriodic();
-    } else if(period.size()==2) {
-      setPeriodic(period[0],period[1]);
-    } else error("missing PERIODIC keyword");
-  }
 }
 
 void Function::addComponentWithDerivatives( const std::string& name ) {
@@ -65,7 +55,7 @@ void Function::addComponentWithDerivatives( const std::string& name ) {
 void Function::apply()
 {
   if( !checkForForces() ) return;
-  unsigned ind=0; addForcesOnArguments( 0, getForcesToApply(), ind );
+  unsigned ind=0; addForcesOnArguments( 0, getForcesToApply(), ind, getLabel() );
 }
 
 }

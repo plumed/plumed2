@@ -54,6 +54,8 @@ void ActionWithVirtualAtom::requestAtoms(const std::vector<AtomNumber> & a) {
 }
 
 void ActionWithVirtualAtom::apply() {
+  if( !checkForForces() ) return ;
+
   Value* xval=getPntrToComponent(0);
   Value* yval=getPntrToComponent(1);
   Value* zval=getPntrToComponent(2);

@@ -262,7 +262,7 @@ std::pair<std::size_t, std::size_t> ActionAtomistic::getValueIndices( const Atom
   return std::pair<std::size_t, std::size_t>( valno, k );
 }
 
-void ActionAtomistic::retrieveAtoms() {
+void ActionAtomistic::retrieveAtoms( const bool& force ) {
   if( boxValue ) {
     PbcAction* pbca = boxValue->getPntrToAction()->castToPbcAction();
     plumed_assert( pbca ); pbc=pbca->pbc;

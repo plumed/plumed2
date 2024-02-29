@@ -28,6 +28,15 @@
 namespace PLMD {
 namespace vatom {
 
+//+PLUMEDOC VATOM CENTER_FAST
+/*
+Calculate the center for a group of atoms, with arbitrary weights.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 //+PLUMEDOC VATOM CENTER
 /*
 Calculate the center for a group of atoms, with arbitrary weights.
@@ -135,7 +144,7 @@ public:
   static void registerKeywords( Keywords& keys );
 };
 
-PLUMED_REGISTER_ACTION(Center,"CENTER")
+PLUMED_REGISTER_ACTION(Center,"CENTER_FAST")
 PLUMED_REGISTER_ACTION(Center,"COM")
 
 void Center::registerKeywords(Keywords& keys) {

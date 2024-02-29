@@ -108,7 +108,7 @@ Mapping::Mapping(const ActionOptions&ao):
   // Get the arguments and atoms that are required
   std::vector<AtomNumber> atoms; std::vector<std::string> args;
   for(unsigned i=0; i<myframes.size(); ++i) { myframes[i]->getAtomRequests( atoms, skipchecks ); myframes[i]->getArgumentRequests( args, skipchecks ); }
-  std::vector<Value*> req_args; interpretArgumentList( args, req_args );
+  std::vector<Value*> req_args; interpretArgumentList( args, plumed.getActionSet(), this, req_args );
   if( req_args.size()>0 && atoms.size()>0 ) error("cannot mix atoms and arguments");
   if( req_args.size()>0 ) requestArguments( req_args );
   if( atoms.size()>0 ) {
@@ -201,7 +201,7 @@ void Mapping::calculateNumericalDerivatives( ActionWithValue* a ) {
 
 void Mapping::apply() {
   if( getForcesFromVessels( forcesToApply ) ) {
-    unsigned ind=0; addForcesOnArguments( 0, forcesToApply, ind );
+    unsigned ind=0; addForcesOnArguments( 0, forcesToApply, ind, getLabel() );
     if( getNumberOfAtoms()>0 ) setForcesOnAtoms( forcesToApply, ind );
   }
 }

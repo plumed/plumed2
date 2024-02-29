@@ -23,9 +23,11 @@
 #include "ActionWithValue.h"
 #include "ActionAtomistic.h"
 #include "ActionWithArguments.h"
+#include "ActionWithVector.h"
 #include "ActionWithVirtualAtom.h"
 #include "tools/Exception.h"
 #include "tools/OpenMP.h"
+#include "tools/OFile.h"
 #include "PlumedMain.h"
 
 namespace PLMD {
@@ -35,14 +37,23 @@ Value::Value():
   value_set(false),
   hasForce(false),
   constant(false),
+  calcOnUpdate(false),
   storedata(false),
   shape(std::vector<unsigned>()),
   hasDeriv(true),
+  bufstart(0),
+  streampos(0),
+  matpos(0),
+  ngrid_der(0),
+  ncols(0),
+  book_start(0),
+  symmetric(false),
   periodicity(unset),
   min(0.0),
   max(0.0),
   max_minus_min(0.0),
-  inv_max_minus_min(0.0)
+  inv_max_minus_min(0.0),
+  derivativeIsZeroWhenValueIsZero(false)
 {
   data.resize(1); inputForce.resize(1);
 }
@@ -52,15 +63,24 @@ Value::Value(const std::string& name):
   value_set(false),
   hasForce(false),
   constant(false),
+  calcOnUpdate(false),
   name(name),
   storedata(false),
   shape(std::vector<unsigned>()),
   hasDeriv(true),
+  bufstart(0),
+  streampos(0),
+  ngrid_der(0),
+  matpos(0),
+  ncols(0),
+  book_start(0),
+  symmetric(false),
   periodicity(unset),
   min(0.0),
   max(0.0),
   max_minus_min(0.0),
-  inv_max_minus_min(0.0)
+  inv_max_minus_min(0.0),
+  derivativeIsZeroWhenValueIsZero(false)
 {
   data.resize(1); inputForce.resize(1);
   data[0]=inputForce[0]=0;
@@ -71,16 +91,27 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   value_set(false),
   hasForce(false),
   constant(false),
+  calcOnUpdate(false),
   name(name),
   storedata(false),
   hasDeriv(withderiv),
+  bufstart(0),
+  streampos(0),
+  ngrid_der(0),
+  matpos(0),
+  ncols(0),
+  book_start(0),
+  symmetric(false),
   periodicity(unset),
   min(0.0),
   max(0.0),
   max_minus_min(0.0),
-  inv_max_minus_min(0.0)
+  inv_max_minus_min(0.0),
+  derivativeIsZeroWhenValueIsZero(false)
 {
-  if( action ) storedata=action->getName()=="PUT";
+  if( action ) calcOnUpdate=(action->getName()=="ACCUMULATE" || action->getName()=="COLLECT");
+  if( action ) storedata=action->getName()=="PUT" || calcOnUpdate;
+  if( ss.size() && withderiv ) storedata=true;
   setShape( ss );
 }
 
@@ -90,13 +121,14 @@ void Value::setShape( const std::vector<unsigned>&ss ) {
 
   if( shape.size()>0 && hasDeriv ) {
     // This is for grids
-    std::size_t ndata = tot*action->getNumberOfDerivatives();
-    data.resize( ndata );
+    std::size_t ndata = tot*(1+action->getNumberOfDerivatives());
+    data.resize( ndata ); inputForce.resize( tot );
+    ngrid_der=action->getNumberOfDerivatives();
   } else if( shape.size()==0 ) {
     // This is for scalars
     data.resize(1); inputForce.resize(1);
-  } else if( storedata ) {
-    // This is for vectors and matrices
+  } else if( storedata && shape.size()<2 ) {
+    // This is for vectors (matrices have special version because we have sparse storage)
     data.resize( tot ); inputForce.resize( tot );
   }
 }
@@ -118,7 +150,7 @@ bool Value::isPeriodic()const {
 }
 
 bool Value::applyForce(std::vector<double>& forces ) const {
-  if( !hasForce || constant ) return false;
+  if( !hasForce || constant || calcOnUpdate ) return false;
   plumed_dbg_massert( data.size()-1==forces.size()," forces array has wrong size" );
   const unsigned N=data.size()-1;
   for(unsigned i=0; i<N; ++i) forces[i]=inputForce[0]*data[1+i];
@@ -190,25 +222,153 @@ void Value::set(const std::size_t& n, const double& v ) {
   else { data[n*(1+action->getNumberOfDerivatives())] = v; }
 }
 
-void Value::buildDataStore() {
+void Value::push_back( const double& v ) {
+  plumed_dbg_assert( shape.size()==1 );
+  value_set=true; data.push_back(v); shape[0]++;
+}
+
+double Value::get(const std::size_t& ival, const bool trueind) const {
+  if( hasDeriv ) return data[ival*(1+ngrid_der)];
+#ifdef DNDEBUG
+  if( action ) plumed_dbg_massert( ival<getNumberOfValues(), "could not get value from " + name );
+#endif
+  if( shape.size()==2 && ncols<shape[1] && trueind ) {
+    unsigned irow = std::floor( ival / shape[1] ), jcol = ival%shape[1];
+    // This is a special treatment for the lower triangular matrices that are used when
+    // we do ITRE with COLLECT_FRAMES
+    if( ncols==0 ) {
+      if( jcol<=irow ) return data[0.5*irow*(irow+1) + jcol];
+      return 0;
+    }
+    for(unsigned i=0; i<getRowLength(irow); ++i) {
+      if( getRowIndex(irow,i)==jcol ) return data[irow*ncols+i];
+    }
+    return 0.0;
+  }
+  plumed_massert( ival<data.size(), "cannot get value from " + name );
+  return data[ival];
+}
+
+void Value::addForce(const std::size_t& iforce, double f, const bool trueind) {
+  hasForce=true;
+  if( shape.size()==2 && !hasDeriv && ncols<shape[1] && trueind ) {
+    unsigned irow = std::floor( iforce / shape[0] ), jcol = iforce%shape[0];
+    for(unsigned i=0; i<getRowLength(irow); ++i) {
+      if( getRowIndex(irow,i)==jcol ) { inputForce[irow*ncols+i]+=f; return; }
+    }
+    plumed_assert( fabs(f)<epsilon ); return;
+  }
+  plumed_massert( iforce<inputForce.size(), "can't add force to " + name );
+  inputForce[iforce]+=f;
+}
+
+
+void Value::buildDataStore( const bool forprint ) {
   if( getRank()==0 ) return;
   storedata=true; setShape( shape );
+  if( !forprint ) return ;
+  ActionWithVector* av=dynamic_cast<ActionWithVector*>( action );
+  if( av ) (av->getFirstActionInChain())->never_reduce_tasks=true;
+}
+
+void Value::reshapeMatrixStore( const unsigned& n ) {
+  plumed_dbg_assert( shape.size()==2 && !hasDeriv );
+  if( !storedata ) return ;
+  ncols=n; if( ncols>shape[1] ) ncols=shape[1];
+  unsigned size=shape[0]*ncols;
+  if( matrix_bookeeping.size()!=(size+shape[0]) ) {
+    data.resize( size ); inputForce.resize( size );
+    matrix_bookeeping.resize( size + shape[0], 0 );
+    if( ncols>=shape[1] ) {
+      for(unsigned i=0; i<shape[0]; ++i) {
+        matrix_bookeeping[(1+ncols)*i] = shape[1];
+        for(unsigned j=0; j<shape[1]; ++j) matrix_bookeeping[(1+ncols)*i+1+j]=j;
+      }
+    }
+  }
+  if( ncols<shape[1] ) std::fill(matrix_bookeeping.begin(), matrix_bookeeping.end(), 0);
+}
+
+void Value::setPositionInMatrixStash( const unsigned& p ) {
+  plumed_dbg_assert( shape.size()==2 && !hasDeriv );
+  matpos=p;
+}
+
+bool Value::ignoreStoredValue(const std::string& c) const {
+  if( !storedata && shape.size()>0 ) return true;
+  ActionWithVector* av=dynamic_cast<ActionWithVector*>(action);
+  if( av ) return (av->getFirstActionInChain())->getLabel()==c;
+  return false;
 }
 
 void Value::setConstant() {
   constant=true; storedata=true; setShape( shape );
+  if( getRank()==2 && !hasDeriv ) reshapeMatrixStore( shape[1] );
 }
 
 void Value::writeBinary(std::ostream&o) const {
   o.write(reinterpret_cast<const char*>(&data[0]),data.size()*sizeof(double));
 }
 
+void Value::setSymmetric( const bool& sym ) {
+  plumed_assert( shape.size()==2 && !hasDeriv );
+  if( sym && shape[0]!=shape[1] ) plumed_merror("non-square matrix cannot be symmetric");
+  symmetric=sym;
+}
+
+void Value::retrieveEdgeList( unsigned& nedge, std::vector<std::pair<unsigned,unsigned> >& active, std::vector<double>& elems ) {
+  nedge=0; plumed_dbg_assert( shape.size()==2 && !hasDeriv );
+  // Check we have enough space to store the edge list
+  if( elems.size()<shape[0]*ncols ) { elems.resize( shape[0]*ncols ); active.resize( shape[0]*ncols ); }
+
+  for(unsigned i=0; i<shape[0]; ++i) {
+    unsigned ncol = getRowLength(i);
+    for(unsigned j=0; j<ncol; ++j) {
+      if( fabs(get(i*ncols+j,false))<epsilon ) continue;
+      if( symmetric && getRowIndex(i,j)>i ) continue;
+      active[nedge].first = i; active[nedge].second = getRowIndex(i,j);
+      elems[nedge] = get(i*ncols+j,false); nedge++;
+    }
+  }
+}
+
 void Value::readBinary(std::istream&i) {
   i.read(reinterpret_cast<char*>(&data[0]),data.size()*sizeof(double));
 }
 
+void Value::convertIndexToindices(const std::size_t& index, std::vector<unsigned>& indices ) const {
+  if( hasDeriv || getRank()==1 ) {
+    std::size_t kk=index; indices[0]=index%shape[0];
+    for(unsigned i=1; i<shape.size()-1; ++i) {
+      kk=(kk-indices[i-1])/shape[i-1];
+      indices[i]=kk%shape[i];
+    }
+    if(shape.size()>=2) indices[shape.size()-1]=(kk-indices[shape.size()-2])/shape[shape.size()-2];
+  } else if( getRank()==2 ) {
+    indices[0]=std::floor( index/shape[1] ); indices[1] = index%shape[1];
+  }
+}
+
+void Value::print( OFile& ofile ) const {
+  if( isPeriodic() ) { ofile.printField( "min_" + name, str_min ); ofile.printField("max_" + name, str_max ); }
+  if( shape.size()==0 ) {
+    ofile.printField( name, get(0) );
+  } else {
+    std::vector<unsigned> indices( shape.size() );
+    for(unsigned i=0; i<getNumberOfValues(); ++i) {
+      convertIndexToindices( i, indices ); std::string num, fname = name;
+      for(unsigned i=0; i<shape.size(); ++i) { Tools::convert( indices[i]+1, num ); fname += "." + num; }
+      ofile.printField( fname, get(i) );
+    }
+  }
+}
+
 unsigned Value::getGoodNumThreads( const unsigned& j, const unsigned& k ) const {
   return OpenMP::getGoodNumThreads( &data[j], (k-j) );
+}
+
+void Value::setCalculateOnUpdate() {
+  calcOnUpdate=true;
 }
 
 void copy( const Value& val1, Value& val2 ) {
@@ -232,5 +392,6 @@ void add( const Value& val1, Value* val2 ) {
   for(unsigned i=0; i<val1.getNumberOfDerivatives(); ++i) val2->addDerivative( i, val1.getDerivative(i) );
   val2->set( val1.get() + val2->get() );
 }
+
 
 }

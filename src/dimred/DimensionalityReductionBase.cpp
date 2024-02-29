@@ -55,9 +55,10 @@ DimensionalityReductionBase::DimensionalityReductionBase( const ActionOptions& a
     log.printf("  projecting in %u dimensional space \n",nlow);
   }
   // Now add fake components to the underlying ActionWithValue for the arguments
-  std::string num;
+  std::string num; std::vector<unsigned> shape(1); shape[0]=2;
   for(unsigned i=0; i<nlow; ++i) {
-    Tools::convert(i+1,num); addComponent( "coord-" + num ); componentIsNotPeriodic( "coord-" + num );
+    Tools::convert(i+1,num); addComponent( "coord-" + num, shape ); componentIsNotPeriodic( "coord-" + num );
+    getPntrToComponent(i)->setCalculateOnUpdate(); getPntrToComponent(i)->buildDataStore();
   }
 }
 
@@ -95,9 +96,14 @@ void DimensionalityReductionBase::performAnalysis() {
   calculateProjections( targets, projections );
   // Now set the projection values in the underlying object
   if( my_input_data ) {
+    std::vector<unsigned> shape(1); shape[0] = getNumberOfDataPoints();
+    for(unsigned i=0; i<nlow; ++i) getPntrToComponent(i)->setShape( shape );
     for(unsigned idat=0; idat<getNumberOfDataPoints(); ++idat) {
       analysis::DataCollectionObject& myref=AnalysisBase::getStoredData(idat,false); std::string num;
-      for(unsigned i=0; i<nlow; ++i) { Tools::convert(i+1,num); myref.setArgument( getLabel() + ".coord-" + num, projections(idat,i) ); }
+      for(unsigned i=0; i<nlow; ++i) {
+        Tools::convert(i+1,num); getPntrToComponent(i)->set( idat, projections(idat,i) );
+        myref.setArgument( getLabel() + ".coord-" + num, projections(idat,i) );
+      }
     }
   }
   log.printf("Generated projections required by action %s \n",getLabel().c_str() );

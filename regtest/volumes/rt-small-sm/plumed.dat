@@ -1,0 +1,14 @@
+# Water oxygens: atoms 1-N with stride 4 (TIP4P geometry)
+ow: GROUP ATOMS=1-4125
+
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+
+# Calculates q_{l,m}(i)
+q6: Q6 SPECIES=ow SWITCH={GAUSSIAN D_0=0.32 R_0=0.01 D_MAX=0.34} 
+
+# Calculates Lechner & Dellago's \bar{q}_{l,m}(i)
+qbar6: LOCAL_AVERAGE SPECIES=q6 SWITCH={GAUSSIAN D_0=0.32 R_0=0.01 D_MAX=0.34} MEAN
+
+PRINT ARG=qbar6_mean FMT=%8.4f FILE=colvar
+BIASVALUE ARG=qbar6_mean 

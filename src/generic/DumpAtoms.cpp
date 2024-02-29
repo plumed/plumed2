@@ -20,12 +20,14 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionAtomistic.h"
+#include "core/ActionWithArguments.h"
 #include "core/ActionPilot.h"
 #include "core/ActionRegister.h"
 #include "tools/Pbc.h"
 #include "tools/File.h"
 #include "core/PlumedMain.h"
 #include "tools/Units.h"
+#include "tools/CheckInRange.h"
 #include <cstdio>
 #include <memory>
 #include "core/GenericMolInfo.h"
@@ -34,8 +36,7 @@
 #include "xdrfile/xdrfile_trr.h"
 
 
-namespace PLMD
-{
+namespace PLMD {
 namespace generic {
 
 //+PLUMEDOC PRINTANALYSIS DUMPATOMS
@@ -117,11 +118,13 @@ DUMPATOMS STRIDE=10 FILE=file.xtc ATOMS=1-10,c1 PRECISION=7
 
 class DumpAtoms:
   public ActionAtomistic,
+  public ActionWithArguments,
   public ActionPilot
 {
   OFile of;
   double lenunit;
   int iprecision;
+  CheckInRange bounds;
   std::vector<std::string> names;
   std::vector<unsigned>    residueNumbers;
   std::vector<std::string> residueNames;
@@ -134,6 +137,9 @@ public:
   explicit DumpAtoms(const ActionOptions&);
   ~DumpAtoms();
   static void registerKeywords( Keywords& keys );
+  void calculateNumericalDerivatives( ActionWithValue* a=NULL ) override;
+  void lockRequests() override;
+  void unlockRequests() override;
   void calculate() override {}
   void apply() override {}
   void update() override ;
@@ -145,12 +151,15 @@ void DumpAtoms::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
+  ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
   keys.add("compulsory","STRIDE","1","the frequency with which the atoms should be output");
   keys.add("atoms", "ATOMS", "the atom indices whose positions you would like to print out");
   keys.add("compulsory", "FILE", "file on which to output coordinates; extension is automatically detected");
   keys.add("compulsory", "UNITS","PLUMED","the units in which to print out the coordinates. PLUMED means internal PLUMED units");
   keys.add("optional", "PRECISION","The number of digits in trajectory file");
   keys.add("optional", "TYPE","file type, either xyz, gro, xtc, or trr, can override an automatically detected file extension");
+  keys.add("optional","LESS_THAN_OR_EQUAL","when printing with arguments that are vectors only print components of vectors have a value less than or equal to this value");
+  keys.add("optional","GREATER_THAN_OR_EQUAL","when printing with arguments that are vectors only print components of vectors have a value greater than or equal to this value");
   keys.use("RESTART");
   keys.use("UPDATE_FROM");
   keys.use("UPDATE_UNTIL");
@@ -159,6 +168,7 @@ void DumpAtoms::registerKeywords( Keywords& keys ) {
 DumpAtoms::DumpAtoms(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao),
+  ActionWithArguments(ao),
   ActionPilot(ao),
   iprecision(3)
 {
@@ -212,7 +222,6 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
   } else if(type=="gro" || type=="xtc" || type=="trr") lenunit=getUnits().getLength();
   else lenunit=1.0;
 
-  checkRead();
   of.link(*this);
   of.open(file);
   std::string path=of.getPath();
@@ -228,7 +237,23 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
   log.printf("  printing the following atoms in %s :", unitname.c_str() );
   for(unsigned i=0; i<atoms.size(); ++i) log.printf(" %d",atoms[i].serial() );
   log.printf("\n");
-  requestAtoms(atoms);
+
+  if( getNumberOfArguments()>0 ) {
+    if( type!="xyz" ) error("can only print atomic properties when outputting xyz files");
+
+    std::vector<std::string> argnames;
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      if( getPntrToArgument(i)->getRank()!=1 || getPntrToArgument(i)->hasDerivatives() ) error("arguments for xyz output should be vectors");
+      if( getPntrToArgument(i)->getNumberOfValues()!=atoms.size() ) error("number of elements in vector " + getPntrToArgument(i)->getName() + " is not equal to number of atoms output");
+      getPntrToArgument(i)->buildDataStore(true); argnames.push_back( getPntrToArgument(i)->getName() );
+    }
+    std::vector<std::string> str_upper, str_lower; std::string errors;
+    parseVector("LESS_THAN_OR_EQUAL",str_upper); parseVector("GREATER_THAN_OR_EQUAL",str_lower);
+    if( !bounds.setBounds( getNumberOfArguments(), str_lower, str_upper, errors ) ) error( errors );
+    if( bounds.wereSet() ) log.printf("  %s \n", bounds.report( argnames ).c_str() );
+  }
+
+  requestAtoms(atoms, false);
   auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   if( moldat ) {
     log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
@@ -241,9 +266,28 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
   }
 }
 
+void DumpAtoms::calculateNumericalDerivatives( ActionWithValue* a ) {
+  plumed_merror("this should never be called");
+}
+
+void DumpAtoms::lockRequests() {
+  ActionWithArguments::lockRequests();
+  ActionAtomistic::lockRequests();
+}
+
+void DumpAtoms::unlockRequests() {
+  ActionWithArguments::unlockRequests();
+  ActionAtomistic::unlockRequests();
+}
+
 void DumpAtoms::update() {
   if(type=="xyz") {
-    of.printf("%d\n",getNumberOfAtoms());
+    unsigned nat=0; std::vector<double> args( getNumberOfArguments() );
+    for(unsigned i=0; i<getNumberOfAtoms(); ++i)  {
+      for(unsigned j=0; j<getNumberOfArguments(); ++j) args[j] = getPntrToArgument(j)->get(i);
+      if( bounds.check( args ) ) nat++;
+    }
+    of.printf("%d\n",nat);
     const Tensor & t(getPbc().getBox());
     if(getPbc().isOrthorombic()) {
       of.printf((" "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+"\n").c_str(),lenunit*t(0,0),lenunit*t(1,1),lenunit*t(2,2));
@@ -255,10 +299,14 @@ void DumpAtoms::update() {
                );
     }
     for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
+      for(unsigned j=0; j<getNumberOfArguments(); ++j) args[j] = getPntrToArgument(j)->get(i);
+      if( !bounds.check(args) ) continue;
       const char* defname="X";
       const char* name=defname;
       if(names.size()>0) if(names[i].length()>0) name=names[i].c_str();
-      of.printf(("%s "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+"\n").c_str(),name,lenunit*getPosition(i)(0),lenunit*getPosition(i)(1),lenunit*getPosition(i)(2));
+      of.printf(("%s "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz).c_str(),name,lenunit*getPosition(i)(0),lenunit*getPosition(i)(1),lenunit*getPosition(i)(2));
+      for(unsigned j=0; j<getNumberOfArguments(); ++j) of.printf((" "+fmt_xyz).c_str(), getPntrToArgument(j)->get(i) );
+      of.printf("\n");
     }
   } else if(type=="gro") {
     const Tensor & t(getPbc().getBox());

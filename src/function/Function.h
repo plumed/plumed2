@@ -46,6 +46,7 @@ protected:
 public:
   explicit Function(const ActionOptions&);
   virtual ~Function() {}
+  double getArgument( const unsigned& iarg );
   void apply() override;
   static void registerKeywords(Keywords&);
   unsigned getNumberOfDerivatives() override;
@@ -63,7 +64,16 @@ void Function::setDerivative(int i,double d) {
 
 inline
 unsigned Function::getNumberOfDerivatives() {
-  return getNumberOfArguments();
+  unsigned narg=0;
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    if( getPntrToArgument(i)->getRank()==0 ) narg++;
+  }
+  return narg;
+}
+
+inline
+double Function::getArgument( const unsigned& iarg ) {
+  return getPntrToArgument(iarg)->get();
 }
 
 }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2023 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -20,90 +20,35 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithGrid.h"
-#include "core/PlumedMain.h"
-#include "core/ActionSet.h"
 
 namespace PLMD {
 namespace gridtools {
 
-void ActionWithGrid::registerKeywords( Keywords& keys ) {
-  vesselbase::ActionWithAveraging::registerKeywords( keys );
-  keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density estimation");
-  keys.add("compulsory","KERNEL","gaussian","the kernel function you are using.  More details on  the kernels available "
-           "in plumed plumed can be found in \\ref kernelfunctions.");
-  keys.add("optional","CONCENTRATION","the concentration parameter for Von Mises-Fisher distributions");
+ActionWithGrid* ActionWithGrid::getInputActionWithGrid( Action* action ) {
+  ActionWithGrid* ag = dynamic_cast<ActionWithGrid*>( action );
+  if( !ag && action->getName()=="ACCUMULATE" ) {
+    ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>( action );
+    plumed_assert( aa ); ag = dynamic_cast<ActionWithGrid*>( (aa->getPntrToArgument(0))->getPntrToAction() );
+  }
+  plumed_assert( ag ); return ag;
 }
 
-ActionWithGrid::ActionWithGrid( const ActionOptions& ao):
+void ActionWithGrid::registerKeywords( Keywords& keys ) {
+  ActionWithVector::registerKeywords( keys );
+}
+
+ActionWithGrid::ActionWithGrid(const ActionOptions&ao):
   Action(ao),
-  ActionWithAveraging(ao),
-  mygrid(NULL)
+  ActionWithVector(ao),
+  firststep(true)
 {
 }
 
-std::unique_ptr<GridVessel> ActionWithGrid::createGrid( const std::string& type, const std::string& inputstr ) {
-  // Start creating the input for the grid
-  std::string vstring = inputstr;
-  if( keywords.exists("KERNEL") ) {
-    std::string vconc; parse("CONCENTRATION",vconc);
-    if( vconc.length()>0 ) {
-      vstring += " TYPE=fibonacci CONCENTRATION=" + vconc;
-    } else {
-      std::string kstring; parse("KERNEL",kstring);
-      if( kstring=="DISCRETE" ) vstring += " KERNEL=" + kstring;
-      else vstring += " KERNEL=" + kstring + " " + getKeyword("BANDWIDTH");
-    }
-  }
-  vesselbase::VesselOptions da("mygrid","",-1,vstring,this);
-  Keywords keys; gridtools::AverageOnGrid::registerKeywords( keys );
-  vesselbase::VesselOptions dar( da, keys );
-  std::unique_ptr<GridVessel> grid;
-  if( type=="histogram" ) {
-    grid=Tools::make_unique<HistogramOnGrid>(dar);
-  } else if( type=="average" ) {
-    grid=Tools::make_unique<AverageOnGrid>(dar);
-  } else if( type=="grid" ) {
-    grid=Tools::make_unique<GridVessel>(dar);
-  } else {
-    plumed_merror("no way to create grid of type " + type );
-  }
-  // cppcheck-suppress danglingLifetime
-  mygrid=grid.get();
-  return grid;
-}
-
-void ActionWithGrid::turnOnDerivatives() {
-  needsDerivatives(); ActionWithValue::turnOnDerivatives();
-  if( getStride()==1 ) setStride(0);
-  else if( getStride()!=0 ) error("conflicting instructions for grid - stride was set but must be evaluated on every step for derivatives - remove STRIDE keyword");
-  if( clearstride>1 ) error("conflicting instructions for grid - CLEAR was set but grid must be reset on every step for derivatives - remove CLEAR keyword" );
-  if( weights.size()>0 ) error("conflicting instructions for grid - LOGWEIGHTS was set but weights are not considered when derivatives of grid are evaluated - remove LOGWEIGHTS keyword");
-}
-
 void ActionWithGrid::calculate() {
-  // Do nothing if derivatives are not required
-  if( doNotCalculateDerivatives() ) return;
-  // Clear on every step
-  if( mygrid ) clearAverage();
-  // Should not be any reweighting so just set these accordingly
-  lweight=0; cweight=1.0;
-  // Prepare to do the averaging
-  prepareForAveraging();
-  // Run all the tasks (if required
-  if( useRunAllTasks ) runAllTasks();
-  // This the averaging if it is not done using task list
-  else performOperations( true );
-  // Update the norm
-  if( mygrid ) mygrid->setNorm( cweight );
-  // Finish the averaging
-  finishAveraging();
-  // And reset for next step
-  if( mygrid ) mygrid->reset();
-}
+  plumed_assert( !actionInChain() );
+  if( firststep ) { setupOnFirstStep( true ); firststep=false; }
 
-void ActionWithGrid::runTask( const unsigned& current, MultiValue& myvals ) const {
-  // Set the weight of this point
-  myvals.setValue( 0, cweight ); compute( current, myvals );
+  runAllTasks();
 }
 
 }

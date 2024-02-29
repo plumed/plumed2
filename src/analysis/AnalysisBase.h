@@ -100,6 +100,8 @@ public:
 /// This calls the analysis to be performed in the final step of the calculation
 /// i.e. when use_all_data is true
   void runFinalJobs() override;
+///
+  bool calculateOnUpdate() override { return false; }
 };
 
 inline

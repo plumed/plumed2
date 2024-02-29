@@ -1,4 +1,4 @@
 type=driver
 plumed_modules=pamm
 # this is to test a different name
-arg="--plumed plumed.dat --ixyz b3lyp.xyz"
+arg="--plumed plumed.dat --ixyz b3lyp.xyz --dump-forces forces --dump-forces-fmt %8.4f"

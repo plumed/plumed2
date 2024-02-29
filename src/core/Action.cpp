@@ -177,7 +177,19 @@ void Action::parseFlag(const std::string&key,bool & t) {
 }
 
 void Action::addDependency(Action*action) {
-  after.push_back(action);
+  bool found=false;
+  for(const auto & d : after ) {
+    if( action==d ) { found=true; break; }
+  }
+  if( !found ) after.push_back(action);
+}
+
+bool Action::checkForDependency( Action* action ) {
+  for(const auto & d : after) {
+    if( action==d ) { return true; }
+    if( d->checkForDependency(action) ) { return true; }
+  }
+  return false;
 }
 
 void Action::activate() {
@@ -242,7 +254,7 @@ void Action::setupConstantValues( const bool& have_atoms ) {
     }
   }
   ActionWithArguments* aa = castToActionWithArguments();
-  if(aa) never_activate = aa->calculateConstantValues( have_atoms );
+  if( aa && aa->getNumberOfArguments()>0 ) never_activate = aa->calculateConstantValues( have_atoms );
 }
 
 long long int Action::getStep()const {
@@ -339,6 +351,13 @@ bool Action::usingNaturalUnits() const {
 double Action::getKBoltzmann() const {
   if( usingNaturalUnits() ) return 1.0;
   else return kBoltzmann/getUnits().getEnergy();
+}
+
+std::string Action::writeInGraph() const {
+  std::string nam=getName();
+  std::size_t u=nam.find_last_of("_"); std::string sub=nam.substr(u+1);
+  if( sub=="SCALAR" || sub=="VECTOR" || sub=="GRID" ) return nam.substr(0,u);
+  return nam;
 }
 
 }

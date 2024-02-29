@@ -173,6 +173,7 @@ void Keywords::use( const std::string & k ) {
 
 void Keywords::reset_style( const std::string & k, const std::string & style ) {
   plumed_massert( exists(k) || reserved(k), "no " + k + " keyword" );
+  if( style=="numbered" ) { allowmultiple[k]=true; return; }
   (types.find(k)->second).setStyle(style);
   if( (types.find(k)->second).isVessel() ) allowmultiple[k]=true;
   if( (types.find(k)->second).isAtomList() ) atomtags.insert( std::pair<std::string,std::string>(k,style) );

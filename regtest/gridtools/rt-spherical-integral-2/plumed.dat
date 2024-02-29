@@ -1,0 +1,19 @@
+cmap: CONTACT_MATRIX ...
+   GROUP=1-201
+   SWITCH={RATIONAL D_0=1.0 R_0=0.5 D_MAX=2.0}
+   COMPONENTS
+...
+cmaps: SUM ARG=cmap.w PERIODIC=NO
+
+# Now construct histogram
+cmapn_d2: COMBINE ARG=cmap.x,cmap.y,cmap.z POWERS=2,2,2 PERIODIC=NO
+cmapn_d: CUSTOM ARG=cmapn_d2 FUNC=sqrt(x) PERIODIC=NO
+cmapn_x: CUSTOM ARG=cmap.x,cmapn_d FUNC=x/y PERIODIC=NO
+cmapn_y: CUSTOM ARG=cmap.y,cmapn_d FUNC=x/y PERIODIC=NO
+cmapn_z: CUSTOM ARG=cmap.z,cmapn_d FUNC=x/y PERIODIC=NO
+hu: SPHERICAL_KDE ARG=cmapn_x,cmapn_y,cmapn_z HEIGHTS=cmap.w CONCENTRATION=10 GRID_BIN=100
+h: CUSTOM ARG=hu,cmaps FUNC=x/y PERIODIC=NO
+iv: INTEGRATE_GRID ARG=h PERIODIC=NO
+
+b: RESTRAINT ARG=iv AT=0.75 KAPPA=10.0
+PRINT ARG=iv,b.* FILE=colvar FMT=%8.4f
