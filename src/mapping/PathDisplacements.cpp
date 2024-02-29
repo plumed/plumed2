@@ -92,20 +92,20 @@ public:
   explicit PathDisplacements(const ActionOptions&);
   unsigned getNumberOfDerivatives();
   void clearDerivatives( const bool& force=false ) {}
-  void calculate(){}
-  void apply(){}
+  void calculate() {}
+  void apply() {}
   void update();
 };
 
 PLUMED_REGISTER_ACTION(PathDisplacements,"AVERAGE_PATH_DISPLACEMENT")
 
 void PathDisplacements::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys ); ActionPilot::registerKeywords( keys ); 
+  Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys ); ActionPilot::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys ); keys.use("ARG"); PathProjectionCalculator::registerKeywords( keys );
   keys.add("compulsory","STRIDE","1","the frequency with which the average displacements should be collected and added to the average displacements");
-  keys.add("compulsory","HALFLIFE","-1","the number of MD steps after which a previously measured path distance weighs only 50% in the average. This option may increase convergence by allowing to \"forget\" the memory of a bad initial guess path. The default is to set this to infinity");
+  keys.add("compulsory","HALFLIFE","-1","the number of MD steps after which a previously measured path distance weighs only 50 percent in the average. This option may increase convergence by allowing to forget the memory of a bad initial guess path. The default is to set this to infinity");
   keys.add("compulsory","CLEAR","0","the frequency with which to clear all the accumulated data.  The default value "
-                                    "of 0 implies that all the data will be used and that the grid will never be cleared");
+           "of 0 implies that all the data will be used and that the grid will never be cleared");
 }
 
 PathDisplacements::PathDisplacements(const ActionOptions& ao):
@@ -126,19 +126,19 @@ PathDisplacements::PathDisplacements(const ActionOptions& ao):
   log.printf("  weight of contribution to frame halves every %f steps \n",halflife);
   if( halflife<0 ) fadefact=1.0;
   else fadefact = exp( -0.693147180559945 / static_cast<double>(halflife) );
-  // Now create the weights vector and displacements matrix 
+  // Now create the weights vector and displacements matrix
   unsigned nrows = getPntrToArgument(0)->getShape()[0];
   unsigned ncols = getPntrToArgument(0)->getShape()[1];
   wsum.resize( nrows ); displacements.resize( nrows, ncols );
-  for(unsigned i=0;i<nrows;++i) {
-      wsum[i]=0; for(unsigned j=0;j<ncols;++j) displacements(i,j)=0;
+  for(unsigned i=0; i<nrows; ++i) {
+    wsum[i]=0; for(unsigned j=0; j<ncols; ++j) displacements(i,j)=0;
   }
   // Add bibliography
   log<<"  Bibliography "<<plumed.cite("Diaz Leines and Ensing, Phys. Rev. Lett. 109, 020601 (2012)")<<"\n";
   // And create a value to hold the displacements
   std::vector<unsigned> shape(2); shape[0]=nrows; shape[1]=ncols;
-  addValue( shape ); setNotPeriodic(); 
-  getPntrToComponent(0)->buildDataStore(); 
+  addValue( shape ); setNotPeriodic();
+  getPntrToComponent(0)->buildDataStore();
   getPntrToComponent(0)->reshapeMatrixStore( shape[1] );
 }
 
@@ -151,35 +151,35 @@ void PathDisplacements::update() {
   unsigned ncols = getPntrToArgument(0)->getShape()[1];
 
   if( clearnextstep ) {
-      unsigned k=0;
-      for(unsigned i=0;i<nrows;++i) {
-          for(unsigned j=0;j<ncols;++j) { displacements(i,j)=0; getPntrToComponent(0)->set(k,0); k++; }
-      }
-      clearnextstep=false;
+    unsigned k=0;
+    for(unsigned i=0; i<nrows; ++i) {
+      for(unsigned j=0; j<ncols; ++j) { displacements(i,j)=0; getPntrToComponent(0)->set(k,0); k++; }
+    }
+    clearnextstep=false;
   }
 
   unsigned k=0, iclose1, iclose2; double v1v1, v3v3;
-  for(unsigned i=0;i<nrows;++i) {
-      double dist = 0;
-      for(unsigned j=0;j<ncols;++j) {
-          double tmp = getPntrToArgument(0)->get(k);
-          dist += tmp*tmp; k++;
-      }
-      if( i==0 ) { v1v1 = dist; iclose1 = 0; }
-      else if( dist<v1v1 ) { v3v3=v1v1; v1v1=dist; iclose2=iclose1; iclose1=i; }
-      else if( i==1 ) { v3v3=dist; iclose2=1; }
-      else if( dist<v3v3 ) { v3v3=dist; iclose2=i; }
+  for(unsigned i=0; i<nrows; ++i) {
+    double dist = 0;
+    for(unsigned j=0; j<ncols; ++j) {
+      double tmp = getPntrToArgument(0)->get(k);
+      dist += tmp*tmp; k++;
+    }
+    if( i==0 ) { v1v1 = dist; iclose1 = 0; }
+    else if( dist<v1v1 ) { v3v3=v1v1; v1v1=dist; iclose2=iclose1; iclose1=i; }
+    else if( i==1 ) { v3v3=dist; iclose2=1; }
+    else if( dist<v3v3 ) { v3v3=dist; iclose2=i; }
   }
   // And find third closest point
   int isign = iclose1 - iclose2;
   if( isign>1 ) isign=1; else if( isign<-1 ) isign=-1;
-  int iclose3 = iclose1 + isign; 
-  unsigned ifrom=iclose1, ito=iclose3; if( iclose3<0 || iclose3>=nrows ) { ifrom=iclose2; ito=iclose1; } 
+  int iclose3 = iclose1 + isign;
+  unsigned ifrom=iclose1, ito=iclose3; if( iclose3<0 || iclose3>=nrows ) { ifrom=iclose2; ito=iclose1; }
 
   // Calculate the dot product of v1 with v2
   path_projector.getDisplaceVector( ifrom, ito, displace_v );
   double v2v2=0, v1v2=0; unsigned kclose1 = iclose1*ncols;
-  for(unsigned i=0;i<displace_v.size();++i) { v2v2 += displace_v[i]*displace_v[i]; v1v2 += displace_v[i]*getPntrToArgument(0)->get(kclose1+i); }
+  for(unsigned i=0; i<displace_v.size(); ++i) { v2v2 += displace_v[i]*displace_v[i]; v1v2 += displace_v[i]*getPntrToArgument(0)->get(kclose1+i); }
 
   double root = sqrt( v1v2*v1v2 - v2v2 * ( v1v1 - v3v3) );
   double dx = 0.5 * ( (root + v1v2) / v2v2 - 1.);
@@ -191,10 +191,10 @@ void PathDisplacements::update() {
   }
 
   // Accumulate displacements for path
-  for(unsigned i=0;i<ncols;++i) {
-      double displace = getPntrToArgument(0)->get(kclose1+i) - dx*displace_v[i];
-      displacements(iclose1,i) += weight1 * displace; displacements(iclose2,i) += weight2 * displace; 
-  } 
+  for(unsigned i=0; i<ncols; ++i) {
+    double displace = getPntrToArgument(0)->get(kclose1+i) - dx*displace_v[i];
+    displacements(iclose1,i) += weight1 * displace; displacements(iclose2,i) += weight2 * displace;
+  }
 
   // Update weight accumulators
   wsum[iclose1] *= fadefact; wsum[iclose2] *= fadefact;
@@ -202,11 +202,11 @@ void PathDisplacements::update() {
 
   // Update numbers in values
   if( wsum[iclose1] > epsilon ) {
-      for(unsigned i=0;i<ncols;++i) getPntrToComponent(0)->set( kclose1+i, displacements(iclose1,i) / wsum[iclose1] );
-  } 
-  if( wsum[iclose2] > epsilon ) { 
-      unsigned kclose2 = iclose2*ncols;
-      for(unsigned i=0;i<ncols;++i) getPntrToComponent(0)->set( kclose2+i, displacements(iclose2,i) / wsum[iclose2] );
+    for(unsigned i=0; i<ncols; ++i) getPntrToComponent(0)->set( kclose1+i, displacements(iclose1,i) / wsum[iclose1] );
+  }
+  if( wsum[iclose2] > epsilon ) {
+    unsigned kclose2 = iclose2*ncols;
+    for(unsigned i=0; i<ncols; ++i) getPntrToComponent(0)->set( kclose2+i, displacements(iclose2,i) / wsum[iclose2] );
   }
 
   // Clear if required

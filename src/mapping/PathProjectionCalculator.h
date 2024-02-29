@@ -42,7 +42,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   PathProjectionCalculator( Action* act );
-/// Get the number of frames in the path 
+/// Get the number of frames in the path
   unsigned getNumberOfFrames() const ;
 /// Get the displacement between two reference frames
   void getDisplaceVector( const unsigned& ifrom, const unsigned& ito, std::vector<double>& displace );

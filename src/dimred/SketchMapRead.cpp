@@ -112,7 +112,7 @@ SketchMapRead::SketchMapRead( const ActionOptions& ao ):
     // Check for required properties
     for(std::map<std::string,std::vector<double> >::iterator it=property.begin(); it!=property.end(); ++it) {
       if( !inpdb.getArgumentValue( it->first, prop ) ) error("pdb input does not have contain property named " + it->first );
-      it->second.push_back(prop[0]); 
+      it->second.push_back(prop[0]);
     }
     // And read the frame ( create a measure )
     myframes.emplace_back( metricRegister().create<ReferenceConfiguration>( mtype, inpdb ) );

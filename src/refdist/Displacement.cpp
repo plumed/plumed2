@@ -69,7 +69,7 @@ Displacement::Displacement( const ActionOptions& ao):
   // Check if one of the input arguments is a reference cluster
   if( arg1f.size()!=arg2f.size() ) error("number of arguments specified to ARG1 should be same as number for ARG2");
 
-  Value* val1=getValueWithLabel( arg1f[0] ); 
+  Value* val1=getValueWithLabel( arg1f[0] );
   if( arg1f.size()==1 && val1->getRank()!=0 ) {
     Value* val2=getValueWithLabel( arg2f[0] );
     if( val1->getNumberOfValues()==val2->getNumberOfValues() ) {

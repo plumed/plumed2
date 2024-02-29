@@ -207,7 +207,7 @@ RMSD::RMSD(const ActionOptions&ao):
 // calculator
 void RMSD::calculate() {
   if(!nopbc) makeWhole();
-  double r=myrmsd.calculate( getPositions(), der, squared ); 
+  double r=myrmsd.calculate( getPositions(), der, squared );
 
   setValue(r);
   for(unsigned i=0; i<getNumberOfAtoms(); i++) setAtomsDerivatives( i, der[i] );

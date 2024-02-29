@@ -42,7 +42,7 @@ void ReferenceArguments::readArgumentsFromPDB( const PDB& pdb ) {
 
   reference_args.resize( arg_names.size() ); arg_der_index.resize( arg_names.size() );
   for(unsigned i=0; i<arg_names.size(); ++i) {
-    std::vector<double> getarg(1); 
+    std::vector<double> getarg(1);
     if( !pdb.getArgumentValue(arg_names[i], getarg) ) error("argument " + arg_names[i] + " was not set in pdb input");
     reference_args[i]=getarg[0]; arg_der_index[i]=i;
   }

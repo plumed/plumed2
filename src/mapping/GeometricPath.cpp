@@ -42,7 +42,7 @@ public:
 PLUMED_REGISTER_ACTION(GeometricPath,"GEOMETRIC_PATH")
 
 void GeometricPath::registerKeywords(Keywords& keys) {
-  ActionWithVector::registerKeywords(keys); keys.use("ARG"); 
+  ActionWithVector::registerKeywords(keys); keys.use("ARG");
   PathProjectionCalculator::registerKeywords(keys);
   keys.add("compulsory","PROPERTY","the coordinates we are projecting these points onto");
   componentsAreNotOptional(keys);
@@ -57,7 +57,7 @@ GeometricPath::GeometricPath(const ActionOptions&ao):
 {
   plumed_assert( !actionInChain() );
   // Get the coordinates in the low dimensional space
-  std::string pcoord; parse("PROPERTY", pcoord ); log.printf("  projecting onto vector of coordinates in %s \n", pcoord.c_str() ); 
+  std::string pcoord; parse("PROPERTY", pcoord ); log.printf("  projecting onto vector of coordinates in %s \n", pcoord.c_str() );
   ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( pcoord ); plumed_assert( av );
   std::vector<Value*> args( getArguments() ); args.push_back( av->copyOutput(0) ); requestArguments( args );
   // Create the values to store the output
@@ -75,16 +75,16 @@ void GeometricPath::calculate() {
   unsigned k=0, iclose1, iclose2; double v1v1, v3v3;
   unsigned nrows = getPntrToArgument(0)->getShape()[0];
   unsigned ncols = getPntrToArgument(0)->getShape()[1];
-  for(unsigned i=0;i<nrows;++i) {
-      double dist = 0;
-      for(unsigned j=0;j<ncols;++j) {
-          double tmp = getPntrToArgument(0)->get(k);
-          dist += tmp*tmp; k++; 
-      }
-      if( i==0 ) { v1v1 = dist; iclose1 = 0; }
-      else if( dist<v1v1 ) { v3v3=v1v1; v1v1=dist; iclose2=iclose1; iclose1=i; } 
-      else if( i==1 ) { v3v3=dist; iclose2=1; }
-      else if( dist<v3v3 ) { v3v3=dist; iclose2=i; }
+  for(unsigned i=0; i<nrows; ++i) {
+    double dist = 0;
+    for(unsigned j=0; j<ncols; ++j) {
+      double tmp = getPntrToArgument(0)->get(k);
+      dist += tmp*tmp; k++;
+    }
+    if( i==0 ) { v1v1 = dist; iclose1 = 0; }
+    else if( dist<v1v1 ) { v3v3=v1v1; v1v1=dist; iclose2=iclose1; iclose1=i; }
+    else if( i==1 ) { v3v3=dist; iclose2=1; }
+    else if( dist<v3v3 ) { v3v3=dist; iclose2=i; }
   }
   // And find third closest point
   int isign = iclose1 - iclose2;
@@ -95,7 +95,7 @@ void GeometricPath::calculate() {
   // And calculate projection of vector connecting current point to closest frame on vector connecting nearest two frames
   std::vector<double> displace; path_projector.getDisplaceVector( ifrom, ito, displace );
   double v2v2=0, v1v2=0; k=ncols*iclose1;
-  for(unsigned i=0;i<displace.size();++i) { v2v2 += displace[i]*displace[i]; v1v2 += displace[i]*getPntrToArgument(0)->get(k+i); }
+  for(unsigned i=0; i<displace.size(); ++i) { v2v2 += displace[i]*displace[i]; v1v2 += displace[i]*getPntrToArgument(0)->get(k+i); }
 
   // This computes s value
   double spacing = getPntrToArgument(1)->get(iclose1) - getPntrToArgument(1)->get(iclose2);
@@ -104,24 +104,24 @@ void GeometricPath::calculate() {
   double path_s = getPntrToArgument(1)->get(iclose1) + spacing * dx;
   Value* sp = getPntrToComponent(0); sp->set( path_s );
   if( !doNotCalculateDerivatives() ) {
-      for(unsigned i=0;i<ncols;++i) {
-          sp->addDerivative( ncols*iclose1 + i, 0.5*spacing*(v1v2*displace[i]/v2v2 - getPntrToArgument(0)->get(ncols*iclose1 + i))/root + 0.5*spacing*displace[i]/v2v2 );
-          sp->addDerivative( ncols*iclose2 + i, 0.5*spacing*getPntrToArgument(0)->get(ncols*iclose2 + i)/root );
-      }
-  } 
+    for(unsigned i=0; i<ncols; ++i) {
+      sp->addDerivative( ncols*iclose1 + i, 0.5*spacing*(v1v2*displace[i]/v2v2 - getPntrToArgument(0)->get(ncols*iclose1 + i))/root + 0.5*spacing*displace[i]/v2v2 );
+      sp->addDerivative( ncols*iclose2 + i, 0.5*spacing*getPntrToArgument(0)->get(ncols*iclose2 + i)/root );
+    }
+  }
 
   // This computes z value
-  path_projector.getDisplaceVector( iclose2, iclose1, displace ); double v4v4=0, proj=0; k=ncols*iclose1; 
-  for(unsigned i=0;i<displace.size();++i) { v4v4 += displace[i]*displace[i]; proj += displace[i]*getPntrToArgument(0)->get(k+i); }
+  path_projector.getDisplaceVector( iclose2, iclose1, displace ); double v4v4=0, proj=0; k=ncols*iclose1;
+  for(unsigned i=0; i<displace.size(); ++i) { v4v4 += displace[i]*displace[i]; proj += displace[i]*getPntrToArgument(0)->get(k+i); }
   double path_z = v1v1 + dx*dx*v4v4 - 2*dx*proj; path_z = sqrt(path_z);
   Value* zp = getPntrToComponent(1); zp->set( path_z );
   if( !doNotCalculateDerivatives() ) {
-      for(unsigned i=0;i<ncols;++i) {
-          zp->addDerivative( ncols*iclose1 + i, (1/path_z)*(getPntrToArgument(0)->get(ncols*iclose1 + i) + 
-                                                            (v4v4*dx-proj)*sp->getDerivative(ncols*iclose1 + i)/spacing - 
-                                                            dx*displace[i]) );
-          zp->addDerivative( ncols*iclose2 + i, (v4v4*dx-proj)*sp->getDerivative(ncols*iclose2 + i)/(path_z*spacing) );
-      } 
+    for(unsigned i=0; i<ncols; ++i) {
+      zp->addDerivative( ncols*iclose1 + i, (1/path_z)*(getPntrToArgument(0)->get(ncols*iclose1 + i) +
+                         (v4v4*dx-proj)*sp->getDerivative(ncols*iclose1 + i)/spacing -
+                         dx*displace[i]) );
+      zp->addDerivative( ncols*iclose2 + i, (v4v4*dx-proj)*sp->getDerivative(ncols*iclose2 + i)/(path_z*spacing) );
+    }
   }
 }
 

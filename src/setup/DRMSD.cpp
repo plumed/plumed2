@@ -136,7 +136,7 @@ DRMSD::DRMSD( const ActionOptions& ao ):
   // Read in the reference configuration
   std::string reference; parse("REFERENCE",reference);
   // First bit of input for the instantaneous distances
-  bool numder; parseFlag("NUMERICAL_DERIVATIVES",numder); 
+  bool numder; parseFlag("NUMERICAL_DERIVATIVES",numder);
   // Get cutoff information
   double lcut=0; parse("LOWER_CUTOFF",lcut); std::string drmsd_type; parse("TYPE",drmsd_type);
   double ucut=std::numeric_limits<double>::max(); parse("UPPER_CUTOFF",ucut);
@@ -146,101 +146,101 @@ DRMSD::DRMSD( const ActionOptions& ao ):
   if(!fp) error("could not open reference file " + reference ); unsigned n=0;
   std::vector<std::pair<unsigned,unsigned> > upairs; std::vector<std::string> refvals;
   while ( do_read ) {
-     PDB mypdb; do_read=mypdb.readFromFilepointer(fp,false,fake_unit);
-     if( !do_read && n>0 ) break ;
-     std::vector<Vector> pos( mypdb.getPositions() ); unsigned nn=1;
-     if( pos.size()==0 ) error("read no atoms from file named " + reference );
-     // This is what we do for the first frame
-     if( n==0 ) {
-         std::vector<AtomNumber> atoms( mypdb.getAtomNumbers() ); 
-         if( drmsd_type=="DRMSD" ) {
-              for(unsigned i=0;i<atoms.size()-1;++i) {
-                  std::string istr; Tools::convert( atoms[i].serial(), istr );
-                  for(unsigned j=i+1; j<atoms.size(); ++j) {
-                      std::string jstr; Tools::convert( atoms[j].serial(), jstr );
-                      double distance = delta( pos[i], pos[j] ).modulo();
-                      if( distance < ucut && distance > lcut ) {
-                          std::string num; Tools::convert( nn, num ); nn++;
-                          // Add this pair to list of pairs
-                          upairs.push_back( std::pair<unsigned,unsigned>(i,j) );
-                          // Add this distance to list of reference values
-                          std::string dstr; Tools::convert( distance, dstr ); refvals.push_back( dstr );
-                          // Calculate this distance
-                          readInputLine( getShortcutLabel() + "_d" + num + ": DISTANCE ATOMS=" + istr + "," + jstr + " " + pbc_str );
-                      }
-                  }    
-              }   
-         } else {
-              unsigned nblocks = mypdb.getNumberOfAtomBlocks(); std::vector<unsigned> blocks( 1 + nblocks );
-              if( nblocks==1 ) { blocks[0]=0; blocks[1]=atoms.size(); }
-              else { blocks[0]=0; for(unsigned i=0; i<nblocks; ++i) blocks[i+1]=mypdb.getAtomBlockEnds()[i]; }
-              if( drmsd_type=="INTRA-DRMSD" ) {
-                  for(unsigned i=0; i<nblocks; ++i) {
-                    for(unsigned iatom=blocks[i]+1; iatom<blocks[i+1]; ++iatom) {
-                      std::string istr; Tools::convert( atoms[iatom].serial(), istr );
-                      for(unsigned jatom=blocks[i]; jatom<iatom; ++jatom) {
-                        std::string jstr; Tools::convert( atoms[jatom].serial(), jstr );
-                        double distance = delta( pos[iatom], pos[jatom] ).modulo();
-                        if(distance < ucut && distance > lcut ) {
-                           std::string num; Tools::convert( nn, num ); nn++;
-                           // Add this pair to list of pairs
-                           upairs.push_back( std::pair<unsigned,unsigned>(iatom,jatom) );
-                           // Add this distance to list of reference values
-                           std::string dstr; Tools::convert( distance, dstr ); refvals.push_back( dstr );
-                           // Calculate this distance
-                           readInputLine( getShortcutLabel() + "_d" + num + ": DISTANCE ATOMS=" + istr + "," + jstr + " " + pbc_str );
-                        }
-                      }
-                    }
+    PDB mypdb; do_read=mypdb.readFromFilepointer(fp,false,fake_unit);
+    if( !do_read && n>0 ) break ;
+    std::vector<Vector> pos( mypdb.getPositions() ); unsigned nn=1;
+    if( pos.size()==0 ) error("read no atoms from file named " + reference );
+    // This is what we do for the first frame
+    if( n==0 ) {
+      std::vector<AtomNumber> atoms( mypdb.getAtomNumbers() );
+      if( drmsd_type=="DRMSD" ) {
+        for(unsigned i=0; i<atoms.size()-1; ++i) {
+          std::string istr; Tools::convert( atoms[i].serial(), istr );
+          for(unsigned j=i+1; j<atoms.size(); ++j) {
+            std::string jstr; Tools::convert( atoms[j].serial(), jstr );
+            double distance = delta( pos[i], pos[j] ).modulo();
+            if( distance < ucut && distance > lcut ) {
+              std::string num; Tools::convert( nn, num ); nn++;
+              // Add this pair to list of pairs
+              upairs.push_back( std::pair<unsigned,unsigned>(i,j) );
+              // Add this distance to list of reference values
+              std::string dstr; Tools::convert( distance, dstr ); refvals.push_back( dstr );
+              // Calculate this distance
+              readInputLine( getShortcutLabel() + "_d" + num + ": DISTANCE ATOMS=" + istr + "," + jstr + " " + pbc_str );
+            }
+          }
+        }
+      } else {
+        unsigned nblocks = mypdb.getNumberOfAtomBlocks(); std::vector<unsigned> blocks( 1 + nblocks );
+        if( nblocks==1 ) { blocks[0]=0; blocks[1]=atoms.size(); }
+        else { blocks[0]=0; for(unsigned i=0; i<nblocks; ++i) blocks[i+1]=mypdb.getAtomBlockEnds()[i]; }
+        if( drmsd_type=="INTRA-DRMSD" ) {
+          for(unsigned i=0; i<nblocks; ++i) {
+            for(unsigned iatom=blocks[i]+1; iatom<blocks[i+1]; ++iatom) {
+              std::string istr; Tools::convert( atoms[iatom].serial(), istr );
+              for(unsigned jatom=blocks[i]; jatom<iatom; ++jatom) {
+                std::string jstr; Tools::convert( atoms[jatom].serial(), jstr );
+                double distance = delta( pos[iatom], pos[jatom] ).modulo();
+                if(distance < ucut && distance > lcut ) {
+                  std::string num; Tools::convert( nn, num ); nn++;
+                  // Add this pair to list of pairs
+                  upairs.push_back( std::pair<unsigned,unsigned>(iatom,jatom) );
+                  // Add this distance to list of reference values
+                  std::string dstr; Tools::convert( distance, dstr ); refvals.push_back( dstr );
+                  // Calculate this distance
+                  readInputLine( getShortcutLabel() + "_d" + num + ": DISTANCE ATOMS=" + istr + "," + jstr + " " + pbc_str );
+                }
+              }
+            }
+          }
+        } else if( drmsd_type=="INTER-DRMSD" ) {
+          for(unsigned i=1; i<nblocks; ++i) {
+            for(unsigned j=0; j<i; ++j) {
+              for(unsigned iatom=blocks[i]; iatom<blocks[i+1]; ++iatom) {
+                std::string istr; Tools::convert( atoms[iatom].serial(), istr );
+                for(unsigned jatom=blocks[j]; jatom<blocks[j+1]; ++jatom) {
+                  std::string jstr; Tools::convert( atoms[jatom].serial(), jstr );
+                  double distance = delta( pos[iatom], pos[jatom] ).modulo();
+                  if(distance < ucut && distance > lcut ) {
+                    std::string num; Tools::convert( nn, num ); nn++;
+                    // Add this pair to list of pairs
+                    upairs.push_back( std::pair<unsigned,unsigned>(iatom,jatom) );
+                    // Add this distance to list of reference values
+                    std::string dstr; Tools::convert( distance, dstr ); refvals.push_back( dstr );
+                    // Calculate this distance
+                    readInputLine( getShortcutLabel() + "_d" + num + ": DISTANCE ATOMS=" + istr + "," + jstr + " " + pbc_str );
                   }
-              } else if( drmsd_type=="INTER-DRMSD" ) {
-                  for(unsigned i=1; i<nblocks; ++i) {
-                    for(unsigned j=0; j<i; ++j) {
-                      for(unsigned iatom=blocks[i]; iatom<blocks[i+1]; ++iatom) {
-                        std::string istr; Tools::convert( atoms[iatom].serial(), istr );
-                        for(unsigned jatom=blocks[j]; jatom<blocks[j+1]; ++jatom) {
-                          std::string jstr; Tools::convert( atoms[jatom].serial(), jstr );
-                          double distance = delta( pos[iatom], pos[jatom] ).modulo();
-                          if(distance < ucut && distance > lcut ) {
-                             std::string num; Tools::convert( nn, num ); nn++;
-                             // Add this pair to list of pairs
-                             upairs.push_back( std::pair<unsigned,unsigned>(iatom,jatom) );
-                             // Add this distance to list of reference values
-                             std::string dstr; Tools::convert( distance, dstr ); refvals.push_back( dstr );
-                             // Calculate this distance
-                             readInputLine( getShortcutLabel() + "_d" + num + ": DISTANCE ATOMS=" + istr + "," + jstr + " " + pbc_str );
-                          }
-                        }
-                      }
-                    }
-                  }
-              } else plumed_merror( drmsd_type + " is not valid input to TYPE keyword");
-         }
-     // This is for every subsequent frame
-     } else {
-         for(unsigned i=0; i<refvals.size(); ++i) {
-             std::string dstr; Tools::convert( delta( pos[upairs[i].first], pos[upairs[i].second] ).modulo(), dstr );
-             refvals[i] += "," + dstr;
-         }
-     }
-     n++;
+                }
+              }
+            }
+          }
+        } else plumed_merror( drmsd_type + " is not valid input to TYPE keyword");
+      }
+      // This is for every subsequent frame
+    } else {
+      for(unsigned i=0; i<refvals.size(); ++i) {
+        std::string dstr; Tools::convert( delta( pos[upairs[i].first], pos[upairs[i].second] ).modulo(), dstr );
+        refvals[i] += "," + dstr;
+      }
+    }
+    n++;
   }
   // Now create values that hold all the reference distances
   fclose(fp); std::string arg_str1, arg_str2;
   for(unsigned i=0; i<refvals.size(); ++i ) {
-      std::string inum; Tools::convert( i+1, inum ); 
-      readInputLine( getShortcutLabel() + "_ref" + inum + ": CONSTANT VALUES=" + refvals[i] );
-      if( i==0 ) { arg_str1 = getShortcutLabel() + "_d" + inum; arg_str2 = getShortcutLabel() + "_ref" + inum; } 
-      else { arg_str1 += "," + getShortcutLabel() + "_d" + inum; arg_str2 += "," + getShortcutLabel() + "_ref" + inum; } 
+    std::string inum; Tools::convert( i+1, inum );
+    readInputLine( getShortcutLabel() + "_ref" + inum + ": CONSTANT VALUES=" + refvals[i] );
+    if( i==0 ) { arg_str1 = getShortcutLabel() + "_d" + inum; arg_str2 = getShortcutLabel() + "_ref" + inum; }
+    else { arg_str1 += "," + getShortcutLabel() + "_d" + inum; arg_str2 += "," + getShortcutLabel() + "_ref" + inum; }
   }
   // And calculate the euclidean distances between the true distances and the references
   readInputLine( getShortcutLabel() + "_u: EUCLIDEAN_DISTANCE SQUARED ARG1=" + arg_str1 + " ARG2=" + arg_str2 );
-  // And final value 
+  // And final value
   std::string nvals; Tools::convert( refvals.size(), nvals ); bool squared; parseFlag("SQUARED",squared);
-  if( squared ) readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_u FUNC=x/" + nvals + " PERIODIC=NO"); 
+  if( squared ) readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_u FUNC=x/" + nvals + " PERIODIC=NO");
   else {
-     readInputLine( getShortcutLabel() + "_2: CUSTOM ARG=" + getShortcutLabel() + "_u FUNC=(x/" + nvals + ") PERIODIC=NO");
-     readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_2 FUNC=sqrt(x) PERIODIC=NO"); 
+    readInputLine( getShortcutLabel() + "_2: CUSTOM ARG=" + getShortcutLabel() + "_u FUNC=(x/" + nvals + ") PERIODIC=NO");
+    readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_2 FUNC=sqrt(x) PERIODIC=NO");
   }
 }
 

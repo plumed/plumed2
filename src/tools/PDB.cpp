@@ -146,10 +146,10 @@ void PDB::setArgumentNames( const std::vector<std::string>& argument_names ) {
 
 bool PDB::getArgumentValue( const std::string& name, std::vector<double>& value ) const {
   std::map<std::string,std::vector<double> >::const_iterator it = arg_data.find(name);
-  if( it!=arg_data.end() ) { 
+  if( it!=arg_data.end() ) {
     if( value.size()!=it->second.size() ) return false;
-    for(unsigned i=0; i<value.size(); ++i) value[i] = it->second[i]; 
-    return true; 
+    for(unsigned i=0; i<value.size(); ++i) value[i] = it->second[i];
+    return true;
   }
   return false;
 }
@@ -225,8 +225,8 @@ void PDB::addRemark( std::vector<std::string>& v1 ) {
       std::string sval=v1[i].substr(eq+1);
       // double val; Tools::convert( sval, val );
       std::vector<std::string> words=Tools::getWords(sval,"\t\n ,");
-      std::vector<double> val( words.size() ); 
-      for(unsigned i=0; i<val.size(); ++i) Tools::convert( words[i], val[i] ); 
+      std::vector<double> val( words.size() );
+      for(unsigned i=0; i<val.size(); ++i) Tools::convert( words[i], val[i] );
       arg_data.insert( std::pair<std::string,std::vector<double> >( name, val ) );
     } else {
       flags.push_back(v1[i]);

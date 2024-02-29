@@ -98,7 +98,7 @@ void AdaptivePath::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys ); Path::registerInputFileKeywords( keys );
   keys.add("optional","PROPERTY","read in path coordinates by finding option with this label in remark of pdb frames");
   keys.add("compulsory","FIXED","the positions in the list of input frames of the two path nodes whose positions remain fixed during the path optimization");
-  keys.add("compulsory","HALFLIFE","-1","the number of MD steps after which a previously measured path distance weighs only 50% in the average. This option may increase convergence by allowing to \"forget\" the memory of a bad initial guess path. The default is to set this to infinity");
+  keys.add("compulsory","HALFLIFE","-1","the number of MD steps after which a previously measured path distance weighs only 50 percent in the average. This option may increase convergence by allowing to forget the memory of a bad initial guess path. The default is to set this to infinity");
   keys.add("compulsory","UPDATE","the frequency with which the path should be updated");
   keys.add("compulsory","TOLERANCE","1E-6","the tolerance to use for the path updating algorithm that makes all frames equidistant");
   keys.add("optional","WFILE","file on which to write out the path");
@@ -115,7 +115,7 @@ AdaptivePath::AdaptivePath(const ActionOptions& ao):
   std::string reference_data, metric, mtype; parse("TYPE", mtype);
   std::string reference; parse("REFERENCE",reference);
   FILE* fp=std::fopen(reference.c_str(),"r"); PDB mypdb; if(!fp) error("could not open reference file " + reference );
-  bool do_read=mypdb.readFromFilepointer(fp,false,0.1); if( !do_read ) error("missing file " + reference ); 
+  bool do_read=mypdb.readFromFilepointer(fp,false,0.1); if( !do_read ) error("missing file " + reference );
   // Create list of reference configurations that PLUMED will use
   Path::readInputFrames( reference, mtype, argnames, true, this, reference_data );
   // Now get coordinates on spath
@@ -124,13 +124,13 @@ AdaptivePath::AdaptivePath(const ActionOptions& ao):
   std::string propstr = getShortcutLabel() + "_ind"; if( pnames.size()>0 ) propstr = pnames[0] + "_ref";
   if( argnames.size()>0 ) readInputLine( getShortcutLabel() + ": GEOMETRIC_PATH ARG=" + getShortcutLabel() + "_data " + " PROPERTY=" + propstr + " REFERENCE=" + reference_data + " METRIC={DIFFERENCE}");
   else {
-     std::string num, align_str, displace_str; Tools::convert( mypdb.getOccupancy()[0], align_str ); Tools::convert( mypdb.getBeta()[0], displace_str );
-     for(unsigned j=1; j<mypdb.getAtomNumbers().size(); ++j ) { Tools::convert( mypdb.getOccupancy()[j], num ); align_str += "," + num; Tools::convert( mypdb.getBeta()[0], num ); displace_str += "," + num; }
-     metric = "RMSD_VECTOR DISPLACEMENT TYPE=" + mtype + " ALIGN=" + align_str + " DISPLACE=" + displace_str;
-     readInputLine( getShortcutLabel() + ": GEOMETRIC_PATH ARG=" + getShortcutLabel() + "_data.disp " + " PROPERTY=" +  propstr + " REFERENCE=" + reference_data + " METRIC={" + metric + "} METRIC_COMPONENT=disp");
+    std::string num, align_str, displace_str; Tools::convert( mypdb.getOccupancy()[0], align_str ); Tools::convert( mypdb.getBeta()[0], displace_str );
+    for(unsigned j=1; j<mypdb.getAtomNumbers().size(); ++j ) { Tools::convert( mypdb.getOccupancy()[j], num ); align_str += "," + num; Tools::convert( mypdb.getBeta()[0], num ); displace_str += "," + num; }
+    metric = "RMSD_VECTOR DISPLACEMENT TYPE=" + mtype + " ALIGN=" + align_str + " DISPLACE=" + displace_str;
+    readInputLine( getShortcutLabel() + ": GEOMETRIC_PATH ARG=" + getShortcutLabel() + "_data.disp " + " PROPERTY=" +  propstr + " REFERENCE=" + reference_data + " METRIC={" + metric + "} METRIC_COMPONENT=disp");
   }
   // Create the object to accumulate the average path displacements
-  std::string update, halflife; parse("HALFLIFE",halflife); parse("UPDATE",update); std::string refframes = " REFERENCE=" + getShortcutLabel() + "_pos"; 
+  std::string update, halflife; parse("HALFLIFE",halflife); parse("UPDATE",update); std::string refframes = " REFERENCE=" + getShortcutLabel() + "_pos";
   if( argnames.size()>0 ) readInputLine( getShortcutLabel() + "_disp: AVERAGE_PATH_DISPLACEMENT ARG=" + getShortcutLabel() + "_data HALFLIFE=" + halflife + " CLEAR=" + update + " METRIC={DIFFERENCE} REFERENCE=" + reference_data );
   else readInputLine( getShortcutLabel() + "_disp: AVERAGE_PATH_DISPLACEMENT ARG=" + getShortcutLabel() + "_data.disp HALFLIFE=" + halflife + " CLEAR=" + update + " METRIC={" + metric + "} METRIC_COMPONENT=disp REFERENCE=" + reference_data );
 
@@ -142,20 +142,20 @@ AdaptivePath::AdaptivePath(const ActionOptions& ao):
   // Information for write out
   std::string wfilename; parse("WFILE",wfilename);
   if( wfilename.length()>0 ) {
-      // This just gets the atom numbers for output
-      std::string atomstr;
-      if( argnames.size()==0 ) {
-          FILE* fp=std::fopen(reference.c_str(),"r"); double fake_unit=0.1; PDB mypdb; bool do_read=mypdb.readFromFilepointer(fp,false,fake_unit);
-          std::string num; Tools::convert( mypdb.getAtomNumbers()[0].serial(), atomstr );
-          for(unsigned j=1; j<mypdb.getAtomNumbers().size(); ++j ) { Tools::convert( mypdb.getAtomNumbers()[j].serial(), num ); atomstr += "," + num; }
-      } 
+    // This just gets the atom numbers for output
+    std::string atomstr;
+    if( argnames.size()==0 ) {
+      FILE* fp=std::fopen(reference.c_str(),"r"); double fake_unit=0.1; PDB mypdb; bool do_read=mypdb.readFromFilepointer(fp,false,fake_unit);
+      std::string num; Tools::convert( mypdb.getAtomNumbers()[0].serial(), atomstr );
+      for(unsigned j=1; j<mypdb.getAtomNumbers().size(); ++j ) { Tools::convert( mypdb.getAtomNumbers()[j].serial(), num ); atomstr += "," + num; }
+    }
 
-      if( wfilename.find(".pdb")==std::string::npos ) error("output must be to a pdb file");
-      std::string ofmt, pframes, wstride; parse("WSTRIDE",wstride); parse("FMT",ofmt); 
-      if( argnames.size()>0 ) {
-          std::string argstr = argnames[0]; for(unsigned i=1; i<argnames.size(); ++i) argstr += "," + argnames[i]; 
-          readInputLine("DUMPPDB DESCRIPTION=PATH STRIDE=" + wstride + " FMT=" + ofmt + " FILE=" + wfilename + " ARG=" + reference_data + " ARG_NAMES=" + argstr );
-      } else readInputLine("DUMPPDB DESCRIPTION=PATH STRIDE=" + wstride + " FMT=" + ofmt + " FILE=" + wfilename + " ARG=" + reference_data + " ATOM_INDICES=" + atomstr );
+    if( wfilename.find(".pdb")==std::string::npos ) error("output must be to a pdb file");
+    std::string ofmt, pframes, wstride; parse("WSTRIDE",wstride); parse("FMT",ofmt);
+    if( argnames.size()>0 ) {
+      std::string argstr = argnames[0]; for(unsigned i=1; i<argnames.size(); ++i) argstr += "," + argnames[i];
+      readInputLine("DUMPPDB DESCRIPTION=PATH STRIDE=" + wstride + " FMT=" + ofmt + " FILE=" + wfilename + " ARG=" + reference_data + " ARG_NAMES=" + argstr );
+    } else readInputLine("DUMPPDB DESCRIPTION=PATH STRIDE=" + wstride + " FMT=" + ofmt + " FILE=" + wfilename + " ARG=" + reference_data + " ATOM_INDICES=" + atomstr );
   }
   log<<"  Bibliography "<<plumed.cite("Diaz Leines and Ensing, Phys. Rev. Lett. 109, 020601 (2012)")<<"\n";
 }

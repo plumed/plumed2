@@ -88,12 +88,12 @@ VStack::VStack(const ActionOptions& ao):
   // Setup everything so we can build the store
   done_in_chain=true; ActionWithVector* av=dynamic_cast<ActionWithVector*>( getPntrToArgument(0)->getPntrToAction() );
   if( av ) {
-      const ActionWithVector* head0 = av->getFirstActionInChain(); 
-      for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-          ActionWithVector* avv=dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
-          if( !avv ) continue;
-          if( head0!=avv->getFirstActionInChain() ) { done_in_chain=false; break; }
-      }
+    const ActionWithVector* head0 = av->getFirstActionInChain();
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      ActionWithVector* avv=dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
+      if( !avv ) continue;
+      if( head0!=avv->getFirstActionInChain() ) { done_in_chain=false; break; }
+    }
   } else done_in_chain=false;
   unsigned nder = buildArgumentStore(0);
   // This checks which values have been stored

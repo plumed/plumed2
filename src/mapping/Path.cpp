@@ -232,9 +232,9 @@ Path::Path( const ActionOptions& ao ):
   std::vector<std::string> properties, pnames;
   if( getName()=="PATH") { properties.resize(1); }
   else { parseVector("PROPERTY",pnames); properties.resize( pnames.size() ); }
-  std::string type, reference_data, reference; parse("REFERENCE",reference); 
+  std::string type, reference_data, reference; parse("REFERENCE",reference);
   std::vector<std::string> argnames; parseVector("ARG",argnames); parse("TYPE",type);
-  if( type.find("DRMSD")!=std::string::npos ) readInputLine( getShortcutLabel() + "_data: DRMSD SQUARED TYPE=" + type + " REFERENCE=" + reference );   
+  if( type.find("DRMSD")!=std::string::npos ) readInputLine( getShortcutLabel() + "_data: DRMSD SQUARED TYPE=" + type + " REFERENCE=" + reference );
   else readInputFrames( reference, type, argnames, false, this, reference_data );
   // Find the shortest distance to the frames
   readInputLine( getShortcutLabel() + "_mindist: LOWEST ARG=" + getShortcutLabel() + "_data");
@@ -249,16 +249,16 @@ Path::Path( const ActionOptions& ao ):
   // Now get coefficients for properies for spath
   readPropertyInformation( pnames, getShortcutLabel(), reference, this );
   // Now create COMBINE objects to compute numerator of path
-  for(unsigned i=0;i<properties.size();++i) {
-      if( pnames.size()>0 ) {
-          readInputLine( pnames[i] + "_numer_prod: CUSTOM ARG=" + getShortcutLabel() + "_weights," + pnames[i] + "_ref FUNC=x*y PERIODIC=NO");
-          readInputLine( pnames[i] + "_numer: SUM ARG=" + pnames[i]  + "_numer_prod PERIODIC=NO");
-          readInputLine( getShortcutLabel() + "_" + pnames[i] + ": CUSTOM ARG=" + pnames[i]  + "_numer," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
-      } else {
-          readInputLine( getShortcutLabel() + "_s_prod: CUSTOM ARG=" + getShortcutLabel() + "_weights," + getShortcutLabel() + "_ind FUNC=x*y PERIODIC=NO");
-          readInputLine( getShortcutLabel()  + "_numer: SUM ARG=" + getShortcutLabel() + "_s_prod PERIODIC=NO");
-          readInputLine( getShortcutLabel() + "_s: CUSTOM ARG=" + getShortcutLabel() + "_numer," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
-      }
+  for(unsigned i=0; i<properties.size(); ++i) {
+    if( pnames.size()>0 ) {
+      readInputLine( pnames[i] + "_numer_prod: CUSTOM ARG=" + getShortcutLabel() + "_weights," + pnames[i] + "_ref FUNC=x*y PERIODIC=NO");
+      readInputLine( pnames[i] + "_numer: SUM ARG=" + pnames[i]  + "_numer_prod PERIODIC=NO");
+      readInputLine( getShortcutLabel() + "_" + pnames[i] + ": CUSTOM ARG=" + pnames[i]  + "_numer," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+    } else {
+      readInputLine( getShortcutLabel() + "_s_prod: CUSTOM ARG=" + getShortcutLabel() + "_weights," + getShortcutLabel() + "_ind FUNC=x*y PERIODIC=NO");
+      readInputLine( getShortcutLabel()  + "_numer: SUM ARG=" + getShortcutLabel() + "_s_prod PERIODIC=NO");
+      readInputLine( getShortcutLabel() + "_s: CUSTOM ARG=" + getShortcutLabel() + "_numer," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+    }
   }
 }
 
@@ -273,50 +273,50 @@ void Path::readInputFrames( const std::string& reference, const std::string& typ
   bool do_read=pdb.readFromFilepointer(fp,false,0.1); if( !do_read ) action->error("missing file " + reference );
   std::vector<Value*> theargs; if( argnames.size()>0 ) ActionWithArguments::interpretArgumentList( argnames, action->plumed.getActionSet(), action, theargs );
   if( pdb.getPositions().size()!=0 && theargs.size()==0 ) {
-     reference_data = action->getShortcutLabel() + "_data_ref"; 
-     if( displacements ) action->readInputLine( action->getShortcutLabel() + "_data: RMSD DISPLACEMENT SQUARED REFERENCE=" + reference + " TYPE=" + type );
-     else action->readInputLine( action->getShortcutLabel() + "_data: RMSD SQUARED REFERENCE=" + reference + " TYPE=" + type );
+    reference_data = action->getShortcutLabel() + "_data_ref";
+    if( displacements ) action->readInputLine( action->getShortcutLabel() + "_data: RMSD DISPLACEMENT SQUARED REFERENCE=" + reference + " TYPE=" + type );
+    else action->readInputLine( action->getShortcutLabel() + "_data: RMSD SQUARED REFERENCE=" + reference + " TYPE=" + type );
   } else if( pdb.getPositions().size()!=0 ) {
-     reference_data = action->getShortcutLabel() + "_atomdata_ref";
-     if( displacements ) action->readInputLine( action->getShortcutLabel() + "_atomdata: RMSD DISPLACEMENT SQUARED REFERENCE=" + reference + " TYPE=" + type );
-     else action->readInputLine( action->getShortcutLabel() + "_atomdata: RMSD SQUARED REFERENCE=" + reference + " TYPE=" + type );
+    reference_data = action->getShortcutLabel() + "_atomdata_ref";
+    if( displacements ) action->readInputLine( action->getShortcutLabel() + "_atomdata: RMSD DISPLACEMENT SQUARED REFERENCE=" + reference + " TYPE=" + type );
+    else action->readInputLine( action->getShortcutLabel() + "_atomdata: RMSD SQUARED REFERENCE=" + reference + " TYPE=" + type );
   }
 
   if( theargs.size()>0 ) {
-      std::string instargs, refargs;
-      for(unsigned i=0; i<theargs.size(); ++i) {
-          std::string iargn = fixArgumentName( theargs[i]->getName() );
-          action->readInputLine( action->getShortcutLabel() + "_ref_" + iargn + ": PDB2CONSTANT REFERENCE=" + reference + " ARG=" + theargs[i]->getName() );
-          if( i==0 ) { instargs=" ARG1=" + theargs[i]->getName(); refargs=" ARG2=" + action->getShortcutLabel() + "_ref_" + iargn; }
-          else { instargs +="," + theargs[i]->getName(); refargs +="," + action->getShortcutLabel() + "_ref_" + iargn; }
-          if( pdb.getPositions().size()==0 && i==0 ) reference_data = action->getShortcutLabel() + "_ref_" + iargn; 
-          else reference_data += "," + action->getShortcutLabel() + "_ref_" + iargn;  
-      }
-      std::string comname="EUCLIDEAN_DISTANCE SQUARED"; std::string coeffstr; action->parse("COEFFICIENTS",coeffstr);
-      if( coeffstr.length()>0 ) {
-          if( displacements ) action->error("cannot use COEFFICIENTS arguments with GEOMETRIC PATH");
-          action->readInputLine( action->getShortcutLabel() + "_coeff: CONSTANT VALUES=" + coeffstr );
-          action->readInputLine( action->getShortcutLabel() + "_coeff2: CUSTOM ARG=" + action->getShortcutLabel() + "_coeff FUNC=x*x PERIODIC=NO");
-          comname = "NORMALIZED_EUCLIDEAN_DISTANCE SQUARED METRIC=" + action->getShortcutLabel() + "_coeff2";
-      } else if( displacements ) comname = "DISPLACEMENT";
+    std::string instargs, refargs;
+    for(unsigned i=0; i<theargs.size(); ++i) {
+      std::string iargn = fixArgumentName( theargs[i]->getName() );
+      action->readInputLine( action->getShortcutLabel() + "_ref_" + iargn + ": PDB2CONSTANT REFERENCE=" + reference + " ARG=" + theargs[i]->getName() );
+      if( i==0 ) { instargs=" ARG1=" + theargs[i]->getName(); refargs=" ARG2=" + action->getShortcutLabel() + "_ref_" + iargn; }
+      else { instargs +="," + theargs[i]->getName(); refargs +="," + action->getShortcutLabel() + "_ref_" + iargn; }
+      if( pdb.getPositions().size()==0 && i==0 ) reference_data = action->getShortcutLabel() + "_ref_" + iargn;
+      else reference_data += "," + action->getShortcutLabel() + "_ref_" + iargn;
+    }
+    std::string comname="EUCLIDEAN_DISTANCE SQUARED"; std::string coeffstr; action->parse("COEFFICIENTS",coeffstr);
+    if( coeffstr.length()>0 ) {
+      if( displacements ) action->error("cannot use COEFFICIENTS arguments with GEOMETRIC PATH");
+      action->readInputLine( action->getShortcutLabel() + "_coeff: CONSTANT VALUES=" + coeffstr );
+      action->readInputLine( action->getShortcutLabel() + "_coeff2: CUSTOM ARG=" + action->getShortcutLabel() + "_coeff FUNC=x*x PERIODIC=NO");
+      comname = "NORMALIZED_EUCLIDEAN_DISTANCE SQUARED METRIC=" + action->getShortcutLabel() + "_coeff2";
+    } else if( displacements ) comname = "DISPLACEMENT";
 
-      if( pdb.getPositions().size()==0 ) action->readInputLine( action->getShortcutLabel() + "_data: " + comname + instargs + refargs );
-      else action->readInputLine( action->getShortcutLabel() + "_argdata: " + comname + instargs + refargs );
+    if( pdb.getPositions().size()==0 ) action->readInputLine( action->getShortcutLabel() + "_data: " + comname + instargs + refargs );
+    else action->readInputLine( action->getShortcutLabel() + "_argdata: " + comname + instargs + refargs );
   }
 }
 
 void Path::readPropertyInformation( const std::vector<std::string>& pnames, const std::string& lab, const std::string& refname, ActionShortcut* action ) {
   if( pnames.size()>0 ) {
-      for(unsigned i=0;i<pnames.size();++i) {
-          action->readInputLine( pnames[i] + ": CONSTANT VALUE=1");
-          action->readInputLine( pnames[i] + "_ref: PDB2CONSTANT REFERENCE=" + refname + " ARG=" + pnames[i] );
-      }
+    for(unsigned i=0; i<pnames.size(); ++i) {
+      action->readInputLine( pnames[i] + ": CONSTANT VALUE=1");
+      action->readInputLine( pnames[i] + "_ref: PDB2CONSTANT REFERENCE=" + refname + " ARG=" + pnames[i] );
+    }
   } else {
-      ActionWithValue* av=action->plumed.getActionSet().selectWithLabel<ActionWithValue*>( lab + "_data" );
-      unsigned nfram = av->copyOutput(0)->getShape()[0]; std::string indices = "VALUES=1";
-      for(unsigned i=1;i<nfram;++i) { std::string num; Tools::convert( i+1, num ); indices += "," + num; }
-      action->readInputLine( lab + "_ind: CONSTANT " + indices );
-  }   
+    ActionWithValue* av=action->plumed.getActionSet().selectWithLabel<ActionWithValue*>( lab + "_data" );
+    unsigned nfram = av->copyOutput(0)->getShape()[0]; std::string indices = "VALUES=1";
+    for(unsigned i=1; i<nfram; ++i) { std::string num; Tools::convert( i+1, num ); indices += "," + num; }
+    action->readInputLine( lab + "_ind: CONSTANT " + indices );
+  }
 }
 
 }
