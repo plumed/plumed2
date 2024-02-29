@@ -48,7 +48,6 @@ namespace gridtools {
 
 class FindGridOptimum : public ActionWithGrid {
 private:
-  bool firsttime;
   bool domin;
   double cgtol;
   std::unique_ptr<Interpolator> function;
@@ -79,7 +78,6 @@ void FindGridOptimum::registerKeywords( Keywords& keys ) {
 FindGridOptimum::FindGridOptimum(const ActionOptions&ao):
   Action(ao),
   ActionWithGrid(ao),
-  firsttime(true),
   cgtol(0)
 {
   if( getName()=="FIND_GRID_MAXIMUM" ) domin=false;
@@ -124,13 +122,18 @@ void FindGridOptimum::calculate() {
   const GridCoordinatesObject& ingrid = getGridCoordinatesObject(); Value* gval = getPntrToArgument(0);
   std::vector<double> optargs( gval->getRank() ); std::vector<unsigned> gridind( gval->getRank() );
   double optval=gval->get( 0 ); ingrid.getGridPointCoordinates( 0, gridind, optargs );
-  unsigned nval = gval->getNumberOfValues();
+  unsigned nval = gval->getNumberOfValues(); bool constant=true;
   for(unsigned i=0; i<nval; ++i) {
     double tval = gval->get( i );
-    if( domin && (tval<optval || std::isnan(optval)) ) { optval=tval; ingrid.getGridPointCoordinates( i, gridind, optargs ); }
-    if( !domin && (tval>optval || std::isnan(optval)) ) { optval=tval; ingrid.getGridPointCoordinates( i, gridind, optargs ); }
+    if( domin && (tval<optval || std::isnan(optval)) ) { constant=false; optval=tval; ingrid.getGridPointCoordinates( i, gridind, optargs ); }
+    if( !domin && (tval>optval || std::isnan(optval)) ) { constant=false; optval=tval; ingrid.getGridPointCoordinates( i, gridind, optargs ); }
   }
-  if( std::isinf(optval) ) return ;
+  // This basically ensures we deal with cases where all points on the grid are infinity as isinf doesn't work on intel compiler
+  if( constant ) {
+      if( domin && gval->get(0)>=gval->get(1) ) return;
+      else if( gval->get(0)<=gval->get(1) ) return;
+  }
+  if( std::isinf(optval) ) { return; }
 
   if( std::isnan(optval) ) error("all values on grid are nans");
   // And do conjugate gradient optimisation (because we can!!)
