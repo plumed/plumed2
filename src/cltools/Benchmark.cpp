@@ -91,12 +91,18 @@ Here `this` means the kernel of the version with which you are running the bench
 instances simultaneously (alternating them) so that systematic differences in the load of your machine will affect them
 to the same extent.
 
-In case the different versions require modified plumed.dat files, or if you simply want to compare 
+In case the different versions require modified plumed.dat files, or if you simply want to compare
 two different plumed input files that compute the same thing, you can also use multiple plumed input files:
 
 \verbatim
 plumed-runtime benchmark --kernel /path/to/lib/libplumedKernel.so:this --plumed plumed1.dat:plumed2.dat
 \endverbatim
+
+\par Profiling
+
+If you want to attach a profiler on the fly to the process, you might find it convenient to use `--nsteps -1`.
+The simulation will run forever and can be interrupted with CTRL-C. When interrupted, the result of the timers
+should be displayed anyway.
 
 \par Output
 
