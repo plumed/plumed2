@@ -58,13 +58,60 @@ benchmarks agaist previous plumed versions
 
 \par Examples
 
+First, you should create a sample `plumed.dat` file for testing. For instance:
+```
+WHOLEMOLECULES ENTITY0=1-10000
+p: POSITION ATOM=1
+RESTRAINT ARG=p.x KAPPA=1 AT=0
+
+```
+
+Then you can test the performance of this input with the following command:
 \verbatim
-plumed benchmark --plumed plumed.dat
+plumed benchmark
 \endverbatim
 
+You can also test a different (older) version of PLUMED with the same input. To do so,
+you should run
 \verbatim
-plumed benchmark --plumed plumed.dat --kernel /path/to/libplumedKernel.so
+plumed-runtime benchmark --kernel /path/to/lib/libplumedKernel.so
 \endverbatim
+
+\warning It is necessary to use the `plumed-runtime` executable here to avoid conflicts between different
+plumed versions. You will find it in `src/lib` if you are using the non installed version of plumed,
+and in `$prefix/lib/plumed` if you installed plumed in $prefix,.
+
+The best way to compare two versions of plumed on the same input is to pass multiple colon-separated kernels:
+
+\verbatim
+plumed-runtime benchmark --kernel /path/to/lib/libplumedKernel.so:/path2/to/lib/libplumedKernel.so:this
+\endverbatim
+
+Here `this` means the kernel of the version with which you are running the benchmark. This comparison runs the three
+instances simultaneously (alternating them) so that systematic differences in the load of your machine will affect them
+to the same extent.
+
+In case the different versions require modified plumed.dat files, or if you simply want to compare 
+two different plumed input files that compute the same thing, you can also use multiple plumed input files:
+
+\verbatim
+plumed-runtime benchmark --kernel /path/to/lib/libplumedKernel.so:this --plumed plumed1.dat:plumed2.dat
+\endverbatim
+
+\par Output
+
+In the output you will see the usual reports about timing produced by the internal
+timers of the tested plumed instances.
+In addition, this tool will monitor the timing externally, with some slightly different criterion:
+- First, the initialization (construction of the input) will be shown with a separate timer
+- Second, the timer corresponding to the calculation will be split in two parts, reporting
+  execution of the first half of the calculation and the second half.
+- Finally, you might notice some discrepancy because some of the actions that are usually
+  not expensive are not included in the internal timers. The external timer will
+  thus provide a better estimate of the total elapsed time, including everything.
+
+The internal timers are still useful to monitor what happens at the different stages
+and, with \ref DEBUG `DETAILED_TIMERS`, what happens in each action.
 
 */
 //+ENDPLUMEDOC
