@@ -26,8 +26,6 @@
 #include "core/Group.h"
 #include "tools/PDB.h"
 
-using namespace std;
-
 namespace PLMD {
 namespace setup {
 

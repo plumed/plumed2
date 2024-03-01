@@ -25,7 +25,6 @@
 #include "core/ActionRegister.h"
 #include "core/ActionSet.h"
 #include "core/PlumedMain.h"
-#include <string.h>
 
 namespace PLMD {
 namespace mapping {

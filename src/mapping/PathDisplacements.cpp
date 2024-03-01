@@ -26,52 +26,11 @@
 #include "tools/Matrix.h"
 #include "PathProjectionCalculator.h"
 
-//+PLUMEDOC COLVAR ADAPTIVE_PATH
+//+PLUMEDOC ANALYSIS AVERAGE_PATH_DISPLACEMENT
 /*
-Compute path collective variables that adapt to the lowest free energy path connecting states A and B.
-
-The Path Collective Variables developed by Branduardi and co-workers \cite brand07 allow one
-to compute the progress along a high-dimensional path and the distance from the high-dimensional
-path.  The progress along the path (s) is computed using:
-
-\f[
-s = i_2 + \textrm{sign}(i_2-i_1) \frac{ \sqrt{( \mathbf{v}_1\cdot\mathbf{v}_2 )^2 - |\mathbf{v}_3|^2(|\mathbf{v}_1|^2 - |\mathbf{v}_2|^2) } }{2|\mathbf{v}_3|^2} - \frac{\mathbf{v}_1\cdot\mathbf{v}_3 - |\mathbf{v}_3|^2}{2|\mathbf{v}_3|^2}
-\f]
-
-In this expression \f$\mathbf{v}_1\f$ and \f$\mathbf{v}_3\f$ are the vectors connecting the current position to the closest and second closest node of the path,
-respectfully and \f$i_1\f$ and \f$i_2\f$ are the projections of the closest and second closest frames of the path. \f$\mathbf{v}_2\f$, meanwhile, is the
-vector connecting the closest frame to the second closest frame.  The distance from the path, \f$z\f$ is calculated using:
-
-\f[
-z = \sqrt{ \left[ |\mathbf{v}_1|^2 - |\mathbf{v}_2| \left( \frac{ \sqrt{( \mathbf{v}_1\cdot\mathbf{v}_2 )^2 - |\mathbf{v}_3|^2(|\mathbf{v}_1|^2 - |\mathbf{v}_2|^2) } }{2|\mathbf{v}_3|^2} - \frac{\mathbf{v}_1\cdot\mathbf{v}_3 - |\mathbf{v}_3|^2}{2|\mathbf{v}_3|^2} \right) \right]^2 }
-\f]
-
-Notice that these are the definitions of \f$s\f$ and \f$z\f$ that are used by \ref PATH when the GPATH option is employed.  The reason for this is that
-the adaptive path method implemented in this action was inspired by the work of Diaz and Ensing in which these formula were used \cite BerndAdaptivePath.
-To learn more about how the path is adapted we strongly recommend reading this paper.
+Accumulate the distances between the reference frames in the paths and the configurations visited
 
 \par Examples
-
-The input below provides an example of how the adaptive path works in practise. The path is updated every 50 steps of
-MD based on the data accumulated during the preceding 50 time steps.
-
-\plumedfile
-d1: DISTANCE ATOMS=1,2 COMPONENTS
-pp: ADAPTIVE_PATH TYPE=EUCLIDEAN FIXED=5,15 UPDATE=50 WFILE=out-path.pdb WSTRIDE=50 REFERENCE=mypath.pdb
-PRINT ARG=d1.x,d1.y,pp.* FILE=colvar
-\endplumedfile
-
-In the case above the distance between frames is calculated based on the \f$x\f$ and \f$y\f$ components of the vector connecting
-atoms 1 and 2.  As such an extract from the input reference path (mypath.pdb) would look as follows:
-
-\verbatim
-REMARK ARG=d1.x,d1.y d1.x=1.12 d1.y=-.60
-END
-REMARK ARG=d1.x,d1.y d1.x=.99 d1.y=-.45
-END
-\endverbatim
-
-Notice that one can also use RMSD frames in place of arguments like those above.
 
 */
 //+ENDPLUMEDOC
@@ -158,7 +117,7 @@ void PathDisplacements::update() {
     clearnextstep=false;
   }
 
-  unsigned k=0, iclose1, iclose2; double v1v1, v3v3;
+  unsigned k=0, iclose1=0, iclose2=0; double v1v1=0, v3v3=0;
   for(unsigned i=0; i<nrows; ++i) {
     double dist = 0;
     for(unsigned j=0; j<ncols; ++j) {

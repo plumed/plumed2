@@ -23,7 +23,15 @@
 #include "tools/PDB.h"
 #include "core/ActionRegister.h"
 
-using namespace std;
+//+PLUMEDOC COLVAR GPATH
+/*
+Distance along and from a path calculated using geometric formulas
+
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
 
 namespace PLMD {
 namespace mapping {

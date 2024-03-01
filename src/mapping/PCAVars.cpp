@@ -26,8 +26,6 @@
 #include "tools/PDB.h"
 #include "Path.h"
 
-using namespace std;
-
 namespace PLMD {
 namespace mapping {
 

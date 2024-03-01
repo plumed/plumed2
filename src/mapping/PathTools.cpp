@@ -312,7 +312,6 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   std::vector<double> displacement( ishape[0] ); plmd.cmd("setMemoryForData " + mydisp, &displacement[0] );
 // And calculate the displacement
   plmd.cmd("calc");
-  for(unsigned j=0; j<displacement.size(); ++j) printf("DISP %d %f \n", j, displacement[j] );
 
   // Now read in the initial frame
 

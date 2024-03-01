@@ -40,6 +40,15 @@ public:
   static void registerKeywords(Keywords& keys);
 };
 
+//+PLUMEDOC DCOLVAR RMSD_SCALAR
+/*
+Calculate the RMSD with respect to a reference structure.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 //+PLUMEDOC DCOLVAR RMSD
 /*
 Calculate the RMSD with respect to a reference structure.

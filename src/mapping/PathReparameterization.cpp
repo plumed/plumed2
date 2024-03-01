@@ -28,6 +28,15 @@
 #include "tools/Matrix.h"
 #include "PathProjectionCalculator.h"
 
+//+PLUMEDOC ANALYSIS REPARAMETERIZE_PATH
+/*
+Take an input path with frames that are not equally spaced and make the frames equally spaced
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace mapping {
 

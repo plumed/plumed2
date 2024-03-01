@@ -22,7 +22,7 @@
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 #include "core/ActionWithArguments.h"
-#include "tools/Pdb.h"
+#include "tools/PDB.h"
 #include "core/PlumedMain.h"
 
 namespace PLMD {

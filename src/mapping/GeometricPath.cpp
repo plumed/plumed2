@@ -24,6 +24,15 @@
 #include "core/ActionSet.h"
 #include "PathProjectionCalculator.h"
 
+//+PLUMEDOC COLVAR GEOMETRIC_PATH
+/*
+Distance along and from a path calculated using geometric formulas
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace mapping {
 
@@ -72,7 +81,7 @@ unsigned GeometricPath::getNumberOfDerivatives() {
 }
 
 void GeometricPath::calculate() {
-  unsigned k=0, iclose1, iclose2; double v1v1, v3v3;
+  unsigned k=0, iclose1=0, iclose2=0; double v1v1=0, v3v3=0;
   unsigned nrows = getPntrToArgument(0)->getShape()[0];
   unsigned ncols = getPntrToArgument(0)->getShape()[1];
   for(unsigned i=0; i<nrows; ++i) {
