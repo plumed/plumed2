@@ -1,3 +1,4 @@
+plumed_modules=mapping
 type=driver
 arg="--noatoms --plumed plumed.dat"
 
