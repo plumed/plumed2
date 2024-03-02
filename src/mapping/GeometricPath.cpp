@@ -38,7 +38,6 @@ namespace mapping {
 
 class GeometricPath : public ActionWithVector {
 private:
-  std::vector<double> forcesToApply;
   PathProjectionCalculator path_projector;
 public:
   static void registerKeywords(Keywords& keys);
@@ -66,18 +65,19 @@ GeometricPath::GeometricPath(const ActionOptions&ao):
 {
   plumed_assert( !actionInChain() );
   // Get the coordinates in the low dimensional space
-  std::string pcoord; parse("PROPERTY", pcoord ); log.printf("  projecting onto vector of coordinates in %s \n", pcoord.c_str() );
-  ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( pcoord ); plumed_assert( av );
-  std::vector<Value*> args( getArguments() ); args.push_back( av->copyOutput(0) ); requestArguments( args );
+  std::vector<std::string> pcoord; parseVector("PROPERTY", pcoord ); std::vector<Value*> theprop;
+  ActionWithArguments::interpretArgumentList( pcoord, plumed.getActionSet(), this, theprop );
+  if( theprop.size()!=1 ) error("did not find property to project on");
+  if( theprop[0]->getNumberOfValues()!=getPntrToArgument(0)->getShape()[0] ) error("mismatch between number of frames and property of interest");
+  log.printf("  projecting onto : %s \n", theprop[0]->getName().c_str() );
+  std::vector<Value*> args( getArguments() ); args.push_back( theprop[0] ); requestArguments( args );
   // Create the values to store the output
   addComponentWithDerivatives("s"); componentIsNotPeriodic("s");
   addComponentWithDerivatives("z"); componentIsNotPeriodic("z");
-  // Create the forces to apply array
-  forcesToApply.resize( getPntrToArgument(0)->getShape()[0]*getPntrToArgument(0)->getShape()[1] );
 }
 
 unsigned GeometricPath::getNumberOfDerivatives() {
-  return getPntrToArgument(0)->getShape()[0]*getPntrToArgument(0)->getShape()[1];
+  return getPntrToArgument(0)->getShape()[0]*getPntrToArgument(0)->getShape()[1] + getPntrToArgument(1)->getShape()[0];
 }
 
 void GeometricPath::calculate() {
