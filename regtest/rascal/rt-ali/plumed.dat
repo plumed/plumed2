@@ -1,0 +1,23 @@
+spex_A: SPHERICAL_INVARIANTS ...
+  SPECIES1=1-900:3
+  HYPERPARAMS={
+    "max_radial": 8,
+    "max_angular": 6,
+    "compute_gradients": false,
+    "normalize": false,
+    "soap_type": "PowerSpectrum",
+    "cutoff_function": {"type": "ShiftedCosine", "cutoff": {"value": 3.7, "unit": "AA"}, "smooth_width": {"value": 0.1, "unit": "AA"}},
+    "gaussian_density": {"type": "Constant", "gaussian_sigma": {"value": 1.0, "unit": "AA"}},
+    "radial_contribution": {"type": "GTO"}
+  }
+...
+
+spex_AT: TRANSPOSE ARG=spex_A
+
+ones: ONES SIZE=300
+sum_A: MATRIX_VECTOR_PRODUCT ARG=spex_AT,ones
+num_O: SUM ARG=ones PERIODIC=NO #count number of oxygens
+av_soap: CUSTOM ARG=sum_A,num_O FUNC=x/y PERIODIC=NO #divide SUM_A by 300 to obtain the snapshot average soap descriptor
+av_soapT: TRANSPOSE ARG=av_soap
+
+PRINT ARG=av_soapT STRIDE=1 FILE=global_vec FMT=%8.4f

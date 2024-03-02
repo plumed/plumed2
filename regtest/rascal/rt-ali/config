@@ -1,0 +1,5 @@
+plumed_modules=rascal
+plumed_needs=rascal
+type=driver
+# this is to test a different name
+arg="--plumed plumed.dat --ixyz traj.xyz --length-units A" # --debug-forces forces.num"

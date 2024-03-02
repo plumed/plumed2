@@ -324,6 +324,7 @@ PLUMED_CONFIG_ENABLE([af_ocl],[search for arrayfire_ocl],[no])
 PLUMED_CONFIG_ENABLE([af_cuda],[search for arrayfire_cuda],[no])
 PLUMED_CONFIG_ENABLE([af_cpu],[search for arrayfire_cpu],[no])
 PLUMED_CONFIG_ENABLE([libtorch],[search for libtorch],[no]) #added by luigibonati
+PLUMED_CONFIG_ENABLE([rascal],[search for rascal],[no])
 
 AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
 AC_ARG_VAR(STATIC_LIBS,[variables that should be linked statically directly to MD code - configure will add here -ldl if necessary ])
@@ -979,6 +980,17 @@ if test "$debug_glibcxx" = true ; then
   AC_MSG_NOTICE([Check boundaries, adding -D_GLIBCXX_DEBUG])
   AC_DEFINE([_GLIBCXX_DEBUG])
   use_debug_glibcxx=yes
+fi
+
+# check for librascal
+if test $rascal == true ; then
+  PLUMED_CHECK_CXX_PACKAGE([rascal],[
+#include <rascal/utils/utils.hh>
+int main() {
+   std::string etest=rascal::internal::get_filename_extension("file.dat"); 
+   return 0;
+}
+  ], [__PLUMED_HAS_RASCAL])
 fi
 
 # this is necessary in many MPI implementations
