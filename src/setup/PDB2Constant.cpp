@@ -83,7 +83,7 @@ PDB2Constant::PDB2Constant(const ActionOptions& ao):
       double asum=0; for(unsigned i=0; i<align.size(); ++i) asum += align[i];
       if( asum>epsilon ) {
         double iasum = 1 / asum; for(unsigned i=0; i<align.size(); ++i) align[i] *= iasum;
-      } else {
+      } else if( mypdb.size()>0 ) {
         double iasum = 1 / mypdb.size(); for(unsigned i=0; i<align.size(); ++i) align[i] = iasum;
       }
       Vector center; center.zero(); for(unsigned i=0; i<mypdb.getPositions().size(); ++i) center += align[i]*mypdb.getPositions()[i];
