@@ -44,6 +44,8 @@ public:
 /// Get the number of derivatives
   unsigned getNumberOfDerivatives() override { return 0; }
 ///
+  void prepare() override ;
+///
   unsigned getNumberOfColumns() const override { return getNumberOfArguments(); }
 ///
   void setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const override ;
@@ -99,6 +101,12 @@ VStack::VStack(const ActionOptions& ao):
   // This checks which values have been stored
   stored.resize( getNumberOfArguments() ); std::string headstr=getFirstActionInChain()->getLabel();
   for(unsigned i=0; i<stored.size(); ++i) stored[i] = getPntrToArgument(i)->ignoreStoredValue( headstr );
+}
+
+void VStack::prepare() {
+  if( getPntrToArgument(0)->getRank()==0 || getPntrToArgument(0)->getShape()[0]==getPntrToComponent(0)->getShape()[0] ) return ;
+  std::vector<unsigned> shape(2); shape[0] = getPntrToArgument(0)->getShape()[0]; shape[1] = getNumberOfArguments();
+  getPntrToComponent(0)->setShape(shape); getPntrToComponent(0)->reshapeMatrixStore( shape[1] );
 }
 
 void VStack::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {

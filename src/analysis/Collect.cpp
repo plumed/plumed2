@@ -86,8 +86,7 @@ Collect::Collect( const ActionOptions& ao ):
     nvals=(clearstride/getStride())*getPntrToArgument(0)->getNumberOfValues();
     clearnextstep=true;
   }
-  std::vector<unsigned> shape(1); shape[0]=nvals;
-  addValueWithDerivatives( shape );
+  std::vector<unsigned> shape(1); shape[0]=nvals; addValue( shape );
   if( getPntrToArgument(0)->isPeriodic() ) {
     std::string min, max; getPntrToArgument(0)->getDomain( min, max );
     setPeriodic( min, max );
@@ -108,7 +107,10 @@ void Collect::update() {
   Value* myout=getPntrToComponent(0);
   unsigned nargs=myin->getNumberOfValues();
   if( clearstride>0 ) {
-    for(unsigned i=0; i<nargs; ++i) myout->set( (getStep()/getStride()-1)*nargs+i, myin->get(i) );
+    unsigned step = getStep() - clearstride*std::floor( getStep() / clearstride );
+    if( getStep()%clearstride==0 ) step = step + clearstride;  
+    unsigned base = (step/getStride()-1)*nargs;
+    for(unsigned i=0; i<nargs; ++i) myout->set( base+i, myin->get(i) );
   } else {
     for(unsigned i=0; i<nargs; ++i) myout->push_back( myin->get(i) );
   }
