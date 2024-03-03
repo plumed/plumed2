@@ -1,9 +1,8 @@
 # Test of row/column sums for symmetric matrix
 
 mat: CONTACT_MATRIX GROUP=1-10 SWITCH={RATIONAL R_0=1.0} 
-matT: TRANSPOSE ARG=mat
 ones: ONES SIZE=10
-csums: MATRIX_VECTOR_PRODUCT ARG=matT,ones
+csums: MATRIX_VECTOR_PRODUCT ARG=mat.w,ones
 csums_mean: MEAN ARG=csums PERIODIC=NO
 rsums: MATRIX_VECTOR_PRODUCT ARG=mat,ones 
 rsums_mean: MEAN ARG=rsums PERIODIC=NO

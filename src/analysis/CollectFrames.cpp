@@ -38,6 +38,8 @@ namespace PLMD {
 namespace analysis {
 
 class CollectFrames : public ActionShortcut {
+private:
+  std::string fixArgumentName( const std::string& argin );
 public:
   static void registerKeywords( Keywords& keys );
   explicit CollectFrames( const ActionOptions& ao ); 
@@ -55,6 +57,12 @@ void CollectFrames::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("logweights","default","the logarithms of the weights of the data points");
 }
 
+std::string CollectFrames::fixArgumentName( const std::string& argin ) {
+  std::string argout = argin; std::size_t dot=argin.find(".");
+  if( dot!=std::string::npos ) argout = argin.substr(0,dot) + "_" + argin.substr(dot+1);
+  return argout;
+}
+
 CollectFrames::CollectFrames( const ActionOptions& ao ):
   Action(ao),
   ActionShortcut(ao)
@@ -67,10 +75,11 @@ CollectFrames::CollectFrames( const ActionOptions& ao ):
   // Create all the collect actions
   for(unsigned i=0; i<theargs.size(); ++i) {
       if( theargs[i]->getNumberOfValues()!=theargs[0]->getNumberOfValues() ) error("mismatch between number of arguments calculated by each collected argument");
-      readInputLine( getShortcutLabel() + "_" + theargs[i]->getName() + ": COLLECT ARG=" + theargs[i]->getName() + " STRIDE=" + stride + " CLEAR=" + clearstride );
+      readInputLine( getShortcutLabel() + "_" + fixArgumentName( theargs[i]->getName() ) + ": COLLECT ARG=" + theargs[i]->getName() + " STRIDE=" + stride + " CLEAR=" + clearstride );
   }
   // Make a list of collect actions
-  std::string allcol = getShortcutLabel() + "_" + theargs[0]->getName(); for(unsigned i=1; i<theargs.size(); ++i) allcol + "," + getShortcutLabel() + "_" + theargs[i]->getName();
+  std::string allcol = getShortcutLabel() + "_" + fixArgumentName( theargs[0]->getName() ); 
+  for(unsigned i=1; i<theargs.size(); ++i) allcol += "," + getShortcutLabel() + "_" + fixArgumentName( theargs[i]->getName() );
   // And transfer everything to a matrix
   readInputLine( getShortcutLabel() + "_data: VSTACK ARG=" + allcol );
 

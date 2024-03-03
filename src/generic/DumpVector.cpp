@@ -46,6 +46,7 @@ private:
   bool onefile;
   std::vector<std::string> argnames;
   std::string fmt, filename;
+  void buildArgnames();
 public:
   static void registerKeywords( Keywords& keys );
   explicit DumpVector(const ActionOptions&ao);
@@ -74,24 +75,7 @@ DumpVector::DumpVector(const ActionOptions&ao):
   fmt("%f")
 {
   if( getNumberOfArguments()==0 ) error("found no arguments");
-  unsigned nvals = getPntrToArgument(0)->getShape()[0];
-  if( getPntrToArgument(0)->getRank()==2 ) nvals = getPntrToArgument(0)->getShape()[0];
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    if( getPntrToArgument(i)->getShape()[0]!=nvals ) error("all arguments should have same number of values"); 
-    if( getPntrToArgument(i)->getRank()==1 ) { 
-        argnames.push_back( getPntrToArgument(i)->getName() );
-    } else if( getPntrToArgument(i)->getRank()==2 ) {
-        unsigned nargs = getPntrToArgument(0)->getShape()[1]; 
-        if( (getPntrToArgument(0)->getPntrToAction())->getName()=="VSTACK" ) {
-             ActionWithArguments* action = dynamic_cast<ActionWithArguments*>( getPntrToArgument(0)->getPntrToAction() ); 
-             for(unsigned j=0; j<nargs; ++j) argnames.push_back( (action->getPntrToArgument(i))->getName() );
-        } else {
-             for(unsigned j=0; j<nargs; ++j) { std::string nn; Tools::convert( j+1, nn ); argnames.push_back( nn ); }
-        }   
-    }
-    getPntrToArgument(i)->buildDataStore(); 
-  }
-  parse("FILE",filename); parseFlag("PRINT_ONE_FILE", onefile);
+  buildArgnames(); parse("FILE",filename); parseFlag("PRINT_ONE_FILE", onefile);
   if(filename.length()==0) error("name out output file was not specified");
 
   log.printf("  outputting data with label %s to file named %s",getPntrToArgument(0)->getName().c_str(), filename.c_str() );
@@ -100,11 +84,38 @@ DumpVector::DumpVector(const ActionOptions&ao):
   else log.printf("  printing all grids on separate files \n");
 }
 
+void DumpVector::buildArgnames() {
+  argnames.resize(0); unsigned nvals = getPntrToArgument(0)->getShape()[0];
+  if( getPntrToArgument(0)->getRank()==2 ) nvals = getPntrToArgument(0)->getShape()[0];
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    if( getPntrToArgument(i)->getShape()[0]!=nvals ) error("all arguments should have same number of values");
+    if( getPntrToArgument(i)->getRank()==1 ) {
+        argnames.push_back( getPntrToArgument(i)->getName() );
+    } else if( getPntrToArgument(i)->getRank()==2 ) {
+        unsigned nargs = getPntrToArgument(0)->getShape()[1];
+        if( (getPntrToArgument(0)->getPntrToAction())->getName()=="VSTACK" ) {
+             ActionWithArguments* action = dynamic_cast<ActionWithArguments*>( getPntrToArgument(0)->getPntrToAction() );
+             for(unsigned j=0; j<nargs; ++j) argnames.push_back( (action->getPntrToArgument(i))->getName() );
+        } else {
+             for(unsigned j=0; j<nargs; ++j) { std::string nn; Tools::convert( j+1, nn ); argnames.push_back( nn ); }
+        }
+    }
+    getPntrToArgument(i)->buildDataStore();
+  }
+}
+
 void DumpVector::update() {
   OFile ofile; ofile.link(*this);
   if( onefile ) ofile.enforceRestart();
   else ofile.setBackupString("analysis");
   ofile.open( filename );
+
+  unsigned totargs = 0; 
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      if( getPntrToArgument(i)->getRank()==1 ) totargs += 1; 
+      else if( getPntrToArgument(i)->getRank()==2 ) totargs += getPntrToArgument(i)->getShape()[1];
+  }
+  if( totargs!=argnames.size() ) buildArgnames(); 
 
   unsigned nvals = getPntrToArgument(0)->getShape()[0];
   for(unsigned i=0; i<nvals; ++i) {
