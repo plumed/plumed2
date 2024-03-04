@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2023 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,8 +19,12 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "DimensionalityReductionBase.h"
+#include "core/ActionShortcut.h"
+#include "core/ActionPilot.h"
+#include "core/ActionWithValue.h"
 #include "core/ActionRegister.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
 
 //+PLUMEDOC DIMRED CLASSICAL_MDS
 /*
@@ -159,50 +163,63 @@ see <a href="http://quest4rigor.com/tag/multidimensional-scaling/"> this website
 namespace PLMD {
 namespace dimred {
 
-class ClassicalMultiDimensionalScaling : public DimensionalityReductionBase {
+class ClassicalMultiDimensionalScaling : public ActionShortcut {
 public:
   static void registerKeywords( Keywords& keys );
   explicit ClassicalMultiDimensionalScaling( const ActionOptions& ao );
-  void calculateProjections( const Matrix<double>&, Matrix<double>& ) override;
 };
 
 PLUMED_REGISTER_ACTION(ClassicalMultiDimensionalScaling,"CLASSICAL_MDS")
 
 void ClassicalMultiDimensionalScaling::registerKeywords( Keywords& keys ) {
-  DimensionalityReductionBase::registerKeywords( keys );
+  ActionShortcut::registerKeywords( keys );
+  keys.add("compulsory","ARG","the arguments that you would like to make the histogram for");
+  keys.add("compulsory","NLOW_DIM","number of low-dimensional coordinates required");
 }
 
 ClassicalMultiDimensionalScaling::ClassicalMultiDimensionalScaling( const ActionOptions& ao):
   Action(ao),
-  DimensionalityReductionBase(ao)
+  ActionShortcut(ao)
 {
-  if( dimredbase ) error("input to CLASSICAL_MDS should not be output from dimensionality reduction object");
-}
+  // Find the argument name
+  std::string argn; parse("ARG",argn);
+  ActionShortcut* as = plumed.getActionSet().getShortcutActionWithLabel( argn ); 
+  if( !as || as->getName()!="COLLECT_FRAMES" ) error("found no COLLECT_FRAMES action with label " + argn );
 
-void ClassicalMultiDimensionalScaling::calculateProjections( const Matrix<double>& targets, Matrix<double>& projections ) {
-  // Retrieve the distances from the dimensionality reduction object
-  double half=(-0.5); Matrix<double> distances( half*targets );
-
-  // Apply centering transtion
-  unsigned n=distances.nrows(); double sum;
-  // First HM
-  for(unsigned i=0; i<n; ++i) {
-    sum=0; for(unsigned j=0; j<n; ++j) sum+=distances(i,j);
-    for(unsigned j=0; j<n; ++j) distances(i,j) -= sum/n;
-  }
-  // Now (HM)H
-  for(unsigned i=0; i<n; ++i) {
-    sum=0; for(unsigned j=0; j<n; ++j) sum+=distances(j,i);
-    for(unsigned j=0; j<n; ++j) distances(j,i) -= sum/n;
-  }
-
-  // Diagonalize matrix
-  std::vector<double> eigval(n); Matrix<double> eigvec(n,n);
-  diagMat( distances, eigval, eigvec );
-
-  // Pass final projections to map object
-  for(unsigned i=0; i<n; ++i) {
-    for(unsigned j=0; j<projections.ncols(); ++j) projections(i,j)=std::sqrt(eigval[n-1-j])*eigvec(n-1-j,i);
+  // Transpose matrix of stored data values
+  readInputLine( argn + "_dataT: TRANSPOSE ARG=" + argn + "_data");
+  // Calculate the dissimilarity matrix
+  readInputLine( getShortcutLabel() + "_mat: DISSIMILARITIES SQUARED ARG=" + argn + "_data," + argn + "_dataT"); 
+  // Step 0: Create a vector with sufficient ones to multiply by to get centering matrix
+  ActionPilot* ap = plumed.getActionSet().selectWithLabel<ActionPilot*>( argn + "_logweights");
+  if( !ap ) error("could not find value that stores logweights for collect frames action " + argn );
+  std::string clearstride="0", stride; Tools::convert( ap->getStride(), stride );
+  ActionWithValue* av = dynamic_cast<ActionWithValue*>(ap); plumed_assert( av );
+  if( (av->copyOutput(0))->getNumberOfValues()>0 ) Tools::convert( ap->getStride()*(av->copyOutput(0))->getNumberOfValues(), clearstride );
+  readInputLine( getShortcutLabel() + "_one: CONSTANT VALUE=1");
+  readInputLine( getShortcutLabel() + "_ones: COLLECT ARG=" + getShortcutLabel() + "_one STRIDE=" + stride + " CLEAR=" + clearstride ); 
+  // Center the matrix 
+  // Step 1: calculate the sum of the rows and duplicate them into a matrix
+  readInputLine( getShortcutLabel() + "_rsums: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_mat," + getShortcutLabel() + "_ones" ); 
+  readInputLine( getShortcutLabel() + "_nones: SUM ARG=" + getShortcutLabel() + "_ones PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_rsumsn: CUSTOM ARG=" + getShortcutLabel() + "_rsums," + getShortcutLabel() + "_nones FUNC=x/y PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_rsummat: OUTER_PRODUCT ARG=" + getShortcutLabel() + "_rsumsn," + getShortcutLabel() + "_ones");
+  // Step 2: Multiply matrix by -0.5 and subtract row sums
+  readInputLine( getShortcutLabel() + "_int: CUSTOM ARG=" + getShortcutLabel() + "_rsummat," + getShortcutLabel() + "_mat FUNC=-0.5*y+0.5*x PERIODIC=NO");
+  // Step 3: Calculate column sums for new matrix and duplicate them into a matrix
+  readInputLine( getShortcutLabel() + "_intT: TRANSPOSE ARG=" + getShortcutLabel() + "_int");
+  readInputLine( getShortcutLabel() + "_csums: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_intT," + getShortcutLabel() + "_ones" );
+  readInputLine( getShortcutLabel() + "_csumsn: CUSTOM ARG=" + getShortcutLabel() + "_csums," + getShortcutLabel() + "_nones FUNC=x/y PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_csummat: OUTER_PRODUCT ARG=" + getShortcutLabel() + "_csumsn," + getShortcutLabel() + "_ones");
+  // Step 4: subtract the column sums
+  readInputLine( getShortcutLabel() + "_cmat: CUSTOM ARG=" + getShortcutLabel() + "_csummat," + getShortcutLabel() + "_intT FUNC=y-x PERIODIC=NO");
+  // And generate the multidimensional scaling projection 
+  unsigned ndim; parse("NLOW_DIM",ndim); 
+  std::string vecstr="1"; for(unsigned i=1;i<ndim;++i){ std::string num; Tools::convert( i+1, num ); vecstr += "," + num; }
+  readInputLine( getShortcutLabel() + "_eig: DIAGONALIZE ARG=" + getShortcutLabel() + "_cmat VECTORS=" + vecstr );
+  for(unsigned i=0;i<ndim;++i) {
+      std::string num; Tools::convert( i+1, num );
+      readInputLine( getShortcutLabel() + "-" +  num + ": CUSTOM ARG=" + getShortcutLabel() + "_eig.vals-" + num + "," + getShortcutLabel() + "_eig.vecs-" + num + " FUNC=sqrt(x)*y PERIODIC=NO");
   }
 }
 
