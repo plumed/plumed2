@@ -247,8 +247,8 @@ bool ActionWithValue::calculateOnUpdate() {
     if(aa) {
       const std::vector<Value*> & args(aa->getArguments());
       for(const auto & p : args ) {
-        if( p->calcOnUpdate ) {
-          for(unsigned i=0; i<values.size(); ++i) values[i]->calcOnUpdate=true;
+        if( p->calculateOnUpdate() ) {
+          for(unsigned i=0; i<values.size(); ++i) values[i]->setValType("calcFromAverage");
           break;
         }
       }
@@ -256,7 +256,7 @@ bool ActionWithValue::calculateOnUpdate() {
     firststep=false;
   }
   for(unsigned i=0; i<values.size(); ++i) {
-    if( values[i]->calcOnUpdate ) return true;
+    if( values[i]->calculateOnUpdate() ) return true;
   }
   return false;
 }
@@ -269,7 +269,7 @@ bool ActionWithValue::checkForForces() {
   unsigned nvalsWithForce=0;
   valsToForce.resize(ncp);
   for(unsigned i=0; i<ncp; ++i) {
-    if( values[i]->hasForce && !values[i]->constant ) {
+    if( values[i]->hasForce && !values[i]->isConstant() ) {
       valsToForce[nvalsWithForce]=i; nvalsWithForce++;
     }
   }

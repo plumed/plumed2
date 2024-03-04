@@ -58,7 +58,7 @@ DimensionalityReductionBase::DimensionalityReductionBase( const ActionOptions& a
   std::string num; std::vector<unsigned> shape(1); shape[0]=2;
   for(unsigned i=0; i<nlow; ++i) {
     Tools::convert(i+1,num); addComponent( "coord-" + num, shape ); componentIsNotPeriodic( "coord-" + num );
-    getPntrToComponent(i)->setCalculateOnUpdate(); getPntrToComponent(i)->buildDataStore();
+    getPntrToComponent(i)->buildDataStore();
   }
 }
 

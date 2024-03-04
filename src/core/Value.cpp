@@ -36,8 +36,6 @@ Value::Value():
   action(NULL),
   value_set(false),
   hasForce(false),
-  constant(false),
-  calcOnUpdate(false),
   storedata(false),
   shape(std::vector<unsigned>()),
   hasDeriv(true),
@@ -62,8 +60,6 @@ Value::Value(const std::string& name):
   action(NULL),
   value_set(false),
   hasForce(false),
-  constant(false),
-  calcOnUpdate(false),
   name(name),
   storedata(false),
   shape(std::vector<unsigned>()),
@@ -90,8 +86,6 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   action(av),
   value_set(false),
   hasForce(false),
-  constant(false),
-  calcOnUpdate(false),
   name(name),
   storedata(false),
   hasDeriv(withderiv),
@@ -109,10 +103,20 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   inv_max_minus_min(0.0),
   derivativeIsZeroWhenValueIsZero(false)
 {
-  if( action ) calcOnUpdate=(action->getName()=="ACCUMULATE" || action->getName()=="COLLECT");
-  if( action ) storedata=action->getName()=="PUT" || calcOnUpdate;
+  if( action ) { 
+      if( action->getName()=="ACCUMULATE" || action->getName()=="COLLECT" ) valtype=average;
+  }
+  if( action ) storedata=action->getName()=="PUT" || valtype==average;
   if( ss.size() && withderiv ) storedata=true;
   setShape( ss );
+}
+
+void Value::setValType( const std::string& vtype ) {
+  if( vtype=="normal" ) valtype=normal;
+  else if( vtype=="constant" ) valtype=constant;
+  else if( vtype=="average" ) valtype=average;
+  else if( vtype=="calcFromAverage" ) valtype=calcFromAverage; 
+  else plumed_merror("invalid valtype " + vtype );
 }
 
 void Value::setShape( const std::vector<unsigned>&ss ) {
@@ -150,7 +154,7 @@ bool Value::isPeriodic()const {
 }
 
 bool Value::applyForce(std::vector<double>& forces ) const {
-  if( !hasForce || constant || calcOnUpdate ) return false;
+  if( !hasForce || valtype!=normal ) return false;
   plumed_dbg_massert( data.size()-1==forces.size()," forces array has wrong size" );
   const unsigned N=data.size()-1;
   for(unsigned i=0; i<N; ++i) forces[i]=inputForce[0]*data[1+i];
@@ -302,7 +306,7 @@ bool Value::ignoreStoredValue(const std::string& c) const {
 }
 
 void Value::setConstant() {
-  constant=true; storedata=true; setShape( shape );
+  valtype=constant; storedata=true; setShape( shape );
   if( getRank()==2 && !hasDeriv ) reshapeMatrixStore( shape[1] );
 }
 
@@ -367,10 +371,6 @@ unsigned Value::getGoodNumThreads( const unsigned& j, const unsigned& k ) const 
   return OpenMP::getGoodNumThreads( &data[j], (k-j) );
 }
 
-void Value::setCalculateOnUpdate() {
-  calcOnUpdate=true;
-}
-
 void copy( const Value& val1, Value& val2 ) {
   unsigned nder=val1.getNumberOfDerivatives();
   if( nder!=val2.getNumberOfDerivatives() ) { val2.resizeDerivatives( nder ); }
@@ -393,5 +393,8 @@ void add( const Value& val1, Value* val2 ) {
   val2->set( val1.get() + val2->get() );
 }
 
+bool Value::calculateOnUpdate() const { 
+  return (valtype==average || valtype==calcFromAverage);
+}
 
 }

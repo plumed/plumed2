@@ -1135,11 +1135,11 @@ void PlumedMain::justCalculate() {
           sw=stopwatch.startStop("4A " + spaces + actionNumberLabel+" "+p->getLabel());
         }
         ActionWithValue*av=p->castToActionWithValue();
-        if( av && av->calculateOnUpdate() ) continue ;
         ActionAtomistic*aa=p->castToActionAtomistic();
         {
           if(av) av->clearInputForces();
           if(av) av->clearDerivatives();
+          if( av && av->calculateOnUpdate() ) continue ; 
         }
         {
           if(aa) if(aa->isActive()) aa->retrieveAtoms();

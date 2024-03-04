@@ -75,10 +75,16 @@ private:
   std::vector<double> inputForce;
 /// A flag telling us we have a force acting on this quantity
   bool hasForce;
-/// This flag is used if the value is a constant
-  bool constant;
-/// This value should only be calculated on update
-  bool calcOnUpdate;
+/// The way this value is used in the code
+/// normal = regular value that is determined during calculate
+/// constant = constnt value that is determined during startup and that doesn't change during simulation
+/// average = value that is averaged/collected over multiple steps of trajectory
+/// calcFromAverage = value that is calculated from an average value
+  enum {normal,constant,average,calcFromAverage} valtype=normal;
+/// This is used by ActionWithValue to set the valtype
+  void setValType( const std::string& vtype );
+/// This is used by ActionWithValue to determine if we need to calculate on update
+  bool calculateOnUpdate() const ;
 /// The derivatives of the quantity stored in value
   std::map<AtomNumber,Vector> gradients;
 /// The name of this quantiy
@@ -244,8 +250,6 @@ public:
   double getGridDerivative(const unsigned& n, const unsigned& j ) const ;
 /// Add the derivatives of the grid to the corner
   void addGridDerivatives( const unsigned& n, const unsigned& j, const double& val );
-/// Set the action to calculate on update
-  void setCalculateOnUpdate();
 /// Add another value to the end of the data vector held by this value.  This is used in COLLECT
   void push_back( const double& val );
 };
@@ -374,7 +378,7 @@ void Value::clearInputForce( const std::vector<AtomNumber>& index ) {
 
 inline
 void Value::clearDerivatives( const bool force ) {
-  if( !force && (constant || calcOnUpdate) ) return;
+  if( !force && (valtype==constant || valtype==average) ) return;
 
   value_set=false;
   if( data.size()>1 ) std::fill(data.begin()+1, data.end(), 0);
@@ -444,7 +448,7 @@ unsigned Value::getNumberOfValues() const {
 
 inline
 bool Value::isConstant() const {
-  return constant;
+  return valtype==constant;
 }
 
 inline
