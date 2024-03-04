@@ -10,3 +10,7 @@ Inverse :
 Pseudoinverse : 
  -18.8889 -11.1111 15.5556
  12.2222 7.77778 -8.88889
+Test diagmat (identical eigenvalues)
+-1.40512 0
+Test diagmat (different eigenvalues)
+-1.40512 0

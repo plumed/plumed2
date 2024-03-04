@@ -535,6 +535,10 @@ void diagMatSym(const TensorGeneric<n,n>&mat,VectorGeneric<m>&evals,TensorGeneri
   std::array<int,10*n> iwork;
   std::array<double,(6+bs)*n> work;
   std::array<int,2*m> isup;
+  // documentation says that "matrix is destroyed" !!!
+  auto mat_copy=mat;
+  // documentation says this is size n (even if m<n)
+  std::array<double,n> evals_tmp;
   int nn=n;              // dimension of matrix
   double vl=0.0, vu=1.0; // ranges - not used
   int one=1,mm=m;        // minimum and maximum index
@@ -543,13 +547,14 @@ void diagMatSym(const TensorGeneric<n,n>&mat,VectorGeneric<m>&evals,TensorGeneri
   int info=0;            // result
   int liwork=iwork.size();
   int lwork=work.size();
-  TensorGenericAux::local_dsyevr("V", (n==m?"A":"I"), "U", &nn, const_cast<double*>(&mat[0][0]), &nn, &vl, &vu, &one, &mm,
-                                 &abstol, &mout, &evals[0], &evec[0][0], &nn,
+  TensorGenericAux::local_dsyevr("V", (n==m?"A":"I"), "U", &nn, const_cast<double*>(&mat_copy[0][0]), &nn, &vl, &vu, &one, &mm,
+                                 &abstol, &mout, &evals_tmp[0], &evec[0][0], &nn,
                                  isup.data(), work.data(), &lwork, iwork.data(), &liwork, &info);
   if(info!=0) plumed_error()<<"Error diagonalizing matrix\n"
                               <<"Matrix:\n"<<mat<<"\n"
                               <<"Info: "<<info<<"\n";
   plumed_assert(mout==m);
+  for(unsigned i=0; i<m; i++) evals[i]=evals_tmp[i];
   // This changes eigenvectors so that the first non-null element
   // of each of them is positive
   // We can do it because the phase is arbitrary, and helps making
