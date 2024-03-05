@@ -610,6 +610,7 @@ public:
         const double rdist = beta*(distance - lambda * ref);
         double exprdist=std::exp(rdist);
         res=1.0/(1.0+exprdist);
+        /*2.9
         //need to see if this (5op+assign)
         //double exprmdist=1.0 + exprdist;
         //dfunc = - (beta *exprdist)/(exprmdist*exprmdist);
@@ -618,6 +619,10 @@ public:
         //this cames from - beta * exprdist/(exprdist*exprdist+ 2.0 *exprdist +1.0)
         //dfunc *= invr0;
         dfunc /= distance;
+        */
+        //2.10
+        dfunc = - beta /(exprdist+ 2.0 +1.0/exprdist) /distance;
+
         dfunc*=stretch;
       }
       res=res*stretch+shift;
