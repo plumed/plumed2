@@ -1,4 +1,4 @@
-USE=core tools function lepton gridtools
+USE=core tools gridtools
 
 #generic makefile
 include ../maketools/make.module

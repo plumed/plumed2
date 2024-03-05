@@ -1,4 +1,4 @@
-USE=core tools adjmat multicolvar symfunc
+USE=core tools adjmat multicolvar
 
 # generic makefile
 include ../maketools/make.module

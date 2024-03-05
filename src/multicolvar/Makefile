@@ -1,4 +1,4 @@
-USE=core tools vesselbase symfunc gridtools
+USE=core tools
 
 # generic makefile
 include ../maketools/make.module

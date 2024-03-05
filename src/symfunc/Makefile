@@ -1,4 +1,4 @@
-USE=core tools volumes gridtools vesselbase multicolvar adjmat function
+USE=core tools multicolvar adjmat function
 
 # generic makefile
 include ../maketools/make.module
