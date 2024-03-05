@@ -224,6 +224,8 @@ public:
 /// count how many times Watch was started (+1) or stopped/paused (-1).
     unsigned running = 0;
     enum class State {started, stopped, paused};
+/// last lap
+    long long int lastLap = 0;
 /// keep track of state
     State state = State::stopped;
 /// Allows access to internal data
@@ -239,6 +241,10 @@ public:
     Handler startStop();
 /// returns a start-pause handler
     Handler startPause();
+/// returns the time for the last cycle
+    long long int getLastCycle() noexcept;
+/// returns the total time
+    long long int getTotal() noexcept;
   };
 
 private:
@@ -290,6 +296,10 @@ public:
 /// pauses the watch. This allows Stopwatch to be started and paused in
 /// an exception safe manner.
   Handler startPause(const std::string_view&name=StopwatchEmptyString());
+/// Return the last completed cycle
+  long long int getLastCycle(const std::string_view&name=StopwatchEmptyString());
+/// returns the total time
+  long long int getTotal(const std::string_view&name=StopwatchEmptyString());
 };
 
 inline
@@ -337,6 +347,16 @@ Stopwatch::Handler Stopwatch::startPause(const std::string_view&name) {
 }
 
 inline
+long long int Stopwatch::getLastCycle(const std::string_view&name) {
+  return watches[name].getLastCycle();
+}
+
+inline
+long long int Stopwatch::getTotal(const std::string_view&name) {
+  return watches[name].getTotal();
+}
+
+inline
 Stopwatch::Handler::Handler(Handler && handler) noexcept :
   watch(handler.watch),
   stop(handler.stop)
@@ -380,6 +400,7 @@ Stopwatch::Watch & Stopwatch::Watch::stop() {
   total+=lap;
   if(lap>max)max=lap;
   if(min>lap || cycles==1)min=lap;
+  lastLap=lap;
   lap=0;
   return *this;
 }
@@ -408,6 +429,16 @@ Stopwatch::Handler Stopwatch::Watch::startStop() {
 inline
 Stopwatch::Handler Stopwatch::Watch::startPause() {
   return Handler( this,false );
+}
+
+inline
+long long int Stopwatch::Watch::getLastCycle() noexcept {
+  return lastLap;
+}
+
+inline
+long long int Stopwatch::Watch::getTotal() noexcept {
+  return total;
 }
 
 inline
