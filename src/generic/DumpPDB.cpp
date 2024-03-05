@@ -102,7 +102,7 @@ void DumpPDB::printAtom( OFile& opdbf, const unsigned& anum, const Vector& pos, 
 void DumpPDB::update() {
   OFile opdbf; opdbf.link(*this);
   opdbf.setBackupString("analysis");
-  opdbf.open( file ); unsigned nn=0;
+  opdbf.open( file );
   std::size_t psign=fmt.find("%"); plumed_assert( psign!=std::string::npos );
   std::string descr2="%s=%-" + fmt.substr(psign+1) + " ";
   // Add suitable code in here to print frames for paths here.  Gareth !!!!!
@@ -126,7 +126,7 @@ void DumpPDB::update() {
   if( posnums.size()%3!=0 ) error("found misleading number of stored positions for output");
   if( pdb_atom_indices.size()==0 ) { pdb_atom_indices.resize( posnums.size() / 3 ); for(unsigned i=0; i<pdb_atom_indices.size(); ++i) pdb_atom_indices[i]=i; }
 
-  if( description.length()>0 ) opdbf.printf("# %s AT STEP %d TIME %f \n", description.c_str(), getStep(), getTime() );
+  if( description.length()>0 ) opdbf.printf("# %s AT STEP %lld TIME %f \n", description.c_str(), getStep(), getTime() );
   unsigned nvals = getPntrToArgument(0)->getShape()[0]; Vector pos;
   for(unsigned j=0; j<nvals; ++j) {
     if( argnums.size()>0 ) {

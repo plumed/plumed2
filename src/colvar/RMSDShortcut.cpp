@@ -66,7 +66,7 @@ RMSDShortcut::RMSDShortcut(const ActionOptions& ao):
   }
   bool nopbc; parseFlag("NOPBC",nopbc);
   // Now create the RMSD object
-  std::string num, rmsd_line = getShortcutLabel() + ": ";
+  std::string rmsd_line = getShortcutLabel() + ": ";
   if( nf==1 && !disp ) {
     rmsd_line += "RMSD_SCALAR REFERENCE=" + reference; if(nopbc) rmsd_line += " NOPBC";
   } else {
