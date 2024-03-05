@@ -1,4 +1,4 @@
-USE=bias cltools colvar config core tools lepton
+USE=bias cltools core tools lepton
 
 #generic makefile
 include ../maketools/make.module
