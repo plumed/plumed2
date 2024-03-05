@@ -27,6 +27,7 @@
 #include "tools/PlumedHandle.h"
 #include "tools/Stopwatch.h"
 #include "tools/Log.h"
+#include "tools/DLLoader.h"
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -36,9 +37,6 @@
 #include <cstdio>
 #include <random>
 #include <algorithm>
-#if defined(__PLUMED_HAS_DLOPEN)
-#include <dlfcn.h>
-#endif
 
 namespace PLMD {
 namespace cltools {
@@ -269,20 +267,13 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
 
     plumed_assert(allplumed.size()>0 && allpaths.size()>0);
 
-#if defined(__PLUMED_HAS_DLOPEN)
+    // if any of the paths if different from "this", we check if libplumed was loaded locally to avoid conflicts.
     if(std::any_of(allpaths.begin(),allpaths.end(),[](auto value) {return value != "this";})) {
-#if defined(__PLUMED_HAS_RTLD_DEFAULT)
-      void* handle=RTLD_DEFAULT;
-#else
-      handle=dlopen(NULL,RTLD_LOCAL);
-#endif
-      if(dlsym(handle,"plumed_plumedmain_create") || dlsym(handle,"plumedmain_create")) {
+      if(DLLoader::isPlumedGlobal()) {
         plumed_error()<<"It looks like libplumed is loaded in the global namespace, you cannot load a different version of the kernel\n"
                       <<"Please make sure you use the plumed-runtime executable and that the env var PLUMED_LOAD_NAMESPACE is not set to GLOBAL";
       }
-      if(handle) dlclose(handle);
     }
-#endif
 
     if(allplumed.size()>1 && allpaths.size()>1 && allplumed.size() != allpaths.size()) {
       plumed_error() << "--kernel and --plumed should have either one element or the same number of elements";
