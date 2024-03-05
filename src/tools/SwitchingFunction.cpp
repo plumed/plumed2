@@ -500,6 +500,31 @@ protected:
   }
 };
 
+class fastGaussianSwitch: public baseSwitch {
+public:
+  fastGaussianSwitch(double /*D0*/, double DMAX, double /*R0*/)
+    :baseSwitch(0.0,DMAX,1.0,"fastgaussian") {}
+protected:
+  inline double function(const double rdist,double&dfunc) const override {
+    double result = std::exp(-0.5*rdist*rdist);
+    dfunc=-rdist*result;
+    return result;
+  }
+  inline double calculateSqr(double distance2,double&dfunc) const override {
+    double result = 0.0;
+    if(distance2>dmax_2) {
+      dfunc=0.0;
+    } else  {
+      result = exp(-0.5*distance2);
+      dfunc = -result;
+      // stretch:
+      result=result*stretch+shift;
+      dfunc*=stretch;
+    }
+    return result;
+  }
+};
+
 class smapSwitch: public baseSwitch {
   const int a=0;
   const int b=0;
@@ -838,7 +863,28 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     } else if(name=="EXP") {
       function = PLMD::Tools::make_unique<switchContainers::exponentialSwitch>(d0,dmax,r0);
     } else if(name=="GAUSSIAN") {
-      function = PLMD::Tools::make_unique<switchContainers::gaussianSwitch>(d0,dmax,r0);
+      //TODO:: add fastgaussian
+      /*
+      fastgaussian=( r0==1.0 && d0==0.0 );
+      //in calculate is
+      } else if( fastgaussian ) {
+      if(distance2>dmax_2) {
+      dfunc=0.0;
+      return 0.0;
+      }
+      double result = exp(-0.5*distance2);
+      dfunc = -result;
+      // stretch:
+      result=result*stretch+shift;
+      dfunc*=stretch;
+      return result;
+      }
+      */
+      if ( r0==1.0 && d0==0.0 ) {
+        function = PLMD::Tools::make_unique<switchContainers::fastGaussianSwitch>(d0,dmax,r0);
+      } else {
+        function = PLMD::Tools::make_unique<switchContainers::gaussianSwitch>(d0,dmax,r0);
+      }
     } else if(name=="TANH") {
       function = PLMD::Tools::make_unique<switchContainers::tanhSwitch>(d0,dmax,r0);
     } else if(name=="COSINUS") {
