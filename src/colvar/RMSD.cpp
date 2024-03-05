@@ -26,6 +26,10 @@
 #include "reference/RMSDBase.h"
 #include "reference/MetricRegister.h"
 
+#ifdef __PLUMED_HAS_ARRAYFIRE
+#include <arrayfire.h>
+#endif
+
 namespace PLMD {
 namespace colvar {
 
@@ -36,6 +40,8 @@ class RMSD : public Colvar {
   std::unique_ptr<PLMD::RMSDBase> rmsd;
   bool squared;
   bool nopbc;
+  bool gpu;
+  int  deviceid;
 
 public:
   explicit RMSD(const ActionOptions&);
@@ -165,6 +171,8 @@ void RMSD::registerKeywords(Keywords& keys) {
   keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
   keys.add("compulsory","TYPE","SIMPLE","the manner in which RMSD alignment is performed.  Should be OPTIMAL or SIMPLE.");
   keys.addFlag("SQUARED",false," This should be set if you want mean squared displacement instead of RMSD ");
+  keys.addFlag("GPU",false,"calculate RMSD using ARRAYFIRE on an accelerator device");
+  keys.add("compulsory","DEVICEID","0","Identifier of the GPU to be used");
 }
 
 RMSD::RMSD(const ActionOptions&ao):
@@ -172,7 +180,9 @@ RMSD::RMSD(const ActionOptions&ao):
   myvals(1,0),
   mypack(0,0,myvals),
   squared(false),
-  nopbc(false)
+  nopbc(false),
+  gpu(false),
+  deviceid(0)
 {
   std::string reference;
   parse("REFERENCE",reference);
@@ -181,6 +191,27 @@ RMSD::RMSD(const ActionOptions&ao):
   parse("TYPE",type);
   parseFlag("SQUARED",squared);
   parseFlag("NOPBC",nopbc);
+
+  std::string gpuuse;
+  gpuuse.assign("off");
+  parse("GPU",gpuuse);
+  if (gpuuse=="on" || gpuuse=="ON")
+    gpu = true;
+  else if (gpuuse=="off" || gpuuse=="OFF")
+    gpu = false;
+  else
+    plumed_merror("unknown GPU on/off");
+#ifndef  __PLUMED_HAS_ARRAYFIRE
+  if(gpu) error("To use the GPU mode PLUMED must be compiled with ARRAYFIRE");
+#endif
+
+  parse("DEVICEID",deviceid);
+#ifdef  __PLUMED_HAS_ARRAYFIRE
+  if(gpu) {
+    af::setDevice(deviceid);
+    af::info();
+  }
+#endif
 
   checkRead();
 
@@ -221,7 +252,7 @@ RMSD::RMSD(const ActionOptions&ao):
 // calculator
 void RMSD::calculate() {
   if(!nopbc) makeWhole();
-  double r=rmsd->calculate( getPositions(), mypack, squared );
+  double r=rmsd->calculate_cpugpu( getPositions(), mypack, squared, gpu, deviceid );
 
   setValue(r);
   for(unsigned i=0; i<getNumberOfAtoms(); i++) setAtomsDerivatives( i, mypack.getAtomDerivative(i) );
