@@ -59,17 +59,23 @@ do
   tmpfile=${tmpfile}.cpp
   cp "${file}" "${tmpfile}"
   toRemove="${toRemove} ${tmpfile} ${tmpfile}.bak"
-
+  #this deprecates the shortcut to action register
   if grep -q '^#include "\(bias\|colvar\|function\|sasa\|vatom\)\/ActionRegister.h"' "${tmpfile}"; then
      >&2 echo 'WARNING: using a legacy ActionRegister.h include path, please use <<#include "core/ActionRegister.h">>'
      sed -i.bak 's%^#include ".*/ActionRegister.h"%#include "core/ActionRegister.h"%g' "${tmpfile}"
   fi
-  
+  #this deprecates the shortcut to CLtoolregister
   if grep -q '^#include "\(cltools\)\/CLToolRegister.h"' "${tmpfile}"; then
      >&2  echo 'WARNING: using a legacy  CLToolRegister.h include path, please use <<#include "core/CLToolRegister.h">>'
      sed -i.bak 's%^#include ".*/CLToolRegister.h"%#include "core/CLToolRegister.h"%g' "${tmpfile}"
   fi
-  
+  #this removes "#include "core/Atoms.h" and makes the compilation failing on the calls of Atoms
+  #instead of on the include
+  if grep -q '^#include\s*"core/Atoms.h"' "${tmpfile}"; then
+     #\s match anly type of white space
+     >&2  echo 'WARNING: "core/Atoms.h" does not exist anymore in  version >=2.10, you should change your code.'
+     sed -i.bak '/^#include\s*"core\/Atoms.h"/d' "${tmpfile}"
+  fi
   rm -f "$obj"
 
   eval "$compile" "$PLUMED_MKLIB_CFLAGS" -o "$obj" "$tmpfile" || {
