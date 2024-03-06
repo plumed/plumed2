@@ -173,7 +173,7 @@ public:
 /// This is to transfer data from the buffer to the final value
   void finishComputations( const std::vector<double>& buf );
 /// Apply the forces on this data
-  void apply() override;
+  virtual void apply();
 };
 
 inline

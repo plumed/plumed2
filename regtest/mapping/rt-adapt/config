@@ -1,3 +1,4 @@
+plumed_modules=mapping
 type=driver
 arg="--noatoms --plumed plumed.dat"
 
@@ -5,10 +6,9 @@ arg="--noatoms --plumed plumed.dat"
 function plumed_custom_skip() {
   if [ "$(uname)" = Darwin ] ; then
     fullversion=$(sw_vers -productVersion)
-    version1=${fullversion%%.*}
-    version2=${fullversion#*.}
-    version2=${version2%%.*}
-    if (( ( version1==10 && version2>14 ) || version1>10)) ; then
+    fullversion=${fullversion#*.}
+    fullversion=${fullversion%.*}
+    if (( fullversion>14 )) ; then
       return 0
     fi
   fi

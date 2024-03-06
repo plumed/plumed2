@@ -32,9 +32,6 @@ subgraph subc1 [c1]
 end
 cc -- ones --> ones
 linkStyle 6 stroke:blue,color:blue;
-ones(["label=ones 
- CONSTANT 
-"])
 Box("label=Box 
  PBC 
 ")

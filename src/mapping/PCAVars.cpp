@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2023 The plumed team
+   Copyright (c) 2013-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,14 +19,15 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "core/ActionWithValue.h"
-#include "core/ActionAtomistic.h"
-#include "core/ActionWithArguments.h"
-#include "reference/MetricRegister.h"
+#include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "reference/Direction.h"
-#include "tools/Pbc.h"
+#include "core/ActionWithArguments.h"
+#include "tools/PDB.h"
+#include "Path.h"
+
+namespace PLMD {
+namespace mapping {
 
 //+PLUMEDOC COLVAR PCAVARS
 /*
@@ -82,33 +83,7 @@ PRINT ARG=pca2.* FILE=colvar2
 
 The reference configurations can be specified using a pdb file.  The first configuration that you provide is the reference configuration,
 which is referred to in the above as \f$X^{ref}\f$ subsequent configurations give the directions of row vectors that are contained in
-the matrix \f$A\f$ above.  These directions can be specified by specifying a second configuration - in this case a vector will
-be constructed by calculating the displacement of this second configuration from the reference configuration.  A pdb input prepared
-in this way would look as follows:
-
-\auxfile{reference.pdb}
-REMARK TYPE=OPTIMAL
-ATOM      2  CH3 ACE     1      12.932 -14.718  -6.016  1.00  1.00
-ATOM      5  C   ACE     1      21.312  -9.928  -5.946  1.00  1.00
-ATOM      9  CA  ALA     2      19.462 -11.088  -8.986  1.00  1.00
-ATOM     13  HB2 ALA     2      21.112 -10.688 -12.476  1.00  1.00
-ATOM     15  C   ALA     2      19.422   7.978 -14.536  1.00  1.00
-ATOM     20 HH31 NME     3      20.122  -9.928 -17.746  1.00  1.00
-ATOM     21 HH32 NME     3      18.572 -13.148 -16.346  1.00  1.00
-END
-REMARK TYPE=OPTIMAL
-ATOM      2  CH3 ACE     1      13.932 -14.718  -6.016  1.00  1.00
-ATOM      5  C   ACE     1      20.312  -9.928  -5.946  1.00  1.00
-ATOM      9  CA  ALA     2      18.462 -11.088  -8.986  1.00  1.00
-ATOM     13  HB2 ALA     2      20.112 -11.688 -12.476  1.00  1.00
-ATOM     15  C   ALA     2      19.422   7.978 -12.536  1.00  1.00
-ATOM     20 HH31 NME     3      20.122  -9.928 -17.746  1.00  1.00
-ATOM     21 HH32 NME     3      18.572 -13.148 -16.346  1.00  1.00
-END
-\endauxfile
-
-Alternatively, the second configuration can specify the components of \f$A\f$ explicitly.  In this case you need to include the
-keyword TYPE=DIRECTION in the remarks to the pdb as shown below.
+the matrix \f$A\f$ above.  These directions are specified by giving a second configuration that describes the components of \f$A\f$ explicitly.
 
 \verbatim
 ATOM      2  CH3 ACE     1      12.932 -14.718  -6.016  1.00  1.00
@@ -119,7 +94,7 @@ ATOM     15  C   ALA     2      19.422   7.978 -14.536  1.00  1.00
 ATOM     20 HH31 NME     3      20.122  -9.928 -17.746  1.00  1.00
 ATOM     21 HH32 NME     3      18.572 -13.148 -16.346  1.00  1.00
 END
-REMARK TYPE=DIRECTION
+REMARK
 ATOM      2  CH3 ACE     1      0.1414  0.3334 -0.0302  1.00  0.00
 ATOM      5  C   ACE     1      0.0893 -0.1095 -0.1434  1.00  0.00
 ATOM      9  CA  ALA     2      0.0207 -0.321   0.0321  1.00  0.00
@@ -130,330 +105,188 @@ ATOM     21 HH32 NME     3     -0.1019 -0.4261 -0.0082  1.00  0.00
 END
 \endverbatim
 
-If your metric involves arguments the labels of these arguments in your plumed input file should be specified in the REMARKS
-for each of the frames of your path.  An input file in this case might look like this:
+Notice that the PCAVARS command is a shortcut.  If you look at how the shortcut in the above input is expanded you should be able to see how the command works
+by calculating the RMSD displacement between the instantaneous and reference configuration and how those displacements are then projected on the eigenvector that
+was specified in the second frame of the pdb input above. Understanding the expanded version of this shortcut command allows you to recognise that you can project
+the displacement vector on any arbitrary vector.  For example in the input below two reference structures are provided in the pdb file. PLUMED calculates the RMSD
+distance between these two reference configurations during setup and sets up a unit vector called eig that points along the director connecting the two RMSD structure.
+During the calculation the vector connecting the instantaneous configuration and the first of the two reference configurations in computed.  This vector is then projected
+on the unit vector connecting the two initial structures:
+
+\plumedfile
+# Read in two reference configuratioms from PDB file
+ref1: PDB2CONSTANT REFERENCE=two-frames.pdb NUMBER=1
+ref1T: TRANSPOSE ARG=ref1
+ref2: PDB2CONSTANT REFERENCE=two-frames.pdb NUMBER=2
+# Calculate the displacement vector that takes you from ref1 to ref2
+eigu: RMSD_VECTOR ARG=ref1T,ref2 DISPLACEMENT TYPE=OPTIMAL
+# Normalise the reference vector
+eigu2: CUSTOM ARG=eigu.disp FUNC=x*x PERIODIC=NO
+eign2: SUM ARG=eigu2 PERIODIC=NO
+eig: CUSTOM ARG=eigu.disp,eign2 FUNC=x/sqrt(y) PERIODIC=NO
+eigT: TRANSPOSE ARG=eig
+# Everything prior to this point is only done in setup.  From here onwards we have the commands that are done during the main calculate loop.
+
+# Calculate the RMSD displacement between the instaneous structure and the first reference structure
+rmsd: RMSD REFERENCE=two-frames.pdb NUMBER=1 TYPE=OPTIMAL DISPLACEMENT SQUARED
+# Project the displacement computed above on the director of the vector that connects reference structure ref1 to refeference structure ref2
+pca: MATRIX_VECTOR_PRODUCT ARG=eigT,rmsd.disp
+
+# Print the final CV to a file
+PRINT ARG=pca FILE=colvar
+\endplumedfile
+
+You also project vectors of differences of arguments on reference vectors.  For example, the input below can be used to look at the projection
+of the vector connecting the instantanous configuraiton to a reference point in CV on a reference vector that has been specified in the PDB file.
+
+\plumedfile
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+d3: DISTANCE ATOMS=5,6
+pca: PCAVARS ARG=d1,d2,d3 REFERENCE=epath.pdb
+PRINT ARG=pca_eig-1,pca_residual FILE=colvar
+\endplumedfile
+
+The pdb input file for this calculation might look something like this:
 
 \verbatim
-DESCRIPTION: a pca eigenvector specified using the start point and direction in the HD space.
-REMARK WEIGHT=1.0
-REMARK ARG=d1,d2
-REMARK d1=1.0 d2=1.0
+REMARK d1=0.1221 d2=0.0979 d3=0.1079
 END
-REMARK TYPE=DIRECTION
-REMARK ARG=d1,d2
-REMARK d1=0.1 d2=0.25
+REMARK d1=0.078811 d2=-0.945732 d3=-0.315244
 END
 \endverbatim
 
-Here we are working with the EUCLIDEAN metric and notice that we have specified the components of \f$A\f$ using DIRECTION.
-Consequently, the values of d1 and d2 in the second frame above do not specify a particular coordinate in the high-dimensional
-space as in they do in the first frame.  Instead these values are the coefficients that can be used to construct a linear combination of d1 and d2.
-If we wanted to specify the direction in this metric using the start and end point of the vector we would write:
+The first set of argument values in this input file are the reference values for the arguments.  The second any subsquent sets of arguments give the
+coefficients that should be used when constructing linear combinations.
 
-\verbatim
-DESCRIPTION: a pca eigenvector specified using the start and end point of a vector in the HD space.
-REMARK WEIGHT=1.0
-REMARK ARG=d1,d2
-REMARK d1=1.0 d2=1.0
-END
-REMARK ARG=d1,d2
-REMARK d1=1.1 d2=1.25
-END
-\endverbatim
+Notice, lastly, that you can also use a combination of argument values and atomic positions when specifying the reference configuration and the reference
+directions.  If you are doing something this complicated, however, you are perhaps better working with the PLUMED input directly rather than this shortcut
+as you will need to take special measures to ensure that all your CVs are in the same units.
 
 */
 //+ENDPLUMEDOC
 
-namespace PLMD {
-namespace mapping {
-
-class PCAVars :
-  public ActionWithValue,
-  public ActionAtomistic,
-  public ActionWithArguments
-{
-private:
-/// The holders for the derivatives
-  MultiValue myvals;
-  ReferenceValuePack mypack;
-/// The position of the reference configuration (the one we align to)
-  std::unique_ptr<ReferenceConfiguration> myref;
-/// The eigenvectors we are interested in
-  std::vector<Direction> directions;
-/// Stuff for applying forces
-  std::vector<double> forces, forcesToApply;
-  bool nopbc;
+class PCAVars : public ActionShortcut {
 public:
-  static void registerKeywords( Keywords& keys );
+  static void registerKeywords(Keywords& keys);
   explicit PCAVars(const ActionOptions&);
-  unsigned getNumberOfDerivatives() override;
-  void lockRequests() override;
-  void unlockRequests() override;
-  void calculateNumericalDerivatives( ActionWithValue* a ) override;
-  void calculate() override;
-  void apply() override;
 };
+
 
 PLUMED_REGISTER_ACTION(PCAVars,"PCAVARS")
 
 void PCAVars::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys );
-  ActionWithValue::registerKeywords( keys );
-  ActionAtomistic::registerKeywords( keys );
-  ActionWithArguments::registerKeywords( keys );
-  componentsAreNotOptional(keys); keys.use("ARG");
-  keys.addOutputComponent("eig","default","the projections on each eigenvalue are stored on values labeled eig-1, eig-2, ...");
-  keys.addOutputComponent("residual","default","the distance of the configuration from the linear subspace defined "
-                          "by the vectors, eig-1, eig2, ... that are contained in the rows of A.");
-  keys.add("compulsory","REFERENCE","a pdb file containing the reference configuration and configurations that define the directions for each eigenvector");
-  keys.add("compulsory","TYPE","OPTIMAL","The method we are using for alignment to the reference structure");
-  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
+  ActionShortcut::registerKeywords( keys );
+  keys.add("compulsory","REFERENCE","a pdb file containing the set of reference configurations");
+  keys.add("compulsory","TYPE","OPTIMAL-FAST","the manner in which distances are calculated. More information on the different "
+           "metrics that are available in PLUMED can be found in the section of the manual on "
+           "\\ref dists");
+  keys.add("optional","ARG","if there are arguments to be used specify them here");
+  keys.addFlag("NOPBC",false,"do not use periodic boundary conditions when computing this quantity");
+  keys.addOutputComponent("eig","default","the projections on the eigenvalues");
+  keys.addOutputComponent("residual","default","the residual distance that is not projected on any of the eigenvalues");
 }
 
-PCAVars::PCAVars(const ActionOptions& ao):
+PCAVars::PCAVars( const ActionOptions& ao ):
   Action(ao),
-  ActionWithValue(ao),
-  ActionAtomistic(ao),
-  ActionWithArguments(ao),
-  myvals(1,0),
-  mypack(0,0,myvals),
-  nopbc(false)
+  ActionShortcut(ao)
 {
-
-  // What type of distance are we calculating
+  std::string reference; parse("REFERENCE",reference);
+  // Create the object that holds the atomic positions by reading the first frame
+  FILE* fp=std::fopen(reference.c_str(),"r"); PDB pdb; if(!fp) error("could not open reference file " + reference );
+  bool do_read=pdb.readFromFilepointer(fp,false,0.1); if( !do_read ) plumed_merror("missing file " + reference );
   std::string mtype; parse("TYPE",mtype);
 
-  parseFlag("NOPBC",nopbc);
+  if( pdb.getPositions().size()>0 ) {
+    // And now create the rmsd object
+    std::string rmsd_line =  getShortcutLabel() + "_at: RMSD DISPLACEMENT SQUARED NUMBER=1 REFERENCE=" + reference;
+    bool nopbc; parseFlag("NOPBC",nopbc); if(nopbc) rmsd_line += " NOPBC";
+    // Now create the RMSD object
+    readInputLine( rmsd_line + " TYPE=" + mtype );
+  }
+  std::vector<std::string> argnames; parseVector("ARG",argnames); unsigned nargs=0; std::string instargs, refargs; std::vector<Value*> theargs;
+  if( argnames.size()>0 ) ActionWithArguments::interpretArgumentList( argnames, plumed.getActionSet(), this, theargs );
+  for(unsigned i=0; i<theargs.size(); ++i) {
+    std::string iargn = Path::fixArgumentName( theargs[i]->getName() ); nargs += theargs[i]->getNumberOfValues();
+    if( theargs[i]->getNumberOfValues()>1 ) {
+      readInputLine( getShortcutLabel() + "_ref_" + iargn + "T: PDB2CONSTANT NUMBER=1 REFERENCE=" + reference + " ARG=" + theargs[i]->getName() );
+      readInputLine( getShortcutLabel() + "_ref_" + iargn + ": TRANSPOSE ARG=" + getShortcutLabel() + "_ref_" + iargn + "T");
+    } else readInputLine( getShortcutLabel() + "_ref_" + iargn + ": PDB2CONSTANT NUMBER=1 REFERENCE=" + reference + " ARG=" + theargs[i]->getName() );
+    if( i==0 ) { instargs=" ARG1=" + theargs[i]->getName(); refargs=" ARG2=" + getShortcutLabel() + "_ref_" + iargn; }
+    else { instargs +="," + theargs[i]->getName(); refargs +="," + getShortcutLabel() + "_ref_" + iargn; }
+  }
+  if( theargs.size()>0 ) readInputLine( getShortcutLabel() + "_argdist: EUCLIDEAN_DISTANCE SQUARED" + instargs + refargs );
+  if( pdb.getPositions().size()>0 && theargs.size()>0 ) {
+    readInputLine( getShortcutLabel() + ": CONCATENATE ARG=" + getShortcutLabel() + "_at.disp," + getShortcutLabel() + "_argdist_diffT");
+    readInputLine( getShortcutLabel() + "_dist: COMBINE ARG=" + getShortcutLabel() + "_at.dist," + getShortcutLabel() + "_argdist PERIODIC=NO");
+  }
 
-  // Open reference file
-  std::string reference; parse("REFERENCE",reference);
-  FILE* fp=this->fopen(reference.c_str(),"r");
-  if(!fp) error("could not open reference file " + reference );
+  // Get the displace stuff
+  std::vector<double> displace( pdb.getBeta() ); double dtot = 0;
+  for(unsigned i=0; i<displace.size(); ++i) dtot += displace[i];
+  for(unsigned i=0; i<displace.size(); ++i) displace[i] = displace[i] / dtot;
 
-  // call fclose when exiting this block
-  auto deleter=[this](FILE* f) { this->fclose(f); };
-  std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
-
-  // Read all reference configurations
-  // MultiReferenceBase myframes( "", false );
-  std::vector<std::unique_ptr<ReferenceConfiguration> > myframes;
-  bool do_read=true; unsigned nfram=0;
-  while (do_read) {
-    PDB mypdb;
-    // Read the pdb file
-    do_read=mypdb.readFromFilepointer(fp,usingNaturalUnits(),0.1/getUnits().getLength());
-    // Fix argument names
-    if(do_read) {
-      if( nfram==0 ) {
-        myref=metricRegister().create<ReferenceConfiguration>( mtype, mypdb );
-        Direction* tdir = dynamic_cast<Direction*>( myref.get() );
-        if( tdir ) error("first frame should be reference configuration - not direction of vector");
-        if( !myref->pcaIsEnabledForThisReference() ) error("can't do PCA with reference type " + mtype );
-        // std::vector<std::string> remarks( mypdb.getRemark() ); std::string rtype;
-        // bool found=Tools::parse( remarks, "TYPE", rtype );
-        // if(!found){ std::vector<std::string> newrem(1); newrem[0]="TYPE="+mtype; mypdb.addRemark(newrem); }
-        // myframes.push_back( metricRegister().create<ReferenceConfiguration>( "", mypdb ) );
-      } else {
-        auto mymsd = metricRegister().create<ReferenceConfiguration>( "", mypdb );
-        myframes.emplace_back( std::move(mymsd) );
-      }
+  // Now read in the directions and create matheval objects to compute the pca components
+  unsigned nfram=0, ncomp=0; std::string pvec;
+  while( do_read ) {
+    std::vector<double> argdir(nargs); PDB mypdb; do_read=mypdb.readFromFilepointer(fp,plumed.usingNaturalUnits(),0.1/plumed.getUnits().getLength());
+    if( do_read ) {
       nfram++;
-    } else {
-      break;
-    }
-  }
-
-  if( nfram<=1 ) error("no eigenvectors were specified");
-  log.printf("  found %u eigenvectors in file %s \n",nfram-1,reference.c_str() );
-
-  // Finish the setup of the mapping object
-  // Get the arguments and atoms that are required
-  std::vector<AtomNumber> atoms; myref->getAtomRequests( atoms, false );
-  std::vector<std::string> args; myref->getArgumentRequests( args, false );
-  if( atoms.size()>0 ) {
-    log.printf("  found %zu atoms in input \n",atoms.size());
-    log.printf("  with indices : ");
-    for(unsigned i=0; i<atoms.size(); ++i) {
-      if(i%25==0) log<<"\n";
-      log.printf("%d ",atoms[i].serial());
-    }
-    log.printf("\n");
-  }
-  requestAtoms( atoms ); std::vector<Value*> req_args;
-  interpretArgumentList( args, plumed.getActionSet(), this, req_args ); requestArguments( req_args );
-
-  // And now check that the atoms/arguments are the same in all the eigenvalues
-  for(unsigned i=0; i<myframes.size(); ++i) { myframes[i]->getAtomRequests( atoms, false ); myframes[i]->getArgumentRequests( args, false ); }
-
-  // Setup the derivative pack
-  if( atoms.size()>0 ) myvals.resize( 1, args.size() + 3*atoms.size() + 9 );
-  else myvals.resize( 1, args.size() );
-  mypack.resize( args.size(), atoms.size() );
-  for(unsigned i=0; i<atoms.size(); ++i) mypack.setAtomIndex( i, i );
-  /// This sets up all the storage data required by PCA in the pack
-  myref->setupPCAStorage( mypack );
-
-  // Check there are no periodic arguments
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    if( getPntrToArgument(i)->isPeriodic() ) error("cannot use periodic variables in pca projections");
-  }
-  // Work out if the user wants to normalise the input vector
-  checkRead();
-
-  if(nopbc) log.printf("  without periodic boundary conditions\n");
-  else      log.printf("  using periodic boundary conditions\n");
-
-  // Resize the matrices that will hold our eivenvectors
-  PDB mypdb; mypdb.setAtomNumbers( atoms ); mypdb.addBlockEnd( atoms.size() );
-  if( args.size()>0 ) mypdb.setArgumentNames( args );
-  // Resize the matrices that will hold our eivenvectors
-  for(unsigned i=0; i<myframes.size(); ++i) {
-    directions.push_back( Direction(ReferenceConfigurationOptions("DIRECTION"))); directions[i].read( mypdb );
-  }
-
-  // Create fake periodic boundary condition (these would only be used for DRMSD which is not allowed)
-  // Now calculate the eigenvectors
-  for(unsigned i=0; i<myframes.size(); ++i) {
-    // Calculate distance from reference configuration
-    myframes[i]->extractDisplacementVector( myref->getReferencePositions(), getArguments(), myref->getReferenceArguments(), true, directions[i] );
-    // Create a component to store the output
-    std::string num; Tools::convert( i+1, num );
-    addComponentWithDerivatives("eig-"+num); componentIsNotPeriodic("eig-"+num);
-  }
-  addComponentWithDerivatives("residual"); componentIsNotPeriodic("residual");
-
-  // Get appropriate number of derivatives
-  unsigned nder;
-  if( getNumberOfAtoms()>0 ) {
-    nder = 3*getNumberOfAtoms() + 9 + getNumberOfArguments();
-  } else {
-    nder = getNumberOfArguments();
-  }
-
-  // Resize all derivative arrays
-  forces.resize( nder ); forcesToApply.resize( nder );
-  for(int i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->resizeDerivatives(nder);
-}
-
-unsigned PCAVars::getNumberOfDerivatives() {
-  if( getNumberOfAtoms()>0 ) {
-    return 3*getNumberOfAtoms() + 9 + getNumberOfArguments();
-  }
-  return getNumberOfArguments();
-}
-
-void PCAVars::lockRequests() {
-  ActionWithArguments::lockRequests();
-  ActionAtomistic::lockRequests();
-}
-
-void PCAVars::unlockRequests() {
-  ActionWithArguments::unlockRequests();
-  ActionAtomistic::unlockRequests();
-}
-
-void PCAVars::calculate() {
-
-  if(!nopbc && getNumberOfAtoms()>0) makeWhole();
-
-  // Clear the reference value pack
-  mypack.clear();
-  // Calculate distance between instaneous configuration and reference
-  double dist = myref->calculate( getPositions(), getPbc(), getArguments(), mypack, true );
-
-  // Start accumulating residual by adding derivatives of distance
-  Value* resid=getPntrToComponent( getNumberOfComponents()-1 ); unsigned nargs=getNumberOfArguments();
-  for(unsigned j=0; j<getNumberOfArguments(); ++j) resid->addDerivative( j, mypack.getArgumentDerivative(j) );
-  for(unsigned j=0; j<getNumberOfAtoms(); ++j) {
-    Vector ader=mypack.getAtomDerivative( j );
-    for(unsigned k=0; k<3; ++k) resid->addDerivative( nargs +3*j+k, ader[k] );
-  }
-  // Retrieve the values of all arguments
-  std::vector<double> args( getNumberOfArguments() ); for(unsigned i=0; i<getNumberOfArguments(); ++i) args[i]=getArgument(i);
-
-  // Now calculate projections on pca vectors
-  Vector adif, ader; Tensor fvir, tvir;
-  for(int i=0; i<getNumberOfComponents()-1; ++i) { // One less component as we also have residual
-    double proj=myref->projectDisplacementOnVector( directions[i], getArguments(), args, mypack );
-    // And now accumulate derivatives
-    Value* eid=getPntrToComponent(i);
-    for(unsigned j=0; j<getNumberOfArguments(); ++j) eid->addDerivative( j, mypack.getArgumentDerivative(j) );
-    if( getNumberOfAtoms()>0 ) {
-      tvir.zero();
-      for(unsigned j=0; j<getNumberOfAtoms(); ++j) {
-        Vector myader=mypack.getAtomDerivative(j);
-        for(unsigned k=0; k<3; ++k) {
-          eid->addDerivative( nargs + 3*j+k, myader[k] );
-          resid->addDerivative( nargs + 3*j+k, -2*proj*myader[k] );
+      // Normalize the eigenvector in the input
+      double norm=0;
+      for(unsigned i=0; i<mypdb.getPositions().size(); ++i) {
+        norm += mypdb.getPositions()[i][0]*mypdb.getPositions()[i][0];
+        norm += mypdb.getPositions()[i][1]*mypdb.getPositions()[i][1];
+        norm += mypdb.getPositions()[i][2]*mypdb.getPositions()[i][2];
+      }
+      unsigned k=0;
+      for(unsigned i=0; i<theargs.size(); ++i) {
+        std::vector<double> argval( theargs[i]->getNumberOfValues() );
+        if( !mypdb.getArgumentValue(theargs[i]->getName(), argval) ) error("argument " + theargs[i]->getName() + " was not set in pdb input");
+        for(unsigned j=0; j<argval.size(); ++j) { argdir[k] = argval[j]; norm += argdir[k]*argdir[k]; k++; }
+      }
+      norm = sqrt( norm ); std::vector<double> normed_coeffs( 3*mypdb.getPositions().size() );
+      for(unsigned i=0; i<mypdb.getPositions().size(); ++i) {
+        if( mtype=="SIMPLE" ) {
+          normed_coeffs[0*mypdb.getPositions().size()+i] = mypdb.getPositions()[i][0] / norm;
+          normed_coeffs[1*mypdb.getPositions().size()+i] = mypdb.getPositions()[i][1] / norm;
+          normed_coeffs[2*mypdb.getPositions().size()+i] = mypdb.getPositions()[i][2] / norm;
+        } else {
+          normed_coeffs[0*mypdb.getPositions().size()+i] = sqrt(displace[i])*mypdb.getPositions()[i][0] / norm;
+          normed_coeffs[1*mypdb.getPositions().size()+i] = sqrt(displace[i])*mypdb.getPositions()[i][1] / norm;
+          normed_coeffs[2*mypdb.getPositions().size()+i] = sqrt(displace[i])*mypdb.getPositions()[i][2] / norm;
         }
-        tvir += -1.0*Tensor( getPosition(j), myader );
       }
-      for(unsigned j=0; j<3; ++j) {
-        for(unsigned k=0; k<3; ++k) eid->addDerivative( nargs + 3*getNumberOfAtoms() + 3*j + k, tvir(j,k) );
+      std::string coeff1;
+      if( mypdb.getPositions().size()>0 ) {
+        if( nfram==1 ) Tools::convert( normed_coeffs[0], pvec );
+        else { Tools::convert( normed_coeffs[0], coeff1 ); pvec += "," + coeff1; }
+        for(unsigned i=1; i<normed_coeffs.size(); ++i) {
+          Tools::convert( normed_coeffs[i], coeff1 );
+          pvec += "," + coeff1;
+        }
+        for(unsigned i=0; i<argdir.size(); ++i) { Tools::convert( argdir[i] / norm, coeff1 ); pvec += "," + coeff1; }
+      } else if( theargs.size()>0 ) {
+        if( nfram==1 ) Tools::convert( argdir[0] / norm, pvec );
+        else { Tools::convert( argdir[0] / norm, coeff1 ); pvec += "," + coeff1; }
+        for(unsigned i=1; i<argdir.size(); ++i) { Tools::convert( argdir[i] / norm, coeff1 ); pvec += "," + coeff1; }
       }
-    }
-    dist -= proj*proj; // Subtract square from total squared distance to get residual squared
-    // Derivatives of residual
-    for(unsigned j=0; j<getNumberOfArguments(); ++j) resid->addDerivative( j, -2*proj*eid->getDerivative(j) );
-    // for(unsigned j=0;j<getNumberOfArguments();++j) resid->addDerivative( j, -2*proj*arg_eigv(i,j) );
-    // And set final value
-    getPntrToComponent(i)->set( proj );
+      ncomp = 3*mypdb.getPositions().size() + nargs;
+    } else { break; }
   }
-  dist=std::sqrt(dist);
-  resid->set( dist );
-
-  // Take square root of residual derivatives
-  double prefactor = 0.5 / dist;
-  for(unsigned j=0; j<getNumberOfArguments(); ++j) resid->setDerivative( j, prefactor*resid->getDerivative(j) );
-  for(unsigned j=0; j<getNumberOfAtoms(); ++j) {
-    for(unsigned k=0; k<3; ++k) resid->setDerivative( nargs + 3*j+k, prefactor*resid->getDerivative( nargs+3*j+k ) );
-  }
-
-  // And finally virial for residual
-  if( getNumberOfAtoms()>0 ) {
-    tvir.zero();
-    for(unsigned j=0; j<getNumberOfAtoms(); ++j) {
-      Vector ader; for(unsigned k=0; k<3; ++k) ader[k]=resid->getDerivative( nargs + 3*j+k );
-      tvir += -1.0*Tensor( getPosition(j), ader );
-    }
-    for(unsigned j=0; j<3; ++j) {
-      for(unsigned k=0; k<3; ++k) resid->addDerivative( nargs + 3*getNumberOfAtoms() + 3*j + k, tvir(j,k) );
-    }
-  }
-
-}
-
-void PCAVars::calculateNumericalDerivatives( ActionWithValue* a ) {
-  if( getNumberOfArguments()>0 ) {
-    ActionWithArguments::calculateNumericalDerivatives( a );
-  }
-  if( getNumberOfAtoms()>0 ) {
-    Matrix<double> save_derivatives( getNumberOfComponents(), getNumberOfArguments() );
-    for(int j=0; j<getNumberOfComponents(); ++j) {
-      for(unsigned i=0; i<getNumberOfArguments(); ++i) save_derivatives(j,i)=getPntrToComponent(j)->getDerivative(i);
-    }
-    calculateAtomicNumericalDerivatives( a, getNumberOfArguments() );
-    for(int j=0; j<getNumberOfComponents(); ++j) {
-      for(unsigned i=0; i<getNumberOfArguments(); ++i) getPntrToComponent(j)->addDerivative( i, save_derivatives(j,i) );
-    }
-  }
-}
-
-void PCAVars::apply() {
-
-  bool wasforced=false; forcesToApply.assign(forcesToApply.size(),0.0);
-  for(int i=0; i<getNumberOfComponents(); ++i) {
-    if( getPntrToComponent(i)->applyForce( forces ) ) {
-      wasforced=true;
-      for(unsigned i=0; i<forces.size(); ++i) forcesToApply[i]+=forces[i];
-    }
-  }
-  if( wasforced ) {
-    unsigned ind=0; addForcesOnArguments( 0, forcesToApply, ind, getLabel() );
-    if( getNumberOfAtoms()>0 ) setForcesOnAtoms( forcesToApply, ind );
-  }
-
+  std::fclose(fp); std::string neig, ncols; Tools::convert( nfram, neig ); Tools::convert( ncomp, ncols );
+  readInputLine( getShortcutLabel() + "_peig: CONSTANT VALUES=" + pvec + " NROWS=" + neig + " NCOLS=" + ncols );
+  if( pdb.getPositions().size()>0 && theargs.size()>0 ) readInputLine( getShortcutLabel() + "_eig: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_peig," + getShortcutLabel() );
+  else if( pdb.getPositions().size()>0 ) readInputLine( getShortcutLabel() + "_eig: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_peig," + getShortcutLabel() + "_at.disp");
+  else if( theargs.size()>0 ) readInputLine( getShortcutLabel() + "_eig: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_peig," + getShortcutLabel() + "_argdist_diffT");
+  readInputLine( getShortcutLabel() + "_eig2: CUSTOM ARG=" + getShortcutLabel() + "_eig FUNC=x*x PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_eigsum2: SUM ARG=" +  getShortcutLabel() + "_eig2 PERIODIC=NO");
+  if( pdb.getPositions().size()>0 && theargs.size()>0 ) readInputLine( getShortcutLabel() + "_residual: CUSTOM ARG=" + getShortcutLabel() + "_dist," + getShortcutLabel() + "_eigsum2 FUNC=sqrt(x-y) PERIODIC=NO");
+  else if( pdb.getPositions().size()>0 ) readInputLine( getShortcutLabel() + "_residual: CUSTOM ARG=" + getShortcutLabel() + "_at.dist," + getShortcutLabel() + "_eigsum2 FUNC=sqrt(x-y) PERIODIC=NO");
+  else if( theargs.size()>0 ) readInputLine( getShortcutLabel() + "_residual: CUSTOM ARG=" + getShortcutLabel() + "_argdist," + getShortcutLabel() + "_eigsum2 FUNC=sqrt(x-y) PERIODIC=NO");
 }
 
 }
 }
+
+

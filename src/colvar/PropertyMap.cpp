@@ -130,8 +130,8 @@ PropertyMap::PropertyMap(const ActionOptions&ao):
       // now look for X=1.34555 Y=5.6677
       std::vector<double> labelvals;
       for(unsigned j=0; j<labels.size(); j++) {
-        double val;
-        if( pdbv[i].getArgumentValue(labels[j],val) ) {labelvals.push_back(val);}
+        std::vector<double> val(1);
+        if( pdbv[i].getArgumentValue(labels[j],val) ) {labelvals.push_back(val[0]);}
         else {
           const std::size_t buflen=500;
           char buf[buflen];

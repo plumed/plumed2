@@ -137,16 +137,20 @@ void PDB::setAtomNumbers( const std::vector<AtomNumber>& atoms ) {
 }
 
 void PDB::setArgumentNames( const std::vector<std::string>& argument_names ) {
-  argnames.resize( argument_names.size() );
+  argnames.resize( argument_names.size() ); std::vector<double> tmp(1,0);
   for(unsigned i=0; i<argument_names.size(); ++i) {
     argnames[i]=argument_names[i];
-    arg_data.insert( std::pair<std::string,double>( argnames[i], 0.0 ) );
+    arg_data.insert( std::pair<std::string,std::vector<double> >( argnames[i], tmp ) );
   }
 }
 
-bool PDB::getArgumentValue( const std::string& name, double& value ) const {
-  std::map<std::string,double>::const_iterator it = arg_data.find(name);
-  if( it!=arg_data.end() ) { value = it->second; return true; }
+bool PDB::getArgumentValue( const std::string& name, std::vector<double>& value ) const {
+  std::map<std::string,std::vector<double> >::const_iterator it = arg_data.find(name);
+  if( it!=arg_data.end() ) {
+    if( value.size()!=it->second.size() ) return false;
+    for(unsigned i=0; i<value.size(); ++i) value[i] = it->second[i];
+    return true;
+  }
   return false;
 }
 
@@ -157,7 +161,8 @@ void PDB::setAtomPositions( const std::vector<Vector>& pos ) {
 
 void PDB::setArgumentValue( const std::string& argname, const double& val ) {
   // First set the value of the value of the argument in the map
-  arg_data.find(argname)->second = val;
+  arg_data.find(argname)->second.resize(1);
+  arg_data.find(argname)->second[0] = val;
 }
 
 // bool PDB::hasRequiredProperties( const std::vector<std::string>& inproperties ){
@@ -218,8 +223,11 @@ void PDB::addRemark( std::vector<std::string>& v1 ) {
       std::size_t eq=v1[i].find_first_of('=');
       std::string name=v1[i].substr(0,eq);
       std::string sval=v1[i].substr(eq+1);
-      double val; Tools::convert( sval, val );
-      arg_data.insert( std::pair<std::string,double>( name, val ) );
+      // double val; Tools::convert( sval, val );
+      std::vector<std::string> words=Tools::getWords(sval,"\t\n ,");
+      std::vector<double> val( words.size() );
+      for(unsigned i=0; i<val.size(); ++i) Tools::convert( words[i], val[i] );
+      arg_data.insert( std::pair<std::string,std::vector<double> >( name, val ) );
     } else {
       flags.push_back(v1[i]);
     }
@@ -574,7 +582,7 @@ void PDB::print( const double& lunits, GenericMolInfo* mymoldat, OFile& ofile, c
     plumed_assert( psign!=std::string::npos );
     descr2="%s=%-" + fmt.substr(psign+1) + " ";
   }
-  for(std::map<std::string,double>::iterator it=arg_data.begin(); it!=arg_data.end(); ++it) ofile.printf( descr2.c_str(),it->first.c_str(), it->second );
+  for(std::map<std::string,std::vector<double> >::iterator it=arg_data.begin(); it!=arg_data.end(); ++it) ofile.printf( descr2.c_str(),it->first.c_str(), it->second[0] );
   if( argnames.size()>0 ) ofile.printf("\n");
   if( !mymoldat ) {
     for(unsigned i=0; i<positions.size(); ++i) {

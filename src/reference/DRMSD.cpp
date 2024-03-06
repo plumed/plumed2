@@ -44,9 +44,9 @@ void DRMSD::setBoundsOnDistances( bool dopbc, double lbound, double ubound ) {
 
 void DRMSD::readBounds( const PDB& pdb ) {
   if( bounds_were_set ) return;
-  double tmp; nopbc=pdb.hasFlag("NOPBC");
-  if( pdb.getArgumentValue("LOWER_CUTOFF",tmp) ) lower=tmp;
-  if( pdb.getArgumentValue("UPPER_CUTOFF",tmp) ) upper=tmp;
+  std::vector<double> tmp(1); nopbc=pdb.hasFlag("NOPBC");
+  if( pdb.getArgumentValue("LOWER_CUTOFF",tmp) ) lower=tmp[0];
+  if( pdb.getArgumentValue("UPPER_CUTOFF",tmp) ) upper=tmp[0];
   bounds_were_set=true;
 }
 

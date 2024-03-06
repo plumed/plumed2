@@ -1,2 +1,3 @@
+plumed_modules=mapping
 type=plumed
 arg="pathtools --start start.pdb --end end.pdb --nframes 1 --metric OPTIMAL --out mypath.pdb" 

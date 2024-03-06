@@ -351,7 +351,7 @@ void Value::convertIndexToindices(const std::size_t& index, std::vector<unsigned
 
 void Value::print( OFile& ofile ) const {
   if( isPeriodic() ) { ofile.printField( "min_" + name, str_min ); ofile.printField("max_" + name, str_max ); }
-  if( shape.size()==0 ) {
+  if( shape.size()==0 || getNumberOfValues()==1 ) {
     ofile.printField( name, get(0) );
   } else {
     std::vector<unsigned> indices( shape.size() );

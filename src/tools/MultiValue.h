@@ -99,6 +99,7 @@ public:
 /// avoid doing lots of resizing of vectors in MultiColvarTemplate
   std::vector<Vector>& getFirstAtomVector();
   std::vector<std::vector<Vector> >& getFirstAtomDerivativeVector();
+  const std::vector<std::vector<Vector> >& getConstFirstAtomDerivativeVector() const ;
   std::vector<Tensor>& getFirstAtomVirialVector();
   void resizeTemporyVector(const unsigned& n );
   std::vector<double>& getTemporyVector(const unsigned& ind );
@@ -388,6 +389,11 @@ std::vector<Vector>& MultiValue::getFirstAtomVector() {
 
 inline
 std::vector<std::vector<Vector> >& MultiValue::getFirstAtomDerivativeVector() {
+  return tmp_atom_der;
+}
+
+inline
+const std::vector<std::vector<Vector> >& MultiValue::getConstFirstAtomDerivativeVector() const {
   return tmp_atom_der;
 }
 

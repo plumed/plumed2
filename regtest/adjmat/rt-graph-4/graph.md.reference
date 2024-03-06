@@ -78,9 +78,6 @@ subgraph subcm_cncn [cm_cncn]
 end
 cc_cnI -- ones192 --> ones192
 linkStyle 17 stroke:blue,color:blue;
-ones192(["label=ones192 
- CONSTANT 
-"])
 subgraph subcm_cncn [cm_cncn]
 end
 cc_cnpb -- ones64 --> ones64
@@ -89,9 +86,6 @@ subgraph subcm_cncn [cm_cncn]
 end
 cc_cncn -- ones64 --> ones64
 linkStyle 19 stroke:blue,color:blue;
-ones64(["label=ones64 
- CONSTANT 
-"])
 Box("label=Box 
  PBC 
 ")

@@ -1,4 +1,4 @@
-#! FIELDS time pcawrong.eig-1 pcawrong.eig-2 pcawrong.residual
+#! FIELDS time pcawrong_eig.1 pcawrong_eig.2 pcawrong_residual
  0.000000   5.4409  -2.7492   3.9339
  1.000000   5.4345  -2.7533   3.9250
  2.000000   5.5717  -1.5221   4.2195

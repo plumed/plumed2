@@ -43,9 +43,9 @@ void MultiDomainRMSD::read( const PDB& pdb ) {
   std::string num; blocks.resize( nblocks+1 ); blocks[0]=0;
   for(unsigned i=0; i<nblocks; ++i) blocks[i+1]=pdb.getAtomBlockEnds()[i];
 
-  double tmp, lower=0.0, upper=std::numeric_limits<double>::max( );
-  if( pdb.getArgumentValue("LOWER_CUTOFF",tmp) ) lower=tmp;
-  if( pdb.getArgumentValue("UPPER_CUTOFF",tmp) ) upper=tmp;
+  std::vector<double> tmp; double lower=0.0, upper=std::numeric_limits<double>::max( );
+  if( pdb.getArgumentValue("LOWER_CUTOFF",tmp) ) lower=tmp[0];
+  if( pdb.getArgumentValue("UPPER_CUTOFF",tmp) ) upper=tmp[0];
   bool nopbc=pdb.hasFlag("NOPBC");
 
   domains.resize(0); weights.resize(0);
@@ -54,8 +54,8 @@ void MultiDomainRMSD::read( const PDB& pdb ) {
     if( ftype=="RMSD" ) {
       // parse("TYPE"+num, ftype );
       lower=0.0; upper=std::numeric_limits<double>::max( );
-      if( pdb.getArgumentValue("LOWER_CUTOFF"+num,tmp) ) lower=tmp;
-      if( pdb.getArgumentValue("UPPER_CUTOFF"+num,tmp) ) upper=tmp;
+      if( pdb.getArgumentValue("LOWER_CUTOFF"+num,tmp) ) lower=tmp[0];
+      if( pdb.getArgumentValue("UPPER_CUTOFF"+num,tmp) ) upper=tmp[0];
       nopbc=pdb.hasFlag("NOPBC");
     }
     domains.emplace_back( metricRegister().create<SingleDomainRMSD>( ftype ) );
@@ -73,9 +73,9 @@ void MultiDomainRMSD::read( const PDB& pdb ) {
     domains[i-1]->setReferenceAtoms( positions, align, displace );
     domains[i-1]->setupRMSDObject();
 
-    double ww=0;
+    std::vector<double> ww(1);
     if( !pdb.getArgumentValue("WEIGHT"+num,ww) ) weights.push_back( 1.0 );
-    else weights.push_back( ww );
+    else weights.push_back( ww[0] );
   }
   // And set the atom numbers for this object
   indices.resize(0); atom_der_index.resize(0);

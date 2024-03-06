@@ -37,7 +37,6 @@ class Stopwatch;
 namespace vesselbase {
 
 class Vessel;
-class StoreDataVessel;
 
 /**
 \ingroup MULTIINHERIT
@@ -47,8 +46,6 @@ times.  This is used in PLMD::MultiColvar.
 
 class ActionWithVessel : public virtual Action {
   friend class Vessel;
-  friend class FunctionVessel;
-  friend class StoreDataVessel;
 private:
 /// Do all calculations in serial
   bool serial;
@@ -96,8 +93,6 @@ protected:
   bool weightHasDerivatives;
 /// This is used for numerical derivatives of bridge variables
   unsigned bridgeVariable;
-/// A pointer to the object that stores data
-  StoreDataVessel* mydata;
 /// This list is used to update the neighbor list
   std::vector<unsigned> taskFlags;
 /// Add a vessel to the list of vessels
@@ -173,8 +168,6 @@ public:
   virtual void performTask( const unsigned&, const unsigned&, MultiValue& ) const=0;
 /// Do the task if we have a bridge
   virtual void transformBridgedDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals ) const;
-/// Ensure that data required in other vessels is stored
-  StoreDataVessel* buildDataStashes( ActionWithVessel* actionThatUses );
 /// Apply forces from bridge vessel - this is rarely used - currently only in ActionVolume
   virtual void applyBridgeForces( const std::vector<double>& bb ) { plumed_error(); }
 /// These are overwritten in MultiColvarFunction

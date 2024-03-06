@@ -103,7 +103,7 @@ void RMSD::setReference(const std::vector<Vector> & reference) {
   reference_center_is_calculated=true;
   reference_center_is_removed=true;
 }
-std::vector<Vector> RMSD::getReference() {
+const std::vector<Vector>& RMSD::getReference() const {
   return reference;
 }
 ///

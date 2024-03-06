@@ -52,7 +52,7 @@ class PDB {
   std::string mtype;
   std::vector<std::string> flags;
   std::vector<std::string> argnames;
-  std::map<std::string,double> arg_data;
+  std::map<std::string,std::vector<double> > arg_data;
   Vector BoxXYZ,BoxABG;
   Tensor Box;
 public:
@@ -121,7 +121,7 @@ public:
 /// This is used in PLMD::analysis::AnalysisWithDataCollection to set the argument values
   void setArgumentValue( const std::string& argname, const double& val );
 /// Get the value of one of the arguments in the PDB file
-  bool getArgumentValue( const std::string& name, double& value ) const ;
+  bool getArgumentValue( const std::string& name, std::vector<double>& value ) const ;
 /// Access to the atoms of a residue
   std::vector<AtomNumber> getAtomsInResidue(const unsigned& resnum,const std::string& chainid)const;
 /// Access to the atoms of a chain
