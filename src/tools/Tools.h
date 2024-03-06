@@ -81,6 +81,9 @@ class Tools {
 /// class to convert a string to a int type T
   template<class T>
   static bool convertToInt(const std::string & str,T &t);
+/// @brief the  recursive part of the template fastpow implementation
+  template <int exp, typename T=double, std::enable_if_t< (exp >=0), bool> = true>
+  static inline /*consteval*/ T fastpow_rec(T base, T result);
 public:
 /// Split the line in words using separators.
 /// It also take into account parenthesis. Outer parenthesis found are removed from
@@ -174,6 +177,9 @@ public:
   static std::string extension(const std::string&);
 /// Fast int power
   static double fastpow(double base,int exp);
+/// Fast int power for power known at compile time
+  template <int exp, typename T=double>
+static inline /*consteval*/ T fastpow(T base);
 /// Modified 0th-order Bessel function of the first kind
   static double bessel0(const double& val);
 /// Check if a string full starts with string start.
@@ -400,6 +406,26 @@ double Tools::fastpow(double base, int exp)
   }
 
   return result;
+}
+
+template <int exp, typename T=double, std::enable_if_t< (exp >=0), bool> = true>
+inline T Tools::fastpow_rec(T const base, T result) {
+  if constexpr (exp == 0) {
+    return result;
+  }
+  if constexpr (exp & 1) {
+    result *= base;
+  }
+  return fastpow_rec<(exp>>1),T> (base*base, result);
+}
+
+template <int exp, typename T=double>
+inline T Tools::fastpow(T const base) {
+  if constexpr (exp<0) {
+    return  fastpow_rec<-exp,T>(1.0/base,1.0);
+  } else {
+    return fastpow_rec<exp,T>(base, 1.0);
+  }
 }
 
 template<typename T>

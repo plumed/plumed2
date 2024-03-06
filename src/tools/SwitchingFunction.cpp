@@ -249,43 +249,6 @@ void baseSwitch::removeStretch() {
   stretch=1.0;
   shift=0.0;
 }
-
-
-template <int exp, std::enable_if_t< (exp >=0), bool> = true>
-inline
-double fastInlinePow_rec(double base, double result) {
-  /*
-  double result = 1.0;
-  while (exp)
-  {
-    if (exp & 1)
-      result *= base;
-    exp >>= 1;
-    base *= base;
-  }
-
-  return result;
-  */
-  if constexpr (exp == 0) {
-    return result;
-  }
-  if constexpr (exp & 1) {
-    result *= base;
-  }
-  return fastInlinePow_rec<(exp>>1)> (base*base, result);
-}
-
-template <int exp>
-inline
-double fastInlinePow(double base)
-{
-  if constexpr (exp<0) {
-    return  fastInlinePow_rec<-exp>(1.0/base,1.0);
-  } else {
-    return fastInlinePow_rec<exp>(base, 1.0);
-  }
-}
-
 template<int N, std::enable_if_t< (N >0), bool> = true, std::enable_if_t< (N %2 == 0), bool> = true>
     class fixedRational :public baseSwitch {
   std::string specificDescription() const override {
@@ -299,7 +262,7 @@ public:
 
   template <int POW>
   static inline double doRational(const double rdist, double&dfunc, double result=0.0) {
-    const double rNdist=fastInlinePow<POW-1>(rdist);
+    const double rNdist=Tools::fastpow<POW-1>(rdist);
     result=1.0/(1.0+rNdist*rdist);
     dfunc = -POW*rNdist*result*result;
     return result;
@@ -411,8 +374,8 @@ std::unique_ptr<baseSwitch>
 rationalFactory(double D0,double DMAX, double R0, int N, int M) {
   bool fast = N%2==0 && M%2==0 && D0==0.0;
   //if (M==0) M will automatically became 2*NN
-  //template<bool isFast, bool n2m>
-  //class rational : public baseSwitch
+  
+  //precompiled rational
   if(2*N==M || M == 0 && fast) {
     if(N==6) {
       return PLMD::Tools::make_unique<switchContainers::fixedRational<6>>(D0,DMAX,R0);
@@ -421,6 +384,8 @@ rationalFactory(double D0,double DMAX, double R0, int N, int M) {
       return PLMD::Tools::make_unique<switchContainers::fixedRational<12>>(D0,DMAX,R0);
     }
   }
+  //template<bool isFast, bool n2m>
+  //class rational : public baseSwitch
   if(2*N==M || M == 0) {
     if(fast) {
       //fast rational
