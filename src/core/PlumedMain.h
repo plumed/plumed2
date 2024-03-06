@@ -93,9 +93,28 @@ public:
   Communicator&comm=*comm_fwd;
 
 private:
+  class DepreciatedAtoms {
+  private:
+    PlumedMain & plumed;
+  public:
+    explicit DepreciatedAtoms(PlumedMain& p): plumed(p) {}
+    [[depreciated("Use Action::getKBoltzmann().")]]
+    double getKBoltzmann() const ;
+    [[depreciated("Use Action::getkBT() N.B. this function also reads the TEMP keyword from the input for you.")]]
+    double getKbT() const ;
+    [[depreciated]]
+    int getNatoms() const ;
+    [[depreciated("Use Action::usingNaturalUnits().")]]
+    bool usingNaturalUnits() const ;
+  };
+/// Forward declaration.
+  ForwardDecl<DepreciatedAtoms> datoms_fwd;
+/// Object containing old bits of atoms that are used by many folks
+  DepreciatedAtoms&    datoms=*datoms_fwd;          
 /// Forward declaration.
   ForwardDecl<Communicator> multi_sim_comm_fwd;
 public:
+  DepreciatedAtoms& getAtoms();
   Communicator&multi_sim_comm=*multi_sim_comm_fwd;
 
 private:
