@@ -26,7 +26,7 @@
 #include "tools/PDB.h"
 
 namespace PLMD {
-namespace setup {
+namespace generic {
 
 //+PLUMEDOC COLVAR PDB2CONSTANT
 /*
