@@ -704,10 +704,10 @@ public:
       } else if(vars.size()==1 && found_x2) {
         lepton_ref[t]=&expression[t].getVariableReference("x2");
         leptonx2=true;
-      } else if(vars.size()==2 && found_x && found_x2) {
-        plumed_error() << "Cannot use simultaneously x and x2 argument in switching function: "<<func;
       } else {
-        plumed_error() << "Something wrong in the arguments for switching function: "<<func;
+        plumed_error()
+            <<"Please declare a function with only ONE argument that can only be x or x2. Your function is: "
+            << func;
       }
     }
     std::string arg="x";
