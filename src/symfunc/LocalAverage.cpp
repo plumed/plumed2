@@ -98,6 +98,8 @@ PLUMED_REGISTER_ACTION(LocalAverage,"LOCAL_AVERAGE")
 
 void LocalAverage::registerKeywords( Keywords& keys ) {
   CoordinationNumbers::shortcutKeywords( keys );
+  keys.needsAction("ONES"); keys.needsAction("MATRIX_VECTOR_PRODUCT");
+  keys.needsAction("VSTACK"); keys.needsAction("CUSTOM"); keys.needsAction("OUTER_PRODUCT");
 }
 
 LocalAverage::LocalAverage(const ActionOptions&ao):

@@ -51,6 +51,9 @@ void CoordAngles::registerKeywords(Keywords& keys) {
   keys.add("atoms","GROUP","a list of angls between pairs of bonds connecting one of the atoms specified using the CATOM command and two of the atoms specified here are computed");
   keys.add("compulsory","SWITCH","the switching function specifies that only those bonds that have a length that is less than a certain threshold are considered");
   MultiColvarShortcuts::shortcutKeywords( keys ); pruneShortcuts( keys );
+  keys.needsAction("DISTANCE"); keys.needsAction("COMBINE"); keys.needsAction("CUSTOM");
+  keys.needsAction("VSTACK"); keys.needsAction("TRANSPOSE");
+  keys.needsAction("OUTER_PRODUCT"); keys.needsAction("MATRIX_PRODUCT");
 }
 
 void CoordAngles::pruneShortcuts(Keywords& keys) {

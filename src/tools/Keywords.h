@@ -57,6 +57,7 @@ class Keywords {
     }
   };
   friend class Action;
+  friend class ActionShortcut;
 private:
 /// Is this an action or driver (this bool affects what style==atoms does in print)
   bool isaction;
@@ -86,6 +87,10 @@ private:
   std::map<std::string,std::string> ckey;
 /// The documentation for a particular component
   std::map<std::string,std::string> cdocs;
+/// The list of actions that are needed by this action
+  std::vector<std::string> neededActions;
+/// List of suffixes that can be used with this action
+  std::vector<std::string> actionNameSuffixes;
 /// Print the documentation for the jth keyword in html
   void print_html_item( const std::string& ) const;
 public:
@@ -177,6 +182,10 @@ public:
   std::vector<std::string> getKeys() const { return keys; }
 /// Get the description of a particular keyword
   std::string getTooltip( const std::string& name ) const ;
+/// Note that another actions is required to create this shortcut
+  void needsAction( const std::string& name );
+/// Add a suffix to the list of action name suffixes to test for
+  void addActionNameSuffix( const std::string& suffix );
 };
 
 }

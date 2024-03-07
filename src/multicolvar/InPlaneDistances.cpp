@@ -52,6 +52,7 @@ void InPlaneDistances::registerKeywords( Keywords& keys ) {
   keys.add("atoms","VECTORSTART","The first atom position that is used to define the normal to the plane of interest");
   keys.add("atoms","VECTOREND","The second atom position that is used to defin the normal to the plane of interest");
   MultiColvarShortcuts::shortcutKeywords( keys );
+  keys.needsAction("DISTANCE"); keys.needsAction("ANGLE");
 }
 
 InPlaneDistances::InPlaneDistances(const ActionOptions&ao):
@@ -72,7 +73,7 @@ InPlaneDistances::InPlaneDistances(const ActionOptions&ao):
     }
   }
   readInputLine( dinput ); readInputLine( ainput );
-  readInputLine( getShortcutLabel() + ": MATHEVAL PERIODIC=NO FUNC=x*sin(y) ARG=" + getShortcutLabel() + "_dis," + getShortcutLabel() + "_ang");
+  readInputLine( getShortcutLabel() + ": CUSTOM PERIODIC=NO FUNC=x*sin(y) ARG=" + getShortcutLabel() + "_dis," + getShortcutLabel() + "_ang");
   MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel(), "", this );
 }
 

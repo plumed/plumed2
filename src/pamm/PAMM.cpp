@@ -124,6 +124,7 @@ void PAMM::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","REGULARISE","0.001","don't allow the denominator to be smaller then this value");
   keys.add("compulsory","KERNELS","all","which kernels are we computing the PAMM values for");
   multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
+  keys.needsAction("KERNEL"); keys.needsAction("COMBINE");
 }
 
 PAMM::PAMM(const ActionOptions& ao) :

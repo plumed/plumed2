@@ -45,6 +45,7 @@ PLUMED_REGISTER_ACTION(Product,"PRODUCT")
 void Product::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords(keys);
   keys.add("compulsory","ARG","The point that we are calculating the distance from");
+  keys.needsAction("CONCATENATE"); keys.needsAction("CUSTOM"); keys.needsAction("SUM");
 }
 
 Product::Product( const ActionOptions& ao):
@@ -53,9 +54,9 @@ Product::Product( const ActionOptions& ao):
 {
   std::string arg; parse("ARG",arg);
   readInputLine( getShortcutLabel() + "_vec: CONCATENATE ARG=" + arg );
-  readInputLine( getShortcutLabel() + "_logs: MATHEVAL ARG1=" + getShortcutLabel() + "_vec FUNC=log(x) PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_logs: CUSTOM ARG=" + getShortcutLabel() + "_vec FUNC=log(x) PERIODIC=NO");
   readInputLine( getShortcutLabel() + "_logsum: SUM ARG=" + getShortcutLabel() + "_logs PERIODIC=NO");
-  readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_logsum FUNC=exp(x) PERIODIC=NO");
+  readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_logsum FUNC=exp(x) PERIODIC=NO");
 }
 
 }

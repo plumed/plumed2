@@ -48,6 +48,7 @@ void FunctionShortcut<T>::registerKeywords(Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
   keys.add("numbered","ARG","the input to this function");
   keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
+  keys.addActionNameSuffix("_SCALAR"); keys.addActionNameSuffix("_VECTOR"); keys.addActionNameSuffix("_MATRIX"); keys.addActionNameSuffix("_GRID");
   T tfunc; tfunc.registerKeywords( keys );
 }
 

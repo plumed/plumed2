@@ -45,6 +45,7 @@ void RestraintShortcut::registerKeywords(Keywords& keys) {
   keys.add("hidden","STRIDE","1","the frequency with which the forces due to the bias should be calculated.  This can be used to correctly set up multistep algorithms");
   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
   keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
+  keys.addActionNameSuffix("_SCALAR"); keys.needsAction("COMBINE"); keys.needsAction("SUM"); keys.needsAction("CUSTOM"); keys.needsAction("BIASVALUE");
 }
 
 RestraintShortcut::RestraintShortcut(const ActionOptions&ao):
@@ -83,15 +84,15 @@ RestraintShortcut::RestraintShortcut(const ActionOptions&ao):
     double kap; Tools::convert(  kappa[i], kap );
     if( fabs(kap)>0 ) {
       non_constant_force = true;
-      readInputLine( getShortcutLabel() + "_harm_" + argn + ": MATHEVAL PERIODIC=NO FUNC=0.5*" + kappa[i] + "*x^2 ARG1=" + getShortcutLabel() + "_cv_" + argn );
+      readInputLine( getShortcutLabel() + "_harm_" + argn + ": CUSTOM PERIODIC=NO FUNC=0.5*" + kappa[i] + "*x^2 ARG1=" + getShortcutLabel() + "_cv_" + argn );
       readInputLine( getShortcutLabel() + "_kap_" + argn + ": SUM PERIODIC=NO ARG=" + getShortcutLabel() + "_harm_" + argn );
-      readInputLine( getShortcutLabel() + "_f2_" + argn + ": MATHEVAL PERIODIC=NO FUNC=" + kappa[i] + "*2*x+" + slope[i] + "*" + slope[i] + " ARG1=" + getShortcutLabel() + "_harm_" + argn );
+      readInputLine( getShortcutLabel() + "_f2_" + argn + ": CUSTOM PERIODIC=NO FUNC=" + kappa[i] + "*2*x+" + slope[i] + "*" + slope[i] + " ARG1=" + getShortcutLabel() + "_harm_" + argn );
       if( i==0 ) biasargs = "ARG=" + getShortcutLabel() + "_kap_" + argn; else biasargs += "," + getShortcutLabel() + "_kap_" + argn;
       if( i==0 ) forceargs = "ARG=" + getShortcutLabel() + "_f2_" + argn; else forceargs += "," + getShortcutLabel() + "_f2_" + argn;
     }
     double slo; Tools::convert( slope[i], slo );
     if( fabs(slo)>0 ) {
-      readInputLine( getShortcutLabel() + "_linear_" + argn + ": MATHEVAL PERIODIC=NO FUNC=" + slope[i] + "*x ARG1=" + getShortcutLabel() + "_cv_" + argn );
+      readInputLine( getShortcutLabel() + "_linear_" + argn + ": CUSTOM PERIODIC=NO FUNC=" + slope[i] + "*x ARG1=" + getShortcutLabel() + "_cv_" + argn );
       readInputLine( getShortcutLabel() + "_slope_" + argn + ": SUM PERIODIC=NO ARG=" + getShortcutLabel() + "_linear_" + argn );
       if( biasargs.length()==0 ) biasargs = "ARG=" + getShortcutLabel() + "_slope_" + argn; else biasargs += "," + getShortcutLabel() + "_slope_" + argn;
     }

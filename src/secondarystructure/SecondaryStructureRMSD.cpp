@@ -90,6 +90,7 @@ void SecondaryStructureRMSD::registerKeywords( Keywords& keys ) {
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
   keys.addOutputComponent("struct","default","the vectors containing the rmsd distances between the residues and each of the reference structures");
   keys.addOutputComponent("lessthan","default","the number blocks of residues that have an RMSD from the secondary structure that is less than the threshold");
+  keys.needsAction("SECONDARY_STRUCTURE_RMSD"); keys.needsAction("LESS_THAN"); keys.needsAction("SUM");
 }
 
 void SecondaryStructureRMSD::readBackboneAtoms( ActionShortcut* action, PlumedMain& plumed, const std::string& moltype, std::vector<unsigned>& chain_lengths, std::string& all_atoms ) {

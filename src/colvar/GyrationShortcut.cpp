@@ -65,6 +65,10 @@ void GyrationShortcut::registerKeywords( Keywords& keys ) {
   keys.addFlag("PHASES",false,"use trigonometric phases when computing position of center of mass");
   keys.addFlag("MASS",false,"calculate the center of mass");
   keys.addFlag("UNORMALIZED",false,"do not divide by the sum of the weights");
+  keys.addActionNameSuffix("_FAST"); keys.needsAction("CENTER"); keys.needsAction("CONSTANT");
+  keys.needsAction("ONES"); keys.needsAction("MASSES"); keys.needsAction("DISTANCE");
+  keys.needsAction("COVARIANCE_MATRIX"); keys.needsAction("SELECT_COMPONENTS");
+  keys.needsAction("SUM"); keys.needsAction("CUSTOM"); keys.needsAction("DIAGONALIZE");
 }
 
 GyrationShortcut::GyrationShortcut(const ActionOptions& ao):
@@ -136,7 +140,7 @@ GyrationShortcut::GyrationShortcut(const ActionOptions& ao):
     // And now we need the average trace for the gyration radius
     readInputLine( getShortcutLabel() + "_trace: SUM ARG=" + getShortcutLabel() + "_diag_elements PERIODIC=NO");
     // Square root the radius
-    readInputLine( getShortcutLabel() + ": CUSTM ARG=" + getShortcutLabel() + "_trace FUNC=sqrt(x) PERIODIC=NO");
+    readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_trace FUNC=sqrt(x) PERIODIC=NO");
   } else if( gtype=="TRACE" ) {
     // Compte the trace of the gyration tensor
     readInputLine( getShortcutLabel() + "_trace: SUM ARG=" + getShortcutLabel() + "_diag_elements PERIODIC=NO");
@@ -149,7 +153,7 @@ GyrationShortcut::GyrationShortcut(const ActionOptions& ao):
       std::size_t und=gtype.find_first_of("_"); if( und==std::string::npos ) error( gtype + " is not a valid type for gyration radius");
       std::string num = gtype.substr(und+1); if( num!="1" && num!="2" && num!="3" ) error( gtype + " is not a valid type for gyration radius");
       // Now get the appropriate eigenvalue
-      readInputLine( getShortcutLabel() + ": MATHEVAL ARG=" + getShortcutLabel() + "_diag.vals-" + num + " FUNC=sqrt(x) PERIODIC=NO");
+      readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_diag.vals-" + num + " FUNC=sqrt(x) PERIODIC=NO");
     } else if( gtype.find("RGYR")!=std::string::npos ) {
       std::size_t und=gtype.find_first_of("_"); if( und==std::string::npos ) error( gtype + " is not a valid type for gyration radius");
       unsigned ind; Tools::convert( gtype.substr(und+1), ind );

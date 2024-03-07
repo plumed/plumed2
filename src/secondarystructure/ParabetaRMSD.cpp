@@ -103,6 +103,7 @@ void ParabetaRMSD::registerKeywords( Keywords& keys ) {
            "chain configuration with the appropriate geometry are counted.  If STYLE=inter "
            "only sheet-like configurations involving two chains are counted, while if STYLE=intra "
            "only sheet-like configurations involving a single chain are counted");
+  keys.needsAction("LOWEST");
 }
 
 ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):

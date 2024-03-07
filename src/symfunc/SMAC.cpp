@@ -59,6 +59,9 @@ void SMAC::registerKeywords(Keywords& keys) {
   keys.add("optional","SWITCH_COORD","This keyword is used to define the coordination switching function.");
   keys.reset_style("KERNEL","optional");
   multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
+  keys.needsAction("VSTACK"); keys.needsAction("TRANSPOSE"); keys.needsAction("CONTACT_MATRIX");
+  keys.needsAction("TORSIONS_MATRIX"); keys.needsAction("COMBINE"); keys.needsAction("CUSTOM");
+  keys.needsAction("ONES"); keys.needsAction("MATRIX_VECTOR_PRODUCT"); keys.needsAction("MORE_THAN");
 }
 
 SMAC::SMAC(const ActionOptions& ao):

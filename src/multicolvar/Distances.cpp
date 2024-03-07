@@ -61,6 +61,7 @@ void Distances::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("x","COMPONENTS","the x-components of the distance vectors");
   keys.addOutputComponent("y","COMPONENTS","the y-components of the distance vectors");
   keys.addOutputComponent("z","COMPONENTS","the z-components of the distance vectors");
+  keys.needsAction("GROUP"); keys.needsAction("DISTANCE_VECTOR"); keys.needsAction("CENTER");
 }
 
 Distances::Distances(const ActionOptions& ao):

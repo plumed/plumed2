@@ -111,6 +111,7 @@ void CoordinationNumbers::shortcutKeywords( Keywords& keys ) {
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
   keys.add("optional","SWITCH","the switching function that it used in the construction of the contact matrix");
   multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
+  keys.needsAction("CONTACT_MATRIX"); keys.needsAction("GROUP");
 }
 
 void CoordinationNumbers::expandMatrix( const bool& components, const std::string& lab, const std::string& sp_str,
@@ -142,6 +143,7 @@ void CoordinationNumbers::expandMatrix( const bool& components, const std::strin
 void CoordinationNumbers::registerKeywords( Keywords& keys ) {
   shortcutKeywords( keys );
   keys.add("compulsory","R_POWER","the power to which you want to raise the distance");
+  keys.needsAction("MATRIX_VECTOR_PRODUCT"); keys.needsAction("ONES");
 }
 
 CoordinationNumbers::CoordinationNumbers(const ActionOptions& ao):

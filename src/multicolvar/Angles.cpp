@@ -108,7 +108,7 @@ void Angles::registerKeywords( Keywords& keys ) {
            "involving one atom from GROUPA, one atom from GROUPB and one atom from "
            "GROUPC are calculated. The GROUPA atoms are assumed to be the central "
            "atoms");
-  MultiColvarShortcuts::shortcutKeywords( keys );
+  MultiColvarShortcuts::shortcutKeywords( keys ); keys.needsAction("ANGLE_VECTOR");
 }
 
 Angles::Angles(const ActionOptions&ao):
@@ -121,7 +121,7 @@ Angles::Angles(const ActionOptions&ao):
   std::vector<std::string> groupc; parseVector("GROUPC",groupc);
   if( group.size()>0 ) {
     if( groupa.size()>0 || groupb.size()>0 || groupc.size()>0 ) error("should only be GROUP keyword in input not GROUPA/GROUPB/GROUPC");
-    Tools::interpretRanges( group ); std::string ainput = getShortcutLabel() + ": ANGLE_VECTOR"; unsigned n=1;
+    Tools::interpretRanges( group ); std::string ainput = getShortcutLabel() + ": ANGLE"; unsigned n=1;
     // Not sure if this triple sum makes any sense
     for(unsigned i=2; i<group.size(); ++i ) {
       for(unsigned j=1; j<i; ++j ) {

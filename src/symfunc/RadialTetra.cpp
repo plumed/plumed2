@@ -52,6 +52,9 @@ void RadialTetra::registerKeywords( Keywords& keys ) {
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.add("compulsory","CUTOFF","-1","ignore distances that have a value larger than this cutoff");
   keys.remove("NN"); keys.remove("MM"); keys.remove("D_0"); keys.remove("R_0"); keys.remove("SWITCH");
+  keys.needsAction("DISTANCE_MATRIX"); keys.needsAction("NEIGHBORS");
+  keys.needsAction("CUSTOM"); keys.needsAction("ONES");
+  keys.needsAction("MATRIX_VECTOR_PRODUCT");
 }
 
 RadialTetra::RadialTetra( const ActionOptions& ao):
@@ -73,7 +76,7 @@ RadialTetra::RadialTetra( const ActionOptions& ao):
   // Get the neighbors matrix
   readInputLine( getShortcutLabel() + "_neigh: NEIGHBORS ARG=" + getShortcutLabel() + "_mat.w NLOWEST=4");
   // Now get distance matrix that just contains four nearest distances
-  readInputLine( getShortcutLabel() + "_near4: MATHEVAL ARG2=" + getShortcutLabel() + "_neigh ARG1=" + getShortcutLabel() + "_mat.w FUNC=x*y PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_near4: CUSTOM ARG2=" + getShortcutLabel() + "_neigh ARG1=" + getShortcutLabel() + "_mat.w FUNC=x*y PERIODIC=NO");
   //Now compute sum of four nearest distances
   ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_mat");
   plumed_assert( av && av->getNumberOfComponents()>0 && (av->copyOutput(0))->getRank()==2 );

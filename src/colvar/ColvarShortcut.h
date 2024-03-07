@@ -41,6 +41,7 @@ void ColvarShortcut<T>::registerKeywords(Keywords& keys ) {
   for(unsigned i=0; i<nkeys; ++i) {
     if( keys.style( keys.get(i), "atoms" ) ) keys.reset_style( keys.get(i), "numbered" );
   }
+  keys.addActionNameSuffix("_SCALAR"); keys.addActionNameSuffix("_VECTOR");
 }
 
 template <class T>

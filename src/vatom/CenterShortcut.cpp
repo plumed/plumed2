@@ -44,7 +44,9 @@ void CenterShortcut::registerKeywords( Keywords& keys ) {
   keys.addFlag("PHASES",false,"use trigonometric phases when computing position of center");
   keys.addFlag("SAFE_PHASES",false,"use trignomentric phases when computing position of center but also compute the center in ths usual way and use this when the pbc are not set. "
                "There are two reasons for using this option (1) you are doing something that you know is really weird or (2) you are an idiot");
-  keys.addFlag("MASS",false,"calculate the center of mass");
+  keys.addFlag("MASS",false,"calculate the center of mass"); keys.addActionNameSuffix("_FAST");
+  keys.needsAction("MASS"); keys.needsAction("SUM"); keys.needsAction("CHARGE"); keys.needsAction("CONSTANT");
+  keys.needsAction("CUSTOM"); keys.needsAction("POSITION"); keys.needsAction("ARGS2VATOM");
 }
 
 CenterShortcut::CenterShortcut(const ActionOptions& ao):
@@ -83,11 +85,11 @@ CenterShortcut::CenterShortcut(const ActionOptions& ao):
       else wlab=str_weights[0];
     } else if( str_weights.size()==nat ) {
       std::string vals=str_weights[0]; for(unsigned i=1; i<str_weights.size(); ++i) vals += "," + str_weights[i];
-      readInputLine( getShortcutLabel() + "_w: CONSTANT_VALUE VALUES=" + vals );
+      readInputLine( getShortcutLabel() + "_w: CONSTANT VALUES=" + vals );
     } else error("invalid input for WEIGHTS keyword " + str_weights[0] );
   } else {
     std::string ones="1"; for(unsigned i=1; i<nat; ++i) ones += ",1";
-    readInputLine( getShortcutLabel() + "_w: CONSTANT_VALUE VALUES=" + ones );
+    readInputLine( getShortcutLabel() + "_w: CONSTANT VALUES=" + ones );
   }
   // Read in the instructions on how to compute the center of mass
   bool safe_phases, phases, nopbc; parseFlag("SAFE_PHASES",safe_phases); parseFlag("NOPBC",nopbc);

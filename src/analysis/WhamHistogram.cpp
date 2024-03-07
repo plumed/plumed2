@@ -92,6 +92,8 @@ void WhamHistogram::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","GRID_MAX","the maximum to use for the grid");
   keys.add("compulsory","GRID_BIN","the number of bins to use for the grid");
   keys.add("optional","BANDWIDTH","the bandwidth for kernel density estimation");
+  keys.needsAction("GATHER_REPLICAS"); keys.needsAction("CONCATENATE");
+  keys.needsAction("COLLECT"); keys.needsAction("WHAM"); keys.needsAction("KDE");
 }
 
 

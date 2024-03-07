@@ -61,6 +61,9 @@ void HexacticParameter::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("_vmean","VMEAN","the norm of the mean vector");
   keys.addFlag("VSUM",false,"calculate the norm of the sum of all the vectors");
   keys.addOutputComponent("_vsum","VSUM","the norm of the mean vector");
+  keys.needsAction("CYLINDRICAL_HARMONIC_MATRIX"); keys.needsAction("ONES");
+  keys.needsAction("MATRIX_VECTOR_PRODUCT"); keys.needsAction("CUSTOM");
+  keys.needsAction("MEAN"); keys.needsAction("SUM"); keys.needsAction("COMBINE");
 }
 
 HexacticParameter::HexacticParameter( const ActionOptions& ao):

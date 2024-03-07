@@ -49,6 +49,8 @@ void AngularTetra::registerKeywords( Keywords& keys ) {
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.add("compulsory","CUTOFF","-1","ignore distances that have a value larger than this cutoff");
   keys.remove("NN"); keys.remove("MM"); keys.remove("D_0"); keys.remove("R_0"); keys.remove("SWITCH");
+  keys.needsAction("DISTANCE_MATRIX"); keys.needsAction("NEIGHBORS");
+  keys.needsAction("GSYMFUNC_THREEBODY"); keys.needsAction("CUSTOM");
 }
 
 AngularTetra::AngularTetra( const ActionOptions& ao):
@@ -73,7 +75,7 @@ AngularTetra::AngularTetra( const ActionOptions& ao):
   readInputLine( getShortcutLabel() + "_g8: GSYMFUNC_THREEBODY WEIGHT=" + getShortcutLabel() + "_neigh " +
                  "ARG=" + getShortcutLabel() + "_mat.x," + getShortcutLabel() + "_mat.y," + getShortcutLabel() + "_mat.z FUNCTION1={FUNC=(cos(ajik)+1/3)^2 LABEL=g8}");
   // Now evaluate the actual per atom CV
-  readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_g8.g8 FUNC=(1-(3*x/8)) PERIODIC=NO");
+  readInputLine( getShortcutLabel() + ": CUSTOM ARG1=" + getShortcutLabel() + "_g8.g8 FUNC=(1-(3*x/8)) PERIODIC=NO");
   // And get the things to do with the quantities we have computed
   std::map<std::string,std::string> keymap; multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );
   multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel(), "", keymap, this );

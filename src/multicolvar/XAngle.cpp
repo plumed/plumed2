@@ -68,6 +68,7 @@ void XAngle::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
   keys.add("numbered","ATOMS","the pairs of atoms that you would like to calculate the angles for");
   keys.reset_style("ATOMS","atoms"); MultiColvarShortcuts::shortcutKeywords( keys );
+  keys.needsAction("DISTANCE_VECTOR"); keys.needsAction("COMBINE"); keys.needsAction("CUSTOM");
 }
 
 XAngle::XAngle(const ActionOptions& ao):
@@ -92,9 +93,9 @@ XAngle::XAngle(const ActionOptions& ao):
   readInputLine( getShortcutLabel() + "_norm_y: CUSTOM ARG1=" + getShortcutLabel() + ".y ARG2=" + getShortcutLabel() + "_norm FUNC=x/y PERIODIC=NO");
   readInputLine( getShortcutLabel() + "_norm_z: CUSTOM ARG1=" + getShortcutLabel() + ".z ARG2=" + getShortcutLabel() + "_norm FUNC=x/y PERIODIC=NO");
   // Now compute the angles with matheval
-  if( getName()=="XANGLES" ) readInputLine( getShortcutLabel() + "_ang: MATHEVAL FUNC=acos(x) PERIODIC=NO ARG1=" + getShortcutLabel() + "_norm_x");
-  if( getName()=="YANGLES" ) readInputLine( getShortcutLabel() + "_ang: MATHEVAL FUNC=acos(x) PERIODIC=NO ARG1=" + getShortcutLabel() + "_norm_y");
-  if( getName()=="ZANGLES" ) readInputLine( getShortcutLabel() + "_ang: MATHEVAL FUNC=acos(x) PERIODIC=NO ARG1=" + getShortcutLabel() + "_norm_z");
+  if( getName()=="XANGLES" ) readInputLine( getShortcutLabel() + "_ang: CUSTOM FUNC=acos(x) PERIODIC=NO ARG1=" + getShortcutLabel() + "_norm_x");
+  if( getName()=="YANGLES" ) readInputLine( getShortcutLabel() + "_ang: CUSTOM FUNC=acos(x) PERIODIC=NO ARG1=" + getShortcutLabel() + "_norm_y");
+  if( getName()=="ZANGLES" ) readInputLine( getShortcutLabel() + "_ang: CUSTOM FUNC=acos(x) PERIODIC=NO ARG1=" + getShortcutLabel() + "_norm_z");
   // Add shortcuts to label
   MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel() + "_ang", "", this );
 }

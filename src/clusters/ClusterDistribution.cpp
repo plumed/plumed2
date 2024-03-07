@@ -166,6 +166,7 @@ PLUMED_REGISTER_ACTION(ClusterDistributionShortcut,"CLUSTER_DISTRIBUTION")
 void ClusterDistributionShortcut::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
   multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
+  keys.addActionNameSuffix("_CALC");
 }
 
 ClusterDistributionShortcut::ClusterDistributionShortcut(const ActionOptions&ao):
