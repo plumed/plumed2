@@ -179,7 +179,7 @@ public:
   static double fastpow(double base,int exp);
 /// Fast int power for power known at compile time
   template <int exp, typename T=double>
-static inline /*consteval*/ T fastpow(T base);
+  static inline /*consteval*/ T fastpow(T base);
 /// Modified 0th-order Bessel function of the first kind
   static double bessel0(const double& val);
 /// Check if a string full starts with string start.

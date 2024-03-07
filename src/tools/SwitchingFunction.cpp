@@ -267,7 +267,7 @@ public:
     dfunc = -POW*rNdist*result*result;
     return result;
   }
-  
+
   inline double function(double rdist,double&dfunc) const override {
     //preRes and preDfunc are passed already set
     dfunc=0.0;
@@ -280,7 +280,6 @@ public:
     dfunc=0.0;
     if(distance2 <= dmax_2) {
       const double rdist = distance2*invr0_2;
-      // dfunc=0.0;
       result = doRational<N/2>(rdist,dfunc);
       dfunc*=2*invr0_2;
       // stretch:
@@ -303,7 +302,7 @@ protected:
   const double preDfunc;
   static constexpr double moreThanOne=1.0+100.0*std::numeric_limits<double>::epsilon();
   static constexpr double lessThanOne=1.0-100.0*std::numeric_limits<double>::epsilon();
-  //bool fastrational=false;
+
   std::string specificDescription() const override {
     std::ostringstream ostr;
     ostr << " nn=" << nn << " mm=" <<mm;
@@ -322,6 +321,7 @@ public:
 
   static inline double doRational(const double rdist, double&dfunc, const int N,
                                   const int M,double result=0.0) {
+    //the result and dfunc are assigned in the drivers for doRational
     //if(rdist>(1.0-100.0*epsilon) && rdist<(1.0+100.0*epsilon)) {
     //result=preRes;
     //dfunc=preDfunc;
@@ -374,7 +374,7 @@ std::unique_ptr<baseSwitch>
 rationalFactory(double D0,double DMAX, double R0, int N, int M) {
   bool fast = N%2==0 && M%2==0 && D0==0.0;
   //if (M==0) M will automatically became 2*NN
-  
+
   //precompiled rational
   if(2*N==M || M == 0 && fast) {
     if(N==6) {
@@ -511,8 +511,7 @@ public:
 protected:
   inline double function(const double rdist,double&dfunc) const override {
     const double tmp1 = std::tanh(rdist);
-    //const double result = 1.0 - tmp1;
-    //dfunc=-(1-tmp1*tmp1);
+    //was dfunc=-(1-tmp1*tmp1);
     dfunc = tmp1 * tmp1 - 1.0;
     //return result;
     return 1.0 - tmp1;
@@ -662,7 +661,6 @@ public:
         res = 1.0;
         const double rdist = (distance-d0)*invr0;
         if(rdist > 0.0) {
-          const double rdist = (distance-d0)*invr0;
           const unsigned t=OpenMP::getThreadNum();
           plumed_assert(t<expression.size());
           if(lepton_ref[t]) {
@@ -764,7 +762,6 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
       CHECKandPARSE(data,"NN",nn,errormsg);
       CHECKandPARSE(data,"MM",mm,errormsg);
       function = switchContainers::rationalFactory(d0,dmax,r0,nn,mm);
-      //function = PLMD::Tools::make_unique<switchContainers::rationalSwitch>(d0,dmax,r0,nn,mm);
     } else if(name=="SMAP") {
       int a=0;
       int b=0;
@@ -788,23 +785,6 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     } else if(name=="EXP") {
       function = PLMD::Tools::make_unique<switchContainers::exponentialSwitch>(d0,dmax,r0);
     } else if(name=="GAUSSIAN") {
-      //TODO:: add fastgaussian
-      /*
-      fastgaussian=( r0==1.0 && d0==0.0 );
-      //in calculate is
-      } else if( fastgaussian ) {
-      if(distance2>dmax_2) {
-      dfunc=0.0;
-      return 0.0;
-      }
-      double result = exp(-0.5*distance2);
-      dfunc = -result;
-      // stretch:
-      result=result*stretch+shift;
-      dfunc*=stretch;
-      return result;
-      }
-      */
       if ( r0==1.0 && d0==0.0 ) {
         function = PLMD::Tools::make_unique<switchContainers::fastGaussianSwitch>(d0,dmax,r0);
       } else {
@@ -858,7 +838,6 @@ void SwitchingFunction::set(const int nn,int mm, const double r0, const double d
   }
   double dmax=d0+r0*std::pow(0.00001,1./(nn-mm));
   function = switchContainers::rationalFactory(d0,dmax,r0,nn,mm);
-  //function = PLMD::Tools::make_unique<switchContainers::rationalSwitch>(d0,dmax,r0,nn,mm);
   function->setupStretch();
 }
 
