@@ -248,14 +248,13 @@ public:
 
 
 
-
   /// Merge sorted vectors.
   /// Takes a vector of pointers to containers and merge them.
   /// Containers should be already sorted.
   /// The content is appended to the result vector.
   /// Optionally, uses a priority_queue implementation.
   template<class C>
-  static void mergeSortedVectors(const std::vector<C*> & vecs, std::vector<typename C::value_type> & result,bool priority_queue=false) {
+  static void mergeSortedVectors(const C* const* vecs, std::size_t size, std::vector<typename C::value_type> & result) {
 
     /// local class storing the range of remaining objects to be pushed
     struct Entry
@@ -270,70 +269,68 @@ public:
       bool operator< (Entry const& rhs) const { return *fwdIt > *rhs.fwdIt; }
     };
 
-    if(priority_queue) {
-      std::priority_queue<Entry> queue;
-      // note: queue does not have reserve() method
+    // heap containing the ranges to be pushed
+    // avoid allocations when it's small
+    gch::small_vector<Entry,32> heap;
 
-      // add vectors to the queue
-      {
-        std::size_t maxsize=0;
-        for(unsigned i=0; i<vecs.size(); i++) {
-          if(vecs[i]->size()>maxsize) maxsize=vecs[i]->size();
-          if(!vecs[i]->empty())queue.push(Entry(*vecs[i]));
+    // first process the vectors
+    {
+      std::size_t maxsize=0;
+      for(unsigned i=0; i<size; i++) {
+        auto size=vecs[i]->size();
+        // find the largest
+        if(size>maxsize) maxsize=size;
+        if(size>0) {
+          // add entry at the end of the array
+          heap.emplace_back(Entry(*vecs[i]));
+          // keep the array sorted
+          std::push_heap(std::begin(heap),std::end(heap));
         }
-        // this is just to save multiple reallocations on push_back
-        result.reserve(maxsize);
       }
-
-      // first iteration (to avoid a if in the main loop)
-      if(queue.empty()) return;
-      auto tmp=queue.top();
-      queue.pop();
-      result.push_back(*tmp.fwdIt);
-      tmp.fwdIt++;
-      if(tmp) queue.push(tmp);
-
-      // main loop
-      while(!queue.empty()) {
-        auto tmp=queue.top();
-        queue.pop();
-        if(result.back() < *tmp.fwdIt) result.push_back(*tmp.fwdIt);
-        tmp.fwdIt++;
-        if(tmp) queue.push(tmp);
-      }
-    } else {
-
-      std::vector<Entry> entries;
-      entries.reserve(vecs.size());
-
-      {
-        std::size_t maxsize=0;
-        for(int i=0; i<vecs.size(); i++) {
-          if(vecs[i]->size()>maxsize) maxsize=vecs[i]->size();
-          if(!vecs[i]->empty())entries.push_back(Entry(*vecs[i]));
-        }
-        // this is just to save multiple reallocations on push_back
-        result.reserve(maxsize);
-      }
-
-      while(!entries.empty()) {
-        // find smallest pending element
-        // we use max_element instead of min_element because we are defining < as > (see above)
-        const auto minval=*std::max_element(entries.begin(),entries.end())->fwdIt;
-
-        // push it
-        result.push_back(minval);
-
-        // fast forward vectors with elements equal to minval (to avoid duplicates)
-        for(auto & e : entries) while(e && *e.fwdIt==minval) ++e.fwdIt;
-
-        // remove from the entries vector all exhausted vectors
-        auto erase=std::remove_if(entries.begin(),entries.end(),[](const Entry & e) {return !e;});
-        entries.erase(erase,entries.end());
-      }
+      // this is just to decrease the number of reallocations on push_back
+      result.reserve(maxsize);
     }
 
+    // if vectors are empty we are done
+    if(heap.empty()) return;
+
+    // first iteration, to avoid an extra "if" in main iteration
+    // explanations are below
+    {
+      std::pop_heap(std::begin(heap), std::end(heap));
+      auto & tmp=heap.back();
+      const auto val=*tmp.fwdIt;
+      // here, we append inconditionally
+      result.push_back(val);
+      tmp.fwdIt++;
+      if(!tmp) heap.pop_back();
+      else std::push_heap(std::begin(heap), std::end(heap));
+    }
+
+    while(!heap.empty()) {
+      // move entry with the smallest element to the back of the array
+      std::pop_heap(std::begin(heap), std::end(heap));
+      // entry
+      auto & tmp=heap.back();
+      // element
+      const auto val=*tmp.fwdIt;
+      // if the element is larger than the current largest element,
+      // push it to result
+      if(val > result.back()) result.push_back(val);
+      // move forward the used entry
+      tmp.fwdIt++;
+      // if this entry is exhausted, remove it from the array
+      if(!tmp) heap.pop_back();
+      // otherwise, sort again the array
+      else std::push_heap(std::begin(heap), std::end(heap));
+    }
   }
+
+  template<class C>
+  static void mergeSortedVectors(const std::vector<C*> vecs, std::vector<typename C::value_type> & result) {
+    mergeSortedVectors(vecs.data(),vecs.size(),result);
+  }
+
   static std::unique_ptr<std::lock_guard<std::mutex>> molfile_lock();
   /// Build a concatenated exception message.
   /// Should be called with an in-flight exception.

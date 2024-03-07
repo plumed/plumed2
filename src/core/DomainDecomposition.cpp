@@ -26,6 +26,8 @@
 #include "PlumedMain.h"
 #include "ActionSet.h"
 
+#include "small_vector/small_vector.h"
+
 //+PLUMEDOC ANALYSIS DOMAIN_DECOMPOSITION
 /*
 Pass domain decomposed properties of atoms to PLUMED
@@ -47,16 +49,6 @@ Option interpretEnvString(const char* env,const char* str) {
   if(!std::strcmp(str,"no"))return Option::no;
   if(!std::strcmp(str,"auto"))return Option::automatic;
   plumed_error()<<"Cannot understand env var "<<env<<"\nPossible values: yes/no/auto\nActual value: "<<str;
-}
-
-/// Use a priority_queue to merge unique vectors.
-/// Merging is done with a naive minimum search or with a priority queue.
-/// The latter is usually convenient when merging many vectors.
-/// export PLUMED_MERGE_VECTORS_PRIORITY_QUEUE=yes to use a priority_queue.
-Option getenvMergeVectorsPriorityQueue() {
-  static const char* name="PLUMED_MERGE_VECTORS_PRIORITY_QUEUE";
-  static const auto opt = interpretEnvString(name,std::getenv(name));
-  return opt;
 }
 
 /// Use unique list of atoms to manipulate forces and positions.
@@ -277,7 +269,7 @@ void DomainDecomposition::share() {
       if( actions[i]->unique_local_needs_update ) actions[i]->updateUniqueLocal( !(dd && shuffledAtoms>0), g2l );
     }
     // Now reset unique for the new step
-    std::vector<const std::vector<AtomNumber>*> vectors;
+    gch::small_vector<const std::vector<AtomNumber>*,32> vectors;
     vectors.reserve(actions.size());
     for(unsigned i=0; i<actions.size(); i++) {
       if(actions[i]->isActive()) {
@@ -289,20 +281,7 @@ void DomainDecomposition::share() {
     }
     if(!vectors.empty()) atomsNeeded=true;
     unique.clear();
-    bool pq=false;
-    switch(getenvMergeVectorsPriorityQueue())
-    {
-    case Option::yes:
-      pq=true;
-      break;
-    case Option::no:
-      pq=false;
-      break;
-    case Option::automatic:
-      pq=vectors.size()>16;
-      break;
-    }
-    Tools::mergeSortedVectors(vectors,unique,pq);
+    Tools::mergeSortedVectors(vectors.data(),vectors.size(),unique);
   } else {
     for(unsigned i=0; i<actions.size(); i++) {
       if(actions[i]->isActive()) {
@@ -463,7 +442,8 @@ const std::vector<int>& DomainDecomposition::getGatindex() const {
 }
 
 void DomainDecomposition::getAllActiveAtoms( std::vector<AtomNumber>& u ) {
-  std::vector<const std::vector<AtomNumber>*> vectors;
+  gch::small_vector<const std::vector<AtomNumber>*,32> vectors;
+  vectors.reserve(actions.size());
   for(unsigned i=0; i<actions.size(); i++) {
     if(actions[i]->isActive()) {
       if(!actions[i]->getUnique().empty()) {
@@ -473,20 +453,7 @@ void DomainDecomposition::getAllActiveAtoms( std::vector<AtomNumber>& u ) {
     }
   }
   u.clear();
-  bool pq=false;
-  switch(getenvMergeVectorsPriorityQueue())
-  {
-  case Option::yes:
-    pq=true;
-    break;
-  case Option::no:
-    pq=false;
-    break;
-  case Option::automatic:
-    pq=vectors.size()>16;
-    break;
-  }
-  Tools::mergeSortedVectors(vectors,u,pq);
+  Tools::mergeSortedVectors(vectors.data(),vectors.size(),u);
 }
 
 void DomainDecomposition::createFullList(const TypesafePtr & n) {
