@@ -1,0 +1,18 @@
+# Water oxygens: atoms 1-N with stride 4 (TIP4P geometry)
+ow: GROUP ATOMS=1-16500:4
+
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+
+# Calculates cooordination numbers
+cc: COORDINATIONNUMBER SPECIES=ow SWITCH={GAUSSIAN D_0=0.32 R_0=0.01 D_MAX=0.34} 
+
+# Probe volume
+sphere: INSPHERE ATOMS=cc CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+prod: CUSTOM ARG=cc,sphere FUNC=x*y PERIODIC=NO
+sphere_sum: SUM ARG=prod PERIODIC=NO
+
+# Bias the mean value of the OP in the sphere
+BIASVALUE ARG=sphere_sum
+
+print: PRINT ARG=sphere_sum FILE=colvar FMT=%8.4f

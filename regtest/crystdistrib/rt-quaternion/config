@@ -1,0 +1,3 @@
+type=driver
+plumed_modules=crystdistrib
+arg="--plumed plumed.dat --ixyz small.xyz --timestep=0.001 --trajectory-stride=25"

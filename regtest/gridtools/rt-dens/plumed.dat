@@ -1,0 +1,19 @@
+UNITS NATURAL
+
+# Print the average (whole trajectory) density with a stride of two
+dens2: MULTICOLVARDENS ATOMS=2 ORIGIN=1 DIR=x GRID_BIN=50 BANDWIDTH=0.1 
+DUMPGRID ARG=dens2 STRIDE=2 FILE=dens2 FMT=%8.4f
+# Print the average density (whole trajectory - 0th frame)
+DUMPGRID ARG=dens2 FILE=dens4 FMT=%8.4f
+
+# Print block averages (over two frames) of the density
+dens2b: MULTICOLVARDENS ATOMS=2 ORIGIN=1 DIR=x GRID_BIN=50 CLEAR=2 BANDWIDTH=0.1
+DUMPGRID ARG=dens2b_numer STRIDE=2 FILE=dens2ba FMT=%8.4f
+DUMPGRID ARG=dens2b STRIDE=2 FILE=dens2b FMT=%8.4f
+ 
+# Interpolate onto a finer grid and test
+fine: MULTICOLVARDENS ATOMS=2 ORIGIN=1 DIR=x GRID_BIN=100 STRIDE=4 BANDWIDTH=0.1
+interpol: INTERPOLATE_GRID ARG=dens2 GRID_BIN=100 
+
+DUMPGRID ARG=fine FILE=fine_grid FMT=%8.4f 
+DUMPGRID ARG=interpol FILE=interpol FMT=%8.4f 

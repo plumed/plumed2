@@ -32,6 +32,7 @@
 
 namespace PLMD {
 
+class OFile;
 class ActionWithValue;
 class ActionAtomistic;
 
@@ -46,6 +47,7 @@ class ActionAtomistic;
 /// you are implementing please feel free to use it.
 class Value {
   friend class ActionWithValue;
+  friend class ActionWithVector;
   friend class ActionAtomistic;
   friend class ActionWithArguments;
   friend class ActionWithVirtualAtom;
@@ -75,6 +77,8 @@ private:
   bool hasForce;
 /// This flag is used if the value is a constant
   bool constant;
+/// This value should only be calculated on update
+  bool calcOnUpdate;
 /// The derivatives of the quantity stored in value
   std::map<AtomNumber,Vector> gradients;
 /// The name of this quantiy
@@ -85,6 +89,12 @@ private:
   std::vector<unsigned> shape;
 /// Does this quanity have derivatives
   bool hasDeriv;
+/// Variables for storing data
+  unsigned bufstart, streampos, matpos, ngrid_der, ncols, book_start;
+/// If we are storing a matrix is it symmetric?
+  bool symmetric;
+/// This is a bookeeping array that holds the non-zero elements of the "sparse" matrix
+  std::vector<unsigned> matrix_bookeeping;
 /// Is this quantity periodic
   enum {unset,periodic,notperiodic} periodicity;
 /// Various quantities that describe the domain of this value
@@ -92,6 +102,8 @@ private:
   double min,max;
   double max_minus_min;
   double inv_max_minus_min;
+/// Is the derivative of this quantity zero when the value is zero
+  bool derivativeIsZeroWhenValueIsZero;
 /// Complete the setup of the periodicity
   void setupPeriodicity();
 // bring value within PBCs
@@ -111,8 +123,10 @@ public:
   void set(const std::size_t& n, const double& v );
 /// Add something to the value of the function
   void add(double);
+/// Add something to the ith element of the data array
+  void add(const std::size_t& n, const double& v );
 /// Get the value of the function
-  double get( const std::size_t& ival=0 ) const;
+  double get( const std::size_t& ival=0, const bool trueind=true ) const;
 /// Find out if the value has been set
   bool valueHasBeenSet() const;
 /// Check if the value is periodic
@@ -134,7 +148,7 @@ public:
 /// Set the number of derivatives
   void resizeDerivatives(int n);
 /// Set all the derivatives to zero
-  void clearDerivatives();
+  void clearDerivatives( const bool force=false );
 /// Add some derivative to the ith component of the derivatives array
   void addDerivative(unsigned i,double d);
 /// Set the value of the ith component of the derivatives array
@@ -150,7 +164,7 @@ public:
 /// Add some force on this value
   void addForce(double f);
 /// Add some force on the ival th component of this value
-  void addForce( const std::size_t& ival, double f );
+  void addForce( const std::size_t& ival, double f, const bool trueind=true );
 /// Get the value of the force on this colvar
   double getForce( const std::size_t& ival=0 ) const ;
 /// Apply the forces to the derivatives using the chain rule (if there are no forces this routine returns false)
@@ -175,7 +189,11 @@ public:
 /// Get the shape of the object that is contained in this value
   const std::vector<unsigned>& getShape() const ;
 /// This turns on storing of vectors/matrices
-  void buildDataStore();
+  void buildDataStore( const bool forprint=false );
+/// Reshape the storage for sparse matrices
+  void reshapeMatrixStore( const unsigned& n );
+/// Set the symmetric flag equal true for this matrix
+  void setSymmetric( const bool& sym );
 /// Get the total number of scalars that are stored here
   unsigned getNumberOfValues() const ;
 /// Get the number of threads to use when assigning this value
@@ -188,6 +206,48 @@ public:
   void setConstant();
 /// Check if forces have been added on this value
   bool forcesWereAdded() const ;
+/// Set a bool that tells us if the derivative is zero when the value is zero true
+  void setDerivativeIsZeroWhenValueIsZero();
+/// Return a bool that tells us if the derivative is zero when the value is zero
+  bool isDerivativeZeroWhenValueIsZero() const ;
+///
+  unsigned getPositionInStream() const ;
+/// This stuff handles where to look for the start of the row that contains the row of the matrix
+  void setPositionInMatrixStash( const unsigned& p );
+  unsigned getPositionInMatrixStash() const ;
+/// This stuff handles where to keep the bookeeping stuff for storing the sparse matrix
+  void setMatrixBookeepingStart( const unsigned& b );
+  unsigned getMatrixBookeepingStart() const ;
+/// Convert the input index to its corresponding indices
+  void convertIndexToindices(const std::size_t& index, std::vector<unsigned>& indices ) const ;
+/// Print out all the values in this Value
+  void print( OFile& ofile ) const ;
+/// Are we to ignore the stored value
+  bool ignoreStoredValue(const std::string& n) const ;
+/// Set a matrix element to be non zero
+  void setMatrixBookeepingElement( const unsigned& i, const unsigned& n );
+///
+  unsigned getRowLength( const unsigned& irow ) const ;
+///
+  unsigned getRowIndex( const unsigned& irow, const unsigned& jind ) const ;
+/// Are we storing this value
+  bool valueIsStored() const ;
+///
+  unsigned getNumberOfColumns() const ;
+///
+  bool isSymmetric() const ;
+/// Retrieve the non-zero edges in a matrix
+  void retrieveEdgeList( unsigned& nedge, std::vector<std::pair<unsigned,unsigned> >& active, std::vector<double>& elems );
+/// Get the number of derivatives that the grid has
+  unsigned getNumberOfGridDerivatives() const ;
+/// get the derivative of a grid at a point n with resepct to argument j
+  double getGridDerivative(const unsigned& n, const unsigned& j ) const ;
+/// Add the derivatives of the grid to the corner
+  void addGridDerivatives( const unsigned& n, const unsigned& j, const double& val );
+/// Set the action to calculate on update
+  void setCalculateOnUpdate();
+/// Add another value to the end of the data vector held by this value.  This is used in COLLECT
+  void push_back( const double& val );
 };
 
 void copy( const Value& val1, Value& val2 );
@@ -245,8 +305,8 @@ void Value::add(double v) {
 }
 
 inline
-double Value::get( const std::size_t& ival )const {
-  return data[ival];
+void Value::add(const std::size_t& n, const double& v ) {
+  value_set=true; data[n]+=v; applyPeriodicity(n);
 }
 
 inline
@@ -313,8 +373,9 @@ void Value::clearInputForce( const std::vector<AtomNumber>& index ) {
 }
 
 inline
-void Value::clearDerivatives() {
-  if( constant ) return;
+void Value::clearDerivatives( const bool force ) {
+  if( !force && (constant || calcOnUpdate) ) return;
+
   value_set=false;
   if( data.size()>1 ) std::fill(data.begin()+1, data.end(), 0);
 }
@@ -323,13 +384,6 @@ inline
 void Value::addForce(double f) {
   hasForce=true;
   inputForce[0]+=f;
-}
-
-inline
-void Value::addForce(const std::size_t& ival, double f) {
-  plumed_dbg_massert(ival<inputForce.size(),"too few components in value to add force");
-  hasForce=true;
-  inputForce[ival]+=f;
 }
 
 inline
@@ -393,7 +447,86 @@ bool Value::isConstant() const {
   return constant;
 }
 
+inline
+void Value::setDerivativeIsZeroWhenValueIsZero() {
+  derivativeIsZeroWhenValueIsZero=true;
 }
 
+inline
+bool Value::isDerivativeZeroWhenValueIsZero() const {
+  return derivativeIsZeroWhenValueIsZero;
+}
+
+inline
+unsigned Value::getPositionInStream() const {
+  return streampos;
+}
+
+inline
+unsigned Value::getPositionInMatrixStash() const {
+  return matpos;
+}
+
+inline
+void Value::setMatrixBookeepingStart( const unsigned& b ) {
+  book_start = b;
+}
+
+inline
+unsigned Value::getMatrixBookeepingStart() const {
+  return book_start;
+}
+
+inline
+void Value::setMatrixBookeepingElement( const unsigned& i, const unsigned& n ) {
+  plumed_dbg_assert( i<matrix_bookeeping.size() );
+  matrix_bookeeping[i]=n;
+}
+
+inline
+bool Value::valueIsStored() const {
+  return storedata;
+}
+
+inline
+unsigned Value::getRowLength( const unsigned& irow ) const {
+  plumed_dbg_assert( (1+ncols)*irow<matrix_bookeeping.size() );
+  return matrix_bookeeping[(1+ncols)*irow];
+}
+
+inline
+unsigned Value::getRowIndex( const unsigned& irow, const unsigned& jind ) const {
+  plumed_dbg_assert( (1+ncols)*irow+1+jind<matrix_bookeeping.size() && jind<matrix_bookeeping[(1+ncols)*irow] );
+  return matrix_bookeeping[(1+ncols)*irow+1+jind];
+}
+
+inline
+unsigned Value::getNumberOfColumns() const {
+  return ncols;
+}
+
+inline
+bool Value::isSymmetric() const {
+  return symmetric;
+}
+
+inline
+unsigned Value::getNumberOfGridDerivatives() const {
+  return ngrid_der;
+}
+
+inline
+double Value::getGridDerivative(const unsigned& n, const unsigned& j ) const {
+  plumed_dbg_assert( hasDeriv && n*(1+ngrid_der) + 1 + j < data.size() );
+  return data[n*(1+ngrid_der) + 1 + j];
+}
+
+inline
+void Value::addGridDerivatives( const unsigned& n, const unsigned& j, const double& val ) {
+  plumed_dbg_assert( hasDeriv && n*(1+ngrid_der) + 1 + j < data.size() );
+  data[n*(1+ngrid_der) + 1 + j] += val;
+}
+
+}
 #endif
 

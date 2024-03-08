@@ -22,12 +22,7 @@
 #include "ActionWithVessel.h"
 #include "tools/Communicator.h"
 #include "Vessel.h"
-#include "ShortcutVessel.h"
-#include "StoreDataVessel.h"
 #include "VesselRegister.h"
-#include "BridgeVessel.h"
-#include "FunctionVessel.h"
-#include "StoreDataVessel.h"
 #include "tools/OpenMP.h"
 #include "tools/Stopwatch.h"
 
@@ -58,8 +53,7 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   dertime_can_be_off(false),
   dertime(true),
   contributorsAreUnlocked(false),
-  weightHasDerivatives(false),
-  mydata(NULL)
+  weightHasDerivatives(false)
 {
   maxderivatives=309; parse("MAXDERIVATIVES",maxderivatives);
   if( keywords.exists("SERIAL") ) parseFlag("SERIAL",serial);
@@ -99,11 +93,6 @@ ActionWithVessel::~ActionWithVessel() {
 void ActionWithVessel::addVessel( const std::string& name, const std::string& input, const int numlab ) {
   VesselOptions da(name,"",numlab,input,this);
   auto vv=vesselRegister().create(name,da);
-  FunctionVessel* fv=dynamic_cast<FunctionVessel*>(vv.get());
-  if( fv ) {
-    std::string mylabel=Vessel::transformName( name );
-    plumed_massert( keywords.outputComponentExists(mylabel,false), "a description of the value calculated by vessel " + name + " has not been added to the manual");
-  }
   addVessel(std::move(vv));
 }
 
@@ -112,48 +101,11 @@ void ActionWithVessel::addVessel( std::unique_ptr<Vessel> vv_ptr ) {
 // In the original code, the dynamically casted pointer was deleted here.
 // Now that vv_ptr is a unique_ptr, the object will be deleted automatically when
 // exiting this routine.
-  if(dynamic_cast<ShortcutVessel*>(vv_ptr.get())) return;
 
   vv_ptr->checkRead();
 
-  StoreDataVessel* mm=dynamic_cast<StoreDataVessel*>( vv_ptr.get() );
-  if( mydata && mm ) error("cannot have more than one StoreDataVessel in one action");
-  else if( mm ) mydata=mm;
-  else dertime_can_be_off=false;
-
 // Ownership is transferred to functions
   functions.emplace_back(std::move(vv_ptr));
-}
-
-BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ) {
-  VesselOptions da("","",0,"",this);
-  auto bv=Tools::make_unique<BridgeVessel>(da);
-  bv->setOutputAction( tome );
-  tome->actionIsBridged=true; dertime_can_be_off=false;
-// store this pointer in order to return it later.
-// notice that I cannot access this with functions.tail().get()
-// since functions contains pointers to a different class (Vessel)
-  auto toBeReturned=bv.get();
-  functions.emplace_back( std::move(bv) );
-  resizeFunctions();
-  return toBeReturned;
-}
-
-StoreDataVessel* ActionWithVessel::buildDataStashes( ActionWithVessel* actionThatUses ) {
-  if(mydata) {
-    if( actionThatUses ) mydata->addActionThatUses( actionThatUses );
-    return mydata;
-  }
-
-  VesselOptions da("","",0,"",this);
-  auto mm=Tools::make_unique<StoreDataVessel>(da);
-  if( actionThatUses ) mm->addActionThatUses( actionThatUses );
-  addVessel(std::move(mm));
-
-  // Make sure resizing of vessels is done
-  resizeFunctions();
-
-  return mydata;
 }
 
 void ActionWithVessel::addTaskToList( const unsigned& taskCode ) {
@@ -226,12 +178,7 @@ void ActionWithVessel::lockContributors() {
     }
   }
   plumed_dbg_assert( n==nactive_tasks );
-  for(unsigned i=0; i<functions.size(); ++i) {
-    BridgeVessel* bb = dynamic_cast<BridgeVessel*>( functions[i].get() );
-    if( bb ) bb->copyTaskFlags();
-  }
   // Resize mydata to accommodate all active tasks
-  if( mydata ) mydata->resize();
   contributorsAreUnlocked=false;
 }
 
@@ -252,10 +199,6 @@ void ActionWithVessel::doJobsRequiredBeforeTaskList() {
 unsigned ActionWithVessel::getSizeOfBuffer( unsigned& bufsize ) {
   for(unsigned i=0; i<functions.size(); ++i) functions[i]->setBufferStart( bufsize );
   if( buffer.size()!=bufsize ) buffer.resize( bufsize );
-  if( mydata ) {
-    unsigned dsize=mydata->getSizeOfDerivativeList();
-    if( der_list.size()!=dsize ) der_list.resize( dsize );
-  }
   return bufsize;
 }
 
@@ -326,10 +269,6 @@ void ActionWithVessel::runAllTasks() {
   if(timers) stopwatch.start("3 MPI gather");
   // MPI Gather everything
   if( !serial && buffer.size()>0 ) comm.Sum( buffer );
-  // MPI Gather index stores
-  if( mydata && !lowmem && !noderiv ) {
-    comm.Sum( der_list ); mydata->setActiveValsAndDerivatives( der_list );
-  }
   // Update the elements that are makign contributions to the sum here
   // this causes problems if we do it in prepare
   if(timers) stopwatch.stop("3 MPI gather");

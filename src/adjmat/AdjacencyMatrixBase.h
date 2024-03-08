@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2023 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,82 +22,90 @@
 #ifndef __PLUMED_adjmat_AdjacencyMatrixBase_h
 #define __PLUMED_adjmat_AdjacencyMatrixBase_h
 
-#include "multicolvar/MultiColvarBase.h"
-#include "AdjacencyMatrixVessel.h"
+#include <vector>
+#include "ActionWithMatrix.h"
+#include "tools/LinkCells.h"
 
 namespace PLMD {
 namespace adjmat {
 
-class AdjacencyMatrixBase : public multicolvar::MultiColvarBase {
-  friend class AdjacencyMatrixVessel;
-  friend class ActionWithInputMatrix;
-  friend class MatrixColumnSums;
-  friend class MatrixRowSums;
+class AdjacencyMatrixBase : public ActionWithMatrix {
 private:
-/// Used for read in of multiple connection descriptors
-  unsigned connect_id;
-/// Do we need to separate out the tasks for the third atoms
-  bool no_third_dim_accum;
-/// This is the vessel that stores the adjacency matrix
-  AdjacencyMatrixVessel* mat;
-/// This is used within AdjacencyMatrixVessel to recalculate matrix elements
-/// which is useful when we are operating with lowmem
-  void recalculateMatrixElement( const unsigned& myelem, MultiValue& myvals );
-/// Finish the setup of the matrix
-  void finishMatrixSetup( const bool& symmetric, const std::vector<AtomNumber>& all_atoms );
+  bool nopbc, components, read_one_group;
+  bool neighbour_list_updated;
+  LinkCells linkcells, threecells;
+  std::vector<unsigned> ablocks, threeblocks;
+  double nl_cut, nl_cut2;
+  unsigned nl_stride;
+  unsigned natoms_per_list;
+  std::vector<unsigned> nlist;
+  void setupThirdAtomBlock( const std::vector<AtomNumber>& tc, std::vector<AtomNumber>& t );
 protected:
-/// Read in a matrix involving a maximum of two species
-  void readMaxTwoSpeciesMatrix( const std::string& key0, const std::string& key1, const std::string& key2, const bool& symmetric );
-/// Read in a matrix involving a maximum of three species
-  void readMaxThreeSpeciesMatrix( const std::string& key0, const std::string& key1, const std::string& key2, const std::string& keym, const bool& symmetric );
-/// Get the dimensions of the matrix of types
-  void retrieveTypeDimensions( unsigned& nrows, unsigned& ncols, unsigned& ntype ) const ;
-/// Retrieve the vessel that holds the adjacency matrix
-  AdjacencyMatrixVessel* getAdjacencyVessel();
-/// Put the indices of the matrix elements in current atoms
-  void setMatrixIndexesForTask( const unsigned& ii );
-/// Add derivatives to a matrix element
-  void addDerivativesOnMatrixElement( const unsigned& ielem, const unsigned& jrow, const double& df, Matrix<double>& der );
-/// Read in the information on the connectors
-  void parseConnectionDescriptions( const std::string& key, const bool& multiple, const unsigned& nrow_t );
-protected:
-/// Get the number of nodes of different types
-  unsigned getNumberOfNodeTypes() const ;
-/// Get the size of the vectors that were stored in the base colvars
-  unsigned getSizeOfInputVectors() const ;
-/// Return the group this atom is a part of
-  unsigned getBaseColvarNumber( const unsigned& ) const ;
+  Vector getPosition( const unsigned& indno, MultiValue& myvals ) const ;
+  void addAtomDerivatives( const unsigned& indno, const Vector& der, MultiValue& myvals ) const ;
+  void addThirdAtomDerivatives( const unsigned& indno, const Vector& der, MultiValue& myvals ) const ;
+  void setLinkCellCutoff( const bool& symmetric, const double& lcut, double tcut=-1.0 );
+  void addBoxDerivatives( const Tensor& vir, MultiValue& myvals ) const ;
 public:
   static void registerKeywords( Keywords& keys );
   explicit AdjacencyMatrixBase(const ActionOptions&);
-/// Create the connection object
-  virtual void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ) = 0;
-/// None of these things are allowed
-  bool isPeriodic() { return false; }
-  Vector getCentralAtom() { plumed_merror("cannot find central atoms for adjacency matrix actions"); }
-/// Get the atom number
-  AtomNumber getAbsoluteIndexOfCentralAtom( const unsigned& i ) const ;
+  bool canBeAfterInChain( ActionWithVector* av ) override;
+  unsigned getNumberOfDerivatives() override ;
+  unsigned getNumberOfColumns() const override;
+  void prepare() override;
+  void getAdditionalTasksRequired( ActionWithVector* action, std::vector<unsigned>& atasks ) override ;
+  void setupForTask( const unsigned& current, std::vector<unsigned> & indices, MultiValue& myvals ) const override;
+  // void setupCurrentTaskList() override;
+  void updateNeighbourList() override ;
+  unsigned retrieveNeighbours( const unsigned& current, std::vector<unsigned> & indices ) const ;
+  void performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const override ;
+  virtual double calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const = 0;
+  void runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const override ;
 };
 
 inline
-AdjacencyMatrixVessel* AdjacencyMatrixBase::getAdjacencyVessel() {
-  return mat;
+Vector AdjacencyMatrixBase::getPosition( const unsigned& indno, MultiValue& myvals ) const {
+  unsigned index = myvals.getIndices()[ indno + myvals.getSplitIndex() ];
+  return myvals.getAtomVector()[index];
 }
 
 inline
-unsigned AdjacencyMatrixBase::getBaseColvarNumber( const unsigned& inum ) const {
-  if( atom_lab[inum].first>0 ) return atom_lab[inum].first-1;
-  return 0;
+void AdjacencyMatrixBase::addAtomDerivatives( const unsigned& indno, const Vector& der, MultiValue& myvals ) const {
+  if( doNotCalculateDerivatives() ) return;
+  plumed_dbg_assert( indno<2 ); unsigned index = myvals.getTaskIndex();
+  if( indno==1 ) index = myvals.getSecondTaskIndex();
+  unsigned w_index = getConstPntrToComponent(0)->getPositionInStream();
+  myvals.addDerivative( w_index, 3*index+0, der[0] );
+  myvals.addDerivative( w_index, 3*index+1, der[1] );
+  myvals.addDerivative( w_index, 3*index+2, der[2] );
 }
 
 inline
-AtomNumber AdjacencyMatrixBase::getAbsoluteIndexOfCentralAtom( const unsigned& iatom ) const {
-  if( atom_lab[iatom].first>0 ) {
-    unsigned mmc=atom_lab[ iatom ].first - 1;
-    return mybasemulticolvars[mmc]->getAbsoluteIndexOfCentralAtom( atom_lab[iatom].second );
-  }
-  return ActionAtomistic::getAbsoluteIndex( atom_lab[iatom].second );
+void AdjacencyMatrixBase::addThirdAtomDerivatives( const unsigned& indno, const Vector& der, MultiValue& myvals ) const {
+  if( doNotCalculateDerivatives() ) return;
+  unsigned index = myvals.getIndices()[ indno + myvals.getSplitIndex() ];
+  unsigned w_index = getConstPntrToComponent(0)->getPositionInStream();
+  myvals.addDerivative( w_index, 3*index+0, der[0] );
+  myvals.addDerivative( w_index, 3*index+1, der[1] );
+  myvals.addDerivative( w_index, 3*index+2, der[2] );
 }
+
+inline
+void AdjacencyMatrixBase::addBoxDerivatives( const Tensor& vir, MultiValue& myvals ) const {
+  if( doNotCalculateDerivatives() ) return;
+  unsigned nbase = 3*getNumberOfAtoms();
+  unsigned w_index = getConstPntrToComponent(0)->getPositionInStream();
+  myvals.addDerivative( w_index, nbase+0, vir(0,0) );
+  myvals.addDerivative( w_index, nbase+1, vir(0,1) );
+  myvals.addDerivative( w_index, nbase+2, vir(0,2) );
+  myvals.addDerivative( w_index, nbase+3, vir(1,0) );
+  myvals.addDerivative( w_index, nbase+4, vir(1,1) );
+  myvals.addDerivative( w_index, nbase+5, vir(1,2) );
+  myvals.addDerivative( w_index, nbase+6, vir(2,0) );
+  myvals.addDerivative( w_index, nbase+7, vir(2,1) );
+  myvals.addDerivative( w_index, nbase+8, vir(2,2) );
+}
+
 
 }
 }

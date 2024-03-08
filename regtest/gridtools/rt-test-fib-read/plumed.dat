@@ -1,0 +1,3 @@
+ffg: REFERENCE_GRID FILE=kde.grid VALUE=h
+
+DUMPGRID ARG=ffg FILE=output.grid FMT=%8.4f

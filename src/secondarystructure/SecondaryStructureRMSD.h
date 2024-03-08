@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2023 The plumed team
+   Copyright (c) 2013-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,24 +22,19 @@
 #ifndef __PLUMED_secondarystructure_SecondaryStructureRMSD_h
 #define __PLUMED_secondarystructure_SecondaryStructureRMSD_h
 
-#include "core/ActionAtomistic.h"
-#include "core/ActionWithValue.h"
-#include "vesselbase/ActionWithVessel.h"
+#include "core/ActionWithVector.h"
+#include "tools/RMSD.h"
 #include <vector>
 
 namespace PLMD {
 
-class SingleDomainRMSD;
+class ActionShortcut;
 
 namespace secondarystructure {
 
 /// Base action for calculating things like AlphRMSD, AntibetaRMSD, etc
 
-class SecondaryStructureRMSD :
-  public ActionAtomistic,
-  public ActionWithValue,
-  public vesselbase::ActionWithVessel
-{
+class SecondaryStructureRMSD : public ActionWithVector {
 private:
 /// Are we operating without periodic boundary conditions
   bool nopbc;
@@ -47,52 +42,32 @@ private:
   std::string alignType;
 /// List of all the atoms we require
   std::vector<AtomNumber> all_atoms;
+/// The list of tasks that we need to do on the round
+  std::vector<unsigned> ss_tasks;
 /// The atoms involved in each of the secondary structure segments
   std::vector< std::vector<unsigned> > colvar_atoms;
 /// The list of reference configurations
-  std::vector<std::unique_ptr<SingleDomainRMSD>> references;
+  std::vector<RMSD> myrmsd;
+  std::vector<std::map<std::pair<unsigned,unsigned>, double> > drmsd_targets;
 /// Variables for strands cutoff
   bool align_strands;
   double s_cutoff2;
   unsigned align_atom_1, align_atom_2;
   bool verbose_output;
-/// Tempory variables for getting positions of atoms and applying forces
-  std::vector<double> forcesToApply;
 /// Get the index of an atom
   unsigned getAtomIndex( const unsigned& current, const unsigned& iatom ) const ;
-protected:
-/// Get the atoms in the backbone
-  void readBackboneAtoms( const std::string& backnames, std::vector<unsigned>& chain_lengths );
-/// Add a set of atoms to calculat ethe rmsd from
-  void addColvar( const std::vector<unsigned>& newatoms );
-/// Set a reference configuration
-  void setSecondaryStructure( std::vector<Vector>& structure, double bondlength, double units );
-/// Setup a pair of atoms to use for strands cutoff
-  void setAtomsFromStrands( const unsigned& atom1, const unsigned& atom2 );
 public:
   static void registerKeywords( Keywords& keys );
+  static void readBackboneAtoms( ActionShortcut* action, PlumedMain& plumed, const std::string& backnames, std::vector<unsigned>& chain_lengths, std::string& all_atoms );
+  static bool readShortcutWords( std::string& ltmap, ActionShortcut* action );
+  static void expandShortcut( const bool& uselessthan, const std::string& labout, const std::string& labin, const std::string& ltmap, ActionShortcut* action );
   explicit SecondaryStructureRMSD(const ActionOptions&);
-  virtual ~SecondaryStructureRMSD();
-  unsigned getNumberOfFunctionsInAction();
-  unsigned getNumberOfDerivatives() override;
-  unsigned getNumberOfQuantities() const override;
-  void turnOnDerivatives() override;
+  unsigned getNumberOfDerivatives() override ;
+  void areAllTasksRequired( std::vector<ActionWithVector*>& task_reducing_actions ) override;
+  int checkTaskStatus( const unsigned& taskno, int& flag ) const override;
   void calculate() override;
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override;
-  void apply() override;
-  bool isPeriodic() override { return false; }
+  void performTask( const unsigned&, MultiValue& ) const override;
 };
-
-inline
-unsigned SecondaryStructureRMSD::getNumberOfQuantities() const {
-  return 1 + references.size();
-}
-
-
-inline
-unsigned SecondaryStructureRMSD::getNumberOfFunctionsInAction() {
-  return colvar_atoms.size();
-}
 
 inline
 unsigned SecondaryStructureRMSD::getNumberOfDerivatives() {

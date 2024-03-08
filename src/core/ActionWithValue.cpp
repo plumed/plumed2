@@ -57,6 +57,7 @@ void ActionWithValue::useCustomisableComponents(Keywords& keys) {
 
 ActionWithValue::ActionWithValue(const ActionOptions&ao):
   Action(ao),
+  firststep(true),
   noderiv(true),
   numericalDerivatives(false)
 {
@@ -68,11 +69,11 @@ ActionWithValue::~ActionWithValue() {
 // empty destructor to delete unique_ptr
 }
 
-void ActionWithValue::clearInputForces() {
+void ActionWithValue::clearInputForces( const bool& force ) {
   for(unsigned i=0; i<values.size(); i++) values[i]->clearInputForce();
 }
 
-void ActionWithValue::clearDerivatives() {
+void ActionWithValue::clearDerivatives( const bool& force ) {
   unsigned nt = OpenMP::getNumThreads();
   #pragma omp parallel num_threads(nt)
   {
@@ -141,7 +142,7 @@ void ActionWithValue::addComponent( const std::string& name, const std::vector<u
     plumed_massert(values[i]->name!=thename&&name!="bias","Since PLUMED 2.3 the component 'bias' is automatically added to all biases by the general constructor!\n"
                    "Remove the line addComponent(\"bias\") from your bias.");
   }
-  values.emplace_back(Tools::make_unique<Value>(this,thename, false ) );
+  values.emplace_back(Tools::make_unique<Value>(this,thename, false, shape ) );
   std::string msg="  added component to this action:  "+thename+" \n";
   log.printf(msg.c_str());
 }
@@ -158,7 +159,7 @@ void ActionWithValue::addComponentWithDerivatives( const std::string& name, cons
     plumed_massert(values[i]->name!=thename&&name!="bias","Since PLUMED 2.3 the component 'bias' is automatically added to all biases by the general constructor!\n"
                    "Remove the line addComponentWithDerivatives(\"bias\") from your bias.");
   }
-  values.emplace_back(Tools::make_unique<Value>(this,thename, true ) );
+  values.emplace_back(Tools::make_unique<Value>(this,thename, true, shape ) );
   std::string msg="  added component to this action:  "+thename+" \n";
   log.printf(msg.c_str());
 }
@@ -229,9 +230,34 @@ Value* ActionWithValue::getPntrToComponent( const std::string& name ) {
   return values[kk].get();
 }
 
+const Value* ActionWithValue::getConstPntrToComponent(int n) const {
+  plumed_dbg_massert(n<values.size(),"you have requested a pointer that is out of bounds");
+  return values[n].get();
+}
+
 Value* ActionWithValue::getPntrToComponent( int n ) {
   plumed_dbg_massert(n<values.size(),"you have requested a pointer that is out of bounds");
   return values[n].get();
+}
+
+bool ActionWithValue::calculateOnUpdate() {
+  if( firststep ) {
+    ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>(this);
+    if(aa) {
+      const std::vector<Value*> & args(aa->getArguments());
+      for(const auto & p : args ) {
+        if( p->calcOnUpdate ) {
+          for(unsigned i=0; i<values.size(); ++i) values[i]->calcOnUpdate=true;
+          break;
+        }
+      }
+    }
+    firststep=false;
+  }
+  for(unsigned i=0; i<values.size(); ++i) {
+    if( values[i]->calcOnUpdate ) return true;
+  }
+  return false;
 }
 
 bool ActionWithValue::checkForForces() {

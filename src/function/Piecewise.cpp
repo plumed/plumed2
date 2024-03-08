@@ -20,7 +20,9 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
-#include "Function.h"
+#include "FunctionTemplateBase.h"
+#include "FunctionShortcut.h"
+#include "FunctionOfScalar.h"
 
 namespace PLMD {
 namespace function {
@@ -64,90 +66,76 @@ PRINT ARG=pw,ppww.dist1_pfunc,ppww.dist2_pfunc
 */
 //+ENDPLUMEDOC
 
+//+PLUMEDOC FUNCTION PIECEWISE_SCALAR
+/*
+Compute a piece wise straight line through its arguments that passes through a set of ordered control points.
 
-class Piecewise :
-  public Function
-{
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+class Piecewise : public FunctionTemplateBase {
   std::vector<std::pair<double,double> > points;
 public:
-  explicit Piecewise(const ActionOptions&);
-  void calculate() override;
-  static void registerKeywords(Keywords& keys);
+  void registerKeywords(Keywords& keys) override;
+  void read( ActionWithArguments* action ) override;
+  void setPeriodicityForOutputs( ActionWithValue* action ) override;
+  void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
 };
 
 
-PLUMED_REGISTER_ACTION(Piecewise,"PIECEWISE")
+typedef FunctionShortcut<Piecewise> PiecewiseShortcut;
+PLUMED_REGISTER_ACTION(PiecewiseShortcut,"PIECEWISE")
+typedef FunctionOfScalar<Piecewise> ScalarPiecewise;
+PLUMED_REGISTER_ACTION(ScalarPiecewise,"PIECEWISE_SCALAR")
 
 void Piecewise::registerKeywords(Keywords& keys) {
-  Function::registerKeywords(keys);
-  keys.use("ARG");
   keys.add("numbered","POINT","This keyword is used to specify the various points in the function above.");
   keys.reset_style("POINT","compulsory");
-  componentsAreNotOptional(keys);
   keys.addOutputComponent("_pfunc","default","one or multiple instances of this quantity can be referenced elsewhere "
                           "in the input file.  These quantities will be named with the arguments of the "
                           "function followed by the character string _pfunc.  These quantities tell the "
                           "user the values of the piece wise functions of each of the arguments.");
 }
 
-Piecewise::Piecewise(const ActionOptions&ao):
-  Action(ao),
-  Function(ao)
-{
+void Piecewise::read( ActionWithArguments* action ) {
   for(int i=0;; i++) {
     std::vector<double> pp;
-    if(!parseNumberedVector("POINT",i,pp) ) break;
-    if(pp.size()!=2) error("points should be in x,y format");
+    if(!action->parseNumberedVector("POINT",i,pp) ) break;
+    if(pp.size()!=2) action->error("points should be in x,y format");
     points.push_back(std::pair<double,double>(pp[0],pp[1]));
-    if(i>0 && points[i].first<=points[i-1].first) error("points abscissas should be monotonously increasing");
+    if(i>0 && points[i].first<=points[i-1].first) action->error("points abscissas should be monotonously increasing");
   }
 
-  for(unsigned i=0; i<getNumberOfArguments(); i++)
-    if(getPntrToArgument(i)->isPeriodic())
-      error("Cannot use PIECEWISE on periodic arguments");
-
-  if(getNumberOfArguments()==1) {
-    addValueWithDerivatives();
-    setNotPeriodic();
-  } else {
-    for(unsigned i=0; i<getNumberOfArguments(); i++) {
-      addComponentWithDerivatives( getPntrToArgument(i)->getName()+"_pfunc" );
-      getPntrToComponent(i)->setNotPeriodic();
-    }
+  for(unsigned i=0; i<action->getNumberOfArguments(); i++) {
+    if(action->getPntrToArgument(i)->isPeriodic()) action->error("Cannot use PIECEWISE on periodic arguments");
   }
-  checkRead();
-
-  log.printf("  on points:");
-  for(unsigned i=0; i<points.size(); i++) log.printf("   (%f,%f)",points[i].first,points[i].second);
-  log.printf("\n");
+  action->log.printf("  on points:");
+  for(unsigned i=0; i<points.size(); i++) action->log.printf("   (%f,%f)",points[i].first,points[i].second);
+  action->log.printf("\n");
 }
 
-void Piecewise::calculate() {
-  for(unsigned i=0; i<getNumberOfArguments(); i++) {
-    double val=getArgument(i);
+void Piecewise::setPeriodicityForOutputs( ActionWithValue* action ) {
+  for(unsigned i=0; i<action->getNumberOfComponents(); ++i) action->copyOutput(i)->setNotPeriodic();
+}
+
+void Piecewise::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
+  for(unsigned i=0; i<args.size(); i++) {
     unsigned p=0;
     for(; p<points.size(); p++) {
-      if(val<points[p].first) break;
+      if(args[i]<points[p].first) break;
     }
-    double f,d;
     if(p==0) {
-      f=points[0].second;
-      d=0.0;
+      vals[i]=points[0].second;
+      derivatives(i,i)=0.0;
     } else if(p==points.size()) {
-      f=points[points.size()-1].second;
-      d=0.0;
+      vals[i]=points[points.size()-1].second;
+      derivatives(i,i)=0.0;
     } else {
       double m=(points[p].second-points[p-1].second) / (points[p].first-points[p-1].first);
-      f=m*(val-points[p-1].first)+points[p-1].second;
-      d=m;
-    }
-    if(getNumberOfArguments()==1) {
-      setValue(f);
-      setDerivative(i,d);
-    } else {
-      Value* v=getPntrToComponent(i);
-      v->set(f);
-      v->addDerivative(i,d);
+      vals[i]=m*(args[i]-points[p-1].first)+points[p-1].second;
+      derivatives(i,i)=m;
     }
   }
 }

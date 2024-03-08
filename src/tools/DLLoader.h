@@ -68,6 +68,13 @@ public:
     template<typename T> EnsureGlobalDLOpen(const T&p) noexcept
       : EnsureGlobalDLOpen(reinterpret_cast<const void*>(p)) {}
   };
+
+  /// Returns true if a PLUMED library is available in the global namespace.
+  /// It does so by looking for the presence of the C interface.
+  /// It will detect any kernel that is available in the global namespece,
+  /// not just the one from which this call is issued. This is useful to
+  /// detect possible conflicts in advance.
+  static bool isPlumedGlobal() noexcept;
 };
 
 } // namespace PLMD

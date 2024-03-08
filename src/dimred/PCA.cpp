@@ -181,8 +181,8 @@ void PCA::performAnalysis() {
   // Calculate the average displacement from the first frame
   double norm=getWeight(0); std::vector<double> args( getNumberOfArguments() );
   for(unsigned i=1; i<getNumberOfDataPoints(); ++i) {
-    my_input_data->getStoredData( i, false ).transferDataToPDB( mypdb );
-    for(unsigned j=0; j<getArguments().size(); ++j) mypdb.getArgumentValue( getArguments()[j]->getName(), args[j] );
+    my_input_data->getStoredData( i, false ).transferDataToPDB( mypdb ); std::vector<double> vaarg(1);
+    for(unsigned j=0; j<getArguments().size(); ++j) { mypdb.getArgumentValue( getArguments()[j]->getName(), vaarg ); args[j]=vaarg[0]; }
     myconf0->calc( mypdb.getPositions(), getPbc(), getArguments(), args, mypack, true );
     // Accumulate average displacement of arguments (Here PBC could do fucked up things - really needs Berry Phase ) GAT
     for(unsigned j=0; j<myconf0->getNumberOfReferenceArguments(); ++j) sarg[j] += 0.5*getWeight(i)*mypack.getArgumentDerivative(j);
@@ -198,8 +198,8 @@ void PCA::performAnalysis() {
   unsigned narg=myconf0->getNumberOfReferenceArguments(), natoms=myconf0->getNumberOfReferencePositions();
   Matrix<double> covar( narg+3*natoms, narg+3*natoms ); covar=0;
   for(unsigned i=0; i<getNumberOfDataPoints(); ++i) {
-    my_input_data->getStoredData( i, false ).transferDataToPDB( mypdb );
-    for(unsigned j=0; j<getArguments().size(); ++j) mypdb.getArgumentValue( getArguments()[j]->getName(), args[j] );
+    my_input_data->getStoredData( i, false ).transferDataToPDB( mypdb ); std::vector<double> vaarg(1);
+    for(unsigned j=0; j<getArguments().size(); ++j) { mypdb.getArgumentValue( getArguments()[j]->getName(), vaarg ); args[j]=vaarg[0]; }
     myconf0->calc( mypdb.getPositions(), getPbc(), getArguments(), args, mypack, true );
     for(unsigned jarg=0; jarg<narg; ++jarg) {
       // Need sorting for PBC with GAT
@@ -262,8 +262,8 @@ void PCA::getProjection( const unsigned& idata, std::vector<double>& point, doub
 }
 
 void PCA::getProjection( analysis::DataCollectionObject& myidata, std::vector<double>& point ) {
-  myidata.transferDataToPDB( mypdb ); std::vector<double> args( getArguments().size() );
-  for(unsigned j=0; j<getArguments().size(); ++j) mypdb.getArgumentValue( getArguments()[j]->getName(), args[j] );
+  myidata.transferDataToPDB( mypdb ); std::vector<double> args( getArguments().size() ); std::vector<double> vaarg(1);
+  for(unsigned j=0; j<getArguments().size(); ++j) { mypdb.getArgumentValue( getArguments()[j]->getName(), vaarg ); args[j]=vaarg[0]; }
   // Create some storage space
   MultiValue myval( 1, 3*mypdb.getPositions().size() + args.size() + 9);
   ReferenceValuePack mypack( args.size(), mypdb.getPositions().size(), myval );

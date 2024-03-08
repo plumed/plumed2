@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2023 The plumed team
+   Copyright (c) 2016-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,32 +19,109 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "PathReparameterization.h"
+#include "core/ActionWithValue.h"
+#include "core/ActionPilot.h"
+#include "core/ActionRegister.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
+#include "tools/Pbc.h"
+#include "tools/Matrix.h"
+#include "PathProjectionCalculator.h"
+
+//+PLUMEDOC ANALYSIS REPARAMETERIZE_PATH
+/*
+Take an input path with frames that are not equally spaced and make the frames equally spaced
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
 
 namespace PLMD {
 namespace mapping {
 
-PathReparameterization::PathReparameterization( const Pbc& ipbc, const std::vector<Value*>& iargs, std::vector<std::unique_ptr<ReferenceConfiguration>>& pp ):
-  mydpack( 1, pp[0]->getNumberOfReferenceArguments() + 3*pp[0]->getNumberOfReferencePositions() + 9 ),
-  mypack( pp[0]->getNumberOfReferenceArguments(), pp[0]->getNumberOfReferencePositions(), mydpack ),
-  mydir(ReferenceConfigurationOptions("DIRECTION")),
-  pbc(ipbc),
-  args(iargs),
-  mypath(pp),
-  len(pp.size()),
-  sumlen(pp.size()),
-  sfrac(pp.size()),
-  MAXCYCLES(100)
+class PathReparameterization : public ActionPilot {
+private:
+/// Number of cycles of the optimization algorithm to run
+  unsigned maxcycles;
+/// The points on the path to fix
+  unsigned ifix1, ifix2;
+/// Tolerance for the minimization algorithm
+  double TOL;
+/// Value containing ammount to displace each reference configuration by
+  Value* displace_value;
+/// The action for calculating the distances between the frames
+  PathProjectionCalculator path_projector;
+/// Used to store current spacing between frames in path
+  std::vector<double> data, len, sumlen, sfrac;
+///
+  bool loopEnd( const int& index, const int& end, const int& inc ) const ;
+///
+  double computeSpacing( const unsigned& ifrom, const unsigned& ito );
+///
+  void calcCurrentPathSpacings( const int& istart, const int& iend );
+///
+  void reparameterizePart( const int& istart, const int& iend, const double& target );
+public:
+  static void registerKeywords( Keywords& keys );
+  PathReparameterization(const ActionOptions&);
+  void calculate() {}
+  void apply() {}
+  void update();
+};
+
+PLUMED_REGISTER_ACTION(PathReparameterization,"REPARAMETERIZE_PATH")
+
+void PathReparameterization::registerKeywords( Keywords& keys ) {
+  Action::registerKeywords( keys ); ActionPilot::registerKeywords( keys );
+  PathProjectionCalculator::registerKeywords(keys);
+  keys.add("compulsory","STRIDE","1","the frequency with which to reparameterize the path");
+  keys.add("compulsory","FIXED","0","the frames in the path to fix");
+  keys.add("compulsory","MAXCYLES","100","number of cycles of the algorithm to run");
+  keys.add("compulsory","TOL","1E-4","the tolerance to use for the path reparameterization algorithm");
+  keys.add("optional","DISPLACE_FRAMES","label of an action that tells us how to displace the frames.  These displacements are applied before "
+           "running the reparameterization algorith");
+}
+
+PathReparameterization::PathReparameterization(const ActionOptions&ao):
+  Action(ao),
+  ActionPilot(ao),
+  displace_value(NULL),
+  path_projector(this)
 {
-  mypdb.setAtomNumbers(  pp[0]->getAbsoluteIndexes() ); mypdb.addBlockEnd( pp[0]->getAbsoluteIndexes().size() );
-  if( pp[0]->getArgumentNames().size()>0 ) mypdb.setArgumentNames( pp[0]->getArgumentNames() );
-  mydir.read( mypdb ); mydir.zeroDirection(); pp[0]->setupPCAStorage( mypack );
+  parse("MAXCYLES",maxcycles); parse("TOL",TOL);
+  log.printf("  running till change is less than %f or until there have been %d optimization cycles \n", TOL, maxcycles);
+  len.resize( path_projector.getNumberOfFrames()  ); sumlen.resize( path_projector.getNumberOfFrames() ); sfrac.resize( path_projector.getNumberOfFrames() );
+  std::vector<unsigned> fixed; parseVector("FIXED",fixed);
+  if( fixed.size()==1 ) {
+    if( fixed[0]!=0 ) error("input to FIXED should be two integers");
+    ifix1=0; ifix2=path_projector.getNumberOfFrames()-1;
+  } else if( fixed.size()==2 ) {
+    if( fixed[0]<1 || fixed[1]<1 || fixed[0]>path_projector.getNumberOfFrames() || fixed[1]>path_projector.getNumberOfFrames() ) {
+      error("input to FIXED should be two numbers between 1 and the number of frames");
+    }
+    ifix1=fixed[0]-1; ifix2=fixed[1]-1;
+  } else error("input to FIXED should be two integers");
+  log.printf("  fixing frames %d and %d when reparameterizing \n", ifix1, ifix2 );
+  std::string dframe; parse("DISPLACE_FRAMES",dframe);
+  if( dframe.length()>0 ) {
+    ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( dframe );
+    if( !av ) error("could not find action with label " + dframe + " specified to DISPLACE_FRAMES keyword in input file");
+    if( av->getName()!="AVERAGE_PATH_DISPLACEMENT" ) error("displace object is not of correct type");
+    displace_value = av->copyOutput(0);
+  }
 }
 
 bool PathReparameterization::loopEnd( const int& index, const int& end, const int& inc ) const {
   if( inc>0 && index<end ) return false;
   else if( inc<0 && index>end ) return false;
   return true;
+}
+
+double PathReparameterization::computeSpacing( const unsigned& ifrom, const unsigned& ito ) {
+  path_projector.getDisplaceVector( ifrom, ito, data );
+  double length=0; for(unsigned i=0; i<data.size(); ++i) length += data[i]*data[i];
+  return sqrt( length );
 }
 
 void PathReparameterization::calcCurrentPathSpacings( const int& istart, const int& iend ) {
@@ -56,13 +133,12 @@ void PathReparameterization::calcCurrentPathSpacings( const int& istart, const i
   int incr=1; if( istart>iend ) { incr=-1; }
 
   for(int i=istart+incr; loopEnd(i,iend+incr,incr)==false; i+=incr) {
-    len[i] = mypath[i-incr]->calc( mypath[i]->getReferencePositions(), pbc, args, mypath[i]->getReferenceArguments(), mypack, false );
-    sumlen[i] = sumlen[i-incr] + len[i];
+    len[i] = computeSpacing( i-incr, i ); sumlen[i] = sumlen[i-incr] + len[i];
     //printf("FRAME %d TO FRAME %d EQUALS %f : %f \n",i-incr,i,len[i],sumlen[i] );
   }
 }
 
-void PathReparameterization::reparameterizePart( const int& istart, const int& iend, const double& target, const double& TOL ) {
+void PathReparameterization::reparameterizePart( const int& istart, const int& iend, const double& target ) {
   calcCurrentPathSpacings( istart, iend ); unsigned cfin;
   // If a target separation is set we fix where we want the nodes
   int incr=1; if( istart>iend ) { incr=-1; }
@@ -78,14 +154,9 @@ void PathReparameterization::reparameterizePart( const int& istart, const int& i
     cfin = iend;
   }
 
-  std::vector<Direction> newpath;
-  for(unsigned i=0; i<mypath.size(); ++i) {
-    newpath.push_back( Direction(ReferenceConfigurationOptions("DIRECTION")) ); newpath[i].read( mypdb );
-  }
-
-  double prevsum=0.;
-  for(unsigned iter=0; iter<MAXCYCLES; ++iter) {
-    if( std::fabs(sumlen[iend] - prevsum)<=TOL ) break ;
+  double prevsum=0.; Matrix<double> newmatrix( path_projector.getNumberOfFrames(), data.size() );
+  for(unsigned iter=0; iter<maxcycles; ++iter) {
+    if( fabs(sumlen[iend] - prevsum)<=TOL ) break ;
     prevsum = sumlen[iend];
     // If no target is set we redistribute length
     if( target<0 ) {
@@ -104,23 +175,18 @@ void PathReparameterization::reparameterizePart( const int& istart, const int& i
         else if( cfin==(iend-1) && k<=iend ) { k=iend+1; break; }
       }
       double dr = (sfrac[i]-sumlen[k])/len[k+incr];
-      // Calculate the displacement between the appropriate points
-      // double dd = mypath[k]->calc( mypath[k+incr]->getReferencePositions(), pbc, args, mypath[k+incr]->getReferenceArguments(), mypack, true );
-      // Copy the reference configuration from the configuration to a tempory direction
-      newpath[i].setDirection( mypath[k]->getReferencePositions(), mypath[k]->getReferenceArguments() );
-      // Get the displacement of the path
-      mypath[k]->extractDisplacementVector( mypath[k+incr]->getReferencePositions(), args, mypath[k+incr]->getReferenceArguments(), false, mydir );
-      // Set our direction equal to the displacement
-      // mydir.setDirection( mypack );
-      // Shift the reference configuration by this amount
-      newpath[i].displaceReferenceConfiguration( dr, mydir );
+      // Copy the reference configuration to the row of a matrix
+      path_projector.getReferenceConfiguration( k, data );
+      for(unsigned j=0; j<data.size(); ++j) newmatrix(i,j) = data[j];
+      path_projector.getDisplaceVector( k, k+incr, data );
+      // Shift the reference configuration by this ammount
+      for(unsigned j=0; j<data.size(); ++j) newmatrix(i,j) += dr*data[j];
     }
 
     // Copy the positions of the new path to the new paths
     for(int i=istart+incr; loopEnd(i,cfin,incr)==false; i+=incr) {
-      mypdb.setAtomPositions( newpath[i].getReferencePositions() );
-      for(unsigned j=0; j<newpath[i].getNumberOfReferenceArguments(); ++j) mypdb.setArgumentValue( mypath[i]->getArgumentNames()[j], newpath[i].getReferenceArgument(j) );
-      mypath[i]->read( mypdb );
+      for(unsigned j=0; j<data.size(); ++j) data[j] = newmatrix(i,j);
+      path_projector.setReferenceConfiguration( i, data );
     }
 
     // Recompute the separations between frames
@@ -128,18 +194,35 @@ void PathReparameterization::reparameterizePart( const int& istart, const int& i
   }
 }
 
-void PathReparameterization::reparameterize( const int& ifix1, const int& ifix2, const double& TOL ) {
-  plumed_dbg_assert( ifix1<ifix2 );
+void PathReparameterization::update() {
+  // We never run this on the first step
+  if( getStep()==0 ) return ;
+
+  // Shift the frames using the displacements
+  if( displace_value ) {
+    for(unsigned i=0; i<path_projector.getNumberOfFrames(); ++i) {
+      if( i==ifix1 || i==ifix2 ) continue ;
+      // Retrieve the current position of the frame
+      path_projector.getReferenceConfiguration( i, data );
+      // Shift using the averages accumulated in the action that accumulates the displacements
+      unsigned kstart = i*data.size();
+      for(unsigned j=0; j<data.size(); ++j) data[j] += displace_value->get( kstart + j );
+      // And now set the new position of the refernce frame
+      path_projector.setReferenceConfiguration( i, data );
+    }
+  }
+
   // First reparameterize the part between the fixed frames
-  reparameterizePart( ifix1, ifix2, -1.0, TOL );
+  reparameterizePart( ifix1, ifix2, -1.0 );
 
   // Get the separation between frames which we will use to set the remaining frames
   double target = sumlen[ifix2] / ( ifix2 - ifix1 );
 
-  // And reparameterize the beginning and end of the path
-  if( ifix1>0 ) reparameterizePart( ifix1, 0, target, TOL );
-  if( ifix2<(mypath.size()-1) ) reparameterizePart( ifix2, mypath.size()-1, target, TOL );
-//  calcCurrentPathSpacings( 0, mypath.size()-1 );
+  // And reparameterize the begining and end of the path
+  if( ifix1>0 ) reparameterizePart( ifix1, 0, target );
+  if( ifix2<(path_projector.getNumberOfFrames()-1) ) reparameterizePart( ifix2, path_projector.getNumberOfFrames()-1, target );
+  // And update any RMSD objects that depend on input values
+  path_projector.updateDepedentRMSDObjects();
 }
 
 }

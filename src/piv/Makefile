@@ -1,3 +1,3 @@
-USE=core tools bias colvar
+USE=core tools colvar
 # generic makefile
 include ../maketools/make.module

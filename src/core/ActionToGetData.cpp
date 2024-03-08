@@ -58,6 +58,7 @@ ActionToGetData::ActionToGetData(const ActionOptions&ao):
   if( gtype!=val ) error("not implemented functionality to pass derviatives or forces to python.  Email gareth.tribello@gmail.com if you want this.");
 
   if( getNumberOfArguments()!=1 ) error("python interface works best when you ask for one argument at a time");
+  if( getPntrToArgument(0)->getNumberOfValues()==0 ) error("cannot get data as shape of value " + getPntrToArgument(0)->getName() + " has not been set");
   getPntrToArgument(0)->buildDataStore(); data.resize( getPntrToArgument(0)->getNumberOfValues() );
 }
 

@@ -91,8 +91,8 @@ Subprocess::Subprocess(const std::string & cmd) {
     if(dup(pc[0])<0) plumed_error()<<"error duplicating file";
     if(close(pc[1])<0) plumed_error()<<"error closing file";
     if(close(cp[0])<0) plumed_error()<<"error closing file";
-    execv(arr[0],arr);
-    plumed_error()<<"error in script file";
+    auto err=execv(arr[0],arr);
+    plumed_error()<<"error in script file " << cmd << ", execv returned "<<err;
   }
 // PARENT::
   default:

@@ -1,4 +1,4 @@
-#! FIELDS time a.lessthan b.lessthan p.lessthan
+#! FIELDS time a_lessthan b_lessthan p_lessthan
  0.000000   0.0776   0.8488   0.1666
  0.050000   0.2634   1.2158   0.1508
  0.100000   0.1157   0.7427   0.8787

@@ -264,6 +264,14 @@ public:
   explicit Stopwatch(Log&log): mylog(&log) {}
 // Destructor.
   ~Stopwatch();
+/// Deleted copy
+  Stopwatch(const Stopwatch&) = delete;
+/// Deleted assignment
+  Stopwatch& operator=(const Stopwatch&) = delete;
+/// Move constructor
+  Stopwatch(Stopwatch&&) noexcept;
+/// Move assignment
+  Stopwatch& operator=(Stopwatch&&) noexcept;
 /// Start timer named "name"
   Stopwatch& start(const std::string_view&name=StopwatchEmptyString());
 /// Stop timer named "name"
@@ -400,6 +408,24 @@ Stopwatch::Handler Stopwatch::Watch::startStop() {
 inline
 Stopwatch::Handler Stopwatch::Watch::startPause() {
   return Handler( this,false );
+}
+
+inline
+Stopwatch::Stopwatch(Stopwatch&& other) noexcept:
+  mylog(other.mylog),
+  watches(std::move(other.watches))
+{
+  other.mylog=nullptr;
+}
+
+inline
+Stopwatch& Stopwatch::operator=(Stopwatch&& other) noexcept {
+  if(this!=&other) {
+    mylog=other.mylog;
+    watches=std::move(other.watches);
+    other.mylog=nullptr;
+  }
+  return *this;
 }
 
 

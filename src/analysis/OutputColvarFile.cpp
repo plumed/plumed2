@@ -47,8 +47,6 @@ class OutputColvarFile : public AnalysisBase {
 private:
   std::string fmt;
   std::string filename;
-  bool output_for_all_replicas;
-  std::vector<unsigned> preps;
   std::vector<std::string> req_vals;
 public:
   static void registerKeywords( Keywords& keys );
@@ -62,7 +60,6 @@ PLUMED_REGISTER_ACTION(OutputColvarFile,"OUTPUT_ANALYSIS_DATA_TO_COLVAR")
 void OutputColvarFile::registerKeywords( Keywords& keys ) {
   AnalysisBase::registerKeywords( keys ); keys.use("ARG");
   keys.add("compulsory","FILE","the name of the file to output to");
-  keys.add("compulsory","REPLICA","0","the replicas for which you would like to output this information");
   keys.add("compulsory","STRIDE","0","the frequency with which to perform the required analysis and to output the data.  The default value of 0 tells plumed to use all the data");
   keys.add("optional","FMT","the format to output the data using");
 }
@@ -70,8 +67,7 @@ void OutputColvarFile::registerKeywords( Keywords& keys ) {
 OutputColvarFile::OutputColvarFile( const ActionOptions& ao ):
   Action(ao),
   AnalysisBase(ao),
-  fmt("%f"),
-  output_for_all_replicas(false)
+  fmt("%f")
 {
   parse("FILE",filename); parse("FMT",fmt);
   if( !getRestart() ) { OFile ofile; ofile.link(*this); ofile.setBackupString("analysis"); ofile.backupAllFiles(filename); }
@@ -89,24 +85,9 @@ OutputColvarFile::OutputColvarFile( const ActionOptions& ao ):
     for(unsigned i=1; i<req_vals.size(); ++i) log.printf(",", req_vals[i].c_str() );
     log.printf("\n");
   }
-  std::string rep_data; parse("REPLICA",rep_data);
-  if( rep_data=="all" ) output_for_all_replicas=true;
-  else { preps.resize(1); Tools::convert( rep_data, preps[0] ); }
-  if( output_for_all_replicas ) log.printf("  outputting files for all replicas \n");
-  else {
-    log.printf("  outputting data for replicas ");
-    for(unsigned i=0; i<preps.size(); ++i) log.printf("%d ", preps[i] );
-  }
 }
 
 void OutputColvarFile::performAnalysis() {
-  if( !output_for_all_replicas ) {
-    bool found=false; unsigned myrep=plumed.multi_sim_comm.Get_rank();
-    for(unsigned i=0; i<preps.size(); ++i) {
-      if( myrep==preps[i] ) { found=true; break; }
-    }
-    if( !found ) return;
-  }
   // Output the embedding as long lists of data
   OFile gfile; gfile.link(*this);
   gfile.setBackupString("analysis");

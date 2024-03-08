@@ -43,7 +43,7 @@ public:
   static void registerKeywords(Keywords& keys);
   explicit ActionForInterface(const ActionOptions&ao);
 /// Override clear the input data
-  void clearDerivatives() override {}
+  void clearDerivatives(const bool& force=false) override {}
 /// Override the need to deal with gradients
   void setGradientsIfNeeded() override {}
 /// Check if the value has been set
@@ -70,7 +70,7 @@ public:
 /// Get the data to share
   virtual void wait() = 0;
 /// Actually set the values for the output
-  void calculate() override { wasscaled=false; }
+  void calculate() override { firststep=false; wasscaled=false; }
   virtual void reset() {}
   virtual void Set_comm(Communicator& comm) = 0;
 /// For replica exchange

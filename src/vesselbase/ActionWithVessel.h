@@ -37,8 +37,6 @@ class Stopwatch;
 namespace vesselbase {
 
 class Vessel;
-class BridgeVessel;
-class StoreDataVessel;
 
 /**
 \ingroup MULTIINHERIT
@@ -48,12 +46,6 @@ times.  This is used in PLMD::MultiColvar.
 
 class ActionWithVessel : public virtual Action {
   friend class Vessel;
-  friend class ShortcutVessel;
-  friend class FunctionVessel;
-  friend class StoreDataVessel;
-  friend class BridgeVessel;
-  friend class ActionWithInputVessel;
-  friend class OrderingVessel;
 private:
 /// Do all calculations in serial
   bool serial;
@@ -101,15 +93,11 @@ protected:
   bool weightHasDerivatives;
 /// This is used for numerical derivatives of bridge variables
   unsigned bridgeVariable;
-/// A pointer to the object that stores data
-  StoreDataVessel* mydata;
 /// This list is used to update the neighbor list
   std::vector<unsigned> taskFlags;
 /// Add a vessel to the list of vessels
   void addVessel( const std::string& name, const std::string& input, const int numlab=0 );
   void addVessel( std::unique_ptr<Vessel> vv );
-/// Add a bridging vessel to the list of vessels
-  BridgeVessel* addBridgingVessel( ActionWithVessel* tome );
 /// Complete the setup of this object (this routine must be called after construction of ActionWithValue)
   void readVesselKeywords();
 /// Turn on the derivatives in the vessel
@@ -180,8 +168,6 @@ public:
   virtual void performTask( const unsigned&, const unsigned&, MultiValue& ) const=0;
 /// Do the task if we have a bridge
   virtual void transformBridgedDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals ) const;
-/// Ensure that data required in other vessels is stored
-  StoreDataVessel* buildDataStashes( ActionWithVessel* actionThatUses );
 /// Apply forces from bridge vessel - this is rarely used - currently only in ActionVolume
   virtual void applyBridgeForces( const std::vector<double>& bb ) { plumed_error(); }
 /// These are overwritten in MultiColvarFunction

@@ -1,0 +1,11 @@
+# break PBC:
+f: FIXEDATOM AT=6.5,6.5,6.5
+WRAPAROUND ATOMS=1-22 AROUND=f
+
+rmsd1: RMSD DISPLACEMENT REFERENCE=reference.pdb TYPE=SIMPLE NOPBC
+rmsd2: RMSD DISPLACEMENT REFERENCE=reference.pdb TYPE=SIMPLE 
+rmsd3: RMSD DISPLACEMENT REFERENCE=reference.pdb TYPE=OPTIMAL
+PRINT ARG=rmsd1.disp,rmsd1.dist FILE=colvar1 FMT=%8.4f
+PRINT ARG=rmsd2.disp,rmsd2.dist FILE=colvar2 FMT=%8.4f
+PRINT ARG=rmsd3.disp,rmsd3.dist FILE=colvar3 FMT=%8.4f 
+

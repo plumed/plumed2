@@ -1,0 +1,19 @@
+#INCLUDE FILE=paramols350.dat
+# new version?
+coord: COORDINATIONNUMBER SPECIES=1-6981:20 SWITCH={RATIONAL R_0=0.08 D_0=0.85 NN=10 MM=20 D_MAX=1.05}
+#coord_morethan: MORE_THAN ARG1=coord SWITCH={RATIONAL R_0=2. D_0=4. NN=10 MM=20 D_MAX=7.8}
+coord_morethan: MORE_THAN ARG=coord SWITCH={RATIONAL R_0=2. D_0=8. NN=10 MM=20 D_MAX=13.}
+coord_sum: COMBINE ARG=coord_morethan PERIODIC=NO
+
+
+# insphere
+# Determine whether the atoms are in a sphere
+c1: FIXEDATOM AT=3.01,3.01,3.01
+#c1: CENTER ATOMS=1-200
+sp: INSPHERE ATOMS=1-6981:20 CENTER=c1 RADIUS={RATIONAL R_0=0.2 D_0=2.3 NN=10 MM=20 D_MAX=2.7}
+sum_sp: SUM ARG=sp PERIODIC=NO
+
+#klcoord: KLDIV GRID=coord USEKLDIV REFERENCE=/home/ggobbo/simulations/solvated/plumed_files/coord_reference240.dat
+#PRINT ARG=coord_sum FILE=colvarcoord.dat
+#metad: METAD ARG=coord_sum PACE=1 HEIGHT=1.0 SIGMA=1.0 FILE=HILLScoord
+

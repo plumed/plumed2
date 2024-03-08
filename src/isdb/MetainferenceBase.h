@@ -345,7 +345,7 @@ void MetainferenceBase::apply() {
     }
   }
   if( wasforced ) {
-    unsigned ind=0; addForcesOnArguments( 0, forcesToApply, ind );
+    unsigned ind=0; addForcesOnArguments( 0, forcesToApply, ind, getLabel() );
     if( getNumberOfAtoms()>0 ) setForcesOnAtoms( forcesToApply, ind );
   }
 }

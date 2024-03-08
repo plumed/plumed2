@@ -46,7 +46,7 @@ public:
 template <class T>
 template<typename ...Args>
 ForwardDecl<T>::ForwardDecl(Args &&...args):
-  std::unique_ptr<T>(new T(std::forward<Args>(args)...))
+  std::unique_ptr<T>(std::make_unique<T>(std::forward<Args>(args)...))
 {}
 
 

@@ -134,6 +134,9 @@ public:
 /// Specify that this Action depends on another one
   void addDependency(Action*);
 
+/// Check that this action does not depend on the action in the argument
+  bool checkForDependency(Action*);
+
 /// Clear the dependence list for this Action
   void clearDependencies();
 
@@ -324,6 +327,8 @@ public:
 /// Get the defaults
   std::string getDefaultString() const ;
 
+/// Get the info on what to calculate
+  virtual std::string writeInGraph() const ;
 /// Specialized casts, to make PlumedMain run faster
   virtual ActionWithValue* castToActionWithValue() noexcept { return nullptr; }
   virtual ActionWithArguments* castToActionWithArguments() noexcept { return nullptr; }

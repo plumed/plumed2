@@ -1,4 +1,4 @@
-DESCRIPTION: analysis data from calculation done by @5 at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @7 at time 5.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=d1,d2
@@ -24,7 +24,7 @@ ATOM     18  X   RES    17       7.466  16.126  24.825  1.00  1.00
 ATOM     19  X   RES    18       8.493  25.374  17.644  1.00  1.00
 ATOM     20  X   RES    19       0.760  25.782  25.501  1.00  1.00
 END
-DESCRIPTION: analysis data from calculation done by @5 at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @7 at time 5.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=d1,d2
@@ -50,7 +50,7 @@ ATOM     18  X   RES    17       6.898  15.646  24.519  1.00  1.00
 ATOM     19  X   RES    18       8.578  25.322  18.282  1.00  1.00
 ATOM     20  X   RES    19       1.070  26.089  25.993  1.00  1.00
 END
-DESCRIPTION: analysis data from calculation done by @5 at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @7 at time 5.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=d1,d2
@@ -76,7 +76,7 @@ ATOM     18  X   RES    17       7.031  15.181  24.387  1.00  1.00
 ATOM     19  X   RES    18       8.450  24.859  18.490  1.00  1.00
 ATOM     20  X   RES    19       0.682  25.773  26.448  1.00  1.00
 END
-DESCRIPTION: analysis data from calculation done by @5 at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @7 at time 5.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=d1,d2
@@ -102,7 +102,7 @@ ATOM     18  X   RES    17       7.489  14.803  24.434  1.00  1.00
 ATOM     19  X   RES    18       8.315  24.535  18.345  1.00  1.00
 ATOM     20  X   RES    19       0.228  25.227  26.742  1.00  1.00
 END
-DESCRIPTION: analysis data from calculation done by @5 at time 5.000000 
+DESCRIPTION: analysis data from calculation done by @7 at time 5.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=d1,d2

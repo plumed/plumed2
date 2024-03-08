@@ -107,7 +107,13 @@ class MovingRestraint : public Bias {
   std::vector<double> oldf;
   std::vector<std::string> verse;
   std::vector<double> work;
+  std::vector<double> kk,aa,f,dpotdk;
   double tot_work;
+  std::vector<Value*> valueCntr;
+  std::vector<Value*> valueWork;
+  std::vector<Value*> valueKappa;
+  Value* valueTotWork=nullptr;
+  Value* valueForce2=nullptr;
 public:
   explicit MovingRestraint(const ActionOptions&);
   void calculate() override;
@@ -149,7 +155,11 @@ void MovingRestraint::registerKeywords( Keywords& keys ) {
 
 MovingRestraint::MovingRestraint(const ActionOptions&ao):
   PLUMED_BIAS_INIT(ao),
-  verse(getNumberOfArguments())
+  verse(getNumberOfArguments()),
+  kk(getNumberOfArguments()),
+  aa(getNumberOfArguments()),
+  f(getNumberOfArguments()),
+  dpotdk(getNumberOfArguments())
 {
   parseVector("VERSE",verse);
   std::vector<long long int> ss(1); ss[0]=-1;
@@ -183,6 +193,7 @@ MovingRestraint::MovingRestraint(const ActionOptions&ao):
   };
 
   addComponent("force2"); componentIsNotPeriodic("force2");
+  valueForce2=getPntrToComponent("force2");
 
   // add the centers of the restraint as additional components that can be retrieved (useful for debug)
 
@@ -190,13 +201,17 @@ MovingRestraint::MovingRestraint(const ActionOptions&ao):
   for(unsigned i=0; i< getNumberOfArguments() ; i++) {
     comp=getPntrToArgument(i)->getName()+"_cntr"; // each spring has its own center
     addComponent(comp); componentIsNotPeriodic(comp);
+    valueCntr.push_back(getPntrToComponent(comp));
     comp=getPntrToArgument(i)->getName()+"_work"; // each spring has its own work
     addComponent(comp); componentIsNotPeriodic(comp);
+    valueWork.push_back(getPntrToComponent(comp));
     comp=getPntrToArgument(i)->getName()+"_kappa"; // each spring has its own kappa
     addComponent(comp); componentIsNotPeriodic(comp);
+    valueKappa.push_back(getPntrToComponent(comp));
     work.push_back(0.); // initialize the work value
   }
   addComponent("work"); componentIsNotPeriodic("work");
+  valueTotWork=getPntrToComponent("work");
   tot_work=0.0;
 
   log<<"  Bibliography ";
@@ -210,7 +225,6 @@ void MovingRestraint::calculate() {
   double totf2=0.0;
   unsigned narg=getNumberOfArguments();
   long long int now=getStep();
-  std::vector<double> kk(narg),aa(narg),f(narg),dpotdk(narg);
   if(now<=step[0]) {
     kk=kappa[0];
     aa=at[0];
@@ -236,7 +250,7 @@ void MovingRestraint::calculate() {
   tot_work=0.0;
   for(unsigned i=0; i<narg; ++i) {
     const double cv=difference(i,aa[i],getArgument(i)); // this gives: getArgument(i) - aa[i]
-    getPntrToComponent(getPntrToArgument(i)->getName()+"_cntr")->set(aa[i]);
+    valueCntr[i]->set(aa[i]);
     const double k=kk[i];
     f[i]=-k*cv;
     if(verse[i]=="U" && cv<0) continue;
@@ -244,20 +258,20 @@ void MovingRestraint::calculate() {
     plumed_assert(verse[i]=="U" || verse[i]=="L" || verse[i]=="B");
     dpotdk[i]=0.5*cv*cv;
     if(oldaa.size()==aa.size() && oldf.size()==f.size()) work[i]+=0.5*(oldf[i]+f[i])*(aa[i]-oldaa[i]) + 0.5*( dpotdk[i]+olddpotdk[i] )*(kk[i]-oldk[i]);
-    getPntrToComponent(getPntrToArgument(i)->getName()+"_work")->set(work[i]);
-    getPntrToComponent(getPntrToArgument(i)->getName()+"_kappa")->set(kk[i]);
+    valueWork[i]->set(work[i]);
+    valueKappa[i]->set(kk[i]);
     tot_work+=work[i];
     ene+=0.5*k*cv*cv;
     setOutputForce(i,f[i]);
     totf2+=f[i]*f[i];
   };
-  getPntrToComponent("work")->set(tot_work);
+  valueTotWork->set(tot_work);
   oldf=f;
   oldaa=aa;
   oldk=kk;
   olddpotdk=dpotdk;
   setBias(ene);
-  getPntrToComponent("force2")->set(totf2);
+  valueForce2->set(totf2);
 }
 
 }

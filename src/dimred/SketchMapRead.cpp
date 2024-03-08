@@ -102,7 +102,7 @@ SketchMapRead::SketchMapRead( const ActionOptions& ao ):
 
 
   // Read in the embedding
-  bool do_read=true; double val, ww, wnorm=0, prop; unsigned nfram=0;
+  bool do_read=true; double wnorm=0; std::vector<double> val(1), ww(1), prop(1); unsigned nfram=0;
   while (do_read) {
     PDB inpdb;
     // Read the pdb file
@@ -112,19 +112,19 @@ SketchMapRead::SketchMapRead( const ActionOptions& ao ):
     // Check for required properties
     for(std::map<std::string,std::vector<double> >::iterator it=property.begin(); it!=property.end(); ++it) {
       if( !inpdb.getArgumentValue( it->first, prop ) ) error("pdb input does not have contain property named " + it->first );
-      it->second.push_back(prop);
+      it->second.push_back(prop[0]);
     }
     // And read the frame ( create a measure )
     myframes.emplace_back( metricRegister().create<ReferenceConfiguration>( mtype, inpdb ) );
     if( !inpdb.getArgumentValue( "WEIGHT", ww ) ) error("could not find weights in input pdb");
-    weights.push_back( ww ); wnorm += ww; nfram++;
+    weights.push_back( ww[0] ); wnorm += ww[0]; nfram++;
     // And create a data collection object
     analysis::DataCollectionObject new_data; new_data.setAtomNumbersAndArgumentNames( getLabel(), inpdb.getAtomNumbers(), inpdb.getArgumentNames() );
     new_data.setAtomPositions( inpdb.getPositions() );
     for(unsigned i=0; i<inpdb.getArgumentNames().size(); ++i) {
       std::string aname = inpdb.getArgumentNames()[i];
       if( !inpdb.getArgumentValue( aname, val ) ) error("failed to find argument named " + aname);
-      new_data.setArgument( aname, val );
+      new_data.setArgument( aname, val[0] );
     }
     data.push_back( new_data );
   }
@@ -139,7 +139,7 @@ SketchMapRead::SketchMapRead( const ActionOptions& ao ):
     }
     if( !found ) { fargs.push_back( args[i] ); }
   }
-  interpretArgumentList( fargs, req_args ); mypdb.setArgumentNames( fargs ); requestArguments( req_args );
+  interpretArgumentList( fargs, plumed.getActionSet(), this, req_args ); mypdb.setArgumentNames( fargs ); requestArguments( req_args );
 
   if(nfram==0 ) error("no reference configurations were specified");
   log.printf(" found %u configurations in file %s\n",nfram,ifilename.c_str() );

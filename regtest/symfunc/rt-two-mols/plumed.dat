@@ -1,0 +1,17 @@
+mols: DISTANCES ...
+  ATOMS1=1,2 LOCATION1=1
+  ATOMS2=9,10 LOCATION2=9
+  COMPONENTS 
+...
+
+vecs: VSTACK ARG=mols.x,mols.y,mols.z
+vecsT: TRANSPOSE ARG=vecs
+
+dd: TORSIONS_MATRIX ARG=vecs,vecsT POSITIONS1=mols POSITIONS2=mols
+
+ones: ONES SIZE=2
+cc: MATRIX_VECTOR_PRODUCT ARG=dd,ones 
+ff: SUM ARG=cc PERIODIC=NO
+
+BIASVALUE ARG=ff 
+PRINT ARG=ff FILE=colvar FMT=%8.4f 

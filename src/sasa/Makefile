@@ -1,3 +1,3 @@
-USE=core tools config  
+USE=core config  
 # generic makefile
 include ../maketools/make.module

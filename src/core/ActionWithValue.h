@@ -67,7 +67,11 @@ PLMD::Action you should use <b> the routines with the word component in the name
 class ActionWithValue :
   public virtual Action
 {
+  friend class ActionWithVector;
+  friend class ActionWithArguments;
 private:
+/// This finishes setup on first step to check if actions are calculated during update
+  bool firststep;
 /// An array containing the values for this action
   std::vector<std::unique_ptr<Value>> values;
 /// A vector that is used to hold the forces that we will apply on the input quantities
@@ -86,7 +90,7 @@ public:
 /// Add a value with the name label
   void addValue( const std::vector<unsigned>& shape=std::vector<unsigned>() );
 /// Add a value with the name label that has derivatives
-  void addValueWithDerivatives( const std::vector<unsigned>& shape=std::vector<unsigned>() );
+  virtual void addValueWithDerivatives( const std::vector<unsigned>& shape=std::vector<unsigned>() );
 /// Set your default value to have no periodicity
   void setNotPeriodic();
 /// Set the value to be periodic with a particular domain
@@ -103,7 +107,7 @@ public:
 /// Add a value with a name like label.name
   void addComponent( const std::string& name, const std::vector<unsigned>& shape=std::vector<unsigned>() );
 /// Add a value with a name like label.name that has derivatives
-  void addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape=std::vector<unsigned>() );
+  virtual void addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape=std::vector<unsigned>() );
 /// Set your value component to have no periodicity
   void componentIsNotPeriodic( const std::string& name );
 /// Set the value to be periodic with a particular domain
@@ -111,6 +115,8 @@ public:
 protected:
 /// Return a pointer to the component by index
   Value* getPntrToComponent(int i);
+/// Get a const pointer to the ith component
+  const Value* getConstPntrToComponent(int i) const;
 /// Return a pointer to the value by name
   Value* getPntrToComponent(const std::string& name);
 /// Accumulate the forces from the Values
@@ -160,9 +166,9 @@ public:
 /// Returns the number of values defined
   int getNumberOfComponents() const ;
 /// Clear the forces on the values
-  void clearInputForces();
+  virtual void clearInputForces( const bool& force=false );
 /// Clear the derivatives of values wrt parameters
-  virtual void clearDerivatives();
+  virtual void clearDerivatives( const bool& force=false );
 /// Calculate the gradients and store them for all the values (need for projections)
   virtual void setGradientsIfNeeded();
 /// Set the value
@@ -176,6 +182,8 @@ public:
   virtual unsigned getNumberOfDerivatives()=0;
 /// Activate the calculation of derivatives
   virtual void turnOnDerivatives();
+/// This is used to check if we run calculate during the update step
+  virtual bool calculateOnUpdate();
   ActionWithValue* castToActionWithValue() noexcept final { return this; }
 };
 
@@ -187,7 +195,7 @@ double ActionWithValue::getOutputQuantity(const unsigned j) const {
 
 inline
 double ActionWithValue::getOutputQuantity( const std::string& name ) const {
-  int offset=getLabel().size();
+  auto offset=getLabel().size();
   for(unsigned i=0; i<values.size(); ++i) {
     const std::string & valname=values[i]->name;
     if(valname.size()>offset+1 && valname[offset]=='.' ) {

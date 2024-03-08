@@ -26,7 +26,7 @@
 namespace PLMD {
 namespace colvar {
 
-//+PLUMEDOC COLVAR GYRATION
+//+PLUMEDOC COLVAR GYRATION_FAST
 /*
 Calculate the radius of gyration, or other properties related to it.
 
@@ -90,7 +90,7 @@ public:
   void calculate() override;
 };
 
-PLUMED_REGISTER_ACTION(Gyration,"GYRATION")
+PLUMED_REGISTER_ACTION(Gyration,"GYRATION_FAST")
 
 void Gyration::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);

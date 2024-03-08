@@ -42,26 +42,28 @@ void ReferenceArguments::readArgumentsFromPDB( const PDB& pdb ) {
 
   reference_args.resize( arg_names.size() ); arg_der_index.resize( arg_names.size() );
   for(unsigned i=0; i<arg_names.size(); ++i) {
-    if( !pdb.getArgumentValue(arg_names[i], reference_args[i]) ) error("argument " + arg_names[i] + " was not set in pdb input");
-    arg_der_index[i]=i;
+    std::vector<double> getarg(1);
+    if( !pdb.getArgumentValue(arg_names[i], getarg) ) error("argument " + arg_names[i] + " was not set in pdb input");
+    reference_args[i]=getarg[0]; arg_der_index[i]=i;
   }
 
   if( hasweights ) {
     plumed_massert( !hasmetric, "should not have weights if we are using metric");
     weights.resize( arg_names.size() ); sqrtweight.resize( arg_names.size() );
     for(unsigned i=0; i<reference_args.size(); ++i) {
-      if( !pdb.getArgumentValue("sigma_" + arg_names[i], weights[i]) ) error("value sigma_" + arg_names[i] + " was not set in pdb input");
-      sqrtweight[i] = std::sqrt( weights[i] );
+      std::vector<double> getweight(1);
+      if( !pdb.getArgumentValue("sigma_" + arg_names[i], getweight) ) error("value sigma_" + arg_names[i] + " was not set in pdb input");
+      weights[i] = getweight[0]; sqrtweight[i] = std::sqrt( weights[i] );
     }
   } else if( hasmetric ) {
     plumed_massert( !hasweights, "should not have weights if we are using metric");
-    double thissig; metric.resize( arg_names.size(), arg_names.size() );
+    std::vector<double> thissig(1); metric.resize( arg_names.size(), arg_names.size() );
     for(unsigned i=0; i<reference_args.size(); ++i) {
       for(unsigned j=i; j<reference_args.size(); ++j) {
         if( !pdb.getArgumentValue("sigma_" + arg_names[i] + "_" + arg_names[j], thissig) ) {
           error("value sigma_" + arg_names[i] + "_" + arg_names[j] + " was not set in pdb input");
         }
-        metric(i,j)=metric(j,i)=thissig;
+        metric(i,j)=metric(j,i)=thissig[0];
       }
     }
   } else {

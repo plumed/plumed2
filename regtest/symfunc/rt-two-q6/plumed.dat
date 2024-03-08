@@ -1,0 +1,15 @@
+q1: Q1 SPECIESA=1,2 SPECIESB=1-64 D_0=3.0 R_0=1.5 NN=12 SUM
+
+dda: VSTACK ARG=q1_sp.rm-n1,q1_sp.im-n1,q1_sp.rm-0,q1_sp.im-0,q1_sp.rm-p1,q1_sp.im-p1
+
+ddT: TRANSPOSE ARG=dda
+dd: MATRIX_PRODUCT ARG=dda,ddT
+mm: CONSTANT VALUES=0,1,1,0 NROWS=2 NCOLS=2
+pp: CUSTOM ARG=dd,mm FUNC=x*y PERIODIC=NO
+
+ones: ONES SIZE=2
+cc: MATRIX_VECTOR_PRODUCT ARG=pp,ones 
+ff: SUM ARG=cc PERIODIC=NO
+
+BIASVALUE ARG=ff 
+PRINT ARG=q1.*,ff FILE=colvar FMT=%8.4f 

@@ -19,9 +19,10 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "vesselbase/ActionWithAveraging.h"
+#include "core/ActionShortcut.h"
+#include "core/ActionWithArguments.h"
+#include "core/PlumedMain.h"
 #include "core/ActionRegister.h"
-#include "AverageVessel.h"
 
 //+PLUMEDOC GRIDCALC AVERAGE
 /*
@@ -89,61 +90,50 @@ PRINT ARG=t1a FILE=colvar STRIDE=100
 namespace PLMD {
 namespace analysis {
 
-class Average : public vesselbase::ActionWithAveraging {
-private:
-  AverageVessel* myaverage;
+class Average : public ActionShortcut {
 public:
   static void registerKeywords( Keywords& keys );
   explicit Average( const ActionOptions& );
-  void calculate() override {}
-  void apply() override {}
-  void performOperations( const bool& from_update ) override;
-  void finishAveraging() override;
-  bool isPeriodic() override { return false; }
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override { plumed_error(); }
-  void accumulateAverage( MultiValue& myvals ) const override;
 };
 
 PLUMED_REGISTER_ACTION(Average,"AVERAGE")
 
 void Average::registerKeywords( Keywords& keys ) {
-  vesselbase::ActionWithAveraging::registerKeywords( keys ); keys.use("ARG");
-  keys.remove("SERIAL"); keys.remove("LOWMEM");
+  ActionShortcut::registerKeywords( keys );
+  keys.add("compulsory","ARG","the quantity that is being averaged");
+  keys.add("optional","LOGWEIGHTS","the logarithm of the quantity to use as the weights when calculating averages");
+  keys.add("compulsory","STRIDE","1","the frequency with which to store data for averaging");
+  keys.add("compulsory","CLEAR","0","the frequency with whihc to clear the data that is being averaged");
 }
 
 Average::Average( const ActionOptions& ao ):
   Action(ao),
-  ActionWithAveraging(ao)
+  ActionShortcut(ao)
 {
-  addValue(); // Create a value so that we can output the average
-  if( getNumberOfArguments()!=1 ) error("only one quantity can be averaged at a time");
-  std::string instring;
-  if( getPntrToArgument(0)->isPeriodic() ) {
-    std::string min, max; getPntrToArgument(0)->getDomain(min,max);
-    instring = "PERIODIC=" + min + "," + max; setPeriodic( min, max );
+
+  std::string lw; parse("LOGWEIGHTS",lw); std::string stride, clearstride; parse("STRIDE",stride); parse("CLEAR",clearstride);
+  if( lw.length()>0 ) {
+    readInputLine( getShortcutLabel() + "_wsum: COMBINE ARG=" + lw + " PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_weight: CUSTOM ARG=" + getShortcutLabel() + "_wsum FUNC=exp(x) PERIODIC=NO");
+  } else readInputLine( getShortcutLabel() + "_weight: ONES SIZE=1" );
+
+  std::vector<std::string> arg; parseVector("ARG",arg);
+  if( arg.size()!=1 ) error("should only be one argument to this action");
+  std::vector<Value*> vals; ActionWithArguments::interpretArgumentList( arg, plumed.getActionSet(), this, vals );
+
+  readInputLine( getShortcutLabel() + "_denom: ACCUMULATE ARG=" + getShortcutLabel() + "_weight STRIDE=" + stride + " CLEAR=" + clearstride );
+  if( vals[0]->isPeriodic() ) {
+    std::string lbound, ubound, pfactor; vals[0]->getDomain( lbound, ubound ); pfactor = "((" + ubound + "-" + lbound + ")/(pi+pi))";
+    readInputLine( getShortcutLabel() + "_sin: CUSTOM ARG=" + arg[0] + "," + getShortcutLabel() + "_weight FUNC=y*sin((x-" + lbound + ")/" + pfactor + ") PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_cos: CUSTOM ARG=" + arg[0] + "," + getShortcutLabel() + "_weight FUNC=y*cos((x-" + lbound + ")/" + pfactor + ") PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_sinsum: ACCUMULATE ARG=" + getShortcutLabel() + "_sin STRIDE=" + stride + " CLEAR=" + clearstride );
+    readInputLine( getShortcutLabel() + "_cossum: ACCUMULATE ARG=" + getShortcutLabel() + "_cos STRIDE=" + stride + " CLEAR=" + clearstride );
+    readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_sinsum," + getShortcutLabel() + "_cossum," + getShortcutLabel() + "_denom FUNC=" + lbound + "+" + pfactor + "*atan2(x/z,y/z) PERIODIC=" + lbound +"," + ubound);
   } else {
-    setNotPeriodic();
+    readInputLine( getShortcutLabel() + "_prod: CUSTOM ARG=" + arg[0] + "," + getShortcutLabel() + "_weight FUNC=x*y PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_numer: ACCUMULATE ARG=" + getShortcutLabel() + "_prod STRIDE=" + stride + " CLEAR=" + clearstride  );
+    readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_numer," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
   }
-  // Create a vessel to hold the average
-  vesselbase::VesselOptions da("myaverage","",-1,instring,this);
-  Keywords keys; AverageVessel::registerKeywords( keys );
-  vesselbase::VesselOptions dar( da, keys );
-  auto average=Tools::make_unique<AverageVessel>(dar);
-  myaverage = average.get();
-  setAveragingAction( std::move(average), false );
-}
-
-void Average::performOperations( const bool& from_update ) {
-  myaverage->accumulate( cweight, getArgument(0) );
-}
-
-void Average::accumulateAverage( MultiValue& myvals ) const {
-  plumed_dbg_assert( myvals.getNumberOfValues()==3 );
-  myaverage->accumulate( myvals.get(0), myvals.get(1) );
-}
-
-void Average::finishAveraging() {
-  setValue( myaverage->getAverage() );
 }
 
 }

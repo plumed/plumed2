@@ -19,159 +19,85 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "MultiColvarBase.h"
-#include "AtomValuePack.h"
+#include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
-#include "tools/Angle.h"
-#include "tools/SwitchingFunction.h"
+#include "MultiColvarShortcuts.h"
 
-#include <string>
-#include <cmath>
+//+PLUMEDOC COLVAR XANGLES
+/*
+Calculate the angle between an arbitrary vector and the positive x direction
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC COLVAR YANGLES
+/*
+Calculate the angle between an arbitrary vector and the positive y direction
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC COLVAR ZANGLES
+/*
+Calculate the angle between an arbitrary vector and the positive z direction
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 
 namespace PLMD {
 namespace multicolvar {
 
-//+PLUMEDOC MCOLVAR XANGLES
-/*
-Calculate the angles between the vector connecting two atoms and the x axis.
-
-\par Examples
-
-The following input tells plumed to calculate the angles between the x-axis and the vector connecting atom 3 to atom 5 and between the x-axis
-and the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then
-\plumedfile
-XANGLES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
-PRINT ARG=d1.min
-\endplumedfile
-(See also \ref PRINT).
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC MCOLVAR YANGLES
-/*
-Calculate the angles between the vector connecting two atoms and the y axis.
-
-\par Examples
-
-The following input tells plumed to calculate the angles between the y-axis and the vector connecting atom 3 to atom 5 and between the y-axis
-and the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then
-\plumedfile
-YANGLES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
-PRINT ARG=d1.min
-\endplumedfile
-(See also \ref PRINT).
-*/
-//+ENDPLUMEDOC
-
-//+PLUMEDOC MCOLVAR ZANGLES
-/*
-Calculate the angles between the vector connecting two atoms and the z axis.
-
-\par Examples
-
-The following input tells plumed to calculate the angles between the z-axis and the vector connecting atom 3 to atom 5 and between the z-axis
-and the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then
-\plumedfile
-ZANGLES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
-PRINT ARG=d1.min
-\endplumedfile
-(See also \ref PRINT).
-*/
-//+ENDPLUMEDOC
-
-
-
-class XAngles : public MultiColvarBase {
-private:
-  bool use_sf;
-  unsigned myc;
-  SwitchingFunction sf1;
+class XAngle : public ActionShortcut {
 public:
-  static void registerKeywords( Keywords& keys );
-  explicit XAngles(const ActionOptions&);
-// active methods:
-  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
-  double calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& ) const override;
-/// Returns the number of coordinates of the field
-  bool isPeriodic() override { return false; }
+  static void registerKeywords(Keywords& keys);
+  explicit XAngle(const ActionOptions&);
 };
 
-PLUMED_REGISTER_ACTION(XAngles,"XANGLES")
-PLUMED_REGISTER_ACTION(XAngles,"YANGLES")
-PLUMED_REGISTER_ACTION(XAngles,"ZANGLES")
+PLUMED_REGISTER_ACTION(XAngle,"XANGLES")
+PLUMED_REGISTER_ACTION(XAngle,"YANGLES")
+PLUMED_REGISTER_ACTION(XAngle,"ZANGLES")
 
-void XAngles::registerKeywords( Keywords& keys ) {
-  MultiColvarBase::registerKeywords( keys );
-  keys.use("MAX"); keys.use("ALT_MIN");
-  keys.use("MEAN"); keys.use("MIN"); keys.use("LESS_THAN");
-  keys.use("LOWEST"); keys.use("HIGHEST");
-  keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
-  keys.add("numbered","ATOMS","the atoms involved in each of the angles you wish to calculate. "
-           "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one angle will be "
-           "calculated for each ATOM keyword you specify (all ATOM keywords should "
-           "specify the indices of two atoms).  The eventual number of quantities calculated by this "
-           "action will depend on what functions of the distribution you choose to calculate.");
-  keys.reset_style("ATOMS","atoms");
-  keys.add("atoms-1","GROUP","Calculate the distance between each distinct pair of atoms in the group");
-  keys.add("atoms-2","GROUPA","Calculate the distances between all the atoms in GROUPA and all "
-           "the atoms in GROUPB. This must be used in conjunction with GROUPB.");
-  keys.add("atoms-2","GROUPB","Calculate the distances between all the atoms in GROUPA and all the atoms "
-           "in GROUPB. This must be used in conjunction with GROUPA.");
-  keys.add("optional","SWITCH","A switching function that ensures that only angles are only computed when atoms are within "
-           "are within a certain fixed cutoff. The following provides information on the \\ref switchingfunction that are available.");
+void XAngle::registerKeywords(Keywords& keys) {
+  ActionShortcut::registerKeywords( keys );
+  keys.add("numbered","ATOMS","the pairs of atoms that you would like to calculate the angles for");
+  keys.reset_style("ATOMS","atoms"); MultiColvarShortcuts::shortcutKeywords( keys );
 }
 
-XAngles::XAngles(const ActionOptions&ao):
+XAngle::XAngle(const ActionOptions& ao):
   Action(ao),
-  MultiColvarBase(ao),
-  use_sf(false)
+  ActionShortcut(ao)
 {
-  if( getName().find("X")!=std::string::npos) myc=0;
-  else if( getName().find("Y")!=std::string::npos) myc=1;
-  else if( getName().find("Z")!=std::string::npos) myc=2;
-  else plumed_error();
-
-  // Read in switching function
-  std::string sfinput, errors; parse("SWITCH",sfinput);
-  if( sfinput.length()>0 ) {
-    use_sf=true; weightHasDerivatives=true;
-    sf1.set(sfinput,errors);
-    if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
-    log.printf("  only calculating angles for atoms separated by less than %s\n", sf1.description().c_str() );
-    setLinkCellCutoff( sf1.get_dmax() );
+  // Create distances
+  std::string dline = getShortcutLabel() + ": DISTANCE_VECTOR COMPONENTS";
+  for(unsigned i=1;; ++i) {
+    std::string atstring; parseNumbered("ATOMS",i,atstring);
+    if( atstring.length()==0 ) break;
+    std::string num; Tools::convert( i, num );
+    dline += " ATOMS" + num + "=" + atstring;
   }
-
-  // Read in the atoms
-  std::vector<AtomNumber> all_atoms;
-  readTwoGroups( "GROUP", "GROUPA", "GROUPB", all_atoms );
-  if( atom_lab.size()==0 ) readAtomsLikeKeyword( "ATOMS", 2, all_atoms );
-  setupMultiColvarBase( all_atoms );
-  // And check everything has been read in correctly
-  checkRead();
-}
-
-double XAngles::calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& myatoms ) const {
-  if(!use_sf) return 1.0;
-
-  Vector distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
-  double dw, w = sf1.calculateSqr( distance.modulo2(), dw );
-  addAtomDerivatives( 0, 0, (-dw)*distance, myatoms );
-  addAtomDerivatives( 0, 1, (+dw)*distance, myatoms );
-  myatoms.addBoxDerivatives( 0, (-dw)*Tensor(distance,distance) );
-  return w;
-}
-
-double XAngles::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
-  Vector ddij, ddik, axis, distance; axis.zero(); axis[myc]=1;
-  distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
-  PLMD::Angle a; double angle=a.compute( distance, axis, ddij, ddik );
-
-  addAtomDerivatives( 1, 0, -ddij, myatoms );
-  addAtomDerivatives( 1, 1, ddij, myatoms );
-  myatoms.addBoxDerivatives( 1, -Tensor( distance,ddij ) );
-  return angle;
+  log.printf("Action DISTANCE\n");
+  log.printf("  with label %s \n", getShortcutLabel().c_str() );
+  readInputLine( dline );
+  // Normalize the vectors
+  readInputLine( getShortcutLabel() + "_norm2: COMBINE ARG1=" + getShortcutLabel() + ".x" + " ARG2=" + getShortcutLabel() + ".y ARG3=" + getShortcutLabel() + ".z POWERS=2,2,2 PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_norm: CUSTOM ARG1=" + getShortcutLabel() + "_norm2 FUNC=sqrt(x) PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_norm_x: CUSTOM ARG1=" + getShortcutLabel() + ".x ARG2=" + getShortcutLabel() + "_norm FUNC=x/y PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_norm_y: CUSTOM ARG1=" + getShortcutLabel() + ".y ARG2=" + getShortcutLabel() + "_norm FUNC=x/y PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_norm_z: CUSTOM ARG1=" + getShortcutLabel() + ".z ARG2=" + getShortcutLabel() + "_norm FUNC=x/y PERIODIC=NO");
+  // Now compute the angles with matheval
+  if( getName()=="XANGLES" ) readInputLine( getShortcutLabel() + "_ang: MATHEVAL FUNC=acos(x) PERIODIC=NO ARG1=" + getShortcutLabel() + "_norm_x");
+  if( getName()=="YANGLES" ) readInputLine( getShortcutLabel() + "_ang: MATHEVAL FUNC=acos(x) PERIODIC=NO ARG1=" + getShortcutLabel() + "_norm_y");
+  if( getName()=="ZANGLES" ) readInputLine( getShortcutLabel() + "_ang: MATHEVAL FUNC=acos(x) PERIODIC=NO ARG1=" + getShortcutLabel() + "_norm_z");
+  // Add shortcuts to label
+  MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel() + "_ang", "", this );
 }
 
 }
 }
-
