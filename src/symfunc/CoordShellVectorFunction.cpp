@@ -165,24 +165,24 @@ CoordShellVectorFunction::CoordShellVectorFunction(const ActionOptions& ao):
   // Calculate FCC cubic function from bond vectors
   if( getName()=="FCCUBIC" ) {
     std::string alpha; parse("ALPHA",alpha);
-    readInputLine( getShortcutLabel() + "_vfunc: FCCUBIC_FUNC ARG1=" + matlab + ".x ARG2=" + matlab + ".y ARG3=" + matlab + ".z ALPHA=" + alpha);
+    readInputLine( getShortcutLabel() + "_vfunc: FCCUBIC_FUNC ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z ALPHA=" + alpha);
   } else if( getName()=="TETRAHEDRAL" ) {
-    readInputLine( getShortcutLabel() + "_r: CUSTOM ARG1=" + matlab + ".x ARG2=" + matlab + ".y ARG3=" + matlab + ".z PERIODIC=NO FUNC=sqrt(x*x+y*y+z*z)");
-    readInputLine( getShortcutLabel() + "_vfunc: CUSTOM ARG1=" + matlab + ".x ARG2=" + matlab + ".y ARG3=" + matlab + ".z ARG4=" + getShortcutLabel() + "_r"
+    readInputLine( getShortcutLabel() + "_r: CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z PERIODIC=NO FUNC=sqrt(x*x+y*y+z*z)");
+    readInputLine( getShortcutLabel() + "_vfunc: CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z," + getShortcutLabel() + "_r"
                    + " VAR=x,y,z,r PERIODIC=NO FUNC=((x+y+z)/r)^3+((x-y-z)/r)^3+((-x+y-z)/r)^3+((-x-y+z)/r)^3" );
   } else if( getName()=="SIMPLECUBIC" ) {
-    readInputLine( getShortcutLabel() + "_r: CUSTOM ARG1=" + matlab + ".x ARG2=" + matlab + ".y ARG3=" + matlab + ".z PERIODIC=NO FUNC=sqrt(x*x+y*y+z*z)");
-    readInputLine( getShortcutLabel() + "_vfunc: CUSTOM ARG1=" + matlab + ".x ARG2=" + matlab + ".y ARG3=" + matlab + ".z ARG4=" + getShortcutLabel() + "_r"
+    readInputLine( getShortcutLabel() + "_r: CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z PERIODIC=NO FUNC=sqrt(x*x+y*y+z*z)");
+    readInputLine( getShortcutLabel() + "_vfunc: CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z," + getShortcutLabel() + "_r"
                    + " VAR=x,y,z,r PERIODIC=NO FUNC=(x^4+y^4+z^4)/(r^4)" );
   } else {
     std::string myfunc; parse("FUNCTION",myfunc);
     if( myfunc.find("r")!=std::string::npos ) {
-      readInputLine( getShortcutLabel() + "_r: CUSTOM ARG1=" + matlab + ".x ARG2=" + matlab + ".y ARG3=" + matlab + ".z PERIODIC=NO FUNC=sqrt(x*x+y*y+z*z)");
-      readInputLine( getShortcutLabel() + "_vfunc: CUSTOM ARG1=" + matlab + ".x ARG2=" + matlab + ".y ARG3=" + matlab + ".z ARG4=" + getShortcutLabel() + "_r VAR=x,y,z,r PERIODIC=NO FUNC=" + myfunc );
-    } else readInputLine( getShortcutLabel() + "_vfunc: CUSTOM ARG1=" + matlab + ".x ARG2=" + matlab + ".y ARG3=" + matlab + ".z PERIODIC=NO FUNC=" + myfunc );
+      readInputLine( getShortcutLabel() + "_r: CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z PERIODIC=NO FUNC=sqrt(x*x+y*y+z*z)");
+      readInputLine( getShortcutLabel() + "_vfunc: CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z," + getShortcutLabel() + "_r VAR=x,y,z,r PERIODIC=NO FUNC=" + myfunc );
+    } else readInputLine( getShortcutLabel() + "_vfunc: CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z PERIODIC=NO FUNC=" + myfunc );
   }
   // Hadamard product of function above and weights
-  readInputLine( getShortcutLabel() + "_wvfunc: CUSTOM ARG1=" + getShortcutLabel() + "_vfunc ARG2=" + matlab + ".w FUNC=x*y PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_wvfunc: CUSTOM ARG=" + getShortcutLabel() + "_vfunc," + matlab + ".w FUNC=x*y PERIODIC=NO");
   // And coordination numbers
   ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_mat");
   plumed_assert( av && av->getNumberOfComponents()>0 && (av->copyOutput(0))->getRank()==2 );
@@ -195,7 +195,7 @@ CoordShellVectorFunction::CoordShellVectorFunction(const ActionOptions& ao):
     // Calculate coordination numbers for denominator
     readInputLine( getShortcutLabel() + "_denom: MATRIX_VECTOR_PRODUCT ARG=" + matlab + ".w," + getShortcutLabel() + "_ones");
     // And normalise
-    readInputLine( getShortcutLabel() + "_n: CUSTOM ARG1=" + getShortcutLabel() + " ARG2=" + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_n: CUSTOM ARG=" + getShortcutLabel() + "," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
   }
   // And expand the functions
   std::map<std::string,std::string> keymap; multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );

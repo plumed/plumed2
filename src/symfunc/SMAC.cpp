@@ -96,7 +96,8 @@ SMAC::SMAC(const ActionOptions& ao):
     if( words[0]=="GAUSSIAN" ) readInputLine( getShortcutLabel() + "_kf" + istr + ": CUSTOM PERIODIC=NO FUNC=exp(-x/2) ARG=" +  getShortcutLabel() + "_kf" + istr + "_r2" );
     else if( words[0]=="TRIANGULAR" ) readInputLine( getShortcutLabel() + "_kf" + istr + ": CUSTOM PERIODIC=NO FUNC=step(1-sqrt(x))*(1-sqrt(x)) ARG=" + getShortcutLabel() + "_kf" + istr + "_r2" );
     else readInputLine( getShortcutLabel() + "_kf" + istr + ": CUSTOM PERIODIC=NO FUNC=" + words[0] + " ARG=" + getShortcutLabel() + "_kf" + istr + "_r2" );
-    kmap_input += " ARG" + istr + "=" + getShortcutLabel() + "_kf" + istr;
+    if( i==1 ) kmap_input += " ARG=" + getShortcutLabel() + "_kf" + istr;
+    else kmap_input += "," + getShortcutLabel() + "_kf" + istr;
   }
   readInputLine( kmap_input );
   // Now create the product matrix

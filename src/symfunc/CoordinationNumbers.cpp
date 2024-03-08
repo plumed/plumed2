@@ -169,7 +169,7 @@ CoordinationNumbers::CoordinationNumbers(const ActionOptions& ao):
   if( getName()=="COORDINATION_MOMENTS" ) {
     // Calculate the lengths of the vectors
     std::string r_power; parse("R_POWER",r_power);
-    readInputLine( getShortcutLabel() + "_pow: CUSTOM ARG1=" + matlab + ".x ARG2=" + matlab + ".y ARG3=" + matlab + ".z ARG4=" + matlab + ".w VAR=x,y,z,w "
+    readInputLine( getShortcutLabel() + "_pow: CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z," + matlab + ".w VAR=x,y,z,w "
                    + "PERIODIC=NO FUNC=w*(sqrt(x*x+y*y+z*z)^" + r_power +")");
     matlab = getShortcutLabel() + "_pow";
   }

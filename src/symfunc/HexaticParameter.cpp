@@ -90,9 +90,9 @@ HexacticParameter::HexacticParameter( const ActionOptions& ao):
   // Input for denominator (coord)
   readInputLine( getShortcutLabel() + "_denom: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_mat.w," + getShortcutLabel() + "_ones");
   // Divide real part by coordination numbers
-  readInputLine( getShortcutLabel() + "_rmn: CUSTOM ARG1=" + getShortcutLabel() + "_rm ARG2=" + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_rmn: CUSTOM ARG=" + getShortcutLabel() + "_rm," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
   // Devide imaginary part by coordination number
-  readInputLine( getShortcutLabel() + "_imn: CUSTOM ARG1=" + getShortcutLabel() + "_im ARG2=" + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_imn: CUSTOM ARG=" + getShortcutLabel() + "_im," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
 
   // If we are doing VMEAN determine sum of vector components
   bool do_vmean; parseFlag("VMEAN",do_vmean);
@@ -120,8 +120,8 @@ HexacticParameter::HexacticParameter( const ActionOptions& ao):
 }
 
 void HexacticParameter::createVectorNormInput( const std::string& ilab, const std::string& olab, const std::string& vlab ) {
-  readInputLine( olab + "2: COMBINE PERIODIC=NO ARG1=" + ilab + "_r" + vlab + " ARG2=" + ilab + "_i" + vlab + " POWERS=2,2" );
-  readInputLine( olab + ": CUSTOM ARG1=" + olab + "2 FUNC=sqrt(x) PERIODIC=NO");
+  readInputLine( olab + "2: COMBINE PERIODIC=NO ARG=" + ilab + "_r" + vlab + "," + ilab + "_i" + vlab + " POWERS=2,2" );
+  readInputLine( olab + ": CUSTOM ARG=" + olab + "2 FUNC=sqrt(x) PERIODIC=NO");
 }
 
 }

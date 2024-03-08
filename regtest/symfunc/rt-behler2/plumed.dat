@@ -1,14 +1,14 @@
 UNITS LENGTH=Bohr 
 
 cmat_hh: CONTACT_MATRIX GROUP=2,3,5,6 SWITCH={CUSTOM R_0=10.0 D_MAX=10 FUNC=tanh(1-x)^3} COMPONENTS
-cmat_rh: CUSTOM ARG1=cmat_hh.x ARG2=cmat_hh.y ARG3=cmat_hh.z FUNC=sqrt(x*x+y*y+z*z) PERIODIC=NO
-cmat_fh: CUSTOM ARG1=cmat_rh ARG2=cmat_hh.w FUNC=y*exp(-0.01*x*x) PERIODIC=NO
+cmat_rh: CUSTOM ARG=cmat_hh.x,cmat_hh.y,cmat_hh.z FUNC=sqrt(x*x+y*y+z*z) PERIODIC=NO
+cmat_fh: CUSTOM ARG=cmat_rh,cmat_hh.w FUNC=y*exp(-0.01*x*x) PERIODIC=NO
 ones4: ONES SIZE=4
 beh_hh: MATRIX_VECTOR_PRODUCT ARG=cmat_fh,ones4
  
 cmat_oo: CONTACT_MATRIX GROUP=1,4 SWITCH={CUSTOM R_0=10.0 D_MAX=10 FUNC=tanh(1-x)^3} COMPONENTS
-cmat_or: CUSTOM ARG1=cmat_oo.x ARG2=cmat_oo.y ARG3=cmat_oo.z FUNC=sqrt(x*x+y*y+z*z) PERIODIC=NO
-cmat_fo: CUSTOM ARG1=cmat_or ARG2=cmat_oo.w FUNC=y*exp(-0.01*x*x) PERIODIC=NO
+cmat_or: CUSTOM ARG=cmat_oo.x,cmat_oo.y,cmat_oo.z FUNC=sqrt(x*x+y*y+z*z) PERIODIC=NO
+cmat_fo: CUSTOM ARG=cmat_or,cmat_oo.w FUNC=y*exp(-0.01*x*x) PERIODIC=NO
 ones2: ONES SIZE=2
 beh_oo: MATRIX_VECTOR_PRODUCT ARG=cmat_fo,ones2
 

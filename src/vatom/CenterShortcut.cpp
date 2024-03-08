@@ -131,9 +131,9 @@ CenterShortcut::CenterShortcut(const ActionOptions& ao):
     readInputLine( getShortcutLabel() + "_sinsumc: SUM ARG=" + getShortcutLabel() + "_sinc PERIODIC=NO");
     readInputLine( getShortcutLabel() + "_cossumc: SUM ARG=" + getShortcutLabel() + "_cosc PERIODIC=NO");
     // And get the final position in fractional coordinates
-    readInputLine( getShortcutLabel() + "_a: CUSTOM ARG1=" + getShortcutLabel() + "_sinsuma ARG2=" + getShortcutLabel() + "_cossuma FUNC=atan2(x,y)/(2*pi) PERIODIC=NO");
-    readInputLine( getShortcutLabel() + "_b: CUSTOM ARG1=" + getShortcutLabel() + "_sinsumb ARG2=" + getShortcutLabel() + "_cossumb FUNC=atan2(x,y)/(2*pi) PERIODIC=NO");
-    readInputLine( getShortcutLabel() + "_c: CUSTOM ARG1=" + getShortcutLabel() + "_sinsumc ARG2=" + getShortcutLabel() + "_cossumc FUNC=atan2(x,y)/(2*pi) PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_a: CUSTOM ARG=" + getShortcutLabel() + "_sinsuma," + getShortcutLabel() + "_cossuma FUNC=atan2(x,y)/(2*pi) PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_b: CUSTOM ARG=" + getShortcutLabel() + "_sinsumb," + getShortcutLabel() + "_cossumb FUNC=atan2(x,y)/(2*pi) PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_c: CUSTOM ARG=" + getShortcutLabel() + "_sinsumc," + getShortcutLabel() + "_cossumc FUNC=atan2(x,y)/(2*pi) PERIODIC=NO");
     // And create the virtual atom
     if( safe_phases ) {
       readInputLine( getShortcutLabel() + ": ARGS2VATOM XPOS=" + getShortcutLabel() + "_a YPOS=" + getShortcutLabel() + "_b ZPOS=" + getShortcutLabel() + "_c "

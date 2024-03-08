@@ -176,7 +176,7 @@ Kernel::Kernel(const ActionOptions&ao):
         std::string num, argnames= getShortcutLabel() + "_det.vals-1";
         for(unsigned i=1; i<nvals; ++i) { Tools::convert( i+1, num ); argnames += "," + getShortcutLabel() + "_det.vals-" + num; }
         readInputLine( getShortcutLabel() + "_comp: CONCATENATE ARG=" + argnames );
-        readInputLine( getShortcutLabel() + "_vec: CUSTOM ARG1=" + getShortcutLabel() + "_comp FUNC=1/x PERIODIC=NO");
+        readInputLine( getShortcutLabel() + "_vec: CUSTOM ARG=" + getShortcutLabel() + "_comp FUNC=1/x PERIODIC=NO");
       } else {
         readInputLine( getShortcutLabel() + "_det: DETERMINANT ARG=" + getShortcutLabel() + "_cov");
       }
@@ -188,18 +188,18 @@ Kernel::Kernel(const ActionOptions&ao):
   if( norm ) {
     if( ktype=="gaussian" ) {
       std::string pstr; Tools::convert( sqrt(pow(2*pi,nvals)), pstr );
-      readInputLine( getShortcutLabel() + "_vol: CUSTOM ARG1=" + getShortcutLabel() + "_det FUNC=(sqrt(x)*" + pstr + ") PERIODIC=NO");
+      readInputLine( getShortcutLabel() + "_vol: CUSTOM ARG=" + getShortcutLabel() + "_det FUNC=(sqrt(x)*" + pstr + ") PERIODIC=NO");
     } else if( ktype=="von-misses" ) {
       std::string wstr, min, max;
       ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_dist_2_diff" ); plumed_assert( av );
       if( !av->copyOutput(0)->isPeriodic() ) error("VON_MISSES only works with periodic variables");
       av->copyOutput(0)->getDomain(min,max);
       readInputLine( getShortcutLabel() + "_bes: BESSEL ORDER=0 ARG=" + getShortcutLabel() + "_vec");
-      readInputLine( getShortcutLabel() + "_cc: CUSTOM ARG1=" + getShortcutLabel() + "_bes FUNC=("+max+"-"+min+")*x PERIODIC=NO");
+      readInputLine( getShortcutLabel() + "_cc: CUSTOM ARG=" + getShortcutLabel() + "_bes FUNC=("+max+"-"+min+")*x PERIODIC=NO");
       readInputLine( getShortcutLabel() + "_vol: PRODUCT ARG=" + getShortcutLabel() + "_cc");
     } else error("only gaussian and von-misses kernels are normalizable");
     // And the (suitably normalized) kernel
-    readInputLine( getShortcutLabel() + ": CUSTOM ARG1=" + getShortcutLabel() + "_dist_2 ARG2=" + getShortcutLabel() + "_vol FUNC=" + wstr + "*exp(-x/2)/y PERIODIC=NO");
+    readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_dist_2," + getShortcutLabel() + "_vol FUNC=" + wstr + "*exp(-x/2)/y PERIODIC=NO");
   } else {
     readInputLine( getShortcutLabel() + ": CUSTOM ARG1=" + getShortcutLabel() + "_dist_2 FUNC=" + wstr + "*" + func_str + " PERIODIC=NO");
   }

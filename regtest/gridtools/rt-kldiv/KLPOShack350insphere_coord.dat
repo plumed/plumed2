@@ -7,11 +7,11 @@ LABEL=dd_centers
 ... CONTACT_MATRIX
 
 # Now normalize the orientation vectors
-dd_centers_len2: COMBINE ARG1=dd_centers.x ARG2=dd_centers.y ARG3=dd_centers.z POWERS=2,2,2 PERIODIC=NO
-dd_centers_len: CUSTOM ARG1=dd_centers_len2 FUNC=sqrt(x) PERIODIC=NO
-bonds_x: CUSTOM ARG1=dd_centers.x ARG2=dd_centers_len FUNC=x/y PERIODIC=NO
-bonds_y: CUSTOM ARG1=dd_centers.y ARG2=dd_centers_len FUNC=x/y PERIODIC=NO
-bonds_z: CUSTOM ARG1=dd_centers.z ARG2=dd_centers_len FUNC=x/y PERIODIC=NO
+dd_centers_len2: COMBINE ARG=dd_centers.x,dd_centers.y,dd_centers.z POWERS=2,2,2 PERIODIC=NO
+dd_centers_len: CUSTOM ARG=dd_centers_len2 FUNC=sqrt(x) PERIODIC=NO
+bonds_x: CUSTOM ARG=dd_centers.x,dd_centers_len FUNC=x/y PERIODIC=NO
+bonds_y: CUSTOM ARG=dd_centers.y,dd_centers_len FUNC=x/y PERIODIC=NO
+bonds_z: CUSTOM ARG=dd_centers.z,dd_centers_len FUNC=x/y PERIODIC=NO
 
 # Now calculate vectors for OO distances
 CONTACT_MATRIX ...
@@ -24,11 +24,11 @@ LABEL=dd_OO
 ... CONTACT_MATRIX
 
 # Now normalize the vectors
-bonds_OO_len2: COMBINE ARG1=dd_OO.x ARG2=dd_OO.y ARG3=dd_OO.z POWERS=2,2,2 PERIODIC=NO
-bonds_OO_len: CUSTOM ARG1=bonds_OO_len2 FUNC=sqrt(x) PERIODIC=NO
-bonds_OO_x: CUSTOM ARG1=dd_OO.x ARG2=bonds_OO_len FUNC=x/y PERIODIC=NO
-bonds_OO_y: CUSTOM ARG1=dd_OO.y ARG2=bonds_OO_len FUNC=x/y PERIODIC=NO
-bonds_OO_z: CUSTOM ARG1=dd_OO.z ARG2=bonds_OO_len FUNC=x/y PERIODIC=NO
+bonds_OO_len2: COMBINE ARG=dd_OO.x,dd_OO.y,dd_OO.z POWERS=2,2,2 PERIODIC=NO
+bonds_OO_len: CUSTOM ARG=bonds_OO_len2 FUNC=sqrt(x) PERIODIC=NO
+bonds_OO_x: CUSTOM ARG=dd_OO.x,bonds_OO_len FUNC=x/y PERIODIC=NO
+bonds_OO_y: CUSTOM ARG=dd_OO.y,bonds_OO_len FUNC=x/y PERIODIC=NO
+bonds_OO_z: CUSTOM ARG=dd_OO.z,bonds_OO_len FUNC=x/y PERIODIC=NO
 
 # Now calculate vectors for ON distances
 CONTACT_MATRIX ...
@@ -50,19 +50,19 @@ coordmat_2: OUTER_PRODUCT ARG=coord_morethan,coord_morethan
 coordmat_3: OUTER_PRODUCT ARG=coord_morethan,coord_morethan
 
 # Now normalize the vectors
-bonds_ON_len2: COMBINE ARG1=dd_ON.x ARG2=dd_ON.y ARG3=dd_ON.z POWERS=2,2,2 PERIODIC=NO
-bonds_ON_len: CUSTOM ARG1=bonds_ON_len2 FUNC=sqrt(x) PERIODIC=NO
-bonds_ON_x: CUSTOM ARG1=dd_ON.x ARG2=bonds_ON_len FUNC=x/y PERIODIC=NO
-bonds_ON_y: CUSTOM ARG1=dd_ON.y ARG2=bonds_ON_len FUNC=x/y PERIODIC=NO
-bonds_ON_z: CUSTOM ARG1=dd_ON.z ARG2=bonds_ON_len FUNC=x/y PERIODIC=NO
+bonds_ON_len2: COMBINE ARG=dd_ON.x,dd_ON.y,dd_ON.z POWERS=2,2,2 PERIODIC=NO
+bonds_ON_len: CUSTOM ARG=bonds_ON_len2 FUNC=sqrt(x) PERIODIC=NO
+bonds_ON_x: CUSTOM ARG=dd_ON.x,bonds_ON_len FUNC=x/y PERIODIC=NO
+bonds_ON_y: CUSTOM ARG=dd_ON.y,bonds_ON_len FUNC=x/y PERIODIC=NO
+bonds_ON_z: CUSTOM ARG=dd_ON.z,bonds_ON_len FUNC=x/y PERIODIC=NO
 
 # Building correct weight matrices by element wise multiplication of all weigths
 #test: MATHEVAL ARG1=spmat_1 ARG2=coordmat_2 FUNC=x*y PERIODIC=NO
-w_centers: MATHEVAL ARG1=dd_centers.w ARG2=coordmat_1 ARG3=spmat_1 FUNC=x*y*z PERIODIC=NO
+w_centers: MATHEVAL ARG=dd_centers.w,coordmat_1,spmat_1 FUNC=x*y*z PERIODIC=NO
 w_centers_sum: SUM ARG=w_centers PERIODIC=NO
-w_OO: MATHEVAL ARG1=dd_OO.w ARG2=coordmat_2 ARG3=spmat_2 FUNC=x*y*z PERIODIC=NO
+w_OO: MATHEVAL ARG=dd_OO.w,coordmat_2,spmat_2 FUNC=x*y*z PERIODIC=NO
 w_OO_sum: SUM ARG=w_OO PERIODIC=NO
-w_ON: MATHEVAL ARG1=dd_ON.w ARG2=coordmat_3 ARG3=spmat_3 FUNC=x*y*z PERIODIC=NO
+w_ON: MATHEVAL ARG=dd_ON.w,coordmat_3,spmat_3 FUNC=x*y*z PERIODIC=NO
 w_ON_sum: SUM ARG=w_ON PERIODIC=NO
 # Now construct the instantaneous histograms 
 Sppos_u: SPHERICAL_KDE ARG=bonds_x,bonds_y,bonds_z HEIGHTS=w_centers GRID_BIN=400 CONCENTRATION=100.0

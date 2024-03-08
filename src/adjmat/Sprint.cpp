@@ -134,7 +134,7 @@ Sprint::Sprint(const ActionOptions& ao):
   readInputLine( getShortcutLabel() + "_diag: DIAGONALIZE ARG=" + getShortcutLabel() + "_jmat VECTORS=1");
   // Compute sprint coordinates as product of eigenvalue and eigenvector times square root of number of atoms in all groups
   std::string str_natoms; Tools::convert( ntot_atoms, str_natoms );
-  readInputLine( getShortcutLabel() + "_sp: CUSTOM ARG1=" + getShortcutLabel() + "_diag.vals-1 ARG2=" + getShortcutLabel() +
+  readInputLine( getShortcutLabel() + "_sp: CUSTOM ARG=" + getShortcutLabel() + "_diag.vals-1," + getShortcutLabel() +
                  "_diag.vecs-1 FUNC=sqrt(" + str_natoms + ")*x*y PERIODIC=NO");
   // Sort sprint coordinates for each group of atoms
   unsigned k=0;

@@ -87,15 +87,15 @@ XAngle::XAngle(const ActionOptions& ao):
   log.printf("  with label %s \n", getShortcutLabel().c_str() );
   readInputLine( dline );
   // Normalize the vectors
-  readInputLine( getShortcutLabel() + "_norm2: COMBINE ARG1=" + getShortcutLabel() + ".x" + " ARG2=" + getShortcutLabel() + ".y ARG3=" + getShortcutLabel() + ".z POWERS=2,2,2 PERIODIC=NO");
-  readInputLine( getShortcutLabel() + "_norm: CUSTOM ARG1=" + getShortcutLabel() + "_norm2 FUNC=sqrt(x) PERIODIC=NO");
-  readInputLine( getShortcutLabel() + "_norm_x: CUSTOM ARG1=" + getShortcutLabel() + ".x ARG2=" + getShortcutLabel() + "_norm FUNC=x/y PERIODIC=NO");
-  readInputLine( getShortcutLabel() + "_norm_y: CUSTOM ARG1=" + getShortcutLabel() + ".y ARG2=" + getShortcutLabel() + "_norm FUNC=x/y PERIODIC=NO");
-  readInputLine( getShortcutLabel() + "_norm_z: CUSTOM ARG1=" + getShortcutLabel() + ".z ARG2=" + getShortcutLabel() + "_norm FUNC=x/y PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_norm2: COMBINE ARG=" + getShortcutLabel() + ".x" + "," + getShortcutLabel() + ".y," + getShortcutLabel() + ".z POWERS=2,2,2 PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_norm: CUSTOM ARG=" + getShortcutLabel() + "_norm2 FUNC=sqrt(x) PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_norm_x: CUSTOM ARG=" + getShortcutLabel() + ".x," + getShortcutLabel() + "_norm FUNC=x/y PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_norm_y: CUSTOM ARG=" + getShortcutLabel() + ".y," + getShortcutLabel() + "_norm FUNC=x/y PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_norm_z: CUSTOM ARG=" + getShortcutLabel() + ".z," + getShortcutLabel() + "_norm FUNC=x/y PERIODIC=NO");
   // Now compute the angles with matheval
-  if( getName()=="XANGLES" ) readInputLine( getShortcutLabel() + "_ang: CUSTOM FUNC=acos(x) PERIODIC=NO ARG1=" + getShortcutLabel() + "_norm_x");
-  if( getName()=="YANGLES" ) readInputLine( getShortcutLabel() + "_ang: CUSTOM FUNC=acos(x) PERIODIC=NO ARG1=" + getShortcutLabel() + "_norm_y");
-  if( getName()=="ZANGLES" ) readInputLine( getShortcutLabel() + "_ang: CUSTOM FUNC=acos(x) PERIODIC=NO ARG1=" + getShortcutLabel() + "_norm_z");
+  if( getName()=="XANGLES" ) readInputLine( getShortcutLabel() + "_ang: CUSTOM FUNC=acos(x) PERIODIC=NO ARG=" + getShortcutLabel() + "_norm_x");
+  if( getName()=="YANGLES" ) readInputLine( getShortcutLabel() + "_ang: CUSTOM FUNC=acos(x) PERIODIC=NO ARG=" + getShortcutLabel() + "_norm_y");
+  if( getName()=="ZANGLES" ) readInputLine( getShortcutLabel() + "_ang: CUSTOM FUNC=acos(x) PERIODIC=NO ARG=" + getShortcutLabel() + "_norm_z");
   // Add shortcuts to label
   MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel() + "_ang", "", this );
 }

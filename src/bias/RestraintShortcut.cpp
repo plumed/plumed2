@@ -80,19 +80,19 @@ RestraintShortcut::RestraintShortcut(const ActionOptions&ao):
     std::string argn; std::size_t dot=args[i].find_first_of(".");
     if(dot!=std::string::npos) argn = args[i].substr(0,dot) + "_" + args[i].substr(dot+1);
     else argn = args[i];
-    readInputLine( getShortcutLabel() + "_cv_" + argn + ": COMBINE PERIODIC=NO ARG1=" + args[i] + " PARAMETERS=" + at[i] );
+    readInputLine( getShortcutLabel() + "_cv_" + argn + ": COMBINE PERIODIC=NO ARG=" + args[i] + " PARAMETERS=" + at[i] );
     double kap; Tools::convert(  kappa[i], kap );
     if( fabs(kap)>0 ) {
       non_constant_force = true;
-      readInputLine( getShortcutLabel() + "_harm_" + argn + ": CUSTOM PERIODIC=NO FUNC=0.5*" + kappa[i] + "*x^2 ARG1=" + getShortcutLabel() + "_cv_" + argn );
+      readInputLine( getShortcutLabel() + "_harm_" + argn + ": CUSTOM PERIODIC=NO FUNC=0.5*" + kappa[i] + "*x^2 ARG=" + getShortcutLabel() + "_cv_" + argn );
       readInputLine( getShortcutLabel() + "_kap_" + argn + ": SUM PERIODIC=NO ARG=" + getShortcutLabel() + "_harm_" + argn );
-      readInputLine( getShortcutLabel() + "_f2_" + argn + ": CUSTOM PERIODIC=NO FUNC=" + kappa[i] + "*2*x+" + slope[i] + "*" + slope[i] + " ARG1=" + getShortcutLabel() + "_harm_" + argn );
+      readInputLine( getShortcutLabel() + "_f2_" + argn + ": CUSTOM PERIODIC=NO FUNC=" + kappa[i] + "*2*x+" + slope[i] + "*" + slope[i] + " ARG=" + getShortcutLabel() + "_harm_" + argn );
       if( i==0 ) biasargs = "ARG=" + getShortcutLabel() + "_kap_" + argn; else biasargs += "," + getShortcutLabel() + "_kap_" + argn;
       if( i==0 ) forceargs = "ARG=" + getShortcutLabel() + "_f2_" + argn; else forceargs += "," + getShortcutLabel() + "_f2_" + argn;
     }
     double slo; Tools::convert( slope[i], slo );
     if( fabs(slo)>0 ) {
-      readInputLine( getShortcutLabel() + "_linear_" + argn + ": CUSTOM PERIODIC=NO FUNC=" + slope[i] + "*x ARG1=" + getShortcutLabel() + "_cv_" + argn );
+      readInputLine( getShortcutLabel() + "_linear_" + argn + ": CUSTOM PERIODIC=NO FUNC=" + slope[i] + "*x ARG=" + getShortcutLabel() + "_cv_" + argn );
       readInputLine( getShortcutLabel() + "_slope_" + argn + ": SUM PERIODIC=NO ARG=" + getShortcutLabel() + "_linear_" + argn );
       if( biasargs.length()==0 ) biasargs = "ARG=" + getShortcutLabel() + "_slope_" + argn; else biasargs += "," + getShortcutLabel() + "_slope_" + argn;
     }

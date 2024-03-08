@@ -75,7 +75,7 @@ AngularTetra::AngularTetra( const ActionOptions& ao):
   readInputLine( getShortcutLabel() + "_g8: GSYMFUNC_THREEBODY WEIGHT=" + getShortcutLabel() + "_neigh " +
                  "ARG=" + getShortcutLabel() + "_mat.x," + getShortcutLabel() + "_mat.y," + getShortcutLabel() + "_mat.z FUNCTION1={FUNC=(cos(ajik)+1/3)^2 LABEL=g8}");
   // Now evaluate the actual per atom CV
-  readInputLine( getShortcutLabel() + ": CUSTOM ARG1=" + getShortcutLabel() + "_g8.g8 FUNC=(1-(3*x/8)) PERIODIC=NO");
+  readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_g8.g8 FUNC=(1-(3*x/8)) PERIODIC=NO");
   // And get the things to do with the quantities we have computed
   std::map<std::string,std::string> keymap; multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );
   multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel(), "", keymap, this );

@@ -58,13 +58,6 @@ FunctionShortcut<T>::FunctionShortcut(const ActionOptions&ao):
   ActionShortcut(ao)
 {
   std::vector<std::string> args; parseVector("ARG",args);
-  if( args.size()==0 ) {
-    for(unsigned i=1;; ++i) {
-      std::string argn;
-      if( !parseNumbered("ARG",i,argn) ) break ;
-      args.push_back(argn);
-    }
-  }
   std::string allargs=args[0]; for(unsigned i=1; i<args.size(); ++i) allargs += "," + args[i];
   std::vector<Value*> vals; ActionWithArguments::interpretArgumentList( args, plumed.getActionSet(), this, vals );
   if( vals.size()==0 ) error("found no input arguments to function");
