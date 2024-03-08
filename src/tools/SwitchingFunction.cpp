@@ -681,6 +681,39 @@ class leptonSwitch: public baseSwitch {
       }
     }
 
+    funcAndDeriv& operator= (const funcAndDeriv& other) {
+      if(this != &other) {
+        expression = other.expression;
+        deriv = other.deriv;
+        std::string arg="x";
+
+        {
+          auto vars=expression.getVariables();
+          bool found_x=std::find(vars.begin(),vars.end(),"x")!=vars.end();
+          bool found_x2=std::find(vars.begin(),vars.end(),"x2")!=vars.end();
+
+          if(found_x2) {
+            arg="x2";
+          }
+          if (vars.size()==0) {
+            varRef=nullptr;
+          } else if(vars.size()==1 && (found_x || found_x2)) {
+            varRef=&expression.getVariableReference(arg);
+          }// UB: I assume that the function is already correct
+        }
+
+        {
+          auto vars=expression.getVariables();
+          if (vars.size()==0) {
+            varDevRef=nullptr;
+          } else {
+            varDevRef=&deriv.getVariableReference(arg);
+          }
+        }
+      }
+      return *this;
+    }
+
     std::pair<double,double> operator()(double const x) const {
       //FAQ: why this works? this thing is const and you are modifying things!
       //Actually I am modifying something that is pointed at, not my pointers,
