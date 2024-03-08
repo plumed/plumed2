@@ -327,7 +327,7 @@ public:
   }
 
   template<class C>
-  static void mergeSortedVectors(const std::vector<C*> vecs, std::vector<typename C::value_type> & result) {
+  static void mergeSortedVectors(const std::vector<C*> & vecs, std::vector<typename C::value_type> & result) {
     mergeSortedVectors(vecs.data(),vecs.size(),result);
   }
 
