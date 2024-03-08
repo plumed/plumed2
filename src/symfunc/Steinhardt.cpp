@@ -365,7 +365,7 @@ void Steinhardt::createVectorNormInput( const std::string& ilab, const std::stri
   std::string arg_inp, norm_input = olab + "2: COMBINE PERIODIC=NO POWERS=2,2"; std::string snum = getSymbol( -l );
   arg_inp = " ARG=" + ilab + sep + "r" + vlab + "-" + snum +"," + ilab + sep + "i" + vlab + "-" + snum;
   for(int i=-l+1; i<=l; ++i) {
-    snum = getSymbol( i ); 
+    snum = getSymbol( i );
     arg_inp += "," + ilab + sep + "r" + vlab + "-" + snum + "," + ilab + sep + "i" + vlab + "-" + snum;
     norm_input += ",2,2";
   }
