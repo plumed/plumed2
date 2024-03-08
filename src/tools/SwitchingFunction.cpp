@@ -292,7 +292,12 @@ public:
   }
 };
 
-template<bool isFast, bool n2m>
+//these enums are useful for clarifying the settings in the factory
+//and the code is autodocumented ;)
+enum class rationalPow:bool {standard, fast};
+enum class rationalForm:bool {standard, simplified};
+
+template<rationalPow isFast, rationalForm nis2m>
 class rational : public baseSwitch {
 protected:
   const int nn=6;
@@ -327,7 +332,7 @@ public:
     //result=preRes;
     //dfunc=preDfunc;
     //} else {
-    if constexpr (n2m) {
+    if constexpr (nis2m==rationalForm::simplified) {
       const double rNdist=Tools::fastpow(rdist,N-1);
       result=1.0/(1.0+rNdist*rdist);
       dfunc = -N*rNdist*result*result;
@@ -351,7 +356,7 @@ public:
   }
 
   double calculateSqr(double distance2,double&dfunc) const override {
-    if constexpr (isFast) {
+    if constexpr (isFast==rationalPow::fast) {
       double result=0.0;
       dfunc=0.0;
       if(distance2 <= dmax_2) {
@@ -403,15 +408,19 @@ rationalFactory(double D0,double DMAX, double R0, int N, int M) {
   if(2*N==M || M == 0) {
     if(fast) {
       //fast rational
-      return PLMD::Tools::make_unique<switchContainers::rational<true,true>>(D0,DMAX,R0,N,M);
+      return PLMD::Tools::make_unique<switchContainers::rational<
+             rationalPow::fast,rationalForm::simplified>>(D0,DMAX,R0,N,M);
     }
-    return PLMD::Tools::make_unique<switchContainers::rational<false,true>>(D0,DMAX,R0,N,M);
+    return PLMD::Tools::make_unique<switchContainers::rational<
+           rationalPow::standard,rationalForm::simplified>>(D0,DMAX,R0,N,M);
   }
   if(fast) {
     //fast rational
-    return PLMD::Tools::make_unique<switchContainers::rational<true,false>>(D0,DMAX,R0,N,M);
+    return PLMD::Tools::make_unique<switchContainers::rational<
+           rationalPow::fast,rationalForm::standard>>(D0,DMAX,R0,N,M);
   }
-  return PLMD::Tools::make_unique<switchContainers::rational<false,false>>(D0,DMAX,R0,N,M);
+  return PLMD::Tools::make_unique<switchContainers::rational<
+         rationalPow::standard,rationalForm::standard>>(D0,DMAX,R0,N,M);
 }
 //function =
 
