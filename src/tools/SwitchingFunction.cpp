@@ -26,6 +26,7 @@
 #include <vector>
 #include <limits>
 #include <algorithm>
+#include <optional>
 
 constexpr double PI = 3.14159265358979323846;
 
@@ -370,19 +371,32 @@ public:
   }
 };
 
+
+template<int EXP,std::enable_if_t< (EXP %2 == 0), bool> = true>
+std::optional<std::unique_ptr<baseSwitch>> fixedRationalFactory(double D0,double DMAX, double R0, int N) {
+  if constexpr (EXP == 0) {
+    return  std::nullopt;
+  } else {
+    if (N==EXP) {
+      return PLMD::Tools::make_unique<switchContainers::fixedRational<EXP>>(D0,DMAX,R0);
+    } else {
+      return fixedRationalFactory<EXP-2>(D0,DMAX,R0,N);
+    }
+  }
+}
+
 std::unique_ptr<baseSwitch>
 rationalFactory(double D0,double DMAX, double R0, int N, int M) {
   bool fast = N%2==0 && M%2==0 && D0==0.0;
   //if (M==0) M will automatically became 2*NN
 
   //precompiled rational
-  if(2*N==M || M == 0 && fast) {
-    if(N==6) {
-      return PLMD::Tools::make_unique<switchContainers::fixedRational<6>>(D0,DMAX,R0);
+  if(((2*N)==M || M == 0) && fast) {
+    auto tmp = fixedRationalFactory<12>(D0,DMAX,R0,N);
+    if(tmp) {
+      return std::move(*tmp);
     }
-    if(N==12) {
-      return PLMD::Tools::make_unique<switchContainers::fixedRational<12>>(D0,DMAX,R0);
-    }
+    //else continue with the at runtime implementation
   }
   //template<bool isFast, bool n2m>
   //class rational : public baseSwitch
