@@ -110,7 +110,7 @@ private:
 /// Forward declaration.
   ForwardDecl<DeprecatedAtoms> datoms_fwd;
 /// Object containing old bits of atoms that are used by many folks
-  DeprecatedAtoms&    datoms=*datoms_fwd;          
+  DeprecatedAtoms&    datoms=*datoms_fwd;
 /// Forward declaration.
   ForwardDecl<Communicator> multi_sim_comm_fwd;
 public:
