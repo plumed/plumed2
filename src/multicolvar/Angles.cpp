@@ -108,7 +108,7 @@ void Angles::registerKeywords( Keywords& keys ) {
            "involving one atom from GROUPA, one atom from GROUPB and one atom from "
            "GROUPC are calculated. The GROUPA atoms are assumed to be the central "
            "atoms");
-  MultiColvarShortcuts::shortcutKeywords( keys ); keys.needsAction("ANGLE_VECTOR");
+  MultiColvarShortcuts::shortcutKeywords( keys ); keys.needsAction("ANGLE");
 }
 
 Angles::Angles(const ActionOptions&ao):
@@ -131,12 +131,10 @@ Angles::Angles(const ActionOptions&ao):
         }
       }
     }
-    log.printf("Action ANGLE\n");
-    log.printf("  with label %s \n", getShortcutLabel().c_str() );
     readInputLine( ainput );
   } else if( groupc.size()>0 ) {
     Tools::interpretRanges( groupa ); Tools::interpretRanges( groupb ); Tools::interpretRanges( groupc );
-    unsigned n=1; std::string ainput = getShortcutLabel() + ": ANGLE_VECTOR";
+    unsigned n=1; std::string ainput = getShortcutLabel() + ": ANGLE";
     for(unsigned i=0; i<groupa.size(); ++i ) {
       for(unsigned j=0; j<groupb.size(); ++j ) {
         for(unsigned k=0; k<groupc.size(); ++k) {
@@ -145,12 +143,10 @@ Angles::Angles(const ActionOptions&ao):
         }
       }
     }
-    log.printf("Action ANGLE\n");
-    log.printf("  with label %s \n", getShortcutLabel().c_str() );
     readInputLine( ainput );
   } else if( groupa.size()>0 ) {
     Tools::interpretRanges( groupa ); Tools::interpretRanges( groupb );
-    unsigned n=1; std::string ainput; ainput = getShortcutLabel() + ": ANGLE_VECTOR";
+    unsigned n=1; std::string ainput; ainput = getShortcutLabel() + ": ANGLE";
     for(unsigned i=0; i<groupa.size(); ++i ) {
       for(unsigned j=1; j<groupb.size(); ++j ) {
         for(unsigned k=0; k<j; ++k) {
@@ -159,8 +155,6 @@ Angles::Angles(const ActionOptions&ao):
         }
       }
     }
-    log.printf("Action ANGLE\n");
-    log.printf("  with label %s \n", getShortcutLabel().c_str() );
     readInputLine( ainput );
   }
   MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel(), "", this );

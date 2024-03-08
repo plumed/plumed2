@@ -61,7 +61,7 @@ void Distances::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("x","COMPONENTS","the x-components of the distance vectors");
   keys.addOutputComponent("y","COMPONENTS","the y-components of the distance vectors");
   keys.addOutputComponent("z","COMPONENTS","the z-components of the distance vectors");
-  keys.needsAction("GROUP"); keys.needsAction("DISTANCE_VECTOR"); keys.needsAction("CENTER");
+  keys.needsAction("GROUP"); keys.needsAction("DISTANCE"); keys.needsAction("CENTER");
 }
 
 Distances::Distances(const ActionOptions& ao):
@@ -69,7 +69,7 @@ Distances::Distances(const ActionOptions& ao):
   ActionShortcut(ao)
 {
   // Create distances
-  std::string dline = getShortcutLabel() + ": DISTANCE_VECTOR";
+  std::string dline = getShortcutLabel() + ": DISTANCE";
   bool nopbc; parseFlag("NOPBC",nopbc); if( nopbc ) dline += " NOPBC";
   bool comp; parseFlag("COMPONENTS",comp); if( comp ) dline += " COMPONENTS";
   bool scomp; parseFlag("SCALED_COMPONENTS",scomp); if( scomp ) dline += " SCALED_COMPONENTS";
@@ -110,8 +110,6 @@ Distances::Distances(const ActionOptions& ao):
     }
     readInputLine( grpstr );
   }
-  log.printf("Action DISTANCE\n");
-  log.printf("  with label %s \n", getShortcutLabel().c_str() );
   readInputLine( dline );
   // Add shortcuts to label
   MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel(), "", this );

@@ -68,7 +68,7 @@ void XAngle::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
   keys.add("numbered","ATOMS","the pairs of atoms that you would like to calculate the angles for");
   keys.reset_style("ATOMS","atoms"); MultiColvarShortcuts::shortcutKeywords( keys );
-  keys.needsAction("DISTANCE_VECTOR"); keys.needsAction("COMBINE"); keys.needsAction("CUSTOM");
+  keys.needsAction("DISTANCE"); keys.needsAction("COMBINE"); keys.needsAction("CUSTOM");
 }
 
 XAngle::XAngle(const ActionOptions& ao):
@@ -76,15 +76,13 @@ XAngle::XAngle(const ActionOptions& ao):
   ActionShortcut(ao)
 {
   // Create distances
-  std::string dline = getShortcutLabel() + ": DISTANCE_VECTOR COMPONENTS";
+  std::string dline = getShortcutLabel() + ": DISTANCE COMPONENTS";
   for(unsigned i=1;; ++i) {
     std::string atstring; parseNumbered("ATOMS",i,atstring);
     if( atstring.length()==0 ) break;
     std::string num; Tools::convert( i, num );
     dline += " ATOMS" + num + "=" + atstring;
   }
-  log.printf("Action DISTANCE\n");
-  log.printf("  with label %s \n", getShortcutLabel().c_str() );
   readInputLine( dline );
   // Normalize the vectors
   readInputLine( getShortcutLabel() + "_norm2: COMBINE ARG=" + getShortcutLabel() + ".x" + "," + getShortcutLabel() + ".y," + getShortcutLabel() + ".z POWERS=2,2,2 PERIODIC=NO");

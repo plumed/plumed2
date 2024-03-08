@@ -59,9 +59,9 @@ ColvarShortcut<T>::ColvarShortcut(const ActionOptions&ao):
   }
   for(unsigned i=0; i<nkeys; ++i) {
     if( keywords.style( keywords.get(i), "atoms" ) ) {
-      std::string inpt; parseNumbered( keywords.get(i), 2, inpt );
+      std::string inpt; parseNumbered( keywords.get(i), 1, inpt );
       if( inpt.length()>0 ) {
-        readInputLine( getShortcutLabel() + ": " + getName() + "_VECTOR " + keywords.get(i) + "2=" + inpt + " " + convertInputLineToString() );
+        readInputLine( getShortcutLabel() + ": " + getName() + "_VECTOR " + keywords.get(i) + "1=" + inpt + " " + convertInputLineToString() );
         scalar=false; break;
       }
     }
