@@ -584,14 +584,105 @@ class leptonSwitch: public baseSwitch {
   /// Function for lepton;
   std::string lepton_func;
 /// Lepton expression.
-/// \warning Since lepton::CompiledExpression is mutable, a vector is necessary for multithreading!
-  std::vector<lepton::CompiledExpression> expression{};
-/// Lepton expression for derivative
-/// \warning Since lepton::CompiledExpression is mutable, a vector is necessary for multithreading!
-  std::vector<lepton::CompiledExpression> expression_deriv{};
-  std::vector<double*> lepton_ref{};
-  std::vector<double*> lepton_ref_deriv{};
-/// Set to true if lepton only uses x2
+  class funcAndDeriv {
+    lepton::CompiledExpression expression;
+    lepton::CompiledExpression deriv;
+    double* varRef=nullptr;
+    double* varDevRef=nullptr;
+  public:
+    funcAndDeriv(const std::string &func) {
+      lepton::ParsedExpression pe=lepton::Parser::parse(func).optimize(lepton::Constants());
+      expression=pe.createCompiledExpression();
+      std::string arg="x";
+
+      {
+        auto vars=expression.getVariables();
+        bool found_x=std::find(vars.begin(),vars.end(),"x")!=vars.end();
+        bool found_x2=std::find(vars.begin(),vars.end(),"x2")!=vars.end();
+
+        if(found_x2) {
+          arg="x2";
+        }
+        if (vars.size()==0) {
+// this is necessary since in some cases lepton thinks a variable is not present even though it is present
+// e.g. func=0*x
+          varRef=nullptr;
+        } else if(vars.size()==1 && (found_x || found_x2)) {
+          varRef=&expression.getVariableReference(arg);
+        } else {
+          plumed_error()
+              <<"Please declare a function with only ONE argument that can only be x or x2. Your function is: "
+              << func;
+        }
+      }
+
+      lepton::ParsedExpression ped=lepton::Parser::parse(func).differentiate(arg).optimize(lepton::Constants());
+      deriv=ped.createCompiledExpression();
+      {
+        auto vars=expression.getVariables();
+        if (vars.size()==0) {
+          varDevRef=nullptr;
+        } else {
+          varDevRef=&deriv.getVariableReference(arg);
+        }
+      }
+
+    }
+    funcAndDeriv (const funcAndDeriv& other):
+      expression(other.expression),
+      deriv(other.deriv) {
+      std::string arg="x";
+
+      {
+        auto vars=expression.getVariables();
+        bool found_x=std::find(vars.begin(),vars.end(),"x")!=vars.end();
+        bool found_x2=std::find(vars.begin(),vars.end(),"x2")!=vars.end();
+
+        if(found_x2) {
+          arg="x2";
+        }
+        if (vars.size()==0) {
+          varRef=nullptr;
+        } else if(vars.size()==1 && (found_x || found_x2)) {
+          varRef=&expression.getVariableReference(arg);
+        }// UB: I assume that the function is already correct
+      }
+
+      {
+        auto vars=expression.getVariables();
+        if (vars.size()==0) {
+          varDevRef=nullptr;
+        } else {
+          varDevRef=&deriv.getVariableReference(arg);
+        }
+      }
+    }
+
+    std::pair<double,double> operator()(double const x) const {
+      //FAQ: why this works? this thing is const and you are modifying things!
+      //Actually I am modifying something that is pointed at, not my pointers,
+      //so I am not mutating the state of this!
+      if(varRef) {
+        *varRef=x;
+      }
+      if(varDevRef) {
+        *varDevRef=x;
+      }
+      return std::make_pair(
+               expression.evaluate(),
+               deriv.evaluate());
+    }
+
+    auto& getVariables() const {
+      return expression.getVariables();
+    }
+    auto& getVariables_derivative() const {
+      return deriv.getVariables();
+    }
+  };
+  /// \warning Since lepton::CompiledExpression is mutable, a vector is necessary for multithreading!
+  std::vector <funcAndDeriv> expressions{};
+  /// Set to true if lepton only uses x2
   bool leptonx2=false;
 protected:
   std::string specificDescription() const override {
@@ -605,50 +696,14 @@ public:
     :baseSwitch(D0,DMAX,R0,"lepton") {
     lepton::ParsedExpression pe=lepton::Parser::parse(func).optimize(lepton::Constants());
     lepton_func=func;
-    expression.resize(OpenMP::getNumThreads());
-    for(auto & e : expression) {
-      e=pe.createCompiledExpression();
+    expressions.reserve(OpenMP::getNumThreads());
+    expressions.emplace_back(func);
+    for(auto i=1U; i<OpenMP::getNumThreads(); ++i) {
+      expressions.emplace_back(expressions[0]);
     }
-    lepton_ref.resize(expression.size());
-    for(unsigned t=0; t<lepton_ref.size(); t++) {
-      try {
-        lepton_ref[t]=&const_cast<lepton::CompiledExpression*>(&expression[t])->getVariableReference("x");
-      } catch(const PLMD::lepton::Exception& exc) {
-        try {
-          lepton_ref[t]=&const_cast<lepton::CompiledExpression*>(&expression[t])->getVariableReference("x2");
-          leptonx2=true;
-          plumed_assert(!(d0!=0.0)) << "You cannot use lepton x2 optimization with d0!=0.0 (d0=" << d0 <<")\n"
-                                    << "Please rewrite your function using x as a variable";
-        } catch(const PLMD::lepton::Exception& exc) {
-// this is necessary since in some cases lepton things a variable is not present even though it is present
-// e.g. func=0*x
-        lepton_ref[t]=nullptr;
-      } else if(vars.size()==1 && found_x) {
-        lepton_ref[t]=&expression[t].getVariableReference("x");
-      } else if(vars.size()==1 && found_x2) {
-        lepton_ref[t]=&expression[t].getVariableReference("x2");
-        leptonx2=true;
-      } else {
-        plumed_error()
-            <<"Please declare a function with only ONE argument that can only be x or x2. Your function is: "
-            << func;
-      }
-    }
-    std::string arg="x";
-    if(leptonx2) arg="x2";
-    lepton::ParsedExpression ped=lepton::Parser::parse(func).differentiate(arg).optimize(lepton::Constants());
-    expression_deriv.resize(OpenMP::getNumThreads());
-    for(auto & e : expression_deriv) e=ped.createCompiledExpression();
-    lepton_ref_deriv.resize(expression_deriv.size());
-    for(unsigned t=0; t<lepton_ref_deriv.size(); t++) {
-      try {
-        lepton_ref_deriv[t]=&expression_deriv[t].getVariableReference(arg);
-      } catch(const PLMD::lepton::Exception& exc) {
-// this is necessary since in some cases lepton things a variable is not present even though it is present
-// e.g. func=3*x
-        lepton_ref_deriv[t]=nullptr;
-      }
-    }
+    //this is a bit odd, but it works
+    auto vars=expressions[0].getVariables();
+    leptonx2=std::find(vars.begin(),vars.end(),"x2")!=vars.end();
   }
 
   double calculate(const double distance,double&dfunc) const override {
@@ -662,15 +717,8 @@ public:
         const double rdist = (distance-d0)*invr0;
         if(rdist > 0.0) {
           const unsigned t=OpenMP::getThreadNum();
-          plumed_assert(t<expression.size());
-          if(lepton_ref[t]) {
-            *lepton_ref[t]=rdist;
-          }
-          if(lepton_ref_deriv[t]) {
-            *lepton_ref_deriv[t]=rdist;
-          }
-          res=expression[t].evaluate();
-          dfunc=expression_deriv[t].evaluate();
+          plumed_assert(t<expressions.size());
+          std::tie(res,dfunc) = expressions[t](rdist);
           dfunc *= invr0;
           dfunc /= distance;
         }
@@ -681,23 +729,15 @@ public:
     return res;
   }
 
-  double calculateSqr(const double distance2,double&dfunc)const override {
+  double calculateSqr(const double distance2,double&dfunc) const override {
     double result =0.0;
-
     dfunc=0.0;
     if(leptonx2) {
       if(distance2<=dmax_2) {
         const unsigned t=OpenMP::getThreadNum();
         const double rdist_2 = distance2*invr0_2;
-        plumed_assert(t<expression.size());
-        if(lepton_ref[t]) {
-          *lepton_ref[t]=rdist_2;
-        }
-        if(lepton_ref_deriv[t]) {
-          *lepton_ref_deriv[t]=rdist_2;
-        }
-        result=expression[t].evaluate();
-        dfunc=expression_deriv[t].evaluate();
+        plumed_assert(t<expressions.size());
+        std::tie(result,dfunc) = expressions[t](rdist_2);
         // chain rule:
         dfunc*=2*invr0_2;
         // stretch:
