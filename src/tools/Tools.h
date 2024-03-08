@@ -408,7 +408,7 @@ double Tools::fastpow(double base, int exp)
   return result;
 }
 
-template <int exp, typename T=double, std::enable_if_t< (exp >=0), bool> = true>
+template <int exp, typename T, std::enable_if_t< (exp >=0), bool> = true>
 inline T Tools::fastpow_rec(T const base, T result) {
   if constexpr (exp == 0) {
     return result;
@@ -419,7 +419,7 @@ inline T Tools::fastpow_rec(T const base, T result) {
   return fastpow_rec<(exp>>1),T> (base*base, result);
 }
 
-template <int exp, typename T=double>
+template <int exp, typename T>
 inline T Tools::fastpow(T const base) {
   if constexpr (exp<0) {
     return  fastpow_rec<-exp,T>(1.0/base,1.0);
