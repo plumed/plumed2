@@ -299,7 +299,9 @@ jobs:
         echo "LD_LIBRARY_PATH=$HOME/opt/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
     - name: Build PLUMED
       run: |
-        brew update > /dev/null
+        # it seems brew update is screwing up something
+        # GB on Mar 8, 2024
+        #brew update > /dev/null
         brew install gawk
         ./configure --disable-dependency-tracking --prefix="$HOME/opt"
         make -j 4
