@@ -394,10 +394,10 @@ std::unique_ptr<baseSwitch>
 rationalFactory(double D0,double DMAX, double R0, int N, int M) {
   bool fast = N%2==0 && M%2==0 && D0==0.0;
   //if (M==0) M will automatically became 2*NN
-
+  constexpr int highestPrecompiledPower=12;
   //precompiled rational
-  if(((2*N)==M || M == 0) && fast) {
-    auto tmp = fixedRationalFactory<12>(D0,DMAX,R0,N);
+  if(((2*N)==M || M == 0) && fast && N<=highestPrecompiledPower) {
+    auto tmp = fixedRationalFactory<highestPrecompiledPower>(D0,DMAX,R0,N);
     if(tmp) {
       return std::move(*tmp);
     }
