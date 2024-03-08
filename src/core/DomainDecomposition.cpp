@@ -398,14 +398,14 @@ void DomainDecomposition::apply() {
     } else if( ip->wasscaled || (!unique_serial && int(gatindex.size())==getNumberOfAtoms() && shuffledAtoms==0) ) {
       (ip->mydata)->add_force( gatindex, ip->getPntrToValue() );
     } else {
-      unsigned nforced_actions=0, nactive_actions=0;
+      unsigned nforced_atoms=0, nactive_atoms=0, nforced_actions=0;
       for(unsigned i=0; i<actions.size(); ++i) {
         if( actions[i]->isActive() ) {
-          nactive_actions++;
-          if( actions[i]->hasForce ) nforced_actions++;
+          nactive_atoms += actions[i]->getUniqueLocal().size();;
+          if( actions[i]->hasForce ) { nforced_actions++; nforced_atoms += actions[i]->getUniqueLocal().size(); }
         }
       }
-      if( nforced_actions<nactive_actions ) {
+      if( 2*nforced_atoms<nactive_atoms ) {
         std::vector<const std::vector<AtomNumber>*> vectors;
         vectors.reserve(nforced_actions);
         for(unsigned i=0; i<actions.size(); i++) {
