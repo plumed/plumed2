@@ -604,8 +604,6 @@ public:
 };
 
 class leptonSwitch: public baseSwitch {
-  /// Function for lepton;
-  std::string lepton_func;
 /// Lepton expression.
   class funcAndDeriv {
     lepton::CompiledExpression expression;
@@ -736,6 +734,8 @@ class leptonSwitch: public baseSwitch {
       return deriv.getVariables();
     }
   };
+  /// Function for lepton
+  std::string lepton_func;
   /// \warning Since lepton::CompiledExpression is mutable, a vector is necessary for multithreading!
   std::vector <funcAndDeriv> expressions{};
   /// Set to true if lepton only uses x2
@@ -748,15 +748,10 @@ protected:
   }
   inline double function(const double,double&) const override {return 0.0;}
 public:
-  leptonSwitch(double D0, double DMAX, double R0, std::string func)
-    :baseSwitch(D0,DMAX,R0,"lepton") {
-    lepton::ParsedExpression pe=lepton::Parser::parse(func).optimize(lepton::Constants());
-    lepton_func=func;
-    expressions.reserve(OpenMP::getNumThreads());
-    expressions.emplace_back(func);
-    for(auto i=1U; i<OpenMP::getNumThreads(); ++i) {
-      expressions.emplace_back(expressions[0]);
-    }
+  leptonSwitch(double D0, double DMAX, double R0, const std::string & func)
+    :baseSwitch(D0,DMAX,R0,"lepton") ,
+    lepton_func(func),
+    expressions  (OpenMP::getNumThreads(), lepton_func){
     //this is a bit odd, but it works
     auto vars=expressions[0].getVariables();
     leptonx2=std::find(vars.begin(),vars.end(),"x2")!=vars.end();
