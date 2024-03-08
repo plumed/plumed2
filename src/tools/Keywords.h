@@ -186,6 +186,8 @@ public:
   void needsAction( const std::string& name );
 /// Add a suffix to the list of action name suffixes to test for
   void addActionNameSuffix( const std::string& suffix );
+/// Get the list of keywords that are needed by this action
+  const std::vector<std::string>& getNeededKeywords() const ;
 };
 
 }

@@ -666,6 +666,10 @@ void Keywords::needsAction( const std::string& name ) {
   neededActions.push_back( name );
 }
 
+const std::vector<std::string>& Keywords::getNeededKeywords() const {
+  return neededActions;
+}
+
 void Keywords::addActionNameSuffix( const std::string& suffix ) {
   if( std::find(actionNameSuffixes.begin(), actionNameSuffixes.end(), suffix )!=actionNameSuffixes.end() ) return;
   actionNameSuffixes.push_back( suffix );
