@@ -53,6 +53,8 @@ public:
   void performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const override ;
 ///
   void runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const override ;
+///
+  void getMatrixColumnTitles( std::vector<std::string>& argnames ) const override ;
 };
 
 PLUMED_REGISTER_ACTION(VStack,"VSTACK")
@@ -101,6 +103,15 @@ VStack::VStack(const ActionOptions& ao):
   // This checks which values have been stored
   stored.resize( getNumberOfArguments() ); std::string headstr=getFirstActionInChain()->getLabel();
   for(unsigned i=0; i<stored.size(); ++i) stored[i] = getPntrToArgument(i)->ignoreStoredValue( headstr );
+}
+
+void VStack::getMatrixColumnTitles( std::vector<std::string>& argnames ) const {
+  for(unsigned j=0; j<getNumberOfArguments(); ++j) {
+      if( (getPntrToArgument(j)->getPntrToAction())->getName()=="COLLECT" ) {
+           ActionWithArguments* aa = dynamic_cast<ActionWithArguments*>( getPntrToArgument(j)->getPntrToAction() );
+           plumed_assert( aa && aa->getNumberOfArguments()==1 ); argnames.push_back( (aa->getPntrToArgument(0))->getName() );  
+      } else argnames.push_back( getPntrToArgument(j)->getName() );
+  }
 }
 
 void VStack::prepare() {

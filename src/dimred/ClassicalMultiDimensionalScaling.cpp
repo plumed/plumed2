@@ -221,6 +221,10 @@ ClassicalMultiDimensionalScaling::ClassicalMultiDimensionalScaling( const Action
       std::string num; Tools::convert( i+1, num );
       readInputLine( getShortcutLabel() + "-" +  num + ": CUSTOM ARG=" + getShortcutLabel() + "_eig.vals-" + num + "," + getShortcutLabel() + "_eig.vecs-" + num + " FUNC=sqrt(x)*y PERIODIC=NO");
   }
+  std::string eigvec_args = " ARG=" + getShortcutLabel() + "-1";
+  // The final output is a stack of all the low dimensional coordinates
+  for(unsigned i=1;i<ndim;++i) { std::string num; Tools::convert( i+1, num ); eigvec_args += "," + getShortcutLabel() + "-" + num; }
+  readInputLine( getShortcutLabel() + ": VSTACK" + eigvec_args );
 }
 
 }

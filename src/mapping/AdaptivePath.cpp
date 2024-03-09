@@ -157,8 +157,8 @@ AdaptivePath::AdaptivePath(const ActionOptions& ao):
     std::string ofmt, pframes, wstride; parse("WSTRIDE",wstride); parse("FMT",ofmt);
     if( argnames.size()>0 ) {
       std::string argstr = argnames[0]; for(unsigned i=1; i<argnames.size(); ++i) argstr += "," + argnames[i];
-      readInputLine("DUMPPDB DESCRIPTION=PATH STRIDE=" + wstride + " FMT=" + ofmt + " FILE=" + wfilename + " ARG=" + reference_data + " ARG_NAMES=" + argstr );
-    } else readInputLine("DUMPPDB DESCRIPTION=PATH STRIDE=" + wstride + " FMT=" + ofmt + " FILE=" + wfilename + " ARG=" + reference_data + " ATOM_INDICES=" + atomstr );
+      readInputLine("DUMPPDB DESCRIPTION=PATH STRIDE=" + wstride + " FMT=" + ofmt + " FILE=" + wfilename + " ARG=" + reference_data );
+    } else readInputLine("DUMPPDB DESCRIPTION=PATH STRIDE=" + wstride + " FMT=" + ofmt + " FILE=" + wfilename + " ATOMS=" + reference_data + " ATOM_INDICES=" + atomstr );
   }
   log<<"  Bibliography "<<plumed.cite("Diaz Leines and Ensing, Phys. Rev. Lett. 109, 020601 (2012)")<<"\n";
 }

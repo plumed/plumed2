@@ -92,6 +92,12 @@ bool ActionWithValue::exists( const std::string& name ) const {
   return false;
 }
 
+void ActionWithValue::getMatrixColumnTitles( std::vector<std::string>& argnames ) const {
+  plumed_assert( getNumberOfComponents()==1 && getConstPntrToComponent(0)->getRank()==2 );
+  unsigned nargs = getConstPntrToComponent(0)->getShape()[1]; std::string aname = getConstPntrToComponent(0)->getName();
+  for(unsigned j=0; j<nargs; ++j) { std::string nn; Tools::convert( j+1, nn ); argnames.push_back( aname + "." + nn ); }
+}
+
 Value* ActionWithValue::copyOutput( const std::string& name ) const {
   for(unsigned i=0; i<values.size(); ++i) {
     if (values[i]->name==name) return values[i].get();

@@ -92,13 +92,7 @@ void DumpVector::buildArgnames() {
     if( getPntrToArgument(i)->getRank()==1 ) {
         argnames.push_back( getPntrToArgument(i)->getName() );
     } else if( getPntrToArgument(i)->getRank()==2 ) {
-        unsigned nargs = getPntrToArgument(0)->getShape()[1];
-        if( (getPntrToArgument(0)->getPntrToAction())->getName()=="VSTACK" ) {
-             ActionWithArguments* action = dynamic_cast<ActionWithArguments*>( getPntrToArgument(0)->getPntrToAction() );
-             for(unsigned j=0; j<nargs; ++j) argnames.push_back( (action->getPntrToArgument(i))->getName() );
-        } else {
-             for(unsigned j=0; j<nargs; ++j) { std::string nn; Tools::convert( j+1, nn ); argnames.push_back( nn ); }
-        }
+        (getPntrToArgument(i)->getPntrToAction())->getMatrixColumnTitles( argnames ); 
     }
     getPntrToArgument(i)->buildDataStore();
   }
