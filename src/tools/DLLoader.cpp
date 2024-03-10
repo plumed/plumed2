@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "DLLoader.h"
 
+#include "Exception.h"
 #include <cstdlib>
 
 #ifdef __PLUMED_HAS_DLOPEN
@@ -113,7 +114,8 @@ DLLoader::EnsureGlobalDLOpen::~EnsureGlobalDLOpen() {
 #endif //__PLUMED_HAS_DLOPEN
 }
 
-bool DLLoader::isPlumedGlobal() noexcept {
+bool DLLoader::isPlumedGlobal() {
+#if defined(__APPLE__)
   bool result;
 #ifdef __PLUMED_HAS_DLOPEN
   void* handle;
@@ -130,6 +132,9 @@ bool DLLoader::isPlumedGlobal() noexcept {
   result=true;
 #endif //__PLUMED_HAS_DLOPEN
   return result;
+#else
+  plumed_error()<<"DLLoader::isPlumedGlobal() is only functional with APPLE dlsym";
+#endif
 }
 
 } // namespace PLMD
