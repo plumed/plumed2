@@ -29,8 +29,8 @@ jobs:
 # see https://github.com/plumed/plumed2/issues/976
 #        - -intel-
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/cache@v3
+    - uses: actions/checkout@v4
+    - uses: actions/cache@v4
       with:
         path: ~/.ccache
         key: ccache-reset1-linux${{ matrix.variant }}hash-${{ github.sha }}
@@ -43,7 +43,7 @@ jobs:
         sudo rm -rf /opt/ghc
         df -h
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: 3.9
     - name: Set paths
@@ -195,7 +195,7 @@ jobs:
   codecheck:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set path
       run: |
          echo "$HOME/opt/bin" >> $GITHUB_PATH
@@ -221,7 +221,7 @@ jobs:
   centos7:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Build and run tests
       run: |
         make -C docker centos7
@@ -230,7 +230,7 @@ jobs:
   fedora37:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Build and run tests
       run: |
         make -C docker fedora37
@@ -254,8 +254,8 @@ jobs:
     env:
       PYVERS: "py39 py310"
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/cache@v3
+    - uses: actions/checkout@v4
+    - uses: actions/cache@v4
       with:
         path: ~/.macports-ci-ccache
         key: ccache-macports-${{ matrix.variant }}-${{ github.sha }}
@@ -289,7 +289,7 @@ jobs:
   macsimple:
     runs-on: macos-12
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set paths
       run: |
         echo "$HOME/opt/bin" >> $GITHUB_PATH
@@ -319,7 +319,7 @@ jobs:
         os: [ubuntu-20.04 , macos-12]
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Install conda
       run: |
         curl -LO https://raw.githubusercontent.com/GiovanniBussi/conda-ci/master/conda-ci
