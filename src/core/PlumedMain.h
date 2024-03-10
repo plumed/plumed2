@@ -93,9 +93,28 @@ public:
   Communicator&comm=*comm_fwd;
 
 private:
+  class DeprecatedAtoms {
+  private:
+    PlumedMain & plumed;
+  public:
+    explicit DeprecatedAtoms(PlumedMain& p): plumed(p) {}
+    [[deprecated("Use Action::getKBoltzmann().")]]
+    double getKBoltzmann() const ;
+    [[deprecated("Use Action::getkBT() N.B. this function also reads the TEMP keyword from the input for you.")]]
+    double getKbT() const ;
+    [[deprecated]]
+    int getNatoms() const ;
+    [[deprecated("Use Action::usingNaturalUnits().")]]
+    bool usingNaturalUnits() const ;
+  };
+/// Forward declaration.
+  ForwardDecl<DeprecatedAtoms> datoms_fwd;
+/// Object containing old bits of atoms that are used by many folks
+  DeprecatedAtoms&    datoms=*datoms_fwd;
 /// Forward declaration.
   ForwardDecl<Communicator> multi_sim_comm_fwd;
 public:
+  DeprecatedAtoms& getAtoms();
   Communicator&multi_sim_comm=*multi_sim_comm_fwd;
 
 private:
