@@ -27,6 +27,7 @@
 #include "ActionSet.h"
 
 #include "small_vector/small_vector.h"
+#include "tools/MergeVectorTools.h"
 
 //+PLUMEDOC ANALYSIS DOMAIN_DECOMPOSITION
 /*
@@ -281,7 +282,7 @@ void DomainDecomposition::share() {
     }
     if(!vectors.empty()) atomsNeeded=true;
     unique.clear();
-    Tools::mergeSortedVectors(vectors.data(),vectors.size(),unique);
+    mergeVectorTools::mergeSortedVectors(vectors.data(),vectors.size(),unique);
   } else {
     for(unsigned i=0; i<actions.size(); i++) {
       if(actions[i]->isActive()) {
@@ -453,7 +454,7 @@ void DomainDecomposition::getAllActiveAtoms( std::vector<AtomNumber>& u ) {
     }
   }
   u.clear();
-  Tools::mergeSortedVectors(vectors.data(),vectors.size(),u);
+  mergeVectorTools::mergeSortedVectors(vectors.data(),vectors.size(),u);
 }
 
 void DomainDecomposition::createFullList(const TypesafePtr & n) {
