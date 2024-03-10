@@ -25,7 +25,7 @@ jobs:
       PYVERS: "py39 py310"
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/cache@v3
+    - uses: actions/cache@v4
       with:
         path: ~/.macports-ci-ccache
         key: ccache-macports-${{ matrix.variant }}-${{ github.sha }}
