@@ -338,7 +338,7 @@ public:
       result=1.0/(1.0+rNdist*rdist);
       dfunc = -N*rNdist*result*result;
     } else {
-      if(!((rdist < lessThanOne) && (rdist > moreThanOne))) {
+      if(!((rdist > lessThanOne) && (rdist < moreThanOne))) {
         const double rNdist=Tools::fastpow(rdist,N-1);
         const double rMdist=Tools::fastpow(rdist,M-1);
         const double num = 1.0-rNdist*rdist;
