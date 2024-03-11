@@ -237,6 +237,7 @@ static CountInstances countInstances;
 
 
 PlumedMain::PlumedMain():
+  datoms_fwd(*this),
   initialized(false),
   MDEngine("mdcode"),
 // automatically write on log in destructor
@@ -1402,6 +1403,10 @@ const Units& PlumedMain::getUnits() {
   return passtools->units;
 }
 
+PlumedMain::DeprecatedAtoms& PlumedMain::getAtoms() {
+  return datoms;
+}
+
 void PlumedMain::plumedQuantityToMD( const std::string& unit, const double& eng, const TypesafePtr & m) const {
   passtools->double2MD( eng/passtools->getUnitConversion(unit),m );
 }
@@ -1409,6 +1414,29 @@ void PlumedMain::plumedQuantityToMD( const std::string& unit, const double& eng,
 double PlumedMain::MDQuantityToPLUMED( const std::string& unit, const TypesafePtr & m) const {
   double x=passtools->MD2double(m);
   return x*passtools->getUnitConversion(unit);
+}
+
+double PlumedMain::DeprecatedAtoms::getKBoltzmann() const {
+  if( plumed.usingNaturalUnits() ) return 1.0;
+  return kBoltzmann/plumed.getUnits().getEnergy();
+}
+
+double PlumedMain::DeprecatedAtoms::getKbT() const {
+  ActionForInterface* kb=plumed.getActionSet().selectWithLabel<ActionForInterface*>("kBT");
+  if( kb ) return (kb->copyOutput(0))->get();
+  return 0.0;
+}
+
+int PlumedMain::DeprecatedAtoms::getNatoms() const {
+  std::vector<ActionToPutData*> inputs=plumed.getActionSet().select<ActionToPutData*>();
+  for(const auto & pp : inputs ) {
+    if( pp->getRole()=="x" ) return (pp->copyOutput(0))->getShape()[0];
+  }
+  return 0;
+}
+
+bool PlumedMain::DeprecatedAtoms::usingNaturalUnits() const {
+  return plumed.usingNaturalUnits();
 }
 
 #ifdef __PLUMED_HAS_PYTHON

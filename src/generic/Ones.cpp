@@ -23,7 +23,7 @@
 #include "core/ActionRegister.h"
 
 namespace PLMD {
-namespace setup {
+namespace generic {
 
 //+PLUMEDOC COLVAR ONES
 /*
