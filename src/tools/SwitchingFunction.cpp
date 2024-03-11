@@ -176,7 +176,7 @@ for backward compatibility. This might change in the future.
 
 namespace switchContainers {
 
-baseSwitch::baseSwitch(double D0,double DMAX, double R0, std::string name)
+baseSwitch::baseSwitch(double D0,double DMAX, double R0, std::string_view name)
   : d0(D0),
     dmax(DMAX),
     dmax_2([](const double d) {
@@ -306,8 +306,9 @@ protected:
   const int mmf;
   const double preRes;
   const double preDfunc;
-  static constexpr double moreThanOne=1.0+100.0*std::numeric_limits<double>::epsilon();
-  static constexpr double lessThanOne=1.0-100.0*std::numeric_limits<double>::epsilon();
+  //I am using PLMD::espilon to be certain to call the one defined in Tools.h
+  static constexpr double moreThanOne=1.0+100.0*PLMD::epsilon;
+  static constexpr double lessThanOne=1.0-100.0*PLMD::epsilon;
 
   std::string specificDescription() const override {
     std::ostringstream ostr;
@@ -337,7 +338,7 @@ public:
       result=1.0/(1.0+rNdist*rdist);
       dfunc = -N*rNdist*result*result;
     } else {
-      if(rdist<=(lessThanOne) || rdist>=(moreThanOne)) {
+      if(!((rdist < lessThanOne) && (rdist > moreThanOne))) {
         const double rNdist=Tools::fastpow(rdist,N-1);
         const double rMdist=Tools::fastpow(rdist,M-1);
         const double num = 1.0-rNdist*rdist;
@@ -749,9 +750,9 @@ protected:
   inline double function(const double,double&) const override {return 0.0;}
 public:
   leptonSwitch(double D0, double DMAX, double R0, const std::string & func)
-    :baseSwitch(D0,DMAX,R0,"lepton") ,
-    lepton_func(func),
-    expressions  (OpenMP::getNumThreads(), lepton_func){
+    :baseSwitch(D0,DMAX,R0,"lepton"),
+     lepton_func(func),
+     expressions  (OpenMP::getNumThreads(), lepton_func) {
     //this is a bit odd, but it works
     auto vars=expressions[0].getVariables();
     leptonx2=std::find(vars.begin(),vars.end(),"x2")!=vars.end();

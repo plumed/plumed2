@@ -53,7 +53,7 @@ protected:
   //
   virtual double function(double rdist, double& dfunc) const=0;
 public:
-  baseSwitch(double D0,double DMAX, double R0, std::string name);
+  baseSwitch(double D0,double DMAX, double R0, std::string_view name);
   virtual ~baseSwitch();
   ///the driver for the function (prepares rdist or returns 1 or 0 automatically)
   virtual double calculate(double distance, double& dfunc) const;
