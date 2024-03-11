@@ -19,7 +19,6 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "core/ActionSetup.h"
 #include "core/ActionWithValue.h"
 #include "core/ActionRegister.h"
 #include "tools/IFile.h"
@@ -56,24 +55,22 @@ PRINT ARG=sss.1
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace setup {
+namespace generic {
 
-class Constant :
-  public ActionSetup,
-  public ActionWithValue
-{
+class Constant : public ActionWithValue {
 public:
   static void registerKeywords( Keywords& keys );
   explicit Constant(const ActionOptions&ao);
   void clearDerivatives( const bool& force=false ) {}
-  unsigned getNumberOfDerivatives() { return 0; }
+  unsigned getNumberOfDerivatives() override { return 0; }
+  void calculate() override {}
+  void apply() override {}
 };
 
 PLUMED_REGISTER_ACTION(Constant,"CONSTANT")
 
 void Constant::registerKeywords( Keywords& keys ) {
-  ActionSetup::registerKeywords(keys); ActionWithValue::registerKeywords(keys); keys.remove("NUMERICAL_DERIVATIVES");
-  keys.add( "hidden", "LABEL", "a label for the action so that its output can be referenced in the input to other actions.  Actions with scalar output are referenced using their label only.  Actions with vector output must have a separate label for every component.  Individual componets are then refered to using label.component" );
+  Action::registerKeywords(keys); ActionWithValue::registerKeywords(keys); keys.remove("NUMERICAL_DERIVATIVES");
   keys.add("optional","FILE","an input file containing the matrix");
   keys.add("compulsory","NROWS","0","the number of rows in your input matrix");
   keys.add("compulsory","NCOLS","0","the number of columns in your matrix");
@@ -86,7 +83,6 @@ void Constant::registerKeywords( Keywords& keys ) {
 
 Constant::Constant(const ActionOptions&ao):
   Action(ao),
-  ActionSetup(ao),
   ActionWithValue(ao)
 {
   bool nolog=false; parseFlag("NOLOG",nolog);

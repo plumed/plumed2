@@ -74,7 +74,7 @@ public:
   /// It will detect any kernel that is available in the global namespece,
   /// not just the one from which this call is issued. This is useful to
   /// detect possible conflicts in advance.
-  static bool isPlumedGlobal() noexcept;
+  static bool isPlumedGlobal();
 };
 
 } // namespace PLMD

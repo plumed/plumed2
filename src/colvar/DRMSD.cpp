@@ -27,7 +27,7 @@
 #include "tools/PDB.h"
 
 namespace PLMD {
-namespace setup {
+namespace colvar {
 
 //+PLUMEDOC DCOLVAR DRMSD
 /*

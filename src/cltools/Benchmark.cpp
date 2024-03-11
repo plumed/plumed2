@@ -267,6 +267,8 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
 
     plumed_assert(allplumed.size()>0 && allpaths.size()>0);
 
+    // this check only works on MacOS
+#if defined(__APPLE__)
     // if any of the paths if different from "this", we check if libplumed was loaded locally to avoid conflicts.
     if(std::any_of(allpaths.begin(),allpaths.end(),[](auto value) {return value != "this";})) {
       if(DLLoader::isPlumedGlobal()) {
@@ -274,6 +276,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
                       <<"Please make sure you use the plumed-runtime executable and that the env var PLUMED_LOAD_NAMESPACE is not set to GLOBAL";
       }
     }
+#endif
 
     if(allplumed.size()>1 && allpaths.size()>1 && allplumed.size() != allpaths.size()) {
       plumed_error() << "--kernel and --plumed should have either one element or the same number of elements";
