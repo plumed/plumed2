@@ -35,9 +35,11 @@ plotswitch is a tool that takes a the input of a switching function and tabulate
 
 The tabulated data is compatible with gnuplot and numpy.loadtxt
 
-Without options plotswitch will tabulat 50 points between 0 and R_0, and then continue in tabulating points with the same step until 2*R_0 or if D_MAX is set, D_MAX
+Without options plotswitch will tabulate 50 points between 0 and R_0, and then continue in tabulating points with the same step until 2*R_0 or if D_MAX is set, D_MAX
 
 Without options plotswitch will tabulate data calling calculateSqr, since should be the most used option within the various colvars
+
+Note that if R_0 happen to be between "from" and "to" the number of steps may not be exacly the number requested in order to force r0 to be computed.
 
 The various --rational** options use the special set option for the rational, like in COORDINATION.
 
@@ -98,6 +100,7 @@ SwitchingPlotter::SwitchingPlotter(const CLToolOptions& co ):
   inputdata=commandline;
 }
 int SwitchingPlotter::main( FILE*, FILE*, Communicator& ) {
+  //collecting options:
   std::string swInput;
   parse("--switch",swInput);
   bool dontOptimize;
@@ -106,15 +109,10 @@ int SwitchingPlotter::main( FILE*, FILE*, Communicator& ) {
   parse("--steps",Nsteps);
   double lowerLimit;
   parse("--from",lowerLimit);
-  if (lowerLimit <0) {
-    lowerLimit=0.0;
-  }
   double upperLimit;
   parse("--to",upperLimit);
-
   unsigned plotPrecision;
   parse("--plotprecision",plotPrecision);
-
   int rationalNN;
   parse("--rationalNN",rationalNN);
   int rationalMM;
@@ -124,30 +122,44 @@ int SwitchingPlotter::main( FILE*, FILE*, Communicator& ) {
   double rationalR_0;
   parse("--rationalR_0",rationalR_0);
 
-  std::string errors;
+  //setting up the switching function
   PLMD::SwitchingFunction switchingFunction;
   if (rationalR_0>0) {
     switchingFunction.set(rationalNN,rationalMM,rationalR_0,rationalD_0);
   } else {
+    std::string errors;
     switchingFunction.set(swInput,errors);
-
     if( errors.length()!=0 ) {
       error("problem reading SWITCH keyword : " + errors );
     }
   }
-  // const double d0 = switchingFunction.get_d0();
+
+  //setting up the limits:
   const double r0 = switchingFunction.get_r0();
   const double dmax = switchingFunction.get_dmax();
-  const double step = [&]() {
-    if (upperLimit < 0) {
-      upperLimit = dmax;
-      if (! (upperLimit < std::numeric_limits<double>::max())) {
-        upperLimit = 2*r0;
-        return r0/double(Nsteps);
-      }
+
+  if (lowerLimit <0) {
+    lowerLimit=0.0;
+  }
+  if (upperLimit < 0) {
+    upperLimit = dmax;
+    if (! (upperLimit < std::numeric_limits<double>::max())) {
+      upperLimit = 2*r0;
+    }
+  }
+  const double step = [=]() {
+    if(r0 > lowerLimit && r0< upperLimit) {
+      //this will make the step pass trough r0
+      double interval = (r0-lowerLimit)/(upperLimit-lowerLimit);
+      return  (r0-lowerLimit)/(interval *Nsteps);
     }
     return (upperLimit-lowerLimit)/double(Nsteps);
   }();
+  if (step <0.0) {
+    error("I calculated a negative step");
+  }
+
+  //finally doing the job
   //descriptions starts with the values of "r_0"
   std::cout <<"#r val dfunc ( r_0="<<switchingFunction.description()<<")\n";
   double x=lowerLimit;
