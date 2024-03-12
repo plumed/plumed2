@@ -1,4 +1,4 @@
-#include "plumed/tools/Tools.h"
+#include "plumed/tools/MergeVectorTools.h"
 #include <fstream>
 #include <iostream>
 #include <vector>
@@ -20,7 +20,7 @@ void run(bool queue) {
     vecs.push_back(&v2);
     vecs.push_back(&v3);
     vecs.push_back(&v4);
-    Tools::mergeSortedVectors(vecs,result);
+    mergeVectorTools::mergeSortedVectors(vecs,result);
     for(const auto &v : result) ofs<<" "<<v; ofs<<"\n";
   }
 
@@ -39,7 +39,7 @@ void run(bool queue) {
     vecs.push_back(&v2);
     vecs.push_back(&v3);
     vecs.push_back(&v4);
-    Tools::mergeSortedVectors(vecs,result);
+    mergeVectorTools::mergeSortedVectors(vecs,result);
     for(const auto &v : result) ofs<<" "<<v; ofs<<"\n";
   }
 }
