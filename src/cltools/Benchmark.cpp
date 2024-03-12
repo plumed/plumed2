@@ -193,8 +193,8 @@ extern "C" void signalHandler(int signal) {
   }
 }
 
-/// Local structure handling a kernel and the related timers
-struct Kernel {
+/// This base class contains members that are movable with default operations
+struct KernelBase {
   std::string path;
   std::string plumed_dat;
   PlumedHandle handle;
@@ -202,15 +202,30 @@ struct Kernel {
   std::vector<long long int> timings;
   double comparative_timing=-1.0;
   double comparative_timing_error=-1.0;
+  KernelBase(const std::string & path_,const std::string & plumed_dat_, Log* log_):
+    path(path_),
+    plumed_dat(plumed_dat_),
+    handle([&]() {
+    if(path_=="this") return PlumedHandle();
+    else return PlumedHandle::dlopen(path.c_str());
+  }()),
+  stopwatch(*log_)
+  {
+  }
+};
+
+/// Local structure handling a kernel and the related timers.
+/// This structure specifically contain the Log, which needs special treatment
+/// in move semantics
+struct Kernel :
+  public KernelBase {
   Log* log=nullptr;
   Kernel(const std::string & path_,const std::string & plumed_dat, Log* log_):
-    path(path_),
-    plumed_dat(plumed_dat),
-    stopwatch(*log_),
+    KernelBase(path_,plumed_dat,log_),
     log(log_)
   {
-    if(path_!="this") handle=PlumedHandle::dlopen(path_.c_str());
   }
+
   ~Kernel() {
     if(log) {
       (*log)<<"\n";
@@ -221,28 +236,18 @@ struct Kernel {
       }
     }
   }
+
   Kernel(Kernel && other) noexcept:
-    path(std::move(other.path)),
-    plumed_dat(std::move(other.plumed_dat)),
-    handle(std::move(other.handle)),
-    stopwatch(std::move(other.stopwatch)),
-    timings(std::move(other.timings)),
-    comparative_timing(other.comparative_timing),
-    comparative_timing_error(other.comparative_timing_error),
+    KernelBase(std::move(other)),
     log(other.log)
   {
     other.log=nullptr; // ensure no log is done in the moved away object
   }
+
   Kernel & operator=(Kernel && other) noexcept
   {
     if(this != &other) {
-      path=std::move(other.path);
-      plumed_dat=std::move(other.plumed_dat);
-      handle=std::move(other.handle);
-      stopwatch=std::move(other.stopwatch);
-      timings=std::move(other.timings);
-      comparative_timing=other.comparative_timing;
-      comparative_timing_error=other.comparative_timing_error;
+      KernelBase::operator=(std::move(other));
       log=other.log;
       other.log=nullptr; // ensure no log is done in the moved away object
     }
