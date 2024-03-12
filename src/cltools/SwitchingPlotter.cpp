@@ -93,6 +93,9 @@ void SwitchingPlotter::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","--rationalD_0","0.0",
            "The d_0 parameter of the switching function");
   keys.addFlag("--nosquare",false,"use calculate instead of calculateSqr");
+  keys.add("compulsory","--centerrange","-1",
+           "centers the visualization in R_0 in a range of 10^(given power)epsilons times r_0"
+           ", note that specifying this will overide all the other range options");
 }
 
 SwitchingPlotter::SwitchingPlotter(const CLToolOptions& co ):
@@ -121,7 +124,8 @@ int SwitchingPlotter::main( FILE*, FILE*, Communicator& ) {
   parse("--rationalD_0",rationalD_0);
   double rationalR_0;
   parse("--rationalR_0",rationalR_0);
-
+  int centerrange;
+  parse("--centerrange",centerrange);
   //setting up the switching function
   PLMD::SwitchingFunction switchingFunction;
   if (rationalR_0>0) {
@@ -147,6 +151,11 @@ int SwitchingPlotter::main( FILE*, FILE*, Communicator& ) {
       upperLimit = 2*r0;
     }
   }
+  if(centerrange>0) {
+    double powOf10 = PLMD::Tools::fastpow(10.0,centerrange);
+    upperLimit=(1.0+powOf10*PLMD::epsilon)*r0;
+    lowerLimit=(1.0-powOf10*PLMD::epsilon)*r0;
+  }
   const double step = [=]() {
     if(r0 > lowerLimit && r0< upperLimit) {
       //this will make the step pass trough r0
@@ -164,7 +173,7 @@ int SwitchingPlotter::main( FILE*, FILE*, Communicator& ) {
   std::cout <<"#r val dfunc ( r_0="<<switchingFunction.description()<<")\n";
   double x=lowerLimit;
   while(x < upperLimit) {
-    double dfunc;
+    double dfunc=0.0;
     double res;
     if(dontOptimize) {
       res=switchingFunction.calculate(x,dfunc);
