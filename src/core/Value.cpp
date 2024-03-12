@@ -227,8 +227,13 @@ void Value::set(const std::size_t& n, const double& v ) {
 }
 
 void Value::push_back( const double& v ) {
-  plumed_dbg_assert( shape.size()==1 );
-  value_set=true; data.push_back(v); shape[0]++;
+  value_set=true; 
+  if( shape.size()==1 ) { 
+      data.push_back(v); shape[0]++; 
+  } else if( shape.size()==2 ) { 
+      data.push_back(v);
+      shape[0] = std::ceil( data.size() / shape[1] );
+  }
 }
 
 double Value::get(const std::size_t& ival, const bool trueind) const {

@@ -86,9 +86,13 @@ DumpPDB::DumpPDB(const ActionOptions&ao):
       std::vector<Value*> atom_args; interpretArgumentList( atoms, plumed.getActionSet(), this, atom_args );
       if( atom_args.size()!=1 ) error("only one action should appear in input to atom args");
       std::vector<Value*> args( getArguments() ); args.push_back( atom_args[0] ); requestArguments( args );
-      parseVector("ATOM_INDICES",pdb_atom_indices);
+      std::vector<std::string> indices; parseVector("ATOM_INDICES",indices); Tools::interpretRanges(indices);
       log.printf("  printing atoms : "); 
-      for(unsigned i=0; i<pdb_atom_indices.size(); ++i) log.printf("%d ", pdb_atom_indices[i] );
+      for(unsigned i=0; i<indices.size(); ++i) {
+          AtomNumber atom; bool ok=Tools::convertNoexcept(indices[i],atom); 
+          if( !ok ) error("count not interpret atom " + indices[i] );
+          pdb_atom_indices.push_back(atom.serial()); log.printf("%d ", pdb_atom_indices[i] );
+      }
       log.printf("\n");
       if( pdb_atom_indices.size()!=atom_args[0]->getShape()[1]/3 ) error("mismatch between size of matrix containing positions and vector of atom indices");
   }  
