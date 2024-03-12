@@ -226,9 +226,12 @@ struct Kernel {
     plumed_dat(std::move(other.plumed_dat)),
     handle(std::move(other.handle)),
     stopwatch(std::move(other.stopwatch)),
+    timings(std::move(other.timings)),
+    comparative_timing(other.comparative_timing),
+    comparative_timing_error(other.comparative_timing_error),
     log(other.log)
   {
-    other.log=nullptr;
+    other.log=nullptr; // ensure no log is done in the moved away object
   }
   Kernel & operator=(Kernel && other) noexcept
   {
@@ -237,8 +240,11 @@ struct Kernel {
       plumed_dat=std::move(other.plumed_dat);
       handle=std::move(other.handle);
       stopwatch=std::move(other.stopwatch);
+      timings=std::move(other.timings);
+      comparative_timing=other.comparative_timing;
+      comparative_timing_error=other.comparative_timing_error;
       log=other.log;
-      other.log=nullptr;
+      other.log=nullptr; // ensure no log is done in the moved away object
     }
     return *this;
   }
