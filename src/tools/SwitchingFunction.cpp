@@ -130,6 +130,8 @@ s(r) = FUNC
 </tr>
 </table>
 
+Notice that most commonly used rational functions are better optimized and might run faster.
+
 Notice that for backward compatibility we allow using `MATHEVAL` instead of `CUSTOM`.
 Also notice that if the a `CUSTOM` switching function only depends on even powers of `x` it can be
 made faster by using `x2` as a variable. For instance
