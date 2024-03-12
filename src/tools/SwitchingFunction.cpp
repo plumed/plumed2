@@ -28,8 +28,6 @@
 #include <algorithm>
 #include <optional>
 
-constexpr double PI = 3.14159265358979323846;
-
 namespace PLMD {
 
 //+PLUMEDOC INTERNAL switchingfunction
@@ -302,11 +300,12 @@ class rational : public baseSwitch {
 protected:
   const int nn=6;
   const int mm=12;
-  const int nnf;
-  const int mmf;
   const double preRes;
   const double preDfunc;
-  //I am using PLMD::espilon to be certain to call the one defined in Tools.h
+  const int nnf;
+  const int mmf;
+  const double preDfuncF;
+  //I am using PLMD::epsilon to be certain to call the one defined in Tools.h
   static constexpr double moreThanOne=1.0+100.0*PLMD::epsilon;
   static constexpr double lessThanOne=1.0-100.0*PLMD::epsilon;
 
@@ -320,10 +319,11 @@ public:
     :baseSwitch(D0,DMAX,R0,"rational"),
      nn(N),
      mm([](int m,int n) {if (m==0) {return n*2;} else {return m;}}(M,N)),
+  preRes(static_cast<double>(nn)/mm),
+  preDfunc(0.5*nn*(nn-mm)/static_cast<double>(mm)),
   nnf(nn/2),
   mmf(mm/2),
-  preRes(static_cast<double>(nn)/mm),
-  preDfunc(0.5*nn*(nn-mm)/static_cast<double>(mm)) {}
+  preDfuncF(0.5*nnf*(nnf-mmf)/static_cast<double>(mmf)) {}
 
 
   static inline double doRational(const double rdist, double&dfunc, const int N,
@@ -344,7 +344,7 @@ public:
         const double num = 1.0-rNdist*rdist;
         const double iden = 1.0/(1.0-rMdist*rdist);
         result = num*iden;
-        dfunc = ((result*(iden*M)*rMdist)-(N*rNdist*iden));
+        dfunc = ((M*result*rMdist)-(N*rNdist))*iden;
       }
     }
     return result;
@@ -362,7 +362,7 @@ public:
       dfunc=0.0;
       if(distance2 <= dmax_2) {
         const double rdist = distance2*invr0_2;
-        dfunc=preDfunc;
+        dfunc=preDfuncF;
         result = doRational(rdist,dfunc,nnf,mmf,preRes);
         dfunc*=2*invr0_2;
 // stretch:
@@ -552,9 +552,9 @@ protected:
     dfunc=0.0;
     if(rdist<=1.0) {
 // rdist = (r-r1)/(r2-r1) ; 0.0<=rdist<=1.0 if r1 <= r <=r2; (r2-r1)/(r2-r1)=1
-      double rdistPI = rdist * PI;
+      double rdistPI = rdist * PLMD::pi;
       result = 0.5 * (std::cos ( rdistPI ) + 1.0);
-      dfunc = -0.5 * PI * std::sin ( rdistPI ) * invr0;
+      dfunc = -0.5 * PLMD::pi * std::sin ( rdistPI ) * invr0;
     }
     return result;
   }
