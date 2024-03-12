@@ -88,6 +88,7 @@ codecheck:
 
 .PHONY: astyle
 astyle:
+	make -C ../../astyle
 	cd ../ ; ./astyle.sh $(CURDIR)
 
 .PHONY: show_used_modules
