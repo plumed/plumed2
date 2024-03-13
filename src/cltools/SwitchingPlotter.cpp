@@ -94,7 +94,7 @@ void SwitchingPlotter::registerKeywords( Keywords& keys ) {
            "The d_0 parameter of the switching function");
   keys.addFlag("--nosquare",false,"use calculate instead of calculateSqr");
   keys.add("compulsory","--centerrange","-1",
-           "centers the visualization in R_0 in a range of 10^(given power)epsilons times r_0"
+           "centers the visualization in R_0 in a range given epsilons times r_0"
            ", note that specifying this will overide all the other range options");
 }
 
@@ -124,7 +124,8 @@ int SwitchingPlotter::main( FILE*, FILE*, Communicator& ) {
   parse("--rationalD_0",rationalD_0);
   double rationalR_0;
   parse("--rationalR_0",rationalR_0);
-  int centerrange;
+  //this works only because we use lepton to parse the numbers
+  double centerrange;
   parse("--centerrange",centerrange);
   //setting up the switching function
   PLMD::SwitchingFunction switchingFunction;
@@ -152,9 +153,8 @@ int SwitchingPlotter::main( FILE*, FILE*, Communicator& ) {
     }
   }
   if(centerrange>0) {
-    double powOf10 = PLMD::Tools::fastpow(10.0,centerrange);
-    upperLimit=(1.0+powOf10*PLMD::epsilon)*r0;
-    lowerLimit=(1.0-powOf10*PLMD::epsilon)*r0;
+    upperLimit=(1.0+centerrange*PLMD::epsilon)*r0;
+    lowerLimit=(1.0-centerrange*PLMD::epsilon)*r0;
   }
   const double step = [=]() {
     if(r0 > lowerLimit && r0< upperLimit) {
