@@ -115,6 +115,7 @@ void VStack::getMatrixColumnTitles( std::vector<std::string>& argnames ) const {
 }
 
 void VStack::prepare() {
+  ActionWithVector::prepare();
   if( getPntrToArgument(0)->getRank()==0 || getPntrToArgument(0)->getShape()[0]==getPntrToComponent(0)->getShape()[0] ) return ;
   std::vector<unsigned> shape(2); shape[0] = getPntrToArgument(0)->getShape()[0]; shape[1] = getNumberOfArguments();
   getPntrToComponent(0)->setShape(shape); getPntrToComponent(0)->reshapeMatrixStore( shape[1] );

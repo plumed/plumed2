@@ -57,6 +57,8 @@ public:
   void turnOnDerivatives() override;
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives() override ;
+/// Resize vectors that are the wrong size
+  void prepare() override ;
 /// Check if all he actions are required
   void areAllTasksRequired( std::vector<ActionWithVector*>& task_reducing_actions );
 /// Get the label to write in the graph
@@ -91,7 +93,7 @@ FunctionOfVector<T>::FunctionOfVector(const ActionOptions&ao):
   myfunc.read( this );
   // Create the task list
   if( myfunc.doWithTasks() ) {
-    if( shape[0]>0 ) { done_in_chain=true; doAtEnd=false; }
+    doAtEnd=false; if( shape[0]>0 ) done_in_chain=true;
   } else { plumed_assert( getNumberOfArguments()==1 ); done_in_chain=false; getPntrToArgument(0)->buildDataStore(); }
   // Get the names of the components
   std::vector<std::string> components( keywords.getOutputComponents() );
@@ -169,6 +171,21 @@ void FunctionOfVector<T>::turnOnDerivatives() {
 template <class T>
 unsigned FunctionOfVector<T>::getNumberOfDerivatives() {
   return nderivatives;
+}
+
+template <class T>
+void FunctionOfVector<T>::prepare() {
+  unsigned argstart = myfunc.getArgStart(); std::vector<unsigned> shape(1);
+  for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
+      if( getPntrToArgument(i)->getRank()==1 ) {
+          shape[0] = getPntrToArgument(i)->getShape()[0]; break;
+      }
+  }
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+      Value* myval = getPntrToComponent(i);
+      if( myval->getRank()==1 && myval->getShape()[0]!=shape[0] ) { myval->setShape(shape); }
+  }
+  ActionWithVector::prepare();
 }
 
 template <class T>

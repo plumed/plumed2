@@ -42,6 +42,8 @@ public:
 ///
   unsigned getNumberOfDerivatives() override { return 0; }
 ///
+  void prepare() override ;
+///
   void calculate() override ;
 ///
   void apply() override ;
@@ -67,6 +69,21 @@ TransposeMatrix::TransposeMatrix(const ActionOptions& ao):
   else { shape.resize(2); shape[0]=getPntrToArgument(0)->getShape()[1]; shape[1]=getPntrToArgument(0)->getShape()[0]; }
   addValue( shape ); setNotPeriodic(); getPntrToComponent(0)->buildDataStore();
   if( shape.size()==2 ) getPntrToComponent(0)->reshapeMatrixStore( shape[1] );
+}
+
+void TransposeMatrix::prepare() {
+  Value* myval = getPntrToComponent(0); Value* myarg = getPntrToArgument(0);
+  if( myarg->getRank()==1 ) {
+      if( myval->getShape()[0]!=1 || myval->getShape()[1]!=myarg->getShape()[0] ) { 
+          std::vector<unsigned> shape(2); shape[0] = 1; shape[1] = myarg->getShape()[0]; 
+          myval->setShape( shape ); myval->reshapeMatrixStore( shape[1] );
+      }  
+  } else if( myarg->getShape()[0]==1 ) {
+      if( myval->getShape()[0]!=myarg->getShape()[1] ) { std::vector<unsigned> shape(1); shape[0] = myarg->getShape()[1]; myval->setShape( shape ); }
+  } else if( myarg->getShape()[0]!=myval->getShape()[1] || myarg->getShape()[1]!=myval->getShape()[0] ) {
+      std::vector<unsigned> shape(2); shape[0] = myarg->getShape()[1]; shape[1] = myarg->getShape()[0];
+      myval->setShape( shape ); myval->reshapeMatrixStore( shape[1] );
+  }
 }
 
 void TransposeMatrix::calculate() {

@@ -1327,9 +1327,13 @@ void PlumedMain::stop() {
 
 void PlumedMain::runJobsAtEndOfCalculation() {
   for(const auto & p : actionSet) {
+     ActionWithValue* av=dynamic_cast<ActionWithValue*>(p.get());
+     if( av && av->calculateOnUpdate() ) p->activate();
+  }
+  for(const auto & p : actionSet) {
     ActionPilot* ap=dynamic_cast<ActionPilot*>(p.get());
     ActionWithValue* av=dynamic_cast<ActionWithValue*>(p.get());
-    if( av && av->calculateOnUpdate() ) { p->activate(); p->calculate(); }
+    if( av && av->calculateOnUpdate() ) { p->calculate(); }
     else if( ap && !av && ap->getStride()==0 ) { p->update(); }
     else p->runFinalJobs();
   }

@@ -47,6 +47,8 @@ public:
 /// This is required to set the number of derivatives for the eigenvalues
   unsigned getNumberOfDerivatives() override { return getPntrToArgument(0)->getNumberOfValues(); }
 ///
+  void prepare() override ;
+///
   void calculate() override ;
 ///
   double getForceOnMatrixElement( const unsigned& jrow, const unsigned& krow ) const override;
@@ -97,17 +99,19 @@ DiagonalizeMatrix::DiagonalizeMatrix(const ActionOptions& ao):
   mymatrix.resize( eigvecs_shape[0], eigvecs_shape[1] ); eigvals.resize( eigvecs_shape[0] ); eigvecs.resize( eigvecs_shape[0], eigvecs_shape[1] );
 }
 
+void DiagonalizeMatrix::prepare() {
+  std::vector<unsigned> shape(1); shape[0]=getPntrToArgument(0)->getShape()[0];
+  for(unsigned i=0; i<desired_vectors.size(); ++i) {
+    if( getPntrToComponent( 2*i+1 )->getShape()[0]!=shape[0] ) getPntrToComponent( 2*i+1 )->setShape( shape );
+  }
+
+}
+
 void DiagonalizeMatrix::calculate() {
   if( getPntrToArgument(0)->getShape()[0]==0 ) return ;
   // Resize stuff that might need resizing
   unsigned nvals=getPntrToArgument(0)->getShape()[0];
-  if( eigvals.size()!=nvals ) {
-    mymatrix.resize( nvals, nvals ); eigvals.resize( nvals );
-    eigvecs.resize( nvals, nvals ); std::vector<unsigned> shape(1); shape[0]=nvals;
-    for(unsigned i=0; i<desired_vectors.size(); ++i) {
-      if( getPntrToComponent( 2*i+1 )->getShape()[0]!=nvals ) getPntrToComponent( 2*i+1 )->setShape( shape );
-    }
-  }
+  if( eigvals.size()!=nvals ) { mymatrix.resize( nvals, nvals ); eigvals.resize( nvals ); eigvecs.resize( nvals, nvals ); }
 
   // Retrieve the matrix from input
   retrieveFullMatrix( mymatrix );

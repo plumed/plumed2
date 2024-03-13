@@ -150,7 +150,7 @@ void DumpPDB::update() {
   if( description.length()>0 ) opdbf.printf("# %s AT STEP %lld TIME %f \n", description.c_str(), getStep(), getTime() );
   unsigned nvals = getPntrToArgument(0)->getShape()[0], nargs = getNumberOfArguments(), atomarg=0; 
   if( pdb_atom_indices.size()>0 ) {
-      if( nargs>1 ) atomarg = nargs - 2; 
+      if( nargs>1 ) { atomarg = nargs - 1; nargs = nargs-1; } 
       else nargs = 0;
   }
   for(unsigned i=0; i<nvals; ++i) {
