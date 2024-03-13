@@ -1,8 +1,8 @@
-#! FIELDS m.coord-1 hC dhC_m.coord-1
-#! SET min_m.coord-1 -1.0
-#! SET max_m.coord-1 1.0
-#! SET nbins_m.coord-1  100
-#! SET periodic_m.coord-1 false
+#! FIELDS m-1 hC dhC_m-1
+#! SET min_m-1 -1.0
+#! SET max_m-1 1.0
+#! SET nbins_m-1  100
+#! SET periodic_m-1 false
   -1.0000   0.0000   0.0000
   -0.9800   0.0000   0.0000
   -0.9600   0.0000   0.0000
