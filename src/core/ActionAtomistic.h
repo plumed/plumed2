@@ -52,6 +52,7 @@ class ActionAtomistic :
   std::vector<AtomNumber> indexes;         // the set of needed atoms
   std::vector<std::size_t>   value_depends;   // The list of values that are being used
   std::vector<std::pair<std::size_t, std::size_t > > atom_value_ind;  // The list of values and indices for the atoms that are being used
+  std::vector<std::pair<std::size_t,std::vector<std::size_t>>> atom_value_ind_grouped;
 /// unique should be an ordered set since we later create a vector containing the corresponding indexes
   std::vector<AtomNumber>  unique;
 /// unique_local should be an ordered set since we later create a vector containing the corresponding indexes
