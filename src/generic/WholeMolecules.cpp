@@ -103,8 +103,8 @@ class WholeMolecules:
   public ActionPilot,
   public ActionAtomistic
 {
-  std::vector<std::vector<std::pair<std::size_t,std::size_t> > > p_groups;
-  std::vector<std::vector<std::pair<std::size_t,std::size_t> > > p_roots;
+  std::vector<std::vector<std::pair<std::size_t,std::vector<std::size_t>>>> p_groups;
+  std::vector<std::vector<std::pair<std::size_t,std::vector<std::size_t>>>> p_roots;
   std::vector<Vector> refs;
   bool doemst, addref;
 public:
@@ -221,16 +221,34 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
   // Convert groups to p_groups
   p_groups.resize( groups.size() );
   for(unsigned i=0; i<groups.size(); ++i) {
-    p_groups[i].resize( groups[i].size() );
-    for(unsigned j=0; j<groups[i].size(); ++j) p_groups[i][j] = getValueIndices( groups[i][j] );
+    std::size_t prev_nn=0;
+    bool first=true;
+    for(unsigned j=0; j<groups[i].size(); ++j) {
+      auto a = getValueIndices( groups[i][j] );
+      auto nn=a.first;
+      auto kk=a.second;
+      if(first || nn!=prev_nn) p_groups.back().push_back(std::pair<std::size_t,std::vector<std::size_t>>(nn,{}));
+      p_groups.back().back().second.push_back(kk);
+      first=false;
+      prev_nn=nn;
+    }
   }
+
   // Convert roots to p_roots
   p_roots.resize( roots.size() );
   for(unsigned i=0; i<roots.size(); ++i) {
-    p_roots[i].resize( roots[i].size() );
-    for(unsigned j=0; j<roots[i].size(); ++j) p_roots[i][j] = getValueIndices( roots[i][j] );
+    bool first=true;
+    std::size_t prev_nn=0;
+    for(unsigned j=0; j<roots[i].size(); ++j) {
+      auto a = getValueIndices( roots[i][j] );
+      auto nn=a.first;
+      auto kk=a.second;
+      if(first || nn!=prev_nn) p_roots.back().push_back(std::pair<std::size_t,std::vector<std::size_t>>(nn,{}));
+      p_roots.back().back().second.push_back(kk);
+      first=false;
+      prev_nn=nn;
+    }
   }
-
 
   checkRead();
   Tools::removeDuplicates(merge);
@@ -241,25 +259,38 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
 
 void WholeMolecules::calculate() {
   for(unsigned i=0; i<p_groups.size(); ++i) {
-    Vector first = getGlobalPosition(p_groups[i][0]);
-    if(addref) {
-      first = refs[i]+pbcDistance(refs[i],first);
-      setGlobalPosition( p_groups[i][0], first );
-    }
-    if(!doemst) {
-      for(unsigned j=1; j<p_groups[i].size(); ++j) {
-        Vector second=getGlobalPosition(p_groups[i][j]);
-        first = first+pbcDistance(first,second);
-        setGlobalPosition(p_groups[i][j], first );
+   bool start=true;
+//   if(addref) {
+//     first = refs[i]+pbcDistance(refs[i],first);
+//     setGlobalPosition( p_groups[i][0], first );
+//   }
+//   if(!doemst) {
+    
+    Vector first;
+    for(unsigned j=0; j<p_groups[i].size(); ++j) {
+      auto data = getValueData(p_groups[i][j].first);
+      for(const auto kk : p_groups[i][j].second) {
+        Vector second{
+          data[0][kk],
+          data[1][kk],
+          data[2][kk],
+        };
+        if(start) first=second;
+        else first += pbcDistance(first,second);
+        start=false;
+        data[0][kk]=first[0];
+        data[1][kk]=first[1];
+        data[2][kk]=first[2];
       }
-    } else {
-      for(unsigned j=1; j<p_groups[i].size(); ++j) {
-        Vector first=getGlobalPosition(p_roots[i][j-1]);
-        Vector second=getGlobalPosition(p_groups[i][j]);
-        second=first+pbcDistance(first,second);
-        setGlobalPosition(p_groups[i][j], second );
-      }
     }
+//  } else {
+//    for(unsigned j=1; j<p_groups[i].size(); ++j) {
+//      Vector first=getGlobalPosition(p_roots[i][j-1]);
+//      Vector second=getGlobalPosition(p_groups[i][j]);
+//      second=first+pbcDistance(first,second);
+//      setGlobalPosition(p_groups[i][j], second );
+//    }
+//  }
   }
 }
 
