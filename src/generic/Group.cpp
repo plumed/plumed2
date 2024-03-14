@@ -46,7 +46,7 @@ the index file and `NDX_GROUP` to set the name of the group to be imported (defa
 It is also possible to remove atoms from a list and or sort them using keywords `REMOVE`, `SORT`, and `UNIQUE`.
 The flow is the following:
 - If `ATOMS` is present, then take the ordered list of atoms from the `ATOMS` keyword as a starting list.
-- If `NDX_FILE` is present, then append to it the list obtained from the gromacs group.
+- Alternatively, if `NDX_FILE` is present, use the list obtained from the gromacs group.
 - If `REMOVE` is present, then remove the first occurrence of each of these atoms from the list.
   If one tries to remove an atom that was not listed plumed adds a notice in the output.
   An atom that is present twice in the original list might be removed twice.
