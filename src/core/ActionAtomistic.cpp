@@ -98,6 +98,24 @@ void ActionAtomistic::requestAtoms(const std::vector<AtomNumber> & a, const bool
     if( atom_value_ind[i].first==0 ) unique.push_back(indexes[i]);
     else if( atom_value_ind[i].second>0 ) error("action atomistic is not set up to deal with multiple vectors in position input");
   }
+
+  atom_value_ind_grouped.clear();
+
+  if(atom_value_ind.size()>0) {
+    auto nn = atom_value_ind[0].first;
+    auto kk = atom_value_ind[0].second;
+    atom_value_ind_grouped.push_back(std::pair<std::size_t,std::vector<std::size_t>>(nn, {}));
+    atom_value_ind_grouped.back().second.push_back(kk);
+    auto prev_nn=nn;
+    for(unsigned i=1; i<atom_value_ind.size(); i++) {
+      auto nn = atom_value_ind[i].first;
+      auto kk = atom_value_ind[i].second;
+      if(nn!=prev_nn) atom_value_ind_grouped.push_back(std::pair<std::size_t,std::vector<std::size_t>>(nn, {}));
+      atom_value_ind_grouped.back().second.push_back(kk);
+      prev_nn=nn;
+    }
+  }
+
   // Add the dependencies to the actions that we require
   Tools::removeDuplicates(unique); value_depends.resize(0);
   for(unsigned i=0; i<requirements.size(); ++i ) {
@@ -271,15 +289,34 @@ void ActionAtomistic::retrieveAtoms( const bool& force ) {
   ActionToPutData* cv = chargev[0]->getPntrToAction()->castToActionToPutData();
   if(cv) chargesWereSet=cv->hasBeenSet();
   unsigned j = 0;
-  for(const auto & a : atom_value_ind) {
-    std::size_t nn = a.first, kk = a.second;
-    positions[j][0] = xpos[nn]->data[kk];
-    positions[j][1] = ypos[nn]->data[kk];
-    positions[j][2] = zpos[nn]->data[kk];
-    charges[j] = chargev[nn]->data[kk];
-    masses[j] = masv[nn]->data[kk];
-    j++;
+
+// for(const auto & a : atom_value_ind) {
+//   std::size_t nn = a.first, kk = a.second;
+//   positions[j][0] = xpos[nn]->data[kk];
+//   positions[j][1] = ypos[nn]->data[kk];
+//   positions[j][2] = zpos[nn]->data[kk];
+//   charges[j] = chargev[nn]->data[kk];
+//   masses[j] = masv[nn]->data[kk];
+//   j++;
+// }
+
+  for(const auto & a : atom_value_ind_grouped) {
+    const auto nn=a.first;
+    auto & xp=xpos[nn]->data;
+    auto & yp=ypos[nn]->data;
+    auto & zp=zpos[nn]->data;
+    auto & ch=chargev[nn]->data;
+    auto & ma=masv[nn]->data;
+    for(const auto & kk : a.second) {
+      positions[j][0] = xp[kk];
+      positions[j][1] = yp[kk];
+      positions[j][2] = zp[kk];
+      charges[j] = ch[kk];
+      masses[j] = ma[kk];
+      j++;
+    }
   }
+
 }
 
 void ActionAtomistic::setForcesOnAtoms(const std::vector<double>& forcesToApply, unsigned& ind) {
@@ -289,13 +326,28 @@ void ActionAtomistic::setForcesOnAtoms(const std::vector<double>& forcesToApply,
     ypos[value_depends[i]]->hasForce = true;
     zpos[value_depends[i]]->hasForce = true;
   }
-  for(const auto & a : atom_value_ind) {
-    plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
-    std::size_t nn = a.first, kk = a.second;
-    xpos[nn]->inputForce[kk] += forcesToApply[ind]; ind++;
-    ypos[nn]->inputForce[kk] += forcesToApply[ind]; ind++;
-    zpos[nn]->inputForce[kk] += forcesToApply[ind]; ind++;
+
+// for(const auto & a : atom_value_ind) {
+//   plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
+//   std::size_t nn = a.first, kk = a.second;
+//   xpos[nn]->inputForce[kk] += forcesToApply[ind]; ind++;
+//   ypos[nn]->inputForce[kk] += forcesToApply[ind]; ind++;
+//   zpos[nn]->inputForce[kk] += forcesToApply[ind]; ind++;
+// }
+
+  for(const auto & a : atom_value_ind_grouped) {
+    const auto nn=a.first;
+    plumed_dbg_assert(ind<forcesToApply.size()) << "problem setting forces in " << getLabel();
+    auto & xp=xpos[nn]->inputForce;
+    auto & yp=ypos[nn]->inputForce;
+    auto & zp=zpos[nn]->inputForce;
+    for(const auto & kk : a.second) {
+      xp[kk] += forcesToApply[ind]; ind++;
+      yp[kk] += forcesToApply[ind]; ind++;
+      zp[kk] += forcesToApply[ind]; ind++;
+    }
   }
+
   setForcesOnCell( forcesToApply, ind );
 }
 
