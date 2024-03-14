@@ -89,6 +89,7 @@ PLUMED_REGISTER_ACTION(Dihcor,"DIHCOR")
 
 void Dihcor::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
+  keys.needsAction("DIHEDRAL_CORRELATION"); keys.needsAction("SUM");
 }
 
 Dihcor::Dihcor(const ActionOptions&ao):

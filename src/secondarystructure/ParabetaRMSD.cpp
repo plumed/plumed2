@@ -103,6 +103,7 @@ void ParabetaRMSD::registerKeywords( Keywords& keys ) {
            "chain configuration with the appropriate geometry are counted.  If STYLE=inter "
            "only sheet-like configurations involving two chains are counted, while if STYLE=intra "
            "only sheet-like configurations involving a single chain are counted");
+  keys.needsAction("LOWEST");
 }
 
 ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
@@ -266,7 +267,7 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
   readInputLine( lab + ": SECONDARY_STRUCTURE_RMSD BONDLENGTH=0.17" + seglist + structure + " " + atoms + " TYPE=" + type + strands_cutoff);
   if( ltmap.length()>0 ) {
     // Create the lowest line
-    readInputLine( getShortcutLabel() + "_low: LOWEST ARG1=" + getShortcutLabel() + ".struct-1 ARG2=" + getShortcutLabel() + ".struct-2" );
+    readInputLine( getShortcutLabel() + "_low: LOWEST ARG=" + getShortcutLabel() + ".struct-1," + getShortcutLabel() + ".struct-2" );
     // Create the less than object
     SecondaryStructureRMSD::expandShortcut( uselessthan, getShortcutLabel(), getShortcutLabel() + "_low", ltmap, this );
   }

@@ -144,6 +144,12 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
 
     }
     std::cout<<"    },"<<std::endl;
+    if( keys.getNeededKeywords().size()>0 ) {
+      std::vector<std::string> neededActions( keys.getNeededKeywords() );
+      std::cout<<"    \"needs\" : ["<<"\""<<neededActions[0]<<"\"";
+      for(unsigned j=1; j<neededActions.size(); ++j) std::cout<<", \""<<neededActions[j]<<"\"";
+      std::cout<<"],"<<std::endl;
+    }
     // This ensures that \n is replaced by \\n
     std::string unsafen="\n", safen="\\n", helpstr = keys.getHelpString();
     for( std::size_t pos = helpstr.find("\n");

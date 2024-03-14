@@ -91,6 +91,7 @@ void HBPammMatrix::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","CLUSTERS","the name of the file that contains the definitions of all the kernels for PAMM");
   keys.add("compulsory","REGULARISE","0.001","don't allow the denominator to be smaller then this value");
   keys.add("compulsory","GAUSS_CUTOFF","6.25","the cutoff at which to stop evaluating the kernel function is set equal to sqrt(2*x)*(max(adc)+cov(adc))");
+  keys.needsAction("PAMM"); keys.needsAction("ONES"); keys.needsAction("MATRIX_VECTOR_PRODUCT");
 }
 
 HBPammMatrix::HBPammMatrix(const ActionOptions& ao):
@@ -209,7 +210,7 @@ void HBPammShortcut::registerKeywords( Keywords& keys ) {
            "variety of functions of the contact matrix as described in \\ref contactmatrix");
   keys.add("compulsory","HYDROGENS","The list of hydrogen atoms that can form part of a hydrogen bond.  The atoms must be specified using a comma separated list, "
            "an index range or by using a \\ref GROUP");
-  multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
+  multicolvar::MultiColvarShortcuts::shortcutKeywords( keys ); keys.needsAction("HBPAMM_MATRIX");
 }
 
 HBPammShortcut::HBPammShortcut(const ActionOptions&ao):

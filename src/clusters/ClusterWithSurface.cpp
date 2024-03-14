@@ -47,6 +47,9 @@ void ClusterWithSurface::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords(keys);
   keys.add("optional","RCUT_SURF","");
   keys.add("compulsory","ATOMS","the atoms that were used to calculate the matrix that was clustered");
+  keys.needsAction("CLUSTER_WEIGHTS"); keys.needsAction("CONTACT_MATRIX");
+  keys.needsAction("OUTER_PRODUCT"); keys.needsAction("CUSTOM");
+  keys.needsAction("DFSCLUSTERING");
 }
 
 ClusterWithSurface::ClusterWithSurface(const ActionOptions& ao):
@@ -64,7 +67,7 @@ ClusterWithSurface::ClusterWithSurface(const ActionOptions& ao):
   // Now create a custom matrix
   readInputLine( getShortcutLabel() + "_cwmat: OUTER_PRODUCT ARG=" + getShortcutLabel() + "_wnosurf," + getShortcutLabel() + "_wnosurf FUNC=max");
   // Product of matrices
-  readInputLine( getShortcutLabel() + "_pmat: CUSTOM ARG1=" + getShortcutLabel() + "_cmat.w ARG2=" + getShortcutLabel() + "_cwmat FUNC=x*y PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_pmat: CUSTOM ARG=" + getShortcutLabel() + "_cmat.w," + getShortcutLabel() + "_cwmat FUNC=x*y PERIODIC=NO");
   // DFS clustering
   readInputLine( getShortcutLabel() + "_clust: DFSCLUSTERING ARG=" + getShortcutLabel() + "_pmat");
   // And final cluster weights

@@ -50,6 +50,8 @@ void EuclideanDistance::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","ARG1","The poin that we are calculating the distance from");
   keys.add("compulsory","ARG2","The point that we are calculating the distance to");
   keys.addFlag("SQUARED",false,"The squared distance should be calculated");
+  keys.needsAction("DISPLACEMENT"); keys.needsAction("CUSTOM");
+  keys.needsAction("TRANSPOSE"); keys.needsAction("MATRIX_PRODUCT_DIAGONAL");
 }
 
 EuclideanDistance::EuclideanDistance( const ActionOptions& ao):

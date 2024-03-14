@@ -59,6 +59,8 @@ void PlaneShortcut::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("_vmean","VMEAN","the norm of the mean vector");
   keys.addFlag("VSUM",false,"calculate the norm of the sum of all the vectors");
   keys.addOutputComponent("_vsum","VSUM","the norm of the mean vector");
+  keys.needsAction("CENTER"); keys.needsAction("GROUP"); keys.needsAction("PLANE");
+  keys.needsAction("MEAN"); keys.needsAction("SUM"); keys.needsAction("COMBINE"); keys.needsAction("CUSTOM");
 }
 
 PlaneShortcut::PlaneShortcut(const ActionOptions&ao):

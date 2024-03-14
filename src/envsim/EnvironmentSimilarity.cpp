@@ -219,6 +219,8 @@ void EnvironmentSimilarity::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","CUTOFF","3","how many multiples of sigma would you like to consider beyond the maximum distance in the environment");
   keys.add("optional","ATOM_NAMES_FILE","PDB file with atom names for all atoms in SPECIES. Atoms in reference environments will be compared only if atom names match.");
   multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
+  keys.needsAction("DISTANCE_MATRIX"); keys.needsAction("ONES"); keys.needsAction("CONSTANT");
+  keys.needsAction("CUSTOM"); keys.needsAction("MATRIX_VECTOR_PRODUCT"); keys.needsAction("COMBINE");
 }
 
 EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
@@ -417,10 +419,7 @@ EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
     }
   }
   // And get the maximum
-  if( funcstr.size()>1 ) {
-    log.printf("Action CUSTOM\n");
-    readInputLine( getShortcutLabel() + ": CUSTOM_VECTOR ARG=" + envargstr + " PERIODIC=NO VAR=" + varstr + " FUNC=" + maxfuncstr + ")" );
-  }
+  if( funcstr.size()>1 ) readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + envargstr + " PERIODIC=NO VAR=" + varstr + " FUNC=" + maxfuncstr + ")" );
   // Read in all the shortcut stuff
   std::map<std::string,std::string> keymap; multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );
   multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel(), "", keymap, this );

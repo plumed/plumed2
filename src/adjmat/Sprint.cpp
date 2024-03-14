@@ -90,6 +90,9 @@ void Sprint::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
   keys.add("numbered","GROUP","specifies the list of atoms that should be assumed indistinguishable");
   keys.add("numbered","SWITCH","specify the switching function to use between two sets of indistinguishable atoms");
+  keys.needsAction("CONTACT_MATRIX"); keys.needsAction("TRANSPOSE"); keys.needsAction("CONCATENATE");
+  keys.needsAction("DIAGONALIZE"); keys.needsAction("CUSTOM");
+  keys.needsAction("SELECT_COMPONENTS"); keys.needsAction("SORT");
 }
 
 Sprint::Sprint(const ActionOptions& ao):
@@ -131,7 +134,7 @@ Sprint::Sprint(const ActionOptions& ao):
   readInputLine( getShortcutLabel() + "_diag: DIAGONALIZE ARG=" + getShortcutLabel() + "_jmat VECTORS=1");
   // Compute sprint coordinates as product of eigenvalue and eigenvector times square root of number of atoms in all groups
   std::string str_natoms; Tools::convert( ntot_atoms, str_natoms );
-  readInputLine( getShortcutLabel() + "_sp: MATHEVAL ARG1=" + getShortcutLabel() + "_diag.vals-1 ARG2=" + getShortcutLabel() +
+  readInputLine( getShortcutLabel() + "_sp: CUSTOM ARG=" + getShortcutLabel() + "_diag.vals-1," + getShortcutLabel() +
                  "_diag.vecs-1 FUNC=sqrt(" + str_natoms + ")*x*y PERIODIC=NO");
   // Sort sprint coordinates for each group of atoms
   unsigned k=0;

@@ -43,7 +43,7 @@ O: MATRIX_VECTOR_PRODUCT ARG=Q,P
 eig: CONSTANT VALUES=1,1,1,1,1,1
 
 # And calculate the CV
-cv_prod: CUSTOM ARG1=O ARG2=eig FUNC=x*y PERIODIC=NO
+cv_prod: CUSTOM ARG=O,eig FUNC=x*y PERIODIC=NO
 cv: SUM ARG=cv_prod PERIODIC=NO
 
 # Add a force

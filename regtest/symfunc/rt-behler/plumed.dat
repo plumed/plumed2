@@ -1,7 +1,7 @@
 cmat: CONTACT_MATRIX GROUP=1-64 SWITCH={CUSTOM R_0=4.5 D_MAX=4.5 FUNC=0.5*(cos(pi*x)+1)} COMPONENTS
-cmatr: CUSTOM ARG1=cmat.x ARG2=cmat.y ARG3=cmat.z FUNC=sqrt(x*x+y*y+z*z) PERIODIC=NO
-g2_f: CUSTOM ARG1=cmatr ARG2=cmat.w FUNC=y*exp(-(x-3)^2) PERIODIC=NO
-g3_f: CUSTOM ARG1=cmatr ARG2=cmat.w FUNC=y*cos(x) PERIODIC=NO 
+cmatr: CUSTOM ARG=cmat.x,cmat.y,cmat.z FUNC=sqrt(x*x+y*y+z*z) PERIODIC=NO
+g2_f: CUSTOM ARG=cmatr,cmat.w FUNC=y*exp(-(x-3)^2) PERIODIC=NO
+g3_f: CUSTOM ARG=cmatr,cmat.w FUNC=y*cos(x) PERIODIC=NO 
 beh2_g1_ones: ONES SIZE=64
 beh2_g1: MATRIX_VECTOR_PRODUCT ARG=cmat.w,beh2_g1_ones 
 beh2_g2: MATRIX_VECTOR_PRODUCT ARG=g2_f,beh2_g1_ones

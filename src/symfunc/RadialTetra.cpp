@@ -52,6 +52,9 @@ void RadialTetra::registerKeywords( Keywords& keys ) {
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.add("compulsory","CUTOFF","-1","ignore distances that have a value larger than this cutoff");
   keys.remove("NN"); keys.remove("MM"); keys.remove("D_0"); keys.remove("R_0"); keys.remove("SWITCH");
+  keys.needsAction("DISTANCE_MATRIX"); keys.needsAction("NEIGHBORS");
+  keys.needsAction("CUSTOM"); keys.needsAction("ONES");
+  keys.needsAction("MATRIX_VECTOR_PRODUCT");
 }
 
 RadialTetra::RadialTetra( const ActionOptions& ao):
@@ -73,7 +76,7 @@ RadialTetra::RadialTetra( const ActionOptions& ao):
   // Get the neighbors matrix
   readInputLine( getShortcutLabel() + "_neigh: NEIGHBORS ARG=" + getShortcutLabel() + "_mat.w NLOWEST=4");
   // Now get distance matrix that just contains four nearest distances
-  readInputLine( getShortcutLabel() + "_near4: MATHEVAL ARG2=" + getShortcutLabel() + "_neigh ARG1=" + getShortcutLabel() + "_mat.w FUNC=x*y PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_near4: CUSTOM ARG=" + getShortcutLabel() + "_mat.w," + getShortcutLabel() + "_neigh FUNC=x*y PERIODIC=NO");
   //Now compute sum of four nearest distances
   ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_mat");
   plumed_assert( av && av->getNumberOfComponents()>0 && (av->copyOutput(0))->getRank()==2 );
@@ -81,13 +84,13 @@ RadialTetra::RadialTetra( const ActionOptions& ao):
   readInputLine( getShortcutLabel() + "_ones: ONES SIZE=" + size );
   readInputLine( getShortcutLabel() + "_sum4: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_near4," + getShortcutLabel() + "_ones");
   // Now compute squares of four nearest distance
-  readInputLine( getShortcutLabel() + "_near4_2: CUSTOM ARG1=" + getShortcutLabel() + "_near4 FUNC=x*x PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_near4_2: CUSTOM ARG=" + getShortcutLabel() + "_near4 FUNC=x*x PERIODIC=NO");
   // Now compute sum of the squares of the four nearest distances
   readInputLine( getShortcutLabel() + "_sum4_2: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_near4_2," + getShortcutLabel() + "_ones");
   // Evaluate the average distance to the four nearest neighbors
-  readInputLine( getShortcutLabel() + "_meanr: CUSTOM ARG1=" + getShortcutLabel() + "_sum4 FUNC=0.25*x PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_meanr: CUSTOM ARG=" + getShortcutLabel() + "_sum4 FUNC=0.25*x PERIODIC=NO");
   // Now evaluate the actual per atom CV
-  readInputLine( getShortcutLabel() + ": CUSTOM ARG1=" + getShortcutLabel() + "_sum4 ARG2=" + getShortcutLabel() + "_sum4_2 ARG3=" + getShortcutLabel() + "_meanr " +
+  readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_sum4," + getShortcutLabel() + "_sum4_2," + getShortcutLabel() + "_meanr " +
                  "FUNC=(1-(y-x*z)/(12*z*z)) PERIODIC=NO");
   // And get the things to do with the quantities we have computed
   std::map<std::string,std::string> keymap; multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );

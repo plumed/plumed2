@@ -47,6 +47,7 @@ PLUMED_REGISTER_ACTION(GeometricPathShortcut,"GPATH")
 void GeometricPathShortcut::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys ); Path::registerInputFileKeywords( keys );
   keys.add("optional","PROPERTY","read in path coordinates by finding option with this label in remark of pdb frames");
+  keys.needsAction("DISPLACEMENT"); keys.needsAction("GEOMETRIC_PATH"); keys.needsAction("PDB2CONSTANT"); keys.needsAction("CONSTANT");
 }
 
 GeometricPathShortcut::GeometricPathShortcut( const ActionOptions& ao ):

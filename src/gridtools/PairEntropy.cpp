@@ -44,7 +44,8 @@ public:
 PLUMED_REGISTER_ACTION(PairEntropy,"PAIRENTROPY")
 
 void PairEntropy::registerKeywords( Keywords& keys ) {
-  RDF::registerKeywords( keys );
+  RDF::registerKeywords( keys ); keys.needsAction("RDF");
+  keys.needsAction("INTERPOLATE_GRID"); keys.needsAction("INTEGRATE_GRID");
 }
 
 PairEntropy::PairEntropy(const ActionOptions&ao):

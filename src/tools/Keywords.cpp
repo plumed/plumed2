@@ -661,4 +661,18 @@ std::string Keywords::getKeywordDescription( const std::string& key ) const {
   plumed_assert( exists( key ) ); return documentation.find(key)->second;
 }
 
+void Keywords::needsAction( const std::string& name ) {
+  if( std::find(neededActions.begin(), neededActions.end(), name )!=neededActions.end() ) return;
+  neededActions.push_back( name );
+}
+
+const std::vector<std::string>& Keywords::getNeededKeywords() const {
+  return neededActions;
+}
+
+void Keywords::addActionNameSuffix( const std::string& suffix ) {
+  if( std::find(actionNameSuffixes.begin(), actionNameSuffixes.end(), suffix )!=actionNameSuffixes.end() ) return;
+  actionNameSuffixes.push_back( suffix );
+}
+
 }

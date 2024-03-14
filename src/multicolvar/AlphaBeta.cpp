@@ -58,6 +58,7 @@ void AlphaBeta::registerKeywords(Keywords& keys) {
   keys.reset_style("ATOMS","atoms");
   keys.add("compulsory","REFERENCE","the reference values for each of the torsional angles.  If you use a single REFERENCE value the "
            "same reference value is used for all torsions");
+  keys.needsAction("TORSIONS"); keys.needsAction("COMBINE"); keys.needsAction("CUSTOM"); keys.needsAction("SUM");
 }
 
 AlphaBeta::AlphaBeta(const ActionOptions& ao):
@@ -69,9 +70,9 @@ AlphaBeta::AlphaBeta(const ActionOptions& ao):
   // Calculate angles
   readInputLine( getShortcutLabel() + "_torsions: TORSIONS " + convertInputLineToString() );
   // Caculate difference from reference using combine
-  readInputLine( getShortcutLabel() + "_comb: COMBINE PARAMETERS=" + refstr + " ARG1=" + getShortcutLabel() + "_torsions PERIODIC=NO" );
+  readInputLine( getShortcutLabel() + "_comb: COMBINE PARAMETERS=" + refstr + " ARG=" + getShortcutLabel() + "_torsions PERIODIC=NO" );
   // Now matheval for cosine bit
-  readInputLine( getShortcutLabel() + "_cos: MATHEVAL ARG1=" + getShortcutLabel() + "_comb FUNC=0.5+0.5*cos(x) PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_cos: CUSTOM ARG=" + getShortcutLabel() + "_comb FUNC=0.5+0.5*cos(x) PERIODIC=NO");
   // And combine to get final value
   readInputLine( getShortcutLabel() + ": SUM ARG=" + getShortcutLabel() + "_cos PERIODIC=NO");
 }

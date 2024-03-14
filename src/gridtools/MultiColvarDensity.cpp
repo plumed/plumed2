@@ -93,6 +93,8 @@ void MultiColvarDensity::registerKeywords( Keywords& keys ) {
   keys.add("optional","DATA","the multicolvar which you would like to calculate the density profile for");
   keys.add("optional","ATOMS","if you are calculating a atomic density you use this keyword to specify the atoms that are involved");
   keys.addFlag("UNORMALIZED",false,"do not divide by the density");
+  keys.needsAction("DISTANCES"); keys.needsAction("KDE"); keys.needsAction("ACCUMULATE");
+  keys.needsAction("CUSTOM"); keys.needsAction("ONES"); keys.needsAction("CUSTOM");
 }
 
 MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
