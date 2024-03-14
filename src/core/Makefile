@@ -1,4 +1,4 @@
-USE=config tools lepton small_vector
+USE=config tools lepton small_vector blas
 
 # generic makefile
 include ../maketools/make.module
