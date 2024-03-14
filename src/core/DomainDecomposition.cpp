@@ -286,15 +286,11 @@ void DomainDecomposition::share() {
     }
     if( !(forced_vectors.empty() && nonforced_vectors.empty()) ) atomsNeeded=true;
     // Merge the atoms from the atoms that have a force on
-    forced_unique.clear();
+    unique.clear(); forced_unique.clear(); 
     mergeVectorTools::mergeSortedVectors(forced_vectors.data(),forced_vectors.size(),forced_unique);
-    // Merge the atoms from the actions that don't apply forces
-    std::vector<AtomNumber> nonforced_unique;
-    mergeVectorTools::mergeSortedVectors(nonforced_vectors.data(),nonforced_vectors.size(),nonforced_unique);
-    // Get unique by merging the forced and unforced atoms
-    unique.clear(); gch::small_vector<const std::vector<AtomNumber>*,32> allvectors; allvectors.reserve(2);
-    allvectors.push_back(&forced_unique); allvectors.push_back(&nonforced_unique);
-    mergeVectorTools::mergeSortedVectors(allvectors.data(),allvectors.size(),unique);
+    // Merge all the atoms
+    nonforced_vectors.push_back( &forced_unique );
+    mergeVectorTools::mergeSortedVectors(nonforced_vectors.data(),nonforced_vectors.size(),unique);
   } else {
     for(unsigned i=0; i<actions.size(); i++) {
       if(actions[i]->isActive()) {
