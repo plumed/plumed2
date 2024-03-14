@@ -86,6 +86,7 @@ public:
   explicit DumpMassCharge(const ActionOptions&);
   ~DumpMassCharge();
   static void registerKeywords( Keywords& keys );
+  bool actionHasForces() override { return false; }
   void prepare() override;
   void calculate() override {}
   void apply() override {}

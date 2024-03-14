@@ -110,6 +110,7 @@ class WholeMolecules:
 public:
   explicit WholeMolecules(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
+  bool actionHasForces() override { return false; }
   void calculate() override;
   void apply() override {}
 };

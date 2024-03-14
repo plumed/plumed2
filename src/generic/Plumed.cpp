@@ -168,6 +168,7 @@ public:
   unsigned getNumberOfDerivatives() override {
     return 0;
   }
+  bool actionHasForces() override { return true; }
 };
 
 PLUMED_REGISTER_ACTION(Plumed,"PLUMED")

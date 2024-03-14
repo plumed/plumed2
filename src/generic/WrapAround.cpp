@@ -156,6 +156,7 @@ class WrapAround:
 public:
   explicit WrapAround(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
+  bool actionHasForces() override { return false; }
   void calculate() override;
   void apply() override {}
 };

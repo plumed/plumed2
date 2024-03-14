@@ -197,6 +197,12 @@ void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, c
   }
 }
 
+bool ActionAtomistic::actionHasForces() {
+  ActionWithValue* av = castToActionWithValue();
+  if( av ) return !av->doNotCalculateDerivatives();
+  if( indexes.size()>0 ) plumed_merror("you have to overwrite the function actionHasForce to tell plumed if you method applies forces");
+}
+
 void ActionAtomistic::parseAtomList(const std::string&key, std::vector<AtomNumber> &t) {
   parseAtomList(key,-1,t);
 }
