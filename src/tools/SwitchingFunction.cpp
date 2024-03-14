@@ -304,12 +304,14 @@ protected:
   const int mm=12;
   const double preRes;
   const double preDfunc;
+  const double preSecDev;
   const int nnf;
   const int mmf;
   const double preDfuncF;
+  const double preSecDevF;
   //I am using PLMD::epsilon to be certain to call the one defined in Tools.h
-  static constexpr double moreThanOne=1.0+100.0*PLMD::epsilon;
-  static constexpr double lessThanOne=1.0-100.0*PLMD::epsilon;
+  static constexpr double moreThanOne=1.0+5.0e10*PLMD::epsilon;
+  static constexpr double lessThanOne=1.0-5.0e10*PLMD::epsilon;
 
   std::string specificDescription() const override {
     std::ostringstream ostr;
@@ -323,12 +325,14 @@ public:
      mm([](int m,int n) {if (m==0) {return n*2;} else {return m;}}(M,N)),
   preRes(static_cast<double>(nn)/mm),
   preDfunc(0.5*nn*(nn-mm)/static_cast<double>(mm)),
+  //wolfram <3:lim_(x->1) d^2/(dx^2) (1 - x^N)/(1 - x^M) = (N (M^2 - 3 M (-1 + N) + N (-3 + 2 N)))/(6 M)
+  preSecDev ((nn * (mm * mm - 3.0* mm * (-1 + nn ) + nn *(-3 + 2* nn )))/(6.0* mm )),
   nnf(nn/2),
   mmf(mm/2),
-  preDfuncF(0.5*nnf*(nnf-mmf)/static_cast<double>(mmf)) {}
+  preDfuncF(0.5*nnf*(nnf-mmf)/static_cast<double>(mmf)),
+  preSecDevF((nnf* (mmf*mmf - 3.0* mmf* (-1 + nnf) + nnf*(-3 + 2* nnf)))/(6.0* mmf)) {}
 
-
-  static inline double doRational(const double rdist, double&dfunc, const int N,
+  static inline double doRational(const double rdist, double&dfunc,double secDev, const int N,
                                   const int M,double result=0.0) {
     //the result and dfunc are assigned in the drivers for doRational
     //if(rdist>(1.0-100.0*epsilon) && rdist<(1.0+100.0*epsilon)) {
@@ -347,6 +351,11 @@ public:
         const double iden = 1.0/(1.0-rMdist*rdist);
         result = num*iden;
         dfunc = ((M*result*rMdist)-(N*rNdist))*iden;
+      } else {
+        //here I imply that the correct initialized are being passed to doRational
+        const double x =(rdist-1.0); 
+        result = result+ x * ( dfunc + 0.5 * x * secDev);
+        dfunc  = dfunc + x * secDev;
       }
     }
     return result;
@@ -354,7 +363,7 @@ public:
   inline double function(double rdist,double&dfunc) const override {
     //preRes and preDfunc are passed already set
     dfunc=preDfunc;
-    double result = doRational(rdist,dfunc,nn,mm,preRes);
+    double result = doRational(rdist,dfunc,preSecDev,nn,mm,preRes);
     return result;
   }
 
@@ -365,7 +374,7 @@ public:
       if(distance2 <= dmax_2) {
         const double rdist = distance2*invr0_2;
         dfunc=preDfuncF;
-        result = doRational(rdist,dfunc,nnf,mmf,preRes);
+        result = doRational(rdist,dfunc,preSecDevF,nnf,mmf,preRes);
         dfunc*=2*invr0_2;
 // stretch:
         result=result*stretch+shift;

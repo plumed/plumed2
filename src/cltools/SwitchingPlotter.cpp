@@ -24,7 +24,6 @@
 #include "core/CLToolRegister.h"
 #include "tools/Tools.h"
 #include "tools/SwitchingFunction.h"
-#include <cstdio>
 #include <string>
 #include <iostream>
 #include <limits>
