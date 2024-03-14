@@ -45,6 +45,7 @@ PLUMED_REGISTER_ACTION(Ones,"ONES")
 void Ones::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
   keys.add("compulsory","SIZE","the number of ones that you would like to create");
+  keys.needsAction("CONSTANT");
 }
 
 Ones::Ones(const ActionOptions& ao):

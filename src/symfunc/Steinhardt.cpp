@@ -283,6 +283,8 @@ void Steinhardt::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("_vmean","VMEAN","the norm of the mean vector");
   keys.addFlag("VSUM",false,"calculate the norm of the sum of all the vectors");
   keys.addOutputComponent("_vsum","VSUM","the norm of the mean vector");
+  keys.needsAction("GROUP"); keys.needsAction("CONTACT_MATRIX"); keys.needsAction("SPHERICAL_HARMONIC"); keys.needsAction("ONES");
+  keys.needsAction("MATRIX_VECTOR_PRODUCT"); keys.needsAction("COMBINE"); keys.needsAction("CUSTOM"); keys.needsAction("MEAN"); keys.needsAction("SUM");
 }
 
 Steinhardt::Steinhardt( const ActionOptions& ao):
@@ -360,18 +362,15 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
 }
 
 void Steinhardt::createVectorNormInput( const std::string& ilab, const std::string& olab, const int& l, const std::string& sep, const std::string& vlab ) {
-  std::string arg_inp, norm_input = olab + "2: COMBINE PERIODIC=NO POWERS=2"; arg_inp = "";
-  std::string snum, num; unsigned nn=1;
-  for(int i=-l; i<=l; ++i) {
-    snum = getSymbol( i ); Tools::convert( nn, num );
-    arg_inp += " ARG" + num + "=" + ilab + sep + "r" + vlab + "-" + snum + "";
-    nn++; Tools::convert( nn, num );
-    arg_inp += " ARG" + num + "=" + ilab + sep + "i" + vlab + "-" + snum + "";
-    nn++;
-    if( i==-l ) norm_input += ",2"; else norm_input += ",2,2";
+  std::string arg_inp, norm_input = olab + "2: COMBINE PERIODIC=NO POWERS=2,2"; std::string snum = getSymbol( -l );
+  arg_inp = " ARG=" + ilab + sep + "r" + vlab + "-" + snum +"," + ilab + sep + "i" + vlab + "-" + snum;
+  for(int i=-l+1; i<=l; ++i) {
+    snum = getSymbol( i );
+    arg_inp += "," + ilab + sep + "r" + vlab + "-" + snum + "," + ilab + sep + "i" + vlab + "-" + snum;
+    norm_input += ",2,2";
   }
   readInputLine( norm_input + arg_inp );
-  readInputLine( olab + ": MATHEVAL ARG=" + olab + "2 FUNC=sqrt(x) PERIODIC=NO");
+  readInputLine( olab + ": CUSTOM ARG=" + olab + "2 FUNC=sqrt(x) PERIODIC=NO");
 }
 
 std::string Steinhardt::getSymbol( const int& m ) const {

@@ -111,6 +111,7 @@ void CoordinationNumbers::shortcutKeywords( Keywords& keys ) {
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
   keys.add("optional","SWITCH","the switching function that it used in the construction of the contact matrix");
   multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
+  keys.needsAction("CONTACT_MATRIX"); keys.needsAction("GROUP");
 }
 
 void CoordinationNumbers::expandMatrix( const bool& components, const std::string& lab, const std::string& sp_str,
@@ -142,6 +143,7 @@ void CoordinationNumbers::expandMatrix( const bool& components, const std::strin
 void CoordinationNumbers::registerKeywords( Keywords& keys ) {
   shortcutKeywords( keys );
   keys.add("compulsory","R_POWER","the power to which you want to raise the distance");
+  keys.needsAction("MATRIX_VECTOR_PRODUCT"); keys.needsAction("ONES");
 }
 
 CoordinationNumbers::CoordinationNumbers(const ActionOptions& ao):
@@ -167,7 +169,7 @@ CoordinationNumbers::CoordinationNumbers(const ActionOptions& ao):
   if( getName()=="COORDINATION_MOMENTS" ) {
     // Calculate the lengths of the vectors
     std::string r_power; parse("R_POWER",r_power);
-    readInputLine( getShortcutLabel() + "_pow: CUSTOM ARG1=" + matlab + ".x ARG2=" + matlab + ".y ARG3=" + matlab + ".z ARG4=" + matlab + ".w VAR=x,y,z,w "
+    readInputLine( getShortcutLabel() + "_pow: CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z," + matlab + ".w VAR=x,y,z,w "
                    + "PERIODIC=NO FUNC=w*(sqrt(x*x+y*y+z*z)^" + r_power +")");
     matlab = getShortcutLabel() + "_pow";
   }

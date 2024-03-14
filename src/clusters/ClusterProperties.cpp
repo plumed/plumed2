@@ -68,6 +68,7 @@ void ClusterProperties::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
   keys.add("optional","ARG","calculate the sum of the arguments calculated by this action for the cluster");
   multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
+  keys.needsAction("CLUSTER_WEIGHTS");
 }
 
 ClusterProperties::ClusterProperties(const ActionOptions& ao):

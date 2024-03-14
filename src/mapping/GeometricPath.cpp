@@ -56,6 +56,7 @@ void GeometricPath::registerKeywords(Keywords& keys) {
   componentsAreNotOptional(keys);
   keys.addOutputComponent("s","default","the position on the path");
   keys.addOutputComponent("z","default","the distance from the path");
+  keys.needsAction("GEOMETRIC_PATH"); keys.needsAction("PDB2CONSTANT");
 }
 
 GeometricPath::GeometricPath(const ActionOptions&ao):

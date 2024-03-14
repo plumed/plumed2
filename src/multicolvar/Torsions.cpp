@@ -79,6 +79,7 @@ PLUMED_REGISTER_ACTION(Torsions,"TORSIONS")
 
 void Torsions::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys ); MultiColvarShortcuts::shortcutKeywords( keys );
+  keys.needsAction("TORSION");
 }
 
 Torsions::Torsions(const ActionOptions& ao):
@@ -87,7 +88,7 @@ Torsions::Torsions(const ActionOptions& ao):
 {
   log.printf("Action TORSION\n");
   log.printf("  with label %s \n", getShortcutLabel().c_str() );
-  readInputLine( getShortcutLabel() + ": TORSION_VECTOR " + convertInputLineToString() );
+  readInputLine( getShortcutLabel() + ": TORSION " + convertInputLineToString() );
   // Add shortcuts to label
   MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel(), "", this );
 }

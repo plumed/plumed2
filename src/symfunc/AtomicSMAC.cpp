@@ -58,6 +58,8 @@ void AtomicSMAC::registerKeywords(Keywords& keys) {
   keys.add("optional","SWITCH_COORD","This keyword is used to define the coordination switching function.");
   keys.reset_style("KERNEL","optional");
   multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
+  keys.needsAction("CONTACT_MATRIX"); keys.needsAction("GSYMFUNC_THREEBODY"); keys.needsAction("ONES");
+  keys.needsAction("MATRIX_VECTOR_PRODUCT");
 }
 
 AtomicSMAC::AtomicSMAC(const ActionOptions& ao):

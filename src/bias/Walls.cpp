@@ -47,6 +47,8 @@ void Walls::registerKeywords(Keywords& keys) {
   keys.add("compulsory","EPS","1.0","the values for s_i in the expression for a wall");
   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
   keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
+  keys.addActionNameSuffix("_SCALAR"); keys.needsAction("COMBINE"); keys.needsAction("CUSTOM");
+  keys.needsAction("SUM"); keys.needsAction("COMBINE"); keys.needsAction("BIASVALUE");
 }
 
 Walls::Walls(const ActionOptions&ao):

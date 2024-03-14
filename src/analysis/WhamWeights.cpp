@@ -81,6 +81,8 @@ void WhamWeights::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","STRIDE","1","the frequency with which the bias should be stored to perform WHAM");
   keys.add("compulsory","FILE","the file on which to output the WHAM weights");
   keys.add("optional","FMT","the format to use for the real numbers in the output file");
+  keys.needsAction("GATHER_REPLICAS"); keys.needsAction("CONCATENATE");
+  keys.needsAction("COLLECT"); keys.needsAction("WHAM"); keys.needsAction("DUMPVECTOR");
 }
 
 WhamWeights::WhamWeights( const ActionOptions& ao ) :

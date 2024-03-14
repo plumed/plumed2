@@ -9,7 +9,7 @@ qbar1: LOCAL_AVERAGE SPECIES=q1 SWITCH={RATIONAL D_0=3.0 R_0=1.5}
 
 # Probe volume
 sphere: INSPHERE ATOMS=1-64 CENTER=center RADIUS={GAUSSIAN R_0=2.0 D_MAX=3.0} 
-prod: MATHEVAL ARG1=qbar1 ARG2=sphere FUNC=x*y PERIODIC=NO
+prod: MATHEVAL ARG=qbar1,sphere FUNC=x*y PERIODIC=NO
 sphere_sum: SUM ARG=prod PERIODIC=NO
 
 PRINT ARG=sphere_sum FILE=colvar FMT=%8.4f

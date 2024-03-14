@@ -71,6 +71,7 @@ void ConvertToFES::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","ARG","the histogram that you would like to convert into a free energy surface");
   keys.add("optional","TEMP","the temperature at which you are operating");
   keys.addFlag("MINTOZERO",false,"set the minimum in the free energy to be equal to zero");
+  keys.needsAction("FIND_GRID_MINIMUM"); keys.needsAction("CUSTOM");
 }
 
 ConvertToFES::ConvertToFES(const ActionOptions&ao):
@@ -84,10 +85,10 @@ ConvertToFES::ConvertToFES(const ActionOptions&ao):
   if( argv.size()!=1 ) error("should only have one argument");
 
   std::string str_temp; Tools::convert( simtemp, str_temp ); std::string flab=""; if( minzero ) flab="_unz";
-  readInputLine( getShortcutLabel() + flab + ": MATHEVAL ARG1=" + argv[0] + " FUNC=-" + str_temp + "*log(x) PERIODIC=NO");
+  readInputLine( getShortcutLabel() + flab + ": CUSTOM ARG=" + argv[0] + " FUNC=-" + str_temp + "*log(x) PERIODIC=NO");
   if( minzero ) {
     readInputLine( getShortcutLabel() + "_min: FIND_GRID_MINIMUM ARG=" + getShortcutLabel() + "_unz" );
-    readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_unz" + " ARG2=" + getShortcutLabel() + "_min.optval FUNC=x-y PERIODIC=NO");
+    readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_unz," + getShortcutLabel() + "_min.optval FUNC=x-y PERIODIC=NO");
   }
 }
 

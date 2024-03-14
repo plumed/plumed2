@@ -44,6 +44,7 @@ PLUMED_REGISTER_ACTION(ClusterNatoms,"CLUSTER_NATOMS")
 
 void ClusterNatoms::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
+  keys.needsAction("CLUSTER_WEIGHTS"); keys.needsAction("SUM");
 }
 
 ClusterNatoms::ClusterNatoms(const ActionOptions& ao):

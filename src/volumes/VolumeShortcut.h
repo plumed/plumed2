@@ -49,6 +49,8 @@ void VolumeShortcut<v>::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("sum","SUM","the sum of all the colvars weighted by the function that determines if we are in the region");
   keys.addFlag("MEAN",false,"calculate the average value of the colvar inside the region of interest");
   keys.addOutputComponent("mean","MEAN","the average values of the colvar in the region of interest");
+  keys.addActionNameSuffix("_CALC"); keys.needsAction("LESS_THAN"); keys.needsAction("MORE_THAN");
+  keys.needsAction("BETWEEN"); keys.needsAction("SUM"); keys.needsAction("MEAN"); keys.needsAction("CUSTOM");
 }
 
 template <const char* v>
@@ -65,7 +67,7 @@ VolumeShortcut<v>::VolumeShortcut(const ActionOptions&ao):
     readInputLine( getShortcutLabel() + ": " + voltype + "_CALC " + convertInputLineToString() + " ATOMS=" + atomsd );
     // Now create input for sums
     if( dosum || domean ) {
-      readInputLine( getShortcutLabel() + "_prod: MATHEVAL ARG1=" + mc_lab + " ARG2=" + getShortcutLabel() + " FUNC=x*y PERIODIC=NO");
+      readInputLine( getShortcutLabel() + "_prod: CUSTOM ARG=" + mc_lab + "," + getShortcutLabel() + " FUNC=x*y PERIODIC=NO");
       std::string tlab = getShortcutLabel() + "_numer"; if( dosum ) tlab = getShortcutLabel() + "_sum:";
       readInputLine( tlab + ": SUM ARG=" + getShortcutLabel() + "_prod PERIODIC=NO");
     }
@@ -74,13 +76,13 @@ VolumeShortcut<v>::VolumeShortcut(const ActionOptions&ao):
       readInputLine( getShortcutLabel() + "_norm: SUM ARG=" + getShortcutLabel() + " PERIODIC=NO");
       // And calculate final quantity which is mean of these two actions
       std::string arg1_lab = getShortcutLabel() + "_numer"; if( dosum ) arg1_lab = getShortcutLabel()  + "_sum";
-      readInputLine( getShortcutLabel() + "_mean: MATHEVAL ARG1=" + arg1_lab + " ARG2=" + getShortcutLabel() + "_norm FUNC=x/y PERIODIC=NO");
+      readInputLine( getShortcutLabel() + "_mean: CUSTOM ARG=" + arg1_lab + "," + getShortcutLabel() + "_norm FUNC=x/y PERIODIC=NO");
     }
     if( lt_input.length()>0 ) {
       // Calculate number less than
       readInputLine( mc_lab + "_" + getShortcutLabel() + "_lt: LESS_THAN ARG=" + mc_lab + " SWITCH={" + lt_input +"}");
       // And the matheval bit
-      readInputLine( getShortcutLabel() + "_lt: MATHEVAL ARG1=" + mc_lab + "_" + getShortcutLabel() + "_lt ARG2=" + getShortcutLabel() + " FUNC=x*y PERIODIC=NO");
+      readInputLine( getShortcutLabel() + "_lt: CUSTOM ARG=" + mc_lab + "_" + getShortcutLabel() + "_lt," + getShortcutLabel() + " FUNC=x*y PERIODIC=NO");
       // And the final sum
       readInputLine( getShortcutLabel() + "_lessthan: SUM ARG=" + getShortcutLabel() + "_lt PERIODIC=NO");
     }
@@ -88,7 +90,7 @@ VolumeShortcut<v>::VolumeShortcut(const ActionOptions&ao):
       // Calculate number less than
       readInputLine( mc_lab + "_" + getShortcutLabel() + "_mt: MORE_THAN ARG=" + mc_lab + " SWITCH={" + mt_input  + "}");
       // And the matheval bit
-      readInputLine( getShortcutLabel() + "_mt: MATHEVAL ARG1=" + mc_lab + "_" + getShortcutLabel() + "_mt ARG2=" + getShortcutLabel() + " FUNC=x*y PERIODIC=NO");
+      readInputLine( getShortcutLabel() + "_mt: CUSTOM ARG=" + mc_lab + "_" + getShortcutLabel() + "_mt," + getShortcutLabel() + " FUNC=x*y PERIODIC=NO");
       // And the final sum
       readInputLine( getShortcutLabel() + "_morethan: SUM ARG=" + getShortcutLabel() + "_mt PERIODIC=NO");
     }
@@ -96,7 +98,7 @@ VolumeShortcut<v>::VolumeShortcut(const ActionOptions&ao):
       // Calculate number less than
       readInputLine( mc_lab + "_" + getShortcutLabel() + "_bt: BETWEEN ARG=" + mc_lab + " SWITCH={" + bt_input +"}");
       // And the matheval bit
-      readInputLine( getShortcutLabel() + "_bt: MATHEVAL ARG1=" + mc_lab + "_" + getShortcutLabel() + "_bt ARG2=" + getShortcutLabel() + " FUNC=x*y PERIODIC=NO");
+      readInputLine( getShortcutLabel() + "_bt: CUSTOM ARG=" + mc_lab + "_" + getShortcutLabel() + "_bt," + getShortcutLabel() + " FUNC=x*y PERIODIC=NO");
       // And the final sum
       readInputLine( getShortcutLabel() + "_between: SUM ARG=" + getShortcutLabel() + "_bt PERIODIC=NO");
     }

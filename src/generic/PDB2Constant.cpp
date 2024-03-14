@@ -51,6 +51,7 @@ void PDB2Constant::registerKeywords(Keywords& keys) {
   keys.add("compulsory","NUMBER","0","if there are multiple structures in the pdb file you can specify that you want the RMSD from a specific structure by specifying its place in the file here. If NUMBER=0 then the RMSD from all structures are computed");
   keys.addFlag("NOARGS",false,"the arguments that are being read from the PDB file are not in the plumed input");
   keys.add("optional","ARG","read this single argument from the input rather than the atomic structure");
+  keys.needsAction("CONSTANT");
 }
 
 PDB2Constant::PDB2Constant(const ActionOptions& ao):

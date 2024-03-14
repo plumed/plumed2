@@ -48,6 +48,7 @@ void FunctionShortcut<T>::registerKeywords(Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
   keys.add("numbered","ARG","the input to this function");
   keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
+  keys.addActionNameSuffix("_SCALAR"); keys.addActionNameSuffix("_VECTOR"); keys.addActionNameSuffix("_MATRIX"); keys.addActionNameSuffix("_GRID");
   T tfunc; tfunc.registerKeywords( keys );
 }
 
@@ -57,13 +58,6 @@ FunctionShortcut<T>::FunctionShortcut(const ActionOptions&ao):
   ActionShortcut(ao)
 {
   std::vector<std::string> args; parseVector("ARG",args);
-  if( args.size()==0 ) {
-    for(unsigned i=1;; ++i) {
-      std::string argn;
-      if( !parseNumbered("ARG",i,argn) ) break ;
-      args.push_back(argn);
-    }
-  }
   std::string allargs=args[0]; for(unsigned i=1; i<args.size(); ++i) allargs += "," + args[i];
   std::vector<Value*> vals; ActionWithArguments::interpretArgumentList( args, plumed.getActionSet(), this, vals );
   if( vals.size()==0 ) error("found no input arguments to function");

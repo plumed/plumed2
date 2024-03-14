@@ -222,6 +222,9 @@ void Path::registerInputFileKeywords( Keywords& keys ) {
   keys.add("optional","ARG","the list of arguments you would like to use in your definition of the path");
   keys.add("optional","COEFFICIENTS","the coefficients of the displacements along each argument that should be used when calculating the euclidean distance");
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
+  keys.needsAction("DRMSD"); keys.needsAction("RMSD"); keys.needsAction("LOWEST");
+  keys.needsAction("EUCLIDEAN_DISTANCE"); keys.needsAction("CUSTOM"); keys.needsAction("SUM");
+  keys.needsAction("NORMALIZED_EUCLIDEAN_DISTANCE"); keys.needsAction("PDB2CONSTANT"); keys.needsAction("CONSTANT");
 }
 
 Path::Path( const ActionOptions& ao ):
