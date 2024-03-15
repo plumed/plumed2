@@ -21,9 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
-#include "core/PlumedMain.h"
-#include "core/ActionSet.h"
-#include "core/Group.h"
 #include "MultiColvarShortcuts.h"
 #include <string>
 #include <cmath>
@@ -50,6 +47,11 @@ PLUMED_REGISTER_ACTION(Distances,"DISTANCES")
 
 void Distances::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
+  keys.add("atoms-1","GROUP","Calculate the distance between each distinct pair of atoms in the group");
+  keys.add("atoms-2","GROUPA","Calculate the distances between all the atoms in GROUPA and all "
+           "the atoms in GROUPB. This must be used in conjunction with GROUPB.");
+  keys.add("atoms-2","GROUPB","Calculate the distances between all the atoms in GROUPA and all the atoms "
+           "in GROUPB. This must be used in conjunction with GROUPA.");
   keys.add("numbered","ATOMS","the pairs of atoms that you would like to calculate the angles for");
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("COMPONENTS",false,"calculate the x, y and z components of the distance separately and store them as label.x, label.y and label.z");
@@ -77,38 +79,47 @@ Distances::Distances(const ActionOptions& ao):
   std::string num, ostr; parse("ORIGIN",ostr);
   if( ostr.length()>0 ) {
     // Parse atoms
-    std::vector<std::string> afstr, astr; parseVector("ATOMS",astr); Tools::interpretRanges(astr);
-    for(unsigned i=0; i<astr.size(); ++i) {
-      Group* mygr=plumed.getActionSet().selectWithLabel<Group*>(astr[i]);
-      if( mygr ) {
-        std::vector<std::string> grstr( mygr->getGroupAtoms() );
-        for(unsigned j=0; j<grstr.size(); ++j) afstr.push_back(grstr[j]);
-      } else {
-        Group* mygr2=plumed.getActionSet().selectWithLabel<Group*>(astr[i] + "_grp");
-        if( mygr2 ) {
-          std::vector<std::string> grstr( mygr2->getGroupAtoms() );
-          for(unsigned j=0; j<grstr.size(); ++j) afstr.push_back(grstr[j]);
-        } else afstr.push_back(astr[i]);
-      }
-    }
+    std::vector<std::string> afstr; MultiColvarShortcuts::parseAtomList("ATOMS",afstr,this);
     for(unsigned i=0; i<afstr.size(); ++i) { Tools::convert( i+1, num ); dline += " ATOMS" + num + "=" + ostr + "," + afstr[i]; }
   } else {
-    std::string grpstr = getShortcutLabel() + "_grp: GROUP ATOMS=";
-    for(unsigned i=1;; ++i) {
-      std::string atstring; parseNumbered("ATOMS",i,atstring);
-      if( atstring.length()==0 ) break;
-      std::string locstr; parseNumbered("LOCATION",i,locstr);
-      if( locstr.length()==0 ) {
-        std::string num; Tools::convert( i, num );
-        readInputLine( getShortcutLabel() + "_vatom" + num + ": CENTER ATOMS=" + atstring );
-        if( i==1 ) grpstr += getShortcutLabel() + "_vatom" + num; else grpstr += "," + getShortcutLabel() + "_vatom" + num;
-      } else {
-        if( i==1 ) grpstr += locstr; else grpstr += "," + locstr;
+    std::vector<std::string> grp; MultiColvarShortcuts::parseAtomList("GROUP",grp,this);
+    std::vector<std::string> grpa; MultiColvarShortcuts::parseAtomList("GROUPA",grpa,this);
+    if( grp.size()>0 ) {
+      if( grpa.size()>0 ) error("should not be using GROUPA in tandem with GROUP");
+      unsigned n=0;
+      for(unsigned i=1; i<grp.size(); ++i) {
+        for(unsigned j=0; j<i; ++j) {
+          std::string num; Tools::convert( n+1, num ); n++;
+          dline += " ATOMS" + num + "=" + grp[i] + "," + grp[j];
+        }
       }
-      std::string num; Tools::convert( i, num );
-      dline += " ATOMS" + num + "=" + atstring;
+    } else if( grpa.size()>0 ) {
+      std::vector<std::string> grpb; MultiColvarShortcuts::parseAtomList("GROUPB",grpb,this);
+      if( grpb.size()==0 ) error("found GROUPA but no corresponding GROUPB");
+      for(unsigned i=0; i<grpa.size(); ++i) {
+        for(unsigned j=0; j<grpb.size(); ++j) {
+          std::string num; Tools::convert( i*grpb.size() + j + 1, num );
+          dline += " ATOMS" + num + "=" + grpa[i] + "," + grpb[j];
+        }
+      }
+    } else {
+      std::string grpstr = getShortcutLabel() + "_grp: GROUP ATOMS=";
+      for(unsigned i=1;; ++i) {
+        std::string atstring; parseNumbered("ATOMS",i,atstring);
+        if( atstring.length()==0 ) break;
+        std::string locstr; parseNumbered("LOCATION",i,locstr);
+        if( locstr.length()==0 ) {
+          std::string num; Tools::convert( i, num );
+          readInputLine( getShortcutLabel() + "_vatom" + num + ": CENTER ATOMS=" + atstring );
+          if( i==1 ) grpstr += getShortcutLabel() + "_vatom" + num; else grpstr += "," + getShortcutLabel() + "_vatom" + num;
+        } else {
+          if( i==1 ) grpstr += locstr; else grpstr += "," + locstr;
+        }
+        std::string num; Tools::convert( i, num );
+        dline += " ATOMS" + num + "=" + atstring;
+      }
+      readInputLine( grpstr );
     }
-    readInputLine( grpstr );
   }
   readInputLine( dline );
   // Add shortcuts to label

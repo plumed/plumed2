@@ -32,6 +32,7 @@ namespace multicolvar {
 class MultiColvarShortcuts {
 public:
   static void shortcutKeywords( Keywords& keys );
+  static void parseAtomList( const std::string& key, std::vector<std::string>& atoms, ActionShortcut* action );
   static void readShortcutKeywords( std::map<std::string,std::string>& keymap, ActionShortcut* action );
   static void expandFunctions( const std::string& labout, const std::string& argin, const std::string& weights,
                                const std::map<std::string,std::string>& keymap, ActionShortcut* action );

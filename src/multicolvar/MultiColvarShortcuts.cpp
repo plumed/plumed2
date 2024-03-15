@@ -20,6 +20,9 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiColvarShortcuts.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
+#include "core/Group.h"
 
 namespace PLMD {
 namespace multicolvar {
@@ -72,6 +75,24 @@ void MultiColvarShortcuts::expandFunctions( const std::string& labout, const std
 
 void MultiColvarShortcuts::readShortcutKeywords( std::map<std::string,std::string>& keymap, ActionShortcut* action ) {
   Keywords keys; shortcutKeywords( keys ); action->readShortcutKeywords( keys, keymap );
+}
+
+void MultiColvarShortcuts::parseAtomList( const std::string& key, std::vector<std::string>& atoms, ActionShortcut* action ) {
+  std::vector<std::string> astr; action->parseVector(key,astr); if( astr.size()==0 ) return ;
+  Tools::interpretRanges( astr );
+  for(unsigned i=0; i<astr.size(); ++i) {
+    Group* mygr=action->plumed.getActionSet().selectWithLabel<Group*>(astr[i]);
+    if( mygr ) {
+      std::vector<std::string> grstr( mygr->getGroupAtoms() );
+      for(unsigned j=0; j<grstr.size(); ++j) atoms.push_back(grstr[j]);
+    } else {
+      Group* mygr2=action->plumed.getActionSet().selectWithLabel<Group*>(astr[i] + "_grp");
+      if( mygr2 ) {
+        std::vector<std::string> grstr( mygr2->getGroupAtoms() );
+        for(unsigned j=0; j<grstr.size(); ++j) atoms.push_back(grstr[j]);
+      } else atoms.push_back(astr[i]);
+    }
+  }
 }
 
 void MultiColvarShortcuts::expandFunctions( const std::string& labout, const std::string& argin, const std::string& weights,
