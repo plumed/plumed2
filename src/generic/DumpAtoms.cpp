@@ -138,6 +138,7 @@ public:
   ~DumpAtoms();
   static void registerKeywords( Keywords& keys );
   void calculateNumericalDerivatives( ActionWithValue* a=NULL ) override;
+  bool actionHasForces() override { return false; }
   void lockRequests() override;
   void unlockRequests() override;
   void calculate() override {}

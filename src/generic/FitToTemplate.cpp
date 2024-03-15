@@ -194,6 +194,7 @@ class FitToTemplate:
 public:
   explicit FitToTemplate(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
+  bool actionHasForces() override { return true; }
   void calculate() override;
   void apply() override;
   unsigned getNumberOfDerivatives() override {plumed_merror("You should not call this function");};

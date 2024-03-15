@@ -66,6 +66,8 @@ private:
 /// This holds the list of unique atoms
   std::vector<AtomNumber> unique;
   std::vector<unsigned> uniq_index;
+/// This holds the list of atoms that have a force on
+  std::vector<AtomNumber> forced_unique;
 /// This holds the list of actions that are set from this action
   std::vector<ActionToPutData*> inputs;
 /// This holds all the actions that read atoms

@@ -50,6 +50,7 @@ public:
   std::string writeInGraph() const override;
   explicit PrintNDX(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
+  bool actionHasForces() override { return false; }
   void calculateNumericalDerivatives( ActionWithValue* a=NULL ) override { plumed_error(); }
   void lockRequests() override;
   void unlockRequests() override;
