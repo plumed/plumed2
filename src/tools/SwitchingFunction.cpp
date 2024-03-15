@@ -372,9 +372,12 @@ double SwitchingFunction::do_rational(double rdist,double&dfunc,int nn,int mm)co
     dfunc = -nn*rNdist*iden*iden;
     result = iden;
   } else {
-    if(rdist>(1.-100.0*epsilon) && rdist<(1+100.0*epsilon)) {
-      result=nn/mm;
-      dfunc=0.5*nn*(nn-mm)/mm;
+    if(rdist>(1.-5.0e10*epsilon) && rdist<(1+5.0e10*epsilon)) {
+      const double secDev = ((nn * (mm * mm - 3.0* mm * (-1 + nn ) + nn *(-3 + 2* nn )))/(6.0* mm ));
+      const double x =(rdist-1.0);
+      dfunc=0.5*nn*double(nn-mm)/mm;
+      result = double(nn)/mm+ x * ( dfunc + 0.5 * x * secDev);
+      dfunc  = dfunc + x * secDev;
     } else {
       double rNdist=Tools::fastpow(rdist,nn-1);
       double rMdist=Tools::fastpow(rdist,mm-1);
