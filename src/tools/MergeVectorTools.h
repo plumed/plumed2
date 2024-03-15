@@ -25,6 +25,7 @@
 #include "small_vector/small_vector.h"
 #include <vector>
 #include <algorithm>
+#include <type_traits>
 
 namespace PLMD {
 
@@ -115,12 +116,18 @@ static void mergeSortedVectors(const C* const* vecs, std::size_t size, std::vect
   }
 }
 
-template<class C>
-static void mergeSortedVectors(const std::vector<C*> & vecs, std::vector<typename C::value_type> & result) {
+template<typename T, typename = void>
+struct has_size_and_data : std::false_type {};
+
+template<typename T>
+struct has_size_and_data<T, std::void_t<decltype(std::declval<T>().size()), decltype(std::declval<T>().data())>> : std::true_type {};
+
+template<class C, class D>
+auto mergeSortedVectors(C& vecs, std::vector<D> & result) -> typename std::enable_if<has_size_and_data<C>::value, void>::type {
   mergeSortedVectors(vecs.data(),vecs.size(),result);
 }
-}
 
+}
 }
 
 #endif
