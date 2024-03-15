@@ -49,7 +49,7 @@ PLUMED_REGISTER_ACTION(CollectFrames,"COLLECT_FRAMES")
 
 void CollectFrames::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
-  keys.add("compulsory","STRIDE","the frequency with which data should be stored for analysis.  By default data is collected on every step");
+  keys.add("compulsory","STRIDE","1","the frequency with which data should be stored for analysis.  By default data is collected on every step");
   keys.add("compulsory","CLEAR","0","the frequency with which data should all be deleted and restarted");
   keys.add("compulsory","ALIGN","OPTIMAL","if storing atoms how would you like the alignment to be done can be SIMPLE/OPTIMAL");
   keys.add("optional","ARG","the arguments you would like to collect");

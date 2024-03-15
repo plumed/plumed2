@@ -27,7 +27,6 @@
 #include "analysis/AnalysisBase.h"
 #include "reference/ReferenceConfiguration.h"
 #include "DimensionalityReductionBase.h"
-#include "PCA.h"
 
 //+PLUMEDOC DIMRED PROJECT_ALL_ANALYSIS_DATA
 /*
@@ -102,9 +101,9 @@ std::vector<Value*> ProjectNonLandmarkPoints::getArgumentList() {
 }
 
 void ProjectNonLandmarkPoints::generateProjection( const unsigned& idat, std::vector<double>& point ) {
-  PCA* ispca = dynamic_cast<PCA*>( mybase );
+  Action* ispca = NULL;
   if( ispca ) {
-    ispca->getProjection( my_input_data->getStoredData(idat,false), point );
+    //ispca->getProjection( my_input_data->getStoredData(idat,false), point );
   } else {
     ConjugateGradient<ProjectNonLandmarkPoints> myminimiser( this );
     unsigned closest=0; double mindist = std::sqrt( getDissimilarity( mybase->getDataPointIndexInBase(0), idat ) );

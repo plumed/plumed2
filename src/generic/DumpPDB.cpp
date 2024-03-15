@@ -72,6 +72,7 @@ void DumpPDB::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","FMT","%f","the format that should be used to output real numbers");
   keys.add("optional","DESCRIPTION","the title to use for your PDB output");
   keys.add("optional","ATOM_INDICES","the indices of the atoms in your PDB output");
+  keys.add("optional","ARG_NAMES","the names of the arguments that are being output");
 }
 
 DumpPDB::DumpPDB(const ActionOptions&ao):
@@ -97,7 +98,8 @@ DumpPDB::DumpPDB(const ActionOptions&ao):
       if( pdb_atom_indices.size()!=atom_args[0]->getShape()[1]/3 ) error("mismatch between size of matrix containing positions and vector of atom indices");
   }  
   log.printf("  printing configurations to PDB file to file named %s \n", file.c_str() );
-  buildArgnames(); parse("FMT",fmt); fmt=" "+fmt;
+  parseVector("ARG_NAMES",argnames); if( argnames.size()==0 ) buildArgnames(); 
+  parse("FMT",fmt); fmt=" "+fmt;
   if( getStride()==0 ) { setStride(0); log.printf("  printing pdb at end of calculation \n"); }
 
   parse("DESCRIPTION",description);
