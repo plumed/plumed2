@@ -286,7 +286,7 @@ void DomainDecomposition::share() {
     }
     if( !(forced_vectors.empty() && nonforced_vectors.empty()) ) atomsNeeded=true;
     // Merge the atoms from the atoms that have a force on
-    unique.clear(); forced_unique.clear(); 
+    unique.clear(); forced_unique.clear();
     mergeVectorTools::mergeSortedVectors(forced_vectors.data(),forced_vectors.size(),forced_unique);
     // Merge all the atoms
     nonforced_vectors.push_back( &forced_unique );
