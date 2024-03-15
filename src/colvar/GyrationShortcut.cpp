@@ -64,6 +64,7 @@ void GyrationShortcut::registerKeywords( Keywords& keys ) {
            "as weights. Lastly, an explicit list of numbers to use as weights can be provided");
   keys.addFlag("PHASES",false,"use trigonometric phases when computing position of center of mass");
   keys.addFlag("MASS",false,"calculate the center of mass");
+  keys.addFlag("MASS_WEIGHTED",false,"set the masses of all the atoms equal to one");
   keys.addFlag("UNORMALIZED",false,"do not divide by the sum of the weights");
   keys.addActionNameSuffix("_FAST"); keys.needsAction("CENTER"); keys.needsAction("CONSTANT");
   keys.needsAction("ONES"); keys.needsAction("MASSES"); keys.needsAction("DISTANCE");
