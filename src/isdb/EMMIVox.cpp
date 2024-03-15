@@ -64,7 +64,7 @@ the Metainference approach \cite Bonomi:2016ip . The approach can be used to mod
 
 \par Examples
 
-Complete tutorials for single-structure and ensemble refinement can be found <a href="https://github.com/maxbonomi/EMMIVox">here</a>.
+Complete tutorials for single-structure and ensemble refinement can be found <a href="https://github.com/COSBlab/EMMIVox">here</a>.
 
 */
 //+ENDPLUMEDOC
