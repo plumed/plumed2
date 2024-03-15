@@ -91,6 +91,7 @@ void Dihcor::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
   keys.needsAction("DIHEDRAL_CORRELATION"); keys.needsAction("SUM");
   keys.add("atoms","ATOMS","the set of 8 atoms that are being used each of the dihedral correlation values"); 
+  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
 }
 
 Dihcor::Dihcor(const ActionOptions&ao):
