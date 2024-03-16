@@ -125,9 +125,10 @@ void Value::setShape( const std::vector<unsigned>&ss ) {
 
   if( shape.size()>0 && hasDeriv ) {
     // This is for grids
-    std::size_t ndata = tot*(1+action->getNumberOfDerivatives());
+    ngrid_der = shape.size();
+    if( action ) ngrid_der = action->getNumberOfDerivatives();
+    std::size_t ndata = tot*(1+ngrid_der);
     data.resize( ndata ); inputForce.resize( tot );
-    ngrid_der=action->getNumberOfDerivatives();
   } else if( shape.size()==0 ) {
     // This is for scalars
     data.resize(1); inputForce.resize(1);
@@ -223,7 +224,7 @@ void Value::set(const std::size_t& n, const double& v ) {
   value_set=true;
   if( getRank()==0 ) { plumed_assert( n==0 ); data[n]=v; applyPeriodicity(n); }
   else if( !hasDeriv ) { plumed_dbg_massert( n<data.size(), "failing in " + getName() ); data[n]=v; applyPeriodicity(n); }
-  else { data[n*(1+action->getNumberOfDerivatives())] = v; }
+  else { data[n*(1+ngrid_der)] = v; }
 }
 
 void Value::push_back( const double& v ) {

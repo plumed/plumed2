@@ -250,6 +250,8 @@ public:
   double getGridDerivative(const unsigned& n, const unsigned& j ) const ;
 /// Add the derivatives of the grid to the corner
   void addGridDerivatives( const unsigned& n, const unsigned& j, const double& val );
+///
+  void setGridDerivatives( const unsigned& n, const unsigned& j, const double& val );
 /// Add another value to the end of the data vector held by this value.  This is used in COLLECT
   void push_back( const double& val );
 };
@@ -529,6 +531,12 @@ inline
 void Value::addGridDerivatives( const unsigned& n, const unsigned& j, const double& val ) {
   plumed_dbg_assert( hasDeriv && n*(1+ngrid_der) + 1 + j < data.size() );
   data[n*(1+ngrid_der) + 1 + j] += val;
+}
+
+inline
+void Value::setGridDerivatives( const unsigned& n, const unsigned& j, const double& val ) {
+  plumed_dbg_assert( hasDeriv && n*(1+ngrid_der) + 1 + j < data.size() );
+  data[n*(1+ngrid_der) + 1 + j] = val;
 }
 
 }
