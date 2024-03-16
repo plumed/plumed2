@@ -1,4 +1,4 @@
-USE=core tools reference gridtools analysis
+USE=core tools gridtools analysis
 
 # generic makefile
 include ../maketools/make.module
