@@ -57,7 +57,6 @@ public:
   void calculate() override {}
   void apply() override {}
   void update() override ;
-  void runFinalJobs() override ;
 };
 
 PLUMED_REGISTER_ACTION(DumpPDB,"DUMPPDB")
@@ -142,15 +141,16 @@ void DumpPDB::update() {
   std::size_t psign=fmt.find("%"); plumed_assert( psign!=std::string::npos );
   std::string descr2="%s=%-" + fmt.substr(psign+1) + " ";
   
-  unsigned totargs = 0; 
+  unsigned totargs = 0; unsigned nvals = getPntrToArgument(0)->getShape()[0];
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      if( getPntrToArgument(i)->getShape()[0]!=nvals ) error("all arguments should have same number of values");
       if( getPntrToArgument(i)->getRank()==1 ) totargs += 1; 
       else if( getPntrToArgument(i)->getRank()==2 ) totargs += getPntrToArgument(i)->getShape()[1];
   }
   if( totargs!=argnames.size() ) buildArgnames();  
 
   if( description.length()>0 ) opdbf.printf("# %s AT STEP %lld TIME %f \n", description.c_str(), getStep(), getTime() );
-  unsigned nvals = getPntrToArgument(0)->getShape()[0], nargs = getNumberOfArguments(), atomarg=0; 
+  unsigned nargs = getNumberOfArguments(), atomarg=0; 
   if( pdb_atom_indices.size()>0 ) {
       if( nargs>1 ) { atomarg = nargs - 1; nargs = nargs-1; } 
       else nargs = 0;
@@ -162,7 +162,7 @@ void DumpPDB::update() {
       if( thisarg->getRank()==1 ) { 
           opdbf.printf( descr2.c_str(), argnames[n].c_str(), thisarg->get(i) ); n++;  
       } else if( thisarg->getRank()==2 ) {
-          unsigned ncols = getPntrToArgument(j)->getShape()[1];
+          unsigned ncols = thisarg->getShape()[1];
           for(unsigned k=0; k<ncols; ++k) { opdbf.printf( descr2.c_str(), argnames[n].c_str(), thisarg->get(i*ncols+k) ); n++; }
       }
       opdbf.printf("\n");
@@ -179,11 +179,6 @@ void DumpPDB::update() {
     opdbf.printf("END\n");
   }
   opdbf.close();
-}
-
-void DumpPDB::runFinalJobs() {
-  if( getStride()>0 ) return ;
-  setStride(1); update();
 }
 
 }

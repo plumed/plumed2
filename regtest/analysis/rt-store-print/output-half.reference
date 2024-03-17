@@ -1,4 +1,4 @@
-#! FIELDS time parameter ff1_d1 ff1_logweights
+#! FIELDS time parameter d1 ff1_logweights
  12.000000 0 6.000000 0.000000
  12.000000 1 7.000000 0.000000
  12.000000 2 8.000000 0.000000

@@ -147,7 +147,7 @@ FunctionOfMatrix<T>::FunctionOfMatrix(const ActionOptions&ao):
   // In order to do this type of calculation.  There should be a neater fix than this but I can't see it.
   bool foundneigh=false;
   for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
-    if( getPntrToArgument(i)->isConstant() ) continue ;
+    if( getPntrToArgument(i)->isConstant() && getNumberOfArguments()>1 ) continue ;
     std::string argname=(getPntrToArgument(i)->getPntrToAction())->getName();
     if( argname=="NEIGHBORS" ) { foundneigh=true; break; }
     ActionWithVector* av=dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );

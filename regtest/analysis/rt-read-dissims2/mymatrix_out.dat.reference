@@ -1,4 +1,4 @@
-#! FIELDS time parameter l1_sqrdissims.1 l1_sqrdissims.2 l1_sqrdissims.3 l1_sqrdissims.4 l1_sqrdissims.5
+#! FIELDS time parameter r1.1 r1.2 r1.3 r1.4 r1.5
  5.000000 0   0.0000   1.0000   1.0000   4.0000   9.0000
  5.000000 1   1.0000   0.0000   1.0000   4.0000   9.0000
  5.000000 2   1.0000   1.0000   0.0000   1.0000   4.0000
