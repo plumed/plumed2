@@ -44,6 +44,15 @@ Select a random set of landmarks from a large set of configurations.
 */
 //+ENDPLUMEDOC
 
+//+PLUMEDOC LANDMARKS LANDMARK_SELECT_FPS
+/*
+Select a of landmarks from a large set of configurations using farthest point sampling.
+
+\par Examples
+  
+*/    
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace analysis {
 
@@ -55,6 +64,7 @@ public:
 
 PLUMED_REGISTER_ACTION(LandmarkSelection,"LANDMARK_SELECT_STRIDE")
 PLUMED_REGISTER_ACTION(LandmarkSelection,"LANDMARK_SELECT_RANDOM")
+PLUMED_REGISTER_ACTION(LandmarkSelection,"LANDMARK_SELECT_FPS")
 
 void LandmarkSelection::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
@@ -100,6 +110,10 @@ LandmarkSelection::LandmarkSelection( const ActionOptions& ao ):
       if( argn.length()==0 ) error("must set COLLECT_FRAMES object for landmark selection using ARG keyword");
       std::string seed; parse("SEED",seed); if( seed.length()>0 ) seed = " SEED=" + seed;
       readInputLine( getShortcutLabel() + "_mask: CREATE_MASK ARG=" + getShortcutLabel() + "_allweights TYPE=random NZEROS=" + nlandmarks + seed );
+  } else if( getName()=="LANDMARK_SELECT_FPS" ) {
+      if( dissims.length()==0 ) error("dissimiarities must be defined to use FPS sampling");
+      std::string seed; parse("SEED",seed); if( seed.length()>0 ) seed = " SEED=" + seed; 
+      readInputLine( getShortcutLabel() + "_mask: FARTHEST_POINT_SAMPLING ARG=" + dissims + " NZEROS=" + nlandmarks + seed );
   }
 
   if( argn.length()>0 ) readInputLine( getShortcutLabel() + "_data: SELECT_WITH_MASK ARG=" + argn + "_data ROW_MASK=" + getShortcutLabel() + "_mask");
