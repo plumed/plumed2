@@ -23,7 +23,6 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/ActionRegister.h"
-#include "analysis/LandmarkSelectionBase.h"
 
 //+PLUMEDOC DIMRED SKETCHMAP_CONJGRAD
 /*
