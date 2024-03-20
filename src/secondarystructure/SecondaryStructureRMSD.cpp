@@ -61,6 +61,7 @@ void SecondaryStructureRMSD::expandShortcut( const bool& uselessthan, const std:
 
 void SecondaryStructureRMSD::registerKeywords( Keywords& keys ) {
   ActionWithVector::registerKeywords( keys );
+  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions");
   keys.add("residues","RESIDUES","this command is used to specify the set of residues that could conceivably form part of the secondary structure. "
            "It is possible to use residues numbers as the various chains and residues should have been identified else using an instance of the "
            "\\ref MOLINFO action. If you wish to use all the residues from all the chains in your system you can do so by "
@@ -133,7 +134,7 @@ SecondaryStructureRMSD::SecondaryStructureRMSD(const ActionOptions&ao):
 {
   if( plumed.usingNaturalUnits() ) error("cannot use this collective variable when using natural units");
 
-  parse("TYPE",alignType);
+  parse("TYPE",alignType); parseFlag("NOPBC",nopbc);
   log.printf("  distances from secondary structure elements are calculated using %s algorithm\n",alignType.c_str() );
   log<<"  Bibliography "<<plumed.cite("Pietrucci and Laio, J. Chem. Theory Comput. 5, 2197 (2009)"); log<<"\n";
 

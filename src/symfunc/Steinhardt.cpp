@@ -279,6 +279,7 @@ PLUMED_REGISTER_ACTION(Steinhardt,"Q6")
 
 void Steinhardt::registerKeywords( Keywords& keys ) {
   CoordinationNumbers::shortcutKeywords( keys );
+  keys.addFlag("LOWMEM",false,"this flag does nothing and is present only to ensure back-compatibility");
   keys.addFlag("VMEAN",false,"calculate the norm of the mean vector.");
   keys.addOutputComponent("_vmean","VMEAN","the norm of the mean vector");
   keys.addFlag("VSUM",false,"calculate the norm of the sum of all the vectors");
@@ -291,6 +292,8 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
   Action(ao),
   ActionShortcut(ao)
 {
+  bool lowmem; parseFlag("LOWMEM",lowmem);
+  if( lowmem ) warning("LOWMEM flag is deprecated and is no longer required for this action");
   std::string sp_str, specA, specB; parse("SPECIES",sp_str); parse("SPECIESA",specA); parse("SPECIESB",specB);
   CoordinationNumbers::expandMatrix( true, getShortcutLabel(), sp_str, specA, specB, this ); int l;
   std::string sph_input = getShortcutLabel() + "_sh: SPHERICAL_HARMONIC ARG=" + getShortcutLabel() + "_mat.x," + getShortcutLabel() + "_mat.y," + getShortcutLabel() + "_mat.z," + getShortcutLabel() + "_mat.w";

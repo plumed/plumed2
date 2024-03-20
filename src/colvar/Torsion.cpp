@@ -137,6 +137,8 @@ void Torsion::registerKeywords(Keywords& keys) {
   keys.add("atoms-2","AXIS","two atoms that define an axis.  You can use this to find the angle in the plane perpendicular to the axis between the vectors specified using the VECTORA and VECTORB keywords.");
   keys.add("atoms-2","VECTORA","two atoms that define a vector.  You can use this in combination with VECTOR2 and AXIS");
   keys.add("atoms-2","VECTORB","two atoms that define a vector.  You can use this in combination with VECTOR1 and AXIS");
+  keys.add("atoms-3","VECTOR1","two atoms that define a vector.  You can use this in combination with VECTOR2 and AXIS");
+  keys.add("atoms-3","VECTOR2","two atoms that define a vector.  You can use this in combination with VECTOR1 and AXIS");
   keys.addFlag("COSINE",false,"calculate cosine instead of dihedral");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
 }
@@ -149,7 +151,22 @@ Torsion::Torsion(const ActionOptions&ao):
   derivs(1),
   virial(1)
 {
-  derivs[0].resize(6); std::vector<AtomNumber> atoms; parseAtomList(-1,atoms,this);
+  derivs[0].resize(6); std::vector<AtomNumber> atoms;
+  std::vector<AtomNumber> v1; ActionAtomistic::parseAtomList("VECTOR1",v1);
+  if( v1.size()>0 ) {
+    std::vector<AtomNumber> v2; ActionAtomistic::parseAtomList("VECTOR2",v2);
+    std::vector<AtomNumber> axis; ActionAtomistic::parseAtomList("AXIS",axis);
+    if( !(v1.size()==2 && v2.size()==2 && axis.size()==2)) error("VECTOR1, VECTOR2 and AXIS should specify 2 atoms each");
+    atoms.resize(6);
+    atoms[0]=v1[1];
+    atoms[1]=v1[0];
+    atoms[2]=axis[0];
+    atoms[3]=axis[1];
+    atoms[4]=v2[0];
+    atoms[5]=v2[1];
+    log.printf("  between lines %d-%d and %d-%d, projected on the plane orthogonal to line %d-%d\n",
+               v1[0].serial(),v1[1].serial(),v2[0].serial(),v2[1].serial(),axis[0].serial(),axis[1].serial());
+  } else parseAtomList(-1,atoms,this);
   unsigned mode=getModeAndSetupValues(this);
   if( mode==1 ) do_cosine=true;
 
@@ -172,7 +189,7 @@ void Torsion::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionA
 
   if(t.size()==4) {
     if(!(v1.empty() && v2.empty() && axis.empty()))
-      aa->error("ATOMS keyword is not compatible with VECTOR1, VECTOR2 and AXIS keywords");
+      aa->error("ATOMS keyword is not compatible with VECTORA, VECTORB and AXIS keywords");
     aa->log.printf("  between atoms %d %d %d %d\n",t[0].serial(),t[1].serial(),t[2].serial(),t[3].serial());
     t.resize(6);
     t[5]=t[3];
@@ -182,7 +199,7 @@ void Torsion::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionA
   } else if(t.empty()) {
     if( num>0 && v1.empty() && v2.empty() && axis.empty() ) return;
     if(!(v1.size()==2 && v2.size()==2 && axis.size()==2))
-      aa->error("VECTOR1, VECTOR2 and AXIS should specify 2 atoms each");
+      aa->error("VECTORA, VECTORB and AXIS should specify 2 atoms each");
     aa->log.printf("  between lines %d-%d and %d-%d, projected on the plane orthogonal to line %d-%d\n",
                    v1[0].serial(),v1[1].serial(),v2[0].serial(),v2[1].serial(),axis[0].serial(),axis[1].serial());
     t.resize(6);
