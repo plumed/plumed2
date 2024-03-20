@@ -291,6 +291,7 @@ void LocalSteinhardt::registerKeywords( Keywords& keys ) {
   keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
            "The following provides information on the \\ref switchingfunction that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
+  keys.addFlag("LOWMEM",false,"this flag does nothing and is present only to ensure back-compatibility");
   multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
   keys.needsAction("CONTACT_MATRIX"); keys.needsAction("MATRIX_PRODUCT");
   keys.needsAction("ONES"); keys.needsAction("OUTER_PRODUCT"); keys.needsAction("VSTACK");
@@ -323,6 +324,8 @@ LocalSteinhardt::LocalSteinhardt(const ActionOptions& ao):
   Action(ao),
   ActionShortcut(ao)
 {
+  bool lowmem; parseFlag("LOWMEM",lowmem);
+  if( lowmem ) warning("LOWMEM flag is deprecated and is no longer required for this action");
   // Get the Q value
   int l; Tools::convert( getName().substr(7), l);
   // Create a vector filled with ones

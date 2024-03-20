@@ -148,6 +148,7 @@ void CoordShellVectorFunction::registerKeywords( Keywords& keys ) {
   CoordinationNumbers::shortcutKeywords( keys );
   keys.add("compulsory","FUNCTION","the function of the bond vectors that you would like to evaluate");
   keys.add("compulsory","ALPHA","3.0","The alpha parameter of the angular function that is used for FCCUBIC");
+  keys.addFlag("LOWMEM",false,"this flag does nothing and is present only to ensure back-compatibility");
   keys.needsAction("CONTACT_MATRIX"); keys.needsAction("FCCUBIC_FUNC"); keys.needsAction("CUSTOM");
   keys.needsAction("ONES"); keys.needsAction("MATRIX_VECTOR_PRODUCT");
 }
@@ -156,7 +157,8 @@ CoordShellVectorFunction::CoordShellVectorFunction(const ActionOptions& ao):
   Action(ao),
   ActionShortcut(ao)
 {
-  std::string matlab, sp_str, specA, specB;
+  std::string matlab, sp_str, specA, specB; bool lowmem; parseFlag("LOWMEM",lowmem);
+  if( lowmem ) warning("LOWMEM flag is deprecated and is no longer required for this action");
   parse("SPECIES",sp_str); parse("SPECIESA",specA); parse("SPECIESB",specB);
   if( sp_str.length()>0 || specA.length()>0 ) {
     matlab = getShortcutLabel() + "_mat";
