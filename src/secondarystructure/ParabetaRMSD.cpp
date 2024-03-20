@@ -264,13 +264,13 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
   std::string strands_cutoff; parse("STRANDS_CUTOFF",strands_cutoff);
   std::string nopbcstr=""; bool nopbc; parseFlag("NOPBC",nopbc); if( nopbc ) nopbcstr = " NOPBC";
   if( strands_cutoff.length()>0 ) strands_cutoff=" CUTOFF_ATOMS=6,21 STRANDS_CUTOFF="+strands_cutoff;
-  std::string type; parse("TYPE",type); std::string lab = getShortcutLabel() + "_rmsd"; if( uselessthan ) lab = getShortcutLabel();
-  readInputLine( lab + ": SECONDARY_STRUCTURE_RMSD BONDLENGTH=0.17" + seglist + structure + " " + atoms + " TYPE=" + type + strands_cutoff + nopbcstr );
+  std::string type; parse("TYPE",type); std::string lab = getShortcutLabel() + "_low"; if( uselessthan ) lab = getShortcutLabel();
+  readInputLine( getShortcutLabel() + "_both: SECONDARY_STRUCTURE_RMSD BONDLENGTH=0.17" + seglist + structure + " " + atoms + " TYPE=" + type + strands_cutoff + nopbcstr );
   if( ltmap.length()>0 ) {
     // Create the lowest line
-    readInputLine( getShortcutLabel() + "_low: LOWEST ARG=" + getShortcutLabel() + ".struct-1," + getShortcutLabel() + ".struct-2" );
+    readInputLine( lab + ": LOWEST ARG=" + getShortcutLabel() + "_both.struct-1," + getShortcutLabel() + "_both.struct-2" );
     // Create the less than object
-    SecondaryStructureRMSD::expandShortcut( uselessthan, getShortcutLabel(), getShortcutLabel() + "_low", ltmap, this );
+    SecondaryStructureRMSD::expandShortcut( uselessthan, getShortcutLabel(), lab, ltmap, this );
   }
 }
 
