@@ -67,19 +67,19 @@ AlphaBeta::AlphaBeta(const ActionOptions& ao):
   // Read in the reference value
   std::string refstr; parse("REFERENCE",refstr); unsigned nref=0;
   if( refstr.length()==0 ) {
-      for(unsigned i=0;;++i) {
-          std::string refval;
-          if( !parseNumbered( "REFERENCE", i+1, refval ) ) break;
-          if( i==0 ) refstr = refval; else refstr += "," + refval; 
-          nref++;
-      }
+    for(unsigned i=0;; ++i) {
+      std::string refval;
+      if( !parseNumbered( "REFERENCE", i+1, refval ) ) break;
+      if( i==0 ) refstr = refval; else refstr += "," + refval;
+      nref++;
+    }
   }
   // Calculate angles
   readInputLine( getShortcutLabel() + "_torsions: TORSION " + convertInputLineToString() );
   ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_torsions" );
-  plumed_assert( av && (av->copyOutput(0))->getRank()==1 ); 
+  plumed_assert( av && (av->copyOutput(0))->getRank()==1 );
   if( nref==0 ) {
-      std::string refval=refstr; for(unsigned i=1;i<(av->copyOutput(0))->getShape()[0];++i) refstr += "," + refval; 
+    std::string refval=refstr; for(unsigned i=1; i<(av->copyOutput(0))->getShape()[0]; ++i) refstr += "," + refval;
   } else if( nref!=(av->copyOutput(0))->getShape()[0] ) error("mismatch between number of reference values and number of ATOMS specified");
   readInputLine( getShortcutLabel() + "_ref: CONSTANT VALUES=" + refstr );
   // Caculate difference from reference using combine
