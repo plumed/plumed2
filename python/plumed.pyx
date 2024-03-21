@@ -166,7 +166,7 @@ cdef class Plumed:
          cdef cplumed.plumed_nothrow_handler nothrow
          cdef cplumed.plumed_error error
          safe.ptr=val
-         safe.nelem=0
+         safe.nelem=nelem
          safe.shape=shape
          safe.flags=flags
          cplumed.plumed_error_init(&error)
