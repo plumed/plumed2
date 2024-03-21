@@ -96,7 +96,7 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
   }
   // Request the atoms from the ActionAtomistic
   requestAtoms( t ); parseFlag("COMPONENTS",components); parseFlag("NOPBC",nopbc);
-  if( !components ) { addValue( shape ); setNotPeriodic(); } 
+  if( !components ) { addValue( shape ); setNotPeriodic(); }
   else { addComponent( "w", shape ); componentIsNotPeriodic("w"); }
   getPntrToComponent(0)->setDerivativeIsZeroWhenValueIsZero();
   // Stuff for neighbor list

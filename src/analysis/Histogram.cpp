@@ -211,7 +211,7 @@ void Histogram::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","KERNEL","GAUSSIAN","the kernel function you are using.  More details on  the kernels available "
            "in plumed plumed can be found in \\ref kernelfunctions.");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
-  keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)"); 
+  keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
   keys.add("optional","LOGWEIGHTS","the logarithm of the quantity to use as the weights when calculating averages");
   keys.add("compulsory","STRIDE","1","the frequency with which to store data for averaging");
   keys.add("compulsory","CLEAR","0","the frequency with whihc to clear the data that is being averaged");

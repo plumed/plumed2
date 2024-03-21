@@ -48,7 +48,7 @@ PLUMED_REGISTER_ACTION(Density,"DENSITY")
 void Density::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
   keys.add("compulsory","SPECIES","the atoms in the group");
-  keys.needsAction("ONES"); keys.needsAction("GROUP"); 
+  keys.needsAction("ONES"); keys.needsAction("GROUP");
 }
 
 Density::Density(const ActionOptions& ao):
