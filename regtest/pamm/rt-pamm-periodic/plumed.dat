@@ -18,6 +18,6 @@ PAMM ARG=phi,psi CLUSTERS=2D-testc-0.75.pammp MEAN HISTOGRAM={GAUSSIAN NBINS=2 L
 mom1: MOMENTS ARG=p-1 POWERS=2,3
 mom2: MOMENTS ARG=p-5 POWERS=2,3
 
-PRINT ARG=p-1_mean,p-2_between1,p-2_between2,p-4_highest,mom1.*,mom2.* FILE=colvar FMT=%8.4f
+PRINT ARG=p-1_mean,p-2_between-1,p-2_between-2,p-4_highest,mom1.*,mom2.* FILE=colvar FMT=%8.4f
 
 BIASVALUE ARG=p-1_mean 

@@ -118,7 +118,7 @@ void MultiColvarShortcuts::expandFunctions( const std::string& labout, const std
         sum_arg = labout + "_wlt" + istr;
         action->readInputLine( labout + "_wlt" + istr + ": CUSTOM ARG=" + weights + "," + labout + "_lt" + istr + " FUNC=x*y PERIODIC=NO");
       }
-      action->readInputLine( labout + "_lessthan" + istr + ": SUM ARG=" + sum_arg + " PERIODIC=NO");
+      action->readInputLine( labout + "_lessthan-" + istr + ": SUM ARG=" + sum_arg + " PERIODIC=NO");
     }
   }
   // Parse MORE_THAN
@@ -141,7 +141,7 @@ void MultiColvarShortcuts::expandFunctions( const std::string& labout, const std
         sum_arg = labout + "_wmt" + istr;
         action->readInputLine( labout + "_wmt" + istr + ": CUSTOM ARG=" + weights + "," + labout + "_lt" + istr + " FUNC=x*y PERIODIC=NO");
       }
-      action->readInputLine( labout + "_morethan" + istr + ": SUM ARG=" + sum_arg + " PERIODIC=NO");
+      action->readInputLine( labout + "_morethan-" + istr + ": SUM ARG=" + sum_arg + " PERIODIC=NO");
     }
   }
   // Parse ALT_MIN
@@ -219,7 +219,7 @@ void MultiColvarShortcuts::expandFunctions( const std::string& labout, const std
         sum_arg = labout + "_wbt" + istr;
         action->readInputLine( labout + "_wbt" + istr + ": CUSTOM ARG=" + weights + "," + labout + "_bt" + istr + " FUNC=x*y PERIODIC=NO");
       }
-      action->readInputLine( labout + "_between" + istr + ": SUM ARG=" + sum_arg + " PERIODIC=NO");
+      action->readInputLine( labout + "_between-" + istr + ": SUM ARG=" + sum_arg + " PERIODIC=NO");
     }
   }
   // Parse HISTOGRAM
@@ -242,7 +242,7 @@ void MultiColvarShortcuts::expandFunctions( const std::string& labout, const std
         sum_arg = labout + "_wbt" + istr;
         action->readInputLine( labout + "_wbt" + istr + ": CUSTOM ARG=" + weights + "," + labout + "_bt" + istr + " FUNC=x*y PERIODIC=NO");
       }
-      action->readInputLine( labout + "_between" + istr + ": SUM ARG=" + sum_arg + " PERIODIC=NO");
+      action->readInputLine( labout + "_between-" + istr + ": SUM ARG=" + sum_arg + " PERIODIC=NO");
     }
   }
 }
