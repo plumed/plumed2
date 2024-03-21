@@ -239,7 +239,7 @@ DRMSD::DRMSD( const ActionOptions& ao ):
   fclose(fp);
 
   if( nframes==1 ) {
-    readInputLine( getShortcutLabel() + "_d: DISTANCE" + allpairs + pbc_str );
+    readInputLine( getShortcutLabel() + "_d: DISTANCE" + allpairs + " " + pbc_str );
     std::string refstr = refvals[0]; for(unsigned i=1; i<refvals.size(); ++i) refstr += "," + refvals[i];
     readInputLine( getShortcutLabel() + "_ref: CONSTANT VALUES="  + refstr );
     readInputLine( getShortcutLabel() + "_diffs: CUSTOM ARG=" + getShortcutLabel() + "_d," + getShortcutLabel() + "_ref FUNC=(x-y)*(x-y) PERIODIC=NO");
