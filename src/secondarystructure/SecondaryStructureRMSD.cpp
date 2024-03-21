@@ -44,10 +44,9 @@ bool SecondaryStructureRMSD::readShortcutWords( std::string& ltmap, ActionShortc
   action->parse("LESS_THAN",ltmap);
   if( ltmap.length()==0 ) {
     std::string nn, mm, d_0, r_0; action->parse("R_0",r_0);
-    if( r_0.length()>0 ) {
-      action->parse("NN",nn); action->parse("D_0",d_0); action->parse("MM",mm);
-      ltmap = "RATIONAL R_0=" + r_0 + " D_0=" + d_0 + " NN=" + nn + " MM=" + mm;
-    }
+    if( r_0.length()==0 ) r_0="0.08";
+    action->parse("NN",nn); action->parse("D_0",d_0); action->parse("MM",mm);
+    ltmap = "RATIONAL R_0=" + r_0 + " D_0=" + d_0 + " NN=" + nn + " MM=" + mm;
     return false;
   }
   return true;
