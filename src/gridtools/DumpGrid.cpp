@@ -214,7 +214,7 @@ DumpGrid::DumpGrid(const ActionOptions&ao):
   fmt("%f")
 {
   if( getNumberOfArguments()==0 ) {
-      std::vector<Value*> grids; parseArgumentList("GRID",grids); requestArguments(grids);
+    std::vector<Value*> grids; parseArgumentList("GRID",grids); requestArguments(grids);
   }
   if( getNumberOfArguments()!=1 ) error("should only be one argument");
   if( getPntrToArgument(0)->getRank()==0 || !getPntrToArgument(0)->hasDerivatives() ) error("input should be a grid");

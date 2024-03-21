@@ -141,7 +141,7 @@ void CoordinationNumbers::expandMatrix( const bool& components, const std::strin
 }
 
 void CoordinationNumbers::registerKeywords( Keywords& keys ) {
-  shortcutKeywords( keys ); 
+  shortcutKeywords( keys );
   keys.add("compulsory","R_POWER","the power to which you want to raise the distance");
   keys.addFlag("LOWMEM",false,"this flag does nothing and is present only to ensure back-compatibility");
   keys.add("optional","MOMENTS","the list of moments that you would like to calculate");
@@ -183,8 +183,8 @@ CoordinationNumbers::CoordinationNumbers(const ActionOptions& ao):
   std::vector<std::string> moments; parseVector("MOMENTS",moments); Tools::interpretRanges( moments );
   readInputLine( getShortcutLabel() + "_caverage: MEAN ARG=" + getShortcutLabel() + " PERIODIC=NO");
   for(unsigned i=0; i<moments.size(); ++i) {
-      readInputLine( getShortcutLabel() + "_diffpow-" + moments[i] + ": CUSTOM ARG=" + getShortcutLabel() + "," + getShortcutLabel() + "_caverage PERIODIC=NO FUNC=(x-y)^" + moments[i] );
-      readInputLine( getShortcutLabel() + "_moments-" + moments[i] + ": MEAN ARG=" + getShortcutLabel() + "_diffpow-" + moments[i] + " PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_diffpow-" + moments[i] + ": CUSTOM ARG=" + getShortcutLabel() + "," + getShortcutLabel() + "_caverage PERIODIC=NO FUNC=(x-y)^" + moments[i] );
+    readInputLine( getShortcutLabel() + "_moments-" + moments[i] + ": MEAN ARG=" + getShortcutLabel() + "_diffpow-" + moments[i] + " PERIODIC=NO");
   }
   // Read in all the shortcut stuff
   std::map<std::string,std::string> keymap; multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );
