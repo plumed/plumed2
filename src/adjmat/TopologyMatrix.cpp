@@ -70,7 +70,7 @@ PLUMED_REGISTER_ACTION(TopologyMatrix,"TOPOLOGY_MATRIX")
 
 void TopologyMatrix::registerKeywords( Keywords& keys ) {
   AdjacencyMatrixBase::registerKeywords( keys );
-  keys.add("atoms","ATOMS","the list of atoms that should be considered as part of the background density");
+  keys.add("atoms","BACKGROUND_ATOMS","the list of atoms that should be considered as part of the background density");
   keys.add("compulsory","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
            "The following provides information on the \\ref switchingfunction that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");

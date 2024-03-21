@@ -117,7 +117,7 @@ Sprint::Sprint(const ActionOptions& ao):
       std::string sw_str2, jnum; Tools::convert( j+1, jnum ); parseNumbered("SWITCH", (j+1)*10 + 1 + i, sw_str2);
       if( sw_str2.length()==0 ) error("missing SWITCH" + jnum + num + " keyword");
       readInputLine( getShortcutLabel() + "_mat" + jnum + num + ": CONTACT_MATRIX GROUPA=" + grp_str[j] + " GROUPB=" + grp_str[i] + " SWITCH={" + sw_str2 +"}");
-      readInputLine( getShortcutLabel() + "_mat" + num +  jnum + ": TRANSPOSE ARG=" + getShortcutLabel() + "_mat" + jnum + num + ".w");
+      readInputLine( getShortcutLabel() + "_mat" + num +  jnum + ": TRANSPOSE ARG=" + getShortcutLabel() + "_mat" + jnum + num );
     }
   }
   std::string join_matrices = getShortcutLabel() + "_jmat: CONCATENATE";
@@ -126,7 +126,7 @@ Sprint::Sprint(const ActionOptions& ao):
     for(unsigned j=0; j<grp_str.size(); ++j) {
       std::string jnum; Tools::convert(j+1,jnum);
       if( i>j ) join_matrices += " MATRIX" + inum + jnum + "=" + getShortcutLabel() + "_mat" + inum +  jnum;
-      else join_matrices += " MATRIX" + inum + jnum + "=" + getShortcutLabel() + "_mat" + inum +  jnum + ".w";
+      else join_matrices += " MATRIX" + inum + jnum + "=" + getShortcutLabel() + "_mat" + inum +  jnum;
     }
   }
   readInputLine( join_matrices );

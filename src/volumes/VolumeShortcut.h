@@ -23,6 +23,9 @@
 #define __PLUMED_volumes_VolumeShortcut_h
 
 #include "core/ActionShortcut.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
+#include "core/Group.h"
 
 namespace PLMD {
 namespace volumes {
@@ -49,7 +52,7 @@ void VolumeShortcut<v>::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("sum","SUM","the sum of all the colvars weighted by the function that determines if we are in the region");
   keys.addFlag("MEAN",false,"calculate the average value of the colvar inside the region of interest");
   keys.addOutputComponent("mean","MEAN","the average values of the colvar in the region of interest");
-  keys.addActionNameSuffix("_CALC"); keys.needsAction("LESS_THAN"); keys.needsAction("MORE_THAN");
+  keys.addActionNameSuffix("_CALC"); keys.needsAction("LESS_THAN"); keys.needsAction("MORE_THAN"); keys.needsAction("GROUP");
   keys.needsAction("BETWEEN"); keys.needsAction("SUM"); keys.needsAction("MEAN"); keys.needsAction("CUSTOM");
 }
 
@@ -60,6 +63,9 @@ VolumeShortcut<v>::VolumeShortcut(const ActionOptions&ao):
 {
   std::string voltype(v), mc_lab; parse("DATA",mc_lab); bool dosum; parseFlag("SUM",dosum);
   if( mc_lab.length()>0 ) {
+    Group* mygrp = plumed.getActionSet().selectWithLabel<Group*>(mc_lab);
+    Group* mygrp2 = plumed.getActionSet().selectWithLabel<Group*>(mc_lab + "_grp");
+    if( mygrp || mygrp2 ) readInputLine( getShortcutLabel() + "_grp: GROUP ATOMS=" + mc_lab );
     bool domean; parseFlag("MEAN",domean); std::string lt_input, mt_input, bt_input;
     parse("LESS_THAN",lt_input); parse("MORE_THAN",mt_input); parse("BETWEEN",bt_input);
     std::string atomsd; parse("ATOMS",atomsd); if( atomsd.length()==0 ) atomsd=mc_lab;

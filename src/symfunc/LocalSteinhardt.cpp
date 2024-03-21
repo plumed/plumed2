@@ -422,7 +422,7 @@ LocalSteinhardt::LocalSteinhardt(const ActionOptions& ao):
   }
 
   // Now create the product matrix
-  readInputLine( getShortcutLabel() + "_prod: CUSTOM ARG=" + getShortcutLabel() + "_cmap.w," + getShortcutLabel() + "_dpmat FUNC=x*y PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_prod: CUSTOM ARG=" + getShortcutLabel() + "_cmap," + getShortcutLabel() + "_dpmat FUNC=x*y PERIODIC=NO");
   // Now the sum of coordination numbers times the switching functions
   ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_cmap");
   plumed_assert( av && av->getNumberOfComponents()>0 && (av->copyOutput(0))->getRank()==2 );
@@ -430,7 +430,7 @@ LocalSteinhardt::LocalSteinhardt(const ActionOptions& ao):
   readInputLine( getShortcutLabel() + "_ones: ONES SIZE=" + size );
   readInputLine( getShortcutLabel() + ": MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() +"_prod," + getShortcutLabel() +"_ones");
   // And just the sum of the coordination numbers
-  readInputLine( getShortcutLabel() + "_denom: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_cmap.w," + getShortcutLabel() +"_ones");
+  readInputLine( getShortcutLabel() + "_denom: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_cmap," + getShortcutLabel() +"_ones");
   // And matheval to get the final quantity
   readInputLine( getShortcutLabel() + "_av: CUSTOM ARG=" + getShortcutLabel() + "," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
   // And this expands everything

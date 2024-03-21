@@ -32,15 +32,16 @@ void AdjacencyMatrixBase::registerKeywords( Keywords& keys ) {
   keys.add("atoms","GROUP","the atoms for which you would like to calculate the adjacency matrix");
   keys.add("atoms","GROUPA","");
   keys.add("atoms","GROUPB","");
+  keys.add("atoms-2","ATOMS","the atoms for which you would like to calculate the adjacency matrix (basically equivalent to GROUP)");
   keys.reserve("atoms","GROUPC","");
   keys.addFlag("COMPONENTS",false,"also calculate the components of the vector connecting the atoms in the contact matrix");
   keys.addFlag("NOPBC",false,"don't use pbc");
   keys.add("compulsory","NL_CUTOFF","0.0","The cutoff for the neighbor list.  A value of 0 means we are not using a neighbor list");
   keys.add("compulsory","NL_STRIDE","1","The frequency with which we are updating the atoms in the neighbor list");
-  keys.addOutputComponent("w","default","the weight of the connection");
-  keys.addOutputComponent("x","COMPONENT","the projection of the bond on the x axis");
-  keys.addOutputComponent("y","COMPONENT","the projection of the bond on the y axis");
-  keys.addOutputComponent("z","COMPONENT","the projection of the bond on the z axis");
+  keys.addOutputComponent("w","COMPONENTS","the weight of the connection");
+  keys.addOutputComponent("x","COMPONENTS","the projection of the bond on the x axis");
+  keys.addOutputComponent("y","COMPONENTS","the projection of the bond on the y axis");
+  keys.addOutputComponent("z","COMPONENTS","the projection of the bond on the z axis");
 }
 
 AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
@@ -53,6 +54,8 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
   natoms_per_list(0)
 {
   std::vector<unsigned> shape(2); std::vector<AtomNumber> t; parseAtomList("GROUP", t );
+  if( t.size()==0 ) parseAtomList("ATOMS", t);
+
   if( t.size()==0 ) {
     std::vector<AtomNumber> ta; parseAtomList("GROUPA",ta);
     std::vector<AtomNumber> tb; parseAtomList("GROUPB",tb);
@@ -86,14 +89,15 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
     std::vector<AtomNumber> tc; parseAtomList("HYDROGENS",tc);
     if( tc.size()==0 ) error("no HYDROGEN atoms specified");
     log.printf("  hydrogen atoms are "); setupThirdAtomBlock( tc, t );
-  } else if( keywords.exists("ATOMS") ) {
-    std::vector<AtomNumber> tc; parseAtomList("ATOMS",tc);
+  } else if( keywords.exists("BACKGROUND_ATOMS") ) {
+    std::vector<AtomNumber> tc; parseAtomList("BACKGROUND_ATOMS",tc);
     if( tc.size()==0 ) error("no ATOMS atoms specified");
     log.printf("  atoms for background density are "); setupThirdAtomBlock( tc, t );
   }
   // Request the atoms from the ActionAtomistic
   requestAtoms( t ); parseFlag("COMPONENTS",components); parseFlag("NOPBC",nopbc);
-  addComponent( "w", shape ); componentIsNotPeriodic("w");
+  if( !components ) { addValue( shape ); setNotPeriodic(); } 
+  else { addComponent( "w", shape ); componentIsNotPeriodic("w"); }
   getPntrToComponent(0)->setDerivativeIsZeroWhenValueIsZero();
   // Stuff for neighbor list
   parse("NL_CUTOFF",nl_cut); nl_cut2=nl_cut*nl_cut; parse("NL_STRIDE",nl_stride);

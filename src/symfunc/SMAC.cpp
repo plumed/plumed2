@@ -101,7 +101,7 @@ SMAC::SMAC(const ActionOptions& ao):
   }
   readInputLine( kmap_input );
   // Now create the product matrix
-  readInputLine( getShortcutLabel() + "_prod: CUSTOM ARG=" + getShortcutLabel() + "_cmap.w," + getShortcutLabel() + "_ksum FUNC=x*y PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_prod: CUSTOM ARG=" + getShortcutLabel() + "_cmap," + getShortcutLabel() + "_ksum FUNC=x*y PERIODIC=NO");
   // Now the sum of coordination numbers times the switching functions
   ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_cmap");
   plumed_assert( av && av->getNumberOfComponents()>0 && (av->copyOutput(0))->getRank()==2 );
@@ -109,7 +109,7 @@ SMAC::SMAC(const ActionOptions& ao):
   readInputLine( getShortcutLabel() + "_ones: ONES SIZE=" + size );
   readInputLine( getShortcutLabel() + ": MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_prod," + getShortcutLabel() + "_ones");
   // And just the sum of the coordination numbers
-  readInputLine( getShortcutLabel() + "_denom: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_cmap.w," + getShortcutLabel() + "_ones");
+  readInputLine( getShortcutLabel() + "_denom: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_cmap," + getShortcutLabel() + "_ones");
   // And the transformed switching functions
   std::string swcoord_str; parse("SWITCH_COORD",swcoord_str);
   readInputLine( getShortcutLabel() + "_mtdenom: MORE_THAN ARG=" + getShortcutLabel() + "_denom SWITCH={" + swcoord_str +"}");

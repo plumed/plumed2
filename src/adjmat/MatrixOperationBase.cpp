@@ -27,6 +27,7 @@ namespace adjmat {
 void MatrixOperationBase::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionWithArguments::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
   keys.use("ARG"); keys.remove("NUMERICAL_DERIVATIVES");
+  keys.add("optional","MATRIX","the input matrix (can use ARG instead)");
 }
 
 MatrixOperationBase::MatrixOperationBase(const ActionOptions&ao):
@@ -34,6 +35,9 @@ MatrixOperationBase::MatrixOperationBase(const ActionOptions&ao):
   ActionWithArguments(ao),
   ActionWithValue(ao)
 {
+  if( getNumberOfArguments()==0 ) {
+      std::vector<Value*> args; parseArgumentList("MATRIX",args); requestArguments(args);
+  }
   if( getNumberOfArguments()!=1 ) error("should only be one argument to this action");
   if( getPntrToArgument(0)->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) {
     if( getName()=="TRANSPOSE" ) {

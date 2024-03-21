@@ -67,7 +67,7 @@ ClusterWithSurface::ClusterWithSurface(const ActionOptions& ao):
   // Now create a custom matrix
   readInputLine( getShortcutLabel() + "_cwmat: OUTER_PRODUCT ARG=" + getShortcutLabel() + "_wnosurf," + getShortcutLabel() + "_wnosurf FUNC=max");
   // Product of matrices
-  readInputLine( getShortcutLabel() + "_pmat: CUSTOM ARG=" + getShortcutLabel() + "_cmat.w," + getShortcutLabel() + "_cwmat FUNC=x*y PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_pmat: CUSTOM ARG=" + getShortcutLabel() + "_cmat," + getShortcutLabel() + "_cwmat FUNC=x*y PERIODIC=NO");
   // DFS clustering
   readInputLine( getShortcutLabel() + "_clust: DFSCLUSTERING ARG=" + getShortcutLabel() + "_pmat");
   // And final cluster weights
