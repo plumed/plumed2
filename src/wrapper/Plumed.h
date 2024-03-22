@@ -337,9 +337,7 @@
   what is allowed in C++ (e.g., `const void*` cannot be converted to `void*`, but `void*` can
   be converted to `const void*`).
 
-  Type checkes can be disabled in two ways:
-  - By compiling `Plumed.h` with `-D__PLUMED_WRAPPER_CXX_TYPESAFE=0`
-  - By setting `export PLUMED_TYPESAFE_IGNORE=yes` at runtime.
+  Type checkes can be disabled by setting `export PLUMED_TYPESAFE_IGNORE=yes` at runtime.
 
   Typechecks are also enabled in the C interface (plumed_cmd). This function is replaced with a macro by default.
   In particular:
@@ -569,17 +567,6 @@
 /*
   1: Enable typesafe interface (default)
   0: Disable typesafe interface
-
-  Only used in declarations.
-*/
-
-#ifndef __PLUMED_WRAPPER_CXX_TYPESAFE
-#define __PLUMED_WRAPPER_CXX_TYPESAFE 1
-#endif
-
-/*
-  1: Define macros plumed_cmd and plumed_gcmd to use the C++ interface (default).
-  0: Don't define macros plumed_cmd and plumed_gcmd.
 
   Only used in declarations.
 */
@@ -2880,7 +2867,7 @@ public:
       \param val The argument, passed by value.
       \note Similar to \ref plumed_cmd(). It actually called \ref plumed_cmd_nothrow() and
             rethrow any exception raised within PLUMED.
-      \note Unless one defines __PLUMED_WRAPPER_CXX_TYPESAFE=0 or PLUMED library is <=2.7,
+      \note Unless PLUMED library is <=2.7,
              the type of the argument is checked.
   */
   template<typename T>
@@ -2895,7 +2882,7 @@ public:
       \param shape A zero-terminated array containing the shape of the data.
       \note Similar to \ref plumed_cmd(). It actually called \ref plumed_cmd_nothrow() and
             rethrow any exception raised within PLUMED.
-      \note Unless one defines __PLUMED_WRAPPER_CXX_TYPESAFE=0 or PLUMED library is <=2.7,
+      \note Unless PLUMED library is <=2.7,
              the type of the argument is checked. If shape is passed, it is also
              checked that PLUMED access only compatible indexes.
   */
@@ -2912,7 +2899,7 @@ public:
       \param shape The shape of the argument, in the form of an initialier_list (e.g., {10,3}).
       \note Similar to \ref plumed_cmd(). It actually called \ref plumed_cmd_nothrow() and
             rethrow any exception raised within PLUMED.
-      \note Unless one defines __PLUMED_WRAPPER_CXX_TYPESAFE=0 or PLUMED library is <=2.7,
+      \note Unless PLUMED library is <=2.7,
              the type of the argument is checked. If shape is passed, it is also
              checked that PLUMED access only compatible indexes.
   */
@@ -2936,7 +2923,7 @@ public:
       \param nelem The number of elements passed.
       \note Similar to \ref plumed_cmd(). It actually called \ref plumed_cmd_nothrow() and
             rethrow any exception raised within PLUMED.
-      \note Unless one defines __PLUMED_WRAPPER_CXX_TYPESAFE=0 or PLUMED library is <=2.7,
+      \note Unless PLUMED library is <=2.7,
              the type of the argument is checked.  nelem is used to check
              the maximum index interpreting the array as flattened.
   */
@@ -2971,12 +2958,8 @@ public:
     Available as of PLUMED 2.8.
   */
   static void plumed_cmd_cxx(plumed p,const char*key,plumed_error* error=__PLUMED_WRAPPER_CXX_NULLPTR) {
-#if __PLUMED_WRAPPER_CXX_TYPESAFE
     SafePtr s;
     cmd_priv(p,key,&s,__PLUMED_WRAPPER_CXX_NULLPTR,error);
-#else
-    cmd_priv(p,key,__PLUMED_WRAPPER_CXX_NULLPTR,__PLUMED_WRAPPER_CXX_NULLPTR,error);
-#endif
   }
 
   /**
@@ -2988,12 +2971,8 @@ public:
   */
   template<typename T>
   static void plumed_cmd_cxx(plumed p,const char*key,T val,plumed_error* error=__PLUMED_WRAPPER_CXX_NULLPTR) {
-#if __PLUMED_WRAPPER_CXX_TYPESAFE
     SafePtr s(val,0,__PLUMED_WRAPPER_CXX_NULLPTR);
     cmd_priv(p,key,&s,__PLUMED_WRAPPER_CXX_NULLPTR,error);
-#else
-    cmd_priv(p,key,__PLUMED_WRAPPER_CXX_NULLPTR,&val,error);
-#endif
   }
 
   /**
@@ -3005,12 +2984,8 @@ public:
   */
   template<typename T>
   static void plumed_cmd_cxx(plumed p,const char*key,T* val,plumed_error* error=__PLUMED_WRAPPER_CXX_NULLPTR) {
-#if __PLUMED_WRAPPER_CXX_TYPESAFE
     SafePtr s(val,0,__PLUMED_WRAPPER_CXX_NULLPTR);
     cmd_priv(p,key,&s,__PLUMED_WRAPPER_CXX_NULLPTR,error);
-#else
-    cmd_priv(p,key,__PLUMED_WRAPPER_CXX_NULLPTR,val,error);
-#endif
   }
 
   /**
@@ -3022,12 +2997,8 @@ public:
   */
   template<typename T>
   static void plumed_cmd_cxx(plumed p,const char*key,T* val, __PLUMED_WRAPPER_STD size_t nelem,plumed_error* error=__PLUMED_WRAPPER_CXX_NULLPTR) {
-#if __PLUMED_WRAPPER_CXX_TYPESAFE
     SafePtr s(val,nelem,__PLUMED_WRAPPER_CXX_NULLPTR);
     cmd_priv(p,key,&s,__PLUMED_WRAPPER_CXX_NULLPTR,error);
-#else
-    cmd_priv(p,key,__PLUMED_WRAPPER_CXX_NULLPTR,val,error);
-#endif
   }
 
   /**
@@ -3039,12 +3010,8 @@ public:
   */
   template<typename T>
   static void plumed_cmd_cxx(plumed p,const char*key,T* val, const __PLUMED_WRAPPER_STD size_t* shape,plumed_error* error=__PLUMED_WRAPPER_CXX_NULLPTR) {
-#if __PLUMED_WRAPPER_CXX_TYPESAFE
     SafePtr s(val,0,shape);
     cmd_priv(p,key,&s,__PLUMED_WRAPPER_CXX_NULLPTR,error);
-#else
-    cmd_priv(p,key,__PLUMED_WRAPPER_CXX_NULLPTR,val,error);
-#endif
   }
 
 
