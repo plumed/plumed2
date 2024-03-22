@@ -108,6 +108,7 @@ int main(){
   os<<"\n";
   for(unsigned i=0;i<3;i++) for(unsigned j=0;j<3;j++) os<<" "<<virial[i][j];
   os<<"\n";
+  os<<bias<<"\n";
 
   return 0;
   
