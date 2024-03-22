@@ -238,10 +238,10 @@ Path::Path( const ActionOptions& ao ):
 {
   bool nospath, nozpath, gpath; parseFlag("NOSPATH",nospath); parseFlag("NOZPATH",nozpath); parseFlag("GPATH",gpath);
   if( gpath ) {
-      readInputLine( getShortcutLabel() + ": GPATH " + convertInputLineToString() );
-      readInputLine( getShortcutLabel() + "_gspath: COMBINE ARG=" + getShortcutLabel() + ".s PERIODIC=NO");
-      readInputLine( getShortcutLabel() + "_gzpath: COMBINE ARG=" + getShortcutLabel() + ".s PERIODIC=NO");
-  } 
+    readInputLine( getShortcutLabel() + ": GPATH " + convertInputLineToString() );
+    readInputLine( getShortcutLabel() + "_gspath: COMBINE ARG=" + getShortcutLabel() + ".s PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_gzpath: COMBINE ARG=" + getShortcutLabel() + ".s PERIODIC=NO");
+  }
   if( nospath && nozpath ) return;
   // Setup the properties
   std::vector<std::string> properties, pnames;
@@ -294,7 +294,7 @@ void Path::readInputFrames( const std::string& reference, const std::string& typ
     reference_data = action->getShortcutLabel() + "_atomdata_ref";
     if( displacements ) action->readInputLine( action->getShortcutLabel() + "_atomdata: RMSD DISPLACEMENT SQUARED REFERENCE=" + reference + " TYPE=" + type );
     else action->readInputLine( action->getShortcutLabel() + "_atomdata: RMSD SQUARED REFERENCE=" + reference + " TYPE=" + type );
-  } else if( argnames.size()==0 ) { 
+  } else if( argnames.size()==0 ) {
     argnames.resize( pdb.getArgumentNames().size() );
     for(unsigned i=0; i<argnames.size(); ++i) argnames[i] = pdb.getArgumentNames()[i];
   }

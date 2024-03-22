@@ -234,7 +234,7 @@ Histogram::Histogram( const ActionOptions& ao ):
   std::vector<std::string> arglist; parseVector("ARG",arglist); if( arglist.size()==0 ) parseVector("DATA",arglist);
   if( arglist.size()==0 ) error("arguments have not been specified use ARG");
   std::vector<Value*> theargs; ActionWithArguments::interpretArgumentList( arglist, plumed.getActionSet(), this, theargs );
-  plumed_assert( theargs.size()>0 ); std::string argstr=theargs[0]->getName(); 
+  plumed_assert( theargs.size()>0 ); std::string argstr=theargs[0]->getName();
   for(unsigned i=1; i<theargs.size(); ++i) argstr += "," + theargs[i]->getName();
   std::string strnum; Tools::convert( theargs[0]->getNumberOfValues(), strnum );
   if( theargs[0]->getNumberOfValues()==1 ) {
