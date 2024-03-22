@@ -188,6 +188,7 @@ void PCAVars::registerKeywords( Keywords& keys ) {
   keys.needsAction("RMSD"); keys.needsAction("PDB2CONSTANT"); keys.needsAction("TRANSPOSE");
   keys.needsAction("EUCLIDEAN_DISTANCE"); keys.needsAction("CONCATENATE"); keys.needsAction("COMBINE"); keys.needsAction("CONSTANT");
   keys.needsAction("COMBINE"); keys.needsAction("MATRIX_VECTOR_PRODUCT"); keys.needsAction("CUSTOM"); keys.needsAction("SUM");
+  keys.needsAction("SELECT_COMPONENTS");
 }
 
 PCAVars::PCAVars( const ActionOptions& ao ):
@@ -282,6 +283,10 @@ PCAVars::PCAVars( const ActionOptions& ao ):
   if( pdb.getPositions().size()>0 && theargs.size()>0 ) readInputLine( getShortcutLabel() + "_eig: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_peig," + getShortcutLabel() );
   else if( pdb.getPositions().size()>0 ) readInputLine( getShortcutLabel() + "_eig: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_peig," + getShortcutLabel() + "_at.disp");
   else if( theargs.size()>0 ) readInputLine( getShortcutLabel() + "_eig: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_peig," + getShortcutLabel() + "_argdist_diffT");
+  for(unsigned i=0; i<nfram; ++i) {
+      std::string num; Tools::convert( i+1, num ); 
+      readInputLine( getShortcutLabel() + "_eig-" + num + ": SELECT_COMPONENTS ARG=" + getShortcutLabel() + "_eig COMPONENTS=" + num );
+  }
   readInputLine( getShortcutLabel() + "_eig2: CUSTOM ARG=" + getShortcutLabel() + "_eig FUNC=x*x PERIODIC=NO");
   readInputLine( getShortcutLabel() + "_eigsum2: SUM ARG=" +  getShortcutLabel() + "_eig2 PERIODIC=NO");
   if( pdb.getPositions().size()>0 && theargs.size()>0 ) readInputLine( getShortcutLabel() + "_residual: CUSTOM ARG=" + getShortcutLabel() + "_dist," + getShortcutLabel() + "_eigsum2 FUNC=sqrt(x-y) PERIODIC=NO");

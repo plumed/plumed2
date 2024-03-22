@@ -57,6 +57,8 @@ void AlphaBeta::registerKeywords(Keywords& keys) {
   keys.reset_style("ATOMS","atoms");
   keys.add("numbered","REFERENCE","the reference values for each of the torsional angles.  If you use a single REFERENCE value the "
            "same reference value is used for all torsions");
+  keys.add("numbered","COEFFICIENT","the coefficient for each of the torsional angles.  If you use a single COEFFICIENT value the "
+           "same reference value is used for all torsional angles");
   keys.needsAction("CONSTANT"); keys.needsAction("TORSION"); keys.needsAction("COMBINE"); keys.needsAction("CUSTOM"); keys.needsAction("SUM");
 }
 
@@ -74,6 +76,16 @@ AlphaBeta::AlphaBeta(const ActionOptions& ao):
       nref++;
     }
   }
+  std::string coeffstr; parse("COEFFICIENT",coeffstr); unsigned ncoeff=0;
+  if( coeffstr.length()==0 ) {
+    for(unsigned i=0;; ++i) {
+      std::string coeff;
+      if( !parseNumbered( "COEFFICIENT", i+1, coeff) ) break;
+      if( i==0 ) coeffstr = coeff; else coeffstr += "," + coeff;
+      ncoeff++;
+    }
+  } 
+  if( coeffstr.length()==0 ) coeffstr="1";
   // Calculate angles
   readInputLine( getShortcutLabel() + "_torsions: TORSION " + convertInputLineToString() );
   ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_torsions" );
@@ -81,11 +93,15 @@ AlphaBeta::AlphaBeta(const ActionOptions& ao):
   if( nref==0 ) {
     std::string refval=refstr; for(unsigned i=1; i<(av->copyOutput(0))->getShape()[0]; ++i) refstr += "," + refval;
   } else if( nref!=(av->copyOutput(0))->getShape()[0] ) error("mismatch between number of reference values and number of ATOMS specified");
+  if( ncoeff==0 ) {
+    std::string coeff=coeffstr; for(unsigned i=1; i<(av->copyOutput(0))->getShape()[0]; ++i) coeffstr += "," + coeff;  
+  } else if( ncoeff!=(av->copyOutput(0))->getShape()[0] ) error("mismatch between number of coefficients and number of ATOMS specified");
   readInputLine( getShortcutLabel() + "_ref: CONSTANT VALUES=" + refstr );
+  readInputLine( getShortcutLabel() + "_coeff: CONSTANT VALUES=" + coeffstr );
   // Caculate difference from reference using combine
   readInputLine( getShortcutLabel() + "_comb: COMBINE ARG=" + getShortcutLabel() + "_torsions," + getShortcutLabel() + "_ref COEFFICIENTS=1,-1 PERIODIC=NO" );
   // Now matheval for cosine bit
-  readInputLine( getShortcutLabel() + "_cos: CUSTOM ARG=" + getShortcutLabel() + "_comb FUNC=0.5+0.5*cos(x) PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_cos: CUSTOM ARG=" + getShortcutLabel() + "_comb," + getShortcutLabel() + "_coeff FUNC=y*(0.5+0.5*cos(x)) PERIODIC=NO");
   // And combine to get final value
   readInputLine( getShortcutLabel() + ": SUM ARG=" + getShortcutLabel() + "_cos PERIODIC=NO");
 }

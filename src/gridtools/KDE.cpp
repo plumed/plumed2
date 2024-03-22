@@ -275,8 +275,9 @@ void KDE::setupOnFirstStep( const bool incalc ) {
   gridobject.setBounds( gmin, gmax, nbin, gspacing );
   std::vector<unsigned> shape( gridobject.getNbin(true) );
   getPntrToComponent(0)->setShape( shape );
+  bool hasauto=false; for(unsigned i=0; i<gmin.size(); ++i) { if(gmin[i]=="auto" || gmax[i]=="auto" ) { hasauto=true; break; } }
   // And setup the neighbors
-  if( gmin[0]!="auto" && kerneltype!="DISCRETE" && getPntrToArgument(bwargno)->isConstant() ) {
+  if( !hasauto && kerneltype!="DISCRETE" && getPntrToArgument(bwargno)->isConstant() ) {
     fixed_width=true; setupNeighborsVector();
   }
 }

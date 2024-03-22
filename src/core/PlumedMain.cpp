@@ -1439,6 +1439,16 @@ bool PlumedMain::DeprecatedAtoms::usingNaturalUnits() const {
   return plumed.usingNaturalUnits();
 }
 
+void PlumedMain::DeprecatedAtoms::setCollectEnergy(bool b) const {
+  plumed.readInputLine( plumed.MDEngine + "_energy: ENERGY" );
+  plumed.setEnergyValue( plumed.MDEngine + "_energy" );
+}
+
+double PlumedMain::DeprecatedAtoms::getEnergy() const {
+  ActionToPutData* av = plumed.getActionSet().selectWithLabel<ActionToPutData*>( plumed.MDEngine + "_energy" );
+  return (av->copyOutput(0))->get();
+}
+
 #ifdef __PLUMED_HAS_PYTHON
 // This is here to stop cppcheck throwing an error
 #endif
