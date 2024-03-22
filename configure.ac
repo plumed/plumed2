@@ -323,6 +323,7 @@ PLUMED_CONFIG_ENABLE([af_ocl],[search for arrayfire_ocl],[no])
 PLUMED_CONFIG_ENABLE([af_cuda],[search for arrayfire_cuda],[no])
 PLUMED_CONFIG_ENABLE([af_cpu],[search for arrayfire_cpu],[no])
 PLUMED_CONFIG_ENABLE([libtorch],[search for libtorch],[no]) #added by luigibonati
+PLUMED_CONFIG_ENABLE([metatensor],[search for metatensor],[no])
 
 AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
 AC_ARG_VAR(STATIC_LIBS,[variables that should be linked statically directly to MD code - configure will add here -ldl if necessary ])
@@ -926,6 +927,11 @@ if test "$af_cpu" = true ; then
   PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afcpu])
 fi
 
+# metatensor requires libtorch
+if test $metatensor = true ; then
+  libtorch=true;
+fi
+
 #added by luigibonati
 if test $libtorch = true ; then 
   # disable as-needed in linking libraries (both static and shared)
@@ -961,6 +967,17 @@ if test $libtorch = true ; then
     }
   ], [__PLUMED_HAS_LIBTORCH], [ torch_cpu c10 ], [true])
   fi
+fi
+
+if test $metatensor = true ; then
+  # find metatensor and metatensor_torch
+  PLUMED_CHECK_CXX_PACKAGE([metatensor],[
+    #include <metatensor/torch.hpp>
+    int main() {
+      metatensor_torch::version();
+      return 0;
+    }
+  ], [__PLUMED_HAS_METATENSOR], [metatensor metatensor_torch], [true])
 fi
 
 # in non-debug mode, add -DNDEBUG
