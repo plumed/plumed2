@@ -1873,6 +1873,23 @@ std::size_t size(const std::string &obj) {
   return obj.size()+1;
 };
 
+// Report the size of a custom_array
+template<typename T, typename std::enable_if<wrapper::is_custom_array<T>::value, int>::type = 0>
+std::size_t custom_array_size() {
+  using value_type = typename wrapper::is_custom_array<T>::value_type;
+  constexpr std::size_t value_size=sizeof(value_type);
+  static_assert(value_size>0,"cannot use custom arrays of void types");
+  static_assert(sizeof(T)%value_size==0,"custom array has incorrect size");
+  return sizeof(T)/sizeof(value_type);
+}
+
+// Cast a pointer of a custom_array to a pointer of its value_type
+template<typename T, typename std::enable_if<wrapper::is_custom_array<T>::value, int>::type = 0>
+typename wrapper::is_custom_array<T>::value_type* custom_array_cast(T* val) {
+  using value_type = typename wrapper::is_custom_array<T>::value_type;
+  return reinterpret_cast<value_type*>(val);
+}
+
 }
 
 #endif
@@ -2999,12 +3016,8 @@ private:
 /// cmd_helper with custom array val (includes std::array)
   template<typename T, typename std::enable_if<wrapper::is_custom_array<T>::value, int>::type = 0>
   void cmd_helper(const char*key,T&& val,bool nocopy=false) {
-    using value_type = typename wrapper::is_custom_array<T>::value_type;
-    constexpr std::size_t value_size=sizeof(value_type);
-    static_assert(value_size>0,"cannot use custom arrays of void types");
-    static_assert(sizeof(T)%value_size==0,"custom array has incorrect size");
-    std::size_t shape[] { sizeof(T)/sizeof(value_type), 0 };
-    cmd_helper_with_shape(key,reinterpret_cast<value_type*>(&val),shape,nocopy);
+    std::size_t shape[] { wrapper::custom_array_size<T>(), 0 };
+    cmd_helper_with_shape(key,wrapper::custom_array_cast(&val),shape,nocopy);
   }
 
 /// cmd_helper with size/data val (typically, std::vector, std::string, small_vector, etc)
@@ -3045,12 +3058,8 @@ private:
 /// cmd_helper_with_shape with custom array val (includes std::array and C arrays)
   template<typename T, typename std::enable_if<wrapper::is_custom_array<T>::value, int>::type = 0>
   void cmd_helper_with_shape(const char*key,T* val, __PLUMED_WRAPPER_STD size_t* shape,bool nocopy=false) {
-    using value_type = typename wrapper::is_custom_array<T>::value_type;
-    constexpr std::size_t value_size=sizeof(value_type);
-    static_assert(value_size>0,"cannot use custom arrays of void types");
-    static_assert(sizeof(T)%value_size==0,"custom array has incorrect size");
-    auto newptr=reinterpret_cast<value_type*>(val);
-    auto newshape=append_size(shape,sizeof(T)/sizeof(value_type));
+    auto newptr=wrapper::custom_array_cast(val);
+    auto newshape=append_size(shape,wrapper::custom_array_size<T>());
     cmd_helper_with_shape(key,newptr,newshape.data(),nocopy);
   }
 
@@ -3065,12 +3074,8 @@ private:
 /// cmd_helper_with_nelem with custom array val (includes std::array)
   template<typename T, typename std::enable_if<wrapper::is_custom_array<T>::value, int>::type = 0>
   void cmd_with_nelem(const char*key,T* val, __PLUMED_WRAPPER_STD size_t nelem) {
-    using value_type = typename wrapper::is_custom_array<T>::value_type;
-    constexpr std::size_t value_size=sizeof(value_type);
-    static_assert(value_size>0,"cannot use custom arrays of void types");
-    static_assert(sizeof(T)%value_size==0,"custom array has incorrect size");
-    auto newptr=reinterpret_cast<value_type*>(val);
-    auto newnelem=nelem*sizeof(T)/sizeof(value_type);
+    auto newptr=wrapper::custom_array_cast(val);
+    auto newnelem=nelem*wrapper::custom_array_size<T>();
     cmd_with_nelem(key,newptr,newnelem);
   }
 
