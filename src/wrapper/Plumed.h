@@ -2981,7 +2981,7 @@ private:
     for(i=0; i<4; i++) {
       shape_[i]=shape[i];
       if(shape[i]==0) break;
-    }
+    } // one less because we need to append another number!
     if(i==4) throw Plumed::ExceptionTypeError("Maximum shape size is 4");
     shape_[i]=newindex;
     shape_[i+1]=0;
@@ -3146,6 +3146,9 @@ public:
   */
   template<typename T>
   void cmd(const char*key,T* val, __PLUMED_WRAPPER_STD size_t* shape) {
+    unsigned i;
+    for(i=0;i<5;i++) if(shape[i]==0) break;
+    if(i==5) throw Plumed::ExceptionTypeError("Maximum shape size is 4");
     cmd_helper_with_shape(key,val,shape);
   }
 
@@ -3213,6 +3216,9 @@ public:
   */
   template<typename T>
   void cmd(const char*key,T* val, const __PLUMED_WRAPPER_STD size_t* shape) {
+    unsigned i;
+    for(i=0;i<5;i++) if(shape[i]==0) break;
+    if(i==5) throw Plumed::ExceptionTypeError("Maximum shape size is 4");
     plumed_cmd_cxx(main,key,val,shape);
   }
 
@@ -3230,6 +3236,8 @@ public:
   */
   template<typename T>
   void cmd(const char*key,T* val, std::initializer_list<std::size_t> shape) {
+    unsigned i;
+    for(i=0;i<5;i++) if(shape[i]==0) break;
     if(shape.size()>4) throw Plumed::ExceptionTypeError("Maximum shape size is 4");
     std::array<std::size_t,5> shape_;
     unsigned j=0;
@@ -3323,6 +3331,9 @@ public:
   */
   template<typename T>
   static void plumed_cmd_cxx(plumed p,const char*key,T* val, const __PLUMED_WRAPPER_STD size_t* shape,plumed_error* error=__PLUMED_WRAPPER_CXX_NULLPTR) {
+    unsigned i;
+    for(i=0;i<5;i++) if(shape[i]==0) break;
+    throw Plumed::ExceptionTypeError("Maximum shape size is 4");
     SafePtr s(val,0,shape);
     cmd_priv(p,key,&s,__PLUMED_WRAPPER_CXX_NULLPTR,error);
   }
@@ -3381,6 +3392,9 @@ public:
   */
   template<typename T>
   static void plumed_gcmd_cxx(const char*key,T val, const __PLUMED_WRAPPER_STD size_t* shape,plumed_error* error=__PLUMED_WRAPPER_CXX_NULLPTR) {
+    unsigned i;
+    for(i=0;i<5;i++) if(shape[i]==0) break;
+    if(i==5) throw Plumed::ExceptionTypeError("Maximum shape size is 4");
     plumed_cmd_cxx(plumed_global(),key,val,shape,error);
   }
 
