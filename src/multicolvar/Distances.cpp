@@ -201,6 +201,7 @@ void Distances::registerKeywords(Keywords& keys) {
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("COMPONENTS",false,"calculate the x, y and z components of the distance separately and store them as label.x, label.y and label.z");
   keys.addFlag("SCALED_COMPONENTS",false,"calculate the a, b and c scaled components of the distance separately and store them as label.a, label.b and label.c");
+  keys.addFlag("LOWMEM",false,"this flag does nothing and is present only to ensure back-compatibility");
   keys.reset_style("ATOMS","atoms"); MultiColvarShortcuts::shortcutKeywords( keys );
   keys.add("atoms","ORIGIN","calculate the distance of all the atoms specified using the ATOMS keyword from this point");
   keys.add("numbered","LOCATION","the location at which the CV is assumed to be in space");
@@ -216,6 +217,8 @@ Distances::Distances(const ActionOptions& ao):
   ActionShortcut(ao)
 {
   // Create distances
+  bool lowmem; parseFlag("LOWMEM",lowmem);
+  if( lowmem ) warning("LOWMEM flag is deprecated and is no longer required for this action");
   std::string dline = getShortcutLabel() + ": DISTANCE";
   bool nopbc; parseFlag("NOPBC",nopbc); if( nopbc ) dline += " NOPBC";
   if( getName()=="DISTANCES" ) {

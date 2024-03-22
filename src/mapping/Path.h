@@ -32,7 +32,7 @@ public:
   static void registerKeywords(Keywords& keys);
   static void registerInputFileKeywords( Keywords& keys );
   static void readPropertyInformation( const std::vector<std::string>& pnames, const std::string& lab, const std::string& refname, ActionShortcut* action );
-  static void readInputFrames( const std::string& reference, const std::string& type, const std::vector<std::string>& argnames, const bool& displacements, ActionShortcut* action, std::string& reference_data );
+  static void readInputFrames( const std::string& reference, const std::string& type, std::vector<std::string>& argnames, const bool& displacements, ActionShortcut* action, std::string& reference_data );
   static std::string fixArgumentName( const std::string& argin );
   explicit Path(const ActionOptions&);
 };

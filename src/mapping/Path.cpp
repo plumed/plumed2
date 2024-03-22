@@ -222,15 +222,27 @@ void Path::registerInputFileKeywords( Keywords& keys ) {
   keys.add("optional","ARG","the list of arguments you would like to use in your definition of the path");
   keys.add("optional","COEFFICIENTS","the coefficients of the displacements along each argument that should be used when calculating the euclidean distance");
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
-  keys.needsAction("DRMSD"); keys.needsAction("RMSD"); keys.needsAction("LOWEST");
-  keys.needsAction("EUCLIDEAN_DISTANCE"); keys.needsAction("CUSTOM"); keys.needsAction("SUM");
+  keys.addFlag("NOSPATH",false,"do not calculate the spath CV");
+  keys.addFlag("NOZPATH",false,"do not calculate the zpath CV");
+  keys.addFlag("GPATH",false,"calculate the trigonometric path");
+  keys.needsAction("DRMSD"); keys.needsAction("RMSD"); keys.needsAction("LOWEST"); keys.needsAction("GPATH");
+  keys.needsAction("EUCLIDEAN_DISTANCE"); keys.needsAction("CUSTOM"); keys.needsAction("SUM"); keys.needsAction("COMBINE");
   keys.needsAction("NORMALIZED_EUCLIDEAN_DISTANCE"); keys.needsAction("PDB2CONSTANT"); keys.needsAction("CONSTANT");
+  keys.addOutputComponent("gspath","GPATH","the position along the path calculated using the geometric formula");
+  keys.addOutputComponent("gzpath","GPATH","the distance from the path calculated using the geometric formula");
 }
 
 Path::Path( const ActionOptions& ao ):
   Action(ao),
   ActionShortcut(ao)
 {
+  bool nospath, nozpath, gpath; parseFlag("NOSPATH",nospath); parseFlag("NOZPATH",nozpath); parseFlag("GPATH",gpath);
+  if( gpath ) {
+      readInputLine( getShortcutLabel() + ": GPATH " + convertInputLineToString() );
+      readInputLine( getShortcutLabel() + "_gspath: COMBINE ARG=" + getShortcutLabel() + ".s PERIODIC=NO");
+      readInputLine( getShortcutLabel() + "_gzpath: COMBINE ARG=" + getShortcutLabel() + ".s PERIODIC=NO");
+  } 
+  if( nospath && nozpath ) return;
   // Setup the properties
   std::vector<std::string> properties, pnames;
   if( getName()=="PATH") { properties.resize(1); }
@@ -248,7 +260,7 @@ Path::Path( const ActionOptions& ao ):
   // Create denominator
   readInputLine( getShortcutLabel() + "_denom: SUM ARG=" + getShortcutLabel() + "_weights PERIODIC=NO");
   // Now compte zpath variable
-  readInputLine( getShortcutLabel() + "_z: CUSTOM ARG=" + getShortcutLabel() + "_denom," + getShortcutLabel() + "_mindist FUNC=y-log(x)/" + lambda + " PERIODIC=NO");
+  if( !nozpath ) readInputLine( getShortcutLabel() + "_z: CUSTOM ARG=" + getShortcutLabel() + "_denom," + getShortcutLabel() + "_mindist FUNC=y-log(x)/" + lambda + " PERIODIC=NO");
   // Now get coefficients for properies for spath
   readPropertyInformation( pnames, getShortcutLabel(), reference, this );
   // Now create COMBINE objects to compute numerator of path
@@ -257,7 +269,7 @@ Path::Path( const ActionOptions& ao ):
       readInputLine( pnames[i] + "_numer_prod: CUSTOM ARG=" + getShortcutLabel() + "_weights," + pnames[i] + "_ref FUNC=x*y PERIODIC=NO");
       readInputLine( pnames[i] + "_numer: SUM ARG=" + pnames[i]  + "_numer_prod PERIODIC=NO");
       readInputLine( getShortcutLabel() + "_" + pnames[i] + ": CUSTOM ARG=" + pnames[i]  + "_numer," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
-    } else {
+    } else if( !nospath ) {
       readInputLine( getShortcutLabel() + "_s_prod: CUSTOM ARG=" + getShortcutLabel() + "_weights," + getShortcutLabel() + "_ind FUNC=x*y PERIODIC=NO");
       readInputLine( getShortcutLabel()  + "_numer: SUM ARG=" + getShortcutLabel() + "_s_prod PERIODIC=NO");
       readInputLine( getShortcutLabel() + "_s: CUSTOM ARG=" + getShortcutLabel() + "_numer," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
@@ -271,11 +283,10 @@ std::string Path::fixArgumentName( const std::string& argin ) {
   return argout;
 }
 
-void Path::readInputFrames( const std::string& reference, const std::string& type, const std::vector<std::string>& argnames, const bool& displacements, ActionShortcut* action, std::string& reference_data ) {
+void Path::readInputFrames( const std::string& reference, const std::string& type, std::vector<std::string>& argnames, const bool& displacements, ActionShortcut* action, std::string& reference_data ) {
   FILE* fp=std::fopen(reference.c_str(),"r"); PDB pdb; if(!fp) action->error("could not open reference file " + reference );
   bool do_read=pdb.readFromFilepointer(fp,false,0.1); if( !do_read ) action->error("missing file " + reference );
-  std::vector<Value*> theargs; if( argnames.size()>0 ) ActionWithArguments::interpretArgumentList( argnames, action->plumed.getActionSet(), action, theargs );
-  if( pdb.getPositions().size()!=0 && theargs.size()==0 ) {
+  if( pdb.getPositions().size()!=0 && argnames.size()==0 ) {
     reference_data = action->getShortcutLabel() + "_data_ref";
     if( displacements ) action->readInputLine( action->getShortcutLabel() + "_data: RMSD DISPLACEMENT SQUARED REFERENCE=" + reference + " TYPE=" + type );
     else action->readInputLine( action->getShortcutLabel() + "_data: RMSD SQUARED REFERENCE=" + reference + " TYPE=" + type );
@@ -283,7 +294,11 @@ void Path::readInputFrames( const std::string& reference, const std::string& typ
     reference_data = action->getShortcutLabel() + "_atomdata_ref";
     if( displacements ) action->readInputLine( action->getShortcutLabel() + "_atomdata: RMSD DISPLACEMENT SQUARED REFERENCE=" + reference + " TYPE=" + type );
     else action->readInputLine( action->getShortcutLabel() + "_atomdata: RMSD SQUARED REFERENCE=" + reference + " TYPE=" + type );
+  } else if( argnames.size()==0 ) { 
+    argnames.resize( pdb.getArgumentNames().size() );
+    for(unsigned i=0; i<argnames.size(); ++i) argnames[i] = pdb.getArgumentNames()[i];
   }
+  std::vector<Value*> theargs; if( argnames.size()>0 ) ActionWithArguments::interpretArgumentList( argnames, action->plumed.getActionSet(), action, theargs );
 
   if( theargs.size()>0 ) {
     std::string instargs, refargs;

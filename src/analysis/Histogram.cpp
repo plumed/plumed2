@@ -22,6 +22,7 @@
 #include "core/ActionRegister.h"
 #include "core/ActionShortcut.h"
 #include "core/ActionWithValue.h"
+#include "core/ActionWithArguments.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 
@@ -232,11 +233,11 @@ Histogram::Histogram( const ActionOptions& ao ):
 
   std::vector<std::string> arglist; parseVector("ARG",arglist); if( arglist.size()==0 ) parseVector("DATA",arglist);
   if( arglist.size()==0 ) error("arguments have not been specified use ARG");
-  std::string argstr=arglist[0]; for(unsigned i=1; i<arglist.size(); ++i) argstr += "," + arglist[i];
-  // Get the number of elements that are being used when we calculate the KDE
-  ActionWithValue* ab=plumed.getActionSet().selectWithLabel<ActionWithValue*>( arglist[0] );
-  plumed_assert( ab ); std::string strnum; Tools::convert( (ab->copyOutput(0))->getNumberOfValues(), strnum );
-  if( (ab->copyOutput(0))->getNumberOfValues()==1 ) {
+  std::vector<Value*> theargs; ActionWithArguments::interpretArgumentList( arglist, plumed.getActionSet(), this, theargs );
+  plumed_assert( theargs.size()>0 ); std::string argstr=theargs[0]->getName(); 
+  for(unsigned i=1; i<theargs.size(); ++i) argstr += "," + theargs[i]->getName();
+  std::string strnum; Tools::convert( theargs[0]->getNumberOfValues(), strnum );
+  if( theargs[0]->getNumberOfValues()==1 ) {
     // Create the KDE object
     readInputLine( getShortcutLabel() + "_kde: KDE ARG=" + argstr + " " + convertInputLineToString() );
   } else {
