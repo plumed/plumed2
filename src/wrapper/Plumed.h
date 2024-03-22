@@ -1791,7 +1791,7 @@ __PLUMED_WRAPPER_EXTERN_C_END /*}*/
 #if __cplusplus > 199711L
 #include <array> /* array */
 #include <initializer_list> /* initializer_list */
-#include <type_traits> /* std::is_array */
+#include <type_traits> /* std::enable_if */
 #endif
 
 /* C++ interface is hidden in PLMD namespace (same as plumed library) */
@@ -1838,6 +1838,7 @@ struct is_custom_array : std::false_type {
   typedef void value_type;
 };
 
+// Template specialization for std::array
 template<typename T, std::size_t N>
 struct is_custom_array<std::array<T,N>> : std::true_type {
   using value_type = typename std::array<T,N>::value_type;
@@ -1854,12 +1855,13 @@ struct is_array<T[N]> : std::true_type {
   static constexpr std::size_t size = N;
 };
 
-
+// Generic utility to retrieve the size of a container
 template<typename T>
 std::size_t size(const T&obj) {
   return obj.size();
 };
 
+// Specialization for std::string, which returns size()+1, which includes the terminating null character
 template<>
 std::size_t size(const std::string &obj) {
   return obj.size()+1;
@@ -3136,7 +3138,7 @@ public:
   template<typename T>
   void cmd(const char*key,T* val, __PLUMED_WRAPPER_STD size_t nelem) {
 #if __PLUMED_WRAPPER_CXX_DETECT_SHAPES_STRICT
-    static_assert("in strict mode you cannot pass nelem, please pass full shape insteal");
+    static_assert("in strict mode you cannot pass nelem, please pass full shape instead");
 #endif
     cmd_with_nelem(key,val,nelem);
   }
