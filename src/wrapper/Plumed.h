@@ -3019,6 +3019,7 @@ private:
 /// as it is in the case cmd("a",&a)
   template<typename T, typename std::enable_if<!wrapper::is_custom_array<T>::value && !wrapper::has_size_and_data<T>::value && std::is_pointer<T>::value, int>::type = 0>
   void cmd_helper(const char*key,T&& val,bool nocopy=false) {
+    (void) nocopy; // suppress warning
 #if __PLUMED_WRAPPER_CXX_DETECT_SHAPES_STRICT
     // this would be strict checking
     // "a pointer without a specified size is meant to be pointing to a size 1 object"
