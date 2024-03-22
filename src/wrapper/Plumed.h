@@ -3236,8 +3236,6 @@ public:
   */
   template<typename T>
   void cmd(const char*key,T* val, std::initializer_list<std::size_t> shape) {
-    unsigned i;
-    for(i=0;i<5;i++) if(shape[i]==0) break;
     if(shape.size()>4) throw Plumed::ExceptionTypeError("Maximum shape size is 4");
     std::array<std::size_t,5> shape_;
     unsigned j=0;
@@ -3333,7 +3331,7 @@ public:
   static void plumed_cmd_cxx(plumed p,const char*key,T* val, const __PLUMED_WRAPPER_STD size_t* shape,plumed_error* error=__PLUMED_WRAPPER_CXX_NULLPTR) {
     unsigned i;
     for(i=0;i<5;i++) if(shape[i]==0) break;
-    throw Plumed::ExceptionTypeError("Maximum shape size is 4");
+    if(i==5) throw Plumed::ExceptionTypeError("Maximum shape size is 4");
     SafePtr s(val,0,shape);
     cmd_priv(p,key,&s,__PLUMED_WRAPPER_CXX_NULLPTR,error);
   }
