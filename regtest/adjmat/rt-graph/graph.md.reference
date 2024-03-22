@@ -24,7 +24,7 @@ s(["label=s
  SUM 
 "])
 end
-c1 -- c1.w --> 1
+c1 -- c1 --> 1
 linkStyle 2 stroke:red,color:red;
 1("label=#64;1 
  PRINT
@@ -33,7 +33,7 @@ FILE=colvar
 ones(["label=ones 
  CONSTANT 
 "])
-c1 -- c1.w --> cc
+c1 -- c1 --> cc
 linkStyle 3 stroke:red,color:red;
 ones -- ones --> cc
 linkStyle 4 stroke:blue,color:blue;

@@ -1,11 +1,11 @@
 # Test of row/column sums for symmetric matrix
 
 mat: CONTACT_MATRIX GROUP=1-10 SWITCH={RATIONAL R_0=1.0} 
-matT: TRANSPOSE ARG=mat.w
+matT: TRANSPOSE ARG=mat
 ones: ONES SIZE=10
 csums: MATRIX_VECTOR_PRODUCT ARG=matT,ones
 csums_mean: MEAN ARG=csums PERIODIC=NO
-rsums: MATRIX_VECTOR_PRODUCT ARG=mat.w,ones 
+rsums: MATRIX_VECTOR_PRODUCT ARG=mat,ones 
 rsums_mean: MEAN ARG=rsums PERIODIC=NO
 
 COORDINATIONNUMBER SPECIES=1-10 SWITCH={RATIONAL R_0=1.0} MEAN LABEL=c1
@@ -27,9 +27,9 @@ PRINT ARG=a1_mean,a2.*,a3.* FILE=colv-around FMT=%8.4f
 
 CONTACT_MATRIX GROUPA=1-5 GROUPB=6-15 SWITCH={RATIONAL R_0=1.0} LABEL=mat2 
 rones: ONES SIZE=10
-rsums2: MATRIX_VECTOR_PRODUCT ARG=mat2.w,rones 
+rsums2: MATRIX_VECTOR_PRODUCT ARG=mat2,rones 
 rsums2_mean: MEAN ARG=rsums2 PERIODIC=NO
-csums2T: TRANSPOSE ARG=mat2.w
+csums2T: TRANSPOSE ARG=mat2
 cones: ONES SIZE=5
 csums2:  MATRIX_VECTOR_PRODUCT ARG=csums2T,cones 
 csums2_mean: MEAN ARG=csums2 PERIODIC=NO 

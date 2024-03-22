@@ -87,7 +87,7 @@ ClusterDiameter::ClusterDiameter(const ActionOptions& ao):
   // Matrix of bonds in cluster
   readInputLine( getShortcutLabel() + "_bmat: OUTER_PRODUCT FUNC=x*y ARG=" + arg_str + "," + arg_str );
   // Product of matrices
-  readInputLine( getShortcutLabel() + "_dcls: CUSTOM ARG=" + getShortcutLabel() + "_dmat.w," + getShortcutLabel() + "_bmat FUNC=x*y PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_dcls: CUSTOM ARG=" + getShortcutLabel() + "_dmat," + getShortcutLabel() + "_bmat FUNC=x*y PERIODIC=NO");
   // Convert matrix to a vector to get highest
   readInputLine( getShortcutLabel() + "_vdcls: FLATTEN ARG=" + getShortcutLabel() + "_dcls" );
   // And take the highest value

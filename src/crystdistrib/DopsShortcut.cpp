@@ -95,7 +95,7 @@ DopsShortcut::DopsShortcut(const ActionOptions&ao):
   // Setup the contact matrix
   readInputLine( getShortcutLabel() + "_cmat: DISTANCE_MATRIX  " + grpinfo + " CUTOFF=" + cutstr);
   // And the kernels
-  readInputLine( getShortcutLabel() + "_kval: CUSTOM ARG=" + getShortcutLabel() + "_cmat.w PERIODIC=NO FUNC=" + kfunc );
+  readInputLine( getShortcutLabel() + "_kval: CUSTOM ARG=" + getShortcutLabel() + "_cmat PERIODIC=NO FUNC=" + kfunc );
   // Find the number of ones we need to multiply by
   ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_cmat");
   plumed_assert( av && av->getNumberOfComponents()>0 && (av->copyOutput(0))->getRank()==2 );

@@ -203,14 +203,15 @@ PLUMED_REGISTER_ACTION(Histogram,"HISTOGRAM")
 void Histogram::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys ); keys.use("UPDATE_FROM"); keys.use("UPDATE_UNTIL");
   keys.add("compulsory","NORMALIZATION","ndata","This controls how the data is normalized it can be set equal to true, false or ndata.  See above for an explanation");
-  keys.add("compulsory","ARG","the quantity that is being averaged");
+  keys.add("optional","ARG","the quantity that is being averaged");
+  keys.add("optional","DATA","an alternative to the ARG keyword");
   keys.add("compulsory","GRID_MIN","auto","the lower bounds for the grid");
   keys.add("compulsory","GRID_MAX","auto","the upper bounds for the grid");
   keys.add("optional","BANDWIDTH","the bandwidths for kernel density esimtation");
   keys.add("compulsory","KERNEL","GAUSSIAN","the kernel function you are using.  More details on  the kernels available "
            "in plumed plumed can be found in \\ref kernelfunctions.");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
-  keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)"); 
+  keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
   keys.add("optional","LOGWEIGHTS","the logarithm of the quantity to use as the weights when calculating averages");
   keys.add("compulsory","STRIDE","1","the frequency with which to store data for averaging");
   keys.add("compulsory","CLEAR","0","the frequency with whihc to clear the data that is being averaged");
@@ -229,8 +230,9 @@ Histogram::Histogram( const ActionOptions& ao ):
     readInputLine( getShortcutLabel() + "_weight: CUSTOM ARG=" + getShortcutLabel() + "_wsum FUNC=exp(x) PERIODIC=NO");
   } else readInputLine( getShortcutLabel() + "_weight: ONES SIZE=1" );
 
-  std::vector<std::string> arglist; parseVector("ARG",arglist); std::string argstr=arglist[0];
-  for(unsigned i=1; i<arglist.size(); ++i) argstr += "," + arglist[i];
+  std::vector<std::string> arglist; parseVector("ARG",arglist); if( arglist.size()==0 ) parseVector("DATA",arglist);
+  if( arglist.size()==0 ) error("arguments have not been specified use ARG");
+  std::string argstr=arglist[0]; for(unsigned i=1; i<arglist.size(); ++i) argstr += "," + arglist[i];
   // Get the number of elements that are being used when we calculate the KDE
   ActionWithValue* ab=plumed.getActionSet().selectWithLabel<ActionWithValue*>( arglist[0] );
   plumed_assert( ab ); std::string strnum; Tools::convert( (ab->copyOutput(0))->getNumberOfValues(), strnum );

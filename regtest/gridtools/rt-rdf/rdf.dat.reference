@@ -1,8 +1,8 @@
-#! FIELDS rdf_mat.w rdf drdf_rdf_mat.w
-#! SET min_rdf_mat.w 0
-#! SET max_rdf_mat.w 2.5
-#! SET nbins_rdf_mat.w  25
-#! SET periodic_rdf_mat.w false
+#! FIELDS rdf_mat rdf drdf_rdf_mat
+#! SET min_rdf_mat 0
+#! SET max_rdf_mat 2.5
+#! SET nbins_rdf_mat  25
+#! SET periodic_rdf_mat false
    0.0000   0.0000   0.0000
    0.1000   0.0000   0.0000
    0.2000   0.0000   0.0000

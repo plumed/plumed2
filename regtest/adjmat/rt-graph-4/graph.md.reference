@@ -13,7 +13,7 @@ cc_cncn(["label=cc_cncn
 "])
 end
 style subcm_cncn_mat fill:lightblue
-cm_cncn -. cm_cncn.w .-> cc_cncn
+cm_cncn -. cm_cncn .-> cc_cncn
 linkStyle 1 stroke:red,color:red;
 mt_cncn(["label=mt_cncn 
  MORE_THAN 
@@ -29,7 +29,7 @@ cc_cnpb(["label=cc_cnpb
 "])
 end
 style subcm_cnpb_mat fill:lightblue
-cm_cnpb -. cm_cnpb.w .-> cc_cnpb
+cm_cnpb -. cm_cnpb .-> cc_cnpb
 linkStyle 3 stroke:red,color:red;
 mt_cnpb(["label=mt_cnpb 
  MORE_THAN 
@@ -45,7 +45,7 @@ cc_cnI(["label=cc_cnI
 "])
 end
 style subcm_cnI_mat fill:lightblue
-cm_cnI -. cm_cnI.w .-> cc_cnI
+cm_cnI -. cm_cnI .-> cc_cnI
 linkStyle 5 stroke:red,color:red;
 mt_cnI(["label=mt_cnI 
  MORE_THAN 

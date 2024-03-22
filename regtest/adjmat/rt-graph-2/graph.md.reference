@@ -13,7 +13,7 @@ cc(["label=cc
 "])
 end
 style subc1_mat fill:lightblue
-c1 -. c1.w .-> cc
+c1 -. c1 .-> cc
 linkStyle 1 stroke:red,color:red;
 mtc(["label=mtc 
  MORE_THAN 

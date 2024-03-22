@@ -98,6 +98,7 @@ PLUMED_REGISTER_ACTION(VolumeAroundShortcut,"AROUND")
 void VolumeAround::registerKeywords( Keywords& keys ) {
   ActionVolume::registerKeywords( keys );
   keys.add("atoms","ORIGIN","the atom whose vicinity we are interested in examining");
+  keys.add("atoms-2","ATOM","an alternative to ORIGIN");
   keys.add("compulsory","XLOWER","0.0","the lower boundary in x relative to the x coordinate of the atom (0 indicates use full extent of box).");
   keys.add("compulsory","XUPPER","0.0","the upper boundary in x relative to the x coordinate of the atom (0 indicates use full extent of box).");
   keys.add("compulsory","YLOWER","0.0","the lower boundary in y relative to the y coordinate of the atom (0 indicates use full extent of box).");
@@ -110,8 +111,8 @@ VolumeAround::VolumeAround(const ActionOptions& ao):
   Action(ao),
   ActionVolume(ao)
 {
-  std::vector<AtomNumber> atom;
-  parseAtomList("ORIGIN",atom);
+  std::vector<AtomNumber> atom; parseAtomList("ORIGIN",atom);
+  if( atom.size()==0 ) parseAtomList("ATOM",atom);
   if( atom.size()!=1 ) error("should only be one atom specified");
   log.printf("  boundaries for region are calculated based on positions of atom : %d\n",atom[0].serial() );
 

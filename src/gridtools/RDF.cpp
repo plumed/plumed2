@@ -101,14 +101,14 @@ RDF::RDF(const ActionOptions&ao):
   readInputLine( getShortcutLabel() + "_mat: DISTANCE_MATRIX CUTOFF=" + cutoff + " " + atom_str);
 
   // Calculate weights of distances
-  readInputLine( getShortcutLabel() + "_wmat: CUSTOM ARG=" + getShortcutLabel() + "_mat.w FUNC=step(" + cutoff + "-x) PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_wmat: CUSTOM ARG=" + getShortcutLabel() + "_mat FUNC=step(" + cutoff + "-x) PERIODIC=NO");
   // Now create a histogram from the contact matrix
   unsigned clear, stride; parse("CLEAR",clear); parse("STRIDE",stride);
   if( clear==1 ) {
-    readInputLine( getShortcutLabel() + "_kde: KDE ARG=" + getShortcutLabel() + "_mat.w VOLUMES=" + getShortcutLabel() + "_wmat " + grid_setup + " " + kernel_data);
+    readInputLine( getShortcutLabel() + "_kde: KDE ARG=" + getShortcutLabel() + "_mat VOLUMES=" + getShortcutLabel() + "_wmat " + grid_setup + " " + kernel_data);
   } else {
     std::string stridestr, clearstr; Tools::convert( stride, stridestr ); Tools::convert( clear, clearstr );
-    readInputLine( getShortcutLabel() + "_okde: KDE ARG=" + getShortcutLabel() + "_mat.w HEIGHTS=" + getShortcutLabel() + "_wmat " + grid_setup + " " + kernel_data);
+    readInputLine( getShortcutLabel() + "_okde: KDE ARG=" + getShortcutLabel() + "_mat HEIGHTS=" + getShortcutLabel() + "_wmat " + grid_setup + " " + kernel_data);
     readInputLine( getShortcutLabel() + "_kde: ACCUMULATE ARG=" + getShortcutLabel() + "_okde STRIDE=" + stridestr + " CLEAR=" + clearstr );
     readInputLine( getShortcutLabel() + "_one: CONSTANT VALUE=1");
     readInputLine( getShortcutLabel() + "_norm: ACCUMULATE ARG=" + getShortcutLabel() + "_one STRIDE=" + stridestr + " CLEAR=" + clearstr );

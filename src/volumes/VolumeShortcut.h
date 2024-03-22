@@ -23,6 +23,10 @@
 #define __PLUMED_volumes_VolumeShortcut_h
 
 #include "core/ActionShortcut.h"
+#include "core/ActionRegister.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
+#include "core/Group.h"
 
 namespace PLMD {
 namespace volumes {
@@ -36,9 +40,9 @@ public:
 
 template <const char* v>
 void VolumeShortcut<v>::registerKeywords( Keywords& keys ) {
-  ActionShortcut::registerKeywords( keys );
+  actionRegister().getKeywords( std::string(v) + "_CALC", keys );
+  keys.add("hidden","IS_SHORTCUT","hidden keyword to tell if actions are shortcuts so that example generator can provide expansions of shortcuts");
   keys.add("optional","DATA","the label of an action that calculates multicolvars.  Weighted sums based on the location of the colvars calculated by this action will be calcualted");
-  keys.add("optional","ATOMS","the atoms to use for the positions of the multicolvars");
   keys.add("optional","LESS_THAN","calcualte the number of colvars that are inside the region of interest and that are less than a certain threshold");
   keys.addOutputComponent("lessthan","LESS_THAN","the number of cvs in the region of interest that are less than a certain threshold");
   keys.add("optional","MORE_THAN","calcualte the number of colvars that are inside the region of interest and that are greater that a certain threshold");
@@ -49,7 +53,7 @@ void VolumeShortcut<v>::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("sum","SUM","the sum of all the colvars weighted by the function that determines if we are in the region");
   keys.addFlag("MEAN",false,"calculate the average value of the colvar inside the region of interest");
   keys.addOutputComponent("mean","MEAN","the average values of the colvar in the region of interest");
-  keys.addActionNameSuffix("_CALC"); keys.needsAction("LESS_THAN"); keys.needsAction("MORE_THAN");
+  keys.addActionNameSuffix("_CALC"); keys.needsAction("LESS_THAN"); keys.needsAction("MORE_THAN"); keys.needsAction("GROUP");
   keys.needsAction("BETWEEN"); keys.needsAction("SUM"); keys.needsAction("MEAN"); keys.needsAction("CUSTOM");
 }
 
@@ -60,6 +64,9 @@ VolumeShortcut<v>::VolumeShortcut(const ActionOptions&ao):
 {
   std::string voltype(v), mc_lab; parse("DATA",mc_lab); bool dosum; parseFlag("SUM",dosum);
   if( mc_lab.length()>0 ) {
+    Group* mygrp = plumed.getActionSet().template selectWithLabel<Group*>(mc_lab);
+    Group* mygrp2 = plumed.getActionSet().template selectWithLabel<Group*>(mc_lab + "_grp");
+    if( mygrp || mygrp2 ) readInputLine( getShortcutLabel() + "_grp: GROUP ATOMS=" + mc_lab );
     bool domean; parseFlag("MEAN",domean); std::string lt_input, mt_input, bt_input;
     parse("LESS_THAN",lt_input); parse("MORE_THAN",mt_input); parse("BETWEEN",bt_input);
     std::string atomsd; parse("ATOMS",atomsd); if( atomsd.length()==0 ) atomsd=mc_lab;
