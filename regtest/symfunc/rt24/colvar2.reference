@@ -1,4 +1,4 @@
-#! FIELDS time c2_moments-2 c2_moments-3 c2_lessthan-1 c2_lessthan-2
+#! FIELDS time c2_moment-2 c2_moment-3 c2_lessthan-1 c2_lessthan-2
  0.000000   0.0383  -0.0032   0.0005   0.0019
  0.005000   0.0427  -0.0041   0.0006   0.0023
  0.010000   0.0585  -0.0020   0.0008   0.0029
