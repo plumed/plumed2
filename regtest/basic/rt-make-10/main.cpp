@@ -174,9 +174,9 @@ int main(){
     COPY_IN(quantity,size) \
     try {
 
-#define FINAL(quantity,size) \
+#define FINAL(quantity,size_) \
       p.cmd("calc"); \
-      COPY_OUT(quantity,size) \
+      COPY_OUT(quantity,size_) \
       if(should_fail) output << "error"; \
       else output << "ok"; \
       output << " - successful\n"; \
@@ -186,7 +186,7 @@ int main(){
       else output << "ok"; \
       output << " - caught: "; \
       std::string msg(e.what()); \
-      msg=msg.substr(1); \
+      if(msg.size()>0 && msg[0]=='\n') msg=msg.substr(1); \
       output << msg.substr(0,msg.find("\n"))<<"\n"; \
     } \
   }
@@ -374,5 +374,19 @@ int main(){
     p.cmd("setVirial",return_virial());
   FINAL(positions,3*natoms)
     
+  // fails because shape size is larger than requested
+  INIT_FAIL((number++))
+    double virial[9];
+  MID(virial,9)
+    p.cmd("setVirial",&virial[0],{6,3,3,2});
+  FINAL(virial,9)
+
+  // fails because shape size is larger than allowed
+  INIT_FAIL((number++))
+    double virial[9];
+  MID(virial,9)
+    p.cmd("setVirial",&virial[0],{6,3,3,2,1});
+  FINAL(virial,9)
+
   return 0;
 }

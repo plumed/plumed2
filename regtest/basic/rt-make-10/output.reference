@@ -120,3 +120,5 @@ caught &natoms_float
 0.444444 0.444444 0.444444 0.333333 0.333333 0.333333 0.222222 0.222222 0.222222 0.111111 0.111111 0.111111 0 0 0 -0.111111 -0.111111 -0.111111 -0.222222 -0.222222 -0.222222 -0.333333 -0.333333 -0.333333 -0.444444 -0.444444 -0.444444 
 6.66667 6.66667 6.66667 6.66667 6.66667 6.66667 6.66667 6.66667 6.66667 
 27 ok - caught: PLUMED is trying to copy the pointer of an object for which this was forbidden
+28 ok - caught: Incorrect number of axis (passed greater than requested)
+29 ok - caught: Maximum shape size is 4
