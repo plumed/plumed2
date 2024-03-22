@@ -165,6 +165,8 @@ PLUMED_REGISTER_ACTION(ClusterDistributionShortcut,"CLUSTER_DISTRIBUTION")
 
 void ClusterDistributionShortcut::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
+  keys.add("compulsory","CLUSTERS","the label of the action that does the clustering");
+  keys.add("optional","WEIGHTS","use the vector of values calculated by this action as weights rather than giving each atom a unit weight");
   multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
   keys.addActionNameSuffix("_CALC");
 }
