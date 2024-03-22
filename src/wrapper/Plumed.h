@@ -1844,6 +1844,12 @@ struct is_custom_array<std::array<T,N>> : std::true_type {
   using value_type = typename std::array<T,N>::value_type;
 };
 
+// Template specialization for C arrays
+template<typename T, std::size_t N>
+struct is_custom_array<T[N]> : std::true_type {
+  using value_type = typename std::remove_reference<decltype(std::declval<T[N]>()[0])>::type;
+};
+
 // Primary template, remains undefined for non-array types
 template<typename T>
 struct is_array : std::false_type {};
@@ -3035,16 +3041,8 @@ private:
     cmd_priv(main,key,&s);
   }
 
-/// cmd_helper_with_shape with C array val.
-  template<typename T, typename std::enable_if<wrapper::is_array<T>::value, int>::type = 0>
-  void cmd_helper_with_shape(const char*key,T* val, __PLUMED_WRAPPER_STD size_t* shape,bool nocopy=false) {
-    auto newptr=reinterpret_cast<typename wrapper::is_array<T>::value_type*>(val);
-    auto newshape=append_size(shape,wrapper::is_array<T>::size);
-    cmd_helper_with_shape(key,newptr,newshape.data(),nocopy);
-  }
-
-/// cmd_helper_with_shape with custom array val (includes std::array)
-  template<typename T, typename std::enable_if<!wrapper::is_array<T>::value && wrapper::is_custom_array<T>::value, int>::type = 0>
+/// cmd_helper_with_shape with custom array val (includes std::array and C arrays)
+  template<typename T, typename std::enable_if<wrapper::is_custom_array<T>::value, int>::type = 0>
   void cmd_helper_with_shape(const char*key,T* val, __PLUMED_WRAPPER_STD size_t* shape,bool nocopy=false) {
     using value_type = typename wrapper::is_custom_array<T>::value_type;
     constexpr std::size_t value_size=sizeof(value_type);
@@ -3056,23 +3054,15 @@ private:
   }
 
 /// cmd_helper_with_shape with pointer to simple type val.
-  template<typename T, typename std::enable_if<!wrapper::is_array<T>::value && !wrapper::is_custom_array<T>::value, int>::type = 0>
+  template<typename T, typename std::enable_if<!wrapper::is_custom_array<T>::value, int>::type = 0>
   void cmd_helper_with_shape(const char*key,T* val, __PLUMED_WRAPPER_STD size_t* shape,bool nocopy=false) {
     SafePtr s(val,0,shape);
     if(nocopy) s.safe.flags |= 0x10000000;
     cmd_priv(main,key,&s);
   }
 
-/// cmd_helper_with_nelem with C array val.
-  template<typename T, typename std::enable_if<wrapper::is_array<T>::value, int>::type = 0>
-  void cmd_with_nelem(const char*key,T* val, __PLUMED_WRAPPER_STD size_t nelem) {
-    auto newptr=reinterpret_cast<typename wrapper::is_array<T>::value_type*>(val);
-    auto newnelem=nelem*wrapper::is_array<T>::size;
-    cmd_with_nelem(key,newptr,newnelem);
-  }
-
 /// cmd_helper_with_nelem with custom array val (includes std::array)
-  template<typename T, typename std::enable_if<!wrapper::is_array<T>::value && wrapper::is_custom_array<T>::value, int>::type = 0>
+  template<typename T, typename std::enable_if<wrapper::is_custom_array<T>::value, int>::type = 0>
   void cmd_with_nelem(const char*key,T* val, __PLUMED_WRAPPER_STD size_t nelem) {
     using value_type = typename wrapper::is_custom_array<T>::value_type;
     constexpr std::size_t value_size=sizeof(value_type);
@@ -3084,7 +3074,7 @@ private:
   }
 
 /// cmd_helper_with_nelem with pointer to simple type val.
-  template<typename T, typename std::enable_if<!wrapper::is_array<T>::value && !wrapper::is_custom_array<T>::value, int>::type = 0>
+  template<typename T, typename std::enable_if<!wrapper::is_custom_array<T>::value, int>::type = 0>
   void cmd_with_nelem(const char*key,T* val, __PLUMED_WRAPPER_STD size_t nelem) {
     // pointer or value, directly managed by SafePtr
     SafePtr s(val,nelem,nullptr);
