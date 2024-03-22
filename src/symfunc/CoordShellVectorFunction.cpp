@@ -168,22 +168,22 @@ CoordShellVectorFunction::CoordShellVectorFunction(const ActionOptions& ao):
     CoordinationNumbers::expandMatrix( true, getShortcutLabel(),  sp_str, specA, specB, this );
   } else error("found no input atoms use SPECIES/SPECIESA");
   double phi, theta, psi; parse("PHI",phi); parse("THETA",theta); parse("PSI",psi);
-  std::vector<std::string> rotelements(9); std::string xvec = matlab + ".x", yvec = matlab + ".y", zvec = matlab + ".z"; 
+  std::vector<std::string> rotelements(9); std::string xvec = matlab + ".x", yvec = matlab + ".y", zvec = matlab + ".z";
   if( phi!=0 || theta!=0 || psi!=0 ) {
-      Tools::convert( std::cos(psi)*std::cos(phi)-std::cos(theta)*std::sin(phi)*std::sin(psi), rotelements[0] );
-      Tools::convert( std::cos(psi)*std::sin(phi)+std::cos(theta)*std::cos(phi)*std::sin(psi), rotelements[1] );
-      Tools::convert( std::sin(psi)*std::sin(theta), rotelements[2] );
+    Tools::convert( std::cos(psi)*std::cos(phi)-std::cos(theta)*std::sin(phi)*std::sin(psi), rotelements[0] );
+    Tools::convert( std::cos(psi)*std::sin(phi)+std::cos(theta)*std::cos(phi)*std::sin(psi), rotelements[1] );
+    Tools::convert( std::sin(psi)*std::sin(theta), rotelements[2] );
 
-      Tools::convert( -std::sin(psi)*std::cos(phi)-std::cos(theta)*std::sin(phi)*std::cos(psi), rotelements[3] );
-      Tools::convert( -std::sin(psi)*std::sin(phi)+std::cos(theta)*std::cos(phi)*std::cos(psi), rotelements[4] );
-      Tools::convert( std::cos(psi)*std::sin(theta), rotelements[5] );
+    Tools::convert( -std::sin(psi)*std::cos(phi)-std::cos(theta)*std::sin(phi)*std::cos(psi), rotelements[3] );
+    Tools::convert( -std::sin(psi)*std::sin(phi)+std::cos(theta)*std::cos(phi)*std::cos(psi), rotelements[4] );
+    Tools::convert( std::cos(psi)*std::sin(theta), rotelements[5] );
 
-      Tools::convert( std::sin(theta)*std::sin(phi), rotelements[6] );
-      Tools::convert( -std::sin(theta)*std::cos(phi), rotelements[7] );
-      Tools::convert( std::cos(theta), rotelements[8] );
-      readInputLine( getShortcutLabel() + "_xrot: CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z FUNC=" + rotelements[0] + "*x+" + rotelements[1] + "*y+" + rotelements[2] + "*z PERIODIC=NO"); 
-      readInputLine( getShortcutLabel() + "_yrot: CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z FUNC=" + rotelements[3] + "*x+" + rotelements[4] + "*y+" + rotelements[5] + "*z PERIODIC=NO");
-      readInputLine( getShortcutLabel() + "_zrot: CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z FUNC=" + rotelements[6] + "*x+" + rotelements[7] + "*y+" + rotelements[8] + "*z PERIODIC=NO");
+    Tools::convert( std::sin(theta)*std::sin(phi), rotelements[6] );
+    Tools::convert( -std::sin(theta)*std::cos(phi), rotelements[7] );
+    Tools::convert( std::cos(theta), rotelements[8] );
+    readInputLine( getShortcutLabel() + "_xrot: CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z FUNC=" + rotelements[0] + "*x+" + rotelements[1] + "*y+" + rotelements[2] + "*z PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_yrot: CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z FUNC=" + rotelements[3] + "*x+" + rotelements[4] + "*y+" + rotelements[5] + "*z PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_zrot: CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z FUNC=" + rotelements[6] + "*x+" + rotelements[7] + "*y+" + rotelements[8] + "*z PERIODIC=NO");
   }
   // Calculate FCC cubic function from bond vectors
   if( getName()=="FCCUBIC" ) {

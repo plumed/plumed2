@@ -84,7 +84,7 @@ AlphaBeta::AlphaBeta(const ActionOptions& ao):
       if( i==0 ) coeffstr = coeff; else coeffstr += "," + coeff;
       ncoeff++;
     }
-  } 
+  }
   if( coeffstr.length()==0 ) coeffstr="1";
   // Calculate angles
   readInputLine( getShortcutLabel() + "_torsions: TORSION " + convertInputLineToString() );
@@ -94,7 +94,7 @@ AlphaBeta::AlphaBeta(const ActionOptions& ao):
     std::string refval=refstr; for(unsigned i=1; i<(av->copyOutput(0))->getShape()[0]; ++i) refstr += "," + refval;
   } else if( nref!=(av->copyOutput(0))->getShape()[0] ) error("mismatch between number of reference values and number of ATOMS specified");
   if( ncoeff==0 ) {
-    std::string coeff=coeffstr; for(unsigned i=1; i<(av->copyOutput(0))->getShape()[0]; ++i) coeffstr += "," + coeff;  
+    std::string coeff=coeffstr; for(unsigned i=1; i<(av->copyOutput(0))->getShape()[0]; ++i) coeffstr += "," + coeff;
   } else if( ncoeff!=(av->copyOutput(0))->getShape()[0] ) error("mismatch between number of coefficients and number of ATOMS specified");
   readInputLine( getShortcutLabel() + "_ref: CONSTANT VALUES=" + refstr );
   readInputLine( getShortcutLabel() + "_coeff: CONSTANT VALUES=" + coeffstr );

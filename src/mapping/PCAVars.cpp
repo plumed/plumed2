@@ -284,8 +284,8 @@ PCAVars::PCAVars( const ActionOptions& ao ):
   else if( pdb.getPositions().size()>0 ) readInputLine( getShortcutLabel() + "_eig: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_peig," + getShortcutLabel() + "_at.disp");
   else if( theargs.size()>0 ) readInputLine( getShortcutLabel() + "_eig: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_peig," + getShortcutLabel() + "_argdist_diffT");
   for(unsigned i=0; i<nfram; ++i) {
-      std::string num; Tools::convert( i+1, num ); 
-      readInputLine( getShortcutLabel() + "_eig-" + num + ": SELECT_COMPONENTS ARG=" + getShortcutLabel() + "_eig COMPONENTS=" + num );
+    std::string num; Tools::convert( i+1, num );
+    readInputLine( getShortcutLabel() + "_eig-" + num + ": SELECT_COMPONENTS ARG=" + getShortcutLabel() + "_eig COMPONENTS=" + num );
   }
   readInputLine( getShortcutLabel() + "_eig2: CUSTOM ARG=" + getShortcutLabel() + "_eig FUNC=x*x PERIODIC=NO");
   readInputLine( getShortcutLabel() + "_eigsum2: SUM ARG=" +  getShortcutLabel() + "_eig2 PERIODIC=NO");
