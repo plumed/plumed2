@@ -98,6 +98,7 @@ PLUMED_REGISTER_ACTION(VolumeInSphereShortcut,"INSPHERE")
 void VolumeInSphere::registerKeywords( Keywords& keys ) {
   ActionVolume::registerKeywords( keys );
   keys.add("atoms","CENTER","the atom whose vicinity we are interested in examining");
+  keys.add("atoms-2","ATOM","the atom whose vicinity we are interested in examining");
   keys.add("compulsory","RADIUS","the switching function that tells us the extent of the sphereical region of interest");
   keys.remove("SIGMA");
 }
@@ -106,8 +107,8 @@ VolumeInSphere::VolumeInSphere(const ActionOptions& ao):
   Action(ao),
   ActionVolume(ao)
 {
-  std::vector<AtomNumber> atom;
-  parseAtomList("CENTER",atom);
+  std::vector<AtomNumber> atom; parseAtomList("CENTER",atom);
+  if( atom.size()==0 ) parseAtomList("ATOM",atom);
   if( atom.size()!=1 ) error("should only be one atom specified");
   log.printf("  center of sphere is at position of atom : %d\n",atom[0].serial() );
 

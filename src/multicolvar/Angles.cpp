@@ -108,6 +108,7 @@ void Angles::registerKeywords( Keywords& keys ) {
            "involving one atom from GROUPA, one atom from GROUPB and one atom from "
            "GROUPC are calculated. The GROUPA atoms are assumed to be the central "
            "atoms");
+  keys.add("optional","SWITCH","the switching function specifies that only those bonds that have a length that is less than a certain threshold are considered");
   MultiColvarShortcuts::shortcutKeywords( keys ); keys.needsAction("ANGLE");
 }
 
@@ -115,6 +116,13 @@ Angles::Angles(const ActionOptions&ao):
   Action(ao),
   ActionShortcut(ao)
 {
+  std::string swit; parse("SWITCH",swit);
+  if( swit.length()>0 ) {
+      std::string cat, grp; parse("GROUPA",cat); parse("GROUPB",grp);
+      if( cat.length()==0 || grp.length()==0 ) error("must use GROUPA/GROUPB when using SWITCH"); 
+      readInputLine( getShortcutLabel() + ": COORD_ANGLES SWITCH={" +  swit + "} CATOMS=" + cat + " GROUP=" + grp ); 
+      return;
+  }
   std::vector<std::string> group; parseVector("GROUP",group);
   std::vector<std::string> groupa; parseVector("GROUPA",groupa);
   std::vector<std::string> groupb; parseVector("GROUPB",groupb);
