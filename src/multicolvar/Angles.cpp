@@ -109,7 +109,7 @@ void Angles::registerKeywords( Keywords& keys ) {
            "GROUPC are calculated. The GROUPA atoms are assumed to be the central "
            "atoms");
   keys.add("optional","SWITCH","the switching function specifies that only those bonds that have a length that is less than a certain threshold are considered");
-  MultiColvarShortcuts::shortcutKeywords( keys ); keys.needsAction("ANGLE");
+  MultiColvarShortcuts::shortcutKeywords( keys ); keys.needsAction("ANGLE"); keys.needsAction("COORD_ANGLES");
 }
 
 Angles::Angles(const ActionOptions&ao):
