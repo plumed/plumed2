@@ -31,8 +31,8 @@ Calculate RMSD distances for different domains and combine them.
 
 This action is largely depracated.  In previous versions of PLUMED a more complex version of this method was implemented.
 We felt, however, that the input syntax for the method was not very transparant.  We have thus provided this minimal action
-that creates the input for calculating the MultiDomain RMSD for simple cases.  This action is a shortcut.  If you look at the log you can see how we 
-use the various actions that are in PLUMED to calculate the final quantity.  If you would like to implement some of the more 
+that creates the input for calculating the MultiDomain RMSD for simple cases.  This action is a shortcut.  If you look at the log you can see how we
+use the various actions that are in PLUMED to calculate the final quantity.  If you would like to implement some of the more
 complicated CVs things that this could do with MULTI_RMSD looking at how this shortcut works will help you start.
 
 
@@ -68,12 +68,12 @@ MultiRMSD::MultiRMSD(const ActionOptions& ao):
 {
   warning("this action is depracated.  look at the log to see how it is implemented using the new syntax");
   std::string type; parse("TYPE",type); bool nopbc; parseFlag("NOPBC",nopbc);
-  std::size_t dash=type.find_first_of("-"); 
-  if( dash!=std::string::npos ) { 
-      if( type.substr(0,dash)=="MULTI" ) warning("MULTI is deprecated.  You can just use OPTIMAL/SIMPLE");
-      else error("cannot understand type " + type );
-      type = type.substr(dash+1);
-  } 
+  std::size_t dash=type.find_first_of("-");
+  if( dash!=std::string::npos ) {
+    if( type.substr(0,dash)=="MULTI" ) warning("MULTI is deprecated.  You can just use OPTIMAL/SIMPLE");
+    else error("cannot understand type " + type );
+    type = type.substr(dash+1);
+  }
   std::string reference; parse("REFERENCE",reference); PDB pdb;
   if( !pdb.read(reference,usingNaturalUnits(),0.1/getUnits().getLength()) ) error("missing input file " + reference );
 
@@ -85,14 +85,14 @@ MultiRMSD::MultiRMSD(const ActionOptions& ao):
   for(unsigned i=1; i<=nblocks; ++i) {
     // Setup a constant
     double asum=0; std::string bnum; Tools::convert( i, bnum );
-    for(unsigned j=blocks[i-1]; j<blocks[i]; ++j) asum += pdb.getOccupancy()[j];  
+    for(unsigned j=blocks[i-1]; j<blocks[i]; ++j) asum += pdb.getOccupancy()[j];
     Vector center; center.zero();
-    for(unsigned j=blocks[i-1]; j<blocks[i]; ++j) center += ( pdb.getOccupancy()[j] / asum )*pdb.getPositions()[j]; 
+    for(unsigned j=blocks[i-1]; j<blocks[i]; ++j) center += ( pdb.getOccupancy()[j] / asum )*pdb.getPositions()[j];
     std::vector<double> vals;
     for(unsigned k=0; k<3; ++k) {
-        for(unsigned j=blocks[i-1]; j<blocks[i]; ++j) vals.push_back( pdb.getPositions()[j][k] - center[k] );
+      for(unsigned j=blocks[i-1]; j<blocks[i]; ++j) vals.push_back( pdb.getPositions()[j][k] - center[k] );
     }
-    std::string valstr; Tools::convert( vals[0], valstr ); 
+    std::string valstr; Tools::convert( vals[0], valstr );
     for(unsigned i=1; i<vals.size(); ++i) { std::string rnum; Tools::convert( vals[i], rnum ); valstr += "," + rnum; }
     // Create the reference value
     readInputLine( getShortcutLabel() + "_ref" + bnum + ": CONSTANT VALUES=" + valstr );
@@ -116,14 +116,14 @@ MultiRMSD::MultiRMSD(const ActionOptions& ao):
     // And displace
     Tools::convert( pdb.getBeta()[blocks[i-1]], num ); rmsd_line += " DISPLACE=" + num;
     for(unsigned j=blocks[i-1]+1; j<blocks[i]; ++j) { Tools::convert( pdb.getBeta()[j], num ); rmsd_line += "," + num; }
-    readInputLine( rmsd_line + " TYPE=" + type ); 
+    readInputLine( rmsd_line + " TYPE=" + type );
   }
-  std::string argstr = getShortcutLabel() + "_rmsd1"; for(unsigned i=1;i<nblocks;++i) { std::string bnum; Tools::convert( i+1, bnum); argstr += "," + getShortcutLabel() + "_rmsd" + bnum; }  
+  std::string argstr = getShortcutLabel() + "_rmsd1"; for(unsigned i=1; i<nblocks; ++i) { std::string bnum; Tools::convert( i+1, bnum); argstr += "," + getShortcutLabel() + "_rmsd" + bnum; }
   bool squared; parseFlag("SQUARED",squared);
   if( !squared ) {
-      readInputLine( getShortcutLabel() + "_2: COMBINE ARG=" + argstr + " PERIODIC=NO");
-      readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_2 FUNC=sqrt(x) PERIODIC=NO");
-  } else readInputLine( getShortcutLabel() + ": COMBINE ARG=" + argstr + " PERIODIC=NO");  
+    readInputLine( getShortcutLabel() + "_2: COMBINE ARG=" + argstr + " PERIODIC=NO");
+    readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_2 FUNC=sqrt(x) PERIODIC=NO");
+  } else readInputLine( getShortcutLabel() + ": COMBINE ARG=" + argstr + " PERIODIC=NO");
 }
 
 }
