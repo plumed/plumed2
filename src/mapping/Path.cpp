@@ -230,6 +230,8 @@ void Path::registerInputFileKeywords( Keywords& keys ) {
   keys.needsAction("NORMALIZED_EUCLIDEAN_DISTANCE"); keys.needsAction("PDB2CONSTANT"); keys.needsAction("CONSTANT");
   keys.addOutputComponent("gspath","GPATH","the position along the path calculated using the geometric formula");
   keys.addOutputComponent("gzpath","GPATH","the distance from the path calculated using the geometric formula");
+  keys.addOutputComponent("spath","GPATH","the position along the path calculated using the geometric formula");
+  keys.addOutputComponent("zpath","GPATH","the distance from the path calculated using the geometric formula");
 }
 
 Path::Path( const ActionOptions& ao ):
@@ -260,7 +262,10 @@ Path::Path( const ActionOptions& ao ):
   // Create denominator
   readInputLine( getShortcutLabel() + "_denom: SUM ARG=" + getShortcutLabel() + "_weights PERIODIC=NO");
   // Now compte zpath variable
-  if( !nozpath ) readInputLine( getShortcutLabel() + "_z: CUSTOM ARG=" + getShortcutLabel() + "_denom," + getShortcutLabel() + "_mindist FUNC=y-log(x)/" + lambda + " PERIODIC=NO");
+  if( !nozpath ) {
+    readInputLine( getShortcutLabel() + "_z: CUSTOM ARG=" + getShortcutLabel() + "_denom," + getShortcutLabel() + "_mindist FUNC=y-log(x)/" + lambda + " PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_zpath: COMBINE ARG=" + getShortcutLabel() + "_z PERIODIC=NO");
+  }
   // Now get coefficients for properies for spath
   readPropertyInformation( pnames, getShortcutLabel(), reference, this );
   // Now create COMBINE objects to compute numerator of path
@@ -273,6 +278,7 @@ Path::Path( const ActionOptions& ao ):
       readInputLine( getShortcutLabel() + "_s_prod: CUSTOM ARG=" + getShortcutLabel() + "_weights," + getShortcutLabel() + "_ind FUNC=x*y PERIODIC=NO");
       readInputLine( getShortcutLabel()  + "_numer: SUM ARG=" + getShortcutLabel() + "_s_prod PERIODIC=NO");
       readInputLine( getShortcutLabel() + "_s: CUSTOM ARG=" + getShortcutLabel() + "_numer," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+      readInputLine( getShortcutLabel() + "_spath: COMBINE ARG=" + getShortcutLabel() + "_s PERIODIC=NO");
     }
   }
 }
