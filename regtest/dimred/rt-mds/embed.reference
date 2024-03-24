@@ -1,598 +1,598 @@
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0594   mds.coord-2=0.0053   mom.moment-2=0.7340   mom.moment-3=1.2672   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0683   mds.coord-2=0.0034   mom.moment-2=0.7371   mom.moment-3=1.2758   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0705   mds.coord-2=0.0006   mom.moment-2=0.7401   mom.moment-3=1.2777   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0729   mds.coord-2=-0.0019  mom.moment-2=0.7428   mom.moment-3=1.2796   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0874   mds.coord-2=-0.0069  mom.moment-2=0.7497   mom.moment-3=1.2934   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0961   mds.coord-2=-0.0095  mom.moment-2=0.7533   mom.moment-3=1.3018   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0867   mds.coord-2=-0.0062  mom.moment-2=0.7489   mom.moment-3=1.2928   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0719   mds.coord-2=-0.0008  mom.moment-2=0.7417   mom.moment-3=1.2788   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0575   mds.coord-2=0.0031   mom.moment-2=0.7360   mom.moment-3=1.2651   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0552   mds.coord-2=0.0034   mom.moment-2=0.7354   mom.moment-3=1.2628   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0682   mds.coord-2=-0.0002  mom.moment-2=0.7405   mom.moment-3=1.2753   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0781   mds.coord-2=-0.0024  mom.moment-2=0.7440   mom.moment-3=1.2847   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0785   mds.coord-2=-0.0025  mom.moment-2=0.7441   mom.moment-3=1.2852   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0763   mds.coord-2=-0.0027  mom.moment-2=0.7441   mom.moment-3=1.2829   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0755   mds.coord-2=-0.0041  mom.moment-2=0.7454   mom.moment-3=1.2820   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0792   mds.coord-2=-0.0069  mom.moment-2=0.7486   mom.moment-3=1.2853   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0778   mds.coord-2=-0.0062  mom.moment-2=0.7477   mom.moment-3=1.2840   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0727   mds.coord-2=-0.0025  mom.moment-2=0.7434   mom.moment-3=1.2795   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0726   mds.coord-2=0.0014   mom.moment-2=0.7396   mom.moment-3=1.2798   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0756   mds.coord-2=0.0030   mom.moment-2=0.7384   mom.moment-3=1.2830   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0821   mds.coord-2=0.0017   mom.moment-2=0.7405   mom.moment-3=1.2893   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0816   mds.coord-2=0.0001   mom.moment-2=0.7420   mom.moment-3=1.2886   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0774   mds.coord-2=0.0008   mom.moment-2=0.7407   mom.moment-3=1.2845   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0766   mds.coord-2=0.0008   mom.moment-2=0.7407   mom.moment-3=1.2837   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0838   mds.coord-2=-0.0005  mom.moment-2=0.7429   mom.moment-3=1.2906   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0931   mds.coord-2=-0.0016  mom.moment-2=0.7452   mom.moment-3=1.2997   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0936   mds.coord-2=-0.0010  mom.moment-2=0.7446   mom.moment-3=1.3004   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0923   mds.coord-2=-0.0009  mom.moment-2=0.7443   mom.moment-3=1.2990   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0906   mds.coord-2=-0.0008  mom.moment-2=0.7440   mom.moment-3=1.2974   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0706   mds.coord-2=0.0025   mom.moment-2=0.7382   mom.moment-3=1.2780   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0664   mds.coord-2=0.0050   mom.moment-2=0.7352   mom.moment-3=1.2741   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0901   mds.coord-2=0.0019   mom.moment-2=0.7412   mom.moment-3=1.2972   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.1059   mds.coord-2=-0.0015  mom.moment-2=0.7467   mom.moment-3=1.3125   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0917   mds.coord-2=0.0006   mom.moment-2=0.7428   mom.moment-3=1.2986   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0876   mds.coord-2=0.0021   mom.moment-2=0.7407   mom.moment-3=1.2948   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.1008   mds.coord-2=-0.0001  mom.moment-2=0.7446   mom.moment-3=1.3076   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0955   mds.coord-2=-0.0014  mom.moment-2=0.7452   mom.moment-3=1.3022   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0858   mds.coord-2=-0.0018  mom.moment-2=0.7444   mom.moment-3=1.2925   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0894   mds.coord-2=-0.0005  mom.moment-2=0.7436   mom.moment-3=1.2963   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0922   mds.coord-2=0.0014   mom.moment-2=0.7420   mom.moment-3=1.2992   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0917   mds.coord-2=0.0010   mom.moment-2=0.7423   mom.moment-3=1.2987   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0925   mds.coord-2=-0.0043  mom.moment-2=0.7477   mom.moment-3=1.2989   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0967   mds.coord-2=-0.0102  mom.moment-2=0.7541   mom.moment-3=1.3023   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.1073   mds.coord-2=-0.0096  mom.moment-2=0.7548   mom.moment-3=1.3129   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.1065   mds.coord-2=-0.0047  mom.moment-2=0.7499   mom.moment-3=1.3126   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0935   mds.coord-2=-0.0003  mom.moment-2=0.7439   mom.moment-3=1.3003   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0668   mds.coord-2=0.0049   mom.moment-2=0.7353   mom.moment-3=1.2745   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0411   mds.coord-2=0.0087   mom.moment-2=0.7284   mom.moment-3=1.2494   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0264   mds.coord-2=0.0110   mom.moment-2=0.7242   mom.moment-3=1.2352   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0254   mds.coord-2=0.0125   mom.moment-2=0.7226   mom.moment-3=1.2344   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0503   mds.coord-2=0.0085   mom.moment-2=0.7297   mom.moment-3=1.2586   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0855   mds.coord-2=0.0007   mom.moment-2=0.7419   mom.moment-3=1.2925   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0975   mds.coord-2=-0.0028  mom.moment-2=0.7469   mom.moment-3=1.3039   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0983   mds.coord-2=-0.0035  mom.moment-2=0.7477   mom.moment-3=1.3047   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0997   mds.coord-2=-0.0044  mom.moment-2=0.7487   mom.moment-3=1.3059   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0877   mds.coord-2=-0.0021  mom.moment-2=0.7449   mom.moment-3=1.2944   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0501   mds.coord-2=0.0053   mom.moment-2=0.7328   mom.moment-3=1.2580   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0104   mds.coord-2=0.0140   mom.moment-2=0.7192   mom.moment-3=1.2197   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.0199  mds.coord-2=0.0221   mom.moment-2=0.7074   mom.moment-3=1.1907   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.0416  mds.coord-2=0.0277   mom.moment-2=0.6990   mom.moment-3=1.1698   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.0688  mds.coord-2=0.0338   mom.moment-2=0.6895   mom.moment-3=1.1436   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.0858  mds.coord-2=0.0354   mom.moment-2=0.6858   mom.moment-3=1.1269   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.0897  mds.coord-2=0.0313   mom.moment-2=0.6894   mom.moment-3=1.1226   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.0920  mds.coord-2=0.0254   mom.moment-2=0.6950   mom.moment-3=1.1195   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.1168  mds.coord-2=0.0227   mom.moment-2=0.6945   mom.moment-3=1.0946   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.1447  mds.coord-2=0.0227   mom.moment-2=0.6910   mom.moment-3=1.0669   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.1636  mds.coord-2=0.0221   mom.moment-2=0.6892   mom.moment-3=1.0481   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.1461  mds.coord-2=0.0182   mom.moment-2=0.6953   mom.moment-3=1.0650   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.1212  mds.coord-2=0.0139   mom.moment-2=0.7027   mom.moment-3=1.0891   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.0775  mds.coord-2=0.0056   mom.moment-2=0.7164   mom.moment-3=1.1314   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.0008  mds.coord-2=-0.0041  mom.moment-2=0.7358   mom.moment-3=1.2063   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0469   mds.coord-2=-0.0038  mom.moment-2=0.7415   mom.moment-3=1.2537   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0771   mds.coord-2=-0.0004  mom.moment-2=0.7419   mom.moment-3=1.2840   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0917   mds.coord-2=0.0005   mom.moment-2=0.7428   mom.moment-3=1.2986   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=0.0656   mds.coord-2=0.0042   mom.moment-2=0.7359   mom.moment-3=1.2732   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.0034  mds.coord-2=0.0115   mom.moment-2=0.7200   mom.moment-3=1.2057   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.0901  mds.coord-2=0.0141   mom.moment-2=0.7064   mom.moment-3=1.1200   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.1784  mds.coord-2=0.0069   mom.moment-2=0.7024   mom.moment-3=1.0315   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.2253  mds.coord-2=-0.0077  mom.moment-2=0.7109   mom.moment-3=0.9832   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.2372  mds.coord-2=-0.0248  mom.moment-2=0.7264   mom.moment-3=0.9692   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.2415  mds.coord-2=-0.0448  mom.moment-2=0.7456   mom.moment-3=0.9624   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.2562  mds.coord-2=-0.0539  mom.moment-2=0.7529   mom.moment-3=0.9466   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.2901  mds.coord-2=-0.0433  mom.moment-2=0.7381   mom.moment-3=0.9144   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.3173  mds.coord-2=-0.0215  mom.moment-2=0.7130   mom.moment-3=0.8902   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.3117  mds.coord-2=0.0096   mom.moment-2=0.6829   mom.moment-3=0.8996   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.2787  mds.coord-2=0.0317   mom.moment-2=0.6651   mom.moment-3=0.9352   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.2319  mds.coord-2=0.0372   mom.moment-2=0.6656   mom.moment-3=0.9823   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.1897  mds.coord-2=0.0305   mom.moment-2=0.6776   mom.moment-3=1.0233   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.1592  mds.coord-2=0.0142   mom.moment-2=0.6975   mom.moment-3=1.0515   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.1211  mds.coord-2=-0.0049  mom.moment-2=0.7213   mom.moment-3=1.0868   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.0960  mds.coord-2=-0.0150  mom.moment-2=0.7345   mom.moment-3=1.1105   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.0842  mds.coord-2=-0.0162  mom.moment-2=0.7372   mom.moment-3=1.1221   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.0813  mds.coord-2=-0.0187  mom.moment-2=0.7401   mom.moment-3=1.1246   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.0823  mds.coord-2=-0.0193  mom.moment-2=0.7406   mom.moment-3=1.1235   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.0773  mds.coord-2=-0.0179  mom.moment-2=0.7398   mom.moment-3=1.1287   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.0621  mds.coord-2=-0.0202  mom.moment-2=0.7440   mom.moment-3=1.1435   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.0449  mds.coord-2=-0.0215  mom.moment-2=0.7475   mom.moment-3=1.1604   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.0269  mds.coord-2=-0.0307  mom.moment-2=0.7589   mom.moment-3=1.1770   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2
 REMARK mds.coord-1=-0.0075  mds.coord-2=-0.0368  mom.moment-2=0.7673   mom.moment-3=1.1955   
 END
-DESCRIPTION: analysis data from calculation done by @44 at time 10.000000 
+DESCRIPTION: analysis data from calculation done by @45 at time 10.000000 
 REMARK TYPE=EUCLIDEAN 
 REMARK WEIGHT=1.0000  
 REMARK ARG=mom.moment-2,mom.moment-3,mds.coord-1,mds.coord-2

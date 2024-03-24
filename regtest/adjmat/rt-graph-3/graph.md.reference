@@ -105,10 +105,10 @@ ff -- ff --> rr
 rr(["label=rr 
  RESTRAINT 
 "])
-ff -- ff --> 25
-rr -- rr.bias --> 25
-rr -- rr.force2 --> 25
-25("label=#64;25 
+ff -- ff --> 28
+rr -- rr.bias --> 28
+rr -- rr.force2 --> 28
+28("label=#64;28 
  PRINT
 FILE=colvar 
 ")

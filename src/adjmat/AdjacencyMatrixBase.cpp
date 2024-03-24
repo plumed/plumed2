@@ -32,7 +32,7 @@ void AdjacencyMatrixBase::registerKeywords( Keywords& keys ) {
   keys.add("atoms","GROUP","the atoms for which you would like to calculate the adjacency matrix");
   keys.add("atoms","GROUPA","");
   keys.add("atoms","GROUPB","");
-  keys.add("atoms-2","ATOMS","the atoms for which you would like to calculate the adjacency matrix (basically equivalent to GROUP)");
+  keys.add("atoms-2","ATOMS","the atoms for which you would like to calculate the adjacency matrix. This is a depracated syntax that is equivalent to GROUP.  You are strongly recommened to use GROUP instead of ATOMS.");
   keys.reserve("atoms","GROUPC","");
   keys.addFlag("COMPONENTS",false,"also calculate the components of the vector connecting the atoms in the contact matrix");
   keys.addFlag("NOPBC",false,"don't use pbc");
@@ -54,7 +54,10 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
   natoms_per_list(0)
 {
   std::vector<unsigned> shape(2); std::vector<AtomNumber> t; parseAtomList("GROUP", t );
-  if( t.size()==0 ) parseAtomList("ATOMS", t);
+  if( t.size()==0 ) {
+      parseAtomList("ATOMS", t);
+      if( t.size()>0 ) warning("using depracated syntax for contact matrix.  You are strongly recommended to use GROUP instead of ATOMS");
+  }
 
   if( t.size()==0 ) {
     std::vector<AtomNumber> ta; parseAtomList("GROUPA",ta);
