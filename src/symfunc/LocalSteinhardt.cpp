@@ -293,7 +293,7 @@ void LocalSteinhardt::registerKeywords( Keywords& keys ) {
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   keys.addFlag("LOWMEM",false,"this flag does nothing and is present only to ensure back-compatibility");
   multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
-  keys.needsAction("CONTACT_MATRIX"); keys.needsAction("MATRIX_PRODUCT");
+  keys.needsAction("CONTACT_MATRIX"); keys.needsAction("MATRIX_PRODUCT"); keys.needsAction("GROUP");
   keys.needsAction("ONES"); keys.needsAction("OUTER_PRODUCT"); keys.needsAction("VSTACK");
   keys.needsAction("CONCATENATE"); keys.needsAction("CUSTOM"); keys.needsAction("TRANSPOSE");
   keys.needsAction("MATRIX_VECTOR_PRODUCT");
@@ -335,6 +335,8 @@ LocalSteinhardt::LocalSteinhardt(const ActionOptions& ao):
   std::string sp_str; parse("SPECIES",sp_str);
   std::string spa_str; parse("SPECIESA",spa_str);
   if( sp_str.length()>0 ) {
+    // Create a group with these atoms
+    readInputLine( getShortcutLabel() + "_grp: GROUP ATOMS=" + sp_str );
     std::vector<std::string> sp_lab = Tools::getWords(sp_str, "\t\n ,");
     // This creates the stash to hold all the vectors
     if( sp_lab.size()==1 ) {
@@ -366,6 +368,8 @@ LocalSteinhardt::LocalSteinhardt(const ActionOptions& ao):
     // And the matrix of dot products
     readInputLine( getShortcutLabel() + "_dpmat: MATRIX_PRODUCT ARG=" + getShortcutLabel() + "_vecs," + getShortcutLabel() + "_vecsT" );
   } else if( spa_str.length()>0 ) {
+    // Create a group with these atoms
+    readInputLine( getShortcutLabel() + "_grp: GROUP ATOMS=" + spa_str );
     std::string spb_str; parse("SPECIESB",spb_str);
     if( spb_str.length()==0 ) plumed_merror("need both SPECIESA and SPECIESB in input");
     std::vector<std::string> sp_laba = Tools::getWords(spa_str, "\t\n ,");

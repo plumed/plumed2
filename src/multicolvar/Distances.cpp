@@ -246,12 +246,16 @@ Distances::Distances(const ActionOptions& ao):
     } else if( grpa.size()>0 ) {
       std::vector<std::string> grpb; MultiColvarShortcuts::parseAtomList("GROUPB",grpb,this);
       if( grpb.size()==0 ) error("found GROUPA but no corresponding GROUPB");
+      std::string grpstr = getShortcutLabel() + "_grp: GROUP ATOMS=";
       for(unsigned i=0; i<grpa.size(); ++i) {
         for(unsigned j=0; j<grpb.size(); ++j) {
           std::string num; Tools::convert( i*grpb.size() + j + 1, num );
           dline += " ATOMS" + num + "=" + grpa[i] + "," + grpb[j];
+          readInputLine( getShortcutLabel() + "_vatom" + num + ": CENTER ATOMS=" + grpa[i] + "," + grpb[j] );
+          if( i+j==0 ) grpstr += getShortcutLabel() + "_vatom" + num; else grpstr += "," + getShortcutLabel() + "_vatom" + num;
         }
       }
+      readInputLine( grpstr );
     } else {
       std::string grpstr = getShortcutLabel() + "_grp: GROUP ATOMS=";
       for(unsigned i=1;; ++i) {

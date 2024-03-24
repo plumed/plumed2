@@ -49,7 +49,7 @@ void MFilterLess::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
   keys.add("compulsory","DATA","the vector you wish to transform");
   keys.add("compulsory","SWITCH","the switching function that transform");
-  keys.needsAction("GROUP"); keys.needsAction("MORE_THAN");
+  keys.needsAction("GROUP"); keys.needsAction("LESS_THAN");
 }
 
 MFilterLess::MFilterLess(const ActionOptions& ao):

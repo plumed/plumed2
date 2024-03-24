@@ -120,7 +120,7 @@ Angles::Angles(const ActionOptions&ao):
   if( swit.length()>0 ) {
     std::string cat, grp; parse("GROUPA",cat); parse("GROUPB",grp);
     if( cat.length()==0 || grp.length()==0 ) error("must use GROUPA/GROUPB when using SWITCH");
-    readInputLine( getShortcutLabel() + ": COORD_ANGLES SWITCH={" +  swit + "} CATOMS=" + cat + " GROUP=" + grp );
+    readInputLine( getShortcutLabel() + ": COORD_ANGLES SWITCH={" +  swit + "} CATOMS=" + cat + " GROUP=" + grp + " " + convertInputLineToString() );
     return;
   }
   std::vector<std::string> group; parseVector("GROUP",group);
