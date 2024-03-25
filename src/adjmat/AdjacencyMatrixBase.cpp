@@ -55,8 +55,8 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
 {
   std::vector<unsigned> shape(2); std::vector<AtomNumber> t; parseAtomList("GROUP", t );
   if( t.size()==0 ) {
-      parseAtomList("ATOMS", t);
-      if( t.size()>0 ) warning("using depracated syntax for contact matrix.  You are strongly recommended to use GROUP instead of ATOMS");
+    parseAtomList("ATOMS", t);
+    if( t.size()>0 ) warning("using depracated syntax for contact matrix.  You are strongly recommended to use GROUP instead of ATOMS");
   }
 
   if( t.size()==0 ) {

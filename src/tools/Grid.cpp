@@ -527,8 +527,22 @@ std::unique_ptr<GridBase> GridBase::create(const std::string& funcl, const std::
   std::vector<int> gbin1(nvar); std::vector<unsigned> gbin(nvar);
   std::vector<std::string> labels(nvar),gmin(nvar),gmax(nvar);
   std::vector<std::string> fieldnames; ifile.scanFieldList( fieldnames );
+
 // Retrieve names for fields
-  for(unsigned i=0; i<args.size(); ++i) labels[i]=args[i]->getName();
+  for(unsigned i=0; i<args.size(); ++i) {
+    labels[i]=args[i]->getName(); bool found=false;
+    for(unsigned j=0; j<fieldnames.size(); ++j) {
+      if( labels[i]==fieldnames[j] ) { found=true; break; }
+    }
+    // This is a change to ensure that we can deal with old style names for multicolvars
+    std::size_t und = labels[i].find_first_of("_");
+    if( !found && und!=std::string::npos ) {
+      labels[i] = labels[i].substr(0,und) + "." + labels[i].substr(und+1);
+      for(unsigned j=0; j<fieldnames.size(); ++j) {
+        if( labels[i]==fieldnames[j] ) { found=true; break; }
+      }
+    }
+  }
 // And read the stuff from the header
   plumed_massert( ifile.FieldExist( funcl ), "no column labelled " + funcl + " in in grid input");
   for(unsigned i=0; i<args.size(); ++i) {
@@ -546,7 +560,7 @@ std::unique_ptr<GridBase> GridBase::create(const std::string& funcl, const std::
       gbin[i]=gbin1[i]-1;  // Note header in grid file indicates one more bin that there should be when data is not periodic
       plumed_massert( pstring=="false", "input value is not periodic but grid is");
     }
-    hasder=ifile.FieldExist( "der_" + args[i]->getName() );
+    hasder=ifile.FieldExist( "der_" + labels[i] );
     if( doder && !hasder ) plumed_merror("missing derivatives from grid file");
     for(unsigned j=0; j<fieldnames.size(); ++j) {
       for(unsigned k=i+1; k<args.size(); ++k) {
@@ -570,7 +584,7 @@ std::unique_ptr<GridBase> GridBase::create(const std::string& funcl, const std::
       ifile.scanField( "nbins_" + labels[i], gbin1[i]);
       ifile.scanField( "periodic_" + labels[i], pstring );
     }
-    if(hasder) { for(unsigned i=0; i<nvar; ++i) { ifile.scanField( "der_" + args[i]->getName(), dder[i] ); } }
+    if(hasder) { for(unsigned i=0; i<nvar; ++i) { ifile.scanField( "der_" + labels[i], dder[i] ); } }
     index_t index=grid->getIndex(xx);
     if(doder) {grid->setValueAndDerivatives(index,f,dder);}
     else {grid->setValue(index,f);}
