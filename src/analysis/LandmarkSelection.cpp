@@ -90,7 +90,7 @@ LandmarkSelection::LandmarkSelection( const ActionOptions& ao ):
       ActionShortcut* as = plumed.getActionSet().getShortcutActionWithLabel( argn );
       if( !as || as->getName()!="COLLECT_FRAMES" ) error("found no COLLECT_FRAMES action with label " + argn );
       // Get the weights
-      readInputLine( getShortcutLabel() + "_allweights: CUSTOM ARG=" + argn + "_logweights FUNC=exp(x) PERIODIC=NO");
+      readInputLine( getShortcutLabel() + "_allweights: LOGSUMEXP ARG=" + argn + "_logweights");
   } 
   if( dissims.length()>0 ) {
       ActionWithValue* ds = plumed.getActionSet().selectWithLabel<ActionWithValue*>( dissims );

@@ -124,17 +124,8 @@ PCA::PCA(const ActionOptions&ao):
   std::string argn; parse("ARG",argn);
   ActionShortcut* as = plumed.getActionSet().getShortcutActionWithLabel( argn );
   if( !as || as->getName()!="COLLECT_FRAMES" ) error("found no COLLECT_FRAMES action with label " + argn );
-  // Find the maximum weight
-  readInputLine( getShortcutLabel() + "_maxlogweight: HIGHEST ARG=" + argn + "_logweights");
-  readInputLine( getShortcutLabel() + "_maxweight: CUSTOM ARG=" + getShortcutLabel() + "_maxlogweight FUNC=exp(x) PERIODIC=NO");
-  // Calculate the maximum
-  readInputLine( getShortcutLabel() + "_shiftw: CUSTOM ARG=" + argn + "_logweights," + getShortcutLabel() + "_maxlogweight FUNC=exp(x-y) PERIODIC=NO");
-  // compute the sum of all the exponentials
-  readInputLine( getShortcutLabel() + "_sumw: SUM ARG=" + getShortcutLabel() + "_shiftw PERIODIC=NO");
-  // and the logsum
-  readInputLine( getShortcutLabel() + "_logsum: CUSTOM ARG=" + getShortcutLabel() + "_sumw," + getShortcutLabel() + "_maxlogweight FUNC=y+log(x) PERIODIC=NO");
-  // And the final logweights
-  readInputLine( getShortcutLabel() + "_weights: CUSTOM ARG=" + argn + "_logweights," +  getShortcutLabel() + "_logsum FUNC=exp(x-y) PERIODIC=NO");
+  // Get the final weights using the logsumexp trick
+  readInputLine( getShortcutLabel() + "_weights: LOGSUMEXP ARG=" + argn + "_logweights");
   // Now transpose the collected frames
   readInputLine( getShortcutLabel() + "_dataT: TRANSPOSE ARG=" + argn + "_data");
   // And multiply the transpose by the weights to get the averages
