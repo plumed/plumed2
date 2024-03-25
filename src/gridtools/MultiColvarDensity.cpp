@@ -90,6 +90,9 @@ void MultiColvarDensity::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","CLEAR","0","the frequency with which to clear the density");
   keys.add("compulsory","ORIGIN","we will use the position of this atom as the origin");
   keys.add("compulsory","DIR","the direction in which to calculate the density profile");
+  keys.add("optional","BANDWIDTH","the bandwidths for kernel density esimtation");
+  keys.add("compulsory","KERNEL","GAUSSIAN","the kernel function you are using.  More details on  the kernels available "
+           "in plumed plumed can be found in \\ref kernelfunctions.");
   keys.add("optional","NBINS","the number of bins to use in each direction (alternative to GRID_NBIN)");
   keys.add("optional","DATA","the multicolvar which you would like to calculate the density profile for");
   keys.add("optional","ATOMS","if you are calculating a atomic density you use this keyword to specify the atoms that are involved");

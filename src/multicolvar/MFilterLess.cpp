@@ -22,9 +22,9 @@
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 
-//+PLUMEDOC MCOLVAR MFILTER_MORE
+//+PLUMEDOC MCOLVAR MFILTER_LESS
 /*
-Basically equivalent to MORE_THAN.
+Basically equivalent to LESS_THAN.
 
 This action has been depracated
 
@@ -37,41 +37,30 @@ This action has been depracated
 namespace PLMD {
 namespace multicolvar {
 
-class MFilterMore : public ActionShortcut {
+class MFilterLess : public ActionShortcut {
 public:
   static void registerKeywords(Keywords& keys);
-  explicit MFilterMore(const ActionOptions&);
+  explicit MFilterLess(const ActionOptions&);
 };
 
-PLUMED_REGISTER_ACTION(MFilterMore,"MFILTER_MORE")
+PLUMED_REGISTER_ACTION(MFilterLess,"MFILTER_LESS")
 
-void MFilterMore::registerKeywords(Keywords& keys) {
+void MFilterLess::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
   keys.add("compulsory","DATA","the vector you wish to transform");
   keys.add("compulsory","SWITCH","the switching function that transform");
-  keys.addFlag("LOWMEM",false,"this flag does nothing and is present only to ensure back-compatibility");
-  keys.addFlag("HIGHEST",false,"this flag allows you to recover the highest of these variables.");
-  keys.addOutputComponent("highest","HIGHEST","the largest of the colvars");
-  keys.needsAction("CUSTOM"); keys.needsAction("GROUP");
-  keys.needsAction("MORE_THAN"); keys.needsAction("HIGHEST");
+  keys.needsAction("GROUP"); keys.needsAction("LESS_THAN");
 }
 
-MFilterMore::MFilterMore(const ActionOptions& ao):
+MFilterLess::MFilterLess(const ActionOptions& ao):
   Action(ao),
   ActionShortcut(ao)
 {
   warning("This action has been depracated.  Look at the log to see how the same result is achieved with the new syntax");
-  bool lowmem; parseFlag("LOWMEM",lowmem);
-  if( lowmem ) warning("LOWMEM flag is deprecated and is no longer required for this action");
   std::string dd; parse("DATA",dd);
   std::string swit; parse("SWITCH",swit);
   readInputLine( getShortcutLabel() + "_grp: GROUP ATOMS=" + dd + "_grp");
-  readInputLine( getShortcutLabel() + ": MORE_THAN ARG=" + dd + " SWITCH={" + swit + "}");
-  bool highest; parseFlag("HIGHEST",highest);
-  if( highest ) {
-    readInputLine( getShortcutLabel() + "_filtered: CUSTOM ARG=" + dd + "," + getShortcutLabel() + " FUNC=x*y PERIODIC=NO");
-    readInputLine( getShortcutLabel() + "_highest: HIGHEST ARG=" + getShortcutLabel() + "_filtered");
-  }
+  readInputLine( getShortcutLabel() + ": LESS_THAN ARG=" + dd + " SWITCH={" + swit + "}");
 }
 
 }

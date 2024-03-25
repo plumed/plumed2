@@ -360,8 +360,8 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
   // Now calculate the total length of the vector
   createVectorNormInput( getShortcutLabel() + "_sp", getShortcutLabel() + "_norm", l, ".", "m" );
   // And take average
-  readInputLine( getShortcutLabel() + "_anorm: CUSTOM ARG=" + getShortcutLabel() + "_norm," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
-  multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel() + "_anorm", "", this );
+  readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_norm," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+  multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel(), "", this );
 }
 
 void Steinhardt::createVectorNormInput( const std::string& ilab, const std::string& olab, const int& l, const std::string& sep, const std::string& vlab ) {

@@ -254,7 +254,7 @@ void Action::setupConstantValues( const bool& have_atoms ) {
     }
   }
   ActionWithArguments* aa = castToActionWithArguments();
-  if( aa && aa->getNumberOfArguments()>0 ) never_activate = aa->calculateConstantValues( have_atoms );
+  if( aa && aa->getNumberOfArguments()>0 && getName()!="BIASVALUE" ) never_activate = aa->calculateConstantValues( have_atoms );
 }
 
 long long int Action::getStep()const {

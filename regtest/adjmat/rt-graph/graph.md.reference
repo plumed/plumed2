@@ -24,9 +24,9 @@ s(["label=s
  SUM 
 "])
 end
-c1 -- c1 --> 1
+c1 -- c1 --> 2
 linkStyle 2 stroke:red,color:red;
-1("label=#64;1 
+2("label=#64;2 
  PRINT
 FILE=colvar 
 ")
@@ -37,9 +37,9 @@ c1 -- c1 --> cc
 linkStyle 3 stroke:red,color:red;
 ones -- ones --> cc
 linkStyle 4 stroke:blue,color:blue;
-cc -- cc --> 5
+cc -- cc --> 6
 linkStyle 5 stroke:blue,color:blue;
-5("label=#64;5 
+6("label=#64;6 
  PRINT
 FILE=coords 
 ")
@@ -47,12 +47,12 @@ cc -- cc --> mtc
 linkStyle 6 stroke:blue,color:blue;
 mtc -- mtc --> s
 linkStyle 7 stroke:blue,color:blue;
-s -- s --> 10
-10("label=#64;10 
+s -- s --> 11
+11("label=#64;11 
  PRINT
 FILE=fcolvar 
 ")
-s -- s --> 11
-11(["label=#64;11 
+s -- s --> 12
+12(["label=#64;12 
  BIASVALUE 
 "])

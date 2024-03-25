@@ -101,6 +101,8 @@ RMSDVector::RMSDVector(const ActionOptions&ao):
     shape.resize(2); shape[0] = getPntrToArgument(1)->getShape()[0]; shape[1] = getPntrToArgument(0)->getNumberOfValues();
     addComponent( "disp", shape ); getPntrToComponent(1)->buildDataStore(); getPntrToComponent(1)->reshapeMatrixStore( shape[1] );
     componentIsNotPeriodic("disp");
+  } else if( (getPntrToArgument(1)->getRank()==1 || getPntrToArgument(1)->getShape()[0]==1) ) {
+    addValue(); setNotPeriodic();
   } else {
     std::vector<unsigned> shape( 1, getPntrToArgument(1)->getShape()[0] );
     addValue( shape ); setNotPeriodic();

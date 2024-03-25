@@ -108,11 +108,11 @@ Concatenate::Concatenate(const ActionOptions& ao):
     std::vector<unsigned> shape(2); shape[0]=0; unsigned k=0;
     row_starts.resize( arglist.size() ); col_starts.resize( arglist.size() );
     for(unsigned i=0; i<nrows; ++i) {
-      unsigned cstart = 0, nr = 1; if( arglist[k]->getRank()==2 ) nr=arglist[k]->getShape()[1];
+      unsigned cstart = 0, nr = 1; if( arglist[k]->getRank()==2 ) nr=arglist[k]->getShape()[0];
       for(unsigned j=0; j<ncols; ++j) {
         if( arglist[k]->getRank()==0 ) {
           if( nr!=1 ) error("mismatched matrix sizes");
-        } else if( nrows>1 && arglist[k]->getShape()[1]!=nr ) error("mismatched matrix sizes");
+        } else if( nrows>1 && arglist[k]->getShape()[0]!=nr ) error("mismatched matrix sizes");
         row_starts[k] = shape[0]; col_starts[k] = cstart;
         if( arglist[k]->getRank()==0 ) cstart += 1;
         else cstart += arglist[k]->getShape()[1];

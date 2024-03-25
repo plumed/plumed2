@@ -137,8 +137,9 @@ void ActionShortcut::interpretDataLabel( const std::string& mystr, Action* myuse
           for(unsigned j=1;; ++j) {
             std::string numstr; Tools::convert( j, numstr );
             ActionWithValue* act=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a + "_" + out_comps[k] + "-" + numstr );
-            if(!act) break;
-            for(unsigned n=0; n<act->getNumberOfComponents(); ++n ) arg.push_back(act->copyOutput(n));
+            if( act ) {
+              for(unsigned n=0; n<act->getNumberOfComponents(); ++n ) arg.push_back(act->copyOutput(n));
+            } else if( j>1 ) break;    // This ensures that * syntax works with moments, which normally start from 2
           }
         }
       }

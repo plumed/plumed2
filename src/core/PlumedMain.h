@@ -106,6 +106,10 @@ private:
     int getNatoms() const ;
     [[deprecated("Use Action::usingNaturalUnits().")]]
     bool usingNaturalUnits() const ;
+    [[deprecated]]
+    void setCollectEnergy(bool b) const;
+    [[deprecated]]
+    double getEnergy() const ;
   };
 /// Forward declaration.
   ForwardDecl<DeprecatedAtoms> datoms_fwd;
