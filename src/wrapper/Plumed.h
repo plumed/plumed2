@@ -2972,10 +2972,7 @@ public:
     plumed_cmd_cxx(main,key);
   }
 
-#if __cplusplus > 199711L && __PLUMED_WRAPPER_CXX_DETECT_SHAPES
-
-private:
-
+#if __cplusplus > 199711L
   /// Internal tool to convert initializer_list to shape
   /// This is just taking an initializer list and making a std::array
   std::array<std::size_t,5>  make_shape(std::initializer_list<std::size_t> shape) {
@@ -2989,6 +2986,12 @@ private:
     shape_[j]=0;
     return shape_;
   }
+#endif
+
+#if __cplusplus > 199711L && __PLUMED_WRAPPER_CXX_DETECT_SHAPES
+
+private:
+
 
   /// Internal utility to append a shape.
   /// Create a new shape where newindex has been appended to the last non zero element.
@@ -3242,13 +3245,7 @@ public:
   template<typename T>
   void cmd(const char*key,T* val, std::initializer_list<std::size_t> shape) {
     if(shape.size()>4) throw Plumed::ExceptionTypeError("Maximum shape size is 4");
-    std::array<std::size_t,5> shape_;
-    unsigned j=0;
-    for(auto i : shape) {
-      shape_[j]=i;
-      j++;
-    }
-    shape_[j]=0;
+    auto shape_=make_shape(shape);
     plumed_cmd_cxx(main,key,val,&shape_[0]);
   }
 #endif
