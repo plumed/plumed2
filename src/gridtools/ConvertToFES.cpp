@@ -68,6 +68,7 @@ PLUMED_REGISTER_ACTION(ConvertToFES,"CONVERT_TO_FES")
 
 void ConvertToFES::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
+  keys.add("optional","GRID","the histogram that you would like to convert into a free energy surface (old syntax)");
   keys.add("compulsory","ARG","the histogram that you would like to convert into a free energy surface");
   keys.add("optional","TEMP","the temperature at which you are operating");
   keys.addFlag("MINTOZERO",false,"set the minimum in the free energy to be equal to zero");
@@ -81,7 +82,8 @@ ConvertToFES::ConvertToFES(const ActionOptions&ao):
   bool minzero=false; parseFlag("MINTOZERO",minzero);
   double simtemp=getkBT(); if( simtemp==0 ) error("TEMP not set - use keyword TEMP");
 
-  std::vector<std::string> argv; parseVector("ARG",argv);
+  std::vector<std::string> argv; parseVector("GRID",argv);
+  if( argv.size()==0 ) parseVector("ARG",argv);
   if( argv.size()!=1 ) error("should only have one argument");
 
   std::string str_temp; Tools::convert( simtemp, str_temp ); std::string flab=""; if( minzero ) flab="_unz";

@@ -21,6 +21,9 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
+#include "core/ActionWithValue.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
 
 //+PLUMEDOC MATRIXF SPRINT
 /*
@@ -88,56 +91,39 @@ PLUMED_REGISTER_ACTION(Sprint,"SPRINT")
 
 void Sprint::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
+  keys.add("optional","MATRIX","the matrix that you would like to perform SPRINT on");
   keys.add("numbered","GROUP","specifies the list of atoms that should be assumed indistinguishable");
   keys.add("numbered","SWITCH","specify the switching function to use between two sets of indistinguishable atoms");
-  keys.needsAction("CONTACT_MATRIX"); keys.needsAction("TRANSPOSE"); keys.needsAction("CONCATENATE");
-  keys.needsAction("DIAGONALIZE"); keys.needsAction("CUSTOM");
-  keys.needsAction("SELECT_COMPONENTS"); keys.needsAction("SORT");
+  keys.needsAction("CONTACT_MATRIX"); keys.needsAction("DIAGONALIZE"); keys.needsAction("CUSTOM");
+  keys.needsAction("SELECT_COMPONENTS"); keys.needsAction("SORT"); keys.needsAction("COMBINE");
+  keys.addOutputComponent("coord","default","the sprint coordinates");
 }
 
 Sprint::Sprint(const ActionOptions& ao):
   Action(ao),
   ActionShortcut(ao)
 {
-  std::vector<std::string> grp_str; std::string grp_inpt;
-  for(unsigned i=1;; ++i) {
-    if( !parseNumbered("GROUP",i,grp_inpt) ) break;
-    grp_str.push_back( grp_inpt );
-  }
-  if( grp_str.size()>9 ) error("cannot handle more than 9 groups");
+  std::string matinp; parse("MATRIX",matinp); 
+  if( matinp.length()==0 ) {
+      readInputLine( getShortcutLabel() + "_jmat: CONTACT_MATRIX " + convertInputLineToString() );
+      matinp = getShortcutLabel() + "_jmat";
+  } 
   std::vector<unsigned> nin_group; unsigned ntot_atoms=0;
-  for(unsigned i=0; i<grp_str.size(); ++i) {
-    std::string sw_str, num; Tools::convert( i+1, num ); parseNumbered("SWITCH", (i+1)*10 + 1 + i,  sw_str );
-    if( sw_str.length()==0 ) error("missing SWITCH" + num + num + " keyword");
-    readInputLine( getShortcutLabel() + "_mat" + num +  num + ": CONTACT_MATRIX GROUP=" + grp_str[i] + " SWITCH={" + sw_str + "}" );
-    // Get number of atoms in each group
-    std::vector<std::string> words=Tools::getWords(grp_str[i],"\t\n ,"); Tools::interpretRanges(words);
-    nin_group.push_back( words.size() ); ntot_atoms += words.size();
-    for(unsigned j=0; j<i; ++j) {
-      std::string sw_str2, jnum; Tools::convert( j+1, jnum ); parseNumbered("SWITCH", (j+1)*10 + 1 + i, sw_str2);
-      if( sw_str2.length()==0 ) error("missing SWITCH" + jnum + num + " keyword");
-      readInputLine( getShortcutLabel() + "_mat" + jnum + num + ": CONTACT_MATRIX GROUPA=" + grp_str[j] + " GROUPB=" + grp_str[i] + " SWITCH={" + sw_str2 +"}");
-      readInputLine( getShortcutLabel() + "_mat" + num +  jnum + ": TRANSPOSE ARG=" + getShortcutLabel() + "_mat" + jnum + num + ".w");
-    }
+  for(unsigned i=1;; ++i) {
+      std::string inum; Tools::convert( i, inum );
+      ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( matinp + inum + inum );
+      if( !av ) break ;
+      unsigned natoms = (av->copyOutput(0))->getShape()[0]; nin_group.push_back( natoms ); ntot_atoms += natoms;
   }
-  std::string join_matrices = getShortcutLabel() + "_jmat: CONCATENATE";
-  for(unsigned i=0; i<grp_str.size(); ++i) {
-    std::string inum; Tools::convert(i+1,inum);
-    for(unsigned j=0; j<grp_str.size(); ++j) {
-      std::string jnum; Tools::convert(j+1,jnum);
-      if( i>j ) join_matrices += " MATRIX" + inum + jnum + "=" + getShortcutLabel() + "_mat" + inum +  jnum;
-      else join_matrices += " MATRIX" + inum + jnum + "=" + getShortcutLabel() + "_mat" + inum +  jnum + ".w";
-    }
-  }
-  readInputLine( join_matrices );
+
   // Diagonalization
-  readInputLine( getShortcutLabel() + "_diag: DIAGONALIZE ARG=" + getShortcutLabel() + "_jmat VECTORS=1");
+  readInputLine( getShortcutLabel() + "_diag: DIAGONALIZE ARG=" + matinp + " VECTORS=1");
   // Compute sprint coordinates as product of eigenvalue and eigenvector times square root of number of atoms in all groups
   std::string str_natoms; Tools::convert( ntot_atoms, str_natoms );
   readInputLine( getShortcutLabel() + "_sp: CUSTOM ARG=" + getShortcutLabel() + "_diag.vals-1," + getShortcutLabel() +
                  "_diag.vecs-1 FUNC=sqrt(" + str_natoms + ")*x*y PERIODIC=NO");
   // Sort sprint coordinates for each group of atoms
-  unsigned k=0;
+  unsigned k=0, kk=0;
   for(unsigned j=0; j<nin_group.size(); ++j) {
     std::string jnum, knum; Tools::convert( j+1, jnum ); Tools::convert(k+1, knum); k++;
     std::string sort_act = getShortcutLabel() + "_selection" + jnum + ": SELECT_COMPONENTS ARG=" + getShortcutLabel() + "_sp COMPONENTS=" + knum;
@@ -146,6 +132,10 @@ Sprint::Sprint(const ActionOptions& ao):
     }
     readInputLine( sort_act );
     readInputLine( getShortcutLabel() + jnum + ": SORT ARG=" + getShortcutLabel() + "_selection" + jnum );
+    for(unsigned n=0; n<nin_group[j]; ++n) {
+        std::string knum, nnum; Tools::convert( kk, knum ); Tools::convert( n+1, nnum ); kk++;
+        readInputLine( getShortcutLabel() + "_coord-" + knum + ": COMBINE ARG=" + getShortcutLabel() + jnum + "." + nnum + " PERIODIC=NO" );
+    }
   }
 }
 

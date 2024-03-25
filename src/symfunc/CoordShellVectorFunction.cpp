@@ -147,7 +147,11 @@ PLUMED_REGISTER_ACTION(CoordShellVectorFunction,"COORDINATION_SHELL_AVERAGE")
 void CoordShellVectorFunction::registerKeywords( Keywords& keys ) {
   CoordinationNumbers::shortcutKeywords( keys );
   keys.add("compulsory","FUNCTION","the function of the bond vectors that you would like to evaluate");
+  keys.add("compulsory","PHI","0.0","The Euler rotational angle phi");
+  keys.add("compulsory","THETA","0.0","The Euler rotational angle theta");
+  keys.add("compulsory","PSI","0.0","The Euler rotational angle psi");
   keys.add("compulsory","ALPHA","3.0","The alpha parameter of the angular function that is used for FCCUBIC");
+  keys.addFlag("LOWMEM",false,"this flag does nothing and is present only to ensure back-compatibility");
   keys.needsAction("CONTACT_MATRIX"); keys.needsAction("FCCUBIC_FUNC"); keys.needsAction("CUSTOM");
   keys.needsAction("ONES"); keys.needsAction("MATRIX_VECTOR_PRODUCT");
 }
@@ -156,30 +160,49 @@ CoordShellVectorFunction::CoordShellVectorFunction(const ActionOptions& ao):
   Action(ao),
   ActionShortcut(ao)
 {
-  std::string matlab, sp_str, specA, specB;
+  std::string matlab, sp_str, specA, specB; bool lowmem; parseFlag("LOWMEM",lowmem);
+  if( lowmem ) warning("LOWMEM flag is deprecated and is no longer required for this action");
   parse("SPECIES",sp_str); parse("SPECIESA",specA); parse("SPECIESB",specB);
   if( sp_str.length()>0 || specA.length()>0 ) {
     matlab = getShortcutLabel() + "_mat";
     CoordinationNumbers::expandMatrix( true, getShortcutLabel(),  sp_str, specA, specB, this );
   } else error("found no input atoms use SPECIES/SPECIESA");
+  double phi, theta, psi; parse("PHI",phi); parse("THETA",theta); parse("PSI",psi);
+  std::vector<std::string> rotelements(9); std::string xvec = matlab + ".x", yvec = matlab + ".y", zvec = matlab + ".z";
+  if( phi!=0 || theta!=0 || psi!=0 ) {
+    Tools::convert( std::cos(psi)*std::cos(phi)-std::cos(theta)*std::sin(phi)*std::sin(psi), rotelements[0] );
+    Tools::convert( std::cos(psi)*std::sin(phi)+std::cos(theta)*std::cos(phi)*std::sin(psi), rotelements[1] );
+    Tools::convert( std::sin(psi)*std::sin(theta), rotelements[2] );
+
+    Tools::convert( -std::sin(psi)*std::cos(phi)-std::cos(theta)*std::sin(phi)*std::cos(psi), rotelements[3] );
+    Tools::convert( -std::sin(psi)*std::sin(phi)+std::cos(theta)*std::cos(phi)*std::cos(psi), rotelements[4] );
+    Tools::convert( std::cos(psi)*std::sin(theta), rotelements[5] );
+
+    Tools::convert( std::sin(theta)*std::sin(phi), rotelements[6] );
+    Tools::convert( -std::sin(theta)*std::cos(phi), rotelements[7] );
+    Tools::convert( std::cos(theta), rotelements[8] );
+    readInputLine( getShortcutLabel() + "_xrot: CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z FUNC=" + rotelements[0] + "*x+" + rotelements[1] + "*y+" + rotelements[2] + "*z PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_yrot: CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z FUNC=" + rotelements[3] + "*x+" + rotelements[4] + "*y+" + rotelements[5] + "*z PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_zrot: CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z FUNC=" + rotelements[6] + "*x+" + rotelements[7] + "*y+" + rotelements[8] + "*z PERIODIC=NO");
+  }
   // Calculate FCC cubic function from bond vectors
   if( getName()=="FCCUBIC" ) {
     std::string alpha; parse("ALPHA",alpha);
-    readInputLine( getShortcutLabel() + "_vfunc: FCCUBIC_FUNC ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z ALPHA=" + alpha);
+    readInputLine( getShortcutLabel() + "_vfunc: FCCUBIC_FUNC ARG=" + xvec + "," + yvec + "," + zvec+ " ALPHA=" + alpha);
   } else if( getName()=="TETRAHEDRAL" ) {
-    readInputLine( getShortcutLabel() + "_r: CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z PERIODIC=NO FUNC=sqrt(x*x+y*y+z*z)");
-    readInputLine( getShortcutLabel() + "_vfunc: CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z," + getShortcutLabel() + "_r"
+    readInputLine( getShortcutLabel() + "_r: CUSTOM ARG=" + xvec + "," + yvec + "," + zvec + " PERIODIC=NO FUNC=sqrt(x*x+y*y+z*z)");
+    readInputLine( getShortcutLabel() + "_vfunc: CUSTOM ARG=" + xvec + "," + yvec + "," + zvec + "," + getShortcutLabel() + "_r"
                    + " VAR=x,y,z,r PERIODIC=NO FUNC=((x+y+z)/r)^3+((x-y-z)/r)^3+((-x+y-z)/r)^3+((-x-y+z)/r)^3" );
   } else if( getName()=="SIMPLECUBIC" ) {
-    readInputLine( getShortcutLabel() + "_r: CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z PERIODIC=NO FUNC=sqrt(x*x+y*y+z*z)");
-    readInputLine( getShortcutLabel() + "_vfunc: CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z," + getShortcutLabel() + "_r"
+    readInputLine( getShortcutLabel() + "_r: CUSTOM ARG=" + xvec + "," + yvec + "," + zvec + " PERIODIC=NO FUNC=sqrt(x*x+y*y+z*z)");
+    readInputLine( getShortcutLabel() + "_vfunc: CUSTOM ARG=" + xvec + "," + yvec + "," + zvec + "," + getShortcutLabel() + "_r"
                    + " VAR=x,y,z,r PERIODIC=NO FUNC=(x^4+y^4+z^4)/(r^4)" );
   } else {
     std::string myfunc; parse("FUNCTION",myfunc);
     if( myfunc.find("r")!=std::string::npos ) {
-      readInputLine( getShortcutLabel() + "_r: CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z PERIODIC=NO FUNC=sqrt(x*x+y*y+z*z)");
-      readInputLine( getShortcutLabel() + "_vfunc: CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z," + getShortcutLabel() + "_r VAR=x,y,z,r PERIODIC=NO FUNC=" + myfunc );
-    } else readInputLine( getShortcutLabel() + "_vfunc: CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z PERIODIC=NO FUNC=" + myfunc );
+      readInputLine( getShortcutLabel() + "_r: CUSTOM ARG=" + xvec + "," + yvec + "," + zvec + " PERIODIC=NO FUNC=sqrt(x*x+y*y+z*z)");
+      readInputLine( getShortcutLabel() + "_vfunc: CUSTOM ARG=" + xvec + "," + yvec + "," + zvec + "," + getShortcutLabel() + "_r VAR=x,y,z,r PERIODIC=NO FUNC=" + myfunc );
+    } else readInputLine( getShortcutLabel() + "_vfunc: CUSTOM ARG=" + xvec + "," + yvec + "," + zvec + " PERIODIC=NO FUNC=" + myfunc );
   }
   // Hadamard product of function above and weights
   readInputLine( getShortcutLabel() + "_wvfunc: CUSTOM ARG=" + getShortcutLabel() + "_vfunc," + matlab + ".w FUNC=x*y PERIODIC=NO");

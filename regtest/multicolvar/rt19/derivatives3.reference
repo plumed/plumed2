@@ -1,4 +1,4 @@
-#! FIELDS time parameter d3_between1 d3_between2
+#! FIELDS time parameter d3_between-1 d3_between-2
  0.000000 0  0.67792 -0.31961
  0.000000 1 -0.00874  0.00412
  0.000000 2  0.59788 -0.28188

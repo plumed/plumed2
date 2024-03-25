@@ -115,7 +115,7 @@ LocalAverage::LocalAverage(const ActionOptions&ao):
   plumed_assert( av && av->getNumberOfComponents()>0 && (av->copyOutput(0))->getRank()==2 );
   std::string size; Tools::convert( (av->copyOutput(0))->getShape()[1], size );
   readInputLine( getShortcutLabel() + "_ones: ONES SIZE=" + size );
-  readInputLine( getShortcutLabel() + "_coord: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_mat.w," + getShortcutLabel() + "_ones" );
+  readInputLine( getShortcutLabel() + "_coord: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_mat," + getShortcutLabel() + "_ones" );
 
   int l=-1; std::vector<ActionShortcut*> shortcuts=plumed.getActionSet().select<ActionShortcut*>();
   for(unsigned i=0; i<shortcuts.size(); ++i) {
@@ -126,7 +126,7 @@ LocalAverage::LocalAverage(const ActionOptions&ao):
   }
 
   if( l>0 ) {
-    std::string vargs, svargs, sargs = "ARG=" + getShortcutLabel() + "_mat.w";
+    std::string vargs, svargs, sargs = "ARG=" + getShortcutLabel() + "_mat";
     for(int i=-l; i<=l; ++i) {
       std::string num = getMomentumSymbol(i);
       if( !plumed.getActionSet().selectWithLabel<ActionWithValue*>(specB + "_rmn-" + num) ) {
@@ -149,7 +149,7 @@ LocalAverage::LocalAverage(const ActionOptions&ao):
     readInputLine( getShortcutLabel() + "_2: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_av2," + getShortcutLabel() + "_lones");
     readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_2 FUNC=sqrt(x) PERIODIC=NO");
   } else {
-    readInputLine( getShortcutLabel() + "_prod: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_mat.w," + sp_str + " " + convertInputLineToString() );
+    readInputLine( getShortcutLabel() + "_prod: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_mat," + sp_str + " " + convertInputLineToString() );
     readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_prod," + sp_str + "," + getShortcutLabel() + "_coord  FUNC=(x+y)/(1+z) PERIODIC=NO");
   }
   multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel(), "", keymap, this );

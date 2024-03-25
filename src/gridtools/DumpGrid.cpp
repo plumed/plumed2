@@ -199,6 +199,7 @@ void DumpGrid::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
+  keys.add("optional","GRID","the grid you would like to print (can also use ARG for specifying what is being printed)");
   keys.add("compulsory","STRIDE","1","the frequency with which the grid should be output to the file.");
   keys.add("compulsory","FILE","density","the file on which to write the grid.");
   keys.add("optional","FMT","the format that should be used to output real numbers");
@@ -212,6 +213,9 @@ DumpGrid::DumpGrid(const ActionOptions&ao):
   ActionPilot(ao),
   fmt("%f")
 {
+  if( getNumberOfArguments()==0 ) {
+    std::vector<Value*> grids; parseArgumentList("GRID",grids); requestArguments(grids);
+  }
   if( getNumberOfArguments()!=1 ) error("should only be one argument");
   if( getPntrToArgument(0)->getRank()==0 || !getPntrToArgument(0)->hasDerivatives() ) error("input should be a grid");
   if( getName()=="DUMPCUBE" && getPntrToArgument(0)->getRank()!=3 ) error("input should be a three dimensional grid");

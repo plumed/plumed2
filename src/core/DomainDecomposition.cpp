@@ -287,10 +287,10 @@ void DomainDecomposition::share() {
     if( !(forced_vectors.empty() && nonforced_vectors.empty()) ) atomsNeeded=true;
     // Merge the atoms from the atoms that have a force on
     unique.clear(); forced_unique.clear();
-    mergeVectorTools::mergeSortedVectors(forced_vectors.data(),forced_vectors.size(),forced_unique);
+    mergeVectorTools::mergeSortedVectors(forced_vectors,forced_unique);
     // Merge all the atoms
     nonforced_vectors.push_back( &forced_unique );
-    mergeVectorTools::mergeSortedVectors(nonforced_vectors.data(),nonforced_vectors.size(),unique);
+    mergeVectorTools::mergeSortedVectors(nonforced_vectors,unique);
   } else {
     for(unsigned i=0; i<actions.size(); i++) {
       if(actions[i]->isActive()) {
@@ -468,7 +468,7 @@ void DomainDecomposition::getAllActiveAtoms( std::vector<AtomNumber>& u ) {
     }
   }
   u.clear();
-  mergeVectorTools::mergeSortedVectors(vectors.data(),vectors.size(),u);
+  mergeVectorTools::mergeSortedVectors(vectors,u);
 }
 
 void DomainDecomposition::createFullList(const TypesafePtr & n) {

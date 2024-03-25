@@ -64,7 +64,7 @@ ff(["label=ff
  SUM 
 "])
 end
-cm_cncn -- cm_cncn.w --> cc_cncn
+cm_cncn -- cm_cncn --> cc_cncn
 linkStyle 2 stroke:red,color:red;
 ones64 -- ones64 --> cc_cncn
 linkStyle 3 stroke:blue,color:blue;
@@ -74,7 +74,7 @@ Box -- Box --> cm_cnpb
 linkStyle 5 stroke:red,color:red;
 MD --> cm_cnpb
 linkStyle 6 stroke:violet,color:violet;
-cm_cnpb -- cm_cnpb.w --> cc_cnpb
+cm_cnpb -- cm_cnpb --> cc_cnpb
 linkStyle 7 stroke:red,color:red;
 ones64 -- ones64 --> cc_cnpb
 linkStyle 8 stroke:blue,color:blue;
@@ -87,7 +87,7 @@ Box -- Box --> cm_cnI
 linkStyle 10 stroke:red,color:red;
 MD --> cm_cnI
 linkStyle 11 stroke:violet,color:violet;
-cm_cnI -- cm_cnI.w --> cc_cnI
+cm_cnI -- cm_cnI --> cc_cnI
 linkStyle 12 stroke:red,color:red;
 ones192 -- ones192 --> cc_cnI
 linkStyle 13 stroke:blue,color:blue;
@@ -105,10 +105,10 @@ ff -- ff --> rr
 rr(["label=rr 
  RESTRAINT 
 "])
-ff -- ff --> 25
-rr -- rr.bias --> 25
-rr -- rr.force2 --> 25
-25("label=#64;25 
+ff -- ff --> 28
+rr -- rr.bias --> 28
+rr -- rr.force2 --> 28
+28("label=#64;28 
  PRINT
 FILE=colvar 
 ")

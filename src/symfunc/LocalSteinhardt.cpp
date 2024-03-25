@@ -291,8 +291,9 @@ void LocalSteinhardt::registerKeywords( Keywords& keys ) {
   keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
            "The following provides information on the \\ref switchingfunction that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
+  keys.addFlag("LOWMEM",false,"this flag does nothing and is present only to ensure back-compatibility");
   multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
-  keys.needsAction("CONTACT_MATRIX"); keys.needsAction("MATRIX_PRODUCT");
+  keys.needsAction("CONTACT_MATRIX"); keys.needsAction("MATRIX_PRODUCT"); keys.needsAction("GROUP");
   keys.needsAction("ONES"); keys.needsAction("OUTER_PRODUCT"); keys.needsAction("VSTACK");
   keys.needsAction("CONCATENATE"); keys.needsAction("CUSTOM"); keys.needsAction("TRANSPOSE");
   keys.needsAction("MATRIX_VECTOR_PRODUCT");
@@ -323,6 +324,8 @@ LocalSteinhardt::LocalSteinhardt(const ActionOptions& ao):
   Action(ao),
   ActionShortcut(ao)
 {
+  bool lowmem; parseFlag("LOWMEM",lowmem);
+  if( lowmem ) warning("LOWMEM flag is deprecated and is no longer required for this action");
   // Get the Q value
   int l; Tools::convert( getName().substr(7), l);
   // Create a vector filled with ones
@@ -332,6 +335,8 @@ LocalSteinhardt::LocalSteinhardt(const ActionOptions& ao):
   std::string sp_str; parse("SPECIES",sp_str);
   std::string spa_str; parse("SPECIESA",spa_str);
   if( sp_str.length()>0 ) {
+    // Create a group with these atoms
+    readInputLine( getShortcutLabel() + "_grp: GROUP ATOMS=" + sp_str );
     std::vector<std::string> sp_lab = Tools::getWords(sp_str, "\t\n ,");
     // This creates the stash to hold all the vectors
     if( sp_lab.size()==1 ) {
@@ -363,6 +368,8 @@ LocalSteinhardt::LocalSteinhardt(const ActionOptions& ao):
     // And the matrix of dot products
     readInputLine( getShortcutLabel() + "_dpmat: MATRIX_PRODUCT ARG=" + getShortcutLabel() + "_vecs," + getShortcutLabel() + "_vecsT" );
   } else if( spa_str.length()>0 ) {
+    // Create a group with these atoms
+    readInputLine( getShortcutLabel() + "_grp: GROUP ATOMS=" + spa_str );
     std::string spb_str; parse("SPECIESB",spb_str);
     if( spb_str.length()==0 ) plumed_merror("need both SPECIESA and SPECIESB in input");
     std::vector<std::string> sp_laba = Tools::getWords(spa_str, "\t\n ,");
@@ -419,7 +426,7 @@ LocalSteinhardt::LocalSteinhardt(const ActionOptions& ao):
   }
 
   // Now create the product matrix
-  readInputLine( getShortcutLabel() + "_prod: CUSTOM ARG=" + getShortcutLabel() + "_cmap.w," + getShortcutLabel() + "_dpmat FUNC=x*y PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_prod: CUSTOM ARG=" + getShortcutLabel() + "_cmap," + getShortcutLabel() + "_dpmat FUNC=x*y PERIODIC=NO");
   // Now the sum of coordination numbers times the switching functions
   ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_cmap");
   plumed_assert( av && av->getNumberOfComponents()>0 && (av->copyOutput(0))->getRank()==2 );
@@ -427,7 +434,7 @@ LocalSteinhardt::LocalSteinhardt(const ActionOptions& ao):
   readInputLine( getShortcutLabel() + "_ones: ONES SIZE=" + size );
   readInputLine( getShortcutLabel() + ": MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() +"_prod," + getShortcutLabel() +"_ones");
   // And just the sum of the coordination numbers
-  readInputLine( getShortcutLabel() + "_denom: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_cmap.w," + getShortcutLabel() +"_ones");
+  readInputLine( getShortcutLabel() + "_denom: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_cmap," + getShortcutLabel() +"_ones");
   // And matheval to get the final quantity
   readInputLine( getShortcutLabel() + "_av: CUSTOM ARG=" + getShortcutLabel() + "," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
   // And this expands everything

@@ -222,7 +222,8 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
   std::string strands_cutoff; parse("STRANDS_CUTOFF",strands_cutoff);
   if( strands_cutoff.length()>0 ) strands_cutoff=" CUTOFF_ATOMS=6,21 STRANDS_CUTOFF="+strands_cutoff;
   std::string type; parse("TYPE",type); std::string lab = getShortcutLabel() + "_rmsd"; if( uselessthan ) lab = getShortcutLabel();
-  readInputLine( lab + ": SECONDARY_STRUCTURE_RMSD BONDLENGTH=0.17" + seglist + structure + " " + atoms + " TYPE=" + type + strands_cutoff);
+  std::string nopbcstr=""; bool nopbc; parseFlag("NOPBC",nopbc); if( nopbc ) nopbcstr = " NOPBC";
+  readInputLine( lab + ": SECONDARY_STRUCTURE_RMSD BONDLENGTH=0.17" + seglist + structure + " " + atoms + " TYPE=" + type + strands_cutoff + nopbcstr );
   // Create the less than object
   if( ltmap.length()>0 ) SecondaryStructureRMSD::expandShortcut( uselessthan, getShortcutLabel(), lab, ltmap, this );
 }

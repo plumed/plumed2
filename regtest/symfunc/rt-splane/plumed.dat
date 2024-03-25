@@ -30,12 +30,12 @@ data: VSTACK ARG=nn_x,nn_y,nn_z
 dataT: TRANSPOSE ARG=data
 con: CONTACT_MATRIX GROUP=m3 SWITCH={RATIONAL R_0=0.6}
 dd: MATRIX_PRODUCT ARG=data,dataT 
-prod: CUSTOM ARG=con.w,dd FUNC=x*(3*y-1)/2 PERIODIC=NO
+prod: CUSTOM ARG=con,dd FUNC=x*(3*y-1)/2 PERIODIC=NO
 # Calculate row sums of matrix
 ones: ONES SIZE=8 
 coord: MATRIX_VECTOR_PRODUCT ARG=prod,ones
 # Now calculate average over columns
-denom: MATRIX_VECTOR_PRODUCT ARG=con.w,ones
+denom: MATRIX_VECTOR_PRODUCT ARG=con,ones
 pa: CUSTOM ARG=coord,denom FUNC=x/y PERIODIC=NO
 # And final value of function
 s3: MEAN ARG=pa PERIODIC=NO

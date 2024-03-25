@@ -143,25 +143,29 @@ void CoordinationNumbers::expandMatrix( const bool& components, const std::strin
 void CoordinationNumbers::registerKeywords( Keywords& keys ) {
   shortcutKeywords( keys );
   keys.add("compulsory","R_POWER","the power to which you want to raise the distance");
-  keys.needsAction("MATRIX_VECTOR_PRODUCT"); keys.needsAction("ONES");
+  keys.addFlag("LOWMEM",false,"this flag does nothing and is present only to ensure back-compatibility");
+  keys.add("optional","MOMENTS","the list of moments that you would like to calculate");
+  keys.addOutputComponent("moment","MOMENT","the moments of the distribution");
+  keys.needsAction("MATRIX_VECTOR_PRODUCT"); keys.needsAction("ONES"); keys.needsAction("MOMENTS");
 }
 
 CoordinationNumbers::CoordinationNumbers(const ActionOptions& ao):
   Action(ao),
   ActionShortcut(ao)
 {
+  bool lowmem; parseFlag("LOWMEM",lowmem);
+  if( lowmem ) warning("LOWMEM flag is deprecated and is no longer required for this action");
   // Setup the contract matrix if that is what is needed
   std::string matlab, sp_str, specA, specB;
   parse("SPECIES",sp_str); parse("SPECIESA",specA); parse("SPECIESB",specB);
   if( sp_str.length()>0 || specA.length()>0 ) {
-    matlab = getShortcutLabel() + "_mat.w"; bool comp=false;
+    matlab = getShortcutLabel() + "_mat"; bool comp=false;
     if( getName()=="COORDINATION_MOMENTS" ) { comp=true; matlab = getShortcutLabel() + "_mat"; }
     expandMatrix( comp, getShortcutLabel(), sp_str, specA, specB, this );
   } else error("missing atoms input use SPECIES or SPECIESA/SPECIESB");
-  std::size_t dot = matlab.find_first_of(".");
-  ActionWithValue* mb=plumed.getActionSet().selectWithLabel<ActionWithValue*>( matlab.substr(0,dot) );
-  if( !mb ) error("could not find action with name " + matlab.substr(0,dot) );
-  Value* arg; if( matlab.find(".")!=std::string::npos ) arg=mb->copyOutput( matlab ); else arg=mb->copyOutput(0);
+  ActionWithValue* mb=plumed.getActionSet().selectWithLabel<ActionWithValue*>( matlab );
+  if( !mb ) error("could not find action with name " + matlab );
+  Value*  arg=mb->copyOutput(0);
   if( arg->getRank()!=2 || arg->hasDerivatives() ) error("the input to this action should be a matrix or scalar");
   // Create vector of ones to multiply input matrix by
   std::string nones; Tools::convert( arg->getShape()[1], nones );
@@ -175,6 +179,12 @@ CoordinationNumbers::CoordinationNumbers(const ActionOptions& ao):
   }
   // Calcualte coordination numbers as matrix vector times vector of ones
   readInputLine( getShortcutLabel() + ": MATRIX_VECTOR_PRODUCT  ARG=" + matlab + "," + getShortcutLabel() + "_ones");
+  std::vector<std::string> moments; parseVector("MOMENTS",moments); Tools::interpretRanges( moments );
+  readInputLine( getShortcutLabel() + "_caverage: MEAN ARG=" + getShortcutLabel() + " PERIODIC=NO");
+  for(unsigned i=0; i<moments.size(); ++i) {
+    readInputLine( getShortcutLabel() + "_diffpow-" + moments[i] + ": CUSTOM ARG=" + getShortcutLabel() + "," + getShortcutLabel() + "_caverage PERIODIC=NO FUNC=(x-y)^" + moments[i] );
+    readInputLine( getShortcutLabel() + "_moment-" + moments[i] + ": MEAN ARG=" + getShortcutLabel() + "_diffpow-" + moments[i] + " PERIODIC=NO");
+  }
   // Read in all the shortcut stuff
   std::map<std::string,std::string> keymap; multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );
   multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel(), "", keymap, this );

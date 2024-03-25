@@ -1,8 +1,8 @@
 flowchart BT 
-11(["label=#64;11 
+12(["label=#64;12 
  BIASVALUE 
 "])
-11 -- s --> s
+12 -- s --> s
 subgraph subc1 [c1]
 subgraph subc1_mat [c1]
 c1(["label=c1 
@@ -13,7 +13,7 @@ cc(["label=cc
 "])
 end
 style subc1_mat fill:lightblue
-c1 -. c1.w .-> cc
+c1 -. c1 .-> cc
 linkStyle 1 stroke:red,color:red;
 mtc(["label=mtc 
  MORE_THAN 

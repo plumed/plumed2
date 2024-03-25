@@ -248,9 +248,9 @@ HBPammShortcut::HBPammShortcut(const ActionOptions&ao):
   std::map<std::string,std::string> keymap; multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );
   readInputLine( mwords + " " + convertInputLineToString() );
   ActionWithValue* mb=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_mat");
-  plumed_assert( mb ); std::string nsize; Tools::convert( (mb->copyOutput(getShortcutLabel() + "_mat.w"))->getShape()[1], nsize );
+  plumed_assert( mb ); std::string nsize; Tools::convert( (mb->copyOutput(getShortcutLabel() + "_mat"))->getShape()[1], nsize );
   readInputLine( getShortcutLabel() + "_ones: ONES SIZE=" + nsize );
-  readInputLine( getShortcutLabel() + ": MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_mat.w," + getShortcutLabel() + "_ones");
+  readInputLine( getShortcutLabel() + ": MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_mat," + getShortcutLabel() + "_ones");
   multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel(), "", keymap, this );
 }
 

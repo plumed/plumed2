@@ -218,7 +218,7 @@ void EnvironmentSimilarity::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","LAMBDA","100","Lambda parameter.  This is only used if you have more than one reference environment");
   keys.add("compulsory","CUTOFF","3","how many multiples of sigma would you like to consider beyond the maximum distance in the environment");
   keys.add("optional","ATOM_NAMES_FILE","PDB file with atom names for all atoms in SPECIES. Atoms in reference environments will be compared only if atom names match.");
-  multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
+  multicolvar::MultiColvarShortcuts::shortcutKeywords( keys ); keys.needsAction("GROUP");
   keys.needsAction("DISTANCE_MATRIX"); keys.needsAction("ONES"); keys.needsAction("CONSTANT");
   keys.needsAction("CUSTOM"); keys.needsAction("MATRIX_VECTOR_PRODUCT"); keys.needsAction("COMBINE");
 }
@@ -365,11 +365,14 @@ EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
 
   // Create the constact matrix
   std::string sp_str, specA, specB; parse("SPECIES",sp_str); parse("SPECIESA",specA); parse("SPECIESB",specB);
-  if( sp_str.length()>0 ) readInputLine( matlab + ": DISTANCE_MATRIX COMPONENTS GROUP=" + sp_str + " CUTOFF=" + str_cutoff );
-  else {
+  if( sp_str.length()>0 ) {
+    readInputLine( matlab + ": DISTANCE_MATRIX COMPONENTS GROUP=" + sp_str + " CUTOFF=" + str_cutoff );
+    readInputLine( getShortcutLabel() + "_grp: GROUP ATOMS=" + sp_str );
+  } else {
     if( specA.length()==0 ) error("no atoms were specified use SPECIES or SPECIESA+SPECIESB");
     if( specB.length()==0 ) error("no atoms were specified for SPECIESB");
     readInputLine( matlab + ": DISTANCE_MATRIX COMPONENTS GROUPA=" + specA + " GROUPB=" + specB + " CUTOFF=" + str_cutoff );
+    readInputLine( getShortcutLabel() + "_grp: GROUP ATOMS=" + specA );
   }
 
   // Make a vector containing all ones

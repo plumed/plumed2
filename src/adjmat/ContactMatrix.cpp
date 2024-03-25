@@ -24,7 +24,7 @@
 #include "tools/SwitchingFunction.h"
 #include "tools/Matrix.h"
 
-//+PLUMEDOC MATRIX CONTACT_MATRIX
+//+PLUMEDOC MATRIX CONTACT_MATRIX_PROPER
 /*
 Adjacency matrix in which two atoms are adjacent if they are within a certain cutoff.
 
@@ -71,9 +71,11 @@ public:
   explicit ContactMatrix(const ActionOptions&);
 /// This does nothing
   double calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const override;
+/// Override this so we write the graph properly
+  std::string writeInGraph() const override { return "CONTACT_MATRIX"; }
 };
 
-PLUMED_REGISTER_ACTION(ContactMatrix,"CONTACT_MATRIX")
+PLUMED_REGISTER_ACTION(ContactMatrix,"CONTACT_MATRIX_PROPER")
 
 void ContactMatrix::registerKeywords( Keywords& keys ) {
   AdjacencyMatrixBase::registerKeywords( keys );

@@ -44,6 +44,11 @@ PLUMED_REGISTER_ACTION(Bridge,"BRIDGE")
 
 void Bridge::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords(keys);
+  keys.add("atoms","GROUP","the atoms for which you would like to calculate the adjacency matrix");
+  keys.add("atoms","GROUPA","");
+  keys.add("atoms","GROUPB","");
+  keys.add("atoms","BRIDGING_ATOMS","The list of atoms that can form the bridge between the two interesting parts "
+           "of the structure.");
   keys.add("optional","SWITCH","The parameters of the two \\ref switchingfunction in the above formula");
   keys.add("optional","SWITCHA","The \\ref switchingfunction on the distance between bridging atoms and the atoms in "
            "group A");
@@ -63,7 +68,7 @@ Bridge::Bridge(const ActionOptions& ao):
   // Create the matrix object
   readInputLine( getShortcutLabel() + "_mat: BRIDGE_MATRIX " + s_inp + convertInputLineToString() );
   // Add all the elements of the matrix together
-  readInputLine( getShortcutLabel() + ": SUM ARG=" + getShortcutLabel() + "_mat.w PERIODIC=NO");
+  readInputLine( getShortcutLabel() + ": SUM ARG=" + getShortcutLabel() + "_mat PERIODIC=NO");
 }
 
 }

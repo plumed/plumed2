@@ -68,6 +68,7 @@ void ClusterWeights::registerKeywords( Keywords& keys ) {
   ActionWithValue::registerKeywords( keys ); keys.remove("NUMERICAL_DERIVATIVES");
   keys.add("compulsory","CLUSTERS","the label of the action that does the clustering");
   keys.add("compulsory","CLUSTER","1","which cluster would you like to look at 1 is the largest cluster, 2 is the second largest, 3 is the the third largest and so on.");
+  keys.addFlag("LOWMEM",false,"this flag does nothing and is present only to ensure back-compatibility");
   // keys.add("hidden","FROM_PROPERTIES","indicates that this is created from CLUSTER_PROPERTIES shortcut");
 }
 
@@ -76,6 +77,8 @@ ClusterWeights::ClusterWeights(const ActionOptions&ao):
   ActionWithArguments(ao),
   ActionWithValue(ao)
 {
+  bool lowmem; parseFlag("LOWMEM",lowmem);
+  if( lowmem ) warning("LOWMEM flag is deprecated and is no longer required for this action");
   // Read in the clustering object
   std::vector<Value*> clusters; parseArgumentList("CLUSTERS",clusters);
   if( clusters.size()!=1 ) error("should pass only one matrix to clustering base");

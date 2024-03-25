@@ -125,7 +125,7 @@ void DRMSD::registerKeywords( Keywords& keys ) {
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   // This is just ignored in reality which is probably bad
   keys.addFlag("NUMERICAL_DERIVATIVES",false,"calculate the derivatives for these quantities numerically");
-  keys.needsAction("DISTANCE"); keys.needsAction("CONSTANT"); keys.needsAction("EUCLIDEAN_DISTANCE"); keys.needsAction("CUSTOM");
+  keys.needsAction("SUM"); keys.needsAction("DISTANCE"); keys.needsAction("CONSTANT"); keys.needsAction("EUCLIDEAN_DISTANCE"); keys.needsAction("CUSTOM");
 }
 
 DRMSD::DRMSD( const ActionOptions& ao ):
@@ -135,14 +135,22 @@ DRMSD::DRMSD( const ActionOptions& ao ):
   // Read in the reference configuration
   std::string reference; parse("REFERENCE",reference);
   // First bit of input for the instantaneous distances
-  bool numder; parseFlag("NUMERICAL_DERIVATIVES",numder);
+  bool numder; parseFlag("NUMERICAL_DERIVATIVES",numder); double fake_unit=0.1;
+  FILE* fp2=fopen(reference.c_str(),"r"); bool do_read=true; unsigned nframes=0;
+  while( do_read ) {
+    PDB mypdb; do_read=mypdb.readFromFilepointer(fp2,false,fake_unit);
+    if( !do_read && nframes>0 ) break ;
+    nframes++;
+  }
+  fclose(fp2);
+
   // Get cutoff information
   double lcut=0; parse("LOWER_CUTOFF",lcut); std::string drmsd_type; parse("TYPE",drmsd_type);
   double ucut=std::numeric_limits<double>::max(); parse("UPPER_CUTOFF",ucut);
   bool nopbc; parseFlag("NOPBC",nopbc); std::string pbc_str; if(nopbc) pbc_str="NOPBC";
   // Open the pdb file
-  FILE* fp=fopen(reference.c_str(),"r"); bool do_read=true; double fake_unit=0.1;
-  if(!fp) error("could not open reference file " + reference ); unsigned n=0;
+  FILE* fp=fopen(reference.c_str(),"r"); do_read=true;
+  if(!fp) error("could not open reference file " + reference ); unsigned n=0; std::string allpairs="";
   std::vector<std::pair<unsigned,unsigned> > upairs; std::vector<std::string> refvals;
   while ( do_read ) {
     PDB mypdb; do_read=mypdb.readFromFilepointer(fp,false,fake_unit);
@@ -165,7 +173,8 @@ DRMSD::DRMSD( const ActionOptions& ao ):
               // Add this distance to list of reference values
               std::string dstr; Tools::convert( distance, dstr ); refvals.push_back( dstr );
               // Calculate this distance
-              readInputLine( getShortcutLabel() + "_d" + num + ": DISTANCE ATOMS=" + istr + "," + jstr + " " + pbc_str );
+              if( nframes==1 ) allpairs += " ATOMS" + num + "=" + istr + "," + jstr;
+              else readInputLine( getShortcutLabel() + "_d" + num + ": DISTANCE ATOMS=" + istr + "," + jstr + " " + pbc_str );
             }
           }
         }
@@ -187,7 +196,8 @@ DRMSD::DRMSD( const ActionOptions& ao ):
                   // Add this distance to list of reference values
                   std::string dstr; Tools::convert( distance, dstr ); refvals.push_back( dstr );
                   // Calculate this distance
-                  readInputLine( getShortcutLabel() + "_d" + num + ": DISTANCE ATOMS=" + istr + "," + jstr + " " + pbc_str );
+                  if( nframes==1 ) allpairs += " ATOMS" + num + "=" + istr + "," + jstr;
+                  else readInputLine( getShortcutLabel() + "_d" + num + ": DISTANCE ATOMS=" + istr + "," + jstr + " " + pbc_str );
                 }
               }
             }
@@ -207,7 +217,8 @@ DRMSD::DRMSD( const ActionOptions& ao ):
                     // Add this distance to list of reference values
                     std::string dstr; Tools::convert( distance, dstr ); refvals.push_back( dstr );
                     // Calculate this distance
-                    readInputLine( getShortcutLabel() + "_d" + num + ": DISTANCE ATOMS=" + istr + "," + jstr + " " + pbc_str );
+                    if( nframes==1 ) allpairs += " ATOMS" + num + "=" + istr + "," + jstr;
+                    else readInputLine( getShortcutLabel() + "_d" + num + ": DISTANCE ATOMS=" + istr + "," + jstr + " " + pbc_str );
                   }
                 }
               }
@@ -225,15 +236,25 @@ DRMSD::DRMSD( const ActionOptions& ao ):
     n++;
   }
   // Now create values that hold all the reference distances
-  fclose(fp); std::string arg_str1, arg_str2;
-  for(unsigned i=0; i<refvals.size(); ++i ) {
-    std::string inum; Tools::convert( i+1, inum );
-    readInputLine( getShortcutLabel() + "_ref" + inum + ": CONSTANT VALUES=" + refvals[i] );
-    if( i==0 ) { arg_str1 = getShortcutLabel() + "_d" + inum; arg_str2 = getShortcutLabel() + "_ref" + inum; }
-    else { arg_str1 += "," + getShortcutLabel() + "_d" + inum; arg_str2 += "," + getShortcutLabel() + "_ref" + inum; }
+  fclose(fp);
+
+  if( nframes==1 ) {
+    readInputLine( getShortcutLabel() + "_d: DISTANCE" + allpairs + " " + pbc_str );
+    std::string refstr = refvals[0]; for(unsigned i=1; i<refvals.size(); ++i) refstr += "," + refvals[i];
+    readInputLine( getShortcutLabel() + "_ref: CONSTANT VALUES="  + refstr );
+    readInputLine( getShortcutLabel() + "_diffs: CUSTOM ARG=" + getShortcutLabel() + "_d," + getShortcutLabel() + "_ref FUNC=(x-y)*(x-y) PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_u: SUM ARG=" + getShortcutLabel() + "_diffs PERIODIC=NO");
+  } else {
+    std::string arg_str1, arg_str2;
+    for(unsigned i=0; i<refvals.size(); ++i ) {
+      std::string inum; Tools::convert( i+1, inum );
+      readInputLine( getShortcutLabel() + "_ref" + inum + ": CONSTANT VALUES=" + refvals[i] );
+      if( i==0 ) { arg_str1 = getShortcutLabel() + "_d" + inum; arg_str2 = getShortcutLabel() + "_ref" + inum; }
+      else { arg_str1 += "," + getShortcutLabel() + "_d" + inum; arg_str2 += "," + getShortcutLabel() + "_ref" + inum; }
+    }
+    // And calculate the euclidean distances between the true distances and the references
+    readInputLine( getShortcutLabel() + "_u: EUCLIDEAN_DISTANCE SQUARED ARG1=" + arg_str1 + " ARG2=" + arg_str2 );
   }
-  // And calculate the euclidean distances between the true distances and the references
-  readInputLine( getShortcutLabel() + "_u: EUCLIDEAN_DISTANCE SQUARED ARG1=" + arg_str1 + " ARG2=" + arg_str2 );
   // And final value
   std::string nvals; Tools::convert( refvals.size(), nvals ); bool squared; parseFlag("SQUARED",squared);
   if( squared ) readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_u FUNC=x/" + nvals + " PERIODIC=NO");

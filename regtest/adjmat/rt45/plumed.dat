@@ -14,7 +14,7 @@ a2: COORD_ANGLES ...
 PRINT ARG=a1_wsum FILE=matrix
 
 DUMPDERIVATIVES ARG=a1_sum FILE=deriv FMT=%8.4f
-a2b: CUSTOM ARG=a2_between1,a2_denom FUNC=x/y PERIODIC=NO
+a2b: CUSTOM ARG=a2_between-1,a2_denom FUNC=x/y PERIODIC=NO
 PRINT ARG=a1.*,a2.*,a2b FILE=colvar FMT=%8.5f
 BIASVALUE ARG=a1_mean
 BIASVALUE ARG=a2b

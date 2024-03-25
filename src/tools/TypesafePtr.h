@@ -303,8 +303,11 @@ private:
           throw ExceptionTypeError() << "Incorrect number of axis (requested greater than passed)"<<extra_msg();
         }
         if(shape[i]==0) break;
-        if(!(shape[i]<=this->shape[i])) {
-          throw ExceptionTypeError() << "This command wants to access " << shape[i] << " on axis " << i <<" of this pointer, but only " << this->shape[i] << " have been passed"<<extra_msg();
+        if((shape[i]>this->shape[i])) {
+          throw ExceptionTypeError() << "This command wants " << shape[i] << " elements on axis " << i <<" of this pointer, but " << this->shape[i] << " have been passed"<<extra_msg();
+        }
+        if(i>0 && (shape[i]<this->shape[i])) {
+          throw ExceptionTypeError() << "This command wants " << shape[i] << " elements on axis " << i <<" of this pointer, but " << this->shape[i] << " have been passed"<<extra_msg();
         }
       }
     }

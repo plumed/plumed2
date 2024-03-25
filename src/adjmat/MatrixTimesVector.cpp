@@ -65,7 +65,7 @@ MatrixTimesVector::MatrixTimesVector(const ActionOptions&ao):
   unsigned nvectors=0, nmatrices=0;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     if( getPntrToArgument(i)->hasDerivatives() ) error("arguments should be vectors or matrices");
-    if( getPntrToArgument(i)->getRank()==1 ) nvectors++;
+    if( getPntrToArgument(i)->getRank()<=1 ) nvectors++;
     if( getPntrToArgument(i)->getRank()==2 ) nmatrices++;
   }
 
@@ -74,9 +74,13 @@ MatrixTimesVector::MatrixTimesVector(const ActionOptions&ao):
     unsigned n = getNumberOfArguments()-1;
     for(unsigned i=0; i<n; ++i) {
       if( getPntrToArgument(i)->getRank()!=2 || getPntrToArgument(i)->hasDerivatives() ) error("all arguments other than last argument should be matrices");
-      if( getPntrToArgument(i)->getShape()[1]!=getPntrToArgument(n)->getShape()[0] ) error("number of columns in input matrix does not equal number of elements in vector");
+      if( getPntrToArgument(n)->getRank()==0 ) {
+        if( getPntrToArgument(i)->getShape()[1]!=1 ) error("number of columns in input matrix does not equal number of elements in vector");
+      } else if( getPntrToArgument(i)->getShape()[1]!=getPntrToArgument(n)->getShape()[0] ) error("number of columns in input matrix does not equal number of elements in vector");
     }
-    if( getPntrToArgument(n)->getRank()!=1 || getPntrToArgument(n)->hasDerivatives() ) error("last argument to this action should be a vector");
+    if( getPntrToArgument(n)->getRank()>0 ) {
+      if( getPntrToArgument(n)->getRank()!=1 || getPntrToArgument(n)->hasDerivatives() ) error("last argument to this action should be a vector");
+    }
     getPntrToArgument(n)->buildDataStore();
 
     ActionWithVector* av=dynamic_cast<ActionWithVector*>( getPntrToArgument(0)->getPntrToAction() );
@@ -94,8 +98,10 @@ MatrixTimesVector::MatrixTimesVector(const ActionOptions&ao):
   } else if( nmatrices==1 ) {
     if( getPntrToArgument(0)->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) error("first argument to this action should be a matrix");
     for(unsigned i=1; i<getNumberOfArguments(); ++i) {
-      if( getPntrToArgument(i)->getRank()!=1 || getPntrToArgument(i)->hasDerivatives() ) error("all arguments other than first argument should be vectors");
-      if( getPntrToArgument(0)->getShape()[1]!=getPntrToArgument(i)->getShape()[0] ) error("number of columns in input matrix does not equal number of elements in vector");
+      if( getPntrToArgument(i)->getRank()>1 || getPntrToArgument(i)->hasDerivatives() ) error("all arguments other than first argument should be vectors");
+      if( getPntrToArgument(i)->getRank()==0 ) {
+        if( getPntrToArgument(0)->getShape()[1]!=1 ) error("number of columns in input matrix does not equal number of elements in vector");
+      } else if( getPntrToArgument(0)->getShape()[1]!=getPntrToArgument(i)->getShape()[0] ) error("number of columns in input matrix does not equal number of elements in vector");
       getPntrToArgument(i)->buildDataStore();
     }
 

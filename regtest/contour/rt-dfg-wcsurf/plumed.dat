@@ -6,10 +6,10 @@ cf: MORE_THAN ARG=c1 SWITCH={RATIONAL D_0=2.0 R_0=0.1}
 c1_mat2: CONTACT_MATRIX GROUP=1-512 SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0}
 dp_mat: OUTER_PRODUCT ARG=cf,cf
 # Build the final matrix
-mat: CUSTOM ARG=c1_mat2.w,dp_mat FUNC=x*y PERIODIC=NO
+mat: CUSTOM ARG=c1_mat2,dp_mat FUNC=x*y PERIODIC=NO
 # Find largest cluster
 dfs: DFSCLUSTERING ARG=mat 
-clust1: CLUSTER_PROPERTIES CLUSTERS=dfs CLUSTER=1 
+clust1: CLUSTER_WEIGHTS CLUSTERS=dfs CLUSTER=1 
 nat: CLUSTER_NATOMS CLUSTERS=dfs CLUSTER=1
 
 # Print out the size of the cluster and the atoms

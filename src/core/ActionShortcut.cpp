@@ -136,9 +136,10 @@ void ActionShortcut::interpretDataLabel( const std::string& mystr, Action* myuse
         } else {
           for(unsigned j=1;; ++j) {
             std::string numstr; Tools::convert( j, numstr );
-            ActionWithValue* act=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a + "_" + out_comps[k] + numstr );
-            if(!act) break;
-            for(unsigned n=0; n<act->getNumberOfComponents(); ++n ) arg.push_back(act->copyOutput(n));
+            ActionWithValue* act=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a + "_" + out_comps[k] + "-" + numstr );
+            if( act ) {
+              for(unsigned n=0; n<act->getNumberOfComponents(); ++n ) arg.push_back(act->copyOutput(n));
+            } else if( j>1 ) break;    // This ensures that * syntax works with moments, which normally start from 2
           }
         }
       }
@@ -149,19 +150,9 @@ void ActionShortcut::interpretDataLabel( const std::string& mystr, Action* myuse
     if( act && act->exists(mystr) ) return;
     // Get components that are actually actions
     for(unsigned k=0; k<out_comps.size(); ++k) {
-      if( name.find(out_comps[k])!=std::string::npos ) {
-        if( name==out_comps[k] ) {
-          ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a + "_" + name );
-          arg.push_back(action->copyOutput(a+"_"+name));
-        } else {
-          for(unsigned j=1;; ++j) {
-            std::string numstr; Tools::convert( j, numstr );
-            if( name==out_comps[k] + numstr ) {
-              ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a + "_" + name + numstr );
-              arg.push_back(action->copyOutput(a+"_"+name+numstr));
-            } else break;
-          }
-        }
+      if(name.find_first_of(out_comps[k])!=std::string::npos ) {
+        ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( a + "_" + name );
+        if( action ) arg.push_back(action->copyOutput(a+"_"+name));
         break;
       }
     }

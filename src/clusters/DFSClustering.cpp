@@ -91,6 +91,7 @@ PLUMED_REGISTER_ACTION(DFSClustering,"DFSCLUSTERING")
 
 void DFSClustering::registerKeywords( Keywords& keys ) {
   ClusteringBase::registerKeywords( keys );
+  keys.addFlag("LOWMEM",false,"this flag does nothing and is present only to ensure back-compatibility");
 }
 
 DFSClustering::DFSClustering(const ActionOptions&ao):
@@ -100,6 +101,8 @@ DFSClustering::DFSClustering(const ActionOptions&ao):
 #ifndef __PLUMED_HAS_BOOST_GRAPH
   nneigh.resize( getNumberOfNodes() ); color.resize(getNumberOfNodes());
 #endif
+  bool lowmem; parseFlag("LOWMEM",lowmem);
+  if( lowmem ) warning("LOWMEM flag is deprecated and is no longer required for this action");
 }
 
 void DFSClustering::performClustering() {
