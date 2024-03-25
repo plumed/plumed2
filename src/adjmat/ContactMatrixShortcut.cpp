@@ -90,23 +90,23 @@ ContactMatrixShortcut::ContactMatrixShortcut(const ActionOptions& ao):
   Action(ao),
   ActionShortcut(ao)
 {
-  std::vector<std::string> grp_str; std::string atomsstr=""; 
-  std::vector<std::string> atomsvec; parseVector("ATOMS",atomsvec); 
+  std::vector<std::string> grp_str; std::string atomsstr="";
+  std::vector<std::string> atomsvec; parseVector("ATOMS",atomsvec);
   if( atomsvec.size()>0 )  {
-     for(unsigned i=0; i<atomsvec.size(); ++i) {
-         Group* gg = plumed.getActionSet().selectWithLabel<Group*>( atomsvec[i] );
-         if( gg ) grp_str.push_back( atomsvec[i] );
-     }
-     if( grp_str.size()!=atomsvec.size() ) { 
-         grp_str.resize(0); 
-         atomsstr = " ATOMS=" + atomsvec[0]; for(unsigned i=1; i<atomsvec.size(); ++i) atomsstr += "," + atomsvec[i];
-     }
-  } else { 
-     std::string grp_inpt; 
-     for(unsigned i=1;; ++i) {
-       if( !parseNumbered("GROUP",i,grp_inpt) ) break;
-       grp_str.push_back( grp_inpt );
-     }
+    for(unsigned i=0; i<atomsvec.size(); ++i) {
+      Group* gg = plumed.getActionSet().selectWithLabel<Group*>( atomsvec[i] );
+      if( gg ) grp_str.push_back( atomsvec[i] );
+    }
+    if( grp_str.size()!=atomsvec.size() ) {
+      grp_str.resize(0);
+      atomsstr = " ATOMS=" + atomsvec[0]; for(unsigned i=1; i<atomsvec.size(); ++i) atomsstr += "," + atomsvec[i];
+    }
+  } else {
+    std::string grp_inpt;
+    for(unsigned i=1;; ++i) {
+      if( !parseNumbered("GROUP",i,grp_inpt) ) break;
+      grp_str.push_back( grp_inpt );
+    }
   }
   if( grp_str.size()>9 ) error("cannot handle more than 9 groups");
   if( grp_str.size()==0 )  { readInputLine( getShortcutLabel() + ": CONTACT_MATRIX_PROPER " + atomsstr + " " + convertInputLineToString() ); return; }

@@ -103,17 +103,17 @@ Sprint::Sprint(const ActionOptions& ao):
   Action(ao),
   ActionShortcut(ao)
 {
-  std::string matinp; parse("MATRIX",matinp); 
+  std::string matinp; parse("MATRIX",matinp);
   if( matinp.length()==0 ) {
-      readInputLine( getShortcutLabel() + "_jmat: CONTACT_MATRIX " + convertInputLineToString() );
-      matinp = getShortcutLabel() + "_jmat";
-  } 
+    readInputLine( getShortcutLabel() + "_jmat: CONTACT_MATRIX " + convertInputLineToString() );
+    matinp = getShortcutLabel() + "_jmat";
+  }
   std::vector<unsigned> nin_group; unsigned ntot_atoms=0;
   for(unsigned i=1;; ++i) {
-      std::string inum; Tools::convert( i, inum );
-      ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( matinp + inum + inum );
-      if( !av ) break ;
-      unsigned natoms = (av->copyOutput(0))->getShape()[0]; nin_group.push_back( natoms ); ntot_atoms += natoms;
+    std::string inum; Tools::convert( i, inum );
+    ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( matinp + inum + inum );
+    if( !av ) break ;
+    unsigned natoms = (av->copyOutput(0))->getShape()[0]; nin_group.push_back( natoms ); ntot_atoms += natoms;
   }
 
   // Diagonalization
@@ -133,8 +133,8 @@ Sprint::Sprint(const ActionOptions& ao):
     readInputLine( sort_act );
     readInputLine( getShortcutLabel() + jnum + ": SORT ARG=" + getShortcutLabel() + "_selection" + jnum );
     for(unsigned n=0; n<nin_group[j]; ++n) {
-        std::string knum, nnum; Tools::convert( kk, knum ); Tools::convert( n+1, nnum ); kk++;
-        readInputLine( getShortcutLabel() + "_coord-" + knum + ": COMBINE ARG=" + getShortcutLabel() + jnum + "." + nnum + " PERIODIC=NO" );
+      std::string knum, nnum; Tools::convert( kk, knum ); Tools::convert( n+1, nnum ); kk++;
+      readInputLine( getShortcutLabel() + "_coord-" + knum + ": COMBINE ARG=" + getShortcutLabel() + jnum + "." + nnum + " PERIODIC=NO" );
     }
   }
 }
