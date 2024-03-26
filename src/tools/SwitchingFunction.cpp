@@ -353,7 +353,7 @@ public:
         dfunc = ((M*result*rMdist)-(N*rNdist))*iden;
       } else {
         //here I imply that the correct initialized are being passed to doRational
-        const double x =(rdist-1.0); 
+        const double x =(rdist-1.0);
         result = result+ x * ( dfunc + 0.5 * x * secDev);
         dfunc  = dfunc + x * secDev;
       }
