@@ -576,7 +576,7 @@
 */
 
 #ifndef __PLUMED_WRAPPER_CXX_DETECT_SHAPES
-# if defined(__INTEL_COMPILER) && (__INTEL_COMPILER >= 1700)
+# if defined(__INTEL_COMPILER) && (__INTEL_COMPILER < 1700)
 #   define __PLUMED_WRAPPER_CXX_DETECT_SHAPES 0
 # elif defined(__GNUC__) && !defined(__clang__) && (__GNUC__ < 6)
 #   define __PLUMED_WRAPPER_CXX_DETECT_SHAPES 0
