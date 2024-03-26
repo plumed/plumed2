@@ -57,7 +57,7 @@ cdef class Plumed:
             if not self.c_plumed.valid():
                  raise RuntimeError("PLUMED not available, check your PLUMED_KERNEL environment variable")
          else:
-            py_kernel= kernel.encode()
+            py_kernel= kernel.encode() + b'\x00'  # Explicitly add null terminator
             ckernel = py_kernel
             self.c_plumed=cplumed.Plumed.dlopen(ckernel)
             if not self.c_plumed.valid():
@@ -131,7 +131,7 @@ cdef class Plumed:
          cdef size_t comm_addr = MPI._addressof(val)
          self.c_plumed.cmd_mpi( ckey, <const void*>comm_addr)
      def cmd( self, key, val=None ):
-         cdef bytes py_bytes = key.encode()
+         cdef bytes py_bytes = key.encode() + b'\x00'  # Explicitly add null terminator
          cdef char* ckey = py_bytes
          cdef char* cval
          if val is None :
@@ -165,7 +165,7 @@ cdef class Plumed:
                raise ValueError("ndarrays should be double (size=8), int, or long")
             return
          if isinstance(val, str ) :
-            py_bytes = val.encode()
+            py_bytes = val.encode() + b'\x00'  # Explicitly add null terminator
             cval = py_bytes
             self.c_plumed.cmd( ckey, <const char*>cval )
             return
