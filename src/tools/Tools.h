@@ -48,20 +48,20 @@ class IFile;
 
 /// \ingroup TOOLBOX
 /// Very small non-zero number
-const double epsilon(std::numeric_limits<double>::epsilon());
+constexpr double epsilon(std::numeric_limits<double>::epsilon());
 
 /// \ingroup TOOLBOX
 /// Boltzman constant in kj/K
-const double kBoltzmann(0.0083144621);
+constexpr double kBoltzmann(0.0083144621);
 
 /// \ingroup TOOLBOX
 /// PI
-const double pi(3.141592653589793238462643383279502884197169399375105820974944592307);
+constexpr double pi(3.141592653589793238462643383279502884197169399375105820974944592307);
 
-const double dp2cutoff(6.25);
+constexpr double dp2cutoff(6.25);
 
-const double dp2cutoffA=1.00193418799744762399; // 1.0/(1-std::exp(-dp2cutoff));
-const double dp2cutoffB=-.00193418799744762399; // -std::exp(-dp2cutoff)/(1-std::exp(-dp2cutoff));
+constexpr double dp2cutoffA=1.00193418799744762399; // 1.0/(1-std::exp(-dp2cutoff));
+constexpr double dp2cutoffB=-.00193418799744762399; // -std::exp(-dp2cutoff)/(1-std::exp(-dp2cutoff));
 
 inline static bool dp2cutoffNoStretch() {
   static const auto* res=std::getenv("PLUMED_DP2CUTOFF_NOSTRETCH");
@@ -81,6 +81,9 @@ class Tools {
 /// class to convert a string to a int type T
   template<class T>
   static bool convertToInt(const std::string & str,T &t);
+/// @brief the  recursive part of the template fastpow implementation
+  template <int exp, typename T=double, std::enable_if_t< (exp >=0), bool> = true>
+  static inline /*consteval*/ T fastpow_rec(T base, T result);
 public:
 /// Split the line in words using separators.
 /// It also take into account parenthesis. Outer parenthesis found are removed from
@@ -174,6 +177,9 @@ public:
   static std::string extension(const std::string&);
 /// Fast int power
   static double fastpow(double base,int exp);
+/// Fast int power for power known at compile time
+  template <int exp, typename T=double>
+  static inline /*consteval*/ T fastpow(T base);
 /// Modified 0th-order Bessel function of the first kind
   static double bessel0(const double& val);
 /// Check if a string full starts with string start.
@@ -400,6 +406,26 @@ double Tools::fastpow(double base, int exp)
   }
 
   return result;
+}
+
+template <int exp, typename T, std::enable_if_t< (exp >=0), bool>>
+inline T Tools::fastpow_rec(T const base, T result) {
+  if constexpr (exp == 0) {
+    return result;
+  }
+  if constexpr (exp & 1) {
+    result *= base;
+  }
+  return fastpow_rec<(exp>>1),T> (base*base, result);
+}
+
+template <int exp, typename T>
+inline T Tools::fastpow(T const base) {
+  if constexpr (exp<0) {
+    return  fastpow_rec<-exp,T>(1.0/base,1.0);
+  } else {
+    return fastpow_rec<exp,T>(base, 1.0);
+  }
 }
 
 template<typename T>

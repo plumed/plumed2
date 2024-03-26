@@ -1,0 +1,4 @@
+type=driver
+#make reset done with plumed 2.10a (05/03/2024)
+arg="--plumed plumed.dat --ixyz switchtraj.xyz"
+extra_files="../../trajectories/switchtraj.xyz"
