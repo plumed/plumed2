@@ -191,7 +191,7 @@ void DomainDecomposition::setAtomsNlocal(int n) {
 
 void DomainDecomposition::setAtomsGatindex(const TypesafePtr & g,bool fortran) {
   plumed_massert( g || gatindex.size()==0, "NULL gatindex pointer with non-zero local atoms");
-  auto gg=g.get<const int*>(gatindex.size());
+  auto gg=g.get<const int*>({gatindex.size()});
   ddStep=getStep();
   if(fortran) {
     for(unsigned i=0; i<gatindex.size(); i++) gatindex[i]=gg[i]-1;

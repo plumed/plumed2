@@ -27,7 +27,7 @@ namespace PLMD {
 
 template<typename T>
 static void getPointer(const TypesafePtr & p, const std::vector<unsigned>& shape, const unsigned& start, const unsigned& stride, T*&pp ) {
-  if( shape.size()==1 && stride==1 ) { pp=p.get<T*>( shape[0] );  }
+  if( shape.size()==1 && stride==1 ) { pp=p.get<T*>( {shape[0]} );  }
   else if( shape.size()==1 ) { auto p_=p.get<T*>( {shape[0],stride} ); pp = p_+start; }
   else if( shape.size()==2 ) { pp=p.get<T*>( {shape[0],shape[1]} ); }
 }
@@ -98,7 +98,7 @@ void DataPassingObjectTyped<T>::setValuePointer( const TypesafePtr & val, const 
   if( shape.size()==0 ) {
     if( isconst ) val.get<const T*>(); else val.get<T*>();  // just check type and discard pointer
   } else if( shape.size()==1 ) {
-    if( isconst ) val.get<const T*>(shape[0]); else val.get<T*>(shape[0]);  // just check type and discard pointer
+    if( isconst ) val.get<const T*>({shape[0]}); else val.get<T*>({shape[0]});  // just check type and discard pointer
   } else if( shape.size()==2 ) {
     if( isconst ) val.get<const T*>({shape[0],shape[1]}); else val.get<T*>({shape[0],shape[1]});  // just check type and discard pointer
   }
@@ -108,7 +108,7 @@ void DataPassingObjectTyped<T>::setValuePointer( const TypesafePtr & val, const 
 template <class T>
 void DataPassingObjectTyped<T>::setForcePointer( const TypesafePtr & val, const std::vector<unsigned>& shape ) {
   if( shape.size()==0 ) val.get<T*>();  // just check type and discard pointer
-  else if( shape.size()==1 ) val.get<T*>(shape[0]);   // just check type and discard pointer
+  else if( shape.size()==1 ) val.get<T*>({shape[0]});   // just check type and discard pointer
   else if( shape.size()==2 ) val.get<T*>({shape[0],shape[1]});   // just check type and discard pointer
   f=val.copy();
 }
