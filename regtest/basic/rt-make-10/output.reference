@@ -113,3 +113,4 @@
 27 ok - caught: PLUMED is trying to copy the pointer of an object for which this was forbidden
 28 ok - caught: Incorrect number of axis (passed greater than requested)
 29 ok - caught: Maximum shape size is 4
+30 ok - caught: PLUMED is expecting a null terminated string, but no null character was found

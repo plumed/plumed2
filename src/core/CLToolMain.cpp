@@ -84,7 +84,7 @@ void CLToolMain::cmd(std::string_view word,const TypesafePtr & val) {
       break;
     case cmd_setArgvLine:
       CHECK_NULL(val,word);
-      vv=val.get<const char*>();
+      vv=val.getCString();
       argv=Tools::getWords(vv);
       break;
     case cmd_setIn:

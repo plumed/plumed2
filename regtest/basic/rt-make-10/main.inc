@@ -297,3 +297,13 @@ Cases that require the new shape detection are possibly skipped with an #ifdef
     p.cmd("setVirial",&virial[0],{6,3,3,2,1});
   FINAL(virial,9)
 
+#if __PLUMED_WRAPPER_CXX_DETECT_SHAPES
+  INIT_FAIL((number++))
+    double positions[natoms][3];
+  MID(positions,3*natoms)
+    p.cmd("setPositions",positions,natoms);
+    auto sv=std::string_view("pp: DISTANCE ATOMS=1,2");
+    p.cmd("readInputLine",sv); // string_view should fail because it is not guaranteed to be null terminated
+  FINAL(positions,3*natoms)
+#endif
+
