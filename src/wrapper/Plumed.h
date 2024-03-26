@@ -337,7 +337,7 @@
   what is allowed in C++ (e.g., `const void*` cannot be converted to `void*`, but `void*` can
   be converted to `const void*`).
 
-  Type checkes can be disabled by setting `export PLUMED_TYPESAFE_IGNORE=yes` at runtime.
+  Type checks can be disabled by setting `export PLUMED_TYPESAFE_IGNORE=yes` at runtime.
 
   Typechecks are also enabled in the C interface (plumed_cmd). This function is replaced with a macro by default.
   In particular:
@@ -1883,7 +1883,7 @@ std::size_t custom_array_size() {
   return sizeof(T)/sizeof(value_type);
 }
 
-// Cast a pointer of a custom_array to a pointer of its value_type
+// Cast a pointer to a custom_array to a pointer of its value_type
 template<typename T, typename std::enable_if<wrapper::is_custom_array<T>::value, int>::type = 0>
 typename wrapper::is_custom_array<T>::value_type* custom_array_cast(T* val) {
   using value_type = typename wrapper::is_custom_array<T>::value_type;
@@ -3095,7 +3095,9 @@ public:
      Send a command to this plumed object
       \param key The name of the command to be executed
       \param val The argument.
-      \note This overload detects temporaries
+      \note This overload detects temporaries. If a non-pointer temporary is passed,
+      then this get marked as not-copyable by PLUMED. This will make sure PLUMED
+      does not retain pointers to temporaries.
   */
   template<typename T>
   void cmd(const char*key,T&& val) {
@@ -3106,7 +3108,9 @@ public:
      Send a command to this plumed object
       \param key The name of the command to be executed
       \param val The argument.
-      \note This overload detect non temporaries C array references.
+      \note This overload detects C-array references. This is necessary since
+      passing a C array to a generic reference will make it decay to
+      pointer, thus loosing the size information.
   */
   template<typename T, typename std::enable_if<wrapper::is_array<T>::value, int>::type = 0>
   void cmd(const char*key,T& val) {
@@ -3118,7 +3122,7 @@ public:
      Send a command to this plumed object
       \param key The name of the command to be executed
       \param val The argument.
-      \note This overload detect non temporaries non C array references.
+      \note This overload detect non-C-array references.
   */
   template<typename T, typename std::enable_if<!wrapper::is_array<T>::value, int>::type = 0>
   void cmd(const char*key,T& val) {

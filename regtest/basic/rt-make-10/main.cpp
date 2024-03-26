@@ -42,6 +42,7 @@ struct PLMD::wrapper::is_custom_array<tens3d3d> : std::true_type {
 
 
 
+// preliminary test on pass by value
 void preliminary(){
   std::ofstream output("output_preliminary");
 

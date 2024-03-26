@@ -1,3 +1,9 @@
+/*
+We here implement a wide range of cases for passing arguments
+of different size and shape to cmd().
+
+Cases that require the new shape detection are possibly skipped with an #ifdef
+*/
 
   constexpr unsigned natoms=9;
   unsigned natoms_=natoms;
