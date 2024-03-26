@@ -26,6 +26,7 @@
 #include "tools/SwitchingFunction.h"
 #include <string>
 #include <iostream>
+#include <iomanip>
 #include <limits>
 
 //+PLUMEDOC TOOLS plotswitch
