@@ -182,35 +182,36 @@ ClassicalMultiDimensionalScaling::ClassicalMultiDimensionalScaling( const Action
   ActionShortcut(ao)
 {
   // Find the argument name
-  std::string argn; parse("ARG",argn);
+  std::string argn; parse("ARG",argn); std::string dissimilarities="";
   ActionShortcut* as = plumed.getActionSet().getShortcutActionWithLabel( argn ); 
-  if( !as || as->getName()!="COLLECT_FRAMES" ) error("found no COLLECT_FRAMES action with label " + argn );
-
-  // Transpose matrix of stored data values
-  readInputLine( argn + "_dataT: TRANSPOSE ARG=" + argn + "_data");
-  // Calculate the dissimilarity matrix
-  readInputLine( getShortcutLabel() + "_mat: DISSIMILARITIES SQUARED ARG=" + argn + "_data," + argn + "_dataT"); 
-  // Step 0: Create a vector with sufficient ones to multiply by to get centering matrix
-  ActionPilot* ap = plumed.getActionSet().selectWithLabel<ActionPilot*>( argn + "_logweights");
-  if( !ap ) error("could not find value that stores logweights for collect frames action " + argn );
-  std::string clearstride="0", stride; Tools::convert( ap->getStride(), stride );
-  ActionWithValue* av = dynamic_cast<ActionWithValue*>(ap); plumed_assert( av );
-  if( (av->copyOutput(0))->getNumberOfValues()>0 ) Tools::convert( ap->getStride()*(av->copyOutput(0))->getNumberOfValues(), clearstride );
-  readInputLine( getShortcutLabel() + "_one: CONSTANT VALUE=1");
-  readInputLine( getShortcutLabel() + "_ones: COLLECT ARG=" + getShortcutLabel() + "_one STRIDE=" + stride + " CLEAR=" + clearstride ); 
+  if( !as || as->getName()!="COLLECT_FRAMES" ) {
+      if( as->getName().find("LANDMARK_SELECT")==std::string::npos ) {
+         error("found no COLLECT_FRAMES or LANDMARK_SELECT action with label " + argn );
+      } else {
+         ActionWithValue* dissims = plumed.getActionSet().selectWithLabel<ActionWithValue*>( argn + "_sqrdissims"); 
+         if( dissims ) dissimilarities = argn + "_sqrdissims";
+      }
+  }
+  if( dissimilarities.length()==0 ) { 
+      dissimilarities = getShortcutLabel() + "_mat"; 
+      // Transpose matrix of stored data values
+      readInputLine( argn + "_dataT: TRANSPOSE ARG=" + argn + "_data");
+      // Calculate the dissimilarity matrix
+      readInputLine( getShortcutLabel() + "_mat: DISSIMILARITIES SQUARED ARG=" + argn + "_data," + argn + "_dataT"); 
+  }
   // Center the matrix 
   // Step 1: calculate the sum of the rows and duplicate them into a matrix
-  readInputLine( getShortcutLabel() + "_rsums: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_mat," + getShortcutLabel() + "_ones" ); 
-  readInputLine( getShortcutLabel() + "_nones: SUM ARG=" + getShortcutLabel() + "_ones PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_rsums: MATRIX_VECTOR_PRODUCT ARG=" + dissimilarities + "," + argn + "_ones" ); 
+  readInputLine( getShortcutLabel() + "_nones: SUM ARG=" + argn + "_ones PERIODIC=NO");
   readInputLine( getShortcutLabel() + "_rsumsn: CUSTOM ARG=" + getShortcutLabel() + "_rsums," + getShortcutLabel() + "_nones FUNC=x/y PERIODIC=NO");
-  readInputLine( getShortcutLabel() + "_rsummat: OUTER_PRODUCT ARG=" + getShortcutLabel() + "_rsumsn," + getShortcutLabel() + "_ones");
+  readInputLine( getShortcutLabel() + "_rsummat: OUTER_PRODUCT ARG=" + getShortcutLabel() + "_rsumsn," + argn + "_ones");
   // Step 2: Multiply matrix by -0.5 and subtract row sums
-  readInputLine( getShortcutLabel() + "_int: CUSTOM ARG=" + getShortcutLabel() + "_rsummat," + getShortcutLabel() + "_mat FUNC=-0.5*y+0.5*x PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_int: CUSTOM ARG=" + getShortcutLabel() + "_rsummat," + dissimilarities + " FUNC=-0.5*y+0.5*x PERIODIC=NO");
   // Step 3: Calculate column sums for new matrix and duplicate them into a matrix
   readInputLine( getShortcutLabel() + "_intT: TRANSPOSE ARG=" + getShortcutLabel() + "_int");
-  readInputLine( getShortcutLabel() + "_csums: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_intT," + getShortcutLabel() + "_ones" );
+  readInputLine( getShortcutLabel() + "_csums: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_intT," + argn + "_ones" );
   readInputLine( getShortcutLabel() + "_csumsn: CUSTOM ARG=" + getShortcutLabel() + "_csums," + getShortcutLabel() + "_nones FUNC=x/y PERIODIC=NO");
-  readInputLine( getShortcutLabel() + "_csummat: OUTER_PRODUCT ARG=" + getShortcutLabel() + "_csumsn," + getShortcutLabel() + "_ones");
+  readInputLine( getShortcutLabel() + "_csummat: OUTER_PRODUCT ARG=" + getShortcutLabel() + "_csumsn," + argn + "_ones");
   // Step 4: subtract the column sums
   readInputLine( getShortcutLabel() + "_cmat: CUSTOM ARG=" + getShortcutLabel() + "_csummat," + getShortcutLabel() + "_intT FUNC=y-x PERIODIC=NO");
   // And generate the multidimensional scaling projection 

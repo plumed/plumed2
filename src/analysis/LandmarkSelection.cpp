@@ -69,10 +69,11 @@ PLUMED_REGISTER_ACTION(LandmarkSelection,"LANDMARK_SELECT_FPS")
 void LandmarkSelection::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
   keys.add("optional","ARG","the COLLECT_FRAMES action that you used to get the data");
-  keys.add("optional","DISSIMILARITIES","the matrix of dissimilarities");
+  keys.add("optional","DISSIMILARITIES","the matrix of dissimilarities if this is not provided the squared dissimilarities are calculated");
   keys.add("compulsory","NLANDMARKS","the numbe rof landmarks you would like to create");
   keys.add("optional","SEED","a random number seed");
   keys.addFlag("NOVORONOI",false,"do not do a Voronoi analysis of the data to determine weights of final points");
+  keys.addFlag("NODISSIMILARITIES",false,"do not calculate the dissimilarities");
   keys.addOutputComponent("data","ARG","the data that is being collected by this action");
   keys.addOutputComponent("logweights","ARG","the logarithms of the weights of the data points");
   keys.addOutputComponent("rectdissims","DISSIMILARITIES","a rectangular matrix containing the distances between the landmark points and the rest of the points");
@@ -85,7 +86,8 @@ LandmarkSelection::LandmarkSelection( const ActionOptions& ao ):
 {
   std::string nlandmarks; parse("NLANDMARKS",nlandmarks); bool novoronoi; parseFlag("NOVORONOI",novoronoi);
  
-  std::string argn, dissims; parse("ARG",argn); parse("DISSIMILARITIES",dissims);
+  bool nodissims; parseFlag("NODISSIMILARITIES",nodissims);
+  std::string argn, dissims; parse("ARG",argn); parse("DISSIMILARITIES",dissims); 
   if( argn.length()>0 ) {
       ActionShortcut* as = plumed.getActionSet().getShortcutActionWithLabel( argn );
       if( !as || as->getName()!="COLLECT_FRAMES" ) error("found no COLLECT_FRAMES action with label " + argn );
@@ -95,7 +97,11 @@ LandmarkSelection::LandmarkSelection( const ActionOptions& ao ):
   if( dissims.length()>0 ) {
       ActionWithValue* ds = plumed.getActionSet().selectWithLabel<ActionWithValue*>( dissims );
       if( (ds->copyOutput(0))->getRank()!=2 ) error("input for dissimilarities shoudl be a matrix");
-  }
+   // Calculate the dissimilarities if the user didn't specify them
+   } else if( !nodissims ) {
+       readInputLine( getShortcutLabel() + "_" + argn + "_dataT: TRANSPOSE ARG=" + argn + "_data"); dissims = getShortcutLabel() + "_dissims";
+       readInputLine( getShortcutLabel() + "_dissims: DISSIMILARITIES SQUARED ARG=" + argn + "_data," + getShortcutLabel() + "_" + argn + "_dataT");
+   } 
   // This deals with a corner case whereby users have a matrix of dissimilarities but no corresponding coordinates for these frames
   if( argn.length()==0 && dissims.size()>0 ) {
       ActionWithValue* ds = plumed.getActionSet().selectWithLabel<ActionWithValue*>( dissims );
@@ -141,7 +147,8 @@ LandmarkSelection::LandmarkSelection( const ActionOptions& ao ):
       if( !novoronoi ) warning("cannot use voronoi procedure to give weights to landmark points as DISSIMILARITIES was not set");
       readInputLine( getShortcutLabel() + "_logweights: SELECT_WITH_MASK ARG=" + argn + "_logweights MASK=" + getShortcutLabel() + "_mask");
   }
-
+  // Create the vector of ones that is needed by Classical MDS
+  if( argn.length()>0 ) readInputLine( getShortcutLabel() + "_ones: SELECT_WITH_MASK ARG=" + argn + "_ones MASK=" + getShortcutLabel() + "_mask");
 }
 
 }

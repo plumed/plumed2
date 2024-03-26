@@ -23,6 +23,7 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/ActionRegister.h"
+#include "core/ActionWithValue.h"
 
 //+PLUMEDOC DIMRED SKETCHMAP_CONJGRAD
 /*
@@ -46,7 +47,7 @@ PLUMED_REGISTER_ACTION(SketchMap,"SKETCHMAP")
 void SketchMap::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
   keys.add("compulsory","NLOW_DIM","number of low-dimensional coordinates required");
-  keys.add("compulsory","WEIGHTS","a vector containing the weights of the points");
+  keys.add("optional","WEIGHTS","a vector containing the weights of the points");
   keys.add("compulsory","ARG","the matrix of high dimensional coordinates that you want to project in the low dimensional space");
   keys.add("compulsory","HIGH_DIM_FUNCTION","the parameters of the switching function in the high dimensional space");
   keys.add("compulsory","LOW_DIM_FUNCTION","the parameters of the switching function in the low dimensional space");
@@ -68,25 +69,25 @@ SketchMap::SketchMap( const ActionOptions& ao):
   ActionShortcut(ao)
 {
   // Get the high dimensioal data
-  std::string argn; parse("ARG",argn);
+  std::string argn; parse("ARG",argn); std::string dissimilarities = getShortcutLabel() + "_mds_mat";
   ActionShortcut* as = plumed.getActionSet().getShortcutActionWithLabel( argn );
-  if( !as || as->getName()!="COLLECT_FRAMES" ) error("found no COLLECT_FRAMES action with label " + argn );
-  bool projall; parseFlag("PROJECT_ALL",projall); unsigned ndim; parse("NLOW_DIM",ndim); 
+  if( !as || as->getName()!="COLLECT_FRAMES" ) {
+      if( as->getName().find("LANDMARK_SELECT")==std::string::npos ) {
+          error("found no COLLECT_FRAMES or LANDMARK_SELECT action with label " + argn );
+      } else {
+         ActionWithValue* dissims = plumed.getActionSet().selectWithLabel<ActionWithValue*>( argn + "_sqrdissims");
+         if( dissims ) dissimilarities = argn + "_sqrdissims";
+      }
+  }
+  unsigned ndim; parse("NLOW_DIM",ndim); 
   std::string str_ndim; Tools::convert( ndim, str_ndim );
   // Construct a projection using classical MDS
   readInputLine( getShortcutLabel() + "_mds: CLASSICAL_MDS ARG=" + argn + " NLOW_DIM=" + str_ndim );
   // Transform the dissimilarities using the switching function
-  std::string hdfunc; parse("HIGH_DIM_FUNCTION",hdfunc); // std::size_t dot=dissmat.find_first_of("."); 
-  // if( dot!=std::string::npos ) {
-  //     analysis::LandmarkSelectionBase* lb = plumed.getActionSet().selectWithLabel<analysis::LandmarkSelectionBase*>( dissmat.substr(0,dot) );
-  //     if( lb && projall ) {
-  //        std::string lname = dissmat.substr(dot+1); std::size_t und = lname.find_first_of("_"); 
-  //        readInputLine( getShortcutLabel() + "_lhdmat: MORE_THAN ARG=" + dissmat.substr(0,dot) + "." + lname.substr(0,und)  + "_rect SQUARED SWITCH={" + hdfunc + "}");
-  //     } else if( projall ) error("input is not a set of landmark coordinates so cannot do out of sample projection");
-  // }
-  readInputLine( getShortcutLabel() + "_hdmat: MORE_THAN ARG=" + getShortcutLabel() + "_mds_mat SQUARED SWITCH={" + hdfunc + "}");
+  std::string hdfunc; parse("HIGH_DIM_FUNCTION",hdfunc); 
+  readInputLine( getShortcutLabel() + "_hdmat: MORE_THAN ARG=" + dissimilarities + " SQUARED SWITCH={" + hdfunc + "}");
   // Now for the weights - read the vector of weights first
-  std::string wvec; parse("WEIGHTS",wvec);
+  std::string wvec; parse("WEIGHTS",wvec); if( wvec.length()==0 ) wvec = argn + "_weights";
   // Now calculate the sum of thse weights
   readInputLine( wvec + "_sum: SUM ARG=" + wvec + " PERIODIC=NO");
   // And normalise the vector of weights using this sum
@@ -117,13 +118,16 @@ SketchMap::SketchMap( const ActionOptions& ao):
           argstr="ARG=" + getShortcutLabel() + "_cg.coord-1"; for(unsigned i=1;i<ndim;++i) { Tools::convert( i+1, num ); argstr += "," + getShortcutLabel() + "_cg.coord-" + num; }
           readInputLine( getShortcutLabel() + ": ARRANGE_POINTS " + argstr  + pwise_args + " MINTYPE=pointwise TARGET1=" + getShortcutLabel() + "_hdmat FUNC1={" + ldfunc + "} WEIGHTS1=" + wvec + "_mat CGTOL=" + cgtol);
       }
-      // Out of sample projection
-      if( projall ) {
-          parse("OS_CGTOL",cgtol);
-          argstr=""; for(unsigned i=0;i<ndim;++i) { Tools::convert( i+1, num ); argstr += " ARG" + num + "=" + getShortcutLabel() + ".coord-" + num; }
-          readInputLine( getShortcutLabel() + "_osample: PROJECT_POINTS " + argstr + " TARGET1=" + getShortcutLabel() + "_lhdmat " +
-                         "FUNC1={" + ldfunc + "} WEIGHTS1=" + wvec + "_normed CGTOL=" + cgtol );
-      }
+  }
+  bool projall; parseFlag("PROJECT_ALL",projall); if( !projall ) return ;
+  parse("OS_CGTOL",cgtol); argstr = getShortcutLabel() + ".coord-1"; for(unsigned i=1;i<ndim;++i) { Tools::convert( i+1, num ); argstr += "," + getShortcutLabel() + ".coord-" + num; }
+  if( as->getName().find("LANDMARK_SELECT")==std::string::npos ) {
+      readInputLine( getShortcutLabel() + "_osample: PROJECT_POINTS " + argstr + " TARGET1=" + getShortcutLabel() + "_hdmat FUNC1={" + ldfunc + "} WEIGHTS1=" + wvec + "_normed CGTOL=" + cgtol );
+  } else {
+      ActionWithValue* dissims = plumed.getActionSet().selectWithLabel<ActionWithValue*>( argn + "_rectdissims");
+      if( !dissims ) error("cannot PROJECT_ALL as " + as->getName() + " with label " + argn + " was involved without the DISSIMILARITIES keyword");
+      readInputLine( getShortcutLabel() + "_lhdmat: MORE_THAN ARG=" + argn + "_rectdissims SQUARED SWITCH={" + hdfunc + "}"); 
+      readInputLine( getShortcutLabel() + "_osample: PROJECT_POINTS ARG=" + argstr + " TARGET1=" + getShortcutLabel() + "_lhdmat FUNC1={" + ldfunc + "} WEIGHTS1=" + wvec + "_normed CGTOL=" + cgtol );
   }
 }
 

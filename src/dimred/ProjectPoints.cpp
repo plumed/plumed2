@@ -47,6 +47,7 @@ public:
   static void registerKeywords( Keywords& keys );
   ProjectPoints( const ActionOptions& );
   unsigned getNumberOfDerivatives() { return 0; }
+  void prepare() override ;
   void performTask( const unsigned& current, MultiValue& myvals ) const override ;
   double calculateStress( const std::vector<double>& pp, std::vector<double>& der );
   void calculate() override ;
@@ -113,12 +114,20 @@ ProjectPoints::ProjectPoints( const ActionOptions& ao ) :
   requestArguments( args ); checkRead();
 }
 
+void ProjectPoints::prepare() {
+  if( getPntrToComponent(0)->getRank()==0 ) return;
+
+  std::vector<unsigned> shape(1); shape[0] = getPntrToArgument(dimout)->getShape()[0];
+  for(unsigned i=0; i<dimout; ++i) {
+      if( getPntrToComponent(i)->getShape()[0]!=shape[0] ) getPntrToComponent(i)->setShape(shape);
+  }
+}
+
 double ProjectPoints::calculateStress( const std::vector<double>& pp, std::vector<double>& der ) {
   unsigned nmatrices = ( getNumberOfArguments() - dimout ) / 2; double stress=0;
 
   unsigned t=OpenMP::getThreadNum();
-  std::vector<double> dtmp( pp.size() ); unsigned nv = 1, nland = getPntrToArgument( dimout )->getShape()[0];
-  if( getPntrToArgument( dimout )->getRank()==2 ) nv = getPntrToArgument( dimout )->getShape()[1]; 
+  std::vector<double> dtmp( pp.size() ); unsigned nland = getPntrToArgument(0)->getShape()[0];
   for(unsigned i=0;i<nland;++i) {
       // Calculate distance in low dimensional space
       double dd2 = 0; for(unsigned k=0; k<pp.size(); ++k) { dtmp[k] = pp[k] - getPntrToArgument(k)->get(i); dd2 += dtmp[k]*dtmp[k]; }
@@ -129,7 +138,7 @@ double ProjectPoints::calculateStress( const std::vector<double>& pp, std::vecto
           // Get the weight for this connection 
           double weight = getPntrToArgument( dimout + 2*k + 1 )->get( i );
           // Get the difference for the connection
-          double fdiff = fd - getPntrToArgument( dimout + 2*k )->get( rowstart[t]+i*nv );
+          double fdiff = fd - getPntrToArgument( dimout + 2*k )->get( rowstart[t]+i );
           // Calculate derivatives
           double pref = -2.*weight*fdiff*df; for(unsigned n=0; n<pp.size(); ++n) der[n]+=pref*dtmp[n]; 
           // Accumulate the total stress
@@ -140,19 +149,19 @@ double ProjectPoints::calculateStress( const std::vector<double>& pp, std::vecto
 }
 
 void ProjectPoints::getProjection( const unsigned& current, std::vector<double>& point ) const {
-  Value* targ = getPntrToArgument( dimout );
-  unsigned nland = targ->getShape()[0], nv=1;
-  if( targ->getRank()==2 ) nv = targ->getShape()[1];
-  unsigned closest=0; double mindist = targ->get( current );
+  Value* targ = getPntrToArgument( dimout ); unsigned nland = getPntrToArgument(0)->getShape()[0];
+  unsigned base = current; if( targ->getRank()==2 ) base = current*targ->getShape()[1];
+  unsigned closest=0; double mindist = targ->get( base );
   for(unsigned i=1; i<nland; ++i) {
-    double dist = targ->get( current + i*nv );
+    double dist = targ->get( base + i );
     if( dist<mindist ) { mindist=dist; closest=i; }
   }
   // Put the initial guess near to the closest landmark  -- may wish to use grid here again Sandip??
   Random random; random.setSeed(-1234); 
   for(unsigned j=0; j<dimout; ++j) point[j] = getPntrToArgument(j)->get(closest) + (random.RandU01() - 0.5)*0.01;
   // And do the optimisation
-  rowstart[OpenMP::getThreadNum()] = current; myminimiser.minimise( cgtol, point, &ProjectPoints::calculateStress );
+  rowstart[OpenMP::getThreadNum()]=current; if( targ->getRank()==2 ) rowstart[OpenMP::getThreadNum()] = current*targ->getShape()[1]; 
+  myminimiser.minimise( cgtol, point, &ProjectPoints::calculateStress );
 }
 
 void ProjectPoints::performTask( const unsigned& current, MultiValue& myvals ) const {

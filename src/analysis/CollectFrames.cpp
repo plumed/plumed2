@@ -130,6 +130,9 @@ CollectFrames::CollectFrames( const ActionOptions& ao ):
       if( theargs[0]->getNumberOfValues()!=thew[0]->getNumberOfValues() ) error("mismatch between number of weights and number of collected arguments");
       readInputLine( getShortcutLabel() + "_logweights: COLLECT ARG=" + thew[0]->getName() + " STRIDE=" + stride + " CLEAR=" + clearstride );
   }
+  // And finally create a value that contains as many ones as there are data points (this is used if we want to do Classical MDS
+  readInputLine( getShortcutLabel() + "_one: CONSTANT VALUE=1");
+  readInputLine( getShortcutLabel() + "_ones: COLLECT ARG=" + getShortcutLabel() + "_one STRIDE=" + stride + " CLEAR=" + clearstride );
 }
 
 }
