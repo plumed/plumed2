@@ -264,8 +264,6 @@ public:
 /// Tell to the Action to flush open files
   void fflush();
 
-  virtual std::string getDocumentation()const;
-
 /// Returns the label
   const std::string & getLabel()const;
 
@@ -357,11 +355,6 @@ const std::string & Action::getName()const {
 
 template<class T>
 void Action::parse(const std::string&key,T&t) {
-//  if(!Tools::parse(line,key,t)){
-//    log.printf("ERROR parsing keyword %s\n",key.c_str());
-//    log.printf("%s\n",getDocumentation().c_str());
-//    this->exit(1);
-//  }
   // Check keyword has been registered
   plumed_massert(keywords.exists(key),"keyword " + key + " has not been registered");
 
@@ -397,12 +390,6 @@ bool Action::parseNumbered(const std::string&key, const int no, T&t) {
 
 template<class T>
 void Action::parseVector(const std::string&key,std::vector<T>&t) {
-//  if(!Tools::parseVector(line,key,t)){
-//    log.printf("ERROR parsing keyword %s\n",key.c_str());
-//    log.printf("%s\n",getDocumentation().c_str());
-//    this->exit(1);
-//  }
-
   // Check keyword has been registered
   plumed_massert(keywords.exists(key), "keyword " + key + " has not been registered");
   unsigned size=t.size(); bool skipcheck=false;
