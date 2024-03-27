@@ -207,6 +207,7 @@ PlumedMain::PlumedMain():
   exchangeStep(false),
   restart(false),
   doCheckPoint(false),
+  doParseOnly(false),
   stopNow(false),
   novirial(false),
   detailedTimers(false),
@@ -1144,6 +1145,14 @@ unsigned PlumedMain::decreaseReferenceCounter() noexcept {
 
 unsigned PlumedMain::useCountReferenceCounter() const noexcept {
   return referenceCounter;
+}
+
+void PlumedMain::activateParseOnlyMode() {
+  doParseOnly=true;
+}
+
+bool PlumedMain::parseOnlyMode() const {
+  return doParseOnly;
 }
 
 #ifdef __PLUMED_HAS_PYTHON
