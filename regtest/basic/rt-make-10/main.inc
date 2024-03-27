@@ -8,6 +8,8 @@ Cases that require the new shape detection are possibly skipped with an #ifdef
   constexpr unsigned natoms=9;
   unsigned natoms_=natoms;
 
+  int natoms_int=natoms;
+
   struct Reference {
     double positions[natoms][3];
     double masses[natoms];
@@ -306,4 +308,10 @@ Cases that require the new shape detection are possibly skipped with an #ifdef
     p.cmd("readInputLine",sv); // string_view should fail because it is not guaranteed to be null terminated
   FINAL(positions,3*natoms)
 #endif
+
+  INIT_CORRECT((number++))
+   std::vector<double> forces(3*natoms);
+  MID(forces,natoms*3)
+   p.cmd("setForces",forces.data(),{natoms_int,3}); // test what happens if a signed int is used for array shape
+  FINAL(forces,natoms*3)
 
