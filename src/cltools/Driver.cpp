@@ -513,7 +513,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     if( !Communicator::initialized() ) error("needs mpi for debug-pd");
   }
 
-  PlumedMain p;
+  PlumedMain p; if( parseOnly ) p.activateParseOnlyMode();
   p.cmd("setRealPrecision",(int)sizeof(real));
   int checknatoms=-1;
   long long int step=0;
