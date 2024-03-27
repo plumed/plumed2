@@ -35,6 +35,7 @@
 #include <type_traits>
 #include <climits>
 #include <initializer_list>
+#include <algorithm>
 
 namespace PLMD {
 
@@ -341,6 +342,16 @@ public:
   template<typename T>
   typename std::enable_if<!std::is_pointer<T>::value,T>::type get() const {
     return *get_priv<const T>(1,nullptr,true);
+  }
+
+  // this will make sure that a null character is present
+  const char* getCString() const {
+    const char* ptr=get_priv<const char>(0,nullptr,false);
+    if(!typesafePtrSkipCheck() && this->nelem>0) {
+      auto f=std::find(ptr,ptr+this->nelem,0);
+      if(f==ptr+this->nelem) throw ExceptionTypeError() << "PLUMED is expecting a null terminated string, but no null character was found";
+    }
+    return ptr;
   }
 
   template<typename T>

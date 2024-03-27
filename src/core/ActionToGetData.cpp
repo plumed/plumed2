@@ -69,7 +69,7 @@ void ActionToGetData::get_rank( const TypesafePtr & dims ) {
 
 void ActionToGetData::get_shape( const TypesafePtr & dims ) {
   if( getPntrToArgument(0)->getRank()==0 ) { dims.set(long(1)); return; }
-  auto dims_=dims.get<long*>( getPntrToArgument(0)->getRank() );
+  auto dims_=dims.get<long*>( { getPntrToArgument(0)->getRank() } );
   for(unsigned j=0; j<getPntrToArgument(0)->getRank(); ++j) dims_[j] = getPntrToArgument(0)->getShape()[j];
 }
 

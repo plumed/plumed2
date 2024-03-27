@@ -5220,6 +5220,10 @@ $as_echo "$as_me: WARNING: Your compiler appears not to support C++17" >&2;}
 $as_echo "$as_me: WARNING: Please change compiler or make sure that everything works correctly" >&2;}
 fi
 
+# We assume now that compiler supports C++11 library
+$as_echo "#define __PLUMED_WRAPPER_LIBCXX11 1" >>confdefs.h
+
+
 
 
 if test "$dependency_tracking" = true

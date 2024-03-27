@@ -1,0 +1,9 @@
+ok natoms
+ok std::move(natoms)
+ok &natoms
+caught natoms_long
+caught std::move(natoms_long)
+caught &natoms_long
+caught natoms_float
+caught std::move(natoms_float)
+caught &natoms_float

@@ -449,6 +449,9 @@ then
    AC_MSG_WARN([Please change compiler or make sure that everything works correctly])
 fi
 
+# We assume now that compiler supports C++11 library
+AC_DEFINE([__PLUMED_WRAPPER_LIBCXX11])
+
 AC_SUBST(disable_dependency_tracking)
 
 if test "$dependency_tracking" = true
