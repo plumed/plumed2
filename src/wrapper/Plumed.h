@@ -2498,6 +2498,21 @@ private:
 
   };
 
+#if __cplusplus > 199711L
+  /// Small structure used to pass elements of a shape initializer_list
+  struct SizeLike {
+    std::size_t size;
+    SizeLike(short unsigned size): size(size) {}
+    SizeLike(unsigned size): size(size) {}
+    SizeLike(long unsigned size): size(size) {}
+    SizeLike(long long unsigned size): size(size) {}
+    SizeLike(short size): size(std::size_t(size)) {}
+    SizeLike(int size): size(std::size_t(size)) {}
+    SizeLike(long int size): size(std::size_t(size)) {}
+    SizeLike(long long int size): size(std::size_t(size)) {}
+  };
+#endif
+
 public:
 
   /**
@@ -2623,7 +2638,7 @@ public:
      \note Equivalent to plumed_gcmd()
   */
   template<typename T>
-  static void gcmd(const char*key,T* val, std::initializer_list<std::size_t> shape) {
+  static void gcmd(const char*key,T* val, std::initializer_list<SizeLike> shape) {
     global().cmd(key,val,shape);
   }
 #endif
@@ -2973,14 +2988,15 @@ public:
   }
 
 #if __cplusplus > 199711L
+
   /// Internal tool to convert initializer_list to shape
   /// This is just taking an initializer list and making a std::array
-  std::array<std::size_t,5>  make_shape(std::initializer_list<std::size_t> shape) {
+  std::array<std::size_t,5>  make_shape(std::initializer_list<SizeLike> shape) {
     if(shape.size()>4) throw Plumed::ExceptionTypeError("Maximum shape size is 4");
     std::array<std::size_t,5> shape_;
     unsigned j=0;
     for(auto i : shape) {
-      shape_[j]=i;
+      shape_[j]=i.size;
       j++;
     }
     shape_[j]=0;
@@ -3138,12 +3154,12 @@ public:
             the overload accepting shape information should be preferred.
   */
 
-  template<typename T>
-  void cmd(const char*key,T* val, __PLUMED_WRAPPER_STD size_t nelem) {
+  template<typename T, typename I, typename std::enable_if<std::is_integral<I>::value, int>::type = 0>
+  void cmd(const char*key,T* val, I nelem) {
 #if __PLUMED_WRAPPER_CXX_DETECT_SHAPES_STRICT
     static_assert("in strict mode you cannot pass nelem, please pass full shape instead");
 #endif
-    cmd_with_nelem(key,val,nelem);
+    cmd_with_nelem(key,val,__PLUMED_WRAPPER_STD size_t(nelem));
   }
 
 
@@ -3174,7 +3190,7 @@ public:
             has a more friendly syntax.
   */
   template<typename T>
-  void cmd(const char*key,T* val, std::initializer_list<std::size_t> shape) {
+  void cmd(const char*key,T* val, std::initializer_list<SizeLike> shape) {
     auto shape_=make_shape(shape);
     cmd_helper_with_shape(key,val,shape_.data());
   }
@@ -3202,23 +3218,6 @@ public:
      Send a command to this plumed object
       \param key The name of the command to be executed
       \param val The argument, passed by pointer.
-      \param nelem The number of elements passed.
-      \note Similar to \ref plumed_cmd(). It actually called \ref plumed_cmd_nothrow() and
-            rethrow any exception raised within PLUMED.
-      \note Unless PLUMED library is <=2.7,
-             the type of the argument is checked.  nelem is used to check
-             the maximum index interpreting the array as flattened.
-  */
-  template<typename T>
-  void cmd(const char*key,T* val, __PLUMED_WRAPPER_STD size_t nelem) {
-    plumed_cmd_cxx(main,key,val,nelem);
-  }
-
-
-  /**
-     Send a command to this plumed object
-      \param key The name of the command to be executed
-      \param val The argument, passed by pointer.
       \param shape A zero-terminated array containing the shape of the data.
       \note Similar to \ref plumed_cmd(). It actually called \ref plumed_cmd_nothrow() and
             rethrow any exception raised within PLUMED.
@@ -3235,6 +3234,13 @@ public:
   }
 
 #if __cplusplus > 199711L
+
+
+  template<typename T, typename I, typename std::enable_if<std::is_integral<I>::value, int>::type = 0>
+  void cmd(const char*key,T* val, I nelem) {
+    plumed_cmd_cxx(main,key,val,nelem);
+  }
+
   /**
      Send a command to this plumed object
       \param key The name of the command to be executed
@@ -3247,11 +3253,31 @@ public:
              checked that PLUMED access only compatible indexes.
   */
   template<typename T>
-  void cmd(const char*key,T* val, std::initializer_list<std::size_t> shape) {
+  void cmd(const char*key,T* val, std::initializer_list<SizeLike> shape) {
     if(shape.size()>4) throw Plumed::ExceptionTypeError("Maximum shape size is 4");
     auto shape_=make_shape(shape);
     plumed_cmd_cxx(main,key,val,&shape_[0]);
   }
+
+#else
+
+  /**
+     Send a command to this plumed object
+      \param key The name of the command to be executed
+      \param val The argument, passed by pointer.
+      \param nelem The number of elements passed.
+      \note Similar to \ref plumed_cmd(). It actually called \ref plumed_cmd_nothrow() and
+            rethrow any exception raised within PLUMED.
+      \note Unless PLUMED library is <=2.7,
+             the type of the argument is checked.  nelem is used to check
+             the maximum index interpreting the array as flattened.
+  */
+  template<typename T>
+  void cmd(const char*key,T* val, __PLUMED_WRAPPER_STD size_t nelem) {
+    plumed_cmd_cxx(main,key,val,nelem);
+  }
+
+
 #endif
 
 #endif
