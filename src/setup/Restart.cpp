@@ -114,7 +114,7 @@ Restart::Restart(const ActionOptions&ao):
     if(md) log<<"  Switching off restart\n";
     plumed.setRestart(false);
     log<<"  Not restarting simulation: files will be backed up\n";
-  } else if( !plumed.parseOnlyMode() ) {
+  } else {
     if(!md) log<<"  Switching on restart\n";
     plumed.setRestart(true);
     log<<"  Restarting simulation: files will be appended\n";

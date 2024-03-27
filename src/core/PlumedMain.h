@@ -404,7 +404,7 @@ public:
 /// Check if restarting
   bool getRestart()const;
 /// Set restart flag
-  void setRestart(bool f) {restart=f;}
+  void setRestart(bool f) {if(!doParseOnly) restart=f;}
 /// Check if checkpointing
   bool getCPT()const;
 /// Set exchangeStep flag
