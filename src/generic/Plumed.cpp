@@ -336,7 +336,7 @@ void Plumed::prepare() {
       index[i]=pointer[i];
     };
     p.cmd("setAtomsNlocal",&n);
-    p.cmd("setAtomsGatindex",index.data(),index.size());
+    p.cmd("setAtomsGatindex",index.data(), {index.size()});
   }
   if(root) p.cmd("clearFullList");
   int tmp=0;
@@ -360,18 +360,18 @@ void Plumed::calculate() {
   Tools::DirectoryChanger directoryChanger(directory.c_str());
   if(root) p.cmd("setStopFlag",&stop);
   Tensor box=getPbc().getBox();
-  if(root) p.cmd("setBox",&box[0][0],9);
+  if(root) p.cmd("setBox",&box[0][0], {3,3});
 
   virial.zero();
   for(int i=0; i<forces.size(); i++) forces[i]=0.0;
   for(int i=0; i<masses.size(); i++) masses[i]=getMass(i);
   for(int i=0; i<charges.size(); i++) charges[i]=getCharge(i);
 
-  if(root) p.cmd("setMasses",masses.data(),masses.size());
-  if(root) p.cmd("setCharges",charges.data(),charges.size());
-  if(root) p.cmd("setPositions",positions.data(),positions.size());
+  if(root) p.cmd("setMasses",masses.data(), {masses.size()});
+  if(root) p.cmd("setCharges",charges.data(), {charges.size()});
+  if(root) p.cmd("setPositions",positions.data(), {masses.size(),3});
   if(root) p.cmd("setForces",forces.data(),forces.size());
-  if(root) p.cmd("setVirial",&virial[0][0],9);
+  if(root) p.cmd("setVirial",&virial[0][0], {3,3});
 
 
   if(root) for(unsigned i=0; i<getNumberOfAtoms(); i++) {

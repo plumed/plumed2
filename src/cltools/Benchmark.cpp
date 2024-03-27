@@ -543,15 +543,15 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
         auto sw=kernels_ptr[i]->stopwatch.startPause(sw_name);
         p.cmd("setStep",step);
         p.cmd("setStopFlag",&plumedStopCondition);
-        p.cmd("setForces",for_ptr,n_local_atoms*3);
+        p.cmd("setForces",for_ptr, {n_local_atoms,3});
         p.cmd("setBox",&cell[0],9);
         p.cmd("setVirial",&virial[0],9);
-        p.cmd("setPositions",pos_ptr,n_local_atoms*3);
-        p.cmd("setMasses",masses_ptr,n_local_atoms);
-        p.cmd("setCharges",charges_ptr,n_local_atoms);
+        p.cmd("setPositions",pos_ptr, {n_local_atoms,3});
+        p.cmd("setMasses",masses_ptr, {n_local_atoms});
+        p.cmd("setCharges",charges_ptr, {n_local_atoms});
         if(shuffled) {
           p.cmd("setAtomsNlocal",n_local_atoms);
-          p.cmd("setAtomsGatindex",indexes_ptr,n_local_atoms);
+          p.cmd("setAtomsGatindex",indexes_ptr, {n_local_atoms});
         }
         p.cmd("prepareCalc");
       }

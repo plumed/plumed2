@@ -32,6 +32,18 @@ namespace PLMD {
 /// This is an abstract base class for classes with
 /// cmd() method.
 class WithCmd {
+  /// Small structure used to pass elements of a shape initializer_list
+  struct SizeLike {
+    std::size_t size;
+    SizeLike(short unsigned size): size(size) {}
+    SizeLike(unsigned size): size(size) {}
+    SizeLike(long unsigned size): size(size) {}
+    SizeLike(long long unsigned size): size(size) {}
+    SizeLike(short size): size(std::size_t(size)) {}
+    SizeLike(int size): size(std::size_t(size)) {}
+    SizeLike(long int size): size(std::size_t(size)) {}
+    SizeLike(long long int size): size(std::size_t(size)) {}
+  };
 public:
   /// This is the preferred method as it avoid allocations of temporaries.
   /// If this is not overridded, it will call the legacy method.
@@ -46,7 +58,19 @@ public:
   void cmd(std::string_view key,const TypesafePtr & val,const std::size_t* shape) {
     cmd(key,TypesafePtr::setNelemAndShape(val,0,shape));
   }
-  void cmd(std::string_view key,const TypesafePtr & val,std::size_t nelem, const std::size_t* shape=nullptr) {
+  void cmd(std::string_view key,const TypesafePtr & val,std::initializer_list<SizeLike> shape) {
+    if(shape.size()>4) plumed_error() << "Maximum shape size is 4";
+    std::array<std::size_t,5> shape_;
+    unsigned j=0;
+    for(auto i : shape) {
+      shape_[j]=i.size;
+      j++;
+    }
+    shape_[j]=0;
+    cmd(key,val,shape_.data());
+  }
+  template<typename I, typename std::enable_if<std::is_integral<I>::value, int>::type = 0>
+  void cmd(std::string_view key,const TypesafePtr & val,I nelem, const std::size_t* shape=nullptr) {
     cmd(key,TypesafePtr::setNelemAndShape(val,nelem,shape));
   }
   /// This is needed to avoid ambiguities
