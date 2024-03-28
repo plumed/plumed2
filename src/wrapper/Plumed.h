@@ -1863,19 +1863,19 @@ struct is_array<T[N]> : std::true_type {
 
 // Generic utility to retrieve the size of a container
 template<typename T>
-std::size_t size(const T&obj) {
+inline std::size_t size(const T&obj) {
   return obj.size();
 };
 
 // Specialization for std::string, which returns size()+1, which includes the terminating null character
 template<>
-std::size_t size(const std::string &obj) {
+inline std::size_t size(const std::string &obj) {
   return obj.size()+1;
 };
 
 // Report the size of a custom_array
 template<typename T, typename std::enable_if<wrapper::is_custom_array<T>::value, int>::type = 0>
-std::size_t custom_array_size() {
+inline std::size_t custom_array_size() {
   using value_type = typename wrapper::is_custom_array<T>::value_type;
   constexpr std::size_t value_size=sizeof(value_type);
   static_assert(value_size>0,"cannot use custom arrays of void types");
@@ -1885,7 +1885,7 @@ std::size_t custom_array_size() {
 
 // Cast a pointer to a custom_array to a pointer of its value_type
 template<typename T, typename std::enable_if<wrapper::is_custom_array<T>::value, int>::type = 0>
-typename wrapper::is_custom_array<T>::value_type* custom_array_cast(T* val) {
+inline typename wrapper::is_custom_array<T>::value_type* custom_array_cast(T* val) {
   using value_type = typename wrapper::is_custom_array<T>::value_type;
   return reinterpret_cast<value_type*>(val);
 }
