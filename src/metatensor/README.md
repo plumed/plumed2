@@ -14,6 +14,8 @@ TORCH_PREFIX=../../..
 TORCH_CMAKE_PREFIX=$(python -c "import torch; print(torch.utils.cmake_prefix_path)")
 TORCH_PREFIX=$(cd "$TORCH_CMAKE_PREFIX/../.." && pwd)
 
+TORCH_INCLUDES="-I$TORCH_PREFIX/include -I$TORCH_PREFIX/include/torch/csrc/api/include"
+
 # patch a bug from torch's MKL detection
 cd <PLUMED/DIR>
 ./src/metatensor/patch-torch.sh "$TORCH_PREFIX"
@@ -30,7 +32,7 @@ METATENSOR_PREFIX=<...>
 
 METATENSOR_TORCH_PREFIX="$METATENSOR_PREFIX"
 
-git clone https://github.com/lab-cosmo/metatensor --tag metatensor-torch-v0.3.0
+git clone https://github.com/lab-cosmo/metatensor --branch=metatensor-torch-v0.4.0
 cd metatensor
 
 mkdir build && cd build
@@ -59,10 +61,18 @@ METATENSOR_TORCH_PREFIX=$(cd "$METATENSOR_TORCH_CMAKE_PREFIX/../.." && pwd)
 ```bash
 cd <PLUMED/DIR>
 
-# configure with metatensor
+# configure PLUMED with metatensor
 ./configure --enable-libtorch --enable-metatensor --enable-modules=+metatensor \
     LDFLAGS="-L$TORCH_PREFIX/lib -L$METATENSOR_PREFIX/lib -L$METATENSOR_TORCH_PREFIX/lib" \
-    CPPFLAGS="-I$TORCH_PREFIX/include -I$TORCH_PREFIX/include/torch/csrc/api/include -I$METATENSOR_PREFIX/include -I$METATENSOR_TORCH_PREFIX/include"
+    CPPFLAGS="$TORCH_INCLUDES -I$METATENSOR_PREFIX/include -I$METATENSOR_TORCH_PREFIX/include"
+
+# If you are on Linux and use a pip-installed version of libtorch, or the
+# pre-cxx11-ABI build of libtorch, you'll need to add "-D_GLIBCXX_USE_CXX11_ABI=0"
+# to the compilation flags:
+./configure --enable-libtorch --enable-metatensor --enable-modules=+metatensor \
+    LDFLAGS="-L$TORCH_PREFIX/lib -L$METATENSOR_PREFIX/lib -L$METATENSOR_TORCH_PREFIX/lib" \
+    CPPFLAGS="$TORCH_INCLUDES -I$METATENSOR_PREFIX/include -I$METATENSOR_TORCH_PREFIX/include" \
+    CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0"
 
 make -j && make install
 ```
