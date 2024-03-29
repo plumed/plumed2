@@ -21,4 +21,12 @@ r5: RMSD REFERENCE=ref.pdb
 r6: RMSD REFERENCE=ref.pdb NOPBC
 
 
+# check EMST with a subset of the atoms in the PDB
+MOLINFO STRUCTURE=ref_even.pdb WHOLE
+WHOLEMOLECULES ENTITY0=2-123 EMST
+
+# note that a complete PDB is required now to avoid errors in DUMPATOMS
+MOLINFO STRUCTURE=ref.pdb
+DUMPATOMS ATOMS=1-123 FILE=atoms_even.xyz PRECISION=3
+
 PRINT ARG=(r.) FILE=COLVAR
