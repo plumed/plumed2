@@ -43,6 +43,8 @@ comma separated combinations of all the former methods (`1,2,4,5,10-20,21-40:2,8
 
 Moreover, lists can be imported from ndx files (GROMACS format). Use `NDX_FILE` to set the name of
 the index file and `NDX_GROUP` to set the name of the group to be imported (default is first one).
+Notice that starting from version 2.10 it is possible to directly use an `@ndx:` selector
+(see \ref Group).
 
 It is also possible to remove atoms from a list and or sort them using keywords `REMOVE`, `SORT`, and `UNIQUE`.
 The flow is the following:
@@ -113,6 +115,13 @@ pro: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein
 DUMPATOMS ATOMS=pro FILE=traj.gro
 \endplumedfile
 
+Notice that it is now possible to directly use the `@ndx:` selector
+in the definition of collective variables. Thus, the same result can be obtained
+with the following input:
+\plumedfile
+DUMPATOMS ATOMS={@ndx:{index.ndx Protein}} FILE=traj.gro
+\endplumedfile
+
 A list can be edited with `REMOVE`. For instance, if you
 are using a water model with three atoms per molecule, you can
 easily construct the list of hydrogen atoms in this manner
@@ -143,30 +152,12 @@ Group::Group(const ActionOptions&ao):
   if(ndxfile.length()==0 && ndxgroup.size()>0) error("NDX_GROUP can be only used is NDX_FILE is also used");
 
   if(ndxfile.length()>0) {
-    if(ndxgroup.size()>0) log<<"  importing group '"+ndxgroup+"'";
-    else                  log<<"  importing first group";
-    log<<" from index file "<<ndxfile<<"\n";
 
-    IFile ifile;
-    ifile.open(ndxfile);
-    std::string line;
-    std::string groupname;
-    bool firstgroup=true;
-    bool groupfound=false;
-    while(ifile.getline(line)) {
-      std::vector<std::string> words=Tools::getWords(line);
-      if(words.size()>=3 && words[0]=="[" && words[2]=="]") {
-        if(groupname.length()>0) firstgroup=false;
-        groupname=words[1];
-        if(groupname==ndxgroup || ndxgroup.length()==0) groupfound=true;
-      } else if(groupname==ndxgroup || (firstgroup && ndxgroup.length()==0)) {
-        for(unsigned i=0; i<words.size(); i++) {
-          AtomNumber at; Tools::convert(words[i],at);
-          atoms.push_back(at);
-        }
-      }
-    }
-    if(!groupfound) error("group has not been found in index file");
+    std::vector<AtomNumber> add;
+    std::vector<std::string> words;
+    words.emplace_back("@ndx: " + ndxfile + " " + ndxgroup);
+    interpretAtomList(words,add);
+    atoms.insert(atoms.end(),add.begin(),add.end());
   }
 
   std::vector<AtomNumber> remove;
