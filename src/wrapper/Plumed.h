@@ -2595,6 +2595,32 @@ public:
   static void gcmd(const char*key) {
     global().cmd(key);
   }
+
+#if __cplusplus > 199711L && __PLUMED_WRAPPER_CXX_DETECT_SHAPES
+
+  template<typename T>
+  static void gcmd(const char*key,T&& val) {
+    global().cmd(key,std::forward<T>(val));
+  }
+
+  template<typename T>
+  static void gcmd(const char*key,T& val) {
+    global().cmd(key,val);
+  }
+
+  template<typename T,typename M>
+  static void gcmd(const char*key,T* val, M&& more) {
+    global().cmd(key,val,std::forward<M>(more));
+  }
+
+  template<typename T>
+  static void gcmd(const char*key,T* val, std::initializer_list<SizeLike> shape) {
+    global().cmd(key,val,shape);
+  }
+
+
+#else
+
   /**
      Send a command to global-plumed
       \param key The name of the command to be executed
@@ -2641,6 +2667,8 @@ public:
   static void gcmd(const char*key,T* val, std::initializer_list<SizeLike> shape) {
     global().cmd(key,val,shape);
   }
+#endif
+
 #endif
 
   /**
