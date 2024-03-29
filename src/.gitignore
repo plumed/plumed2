@@ -34,6 +34,7 @@
 !/maketools
 !/mapping
 !/manyrestraints
+!/matrixtools
 !/maze
 !/molfile
 !/multicolvar
@@ -44,6 +45,7 @@
 !/refdist
 !/secondarystructure
 !/setup
+!/sprint
 !/symfunc
 !/small_vector
 !/tools

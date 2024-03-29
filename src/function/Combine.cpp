@@ -24,6 +24,7 @@
 #include "FunctionShortcut.h"
 #include "FunctionOfScalar.h"
 #include "FunctionOfVector.h"
+#include "FunctionOfMatrix.h"
 #include "core/ActionRegister.h"
 
 namespace PLMD {
@@ -94,12 +95,23 @@ Add together the elements of a set of vectors elementwise
 */
 //+ENDPLUMEDOC
 
+//+PLUMEDOC COLVAR COMBINE_MATRIX
+/*
+Calculate the sum of a number of matrices
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 typedef FunctionShortcut<Combine> CombineShortcut;
 PLUMED_REGISTER_ACTION(CombineShortcut,"COMBINE")
 typedef FunctionOfScalar<Combine> ScalarCombine;
 PLUMED_REGISTER_ACTION(ScalarCombine,"COMBINE_SCALAR")
 typedef FunctionOfVector<Combine> VectorCombine;
 PLUMED_REGISTER_ACTION(VectorCombine,"COMBINE_VECTOR")
+typedef FunctionOfMatrix<Combine> MatrixCombine;
+PLUMED_REGISTER_ACTION(MatrixCombine,"COMBINE_MATRIX")
 
 void Combine::registerKeywords(Keywords& keys) {
   keys.use("PERIODIC");

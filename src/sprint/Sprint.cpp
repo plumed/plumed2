@@ -79,7 +79,7 @@ PRINT ARG=ss.* FILE=colvar
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace adjmat {
+namespace sprint {
 
 class Sprint : public ActionShortcut {
 public:

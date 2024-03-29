@@ -22,7 +22,6 @@
 #include "ActionWithMatrix.h"
 
 namespace PLMD {
-namespace adjmat {
 
 void ActionWithMatrix::registerKeywords( Keywords& keys ) {
   ActionWithVector::registerKeywords( keys ); keys.use("ARG");
@@ -230,5 +229,4 @@ void ActionWithMatrix::clearMatrixElements( MultiValue& myvals ) const {
   if( matrix_to_do_after ) matrix_to_do_after->clearMatrixElements( myvals );
 }
 
-}
 }

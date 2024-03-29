@@ -26,12 +26,12 @@ namespace PLMD {
 namespace clusters {
 
 void ClusteringBase::registerKeywords( Keywords& keys ) {
-  adjmat::MatrixOperationBase::registerKeywords( keys ); keys.use("ARG");
+  matrixtools::MatrixOperationBase::registerKeywords( keys ); keys.use("ARG");
 }
 
 ClusteringBase::ClusteringBase(const ActionOptions&ao):
   Action(ao),
-  adjmat::MatrixOperationBase(ao),
+  matrixtools::MatrixOperationBase(ao),
   number_of_cluster(-1)
 {
   // Do some checks on the input

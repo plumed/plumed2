@@ -1,4 +1,4 @@
-USE=core tools adjmat gridtools bias
+USE=core tools matrixtools gridtools bias
 
 #generic makefile
 include ../maketools/make.module

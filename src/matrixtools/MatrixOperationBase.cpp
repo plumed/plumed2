@@ -22,7 +22,7 @@
 #include "MatrixOperationBase.h"
 
 namespace PLMD {
-namespace adjmat {
+namespace matrixtools {
 
 void MatrixOperationBase::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionWithArguments::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );

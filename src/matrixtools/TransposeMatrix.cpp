@@ -32,7 +32,7 @@ Calculate the transpose of a matrix
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace adjmat {
+namespace matrixtools {
 
 class TransposeMatrix : public MatrixOperationBase {
 public:

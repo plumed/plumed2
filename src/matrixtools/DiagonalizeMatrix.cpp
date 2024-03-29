@@ -32,7 +32,7 @@ Calculate the eigenvalues and eigenvectors of a square matrix
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace adjmat {
+namespace matrixtools {
 
 class DiagonalizeMatrix : public MatrixOperationBase {
 private:

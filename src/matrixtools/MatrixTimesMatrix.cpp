@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ActionWithMatrix.h"
+#include "core/ActionWithMatrix.h"
 #include "core/ActionRegister.h"
 
 //+PLUMEDOC MCOLVAR MATRIX_PRODUCT
@@ -41,7 +41,7 @@ Calculate the matrix of dissimilarities between a trajectory of atomic configura
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace adjmat {
+namespace matrixtools {
 
 class MatrixTimesMatrix : public ActionWithMatrix {
 private:

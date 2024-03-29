@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "adjmat/MatrixOperationBase.h"
+#include "matrixtools/MatrixOperationBase.h"
 #include "core/ActionRegister.h"
 #include "tools/Random.h"
 
@@ -35,7 +35,7 @@ Select a set of landmarks using farthest point sampling.
 namespace PLMD {
 namespace analysis {
 
-class FarthestPointSampling : public adjmat::MatrixOperationBase {
+class FarthestPointSampling : public matrixtools::MatrixOperationBase {
 private:
   unsigned seed;
   unsigned nlandmarks;
@@ -52,7 +52,7 @@ public:
 PLUMED_REGISTER_ACTION(FarthestPointSampling,"FARTHEST_POINT_SAMPLING")
 
 void FarthestPointSampling::registerKeywords( Keywords& keys ) {
-  adjmat::MatrixOperationBase::registerKeywords( keys );
+  matrixtools::MatrixOperationBase::registerKeywords( keys );
   keys.add("compulsory","NZEROS","the number of landmark points that you want to select");
   keys.add("compulsory","SEED","1234","a random number seed");
 }

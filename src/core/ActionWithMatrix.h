@@ -19,13 +19,12 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_adjmat_ActionWithMatrix_h
-#define __PLUMED_adjmat_ActionWithMatrix_h
+#ifndef __PLUMED_core_ActionWithMatrix_h
+#define __PLUMED_core_ActionWithMatrix_h
 
-#include "core/ActionWithVector.h"
+#include "ActionWithVector.h"
 
 namespace PLMD {
-namespace adjmat {
 
 class ActionWithMatrix : public ActionWithVector {
 private:
@@ -145,6 +144,5 @@ void ActionWithMatrix::addDerivativeOnMatrixArgument( const bool& inchain, const
   }
 }
 
-}
 }
 #endif

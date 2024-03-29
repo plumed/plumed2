@@ -19,17 +19,16 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_adjmat_FunctionOfMatrix_h
-#define __PLUMED_adjmat_FunctionOfMatrix_h
+#ifndef __PLUMED_function_FunctionOfMatrix_h
+#define __PLUMED_function_FunctionOfMatrix_h
 
-#include "ActionWithMatrix.h"
-#include "AdjacencyMatrixBase.h"
-#include "function/FunctionOfVector.h"
-#include "function/Sum.h"
+#include "core/ActionWithMatrix.h"
+#include "FunctionOfVector.h"
+#include "Sum.h"
 #include "tools/Matrix.h"
 
 namespace PLMD {
-namespace adjmat {
+namespace function {
 
 template <class T>
 class FunctionOfMatrix : public ActionWithMatrix {
@@ -161,7 +160,7 @@ FunctionOfMatrix<T>::FunctionOfMatrix(const ActionOptions&ao):
       // of the two adjacency matrix are run over separately.  The value A_ij is thus not available when B_ij is calculated.
       ActionWithMatrix* am = dynamic_cast<ActionWithMatrix*>( getPntrToArgument(i)->getPntrToAction() );
       plumed_assert( am ); const ActionWithMatrix* thischain = am->getFirstMatrixInChain();
-      const AdjacencyMatrixBase* aa=dynamic_cast<const AdjacencyMatrixBase*>( thischain ); if( !aa && thischain->getName()!="VSTACK" ) continue;
+      if( !thischain->isAdjacencyMatrix() && thischain->getName()!="VSTACK" ) continue;
       if( !chainstart ) chainstart = thischain;
       else if( thischain!=chainstart ) done_in_chain=false;
     }

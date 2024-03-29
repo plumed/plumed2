@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2023 The plumed team
+   Copyright (c) 2013-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,37 +19,44 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_adjmat_MatrixOperationBase_h
-#define __PLUMED_adjmat_MatrixOperationBase_h
+#include "core/ActionRegister.h"
+#include "core/ActionShortcut.h"
 
-#include "core/ActionWithValue.h"
-#include "core/ActionWithArguments.h"
-#include "tools/Matrix.h"
+//+PLUMEDOC MCOLVAR DETERMINANT
+/*
+Calculate the determinant of a matrix
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
 
 namespace PLMD {
-namespace adjmat {
+namespace matrixtools {
 
-class MatrixOperationBase :
-  public ActionWithArguments,
-  public ActionWithValue
-{
-private:
-/// These are used to hold the matrix
-  std::vector<double> vals;
-  std::vector<std::pair<unsigned,unsigned> > pairs;
-protected:
-/// Retrieve a dense version of the ith matrix that is used by this action
-  void retrieveFullMatrix( Matrix<double>& mymatrix );
+class Determinant : public ActionShortcut {
 public:
   static void registerKeywords( Keywords& keys );
-///
-  explicit MatrixOperationBase(const ActionOptions&);
-/// Apply the forces
-  virtual void apply() override;
-/// Get the force on a matrix element
-  virtual double getForceOnMatrixElement( const unsigned& jrow, const unsigned& krow ) const = 0 ;
+  explicit Determinant(const ActionOptions&ao);
 };
+
+PLUMED_REGISTER_ACTION(Determinant,"DETERMINANT")
+
+void Determinant::registerKeywords( Keywords& keys ) {
+  ActionShortcut::registerKeywords(keys);
+  keys.add("compulsory","ARG","The matrix that we are calculating the determinant for");
+}
+
+Determinant::Determinant( const ActionOptions& ao):
+  Action(ao),
+  ActionShortcut(ao)
+{
+  std::string arg; parse("ARG",arg);
+  // Compose a vector from the args
+  readInputLine( getShortcutLabel() + "_diag: DIAGONALIZE ARG=" + arg + " VECTORS=all");
+  // Not sure about the regexp here - check with matrix with more than 10 rows
+  readInputLine( getShortcutLabel() + ": PRODUCT ARG=(" + getShortcutLabel() + "_diag\.vals-[0-9])");
+}
 
 }
 }
-#endif

@@ -33,7 +33,7 @@ Calculate the inverse of the input matrix
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace adjmat {
+namespace matrixtools {
 
 class InvertMatrix : public MatrixOperationBase {
 private:

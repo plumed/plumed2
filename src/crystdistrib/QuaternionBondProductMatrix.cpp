@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "adjmat/ActionWithMatrix.h"
+#include "core/ActionWithMatrix.h"
 #include "core/ActionRegister.h"
 #include "tools/Torsion.h"
 
@@ -38,7 +38,7 @@ Calculate the product between a matrix of quaternions and the bonds
 */
 //+ENDPLUMEDOC
 
-class QuaternionBondProductMatrix : public adjmat::ActionWithMatrix {
+class QuaternionBondProductMatrix : public ActionWithMatrix {
 private:
   unsigned nderivatives;
   std::vector<bool> stored;
@@ -73,7 +73,7 @@ PLUMED_REGISTER_ACTION(QuaternionBondProductMatrix,"QUATERNION_BOND_PRODUCT_MATR
 
 
 void QuaternionBondProductMatrix::registerKeywords( Keywords& keys ) {
-  adjmat::ActionWithMatrix::registerKeywords(keys); keys.use("ARG");
+  ActionWithMatrix::registerKeywords(keys); keys.use("ARG");
   keys.addOutputComponent("w","default","the real component of quaternion");
   keys.addOutputComponent("i","default","the i component of the quaternion");
   keys.addOutputComponent("j","default","the j component of the quaternion");
