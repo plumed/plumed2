@@ -8,7 +8,7 @@ ll: LANDMARK_SELECT_STRIDE ARG=ff NLANDMARKS=250
 
 # Calculate the weights
 voro: VORONOI ARG=ll_rectdissims
-weights: CUSTOM ARG1=ff.logweights FUNC=exp(x) PERIODIC=NO
+weights: CUSTOM ARG=ff.logweights FUNC=exp(x) PERIODIC=NO
 weightsT: TRANSPOSE ARG=weights
 lweT: MATRIX_PRODUCT ARG=weightsT,voro
 lwe: TRANSPOSE ARG=lweT

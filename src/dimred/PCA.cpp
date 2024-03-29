@@ -113,6 +113,9 @@ void PCA::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","STRIDE","0","the frequency with which to perform this analysis");
   keys.add("optional","FILE","the file on which to output the low dimensional coordinates");
   keys.add("optional","FMT","the format to use when outputting the low dimensional coordinates");
+  keys.needsAction("LOGSUMEXP"); keys.needsAction("TRANSPOSE"); keys.needsAction("MATRIX_VECTOR_PRODUCT");
+  keys.needsAction("CONSTANT"); keys.needsAction("COLLECT"); keys.needsAction("OUTER_PRODUCT"); keys.needsAction("CUSTOM");
+  keys.needsAction("MATRIX_PRODUCT"); keys.needsAction("DIAGONALIZE"); keys.needsAction("VSTACK"); keys.needsAction("DUMPPDB");
 }
 
 
@@ -131,14 +134,7 @@ PCA::PCA(const ActionOptions&ao):
   // And multiply the transpose by the weights to get the averages
   readInputLine( getShortcutLabel() + "_mean: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_dataT," + getShortcutLabel() + "_weights");
   // Make a matrix of averages
-  ActionPilot* ap = plumed.getActionSet().selectWithLabel<ActionPilot*>( argn + "_logweights");
-  if( !ap ) error("could not find value that stores logweights for collect frames action " + argn );
-  std::string clearstride="0", stride; Tools::convert( ap->getStride(), stride );
-  ActionWithValue* av = dynamic_cast<ActionWithValue*>(ap); plumed_assert( av );
-  if( (av->copyOutput(0))->getNumberOfValues()>0 ) Tools::convert( ap->getStride()*(av->copyOutput(0))->getNumberOfValues(), clearstride );
-  readInputLine( getShortcutLabel() + "_one: CONSTANT VALUE=1");
-  readInputLine( getShortcutLabel() + "_aones: COLLECT ARG=" + getShortcutLabel() + "_one STRIDE=" + stride + " CLEAR=" + clearstride );
-  readInputLine( getShortcutLabel() + "_averages: OUTER_PRODUCT ARG=" + getShortcutLabel() + "_aones," + getShortcutLabel() + "_mean");  
+  readInputLine( getShortcutLabel() + "_averages: OUTER_PRODUCT ARG=" + argn + "_ones," + getShortcutLabel() + "_mean");  
   // Make a matrix of weights
   ActionWithValue* av2 = plumed.getActionSet().selectWithLabel<ActionWithValue*>( argn + "_data" );
   if( !av2 ) error("count not find data");

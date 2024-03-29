@@ -78,6 +78,10 @@ void LandmarkSelection::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("logweights","ARG","the logarithms of the weights of the data points");
   keys.addOutputComponent("rectdissims","DISSIMILARITIES","a rectangular matrix containing the distances between the landmark points and the rest of the points");
   keys.addOutputComponent("sqrdissims","DISSIMILARITIES","a square matrix containing the distances between each pair of landmark points");
+  keys.needsAction("LOGSUMEXP"); keys.needsAction("TRANSPOSE"); keys.needsAction("DISSIMILARITIES");
+  keys.needsAction("ONES"); keys.needsAction("CREATE_MASK"); keys.needsAction("FARTHEST_POINT_SAMPLING");
+  keys.needsAction("SELECT_WITH_MASK"); keys.needsAction("COMBINE"); keys.needsAction("VORONOI"); 
+  keys.needsAction("MATRIX_PRODUCT"); keys.needsAction("CUSTOM");
 }
 
 LandmarkSelection::LandmarkSelection( const ActionOptions& ao ):

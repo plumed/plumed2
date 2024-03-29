@@ -2,7 +2,7 @@
 
 mat: CONTACT_MATRIX GROUP=1-10 SWITCH={RATIONAL R_0=1.0} 
 ones: ONES SIZE=10
-csums: MATRIX_VECTOR_PRODUCT ARG=mat.w,ones
+csums: MATRIX_VECTOR_PRODUCT ARG=mat,ones
 csums_mean: MEAN ARG=csums PERIODIC=NO
 rsums: MATRIX_VECTOR_PRODUCT ARG=mat,ones 
 rsums_mean: MEAN ARG=rsums PERIODIC=NO

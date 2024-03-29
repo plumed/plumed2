@@ -57,6 +57,9 @@ void CollectFrames::registerKeywords( Keywords& keys ) {
   keys.add("optional","LOGWEIGHTS","list of actions that calculates log weights that should be used to weight configurations when calculating averages");
   keys.addOutputComponent("data","default","the data that is being collected by this action");
   keys.addOutputComponent("logweights","default","the logarithms of the weights of the data points");
+  keys.needsAction("POSITION"); keys.needsAction("CONCATENATE"); keys.needsAction("MEAN"); keys.needsAction("CUSTOM");
+  keys.needsAction("CONCATENATE"); keys.needsAction("COLLECT"); keys.needsAction("TRANSPOSE"); keys.needsAction("RMSD_VECTOR");
+  keys.needsAction("COMBINE"); keys.needsAction("VSTACK"); keys.needsAction("CONSTANT");
 }
 
 std::string CollectFrames::fixArgumentName( const std::string& argin ) {

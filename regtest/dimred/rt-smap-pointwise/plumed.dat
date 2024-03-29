@@ -3,7 +3,7 @@ d2: READ FILE=plumed.in VALUES=c2
 d3: READ FILE=plumed.in VALUES=c3
 
 ff: COLLECT_FRAMES STRIDE=1 ARG=d1,d2,d3
-lwe: CUSTOM ARG1=ff_logweights FUNC=exp(x) PERIODIC=NO
+lwe: CUSTOM ARG=ff_logweights FUNC=exp(x) PERIODIC=NO
 smap: SKETCHMAP ...
    ARG=ff NLOW_DIM=2
    HIGH_DIM_FUNCTION={SMAP R_0=2 A=3 B=9}
