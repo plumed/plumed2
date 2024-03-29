@@ -116,10 +116,14 @@ void test1(){
 }
 
 void test_no_shapes(); // this is in main_no_shapes.cpp
+void test_global_no_shapes(); // this is in main_global_no_shapes.cpp
+void test_global(); // this is in main_global.cpp
 
 int main() {
   preliminary();
   test1();
   test_no_shapes();
+  test_global();
+  test_global_no_shapes();
   return 0;
 }
