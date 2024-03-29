@@ -750,7 +750,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
       case cmd_getExchangesList:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        exchangePatterns.getList(val.get<int*>());
+        exchangePatterns.getList(val);
         break;
       case cmd_runFinalJobs:
         CHECK_INIT(initialized,word);
