@@ -32,6 +32,7 @@
 #include "tools/Exception.h"
 #include "tools/Pbc.h"
 #include "tools/PDB.h"
+#include "tools/Tree.h"
 
 namespace PLMD {
 
@@ -49,6 +50,7 @@ ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
   chargesWereSet(false)
 {
   ActionWithValue* bv = plumed.getActionSet().selectWithLabel<ActionWithValue*>("Box");
+  moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   if( bv ) boxValue=bv->copyOutput(0);
   // We now get all the information about atoms that are lying about
   std::vector<ActionWithValue*> vatoms = plumed.getActionSet().select<ActionWithValue*>();
@@ -82,6 +84,8 @@ void ActionAtomistic::registerKeywords( Keywords& keys ) {
 
 void ActionAtomistic::requestAtoms(const std::vector<AtomNumber> & a, const bool clearDep) {
   plumed_massert(!lockRequestAtoms,"requested atom list can only be changed in the prepare() method");
+  // this makes the EMST invalid so that it will be regenerated at next request
+  tree.reset();
   int nat=a.size();
   indexes=a;
   positions.resize(nat);
@@ -275,7 +279,6 @@ void ActionAtomistic::interpretAtomList(std::vector<std::string>& strings, std::
         if(!groupfound) plumed_error()<<"group has not been found in index file";
         ok=true;
       } else {
-        auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
         if( moldat ) {
           std::vector<AtomNumber> atom_list; moldat->interpretSymbol( symbol, atom_list );
           if( atom_list.size()>0 ) { ok=true; t.insert(t.end(),atom_list.begin(),atom_list.end()); }
@@ -432,10 +435,22 @@ unsigned ActionAtomistic::getTotAtoms()const {
 }
 
 void ActionAtomistic::makeWhole() {
-  for(unsigned j=0; j<positions.size()-1; ++j) {
-    const Vector & first (positions[j]);
-    Vector & second (positions[j+1]);
-    second=first+pbcDistance(first,second);
+  if(moldat && moldat->isWhole()) {
+    // make sure the tree has been constructed
+    if(!tree) tree=std::make_unique<Tree>(moldat);
+    const auto & tree_indexes=tree->getTreeIndexes();
+    const auto & root_indexes=tree->getRootIndexes();
+    for(unsigned j=0; j<root_indexes.size(); j++) {
+      const Vector & first (positions[root_indexes[j]]);
+      Vector & second (positions[tree_indexes[j]]);
+      second=first+pbcDistance(first,second);
+    }
+  } else {
+    for(unsigned j=0; j<positions.size()-1; ++j) {
+      const Vector & first (positions[j]);
+      Vector & second (positions[j+1]);
+      second=first+pbcDistance(first,second);
+    }
   }
 }
 

@@ -34,6 +34,8 @@ namespace PLMD {
 
 class Pbc;
 class PDB;
+class GenericMolInfo;
+class Tree;
 
 namespace colvar {
 class SelectMassCharge;
@@ -75,6 +77,10 @@ class ActionAtomistic :
 
   bool                  donotretrieve;
   bool                  donotforce;
+
+  // EMST
+  GenericMolInfo* moldat{nullptr};
+  std::unique_ptr<Tree> tree;
 
 /// Values that hold information about atom positions and charges
   std::vector<Value*>   xpos, ypos, zpos, masv, chargev;

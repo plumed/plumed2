@@ -129,7 +129,7 @@ void WholeMolecules::registerKeywords( Keywords& keys ) {
            "specifying all. Alternatively, if you wish to use a subset of the residues you can specify the particular residues "
            "you are interested in as a list of numbers");
   keys.add("optional","MOLTYPE","the type of molecule that is under study.  This is used to define the backbone atoms");
-  keys.addFlag("EMST", false, "Define atoms sequence in entities using an Euclidean minimum spanning tree");
+  keys.addFlag("EMST", false, "only for backward compatibility, as of PLUMED 2.10 this is the default when using MOLINFO with WHOLE");
   keys.addFlag("ADDREFERENCE", false, "Define the reference position of the first atom of each entity using a PDB file");
 }
 
@@ -142,7 +142,9 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
   std::vector<std::vector<AtomNumber> > groups;
   std::vector<std::vector<AtomNumber> > roots;
   // parse optional flags
-  parseFlag("EMST", doemst);
+  bool doemst_tmp;
+  parseFlag("EMST", doemst_tmp);
+  if(doemst_tmp) log << "EMST option is not needed any more as of PLUMED 2.10\n";
   parseFlag("ADDREFERENCE", addref);
 
   // create groups from ENTITY
@@ -174,8 +176,12 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
   if(groups.size()==0) error("no atoms found for WHOLEMOLECULES!");
 
   // if using PDBs reorder atoms in groups based on proximity in PDB file
+  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+  if(moldat && moldat->isWhole()) doemst=true;
+
+  if(doemst_tmp && ! doemst) error("cannot enable EMST if MOLINFO is not WHOLE");
+
   if(doemst) {
-    auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
     if( !moldat ) error("MOLINFO is required to use EMST");
     // initialize tree
     Tree tree = Tree(moldat);

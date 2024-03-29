@@ -37,14 +37,21 @@ class Tree
 private:
   GenericMolInfo* moldat_;
   std::vector<AtomNumber> root_;
+  std::vector<AtomNumber> tree_;
+
+  std::vector<unsigned> root_indexes_;
+  std::vector<unsigned> tree_indexes_;
 
 public:
 /// constructor
   explicit Tree(GenericMolInfo* moldat);
 /// build a tree
-  std::vector<AtomNumber> getTree(std::vector<AtomNumber> atoms);
+  std::vector<AtomNumber> getTree(const std::vector<AtomNumber> & atoms);
 /// get root
   std::vector<AtomNumber> getRoot() const;
+
+  std::vector<unsigned> getTreeIndexes() const;
+  std::vector<unsigned> getRootIndexes() const;
 };
 
 }
