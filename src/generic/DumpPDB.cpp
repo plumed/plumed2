@@ -79,25 +79,25 @@ DumpPDB::DumpPDB(const ActionOptions&ao):
   ActionWithArguments(ao),
   ActionPilot(ao)
 {
-  parse("FILE",file); 
+  parse("FILE",file);
   if(file.length()==0) error("name out output file was not specified");
   std::vector<std::string> atoms; parseVector("ATOMS",atoms);
-  if( atoms.size()>0 ) { 
-      std::vector<Value*> atom_args; interpretArgumentList( atoms, plumed.getActionSet(), this, atom_args );
-      if( atom_args.size()!=1 ) error("only one action should appear in input to atom args");
-      std::vector<Value*> args( getArguments() ); args.push_back( atom_args[0] ); requestArguments( args );
-      std::vector<std::string> indices; parseVector("ATOM_INDICES",indices); Tools::interpretRanges(indices);
-      log.printf("  printing atoms : "); 
-      for(unsigned i=0; i<indices.size(); ++i) {
-          AtomNumber atom; bool ok=Tools::convertNoexcept(indices[i],atom); 
-          if( !ok ) error("count not interpret atom " + indices[i] );
-          pdb_atom_indices.push_back(atom.serial()); log.printf("%d ", pdb_atom_indices[i] );
-      }
-      log.printf("\n");
-      if( pdb_atom_indices.size()!=atom_args[0]->getShape()[1]/3 ) error("mismatch between size of matrix containing positions and vector of atom indices");
-  }  
+  if( atoms.size()>0 ) {
+    std::vector<Value*> atom_args; interpretArgumentList( atoms, plumed.getActionSet(), this, atom_args );
+    if( atom_args.size()!=1 ) error("only one action should appear in input to atom args");
+    std::vector<Value*> args( getArguments() ); args.push_back( atom_args[0] ); requestArguments( args );
+    std::vector<std::string> indices; parseVector("ATOM_INDICES",indices); Tools::interpretRanges(indices);
+    log.printf("  printing atoms : ");
+    for(unsigned i=0; i<indices.size(); ++i) {
+      AtomNumber atom; bool ok=Tools::convertNoexcept(indices[i],atom);
+      if( !ok ) error("count not interpret atom " + indices[i] );
+      pdb_atom_indices.push_back(atom.serial()); log.printf("%d ", pdb_atom_indices[i] );
+    }
+    log.printf("\n");
+    if( pdb_atom_indices.size()!=atom_args[0]->getShape()[1]/3 ) error("mismatch between size of matrix containing positions and vector of atom indices");
+  }
   log.printf("  printing configurations to PDB file to file named %s \n", file.c_str() );
-  parseVector("ARG_NAMES",argnames); if( argnames.size()==0 ) buildArgnames(); 
+  parseVector("ARG_NAMES",argnames); if( argnames.size()==0 ) buildArgnames();
   parse("FMT",fmt); fmt=" "+fmt;
   if( getStride()==0 ) { setStride(0); log.printf("  printing pdb at end of calculation \n"); }
 
@@ -126,9 +126,9 @@ void DumpPDB::buildArgnames() {
   for(unsigned i=0; i<nargs; ++i) {
     if( getPntrToArgument(i)->getShape()[0]!=nvals ) error("all arguments should have same number of values");
     if( getPntrToArgument(i)->getRank()==1 ) {
-        argnames.push_back( getPntrToArgument(i)->getName() );
+      argnames.push_back( getPntrToArgument(i)->getName() );
     } else if( getPntrToArgument(i)->getRank()==2 ) {
-        (getPntrToArgument(i)->getPntrToAction())->getMatrixColumnTitles( argnames );
+      (getPntrToArgument(i)->getPntrToAction())->getMatrixColumnTitles( argnames );
     }
     getPntrToArgument(i)->buildDataStore();
   }
@@ -140,41 +140,41 @@ void DumpPDB::update() {
   opdbf.open( file );
   std::size_t psign=fmt.find("%"); plumed_assert( psign!=std::string::npos );
   std::string descr2="%s=%-" + fmt.substr(psign+1) + " ";
-  
+
   unsigned totargs = 0; unsigned nvals = getPntrToArgument(0)->getShape()[0];
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      if( getPntrToArgument(i)->getShape()[0]!=nvals ) error("all arguments should have same number of values");
-      if( getPntrToArgument(i)->getRank()==1 ) totargs += 1; 
-      else if( getPntrToArgument(i)->getRank()==2 ) totargs += getPntrToArgument(i)->getShape()[1];
+    if( getPntrToArgument(i)->getShape()[0]!=nvals ) error("all arguments should have same number of values");
+    if( getPntrToArgument(i)->getRank()==1 ) totargs += 1;
+    else if( getPntrToArgument(i)->getRank()==2 ) totargs += getPntrToArgument(i)->getShape()[1];
   }
-  if( totargs!=argnames.size() ) buildArgnames();  
+  if( totargs!=argnames.size() ) buildArgnames();
 
   if( description.length()>0 ) opdbf.printf("# %s AT STEP %lld TIME %f \n", description.c_str(), getStep(), getTime() );
-  unsigned nargs = getNumberOfArguments(), atomarg=0; 
+  unsigned nargs = getNumberOfArguments(), atomarg=0;
   if( pdb_atom_indices.size()>0 ) {
-      if( nargs>1 ) { atomarg = nargs - 1; nargs = nargs-1; } 
-      else nargs = 0;
+    if( nargs>1 ) { atomarg = nargs - 1; nargs = nargs-1; }
+    else nargs = 0;
   }
   for(unsigned i=0; i<nvals; ++i) {
     unsigned n=0;
     for(unsigned j=0; j<nargs; j++) {
       Value* thisarg=getPntrToArgument(j); opdbf.printf("REMARK ");
-      if( thisarg->getRank()==1 ) { 
-          opdbf.printf( descr2.c_str(), argnames[n].c_str(), thisarg->get(i) ); n++;  
+      if( thisarg->getRank()==1 ) {
+        opdbf.printf( descr2.c_str(), argnames[n].c_str(), thisarg->get(i) ); n++;
       } else if( thisarg->getRank()==2 ) {
-          unsigned ncols = thisarg->getShape()[1];
-          for(unsigned k=0; k<ncols; ++k) { opdbf.printf( descr2.c_str(), argnames[n].c_str(), thisarg->get(i*ncols+k) ); n++; }
+        unsigned ncols = thisarg->getShape()[1];
+        for(unsigned k=0; k<ncols; ++k) { opdbf.printf( descr2.c_str(), argnames[n].c_str(), thisarg->get(i*ncols+k) ); n++; }
       }
       opdbf.printf("\n");
     }
     if( pdb_atom_indices.size()>0 ) {
-        unsigned npos = pdb_atom_indices.size(); Vector pos;
-        for(unsigned k=0; k<npos; ++k) {
-          pos[0]=getPntrToArgument(atomarg)->get(npos*(3*i+0) + k);
-          pos[1]=getPntrToArgument(atomarg)->get(npos*(3*i+1) + k);
-          pos[2]=getPntrToArgument(atomarg)->get(npos*(3*i+2) + k);
-          printAtom( opdbf, pdb_atom_indices[k], pos, 1.0, 1.0 );
-        }
+      unsigned npos = pdb_atom_indices.size(); Vector pos;
+      for(unsigned k=0; k<npos; ++k) {
+        pos[0]=getPntrToArgument(atomarg)->get(npos*(3*i+0) + k);
+        pos[1]=getPntrToArgument(atomarg)->get(npos*(3*i+1) + k);
+        pos[2]=getPntrToArgument(atomarg)->get(npos*(3*i+2) + k);
+        printAtom( opdbf, pdb_atom_indices[k], pos, 1.0, 1.0 );
+      }
     }
     opdbf.printf("END\n");
   }

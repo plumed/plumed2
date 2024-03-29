@@ -1139,7 +1139,7 @@ void PlumedMain::justCalculate() {
         {
           if(av) av->clearInputForces();
           if(av) av->clearDerivatives();
-          if( av && av->calculateOnUpdate() ) continue ; 
+          if( av && av->calculateOnUpdate() ) continue ;
         }
         {
           if(aa) if(aa->isActive()) aa->retrieveAtoms();
@@ -1327,8 +1327,8 @@ void PlumedMain::stop() {
 
 void PlumedMain::runJobsAtEndOfCalculation() {
   for(const auto & p : actionSet) {
-     ActionWithValue* av=dynamic_cast<ActionWithValue*>(p.get());
-     if( av && av->calculateOnUpdate() ) p->activate();
+    ActionWithValue* av=dynamic_cast<ActionWithValue*>(p.get());
+    if( av && av->calculateOnUpdate() ) p->activate();
   }
   for(const auto & p : actionSet) {
     ActionPilot* ap=dynamic_cast<ActionPilot*>(p.get());

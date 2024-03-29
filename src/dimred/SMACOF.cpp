@@ -24,12 +24,12 @@
 namespace PLMD {
 namespace dimred {
 
-SMACOF::SMACOF( const Value* target) 
+SMACOF::SMACOF( const Value* target)
 {
   std::vector<unsigned> shape( target->getShape() );
   Distances.resize( shape[0], shape[1] ); Weights.resize( shape[0], shape[1] );
-  for(unsigned i=0;i<shape[0];++i) {
-      for(unsigned j=0;j<shape[1];++j) Distances(i,j) = sqrt( target->get(shape[0]*i+j) );
+  for(unsigned i=0; i<shape[0]; ++i) {
+    for(unsigned j=0; j<shape[1]; ++j) Distances(i,j) = sqrt( target->get(shape[0]*i+j) );
   }
 }
 
@@ -37,8 +37,8 @@ void SMACOF::optimize( const double& tol, const unsigned& maxloops, std::vector<
   unsigned M = Distances.nrows(); unsigned nlow=proj.size() / M; Matrix<double> Z( M, nlow );
   // Transfer initial projection to matrix
   unsigned k = 0;
-  for(unsigned i=0;i<M;++i) { 
-      for(unsigned j=0;j<nlow;++j){ Z(i,j)=proj[k]; k++; }
+  for(unsigned i=0; i<M; ++i) {
+    for(unsigned j=0; j<nlow; ++j) { Z(i,j)=proj[k]; k++; }
   }
 
   // Calculate V
@@ -80,17 +80,17 @@ void SMACOF::optimize( const double& tol, const unsigned& maxloops, std::vector<
 
     mult( mypseudo, BZ, temp); mult(temp, Z, newZ);
     //Compute new sigma
-    double newsig = calculateSigma( newZ, dists ); 
+    double newsig = calculateSigma( newZ, dists );
     //Computing whether the algorithm has converged (has the mass of the potato changed
     //when we put it back in the oven!)
     if( fabs( newsig - myfirstsig )<tol ) break;
     myfirstsig=newsig; Z = newZ;
   }
 
-  // Transfer final projection matrix to output proj 
+  // Transfer final projection matrix to output proj
   k = 0;
-  for(unsigned i=0;i<M;++i) {
-      for(unsigned j=0;j<nlow;++j){ proj[k]=Z(i,j); k++; }
+  for(unsigned i=0; i<M; ++i) {
+    for(unsigned j=0; j<nlow; ++j) { proj[k]=Z(i,j); k++; }
   }
 }
 

@@ -101,7 +101,7 @@ void OuterProduct::prepare() {
   ActionWithVector::prepare(); Value* myval=getPntrToComponent(0);
   if( myval->getShape()[0]==getPntrToArgument(0)->getShape()[0] && myval->getShape()[1]==getPntrToArgument(1)->getShape()[0] ) return;
   std::vector<unsigned> shape(2); shape[0] = getPntrToArgument(0)->getShape()[0]; shape[1] = getPntrToArgument(1)->getShape()[0];
-  myval->setShape( shape ); 
+  myval->setShape( shape );
 }
 
 void OuterProduct::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {

@@ -74,19 +74,19 @@ SketchMap::SketchMap( const ActionOptions& ao):
   std::string argn; parse("ARG",argn); std::string dissimilarities = getShortcutLabel() + "_mds_mat";
   ActionShortcut* as = plumed.getActionSet().getShortcutActionWithLabel( argn );
   if( !as || as->getName()!="COLLECT_FRAMES" ) {
-      if( as->getName().find("LANDMARK_SELECT")==std::string::npos ) {
-          error("found no COLLECT_FRAMES or LANDMARK_SELECT action with label " + argn );
-      } else {
-         ActionWithValue* dissims = plumed.getActionSet().selectWithLabel<ActionWithValue*>( argn + "_sqrdissims");
-         if( dissims ) dissimilarities = argn + "_sqrdissims";
-      }
+    if( as->getName().find("LANDMARK_SELECT")==std::string::npos ) {
+      error("found no COLLECT_FRAMES or LANDMARK_SELECT action with label " + argn );
+    } else {
+      ActionWithValue* dissims = plumed.getActionSet().selectWithLabel<ActionWithValue*>( argn + "_sqrdissims");
+      if( dissims ) dissimilarities = argn + "_sqrdissims";
+    }
   }
-  unsigned ndim; parse("NLOW_DIM",ndim); 
+  unsigned ndim; parse("NLOW_DIM",ndim);
   std::string str_ndim; Tools::convert( ndim, str_ndim );
   // Construct a projection using classical MDS
   readInputLine( getShortcutLabel() + "_mds: CLASSICAL_MDS ARG=" + argn + " NLOW_DIM=" + str_ndim );
   // Transform the dissimilarities using the switching function
-  std::string hdfunc; parse("HIGH_DIM_FUNCTION",hdfunc); 
+  std::string hdfunc; parse("HIGH_DIM_FUNCTION",hdfunc);
   readInputLine( getShortcutLabel() + "_hdmat: MORE_THAN ARG=" + dissimilarities + " SQUARED SWITCH={" + hdfunc + "}");
   // Now for the weights - read the vector of weights first
   std::string wvec; parse("WEIGHTS",wvec); if( wvec.length()==0 ) wvec = argn + "_weights";
@@ -99,37 +99,37 @@ SketchMap::SketchMap( const ActionOptions& ao):
   // Run the arrange points object
   std::string ldfunc, cgtol, maxiter; parse("LOW_DIM_FUNCTION",ldfunc); parse("CGTOL",cgtol); parse("MAXITER",maxiter); unsigned ncycles; parse("NCYCLES",ncycles);
   std::string num, argstr, lname=getShortcutLabel(); if( ncycles>0 ) lname = getShortcutLabel() + "_cg";
-  argstr = "ARG=" + getShortcutLabel() + "_mds-1"; for(unsigned i=1;i<ndim;++i) { Tools::convert( i+1, num ); argstr += "," + getShortcutLabel() + "_mds-" + num; } 
+  argstr = "ARG=" + getShortcutLabel() + "_mds-1"; for(unsigned i=1; i<ndim; ++i) { Tools::convert( i+1, num ); argstr += "," + getShortcutLabel() + "_mds-" + num; }
   bool usesmacof; parseFlag("USE_SMACOF",usesmacof);
   if( usesmacof ) {
-      std::string smactol, smacreg; parse("SMACTOL",smactol); parse("SMACREG",smacreg);
-      readInputLine( lname + ": ARRANGE_POINTS " + argstr  + " MINTYPE=smacof TARGET1=" + getShortcutLabel() + "_hdmat FUNC1={" + ldfunc + "} WEIGHTS1=" + wvec + "_mat" +
-                             " MAXITER=" + maxiter + " SMACTOL=" + smactol + " SMACREG=" + smacreg + " TARGET2=" + getShortcutLabel() + "_mds_mat WEIGHTS2=" + wvec + "_mat");
+    std::string smactol, smacreg; parse("SMACTOL",smactol); parse("SMACREG",smacreg);
+    readInputLine( lname + ": ARRANGE_POINTS " + argstr  + " MINTYPE=smacof TARGET1=" + getShortcutLabel() + "_hdmat FUNC1={" + ldfunc + "} WEIGHTS1=" + wvec + "_mat" +
+                   " MAXITER=" + maxiter + " SMACTOL=" + smactol + " SMACREG=" + smacreg + " TARGET2=" + getShortcutLabel() + "_mds_mat WEIGHTS2=" + wvec + "_mat");
   } else {
-      readInputLine( lname + ": ARRANGE_POINTS " + argstr  + " MINTYPE=conjgrad TARGET1=" + getShortcutLabel() + "_hdmat FUNC1={" + ldfunc + "} WEIGHTS1=" + wvec + "_mat CGTOL=" + cgtol);  
-      if( ncycles>0 ) {
-          std::string buf; parse("BUFFER",buf); 
-          std::vector<std::string> fgrid; parseVector("FGRID_SIZE",fgrid); 
-          std::string ncyc; Tools::convert(ncycles,ncyc); std::string pwise_args=" NCYCLES=" + ncyc + " BUFFER=" + buf; 
-          if( fgrid.size()>0 ) { 
-              if( fgrid.size()!=ndim ) error("number of elements of fgrid is not correct");
-              pwise_args += " FGRID_SIZE=" + fgrid[0];  for(unsigned i=1;i<fgrid.size();++i) pwise_args += "," + fgrid[i]; 
-          }
-          std::vector<std::string> cgrid(ndim); parseVector("CGRID_SIZE",cgrid); 
-          pwise_args += " CGRID_SIZE=" + cgrid[0]; for(unsigned i=1;i<cgrid.size();++i) pwise_args += "," + cgrid[i];
-          argstr="ARG=" + getShortcutLabel() + "_cg.coord-1"; for(unsigned i=1;i<ndim;++i) { Tools::convert( i+1, num ); argstr += "," + getShortcutLabel() + "_cg.coord-" + num; }
-          readInputLine( getShortcutLabel() + ": ARRANGE_POINTS " + argstr  + pwise_args + " MINTYPE=pointwise TARGET1=" + getShortcutLabel() + "_hdmat FUNC1={" + ldfunc + "} WEIGHTS1=" + wvec + "_mat CGTOL=" + cgtol);
+    readInputLine( lname + ": ARRANGE_POINTS " + argstr  + " MINTYPE=conjgrad TARGET1=" + getShortcutLabel() + "_hdmat FUNC1={" + ldfunc + "} WEIGHTS1=" + wvec + "_mat CGTOL=" + cgtol);
+    if( ncycles>0 ) {
+      std::string buf; parse("BUFFER",buf);
+      std::vector<std::string> fgrid; parseVector("FGRID_SIZE",fgrid);
+      std::string ncyc; Tools::convert(ncycles,ncyc); std::string pwise_args=" NCYCLES=" + ncyc + " BUFFER=" + buf;
+      if( fgrid.size()>0 ) {
+        if( fgrid.size()!=ndim ) error("number of elements of fgrid is not correct");
+        pwise_args += " FGRID_SIZE=" + fgrid[0];  for(unsigned i=1; i<fgrid.size(); ++i) pwise_args += "," + fgrid[i];
       }
+      std::vector<std::string> cgrid(ndim); parseVector("CGRID_SIZE",cgrid);
+      pwise_args += " CGRID_SIZE=" + cgrid[0]; for(unsigned i=1; i<cgrid.size(); ++i) pwise_args += "," + cgrid[i];
+      argstr="ARG=" + getShortcutLabel() + "_cg.coord-1"; for(unsigned i=1; i<ndim; ++i) { Tools::convert( i+1, num ); argstr += "," + getShortcutLabel() + "_cg.coord-" + num; }
+      readInputLine( getShortcutLabel() + ": ARRANGE_POINTS " + argstr  + pwise_args + " MINTYPE=pointwise TARGET1=" + getShortcutLabel() + "_hdmat FUNC1={" + ldfunc + "} WEIGHTS1=" + wvec + "_mat CGTOL=" + cgtol);
+    }
   }
   bool projall; parseFlag("PROJECT_ALL",projall); if( !projall ) return ;
-  parse("OS_CGTOL",cgtol); argstr = getShortcutLabel() + ".coord-1"; for(unsigned i=1;i<ndim;++i) { Tools::convert( i+1, num ); argstr += "," + getShortcutLabel() + ".coord-" + num; }
+  parse("OS_CGTOL",cgtol); argstr = getShortcutLabel() + ".coord-1"; for(unsigned i=1; i<ndim; ++i) { Tools::convert( i+1, num ); argstr += "," + getShortcutLabel() + ".coord-" + num; }
   if( as->getName().find("LANDMARK_SELECT")==std::string::npos ) {
-      readInputLine( getShortcutLabel() + "_osample: PROJECT_POINTS " + argstr + " TARGET1=" + getShortcutLabel() + "_hdmat FUNC1={" + ldfunc + "} WEIGHTS1=" + wvec + "_normed CGTOL=" + cgtol );
+    readInputLine( getShortcutLabel() + "_osample: PROJECT_POINTS " + argstr + " TARGET1=" + getShortcutLabel() + "_hdmat FUNC1={" + ldfunc + "} WEIGHTS1=" + wvec + "_normed CGTOL=" + cgtol );
   } else {
-      ActionWithValue* dissims = plumed.getActionSet().selectWithLabel<ActionWithValue*>( argn + "_rectdissims");
-      if( !dissims ) error("cannot PROJECT_ALL as " + as->getName() + " with label " + argn + " was involved without the DISSIMILARITIES keyword");
-      readInputLine( getShortcutLabel() + "_lhdmat: MORE_THAN ARG=" + argn + "_rectdissims SQUARED SWITCH={" + hdfunc + "}"); 
-      readInputLine( getShortcutLabel() + "_osample: PROJECT_POINTS ARG=" + argstr + " TARGET1=" + getShortcutLabel() + "_lhdmat FUNC1={" + ldfunc + "} WEIGHTS1=" + wvec + "_normed CGTOL=" + cgtol );
+    ActionWithValue* dissims = plumed.getActionSet().selectWithLabel<ActionWithValue*>( argn + "_rectdissims");
+    if( !dissims ) error("cannot PROJECT_ALL as " + as->getName() + " with label " + argn + " was involved without the DISSIMILARITIES keyword");
+    readInputLine( getShortcutLabel() + "_lhdmat: MORE_THAN ARG=" + argn + "_rectdissims SQUARED SWITCH={" + hdfunc + "}");
+    readInputLine( getShortcutLabel() + "_osample: PROJECT_POINTS ARG=" + argstr + " TARGET1=" + getShortcutLabel() + "_lhdmat FUNC1={" + ldfunc + "} WEIGHTS1=" + wvec + "_normed CGTOL=" + cgtol );
   }
 }
 

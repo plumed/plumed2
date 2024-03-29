@@ -57,7 +57,7 @@ public:
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives() override ;
 /// Resize the matrices
-  void prepare() override ; 
+  void prepare() override ;
 /// This gets the number of columns
   unsigned getNumberOfColumns() const override ;
 /// This checks for tasks in the parent class
@@ -187,17 +187,17 @@ template <class T>
 void FunctionOfMatrix<T>::prepare() {
   unsigned argstart = myfunc.getArgStart(); std::vector<unsigned> shape(2);
   for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
-      if( getPntrToArgument(i)->getRank()==2 ) {
-          shape[0] = getPntrToArgument(i)->getShape()[0]; 
-          shape[1] = getPntrToArgument(i)->getShape()[1];
-          break;
-      }
+    if( getPntrToArgument(i)->getRank()==2 ) {
+      shape[0] = getPntrToArgument(i)->getShape()[0];
+      shape[1] = getPntrToArgument(i)->getShape()[1];
+      break;
+    }
   }
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
-      Value* myval = getPntrToComponent(i);
-      if( myval->getRank()==2 && (myval->getShape()[0]!=shape[0] || myval->getShape()[1]!=shape[1]) ) { 
-          myval->setShape(shape); if( myval->valueIsStored() ) myval->reshapeMatrixStore( shape[1] ); 
-      }
+    Value* myval = getPntrToComponent(i);
+    if( myval->getRank()==2 && (myval->getShape()[0]!=shape[0] || myval->getShape()[1]!=shape[1]) ) {
+      myval->setShape(shape); if( myval->valueIsStored() ) myval->reshapeMatrixStore( shape[1] );
+    }
   }
   ActionWithVector::prepare();
 }

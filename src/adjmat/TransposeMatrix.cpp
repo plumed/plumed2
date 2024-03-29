@@ -74,15 +74,15 @@ TransposeMatrix::TransposeMatrix(const ActionOptions& ao):
 void TransposeMatrix::prepare() {
   Value* myval = getPntrToComponent(0); Value* myarg = getPntrToArgument(0);
   if( myarg->getRank()==1 ) {
-      if( myval->getShape()[0]!=1 || myval->getShape()[1]!=myarg->getShape()[0] ) { 
-          std::vector<unsigned> shape(2); shape[0] = 1; shape[1] = myarg->getShape()[0]; 
-          myval->setShape( shape ); myval->reshapeMatrixStore( shape[1] );
-      }  
-  } else if( myarg->getShape()[0]==1 ) {
-      if( myval->getShape()[0]!=myarg->getShape()[1] ) { std::vector<unsigned> shape(1); shape[0] = myarg->getShape()[1]; myval->setShape( shape ); }
-  } else if( myarg->getShape()[0]!=myval->getShape()[1] || myarg->getShape()[1]!=myval->getShape()[0] ) {
-      std::vector<unsigned> shape(2); shape[0] = myarg->getShape()[1]; shape[1] = myarg->getShape()[0];
+    if( myval->getShape()[0]!=1 || myval->getShape()[1]!=myarg->getShape()[0] ) {
+      std::vector<unsigned> shape(2); shape[0] = 1; shape[1] = myarg->getShape()[0];
       myval->setShape( shape ); myval->reshapeMatrixStore( shape[1] );
+    }
+  } else if( myarg->getShape()[0]==1 ) {
+    if( myval->getShape()[0]!=myarg->getShape()[1] ) { std::vector<unsigned> shape(1); shape[0] = myarg->getShape()[1]; myval->setShape( shape ); }
+  } else if( myarg->getShape()[0]!=myval->getShape()[1] || myarg->getShape()[1]!=myval->getShape()[0] ) {
+    std::vector<unsigned> shape(2); shape[0] = myarg->getShape()[1]; shape[1] = myarg->getShape()[0];
+    myval->setShape( shape ); myval->reshapeMatrixStore( shape[1] );
   }
 }
 
@@ -91,18 +91,18 @@ void TransposeMatrix::calculate() {
   Value* myarg=getPntrToArgument(0); Value* myval=getPntrToComponent(0);
   if( myarg->getRank()<=1 || myval->getRank()==1 ) {
     if( myarg->getRank()<=1 && myval->getShape()[1]!=myarg->getShape()[0] ) {
-        std::vector<unsigned> shape( 2 ); shape[0] = 1; shape[1] = myarg->getShape()[0];
-        myval->setShape( shape ); myval->reshapeMatrixStore( shape[1] );
+      std::vector<unsigned> shape( 2 ); shape[0] = 1; shape[1] = myarg->getShape()[0];
+      myval->setShape( shape ); myval->reshapeMatrixStore( shape[1] );
     } else if( myval->getRank()==1 && myval->getShape()[0]!=myarg->getShape()[1] ) {
-        std::vector<unsigned> shape( 1 ); shape[0] = myarg->getShape()[1]; 
-        myval->setShape( shape );
+      std::vector<unsigned> shape( 1 ); shape[0] = myarg->getShape()[1];
+      myval->setShape( shape );
     }
     unsigned nv=myarg->getNumberOfValues();
     for(unsigned i=0; i<nv; ++i) myval->set( i, myarg->get(i) );
   } else {
     if( myarg->getShape()[0]!=myval->getShape()[1] || myarg->getShape()[1]!=myval->getShape()[0] ) {
-        std::vector<unsigned> shape( 2 ); shape[0] = myarg->getShape()[1]; shape[1] = myarg->getShape()[0];
-        myval->setShape( shape ); myval->reshapeMatrixStore( shape[1] ); 
+      std::vector<unsigned> shape( 2 ); shape[0] = myarg->getShape()[1]; shape[1] = myarg->getShape()[0];
+      myval->setShape( shape ); myval->reshapeMatrixStore( shape[1] );
     }
     std::vector<double> vals; std::vector<std::pair<unsigned,unsigned> > pairs;
     std::vector<unsigned> shape( myval->getShape() ); unsigned nedge=0; myarg->retrieveEdgeList( nedge, pairs, vals );

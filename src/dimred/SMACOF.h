@@ -34,7 +34,7 @@ private:
   Matrix<double> Distances, Weights;
   double calculateSigma( const Matrix<double>& InitialZ, Matrix<double>& dists );
 public:
-  explicit SMACOF( const Value* mysquaredists ); 
+  explicit SMACOF( const Value* mysquaredists );
   void optimize( const double& tol, const unsigned& maxloops, std::vector<double>& proj);
   double getDistance( const unsigned& i, const unsigned& j ) const ;
   void setWeight( const unsigned& i, const unsigned& j, const double& ww );

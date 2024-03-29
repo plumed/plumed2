@@ -33,9 +33,9 @@ namespace analysis {
 */
 //+ENDPLUMEDOC
 
-class CreateMask : 
-public ActionWithValue,
-public ActionWithArguments {
+class CreateMask :
+  public ActionWithValue,
+  public ActionWithArguments {
 private:
   Random r;
   unsigned nzeros;
@@ -52,7 +52,7 @@ public:
 PLUMED_REGISTER_ACTION(CreateMask,"CREATE_MASK")
 
 void CreateMask::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys ); 
+  Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
   keys.add("compulsory","TYPE","the way the zeros are supposed to be set");
   keys.add("compulsory","NZEROS","the number of zeros that you want to put in the mask");
@@ -68,15 +68,15 @@ CreateMask::CreateMask( const ActionOptions& ao ) :
 {
   if( getNumberOfArguments()!=1 ) error("should only be one argument to this action");
   if( getPntrToArgument(0)->getRank()!=1 ) error("argument should be a vector");
-  std::string stype; parse("TYPE",stype); if( stype!="nomask" ) parse("NZEROS",nzeros); 
+  std::string stype; parse("TYPE",stype); if( stype!="nomask" ) parse("NZEROS",nzeros);
 
   if( stype=="nomask" ) {
-      type=nomask; log.printf("  setting all points in output mask to zero \n"); 
+    type=nomask; log.printf("  setting all points in output mask to zero \n");
   } else if( stype=="stride" ) {
-      type=stride; log.printf("  setting every %d equally spaced points in output mask to zero \n", nzeros );  
+    type=stride; log.printf("  setting every %d equally spaced points in output mask to zero \n", nzeros );
   } else if( stype=="random" ) {
-      unsigned seed=230623; parse("SEED",seed); r.setSeed(-seed); getPntrToArgument(0)->buildDataStore();
-      type=random; log.printf("  choosing %d points to set to non-zero in mask in accordance with input weights \n", nzeros );
+    unsigned seed=230623; parse("SEED",seed); r.setSeed(-seed); getPntrToArgument(0)->buildDataStore();
+    type=random; log.printf("  choosing %d points to set to non-zero in mask in accordance with input weights \n", nzeros );
   } else error( stype + " is not a valid way input for TYPE");
   std::vector<unsigned> shape(1); shape[0] = getPntrToArgument(0)->getShape()[0];
   addValue( shape ); setNotPeriodic(); getPntrToComponent(0)->buildDataStore();
@@ -86,10 +86,10 @@ CreateMask::CreateMask( const ActionOptions& ao ) :
 void CreateMask::prepare() {
   Value* out=getPntrToComponent(0); Value* arg=getPntrToArgument(0);
   if( out->getShape()[0]!=arg->getShape()[0] ) {
-      std::vector<unsigned> shape(1); shape[0] = arg->getShape()[0]; out->setShape( shape );
+    std::vector<unsigned> shape(1); shape[0] = arg->getShape()[0]; out->setShape( shape );
   }
   if( type!=nomask ) {
-      for(unsigned i=nzeros; i<out->getShape()[0]; ++i) out->set( i, 1 );
+    for(unsigned i=nzeros; i<out->getShape()[0]; ++i) out->set( i, 1 );
   }
 }
 
@@ -99,23 +99,23 @@ void CreateMask::calculate() {
   for(unsigned i=0; i<ns; ++i) out->set( i, 1.0 );
 
   if( type==stride ) {
-      unsigned ss = int( std::floor( ns / nzeros ) );
-      for(unsigned i=0; i<nzeros; ++i) out->set( i*ss, 0.0 );  
+    unsigned ss = int( std::floor( ns / nzeros ) );
+    for(unsigned i=0; i<nzeros; ++i) out->set( i*ss, 0.0 );
   } else if( type==random ) {
-      for(unsigned i=0; i<nzeros; ++i ) {
-          double totweights = 0; 
-          for(unsigned j=0; j<ns; ++j) {
-              if( out->get(j)>0 ) totweights += arg->get(j);
-          }
-          double rr = r.U01()*totweights; double accum=0;
-          for(unsigned j=0; j<ns; ++j) {
-              if( out->get(j)>0 ) accum += arg->get(j);
-              if( accum<rr ) continue;
-              out->set( j, 0 ); break;
-          }
-      } 
+    for(unsigned i=0; i<nzeros; ++i ) {
+      double totweights = 0;
+      for(unsigned j=0; j<ns; ++j) {
+        if( out->get(j)>0 ) totweights += arg->get(j);
+      }
+      double rr = r.U01()*totweights; double accum=0;
+      for(unsigned j=0; j<ns; ++j) {
+        if( out->get(j)>0 ) accum += arg->get(j);
+        if( accum<rr ) continue;
+        out->set( j, 0 ); break;
+      }
+    }
   } else if( type==nomask ) {
-      for(unsigned i=0; i<ns; ++i) out->set( i, 0.0 );
+    for(unsigned i=0; i<ns; ++i) out->set( i, 0.0 );
   } else error("invalid mask creation type");
 }
 

@@ -47,7 +47,7 @@ public:
 PLUMED_REGISTER_ACTION(SelectComponents,"SELECT_COMPONENTS")
 
 void SelectComponents::registerKeywords( Keywords& keys ) {
-  ActionShortcut::registerKeywords( keys ); 
+  ActionShortcut::registerKeywords( keys );
   keys.add("compulsory","ARG","the argument we are using to build the shortcut");
   keys.add("compulsory","COMPONENTS","the components in the input value that you woul like to build a new vector from");
   keys.needsAction("FLATTEN"); keys.needsAction("CONSTANT"); keys.needsAction("SELECT_WITH_MASK");
@@ -58,22 +58,22 @@ SelectComponents::SelectComponents(const ActionOptions& ao):
   ActionShortcut(ao)
 {
   std::vector<std::string> argn; parseVector("ARG",argn); std::vector<Value*> theargs;
-  ActionWithArguments::interpretArgumentList( argn, plumed.getActionSet(), this, theargs );  
+  ActionWithArguments::interpretArgumentList( argn, plumed.getActionSet(), this, theargs );
   if( theargs.size()!=1 ) error("should only be one argument input to this action");
   // Create an array that will eventually hold the mask
   std::vector<double> mask( theargs[0]->getNumberOfValues(), 1 );
   std::vector<std::string> elements; parseVector("COMPONENTS",elements);
-  if( theargs[0]->getRank()==1 ) { 
-      for(unsigned i=0; i<elements.size(); ++i) { unsigned sel; Tools::convert( elements[i], sel ); mask[sel-1]=0; }  
+  if( theargs[0]->getRank()==1 ) {
+    for(unsigned i=0; i<elements.size(); ++i) { unsigned sel; Tools::convert( elements[i], sel ); mask[sel-1]=0; }
   } else if( theargs[0]->getRank()==2 ) {
-      for(unsigned i=0; i<elements.size(); ++i) {
-          std::size_t dot = elements[i].find_first_of(".");
-          if( dot==std::string::npos ) error("found no dot in specification of required matrix element");
-          std::string istr=elements[i].substr(0,dot), jstr=elements[i].substr(dot+1);
-          unsigned ival, jval; Tools::convert( istr, ival ); Tools::convert( jstr, jval );
-          mask[(ival-1)*theargs[0]->getShape()[1] + jval - 1] = 0;
-      }
-      readInputLine( getShortcutLabel() + "_flat: FLATTEN ARG=" + theargs[0]->getName() );
+    for(unsigned i=0; i<elements.size(); ++i) {
+      std::size_t dot = elements[i].find_first_of(".");
+      if( dot==std::string::npos ) error("found no dot in specification of required matrix element");
+      std::string istr=elements[i].substr(0,dot), jstr=elements[i].substr(dot+1);
+      unsigned ival, jval; Tools::convert( istr, ival ); Tools::convert( jstr, jval );
+      mask[(ival-1)*theargs[0]->getShape()[1] + jval - 1] = 0;
+    }
+    readInputLine( getShortcutLabel() + "_flat: FLATTEN ARG=" + theargs[0]->getName() );
   } else error("input to this argument should be a vector/matrix");
   // Now create the mask action
   std::string mask_str; Tools::convert( mask[0], mask_str ); unsigned check_mask=mask[0];

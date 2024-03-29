@@ -42,7 +42,7 @@ private:
   std::string fixArgumentName( const std::string& argin );
 public:
   static void registerKeywords( Keywords& keys );
-  explicit CollectFrames( const ActionOptions& ao ); 
+  explicit CollectFrames( const ActionOptions& ao );
 };
 
 PLUMED_REGISTER_ACTION(CollectFrames,"COLLECT_FRAMES")
@@ -80,42 +80,42 @@ CollectFrames::CollectFrames( const ActionOptions& ao ):
 
   // Create the values to collect the atomic positions
   if( indices.length()>0 ) {
-      // Collect reference position
-      readInputLine( getShortcutLabel() + "_getposx: POSITION ATOMS=" + indices ); std::string align; parse("ALIGN",align);
-      readInputLine( getShortcutLabel() + "_getpos: CONCATENATE ARG=" + getShortcutLabel() + "_getposx.x," + getShortcutLabel() + "_getposx.y," + getShortcutLabel() + "_getposx.z");
-      // Find atomic center
-      readInputLine( getShortcutLabel() + "_cposx: MEAN ARG=" + getShortcutLabel() + "_getposx.x PERIODIC=NO");
-      readInputLine( getShortcutLabel() + "_cposy: MEAN ARG=" + getShortcutLabel() + "_getposx.y PERIODIC=NO");
-      readInputLine( getShortcutLabel() + "_cposz: MEAN ARG=" + getShortcutLabel() + "_getposx.z PERIODIC=NO");
-      // Subtract atomimc center
-      readInputLine( getShortcutLabel() + "_refx: CUSTOM ARG=" + getShortcutLabel() + "_getposx.x," + getShortcutLabel() + "_cposx FUNC=x-y PERIODIC=NO");
-      readInputLine( getShortcutLabel() + "_refy: CUSTOM ARG=" + getShortcutLabel() + "_getposx.y," + getShortcutLabel() + "_cposy FUNC=x-y PERIODIC=NO");
-      readInputLine( getShortcutLabel() + "_refz: CUSTOM ARG=" + getShortcutLabel() + "_getposx.z," + getShortcutLabel() + "_cposz FUNC=x-y PERIODIC=NO"); 
-      readInputLine( getShortcutLabel() + "_ref: CONCATENATE ARG=" + getShortcutLabel() + "_refx," + getShortcutLabel() + "_refy," + getShortcutLabel() + "_refz");
-      // Store the reference position in a collect action
-      readInputLine( getShortcutLabel() + "_refpos: COLLECT TYPE=matrix ARG=" + getShortcutLabel() + "_ref STRIDE=" + clearstride + " CLEAR=" + clearstride );
-      readInputLine( getShortcutLabel() + "_refposT: TRANSPOSE ARG=" + getShortcutLabel() + "_refpos");
-      // Calculate the RMSD between the instaneous position and the reference position
-      readInputLine( getShortcutLabel() + "_rmsd: RMSD_VECTOR ARG=" + getShortcutLabel() + "_getpos," + getShortcutLabel() + "_refpos DISPLACEMENT SQUARED TYPE=" + align );
-      // Add the reference position to the RMSD displacement
-      readInputLine( getShortcutLabel() + "_fpos: COMBINE ARG=" + getShortcutLabel() + "_refposT," + getShortcutLabel() + "_rmsd.disp PERIODIC=NO");
-      // Store the reference data
-      std::string suffix = "_atomdata"; if( theargs.size()==0 ) suffix = "_data";
-      readInputLine( getShortcutLabel() + suffix + ": COLLECT TYPE=matrix ARG=" + getShortcutLabel() + "_fpos STRIDE=" + stride + " CLEAR=" + clearstride );
+    // Collect reference position
+    readInputLine( getShortcutLabel() + "_getposx: POSITION ATOMS=" + indices ); std::string align; parse("ALIGN",align);
+    readInputLine( getShortcutLabel() + "_getpos: CONCATENATE ARG=" + getShortcutLabel() + "_getposx.x," + getShortcutLabel() + "_getposx.y," + getShortcutLabel() + "_getposx.z");
+    // Find atomic center
+    readInputLine( getShortcutLabel() + "_cposx: MEAN ARG=" + getShortcutLabel() + "_getposx.x PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_cposy: MEAN ARG=" + getShortcutLabel() + "_getposx.y PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_cposz: MEAN ARG=" + getShortcutLabel() + "_getposx.z PERIODIC=NO");
+    // Subtract atomimc center
+    readInputLine( getShortcutLabel() + "_refx: CUSTOM ARG=" + getShortcutLabel() + "_getposx.x," + getShortcutLabel() + "_cposx FUNC=x-y PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_refy: CUSTOM ARG=" + getShortcutLabel() + "_getposx.y," + getShortcutLabel() + "_cposy FUNC=x-y PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_refz: CUSTOM ARG=" + getShortcutLabel() + "_getposx.z," + getShortcutLabel() + "_cposz FUNC=x-y PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_ref: CONCATENATE ARG=" + getShortcutLabel() + "_refx," + getShortcutLabel() + "_refy," + getShortcutLabel() + "_refz");
+    // Store the reference position in a collect action
+    readInputLine( getShortcutLabel() + "_refpos: COLLECT TYPE=matrix ARG=" + getShortcutLabel() + "_ref STRIDE=" + clearstride + " CLEAR=" + clearstride );
+    readInputLine( getShortcutLabel() + "_refposT: TRANSPOSE ARG=" + getShortcutLabel() + "_refpos");
+    // Calculate the RMSD between the instaneous position and the reference position
+    readInputLine( getShortcutLabel() + "_rmsd: RMSD_VECTOR ARG=" + getShortcutLabel() + "_getpos," + getShortcutLabel() + "_refpos DISPLACEMENT SQUARED TYPE=" + align );
+    // Add the reference position to the RMSD displacement
+    readInputLine( getShortcutLabel() + "_fpos: COMBINE ARG=" + getShortcutLabel() + "_refposT," + getShortcutLabel() + "_rmsd.disp PERIODIC=NO");
+    // Store the reference data
+    std::string suffix = "_atomdata"; if( theargs.size()==0 ) suffix = "_data";
+    readInputLine( getShortcutLabel() + suffix + ": COLLECT TYPE=matrix ARG=" + getShortcutLabel() + "_fpos STRIDE=" + stride + " CLEAR=" + clearstride );
   }
 
   // Create all the collect actions for arguments
   for(unsigned i=0; i<theargs.size(); ++i) {
-      if( theargs[i]->getNumberOfValues()!=theargs[0]->getNumberOfValues() ) error("mismatch between number of arguments calculated by each collected argument");
-      readInputLine( getShortcutLabel() + "_" + fixArgumentName( theargs[i]->getName() ) + ": COLLECT ARG=" + theargs[i]->getName() + " STRIDE=" + stride + " CLEAR=" + clearstride );
+    if( theargs[i]->getNumberOfValues()!=theargs[0]->getNumberOfValues() ) error("mismatch between number of arguments calculated by each collected argument");
+    readInputLine( getShortcutLabel() + "_" + fixArgumentName( theargs[i]->getName() ) + ": COLLECT ARG=" + theargs[i]->getName() + " STRIDE=" + stride + " CLEAR=" + clearstride );
   }
   // Make a list of collect actions
   if( theargs.size()>0 ) {
-      std::string allcol = getShortcutLabel() + "_" + fixArgumentName( theargs[0]->getName() ); 
-      for(unsigned i=1; i<theargs.size(); ++i) allcol += "," + getShortcutLabel() + "_" + fixArgumentName( theargs[i]->getName() );
-      // And transfer everything to a matrix
-      std::string suffix = "_argdata"; if( indices.length()==0 ) suffix = "_data"; 
-      readInputLine( getShortcutLabel() + suffix + ": VSTACK ARG=" + allcol );
+    std::string allcol = getShortcutLabel() + "_" + fixArgumentName( theargs[0]->getName() );
+    for(unsigned i=1; i<theargs.size(); ++i) allcol += "," + getShortcutLabel() + "_" + fixArgumentName( theargs[i]->getName() );
+    // And transfer everything to a matrix
+    std::string suffix = "_argdata"; if( indices.length()==0 ) suffix = "_data";
+    readInputLine( getShortcutLabel() + suffix + ": VSTACK ARG=" + allcol );
   }
   // Merge all the collected data together into a single matrix
   if( theargs.size()>0 && indices.length()>0 ) readInputLine( getShortcutLabel() + "_data: CONCATENATE MATRIX11=" + getShortcutLabel() + "_atomdata MATRIX12=" + getShortcutLabel() + "_argdata");
@@ -126,12 +126,12 @@ CollectFrames::CollectFrames( const ActionOptions& ao ):
   if( logw.size()>1 ) error("maximum of one argument should be specified for logweights");
 
   if( logw.size()==0 ) {
-      std::string zeros="0"; if( theargs.size()>0 ) { for(unsigned i=1; i<theargs[0]->getNumberOfValues(); ++i) zeros += ",0"; }
-      readInputLine( getShortcutLabel() + "_cweight: CONSTANT VALUE=" + zeros );
-      readInputLine( getShortcutLabel() + "_logweights: COLLECT ARG=" + getShortcutLabel() + "_cweight STRIDE=" + stride + " CLEAR=" + clearstride ); 
+    std::string zeros="0"; if( theargs.size()>0 ) { for(unsigned i=1; i<theargs[0]->getNumberOfValues(); ++i) zeros += ",0"; }
+    readInputLine( getShortcutLabel() + "_cweight: CONSTANT VALUE=" + zeros );
+    readInputLine( getShortcutLabel() + "_logweights: COLLECT ARG=" + getShortcutLabel() + "_cweight STRIDE=" + stride + " CLEAR=" + clearstride );
   } else {
-      if( theargs[0]->getNumberOfValues()!=thew[0]->getNumberOfValues() ) error("mismatch between number of weights and number of collected arguments");
-      readInputLine( getShortcutLabel() + "_logweights: COLLECT ARG=" + thew[0]->getName() + " STRIDE=" + stride + " CLEAR=" + clearstride );
+    if( theargs[0]->getNumberOfValues()!=thew[0]->getNumberOfValues() ) error("mismatch between number of weights and number of collected arguments");
+    readInputLine( getShortcutLabel() + "_logweights: COLLECT ARG=" + thew[0]->getName() + " STRIDE=" + stride + " CLEAR=" + clearstride );
   }
   // And finally create a value that contains as many ones as there are data points (this is used if we want to do Classical MDS
   readInputLine( getShortcutLabel() + "_one: CONSTANT VALUE=1");

@@ -185,25 +185,25 @@ ClassicalMultiDimensionalScaling::ClassicalMultiDimensionalScaling( const Action
 {
   // Find the argument name
   std::string argn; parse("ARG",argn); std::string dissimilarities="";
-  ActionShortcut* as = plumed.getActionSet().getShortcutActionWithLabel( argn ); 
+  ActionShortcut* as = plumed.getActionSet().getShortcutActionWithLabel( argn );
   if( !as || as->getName()!="COLLECT_FRAMES" ) {
-      if( as->getName().find("LANDMARK_SELECT")==std::string::npos ) {
-         error("found no COLLECT_FRAMES or LANDMARK_SELECT action with label " + argn );
-      } else {
-         ActionWithValue* dissims = plumed.getActionSet().selectWithLabel<ActionWithValue*>( argn + "_sqrdissims"); 
-         if( dissims ) dissimilarities = argn + "_sqrdissims";
-      }
+    if( as->getName().find("LANDMARK_SELECT")==std::string::npos ) {
+      error("found no COLLECT_FRAMES or LANDMARK_SELECT action with label " + argn );
+    } else {
+      ActionWithValue* dissims = plumed.getActionSet().selectWithLabel<ActionWithValue*>( argn + "_sqrdissims");
+      if( dissims ) dissimilarities = argn + "_sqrdissims";
+    }
   }
-  if( dissimilarities.length()==0 ) { 
-      dissimilarities = getShortcutLabel() + "_mat"; 
-      // Transpose matrix of stored data values
-      readInputLine( argn + "_dataT: TRANSPOSE ARG=" + argn + "_data");
-      // Calculate the dissimilarity matrix
-      readInputLine( getShortcutLabel() + "_mat: DISSIMILARITIES SQUARED ARG=" + argn + "_data," + argn + "_dataT"); 
+  if( dissimilarities.length()==0 ) {
+    dissimilarities = getShortcutLabel() + "_mat";
+    // Transpose matrix of stored data values
+    readInputLine( argn + "_dataT: TRANSPOSE ARG=" + argn + "_data");
+    // Calculate the dissimilarity matrix
+    readInputLine( getShortcutLabel() + "_mat: DISSIMILARITIES SQUARED ARG=" + argn + "_data," + argn + "_dataT");
   }
-  // Center the matrix 
+  // Center the matrix
   // Step 1: calculate the sum of the rows and duplicate them into a matrix
-  readInputLine( getShortcutLabel() + "_rsums: MATRIX_VECTOR_PRODUCT ARG=" + dissimilarities + "," + argn + "_ones" ); 
+  readInputLine( getShortcutLabel() + "_rsums: MATRIX_VECTOR_PRODUCT ARG=" + dissimilarities + "," + argn + "_ones" );
   readInputLine( getShortcutLabel() + "_nones: SUM ARG=" + argn + "_ones PERIODIC=NO");
   readInputLine( getShortcutLabel() + "_rsumsn: CUSTOM ARG=" + getShortcutLabel() + "_rsums," + getShortcutLabel() + "_nones FUNC=x/y PERIODIC=NO");
   readInputLine( getShortcutLabel() + "_rsummat: OUTER_PRODUCT ARG=" + getShortcutLabel() + "_rsumsn," + argn + "_ones");
@@ -216,17 +216,17 @@ ClassicalMultiDimensionalScaling::ClassicalMultiDimensionalScaling( const Action
   readInputLine( getShortcutLabel() + "_csummat: OUTER_PRODUCT ARG=" + getShortcutLabel() + "_csumsn," + argn + "_ones");
   // Step 4: subtract the column sums
   readInputLine( getShortcutLabel() + "_cmat: CUSTOM ARG=" + getShortcutLabel() + "_csummat," + getShortcutLabel() + "_intT FUNC=y-x PERIODIC=NO");
-  // And generate the multidimensional scaling projection 
-  unsigned ndim; parse("NLOW_DIM",ndim); 
-  std::string vecstr="1"; for(unsigned i=1;i<ndim;++i){ std::string num; Tools::convert( i+1, num ); vecstr += "," + num; }
+  // And generate the multidimensional scaling projection
+  unsigned ndim; parse("NLOW_DIM",ndim);
+  std::string vecstr="1"; for(unsigned i=1; i<ndim; ++i) { std::string num; Tools::convert( i+1, num ); vecstr += "," + num; }
   readInputLine( getShortcutLabel() + "_eig: DIAGONALIZE ARG=" + getShortcutLabel() + "_cmat VECTORS=" + vecstr );
-  for(unsigned i=0;i<ndim;++i) {
-      std::string num; Tools::convert( i+1, num );
-      readInputLine( getShortcutLabel() + "-" +  num + ": CUSTOM ARG=" + getShortcutLabel() + "_eig.vals-" + num + "," + getShortcutLabel() + "_eig.vecs-" + num + " FUNC=sqrt(x)*y PERIODIC=NO");
+  for(unsigned i=0; i<ndim; ++i) {
+    std::string num; Tools::convert( i+1, num );
+    readInputLine( getShortcutLabel() + "-" +  num + ": CUSTOM ARG=" + getShortcutLabel() + "_eig.vals-" + num + "," + getShortcutLabel() + "_eig.vecs-" + num + " FUNC=sqrt(x)*y PERIODIC=NO");
   }
   std::string eigvec_args = " ARG=" + getShortcutLabel() + "-1";
   // The final output is a stack of all the low dimensional coordinates
-  for(unsigned i=1;i<ndim;++i) { std::string num; Tools::convert( i+1, num ); eigvec_args += "," + getShortcutLabel() + "-" + num; }
+  for(unsigned i=1; i<ndim; ++i) { std::string num; Tools::convert( i+1, num ); eigvec_args += "," + getShortcutLabel() + "-" + num; }
   readInputLine( getShortcutLabel() + ": VSTACK" + eigvec_args );
 }
 

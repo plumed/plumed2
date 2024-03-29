@@ -83,8 +83,8 @@ MatrixTimesMatrix::MatrixTimesMatrix(const ActionOptions&ao):
   stored_matrix1 = getPntrToArgument(0)->ignoreStoredValue( headstr );
   stored_matrix2 = getPntrToArgument(1)->ignoreStoredValue( headstr );
   if( getName()=="DISSIMILARITIES" ) {
-      parseFlag("SQUARED",squared); 
-      if( squared ) log.printf("  calculating the squares of the dissimilarities \n");
+    parseFlag("SQUARED",squared);
+    if( squared ) log.printf("  calculating the squares of the dissimilarities \n");
   } else squared=true;
 }
 
@@ -125,10 +125,10 @@ void MatrixTimesMatrix::performTask( const std::string& controller, const unsign
     double val1 = getElementOfMatrixArgument( 0, index1, kind, myvals );
     double val2 = getElementOfMatrixArgument( 1, kind, ind2, myvals );
     if( getName()=="DISSIMILARITIES" ) {
-        double tmp = getPntrToArgument(0)->difference(val2, val1); matval += tmp*tmp;
-        if( !squared ) {
-            dvec1[i] = 2*tmp; dvec2[i] = -2*tmp; continue;
-        } else { val2 = -2*tmp; val1 = 2*tmp; }
+      double tmp = getPntrToArgument(0)->difference(val2, val1); matval += tmp*tmp;
+      if( !squared ) {
+        dvec1[i] = 2*tmp; dvec2[i] = -2*tmp; continue;
+      } else { val2 = -2*tmp; val1 = 2*tmp; }
     } else matval+= val1*val2;
 
     if( doNotCalculateDerivatives() ) continue;
@@ -141,7 +141,7 @@ void MatrixTimesMatrix::performTask( const std::string& controller, const unsign
   myvals.addValue( ostrn, matval );
   if( squared || doNotCalculateDerivatives() ) return;
 
-  for(unsigned i=0; i<nmult; ++i) { 
+  for(unsigned i=0; i<nmult; ++i) {
     unsigned kind = myarg->getRowIndex( index1, i );
     addDerivativeOnMatrixArgument( stored_matrix1, 0, 0, index1, kind, dvec1[i]/(2*matval), myvals );
     addDerivativeOnMatrixArgument( stored_matrix2, 0, 1, kind, ind2, dvec2[i]/(2*matval), myvals );

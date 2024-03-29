@@ -103,8 +103,8 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   inv_max_minus_min(0.0),
   derivativeIsZeroWhenValueIsZero(false)
 {
-  if( action ) { 
-      if( action->getName()=="ACCUMULATE" || action->getName()=="COLLECT" ) valtype=average;
+  if( action ) {
+    if( action->getName()=="ACCUMULATE" || action->getName()=="COLLECT" ) valtype=average;
   }
   if( action ) storedata=action->getName()=="PUT" || valtype==average;
   if( ss.size() && withderiv ) storedata=true;
@@ -115,7 +115,7 @@ void Value::setValType( const std::string& vtype ) {
   if( vtype=="normal" ) valtype=normal;
   else if( vtype=="constant" ) valtype=constant;
   else if( vtype=="average" ) valtype=average;
-  else if( vtype=="calcFromAverage" ) valtype=calcFromAverage; 
+  else if( vtype=="calcFromAverage" ) valtype=calcFromAverage;
   else plumed_merror("invalid valtype " + vtype );
 }
 
@@ -228,12 +228,12 @@ void Value::set(const std::size_t& n, const double& v ) {
 }
 
 void Value::push_back( const double& v ) {
-  value_set=true; 
-  if( shape.size()==1 ) { 
-      data.push_back(v); shape[0]++; 
-  } else if( shape.size()==2 ) { 
-      data.push_back(v);
-      shape[0] = std::ceil( data.size() / shape[1] );
+  value_set=true;
+  if( shape.size()==1 ) {
+    data.push_back(v); shape[0]++;
+  } else if( shape.size()==2 ) {
+    data.push_back(v);
+    shape[0] = std::ceil( data.size() / shape[1] );
   }
 }
 
@@ -399,7 +399,7 @@ void add( const Value& val1, Value* val2 ) {
   val2->set( val1.get() + val2->get() );
 }
 
-bool Value::calculateOnUpdate() const { 
+bool Value::calculateOnUpdate() const {
   return (valtype==average || valtype==calcFromAverage);
 }
 

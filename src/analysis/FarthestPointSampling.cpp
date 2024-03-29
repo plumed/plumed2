@@ -52,7 +52,7 @@ public:
 PLUMED_REGISTER_ACTION(FarthestPointSampling,"FARTHEST_POINT_SAMPLING")
 
 void FarthestPointSampling::registerKeywords( Keywords& keys ) {
-  adjmat::MatrixOperationBase::registerKeywords( keys ); 
+  adjmat::MatrixOperationBase::registerKeywords( keys );
   keys.add("compulsory","NZEROS","the number of landmark points that you want to select");
   keys.add("compulsory","SEED","1234","a random number seed");
 }
@@ -66,16 +66,16 @@ FarthestPointSampling::FarthestPointSampling( const ActionOptions& ao ):
   log.printf("  selecting %d landmark points \n", nlandmarks );
 
   std::vector<unsigned> shape(1); shape[0] = getPntrToArgument(0)->getShape()[0];
-  addValue( shape ); setNotPeriodic(); getPntrToComponent(0)->buildDataStore(); 
+  addValue( shape ); setNotPeriodic(); getPntrToComponent(0)->buildDataStore();
 }
 
 void FarthestPointSampling::prepare() {
-  Value* myval = getPntrToComponent(0); 
+  Value* myval = getPntrToComponent(0);
   if( myval->getShape()[0]!=getPntrToArgument(0)->getShape()[0] ) {
-      std::vector<unsigned> shape(1); shape[0] = getPntrToArgument(0)->getShape()[0]; myval->setShape(shape);
+    std::vector<unsigned> shape(1); shape[0] = getPntrToArgument(0)->getShape()[0]; myval->setShape(shape);
   }
   for(unsigned i=0; i<nlandmarks; ++i) myval->set( i, 0.0 );
-  for(unsigned i=nlandmarks; i<myval->getShape()[0]; ++i) myval->set( i, 1.0 ); 
+  for(unsigned i=nlandmarks; i<myval->getShape()[0]; ++i) myval->set( i, 1.0 );
 }
 
 void FarthestPointSampling::calculate() {
@@ -103,7 +103,7 @@ void FarthestPointSampling::calculate() {
       if( mind>maxd ) { maxd=mind; landmarks[i]=j; }
     }
     myval->set( landmarks[i], 0 );
-    for(unsigned k=0; k<npoints; ++k) distances(i,k) = myarg->get( landmarks[i]*npoints + k ); 
+    for(unsigned k=0; k<npoints; ++k) distances(i,k) = myarg->get( landmarks[i]*npoints + k );
   }
 }
 

@@ -90,9 +90,9 @@ void DumpVector::buildArgnames() {
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     if( getPntrToArgument(i)->getShape()[0]!=nvals ) error("all arguments should have same number of values");
     if( getPntrToArgument(i)->getRank()==1 ) {
-        argnames.push_back( getPntrToArgument(i)->getName() );
+      argnames.push_back( getPntrToArgument(i)->getName() );
     } else if( getPntrToArgument(i)->getRank()==2 ) {
-        (getPntrToArgument(i)->getPntrToAction())->getMatrixColumnTitles( argnames ); 
+      (getPntrToArgument(i)->getPntrToAction())->getMatrixColumnTitles( argnames );
     }
     getPntrToArgument(i)->buildDataStore();
   }
@@ -104,12 +104,12 @@ void DumpVector::update() {
   else ofile.setBackupString("analysis");
   ofile.open( filename );
 
-  unsigned totargs = 0; 
+  unsigned totargs = 0;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      if( getPntrToArgument(i)->getRank()==1 ) totargs += 1; 
-      else if( getPntrToArgument(i)->getRank()==2 ) totargs += getPntrToArgument(i)->getShape()[1];
+    if( getPntrToArgument(i)->getRank()==1 ) totargs += 1;
+    else if( getPntrToArgument(i)->getRank()==2 ) totargs += getPntrToArgument(i)->getShape()[1];
   }
-  if( totargs!=argnames.size() ) buildArgnames(); 
+  if( totargs!=argnames.size() ) buildArgnames();
 
   unsigned nvals = getPntrToArgument(0)->getShape()[0];
   for(unsigned i=0; i<nvals; ++i) {
@@ -118,11 +118,11 @@ void DumpVector::update() {
     ofile.printField("time",getTime());
     ofile.printField("parameter",int(i));
     for(unsigned j=0; j<getNumberOfArguments(); j++) {
-      if( getPntrToArgument(j)->getRank()==1 ) { 
-          ofile.fmtField(fmt); ofile.printField(argnames[n],getPntrToArgument(j)->get(i) ); n++;
+      if( getPntrToArgument(j)->getRank()==1 ) {
+        ofile.fmtField(fmt); ofile.printField(argnames[n],getPntrToArgument(j)->get(i) ); n++;
       } else if( getPntrToArgument(j)->getRank()==2 ) {
-          unsigned ncols = getPntrToArgument(j)->getShape()[1];
-          for(unsigned k=0; k<ncols; ++k) { ofile.fmtField(fmt); ofile.printField(argnames[n],getPntrToArgument(j)->get(i*ncols+k)); n++; }
+        unsigned ncols = getPntrToArgument(j)->getShape()[1];
+        for(unsigned k=0; k<ncols; ++k) { ofile.fmtField(fmt); ofile.printField(argnames[n],getPntrToArgument(j)->get(i*ncols+k)); n++; }
       }
     }
     ofile.printField();

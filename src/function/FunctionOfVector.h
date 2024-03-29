@@ -177,13 +177,13 @@ template <class T>
 void FunctionOfVector<T>::prepare() {
   unsigned argstart = myfunc.getArgStart(); std::vector<unsigned> shape(1);
   for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
-      if( getPntrToArgument(i)->getRank()==1 ) {
-          shape[0] = getPntrToArgument(i)->getShape()[0]; break;
-      }
+    if( getPntrToArgument(i)->getRank()==1 ) {
+      shape[0] = getPntrToArgument(i)->getShape()[0]; break;
+    }
   }
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
-      Value* myval = getPntrToComponent(i);
-      if( myval->getRank()==1 && myval->getShape()[0]!=shape[0] ) { myval->setShape(shape); }
+    Value* myval = getPntrToComponent(i);
+    if( myval->getRank()==1 && myval->getShape()[0]!=shape[0] ) { myval->setShape(shape); }
   }
   ActionWithVector::prepare();
 }

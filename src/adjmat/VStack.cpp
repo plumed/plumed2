@@ -107,10 +107,10 @@ VStack::VStack(const ActionOptions& ao):
 
 void VStack::getMatrixColumnTitles( std::vector<std::string>& argnames ) const {
   for(unsigned j=0; j<getNumberOfArguments(); ++j) {
-      if( (getPntrToArgument(j)->getPntrToAction())->getName()=="COLLECT" ) {
-           ActionWithArguments* aa = dynamic_cast<ActionWithArguments*>( getPntrToArgument(j)->getPntrToAction() );
-           plumed_assert( aa && aa->getNumberOfArguments()==1 ); argnames.push_back( (aa->getPntrToArgument(0))->getName() );  
-      } else argnames.push_back( getPntrToArgument(j)->getName() );
+    if( (getPntrToArgument(j)->getPntrToAction())->getName()=="COLLECT" ) {
+      ActionWithArguments* aa = dynamic_cast<ActionWithArguments*>( getPntrToArgument(j)->getPntrToAction() );
+      plumed_assert( aa && aa->getNumberOfArguments()==1 ); argnames.push_back( (aa->getPntrToArgument(0))->getName() );
+    } else argnames.push_back( getPntrToArgument(j)->getName() );
   }
 }
 

@@ -63,9 +63,9 @@ SketchMapProjection::SketchMapProjection( const ActionOptions& ao):
   std::string refname, refactions, metric;
   std::vector<std::string> argnames; parseVector("ARG",argnames);
   std::string type, reference_data, reference; parse("REFERENCE",reference); parse("TYPE",type);
-  mapping::Path::readInputFrames( reference, type, argnames, false, this, reference_data ); 
+  mapping::Path::readInputFrames( reference, type, argnames, false, this, reference_data );
   // And read in the data that we want on the projections
-  std::vector<std::string> pnames; parseVector("PROPERTY",pnames); 
+  std::vector<std::string> pnames; parseVector("PROPERTY",pnames);
   std::string weights; parse("WEIGHT",weights); pnames.push_back( weights );
   // Now create fixed vectors using some sort of reference action
   mapping::Path::readPropertyInformation( pnames, getShortcutLabel(), reference, this );
@@ -77,9 +77,9 @@ SketchMapProjection::SketchMapProjection( const ActionOptions& ao):
   readInputLine( getShortcutLabel() + "_targ: MORE_THAN ARG=" + getShortcutLabel() + "_data SQUARED SWITCH={" + hdfunc + "}");
   // Create the projection object
   std::string ldfunc, cgtol; parse("LOW_DIM_FUNCTION",ldfunc); parse("CGTOL",cgtol);
-  std::string argstr="ARG=" + pnames[0] + "_ref"; for(unsigned i=1;i<pnames.size()-1;++i) argstr += "," + pnames[i] + "_ref";
+  std::string argstr="ARG=" + pnames[0] + "_ref"; for(unsigned i=1; i<pnames.size()-1; ++i) argstr += "," + pnames[i] + "_ref";
   readInputLine( getShortcutLabel() + ": PROJECT_POINTS " + argstr + " TARGET1=" + getShortcutLabel() + "_targ " +
-                                      "FUNC1={" + ldfunc + "} WEIGHTS1=" + getShortcutLabel() + "_weights CGTOL=" + cgtol );
+                 "FUNC1={" + ldfunc + "} WEIGHTS1=" + getShortcutLabel() + "_weights CGTOL=" + cgtol );
 }
 
 }

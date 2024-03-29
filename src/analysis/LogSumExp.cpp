@@ -26,7 +26,7 @@
 /*
 This action takes the exponential of a vector of logarithms and divides each element of the vector by the sum of the exponentials.
 
-The log-exp-sum trick is used here 
+The log-exp-sum trick is used here
 
 \par Examples
 
@@ -41,7 +41,7 @@ private:
   std::string fixArgumentName( const std::string& argin );
 public:
   static void registerKeywords( Keywords& keys );
-  explicit LogSumExp( const ActionOptions& ao ); 
+  explicit LogSumExp( const ActionOptions& ao );
 };
 
 PLUMED_REGISTER_ACTION(LogSumExp,"LOGSUMEXP")

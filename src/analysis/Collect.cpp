@@ -82,7 +82,7 @@ Collect::Collect( const ActionOptions& ao ):
 
   std::string type="vector";
   if( getPntrToArgument(0)->getNumberOfValues()!=1 ) {
-      parse("TYPE",type); if( type!="vector" && type!="matrix" ) error("invalid type specified.  Should be vector/matrix");
+    parse("TYPE",type); if( type!="vector" && type!="matrix" ) error("invalid type specified.  Should be vector/matrix");
   }
   if( type=="vector" ) log.printf("  adding %d elements to stored vector each time we collect\n", getPntrToArgument(0)->getNumberOfValues() );
   else log.printf("  constructing matrix with rows of length %d from input data\n", getPntrToArgument(0)->getNumberOfValues() );
@@ -94,7 +94,7 @@ Collect::Collect( const ActionOptions& ao ):
     if( clearstride%getStride()!=0 ) error("CLEAR parameter must be a multiple of STRIDE");
     log.printf("  clearing collected data every %u steps \n",clearstride);
     nvals=(clearstride/getStride());
-  } 
+  }
 
   std::vector<unsigned> shape(1); shape[0]=nvals; getPntrToArgument(0)->buildDataStore();
   if( type=="matrix" ) { shape.resize(2); shape[1] = getPntrToArgument(0)->getNumberOfValues(); }
@@ -121,7 +121,7 @@ void Collect::update() {
     for(unsigned i=0; i<nargs; ++i) myout->set( i, myin->get(i) );
   } else if( clearstride>0 ) {
     unsigned step = getStep() - clearstride*std::floor( getStep() / clearstride );
-    if( getStep()%clearstride==0 ) step = step + clearstride;  
+    if( getStep()%clearstride==0 ) step = step + clearstride;
     unsigned base = (step/getStride()-1)*nargs;
     for(unsigned i=0; i<nargs; ++i) myout->set( base+i, myin->get(i) );
   } else {
