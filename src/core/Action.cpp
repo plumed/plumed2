@@ -104,7 +104,8 @@ Action::Action(const ActionOptions&ao):
   if ( keywords.exists("RESTART") ) {
     std::string srestart="AUTO";
     parse("RESTART",srestart);
-    if(srestart=="YES") restart=true;
+    if( plumed.parseOnlyMode() ) restart=false;
+    else if(srestart=="YES") restart=true;
     else if(srestart=="NO")  restart=false;
     else if(srestart=="AUTO") {
       // do nothing, this is the default
@@ -222,10 +223,6 @@ void Action::clearOptions() {
 
 void Action::clearDependencies() {
   after.clear();
-}
-
-std::string Action::getDocumentation()const {
-  return std::string("UNDOCUMENTED ACTION");
 }
 
 void Action::checkRead() {

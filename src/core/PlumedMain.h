@@ -227,6 +227,10 @@ private:
 
 /// This sets up the vector that contains the interface to the MD code
   void setupInterfaceActions();
+
+/// Flag for parse only mode -- basically just forces restart to turn off
+  bool doParseOnly;
+
 private:
 /// Forward declaration.
   ForwardDecl<TypesafePtr> stopFlag_fwd;
@@ -295,6 +299,15 @@ public:
   */
   void cmd(std::string_view key,const TypesafePtr & val=nullptr) override;
   ~PlumedMain();
+  /**
+    Turn on parse only mode to deactivate restart in all actions.
+    This is only used by plumed driver --parse-only
+  */
+  void activateParseOnlyMode();
+  /**
+    This checks if parse only mode is active and turns off any restart.
+  */
+  bool parseOnlyMode() const ;
   /**
     Read an input file.
     \param str name of the file
@@ -444,7 +457,7 @@ public:
 /// Check if restarting
   bool getRestart()const;
 /// Set restart flag
-  void setRestart(bool f) {restart=f;}
+  void setRestart(bool f) {if(!doParseOnly) restart=f;}
 /// Check if checkpointing
   bool getCPT()const;
 /// Set exchangeStep flag

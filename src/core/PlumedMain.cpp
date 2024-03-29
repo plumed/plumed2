@@ -252,6 +252,7 @@ PlumedMain::PlumedMain():
   exchangeStep(false),
   restart(false),
   doCheckPoint(false),
+  doParseOnly(false),
   stopNow(false),
   name_of_energy(""),
   novirial(false),
@@ -749,7 +750,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
       case cmd_getExchangesList:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        exchangePatterns.getList(val.get<int*>());
+        exchangePatterns.getList(val);
         break;
       case cmd_runFinalJobs:
         CHECK_INIT(initialized,word);
@@ -1447,6 +1448,14 @@ void PlumedMain::DeprecatedAtoms::setCollectEnergy(bool b) const {
 double PlumedMain::DeprecatedAtoms::getEnergy() const {
   ActionToPutData* av = plumed.getActionSet().selectWithLabel<ActionToPutData*>( plumed.MDEngine + "_energy" );
   return (av->copyOutput(0))->get();
+}
+
+void PlumedMain::activateParseOnlyMode() {
+  doParseOnly=true;
+}
+
+bool PlumedMain::parseOnlyMode() const {
+  return doParseOnly;
 }
 
 #ifdef __PLUMED_HAS_PYTHON
