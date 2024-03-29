@@ -451,9 +451,6 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
 
   std::vector<int> shuffled_indexes;
 
-  // trap signals:
-  SignalHandlerGuard sigIntGuard(SIGINT, signalHandler);
-
   auto initial_time=std::chrono::high_resolution_clock::now();
 
   for(auto & k : kernels) {
@@ -492,6 +489,9 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
 
   log<<"Starting MD loop\n";
   log<<"Use CTRL+C to stop at any time and collect timers (not working in MPI runs)\n";
+  // trap signals:
+  SignalHandlerGuard sigIntGuard(SIGINT, signalHandler);
+
 
   for(int step=0; nf<0 || step<nf; ++step) {
     std::shuffle(kernels_ptr.begin(),kernels_ptr.end(),g);
