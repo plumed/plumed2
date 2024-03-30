@@ -29,6 +29,9 @@ namespace analysis {
 
 //+PLUMEDOC DIMRED CREATE_MASK
 /*
+Create a mask vector to use for landmark selection
+
+\par Examples
 
 */
 //+ENDPLUMEDOC

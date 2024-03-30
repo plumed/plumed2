@@ -186,7 +186,8 @@ ClassicalMultiDimensionalScaling::ClassicalMultiDimensionalScaling( const Action
   // Find the argument name
   std::string argn; parse("ARG",argn); std::string dissimilarities="";
   ActionShortcut* as = plumed.getActionSet().getShortcutActionWithLabel( argn );
-  if( !as || as->getName()!="COLLECT_FRAMES" ) {
+  if( !as ) error("found no action with name " + argn );
+  if( as->getName()!="COLLECT_FRAMES" ) {
     if( as->getName().find("LANDMARK_SELECT")==std::string::npos ) {
       error("found no COLLECT_FRAMES or LANDMARK_SELECT action with label " + argn );
     } else {

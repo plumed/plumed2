@@ -31,6 +31,9 @@ namespace dimred {
 
 //+PLUMEDOC DIMRED PROJECT_POINTS
 /*
+Find the projection of a point in a low dimensional space by matching the (transformed) distance between it and a series of reference configurations that were input
+
+\par Examples
 
 */
 //+ENDPLUMEDOC

@@ -25,8 +25,9 @@
 #include "core/ActionRegister.h"
 #include "core/ActionWithValue.h"
 
-//+PLUMEDOC DIMRED SKETCHMAP_CONJGRAD
+//+PLUMEDOC DIMRED SKETCHMAP
 /*
+Construct a sketch map projection of the input data
 
 \par Examples
 
@@ -73,7 +74,8 @@ SketchMap::SketchMap( const ActionOptions& ao):
   // Get the high dimensioal data
   std::string argn; parse("ARG",argn); std::string dissimilarities = getShortcutLabel() + "_mds_mat";
   ActionShortcut* as = plumed.getActionSet().getShortcutActionWithLabel( argn );
-  if( !as || as->getName()!="COLLECT_FRAMES" ) {
+  if( !as ) error("found no action with name " + argn );
+  if( as->getName()!="COLLECT_FRAMES" ) {
     if( as->getName().find("LANDMARK_SELECT")==std::string::npos ) {
       error("found no COLLECT_FRAMES or LANDMARK_SELECT action with label " + argn );
     } else {

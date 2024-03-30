@@ -32,6 +32,9 @@ namespace dimred {
 
 //+PLUMEDOC DIMRED ARRANGE_POINTS
 /*
+Arrange points in a low dimensional space so that the (transformed) distances between points in the low dimensional space match the dissimilarities provided in an input matrix.
+
+\par Examples
 
 */
 //+ENDPLUMEDOC
