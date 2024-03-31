@@ -130,8 +130,8 @@ unsigned SelectMassCharge::getModeAndSetupValues( ActionWithValue* av ) {
   ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>( av ); plumed_assert( aa );
   for(unsigned i=0; i<aa->getNumberOfAtoms(); ++i) {
     std::pair<std::size_t,std::size_t> p = aa->getValueIndices( aa->getAbsoluteIndex(i) );
-    if( av->getName()=="MASSES" && !aa->masv[p.first]->isConstant() ) constant=false;
-    if( av->getName()=="CHARGES" && !aa->chargev[p.first]->isConstant() ) constant=false;
+    if( av->getName().find("MASS")!=std::string::npos && !aa->masv[p.first]->isConstant() ) constant=false;
+    if( av->getName().find("CHARGE")!=std::string::npos && !aa->chargev[p.first]->isConstant() ) constant=false;
   }
   if( !constant ) av->error("cannot deal with non-constant " + av->getName() + " values");
   (av->copyOutput(0))->setConstant();
