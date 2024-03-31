@@ -1,3 +1,4 @@
+plumed_modules=sprint
 type=driver
 plumed_modules=adjmat
 # this is to test a different name
