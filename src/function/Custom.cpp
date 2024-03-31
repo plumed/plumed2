@@ -296,7 +296,7 @@ void Custom::read( ActionWithArguments* action ) {
   for(unsigned i=0; i<var.size(); i++) action->log.printf(" %s",var[i].c_str());
   action->log.printf("\n"); function.set( func, var, action );
   std::vector<double> zeros( action->getNumberOfArguments(), 0 ); double fval = abs(function.evaluate(zeros));
-  zerowhenallzero=(fval<epsilon || std::isnan(fval) || func=="x/y" ); 
+  zerowhenallzero=(fval<epsilon );
   if( zerowhenallzero ) action->log.printf("  not calculating when all arguments are zero \n");
 }
 
