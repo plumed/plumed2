@@ -15,11 +15,6 @@ struct vec3d {
   double z;
 };  
       
-template<>
-struct PLMD::wrapper::is_custom_array<vec3d> : std::true_type {
-  using value_type = double;
-};  
-
 struct tens3d3d {
   double xx;
   double xy;
@@ -38,10 +33,19 @@ struct tens3d3d {
   } 
 };    
       
+namespace PLMD {
+namespace wrapper {
 template<>
-struct PLMD::wrapper::is_custom_array<tens3d3d> : std::true_type {
+struct is_custom_array<vec3d> : std::true_type {
+  using value_type = double;
+};
+
+template<>
+struct is_custom_array<tens3d3d> : std::true_type {
   using value_type = vec3d;
 };
+}
+}
 
 
 void test_global(){

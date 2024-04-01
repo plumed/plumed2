@@ -565,29 +565,12 @@
 #endif
 
 /*
-  1: Enable typesafe C++ interface for vector shape (default)
-  0: Disable typesafe C++ interface for vector shape
+  1: Forces strict mode for vector shapes
+  0: Enable backward compatible sloppy mode for vector shapes (default)
 
   Only used in declarations.
 
-  It tests for old versions of GCC and ICC that do not properly
-  implement overload resultion. Notice that it is only
-  enabled in C++11
 */
-
-#ifndef __PLUMED_WRAPPER_CXX_DETECT_SHAPES
-# if defined(__INTEL_COMPILER) && (__INTEL_COMPILER < 1700)
-#   define __PLUMED_WRAPPER_CXX_DETECT_SHAPES 0
-# elif defined(__GNUC__) && !defined(__clang__) && (__GNUC__ < 6)
-#   define __PLUMED_WRAPPER_CXX_DETECT_SHAPES 0
-# elif __cplusplus <= 199711L
-#   define __PLUMED_WRAPPER_CXX_DETECT_SHAPES 0
-# endif
-# ifndef __PLUMED_WRAPPER_CXX_DETECT_SHAPES
-#   define __PLUMED_WRAPPER_CXX_DETECT_SHAPES 1
-# endif
-#endif
-
 #ifndef __PLUMED_WRAPPER_CXX_DETECT_SHAPES_STRICT
 #define __PLUMED_WRAPPER_CXX_DETECT_SHAPES_STRICT 0
 #endif
@@ -1813,80 +1796,79 @@ inline static bool PlumedGetenvExceptionsDebug() __PLUMED_WRAPPER_CXX_NOEXCEPT {
   return res;
 }
 
-#if __cplusplus > 199711L && __PLUMED_WRAPPER_CXX_DETECT_SHAPES
+#if __cplusplus > 199711L
 
+/**
+
+We use a separate namespace here instead of hiding these classes in the Plumed
+class, because some of these structs might be specialized by the user.
+
+*/
 namespace wrapper {
 
-// Utilities
+/// This is to replace c++17 std::void_t
 template<typename... Ts>
 struct make_void { using type = void; };
 template<typename... Ts>
 using void_t = typename make_void<Ts...>::type;
 
-// Primary template, assumes T does not have both size() and data() methods
+/// Primary template, assumes T does not have both size() and data() methods
 template<typename T, typename = void>
 struct has_size_and_data : std::false_type {};
 
-// Specialization for types T that do have both size() and data() methods
+/// Specialization for types T that do have both size() and data() methods
 template<typename T>
 struct has_size_and_data<T, void_t<decltype(std::declval<T>().size()), decltype(std::declval<T>().data())>> : std::true_type {};
 
-// Primary template, assumes T is not a custom structure
-// Can be specialized to inform about custom structures
+/// Primary template, assumes T is not a custom structure.
+/// Can be specialized to inform about custom structures
 template<typename T>
 struct is_custom_array : std::false_type {
   typedef void value_type;
 };
 
-// Template specialization for std::array
+/// Template specialization for std::array
 template<typename T, std::size_t N>
 struct is_custom_array<std::array<T,N>> : std::true_type {
   using value_type = typename std::array<T,N>::value_type;
 };
 
-// Template specialization for C arrays
+/// Template specialization for C arrays.
+/// Note: we have to use it as wrapper::is_custom_array<typename std::remove_reference<T>::type>::value
+/// because C arrays are only passed by reference!
 template<typename T, std::size_t N>
 struct is_custom_array<T[N]> : std::true_type {
   using value_type = typename std::remove_reference<decltype(std::declval<T[N]>()[0])>::type;
 };
 
-// Primary template, remains undefined for non-array types
-template<typename T>
-struct is_array : std::false_type {};
-
-// Template specialization for C array types
-template<typename T, std::size_t N>
-struct is_array<T[N]> : std::true_type {
-  using value_type = T;
-  static constexpr std::size_t size = N;
-};
-
-// Generic utility to retrieve the size of a container
+/// Generic utility to retrieve the size of a container
 template<typename T>
 inline std::size_t size(const T&obj) {
   return obj.size();
-};
+}
 
-// Specialization for std::string, which returns size()+1, which includes the terminating null character
+/// Specialization for std::string, which returns size()+1, which includes the terminating null character
 template<>
 inline std::size_t size(const std::string &obj) {
   return obj.size()+1;
-};
+}
 
-// Report the size of a custom_array
-template<typename T, typename std::enable_if<wrapper::is_custom_array<T>::value, int>::type = 0>
+/// Report the size of a custom_array.
+/// typename std::remove_reference<T>::type is needed because C arrays are passed by reference
+template<typename T, typename std::enable_if<wrapper::is_custom_array<typename std::remove_reference<T>::type>::value, int>::type = 0>
 inline std::size_t custom_array_size() {
-  using value_type = typename wrapper::is_custom_array<T>::value_type;
+  using value_type = typename wrapper::is_custom_array<typename std::remove_reference<T>::type>::value_type;
   constexpr std::size_t value_size=sizeof(value_type);
   static_assert(value_size>0,"cannot use custom arrays of void types");
   static_assert(sizeof(T)%value_size==0,"custom array has incorrect size");
   return sizeof(T)/sizeof(value_type);
 }
 
-// Cast a pointer to a custom_array to a pointer of its value_type
-template<typename T, typename std::enable_if<wrapper::is_custom_array<T>::value, int>::type = 0>
+/// Cast a pointer to a custom_array to a pointer of its value_type.
+/// typename std::remove_reference<T>::type is needed because C arrays are passed by reference
+template<typename T, typename std::enable_if<wrapper::is_custom_array<typename std::remove_reference<T>::type>::value, int>::type = 0>
 inline typename wrapper::is_custom_array<T>::value_type* custom_array_cast(T* val) {
-  using value_type = typename wrapper::is_custom_array<T>::value_type;
+  using value_type = typename wrapper::is_custom_array<typename std::remove_reference<T>::type>::value_type;
   return reinterpret_cast<value_type*>(val);
 }
 
@@ -2499,7 +2481,8 @@ private:
   };
 
 #if __cplusplus > 199711L
-  /// Small structure used to pass elements of a shape initializer_list
+  /// Small structure used to pass elements of a shape initializer_list.
+  /// We use simple conversions, without sign checks, which implicitly means that size=-1 is a very large size
   struct SizeLike {
     std::size_t size;
     SizeLike(short unsigned size): size(size) {}
@@ -2596,28 +2579,33 @@ public:
     global().cmd(key);
   }
 
-#if __cplusplus > 199711L && __PLUMED_WRAPPER_CXX_DETECT_SHAPES
+#if __cplusplus > 199711L
 
+  /**
+     Send a command to global-plumed.
+  */
   template<typename T>
   static void gcmd(const char*key,T&& val) {
     global().cmd(key,std::forward<T>(val));
   }
 
-  template<typename T>
-  static void gcmd(const char*key,T& val) {
-    global().cmd(key,val);
-  }
-
+  /**
+     Send a command to global-plumed.
+     This version detects passing size or shape as a pointer.
+  */
   template<typename T,typename M>
   static void gcmd(const char*key,T* val, M&& more) {
     global().cmd(key,val,std::forward<M>(more));
   }
 
+  /**
+     Send a command to global-plumed.
+     This version detects passing shape as an initializer_list.
+  */
   template<typename T>
   static void gcmd(const char*key,T* val, std::initializer_list<SizeLike> shape) {
     global().cmd(key,val,shape);
   }
-
 
 #else
 
@@ -2654,20 +2642,6 @@ public:
   static void gcmd(const char*key,T* val, const __PLUMED_WRAPPER_STD size_t* shape) {
     global().cmd(key,val,shape);
   }
-
-#if __cplusplus > 199711L
-  /**
-     Send a command to global-plumed
-      \param key The name of the command to be executed
-      \param val The argument.
-      \param shape The shape of the argument, in the form of an initialier_list (e.g., {10,3}).
-     \note Equivalent to plumed_gcmd()
-  */
-  template<typename T>
-  static void gcmd(const char*key,T* val, std::initializer_list<SizeLike> shape) {
-    global().cmd(key,val,shape);
-  }
-#endif
 
 #endif
 
@@ -3017,6 +2991,8 @@ public:
 
 #if __cplusplus > 199711L
 
+private:
+
   /// Internal tool to convert initializer_list to shape
   /// This is just taking an initializer list and making a std::array
   std::array<std::size_t,5>  make_shape(std::initializer_list<SizeLike> shape) {
@@ -3030,12 +3006,6 @@ public:
     shape_[j]=0;
     return shape_;
   }
-#endif
-
-#if __cplusplus > 199711L && __PLUMED_WRAPPER_CXX_DETECT_SHAPES
-
-private:
-
 
   /// Internal utility to append a shape.
   /// Create a new shape where newindex has been appended to the last non zero element.
@@ -3052,34 +3022,36 @@ private:
     return shape_;
   }
 
-
 /// Helper functions for interpreting commands. **They are all internals**.
 /// cmd_helper is called when we have no shape information associated.
 /// cmd_helper_with_shape is called when we have shape information associated.
-/// The nocopy bool tells us if this pointer is pointing to a temporary variable,
-/// and thus PLUMED should not keep a copy.
+/// cmd_helper_with_nelem is called when we have size information associated.
+/// The nocopy bool tells us if this pointer is pointing to a temporary variable, it is propagated by the cmd_helper_with_shape version
+/// It makes sure PLUMED will not keep a copy.
 /// The variants below change for the type of the val argument
+/// There is a chain of SFINAE conditions. This would be better implement with if constexpr, but we avoid doing so
+/// to keep this compatible with C++11.
 
 /// cmd_helper with custom array val (includes std::array)
-  template<typename T, typename std::enable_if<wrapper::is_custom_array<T>::value, int>::type = 0>
-  void cmd_helper(const char*key,T&& val,bool nocopy=false) {
+/// temporaries are detected and the information is propragated
+  template<typename T, typename std::enable_if<wrapper::is_custom_array<typename std::remove_reference<T>::type>::value, int>::type = 0>
+  void cmd_helper(const char*key,T&& val) {
     std::size_t shape[] { wrapper::custom_array_size<T>(), 0 };
-    cmd_helper_with_shape(key,wrapper::custom_array_cast(&val),shape,nocopy);
+    cmd_helper_with_shape(key,wrapper::custom_array_cast(&val),shape, std::is_rvalue_reference<T&&>::value);
   }
 
 /// cmd_helper with size/data val (typically, std::vector, std::string, small_vector, etc)
-  template<typename T, typename std::enable_if<!wrapper::is_custom_array<T>::value && wrapper::has_size_and_data<T>::value, int>::type = 0>
-  void cmd_helper(const char*key,T&& val,bool nocopy=false) {
+/// temporaries are detected and the information is propragated
+  template<typename T, typename std::enable_if<!wrapper::is_custom_array<typename std::remove_reference<T>::type>::value && wrapper::has_size_and_data<T>::value, int>::type = 0>
+  void cmd_helper(const char*key,T&& val) {
     std::size_t shape[] { wrapper::size(val), 0 };
-    cmd_helper_with_shape(key,val.data(),shape,nocopy);
+    cmd_helper_with_shape(key,val.data(),shape, std::is_rvalue_reference<T&&>::value);
   }
 
 /// cmd_helper with raw pointer val
-/// In this case, the nocopy information is not propagated. We can indeed save the pointer, even if it's a temporary
-/// as it is in the case cmd("a",&a)
-  template<typename T, typename std::enable_if<!wrapper::is_custom_array<T>::value && !wrapper::has_size_and_data<T>::value && std::is_pointer<T>::value, int>::type = 0>
-  void cmd_helper(const char*key,T&& val,bool nocopy=false) {
-    (void) nocopy; // suppress warning
+/// temporaries are not detected. We can indeed save the pointer, even if it's a temporary as it is in the case cmd("a",&a)
+  template<typename T, typename std::enable_if<!wrapper::is_custom_array<typename std::remove_reference<T>::type>::value && !wrapper::has_size_and_data<T>::value && std::is_pointer<T>::value, int>::type = 0>
+  void cmd_helper(const char*key,T&& val) {
 #if __PLUMED_WRAPPER_CXX_DETECT_SHAPES_STRICT
     // this would be strict checking
     // "a pointer without a specified size is meant to be pointing to a size 1 object"
@@ -3094,15 +3066,15 @@ private:
   }
 
 /// cmd_helper in remaining cases, that is when val is passed by value
-/// in this case, the nocopy information is not propagated, but the address of the data will be considered not copyable anyway
-/// by PLUMED ("pass by value")
-  template<typename T, typename std::enable_if<!wrapper::is_custom_array<T>::value && !wrapper::has_size_and_data<T>::value && !std::is_pointer<T>::value, int>::type = 0>
-  void cmd_helper(const char*key,T&& val,bool nocopy=false) {
+/// temporaries are not detected. However, the argument is passed by value and its address is not copyable anyway
+  template<typename T, typename std::enable_if<!wrapper::is_custom_array<typename std::remove_reference<T>::type>::value && !wrapper::has_size_and_data<T>::value && !std::is_pointer<T>::value, int>::type = 0>
+  void cmd_helper(const char*key,T&& val) {
     SafePtr s(val,0,nullptr);
     cmd_priv(main,key,&s);
   }
 
 /// cmd_helper_with_shape with custom array val (includes std::array and C arrays)
+/// nocopy information is propagated
   template<typename T, typename std::enable_if<wrapper::is_custom_array<T>::value, int>::type = 0>
   void cmd_helper_with_shape(const char*key,T* val, __PLUMED_WRAPPER_STD size_t* shape,bool nocopy=false) {
     auto newptr=wrapper::custom_array_cast(val);
@@ -3111,6 +3083,7 @@ private:
   }
 
 /// cmd_helper_with_shape with pointer to simple type val.
+/// nocopy information is used to pass the proper flags to plumed
   template<typename T, typename std::enable_if<!wrapper::is_custom_array<T>::value, int>::type = 0>
   void cmd_helper_with_shape(const char*key,T* val, __PLUMED_WRAPPER_STD size_t* shape,bool nocopy=false) {
     SafePtr s(val,0,shape);
@@ -3118,7 +3091,10 @@ private:
     cmd_priv(main,key,&s);
   }
 
+#if ! __PLUMED_WRAPPER_CXX_DETECT_SHAPES_STRICT
 /// cmd_helper_with_nelem with custom array val (includes std::array)
+/// this helper is only used for backward compatibility, so it does not need to take into account
+/// the copyability of the pointer
   template<typename T, typename std::enable_if<wrapper::is_custom_array<T>::value, int>::type = 0>
   void cmd_with_nelem(const char*key,T* val, __PLUMED_WRAPPER_STD size_t nelem) {
     auto newptr=wrapper::custom_array_cast(val);
@@ -3127,49 +3103,25 @@ private:
   }
 
 /// cmd_helper_with_nelem with pointer to simple type val.
+/// this helper is only used for backward compatibility, so it does not need to take into account
+/// the copyability of the pointer
   template<typename T, typename std::enable_if<!wrapper::is_custom_array<T>::value, int>::type = 0>
   void cmd_with_nelem(const char*key,T* val, __PLUMED_WRAPPER_STD size_t nelem) {
     // pointer or value, directly managed by SafePtr
     SafePtr s(val,nelem,nullptr);
     cmd_priv(main,key,&s);
   }
+#endif
+
 public:
 
   /**
      Send a command to this plumed object
       \param key The name of the command to be executed
       \param val The argument.
-      \note This overload detects temporaries. If a non-pointer temporary is passed,
-      then this get marked as not-copyable by PLUMED. This will make sure PLUMED
-      does not retain pointers to temporaries.
   */
   template<typename T>
   void cmd(const char*key,T&& val) {
-    cmd_helper(key,std::forward<T>(val),true);
-  }
-
-  /**
-     Send a command to this plumed object
-      \param key The name of the command to be executed
-      \param val The argument.
-      \note This overload detects C-array references. This is necessary since
-      passing a C array to a generic reference will make it decay to
-      pointer, thus loosing the size information.
-  */
-  template<typename T, typename std::enable_if<wrapper::is_array<T>::value, int>::type = 0>
-  void cmd(const char*key,T& val) {
-    std::size_t shape[] { wrapper::is_array<T>::size, 0 };
-    cmd_helper_with_shape(key,reinterpret_cast<typename wrapper::is_array<T>::value_type*>(val),shape);
-  }
-
-  /**
-     Send a command to this plumed object
-      \param key The name of the command to be executed
-      \param val The argument.
-      \note This overload detect non-C-array references.
-  */
-  template<typename T, typename std::enable_if<!wrapper::is_array<T>::value, int>::type = 0>
-  void cmd(const char*key,T& val) {
     cmd_helper(key,std::forward<T>(val));
   }
 
@@ -3186,10 +3138,10 @@ public:
   void cmd(const char*key,T* val, I nelem) {
 #if __PLUMED_WRAPPER_CXX_DETECT_SHAPES_STRICT
     static_assert("in strict mode you cannot pass nelem, please pass full shape instead");
-#endif
+#else
     cmd_with_nelem(key,val,__PLUMED_WRAPPER_STD size_t(nelem));
+#endif
   }
-
 
   /**
      Send a command to this plumed object
@@ -3222,7 +3174,6 @@ public:
     auto shape_=make_shape(shape);
     cmd_helper_with_shape(key,val,shape_.data());
   }
-
 
 public:
 
@@ -3261,34 +3212,6 @@ public:
     plumed_cmd_cxx(main,key,val,shape);
   }
 
-#if __cplusplus > 199711L
-
-
-  template<typename T, typename I, typename std::enable_if<std::is_integral<I>::value, int>::type = 0>
-  void cmd(const char*key,T* val, I nelem) {
-    plumed_cmd_cxx(main,key,val,nelem);
-  }
-
-  /**
-     Send a command to this plumed object
-      \param key The name of the command to be executed
-      \param val The argument, passed by pointer.
-      \param shape The shape of the argument, in the form of an initialier_list (e.g., {10,3}).
-      \note Similar to \ref plumed_cmd(). It actually called \ref plumed_cmd_nothrow() and
-            rethrow any exception raised within PLUMED.
-      \note Unless PLUMED library is <=2.7,
-             the type of the argument is checked. If shape is passed, it is also
-             checked that PLUMED access only compatible indexes.
-  */
-  template<typename T>
-  void cmd(const char*key,T* val, std::initializer_list<SizeLike> shape) {
-    if(shape.size()>4) throw Plumed::ExceptionTypeError("Maximum shape size is 4");
-    auto shape_=make_shape(shape);
-    plumed_cmd_cxx(main,key,val,&shape_[0]);
-  }
-
-#else
-
   /**
      Send a command to this plumed object
       \param key The name of the command to be executed
@@ -3304,9 +3227,6 @@ public:
   void cmd(const char*key,T* val, __PLUMED_WRAPPER_STD size_t nelem) {
     plumed_cmd_cxx(main,key,val,nelem);
   }
-
-
-#endif
 
 #endif
 

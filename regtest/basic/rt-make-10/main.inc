@@ -110,7 +110,6 @@ Cases that require the new shape detection are possibly skipped with an #ifdef
 
   int number=0;
 
-#if __PLUMED_WRAPPER_CXX_DETECT_SHAPES
   INIT_CORRECT((number++))
      double virial[3][3];
   MID(virial,9)
@@ -122,7 +121,6 @@ Cases that require the new shape detection are possibly skipped with an #ifdef
   MID(virial,9)
      P_CMD("setVirial",virial);
   FINAL(virial,9)
-#endif
 
   INIT_CORRECT((number++))
     double virial[9];
@@ -148,13 +146,11 @@ Cases that require the new shape detection are possibly skipped with an #ifdef
     P_CMD("setVirial",virial);
   FINAL(virial,6)
 
-#if __PLUMED_WRAPPER_CXX_DETECT_SHAPES
   INIT_CORRECT((number++))
     double virial[4][3];
   MID(virial,9)
     P_CMD("setVirial",virial);
   FINAL(virial,9)
-#endif
 
   INIT_FAIL((number++))
     double virial[3][3][1];
@@ -162,13 +158,11 @@ Cases that require the new shape detection are possibly skipped with an #ifdef
     P_CMD("setVirial",virial);
   FINAL(virial,9)
 
-#if __PLUMED_WRAPPER_CXX_DETECT_SHAPES
   INIT_FAIL((number++))
     double virial[9];
   MID(virial,9)
      P_CMD("setVirial",virial);
   FINAL(virial,9)
-#endif
 
   INIT_FAIL((number++))
     const double virial[3][3]{};
@@ -176,13 +170,11 @@ Cases that require the new shape detection are possibly skipped with an #ifdef
      P_CMD("setVirial",virial);
   FINAL(virial,9)
 
-#if __PLUMED_WRAPPER_CXX_DETECT_SHAPES
   INIT_CORRECT((number++))
    double box[3][3];
   MID(box,9)
    P_CMD("setBox",box);
   FINAL(box,9)
-#endif
 
   INIT_CORRECT((number++))
    std::vector<double> forces(3*natoms);
@@ -190,7 +182,6 @@ Cases that require the new shape detection are possibly skipped with an #ifdef
    P_CMD("setForces",forces.data(),{natoms,3});
   FINAL(forces,natoms*3)
 
-#if __PLUMED_WRAPPER_CXX_DETECT_SHAPES
   INIT_CORRECT((number++))
     std::vector<std::array<double,3>> forces(natoms);
   MID(forces,natoms*3)
@@ -220,7 +211,6 @@ Cases that require the new shape detection are possibly skipped with an #ifdef
   MID(virial,9)
     P_CMD("setVirial",virial);
   FINAL(virial,9)
-#endif
 
 // now make some tests without explicit shapes
  
@@ -230,7 +220,6 @@ Cases that require the new shape detection are possibly skipped with an #ifdef
     P_CMD("setPositions",positions.data(),3*natoms);
   FINAL(positions,3*natoms)
 
-#if __PLUMED_WRAPPER_CXX_DETECT_SHAPES
   INIT_CORRECT((number++))
     std::vector<vec3d> positions(natoms);
   MID(positions,3*natoms)
@@ -298,7 +287,6 @@ Cases that require the new shape detection are possibly skipped with an #ifdef
     };
     P_CMD("setVirial",return_virial());
   FINAL(positions,3*natoms)
-#endif
     
   // fails because shape size is larger than requested
   INIT_FAIL((number++))
@@ -314,7 +302,6 @@ Cases that require the new shape detection are possibly skipped with an #ifdef
     P_CMD("setVirial",&virial[0],{6,3,3,2,1});
   FINAL(virial,9)
 
-#if __PLUMED_WRAPPER_CXX_DETECT_SHAPES
   INIT_FAIL((number++))
     double positions[natoms][3];
   MID(positions,3*natoms)
@@ -322,7 +309,6 @@ Cases that require the new shape detection are possibly skipped with an #ifdef
     auto sv=std::string_view("pp: DISTANCE ATOMS=1,2");
     P_CMD("readInputLine",sv); // string_view should fail because it is not guaranteed to be null terminated
   FINAL(positions,3*natoms)
-#endif
 
   INIT_CORRECT((number++))
    std::vector<double> forces(3*natoms);
