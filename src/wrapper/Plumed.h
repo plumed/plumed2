@@ -1757,6 +1757,7 @@ __PLUMED_WRAPPER_EXTERN_C_END /*}*/
 #include <ios> /* iostream_category (C++11) ios_base::failure (C++11 and C++<11) */
 #include <new> /* bad_alloc bad_array_new_length (C++11) */
 #include <typeinfo> /* bad_typeid bad_cast */
+#include <limits> /* numeric_limits */
 #if __cplusplus > 199711L && __PLUMED_WRAPPER_LIBCXX11
 #include <system_error> /* system_error generic_category system_category */
 #include <future> /* future_category */
@@ -3050,7 +3051,8 @@ private:
 
 /// cmd_helper with raw pointer val
 /// temporaries are not detected. We can indeed save the pointer, even if it's a temporary as it is in the case cmd("a",&a)
-  template<typename T, typename std::enable_if<!wrapper::is_custom_array<typename std::remove_reference<T>::type>::value && !wrapper::has_size_and_data<T>::value && std::is_pointer<T>::value, int>::type = 0>
+/// here we use std::remove_reference to detect properly pointers to arrays
+  template<typename T, typename std::enable_if<!wrapper::is_custom_array<typename std::remove_reference<T>::type>::value && !wrapper::has_size_and_data<T>::value && std::is_pointer<typename std::remove_reference<T>::type>::value, int>::type = 0>
   void cmd_helper(const char*key,T&& val) {
 #if __PLUMED_WRAPPER_CXX_DETECT_SHAPES_STRICT
     // this would be strict checking
@@ -3059,15 +3061,23 @@ private:
     if(val) shape[0]=1;
     cmd_helper_with_shape(key,val,shape);
 #else
-    // for backward compatibility, the pointer is directly managed by SafePtr, with no size information
-    SafePtr s(val,0,nullptr);
-    cmd_priv(main,key,&s);
+    if(wrapper::is_custom_array<typename std::remove_pointer<typename std::remove_reference<T>::type>::type>::value) {
+      // if we are passing a pointer to a fixed sized array, we make sure to retain the information related to
+      // the rank of the array and the following (fixed) dimensions
+      std::size_t shape[] {  0, 0 };
+      if(val) shape[0]=std::numeric_limits<std::size_t>::max();
+      cmd_helper_with_shape(key,val,shape);
+    } else {
+      // otherwise, for backward compatibility, the pointer is assumed with no shape information
+      SafePtr s(val,0,nullptr);
+      cmd_priv(main,key,&s);
+    }
 #endif
   }
 
 /// cmd_helper in remaining cases, that is when val is passed by value
 /// temporaries are not detected. However, the argument is passed by value and its address is not copyable anyway
-  template<typename T, typename std::enable_if<!wrapper::is_custom_array<typename std::remove_reference<T>::type>::value && !wrapper::has_size_and_data<T>::value && !std::is_pointer<T>::value, int>::type = 0>
+  template<typename T, typename std::enable_if<!wrapper::is_custom_array<typename std::remove_reference<T>::type>::value && !wrapper::has_size_and_data<T>::value && !std::is_pointer<typename std::remove_reference<T>::type>::value, int>::type = 0>
   void cmd_helper(const char*key,T&& val) {
     SafePtr s(val,0,nullptr);
     cmd_priv(main,key,&s);
@@ -3097,9 +3107,9 @@ private:
 /// the copyability of the pointer
   template<typename T, typename std::enable_if<wrapper::is_custom_array<T>::value, int>::type = 0>
   void cmd_with_nelem(const char*key,T* val, __PLUMED_WRAPPER_STD size_t nelem) {
-    auto newptr=wrapper::custom_array_cast(val);
-    auto newnelem=nelem*wrapper::custom_array_size<T>();
-    cmd_with_nelem(key,newptr,newnelem);
+    std::size_t shape[] {  0, 0 };
+    if(val) shape[0]=nelem;
+    cmd_helper_with_shape(key,val,shape);
   }
 
 /// cmd_helper_with_nelem with pointer to simple type val.
@@ -3107,7 +3117,7 @@ private:
 /// the copyability of the pointer
   template<typename T, typename std::enable_if<!wrapper::is_custom_array<T>::value, int>::type = 0>
   void cmd_with_nelem(const char*key,T* val, __PLUMED_WRAPPER_STD size_t nelem) {
-    // pointer or value, directly managed by SafePtr
+    // pointer, directly managed by SafePtr
     SafePtr s(val,nelem,nullptr);
     cmd_priv(main,key,&s);
   }

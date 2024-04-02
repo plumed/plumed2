@@ -34,6 +34,7 @@
 #include <cstring>
 #include <type_traits>
 #include <climits>
+#include <limits>
 #include <initializer_list>
 #include <algorithm>
 
@@ -360,9 +361,10 @@ public:
   // this will make sure that a null character is present
   const char* getCString() const {
     const char* ptr=get_priv<const char>(0,nullptr,false);
-    if(!typesafePtrSkipCheck() && this->nelem>0) {
-      auto f=std::find(ptr,ptr+this->nelem,0);
-      if(f==ptr+this->nelem) throw ExceptionTypeError() << "PLUMED is expecting a null terminated string, but no null character was found";
+    if(!typesafePtrSkipCheck() && this->nelem>0 && this->nelem<std::numeric_limits<std::size_t>::max()) {
+      std::size_t i=0;
+      for(; i<this->nelem; i++) if(ptr[i]==0) break;
+      if(i==this->nelem) throw ExceptionTypeError() << "PLUMED is expecting a null terminated string, but no null character was found";
     }
     return ptr;
   }
