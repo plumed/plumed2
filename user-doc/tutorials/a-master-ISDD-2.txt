@@ -1,12 +1,12 @@
 a-master-ISDD-2.txt/**
-\page master-ISDD-2 Master ISDD tutorial 2023: Metadynamics simulations with PLUMED
+\page master-ISDD-2 Master ISDD tutorial 2024: Metadynamics simulations with PLUMED
 
 \section master-ISDD-2-aims Aim
 
 The aim of this tutorial is to train users to perform and analyze metadynamics simulations with PLUMED.
 This tutorial has been prepared by Max Bonomi (adapting a lot of material from other tutorials) for
 the <a href="http://isddteach.sdv.univ-paris-diderot.fr/fr/accueil.html">Master In Silico Drug Design</a>, held
-at Université Paris Cité on March 6th, 2023.
+at Université Paris Cité on April 8th, 2024.
 
 \section master-ISDD-2-objectives Objectives 
 
