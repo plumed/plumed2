@@ -245,7 +245,7 @@ PRINT ARG=__FILL__ FILE=COLVAR STRIDE=__FILL__
 Once your `plumed.dat` file is complete, you can run the PLUMED \ref driver as follows:
 
 \verbatim
-> plumed driver --plumed plumed.dat --mf_xtc traj-broken.xtc
+plumed driver --plumed plumed.dat --mf_xtc traj-broken.xtc
 \endverbatim
 
 Scroll in your terminal to read the PLUMED log. As you can see,
@@ -316,7 +316,7 @@ PRINT ARG=__FILL__ FILE=COLVAR STRIDE=__FILL__
 After completing the PLUMED input file above, let's use it to analyze the trajectory `traj-whole.xtc` using the \ref driver tool:
 
 \verbatim
-> plumed driver --plumed plumed.dat --mf_xtc traj-whole.xtc
+plumed driver --plumed plumed.dat --mf_xtc traj-whole.xtc
 \endverbatim
 
 You can use `gnuplot` to visualize the trajectory of the two CVs calculated with the PLUMED input file above
