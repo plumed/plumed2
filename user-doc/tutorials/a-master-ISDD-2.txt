@@ -178,7 +178,7 @@ This default choice should be reasonable for most applications.
 Once your `plumed.dat` file is complete, you can run a 10-ns long metadynamics simulations with the following command:
 
 \verbatim
-> gmx mdrun -s topol.tpr -nsteps 5000000 -plumed plumed.dat 
+gmx_mpi mdrun -s topol.tpr -nsteps 5000000 -plumed plumed.dat 
 \endverbatim
 
 During the metadynamics simulation, PLUMED will create two files, named `COLVAR` and `HILLS`.
@@ -343,7 +343,7 @@ PRINT ARG=__FILL__ FILE=COLVAR_REWEIGHT STRIDE=__FILL__  # <- also change this o
 Then run the \ref driver tool using this command:
 
 \verbatim
-> plumed driver --mf_xtc traj_comp.xtc --plumed plumed_reweight.dat --kt 2.494339 
+plumed driver --mf_xtc traj_comp.xtc --plumed plumed_reweight.dat --kt 2.494339 
 \endverbatim
 
 Notice that you have to specify the value of \f$k_BT\f$ in energy units. While running your simulation
