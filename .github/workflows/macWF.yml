@@ -15,12 +15,19 @@ env:
 jobs:
 
   macports:
-    runs-on: macos-12
     strategy:
       fail-fast: false
+      # see https://github.community/t/how-to-conditionally-include-exclude-items-in-matrix-eg-based-on-branch/16853/6 for possible exclusions
       matrix:
         variant: [ "" , "+allmodules" ]
-        # see https://github.community/t/how-to-conditionally-include-exclude-items-in-matrix-eg-based-on-branch/16853/6 for possible exclusions
+        # this is to test both intel and arm64 macs
+        os: [ macos-12 , macos-14 ]
+        exclude:
+        # many tests on contributed modules are still failing for numerical reasons on arm64, see https://github.com/plumed/plumed2/pull/950
+        # once fixed we could introduce this back:
+        - os: macos-14
+          variant: "+allmodules"
+    runs-on: ${{ matrix.os }}
     env:
       PYVERS: "py39 py310"
     steps:
@@ -28,8 +35,8 @@ jobs:
     - uses: actions/cache@v4
       with:
         path: ~/.macports-ci-ccache
-        key: ccache-macports-${{ matrix.variant }}-${{ github.sha }}
-        restore-keys: ccache-macports-${{ matrix.variant }}-
+        key: ccache-macports-${{ matrix.os }}-${{ matrix.variant }}-${{ github.sha }}
+        restore-keys: ccache-macports-${{ matrix.os }}-${{ matrix.variant }}-
     - name: Install MacPorts
       run: |
         wget https://raw.githubusercontent.com/GiovanniBussi/macports-ci/master/macports-ci
@@ -60,6 +67,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # this is to test both intel and arm64 macs
         os: [ macos-12 , macos-14 ]
     runs-on: ${{ matrix.os }}
     steps:
