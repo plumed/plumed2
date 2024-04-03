@@ -19,8 +19,8 @@ Once this tutorial is completed, users will be able to:
 
 \section master-ISDD-1-software Software
 
-In this and in the next tutorial, we will use two pieces of software: <a href="https://www.plumed.org">PLUMED</a> version 2.8.2 and
-<a href="http://www.gromacs.org">GROMACS</a> version 2019.6. First, we need to install the software on your machine using `conda`.
+In this and in the next tutorial, we will use two pieces of software: <a href="https://www.plumed.org">PLUMED</a> version 2.9.0 and
+<a href="http://www.gromacs.org">GROMACS</a> version 2020.7. First, we need to install the software on your machine using `conda`.
 
 \subsection master-ISDD-1-install Installation
 
@@ -51,30 +51,30 @@ Now we can create a `conda` environment for the ISDD tutorial using the followin
 
 \verbatim
 # create environment
-conda create --name ISDD-tutorial-2023
+conda create --name ISDD-tutorial-2024
 \endverbatim
 
 and activate it with:
 
 \verbatim
 # activate environment
-conda activate ISDD-tutorial-2023
+conda activate ISDD-tutorial-2024
 \endverbatim
 
 Finally, we can proceed with the installation of the required software: 
 
 \verbatim
-conda install -c conda-forge plumed
-conda install --strict-channel-priority -c plumed/label/masterclass -c conda-forge gromacs
+conda install --strict-channel-priority -c plumed/label/isdd-2024 -c conda-forge plumed
+conda install --strict-channel-priority -c plumed/label/isdd-2024 -c conda-forge gromacs
 \endverbatim
 
 The `--strict-channel-priority` might be necessary in case your `conda` install is configured to download packages from the `bioconda` channel. Indeed, `bioconda` contains a version of GROMACS that is **not** patched with PLUMED and would thus not work here.
 
 Keep in mind that every time you open a new shell, in order to use PLUMED and GROMACS you need to 
-activate the `ISDD-tutorial-2023` environment using the following command:
+activate the `ISDD-tutorial-2024` environment using the following command:
 
 \verbatim
-conda activate ISDD-tutorial-2023
+conda activate ISDD-tutorial-2024
 \endverbatim
 
 \subsection master-ISDD-1-plumed PLUMED overview
