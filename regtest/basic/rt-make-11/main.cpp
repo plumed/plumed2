@@ -1,12 +1,4 @@
-// In strict mode:
-// - full shapes should be passed to plumed
-// - when passing pointers with no shape information, shape is assumed to be {1}
-#define __PLUMED_WRAPPER_CXX_DETECT_SHAPES_STRICT 1
-#include "plumed/wrapper/Plumed.h"
-#include <fstream>
-
-using namespace PLMD;
-
+#include "type_traits"
 // custom structure used to store 3d vectors
 // this is similar to PLMD::Vector and to OpenMM::Vec3
 class vec3 {
@@ -17,12 +9,28 @@ public:
 };
 
 // users need to add this so as to make plumed aware of their structure
-template<>
-struct PLMD::wrapper::is_custom_array<vec3> : std::true_type {
+namespace PLMD {
+namespace wrapper {
+// forward declaration
+template<typename T> struct is_custom_array;
+
+template<> struct is_custom_array<vec3> : std::true_type {
   // this is just saying that the elements of this array are double
   // plumed is going to compute the number of elements as sizeof(vec3)/sizeof(double)
   using value_type = double;
 };
+}
+}
+
+// In strict mode:
+// - full shapes should be passed to plumed
+// - when passing pointers with no shape information, shape is assumed to be {1}
+#define __PLUMED_WRAPPER_CXX_DETECT_SHAPES_STRICT 1
+#include "plumed/wrapper/Plumed.h"
+#include <fstream>
+
+using namespace PLMD;
+
 
 
 int main(){

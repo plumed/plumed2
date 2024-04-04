@@ -1,11 +1,10 @@
-#include "plumed/wrapper/Plumed.h"
 #include <vector>
 #include <fstream>
 #include <cstdio>
 #include <iostream>
+#include <type_traits>
 
-using namespace PLMD;
-
+// First we define custom data types
 struct vec3d {
   double x;
   double y;
@@ -32,6 +31,11 @@ struct tens3d3d {
 
 namespace PLMD {
 namespace wrapper {
+
+// then we forward declare is_custom_array
+template<typename T> struct is_custom_array;
+
+// then we provide the needed specializations
 template<>
 struct is_custom_array<vec3d> : std::true_type {
   using value_type = double;
@@ -41,8 +45,15 @@ template<>
 struct is_custom_array<tens3d3d> : std::true_type {
   using value_type = vec3d;
 };
+
 }
 }
+
+
+// only here we need to include the plumed header
+#include "plumed/wrapper/Plumed.h"
+
+using namespace PLMD;
 
 
 

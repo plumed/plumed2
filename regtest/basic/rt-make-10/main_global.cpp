@@ -1,13 +1,11 @@
 /*
 Test with gcmd
 */
-#include "plumed/wrapper/Plumed.h"
 #include <vector>
 #include <fstream>
 #include <cstdio>
 #include <iostream>
-
-using namespace PLMD;
+#include <type_traits>
 
 struct vec3d {
   double x;
@@ -35,6 +33,9 @@ struct tens3d3d {
       
 namespace PLMD {
 namespace wrapper {
+
+template<typename T> struct is_custom_array;
+
 template<>
 struct is_custom_array<vec3d> : std::true_type {
   using value_type = double;
@@ -46,6 +47,9 @@ struct is_custom_array<tens3d3d> : std::true_type {
 };
 }
 }
+
+#include "plumed/wrapper/Plumed.h"
+using namespace PLMD;
 
 
 void test_global(){
