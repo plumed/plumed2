@@ -1,0 +1,14 @@
+type=make
+plumed_src=main.cpp
+plumed_link=shared
+
+function plumed_regtest_before(){
+  # find the name of the main executable
+  plumed="${PLUMED_PROGRAM_NAME:-plumed} --no-mpi"
+
+  # prebuild libraries:
+  eval $plumed mklib Distance10.cpp &
+  eval $plumed mklib Distance20.cpp &
+  wait
+}
+
