@@ -78,6 +78,11 @@ void ActionWithMatrix::finishChainBuild( ActionWithVector* act ) {
   }
 }
 
+const ActionWithMatrix* ActionWithMatrix::getFirstMatrixInChain() const {
+  if( !actionInChain() ) return this;
+  return matrix_to_do_before->getFirstMatrixInChain();
+}
+
 void ActionWithMatrix::getTotalMatrixBookeeping( unsigned& nbookeeping ) {
   for(int i=0; i<getNumberOfComponents(); ++i) {
     Value* myval=getPntrToComponent(i);
