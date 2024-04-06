@@ -156,7 +156,7 @@ FunctionOfMatrix<T>::FunctionOfMatrix(const ActionOptions&ao):
       if(as) done_in_chain=false;
     } else if( getPntrToArgument(i)->ignoreStoredValue( getLabel() ) ) {
       // This option deals with the case when you have two adjacency matrices, A_ij and B_ij, multiplied together.  This cannot be done in the chain as the rows
-      // of the two adjacency matrix are run over separately.  The value A_ij is thus not available when B_ij is calculated. 
+      // of the two adjacency matrix are run over separately.  The value A_ij is thus not available when B_ij is calculated.
       ActionWithMatrix* am = dynamic_cast<ActionWithMatrix*>( getPntrToArgument(i)->getPntrToAction() );
       plumed_assert( am ); const ActionWithMatrix* thischain = am->getFirstMatrixInChain();
       const AdjacencyMatrixBase* aa=dynamic_cast<const AdjacencyMatrixBase*>( thischain ); if( !aa && thischain->getName()!="VSTACK" ) continue;
