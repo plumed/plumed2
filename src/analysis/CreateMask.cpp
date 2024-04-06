@@ -102,7 +102,7 @@ void CreateMask::calculate() {
   for(unsigned i=0; i<ns; ++i) out->set( i, 1.0 );
 
   if( type==stride ) {
-    unsigned ss = int( std::floor( ns / nzeros ) );
+    std::size_t ss = int( std::floor( ns / nzeros ) );
     for(unsigned i=0; i<nzeros; ++i) out->set( i*ss, 0.0 );
   } else if( type==random ) {
     for(unsigned i=0; i<nzeros; ++i ) {

@@ -73,7 +73,7 @@ void Voronoi::prepare() {
 
 void Voronoi::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
                                  const unsigned& bufstart, std::vector<double>& buffer ) const {
-  Value* arg0 = getPntrToArgument(0); unsigned nv = 0; double minmax = arg0->get( code*arg0->getShape()[1] );
+  Value* arg0 = getPntrToArgument(0); unsigned nv = 0; std::size_t cc=code; double minmax = arg0->get( cc*arg0->getShape()[1] );
   for(unsigned i=0; i<arg0->getShape()[1]; ++i) {
     double value = arg0->get( code*arg0->getShape()[1] + i );
     if( value<minmax ) { minmax = value; nv = i; }
