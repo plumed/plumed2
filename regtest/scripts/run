@@ -202,10 +202,14 @@ case "$type" in
  ;;
 (make)
   $plumed_nompi --is-installed || ln -s "$root/src" plumed
-  if test "$plumed_language" = fortran || test "$plumed_language" = fortran08 || test "$plumed_language" = c ; then
-    cat <($plumed_nompi info --configuration) "$root/src/lib/Plumed.inc.shared" ../../../scripts/exe.make > Makefile 
+  rm Makefile
+  if test -n "$plumed_src" ; then
+    echo "CXX_SRC=$plumed_src" > Makefile
+  fi
+  if test "$plumed_language" = fortran || test "$plumed_language" = fortran08 || test "$plumed_language" = c || test "$plumed_link" = shared ; then
+    cat <($plumed_nompi info --configuration) "$root/src/lib/Plumed.inc.shared" ../../../scripts/exe.make >> Makefile 
   else
-    cat <($plumed_nompi info --configuration) "$root/src/lib/Plumed.inc.static" ../../../scripts/exe.make > Makefile 
+    cat <($plumed_nompi info --configuration) "$root/src/lib/Plumed.inc.static" ../../../scripts/exe.make >> Makefile 
   fi
   if test "$plumed_language" = fortran || test "$plumed_language" = fortran08 ; then
     if make print-fortran | grep "FC=$" 1>/dev/null ; then
