@@ -777,7 +777,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
       case cmd_checkAction:
         CHECK_NOTNULL(val,word);
         plumed_assert(nw==2);
-        val.set(int(actionRegister().check(std::string(words[1])) ? 1:0));
+        val.set(int(actionRegister().check(dlloader.getHandles(), std::string(words[1])) ? 1:0));
         break;
       case cmd_setExtraCV:
       {
@@ -975,7 +975,7 @@ void PlumedMain::readInputWords(const std::vector<std::string> & words, const bo
   } else {
     std::vector<std::string> interpreted(words);
     Tools::interpretLabel(interpreted);
-    auto action=actionRegister().create(ActionOptions(*this,interpreted));
+    auto action=actionRegister().create(dlloader.getHandles(),ActionOptions(*this,interpreted));
     if(!action) {
       std::string msg;
       msg ="ERROR\nI cannot understand line:";
@@ -1267,7 +1267,7 @@ void PlumedMain::load(const std::string& fileName) {
     if(!p) {
       plumed_error()<<"I cannot load library " << fileName << " " << dlloader.error();
     }
-    log<<"Loading shared library "<<libName.c_str()<<"\n";
+    log<<"Loading shared library "<<libName.c_str()<<" at "<<p<<"\n";
     log<<"Here is the new list of available actions\n";
     log<<actionRegister();
   } else

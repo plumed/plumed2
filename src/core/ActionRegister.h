@@ -28,6 +28,8 @@
 #include <iosfwd>
 #include "tools/Keywords.h"
 #include <memory>
+#include <stack>
+#include <mutex>
 
 namespace PLMD {
 
@@ -40,8 +42,6 @@ class ActionOptions;
 /// the corresponding class given the corresponding options (ActionOptions).
 /// There should be only one of there objects allocated.
 /// Actions should be registered here at the beginning of execution
-/// If the same directive is used for different classes, it is automatically disabled
-/// to avoid random results.
 ///
 class ActionRegister {
 /// Write on a stream the list of registered directives
@@ -50,12 +50,27 @@ class ActionRegister {
   typedef std::unique_ptr<Action>(*creator_pointer)(const ActionOptions&);
 /// Pointer to a function which, returns the keywords allowed
   typedef void(*keywords_pointer)(Keywords&);
-/// Map action to a function which creates the related object
-  std::map<std::string,creator_pointer> m;
-/// Map action to a function which documents the related object
-  std::map<std::string,keywords_pointer> mk;
-/// Set of disabled actions (which were registered more than once)
-  std::set<std::string> disabled;
+  struct Item {
+    creator_pointer create;
+    keywords_pointer keys;
+  };
+/// Map action to a function which creates the related object and a function which documents the related object
+  std::map<std::string,Item> m;
+/// Map of staged actions
+  std::map<std::string,Item> staged_m;
+/// Mutex to avoid simultaneous registrations from multiple threads
+/// It is a recursive mutex so that recursive calls will be detected and throw.
+/// (a non recursive mutex would lead to a lock instead)
+  std::recursive_mutex registeringMutex;
+  unsigned registeringCounter=0;
+  /// initiate registration
+  /// all actions registered after this call will be staged
+  /// Better use the RAII interface as registrationLock()
+  void pushDLRegistration();
+  /// finish registration
+  /// all actions that were staged will be removed.
+  /// Better use the RAII interface as registrationLock()
+  void popDLRegistration() noexcept;
 public:
 /// Register a new class.
 /// \param key The name of the directive to be used in the input file
@@ -64,9 +79,11 @@ public:
   void add(std::string key,creator_pointer cp,keywords_pointer kp);
 /// Verify if a directive is present in the register
   bool check(const std::string & action);
+  bool check(const std::vector<void*> & images,const std::string & action);
 /// Create an Action of the type indicated in the options
 /// \param ao object containing information for initialization, such as the full input line, a pointer to PlumedMain, etc
   std::unique_ptr<Action> create(const ActionOptions&ao);
+  std::unique_ptr<Action> create(const std::vector<void*> & images,const ActionOptions&ao);
 /// Print out the keywords for an action in html/vim ready for input into the manual
   bool printManual(const std::string& action, const bool& vimout, const bool& spellout);
 /// Retrieve a keywords object for a particular action
@@ -77,6 +94,23 @@ public:
 /// Get a list of action names
   std::vector<std::string> getActionNames() const ;
   ~ActionRegister();
+  /// complete registration
+  /// all staged actions will be enabled
+  /// Should be called after dlopen has been completed correctly.
+  void completeRegistration(void*handle);
+
+  /// small class to manage registration lock
+  class RegistrationLock {
+    ActionRegister* ar=nullptr;
+  public:
+    RegistrationLock(ActionRegister* ar);
+    RegistrationLock(const RegistrationLock&) = delete;
+    RegistrationLock(RegistrationLock&& other) noexcept;
+    ~RegistrationLock() noexcept;
+  };
+
+  /// return a registration lock
+  RegistrationLock registrationLock();
 };
 
 /// Function returning a reference to the ActionRegister.

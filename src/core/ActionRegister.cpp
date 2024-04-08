@@ -24,8 +24,23 @@
 #include "Action.h"
 #include <algorithm>
 #include <iostream>
+#include <sstream> //for std::stringstream 
+#include <algorithm>
+
+#ifdef __PLUMED_HAS_DLADDR
+#include <dlfcn.h>
+#endif
 
 namespace PLMD {
+
+namespace {
+std::string imageToString(void* image) {
+  std::stringstream ss;
+  ss << image;
+  return ss.str();
+}
+}
+
 
 ActionRegister::~ActionRegister() {
   if(m.size()>0) {
@@ -42,7 +57,7 @@ ActionRegister& actionRegister() {
 
 void ActionRegister::remove(creator_pointer f) {
   for(auto p=m.begin(); p!=m.end(); ++p) {
-    if((*p).second==f) {
+    if((*p).second.create==f) {
       m.erase(p); break;
     }
   }
@@ -51,25 +66,41 @@ void ActionRegister::remove(creator_pointer f) {
 void ActionRegister::add(std::string key,creator_pointer f,keywords_pointer k) {
   // this force each action to be registered as an uppercase string
   if ( std::any_of( std::begin( key ), std::end( key ), []( char c ) { return ( std::islower( c ) ); } ) ) plumed_error() << "Action: " + key + " cannot be registered, use only UPPERCASE characters";
-  if(m.count(key)) {
-    m.erase(key);
-    disabled.insert(key);
-  } else {
-    m.insert(std::pair<std::string,creator_pointer>(key,f));
+
+  if(registeringCounter) {
+    plumed_assert(!staged_m.count(key)) << "cannot registed action twice with the same name "<< key<<"\n";
     // Store a pointer to the function that creates keywords
     // A pointer is stored and not the keywords because all
     // Vessels must be dynamically loaded before the actions.
-    mk.insert(std::pair<std::string,keywords_pointer>(key,k));
-  };
+    staged_m.insert(std::pair<std::string,Item>(key, {f,k}));
+  } else {
+    plumed_assert(!m.count(key)) << "cannot registed action twice with the same name "<< key<<"\n";
+    m.insert(std::pair<std::string,Item>(key, {f,k}));
+  }
 }
 
 bool ActionRegister::check(const std::string & key) {
-  if(m.count(key)>0 && mk.count(key)>0) return true;
+  std::vector<void*> images; // empty vector
+  return check(images,key);
+}
+
+bool ActionRegister::check(const std::vector<void*> & images,const std::string & key) {
+  if(m.count(key)>0) return true;
+  for(auto image : images) {
+    std::string k=imageToString(image)+":"+key;
+    if(m.count(k)>0) return true;
+  }
   return false;
 }
 
 std::unique_ptr<Action> ActionRegister::create(const ActionOptions&ao) {
+  std::vector<void*> images; // empty vector
+  return create(images,ao);
+}
+
+std::unique_ptr<Action> ActionRegister::create(const std::vector<void*> & images,const ActionOptions&ao) {
   if(ao.line.size()<1)return NULL;
+
   // Create a copy of the manual locally. The manual is
   // then added to the ActionOptions. This allows us to
   // ensure during construction that all the keywords for
@@ -77,16 +108,24 @@ std::unique_ptr<Action> ActionRegister::create(const ActionOptions&ao) {
   // generate the documentation when the user makes an error
   // in the input.
   std::unique_ptr<Action> action;
-  if( check(ao.line[0]) ) {
-    Keywords keys; mk[ao.line[0]](keys);
+  if( check(images,ao.line[0]) ) {
+    std::string found_key=ao.line[0];
+    for(auto image = images.rbegin(); image != images.rend(); ++image) {
+      auto key=imageToString(*image) + ":" + ao.line[0];
+      if(m.count(key)>0) {
+        found_key=key;
+        break;
+      }
+    }
+    Keywords keys; m[found_key].keys(keys);
     ActionOptions nao( ao,keys );
-    action=m[ao.line[0]](nao);
+    action=m[found_key].create(nao);
   }
   return action;
 }
 
 bool ActionRegister::getKeywords(const std::string& action, Keywords& keys) {
-  if ( check(action) ) {  mk[action](keys); return true; }
+  if ( check(action) ) {  m[action].keys(keys); return true; }
   return false;
 }
 
@@ -108,7 +147,7 @@ bool ActionRegister::printManual(const std::string& action, const bool& vimout, 
 
 bool ActionRegister::printTemplate(const std::string& action, bool include_optional) {
   if( check(action) ) {
-    Keywords keys; mk[action](keys);
+    Keywords keys; m[action].keys(keys);
     keys.print_template(action, include_optional);
     return true;
   } else {
@@ -126,16 +165,57 @@ std::vector<std::string> ActionRegister::getActionNames() const {
 std::ostream & operator<<(std::ostream &log,const ActionRegister&ar) {
   std::vector<std::string> s(ar.getActionNames());
   for(unsigned i=0; i<s.size(); i++) log<<"  "<<s[i]<<"\n";
-  if(!ar.disabled.empty()) {
-    s.assign(ar.disabled.size(),"");
-    std::copy(ar.disabled.begin(),ar.disabled.end(),s.begin());
-    std::sort(s.begin(),s.end());
-    log<<"+++++++ WARNING +++++++\n";
-    log<<"The following keywords have been registered more than once and will be disabled:\n";
-    for(unsigned i=0; i<s.size(); i++) log<<"  - "<<s[i]<<"\n";
-    log<<"+++++++ END WARNING +++++++\n";
-  };
   return log;
+}
+
+void ActionRegister::pushDLRegistration() {
+
+  registeringMutex.lock();
+  if(registeringCounter>0) {
+    registeringMutex.unlock();
+    plumed_error()<<"recursive registrations are technically possible but disabled at this stage";
+  }
+  registeringCounter++;
+}
+
+void ActionRegister::popDLRegistration() noexcept {
+  try {
+    staged_m.clear();
+  } catch(...) {
+    // should never happen
+    std::fprintf(stderr,"Unexpected error in popDLRegistration\n");
+    std::terminate();
+  }
+
+  registeringCounter--;
+  registeringMutex.unlock();
+}
+
+void ActionRegister::completeRegistration(void* handle) {
+  for(auto & it : staged_m) {
+    auto key=imageToString(handle) + ":" + it.first;
+    plumed_assert(!m.count(key)) << "cannot registed action twice with the same name "<< key<<"\n";
+    m.insert(std::pair<std::string,Item>(key,it.second));
+  }
+  staged_m.clear();
+}
+
+ActionRegister::RegistrationLock::RegistrationLock(ActionRegister* ar):
+  ar(ar)
+{
+  ar->pushDLRegistration();
+}
+ActionRegister::RegistrationLock::RegistrationLock(RegistrationLock&& other) noexcept:
+  ar(other.ar)
+{
+  other.ar=nullptr;
+}
+ActionRegister::RegistrationLock::~RegistrationLock() noexcept {
+  if(ar) ar->popDLRegistration();
+}
+
+ActionRegister::RegistrationLock ActionRegister::registrationLock() {
+  return RegistrationLock(this);
 }
 
 

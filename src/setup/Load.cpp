@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "core/ActionSetup.h"
+#include "core/ActionAnyorder.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "tools/Exception.h"
@@ -94,7 +94,7 @@ the whole PLUMED.
 //+ENDPLUMEDOC
 
 class Load :
-  public virtual ActionSetup
+  public virtual ActionAnyorder
 {
 public:
   static void registerKeywords( Keywords& keys );
@@ -104,13 +104,13 @@ public:
 PLUMED_REGISTER_ACTION(Load,"LOAD")
 
 void Load::registerKeywords( Keywords& keys ) {
-  ActionSetup::registerKeywords(keys);
+  ActionAnyorder::registerKeywords(keys);
   keys.add("compulsory","FILE","file to be loaded");
 }
 
 Load::Load(const ActionOptions&ao):
   Action(ao),
-  ActionSetup(ao)
+  ActionAnyorder(ao)
 {
   std::string f;
   parse("FILE",f);

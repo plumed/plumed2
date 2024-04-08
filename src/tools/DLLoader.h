@@ -22,7 +22,7 @@
 #ifndef __PLUMED_tools_DLLoader_h
 #define __PLUMED_tools_DLLoader_h
 
-#include <stack>
+#include <vector>
 #include <string>
 
 namespace PLMD {
@@ -38,7 +38,7 @@ namespace PLMD {
 /// contain self-registering classes, they will register themselves
 /// to the ActionRegister object.
 class DLLoader {
-  std::stack<void*> handles;
+  std::vector<void*> handles;
   std::string lastError;
   /// Deleted copy constructor
   DLLoader(const DLLoader&) = delete;
@@ -55,7 +55,6 @@ public:
   const std::string & error();
   /// Returns true if the dynamic loader is available (on some systems it may not).
   static bool installed();
-
   /// RAII helper for promoting RTLD_LOCAL loaded objects to RTLD_GLOBAL
   class EnsureGlobalDLOpen {
     void* handle_=nullptr;
@@ -75,6 +74,7 @@ public:
   /// not just the one from which this call is issued. This is useful to
   /// detect possible conflicts in advance.
   static bool isPlumedGlobal();
+  const std::vector<void*> & getHandles() const noexcept;
 };
 
 } // namespace PLMD
