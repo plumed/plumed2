@@ -52,7 +52,7 @@ cmake --build . --target install --parallel
 METATENSOR_CMAKE_PREFIX=$(python -c "import metatensor; print(metatensor.utils.cmake_prefix_path)")
 METATENSOR_PREFIX=$(cd "$METATENSOR_CMAKE_PREFIX/../.." && pwd)
 
-METATENSOR_TORCH_CMAKE_PREFIX=$(python -c "import torch; print(torch.utils.cmake_prefix_path)")
+METATENSOR_TORCH_CMAKE_PREFIX=$(python -c "import metatensor.torch; print(metatensor.torch.utils.cmake_prefix_path)")
 METATENSOR_TORCH_PREFIX=$(cd "$METATENSOR_TORCH_CMAKE_PREFIX/../.." && pwd)
 ```
 
@@ -61,18 +61,24 @@ METATENSOR_TORCH_PREFIX=$(cd "$METATENSOR_TORCH_CMAKE_PREFIX/../.." && pwd)
 ```bash
 cd <PLUMED/DIR>
 
+# set the rpath to make sure plumed executable will be able to find the right libraries
+RPATH="-Wl,-rpath,$TORCH_PREFIX/lib -Wl,-rpath,$METATENSOR_PREFIX/lib -Wl,-rpath,$METATENSOR_TORCH_PREFIX/lib"
+
 # configure PLUMED with metatensor
 ./configure --enable-libtorch --enable-metatensor --enable-modules=+metatensor \
-    LDFLAGS="-L$TORCH_PREFIX/lib -L$METATENSOR_PREFIX/lib -L$METATENSOR_TORCH_PREFIX/lib" \
+    LDFLAGS="-L$TORCH_PREFIX/lib -L$METATENSOR_PREFIX/lib -L$METATENSOR_TORCH_PREFIX/lib $RPATH" \
     CPPFLAGS="$TORCH_INCLUDES -I$METATENSOR_PREFIX/include -I$METATENSOR_TORCH_PREFIX/include"
 
 # If you are on Linux and use a pip-installed version of libtorch, or the
 # pre-cxx11-ABI build of libtorch, you'll need to add "-D_GLIBCXX_USE_CXX11_ABI=0"
 # to the compilation flags:
 ./configure --enable-libtorch --enable-metatensor --enable-modules=+metatensor \
-    LDFLAGS="-L$TORCH_PREFIX/lib -L$METATENSOR_PREFIX/lib -L$METATENSOR_TORCH_PREFIX/lib" \
+    LDFLAGS="-L$TORCH_PREFIX/lib -L$METATENSOR_PREFIX/lib -L$METATENSOR_TORCH_PREFIX/lib $RPATH" \
     CPPFLAGS="$TORCH_INCLUDES -I$METATENSOR_PREFIX/include -I$METATENSOR_TORCH_PREFIX/include" \
     CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0"
 
 make -j && make install
 ```
+
+
+<!-- TODO: explain vesin update process -->
