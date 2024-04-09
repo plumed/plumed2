@@ -67,6 +67,7 @@
 #include <optional>
 #include <variant>
 #include <filesystem>
+#include <mutex>
 
 namespace PLMD {
 
@@ -233,6 +234,12 @@ public:
   }
 };
 static CountInstances countInstances;
+
+// lock for mklib
+std::mutex plumed_mklib_mutex;
+std::condition_variable plumed_mklib_condition_variable;
+std::unordered_map<std::string, int> plumed_mklib_in_progress;
+
 }
 
 
@@ -1255,7 +1262,25 @@ void PlumedMain::load(const std::string& fileName) {
       if(comm.Get_size()>0) log<<" (only on master node)";
       log<<"\n";
       if(comm.Get_rank()==0) {
+        {
+          std::unique_lock<std::mutex> lock(plumed_mklib_mutex);
+          while (plumed_mklib_in_progress[cmd] > 0) {
+            // Wait if this command is already in progress.
+            plumed_mklib_condition_variable.wait(lock);
+          }
+          // Mark this command as in progress.
+          plumed_mklib_in_progress[cmd]++;
+        }
         int ret=std::system(cmd.c_str());
+        {
+          std::unique_lock<std::mutex> lock(plumed_mklib_mutex);
+          // Mark this command as completed.
+          plumed_mklib_in_progress[cmd]--;
+
+          // Notify other threads that may be waiting for this command to complete.
+          plumed_mklib_condition_variable.notify_all();
+        }
+
         if(ret!=0)
           plumed_error() <<"An error happened while executing command "<<cmd<<"\n";
       }
