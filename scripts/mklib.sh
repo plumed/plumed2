@@ -22,17 +22,36 @@ fi
 source "$PLUMED_ROOT"/src/config/compile_options.sh
 
 lib="${1%%.cpp}".$soext
+
+recompile=no
+for file
+do
+  if ! test $lib -nt $file ;
+  then
+    recompile=yes
+  fi
+done
+
+if test $recompile = no ; then
+  echo "$lib is already up to date"
+  exit 0
+fi
+
 rm -f "$lib"
 
 toRemove=""
 remover() {
   #if compilation fails or crashes the trap will delete the temporary files
   for f in $toRemove; do
-    rm -f "${f}"
+    rm -rf "${f}"
   done
 }
 trap "remover" EXIT
 objs=""
+
+tmpdir=$(mktemp -d "plumed_mklib.XXXXXX")
+
+toRemove="${toRemove} $tmpdir"
 
 for file
 do
@@ -76,14 +95,14 @@ do
      >&2  echo 'WARNING: "core/Atoms.h" does not exist anymore in  version >=2.10, you should change your code.'
      sed -i.bak '/^#include\s*"core\/Atoms.h"/d' "${tmpfile}"
   fi
-  rm -f "$obj"
+  rm -f "$tmpdir/$obj"
 
-  eval "$compile" "$PLUMED_MKLIB_CFLAGS" -o "$obj" "$tmpfile" || {
+  eval "$compile" "$PLUMED_MKLIB_CFLAGS" -o "$tmpdir/$obj" "$tmpfile" || {
     echo "ERROR: compiling $file"
     exit 1
   }
 
-  objs="$objs $obj"
+  objs="$objs $tmpdir/$obj"
 
 done
 
@@ -93,4 +112,7 @@ if test "$PLUMED_IS_INSTALLED" = yes; then
   link_command="$link_installed"
 fi
 
-eval "$link_command" "$PLUMED_MKLIB_LDFLAGS" $objs -o "$lib"
+eval "$link_command" "$PLUMED_MKLIB_LDFLAGS" $objs -o "$tmpdir/$lib"
+
+# || true is necessary with recent coreutils
+mv -n "$tmpdir/$lib" $lib || true
