@@ -12,3 +12,8 @@ function plumed_regtest_before(){
   wait
 }
 
+function plumed_regtest_after(){
+  grep ":DISTANCE" log_threads* | sed "s/.*0x//" | sort | uniq | wc -l | sed "s/ *//g" > count_distances_threads
+  grep ":DISTANCE" log_sequential* | sed "s/.*0x//" | sort | uniq | wc -l | sed "s/ *//g" > count_distances_sequential
+}
+

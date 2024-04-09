@@ -39,8 +39,7 @@ void run(Plumed &p) {
 }
 
 // i is thread number (starting from 0)
-void fun(unsigned i) {
-  Plumed p;
+void fun(Plumed p,unsigned i) {
   init(p,std::string("log_threads") + std::to_string(i));
   
   readline(p,"d1: DISTANCE ATOMS=1,2");
@@ -54,7 +53,20 @@ void fun(unsigned i) {
 }
 
 int main() {
+  // threads
   {
+    unsigned nthreads=16;
+    std::vector<std::thread> threads;
+    // plumed objects are declared outside
+    std::vector<Plumed> pl(nthreads);
+    for(unsigned j=0;j<nthreads;j++) threads.emplace_back(fun,pl[j],j);
+    // threads are joined before destruction
+    for(unsigned j=0;j<nthreads;j++) threads[j].join();
+
+    // this is done to make sure that all plumed objects survive till the end
+    // and make the number of unique dylib loaded reproducible
+  }
+
   Plumed p1,p2;
 
   init(p1,"log_sequential1");
@@ -72,13 +84,7 @@ int main() {
 
   run(p1);
   run(p2);
-  }
 
-  // threads
-  unsigned nthreads=16;
-  std::vector<std::thread> threads;
-  for(unsigned j=0;j<nthreads;j++) threads.emplace_back(fun,j);
-  for(unsigned j=0;j<nthreads;j++) threads[j].join();
 
   return 0;
 }
