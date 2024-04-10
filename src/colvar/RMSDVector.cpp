@@ -90,7 +90,7 @@ RMSDVector::RMSDVector(const ActionOptions&ao):
   for(unsigned i=0; i<align.size(); ++i) sqrtdisplace[i] = sqrt(displace[i]);
 
   parseFlag("DISPLACEMENT",displacement);
-  if( displacement && (getPntrToArgument(1)->getRank()==1 || getPntrToArgument(1)->getShape()[0]==1) ) {
+  if( displacement && (getPntrToArgument(1)->getRank()==1 || getPntrToArgument(1)->getShape()[0]<=1) ) {
     addComponentWithDerivatives("dist"); componentIsNotPeriodic("dist");
     std::vector<unsigned> shape( 1, getPntrToArgument(0)->getNumberOfValues() );
     addComponent( "disp", shape ); getPntrToComponent(1)->buildDataStore(); componentIsNotPeriodic("disp");
@@ -107,7 +107,7 @@ RMSDVector::RMSDVector(const ActionOptions&ao):
     std::vector<unsigned> shape( 1, getPntrToArgument(1)->getShape()[0] );
     addValue( shape ); setNotPeriodic();
   }
-  if( getPntrToArgument(1)->getRank()==1 ) myrmsd.resize(1);
+  if( getPntrToArgument(1)->getRank()==1 || getPntrToArgument(1)->getNumberOfValues()==0 ) myrmsd.resize(1);
   else myrmsd.resize( getPntrToArgument(1)->getShape()[0] );
 
   if( getPntrToArgument(1)->getRank()==1 ) log.printf("  calculating RMSD distance between %d atoms. Distance between the avectors of atoms in %s and %s\n",

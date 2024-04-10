@@ -37,8 +37,6 @@ Adjacency matrix in which two atoms are adjacent if they are connected topologic
 */
 //+ENDPLUMEDOC
 
-using namespace std;
-
 namespace PLMD {
 namespace adjmat {
 

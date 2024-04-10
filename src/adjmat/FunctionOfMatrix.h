@@ -57,6 +57,8 @@ public:
   void turnOnDerivatives() override;
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives() override ;
+/// Resize the matrices
+  void prepare() override ;
 /// This gets the number of columns
   unsigned getNumberOfColumns() const override ;
 /// This checks for tasks in the parent class
@@ -146,7 +148,7 @@ FunctionOfMatrix<T>::FunctionOfMatrix(const ActionOptions&ao):
   // In order to do this type of calculation.  There should be a neater fix than this but I can't see it.
   bool foundneigh=false; const ActionWithMatrix* chainstart = NULL;
   for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
-    if( getPntrToArgument(i)->isConstant() ) continue ;
+    if( getPntrToArgument(i)->isConstant() && getNumberOfArguments()>1 ) continue ;
     std::string argname=(getPntrToArgument(i)->getPntrToAction())->getName();
     if( argname=="NEIGHBORS" ) { foundneigh=true; break; }
     ActionWithVector* av=dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
@@ -188,6 +190,25 @@ void FunctionOfMatrix<T>::turnOnDerivatives() {
 template <class T>
 unsigned FunctionOfMatrix<T>::getNumberOfDerivatives() {
   return nderivatives;
+}
+
+template <class T>
+void FunctionOfMatrix<T>::prepare() {
+  unsigned argstart = myfunc.getArgStart(); std::vector<unsigned> shape(2);
+  for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
+    if( getPntrToArgument(i)->getRank()==2 ) {
+      shape[0] = getPntrToArgument(i)->getShape()[0];
+      shape[1] = getPntrToArgument(i)->getShape()[1];
+      break;
+    }
+  }
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+    Value* myval = getPntrToComponent(i);
+    if( myval->getRank()==2 && (myval->getShape()[0]!=shape[0] || myval->getShape()[1]!=shape[1]) ) {
+      myval->setShape(shape); if( myval->valueIsStored() ) myval->reshapeMatrixStore( shape[1] );
+    }
+  }
+  ActionWithVector::prepare();
 }
 
 template <class T>

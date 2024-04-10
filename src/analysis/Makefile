@@ -1,4 +1,4 @@
-USE=core tools reference vesselbase gridtools bias
+USE=core tools adjmat gridtools bias
 
 #generic makefile
 include ../maketools/make.module

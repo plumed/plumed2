@@ -1135,11 +1135,11 @@ void PlumedMain::justCalculate() {
           sw=stopwatch.startStop("4A " + spaces + actionNumberLabel+" "+p->getLabel());
         }
         ActionWithValue*av=p->castToActionWithValue();
-        if( av && av->calculateOnUpdate() ) continue ;
         ActionAtomistic*aa=p->castToActionAtomistic();
         {
           if(av) av->clearInputForces();
           if(av) av->clearDerivatives();
+          if( av && av->calculateOnUpdate() ) continue ;
         }
         {
           if(aa) if(aa->isActive()) aa->retrieveAtoms();
@@ -1327,9 +1327,13 @@ void PlumedMain::stop() {
 
 void PlumedMain::runJobsAtEndOfCalculation() {
   for(const auto & p : actionSet) {
+    ActionWithValue* av=dynamic_cast<ActionWithValue*>(p.get());
+    if( av && av->calculateOnUpdate() ) p->activate();
+  }
+  for(const auto & p : actionSet) {
     ActionPilot* ap=dynamic_cast<ActionPilot*>(p.get());
     ActionWithValue* av=dynamic_cast<ActionWithValue*>(p.get());
-    if( av && av->calculateOnUpdate() ) { p->activate(); p->calculate(); }
+    if( av && av->calculateOnUpdate() ) { p->calculate(); }
     else if( ap && !av && ap->getStride()==0 ) { p->update(); }
     else p->runFinalJobs();
   }

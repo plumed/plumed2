@@ -19,12 +19,13 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "PCA.h"
-#include "tools/Matrix.h"
-#include "reference/MetricRegister.h"
-#include "reference/ReferenceValuePack.h"
-#include "analysis/ReadAnalysisFrames.h"
+#include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
+#include "core/ActionWithValue.h"
+#include "core/ActionPilot.h"
+#include "core/ActionAtomistic.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
 
 //+PLUMEDOC DIMRED PCA
 /*
@@ -97,181 +98,85 @@ OUTPUT_PCA_PROJECTION USE_OUTPUT_DATA_FROM=pca STRIDE=100 FILE=PCA-comp.pdb
 namespace PLMD {
 namespace dimred {
 
+class PCA : public ActionShortcut {
+public:
+  static void registerKeywords( Keywords& keys );
+  PCA( const ActionOptions& );
+};
+
 PLUMED_REGISTER_ACTION(PCA,"PCA")
 
 void PCA::registerKeywords( Keywords& keys ) {
-  DimensionalityReductionBase::registerKeywords( keys ); keys.use("ARG"); keys.reset_style("ARG","optional");
-  keys.add("compulsory","METRIC","EUCLIDEAN","the method that you are going to use to measure the distances between points");
-  keys.add("atoms","ATOMS","the list of atoms that you are going to use in the measure of distance that you are using");
+  ActionShortcut::registerKeywords( keys );
+  keys.add("compulsory","ARG","the arguments that you would like to make the histogram for");
+  keys.add("compulsory","NLOW_DIM","number of low-dimensional coordinates required");
+  keys.add("compulsory","STRIDE","0","the frequency with which to perform this analysis");
+  keys.add("optional","FILE","the file on which to output the low dimensional coordinates");
+  keys.add("optional","FMT","the format to use when outputting the low dimensional coordinates");
+  keys.needsAction("LOGSUMEXP"); keys.needsAction("TRANSPOSE"); keys.needsAction("MATRIX_VECTOR_PRODUCT");
+  keys.needsAction("CONSTANT"); keys.needsAction("COLLECT"); keys.needsAction("OUTER_PRODUCT"); keys.needsAction("CUSTOM");
+  keys.needsAction("MATRIX_PRODUCT"); keys.needsAction("DIAGONALIZE"); keys.needsAction("VSTACK"); keys.needsAction("DUMPPDB");
 }
+
 
 PCA::PCA(const ActionOptions&ao):
   Action(ao),
-  DimensionalityReductionBase(ao)
+  ActionShortcut(ao)
 {
-  // Get the input PDB file from the underlying ReadAnalysisFrames object
-  analysis::ReadAnalysisFrames* myframes = dynamic_cast<analysis::ReadAnalysisFrames*>( my_input_data );
-  if( !myframes ) error("input to PCA should be ReadAnalysisFrames object");
-  parse("METRIC",mtype); std::vector<AtomNumber> atoms;
-  log.printf("  performing PCA analysis using %s metric \n", mtype.c_str() );
-  if( my_input_data->getNumberOfAtoms()>0 ) {
-    parseAtomList("ATOMS",atoms);
-    if( atoms.size()!=0 ) {
-      mypdb.setAtomNumbers( atoms );
-      for(unsigned i=0; i<atoms.size(); ++i) {
-        bool found=false;
-        for(unsigned j=0; j<my_input_data->getAtomIndexes().size(); ++j) {
-          if( my_input_data->getAtomIndexes()[j]==atoms[i] ) { found=true; break; }
-        }
-        if( !found ) {
-          std::string num; Tools::convert( atoms[i].serial(), num );
-          error("atom number " + num + " is not stored in any action that has been input");
-        }
-      }
-      mypdb.addBlockEnd( atoms.size() );
-    } else if( getNumberOfArguments()==0 ) {
-      mypdb.setAtomNumbers( my_input_data->getAtomIndexes() );
-      mypdb.addBlockEnd( my_input_data->getAtomIndexes().size() );
-      if( mtype=="EUCLIDEAN" ) mtype="OPTIMAL";
-    }
+  // Find the argument name
+  std::string argn; parse("ARG",argn);
+  ActionShortcut* as = plumed.getActionSet().getShortcutActionWithLabel( argn );
+  if( !as || as->getName()!="COLLECT_FRAMES" ) error("found no COLLECT_FRAMES action with label " + argn );
+  // Get the final weights using the logsumexp trick
+  readInputLine( getShortcutLabel() + "_weights: LOGSUMEXP ARG=" + argn + "_logweights");
+  // Now transpose the collected frames
+  readInputLine( getShortcutLabel() + "_dataT: TRANSPOSE ARG=" + argn + "_data");
+  // And multiply the transpose by the weights to get the averages
+  readInputLine( getShortcutLabel() + "_mean: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_dataT," + getShortcutLabel() + "_weights");
+  // Make a matrix of averages
+  readInputLine( getShortcutLabel() + "_averages: OUTER_PRODUCT ARG=" + argn + "_ones," + getShortcutLabel() + "_mean");
+  // Make a matrix of weights
+  ActionWithValue* av2 = plumed.getActionSet().selectWithLabel<ActionWithValue*>( argn + "_data" );
+  if( !av2 ) error("count not find data");
+  unsigned nones = (av2->copyOutput(0))->getShape()[1];
+  std::string ones="1"; for(unsigned i=1; i<nones; ++i) ones += ",1";
+  readInputLine( getShortcutLabel() + "_wones: CONSTANT VALUES=" + ones );
+  readInputLine( getShortcutLabel() + "_wmat: OUTER_PRODUCT ARG=" + getShortcutLabel() + "_weights," + getShortcutLabel() + "_wones");
+  // And compute the data substract the mean
+  readInputLine( getShortcutLabel() + "_diff: CUSTOM ARG=" + argn + "_data," + getShortcutLabel() + "_averages FUNC=(x-y) PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_wdiff: CUSTOM ARG=" + getShortcutLabel() + "_wmat," + getShortcutLabel() + "_diff FUNC=sqrt(x)*y PERIODIC=NO");
+  // And the covariance
+  readInputLine( getShortcutLabel() + "_wdiffT: TRANSPOSE ARG=" + getShortcutLabel() + "_wdiff");
+  readInputLine( getShortcutLabel() + "_covar: MATRIX_PRODUCT ARG=" + getShortcutLabel() + "_wdiffT," + getShortcutLabel() + "_wdiff");
+  // Read the dimensionality of the low dimensional space
+  unsigned ndim; parse("NLOW_DIM",ndim); std::string vecstr="1";
+  if( ndim<=0 || ndim>nones ) error("cannot generate projection in space of dimension higher than input coordinates");
+  for(unsigned i=1; i<ndim; ++i) { std::string num; Tools::convert( i+1, num ); vecstr += "," + num; }
+  readInputLine( getShortcutLabel() + "_eig: DIAGONALIZE ARG=" + getShortcutLabel() + "_covar VECTORS=" + vecstr );
+  // Now create a matrix to hold the output data
+  std::string outd = "ARG=" + getShortcutLabel() + "_mean";
+  for(unsigned i=0; i<ndim; ++i) { std::string num; Tools::convert( i+1, num ); outd += "," + getShortcutLabel() + "_eig.vecs-" + num; }
+  readInputLine( getShortcutLabel() + "_pcaT: VSTACK " + outd );
+  readInputLine( getShortcutLabel() + "_pca: TRANSPOSE ARG=" + getShortcutLabel() + "_pcaT");
+  // And output it all
+  std::string filename, pstride; parse("STRIDE",pstride); parse("FILE",filename);
+  if( filename.length()>0 && av2->getName()=="VSTACK" ) {
+    std::vector<std::string> argnames; av2->getMatrixColumnTitles( argnames );
+    std::string argname_str=argnames[0]; for(unsigned i=1; i<argnames.size(); ++i) argname_str += "," + argnames[i];
+    std::string fmt; parse("FMT",fmt); if( fmt.length()>0 ) fmt=" FMT=" + fmt;
+    readInputLine("DUMPPDB DESCRIPTION=PCA ARG_NAMES=" + argname_str + " ARG=" + getShortcutLabel() + "_pca FILE=" + filename + " STRIDE=" + pstride + fmt );
+  } else {
+    if( av2->getName()!="COLLECT" ) error("input data should be VSTACK if list of arguments of COLLECT if atom positions");
+    ActionAtomistic* rmsdact = plumed.getActionSet().selectWithLabel<ActionAtomistic*>( argn + "_getposx" );
+    if( !rmsdact ) error("could not find action that gets positions from trajectory for RMSD");
+    std::vector<AtomNumber> atoms( rmsdact->getAbsoluteIndexes() ); std::string indices; Tools::convert( atoms[0].serial(), indices );
+    for(unsigned i=1; i<atoms.size(); ++i) { std::string jnum; Tools::convert( atoms[i].serial(), jnum ); indices += "," + jnum; }
+    readInputLine("DUMPPDB DESCRIPTION=PCA ATOM_INDICES=" + indices + " ATOMS=" + getShortcutLabel() + "_pca FILE=" + filename + " STRIDE=" + pstride );
   }
-  if( my_input_data->getArgumentNames().size()>0 ) {
-    if( getNumberOfArguments()==0 && atoms.size()==0 ) {
-      std::vector<std::string> argnames( my_input_data->getArgumentNames() );
-      mypdb.setArgumentNames( argnames ); requestArguments( my_input_data->getArgumentList() );
-    } else {
-      std::vector<Value*> myargs( getArguments() );
-      std::vector<std::string> inargnames( my_input_data->getArgumentNames() );
-      std::vector<std::string> argnames( myargs.size() );
-      for(unsigned i=0; i<myargs.size(); ++i) {
-        argnames[i]=myargs[i]->getName();
-        bool found=false;
-        for(unsigned j=0; j<inargnames.size(); ++j) {
-          if( argnames[i]==inargnames[j] ) { found=true; break; }
-        }
-        if( !found ) error("input named " + my_input_data->getLabel() + " does not store/calculate quantity named " + argnames[i] );
-      }
-      mypdb.setArgumentNames( argnames ); requestArguments( myargs );
-    }
-  }
-  if( nlow==0 ) error("dimensionality of output not set");
-  checkRead();
-}
-
-void PCA::performAnalysis() {
-  // Align everything to the first frame
-  my_input_data->getStoredData( 0, false ).transferDataToPDB( mypdb );
-  auto myconf0=metricRegister().create<ReferenceConfiguration>(mtype, mypdb);
-  MultiValue myval( 1, myconf0->getNumberOfReferenceArguments() + 3*myconf0->getNumberOfReferencePositions() + 9 );
-  ReferenceValuePack mypack( myconf0->getNumberOfReferenceArguments(), myconf0->getNumberOfReferencePositions(), myval );
-  for(unsigned i=0; i<myconf0->getNumberOfReferencePositions(); ++i) mypack.setAtomIndex( i, i );
-  // Setup some PCA storage
-  myconf0->setupPCAStorage ( mypack );
-  std::vector<double> displace( myconf0->getNumberOfReferencePositions() );
-  if( myconf0->getNumberOfReferencePositions()>0 ) {
-    ReferenceAtoms* at = dynamic_cast<ReferenceAtoms*>( myconf0.get() );
-    displace = at->getDisplace();
-  }
-
-  // Create some arrays to store the average position
-  std::vector<double> sarg( myconf0->getNumberOfReferenceArguments(), 0 );
-  std::vector<Vector> spos( myconf0->getNumberOfReferencePositions() );
-  for(unsigned i=0; i<myconf0->getNumberOfReferencePositions(); ++i) spos[i].zero();
-
-  // Calculate the average displacement from the first frame
-  double norm=getWeight(0); std::vector<double> args( getNumberOfArguments() );
-  for(unsigned i=1; i<getNumberOfDataPoints(); ++i) {
-    my_input_data->getStoredData( i, false ).transferDataToPDB( mypdb ); std::vector<double> vaarg(1);
-    for(unsigned j=0; j<getArguments().size(); ++j) { mypdb.getArgumentValue( getArguments()[j]->getName(), vaarg ); args[j]=vaarg[0]; }
-    myconf0->calc( mypdb.getPositions(), getPbc(), getArguments(), args, mypack, true );
-    // Accumulate average displacement of arguments (Here PBC could do fucked up things - really needs Berry Phase ) GAT
-    for(unsigned j=0; j<myconf0->getNumberOfReferenceArguments(); ++j) sarg[j] += 0.5*getWeight(i)*mypack.getArgumentDerivative(j);
-    // Accumulate average displacement of position
-    for(unsigned j=0; j<myconf0->getNumberOfReferencePositions(); ++j) spos[j] += getWeight(i)*mypack.getAtomsDisplacementVector()[j] / displace[j];
-    norm += getWeight(i);
-  }
-  // Now normalise the displacements to get the average and add these to the first frame
-  double inorm = 1.0 / norm ;
-  for(unsigned j=0; j<myconf0->getNumberOfReferenceArguments(); ++j) sarg[j] = inorm*sarg[j] + myconf0->getReferenceArguments()[j];
-  for(unsigned j=0; j<myconf0->getNumberOfReferencePositions(); ++j) spos[j] = inorm*spos[j] + myconf0->getReferencePositions()[j];
-  // Now accumulate the covariance
-  unsigned narg=myconf0->getNumberOfReferenceArguments(), natoms=myconf0->getNumberOfReferencePositions();
-  Matrix<double> covar( narg+3*natoms, narg+3*natoms ); covar=0;
-  for(unsigned i=0; i<getNumberOfDataPoints(); ++i) {
-    my_input_data->getStoredData( i, false ).transferDataToPDB( mypdb ); std::vector<double> vaarg(1);
-    for(unsigned j=0; j<getArguments().size(); ++j) { mypdb.getArgumentValue( getArguments()[j]->getName(), vaarg ); args[j]=vaarg[0]; }
-    myconf0->calc( mypdb.getPositions(), getPbc(), getArguments(), args, mypack, true );
-    for(unsigned jarg=0; jarg<narg; ++jarg) {
-      // Need sorting for PBC with GAT
-      double jarg_d = 0.5*mypack.getArgumentDerivative(jarg) + myconf0->getReferenceArguments()[jarg] - sarg[jarg];
-      for(unsigned karg=0; karg<narg; ++karg) {
-        // Need sorting for PBC with GAT
-        double karg_d = 0.5*mypack.getArgumentDerivative(karg) + myconf0->getReferenceArguments()[karg] - sarg[karg];
-        covar( jarg, karg ) += 0.25*getWeight(i)*jarg_d*karg_d; // mypack.getArgumentDerivative(jarg)*mypack.getArgumentDerivative(karg);
-      }
-    }
-    for(unsigned jat=0; jat<natoms; ++jat) {
-      for(unsigned jc=0; jc<3; ++jc) {
-        double jdisplace = mypack.getAtomsDisplacementVector()[jat][jc] / displace[jat] + myconf0->getReferencePositions()[jat][jc] - spos[jat][jc];
-        for(unsigned kat=0; kat<natoms; ++kat) {
-          for(unsigned kc=0; kc<3; ++kc) {
-            double kdisplace = mypack.getAtomsDisplacementVector()[kat][kc] /displace[kat] + myconf0->getReferencePositions()[kat][kc] - spos[kat][kc];
-            covar( narg+3*jat + jc, narg+3*kat + kc ) += getWeight(i)*jdisplace*kdisplace;
-          }
-        }
-      }
-    }
-  }
-  // Normalise
-  for(unsigned i=0; i<covar.nrows(); ++i) {
-    for(unsigned j=0; j<covar.ncols(); ++j) covar(i,j) *= inorm;
-  }
-
-  // Diagonalise the covariance
-  std::vector<double> eigval( narg+3*natoms );
-  Matrix<double> eigvec( narg+3*natoms, narg+3*natoms );
-  diagMat( covar, eigval, eigvec );
-
-  // Output the reference configuration
-  mypdb.setAtomPositions( spos );
-  for(unsigned j=0; j<sarg.size(); ++j) mypdb.setArgumentValue( getArguments()[j]->getName(), sarg[j] );
-  // Reset the reference configuration
-  myref = metricRegister().create<ReferenceConfiguration>( mtype, mypdb );
-
-  // Store and print the eigenvectors
-  std::vector<Vector> tmp_atoms( natoms );
-  for(unsigned dim=0; dim<nlow; ++dim) {
-    unsigned idim = covar.ncols() - 1 - dim;
-    for(unsigned i=0; i<narg; ++i) mypdb.setArgumentValue( getArguments()[i]->getName(), eigvec(idim,i) );
-    for(unsigned i=0; i<natoms; ++i) {
-      for(unsigned k=0; k<3; ++k) tmp_atoms[i][k]=eigvec(idim,narg+3*i+k);
-    }
-    mypdb.setAtomPositions( tmp_atoms );
-    // Create a direction object so that we can calculate other PCA components
-    directions.push_back( Direction(ReferenceConfigurationOptions("DIRECTION")));
-    directions[dim].read( mypdb );
-  }
-}
-
-void PCA::getProjection( const unsigned& idata, std::vector<double>& point, double& weight ) {
-  if( point.size()!=nlow ) point.resize( nlow );
-  // Retrieve the weight
-  weight = getWeight(idata);
-  // Retrieve the data point
-  getProjection( my_input_data->getStoredData( idata, false ), point );
-}
-
-void PCA::getProjection( analysis::DataCollectionObject& myidata, std::vector<double>& point ) {
-  myidata.transferDataToPDB( mypdb ); std::vector<double> args( getArguments().size() ); std::vector<double> vaarg(1);
-  for(unsigned j=0; j<getArguments().size(); ++j) { mypdb.getArgumentValue( getArguments()[j]->getName(), vaarg ); args[j]=vaarg[0]; }
-  // Create some storage space
-  MultiValue myval( 1, 3*mypdb.getPositions().size() + args.size() + 9);
-  ReferenceValuePack mypack( args.size(), mypdb.getPositions().size(), myval );
-  for(unsigned i=0; i<mypdb.getPositions().size(); ++i) mypack.setAtomIndex( i, i );
-  myref->setupPCAStorage( mypack );
-  // And calculate
-  myref->calculate( mypdb.getPositions(), getPbc(), getArguments(), mypack, true );
-  for(unsigned i=0; i<nlow; ++i) point[i]=myref->projectDisplacementOnVector( directions[i], getArguments(), args, mypack );
+  outd = "ARG=" + getShortcutLabel() + "_eig.vecs-1";
+  for(unsigned i=1; i<ndim; ++i) { std::string num; Tools::convert( i+1, num ); outd += "," + getShortcutLabel() + "_eig.vecs-" + num; }
+  readInputLine( getShortcutLabel() + "_eigv: VSTACK " + outd );
+  readInputLine( getShortcutLabel() + ": MATRIX_PRODUCT ARG=" + getShortcutLabel() + "_diff," + getShortcutLabel() + "_eigv");
 }
 
 }

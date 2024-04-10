@@ -42,7 +42,6 @@
 !/pamm
 !/piv
 !/refdist
-!/reference
 !/secondarystructure
 !/setup
 !/symfunc
@@ -51,7 +50,6 @@
 !/valtools
 !/vatom
 !/ves
-!/vesselbase
 !/volumes
 !/wrapper
 !/header.sh

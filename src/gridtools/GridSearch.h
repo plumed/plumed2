@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2023 The plumed team
+   Copyright (c) 2016-2024 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,8 +22,10 @@
 #ifndef __PLUMED_gridtools_GridSearch_h
 #define __PLUMED_gridtools_GridSearch_h
 
+#include "core/Value.h"
 #include "tools/MinimiseBase.h"
-#include "GridVessel.h"
+#include "GridCoordinatesObject.h"
+#include "Interpolator.h"
 #include <iostream>
 #include <memory>
 
@@ -37,59 +39,65 @@ private:
 /// calculating class that calculates the energy
   typedef double(FCLASS::*engf_pointer)( const std::vector<double>& p, std::vector<double>& der );
   FCLASS* myclass_func;
-  std::unique_ptr<GridVessel> mygrid;
-  std::unique_ptr<GridVessel> myfgrid;
+  bool using_fgrid;
+  std::unique_ptr<Value> value;
+  std::unique_ptr<Interpolator> myinterp;
+  GridCoordinatesObject mygrid;
+  GridCoordinatesObject myfgrid;
 public:
   GridSearch( const std::vector<double>& mmin, const std::vector<double>& mmax, const std::vector<unsigned>& ng, const std::vector<unsigned>& nfg, FCLASS* funcc ) :
-    myclass_func( funcc )
+    myclass_func( funcc ),
+    using_fgrid(false)
   {
-    // Create the grid objects
-    std::string nstr, vstring="COMPONENTS=func COORDINATES=x1";
-    for(unsigned i=1; i<mmin.size(); ++i) { Tools::convert(i+1,nstr); vstring += ",x" + nstr; }
-    vstring += " PBC=F"; for(unsigned i=1; i<mmin.size(); ++i) vstring += ",F";
-    vesselbase::VesselOptions da("mygrid","",-1,vstring,NULL);
-    Keywords keys; gridtools::GridVessel::registerKeywords( keys );
-    vesselbase::VesselOptions dar( da, keys );
-    mygrid=Tools::make_unique<GridVessel>(dar);
-    if( nfg[0]>0 ) myfgrid=Tools::make_unique<GridVessel>(dar);
-
-    // Now setup the min and max values for the grid
-    std::vector<std::string> gmin( nfg.size() ), gmax( nfg.size() ); std::vector<double> dummy_spacing;
+    // Setup the min and max values for the grid
+    std::vector<std::string> gmin( nfg.size() ), gmax( nfg.size() );
+    std::vector<bool> pbc( nfg.size(), false ); std::vector<double> dummy_spacing;
     for(unsigned i=0; i<nfg.size(); ++i) { Tools::convert(mmin[i],gmin[i]); Tools::convert(mmax[i],gmax[i]); }
-    mygrid->setBounds( gmin, gmax, ng, dummy_spacing ); mygrid->resize();
-    if( myfgrid ) myfgrid->setBounds( gmin, gmax, nfg, dummy_spacing );
+    // Create the coarse grid grid objects
+    mygrid.setup( "flat", pbc, 0, 0.0 );
+    mygrid.setBounds( gmin, gmax, ng, dummy_spacing );
+    // Setup the fine grid object
+    if( nfg[0]>0 ) {
+      using_fgrid=true; myfgrid.setup("flat", pbc, 0, 0.0 ); dummy_spacing.resize(0);
+      myfgrid.setBounds( gmin, gmax, nfg, dummy_spacing );
+    }
+    value.reset( new Value( NULL, "gval", true, mygrid.getNbin(true)) );
+    myinterp.reset( new Interpolator( value.get(), mygrid ) );
   }
+  void setGridElement( const unsigned& ind, const double& emin, const std::vector<double>& der );
   bool minimise( std::vector<double>& p, engf_pointer myfunc );
 };
+
+template <class FCLASS>
+void GridSearch<FCLASS>::setGridElement( const unsigned& ind, const double& emin, const std::vector<double>& der ) {
+  value->set( ind, emin ); for(unsigned j=0; j<der.size(); ++j) value->setGridDerivatives( ind, j, der[j] );
+}
 
 template <class FCLASS>
 bool GridSearch<FCLASS>::minimise( std::vector<double>& p, engf_pointer myfunc ) {
   std::vector<double> der( p.size() ); std::vector<double> coords( p.size() );
   double initial_eng = (myclass_func->*myfunc)( p, der );
-  mygrid->getGridPointCoordinates( 0, coords );
-  double emin=(myclass_func->*myfunc)( coords, der );
-  mygrid->setValueAndDerivatives( 0, 0, emin, der ); unsigned pmin=0;
-  for(unsigned i=1; i<mygrid->getNumberOfPoints(); ++i) {
-    mygrid->getGridPointCoordinates( i, coords );
+  mygrid.getGridPointCoordinates( 0, coords ); unsigned pmin=0;
+  double emin=(myclass_func->*myfunc)( coords, der ); setGridElement( 0, emin, der );
+  for(unsigned i=1; i<mygrid.getNumberOfPoints(); ++i) {
+    mygrid.getGridPointCoordinates( i, coords );
     double eng = (myclass_func->*myfunc)( coords, der );
-    mygrid->setValueAndDerivatives( i, 0, eng, der );
+    setGridElement( i, eng, der );
     if( eng<emin ) { emin=eng; pmin=i; }
   }
-  // This prevents division by zero
-  mygrid->setNorm( 1.0 );
 
-  if( myfgrid ) {
-    myfgrid->getGridPointCoordinates( 0, coords ); pmin=0;
-    double emin=mygrid->getValueAndDerivatives( coords, 0, der );
-    for(unsigned i=1; i<myfgrid->getNumberOfPoints(); ++i) {
-      myfgrid->getGridPointCoordinates( i, coords );
-      double eng = mygrid->getValueAndDerivatives( coords, 0, der );
+  if( using_fgrid ) {
+    myfgrid.getGridPointCoordinates( 0, coords ); pmin=0;
+    double emin = myinterp->splineInterpolation( coords, der );
+    for(unsigned i=1; i<myfgrid.getNumberOfPoints(); ++i) {
+      myfgrid.getGridPointCoordinates( i, coords );
+      double eng = myinterp->splineInterpolation( coords, der );
       if( eng<emin ) { emin=eng; pmin=i; }
     }
-    myfgrid->getGridPointCoordinates( pmin, coords );
+    myfgrid.getGridPointCoordinates( pmin, coords );
     double checkEng = (myclass_func->*myfunc)( coords, der );
     if( checkEng<initial_eng ) {
-      myfgrid->getGridPointCoordinates( pmin, p );
+      myfgrid.getGridPointCoordinates( pmin, p );
       return true;
     } else {
       return false;
@@ -97,11 +105,10 @@ bool GridSearch<FCLASS>::minimise( std::vector<double>& p, engf_pointer myfunc )
   }
 
   if( emin<initial_eng ) {
-    mygrid->getGridPointCoordinates( pmin, p );
+    mygrid.getGridPointCoordinates( pmin, p );
     return true;
-  } else {
-    return false;
   }
+  return false;
 }
 
 }
