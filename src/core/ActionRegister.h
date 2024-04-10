@@ -55,9 +55,9 @@ class ActionRegister {
     keywords_pointer keys;
   };
 /// Map action to a function which creates the related object and a function which documents the related object
-  std::map<std::string,Pointers> m;
+  std::map<std::string,std::unique_ptr<Pointers>> m;
 /// Map of staged actions
-  std::map<std::string,Pointers> staged_m;
+  std::map<std::string,std::unique_ptr<Pointers>> staged_m;
 /// Mutex to avoid simultaneous registrations from multiple threads
 /// It is a recursive mutex so that recursive calls will be detected and throw.
 /// (a non recursive mutex would lead to a lock instead)
@@ -72,11 +72,14 @@ class ActionRegister {
   /// Better use the RAII interface as registrationLock()
   void popDLRegistration() noexcept;
 public:
+  struct ID {
+    Pointers* ptr{nullptr};
+  };
 /// Register a new class.
 /// \param key The name of the directive to be used in the input file
 /// \param cp A pointer to a function which creates an object of that class
 /// \param kp A pointer to a function which returns the allowed keywords
-  void add(std::string key,creator_pointer cp,keywords_pointer kp);
+  ID add(std::string key,creator_pointer cp,keywords_pointer kp);
 /// Verify if a directive is present in the register
   bool check(const std::string & action);
   bool check(const std::vector<void*> & images,const std::string & action);
@@ -90,7 +93,7 @@ public:
   bool getKeywords( const std::string& action, Keywords& keys );
 /// Print out a template command for an action
   bool printTemplate(const std::string& action, bool include_optional);
-  void remove(creator_pointer);
+  void remove(ID id);
 /// Get a list of action names
   std::vector<std::string> getActionNames() const ;
   ~ActionRegister();
@@ -135,18 +138,20 @@ inline constexpr bool isActionType = std::is_base_of<Action, T>::value;
 ///As soon it goes out of scope it will deregister the directive from the singleton ActionRegister
 template<typename ActionClass>
 class ActionRegistration {
+  ActionRegister::ID id;
   static std::unique_ptr<Action> create(const ActionOptions&ao) {
     return std::make_unique<ActionClass>(ao);
   }
 public:
   ///On construction register the ActionClass with the wanted directive
-  ActionRegistration(std::string_view directive) {
+  ActionRegistration(std::string_view directive):
+    id(actionRegister().add(directive.data(),create,ActionClass::registerKeywords))
+  {
     static_assert(isActionType<ActionClass>,
                   "ActionRegistration accepts only class that inherit from Action");
-    actionRegister().add(directive.data(),create,ActionClass::registerKeywords);
   }
   ///On destruction deregister the ActionClass (useful when you unload a shared object)
-  ~ActionRegistration() {actionRegister().remove(create);}
+  ~ActionRegistration() {actionRegister().remove(id);}
 };
 } //PLMD
 

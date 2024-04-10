@@ -55,28 +55,33 @@ ActionRegister& actionRegister() {
   return ans;
 }
 
-void ActionRegister::remove(creator_pointer f) {
-  for(auto p=m.begin(); p!=m.end(); ++p) {
-    if((*p).second.create==f) {
-      m.erase(p); break;
+void ActionRegister::remove(ID id) {
+  if(id.ptr) {
+    for(auto p=m.begin(); p!=m.end(); ++p) {
+      if(p->second.get()==id.ptr) {
+        m.erase(p); break;
+      }
     }
   }
 }
 
-void ActionRegister::add(std::string key,creator_pointer f,keywords_pointer k) {
+ActionRegister::ID ActionRegister::add(std::string key,creator_pointer f,keywords_pointer k) {
   // this force each action to be registered as an uppercase string
   if ( std::any_of( std::begin( key ), std::end( key ), []( char c ) { return ( std::islower( c ) ); } ) ) plumed_error() << "Action: " + key + " cannot be registered, use only UPPERCASE characters";
 
+  auto ptr=std::make_unique<Pointers>(Pointers{f,k});
+  ID id{ptr.get()};
   if(registeringCounter) {
     plumed_assert(!staged_m.count(key)) << "cannot registed action twice with the same name "<< key<<"\n";
     // Store a pointer to the function that creates keywords
     // A pointer is stored and not the keywords because all
     // Vessels must be dynamically loaded before the actions.
-    staged_m.insert(std::pair<std::string,Pointers>(key, {f,k}));
+    staged_m.insert({key, std::move(ptr)});
   } else {
     plumed_assert(!m.count(key)) << "cannot registed action twice with the same name "<< key<<"\n";
-    m.insert(std::pair<std::string,Pointers>(key, {f,k}));
+    m.insert({key, std::move(ptr)});
   }
+  return id;
 }
 
 bool ActionRegister::check(const std::string & key) {
@@ -117,15 +122,15 @@ std::unique_ptr<Action> ActionRegister::create(const std::vector<void*> & images
         break;
       }
     }
-    Keywords keys; m[found_key].keys(keys);
+    Keywords keys; m[found_key]->keys(keys);
     ActionOptions nao( ao,keys );
-    action=m[found_key].create(nao);
+    action=m[found_key]->create(nao);
   }
   return action;
 }
 
 bool ActionRegister::getKeywords(const std::string& action, Keywords& keys) {
-  if ( check(action) ) {  m[action].keys(keys); return true; }
+  if ( check(action) ) {  m[action]->keys(keys); return true; }
   return false;
 }
 
@@ -147,7 +152,7 @@ bool ActionRegister::printManual(const std::string& action, const bool& vimout, 
 
 bool ActionRegister::printTemplate(const std::string& action, bool include_optional) {
   if( check(action) ) {
-    Keywords keys; m[action].keys(keys);
+    Keywords keys; m[action]->keys(keys);
     keys.print_template(action, include_optional);
     return true;
   } else {
@@ -185,12 +190,15 @@ void ActionRegister::popDLRegistration() noexcept {
 }
 
 void ActionRegister::completeRegistration(void* handle) {
-  for(auto & it : staged_m) {
-    auto key=imageToString(handle) + ":" + it.first;
+  for (auto iter = staged_m.begin(); iter != staged_m.end(); ) {
+    auto key = imageToString(handle) + ":" + iter->first;
     plumed_assert(!m.count(key)) << "cannot registed action twice with the same name "<< key<<"\n";
-    m.insert(std::pair<std::string,Pointers>(key,it.second));
+    m[key] = std::move(iter->second);
+    // Since we've moved out the value, we can safely erase the element from the original map
+    // This also avoids invalidating our iterator since erase returns the next iterator
+    iter = staged_m.erase(iter);
   }
-  staged_m.clear();
+  plumed_assert(staged_m.empty());
 }
 
 ActionRegister::RegistrationLock::RegistrationLock(ActionRegister* ar):
