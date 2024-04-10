@@ -23,6 +23,7 @@
 #define __PLUMED_adjmat_FunctionOfMatrix_h
 
 #include "ActionWithMatrix.h"
+#include "AdjacencyMatrixBase.h"
 #include "function/FunctionOfVector.h"
 #include "function/Sum.h"
 #include "tools/Matrix.h"
@@ -145,7 +146,7 @@ FunctionOfMatrix<T>::FunctionOfMatrix(const ActionOptions&ao):
   myfunc.setPeriodicityForOutputs( this );
   // We can't do this with if we are dividing a stack by some a product v.v^T product as we need to store the vector
   // In order to do this type of calculation.  There should be a neater fix than this but I can't see it.
-  bool foundneigh=false;
+  bool foundneigh=false; const ActionWithMatrix* chainstart = NULL;
   for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
     if( getPntrToArgument(i)->isConstant() && getNumberOfArguments()>1 ) continue ;
     std::string argname=(getPntrToArgument(i)->getPntrToAction())->getName();
@@ -155,6 +156,14 @@ FunctionOfMatrix<T>::FunctionOfMatrix(const ActionOptions&ao):
     if( getPntrToArgument(i)->getRank()==0 ) {
       function::FunctionOfVector<function::Sum>* as = dynamic_cast<function::FunctionOfVector<function::Sum>*>( getPntrToArgument(i)->getPntrToAction() );
       if(as) done_in_chain=false;
+    } else if( getPntrToArgument(i)->ignoreStoredValue( getLabel() ) ) {
+      // This option deals with the case when you have two adjacency matrices, A_ij and B_ij, multiplied together.  This cannot be done in the chain as the rows
+      // of the two adjacency matrix are run over separately.  The value A_ij is thus not available when B_ij is calculated.
+      ActionWithMatrix* am = dynamic_cast<ActionWithMatrix*>( getPntrToArgument(i)->getPntrToAction() );
+      plumed_assert( am ); const ActionWithMatrix* thischain = am->getFirstMatrixInChain();
+      const AdjacencyMatrixBase* aa=dynamic_cast<const AdjacencyMatrixBase*>( thischain ); if( !aa && thischain->getName()!="VSTACK" ) continue;
+      if( !chainstart ) chainstart = thischain;
+      else if( thischain!=chainstart ) done_in_chain=false;
     }
   }
   // If we are working with neighbors we trick PLUMED into storing ALL the components of the other arguments
@@ -393,12 +402,12 @@ void FunctionOfMatrix<T>::runEndOfRowJobs( const unsigned& ind, const std::vecto
     for(int vv=0; vv<getNumberOfComponents(); ++vv) {
       unsigned nmat = getConstPntrToComponent(vv)->getPositionInMatrixStash();
       std::vector<unsigned>& mat_indices( myvals.getMatrixRowDerivativeIndices( nmat ) ); unsigned ntot_mat=0;
-      if( mat_indices.size()<nderivatives ) mat_indices.resize( nderivatives );
+      if( mat_indices.size()<nderivatives ) mat_indices.resize( nderivatives ); unsigned matderbase = 0;
       for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
         if( getPntrToArgument(i)->getRank()==0 ) continue ;
-        unsigned ss = getPntrToArgument(i)->getShape()[1]; unsigned tbase = ss*myvals.getTaskIndex();
+        unsigned ss = getPntrToArgument(i)->getShape()[1]; unsigned tbase = matderbase + ss*myvals.getTaskIndex();
         for(unsigned k=0; k<ss; ++k) mat_indices[ntot_mat + k] = tbase + k;
-        ntot_mat += ss;
+        ntot_mat += ss; matderbase += getPntrToArgument(i)->getNumberOfValues();
       }
       myvals.setNumberOfMatrixRowDerivatives( nmat, ntot_mat );
     }

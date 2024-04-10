@@ -49,13 +49,19 @@ std::vector<AtomNumber> Tree::getTree(std::vector<AtomNumber> atoms)
   // clear root_ vector
   root_.clear();
 
+  std::vector<Vector> positions;
+
   // remove atoms not in PDB file
   std::vector<AtomNumber> addtotree, addtoroot;
   std::vector<AtomNumber> newatoms;
   newatoms.reserve(atoms.size());
+  positions.reserve(atoms.size());
+  tree.reserve(atoms.size());
+  root_.reserve(atoms.size());
   if(!moldat_->checkForAtom(atoms[0])) plumed_merror("The first atom in the list should be present in the PDB file");
   // store first atom
   newatoms.push_back(atoms[0]);
+  positions.push_back(moldat_->getPosition(atoms[0]));
   for(unsigned i=1; i<atoms.size(); ++i) {
     if(!moldat_->checkForAtom(atoms[i])) {
       // store this atom for later
@@ -64,6 +70,7 @@ std::vector<AtomNumber> Tree::getTree(std::vector<AtomNumber> atoms)
       addtoroot.push_back(atoms[i-1]);
     } else {
       newatoms.push_back(atoms[i]);
+      positions.push_back(moldat_->getPosition(atoms[i]));
     }
   }
   // reassign atoms
@@ -88,7 +95,7 @@ std::vector<AtomNumber> Tree::getTree(std::vector<AtomNumber> atoms)
     double minroot = std::numeric_limits<double>::max();
     int iroot = -1;
     for(unsigned j=0; j<atoms.size(); ++j) {
-      double dist = delta(moldat_->getPosition(atoms[selected_vertex]), moldat_->getPosition(atoms[j])).modulo2();
+      double dist = delta(positions[selected_vertex], positions[j]).modulo2();
       if(dist < mindist[j]) mindist[j] = dist;
       if(dist < minroot && intree[j] && dist>0.0) {
         minroot = dist;

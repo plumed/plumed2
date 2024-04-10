@@ -115,12 +115,6 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
   log<<"  Bibliography "<<plumed.cite("Tribello, Giberti, Sosso, Salvalaglio and Parrinello, J. Chem. Theory Comput. 13, 1317 (2017)")<<"\n";
 }
 
-bool AdjacencyMatrixBase::canBeAfterInChain( ActionWithVector* av ) {
-  AdjacencyMatrixBase* ab=dynamic_cast<AdjacencyMatrixBase*>(av);
-  // if( av->getName()!="MATRIX_MATRIX_PRODUCT" ) return false;
-  return true;
-}
-
 unsigned AdjacencyMatrixBase::getNumberOfDerivatives() {
   return 3*getNumberOfAtoms() + 9;
 }
