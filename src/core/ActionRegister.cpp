@@ -72,10 +72,10 @@ void ActionRegister::add(std::string key,creator_pointer f,keywords_pointer k) {
     // Store a pointer to the function that creates keywords
     // A pointer is stored and not the keywords because all
     // Vessels must be dynamically loaded before the actions.
-    staged_m.insert(std::pair<std::string,Item>(key, {f,k}));
+    staged_m.insert(std::pair<std::string,Pointers>(key, {f,k}));
   } else {
     plumed_assert(!m.count(key)) << "cannot registed action twice with the same name "<< key<<"\n";
-    m.insert(std::pair<std::string,Item>(key, {f,k}));
+    m.insert(std::pair<std::string,Pointers>(key, {f,k}));
   }
 }
 
@@ -188,7 +188,7 @@ void ActionRegister::completeRegistration(void* handle) {
   for(auto & it : staged_m) {
     auto key=imageToString(handle) + ":" + it.first;
     plumed_assert(!m.count(key)) << "cannot registed action twice with the same name "<< key<<"\n";
-    m.insert(std::pair<std::string,Item>(key,it.second));
+    m.insert(std::pair<std::string,Pointers>(key,it.second));
   }
   staged_m.clear();
 }

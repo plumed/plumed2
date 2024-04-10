@@ -50,14 +50,14 @@ class ActionRegister {
   typedef std::unique_ptr<Action>(*creator_pointer)(const ActionOptions&);
 /// Pointer to a function which, returns the keywords allowed
   typedef void(*keywords_pointer)(Keywords&);
-  struct Item {
+  struct Pointers {
     creator_pointer create;
     keywords_pointer keys;
   };
 /// Map action to a function which creates the related object and a function which documents the related object
-  std::map<std::string,Item> m;
+  std::map<std::string,Pointers> m;
 /// Map of staged actions
-  std::map<std::string,Item> staged_m;
+  std::map<std::string,Pointers> staged_m;
 /// Mutex to avoid simultaneous registrations from multiple threads
 /// It is a recursive mutex so that recursive calls will be detected and throw.
 /// (a non recursive mutex would lead to a lock instead)
