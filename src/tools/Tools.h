@@ -41,6 +41,8 @@
 #include <filesystem>
 #include <utility>
 #include <unordered_map>
+#include <map>
+#include <condition_variable>
 
 namespace PLMD {
 
@@ -309,6 +311,76 @@ public:
     auto find(const std::string_view & key) const {
       return map.find(key);
     }
+  };
+
+  /// Utility to create named critical sections
+  /// Key should be usable in a std::map
+  template<class Key>
+  class CriticalSectionWithKey {
+    std::mutex mutex;
+    std::condition_variable notify;
+    std::map<Key, int> in_progress;
+  public:
+    void start(const Key & key) {
+      std::unique_lock<std::mutex> lock(mutex);
+      while (in_progress[key] > 0) {
+        // Wait if this command is already in progress.
+        notify.wait(lock);
+      }
+      // Mark this command as in progress.
+      in_progress[key]++;
+    }
+    void stop(const Key & key) {
+      std::unique_lock<std::mutex> lock(mutex);
+      // Mark this command as completed.
+      in_progress[key]--;
+      // Notify other threads that may be waiting for this command to complete.
+      notify.notify_all();
+    }
+    class Handler {
+      CriticalSectionWithKey* section{nullptr};
+      Key key;
+      Handler(CriticalSectionWithKey* section,const Key& key):
+        section(section),
+        key(key)
+      {
+        section->start(key);
+      }
+      friend class CriticalSectionWithKey;
+    public:
+      /// Default constructor
+      Handler() = default;
+      /// Default copy constructor is deleted (not copyable)
+      Handler(const Handler & handler) = delete;
+      /// Default copy assignment is deleted (not copyable)
+      Handler & operator=(const Handler & handler) = delete;
+      /// Move constructor.
+      Handler(Handler && handler) noexcept :
+        section(handler.section),
+        key(std::move(handler.key))
+      {
+        handler.section=nullptr;
+      };
+      /// Move assignment.
+      Handler & operator=(Handler && handler) noexcept {
+        if(this!=&handler) {
+          if(section) section->stop(key);
+          section=handler.section;
+          key=std::move(handler.key);
+        }
+        handler.watch=nullptr;
+        return *this;
+      }
+      /// Destructor
+      ~Handler() {
+        if(section) section->stop(key);
+      }
+    };
+
+    Handler startStop(const Key & key) {
+      return Handler(this,key);
+    }
+
   };
 
 };
