@@ -160,6 +160,8 @@ this analysis.
 // declared in other parts of the code
 namespace {
 
+//this is a sugar for changing idea fast about the rng
+using generator = std::mt19937;
 std::atomic<bool> signalReceived(false);
 
 class SignalHandlerGuard {
@@ -290,7 +292,7 @@ Benchmark::Benchmark(const CLToolOptions& co ):
 
 int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
 
-  std::mt19937 g; // deterministic initialization to avoid issues with MPI
+  generator rng; // deterministic initialization to avoid issues with MPI
 
   struct FileDeleter {
     void operator()(FILE*f) const noexcept {
@@ -315,7 +317,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   auto kernels_deleter=[&log](auto f) {
     if(!f) return;
     if(f->empty()) return;
-    std::mt19937 g;
+    generator rng;
 
     auto size=f->back().timings.size();
     constexpr int B=200;
@@ -355,13 +357,13 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
         for(auto & r : ratios) r.resize(B);
 
         for(unsigned b=0; b<B; b++) {
-          for(auto & c : choice) c=distrib(g);
+          for(auto & c : choice) c=distrib(rng);
           long long int reference=0;
           for(auto & c : choice) reference+=blocks[0][c];
           for(auto i=0; i<blocks.size(); i++) {
             long long int estimate=0;
             // this would lead to separate bootstrap samples for each estimate:
-            // for(auto & c : choice) c=distrib(g);
+            // for(auto & c : choice) c=distrib(rng);
             for(auto & c : choice) estimate+=blocks[i][c];
             ratios[i][b]=double(estimate)/double(reference);
           }
@@ -476,7 +478,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   if(shuffled) {
     shuffled_indexes.resize(natoms);
     for(unsigned i=0; i<natoms; i++) shuffled_indexes[i]=i;
-    std::shuffle(shuffled_indexes.begin(),shuffled_indexes.end(),g);
+    std::shuffle(shuffled_indexes.begin(),shuffled_indexes.end(),rng);
   }
 
   // non owning pointers, used for shuffling the execution order
@@ -494,7 +496,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
 
 
   for(int step=0; nf<0 || step<nf; ++step) {
-    std::shuffle(kernels_ptr.begin(),kernels_ptr.end(),g);
+    std::shuffle(kernels_ptr.begin(),kernels_ptr.end(),rng);
     for(unsigned j=0; j<natoms; ++j) pos[j] = Vector(step*j, step*j+1, step*j+2);
     double* pos_ptr;
     double* for_ptr;
@@ -600,6 +602,6 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   return 0;
 }
 
-}
-} // End of namespace
-}
+} // namespace unnamed
+} // namespace cltools
+} // namespace PLMD
