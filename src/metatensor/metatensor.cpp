@@ -100,15 +100,21 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
     this->parse("EXTENSIONS_DIRECTORY", extensions_directory);
 
     // TEMPORARY BAD CODE, TO BE REMOVED
-    dlopen(
+    auto rascaline = dlopen(
         (extensions_directory + "/rascaline/lib/librascaline.dylib").c_str(),
         RTLD_LOCAL | RTLD_NOW
     );
+    if (rascaline == nullptr) {
+        std::cerr << "failed to load rascaline: " << dlerror() << std::endl;
+    }
 
-    dlopen(
+    auto rascaline_torch = dlopen(
         (extensions_directory + "/rascaline/torch/lib/librascaline_torch.dylib").c_str(),
         RTLD_LOCAL | RTLD_NOW
     );
+    if (rascaline_torch == nullptr) {
+        std::cerr << "failed to load rascaline_torch: " << dlerror() << std::endl;
+    }
     // END OF TEMPORARY BAD CODE, TO BE REMOVED
 
     // load the model
