@@ -257,9 +257,26 @@ struct Kernel :
   }
 };
 
+///Acts as a template for any distribution
+struct AtomDistribution {
+  using ForwardIt = std::vector<Vector>::iterator;
+  virtual void operator()(std::vector<Vector>& posToUpdate, unsigned, generator&)=0;
+};
+
+struct theLine:AtomDistribution {
+  using ForwardIt= AtomDistribution::ForwardIt;
+  void operator()(std::vector<Vector>& posToUpdate, unsigned step, generator&) override {
+    std::generate(posToUpdate.begin(),posToUpdate.end(),[j=0u,step]() {
+      return Vector(step*j, step*j+1, step*j+2);
+    });
+  }
+};
+
+
 class Benchmark:
   public CLTool
 {
+  std::unique_ptr<AtomDistribution> distribution;
 public:
   static void registerKeywords( Keywords& keys );
   explicit Benchmark(const CLToolOptions& co );
@@ -464,6 +481,8 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
 
   std::vector<int> shuffled_indexes;
 
+  distribution = std::make_unique<theLine>();
+
   const auto initial_time=std::chrono::high_resolution_clock::now();
 
   for(auto & k : kernels) {
@@ -508,7 +527,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
 
   for(int step=0; nf<0 || step<nf; ++step) {
     std::shuffle(kernels_ptr.begin(),kernels_ptr.end(),rng);
-    for(unsigned j=0; j<natoms; ++j) pos[j] = Vector(step*j, step*j+1, step*j+2);
+    (*distribution)(pos,step,rng);
     double* pos_ptr;
     double* for_ptr;
     double* charges_ptr;
