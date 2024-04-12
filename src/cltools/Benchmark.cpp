@@ -222,8 +222,8 @@ struct KernelBase {
 struct Kernel :
   public KernelBase {
   Log* log=nullptr;
-  Kernel(const std::string & path_,const std::string & plumed_dat, Log* log_):
-    KernelBase(path_,plumed_dat,log_),
+  Kernel(const std::string & path_,const std::string & the_plumed_dat, Log* log_):
+    KernelBase(path_,the_plumed_dat,log_),
     log(log_)
   {
   }
@@ -315,14 +315,16 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   // perform comparative analysis
   // ensure that kernels vector is destroyed from last to first element upon exit
   auto kernels_deleter=[&log](auto f) {
-    if(!f)
+    if(!f) {
       return;
-    if(f->empty())
+    }
+    if(f->empty()) {
       return;
-    generator rng;
+    }
+    generator deleterRng;
 
     const auto size=f->back().timings.size();
-    constexpr int B=200;
+    constexpr int bootstrapIterations=200;
     const size_t numblocks=size;
     // for some reasons, blocked bootstrap underestimates error
     // For now I keep it off. If I remove it, the code below could be simplified
@@ -341,27 +343,27 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
         std::uniform_int_distribution<> distrib(0, numblocks-1);
         std::vector<std::vector<long long int>> blocks(f->size());
 
-        int i=0;
-        for(auto it = f->rbegin(); it != f->rend(); ++it) {
-          size_t l=0;
-          blocks[i].assign(numblocks,0);
-          for(auto j=0ULL; j<numblocks; j++) {
-            for(auto k=0ULL; k<blocksize; k++) {
-              plumed_assert(l<it->timings.size());
-              blocks[i][j]+=it->timings[l];
-              l++;
+        { int i=0;
+          for(auto it = f->rbegin(); it != f->rend(); ++it,++i) {
+            size_t l=0;
+            blocks[i].assign(numblocks,0);
+            for(auto j=0ULL; j<numblocks; j++) {
+              for(auto k=0ULL; k<blocksize; k++) {
+                plumed_assert(l<it->timings.size());
+                blocks[i][j]+=it->timings[l];
+                l++;
+              }
             }
           }
-          i++;
         }
 
         std::vector<std::vector<double>> ratios(f->size());
-        for(auto & r : ratios){
-          r.resize(B);
-          }
+        for(auto & r : ratios) {
+          r.resize(bootstrapIterations);
+        }
 
-        for(unsigned b=0; b<B; b++) {
-          for(auto & c : choice) c=distrib(rng);
+        for(unsigned b=0; b<bootstrapIterations; b++) {
+          for(auto & c : choice) c=distrib(deleterRng);
           long long int reference=0;
           for(auto & c : choice) {
             reference+=blocks[0][c];
@@ -369,7 +371,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
           for(auto i=0ULL; i<blocks.size(); i++) {
             long long int estimate=0;
             // this would lead to separate bootstrap samples for each estimate:
-            // for(auto & c : choice){c=distrib(rng);}
+            // for(auto & c : choice){c=distrib(deleterRng);}
             for(auto & c : choice) {
               estimate+=blocks[i][c];
             }
@@ -377,17 +379,18 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
           }
         }
 
-        i=0;
-        for(auto it = f->rbegin(); it != f->rend(); ++it) {
-          double sum=0.0;
-          double sum2=0.0;
-          for(auto r : ratios[i]) {
-            sum+=r;
-            sum2+=r*r;
+        {
+          int i=0;
+          for(auto it = f->rbegin(); it != f->rend(); ++it,++i) {
+            double sum=0.0;
+            double sum2=0.0;
+            for(auto r : ratios[i]) {
+              sum+=r;
+              sum2+=r*r;
+            }
+            it->comparative_timing=sum/bootstrapIterations;
+            it->comparative_timing_error=std::sqrt(sum2/bootstrapIterations-sum*sum/(bootstrapIterations*bootstrapIterations));
           }
-          it->comparative_timing=sum/B;
-          it->comparative_timing_error=std::sqrt(sum2/B-sum*sum/(B*B));
-          i++;
         }
 
       } catch(std::exception & e) {
