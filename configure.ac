@@ -782,10 +782,6 @@ main ()
   ], [__PLUMED_HAS_SUBPROCESS])
 fi
 
-if test $popen = true ; then
-  PLUMED_CHECK_PACKAGE([cstdio],[popen],[__PLUMED_HAS_POPEN])
-fi
-
 if test $execinfo = true ; then
   PLUMED_CHECK_PACKAGE([execinfo.h],[backtrace],[__PLUMED_HAS_EXECINFO])
 fi

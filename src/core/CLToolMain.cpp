@@ -27,6 +27,7 @@
 #include "CLToolRegister.h"
 #include "tools/Tools.h"
 #include "tools/DLLoader.h"
+#include "tools/Subprocess.h"
 #include <string>
 #include <cstdlib>
 #include <cstdio>
@@ -239,15 +240,15 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
     }
     for(unsigned j=0; j<availableShell.size(); ++j) {
       std::string manual;
-#ifdef __PLUMED_HAS_POPEN
-      std::string cmd=config::getEnvCommand()+" \""+root+"/scripts/"+availableShell[j]+".sh\" --description";
-      FILE *fp=popen(cmd.c_str(),"r");
-      std::string line;
-      while(Tools::getline(fp,line))manual+=line;
-      pclose(fp);
-#else
-      manual="(doc not avail)";
-#endif
+      if(Subprocess::available()) {
+        auto cmd=config::getEnvCommand()+" \""+root+"/scripts/"+availableShell[j]+".sh\" --description";
+        auto proc=Subprocess(cmd);
+        // we only need the first line, so this is fine:
+        proc.getline(manual);
+        // process will be killed immediately after
+      } else {
+        manual="(doc not avail)";
+      }
       manual= availableShell[j]+" : "+manual;
       std::fprintf(out,"  plumed %s\n", manual.c_str());
     }
