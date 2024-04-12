@@ -25,6 +25,7 @@
 #include <cstdlib>
 #include <iostream>
 #include "core/ActionRegister.h"
+#include "core/CLToolRegister.h"
 
 #ifdef __PLUMED_HAS_DLOPEN
 #include <dlfcn.h>
@@ -43,7 +44,8 @@ bool DLLoader::installed() {
 
 void* DLLoader::load(const std::string&s) {
 #ifdef __PLUMED_HAS_DLOPEN
-  auto locker=actionRegister().registrationLock();
+  auto lockerAction=actionRegister().registrationLock();
+  auto lockerCLTool=cltoolRegister().registrationLock();
   void* p=dlopen(s.c_str(),RTLD_NOW|RTLD_LOCAL);
   if(!p) {
     lastError=dlerror();
@@ -51,6 +53,7 @@ void* DLLoader::load(const std::string&s) {
     lastError="";
     handles.push_back(p);
     actionRegister().completeRegistration(p);
+    cltoolRegister().completeRegistration(p);
   }
   return p;
 #else

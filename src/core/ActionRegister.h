@@ -22,19 +22,23 @@
 #ifndef __PLUMED_core_ActionRegister_h
 #define __PLUMED_core_ActionRegister_h
 
-#include <string>
-#include <map>
-#include <set>
-#include <iosfwd>
+#include "RegisterBase.h"
+
 #include "tools/Keywords.h"
-#include <memory>
-#include <stack>
-#include <mutex>
 
 namespace PLMD {
 
 class Action;
 class ActionOptions;
+
+struct ActionRegisterPointers {
+/// Pointer to a function which, given the options, create an Action
+  typedef std::unique_ptr<Action>(*creator_pointer)(const ActionOptions&);
+/// Pointer to a function which, returns the keywords allowed
+  typedef void(*keywords_pointer)(Keywords&);
+  creator_pointer create;
+  keywords_pointer keys;
+};
 
 /// Register holding all the allowed keywords.
 /// This is a register which holds a map between strings (directives) and function pointers.
@@ -43,46 +47,15 @@ class ActionOptions;
 /// There should be only one of there objects allocated.
 /// Actions should be registered here at the beginning of execution
 ///
-class ActionRegister {
-/// Write on a stream the list of registered directives
-  friend std::ostream &operator<<(std::ostream &,const ActionRegister&);
-/// Pointer to a function which, given the options, create an Action
-  typedef std::unique_ptr<Action>(*creator_pointer)(const ActionOptions&);
-/// Pointer to a function which, returns the keywords allowed
-  typedef void(*keywords_pointer)(Keywords&);
-  struct Pointers {
-    creator_pointer create;
-    keywords_pointer keys;
-  };
-/// Map action to a function which creates the related object and a function which documents the related object
-  std::map<std::string,std::unique_ptr<Pointers>> m;
-/// Map of staged actions
-  std::map<std::string,std::unique_ptr<Pointers>> staged_m;
-/// Mutex to avoid simultaneous registrations from multiple threads
-/// It is a recursive mutex so that recursive calls will be detected and throw.
-/// (a non recursive mutex would lead to a lock instead)
-  std::recursive_mutex registeringMutex;
-  unsigned registeringCounter=0;
-  /// initiate registration
-  /// all actions registered after this call will be staged
-  /// Better use the RAII interface as registrationLock()
-  void pushDLRegistration();
-  /// finish registration
-  /// all actions that were staged will be removed.
-  /// Better use the RAII interface as registrationLock()
-  void popDLRegistration() noexcept;
+class ActionRegister:
+  public RegisterBase<ActionRegister,ActionRegisterPointers> {
+
+  typedef ActionRegisterPointers::creator_pointer creator_pointer;
+  typedef ActionRegisterPointers::keywords_pointer keywords_pointer;
+  typedef ActionRegisterPointers Pointers;
+
 public:
-  struct ID {
-    Pointers* ptr{nullptr};
-  };
-/// Register a new class.
-/// \param key The name of the directive to be used in the input file
-/// \param cp A pointer to a function which creates an object of that class
-/// \param kp A pointer to a function which returns the allowed keywords
   ID add(std::string key,creator_pointer cp,keywords_pointer kp);
-/// Verify if a directive is present in the register
-  bool check(const std::string & action);
-  bool check(const std::vector<void*> & images,const std::string & action);
 /// Create an Action of the type indicated in the options
 /// \param ao object containing information for initialization, such as the full input line, a pointer to PlumedMain, etc
   std::unique_ptr<Action> create(const ActionOptions&ao);
@@ -93,27 +66,7 @@ public:
   bool getKeywords( const std::string& action, Keywords& keys );
 /// Print out a template command for an action
   bool printTemplate(const std::string& action, bool include_optional);
-  void remove(ID id);
-/// Get a list of action names
-  std::vector<std::string> getActionNames() const ;
-  ~ActionRegister();
-  /// complete registration
-  /// all staged actions will be enabled
-  /// Should be called after dlopen has been completed correctly.
-  void completeRegistration(void*handle);
-
-  /// small class to manage registration lock
-  class RegistrationLock {
-    ActionRegister* ar=nullptr;
-  public:
-    RegistrationLock(ActionRegister* ar);
-    RegistrationLock(const RegistrationLock&) = delete;
-    RegistrationLock(RegistrationLock&& other) noexcept;
-    ~RegistrationLock() noexcept;
-  };
-
-  /// return a registration lock
-  RegistrationLock registrationLock();
+  std::vector<std::string> getActionNames() const;
 };
 
 /// Function returning a reference to the ActionRegister.
@@ -122,8 +75,6 @@ public:
 /// a static ActionRegister which is built the first time the function is called.
 /// In this manner, it is always initialized before it's used
 ActionRegister& actionRegister();
-
-std::ostream & operator<<(std::ostream &log,const ActionRegister&ar);
 
 template<typename T>
 inline constexpr bool isActionType = std::is_base_of<Action, T>::value;
