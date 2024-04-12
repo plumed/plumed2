@@ -260,42 +260,89 @@ struct Kernel :
 namespace benchDistributions {
 ///Acts as a template for any distribution
 struct AtomDistribution {
-  virtual void operator()(std::vector<Vector>& posToUpdate, unsigned, generator&)=0;
+  virtual void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, generator&)=0;
+  virtual void box(std::vector<double>& box, unsigned /*natoms*/, unsigned /*step*/, generator&) {
+    std::fill(box.begin(), box.end(),0);
+  };
 };
 
-struct theLine:AtomDistribution {
-  void operator()(std::vector<Vector>& posToUpdate, unsigned step, generator&) override {
+struct theLine:public AtomDistribution {
+  void positions(std::vector<Vector>& posToUpdate, unsigned step, generator&) override {
     std::generate(posToUpdate.begin(),posToUpdate.end(),[j=0u,step]() {
       return Vector(step*j, step*j+1, step*j+2);
     });
   }
 };
 
-struct uniformSphere:AtomDistribution {
-  void operator()(std::vector<Vector>& posToUpdate, unsigned step, generator& rng) override {
-    constexpr double rmin=0.0;
-    constexpr double rminCub =rmin*rmin*rmin;
-    //giving more or less a cubic udm of volume for each atom: V=nat
-    const double rmaxCub= (3.0/(4.0*PLMD::pi)) * posToUpdate.size();
-    using realDistr = std::uniform_real_distribution<double>;
-    realDistr rndRho (0.0,  (rmaxCub-rminCub));
-    realDistr rndTheta (-1, 1.); //(goes in 1-2*rnd(0,1)
-    realDistr rndPhi (0, 2.0 * PLMD::pi) ;
-
-    std::generate(posToUpdate.begin(),posToUpdate.end(),[&]() {
-      double rho  = std::cbrt (rminCub + rndRho (rng));
-      double theta=std::acos (rndTheta (rng));
-      double phi  = rndPhi (rng);
-      return Vector (
-               rho * sin (theta) * cos (phi),
-               rho * sin (theta) * sin (phi),
-               rho * cos (theta));
-    });
+class UniformSphericalVector {
+  using realDistr = std::uniform_real_distribution<double>;
+  realDistr rndRho;
+  realDistr rndTheta;
+  realDistr rndPhi;
+public:
+  //assuming rmin=0
+  UniformSphericalVector(const double rmax):
+    rndRho (0.0,  (rmax*rmax*rmax/*-rminCub*/)),
+    rndTheta (-1.0, 1.0),
+    rndPhi (0.0, 2.0 * PLMD::pi) {}
+  PLMD::Vector operator()(generator& rng) {
+    double rho = std::cbrt (/*rminCub +*/ rndRho (rng));
+    double theta =std::acos (rndTheta (rng));
+    double phi = rndPhi (rng);
+    return Vector (
+             rho * sin (theta) * cos (phi),
+             rho * sin (theta) * sin (phi),
+             rho * cos (theta));
   }
 };
 
-struct uniformCube:AtomDistribution {
-  void operator()(std::vector<Vector>& posToUpdate, unsigned step, generator& rng) override {
+struct uniformSphere:public AtomDistribution {
+  void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, generator& rng) override {
+
+    //giving more or less a cubic udm of volume for each atom: V=nat
+    const double rmax= std::cbrt ((3.0/(4.0*PLMD::pi)) * posToUpdate.size());
+
+    UniformSphericalVector usv(rmax);
+    std::generate(posToUpdate.begin(),posToUpdate.end(),[&]() {
+      return usv (rng);
+    });
+  }
+  void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, generator&) override {
+    const double rmax= 2.0*std::cbrt((3.0/(4.0*PLMD::pi)) * natoms);
+    box[0]=rmax; box[1]=0.0;  box[2]=0.0;
+    box[3]=0.0;  box[4]=rmax; box[5]=0.0;
+    box[6]=0.0;  box[7]=0.0;  box[8]=rmax;
+
+  }
+};
+
+struct twoGlobs: public AtomDistribution {
+  virtual void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, generator&rng) {
+    //I am using two unigform spheres and 2V=n
+    const double rmax= std::cbrt ((3.0/(8.0*PLMD::pi)) * posToUpdate.size());
+    std::uniform_int_distribution<int> whichone(0,1);
+    UniformSphericalVector usv(rmax);
+    std::array<Vector,2> centers{
+      PLMD::Vector{0.0,0.0,0.0},
+//so they do not overlap
+      PLMD::Vector{2.0*rmax,2.0*rmax,2.0*rmax}
+    };
+    std::generate(posToUpdate.begin(),posToUpdate.end(),[&]() {
+      return usv (rng) + centers[whichone(rng)];
+    });
+  }
+
+  virtual void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, generator&) {
+
+    const double rmax= 4.0 * std::cbrt ((3.0/(8.0*PLMD::pi)) * natoms);
+    box[0]=rmax; box[1]=0.0;  box[2]=0.0;
+    box[3]=0.0;  box[4]=rmax; box[5]=0.0;
+    box[6]=0.0;  box[7]=0.0;  box[8]=rmax;
+  };
+};
+
+struct uniformCube:public AtomDistribution {
+  void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, generator& rng) override {
     //giving more or less a cubic udm of volume for each atom: V = nat
     const double rmax = std::cbrt(static_cast<double>(posToUpdate.size()));
     using realDistr = std::uniform_real_distribution<double>;
@@ -305,7 +352,16 @@ struct uniformCube:AtomDistribution {
       return Vector (rndR(rng),rndR(rng),rndR(rng));
     });
   }
+  void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, generator&) override {
+    //+0.05 to avoid overlap
+    const double rmax= std::cbrt(natoms)+0.05;
+    box[0]=rmax; box[1]=0.0;  box[2]=0.0;
+    box[3]=0.0;  box[4]=rmax; box[5]=0.0;
+    box[6]=0.0;  box[7]=0.0;  box[8]=rmax;
+
+  }
 };
+
 } //namespace  benchDistributions
 class Benchmark:
   public CLTool
@@ -526,12 +582,12 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
       distribution = std::make_unique<benchDistributions::theLine>();
     } else if (atomicDistr == "cube") {
       distribution = std::make_unique<benchDistributions::uniformCube>();
-    } else if (atomicDistr == "line") {
+    } else if (atomicDistr == "sphere") {
       distribution = std::make_unique<benchDistributions::uniformSphere>();
+    } else if (atomicDistr == "globs") {
+      distribution = std::make_unique<benchDistributions::twoGlobs>();
     }
   }
-
-
 
   const auto initial_time=std::chrono::high_resolution_clock::now();
 
@@ -577,7 +633,8 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
 
   for(int step=0; nf<0 || step<nf; ++step) {
     std::shuffle(kernels_ptr.begin(),kernels_ptr.end(),rng);
-    (*distribution)(pos,step,rng);
+    distribution->positions(pos,step,rng);
+    distribution->box(cell,natoms,step,rng);
     double* pos_ptr;
     double* for_ptr;
     double* charges_ptr;
