@@ -257,14 +257,13 @@ struct Kernel :
   }
 };
 
+namespace benchDistributions {
 ///Acts as a template for any distribution
 struct AtomDistribution {
-  using ForwardIt = std::vector<Vector>::iterator;
   virtual void operator()(std::vector<Vector>& posToUpdate, unsigned, generator&)=0;
 };
 
 struct theLine:AtomDistribution {
-  using ForwardIt= AtomDistribution::ForwardIt;
   void operator()(std::vector<Vector>& posToUpdate, unsigned step, generator&) override {
     std::generate(posToUpdate.begin(),posToUpdate.end(),[j=0u,step]() {
       return Vector(step*j, step*j+1, step*j+2);
@@ -272,11 +271,46 @@ struct theLine:AtomDistribution {
   }
 };
 
+struct uniformSphere:AtomDistribution {
+  void operator()(std::vector<Vector>& posToUpdate, unsigned step, generator& rng) override {
+    constexpr double rmin=0.0;
+    constexpr double rminCub =rmin*rmin*rmin;
+    //giving more or less a cubic udm of volume for each atom: V=nat
+    const double rmaxCub= (3.0/(4.0*PLMD::pi)) * posToUpdate.size();
+    using realDistr = std::uniform_real_distribution<double>;
+    realDistr rndRho (0.0,  (rmaxCub-rminCub));
+    realDistr rndTheta (-1, 1.); //(goes in 1-2*rnd(0,1)
+    realDistr rndPhi (0, 2.0 * PLMD::pi) ;
 
+    std::generate(posToUpdate.begin(),posToUpdate.end(),[&]() {
+      double rho  = std::cbrt (rminCub + rndRho (rng));
+      double theta=std::acos (rndTheta (rng));
+      double phi  = rndPhi (rng);
+      return Vector (
+               rho * sin (theta) * cos (phi),
+               rho * sin (theta) * sin (phi),
+               rho * cos (theta));
+    });
+  }
+};
+
+struct uniformCube:AtomDistribution {
+  void operator()(std::vector<Vector>& posToUpdate, unsigned step, generator& rng) override {
+    //giving more or less a cubic udm of volume for each atom: V = nat
+    const double rmax = std::cbrt(static_cast<double>(posToUpdate.size()));
+    using realDistr = std::uniform_real_distribution<double>;
+    realDistr rndR (0.0,  rmax);
+
+    std::generate(posToUpdate.begin(),posToUpdate.end(),[&]() {
+      return Vector (rndR(rng),rndR(rng),rndR(rng));
+    });
+  }
+};
+} //namespace  benchDistributions
 class Benchmark:
   public CLTool
 {
-  std::unique_ptr<AtomDistribution> distribution;
+  std::unique_ptr<benchDistributions::AtomDistribution> distribution;
 public:
   static void registerKeywords( Keywords& keys );
   explicit Benchmark(const CLToolOptions& co );
@@ -296,6 +330,7 @@ void Benchmark::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","--nsteps","2000","number of steps of MD to perform (-1 means forever)");
   keys.add("compulsory","--maxtime","-1","maximum number of seconds (-1 means forever)");
   keys.add("compulsory","--sleep","0","number of seconds of sleep, mimicking MD calculation");
+  keys.add("compulsory","--atom-distribution","line","the kind of possible atomic displacement at each step");
   keys.addFlag("--domain-decomposition",false,"simulate domain decomposition, implies --shuffle");
   keys.addFlag("--shuffled",false,"reshuffle atoms");
 }
@@ -485,7 +520,18 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
 
   std::vector<int> shuffled_indexes;
 
-  distribution = std::make_unique<theLine>();
+  { std::string atomicDistr;
+    parse("--atom-distribution",atomicDistr);
+    if(atomicDistr == "line") {
+      distribution = std::make_unique<benchDistributions::theLine>();
+    } else if (atomicDistr == "cube") {
+      distribution = std::make_unique<benchDistributions::uniformCube>();
+    } else if (atomicDistr == "line") {
+      distribution = std::make_unique<benchDistributions::uniformSphere>();
+    }
+  }
+
+
 
   const auto initial_time=std::chrono::high_resolution_clock::now();
 
