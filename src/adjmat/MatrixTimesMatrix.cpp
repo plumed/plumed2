@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithMatrix.h"
-#include "AdjacencyMatrixBase.h"
 #include "core/ActionRegister.h"
 
 //+PLUMEDOC MCOLVAR MATRIX_PRODUCT
@@ -101,8 +100,8 @@ void MatrixTimesMatrix::prepare() {
 
 void MatrixTimesMatrix::getAdditionalTasksRequired( ActionWithVector* action, std::vector<unsigned>& atasks ) {
 
-  AdjacencyMatrixBase* adj=dynamic_cast<AdjacencyMatrixBase*>( getPntrToArgument(0)->getPntrToAction() );
-  if( !adj ) return;
+  ActionWithMatrix* adj=dynamic_cast<ActionWithMatrix*>( getPntrToArgument(0)->getPntrToAction() );
+  if( !adj->isAdjacencyMatrix() ) return;
   adj->retrieveAtoms(); adj->getAdditionalTasksRequired( action, atasks );
 }
 
