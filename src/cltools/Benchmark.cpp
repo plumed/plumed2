@@ -341,7 +341,8 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
     generator deleterRng;
 
     const auto size=f->back().timings.size();
-    constexpr int bootstrapIterations=200;
+    //B are the bootstrap iterations
+    constexpr int B=200;
     const size_t numblocks=size;
     // for some reasons, blocked bootstrap underestimates error
     // For now I keep it off. If I remove it, the code below could be simplified
@@ -376,10 +377,12 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
 
         std::vector<std::vector<double>> ratios(f->size());
         for(auto & r : ratios) {
-          r.resize(bootstrapIterations);
+          //B are the bootstrap iterations
+          r.resize(B);
         }
 
-        for(unsigned b=0; b<bootstrapIterations; b++) {
+        //B are the bootstrap iterations
+        for(unsigned b=0; b<B; b++) {
           for(auto & c : choice) c=distrib(deleterRng);
           long long int reference=0;
           for(auto & c : choice) {
@@ -405,8 +408,9 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
               sum+=r;
               sum2+=r*r;
             }
-            it->comparative_timing=sum/bootstrapIterations;
-            it->comparative_timing_error=std::sqrt(sum2/bootstrapIterations-sum*sum/(bootstrapIterations*bootstrapIterations));
+            //B are the bootstrap iterations
+            it->comparative_timing=sum/B;
+            it->comparative_timing_error=std::sqrt(sum2/B-sum*sum/(B*B));
           }
         }
 
