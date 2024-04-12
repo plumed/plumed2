@@ -315,17 +315,19 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   // perform comparative analysis
   // ensure that kernels vector is destroyed from last to first element upon exit
   auto kernels_deleter=[&log](auto f) {
-    if(!f) return;
-    if(f->empty()) return;
+    if(!f)
+      return;
+    if(f->empty())
+      return;
     generator rng;
 
-    auto size=f->back().timings.size();
+    const auto size=f->back().timings.size();
     constexpr int B=200;
-    auto numblocks=size;
+    const size_t numblocks=size;
     // for some reasons, blocked bootstrap underestimates error
     // For now I keep it off. If I remove it, the code below could be simplified
     // if(numblocks>20) numblocks=20;
-    auto blocksize=size/numblocks;
+    const auto blocksize=size/numblocks;
 
     if(f->size()<2) {
       log<<"Single run, skipping comparative analysis\n";
@@ -341,10 +343,10 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
 
         int i=0;
         for(auto it = f->rbegin(); it != f->rend(); ++it) {
-          int l=0;
+          size_t l=0;
           blocks[i].assign(numblocks,0);
-          for(auto j=0; j<numblocks; j++) {
-            for(auto k=0; k<blocksize; k++) {
+          for(auto j=0ULL; j<numblocks; j++) {
+            for(auto k=0ULL; k<blocksize; k++) {
               plumed_assert(l<it->timings.size());
               blocks[i][j]+=it->timings[l];
               l++;
@@ -354,17 +356,23 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
         }
 
         std::vector<std::vector<double>> ratios(f->size());
-        for(auto & r : ratios) r.resize(B);
+        for(auto & r : ratios){
+          r.resize(B);
+          }
 
         for(unsigned b=0; b<B; b++) {
           for(auto & c : choice) c=distrib(rng);
           long long int reference=0;
-          for(auto & c : choice) reference+=blocks[0][c];
-          for(auto i=0; i<blocks.size(); i++) {
+          for(auto & c : choice) {
+            reference+=blocks[0][c];
+          }
+          for(auto i=0ULL; i<blocks.size(); i++) {
             long long int estimate=0;
             // this would lead to separate bootstrap samples for each estimate:
-            // for(auto & c : choice) c=distrib(rng);
-            for(auto & c : choice) estimate+=blocks[i][c];
+            // for(auto & c : choice){c=distrib(rng);}
+            for(auto & c : choice) {
+              estimate+=blocks[i][c];
+            }
             ratios[i][b]=double(estimate)/double(reference);
           }
         }
@@ -453,7 +461,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
 
   std::vector<int> shuffled_indexes;
 
-  auto initial_time=std::chrono::high_resolution_clock::now();
+  const auto initial_time=std::chrono::high_resolution_clock::now();
 
   for(auto & k : kernels) {
     auto & p(k.handle);
@@ -506,14 +514,15 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
     int n_local_atoms;
 
     if(domain_decomposition) {
-      auto nproc=pc.Get_size();
-      auto nn=natoms/nproc;
-      auto excess=natoms%nproc;
-      auto myrank=pc.Get_rank();
+      const auto nproc=pc.Get_size();
+      const auto nn=natoms/nproc;
+      //using int to remove warning, MPI don't work with unsigned
+      int excess=natoms%nproc;
+      const auto myrank=pc.Get_rank();
       auto shift=0;
       n_local_atoms=nn;
       if(myrank<excess) n_local_atoms+=1;
-      for(unsigned i=0; i<myrank; i++) {
+      for(int i=0; i<myrank; i++) {
         shift+=nn;
         if(i<excess) shift+=1;
       }
@@ -577,7 +586,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
     auto elapsed=std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-initial_time).count();
     if(part==0) part=1;
     if(part<2) {
-      if((maxtime>0 && elapsed>(long long int)(0.2*1e9*maxtime)) || (nf>0 && step+1>=nf/5) || (maxtime<0 & nf<0 && step+1>=100)) {
+      if((maxtime>0 && elapsed>(long long int)(0.2*1e9*maxtime)) || (nf>0 && step+1>=nf/5) || (maxtime<0 && nf<0 && step+1>=100)) {
         part=2;
         log<<"Warm-up completed\n";
       }
