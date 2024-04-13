@@ -1,4 +1,4 @@
-USE=colvar core tools matrixtools gridtools generic valtools function
+USE=colvar core tools matrixtools generic valtools function
 
 #generic makefile
 include ../maketools/make.module
