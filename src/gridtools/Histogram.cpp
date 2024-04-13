@@ -191,7 +191,7 @@ DUMPGRID GRID=hh FILE=histo STRIDE=100000
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace analysis {
+namespace gridtools {
 
 class Histogram : public ActionShortcut {
 public:

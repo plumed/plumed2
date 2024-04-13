@@ -4,7 +4,6 @@
 !/Makefile
 !/README
 !/adjmat
-!/analysis
 !/annfunc
 !/asmjit
 !/bias
@@ -26,6 +25,7 @@
 !/gridtools
 !/imd
 !/isdb
+!/landmarks
 !/lapack
 !/lepton
 !/logmfd
@@ -64,6 +64,7 @@
 !/s2cm
 !/pytorch
 !/membranefusion
+!/wham
 
 # And just ignore these files
 *.xxd

@@ -32,7 +32,7 @@ Do a voronoi analysis
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace adjmat {
+namespace matrixtools {
 
 class Voronoi : public ActionWithMatrix {
 public:

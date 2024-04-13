@@ -35,7 +35,7 @@ Create a vector that contains the copies of the input quantities from all replic
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace analysis {
+namespace generic {
 
 class GatherReplicas :
   public ActionWithValue,

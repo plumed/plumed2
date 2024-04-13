@@ -33,7 +33,7 @@ Select a set of landmarks using farthest point sampling.
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace analysis {
+namespace landmarks {
 
 class FarthestPointSampling : public matrixtools::MatrixOperationBase {
 private:

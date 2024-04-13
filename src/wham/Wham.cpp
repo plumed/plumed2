@@ -75,7 +75,7 @@ This observation is important as it is the basis of the binless formulation of W
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace analysis {
+namespace wham {
 
 class Wham :
   public ActionWithValue,

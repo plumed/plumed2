@@ -35,7 +35,7 @@ This allows you to convert a trajectory and a dissimilarity matrix into a dissim
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace analysis {
+namespace landmarks {
 
 class CollectFrames : public ActionShortcut {
 private:

@@ -26,7 +26,7 @@
 #include "core/PlumedMain.h"
 
 namespace PLMD {
-namespace analysis {
+namespace generic {
 
 //+PLUMEDOC PRINTANALYSIS COMMITTOR
 /*

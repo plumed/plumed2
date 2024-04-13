@@ -88,7 +88,7 @@ PRINT ARG=t1a FILE=colvar STRIDE=100
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace analysis {
+namespace generic {
 
 class Average : public ActionShortcut {
 public:

@@ -25,7 +25,6 @@
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
-#include "gridtools/ActionWithGrid.h"
 
 //+PLUMEDOC GRIDCALC ACCUMULATE
 /*
@@ -37,7 +36,7 @@ Sum the elements of this value over the course of the trajectory
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace analysis {
+namespace generic {
 
 class Accumulate :
   public ActionWithValue,

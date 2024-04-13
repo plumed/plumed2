@@ -23,7 +23,7 @@
 #include "core/ActionRegister.h"
 
 namespace PLMD {
-namespace analysis {
+namespace wham {
 
 //+PLUMEDOC REWEIGHTING WHAM_WEIGHTS
 /*

@@ -34,7 +34,7 @@ The log-exp-sum trick is used here
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace analysis {
+namespace landmarks {
 
 class LogSumExp : public ActionShortcut {
 private:

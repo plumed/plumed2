@@ -54,7 +54,7 @@ Select a of landmarks from a large set of configurations using farthest point sa
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace analysis {
+namespace landmarks {
 
 class LandmarkSelection : public ActionShortcut {
 public:

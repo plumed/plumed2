@@ -25,7 +25,6 @@
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
-#include "gridtools/ActionWithGrid.h"
 
 //+PLUMEDOC ANALYSIS COLLECT
 /*
@@ -37,7 +36,7 @@ Collect data from the trajectory for later analysis
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace analysis {
+namespace generic {
 
 class Collect :
   public ActionWithValue,

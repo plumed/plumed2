@@ -25,7 +25,7 @@
 #include "tools/Random.h"
 
 namespace PLMD {
-namespace analysis {
+namespace generic {
 
 //+PLUMEDOC DIMRED CREATE_MASK
 /*
