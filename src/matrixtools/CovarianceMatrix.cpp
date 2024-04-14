@@ -32,7 +32,7 @@ Calculate a covariance matix
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace adjmat {
+namespace matrixtools {
 
 class CovarianceMatrix : public ActionShortcut {
 public:
