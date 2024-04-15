@@ -42,10 +42,19 @@ struct CLToolRegisterPointers {
 
 /// Same as ActionRegister, but for CLTools
 class CLToolRegister :
-  public RegisterBase<CLToolRegister,CLToolRegisterPointers> {
+  public RegisterBase<CLToolRegisterPointers> {
   typedef CLToolRegisterPointers::creator_pointer creator_pointer;
   typedef CLToolRegisterPointers::keywords_pointer keywords_pointer;
   typedef CLToolRegisterPointers Pointers;
+
+  // this is necessary to avoid warnings on getKeys overload.
+  // notice that RegisterBase<CLToolRegisterPointers>::getKeys returns
+  // the list of keys (here: CLTools). conversely
+  // CLToolRegister::getKeys(std::string name) returns the options
+  // associated to CLTool name.
+  // We hide the former here, which is actually implemented by list()
+  // not to break existing code.
+  using RegisterBase<CLToolRegisterPointers>::getKeys;
 
 public:
 /// Register a new class.

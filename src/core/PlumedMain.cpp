@@ -1255,8 +1255,15 @@ void PlumedMain::load(const std::string& fileName) {
       log<<"Executing: "<<cmd;
       if(comm.Get_size()>0) log<<" (only on master node)";
       log<<"\n";
+
+      // On MPI process (intracomm), we use Get_rank to make sure a single process does the compilation
+      // Processes from multiple replicas might simultaneously do the compilation.
       if(comm.Get_rank()==0) {
         static Tools::CriticalSectionWithKey<std::string> section;
+        // This is only locking commands that are running with identical arguments.
+        // It is not necessary for correctness (a second mklib would just result in a no op since
+        // the library is already there, even if running simultaneously).
+        // It however decreases the system load if many threads are used.
         auto s=section.startStop(cmd);
         int ret=std::system(cmd.c_str());
         if(ret!=0) plumed_error() <<"An error happened while executing command "<<cmd<<"\n";
@@ -1265,15 +1272,21 @@ void PlumedMain::load(const std::string& fileName) {
       base="./"+base;
     }
     libName=base+"."+config::getSoExt();
+    // If we have multiple threads (each holding a Plumed object), each of them
+    // will load the library, but each of them will only see actions registered
+    // from the owned library
     void *p=dlloader.load(libName);
     if(!p) {
       plumed_error()<<"I cannot load library " << fileName << " " << dlloader.error();
     }
     log<<"Loading shared library "<<libName.c_str()<<" at "<<p<<"\n";
-    log<<"Here is the new list of available actions\n";
-    log<<actionRegister();
-  } else
+    log<<"Here is the list of new actions\n";
+    log<<"\n";
+    for(const auto & a : actionRegister().getKeysWithDLHandle(p)) log<<a<<"\n";
+    log<<"\n";
+  } else {
     plumed_error()<<"While loading library "<< fileName << " loading was not enabled, please check if dlopen was found at configure time";
+  }
 }
 
 void PlumedMain::resetInputs() {

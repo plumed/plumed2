@@ -26,53 +26,78 @@
 #include <string>
 #include <map>
 #include <memory>
-#include <mutex>
 #include <iostream>
 #include <vector>
 #include <algorithm>
 
 namespace PLMD {
 
+/// Base class, with type independent information.
+/// Actual registers should inherit through the RegisterBase class below
+class Register {
+  /// Initialize registration - only used by registrationLock()
+  static void pushDLRegistration();
+  /// Finalize registration - only used by registrationLock()
+  static void popDLRegistration() noexcept;
+
+protected:
+  /// Internal tool to format image addresses
+  static std::string imageToString(void* image);
+  /// Check if we are in a dlopen section
+  static bool isDLRegistering() noexcept;
+  /// Save all staged objects from a register
+  virtual void completeRegistration(void* image)=0;
+  /// Clear staged objects.
+  /// Should be used when leaving the dlopen section to remove
+  /// any dangling object.
+  virtual void clearStaged() noexcept =0;
+  /// Get all registered keys.
+  /// These are the keys in the map, not the plumed keywords!
+  virtual std::vector<std::string> getKeys() const =0;
+
+public:
+  /// Constructor.
+  /// This keeps track of all created instances.
+  Register();
+  /// Destructor.
+  virtual ~Register() noexcept;
+  /// Disable move
+  Register(Register &&) = delete;
+  /// Disable copy
+  Register(const Register &) = delete;
+
+  /// Small class to manage registration lock
+  class RegistrationLock {
+    bool active;
+  public:
+    RegistrationLock();
+    RegistrationLock(const RegistrationLock&) = delete;
+    RegistrationLock(RegistrationLock&& other) noexcept;
+    ~RegistrationLock() noexcept;
+  };
+
+  /// return a registration lock
+  static RegistrationLock registrationLock();
+
+  /// Save all staged objects in all registers
+  static void completeAllRegistrations(void* image);
+
+  /// Get only keys registered specifically by a given image
+  std::vector<std::string> getKeysWithDLHandle(void* handle) const;
+
+  friend std::ostream & operator<<(std::ostream &log,const Register &reg);
+};
+
 /// General register.
-template<class Register,class Content>
-class RegisterBase {
+/// This class provide a generic implementation based on the content of the Register
+template<class Content>
+class RegisterBase :
+  public Register {
 /// Main register map
   std::map<std::string,std::unique_ptr<Content>> m;
 /// Map of staged keys
   std::map<std::string,std::unique_ptr<Content>> staged_m;
-/// Mutex to avoid simultaneous registrations from multiple threads
-/// It is a recursive mutex so that recursive calls will be detected and throw.
-/// (a non recursive mutex would lead to a lock instead)
-  std::recursive_mutex registeringMutex;
-  unsigned registeringCounter=0;
 
-  /// initiate registration
-  /// all keys registered after this call will be staged
-  /// Better use the RAII interface as registrationLock()
-  void pushDLRegistration() {
-    registeringMutex.lock();
-    if(registeringCounter>0) {
-      registeringMutex.unlock();
-      plumed_error()<<"recursive registrations are technically possible but disabled at this stage";
-    }
-    registeringCounter++;
-  }
-
-  /// finish registration
-  /// all keys that were staged will be removed.
-  /// Better use the RAII interface as registrationLock()
-  void popDLRegistration() noexcept {
-    staged_m.clear();
-    registeringCounter--;
-    registeringMutex.unlock();
-  }
-
-  /// Internal tool
-  static std::string imageToString(void* image) {
-    std::stringstream ss;
-    ss << image;
-    return ss.str();
-  }
 public:
   struct ID {
     Content* ptr{nullptr};
@@ -80,124 +105,134 @@ public:
 /// Register a new class.
 /// \param key The name of the directive to be used in the input file
 /// \param content The registered content
-  ID add(std::string key,Content content) {
+/// \param ID A returned ID that can be used to remove the directive later
+  ID add(std::string key,Content content);
 
-    auto ptr=std::make_unique<Content>(content);
-    ID id{ptr.get()};
-    if(registeringCounter) {
-      plumed_assert(!staged_m.count(key)) << "cannot stage key twice with the same name "<< key<<"\n";
-      staged_m.insert({key, std::move(ptr)});
-    } else {
-      plumed_assert(!m.count(key)) << "cannot register key twice with the same name "<< key<<"\n";
-      m.insert({key, std::move(ptr)});
-    }
-    return id;
-  }
+/// Verify if a key is present in the register, accessing to registered images
+  bool check(const std::vector<void*> & images,const std::string & key) const;
 
-/// Verify if a key is present in the register
+/// Verify if a key is present in the register, only considering the default image
+  bool check(const std::string & key) const;
 
-  bool check(const std::vector<void*> & images,const std::string & key) const {
-    if(m.count(key)>0) return true;
-    for(auto image : images) {
-      std::string k=imageToString(image)+":"+key;
-      if(m.count(k)>0) return true;
-    }
-    return false;
-  }
+/// Return the content associated to a key in the register, accessing to registerd images
+  const Content & get(const std::vector<void*> & images,const std::string & key) const;
 
-  bool check(const std::string & key) const {
-    return m.count(key)>0;
-  }
+/// Return the content associated to a key in the register, only considering the default image
+  const Content & get(const std::string & key) const;
 
-  const Content & get(const std::vector<void*> & images,const std::string & key) const {
-    for(auto image = images.rbegin(); image != images.rend(); ++image) {
-      auto qualified_key=imageToString(*image) + ":" + key;
-      if(m.count(qualified_key)>0) return *(m.find(qualified_key)->second);
-    }
-    plumed_assert(m.count(key)>0);
-    return *(m.find(key)->second);
-  }
+/// Remove a registered keyword.
+/// Use the ID returned by add().
+  void remove(ID id);
 
-  const Content & get(const std::string & key) const {
-    plumed_assert(m.count(key)>0);
-    return *(m.find(key)->second);
-  }
-
-
-  void remove(ID id) {
-    if(id.ptr) {
-      for(auto p=m.begin(); p!=m.end(); ++p) {
-        if(p->second.get()==id.ptr) {
-          m.erase(p); break;
-        }
-      }
-    }
-  }
 /// Get a list of keys
-  std::vector<std::string> getKeys() const {
-    std::vector<std::string> s;
-    for(const auto & it : m) s.push_back(it.first);
-    std::sort(s.begin(),s.end());
-    return s;
-  }
+/// Notice that these are the keys in the map, not the plumed keywords!
+/// Also notice that this list includes keys from all images, including the
+/// textual version of the image void*
+  std::vector<std::string> getKeys() const override;
 
-  ~RegisterBase() noexcept {
-    if(m.size()>0) {
-      std::string names="";
-      for(const auto & p : m) names+=p.first+" ";
-      std::cerr<<"WARNING: Directive "+ names +" has not been properly unregistered. This might lead to memory leak!!\n";
-    }
-  }
+  ~RegisterBase() noexcept override;
+
   /// complete registration
   /// all staged keys will be enabled
   /// Should be called after dlopen has been completed correctly.
-  void completeRegistration(void*handle) {
-    for (auto iter = staged_m.begin(); iter != staged_m.end(); ) {
-      auto key = imageToString(handle) + ":" + iter->first;
-      plumed_assert(!m.count(key)) << "cannot registed key twice with the same name "<< key<<"\n";
-      m[key] = std::move(iter->second);
-      // Since we've moved out the value, we can safely erase the element from the original map
-      // This also avoids invalidating our iterator since erase returns the next iterator
-      iter = staged_m.erase(iter);
-    }
-    plumed_assert(staged_m.empty());
-  }
+  void completeRegistration(void*handle) override;
 
-  /// small class to manage registration lock
-  class RegistrationLock {
-    RegisterBase* reg{nullptr};
-  public:
-    RegistrationLock(RegisterBase* reg) :
-      reg(reg)
-    {
-      plumed_assert(reg);
-      reg->pushDLRegistration();
-    }
-    RegistrationLock(const RegistrationLock&) = delete;
-    RegistrationLock(RegistrationLock&& other) noexcept:
-      reg(other.reg)
-    {
-      other.reg=nullptr;
-    }
-    ~RegistrationLock() noexcept {
-      if(reg) reg->popDLRegistration();
-    }
-  };
+  void clearStaged() noexcept override;
 
-  /// return a registration lock
-  RegistrationLock registrationLock() {
-    return RegistrationLock(this);
-  }
 };
 
+template<class Content>
+typename RegisterBase<Content>::ID RegisterBase<Content>::add(std::string key,Content content) {
 
-template<class Register,class Content>
-std::ostream & operator<<(std::ostream &log,const RegisterBase<Register,Content> &reg) {
-  std::vector<std::string> s(reg.getKeys());
-  for(unsigned i=0; i<s.size(); i++) log<<"  "<<s[i]<<"\n";
-  return log;
+  auto ptr=std::make_unique<Content>(content);
+  ID id{ptr.get()};
+  if(isDLRegistering()) {
+    plumed_assert(!staged_m.count(key)) << "cannot stage key twice with the same name "<< key<<"\n";
+    staged_m.insert({key, std::move(ptr)});
+  } else {
+    plumed_assert(!m.count(key)) << "cannot register key twice with the same name "<< key<<"\n";
+    m.insert({key, std::move(ptr)});
+  }
+  return id;
+}
+std::ostream & operator<<(std::ostream &log,const Register &reg);
+
+template<class Content>
+bool RegisterBase<Content>::check(const std::vector<void*> & images,const std::string & key) const {
+  if(m.count(key)>0) return true;
+  for(auto image : images) {
+    std::string k=imageToString(image)+":"+key;
+    if(m.count(k)>0) return true;
+  }
+  return false;
 }
 
+template<class Content>
+bool RegisterBase<Content>::check(const std::string & key) const {
+  return m.count(key)>0;
+}
+
+template<class Content>
+const Content & RegisterBase<Content>::get(const std::vector<void*> & images,const std::string & key) const {
+  for(auto image = images.rbegin(); image != images.rend(); ++image) {
+    auto qualified_key=imageToString(*image) + ":" + key;
+    if(m.count(qualified_key)>0) return *(m.find(qualified_key)->second);
+  }
+  plumed_assert(m.count(key)>0);
+  return *(m.find(key)->second);
+}
+
+template<class Content>
+const Content & RegisterBase<Content>::get(const std::string & key) const {
+  plumed_assert(m.count(key)>0);
+  return *(m.find(key)->second);
+}
+
+template<class Content>
+void RegisterBase<Content>::remove(ID id) {
+  if(id.ptr) {
+    for(auto p=m.begin(); p!=m.end(); ++p) {
+      if(p->second.get()==id.ptr) {
+        m.erase(p); break;
+      }
+    }
+  }
+}
+
+template<class Content>
+std::vector<std::string> RegisterBase<Content>::getKeys() const {
+  std::vector<std::string> s;
+  for(const auto & it : m) s.push_back(it.first);
+  std::sort(s.begin(),s.end());
+  return s;
+}
+
+template<class Content>
+RegisterBase<Content>::~RegisterBase() noexcept {
+  if(m.size()>0) {
+    std::string names="";
+    for(const auto & p : m) names+=p.first+" ";
+    std::cerr<<"WARNING: Directive "+ names +" has not been properly unregistered. This might lead to memory leak!!\n";
+  }
+}
+
+template<class Content>
+void RegisterBase<Content>::completeRegistration(void*handle) {
+  for (auto iter = staged_m.begin(); iter != staged_m.end(); ) {
+    auto key = imageToString(handle) + ":" + iter->first;
+    plumed_assert(!m.count(key)) << "cannot register key twice with the same name "<< key<<"\n";
+    m[key] = std::move(iter->second);
+    // Since we've moved out the value, we can safely erase the element from the original map
+    // This also avoids invalidating our iterator since erase returns the next iterator
+    iter = staged_m.erase(iter);
+  }
+  plumed_assert(staged_m.empty());
+}
+
+template<class Content>
+void RegisterBase<Content>::clearStaged() noexcept {
+  staged_m.clear();
+}
 }
 
 #endif

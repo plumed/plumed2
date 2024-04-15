@@ -44,16 +44,14 @@ bool DLLoader::installed() {
 
 void* DLLoader::load(const std::string&s) {
 #ifdef __PLUMED_HAS_DLOPEN
-  auto lockerAction=actionRegister().registrationLock();
-  auto lockerCLTool=cltoolRegister().registrationLock();
+  auto lockerAction=Register::registrationLock();
   void* p=dlopen(s.c_str(),RTLD_NOW|RTLD_LOCAL);
   if(!p) {
     lastError=dlerror();
   } else {
     lastError="";
     handles.push_back(p);
-    actionRegister().completeRegistration(p);
-    cltoolRegister().completeRegistration(p);
+    Register::completeAllRegistrations(p);
   }
   return p;
 #else

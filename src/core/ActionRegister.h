@@ -48,7 +48,7 @@ struct ActionRegisterPointers {
 /// Actions should be registered here at the beginning of execution
 ///
 class ActionRegister:
-  public RegisterBase<ActionRegister,ActionRegisterPointers> {
+  public RegisterBase<ActionRegisterPointers> {
 
   typedef ActionRegisterPointers::creator_pointer creator_pointer;
   typedef ActionRegisterPointers::keywords_pointer keywords_pointer;
