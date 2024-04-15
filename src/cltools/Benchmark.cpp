@@ -28,6 +28,8 @@
 #include "tools/Stopwatch.h"
 #include "tools/Log.h"
 #include "tools/DLLoader.h"
+#include "tools/Random.h"
+
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -161,8 +163,9 @@ this analysis.
 // declared in other parts of the code
 namespace {
 
-//this is a sugar for changing idea fast about the rng
+//this is a sugar for changing idea faster about the rng
 using generator = std::mt19937;
+
 std::atomic<bool> signalReceived(false);
 
 class SignalHandlerGuard {
@@ -259,45 +262,19 @@ struct Kernel :
 };
 
 namespace benchDistributions {
-///Acts as a template for any distribution
-struct AtomDistribution {
-  virtual void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, generator&)=0;
-  virtual void box(std::vector<double>& box, unsigned /*natoms*/, unsigned /*step*/, generator&) {
-    std::fill(box.begin(), box.end(),0);
-  };
-};
 
-struct theLine:public AtomDistribution {
-  void positions(std::vector<Vector>& posToUpdate, unsigned step, generator&) override {
-    auto s=posToUpdate.begin();
-    auto e=posToUpdate.end();
-    //I am using the iterators:this is slightly faster,
-    // enough to overcome the cost of the vtable that I added
-    for (unsigned i=0; s!=e; ++s,++i) {
-      *s = Vector(step*i, step*i+1, step*i+2);
-    }
-    //generate is slower
-    // std::generate(posToUpdate.begin(),posToUpdate.end(),[j=0u,step]() {
-    //   return Vector(step*j, step*j+1, step*j+2);
-    // });
-  }
-};
-
-class UniformSphericalVector {
-  using realDistr = std::uniform_real_distribution<double>;
-  realDistr rndRho;
-  realDistr rndTheta;
-  realDistr rndPhi;
+  class UniformSphericalVector {
+    //double rminCub;
+    double rCub;
+    
 public:
   //assuming rmin=0
   UniformSphericalVector(const double rmax):
-    rndRho (0.0,  (rmax*rmax*rmax/*-rminCub*/)),
-    rndTheta (-1.0, 1.0),
-    rndPhi (0.0, 2.0 * PLMD::pi) {}
-  PLMD::Vector operator()(generator& rng) {
-    double rho = std::cbrt (/*rminCub +*/ rndRho (rng));
-    double theta =std::acos (rndTheta (rng));
-    double phi = rndPhi (rng);
+    rCub (rmax*rmax*rmax/*-rminCub*/) {}
+  PLMD::Vector operator()(Random& rng) {
+    double rho = std::cbrt (/*rminCub + */rng.RandU01()*rCub);
+    double theta =std::acos (2.0*rng.RandU01() -1.0);
+    double phi = 2.0 * PLMD::pi * rng.RandU01();
     return Vector (
              rho * sin (theta) * cos (phi),
              rho * sin (theta) * sin (phi),
@@ -305,8 +282,27 @@ public:
   }
 };
 
+///Acts as a template for any distribution
+struct AtomDistribution {
+  virtual void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, Random&)=0;
+  virtual void box(std::vector<double>& box, unsigned /*natoms*/, unsigned /*step*/, Random&) {
+    std::fill(box.begin(), box.end(),0);
+  };
+};
+
+struct theLine:public AtomDistribution {
+  void positions(std::vector<Vector>& posToUpdate, unsigned step, Random&rng) override {
+    auto nat = posToUpdate.size();
+    UniformSphericalVector usv(0.5);
+    // enough to overcome the cost of the vtable that I added
+    for (unsigned i=0; i<nat; ++i) {  
+posToUpdate[i] = Vector(i, 0, 0) + usv(rng);
+    }
+  }
+};
+
 struct uniformSphere:public AtomDistribution {
-  void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, generator& rng) override {
+  void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, Random& rng) override {
 
     //giving more or less a cubic udm of volume for each atom: V=nat
     const double rmax= std::cbrt ((3.0/(4.0*PLMD::pi)) * posToUpdate.size());
@@ -321,7 +317,7 @@ struct uniformSphere:public AtomDistribution {
     }
 
   }
-  void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, generator&) override {
+  void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, Random&) override {
     const double rmax= 2.0*std::cbrt((3.0/(4.0*PLMD::pi)) * natoms);
     box[0]=rmax; box[1]=0.0;  box[2]=0.0;
     box[3]=0.0;  box[4]=rmax; box[5]=0.0;
@@ -331,10 +327,10 @@ struct uniformSphere:public AtomDistribution {
 };
 
 struct twoGlobs: public AtomDistribution {
-  virtual void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, generator&rng) {
+  virtual void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, Random&rng) {
     //I am using two unigform spheres and 2V=n
     const double rmax= std::cbrt ((3.0/(8.0*PLMD::pi)) * posToUpdate.size());
-    std::uniform_int_distribution<int> whichone(0,1);
+    
     UniformSphericalVector usv(rmax);
     std::array<Vector,2> centers{
       PLMD::Vector{0.0,0.0,0.0},
@@ -342,11 +338,14 @@ struct twoGlobs: public AtomDistribution {
       PLMD::Vector{2.0*rmax,2.0*rmax,2.0*rmax}
     };
     std::generate(posToUpdate.begin(),posToUpdate.end(),[&]() {
-      return usv (rng) + centers[whichone(rng)];
+      return usv (rng) + centers[rng.RandU01()>0.5];
     });
+    // std::generate(posToUpdate.begin(),posToUpdate.end(),[&]() {
+    //   return usv (rng) + centers[rng.RandInt(1)];
+    // });
   }
 
-  virtual void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, generator&) {
+  virtual void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, Random&) {
 
     const double rmax= 4.0 * std::cbrt ((3.0/(8.0*PLMD::pi)) * natoms);
     box[0]=rmax; box[1]=0.0;  box[2]=0.0;
@@ -356,11 +355,11 @@ struct twoGlobs: public AtomDistribution {
 };
 
 struct uniformCube:public AtomDistribution {
-  void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, generator& rng) override {
+  void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, Random& rng) override {
     //giving more or less a cubic udm of volume for each atom: V = nat
     const double rmax = std::cbrt(static_cast<double>(posToUpdate.size()));
-    using realDistr = std::uniform_real_distribution<double>;
-    realDistr rndR (0.0,  rmax);
+    
+    
 
     // std::generate(posToUpdate.begin(),posToUpdate.end(),[&]() {
     //   return Vector (rndR(rng),rndR(rng),rndR(rng));
@@ -370,10 +369,10 @@ struct uniformCube:public AtomDistribution {
     //I am using the iterators:this is slightly faster,
     // enough to overcome the cost of the vtable that I added
     for (unsigned i=0; s!=e; ++s,++i) {
-      *s = Vector (rndR(rng),rndR(rng),rndR(rng));
+      *s = Vector (rng.RandU01()*rmax,rng.RandU01()*rmax,rng.RandU01()*rmax);
     }
   }
-  void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, generator&) override {
+  void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, Random&) override {
     //+0.05 to avoid overlap
     const double rmax= std::cbrt(natoms)+0.05;
     box[0]=rmax; box[1]=0.0;  box[2]=0.0;
@@ -384,7 +383,7 @@ struct uniformCube:public AtomDistribution {
 };
 
 struct tiledSimpleCubic:public AtomDistribution {
-  void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, generator& rng) override {
+  void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, Random& rng) override {
     //Tiling the space in this way will not tests 100% the pbc, but
     //I do not think that write a spacefilling curve, like Hilbert, Peano or Morton
     //could be a good idea, in this case
@@ -403,7 +402,7 @@ struct tiledSimpleCubic:public AtomDistribution {
       }
     }
   }
-  void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, generator&) override {
+  void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, Random&) override {
     //+0.05 to avoid overlap
     const double rmax= std::ceil(std::cbrt(static_cast<double>(natoms)));;
     box[0]=rmax; box[1]=0.0;  box[2]=0.0;
@@ -466,7 +465,7 @@ Benchmark::Benchmark(const CLToolOptions& co ):
 int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
 
   generator rng; // deterministic initialization to avoid issues with MPI
-
+  PLMD::Random atomicGenerator;
   struct FileDeleter {
     void operator()(FILE*f) const noexcept {
       if(f) std::fclose(f);
@@ -691,8 +690,8 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
 
   for(int step=0; nf<0 || step<nf; ++step) {
     std::shuffle(kernels_ptr.begin(),kernels_ptr.end(),rng);
-    distribution->positions(pos,step,rng);
-    distribution->box(cell,natoms,step,rng);
+    distribution->positions(pos,step,atomicGenerator);
+    distribution->box(cell,natoms,step,atomicGenerator);
     double* pos_ptr;
     double* for_ptr;
     double* charges_ptr;
