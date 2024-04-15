@@ -431,7 +431,6 @@ std::unique_ptr<AtomDistribution> getDistribution(std::string_view atomicDistr) 
 class Benchmark:
   public CLTool
 {
-  std::unique_ptr<benchDistributions::AtomDistribution> distribution;
 public:
   static void registerKeywords( Keywords& keys );
   explicit Benchmark(const CLToolOptions& co );
@@ -464,9 +463,11 @@ Benchmark::Benchmark(const CLToolOptions& co ):
 
 
 int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
-
-  generator rng; // deterministic initialization to avoid issues with MPI
+  // deterministic initializations to avoid issues with MPI
+  generator rng;
   PLMD::Random atomicGenerator;
+  std::unique_ptr<benchDistributions::AtomDistribution> distribution;
+
   struct FileDeleter {
     void operator()(FILE*f) const noexcept {
       if(f) std::fclose(f);
