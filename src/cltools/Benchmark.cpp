@@ -38,6 +38,7 @@
 #include <random>
 #include <algorithm>
 #include <chrono>
+#include <string_view>
 
 namespace PLMD {
 namespace cltools {
@@ -268,9 +269,17 @@ struct AtomDistribution {
 
 struct theLine:public AtomDistribution {
   void positions(std::vector<Vector>& posToUpdate, unsigned step, generator&) override {
-    std::generate(posToUpdate.begin(),posToUpdate.end(),[j=0u,step]() {
-      return Vector(step*j, step*j+1, step*j+2);
-    });
+    auto s=posToUpdate.begin();
+    auto e=posToUpdate.end();
+    //I am using the iterators:this is slightly faster,
+    // enough to overcome the cost of the vtable that I added
+    for (unsigned i=0; s!=e; ++s,++i) {
+      *s = Vector(step*i, step*i+1, step*i+2);
+    }
+    //generate is slower
+    // std::generate(posToUpdate.begin(),posToUpdate.end(),[j=0u,step]() {
+    //   return Vector(step*j, step*j+1, step*j+2);
+    // });
   }
 };
 
@@ -303,9 +312,14 @@ struct uniformSphere:public AtomDistribution {
     const double rmax= std::cbrt ((3.0/(4.0*PLMD::pi)) * posToUpdate.size());
 
     UniformSphericalVector usv(rmax);
-    std::generate(posToUpdate.begin(),posToUpdate.end(),[&]() {
-      return usv (rng);
-    });
+    auto s=posToUpdate.begin();
+    auto e=posToUpdate.end();
+    //I am using the iterators:this is slightly faster,
+    // enough to overcome the cost of the vtable that I added
+    for (unsigned i=0; s!=e; ++s,++i) {
+      *s = usv (rng);
+    }
+
   }
   void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, generator&) override {
     const double rmax= 2.0*std::cbrt((3.0/(4.0*PLMD::pi)) * natoms);
@@ -348,9 +362,16 @@ struct uniformCube:public AtomDistribution {
     using realDistr = std::uniform_real_distribution<double>;
     realDistr rndR (0.0,  rmax);
 
-    std::generate(posToUpdate.begin(),posToUpdate.end(),[&]() {
-      return Vector (rndR(rng),rndR(rng),rndR(rng));
-    });
+    // std::generate(posToUpdate.begin(),posToUpdate.end(),[&]() {
+    //   return Vector (rndR(rng),rndR(rng),rndR(rng));
+    // });
+    auto s=posToUpdate.begin();
+    auto e=posToUpdate.end();
+    //I am using the iterators:this is slightly faster,
+    // enough to overcome the cost of the vtable that I added
+    for (unsigned i=0; s!=e; ++s,++i) {
+      *s = Vector (rndR(rng),rndR(rng),rndR(rng));
+    }
   }
   void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, generator&) override {
     //+0.05 to avoid overlap
@@ -362,6 +383,50 @@ struct uniformCube:public AtomDistribution {
   }
 };
 
+struct tiledSimpleCubic:public AtomDistribution {
+  void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, generator& rng) override {
+    //Tiling the space in this way will not tests 100% the pbc, but
+    //I do not think that write a spacefilling curve, like Hilbert, Peano or Morton
+    //could be a good idea, in this case
+    const unsigned rmax = std::ceil(std::cbrt(static_cast<double>(posToUpdate.size())));
+
+    auto s=posToUpdate.begin();
+    auto e=posToUpdate.end();
+    //I am using the iterators:this is slightly faster,
+    // enough to overcome the cost of the vtable that I added
+    for (unsigned k=0; k<rmax; ++k) {
+      for (unsigned j=0; j<rmax; ++j) {
+        for (unsigned i=0; i<rmax; ++i) {
+          *s = Vector (i,j,k);
+          ++s;
+        }
+      }
+    }
+  }
+  void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, generator&) override {
+    //+0.05 to avoid overlap
+    const double rmax= std::ceil(std::cbrt(static_cast<double>(natoms)));;
+    box[0]=rmax; box[1]=0.0;  box[2]=0.0;
+    box[3]=0.0;  box[4]=rmax; box[5]=0.0;
+    box[6]=0.0;  box[7]=0.0;  box[8]=rmax;
+
+  }
+};
+std::unique_ptr<AtomDistribution> getDistribution(std::string_view atomicDistr) {
+  std::unique_ptr<AtomDistribution> distribution;
+  if(atomicDistr == "line") {
+    distribution = std::make_unique<theLine>();
+  } else if (atomicDistr == "cube") {
+    distribution = std::make_unique<uniformCube>();
+  } else if (atomicDistr == "sphere") {
+    distribution = std::make_unique<uniformSphere>();
+  } else if (atomicDistr == "globs") {
+    distribution = std::make_unique<twoGlobs>();
+  } else if (atomicDistr == "sc") {
+    distribution = std::make_unique<tiledSimpleCubic>();
+  }
+  return distribution;
+}
 } //namespace  benchDistributions
 class Benchmark:
   public CLTool
@@ -576,17 +641,10 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
 
   std::vector<int> shuffled_indexes;
 
-  { std::string atomicDistr;
+  {
+    std::string atomicDistr;
     parse("--atom-distribution",atomicDistr);
-    if(atomicDistr == "line") {
-      distribution = std::make_unique<benchDistributions::theLine>();
-    } else if (atomicDistr == "cube") {
-      distribution = std::make_unique<benchDistributions::uniformCube>();
-    } else if (atomicDistr == "sphere") {
-      distribution = std::make_unique<benchDistributions::uniformSphere>();
-    } else if (atomicDistr == "globs") {
-      distribution = std::make_unique<benchDistributions::twoGlobs>();
-    }
+    distribution = benchDistributions::getDistribution(atomicDistr);
   }
 
   const auto initial_time=std::chrono::high_resolution_clock::now();
