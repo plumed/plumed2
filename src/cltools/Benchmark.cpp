@@ -263,10 +263,10 @@ struct Kernel :
 
 namespace benchDistributions {
 
-  class UniformSphericalVector {
-    //double rminCub;
-    double rCub;
-    
+class UniformSphericalVector {
+  //double rminCub;
+  double rCub;
+
 public:
   //assuming rmin=0
   UniformSphericalVector(const double rmax):
@@ -294,9 +294,9 @@ struct theLine:public AtomDistribution {
   void positions(std::vector<Vector>& posToUpdate, unsigned step, Random&rng) override {
     auto nat = posToUpdate.size();
     UniformSphericalVector usv(0.5);
-    // enough to overcome the cost of the vtable that I added
-    for (unsigned i=0; i<nat; ++i) {  
-posToUpdate[i] = Vector(i, 0, 0) + usv(rng);
+
+    for (unsigned i=0; i<nat; ++i) {
+      posToUpdate[i] = Vector(i, 0, 0) + usv(rng);
     }
   }
 };
@@ -330,7 +330,7 @@ struct twoGlobs: public AtomDistribution {
   virtual void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, Random&rng) {
     //I am using two unigform spheres and 2V=n
     const double rmax= std::cbrt ((3.0/(8.0*PLMD::pi)) * posToUpdate.size());
-    
+
     UniformSphericalVector usv(rmax);
     std::array<Vector,2> centers{
       PLMD::Vector{0.0,0.0,0.0},
@@ -338,11 +338,10 @@ struct twoGlobs: public AtomDistribution {
       PLMD::Vector{2.0*rmax,2.0*rmax,2.0*rmax}
     };
     std::generate(posToUpdate.begin(),posToUpdate.end(),[&]() {
+      //RandInt is only declared
+      // return usv (rng) + centers[rng.RandInt(1)];
       return usv (rng) + centers[rng.RandU01()>0.5];
     });
-    // std::generate(posToUpdate.begin(),posToUpdate.end(),[&]() {
-    //   return usv (rng) + centers[rng.RandInt(1)];
-    // });
   }
 
   virtual void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, Random&) {
@@ -358,8 +357,8 @@ struct uniformCube:public AtomDistribution {
   void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, Random& rng) override {
     //giving more or less a cubic udm of volume for each atom: V = nat
     const double rmax = std::cbrt(static_cast<double>(posToUpdate.size()));
-    
-    
+
+
 
     // std::generate(posToUpdate.begin(),posToUpdate.end(),[&]() {
     //   return Vector (rndR(rng),rndR(rng),rndR(rng));
@@ -393,9 +392,9 @@ struct tiledSimpleCubic:public AtomDistribution {
     auto e=posToUpdate.end();
     //I am using the iterators:this is slightly faster,
     // enough to overcome the cost of the vtable that I added
-    for (unsigned k=0; k<rmax; ++k) {
-      for (unsigned j=0; j<rmax; ++j) {
-        for (unsigned i=0; i<rmax; ++i) {
+    for (unsigned k=0; k<rmax&&s!=e; ++k) {
+      for (unsigned j=0; j<rmax&&s!=e; ++j) {
+        for (unsigned i=0; i<rmax&&s!=e; ++i) {
           *s = Vector (i,j,k);
           ++s;
         }
@@ -403,7 +402,6 @@ struct tiledSimpleCubic:public AtomDistribution {
     }
   }
   void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, Random&) override {
-    //+0.05 to avoid overlap
     const double rmax= std::ceil(std::cbrt(static_cast<double>(natoms)));;
     box[0]=rmax; box[1]=0.0;  box[2]=0.0;
     box[3]=0.0;  box[4]=rmax; box[5]=0.0;
@@ -423,6 +421,9 @@ std::unique_ptr<AtomDistribution> getDistribution(std::string_view atomicDistr) 
     distribution = std::make_unique<twoGlobs>();
   } else if (atomicDistr == "sc") {
     distribution = std::make_unique<tiledSimpleCubic>();
+  } else {
+    plumed_error() << R"(The atomic distribution can be only "line", "cube", "sphere", "globs" and "sc", the input was ")"
+                   << atomicDistr <<'"';
   }
   return distribution;
 }
