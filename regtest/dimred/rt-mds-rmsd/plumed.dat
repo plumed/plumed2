@@ -1,0 +1,7 @@
+ff: COLLECT_FRAMES ATOMS=1-22 STRIDE=1 
+mds: CLASSICAL_MDS ARG=ff NLOW_DIM=2 
+
+weights: CUSTOM ARG=ff.logweights FUNC=exp(x) PERIODIC=NO
+
+DUMPVECTOR ARG=mds,weights FILE=list_embed FMT=%8.4f
+DUMPPDB ATOM_INDICES=1-22 ATOMS=ff_data ARG=mds,weights FILE=embed.pdb FMT=%8.4f

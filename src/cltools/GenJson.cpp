@@ -168,6 +168,10 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
   std::cout<<"    \"@mdatoms\" : { \n"<<std::endl;
   std::cout<<"        \"description\" : \"refers to all the MD codes atoms but not PLUMEDs vatoms\","<<std::endl;
   std::cout<<"        \"link\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/_group.html\""<<std::endl;
+  std::cout<<"    },"<<std::endl;
+  std::cout<<"    \"@ndx\" : { \n"<<std::endl;
+  std::cout<<"        \"description\" : \"load a group from a GROMACS index file\","<<std::endl;
+  std::cout<<"        \"link\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/_group.html\""<<std::endl;
   // Now print all the special keywords in molinfo
   std::map<std::string,std::string> specials( GenericMolInfo::getSpecialKeywords() );
   for(auto const& s : specials ) {

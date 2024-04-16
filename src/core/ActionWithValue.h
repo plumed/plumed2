@@ -182,6 +182,8 @@ public:
   virtual unsigned getNumberOfDerivatives()=0;
 /// Activate the calculation of derivatives
   virtual void turnOnDerivatives();
+/// Get the titles to use for the columns of the matrix
+  virtual void getMatrixColumnTitles( std::vector<std::string>& argnames ) const ;
 /// This is used to check if we run calculate during the update step
   virtual bool calculateOnUpdate();
   ActionWithValue* castToActionWithValue() noexcept final { return this; }

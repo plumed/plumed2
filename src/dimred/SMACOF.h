@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2023 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,16 +23,32 @@
 #define __PLUMED_dimred_SMACOF_h
 
 #include <vector>
+#include "core/Value.h"
 #include "tools/Matrix.h"
 
 namespace PLMD {
 namespace dimred {
 
 class SMACOF {
+private:
+  Matrix<double> Distances, Weights;
+  double calculateSigma( const Matrix<double>& InitialZ, Matrix<double>& dists );
 public:
-  static double calculateSigma( const Matrix<double>& Weights, const Matrix<double>& Distances, const Matrix<double>& InitialZ, Matrix<double>& dists );
-  static void run( const Matrix<double>& Weights, const Matrix<double>& Distances, const double& tol, const unsigned& maxloops, Matrix<double>& InitialZ);
+  explicit SMACOF( const Value* mysquaredists );
+  void optimize( const double& tol, const unsigned& maxloops, std::vector<double>& proj);
+  double getDistance( const unsigned& i, const unsigned& j ) const ;
+  void setWeight( const unsigned& i, const unsigned& j, const double& ww );
 };
+
+inline
+double SMACOF::getDistance( const unsigned& i, const unsigned& j ) const {
+  return Distances( i, j );
+}
+
+inline
+void SMACOF::setWeight( const unsigned& i, const unsigned& j, const double& ww ) {
+  Weights(i,j) = Weights(j,i ) = ww;
+}
 
 }
 }

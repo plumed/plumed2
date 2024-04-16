@@ -45,6 +45,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit OuterProduct(const ActionOptions&);
   unsigned getNumberOfDerivatives();
+  void prepare() override ;
   unsigned getNumberOfColumns() const override { return getConstPntrToComponent(0)->getShape()[1]; }
   void setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const ;
   void performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const override;
@@ -94,6 +95,13 @@ OuterProduct::OuterProduct(const ActionOptions&ao):
 
 unsigned OuterProduct::getNumberOfDerivatives() {
   return nderivatives;
+}
+
+void OuterProduct::prepare() {
+  ActionWithVector::prepare(); Value* myval=getPntrToComponent(0);
+  if( myval->getShape()[0]==getPntrToArgument(0)->getShape()[0] && myval->getShape()[1]==getPntrToArgument(1)->getShape()[0] ) return;
+  std::vector<unsigned> shape(2); shape[0] = getPntrToArgument(0)->getShape()[0]; shape[1] = getPntrToArgument(1)->getShape()[0];
+  myval->setShape( shape );
 }
 
 void OuterProduct::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {

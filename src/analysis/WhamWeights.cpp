@@ -97,7 +97,7 @@ WhamWeights::WhamWeights( const ActionOptions& ao ) :
   // Put all the replicas in a single vector
   readInputLine( getShortcutLabel() + "_gatherv: CONCATENATE ARG=" + getShortcutLabel() + "_gather.*");
   // Input for COLLECT_FRAMES
-  readInputLine( getShortcutLabel() + "_collect: COLLECT ARG=" + getShortcutLabel() + "_gatherv STRIDE=" + stride);
+  readInputLine( getShortcutLabel() + "_collect: COLLECT TYPE=vector ARG=" + getShortcutLabel() + "_gatherv STRIDE=" + stride);
   // Input for WHAM
   std::string temp, tempstr=""; parse("TEMP",temp); if( temp.length()>0 ) tempstr="TEMP=" + temp;
   readInputLine( getShortcutLabel() + ": WHAM ARG=" + getShortcutLabel() + "_collect " + tempstr );

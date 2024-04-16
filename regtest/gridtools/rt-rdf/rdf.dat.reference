@@ -3,7 +3,7 @@
 #! SET max_rdf_mat 2.5
 #! SET nbins_rdf_mat  25
 #! SET periodic_rdf_mat false
-   0.0000   0.0000   0.0000
+   0.0000      nan      nan
    0.1000   0.0000   0.0000
    0.2000   0.0000   0.0000
    0.3000   0.0000   0.0000
