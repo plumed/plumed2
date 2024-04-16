@@ -69,6 +69,7 @@ public:
   Register(const Register &) = delete;
 
   /// Small class to manage registration lock
+  /// This is used during dlopen, to avoid data races in registrations
   class RegistrationLock {
     bool active;
   public:
@@ -80,6 +81,22 @@ public:
 
   /// return a registration lock
   static RegistrationLock registrationLock(const std::string & fullpath);
+
+  /// Small class to manage access lock
+  /// This is used whenever a register is accessed for reading.
+  /// It makes sure that no other threads is registering anything.
+  /// Should be taken in all functions that are reading the maps
+  class AccessLock {
+    bool active;
+  public:
+    AccessLock();
+    AccessLock(const AccessLock&) = delete;
+    AccessLock(AccessLock&& other) noexcept;
+    ~AccessLock() noexcept;
+  };
+
+  /// return an access lock
+  static AccessLock accessLock();
 
   /// Save all staged objects in all registers
   static void completeAllRegistrations(void* image);
@@ -175,6 +192,7 @@ std::ostream & operator<<(std::ostream &log,const Register &reg);
 
 template<class Content>
 bool RegisterBase<Content>::check(const std::vector<void*> & images,const std::string & key) const {
+  auto lock=accessLock();
   if(m.count(key)>0) return true;
   for(auto image : images) {
     std::string k=imageToString(image)+":"+key;
@@ -185,11 +203,13 @@ bool RegisterBase<Content>::check(const std::vector<void*> & images,const std::s
 
 template<class Content>
 bool RegisterBase<Content>::check(const std::string & key) const {
+  auto lock=accessLock();
   return m.count(key)>0;
 }
 
 template<class Content>
 const Content & RegisterBase<Content>::get(const std::vector<void*> & images,const std::string & key) const {
+  auto lock=accessLock();
   for(auto image = images.rbegin(); image != images.rend(); ++image) {
     auto qualified_key=imageToString(*image) + ":" + key;
     if(m.count(qualified_key)>0) return m.find(qualified_key)->second->content;
@@ -200,6 +220,7 @@ const Content & RegisterBase<Content>::get(const std::vector<void*> & images,con
 
 template<class Content>
 const std::string & RegisterBase<Content>::getFullPath(const std::vector<void*> & images,const std::string & key) const {
+  auto lock=accessLock();
   for(auto image = images.rbegin(); image != images.rend(); ++image) {
     auto qualified_key=imageToString(*image) + ":" + key;
     if(m.count(qualified_key)>0) return m.find(qualified_key)->second->fullPath;
@@ -210,6 +231,7 @@ const std::string & RegisterBase<Content>::getFullPath(const std::vector<void*> 
 
 template<class Content>
 const Content & RegisterBase<Content>::get(const std::string & key) const {
+  auto lock=accessLock();
   plumed_assert(m.count(key)>0);
   return m.find(key)->second->content;
 }
@@ -227,6 +249,7 @@ void RegisterBase<Content>::remove(ID id) {
 
 template<class Content>
 std::vector<std::string> RegisterBase<Content>::getKeys() const {
+  auto lock=accessLock();
   std::vector<std::string> s;
   for(const auto & it : m) s.push_back(it.first);
   std::sort(s.begin(),s.end());

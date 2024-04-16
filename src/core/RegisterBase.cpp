@@ -22,6 +22,7 @@
 #include "RegisterBase.h"
 
 #include <mutex>
+#include <shared_mutex>
 #include "tools/Tools.h"
 
 namespace PLMD {
@@ -30,9 +31,8 @@ namespace {
 class Singleton {
 public:
   /// Mutex to avoid simultaneous registrations from multiple threads
-  /// It is a recursive mutex so that recursive calls will be detected and throw.
-  /// (a non recursive mutex would lead to a lock instead)
-  std::recursive_mutex registeringMutex;
+  /// and to lock new read access during registration
+  std::shared_mutex registeringMutex;
 
   /// Count simultaneous registrations
   unsigned registeringCounter=0;
@@ -71,6 +71,29 @@ Register::RegistrationLock Register::registrationLock(const std::string & fullPa
   return RegistrationLock(fullPath);
 }
 
+Register::AccessLock::AccessLock():
+  active(true)
+{
+  auto & singleton=getSingleton();
+  singleton.registeringMutex.lock_shared();
+}
+
+Register::AccessLock::~AccessLock() noexcept {
+  if(active) {
+    auto & singleton=getSingleton();
+    singleton.registeringMutex.unlock_shared();
+  }
+}
+
+Register::AccessLock::AccessLock(AccessLock&& other) noexcept:
+  active(other.active)
+{
+  other.active=false;
+}
+
+Register::AccessLock Register::accessLock() {
+  return AccessLock();
+}
 
 void Register::pushDLRegistration(const std::string & fullPath) {
   auto & singleton=getSingleton();
@@ -114,14 +137,14 @@ const std::string Register::getRegisteringFullPath() noexcept {
 Register::Register() {
   auto & singleton=getSingleton();
   // this is to protect insertion
-  const std::lock_guard lock(singleton.registeringMutex);
+  std::unique_lock<std::shared_mutex> lock(singleton.registeringMutex);
   singleton.registers.push_back(this);
 }
 
 Register::~Register() noexcept {
   auto & singleton=getSingleton();
   // this is to protect removal
-  const std::lock_guard lock(singleton.registeringMutex);
+  std::unique_lock<std::shared_mutex> lock(singleton.registeringMutex);
   auto it=std::find(singleton.registers.begin(),singleton.registers.end(),this);
   if(it!=singleton.registers.end()) singleton.registers.erase(it);
 }
