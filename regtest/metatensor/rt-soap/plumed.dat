@@ -1,11 +1,11 @@
 soap: METATENSOR ...
       MODEL=soap_cv.pt
       EXTENSIONS_DIRECTORY=../extensions
-      SPECIES1=1-8
-      SPECIES2=9-32
-      SPECIES3=33-88
-      SPECIES4=89-176
-      SPECIES_TO_TYPES=7,8,6,1
+
+      SPECIES1=1-26
+      SPECIES2=27-62
+      SPECIES3=63-76
+      SPECIES_TO_TYPES=6,1,8
 ...
 
 

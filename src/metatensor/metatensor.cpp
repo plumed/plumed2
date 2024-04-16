@@ -35,7 +35,11 @@ public:
 #include <type_traits>
 
 #include <torch/script.h>
-#include "torch/csrc/autograd/autograd.h"
+#include <torch/version.h>
+#include <torch/cuda.h>
+#if TORCH_VERSION_MAJOR >= 2
+#include <torch/mps.h>
+#endif
 
 #include <metatensor/torch.hpp>
 #include <metatensor/torch/atomistic.hpp>
@@ -83,13 +87,17 @@ private:
     metatensor_torch::ModelCapabilities capabilities_;
     std::vector<metatensor_torch::NeighborsListOptions> nl_requests_;
 
+    // dtype/device to use to execute the model
+    torch::ScalarType dtype_;
+    torch::Device device_;
+
     torch::Tensor atomic_types_;
     // store the strain to be able to compute the virial with autograd
     torch::Tensor strain_;
 
     metatensor_torch::System system_;
     metatensor_torch::ModelEvaluationOptions evaluations_options_;
-    bool check_consistency_ = true;
+    bool check_consistency_;
 
     metatensor_torch::TorchTensorMap output_;
     // shape of the output of this model
@@ -101,7 +109,8 @@ private:
 MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
     Action(options),
     ActionAtomistic(options),
-    ActionWithValue(options)
+    ActionWithValue(options),
+    device_(torch::kCPU)
 {
     if (metatensor_torch::version().find("0.4.") != 0) {
         this->error(
@@ -139,11 +148,11 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
     // parse the atomic types from the input file
     std::vector<int32_t> atomic_types;
     std::vector<int32_t> species_to_types;
-    parseVector("SPECIES_TO_TYPES", species_to_types);
+    this->parseVector("SPECIES_TO_TYPES", species_to_types);
     bool has_custom_types = !species_to_types.empty();
 
     std::vector<AtomNumber> all_atoms;
-    parseAtomList("SPECIES", all_atoms);
+    this->parseAtomList("SPECIES", all_atoms);
 
     size_t n_species = 0;
     if (all_atoms.empty()) {
@@ -151,7 +160,7 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
         int i = 0;
         while (true) {
             i += 1;
-            parseAtomList("SPECIES", i, t);
+            this->parseAtomList("SPECIES", i, t);
             if (t.empty()) {
                 break;
             }
@@ -203,6 +212,8 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
     // Request the atoms and check we have read in everything
     this->requestAtoms(all_atoms);
 
+    this->parseFlag("CHECK_CONSISTENCY", this->check_consistency_);
+
     // create evaluation options for the model. These won't change during the
     // simulation, so we initialize them once here.
     evaluations_options_ = torch::make_intrusive<metatensor_torch::ModelEvaluationOptionsHolder>();
@@ -233,10 +244,94 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
     // evaluations_options_->set_selected_atoms()
 
 
+    // Determine which device we should use based on user input, what the model
+    // supports and what's available
+    auto available_devices = std::vector<torch::Device>();
+    for (const auto& device: this->capabilities_->supported_devices) {
+        if (device == "cpu") {
+            available_devices.push_back(torch::kCPU);
+        } else if (device == "cuda") {
+            if (torch::cuda::is_available()) {
+                available_devices.push_back(torch::Device("cuda"));
+            }
+        } else if (device == "mps") {
+            #if TORCH_VERSION_MAJOR >= 2
+            if (torch::mps::is_available()) {
+                available_devices.push_back(torch::Device("mps"));
+            }
+            #endif
+        } else {
+            this->warning(
+                "the model declared support for unknown device '" + device +
+                "', it will be ignored"
+            );
+        }
+    }
+
+    if (available_devices.empty()) {
+        this->error(
+            "failed to find a valid device for the model at '" + model_path + "': "
+            "the model supports " + torch::str(this->capabilities_->supported_devices) +
+            ", none of these where available"
+        );
+    }
+
+    std::string requested_device;
+    this->parse("DEVICE", requested_device);
+    if (requested_device.empty()) {
+        // no user request, pick the device the model prefers
+        this->device_ = available_devices[0];
+    } else {
+        bool found_requested_device = false;
+        for (const auto& device: available_devices) {
+            if (device.is_cpu() && requested_device == "cpu") {
+                this->device_ = device;
+                found_requested_device = true;
+                break;
+            } else if (device.is_cuda() && requested_device == "cuda") {
+                this->device_ = device;
+                found_requested_device = true;
+                break;
+            } else if (device.is_mps() && requested_device == "mps") {
+                this->device_ = device;
+                found_requested_device = true;
+                break;
+            }
+        }
+
+        if (!found_requested_device) {
+            this->error(
+                "failed to find requested device (" + requested_device + "): it is either "
+                "not supported by this model or not available on this machine"
+            );
+        }
+    }
+
+    this->model_.to(this->device_);
+    this->atomic_types_ = this->atomic_types_.to(this->device_);
+
+    log.printf(
+        "  running model on %s device with %s data\n",
+        this->device_.str().c_str(),
+        this->capabilities_->dtype().c_str()
+    );
+
+    if (this->capabilities_->dtype() == "float64") {
+        this->dtype_ = torch::kFloat64;
+    } else if (this->capabilities_->dtype() == "float32") {
+        this->dtype_ = torch::kFloat32;
+    } else {
+        this->error(
+            "the model requested an unsupported dtype '" + this->capabilities_->dtype() + "'"
+        );
+    }
+
+    auto tensor_options = torch::TensorOptions().dtype(this->dtype_).device(this->device_);
+    this->strain_ = torch::eye(3, tensor_options.requires_grad(true));
+
     // setup storage for the computed CV: we need to run the model once to know
     // the shape of the output, so we use a dummy system with one since atom for
     // this
-    auto tensor_options = torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCPU);
     auto dummy_system = torch::make_intrusive<metatensor_torch::SystemHolder>(
         /*types = */ this->atomic_types_.index({torch::indexing::Slice(0, 1)}),
         /*positions = */ torch::zeros({1, 3}, tensor_options),
@@ -290,8 +385,8 @@ unsigned MetatensorPlumedAction::getNumberOfDerivatives() {
 void MetatensorPlumedAction::createSystem() {
     const auto& cell = this->getPbc().getBox();
 
-    auto tensor_options = torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCPU);
-    auto torch_cell = torch::zeros({3, 3}, tensor_options);
+    auto cpu_f64_tensor = torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCPU);
+    auto torch_cell = torch::zeros({3, 3}, cpu_f64_tensor);
 
     // TODO: check if cell is stored in row or column major order
     // TODO: check if cell is zero for non-periodic systems
@@ -312,14 +407,15 @@ void MetatensorPlumedAction::createSystem() {
     auto torch_positions = torch::from_blob(
         const_cast<PLMD::Vector*>(positions.data()),
         {static_cast<int64_t>(positions.size()), 3},
-        tensor_options
+        cpu_f64_tensor
     );
+
+    torch_positions = torch_positions.to(this->dtype_).to(this->device_);
+    torch_cell = torch_cell.to(this->dtype_).to(this->device_);
 
     // setup torch's automatic gradient tracking
     if (!this->doNotCalculateDerivatives()) {
         torch_positions.requires_grad_(true);
-
-        this->strain_ = torch::eye(3, tensor_options.requires_grad(true));
 
         // pretend to scale positions/cell by the strain so that it enters the
         // computational graph.
@@ -329,7 +425,6 @@ void MetatensorPlumedAction::createSystem() {
         torch_cell = torch_cell.matmul(this->strain_);
     }
 
-    // TODO: move data to another dtype/device as requested by the model or user
     this->system_ = torch::make_intrusive<metatensor_torch::SystemHolder>(
         this->atomic_types_,
         torch_positions,
@@ -351,7 +446,7 @@ metatensor_torch::TorchTensorBlock MetatensorPlumedAction::computeNeighbors(
     const std::vector<PLMD::Vector>& positions,
     const PLMD::Tensor& cell
 ) {
-    auto labels_options = torch::TensorOptions().dtype(torch::kInt32).device(torch::kCPU);
+    auto labels_options = torch::TensorOptions().dtype(torch::kInt32).device(this->device_);
     auto neighbor_component = torch::make_intrusive<metatensor_torch::LabelsHolder>(
         "xyz",
         torch::tensor({0, 1, 2}, labels_options).reshape({3, 1})
@@ -412,7 +507,7 @@ metatensor_torch::TorchTensorBlock MetatensorPlumedAction::computeNeighbors(
         torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCPU)
     );
 
-    auto pair_samples_values = torch::zeros({n_pairs, 5}, labels_options);
+    auto pair_samples_values = torch::zeros({n_pairs, 5}, labels_options.device(torch::kCPU));
     for (unsigned i=0; i<n_pairs; i++) {
         pair_samples_values[i][0] = static_cast<int32_t>(vesin_neighbor_list->pairs[i][0]);
         pair_samples_values[i][1] = static_cast<int32_t>(vesin_neighbor_list->pairs[i][1]);
@@ -423,11 +518,11 @@ metatensor_torch::TorchTensorBlock MetatensorPlumedAction::computeNeighbors(
 
     auto neighbor_samples = torch::make_intrusive<metatensor_torch::LabelsHolder>(
         std::vector<std::string>{"first_atom", "second_atom", "cell_shift_a", "cell_shift_b", "cell_shift_c"},
-        pair_samples_values
+        pair_samples_values.to(this->device_)
     );
 
     auto neighbors = torch::make_intrusive<metatensor_torch::TensorBlockHolder>(
-        pair_vectors,
+        pair_vectors.to(this->dtype_).to(this->device_),
         neighbor_samples,
         std::vector<metatensor_torch::TorchLabels>{neighbor_component},
         neighbor_properties
@@ -543,19 +638,21 @@ void MetatensorPlumedAction::apply() {
         }
     }
 
-    auto input_grad = torch::autograd::grad(
-        {torch_values},
-        {this->system_->positions(), this->strain_},
-        {output_grad}
-    );
-    plumed_assert(input_grad[0].is_cpu());
-    plumed_assert(input_grad[0].is_contiguous());
+    this->system_->positions().mutable_grad() = torch::Tensor();
+    this->strain_.mutable_grad() = torch::Tensor();
 
-    plumed_assert(input_grad[1].is_cpu());
-    plumed_assert(input_grad[1].is_contiguous());
+    torch_values.backward(output_grad);
+    auto positions_grad = this->system_->positions().grad();
+    auto strain_grad = this->strain_.grad();
 
-    auto positions_grad = input_grad[0];
-    auto strain_grad = input_grad[1];
+    positions_grad = positions_grad.to(torch::kCPU).to(torch::kFloat64);
+    strain_grad = strain_grad.to(torch::kCPU).to(torch::kFloat64);
+
+    plumed_assert(positions_grad.sizes().size() == 2);
+    plumed_assert(positions_grad.is_contiguous());
+
+    plumed_assert(strain_grad.sizes().size() == 2);
+    plumed_assert(strain_grad.is_contiguous());
 
     auto derivatives = std::vector<double>(
         positions_grad.data_ptr<double>(),
@@ -574,7 +671,6 @@ void MetatensorPlumedAction::apply() {
     derivatives.push_back(strain_grad[2][0].item<double>());
     derivatives.push_back(strain_grad[2][1].item<double>());
     derivatives.push_back(strain_grad[2][2].item<double>());
-
 
     unsigned index = 0;
     this->setForcesOnAtoms(derivatives, index);
@@ -595,6 +691,9 @@ namespace PLMD { namespace metatensor {
 
         keys.add("compulsory", "MODEL", "path to the exported metatensor model");
         keys.add("optional", "EXTENSIONS_DIRECTORY", "path to the directory containing TorchScript extensions to load");
+        keys.add("optional", "DEVICE", "Torch device to use for the calculation");
+
+        keys.addFlag("CHECK_CONSISTENCY", false, "whether to check for internal consistency of the model");
 
         keys.add("numbered", "SPECIES", "the atoms in each PLUMED species");
         keys.reset_style("SPECIES", "atoms");

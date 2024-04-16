@@ -32,7 +32,7 @@ class SOAP_CV(torch.nn.Module):
             atomic_gaussian_width=0.3,
         )
 
-        self.pca_projection = torch.rand(2520, 3, dtype=torch.float64)
+        self.register_buffer("pca_projection", torch.rand(2520, 3, dtype=torch.float64))
 
     def forward(
         self,
@@ -45,6 +45,10 @@ class SOAP_CV(torch.nn.Module):
             return {}
 
         output = outputs["plumed::cv"]
+
+        device = torch.device("cpu")
+        if len(systems) > 0:
+            device = systems[0].positions.device
 
         soap = self.calculator(systems, selected_samples=selected_atoms)
         soap = soap.keys_to_samples("center_type")
@@ -60,9 +64,12 @@ class SOAP_CV(torch.nn.Module):
             values=projected,
             samples=soap_block.samples,
             components=[],
-            properties=Labels("soap_pca", torch.tensor([[0], [1], [2]])),
+            properties=Labels("soap_pca", torch.tensor([[0], [1], [2]], device=device)),
         )
-        cv = TensorMap(keys=Labels("_", torch.tensor([[0]])), blocks=[block])
+        cv = TensorMap(
+            keys=Labels("_", torch.tensor([[0]], device=device)),
+            blocks=[block],
+        )
 
         return {"plumed::cv": cv}
 
@@ -81,7 +88,7 @@ capabilities = ModelCapabilities(
         )
     },
     interaction_range=4.0,
-    supported_devices=["cpu", "cuda"],
+    supported_devices=["cpu", "mps", "cuda"],
     length_unit="nm",
     atomic_types=[6, 1, 7, 8],
     dtype="float64",
