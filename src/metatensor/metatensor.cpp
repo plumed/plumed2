@@ -104,7 +104,7 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
     ActionWithValue(options)
 {
     if (metatensor_torch::version().find("0.4.") != 0) {
-        error(
+        this->error(
             "this code requires version 0.4.x of metatensor-torch, got version " +
             metatensor_torch::version()
         );
@@ -201,23 +201,36 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
     this->atomic_types_ = torch::tensor(std::move(atomic_types));
 
     // Request the atoms and check we have read in everything
-    requestAtoms(all_atoms);
-
-    // TODO: selected_atoms
-    // evaluations_options_->set_selected_atoms()
+    this->requestAtoms(all_atoms);
 
     // create evaluation options for the model. These won't change during the
     // simulation, so we initialize them once here.
     evaluations_options_ = torch::make_intrusive<metatensor_torch::ModelEvaluationOptionsHolder>();
     evaluations_options_->set_length_unit(getUnits().getLengthString());
 
+    if (!this->capabilities_->outputs().contains("plumed::cv")) {
+        auto existing_outputs = std::vector<std::string>();
+        for (const auto& it: this->capabilities_->outputs()) {
+            existing_outputs.push_back(it.key());
+        }
+
+        this->error(
+            "expected 'plumed::cv' in the capabilities of the model, could not find it. "
+            "the following outputs exist: " + torch::str(existing_outputs)
+        );
+    }
+
     auto output = torch::make_intrusive<metatensor_torch::ModelOutputHolder>();
-    // TODO: should this be configurable?
-    output->per_atom = true;
-    // we are using torch autograd system to compute gradients, so we don't need
-    // any explicit gradients.
+    // this output has no quantity or unit to set
+
+    output->per_atom = this->capabilities_->outputs().at("plumed::cv")->per_atom;
+    // we are using torch autograd system to compute gradients,
+    // so we don't need any explicit gradients.
     output->explicit_gradients = {};
     evaluations_options_->outputs.insert("plumed::cv", output);
+
+    // TODO: selected_atoms
+    // evaluations_options_->set_selected_atoms()
 
 
     // setup storage for the computed CV: we need to run the model once to know
@@ -435,7 +448,7 @@ torch::Tensor MetatensorPlumedAction::executeModel(metatensor_torch::System syst
         auto cv = dict_output.at("plumed::cv");
         this->output_ = cv.toCustomClass<metatensor_torch::TensorMapHolder>();
     } catch (const std::exception& e) {
-        error("failed to evaluate the model: " + std::string(e.what()));
+        this->error("failed to evaluate the model: " + std::string(e.what()));
     }
 
     plumed_massert(this->output_->keys()->count() == 1, "output should have a single block");
@@ -452,13 +465,13 @@ void MetatensorPlumedAction::calculate() {
     auto torch_values = executeModel(this->system_);
 
     if (static_cast<unsigned>(torch_values.size(0)) != this->n_samples_) {
-        error(
+        this->error(
             "expected the model to return a TensorBlock with " +
             std::to_string(this->n_samples_) + " samples, got " +
             std::to_string(torch_values.size(0)) + " instead"
         );
     } else if (static_cast<unsigned>(torch_values.size(1)) != this->n_properties_) {
-        error(
+        this->error(
             "expected the model to return a TensorBlock with " +
             std::to_string(this->n_properties_) + " properties, got " +
             std::to_string(torch_values.size(1)) + " instead"
