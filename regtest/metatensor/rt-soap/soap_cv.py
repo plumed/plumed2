@@ -41,10 +41,10 @@ class SOAP_CV(torch.nn.Module):
         selected_atoms: Optional[Labels],
     ) -> Dict[str, TensorMap]:
 
-        if "collective_variable" not in outputs:
+        if "plumed::cv" not in outputs:
             return {}
 
-        output = outputs["collective_variable"]
+        output = outputs["plumed::cv"]
 
         soap = self.calculator(systems, selected_samples=selected_atoms)
         soap = soap.keys_to_samples("center_type")
@@ -64,16 +64,16 @@ class SOAP_CV(torch.nn.Module):
         )
         cv = TensorMap(keys=Labels("_", torch.tensor([[0]])), blocks=[block])
 
-        return {"collective_variable": cv}
+        return {"plumed::cv": cv}
 
 
 cv = SOAP_CV(species=[1, 6, 7, 8])
 cv.eval()
 
 
-capabilites = ModelCapabilities(
+capabilities = ModelCapabilities(
     outputs={
-        "collective_variable": ModelOutput(
+        "plumed::cv": ModelOutput(
             quantity="",
             unit="",
             per_atom=True,
@@ -84,7 +84,7 @@ capabilites = ModelCapabilities(
     supported_devices=["cpu", "cuda"],
     length_unit="nm",
     atomic_types=[6, 1, 7, 8],
-    # dtype=TODO
+    dtype="float64",
 )
 
 metadata = ModelMetadata(
@@ -101,5 +101,5 @@ A simple collective variable for testing purposes
 )
 
 
-model = MetatensorAtomisticModel(cv, metadata, capabilites)
+model = MetatensorAtomisticModel(cv, metadata, capabilities)
 model.export("soap_cv.pt", collect_extensions="extensions")

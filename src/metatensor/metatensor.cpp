@@ -43,10 +43,6 @@ public:
 #include "vesin.h"
 
 
-// TEMPORARY HACK
-#include <dlfcn.h>
-// TEMPORARY HACK
-
 namespace PLMD { namespace metatensor {
 
 // We will cast Vector/Tensor to pointers to arrays and doubles, so let's make
@@ -69,8 +65,8 @@ public:
     unsigned getNumberOfDerivatives() override;
 
 private:
+    // fill this->system_ according to the current PLUMED data
     void createSystem();
-
     // compute a neighbor list following metatensor format, using data from PLUMED
     metatensor_torch::TorchTensorBlock computeNeighbors(
         metatensor_torch::NeighborsListOptions request,
@@ -78,7 +74,14 @@ private:
         const PLMD::Tensor& cell
     );
 
+    // execute the model for the given system
+    torch::Tensor executeModel(metatensor_torch::System system);
+
     torch::jit::Module model_;
+
+    // neighbor lists requests made by the model
+    metatensor_torch::ModelCapabilities capabilities_;
+    std::vector<metatensor_torch::NeighborsListOptions> nl_requests_;
 
     torch::Tensor atomic_types_;
     // store the strain to be able to compute the virial with autograd
@@ -87,7 +90,11 @@ private:
     metatensor_torch::System system_;
     metatensor_torch::ModelEvaluationOptions evaluations_options_;
     bool check_consistency_ = true;
+
     metatensor_torch::TorchTensorMap output_;
+    // shape of the output of this model
+    unsigned n_samples_;
+    unsigned n_properties_;
 };
 
 
@@ -96,51 +103,54 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
     ActionAtomistic(options),
     ActionWithValue(options)
 {
-    std::string extensions_directory;
-    this->parse("EXTENSIONS_DIRECTORY", extensions_directory);
-
-    // TEMPORARY BAD CODE, TO BE REMOVED
-    auto rascaline = dlopen(
-        (extensions_directory + "/rascaline/lib/librascaline.dylib").c_str(),
-        RTLD_LOCAL | RTLD_NOW
-    );
-    if (rascaline == nullptr) {
-        std::cerr << "failed to load rascaline: " << dlerror() << std::endl;
+    if (metatensor_torch::version().find("0.4.") != 0) {
+        error(
+            "this code requires version 0.4.x of metatensor-torch, got version " +
+            metatensor_torch::version()
+        );
     }
 
-    auto rascaline_torch = dlopen(
-        (extensions_directory + "/rascaline/torch/lib/librascaline_torch.dylib").c_str(),
-        RTLD_LOCAL | RTLD_NOW
-    );
-    if (rascaline_torch == nullptr) {
-        std::cerr << "failed to load rascaline_torch: " << dlerror() << std::endl;
-    }
-    // END OF TEMPORARY BAD CODE, TO BE REMOVED
+    // first, load the model
+    std::string extensions_directory_str;
+    this->parse("EXTENSIONS_DIRECTORY", extensions_directory_str);
 
-    // load the model
+    torch::optional<std::string> extensions_directory = torch::nullopt;
+    if (!extensions_directory_str.empty()) {
+        extensions_directory = std::move(extensions_directory_str);
+    }
+
     std::string model_path;
     this->parse("MODEL", model_path);
 
     try {
-        this->model_ = metatensor_torch::load_atomistic_model(model_path);
+        this->model_ = metatensor_torch::load_atomistic_model(model_path, extensions_directory);
     } catch (const std::exception& e) {
         error("failed to load model at '" + model_path + "': " + e.what());
     }
 
+    // extract information from the model
+    this->capabilities_ = this->model_.run_method("capabilities").toCustomClass<metatensor_torch::ModelCapabilitiesHolder>();
+    auto requests_ivalue = this->model_.run_method("requested_neighbors_lists");
+    for (auto request_ivalue: requests_ivalue.toList()) {
+        auto request = request_ivalue.get().toCustomClass<metatensor_torch::NeighborsListOptionsHolder>();
+        this->nl_requests_.push_back(request);
+    }
 
     // parse the atomic types from the input file
     std::vector<int32_t> atomic_types;
-    std::vector<int32_t> species_to_metatensor_types;
-    parseVector("SPECIES_TO_METATENSOR_TYPES", species_to_metatensor_types);
-    bool has_custom_types = !species_to_metatensor_types.empty();
+    std::vector<int32_t> species_to_types;
+    parseVector("SPECIES_TO_TYPES", species_to_types);
+    bool has_custom_types = !species_to_types.empty();
 
     std::vector<AtomNumber> all_atoms;
     parseAtomList("SPECIES", all_atoms);
 
-    auto n_species = 0;
+    size_t n_species = 0;
     if (all_atoms.empty()) {
         std::vector<AtomNumber> t;
-        for (int i=1;;i++) {
+        int i = 0;
+        while (true) {
+            i += 1;
             parseAtomList("SPECIES", i, t);
             if (t.empty()) {
                 break;
@@ -148,21 +158,21 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
 
             int32_t type = i;
             if (has_custom_types) {
-                if (species_to_metatensor_types.size() < i) {
+                if (species_to_types.size() < static_cast<size_t>(i)) {
                     error(
-                        "SPECIES_TO_METATENSOR_TYPES is too small, "
-                        "it should have one entry for each species (we have at least "
-                        + std::to_string(i) + " species and " +
-                        std::to_string(species_to_metatensor_types.size()) +
-                        "entries in SPECIES_TO_METATENSOR_TYPES)"
+                        "SPECIES_TO_TYPES is too small, it should have one entry "
+                        "for each species (we have at least " + std::to_string(i) +
+                        " species and " + std::to_string(species_to_types.size()) +
+                        "entries in SPECIES_TO_TYPES)"
                     );
                 }
 
-                type = species_to_metatensor_types[i - 1];
+                type = species_to_types[static_cast<size_t>(i - 1)];
             }
 
-            log.printf("  Species %d includes atoms : ", i);
+            log.printf("  atoms with type %d are: ", type);
             for(unsigned j=0; j<t.size(); j++) {
+                log.printf("%d ", t[j]);
                 all_atoms.push_back(t[j]);
                 atomic_types.push_back(type);
             }
@@ -175,15 +185,15 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
 
         int32_t type = 1;
         if (has_custom_types) {
-            type = species_to_metatensor_types[0];
+            type = species_to_types[0];
         }
         atomic_types.resize(all_atoms.size(), type);
     }
 
-    if (has_custom_types && species_to_metatensor_types.size() != n_species) {
+    if (has_custom_types && species_to_types.size() != n_species) {
         this->warning(
-            "SPECIES_TO_METATENSOR_TYPES contains more entries (" +
-            std::to_string(species_to_metatensor_types.size()) +
+            "SPECIES_TO_TYPES contains more entries (" +
+            std::to_string(species_to_types.size()) +
             ") than there where species (" + std::to_string(n_species) + ")"
         );
     }
@@ -196,12 +206,6 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
     // TODO: selected_atoms
     // evaluations_options_->set_selected_atoms()
 
-    // setup the output
-    // TODO: define the size/type of output a bit better
-    this->addValue({1, 1});
-    this->setNotPeriodic();
-    this->getPntrToComponent(0)->buildDataStore();
-
     // create evaluation options for the model. These won't change during the
     // simulation, so we initialize them once here.
     evaluations_options_ = torch::make_intrusive<metatensor_torch::ModelEvaluationOptionsHolder>();
@@ -213,7 +217,55 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
     // we are using torch autograd system to compute gradients, so we don't need
     // any explicit gradients.
     output->explicit_gradients = {};
-    evaluations_options_->outputs.insert("collective_variable", output);
+    evaluations_options_->outputs.insert("plumed::cv", output);
+
+
+    // setup storage for the computed CV: we need to run the model once to know
+    // the shape of the output, so we use a dummy system with one since atom for
+    // this
+    auto tensor_options = torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCPU);
+    auto dummy_system = torch::make_intrusive<metatensor_torch::SystemHolder>(
+        /*types = */ this->atomic_types_.index({torch::indexing::Slice(0, 1)}),
+        /*positions = */ torch::zeros({1, 3}, tensor_options),
+        /*cell = */ torch::zeros({3, 3}, tensor_options)
+    );
+    for (auto request: this->nl_requests_) {
+        auto neighbors = this->computeNeighbors(request, {PLMD::Vector(0, 0, 0)}, PLMD::Tensor(0, 0, 0, 0, 0, 0, 0, 0, 0));
+        metatensor_torch::register_autograd_neighbors(dummy_system, neighbors, this->check_consistency_);
+        dummy_system->add_neighbors_list(request, neighbors);
+    }
+
+    if (output->per_atom) {
+        this->n_samples_ = static_cast<unsigned>(this->atomic_types_.size(0));
+    } else {
+        this->n_samples_ = 1;
+    }
+
+    this->n_properties_ = static_cast<unsigned>(this->executeModel(dummy_system).size(1));
+
+    if (n_samples_ == 1 && n_properties_ == 1) {
+        log.printf("  the output of this model is a scalar\n");
+
+        this->addValue({this->n_samples_, this->n_properties_});
+    } else if (n_samples_ == 1) {
+        log.printf("  the output of this model is 1x%d vector\n", n_properties_);
+
+        this->addValue({this->n_properties_});
+        this->getPntrToComponent(0)->buildDataStore();
+    } else if (n_properties_ == 1) {
+        log.printf("  the output of this model is %dx1 vector\n", n_samples_);
+
+        this->addValue({this->n_samples_});
+        this->getPntrToComponent(0)->buildDataStore();
+    } else {
+        log.printf("  the output of this model is a %dx%d matrix\n", n_samples_, n_properties_);
+
+        this->addValue({this->n_samples_, this->n_properties_});
+        this->getPntrToComponent(0)->buildDataStore();
+        this->getPntrToComponent(0)->reshapeMatrixStore(n_properties_);
+    }
+
+    this->setNotPeriodic();
 }
 
 unsigned MetatensorPlumedAction::getNumberOfDerivatives() {
@@ -264,7 +316,6 @@ void MetatensorPlumedAction::createSystem() {
         torch_cell = torch_cell.matmul(this->strain_);
     }
 
-
     // TODO: move data to another dtype/device as requested by the model or user
     this->system_ = torch::make_intrusive<metatensor_torch::SystemHolder>(
         this->atomic_types_,
@@ -274,10 +325,7 @@ void MetatensorPlumedAction::createSystem() {
 
     // compute the neighbors list requested by the model, and register them with
     // the system
-    auto nl_requests = this->model_.run_method("requested_neighbors_lists");
-    for (auto request_ivalue: nl_requests.toList()) {
-        auto request = request_ivalue.get().toCustomClass<metatensor_torch::NeighborsListOptionsHolder>();
-
+    for (auto request: this->nl_requests_) {
         auto neighbors = this->computeNeighbors(request, positions, cell);
         metatensor_torch::register_autograd_neighbors(this->system_, neighbors, this->check_consistency_);
         this->system_->add_neighbors_list(request, neighbors);
@@ -301,7 +349,7 @@ metatensor_torch::TorchTensorBlock MetatensorPlumedAction::computeNeighbors(
 
     auto cutoff = request->engine_cutoff(this->getUnits().getLengthString());
 
-    auto periodic = (
+    auto non_periodic = (
         cell(0, 0) == 0.0 && cell(0, 1) == 0.0 && cell(0, 2) == 0.0 &&
         cell(1, 0) == 0.0 && cell(1, 1) == 0.0 && cell(1, 2) == 0.0 &&
         cell(2, 0) == 0.0 && cell(2, 2) == 0.0 && cell(2, 2) == 0.0
@@ -324,7 +372,7 @@ metatensor_torch::TorchTensorBlock MetatensorPlumedAction::computeNeighbors(
         reinterpret_cast<const double (*)[3]>(positions.data()),
         positions.size(),
         reinterpret_cast<const double (*)[3]>(&cell(0, 0)),
-        periodic,
+        !non_periodic,
         VesinCPU,
         options,
         vesin_neighbor_list,
@@ -334,7 +382,7 @@ metatensor_torch::TorchTensorBlock MetatensorPlumedAction::computeNeighbors(
     if (status != EXIT_SUCCESS) {
         this->error(
             "failed to compute neighbor list (cutoff=" + std::to_string(cutoff) +
-            "full=" + (request->full_list() ? "true" : "false") + "): " + error_message
+            ", full=" + (request->full_list() ? "true" : "false") + "): " + error_message
         );
     }
 
@@ -375,82 +423,72 @@ metatensor_torch::TorchTensorBlock MetatensorPlumedAction::computeNeighbors(
     return neighbors;
 }
 
-
-void MetatensorPlumedAction::calculate() {
-    this->createSystem();
-
+torch::Tensor MetatensorPlumedAction::executeModel(metatensor_torch::System system) {
     try {
         auto ivalue_output = this->model_.forward({
-            std::vector<metatensor_torch::System>{this->system_},
+            std::vector<metatensor_torch::System>{system},
             evaluations_options_,
             this->check_consistency_,
         });
 
         auto dict_output = ivalue_output.toGenericDict();
-        auto cv = dict_output.at("collective_variable");
+        auto cv = dict_output.at("plumed::cv");
         this->output_ = cv.toCustomClass<metatensor_torch::TensorMapHolder>();
     } catch (const std::exception& e) {
         error("failed to evaluate the model: " + std::string(e.what()));
     }
 
-    // send the output back to plumed
     plumed_massert(this->output_->keys()->count() == 1, "output should have a single block");
     auto block = metatensor_torch::TensorMapHolder::block_by_id(this->output_, 0);
     plumed_massert(block->components().empty(), "components are not yet supported in the output");
-    auto torch_values = block->values().to(torch::kCPU).to(torch::kFloat64);
-    auto n_samples = torch_values.size(0);
-    auto n_properties = torch_values.size(1);
+
+    return block->values().to(torch::kCPU).to(torch::kFloat64);
+}
+
+
+void MetatensorPlumedAction::calculate() {
+    this->createSystem();
+
+    auto torch_values = executeModel(this->system_);
+
+    if (static_cast<unsigned>(torch_values.size(0)) != this->n_samples_) {
+        error(
+            "expected the model to return a TensorBlock with " +
+            std::to_string(this->n_samples_) + " samples, got " +
+            std::to_string(torch_values.size(0)) + " instead"
+        );
+    } else if (static_cast<unsigned>(torch_values.size(1)) != this->n_properties_) {
+        error(
+            "expected the model to return a TensorBlock with " +
+            std::to_string(this->n_properties_) + " properties, got " +
+            std::to_string(torch_values.size(1)) + " instead"
+        );
+    }
 
     Value* value = this->getPntrToComponent(0);
-    const auto& value_shape = value->getShape();
     // reshape the plumed `Value` to hold the data returned by the model
-    if (n_samples == 1) {
-        if (n_properties == 1) {
-            // the CV is a single scalar
-            if (value->getRank() != 0) {
-                log.printf("  output of metatensor model is a scalar\n");
-                value->setShape({});
-            }
-
+    if (n_samples_ == 1) {
+        if (n_properties_ == 1) {
             value->set(torch_values.item<double>());
         } else {
             // we have multiple CV describing a single thing (atom or full system)
-            if (value->getRank() != 1 || value_shape[0] != n_properties) {
-                log.printf("  output of metatensor model is a 1x%d vector\n", n_properties);
-                value->setShape({static_cast<unsigned>(n_properties)});
-            }
-
-            for (unsigned i=0; i<n_properties; i++) {
+            for (unsigned i=0; i<n_properties_; i++) {
                 value->set(i, torch_values[0][i].item<double>());
             }
         }
     } else {
-        if (n_properties == 1) {
+        if (n_properties_ == 1) {
             // we have a single CV describing multiple things (i.e. atoms)
-            if (value->getRank() != 1 || value_shape[0] != n_samples) {
-                log.printf("  output of metatensor model is a %dx1 vector\n", n_samples);
-                value->setShape({static_cast<unsigned>(n_samples)});
-            }
-
-            // TODO: check sample order?
-            for (unsigned i=0; i<n_samples; i++) {
+            for (unsigned i=0; i<n_samples_; i++) {
+                // TODO: check sample order
                 value->set(i, torch_values[i][0].item<double>());
             }
         } else {
             // the CV is a matrix
-            if (value->getRank() != 2 || value_shape[0] != n_samples || value_shape[1] != n_properties) {
-                log.printf("  output of metatensor model is a %dx%d matrix\n", n_samples, n_properties);
-                value->setShape({
-                    static_cast<unsigned>(n_samples),
-                    static_cast<unsigned>(n_properties),
-                });
-                value->reshapeMatrixStore(n_properties);
-            }
-
-            // TODO: check sample order?
-            for (unsigned i=0; i<n_samples; i++) {
-                for (unsigned j=0; j<n_properties; j++) {
-                    value->set(i * n_properties + j, torch_values[i][j].item<double>());
+            for (unsigned i=0; i<n_samples_; i++) {
+                // TODO: check sample order
+                for (unsigned j=0; j<n_properties_; j++) {
+                    value->set(i * n_properties_ + j, torch_values[i][j].item<double>());
                 }
             }
         }
@@ -466,29 +504,27 @@ void MetatensorPlumedAction::apply() {
 
     auto block = metatensor_torch::TensorMapHolder::block_by_id(this->output_, 0);
     auto torch_values = block->values().to(torch::kCPU).to(torch::kFloat64);
-    auto n_samples = torch_values.size(0);
-    auto n_properties = torch_values.size(1);
 
     auto output_grad = torch::zeros_like(torch_values);
-    if (n_samples == 1) {
-        if (n_properties == 1) {
+    if (n_samples_ == 1) {
+        if (n_properties_ == 1) {
             output_grad[0][0] = value->getForce();
         } else {
-            for (unsigned i=0; i<n_properties; i++) {
+            for (unsigned i=0; i<n_properties_; i++) {
                 output_grad[0][i] = value->getForce(i);
             }
         }
     } else {
-        if (n_properties == 1) {
+        if (n_properties_ == 1) {
             // TODO: check sample order?
-            for (unsigned i=0; i<n_samples; i++) {
+            for (unsigned i=0; i<n_samples_; i++) {
                 output_grad[i][0] = value->getForce(i);
             }
         } else {
             // TODO: check sample order?
-            for (unsigned i=0; i<n_samples; i++) {
-                for (unsigned j=0; j<n_properties; j++) {
-                    output_grad[i][j] = value->getForce(i * n_properties + j);
+            for (unsigned i=0; i<n_samples_; i++) {
+                for (unsigned j=0; j<n_properties_; j++) {
+                    output_grad[i][j] = value->getForce(i * n_properties_ + j);
                 }
             }
         }
@@ -550,7 +586,7 @@ namespace PLMD { namespace metatensor {
         keys.add("numbered", "SPECIES", "the atoms in each PLUMED species");
         keys.reset_style("SPECIES", "atoms");
 
-        keys.add("optional", "SPECIES_TO_METATENSOR_TYPES", "mapping from PLUMED SPECIES to metatensor's atomic types");
+        keys.add("optional", "SPECIES_TO_TYPES", "mapping from PLUMED SPECIES to metatensor's atomic types");
     }
 
     PLUMED_REGISTER_ACTION(MetatensorPlumedAction, "METATENSOR")

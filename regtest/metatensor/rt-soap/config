@@ -1,5 +1,4 @@
 plumed_modules=metatensor
 plumed_needs=metatensor
 type=driver
-# this is to test a different name
 arg="--plumed plumed.dat --ixyz crystal_structure.xyz --dump-forces forces --dump-forces-fmt %8.4f --debug-forces forces.num"

@@ -15,16 +15,16 @@ TORCH_CMAKE_PREFIX=$(python -c "import torch; print(torch.utils.cmake_prefix_pat
 TORCH_PREFIX=$(cd "$TORCH_CMAKE_PREFIX/../.." && pwd)
 
 TORCH_INCLUDES="-I$TORCH_PREFIX/include -I$TORCH_PREFIX/include/torch/csrc/api/include"
-
-# patch a bug from torch's MKL detection
-cd <PLUMED/DIR>
-./src/metatensor/patch-torch.sh "$TORCH_PREFIX"
 ```
 
 2. a) build and install metatensor-torch from source. You'll need a rust
       compiler on your system, the easiest way is by using https://rustup.rs/
 
 ```bash
+# patch a bug from torch's MKL detection
+cd <PLUMED/DIR>
+./src/metatensor/patch-torch.sh "$TORCH_PREFIX"
+
 cd <SOME/PLACE/WHERE/TO/PUT/METATENSOR/SOURCES>
 
 # define a location where metatensor should be installed
