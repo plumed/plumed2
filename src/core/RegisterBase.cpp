@@ -119,8 +119,12 @@ Register::~Register() noexcept {
 
 std::vector<std::string> Register::getKeysWithDLHandle(void* image) const {
   std::vector<std::string> res;
+  const auto prefix=imageToString(image)+":";
   for(auto & k : getKeys()) {
-    if(Tools::startWith(k,imageToString(image)+":")) res.push_back(k);
+    if(Tools::startWith(k,prefix)) {
+      if(!std::getenv("PLUMED_LOAD_ACTION_DEBUG")) k=k.substr(prefix.length());
+      res.push_back(k);
+    }
   }
   return res;
 }

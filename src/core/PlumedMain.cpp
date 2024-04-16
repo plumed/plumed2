@@ -1252,7 +1252,10 @@ void PlumedMain::load(const std::string& fileName) {
 // this will work even if plumed is not in the execution path or if it has been
 // installed with a name different from "plumed"
       std::string cmd=config::getEnvCommand()+" \""+config::getPlumedRoot()+"\"/scripts/mklib.sh "+libName;
-      log<<"Executing: "<<cmd;
+
+      if(std::getenv("PLUMED_LOAD_ACTION_DEBUG")) log<<"Executing: "<<cmd;
+      else log<<"Compiling: "<<libName;
+
       if(comm.Get_size()>0) log<<" (only on master node)";
       log<<"\n";
 
