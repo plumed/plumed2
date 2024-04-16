@@ -42,6 +42,8 @@ std::unique_ptr<Action> ActionRegister::create(const std::vector<void*> & images
   Keywords keys;
   content.keys(keys);
   ActionOptions nao( ao,keys );
+  auto fullPath=getFullPath(images,ao.line[0]);
+  nao.setFullPath(fullPath);
   return content.create(nao);
 }
 

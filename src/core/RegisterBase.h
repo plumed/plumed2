@@ -36,7 +36,7 @@ namespace PLMD {
 /// Actual registers should inherit through the RegisterBase class below
 class Register {
   /// Initialize registration - only used by registrationLock()
-  static void pushDLRegistration();
+  static void pushDLRegistration(const std::string & fullpath);
   /// Finalize registration - only used by registrationLock()
   static void popDLRegistration() noexcept;
 
@@ -45,6 +45,8 @@ protected:
   static std::string imageToString(void* image);
   /// Check if we are in a dlopen section
   static bool isDLRegistering() noexcept;
+  /// Return the path of the currently-loading library
+  static const std::string getRegisteringFullPath() noexcept;
   /// Save all staged objects from a register
   virtual void completeRegistration(void* image)=0;
   /// Clear staged objects.
@@ -70,14 +72,14 @@ public:
   class RegistrationLock {
     bool active;
   public:
-    RegistrationLock();
+    RegistrationLock(const std::string & fullpath);
     RegistrationLock(const RegistrationLock&) = delete;
     RegistrationLock(RegistrationLock&& other) noexcept;
     ~RegistrationLock() noexcept;
   };
 
   /// return a registration lock
-  static RegistrationLock registrationLock();
+  static RegistrationLock registrationLock(const std::string & fullpath);
 
   /// Save all staged objects in all registers
   static void completeAllRegistrations(void* image);
@@ -93,14 +95,24 @@ public:
 template<class Content>
 class RegisterBase :
   public Register {
-/// Main register map
-  std::map<std::string,std::unique_ptr<Content>> m;
-/// Map of staged keys
-  std::map<std::string,std::unique_ptr<Content>> staged_m;
 
 public:
+/// auxiliary class
+  struct ContentAndFullPath {
+    Content content;
+    std::string fullPath;
+  };
+
+private:
+/// Main register map
+  std::map<std::string,std::unique_ptr<ContentAndFullPath>> m;
+/// Map of staged keys
+  std::map<std::string,std::unique_ptr<ContentAndFullPath>> staged_m;
+
+public:
+
   struct ID {
-    Content* ptr{nullptr};
+    ContentAndFullPath* ptr{nullptr};
   };
 /// Register a new class.
 /// \param key The name of the directive to be used in the input file
@@ -116,6 +128,9 @@ public:
 
 /// Return the content associated to a key in the register, accessing to registerd images
   const Content & get(const std::vector<void*> & images,const std::string & key) const;
+
+/// Return the full path associated to a key in the register, accessing to registerd images
+  const std::string & getFullPath(const std::vector<void*> & images,const std::string & key) const;
 
 /// Return the content associated to a key in the register, only considering the default image
   const Content & get(const std::string & key) const;
@@ -144,7 +159,8 @@ public:
 template<class Content>
 typename RegisterBase<Content>::ID RegisterBase<Content>::add(std::string key,Content content) {
 
-  auto ptr=std::make_unique<Content>(content);
+  ContentAndFullPath insert({content,getRegisteringFullPath()});
+  auto ptr=std::make_unique<ContentAndFullPath>(insert);
   ID id{ptr.get()};
   if(isDLRegistering()) {
     plumed_assert(!staged_m.count(key)) << "cannot stage key twice with the same name "<< key<<"\n";
@@ -176,16 +192,26 @@ template<class Content>
 const Content & RegisterBase<Content>::get(const std::vector<void*> & images,const std::string & key) const {
   for(auto image = images.rbegin(); image != images.rend(); ++image) {
     auto qualified_key=imageToString(*image) + ":" + key;
-    if(m.count(qualified_key)>0) return *(m.find(qualified_key)->second);
+    if(m.count(qualified_key)>0) return m.find(qualified_key)->second->content;
   }
   plumed_assert(m.count(key)>0);
-  return *(m.find(key)->second);
+  return m.find(key)->second->content;
+}
+
+template<class Content>
+const std::string & RegisterBase<Content>::getFullPath(const std::vector<void*> & images,const std::string & key) const {
+  for(auto image = images.rbegin(); image != images.rend(); ++image) {
+    auto qualified_key=imageToString(*image) + ":" + key;
+    if(m.count(qualified_key)>0) return m.find(qualified_key)->second->fullPath;
+  }
+  plumed_assert(m.count(key)>0);
+  return m.find(key)->second->fullPath;
 }
 
 template<class Content>
 const Content & RegisterBase<Content>::get(const std::string & key) const {
   plumed_assert(m.count(key)>0);
-  return *(m.find(key)->second);
+  return m.find(key)->second->content;
 }
 
 template<class Content>

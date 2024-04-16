@@ -39,6 +39,9 @@ public:
 
   /// Take care of all exisiting registers
   std::vector<Register*> registers;
+
+  /// Full path of the registering library
+  std::string fullPath;
 };
 
 Singleton & getSingleton() {
@@ -48,10 +51,10 @@ Singleton & getSingleton() {
 
 }
 
-Register::RegistrationLock::RegistrationLock():
+Register::RegistrationLock::RegistrationLock(const std::string & fullPath):
   active(true)
 {
-  pushDLRegistration();
+  pushDLRegistration(fullPath);
 }
 
 Register::RegistrationLock::~RegistrationLock() noexcept {
@@ -64,14 +67,15 @@ Register::RegistrationLock::RegistrationLock(RegistrationLock&& other) noexcept:
   other.active=false;
 }
 
-Register::RegistrationLock Register::registrationLock() {
-  return RegistrationLock();
+Register::RegistrationLock Register::registrationLock(const std::string & fullPath) {
+  return RegistrationLock(fullPath);
 }
 
 
-void Register::pushDLRegistration() {
+void Register::pushDLRegistration(const std::string & fullPath) {
   auto & singleton=getSingleton();
   singleton.registeringMutex.lock();
+  singleton.fullPath=fullPath;
   if(singleton.registeringCounter>0) {
     singleton.registeringMutex.unlock();
     plumed_error()<<"recursive registrations are technically possible but disabled at this stage "<<singleton.registeringCounter;
@@ -100,6 +104,11 @@ std::string Register::imageToString(void* image) {
 bool Register::isDLRegistering() noexcept {
   auto & singleton=getSingleton();
   return singleton.registeringCounter>0;
+}
+
+const std::string Register::getRegisteringFullPath() noexcept {
+  auto & singleton=getSingleton();
+  return singleton.fullPath;
 }
 
 Register::Register() {
