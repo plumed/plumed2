@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithMatrix.h"
-#include "AdjacencyMatrixBase.h"
 
 namespace PLMD {
 namespace adjmat {
@@ -72,7 +71,7 @@ void ActionWithMatrix::finishChainBuild( ActionWithVector* act ) {
   else {
     next_action_in_chain=am;
     // Build the list of things we are going to loop over in runTask
-    AdjacencyMatrixBase* aa=dynamic_cast<AdjacencyMatrixBase*>(act); if( aa || act->getName()=="VSTACK" ) return ;
+    if( am->isAdjacencyMatrix() || act->getName()=="VSTACK" ) return ;
     plumed_massert( !matrix_to_do_after, "cannot add " + act->getLabel() + " in " + getLabel() + " as have already added " + matrix_to_do_after->getLabel() );
     matrix_to_do_after=am; am->matrix_to_do_before=this;
   }
@@ -134,7 +133,7 @@ void ActionWithMatrix::performTask( const unsigned& task_index, MultiValue& myva
 void ActionWithMatrix::runTask( const std::string& controller, const unsigned& current, const unsigned colno, MultiValue& myvals ) const {
   double outval=0; myvals.setTaskIndex(current); myvals.setSecondTaskIndex( colno );
   if( isActive() ) performTask( controller, current, colno, myvals );
-  bool hasval=false;
+  bool hasval = !isAdjacencyMatrix();
   for(int i=0; i<getNumberOfComponents(); ++i) {
     if( fabs(myvals.get( getConstPntrToComponent(i)->getPositionInStream()) )>0 ) { hasval=true; break; }
   }

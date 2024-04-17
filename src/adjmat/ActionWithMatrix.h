@@ -60,6 +60,8 @@ public:
   explicit ActionWithMatrix(const ActionOptions&);
   virtual ~ActionWithMatrix();
 ///
+  virtual bool isAdjacencyMatrix() const { return false; }
+///
   void getAllActionLabelsInMatrixChain( std::vector<std::string>& mylabels ) const override ;
 /// Get the first matrix in this chain
   const ActionWithMatrix* getFirstMatrixInChain() const ;
