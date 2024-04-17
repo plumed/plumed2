@@ -134,15 +134,24 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
     try {
         this->model_ = metatensor_torch::load_atomistic_model(model_path, extensions_directory);
     } catch (const std::exception& e) {
-        error("failed to load model at '" + model_path + "': " + e.what());
+        this->error("failed to load model at '" + model_path + "': " + e.what());
     }
 
     // extract information from the model
+    auto metadata = this->model_.run_method("metadata").toCustomClass<metatensor_torch::ModelMetadataHolder>();
     this->capabilities_ = this->model_.run_method("capabilities").toCustomClass<metatensor_torch::ModelCapabilitiesHolder>();
     auto requests_ivalue = this->model_.run_method("requested_neighbors_lists");
     for (auto request_ivalue: requests_ivalue.toList()) {
         auto request = request_ivalue.get().toCustomClass<metatensor_torch::NeighborsListOptionsHolder>();
         this->nl_requests_.push_back(request);
+    }
+
+    log.printf("\n%s\n", metadata->print().c_str());
+    // add the model references to PLUMED citation handling mechanism
+    for (const auto& it: metadata->references) {
+        for (const auto& ref: it.value()) {
+            this->cite(ref);
+        }
     }
 
     // parse the atomic types from the input file
@@ -168,7 +177,7 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
             int32_t type = i;
             if (has_custom_types) {
                 if (species_to_types.size() < static_cast<size_t>(i)) {
-                    error(
+                    this->error(
                         "SPECIES_TO_TYPES is too small, it should have one entry "
                         "for each species (we have at least " + std::to_string(i) +
                         " species and " + std::to_string(species_to_types.size()) +

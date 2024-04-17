@@ -60,9 +60,11 @@ class SOAP_CV(torch.nn.Module):
         soap_block = soap.block()
         projected = soap_block.values @ self.pca_projection
 
+        samples = soap_block.samples.remove("center_type")
+
         block = TensorBlock(
             values=projected,
-            samples=soap_block.samples,
+            samples=samples,
             components=[],
             properties=Labels("soap_pca", torch.tensor([[0], [1], [2]], device=device)),
         )
@@ -99,7 +101,7 @@ metadata = ModelMetadata(
     description="""
 A simple collective variable for testing purposes
 """,
-    authors=["..."],
+    authors=["Some Author"],
     references={
         "implementation": ["ref to SOAP code"],
         "architecture": ["ref to SOAP"],
