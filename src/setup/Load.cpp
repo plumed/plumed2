@@ -89,6 +89,29 @@ variables. Of course, after your implementation is ready you might
 want to add it to the PLUMED source tree and recompile
 the whole PLUMED.
 
+Starting with PLUMED 2.10, the LOAD action can be placed in any point of the input
+file, and will only affect commands that are placed after the LOAD action.
+In other words, you can create a file named `Distance.cpp` and that reimplement
+the \ref DISTANCE action and use it like this:
+
+\plumedfile
+# compute standard distance
+d: DISTANCE ATOMS=1,10
+# load the new definition
+LOAD FILE=Distance.so
+# compute modified distance
+d2: DISTANCE ATOMS=1,10
+# print them on a file
+PRINT ARG=d,d2 FILE=compare-them
+\endplumedfile
+
+In addition, starting with PLUMED 2.10 the LOAD action can be used in contexts where
+multiple Plumed objects exist. A possible example is multithreading: loading an action
+from a Plumed object used in one thread will not affect other threads.
+Another example is if multiple Plumed objects are created in the C/C++ or Python interface.
+If a LOAD command is used in one of these objects, the loaded action will not affect
+the other objects.
+
 
 */
 //+ENDPLUMEDOC
