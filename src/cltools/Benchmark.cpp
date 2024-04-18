@@ -495,7 +495,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
     if(f->empty()) {
       return;
     }
-    generator deleterRng;
+    generator bootstrapRng;
 
     const auto size=f->back().timings.size();
     //B are the bootstrap iterations
@@ -540,7 +540,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
 
         //B are the bootstrap iterations
         for(unsigned b=0; b<B; b++) {
-          for(auto & c : choice) c=distrib(deleterRng);
+          for(auto & c : choice) c=distrib(bootstrapRng);
           long long int reference=0;
           for(auto & c : choice) {
             reference+=blocks[0][c];
@@ -548,7 +548,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
           for(auto i=0ULL; i<blocks.size(); i++) {
             long long int estimate=0;
             // this would lead to separate bootstrap samples for each estimate:
-            // for(auto & c : choice){c=distrib(deleterRng);}
+            // for(auto & c : choice){c=distrib(bootstrapRng);}
             for(auto & c : choice) {
               estimate+=blocks[i][c];
             }
