@@ -85,7 +85,7 @@ Action::Action(const ActionOptions&ao):
   line.erase(line.begin());
   if( !keywords.exists("NO_ACTION_LOG") ) {
     log.printf("Action %s\n",name.c_str());
-    if(ao.fullPath.length()>0) log<<"  From library: "<<ao.fullPath<<"\n";
+    if(ao.fullPath.length()>0) log<<"  from library: "<<ao.fullPath<<"\n";
   }
 
   if(comm.Get_rank()==0) {
