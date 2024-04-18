@@ -179,12 +179,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
     } else if(Tools::startWith(a,"--load=")) {
       a.erase(0,a.find("=")+1);
       prefix="";
-      void *p=dlloader.load(a);
-      if(!p) {
-        std::fprintf(stderr,"ERROR: cannot load library %s\n",a.c_str());
-        std::fprintf(stderr,"ERROR: %s\n",dlloader.error().c_str());
-        return 1;
-      }
+      dlloader.load(a);
     } else if(a=="--load") {
       prefix="--load=";
     } else if(a[0]=='-') {

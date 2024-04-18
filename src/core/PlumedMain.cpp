@@ -1278,10 +1278,7 @@ void PlumedMain::load(const std::string& fileName) {
     // If we have multiple threads (each holding a Plumed object), each of them
     // will load the library, but each of them will only see actions registered
     // from the owned library
-    void *p=dlloader.load(libName);
-    if(!p) {
-      plumed_error()<<"I cannot load library " << fileName << " " << dlloader.error();
-    }
+    auto *p=dlloader.load(libName);
     log<<"Loading shared library "<<libName.c_str()<<" at "<<p<<"\n";
     log<<"Here is the list of new actions\n";
     log<<"\n";

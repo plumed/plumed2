@@ -39,7 +39,6 @@ namespace PLMD {
 /// to the ActionRegister object.
 class DLLoader {
   std::vector<void*> handles;
-  std::string lastError;
   /// Deleted copy constructor
   DLLoader(const DLLoader&) = delete;
   /// Deleted assignment
@@ -51,8 +50,6 @@ public:
   ~DLLoader();
   /// Load a library, returning its handle
   void* load(const std::string&);
-  /// Returns the last error in dynamic loader
-  const std::string & error();
   /// Returns true if the dynamic loader is available (on some systems it may not).
   static bool installed();
   /// RAII helper for promoting RTLD_LOCAL loaded objects to RTLD_GLOBAL

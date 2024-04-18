@@ -46,21 +46,13 @@ void* DLLoader::load(const std::string&s) {
 #ifdef __PLUMED_HAS_DLOPEN
   auto lockerAction=Register::registrationLock(s);
   void* p=dlopen(s.c_str(),RTLD_NOW|RTLD_LOCAL);
-  if(!p) {
-    lastError=dlerror();
-  } else {
-    lastError="";
-    handles.push_back(p);
-    Register::completeAllRegistrations(p);
-  }
+  if(!p) plumed_error()<<"Could not load library "<<s<<"\n"<<dlerror();
+  handles.push_back(p);
+  Register::completeAllRegistrations(p);
   return p;
 #else
-  return NULL;
+  plumed_error()<<"you are trying to use dlopen but it's not configured on your system";
 #endif
-}
-
-const std::string & DLLoader::error() {
-  return lastError;
 }
 
 DLLoader::~DLLoader() {
