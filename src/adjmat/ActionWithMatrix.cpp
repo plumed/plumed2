@@ -153,7 +153,8 @@ void ActionWithMatrix::runTask( const std::string& controller, const unsigned& c
           unsigned kindex = myvals.getActiveIndex(sind,j); myvals.addMatrixForce( matindex, kindex, fforce*myvals.getDerivative(sind,kindex ) );
         }
       }
-      myvals.stashMatrixElement( matindex, rowstart, col_stash_index, myvals.get( myval->getPositionInStream() ) );
+      double finalval = myvals.get( myval->getPositionInStream() );
+      if( fabs(finalval)>0 ) myvals.stashMatrixElement( matindex, rowstart, col_stash_index, finalval );
     }
   }
   if( matrix_to_do_after ) matrix_to_do_after->runTask( controller, current, colno, myvals );
