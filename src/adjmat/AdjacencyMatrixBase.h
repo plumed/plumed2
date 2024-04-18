@@ -49,7 +49,6 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit AdjacencyMatrixBase(const ActionOptions&);
-  bool isAdjacencyMatrix() const override { return true; }
   unsigned getNumberOfDerivatives() override ;
   unsigned getNumberOfColumns() const override;
   void prepare() override;

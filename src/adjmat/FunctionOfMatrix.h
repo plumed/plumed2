@@ -324,16 +324,12 @@ void FunctionOfMatrix<T>::performTask( const std::string& controller, const unsi
     }
   } else {
     unsigned base=0; ind2 = index2;
-    for(unsigned j=argstart; j<getNumberOfArguments(); ++j) {
-      if( getPntrToArgument(j)->getRank()!=2 ) continue ;
-      if( index2>=getPntrToArgument(j)->getShape()[0] ) ind2 = index2 - getPntrToArgument(j)->getShape()[0];
-      break;
-    }
+    if( index2>=getConstPntrToComponent(0)->getShape()[0] ) ind2 = index2 - getConstPntrToComponent(0)->getShape()[0];
     for(unsigned j=argstart; j<getNumberOfArguments(); ++j) {
       if( getPntrToArgument(j)->getRank()==2 ) {
         for(int i=0; i<getNumberOfComponents(); ++i) {
           unsigned ostrn=getConstPntrToComponent(i)->getPositionInStream();
-          unsigned myind = base + getPntrToArgument(j)->getShape()[1]*index1 + ind2;
+          unsigned myind = base + getConstPntrToComponent(i)->getShape()[1]*index1 + ind2;
           myvals.addDerivative( ostrn, myind, derivatives(i,j) );
           myvals.updateIndex( ostrn, myind );
         }
