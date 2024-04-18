@@ -261,7 +261,7 @@ struct Kernel :
   }
 };
 
-namespace benchDistributions {
+namespace  {
 
 class UniformSphericalVector {
   //double rminCub;
@@ -409,7 +409,7 @@ struct tiledSimpleCubic:public AtomDistribution {
 
   }
 };
-std::unique_ptr<AtomDistribution> getDistribution(std::string_view atomicDistr) {
+std::unique_ptr<AtomDistribution> getAtomDistribution(std::string_view atomicDistr) {
   std::unique_ptr<AtomDistribution> distribution;
   if(atomicDistr == "line") {
     distribution = std::make_unique<theLine>();
@@ -427,7 +427,7 @@ std::unique_ptr<AtomDistribution> getDistribution(std::string_view atomicDistr) 
   }
   return distribution;
 }
-} //namespace  benchDistributions
+} //anonymus namespace for benchmark distributions
 class Benchmark:
   public CLTool
 {
@@ -466,7 +466,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   // deterministic initializations to avoid issues with MPI
   generator rng;
   PLMD::Random atomicGenerator;
-  std::unique_ptr<benchDistributions::AtomDistribution> distribution;
+  std::unique_ptr<AtomDistribution> distribution;
 
   struct FileDeleter {
     void operator()(FILE*f) const noexcept {
@@ -645,7 +645,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   {
     std::string atomicDistr;
     parse("--atom-distribution",atomicDistr);
-    distribution = benchDistributions::getDistribution(atomicDistr);
+    distribution = getAtomDistribution(atomicDistr);
   }
 
   const auto initial_time=std::chrono::high_resolution_clock::now();
