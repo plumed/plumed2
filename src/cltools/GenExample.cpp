@@ -202,7 +202,7 @@ std::vector<std::vector<std::string> > GenExample::createLongInput( const std::v
     }
     if( status=="working" && keys.exists("IS_SHORTCUT") ) {
       myplumed.readInputLine( myinputline );
-      ActionShortcut* as=myplumed.getActionSet()[myplumed.getActionSet().size()-1].get()->castToActionShortcut();
+      ActionShortcut* as=dynamic_cast<ActionShortcut*>( myplumed.getActionSet()[myplumed.getActionSet().size()-1].get() );
       plumed_assert( as ); std::vector<std::string> shortcut_commands = as->getSavedInputLines();
       for(unsigned i=0; i<shortcut_commands.size(); ++i) {
         std::vector<std::string> words = Tools::getWords( shortcut_commands[i] ); long_input.push_back( words );
@@ -309,7 +309,7 @@ void GenExample::printExampleInput( const std::vector<std::vector<std::string> >
         ofile<<"<span style=\"display:none;\" id=\""<<egname<<lab<<"\">";
         ofile<<"The "<<interpreted[0]<<" action with label <b>"<<lab<<"</b>";
         myplumed.readInputLine( myinputline );
-        ActionWithValue* av=myplumed.getActionSet().selectWithLabel<Action*>(lab)->castToActionWithValue();
+        ActionWithValue* av=myplumed.getActionSet().selectWithLabel<ActionWithValue*>(lab);
         if( av ) {
           if( av->getNumberOfComponents()==1 ) { ofile<<" calculates a single scalar value"; }
           else if( av->getNumberOfComponents()>0 ) {
@@ -333,7 +333,7 @@ void GenExample::printExampleInput( const std::vector<std::vector<std::string> >
             ofile<<"</table>"<<std::endl;
           }
         } else {
-          ActionWithVirtualAtom* avv=myplumed.getActionSet().selectWithLabel<Action*>(lab)->castToActionWithVirtualAtom();
+          ActionWithVirtualAtom* avv=myplumed.getActionSet().selectWithLabel<ActionWithVirtualAtom*>(lab);
           if( avv ) ofile<<" calculates the position of a virtual atom";
           else if( interpreted[0]=="GROUP" ) ofile<<" defines a group of atoms so that they can be referred to later in the input";
         }
