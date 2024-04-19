@@ -5103,9 +5103,9 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 
   save_CXXFLAGS="$CXXFLAGS"
-  CXXFLAGS="$CXXFLAGS -Wredundant-delcs"
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -Wredundant-delcs" >&5
-$as_echo_n "checking whether $CXX accepts -Wredundant-delcs... " >&6; }
+  CXXFLAGS="$CXXFLAGS -Wredundant-decls"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -Wredundant-decls" >&5
+$as_echo_n "checking whether $CXX accepts -Wredundant-decls... " >&6; }
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
