@@ -434,6 +434,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
         for(const auto & pp : inputs ) {
+          plumed_assert(pp);
           DomainDecomposition* dd=pp->castToDomainDecomposition();
           if( dd ) dd->setAtomsNlocal(val.get<int>());
         }
@@ -441,6 +442,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
       case cmd_setAtomsGatindex:
         CHECK_INIT(initialized,word);
         for(const auto & pp : inputs ) {
+          plumed_assert(pp);
           DomainDecomposition* dd=pp->castToDomainDecomposition();
           if( dd ) dd->setAtomsGatindex(val,false);
         }
@@ -448,6 +450,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
       case cmd_setAtomsFGatindex:
         CHECK_INIT(initialized,word);
         for(const auto & pp : inputs ) {
+          plumed_assert(pp);
           DomainDecomposition* dd=pp->castToDomainDecomposition();
           if( dd ) dd->setAtomsGatindex(val,false);
         }
@@ -456,6 +459,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
         for(const auto & pp : inputs ) {
+          plumed_assert(pp);
           DomainDecomposition* dd=pp->castToDomainDecomposition();
           if( dd ) dd->setAtomsContiguous(val.get<int>());
         }
@@ -464,6 +468,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
         for(const auto & pp : inputs ) {
+          plumed_assert(pp);
           DomainDecomposition* dd=pp->castToDomainDecomposition();
           if( dd ) dd->createFullList(val);
         }
@@ -474,6 +479,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         CHECK_NOTNULL(val,word);
         unsigned nlists=0;
         for(const auto & pp : inputs ) {
+          plumed_assert(pp);
           DomainDecomposition* dd=pp->castToDomainDecomposition();
           if( dd ) { dd->getFullList(val); nlists++; }
         }
@@ -483,6 +489,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
       case cmd_clearFullList:
         CHECK_INIT(initialized,word);
         for(const auto & pp : inputs ) {
+          plumed_assert(pp);
           DomainDecomposition* dd=pp->castToDomainDecomposition();
           if( dd ) dd->clearFullList();
         }
@@ -540,6 +547,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         CHECK_INIT(initialized,word);
         std::vector<int> natoms;
         for(const auto & pp : inputs ) {
+          plumed_assert(pp);
           DomainDecomposition* dd=pp->castToDomainDecomposition();
           if ( dd ) natoms.push_back( dd->getNumberOfAtoms() );
         }
@@ -873,6 +881,7 @@ void PlumedMain::init() {
   log<<"Number of threads: "<<OpenMP::getNumThreads()<<"\n";
   log<<"Cache line size: "<<OpenMP::getCachelineSize()<<"\n";
   for(const auto & pp : inputs ) {
+    plumed_assert(pp);
     DomainDecomposition* dd=pp->castToDomainDecomposition();
     if ( dd ) log.printf("Number of atoms: %d\n",dd->getNumberOfAtoms());
   }
@@ -1123,6 +1132,7 @@ void PlumedMain::justCalculate() {
 // calculate the active actions in order (assuming *backward* dependence)
   for(const auto & pp : actionSet) {
     Action* p(pp.get());
+    plumed_assert(p);
     try {
       if(p->isActive()) {
 // Stopwatch is stopped when sw goes out of scope.
