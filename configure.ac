@@ -426,7 +426,7 @@ then
   PLUMED_CHECK_CXXFLAG([-Wcast-qual])
   PLUMED_CHECK_CXXFLAG([-Wcast-align])
   PLUMED_CHECK_CXXFLAG([-Wconversion])
-  PLUMED_CHECK_CXXFLAG([-Wredundant-delcs])
+  PLUMED_CHECK_CXXFLAG([-Wredundant-decls])
   PLUMED_CHECK_CXXFLAG([-Wvariadic-macros])
   PLUMED_CHECK_CXXFLAG([-Wold-style-cast])
 fi
