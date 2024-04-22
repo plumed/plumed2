@@ -116,6 +116,7 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
     for(auto c : action ) { if( isdigit(c) ) std::cout<<c; else std::cout<<"_"<<c; }
     std::cout<<".html\","<<std::endl;
     std::cout<<"    \"description\" : \""<<action_map[action_names[i]]<<"\",\n";
+    if( module_map.find(action_names[i]) == module_map.end() ) error("could not find module for action "  + action_names[i] );
     std::cout<<"    \"module\" : \""<<module_map[action_names[i]]<<"\",\n";
     // Now output keyword information
     Keywords keys; actionRegister().getKeywords( action_names[i], keys );
