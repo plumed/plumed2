@@ -1,4 +1,4 @@
-USE=core tools generic function colvar
+USE=core tools 
 
 #generic makefile
 include ../maketools/make.module

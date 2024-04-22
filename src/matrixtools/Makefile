@@ -1,4 +1,4 @@
-USE=core tools generic function valtools
+USE=core tools 
 
 # generic makefile
 include ../maketools/make.module

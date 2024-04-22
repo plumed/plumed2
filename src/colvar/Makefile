@@ -1,4 +1,4 @@
-USE=core tools vatom valtools matrixtools generic function refdist
+USE=core tools 
 
 #generic makefile
 include ../maketools/make.module

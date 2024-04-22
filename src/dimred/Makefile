@@ -1,4 +1,4 @@
-USE=core tools gridtools mapping generic refdist function colvar matrixtools valtools landmarks
+USE=core tools gridtools mapping 
 
 # generic makefile
 include ../maketools/make.module

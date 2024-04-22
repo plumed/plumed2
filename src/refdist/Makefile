@@ -1,4 +1,4 @@
-USE=core tools function matrixtools generic valtools
+USE=core tools function 
 
 #generic makefile
 include ../maketools/make.module

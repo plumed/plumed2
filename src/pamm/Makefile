@@ -1,4 +1,4 @@
-USE=core tools multicolvar adjmat matrixtools refdist function generic
+USE=core tools multicolvar adjmat 
 
 # generic makefile
 include ../maketools/make.module

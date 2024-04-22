@@ -1,3 +1,3 @@
-USE=core tools colvar adjmat matrixtools function generic 
+USE=core tools colvar 
 # generic makefile
 include ../maketools/make.module

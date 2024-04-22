@@ -1,4 +1,4 @@
-USE=core generic
+USE=core 
 
 # generic makefile
 include ../maketools/make.module

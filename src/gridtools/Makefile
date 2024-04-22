@@ -1,4 +1,4 @@
-USE=core tools function lepton valtools colvar multicolvar adjmat generic
+USE=core tools function lepton 
 
 #generic makefile
 include ../maketools/make.module

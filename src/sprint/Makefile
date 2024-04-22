@@ -1,4 +1,4 @@
-USE=core function adjmat valtools matrixtools
+USE=core
 
 # generic makefile
 include ../maketools/make.module

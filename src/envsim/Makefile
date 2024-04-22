@@ -1,4 +1,4 @@
-USE=core tools multicolvar adjmat matrixtools function generic
+USE=core tools multicolvar 
 
 # generic makefile
 include ../maketools/make.module

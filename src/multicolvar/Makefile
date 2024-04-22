@@ -1,4 +1,4 @@
-USE=core tools valtools matrixtools generic vatom function bias colvar
+USE=core tools 
 
 # generic makefile
 include ../maketools/make.module

@@ -1,4 +1,4 @@
-USE=core tools function
+USE=core tools 
 
 #generic makefile
 include ../maketools/make.module

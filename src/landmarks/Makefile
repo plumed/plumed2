@@ -1,4 +1,4 @@
-USE=colvar core tools matrixtools generic valtools function
+USE=core tools matrixtools 
 
 #generic makefile
 include ../maketools/make.module
