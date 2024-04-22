@@ -686,17 +686,17 @@ void MetatensorPlumedAction::apply() {
     );
 
     // add virials to the derivatives
-    derivatives.push_back(strain_grad[0][0].item<double>());
-    derivatives.push_back(strain_grad[0][1].item<double>());
-    derivatives.push_back(strain_grad[0][2].item<double>());
+    derivatives.push_back(-strain_grad[0][0].item<double>());
+    derivatives.push_back(-strain_grad[0][1].item<double>());
+    derivatives.push_back(-strain_grad[0][2].item<double>());
 
-    derivatives.push_back(strain_grad[1][0].item<double>());
-    derivatives.push_back(strain_grad[1][1].item<double>());
-    derivatives.push_back(strain_grad[1][2].item<double>());
+    derivatives.push_back(-strain_grad[1][0].item<double>());
+    derivatives.push_back(-strain_grad[1][1].item<double>());
+    derivatives.push_back(-strain_grad[1][2].item<double>());
 
-    derivatives.push_back(strain_grad[2][0].item<double>());
-    derivatives.push_back(strain_grad[2][1].item<double>());
-    derivatives.push_back(strain_grad[2][2].item<double>());
+    derivatives.push_back(-strain_grad[2][0].item<double>());
+    derivatives.push_back(-strain_grad[2][1].item<double>());
+    derivatives.push_back(-strain_grad[2][2].item<double>());
 
     unsigned index = 0;
     this->setForcesOnAtoms(derivatives, index);
