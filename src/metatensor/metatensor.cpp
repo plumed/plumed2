@@ -71,13 +71,21 @@ namespace PLMD { namespace metatensor {
 class MetatensorPlumedAction: public ActionAtomistic, public ActionWithValue {
 public:
     static void registerKeywords(Keywords& keys);
-    explicit MetatensorPlumedAction(const ActionOptions&) {
+    explicit MetatensorPlumedAction(const ActionOptions& options):
+        Action(options),
+        ActionAtomistic(options),
+        ActionWithValue(options)
+    {
         throw std::runtime_error(
             "Can not use metatensor action without the corresponding libraries. \n"
             "Make sure to configure with `--enable-metatensor --enable-libtorch` "
             "and that the corresponding libraries are found"
         );
     }
+
+    void calculate() override {}
+    void apply() override {}
+    unsigned getNumberOfDerivatives() override {return 0;}
 };
 
 }} // namespace PLMD::metatensor
