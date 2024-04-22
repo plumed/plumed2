@@ -12,6 +12,58 @@
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 
+//+PLUMEDOC METATENSORMOD_COLVAR METATENSOR
+/*
+Use arbitrary machine learning models as collective variables.
+
+Note that this action requires the metatensor-torch library. Check the
+instructions in the \ref METATENSORMOD page to enable this module.
+
+This action enables the use of fully custom machine learning models — based on
+the [metatensor atomistic models][mts_models] interface — as collective
+variables in PLUMED. Such machine learning model are typically written and
+customized using Python code, and then exported to run within PLUMED as
+[TorchScript], which is a subset of Python that can be executed by the C++ torch
+library.
+
+Metatensor offers a way to define such models and pass data from PLUMED (or any
+other simulation engine) to the model and back. For more information on how to
+define such model, have a look at the [corresponding tutorials][mts_tutorials],
+or at the code in `regtest/metatensor/`. Each of the Python scripts in this
+directory defines a custom machine learning CV that can be used with PLUMED.
+
+\par Examples
+
+TODO
+
+\par Collective variables and metatensor models
+
+Collective variables are not yet part of the [known outputs][mts_outputs] for
+metatensor models. Until the output format is standardized, this action expects
+the following:
+
+- the output name should be `"plumed::cv"`;
+- the output should contain a single [block][mts_block];
+- the output samples should be named `["system", "atom"]` for per-atom outputs;
+  or `["system"]` for global outputs. The `"system"` index should always be 0,
+  and the `"atom"` index should be the index of the atom (between 0 and the
+  total number of atoms);
+- the output should not have any components;
+- the output can have arbitrary properties;
+- the output should not have any explicit gradients, all gradient calculations
+  are done using autograd.
+
+*/ /*
+
+[TorchScript]: https://pytorch.org/docs/stable/jit.html
+[mts_models]: https://lab-cosmo.github.io/metatensor/latest/atomistic/index.html
+[mts_tutorials]: https://lab-cosmo.github.io/metatensor/latest/examples/atomistic/index.html
+[mts_outputs]: https://lab-cosmo.github.io/metatensor/latest/atomistic/outputs.html
+[mts_block]: https://lab-cosmo.github.io/metatensor/latest/torch/reference/block.html
+
+*/
+//+ENDPLUMEDOC
+
 
 #if !defined(__PLUMED_HAS_LIBTORCH) || !defined(__PLUMED_HAS_METATENSOR)
 
