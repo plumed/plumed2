@@ -27,6 +27,7 @@
 #include "CLToolRegister.h"
 #include "tools/Tools.h"
 #include "tools/DLLoader.h"
+#include "tools/Subprocess.h"
 #include <string>
 #include <cstdlib>
 #include <cstdio>
@@ -178,12 +179,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
     } else if(Tools::startWith(a,"--load=")) {
       a.erase(0,a.find("=")+1);
       prefix="";
-      void *p=dlloader.load(a);
-      if(!p) {
-        std::fprintf(stderr,"ERROR: cannot load library %s\n",a.c_str());
-        std::fprintf(stderr,"ERROR: %s\n",dlloader.error().c_str());
-        return 1;
-      }
+      dlloader.load(a);
     } else if(a=="--load") {
       prefix="--load=";
     } else if(a[0]=='-') {
@@ -232,22 +228,22 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
       "Commands:\n";
     std::fprintf(out,"%s",msg.c_str());
     for(unsigned j=0; j<availableCxx.size(); ++j) {
-      auto cl=cltoolRegister().create(CLToolOptions(availableCxx[j]));
+      auto cl=cltoolRegister().create(dlloader.getHandles(),CLToolOptions(availableCxx[j]));
       plumed_assert(cl);
       std::string manual=availableCxx[j]+" : "+cl->description();
       std::fprintf(out,"  plumed %s\n", manual.c_str());
     }
     for(unsigned j=0; j<availableShell.size(); ++j) {
       std::string manual;
-#ifdef __PLUMED_HAS_POPEN
-      std::string cmd=config::getEnvCommand()+" \""+root+"/scripts/"+availableShell[j]+".sh\" --description";
-      FILE *fp=popen(cmd.c_str(),"r");
-      std::string line;
-      while(Tools::getline(fp,line))manual+=line;
-      pclose(fp);
-#else
-      manual="(doc not avail)";
-#endif
+      if(Subprocess::available()) {
+        auto cmd=config::getEnvCommand()+" \""+root+"/scripts/"+availableShell[j]+".sh\" --description";
+        auto proc=Subprocess(cmd);
+        // we only need the first line, so this is fine:
+        proc.getline(manual);
+        // process will be killed immediately after
+      } else {
+        manual="(doc not avail)";
+      }
       manual= availableShell[j]+" : "+manual;
       std::fprintf(out,"  plumed %s\n", manual.c_str());
     }
@@ -262,7 +258,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
   std::string command(argv[i]);
 
   if(find(availableCxx.begin(),availableCxx.end(),command)!=availableCxx.end()) {
-    auto cl=cltoolRegister().create(CLToolOptions(command));
+    auto cl=cltoolRegister().create(dlloader.getHandles(),CLToolOptions(command));
     plumed_assert(cl);
     // Read the command line options (returns false if we are just printing help)
     if( !cl->readInput( argc-i,&argv[i],in,out ) ) { return 0; }

@@ -53,6 +53,7 @@ ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
   // We now get all the information about atoms that are lying about
   std::vector<ActionWithValue*> vatoms = plumed.getActionSet().select<ActionWithValue*>();
   for(const auto & vv : vatoms ) {
+    plumed_assert(vv); // needed for following calls, see #1046
     ActionToPutData* ap = vv->castToActionToPutData();
     if( ap ) {
       if( ap->getRole()=="x" ) xpos.push_back( ap->copyOutput(0) );
@@ -324,11 +325,15 @@ std::pair<std::size_t, std::size_t> ActionAtomistic::getValueIndices( const Atom
 
 void ActionAtomistic::retrieveAtoms( const bool& force ) {
   if( boxValue ) {
-    PbcAction* pbca = boxValue->getPntrToAction()->castToPbcAction();
+    auto* ptr=boxValue->getPntrToAction();
+    plumed_assert(ptr); // needed for following calls, see #1046
+    PbcAction* pbca = ptr->castToPbcAction();
     plumed_assert( pbca ); pbc=pbca->pbc;
   }
   if( donotretrieve || indexes.size()==0 ) return;
-  ActionToPutData* cv = chargev[0]->getPntrToAction()->castToActionToPutData();
+  auto * ptr=chargev[0]->getPntrToAction();
+  plumed_assert(ptr); // needed for following calls, see #1046
+  ActionToPutData* cv = ptr->castToActionToPutData();
   if(cv) chargesWereSet=cv->hasBeenSet();
   unsigned j = 0;
 

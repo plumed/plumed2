@@ -1,0 +1,20 @@
+type=make
+plumed_src=main.cpp
+plumed_link=shared
+
+function plumed_regtest_before(){
+  # find the name of the main executable
+  plumed="${PLUMED_PROGRAM_NAME:-plumed} --no-mpi"
+
+  # prebuild libraries:
+  eval $plumed mklib kT10.cpp &
+  eval $plumed mklib kT20.cpp &
+  wait
+}
+
+function plumed_regtest_after(){
+  cat output_threads{?,??} | awk '{
+    print($(NF-1))
+  }' > output_all
+}
+

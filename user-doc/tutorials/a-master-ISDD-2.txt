@@ -178,7 +178,7 @@ This default choice should be reasonable for most applications.
 Once your `plumed.dat` file is complete, you can run a 10-ns long metadynamics simulations with the following command:
 
 \verbatim
-gmx_mpi mdrun -s topol.tpr -nsteps 5000000 -plumed plumed.dat 
+gmx_mpi mdrun -s topol.tpr -nsteps 5000000 -plumed plumed.dat -ntomp 1
 \endverbatim
 
 During the metadynamics simulation, PLUMED will create two files, named `COLVAR` and `HILLS`.

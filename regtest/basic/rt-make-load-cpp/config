@@ -1,0 +1,25 @@
+type=make
+plumed_src=main.cpp
+plumed_link=shared
+
+# test is based on rt-make-load, we copy stuff here:
+
+extra_files="../rt-make-load/main.cpp ../rt-make-load/Distance10.cpp ../rt-make-load/Distance20.cpp ../rt-make-load/*.reference"
+
+function plumed_regtest_before(){
+
+awk '{if($1=="using" && $2=="namespace" && $3=="PLMD;") {
+       print "#undef __PLUMED_SOEXT"
+       print "#define __PLUMED_SOEXT \"cpp\""
+     }
+     print
+     }' main.cpp > newmain.cpp
+mv newmain.cpp main.cpp
+
+}
+
+function plumed_regtest_after(){
+  grep "Loading shared library" log_threads* | awk '{print $NF}' | sort | uniq | wc -l | sed "s/ *//g" > count_distances_threads
+  grep "Loading shared library" log_sequential* | awk '{print $NF}' | sort | uniq | wc -l | sed "s/ *//g" > count_distances_sequential
+}
+

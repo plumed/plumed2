@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "core/ActionSetup.h"
+#include "core/ActionAnyorder.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "tools/Exception.h"
@@ -89,12 +89,35 @@ variables. Of course, after your implementation is ready you might
 want to add it to the PLUMED source tree and recompile
 the whole PLUMED.
 
+Starting with PLUMED 2.10, the LOAD action can be placed in any point of the input
+file, and will only affect commands that are placed after the LOAD action.
+In other words, you can create a file named `Distance.cpp` and that reimplement
+the \ref DISTANCE action and use it like this:
+
+\plumedfile
+# compute standard distance
+d: DISTANCE ATOMS=1,10
+# load the new definition
+LOAD FILE=Distance.so
+# compute modified distance
+d2: DISTANCE ATOMS=1,10
+# print them on a file
+PRINT ARG=d,d2 FILE=compare-them
+\endplumedfile
+
+In addition, starting with PLUMED 2.10 the LOAD action can be used in contexts where
+multiple Plumed objects exist. A possible example is multithreading: loading an action
+from a Plumed object used in one thread will not affect other threads.
+Another example is if multiple Plumed objects are created in the C/C++ or Python interface.
+If a LOAD command is used in one of these objects, the loaded action will not affect
+the other objects.
+
 
 */
 //+ENDPLUMEDOC
 
 class Load :
-  public virtual ActionSetup
+  public virtual ActionAnyorder
 {
 public:
   static void registerKeywords( Keywords& keys );
@@ -104,13 +127,13 @@ public:
 PLUMED_REGISTER_ACTION(Load,"LOAD")
 
 void Load::registerKeywords( Keywords& keys ) {
-  ActionSetup::registerKeywords(keys);
+  ActionAnyorder::registerKeywords(keys);
   keys.add("compulsory","FILE","file to be loaded");
 }
 
 Load::Load(const ActionOptions&ao):
   Action(ao),
-  ActionSetup(ao)
+  ActionAnyorder(ao)
 {
   std::string f;
   parse("FILE",f);

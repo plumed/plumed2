@@ -426,7 +426,7 @@ then
   PLUMED_CHECK_CXXFLAG([-Wcast-qual])
   PLUMED_CHECK_CXXFLAG([-Wcast-align])
   PLUMED_CHECK_CXXFLAG([-Wconversion])
-  PLUMED_CHECK_CXXFLAG([-Wredundant-delcs])
+  PLUMED_CHECK_CXXFLAG([-Wredundant-decls])
   PLUMED_CHECK_CXXFLAG([-Wvariadic-macros])
   PLUMED_CHECK_CXXFLAG([-Wold-style-cast])
 fi
@@ -780,10 +780,6 @@ main ()
 }
 
   ], [__PLUMED_HAS_SUBPROCESS])
-fi
-
-if test $popen = true ; then
-  PLUMED_CHECK_PACKAGE([cstdio],[popen],[__PLUMED_HAS_POPEN])
 fi
 
 if test $execinfo = true ; then

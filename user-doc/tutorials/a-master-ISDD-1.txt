@@ -24,30 +24,16 @@ In this and in the next tutorial, we will use two pieces of software: <a href="h
 
 \subsection master-ISDD-1-install Installation
 
-First, check if `conda` is installed on your machine by typing:
+You should have all the software installed in a conda environment.
+To check this, you can type:
 
 \verbatim
-conda
+# activate environment
+conda activate ISDD-tutorial-2024
 \endverbatim
 
-In case the command is not found, please follow the instructions below to install `conda` in the
-directory `/path/to/conda`. You can choose it in your home so that you will have write permission to it.
-If `conda` is already installed on your machine, please skip the instructions below and move directly
-to the creation of the `conda` environment for this tutorial.
-
-\verbatim
-# on Linux:
-wget -c https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-# on MacOS:
-# wget -c https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
-bash ./miniconda.sh -b -f -p /path/to/conda
-# export PATH to find the conda executable
-export PATH="/path/to/conda/bin:$PATH"
-# initialize bash shell
-conda init bash
-\endverbatim
-
-Now we can create a `conda` environment for the ISDD tutorial using the following commands:
+If the environment is not found, you can prepare it yourself.
+First, you need to create the conda environment with:
 
 \verbatim
 # create environment
@@ -66,11 +52,12 @@ Finally, we can proceed with the installation of the required software:
 \verbatim
 conda install --strict-channel-priority -c plumed/label/isdd-2024 -c conda-forge plumed
 conda install --strict-channel-priority -c plumed/label/isdd-2024 -c conda-forge gromacs
+conda install -c conda-forge numpy
 \endverbatim
 
 The `--strict-channel-priority` might be necessary in case your `conda` install is configured to download packages from the `bioconda` channel. Indeed, `bioconda` contains a version of GROMACS that is **not** patched with PLUMED and would thus not work here.
 
-Keep in mind that every time you open a new shell, in order to use PLUMED and GROMACS you need to 
+Please keep in mind that every time you open a new shell, in order to use PLUMED and GROMACS you need to 
 activate the `ISDD-tutorial-2024` environment using the following command:
 
 \verbatim
