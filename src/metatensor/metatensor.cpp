@@ -64,7 +64,7 @@ the following:
 */
 //+ENDPLUMEDOC
 
-
+/*INDENT-OFF*/
 #if !defined(__PLUMED_HAS_LIBTORCH) || !defined(__PLUMED_HAS_METATENSOR)
 
 namespace PLMD { namespace metatensor {

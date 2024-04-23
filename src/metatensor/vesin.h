@@ -1,3 +1,4 @@
+/*INDENT-OFF*/
 #ifndef VESIN_H
 #define VESIN_H
 
