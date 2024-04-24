@@ -22,6 +22,7 @@
 #ifndef __PLUMED_core_ModuleMap_h
 #define __PLUMED_core_ModuleMap_h
 #include <map>
+#include <string>
 namespace PLMD {
 const std::map<std::string,std::string> & getModuleMap();
 } // namespace PLMD
