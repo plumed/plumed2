@@ -32,6 +32,7 @@ class SOAP_CV(torch.nn.Module):
             atomic_gaussian_width=0.3,
         )
 
+        torch.manual_seed(-230623)
         self.register_buffer("pca_projection", torch.rand(2520, 3, dtype=torch.float64))
 
     def forward(
@@ -44,32 +45,31 @@ class SOAP_CV(torch.nn.Module):
         if "plumed::cv" not in outputs:
             return {}
 
-        output = outputs["plumed::cv"]
-
-        device = torch.device("cpu")
-        if len(systems) > 0:
-            device = systems[0].positions.device
-
-        soap = self.calculator(systems, selected_samples=selected_atoms)
-        soap = soap.keys_to_samples("center_type")
-        soap = soap.keys_to_properties(self.neighbor_type_pairs)
-
-        if not output.per_atom:
+        if not outputs["plumed::cv"].per_atom:
             raise ValueError("per_atom=False is not supported")
 
-        soap_block = soap.block()
-        projected = soap_block.values @ self.pca_projection
+        if len(systems[0]) == 0:
+            # PLUMED is trying to determine the size of the output
+            projected = torch.zeros((0, 3), dtype=torch.float64)
+            samples = Labels(["system", "atom"], torch.zeros((0, 2), dtype=torch.int32))
+        else:
+            soap = self.calculator(systems, selected_samples=selected_atoms)
+            soap = soap.keys_to_samples("center_type")
+            soap = soap.keys_to_properties(self.neighbor_type_pairs)
 
-        samples = soap_block.samples.remove("center_type")
+            soap_block = soap.block()
+            projected = soap_block.values @ self.pca_projection
+
+            samples = soap_block.samples.remove("center_type")
 
         block = TensorBlock(
             values=projected,
             samples=samples,
             components=[],
-            properties=Labels("soap_pca", torch.tensor([[0], [1], [2]], device=device)),
+            properties=Labels("soap_pca", torch.tensor([[0], [1], [2]])),
         )
         cv = TensorMap(
-            keys=Labels("_", torch.tensor([[0]], device=device)),
+            keys=Labels("_", torch.tensor([[0]])),
             blocks=[block],
         )
 
@@ -81,34 +81,14 @@ cv.eval()
 
 
 capabilities = ModelCapabilities(
-    outputs={
-        "plumed::cv": ModelOutput(
-            quantity="",
-            unit="",
-            per_atom=True,
-            explicit_gradients=["postions"],
-        )
-    },
+    outputs={"plumed::cv": ModelOutput(per_atom=True)},
     interaction_range=4.0,
-    supported_devices=["cpu", "mps", "cuda"],
+    supported_devices=["cpu"],
     length_unit="nm",
     atomic_types=[6, 1, 7, 8],
     dtype="float64",
 )
 
-metadata = ModelMetadata(
-    name="Collective Variable test",
-    description="""
-A simple collective variable for testing purposes
-""",
-    authors=["Some Author"],
-    references={
-        "implementation": ["ref to SOAP code"],
-        "architecture": ["ref to SOAP"],
-        "model": ["ref to paper"],
-    },
-)
-
-
+metadata = ModelMetadata(name="Collective Variable test")
 model = MetatensorAtomisticModel(cv, metadata, capabilities)
 model.export("soap_cv.pt", collect_extensions="extensions")

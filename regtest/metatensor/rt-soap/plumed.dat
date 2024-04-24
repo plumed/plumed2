@@ -1,6 +1,6 @@
 soap: METATENSOR ...
       MODEL=soap_cv.pt
-      EXTENSIONS_DIRECTORY=../extensions
+      EXTENSIONS_DIRECTORY=extensions
 
       SPECIES1=1-26
       SPECIES2=27-62
@@ -13,4 +13,4 @@ scalar: SUM ARG=soap PERIODIC=NO
 BIASVALUE ARG=scalar
 
 
-PRINT ARG=soap FILE=soap.matx STRIDE=1 FMT=%8.4f
+PRINT ARG=soap FILE=soap_data STRIDE=1 FMT=%8.4f

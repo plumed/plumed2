@@ -1,4 +1,9 @@
 plumed_modules=metatensor
 plumed_needs=metatensor
 type=driver
-arg="--plumed plumed.dat --ixyz crystal_structure.xyz --dump-forces forces --dump-forces-fmt %8.4f --debug-forces forces.num"
+arg="--plumed plumed.dat --ixyz crystal_structure.xyz --dump-forces forces --dump-forces-fmt %8.4f" # --debug-forces forces.num"
+
+function plumed_regtest_before(){
+  python soap_cv.py
+  echo Generated model using soap_cv.py
+}
