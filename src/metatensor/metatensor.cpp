@@ -34,7 +34,26 @@ directory defines a custom machine learning CV that can be used with PLUMED.
 
 \par Examples
 
-TODO
+The following input shows how you can call metatensor and evaluate the model
+that is described in the file soap_cv.pt from PLUMED. To evaluate this model
+plumed is required to use code that is included in the directory extensions
+which has been specified using the `EXTENSIONS_DIRECTORY` flag. Numbered
+`SPECIES` labels are used to indicate the list of indices that belong to each
+atomic species in the model. The `SPECIES_TO_TYPE` keyword then provides
+information on the atom type for each species. The first number here is the
+atomic number of the atoms that have been specified using the `SPECIES1` flag,
+the second number is the atomic number of the atoms that have been specified
+using the `SPECIES2` flag and so on.
+
+\plumedfile soap: METATENSOR ... MODEL=soap_cv.pt
+EXTENSIONS_DIRECTORY=extensions
+
+    SPECIES1=1-26
+    SPECIES2=27-62
+    SPECIES3=63-76
+    SPECIES_TO_TYPES=6,1,8
+...
+\endplumedfile
 
 \par Collective variables and metatensor models
 
