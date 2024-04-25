@@ -300,7 +300,12 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
     // Request the atoms and check we have read in everything
     this->requestAtoms(all_atoms);
 
-    this->parseFlag("CHECK_CONSISTENCY", this->check_consistency_);
+    bool no_consistency_check = false;
+    this->parseFlag("NO_CONSISTENCY_CHECK", no_consistency_check);
+    this->check_consistency_ = !no_consistency_check;
+    if (this->check_consistency_) {
+        log.printf("  checking for internal consistency of the model\n");
+    }
 
     // create evaluation options for the model. These won't change during the
     // simulation, so we initialize them once here.
@@ -798,7 +803,8 @@ namespace PLMD { namespace metatensor {
         keys.add("optional", "EXTENSIONS_DIRECTORY", "path to the directory containing TorchScript extensions to load");
         keys.add("optional", "DEVICE", "Torch device to use for the calculation");
 
-        keys.addFlag("CHECK_CONSISTENCY", false, "whether to check for internal consistency of the model");
+        // TODO: change the default?
+        keys.addFlag("NO_CONSISTENCY_CHECK", false, "Should we disable internal consistency of the model");
 
         keys.add("numbered", "SPECIES", "the atoms in each PLUMED species");
         keys.reset_style("SPECIES", "atoms");
