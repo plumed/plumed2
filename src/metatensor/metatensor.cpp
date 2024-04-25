@@ -461,7 +461,7 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
     if (n_samples_ == 1 && n_properties_ == 1) {
         log.printf("  the output of this model is a scalar\n");
 
-        this->addValue({this->n_samples_, this->n_properties_});
+        this->addValue();
     } else if (n_samples_ == 1) {
         log.printf("  the output of this model is 1x%d vector\n", n_properties_);
 
