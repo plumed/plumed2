@@ -24,7 +24,7 @@
 
 //+PLUMEDOC LANDMARKS LANDMARK_SELECT_STRIDE
 /*
-Select every \f$k\f$th landmark from the trajectory.
+Select every kth landmark from the trajectory.
 
 \par Examples
 
