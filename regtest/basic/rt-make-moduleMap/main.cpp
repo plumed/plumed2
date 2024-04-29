@@ -12,7 +12,7 @@ int main(){
   std::ofstream file("output");
   for (const auto & name: actionList){
     if(PLMD::getModuleMap().count(name)==0){
-      file << name << "is not in the ModuleMap\n";
+      file << name << " is not in the ModuleMap\n";
     }
   }
   return 0;
