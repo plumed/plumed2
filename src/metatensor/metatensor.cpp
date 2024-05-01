@@ -426,11 +426,23 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
     // the shape of the output, so we use a dummy system with one since atom for
     // this
     auto dummy_system = torch::make_intrusive<metatensor_torch::SystemHolder>(
-        /*types = */ this->atomic_types_.index({torch::indexing::Slice(0, 1)}),
-        /*positions = */ torch::zeros({1, 3}, tensor_options),
+        /*types = */ torch::zeros({0}, tensor_options.dtype(torch::kInt32)),
+        /*positions = */ torch::zeros({0, 3}, tensor_options),
         /*cell = */ torch::zeros({3, 3}, tensor_options)
     );
+
+    log.printf("  the following neighbor lists have been requested:\n");
+    auto length_unit = this->getUnits().getLengthString();
+    auto model_length_unit = this->capabilities_->length_unit();
     for (auto request: this->nl_requests_) {
+        log.printf("    - %s list, %g %s cutoff (requested %g %s)\n",
+            request->full_list() ? "full" : "half",
+            request->engine_cutoff(length_unit),
+            length_unit.c_str(),
+            request->cutoff(),
+            model_length_unit.c_str()
+        );
+
         auto neighbors = this->computeNeighbors(request, {PLMD::Vector(0, 0, 0)}, PLMD::Tensor(0, 0, 0, 0, 0, 0, 0, 0, 0));
         metatensor_torch::register_autograd_neighbors(dummy_system, neighbors, this->check_consistency_);
         dummy_system->add_neighbors_list(request, neighbors);
@@ -478,6 +490,14 @@ unsigned MetatensorPlumedAction::getNumberOfDerivatives() {
 
 
 void MetatensorPlumedAction::createSystem() {
+    if (this->getTotAtoms() != static_cast<unsigned>(this->atomic_types_.size(0))) {
+        std::ostringstream oss;
+        oss << "METATENSOR action needs to know about all atoms in the system. ";
+        oss << "There are " << this->getTotAtoms() << " atoms overall, ";
+        oss << "but we only have atomic types for " << this->atomic_types_.size(0) << " of them.";
+        this->error(oss.str());
+    }
+
     const auto& cell = this->getPbc().getBox();
 
     auto cpu_f64_tensor = torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCPU);

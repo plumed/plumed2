@@ -131,6 +131,10 @@ LDFLAGS="-L$TORCH_PREFIX/lib -L$METATENSOR_PREFIX/lib -L$METATENSOR_TORCH_PREFIX
 LDFLAGS="$LDFLAGS -Wl,-rpath,$TORCH_PREFIX/lib"
 LDFLAGS="$LDFLAGS -Wl,-rpath,$METATENSOR_PREFIX/lib -Wl,-rpath,$METATENSOR_TORCH_PREFIX/lib"
 
+# If you are running on Linux, force the use of rpath instead of runpath
+# (we rely on the rpath to find dependencies of dependencies)
+LDFLAGS="$LDFLAGS -Wl,--disable-new-dtags"
+
 # configure PLUMED
 ./configure --enable-libtorch --enable-metatensor --enable-modules=+metatensor \
     LDFLAGS="$LDFLAGS" CPPFLAGS="$CPPFLAGS"
