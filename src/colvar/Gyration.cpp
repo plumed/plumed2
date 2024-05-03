@@ -55,7 +55,7 @@ The radius of gyration usually makes sense when atoms used for the calculation
 are all part of the same molecule.
 When running with periodic boundary conditions, the atoms should be
 in the proper periodic image. This is done automatically since PLUMED 2.2,
-by considering the ordered list of atoms and rebuilding the broken entities using a procedure
+by rebuilding the broken entities using a procedure
 that is equivalent to that done in \ref WHOLEMOLECULES . Notice that
 rebuilding is local to this action. This is different from \ref WHOLEMOLECULES
 which actually modifies the coordinates stored in PLUMED.

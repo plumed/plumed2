@@ -57,7 +57,9 @@ As a general rule, put it at the top of the input file. Also, unless you
 know exactly what you are doing, leave the default stride (1), so that
 this action is performed at every MD step.
 
-The way WHOLEMOLECULES modifies each of the listed entities is this:
+The behavior of WHOLEMOLECULES is affected by the last \ref MOLINFO action
+present in the input file before WHOLEMOLECULES. Specifically, if the
+\ref MOLINFO action does not have a `WHOLE` flag, then the behavior is the following:
 - First atom of the list is left in place
 - Each atom of the list is shifted by a lattice vectors so that it becomes as close as possible
   to the previous one, iteratively.
@@ -66,6 +68,11 @@ In this way, if an entity consists of a list of atoms such that consecutive atom
 list are always closer than half a box side the entity will become whole.
 This can be usually achieved selecting consecutive atoms (1-100), but it is also possible
 to skip some atoms, provided consecutive chosen atoms are close enough.
+
+If instead the \ref MOLINFO action does have a `WHOLE` flag, then a minimum spanning tree
+is built based on the atoms passed to WHOLEMOLECULES using the coordinates in the PDB
+passed to \ref MOLINFO as a reference, and this tree is used to reconstruct PBCs.
+This approach is more robust when dealing with complexes of multiple molecules.
 
 \par Examples
 
