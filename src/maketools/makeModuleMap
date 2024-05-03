@@ -1,6 +1,9 @@
 #! /usr/bin/env bash
 # shellcheck disable=SC2059
 
+outputfile=$1
+rm -f $outputfile~
+
 problems=""
 toPrint='  {"%s", "%s"}'
 #regex are scary, here's a link with the flow of the regex
@@ -37,7 +40,7 @@ for module in ../*/module.type; do
           # echo $action
           if [[ $action =~ $regex ]]; then
             actionName=${BASH_REMATCH[1]}
-            printf "$toPrint" "$actionName" "$modulename"
+            printf "$toPrint" "$actionName" "$modulename" >> $outputfile~
             
             toPrint=',\n  {"%s", "%s"}'
           fi
@@ -49,6 +52,10 @@ for module in ../*/module.type; do
   }
 
 done
+
+cmp -s $outputfile~ $outputfile || cp $outputfile~ $outputfile
+rm $outputfile~
+
 echo -e '\n'
 if [[ -n $problems ]]; then
   echo >&2 some problems in the following:
@@ -57,3 +64,4 @@ if [[ -n $problems ]]; then
   done
   exit 1
 fi
+

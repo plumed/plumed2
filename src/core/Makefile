@@ -32,4 +32,4 @@ CLToolMainEnum.inc: CLToolMain.cpp
 ModuleMap.o: ModuleMap.inc
 
 ModuleMap.inc: ../*/*.cpp
-	../maketools/makeModuleMap > $@
+	../maketools/makeModuleMap $@
