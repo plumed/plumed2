@@ -1,0 +1,1 @@
+#include "../../colvar/CoordinationBase.h"

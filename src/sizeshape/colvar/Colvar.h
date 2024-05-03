@@ -1,0 +1,1 @@
+#include "../../colvar/Colvar.h"
