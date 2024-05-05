@@ -161,6 +161,7 @@ void Distance::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("b","SCALED_COMPONENTS","the normalized projection on the second lattice vector of the vector connecting the two atoms");
   keys.addOutputComponent("c","SCALED_COMPONENTS","the normalized projection on the third lattice vector of the vector connecting the two atoms");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
+  keys.setValueDescription("the DISTANCE between this pair of atoms");
 }
 
 Distance::Distance(const ActionOptions&ao):

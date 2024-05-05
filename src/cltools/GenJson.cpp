@@ -134,7 +134,8 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
         if( components.size()==0 ) std::cout<<"         }"<<std::endl; else std::cout<<"         },"<<std::endl;
       }
       for(unsigned k=0; k<components.size(); ++k) {
-        std::cout<<"         \""<<components[k]<<"\" : {"<<std::endl;
+        std::string compname=components[k]; if( components[k]==".#!value" ) compname="value";
+        std::cout<<"         \""<<compname<<"\" : {"<<std::endl;
         std::cout<<"           \"flag\": \""<<keys.getOutputComponentFlag( components[k] )<<"\","<<std::endl;
         std::string desc=keys.getOutputComponentDescription( components[k] ); std::size_t dot=desc.find_first_of(".");
         std::cout<<"           \"description\": \""<<desc.substr(0,dot)<<"\""<<std::endl;

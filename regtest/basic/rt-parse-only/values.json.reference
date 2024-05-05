@@ -1,27 +1,27 @@
 {
   "timestep" : {
-    "timestep" : { "type": "scalar", "description": "scalar calculated by PUT action with this label" }
+    "timestep" : { "type": "scalar", "description": "the value calculated by this action" }
   },
   "posx" : {
-    "posx" : { "type": "vector", "description": "vector calculated by PUT action with this label" }
+    "posx" : { "type": "vector", "description": "the value calculated by this action" }
   },
   "posy" : {
-    "posy" : { "type": "vector", "description": "vector calculated by PUT action with this label" }
+    "posy" : { "type": "vector", "description": "the value calculated by this action" }
   },
   "posz" : {
-    "posz" : { "type": "vector", "description": "vector calculated by PUT action with this label" }
+    "posz" : { "type": "vector", "description": "the value calculated by this action" }
   },
   "Masses" : {
-    "Masses" : { "type": "vector", "description": "vector calculated by PUT action with this label" }
+    "Masses" : { "type": "vector", "description": "the value calculated by this action" }
   },
   "Charges" : {
-    "Charges" : { "type": "vector", "description": "vector calculated by PUT action with this label" }
+    "Charges" : { "type": "vector", "description": "the value calculated by this action" }
   },
   "Box" : {
-    "Box" : { "type": "matrix", "description": "matrix calculated by PBC action with this label" }
+    "Box" : { "type": "matrix", "description": "the value calculated by this action" }
   },
   "phi" : {
-    "phi" : { "type": "scalar", "description": "scalar calculated by TORSION_SCALAR action with this label" }
+    "phi" : { "type": "scalar", "description": "the TORSION involving these atoms" }
   },
   "rp" : {
     "rp.bias" : { "type": "scalar", "description": "the instantaneous value of the bias potential" },
@@ -31,18 +31,18 @@
     "hh_gather.rep-1" : { "type": "scalar", "description": "the input arguments for each of the replicas" }
   },
   "hh_gatherv" : {
-    "hh_gatherv" : { "type": "vector", "description": "vector calculated by CONCATENATE action with this label" }
+    "hh_gatherv" : { "type": "vector", "description": "the value calculated by this action" }
   },
   "hh_collect" : {
-    "hh_collect" : { "type": "vector", "description": "vector calculated by COLLECT action with this label" }
+    "hh_collect" : { "type": "vector", "description": "the value calculated by this action" }
   },
   "hh_wham" : {
-    "hh_wham" : { "type": "vector", "description": "vector calculated by WHAM action with this label" }
+    "hh_wham" : { "type": "vector", "description": "the value calculated by this action" }
   },
   "hh_data_phi" : {
-    "hh_data_phi" : { "type": "vector", "description": "vector calculated by COLLECT action with this label" }
+    "hh_data_phi" : { "type": "vector", "description": "the value calculated by this action" }
   },
   "hh" : {
-    "hh" : { "type": "grid", "description": "grid calculated by KDE action with this label" }
+    "hh" : { "type": "grid", "description": "the value calculated by this action" }
   }
 }

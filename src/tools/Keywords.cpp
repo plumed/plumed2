@@ -592,6 +592,7 @@ void Keywords::setComponentsIntroduction( const std::string& instr ) {
 
 void Keywords::addOutputComponent( const std::string& name, const std::string& key, const std::string& descr ) {
   plumed_assert( !outputComponentExists( name, false ) );
+  plumed_massert( name!=".#!value", name + " is reserved for storing description of value" );
   plumed_massert( name.find("-")==std::string::npos,"dash is reseved character in component names" );
 
   std::size_t num2=name.find_first_of("_");
@@ -603,6 +604,14 @@ void Keywords::addOutputComponent( const std::string& name, const std::string& k
   ckey.insert( std::pair<std::string,std::string>(name,key) );
   cdocs.insert( std::pair<std::string,std::string>(name,descr) );
   cnames.push_back(name);
+}
+
+void Keywords::setValueDescription( const std::string& descr ) {
+  if( !outputComponentExists(".#!value", false) ) {
+    ckey.insert( std::pair<std::string,std::string>(".#!value","default") );
+    cdocs.insert( std::pair<std::string,std::string>(".#!value",descr) );
+    cnames.push_back(".#!value");
+  } else cdocs[".#!value"] = descr;
 }
 
 bool Keywords::outputComponentExists( const std::string& name, const bool& custom ) const {
@@ -633,7 +642,10 @@ std::string Keywords::getOutputComponentDescription( const std::string& name ) c
   for(unsigned i=0; i<cnames.size(); ++i) {
     if( name==cnames[i] ) found=true;
   }
-  if( !found ) plumed_merror("could not find output component named " + name );
+  if( !found ) {
+    if( name==".#!value" ) return "the value calculated by this action";
+    plumed_merror("could not find output component named " + name );
+  }
   return cdocs.find(name)->second;
 }
 
@@ -673,6 +685,10 @@ const std::vector<std::string>& Keywords::getNeededKeywords() const {
 void Keywords::addActionNameSuffix( const std::string& suffix ) {
   if( std::find(actionNameSuffixes.begin(), actionNameSuffixes.end(), suffix )!=actionNameSuffixes.end() ) return;
   actionNameSuffixes.push_back( suffix );
+}
+
+std::string Keywords::getActionName() const {
+  return thisactname;
 }
 
 }

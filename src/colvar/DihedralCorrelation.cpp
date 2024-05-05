@@ -88,6 +88,7 @@ void DihedralCorrelation::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   keys.add("atoms","ATOMS","the set of 8 atoms that are being used to calculate this quantity");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
+  keys.setValueDescription("the DIHEDRAL_CORRELATION for these atoms");
 }
 
 DihedralCorrelation::DihedralCorrelation(const ActionOptions&ao):
