@@ -1,0 +1,48 @@
+{
+  "timestep" : {
+    "timestep" : { "type": "scalar", "description": "scalar calculated by PUT action with this label" }
+  },
+  "posx" : {
+    "posx" : { "type": "vector", "description": "vector calculated by PUT action with this label" }
+  },
+  "posy" : {
+    "posy" : { "type": "vector", "description": "vector calculated by PUT action with this label" }
+  },
+  "posz" : {
+    "posz" : { "type": "vector", "description": "vector calculated by PUT action with this label" }
+  },
+  "Masses" : {
+    "Masses" : { "type": "vector", "description": "vector calculated by PUT action with this label" }
+  },
+  "Charges" : {
+    "Charges" : { "type": "vector", "description": "vector calculated by PUT action with this label" }
+  },
+  "Box" : {
+    "Box" : { "type": "matrix", "description": "matrix calculated by PBC action with this label" }
+  },
+  "phi" : {
+    "phi" : { "type": "scalar", "description": "scalar calculated by TORSION_SCALAR action with this label" }
+  },
+  "rp" : {
+    "rp.bias" : { "type": "scalar", "description": "the instantaneous value of the bias potential" },
+    "rp.force2" : { "type": "scalar", "description": "the instantaneous value of the squared force due to this bias potential" }
+  },
+  "hh_gather" : {
+    "hh_gather.rep-1" : { "type": "scalar", "description": "the input arguments for each of the replicas" }
+  },
+  "hh_gatherv" : {
+    "hh_gatherv" : { "type": "vector", "description": "vector calculated by CONCATENATE action with this label" }
+  },
+  "hh_collect" : {
+    "hh_collect" : { "type": "vector", "description": "vector calculated by COLLECT action with this label" }
+  },
+  "hh_wham" : {
+    "hh_wham" : { "type": "vector", "description": "vector calculated by WHAM action with this label" }
+  },
+  "hh_data_phi" : {
+    "hh_data_phi" : { "type": "vector", "description": "vector calculated by COLLECT action with this label" }
+  },
+  "hh" : {
+    "hh" : { "type": "grid", "description": "grid calculated by KDE action with this label" }
+  }
+}
