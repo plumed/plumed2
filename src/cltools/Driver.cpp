@@ -745,10 +745,10 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
               std::vector<std::string> def; def.push_back( "defaults " + aa->getDefaultString() );
               data[ as->getShortcutLabel() ] = def;
             }
+            std::vector<std::string> shortcut_commands = as->getSavedInputLines(); if( shortcut_commands.size()==0 ) continue;
             if( data.find( as->getShortcutLabel() )!=data.end() ) {
-              std::vector<std::string> shortcut_commands = as->getSavedInputLines();
               for(unsigned i=0; i<shortcut_commands.size(); ++i) data[ as->getShortcutLabel() ].push_back( shortcut_commands[i] );
-            } else data[ as->getShortcutLabel() ] = as->getSavedInputLines();
+            } else data[ as->getShortcutLabel() ] = shortcut_commands;
           }
         }
         ifile.close();
