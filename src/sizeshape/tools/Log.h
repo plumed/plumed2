@@ -1,1 +1,0 @@
-#include "../../tools/Log.h"

@@ -1,1 +1,0 @@
-#include "../../colvar/RMSDVector.h"
