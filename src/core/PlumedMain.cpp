@@ -210,19 +210,14 @@ namespace PLMD {
 }
 
 namespace {
-// This is an internal tool used to count how many PlumedMain objects have been created
-// and if they were correctly destroyed.
-// When using debug options, it leads to a crash
-// Otherwise, it just prints a message
+/// This is an internal tool used to count how many PlumedMain objects have been created
+/// and if they were correctly destroyed.
+/// When using debug options, it leads to a crash
+/// Otherwise, it just prints a message
 class CountInstances {
   std::atomic<int> counter{};
-public:
-  void increase() noexcept {
-    ++counter;
-  }
-  void decrease() noexcept {
-    --counter;
-  }
+  // private constructor to avoid direct usage
+  CountInstances() noexcept {}
   ~CountInstances() {
     if(counter!=0) {
       std::cerr<<"WARNING: internal inconsistency in allocated PlumedMain instances (" <<counter<< ")\n";
@@ -234,8 +229,24 @@ public:
 #endif
     }
   }
+  static CountInstances & instance() {
+    static CountInstances counter;
+    return counter;
+  }
+public:
+  /// Only access through these static functions
+  /// The first call to increase() ensures the instance is constructed
+  /// This should provide the correct construction and destruction order
+  /// also in cases where the PlumedMain object is constructed in the
+  /// constructor of a static object
+  static void increase() noexcept {
+    ++instance().counter;
+  }
+  /// See increase()
+  static void decrease() noexcept {
+    --instance().counter;
+  }
 };
-static CountInstances countInstances;
 
 }
 
@@ -252,12 +263,12 @@ PlumedMain::PlumedMain():
   log.link(comm);
   log.setLinePrefix("PLUMED: ");
   // this is at last so as to avoid inconsistencies if an exception is thrown
-  countInstances.increase(); // noexcept
+  CountInstances::increase(); // noexcept
 }
 
 // destructor needed to delete forward declarated objects
 PlumedMain::~PlumedMain() {
-  countInstances.decrease();
+  CountInstances::decrease();
 }
 
 /////////////////////////////////////////////////////////////
