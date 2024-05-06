@@ -131,8 +131,6 @@ public:
   static void registerKeywords( Keywords& keys );
 /// Insist that numerical derivatives should always be used for an action and make this fact appear in the manual
   static void noAnalyticalDerivatives(Keywords& keys);
-/// Puts a message into the manual that the components always output
-  static void componentsAreNotOptional(Keywords& keys);
 /// The components in the action will depend on the user
   static void useCustomisableComponents(Keywords& keys);
 /// Are we not calculating derivatives

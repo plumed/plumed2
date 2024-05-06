@@ -44,12 +44,6 @@ void ActionWithValue::noAnalyticalDerivatives(Keywords& keys) {
   keys.addFlag("NUMERICAL_DERIVATIVES",false,"analytical derivatives are not implemented for this keyword so numerical derivatives are always used");
 }
 
-void ActionWithValue::componentsAreNotOptional(Keywords& keys) {
-  keys.setComponentsIntroduction("By default this Action calculates the following quantities. These quantities can "
-                                 "be referenced elsewhere in the input by using this Action's label followed by a "
-                                 "dot and the name of the quantity required from the list below.");
-}
-
 void ActionWithValue::useCustomisableComponents(Keywords& keys) {
   keys.setComponentsIntroduction("The names of the components in this action can be customized by the user in the "
                                  "actions input file.  However, in addition to the components that can be customized the "

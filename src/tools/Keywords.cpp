@@ -600,6 +600,11 @@ void Keywords::addOutputComponent( const std::string& name, const std::string& k
     char uu = '_'; plumed_massert( std::count(name.begin(),name.end(), uu)==1, "underscore is reserved character in component names and there should only be one");
     plumed_massert( num2==0, "underscore is reserved character in component names that has special meaning");
   }
+  if( key=="default" ) {
+    cstring = "By default this Action calculates the following quantities. These quantities can "
+              "be referenced elsewhere in the input by using this Action's label followed by a "
+              "dot and the name of the quantity required from the list below.";
+  }
 
   ckey.insert( std::pair<std::string,std::string>(name,key) );
   cdocs.insert( std::pair<std::string,std::string>(name,descr) );

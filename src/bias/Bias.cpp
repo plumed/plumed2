@@ -53,7 +53,6 @@ void Bias::registerKeywords( Keywords& keys ) {
   ActionWithValue::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
   keys.add("hidden","STRIDE","the frequency with which the forces due to the bias should be calculated.  This can be used to correctly set up multistep algorithms");
-  componentsAreNotOptional(keys);
   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
 }
 

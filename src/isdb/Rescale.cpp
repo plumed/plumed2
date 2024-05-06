@@ -177,7 +177,6 @@ void Rescale::registerKeywords(Keywords& keys) {
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_STRIDE","MC stride");
   keys.add("optional","PACE", "Pace for adding bias, in MC stride unit");
-  componentsAreNotOptional(keys);
   keys.addOutputComponent("igamma",  "default","gamma parameter");
   keys.addOutputComponent("accgamma","default","MC acceptance for gamma");
   keys.addOutputComponent("wtbias",  "default","well-tempered bias");

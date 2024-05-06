@@ -79,7 +79,6 @@ void Cell::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
-  componentsAreNotOptional(keys);
   keys.addOutputComponent("ax","default","the ax component of the cell matrix");
   keys.addOutputComponent("ay","default","the ay component of the cell matrix");
   keys.addOutputComponent("az","default","the az component of the cell matrix");

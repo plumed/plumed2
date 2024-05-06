@@ -251,7 +251,6 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   keys.addFlag("BFACT_READ",false,"Read Bfactor on RESTART (automatic with DBFACT>0)");
   keys.addFlag("BFACT_MINIMIZE",false,"Accept only moves that decrease energy");
   keys.addFlag("MARTINI",false,"Use Martini scattering factors");
-  componentsAreNotOptional(keys);
   keys.addOutputComponent("scoreb","default","Bayesian score");
   keys.addOutputComponent("scale", "default","scale factor");
   keys.addOutputComponent("offset","default","offset");

@@ -221,7 +221,6 @@ PLUMED_REGISTER_ACTION(RDC,"RDC")
 PLUMED_REGISTER_ACTION(RDC,"PCS")
 
 void RDC::registerKeywords( Keywords& keys ) {
-  componentsAreNotOptional(keys);
   MetainferenceBase::registerKeywords(keys);
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.add("numbered","ATOMS","the couple of atoms involved in each of the bonds for which you wish to calculate the RDC. "
