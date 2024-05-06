@@ -26,6 +26,7 @@
 #include "core/PbcAction.h"
 #include "tools/HistogramBead.h"
 #include "tools/SwitchingFunction.h"
+#include "tools/Matrix.h"
 
 //+PLUMEDOC ANALYSIS KDE
 /*
