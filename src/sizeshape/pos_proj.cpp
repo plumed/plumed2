@@ -24,7 +24,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include "tools/Communicator.h"   // All the MPI related stuffs
 
 namespace PLMD {
-namespace colvar {
+namespace sizeshape {
 
 //+PLUMEDOC sizeshapeMOD_COLVAR POSITION_LINEAR_PROJ
 /*
@@ -113,6 +113,7 @@ position_linear_proj::position_linear_proj(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true),
   serial(false),
+  proj(0),
   prec_f_name(""),
   ref_f_name(""),   
   coeffs_f_name("")   // Note! no comma here in the last line.
