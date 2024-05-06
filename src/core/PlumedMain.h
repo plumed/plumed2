@@ -145,9 +145,9 @@ private:
 
   std::unique_ptr<WithCmd> grex;
 /// Flag to avoid double initialization
-  bool  initialized;
+  bool  initialized=false;
 /// Name of MD engine
-  std::string MDEngine;
+  std::string MDEngine{"mdcode"};
 
 /// Forward declaration.
   ForwardDecl<Log> log_fwd;
@@ -165,19 +165,19 @@ private:
   Citations& citations=*citations_fwd;
 
 /// Present step number.
-  long long int step;
+  long long int step=0;
 
 /// Condition for plumed to be active.
 /// At every step, PlumedMain is checking if there are Action's requiring some work.
 /// If at least one Action requires some work, this variable is set to true.
-  bool active;
+  bool active=false;
 
 /// Name of the input file
   std::string plumedDat;
 
 /// End of input file.
 /// Set to true to terminate reading
-  bool endPlumed;
+  bool endPlumed=false;
 
 /// Forward declaration.
   ForwardDecl<ActionSet> actionSet_fwd;
@@ -198,11 +198,11 @@ private:
   std::string suffix;
 
 /// The total bias (=total energy of the restraints)
-  double bias;
+  double bias=0.0;
 
 /// The total work.
 /// This computed by accumulating the change in external potentials.
-  double work;
+  double work=0.0;
 
 /// Forward declaration.
   ForwardDecl<ExchangePatterns> exchangePatterns_fwd;
@@ -210,17 +210,17 @@ private:
   ExchangePatterns& exchangePatterns=*exchangePatterns_fwd;
 
 /// Set to true if on an exchange step
-  bool exchangeStep;
+  bool exchangeStep=false;
 
 /// Flag for restart
-  bool restart;
+  bool restart=false;
 
 /// Flag for checkpointig
-  bool doCheckPoint;
+  bool doCheckPoint=false;
 
 /// A string that holds the name of the action that gets the energy from the MD
 /// code.  Set empty if energy is not used.
-  std::string name_of_energy;
+  std::string name_of_energy{""};
 
 /// This sets up the values that are set from the MD code
   void startStep();
@@ -229,7 +229,7 @@ private:
   void setupInterfaceActions();
 
 /// Flag for parse only mode -- basically just forces restart to turn off
-  bool doParseOnly;
+  bool doParseOnly=false;
 
 private:
 /// Forward declaration.
@@ -237,7 +237,7 @@ private:
 public:
 /// Stuff to make plumed stop the MD code cleanly
   TypesafePtr& stopFlag=*stopFlag_fwd;
-  bool stopNow;
+  bool stopNow=false;
 
 /// Stack for update flags.
 /// Store information used in class \ref generic::UpdateIf
@@ -257,13 +257,13 @@ public:
   void setUnits( const bool& natural, const Units& u );
 
 /// Flag to switch off virial calculation (for debug and MD codes with no barostat)
-  bool novirial;
+  bool novirial=false;
 
 /// Flag to switch on detailed timers
-  bool detailedTimers;
+  bool detailedTimers=false;
 
 /// GpuDevice Identifier
-  int gpuDeviceId;
+  int gpuDeviceId=-1;
 
 /// Generic map string -> double
 /// intended to pass information across Actions

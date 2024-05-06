@@ -242,26 +242,10 @@ static CountInstances countInstances;
 
 PlumedMain::PlumedMain():
   datoms_fwd(*this),
-  initialized(false),
-  MDEngine("mdcode"),
 // automatically write on log in destructor
   stopwatch_fwd(log),
-  step(0),
-  active(false),
-  endPlumed(false),
-  passtools(DataPassingTools::create(sizeof(double))),
   actionSet_fwd(*this),
-  bias(0.0),
-  work(0.0),
-  exchangeStep(false),
-  restart(false),
-  doCheckPoint(false),
-  doParseOnly(false),
-  stopNow(false),
-  name_of_energy(""),
-  novirial(false),
-  detailedTimers(false),
-  gpuDeviceId(-1)
+  passtools(DataPassingTools::create(sizeof(double)))
 {
   passtools->usingNaturalUnits=false;
   increaseReferenceCounter();
