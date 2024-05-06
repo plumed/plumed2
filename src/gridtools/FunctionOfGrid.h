@@ -61,6 +61,11 @@ void FunctionOfGrid<T>::registerKeywords(Keywords& keys ) {
   ActionWithGrid::registerKeywords(keys); keys.use("ARG");
   keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
   T tfunc; tfunc.registerKeywords( keys ); if( typeid(tfunc)==typeid(function::Custom()) ) keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
+  if( keys.getActionName()=="INTEGRATE_GRID") {
+    keys.setValueDescription("the numerical integral of the input function over its whole domain");
+  } else if( keys.outputComponentExists(".#!value", false) ) {
+    keys.setValueDescription("the grid obtained by doing an element-wise application of " + keys.getOutputComponentDescription(".#!value") + " to the input grid");
+  }
 }
 
 template <class T>
@@ -87,9 +92,8 @@ FunctionOfGrid<T>::FunctionOfGrid(const ActionOptions&ao):
   // Get the names of the components
   std::vector<std::string> components( keywords.getOutputComponents() );
   // Create the values to hold the output
-  if( components.size()==0 && myfunc.zeroRank() ) addValueWithDerivatives();
-  else if( components.size()==0 ) addValueWithDerivatives( shape );
-  else error("functions of grid should only output one grid");
+  if( components.size()!=1 || components[0]!=".#!value" ) error("functions of grid should only output one grid");
+  addValueWithDerivatives( shape );
   // Set the periodicities of the output components
   myfunc.setPeriodicityForOutputs( this );
   // Check if we can turn off the derivatives when they are zero

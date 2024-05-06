@@ -521,6 +521,7 @@ void CS2Backbone::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("expca","default","the experimental Ca carbon chemical shifts");
   keys.addOutputComponent("expcb","default","the experimental Cb carbon chemical shifts");
   keys.addOutputComponent("expco","default","the experimental C' carbon chemical shifts");
+  keys.setValueDescription("the backbone chemical shifts");
 }
 
 CS2Backbone::CS2Backbone(const ActionOptions&ao):

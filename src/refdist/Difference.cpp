@@ -63,7 +63,7 @@ private:
   bool periodic;
   std::string min0, max0;
 public:
-  void registerKeywords(Keywords& keys) override {}
+  void registerKeywords(Keywords& keys) override ;
   void read( ActionWithArguments* action ) override;
   void setPeriodicityForOutputs( ActionWithValue* action ) override;
   void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
@@ -76,6 +76,10 @@ typedef function::FunctionOfScalar<Difference> ScalarDifference;
 PLUMED_REGISTER_ACTION(ScalarDifference,"DIFFERENCE_SCALAR")
 typedef function::FunctionOfVector<Difference> VectorDifference;
 PLUMED_REGISTER_ACTION(VectorDifference,"DIFFERENCE_VECTOR")
+
+void Difference::registerKeywords(Keywords& keys) {
+  keys.setValueDescription("a function that measures the difference");
+}
 
 void Difference::read( ActionWithArguments* action ) {
   if( action->getNumberOfArguments()!=2 ) action->error("should be two arguments to this action");

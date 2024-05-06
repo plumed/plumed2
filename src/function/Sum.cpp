@@ -94,7 +94,7 @@ PLUMED_REGISTER_ACTION(VectorSum,"SUM_VECTOR")
 PLUMED_REGISTER_ACTION(VectorSum,"MEAN_VECTOR")
 
 void Sum::registerKeywords( Keywords& keys ) {
-  keys.use("PERIODIC");
+  keys.use("PERIODIC"); keys.setValueDescription("the sum");
 }
 
 void Sum::read( ActionWithArguments* action ) {

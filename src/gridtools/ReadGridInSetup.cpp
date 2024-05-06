@@ -82,6 +82,7 @@ void ReadGridInSetup::registerKeywords( Keywords& keys ) {
   keys.add("optional","VAR","the names to give each of the grid directions in the function.  If you have up to three grid coordinates in your function you can use x, y and z to refer to them.  Otherwise you must use this flag to give your variables names.");
   keys.add("compulsory","FILE","the name of the file that contains the reference data");
   keys.add("compulsory","VALUE","the name of the value that should be read from the grid");
+  keys.setValueDescription("the constant function on the grid that was specified in input");
 }
 
 ReadGridInSetup::ReadGridInSetup(const ActionOptions&ao):

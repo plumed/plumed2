@@ -94,6 +94,7 @@ void FourierTransform::registerKeywords( Keywords& keys ) {
            "A=0: normalize by the square root of the number of data (one forward and followed by backward FFT recover the original data). ");
   keys.addOutputComponent("real","FT_TYPE","the real part of the function");
   keys.addOutputComponent("imag","FT_TYPE","the imaginary part of the function");
+  keys.setValueDescription("the fourier transform of the input grid");
 }
 
 FourierTransform::FourierTransform(const ActionOptions&ao):

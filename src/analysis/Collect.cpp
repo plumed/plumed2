@@ -68,6 +68,7 @@ void Collect::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","CLEAR","0","the frequency with which to clear all the accumulated data.  The default value "
            "of 0 implies that all the data will be used and that the grid will never be cleared");
   keys.add("compulsory","TYPE","auto","required if you are collecting an object with rank>0. Should be vector/matrix and determines how data is stored.  If rank==0 then data has to be stored as a vector");
+  keys.setValueDescription("the time series for the input quantity");
 }
 
 Collect::Collect( const ActionOptions& ao ):

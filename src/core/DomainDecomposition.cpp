@@ -93,6 +93,7 @@ void DomainDecomposition::registerKeywords(Keywords& keys) {
            "is not periodic you must state this using PERIODIC=NO.  Positions are passed with PERIODIC=NO even though special methods are used "
            "to deal with pbc");
   keys.add("numbered","ROLE","Get the role this value plays in the code can be x/y/z/m/q to signify that this is x, y, z positions of atoms or masses or charges of atoms");
+  keys.setValueDescription("the domain that each atom is within");
 }
 
 DomainDecomposition::DomainDecomposition(const ActionOptions&ao):

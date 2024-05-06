@@ -195,6 +195,7 @@ void ReweightTemperaturePressure::registerKeywords(Keywords& keys ) {
   keys.add("optional","REWEIGHT_PRESSURE","Reweighting pressure");
   keys.add("optional","PRESSURE","The system pressure");
   keys.add("optional","REWEIGHT_TEMP","Reweighting temperature");
+  keys.setValueDescription("the weight to use for this frame to determine its contribution at a different temperature/pressure");
 }
 
 ReweightTemperaturePressure::ReweightTemperaturePressure(const ActionOptions&ao):

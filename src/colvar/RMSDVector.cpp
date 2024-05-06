@@ -49,6 +49,7 @@ void RMSDVector::registerKeywords(Keywords& keys) {
   keys.addFlag("DISPLACEMENT",false,"Calculate the vector of displacements instead of the length of this vector");
   keys.addOutputComponent("disp","DISPLACEMENT","the vector of displacements for the atoms");
   keys.addOutputComponent("dist","DISPLACEMENT","the RMSD distance the atoms have moved");
+  keys.setValueDescription("a vector containing the RMSD between the instantaneous structure and each of the reference structures that were input");
 }
 
 RMSDVector::RMSDVector(const ActionOptions&ao):

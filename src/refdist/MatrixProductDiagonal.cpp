@@ -48,6 +48,7 @@ PLUMED_REGISTER_ACTION(MatrixProductDiagonal,"MATRIX_PRODUCT_DIAGONAL")
 
 void MatrixProductDiagonal::registerKeywords( Keywords& keys ) {
   ActionWithVector::registerKeywords(keys); keys.use("ARG");
+  keys.setValueDescription("a vector containing the diagonal elements of the matrix that obtaned by multiplying the two input matrices together");
 }
 
 MatrixProductDiagonal::MatrixProductDiagonal(const ActionOptions&ao):

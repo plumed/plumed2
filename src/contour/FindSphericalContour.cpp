@@ -133,6 +133,7 @@ void FindSphericalContour::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","INNER_RADIUS","the minimum radius on which to look for the contour");
   keys.add("compulsory","OUTER_RADIUS","the outer radius on which to look for the contour");
   keys.add("compulsory","NBINS","1","the number of discrete sections in which to divide the distance between the inner and outer radius when searching for a contour");
+  keys.setValueDescription("a grid on a Fibonacci sphere that describes the radial distance from the origin for the points on the Willard-Chandler surface");
 }
 
 FindSphericalContour::FindSphericalContour(const ActionOptions&ao):

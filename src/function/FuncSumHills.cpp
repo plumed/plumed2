@@ -221,6 +221,7 @@ void FuncSumHills::registerKeywords(Keywords& keys) {
   keys.addFlag("NOHISTORY",false,"to be used with INITSTRIDE:  it splits the bias/histogram in pieces without previous history  ");
   keys.addFlag("MINTOZERO",false,"translate the resulting bias/histogram to have the minimum to zero  ");
   keys.add("optional","FMT","the format that should be used to output real numbers");
+  keys.setValueDescription("a scalar");
 }
 
 FuncSumHills::FuncSumHills(const ActionOptions&ao):

@@ -30,6 +30,7 @@ namespace gridtools {
 void EvaluateGridFunction::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","INTERPOLATION_TYPE","spline","the method to use for interpolation.  Can be spline, linear, ceiling or floor.");
   keys.addFlag("ZERO_OUTSIDE_GRID_RANGE",false,"if we are asked to evaluate the function for a number that is outside the range of the grid set it to zero");
+  keys.setValueDescription("interpolation of the input grid to get the value of the function at the input arguments");
 }
 
 std::vector<bool> EvaluateGridFunction::getPbc() const {

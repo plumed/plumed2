@@ -70,6 +70,7 @@ void Loss::registerKeywords(Keywords& keys) {
     "PARAMS",
     "Parameters for the loss function."
   );
+  keys.setValueDescription("the value of the loss function");
 }
 
 Loss::Loss(const ActionOptions& ao)

@@ -65,6 +65,7 @@ void PathDisplacements::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","HALFLIFE","-1","the number of MD steps after which a previously measured path distance weighs only 50 percent in the average. This option may increase convergence by allowing to forget the memory of a bad initial guess path. The default is to set this to infinity");
   keys.add("compulsory","CLEAR","0","the frequency with which to clear all the accumulated data.  The default value "
            "of 0 implies that all the data will be used and that the grid will never be cleared");
+  keys.setValueDescription("vector containing the average displacement between the trajectory and each of the landmarks that makes up the path");
 }
 
 PathDisplacements::PathDisplacements(const ActionOptions& ao):

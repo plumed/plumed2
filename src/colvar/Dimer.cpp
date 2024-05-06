@@ -155,7 +155,7 @@ void Dimer::registerKeywords( Keywords& keys) {
   keys.add("atoms", "ATOMS2", "The list of atoms representing the second bead of each Dimer being considered by this CV. Used if ALLATOMS flag is missing");
   keys.addFlag("ALLATOMS", false, "Use EVERY atom of the system. Overrides ATOMS keyword.");
   keys.addFlag("NOVSITES", false, "If present the configuration is without virtual sites at the centroid positions.");
-
+  keys.setValueDescription("the dimer interaction energy");
 }
 
 

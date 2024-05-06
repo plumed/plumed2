@@ -113,11 +113,13 @@ Value* ActionWithValue::copyOutput( const unsigned& n ) const {
 // -- HERE WE HAVE THE STUFF FOR THE DEFAULT VALUE -- //
 
 void ActionWithValue::addValue( const std::vector<unsigned>& shape ) {
+  if( !keywords.outputComponentExists(".#!value", false) ) warning("documentation for the value calculated by this action has not been included");
   plumed_massert(values.empty(),"You have already added the default value for this action");
   values.emplace_back(Tools::make_unique<Value>(this,getLabel(), false, shape ) );
 }
 
 void ActionWithValue::addValueWithDerivatives( const std::vector<unsigned>& shape ) {
+  if( !keywords.outputComponentExists(".#!value", false) ) warning("documentation for the value calculated by this action has not been included");
   plumed_massert(values.empty(),"You have already added the default value for this action");
   values.emplace_back(Tools::make_unique<Value>(this,getLabel(), true, shape ) );
 }

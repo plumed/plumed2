@@ -78,6 +78,7 @@ void DHEnergy::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","I","1.0","Ionic strength (M)");
   keys.add("compulsory","TEMP","300.0","Simulation temperature (K)");
   keys.add("compulsory","EPSILON","80.0","Dielectric constant of solvent");
+  keys.setValueDescription("the value of the DHENERGY");
 }
 
 /*

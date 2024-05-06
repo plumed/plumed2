@@ -852,7 +852,7 @@ void Optimizer::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("gradrms","MONITOR_INSTANTANEOUS_GRADIENT","the root mean square value of the coefficient gradient. For multiple biases this component is labeled using the number of the bias as gradrms-#.");
   keys.addOutputComponent("gradmax","MONITOR_INSTANTANEOUS_GRADIENT","the largest absolute value of the coefficient gradient. For multiple biases this component is labeled using the number of the bias as gradmax-#.");
   // keys.addOutputComponent("gradmaxidx","default","the index of the maximum absolute value of the gradient");
-
+  keys.setValueDescription("a scalar");
 }
 
 

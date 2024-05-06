@@ -66,6 +66,7 @@ void SelectWithMask::registerKeywords( Keywords& keys ) {
   keys.add("optional","ROW_MASK","an array with ones in the rows of the matrix that you want to discard");
   keys.add("optional","COLUMN_MASK","an array with ones in the columns of the matrix that you want to discard");
   keys.add("compulsory","MASK","an array with ones in the components that you want to discard");
+  keys.setValueDescription("a vector/matrix of values that is obtained using a mask to select elements of interest");
 }
 
 SelectWithMask::SelectWithMask(const ActionOptions& ao):

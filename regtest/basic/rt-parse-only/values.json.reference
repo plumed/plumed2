@@ -1,24 +1,24 @@
 {
   "timestep" : {
-    "timestep" : { "type": "scalar", "description": "the value calculated by this action" }
+    "timestep" : { "type": "scalar", "description": "the data that was passed from the MD code" }
   },
   "posx" : {
-    "posx" : { "type": "vector", "description": "the value calculated by this action" }
+    "posx" : { "type": "vector", "description": "the data that was passed from the MD code" }
   },
   "posy" : {
-    "posy" : { "type": "vector", "description": "the value calculated by this action" }
+    "posy" : { "type": "vector", "description": "the data that was passed from the MD code" }
   },
   "posz" : {
-    "posz" : { "type": "vector", "description": "the value calculated by this action" }
+    "posz" : { "type": "vector", "description": "the data that was passed from the MD code" }
   },
   "Masses" : {
-    "Masses" : { "type": "vector", "description": "the value calculated by this action" }
+    "Masses" : { "type": "vector", "description": "the data that was passed from the MD code" }
   },
   "Charges" : {
-    "Charges" : { "type": "vector", "description": "the value calculated by this action" }
+    "Charges" : { "type": "vector", "description": "the data that was passed from the MD code" }
   },
   "Box" : {
-    "Box" : { "type": "matrix", "description": "the value calculated by this action" }
+    "Box" : { "type": "matrix", "description": "a matrix containing the cell vectors that were passed from the MD code" }
   },
   "phi" : {
     "phi" : { "type": "scalar", "description": "the TORSION involving these atoms" }
@@ -31,18 +31,18 @@
     "hh_gather.rep-1" : { "type": "scalar", "description": "the input arguments for each of the replicas" }
   },
   "hh_gatherv" : {
-    "hh_gatherv" : { "type": "vector", "description": "the value calculated by this action" }
+    "hh_gatherv" : { "type": "vector", "description": "the concatenated vector/matrix that was constructed from the input values" }
   },
   "hh_collect" : {
-    "hh_collect" : { "type": "vector", "description": "the value calculated by this action" }
+    "hh_collect" : { "type": "vector", "description": "the time series for the input quantity" }
   },
   "hh_wham" : {
-    "hh_wham" : { "type": "vector", "description": "the value calculated by this action" }
+    "hh_wham" : { "type": "vector", "description": "the vector of WHAM weights to use for reweighting the elements in a time series" }
   },
   "hh_data_phi" : {
-    "hh_data_phi" : { "type": "vector", "description": "the value calculated by this action" }
+    "hh_data_phi" : { "type": "vector", "description": "the time series for the input quantity" }
   },
   "hh" : {
-    "hh" : { "type": "grid", "description": "the value calculated by this action" }
+    "hh" : { "type": "grid", "description": "a function on a grid that was obtained by doing a Kernel Density Estimation using the input arguments" }
   }
 }
