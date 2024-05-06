@@ -46,12 +46,15 @@ public:
 /// constructor
   explicit Tree(GenericMolInfo* moldat);
 /// build a tree
-  std::vector<AtomNumber> getTree(const std::vector<AtomNumber> & atoms);
-/// get root
-  std::vector<AtomNumber> getRoot() const;
+  void buildTree(const std::vector<AtomNumber> & atoms);
+  const std::vector<AtomNumber> & getTree(const std::vector<AtomNumber> & atoms);
 
-  std::vector<unsigned> getTreeIndexes() const;
-  std::vector<unsigned> getRootIndexes() const;
+  const std::vector<AtomNumber> & getTree() const noexcept;
+/// get root
+  const std::vector<AtomNumber> & getRoot() const noexcept;
+
+  const std::vector<unsigned> & getTreeIndexes() const noexcept;
+  const std::vector<unsigned> & getRootIndexes() const noexcept;
 };
 
 }

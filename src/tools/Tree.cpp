@@ -39,7 +39,7 @@ Tree::Tree(GenericMolInfo* moldat) {
   if(!moldat_->isWhole()) plumed_merror("Check that reference structure in PDB file is not broken by pbc and set WHOLE in MOLINFO line");
 }
 
-std::vector<AtomNumber> Tree::getTree(const std::vector<AtomNumber> & atoms)
+void Tree::buildTree(const std::vector<AtomNumber> & atoms)
 {
   // Implementation inspired from:
   // https://mayanknatani.wordpress.com/2013/05/31/euclidean-minimummaximum-spanning-tree-emst/
@@ -120,21 +120,26 @@ std::vector<AtomNumber> Tree::getTree(const std::vector<AtomNumber> & atoms)
     root_.push_back(atoms[addtoroot[i]]);
     root_indexes_.push_back(addtoroot[i]);
   }
+}
 
-  // return
+const std::vector<AtomNumber> & Tree::getTree(const std::vector<AtomNumber> & atoms) {
+  buildTree(atoms);
   return tree_;
 }
 
-std::vector<AtomNumber> Tree::getRoot() const
-{
+const std::vector<AtomNumber> & Tree::getTree() const noexcept {
+  return tree_;
+}
+
+const std::vector<AtomNumber> & Tree::getRoot() const noexcept {
   return root_;
 }
 
-std::vector<unsigned> Tree::getTreeIndexes() const {
+const std::vector<unsigned> & Tree::getTreeIndexes() const noexcept {
   return tree_indexes_;
 }
 
-std::vector<unsigned> Tree::getRootIndexes() const {
+const std::vector<unsigned> & Tree::getRootIndexes() const noexcept {
   return root_indexes_;
 }
 
