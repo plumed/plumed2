@@ -226,7 +226,10 @@ public:
   ~CountInstances() {
     if(counter!=0) {
       std::cerr<<"WARNING: internal inconsistency in allocated PlumedMain instances (" <<counter<< ")\n";
+      std::cerr<<"Might be a consequence of incorrectly paired plumed_create/plumed_finalize in the C interface\n";
+      std::cerr<<"Or it could be due to incorrect calls to std::exit, without properly destroying all PlumedMain objects\n";
 #ifndef NDEBUG
+      std::cerr<<"This is a debug build, so the warning will make PLUMED abort\n";
       std::abort();
 #endif
     }
