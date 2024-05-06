@@ -972,7 +972,25 @@ fi
 if test $metatensor = true ; then
   # find metatensor and metatensor_torch
   PLUMED_CHECK_CXX_PACKAGE([metatensor],[
+    // torch header creates a lot a pedantic warnings, which we can't do anything about
+    // we disable them to make finding the relevant part in the config.log easier
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wpedantic"
+    #pragma GCC diagnostic ignored "-Wunused-parameter"
+    #pragma GCC diagnostic ignored "-Wfloat-equal"
+    #pragma GCC diagnostic ignored "-Wfloat-conversion"
+    #pragma GCC diagnostic ignored "-Wimplicit-float-conversion"
+    #pragma GCC diagnostic ignored "-Wimplicit-int-conversion"
+    #pragma GCC diagnostic ignored "-Wshorten-64-to-32"
+    #pragma GCC diagnostic ignored "-Wsign-conversion"
+    #pragma GCC diagnostic ignored "-Wold-style-cast"
+    #include <torch/torch.h>
+    #include <torch/script.h>
+    #pragma GCC diagnostic pop
     #include <metatensor/torch.hpp>
+    #if METATENSOR_TORCH_VERSION_MAJOR != 0 || METATENSOR_TORCH_VERSION_MINOR != 5
+    #error "this code is only compatible with metatensor-torch >=0.5.1,<0.6"
+    #endif
     int main() {
       metatensor_torch::version();
       return 0;

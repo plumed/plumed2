@@ -113,12 +113,25 @@ public:
 
 #include <type_traits>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#pragma GCC diagnostic ignored "-Wfloat-conversion"
+#pragma GCC diagnostic ignored "-Wimplicit-float-conversion"
+#pragma GCC diagnostic ignored "-Wimplicit-int-conversion"
+#pragma GCC diagnostic ignored "-Wshorten-64-to-32"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+
 #include <torch/script.h>
 #include <torch/version.h>
 #include <torch/cuda.h>
 #if TORCH_VERSION_MAJOR >= 2
 #include <torch/mps.h>
 #endif
+
+#pragma GCC diagnostic pop
 
 #include <metatensor/torch.hpp>
 #include <metatensor/torch/atomistic.hpp>
@@ -152,7 +165,7 @@ private:
     void createSystem();
     // compute a neighbor list following metatensor format, using data from PLUMED
     metatensor_torch::TorchTensorBlock computeNeighbors(
-        metatensor_torch::NeighborsListOptions request,
+        metatensor_torch::NeighborListOptions request,
         const std::vector<PLMD::Vector>& positions,
         const PLMD::Tensor& cell
     );
@@ -164,7 +177,7 @@ private:
 
     // neighbor lists requests made by the model
     metatensor_torch::ModelCapabilities capabilities_;
-    std::vector<metatensor_torch::NeighborsListOptions> nl_requests_;
+    std::vector<metatensor_torch::NeighborListOptions> nl_requests_;
 
     // dtype/device to use to execute the model
     torch::ScalarType dtype_;
@@ -191,9 +204,9 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
     ActionWithValue(options),
     device_(torch::kCPU)
 {
-    if (metatensor_torch::version().find("0.4.") != 0) {
+    if (metatensor_torch::version().find("0.5.") != 0) {
         this->error(
-            "this code requires version 0.4.x of metatensor-torch, got version " +
+            "this code requires version 0.5.x of metatensor-torch, got version " +
             metatensor_torch::version()
         );
     }
@@ -219,9 +232,9 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
     // extract information from the model
     auto metadata = this->model_.run_method("metadata").toCustomClass<metatensor_torch::ModelMetadataHolder>();
     this->capabilities_ = this->model_.run_method("capabilities").toCustomClass<metatensor_torch::ModelCapabilitiesHolder>();
-    auto requests_ivalue = this->model_.run_method("requested_neighbors_lists");
+    auto requests_ivalue = this->model_.run_method("requested_neighbor_lists");
     for (auto request_ivalue: requests_ivalue.toList()) {
-        auto request = request_ivalue.get().toCustomClass<metatensor_torch::NeighborsListOptionsHolder>();
+        auto request = request_ivalue.get().toCustomClass<metatensor_torch::NeighborListOptionsHolder>();
         this->nl_requests_.push_back(request);
     }
 
@@ -445,7 +458,7 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
 
         auto neighbors = this->computeNeighbors(request, {PLMD::Vector(0, 0, 0)}, PLMD::Tensor(0, 0, 0, 0, 0, 0, 0, 0, 0));
         metatensor_torch::register_autograd_neighbors(dummy_system, neighbors, this->check_consistency_);
-        dummy_system->add_neighbors_list(request, neighbors);
+        dummy_system->add_neighbor_list(request, neighbors);
     }
 
     if (output->per_atom) {
@@ -551,13 +564,13 @@ void MetatensorPlumedAction::createSystem() {
     for (auto request: this->nl_requests_) {
         auto neighbors = this->computeNeighbors(request, positions, cell);
         metatensor_torch::register_autograd_neighbors(this->system_, neighbors, this->check_consistency_);
-        this->system_->add_neighbors_list(request, neighbors);
+        this->system_->add_neighbor_list(request, neighbors);
     }
 }
 
 
 metatensor_torch::TorchTensorBlock MetatensorPlumedAction::computeNeighbors(
-    metatensor_torch::NeighborsListOptions request,
+    metatensor_torch::NeighborListOptions request,
     const std::vector<PLMD::Vector>& positions,
     const PLMD::Tensor& cell
 ) {
@@ -587,8 +600,8 @@ metatensor_torch::TorchTensorBlock MetatensorPlumedAction::computeNeighbors(
     options.return_distances = false;
     options.return_vectors = true;
 
-    VesinNeighborsList* vesin_neighbor_list = new VesinNeighborsList();
-    memset(vesin_neighbor_list, 0, sizeof(VesinNeighborsList));
+    VesinNeighborList* vesin_neighbor_list = new VesinNeighborList();
+    memset(vesin_neighbor_list, 0, sizeof(VesinNeighborList));
 
     const char* error_message = NULL;
     int status = vesin_neighbors(

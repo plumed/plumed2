@@ -9,20 +9,20 @@
 extern "C" {
 #endif
 
-/// Options for a neighbors list calculation
+/// Options for a neighbor list calculation
 typedef struct VesinOptions {
     /// Spherical cutoff, only pairs below this cutoff will be included
     double cutoff;
-    /// Should the returned neighbors list be a full list (include both `i -> j`
+    /// Should the returned neighbor list be a full list (include both `i -> j`
     /// and `j -> i` pairs) or a half list (include only `i -> j`).
     bool full;
     // TODO: sort option?
 
-    /// Should the returned `VesinNeighborsList` contain `shifts`?
+    /// Should the returned `VesinNeighborList` contain `shifts`?
     bool return_shifts;
-    /// Should the returned `VesinNeighborsList` contain `distances`?
+    /// Should the returned `VesinNeighborList` contain `distances`?
     bool return_distances;
-    /// Should the returned `VesinNeighborsList` contain `vector`?
+    /// Should the returned `VesinNeighborList` contain `vector`?
     bool return_vectors;
 } VesinOptions;
 
@@ -36,7 +36,7 @@ enum VesinDevice {
 };
 
 
-/// The actual neighbors list
+/// The actual neighbor list
 ///
 /// This is organized as a list of pairs, where each pair can contain the
 /// following data:
@@ -55,9 +55,9 @@ enum VesinDevice {
 ///
 /// Under periodic boundary conditions, two atoms can be part of multiple pairs,
 /// each pair having a different periodic shift.
-typedef struct VesinNeighborsList {
+typedef struct VesinNeighborList {
 #ifdef __cplusplus
-    VesinNeighborsList():
+    VesinNeighborList():
         length(0),
         device(VesinUnknownDevice),
         pairs(nullptr),
@@ -67,7 +67,7 @@ typedef struct VesinNeighborsList {
     {}
 #endif
 
-    /// Number of pairs in this neighbors list
+    /// Number of pairs in this neighbor list
     size_t length;
     /// Device used for the data allocations
     VesinDevice device;
@@ -89,15 +89,15 @@ typedef struct VesinNeighborsList {
     // TODO: custom memory allocators?
 } VesinNeighborList;
 
-/// Free all allocated memory inside a `VesinNeighborsList`, according the it's
+/// Free all allocated memory inside a `VesinNeighborList`, according the it's
 /// `device`.
 void vesin_free(VesinNeighborList* neighbors);
 
-/// Compute a neighbors list.
+/// Compute a neighbor list.
 ///
-/// The data is returned in a `VesinNeighborsList`. For an initial call, the
-/// `VesinNeighborsList` should be zero-initialized (or default-initalized in
-/// C++). The `VesinNeighborsList` can be re-used across calls to this functions
+/// The data is returned in a `VesinNeighborList`. For an initial call, the
+/// `VesinNeighborList` should be zero-initialized (or default-initalized in
+/// C++). The `VesinNeighborList` can be re-used across calls to this functions
 /// to re-use memory allocations, and once it is no longer needed, users should
 /// call `vesin_free` to release the corresponding memory.
 ///
@@ -109,7 +109,7 @@ void vesin_free(VesinNeighborList* neighbors);
 /// @param periodic is the system using periodic boundary conditions?
 /// @param device device where the `points` and `box` data is allocated.
 /// @param options options for the calculation
-/// @param neighbors non-NULL pointer to `VesinNeighborsList` that will be used
+/// @param neighbors non-NULL pointer to `VesinNeighborList` that will be used
 ///     to store the computed list of neighbors.
 /// @param error_message Pointer to a `char*` that wil be set to the error
 ///     message if this function fails. This does not need to be freed when no

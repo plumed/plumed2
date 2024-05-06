@@ -7,7 +7,7 @@ from metatensor.torch.atomistic import (
     ModelCapabilities,
     ModelMetadata,
     ModelOutput,
-    NeighborsListOptions,
+    NeighborListOptions,
     System,
 )
 
@@ -34,7 +34,7 @@ class TestCollectiveVariable(torch.nn.Module):
     def __init__(self, cutoff, multiple_properties):
         super().__init__()
 
-        self._nl_request = NeighborsListOptions(cutoff=cutoff, full_list=True)
+        self._nl_request = NeighborListOptions(cutoff=cutoff, full_list=True)
         self._multiple_properties = multiple_properties
 
     def forward(
@@ -84,7 +84,7 @@ class TestCollectiveVariable(torch.nn.Module):
         for system_i, system in enumerate(systems):
             system_stop = system_start + len(system)
 
-            neighbors = system.get_neighbors_list(self._nl_request)
+            neighbors = system.get_neighbor_list(self._nl_request)
 
             atom_index = neighbors.samples.column("first_atom")
             distances = torch.linalg.vector_norm(neighbors.values.reshape(-1, 3), dim=1)
@@ -119,7 +119,7 @@ class TestCollectiveVariable(torch.nn.Module):
 
         return {"plumed::cv": cv}
 
-    def requested_neighbors_lists(self) -> List[NeighborsListOptions]:
+    def requested_neighbor_lists(self) -> List[NeighborListOptions]:
         return [self._nl_request]
 
 
