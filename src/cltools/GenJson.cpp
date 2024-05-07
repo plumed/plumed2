@@ -25,6 +25,7 @@
 #include "config/Config.h"
 #include "core/ActionRegister.h"
 #include "core/GenericMolInfo.h"
+#include "core/ModuleMap.h"
 #include <cstdio>
 #include <string>
 #include <iostream>
@@ -64,7 +65,6 @@ PLUMED_REGISTER_CLTOOL(GenJson,"gen_json")
 void GenJson::registerKeywords( Keywords& keys ) {
   CLTool::registerKeywords( keys );
   keys.add("compulsory","--actions","a file containing one line descriptions of the various actions");
-  keys.add("compulsory","--modules","a file containing the modules that each action is a part of");
 }
 
 GenJson::GenJson(const CLToolOptions& co ):
@@ -84,14 +84,6 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
     action_map.insert(std::pair<std::string,std::string>( line.substr(0,col), line.substr(col+1) ) );
   }
   myfile.close();
-  std::string modulefile; parse("--modules",modulefile);
-  IFile modfile; modfile.open(modulefile);
-  std::map<std::string,std::string> module_map;
-  while((stat=modfile.getline(line))) {
-    std::size_t col = line.find_first_of(":");
-    module_map.insert(std::pair<std::string,std::string>( line.substr(0,col), line.substr(col+1) ) );
-  }
-  modfile.close();
 
   // Cycle over all the action names
   std::cout<<"{"<<std::endl;
@@ -116,8 +108,7 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
     for(auto c : action ) { if( isdigit(c) ) std::cout<<c; else std::cout<<"_"<<c; }
     std::cout<<".html\","<<std::endl;
     std::cout<<"    \"description\" : \""<<action_map[action_names[i]]<<"\",\n";
-    if( module_map.find(action_names[i]) == module_map.end() ) error("could not find module for action "  + action_names[i] );
-    std::cout<<"    \"module\" : \""<<module_map[action_names[i]]<<"\",\n";
+    std::cout<<"    \"module\" : \""<<getModuleMap().find(action_names[i])->second<<"\",\n";
     // Now output keyword information
     Keywords keys; actionRegister().getKeywords( action_names[i], keys );
     std::cout<<"    \"syntax\" : {"<<std::endl;
