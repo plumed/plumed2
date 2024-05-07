@@ -1,0 +1,67 @@
+#! /usr/bin/env bash
+# shellcheck disable=SC2059
+
+outputfile=$1
+rm -f $outputfile~
+
+problems=""
+toPrint='  {"%s", "%s"}'
+#regex are scary, here's a link with the flow of the regex
+# https://regexper.com/#PLUMED_REGISTER_ACTION%20*%5C%28%20*%5B0-9a-zA-Z_%5D%2B%20*%2C%20*%22%28%5B0-9a-zA-Z_%5D%2B%29%22%20*%5C%29
+regex='PLUMED_REGISTER_ACTION *\( *[0-9a-zA-Z_]+ *, *"([0-9a-zA-Z_]+)" *\)'
+
+for module in ../*/module.type; do
+  moduledir=${module%%/module.type}
+  modulename=${moduledir##*/}
+  {
+    for file in "$moduledir"/*.cpp; do
+      if grep -q PLUMED_REGISTER_ACTION "${file}"; then
+        # gawk and perl implementation in case your bash dialect do not process correctly the regex
+        # actionName=$(gawk 'match($0,/PLUMED_REGISTER_ACTION *\( *[0-9_a-zA-Z]+ *, *"([0-9a-zA-Z_]+)" *\)/, captured){print captured[1]}' "${file}" )
+        # # in case gawk does not work, here's the perl implementation:
+        # # actionName=$(perl -ln -e'print $1 if /PLUMED_REGISTER_ACTION *\( *[0-9_a-zA-Z]+ *, *"([0-9a-zA-Z_]+)" *\)/'  "${file}")
+        # ng=$(grep -c PLUMED_REGISTER_ACTION "${file}")
+        # nawk=$(
+        #           cat <<EOF | wc -l
+        # $b
+        # EOF
+        #         )
+        #         if [[ $ng -ne $nawk ]]; then
+        #           problems="$problems ${modulename}:${file}"
+        #         fi
+        # for a in $actionName; do
+        #   printf  "$toPrint" "$a" "$modulename"
+        #   # echo -ne "$init  {\"$a\", \"$modulename\"}"
+        #   toPrint=',\n  {"%s", "%s"}'
+        # done
+        # fi
+
+        grep PLUMED_REGISTER_ACTION "${file}" | while read -r action; do
+          # echo $action
+          if [[ $action =~ $regex ]]; then
+            actionName=${BASH_REMATCH[1]}
+            printf "$toPrint" "$actionName" "$modulename" >> $outputfile~
+            
+            toPrint=',\n  {"%s", "%s"}'
+          fi
+        done
+        #also here becasue while spawns a subshell and toPrint do not get updated
+        toPrint=',\n  {"%s", "%s"}'
+      fi
+    done
+  }
+
+done
+
+cmp -s $outputfile~ $outputfile || cp $outputfile~ $outputfile
+rm $outputfile~
+
+echo -e '\n'
+if [[ -n $problems ]]; then
+  echo >&2 some problems in the following:
+  for p in $problems; do
+    echo >&2 $p
+  done
+  exit 1
+fi
+

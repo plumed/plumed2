@@ -3,7 +3,7 @@ USE=config tools lepton small_vector blas
 # generic makefile
 include ../maketools/make.module
 
-CLEANLIST:=$(CLEANLIST) PlumedMainMap.inc PlumedMainEnum.inc GREXMap.inc GREXEnum.inc CLToolMainMap.inc CLToolMainEnum.inc
+CLEANLIST:=$(CLEANLIST) PlumedMainMap.inc PlumedMainEnum.inc GREXMap.inc GREXEnum.inc CLToolMainMap.inc CLToolMainEnum.inc ModuleMap.inc
 
 PlumedMain.o: PlumedMainMap.inc PlumedMainEnum.inc
 
@@ -29,3 +29,7 @@ CLToolMainMap.inc: CLToolMain.cpp
 CLToolMainEnum.inc: CLToolMain.cpp
 	../maketools/makecmd enum < CLToolMain.cpp > CLToolMainEnum.inc
 
+ModuleMap.o: ModuleMap.inc
+
+ModuleMap.inc: ../*/*.cpp
+	../maketools/makeModuleMap $@
