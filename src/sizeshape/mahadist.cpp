@@ -25,7 +25,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 namespace PLMD {
 namespace sizeshape {
 
-//+PLUMEDOC sizeshapeMOD_COLVAR POSITION_MAHA_DIST
+//+PLUMEDOC sizeshapeMOD_COLVAR SIZESHAPE_POSITION_MAHA_DIST
 /*
 Calculates Mahalanobis distance of a current configuration from a  given reference configurational distribution in size-and-shape space.
 
@@ -47,7 +47,7 @@ UNITS LENGTH=A TIME=ps ENERGY=kcal/mol
 GROUP ATOMS=18,20,22,31,33,35,44,46,48,57,59,61,70,72,74,83,85,87,96,98,100,109,111 LABEL=ga_list
 #SETTINGS AUXFILE=regtest/sizeshape/rt-mahadist/global_avg.txt
 #SETTINGS AUXFILE=regtest/sizeshape/rt-mahadist/global_precision.txt
-d: POSITION_MAHA_DIST REFERENCE=global_avg.txt PRECISION=global_precision.txt GROUP=ga_list
+d: SIZESHAPE_POSITION_MAHA_DIST REFERENCE=global_avg.txt PRECISION=global_precision.txt GROUP=ga_list
 PRINT ARG=d STRIDE=1 FILE=output FMT=%8.8f
 \endplumedfile
 
@@ -85,7 +85,7 @@ public:
   void calculate() override;
 };
 
-PLUMED_REGISTER_ACTION(position_maha_dist,"POSITION_MAHA_DIST")
+PLUMED_REGISTER_ACTION(position_maha_dist,"SIZESHAPE_POSITION_MAHA_DIST")
 
 void position_maha_dist::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
@@ -120,7 +120,7 @@ position_maha_dist::position_maha_dist(const ActionOptions&ao):
     log.printf("  %d", atom_list[i].serial());
   }
 
-  if(squared)log.printf("\n chosen to use SQUARED option for POSITION_MAHA_DIST\n");
+  if(squared)log.printf("\n chosen to use SQUARED option for SIZESHAPE_POSITION_MAHA_DIST\n");
 
   if(pbc) log.printf("\n using periodic boundary conditions\n");
   else log.printf("\n without periodic boundary conditions\n");

@@ -26,7 +26,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 namespace PLMD {
 namespace sizeshape {
 
-//+PLUMEDOC sizeshapeMOD_COLVAR POSITION_LINEAR_PROJ
+//+PLUMEDOC sizeshapeMOD_COLVAR SIZESHAPE_POSITION_LINEAR_PROJ
 /*
 Calculates a linear projection in the space of a given reference configurational distribution in size-and-shape space.
 
@@ -57,7 +57,7 @@ GROUP ATOMS=18,20,22,31,33,35,44,46,48,57,59,61,70,72,74,83,85,87,96,98,100,109,
 #SETTINGS AUXFILE=regtest/sizeshape/rt-sizeshape/global_avg.txt
 #SETTINGS AUXFILE=regtest/sizeshape/rt-sizeshape/global_precision.txt
 #SETTINGS AUXFILE=regtest/sizeshape/rt-sizeshape/ld1_scalings.txt
-proj: POSITION_LINEAR_PROJ REFERENCE=global_avg.txt PRECISION=global_precision.txt COEFFS=ld1_scalings.txt GROUP=ga_list
+proj: SIZESHAPE_POSITION_LINEAR_PROJ REFERENCE=global_avg.txt PRECISION=global_precision.txt COEFFS=ld1_scalings.txt GROUP=ga_list
 PRINT ARG=proj STRIDE=1 FILE=COLVAR FMT=%8.8f
 \endplumedfile
 
@@ -96,7 +96,7 @@ public:
   void calculate() override;
 };
 
-PLUMED_REGISTER_ACTION(position_linear_proj, "POSITION_LINEAR_PROJ")
+PLUMED_REGISTER_ACTION(position_linear_proj, "SIZESHAPE_POSITION_LINEAR_PROJ")
 
 // register keywords function
 void position_linear_proj::registerKeywords( Keywords& keys ) {
