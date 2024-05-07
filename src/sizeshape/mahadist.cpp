@@ -37,6 +37,20 @@ d(\mathbf{x}, \mathbf{\mu}, \mathbf{\Sigma}) = \sqrt{(\mathbf{x}-\mathbf{\mu})^T
 
 Here \f$\mathbf{x}\f$ is the configuration at time t, \f$\mathbf{\mu}\f$ is the reference and \f$\mathbf{\Sigma}^{-1}\f$ is the \f$N \times N\f$ precision matrix.
 
+Size-and-shape Gaussian Mixture Model (shapeGMM) \cite Heidi-shapeGMM-2022 is a probabilistic clustering technique that is used to perform structural clusteing on ensemble of molecular configurations and to obtain reference \f$(\mathbf{\mu})\f$ and precision \f$(\mathbf{\Sigma}^{-1})\f$ corresponding to each of the cluster centers. Please chcek out <a href="https://github.com/mccullaghlab/shapeGMMTorch">shapeGMMTorch-GitHub</a> and <a href="https://pypi.org/project/shapeGMMTorch/"> shapeGMMTorch-PyPI</a> for examples and informations on preforming shapeGMM clustering.
+
+\par Examples
+In the following example, a group is defined with atom indices of selected atoms and then Mahalanobis distance is calculated with respect to the given reference and precision. Each file is a space separated list of 3N floating point numbers.
+
+\plumedfile
+UNITS LENGTH=A TIME=ps ENERGY=kcal/mol
+GROUP ATOMS=18,20,22,31,33,35,44,46,48,57,59,61,70,72,74,83,85,87,96,98,100,109,111 LABEL=ga_list
+#SETTINGS AUXFILE=regtest/sizeshape/rt-mahadist/global_avg.txt
+#SETTINGS AUXFILE=regtest/sizeshape/rt-mahadist/global_precision.txt
+d: POSITION_MAHA_DIST REFERENCE=global_avg.txt PRECISION=global_precision.txt GROUP=ga_list
+PRINT ARG=d STRIDE=1 FILE=output FMT=%8.8f
+\endplumedfile
+
 */
 //+ENDPLUMEDOC
 
