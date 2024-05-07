@@ -641,8 +641,6 @@ std::string Keywords::getOutputComponentFlag( const std::string& name ) const {
 }
 
 std::string Keywords::getOutputComponentDescription( const std::string& name ) const {
-  if( cstring.find("customized")!=std::string::npos ) return "the label of this action is set by user in the input. See documentation above.";
-
   bool found=false;
   for(unsigned i=0; i<cnames.size(); ++i) {
     if( name==cnames[i] ) found=true;

@@ -63,6 +63,7 @@ class Ensemble :
   double   power;
 public:
   explicit Ensemble(const ActionOptions&);
+  std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const override ;
   void     calculate() override;
   static void registerKeywords(Keywords& keys);
 };
@@ -146,6 +147,15 @@ Ensemble::Ensemble(const ActionOptions&ao):
   if(do_moments&&do_central)   log.printf("  calculating also the %lf central moment\n", moment);
   if(do_powers)                log.printf("  calculating the %lf power of the mean (and moment)\n", power);
 }
+
+std::string Ensemble::getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const {
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    if( cname==getPntrToArgument(i)->getName() ) return "the average for argument " + cname;
+    if( cname==getPntrToArgument(i)->getName() + "_m" ) return "the moment for argument " + cname;
+  }
+  plumed_error(); return "";
+}
+
 
 void Ensemble::calculate() {
   double norm = 0.0;

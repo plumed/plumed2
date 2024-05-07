@@ -51,6 +51,7 @@ public:
   static void runSingleTaskCalculation( const Value* arg, ActionWithValue* action, T& f );
   explicit FunctionOfVector(const ActionOptions&);
   ~FunctionOfVector() {}
+  std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const override ;
 /// Get the size of the task list at the end of the run
   unsigned getNumberOfFinalTasks();
 /// Check if derivatives are available
@@ -168,6 +169,13 @@ FunctionOfVector<T>::FunctionOfVector(const ActionOptions&ao):
   }
   if( allconstant ) done_in_chain=false;
   nderivatives = buildArgumentStore(myfunc.getArgStart());
+}
+
+template <class T>
+std::string FunctionOfVector<T>::getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const {
+  if( getName().find("SORT")==std::string::npos ) return ActionWithValue::getOutputComponentDescription( cname, keys );
+  if( getNumberOfArguments()==1 ) return "the " + cname + "th largest element of the vector " + getPntrToArgument(0)->getName();
+  return "the " + cname + "th largest element in the input vectors";
 }
 
 template <class T>

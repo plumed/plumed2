@@ -92,6 +92,7 @@ class PropertyMap : public PathMSDBase {
 public:
   explicit PropertyMap(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
+  std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const override ;
 };
 
 PLUMED_REGISTER_ACTION(PropertyMap,"PROPERTYMAP")
@@ -144,6 +145,10 @@ PropertyMap::PropertyMap(const ActionOptions&ao):
   }
   requestAtoms(pdbv[0].getAtomNumbers());
 
+}
+
+std::string PropertyMap::getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const {
+  return "the projection of the instanenous position in CV space on the coordinate " + cname + " that is defined in the reference file";
 }
 
 }

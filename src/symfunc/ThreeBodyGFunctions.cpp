@@ -42,6 +42,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit ThreeBodyGFunctions(const ActionOptions&);
+  std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const override ;
   void calculate() override ;
   unsigned getNumberOfDerivatives() override;
   void performTask( const unsigned& task_index, MultiValue& myvals ) const override ;
@@ -96,6 +97,15 @@ ThreeBodyGFunctions::ThreeBodyGFunctions(const ActionOptions&ao):
     functions[i-1].set( myfunc, argnames, this, true );
   }
   checkRead();
+}
+
+std::string ThreeBodyGFunctions::getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const {
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+    if( getConstPntrToComponent(i)->getName().find(cname)!=std::string::npos ) {
+      std::string num; Tools::convert( i+1, num ); return "the function defined by the FUNCTION" + num + " keyword";
+    }
+  }
+  plumed_error(); return "";
 }
 
 unsigned ThreeBodyGFunctions::getNumberOfDerivatives() {

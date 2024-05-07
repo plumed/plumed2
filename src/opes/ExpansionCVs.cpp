@@ -63,6 +63,10 @@ ExpansionCVs::ExpansionCVs(const ActionOptions&ao)
   plumed_massert((int)getNumberOfArguments()==getNumberOfComponents(),"Expansion CVs have same number of arguments and components");
 }
 
+std::string ExpansionCVs::getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const {
+  return "the value of the argument named " + cname;
+}
+
 void ExpansionCVs::calculate()
 {
   std::vector<double> args(getNumberOfArguments());

@@ -800,7 +800,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
             if( dot!=std::string::npos ) {
               std::string cname = compname.substr(dot+1); std::size_t hyph = cname.find_first_of("-");
               if( hyph!=std::string::npos ) cname = cname.substr(0,hyph);
-              description = keys.getOutputComponentDescription( cname );
+              description = av->getOutputComponentDescription( cname, keys );
             } else description = keys.getOutputComponentDescription(".#!value");
             if( firstv ) { valuefile.printf("    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), vtype.c_str(), description.c_str() ); firstv=false; }
             else valuefile.printf(",\n    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), vtype.c_str(), description.c_str() );

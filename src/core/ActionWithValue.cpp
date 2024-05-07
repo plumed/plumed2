@@ -167,6 +167,15 @@ void ActionWithValue::addComponentWithDerivatives( const std::string& name, cons
   log.printf(msg.c_str());
 }
 
+std::string ActionWithValue::getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const {
+  std::size_t und=cname.find_last_of("_"); std::size_t hyph=cname.find_first_of("-");
+  if( und!=std::string::npos && hyph!=std::string::npos ) plumed_merror("cannot use underscore and hyphen in name");
+  if( und!=std::string::npos ) return keys.getOutputComponentDescription(cname.substr(und)) + " This particular component measures this quantity for the input CV named " + cname.substr(0,und);
+  if( hyph!=std::string::npos ) return keys.getOutputComponentDescription(cname.substr(0,hyph)) + "  This is the " + cname.substr(hyph+1) + "th of these quantities";
+  plumed_massert( keys.outputComponentExists(cname,false), "if the component names are customizable then you should override this function" );
+  return keys.getOutputComponentDescription( cname );
+}
+
 int ActionWithValue::getComponent( const std::string& name ) const {
   plumed_massert( !exists( getLabel() ), "You should not be calling this routine if you are using a value");
   std::string thename; thename=getLabel() + "." + name;

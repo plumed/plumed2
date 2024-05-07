@@ -41,6 +41,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit MatrixTimesVector(const ActionOptions&);
+  std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const override ;
   unsigned getNumberOfColumns() const override { plumed_error(); }
   unsigned getNumberOfDerivatives();
   void prepare() override ;
@@ -56,6 +57,22 @@ PLUMED_REGISTER_ACTION(MatrixTimesVector,"MATRIX_VECTOR_PRODUCT")
 void MatrixTimesVector::registerKeywords( Keywords& keys ) {
   ActionWithMatrix::registerKeywords(keys); keys.use("ARG"); ActionWithValue::useCustomisableComponents(keys);
   keys.setValueDescription("the vector that is obtained by taking the product between the matrix and the vector that were input");
+}
+
+std::string MatrixTimesVector::getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const {
+  if( getPntrToArgument(1)->getRank()==1 ) {
+    for(unsigned i=1; i<getNumberOfArguments(); ++i) {
+      if( getPntrToArgument(i)->getName().find(cname)!=std::string::npos ) {
+        return "the product of the matrix " + getPntrToArgument(0)->getName() + " and the vector " + getPntrToArgument(i)->getName();
+      }
+    }
+  }
+  for(unsigned i=0; i<getNumberOfArguments()-1; ++i) {
+    if( getPntrToArgument(i)->getName().find(cname)!=std::string::npos ) {
+      return "the product of the matrix " + getPntrToArgument(i)->getName() + " and the vector " + getPntrToArgument(getNumberOfArguments()-1)->getName();
+    }
+  }
+  plumed_merror( "could not understand request for component " + cname ); return "";
 }
 
 MatrixTimesVector::MatrixTimesVector(const ActionOptions&ao):

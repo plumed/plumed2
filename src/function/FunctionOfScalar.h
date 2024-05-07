@@ -46,6 +46,7 @@ public:
   virtual ~FunctionOfScalar() {}
 /// Get the label to write in the graph
   std::string writeInGraph() const override { return myfunc.getGraphInfo( getName() ); }
+  std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const override ;
   void calculate() override;
   static void registerKeywords(Keywords&);
   void turnOnDerivatives() override;
@@ -83,6 +84,12 @@ FunctionOfScalar<T>::FunctionOfScalar(const ActionOptions&ao):
   }
   // Set the periodicities of the output components
   myfunc.setPeriodicityForOutputs( this ); myfunc.setPrefactor( this, 1.0 );
+}
+
+template <class T>
+std::string FunctionOfScalar<T>::getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const {
+  if( getName().find("SORT")==std::string::npos ) return ActionWithValue::getOutputComponentDescription( cname, keys );
+  return "the " + cname + "th largest of the input scalars";
 }
 
 template <class T>

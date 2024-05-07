@@ -112,6 +112,8 @@ public:
   void componentIsNotPeriodic( const std::string& name );
 /// Set the value to be periodic with a particular domain
   void componentIsPeriodic( const std::string& name, const std::string& min, const std::string& max );
+/// Get the description of this component
+  virtual std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const ;
 protected:
 /// Return a pointer to the component by index
   Value* getPntrToComponent(int i);

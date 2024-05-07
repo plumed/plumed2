@@ -1,0 +1,67 @@
+{
+  "timestep" : {
+    "timestep" : { "type": "scalar", "description": "the data that was passed from the MD code" }
+  },
+  "posx" : {
+    "posx" : { "type": "vector", "description": "the data that was passed from the MD code" }
+  },
+  "posy" : {
+    "posy" : { "type": "vector", "description": "the data that was passed from the MD code" }
+  },
+  "posz" : {
+    "posz" : { "type": "vector", "description": "the data that was passed from the MD code" }
+  },
+  "Masses" : {
+    "Masses" : { "type": "vector", "description": "the data that was passed from the MD code" }
+  },
+  "Charges" : {
+    "Charges" : { "type": "vector", "description": "the data that was passed from the MD code" }
+  },
+  "Box" : {
+    "Box" : { "type": "matrix", "description": "a matrix containing the cell vectors that were passed from the MD code" }
+  },
+  "q1_grp" : {
+    "q1_grp" : { "type": "atoms", "description": "indices of atoms specified in GROUP" }
+  },
+  "q1_mat" : {
+    "q1_mat.w" : { "type": "matrix", "description": "a matrix containing the weights for the bonds between each pair of atoms" },
+    "q1_mat.x" : { "type": "matrix", "description": "the projection of the bond on the x axis" },
+    "q1_mat.y" : { "type": "matrix", "description": "the projection of the bond on the y axis" },
+    "q1_mat.z" : { "type": "matrix", "description": "the projection of the bond on the z axis" }
+  },
+  "q1_sh" : {
+    "q1_sh.rm-n1" : { "type": "matrix", "description": "the real parts of the spherical harmonic values with the m value given" },
+    "q1_sh.rm-0" : { "type": "matrix", "description": "the real parts of the spherical harmonic values with the m value given" },
+    "q1_sh.rm-p1" : { "type": "matrix", "description": "the real parts of the spherical harmonic values with the m value given" },
+    "q1_sh.im-n1" : { "type": "matrix", "description": "the real parts of the spherical harmonic values with the m value given" },
+    "q1_sh.im-0" : { "type": "matrix", "description": "the real parts of the spherical harmonic values with the m value given" },
+    "q1_sh.im-p1" : { "type": "matrix", "description": "the real parts of the spherical harmonic values with the m value given" }
+  },
+  "q1_denom_ones" : {
+    "q1_denom_ones" : { "type": "vector", "description": "the constant value that was read from the plumed input" }
+  },
+  "q1_denom" : {
+    "q1_denom" : { "type": "vector", "description": "the vector that is obtained by taking the product between the matrix and the vector that were input" }
+  },
+  "q1_sp" : {
+    "q1_sp.rm-n1" : { "type": "vector", "description": "the product of the matrix q1_sh.rm-n1 and the vector q1_denom_ones" },
+    "q1_sp.rm-0" : { "type": "vector", "description": "the product of the matrix q1_sh.rm-n1 and the vector q1_denom_ones" },
+    "q1_sp.rm-p1" : { "type": "vector", "description": "the product of the matrix q1_sh.rm-n1 and the vector q1_denom_ones" },
+    "q1_sp.im-n1" : { "type": "vector", "description": "the product of the matrix q1_sh.im-n1 and the vector q1_denom_ones" },
+    "q1_sp.im-0" : { "type": "vector", "description": "the product of the matrix q1_sh.im-n1 and the vector q1_denom_ones" },
+    "q1_sp.im-p1" : { "type": "vector", "description": "the product of the matrix q1_sh.im-n1 and the vector q1_denom_ones" }
+  },
+  "q1_norm2" : {
+    "q1_norm2" : { "type": "vector", "description": "the vector obtained by doing an element-wise application of a linear compbination to the input vectors" }
+  },
+  "q1_norm" : {
+    "q1_norm" : { "type": "vector", "description": "the vector obtained by doing an element-wise application of an arbitrary function to the input vectors" }
+  },
+  "q1" : {
+    "q1" : { "type": "vector", "description": "the vector obtained by doing an element-wise application of an arbitrary function to the input vectors" }
+  },
+  "gg" : {
+    "gg.g6" : { "type": "vector", "description": "the function defined by the FUNCTION1 keyword" },
+    "gg.g7" : { "type": "vector", "description": "the function defined by the FUNCTION2 keyword" }
+  }
+}

@@ -43,6 +43,7 @@ class ColvarFake : public Colvar {
 public:
   static void registerKeywords( Keywords& keys );
   explicit ColvarFake(const ActionOptions&);
+  std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const override { plumed_error(); }
 // active methods:
   void calculate() override;
 };

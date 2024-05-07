@@ -44,5 +44,13 @@
   },
   "hh" : {
     "hh" : { "type": "grid", "description": "a function on a grid that was obtained by doing a Kernel Density Estimation using the input arguments" }
+  },
+  "r1" : {
+    "r1.X" : { "type": "scalar", "description": "values from the column labelled p2.X in the file named input_colvar" }
+  },
+  "r2" : {
+    "r2.X" : { "type": "scalar", "description": "values from the column labelled p3.X in the file named input_colvar" },
+    "r2.Y" : { "type": "scalar", "description": "values from the column labelled p3.Y in the file named input_colvar" },
+    "r2.zzz" : { "type": "scalar", "description": "values from the column labelled p3.zzz in the file named input_colvar" }
   }
 }
