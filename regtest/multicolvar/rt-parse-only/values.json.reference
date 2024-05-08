@@ -1,52 +1,52 @@
-{
-  "timestep" : {
-    "timestep" : { "type": "scalar", "description": "the data that was passed from the MD code" }
-  },
-  "posx" : {
-    "posx" : { "type": "vector", "description": "the data that was passed from the MD code" }
-  },
-  "posy" : {
-    "posy" : { "type": "vector", "description": "the data that was passed from the MD code" }
-  },
-  "posz" : {
-    "posz" : { "type": "vector", "description": "the data that was passed from the MD code" }
-  },
-  "Masses" : {
-    "Masses" : { "type": "vector", "description": "the data that was passed from the MD code" }
-  },
-  "Charges" : {
-    "Charges" : { "type": "vector", "description": "the data that was passed from the MD code" }
-  },
-  "Box" : {
-    "Box" : { "type": "matrix", "description": "a matrix containing the cell vectors that were passed from the MD code" }
-  },
-  "d1" : {
-    "d1" : { "type": "scalar", "description": "the DISTANCE between this pair of atoms" }
-  },
-  "d2" : {
-    "d2" : { "type": "scalar", "description": "the DISTANCE between this pair of atoms" }
-  },
-  "d3" : {
-    "d3" : { "type": "scalar", "description": "the DISTANCE between this pair of atoms" }
-  },
-  "ss" : {
-    "ss.1" : { "type": "scalar", "description": "the 1th largest of the input scalars" },
-    "ss.2" : { "type": "scalar", "description": "the 2th largest of the input scalars" },
-    "ss.3" : { "type": "scalar", "description": "the 3th largest of the input scalars" }
-  },
-  "dall" : {
-    "dall" : { "type": "vector", "description": "the DISTANCE for each set of specified atoms" }
-  },
-  "ssall" : {
-    "ssall.1" : { "type": "scalar", "description": "the 1th largest element of the vector dall" },
-    "ssall.2" : { "type": "scalar", "description": "the 2th largest element of the vector dall" },
-    "ssall.3" : { "type": "scalar", "description": "the 3th largest element of the vector dall" }
-  },
-  "dall2" : {
-    "dall2" : { "type": "vector", "description": "the DISTANCE for each set of specified atoms" }
-  },
-  "sfinal" : {
-    "sfinal.1" : { "type": "scalar", "description": "the 1th largest element in the input vectors" },
-    "sfinal.2" : { "type": "scalar", "description": "the 2th largest element in the input vectors" }
-  }
-}
+{ 
+"timestep" : { 
+"timestep" : { "type": "scalar", "desciption": "" }
+}, 
+"posx" : { 
+"posx" : { "type": "vector", "desciption": "" }
+}, 
+"posy" : { 
+"posy" : { "type": "vector", "desciption": "" }
+}, 
+"posz" : { 
+"posz" : { "type": "vector", "desciption": "" }
+}, 
+"Masses" : { 
+"Masses" : { "type": "vector", "desciption": "" }
+}, 
+"Charges" : { 
+"Charges" : { "type": "vector", "desciption": "" }
+}, 
+"Box" : { 
+"Box" : { "type": "matrix", "desciption": "" }
+}, 
+"d1" : { 
+"d1" : { "type": "scalar", "desciption": "DISTANCE" }
+}, 
+"d2" : { 
+"d2" : { "type": "scalar", "desciption": "DISTANCE" }
+}, 
+"d3" : { 
+"d3" : { "type": "scalar", "desciption": "DISTANCE" }
+}, 
+"ss" : { 
+"ss.1" : { "type": "scalar", "desciption": "1th" }
+"ss.2" : { "type": "scalar", "desciption": "2th" }
+"ss.3" : { "type": "scalar", "desciption": "3th" }
+}, 
+"dall" : { 
+"dall" : { "type": "vector", "desciption": "" }
+}, 
+"ssall" : { 
+"ssall.1" : { "type": "scalar", "desciption": "1th" }
+"ssall.2" : { "type": "scalar", "desciption": "2th" }
+"ssall.3" : { "type": "scalar", "desciption": "3th" }
+}, 
+"dallt" : { 
+"dallt" : { "type": "vector", "desciption": "" }
+}, 
+"sfinal" : { 
+"sfinal.1" : { "type": "scalar", "desciption": "1th" }
+"sfinal.2" : { "type": "scalar", "desciption": "2th" }
+} 
+} 

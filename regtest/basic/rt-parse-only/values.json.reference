@@ -1,56 +1,34 @@
-{
-  "timestep" : {
-    "timestep" : { "type": "scalar", "description": "the data that was passed from the MD code" }
-  },
-  "posx" : {
-    "posx" : { "type": "vector", "description": "the data that was passed from the MD code" }
-  },
-  "posy" : {
-    "posy" : { "type": "vector", "description": "the data that was passed from the MD code" }
-  },
-  "posz" : {
-    "posz" : { "type": "vector", "description": "the data that was passed from the MD code" }
-  },
-  "Masses" : {
-    "Masses" : { "type": "vector", "description": "the data that was passed from the MD code" }
-  },
-  "Charges" : {
-    "Charges" : { "type": "vector", "description": "the data that was passed from the MD code" }
-  },
-  "Box" : {
-    "Box" : { "type": "matrix", "description": "a matrix containing the cell vectors that were passed from the MD code" }
-  },
-  "phi" : {
-    "phi" : { "type": "scalar", "description": "the TORSION involving these atoms" }
-  },
-  "rp" : {
-    "rp.bias" : { "type": "scalar", "description": "the instantaneous value of the bias potential" },
-    "rp.force2" : { "type": "scalar", "description": "the instantaneous value of the squared force due to this bias potential" }
-  },
-  "hh_gather" : {
-    "hh_gather.rep-1" : { "type": "scalar", "description": "the input arguments for each of the replicas" }
-  },
-  "hh_gatherv" : {
-    "hh_gatherv" : { "type": "vector", "description": "the concatenated vector/matrix that was constructed from the input values" }
-  },
-  "hh_collect" : {
-    "hh_collect" : { "type": "vector", "description": "the time series for the input quantity" }
-  },
-  "hh_wham" : {
-    "hh_wham" : { "type": "vector", "description": "the vector of WHAM weights to use for reweighting the elements in a time series" }
-  },
-  "hh_data_phi" : {
-    "hh_data_phi" : { "type": "vector", "description": "the time series for the input quantity" }
-  },
-  "hh" : {
-    "hh" : { "type": "grid", "description": "a function on a grid that was obtained by doing a Kernel Density Estimation using the input arguments" }
-  },
-  "r1" : {
-    "r1.X" : { "type": "scalar", "description": "values from the column labelled p2.X in the file named input_colvar" }
-  },
-  "r2" : {
-    "r2.X" : { "type": "scalar", "description": "values from the column labelled p3.X in the file named input_colvar" },
-    "r2.Y" : { "type": "scalar", "description": "values from the column labelled p3.Y in the file named input_colvar" },
-    "r2.zzz" : { "type": "scalar", "description": "values from the column labelled p3.zzz in the file named input_colvar" }
-  }
-}
+{ 
+"timestep" : { 
+"timestep" : { "type": "scalar", "desciption": "" }
+}, 
+"posx" : { 
+"posx" : { "type": "vector", "desciption": "" }
+}, 
+"posy" : { 
+"posy" : { "type": "vector", "desciption": "" }
+}, 
+"posz" : { 
+"posz" : { "type": "vector", "desciption": "" }
+}, 
+"Masses" : { 
+"Masses" : { "type": "vector", "desciption": "" }
+}, 
+"Charges" : { 
+"Charges" : { "type": "vector", "desciption": "" }
+}, 
+"Box" : { 
+"Box" : { "type": "matrix", "desciption": "" }
+}, 
+"phi" : { 
+"phi" : { "type": "scalar", "desciption": "" }
+}, 
+"r1" : { 
+"r1.X" : { "type": "scalar", "description": "values from the column labelled p2.X in the file named input_colvar" } 
+}, 
+"r2" : { 
+"r2.X" : { "type": "scalar", "description": "values from the column labelled p3.X in the file named input_colvar" }, 
+"r2.Y" : { "type": "scalar", "description": "values from the column labelled p3.Y in the file named input_colvar" }, 
+"r2.zzz" : { "type": "scalar", "description": "values from the column labelled p3.zzz in the file named input_colvar" } 
+} 
+} 

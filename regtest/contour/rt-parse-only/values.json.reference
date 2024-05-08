@@ -1,90 +1,90 @@
-{
-  "timestep" : {
-    "timestep" : { "type": "scalar", "description": "the data that was passed from the MD code" }
-  },
-  "posx" : {
-    "posx" : { "type": "vector", "description": "the data that was passed from the MD code" }
-  },
-  "posy" : {
-    "posy" : { "type": "vector", "description": "the data that was passed from the MD code" }
-  },
-  "posz" : {
-    "posz" : { "type": "vector", "description": "the data that was passed from the MD code" }
-  },
-  "Masses" : {
-    "Masses" : { "type": "vector", "description": "the data that was passed from the MD code" }
-  },
-  "Charges" : {
-    "Charges" : { "type": "vector", "description": "the data that was passed from the MD code" }
-  },
-  "Box" : {
-    "Box" : { "type": "matrix", "description": "a matrix containing the cell vectors that were passed from the MD code" }
-  },
-  "fcc_grp" : {
-    "fcc_grp" : { "type": "atoms", "description": "indices of atoms specified in GROUP" }
-  },
-  "fcc_mat" : {
-    "fcc_mat.w" : { "type": "matrix", "description": "a matrix containing the weights for the bonds between each pair of atoms" },
-    "fcc_mat.x" : { "type": "matrix", "description": "the projection of the bond on the x axis" },
-    "fcc_mat.y" : { "type": "matrix", "description": "the projection of the bond on the y axis" },
-    "fcc_mat.z" : { "type": "matrix", "description": "the projection of the bond on the z axis" }
-  },
-  "fcc_vfunc" : {
-    "fcc_vfunc" : { "type": "matrix", "description": "the matrix obtained by doing an element-wise application of a function that measures the similarity with an fcc environment to the input matrix" }
-  },
-  "fcc_wvfunc" : {
-    "fcc_wvfunc" : { "type": "matrix", "description": "the matrix obtained by doing an element-wise application of an arbitrary function to the input matrix" }
-  },
-  "fcc_ones" : {
-    "fcc_ones" : { "type": "vector", "description": "the constant value that was read from the plumed input" }
-  },
-  "fcc" : {
-    "fcc" : { "type": "vector", "description": "the vector that is obtained by taking the product between the matrix and the vector that were input" }
-  },
-  "fcc_denom" : {
-    "fcc_denom" : { "type": "vector", "description": "the vector that is obtained by taking the product between the matrix and the vector that were input" }
-  },
-  "fcc_n" : {
-    "fcc_n" : { "type": "vector", "description": "the vector obtained by doing an element-wise application of an arbitrary function to the input vectors" }
-  },
-  "dens_dist" : {
-    "dens_dist.x" : { "type": "vector", "description": "the x-component of the vector connecting the two atoms" },
-    "dens_dist.y" : { "type": "vector", "description": "the y-component of the vector connecting the two atoms" },
-    "dens_dist.z" : { "type": "vector", "description": "the z-component of the vector connecting the two atoms" }
-  },
-  "dens_numer_sigma" : {
-    "dens_numer_sigma" : { "type": "vector", "description": "the constant value that was read from the plumed input" }
-  },
-  "dens_numer_cov" : {
-    "dens_numer_cov" : { "type": "vector", "description": "the vector obtained by doing an element-wise application of an arbitrary function to the input vectors" }
-  },
-  "dens_numer_icov" : {
-    "dens_numer_icov" : { "type": "vector", "description": "the vector obtained by doing an element-wise application of an arbitrary function to the input vectors" }
-  },
-  "dens_numer" : {
-    "dens_numer" : { "type": "grid", "description": "a function on a grid that was obtained by doing a Kernel Density Estimation using the input arguments" }
-  },
-  "ones" : {
-    "ones" : { "type": "vector", "description": "the constant value that was read from the plumed input" }
-  },
-  "dens_denom_sigma" : {
-    "dens_denom_sigma" : { "type": "vector", "description": "the constant value that was read from the plumed input" }
-  },
-  "dens_denom_cov" : {
-    "dens_denom_cov" : { "type": "vector", "description": "the vector obtained by doing an element-wise application of an arbitrary function to the input vectors" }
-  },
-  "dens_denom_icov" : {
-    "dens_denom_icov" : { "type": "vector", "description": "the vector obtained by doing an element-wise application of an arbitrary function to the input vectors" }
-  },
-  "dens_denom" : {
-    "dens_denom" : { "type": "grid", "description": "a function on a grid that was obtained by doing a Kernel Density Estimation using the input arguments" }
-  },
-  "dens" : {
-    "dens" : { "type": "grid", "description": "the grid obtained by doing an element-wise application of an arbitrary function to the input grid" }
-  },
-  "cont" : {
-    "cont.dens_dist.x" : { "type": "vector", "description": "a vector of coordinates for the contour along the dens_dist.x direction" },
-    "cont.dens_dist.y" : { "type": "vector", "description": "a vector of coordinates for the contour along the dens_dist.y direction" },
-    "cont.dens_dist.z" : { "type": "vector", "description": "a vector of coordinates for the contour along the dens_dist.z direction" }
-  }
-}
+{ 
+"timestep" : { 
+"timestep" : { "type": "scalar", "desciption": "" }
+}, 
+"posx" : { 
+"posx" : { "type": "vector", "desciption": "" }
+}, 
+"posy" : { 
+"posy" : { "type": "vector", "desciption": "" }
+}, 
+"posz" : { 
+"posz" : { "type": "vector", "desciption": "" }
+}, 
+"Masses" : { 
+"Masses" : { "type": "vector", "desciption": "" }
+}, 
+"Charges" : { 
+"Charges" : { "type": "vector", "desciption": "" }
+}, 
+"Box" : { 
+"Box" : { "type": "matrix", "desciption": "" }
+}, 
+"fcc_grp" : { 
+"fcc_grp" : { "type": "atoms", "desciption": "" }
+}, 
+"fcc_mat" : { 
+"fcc_mat.w" : { "type": "matrix", "desciption": "" }
+"fcc_mat.x" : { "type": "matrix", "desciption": "" }
+"fcc_mat.y" : { "type": "matrix", "desciption": "" }
+"fcc_mat.z" : { "type": "matrix", "desciption": "" }
+}, 
+"fcc_vfunc" : { 
+"fcc_vfunc" : { "type": "matrix", "desciption": "" }
+}, 
+"fcc_wvfunc" : { 
+"fcc_wvfunc" : { "type": "matrix", "desciption": "" }
+}, 
+"fcc_ones" : { 
+"fcc_ones" : { "type": "vector", "desciption": "" }
+}, 
+"fcc" : { 
+"fcc" : { "type": "vector", "desciption": "" }
+}, 
+"fcc_denom" : { 
+"fcc_denom" : { "type": "vector", "desciption": "" }
+}, 
+"fcc_n" : { 
+"fcc_n" : { "type": "vector", "desciption": "" }
+}, 
+"dens_dist" : { 
+"dens_dist.x" : { "type": "vector", "desciption": "" }
+"dens_dist.y" : { "type": "vector", "desciption": "" }
+"dens_dist.z" : { "type": "vector", "desciption": "" }
+}, 
+"dens_numer_sigma" : { 
+"dens_numer_sigma" : { "type": "vector", "desciption": "" }
+}, 
+"dens_numer_cov" : { 
+"dens_numer_cov" : { "type": "vector", "desciption": "" }
+}, 
+"dens_numer_icov" : { 
+"dens_numer_icov" : { "type": "vector", "desciption": "" }
+}, 
+"dens_numer" : { 
+"dens_numer" : { "type": "grid", "desciption": "" }
+}, 
+"ones" : { 
+"ones" : { "type": "vector", "desciption": "" }
+}, 
+"dens_denom_sigma" : { 
+"dens_denom_sigma" : { "type": "vector", "desciption": "" }
+}, 
+"dens_denom_cov" : { 
+"dens_denom_cov" : { "type": "vector", "desciption": "" }
+}, 
+"dens_denom_icov" : { 
+"dens_denom_icov" : { "type": "vector", "desciption": "" }
+}, 
+"dens_denom" : { 
+"dens_denom" : { "type": "grid", "desciption": "" }
+}, 
+"dens" : { 
+"dens" : { "type": "grid", "desciption": "" }
+}, 
+"cont" : { 
+"cont.dens_dist.x" : { "type": "vector", "description": "a vector of coordinates for the contour along the dens_dist.x direction" }, 
+"cont.dens_dist.y" : { "type": "vector", "description": "a vector of coordinates for the contour along the dens_dist.y direction" }, 
+"cont.dens_dist.z" : { "type": "vector", "description": "a vector of coordinates for the contour along the dens_dist.z direction" } 
+} 
+} 
