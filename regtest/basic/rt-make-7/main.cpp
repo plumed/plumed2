@@ -7,6 +7,12 @@
 
 using namespace PLMD;
 
+// This is to test the possibility to have a Plumed object
+// initialized during static object initialization
+class StaticObject {
+  PLMD::Plumed p;
+} staticObject;
+
 class A{
   const int a;
 public:

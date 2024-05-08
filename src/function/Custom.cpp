@@ -295,6 +295,9 @@ void Custom::read( ActionWithArguments* action ) {
   action->log.printf("  with variables :");
   for(unsigned i=0; i<var.size(); i++) action->log.printf(" %s",var[i].c_str());
   action->log.printf("\n"); function.set( func, var, action );
+  std::vector<double> zeros( action->getNumberOfArguments(), 0 ); double fval = abs(function.evaluate(zeros));
+  zerowhenallzero=(fval<epsilon );
+  if( zerowhenallzero ) action->log.printf("  not calculating when all arguments are zero \n");
 }
 
 std::string Custom::getGraphInfo( const std::string& name ) const {
@@ -313,13 +316,12 @@ std::vector<Value*> Custom::getArgumentsToCheck( const std::vector<Value*>& args
 
 void Custom::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
   if( args.size()>1 ) {
-    bool allzero;
+    bool allzero=false;
     if( check_multiplication_vars.size()>0 ) {
-      allzero=false;
       for(unsigned i=0; i<check_multiplication_vars.size(); ++i) {
         if( fabs(args[check_multiplication_vars[i]])<epsilon ) { allzero=true; break; }
       }
-    } else {
+    } else if( zerowhenallzero ) {
       allzero=(fabs(args[0])<epsilon);
       for(unsigned i=1; i<args.size(); ++i) {
         if( fabs(args[i])>epsilon ) { allzero=false; break; }

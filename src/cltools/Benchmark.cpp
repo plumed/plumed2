@@ -28,6 +28,8 @@
 #include "tools/Stopwatch.h"
 #include "tools/Log.h"
 #include "tools/DLLoader.h"
+#include "tools/Random.h"
+
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -38,6 +40,7 @@
 #include <random>
 #include <algorithm>
 #include <chrono>
+#include <string_view>
 
 namespace PLMD {
 namespace cltools {
@@ -160,6 +163,9 @@ this analysis.
 // declared in other parts of the code
 namespace {
 
+//this is a sugar for changing idea faster about the rng
+using generator = std::mt19937;
+
 std::atomic<bool> signalReceived(false);
 
 class SignalHandlerGuard {
@@ -220,8 +226,8 @@ struct KernelBase {
 struct Kernel :
   public KernelBase {
   Log* log=nullptr;
-  Kernel(const std::string & path_,const std::string & plumed_dat, Log* log_):
-    KernelBase(path_,plumed_dat,log_),
+  Kernel(const std::string & path_,const std::string & the_plumed_dat, Log* log_):
+    KernelBase(path_,the_plumed_dat,log_),
     log(log_)
   {
   }
@@ -255,6 +261,173 @@ struct Kernel :
   }
 };
 
+namespace  {
+
+class UniformSphericalVector {
+  //double rminCub;
+  double rCub;
+
+public:
+  //assuming rmin=0
+  UniformSphericalVector(const double rmax):
+    rCub (rmax*rmax*rmax/*-rminCub*/) {}
+  PLMD::Vector operator()(Random& rng) {
+    double rho = std::cbrt (/*rminCub + */rng.RandU01()*rCub);
+    double theta =std::acos (2.0*rng.RandU01() -1.0);
+    double phi = 2.0 * PLMD::pi * rng.RandU01();
+    return Vector (
+             rho * sin (theta) * cos (phi),
+             rho * sin (theta) * sin (phi),
+             rho * cos (theta));
+  }
+};
+
+///Acts as a template for any distribution
+struct AtomDistribution {
+  virtual void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, Random&)=0;
+  virtual void box(std::vector<double>& box, unsigned /*natoms*/, unsigned /*step*/, Random&) {
+    std::fill(box.begin(), box.end(),0);
+  };
+};
+
+struct theLine:public AtomDistribution {
+  void positions(std::vector<Vector>& posToUpdate, unsigned step, Random&rng) override {
+    auto nat = posToUpdate.size();
+    UniformSphericalVector usv(0.5);
+
+    for (unsigned i=0; i<nat; ++i) {
+      posToUpdate[i] = Vector(i, 0, 0) + usv(rng);
+    }
+  }
+};
+
+struct uniformSphere:public AtomDistribution {
+  void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, Random& rng) override {
+
+    //giving more or less a cubic udm of volume for each atom: V=nat
+    const double rmax= std::cbrt ((3.0/(4.0*PLMD::pi)) * posToUpdate.size());
+
+    UniformSphericalVector usv(rmax);
+    auto s=posToUpdate.begin();
+    auto e=posToUpdate.end();
+    //I am using the iterators:this is slightly faster,
+    // enough to overcome the cost of the vtable that I added
+    for (unsigned i=0; s!=e; ++s,++i) {
+      *s = usv (rng);
+    }
+
+  }
+  void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, Random&) override {
+    const double rmax= 2.0*std::cbrt((3.0/(4.0*PLMD::pi)) * natoms);
+    box[0]=rmax; box[1]=0.0;  box[2]=0.0;
+    box[3]=0.0;  box[4]=rmax; box[5]=0.0;
+    box[6]=0.0;  box[7]=0.0;  box[8]=rmax;
+
+  }
+};
+
+struct twoGlobs: public AtomDistribution {
+  virtual void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, Random&rng) {
+    //I am using two unigform spheres and 2V=n
+    const double rmax= std::cbrt ((3.0/(8.0*PLMD::pi)) * posToUpdate.size());
+
+    UniformSphericalVector usv(rmax);
+    std::array<Vector,2> centers{
+      PLMD::Vector{0.0,0.0,0.0},
+//so they do not overlap
+      PLMD::Vector{2.0*rmax,2.0*rmax,2.0*rmax}
+    };
+    std::generate(posToUpdate.begin(),posToUpdate.end(),[&]() {
+      //RandInt is only declared
+      // return usv (rng) + centers[rng.RandInt(1)];
+      return usv (rng) + centers[rng.RandU01()>0.5];
+    });
+  }
+
+  virtual void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, Random&) {
+
+    const double rmax= 4.0 * std::cbrt ((3.0/(8.0*PLMD::pi)) * natoms);
+    box[0]=rmax; box[1]=0.0;  box[2]=0.0;
+    box[3]=0.0;  box[4]=rmax; box[5]=0.0;
+    box[6]=0.0;  box[7]=0.0;  box[8]=rmax;
+  };
+};
+
+struct uniformCube:public AtomDistribution {
+  void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, Random& rng) override {
+    //giving more or less a cubic udm of volume for each atom: V = nat
+    const double rmax = std::cbrt(static_cast<double>(posToUpdate.size()));
+
+
+
+    // std::generate(posToUpdate.begin(),posToUpdate.end(),[&]() {
+    //   return Vector (rndR(rng),rndR(rng),rndR(rng));
+    // });
+    auto s=posToUpdate.begin();
+    auto e=posToUpdate.end();
+    //I am using the iterators:this is slightly faster,
+    // enough to overcome the cost of the vtable that I added
+    for (unsigned i=0; s!=e; ++s,++i) {
+      *s = Vector (rng.RandU01()*rmax,rng.RandU01()*rmax,rng.RandU01()*rmax);
+    }
+  }
+  void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, Random&) override {
+    //+0.05 to avoid overlap
+    const double rmax= std::cbrt(natoms)+0.05;
+    box[0]=rmax; box[1]=0.0;  box[2]=0.0;
+    box[3]=0.0;  box[4]=rmax; box[5]=0.0;
+    box[6]=0.0;  box[7]=0.0;  box[8]=rmax;
+
+  }
+};
+
+struct tiledSimpleCubic:public AtomDistribution {
+  void positions(std::vector<Vector>& posToUpdate, unsigned /*step*/, Random& rng) override {
+    //Tiling the space in this way will not tests 100% the pbc, but
+    //I do not think that write a spacefilling curve, like Hilbert, Peano or Morton
+    //could be a good idea, in this case
+    const unsigned rmax = std::ceil(std::cbrt(static_cast<double>(posToUpdate.size())));
+
+    auto s=posToUpdate.begin();
+    auto e=posToUpdate.end();
+    //I am using the iterators:this is slightly faster,
+    // enough to overcome the cost of the vtable that I added
+    for (unsigned k=0; k<rmax&&s!=e; ++k) {
+      for (unsigned j=0; j<rmax&&s!=e; ++j) {
+        for (unsigned i=0; i<rmax&&s!=e; ++i) {
+          *s = Vector (i,j,k);
+          ++s;
+        }
+      }
+    }
+  }
+  void box(std::vector<double>& box, unsigned natoms, unsigned /*step*/, Random&) override {
+    const double rmax= std::ceil(std::cbrt(static_cast<double>(natoms)));;
+    box[0]=rmax; box[1]=0.0;  box[2]=0.0;
+    box[3]=0.0;  box[4]=rmax; box[5]=0.0;
+    box[6]=0.0;  box[7]=0.0;  box[8]=rmax;
+
+  }
+};
+std::unique_ptr<AtomDistribution> getAtomDistribution(std::string_view atomicDistr) {
+  std::unique_ptr<AtomDistribution> distribution;
+  if(atomicDistr == "line") {
+    distribution = std::make_unique<theLine>();
+  } else if (atomicDistr == "cube") {
+    distribution = std::make_unique<uniformCube>();
+  } else if (atomicDistr == "sphere") {
+    distribution = std::make_unique<uniformSphere>();
+  } else if (atomicDistr == "globs") {
+    distribution = std::make_unique<twoGlobs>();
+  } else if (atomicDistr == "sc") {
+    distribution = std::make_unique<tiledSimpleCubic>();
+  } else {
+    plumed_error() << R"(The atomic distribution can be only "line", "cube", "sphere", "globs" and "sc", the input was ")"
+                   << atomicDistr <<'"';
+  }
+  return distribution;
+}
+} //anonymus namespace for benchmark distributions
 class Benchmark:
   public CLTool
 {
@@ -277,6 +450,7 @@ void Benchmark::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","--nsteps","2000","number of steps of MD to perform (-1 means forever)");
   keys.add("compulsory","--maxtime","-1","maximum number of seconds (-1 means forever)");
   keys.add("compulsory","--sleep","0","number of seconds of sleep, mimicking MD calculation");
+  keys.add("compulsory","--atom-distribution","line","the kind of possible atomic displacement at each step");
   keys.addFlag("--domain-decomposition",false,"simulate domain decomposition, implies --shuffle");
   keys.addFlag("--shuffled",false,"reshuffle atoms");
 }
@@ -289,8 +463,10 @@ Benchmark::Benchmark(const CLToolOptions& co ):
 
 
 int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
-
-  std::mt19937 g; // deterministic initialization to avoid issues with MPI
+  // deterministic initializations to avoid issues with MPI
+  generator rng;
+  PLMD::Random atomicGenerator;
+  std::unique_ptr<AtomDistribution> distribution;
 
   struct FileDeleter {
     void operator()(FILE*f) const noexcept {
@@ -313,17 +489,22 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   // perform comparative analysis
   // ensure that kernels vector is destroyed from last to first element upon exit
   auto kernels_deleter=[&log](auto f) {
-    if(!f) return;
-    if(f->empty()) return;
-    std::mt19937 g;
+    if(!f) {
+      return;
+    }
+    if(f->empty()) {
+      return;
+    }
+    generator bootstrapRng;
 
-    auto size=f->back().timings.size();
+    const auto size=f->back().timings.size();
+    //B are the bootstrap iterations
     constexpr int B=200;
-    auto numblocks=size;
+    const size_t numblocks=size;
     // for some reasons, blocked bootstrap underestimates error
     // For now I keep it off. If I remove it, the code below could be simplified
     // if(numblocks>20) numblocks=20;
-    auto blocksize=size/numblocks;
+    const auto blocksize=size/numblocks;
 
     if(f->size()<2) {
       log<<"Single run, skipping comparative analysis\n";
@@ -337,47 +518,57 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
         std::uniform_int_distribution<> distrib(0, numblocks-1);
         std::vector<std::vector<long long int>> blocks(f->size());
 
-        int i=0;
-        for(auto it = f->rbegin(); it != f->rend(); ++it) {
-          int l=0;
-          blocks[i].assign(numblocks,0);
-          for(auto j=0; j<numblocks; j++) {
-            for(auto k=0; k<blocksize; k++) {
-              plumed_assert(l<it->timings.size());
-              blocks[i][j]+=it->timings[l];
-              l++;
+        { int i=0;
+          for(auto it = f->rbegin(); it != f->rend(); ++it,++i) {
+            size_t l=0;
+            blocks[i].assign(numblocks,0);
+            for(auto j=0ULL; j<numblocks; j++) {
+              for(auto k=0ULL; k<blocksize; k++) {
+                plumed_assert(l<it->timings.size());
+                blocks[i][j]+=it->timings[l];
+                l++;
+              }
             }
           }
-          i++;
         }
 
         std::vector<std::vector<double>> ratios(f->size());
-        for(auto & r : ratios) r.resize(B);
+        for(auto & r : ratios) {
+          //B are the bootstrap iterations
+          r.resize(B);
+        }
 
+        //B are the bootstrap iterations
         for(unsigned b=0; b<B; b++) {
-          for(auto & c : choice) c=distrib(g);
+          for(auto & c : choice) c=distrib(bootstrapRng);
           long long int reference=0;
-          for(auto & c : choice) reference+=blocks[0][c];
-          for(auto i=0; i<blocks.size(); i++) {
+          for(auto & c : choice) {
+            reference+=blocks[0][c];
+          }
+          for(auto i=0ULL; i<blocks.size(); i++) {
             long long int estimate=0;
             // this would lead to separate bootstrap samples for each estimate:
-            // for(auto & c : choice) c=distrib(g);
-            for(auto & c : choice) estimate+=blocks[i][c];
+            // for(auto & c : choice){c=distrib(bootstrapRng);}
+            for(auto & c : choice) {
+              estimate+=blocks[i][c];
+            }
             ratios[i][b]=double(estimate)/double(reference);
           }
         }
 
-        i=0;
-        for(auto it = f->rbegin(); it != f->rend(); ++it) {
-          double sum=0.0;
-          double sum2=0.0;
-          for(auto r : ratios[i]) {
-            sum+=r;
-            sum2+=r*r;
+        {
+          int i=0;
+          for(auto it = f->rbegin(); it != f->rend(); ++it,++i) {
+            double sum=0.0;
+            double sum2=0.0;
+            for(auto r : ratios[i]) {
+              sum+=r;
+              sum2+=r*r;
+            }
+            //B are the bootstrap iterations
+            it->comparative_timing=sum/B;
+            it->comparative_timing_error=std::sqrt(sum2/B-sum*sum/(B*B));
           }
-          it->comparative_timing=sum/B;
-          it->comparative_timing_error=std::sqrt(sum2/B-sum*sum/(B*B));
-          i++;
         }
 
       } catch(std::exception & e) {
@@ -451,10 +642,13 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
 
   std::vector<int> shuffled_indexes;
 
-  // trap signals:
-  SignalHandlerGuard sigIntGuard(SIGINT, signalHandler);
+  {
+    std::string atomicDistr;
+    parse("--atom-distribution",atomicDistr);
+    distribution = getAtomDistribution(atomicDistr);
+  }
 
-  auto initial_time=std::chrono::high_resolution_clock::now();
+  const auto initial_time=std::chrono::high_resolution_clock::now();
 
   for(auto & k : kernels) {
     auto & p(k.handle);
@@ -479,7 +673,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   if(shuffled) {
     shuffled_indexes.resize(natoms);
     for(unsigned i=0; i<natoms; i++) shuffled_indexes[i]=i;
-    std::shuffle(shuffled_indexes.begin(),shuffled_indexes.end(),g);
+    std::shuffle(shuffled_indexes.begin(),shuffled_indexes.end(),rng);
   }
 
   // non owning pointers, used for shuffling the execution order
@@ -492,10 +686,14 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
 
   log<<"Starting MD loop\n";
   log<<"Use CTRL+C to stop at any time and collect timers (not working in MPI runs)\n";
+  // trap signals:
+  SignalHandlerGuard sigIntGuard(SIGINT, signalHandler);
+
 
   for(int step=0; nf<0 || step<nf; ++step) {
-    std::shuffle(kernels_ptr.begin(),kernels_ptr.end(),g);
-    for(unsigned j=0; j<natoms; ++j) pos[j] = Vector(step*j, step*j+1, step*j+2);
+    std::shuffle(kernels_ptr.begin(),kernels_ptr.end(),rng);
+    distribution->positions(pos,step,atomicGenerator);
+    distribution->box(cell,natoms,step,atomicGenerator);
     double* pos_ptr;
     double* for_ptr;
     double* charges_ptr;
@@ -504,14 +702,15 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
     int n_local_atoms;
 
     if(domain_decomposition) {
-      auto nproc=pc.Get_size();
-      auto nn=natoms/nproc;
-      auto excess=natoms%nproc;
-      auto myrank=pc.Get_rank();
+      const auto nproc=pc.Get_size();
+      const auto nn=natoms/nproc;
+      //using int to remove warning, MPI don't work with unsigned
+      int excess=natoms%nproc;
+      const auto myrank=pc.Get_rank();
       auto shift=0;
       n_local_atoms=nn;
       if(myrank<excess) n_local_atoms+=1;
-      for(unsigned i=0; i<myrank; i++) {
+      for(int i=0; i<myrank; i++) {
         shift+=nn;
         if(i<excess) shift+=1;
       }
@@ -575,7 +774,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
     auto elapsed=std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-initial_time).count();
     if(part==0) part=1;
     if(part<2) {
-      if((maxtime>0 && elapsed>(long long int)(0.2*1e9*maxtime)) || (nf>0 && step+1>=nf/5) || (maxtime<0 & nf<0 && step+1>=100)) {
+      if((maxtime>0 && elapsed>(long long int)(0.2*1e9*maxtime)) || (nf>0 && step+1>=nf/5) || (maxtime<0 && nf<0 && step+1>=100)) {
         part=2;
         log<<"Warm-up completed\n";
       }
@@ -600,6 +799,6 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   return 0;
 }
 
-}
-} // End of namespace
-}
+} // namespace unnamed
+} // namespace cltools
+} // namespace PLMD

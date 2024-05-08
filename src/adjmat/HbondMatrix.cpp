@@ -77,8 +77,6 @@ DUMPMULTICOLVAR DATA=csums FILE=acceptors.xyz
 */
 //+ENDPLUMEDOC
 
-using namespace std;
-
 namespace PLMD {
 namespace adjmat {
 

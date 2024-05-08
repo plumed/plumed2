@@ -512,7 +512,8 @@ bool ActionWithVector::checkForGrids( unsigned& nder ) const {
 void ActionWithVector::getNumberOfTasks( unsigned& ntasks ) {
   if( ntasks==0 ) {
     if( getNumberOfArguments()==1 && getNumberOfComponents()==1 && getPntrToComponent(0)->getRank()==0 ) {
-      ntasks = getPntrToArgument(0)->getNumberOfValues();
+      if( !getPntrToArgument(0)->hasDerivatives() && getPntrToArgument(0)->getRank()==2 ) ntasks = getPntrToArgument(0)->getShape()[0];
+      else ntasks = getPntrToArgument(0)->getNumberOfValues();
     } else {
       plumed_assert( getNumberOfComponents()>0 && getPntrToComponent(0)->getRank()>0 );
       if( getPntrToComponent(0)->hasDerivatives() ) ntasks = getPntrToComponent(0)->getNumberOfValues();

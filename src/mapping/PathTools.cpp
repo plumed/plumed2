@@ -212,7 +212,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
     std::string pinput="DUMPPDB STRIDE=1 DESCRIPTION=PATH FILE=" + ofilename + " FMT=" + ofmt;
     if( argstr.size()>0 ) {
       pinput += " ARG=" + argstr[0]; for(unsigned i=1; i<argstr.size(); ++i ) pinput += "," + argstr[i];
-    } else { std::string num; Tools::convert( indices[0].serial(), num ); pinput += " ARG=data ATOM_INDICES=" + num; for(unsigned i=1; i<indices.size(); ++i ) { Tools::convert( indices[i].serial(), num ); pinput += "," + num; } }
+    } else { std::string num; Tools::convert( indices[0].serial(), num ); pinput += " ATOMS=data ATOM_INDICES=" + num; for(unsigned i=1; i<indices.size(); ++i ) { Tools::convert( indices[i].serial(), num ); pinput += "," + num; } }
     const char* pcinp=pinput.c_str(); plmd.cmd("readInputLine",pcinp);
     Action* paction = plmd.getActionSet()[plmd.getActionSet().size()-1].get();
     paction->update();
@@ -353,7 +353,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
       }
     }
     const char* icinp=inpt.c_str(); plmd.cmd("readInputLine",icinp); std::string num; Tools::convert( indices[0].serial(), num );
-    pinput += " ARG=atom_data ATOM_INDICES=" + num; for(unsigned i=1; i<indices.size(); ++i ) { Tools::convert( indices[i].serial(), num ); pinput += "," + num; }
+    pinput += " ATOMS=atom_data ATOM_INDICES=" + num; for(unsigned i=1; i<indices.size(); ++i ) { Tools::convert( indices[i].serial(), num ); pinput += "," + num; }
   }
   const char* pcinp=pinput.c_str(); plmd.cmd("readInputLine",pcinp);
   Action* paction = plmd.getActionSet()[plmd.getActionSet().size()-1].get();

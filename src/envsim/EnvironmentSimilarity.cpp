@@ -213,6 +213,7 @@ void EnvironmentSimilarity::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","LATTICE_CONSTANTS","Lattice constants. Two comma separated values for HCP, "
            "one value for all other CRYSTAL_STRUCTURES.");
   keys.add("compulsory","SIGMA","0.1","the width to use for the gaussian kernels");
+  keys.add("compulsory","LCUTOFF","0.0001","any atoms separated by less than this tolerance should be ignored");
   keys.add("optional","REFERENCE","PDB files with relative distances from central atom.  Use this keyword if you are targeting a single reference environment.");
   keys.add("numbered","REFERENCE_","PDB files with relative distances from central atom. Each file corresponds to one template. Use these keywords if you are targeting more than one reference environment.");
   keys.add("compulsory","LAMBDA","100","Lambda parameter.  This is only used if you have more than one reference environment");
@@ -346,7 +347,7 @@ EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
     } else error( crystal_structure + " is not a valid input for keyword CRYSTAL_STRUCTURE");
   }
   std::string matlab = getShortcutLabel() + "_cmat";
-  double cutoff, sig; parse("SIGMA",sig); parse("CUTOFF",cutoff);
+  double cutoff, sig; parse("SIGMA",sig); parse("CUTOFF",cutoff); std::string lcutoff; parse("LCUTOFF",lcutoff);
   std::string sig2; Tools::convert( sig*sig, sig2 ); std::vector<std::vector<std::string> > funcstr(environments.size());
   std::string str_cutoff; Tools::convert( maxdist + cutoff*sig, str_cutoff );
   std::string str_natoms, xpos, ypos, zpos; Tools::convert( environments[0].size(), str_natoms );
@@ -356,7 +357,7 @@ EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
       for(unsigned i=0; i<environments[j].size(); ++i) {
         if( environments[j][i].first!=k ) continue ;
         Tools::convert( environments[j][i].second[0], xpos ); Tools::convert( environments[j][i].second[1], ypos ); Tools::convert( environments[j][i].second[2], zpos );
-        if( i==0 ) funcstr[j][k] = "FUNC=(step(" + str_cutoff + "-w)/" + str_natoms + ")*(exp(-((x-" + xpos + ")^2+(y-" + ypos + ")^2+(z-" + zpos + ")^2)/(4*" + sig2 + "))";
+        if( i==0 ) funcstr[j][k] = "FUNC=(step(w-" + lcutoff + ")*step(" + str_cutoff + "-w)/" + str_natoms + ")*(exp(-((x-" + xpos + ")^2+(y-" + ypos + ")^2+(z-" + zpos + ")^2)/(4*" + sig2 + "))";
         else funcstr[j][k] += "+exp(-((x-" + xpos + ")^2+(y-" + ypos + ")^2+(z-" + zpos + ")^2)/(4*" + sig2 + "))";
       }
       if( funcstr[j][k].length()>0 ) funcstr[j][k] += ")"; else funcstr[j][k] ="FUNC=0";

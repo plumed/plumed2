@@ -83,7 +83,10 @@ Action::Action(const ActionOptions&ao):
   if( ts ) timestep = (ts->copyOutput(0))->get();
 
   line.erase(line.begin());
-  if( !keywords.exists("NO_ACTION_LOG") ) log.printf("Action %s\n",name.c_str());
+  if( !keywords.exists("NO_ACTION_LOG") ) {
+    log.printf("Action %s\n",name.c_str());
+    if(ao.fullPath.length()>0) log<<"  from library: "<<ao.fullPath<<"\n";
+  }
 
   if(comm.Get_rank()==0) {
     replica_index=multi_sim_comm.Get_rank();

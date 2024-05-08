@@ -43,6 +43,7 @@ public:
   explicit MatrixTimesVector(const ActionOptions&);
   unsigned getNumberOfColumns() const override { plumed_error(); }
   unsigned getNumberOfDerivatives();
+  void prepare() override ;
   bool isInSubChain( unsigned& nder ) override { nder = arg_deriv_starts[0]; return true; }
   void setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const ;
   void performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const override;
@@ -122,6 +123,12 @@ MatrixTimesVector::MatrixTimesVector(const ActionOptions&ao):
 
 unsigned MatrixTimesVector::getNumberOfDerivatives() {
   return nderivatives;
+}
+
+void MatrixTimesVector::prepare() {
+  ActionWithVector::prepare(); Value* myval = getPntrToComponent(0);
+  if( myval->getShape()[0]==getPntrToArgument(0)->getShape()[0] ) return;
+  std::vector<unsigned> shape(1); shape[0] = getPntrToArgument(0)->getShape()[0]; myval->setShape(shape);
 }
 
 void MatrixTimesVector::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {

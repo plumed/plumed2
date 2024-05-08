@@ -200,7 +200,7 @@ void DumpGrid::registerKeywords( Keywords& keys ) {
   ActionPilot::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
   keys.add("optional","GRID","the grid you would like to print (can also use ARG for specifying what is being printed)");
-  keys.add("compulsory","STRIDE","1","the frequency with which the grid should be output to the file.");
+  keys.add("compulsory","STRIDE","0","the frequency with which the grid should be output to the file.  Default of zero means dump at end of calculation");
   keys.add("compulsory","FILE","density","the file on which to write the grid.");
   keys.add("optional","FMT","the format that should be used to output real numbers");
   keys.addFlag("PRINT_XYZ",false,"output coordinates on fibonacci grid to xyz file");

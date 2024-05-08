@@ -28,75 +28,39 @@
 
 namespace PLMD {
 
-CLToolRegister::~CLToolRegister() {
-  if(m.size()>0) {
-    std::string names="";
-    for(const auto & p : m) names+=p.first+" ";
-    std::cerr<<"WARNING: CLTools "+ names +" has not been properly unregistered. This might lead to memory leak!!\n";
-  }
-}
-
 CLToolRegister& cltoolRegister() {
   static CLToolRegister ans;
   return ans;
 }
 
-void CLToolRegister::remove(creator_pointer f) {
-  for(auto p=m.begin(); p!=m.end(); ++p) {
-    if((*p).second==f) {
-      m.erase(p); break;
-    }
-  }
-}
-
-void CLToolRegister::add(std::string key,creator_pointer f,keywords_pointer kf) {
-  if(m.count(key)) {
-    m.erase(key);
-    disabled.insert(key);
-  } else {
-    m.insert(std::pair<std::string,creator_pointer>(key,f));
-    Keywords keys; kf(keys);
-    mk.insert(std::pair<std::string,Keywords>(key,keys));
-  };
-}
-
-bool CLToolRegister::check(const std::string & key)const {
-  if(m.count(key)>0) return true;
-  return false;
-}
-
 std::unique_ptr<CLTool> CLToolRegister::create(const CLToolOptions&ao) {
-  if(ao.line.size()<1)return NULL;
-  std::unique_ptr<CLTool> cltool;
-  if(check(ao.line[0])) {
-    CLToolOptions nao( ao,mk[ao.line[0]] );
-    cltool=m[ao.line[0]](nao);
-  }
-  return cltool;
+  std::vector<void*> images; // empty vector
+  return create(images,ao);
 }
 
+std::unique_ptr<CLTool> CLToolRegister::create(const std::vector<void*> & images,const CLToolOptions&ao) {
+  if(ao.line.size()<1)return nullptr;
+  auto & content=get(images,ao.line[0]);
+  CLToolOptions nao( ao,content.keys );
+  return content.create(nao);
+}
 
-std::ostream & operator<<(std::ostream &log,const CLToolRegister&ar) {
-  std::vector<std::string> s(ar.list());
-  for(unsigned i=0; i<s.size(); i++) log<<"  "<<s[i]<<"\n";
-  if(!ar.disabled.empty()) {
-    s.assign(ar.disabled.size(),"");
-    std::copy(ar.disabled.begin(),ar.disabled.end(),s.begin());
-    std::sort(s.begin(),s.end());
-    log<<"+++++++ WARNING +++++++\n";
-    log<<"The following keywords have been registered more than once and will be disabled:\n";
-    for(unsigned i=0; i<s.size(); i++) log<<"  - "<<s[i]<<"\n";
-    log<<"+++++++ END WARNING +++++++\n";
-  };
-  return log;
+CLToolRegister::ID CLToolRegister::add(std::string key,creator_pointer cp,keywords_pointer kp) {
+  // this force each action to be registered as an uppercase string
+  if ( std::any_of( std::begin( key ), std::end( key ), []( char c ) { return ( std::isupper( c ) ); } ) ) plumed_error() << "CLTool: " + key + " cannot be registered, use only LOWERCASE characters";
+
+  Keywords keys; kp(keys);
+  return RegisterBase::add(key,Pointers{cp,keys});
 }
 
 bool CLToolRegister::printManual( const std::string& cltool, const bool& spelling ) {
   if( spelling && check(cltool) ) {
-    mk[cltool].print_spelling();
+    auto cl=get(cltool);
+    cl.keys.print_spelling();
     return true;
   } else if ( check(cltool) ) {
-    mk[cltool].print_html();
+    auto cl=get(cltool);
+    cl.keys.print_html();
     return true;
   } else {
     return false;
@@ -105,7 +69,11 @@ bool CLToolRegister::printManual( const std::string& cltool, const bool& spellin
 
 std::vector<std::string> CLToolRegister::getKeys(const std::string& cltool)const {
   if ( check(cltool) ) {
-    return mk.find(cltool)->second.getKeys();
+    auto cl=get(cltool);
+    auto k=cl.keys.getKeys();
+    std::cerr<<k.size()<<"\n";
+    for(unsigned i=0; i<k.size(); i++) std::cerr<<k[i]<<"\n";
+    return k;
   } else {
     std::vector<std::string> empty;
     return empty;
@@ -114,12 +82,7 @@ std::vector<std::string> CLToolRegister::getKeys(const std::string& cltool)const
 
 
 std::vector<std::string> CLToolRegister::list()const {
-  std::vector<std::string> s;
-  for(const auto & it : m) s.push_back(it.first);
-  std::sort(s.begin(),s.end());
-  return s;
+  return RegisterBase::getKeys();
 }
-
-
 
 }

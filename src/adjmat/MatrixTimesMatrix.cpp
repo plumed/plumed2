@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithMatrix.h"
-#include "AdjacencyMatrixBase.h"
 #include "core/ActionRegister.h"
 
 //+PLUMEDOC MCOLVAR MATRIX_PRODUCT
@@ -32,16 +31,27 @@ Calculate the product of two matrices
 */
 //+ENDPLUMEDOC
 
+//+PLUMEDOC ANALYSIS DISSIMILARITIES
+/*
+Calculate the matrix of dissimilarities between a trajectory of atomic configurations.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace adjmat {
 
 class MatrixTimesMatrix : public ActionWithMatrix {
 private:
+  bool squared;
   unsigned nderivatives;
   bool stored_matrix1, stored_matrix2;
 public:
   static void registerKeywords( Keywords& keys );
   explicit MatrixTimesMatrix(const ActionOptions&);
+  void prepare() override ;
   unsigned getNumberOfDerivatives();
   unsigned getNumberOfColumns() const override { return getConstPntrToComponent(0)->getShape()[1]; }
   void getAdditionalTasksRequired( ActionWithVector* action, std::vector<unsigned>& atasks ) override ;
@@ -51,9 +61,11 @@ public:
 };
 
 PLUMED_REGISTER_ACTION(MatrixTimesMatrix,"MATRIX_PRODUCT")
+PLUMED_REGISTER_ACTION(MatrixTimesMatrix,"DISSIMILARITIES")
 
 void MatrixTimesMatrix::registerKeywords( Keywords& keys ) {
   ActionWithMatrix::registerKeywords(keys); keys.use("ARG");
+  keys.addFlag("SQUARED",false,"calculate the squares of the dissimilarities (this option cannot be used with MATRIX_PRODUCT)");
 }
 
 MatrixTimesMatrix::MatrixTimesMatrix(const ActionOptions&ao):
@@ -69,16 +81,27 @@ MatrixTimesMatrix::MatrixTimesMatrix(const ActionOptions&ao):
   std::string headstr=getFirstActionInChain()->getLabel();
   stored_matrix1 = getPntrToArgument(0)->ignoreStoredValue( headstr );
   stored_matrix2 = getPntrToArgument(1)->ignoreStoredValue( headstr );
+  if( getName()=="DISSIMILARITIES" ) {
+    parseFlag("SQUARED",squared);
+    if( squared ) log.printf("  calculating the squares of the dissimilarities \n");
+  } else squared=true;
 }
 
 unsigned MatrixTimesMatrix::getNumberOfDerivatives() {
   return nderivatives;
 }
 
+void MatrixTimesMatrix::prepare() {
+  Value* myval = getPntrToComponent(0);
+  if( myval->getShape()[0]==getPntrToArgument(0)->getShape()[0] && myval->getShape()[1]==getPntrToArgument(1)->getShape()[1] ) return;
+  std::vector<unsigned> shape(2); shape[0]=getPntrToArgument(0)->getShape()[0]; shape[1]=getPntrToArgument(1)->getShape()[1];
+  myval->setShape(shape); if( myval->valueIsStored() ) myval->reshapeMatrixStore( shape[1] );
+}
+
 void MatrixTimesMatrix::getAdditionalTasksRequired( ActionWithVector* action, std::vector<unsigned>& atasks ) {
 
-  AdjacencyMatrixBase* adj=dynamic_cast<AdjacencyMatrixBase*>( getPntrToArgument(0)->getPntrToAction() );
-  if( !adj ) return;
+  ActionWithMatrix* adj=dynamic_cast<ActionWithMatrix*>( getPntrToArgument(0)->getPntrToAction() );
+  if( !adj->isAdjacencyMatrix() ) return;
   adj->retrieveAtoms(); adj->getAdditionalTasksRequired( action, atasks );
 }
 
@@ -95,11 +118,17 @@ void MatrixTimesMatrix::performTask( const std::string& controller, const unsign
 
   Value* myarg = getPntrToArgument(0);
   unsigned nmult=myarg->getRowLength(index1); double matval=0;
+  std::vector<double>  dvec1(nmult), dvec2(nmult);
   for(unsigned i=0; i<nmult; ++i) {
     unsigned kind = myarg->getRowIndex( index1, i );
     double val1 = getElementOfMatrixArgument( 0, index1, kind, myvals );
     double val2 = getElementOfMatrixArgument( 1, kind, ind2, myvals );
-    matval+= val1*val2;
+    if( getName()=="DISSIMILARITIES" ) {
+      double tmp = getPntrToArgument(0)->difference(val2, val1); matval += tmp*tmp;
+      if( !squared ) {
+        dvec1[i] = 2*tmp; dvec2[i] = -2*tmp; continue;
+      } else { val2 = -2*tmp; val1 = 2*tmp; }
+    } else matval+= val1*val2;
 
     if( doNotCalculateDerivatives() ) continue;
 
@@ -107,7 +136,15 @@ void MatrixTimesMatrix::performTask( const std::string& controller, const unsign
     addDerivativeOnMatrixArgument( stored_matrix2, 0, 1, kind, ind2, val1, myvals );
   }
   // And add this part of the product
+  if( !squared ) matval = sqrt(matval);
   myvals.addValue( ostrn, matval );
+  if( squared || doNotCalculateDerivatives() ) return;
+
+  for(unsigned i=0; i<nmult; ++i) {
+    unsigned kind = myarg->getRowIndex( index1, i );
+    addDerivativeOnMatrixArgument( stored_matrix1, 0, 0, index1, kind, dvec1[i]/(2*matval), myvals );
+    addDerivativeOnMatrixArgument( stored_matrix2, 0, 1, kind, ind2, dvec2[i]/(2*matval), myvals );
+  }
 }
 
 void MatrixTimesMatrix::runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const {

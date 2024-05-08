@@ -30,6 +30,7 @@ namespace function {
 
 class Custom : public FunctionTemplateBase {
   std::string func;
+  bool zerowhenallzero;
   LeptonCall function;
 /// Check if only multiplication is done in function.  If only multiplication is done we can do some tricks
 /// to speed things up

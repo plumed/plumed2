@@ -107,6 +107,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
           std::vector<ActionWithValue*> all=as.select<ActionWithValue*>();
           if( all.empty() ) readact->error("your input file is not telling plumed to calculate anything");
           for(unsigned j=0; j<all.size(); j++) {
+            plumed_assert(all[j]); // needed for following calls, see #1046
             ActionForInterface* ap=all[j]->castToActionForInterface(); if( ap ) continue;
             for(int k=0; k<all[j]->getNumberOfComponents(); ++k) arg.push_back(all[j]->copyOutput(k));
           }
@@ -166,6 +167,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
           std::vector<ActionWithValue*> all=as.select<ActionWithValue*>();
           if( all.empty() ) readact->error("your input file is not telling plumed to calculate anything");
           for(unsigned j=0; j<all.size(); j++) {
+            plumed_assert(all[j]); // needed for following calls, see #1046
             ActionWithVirtualAtom* av=all[j]->castToActionWithVirtualAtom(); if( av ) continue;
             ActionForInterface* ap=all[j]->castToActionForInterface(); if( ap && all[j]->getName()!="ENERGY" ) continue;
             for(int k=0; k<all[j]->getNumberOfComponents(); ++k) arg.push_back(all[j]->copyOutput(k));
@@ -327,7 +329,9 @@ bool ActionWithArguments::calculateConstantValues( const bool& haveatoms ) {
   if( !av || arguments.size()==0 ) return false;
   bool constant = true, atoms=false;
   for(unsigned i=0; i<arguments.size(); ++i) {
-    ActionAtomistic* aa=arguments[i]->getPntrToAction()->castToActionAtomistic();
+    auto * ptr=arguments[i]->getPntrToAction();
+    plumed_assert(ptr); // needed for following calls, see #1046
+    ActionAtomistic* aa=ptr->castToActionAtomistic();
     if( aa ) {
       ActionWithVector* av=dynamic_cast<ActionWithVector*>( arguments[i]->getPntrToAction() );
       if( !av || aa->getNumberOfAtoms()>0 ) atoms=true;

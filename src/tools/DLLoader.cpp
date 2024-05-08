@@ -23,6 +23,9 @@
 
 #include "Exception.h"
 #include <cstdlib>
+#include <iostream>
+#include "core/ActionRegister.h"
+#include "core/CLToolRegister.h"
 
 #ifdef __PLUMED_HAS_DLOPEN
 #include <dlfcn.h>
@@ -41,21 +44,15 @@ bool DLLoader::installed() {
 
 void* DLLoader::load(const std::string&s) {
 #ifdef __PLUMED_HAS_DLOPEN
+  auto lockerAction=Register::registrationLock(s);
   void* p=dlopen(s.c_str(),RTLD_NOW|RTLD_LOCAL);
-  if(!p) {
-    lastError=dlerror();
-  } else {
-    lastError="";
-    handles.push(p);
-  }
+  if(!p) plumed_error()<<"Could not load library "<<s<<"\n"<<dlerror();
+  handles.push_back(p);
+  Register::completeAllRegistrations(p);
   return p;
 #else
-  return NULL;
+  plumed_error()<<"you are trying to use dlopen but it's not configured on your system";
 #endif
-}
-
-const std::string & DLLoader::error() {
-  return lastError;
 }
 
 DLLoader::~DLLoader() {
@@ -63,11 +60,11 @@ DLLoader::~DLLoader() {
 #ifdef __PLUMED_HAS_DLOPEN
   if(debug) std::fprintf(stderr,"delete dlloader\n");
   while(!handles.empty()) {
-    int ret=dlclose(handles.top());
+    int ret=dlclose(handles.back());
     if(ret) {
       std::fprintf(stderr,"+++ error reported by dlclose: %s\n",dlerror());
     }
-    handles.pop();
+    handles.pop_back();
   }
   if(debug) std::fprintf(stderr,"end delete dlloader\n");
 #endif
@@ -75,6 +72,10 @@ DLLoader::~DLLoader() {
 
 DLLoader::DLLoader() {
   // do nothing
+}
+
+const std::vector<void*> & DLLoader::getHandles() const noexcept {
+  return handles;
 }
 
 DLLoader::EnsureGlobalDLOpen::EnsureGlobalDLOpen(const void *symbol) noexcept {
@@ -94,7 +95,6 @@ DLLoader::EnsureGlobalDLOpen::EnsureGlobalDLOpen(const void *symbol) noexcept {
                  "+++WARNING+++"
                  "Failure in finding any object that contains the symbol %p.\n",
                  symbol);
-
   }
 #else
   std::fprintf(stderr,

@@ -92,6 +92,12 @@ bool ActionWithValue::exists( const std::string& name ) const {
   return false;
 }
 
+void ActionWithValue::getMatrixColumnTitles( std::vector<std::string>& argnames ) const {
+  plumed_assert( getNumberOfComponents()==1 && getConstPntrToComponent(0)->getRank()==2 );
+  unsigned nargs = getConstPntrToComponent(0)->getShape()[1]; std::string aname = getConstPntrToComponent(0)->getName();
+  for(unsigned j=0; j<nargs; ++j) { std::string nn; Tools::convert( j+1, nn ); argnames.push_back( aname + "." + nn ); }
+}
+
 Value* ActionWithValue::copyOutput( const std::string& name ) const {
   for(unsigned i=0; i<values.size(); ++i) {
     if (values[i]->name==name) return values[i].get();
@@ -247,8 +253,8 @@ bool ActionWithValue::calculateOnUpdate() {
     if(aa) {
       const std::vector<Value*> & args(aa->getArguments());
       for(const auto & p : args ) {
-        if( p->calcOnUpdate ) {
-          for(unsigned i=0; i<values.size(); ++i) values[i]->calcOnUpdate=true;
+        if( p->calculateOnUpdate() ) {
+          for(unsigned i=0; i<values.size(); ++i) values[i]->setValType("calcFromAverage");
           break;
         }
       }
@@ -256,7 +262,7 @@ bool ActionWithValue::calculateOnUpdate() {
     firststep=false;
   }
   for(unsigned i=0; i<values.size(); ++i) {
-    if( values[i]->calcOnUpdate ) return true;
+    if( values[i]->calculateOnUpdate() ) return true;
   }
   return false;
 }
@@ -269,7 +275,7 @@ bool ActionWithValue::checkForForces() {
   unsigned nvalsWithForce=0;
   valsToForce.resize(ncp);
   for(unsigned i=0; i<ncp; ++i) {
-    if( values[i]->hasForce && !values[i]->constant ) {
+    if( values[i]->hasForce && !values[i]->isConstant() ) {
       valsToForce[nvalsWithForce]=i; nvalsWithForce++;
     }
   }

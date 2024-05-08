@@ -53,6 +53,7 @@ ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
   // We now get all the information about atoms that are lying about
   std::vector<ActionWithValue*> vatoms = plumed.getActionSet().select<ActionWithValue*>();
   for(const auto & vv : vatoms ) {
+    plumed_assert(vv); // needed for following calls, see #1046
     ActionToPutData* ap = vv->castToActionToPutData();
     if( ap ) {
       if( ap->getRole()=="x" ) xpos.push_back( ap->copyOutput(0) );
@@ -238,6 +239,41 @@ void ActionAtomistic::interpretAtomList(std::vector<std::string>& strings, std::
         t.reserve(t.size()+n);
         for(unsigned i=0; i<n; i++) t.push_back(AtomNumber::index(i));
         ok=true;
+      } else if(Tools::startWith(symbol,"ndx:")) {
+        auto words=Tools::getWords(symbol.substr(4));
+        std::string ndxfile,ndxgroup;
+        if(words.size()==1) {
+          ndxfile=words[0];
+        } else if(words.size()==2) {
+          ndxfile=words[0];
+          ndxgroup=words[1];
+        } else plumed_error()<<"Cannot intepret selection "<<symbol;
+
+        if(ndxgroup.size()>0) log<<"  importing group '"+ndxgroup+"'";
+        else                  log<<"  importing first group";
+        log<<" from index file "<<ndxfile<<"\n";
+
+        IFile ifile;
+        ifile.open(ndxfile);
+        std::string line;
+        std::string groupname;
+        bool firstgroup=true;
+        bool groupfound=false;
+        while(ifile.getline(line)) {
+          std::vector<std::string> words=Tools::getWords(line);
+          if(words.size()>=3 && words[0]=="[" && words[2]=="]") {
+            if(groupname.length()>0) firstgroup=false;
+            groupname=words[1];
+            if(groupname==ndxgroup || ndxgroup.length()==0) groupfound=true;
+          } else if(groupname==ndxgroup || (firstgroup && ndxgroup.length()==0)) {
+            for(unsigned i=0; i<words.size(); i++) {
+              AtomNumber at; Tools::convert(words[i],at);
+              t.push_back(at);
+            }
+          }
+        }
+        if(!groupfound) plumed_error()<<"group has not been found in index file";
+        ok=true;
       } else {
         auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
         if( moldat ) {
@@ -289,11 +325,15 @@ std::pair<std::size_t, std::size_t> ActionAtomistic::getValueIndices( const Atom
 
 void ActionAtomistic::retrieveAtoms( const bool& force ) {
   if( boxValue ) {
-    PbcAction* pbca = boxValue->getPntrToAction()->castToPbcAction();
+    auto* ptr=boxValue->getPntrToAction();
+    plumed_assert(ptr); // needed for following calls, see #1046
+    PbcAction* pbca = ptr->castToPbcAction();
     plumed_assert( pbca ); pbc=pbca->pbc;
   }
   if( donotretrieve || indexes.size()==0 ) return;
-  ActionToPutData* cv = chargev[0]->getPntrToAction()->castToActionToPutData();
+  auto * ptr=chargev[0]->getPntrToAction();
+  plumed_assert(ptr); // needed for following calls, see #1046
+  ActionToPutData* cv = ptr->castToActionToPutData();
   if(cv) chargesWereSet=cv->hasBeenSet();
   unsigned j = 0;
 

@@ -1,7 +1,5 @@
 FROM rockylinux/rockylinux:8
 
-# NOTE: numpy==1.19 is the last version compatible with python 3.6
-# NOTE: pillow==8.4.0 leads to an error while installing on centos7
 RUN yum -y update \
  && yum -y install dnf-plugins-core \
  && dnf config-manager --set-enabled powertools \
@@ -28,12 +26,11 @@ RUN PYVERSION="3.9.16" \
 
 RUN . ./.bashrc \                
  && pip3 install --user -U pip \
- && pip3 install --user pillow==8.3.2 \
- && pip3 install --user "Cython<3" \
+ && pip3 install --user pillow \
+ && pip3 install --user Cython \
  && pip3 install --user pandas \
  && pip3 install --user mdtraj     \
- && pip3 install --user MDAnalysis==1.0.0
-#  && pip3 install --user numpy==1.19
+ && pip3 install --user MDAnalysis
 
 # import plumed code.
 # assumes a file plumed2.tgz is present in the Dockerfile directory

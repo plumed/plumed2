@@ -210,66 +210,65 @@ namespace PLMD {
 }
 
 namespace {
-// This is an internal tool used to count how many PlumedMain objects have been created
-// and if they were correctly destroyed.
-// When using debug options, it leads to a crash
-// Otherwise, it just prints a message
+/// This is an internal tool used to count how many PlumedMain objects have been created
+/// and if they were correctly destroyed.
+/// When using debug options, it leads to a crash
+/// Otherwise, it just prints a message
 class CountInstances {
   std::atomic<int> counter{};
-public:
-  void increase() noexcept {
-    ++counter;
-  }
-  void decrease() noexcept {
-    --counter;
-  }
+  // private constructor to avoid direct usage
+  CountInstances() noexcept {}
   ~CountInstances() {
     if(counter!=0) {
       std::cerr<<"WARNING: internal inconsistency in allocated PlumedMain instances (" <<counter<< ")\n";
+      std::cerr<<"Might be a consequence of incorrectly paired plumed_create/plumed_finalize in the C interface\n";
+      std::cerr<<"Or it could be due to incorrect calls to std::exit, without properly destroying all PlumedMain objects\n";
 #ifndef NDEBUG
+      std::cerr<<"This is a debug build, so the warning will make PLUMED abort\n";
       std::abort();
 #endif
     }
   }
+  static CountInstances & instance() {
+    static CountInstances counter;
+    return counter;
+  }
+public:
+  /// Only access through these static functions
+  /// The first call to increase() ensures the instance is constructed
+  /// This should provide the correct construction and destruction order
+  /// also in cases where the PlumedMain object is constructed in the
+  /// constructor of a static object
+  static void increase() noexcept {
+    ++instance().counter;
+  }
+  /// See increase()
+  static void decrease() noexcept {
+    --instance().counter;
+  }
 };
-static CountInstances countInstances;
+
 }
 
 
 PlumedMain::PlumedMain():
   datoms_fwd(*this),
-  initialized(false),
-  MDEngine("mdcode"),
 // automatically write on log in destructor
   stopwatch_fwd(log),
-  step(0),
-  active(false),
-  endPlumed(false),
-  passtools(DataPassingTools::create(sizeof(double))),
   actionSet_fwd(*this),
-  bias(0.0),
-  work(0.0),
-  exchangeStep(false),
-  restart(false),
-  doCheckPoint(false),
-  doParseOnly(false),
-  stopNow(false),
-  name_of_energy(""),
-  novirial(false),
-  detailedTimers(false),
-  gpuDeviceId(-1)
+  passtools(DataPassingTools::create(sizeof(double)))
 {
   passtools->usingNaturalUnits=false;
   increaseReferenceCounter();
   log.link(comm);
   log.setLinePrefix("PLUMED: ");
   // this is at last so as to avoid inconsistencies if an exception is thrown
-  countInstances.increase(); // noexcept
+  CountInstances::increase(); // noexcept
 }
 
 // destructor needed to delete forward declarated objects
 PlumedMain::~PlumedMain() {
-  countInstances.decrease();
+  CountInstances::decrease();
 }
 
 /////////////////////////////////////////////////////////////
@@ -433,6 +432,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
         for(const auto & pp : inputs ) {
+          plumed_assert(pp);
           DomainDecomposition* dd=pp->castToDomainDecomposition();
           if( dd ) dd->setAtomsNlocal(val.get<int>());
         }
@@ -440,6 +440,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
       case cmd_setAtomsGatindex:
         CHECK_INIT(initialized,word);
         for(const auto & pp : inputs ) {
+          plumed_assert(pp);
           DomainDecomposition* dd=pp->castToDomainDecomposition();
           if( dd ) dd->setAtomsGatindex(val,false);
         }
@@ -447,6 +448,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
       case cmd_setAtomsFGatindex:
         CHECK_INIT(initialized,word);
         for(const auto & pp : inputs ) {
+          plumed_assert(pp);
           DomainDecomposition* dd=pp->castToDomainDecomposition();
           if( dd ) dd->setAtomsGatindex(val,false);
         }
@@ -455,6 +457,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
         for(const auto & pp : inputs ) {
+          plumed_assert(pp);
           DomainDecomposition* dd=pp->castToDomainDecomposition();
           if( dd ) dd->setAtomsContiguous(val.get<int>());
         }
@@ -463,6 +466,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
         for(const auto & pp : inputs ) {
+          plumed_assert(pp);
           DomainDecomposition* dd=pp->castToDomainDecomposition();
           if( dd ) dd->createFullList(val);
         }
@@ -473,6 +477,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         CHECK_NOTNULL(val,word);
         unsigned nlists=0;
         for(const auto & pp : inputs ) {
+          plumed_assert(pp);
           DomainDecomposition* dd=pp->castToDomainDecomposition();
           if( dd ) { dd->getFullList(val); nlists++; }
         }
@@ -482,6 +487,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
       case cmd_clearFullList:
         CHECK_INIT(initialized,word);
         for(const auto & pp : inputs ) {
+          plumed_assert(pp);
           DomainDecomposition* dd=pp->castToDomainDecomposition();
           if( dd ) dd->clearFullList();
         }
@@ -539,6 +545,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         CHECK_INIT(initialized,word);
         std::vector<int> natoms;
         for(const auto & pp : inputs ) {
+          plumed_assert(pp);
           DomainDecomposition* dd=pp->castToDomainDecomposition();
           if ( dd ) natoms.push_back( dd->getNumberOfAtoms() );
         }
@@ -777,7 +784,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
       case cmd_checkAction:
         CHECK_NOTNULL(val,word);
         plumed_assert(nw==2);
-        val.set(int(actionRegister().check(std::string(words[1])) ? 1:0));
+        val.set(int(actionRegister().check(dlloader.getHandles(), std::string(words[1])) ? 1:0));
         break;
       case cmd_setExtraCV:
       {
@@ -872,6 +879,7 @@ void PlumedMain::init() {
   log<<"Number of threads: "<<OpenMP::getNumThreads()<<"\n";
   log<<"Cache line size: "<<OpenMP::getCachelineSize()<<"\n";
   for(const auto & pp : inputs ) {
+    plumed_assert(pp);
     DomainDecomposition* dd=pp->castToDomainDecomposition();
     if ( dd ) log.printf("Number of atoms: %d\n",dd->getNumberOfAtoms());
   }
@@ -975,7 +983,7 @@ void PlumedMain::readInputWords(const std::vector<std::string> & words, const bo
   } else {
     std::vector<std::string> interpreted(words);
     Tools::interpretLabel(interpreted);
-    auto action=actionRegister().create(ActionOptions(*this,interpreted));
+    auto action=actionRegister().create(dlloader.getHandles(),ActionOptions(*this,interpreted));
     if(!action) {
       std::string msg;
       msg ="ERROR\nI cannot understand line:";
@@ -1122,6 +1130,7 @@ void PlumedMain::justCalculate() {
 // calculate the active actions in order (assuming *backward* dependence)
   for(const auto & pp : actionSet) {
     Action* p(pp.get());
+    plumed_assert(p);
     try {
       if(p->isActive()) {
 // Stopwatch is stopped when sw goes out of scope.
@@ -1135,11 +1144,11 @@ void PlumedMain::justCalculate() {
           sw=stopwatch.startStop("4A " + spaces + actionNumberLabel+" "+p->getLabel());
         }
         ActionWithValue*av=p->castToActionWithValue();
-        if( av && av->calculateOnUpdate() ) continue ;
         ActionAtomistic*aa=p->castToActionAtomistic();
         {
           if(av) av->clearInputForces();
           if(av) av->clearDerivatives();
+          if( av && av->calculateOnUpdate() ) continue ;
         }
         {
           if(aa) if(aa->isActive()) aa->retrieveAtoms();
@@ -1251,27 +1260,41 @@ void PlumedMain::load(const std::string& fileName) {
 // this will work even if plumed is not in the execution path or if it has been
 // installed with a name different from "plumed"
       std::string cmd=config::getEnvCommand()+" \""+config::getPlumedRoot()+"\"/scripts/mklib.sh "+libName;
-      log<<"Executing: "<<cmd;
+
+      if(std::getenv("PLUMED_LOAD_ACTION_DEBUG")) log<<"Executing: "<<cmd;
+      else log<<"Compiling: "<<libName;
+
       if(comm.Get_size()>0) log<<" (only on master node)";
       log<<"\n";
+
+      // On MPI process (intracomm), we use Get_rank to make sure a single process does the compilation
+      // Processes from multiple replicas might simultaneously do the compilation.
       if(comm.Get_rank()==0) {
+        static Tools::CriticalSectionWithKey<std::string> section;
+        // This is only locking commands that are running with identical arguments.
+        // It is not necessary for correctness (a second mklib would just result in a no op since
+        // the library is already there, even if running simultaneously).
+        // It however decreases the system load if many threads are used.
+        auto s=section.startStop(cmd);
         int ret=std::system(cmd.c_str());
-        if(ret!=0)
-          plumed_error() <<"An error happened while executing command "<<cmd<<"\n";
+        if(ret!=0) plumed_error() <<"An error happened while executing command "<<cmd<<"\n";
       }
       comm.Barrier();
       base="./"+base;
     }
     libName=base+"."+config::getSoExt();
-    void *p=dlloader.load(libName);
-    if(!p) {
-      plumed_error()<<"I cannot load library " << fileName << " " << dlloader.error();
-    }
-    log<<"Loading shared library "<<libName.c_str()<<"\n";
-    log<<"Here is the new list of available actions\n";
-    log<<actionRegister();
-  } else
+    // If we have multiple threads (each holding a Plumed object), each of them
+    // will load the library, but each of them will only see actions registered
+    // from the owned library
+    auto *p=dlloader.load(libName);
+    log<<"Loading shared library "<<libName.c_str()<<" at "<<p<<"\n";
+    log<<"Here is the list of new actions\n";
+    log<<"\n";
+    for(const auto & a : actionRegister().getKeysWithDLHandle(p)) log<<a<<"\n";
+    log<<"\n";
+  } else {
     plumed_error()<<"While loading library "<< fileName << " loading was not enabled, please check if dlopen was found at configure time";
+  }
 }
 
 void PlumedMain::resetInputs() {
@@ -1327,9 +1350,13 @@ void PlumedMain::stop() {
 
 void PlumedMain::runJobsAtEndOfCalculation() {
   for(const auto & p : actionSet) {
+    ActionWithValue* av=dynamic_cast<ActionWithValue*>(p.get());
+    if( av && av->calculateOnUpdate() ) p->activate();
+  }
+  for(const auto & p : actionSet) {
     ActionPilot* ap=dynamic_cast<ActionPilot*>(p.get());
     ActionWithValue* av=dynamic_cast<ActionWithValue*>(p.get());
-    if( av && av->calculateOnUpdate() ) { p->activate(); p->calculate(); }
+    if( av && av->calculateOnUpdate() ) { p->calculate(); }
     else if( ap && !av && ap->getStride()==0 ) { p->update(); }
     else p->runFinalJobs();
   }

@@ -17,6 +17,8 @@ In addition, there are a few shortcuts that can be used:
 
 - `@mdatoms` indicate all the physical atoms present in the MD engine (e.g. `DUMPATOMS ATOMS=@mdatoms`).
 - `@allatoms` indicates all atoms, including \ref vatoms "those defined only in PLUMED" (e.g. `DUMPATOMS ATOMS=@allatoms`).
+- `@ndx` uses a GROMACS index file. `@ndx:index.ndx` picks the first group in the file. `{@ndx:{index.ndx protein}}` picks
+   the group named `protein`.
 
 The list of the virtual atoms defined in PLUMED can be obtained by using the command `GROUP ATOMS=@allatoms REMOVE=@mdatoms`.
 

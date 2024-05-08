@@ -38,11 +38,11 @@ MOVINGRESTRAINT ...
 
 
 PRINT ...
-  ARG=a,b,c.contact-1,c.contact-5
+  ARG=a,c.contact-1,c.contact-5
   FILE=colvar
 ... PRINT
 
-DUMPDERIVATIVES ARG=a,b FILE=deriv FMT=%8.6f
+DUMPDERIVATIVES ARG=a FILE=deriv FMT=%8.6f
 
 ENDPLUMED
 

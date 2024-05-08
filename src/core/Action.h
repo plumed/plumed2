@@ -58,10 +58,14 @@ class ActionOptions {
 /// The documentation for this action
   const Keywords& keys;
   static Keywords emptyKeys;
+  std::string fullPath;
 public:
 /// Constructor
   ActionOptions(PlumedMain&p,const std::vector<std::string>&);
   ActionOptions(const ActionOptions&,const Keywords& keys);
+  void setFullPath(const std::string & fullPath) {
+    this->fullPath=fullPath;
+  }
 };
 
 /// Base class for all the input Actions.

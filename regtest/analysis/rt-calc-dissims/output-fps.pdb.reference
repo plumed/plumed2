@@ -1,18 +1,12 @@
-DESCRIPTION: analysis data from calculation done by @9 at time 13.000000 
-REMARK TYPE=EUCLIDEAN 
-REMARK WEIGHT=6.000000
-REMARK ARG=d1
-REMARK d1=7.000000 
-END
-DESCRIPTION: analysis data from calculation done by @9 at time 13.000000 
-REMARK TYPE=EUCLIDEAN 
-REMARK WEIGHT=5.000000
-REMARK ARG=d1
+REMARK ll2_weights=0.384615 
+REMARK ll2_logweights=-0.955511 
 REMARK d1=0.000000 
 END
-DESCRIPTION: analysis data from calculation done by @9 at time 13.000000 
-REMARK TYPE=EUCLIDEAN 
-REMARK WEIGHT=2.000000
-REMARK ARG=d1
+REMARK ll2_weights=0.461538 
+REMARK ll2_logweights=-0.773190 
+REMARK d1=7.000000 
+END
+REMARK ll2_weights=0.153846 
+REMARK ll2_logweights=-1.871802 
 REMARK d1=11.000000 
 END

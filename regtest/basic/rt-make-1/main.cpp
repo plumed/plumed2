@@ -4,6 +4,7 @@
 #include "plumed/tools/Stopwatch.h"
 #include <iostream>
 #include <fstream>
+#include <cmath>
 
 using namespace PLMD;
 
@@ -108,6 +109,9 @@ int main(){
     ofs<<"Box type "<<type<<"\n";
     ofs<<"Failures "<<err<<"\n";
     ofs.precision(1);
+    if(type==4) {
+      nsh=std::round(nsh);
+    }
     ofs<<"Shifts   "<<nsh<<"\n\n";
   }
   sw.stop();

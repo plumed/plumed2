@@ -35,6 +35,17 @@ Calculate the absolute position of a ghost atom with fixed coordinates in the lo
 The computed ghost atom is stored as a virtual atom that can be accessed in
  an atom list through the the label for the GHOST action that creates it.
 
+When running with periodic boundary conditions, the atoms should be
+in the proper periodic image. This is done automatically since PLUMED 2.10,
+by considering the ordered list of atoms and rebuilding the molecule using a procedure
+that is equivalent to that done in \ref WHOLEMOLECULES . Notice that
+rebuilding is local to this action. This is different from \ref WHOLEMOLECULES
+which actually modifies the coordinates stored in PLUMED.
+
+In case you want to recover the old behavior you should use the NOPBC flag.
+In that case you need to take care that atoms are in the correct
+periodic image.
+
 \par Examples
 
 The following input instructs plumed to print the distance between the
@@ -55,6 +66,7 @@ class Ghost:
 {
   std::vector<double> coord;
   std::vector<Tensor> deriv;
+  bool nopbc=false;
 public:
   explicit Ghost(const ActionOptions&ao);
   void calculate() override;
@@ -66,6 +78,7 @@ PLUMED_REGISTER_ACTION(Ghost,"GHOST")
 void Ghost::registerKeywords(Keywords& keys) {
   ActionWithVirtualAtom::registerKeywords(keys);
   keys.add("atoms","COORDINATES","coordinates of the ghost atom in the local reference frame");
+  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
 }
 
 Ghost::Ghost(const ActionOptions&ao):
@@ -79,14 +92,25 @@ Ghost::Ghost(const ActionOptions&ao):
   parseVector("COORDINATES",coord);
   if(coord.size()!=3) error("COORDINATES should be a list of three real numbers");
 
+  parseFlag("NOPBC",nopbc);
+
   checkRead();
   log.printf("  of atoms");
   for(unsigned i=0; i<atoms.size(); ++i) log.printf(" %d",atoms[i].serial());
   log.printf("\n");
+
+  if(nopbc) {
+    log<<"  PBC will be ignored\n";
+  } else {
+    log<<"  broken molecules will be rebuilt assuming atoms are in the proper order\n";
+  }
   requestAtoms(atoms);
 }
 
 void Ghost::calculate() {
+
+  if(!nopbc) makeWhole();
+
   Vector pos;
   deriv.resize(getNumberOfAtoms());
   std::array<Vector,3> n;

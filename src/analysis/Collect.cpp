@@ -45,7 +45,7 @@ class Collect :
   public ActionPilot
 {
 private:
-  bool clearnextstep;
+  bool usefirstconf;
   unsigned clearstride;
 public:
   static void registerKeywords( Keywords& keys );
@@ -67,6 +67,7 @@ void Collect::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","STRIDE","1","the frequency with which the data should be collected and added to the quantity being averaged");
   keys.add("compulsory","CLEAR","0","the frequency with which to clear all the accumulated data.  The default value "
            "of 0 implies that all the data will be used and that the grid will never be cleared");
+  keys.add("compulsory","TYPE","auto","required if you are collecting an object with rank>0. Should be vector/matrix and determines how data is stored.  If rank==0 then data has to be stored as a vector");
 }
 
 Collect::Collect( const ActionOptions& ao ):
@@ -74,20 +75,33 @@ Collect::Collect( const ActionOptions& ao ):
   ActionWithValue(ao),
   ActionWithArguments(ao),
   ActionPilot(ao),
-  clearnextstep(false)
+  usefirstconf(false)
 {
   if( getNumberOfArguments()!=1 ) error("there should only be one argument to this action");
   if( getPntrToArgument(0)->getRank()>0 && getPntrToArgument(0)->hasDerivatives() ) error("input to the collect argument cannot be a grid");
 
+  std::string type; parse("TYPE",type);
+  if( getPntrToArgument(0)->getNumberOfValues()==1 && (type=="auto" || type=="vector") ) type="vector";
+  else if( getPntrToArgument(0)->getNumberOfValues()==1 && type=="matrix" ) error("invalid type specified. Cannot construct a matrix by collecting scalars");
+  else if(  getPntrToArgument(0)->getNumberOfValues()!=1 && type=="auto" ) error("missing TYPE keyword.  TYPE should specify whether data is to be stored as a vector or a matrix");
+  else if( type!="vector" && type!="matrix" ) error("invalid TYPE specified. Should be matrix/scalar found " + type);
+
+  if( type=="vector" ) log.printf("  adding %d elements to stored vector each time we collect\n", getPntrToArgument(0)->getNumberOfValues() );
+  else log.printf("  constructing matrix with rows of length %d from input data\n", getPntrToArgument(0)->getNumberOfValues() );
+
   parse("CLEAR",clearstride); unsigned nvals=0;
-  if( clearstride>0 ) {
+  if( clearstride==getStride() ) {
+    nvals=1; usefirstconf=(getStride()==0);
+  } else if( clearstride>0 ) {
     if( clearstride%getStride()!=0 ) error("CLEAR parameter must be a multiple of STRIDE");
     log.printf("  clearing collected data every %u steps \n",clearstride);
-    nvals=(clearstride/getStride())*getPntrToArgument(0)->getNumberOfValues();
-    clearnextstep=true;
+    nvals=(clearstride/getStride());
   }
-  std::vector<unsigned> shape(1); shape[0]=nvals;
-  addValueWithDerivatives( shape );
+
+  std::vector<unsigned> shape(1); shape[0]=nvals; getPntrToArgument(0)->buildDataStore();
+  if( type=="matrix" ) { shape.resize(2); shape[1] = getPntrToArgument(0)->getNumberOfValues(); }
+  if( type=="vector" ) { shape[0] = nvals*getPntrToArgument(0)->getNumberOfValues(); }
+  addValue( shape ); if( shape.size()==2 ) getPntrToComponent(0)->reshapeMatrixStore( shape[1] );
   if( getPntrToArgument(0)->isPeriodic() ) {
     std::string min, max; getPntrToArgument(0)->getDomain( min, max );
     setPeriodic( min, max );
@@ -99,22 +113,23 @@ unsigned Collect::getNumberOfDerivatives() {
 }
 
 void Collect::update() {
-  if( clearnextstep ) {
-    clearnextstep=false; getPntrToComponent(0)->set(0,0.0); getPntrToComponent(0)->clearDerivatives(true);
-  }
-  if( getStep()==0 ) return;
+  if( getStep()==0 || (!onStep() && !usefirstconf) ) return ;
+  usefirstconf=false;
 
   Value* myin=getPntrToArgument(0);
   Value* myout=getPntrToComponent(0);
   unsigned nargs=myin->getNumberOfValues();
-  if( clearstride>0 ) {
-    for(unsigned i=0; i<nargs; ++i) myout->set( (getStep()/getStride()-1)*nargs+i, myin->get(i) );
+  if( clearstride==getStride() ) {
+    for(unsigned i=0; i<nargs; ++i) myout->set( i, myin->get(i) );
+  } else if( clearstride>0 ) {
+    unsigned step = getStep() - clearstride*std::floor( getStep() / clearstride );
+    if( getStep()%clearstride==0 ) step = step + clearstride;
+    unsigned base = (step/getStride()-1)*nargs;
+    for(unsigned i=0; i<nargs; ++i) myout->set( base+i, myin->get(i) );
   } else {
     for(unsigned i=0; i<nargs; ++i) myout->push_back( myin->get(i) );
+    if( myout->getRank()==2 ) myout->reshapeMatrixStore( nargs );
   }
-
-  // Clear if required
-  if( clearstride>0 && getStep()%clearstride==0 ) clearnextstep=true;
 }
 
 }
