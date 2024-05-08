@@ -23,6 +23,7 @@
 #include "FunctionShortcut.h"
 #include "FunctionOfScalar.h"
 #include "FunctionOfVector.h"
+#include "FunctionOfMatrix.h"
 #include "core/ActionRegister.h"
 
 //+PLUMEDOC COLVAR SUM
@@ -79,6 +80,15 @@ Calculate the arithmetic mean of the elements in a vector
 */
 //+ENDPLUMEDOC
 
+//+PLUMEDOC COLVAR SUM_MATRIX
+/*
+Sum all the elements in a matrix
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 
 namespace PLMD {
 namespace function {
@@ -92,6 +102,8 @@ PLUMED_REGISTER_ACTION(ScalarSum,"MEAN_SCALAR")
 typedef FunctionOfVector<Sum> VectorSum;
 PLUMED_REGISTER_ACTION(VectorSum,"SUM_VECTOR")
 PLUMED_REGISTER_ACTION(VectorSum,"MEAN_VECTOR")
+typedef FunctionOfMatrix<Sum> MatrixSum;
+PLUMED_REGISTER_ACTION(MatrixSum,"SUM_MATRIX")
 
 void Sum::registerKeywords( Keywords& keys ) {
   keys.use("PERIODIC");

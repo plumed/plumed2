@@ -1,0 +1,4 @@
+plumed_modules=landmarks
+type=driver
+# this is to test a different name
+arg="--plumed plumed.dat --ixyz traj.xyz"

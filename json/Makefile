@@ -35,4 +35,4 @@ endif
 endif
 
 clean:
-	rm -fr action_list syntax.json 
+	rm -fr action_list syntax.json

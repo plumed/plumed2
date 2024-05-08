@@ -24,6 +24,7 @@
 #include "FunctionShortcut.h"
 #include "FunctionOfScalar.h"
 #include "FunctionOfVector.h"
+#include "FunctionOfMatrix.h"
 #include "tools/OpenMP.h"
 #include "tools/LeptonCall.h"
 
@@ -206,6 +207,24 @@ See \ref CUSTOM
 */
 //+ENDPLUMEDOC
 
+//+PLUMEDOC COLVAR CUSTOM_MATRIX
+/*
+Calculate an arbitrary function piecewise for one or multiple input matrices.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC COLVAR MATHEVAL_MATRIX
+/*
+Calculate an arbitrary function piecewise for one or multiple input matrices.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 typedef FunctionShortcut<Custom> CustomShortcut;
 PLUMED_REGISTER_ACTION(CustomShortcut,"CUSTOM")
 PLUMED_REGISTER_ACTION(CustomShortcut,"MATHEVAL")
@@ -215,6 +234,9 @@ PLUMED_REGISTER_ACTION(ScalarCustom,"MATHEVAL_SCALAR")
 typedef FunctionOfVector<Custom> VectorCustom;
 PLUMED_REGISTER_ACTION(VectorCustom,"CUSTOM_VECTOR")
 PLUMED_REGISTER_ACTION(VectorCustom,"MATHEVAL_VECTOR")
+typedef FunctionOfMatrix<Custom> MatrixCustom;
+PLUMED_REGISTER_ACTION(MatrixCustom,"CUSTOM_MATRIX")
+PLUMED_REGISTER_ACTION(MatrixCustom,"MATHEVAL_MATRIX")
 
 //+PLUMEDOC FUNCTION MATHEVAL
 /*

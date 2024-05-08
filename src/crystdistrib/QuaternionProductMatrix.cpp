@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "adjmat/ActionWithMatrix.h"
+#include "core/ActionWithMatrix.h"
 #include "core/ActionRegister.h"
 
 //+PLUMEDOC MCOLVAR QUATERNION_PRODUCT_MATRIX
@@ -34,7 +34,7 @@ Calculate the outer product matrix from two vectors of quaternions
 namespace PLMD {
 namespace crystdistrib {
 
-class QuaternionProductMatrix : public adjmat::ActionWithMatrix {
+class QuaternionProductMatrix : public ActionWithMatrix {
 private:
   unsigned nderivatives;
 public:
@@ -50,7 +50,7 @@ public:
 PLUMED_REGISTER_ACTION(QuaternionProductMatrix,"QUATERNION_PRODUCT_MATRIX")
 
 void QuaternionProductMatrix::registerKeywords( Keywords& keys ) {
-  adjmat::ActionWithMatrix::registerKeywords(keys); keys.use("ARG");
+  ActionWithMatrix::registerKeywords(keys); keys.use("ARG");
   keys.addOutputComponent("w","default","the real component of quaternion");
   keys.addOutputComponent("i","default","the i component of the quaternion");
   keys.addOutputComponent("j","default","the j component of the quaternion");

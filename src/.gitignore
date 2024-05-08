@@ -4,7 +4,6 @@
 !/Makefile
 !/README
 !/adjmat
-!/analysis
 !/annfunc
 !/asmjit
 !/bias
@@ -26,6 +25,7 @@
 !/gridtools
 !/imd
 !/isdb
+!/landmarks
 !/lapack
 !/lepton
 !/logmfd
@@ -34,6 +34,7 @@
 !/maketools
 !/mapping
 !/manyrestraints
+!/matrixtools
 !/maze
 !/molfile
 !/multicolvar
@@ -44,6 +45,7 @@
 !/refdist
 !/secondarystructure
 !/setup
+!/sprint
 !/symfunc
 !/small_vector
 !/tools
@@ -62,6 +64,7 @@
 !/s2cm
 !/pytorch
 !/membranefusion
+!/wham
 
 # And just ignore these files
 *.xxd

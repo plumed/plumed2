@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "function/FunctionTemplateBase.h"
 #include "function/FunctionShortcut.h"
-#include "adjmat/FunctionOfMatrix.h"
+#include "function/FunctionOfMatrix.h"
 #include "core/ActionRegister.h"
 
 #include <complex>
@@ -62,7 +62,7 @@ public:
 
 typedef function::FunctionShortcut<CylindricalHarmonic> CyHarmShortcut;
 PLUMED_REGISTER_ACTION(CyHarmShortcut,"CYLINDRICAL_HARMONIC")
-typedef adjmat::FunctionOfMatrix<CylindricalHarmonic> MatrixCyHarm;
+typedef function::FunctionOfMatrix<CylindricalHarmonic> MatrixCyHarm;
 PLUMED_REGISTER_ACTION(MatrixCyHarm,"CYLINDRICAL_HARMONIC_MATRIX")
 
 void CylindricalHarmonic::registerKeywords( Keywords& keys ) {

@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "function/FunctionTemplateBase.h"
 #include "function/FunctionShortcut.h"
-#include "adjmat/FunctionOfMatrix.h"
+#include "function/FunctionOfMatrix.h"
 #include "core/ActionRegister.h"
 
 #include <complex>
@@ -67,7 +67,7 @@ public:
 
 typedef function::FunctionShortcut<SphericalHarmonic> SpHarmShortcut;
 PLUMED_REGISTER_ACTION(SpHarmShortcut,"SPHERICAL_HARMONIC")
-typedef adjmat::FunctionOfMatrix<SphericalHarmonic> MatrixSpHarm;
+typedef function::FunctionOfMatrix<SphericalHarmonic> MatrixSpHarm;
 PLUMED_REGISTER_ACTION(MatrixSpHarm,"SPHERICAL_HARMONIC_MATRIX")
 
 void SphericalHarmonic::registerKeywords( Keywords& keys ) {

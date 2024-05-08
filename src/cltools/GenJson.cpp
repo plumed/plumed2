@@ -25,6 +25,7 @@
 #include "config/Config.h"
 #include "core/ActionRegister.h"
 #include "core/GenericMolInfo.h"
+#include "core/ModuleMap.h"
 #include <cstdio>
 #include <string>
 #include <iostream>
@@ -107,6 +108,7 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
     for(auto c : action ) { if( isdigit(c) ) std::cout<<c; else std::cout<<"_"<<c; }
     std::cout<<".html\","<<std::endl;
     std::cout<<"    \"description\" : \""<<action_map[action_names[i]]<<"\",\n";
+    std::cout<<"    \"module\" : \""<<getModuleMap().find(action_names[i])->second<<"\",\n";
     // Now output keyword information
     Keywords keys; actionRegister().getKeywords( action_names[i], keys );
     std::cout<<"    \"syntax\" : {"<<std::endl;
