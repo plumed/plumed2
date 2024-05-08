@@ -2945,7 +2945,7 @@ private:
   /**
     Private version of cmd. It is used here to avoid duplication of code between typesafe and not-typesafe versions
   */
-  static void cmd_priv(plumed main,const char*key, SafePtr*safe=__PLUMED_WRAPPER_CXX_NULLPTR, const void* unsafe=__PLUMED_WRAPPER_CXX_NULLPTR,plumed_error*error=__PLUMED_WRAPPER_CXX_NULLPTR) {
+  static void cmd_priv(plumed main,const char*key, SafePtr& safe, plumed_error*error=__PLUMED_WRAPPER_CXX_NULLPTR) {
 
     plumed_error error_cxx;
     plumed_error_init(&error_cxx);
@@ -2960,11 +2960,7 @@ private:
     nothrow.handler=plumed_error_set;
 
     try {
-      if(safe) {
-        plumed_cmd_safe_nothrow(main,key,safe->get_safeptr(),nothrow);
-      } else {
-        plumed_cmd_nothrow(main,key,unsafe,nothrow);
-      }
+      plumed_cmd_safe_nothrow(main,key,safe.get_safeptr(),nothrow);
     } catch (...) {
       assert(error_cxx.code==0); /* no need to plumed_error_finalize here */
       /*
@@ -3070,7 +3066,7 @@ private:
     } else {
       // otherwise, for backward compatibility, the pointer is assumed with no shape information
       SafePtr s(val,0,nullptr);
-      cmd_priv(main,key,&s);
+      cmd_priv(main,key,s);
     }
 #endif
   }
@@ -3080,7 +3076,7 @@ private:
   template<typename T, typename std::enable_if<!wrapper::is_custom_array<typename std::remove_reference<T>::type>::value && !wrapper::has_size_and_data<T>::value && !std::is_pointer<typename std::remove_reference<T>::type>::value, int>::type = 0>
   void cmd_helper(const char*key,T&& val) {
     SafePtr s(val,0,nullptr);
-    cmd_priv(main,key,&s);
+    cmd_priv(main,key,s);
   }
 
 /// cmd_helper_with_shape with custom array val (includes std::array and C arrays)
@@ -3098,7 +3094,7 @@ private:
   void cmd_helper_with_shape(const char*key,T* val, __PLUMED_WRAPPER_STD size_t* shape,bool nocopy=false) {
     SafePtr s(val,0,shape);
     if(nocopy) s.safe.flags |= 0x10000000;
-    cmd_priv(main,key,&s);
+    cmd_priv(main,key,s);
   }
 
 #if ! __PLUMED_WRAPPER_CXX_DETECT_SHAPES_STRICT
@@ -3119,7 +3115,7 @@ private:
   void cmd_with_nelem(const char*key,T* val, __PLUMED_WRAPPER_STD size_t nelem) {
     // pointer, directly managed by SafePtr
     SafePtr s(val,nelem,nullptr);
-    cmd_priv(main,key,&s);
+    cmd_priv(main,key,s);
   }
 #endif
 
@@ -3268,7 +3264,7 @@ public:
   */
   static void plumed_cmd_cxx(plumed p,const char*key,plumed_error* error=__PLUMED_WRAPPER_CXX_NULLPTR) {
     SafePtr s;
-    cmd_priv(p,key,&s,__PLUMED_WRAPPER_CXX_NULLPTR,error);
+    cmd_priv(p,key,s,error);
   }
 
   /**
@@ -3281,7 +3277,7 @@ public:
   template<typename T>
   static void plumed_cmd_cxx(plumed p,const char*key,T val,plumed_error* error=__PLUMED_WRAPPER_CXX_NULLPTR) {
     SafePtr s(val,0,__PLUMED_WRAPPER_CXX_NULLPTR);
-    cmd_priv(p,key,&s,__PLUMED_WRAPPER_CXX_NULLPTR,error);
+    cmd_priv(p,key,s,error);
   }
 
   /**
@@ -3294,7 +3290,7 @@ public:
   template<typename T>
   static void plumed_cmd_cxx(plumed p,const char*key,T* val,plumed_error* error=__PLUMED_WRAPPER_CXX_NULLPTR) {
     SafePtr s(val,0,__PLUMED_WRAPPER_CXX_NULLPTR);
-    cmd_priv(p,key,&s,__PLUMED_WRAPPER_CXX_NULLPTR,error);
+    cmd_priv(p,key,s,error);
   }
 
   /**
@@ -3307,7 +3303,7 @@ public:
   template<typename T>
   static void plumed_cmd_cxx(plumed p,const char*key,T* val, __PLUMED_WRAPPER_STD size_t nelem,plumed_error* error=__PLUMED_WRAPPER_CXX_NULLPTR) {
     SafePtr s(val,nelem,__PLUMED_WRAPPER_CXX_NULLPTR);
-    cmd_priv(p,key,&s,__PLUMED_WRAPPER_CXX_NULLPTR,error);
+    cmd_priv(p,key,s,error);
   }
 
   /**
@@ -3323,7 +3319,7 @@ public:
     for(i=0; i<5; i++) if(shape[i]==0) break;
     if(i==5) throw Plumed::ExceptionTypeError("Maximum shape size is 4");
     SafePtr s(val,0,shape);
-    cmd_priv(p,key,&s,__PLUMED_WRAPPER_CXX_NULLPTR,error);
+    cmd_priv(p,key,s,error);
   }
 
 
