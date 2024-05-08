@@ -45,11 +45,11 @@
 }, 
 "q1_sp" : { 
 "q1_sp.rm-n1" : { "type": "vector", "description": "the product of the matrix q1_sh.rm-n1 and the vector q1_denom_ones" }, 
-"q1_sp.rm-0" : { "type": "vector", "description": "the product of the matrix q1_sh.rm-n1 and the vector q1_denom_ones" }, 
-"q1_sp.rm-p1" : { "type": "vector", "description": "the product of the matrix q1_sh.rm-n1 and the vector q1_denom_ones" }, 
+"q1_sp.rm-0" : { "type": "vector", "description": "the product of the matrix q1_sh.rm-0 and the vector q1_denom_ones" }, 
+"q1_sp.rm-p1" : { "type": "vector", "description": "the product of the matrix q1_sh.rm-p1 and the vector q1_denom_ones" }, 
 "q1_sp.im-n1" : { "type": "vector", "description": "the product of the matrix q1_sh.im-n1 and the vector q1_denom_ones" }, 
-"q1_sp.im-0" : { "type": "vector", "description": "the product of the matrix q1_sh.im-n1 and the vector q1_denom_ones" }, 
-"q1_sp.im-p1" : { "type": "vector", "description": "the product of the matrix q1_sh.im-n1 and the vector q1_denom_ones" } 
+"q1_sp.im-0" : { "type": "vector", "description": "the product of the matrix q1_sh.im-0 and the vector q1_denom_ones" }, 
+"q1_sp.im-p1" : { "type": "vector", "description": "the product of the matrix q1_sh.im-p1 and the vector q1_denom_ones" } 
 }, 
 "q1_norm2" : { 
 "q1_norm2" : { "type": "vector", "desciption": "" }

@@ -798,9 +798,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
             else if( myval->getRank()==2 ) vtype="matrix";
             else plumed_merror("unknown type for value " + myval->getName() );
             if( dot!=std::string::npos ) {
-              std::string cname = compname.substr(dot+1); std::size_t hyph = cname.find_first_of("-");
-              if( hyph!=std::string::npos ) cname = cname.substr(0,hyph);
-              description = av->getOutputComponentDescription( cname, keys );
+              std::string cname = compname.substr(dot+1); description = av->getOutputComponentDescription( cname, keys );
             } else description = keys.getOutputComponentDescription(".#!value");
             if( firstv ) { valuefile.printf("    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), vtype.c_str(), description.c_str() ); firstv=false; }
             else valuefile.printf(",\n    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), vtype.c_str(), description.c_str() );
