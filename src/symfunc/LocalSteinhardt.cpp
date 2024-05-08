@@ -31,7 +31,7 @@ namespace symfunc {
 
 //+PLUMEDOC MCOLVARF LOCAL_Q1
 /*
-Calculate the local degree of order around an atoms by taking the average dot product between the \f$q_1\f$ vector on the central atom and the \f$q_3\f$ vector on the atoms in the first coordination sphere.
+Calculate the local degree of order around an atoms by taking the average dot product between the q_1 vector on the central atom and the q_3 vector on the atoms in the first coordination sphere.
 
 \par Examples
 
@@ -40,7 +40,7 @@ Calculate the local degree of order around an atoms by taking the average dot pr
 
 //+PLUMEDOC MCOLVARF LOCAL_Q3
 /*
-Calculate the local degree of order around an atoms by taking the average dot product between the \f$q_3\f$ vector on the central atom and the \f$q_3\f$ vector on the atoms in the first coordination sphere.
+Calculate the local degree of order around an atoms by taking the average dot product between the q_3 vector on the central atom and the q_3 vector on the atoms in the first coordination sphere.
 
 The \ref Q3 command allows one to calculate one complex vectors for each of the atoms in your system that describe the degree of order in the coordination sphere
 around a particular atom. The difficulty with these vectors comes when combining the order parameters from all of the individual atoms/molecules so as to get a
@@ -117,7 +117,7 @@ PRINT ARG=w3.* FILE=colvar
 
 //+PLUMEDOC MCOLVARF LOCAL_Q4
 /*
-Calculate the local degree of order around an atoms by taking the average dot product between the \f$q_4\f$ vector on the central atom and the \f$q_4\f$ vector on the atoms in the first coordination sphere.
+Calculate the local degree of order around an atoms by taking the average dot product between the q_4 vector on the central atom and the q_4 vector on the atoms in the first coordination sphere.
 
 The \ref Q4 command allows one to calculate one complex vectors for each of the atoms in your system that describe the degree of order in the coordination sphere
 around a particular atom. The difficulty with these vectors comes when combining the order parameters from all of the individual atoms/molecules so as to get a
@@ -194,7 +194,7 @@ PRINT ARG=w4.* FILE=colvar
 
 //+PLUMEDOC MCOLVARF LOCAL_Q6
 /*
-Calculate the local degree of order around an atoms by taking the average dot product between the \f$q_6\f$ vector on the central atom and the \f$q_6\f$ vector on the atoms in the first coordination sphere.
+Calculate the local degree of order around an atoms by taking the average dot product between the q_6 vector on the central atom and the q_6 vector on the atoms in the first coordination sphere.
 
 The \ref Q6 command allows one to calculate one complex vectors for each of the atoms in your system that describe the degree of order in the coordination sphere
 around a particular atom. The difficulty with these vectors comes when combining the order parameters from all of the individual atoms/molecules so as to get a

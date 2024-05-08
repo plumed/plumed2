@@ -22,13 +22,13 @@
 #ifndef __PLUMED_clusters_ClusteringBase_h
 #define __PLUMED_clusters_ClusteringBase_h
 
-#include "adjmat/MatrixOperationBase.h"
+#include "matrixtools/MatrixOperationBase.h"
 #include "tools/Matrix.h"
 
 namespace PLMD {
 namespace clusters {
 
-class ClusteringBase : public adjmat::MatrixOperationBase {
+class ClusteringBase : public matrixtools::MatrixOperationBase {
 protected:
 /// Vector that stores the sizes of the current set of clusters
   std::vector< std::pair<unsigned,unsigned> > cluster_sizes;

@@ -49,11 +49,11 @@ namespace maze {
 //+PLUMEDOC MAZE_BIAS MAZE_OPTIMIZER_BIAS
 /*
 
-Biases the ligand along the direction calculated by the chosen \ref MAZE_OPTIMIZER.
+Biases the ligand along the direction calculated by the chosen MAZE_OPTIMIZER.
 
 OptimizerBias is a class deriving from Bias, and it is used to adaptively
 bias a ligand-protein system toward an optimal solution found by the chosen
-optimizer.
+\ref MAZE_OPTIMIZER.
 
 Remember to define the loss function (\ref MAZE_LOSS) and the optimizer
 (\ref MAZE_OPTIMIZER) prior to the adaptive bias for the optimizer.

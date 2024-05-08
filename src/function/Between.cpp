@@ -22,6 +22,7 @@
 #include "Between.h"
 #include "FunctionShortcut.h"
 #include "FunctionOfVector.h"
+#include "FunctionOfMatrix.h"
 #include "core/ActionRegister.h"
 
 #include <cmath>
@@ -47,10 +48,21 @@ Use a switching function to determine how many of the input components are withi
 */
 //+ENDPLUMEDOC
 
+//+PLUMEDOC COLVAR BETWEEN_MATRIX
+/*
+Transform all the elements of a matrix using a switching function that is oen when the input value is within a particular range
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 typedef FunctionShortcut<Between> BetweenShortcut;
 PLUMED_REGISTER_ACTION(BetweenShortcut,"BETWEEN")
 typedef FunctionOfVector<Between> VectorBetween;
 PLUMED_REGISTER_ACTION(VectorBetween,"BETWEEN_VECTOR")
+typedef FunctionOfMatrix<Between> MatrixBetween;
+PLUMED_REGISTER_ACTION(MatrixBetween,"BETWEEN_MATRIX")
 
 void Between::registerKeywords(Keywords& keys) {
   keys.add("compulsory","LOWER","the lower boundary for this particular bin");

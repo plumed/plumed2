@@ -34,6 +34,7 @@ namespace symfunc {
 
 //+PLUMEDOC MCOLVAR HEXACTIC_PARAMETER
 /*
+Calculate the hexatic order parameter
 
 \bug Virial is not working currently
 

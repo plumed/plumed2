@@ -23,7 +23,7 @@
 #define __PLUMED_adjmat_AdjacencyMatrixBase_h
 
 #include <vector>
-#include "ActionWithMatrix.h"
+#include "core/ActionWithMatrix.h"
 #include "tools/LinkCells.h"
 
 namespace PLMD {
