@@ -74,8 +74,8 @@ RestraintShortcut::RestraintShortcut(const ActionOptions&ao):
 
   std::string stride; parse("STRIDE",stride);
   std::vector<std::string> at; parseVector("AT",at);
-  std::vector<std::string> slope(at.size()); parseVector("SLOPE",slope); 
-  std::vector<std::string> kappa(at.size()); parseVector("KAPPA",kappa); 
+  std::vector<std::string> slope(at.size()); parseVector("SLOPE",slope);
+  std::vector<std::string> kappa(at.size()); parseVector("KAPPA",kappa);
 
   std::string biasargs, forceargs; bool non_constant_force=false;
   for(unsigned i=0; i<args.size(); ++i) {
