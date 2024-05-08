@@ -240,7 +240,9 @@ PLUMED_REGISTER_ACTION(MatrixCustom,"MATHEVAL_MATRIX")
 
 //+PLUMEDOC FUNCTION MATHEVAL
 /*
-An alias to the \ref CUSTOM function.
+An alias to the CUSTOM function that can also be used to calaculate combinations of variables using a custom expression.
+
+Documentation for this action is identical to that for \ref CUSTOM
 
 This alias is kept in order to maintain compatibility with previous PLUMED versions.
 However, notice that as of PLUMED 2.5 the libmatheval library is not linked anymore,
