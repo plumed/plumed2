@@ -172,7 +172,7 @@ public:
 /// Add a potential component which can be output by this particular action
   void addOutputComponent( const std::string& name, const std::string& key, const std::string& descr );
 /// Has a component with this name been added?
-  bool outputComponentExists( const std::string& name, const bool& custom ) const ;
+  bool outputComponentExists( const std::string& name ) const ;
 /// Get the flag that forces this component to be calculated
   std::string getOutputComponentFlag( const std::string& name ) const ;
 /// Get the description of this component

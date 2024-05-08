@@ -63,7 +63,7 @@ void FunctionOfGrid<T>::registerKeywords(Keywords& keys ) {
   T tfunc; tfunc.registerKeywords( keys ); if( typeid(tfunc)==typeid(function::Custom()) ) keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
   if( keys.getActionName()=="INTEGRATE_GRID") {
     keys.setValueDescription("the numerical integral of the input function over its whole domain");
-  } else if( keys.outputComponentExists(".#!value", false) ) {
+  } else if( keys.outputComponentExists(".#!value") ) {
     keys.setValueDescription("the grid obtained by doing an element-wise application of " + keys.getOutputComponentDescription(".#!value") + " to the input grid");
   }
 }

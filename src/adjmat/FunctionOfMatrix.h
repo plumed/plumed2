@@ -86,7 +86,7 @@ void FunctionOfMatrix<T>::registerKeywords(Keywords& keys ) {
     keys.setValueDescription("the largest element of the input matrix");
   } else if( keys.getActionName()=="LOWEST_MATRIX" ) {
     keys.setValueDescription("the smallest element in the input matrix");
-  } else if( keys.outputComponentExists(".#!value", false) ) {
+  } else if( keys.outputComponentExists(".#!value") ) {
     keys.setValueDescription("the matrix obtained by doing an element-wise application of " + keys.getOutputComponentDescription(".#!value") + " to the input matrix");
   }
 }

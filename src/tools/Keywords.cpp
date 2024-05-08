@@ -591,7 +591,7 @@ void Keywords::setComponentsIntroduction( const std::string& instr ) {
 }
 
 void Keywords::addOutputComponent( const std::string& name, const std::string& key, const std::string& descr ) {
-  plumed_assert( !outputComponentExists( name, false ) );
+  plumed_assert( !outputComponentExists(name) );
   plumed_massert( name!=".#!value", name + " is reserved for storing description of value" );
   plumed_massert( name.find("-")==std::string::npos,"dash is reseved character in component names" );
 
@@ -612,15 +612,15 @@ void Keywords::addOutputComponent( const std::string& name, const std::string& k
 }
 
 void Keywords::setValueDescription( const std::string& descr ) {
-  if( !outputComponentExists(".#!value", false) ) {
+  if( !outputComponentExists(".#!value") ) {
     ckey.insert( std::pair<std::string,std::string>(".#!value","default") );
     cdocs.insert( std::pair<std::string,std::string>(".#!value",descr) );
     cnames.push_back(".#!value");
   } else cdocs[".#!value"] = descr;
 }
 
-bool Keywords::outputComponentExists( const std::string& name, const bool& custom ) const {
-  if( custom && cstring.find("customize")!=std::string::npos ) return true;
+bool Keywords::outputComponentExists( const std::string& name ) const {
+  if( cstring.find("customize")!=std::string::npos ) return true;
 
   std::string sname;
   std::size_t num=name.find_first_of("-");

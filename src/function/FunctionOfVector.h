@@ -88,7 +88,7 @@ void FunctionOfVector<T>::registerKeywords(Keywords& keys ) {
     keys.setValueDescription("the smallest element in the input vector");
   } else if( keys.getActionName()=="SORT_VECTOR" ) {
     keys.setValueDescription("a vector that has been sorted into ascending order");
-  } else if( keys.outputComponentExists(".#!value", false) ) {
+  } else if( keys.outputComponentExists(".#!value") ) {
     keys.setValueDescription("the vector obtained by doing an element-wise application of " + keys.getOutputComponentDescription(".#!value") + " to the input vectors");
   }
 }

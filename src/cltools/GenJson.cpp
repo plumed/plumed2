@@ -139,6 +139,7 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
         std::cout<<"         \"value\" : {"<<std::endl;
         std::cout<<"           \"flag\": \"default\","<<std::endl;
         std::cout<<"           \"description\": \"something calculated by "<<action_names[i]<<"\""<<std::endl;
+        std::cout<<"         }"<<std::endl;
       }
       std::cout<<"       }"<<std::endl;
 

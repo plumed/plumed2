@@ -107,13 +107,13 @@ Value* ActionWithValue::copyOutput( const unsigned& n ) const {
 // -- HERE WE HAVE THE STUFF FOR THE DEFAULT VALUE -- //
 
 void ActionWithValue::addValue( const std::vector<unsigned>& shape ) {
-  if( !keywords.outputComponentExists(".#!value", false) ) warning("documentation for the value calculated by this action has not been included");
+  if( !keywords.outputComponentExists(".#!value") ) warning("documentation for the value calculated by this action has not been included");
   plumed_massert(values.empty(),"You have already added the default value for this action");
   values.emplace_back(Tools::make_unique<Value>(this,getLabel(), false, shape ) );
 }
 
 void ActionWithValue::addValueWithDerivatives( const std::vector<unsigned>& shape ) {
-  if( !keywords.outputComponentExists(".#!value", false) ) warning("documentation for the value calculated by this action has not been included");
+  if( !keywords.outputComponentExists(".#!value") ) warning("documentation for the value calculated by this action has not been included");
   plumed_massert(values.empty(),"You have already added the default value for this action");
   values.emplace_back(Tools::make_unique<Value>(this,getLabel(), true, shape ) );
 }
@@ -134,7 +134,7 @@ void ActionWithValue::setPeriodic( const std::string& min, const std::string& ma
 // -- HERE WE HAVE THE STUFF FOR NAMED VALUES / COMPONENTS -- //
 
 void ActionWithValue::addComponent( const std::string& name, const std::vector<unsigned>& shape ) {
-  if( !keywords.outputComponentExists(name,true) ) {
+  if( !keywords.outputComponentExists(name) ) {
     plumed_merror("a description of component " + name + " has not been added to the manual. Components should be registered like keywords in "
                   "registerKeywords as described in the developer docs.");
   }
@@ -151,7 +151,7 @@ void ActionWithValue::addComponent( const std::string& name, const std::vector<u
 }
 
 void ActionWithValue::addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape ) {
-  if( !keywords.outputComponentExists(name,true) ) {
+  if( !keywords.outputComponentExists(name) ) {
     plumed_merror("a description of component " + name + " has not been added to the manual. Components should be registered like keywords in "
                   "registerKeywords as described in the developer doc.");
   }
@@ -172,7 +172,7 @@ std::string ActionWithValue::getOutputComponentDescription( const std::string& c
   if( und!=std::string::npos && hyph!=std::string::npos ) plumed_merror("cannot use underscore and hyphen in name");
   if( und!=std::string::npos ) return keys.getOutputComponentDescription(cname.substr(und)) + " This particular component measures this quantity for the input CV named " + cname.substr(0,und);
   if( hyph!=std::string::npos ) return keys.getOutputComponentDescription(cname.substr(0,hyph)) + "  This is the " + cname.substr(hyph+1) + "th of these quantities";
-  plumed_massert( keys.outputComponentExists(cname,false), "if the component names are customizable then you should override this function" );
+  plumed_massert( keys.outputComponentExists(cname), "if the component names are customizable then you should override this function" );
   return keys.getOutputComponentDescription( cname );
 }
 
