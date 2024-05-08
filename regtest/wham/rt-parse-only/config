@@ -1,4 +1,5 @@
 type=driver
+plumed_modules=wham
 # this is to test automatic sizing  
 arg="--parse-only --natoms 10000 --shortcut-ofile shortcuts.json --valuedict-ofile values_pre.json"
 function plumed_regtest_after(){
