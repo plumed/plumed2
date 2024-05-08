@@ -27,7 +27,7 @@ namespace manyrestraints {
 
 //+PLUMEDOC MCOLVARB UWALLS
 /*
-Add \ref UPPER_WALLS restraints on all the multicolvar values
+Add UPPER_WALL restraints on all the multicolvar values
 
 This action takes the set of values calculated by the colvar specified by label in the DATA
 keyword and places a restraint on each quantity, \f$x\f$, with the following functional form:

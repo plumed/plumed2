@@ -85,8 +85,7 @@ for \ref MULTICOLVARDENS
 
 //+PLUMEDOC MFILTERS MFILTER_BETWEEN
 /*
-This action can be used to filter the colvar values calculated by a \ref mcolv
-so that one can compute the mean and so on for only those multicolvars within a certain range.
+This action can be used to filter the colvar values calculated by a multicolvar so that one can compute the mean and so on for only those multicolvars within a certain range.
 
 This action can be used to create a dynamic group of atom based on the value of a multicolvar.
 In this action a multicolvar is within the dynamic group if its value lies in a particular range.

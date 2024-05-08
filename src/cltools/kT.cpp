@@ -33,7 +33,7 @@ namespace cltools {
 
 //+PLUMEDOC TOOLS kt
 /*
-Print out the value of \f$k_BT\f$ at a particular temperature
+Print out the value of k_B T at a particular temperature
 
 \par Examples
 
