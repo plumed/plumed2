@@ -66,7 +66,7 @@ RestraintShortcut::RestraintShortcut(const ActionOptions&ao):
   }
   if( rank==0 ) {
     std::vector<std::string> slope(args.size()); parseVector("SLOPE",slope); std::string slopestr="";
-    if( slope[0]!="0.0" ) { slopestr=slope[0]; for(unsigned i=1; i<slope.size(); ++i) slopestr += "," + slope[i]; }
+    if( slope[0]!="0.0" ) { slopestr="SLOPE=" + slope[0]; for(unsigned i=1; i<slope.size(); ++i) slopestr += "," + slope[i]; }
     std::string allargs=args[0]; for(unsigned i=1; i<args.size(); ++i) allargs += "," + args[i];
     readInputLine( getShortcutLabel() + ": RESTRAINT_SCALAR ARG=" + allargs + " " + slopestr + " " + convertInputLineToString() );
     return;
