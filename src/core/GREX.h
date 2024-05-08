@@ -52,7 +52,7 @@ class GREX:
 public:
   explicit GREX(PlumedMain&);
   ~GREX();
-  void cmd(std::string_view key,const TypesafePtr & val=nullptr) override;
+  void cmd(std::string_view key,const TypesafePtr & val) override;
   void calculate();
   void savePositions();
 };

@@ -297,7 +297,7 @@ public:
    and an MD engine, this is the right place
    Notice that this interface should always keep retro-compatibility
   */
-  void cmd(std::string_view key,const TypesafePtr & val=nullptr) override;
+  void cmd(std::string_view key,const TypesafePtr & val) override;
   ~PlumedMain();
   /**
     Turn on parse only mode to deactivate restart in all actions.
