@@ -288,6 +288,7 @@ struct AtomDistribution {
   virtual void box(std::vector<double>& box, unsigned /*natoms*/, unsigned /*step*/, Random&) {
     std::fill(box.begin(), box.end(),0);
   };
+  virtual ~AtomDistribution() noexcept {}
 };
 
 struct theLine:public AtomDistribution {
