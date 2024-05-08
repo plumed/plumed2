@@ -6,7 +6,6 @@
 !/adjmat
 !/fourier
 !/function
-!/analysis
 !/annfunc
 !/basic
 !/core
@@ -26,6 +25,7 @@
 !/trajectories
 !/scripts
 !/symfunc
+!/landmarks
 !/molfile_plugin
 !/pamm
 !/isdb
@@ -41,6 +41,7 @@
 !/gridtools
 !/clusters
 !/unittest
+!/wham
 # These files we just want to ignore completely
 tmp
 report.txt

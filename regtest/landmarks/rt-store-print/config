@@ -1,0 +1,4 @@
+plumed_modules=landmarks
+type=driver
+arg="--noatoms --plumed plumed.dat"
+

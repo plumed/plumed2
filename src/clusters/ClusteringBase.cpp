@@ -26,13 +26,13 @@ namespace PLMD {
 namespace clusters {
 
 void ClusteringBase::registerKeywords( Keywords& keys ) {
-  adjmat::MatrixOperationBase::registerKeywords( keys ); keys.use("ARG");
+  matrixtools::MatrixOperationBase::registerKeywords( keys ); keys.use("ARG");
   keys.setValueDescription("vector with length that is equal to the number of rows in the input matrix.  Elements of this vector are equal to the cluster that each node is a part of");
 }
 
 ClusteringBase::ClusteringBase(const ActionOptions&ao):
   Action(ao),
-  adjmat::MatrixOperationBase(ao),
+  matrixtools::MatrixOperationBase(ao),
   number_of_cluster(-1)
 {
   // Do some checks on the input

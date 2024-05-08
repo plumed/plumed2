@@ -25,6 +25,7 @@
 #include "config/Config.h"
 #include "core/ActionRegister.h"
 #include "core/GenericMolInfo.h"
+#include "core/ModuleMap.h"
 #include <cstdio>
 #include <string>
 #include <iostream>
@@ -79,8 +80,9 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
   IFile myfile; myfile.open(actionfile); bool stat;
   std::map<std::string,std::string> action_map;
   while((stat=myfile.getline(line))) {
-    std::size_t col = line.find_first_of(":");
-    action_map.insert(std::pair<std::string,std::string>( line.substr(0,col), line.substr(col+1) ) );
+    std::size_t col = line.find_first_of(":"); std::string docs = line.substr(col+1);
+    if( docs.find("\\")!=std::string::npos ) error("found invalid backslash character in first line of documentation for action " + line.substr(0,col) );
+    action_map.insert(std::pair<std::string,std::string>( line.substr(0,col), docs ) );
   }
   myfile.close();
 
@@ -107,6 +109,7 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
     for(auto c : action ) { if( isdigit(c) ) std::cout<<c; else std::cout<<"_"<<c; }
     std::cout<<".html\","<<std::endl;
     std::cout<<"    \"description\" : \""<<action_map[action_names[i]]<<"\",\n";
+    std::cout<<"    \"module\" : \""<<getModuleMap().find(action_names[i])->second<<"\",\n";
     // Now output keyword information
     Keywords keys; actionRegister().getKeywords( action_names[i], keys );
     std::cout<<"    \"syntax\" : {"<<std::endl;

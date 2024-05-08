@@ -65,10 +65,10 @@ namespace cltools {
 
 //+PLUMEDOC TOOLS driver-float
 /*
-Equivalent to \ref driver, but using single precision reals.
+Equivalent to driver, but using single precision reals.
 
 The purpose of this tool is just to test what PLUMED does when linked from
-a single precision code.
+a single precision code.  The documentation is identical to that for \ref driver
 
 \par Examples
 

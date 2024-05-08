@@ -1,4 +1,4 @@
 type=driver
-plumed_modules=dimred
+plumed_modules="landmarks dimred"
 # this is to test a different name
 arg="--plumed plumed.dat --noatoms"

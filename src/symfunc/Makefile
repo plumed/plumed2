@@ -1,4 +1,4 @@
-USE=core tools multicolvar adjmat function
+USE=core tools multicolvar function 
 
 # generic makefile
 include ../maketools/make.module
