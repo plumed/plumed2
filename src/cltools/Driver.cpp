@@ -830,7 +830,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           std::fprintf(out,"\nDRIVER: Reassigning domain decomposition\n");
         }
         p.cmd("setAtomsNlocal",dd_nlocal);
-        p.cmd("setAtomsGatindex",&dd_gatindex[0],dd_nlocal);
+        p.cmd("setAtomsGatindex",&dd_gatindex[0], {dd_nlocal});
       }
     }
 
@@ -1010,22 +1010,22 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           dd_coordinates[3*i+1]=coordinates[3*kk+1];
           dd_coordinates[3*i+2]=coordinates[3*kk+2];
         }
-        p.cmd("setForces",&dd_forces[0],3*dd_nlocal);
-        p.cmd("setPositions",&dd_coordinates[0],3*dd_nlocal);
-        p.cmd("setMasses",&dd_masses[0],dd_nlocal);
-        p.cmd("setCharges",&dd_charges[0],dd_nlocal);
+        p.cmd("setForces",&dd_forces[0], {dd_nlocal,3});
+        p.cmd("setPositions",&dd_coordinates[0], {dd_nlocal,3});
+        p.cmd("setMasses",&dd_masses[0], {dd_nlocal});
+        p.cmd("setCharges",&dd_charges[0], {dd_nlocal});
       } else {
 // this is required to avoid troubles when the last domain
 // contains zero atoms
 // Basically, for empty domains we pass null pointers
 #define fix_pd(xx) (pd_nlocal!=0?&xx:NULL)
-        p.cmd("setForces",fix_pd(forces[3*pd_start]),3*pd_nlocal);
-        p.cmd("setPositions",fix_pd(coordinates[3*pd_start]),3*pd_nlocal);
-        p.cmd("setMasses",fix_pd(masses[pd_start]),pd_nlocal);
-        p.cmd("setCharges",fix_pd(charges[pd_start]),pd_nlocal);
+        p.cmd("setForces",fix_pd(forces[3*pd_start]), {pd_nlocal,3});
+        p.cmd("setPositions",fix_pd(coordinates[3*pd_start]), {pd_nlocal,3});
+        p.cmd("setMasses",fix_pd(masses[pd_start]), {pd_nlocal});
+        p.cmd("setCharges",fix_pd(charges[pd_start]), {pd_nlocal});
       }
-      p.cmd("setBox",cell.data(),9);
-      p.cmd("setVirial",virial.data(),9);
+      p.cmd("setBox",cell.data(), {3,3});
+      p.cmd("setVirial",virial.data(), {3,3});
     } else {
       p.cmd("setStepLongLong",step);
       p.cmd("setStopFlag",&plumedStopCondition);
@@ -1135,12 +1135,12 @@ void Driver<real>::evaluateNumericalDerivatives( const long long int& step, Plum
     for(unsigned j=0; j<3; ++j) {
       pos[i][j]=pos[i][j]+delta;
       p.cmd("setStepLongLong",step);
-      p.cmd("setPositions",&pos[0][0],3*natoms);
-      p.cmd("setForces",&fake_forces[0],3*natoms);
-      p.cmd("setMasses",&masses[0],natoms);
-      p.cmd("setCharges",&charges[0],natoms);
-      p.cmd("setBox",&cell[0],9);
-      p.cmd("setVirial",&fake_virial[0],9);
+      p.cmd("setPositions",&pos[0][0], {natoms,3});
+      p.cmd("setForces",&fake_forces[0], {natoms,3});
+      p.cmd("setMasses",&masses[0], {natoms});
+      p.cmd("setCharges",&charges[0], {natoms});
+      p.cmd("setBox",&cell[0], {3,3});
+      p.cmd("setVirial",&fake_virial[0], {3,3});
       p.cmd("prepareCalc");
       p.cmd("performCalcNoUpdate");
       p.cmd("getBias",&bias);
@@ -1159,12 +1159,12 @@ void Driver<real>::evaluateNumericalDerivatives( const long long int& step, Plum
       cell[3*i+k]=box(i,k)=box(i,k)+delta; pbc.setBox(box);
       for(int j=0; j<natoms; j++) pos[j]=pbc.scaledToReal( pos[j] );
       p.cmd("setStepLongLong",step);
-      p.cmd("setPositions",&pos[0][0],3*natoms);
-      p.cmd("setForces",&fake_forces[0],3*natoms);
-      p.cmd("setMasses",&masses[0],natoms);
-      p.cmd("setCharges",&charges[0],natoms);
-      p.cmd("setBox",&cell[0],9);
-      p.cmd("setVirial",&fake_virial[0],9);
+      p.cmd("setPositions",&pos[0][0], {natoms,3});
+      p.cmd("setForces",&fake_forces[0], {natoms,3});
+      p.cmd("setMasses",&masses[0], {natoms});
+      p.cmd("setCharges",&charges[0], {natoms});
+      p.cmd("setBox",&cell[0], {3,3});
+      p.cmd("setVirial",&fake_virial[0], {3,3});
       p.cmd("prepareCalc");
       p.cmd("performCalcNoUpdate");
       p.cmd("getBias",&bias);

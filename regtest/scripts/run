@@ -206,7 +206,7 @@ case "$type" in
   if test -n "$plumed_src" ; then
     echo "CXX_SRC=$plumed_src" > Makefile
   fi
-  if test "$plumed_language" = fortran || test "$plumed_language" = fortran08 || test "$plumed_language" = c || test "$plumed_link" = shared ; then
+  if test "$plumed_language" = fortran || test "$plumed_language" = fortran08 || test "$plumed_language" = c || test "$plumed_language" = c++98 || test "$plumed_language" = c++11 || test "$plumed_language" = c++14 || test "$plumed_link" = shared ; then
     cat <($plumed_nompi info --configuration) "$root/src/lib/Plumed.inc.shared" ../../../scripts/exe.make >> Makefile 
   else
     cat <($plumed_nompi info --configuration) "$root/src/lib/Plumed.inc.static" ../../../scripts/exe.make >> Makefile 
@@ -287,6 +287,10 @@ EOF
     else
       make exe-c 1>out 2> err
     fi
+  elif test "$plumed_language" = c++98 || test "$plumed_language" = c++11 || test "$plumed_language" = c++14 ; then
+    sed "s/-std=c++[0-9][0-9]/-std=$plumed_language/g" Makefile > __Makefile.tmp
+    mv __Makefile.tmp Makefile
+    make exe 1>out 2> err
   else
     make exe 1>out 2> err
   fi

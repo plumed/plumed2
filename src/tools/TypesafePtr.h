@@ -34,7 +34,9 @@
 #include <cstring>
 #include <type_traits>
 #include <climits>
+#include <limits>
 #include <initializer_list>
+#include <algorithm>
 
 namespace PLMD {
 
@@ -66,6 +68,19 @@ Class to deal with propoagation of typesafe pointers.
 
 */
 class TypesafePtr {
+  /// Small structure used to pass elements of a shape initializer_list
+  struct SizeLike {
+    std::size_t size;
+    SizeLike(short unsigned size): size(size) {}
+    SizeLike(unsigned size): size(size) {}
+    SizeLike(long unsigned size): size(size) {}
+    SizeLike(long long unsigned size): size(size) {}
+    SizeLike(short size): size(std::size_t(size)) {}
+    SizeLike(int size): size(std::size_t(size)) {}
+    SizeLike(long int size): size(std::size_t(size)) {}
+    SizeLike(long long int size): size(std::size_t(size)) {}
+  };
+
   inline void init_shape(const std::size_t* shape) {
     this->shape[0]=0;
     if(shape && *shape>0) {
@@ -343,22 +358,33 @@ public:
     return *get_priv<const T>(1,nullptr,true);
   }
 
-  template<typename T>
-  T get(std::size_t nelem) const {
+  // this will make sure that a null character is present
+  const char* getCString() const {
+    const char* ptr=get_priv<const char>(0,nullptr,false);
+    if(!typesafePtrSkipCheck() && this->nelem>0 && this->nelem<std::numeric_limits<std::size_t>::max()) {
+      std::size_t i=0;
+      for(; i<this->nelem; i++) if(ptr[i]==0) break;
+      if(i==this->nelem) throw ExceptionTypeError() << "PLUMED is expecting a null terminated string, but no null character was found";
+    }
+    return ptr;
+  }
+
+  template<typename T,typename I>
+  typename std::enable_if<std::is_integral<I>::value, T>::type get(I nelem) const {
     static_assert(std::is_pointer<T>::value,"only pointer types allowed here");
     typedef typename std::remove_pointer<T>::type T_noptr;
-    return get_priv<T_noptr>(nelem,nullptr,false);
+    return get_priv<T_noptr>(std::size_t(nelem),nullptr,false);
   }
 
   template<typename T>
-  T get(std::initializer_list<std::size_t> shape) const {
+  T get(std::initializer_list<SizeLike> shape) const {
     static_assert(std::is_pointer<T>::value,"only pointer types allowed here");
     plumed_assert(shape.size()<=maxrank);
     std::array<std::size_t,maxrank+1> shape_;
     typedef typename std::remove_pointer<T>::type T_noptr;
     unsigned j=0;
     for(auto i : shape) {
-      shape_[j]=i;
+      shape_[j]=i.size;
       j++;
     }
     shape_[j]=0;

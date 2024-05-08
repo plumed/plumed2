@@ -527,18 +527,18 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
       break;
       case cmd_read:
         CHECK_INIT(initialized,word);
-        if(val)readInputFile(val.get<const char*>());
+        if(val)readInputFile(val.getCString());
         else   readInputFile("plumed.dat");
         break;
       case cmd_readInputLine:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        readInputLine(val.get<const char*>());
+        readInputLine(val.getCString());
         break;
       case cmd_readInputLines:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        readInputLines(val.get<const char*>());
+        readInputLines(val.getCString());
         break;
       case cmd_clear:
       {
@@ -624,7 +624,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
       case cmd_setPlumedDat:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        plumedDat=val.get<const char*>();
+        plumedDat=val.getCString();
         break;
       case cmd_setMPIComm:
         CHECK_NOTINIT(initialized,word);
@@ -710,7 +710,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
       /* only used for testing */
       case cmd_throw:
         CHECK_NOTNULL(val,word);
-        testThrow(val.get<const char*>());
+        testThrow(val.getCString());
       /* ADDED WITH API==10 */
       case cmd_setNestedExceptions:
         CHECK_NOTNULL(val,word);
@@ -721,7 +721,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
       case cmd_setMDEngine:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        MDEngine=val.get<const char*>();
+        MDEngine=val.getCString();
         break;
       case cmd_setLog:
         CHECK_NOTINIT(initialized,word);
@@ -730,7 +730,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
       case cmd_setLogFile:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        log.open(val.get<const char*>());
+        log.open(val.getCString());
         break;
       // other commands that should be used after initialization:
       case cmd_setStopFlag:

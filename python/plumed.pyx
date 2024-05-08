@@ -273,7 +273,7 @@ cdef class Plumed:
             py_bytes = val.encode() + b'\x00'  # Explicitly add null terminator
             cval = py_bytes
             # assume sizeof(char)=1
-            self.cmd_low_level(ckey,cval,0, NULL,1 + type_integral + type_const_pointer + type_nocopy)
+            self.cmd_low_level(ckey,cval,len(py_bytes), NULL,1 + type_integral + type_const_pointer + type_nocopy)
             return
          if 'mpi4py' in sys.modules:
             import mpi4py.MPI as MPI

@@ -49,7 +49,7 @@ int main(int argc,char**argv) {
   try {
     PLMD::Plumed p;
     p.cmd("CLTool setArgc",&argc);
-    p.cmd("CLTool setArgv",argv);
+    p.cmd("CLTool setArgv",argv, {argc});
 #ifdef __PLUMED_HAS_MPI
     if(!nompi) {
       MPI_Comm comm;

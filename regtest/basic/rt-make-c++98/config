@@ -1,0 +1,4 @@
+type=make
+plumed_language=c++98
+# this is needed since we check the error messages in the report
+export PLUMED_STACK_TRACE=no
