@@ -98,13 +98,13 @@ void ECVlinear::registerKeywords(Keywords& keys)
 {
   ExpansionCVs::registerKeywords(keys);
   keys.remove("ARG");
-  keys.add("compulsory","ARG","the label of the Hamiltonian difference. \\f$\\Delta U\\f$");
+  keys.add("compulsory","ARG","the label of the Hamiltonian difference. Delta U");
   keys.add("compulsory","LAMBDA","0","the lambda at which the underlying simulation runs");
   keys.add("optional","LAMBDA_MIN","( default=0 ) the minimum of the lambda range");
   keys.add("optional","LAMBDA_MAX","( default=1 ) the maximum of the lambda range");
   keys.add("optional","LAMBDA_STEPS","uniformly place the lambda values, for a total of LAMBDA_STEPS");
   keys.add("optional","LAMBDA_SET_ALL","manually set all the lamdbas");
-  keys.addFlag("DIMENSIONLESS",false,"ARG is considered dimensionless rather than an energy, thus is not multiplied by \\f$\\beta\\f$");
+  keys.addFlag("DIMENSIONLESS",false,"ARG is considered dimensionless rather than an energy, thus is not multiplied by beta");
   keys.addFlag("GEOM_SPACING",false,"use geometrical spacing in lambda instead of linear spacing");
 }
 

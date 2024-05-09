@@ -786,24 +786,27 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
             valuefile.printf("\n  }"); continue;
           }
           ActionWithValue* av=dynamic_cast<ActionWithValue*>(pp.get());
-          if( !av || av->getNumberOfComponents()==0 ) continue;
-          if( firsta ) { valuefile.printf("  \"%s\" : {\n", av->getLabel().c_str() ); firsta=false; }
-          else valuefile.printf(",\n  \"%s\" : {\n", av->getLabel().c_str() );
-          bool firstv=true; Keywords keys; actionRegister().getKeywords( av->getName(), keys );
-          for(unsigned i=0; i<av->getNumberOfComponents(); ++i) {
-            Value* myval = av->copyOutput(i); std::string compname = myval->getName(), vtype, description;  std::size_t dot=compname.find(".");
-            if( myval->getRank()==0 ) vtype="scalar";
-            else if( myval->getRank()>0 && myval->hasDerivatives() ) vtype="grid";
-            else if( myval->getRank()==1 ) vtype="vector";
-            else if( myval->getRank()==2 ) vtype="matrix";
-            else plumed_merror("unknown type for value " + myval->getName() );
-            if( dot!=std::string::npos ) {
-              std::string cname = compname.substr(dot+1); description = av->getOutputComponentDescription( cname, keys );
-            } else description = keys.getOutputComponentDescription(".#!value");
-            if( firstv ) { valuefile.printf("    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), vtype.c_str(), description.c_str() ); firstv=false; }
-            else valuefile.printf(",\n    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), vtype.c_str(), description.c_str() );
+          if( av && av->getNumberOfComponents()>0 ) {
+            if( firsta ) { valuefile.printf("  \"%s\" : {\n", av->getLabel().c_str() ); firsta=false; }
+            else valuefile.printf(",\n  \"%s\" : {\n", av->getLabel().c_str() );
+            bool firstv=true; Keywords keys; actionRegister().getKeywords( av->getName(), keys );
+            for(unsigned i=0; i<av->getNumberOfComponents(); ++i) {
+              Value* myval = av->copyOutput(i); std::string compname = myval->getName(), vtype, description;  std::size_t dot=compname.find(".");
+              if( myval->getRank()==0 ) vtype="scalar";
+              else if( myval->getRank()>0 && myval->hasDerivatives() ) vtype="grid";
+              else if( myval->getRank()==1 ) vtype="vector";
+              else if( myval->getRank()==2 ) vtype="matrix";
+              else plumed_merror("unknown type for value " + myval->getName() );
+              if( dot!=std::string::npos ) {
+                std::string cname = compname.substr(dot+1); description = av->getOutputComponentDescription( cname, keys );
+              } else description = keys.getOutputComponentDescription(".#!value");
+              if( description.find("\\")!=std::string::npos ) error("found invalid backslash character in documentation for component " + compname + " in action " + av->getName() + " with label " + av->getLabel() );
+              if( firstv ) { valuefile.printf("    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), vtype.c_str(), description.c_str() ); firstv=false; }
+              else valuefile.printf(",\n    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), vtype.c_str(), description.c_str() );
+            }
+            valuefile.printf("\n  }");
           }
-          valuefile.printf("\n  }");
+          ActionShortcut* as=pp->castToActionShortcut();
         }
         valuefile.printf("\n}\n"); valuefile.close();
       }

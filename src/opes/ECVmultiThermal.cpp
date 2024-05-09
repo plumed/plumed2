@@ -104,7 +104,7 @@ void ECVmultiThermal::registerKeywords(Keywords& keys)
 {
   ExpansionCVs::registerKeywords(keys);
   keys.remove("ARG");
-  keys.add("compulsory","ARG","the label of the internal energy of the system. If volume is fixed it is calculated by the \\ref ENERGY colvar");
+  keys.add("compulsory","ARG","the label of the internal energy of the system. If volume is fixed it is calculated by the ENERGY colvar");
   keys.add("optional","TEMP_MIN","the minimum of the temperature range");
   keys.add("optional","TEMP_MAX","the maximum of the temperature range");
   keys.add("optional","TEMP_STEPS","the number of steps in temperature");

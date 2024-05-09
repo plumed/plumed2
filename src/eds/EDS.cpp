@@ -287,7 +287,7 @@ void EDS::registerKeywords(Keywords &keys)
            "CENTER_ARG is for calculated centers, e.g. from a CV or analysis. ");
 
   keys.add("optional", "PERIOD", "Steps over which to adjust bias for adaptive or ramping");
-  keys.add("compulsory", "RANGE", "25.0", "The (starting) maximum increase in coupling constant per PERIOD (in \\f$k_B T\\f$/[BIAS_SCALE unit]) for each CV biased");
+  keys.add("compulsory", "RANGE", "25.0", "The (starting) maximum increase in coupling constant per PERIOD (in k_B T/[BIAS_SCALE unit]) for each CV biased");
   keys.add("compulsory", "SEED", "0", "Seed for random order of changing bias");
   keys.add("compulsory", "INIT", "0", "Starting value for coupling constant");
   keys.add("compulsory", "FIXED", "0", "Fixed target values for coupling constant. Non-adaptive.");

@@ -111,7 +111,7 @@ void ECVmultiThermalBaric::registerKeywords(Keywords& keys)
 {
   ExpansionCVs::registerKeywords(keys);
   keys.remove("ARG");
-  keys.add("compulsory","ARG","the labels of the potential energy and of the volume of the system. You can calculate them with \\ref ENERGY and \\ref VOLUME respectively");
+  keys.add("compulsory","ARG","the labels of the potential energy and of the volume of the system. You can calculate them with ENERGY and VOLUME respectively");
 //temperature
   keys.add("optional","TEMP_MIN","the minimum of the temperature range");
   keys.add("optional","TEMP_MAX","the maximum of the temperature range");

@@ -127,16 +127,16 @@ void MovingRestraint::registerKeywords( Keywords& keys ) {
   keys.use("ARG");
   keys.add("compulsory","VERSE","B","Tells plumed whether the restraint is only acting for CV larger (U) or smaller (L) than "
            "the restraint or whether it is acting on both sides (B)");
-  keys.add("numbered","STEP","This keyword appears multiple times as STEP\\f$x\\f$ with x=0,1,2,...,n. Each value given represents "
-           "the MD step at which the restraint parameters take the values KAPPA\\f$x\\f$ and AT\\f$x\\f$.");
+  keys.add("numbered","STEP","This keyword appears multiple times as STEPx with x=0,1,2,...,n. Each value given represents "
+           "the MD step at which the restraint parameters take the values KAPPAx and ATx.");
   keys.reset_style("STEP","compulsory");
-  keys.add("numbered","AT","AT\\f$x\\f$ is equal to the position of the restraint at time STEP\\f$x\\f$. For intermediate times this parameter "
-           "is linearly interpolated. If no AT\\f$x\\f$ is specified for STEP\\f$x\\f$ then the values of AT are kept constant "
-           "during the interval of time between STEP\\f$x-1\\f$ and STEP\\f$x\\f$.");
+  keys.add("numbered","AT","ATx is equal to the position of the restraint at time STEPx. For intermediate times this parameter "
+           "is linearly interpolated. If no ATx is specified for STEPx then the values of AT are kept constant "
+           "during the interval of time between STEP(x-1) and STEPx.");
   keys.reset_style("AT","compulsory");
-  keys.add("numbered","KAPPA","KAPPA\\f$x\\f$ is equal to the value of the force constants at time STEP\\f$x\\f$. For intermediate times this "
-           "parameter is linearly interpolated.  If no KAPPA\\f$x\\f$ is specified for STEP\\f$x\\f$ then the values of KAPPA\\f$x\\f$ "
-           "are kept constant during the interval of time between STEP\\f$x-1\\f$ and STEP\\f$x\\f$.");
+  keys.add("numbered","KAPPA","KAPPAx is equal to the value of the force constants at time STEPx. For intermediate times this "
+           "parameter is linearly interpolated.  If no KAPPAx is specified for STEPx then the values of KAPPAx "
+           "are kept constant during the interval of time between STEP(x-1) and STEPx.");
   keys.reset_style("KAPPA","compulsory");
   keys.addOutputComponent("work","default","the total work performed changing this restraint");
   keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");

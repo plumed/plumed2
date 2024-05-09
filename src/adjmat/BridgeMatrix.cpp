@@ -74,10 +74,10 @@ void BridgeMatrix::registerKeywords( Keywords& keys ) {
   AdjacencyMatrixBase::registerKeywords( keys );
   keys.add("atoms","BRIDGING_ATOMS","The list of atoms that can form the bridge between the two interesting parts "
            "of the structure.");
-  keys.add("optional","SWITCH","The parameters of the two \\ref switchingfunction in the above formula");
-  keys.add("optional","SWITCHA","The \\ref switchingfunction on the distance between bridging atoms and the atoms in "
+  keys.add("optional","SWITCH","The parameters of the two switchingfunction in the above formula");
+  keys.add("optional","SWITCHA","The switchingfunction on the distance between bridging atoms and the atoms in "
            "group A");
-  keys.add("optional","SWITCHB","The \\ref switchingfunction on the distance between the bridging atoms and the atoms in "
+  keys.add("optional","SWITCHB","The switchingfunction on the distance between the bridging atoms and the atoms in "
            "group B");
 }
 

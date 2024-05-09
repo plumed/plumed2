@@ -522,7 +522,7 @@ void MetaD::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
   keys.addOutputComponent("rbias","CALC_RCT","the instantaneous value of the bias normalized using the c(t) reweighting factor [rbias=bias-rct]."
                           "This component can be used to obtain a reweighted histogram.");
-  keys.addOutputComponent("rct","CALC_RCT","the reweighting factor \\f$c(t)\\f$.");
+  keys.addOutputComponent("rct","CALC_RCT","the reweighting factor c(t).");
   keys.addOutputComponent("work","CALC_WORK","accumulator for work");
   keys.addOutputComponent("acc","ACCELERATION","the metadynamics acceleration factor");
   keys.addOutputComponent("maxbias", "CALC_MAX_BIAS", "the maximum of the metadynamics V(s, t)");
@@ -548,8 +548,8 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.add("optional","TAU","in well tempered metadynamics, sets height to (k_B Delta T*pace*timestep)/tau");
   keys.addFlag("CALC_RCT",false,"calculate the c(t) reweighting factor and use that to obtain the normalized bias [rbias=bias-rct]."
                "This method is not compatible with metadynamics not on a grid.");
-  keys.add("optional","RCT_USTRIDE","the update stride for calculating the \\f$c(t)\\f$ reweighting factor."
-           "The default 1, so \\f$c(t)\\f$ is updated every time the bias is updated.");
+  keys.add("optional","RCT_USTRIDE","the update stride for calculating the c(t) reweighting factor."
+           "The default 1, so c(t) is updated every time the bias is updated.");
   keys.add("optional","GRID_MIN","the lower bounds for the grid");
   keys.add("optional","GRID_MAX","the upper bounds for the grid");
   keys.add("optional","GRID_BIN","the number of bins for the grid");

@@ -112,7 +112,7 @@ void Read::registerKeywords(Keywords& keys) {
   ActionPilot::registerKeywords(keys);
   ActionWithValue::registerKeywords(keys);
   keys.add("compulsory","STRIDE","1","the frequency with which the file should be read.");
-  keys.add("compulsory","EVERY","1","only read every \\f$n\\f$th line of the colvar file. This should be used if the colvar was written more frequently than the trajectory.");
+  keys.add("compulsory","EVERY","1","only read every nth line of the colvar file. This should be used if the colvar was written more frequently than the trajectory.");
   keys.add("compulsory","VALUES","the values to read from the file");
   keys.add("compulsory","FILE","the name of the file from which to read these quantities");
   keys.addFlag("IGNORE_TIME",false,"ignore the time in the colvar file. When this flag is not present read will be quite strict "

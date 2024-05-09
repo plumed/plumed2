@@ -118,8 +118,9 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
       if( desc.find("default=")!=std::string::npos ) {
         std::size_t brac=desc.find_first_of(")"); desc = desc.substr(brac+1);
       }
-      std::size_t dot=desc.find_first_of(".");
-      std::cout<<"       \""<<keys.getKeyword(j)<<"\" : { \"type\": \""<<keys.getStyle(keys.getKeyword(j))<<"\", \"description\": \""<<desc.substr(0,dot)<<"\", \"multiple\": "<<keys.numbered( keys.getKeyword(j) )<<"}";
+      std::size_t dot=desc.find_first_of("."); std::string mydescrip = desc.substr(0,dot);
+      if( mydescrip.find("\\")!=std::string::npos ) error("found invalid backslash character documentation for keyword " + keys.getKeyword(j) + " in action " + action_names[i] );
+      std::cout<<"       \""<<keys.getKeyword(j)<<"\" : { \"type\": \""<<keys.getStyle(keys.getKeyword(j))<<"\", \"description\": \""<<mydescrip<<"\", \"multiple\": "<<keys.numbered( keys.getKeyword(j) )<<"}";
       if( j==keys.size()-1 && !keys.exists("HAS_VALUES") ) std::cout<<std::endl; else std::cout<<","<<std::endl;
     }
     if( keys.exists("HAS_VALUES") ) {
@@ -134,8 +135,10 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
         std::string compname=components[k]; if( components[k]==".#!value" ) { hasvalue=false; compname="value"; }
         std::cout<<"         \""<<compname<<"\" : {"<<std::endl;
         std::cout<<"           \"flag\": \""<<keys.getOutputComponentFlag( components[k] )<<"\","<<std::endl;
-        std::string desc=keys.getOutputComponentDescription( components[k] ); std::size_t dot=desc.find_first_of(".");
-        std::cout<<"           \"description\": \""<<desc.substr(0,dot)<<"\""<<std::endl;
+        std::string desc=keys.getOutputComponentDescription( components[k] );
+        std::size_t dot=desc.find_first_of("."); std::string mydescrip = desc.substr(0,dot);
+        if( mydescrip.find("\\")!=std::string::npos ) error("found invalid backslash character documentation for output component " + compname + " in action " + action_names[i] );
+        std::cout<<"           \"description\": \""<<mydescrip<<"\""<<std::endl;
         if( k==components.size()-1 ) std::cout<<"         }"<<std::endl; else std::cout<<"         },"<<std::endl;
       }
       if( hasvalue ) {

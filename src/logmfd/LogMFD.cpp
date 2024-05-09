@@ -463,7 +463,7 @@ void LogMFD::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","INTERVAL",
-           "Period of MD steps (\\f$N_m\\f$) to update fictitious dynamical variables." );
+           "Period of MD steps (N_m) to update fictitious dynamical variables." );
   keys.add("compulsory","DELTA_T",
            "Time step for the fictitious dynamical variables (DELTA_T=1 often works)." );
   keys.add("compulsory","THERMOSTAT",
@@ -513,17 +513,17 @@ void LogMFD::registerKeywords(Keywords& keys) {
            "If not provided, it will be taken as 0." );
   keys.add("optional","META",
            "Mass of eta variable. "
-           "If not provided, it will be taken as \\f$N*kb*T*100*100\\f$." );
+           "If not provided, it will be taken as N*kb*T*100*100." );
 
   keys.add("compulsory","FLOG",
            "The initial free energy value in the LogMFD/PD run."
            "The origin of the free energy profile is adjusted by FLOG to "
-           "realize \\f$F({\\bf X}(t)) > 0\\f$ at any \\f${\\bf X}(t)\\f$, "
+           "realize F({X}(t)) > 0 at any X(t), "
            "resulting in enhanced barrier-crossing. "
-           "(The value of \\f$H_{\\rm log}\\f$ is automatically "
+           "(The value of H_log is automatically "
            "set according to FLOG). "
-           "In fact, \\f$F({\\bf X}(t))\\f$ is correctly "
-           "estimated in PLUMED even when \\f$F({\\bf X}(t)) < 0\\f$ in "
+           "In fact, F({X}(t)) is correctly "
+           "estimated in PLUMED even when F({X}(t)) < 0 in "
            "the LogMFD/PD run." );
 
   keys.add("optional","WORK",
