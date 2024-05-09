@@ -115,7 +115,7 @@ position_linear_proj::position_linear_proj(const ActionOptions&ao):
   serial(false),
   proj(0),
   prec_f_name(""),
-  ref_f_name(""),   
+  ref_f_name(""),
   coeffs_f_name("")   // Note! no comma here in the last line.
 {
   parseFlag("SERIAL",serial);
@@ -136,80 +136,80 @@ position_linear_proj::position_linear_proj(const ActionOptions&ao):
 
   if(pbc) log.printf("\n using periodic boundary conditions\n");
   else log.printf("\n without periodic boundary conditions\n");
-  
+
   addValueWithDerivatives(); setNotPeriodic();
 
   requestAtoms(atom_list);
 
   // call the readinputs() function here
   readinputs();
-  
+
 }
 
 // read inputs function
 void position_linear_proj::readinputs()
 {
-	unsigned N=getNumberOfAtoms();
-	// read ref coords
-	in_.open(ref_f_name);
+  unsigned N=getNumberOfAtoms();
+  // read ref coords
+  in_.open(ref_f_name);
 
-	ref_str.resize(N,3); prec.resize(N,N);
-	derv_numeric.resize(N,3);
+  ref_str.resize(N,3); prec.resize(N,N);
+  derv_numeric.resize(N,3);
 
-	std::string line_, val_;
-	unsigned c_=0;
+  std::string line_, val_;
+  unsigned c_=0;
 
-	while (c_ < N)
-	{
-		in_.getline(line_);
-		std::vector<std::string> items_;
-		std::stringstream check_(line_);
+  while (c_ < N)
+  {
+    in_.getline(line_);
+    std::vector<std::string> items_;
+    std::stringstream check_(line_);
 
-		while(std::getline(check_, val_, ' ')){ items_.push_back(val_); }
-		for(int i=0; i<3; ++i){ ref_str(c_,i) = std::stold(items_[i]); }
-		c_ += 1;
-	}
-	in_.close();
+    while(std::getline(check_, val_, ' ')) { items_.push_back(val_); }
+    for(int i=0; i<3; ++i) { ref_str(c_,i) = std::stold(items_[i]); }
+    c_ += 1;
+  }
+  in_.close();
 
-	//read precision
-	in_.open(prec_f_name);
-	
-	std::string line, val;
-	unsigned int c = 0;
-	
-	while(c < N)
-	{
-		in_.getline(line);
-		
-		// vector for storing the objects
-		std::vector<std::string> items;
+  //read precision
+  in_.open(prec_f_name);
 
-                // stringstream helps to treat a string like an ifstream!
-		std::stringstream check(line);
+  std::string line, val;
+  unsigned int c = 0;
 
-                while (std::getline(check, val, ' '))
-                {
-                        items.push_back(val);
-                }
+  while(c < N)
+  {
+    in_.getline(line);
 
-                for(unsigned int i=0; i<N; ++i)
-                {
-                        prec(c, i) = std::stold(items[i]);
-                }
+    // vector for storing the objects
+    std::vector<std::string> items;
 
-                c += 1;
+    // stringstream helps to treat a string like an ifstream!
+    std::stringstream check(line);
 
-	}
-	in_.close();
+    while (std::getline(check, val, ' '))
+    {
+      items.push_back(val);
+    }
 
-	// read in the linear coeffs
-	in_.open(coeffs_f_name);
-	unsigned n_=0;
-	std::string l_; 
-	while (n_ < N*3){ in_.getline(l_); linear_coeffs.push_back(std::stod(l_)); n_ += 1; }
-	linear_coeffs.resize(N*3);
+    for(unsigned int i=0; i<N; ++i)
+    {
+      prec(c, i) = std::stold(items[i]);
+    }
 
-	in_.close();
+    c += 1;
+
+  }
+  in_.close();
+
+  // read in the linear coeffs
+  in_.open(coeffs_f_name);
+  unsigned n_=0;
+  std::string l_;
+  while (n_ < N*3) { in_.getline(l_); linear_coeffs.push_back(std::stod(l_)); n_ += 1; }
+  linear_coeffs.resize(N*3);
+
+  in_.close();
 
 }
 
@@ -217,59 +217,59 @@ void position_linear_proj::readinputs()
 
 double position_linear_proj::determinant(int n, const std::vector<std::vector<double>>* B)
 {
-   	
-   std::vector<std::vector<double>> A(n, std::vector<double>(n, 0));
-   // make a copy first!
-   for(int i=0; i<n; ++i){
-	   for(int j=0; j<n; ++j){A[i][j] = (*B)[i][j];}
-   }
-   
 
-   //  It calculates determinant of a matrix using partial pivoting.
+  std::vector<std::vector<double>> A(n, std::vector<double>(n, 0));
+  // make a copy first!
+  for(int i=0; i<n; ++i) {
+    for(int j=0; j<n; ++j) {A[i][j] = (*B)[i][j];}
+  }
 
-   double det = 1;
 
-   // Row operations for i = 0, ,,,, n - 2 (n-1 not needed)
-   for ( int i = 0; i < n - 1; i++ )
-   {
-      // Partial pivot: find row r below with largest element in column i
-      int r = i;
-      double maxA = std::abs( A[i][i] );
-      for ( int k = i + 1; k < n; k++ )
+  //  It calculates determinant of a matrix using partial pivoting.
+
+  double det = 1;
+
+  // Row operations for i = 0, ,,,, n - 2 (n-1 not needed)
+  for ( int i = 0; i < n - 1; i++ )
+  {
+    // Partial pivot: find row r below with largest element in column i
+    int r = i;
+    double maxA = std::abs( A[i][i] );
+    for ( int k = i + 1; k < n; k++ )
+    {
+      double val = std::abs( A[k][i] );
+      if ( val > maxA )
       {
-         double val = std::abs( A[k][i] );
-         if ( val > maxA )
-         {
-            r = k;
-            maxA = val;
-         }
+        r = k;
+        maxA = val;
       }
-      if ( r != i )
-      {
-         for ( int j = i; j < n; j++ ) std::swap( A[i][j], A[r][j] );
-         det = -det;
-      }
+    }
+    if ( r != i )
+    {
+      for ( int j = i; j < n; j++ ) std::swap( A[i][j], A[r][j] );
+      det = -det;
+    }
 
-      // Row operations to make upper-triangular
-      double pivot = A[i][i];
-      if (std::abs( pivot ) < SMALL ) return 0.0;              // Singular matrix
+    // Row operations to make upper-triangular
+    double pivot = A[i][i];
+    if (std::abs( pivot ) < SMALL ) return 0.0;              // Singular matrix
 
-      for ( int r = i + 1; r < n; r++ )                    // On lower rows
-      {
-         double multiple = A[r][i] / pivot;                // Multiple of row i to clear element in ith column
-         for ( int j = i; j < n; j++ ) A[r][j] -= multiple * A[i][j];
-      }
-      det *= pivot;                                        // Determinant is product of diagonal
-   }
+    for ( int r = i + 1; r < n; r++ )                    // On lower rows
+    {
+      double multiple = A[r][i] / pivot;                // Multiple of row i to clear element in ith column
+      for ( int j = i; j < n; j++ ) A[r][j] -= multiple * A[i][j];
+    }
+    det *= pivot;                                        // Determinant is product of diagonal
+  }
 
-   det *= A[n-1][n-1];
+  det *= A[n-1][n-1];
 
-   return det;
+  return det;
 }
 
-// kabsch rotation 
+// kabsch rotation
 void position_linear_proj::kabsch_rot_mat() {
-	
+
   unsigned N=getNumberOfAtoms();
 
   Matrix<double> mobile_str_T(3,N);
@@ -323,24 +323,24 @@ void position_linear_proj::kabsch_rot_mat() {
   std::vector<std::vector<double>> U_(nrows, std::vector<double>(nrows,0));
   std::vector<std::vector<double>> VT_(ncols, std::vector<double>(ncols,0));
 
-  int  c=0; 
-  
-  for(int i=0; i<nrows; ++i){ for(int j=0; j<nrows; ++j){ U_[j][i] = U[c]; c += 1;} } c = 0;  // note! its [j][i] not [i][j]
-  for(int i=0; i<ncols; ++i){ for(int j=0; j<ncols; ++j){ VT_[j][i] = VT[c]; c += 1;} } c=0; // note! its [j][i] not [i][j]
-  
+  int  c=0;
+
+  for(int i=0; i<nrows; ++i) { for(int j=0; j<nrows; ++j) { U_[j][i] = U[c]; c += 1;} } c = 0; // note! its [j][i] not [i][j]
+  for(int i=0; i<ncols; ++i) { for(int j=0; j<ncols; ++j) { VT_[j][i] = VT[c]; c += 1;} } c=0; // note! its [j][i] not [i][j]
+
 
   // calculate determinants
   double det_u = determinant(nrows, &U_);
   double det_vt = determinant(ncols, &VT_);
-  
+
   // check!
-  if (det_u * det_vt < 0.0){ for(int i=0; i<nrows; ++i){U_[i][nrows-1] *= -1;} }
+  if (det_u * det_vt < 0.0) { for(int i=0; i<nrows; ++i) {U_[i][nrows-1] *= -1;} }
 
 
   //Matrix<double> rotation(3,3);
   rotation.resize(3,3);
   Matrix<double> u(3,3), vt(3,3);
-  for(int i=0; i<3; ++i){ for(int j=0; j<3; ++j){ u(i,j)=U_[i][j]; vt(i,j)=VT_[i][j]; } }
+  for(int i=0; i<3; ++i) { for(int j=0; j<3; ++j) { u(i,j)=U_[i][j]; vt(i,j)=VT_[i][j]; } }
 
   // get rotation matrix
   mult(u, vt, rotation);
@@ -350,9 +350,9 @@ void position_linear_proj::kabsch_rot_mat() {
 
 // calculates linear projection
 double position_linear_proj::cal_position_linear_proj() {
-  
+
   unsigned N=getNumberOfAtoms();
-  
+
   Matrix<double> rotated_obj(N,3);
   // rotate the object
   mult(mobile_str, rotation, rotated_obj);
@@ -360,55 +360,55 @@ double position_linear_proj::cal_position_linear_proj() {
   // compute the displacement
   std::vector<double> disp(N*3);
   unsigned c=0;
-  for(unsigned int i=0; i<N; ++i){ for(int j=0; j<3; ++j) { disp[c] = (rotated_obj(i,j)-ref_str(i,j)); c+=1;} }
-  
+  for(unsigned int i=0; i<N; ++i) { for(int j=0; j<3; ++j) { disp[c] = (rotated_obj(i,j)-ref_str(i,j)); c+=1;} }
+
   //double proj_val = dotProduct(disp, linear_coeffs);
   double proj_val = 0.0;
-  for(unsigned int i=0; i<N*3; ++i){ proj_val += (linear_coeffs[i]*disp[i]);}
+  for(unsigned int i=0; i<N*3; ++i) { proj_val += (linear_coeffs[i]*disp[i]);}
 
   return proj_val;
 }
 
 // numeric gradient
-void position_linear_proj::numeric_grad(){
-        // This function performs numerical derivative.
-	unsigned N=getNumberOfAtoms();
+void position_linear_proj::numeric_grad() {
+  // This function performs numerical derivative.
+  unsigned N=getNumberOfAtoms();
 
-	unsigned stride;
-	unsigned rank;
-	if(serial) {
-		// when using components the parallelisation do not work
-		stride=1;
-		rank=0;
-	} else {
-		stride=comm.Get_size();
-		rank=comm.Get_rank();
-	}
+  unsigned stride;
+  unsigned rank;
+  if(serial) {
+    // when using components the parallelisation do not work
+    stride=1;
+    rank=0;
+  } else {
+    stride=comm.Get_size();
+    rank=comm.Get_rank();
+  }
 
-	for(unsigned i=rank; i<N; i+=stride){
-		for (unsigned j=0; j<3; ++j){
+  for(unsigned i=rank; i<N; i+=stride) {
+    for (unsigned j=0; j<3; ++j) {
 
-			mobile_str(i,j) += delta;
-			kabsch_rot_mat();
-			derv_numeric(i,j) = ((cal_position_linear_proj() - proj)/delta);
+      mobile_str(i,j) += delta;
+      kabsch_rot_mat();
+      derv_numeric(i,j) = ((cal_position_linear_proj() - proj)/delta);
 
-			mobile_str(i,j) -= delta;
-		}
+      mobile_str(i,j) -= delta;
+    }
 
-	}
+  }
 
-	if(!serial) {
-		if(!derv_numeric.getVector().empty()) comm.Sum(&derv_numeric(0,0), derv_numeric.getVector().size());
-	}
-    
+  if(!serial) {
+    if(!derv_numeric.getVector().empty()) comm.Sum(&derv_numeric(0,0), derv_numeric.getVector().size());
+  }
 
-		for(unsigned i=0; i<N; ++i){
-			Vector vi(derv_numeric(i,0), derv_numeric(i,1), derv_numeric(i,2) );
-			setAtomsDerivatives(i, vi);
-		}
-	
-	// clear the matrix (very important step!!)
-	derv_numeric *= 0;
+
+  for(unsigned i=0; i<N; ++i) {
+    Vector vi(derv_numeric(i,0), derv_numeric(i,1), derv_numeric(i,2) );
+    setAtomsDerivatives(i, vi);
+  }
+
+  // clear the matrix (very important step!!)
+  derv_numeric *= 0;
 }
 
 
@@ -419,36 +419,36 @@ void position_linear_proj::calculate() {
   unsigned N=getNumberOfAtoms();
 
   mobile_str.resize(N,3);
-  
+
   // load the mobile str
   for(unsigned int i=0; i<N; ++i) {
-	  Vector pos=getPosition(i);  // const PLMD::Vector
-	  for(unsigned j=0; j<3; ++j){
-		  mobile_str(i,j) = pos[j];
-	  }
+    Vector pos=getPosition(i);  // const PLMD::Vector
+    for(unsigned j=0; j<3; ++j) {
+      mobile_str(i,j) = pos[j];
+    }
   }
 
   // translating the structure to center of geometry
   double center_of_geometry[3]= {0.0, 0.0, 0.0};
-  
+
   for(unsigned int i=0; i<N; ++i)
   {
-	  center_of_geometry[0] += mobile_str(i,0); center_of_geometry[1] += mobile_str(i,1); center_of_geometry[2] += mobile_str(i,2);
+    center_of_geometry[0] += mobile_str(i,0); center_of_geometry[1] += mobile_str(i,1); center_of_geometry[2] += mobile_str(i,2);
   }
 
   for(unsigned int i=0; i<N; ++i)
-  { 
-	  for(int j=0; j<3; ++j) { mobile_str(i,j) -= (center_of_geometry[j]/N); } 
+  {
+    for(int j=0; j<3; ++j) { mobile_str(i,j) -= (center_of_geometry[j]/N); }
   }
 
   kabsch_rot_mat();
   proj = cal_position_linear_proj();
-  
+
   numeric_grad();
   setBoxDerivativesNoPbc();
   setValue(proj);
 
-  
+
 }
 
 }

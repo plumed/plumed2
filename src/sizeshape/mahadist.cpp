@@ -79,7 +79,7 @@ public:
   double determinant(int n, const std::vector<std::vector<double>>* B);
   void kabsch_rot_mat();   		// gives rotation matrix
   double cal_maha_dist();    		// calculates the mahalanobis distance
-  void grad_maha(double);        	// calculates the gradient  
+  void grad_maha(double);        	// calculates the gradient
   void numeric_maha();        		// calculates the numeric gradient
   // active methods:
   void calculate() override;
@@ -107,7 +107,7 @@ position_maha_dist::position_maha_dist(const ActionOptions&ao):
   parseAtomList("GROUP",atom_list);
   parse("REFERENCE", ref_f_name);
   parse("PRECISION", prec_f_name);
-  
+
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   parseFlag("SQUARED",squared);
@@ -124,126 +124,126 @@ position_maha_dist::position_maha_dist(const ActionOptions&ao):
 
   if(pbc) log.printf("\n using periodic boundary conditions\n");
   else log.printf("\n without periodic boundary conditions\n");
-  
+
   addValueWithDerivatives(); setNotPeriodic();
 
   requestAtoms(atom_list);
 
   // call the readinputs() function here
   readinputs();
-  
+
 }
 
 // read inputs function
 void position_maha_dist::readinputs()
 {
-	unsigned N=getNumberOfAtoms();
-	// read ref coords
-	in_.open(ref_f_name);
+  unsigned N=getNumberOfAtoms();
+  // read ref coords
+  in_.open(ref_f_name);
 
-	ref_str.resize(N,3); prec.resize(N,N);
+  ref_str.resize(N,3); prec.resize(N,N);
 
-	std::string line_, val_;
-	unsigned c_=0;
+  std::string line_, val_;
+  unsigned c_=0;
 
-	while (c_ < N)
-	{
-		in_.getline(line_);
-		std::vector<std::string> items_;
-		std::stringstream check_(line_);
-		
-		while(std::getline(check_, val_, ' ')){ items_.push_back(val_); }
-		for(int i=0; i<3; ++i){ ref_str(c_,i) = std::stold(items_[i]); }
-		c_ += 1;
-	}
-	in_.close();
+  while (c_ < N)
+  {
+    in_.getline(line_);
+    std::vector<std::string> items_;
+    std::stringstream check_(line_);
 
-	//read precision
-	in_.open(prec_f_name);
-	
-	std::string line, val;
-	unsigned int c = 0;
-	
-	while(c < N)
-	{
-		in_.getline(line);
-		
-		// vector for storing the objects
-		std::vector<std::string> items;
+    while(std::getline(check_, val_, ' ')) { items_.push_back(val_); }
+    for(int i=0; i<3; ++i) { ref_str(c_,i) = std::stold(items_[i]); }
+    c_ += 1;
+  }
+  in_.close();
 
-                // stringstream helps to treat a string like an ifstream!
-		std::stringstream check(line);
+  //read precision
+  in_.open(prec_f_name);
 
-                while (std::getline(check, val, ' '))
-                {
-                        items.push_back(val);
-                }
+  std::string line, val;
+  unsigned int c = 0;
 
-                for(unsigned int i=0; i<N; ++i)
-                {
-                        prec(c, i) = std::stold(items[i]);
-                }
+  while(c < N)
+  {
+    in_.getline(line);
 
-                c += 1;
+    // vector for storing the objects
+    std::vector<std::string> items;
 
-	}
-	in_.close();
+    // stringstream helps to treat a string like an ifstream!
+    std::stringstream check(line);
+
+    while (std::getline(check, val, ' '))
+    {
+      items.push_back(val);
+    }
+
+    for(unsigned int i=0; i<N; ++i)
+    {
+      prec(c, i) = std::stold(items[i]);
+    }
+
+    c += 1;
+
+  }
+  in_.close();
 }
 
 
 double position_maha_dist::determinant(int n, const std::vector<std::vector<double>>* B)
 {
 
-   std::vector<std::vector<double>> A(n, std::vector<double>(n, 0));
-   // make a copy first!
-   for(int i=0; i<n; ++i){
-           for(int j=0; j<n; ++j){A[i][j] = (*B)[i][j];}
-   }
+  std::vector<std::vector<double>> A(n, std::vector<double>(n, 0));
+  // make a copy first!
+  for(int i=0; i<n; ++i) {
+    for(int j=0; j<n; ++j) {A[i][j] = (*B)[i][j];}
+  }
 
 
-   //  It calculates determinant of a matrix using partial pivoting.
+  //  It calculates determinant of a matrix using partial pivoting.
 
-   double det = 1;
+  double det = 1;
 
-   // Row operations for i = 0, ,,,, n - 2 (n-1 not needed)
-   for ( int i = 0; i < n - 1; i++ )
-   {
-      // Partial pivot: find row r below with largest element in column i
-      int r = i;
-      double maxA = std::abs( A[i][i] );
-      for ( int k = i + 1; k < n; k++ )
+  // Row operations for i = 0, ,,,, n - 2 (n-1 not needed)
+  for ( int i = 0; i < n - 1; i++ )
+  {
+    // Partial pivot: find row r below with largest element in column i
+    int r = i;
+    double maxA = std::abs( A[i][i] );
+    for ( int k = i + 1; k < n; k++ )
+    {
+      double val = std::abs( A[k][i] );
+      if ( val > maxA )
       {
-         double val = std::abs( A[k][i] );
-         if ( val > maxA )
-         {
-            r = k;
-            maxA = val;
-         }
+        r = k;
+        maxA = val;
       }
-      if ( r != i )
-      {
-         for ( int j = i; j < n; j++ ) std::swap( A[i][j], A[r][j] );
-         det = -det;
-      }
+    }
+    if ( r != i )
+    {
+      for ( int j = i; j < n; j++ ) std::swap( A[i][j], A[r][j] );
+      det = -det;
+    }
 
-      // Row operations to make upper-triangular
-      double pivot = A[i][i];
-      if (std::abs( pivot ) < SMALL ) return 0.0;              // Singular matrix
+    // Row operations to make upper-triangular
+    double pivot = A[i][i];
+    if (std::abs( pivot ) < SMALL ) return 0.0;              // Singular matrix
 
-      for ( int r = i + 1; r < n; r++ )                    // On lower rows
-      {
-         double multiple = A[r][i] / pivot;                // Multiple of row i to clear element in ith column
-         for ( int j = i; j < n; j++ ) A[r][j] -= multiple * A[i][j];
-      }
-      det *= pivot;                                        // Determinant is product of diagonal
-   }
+    for ( int r = i + 1; r < n; r++ )                    // On lower rows
+    {
+      double multiple = A[r][i] / pivot;                // Multiple of row i to clear element in ith column
+      for ( int j = i; j < n; j++ ) A[r][j] -= multiple * A[i][j];
+    }
+    det *= pivot;                                        // Determinant is product of diagonal
+  }
 
-   det *= A[n-1][n-1];
+  det *= A[n-1][n-1];
 
-   return det;
+  return det;
 }
 
-// kabsch rotation 
+// kabsch rotation
 void position_maha_dist::kabsch_rot_mat() {
 
   unsigned N=getNumberOfAtoms();
@@ -301,8 +301,8 @@ void position_maha_dist::kabsch_rot_mat() {
 
   int  c=0;
 
-  for(int i=0; i<nrows; ++i){ for(int j=0; j<nrows; ++j){ U_[j][i] = U[c]; c += 1;} } c = 0;  // note! its [j][i] not [i][j]
-  for(int i=0; i<ncols; ++i){ for(int j=0; j<ncols; ++j){ VT_[j][i] = VT[c]; c += 1;} } c=0; // note! its [j][i] not [i][j]
+  for(int i=0; i<nrows; ++i) { for(int j=0; j<nrows; ++j) { U_[j][i] = U[c]; c += 1;} } c = 0; // note! its [j][i] not [i][j]
+  for(int i=0; i<ncols; ++i) { for(int j=0; j<ncols; ++j) { VT_[j][i] = VT[c]; c += 1;} } c=0; // note! its [j][i] not [i][j]
 
 
   // calculate determinants
@@ -310,13 +310,13 @@ void position_maha_dist::kabsch_rot_mat() {
   double det_vt = determinant(ncols, &VT_);
 
   // check!
-  if (det_u * det_vt < 0.0){ for(int i=0; i<nrows; ++i){U_[i][nrows-1] *= -1;} }
+  if (det_u * det_vt < 0.0) { for(int i=0; i<nrows; ++i) {U_[i][nrows-1] *= -1;} }
 
 
   //Matrix<double> rotation(3,3);
   rotation.resize(3,3);
   Matrix<double> u(3,3), vt(3,3);
-  for(int i=0; i<3; ++i){ for(int j=0; j<3; ++j){ u(i,j)=U_[i][j]; vt(i,j)=VT_[i][j]; } }
+  for(int i=0; i<3; ++i) { for(int j=0; j<3; ++j) { u(i,j)=U_[i][j]; vt(i,j)=VT_[i][j]; } }
 
   // get rotation matrix
   mult(u, vt, rotation);
@@ -326,16 +326,16 @@ void position_maha_dist::kabsch_rot_mat() {
 
 // calculates maha dist
 double position_maha_dist::cal_maha_dist() {
-  
+
   unsigned N=getNumberOfAtoms();
-  
+
   Matrix<double> rotated_obj(N,3);
   // rotate the object
   mult(mobile_str, rotation, rotated_obj);
 
   // compute the displacement
   Matrix<double> disp(N,3);
-  for(unsigned int i=0; i<N; ++i){ for(unsigned int j=0; j<3; ++j) { disp(i,j) = (rotated_obj(i,j)-ref_str(i,j)); } }
+  for(unsigned int i=0; i<N; ++i) { for(unsigned int j=0; j<3; ++j) { disp(i,j) = (rotated_obj(i,j)-ref_str(i,j)); } }
 
   Matrix<double> prec_dot_disp(N,3);
   Matrix<double> disp_T(3,N);
@@ -348,7 +348,7 @@ double position_maha_dist::cal_maha_dist() {
 
 
   double maha_d=0.0;
-  for(int i=0; i<3; ++i){ maha_d += out(i,i);}
+  for(int i=0; i<3; ++i) { maha_d += out(i,i);}
 
   if (!squared) maha_d = std::sqrt(maha_d);
 
@@ -357,43 +357,43 @@ double position_maha_dist::cal_maha_dist() {
 
 // gradient function
 void position_maha_dist::grad_maha(double d) {
-	
-	unsigned N=getNumberOfAtoms();
 
-	derv_.resize(N,3);
+  unsigned N=getNumberOfAtoms();
 
-	Matrix<double> ref_str_rot_T(N,3);
-	Matrix<double> rot_T(3,3);
-	Matrix<double> diff_(N,3);
+  derv_.resize(N,3);
 
-	transpose(rotation, rot_T);
-	mult(ref_str, rot_T, ref_str_rot_T);
+  Matrix<double> ref_str_rot_T(N,3);
+  Matrix<double> rot_T(3,3);
+  Matrix<double> diff_(N,3);
 
-	for(unsigned i=0; i<N; ++i){ for(unsigned j=0; j<3; ++j){ diff_(i,j) = mobile_str(i,j) - ref_str_rot_T(i,j); } }
+  transpose(rotation, rot_T);
+  mult(ref_str, rot_T, ref_str_rot_T);
 
-	mult(prec, diff_, derv_);
+  for(unsigned i=0; i<N; ++i) { for(unsigned j=0; j<3; ++j) { diff_(i,j) = mobile_str(i,j) - ref_str_rot_T(i,j); } }
 
-	//for(unsigned i=0; i<N; ++i){ for(unsigned j=0; j<3; ++j) {derv_(i,j) /= (N*d);} }  // dividing by N here!
-	for(unsigned i=0; i<N; ++i){ for(unsigned j=0; j<3; ++j) { if (!squared) {derv_(i,j) /= d;} else {derv_(i,j) *= 2.0;}}}
+  mult(prec, diff_, derv_);
+
+  //for(unsigned i=0; i<N; ++i){ for(unsigned j=0; j<3; ++j) {derv_(i,j) /= (N*d);} }  // dividing by N here!
+  for(unsigned i=0; i<N; ++i) { for(unsigned j=0; j<3; ++j) { if (!squared) {derv_(i,j) /= d;} else {derv_(i,j) *= 2.0;}}}
 
 
 }
 
 
 // numeric gradient
-void position_maha_dist::numeric_maha(){
-        // This function performs numerical derivative.
-	unsigned N=getNumberOfAtoms();
-	derv_numeric.resize(N,3);
+void position_maha_dist::numeric_maha() {
+  // This function performs numerical derivative.
+  unsigned N=getNumberOfAtoms();
+  derv_numeric.resize(N,3);
 
-        for(unsigned int atom=0; atom<N; ++atom){
-                for(unsigned int j=0; j<3; ++j){
-			mobile_str(atom,j) += delta;
-			kabsch_rot_mat();
-			derv_numeric(atom,j) = (cal_maha_dist() - dist)/delta;
-			mobile_str(atom,j) -= delta;
-                }
-        }
+  for(unsigned int atom=0; atom<N; ++atom) {
+    for(unsigned int j=0; j<3; ++j) {
+      mobile_str(atom,j) += delta;
+      kabsch_rot_mat();
+      derv_numeric(atom,j) = (cal_maha_dist() - dist)/delta;
+      mobile_str(atom,j) -= delta;
+    }
+  }
 
 }
 
@@ -405,36 +405,36 @@ void position_maha_dist::calculate() {
   unsigned N=getNumberOfAtoms();
 
   mobile_str.resize(N,3);
-  
+
   // load the mobile str
   for(unsigned int i=0; i<N; ++i) {
-	  Vector pos=getPosition(i);  // const PLMD::Vector
-	  for(unsigned j=0; j<3; ++j){
-		  mobile_str(i,j) = pos[j];
-	  }
+    Vector pos=getPosition(i);  // const PLMD::Vector
+    for(unsigned j=0; j<3; ++j) {
+      mobile_str(i,j) = pos[j];
+    }
   }
 
   // translating the structure to center of geometry
   double center_of_geometry[3]= {0.0, 0.0, 0.0};
-  
+
   for(unsigned int i=0; i<N; ++i)
   {
-	  center_of_geometry[0] += mobile_str(i,0); center_of_geometry[1] += mobile_str(i,1); center_of_geometry[2] += mobile_str(i,2);
+    center_of_geometry[0] += mobile_str(i,0); center_of_geometry[1] += mobile_str(i,1); center_of_geometry[2] += mobile_str(i,2);
   }
 
   for(unsigned int i=0; i<N; ++i)
-  { 
-	  for(unsigned int j=0; j<3; ++j) { mobile_str(i,j) -= (center_of_geometry[j]/N); } 
+  {
+    for(unsigned int j=0; j<3; ++j) { mobile_str(i,j) -= (center_of_geometry[j]/N); }
   }
 
   kabsch_rot_mat();
   dist = cal_maha_dist();
-  
+
   grad_maha(dist);
   // set derivatives
-  for(unsigned i=0; i<N; ++i){
-	  Vector vi(derv_(i,0), derv_(i,1), derv_(i,2) );
-	  setAtomsDerivatives(i, vi);
+  for(unsigned i=0; i<N; ++i) {
+    Vector vi(derv_(i,0), derv_(i,1), derv_(i,2) );
+    setAtomsDerivatives(i, vi);
   }
   setBoxDerivativesNoPbc();
   setValue(dist);
