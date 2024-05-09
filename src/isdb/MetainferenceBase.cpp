@@ -36,7 +36,6 @@ void MetainferenceBase::registerKeywords( Keywords& keys ) {
   ActionAtomistic::registerKeywords(keys);
   ActionWithValue::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
-  componentsAreNotOptional(keys);
   keys.use("ARG");
   keys.addFlag("DOSCORE",false,"activate metainference");
   keys.addFlag("NOENSEMBLE",false,"don't perform any replica-averaging");

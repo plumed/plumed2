@@ -82,6 +82,7 @@ public:
   explicit LocalEnsemble(const ActionOptions&);
   void     calculate() override;
   static void registerKeywords(Keywords& keys);
+  std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const override ;
 };
 
 
@@ -127,6 +128,10 @@ LocalEnsemble::LocalEnsemble(const ActionOptions&ao):
   }
 
   log.printf("  averaging over %u replicas.\n", ens_dim);
+}
+
+std::string LocalEnsemble::getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const {
+  return "the average for argument named " + cname;
 }
 
 void LocalEnsemble::calculate()

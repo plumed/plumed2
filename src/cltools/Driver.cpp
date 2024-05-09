@@ -25,7 +25,9 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/ActionWithValue.h"
+#include "core/ActionWithVirtualAtom.h"
 #include "core/ActionShortcut.h"
+#include "core/ActionRegister.h"
 #include "tools/Communicator.h"
 #include "tools/Random.h"
 #include "tools/Pbc.h"
@@ -226,6 +228,7 @@ void Driver<real>::registerKeywords( Keywords& keys ) {
   keys.add("atoms","--ixtc","the trajectory in xtc format (xdrfile implementation)");
   keys.add("atoms","--itrr","the trajectory in trr format (xdrfile implementation)");
   keys.add("optional","--shortcut-ofile","the name of the file to output info on the way shortcuts have been expanded.  If there are no shortcuts in your input file nothing is output");
+  keys.add("optional","--valuedict-ofile","output a dictionary giving information about each value in the input file");
   keys.add("optional","--length-units","units for length, either as a string or a number");
   keys.add("optional","--mass-units","units for mass in pdb and mc file, either as a string or a number");
   keys.add("optional","--charge-units","units for charge in pdb and mc file, either as a string or a number");
@@ -285,6 +288,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   bool noatoms; parseFlag("--noatoms",noatoms);
   bool parseOnly; parseFlag("--parse-only",parseOnly);
   std::string full_outputfile; parse("--shortcut-ofile",full_outputfile);
+  std::string valuedict_file; parse("--valuedict-ofile",valuedict_file);
   bool restart; parseFlag("--restart",restart);
 
   std::string fakein;
@@ -741,10 +745,10 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
               std::vector<std::string> def; def.push_back( "defaults " + aa->getDefaultString() );
               data[ as->getShortcutLabel() ] = def;
             }
+            std::vector<std::string> shortcut_commands = as->getSavedInputLines(); if( shortcut_commands.size()==0 ) continue;
             if( data.find( as->getShortcutLabel() )!=data.end() ) {
-              std::vector<std::string> shortcut_commands = as->getSavedInputLines();
               for(unsigned i=0; i<shortcut_commands.size(); ++i) data[ as->getShortcutLabel() ].push_back( shortcut_commands[i] );
-            } else data[ as->getShortcutLabel() ] = as->getSavedInputLines();
+            } else data[ as->getShortcutLabel() ] = shortcut_commands;
           }
         }
         ifile.close();
@@ -768,6 +772,40 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           }
           long_file.printf("   }\n}\n"); long_file.close();
         }
+      }
+      if( valuedict_file.length()>0 ) {
+        OFile valuefile; valuefile.open( valuedict_file ); valuefile.printf("{\n"); bool firsta=true;
+        for(const auto & pp : p.getActionSet()) {
+          ActionWithVirtualAtom* avv=dynamic_cast<ActionWithVirtualAtom*>(pp.get());
+          if( avv ||  pp.get()->getName()=="GROUP" ) {
+            Action* p(pp.get());
+            if( firsta ) { valuefile.printf("  \"%s\" : {\n", p->getLabel().c_str() ); firsta=false; }
+            else valuefile.printf(",\n  \"%s\" : {\n", p->getLabel().c_str() );
+            if( avv ) valuefile.printf("    \"%s\" : { \"type\": \"atoms\", \"description\": \"virtual atom calculated by %s action\" }", avv->getLabel().c_str(), avv->getName().c_str() );
+            else valuefile.printf("    \"%s\" : { \"type\": \"atoms\", \"description\": \"indices of atoms specified in GROUP\" }", p->getLabel().c_str() );
+            valuefile.printf("\n  }"); continue;
+          }
+          ActionWithValue* av=dynamic_cast<ActionWithValue*>(pp.get());
+          if( !av || av->getNumberOfComponents()==0 ) continue;
+          if( firsta ) { valuefile.printf("  \"%s\" : {\n", av->getLabel().c_str() ); firsta=false; }
+          else valuefile.printf(",\n  \"%s\" : {\n", av->getLabel().c_str() );
+          bool firstv=true; Keywords keys; actionRegister().getKeywords( av->getName(), keys );
+          for(unsigned i=0; i<av->getNumberOfComponents(); ++i) {
+            Value* myval = av->copyOutput(i); std::string compname = myval->getName(), vtype, description;  std::size_t dot=compname.find(".");
+            if( myval->getRank()==0 ) vtype="scalar";
+            else if( myval->getRank()>0 && myval->hasDerivatives() ) vtype="grid";
+            else if( myval->getRank()==1 ) vtype="vector";
+            else if( myval->getRank()==2 ) vtype="matrix";
+            else plumed_merror("unknown type for value " + myval->getName() );
+            if( dot!=std::string::npos ) {
+              std::string cname = compname.substr(dot+1); description = av->getOutputComponentDescription( cname, keys );
+            } else description = keys.getOutputComponentDescription(".#!value");
+            if( firstv ) { valuefile.printf("    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), vtype.c_str(), description.c_str() ); firstv=false; }
+            else valuefile.printf(",\n    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), vtype.c_str(), description.c_str() );
+          }
+          valuefile.printf("\n  }");
+        }
+        valuefile.printf("\n}\n"); valuefile.close();
       }
       if(parseOnly) break;
     }

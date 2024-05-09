@@ -162,7 +162,6 @@ void FuncPathGeneral::registerKeywords(Keywords& keys) {
   keys.add("optional", "COLUMNS", "List of columns in the reference colvar file specifying the CVs");
   keys.add("optional", "NEIGH_SIZE", "Size of the neighbor list");
   keys.add("optional", "NEIGH_STRIDE", "How often the neighbor list needs to be calculated in time units");
-  componentsAreNotOptional(keys);
   keys.addOutputComponent("s", "default", "Position on the path");
   keys.addOutputComponent("z", "default", "Distance from the path");
 }

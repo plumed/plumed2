@@ -60,6 +60,7 @@ void CreateMask::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","TYPE","the way the zeros are supposed to be set");
   keys.add("compulsory","NZEROS","the number of zeros that you want to put in the mask");
   keys.add("optional","SEED","the seed to use for the random number generator");
+  keys.setValueDescription("a vector of zeros and ones that is used that can be used to mask some of the elements in a time series");
 }
 
 

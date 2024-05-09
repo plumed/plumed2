@@ -112,6 +112,8 @@ public:
   void componentIsNotPeriodic( const std::string& name );
 /// Set the value to be periodic with a particular domain
   void componentIsPeriodic( const std::string& name, const std::string& min, const std::string& max );
+/// Get the description of this component
+  virtual std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const ;
 protected:
 /// Return a pointer to the component by index
   Value* getPntrToComponent(int i);
@@ -131,8 +133,6 @@ public:
   static void registerKeywords( Keywords& keys );
 /// Insist that numerical derivatives should always be used for an action and make this fact appear in the manual
   static void noAnalyticalDerivatives(Keywords& keys);
-/// Puts a message into the manual that the components always output
-  static void componentsAreNotOptional(Keywords& keys);
 /// The components in the action will depend on the user
   static void useCustomisableComponents(Keywords& keys);
 /// Are we not calculating derivatives

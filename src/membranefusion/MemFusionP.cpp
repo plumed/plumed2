@@ -102,6 +102,7 @@ void memFusionP::registerKeywords(Keywords &keys)
   keys.add("optional", "ONEOVERS2C2CUTOFF", "( default=500 ) cut off large values for the derivative of the atan2 function.");
   keys.add("optional", "XCYL", "X coordinate of the fixed cylinder, if not present this will be calculated.");
   keys.add("optional", "YCYL", "Y coordinate of the fixed cylinder, if not present this will be calculated.");
+  keys.setValueDescription("the value of the CV");
 }
 
 memFusionP::memFusionP(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao)

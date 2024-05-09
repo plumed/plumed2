@@ -1,0 +1,8 @@
+{
+   "r1" : {
+      "defaults" : " STRIDE=1 EVERY=1"
+   },
+   "r2" : {
+      "defaults" : " STRIDE=1 EVERY=1"
+   }
+}

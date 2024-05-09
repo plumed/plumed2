@@ -261,6 +261,7 @@ void PIV::registerKeywords( Keywords& keys )
   keys.add("optional","NL_STRIDE","Update neighbor lists every NL_STRIDE steps.");
   keys.add("optional","NL_SKIN","The maximum atom displacement tolerated for the neighbor lists update.");
   keys.reset_style("SWITCH","compulsory");
+  keys.setValueDescription("the PIV-distance");
 }
 
 PIV::PIV(const ActionOptions&ao):

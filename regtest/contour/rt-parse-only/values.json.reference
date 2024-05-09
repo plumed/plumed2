@@ -1,0 +1,90 @@
+{ 
+"timestep" : { 
+"timestep" : { "type": "scalar", "desciption": "" }
+}, 
+"posx" : { 
+"posx" : { "type": "vector", "desciption": "" }
+}, 
+"posy" : { 
+"posy" : { "type": "vector", "desciption": "" }
+}, 
+"posz" : { 
+"posz" : { "type": "vector", "desciption": "" }
+}, 
+"Masses" : { 
+"Masses" : { "type": "vector", "desciption": "" }
+}, 
+"Charges" : { 
+"Charges" : { "type": "vector", "desciption": "" }
+}, 
+"Box" : { 
+"Box" : { "type": "matrix", "desciption": "" }
+}, 
+"fcc_grp" : { 
+"fcc_grp" : { "type": "atoms", "desciption": "" }
+}, 
+"fcc_mat" : { 
+"fcc_mat.w" : { "type": "matrix", "desciption": "" }
+"fcc_mat.x" : { "type": "matrix", "desciption": "" }
+"fcc_mat.y" : { "type": "matrix", "desciption": "" }
+"fcc_mat.z" : { "type": "matrix", "desciption": "" }
+}, 
+"fcc_vfunc" : { 
+"fcc_vfunc" : { "type": "matrix", "desciption": "" }
+}, 
+"fcc_wvfunc" : { 
+"fcc_wvfunc" : { "type": "matrix", "desciption": "" }
+}, 
+"fcc_ones" : { 
+"fcc_ones" : { "type": "vector", "desciption": "" }
+}, 
+"fcc" : { 
+"fcc" : { "type": "vector", "desciption": "" }
+}, 
+"fcc_denom" : { 
+"fcc_denom" : { "type": "vector", "desciption": "" }
+}, 
+"fcc_n" : { 
+"fcc_n" : { "type": "vector", "desciption": "" }
+}, 
+"dens_dist" : { 
+"dens_dist.x" : { "type": "vector", "desciption": "" }
+"dens_dist.y" : { "type": "vector", "desciption": "" }
+"dens_dist.z" : { "type": "vector", "desciption": "" }
+}, 
+"dens_numer_sigma" : { 
+"dens_numer_sigma" : { "type": "vector", "desciption": "" }
+}, 
+"dens_numer_cov" : { 
+"dens_numer_cov" : { "type": "vector", "desciption": "" }
+}, 
+"dens_numer_icov" : { 
+"dens_numer_icov" : { "type": "vector", "desciption": "" }
+}, 
+"dens_numer" : { 
+"dens_numer" : { "type": "grid", "desciption": "" }
+}, 
+"ones" : { 
+"ones" : { "type": "vector", "desciption": "" }
+}, 
+"dens_denom_sigma" : { 
+"dens_denom_sigma" : { "type": "vector", "desciption": "" }
+}, 
+"dens_denom_cov" : { 
+"dens_denom_cov" : { "type": "vector", "desciption": "" }
+}, 
+"dens_denom_icov" : { 
+"dens_denom_icov" : { "type": "vector", "desciption": "" }
+}, 
+"dens_denom" : { 
+"dens_denom" : { "type": "grid", "desciption": "" }
+}, 
+"dens" : { 
+"dens" : { "type": "grid", "desciption": "" }
+}, 
+"cont" : { 
+"cont.dens_dist.x" : { "type": "vector", "description": "a vector of coordinates for the contour along the dens_dist.x direction" }, 
+"cont.dens_dist.y" : { "type": "vector", "description": "a vector of coordinates for the contour along the dens_dist.y direction" }, 
+"cont.dens_dist.z" : { "type": "vector", "description": "a vector of coordinates for the contour along the dens_dist.z direction" } 
+} 
+} 

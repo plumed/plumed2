@@ -54,16 +54,6 @@ class Value {
   friend class DomainDecomposition;
   template<typename T>
   friend class DataPassingObjectTyped;
-/// This copies the contents of a value into a second value (just the derivatives and value)
-  friend void copy( const Value& val1, Value& val2 );
-/// This copies the contents of a value into a second value (but second value is a pointer)
-  friend void copy( const Value& val, Value* val2 );
-/// This adds some derivatives onto the value
-  friend void add( const Value& val1, Value* valout );
-/// This calculates val1*val2 and sorts out the derivatives
-  friend void product( const Value& val1, const Value& val2, Value& valout );
-/// This calculates va1/val2 and sorts out the derivatives
-  friend void quotient( const Value& val1, const Value& val2, Value* valout );
 private:
 /// The action in which this quantity is calculated
   ActionWithValue* action;
@@ -159,8 +149,6 @@ public:
   void addDerivative(unsigned i,double d);
 /// Set the value of the ith component of the derivatives array
   void setDerivative(unsigned i, double d);
-/// Apply the chain rule to the derivatives
-  void chainRule(double df);
 /// Get the derivative with respect to component n
   double getDerivative(const unsigned n) const;
 /// Clear the input force on the variable
@@ -256,44 +244,12 @@ public:
   void push_back( const double& val );
 };
 
-void copy( const Value& val1, Value& val2 );
-void copy( const Value& val1, Value* val2 );
-void add( const Value& val1, Value* valout );
-
 inline
 void Value::applyPeriodicity(const unsigned& ival) {
   if(periodicity==periodic) {
     data[ival]=min+difference(min,data[ival]);
     if(data[ival]<min)data[ival]+=max_minus_min;
   }
-}
-
-inline
-void product( const Value& val1, const Value& val2, Value& valout ) {
-  plumed_assert( val1.getNumberOfDerivatives()==val2.getNumberOfDerivatives() );
-  if( valout.getNumberOfDerivatives()!=val1.getNumberOfDerivatives() ) valout.resizeDerivatives( val1.getNumberOfDerivatives() );
-  valout.value_set=false;
-  valout.clearDerivatives();
-  double u=val1.get();
-  double v=val2.get();
-  for(unsigned i=0; i<val1.getNumberOfDerivatives(); ++i) {
-    valout.addDerivative(i, u*val2.getDerivative(i) + v*val1.getDerivative(i) );
-  }
-  valout.set( u*v );
-}
-
-inline
-void quotient( const Value& val1, const Value& val2, Value* valout ) {
-  plumed_assert( val1.getNumberOfDerivatives()==val2.getNumberOfDerivatives());
-  if( valout->getNumberOfDerivatives()!=val1.getNumberOfDerivatives() ) valout->resizeDerivatives( val1.getNumberOfDerivatives() );
-  valout->value_set=false;
-  valout->clearDerivatives();
-  double u=val1.get();
-  double v=val2.get();
-  for(unsigned i=0; i<val1.getNumberOfDerivatives(); ++i) {
-    valout->addDerivative(i, v*val1.getDerivative(i) - u*val2.getDerivative(i) );
-  }
-  valout->chainRule( 1/(v*v) ); valout->set( u / v );
 }
 
 inline
@@ -359,11 +315,6 @@ inline
 void Value::setDerivative(unsigned i, double d) {
   plumed_dbg_massert(i<getNumberOfDerivatives(),"derivative is out of bounds");
   data[1+i]=d;
-}
-
-inline
-void Value::chainRule(double df) {
-  for(unsigned i=0; i<getNumberOfDerivatives(); ++i) data[1+i]*=df;
 }
 
 inline

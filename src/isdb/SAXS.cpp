@@ -407,7 +407,6 @@ PLUMED_REGISTER_ACTION(SAXS,"SAXS")
 PLUMED_REGISTER_ACTION(SAXS,"SANS")
 
 void SAXS::registerKeywords(Keywords& keys) {
-  componentsAreNotOptional(keys);
   MetainferenceBase::registerKeywords(keys);
   keys.addFlag("NOPBC",false,"Ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");

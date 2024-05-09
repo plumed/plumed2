@@ -26,6 +26,7 @@
 #include "core/PbcAction.h"
 #include "tools/HistogramBead.h"
 #include "tools/SwitchingFunction.h"
+#include "tools/Matrix.h"
 
 //+PLUMEDOC ANALYSIS KDE
 /*
@@ -111,6 +112,7 @@ void KDE::registerKeywords( Keywords& keys ) {
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
   // Keywords for spherical KDE
   keys.add("compulsory","CONCENTRATION","the concentration parameter for Von Mises-Fisher distributions (only required for SPHERICAL_KDE)");
+  keys.setValueDescription("a function on a grid that was obtained by doing a Kernel Density Estimation using the input arguments");
 }
 
 KDE::KDE(const ActionOptions&ao):

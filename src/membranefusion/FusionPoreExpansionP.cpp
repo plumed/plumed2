@@ -102,6 +102,7 @@ void fusionPoreExpansionP::registerKeywords(Keywords &keys)
   keys.add("compulsory", "R0", "normalization constant that makes 0 the initial value of the CV.");
   keys.add("optional", "XCYL", "X coordinate of the fixed cylinder, if not present this will be calculated.");
   keys.add("optional", "YCYL", "X coordinate of the fixed cylinder, if not present this will be calculated.");
+  keys.setValueDescription("the value of the CV");
 }
 
 fusionPoreExpansionP::fusionPoreExpansionP(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao)

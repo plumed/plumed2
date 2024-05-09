@@ -113,6 +113,7 @@ void Dipole::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("y","COMPONENTS","the y-component of the dipole");
   keys.addOutputComponent("z","COMPONENTS","the z-component of the dipole");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
+  keys.setValueDescription("the DIPOLE for these atoms");
 }
 
 Dipole::Dipole(const ActionOptions&ao):

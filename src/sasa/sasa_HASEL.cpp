@@ -171,6 +171,7 @@ void SASA_HASEL::registerKeywords(Keywords& keys) {
   keys.add("compulsory", "NL_STRIDE", "The frequency with which the neighbor list for the calculation of SASA is updated.");
   keys.add("optional","DELTAGFILE","a file containing the free energy of transfer values for backbone and sidechains atoms. Necessary only if TYPE = TRANSFER. A Python script for the computation of free energy of transfer values to describe the effect of osmolyte concentration, temperature and pressure is freely available at https://github.com/andrea-arsiccio/DeltaG-calculation. The script automatically outputs a DeltaG.dat file compatible with this SASA module. If TYPE = TRANSFER and no DELTAGFILE is provided, the free energy values are those describing the effect of temperature, and are computed using the temperature value passed by the MD engine");
   keys.add("optional","APPROACH","either approach 2 or 3. Necessary only if TYPE = TRANSFER and no DELTAGFILE is provided. If TYPE = TRANSFER and no DELTAGFILE is provided, the free energy values are those describing the effect of temperature, and the program must know if approach 2 or 3 (as described in Arsiccio and Shea, Protein Cold Denaturation in Implicit Solvent Simulations: A Transfer Free Energy Approach, J. Phys. Chem. B, 2021) needs to be used to compute them");
+  keys.setValueDescription("the solvent accessible surface area (SASA) of the molecule");
 }
 
 

@@ -110,6 +110,7 @@ PLUMED_REGISTER_ACTION(FindContourSurface,"FIND_CONTOUR_SURFACE")
 void FindContourSurface::registerKeywords( Keywords& keys ) {
   ContourFindingBase::registerKeywords( keys );
   keys.add("compulsory","SEARCHDIR","In which directions do you wish to search for the contour.");
+  keys.setValueDescription("a grid containing the location of the points in the Willard-Chandler surface along the chosen direction");
 }
 
 FindContourSurface::FindContourSurface(const ActionOptions&ao):

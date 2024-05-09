@@ -77,6 +77,7 @@ PLUMED_REGISTER_ACTION(ReweightMetad,"REWEIGHT_METAD")
 void ReweightMetad::registerKeywords(Keywords& keys ) {
   ReweightBase::registerKeywords( keys ); keys.remove("ARG");
   keys.add("compulsory","ARG","*.rbias","the biases that must be taken into account when reweighting");
+  keys.setValueDescription("the weight to use for this frame to negate the effect the metadynamics bias");
 }
 
 ReweightMetad::ReweightMetad(const ActionOptions&ao):

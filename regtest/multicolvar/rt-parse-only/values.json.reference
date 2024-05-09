@@ -1,0 +1,52 @@
+{ 
+"timestep" : { 
+"timestep" : { "type": "scalar", "desciption": "" }
+}, 
+"posx" : { 
+"posx" : { "type": "vector", "desciption": "" }
+}, 
+"posy" : { 
+"posy" : { "type": "vector", "desciption": "" }
+}, 
+"posz" : { 
+"posz" : { "type": "vector", "desciption": "" }
+}, 
+"Masses" : { 
+"Masses" : { "type": "vector", "desciption": "" }
+}, 
+"Charges" : { 
+"Charges" : { "type": "vector", "desciption": "" }
+}, 
+"Box" : { 
+"Box" : { "type": "matrix", "desciption": "" }
+}, 
+"d1" : { 
+"d1" : { "type": "scalar", "desciption": "DISTANCE" }
+}, 
+"d2" : { 
+"d2" : { "type": "scalar", "desciption": "DISTANCE" }
+}, 
+"d3" : { 
+"d3" : { "type": "scalar", "desciption": "DISTANCE" }
+}, 
+"ss" : { 
+"ss.1" : { "type": "scalar", "desciption": "1th" }
+"ss.2" : { "type": "scalar", "desciption": "2th" }
+"ss.3" : { "type": "scalar", "desciption": "3th" }
+}, 
+"dall" : { 
+"dall" : { "type": "vector", "desciption": "" }
+}, 
+"ssall" : { 
+"ssall.1" : { "type": "scalar", "desciption": "1th" }
+"ssall.2" : { "type": "scalar", "desciption": "2th" }
+"ssall.3" : { "type": "scalar", "desciption": "3th" }
+}, 
+"dallt" : { 
+"dallt" : { "type": "vector", "desciption": "" }
+}, 
+"sfinal" : { 
+"sfinal.1" : { "type": "scalar", "desciption": "1th" }
+"sfinal.2" : { "type": "scalar", "desciption": "2th" }
+} 
+} 

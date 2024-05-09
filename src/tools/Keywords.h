@@ -58,11 +58,14 @@ class Keywords {
   };
   friend class Action;
   friend class ActionShortcut;
+  friend class ActionRegister;
 private:
 /// Is this an action or driver (this bool affects what style==atoms does in print)
   bool isaction;
 /// This allows us to overwrite the behavior of the atoms type in analysis actions
   bool isatoms;
+/// The name of the action that has this set of keywords
+  std::string thisactname;
 /// The names of the allowed keywords
   std::vector<std::string> keys;
 /// The names of the reserved keywords
@@ -164,10 +167,12 @@ public:
   void destroyData();
 /// Set the text that introduces how the components for this action are introduced
   void setComponentsIntroduction( const std::string& instr );
+/// Add the description of the value
+  void setValueDescription( const std::string& descr );
 /// Add a potential component which can be output by this particular action
   void addOutputComponent( const std::string& name, const std::string& key, const std::string& descr );
 /// Has a component with this name been added?
-  bool outputComponentExists( const std::string& name, const bool& custom ) const ;
+  bool outputComponentExists( const std::string& name ) const ;
 /// Get the flag that forces this component to be calculated
   std::string getOutputComponentFlag( const std::string& name ) const ;
 /// Get the description of this component
@@ -188,6 +193,8 @@ public:
   void addActionNameSuffix( const std::string& suffix );
 /// Get the list of keywords that are needed by this action
   const std::vector<std::string>& getNeededKeywords() const ;
+/// Return the name of the action that has this set of keywords
+  std::string getActionName() const ;
 };
 
 }

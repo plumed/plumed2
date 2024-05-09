@@ -499,7 +499,6 @@ public:
 PLUMED_REGISTER_ACTION(CS2Backbone,"CS2BACKBONE")
 
 void CS2Backbone::registerKeywords( Keywords& keys ) {
-  componentsAreNotOptional(keys);
   MetainferenceBase::registerKeywords( keys );
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
@@ -521,6 +520,7 @@ void CS2Backbone::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("expca","default","the experimental Ca carbon chemical shifts");
   keys.addOutputComponent("expcb","default","the experimental Cb carbon chemical shifts");
   keys.addOutputComponent("expco","default","the experimental C' carbon chemical shifts");
+  keys.setValueDescription("the backbone chemical shifts");
 }
 
 CS2Backbone::CS2Backbone(const ActionOptions&ao):

@@ -57,6 +57,7 @@ PLUMED_REGISTER_ACTION(InvertMatrix,"INVERT_MATRIX")
 
 void InvertMatrix::registerKeywords( Keywords& keys ) {
   MatrixOperationBase::registerKeywords( keys );
+  keys.setValueDescription("the inverse of the input matrix");
 }
 
 InvertMatrix::InvertMatrix(const ActionOptions& ao):

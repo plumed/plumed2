@@ -93,6 +93,7 @@ typedef FunctionOfVector<Sort> VectorSort;
 PLUMED_REGISTER_ACTION(VectorSort,"SORT_VECTOR")
 
 void Sort::registerKeywords(Keywords& keys) {
+  keys.setValueDescription("sorted");
   keys.setComponentsIntroduction("The names of the components in this action will be customized in accordance with the contents of the input file. "
                                  "The largest value is called label.1th, the second largest label.2th, the third label.3th and so on");
 }

@@ -39,7 +39,7 @@ std::unique_ptr<Action> ActionRegister::create(const std::vector<void*> & images
   if(ao.line.size()<1)return nullptr;
 
   auto content=get(images,ao.line[0]);
-  Keywords keys;
+  Keywords keys; keys.thisactname = ao.line[0];
   content.keys(keys);
   ActionOptions nao( ao,keys );
   auto fullPath=getFullPath(images,ao.line[0]);
@@ -65,7 +65,7 @@ bool ActionRegister::printManual(const std::string& action, const bool& vimout, 
 
 bool ActionRegister::printTemplate(const std::string& action, bool include_optional) {
   if( check(action) ) {
-    Keywords keys;
+    Keywords keys; keys.thisactname = action;
     get(action).keys(keys);
     keys.print_template(action, include_optional);
     return true;
@@ -86,6 +86,7 @@ ActionRegister::ID ActionRegister::add(std::string key,creator_pointer cp,keywor
 
 bool ActionRegister::getKeywords(const std::string& action, Keywords& keys) {
   if(check(action)) {
+    keys.thisactname = action;
     get(action).keys(keys);
     return true;
   }

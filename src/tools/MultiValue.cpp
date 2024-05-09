@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiValue.h"
+#include "Tools.h"
 
 namespace PLMD {
 
@@ -49,7 +50,6 @@ MultiValue::MultiValue( const size_t& nvals, const size_t& nder, const size_t& n
   // This is crap that will be deleted in future
   std::vector<unsigned> myind( nder );
   for(unsigned i=0; i<nder; ++i) myind[i]=i;
-  hasDerivatives.createIndexListFromVector( myind );
 }
 
 void MultiValue::resize( const size_t& nvals, const size_t& nder, const size_t& nmat, const size_t& maxcol, const size_t& nbook ) {
@@ -59,29 +59,21 @@ void MultiValue::resize( const size_t& nvals, const size_t& nder, const size_t& 
   matrix_row_nderivatives.resize(nmat,0); matrix_row_derivative_indices.resize(nmat); atLeastOneSet=false;
   for(unsigned i=0; i<nmat; ++i) matrix_row_derivative_indices[i].resize( nder );
   // All crap from here onwards
-  tmpder.resize( nder ); hasDerivatives.clear(); std::vector<unsigned> myind( nder );
+  tmpder.resize( nder ); std::vector<unsigned> myind( nder );
   for(unsigned i=0; i<nder; ++i) myind[i]=i;
-  hasDerivatives.createIndexListFromVector( myind );
 }
 
-void MultiValue::clearAll( const bool& newversion ) {
-  if( newversion ) {
-    for(unsigned i=0; i<values.size(); ++i) values[i]=0;
-    // Clear matrix row
-    std::fill( matrix_row_stash.begin(), matrix_row_stash.end(), 0 );
-    // Clear matrix derivative indices
-    std::fill( matrix_row_nderivatives.begin(), matrix_row_nderivatives.end(), 0 );
-    // Clear matrix forces
-    std::fill(matrix_force_stash.begin(),matrix_force_stash.end(),0);
-    if( !atLeastOneSet ) return;
-    for(unsigned i=0; i<values.size(); ++i) clearDerivatives(i);
-    atLeastOneSet=false;
-  } else {
-    // This should be deleted once old MultiColvar has gone
-    if( atLeastOneSet && !hasDerivatives.updateComplete() ) hasDerivatives.updateActiveMembers();
-    for(unsigned i=0; i<values.size(); ++i) clear(i);
-    clearTemporyDerivatives(); hasDerivatives.deactivateAll(); atLeastOneSet=false;
-  }
+void MultiValue::clearAll() {
+  for(unsigned i=0; i<values.size(); ++i) values[i]=0;
+  // Clear matrix row
+  std::fill( matrix_row_stash.begin(), matrix_row_stash.end(), 0 );
+  // Clear matrix derivative indices
+  std::fill( matrix_row_nderivatives.begin(), matrix_row_nderivatives.end(), 0 );
+  // Clear matrix forces
+  std::fill(matrix_force_stash.begin(),matrix_force_stash.end(),0);
+  if( !atLeastOneSet ) return;
+  for(unsigned i=0; i<values.size(); ++i) clearDerivatives(i);
+  atLeastOneSet=false;
 }
 
 void MultiValue::clearDerivatives( const unsigned& ival ) {
@@ -103,74 +95,6 @@ void MultiValue::clearDerivatives( const unsigned& ival ) {
     if( i>1000 ) return;
   }
 #endif
-}
-
-// This should be deleted once old MultiColvar has gone
-void MultiValue::clear( const unsigned& ival ) {
-  values[ival]=0;
-  unsigned base=ival*nderivatives, ndert=hasDerivatives.getNumberActive();
-  for(unsigned i=0; i<ndert; ++i) derivatives[ base+hasDerivatives[i] ]=0.;
-}
-
-void MultiValue::clearTemporyDerivatives() {
-  unsigned ndert=hasDerivatives.getNumberActive(); tmpval=0.;
-  for(unsigned i=0; i<ndert; ++i) tmpder[ hasDerivatives[i] ]=0.;
-}
-
-void MultiValue::chainRule( const unsigned& ival, const unsigned& iout, const unsigned& stride, const unsigned& off,
-                            const double& df, const unsigned& bufstart, std::vector<double>& buffer ) {
-  if( !hasDerivatives.updateComplete() ) hasDerivatives.updateActiveMembers();
-
-  plumed_dbg_assert( off<stride );
-  unsigned base=nderivatives*ival, ndert=hasDerivatives.getNumberActive();
-  unsigned start=bufstart+stride*(nderivatives+1)*iout + stride;
-  for(unsigned i=0; i<ndert; ++i) {
-    unsigned jder=hasDerivatives[i];
-    buffer[start+jder*stride] += df*derivatives[base+jder];
-  }
-}
-
-void MultiValue::copyValues( MultiValue& outvals ) const {
-  plumed_dbg_assert( values.size()<=outvals.getNumberOfValues() );
-  for(unsigned i=0; i<values.size(); ++i) outvals.setValue( i, values[i] );
-
-}
-
-void MultiValue::copyDerivatives( MultiValue& outvals ) {
-  plumed_dbg_assert( values.size()<=outvals.getNumberOfValues() && nderivatives<=outvals.getNumberOfDerivatives() );
-  if( !hasDerivatives.updateComplete() ) hasDerivatives.updateActiveMembers();
-
-  outvals.atLeastOneSet=true; unsigned ndert=hasDerivatives.getNumberActive();
-  for(unsigned j=0; j<ndert; ++j) {
-    unsigned jder=hasDerivatives[j]; outvals.hasDerivatives.activate(jder);
-  }
-
-  unsigned base=0, obase=0;
-  for(unsigned i=0; i<values.size(); ++i) {
-    for(unsigned j=0; j<ndert; ++j) {
-      unsigned jder=hasDerivatives[j];
-      outvals.derivatives[obase+jder] += derivatives[base+jder];
-    }
-    obase+=outvals.nderivatives; base+=nderivatives;
-  }
-}
-
-void MultiValue::quotientRule( const unsigned& nder, const unsigned& oder ) {
-  plumed_dbg_assert( nder<values.size() && oder<values.size() );
-  if( !hasDerivatives.updateComplete() ) hasDerivatives.updateActiveMembers();
-
-  unsigned ndert=hasDerivatives.getNumberActive(); double wpref;
-  unsigned obase=oder*nderivatives, nbase=nder*nderivatives;
-
-  if( std::fabs(tmpval)>epsilon ) { wpref=1.0/tmpval; }
-  else { wpref=1.0; }
-
-  double pref = values[nder]*wpref*wpref;
-  for(unsigned j=0; j<ndert; ++j) {
-    unsigned jder=hasDerivatives[j];
-    derivatives[obase+jder] = wpref*derivatives[nbase+jder]  - pref*tmpder[jder];
-  }
-  values[oder] = wpref*values[nder];
 }
 
 }

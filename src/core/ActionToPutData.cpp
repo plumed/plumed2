@@ -48,6 +48,7 @@ void ActionToPutData::registerKeywords(Keywords& keys) {
   keys.addFlag("CONSTANT",false,"does this quantity not depend on time");
   keys.addFlag("FROM_DOMAINS",false,"is this quantity passed through the domain decomposition object");
   keys.addFlag("MUTABLE",false,"can plumed change the value of the pointer that is passed from the MD code");
+  keys.setValueDescription("the data that was passed from the MD code");
 }
 
 ActionToPutData::ActionToPutData(const ActionOptions&ao):

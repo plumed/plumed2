@@ -1,0 +1,48 @@
+{ 
+"timestep" : { 
+"timestep" : { "type": "scalar", "desciption": "" }
+}, 
+"posx" : { 
+"posx" : { "type": "vector", "desciption": "" }
+}, 
+"posy" : { 
+"posy" : { "type": "vector", "desciption": "" }
+}, 
+"posz" : { 
+"posz" : { "type": "vector", "desciption": "" }
+}, 
+"Masses" : { 
+"Masses" : { "type": "vector", "desciption": "" }
+}, 
+"Charges" : { 
+"Charges" : { "type": "vector", "desciption": "" }
+}, 
+"Box" : { 
+"Box" : { "type": "matrix", "desciption": "" }
+}, 
+"phi" : { 
+"phi" : { "type": "scalar", "desciption": "" }
+}, 
+"rp" : { 
+"rp.bias" : { "type": "scalar", "desciption": "" }
+"rp.force2" : { "type": "scalar", "desciption": "" }
+}, 
+"hh_gather" : { 
+"hh_gather.rep-1" : { "type": "scalar", "desciption": "" }
+}, 
+"hh_gatherv" : { 
+"hh_gatherv" : { "type": "vector", "desciption": "" }
+}, 
+"hh_collect" : { 
+"hh_collect" : { "type": "vector", "desciption": "" }
+}, 
+"hh_wham" : { 
+"hh_wham" : { "type": "vector", "desciption": "" }
+}, 
+"hh_data_phi" : { 
+"hh_data_phi" : { "type": "vector", "desciption": "" }
+}, 
+"hh" : { 
+"hh" : { "type": "grid", "desciption": "" }
+} 
+} 

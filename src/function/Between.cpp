@@ -71,6 +71,7 @@ void Between::registerKeywords(Keywords& keys) {
   keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous function defined above. "
            "The following provides information on the \\ref histogrambead that are available. "
            "When this keyword is present you no longer need the LOWER, UPPER, SMEAR and KERNEL keywords.");
+  keys.setValueDescription("a function that is one if the input falls within a particular range and zero otherwise");
 }
 
 void Between::read( ActionWithArguments* action ) {

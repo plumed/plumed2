@@ -1,0 +1,67 @@
+{ 
+"timestep" : { 
+"timestep" : { "type": "scalar", "desciption": "" }
+}, 
+"posx" : { 
+"posx" : { "type": "vector", "desciption": "" }
+}, 
+"posy" : { 
+"posy" : { "type": "vector", "desciption": "" }
+}, 
+"posz" : { 
+"posz" : { "type": "vector", "desciption": "" }
+}, 
+"Masses" : { 
+"Masses" : { "type": "vector", "desciption": "" }
+}, 
+"Charges" : { 
+"Charges" : { "type": "vector", "desciption": "" }
+}, 
+"Box" : { 
+"Box" : { "type": "matrix", "desciption": "" }
+}, 
+"q1_grp" : { 
+"q1_grp" : { "type": "atoms", "desciption": "" }
+}, 
+"q1_mat" : { 
+"q1_mat.w" : { "type": "matrix", "desciption": "" }
+"q1_mat.x" : { "type": "matrix", "desciption": "" }
+"q1_mat.y" : { "type": "matrix", "desciption": "" }
+"q1_mat.z" : { "type": "matrix", "desciption": "" }
+}, 
+"q1_sh" : { 
+"q1_sh.rm-n1" : { "type": "matrix", "desciption": "" }
+"q1_sh.rm-0" : { "type": "matrix", "desciption": "" }
+"q1_sh.rm-p1" : { "type": "matrix", "desciption": "" }
+"q1_sh.im-n1" : { "type": "matrix", "desciption": "" }
+"q1_sh.im-0" : { "type": "matrix", "desciption": "" }
+"q1_sh.im-p1" : { "type": "matrix", "desciption": "" }
+}, 
+"q1_denom_ones" : { 
+"q1_denom_ones" : { "type": "vector", "desciption": "" }
+}, 
+"q1_denom" : { 
+"q1_denom" : { "type": "vector", "desciption": "" }
+}, 
+"q1_sp" : { 
+"q1_sp.rm-n1" : { "type": "vector", "description": "the product of the matrix q1_sh.rm-n1 and the vector q1_denom_ones" }, 
+"q1_sp.rm-0" : { "type": "vector", "description": "the product of the matrix q1_sh.rm-0 and the vector q1_denom_ones" }, 
+"q1_sp.rm-p1" : { "type": "vector", "description": "the product of the matrix q1_sh.rm-p1 and the vector q1_denom_ones" }, 
+"q1_sp.im-n1" : { "type": "vector", "description": "the product of the matrix q1_sh.im-n1 and the vector q1_denom_ones" }, 
+"q1_sp.im-0" : { "type": "vector", "description": "the product of the matrix q1_sh.im-0 and the vector q1_denom_ones" }, 
+"q1_sp.im-p1" : { "type": "vector", "description": "the product of the matrix q1_sh.im-p1 and the vector q1_denom_ones" } 
+}, 
+"q1_norm2" : { 
+"q1_norm2" : { "type": "vector", "desciption": "" }
+}, 
+"q1_norm" : { 
+"q1_norm" : { "type": "vector", "desciption": "" }
+}, 
+"q1" : { 
+"q1" : { "type": "vector", "desciption": "" }
+}, 
+"gg" : { 
+"gg.g6" : { "type": "vector", "description": "the function defined by the FUNCTION1 keyword" }, 
+"gg.g7" : { "type": "vector", "description": "the function defined by the FUNCTION2 keyword" } 
+} 
+} 

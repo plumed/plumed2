@@ -116,6 +116,10 @@ FindContour::FindContour(const ActionOptions&ao):
   updateTaskListReductionStatus();
 }
 
+std::string FindContour::getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const {
+  return "a vector of coordinates for the contour along the " + cname + " direction";
+}
+
 void FindContour::setupValuesOnFirstStep() {
   std::vector<unsigned> shape(1); shape[0] = getPntrToArgument(0)->getRank()*getPntrToArgument(0)->getNumberOfValues();
   for(unsigned i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->setShape( shape );

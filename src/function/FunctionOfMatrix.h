@@ -79,6 +79,15 @@ void FunctionOfMatrix<T>::registerKeywords(Keywords& keys ) {
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
   keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
   T tfunc; tfunc.registerKeywords( keys );
+  if( keys.getActionName()=="SUM_MATRIX" ) {
+    keys.setValueDescription("the sum of all the elements in the input matrix");
+  } else if( keys.getActionName()=="HIGHEST_MATRIX" ) {
+    keys.setValueDescription("the largest element of the input matrix");
+  } else if( keys.getActionName()=="LOWEST_MATRIX" ) {
+    keys.setValueDescription("the smallest element in the input matrix");
+  } else if( keys.outputComponentExists(".#!value") ) {
+    keys.setValueDescription("the matrix obtained by doing an element-wise application of " + keys.getOutputComponentDescription(".#!value") + " to the input matrix");
+  }
 }
 
 template <class T>
@@ -107,36 +116,31 @@ FunctionOfMatrix<T>::FunctionOfMatrix(const ActionOptions&ao):
   std::vector<std::string> components( keywords.getOutputComponents() );
   // Create the values to hold the output
   std::vector<std::string> str_ind( myfunc.getComponentsPerLabel() );
-  if( components.size()==0 && myfunc.zeroRank() && str_ind.size()==0 ) {
-    addValueWithDerivatives( shape );
-  } else if( components.size()==0 && myfunc.zeroRank() ) {
-    for(unsigned j=0; j<str_ind.size(); ++j) addComponentWithDerivatives( str_ind[j], shape );
-  } else if( components.size()==0 && str_ind.size()==0 ) {
-    addValue( shape ); getPntrToComponent(0)->setSymmetric( symmetric );
-  } else if ( components.size()==0 ) {
-    for(unsigned j=0; j<str_ind.size(); ++j) { addComponent( str_ind[j], shape ); getPntrToComponent(j)->setSymmetric( symmetric ); }
-  } else {
-    for(unsigned i=0; i<components.size(); ++i) {
-      if( str_ind.size()>0 ) {
-        for(unsigned j=0; j<str_ind.size(); ++j) { addComponent( components[i] + str_ind[j], shape ); getPntrToComponent(i*str_ind.size()+j)->setSymmetric( symmetric ); }
-      } else if( components[i].find_first_of("_")!=std::string::npos ) {
-        if( getNumberOfArguments()-argstart==1 ) { addValue( shape ); getPntrToComponent(0)->setSymmetric( symmetric ); }
-        else {
-          for(unsigned j=argstart; j<getNumberOfArguments(); ++j) {
-            addComponent( getPntrToArgument(j)->getName() + components[i], shape );
-            getPntrToComponent(i*(getNumberOfArguments()-argstart)+j-argstart)->setSymmetric( symmetric );
-          }
+  for(unsigned i=0; i<components.size(); ++i) {
+    if( str_ind.size()>0 ) {
+      std::string compstr = components[i]; if( components[i]==".#!value" ) compstr = "";
+      for(unsigned j=0; j<str_ind.size(); ++j) {
+        if( myfunc.zeroRank() ) {
+          addComponentWithDerivatives( compstr + str_ind[j], shape );
+        } else {
+          addComponent( compstr + str_ind[j], shape );
+          getPntrToComponent(i*str_ind.size()+j)->setSymmetric( symmetric );
         }
-      } else { addComponent( components[i], shape ); getPntrToComponent(i)->setSymmetric( symmetric ); }
-    }
+      }
+    } else if( components[i]==".#!value" && myfunc.zeroRank() ) {
+      addValueWithDerivatives( shape );
+    } else if( components[i]==".#!value" ) {
+      addValue( shape ); getPntrToComponent(0)->setSymmetric( symmetric );
+    } else if( components[i].find_first_of("_")!=std::string::npos ) {
+      if( getNumberOfArguments()-argstart==1 ) { addValue( shape ); getPntrToComponent(0)->setSymmetric( symmetric ); }
+      else {
+        for(unsigned j=argstart; j<getNumberOfArguments(); ++j) {
+          addComponent( getPntrToArgument(j)->getName() + components[i], shape );
+          getPntrToComponent(i*(getNumberOfArguments()-argstart)+j-argstart)->setSymmetric( symmetric );
+        }
+      }
+    } else { addComponent( components[i], shape ); getPntrToComponent(i)->setSymmetric( symmetric ); }
   }
-  // Check if this is a timeseries
-  // for(unsigned i=argstart; i<getNumberOfArguments();++i) {
-  //   if( getPntrToArgument(i)->isTimeSeries() ) {
-  //       for(unsigned i=0; i<getNumberOfComponents(); ++i) getPntrToOutput(i)->makeHistoryDependent();
-  //       break;
-  //   }
-  // }
   // Check if this can be sped up
   if( myfunc.getDerivativeZeroIfValueIsZero() )  {
     for(int i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->setDerivativeIsZeroWhenValueIsZero();

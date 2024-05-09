@@ -130,18 +130,19 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
       for(unsigned k=0; k<components.size(); ++k) {
         if( keys.getOutputComponentFlag( components[k] )=="default" ) { hasvalue=false; break; }
       }
-      if( hasvalue ) {
-        std::cout<<"         \"value\": {"<<std::endl;
-        std::cout<<"           \"flag\": \"value\","<<std::endl;
-        std::cout<<"           \"description\": \"a scalar quantity\""<<std::endl;
-        if( components.size()==0 ) std::cout<<"         }"<<std::endl; else std::cout<<"         },"<<std::endl;
-      }
       for(unsigned k=0; k<components.size(); ++k) {
-        std::cout<<"         \""<<components[k]<<"\" : {"<<std::endl;
+        std::string compname=components[k]; if( components[k]==".#!value" ) { hasvalue=false; compname="value"; }
+        std::cout<<"         \""<<compname<<"\" : {"<<std::endl;
         std::cout<<"           \"flag\": \""<<keys.getOutputComponentFlag( components[k] )<<"\","<<std::endl;
         std::string desc=keys.getOutputComponentDescription( components[k] ); std::size_t dot=desc.find_first_of(".");
         std::cout<<"           \"description\": \""<<desc.substr(0,dot)<<"\""<<std::endl;
         if( k==components.size()-1 ) std::cout<<"         }"<<std::endl; else std::cout<<"         },"<<std::endl;
+      }
+      if( hasvalue ) {
+        std::cout<<"         \"value\" : {"<<std::endl;
+        std::cout<<"           \"flag\": \"default\","<<std::endl;
+        std::cout<<"           \"description\": \"something calculated by "<<action_names[i]<<"\""<<std::endl;
+        std::cout<<"         }"<<std::endl;
       }
       std::cout<<"       }"<<std::endl;
 

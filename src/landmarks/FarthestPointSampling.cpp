@@ -55,6 +55,7 @@ void FarthestPointSampling::registerKeywords( Keywords& keys ) {
   matrixtools::MatrixOperationBase::registerKeywords( keys );
   keys.add("compulsory","NZEROS","the number of landmark points that you want to select");
   keys.add("compulsory","SEED","1234","a random number seed");
+  keys.setValueDescription("a vector which has as many elements as there are rows in the input matrix of dissimilarities. NZEROS of the elements in this vector are equal to one, the rest of the elements are equal to zero.  The nodes that have elements equal to one are the NZEROS points that are farthest appart according to the input dissimilarities");
 }
 
 FarthestPointSampling::FarthestPointSampling( const ActionOptions& ao ):

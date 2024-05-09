@@ -56,6 +56,7 @@ PLUMED_REGISTER_ACTION(Time,"TIME")
 void Time::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
+  keys.setValueDescription("the time since the start of the trajectory");
 }
 
 Time::Time(const ActionOptions&ao):

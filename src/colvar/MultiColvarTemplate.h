@@ -56,6 +56,10 @@ void MultiColvarTemplate<T>::registerKeywords(Keywords& keys ) {
   for(unsigned i=0; i<nkeys; ++i) {
     if( keys.style( keys.get(i), "atoms" ) ) keys.reset_style( keys.get(i), "numbered" );
   }
+  if( keys.outputComponentExists(".#!value") ) {
+    std::string acname = keys.getActionName(); std::size_t und = acname.find("_VECTOR");
+    keys.setValueDescription("the " + acname.substr(0,und) + " for each set of specified atoms");
+  }
 }
 
 template <class T>

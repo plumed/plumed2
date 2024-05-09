@@ -92,6 +92,7 @@ void GHBFIX::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","D_MAX","the value of D_MAX in the switching function");
   keys.add("compulsory","D_0","the value of D_0 in the switching function");
   keys.add("compulsory","C","the value of C in the switching function");
+  keys.setValueDescription("the GHBFIX interaction energy between the atoms in GROUPA and GROUPB");
 }
 
 GHBFIX::GHBFIX(const ActionOptions&ao):

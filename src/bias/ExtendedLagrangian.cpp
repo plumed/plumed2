@@ -134,7 +134,6 @@ void ExtendedLagrangian::registerKeywords(Keywords& keys) {
   keys.add("compulsory","TAU","specifies that the restraint is harmonic and what the values of the force constants on each of the variables are");
   keys.add("compulsory","FRICTION","0.0","add a friction to the variable");
   keys.add("optional","TEMP","the system temperature - needed when FRICTION is present. If not provided will be taken from MD code (if available)");
-  componentsAreNotOptional(keys);
   keys.addOutputComponent("_fict","default","one or multiple instances of this quantity can be referenced elsewhere in the input file. "
                           "These quantities will named with the arguments of the bias followed by "
                           "the character string _tilde. It is possible to add forces on these variable.");

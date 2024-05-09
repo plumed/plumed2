@@ -116,7 +116,6 @@ PLUMED_REGISTER_ACTION(PositionMulti,"POSITION_VECTOR")
 
 void Position::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
-  componentsAreNotOptional(keys);
   keys.add("atoms","ATOM","the atom number");
   keys.add("atoms","ATOMS","the atom numbers that you would like to use the positions of");
   keys.addFlag("WHOLEMOLECULES",false,"if this is a vector of positions do you want to make the positions into a whole before");

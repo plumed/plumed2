@@ -51,6 +51,7 @@ public:
   static void runSingleTaskCalculation( const Value* arg, ActionWithValue* action, T& f );
   explicit FunctionOfVector(const ActionOptions&);
   ~FunctionOfVector() {}
+  std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const override ;
 /// Get the size of the task list at the end of the run
   unsigned getNumberOfFinalTasks();
 /// Check if derivatives are available
@@ -77,6 +78,19 @@ void FunctionOfVector<T>::registerKeywords(Keywords& keys ) {
   keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
   T tfunc; tfunc.registerKeywords( keys );
+  if( keys.getActionName()=="SUM_VECTOR" ) {
+    keys.setValueDescription("the sum of all the elements in the input vector");
+  } else if( keys.getActionName()=="MEAN_VECTOR" ) {
+    keys.setValueDescription("the mean of all the elements in the input vector");
+  } else if( keys.getActionName()=="HIGHEST_VECTOR" ) {
+    keys.setValueDescription("the largest element of the input vector");
+  } else if( keys.getActionName()=="LOWEST_VECTOR" ) {
+    keys.setValueDescription("the smallest element in the input vector");
+  } else if( keys.getActionName()=="SORT_VECTOR" ) {
+    keys.setValueDescription("a vector that has been sorted into ascending order");
+  } else if( keys.outputComponentExists(".#!value") ) {
+    keys.setValueDescription("the vector obtained by doing an element-wise application of " + keys.getOutputComponentDescription(".#!value") + " to the input vectors");
+  }
 }
 
 template <class T>
@@ -99,32 +113,27 @@ FunctionOfVector<T>::FunctionOfVector(const ActionOptions&ao):
   std::vector<std::string> components( keywords.getOutputComponents() );
   // Create the values to hold the output
   std::vector<std::string> str_ind( myfunc.getComponentsPerLabel() );
-  if( components.size()==0 && myfunc.zeroRank() && str_ind.size()==0 ) addValueWithDerivatives();
-  else if( components.size()==0 && myfunc.zeroRank() ) {
-    for(unsigned j=0; j<str_ind.size(); ++j) addComponentWithDerivatives( str_ind[j] );
-  } else if( components.size()==0 && str_ind.size()==0 ) addValue( shape );
-  else if( components.size()==0 ) {
-    for(unsigned j=0; j<str_ind.size(); ++j) addComponent( str_ind[j], shape );
-  } else {
-    for(unsigned i=0; i<components.size(); ++i) {
-      if( str_ind.size()>0 ) {
-        for(unsigned j=0; j<str_ind.size(); ++j) {
-          if( myfunc.zeroRank() ) addComponentWithDerivatives( components[i] + str_ind[j] );
-          else addComponent( components[i] + str_ind[j], shape );
+  for(unsigned i=0; i<components.size(); ++i) {
+    if( str_ind.size()>0 ) {
+      std::string strcompn = components[i]; if( components[i]==".#!value" ) strcompn = "";
+      for(unsigned j=0; j<str_ind.size(); ++j) {
+        if( myfunc.zeroRank() ) addComponentWithDerivatives( strcompn + str_ind[j] );
+        else addComponent( strcompn + str_ind[j], shape );
+      }
+    } else if( components[i].find_first_of("_")!=std::string::npos ) {
+      if( getNumberOfArguments()==1 && myfunc.zeroRank() ) addValueWithDerivatives();
+      else if( getNumberOfArguments()==1 ) addValue( shape );
+      else {
+        unsigned argstart=myfunc.getArgStart();
+        for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
+          if( myfunc.zeroRank() ) addComponentWithDerivatives( getPntrToArgument(i)->getName() + components[i] );
+          else addComponent( getPntrToArgument(i)->getName() + components[i], shape );
         }
-      } else if( components[i].find_first_of("_")!=std::string::npos ) {
-        if( getNumberOfArguments()==1 && myfunc.zeroRank() ) addValueWithDerivatives();
-        else if( getNumberOfArguments()==1 ) addValue( shape );
-        else {
-          unsigned argstart=myfunc.getArgStart();
-          for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
-            if( myfunc.zeroRank() ) addComponentWithDerivatives( getPntrToArgument(i)->getName() + components[i] );
-            else addComponent( getPntrToArgument(i)->getName() + components[i], shape );
-          }
-        }
-      } else if( myfunc.zeroRank() ) addComponentWithDerivatives( components[i] );
-      else addComponent( components[i], shape );
-    }
+      }
+    } else if( components[i]==".#!value" && myfunc.zeroRank() ) addValueWithDerivatives();
+    else if( components[i]==".#!value" ) addValue(shape);
+    else if( myfunc.zeroRank() ) addComponentWithDerivatives( components[i] );
+    else addComponent( components[i], shape );
   }
   // Check if we can turn off the derivatives when they are zero
   if( myfunc.getDerivativeZeroIfValueIsZero() )  {
@@ -160,6 +169,13 @@ FunctionOfVector<T>::FunctionOfVector(const ActionOptions&ao):
   }
   if( allconstant ) done_in_chain=false;
   nderivatives = buildArgumentStore(myfunc.getArgStart());
+}
+
+template <class T>
+std::string FunctionOfVector<T>::getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const {
+  if( getName().find("SORT")==std::string::npos ) return ActionWithValue::getOutputComponentDescription( cname, keys );
+  if( getNumberOfArguments()==1 ) return "the " + cname + "th largest element of the vector " + getPntrToArgument(0)->getName();
+  return "the " + cname + "th largest element in the input vectors";
 }
 
 template <class T>

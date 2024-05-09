@@ -103,8 +103,6 @@ void Optimizer::registerKeywords(Keywords& keys) {
     "optimization process every OPTIMIZER_STRIDE."
   );
 
-  componentsAreNotOptional(keys);
-
   keys.addOutputComponent(
     "x",
     "default",

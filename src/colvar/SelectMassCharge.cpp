@@ -109,6 +109,8 @@ void SelectMassCharge::registerKeywords( Keywords& keys ) {
   keys.add("atoms","ATOM","the atom number");
   keys.add("atoms","ATOMS","the atom numbers that you would like to store the masses and charges of");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
+  std::string acname = keys.getActionName(); std::size_t und = acname.find("_SCALAR");
+  keys.setValueDescription("the " + acname.substr(0,und) + " of the atom");
 }
 
 SelectMassCharge::SelectMassCharge(const ActionOptions&ao):

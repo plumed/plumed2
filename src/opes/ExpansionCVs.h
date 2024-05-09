@@ -48,6 +48,7 @@ protected:
 public:
   explicit ExpansionCVs(const ActionOptions&);
   virtual ~ExpansionCVs() {};
+  std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const override ;
   void apply() override;
   void calculate() override;
   static void registerKeywords(Keywords&);

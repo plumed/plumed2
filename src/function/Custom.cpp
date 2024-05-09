@@ -268,6 +268,7 @@ void Custom::registerKeywords(Keywords& keys) {
   keys.use("PERIODIC");
   keys.add("compulsory","FUNC","the function you wish to evaluate");
   keys.add("optional","VAR","the names to give each of the arguments in the function.  If you have up to three arguments in your function you can use x, y and z to refer to them.  Otherwise you must use this flag to give your variables names.");
+  keys.setValueDescription("an arbitrary function");
 }
 
 void Custom::read( ActionWithArguments* action ) {

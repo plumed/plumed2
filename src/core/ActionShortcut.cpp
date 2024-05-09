@@ -67,15 +67,16 @@ ActionShortcut::ActionShortcut(const ActionOptions&ao):
 void ActionShortcut::readInputLine( const std::string& input ) {
   std::vector<std::string> words=Tools::getWords(input); Tools::interpretLabel(words);
   // Check if this action name has been registered
-  bool found = std::find(keywords.neededActions.begin(), keywords.neededActions.end(), words[0] )!=keywords.neededActions.end();
+  bool founds=false, found = std::find(keywords.neededActions.begin(), keywords.neededActions.end(), words[0] )!=keywords.neededActions.end();
   // Check if we are just calling something like SUM_VECTOR using just SUM.
   if( !found && words[0].find(getName())!=std::string::npos ) {
     for(unsigned j=0 ; j<keywords.actionNameSuffixes.size(); ++j) {
       if( (getName() + keywords.actionNameSuffixes[j])==words[0] ) { found=true; break; }
     }
+    founds=true;
   }
   if( found ) {
-    std::string f_input = input; savedInputLines.push_back( input );
+    std::string f_input = input; if( !founds ) savedInputLines.push_back( input );
     if( keywords.exists("RESTART") ) {
       if( restart ) f_input += " RESTART=YES";
       if( !restart ) f_input += " RESTART=NO";

@@ -42,6 +42,7 @@ PLUMED_REGISTER_ACTION(PbcAction,"PBC")
 void PbcAction::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
+  keys.setValueDescription("a matrix containing the cell vectors that were passed from the MD code");
 }
 
 PbcAction::PbcAction(const ActionOptions&ao):

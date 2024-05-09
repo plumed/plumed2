@@ -468,7 +468,7 @@ void ActionWithVector::runAllTasks() {
     std::vector<double> omp_buffer;
     if( nt>1 ) omp_buffer.resize( bufsize, 0.0 );
     MultiValue myvals( nquants, nderivatives, nmatrices, maxcol, nbooks );
-    myvals.clearAll(true);
+    myvals.clearAll();
 
     #pragma omp for nowait
     for(unsigned i=rank; i<nactive_tasks; i+=stride) {
@@ -480,7 +480,7 @@ void ActionWithVector::runAllTasks() {
       else gatherAccumulators( partialTaskList[i], myvals, buffer );
 
       // Clear the value
-      myvals.clearAll(true);
+      myvals.clearAll();
     }
     #pragma omp critical
     gatherThreads( nt, bufsize, omp_buffer, buffer, myvals );
@@ -685,7 +685,7 @@ bool ActionWithVector::checkForForces() {
     std::vector<double> omp_forces;
     if( nt>1 ) omp_forces.resize( forcesForApply.size(), 0.0 );
     MultiValue myvals( nquants, nderiv, nmatrices, maxcol, nbooks );
-    myvals.clearAll(true);
+    myvals.clearAll();
 
     #pragma omp for nowait
     for(unsigned i=rank; i<nf_tasks; i+=stride) {
@@ -695,7 +695,7 @@ bool ActionWithVector::checkForForces() {
       if( nt>1 ) gatherForces( force_tasks[i], myvals, omp_forces );
       else gatherForces( force_tasks[i], myvals, forcesForApply );
 
-      myvals.clearAll(true);
+      myvals.clearAll();
     }
     #pragma omp critical
     if(nt>1) for(unsigned i=0; i<forcesForApply.size(); ++i) forcesForApply[i]+=omp_forces[i];

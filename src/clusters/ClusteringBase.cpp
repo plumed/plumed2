@@ -27,6 +27,7 @@ namespace clusters {
 
 void ClusteringBase::registerKeywords( Keywords& keys ) {
   matrixtools::MatrixOperationBase::registerKeywords( keys ); keys.use("ARG");
+  keys.setValueDescription("vector with length that is equal to the number of rows in the input matrix.  Elements of this vector are equal to the cluster that each node is a part of");
 }
 
 ClusteringBase::ClusteringBase(const ActionOptions&ao):

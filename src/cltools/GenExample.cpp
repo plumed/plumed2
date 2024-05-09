@@ -319,16 +319,8 @@ void GenExample::printExampleInput( const std::vector<std::vector<std::string> >
             unsigned ncomp = av->getNumberOfComponents();
             for(unsigned k=0; k<ncomp; ++k ) {
               std::string myname = av->copyOutput(k)->getName(); std::size_t dot=myname.find_first_of(".");
-              std::string tname=myname.substr(dot+1); std::size_t und=tname.find_last_of("_"); std::size_t hyph=tname.find_first_of("-");
-              if( und!=std::string::npos && hyph!=std::string::npos ) plumed_merror("cannot use underscore and hyphen in name");
-              ofile<<"<tr><td width=\"5%%\">"<<myname<<"</td><td>";
-              if( und!=std::string::npos ) {
-                ofile<<keys.getOutputComponentDescription(tname.substr(und))<<" This particular component measures this quantity for the input CV named ";
-                ofile<<tname.substr(0,und);
-              } else if( hyph!=std::string::npos ) {
-                ofile<<keys.getOutputComponentDescription(tname.substr(0,hyph))<<"  This is the "<<tname.substr(hyph+1)<<"th of these quantities";
-              } else ofile<<keys.getOutputComponentDescription(tname);
-              ofile<<"</td></tr>"<<std::endl;
+              std::string tname=myname.substr(dot+1);
+              ofile<<"<tr><td width=\"5%%\">"<<myname<<"</td><td>"<<av->getOutputComponentDescription(tname,keys)<<"</td></tr>"<<std::endl;
             }
             ofile<<"</table>"<<std::endl;
           }

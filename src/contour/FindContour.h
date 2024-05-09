@@ -35,6 +35,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit FindContour(const ActionOptions&ao);
+  std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const override ;
   void setupValuesOnFirstStep() override;
   unsigned getNumberOfDerivatives() override ;
   void areAllTasksRequired( std::vector<ActionWithVector*>& task_reducing_actions ) override ;

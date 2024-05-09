@@ -59,6 +59,7 @@ PLUMED_REGISTER_ACTION(Concatenate,"CONCATENATE")
 void Concatenate::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys ); ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
   keys.add("numbered","MATRIX","specify the matrices that you wish to join together into a single matrix"); keys.reset_style("MATRIX","compulsory");
+  keys.setValueDescription("the concatenated vector/matrix that was constructed from the input values");
 }
 
 Concatenate::Concatenate(const ActionOptions& ao):

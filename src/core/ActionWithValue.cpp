@@ -44,12 +44,6 @@ void ActionWithValue::noAnalyticalDerivatives(Keywords& keys) {
   keys.addFlag("NUMERICAL_DERIVATIVES",false,"analytical derivatives are not implemented for this keyword so numerical derivatives are always used");
 }
 
-void ActionWithValue::componentsAreNotOptional(Keywords& keys) {
-  keys.setComponentsIntroduction("By default this Action calculates the following quantities. These quantities can "
-                                 "be referenced elsewhere in the input by using this Action's label followed by a "
-                                 "dot and the name of the quantity required from the list below.");
-}
-
 void ActionWithValue::useCustomisableComponents(Keywords& keys) {
   keys.setComponentsIntroduction("The names of the components in this action can be customized by the user in the "
                                  "actions input file.  However, in addition to the components that can be customized the "
@@ -113,11 +107,13 @@ Value* ActionWithValue::copyOutput( const unsigned& n ) const {
 // -- HERE WE HAVE THE STUFF FOR THE DEFAULT VALUE -- //
 
 void ActionWithValue::addValue( const std::vector<unsigned>& shape ) {
+  if( !keywords.outputComponentExists(".#!value") ) warning("documentation for the value calculated by this action has not been included");
   plumed_massert(values.empty(),"You have already added the default value for this action");
   values.emplace_back(Tools::make_unique<Value>(this,getLabel(), false, shape ) );
 }
 
 void ActionWithValue::addValueWithDerivatives( const std::vector<unsigned>& shape ) {
+  if( !keywords.outputComponentExists(".#!value") ) warning("documentation for the value calculated by this action has not been included");
   plumed_massert(values.empty(),"You have already added the default value for this action");
   values.emplace_back(Tools::make_unique<Value>(this,getLabel(), true, shape ) );
 }
@@ -138,7 +134,7 @@ void ActionWithValue::setPeriodic( const std::string& min, const std::string& ma
 // -- HERE WE HAVE THE STUFF FOR NAMED VALUES / COMPONENTS -- //
 
 void ActionWithValue::addComponent( const std::string& name, const std::vector<unsigned>& shape ) {
-  if( !keywords.outputComponentExists(name,true) ) {
+  if( !keywords.outputComponentExists(name) ) {
     plumed_merror("a description of component " + name + " has not been added to the manual. Components should be registered like keywords in "
                   "registerKeywords as described in the developer docs.");
   }
@@ -155,7 +151,7 @@ void ActionWithValue::addComponent( const std::string& name, const std::vector<u
 }
 
 void ActionWithValue::addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape ) {
-  if( !keywords.outputComponentExists(name,true) ) {
+  if( !keywords.outputComponentExists(name) ) {
     plumed_merror("a description of component " + name + " has not been added to the manual. Components should be registered like keywords in "
                   "registerKeywords as described in the developer doc.");
   }
@@ -169,6 +165,15 @@ void ActionWithValue::addComponentWithDerivatives( const std::string& name, cons
   values.emplace_back(Tools::make_unique<Value>(this,thename, true, shape ) );
   std::string msg="  added component to this action:  "+thename+" \n";
   log.printf(msg.c_str());
+}
+
+std::string ActionWithValue::getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const {
+  std::size_t und=cname.find_last_of("_"); std::size_t hyph=cname.find_first_of("-");
+  if( und!=std::string::npos && hyph!=std::string::npos ) plumed_merror("cannot use underscore and hyphen in name");
+  if( und!=std::string::npos ) return keys.getOutputComponentDescription(cname.substr(und)) + " This particular component measures this quantity for the input CV named " + cname.substr(0,und);
+  if( hyph!=std::string::npos ) return keys.getOutputComponentDescription(cname.substr(0,hyph)) + "  This is the " + cname.substr(hyph+1) + "th of these quantities";
+  plumed_massert( keys.outputComponentExists(cname), "if the component names are customizable then you should override this function" );
+  return keys.getOutputComponentDescription( cname );
 }
 
 int ActionWithValue::getComponent( const std::string& name ) const {

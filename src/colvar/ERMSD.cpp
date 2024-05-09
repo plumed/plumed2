@@ -121,7 +121,7 @@ void ERMSD::registerKeywords(Keywords& keys) {
   keys.add("compulsory","CUTOFF","2.4","only pairs of atoms closer than CUTOFF are considered in the calculation.");
   keys.add("atoms","ATOMS","the list of atoms (use lcs)");
   keys.add("optional","PAIRS","List of pairs considered. All pairs are considered if this value is not specified.");
-
+  keys.setValueDescription("the eRMSD between the instantaneous structure and the reference structure that was input");
 }
 
 ERMSD::ERMSD(const ActionOptions&ao):

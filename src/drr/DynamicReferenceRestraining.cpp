@@ -309,7 +309,6 @@ void DynamicReferenceRestraining::registerKeywords(Keywords &keys) {
                "to a single file rather than multiple .drrstate files. "
                "This option is effective only when textOutput is on.");
   keys.add("optional","FMT","specify format for outfiles files (useful for decrease the number of digits in regtests)");
-  componentsAreNotOptional(keys);
   keys.addOutputComponent(
     "_fict", "default",
     "one or multiple instances of this quantity can be referenced "

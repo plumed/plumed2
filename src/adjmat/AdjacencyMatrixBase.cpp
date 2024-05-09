@@ -38,10 +38,11 @@ void AdjacencyMatrixBase::registerKeywords( Keywords& keys ) {
   keys.addFlag("NOPBC",false,"don't use pbc");
   keys.add("compulsory","NL_CUTOFF","0.0","The cutoff for the neighbor list.  A value of 0 means we are not using a neighbor list");
   keys.add("compulsory","NL_STRIDE","1","The frequency with which we are updating the atoms in the neighbor list");
-  keys.addOutputComponent("w","COMPONENTS","the weight of the connection");
+  keys.addOutputComponent("w","COMPONENTS","a matrix containing the weights for the bonds between each pair of atoms");
   keys.addOutputComponent("x","COMPONENTS","the projection of the bond on the x axis");
   keys.addOutputComponent("y","COMPONENTS","the projection of the bond on the y axis");
   keys.addOutputComponent("z","COMPONENTS","the projection of the bond on the z axis");
+  keys.setValueDescription("a matrix containing the weights for the bonds between each pair of atoms");
 }
 
 AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):

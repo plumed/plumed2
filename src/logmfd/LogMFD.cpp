@@ -537,7 +537,6 @@ void LogMFD::registerKeywords(Keywords& keys) {
            "temperature of the MD system, while TEMP may be (in principle) different from it. "
            "If not provided, TEMPPD is set to be the same value as TEMP." );
 
-  componentsAreNotOptional(keys);
   keys.addOutputComponent("_fict","default",
                           "For example, the fictitious collective variable for LogMFD is specified as "
                           "ARG=dist12 and LABEL=logmfd in LOGMFD section in Plumed input file, "

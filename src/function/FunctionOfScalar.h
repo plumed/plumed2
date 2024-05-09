@@ -46,6 +46,7 @@ public:
   virtual ~FunctionOfScalar() {}
 /// Get the label to write in the graph
   std::string writeInGraph() const override { return myfunc.getGraphInfo( getName() ); }
+  std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const override ;
   void calculate() override;
   static void registerKeywords(Keywords&);
   void turnOnDerivatives() override;
@@ -56,6 +57,8 @@ void FunctionOfScalar<T>::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys); keys.use("ARG");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
   T tfunc; tfunc.registerKeywords( keys );
+  if( keys.getActionName()=="SUM_SCALAR" ) keys.setValueDescription("the sum of all the input arguments");
+  else if( keys.getActionName()=="MEAN_SCALAR" ) keys.setValueDescription("the mean of all the input arguments");
 }
 
 template <class T>
@@ -69,22 +72,24 @@ FunctionOfScalar<T>::FunctionOfScalar(const ActionOptions&ao):
   std::vector<std::string> components( keywords.getOutputComponents() );
   // Create the values to hold the output
   std::vector<std::string> str_ind( myfunc.getComponentsPerLabel() );
-  if( components.size()==0 && str_ind.size()==0 ) addValueWithDerivatives();
-  else if ( components.size()==0 ) {
-    for(unsigned j=0; j<str_ind.size(); ++j) addComponentWithDerivatives( str_ind[j] );
-  } else {
-    std::vector<std::string> str_ind( myfunc.getComponentsPerLabel() );
-    for(unsigned i=0; i<components.size(); ++i) {
-      if( str_ind.size()>0 ) {
-        for(unsigned j=0; j<str_ind.size(); ++j) addComponentWithDerivatives( components[i] + str_ind[j] );
-      } else if( components[i].find_first_of("_")!=std::string::npos ) {
-        if( getNumberOfArguments()==1 ) addValueWithDerivatives();
-        else { for(unsigned j=0; j<getNumberOfArguments(); ++j) addComponentWithDerivatives( getPntrToArgument(j)->getName() + components[i] ); }
-      } else addComponentWithDerivatives( components[i] );
-    }
+  for(unsigned i=0; i<components.size(); ++i) {
+    if( str_ind.size()>0 ) {
+      std::string compstr = components[i]; if( compstr==".#!value" ) compstr = "";
+      for(unsigned j=0; j<str_ind.size(); ++j) addComponentWithDerivatives( compstr + str_ind[j] );
+    } else if( components[i]==".#!value" ) addValueWithDerivatives();
+    else if( components[i].find_first_of("_")!=std::string::npos ) {
+      if( getNumberOfArguments()==1 ) addValueWithDerivatives();
+      else { for(unsigned j=0; j<getNumberOfArguments(); ++j) addComponentWithDerivatives( getPntrToArgument(j)->getName() + components[i] ); }
+    } else addComponentWithDerivatives( components[i] );
   }
   // Set the periodicities of the output components
   myfunc.setPeriodicityForOutputs( this ); myfunc.setPrefactor( this, 1.0 );
+}
+
+template <class T>
+std::string FunctionOfScalar<T>::getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const {
+  if( getName().find("SORT")==std::string::npos ) return ActionWithValue::getOutputComponentDescription( cname, keys );
+  return "the " + cname + "th largest of the input scalars";
 }
 
 template <class T>

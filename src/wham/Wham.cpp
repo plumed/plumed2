@@ -102,6 +102,7 @@ void Wham::registerKeywords(Keywords& keys ) {
   keys.add("compulsory","WHAMTOL","1e-10","threshold for convergence of WHAM algorithm");
   keys.add("optional","TEMP","the system temperature.  This is not required if your MD code passes this quantity to PLUMED");
   keys.remove("NUMERICAL_DERIVATIVES");
+  keys.setValueDescription("the vector of WHAM weights to use for reweighting the elements in a time series");
 }
 
 Wham::Wham(const ActionOptions&ao):

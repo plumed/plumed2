@@ -109,6 +109,7 @@ void EEFSolv::registerKeywords(Keywords& keys) {
   keys.add("compulsory", "NL_STRIDE", "40", "The frequency with which the neighbor list is updated.");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   keys.addFlag("TEMP_CORRECTION", false, "Correct free energy of solvation constants for temperatures different from 298.15 K");
+  keys.setValueDescription("the EEF1 solvation free energy for the input atoms");
 }
 
 EEFSolv::EEFSolv(const ActionOptions&ao):

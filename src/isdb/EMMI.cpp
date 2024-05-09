@@ -420,7 +420,6 @@ void EMMI::registerKeywords( Keywords& keys ) {
   keys.add("optional","AVERAGING", "Averaging window for weights");
   keys.addFlag("NO_AVER",false,"don't do ensemble averaging in multi-replica mode");
   keys.addFlag("REWEIGHT",false,"simple REWEIGHT using the ARG as energy");
-  componentsAreNotOptional(keys);
   keys.addOutputComponent("scoreb","default","Bayesian score");
   keys.addOutputComponent("acc",   "NOISETYPE","MC acceptance for uncertainty");
   keys.addOutputComponent("scale", "REGRESSION","scale factor");

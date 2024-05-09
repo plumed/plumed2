@@ -84,6 +84,7 @@ PLUMED_REGISTER_ACTION(VectorBessel,"BESSEL_VECTOR")
 
 void Bessel::registerKeywords(Keywords& keys) {
   keys.add("compulsory","ORDER","0","the order of Bessel function to use.  Can only be zero at the moment.");
+  keys.setValueDescription("the value of the bessel function");
 }
 
 void Bessel::read( ActionWithArguments* action ) {

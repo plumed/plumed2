@@ -591,7 +591,8 @@ void Keywords::setComponentsIntroduction( const std::string& instr ) {
 }
 
 void Keywords::addOutputComponent( const std::string& name, const std::string& key, const std::string& descr ) {
-  plumed_assert( !outputComponentExists( name, false ) );
+  plumed_assert( !outputComponentExists(name) );
+  plumed_massert( name!=".#!value", name + " is reserved for storing description of value" );
   plumed_massert( name.find("-")==std::string::npos,"dash is reseved character in component names" );
 
   std::size_t num2=name.find_first_of("_");
@@ -599,14 +600,27 @@ void Keywords::addOutputComponent( const std::string& name, const std::string& k
     char uu = '_'; plumed_massert( std::count(name.begin(),name.end(), uu)==1, "underscore is reserved character in component names and there should only be one");
     plumed_massert( num2==0, "underscore is reserved character in component names that has special meaning");
   }
+  if( key=="default" ) {
+    cstring = "By default this Action calculates the following quantities. These quantities can "
+              "be referenced elsewhere in the input by using this Action's label followed by a "
+              "dot and the name of the quantity required from the list below.";
+  }
 
   ckey.insert( std::pair<std::string,std::string>(name,key) );
   cdocs.insert( std::pair<std::string,std::string>(name,descr) );
   cnames.push_back(name);
 }
 
-bool Keywords::outputComponentExists( const std::string& name, const bool& custom ) const {
-  if( custom && cstring.find("customize")!=std::string::npos ) return true;
+void Keywords::setValueDescription( const std::string& descr ) {
+  if( !outputComponentExists(".#!value") ) {
+    ckey.insert( std::pair<std::string,std::string>(".#!value","default") );
+    cdocs.insert( std::pair<std::string,std::string>(".#!value",descr) );
+    cnames.push_back(".#!value");
+  } else cdocs[".#!value"] = descr;
+}
+
+bool Keywords::outputComponentExists( const std::string& name ) const {
+  if( cstring.find("customize")!=std::string::npos ) return true;
 
   std::string sname;
   std::size_t num=name.find_first_of("-");
@@ -627,13 +641,14 @@ std::string Keywords::getOutputComponentFlag( const std::string& name ) const {
 }
 
 std::string Keywords::getOutputComponentDescription( const std::string& name ) const {
-  if( cstring.find("customized")!=std::string::npos ) return "the label of this action is set by user in the input. See documentation above.";
-
   bool found=false;
   for(unsigned i=0; i<cnames.size(); ++i) {
     if( name==cnames[i] ) found=true;
   }
-  if( !found ) plumed_merror("could not find output component named " + name );
+  if( !found ) {
+    if( name==".#!value" ) return "the value calculated by this action";
+    plumed_merror("could not find output component named " + name );
+  }
   return cdocs.find(name)->second;
 }
 
@@ -673,6 +688,10 @@ const std::vector<std::string>& Keywords::getNeededKeywords() const {
 void Keywords::addActionNameSuffix( const std::string& suffix ) {
   if( std::find(actionNameSuffixes.begin(), actionNameSuffixes.end(), suffix )!=actionNameSuffixes.end() ) return;
   actionNameSuffixes.push_back( suffix );
+}
+
+std::string Keywords::getActionName() const {
+  return thisactname;
 }
 
 }

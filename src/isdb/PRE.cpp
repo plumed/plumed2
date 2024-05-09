@@ -89,7 +89,6 @@ public:
 PLUMED_REGISTER_ACTION(PRE,"PRE")
 
 void PRE::registerKeywords( Keywords& keys ) {
-  componentsAreNotOptional(keys);
   MetainferenceBase::registerKeywords(keys);
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("NORATIO",false,"Set to TRUE if you want to compute PRE without Intensity Ratio");

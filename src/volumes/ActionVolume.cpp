@@ -32,6 +32,7 @@ void ActionVolume::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","SIGMA","the width of the function to be used for kernel density estimation");
   keys.add("compulsory","KERNEL","gaussian","the type of kernel function to be used");
   keys.addFlag("OUTSIDE",false,"calculate quantities for colvars that are on atoms outside the region of interest");
+  keys.setValueDescription("vector of numbers between 0 and 1 that measure the degree to which each atom is within the volume of interest");
 }
 
 ActionVolume::ActionVolume(const ActionOptions&ao):

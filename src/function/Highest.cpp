@@ -86,7 +86,7 @@ class Highest : public FunctionTemplateBase {
 private:
   bool min, scalar_out;
 public:
-  void registerKeywords( Keywords& keys ) override {}
+  void registerKeywords( Keywords& keys ) override ;
   void read( ActionWithArguments* action ) override;
   bool zeroRank() const override { return scalar_out; }
   bool doWithTasks() const override { return !scalar_out; }
@@ -102,6 +102,11 @@ PLUMED_REGISTER_ACTION(ScalarHighest,"LOWEST_SCALAR")
 typedef FunctionOfVector<Highest> VectorHighest;
 PLUMED_REGISTER_ACTION(VectorHighest,"HIGHEST_VECTOR")
 PLUMED_REGISTER_ACTION(VectorHighest,"LOWEST_VECTOR")
+
+void Highest::registerKeywords( Keywords& keys ) {
+  if( keys.getActionName().find("LOWEST") ) keys.setValueDescription("the lowest of the input values");
+  else keys.setValueDescription("the highest of the input values");
+}
 
 void Highest::read( ActionWithArguments* action ) {
   min=action->getName().find("LOWEST")!=std::string::npos; if( !min ) plumed_assert( action->getName().find("HIGHEST")!=std::string::npos );
