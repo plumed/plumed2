@@ -120,6 +120,10 @@ void preliminary(){
     } catch(Plumed::ExceptionTypeError & e) {
       output<<"caught &natoms_float\n";
     }
+
+    const char* init_string="init____";
+    std::string_view sw(init_string,4);
+    p.cmd(sw);
   }
 }
 
