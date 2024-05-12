@@ -225,6 +225,10 @@ void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::ve
   t.resize(0); interpretAtomList( strings, xpos, this, t );
 }
 
+void ActionAtomistic::interpretAtomList(std::vector<std::string>& strings, std::vector<AtomNumber> &t) {
+  interpretAtomList( strings, xpos, this, t );
+}
+
 void ActionAtomistic::interpretAtomList(std::vector<std::string>& strings, const std::vector<Value*>& xpos, Action* action, std::vector<AtomNumber> &t) {
   Tools::interpretRanges(strings);
   for(unsigned i=0; i<strings.size(); ++i) {
