@@ -51,6 +51,12 @@ ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
   ActionWithValue* bv = plumed.getActionSet().selectWithLabel<ActionWithValue*>("Box");
   if( bv ) boxValue=bv->copyOutput(0);
   // We now get all the information about atoms that are lying about
+  getAtomValuesFromPlumedObject( plumed, xpos, ypos, zpos, masv, chargev );
+  if( xpos.size()!=ypos.size() || xpos.size()!=zpos.size() || xpos.size()!=masv.size() || xpos.size()!=chargev.size() )
+    error("mismatch between value arrays");
+}
+
+void ActionAtomistic::getAtomValuesFromPlumedObject( const PlumedMain& plumed, std::vector<Value*>& xpos, std::vector<Value*>& ypos, std::vector<Value*>& zpos, std::vector<Value*>& masv, std::vector<Value*>& chargev ) {
   std::vector<ActionWithValue*> vatoms = plumed.getActionSet().select<ActionWithValue*>();
   for(const auto & vv : vatoms ) {
     plumed_assert(vv); // needed for following calls, see #1046
@@ -71,8 +77,6 @@ ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
       chargev.push_back( vv->copyOutput( vv->getLabel() + ".charge") );
     }
   }
-  if( xpos.size()!=ypos.size() || xpos.size()!=zpos.size() || xpos.size()!=masv.size() || xpos.size()!=chargev.size() )
-    error("mismatch between value arrays");
 }
 
 void ActionAtomistic::registerKeywords( Keywords& keys ) {
@@ -218,10 +222,10 @@ void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::ve
   } else {
     if ( !parseNumberedVector(key,num,strings) ) return;
   }
-  t.resize(0); interpretAtomList( strings, t );
+  t.resize(0); interpretAtomList( strings, xpos, this, t );
 }
 
-void ActionAtomistic::interpretAtomList(std::vector<std::string>& strings, std::vector<AtomNumber> &t) {
+void ActionAtomistic::interpretAtomList(std::vector<std::string>& strings, const std::vector<Value*>& xpos, Action* action, std::vector<AtomNumber> &t) {
   Tools::interpretRanges(strings);
   for(unsigned i=0; i<strings.size(); ++i) {
     AtomNumber atom;
@@ -249,9 +253,9 @@ void ActionAtomistic::interpretAtomList(std::vector<std::string>& strings, std::
           ndxgroup=words[1];
         } else plumed_error()<<"Cannot intepret selection "<<symbol;
 
-        if(ndxgroup.size()>0) log<<"  importing group '"+ndxgroup+"'";
-        else                  log<<"  importing first group";
-        log<<" from index file "<<ndxfile<<"\n";
+        if(ndxgroup.size()>0) action->log<<"  importing group '"+ndxgroup+"'";
+        else                  action->log<<"  importing first group";
+        action->log<<" from index file "<<ndxfile<<"\n";
 
         IFile ifile;
         ifile.open(ndxfile);
@@ -275,27 +279,27 @@ void ActionAtomistic::interpretAtomList(std::vector<std::string>& strings, std::
         if(!groupfound) plumed_error()<<"group has not been found in index file";
         ok=true;
       } else {
-        auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+        auto* moldat=action->plumed.getActionSet().selectLatest<GenericMolInfo*>(action);
         if( moldat ) {
           std::vector<AtomNumber> atom_list; moldat->interpretSymbol( symbol, atom_list );
           if( atom_list.size()>0 ) { ok=true; t.insert(t.end(),atom_list.begin(),atom_list.end()); }
-          else { error(strings[i] + " is not a label plumed knows"); }
+          else { action->error(strings[i] + " is not a label plumed knows"); }
         } else {
-          error("atoms specified using @ symbol but no MOLINFO was available");
+          action->error("atoms specified using @ symbol but no MOLINFO was available");
         }
       }
     }
 // here we check if the atom name is the name of a group
     if(!ok) {
-      Group* mygrp=plumed.getActionSet().selectWithLabel<Group*>(strings[i]);
+      Group* mygrp=action->plumed.getActionSet().selectWithLabel<Group*>(strings[i]);
       if(mygrp) {
         std::vector<std::string> grp_str( mygrp->getGroupAtoms() );
-        interpretAtomList( grp_str, t ); ok=true;
+        interpretAtomList( grp_str, xpos, action, t ); ok=true;
       } else {
-        Group* mygrp2=plumed.getActionSet().selectWithLabel<Group*>(strings[i]+"_grp");
+        Group* mygrp2=action->plumed.getActionSet().selectWithLabel<Group*>(strings[i]+"_grp");
         if(mygrp2) {
           std::vector<std::string> grp_str( mygrp2->getGroupAtoms() );
-          interpretAtomList( grp_str, t ); ok=true;
+          interpretAtomList( grp_str, xpos, action, t ); ok=true;
         }
       }
     }
@@ -309,7 +313,7 @@ void ActionAtomistic::interpretAtomList(std::vector<std::string>& strings, std::
         ind = ind + xpos[j]->getNumberOfValues();
       }
     }
-    if(!ok) error("it was not possible to interpret atom name " + strings[i]);
+    if(!ok) action->error("it was not possible to interpret atom name " + strings[i]);
     // plumed_massert(ok,"it was not possible to interpret atom name " + strings[i]);
   }
 }

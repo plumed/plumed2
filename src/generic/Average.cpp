@@ -104,6 +104,7 @@ void Average::registerKeywords( Keywords& keys ) {
   keys.add("optional","LOGWEIGHTS","the logarithm of the quantity to use as the weights when calculating averages");
   keys.add("compulsory","STRIDE","1","the frequency with which to store data for averaging");
   keys.add("compulsory","CLEAR","0","the frequency with whihc to clear the data that is being averaged");
+  keys.add("optional","NORMALIZATION","keyword for old version of the code that is there to maintain back compatibility only. Adding this keyword does nothing");
   keys.needsAction("COMBINE"); keys.needsAction("CUSTOM"); keys.needsAction("ONES"); keys.needsAction("ACCUMULATE");
 }
 
@@ -131,9 +132,15 @@ Average::Average( const ActionOptions& ao ):
     readInputLine( getShortcutLabel() + "_cossum: ACCUMULATE ARG=" + getShortcutLabel() + "_cos STRIDE=" + stride + " CLEAR=" + clearstride );
     readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_sinsum," + getShortcutLabel() + "_cossum," + getShortcutLabel() + "_denom FUNC=" + lbound + "+" + pfactor + "*atan2(x/z,y/z) PERIODIC=" + lbound +"," + ubound);
   } else {
+    std::string normstr; parse("NORMALIZATION",normstr);
+    if( normstr=="true" || normstr=="false" ) warning("NORMALIZATION is deprecated. You are advised to take this out of input files in future and use the new syntax with ACCUMULATE for unormalized data rather than the shortcut AVERAGE");
+    else if( normstr.length()>0 ) error("NORMALIZATION=" + normstr + " is not valid PLUMED input.  If you want an unormalised 'average' use ACCUMULATE");
     readInputLine( getShortcutLabel() + "_prod: CUSTOM ARG=" + arg[0] + "," + getShortcutLabel() + "_weight FUNC=x*y PERIODIC=NO");
-    readInputLine( getShortcutLabel() + "_numer: ACCUMULATE ARG=" + getShortcutLabel() + "_prod STRIDE=" + stride + " CLEAR=" + clearstride  );
-    readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_numer," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+    if( normstr.length()==0 || normstr=="true" ) {
+      readInputLine( getShortcutLabel() + "_numer: ACCUMULATE ARG=" + getShortcutLabel() + "_prod STRIDE=" + stride + " CLEAR=" + clearstride  );
+      readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_numer," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+    } else if( normstr=="false" ) readInputLine( getShortcutLabel() + ": ACCUMULATE ARG=" + getShortcutLabel() + "_prod STRIDE=" + stride + " CLEAR=" + clearstride  );
+    else plumed_error();
   }
 }
 

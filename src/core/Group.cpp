@@ -156,7 +156,7 @@ Group::Group(const ActionOptions&ao):
     std::vector<AtomNumber> add;
     std::vector<std::string> words;
     words.emplace_back("@ndx: " + ndxfile + " " + ndxgroup);
-    interpretAtomList(words,add);
+    interpretAtomList(words,xpos,this,add);
     atoms.insert(atoms.end(),add.begin(),add.end());
   }
 

@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionWithArguments.h"
 #include "core/ActionWithValue.h"
+#include "core/ActionAtomistic.h"
 #include "core/ActionPilot.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
@@ -48,7 +49,7 @@ class DumpPDB :
   std::string file;
   std::string description;
   std::vector<std::string> argnames;
-  std::vector<unsigned> pdb_atom_indices;
+  std::vector<AtomNumber> pdb_atom_indices;
   void buildArgnames();
   void printAtom( OFile& opdbf, const unsigned& anum, const Vector& pos, const double& m, const double& q ) const ;
 public:
@@ -86,13 +87,11 @@ DumpPDB::DumpPDB(const ActionOptions&ao):
     std::vector<Value*> atom_args; interpretArgumentList( atoms, plumed.getActionSet(), this, atom_args );
     if( atom_args.size()!=1 ) error("only one action should appear in input to atom args");
     std::vector<Value*> args( getArguments() ); args.push_back( atom_args[0] ); requestArguments( args );
-    std::vector<std::string> indices; parseVector("ATOM_INDICES",indices); Tools::interpretRanges(indices);
+    std::vector<std::string> indices; parseVector("ATOM_INDICES",indices); std::vector<Value*> xvals,yvals,zvals,masv,chargev;
+    ActionAtomistic::getAtomValuesFromPlumedObject(plumed,xvals,yvals,zvals,masv,chargev);
+    ActionAtomistic::interpretAtomList( indices, xvals, this, pdb_atom_indices );
     log.printf("  printing atoms : ");
-    for(unsigned i=0; i<indices.size(); ++i) {
-      AtomNumber atom; bool ok=Tools::convertNoexcept(indices[i],atom);
-      if( !ok ) error("count not interpret atom " + indices[i] );
-      pdb_atom_indices.push_back(atom.serial()); log.printf("%d ", pdb_atom_indices[i] );
-    }
+    for(unsigned i=0; i<indices.size(); ++i) log.printf("%d ", pdb_atom_indices[i].serial() );
     log.printf("\n");
     if( pdb_atom_indices.size()!=atom_args[0]->getShape()[1]/3 ) error("mismatch between size of matrix containing positions and vector of atom indices");
   }
@@ -173,7 +172,7 @@ void DumpPDB::update() {
         pos[0]=getPntrToArgument(atomarg)->get(npos*(3*i+0) + k);
         pos[1]=getPntrToArgument(atomarg)->get(npos*(3*i+1) + k);
         pos[2]=getPntrToArgument(atomarg)->get(npos*(3*i+2) + k);
-        printAtom( opdbf, pdb_atom_indices[k], pos, 1.0, 1.0 );
+        printAtom( opdbf, pdb_atom_indices[k].serial(), pos, 1.0, 1.0 );
       }
     }
     opdbf.printf("END\n");
