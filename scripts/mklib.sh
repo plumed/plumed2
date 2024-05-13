@@ -4,17 +4,30 @@ if [ "$1" = --description ] ; then
   echo "compile one or more *.cpp files into a shared library"
 fi
 
-if [ "$1" = --help ] ; then
-  echo "compile one or more *.cpp files into a shared library"
-  echo " you can create and export the variable PLUMED_MKLIB_CFLAGS with some extra compile time flags to be used"
-  echo " you can create and export the variable PLUMED_MKLIB_LDFLAGS with some extra link time flags (and libraries) to be used"
-  exit 0
-fi
+MANUAL='Compile one or more *.cpp files into a shared library.
 
-if [ "$1" = --options ] ; then
-  echo "--description --options --help -o -n"
-  exit 0
-fi
+Usage:
+
+  plumed mklib [options] files1.cpp [file2.cpp ...]
+
+Options:
+  -h, --help
+                         Print this help and exit
+  -o LIBNAME, --out LIBNAME
+                         Name of the output library. If missing, the name
+                         of the first input file will me used, with its
+                         suffix properly adjusted.
+  -n                     No-clobber mode, similar to `mv -n`.
+                         Does not overwrite an existing library.
+                         If the library exists when the command is started,
+                         skip also the compilation phase.
+
+Environment variables:
+  PLUMED_MKLIB_CFLAGS    Extra compile time flags to be used
+  PLUMED_MKLIB_LDFLAGS   Extra link time flags (and libraries) to be used
+'
+
+OPTIONS="--description --options -h --help -o --out -n"
 
 if [ $# == 0 ]
 then
@@ -34,12 +47,11 @@ do
   prefixopt="$prefix$opt"
   prefix=""
   case "$prefixopt" in
-    (-o)
-      prefix="--out=";;
-    (--out=*)
-      lib="${prefixopt#--out=}";;
-    (-n)
-      no_clobber=yes;;
+    (-o|--out) prefix="--out=";;
+    (-h|--help) echo "$MANUAL" ; exit ;;
+    (--options) echo "$OPTIONS" ; exit ;;
+    (--out=*) lib="${prefixopt#--out=}";;
+    (-n) no_clobber=yes;;
     (-*)
       echo "ERROR: Unknown option $opt. Use --help for help."
       exit 1 ;;
