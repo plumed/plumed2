@@ -740,7 +740,6 @@ enable_dlopen
 enable_dladdr
 enable_rtld_default
 enable_subprocess
-enable_popen
 enable_execinfo
 enable_gsl
 enable_boost_graph
@@ -1441,7 +1440,6 @@ Optional Features:
   --enable-rtld_default   enable search for RTLD_DEFAULT macro, default: yes
   --enable-subprocess     enable search for functions needed to manage a
                           subprocess, default: yes
-  --enable-popen          enable search for popen, default: yes
   --enable-execinfo       enable search for execinfo, default: yes
   --enable-gsl            enable search for gsl, default: yes
   --enable-boost_graph    enable search for boost graph, default: no
@@ -3018,24 +3016,6 @@ else
   case "yes" in
              (yes) subprocess=true ;;
              (no)  subprocess=false ;;
-  esac
-
-fi
-
-
-
-popen=
-# Check whether --enable-popen was given.
-if test "${enable_popen+set}" = set; then :
-  enableval=$enable_popen; case "${enableval}" in
-             (yes) popen=true ;;
-             (no)  popen=false ;;
-             (*)   as_fn_error $? "wrong argument to --enable-popen" "$LINENO" 5 ;;
-  esac
-else
-  case "yes" in
-             (yes) popen=true ;;
-             (no)  popen=false ;;
   esac
 
 fi
