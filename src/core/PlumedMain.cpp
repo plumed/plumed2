@@ -1255,14 +1255,16 @@ void PlumedMain::load(const std::string& fileName) {
       extension=libName.substr(n+1);
     if(n!=std::string::npos && n<libName.length())
       base=libName.substr(0,n);
+
     if(extension=="cpp") {
+      libName="./"+base+"."+config::getVersionLong()+"."+config::getSoExt();
 // full path command, including environment setup
 // this will work even if plumed is not in the execution path or if it has been
 // installed with a name different from "plumed"
-      std::string cmd=config::getEnvCommand()+" \""+config::getPlumedRoot()+"\"/scripts/mklib.sh "+libName;
+      std::string cmd=config::getEnvCommand()+" \""+config::getPlumedRoot()+"\"/scripts/mklib.sh -n -o "+libName+" "+fileName;
 
       if(std::getenv("PLUMED_LOAD_ACTION_DEBUG")) log<<"Executing: "<<cmd;
-      else log<<"Compiling: "<<libName;
+      else log<<"Compiling: "<<fileName<<" to "<<libName;
 
       if(comm.Get_size()>0) log<<" (only on master node)";
       log<<"\n";
@@ -1280,9 +1282,10 @@ void PlumedMain::load(const std::string& fileName) {
         if(ret!=0) plumed_error() <<"An error happened while executing command "<<cmd<<"\n";
       }
       comm.Barrier();
-      base="./"+base;
+    } else {
+      libName=base+"."+config::getSoExt();
     }
-    libName=base+"."+config::getSoExt();
+
     // If we have multiple threads (each holding a Plumed object), each of them
     // will load the library, but each of them will only see actions registered
     // from the owned library

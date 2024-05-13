@@ -2,15 +2,32 @@
 
 if [ "$1" = --description ] ; then
   echo "compile one or more *.cpp files into a shared library"
-  echo " you can create and export the variable PLUMED_MKLIB_CFLAGS with some extra compile time flags to be used"
-  echo " you can create and export the variable PLUMED_MKLIB_LDFLAGS with some extra link time flags (and libraries) to be used"
-  exit 0
 fi
 
-if [ "$1" = --options ] ; then
-  echo "--description --options"
-  exit 0
-fi
+MANUAL='Compile one or more *.cpp files into a shared library.
+
+Usage:
+
+  plumed mklib [options] files1.cpp [file2.cpp ...]
+
+Options:
+  -h, --help
+                         Print this help and exit
+  -o LIBNAME, --out LIBNAME
+                         Name of the output library. If missing, the name
+                         of the first input file will me used, with its
+                         suffix properly adjusted.
+  -n                     No-clobber mode, similar to `mv -n`.
+                         Does not overwrite an existing library.
+                         If the library exists when the command is started,
+                         skip also the compilation phase.
+
+Environment variables:
+  PLUMED_MKLIB_CFLAGS    Extra compile time flags to be used
+  PLUMED_MKLIB_LDFLAGS   Extra link time flags (and libraries) to be used
+'
+
+OPTIONS="--description --options -h --help -o --out -n"
 
 if [ $# == 0 ]
 then
@@ -21,16 +38,52 @@ fi
 
 source "$PLUMED_ROOT"/src/config/compile_options.sh
 
-lib="${1%%.cpp}".$soext
+prefix=""
+lib=""
+no_clobber=""
+files=() # empty array
+for opt
+do
+  prefixopt="$prefix$opt"
+  prefix=""
+  case "$prefixopt" in
+    (-o|--out) prefix="--out=";;
+    (-h|--help) echo "$MANUAL" ; exit ;;
+    (--options) echo "$OPTIONS" ; exit ;;
+    (--out=*) lib="${prefixopt#--out=}";;
+    (-n) no_clobber=yes;;
+    (-*)
+      echo "ERROR: Unknown option $opt. Use --help for help."
+      exit 1 ;;
+    (*)
+      files+=("${prefixopt}");;
+  esac
+done
+
+if [ ${#files[@]} = 0 ] ; then
+  echo ERROR
+  echo "pass at least one file"
+  exit 1
+fi
+
+if [ -z "$lib" ]
+then
+  firstfile="${files[0]}"
+  lib="${firstfile%%.cpp}".$soext
+fi
 
 recompile=no
-for file
+for file in "${files[@]}"
 do
   if ! test $lib -nt $file ;
   then
     recompile=yes
   fi
 done
+
+if test -z "$no_clobber" ; then
+  recompile=yes
+fi
 
 if test $recompile = no ; then
   echo "$lib is already up to date"
@@ -53,7 +106,7 @@ tmpdir=$(mktemp -d "plumed_mklib.XXXXXX")
 
 toRemove="${toRemove} $tmpdir"
 
-for file
+for file in "${files[@]}"
 do
 
   if [[ "$file" != *.cpp ]] ;
@@ -114,5 +167,9 @@ fi
 
 eval "$link_command" "$PLUMED_MKLIB_LDFLAGS" $objs -o "$tmpdir/$lib"
 
-# || true is necessary with recent coreutils
-mv -n "$tmpdir/$lib" $lib || true
+if test -n "$no_clobber" ; then
+  # || true is necessary with recent coreutils
+  mv -n "$tmpdir/$lib" $lib || true
+else
+  mv "$tmpdir/$lib" $lib
+fi
