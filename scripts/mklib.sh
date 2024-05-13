@@ -2,13 +2,17 @@
 
 if [ "$1" = --description ] ; then
   echo "compile one or more *.cpp files into a shared library"
+fi
+
+if [ "$1" = --help ] ; then
+  echo "compile one or more *.cpp files into a shared library"
   echo " you can create and export the variable PLUMED_MKLIB_CFLAGS with some extra compile time flags to be used"
   echo " you can create and export the variable PLUMED_MKLIB_LDFLAGS with some extra link time flags (and libraries) to be used"
   exit 0
 fi
 
 if [ "$1" = --options ] ; then
-  echo "--description --options"
+  echo "--description --options --help -o"
   exit 0
 fi
 
@@ -21,10 +25,40 @@ fi
 
 source "$PLUMED_ROOT"/src/config/compile_options.sh
 
-lib="${1%%.cpp}".$soext
+prefix=""
+lib=""
+files=() # empty array
+for opt
+do
+  prefixopt="$prefix$opt"
+  prefix=""
+  case "$prefixopt" in
+    (-o)
+      prefix="--out=";;
+    (--out=*)
+      lib="${prefixopt#--out=}";;
+    (-*)
+      echo "ERROR: Unknown option $opt. Use --help for help."
+      exit 1 ;;
+    (*)
+      files+="${prefixopt}";;
+  esac
+done
+
+if [ ${#files[@]} = 0 ] ; then
+  echo ERROR
+  echo "pass at least one file"
+  exit 1
+fi
+
+if [ -z "$lib" ]
+then
+  firstfile="${files[0]}"
+  lib="${firstfile%%.cpp}".$soext
+fi
 
 recompile=no
-for file
+for file in $files
 do
   if ! test $lib -nt $file ;
   then
@@ -53,7 +87,7 @@ tmpdir=$(mktemp -d "plumed_mklib.XXXXXX")
 
 toRemove="${toRemove} $tmpdir"
 
-for file
+for file in $files
 do
 
   if [[ "$file" != *.cpp ]] ;
