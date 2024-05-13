@@ -41,7 +41,7 @@ do
       echo "ERROR: Unknown option $opt. Use --help for help."
       exit 1 ;;
     (*)
-      files+="${prefixopt}";;
+      files+=("${prefixopt}");;
   esac
 done
 
@@ -58,7 +58,7 @@ then
 fi
 
 recompile=no
-for file in $files
+for file in "${files[@]}"
 do
   if ! test $lib -nt $file ;
   then
@@ -87,7 +87,7 @@ tmpdir=$(mktemp -d "plumed_mklib.XXXXXX")
 
 toRemove="${toRemove} $tmpdir"
 
-for file in $files
+for file in "${files[@]}"
 do
 
   if [[ "$file" != *.cpp ]] ;
