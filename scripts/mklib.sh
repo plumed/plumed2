@@ -12,7 +12,7 @@ if [ "$1" = --help ] ; then
 fi
 
 if [ "$1" = --options ] ; then
-  echo "--description --options --help -o"
+  echo "--description --options --help -o -n"
   exit 0
 fi
 
@@ -27,6 +27,7 @@ source "$PLUMED_ROOT"/src/config/compile_options.sh
 
 prefix=""
 lib=""
+no_clobber=""
 files=() # empty array
 for opt
 do
@@ -37,6 +38,8 @@ do
       prefix="--out=";;
     (--out=*)
       lib="${prefixopt#--out=}";;
+    (-n)
+      no_clobber=yes;;
     (-*)
       echo "ERROR: Unknown option $opt. Use --help for help."
       exit 1 ;;
@@ -65,6 +68,10 @@ do
     recompile=yes
   fi
 done
+
+if test -z "$no_clobber" ; then
+  recompile=yes
+fi
 
 if test $recompile = no ; then
   echo "$lib is already up to date"
@@ -148,5 +155,9 @@ fi
 
 eval "$link_command" "$PLUMED_MKLIB_LDFLAGS" $objs -o "$tmpdir/$lib"
 
-# || true is necessary with recent coreutils
-mv -n "$tmpdir/$lib" $lib || true
+if test -n "$no_clobber" ; then
+  # || true is necessary with recent coreutils
+  mv -n "$tmpdir/$lib" $lib || true
+else
+  mv "$tmpdir/$lib" $lib
+fi
