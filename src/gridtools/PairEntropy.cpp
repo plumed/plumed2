@@ -45,6 +45,7 @@ PLUMED_REGISTER_ACTION(PairEntropy,"PAIRENTROPY")
 
 void PairEntropy::registerKeywords( Keywords& keys ) {
   RDF::registerKeywords( keys ); keys.needsAction("RDF");
+  keys.setValueDescription("the KL-entropy that is computed from the radial distribution function");
   keys.needsAction("INTERPOLATE_GRID"); keys.needsAction("INTEGRATE_GRID");
 }
 

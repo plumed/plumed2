@@ -52,6 +52,7 @@ void Displacement::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords(keys);
   keys.add("compulsory","ARG1","The point that we are calculating the distance from");
   keys.add("compulsory","ARG2","The point that we are calculating the distance to");
+  keys.setValueDescription("the differences between the input arguments");
   keys.needsAction("DIFFERENCE"); keys.needsAction("TRANSPOSE"); keys.needsAction("VSTACK");
 }
 

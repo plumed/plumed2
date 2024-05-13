@@ -776,8 +776,9 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
       if( valuedict_file.length()>0 ) {
         OFile valuefile; valuefile.open( valuedict_file ); valuefile.printf("{\n"); bool firsta=true;
         for(const auto & pp : p.getActionSet()) {
+          if( pp.get()->getName()=="CENTER" ) continue ;
           ActionWithVirtualAtom* avv=dynamic_cast<ActionWithVirtualAtom*>(pp.get());
-          if( avv ||  pp.get()->getName()=="GROUP" ) {
+          if( avv ||  pp.get()->getName()=="GROUP" || pp.get()->getName()=="DENSITY" ) {
             Action* p(pp.get());
             if( firsta ) { valuefile.printf("  \"%s\" : {\n", p->getLabel().c_str() ); firsta=false; }
             else valuefile.printf(",\n  \"%s\" : {\n", p->getLabel().c_str() );
@@ -791,22 +792,46 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
             else valuefile.printf(",\n  \"%s\" : {\n", av->getLabel().c_str() );
             bool firstv=true; Keywords keys; actionRegister().getKeywords( av->getName(), keys );
             for(unsigned i=0; i<av->getNumberOfComponents(); ++i) {
-              Value* myval = av->copyOutput(i); std::string compname = myval->getName(), vtype, description;  std::size_t dot=compname.find(".");
-              if( myval->getRank()==0 ) vtype="scalar";
-              else if( myval->getRank()>0 && myval->hasDerivatives() ) vtype="grid";
-              else if( myval->getRank()==1 ) vtype="vector";
-              else if( myval->getRank()==2 ) vtype="matrix";
-              else plumed_merror("unknown type for value " + myval->getName() );
+              Value* myval = av->copyOutput(i); std::string compname = myval->getName(), description; std::size_t dot=compname.find(".");
               if( dot!=std::string::npos ) {
                 std::string cname = compname.substr(dot+1); description = av->getOutputComponentDescription( cname, keys );
               } else description = keys.getOutputComponentDescription(".#!value");
               if( description.find("\\")!=std::string::npos ) error("found invalid backslash character in documentation for component " + compname + " in action " + av->getName() + " with label " + av->getLabel() );
-              if( firstv ) { valuefile.printf("    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), vtype.c_str(), description.c_str() ); firstv=false; }
-              else valuefile.printf(",\n    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), vtype.c_str(), description.c_str() );
+              if( firstv ) { valuefile.printf("    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), myval->getValueType().c_str(), description.c_str() ); firstv=false; }
+              else valuefile.printf(",\n    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), myval->getValueType().c_str(), description.c_str() );
             }
             valuefile.printf("\n  }");
           }
           ActionShortcut* as=pp->castToActionShortcut();
+          if( as ) {
+            unsigned ncomponents = 0; std::vector<ActionWithValue*> val_actions;
+            Keywords keys; actionRegister().getKeywords( as->getName(), keys );
+            std::vector<std::string> cnames( keys.getOutputComponents().size() );
+            for(unsigned i=0; i<cnames.size(); ++i) {
+              std::string valname;
+              if( cnames[i]==".#!value" ) valname = as->getShortcutLabel();
+              else valname = as->getShortcutLabel() + "_" + cnames[i];
+              ActionWithValue* av = p.getActionSet().selectWithLabel<ActionWithValue*>( valname );
+              if( av ) val_actions.push_back(av);
+            }
+            if( val_actions.size()==0 ) continue ;
+
+            if( firsta ) { valuefile.printf("  \"shortcut_%s\" : {\n", as->getShortcutLabel().c_str() ); firsta=false; }
+            else valuefile.printf(",\n  \"shortcut_%s\" : {\n", as->getShortcutLabel().c_str() );
+            bool firstv=true;
+            for(unsigned i=0; i<val_actions.size(); ++i) {
+              for(unsigned j=0; j<val_actions[i]->getNumberOfComponents(); ++j) {
+                Value* myval = val_actions[i]->copyOutput(j); std::string compname = myval->getName(), description; std::size_t dot=compname.find(".");
+                if( dot!=std::string::npos ) {
+                  std::string cname = compname.substr(dot+1); description = val_actions[i]->getOutputComponentDescription( cname, keys );
+                } else description = description = keys.getOutputComponentDescription(".#!value");
+                if( description.find("\\")!=std::string::npos ) error("found invalid backslash character in documentation for component " + compname + " in action " + val_actions[i]->getName() + " with label " + val_actions[i]->getLabel() );
+                if( firstv ) { valuefile.printf("    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), myval->getValueType().c_str(), description.c_str() ); firstv=false; }
+                else valuefile.printf(",\n    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), myval->getValueType().c_str(), description.c_str() );
+              }
+            }
+            valuefile.printf("\n  }");
+          }
         }
         valuefile.printf("\n}\n"); valuefile.close();
       }

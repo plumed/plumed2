@@ -55,6 +55,7 @@ void Bridge::registerKeywords(Keywords& keys) {
   keys.add("optional","SWITCHB","The switchingfunction on the distance between the bridging atoms and the atoms in "
            "group B");
   keys.needsAction("BRIDGE_MATRIX"); keys.needsAction("SUM");
+  keys.setValueDescription("the number of bridging atoms between the two groups");
 }
 
 Bridge::Bridge(const ActionOptions& ao):

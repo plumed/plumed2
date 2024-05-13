@@ -1,4 +1,4 @@
-#! FIELDS time parameter smap.coord-1 smap.coord-2 weights
+#! FIELDS time parameter smap_ap.coord-1 smap_ap.coord-2 weights
  50.000000 0  18.8066  10.1521   1.0000
  50.000000 1  14.0852   9.9268   1.0000
  50.000000 2   8.3328   9.6157   1.0000

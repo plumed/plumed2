@@ -60,6 +60,7 @@ void DopsShortcut::registerKeywords( Keywords& keys ) {
            "the documentation for that keyword");
   keys.add("compulsory","KERNELFILE","the file containing the list of kernel parameters.  We expect h, mu and sigma parameters for a 1D Gaussian kernel of the form h*exp(-(x-mu)^2/2sigma^2)");
   keys.add("compulsory","CUTOFF","6.25","to make the calculation faster we calculate a cutoff value on the distances.  The input to this keyword determines x in this expreession max(mu + sqrt(2*x)/sigma)");
+  keys.setValueDescription("the values of the DOPS order parameters");
   keys.needsAction("DISTANCE_MATRIX"); keys.needsAction("CUSTOM"); keys.needsAction("ONES"); keys.needsAction("MATRIX_VECTOR_PRODUCT");
 }
 

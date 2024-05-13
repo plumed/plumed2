@@ -45,6 +45,7 @@ PLUMED_REGISTER_ACTION(Product,"PRODUCT")
 void Product::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords(keys);
   keys.add("compulsory","ARG","The point that we are calculating the distance from");
+  keys.setValueDescription("the product of all the elements in the input vector");
   keys.needsAction("CONCATENATE"); keys.needsAction("CUSTOM"); keys.needsAction("SUM");
 }
 

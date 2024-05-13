@@ -50,6 +50,7 @@ void SketchMapProjection::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","HIGH_DIM_FUNCTION","the parameters of the switching function in the high dimensional space");
   keys.add("compulsory","LOW_DIM_FUNCTION","the parameters of the switching function in the low dimensional space");
   keys.add("compulsory","CGTOL","1E-6","The tolerance for the conjugate gradient minimization that finds the out of sample projections");
+  keys.setValueDescription("the out-of-sample projections of the input arguments using the input sketch-map projection");
   keys.needsAction("RMSD"); keys.needsAction("PDB2CONSTANT"); keys.needsAction("CONSTANT"); keys.needsAction("CUSTOM");
   keys.needsAction("EUCLIDEAN_DISTANCE"); keys.needsAction("NORMALIZED_EUCLIDEAN_DISTANCE");
   keys.needsAction("SUM"); keys.needsAction("MORE_THAN"); keys.needsAction("PROJECT_POINTS");

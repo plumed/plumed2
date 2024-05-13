@@ -24,6 +24,7 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/Group.h"
+#include "AdjacencyMatrixBase.h"
 
 //+PLUMEDOC MATRIX CONTACT_MATRIX
 /*
@@ -69,20 +70,13 @@ public:
 PLUMED_REGISTER_ACTION(ContactMatrixShortcut,"CONTACT_MATRIX")
 
 void ContactMatrixShortcut::registerKeywords(Keywords& keys) {
-  ActionShortcut::registerKeywords( keys );
-  keys.add("atoms","GROUPA","");
-  keys.add("atoms","GROUPB","");
-  keys.add("atoms-2","ATOMS","the atoms for which you would like to calculate the adjacency matrix (basically equivalent to GROUP)");
-  keys.add("numbered","GROUP","specifies the list of atoms that should be assumed indistinguishable");
+  AdjacencyMatrixBase::registerKeywords( keys );
+  keys.remove("GROUP"); keys.add("numbered","GROUP","specifies the list of atoms that should be assumed indistinguishable");
   keys.add("compulsory","NN","6","The n parameter of the switching function ");
   keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
   keys.add("numbered","SWITCH","specify the switching function to use between two sets of indistinguishable atoms");
-  keys.add("compulsory","NL_CUTOFF","0.0","The cutoff for the neighbor list.  A value of 0 means we are not using a neighbor list");
-  keys.add("compulsory","NL_STRIDE","1","The frequency with which we are updating the atoms in the neighbor list");
-  keys.addFlag("COMPONENTS",false,"also calculate the components of the vector connecting the atoms in the contact matrix");
-  keys.addFlag("NOPBC",false,"don't use pbc");
   keys.addActionNameSuffix("_PROPER"); keys.needsAction("TRANSPOSE"); keys.needsAction("CONCATENATE");
 }
 

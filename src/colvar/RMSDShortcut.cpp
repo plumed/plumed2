@@ -45,6 +45,7 @@ void RMSDShortcut::registerKeywords(Keywords& keys) {
   keys.addFlag("NUMERICAL_DERIVATIVES", false, "calculate the derivatives for these quantities numerically");
   keys.addFlag("DISPLACEMENT",false,"Calculate the vector of displacements instead of the length of this vector");
   keys.add("compulsory","NUMBER","0","if there are multiple structures in the pdb file you can specify that you want the RMSD from a specific structure by specifying its place in the file here. If NUMBER=0 then the RMSD from all structures are computed");
+  keys.setValueDescription("the RMSD distance between the instaneous structure and the reference structure/s that were input");
   keys.addActionNameSuffix("_SCALAR"); keys.addActionNameSuffix("_VECTOR");
   keys.needsAction("PDB2CONSTANT"); keys.needsAction("WHOLEMOLECULES");
   keys.needsAction("POSITION"); keys.needsAction("CONCATENATE");

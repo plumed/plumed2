@@ -51,6 +51,7 @@ void NormalizedEuclideanDistance::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","ARG2","The point that we are calculating the distance to");
   keys.add("compulsory","METRIC","The inverse covariance matrix that should be used when calculating the distance");
   keys.addFlag("SQUARED",false,"The squared distance should be calculated");
+  keys.setValueDescription("the normalized euclidean distances between the input vectors");
   keys.needsAction("DISPLACEMENT"); keys.needsAction("CUSTOM"); keys.needsAction("OUTER_PRODUCT");
   keys.needsAction("TRANSPOSE"); keys.needsAction("MATRIX_PRODUCT_DIAGONAL"); keys.needsAction("ONES");
 }

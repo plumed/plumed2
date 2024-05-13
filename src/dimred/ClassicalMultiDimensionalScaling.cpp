@@ -175,6 +175,7 @@ void ClassicalMultiDimensionalScaling::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
   keys.add("compulsory","ARG","the arguments that you would like to make the histogram for");
   keys.add("compulsory","NLOW_DIM","number of low-dimensional coordinates required");
+  keys.setValueDescription("the low dimensional projections for the input data points");
   keys.needsAction("TRANSPOSE"); keys.needsAction("DISSIMILARITIES"); keys.needsAction("MATRIX_VECTOR_PRODUCT"); keys.needsAction("VSTACK");
   keys.needsAction("SUM"); keys.needsAction("CUSTOM"); keys.needsAction("OUTER_PRODUCT"); keys.needsAction("DIAGONALIZE");
 }

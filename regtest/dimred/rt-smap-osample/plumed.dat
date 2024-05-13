@@ -19,5 +19,5 @@ smap: SKETCHMAP ...
   LOW_DIM_FUNCTION={SMAP R_0=4 A=1 B=2} CGTOL=1E-4 OS_CGTOL=1E-3
 ...
 
-DUMPVECTOR ARG=smap.*,lwe FMT=%8.4f FILE=smap
-DUMPVECTOR ARG=smap_osample.coord-1,smap_osample.coord-2,weights FILE=projections FMT=%8.2f
+DUMPVECTOR ARG=smap,lwe FMT=%8.4f FILE=smap
+DUMPVECTOR ARG=smap_osample,weights FILE=projections FMT=%8.2f

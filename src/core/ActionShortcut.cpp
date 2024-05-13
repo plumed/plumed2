@@ -30,6 +30,7 @@ namespace PLMD {
 void ActionShortcut::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   keys.add("hidden","IS_SHORTCUT","hidden keyword to tell if actions are shortcuts so that example generator can provide expansions of shortcuts");
+  keys.add("hidden","HAS_VALUES","this is used in json output to determine those actions that have values");
 }
 
 void ActionShortcut::readShortcutKeywords( const Keywords& keys, std::map<std::string,std::string>& keymap ) {

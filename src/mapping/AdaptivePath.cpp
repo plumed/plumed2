@@ -104,6 +104,7 @@ void AdaptivePath::registerKeywords( Keywords& keys ) {
   keys.add("optional","WFILE","file on which to write out the path");
   keys.add("compulsory","FMT","%f","the format to use for output files");
   keys.add("compulsory","WSTRIDE","frequency with which to write out the path");
+  keys.setValueDescription("the position along and from the adaptive path");
   keys.needsAction("GEOMETRIC_PATH"); keys.needsAction("AVERAGE_PATH_DISPLACEMENT");
   keys.needsAction("REPARAMETERIZE_PATH"); keys.needsAction("DUMPPDB");
   keys.needsAction("PDB2CONSTANT"); keys.needsAction("DISPLACEMENT"); keys.needsAction("CONSTANT");

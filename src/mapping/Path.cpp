@@ -212,6 +212,10 @@ void Path::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys ); Path::registerInputFileKeywords( keys );
   keys.add("optional","PROPERTY","the property to be used in the index. This should be in the REMARK of the reference");
   keys.add("compulsory","LAMBDA","the lambda parameter is needed for smoothing, is in the units of plumed");
+  keys.addOutputComponent("gspath","GPATH","the position along the path calculated using the geometric formula");
+  keys.addOutputComponent("gzpath","GPATH","the distance from the path calculated using the geometric formula");
+  keys.addOutputComponent("spath","default","the position along the path calculated");
+  keys.addOutputComponent("zpath","default","the distance from the path calculated");
 }
 
 void Path::registerInputFileKeywords( Keywords& keys ) {
@@ -228,10 +232,6 @@ void Path::registerInputFileKeywords( Keywords& keys ) {
   keys.needsAction("DRMSD"); keys.needsAction("RMSD"); keys.needsAction("LOWEST"); keys.needsAction("GPATH");
   keys.needsAction("EUCLIDEAN_DISTANCE"); keys.needsAction("CUSTOM"); keys.needsAction("SUM"); keys.needsAction("COMBINE");
   keys.needsAction("NORMALIZED_EUCLIDEAN_DISTANCE"); keys.needsAction("PDB2CONSTANT"); keys.needsAction("CONSTANT");
-  keys.addOutputComponent("gspath","GPATH","the position along the path calculated using the geometric formula");
-  keys.addOutputComponent("gzpath","GPATH","the distance from the path calculated using the geometric formula");
-  keys.addOutputComponent("spath","GPATH","the position along the path calculated using the geometric formula");
-  keys.addOutputComponent("zpath","GPATH","the distance from the path calculated using the geometric formula");
 }
 
 Path::Path( const ActionOptions& ao ):
@@ -242,7 +242,7 @@ Path::Path( const ActionOptions& ao ):
   if( gpath ) {
     readInputLine( getShortcutLabel() + ": GPATH " + convertInputLineToString() );
     readInputLine( getShortcutLabel() + "_gspath: COMBINE ARG=" + getShortcutLabel() + ".s PERIODIC=NO");
-    readInputLine( getShortcutLabel() + "_gzpath: COMBINE ARG=" + getShortcutLabel() + ".s PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_gzpath: COMBINE ARG=" + getShortcutLabel() + ".z PERIODIC=NO");
   }
   if( nospath && nozpath ) return;
   // Setup the properties

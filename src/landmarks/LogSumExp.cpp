@@ -49,6 +49,7 @@ PLUMED_REGISTER_ACTION(LogSumExp,"LOGSUMEXP")
 void LogSumExp::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
   keys.add("compulsory","ARG","the vector of logweights that you would like to normalise using the logsumexp trick");
+  keys.setValueDescription("the logarithms of the input weights logweights that are computed with the log-sum weights formula");
   keys.needsAction("HIGHEST"); keys.needsAction("CUSTOM"); keys.needsAction("SUM");
 }
 

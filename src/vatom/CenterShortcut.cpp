@@ -45,6 +45,7 @@ void CenterShortcut::registerKeywords( Keywords& keys ) {
   keys.addFlag("SAFE_PHASES",false,"use trignomentric phases when computing position of center but also compute the center in ths usual way and use this when the pbc are not set. "
                "There are two reasons for using this option (1) you are doing something that you know is really weird or (2) you are an idiot");
   keys.addFlag("MASS",false,"calculate the center of mass"); keys.addActionNameSuffix("_FAST");
+  keys.setValueDescription("the position of the center of mass");
   keys.needsAction("MASS"); keys.needsAction("SUM"); keys.needsAction("CHARGE"); keys.needsAction("CONSTANT");
   keys.needsAction("CUSTOM"); keys.needsAction("POSITION"); keys.needsAction("ARGS2VATOM");
 }

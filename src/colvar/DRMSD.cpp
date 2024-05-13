@@ -125,6 +125,7 @@ void DRMSD::registerKeywords( Keywords& keys ) {
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   // This is just ignored in reality which is probably bad
   keys.addFlag("NUMERICAL_DERIVATIVES",false,"calculate the derivatives for these quantities numerically");
+  keys.setValueDescription("the DRMSD distance between the instantaneous structure and the reference structure");
   keys.needsAction("SUM"); keys.needsAction("DISTANCE"); keys.needsAction("CONSTANT"); keys.needsAction("EUCLIDEAN_DISTANCE"); keys.needsAction("CUSTOM");
 }
 

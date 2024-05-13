@@ -59,6 +59,7 @@ void AlphaBeta::registerKeywords(Keywords& keys) {
            "same reference value is used for all torsions");
   keys.add("numbered","COEFFICIENT","the coefficient for each of the torsional angles.  If you use a single COEFFICIENT value the "
            "same reference value is used for all torsional angles");
+  keys.setValueDescription("the alpha beta CV");
   keys.needsAction("CONSTANT"); keys.needsAction("TORSION"); keys.needsAction("COMBINE"); keys.needsAction("CUSTOM"); keys.needsAction("SUM");
 }
 

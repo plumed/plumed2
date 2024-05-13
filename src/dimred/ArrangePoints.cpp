@@ -60,6 +60,7 @@ public:
   static void registerKeywords( Keywords& keys );
   ArrangePoints( const ActionOptions& );
   unsigned getNumberOfDerivatives() override { return 0; }
+  void prepare() override ;
   void calculate() override ;
   virtual void optimize( std::vector<double>& pos );
   void apply() override {}
@@ -305,6 +306,14 @@ void ArrangePoints::optimize( std::vector<double>& pos ) {
   }
 }
 
+void ArrangePoints::prepare() {
+  // Make sure all the components are the right size
+  std::vector<unsigned> shape(1,getPntrToArgument( dimout )->getShape()[0]);
+  for(unsigned j=0; j<dimout; ++j) {
+    if( getPntrToComponent(j)->getShape()[0]!=shape[0] ) getPntrToComponent(j)->setShape( shape );
+  }
+}
+
 void ArrangePoints::calculate() {
   // Retrive the initial value
   unsigned nvals = getPntrToArgument( dimout )->getShape()[0];
@@ -314,12 +323,6 @@ void ArrangePoints::calculate() {
   }
   // Do the optimization
   optimize( pos );
-  // Make sure all the components are the right size
-  for(unsigned j=0; j<dimout; ++j) {
-    if( getPntrToComponent(j)->getShape()[0]!=nvals ) {
-      std::vector<unsigned> shape(1,nvals); getPntrToComponent(j)->setShape( shape );
-    }
-  }
   // And set the final values
   for(unsigned i=0; i<nvals; ++i) {
     for(unsigned j=0; j<dimout; ++j) getPntrToComponent(j)->set( i, pos[dimout*i+j] );

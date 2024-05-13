@@ -72,6 +72,7 @@ void ConvertToFES::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","ARG","the histogram that you would like to convert into a free energy surface");
   keys.add("optional","TEMP","the temperature at which you are operating");
   keys.addFlag("MINTOZERO",false,"set the minimum in the free energy to be equal to zero");
+  keys.setValueDescription("the free energy surface");
   keys.needsAction("FIND_GRID_MINIMUM"); keys.needsAction("CUSTOM");
 }
 

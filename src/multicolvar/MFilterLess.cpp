@@ -49,6 +49,7 @@ void MFilterLess::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
   keys.add("compulsory","DATA","the vector you wish to transform");
   keys.add("compulsory","SWITCH","the switching function that transform");
+  keys.setValueDescription("a vector that has the same dimension as the input vector with elements equal to one if the corresponding component of the vector is less than a tolerance and zero otherwise");
   keys.needsAction("GROUP"); keys.needsAction("LESS_THAN");
 }
 

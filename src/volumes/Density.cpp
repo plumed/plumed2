@@ -48,6 +48,7 @@ PLUMED_REGISTER_ACTION(Density,"DENSITY")
 void Density::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
   keys.add("compulsory","SPECIES","the atoms in the group");
+  keys.setValueDescription("indices for the specified group of atoms");
   keys.needsAction("ONES"); keys.needsAction("GROUP");
 }
 

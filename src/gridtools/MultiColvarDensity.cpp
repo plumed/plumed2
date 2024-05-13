@@ -98,6 +98,7 @@ void MultiColvarDensity::registerKeywords( Keywords& keys ) {
   keys.add("optional","ATOMS","if you are calculating a atomic density you use this keyword to specify the atoms that are involved");
   keys.addFlag("UNORMALIZED",false,"do not divide by the density");
   keys.add("optional","NORMALIZATION","set true/false to determine how to the data is normalised");
+  keys.setValueDescription("the average value of the order parameters at each point on the grid");
   keys.needsAction("DISTANCES"); keys.needsAction("KDE"); keys.needsAction("ACCUMULATE");
   keys.needsAction("CUSTOM"); keys.needsAction("ONES"); keys.needsAction("CUSTOM");
 }

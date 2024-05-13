@@ -1,4 +1,4 @@
-#! FIELDS time parameter smap_osample.coord-1 smap_osample.coord-2 weights
+#! FIELDS time parameter smap_osample_pp.coord-1 smap_osample_pp.coord-2 weights
  500.000000 0     0.75     1.97     1.00
  500.000000 1    -0.41    -2.02     1.00
  500.000000 2    -1.23     0.97     1.00

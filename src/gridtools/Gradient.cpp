@@ -50,6 +50,7 @@ void Gradient::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","SIGMA","the width of the function to be used for kernel density estimation");
   keys.add("compulsory","KERNEL","gaussian-bin","the type of kernel function to be used in the grids");
   keys.add("compulsory","ATOMS","calculate the gradient of these atoms");
+  keys.setValueDescription("the desired gradient");
   keys.needsAction("DISTANCES"); keys.needsAction("KDE"); keys.needsAction("INTERPOLATE_GRID");
   keys.needsAction("CUSTOM"); keys.needsAction("SUM_GRID"); keys.needsAction("COMBINE");
 }

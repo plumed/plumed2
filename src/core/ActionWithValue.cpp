@@ -45,6 +45,7 @@ void ActionWithValue::noAnalyticalDerivatives(Keywords& keys) {
 }
 
 void ActionWithValue::useCustomisableComponents(Keywords& keys) {
+  if( !keys.outputComponentExists(".#!custom") ) keys.addOutputComponent(".#!custom","default","the names of the output components for this action depend on the actions input file see the example inputs below for details");
   keys.setComponentsIntroduction("The names of the components in this action can be customized by the user in the "
                                  "actions input file.  However, in addition to the components that can be customized the "
                                  "following quantities will always be output");
