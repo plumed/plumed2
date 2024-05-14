@@ -824,7 +824,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
                 Value* myval = val_actions[i]->copyOutput(j); std::string compname = myval->getName(), description; std::size_t dot=compname.find(".");
                 if( dot!=std::string::npos ) {
                   std::string cname = compname.substr(dot+1); description = val_actions[i]->getOutputComponentDescription( cname, keys );
-                } else description = description = keys.getOutputComponentDescription(".#!value");
+                } else description = keys.getOutputComponentDescription(".#!value");
                 if( description.find("\\")!=std::string::npos ) error("found invalid backslash character in documentation for component " + compname + " in action " + val_actions[i]->getName() + " with label " + val_actions[i]->getLabel() );
                 if( firstv ) { valuefile.printf("    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), myval->getValueType().c_str(), description.c_str() ); firstv=false; }
                 else valuefile.printf(",\n    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), myval->getValueType().c_str(), description.c_str() );
