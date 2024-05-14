@@ -141,12 +141,7 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
         std::cout<<"           \"description\": \""<<mydescrip<<"\""<<std::endl;
         if( k==components.size()-1 ) std::cout<<"         }"<<std::endl; else std::cout<<"         },"<<std::endl;
       }
-      if( hasvalue ) {
-        std::cout<<"         \"value\" : {"<<std::endl;
-        std::cout<<"           \"flag\": \"default\","<<std::endl;
-        std::cout<<"           \"description\": \"something calculated by "<<action_names[i]<<"\""<<std::endl;
-        std::cout<<"         }"<<std::endl;
-      }
+      if( hasvalue && components.size()==0 ) plumed_merror("no components have been registered for action " + action_names[i] );
       std::cout<<"       }"<<std::endl;
 
     }

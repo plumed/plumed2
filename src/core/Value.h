@@ -242,6 +242,8 @@ public:
   void setGridDerivatives( const unsigned& n, const unsigned& j, const double& val );
 /// Add another value to the end of the data vector held by this value.  This is used in COLLECT
   void push_back( const double& val );
+/// Get the type of value that is stored here
+  std::string getValueType() const ;
 };
 
 inline

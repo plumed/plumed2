@@ -52,6 +52,7 @@ void MahalanobisDistance::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","METRIC","The inverse covariance matrix that should be used when calculating the distance");
   keys.addFlag("SQUARED",false,"The squared distance should be calculated");
   keys.addFlag("VON_MISSES",false,"Compute the mahalanobis distance in a way that is more sympathetic to the periodic boundary conditions");
+  keys.setValueDescription("the Mahalanobis distances between the input vectors");
   keys.needsAction("DISPLACEMENT"); keys.needsAction("CUSTOM"); keys.needsAction("OUTER_PRODUCT");
   keys.needsAction("TRANSPOSE"); keys.needsAction("MATRIX_PRODUCT_DIAGONAL"); keys.needsAction("CONSTANT");
   keys.needsAction("MATRIX_VECTOR_PRODUCT"); keys.needsAction("MATRIX_PRODUCT"); keys.needsAction("COMBINE");

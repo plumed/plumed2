@@ -69,6 +69,7 @@ ExtraCV::ExtraCV(const ActionOptions&ao):
 void ExtraCV::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
   keys.add("compulsory","NAME","name of the CV as computed by the MD engine");
+  keys.setValueDescription("the value of the CV that was passed from the MD code to PLUMED");
   keys.needsAction("PUT"); keys.needsAction("COMBINE");
 }
 

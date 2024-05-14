@@ -381,4 +381,13 @@ bool Value::calculateOnUpdate() const {
   return (valtype==average || valtype==calcFromAverage);
 }
 
+std::string Value::getValueType() const {
+  if( getRank()==0 ) return "scalar";
+  if( getRank()>0 && hasDerivatives() ) return "grid";
+  if( getRank()==1 ) return "vector";
+  if( getRank()==2 ) return "matrix";
+  plumed_merror("unknown type for value " + getName() );
+  return "";
+}
+
 }

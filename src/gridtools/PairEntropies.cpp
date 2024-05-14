@@ -46,6 +46,7 @@ PLUMED_REGISTER_ACTION(PairEntropies,"PAIRENTROPIES")
 void PairEntropies::registerKeywords( Keywords& keys ) {
   RDF::registerKeywords( keys ); keys.remove("GROUP"); keys.remove("GROUPA"); keys.remove("GROUPB");
   keys.add("atoms","ATOMS","the atoms that you would like to compute the entropies for");
+  keys.setValueDescription("the a vector containing the KL-entropy that is computed from the radial distribution function around each of the atoms in the input");
   keys.needsAction("PAIRENTROPY"); keys.needsAction("INTERPOLATE_GRID");
   keys.needsAction("INTEGRATE_GRID"); keys.needsAction("CUSTOM");
   keys.needsAction("CONCATENATE");

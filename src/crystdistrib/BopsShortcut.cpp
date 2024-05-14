@@ -63,6 +63,7 @@ void BopsShortcut::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","KERNELFILE_BOPS","the second file containing the list of kernel parameters. Expecting a normalization factor (height), concentration parameter (kappa), and 3 norm vector pieces of the mean (mu_i, mu_j, mu_k )for a fisher distribution. of the form h*exp(kappa*dot(r_mean,r)), where dot is a standard dot product.");
   keys.add("compulsory", "CUTOFF", "cutoff for the distance matrix");
 //  keys.add("compulsory","SWITCH","the switching function that acts on the distances between points)");
+  keys.setValueDescription("the values of the bops order parameters");
   keys.needsAction("DISTANCE_MATRIX"); keys.needsAction("QUATERNION_BOND_PRODUCT_MATRIX"); keys.needsAction("CUSTOM");
   keys.needsAction("ONES"); keys.needsAction("MATRIX_VECTOR_PRODUCT");
 }

@@ -63,6 +63,7 @@ void RopsShortcut::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","KERNELFILE_ROPS","the file containing the list of kernel parameters.  We expect the normalization factor (height), concentration parameter (kappa), and 4 quaternion pieces of the mean for a bipolar watson distribution (mu_w,mu_i,mu_j,mu_k)): (h*exp(kappa*dot(q_mean,q))), where dot is the dot product ");
   keys.add("compulsory", "CUTOFF", "cutoff for the distance matrix");
 //  keys.add("compulsory","SWITCH","the switching function that acts on the distances between points)");
+  keys.setValueDescription("the values of the ROPS order parameters");
   keys.needsAction("DISTANCE_MATRIX"); keys.needsAction("QUATERNION_PRODUCT_MATRIX");
   keys.needsAction("ONES"); keys.needsAction("CUSTOM"); keys.needsAction("MATRIX_VECTOR_PRODUCT");
 }

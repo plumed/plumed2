@@ -113,6 +113,7 @@ void PCA::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","STRIDE","0","the frequency with which to perform this analysis");
   keys.add("optional","FILE","the file on which to output the low dimensional coordinates");
   keys.add("optional","FMT","the format to use when outputting the low dimensional coordinates");
+  keys.setValueDescription("the projections of the input coordinates on the PCA components that were found from the covariance matrix");
   keys.needsAction("LOGSUMEXP"); keys.needsAction("TRANSPOSE"); keys.needsAction("MATRIX_VECTOR_PRODUCT");
   keys.needsAction("CONSTANT"); keys.needsAction("COLLECT"); keys.needsAction("OUTER_PRODUCT"); keys.needsAction("CUSTOM");
   keys.needsAction("MATRIX_PRODUCT"); keys.needsAction("DIAGONALIZE"); keys.needsAction("VSTACK"); keys.needsAction("DUMPPDB");

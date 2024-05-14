@@ -57,6 +57,7 @@ void RDF::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","STRIDE","1","the frequency with which to compute the rdf and accumulate averages");
   keys.add("optional","DENSITY","the reference density to use when normalizing the RDF");
   keys.add("hidden","REFERENCE","this is the label of the reference objects");
+  keys.setValueDescription("the radial distribution function");
   keys.needsAction("REFERENCE_GRID"); keys.needsAction("VOLUME"); keys.needsAction("DISTANCE_MATRIX");
   keys.needsAction("CUSTOM"); keys.needsAction("KDE"); keys.needsAction("ACCUMULATE");
   keys.needsAction("CONSTANT");

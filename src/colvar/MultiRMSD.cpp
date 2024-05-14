@@ -58,6 +58,7 @@ void MultiRMSD::registerKeywords(Keywords& keys) {
   keys.add("compulsory","TYPE","SIMPLE","the manner in which RMSD alignment is performed.  Should be MULTI-OPTIMAL, MULTI-OPTIMAL-FAST,  MULTI-SIMPLE or MULTI-DRMSD.");
   keys.addFlag("SQUARED",false," This should be set if you want the mean squared displacement instead of the root mean squared displacement");
   keys.addFlag("NOPBC",false,"don't use periodic boundary conditions");
+  keys.setValueDescription("the sum of the multiple RMSD distances");
   keys.needsAction("CONSTANT"); keys.needsAction("WHOLEMOLECULES"); keys.needsAction("POSITION");
   keys.needsAction("CONCATENATE"); keys.needsAction("RMSD_VECTOR"); keys.needsAction("COMBINE"); keys.needsAction("CUSTOM");
 }

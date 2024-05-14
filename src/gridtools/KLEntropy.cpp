@@ -48,6 +48,7 @@ void KLEntropy::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","ARG","the grid that you wish to use in the KL entropy calculation");
   keys.add("compulsory","REFERENCE","a file containing the reference density in grid format");
   keys.add("compulsory","VALUE","the name of the value that should be read from the grid");
+  keys.setValueDescription("the value of the KL-Entropy");
   keys.needsAction("REFERENCE_GRID"); keys.needsAction("CUSTOM"); keys.needsAction("INTEGRATE_GRID");
 }
 

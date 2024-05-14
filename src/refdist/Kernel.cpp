@@ -62,6 +62,7 @@ void Kernel::registerKeywords(Keywords& keys) {
   keys.add("optional","REFERENCE","the file from which to read the kernel parameters");
   keys.add("compulsory","NUMBER","1","if there are multiple sets of kernel parameters in the input file which set of kernel parameters would you like to read in here");
   keys.addFlag("NORMALIZED",false,"would you like the kernel function to be normalized");
+  keys.setValueDescription("the value of the kernel evaluated at the argument values");
   keys.needsAction("CONSTANT"); keys.needsAction("CUSTOM"); keys.needsAction("NORMALIZED_EUCLIDEAN_DISTANCE");
   keys.needsAction("PRODUCT"); keys.needsAction("INVERT_MATRIX"); keys.needsAction("MAHALANOBIS_DISTANCE");
   keys.needsAction("DIAGONALIZE"); keys.needsAction("CONCATENATE"); keys.needsAction("DETERMINANT");

@@ -72,6 +72,7 @@ void ClusterDiameter::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
   keys.add("optional","ARG","calculate ths radius of the cluster that are in this particular cluster");
   keys.add("compulsory","ATOMS","the atoms that were used to calculate the matrix that was clustered");
+  keys.setValueDescription("the largest of all the distances between the pairs of atom in the cluster");
   keys.needsAction("DISTANCE_MATRIX"); keys.needsAction("OUTER_PRODUCT"); keys.needsAction("CUSTOM");
   keys.needsAction("FLATTEN"); keys.needsAction("HIGHEST");
 }
