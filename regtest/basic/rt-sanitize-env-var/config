@@ -1,0 +1,4 @@
+type=plumed
+export PLUMED_INCLUDEDIR="\" echo ko > should_be_empty \""
+arg="patch -h"
+touch should_be_empty
