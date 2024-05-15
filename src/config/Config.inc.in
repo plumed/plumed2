@@ -30,20 +30,20 @@ namespace PLMD {
 namespace config {
 
 namespace {
-  /// local tool that, given a string, returns a new string which is:
-  /// - enclosed in single quotes (')
-  /// - with all single quotes escaped
-  std::string escapeForSingleQuote(const std::string& input) {
-    std::string escaped;
-    for (char c : input) {
-        if (c == '\'') {
-            escaped += "'\\''";
-        } else {
-            escaped += c;
-        }
+/// local tool that, given a string, returns a new string which is:
+/// - enclosed in single quotes (')
+/// - with all single quotes escaped
+std::string escapeForSingleQuote(const std::string& input) {
+  std::string escaped;
+  for (char c : input) {
+    if (c == '\'') {
+      escaped += "'\\''";
+    } else {
+      escaped += c;
     }
-    return "'" + escaped + "'";
   }
+  return "'" + escaped + "'";
+}
 }
 
 // This is a fix to allow conda to correctly replace paths in binary files.
