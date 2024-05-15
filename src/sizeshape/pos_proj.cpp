@@ -106,6 +106,7 @@ void position_linear_proj::registerKeywords( Keywords& keys ) {
   keys.add("atoms","GROUP","Group of atoms being used");
   keys.add("compulsory", "COEFFS", "Vector of linear coefficients.");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial, for debug purposes only.");
+  keys.setValueDescription("the linear projection");
 }
 
 // constructor function

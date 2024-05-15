@@ -93,6 +93,7 @@ void position_maha_dist::registerKeywords( Keywords& keys ) {
   keys.add("compulsory", "REFERENCE", "Reference structure.");
   keys.add("atoms","GROUP","The group of atoms being used");
   keys.addFlag("SQUARED",false,"Returns the square of distance.");
+  keys.setValueDescription("the Mahalanobis distance between the instantaneous configuration and a given reference distribution in size-and-shape space");
 }
 
 // constructor function
