@@ -56,6 +56,9 @@ private:
   std::string pythonCmd;
 /// Selector subprocess
   std::unique_ptr<Subprocess> selector;
+/// Track is selector is running
+/// Needed on Get_rank()>0
+  bool selector_running=false;
 /// Structure in pdb file is whole
   bool iswhole_;
 public:
