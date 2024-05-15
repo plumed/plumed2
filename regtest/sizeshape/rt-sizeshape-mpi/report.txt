@@ -1,7 +1,0 @@
-Tue May  7 17:13:00 EDT 2024
-Running regtest in /home/subarna/plumed2-sizeshape/regtest/sizeshape/rt-sizeshape-mpi
-++ Test type: driver
-++ Arguments: --plumed plumed.dat --itrr test_traj.trr
-++ Processors: 4
-/home/subarna/plumed2-sizeshape/regtest/sizeshape/rt-sizeshape-mpi/tmp
-NOT_APPLICABLE (MPI NOT INSTALLED)

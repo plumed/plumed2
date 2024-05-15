@@ -1,2 +1,0 @@
-Tue May  7 17:13:00 EDT 2024
-Running regtest in /home/subarna/plumed2-sizeshape/regtest/sizeshape/rt-sizeshape-mpi
