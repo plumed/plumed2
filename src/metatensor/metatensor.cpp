@@ -508,7 +508,7 @@ void MetatensorPlumedAction::createSystem() {
         oss << "METATENSOR action needs to know about all atoms in the system. ";
         oss << "There are " << this->getTotAtoms() << " atoms overall, ";
         oss << "but we only have atomic types for " << this->atomic_types_.size(0) << " of them.";
-        this->error(oss.str());
+        plumed_merror(oss.str());
     }
 
     const auto& cell = this->getPbc().getBox();
@@ -616,7 +616,7 @@ metatensor_torch::TorchTensorBlock MetatensorPlumedAction::computeNeighbors(
     );
 
     if (status != EXIT_SUCCESS) {
-        this->error(
+        plumed_merror(
             "failed to compute neighbor list (cutoff=" + std::to_string(cutoff) +
             ", full=" + (request->full_list() ? "true" : "false") + "): " + error_message
         );
@@ -671,7 +671,7 @@ metatensor_torch::TorchTensorBlock MetatensorPlumedAction::executeModel(metatens
         auto cv = dict_output.at("plumed::cv");
         this->output_ = cv.toCustomClass<metatensor_torch::TensorMapHolder>();
     } catch (const std::exception& e) {
-        this->error("failed to evaluate the model: " + std::string(e.what()));
+        plumed_merror("failed to evaluate the model: " + std::string(e.what()));
     }
 
     plumed_massert(this->output_->keys()->count() == 1, "output should have a single block");
@@ -689,13 +689,13 @@ void MetatensorPlumedAction::calculate() {
     auto torch_values = block->values().to(torch::kCPU).to(torch::kFloat64);
 
     if (static_cast<unsigned>(torch_values.size(0)) != this->n_samples_) {
-        this->error(
+        plumed_merror(
             "expected the model to return a TensorBlock with " +
             std::to_string(this->n_samples_) + " samples, got " +
             std::to_string(torch_values.size(0)) + " instead"
         );
     } else if (static_cast<unsigned>(torch_values.size(1)) != this->n_properties_) {
-        this->error(
+        plumed_merror(
             "expected the model to return a TensorBlock with " +
             std::to_string(this->n_properties_) + " properties, got " +
             std::to_string(torch_values.size(1)) + " instead"
