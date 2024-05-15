@@ -75,10 +75,10 @@ the following:
 */ /*
 
 [TorchScript]: https://pytorch.org/docs/stable/jit.html
-[mts_models]: https://lab-cosmo.github.io/metatensor/latest/atomistic/index.html
-[mts_tutorials]: https://lab-cosmo.github.io/metatensor/latest/examples/atomistic/index.html
-[mts_outputs]: https://lab-cosmo.github.io/metatensor/latest/atomistic/outputs.html
-[mts_block]: https://lab-cosmo.github.io/metatensor/latest/torch/reference/block.html
+[mts_models]: https://docs.metatensor.org/latest/atomistic/index.html
+[mts_tutorials]: https://docs.metatensor.org/latest/examples/atomistic/index.html
+[mts_outputs]: https://docs.metatensor.org/latest/atomistic/outputs.html
+[mts_block]: https://docs.metatensor.org/latest/torch/reference/block.html
 
 */
 //+ENDPLUMEDOC

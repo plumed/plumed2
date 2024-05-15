@@ -157,5 +157,5 @@ This module defines the following actions:
 
 
 [TorchScript]: https://pytorch.org/docs/stable/jit.html
-[metatensor]: https://lab-cosmo.github.io/metatensor/latest/index.html
-[mts_models]: https://lab-cosmo.github.io/metatensor/latest/atomistic/index.html
+[metatensor]: https://docs.metatensor.org/latest/index.html
+[mts_models]: https://docs.metatensor.org/latest/atomistic/index.html

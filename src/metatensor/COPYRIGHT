@@ -1,7 +1,7 @@
 Copyright (c) 2024 The METATENSOR code team
 (see the PEOPLE-METATENSOR file at the root of this folder for a list of names)
 
-See https://lab-cosmo.github.io/metatensor/latest/ for more information about the
+See https://docs.metatensor.org/latest/ for more information about the
 metatensor package that this module allows you to call from PLUMED.
 
 This file is part of METATENSOR-PLUMED module.
