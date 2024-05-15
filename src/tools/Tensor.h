@@ -606,5 +606,4 @@ static_assert(sizeof(Tensor)==9*sizeof(double), "code cannot work if this is not
 
 }
 
-#endif
-
+#endif //__PLUMED_tools_Tensor_h
