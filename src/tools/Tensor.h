@@ -225,7 +225,7 @@ TensorGeneric<n,m>::TensorGeneric(double first,Args... arg) {
 
 template<unsigned n,unsigned m>
 TensorGeneric<n,m>::TensorGeneric() {
-  LoopUnroller<n*m>::_zero(d.data());
+  LoopUnroller<double,n*m>::_zero(d.data());
 }
 
 template<unsigned n,unsigned m>
@@ -238,7 +238,7 @@ TensorGeneric<n,m>::TensorGeneric(const VectorGeneric<n>&v1,const VectorGeneric<
 
 template<unsigned n,unsigned m>
 void TensorGeneric<n,m>::zero() {
-  LoopUnroller<n*m>::_zero(d.data());
+  LoopUnroller<double,n*m>::_zero(d.data());
 }
 
 template<unsigned n,unsigned m>
@@ -261,25 +261,25 @@ const double & TensorGeneric<n,m>::operator() (unsigned i,unsigned j)const {
 
 template<unsigned n,unsigned m>
 TensorGeneric<n,m>& TensorGeneric<n,m>::operator +=(const TensorGeneric<n,m>& b) {
-  LoopUnroller<n*m>::_add(d.data(),b.d.data());
+  LoopUnroller<double,n*m>::_add(d.data(),b.d.data());
   return *this;
 }
 
 template<unsigned n,unsigned m>
 TensorGeneric<n,m>& TensorGeneric<n,m>::operator -=(const TensorGeneric<n,m>& b) {
-  LoopUnroller<n*m>::_sub(d.data(),b.d.data());
+  LoopUnroller<double,n*m>::_sub(d.data(),b.d.data());
   return *this;
 }
 
 template<unsigned n,unsigned m>
 TensorGeneric<n,m>& TensorGeneric<n,m>::operator *=(double s) {
-  LoopUnroller<n*m>::_mul(d.data(),s);
+  LoopUnroller<double,n*m>::_mul(d.data(),s);
   return *this;
 }
 
 template<unsigned n,unsigned m>
 TensorGeneric<n,m>& TensorGeneric<n,m>::operator /=(double s) {
-  LoopUnroller<n*m>::_mul(d.data(),1.0/s);
+  LoopUnroller<double,n*m>::_mul(d.data(),1.0/s);
   return *this;
 }
 
@@ -291,7 +291,7 @@ TensorGeneric<n,m> TensorGeneric<n,m>::operator+()const {
 template<unsigned n,unsigned m>
 TensorGeneric<n,m> TensorGeneric<n,m>::operator-()const {
   TensorGeneric<n,m> r;
-  LoopUnroller<n*m>::_neg(r.d.data(),d.data());
+  LoopUnroller<double,n*m>::_neg(r.d.data(),d.data());
   return r;
 }
 
