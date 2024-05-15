@@ -250,13 +250,16 @@ void GenericMolInfo::interpretSymbol( const std::string& symbol, std::vector<Ato
     plumed_assert(enablePythonInterpreter);
 
     log<<"  symbol " + symbol + " will be sent to python interpreter\n";
-    if(!selector) {
+    if(!selector_running) {
       log<<"  MOLINFO "<<getLabel()<<": starting python interpreter\n";
       if(comm.Get_rank()==0) {
         selector=Tools::make_unique<Subprocess>(pythonCmd+" \""+config::getPlumedRoot()+"\"/scripts/selector.sh --pdb " + reference);
         selector->stop();
       }
+      selector_running=true;
     }
+
+    atoms.resize(0);
 
     if(comm.Get_rank()==0) {
       int ok=0;
@@ -279,7 +282,6 @@ void GenericMolInfo::interpretSymbol( const std::string& symbol, std::vector<Ato
           if(!words.empty() && words[0]=="Selection:") break;
         }
         words.erase(words.begin());
-        atoms.resize(0);
         for(const auto & w : words) {
           int n;
           if(w.empty()) continue;
@@ -313,6 +315,7 @@ void GenericMolInfo::interpretSymbol( const std::string& symbol, std::vector<Ato
       }
       size_t nat=0;
       comm.Bcast(nat,0);
+      atoms.resize(nat);
       comm.Bcast(atoms,0);
     }
     log<<"  selection interpreted using ";
@@ -359,9 +362,10 @@ bool GenericMolInfo::isWhole() const {
 }
 
 void GenericMolInfo::prepare() {
-  if(selector) {
+  if(selector_running) {
     log<<"  MOLINFO "<<getLabel()<<": killing python interpreter\n";
     selector.reset();
+    selector_running=false;
   }
 }
 

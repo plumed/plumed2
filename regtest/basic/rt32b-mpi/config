@@ -1,5 +1,19 @@
 type=driver
-arg="--plumed plumed.dat --trajectory-stride 10 --timestep 0.005 --ixyz ala12_trajectory.xyz --dump-forces forces --dump-forces-fmt=%10.6f"
+mpiprocs=2
+arg="--plumed plumed.dat --trajectory-stride 10 --timestep 0.005 --ixyz ala12_trajectory.xyz --dump-forces forces --dump-forces-fmt=%10.6f --debug-dd yes"
+extra_files="
+  ../rt32b/colvar.reference
+  ../rt32b/helix.pdb
+  ../rt32b/test.gro.reference
+  ../rt32b/test1.gro.reference
+  ../rt32b/test2.gro.reference
+  ../rt32b/test3.gro.reference
+  ../rt32b/test4.gro.reference
+  ../rt32b/test5.gro.reference
+  ../rt32b/ala12_trajectory.xyz
+  ../rt32b/plumed.dat
+"
+
 
 function plumed_custom_skip() {
    if test -n "$PLUMED_PYTHON_SELECT" ; then
