@@ -23,6 +23,9 @@
 "phi" : { 
 "phi" : { "type": "scalar", "desciption": "" }
 }, 
+"shortcut_phi" : { 
+"phi" : { "type": "scalar", "desciption": "" }
+}, 
 "rp" : { 
 "rp.bias" : { "type": "scalar", "desciption": "" }
 "rp.force2" : { "type": "scalar", "desciption": "" }
@@ -43,6 +46,9 @@
 "hh_data_phi" : { "type": "vector", "desciption": "" }
 }, 
 "hh" : { 
+"hh" : { "type": "grid", "desciption": "" }
+}, 
+"shortcut_hh" : { 
 "hh" : { "type": "grid", "desciption": "" }
 } 
 } 
