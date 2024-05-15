@@ -806,7 +806,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           if( as ) {
             unsigned ncomponents = 0; std::vector<ActionWithValue*> val_actions;
             Keywords keys; actionRegister().getKeywords( as->getName(), keys );
-            std::vector<std::string> cnames( keys.getOutputComponents() );
+            std::vector<std::string> cnames( keys.getOutputComponents().size() );
             for(unsigned i=0; i<cnames.size(); ++i) {
               std::string valname;
               if( cnames[i]==".#!value" ) valname = as->getShortcutLabel();
