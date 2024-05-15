@@ -6,7 +6,7 @@ function plumed_custom_skip() {
       export PLUMED_PYTHON_BIN="$PLUMED_PYTHON_SELECT"
       return 1
    fi
-   for python_bin in python python2.7 python3.6 python3.7 ; do
+   for python_bin in python3 python3.12 python3.11 python3.10 python3.9 python3.8 python3.7 python ; do
      if $python_bin -c "import MDAnalysis; import mdtraj" 2>/dev/null ; then
        if [ $python_bin != python ] ; then
          export PLUMED_PYTHON_BIN=$python_bin
