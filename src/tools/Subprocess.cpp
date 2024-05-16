@@ -42,7 +42,7 @@ inline static bool SubprocessPidGetenvSignals() noexcept {
 class SubprocessPid {
 #ifdef __PLUMED_HAS_SUBPROCESS
 public:
-  pid_t pid;
+  const pid_t pid;
   explicit SubprocessPid(pid_t pid):
     pid(pid)
   {
@@ -51,26 +51,23 @@ public:
   void stop() noexcept {
     // Signals give problems with MPI on Travis.
     // I disable them for now.
-    if(SubprocessPidGetenvSignals()) if(pid!=0 && pid!=-1) kill(pid,SIGSTOP);
+    if(SubprocessPidGetenvSignals()) kill(pid,SIGSTOP);
   }
   void cont() noexcept {
     // Signals give problems with MPI on Travis.
     // I disable them for now.
-    if(SubprocessPidGetenvSignals()) if(pid!=0 && pid!=-1) kill(pid,SIGCONT);
+    if(SubprocessPidGetenvSignals()) kill(pid,SIGCONT);
   }
   ~SubprocessPid() {
-    // this is apparently working also with MPI on Travis.
-    if(pid!=0 && pid!=-1) {
-      // the destructor implies we do not need the subprocess anymore, so SIGKILL
-      // is the fastest exit.
-      // if we want to gracefully kill the process with a delay, it would be cleaner
-      // to have another member function
-      kill(pid,SIGKILL);
-      // Wait for the child process to terminate
-      // This is anyway required to avoid leaks
-      int status;
-      waitpid(pid, &status, 0);
-    }
+    // the destructor implies we do not need the subprocess anymore, so SIGKILL
+    // is the fastest exit.
+    // if we want to gracefully kill the process with a delay, it would be cleaner
+    // to have another member function
+    kill(pid,SIGKILL);
+    // Wait for the child process to terminate
+    // This is anyway required to avoid leaks
+    int status;
+    waitpid(pid, &status, 0);
   }
 #endif
 };
