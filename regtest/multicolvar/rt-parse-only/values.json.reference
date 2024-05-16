@@ -23,10 +23,19 @@
 "d1" : { 
 "d1" : { "type": "scalar", "desciption": "DISTANCE" }
 }, 
+"shortcut_d1" : { 
+"d1" : { "type": "scalar", "desciption": "DISTANCE" }
+}, 
 "d2" : { 
 "d2" : { "type": "scalar", "desciption": "DISTANCE" }
 }, 
+"shortcut_d2" : { 
+"d2" : { "type": "scalar", "desciption": "DISTANCE" }
+}, 
 "d3" : { 
+"d3" : { "type": "scalar", "desciption": "DISTANCE" }
+}, 
+"shortcut_d3" : { 
 "d3" : { "type": "scalar", "desciption": "DISTANCE" }
 }, 
 "ss" : { 
@@ -34,7 +43,15 @@
 "ss.2" : { "type": "scalar", "desciption": "2th" }
 "ss.3" : { "type": "scalar", "desciption": "3th" }
 }, 
+"shortcut_ss" : { 
+"ss.1" : { "type": "scalar", "desciption": "1th" }
+"ss.2" : { "type": "scalar", "desciption": "2th" }
+"ss.3" : { "type": "scalar", "desciption": "3th" }
+}, 
 "dall" : { 
+"dall" : { "type": "vector", "desciption": "" }
+}, 
+"shortcut_dall" : { 
 "dall" : { "type": "vector", "desciption": "" }
 }, 
 "ssall" : { 
@@ -42,10 +59,22 @@
 "ssall.2" : { "type": "scalar", "desciption": "2th" }
 "ssall.3" : { "type": "scalar", "desciption": "3th" }
 }, 
+"shortcut_ssall" : { 
+"ssall.1" : { "type": "scalar", "desciption": "1th" }
+"ssall.2" : { "type": "scalar", "desciption": "2th" }
+"ssall.3" : { "type": "scalar", "desciption": "3th" }
+}, 
 "dallt" : { 
 "dallt" : { "type": "vector", "desciption": "" }
 }, 
+"shortcut_dallt" : { 
+"dallt" : { "type": "vector", "desciption": "" }
+}, 
 "sfinal" : { 
+"sfinal.1" : { "type": "scalar", "desciption": "1th" }
+"sfinal.2" : { "type": "scalar", "desciption": "2th" }
+}, 
+"shortcut_sfinal" : { 
 "sfinal.1" : { "type": "scalar", "desciption": "1th" }
 "sfinal.2" : { "type": "scalar", "desciption": "2th" }
 } 
