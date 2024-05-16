@@ -29,22 +29,10 @@
 "fcc_mat.y" : { "type": "matrix", "desciption": "" }
 "fcc_mat.z" : { "type": "matrix", "desciption": "" }
 }, 
-"shortcut_fcc_mat" : { 
-"fcc_mat.w" : { "type": "matrix", "desciption": "" }
-"fcc_mat.x" : { "type": "matrix", "desciption": "" }
-"fcc_mat.y" : { "type": "matrix", "desciption": "" }
-"fcc_mat.z" : { "type": "matrix", "desciption": "" }
-}, 
 "fcc_vfunc" : { 
 "fcc_vfunc" : { "type": "matrix", "desciption": "" }
 }, 
-"shortcut_fcc_vfunc" : { 
-"fcc_vfunc" : { "type": "matrix", "desciption": "" }
-}, 
 "fcc_wvfunc" : { 
-"fcc_wvfunc" : { "type": "matrix", "desciption": "" }
-}, 
-"shortcut_fcc_wvfunc" : { 
 "fcc_wvfunc" : { "type": "matrix", "desciption": "" }
 }, 
 "fcc_ones" : { 
@@ -62,8 +50,8 @@
 "fcc_n" : { 
 "fcc_n" : { "type": "vector", "desciption": "" }
 }, 
-"shortcut_fcc_n" : { 
-"fcc_n" : { "type": "vector", "desciption": "" }
+"shortcut_fcc" : { 
+"fcc" : { "type": "vector", "desciption": "" }
 }, 
 "dens_dist" : { 
 "dens_dist.x" : { "type": "vector", "desciption": "" }
@@ -81,13 +69,7 @@
 "dens_numer_cov" : { 
 "dens_numer_cov" : { "type": "vector", "desciption": "" }
 }, 
-"shortcut_dens_numer_cov" : { 
-"dens_numer_cov" : { "type": "vector", "desciption": "" }
-}, 
 "dens_numer_icov" : { 
-"dens_numer_icov" : { "type": "vector", "desciption": "" }
-}, 
-"shortcut_dens_numer_icov" : { 
 "dens_numer_icov" : { "type": "vector", "desciption": "" }
 }, 
 "dens_numer" : { 
@@ -105,22 +87,13 @@
 "dens_denom_cov" : { 
 "dens_denom_cov" : { "type": "vector", "desciption": "" }
 }, 
-"shortcut_dens_denom_cov" : { 
-"dens_denom_cov" : { "type": "vector", "desciption": "" }
-}, 
 "dens_denom_icov" : { 
-"dens_denom_icov" : { "type": "vector", "desciption": "" }
-}, 
-"shortcut_dens_denom_icov" : { 
 "dens_denom_icov" : { "type": "vector", "desciption": "" }
 }, 
 "dens_denom" : { 
 "dens_denom" : { "type": "grid", "desciption": "" }
 }, 
 "dens" : { 
-"dens" : { "type": "grid", "desciption": "" }
-}, 
-"shortcut_dens" : { 
 "dens" : { "type": "grid", "desciption": "" }
 }, 
 "cont" : { 

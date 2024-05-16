@@ -83,6 +83,28 @@ void ActionShortcut::readInputLine( const std::string& input ) {
       if( !restart ) f_input += " RESTART=NO";
     }
     plumed.readInputLine( f_input );
+    if( !founds ) {
+      ActionWithValue* av=NULL;
+      for(auto pp=plumed.getActionSet().rbegin(); pp!=plumed.getActionSet().rend(); ++pp) {
+        av = pp->get()->castToActionWithValue();
+        if( !av ) continue ;
+        if( std::find(savedOutputs.begin(), savedOutputs.end(), av->getLabel() )!=savedOutputs.end() ) av=NULL;
+        break;
+      }
+      if( av ) {
+        std::string av_label = av->getLabel();
+        if( av_label == getShortcutLabel() ) savedOutputs.push_back( av_label );
+        else {
+          for(unsigned i=0; i<keywords.cnames.size(); ++i) {
+            if( av_label == getShortcutLabel() + "_" + keywords.cnames[i] ) savedOutputs.push_back( av_label );
+            else if( keywords.getOutputComponentFlag(keywords.cnames[i])!="default" ) {
+              std::string thisflag = keywords.getOutputComponentFlag(keywords.cnames[i]);
+              if( keywords.numbered(thisflag) && av_label.find(getShortcutLabel() + "_" + keywords.cnames[i])!=std::string::npos ) savedOutputs.push_back( av_label );
+            }
+          }
+        }
+      }
+    }
   } else error("requirement for action " + words[0] + " should be registered in registerKeywords function for shortcut action using keys.useAction");
 }
 
@@ -103,6 +125,10 @@ const std::string & ActionShortcut::getShortcutLabel() const {
 
 std::vector<std::string> ActionShortcut::getSavedInputLines() const {
   return savedInputLines;
+}
+
+std::vector<std::string> ActionShortcut::getSavedOutputs() const {
+  return savedOutputs;
 }
 
 std::string ActionShortcut::convertInputLineToString() {

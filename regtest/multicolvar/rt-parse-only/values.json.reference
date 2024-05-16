@@ -21,29 +21,15 @@
 "Box" : { "type": "matrix", "desciption": "" }
 }, 
 "d1" : { 
-"d1" : { "type": "scalar", "desciption": "DISTANCE" }
-}, 
-"shortcut_d1" : { 
-"d1" : { "type": "scalar", "desciption": "DISTANCE" }
+"d1" : { "type": "scalar", "desciption": "" }
 }, 
 "d2" : { 
-"d2" : { "type": "scalar", "desciption": "DISTANCE" }
-}, 
-"shortcut_d2" : { 
-"d2" : { "type": "scalar", "desciption": "DISTANCE" }
+"d2" : { "type": "scalar", "desciption": "" }
 }, 
 "d3" : { 
-"d3" : { "type": "scalar", "desciption": "DISTANCE" }
-}, 
-"shortcut_d3" : { 
-"d3" : { "type": "scalar", "desciption": "DISTANCE" }
+"d3" : { "type": "scalar", "desciption": "" }
 }, 
 "ss" : { 
-"ss.1" : { "type": "scalar", "desciption": "1th" }
-"ss.2" : { "type": "scalar", "desciption": "2th" }
-"ss.3" : { "type": "scalar", "desciption": "3th" }
-}, 
-"shortcut_ss" : { 
 "ss.1" : { "type": "scalar", "desciption": "1th" }
 "ss.2" : { "type": "scalar", "desciption": "2th" }
 "ss.3" : { "type": "scalar", "desciption": "3th" }
@@ -51,15 +37,7 @@
 "dall" : { 
 "dall" : { "type": "vector", "desciption": "" }
 }, 
-"shortcut_dall" : { 
-"dall" : { "type": "vector", "desciption": "" }
-}, 
 "ssall" : { 
-"ssall.1" : { "type": "scalar", "desciption": "1th" }
-"ssall.2" : { "type": "scalar", "desciption": "2th" }
-"ssall.3" : { "type": "scalar", "desciption": "3th" }
-}, 
-"shortcut_ssall" : { 
 "ssall.1" : { "type": "scalar", "desciption": "1th" }
 "ssall.2" : { "type": "scalar", "desciption": "2th" }
 "ssall.3" : { "type": "scalar", "desciption": "3th" }
@@ -67,15 +45,48 @@
 "dallt" : { 
 "dallt" : { "type": "vector", "desciption": "" }
 }, 
-"shortcut_dallt" : { 
-"dallt" : { "type": "vector", "desciption": "" }
-}, 
 "sfinal" : { 
 "sfinal.1" : { "type": "scalar", "desciption": "1th" }
 "sfinal.2" : { "type": "scalar", "desciption": "2th" }
 }, 
-"shortcut_sfinal" : { 
-"sfinal.1" : { "type": "scalar", "desciption": "1th" }
-"sfinal.2" : { "type": "scalar", "desciption": "2th" }
+"dallk_vatom1" : { 
+"dallk_vatom1" : { "type": "atoms", "desciption": "" }
+}, 
+"dallk_vatom2" : { 
+"dallk_vatom2" : { "type": "atoms", "desciption": "" }
+}, 
+"dallk_vatom3" : { 
+"dallk_vatom3" : { "type": "atoms", "desciption": "" }
+}, 
+"dallk_grp" : { 
+"dallk_grp" : { "type": "atoms", "desciption": "" }
+}, 
+"dallk" : { 
+"dallk" : { "type": "vector", "desciption": "" }
+}, 
+"dallk_lt1" : { 
+"dallk_lt1" : { "type": "vector", "desciption": "" }
+}, 
+"dallk_lessthan-1" : { 
+"dallk_lessthan-1" : { "type": "scalar", "desciption": "" }
+}, 
+"dallk_lt2" : { 
+"dallk_lt2" : { "type": "vector", "desciption": "" }
+}, 
+"dallk_lessthan-2" : { 
+"dallk_lessthan-2" : { "type": "scalar", "desciption": "" }
+}, 
+"dallk_lowest" : { 
+"dallk_lowest" : { "type": "scalar", "desciption": "" }
+}, 
+"dallk_mean" : { 
+"dallk_mean" : { "type": "scalar", "desciption": "" }
+}, 
+"shortcut_dallk" : { 
+"dallk" : { "type": "vector", "desciption": "" }
+"dallk_lessthan-1" : { "type": "scalar", "desciption": "" }
+"dallk_lessthan-2" : { "type": "scalar", "desciption": "" }
+"dallk_lowest" : { "type": "scalar", "desciption": "" }
+"dallk_mean" : { "type": "scalar", "desciption": "" }
 } 
 } 

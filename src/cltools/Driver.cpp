@@ -804,30 +804,33 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           }
           ActionShortcut* as=pp->castToActionShortcut();
           if( as ) {
-            unsigned ncomponents = 0; std::vector<ActionWithValue*> val_actions;
-            Keywords keys; actionRegister().getKeywords( as->getName(), keys );
-            std::vector<std::string> cnames( keys.getOutputComponents() );
-            for(unsigned i=0; i<cnames.size(); ++i) {
-              std::string valname;
-              if( cnames[i]==".#!value" ) valname = as->getShortcutLabel();
-              else valname = as->getShortcutLabel() + "_" + cnames[i];
-              ActionWithValue* av = p.getActionSet().selectWithLabel<ActionWithValue*>( valname );
-              if( av ) val_actions.push_back(av);
-            }
-            if( val_actions.size()==0 ) continue ;
+            std::vector<std::string> cnames( as->getSavedOutputs() );
+            printf("CHECK %s %s %d \n", as->getShortcutLabel().c_str(), as->getName().c_str(), cnames.size() );
+            if( cnames.size()==0 ) continue ;
 
             if( firsta ) { valuefile.printf("  \"shortcut_%s\" : {\n", as->getShortcutLabel().c_str() ); firsta=false; }
             else valuefile.printf(",\n  \"shortcut_%s\" : {\n", as->getShortcutLabel().c_str() );
-            bool firstv=true;
-            for(unsigned i=0; i<val_actions.size(); ++i) {
-              for(unsigned j=0; j<val_actions[i]->getNumberOfComponents(); ++j) {
-                Value* myval = val_actions[i]->copyOutput(j); std::string compname = myval->getName(), description; std::size_t dot=compname.find(".");
-                if( dot!=std::string::npos ) {
-                  std::string cname = compname.substr(dot+1); description = val_actions[i]->getOutputComponentDescription( cname, keys );
-                } else description = keys.getOutputComponentDescription(".#!value");
-                if( description.find("\\")!=std::string::npos ) error("found invalid backslash character in documentation for component " + compname + " in action " + val_actions[i]->getName() + " with label " + val_actions[i]->getLabel() );
+            bool firstv=true; Keywords keys; actionRegister().getKeywords( as->getName(), keys );
+            for(unsigned i=0; i<cnames.size(); ++i) {
+              ActionWithValue* av2=p.getActionSet().selectWithLabel<ActionWithValue*>( cnames[i] );
+              if( !av2 ) plumed_merror("could not find value created by shortcut with name " + cnames[i] );
+              if( av2->getNumberOfComponents()==1 ) {
+                Value* myval = av2->copyOutput(0); std::string compname = myval->getName(), description;
+                if( compname==as->getShortcutLabel() ) description = keys.getOutputComponentDescription(".#!value");
+                else { std::size_t pp=compname.find(as->getShortcutLabel()); description = keys.getOutputComponentDescription( compname.substr(pp+as->getShortcutLabel().length()+1) ); }
+                if( description.find("\\")!=std::string::npos ) error("found invalid backslash character in documentation for component " + compname + " in action " + as->getName() + " with label " + as->getLabel() );
                 if( firstv ) { valuefile.printf("    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), myval->getValueType().c_str(), description.c_str() ); firstv=false; }
                 else valuefile.printf(",\n    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), myval->getValueType().c_str(), description.c_str() );
+              } else {
+                for(unsigned j=0; j<av2->getNumberOfComponents(); ++j) {
+                  Value* myval = av2->copyOutput(j); std::string compname = myval->getName(), description; std::size_t dot=compname.find(".");
+                  if( dot!=std::string::npos ) {
+                    std::string cname = compname.substr(dot+1); description = av2->getOutputComponentDescription( cname, keys );
+                  } else plumed_merror("should not be outputting description of value from action when using shortcuts");
+                  if( description.find("\\")!=std::string::npos ) error("found invalid backslash character in documentation for component " + compname + " in action " + av2->getName() + " with label " + av2->getLabel() );
+                  if( firstv ) { valuefile.printf("    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), myval->getValueType().c_str(), description.c_str() ); firstv=false; }
+                  else valuefile.printf(",\n    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), myval->getValueType().c_str(), description.c_str() );
+                }
               }
             }
             valuefile.printf("\n  }");

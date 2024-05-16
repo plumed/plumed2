@@ -23,9 +23,6 @@
 "phi" : { 
 "phi" : { "type": "scalar", "desciption": "" }
 }, 
-"shortcut_phi" : { 
-"phi" : { "type": "scalar", "desciption": "" }
-}, 
 "r1" : { 
 "r1.X" : { "type": "scalar", "description": "values from the column labelled p2.X in the file named input_colvar" } 
 }, 

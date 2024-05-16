@@ -29,12 +29,6 @@
 "q1_mat.y" : { "type": "matrix", "desciption": "" }
 "q1_mat.z" : { "type": "matrix", "desciption": "" }
 }, 
-"shortcut_q1_mat" : { 
-"q1_mat.w" : { "type": "matrix", "desciption": "" }
-"q1_mat.x" : { "type": "matrix", "desciption": "" }
-"q1_mat.y" : { "type": "matrix", "desciption": "" }
-"q1_mat.z" : { "type": "matrix", "desciption": "" }
-}, 
 "q1_sh" : { 
 "q1_sh.rm-n1" : { "type": "matrix", "desciption": "" }
 "q1_sh.rm-0" : { "type": "matrix", "desciption": "" }
@@ -63,13 +57,7 @@
 "q1_norm2" : { 
 "q1_norm2" : { "type": "vector", "desciption": "" }
 }, 
-"shortcut_q1_norm2" : { 
-"q1_norm2" : { "type": "vector", "desciption": "" }
-}, 
 "q1_norm" : { 
-"q1_norm" : { "type": "vector", "desciption": "" }
-}, 
-"shortcut_q1_norm" : { 
 "q1_norm" : { "type": "vector", "desciption": "" }
 }, 
 "q1" : { 

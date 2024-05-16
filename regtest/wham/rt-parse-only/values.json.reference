@@ -23,9 +23,6 @@
 "phi" : { 
 "phi" : { "type": "scalar", "desciption": "" }
 }, 
-"shortcut_phi" : { 
-"phi" : { "type": "scalar", "desciption": "" }
-}, 
 "rp" : { 
 "rp.bias" : { "type": "scalar", "desciption": "" }
 "rp.force2" : { "type": "scalar", "desciption": "" }
