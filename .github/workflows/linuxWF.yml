@@ -158,8 +158,8 @@ jobs:
         echo "OMPI_MCA_plm=isolated" >> $GITHUB_ENV
         echo "OMPI_MCA_btl_vader_single_copy_mechanism=none" >> $GITHUB_ENV
         echo "OMPI_MCA_rmaps_base_oversubscribe=yes" >> $GITHUB_ENV
-        pip install --user mpi4py
-        python -c "import mpi4py"
+      #  pip install --user mpi4py
+      #  python -c "import mpi4py"
       # nvhpcinstalls his own mpi compilers
     - name: Install MPI
       # install MPI at last since it modifies CC and CXX
