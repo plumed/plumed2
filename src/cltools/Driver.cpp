@@ -805,7 +805,6 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           ActionShortcut* as=pp->castToActionShortcut();
           if( as ) {
             std::vector<std::string> cnames( as->getSavedOutputs() );
-            printf("CHECK %s %s %d \n", as->getShortcutLabel().c_str(), as->getName().c_str(), cnames.size() );
             if( cnames.size()==0 ) continue ;
 
             if( firsta ) { valuefile.printf("  \"shortcut_%s\" : {\n", as->getShortcutLabel().c_str() ); firsta=false; }
