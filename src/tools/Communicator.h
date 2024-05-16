@@ -76,10 +76,10 @@ class Communicator {
     template <typename T, unsigned n> explicit Data(VectorTyped<T,n> *p,int s): pointer(p), size(n*s), nbytes(sizeof(T)), type(getMPIType<T>()) {}
 /// Init from reference to VectorGeneric
     template <typename T, unsigned n> explicit Data(VectorTyped<T,n> &p): pointer(&p), size(n), nbytes(sizeof(T)), type(getMPIType<T>()) {}
-/// Init from pointer to TensorGeneric
-    template <unsigned n,unsigned m> explicit Data(TensorGeneric<n,m> *p,int s): pointer(p), size(n*m*s), nbytes(sizeof(double)), type(getMPIType<double>()) {}
-/// Init from reference to TensorGeneric
-    template <unsigned n,unsigned m> explicit Data(TensorGeneric<n,m> &p): pointer(&p), size(n*m), nbytes(sizeof(double)), type(getMPIType<double>()) {}
+/// Init from pointer to TensorTyped
+    template <typename T, unsigned n,unsigned m> explicit Data(TensorTyped<T,n,m> *p,int s): pointer(p), size(n*m*s), nbytes(sizeof(T)), type(getMPIType<T>()) {}
+/// Init from reference to TensorTyped
+    template <typename T, unsigned n,unsigned m> explicit Data(TensorTyped<T,n,m> &p): pointer(&p), size(n*m), nbytes(sizeof(T)), type(getMPIType<T>()) {}
 /// Init from reference to std::vector
     template <typename T> explicit Data(std::vector<T>&v) {
       Data d(v.data(),v.size());
@@ -123,8 +123,8 @@ class Communicator {
     template <typename T> explicit ConstData(const T&p): pointer(&p), size(1), nbytes(sizeof(T)), type(getMPIType<T>()) {}
     template <typename T,unsigned n> explicit ConstData(const VectorTyped<T,n> *p,int s): pointer(p), size(n*s), nbytes(sizeof(T)), type(getMPIType<T>()) {}
     template <typename T,unsigned n> explicit ConstData(const VectorTyped<T,n> &p): pointer(&p), size(n), nbytes(sizeof(T)), type(getMPIType<T>()) {}
-    template <unsigned n,unsigned m> explicit ConstData(const TensorGeneric<n,m> *p,int s): pointer(p), size(n*m*s), nbytes(sizeof(double)), type(getMPIType<double>()) {}
-    template <unsigned n,unsigned m> explicit ConstData(const TensorGeneric<n,m> &p): pointer(&p), size(n*m), nbytes(sizeof(double)), type(getMPIType<double>()) {}
+    template <typename T, unsigned n,unsigned m> explicit ConstData(const TensorTyped<T,n,m> *p,int s): pointer(p), size(n*m*s), nbytes(sizeof(T)), type(getMPIType<T>()) {}
+    template <typename T, unsigned n,unsigned m> explicit ConstData(const TensorTyped<T,n,m> &p): pointer(&p), size(n*m), nbytes(sizeof(T)), type(getMPIType<T>()) {}
     template <typename T> explicit ConstData(const std::vector<T>&v) {
       ConstData d(v.data(),v.size());
       pointer=d.pointer;
