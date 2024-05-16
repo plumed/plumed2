@@ -51,13 +51,8 @@ static void mergeSortedVectors(const C* const* vecs, std::size_t size, std::vect
     /// to allow using a priority_queu, which selects the highest element.
     /// we here (counterintuitively) define < as >
     bool operator< (Entry const& rhs) const { return top() > rhs.top(); }
-#ifdef __NVCOMPILER
-#define PLMDAUTO typename C::value_type
-#else
-//I prefer letting gcc doing his work
-#define PLMDAUTO auto
-#endif
-    const PLMDAUTO & top() const { return *fwdIt; }
+    // TODO: revert "typename C::value_type" to "auto": nvc++ and icpc seems to do not deduce automatically the return type
+    const typename C::value_type & top() const { return *fwdIt; }
     void next() { ++fwdIt;};
   };
 
