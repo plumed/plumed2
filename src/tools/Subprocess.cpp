@@ -61,9 +61,15 @@ public:
   ~SubprocessPid() {
     // this is apparently working also with MPI on Travis.
     if(pid!=0 && pid!=-1) {
+      // the destructor implies we do not need the subprocess anymore, so SIGKILL
+      // is the fastest exit.
+      // if we want to gracefully kill the process with a delay, it would be cleaner
+      // to have another member function
+      kill(pid,SIGKILL);
+      // Wait for the child process to terminate
+      // This is anyway required to avoid leaks
       int status;
-      kill(pid,SIGINT);
-      waitpid(pid, &status, 0); // Wait for the child process to terminate
+      waitpid(pid, &status, 0);
     }
   }
 #endif
