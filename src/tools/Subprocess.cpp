@@ -25,6 +25,7 @@
 #ifdef __PLUMED_HAS_SUBPROCESS
 #include <unistd.h>
 #include <csignal>
+#include <sys/wait.h>
 #endif
 
 namespace PLMD {
@@ -59,7 +60,11 @@ public:
   }
   ~SubprocessPid() {
     // this is apparently working also with MPI on Travis.
-    if(pid!=0 && pid!=-1) kill(pid,SIGINT);
+    if(pid!=0 && pid!=-1) {
+      int status;
+      kill(pid,SIGINT);
+      waitpid(pid, &status, 0); // Wait for the child process to terminate
+    }
   }
 #endif
 };
@@ -113,11 +118,15 @@ Subprocess::Subprocess(const std::string & cmd) {
 
 Subprocess::~Subprocess() {
 #ifdef __PLUMED_HAS_SUBPROCESS
-// fpc should be closed to terminate the child executable
+// close files:
   fclose(fppc);
+  fclose(fpcp);
+// fclose also closes the underlying descriptors,
+// so this is not needed:
   close(fpc);
-// fcp should not be closed because it could make the child executable fail
-/// TODO: check if this is necessary and make this class exception safe!
+  close(fcp);
+// after closing the communication, the subprocess is killed
+// in pid's destructor
 #endif
 }
 
