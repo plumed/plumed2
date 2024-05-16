@@ -74,6 +74,14 @@ int main(){
 
 */
 template<typename T, unsigned n> class VectorTyped;
+
+template<typename T, unsigned n>
+VectorTyped<T, n> delta(const VectorTyped<T, n>&,const VectorTyped<T, n>&);
+
+template<typename T, unsigned n>
+T dotProduct(const VectorTyped<T, n>&,const VectorTyped<T, n>&);
+
+
 template<typename T, unsigned n>
 std::ostream & operator<<(std::ostream &os, const VectorTyped<T, n>& v);
 template<typename T, unsigned n>
@@ -134,11 +142,9 @@ public:
   template<typename U, typename J, unsigned m>
   friend VectorTyped<U, m> operator/(const VectorTyped<U, m>&,J);
 /// return v2-v1
-  template<typename U, unsigned m>
-  friend VectorTyped<U, m> delta(const VectorTyped<U, m>&v1,const VectorTyped<U, m>&v2);
+  friend VectorTyped delta<>(const VectorTyped&v1,const VectorTyped&v2);
 /// return v1 .scalar. v2
-  template<typename U, unsigned m>
-  friend U dotProduct(const VectorTyped<U, m>&,const VectorTyped<U, m>&);
+  friend T dotProduct<>(const VectorTyped&,const VectorTyped&);
   //this bad boy produces a warning (in fact becasue declrare the crossproduc as a friend for ALL thhe possible combinations of n and T)
 /// return v1 .vector. v2
 /// Only available for size 3
@@ -179,12 +185,12 @@ VectorTyped<T, n>::VectorTyped(T first,Args... arg) {
 }
 
 template<typename T, unsigned n>
-constexpr T* VectorTyped<T, n>::data() noexcept{
+constexpr T* VectorTyped<T, n>::data() noexcept {
   return d.data();
 }
 
 template<typename T, unsigned n>
-constexpr const T* VectorTyped<T, n>::data() const noexcept{
+constexpr const T* VectorTyped<T, n>::data() const noexcept {
   return d.data();
 }
 
@@ -277,7 +283,7 @@ VectorTyped<T, n> operator*(VectorTyped<T, n> v,J s) {
 
 template<typename T, typename J, unsigned n>
 VectorTyped<T, n> operator/(const VectorTyped<T, n>&v,J s) {
-  return v*(1.0/s);
+  return v*(T(1.0)/s);
 }
 
 template<typename T, unsigned n>
