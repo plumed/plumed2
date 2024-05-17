@@ -780,25 +780,24 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           ActionWithVirtualAtom* avv=dynamic_cast<ActionWithVirtualAtom*>(pp.get());
           if( avv ||  pp.get()->getName()=="GROUP" || pp.get()->getName()=="DENSITY" ) {
             Action* p(pp.get());
-            if( firsta ) { valuefile.printf("  \"%s\" : {\n", p->getLabel().c_str() ); firsta=false; }
-            else valuefile.printf(",\n  \"%s\" : {\n", p->getLabel().c_str() );
-            if( avv ) valuefile.printf("    \"%s\" : { \"type\": \"atoms\", \"description\": \"virtual atom calculated by %s action\" }", avv->getLabel().c_str(), avv->getName().c_str() );
-            else valuefile.printf("    \"%s\" : { \"type\": \"atoms\", \"description\": \"indices of atoms specified in GROUP\" }", p->getLabel().c_str() );
+            if( firsta ) { valuefile.printf("  \"%s\" : {\n    \"action\" : \"%s\"", p->getLabel().c_str(), p->getName().c_str() ); firsta=false; }
+            else valuefile.printf(",\n  \"%s\" : {\n    \"action\" : \"%s\"", p->getLabel().c_str(), p->getName().c_str() );
+            if( avv ) valuefile.printf(",\n    \"%s\" : { \"type\": \"atoms\", \"description\": \"virtual atom calculated by %s action\" }", avv->getLabel().c_str(), avv->getName().c_str() );
+            else valuefile.printf(",\n    \"%s\" : { \"type\": \"atoms\", \"description\": \"indices of atoms specified in GROUP\" }", p->getLabel().c_str() );
             valuefile.printf("\n  }"); continue;
           }
           ActionWithValue* av=dynamic_cast<ActionWithValue*>(pp.get());
           if( av && av->getNumberOfComponents()>0 ) {
-            if( firsta ) { valuefile.printf("  \"%s\" : {\n", av->getLabel().c_str() ); firsta=false; }
-            else valuefile.printf(",\n  \"%s\" : {\n", av->getLabel().c_str() );
-            bool firstv=true; Keywords keys; actionRegister().getKeywords( av->getName(), keys );
+            Keywords keys; actionRegister().getKeywords( av->getName(), keys );
+            if( firsta ) { valuefile.printf("  \"%s\" : {\n    \"action\" : \"%s\"", av->getLabel().c_str(), keys.getDisplayName().c_str() ); firsta=false; }
+            else valuefile.printf(",\n  \"%s\" : {\n    \"action\" : \"%s\"", av->getLabel().c_str(), keys.getDisplayName().c_str() );
             for(unsigned i=0; i<av->getNumberOfComponents(); ++i) {
               Value* myval = av->copyOutput(i); std::string compname = myval->getName(), description; std::size_t dot=compname.find(".");
               if( dot!=std::string::npos ) {
                 std::string cname = compname.substr(dot+1); description = av->getOutputComponentDescription( cname, keys );
               } else description = keys.getOutputComponentDescription(".#!value");
               if( description.find("\\")!=std::string::npos ) error("found invalid backslash character in documentation for component " + compname + " in action " + av->getName() + " with label " + av->getLabel() );
-              if( firstv ) { valuefile.printf("    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), myval->getValueType().c_str(), description.c_str() ); firstv=false; }
-              else valuefile.printf(",\n    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), myval->getValueType().c_str(), description.c_str() );
+              valuefile.printf(",\n    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), myval->getValueType().c_str(), description.c_str() );
             }
             valuefile.printf("\n  }");
           }
@@ -807,9 +806,9 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
             std::vector<std::string> cnames( as->getSavedOutputs() );
             if( cnames.size()==0 ) continue ;
 
-            if( firsta ) { valuefile.printf("  \"shortcut_%s\" : {\n", as->getShortcutLabel().c_str() ); firsta=false; }
-            else valuefile.printf(",\n  \"shortcut_%s\" : {\n", as->getShortcutLabel().c_str() );
-            bool firstv=true; Keywords keys; actionRegister().getKeywords( as->getName(), keys );
+            if( firsta ) { valuefile.printf("  \"shortcut_%s\" : {\n    \"action\" : \"%s\"", as->getShortcutLabel().c_str(), as->getName().c_str() ); firsta=false; }
+            else valuefile.printf(",\n  \"shortcut_%s\" : {\n    \"action\" : \"%s\"", as->getShortcutLabel().c_str(), as->getName().c_str() );
+            Keywords keys; actionRegister().getKeywords( as->getName(), keys );
             for(unsigned i=0; i<cnames.size(); ++i) {
               ActionWithValue* av2=p.getActionSet().selectWithLabel<ActionWithValue*>( cnames[i] );
               if( !av2 ) plumed_merror("could not find value created by shortcut with name " + cnames[i] );
@@ -818,8 +817,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
                 if( compname==as->getShortcutLabel() ) description = keys.getOutputComponentDescription(".#!value");
                 else { std::size_t pp=compname.find(as->getShortcutLabel()); description = keys.getOutputComponentDescription( compname.substr(pp+as->getShortcutLabel().length()+1) ); }
                 if( description.find("\\")!=std::string::npos ) error("found invalid backslash character in documentation for component " + compname + " in action " + as->getName() + " with label " + as->getLabel() );
-                if( firstv ) { valuefile.printf("    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), myval->getValueType().c_str(), description.c_str() ); firstv=false; }
-                else valuefile.printf(",\n    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), myval->getValueType().c_str(), description.c_str() );
+                valuefile.printf(",\n    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), myval->getValueType().c_str(), description.c_str() );
               } else {
                 for(unsigned j=0; j<av2->getNumberOfComponents(); ++j) {
                   Value* myval = av2->copyOutput(j); std::string compname = myval->getName(), description; std::size_t dot=compname.find(".");
@@ -827,8 +825,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
                     std::string cname = compname.substr(dot+1); description = av2->getOutputComponentDescription( cname, keys );
                   } else plumed_merror("should not be outputting description of value from action when using shortcuts");
                   if( description.find("\\")!=std::string::npos ) error("found invalid backslash character in documentation for component " + compname + " in action " + av2->getName() + " with label " + av2->getLabel() );
-                  if( firstv ) { valuefile.printf("    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), myval->getValueType().c_str(), description.c_str() ); firstv=false; }
-                  else valuefile.printf(",\n    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), myval->getValueType().c_str(), description.c_str() );
+                  valuefile.printf(",\n    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), myval->getValueType().c_str(), description.c_str() );
                 }
               }
             }

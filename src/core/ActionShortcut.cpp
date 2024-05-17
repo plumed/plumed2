@@ -104,6 +104,11 @@ void ActionShortcut::readInputLine( const std::string& input ) {
           }
         }
       }
+    } else {
+      ActionWithValue* av = plumed.getActionSet()[plumed.getActionSet().size()-1]->castToActionWithValue();
+      if( !av ) error("shortcut is using suffix but action created is not ActionWithValue");
+      Keywords thiskeys; actionRegister().getKeywords( av->getName(), thiskeys );
+      if( thiskeys.getDisplayName()!=getName() ) error("mismatch between display name of hidden action " + thiskeys.getDisplayName() + " and shortcut that creates it " + getName() );
     }
   } else error("requirement for action " + words[0] + " should be registered in registerKeywords function for shortcut action using keys.useAction");
 }

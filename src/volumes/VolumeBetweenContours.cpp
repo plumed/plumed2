@@ -92,7 +92,7 @@ typedef VolumeShortcut<glob_contours> VolumeInEnvelopeShortcut;
 PLUMED_REGISTER_ACTION(VolumeInEnvelopeShortcut,"INENVELOPE")
 
 void VolumeInEnvelope::registerKeywords( Keywords& keys ) {
-  ActionVolume::registerKeywords( keys ); keys.remove("SIGMA");
+  ActionVolume::registerKeywords( keys ); keys.remove("SIGMA"); keys.setDisplayName("INENVELOPE");
   keys.add("atoms","FIELD_ATOMS","the atom whose positions we are constructing a field from");
   keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
   keys.add("compulsory","CONTOUR","a switching funciton that tells PLUMED how large the density should be");

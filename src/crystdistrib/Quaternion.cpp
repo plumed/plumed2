@@ -119,7 +119,7 @@ typedef colvar::MultiColvarTemplate<Quaternion> QuaternionMulti;
 PLUMED_REGISTER_ACTION(QuaternionMulti,"QUATERNION_VECTOR")
 
 void Quaternion::registerKeywords( Keywords& keys ) {
-  Colvar::registerKeywords( keys );
+  Colvar::registerKeywords( keys ); keys.setDisplayName("QUATERNION");
   keys.add("atoms","ATOMS","the three atom that we are using to calculate the quaternion");
   keys.addOutputComponent("w","default","the real component of quaternion");
   keys.addOutputComponent("i","default","the i component of the quaternion");

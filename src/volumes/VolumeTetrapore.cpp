@@ -147,7 +147,7 @@ typedef VolumeShortcut<glob_tetrapore> VolumeTetraporeShortcut;
 PLUMED_REGISTER_ACTION(VolumeTetraporeShortcut,"TETRAHEDRALPORE")
 
 void VolumeTetrapore::registerKeywords( Keywords& keys ) {
-  ActionVolume::registerKeywords( keys );
+  ActionVolume::registerKeywords( keys ); keys.setDisplayName("TETRAHEDRALPORE");
   keys.add("atoms","BOX","the positions of four atoms that define spatial extent of the cavity");
   keys.addFlag("PRINT_BOX",false,"write out the positions of the corners of the box to an xyz file");
   keys.add("optional","FILE","the file on which to write out the box coordinates");

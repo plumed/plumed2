@@ -78,7 +78,7 @@ public:
 PLUMED_REGISTER_ACTION(ContactMatrix,"CONTACT_MATRIX_PROPER")
 
 void ContactMatrix::registerKeywords( Keywords& keys ) {
-  AdjacencyMatrixBase::registerKeywords( keys );
+  AdjacencyMatrixBase::registerKeywords( keys ); keys.setDisplayName("CONTACT_MATRIX");
   keys.add("compulsory","NN","6","The n parameter of the switching function ");
   keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");

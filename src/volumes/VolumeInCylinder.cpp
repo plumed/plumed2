@@ -100,7 +100,7 @@ typedef VolumeShortcut<glob_cylinder> VolumeInCylinderShortcut;
 PLUMED_REGISTER_ACTION(VolumeInCylinderShortcut,"INCYLINDER")
 
 void VolumeInCylinder::registerKeywords( Keywords& keys ) {
-  ActionVolume::registerKeywords( keys );
+  ActionVolume::registerKeywords( keys ); keys.setDisplayName("INCYLINDER");
   keys.add("atoms","CENTER","the atom whose vicinity we are interested in examining");
   keys.add("compulsory","DIRECTION","the direction of the long axis of the cylinder. Must be x, y or z");
   keys.add("compulsory","RADIUS","a switching function that gives the extent of the cylinder in the plane perpendicular to the direction");

@@ -75,15 +75,16 @@ public:
 
 template <class T>
 void FunctionOfMatrix<T>::registerKeywords(Keywords& keys ) {
-  ActionWithMatrix::registerKeywords(keys); keys.use("ARG");
+  ActionWithMatrix::registerKeywords(keys); keys.use("ARG"); std::string name = keys.getDisplayName();
+  std::size_t und=name.find("_MATRIX"); keys.setDisplayName( name.substr(0,und) );
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
   keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
   T tfunc; tfunc.registerKeywords( keys );
-  if( keys.getActionName()=="SUM_MATRIX" ) {
+  if( keys.getDisplayName()=="SUM" ) {
     keys.setValueDescription("the sum of all the elements in the input matrix");
-  } else if( keys.getActionName()=="HIGHEST_MATRIX" ) {
+  } else if( keys.getDisplayName()=="HIGHEST" ) {
     keys.setValueDescription("the largest element of the input matrix");
-  } else if( keys.getActionName()=="LOWEST_MATRIX" ) {
+  } else if( keys.getDisplayName()=="LOWEST" ) {
     keys.setValueDescription("the smallest element in the input matrix");
   } else if( keys.outputComponentExists(".#!value") ) {
     keys.setValueDescription("the matrix obtained by doing an element-wise application of " + keys.getOutputComponentDescription(".#!value") + " to the input matrix");

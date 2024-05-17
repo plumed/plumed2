@@ -708,7 +708,11 @@ void Keywords::addActionNameSuffix( const std::string& suffix ) {
   actionNameSuffixes.push_back( suffix );
 }
 
-std::string Keywords::getActionName() const {
+void Keywords::setDisplayName( const std::string& name ) {
+  thisactname = name;
+}
+
+std::string Keywords::getDisplayName() const {
   return thisactname;
 }
 

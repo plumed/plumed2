@@ -84,7 +84,7 @@ typedef MultiColvarTemplate<Plane> PlaneMulti;
 PLUMED_REGISTER_ACTION(PlaneMulti,"PLANE_VECTOR")
 
 void Plane::registerKeywords( Keywords& keys ) {
-  Colvar::registerKeywords( keys );
+  Colvar::registerKeywords( keys ); keys.setDisplayName("PLANE");
   keys.add("atoms","ATOMS","the three or four atoms whose plane we are computing");
   keys.addOutputComponent("x","default","the x-component of the vector that is normal to the plane containing the atoms");
   keys.addOutputComponent("y","default","the y-component of the vector that is normal to the plane containing the atoms");

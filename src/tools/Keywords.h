@@ -196,7 +196,9 @@ public:
 /// Get the list of keywords that are needed by this action
   const std::vector<std::string>& getNeededKeywords() const ;
 /// Return the name of the action that has this set of keywords
-  std::string getActionName() const ;
+  std::string getDisplayName() const ;
+/// Set the display name
+  void setDisplayName( const std::string& name );
 };
 
 }
