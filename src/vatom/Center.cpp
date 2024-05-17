@@ -149,6 +149,7 @@ PLUMED_REGISTER_ACTION(Center,"COM")
 
 void Center::registerKeywords(Keywords& keys) {
   ActionWithVirtualAtom::registerKeywords(keys);
+  if( keys.getDisplayName()!="COM" ) keys.setDisplayName("CENTER");
   keys.add("optional","WEIGHTS","Center is computed as a weighted average.");
   keys.add("optional","SET_CHARGE","Set the charge of the virtual atom to a given value.");
   keys.add("optional","SET_MASS","Set the mass of the virtual atom to a given value.");

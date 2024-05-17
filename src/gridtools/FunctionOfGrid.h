@@ -58,10 +58,11 @@ public:
 
 template <class T>
 void FunctionOfGrid<T>::registerKeywords(Keywords& keys ) {
-  ActionWithGrid::registerKeywords(keys); keys.use("ARG");
+  ActionWithGrid::registerKeywords(keys); keys.use("ARG"); std::string name = keys.getDisplayName();
+  std::size_t und=name.find("_GRID"); keys.setDisplayName( name.substr(0,und) );
   keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
   T tfunc; tfunc.registerKeywords( keys ); if( typeid(tfunc)==typeid(function::Custom()) ) keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
-  if( keys.getActionName()=="INTEGRATE_GRID") {
+  if( keys.getDisplayName()=="INTEGRATE") {
     keys.setValueDescription("the numerical integral of the input function over its whole domain");
   } else if( keys.outputComponentExists(".#!value") ) {
     keys.setValueDescription("the grid obtained by doing an element-wise application of " + keys.getOutputComponentDescription(".#!value") + " to the input grid");

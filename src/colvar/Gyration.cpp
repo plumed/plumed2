@@ -93,7 +93,7 @@ public:
 PLUMED_REGISTER_ACTION(Gyration,"GYRATION_FAST")
 
 void Gyration::registerKeywords(Keywords& keys) {
-  Colvar::registerKeywords(keys);
+  Colvar::registerKeywords(keys); keys.setDisplayName("GYRATION");
   keys.add("atoms","ATOMS","the group of atoms that you are calculating the Gyration Tensor for");
   keys.add("compulsory","TYPE","RADIUS","The type of calculation relative to the Gyration Tensor you want to perform");
   keys.addFlag("MASS_WEIGHTED",false,"set the masses of all the atoms equal to one");

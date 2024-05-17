@@ -36,6 +36,7 @@ class ActionShortcut :
 private:
   std::string shortcutlabel;
   std::vector<std::string> savedInputLines;
+  std::vector<std::string> savedOutputs;
 protected:
   std::string getUpdateLimits() const ;
 public:
@@ -53,6 +54,8 @@ public:
   void apply() override {}
 /// Get the lines of the shortcut that were read in
   std::vector<std::string> getSavedInputLines() const ;
+/// Get the labels of the actions that this creates
+  std::vector<std::string> getSavedOutputs() const ;
 /// Take everything that was input to this action and convert it to a string
   std::string convertInputLineToString();
 /// This sorts out the reading of arguments from shortcuts

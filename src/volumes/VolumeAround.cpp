@@ -96,7 +96,7 @@ typedef VolumeShortcut<glob_around> VolumeAroundShortcut;
 PLUMED_REGISTER_ACTION(VolumeAroundShortcut,"AROUND")
 
 void VolumeAround::registerKeywords( Keywords& keys ) {
-  ActionVolume::registerKeywords( keys );
+  ActionVolume::registerKeywords( keys ); keys.setDisplayName("AROUND");
   keys.add("atoms","ORIGIN","the atom whose vicinity we are interested in examining");
   keys.add("atoms-2","ATOM","an alternative to ORIGIN");
   keys.add("compulsory","XLOWER","0.0","the lower boundary in x relative to the x coordinate of the atom (0 indicates use full extent of box).");

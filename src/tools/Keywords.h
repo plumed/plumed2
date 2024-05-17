@@ -171,6 +171,8 @@ public:
   void setValueDescription( const std::string& descr );
 /// Add a potential component which can be output by this particular action
   void addOutputComponent( const std::string& name, const std::string& key, const std::string& descr );
+/// Remove a component that can be output by this particular action
+  void removeOutputComponent( const std::string& name );
 /// Has a component with this name been added?
   bool outputComponentExists( const std::string& name ) const ;
 /// Get the flag that forces this component to be calculated
@@ -194,7 +196,9 @@ public:
 /// Get the list of keywords that are needed by this action
   const std::vector<std::string>& getNeededKeywords() const ;
 /// Return the name of the action that has this set of keywords
-  std::string getActionName() const ;
+  std::string getDisplayName() const ;
+/// Set the display name
+  void setDisplayName( const std::string& name );
 };
 
 }

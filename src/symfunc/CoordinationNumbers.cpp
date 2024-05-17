@@ -145,7 +145,7 @@ void CoordinationNumbers::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","R_POWER","the power to which you want to raise the distance");
   keys.addFlag("LOWMEM",false,"this flag does nothing and is present only to ensure back-compatibility");
   keys.add("optional","MOMENTS","the list of moments that you would like to calculate");
-  keys.addOutputComponent("moment","MOMENT","the moments of the distribution");
+  keys.addOutputComponent("moment","MOMENTS","the moments of the distribution");
   keys.needsAction("MATRIX_VECTOR_PRODUCT"); keys.needsAction("ONES"); keys.needsAction("MOMENTS");
 }
 

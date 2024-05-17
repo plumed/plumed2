@@ -106,7 +106,7 @@ typedef MultiColvarTemplate<Dipole> DipoleMulti;
 PLUMED_REGISTER_ACTION(DipoleMulti,"DIPOLE_VECTOR")
 
 void Dipole::registerKeywords(Keywords& keys) {
-  Colvar::registerKeywords(keys);
+  Colvar::registerKeywords(keys); keys.setDisplayName("DIPOLE");
   keys.add("atoms","GROUP","the group of atoms we are calculating the dipole moment for");
   keys.addFlag("COMPONENTS",false,"calculate the x, y and z components of the dipole separately and store them as label.x, label.y and label.z");
   keys.addOutputComponent("x","COMPONENTS","the x-component of the dipole");

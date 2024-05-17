@@ -104,7 +104,7 @@ PLUMED_REGISTER_ACTION(VectorHighest,"HIGHEST_VECTOR")
 PLUMED_REGISTER_ACTION(VectorHighest,"LOWEST_VECTOR")
 
 void Highest::registerKeywords( Keywords& keys ) {
-  if( keys.getActionName().find("LOWEST") ) keys.setValueDescription("the lowest of the input values");
+  if( keys.getDisplayName().find("LOWEST") ) keys.setValueDescription("the lowest of the input values");
   else keys.setValueDescription("the highest of the input values");
 }
 

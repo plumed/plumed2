@@ -96,7 +96,7 @@ typedef VolumeShortcut<glob_sphere> VolumeInSphereShortcut;
 PLUMED_REGISTER_ACTION(VolumeInSphereShortcut,"INSPHERE")
 
 void VolumeInSphere::registerKeywords( Keywords& keys ) {
-  ActionVolume::registerKeywords( keys );
+  ActionVolume::registerKeywords( keys ); keys.setDisplayName("INSPHERE");
   keys.add("atoms","CENTER","the atom whose vicinity we are interested in examining");
   keys.add("atoms-2","ATOM","the atom whose vicinity we are interested in examining");
   keys.add("compulsory","RADIUS","the switching function that tells us the extent of the sphereical region of interest");
