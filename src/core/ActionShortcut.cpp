@@ -65,7 +65,7 @@ ActionShortcut::ActionShortcut(const ActionOptions&ao):
   } else label = ("@s" + s);
 }
 
-void ActionShortcut::readInputLine( const std::string& input ) {
+void ActionShortcut::readInputLine( const std::string& input, bool saveline ) {
   std::vector<std::string> words=Tools::getWords(input); Tools::interpretLabel(words);
   // Check if this action name has been registered
   bool founds=false, found = std::find(keywords.neededActions.begin(), keywords.neededActions.end(), words[0] )!=keywords.neededActions.end();
@@ -77,7 +77,7 @@ void ActionShortcut::readInputLine( const std::string& input ) {
     founds=true;
   }
   if( found ) {
-    std::string f_input = input; if( !founds ) savedInputLines.push_back( input );
+    std::string f_input = input; if( !founds && saveline ) addToSavedInputLines( input );
     if( keywords.exists("RESTART") ) {
       if( restart ) f_input += " RESTART=YES";
       if( !restart ) f_input += " RESTART=NO";
@@ -113,6 +113,10 @@ void ActionShortcut::readInputLine( const std::string& input ) {
   } else error("requirement for action " + words[0] + " should be registered in registerKeywords function for shortcut action using keys.useAction");
 }
 
+void ActionShortcut::addCommentToShortcutOutput( const std::string& input ) {
+  savedInputLines.push_back( input );
+}
+
 std::string ActionShortcut::getUpdateLimits() const {
   std::string f_input="";
   if( update_from!=std::numeric_limits<double>::max() ) {
@@ -122,6 +126,49 @@ std::string ActionShortcut::getUpdateLimits() const {
     std::string util; Tools::convert( update_until, util ); f_input += " UPDATE_UNTIL=" + util;
   }
   return f_input;
+}
+
+void ActionShortcut::addToSavedInputLines( const std::string& line ) {
+  std::vector<std::string> words = Tools::getWords(line); std::string actname;
+  if( words[0].find_first_of(":")!=std::string::npos) actname = words[1]; else actname = words[0];
+  if( !actionRegister().check(actname) ) error("found no action with name " + actname + " to create shortcut");
+  Keywords thiskeys; actionRegister().getKeywords( actname, thiskeys ); std::vector<std::string> numberedkeys;
+  for(unsigned i=0; i<thiskeys.size(); ++i ) {
+    if( thiskeys.numbered( thiskeys.getKeyword(i) ) ) numberedkeys.push_back( thiskeys.getKeyword(i) );
+  }
+  if( numberedkeys.size()>0 ) {
+    std::string reducedline;
+    for(unsigned i=0; i<words.size(); ++i) {
+      bool notnumbered=true;
+      for(unsigned j=0; j<numberedkeys.size(); ++j) {
+        if( words[i].find(numberedkeys[j])!=std::string::npos ) { notnumbered=false; break; }
+      }
+      if( notnumbered ) reducedline += words[i] + " ";
+    }
+    std::vector<unsigned> ninstances( numberedkeys.size(), 0 );
+    for(unsigned j=0; j<numberedkeys.size(); ++j) {
+      std::string val, num; bool found = Tools::parse(words, numberedkeys[j], val );
+      if( found ) reducedline += numberedkeys[j] + "=" + val + " ";
+      for(unsigned i=1;; ++i) {
+        Tools::convert(i, num); found = Tools::parse(words, numberedkeys[j] + num, val );
+        if( !found) break ;
+        if( i<6 ) reducedline += numberedkeys[j] + num + "=" + val + " ";
+        else ninstances[j]++;
+      }
+    }
+    bool outputcomment=false;
+    for(unsigned j=0; j<numberedkeys.size(); ++j) {
+      if( ninstances[j]>0 ) { outputcomment=true; break; }
+    }
+    if( outputcomment ) {
+      reducedline += "    # Action input conctinues with ";
+      for(unsigned  j=0; j<numberedkeys.size(); ++j) {
+        std::string num; Tools::convert( ninstances[j], num );
+        reducedline += num + " " + numberedkeys[j] + "n keywords, ";
+      }
+    }
+    savedInputLines.push_back( reducedline );
+  } else savedInputLines.push_back( line );
 }
 
 const std::string & ActionShortcut::getShortcutLabel() const {
