@@ -143,8 +143,7 @@ void ActionShortcut::addToSavedInputLines( const std::string& line ) {
       for(unsigned j=0; j<numberedkeys.size(); ++j) {
         if( words[i].find(numberedkeys[j])!=std::string::npos && words[i].substr(0,numberedkeys[j].length()+1)!=numberedkeys[j]+"=" ) { notnumbered=false; break; }
       }
-      if( notnumbered ) {
-        printf("CHECK %s \n", words[i].c_str() );
+      if( notnumbered || words[i]==actname ) {
         if( words[i].find(" ")!=std::string::npos) {
           std::size_t eq=words[i].find_first_of("=");
           reducedline += words[i].substr(0,eq) + "={" + words[i].substr(eq+1) + "} ";
@@ -169,7 +168,7 @@ void ActionShortcut::addToSavedInputLines( const std::string& line ) {
       reducedline += "    # Action input conctinues with ";
       for(unsigned  j=0; j<numberedkeys.size(); ++j) {
         std::string num; Tools::convert( ninstances[j], num );
-        reducedline += num + " " + numberedkeys[j] + "n keywords, ";
+        if( ninstances[j]>0 ) reducedline += num + " further " + numberedkeys[j] + "n keywords, ";
       }
     }
     savedInputLines.push_back( reducedline );
