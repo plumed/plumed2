@@ -136,21 +136,26 @@ void ActionShortcut::addToSavedInputLines( const std::string& line ) {
   for(unsigned i=0; i<thiskeys.size(); ++i ) {
     if( thiskeys.numbered( thiskeys.getKeyword(i) ) ) numberedkeys.push_back( thiskeys.getKeyword(i) );
   }
-  if( numberedkeys.size()>0 ) {
+  if( numberedkeys.size()>0 && actname!="CONCATENATE" ) {
     std::string reducedline;
     for(unsigned i=0; i<words.size(); ++i) {
       bool notnumbered=true;
       for(unsigned j=0; j<numberedkeys.size(); ++j) {
-        if( words[i].find(numberedkeys[j])!=std::string::npos ) { notnumbered=false; break; }
+        if( words[i].find(numberedkeys[j])!=std::string::npos && words[i].substr(0,numberedkeys[j].length()+1)!=numberedkeys[j]+"=" ) { notnumbered=false; break; }
       }
-      if( notnumbered ) reducedline += words[i] + " ";
+      if( notnumbered ) {
+        printf("CHECK %s \n", words[i].c_str() );
+        if( words[i].find(" ")!=std::string::npos) {
+          std::size_t eq=words[i].find_first_of("=");
+          reducedline += words[i].substr(0,eq) + "={" + words[i].substr(eq+1) + "} ";
+        } else reducedline += words[i] + " ";
+      }
     }
     std::vector<unsigned> ninstances( numberedkeys.size(), 0 );
     for(unsigned j=0; j<numberedkeys.size(); ++j) {
-      std::string val, num; bool found = Tools::parse(words, numberedkeys[j], val );
-      if( found ) reducedline += numberedkeys[j] + "=" + val + " ";
       for(unsigned i=1;; ++i) {
-        Tools::convert(i, num); found = Tools::parse(words, numberedkeys[j] + num, val );
+        std::string num, val; Tools::convert(i, num);
+        bool found = Tools::parse(words, numberedkeys[j] + num, val );
         if( !found) break ;
         if( i<6 ) reducedline += numberedkeys[j] + num + "=" + val + " ";
         else ninstances[j]++;
