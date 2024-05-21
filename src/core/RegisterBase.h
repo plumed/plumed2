@@ -208,7 +208,7 @@ const Content & RegisterBase<Content>::get(const std::vector<void*> & images,con
     auto qualified_key=imageToString(*image) + ":" + key;
     if(m.count(qualified_key)>0) return m.find(qualified_key)->second->content;
   }
-  plumed_assert(m.count(key)>0);
+  plumed_assert(m.count(key)>0) << ", Missing key: \"" << key<<"\"";
   return m.find(key)->second->content;
 }
 
@@ -220,7 +220,7 @@ const std::string & RegisterBase<Content>::getFullPath(const std::vector<void*> 
     auto qualified_key=imageToString(*image) + ":" + key;
     if(m.count(qualified_key)>0) return m.find(qualified_key)->second->fullPath;
   }
-  plumed_assert(m.count(key)>0);
+  plumed_assert(m.count(key)>0) << ", Missing key: \"" << key<<"\"";
   return m.find(key)->second->fullPath;
 }
 
@@ -228,7 +228,7 @@ template<class Content>
 const Content & RegisterBase<Content>::get(const std::string & key) const {
   // lock map for reading
   std::shared_lock<std::shared_mutex> lock(mutex);
-  plumed_assert(m.count(key)>0);
+  plumed_assert(m.count(key)>0) << ", Missing key: \"" << key<<"\"";
   return m.find(key)->second->content;
 }
 
@@ -288,5 +288,3 @@ void RegisterBase<Content>::clearStaged() noexcept {
 }
 
 #endif
-
-
