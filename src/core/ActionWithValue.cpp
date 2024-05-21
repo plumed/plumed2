@@ -173,7 +173,7 @@ std::string ActionWithValue::getOutputComponentDescription( const std::string& c
   if( und!=std::string::npos && hyph!=std::string::npos ) plumed_merror("cannot use underscore and hyphen in name");
   if( und!=std::string::npos ) return keys.getOutputComponentDescription(cname.substr(und)) + " This particular component measures this quantity for the input CV named " + cname.substr(0,und);
   if( hyph!=std::string::npos ) return keys.getOutputComponentDescription(cname.substr(0,hyph)) + "  This is the " + cname.substr(hyph+1) + "th of these quantities";
-  plumed_massert( keys.outputComponentExists(cname), "if the component names are customizable then you should override this function" );
+  plumed_massert( keys.outputComponentExists(cname), "component " + cname + " does not exist in " + keys.getDisplayName() + " if the component names are customizable then you should override this function" );
   return keys.getOutputComponentDescription( cname );
 }
 

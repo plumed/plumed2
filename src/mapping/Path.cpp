@@ -240,9 +240,9 @@ Path::Path( const ActionOptions& ao ):
 {
   bool nospath, nozpath, gpath; parseFlag("NOSPATH",nospath); parseFlag("NOZPATH",nozpath); parseFlag("GPATH",gpath);
   if( gpath ) {
-    readInputLine( getShortcutLabel() + ": GPATH " + convertInputLineToString() );
-    readInputLine( getShortcutLabel() + "_gspath: COMBINE ARG=" + getShortcutLabel() + ".s PERIODIC=NO");
-    readInputLine( getShortcutLabel() + "_gzpath: COMBINE ARG=" + getShortcutLabel() + ".z PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_gpath: GPATH " + convertInputLineToString() );
+    readInputLine( getShortcutLabel() + "_gspath: COMBINE ARG=" + getShortcutLabel() + "_gpath.s PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_gzpath: COMBINE ARG=" + getShortcutLabel() + "_gpath.z PERIODIC=NO");
   }
   if( nospath && nozpath ) return;
   // Setup the properties
