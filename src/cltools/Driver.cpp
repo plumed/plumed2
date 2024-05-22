@@ -791,10 +791,13 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
             if( firsta ) { valuefile.printf("  \"%s\" : {\n    \"action\" : \"%s\"", av->getLabel().c_str(), keys.getDisplayName().c_str() ); firsta=false; }
             else valuefile.printf(",\n  \"%s\" : {\n    \"action\" : \"%s\"", av->getLabel().c_str(), keys.getDisplayName().c_str() );
             for(unsigned i=0; i<av->getNumberOfComponents(); ++i) {
-              Value* myval = av->copyOutput(i); std::string compname = myval->getName(), description; std::size_t dot=compname.find(".");
-              if( dot!=std::string::npos ) {
-                std::string cname = compname.substr(dot+1); description = av->getOutputComponentDescription( cname, keys );
-              } else description = keys.getOutputComponentDescription(".#!value");
+              Value* myval = av->copyOutput(i); std::string compname = myval->getName(), description; 
+              if( av->getLabel()==compname ) {
+                  description = keys.getOutputComponentDescription(".#!value");
+              } else {
+                  std::size_t dot=compname.find(av->getLabel() + "."); std::string cname = compname.substr(dot + av->getLabel().length() + 1); 
+                  description = av->getOutputComponentDescription( cname, keys );
+              }
               if( description.find("\\")!=std::string::npos ) error("found invalid backslash character in documentation for component " + compname + " in action " + av->getName() + " with label " + av->getLabel() );
               valuefile.printf(",\n    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), myval->getValueType().c_str(), description.c_str() );
             }
@@ -819,10 +822,13 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
                 valuefile.printf(",\n    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), myval->getValueType().c_str(), description.c_str() );
               } else {
                 for(unsigned j=0; j<av2->getNumberOfComponents(); ++j) {
-                  Value* myval = av2->copyOutput(j); std::string compname = myval->getName(), description; std::size_t dot=compname.find(".");
-                  if( dot!=std::string::npos ) {
-                    std::string cname = compname.substr(dot+1); description = av2->getOutputComponentDescription( cname, keys );
-                  } else plumed_merror("should not be outputting description of value from action when using shortcuts");
+                  Value* myval = av2->copyOutput(j); std::string compname = myval->getName(), description; 
+                  if( av2->getLabel()==compname ) {
+                      plumed_merror("should not be outputting description of value from action when using shortcuts");
+                  } else {
+                      std::size_t dot=compname.find(av2->getLabel() + "."); std::string cname = compname.substr(dot+av2->getLabel().length() + 1); 
+                      description = av2->getOutputComponentDescription( cname, keys );
+                  } 
                   if( description.find("\\")!=std::string::npos ) error("found invalid backslash character in documentation for component " + compname + " in action " + av2->getName() + " with label " + av2->getLabel() );
                   valuefile.printf(",\n    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), myval->getValueType().c_str(), description.c_str() );
                 }
