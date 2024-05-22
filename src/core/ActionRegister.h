@@ -64,6 +64,7 @@ public:
   bool printManual(const std::string& action, const bool& vimout, const bool& spellout);
 /// Retrieve a keywords object for a particular action
   bool getKeywords( const std::string& action, Keywords& keys );
+  void getKeywords(const std::vector<void*> & images, const std::string& action, Keywords& keys);
 /// Print out a template command for an action
   bool printTemplate(const std::string& action, bool include_optional);
   std::vector<std::string> getActionNames() const;

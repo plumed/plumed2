@@ -27,7 +27,6 @@
 #include "core/ActionWithValue.h"
 #include "core/ActionWithVirtualAtom.h"
 #include "core/ActionShortcut.h"
-#include "core/ActionRegister.h"
 #include "tools/Communicator.h"
 #include "tools/Random.h"
 #include "tools/Pbc.h"
@@ -788,7 +787,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           }
           ActionWithValue* av=dynamic_cast<ActionWithValue*>(pp.get());
           if( av && av->getNumberOfComponents()>0 ) {
-            Keywords keys; actionRegister().getKeywords( av->getName(), keys );
+            Keywords keys; p.getKeywordsForAction( av->getName(), keys ); 
             if( firsta ) { valuefile.printf("  \"%s\" : {\n    \"action\" : \"%s\"", av->getLabel().c_str(), keys.getDisplayName().c_str() ); firsta=false; }
             else valuefile.printf(",\n  \"%s\" : {\n    \"action\" : \"%s\"", av->getLabel().c_str(), keys.getDisplayName().c_str() );
             for(unsigned i=0; i<av->getNumberOfComponents(); ++i) {
@@ -808,7 +807,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 
             if( firsta ) { valuefile.printf("  \"shortcut_%s\" : {\n    \"action\" : \"%s\"", as->getShortcutLabel().c_str(), as->getName().c_str() ); firsta=false; }
             else valuefile.printf(",\n  \"shortcut_%s\" : {\n    \"action\" : \"%s\"", as->getShortcutLabel().c_str(), as->getName().c_str() );
-            Keywords keys; actionRegister().getKeywords( as->getName(), keys );
+            Keywords keys; p.getKeywordsForAction( as->getName(), keys ); 
             for(unsigned i=0; i<cnames.size(); ++i) {
               ActionWithValue* av2=p.getActionSet().selectWithLabel<ActionWithValue*>( cnames[i] );
               if( !av2 ) plumed_merror("could not find value created by shortcut with name " + cnames[i] );

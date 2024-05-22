@@ -1488,6 +1488,10 @@ bool PlumedMain::parseOnlyMode() const {
   return doParseOnly;
 }
 
+void PlumedMain::getKeywordsForAction( const std::string& action, Keywords& keys ) const {
+  actionRegister().getKeywords( dlloader.getHandles(), action, keys ); 
+}
+
 #ifdef __PLUMED_HAS_PYTHON
 // This is here to stop cppcheck throwing an error
 #endif

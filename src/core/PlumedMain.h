@@ -68,6 +68,7 @@ class FileBase;
 class TypesafePtr;
 class IFile;
 class Units;
+class Keywords;
 class DataPassingTools;
 
 /**
@@ -523,6 +524,8 @@ public:
   void plumedQuantityToMD( const std::string& unit, const double& eng, const TypesafePtr & m) const ;
 /// Take a typesafe pointer from the MD code and convert it to a double
   double MDQuantityToPLUMED( const std::string& unit, const TypesafePtr & m) const ;
+/// Get the keywords for a particular action
+  void getKeywordsForAction( const std::string& action, Keywords& keys ) const ;
 };
 
 /////

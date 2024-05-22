@@ -93,4 +93,8 @@ bool ActionRegister::getKeywords(const std::string& action, Keywords& keys) {
   return false;
 }
 
+void ActionRegister::getKeywords(const std::vector<void*> & images, const std::string& action, Keywords& keys) {
+  auto content=get(images,action); keys.thisactname = action; content.keys(keys);
+}
+
 }
