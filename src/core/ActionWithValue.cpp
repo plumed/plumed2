@@ -169,6 +169,7 @@ void ActionWithValue::addComponentWithDerivatives( const std::string& name, cons
 }
 
 std::string ActionWithValue::getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const {
+  if( keys.outputComponentExists(".#!custom") ) return "a quantity calculated by the action " + getName() + " with label " + getLabel();
   std::size_t und=cname.find_last_of("_"); std::size_t hyph=cname.find_first_of("-");
   if( und!=std::string::npos ) return keys.getOutputComponentDescription(cname.substr(und)) + " This particular component measures this quantity for the input CV named " + cname.substr(0,und);
   if( hyph!=std::string::npos ) return keys.getOutputComponentDescription(cname.substr(0,hyph)) + "  This is the " + cname.substr(hyph+1) + "th of these quantities";
