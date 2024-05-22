@@ -24,6 +24,7 @@
 
 #include "tools/Exception.h"
 #include <string>
+#include <string_view>
 #include <map>
 #include <memory>
 #include <iostream>
@@ -93,6 +94,24 @@ public:
   std::vector<std::string> getKeysWithDLHandle(void* handle) const;
 
   friend std::ostream & operator<<(std::ostream &log,const Register &reg);
+};
+
+/// Class representing an error in a register
+class ExceptionRegisterError :
+  public Exception {
+  std::string missingKey;
+public:
+  using Exception::Exception;
+  ExceptionRegisterError& setMissingKey (std::string_view key) {
+    missingKey=key;
+    return *this;
+  }
+  const std::string& getMissingKey() const {return missingKey;}
+  template<typename T>
+  ExceptionRegisterError& operator<<(const T & x) {
+    *static_cast<Exception*>(this) <<x;
+    return *this;
+  }
 };
 
 /// General register.
@@ -208,7 +227,9 @@ const Content & RegisterBase<Content>::get(const std::vector<void*> & images,con
     auto qualified_key=imageToString(*image) + ":" + key;
     if(m.count(qualified_key)>0) return m.find(qualified_key)->second->content;
   }
-  plumed_assert(m.count(key)>0) << ", Missing key: \"" << key<<"\"";
+  if (m.count(key) == 0 ) {
+    throw ExceptionRegisterError().setMissingKey(key);
+  }
   return m.find(key)->second->content;
 }
 
@@ -220,7 +241,9 @@ const std::string & RegisterBase<Content>::getFullPath(const std::vector<void*> 
     auto qualified_key=imageToString(*image) + ":" + key;
     if(m.count(qualified_key)>0) return m.find(qualified_key)->second->fullPath;
   }
-  plumed_assert(m.count(key)>0) << ", Missing key: \"" << key<<"\"";
+  if (m.count(key) == 0 ) {
+    throw ExceptionRegisterError().setMissingKey(key);
+  }
   return m.find(key)->second->fullPath;
 }
 
@@ -228,7 +251,9 @@ template<class Content>
 const Content & RegisterBase<Content>::get(const std::string & key) const {
   // lock map for reading
   std::shared_lock<std::shared_mutex> lock(mutex);
-  plumed_assert(m.count(key)>0) << ", Missing key: \"" << key<<"\"";
+  if (m.count(key) == 0 ) {
+    throw ExceptionRegisterError().setMissingKey(key);
+  }
   return m.find(key)->second->content;
 }
 
