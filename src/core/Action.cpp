@@ -97,7 +97,7 @@ Action::Action(const ActionOptions&ao):
   if(label.length()==0) {
     std::string s; Tools::convert(plumed.getActionSet().size()-plumed.getActionSet().select<ActionForInterface*>().size(),s);
     label="@"+s;
-  }
+  } else if ( label.find(".")!=std::string::npos ) warning("using full stop in an action label should be avaoided as . has a special meaning in PLUMED action labels");
   if( plumed.getActionSet().selectWithLabel<Action*>(label) ) error("label " + label + " has been already used");
   if( !keywords.exists("NO_ACTION_LOG") ) log.printf("  with label %s\n",label.c_str());
   if ( keywords.exists("UPDATE_FROM") ) parse("UPDATE_FROM",update_from);
