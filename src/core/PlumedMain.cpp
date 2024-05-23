@@ -664,6 +664,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
           ts = actionSet.selectWithLabel<ActionToPutData*>("timestep");
         }
         if( !ts->setValuePointer("timestep", val ) ) plumed_error();
+        ts->updateUnits( passtools.get() );
       }
       break;
       /* ADDED WITH API==2 */
@@ -674,6 +675,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         readInputLine("kBT: PUT CONSTANT PERIODIC=NO UNIT=energy", true);
         ActionToPutData* kb = actionSet.selectWithLabel<ActionToPutData*>("kBT");
         if( !kb->setValuePointer("kBT", val ) ) plumed_error();
+        kb->updateUnits( passtools.get() );
       }
       break;
       /* ADDED WITH API==3 */
