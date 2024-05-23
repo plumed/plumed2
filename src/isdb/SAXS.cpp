@@ -97,6 +97,8 @@ Two additional bead types are available for DNA and RNA besides phosphate group,
 "5", e.g., DC5 or C5 for cytosine in DNA and RNA, respectively);
 - 3'-end pentose sugar capped with an hydroxyl moiety at C3' (the residue name in the PDB must be followed by
 "3", e.g., DC3 or C3 for cytosine in DNA and RNA, respectively).
+An additional bead type is available for proteins:
+-Cysteine residue involved in disulfide bridge (the residue in the PDB must be named CYX).
 
 Experimental reference intensities can be added using the EXPINT keywords. All these values must be normalised
 to the SAXS intensity at q = 0. To facilitate this operation, the SCALE_EXPINT keyword can be used to provide
@@ -181,6 +183,8 @@ Two additional bead types are available for DNA and RNA besides phosphate group,
 e.g., DC5 or C5 for cytosine in DNA and RNA, respectively);
 - 3'-end pentose sugar capped with an hydroxyl moiety at C3' (the residue name in the PDB must be followed by "3",
 e.g., DC3 or C3 for cytosine in DNA and RNA, respectively).
+An additional bead type is available for proteins:
+-Cysteine residue involved in disulfide bridge (the residue in the PDB must be named CYX).
 
 PLEASE NOTE: at the moment, we DO NOT explicitly take into account deuterated residues in the ATOMISTIC
 representation, but we correct the solvent contribution via the DEUTER_CONC keyword.
@@ -251,11 +255,40 @@ private:
          DG_3TE, DG_5TE, DG_TE3, DG_TE5, DT_BB1, DT_BB2, DT_BB3, DT_SC1, DT_SC2, DT_SC3, DT_3TE,
          DT_5TE, DT_TE3, DT_TE5, NMARTINI
        };
-  enum { TRP, TYR, PHE, HIS, HIP, ARG, LYS, CYS, ASP, GLU, ILE, LEU, MET, ASN, PRO, GLN, SER, THR, VAL, ALA, GLY,
-         BASE_A, BASE_C, BASE_T, BASE_G, BASE_U,
-         BB_DNA, BB_DNA_5, BB_DNA_3,
-         BB_RNA, BB_RNA_5, BB_RNA_3,
+  enum { TRP,
+         TYR,
+         PHE,
+         HIS,
+         HIP,
+         ARG,
+         LYS,
+         CYS,
+         CYX,
+         ASP,
+         GLU,
+         ILE,
+         LEU,
+         MET,
+         ASN,
+         PRO,
+         GLN,
+         SER,
+         THR,
+         VAL,
+         ALA,
+         GLY,
          BB_PO2,
+         BB_DNA,
+         BB_DNA_5,
+         BB_DNA_3,
+         BB_RNA,
+         BB_RNA_5,
+         BB_RNA_3,
+         BASE_A,
+         BASE_C,
+         BASE_T,
+         BASE_G,
+         BASE_U,
          NONEBEAD
        };
   struct SplineCoeffs {
@@ -709,7 +742,7 @@ SAXS::SAXS(const ActionOptions&ao):
       std::vector<std::vector<long double> > parameter_vac(NONEBEAD);
       std::vector<std::vector<long double> > parameter_mix(NONEBEAD);
       std::vector<std::vector<long double> > parameter_solv(NONEBEAD);
-      getOnebeadparam(pdb, atoms, parameter_vac, parameter_mix, parameter_solv,residue_atom);
+      getOnebeadparam(pdb, atoms, parameter_vac, parameter_mix, parameter_solv, residue_atom);
       for(unsigned i=0; i<NONEBEAD; ++i) {
         for(unsigned k=0; k<numq; ++k) {
           for(unsigned j=0; j<parameter_vac[i].size(); ++j) {
@@ -786,6 +819,7 @@ SAXS::SAXS(const ActionOptions&ao):
     else Iq0=calculateAFFsans(atoms, FF_tmp, deuter_conc);
     Iq0 *= Iq0;
   }
+
 
   std::vector<double> expint;
   expint.resize( numq );
@@ -948,13 +982,16 @@ SAXS::SAXS(const ActionOptions&ao):
   }
 
   log<<"  Bibliography ";
+  if(onebead) {
+    log<<plumed.cite("Ballabio, Paissoni, Bollati, de Rosa, Capelli, Camilloni, J. Chem. Theory Comput., 19, 22, 8401-8413 (2023)");
+  }
   if(martini) {
-    log<<plumed.cite("Niebling, Björling, Westenhoff, J Appl Crystallogr 47, 1190–1198 (2014)");
-    log<<plumed.cite("Paissoni, Jussupow, Camilloni, J Appl Crystallogr 52, 394-402 (2019)");
+    log<<plumed.cite("Niebling, Björling, Westenhoff, J. Appl. Crystallogr., 47, 1190–1198 (2014)");
+    log<<plumed.cite("Paissoni, Jussupow, Camilloni, J. Appl. Crystallogr., 52, 394-402 (2019)");
   }
   if(atomistic) {
     log<<plumed.cite("Fraser, MacRae, Suzuki, J. Appl. Crystallogr., 11, 693–694 (1978)");
-    log<<plumed.cite("Brown, Fox, Maslen, O'Keefe, Willis, International Tables for Crystallography C, 554–595 (International Union of Crystallography, 2006)");
+    log<<plumed.cite("Brown, Fox, Maslen, O'Keefe, Willis, International Tables for Crystallography, C, 554–595 (International Union of Crystallography, 2006)");
   }
   if(resolution) {
     log<<plumed.cite("Pedersen, Posselt, Mortensen, J. Appl. Crystallogr., 23, 321–333 (1990)");
@@ -1507,9 +1544,6 @@ unsigned SAXS::getOnebeadMapping(const PDB &pdb, const std::vector<AtomNumber> &
   std::vector<std::string> chains; pdb.getChainNames( chains );
   std::vector<std::vector<std::string> > AtomResidueName;
 
-  atoms_masses.resize(atoms.size());
-  residue_atom.resize(atoms.size());
-
   // cycle over chains
   for(unsigned i=0; i<chains.size(); ++i) {
     unsigned start, end;
@@ -1521,8 +1555,7 @@ unsigned SAXS::getOnebeadMapping(const PDB &pdb, const std::vector<AtomNumber> &
       std::string Rname = pdb.getResidueName(res, chains[i]);
       Rname.erase(std::remove_if(Rname.begin(), Rname.end(), ::isspace),Rname.end());
       std::vector<AtomNumber> res_atoms = pdb.getAtomsInResidue(res, chains[i]);
-      unsigned first_time=1;
-      std::vector<std::vector<unsigned> > tmp_residue_atom; tmp_residue_atom.resize(3);
+      std::vector<unsigned> tmp_residue_atom; tmp_residue_atom.resize(3,0);
       // cycle over atoms
       for(unsigned a=0; a<res_atoms.size(); a++) {
         // operations shared among all beads
@@ -1538,21 +1571,17 @@ unsigned SAXS::getOnebeadMapping(const PDB &pdb, const std::vector<AtomNumber> &
         } else {
           type = Aname.at(1);
         }
-        if (type == 'H') atoms_masses[res_atoms[a].index()] = 1.008;
-        else if(type == 'C') atoms_masses[res_atoms[a].index()] = 12.011;
-        else if(type == 'N') atoms_masses[res_atoms[a].index()] = 14.007;
-        else if(type == 'O') atoms_masses[res_atoms[a].index()] = 15.999;
-        else if(type == 'S') atoms_masses[res_atoms[a].index()] = 32.065;
-        else if(type == 'P') atoms_masses[res_atoms[a].index()] = 30.974;
+        if (type == 'H') atoms_masses.push_back(1.008);
+        else if(type == 'C') atoms_masses.push_back(12.011);
+        else if(type == 'N') atoms_masses.push_back(14.007);
+        else if(type == 'O') atoms_masses.push_back(15.999);
+        else if(type == 'S') atoms_masses.push_back(32.065);
+        else if(type == 'P') atoms_masses.push_back(30.974);
         else {
           error("Unknown element in mass extraction\n");
         }
         if(pdb.allowedResidue("protein",Rname)) {
-          if(first_time) {
-            atoms_per_bead.push_back(res_atoms.size());
-            first_time = 0;
-          }
-          residue_atom[res_atoms[a].index()] = atoms_per_bead.size()-1;
+          residue_atom.push_back(atoms_per_bead.size());
         } else {
           // check for nucleic acids
           // Pentose bead
@@ -1562,7 +1591,8 @@ unsigned SAXS::getOnebeadMapping(const PDB &pdb, const std::vector<AtomNumber> &
               Aname=="H2'2" || Aname=="H1'"  || Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" ||
               Aname=="H5'1" || Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T"  ||
               Aname=="H3T" ) {
-            tmp_residue_atom[0].push_back(res_atoms[a].index());
+            residue_atom.push_back(atoms_per_bead.size()+0);
+            tmp_residue_atom[0]++;
           }
           // Nucleobase bead
           else if(Aname=="N1"  || Aname=="N2"  || Aname=="N3"  || Aname=="N4"  || Aname=="N6"  ||
@@ -1572,26 +1602,25 @@ unsigned SAXS::getOnebeadMapping(const PDB &pdb, const std::vector<AtomNumber> &
                   Aname=="H6"  || Aname=="H8"  || Aname=="H21" || Aname=="H22" || Aname=="H41" ||
                   Aname=="H42" || Aname=="H61" || Aname=="H62" || Aname=="H71" || Aname=="H72" ||
                   Aname=="H73" ) {
-            tmp_residue_atom[1].push_back(res_atoms[a].index());
+            residue_atom.push_back(atoms_per_bead.size()+1);
+            tmp_residue_atom[1]++;
           }
           // PO2 bead
           else if(Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || Aname=="O1P" ||
                   Aname=="O2P" || Aname=="O3P" ) {
-            tmp_residue_atom[2].push_back(res_atoms[a].index());
+            residue_atom.push_back(atoms_per_bead.size()+2);
+            tmp_residue_atom[2]++;
           }
           // error
           else error("Atom name "+Aname+" cannot be indexed to any bead. Check the PDB.");
         }
       }
-      if(!pdb.allowedResidue("protein",Rname)) {
-        atoms_per_bead.push_back(tmp_residue_atom[0].size());
-        for(unsigned tmp_i=0; tmp_i<tmp_residue_atom[0].size(); tmp_i++) residue_atom[tmp_residue_atom[0][tmp_i]]=atoms_per_bead.size()-1;
-        atoms_per_bead.push_back(tmp_residue_atom[1].size());
-        for(unsigned tmp_i=0; tmp_i<tmp_residue_atom[1].size(); tmp_i++) residue_atom[tmp_residue_atom[1][tmp_i]]=atoms_per_bead.size()-1;
-        if(tmp_residue_atom[2].size()>0) {
-          atoms_per_bead.push_back(tmp_residue_atom[2].size());
-          for(unsigned tmp_i=0; tmp_i<tmp_residue_atom[2].size(); tmp_i++) residue_atom[tmp_residue_atom[2][tmp_i]]=atoms_per_bead.size()-1;
-        }
+      if(pdb.allowedResidue("protein",Rname)) {
+        atoms_per_bead.push_back(res_atoms.size());
+      } else {
+        atoms_per_bead.push_back(tmp_residue_atom[0]);
+        atoms_per_bead.push_back(tmp_residue_atom[1]);
+        if(tmp_residue_atom[2]>0) atoms_per_bead.push_back(tmp_residue_atom[2]);
       }
     }
   }
@@ -3058,6 +3087,14 @@ void SAXS::getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms,
   parameter_solv[CYS].push_back(-27885.23426006181);
   parameter_solv[CYS].push_back(6280.15058191397);
 
+  parameter_solv[CYX].push_back(10281.960000119348);
+  parameter_solv[CYX].push_back(-42.315998754511);
+  parameter_solv[CYX].push_back(-19328.174487327480);
+  parameter_solv[CYX].push_back(-5523.191775626829);
+  parameter_solv[CYX].push_back(38185.463172673335);
+  parameter_solv[CYX].push_back(-28940.174693042034);
+  parameter_solv[CYX].push_back(6925.390014187676);
+
   parameter_solv[ASP].push_back(13511.73760011933);
   parameter_solv[ASP].push_back(-59.929111107656595);
   parameter_solv[ASP].push_back(-25849.869639655575);
@@ -3226,6 +3263,14 @@ void SAXS::getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms,
   parameter_mix[CYS].push_back(-18024.826330595406);
   parameter_mix[CYS].push_back(3551.2207387570024);
 
+  parameter_mix[CYX].push_back(10746.617793719070);
+  parameter_mix[CYX].push_back(-37.082746200650);
+  parameter_mix[CYX].push_back(-17871.552278655203);
+  parameter_mix[CYX].push_back(-4512.203184574789);
+  parameter_mix[CYX].push_back(30605.726711712588);
+  parameter_mix[CYX].push_back(-21530.684072275839);
+  parameter_mix[CYX].push_back(4694.601090758420);
+
   parameter_mix[ASP].push_back(13713.858501879382);
   parameter_mix[ASP].push_back(-51.33286241257164);
   parameter_mix[ASP].push_back(-23807.8549764091);
@@ -3393,6 +3438,14 @@ void SAXS::getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms,
   parameter_vac[CYS].push_back(4524.133086072617);
   parameter_vac[CYS].push_back(-2537.87137720241);
   parameter_vac[CYS].push_back(381.52870758240016);
+
+  parameter_vac[CYX].push_back(2808.068549348085);
+  parameter_vac[CYX].push_back(-7.372260063948);
+  parameter_vac[CYX].push_back(-4017.492317531980);
+  parameter_vac[CYX].push_back(-840.151815748375);
+  parameter_vac[CYX].push_back(5800.074437790741);
+  parameter_vac[CYX].push_back(-3637.868824045027);
+  parameter_vac[CYX].push_back(659.528934122407);
 
   parameter_vac[ASP].push_back(3479.750728224898);
   parameter_vac[ASP].push_back(-10.33897891836596);
@@ -3810,6 +3863,8 @@ void SAXS::getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms,
       atoi[residue_atom[i]]=ASP;
     } else if(Rname=="CYS") {
       atoi[residue_atom[i]]=CYS;
+    } else if(Rname=="CYX") {
+      atoi[residue_atom[i]]=CYX;
     } else if(Rname=="GLN") {
       atoi[residue_atom[i]]=GLN;
     } else if(Rname=="GLU") {
@@ -4317,6 +4372,14 @@ void SAXS::getOnebeadparam_sansH(const PDB &pdb, const std::vector<AtomNumber> &
   parameter_solv_H[CYS].push_back(-27885.22747486708);
   parameter_solv_H[CYS].push_back(6280.148346561226);
 
+  parameter_solv_H[CYX].push_back(10281.960000119348);
+  parameter_solv_H[CYX].push_back(-42.315998754511);
+  parameter_solv_H[CYX].push_back(-19328.174487327480);
+  parameter_solv_H[CYX].push_back(-5523.191775626829);
+  parameter_solv_H[CYX].push_back(38185.463172673335);
+  parameter_solv_H[CYX].push_back(-28940.174693042034);
+  parameter_solv_H[CYX].push_back(6925.390014187676);
+
   parameter_solv_H[ASP].push_back(13511.73760011933);
   parameter_solv_H[ASP].push_back(-59.92934247210642);
   parameter_solv_H[ASP].push_back(-25849.867077822244);
@@ -4485,6 +4548,14 @@ void SAXS::getOnebeadparam_sansH(const PDB &pdb, const std::vector<AtomNumber> &
   parameter_mix_H[CYS].push_back(-407.87897719750896);
   parameter_mix_H[CYS].push_back(76.50541508448237);
 
+  parameter_mix_H[CYX].push_back(466.237200119199);
+  parameter_mix_H[CYX].push_back(-1.302082362010);
+  parameter_mix_H[CYX].push_back(-667.565738985901);
+  parameter_mix_H[CYX].push_back(-159.506437978088);
+  parameter_mix_H[CYX].push_back(1085.648159448292);
+  parameter_mix_H[CYX].push_back(-767.622943338598);
+  parameter_mix_H[CYX].push_back(170.157274620163);
+
   parameter_mix_H[ASP].push_back(893.6531201192147);
   parameter_mix_H[ASP].push_back(-3.0756255172248874);
   parameter_mix_H[ASP].push_back(-1453.1760425275006);
@@ -4596,6 +4667,7 @@ void SAXS::getOnebeadparam_sansH(const PDB &pdb, const std::vector<AtomNumber> &
   parameter_mix_H[HIS].push_back(5821.6258431396);
   parameter_mix_H[HIS].push_back(-4415.32722209556);
   parameter_mix_H[HIS].push_back(1044.7044029209756);
+
   parameter_vac_H[TRP].push_back(36.42122511920832);
   parameter_vac_H[TRP].push_back(-0.36925500341767903);
   parameter_vac_H[TRP].push_back(-51.34228792835503);
@@ -4651,6 +4723,14 @@ void SAXS::getOnebeadparam_sansH(const PDB &pdb, const std::vector<AtomNumber> &
   parameter_vac_H[CYS].push_back(-3.716408071089366);
   parameter_vac_H[CYS].push_back(2.3947518943233117);
   parameter_vac_H[CYS].push_back(-0.40204949737133333);
+
+  parameter_vac_H[CYX].push_back(5.285401118868);
+  parameter_vac_H[CYX].push_back(-0.006119528779);
+  parameter_vac_H[CYX].push_back(-3.091212256902);
+  parameter_vac_H[CYX].push_back(-0.679948780910);
+  parameter_vac_H[CYX].push_back(4.495837313271);
+  parameter_vac_H[CYX].push_back(-2.827133444940);
+  parameter_vac_H[CYX].push_back(0.494583310914);
 
   parameter_vac_H[ASP].push_back(14.776336119209605);
   parameter_vac_H[ASP].push_back(-0.037351220316916435);
@@ -5069,6 +5149,8 @@ void SAXS::getOnebeadparam_sansH(const PDB &pdb, const std::vector<AtomNumber> &
       atoi[residue_atom[i]]=ASP;
     } else if(Rname=="CYS") {
       atoi[residue_atom[i]]=CYS;
+    } else if(Rname=="CYX") {
+      atoi[residue_atom[i]]=CYX;
     } else if(Rname=="GLN") {
       atoi[residue_atom[i]]=GLN;
     } else if(Rname=="GLU") {
@@ -5576,6 +5658,14 @@ void SAXS::getOnebeadparam_sansD(const PDB &pdb, const std::vector<AtomNumber> &
   parameter_mix_D[CYS].push_back(-1798.3157146799638);
   parameter_mix_D[CYS].push_back(314.568167888235);
 
+  parameter_mix_D[CYX].push_back(1310.696400119220);
+  parameter_mix_D[CYX].push_back(-2.919852579787);
+  parameter_mix_D[CYX].push_back(-1902.283026713150);
+  parameter_mix_D[CYX].push_back(-340.431267947190);
+  parameter_mix_D[CYX].push_back(2480.025274590502);
+  parameter_mix_D[CYX].push_back(-1529.188197179144);
+  parameter_mix_D[CYX].push_back(278.926068515295);
+
   parameter_mix_D[ASP].push_back(1861.6998401191709);
   parameter_mix_D[ASP].push_back(-5.349780637260551);
   parameter_mix_D[ASP].push_back(-2960.36741510377);
@@ -5743,6 +5833,14 @@ void SAXS::getOnebeadparam_sansD(const PDB &pdb, const std::vector<AtomNumber> &
   parameter_vac_D[CYS].push_back(41.55290573185214);
   parameter_vac_D[CYS].push_back(-17.248208429078456);
   parameter_vac_D[CYS].push_back(1.0736187172140528);
+
+  parameter_vac_D[CYX].push_back(41.770369115535);
+  parameter_vac_D[CYX].push_back(-0.019277246931);
+  parameter_vac_D[CYX].push_back(-40.006821199463);
+  parameter_vac_D[CYX].push_back(-2.056736901533);
+  parameter_vac_D[CYX].push_back(23.707430747544);
+  parameter_vac_D[CYX].push_back(-8.010813092204);
+  parameter_vac_D[CYX].push_back(-0.023482540763);
 
   parameter_vac_D[ASP].push_back(64.12806411920792);
   parameter_vac_D[ASP].push_back(-0.08245818875074411);
@@ -6064,6 +6162,8 @@ void SAXS::getOnebeadparam_sansD(const PDB &pdb, const std::vector<AtomNumber> &
       atoi[residue_atom[i]]=ASP;
     } else if(Rname=="CYS") {
       atoi[residue_atom[i]]=CYS;
+    } else if(Rname=="CYX") {
+      atoi[residue_atom[i]]=CYX;
     } else if(Rname=="GLN") {
       atoi[residue_atom[i]]=GLN;
     } else if(Rname=="GLU") {
@@ -6765,6 +6865,18 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["CYS_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["CYS_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["CYS_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+
+  lcpomap["CYX_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["CYX_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
+  lcpomap["CYX_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["CYX_O"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["CYX_CB"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["CYX_SG"] = { 1.9,  0.54581,  -0.19477,  -0.0012873,  0.00029247};
+  lcpomap["CYX_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["CYX_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["CYX_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["CYX_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["CYX_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["GLU_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["GLU_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
