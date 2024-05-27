@@ -539,11 +539,10 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
     // Now that we now both n_samples and n_properties, we can setup the
     // PLUMED-side storage for the computed CV
     if (output->per_atom) {
-        auto selected_atoms = this->evaluations_options_->get_selected_atoms();
-        if (selected_atoms.has_value()) {
-            this->n_samples_ = static_cast<unsigned>(selected_atoms.value()->count());
-        } else {
+        if (selected_atoms.empty()) {
             this->n_samples_ = static_cast<unsigned>(this->atomic_types_.size(0));
+        } else {
+            this->n_samples_ = static_cast<unsigned>(selected_atoms.size());
         }
     } else {
         this->n_samples_ = 1;
@@ -835,7 +834,7 @@ void MetatensorPlumedAction::calculate() {
 
 
 void MetatensorPlumedAction::apply() {
-    auto* value = this->getPntrToComponent(0);
+    const auto* value = this->getPntrToComponent(0);
     if (!value->forcesWereAdded()) {
         return;
     }
