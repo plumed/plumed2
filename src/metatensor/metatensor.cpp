@@ -132,7 +132,7 @@ the following:
 //+ENDPLUMEDOC
 
 /*INDENT-OFF*/
-#if !defined(__PLUMED_HAS_LIBTORCH) || !defined(__PLUMED_HAS_METATENSOR)
+#if !defined(__PLUMED_HAS_METATENSOR) || !defined(__PLUMED_HAS_LIBTORCH)
 
 namespace PLMD { namespace metatensor {
 class MetatensorPlumedAction: public ActionAtomistic, public ActionWithValue {
@@ -187,7 +187,8 @@ public:
 #include "vesin.h"
 
 
-namespace PLMD { namespace metatensor {
+namespace PLMD {
+namespace metatensor {
 
 // We will cast Vector/Tensor to pointers to arrays and doubles, so let's make
 // sure this is legal to do
@@ -923,36 +924,42 @@ void MetatensorPlumedAction::apply() {
     this->setForcesOnAtoms(derivatives, index);
 }
 
-}} // namespace PLMD::metatensor
+} // namespace metatensor
+} // namespace PLMD
+
 
 #endif
 
 
-namespace PLMD { namespace metatensor {
-    // use the same implementation for both the actual action and the dummy one
-    // (when libtorch and libmetatensor could not be found).
-    void MetatensorPlumedAction::registerKeywords(Keywords& keys) {
-        Action::registerKeywords(keys);
-        ActionAtomistic::registerKeywords(keys);
-        ActionWithValue::registerKeywords(keys);
+namespace PLMD {
+namespace metatensor {
 
-        keys.add("compulsory", "MODEL", "path to the exported metatensor model");
-        keys.add("optional", "EXTENSIONS_DIRECTORY", "path to the directory containing TorchScript extensions to load");
-        keys.add("optional", "DEVICE", "Torch device to use for the calculation");
+// use the same implementation for both the actual action and the dummy one
+// (when libtorch and libmetatensor could not be found).
+void MetatensorPlumedAction::registerKeywords(Keywords& keys) {
+    Action::registerKeywords(keys);
+    ActionAtomistic::registerKeywords(keys);
+    ActionWithValue::registerKeywords(keys);
 
-        // TODO: change the default?
-        keys.addFlag("NO_CONSISTENCY_CHECK", false, "Should we disable internal consistency of the model");
+    keys.add("compulsory", "MODEL", "path to the exported metatensor model");
+    keys.add("optional", "EXTENSIONS_DIRECTORY", "path to the directory containing TorchScript extensions to load");
+    keys.add("optional", "DEVICE", "Torch device to use for the calculation");
 
-        keys.add("numbered", "SPECIES", "the atoms in each PLUMED species");
-        keys.reset_style("SPECIES", "atoms");
+    // TODO: change the default?
+    keys.addFlag("NO_CONSISTENCY_CHECK", false, "Should we disable internal consistency of the model");
 
-        keys.add("optional", "SELECTED_ATOMS", "subset of atoms that should be used for the calculation");
-        keys.reset_style("SELECTED_ATOMS", "atoms");
+    keys.add("numbered", "SPECIES", "the atoms in each PLUMED species");
+    keys.reset_style("SPECIES", "atoms");
 
-        keys.add("optional", "SPECIES_TO_TYPES", "mapping from PLUMED SPECIES to metatensor's atomic types");
+    keys.add("optional", "SELECTED_ATOMS", "subset of atoms that should be used for the calculation");
+    keys.reset_style("SELECTED_ATOMS", "atoms");
 
-        keys.addOutputComponent("outputs", "default", "collective variable created by the model");
-    }
+    keys.add("optional", "SPECIES_TO_TYPES", "mapping from PLUMED SPECIES to metatensor's atomic types");
 
-    PLUMED_REGISTER_ACTION(MetatensorPlumedAction, "METATENSOR")
-}}
+    keys.addOutputComponent("outputs", "default", "collective variable created by the model");
+}
+
+PLUMED_REGISTER_ACTION(MetatensorPlumedAction, "METATENSOR")
+
+} // namespace metatensor
+} // namespace PLMD
