@@ -49,7 +49,7 @@ SUBROUTINE plugin_initialization()
             call plumed_f_gcmd("setPlumedDat"//char(0),"plumed.dat"//char(0))
             call plumed_f_gcmd("setLogFile"//char(0),"PLUMED.OUT"//char(0))
             call plumed_f_gcmd("setNatoms"//char(0),nat)
-            call plumed_f_gcmd("setMDEngine"//char(0),"qespresso");
+            call plumed_f_gcmd("setMDEngine"//char(0),"qespresso"//char(0));
             call plumed_f_gcmd("setTimestep"//char(0),dt);
             call plumed_f_gcmd("init"//char(0),0);
 
