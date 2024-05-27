@@ -950,6 +950,8 @@ namespace PLMD { namespace metatensor {
         keys.reset_style("SELECTED_ATOMS", "atoms");
 
         keys.add("optional", "SPECIES_TO_TYPES", "mapping from PLUMED SPECIES to metatensor's atomic types");
+
+        keys.addOutputComponent("outputs", "default", "collective variable created by the model");
     }
 
     PLUMED_REGISTER_ACTION(MetatensorPlumedAction, "METATENSOR")
