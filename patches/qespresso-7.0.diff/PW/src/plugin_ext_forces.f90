@@ -15,13 +15,15 @@ SUBROUTINE plugin_ext_forces()
   USE io_global,        ONLY : stdout, ionode, ionode_id
   USE kinds,            ONLY : DP
   !
-  USE plugin_flags
+  USE plugin_flags,     ONLY : use_plumed
   !
   USE cell_base,        ONLY : alat, at
   USE ions_base,        ONLY : tau, nat, amass, ityp
   USE force_mod,        ONLY : force,sigma
   USE control_flags,    ONLY : istep
   USE ener,             ONLY : etot 
+
+  USE plumed_module,    ONLY: plumed_f_gcmd
   !
   IMPLICIT NONE
   !
@@ -45,10 +47,12 @@ SUBROUTINE plugin_ext_forces()
              -at_plumed(1,2)*at_plumed(3,3)*at_plumed(2,1) &
              -at_plumed(1,3)*at_plumed(3,1)*at_plumed(2,2) 
       virial=-sigma*volume
+
       ! the masses in QE are stored per type, see q-e//Modules/ions_base.f90
       do ia=1,nat
         masses_plumed(ia)=amass(ityp(ia))
       end do
+
       CALL plumed_f_gcmd("setStep"//char(0),istep)
       CALL plumed_f_gcmd("setMasses"//char(0),masses_plumed)
       CALL plumed_f_gcmd("setForces"//char(0),force)
