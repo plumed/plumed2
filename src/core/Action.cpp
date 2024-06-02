@@ -79,8 +79,7 @@ Action::Action(const ActionOptions&ao):
   keywords(ao.keys)
 {
   // Retrieve the timestep and save it
-  ActionWithValue* ts = plumed.getActionSet().selectWithLabel<ActionWithValue*>("timestep");
-  if( ts ) timestep = (ts->copyOutput(0))->get();
+  resetStoredTimestep();
 
   line.erase(line.begin());
   if( !keywords.exists("NO_ACTION_LOG") ) {
@@ -114,6 +113,11 @@ Action::Action(const ActionOptions&ao):
       // do nothing, this is the default
     } else error("RESTART should be either YES, NO, or AUTO");
   }
+}
+
+void Action::resetStoredTimestep() {
+  ActionWithValue* ts = plumed.getActionSet().selectWithLabel<ActionWithValue*>("timestep");
+  if( ts ) timestep = (ts->copyOutput(0))->get();
 }
 
 Action::~Action() {

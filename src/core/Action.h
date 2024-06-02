@@ -329,6 +329,9 @@ public:
 /// Get the defaults
   std::string getDefaultString() const ;
 
+/// Set the timestep that is stored in the action to the correct value
+  void resetStoredTimestep();
+
 /// Get the info on what to calculate
   virtual std::string writeInGraph() const ;
 /// Specialized casts, to make PlumedMain run faster
