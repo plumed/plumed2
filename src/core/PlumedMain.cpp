@@ -1406,6 +1406,7 @@ void PlumedMain::setUnits( const bool& natural, const Units& u ) {
   passtools->usingNaturalUnits = natural; passtools->units=u;
   std::vector<ActionToPutData*> idata = actionSet.select<ActionToPutData*>();
   for(const auto & ip : idata) ip->updateUnits( passtools.get() );
+  for(const auto & p : actionSet ) p->resetStoredTimestep();
 }
 
 void PlumedMain::startStep() {
