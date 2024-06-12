@@ -180,6 +180,16 @@
 #include "replicaexchange.h"
 #include "simulatorbuilder.h"
 
+/* PLUMED */
+#include "../../../Plumed.h"
+int    plumedswitch;
+plumed plumedmain; 
+/* END PLUMED */
+
+/* PLUMED HREX */
+int plumed_hrex;
+/* END PLUMED HREX */
+
 namespace gmx
 {
 
@@ -536,7 +546,7 @@ static void prepare_verlet_scheme(FILE*                          fplog,
         VerletbufListSetup listSetup = verletbufGetSafeListSetup(listType);
 
         const real rlist_new = calcVerletBufferSize(
-                mtop, effectiveAtomDensity.value(), *ir, ir->nstlist, ir->nstlist - 1, -1, listSetup);
+                mtop, effectiveAtomDensity.value(), *ir, -1, ir->nstlist, ir->nstlist - 1, -1, listSetup);
 
         if (rlist_new != ir->rlist)
         {
@@ -991,7 +1001,7 @@ int Mdrunner::mdrunner()
                                                 inputrec.get(),
                                                 mtop,
                                                 mdlog,
-                                                membedHolder.doMembed());
+                                                              membedHolder.doMembed() && (plumedswitch==0) /* PLUMED */);
 
         // Now start the threads for thread MPI.
         spawnThreads(hw_opt.nthreads_tmpi);
@@ -1373,6 +1383,7 @@ int Mdrunner::mdrunner()
         updateGroups            = makeUpdateGroups(mdlog,
                                         std::move(updateGroupingsPerMoleculeType),
                                         maxUpdateGroupRadius,
+                                        doRerun,
                                         useDomainDecomposition,
                                         systemHasConstraintsOrVsites(mtop),
                                         cutoffMargin);
@@ -1381,7 +1392,10 @@ int Mdrunner::mdrunner()
     try
     {
         const bool haveFrozenAtoms = inputrecFrozenAtoms(inputrec.get());
-
+        /* PLUMED */
+        bool usePlumed = 0;
+        if(plumedswitch) usePlumed = 1;
+        /* END PLUMED */
         useGpuForUpdate = decideWhetherToUseGpuForUpdate(useDomainDecomposition,
                                                          updateGroups.useUpdateGroups(),
                                                          pmeRunMode,
@@ -1396,6 +1410,7 @@ int Mdrunner::mdrunner()
                                                          haveFrozenAtoms,
                                                          useModularSimulator,
                                                          doRerun,
+                                                         usePlumed, /* PLUMED */
                                                          mdlog);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
@@ -2226,6 +2241,32 @@ int Mdrunner::mdrunner()
         simulatorBuilder.add(BoxDeformationHandle(deform.get()));
         simulatorBuilder.add(std::move(modularSimulatorCheckpointData));
 
+        /* PLUMED */
+        if(plumedswitch){
+          if(useModularSimulator) gmx_fatal(FARGS, "PLUMED is not yet compatible with GROMACS new modular simulator");
+          /* detect plumed API version */
+          int pversion=0;
+          plumed_cmd(plumedmain,"getApiVersion",&pversion);
+          if(pversion>5) {
+             int nth = gmx_omp_nthreads_get(ModuleMultiThread::Default);
+             plumed_cmd(plumedmain,"setNumOMPthreads",&nth);
+          }
+          /* set GPU device id */
+          if(pversion>9) {
+             plumed_cmd(plumedmain,"setGpuDeviceId", &deviceId);
+          }
+          if(useGpuForUpdate) {
+             GMX_LOG(mdlog.warning)
+                .asParagraph()
+                .appendTextFormatted(
+                        "This simulation is resident on GPU (-update gpu)\n"
+                        "but also runs PLUMED (-plumed ). Unless plumed actions are performed\n" 
+                        "only on neighbour list search and/or file writing steps, this will lead to WRONG RESULTS.\n" 
+                        "Stop it and run it again with -update cpu.\n");
+          } 
+        }
+        /* END PLUMED */
+
         // build and run simulator object based on user-input
         auto simulator = simulatorBuilder.build(useModularSimulator);
         simulator->run();
@@ -2339,6 +2380,12 @@ int Mdrunner::mdrunner()
     /* Does what it says */
     print_date_and_time(fplog, cr->nodeid, "Finished mdrun", gmx_gettime());
     walltime_accounting_destroy(walltime_accounting);
+
+    /* PLUMED */
+    if(plumedswitch){
+      plumed_finalize(plumedmain);
+    }
+    /* END PLUMED */
 
     // Ensure log file content is written
     if (logFileHandle)

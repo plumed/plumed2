@@ -70,7 +70,6 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/coupling.h"
-#include "gromacs/mdlib/dispersioncorrection.h"
 #include "gromacs/mdlib/ebin.h"
 #include "gromacs/mdlib/enerdata_utils.h"
 #include "gromacs/mdlib/energyoutput.h"
@@ -953,6 +952,8 @@ public:
     gmx::ImdSession* imdSession;
     //! The pull work object.
     pull_t* pull_work;
+    //! Data for rotational pulling.
+    gmx_enfrot* enforcedRotation;
     //! Manages flop accounting.
     t_nrnb* nrnb;
     //! Manages wall cycle accounting.
@@ -1080,7 +1081,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
              ms,
              *inputrec,
              nullptr,
-             nullptr,
+             enforcedRotation,
              imdSession,
              pull_work,
              count,
@@ -1144,22 +1145,6 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
                     observablesReducer);
 
         wallcycle_stop(wcycle, WallCycleCounter::MoveE);
-    }
-
-    if (fr->dispersionCorrection)
-    {
-        /* Calculate long range corrections to pressure and energy */
-        const DispersionCorrection::Correction correction = fr->dispersionCorrection->calculate(
-                ems->s.box, ems->s.lambda[FreeEnergyPerturbationCouplingType::Vdw]);
-
-        enerd->term[F_DISPCORR] = correction.energy;
-        enerd->term[F_EPOT] += correction.energy;
-        enerd->term[F_PRES] += correction.pressure;
-        enerd->term[F_DVDL] += correction.dvdl;
-    }
-    else
-    {
-        enerd->term[F_DISPCORR] = 0;
     }
 
     ems->epot = enerd->term[F_EPOT];
@@ -1449,6 +1434,7 @@ void LegacySimulator::do_cg()
                                      inputrec,
                                      imdSession,
                                      pull_work,
+                                     enforcedRotation,
                                      nrnb,
                                      wcycle,
                                      gstat,
@@ -2210,6 +2196,7 @@ void LegacySimulator::do_lbfgs()
                                      inputrec,
                                      imdSession,
                                      pull_work,
+                                     enforcedRotation,
                                      nrnb,
                                      wcycle,
                                      gstat,
@@ -2973,6 +2960,7 @@ void LegacySimulator::do_steep()
                                      inputrec,
                                      imdSession,
                                      pull_work,
+                                     enforcedRotation,
                                      nrnb,
                                      wcycle,
                                      gstat,
@@ -3354,6 +3342,7 @@ void LegacySimulator::do_nm()
                                      inputrec,
                                      imdSession,
                                      pull_work,
+                                     enforcedRotation,
                                      nrnb,
                                      wcycle,
                                      gstat,

@@ -65,6 +65,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/math/units.h"
 #include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
@@ -137,6 +138,12 @@
 #include "replicaexchange.h"
 #include "shellfc.h"
 
+/* PLUMED */
+#include "../../../Plumed.h"
+extern int    plumedswitch;
+extern plumed plumedmain;
+/* END PLUMED */
+
 using gmx::SimulationSignaller;
 using gmx::VirtualSitesHandler;
 
@@ -188,7 +195,18 @@ void gmx::LegacySimulator::do_rerun()
 
     double cycles;
 
+    GMX_RELEASE_ASSERT(cr->dd == nullptr || !ddUsesUpdateGroups(*cr->dd),
+                       "Update groups are not supported with rerun");
+
     SimulationSignals signals;
+    /* PLUMED */
+    int plumedNeedsEnergy=0;
+    int plumedWantsToStop=0;
+    matrix plumed_vir;
+    real lambdaForce=0;
+    real realFepState=0;
+    /* END PLUMED */
+
     // Most global communnication stages don't propagate mdrun
     // signals, and will use this object to achieve that.
     SimulationSignaller nullSignaller(nullptr, nullptr, nullptr, false, false);
@@ -416,6 +434,42 @@ void gmx::LegacySimulator::do_rerun()
         fprintf(fplog, "\n");
     }
 
+    /* PLUMED */
+    if(plumedswitch){
+      /* detect plumed API version */
+      int pversion=0;
+      plumed_cmd(plumedmain,"getApiVersion",&pversion);
+      /* setting kbT is only implemented with api>1) */
+      real kbT=ir->opts.ref_t[0]*gmx::c_boltz;
+      if(pversion>1) plumed_cmd(plumedmain,"setKbT",&kbT);
+      if(pversion>2){
+        int res=1;
+        if( (startingBehavior != StartingBehavior::NewSimulation) ) plumed_cmd(plumedmain,"setRestart",&res);
+      }
+
+      if(PAR(cr)){
+        if(haveDDAtomOrdering(*cr)) {
+          plumed_cmd(plumedmain,"setMPIComm",&cr->dd->mpi_comm_all);
+        }
+      }
+      plumed_cmd(plumedmain,"setNatoms",top_global.natoms);
+      plumed_cmd(plumedmain,"setMDEngine","gromacs");
+      plumed_cmd(plumedmain,"setLog",fplog);
+      real real_delta_t=ir->delta_t;
+      plumed_cmd(plumedmain,"setTimestep",&real_delta_t);
+      plumed_cmd(plumedmain,"init",nullptr);
+
+      if(haveDDAtomOrdering(*cr)) {
+        int nat_home = dd_numHomeAtoms(*cr->dd);
+        plumed_cmd(plumedmain,"setAtomsNlocal",&nat_home);
+        plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->globalAtomIndices.data());
+      }
+      realFepState = state->fep_state;
+      plumed_cmd(plumedmain, "setExtraCV lambda", &realFepState);
+      plumed_cmd(plumedmain, "setExtraCVForce lambda", &lambdaForce);
+    }
+    /* END PLUMED */
+
     walltime_accounting_start_time(walltime_accounting);
     wallcycle_start(wcycle, WallCycleCounter::Run);
     print_start(fplog, cr, walltime_accounting, "mdrun");
@@ -583,6 +637,13 @@ void gmx::LegacySimulator::do_rerun()
                                 nrnb,
                                 wcycle,
                                 mdrunOptions.verbose);
+                /* PLUMED */
+                if(plumedswitch){
+                  int nat_home = dd_numHomeAtoms(*cr->dd);
+                  plumed_cmd(plumedmain,"setAtomsNlocal",&nat_home);
+                  plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->globalAtomIndices.data());
+                }
+                /* END PLUMED */
         }
 
         if (MAIN(cr))
@@ -647,6 +708,25 @@ void gmx::LegacySimulator::do_rerun()
              */
             Awh*       awh = nullptr;
             gmx_edsam* ed  = nullptr;
+             /* PLUMED */
+            plumedNeedsEnergy=0;
+            if(plumedswitch){
+              int pversion=0;
+              plumed_cmd(plumedmain,"getApiVersion",&pversion);
+              long int lstep=step; plumed_cmd(plumedmain,"setStepLong",&lstep);
+              plumed_cmd(plumedmain,"setPositions",&state->x[0][0]);
+              plumed_cmd(plumedmain,"setMasses",&mdatoms->massT[0]);
+              plumed_cmd(plumedmain,"setCharges",&mdatoms->chargeA[0]);
+              plumed_cmd(plumedmain,"setBox",&state->box[0][0]);
+              plumed_cmd(plumedmain,"prepareCalc",nullptr);
+              plumed_cmd(plumedmain,"setStopFlag",&plumedWantsToStop);
+              plumed_cmd(plumedmain,"setForces",&f.view().force()[0][0]);
+              plumed_cmd(plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
+              if(plumedNeedsEnergy) force_flags |= GMX_FORCE_ENERGY | GMX_FORCE_VIRIAL;
+              clear_mat(plumed_vir);
+              plumed_cmd(plumedmain,"setVirial",&plumed_vir[0][0]);
+            }
+            /* END PLUMED */
             try
             {
                 do_force(fplog,
@@ -687,6 +767,20 @@ void gmx::LegacySimulator::do_rerun()
                                 "Continuing with next frame after catching invalid force in "
                                 "previous frame");
             };
+            /* PLUMED */
+            if(plumedswitch){
+              if(plumedNeedsEnergy){
+                msmul(force_vir,2.0,plumed_vir);
+                plumed_cmd(plumedmain,"setEnergy",&enerd->term[F_EPOT]);
+                plumed_cmd(plumedmain,"performCalc",nullptr);
+                msmul(plumed_vir,0.5,force_vir);
+              } else {
+                msmul(plumed_vir,0.5,plumed_vir);
+                m_add(force_vir,plumed_vir,force_vir);
+              }
+              if(plumedWantsToStop) isLastStep = true;
+            }
+            /* END PLUMED */
         }
 
         /* Now we have the energies and forces corresponding to the
