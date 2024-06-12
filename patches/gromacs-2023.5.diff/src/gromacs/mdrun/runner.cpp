@@ -72,6 +72,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trrio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/device_stream_manager.h"
@@ -178,6 +179,16 @@
 #include "membedholder.h"
 #include "replicaexchange.h"
 #include "simulatorbuilder.h"
+
+/* PLUMED */
+#include "../../../Plumed.h"
+int    plumedswitch;
+plumed plumedmain; 
+/* END PLUMED */
+
+/* PLUMED HREX */
+int plumed_hrex;
+/* END PLUMED HREX */
 
 namespace gmx
 {
@@ -535,7 +546,7 @@ static void prepare_verlet_scheme(FILE*                          fplog,
         VerletbufListSetup listSetup = verletbufGetSafeListSetup(listType);
 
         const real rlist_new = calcVerletBufferSize(
-                mtop, effectiveAtomDensity.value(), *ir, ir->nstlist, ir->nstlist - 1, -1, listSetup);
+                mtop, effectiveAtomDensity.value(), *ir, -1, ir->nstlist, ir->nstlist - 1, -1, listSetup);
 
         if (rlist_new != ir->rlist)
         {
@@ -927,6 +938,19 @@ int Mdrunner::mdrunner()
          */
         applyGlobalSimulationState(
                 *inputHolder_.get(), partialDeserializedTpr.get(), globalState.get(), inputrec.get(), &mtop);
+
+        static_assert(sc_trrMaxAtomCount == sc_checkpointMaxAtomCount);
+        if (mtop.natoms > sc_checkpointMaxAtomCount)
+        {
+            gmx_fatal(FARGS,
+                      "System has %d atoms, which is more than can be stored in checkpoint and trr "
+                      "files (max %" PRId64 ")",
+                      mtop.natoms,
+                      sc_checkpointMaxAtomCount);
+        }
+
+        // The XTC format has been updated to support up to 2^31-1 atoms, which is anyway the
+        // largest supported by GROMACS, so no need for any particular check here.
     }
 
     /* Check and update the hardware options for internal consistency */
@@ -977,7 +1001,7 @@ int Mdrunner::mdrunner()
                                                 inputrec.get(),
                                                 mtop,
                                                 mdlog,
-                                                membedHolder.doMembed());
+                                                              membedHolder.doMembed() && (plumedswitch==0) /* PLUMED */);
 
         // Now start the threads for thread MPI.
         spawnThreads(hw_opt.nthreads_tmpi);
@@ -1068,11 +1092,12 @@ int Mdrunner::mdrunner()
     // the task-deciding functions and will agree on the result
     // without needing to communicate.
     // The LBFGS minimizer, test-particle insertion, normal modes and shell dynamics don't support DD
+    const bool hasCustomParallelization =
+            (EI_TPI(inputrec->eI) || inputrec->eI == IntegrationAlgorithm::NM);
     const bool canUseDomainDecomposition =
-            !(inputrec->eI == IntegrationAlgorithm::LBFGS || EI_TPI(inputrec->eI)
-              || inputrec->eI == IntegrationAlgorithm::NM
-              || gmx_mtop_particletype_count(mtop)[ParticleType::Shell] > 0);
-    GMX_RELEASE_ASSERT(!PAR(cr) || canUseDomainDecomposition,
+            (inputrec->eI != IntegrationAlgorithm::LBFGS && !hasCustomParallelization
+             && gmx_mtop_particletype_count(mtop)[ParticleType::Shell] == 0);
+    GMX_RELEASE_ASSERT(!PAR(cr) || hasCustomParallelization || canUseDomainDecomposition,
                        "A parallel run should not arrive here without DD support");
 
     int useDDWithSingleRank = -1;
@@ -1358,6 +1383,7 @@ int Mdrunner::mdrunner()
         updateGroups            = makeUpdateGroups(mdlog,
                                         std::move(updateGroupingsPerMoleculeType),
                                         maxUpdateGroupRadius,
+                                        doRerun,
                                         useDomainDecomposition,
                                         systemHasConstraintsOrVsites(mtop),
                                         cutoffMargin);
@@ -1366,7 +1392,10 @@ int Mdrunner::mdrunner()
     try
     {
         const bool haveFrozenAtoms = inputrecFrozenAtoms(inputrec.get());
-
+        /* PLUMED */
+        bool usePlumed = 0;
+        if(plumedswitch) usePlumed = 1;
+        /* END PLUMED */
         useGpuForUpdate = decideWhetherToUseGpuForUpdate(useDomainDecomposition,
                                                          updateGroups.useUpdateGroups(),
                                                          pmeRunMode,
@@ -1381,6 +1410,7 @@ int Mdrunner::mdrunner()
                                                          haveFrozenAtoms,
                                                          useModularSimulator,
                                                          doRerun,
+                                                         usePlumed, /* PLUMED */
                                                          mdlog);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
@@ -1441,6 +1471,9 @@ int Mdrunner::mdrunner()
     else
     {
         /* PME, if used, is done on all nodes with 1D decomposition */
+        cr->mpi_comm_mygroup = cr->mpiDefaultCommunicator;
+        cr->mpi_comm_mysim   = cr->mpiDefaultCommunicator;
+
         cr->nnodes     = cr->sizeOfDefaultCommunicator;
         cr->sim_nodeid = cr->rankInDefaultCommunicator;
         cr->nodeid     = cr->rankInDefaultCommunicator;
@@ -2095,7 +2128,7 @@ int Mdrunner::mdrunner()
 
         /* Energy terms and groups */
         gmx_enerdata_t enerd(mtop.groups.groups[SimulationAtomGroupType::EnergyOutput].size(),
-                             inputrec->fepvals->n_lambda);
+                             &inputrec->fepvals->all_lambda);
 
         // cos acceleration is only supported by md, but older tpr
         // files might still combine it with other integrators
@@ -2207,6 +2240,32 @@ int Mdrunner::mdrunner()
         simulatorBuilder.add(TopologyData(mtop, &localTopology, mdAtoms.get()));
         simulatorBuilder.add(BoxDeformationHandle(deform.get()));
         simulatorBuilder.add(std::move(modularSimulatorCheckpointData));
+
+        /* PLUMED */
+        if(plumedswitch){
+          if(useModularSimulator) gmx_fatal(FARGS, "PLUMED is not yet compatible with GROMACS new modular simulator");
+          /* detect plumed API version */
+          int pversion=0;
+          plumed_cmd(plumedmain,"getApiVersion",&pversion);
+          if(pversion>5) {
+             int nth = gmx_omp_nthreads_get(ModuleMultiThread::Default);
+             plumed_cmd(plumedmain,"setNumOMPthreads",&nth);
+          }
+          /* set GPU device id */
+          if(pversion>9) {
+             plumed_cmd(plumedmain,"setGpuDeviceId", &deviceId);
+          }
+          if(useGpuForUpdate) {
+             GMX_LOG(mdlog.warning)
+                .asParagraph()
+                .appendTextFormatted(
+                        "This simulation is resident on GPU (-update gpu)\n"
+                        "but also runs PLUMED (-plumed ). Unless plumed actions are performed\n" 
+                        "only on neighbour list search and/or file writing steps, this will lead to WRONG RESULTS.\n" 
+                        "Stop it and run it again with -update cpu.\n");
+          } 
+        }
+        /* END PLUMED */
 
         // build and run simulator object based on user-input
         auto simulator = simulatorBuilder.build(useModularSimulator);
@@ -2321,6 +2380,12 @@ int Mdrunner::mdrunner()
     /* Does what it says */
     print_date_and_time(fplog, cr->nodeid, "Finished mdrun", gmx_gettime());
     walltime_accounting_destroy(walltime_accounting);
+
+    /* PLUMED */
+    if(plumedswitch){
+      plumed_finalize(plumedmain);
+    }
+    /* END PLUMED */
 
     // Ensure log file content is written
     if (logFileHandle)
