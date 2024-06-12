@@ -1,20 +1,68 @@
-/*INDENT-OFF*/
-#ifndef VESIN_H
-#define VESIN_H
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Copyright (c) 2024 The METATENSOR code team
+(see the PEOPLE-METATENSOR file at the root of this folder for a list of names)
 
-#include <stddef.h>
-#include <stdint.h>
+See https://docs.metatensor.org/latest/ for more information about the
+metatensor package that this module allows you to call from PLUMED.
+
+This file is part of METATENSOR-PLUMED module.
+
+The METATENSOR-PLUMED module is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+The METATENSOR-PLUMED module is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with the METATENSOR-PLUMED module. If not, see <http://www.gnu.org/licenses/>.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#ifndef __PLUMED_metatensor_vesin_h
+#define __PLUMED_metatensor_vesin_h
+/*INDENT-OFF*/
+
+
+#include <cstddef>
+#include <cstdint>
+
+#if defined(VESIN_SHARED)
+    #if defined(VESIN_EXPORTS)
+        #if defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
+            #define VESIN_API __attribute__((visibility("default")))
+        #elif defined(_MSC_VER)
+            #define VESIN_API __declspec(dllexport)
+        #else
+            #define VESIN_API
+        #endif
+    #else
+        #if defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
+            #define VESIN_API __attribute__((visibility("default")))
+        #elif defined(_MSC_VER)
+            #define VESIN_API __declspec(dllimport)
+        #else
+            #define VESIN_API
+        #endif
+    #endif
+#else
+    #define VESIN_API
+#endif
 
 #ifdef __cplusplus
+namespace PLMD {
+namespace metatensor {
+namespace vesin {
 extern "C" {
 #endif
 
 /// Options for a neighbor list calculation
-typedef struct VesinOptions {
+struct VesinOptions {
     /// Spherical cutoff, only pairs below this cutoff will be included
     double cutoff;
     /// Should the returned neighbor list be a full list (include both `i -> j`
-    /// and `j -> i` pairs) or a half list (include only `i -> j`).
+    /// and `j -> i` pairs) or a half list (include only `i -> j`)?
     bool full;
     // TODO: sort option?
 
@@ -24,7 +72,7 @@ typedef struct VesinOptions {
     bool return_distances;
     /// Should the returned `VesinNeighborList` contain `vector`?
     bool return_vectors;
-} VesinOptions;
+};
 
 /// Device on which the data can be
 enum VesinDevice {
@@ -55,7 +103,7 @@ enum VesinDevice {
 ///
 /// Under periodic boundary conditions, two atoms can be part of multiple pairs,
 /// each pair having a different periodic shift.
-typedef struct VesinNeighborList {
+struct VESIN_API VesinNeighborList {
 #ifdef __cplusplus
     VesinNeighborList():
         length(0),
@@ -87,11 +135,11 @@ typedef struct VesinNeighborList {
     double (*vectors)[3];
 
     // TODO: custom memory allocators?
-} VesinNeighborList;
+};
 
 /// Free all allocated memory inside a `VesinNeighborList`, according the it's
 /// `device`.
-void vesin_free(VesinNeighborList* neighbors);
+void VESIN_API vesin_free(struct VesinNeighborList* neighbors);
 
 /// Compute a neighbor list.
 ///
@@ -114,14 +162,14 @@ void vesin_free(VesinNeighborList* neighbors);
 /// @param error_message Pointer to a `char*` that wil be set to the error
 ///     message if this function fails. This does not need to be freed when no
 ///     longer needed.
-int vesin_neighbors(
+int VESIN_API vesin_neighbors(
     const double (*points)[3],
     size_t n_points,
     const double box[3][3],
     bool periodic,
     VesinDevice device,
-    VesinOptions options,
-    VesinNeighborList* neighbors,
+    struct VesinOptions options,
+    struct VesinNeighborList* neighbors,
     const char** error_message
 );
 
@@ -129,6 +177,9 @@ int vesin_neighbors(
 #ifdef __cplusplus
 
 } // extern "C"
+} // namespace vesin
+} // namespace metatensor
+} // namespace PLMD
 
 #endif
 

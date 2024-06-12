@@ -1,4 +1,27 @@
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Copyright (c) 2024 The METATENSOR code team
+(see the PEOPLE-METATENSOR file at the root of this folder for a list of names)
+
+See https://docs.metatensor.org/latest/ for more information about the
+metatensor package that this module allows you to call from PLUMED.
+
+This file is part of METATENSOR-PLUMED module.
+
+The METATENSOR-PLUMED module is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+The METATENSOR-PLUMED module is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with the METATENSOR-PLUMED module. If not, see <http://www.gnu.org/licenses/>.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 /*INDENT-OFF*/
+#include "vesin.h"
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
@@ -24,6 +47,8 @@
 #include <cmath>
 #include <stdexcept>
 
+namespace PLMD {
+namespace metatensor {
 namespace vesin {
 struct Vector;
 
@@ -129,15 +154,19 @@ inline Vector operator*(Vector vector, Matrix matrix) {
     };
 }
 
-}
+} // namespace vesin
+} // namespace metatensor
+} // namespace PLMD
 
 #endif
 
+namespace PLMD {
+namespace metatensor {
 namespace vesin {
 
 class BoundingBox {
 public:
-    BoundingBox(Matrix matrix, bool periodic): matrix_(std::move(matrix)), periodic_(periodic) {
+    BoundingBox(Matrix matrix, bool periodic): matrix_(matrix), periodic_(periodic) {
         if (periodic) {
             this->inverse_ = matrix_.inverse();
         } else {
@@ -228,11 +257,14 @@ inline CellShift operator-(CellShift a, CellShift b) {
 }
 
 
-
-}
+} // namespace vesin
+} // namespace metatensor
+} // namespace PLMD
 
 #endif
 
+namespace PLMD {
+namespace metatensor {
 namespace vesin { namespace cpu {
 
 void free_neighbors(VesinNeighborList& neighbors);
@@ -305,9 +337,9 @@ public:
     }
 
     void set_pair(size_t index, size_t first, size_t second);
-    void set_shift(size_t index, vesin::CellShift shift);
+    void set_shift(size_t index, PLMD::metatensor::vesin::CellShift shift);
     void set_distance(size_t index, double distance);
-    void set_vector(size_t index, vesin::Vector vector);
+    void set_vector(size_t index, PLMD::metatensor::vesin::Vector vector);
 
     // reset length to 0, and allocate/deallocate members of
     // `neighbors` according to `options`
@@ -317,13 +349,17 @@ public:
     void grow();
 };
 
-}}
+} // namespace vesin
+} // namespace metatensor
+} // namespace PLMD
+} // namespace cpu
 
 #endif
 
-using namespace vesin::cpu;
+using namespace PLMD::metatensor::vesin;
+using namespace PLMD::metatensor::vesin::cpu;
 
-void vesin::cpu::neighbors(
+void PLMD::metatensor::vesin::cpu::neighbors(
     const Vector* points,
     size_t n_points,
     BoundingBox cell,
@@ -420,7 +456,7 @@ static std::tuple<int32_t, int32_t> divmod(int32_t a, size_t b) {
     auto quotient = a / b_32;
     auto remainder = a % b_32;
     if (remainder < 0) {
-        remainder += b;
+        remainder += b_32;
         quotient -= 1;
     }
     return std::make_tuple(quotient, remainder);
@@ -441,7 +477,7 @@ divmod(std::array<int32_t, 3> a, std::array<size_t, 3> b) {
 CellList::CellList(BoundingBox box, double cutoff):
     n_search_({0, 0, 0}),
     cells_shape_({0, 0, 0}),
-    box_(std::move(box))
+    box_(box)
 {
     auto distances_between_faces = box_.distances_between_faces();
 
@@ -501,9 +537,9 @@ void CellList::add_point(size_t index, Vector position) {
 
     // find the cell in which this atom should go
     auto cell_index = std::array<int32_t, 3>{
-        static_cast<int32_t>(std::floor(fractional[0] * cells_shape_[0])),
-        static_cast<int32_t>(std::floor(fractional[1] * cells_shape_[1])),
-        static_cast<int32_t>(std::floor(fractional[2] * cells_shape_[2])),
+        static_cast<int32_t>(std::floor(fractional[0] * static_cast<double>(cells_shape_[0]))),
+        static_cast<int32_t>(std::floor(fractional[1] * static_cast<double>(cells_shape_[1]))),
+        static_cast<int32_t>(std::floor(fractional[2] * static_cast<double>(cells_shape_[2]))),
     };
 
     // deal with pbc by wrapping the atom inside if it was outside of the
@@ -512,8 +548,8 @@ void CellList::add_point(size_t index, Vector position) {
     // auto (shift, cell_index) =
     if (box_.periodic()) {
         auto result = divmod(cell_index, cells_shape_);
-        shift = CellShift{std::move(std::get<0>(result))};
-        cell_index = std::move(std::get<1>(result));
+        shift = CellShift{std::get<0>(result)};
+        cell_index = std::get<1>(result);
     } else {
         shift = CellShift({0, 0, 0});
         cell_index = std::array<int32_t, 3>{
@@ -532,7 +568,7 @@ void CellList::foreach_pair(Function callback) {
     for (int32_t cell_i_x=0; cell_i_x<static_cast<int32_t>(cells_shape_[0]); cell_i_x++) {
     for (int32_t cell_i_y=0; cell_i_y<static_cast<int32_t>(cells_shape_[1]); cell_i_y++) {
     for (int32_t cell_i_z=0; cell_i_z<static_cast<int32_t>(cells_shape_[2]); cell_i_z++) {
-        auto& current_cell = this->get_cell({cell_i_x, cell_i_y, cell_i_z});
+        const auto& current_cell = this->get_cell({cell_i_x, cell_i_y, cell_i_z});
         // look through each neighboring cell
         for (int32_t delta_x=-n_search_[0]; delta_x<=n_search_[0]; delta_x++) {
         for (int32_t delta_y=-n_search_[1]; delta_y<=n_search_[1]; delta_y++) {
@@ -590,7 +626,7 @@ void GrowableNeighborList::set_pair(size_t index, size_t first, size_t second) {
     this->neighbors.pairs[index][1] = second;
 }
 
-void GrowableNeighborList::set_shift(size_t index, vesin::CellShift shift) {
+void GrowableNeighborList::set_shift(size_t index, PLMD::metatensor::vesin::CellShift shift) {
     if (index >= this->capacity) {
         this->grow();
     }
@@ -608,7 +644,7 @@ void GrowableNeighborList::set_distance(size_t index, double distance) {
     this->neighbors.distances[index] = distance;
 }
 
-void GrowableNeighborList::set_vector(size_t index, vesin::Vector vector) {
+void GrowableNeighborList::set_vector(size_t index, PLMD::metatensor::vesin::Vector vector) {
     if (index >= this->capacity) {
         this->grow();
     }
@@ -620,30 +656,30 @@ void GrowableNeighborList::set_vector(size_t index, vesin::Vector vector) {
 
 template <typename scalar_t, size_t N>
 static scalar_t (*alloc(scalar_t (*ptr)[N], size_t size, size_t new_size))[N] {
-    ptr = reinterpret_cast<scalar_t (*)[N]>(std::realloc(ptr, new_size * sizeof(scalar_t[N])));
+    auto* new_ptr = reinterpret_cast<scalar_t (*)[N]>(std::realloc(ptr, new_size * sizeof(scalar_t[N])));
 
-    if (ptr == nullptr) {
+    if (new_ptr == nullptr) {
         throw std::bad_alloc();
     }
 
     // initialize with a bit pattern that maps to NaN for double
-    std::memset(ptr + size, 0b11111111, (new_size - size) * sizeof(scalar_t[N]));
+    std::memset(new_ptr + size, 0b11111111, (new_size - size) * sizeof(scalar_t[N]));
 
-    return ptr;
+    return new_ptr;
 }
 
 template <typename scalar_t>
 static scalar_t* alloc(scalar_t* ptr, size_t size, size_t new_size) {
-    ptr = reinterpret_cast<scalar_t*>(std::realloc(ptr, new_size * sizeof(scalar_t)));
+    auto* new_ptr = reinterpret_cast<scalar_t*>(std::realloc(ptr, new_size * sizeof(scalar_t)));
 
-    if (ptr == nullptr) {
+    if (new_ptr == nullptr) {
         throw std::bad_alloc();
     }
 
     // initialize with a bit pattern that maps to NaN for double
-    std::memset(ptr + size, 0b11111111, (new_size - size) * sizeof(scalar_t));
+    std::memset(new_ptr + size, 0b11111111, (new_size - size) * sizeof(scalar_t));
 
-    return ptr;
+    return new_ptr;
 }
 
 void GrowableNeighborList::grow() {
@@ -652,7 +688,7 @@ void GrowableNeighborList::grow() {
         new_size = 1;
     }
 
-    auto new_pairs = alloc<size_t, 2>(neighbors.pairs, neighbors.length, new_size);
+    auto* new_pairs = alloc<size_t, 2>(neighbors.pairs, neighbors.length, new_size);
 
     int32_t (*new_shifts)[3] = nullptr;
     if (options.return_shifts) {
@@ -698,7 +734,7 @@ void GrowableNeighborList::reset() {
     this->neighbors.length = 0;
 
     // allocate/deallocate pointers as required
-    auto shifts = this->neighbors.shifts;
+    auto* shifts = this->neighbors.shifts;
     if (this->options.return_shifts && shifts == nullptr) {
         shifts = alloc<int32_t, 3>(shifts, 0, capacity);
     } else if (!this->options.return_shifts && shifts != nullptr) {
@@ -706,7 +742,7 @@ void GrowableNeighborList::reset() {
         shifts = nullptr;
     }
 
-    auto distances = this->neighbors.distances;
+    auto* distances = this->neighbors.distances;
     if (this->options.return_distances && distances == nullptr) {
         distances = alloc<double>(distances, 0, capacity);
     } else if (!this->options.return_distances && distances != nullptr) {
@@ -714,7 +750,7 @@ void GrowableNeighborList::reset() {
         distances = nullptr;
     }
 
-    auto vectors = this->neighbors.vectors;
+    auto* vectors = this->neighbors.vectors;
     if (this->options.return_vectors && vectors == nullptr) {
         vectors = alloc<double, 3>(vectors, 0, capacity);
     } else if (!this->options.return_vectors && vectors != nullptr) {
@@ -728,7 +764,7 @@ void GrowableNeighborList::reset() {
 }
 
 
-void vesin::cpu::free_neighbors(VesinNeighborList& neighbors) {
+void PLMD::metatensor::vesin::cpu::free_neighbors(VesinNeighborList& neighbors) {
     assert(neighbors.device == VesinCPU);
 
     std::free(neighbors.pairs);
@@ -792,16 +828,16 @@ extern "C" int vesin_neighbors(
 
     try {
         if (device == VesinCPU) {
-            auto matrix = vesin::Matrix{{{
+            auto matrix = PLMD::metatensor::vesin::Matrix{{{
                 {{box[0][0], box[0][1], box[0][2]}},
                 {{box[1][0], box[1][1], box[1][2]}},
                 {{box[2][0], box[2][1], box[2][2]}},
             }}};
 
-            vesin::cpu::neighbors(
-                reinterpret_cast<const vesin::Vector*>(points),
+            PLMD::metatensor::vesin::cpu::neighbors(
+                reinterpret_cast<const PLMD::metatensor::vesin::Vector*>(points),
                 n_points,
-                vesin::BoundingBox(matrix, periodic),
+                PLMD::metatensor::vesin::BoundingBox(matrix, periodic),
                 options,
                 *neighbors
             );
@@ -833,7 +869,7 @@ extern "C" void vesin_free(VesinNeighborList* neighbors) {
     if (neighbors->device == VesinUnknownDevice) {
         // nothing to do
     } else if (neighbors->device == VesinCPU) {
-        vesin::cpu::free_neighbors(*neighbors);
+        PLMD::metatensor::vesin::cpu::free_neighbors(*neighbors);
     }
 
     std::memset(neighbors, 0, sizeof(VesinNeighborList));

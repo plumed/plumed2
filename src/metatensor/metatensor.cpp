@@ -672,15 +672,15 @@ metatensor_torch::TorchTensorBlock MetatensorPlumedAction::computeNeighbors(
 
     // use https://github.com/Luthaf/vesin to compute the requested neighbor
     // lists since we can not get these from PLUMED
-    VesinOptions options;
+    vesin::VesinOptions options;
     options.cutoff = cutoff;
     options.full = request->full_list();
     options.return_shifts = true;
     options.return_distances = false;
     options.return_vectors = true;
 
-    VesinNeighborList* vesin_neighbor_list = new VesinNeighborList();
-    memset(vesin_neighbor_list, 0, sizeof(VesinNeighborList));
+    vesin::VesinNeighborList* vesin_neighbor_list = new vesin::VesinNeighborList();
+    memset(vesin_neighbor_list, 0, sizeof(vesin::VesinNeighborList));
 
     const char* error_message = NULL;
     int status = vesin_neighbors(
@@ -688,7 +688,7 @@ metatensor_torch::TorchTensorBlock MetatensorPlumedAction::computeNeighbors(
         positions.size(),
         reinterpret_cast<const double (*)[3]>(&cell(0, 0)),
         !non_periodic,
-        VesinCPU,
+        vesin::VesinCPU,
         options,
         vesin_neighbor_list,
         &error_message
