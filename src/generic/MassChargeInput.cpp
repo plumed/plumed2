@@ -51,6 +51,8 @@ PLUMED_REGISTER_ACTION(MassChargeInput,"READ_MASS_CHARGE")
 void MassChargeInput::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
   keys.add("compulsory","FILE","a pdb file that contains the masses and charges of the atoms in the beta and occupancy columns");
+  keys.addOutputComponent("mass","default","the masses of the atoms in the system");
+  keys.addOutputComponent("charges","default","the masses of the atoms in the system");
   keys.needsAction("CONSTANT");
 }
 
