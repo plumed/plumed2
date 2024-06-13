@@ -27,6 +27,7 @@
 #include <vector>
 #include <string>
 #include "ActionWithValue.h"
+#include "ActionShortcut.h"
 #include "Group.h"
 #include "ActionWithVirtualAtom.h"
 #include "tools/Exception.h"
@@ -46,6 +47,7 @@ ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
   lockRequestAtoms(false),
   donotretrieve(false),
   donotforce(false),
+  massesWereSet(false),
   chargesWereSet(false)
 {
   ActionWithValue* bv = plumed.getActionSet().selectWithLabel<ActionWithValue*>("Box");
@@ -57,6 +59,16 @@ ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
 }
 
 void ActionAtomistic::getAtomValuesFromPlumedObject( const PlumedMain& plumed, std::vector<Value*>& xpos, std::vector<Value*>& ypos, std::vector<Value*>& zpos, std::vector<Value*>& masv, std::vector<Value*>& chargev ) {
+  std::vector<ActionShortcut*> shortcuts = plumed.getActionSet().select<ActionShortcut*>(); bool foundpdb=false;
+  for(const auto & ss : shortcuts ) {
+    if( ss->getName()=="READ_MASS_CHARGE" ) {
+      foundpdb=true;
+      ActionWithValue* mv = plumed.getActionSet().selectWithLabel<ActionWithValue*>( ss->getShortcutLabel() + "_mass");
+      plumed_assert( mv ); masv.push_back( mv->copyOutput(0) );
+      ActionWithValue* qv = plumed.getActionSet().selectWithLabel<ActionWithValue*>( ss->getShortcutLabel() + "_charges");
+      plumed_assert( qv ); chargev.push_back( qv->copyOutput(0) );
+    }
+  }
   std::vector<ActionWithValue*> vatoms = plumed.getActionSet().select<ActionWithValue*>();
   for(const auto & vv : vatoms ) {
     plumed_assert(vv); // needed for following calls, see #1046
@@ -65,8 +77,8 @@ void ActionAtomistic::getAtomValuesFromPlumedObject( const PlumedMain& plumed, s
       if( ap->getRole()=="x" ) xpos.push_back( ap->copyOutput(0) );
       if( ap->getRole()=="y" ) ypos.push_back( ap->copyOutput(0) );
       if( ap->getRole()=="z" ) zpos.push_back( ap->copyOutput(0) );
-      if( ap->getRole()=="m" ) masv.push_back( ap->copyOutput(0) );
-      if( ap->getRole()=="q" ) chargev.push_back( ap->copyOutput(0) );
+      if( !foundpdb && ap->getRole()=="m" ) masv.push_back( ap->copyOutput(0) );
+      if( !foundpdb && ap->getRole()=="q" ) chargev.push_back( ap->copyOutput(0) );
     }
     ActionWithVirtualAtom* av = vv->castToActionWithVirtualAtom();
     if( av || vv->getName()=="ARGS2VATOM" ) {
@@ -339,10 +351,16 @@ void ActionAtomistic::retrieveAtoms( const bool& force ) {
     plumed_assert( pbca ); pbc=pbca->pbc;
   }
   if( donotretrieve || indexes.size()==0 ) return;
+  auto * mtr=masv[0]->getPntrToAction();
+  plumed_assert(mtr); // needed for following calls, see #1046
+  ActionToPutData* mv = mtr->castToActionToPutData();
+  if(mv) massesWereSet=mv->hasBeenSet();
+  else if( (masv[0]->getPntrToAction())->getName()=="CONSTANT" ) massesWereSet=true; // Read masses from PDB file
   auto * ptr=chargev[0]->getPntrToAction();
   plumed_assert(ptr); // needed for following calls, see #1046
   ActionToPutData* cv = ptr->castToActionToPutData();
   if(cv) chargesWereSet=cv->hasBeenSet();
+  else if( (chargev[0]->getPntrToAction())->getName()=="CONSTANT" ) chargesWereSet=true; // Read masses from PDB file
   unsigned j = 0;
 
 // for(const auto & a : atom_value_ind) {
