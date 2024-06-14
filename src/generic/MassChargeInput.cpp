@@ -31,7 +31,7 @@
 namespace PLMD {
 namespace generic {
 
-//+PLUMEDOC COLVAR READ_MASS_CHARGE
+//+PLUMEDOC COLVAR READMASSCHARGE
 /*
 Set the masses and charges from an input PDB file.
 
@@ -46,11 +46,12 @@ public:
   explicit MassChargeInput(const ActionOptions&);
 };
 
-PLUMED_REGISTER_ACTION(MassChargeInput,"READ_MASS_CHARGE")
+PLUMED_REGISTER_ACTION(MassChargeInput,"READMASSCHARGE")
 
 void MassChargeInput::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
-  keys.add("compulsory","FILE","a pdb file that contains the masses and charges of the atoms in the beta and occupancy columns");
+  keys.add("optional","FILE","input file that contains the masses and charges that should be used");
+  keys.add("compulsory","PDBFILE","a pdb file that contains the masses and charges of the atoms in the beta and occupancy columns");
   keys.addOutputComponent("mass","default","the masses of the atoms in the system");
   keys.addOutputComponent("charges","default","the masses of the atoms in the system");
   keys.needsAction("CONSTANT");
@@ -65,7 +66,7 @@ MassChargeInput::MassChargeInput(const ActionOptions& ao):
     // check that all the preceding actions are ActionSetup
     if( !dynamic_cast<ActionSetup*>(p.get()) && !dynamic_cast<ActionForInterface*>(p.get()) && !dynamic_cast<ActionAnyorder*>(p.get()) ) {
       error("Action " + getLabel() + " is a setup action, and should be only preceded by other setup actions or by actions that can be used in any order.");
-    } else if( (p.get())->getName()=="READ_MASS_CHARGE" ) error("should only be one READ_MASS_CHARGE action in the input file");
+    } else if( (p.get())->getName()=="READMASSCHARGE" ) error("should only be one READMASSCHARGE action in the input file");
   }
   std::string input; parse("FILE",input); PDB pdb;
   if( !pdb.read(input, false, 1.0 ) ) error("error reading pdb file containing masses and charges");

@@ -61,7 +61,7 @@ ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
 void ActionAtomistic::getAtomValuesFromPlumedObject( const PlumedMain& plumed, std::vector<Value*>& xpos, std::vector<Value*>& ypos, std::vector<Value*>& zpos, std::vector<Value*>& masv, std::vector<Value*>& chargev ) {
   std::vector<ActionShortcut*> shortcuts = plumed.getActionSet().select<ActionShortcut*>(); bool foundpdb=false;
   for(const auto & ss : shortcuts ) {
-    if( ss->getName()=="READ_MASS_CHARGE" ) {
+    if( ss->getName()=="READMASSCHARGE" ) {
       foundpdb=true;
       ActionWithValue* mv = plumed.getActionSet().selectWithLabel<ActionWithValue*>( ss->getShortcutLabel() + "_mass");
       plumed_assert( mv ); masv.push_back( mv->copyOutput(0) );
