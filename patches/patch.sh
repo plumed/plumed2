@@ -284,14 +284,19 @@ case "$action" in
       test -n "$quiet" || echo "Executing plumed_before_patch function"
       plumed_before_patch
     fi
+    if test -f "$PLUMED_INCLUDEDIR/$PLUMED_PROGRAM_NAME/wrapper/Plumed.h"; then
+      header="$PLUMED_INCLUDEDIR/$PLUMED_PROGRAM_NAME/wrapper/Plumed.h"
+    else
+      header=`realpath "$PLUMED_ROOT/../../include/plumed/wrapper/Plumed.h"`
+    fi
     if test -n "$include" ; then
       test -n "$quiet" || echo "Including Plumed.h, Plumed.inc, and Plumed.cmake ($mode mode)"
-      echo "#include \"$PLUMED_INCLUDEDIR/$PLUMED_PROGRAM_NAME/wrapper/Plumed.h\"" > Plumed.h
+      echo "#include \"$header\"" > Plumed.h
       echo "include $PLUMED_ROOT/src/lib/Plumed.inc.$mode" > Plumed.inc
       echo "include($PLUMED_ROOT/src/lib/Plumed.cmake.$mode)" > Plumed.cmake
     else
       test -n "$quiet" || echo "Linking Plumed.h, Plumed.inc, and Plumed.cmake ($mode mode)"
-      ln -fs "$PLUMED_INCLUDEDIR/$PLUMED_PROGRAM_NAME/wrapper/Plumed.h" Plumed.h
+      ln -fs "$header" Plumed.h
       ln -fs "$PLUMED_ROOT/src/lib/Plumed.inc.$mode" Plumed.inc
       ln -fs "$PLUMED_ROOT/src/lib/Plumed.cmake.$mode" Plumed.cmake
     fi

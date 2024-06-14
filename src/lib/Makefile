@@ -446,16 +446,36 @@ ifeq ($(PLUMED_INSTALL),Install)
 # If plumed is installed, single paths can be overridden using env vars
 	@echo "export PLUMED_IS_INSTALLED=yes" >> $@
 	@echo "export PLUMED_ROOT=\"\$${PLUMED_ROOT-$(libdir)/$(program_name)}\"" >> $@
-	@echo "export PLUMED_INCLUDEDIR=\"\$${PLUMED_INCLUDEDIR-$(includedir)}\"" >> $@
-	@echo "export PLUMED_HTMLDIR=\"\$${PLUMED_HTMLDIR=$(htmldir)}\"" >> $@
+	@echo "PLUMED_INCLUDEDIR=\"\$${PLUMED_INCLUDEDIR-$(includedir)}\""      >> $@
+	@echo "if test -d \"\$$PLUMED_INCLUDEDIR/plumed\"; then"                >> $@
+	@echo "    export PLUMED_INCLUDEDIR=\$$PLUMED_INCLUDEDIR"               >> $@
+	@echo "else"                                                            >> $@
+	@echo "    export PLUMED_INCLUDEDIR=\$$PLUMED_ROOT/../../include"       >> $@
+	@echo "fi"                                                              >> $@
+	@echo "PLUMED_HTMLDIR=\"\$${PLUMED_HTMLDIR=$(htmldir)}\""               >> $@
+	@echo "if test -d \"\$$PLUMED_HTMLDIR\"; then"                          >> $@
+	@echo "    export PLUMED_HTMLDIR=\$$PLUMED_HTMLDIR"                     >> $@
+	@echo "else"                                                            >> $@
+	@echo "    export PLUMED_HTMLDIR=\$$PLUMED_ROOT/../../share/doc/plumed" >> $@
+	@echo "fi"                                                              >> $@
 	@echo "export PLUMED_PROGRAM_NAME=\"\$${PLUMED_PROGRAM_NAME-$(program_name)}\"" >> $@
 	@echo "export PLUMED_VERSION=$(VERSION)" >> $@
 	@echo "source \"\$$PLUMED_ROOT\"/scripts/$(subst plumed-,,$(@F)).sh" >> $@
 else
 	@echo "export PLUMED_IS_INSTALLED=no" >> $@
 	@echo "export PLUMED_ROOT=\"\$${PLUMED_ROOT-$(realpath ../../)}\"" >> $@
-	@echo "export PLUMED_INCLUDEDIR=\"\$${PLUMED_ROOT}/src/include\"" >> $@
-	@echo "export PLUMED_HTMLDIR=\"\$${PLUMED_ROOT}\"" >> $@
+	@echo "PLUMED_INCLUDEDIR=\"\$${PLUMED_INCLUDEDIR-$(includedir)}\""      >> $@
+	@echo "if test -d \"\$$PLUMED_INCLUDEDIR/plumed\"; then"                >> $@
+	@echo "    export PLUMED_INCLUDEDIR=\$$PLUMED_INCLUDEDIR"               >> $@
+	@echo "else"                                                            >> $@
+	@echo "    export PLUMED_INCLUDEDIR=\$$PLUMED_ROOT/../../include"       >> $@
+	@echo "fi"                                                              >> $@
+	@echo "PLUMED_HTMLDIR=\"\$${PLUMED_HTMLDIR=$(htmldir)}\""               >> $@
+	@echo "if test -d \"\$$PLUMED_HTMLDIR\"; then"                          >> $@
+	@echo "    export PLUMED_HTMLDIR=\$$PLUMED_HTMLDIR"                     >> $@
+	@echo "else"                                                            >> $@
+	@echo "    export PLUMED_HTMLDIR=\$$PLUMED_ROOT/../../share/doc/plumed" >> $@
+	@echo "fi"                                                              >> $@
 	@echo "export PLUMED_PROGRAM_NAME=plumed" >> $@
 	@echo "export PLUMED_VERSION=$(VERSION)" >> $@
 	@echo "source \"\$$PLUMED_ROOT\"/scripts/$(subst plumed-,,$(@F)).sh" >> $@
