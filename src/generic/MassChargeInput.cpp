@@ -26,6 +26,7 @@
 #include "core/ActionSetup.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
+#include "tools/IFile.h"
 #include "tools/PDB.h"
 
 namespace PLMD {
@@ -68,26 +69,39 @@ MassChargeInput::MassChargeInput(const ActionOptions& ao):
       error("Action " + getLabel() + " is a setup action, and should be only preceded by other setup actions or by actions that can be used in any order.");
     } else if( (p.get())->getName()=="READMASSCHARGE" ) error("should only be one READMASSCHARGE action in the input file");
   }
-  std::string input; parse("FILE",input); PDB pdb;
-  if( !pdb.read(input, false, 1.0 ) ) error("error reading pdb file containing masses and charges");
   // Check for correct number of atoms
   unsigned natoms=0; std::vector<ActionToPutData*> inputs=plumed.getActionSet().select<ActionToPutData*>();
   for(const auto & pp : inputs ) {
     if( pp->getRole()=="x" ) natoms = (pp->copyOutput(0))->getShape()[0];
   }
-  if( natoms!=pdb.size() ) error("mismatch between number of atoms passed from MD code and number of atoms in PDB file");
+  std::string input; parse("FILE",input); std::vector<double> masses( natoms ), charges( natoms );
+  if( input.length()>0 ) {
+    log.printf("   reading masses and charges from file named %s \n", input.c_str() );
+    IFile ifile; ifile.open( input ); int index; double mass; double charge;
+    while(ifile.scanField("index",index).scanField("mass",mass).scanField("charge",charge).scanField()) {
+      if( index>=natoms ) error("indices of atoms in input file are too large");
+      masses[index]=mass; charges[index]=charge;
+    }
+    ifile.close();
+  } else {
+    std::string pdbinpt; parse("PDBFILE",pdbinpt); PDB pdb;
+    log.printf("  reading masses and charges from pdb file named %s \n", pdbinpt.c_str() );
+    if( !pdb.read(pdbinpt, false, 1.0 ) ) error("error reading pdb file containing masses and charges");
+    if( natoms!=pdb.size() ) error("mismatch between number of atoms passed from MD code and number of atoms in PDB file");
+    masses = pdb.getOccupancy(); charges = pdb.getBeta();
+  }
 
   // Now get masses and charges
-  std::string nnn, charges, masses;
-  Tools::convert( pdb.getBeta()[0], charges );
-  Tools::convert( pdb.getOccupancy()[0], masses );
-  for(unsigned i=1; i<pdb.size(); ++i) {
-    Tools::convert( pdb.getBeta()[i], nnn ); charges += "," + nnn;
-    Tools::convert( pdb.getOccupancy()[i], nnn ); masses += "," + nnn;
+  std::string nnn, qstr, mstr;
+  Tools::convert( masses[0], mstr );
+  Tools::convert( charges[0], qstr );
+  for(unsigned i=1; i<natoms; ++i) {
+    Tools::convert( masses[i], nnn ); mstr += "," + nnn;
+    Tools::convert( charges[i], nnn ); qstr += "," + nnn;
   }
   // And create constant actions to hold masses and charges
-  readInputLine( getShortcutLabel() + "_mass: CONSTANT VALUES=" + masses );
-  readInputLine( getShortcutLabel() + "_charges: CONSTANT VALUES=" + charges );
+  readInputLine( getShortcutLabel() + "_mass: CONSTANT VALUES=" + mstr );
+  readInputLine( getShortcutLabel() + "_charges: CONSTANT VALUES=" + qstr );
 }
 
 }
