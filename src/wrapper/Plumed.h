@@ -657,7 +657,7 @@
 #ifdef __cplusplus
 #define __PLUMED_WRAPPER_STATIC_CAST(to,what) static_cast<to>(what)
 #define __PLUMED_WRAPPER_REINTERPRET_CAST(to,what) reinterpret_cast<to>(what)
-//reinterpret_cast<to>(const_cast<to>(what))#else
+#else
 #define __PLUMED_WRAPPER_STATIC_CAST(to,what) ((to) what)
 #define __PLUMED_WRAPPER_REINTERPRET_CAST(to,what) __PLUMED_WRAPPER_STATIC_CAST(to,what)
 
