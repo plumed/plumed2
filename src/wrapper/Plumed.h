@@ -655,12 +655,12 @@
 
 /* This is needed to use non c-style cast when working in c++ */
 #ifdef __cplusplus
-#define __PLUMED_WRAPPER_CAST(to,what) reinterpret_cast<to>(what)
 #define __PLUMED_WRAPPER_STATIC_CAST(to,what) static_cast<to>(what)
-//reinterpret_cast<to>(const_cast<to>(what))
-#else
-#define __PLUMED_WRAPPER_CAST(to,what) ((to) what)
-#define __PLUMED_WRAPPER_STATIC_CAST(to,what) __PLUMED_WRAPPER_CAST(to,what)
+#define __PLUMED_WRAPPER_REINTERPRET_CAST(to,what) reinterpret_cast<to>(what)
+//reinterpret_cast<to>(const_cast<to>(what))#else
+#define __PLUMED_WRAPPER_STATIC_CAST(to,what) ((to) what)
+#define __PLUMED_WRAPPER_REINTERPRET_CAST(to,what) __PLUMED_WRAPPER_STATIC_CAST(to,what)
+
 #endif
 
 /* Simplify addition of extern "C" blocks.  */
@@ -1976,23 +1976,23 @@ private:
           */
           f(::std::filesystem::filesystem_error(msg,
                                                 ::std::filesystem::path(::std::filesystem::path::string_type(
-                                                  __PLUMED_WRAPPER_CAST(::std::filesystem::path::value_type*, h.path1.ptr),
-                                                  h.path1.numbytes/sizeof(::std::filesystem::path::value_type)
-                                                ),
-                                                ::std::filesystem::path::format::native_format),
+                                                    reinterpret_cast<::std::filesystem::path::value_type*>(h.path1.ptr),
+                                                    h.path1.numbytes/sizeof(::std::filesystem::path::value_type)
+                                                    ),
+                                                    ::std::filesystem::path::format::native_format),
                                                 error_code));
         } else {
           f(::std::filesystem::filesystem_error(msg,
                                                 ::std::filesystem::path(::std::filesystem::path::string_type(
-                                                  __PLUMED_WRAPPER_CAST(::std::filesystem::path::value_type*, h.path1.ptr),
-                                                  h.path1.numbytes/sizeof(::std::filesystem::path::value_type)
-                                                ),
-                                                ::std::filesystem::path::format::native_format),
+                                                    reinterpret_cast<::std::filesystem::path::value_type*>(h.path1.ptr),
+                                                    h.path1.numbytes/sizeof(::std::filesystem::path::value_type)
+                                                    ),
+                                                    ::std::filesystem::path::format::native_format),
                                                 ::std::filesystem::path(::std::filesystem::path::string_type(
-                                                  __PLUMED_WRAPPER_CAST(::std::filesystem::path::value_type*, h.path2.ptr),
-                                                  h.path2.numbytes/sizeof(::std::filesystem::path::value_type)
-                                                ),
-                                                ::std::filesystem::path::format::native_format),
+                                                    reinterpret_cast<::std::filesystem::path::value_type*>(h.path2.ptr),
+                                                    h.path2.numbytes/sizeof(::std::filesystem::path::value_type)
+                                                    ),
+                                                    ::std::filesystem::path::format::native_format),
                                                 error_code));
         }
       }
@@ -3856,7 +3856,7 @@ __PLUMED_WRAPPER_INTERNALS_END
   if(!func) { \
     tmpptr=dlsym(handle,name); \
     if(tmpptr) { \
-      *__PLUMED_WRAPPER_CAST(void **,&func)=tmpptr; \
+      *__PLUMED_WRAPPER_REINTERPRET_CAST(void **,&func)=tmpptr; \
       if(debug) __PLUMED_FPRINTF(stderr,"+++ %s found at %p +++\n",name,tmpptr); \
     } else { \
       if(debug) __PLUMED_FPRINTF(stderr,"+++ Function %s not found\n",name); \
@@ -4529,7 +4529,7 @@ void plumed_c2f(plumed p,char*c) {
   assert(sizeof(p.p)<=16);
 
   assert(c);
-  cc=__PLUMED_WRAPPER_CAST(unsigned char*,&p.p);
+  cc=__PLUMED_WRAPPER_REINTERPRET_CAST(unsigned char*,&p.p);
   for(i=0; i<sizeof(p.p); i++) {
     /*
       characters will range between '0' (ASCII 48) and 'o' (ASCII 111=48+63)
@@ -4559,7 +4559,7 @@ plumed plumed_f2c(const char*c) {
      needed to avoid cppcheck warning on uninitialized p
   */
   p.p=__PLUMED_WRAPPER_CXX_NULLPTR;
-  cc=__PLUMED_WRAPPER_CAST(unsigned char*,&p.p);
+  cc=__PLUMED_WRAPPER_REINTERPRET_CAST(unsigned char*,&p.p);
   for(i=0; i<sizeof(p.p); i++) {
     assert(c[2*i]>=48 && c[2*i]<48+64);
     assert(c[2*i+1]>=48 && c[2*i+1]<48+64);
@@ -4578,14 +4578,14 @@ __PLUMED_WRAPPER_C_END
 
 __PLUMED_WRAPPER_C_BEGIN
 void* plumed_c2v(plumed p) {
-  assert(plumed_check_pimpl(__PLUMED_WRAPPER_CAST(plumed_implementation*,p.p)));
+  assert(plumed_check_pimpl(__PLUMED_WRAPPER_REINTERPRET_CAST(plumed_implementation*,p.p)));
   return p.p;
 }
 __PLUMED_WRAPPER_C_END
 
 __PLUMED_WRAPPER_C_BEGIN
 plumed plumed_v2c(void* v) {
-  assert(plumed_check_pimpl(__PLUMED_WRAPPER_CAST(plumed_implementation*,v)));
+  assert(plumed_check_pimpl(__PLUMED_WRAPPER_REINTERPRET_CAST(plumed_implementation*,v)));
   plumed p;
   p.p=v;
   return p;
