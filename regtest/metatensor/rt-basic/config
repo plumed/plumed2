@@ -1,0 +1,8 @@
+plumed_modules=metatensor
+plumed_needs=metatensor
+type=driver
+
+# NOTE: to enable --debug-forces, also change the dtype of the models to float64
+arg="--plumed plumed.dat --ixyz structure.xyz --length-units A --dump-forces forces --dump-forces-fmt %8.2f" # --debug-forces forces.num"
+
+PLUMED_ALLOW_SKIP_ON_TRAVIS=yes
