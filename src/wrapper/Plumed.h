@@ -3852,11 +3852,16 @@ __PLUMED_WRAPPER_INTERNALS_END
 /**
   Utility to search for a function.
 */
+#ifdef __cplusplus
+#define __PLUMED_WRAPPER_SEARCHF_CAST(func,tmpptr) func=reinterpret_cast<decltype (func)>(tmpptr)
+#else
+#define __PLUMED_WRAPPER_SEARCHF_CAST(func,tmpptr)  *(void **)&func=tmpptr
+#endif
 #define __PLUMED_SEARCH_FUNCTION(tmpptr,handle,func,name,debug) \
   if(!func) { \
     tmpptr=dlsym(handle,name); \
     if(tmpptr) { \
-      *__PLUMED_WRAPPER_REINTERPRET_CAST(void **,&func)=tmpptr; \
+      __PLUMED_WRAPPER_SEARCHF_CAST(func,tmpptr); \
       if(debug) __PLUMED_FPRINTF(stderr,"+++ %s found at %p +++\n",name,tmpptr); \
     } else { \
       if(debug) __PLUMED_FPRINTF(stderr,"+++ Function %s not found\n",name); \
