@@ -3853,15 +3853,15 @@ __PLUMED_WRAPPER_INTERNALS_END
   Utility to search for a function.
 */
 #ifdef __cplusplus
-#define __PLUMED_WRAPPER_SEARCHF_CAST(func,tmpptr) func=reinterpret_cast<decltype (func)>(tmpptr)
+#define __PLUMED_WRAPPER_SEARCHF_CAST(functype,func,tmpptr) func=reinterpret_cast<functype>(tmpptr)
 #else
-#define __PLUMED_WRAPPER_SEARCHF_CAST(func,tmpptr)  *(void **)&func=tmpptr
+#define __PLUMED_WRAPPER_SEARCHF_CAST(functype,func,tmpptr)  *(void **)&func=tmpptr
 #endif
-#define __PLUMED_SEARCH_FUNCTION(tmpptr,handle,func,name,debug) \
+#define __PLUMED_SEARCH_FUNCTION(functype,tmpptr,handle,func,name,debug) \
   if(!func) { \
     tmpptr=dlsym(handle,name); \
     if(tmpptr) { \
-      __PLUMED_WRAPPER_SEARCHF_CAST(func,tmpptr); \
+      __PLUMED_WRAPPER_SEARCHF_CAST(functype,func,tmpptr); \
       if(debug) __PLUMED_FPRINTF(stderr,"+++ %s found at %p +++\n",name,tmpptr); \
     } else { \
       if(debug) __PLUMED_FPRINTF(stderr,"+++ Function %s not found\n",name); \
@@ -3910,12 +3910,12 @@ void plumed_search_symbols(void* handle, plumed_plumedmain_function_holder* f,pl
     }
   }
   /* only searches if they were not found already */
-  __PLUMED_SEARCH_FUNCTION(tmpptr,handle,functions.create,"plumedmain_create",debug);
-  __PLUMED_SEARCH_FUNCTION(tmpptr,handle,functions.create,"plumed_plumedmain_create",debug);
-  __PLUMED_SEARCH_FUNCTION(tmpptr,handle,functions.cmd,"plumedmain_cmd",debug);
-  __PLUMED_SEARCH_FUNCTION(tmpptr,handle,functions.cmd,"plumed_plumedmain_cmd",debug);
-  __PLUMED_SEARCH_FUNCTION(tmpptr,handle,functions.finalize,"plumedmain_finalize",debug);
-  __PLUMED_SEARCH_FUNCTION(tmpptr,handle,functions.finalize,"plumed_plumedmain_finalize",debug);
+  __PLUMED_SEARCH_FUNCTION(plumed_create_pointer,tmpptr,handle,functions.create,"plumedmain_create",debug);
+  __PLUMED_SEARCH_FUNCTION(plumed_create_pointer,tmpptr,handle,functions.create,"plumed_plumedmain_create",debug);
+  __PLUMED_SEARCH_FUNCTION(plumed_cmd_pointer,tmpptr,handle,functions.cmd,"plumedmain_cmd",debug);
+  __PLUMED_SEARCH_FUNCTION(plumed_cmd_pointer,tmpptr,handle,functions.cmd,"plumed_plumedmain_cmd",debug);
+  __PLUMED_SEARCH_FUNCTION(plumed_finalize_pointer,tmpptr,handle,functions.finalize,"plumedmain_finalize",debug);
+  __PLUMED_SEARCH_FUNCTION(plumed_finalize_pointer,tmpptr,handle,functions.finalize,"plumed_plumedmain_finalize",debug);
   if(functions.create && functions.cmd && functions.finalize) {
     if(debug) __PLUMED_FPRINTF(stderr,"+++ PLUMED was loaded correctly +++\n");
     *f=functions;
