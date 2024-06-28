@@ -1,0 +1,4 @@
+type=driver
+# this is to test a different name
+arg="--plumed=plumed.dat --timestep=0.05 --ixyz trajectory.xyz"
+extra_files="../../trajectories/trajectory.xyz"

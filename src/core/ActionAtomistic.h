@@ -80,6 +80,7 @@ class ActionAtomistic :
   std::vector<Value*>   xpos, ypos, zpos, masv, chargev;
   void updateUniqueLocal( const bool& useunique, const std::vector<int>& g2l );
 protected:
+  bool                  massesWereSet;
   bool                  chargesWereSet;
   void setExtraCV(const std::string &name);
 /// Used to interpret whether this index is a virtual atom or a real atom
@@ -202,6 +203,7 @@ const Vector & ActionAtomistic::getPosition(int i)const {
 
 inline
 double ActionAtomistic::getMass(int i)const {
+  if( !massesWereSet ) log.printf("WARNING: masses were not passed to plumed\n");
   return masses[i];
 }
 
