@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionRegister.h"
+#include "ModuleMap.h"
 #include "Action.h"
 #include <algorithm>
 
@@ -35,7 +36,7 @@ std::unique_ptr<Action> ActionRegister::create(const ActionOptions&ao) {
   return create(images,ao);
 }
 
-std::unique_ptr<Action> ActionRegister::create(const std::vector<void*> & images,const ActionOptions&ao) {
+std::unique_ptr<Action> ActionRegister::create(const std::vector<void*> & images,const ActionOptions&ao) try {
   if(ao.line.size()<1)return nullptr;
 
   auto content=get(images,ao.line[0]);
@@ -45,6 +46,17 @@ std::unique_ptr<Action> ActionRegister::create(const std::vector<void*> & images
   auto fullPath=getFullPath(images,ao.line[0]);
   nao.setFullPath(fullPath);
   return content.create(nao);
+} catch (PLMD::ExceptionRegisterError &e ) {
+  auto& actionName = e.getMissingKey();
+  e <<"Action \"" << actionName << "\" is not known.";
+  if (getModuleMap().count(actionName)>0) {
+    e << "\nAn Action named \""
+      <<actionName
+      <<"\" is available in module \""
+      << getModuleMap().at(actionName)
+      << "\".\nPlease consider installing PLUMED with that module enabled.";
+  }
+  throw e;
 }
 
 bool ActionRegister::printManual(const std::string& action, const bool& vimout, const bool& spellout) {
@@ -64,6 +76,7 @@ bool ActionRegister::printManual(const std::string& action, const bool& vimout, 
 }
 
 bool ActionRegister::printTemplate(const std::string& action, bool include_optional) {
+  //no need to insert the try/catch block: check will ensure that action is known
   if( check(action) ) {
     Keywords keys; keys.thisactname = action;
     get(action).keys(keys);
@@ -85,6 +98,7 @@ ActionRegister::ID ActionRegister::add(std::string key,creator_pointer cp,keywor
 }
 
 bool ActionRegister::getKeywords(const std::string& action, Keywords& keys) {
+  //no need to insert the try/catch block: check will ensure that action is known
   if(check(action)) {
     keys.thisactname = action;
     get(action).keys(keys);
