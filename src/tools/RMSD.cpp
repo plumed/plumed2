@@ -519,8 +519,8 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
       dq_drr01[i]=tmp;
     }
   } else {
-    VectorGeneric<1> eigenvals;
-    TensorGeneric<1,4> eigenvecs;
+    Vector1d eigenvals;
+    Tensor1_4d eigenvecs;
     diagMatSym(m, eigenvals, eigenvecs );
     dist=eigenvals[0]+rr00+rr11;
     q=Vector4d(eigenvecs[0][0],eigenvecs[0][1],eigenvecs[0][2],eigenvecs[0][3]);
@@ -1053,8 +1053,8 @@ void RMSDCoreData::doCoreCalc(bool safe,bool alEqDis, bool only_rotation) {
       dq_drr01[i]=tmp;
     }
   } else {
-    TensorGeneric<1,4> here_eigenvecs;
-    VectorGeneric<1> here_eigenvals;
+    Tensor1_4d here_eigenvecs;
+    Vector1d here_eigenvals;
     diagMatSym(m, here_eigenvals, here_eigenvecs );
     for(unsigned i=0; i<4; i++) eigenvecs[0][i]=here_eigenvecs[0][i];
     eigenvals[0]=here_eigenvals[0];

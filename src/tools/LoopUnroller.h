@@ -47,114 +47,89 @@ Implementation is made using template metaprogramming, that is:
 Here xxx is any of the methods of the class.
 
 */
-template<unsigned n>
+//the typename is the second parameter argument so that it can be deduced
+template<typename T, unsigned n>
 class LoopUnroller {
 public:
 /// Set to zero.
 /// Same as `for(unsigned i=0;i<n;i++) d[i]=0.0;`
-  static void _zero(double*d);
+  static void _zero(T*d);
 /// Add v to d.
 /// Same as `for(unsigned i=0;i<n;i++) d[i]+=v[i];`
-  static void _add(double*d,const double*v);
+  static void _add(T*d,const T*v);
 /// Subtract v from d.
 /// Same as `for(unsigned i=0;i<n;i++) d[i]-=v[i];`
-  static void _sub(double*d,const double*v);
+  static void _sub(T*d,const T*v);
 /// Multiply d by s.
 /// Same as `for(unsigned i=0;i<n;i++) d[i]*=s;`
-  static void _mul(double*d,const double s);
+  static void _mul(T*d,const T s);
 /// Set d to -v.
 /// Same as `for(unsigned i=0;i<n;i++) d[i]=-v[i];`
-  static void _neg(double*d,const double*v);
+  static void _neg(T*d,const T*v);
 /// Squared modulo of d;
 /// Same as `r=0.0; for(unsigned i=0;i<n;i++) r+=d[i]*d[i]; return r;`
-  static double _sum2(const double*d);
+  static T _sum2(const T*d);
 /// Dot product of d and v
 /// Same as `r=0.0; for(unsigned i=0;i<n;i++) r+=d[i]*v[i]; return r;`
-  static double _dot(const double*d,const double*v);
+  static T _dot(const T*d,const T*v);
 };
 
-template<unsigned n>
-void LoopUnroller<n>::_zero(double*d) {
-  LoopUnroller<n-1>::_zero(d);
-  d[n-1]=0.0;
+template<typename T, unsigned n>
+void LoopUnroller<T,n>::_zero(T*d) {
+  if constexpr (n>1) {
+    LoopUnroller<T,n-1>::_zero(d);
+  }
+  d[n-1]=T(0);
 }
 
-template<>
-inline
-void LoopUnroller<1>::_zero(double*d) {
-  d[0]=0.0;
-}
-
-template<unsigned n>
-void LoopUnroller<n>::_add(double*d,const double*a) {
-  LoopUnroller<n-1>::_add(d,a);
+template<typename T, unsigned n>
+void LoopUnroller<T,n>::_add(T*d,const T*a) {
+  if constexpr (n>1) {
+    LoopUnroller<T,n-1>::_add(d,a);
+  }
   d[n-1]+=a[n-1];
 }
 
-template<>
-inline
-void LoopUnroller<1>::_add(double*d,const double*a) {
-  d[0]+=a[0];
-}
-
-template<unsigned n>
-void LoopUnroller<n>::_sub(double*d,const double*a) {
-  LoopUnroller<n-1>::_sub(d,a);
+template<typename T, unsigned n>
+void LoopUnroller<T,n>::_sub(T*d,const T*a) {
+  if constexpr (n>1) {
+    LoopUnroller<T,n-1>::_sub(d,a);
+  }
   d[n-1]-=a[n-1];
 }
 
-template<>
-inline
-void LoopUnroller<1>::_sub(double*d,const double*a) {
-  d[0]-=a[0];
-}
-
-template<unsigned n>
-void LoopUnroller<n>::_mul(double*d,const double s) {
-  LoopUnroller<n-1>::_mul(d,s);
+template<typename T, unsigned n>
+void LoopUnroller<T,n>::_mul(T*d,const T s) {
+  if constexpr (n>1) {
+    LoopUnroller<T,n-1>::_mul(d,s);
+  }
   d[n-1]*=s;
 }
 
-template<>
-inline
-void LoopUnroller<1>::_mul(double*d,const double s) {
-  d[0]*=s;
-}
-
-template<unsigned n>
-void LoopUnroller<n>::_neg(double*d,const double*a ) {
-  LoopUnroller<n-1>::_neg(d,a);
+template<typename T, unsigned n>
+void LoopUnroller<T,n>::_neg(T*d,const T*a ) {
+  if constexpr (n>1) {
+    LoopUnroller<T,n-1>::_neg(d,a);
+  }
   d[n-1]=-a[n-1];
 }
 
-template<>
-inline
-void LoopUnroller<1>::_neg(double*d,const double*a) {
-  d[0]=-a[0];
+template<typename T, unsigned n>
+T LoopUnroller<T,n>::_sum2(const T*d) {
+  if constexpr (n>1) {
+    return LoopUnroller<T,n-1>::_sum2(d)+d[n-1]*d[n-1];
+  } else {
+    return d[0]*d[0];
+  }
 }
-
-template<unsigned n>
-double LoopUnroller<n>::_sum2(const double*d) {
-  return LoopUnroller<n-1>::_sum2(d)+d[n-1]*d[n-1];
+template<typename T, unsigned n>
+T LoopUnroller<T,n>::_dot(const T*d,const T*v) {
+  if constexpr (n>1) {
+    return LoopUnroller<T,n-1>::_dot(d,v)+d[n-1]*v[n-1];
+  } else {
+    return d[0]*v[0];
+  }
 }
+} //PLMD
 
-template<>
-inline
-double LoopUnroller<1>::_sum2(const double*d) {
-  return d[0]*d[0];
-}
-
-template<unsigned n>
-double LoopUnroller<n>::_dot(const double*d,const double*v) {
-  return LoopUnroller<n-1>::_dot(d,v)+d[n-1]*v[n-1];
-}
-
-template<>
-inline
-double LoopUnroller<1>::_dot(const double*d,const double*v) {
-  return d[0]*v[0];
-}
-
-}
-
-#endif
+#endif //__PLUMED_tools_LoopUnroller_h

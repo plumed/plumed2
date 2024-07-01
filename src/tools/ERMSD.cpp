@@ -56,7 +56,7 @@ void ERMSD::setReference(const std::vector<Vector> & reference, const std::vecto
   }
 
   cutoff = mycutoff;
-  std::vector<TensorGeneric<4,3> > deri;
+  std::vector<Tensor4_3d> deri;
   deri.resize(natoms*natoms);
   reference_mat.resize(nresidues*nresidues);
   Pbc fake_pbc;
@@ -75,7 +75,7 @@ bool ERMSD::inPair(unsigned i, unsigned j) {
   return false;
 }
 
-void ERMSD::calcMat(const std::vector<Vector> & positions,const Pbc& pbc, std::vector<Vector4d> &mat, std::vector<TensorGeneric<4,3> > &Gderi) {
+void ERMSD::calcMat(const std::vector<Vector> & positions,const Pbc& pbc, std::vector<Vector4d> &mat, std::vector<Tensor4_3d> &Gderi) {
 
   std::vector<Vector3d> pos;
   pos.resize(3*nresidues);
@@ -266,7 +266,7 @@ double ERMSD::calculate(const std::vector<Vector> & positions,const Pbc& pbc,\
   std::vector<Vector4d> mat;
   mat.resize(nresidues*nresidues);
 
-  std::vector<TensorGeneric<4,3> > Gderi;
+  std::vector<Tensor4_3d> Gderi;
   Gderi.resize(natoms*natoms);
 
   calcMat(positions,pbc,mat,Gderi);

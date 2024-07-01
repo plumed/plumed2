@@ -96,6 +96,7 @@ class RMSD
   void addCenter(std::vector<Vector> &p, const Vector &c) {Vector cc=c*-1.; removeCenter(p,cc);};
 
 public:
+  using Tensor1_4d = TensorGeneric<double,1,4>;
 /// Constructor
   RMSD();
 /// clear the structure
@@ -295,6 +296,7 @@ private:
   Tensor ddist_drotation;
   std::vector<Vector> d; // difference of components
 public:
+  using Tensor1_4d=RMSD::Tensor1_4d;
   /// the constructor (note: only references are passed, therefore is rather fast)
   /// note: this aligns the reference onto the positions
   ///

@@ -47,6 +47,7 @@ class ERMSD {
   double cutoff;
 
 public:
+  using Tensor4_3d = TensorGeneric<double,4,3>;
 /// Constructor
   ERMSD(): natoms(0),nresidues(0), cutoff(0.0) {}
 
@@ -58,7 +59,7 @@ public:
 /// set reference coordinates
   void setReference(const std::vector<Vector> & reference, const std::vector<unsigned> & pairs_vec,double mycutoff=0.24);
 
-  void calcMat(const std::vector<Vector> & positions, const Pbc& pbc,std::vector<Vector4d> &mat,std::vector<TensorGeneric<4,3> > & Gderivatives);
+  void calcMat(const std::vector<Vector> & positions, const Pbc& pbc,std::vector<Vector4d> &mat,std::vector<Tensor4_3d> & Gderivatives);
 
 /// Compute ermsd ( no pbc )
 //  double calculate(const std::vector<Vector> & positions,

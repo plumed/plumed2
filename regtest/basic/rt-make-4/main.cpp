@@ -47,11 +47,13 @@ int main () {
 /// This would trigger an error before fix
 /// f1da0a9b3a13f904bd97d6f92a2fb5e1b6479ac0
   {
-    PLMD::TensorGeneric<4,4> mat;
-    PLMD::TensorGeneric<1,4> evec;
-    PLMD::VectorGeneric<4> eval_underlying;
-
-    auto eval = new(&eval_underlying[0]) PLMD::VectorGeneric<1>;
+    PLMD::Tensor4d mat;
+    PLMD::TensorGeneric<double,1,4> evec;
+    PLMD::Vector4d eval_underlying;
+    
+    //The both of the two following lines are scary, but on my machine are equivalent
+    //PLMD::Vector1d* eval=reinterpret_cast<PLMD::Vector1d*>(eval_underlying.data());
+    auto eval = new(&eval_underlying[0]) PLMD::Vector1d;
 
     mat[1][0]=mat[0][1]=3.0;
     mat[1][1]=5.0;
@@ -66,11 +68,11 @@ int main () {
   }
 
   {
-    PLMD::TensorGeneric<4,4> mat;
-    PLMD::TensorGeneric<1,4> evec;
-    PLMD::VectorGeneric<4> eval_underlying;
+    PLMD::Tensor4d mat;
+    PLMD::TensorGeneric<double,1,4> evec;
+    PLMD::Vector4d eval_underlying;
 
-    auto eval = new(&eval_underlying[0]) PLMD::VectorGeneric<1>;
+    auto eval = new(&eval_underlying[0]) PLMD::Vector1d;
 
     mat[1][0]=mat[0][1]=3.0;
     mat[1][1]=5.0;
@@ -88,9 +90,9 @@ int main () {
 /// This would trigger an error before fix
 /// f1da0a9b3a13f904bd97d6f92a2fb5e1b6479ac0
   {
-    PLMD::TensorGeneric<4,4> mat;
-    PLMD::TensorGeneric<4,4> evec;
-    PLMD::VectorGeneric<4> eval;
+    PLMD::Tensor4d mat;
+    PLMD::Tensor4d evec;
+    PLMD::Vector4d eval;
 
     mat[1][0]=mat[0][1]=3.0;
     mat[1][1]=5.0;

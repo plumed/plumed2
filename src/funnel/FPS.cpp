@@ -216,8 +216,8 @@ void FUNNEL_PS::calculate() {
   sourcePositions.resize(sourcePositions.size()-2);// just the protein
 
   // The two points that define the axis : this can be moved in the initialization
-  Vector p1 = VectorGeneric<3>(points[0],points[1],points[2]);
-  Vector p2 = VectorGeneric<3>(points[3],points[4],points[5]);
+  Vector p1 (points[0],points[1],points[2]);
+  Vector p2 (points[3],points[4],points[5]);
   Vector s = p2 - p1;
 
   // I call the method calc_FitElements that initializes all feature that I need

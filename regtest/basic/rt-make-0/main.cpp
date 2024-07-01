@@ -24,10 +24,10 @@ int main(){
   B-=A;
   ofs<<determinant(B)<<"\n";
 
-  TensorGeneric<3,2> D(Vector(0,1,2),Vector2d(3,4));
+  TensorGeneric<double,3,2> D(Vector(0,1,2),Vector2d(3,4));
   ofs<<D<<"\n";
 
-  TensorGeneric<2,3> E=transpose(D);
+  TensorGeneric<double,2,3> E=transpose(D);
   ofs<<E<<"\n";
 
   double f(matmul(a,B,c));

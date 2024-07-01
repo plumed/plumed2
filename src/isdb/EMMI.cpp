@@ -112,6 +112,7 @@ class EMMI :
   public ActionWithArguments,
   public ActionWithValue
 {
+  using Vector6d = PLMD::VectorGeneric<double,6>;
 private:
 
 // temperature in kbt
@@ -125,7 +126,7 @@ private:
 // data GMM - means, weights, and covariances + beta option
   std::vector<Vector>             GMM_d_m_;
   std::vector<double>             GMM_d_w_;
-  std::vector< VectorGeneric<6> > GMM_d_cov_;
+  std::vector< Vector6d > GMM_d_cov_;
   std::vector<int>                GMM_d_beta_;
   std::vector < std::vector<int> >     GMM_d_grps_;
 // overlaps
@@ -150,7 +151,7 @@ private:
 // pre_fact = 1.0 / (2pi)**1.5 / std::sqrt(det_md) * Wm * Wd
   std::vector<double> pre_fact_;
 // inverse of the sum of model and data covariances matrices
-  std::vector< VectorGeneric<6> > inv_cov_md_;
+  std::vector< Vector6d > inv_cov_md_;
 // neighbor list
   double   nl_cutoff_;
   unsigned nl_stride_;
@@ -233,21 +234,21 @@ private:
 // read data GMM file
   void get_GMM_d(const std::string & gmm_file);
 // check GMM data
-  void check_GMM_d(const VectorGeneric<6> &cov, double w);
+  void check_GMM_d(const Vector6d &cov, double w);
 // auxiliary method
   void calculate_useful_stuff(double reso);
 // get pref_fact and inv_cov_md
-  double get_prefactor_inverse (const VectorGeneric<6> &GMM_cov_0, const VectorGeneric<6> &GMM_cov_1,
+  double get_prefactor_inverse (const Vector6d &GMM_cov_0, const Vector6d &GMM_cov_1,
                                 double GMM_w_0, double GMM_w_1,
-                                VectorGeneric<6> &sum, VectorGeneric<6> &inv_sum);
+                                Vector6d &sum, Vector6d &inv_sum);
 // calculate self overlaps between data GMM components - ovdd_
   double get_self_overlap(unsigned id);
 // calculate overlap between two Gaussians
   double get_overlap(const Vector &m_m, const Vector &d_m, double pre_fact,
-                     const VectorGeneric<6> &inv_cov_md, Vector &ov_der);
+                     const Vector6d &inv_cov_md, Vector &ov_der);
 // calculate exponent of overlap for neighbor list update
   double get_exp_overlap(const Vector &m_m, const Vector &d_m,
-                         const VectorGeneric<6> &inv_cov_md);
+                         const Vector6d &inv_cov_md);
 // update the neighbor list
   void update_neighbor_list();
 // calculate overlap
@@ -1051,7 +1052,7 @@ std::vector<double> EMMI::get_GMM_m(std::vector<AtomNumber> &atoms)
   return GMM_m_w;
 }
 
-void EMMI::check_GMM_d(const VectorGeneric<6> &cov, double w)
+void EMMI::check_GMM_d(const Vector6d &cov, double w)
 {
 
 // check if positive defined, by calculating the 3 leading principal minors
@@ -1069,7 +1070,7 @@ void EMMI::check_GMM_d(const VectorGeneric<6> &cov, double w)
 // read GMM data file in PLUMED format:
 void EMMI::get_GMM_d(const std::string & GMM_file)
 {
-  VectorGeneric<6> cov;
+  Vector6d cov;
 
 // open file
   auto ifile=Tools::make_unique<IFile>();
@@ -1147,7 +1148,7 @@ void EMMI::calculate_useful_stuff(double reso)
   log.printf("  predicted map resolution : %3.2f\n", ave_res);
   log.printf("  blur factor : %f\n", blur);
   // now calculate useful stuff
-  VectorGeneric<6> cov, sum, inv_sum;
+  Vector6d cov, sum, inv_sum;
   // cycle on all atoms types (4 for the moment)
   for(unsigned i=0; i<GMM_m_s_.size(); ++i) {
     // the Gaussian in density (real) space is the FT of scattering factor
@@ -1189,9 +1190,9 @@ void EMMI::calculate_useful_stuff(double reso)
 
 // get prefactors
 double EMMI::get_prefactor_inverse
-(const VectorGeneric<6> &GMM_cov_0, const VectorGeneric<6> &GMM_cov_1,
+(const Vector6d &GMM_cov_0, const Vector6d &GMM_cov_1,
  double GMM_w_0, double GMM_w_1,
- VectorGeneric<6> &sum, VectorGeneric<6> &inv_sum)
+ Vector6d &sum, Vector6d &inv_sum)
 {
 // we need the sum of the covariance matrices
   for(unsigned k=0; k<6; ++k) sum[k] = GMM_cov_0[k] + GMM_cov_1[k];
@@ -1219,7 +1220,7 @@ double EMMI::get_prefactor_inverse
 double EMMI::get_self_overlap(unsigned id)
 {
   double ov_tot = 0.0;
-  VectorGeneric<6> sum, inv_sum;
+  Vector6d sum, inv_sum;
   Vector ov_der;
 // start loop
   for(unsigned i=0; i<GMM_d_m_.size(); ++i) {
@@ -1235,7 +1236,7 @@ double EMMI::get_self_overlap(unsigned id)
 
 // get overlap and derivatives
 double EMMI::get_overlap(const Vector &m_m, const Vector &d_m, double pre_fact,
-                         const VectorGeneric<6> &inv_cov_md, Vector &ov_der)
+                         const Vector6d &inv_cov_md, Vector &ov_der)
 {
   Vector md;
   // calculate std::vector difference m_m-d_m with/without pbc
@@ -1256,7 +1257,7 @@ double EMMI::get_overlap(const Vector &m_m, const Vector &d_m, double pre_fact,
 
 // get the exponent of the overlap
 double EMMI::get_exp_overlap(const Vector &m_m, const Vector &d_m,
-                             const VectorGeneric<6> &inv_cov_md)
+                             const Vector6d &inv_cov_md)
 {
   Vector md;
   // calculate std::vector difference m_m-d_m with/without pbc
