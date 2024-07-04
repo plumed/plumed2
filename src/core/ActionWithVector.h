@@ -39,6 +39,8 @@ class ActionWithVector:
 private:
 /// Is the calculation to be done in serial
   bool serial;
+/// Are we in the forward pass through the calculation
+  bool forwardPass;
 /// The buffer that we use (we keep a copy here to avoid resizing)
   std::vector<double> buffer;
 /// The list of active tasks
@@ -119,6 +121,8 @@ public:
   virtual void prepare() override;
   void retrieveAtoms( const bool& force=false ) override;
   void calculateNumericalDerivatives(ActionWithValue* av) override;
+/// Turn off the calculation of the derivatives during the forward pass through a calculation
+  bool doNotCalculateDerivatives() const override ;
 /// Are we running this command in a chain
   bool actionInChain() const ;
 /// This is overwritten within ActionWithMatrix and is used to build the chain of just matrix actions

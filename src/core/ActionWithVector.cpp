@@ -35,7 +35,7 @@ Option interpretEnvString(const char* env,const char* str) {
   if(!std::strcmp(str,"no"))return Option::no;
   plumed_error()<<"Cannot understand env var "<<env<<"\nPossible values: yes/no\nActual value: "<<str;
 }
-  
+
 /// Switch on/off chains of actions using PLUMED environment variable
 /// export PLUMED_FORBID_CHAINS=yes  # forbid the use of chains in this run
 /// export PLUMED_FORBID_CHAINS=no   # allow chains to be used in the run
@@ -44,7 +44,7 @@ Option getenvChainForbidden() {
   static const char* name="PLUMED_FORBID_CHAINS";
   static const auto opt = interpretEnvString(name,std::getenv(name));
   return opt;
-}      
+}
 
 void ActionWithVector::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
@@ -60,6 +60,7 @@ ActionWithVector::ActionWithVector(const ActionOptions&ao):
   ActionWithValue(ao),
   ActionWithArguments(ao),
   serial(false),
+  forwardPass(false),
   action_to_do_before(NULL),
   action_to_do_after(NULL),
   never_reduce_tasks(false),
@@ -451,6 +452,11 @@ std::vector<unsigned>& ActionWithVector::getListOfActiveTasks( ActionWithVector*
   return active_tasks;
 }
 
+bool ActionWithVector::doNotCalculateDerivatives() const {
+  if( forwardPass ) return true;
+  return ActionWithValue::doNotCalculateDerivatives();
+}
+
 void ActionWithVector::runAllTasks() {
 // Skip this if this is done elsewhere
   if( action_to_do_before ) return;
@@ -471,6 +477,12 @@ void ActionWithVector::runAllTasks() {
   // Now do all preparations required to run all the tasks
   // prepareForTaskLoop();
 
+  if( !action_to_do_after ) {
+    forwardPass=true;
+    for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+      if( getConstPntrToComponent(i)->getRank()==0 ) { forwardPass=false; break; }
+    }
+  }
   // Get the total number of streamed quantities that we need
   unsigned nquants=0, nmatrices=0, maxcol=0, nbooks=0;
   getNumberOfStreamedQuantities( getLabel(), nquants, nmatrices, maxcol, nbooks );
@@ -509,7 +521,7 @@ void ActionWithVector::runAllTasks() {
 
   // MPI Gather everything
   if( !serial && buffer.size()>0 ) gatherProcesses( buffer );
-  finishComputations( buffer );
+  finishComputations( buffer ); forwardPass=false;
 }
 
 void ActionWithVector::gatherThreads( const unsigned& nt, const unsigned& bufsize, const std::vector<double>& omp_buffer, std::vector<double>& buffer, MultiValue& myvals ) {
