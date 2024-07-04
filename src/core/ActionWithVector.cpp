@@ -27,6 +27,25 @@
 
 namespace PLMD {
 
+enum class Option { no, yes };
+
+Option interpretEnvString(const char* env,const char* str) {
+  if(!str) return Option::no;
+  if(!std::strcmp(str,"yes"))return Option::yes;
+  if(!std::strcmp(str,"no"))return Option::no;
+  plumed_error()<<"Cannot understand env var "<<env<<"\nPossible values: yes/no\nActual value: "<<str;
+}
+  
+/// Switch on/off chains of actions using PLUMED environment variable
+/// export PLUMED_FORBID_CHAINS=yes  # forbid the use of chains in this run
+/// export PLUMED_FORBID_CHAINS=no   # allow chains to be used in the run
+/// default: yes
+Option getenvChainForbidden() {
+  static const char* name="PLUMED_FORBID_CHAINS";
+  static const auto opt = interpretEnvString(name,std::getenv(name));
+  return opt;
+}      
+
 void ActionWithVector::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
@@ -123,6 +142,8 @@ unsigned ActionWithVector::buildArgumentStore( const unsigned& argstart ) {
     ActionWithVector* av=dynamic_cast<ActionWithVector*>(getPntrToArgument(i)->getPntrToAction());
     if( !av || getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->hasDerivatives() ) { done_in_chain=false; break; }
   }
+  if( getenvChainForbidden()==Option::yes ) done_in_chain=false;
+
   if( done_in_chain ) {
     std::vector<std::string> alabels; std::vector<ActionWithVector*> f_actions;
     for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
