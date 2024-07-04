@@ -237,6 +237,17 @@ void Value::push_back( const double& v ) {
   }
 }
 
+std::size_t Value::getIndexInStore( const std::size_t& ival ) const {
+  if( shape.size()==2 && ncols<shape[1] ) {
+    unsigned irow = std::floor( ival / shape[1] ), jcol = ival%shape[1];
+    for(unsigned i=0; i<getRowLength(irow); ++i) {
+      if( getRowIndex(irow,i)==jcol ) return irow*ncols+i;
+    }
+    plumed_merror("cannot get store index");
+  }
+  return ival;
+}
+
 double Value::get(const std::size_t& ival, const bool trueind) const {
   if( hasDeriv ) return data[ival*(1+ngrid_der)];
 #ifdef DNDEBUG

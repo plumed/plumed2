@@ -150,9 +150,9 @@ void MatrixTimesVector::prepare() {
 }
 
 void MatrixTimesVector::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {
-  unsigned start_n = getPntrToArgument(0)->getShape()[0], size_v = getPntrToArgument(0)->getShape()[1];
+  unsigned start_n = getPntrToArgument(0)->getShape()[0], size_v = getPntrToArgument(0)->getRowLength(task_index);
   if( indices.size()!=size_v+1 ) indices.resize( size_v + 1 );
-  for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + i;
+  for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + getPntrToArgument(0)->getRowIndex( task_index, i );
   myvals.setSplitIndex( size_v + 1 );
 }
 

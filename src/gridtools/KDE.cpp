@@ -540,6 +540,7 @@ void KDE::gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, 
   unsigned num_neigh; std::vector<unsigned> neighbors;
   gridobject.getNeighbors( args, nneigh, num_neigh, neighbors );
   std::vector<double> der( args.size() ), gpoint( args.size() );
+  unsigned hforce_start = 0; for(unsigned j=0; j<der.size(); ++j) hforce_start += getPntrToArgument(j)->getNumberOfStoredValues();
   if( fabs(height)>epsilon ) {
     if( getName()=="KDE" ) {
       if( kerneltype.find("bin")!=std::string::npos ) {
@@ -547,17 +548,17 @@ void KDE::gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, 
         for(unsigned i=0; i<num_neigh; ++i) {
           gridobject.getGridPointCoordinates( neighbors[i], gpoint );
           double val = evaluateBeadValue( bead, gpoint, args, height, der ); double fforce = getConstPntrToComponent(0)->getForce( neighbors[i] );
-          if( hasheight && getPntrToArgument(args.size())->getRank()==0 ) forces[ args.size()*numberOfKernels ] += val*fforce / height;
-          else if( hasheight ) forces[ args.size()*numberOfKernels + itask ] += val*fforce / height;
-          unsigned n=itask; for(unsigned j=0; j<der.size(); ++j) { forces[n] += der[j]*fforce; n += numberOfKernels; }
+          if( hasheight && getPntrToArgument(args.size())->getRank()==0 ) forces[ hforce_start ] += val*fforce / height;
+          else if( hasheight ) forces[ hforce_start + getPntrToArgument(args.size())->getIndexInStore(itask) ] += val*fforce / height;
+          unsigned n=0; for(unsigned j=0; j<der.size(); ++j) { forces[n + getPntrToArgument(j)->getIndexInStore(itask)] += der[j]*fforce; n += getPntrToArgument(j)->getNumberOfStoredValues(); }
         }
       } else {
         for(unsigned i=0; i<num_neigh; ++i) {
           gridobject.getGridPointCoordinates( neighbors[i], gpoint );
           double val = evaluateKernel( gpoint, args, height, der ), fforce = getConstPntrToComponent(0)->getForce( neighbors[i] );
-          if( hasheight && getPntrToArgument(args.size())->getRank()==0 ) forces[ args.size()*numberOfKernels ] += val*fforce / height;
-          else if( hasheight ) forces[ args.size()*numberOfKernels + itask ] += val*fforce / height;
-          unsigned n=itask; for(unsigned j=0; j<der.size(); ++j) { forces[n] += -der[j]*fforce; n += numberOfKernels; }
+          if( hasheight && getPntrToArgument(args.size())->getRank()==0 ) forces[ hforce_start ] += val*fforce / height;
+          else if( hasheight ) forces[ hforce_start + getPntrToArgument(args.size())->getIndexInStore(itask) ] += val*fforce / height;
+          unsigned n=0; for(unsigned j=0; j<der.size(); ++j) { forces[n + getPntrToArgument(j)->getIndexInStore(itask)] += -der[j]*fforce; n += getPntrToArgument(j)->getNumberOfStoredValues(); }
         }
       }
     } else {
@@ -565,9 +566,9 @@ void KDE::gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, 
         gridobject.getGridPointCoordinates( neighbors[i], gpoint );
         double dot=0; for(unsigned j=0; j<gpoint.size(); ++j) dot += args[j]*gpoint[j];
         double fforce = myval->getForce( neighbors[i] ); double newval = height*von_misses_norm*exp( von_misses_concentration*dot );
-        if( hasheight && getPntrToArgument(args.size())->getRank()==0 ) forces[ args.size()*numberOfKernels ] += newval*fforce / height;
-        else if( hasheight ) forces[ args.size()*numberOfKernels + itask ] += newval*fforce / height;
-        unsigned n=itask; for(unsigned j=0; j<gpoint.size(); ++j) { forces[n] += von_misses_concentration*newval*gpoint[j]*fforce; n += numberOfKernels; }
+        if( hasheight && getPntrToArgument(args.size())->getRank()==0 ) forces[ hforce_start ] += newval*fforce / height;
+        else if( hasheight ) forces[ hforce_start + getPntrToArgument(args.size())->getIndexInStore(itask) ] += newval*fforce / height;
+        unsigned n=0; for(unsigned j=0; j<gpoint.size(); ++j) { forces[n + getPntrToArgument(j)->getIndexInStore(itask)] += von_misses_concentration*newval*gpoint[j]*fforce; n += getPntrToArgument(j)->getNumberOfStoredValues(); }
       }
     }
   }

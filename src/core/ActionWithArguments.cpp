@@ -299,8 +299,8 @@ void ActionWithArguments::addForcesOnArguments( const unsigned& argstart, const 
   for(unsigned i=0; i<arguments.size(); ++i) {
     if( i==0 && getName().find("EVALUATE_FUNCTION_FROM_GRID")!=std::string::npos ) continue ;
     if( !arguments[i]->ignoreStoredValue(c) || arguments[i]->getRank()==0 || (arguments[i]->getRank()>0 && arguments[i]->hasDerivatives()) ) {
-      unsigned nvals = arguments[i]->getNumberOfValues();
-      for(unsigned j=0; j<nvals; ++j) { arguments[i]->addForce( j, forces[ind] ); ind++; }
+      unsigned nvals = arguments[i]->getNumberOfStoredValues();
+      for(unsigned j=0; j<nvals; ++j) { arguments[i]->addForce( j, forces[ind], false ); ind++; }
     }
   }
 }

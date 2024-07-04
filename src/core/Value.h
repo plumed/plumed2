@@ -121,6 +121,8 @@ public:
   void add(double);
 /// Add something to the ith element of the data array
   void add(const std::size_t& n, const double& v );
+/// Get the location of this element of in the store
+  std::size_t getIndexInStore( const std::size_t& ival ) const ;
 /// Get the value of the function
   double get( const std::size_t& ival=0, const bool trueind=true ) const;
 /// Find out if the value has been set
@@ -190,6 +192,8 @@ public:
   void setSymmetric( const bool& sym );
 /// Get the total number of scalars that are stored here
   unsigned getNumberOfValues() const ;
+/// Get the number of values that are actually stored here once sparse matrices are taken into account
+  unsigned getNumberOfStoredValues() const ;
 /// Get the number of threads to use when assigning this value
   unsigned getGoodNumThreads( const unsigned& j, const unsigned& k ) const ;
 /// These are used for passing around the data in this value when we are doing replica exchange
@@ -399,6 +403,12 @@ inline
 unsigned Value::getNumberOfValues() const {
   unsigned size=1; for(unsigned i=0; i<shape.size(); ++i) size *= shape[i];
   return size;
+}
+
+inline
+unsigned Value::getNumberOfStoredValues() const {
+  if( getRank()==2 && !hasDeriv ) return shape[0]*ncols;
+  return getNumberOfValues();
 }
 
 inline
