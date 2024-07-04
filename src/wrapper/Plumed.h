@@ -660,7 +660,6 @@
 #else
 #define __PLUMED_WRAPPER_STATIC_CAST(to,what) ((to) what)
 #define __PLUMED_WRAPPER_REINTERPRET_CAST(to,what) __PLUMED_WRAPPER_STATIC_CAST(to,what)
-
 #endif
 
 /* Simplify addition of extern "C" blocks.  */
