@@ -36,6 +36,7 @@ private:
   LinkCells linkcells, threecells;
   std::vector<unsigned> ablocks, threeblocks;
   double nl_cut, nl_cut2;
+  unsigned maxcol;
   unsigned nl_stride;
   unsigned natoms_per_list;
   std::vector<unsigned> nlist;
@@ -104,6 +105,11 @@ void AdjacencyMatrixBase::addBoxDerivatives( const Tensor& vir, MultiValue& myva
   myvals.addDerivative( w_index, nbase+6, vir(2,0) );
   myvals.addDerivative( w_index, nbase+7, vir(2,1) );
   myvals.addDerivative( w_index, nbase+8, vir(2,2) );
+}
+
+inline
+unsigned AdjacencyMatrixBase::getNumberOfColumns() const {
+  return maxcol;
 }
 
 

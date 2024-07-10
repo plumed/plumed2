@@ -228,6 +228,11 @@ void AdjacencyMatrixBase::updateNeighbourList() {
     }
     threecells.buildCellLists( ltmp_pos2, threeblocks, getPbc() );
   }
+  // And finally work out maximum number of columns to use
+  maxcol = nlist[0];
+  for(unsigned i=1; i<getConstPntrToComponent(0)->getShape()[0]; ++i) {
+    if( nlist[i]>maxcol ) maxcol = nlist[i];
+  }
 }
 
 void AdjacencyMatrixBase::getAdditionalTasksRequired( ActionWithVector* action, std::vector<unsigned>& atasks ) {
@@ -247,16 +252,6 @@ void AdjacencyMatrixBase::getAdditionalTasksRequired( ActionWithVector* action, 
       if( !found ) atasks.push_back( indlist[j] );
     }
   }
-}
-
-unsigned AdjacencyMatrixBase::getNumberOfColumns() const {
-  unsigned maxcol=nlist[0];
-  for(unsigned i=1; i<getConstPntrToComponent(0)->getShape()[0]; ++i) {
-    if( nlist[i]>maxcol ) maxcol = nlist[i];
-  }
-  // This triggers appropriate storage of symmetric matrices which can only have
-  // a maximumum of shape[1]-1 non-zero elements
-  return maxcol;
 }
 
 unsigned AdjacencyMatrixBase::retrieveNeighbours( const unsigned& current, std::vector<unsigned> & indices ) const {
