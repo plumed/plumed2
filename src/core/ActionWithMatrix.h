@@ -44,6 +44,8 @@ private:
 /// This does the calculation of a particular matrix element
   void runTask( const std::string& controller, const unsigned& current, const unsigned colno, MultiValue& myvals ) const ;
 protected:
+/// This turns off derivative clearing for contact matrix if we are not storing derivatives
+  bool clearOnEachCycle;
 /// Does the matrix chain continue on from this action
   bool matrixChainContinues() const ;
 /// This returns the jelem th element of argument ic

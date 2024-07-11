@@ -52,6 +52,7 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
   neighbour_list_updated(false),
   linkcells(comm),
   threecells(comm),
+  maxcol(0),
   natoms_per_list(0)
 {
   std::vector<unsigned> shape(2); std::vector<AtomNumber> t; parseAtomList("GROUP", t );
@@ -291,9 +292,9 @@ void AdjacencyMatrixBase::setupForTask( const unsigned& current, std::vector<uns
 void AdjacencyMatrixBase::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
   Vector zero; zero.zero(); plumed_dbg_assert( index2<myvals.getAtomVector().size() );
   double weight = calculateWeight( zero, myvals.getAtomVector()[index2], myvals.getNumberOfIndices()-myvals.getSplitIndex(), myvals );
-  if( fabs(weight)<epsilon ) return;
-
   unsigned w_ind = getConstPntrToComponent(0)->getPositionInStream(); myvals.setValue( w_ind, weight );
+  if( fabs(weight)<epsilon ) { myvals.setValue( w_ind, 0 ); return; }
+
   if( !doNotCalculateDerivatives() ) {
     // Update dynamic list indices for central atom
     myvals.updateIndex( w_ind, 3*index1+0 ); myvals.updateIndex( w_ind, 3*index1+1 ); myvals.updateIndex( w_ind, 3*index1+2 );

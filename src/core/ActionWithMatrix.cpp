@@ -33,7 +33,8 @@ ActionWithMatrix::ActionWithMatrix(const ActionOptions&ao):
   ActionWithVector(ao),
   next_action_in_chain(NULL),
   matrix_to_do_before(NULL),
-  matrix_to_do_after(NULL)
+  matrix_to_do_after(NULL),
+  clearOnEachCycle(true)
 {
 }
 
@@ -62,6 +63,14 @@ void ActionWithMatrix::setupStreamedComponents( const std::string& headstr, unsi
     myval->setMatrixBookeepingStart(nbookeeping);
     nbookeeping += myval->getShape()[0]*( 1 + myval->getNumberOfColumns() );
   }
+  // Turn off clearning of derivatives after each matrix run if there are no matrices in the output of this action
+  clearOnEachCycle = false;
+  for(int i=0; i<getNumberOfComponents(); ++i) {
+    const Value* myval=getConstPntrToComponent(i);
+    if( myval->getRank()==2 && !myval->hasDerivatives() ) { clearOnEachCycle = true; break; }
+  }
+  // Turn off clearing of derivatives if we have only the values of adjacency matrices
+  if( doNotCalculateDerivatives() && isAdjacencyMatrix() ) clearOnEachCycle = false;
 }
 
 void ActionWithMatrix::finishChainBuild( ActionWithVector* act ) {
@@ -222,7 +231,7 @@ void ActionWithMatrix::gatherForcesOnStoredValue( const Value* myval, const unsi
 }
 
 void ActionWithMatrix::clearMatrixElements( MultiValue& myvals ) const {
-  if( isActive() ) {
+  if( isActive() && clearOnEachCycle ) {
     for(int i=0; i<getNumberOfComponents(); ++i) {
       const Value* myval=getConstPntrToComponent(i);
       if( myval->getRank()==2 && !myval->hasDerivatives() ) myvals.clearDerivatives( myval->getPositionInStream() );
