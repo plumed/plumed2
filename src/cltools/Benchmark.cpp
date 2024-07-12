@@ -484,7 +484,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
     log.link(log_dev_null.get());
   }
   log.setLinePrefix("BENCH:  ");
-
+  log <<"Welcome to PLUMED benchmark\n";
   std::vector<Kernel> kernels;
 
   // perform comparative analysis
@@ -589,6 +589,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
     {
       std::string paths;
       parse("--kernel",paths);
+      log <<"Using --kernel=" << paths << "\n";
       allpaths=Tools::getWords(paths,":");
     }
 
@@ -596,6 +597,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
     {
       std::string paths;
       parse("--plumed",paths);
+      log <<"Using --plumed=" << paths << "\n";
       allplumed=Tools::getWords(paths,":");
     }
 
@@ -628,18 +630,26 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   // read other flags:
   bool shuffled=false;
   parseFlag("--shuffled",shuffled);
+  if (shuffled)
+    log << "Using --shuffled\n";
   int nf; parse("--nsteps",nf);
+  log << "Using --nsteps=" << nf << "\n";
   unsigned natoms; parse("--natoms",natoms);
-
+  log << "Using --natoms=" << natoms << "\n";
   double maxtime; parse("--maxtime",maxtime);
+  log << "Using --maxtime=" << maxtime << "\n";
 
   bool domain_decomposition=false;
   parseFlag("--domain-decomposition",domain_decomposition);
+  if (domain_decomposition)
+    log << "Using --domain-decomposition\n";
+
   if(pc.Get_size()>1) domain_decomposition=true;
   if(domain_decomposition) shuffled=true;
 
   double timeToSleep;
   parse("--sleep",timeToSleep);
+  log << "Using --sleep=" << timeToSleep << "\n";
 
   std::vector<int> shuffled_indexes;
 
@@ -647,8 +657,9 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
     std::string atomicDistr;
     parse("--atom-distribution",atomicDistr);
     distribution = getAtomDistribution(atomicDistr);
+    log << "Using --atom-distribution=" << atomicDistr << "\n";
   }
-
+  log <<"Initializing the setup of the kernel(s)\n";
   const auto initial_time=std::chrono::high_resolution_clock::now();
 
   for(auto & k : kernels) {
@@ -689,7 +700,6 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   log<<"Use CTRL+C to stop at any time and collect timers (not working in MPI runs)\n";
   // trap signals:
   SignalHandlerGuard sigIntGuard(SIGINT, signalHandler);
-
 
   for(int step=0; nf<0 || step<nf; ++step) {
     std::shuffle(kernels_ptr.begin(),kernels_ptr.end(),rng);
