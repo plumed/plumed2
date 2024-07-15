@@ -134,14 +134,8 @@ inline
 void ActionWithMatrix::addDerivativeOnMatrixArgument( const bool& inchain, const unsigned& ival, const unsigned& jarg, const unsigned& irow, const unsigned& jcol, const double& der, MultiValue& myvals ) const {
   plumed_dbg_assert( jarg<getNumberOfArguments() && getPntrToArgument(jarg)->getRank()==2 && !getPntrToArgument(jarg)->hasDerivatives() );
   unsigned ostrn = getConstPntrToComponent(ival)->getPositionInStream(), vstart=arg_deriv_starts[jarg];
-  if( !inchain && getPntrToArgument(jarg)->getNumberOfColumns()<getPntrToArgument(jarg)->getShape()[1] ) {
-    unsigned dloc = vstart + irow*getPntrToArgument(jarg)->getNumberOfColumns(); Value* myarg=getPntrToArgument(jarg);
-    for(unsigned i=0; i<myarg->getRowLength(irow); ++i) {
-      if( myarg->getRowIndex(irow,i)==jcol ) { myvals.addDerivative( ostrn, dloc+i, der ); myvals.updateIndex( ostrn, dloc+i ); return; }
-    }
-    plumed_merror("could not find element of sparse matrix to add derivative to");
-  } else if( !inchain ) {
-    unsigned dloc = vstart + irow*getPntrToArgument(jarg)->getShape()[1] + jcol;
+  if( !inchain ) {
+    unsigned dloc = vstart + irow*getPntrToArgument(jarg)->getNumberOfColumns() + jcol;
     myvals.addDerivative( ostrn, dloc, der ); myvals.updateIndex( ostrn, dloc );
   } else {
     unsigned istrn = getPntrToArgument(jarg)->getPositionInStream();
