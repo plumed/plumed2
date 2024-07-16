@@ -36,6 +36,7 @@ namespace matrixtools {
 
 class MatrixTimesVector : public ActionWithMatrix {
 private:
+  bool sumrows;
   unsigned nderivatives;
   std::vector<bool> stored_arg;
 public:
@@ -78,7 +79,8 @@ std::string MatrixTimesVector::getOutputComponentDescription( const std::string&
 
 MatrixTimesVector::MatrixTimesVector(const ActionOptions&ao):
   Action(ao),
-  ActionWithMatrix(ao)
+  ActionWithMatrix(ao),
+  sumrows(false)
 {
   if( getNumberOfArguments()<2 ) error("Not enough arguments specified");
   unsigned nvectors=0, nmatrices=0;
@@ -112,6 +114,16 @@ MatrixTimesVector::MatrixTimesVector(const ActionOptions&ao):
         std::string name = getPntrToArgument(i)->getName();
         if( name.find_first_of(".")!=std::string::npos ) { std::size_t dot=name.find_first_of("."); name = name.substr(dot+1); }
         addComponent( name, shape ); componentIsNotPeriodic( name );
+      }
+    }
+    if( (getPntrToArgument(n)->getPntrToAction())->getName()=="CONSTANT" ) {
+      sumrows=true;
+      if( getPntrToArgument(n)->getRank()==0 ) {
+        if( fabs( getPntrToArgument(n)->get() - 1.0 )>epsilon ) sumrows = false;
+      } else {
+        for(unsigned i=0; i<getPntrToArgument(n)->getShape()[0]; ++i) {
+          if( fabs( getPntrToArgument(n)->get(i) - 1.0 )>epsilon ) { sumrows=false; break; }
+        }
       }
     }
   } else if( nmatrices==1 ) {
@@ -158,7 +170,18 @@ void MatrixTimesVector::setupForTask( const unsigned& task_index, std::vector<un
 
 void MatrixTimesVector::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
   unsigned ind2 = index2; if( index2>=getPntrToArgument(0)->getShape()[0] ) ind2 = index2 - getPntrToArgument(0)->getShape()[0];
-  if( getPntrToArgument(1)->getRank()==1 ) {
+  if( sumrows ) {
+    unsigned n=getNumberOfArguments()-1; double matval = 0;
+    for(unsigned i=0; i<getNumberOfArguments()-1; ++i) {
+      unsigned ostrn = getConstPntrToComponent(i)->getPositionInStream();
+      Value* myarg = getPntrToArgument(i);
+      if( !myarg->valueHasBeenSet() ) myvals.addValue( ostrn, myvals.get( myarg->getPositionInStream() ) );
+      else myvals.addValue( ostrn, myarg->get( index1*myarg->getNumberOfColumns() + ind2, false ) );
+      // Now lets work out the derivatives
+      if( doNotCalculateDerivatives() ) continue;
+      addDerivativeOnMatrixArgument( stored_arg[i], i, i, index1, ind2, 1.0, myvals );
+    }
+  } else if( getPntrToArgument(1)->getRank()==1 ) {
     double matval = 0; Value* myarg = getPntrToArgument(0); unsigned vcol = ind2;
     if( !myarg->valueHasBeenSet() ) matval = myvals.get( myarg->getPositionInStream() );
     else {
