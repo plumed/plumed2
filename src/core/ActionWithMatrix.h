@@ -75,7 +75,7 @@ public:
 //// This does some setup before we run over the row of the matrix
   virtual void setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const = 0;
 /// Run over one row of the matrix
-  void performTask( const unsigned& task_index, MultiValue& myvals ) const override ;
+  virtual void performTask( const unsigned& task_index, MultiValue& myvals ) const ;
 /// Gather a row of the matrix
   void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals, const unsigned& bufstart, std::vector<double>& buffer ) const override;
 /// Gather all the data from the threads

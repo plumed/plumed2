@@ -46,6 +46,7 @@ public:
   unsigned getNumberOfColumns() const override { plumed_error(); }
   unsigned getNumberOfDerivatives();
   void prepare() override ;
+  void performTask( const unsigned& task_index, MultiValue& myvals ) const override ;
   bool isInSubChain( unsigned& nder ) override { nder = arg_deriv_starts[0]; return true; }
   void setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const ;
   void performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const override;
@@ -159,6 +160,74 @@ void MatrixTimesVector::prepare() {
   ActionWithVector::prepare(); Value* myval = getPntrToComponent(0);
   if( myval->getShape()[0]==getPntrToArgument(0)->getShape()[0] ) return;
   std::vector<unsigned> shape(1); shape[0] = getPntrToArgument(0)->getShape()[0]; myval->setShape(shape);
+}
+
+void MatrixTimesVector::performTask( const unsigned& task_index, MultiValue& myvals ) const {
+  if( actionInChain() ) { ActionWithMatrix::performTask( task_index, myvals ); return; }
+
+  if( sumrows ) {
+    unsigned n=getNumberOfArguments()-1; Value* myvec = getPntrToArgument(n);
+    for(unsigned i=0; i<n; ++i) {
+      Value* mymat = getPntrToArgument(i);
+      unsigned ncol = mymat->getNumberOfColumns();
+      unsigned nmat = mymat->getRowLength(task_index);
+      double val=0; for(unsigned j=0; j<nmat; ++j) val += mymat->get( task_index*ncol + j, false );
+      unsigned ostrn = getConstPntrToComponent(i)->getPositionInStream();
+      myvals.setValue( ostrn, val );
+
+      // And the derivatives
+      if( doNotCalculateDerivatives() ) continue;
+
+      unsigned dloc = arg_deriv_starts[i] + task_index*ncol;
+      for(unsigned j=0; j<nmat; ++j) {
+        myvals.addDerivative( ostrn, dloc + j, 1.0 ); myvals.updateIndex( ostrn, dloc + j );
+      }
+    }
+  } else if( getPntrToArgument(1)->getRank()==1 ) {
+    Value* mymat = getPntrToArgument(0);
+    unsigned ncol = mymat->getNumberOfColumns();
+    unsigned nmat = mymat->getRowLength(task_index);
+    unsigned dloc = arg_deriv_starts[0] + task_index*ncol;
+    for(unsigned i=0; i<getNumberOfArguments()-1; ++i) {
+      Value* myvec = getPntrToArgument(i+1);
+      double val=0; for(unsigned j=0; j<nmat; ++j) val += mymat->get( task_index*ncol + j, false )*myvec->get( mymat->getRowIndex( task_index, j ) );
+      unsigned ostrn = getConstPntrToComponent(i)->getPositionInStream();
+      myvals.setValue( ostrn, val );
+
+      // And the derivatives
+      if( doNotCalculateDerivatives() ) continue;
+
+      for(unsigned j=0; j<nmat; ++j) {
+        unsigned kind = mymat->getRowIndex( task_index, j );
+        double vecval = myvec->get( kind );
+        double matval = mymat->get( task_index*ncol + j, false );
+        myvals.addDerivative( ostrn, dloc + j, vecval ); myvals.updateIndex( ostrn, dloc + j );
+        myvals.addDerivative( ostrn, arg_deriv_starts[i+1] + kind, matval ); myvals.updateIndex( ostrn, arg_deriv_starts[i+1] + kind );
+      }
+    }
+  } else {
+    unsigned n=getNumberOfArguments()-1; Value* myvec = getPntrToArgument(n);
+    for(unsigned i=0; i<n; ++i) {
+      Value* mymat = getPntrToArgument(i);
+      unsigned ncol = mymat->getNumberOfColumns();
+      unsigned nmat = mymat->getRowLength(task_index);
+      double val=0; for(unsigned j=0; j<nmat; ++j) val += mymat->get( task_index*ncol + j, false )*myvec->get( mymat->getRowIndex( task_index, j ) );
+      unsigned ostrn = getConstPntrToComponent(i)->getPositionInStream();
+      myvals.setValue( ostrn, val );
+
+      // And the derivatives
+      if( doNotCalculateDerivatives() ) continue;
+
+      unsigned dloc = arg_deriv_starts[i] + task_index*ncol;
+      for(unsigned j=0; j<nmat; ++j) {
+        unsigned kind = mymat->getRowIndex( task_index, j );
+        double vecval = myvec->get( kind );
+        double matval = mymat->get( task_index*ncol + j, false );
+        myvals.addDerivative( ostrn, dloc + j, vecval ); myvals.updateIndex( ostrn, dloc + j );
+        myvals.addDerivative( ostrn, arg_deriv_starts[n] + kind, matval ); myvals.updateIndex( ostrn, arg_deriv_starts[n] + kind );
+      }
+    }
+  }
 }
 
 void MatrixTimesVector::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {
