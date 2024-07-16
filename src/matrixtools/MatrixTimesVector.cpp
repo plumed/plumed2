@@ -152,32 +152,44 @@ void MatrixTimesVector::prepare() {
 void MatrixTimesVector::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {
   unsigned start_n = getPntrToArgument(0)->getShape()[0], size_v = getPntrToArgument(0)->getRowLength(task_index);
   if( indices.size()!=size_v+1 ) indices.resize( size_v + 1 );
-  for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + getPntrToArgument(0)->getRowIndex( task_index, i );
+  for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + i;
   myvals.setSplitIndex( size_v + 1 );
 }
 
 void MatrixTimesVector::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
   unsigned ind2 = index2; if( index2>=getPntrToArgument(0)->getShape()[0] ) ind2 = index2 - getPntrToArgument(0)->getShape()[0];
   if( getPntrToArgument(1)->getRank()==1 ) {
+    double matval = 0; Value* myarg = getPntrToArgument(0); unsigned vcol = ind2;
+    if( !myarg->valueHasBeenSet() ) matval = myvals.get( myarg->getPositionInStream() );
+    else {
+      matval = myarg->get( index1*myarg->getNumberOfColumns() + ind2, false );
+      vcol = getPntrToArgument(0)->getRowIndex( index1, ind2 );
+    }
     for(unsigned i=0; i<getNumberOfArguments()-1; ++i) {
       unsigned ostrn = getConstPntrToComponent(i)->getPositionInStream();
-      double matval = getElementOfMatrixArgument( 0, index1, ind2, myvals ), vecval=getArgumentElement( i+1, ind2, myvals );
+      double vecval=getArgumentElement( i+1, vcol, myvals );
       // And add this part of the product
       myvals.addValue( ostrn, matval*vecval );
       // Now lets work out the derivatives
       if( doNotCalculateDerivatives() ) continue;
-      addDerivativeOnMatrixArgument( stored_arg[0], i, 0, index1, ind2, vecval, myvals ); addDerivativeOnVectorArgument( stored_arg[i+1], i, i+1, ind2, matval, myvals );
+      addDerivativeOnMatrixArgument( stored_arg[0], i, 0, index1, ind2, vecval, myvals ); addDerivativeOnVectorArgument( stored_arg[i+1], i, i+1, vcol, matval, myvals );
     }
   } else {
-    unsigned n=getNumberOfArguments()-1;
+    unsigned n=getNumberOfArguments()-1; double matval = 0; unsigned vcol = ind2;
     for(unsigned i=0; i<getNumberOfArguments()-1; ++i) {
       unsigned ostrn = getConstPntrToComponent(i)->getPositionInStream();
-      double matval = getElementOfMatrixArgument( i, index1, ind2, myvals ), vecval=getArgumentElement( n, ind2, myvals );
+      Value* myarg = getPntrToArgument(i);
+      if( !myarg->valueHasBeenSet() ) matval = myvals.get( myarg->getPositionInStream() );
+      else {
+        matval = myarg->get( index1*myarg->getNumberOfColumns() + ind2, false );
+        vcol = getPntrToArgument(i)->getRowIndex( index1, ind2 );
+      }
+      double vecval=getArgumentElement( n, vcol, myvals );
       // And add this part of the product
       myvals.addValue( ostrn, matval*vecval );
       // Now lets work out the derivatives
       if( doNotCalculateDerivatives() ) continue;
-      addDerivativeOnMatrixArgument( stored_arg[i], i, i, index1, ind2, vecval, myvals ); addDerivativeOnVectorArgument( stored_arg[n], i, n, ind2, matval, myvals );
+      addDerivativeOnMatrixArgument( stored_arg[i], i, i, index1, ind2, vecval, myvals ); addDerivativeOnVectorArgument( stored_arg[n], i, n, vcol, matval, myvals );
     }
   }
 }
