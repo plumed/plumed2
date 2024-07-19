@@ -55,6 +55,8 @@ public:
   void runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const override ;
 ///
   void getMatrixColumnTitles( std::vector<std::string>& argnames ) const override ;
+///
+  void gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const override ;
 };
 
 PLUMED_REGISTER_ACTION(VStack,"VSTACK")
@@ -135,6 +137,11 @@ void VStack::performTask( const std::string& controller, const unsigned& index1,
 
   if( doNotCalculateDerivatives() ) return;
   addDerivativeOnVectorArgument( stored[ind2], 0, ind2, index1, 1.0, myvals );
+}
+
+void VStack::gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
+  unsigned matind = myval->getPositionInMatrixStash(); const std::vector<unsigned>& mat_indices( myvals.getMatrixRowDerivativeIndices( matind ) );
+  for(unsigned i=0; i<forces.size(); ++i) forces[i] += myvals.getStashedMatrixForce( matind, i );
 }
 
 void VStack::runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const {

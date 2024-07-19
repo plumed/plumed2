@@ -144,6 +144,7 @@ public:
   void setNumberOfMatrixRowDerivatives( const unsigned& nmat, const unsigned& nind );
   unsigned getNumberOfMatrixRowDerivatives( const unsigned& nmat ) const ;
   std::vector<unsigned>& getMatrixRowDerivativeIndices( const unsigned& nmat );
+  const std::vector<unsigned>& getMatrixRowDerivativeIndices( const unsigned& nmat ) const ;
 /// Stash the forces on the matrix
   void addMatrixForce( const unsigned& imat, const unsigned& jind, const double& f );
   double getStashedMatrixForce( const unsigned& imat, const unsigned& jind ) const ;
@@ -332,6 +333,11 @@ unsigned MultiValue::getNumberOfMatrixRowDerivatives( const unsigned& nmat ) con
 
 inline
 std::vector<unsigned>& MultiValue::getMatrixRowDerivativeIndices( const unsigned& nmat ) {
+  plumed_dbg_assert( nmat<matrix_row_nderivatives.size() ); return matrix_row_derivative_indices[nmat];
+}
+
+inline
+const std::vector<unsigned>& MultiValue::getMatrixRowDerivativeIndices( const unsigned& nmat ) const {
   plumed_dbg_assert( nmat<matrix_row_nderivatives.size() ); return matrix_row_derivative_indices[nmat];
 }
 

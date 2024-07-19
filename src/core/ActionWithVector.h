@@ -125,7 +125,6 @@ public:
   bool doNotCalculateDerivatives() const override ;
 /// Are we running this command in a chain
   bool actionInChain() const ;
-  bool chainContinuesAfterThisAction() const ;
 /// This is overwritten within ActionWithMatrix and is used to build the chain of just matrix actions
   virtual void finishChainBuild( ActionWithVector* act );
 /// Check if there are any stored values in arguments
@@ -184,11 +183,6 @@ public:
 inline
 bool ActionWithVector::actionInChain() const {
   return (action_to_do_before!=NULL);
-}
-
-inline
-bool ActionWithVector::chainContinuesAfterThisAction() const {
-  return (action_to_do_after!=NULL);
 }
 
 inline

@@ -226,8 +226,8 @@ bool ActionWithMatrix::checkForTaskForce( const unsigned& itask, const Value* my
 
 void ActionWithMatrix::gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
   if( myval->getRank()==1 ) { ActionWithVector::gatherForcesOnStoredValue( myval, itask, myvals, forces ); return; }
-  unsigned matind = myval->getPositionInMatrixStash();
-  for(unsigned j=0; j<forces.size(); ++j) forces[j] += myvals.getStashedMatrixForce( matind, j );
+  unsigned matind = myval->getPositionInMatrixStash(); const std::vector<unsigned>& mat_indices( myvals.getMatrixRowDerivativeIndices( matind ) );
+  for(unsigned i=0; i<myvals.getNumberOfMatrixRowDerivatives(matind); ++i) { unsigned kind = mat_indices[i]; forces[kind] += myvals.getStashedMatrixForce( matind, kind ); }
 }
 
 void ActionWithMatrix::clearMatrixElements( MultiValue& myvals ) const {
