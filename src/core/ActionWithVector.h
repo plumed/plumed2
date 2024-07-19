@@ -136,7 +136,7 @@ public:
 /// This is overridden in ActionWithMatrix
   virtual void getAllActionLabelsInMatrixChain( std::vector<std::string>& matchain ) const {}
 /// Get the number of derivatives in the stream
-  void getNumberOfStreamedDerivatives( unsigned& nderivatives, Value* stopat );
+  virtual void getNumberOfStreamedDerivatives( unsigned& nderivatives, Value* stopat );
 /// Get every the label of every value that is calculated in this chain
   void getAllActionLabelsInChain( std::vector<std::string>& mylabels ) const ;
 /// We override clearInputForces here to ensure that forces are deleted from all values
@@ -186,7 +186,7 @@ bool ActionWithVector::actionInChain() const {
   return (action_to_do_before!=NULL);
 }
 
-inline 
+inline
 bool ActionWithVector::chainContinuesAfterThisAction() const {
   return (action_to_do_after!=NULL);
 }

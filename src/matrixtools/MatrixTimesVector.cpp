@@ -44,7 +44,8 @@ public:
   explicit MatrixTimesVector(const ActionOptions&);
   std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const override ;
   unsigned getNumberOfColumns() const override { plumed_error(); }
-  unsigned getNumberOfDerivatives();
+  void getNumberOfStreamedDerivatives( unsigned& nderivatives, Value* stopat ) override ;
+  unsigned getNumberOfDerivatives() override ;
   void prepare() override ;
   void performTask( const unsigned& task_index, MultiValue& myvals ) const override ;
   bool isInSubChain( unsigned& nder ) override { nder = arg_deriv_starts[0]; return true; }
@@ -160,6 +161,16 @@ void MatrixTimesVector::prepare() {
   ActionWithVector::prepare(); Value* myval = getPntrToComponent(0);
   if( myval->getShape()[0]==getPntrToArgument(0)->getShape()[0] ) return;
   std::vector<unsigned> shape(1); shape[0] = getPntrToArgument(0)->getShape()[0]; myval->setShape(shape);
+}
+
+void MatrixTimesVector::getNumberOfStreamedDerivatives( unsigned& nderivatives, Value* stopat ) {
+  if( actionInChain() ) { ActionWithVector::getNumberOfStreamedDerivatives( nderivatives, stopat ); return; }
+
+  nderivatives = 0;
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    arg_deriv_starts[i] = nderivatives;
+    nderivatives += getPntrToArgument(i)->getNumberOfStoredValues();
+  }
 }
 
 void MatrixTimesVector::performTask( const unsigned& task_index, MultiValue& myvals ) const {
