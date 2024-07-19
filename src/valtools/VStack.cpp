@@ -140,7 +140,7 @@ void VStack::performTask( const std::string& controller, const unsigned& index1,
 }
 
 void VStack::gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
-  unsigned matind = myval->getPositionInMatrixStash(); const std::vector<unsigned>& mat_indices( myvals.getMatrixRowDerivativeIndices( matind ) );
+  unsigned matind = myval->getPositionInMatrixStash();
   for(unsigned i=0; i<forces.size(); ++i) forces[i] += myvals.getStashedMatrixForce( matind, i );
 }
 
