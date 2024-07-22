@@ -141,7 +141,7 @@ void ActionWithMatrix::performTask( const unsigned& task_index, MultiValue& myva
 
 void ActionWithMatrix::runTask( const std::string& controller, const unsigned& current, const unsigned colno, MultiValue& myvals ) const {
   double outval=0; myvals.setTaskIndex(current); myvals.setSecondTaskIndex( colno );
-  if( isActive() ) performTask( controller, current, colno, myvals );
+  performTask( controller, current, colno, myvals );
   bool hasval = !isAdjacencyMatrix();
   for(int i=0; i<getNumberOfComponents(); ++i) {
     if( fabs(myvals.get( getConstPntrToComponent(i)->getPositionInStream()) )>0 ) { hasval=true; break; }
@@ -231,7 +231,7 @@ void ActionWithMatrix::gatherForcesOnStoredValue( const Value* myval, const unsi
 }
 
 void ActionWithMatrix::clearMatrixElements( MultiValue& myvals ) const {
-  if( isActive() && clearOnEachCycle ) {
+  if( clearOnEachCycle ) {
     for(int i=0; i<getNumberOfComponents(); ++i) {
       const Value* myval=getConstPntrToComponent(i);
       if( myval->getRank()==2 && !myval->hasDerivatives() ) myvals.clearDerivatives( myval->getPositionInStream() );

@@ -388,7 +388,7 @@ void ActionWithVector::getAllActionLabelsInChain( std::vector<std::string>& myla
 }
 
 void ActionWithVector::taskIsActive( const unsigned& current, int& flag ) const {
-  if( isActive() ) flag = checkTaskStatus( current, flag );
+  flag = checkTaskStatus( current, flag );
   if( flag<=0 && action_to_do_after ) action_to_do_after->taskIsActive( current, flag );
 }
 
@@ -617,30 +617,26 @@ bool ActionWithVector::getNumberOfStoredValues( Value* startat, unsigned& nvals,
 }
 
 void ActionWithVector::runTask( const unsigned& current, MultiValue& myvals ) const {
-  if( isActive() ) {
-    myvals.setTaskIndex(current); myvals.vector_call=true; performTask( current, myvals );
-  }
+  myvals.setTaskIndex(current); myvals.vector_call=true; performTask( current, myvals );
   if( action_to_do_after ) action_to_do_after->runTask( current, myvals );
 }
 
 void ActionWithVector::gatherAccumulators( const unsigned& taskCode, const MultiValue& myvals, std::vector<double>& buffer ) const {
-  if( isActive() ) {
-    for(int i=0; i<getNumberOfComponents(); ++i) {
-      unsigned bufstart = getConstPntrToComponent(i)->bufstart;
-      // This looks after storing of scalars that are summed from vectors/matrices
-      if( getConstPntrToComponent(i)->getRank()==0 ) {
-        plumed_dbg_massert( bufstart<buffer.size(), "problem in " + getLabel() );
-        unsigned sind = getConstPntrToComponent(i)->streampos; buffer[bufstart] += myvals.get(sind);
-        if( getConstPntrToComponent(i)->hasDerivatives() ) {
-          for(unsigned k=0; k<myvals.getNumberActive(sind); ++k) {
-            unsigned kindex = myvals.getActiveIndex(sind,k);
-            plumed_dbg_massert( bufstart+1+kindex<buffer.size(), "problem in " + getLabel()  );
-            buffer[bufstart + 1 + kindex] += myvals.getDerivative(sind,kindex);
-          }
+  for(int i=0; i<getNumberOfComponents(); ++i) {
+    unsigned bufstart = getConstPntrToComponent(i)->bufstart;
+    // This looks after storing of scalars that are summed from vectors/matrices
+    if( getConstPntrToComponent(i)->getRank()==0 ) {
+      plumed_dbg_massert( bufstart<buffer.size(), "problem in " + getLabel() );
+      unsigned sind = getConstPntrToComponent(i)->streampos; buffer[bufstart] += myvals.get(sind);
+      if( getConstPntrToComponent(i)->hasDerivatives() ) {
+        for(unsigned k=0; k<myvals.getNumberActive(sind); ++k) {
+          unsigned kindex = myvals.getActiveIndex(sind,k);
+          plumed_dbg_massert( bufstart+1+kindex<buffer.size(), "problem in " + getLabel()  );
+          buffer[bufstart + 1 + kindex] += myvals.getDerivative(sind,kindex);
         }
-        // This looks after storing of vectors
-      } else if( getConstPntrToComponent(i)->storedata ) gatherStoredValue( i, taskCode, myvals, bufstart, buffer );
-    }
+      }
+      // This looks after storing of vectors
+    } else if( getConstPntrToComponent(i)->storedata ) gatherStoredValue( i, taskCode, myvals, bufstart, buffer );
   }
   if( action_to_do_after ) action_to_do_after->gatherAccumulators( taskCode, myvals, buffer );
 }
@@ -653,23 +649,21 @@ void ActionWithVector::gatherStoredValue( const unsigned& valindex, const unsign
 }
 
 void ActionWithVector::finishComputations( const std::vector<double>& buf ) {
-  if( isActive() ) {
-    for(int i=0; i<getNumberOfComponents(); ++i) {
-      // This gathers vectors and grids at the end of the calculation
-      unsigned bufstart = getPntrToComponent(i)->bufstart;
-      getPntrToComponent(i)->data.assign( getPntrToComponent(i)->data.size(), 0 );
-      if( (getPntrToComponent(i)->getRank()>0 && getPntrToComponent(i)->hasDerivatives()) || getPntrToComponent(i)->storedata ) {
-        unsigned sz_v = getPntrToComponent(i)->data.size();
-        for(unsigned j=0; j<sz_v; ++j) {
-          plumed_dbg_assert( bufstart+j<buf.size() );
-          getPntrToComponent(i)->add( j, buf[bufstart+j] );
-        }
-        // Make sure single values are set
-      } else if( getPntrToComponent(i)->getRank()==0 ) getPntrToComponent(i)->set( buf[bufstart] );
-      // This gathers derivatives of scalars
-      if( !doNotCalculateDerivatives() && getPntrToComponent(i)->hasDeriv && getPntrToComponent(i)->getRank()==0 ) {
-        for(unsigned j=0; j<getPntrToComponent(i)->getNumberOfDerivatives(); ++j) getPntrToComponent(i)->setDerivative( j, buf[bufstart+1+j] );
+  for(int i=0; i<getNumberOfComponents(); ++i) {
+    // This gathers vectors and grids at the end of the calculation
+    unsigned bufstart = getPntrToComponent(i)->bufstart;
+    getPntrToComponent(i)->data.assign( getPntrToComponent(i)->data.size(), 0 );
+    if( (getPntrToComponent(i)->getRank()>0 && getPntrToComponent(i)->hasDerivatives()) || getPntrToComponent(i)->storedata ) {
+      unsigned sz_v = getPntrToComponent(i)->data.size();
+      for(unsigned j=0; j<sz_v; ++j) {
+        plumed_dbg_assert( bufstart+j<buf.size() );
+        getPntrToComponent(i)->add( j, buf[bufstart+j] );
       }
+      // Make sure single values are set
+    } else if( getPntrToComponent(i)->getRank()==0 ) getPntrToComponent(i)->set( buf[bufstart] );
+    // This gathers derivatives of scalars
+    if( !doNotCalculateDerivatives() && getPntrToComponent(i)->hasDeriv && getPntrToComponent(i)->getRank()==0 ) {
+      for(unsigned j=0; j<getPntrToComponent(i)->getNumberOfDerivatives(); ++j) getPntrToComponent(i)->setDerivative( j, buf[bufstart+1+j] );
     }
   }
   if( action_to_do_after ) action_to_do_after->finishComputations( buf );
@@ -761,7 +755,7 @@ void ActionWithVector::updateForceTasksFromValue( const Value* myval, std::vecto
 }
 
 void ActionWithVector::getForceTasks( std::vector<unsigned>& force_tasks ) const {
-  if( isActive() && checkComponentsForForce() ) {
+  if( checkComponentsForForce() ) {
     for(unsigned k=0; k<values.size(); ++k) {
       updateForceTasksFromValue( getConstPntrToComponent(k), force_tasks );
     }
@@ -780,7 +774,7 @@ void ActionWithVector::gatherForcesOnStoredValue( const Value* myval, const unsi
 }
 
 void ActionWithVector::gatherForces( const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
-  if( isActive() && checkComponentsForForce() ) {
+  if( checkComponentsForForce() ) {
     for(unsigned k=0; k<getNumberOfComponents(); ++k) {
       const Value* myval=getConstPntrToComponent(k);
       if( myval->getRank()>0 && myval->forcesWereAdded() ) gatherForcesOnStoredValue( myval, itask, myvals, forces );
