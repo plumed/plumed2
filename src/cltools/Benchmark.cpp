@@ -195,7 +195,11 @@ private:
 extern "C" void signalHandler(int signal) {
   if (signal == SIGINT) {
     signalReceived.store(true);
-    fprintf(stderr, "Signal handler called\n");
+    fprintf(stderr, "Signal interrupt received\n");
+  }
+  if (signal == SIGTERM) {
+    signalReceived.store(true);
+    fprintf(stderr, "Signal termination received\n");
   }
 }
 
@@ -700,6 +704,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   log<<"Use CTRL+C to stop at any time and collect timers (not working in MPI runs)\n";
   // trap signals:
   SignalHandlerGuard sigIntGuard(SIGINT, signalHandler);
+  SignalHandlerGuard sigTermGuard(SIGTERM, signalHandler);
 
   for(int step=0; nf<0 || step<nf; ++step) {
     std::shuffle(kernels_ptr.begin(),kernels_ptr.end(),rng);
