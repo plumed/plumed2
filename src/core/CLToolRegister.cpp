@@ -38,11 +38,14 @@ std::unique_ptr<CLTool> CLToolRegister::create(const CLToolOptions&ao) {
   return create(images,ao);
 }
 
-std::unique_ptr<CLTool> CLToolRegister::create(const std::vector<void*> & images,const CLToolOptions&ao) {
+std::unique_ptr<CLTool> CLToolRegister::create(const std::vector<void*> & images,const CLToolOptions&ao) try {
   if(ao.line.size()<1)return nullptr;
   auto & content=get(images,ao.line[0]);
   CLToolOptions nao( ao,content.keys );
   return content.create(nao);
+} catch (PLMD::ExceptionRegisterError &e ) {
+  auto& toolName = e.getMissingKey();
+  throw e <<"CL tool \"" << toolName << "\" is not known.";
 }
 
 CLToolRegister::ID CLToolRegister::add(std::string key,creator_pointer cp,keywords_pointer kp) {
