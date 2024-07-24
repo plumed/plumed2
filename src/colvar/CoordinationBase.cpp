@@ -149,17 +149,21 @@ void CoordinationBase::calculate()
   const unsigned nn=nl->size();
   if(nt*stride*10>nn) nt=1;
 
+  const unsigned elementsPerRank = std::ceil(double(nn)/stride);
+  const unsigned int start= rank*elementsPerRank;
+  const unsigned int end = ((start + elementsPerRank)< nn)?(start + elementsPerRank): nn;
+
   #pragma omp parallel num_threads(nt)
   {
     std::vector<Vector> omp_deriv(getPositions().size());
     Tensor omp_virial;
 
     #pragma omp for reduction(+:ncoord) nowait
-    for(unsigned int i=rank; i<nn; i+=stride) {
+    for(unsigned int i=start; i<end; ++i) {
 
       Vector distance;
-      unsigned i0=nl->getClosePair(i).first;
-      unsigned i1=nl->getClosePair(i).second;
+      const unsigned i0=nl->getClosePair(i).first;
+      const unsigned i1=nl->getClosePair(i).second;
 
       if(getAbsoluteIndex(i0)==getAbsoluteIndex(i1)) continue;
 
@@ -187,7 +191,8 @@ void CoordinationBase::calculate()
     }
     #pragma omp critical
     if(nt>1) {
-      for(unsigned i=0; i<getPositions().size(); i++) deriv[i]+=omp_deriv[i];
+      for(unsigned i=0; i<getPositions().size(); i++)
+        deriv[i]+=omp_deriv[i];
       virial+=omp_virial;
     }
   }
