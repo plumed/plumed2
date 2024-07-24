@@ -28,6 +28,7 @@ namespace PLMD {
 LinkCells::LinkCells( Communicator& cc ) :
   comm(cc),
   cutoffwasset(false),
+  nopbc(false),
   link_cutoff(0.0),
   ncells(3),
   nstride(3)
@@ -45,10 +46,20 @@ double LinkCells::getCutoff() const {
 void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vector<unsigned>& indices, const Pbc& pbc ) {
   plumed_assert( cutoffwasset && pos.size()==indices.size() );
 
-  // Must be able to check that pbcs are not nonsensical in some way?? -- GAT
-
-  // Setup the pbc object by copying it from action
-  mypbc.setBox( pbc.getBox() );
+  // Create an orthorhombic box around the atomic positions that encompasses every atomic position if there are no pbc
+  if( !pbc.isSet() ) {
+    Vector minp, maxp; minp = maxp = pos[0]; Tensor fake_box; fake_box.zero();
+    for(unsigned k=0; k<3; ++k) {
+      for(unsigned i=1; i<pos.size(); ++i) {
+        if( pos[i][k]>maxp[k] ) maxp[k] = pos[i][k];
+        if( pos[i][k]<minp[k] ) minp[k] = pos[i][k];
+      }
+      fake_box[k][k] = link_cutoff*( 1 + std::ceil( (maxp[k] - minp[k])/link_cutoff ) );
+      origin[k] = ( minp[k] + maxp[k] ) / 2;
+    }
+    mypbc.setBox( fake_box ); nopbc=true;
+    // Setup the pbc object by copying it from action if the Pbc were set
+  } else { mypbc.setBox( pbc.getBox() ); nopbc=false; }
 
   // Setup the lists
   if( pos.size()!=allcells.size() ) {
@@ -153,10 +164,12 @@ void LinkCells::retrieveAtomsInCells( const unsigned& ncells_required,
 }
 
 std::array<unsigned,3> LinkCells::findMyCell( const Vector& pos ) const {
-  Vector fpos=mypbc.realToScaled( pos );
+  Vector mypos = pos; if( nopbc ) mypos = pos - origin;
+  Vector fpos=mypbc.realToScaled( mypos );
   std::array<unsigned,3> celn;
   for(unsigned j=0; j<3; ++j) {
-    celn[j] = std::floor( ( Tools::pbc(fpos[j]) + 0.5 ) * ncells[j] );
+    if( nopbc ) celn[j] = std::floor( fpos[j] * ncells[j] );
+    else celn[j] = std::floor( ( Tools::pbc(fpos[j]) + 0.5 ) * ncells[j] );
     plumed_assert( celn[j]>=0 && celn[j]<ncells[j] ); // Check that atom is in box
   }
   return celn;
