@@ -703,6 +703,12 @@ bool ActionWithVector::checkForForces() {
   getNumberOfStreamedQuantities( getLabel(), nquants, nmatrices, maxcol, nbooks );
   // Recover the number of derivatives we require (this should be equal to the number of forces)
   unsigned nderiv=0; getNumberOfStreamedDerivatives( nderiv, NULL );
+  if( !action_to_do_after && arg_deriv_starts.size()>0 ) {
+      nderiv = 0; 
+      for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+          arg_deriv_starts[i] = nderiv; nderiv += getPntrToArgument(i)->getNumberOfStoredValues();
+      }
+  }
   if( forcesForApply.size()!=nderiv ) forcesForApply.resize( nderiv );
   // Clear force buffer
   forcesForApply.assign( forcesForApply.size(), 0.0 );
