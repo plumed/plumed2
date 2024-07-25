@@ -153,74 +153,42 @@ void AdjacencyMatrixBase::updateNeighbourList() {
     // In this way we ensure that the neighbour list doesn't get too big.  Also this number should always be large enough
     natoms_per_list = 27*linkcells.getMaxInCell();
     nlist.resize( getConstPntrToComponent(0)->getShape()[0]*( 2 + natoms_per_list ) );
-    // Set the number of neighbors to zero for all ranks
-    nlist.assign(nlist.size(),0);
-    // Now get stuff to do parallel implementation
-    unsigned stride=comm.Get_size(); unsigned rank=comm.Get_rank();
-    if( runInSerial() ) { stride=1; rank=0; }
-    unsigned nt=OpenMP::getNumThreads();
-    if( nt*stride*10>getConstPntrToComponent(0)->getShape()[0] ) nt=getConstPntrToComponent(0)->getShape()[0]/stride/10;
-    if( nt==0 ) nt=1;
     // Create a vector from the input set of tasks
     std::vector<unsigned> & pTaskList( getListOfActiveTasks(this) );
-
-    #pragma omp parallel num_threads(nt)
-    {
-      // Get the number of tasks we have to deal with
-      unsigned ntasks=getConstPntrToComponent(0)->getShape()[0];
-      if( nl_stride==1 ) ntasks=pTaskList.size();
-      // Build a tempory nlist so we can do omp parallelism
-      std::vector<unsigned> omp_nlist;
-      if( nt>1 ) omp_nlist.resize( nlist.size(), 0 );
-      // Now run over all atoms and construct the link cells
-      std::vector<Vector> t_atoms( 1+ablocks.size() );
-      std::vector<unsigned> indices( 1+ablocks.size() ), cells_required( linkcells.getNumberOfCells() );
-      #pragma omp for nowait
-      for(unsigned i=rank; i<ntasks; i+=stride) {
-        // Retrieve cells required from link cells - for matrix blocks
-        unsigned ncells_required=0;
-        linkcells.addRequiredCells( linkcells.findMyCell( ActionAtomistic::getPosition(pTaskList[i]) ), ncells_required, cells_required );
-        // Now get the indices of the atoms in the link cells positions
-        unsigned natoms=1; indices[0]=pTaskList[i];
-        linkcells.retrieveAtomsInCells( ncells_required, cells_required, natoms, indices );
-        if( nl_stride==1 ) {
-          if( nt>1 ) omp_nlist[indices[0]]=0; else nlist[indices[0]] = 0;
-          unsigned lstart = getConstPntrToComponent(0)->getShape()[0] + indices[0]*(1+natoms_per_list);
-          for(unsigned j=0; j<natoms; ++j) {
-            if( nt>1 ) { omp_nlist[ lstart + omp_nlist[indices[0]] ] = indices[j]; omp_nlist[indices[0]]++; }
-            else { nlist[ lstart + nlist[indices[0]] ] = indices[j]; nlist[indices[0]]++; }
+    // Get the number of tasks we have to deal with
+    unsigned ntasks=getConstPntrToComponent(0)->getShape()[0];
+    if( nl_stride==1 ) ntasks=pTaskList.size();
+    // Now run over all atoms and construct the link cells
+    std::vector<Vector> t_atoms( 1+ablocks.size() );
+    std::vector<unsigned> indices( 1+ablocks.size() ), cells_required( linkcells.getNumberOfCells() );
+    for(unsigned i=0; i<ntasks; i++) {
+      // Retrieve cells required from link cells - for matrix blocks
+      unsigned ncells_required=0;
+      linkcells.addRequiredCells( linkcells.findMyCell( ActionAtomistic::getPosition(pTaskList[i]) ), ncells_required, cells_required );
+      // Now get the indices of the atoms in the link cells positions
+      unsigned natoms=1; indices[0]=pTaskList[i];
+      linkcells.retrieveAtomsInCells( ncells_required, cells_required, natoms, indices );
+      if( nl_stride==1 ) {
+        nlist[indices[0]] = 0;
+        unsigned lstart = getConstPntrToComponent(0)->getShape()[0] + indices[0]*(1+natoms_per_list);
+        for(unsigned j=0; j<natoms; ++j) { nlist[ lstart + nlist[indices[0]] ] = indices[j]; nlist[indices[0]]++; }
+      } else {
+        // Get the positions of all the atoms in the link cells relative to the central atom
+        for(unsigned j=0; j<natoms; ++j) t_atoms[j] = ActionAtomistic::getPosition(indices[j]) - ActionAtomistic::getPosition(indices[0]);
+        if( !nopbc ) pbcApply( t_atoms, natoms );
+        // Now construct the neighbor list
+        nlist[indices[0]] = 0;
+        unsigned lstart = getConstPntrToComponent(0)->getShape()[0] + indices[0]*(1+natoms_per_list);
+        for(unsigned j=0; j<natoms; ++j) {
+          double d2;
+          if ( (d2=t_atoms[j][0]*t_atoms[j][0])<nl_cut2 &&
+               (d2+=t_atoms[j][1]*t_atoms[j][1])<nl_cut2 &&
+               (d2+=t_atoms[j][2]*t_atoms[j][2])<nl_cut2 ) {
+            nlist[ lstart + nlist[indices[0]] ] = indices[j]; nlist[indices[0]]++;
           }
-        } else {
-          // Get the positions of all the atoms in the link cells relative to the central atom
-          for(unsigned j=0; j<natoms; ++j) t_atoms[j] = ActionAtomistic::getPosition(indices[j]) - ActionAtomistic::getPosition(indices[0]);
-          if( !nopbc ) pbcApply( t_atoms, natoms );
-          // Now construct the neighbor list
-          if( nt>1 ) omp_nlist[indices[0]] = 0; else nlist[indices[0]] = 0;
-          unsigned lstart = getConstPntrToComponent(0)->getShape()[0] + indices[0]*(1+natoms_per_list);
-          for(unsigned j=0; j<natoms; ++j) {
-            double d2;
-            if ( (d2=t_atoms[j][0]*t_atoms[j][0])<nl_cut2 &&
-                 (d2+=t_atoms[j][1]*t_atoms[j][1])<nl_cut2 &&
-                 (d2+=t_atoms[j][2]*t_atoms[j][2])<nl_cut2 ) {
-              if( nt>1 ) { omp_nlist[ lstart + omp_nlist[indices[0]] ] = indices[j]; omp_nlist[indices[0]]++; }
-              else { nlist[ lstart + nlist[indices[0]] ] = indices[j]; nlist[indices[0]]++; }
-            }
-          }
-
-        }
-      }
-      // Gather OMP stuff
-      #pragma omp critical
-      if(nt>1) {
-        for(unsigned i=0; i<ntasks; ++i) nlist[pTaskList[i]]+=omp_nlist[pTaskList[i]];
-        for(unsigned i=0; i<ntasks; ++i) {
-          unsigned lstart = getConstPntrToComponent(0)->getShape()[0] + pTaskList[i]*(1+natoms_per_list);
-          for(unsigned j=0; j<omp_nlist[pTaskList[i]]; ++j) nlist[ lstart + j ] += omp_nlist[ lstart + j ];
         }
       }
     }
-    // MPI gather
-    if( !runInSerial() ) comm.Sum( nlist );
   }
   if( threeblocks.size()>0 ) {
     std::vector<Vector> ltmp_pos2( threeblocks.size() );
