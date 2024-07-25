@@ -456,6 +456,7 @@ void Benchmark::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","--maxtime","-1","maximum number of seconds (-1 means forever)");
   keys.add("compulsory","--sleep","0","number of seconds of sleep, mimicking MD calculation");
   keys.add("compulsory","--atom-distribution","line","the kind of possible atomic displacement at each step");
+  keys.add("optional","--dump-trajectory","dump the trajectory to this file");
   keys.addFlag("--domain-decomposition",false,"simulate domain decomposition, implies --shuffle");
   keys.addFlag("--shuffled",false,"reshuffle atoms");
 }
@@ -663,6 +664,35 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
     distribution = getAtomDistribution(atomicDistr);
     log << "Using --atom-distribution=" << atomicDistr << "\n";
   }
+
+  {
+    std::string fileToDump;
+    if(parse("--dump-trajectory",fileToDump)) {
+      log << "Saving the trajectory to \"" << fileToDump << "\" and exiting\n";
+      std::vector<double> cell(9);
+      std::vector<Vector> pos(natoms);
+      std::ofstream ofile(fileToDump);
+      if (nf<0) {
+        //if the user accidentally sets infinite steps, we set it to print only one
+        nf=1;
+      }
+      for(int step=0; step<nf; ++step) {
+        auto sw=kernels[0].stopwatch.startStop("TrajectoryGeneration");
+        distribution->positions(pos,step,atomicGenerator);
+        distribution->box(cell,natoms,step,atomicGenerator);
+        ofile << natoms << "\n"
+              << cell[0] << " " << cell[1] << " " << cell[2] << " "
+              << cell[3] << " " << cell[4] << " " << cell[5] << " "
+              << cell[6] << " " << cell[7] << " " << cell[8] << "\n";
+        for(int i=0; i<natoms; ++i) {
+          ofile << "X\t" << pos[i]<< "\n";
+        }
+      }
+      ofile.close();
+      return 0;
+    }
+  }
+
   log <<"Initializing the setup of the kernel(s)\n";
   const auto initial_time=std::chrono::high_resolution_clock::now();
 
