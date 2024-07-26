@@ -634,8 +634,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   // read other flags:
   bool shuffled=false;
   parseFlag("--shuffled",shuffled);
-  if (shuffled)
-    log << "Using --shuffled\n";
+
   int nf; parse("--nsteps",nf);
   log << "Using --nsteps=" << nf << "\n";
   unsigned natoms; parse("--natoms",natoms);
@@ -645,11 +644,14 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
 
   bool domain_decomposition=false;
   parseFlag("--domain-decomposition",domain_decomposition);
-  if (domain_decomposition)
-    log << "Using --domain-decomposition\n";
 
   if(pc.Get_size()>1) domain_decomposition=true;
   if(domain_decomposition) shuffled=true;
+
+  if (shuffled)
+    log << "Using --shuffled\n";
+  if (domain_decomposition)
+    log << "Using --domain-decomposition\n";
 
   double timeToSleep;
   parse("--sleep",timeToSleep);
