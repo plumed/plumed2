@@ -249,23 +249,24 @@ void MatrixTimesVector::setupForTask( const unsigned& task_index, std::vector<un
 }
 
 void MatrixTimesVector::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
+  std::string headstr=getFirstActionInChain()->getLabel();
   unsigned ind2 = index2; if( index2>=getPntrToArgument(0)->getShape()[0] ) ind2 = index2 - getPntrToArgument(0)->getShape()[0];
   if( sumrows ) {
     unsigned n=getNumberOfArguments()-1; double matval = 0;
     for(unsigned i=0; i<getNumberOfArguments()-1; ++i) {
       unsigned ostrn = getConstPntrToComponent(i)->getPositionInStream();
       Value* myarg = getPntrToArgument(i);
-      if( !myarg->valueHasBeenSet() ) myvals.addValue( ostrn, myvals.get( myarg->getPositionInStream() ) );
-      else myvals.addValue( ostrn, myarg->get( index1*myarg->getNumberOfColumns() + ind2, false ) );
+      if( !myarg->valueHasBeenSet() || myarg->ignoreStoredValue(headstr) ) myvals.addValue( ostrn, myvals.get( myarg->getPositionInStream() ) );
+      else myvals.addValue( ostrn, myarg->get( index1*myarg->getNumberOfColumns() + ind2, true ) );
       // Now lets work out the derivatives
       if( doNotCalculateDerivatives() ) continue;
       addDerivativeOnMatrixArgument( stored_arg[i], i, i, index1, ind2, 1.0, myvals );
     }
   } else if( getPntrToArgument(1)->getRank()==1 ) {
     double matval = 0; Value* myarg = getPntrToArgument(0); unsigned vcol = ind2;
-    if( !myarg->valueHasBeenSet() ) matval = myvals.get( myarg->getPositionInStream() );
+    if( !myarg->valueHasBeenSet() || myarg->ignoreStoredValue(headstr) ) matval = myvals.get( myarg->getPositionInStream() );
     else {
-      matval = myarg->get( index1*myarg->getNumberOfColumns() + ind2, false );
+      matval = myarg->get( index1*myarg->getNumberOfColumns() + ind2, true );
       vcol = getPntrToArgument(0)->getRowIndex( index1, ind2 );
     }
     for(unsigned i=0; i<getNumberOfArguments()-1; ++i) {
@@ -282,9 +283,9 @@ void MatrixTimesVector::performTask( const std::string& controller, const unsign
     for(unsigned i=0; i<getNumberOfArguments()-1; ++i) {
       unsigned ostrn = getConstPntrToComponent(i)->getPositionInStream();
       Value* myarg = getPntrToArgument(i);
-      if( !myarg->valueHasBeenSet() ) matval = myvals.get( myarg->getPositionInStream() );
+      if( !myarg->valueHasBeenSet() || myarg->ignoreStoredValue(headstr) ) matval = myvals.get( myarg->getPositionInStream() );
       else {
-        matval = myarg->get( index1*myarg->getNumberOfColumns() + ind2, false );
+        matval = myarg->get( index1*myarg->getNumberOfColumns() + ind2, true );
         vcol = getPntrToArgument(i)->getRowIndex( index1, ind2 );
       }
       double vecval=getArgumentElement( n, vcol, myvals );

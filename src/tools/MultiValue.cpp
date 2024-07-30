@@ -24,7 +24,7 @@
 
 namespace PLMD {
 
-MultiValue::MultiValue( const size_t& nvals, const size_t& nder, const size_t& nmat, const size_t& maxcol, const size_t& nbook ):
+MultiValue::MultiValue( const size_t& nvals, const size_t& nder, const size_t& nmat, const size_t& maxcol ):
   task_index(0),
   task2_index(0),
   values(nvals),
@@ -40,9 +40,7 @@ MultiValue::MultiValue( const size_t& nvals, const size_t& nder, const size_t& n
   nindices(0),
   nsplit(0),
   nmatrix_cols(maxcol),
-  matrix_row_stash(nmat*maxcol,0),
   matrix_force_stash(nder*nmat),
-  matrix_bookeeping(nbook,0),
   matrix_row_nderivatives(nmat,0),
   matrix_row_derivative_indices(nmat)
 {
@@ -52,10 +50,10 @@ MultiValue::MultiValue( const size_t& nvals, const size_t& nder, const size_t& n
   for(unsigned i=0; i<nder; ++i) myind[i]=i;
 }
 
-void MultiValue::resize( const size_t& nvals, const size_t& nder, const size_t& nmat, const size_t& maxcol, const size_t& nbook ) {
+void MultiValue::resize( const size_t& nvals, const size_t& nder, const size_t& nmat, const size_t& maxcol ) {
   values.resize(nvals); nderivatives=nder; derivatives.resize( nvals*nder );
   hasderiv.resize(nvals*nder,false); nactive.resize(nvals); active_list.resize(nvals*nder);
-  nmatrix_cols=maxcol; matrix_row_stash.resize(nmat*maxcol,0); matrix_force_stash.resize(nmat*nder,0); matrix_bookeeping.resize(nbook, 0);
+  nmatrix_cols=maxcol; matrix_force_stash.resize(nmat*nder,0); 
   matrix_row_nderivatives.resize(nmat,0); matrix_row_derivative_indices.resize(nmat); atLeastOneSet=false;
   for(unsigned i=0; i<nmat; ++i) matrix_row_derivative_indices[i].resize( nder );
   // All crap from here onwards
@@ -65,8 +63,6 @@ void MultiValue::resize( const size_t& nvals, const size_t& nder, const size_t& 
 
 void MultiValue::clearAll() {
   for(unsigned i=0; i<values.size(); ++i) values[i]=0;
-  // Clear matrix row
-  std::fill( matrix_row_stash.begin(), matrix_row_stash.end(), 0 );
   // Clear matrix derivative indices
   std::fill( matrix_row_nderivatives.begin(), matrix_row_nderivatives.end(), 0 );
   // Clear matrix forces

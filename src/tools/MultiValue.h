@@ -56,9 +56,7 @@ private:
   unsigned nindices, nsplit;
 /// This allows us to store matrix elements
   unsigned nmatrix_cols;
-  std::vector<double> matrix_row_stash;
   std::vector<double> matrix_force_stash;
-  std::vector<unsigned> matrix_bookeeping;
 /// These are used to store the indices that have derivatives wrt to at least one
 /// of the elements in a matrix
   std::vector<unsigned> matrix_row_nderivatives;
@@ -70,8 +68,8 @@ private:
   std::vector<Tensor> tmp_atom_virial;
   std::vector<std::vector<double> > tmp_vectors;
 public:
-  MultiValue( const std::size_t& nvals, const std::size_t& nder, const std::size_t& nmat=0, const std::size_t& maxcol=0, const std::size_t& nbook=0 );
-  void resize( const std::size_t& nvals, const std::size_t& nder, const std::size_t& nmat=0, const std::size_t& maxcol=0, const std::size_t& nbook=0 );
+  MultiValue( const std::size_t& nvals, const std::size_t& nder, const std::size_t& nmat=0, const std::size_t& maxcol=0 );
+  void resize( const std::size_t& nvals, const std::size_t& nder, const std::size_t& nmat=0, const std::size_t& maxcol=0 );
 /// Set the task index prior to the loop
   void setTaskIndex( const std::size_t& tindex );
 ///
@@ -136,10 +134,6 @@ public:
   unsigned getNumberActive( const std::size_t& ival ) const ;
 ///
   unsigned getActiveIndex( const unsigned& ) const ;
-/// Get the matrix bookeeping array
-  const std::vector<unsigned> & getMatrixBookeeping() const ;
-  void stashMatrixElement( const unsigned& nmat, const unsigned& rowstart, const unsigned& jcol, const double& val );
-  double getStashedMatrixElement( const unsigned& nmat, const unsigned& jcol ) const ;
 /// Get the bookeeping stuff for the derivatives wrt to rows of matrix
   void setNumberOfMatrixRowDerivatives( const unsigned& nmat, const unsigned& nind );
   unsigned getNumberOfMatrixRowDerivatives( const unsigned& nmat ) const ;
@@ -301,23 +295,6 @@ const std::vector<std::vector<Vector> >& MultiValue::getConstFirstAtomDerivative
 inline
 std::vector<Tensor>& MultiValue::getFirstAtomVirialVector() {
   return tmp_atom_virial;
-}
-
-inline
-void MultiValue::stashMatrixElement( const unsigned& nmat, const unsigned& rowstart, const unsigned& jcol, const double& val ) {
-  plumed_dbg_assert( jcol<nmatrix_cols && rowstart + matrix_bookeeping[rowstart]<matrix_bookeeping.size() && nmatrix_cols*nmat + matrix_bookeeping[rowstart]<matrix_row_stash.size() );
-  matrix_bookeeping[rowstart]++; matrix_bookeeping[rowstart + matrix_bookeeping[rowstart]]=jcol; matrix_row_stash[ nmatrix_cols*nmat + jcol] = val;
-}
-
-inline
-double MultiValue::getStashedMatrixElement( const unsigned& nmat, const unsigned& jcol ) const {
-  plumed_dbg_assert( nmatrix_cols*nmat + jcol<matrix_row_stash.size() );
-  return matrix_row_stash[ nmatrix_cols*nmat + jcol ];
-}
-
-inline
-const std::vector<unsigned> & MultiValue::getMatrixBookeeping() const {
-  return matrix_bookeeping;
 }
 
 inline

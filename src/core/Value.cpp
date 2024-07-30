@@ -44,7 +44,6 @@ Value::Value():
   matpos(0),
   ngrid_der(0),
   ncols(0),
-  book_start(0),
   symmetric(false),
   periodicity(unset),
   min(0.0),
@@ -69,7 +68,6 @@ Value::Value(const std::string& name):
   ngrid_der(0),
   matpos(0),
   ncols(0),
-  book_start(0),
   symmetric(false),
   periodicity(unset),
   min(0.0),
@@ -94,7 +92,6 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   ngrid_der(0),
   matpos(0),
   ncols(0),
-  book_start(0),
   symmetric(false),
   periodicity(unset),
   min(0.0),
@@ -307,7 +304,6 @@ void Value::reshapeMatrixStore( const unsigned& n ) {
       }
     }
   }
-  if( ncols<shape[1] ) std::fill(matrix_bookeeping.begin(), matrix_bookeeping.end(), 0);
 }
 
 void Value::setPositionInMatrixStash( const unsigned& p ) {

@@ -67,7 +67,7 @@ public:
 /// This builds the task list for the action
   void calculate() override;
 /// This ensures that we create some bookeeping stuff during the first step
-  void setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping ) override ;
+  void setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol ) override ;
 /// Calculate the function
   void performTask( const unsigned& current, MultiValue& myvals ) const override ;
 };
@@ -206,7 +206,7 @@ void FunctionOfVector<T>::prepare() {
 }
 
 template <class T>
-void FunctionOfVector<T>::setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping ) {
+void FunctionOfVector<T>::setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol ) {
   if( firststep ) {
     stored_arguments.resize( getNumberOfArguments() );
     std::string control = getFirstActionInChain()->getLabel();
@@ -216,7 +216,7 @@ void FunctionOfVector<T>::setupStreamedComponents( const std::string& headstr, u
     }
     firststep=false;
   }
-  ActionWithVector::setupStreamedComponents( headstr, nquants, nmat, maxcol, nbookeeping );
+  ActionWithVector::setupStreamedComponents( headstr, nquants, nmat, maxcol );
 }
 
 template <class T>

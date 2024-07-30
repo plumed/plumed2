@@ -129,7 +129,7 @@ void MatrixProductDiagonal::performTask( const unsigned& task_index, MultiValue&
 void MatrixProductDiagonal::calculate() {
   if( getPntrToArgument(1)->getRank()==1 ) {
     unsigned nder = getNumberOfDerivatives();
-    MultiValue myvals( 1, nder, 0, 0, 0 ); performTask( 0, myvals );
+    MultiValue myvals( 1, nder, 0, 0 ); performTask( 0, myvals );
 
     Value* myval=getPntrToComponent(0); myval->set( myvals.get(0) );
     for(unsigned i=0; i<nder; ++i) myval->setDerivative( i, myvals.getDerivative(0,i) );
