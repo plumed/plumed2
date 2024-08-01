@@ -43,12 +43,8 @@ private:
   std::vector<double> derivatives;
 /// Matrix asserting which values have derivatives
   std::vector<bool> hasderiv;
-/// Tempory value
-  double tmpval;
 /// Lists of active variables
   std::vector<unsigned> nactive, active_list;
-/// Tempory vector of derivatives (used for calculating quotients
-  std::vector<double> tmpder;
 /// Logical to check if any derivatives were set
   bool atLeastOneSet;
 /// Are we in this for a call on vectors

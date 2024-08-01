@@ -31,10 +31,8 @@ MultiValue::MultiValue( const size_t& nvals, const size_t& nder, const size_t& n
   nderivatives(nder),
   derivatives(nvals*nder),
   hasderiv(nvals*nder,false),
-  tmpval(0),
   nactive(nvals),
   active_list(nvals*nder),
-  tmpder(nder),
   atLeastOneSet(false),
   vector_call(false),
   nindices(0),
@@ -45,20 +43,15 @@ MultiValue::MultiValue( const size_t& nvals, const size_t& nder, const size_t& n
   matrix_row_derivative_indices(nmat)
 {
   for(unsigned i=0; i<nmat; ++i) matrix_row_derivative_indices[i].resize( nder );
-  // This is crap that will be deleted in future
-  std::vector<unsigned> myind( nder );
-  for(unsigned i=0; i<nder; ++i) myind[i]=i;
 }
 
 void MultiValue::resize( const size_t& nvals, const size_t& nder, const size_t& nmat, const size_t& maxcol ) {
+  if( values.size()==nvals && nderivatives==nder && matrix_row_nderivatives.size()==nmat && nmatrix_cols==maxcol ) return;
   values.resize(nvals); nderivatives=nder; derivatives.resize( nvals*nder );
   hasderiv.resize(nvals*nder,false); nactive.resize(nvals); active_list.resize(nvals*nder);
   nmatrix_cols=maxcol; matrix_force_stash.resize(nmat*nder,0); 
   matrix_row_nderivatives.resize(nmat,0); matrix_row_derivative_indices.resize(nmat); atLeastOneSet=false;
   for(unsigned i=0; i<nmat; ++i) matrix_row_derivative_indices[i].resize( nder );
-  // All crap from here onwards
-  tmpder.resize( nder ); std::vector<unsigned> myind( nder );
-  for(unsigned i=0; i<nder; ++i) myind[i]=i;
 }
 
 void MultiValue::clearAll() {
