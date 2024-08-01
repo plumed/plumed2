@@ -269,7 +269,7 @@ void RMSDVector::gatherStoredValue( const unsigned& valindex, const unsigned& co
                                     const unsigned& bufstart, std::vector<double>& buffer ) const {
   if( getConstPntrToComponent(valindex)->getRank()==1 ) { ActionWithVector::gatherStoredValue( valindex, code, myvals, bufstart, buffer ); return; }
   const std::vector<Vector>& direction( myvals.getConstFirstAtomDerivativeVector()[1] );
-  unsigned natoms = direction.size(); unsigned vindex = 3*code*natoms; Value* myval = const_cast<Value*>( getConstPntrToComponent(valindex) ); 
+  unsigned natoms = direction.size(); unsigned vindex = 3*code*natoms; Value* myval = const_cast<Value*>( getConstPntrToComponent(valindex) );
   for(unsigned i=0; i<natoms; ++i) {
     for(unsigned j=0; j<3; ++j ) myval->set(vindex + j*natoms + i, direction[i][j] );
   }

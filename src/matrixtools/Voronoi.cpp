@@ -80,7 +80,7 @@ void Voronoi::gatherStoredValue( const unsigned& valindex, const unsigned& code,
     if( value<minmax ) { minmax = value; nv = i; }
   }
   Value* myval = const_cast<Value*>( getConstPntrToComponent(0) );
-  myval->set( code*arg0->getShape()[1] + nv, 1 ); 
+  myval->set( code*arg0->getShape()[1] + nv, 1 );
 }
 
 }

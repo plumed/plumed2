@@ -459,11 +459,11 @@ bool ActionWithVector::doNotCalculateDerivatives() const {
 
 void ActionWithVector::clearMatrixBookeeping() {
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
-      Value* myval = getPntrToComponent(i); if( !myval->storedata ) continue;
-      if( myval->getRank()==2 && myval->getNumberOfColumns()<myval->getShape()[1] ) {
-          std::fill(myval->matrix_bookeeping.begin(), myval->matrix_bookeeping.end(), 0);
-      }
-      myval->set(0);
+    Value* myval = getPntrToComponent(i); if( !myval->storedata ) continue;
+    if( myval->getRank()==2 && myval->getNumberOfColumns()<myval->getShape()[1] ) {
+      std::fill(myval->matrix_bookeeping.begin(), myval->matrix_bookeeping.end(), 0);
+    }
+    myval->set(0);
   }
 }
 
@@ -533,19 +533,19 @@ void ActionWithVector::runAllTasks() {
   }
 
   // MPI Gather everything
-  if( !serial ) { 
-    if( buffer.size()>0 ) comm.Sum( buffer ); 
-    gatherProcesses(); 
+  if( !serial ) {
+    if( buffer.size()>0 ) comm.Sum( buffer );
+    gatherProcesses();
   }
   finishComputations( buffer ); forwardPass=false;
 }
 
 void ActionWithVector::gatherProcesses() {
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
-      Value* myval = getPntrToComponent(i);
-      if( myval->storedata && !myval->hasDeriv ) {
-          comm.Sum( myval->data ); if( myval->getRank()==2 && myval->getNumberOfColumns()<myval->getShape()[1] ) comm.Sum( myval->matrix_bookeeping );
-      }
+    Value* myval = getPntrToComponent(i);
+    if( myval->storedata && !myval->hasDeriv ) {
+      comm.Sum( myval->data ); if( myval->getRank()==2 && myval->getNumberOfColumns()<myval->getShape()[1] ) comm.Sum( myval->matrix_bookeeping );
+    }
   }
   if( action_to_do_after ) action_to_do_after->gatherProcesses();
 }
@@ -595,9 +595,9 @@ void ActionWithVector::getNumberOfStreamedQuantities( const std::string& headstr
 }
 
 void ActionWithVector::getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize ) {
-  for(int i=0; i<getNumberOfComponents(); ++i) { 
-      getPntrToComponent(i)->bufstart=bufsize; 
-      if( getPntrToComponent(i)->hasDerivatives() || getPntrToComponent(i)->getRank()==0 ) bufsize += getPntrToComponent(i)->data.size();
+  for(int i=0; i<getNumberOfComponents(); ++i) {
+    getPntrToComponent(i)->bufstart=bufsize;
+    if( getPntrToComponent(i)->hasDerivatives() || getPntrToComponent(i)->getRank()==0 ) bufsize += getPntrToComponent(i)->data.size();
   }
   if( action_to_do_after ) action_to_do_after->getSizeOfBuffer( nactive_tasks, bufsize );
 }
@@ -640,9 +640,9 @@ bool ActionWithVector::getNumberOfStoredValues( Value* startat, unsigned& nvals,
 void ActionWithVector::runTask( const unsigned& current, MultiValue& myvals ) const {
   myvals.setTaskIndex(current); myvals.vector_call=true; performTask( current, myvals );
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
-      const Value* myval = getConstPntrToComponent(i); 
-      if( myval->getRank()!=1 || myval->hasDerivatives() || !myval->valueIsStored() ) continue;
-      Value* myv = const_cast<Value*>( myval ); myv->set( current, myvals.get( myval->getPositionInStream() ) );
+    const Value* myval = getConstPntrToComponent(i);
+    if( myval->getRank()!=1 || myval->hasDerivatives() || !myval->valueIsStored() ) continue;
+    Value* myv = const_cast<Value*>( myval ); myv->set( current, myvals.get( myval->getPositionInStream() ) );
   }
   if( action_to_do_after ) action_to_do_after->runTask( current, myvals );
 }
@@ -672,7 +672,7 @@ void ActionWithVector::finishComputations( const std::vector<double>& buf ) {
     // This gathers vectors and grids at the end of the calculation
     unsigned bufstart = getPntrToComponent(i)->bufstart;
     if( (getPntrToComponent(i)->getRank()>0 && getPntrToComponent(i)->hasDerivatives()) ) {
-      unsigned sz_v = getPntrToComponent(i)->data.size(); getPntrToComponent(i)->data.assign( getPntrToComponent(i)->data.size(), 0 ); 
+      unsigned sz_v = getPntrToComponent(i)->data.size(); getPntrToComponent(i)->data.assign( getPntrToComponent(i)->data.size(), 0 );
       for(unsigned j=0; j<sz_v; ++j) {
         plumed_dbg_assert( bufstart+j<buf.size() );
         getPntrToComponent(i)->add( j, buf[bufstart+j] );
@@ -722,10 +722,10 @@ bool ActionWithVector::checkForForces() {
   // Recover the number of derivatives we require (this should be equal to the number of forces)
   unsigned nderiv=0; getNumberOfStreamedDerivatives( nderiv, NULL );
   if( !action_to_do_after && arg_deriv_starts.size()>0 ) {
-      nderiv = 0; 
-      for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-          arg_deriv_starts[i] = nderiv; nderiv += getPntrToArgument(i)->getNumberOfStoredValues();
-      }
+    nderiv = 0;
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      arg_deriv_starts[i] = nderiv; nderiv += getPntrToArgument(i)->getNumberOfStoredValues();
+    }
   }
   if( forcesForApply.size()!=nderiv ) forcesForApply.resize( nderiv );
   // Clear force buffer

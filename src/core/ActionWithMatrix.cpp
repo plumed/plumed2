@@ -116,9 +116,9 @@ void ActionWithMatrix::updateAllNeighbourLists() {
 void ActionWithMatrix::clearBookeepingBeforeTask( const unsigned& task_index ) const {
   // Reset the bookeeping elements for storage
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
-      Value* myval = const_cast<Value*>( getConstPntrToComponent(i) ); unsigned ncols = myval->getNumberOfColumns();
-      if( myval->getRank()!=2 || myval->hasDerivatives() || !myval->valueIsStored() || ncols>=myval->getShape()[1] ) continue;
-      myval->matrix_bookeeping[task_index*(1+ncols)]=0;
+    Value* myval = const_cast<Value*>( getConstPntrToComponent(i) ); unsigned ncols = myval->getNumberOfColumns();
+    if( myval->getRank()!=2 || myval->hasDerivatives() || !myval->valueIsStored() || ncols>=myval->getShape()[1] ) continue;
+    myval->matrix_bookeeping[task_index*(1+ncols)]=0;
   }
   if( matrix_to_do_after ) matrix_to_do_after->clearBookeepingBeforeTask( task_index );
 }
@@ -171,11 +171,11 @@ void ActionWithMatrix::runTask( const std::string& controller, const unsigned& c
       }
       double finalval = myvals.get( myval->getPositionInStream() );
       if( fabs(finalval)>0 ) {
-          Value* myv = const_cast<Value*>( myval );
-          if( ncols<myval->getShape()[1] ) { 
-              myv->set( current*ncols + myval->matrix_bookeeping[current*(1+ncols)], finalval );
-              myv->matrix_bookeeping[current*(1+ncols)]++; myv->matrix_bookeeping[current*(1+ncols)+myval->matrix_bookeeping[current*(1+ncols)]] = col_stash_index;
-          } else myv->set( current*myval->getShape()[1] + col_stash_index, finalval );
+        Value* myv = const_cast<Value*>( myval );
+        if( ncols<myval->getShape()[1] ) {
+          myv->set( current*ncols + myval->matrix_bookeeping[current*(1+ncols)], finalval );
+          myv->matrix_bookeeping[current*(1+ncols)]++; myv->matrix_bookeeping[current*(1+ncols)+myval->matrix_bookeeping[current*(1+ncols)]] = col_stash_index;
+        } else myv->set( current*myval->getShape()[1] + col_stash_index, finalval );
       }
     }
   }

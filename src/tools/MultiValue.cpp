@@ -49,7 +49,7 @@ void MultiValue::resize( const size_t& nvals, const size_t& nder, const size_t& 
   if( values.size()==nvals && nderivatives==nder && matrix_row_nderivatives.size()==nmat && nmatrix_cols==maxcol ) return;
   values.resize(nvals); nderivatives=nder; derivatives.resize( nvals*nder );
   hasderiv.resize(nvals*nder,false); nactive.resize(nvals); active_list.resize(nvals*nder);
-  nmatrix_cols=maxcol; matrix_force_stash.resize(nmat*nder,0); 
+  nmatrix_cols=maxcol; matrix_force_stash.resize(nmat*nder,0);
   matrix_row_nderivatives.resize(nmat,0); matrix_row_derivative_indices.resize(nmat); atLeastOneSet=false;
   for(unsigned i=0; i<nmat; ++i) matrix_row_derivative_indices[i].resize( nder );
 }
