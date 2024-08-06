@@ -212,7 +212,12 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
     std::string pinput="DUMPPDB STRIDE=1 DESCRIPTION=PATH FILE=" + ofilename + " FMT=" + ofmt;
     if( argstr.size()>0 ) {
       pinput += " ARG=" + argstr[0]; for(unsigned i=1; i<argstr.size(); ++i ) pinput += "," + argstr[i];
-    } else { std::string num; Tools::convert( indices[0].serial(), num ); pinput += " ATOMS=data ATOM_INDICES=" + num; for(unsigned i=1; i<indices.size(); ++i ) { Tools::convert( indices[i].serial(), num ); pinput += "," + num; } }
+    } else {
+      std::string num; Tools::convert( indices[0].serial(), num ); pinput += " ATOMS=data ATOM_INDICES=" + num; for(unsigned i=1; i<indices.size(); ++i ) { Tools::convert( indices[i].serial(), num ); pinput += "," + num; }
+      std::string anum, dnum; Tools::convert( alig[0], anum ); Tools::convert( disp[0], dnum );
+      pinput += " OCCUPANCY=" + anum; for(unsigned i=1; i<alig.size(); ++i) { Tools::convert( alig[i], anum ); pinput += "," + anum; }
+      pinput += " BETA=" + dnum; for(unsigned i=1; i<disp.size(); ++i) { Tools::convert( disp[i], dnum ); pinput += "," + dnum; }
+    }
     const char* pcinp=pinput.c_str(); plmd.cmd("readInputLine",pcinp);
     Action* paction = plmd.getActionSet()[plmd.getActionSet().size()-1].get();
     paction->update();
@@ -271,11 +276,13 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   }
 
 // Now create the metric object
+  std::vector<double> alig, disp;
   if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) {
     std::string trinput = "endT: TRANSPOSE ARG=end";
     const char* tinp=trinput.c_str(); plmd.cmd("readInputLine",tinp);
     PDB pdb; pdb.read(istart,false,0.1);
-    std::vector<double> alig( pdb.getOccupancy() ), disp( pdb.getBeta() );
+    alig.resize( pdb.getOccupancy().size() ); disp.resize( pdb.getBeta().size() );
+    for(unsigned i=0; i<alig.size(); ++i) { alig[i] = pdb.getOccupancy()[i]; disp[i]= pdb.getBeta()[i]; }
     std::string minput = "d: RMSD_VECTOR DISPLACEMENT SQUARED UNORMALIZED TYPE=" + mtype + " ARG=endT,start";
     // Get the align values
     std::string anum; Tools::convert( alig[0], anum ); minput += " ALIGN=" + anum;
@@ -354,6 +361,9 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
     }
     const char* icinp=inpt.c_str(); plmd.cmd("readInputLine",icinp); std::string num; Tools::convert( indices[0].serial(), num );
     pinput += " ATOMS=atom_data ATOM_INDICES=" + num; for(unsigned i=1; i<indices.size(); ++i ) { Tools::convert( indices[i].serial(), num ); pinput += "," + num; }
+    std::string anum, dnum; Tools::convert( alig[0], anum ); Tools::convert( disp[0], dnum );
+    pinput += " OCCUPANCY=" + anum; for(unsigned i=1; i<alig.size(); ++i) { Tools::convert( alig[i], anum ); pinput += "," + anum; }
+    pinput += " BETA=" + dnum; for(unsigned i=1; i<disp.size(); ++i) { Tools::convert( disp[i], dnum ); pinput += "," + dnum; }
   }
   const char* pcinp=pinput.c_str(); plmd.cmd("readInputLine",pcinp);
   Action* paction = plmd.getActionSet()[plmd.getActionSet().size()-1].get();

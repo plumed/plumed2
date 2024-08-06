@@ -48,6 +48,7 @@ class DumpPDB :
   std::string fmt;
   std::string file;
   std::string description;
+  std::vector<double> beta, occupancy;
   std::vector<std::string> argnames;
   std::vector<AtomNumber> pdb_atom_indices;
   void buildArgnames();
@@ -70,6 +71,8 @@ void DumpPDB::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","STRIDE","0","the frequency with which the atoms should be output");
   keys.add("compulsory","FILE","the name of the file on which to output these quantities");
   keys.add("compulsory","FMT","%f","the format that should be used to output real numbers");
+  keys.add("compulsory","OCCUPANCY","1.0","vector of values to output in the occupancy column of the pdb file");
+  keys.add("compulsory","BETA","1.0","vector of values to output in the beta column of the pdb file");
   keys.add("optional","DESCRIPTION","the title to use for your PDB output");
   keys.add("optional","ATOM_INDICES","the indices of the atoms in your PDB output");
   keys.add("optional","ARG_NAMES","the names of the arguments that are being output");
@@ -94,6 +97,8 @@ DumpPDB::DumpPDB(const ActionOptions&ao):
     for(unsigned i=0; i<indices.size(); ++i) log.printf("%d ", pdb_atom_indices[i].serial() );
     log.printf("\n");
     if( pdb_atom_indices.size()!=atom_args[0]->getShape()[1]/3 ) error("mismatch between size of matrix containing positions and vector of atom indices");
+    beta.resize( atom_args[0]->getShape()[1]/3 ); occupancy.resize( atom_args[0]->getShape()[1]/3 );
+    parseVector("OCCUPANCY", occupancy ); parseVector("BETA", beta );
   }
   log.printf("  printing configurations to PDB file to file named %s \n", file.c_str() );
   parseVector("ARG_NAMES",argnames); if( argnames.size()==0 ) buildArgnames();
@@ -172,7 +177,7 @@ void DumpPDB::update() {
         pos[0]=getPntrToArgument(atomarg)->get(npos*(3*i+0) + k);
         pos[1]=getPntrToArgument(atomarg)->get(npos*(3*i+1) + k);
         pos[2]=getPntrToArgument(atomarg)->get(npos*(3*i+2) + k);
-        printAtom( opdbf, pdb_atom_indices[k].serial(), pos, 1.0, 1.0 );
+        printAtom( opdbf, pdb_atom_indices[k].serial(), pos, occupancy[k], beta[k] );
       }
     }
     opdbf.printf("END\n");
