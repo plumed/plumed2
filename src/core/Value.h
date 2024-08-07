@@ -48,6 +48,7 @@ class ActionAtomistic;
 class Value {
   friend class ActionWithValue;
   friend class ActionWithVector;
+  friend class ActionWithMatrix;
   friend class ActionAtomistic;
   friend class ActionWithArguments;
   friend class ActionWithVirtualAtom;
@@ -86,7 +87,7 @@ private:
 /// Does this quanity have derivatives
   bool hasDeriv;
 /// Variables for storing data
-  unsigned bufstart, streampos, matpos, ngrid_der, ncols, book_start;
+  unsigned bufstart, streampos, matpos, ngrid_der, ncols;
 /// If we are storing a matrix is it symmetric?
   bool symmetric;
 /// This is a bookeeping array that holds the non-zero elements of the "sparse" matrix
@@ -213,9 +214,6 @@ public:
 /// This stuff handles where to look for the start of the row that contains the row of the matrix
   void setPositionInMatrixStash( const unsigned& p );
   unsigned getPositionInMatrixStash() const ;
-/// This stuff handles where to keep the bookeeping stuff for storing the sparse matrix
-  void setMatrixBookeepingStart( const unsigned& b );
-  unsigned getMatrixBookeepingStart() const ;
 /// Convert the input index to its corresponding indices
   void convertIndexToindices(const std::size_t& index, std::vector<unsigned>& indices ) const ;
 /// Print out all the values in this Value
@@ -434,16 +432,6 @@ unsigned Value::getPositionInStream() const {
 inline
 unsigned Value::getPositionInMatrixStash() const {
   return matpos;
-}
-
-inline
-void Value::setMatrixBookeepingStart( const unsigned& b ) {
-  book_start = b;
-}
-
-inline
-unsigned Value::getMatrixBookeepingStart() const {
-  return book_start;
 }
 
 inline

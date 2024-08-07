@@ -149,7 +149,7 @@ void MatrixTimesMatrix::performTask( const std::string& controller, const unsign
 }
 
 void MatrixTimesMatrix::runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const {
-  if( doNotCalculateDerivatives() || !matrixChainContinues() ) return ;
+  if( doNotCalculateDerivatives() ) return ;
 
   unsigned mat1s = ival*getPntrToArgument(0)->getShape()[1];
   unsigned nmult = getPntrToArgument(0)->getShape()[1], ss = getPntrToArgument(1)->getShape()[1];

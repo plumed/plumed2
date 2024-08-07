@@ -146,13 +146,13 @@ void OuterProduct::performTask( const std::string& controller, const unsigned& i
     addDerivativeOnVectorArgument( stored_vector1, 0, 0, index1, function.evaluateDeriv( 0, args ), myvals );
     addDerivativeOnVectorArgument( stored_vector2, 0, 1, ind2, function.evaluateDeriv( 1, args ), myvals );
   }
-  if( doNotCalculateDerivatives() || !matrixChainContinues() ) return ;
+  if( doNotCalculateDerivatives() ) return ;
   unsigned nmat = getConstPntrToComponent(0)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixRowDerivatives( nmat );
   myvals.getMatrixRowDerivativeIndices( nmat )[nmat_ind] = arg_deriv_starts[1] + ind2; myvals.setNumberOfMatrixRowDerivatives( nmat, nmat_ind+1 );
 }
 
 void OuterProduct::runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const {
-  if( doNotCalculateDerivatives() || !matrixChainContinues() ) return ;
+  if( doNotCalculateDerivatives() ) return ;
   unsigned nmat = getConstPntrToComponent(0)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixRowDerivatives( nmat );
   myvals.getMatrixRowDerivativeIndices( nmat )[nmat_ind] = ival; myvals.setNumberOfMatrixRowDerivatives( nmat, nmat_ind+1 );
 }

@@ -31,16 +31,14 @@ private:
   ActionWithMatrix* next_action_in_chain;
   ActionWithMatrix* matrix_to_do_before;
   ActionWithMatrix* matrix_to_do_after;
-/// This holds the bookeeping arrays for sparse matrices
-  std::vector<unsigned> matrix_bookeeping;
 /// Update all the neighbour lists in the chain
   void updateAllNeighbourLists();
+/// This clears all bookeeping arrays before the ith task
+  void clearBookeepingBeforeTask( const unsigned& task_index ) const ;
 /// This is used to clear up the matrix elements
   void clearMatrixElements( MultiValue& myvals ) const ;
 /// This is used to find the total amount of space we need for storing matrix elements
-  void getTotalMatrixBookeeping( unsigned& stashsize );
-/// This transfers the non-zero elements to the Value
-  void transferNonZeroMatrixElementsToValues( unsigned& nval, const std::vector<unsigned>& matbook );
+  void setupMatrixStore();
 /// This does the calculation of a particular matrix element
   void runTask( const std::string& controller, const unsigned& current, const unsigned colno, MultiValue& myvals ) const ;
 protected:
@@ -71,17 +69,11 @@ public:
 /// This should return the number of columns to help with sparse storage of matrices
   virtual unsigned getNumberOfColumns() const = 0;
 /// This requires some thought
-  void setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping ) override;
+  void setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol ) override;
 //// This does some setup before we run over the row of the matrix
   virtual void setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const = 0;
 /// Run over one row of the matrix
-  void performTask( const unsigned& task_index, MultiValue& myvals ) const override ;
-/// Gather a row of the matrix
-  void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals, const unsigned& bufstart, std::vector<double>& buffer ) const override;
-/// Gather all the data from the threads
-  void gatherThreads( const unsigned& nt, const unsigned& bufsize, const std::vector<double>& omp_buffer, std::vector<double>& buffer, MultiValue& myvals ) override ;
-/// Gather all the data from the MPI processes
-  void gatherProcesses( std::vector<double>& buffer ) override;
+  virtual void performTask( const unsigned& task_index, MultiValue& myvals ) const ;
 /// This is the virtual that will do the calculation of the task for a particular matrix element
   virtual void performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const = 0;
 /// This is the jobs that need to be done when we have run all the jobs in a row of the matrix
@@ -93,7 +85,7 @@ public:
 /// Check if there are forces we need to account for on this task
   bool checkForTaskForce( const unsigned& itask, const Value* myval ) const override ;
 /// This gathers the force on a particular value
-  void gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const override;
+  virtual void gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const;
 };
 
 inline

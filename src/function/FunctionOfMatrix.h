@@ -63,7 +63,7 @@ public:
 /// This checks for tasks in the parent class
 //  void buildTaskListFromArgumentRequests( const unsigned& ntasks, bool& reduce, std::set<AtomNumber>& otasks ) override ;
 /// This ensures that we create some bookeeping stuff during the first step
-  void setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping ) override ;
+  void setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol ) override ;
 /// This sets up for the task
   void setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const ;
 /// Calculate the full matrix
@@ -248,7 +248,7 @@ void FunctionOfMatrix<T>::setupForTask( const unsigned& task_index, std::vector<
 // }
 
 template <class T>
-void FunctionOfMatrix<T>::setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping ) {
+void FunctionOfMatrix<T>::setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol ) {
   if( firststep ) {
     stored_arguments.resize( getNumberOfArguments() );
     update_arguments.resize( getNumberOfArguments(), true );
@@ -260,7 +260,7 @@ void FunctionOfMatrix<T>::setupStreamedComponents( const std::string& headstr, u
     }
     firststep=false;
   }
-  ActionWithMatrix::setupStreamedComponents( headstr, nquants, nmat, maxcol, nbookeeping );
+  ActionWithMatrix::setupStreamedComponents( headstr, nquants, nmat, maxcol );
 }
 
 template <class T>

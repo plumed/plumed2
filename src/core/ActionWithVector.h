@@ -39,6 +39,8 @@ class ActionWithVector:
 private:
 /// Is the calculation to be done in serial
   bool serial;
+/// Are we in the forward pass through the calculation
+  bool forwardPass;
 /// The buffer that we use (we keep a copy here to avoid resizing)
   std::vector<double> buffer;
 /// The list of active tasks
@@ -51,6 +53,10 @@ private:
   std::vector<ActionWithVector*> task_control_list;
 /// Work backwards through the chain to find an action that has either stored arguments or derivatives
   ActionWithVector* getActionWithDerivatives( ActionWithVector* depaction );
+/// Gather all the data from the MPI processes
+  void gatherProcesses();
+/// Clear all the bookeeping arrays
+  void clearMatrixBookeeping();
 /// Check if there are any grids in the stream
   bool checkForGrids(unsigned& nder) const ;
 ///  Run the task
@@ -62,7 +68,7 @@ private:
 /// Get the size of the buffer array that holds the data we are gathering over the MPI loop
   void getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize );
 /// Get the number of quantities in the stream
-  void getNumberOfStreamedQuantities( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping );
+  void getNumberOfStreamedQuantities( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol );
 /// Get the number of stored values in the stream
   bool getNumberOfStoredValues( Value* startat, unsigned& nvals, const unsigned& astart, const std::vector<Value*>& stopat );
 /// Add this action to the recursive chain
@@ -119,6 +125,8 @@ public:
   virtual void prepare() override;
   void retrieveAtoms( const bool& force=false ) override;
   void calculateNumericalDerivatives(ActionWithValue* av) override;
+/// Turn off the calculation of the derivatives during the forward pass through a calculation
+  bool doNotCalculateDerivatives() const override ;
 /// Are we running this command in a chain
   bool actionInChain() const ;
 /// This is overwritten within ActionWithMatrix and is used to build the chain of just matrix actions
@@ -131,7 +139,7 @@ public:
 /// This is overridden in ActionWithMatrix
   virtual void getAllActionLabelsInMatrixChain( std::vector<std::string>& matchain ) const {}
 /// Get the number of derivatives in the stream
-  void getNumberOfStreamedDerivatives( unsigned& nderivatives, Value* stopat );
+  virtual void getNumberOfStreamedDerivatives( unsigned& nderivatives, Value* stopat );
 /// Get every the label of every value that is calculated in this chain
   void getAllActionLabelsInChain( std::vector<std::string>& mylabels ) const ;
 /// We override clearInputForces here to ensure that forces are deleted from all values
@@ -151,19 +159,15 @@ public:
 /// Get the additional tasks that are required here
   virtual void getAdditionalTasksRequired( ActionWithVector* action, std::vector<unsigned>& atasks );
 /// setup the streamed quantities
-  virtual void setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping );
+  virtual void setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol );
 /// This we override to perform each individual task
   virtual void performTask( const unsigned& current, MultiValue& myvals ) const = 0;
 /// This is used to ensure that all indices are updated when you do local average
   virtual void updateAdditionalIndices( const unsigned& ostrn, MultiValue& myvals ) const {}
-/// Gather the data from all the OpenMP threads
-  virtual void gatherThreads( const unsigned& nt, const unsigned& bufsize, const std::vector<double>& omp_buffer, std::vector<double>& buffer, MultiValue& myvals );
 /// Can be used to reduce the number of tasks that are performed when you use an ation from elsewhere
   virtual void switchTaskReduction( const bool& task_reduction, ActionWithVector* aselect ) {}
-/// Gather all the data from the MPI processes
-  virtual void gatherProcesses( std::vector<double>& buffer );
 /// Gather the values that we intend to store in the buffer
-  virtual void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals, const unsigned& bufstart, std::vector<double>& buffer ) const ;
+  virtual void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals, const unsigned& bufstart, std::vector<double>& buffer ) const {}
 /// Get the force tasks that are active for this action
   virtual void updateForceTasksFromValue( const Value* myval, std::vector<unsigned>& force_tasks ) const ;
 /// Check if there is a force that needs to be accumulated on the ith task

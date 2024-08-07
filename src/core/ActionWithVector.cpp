@@ -27,6 +27,25 @@
 
 namespace PLMD {
 
+enum class Option { no, yes };
+
+Option interpretEnvString(const char* env,const char* str) {
+  if(!str) return Option::no;
+  if(!std::strcmp(str,"yes"))return Option::yes;
+  if(!std::strcmp(str,"no"))return Option::no;
+  plumed_error()<<"Cannot understand env var "<<env<<"\nPossible values: yes/no\nActual value: "<<str;
+}
+
+/// Switch on/off chains of actions using PLUMED environment variable
+/// export PLUMED_FORBID_CHAINS=yes  # forbid the use of chains in this run
+/// export PLUMED_FORBID_CHAINS=no   # allow chains to be used in the run
+/// default: yes
+Option getenvChainForbidden() {
+  static const char* name="PLUMED_FORBID_CHAINS";
+  static const auto opt = interpretEnvString(name,std::getenv(name));
+  return opt;
+}
+
 void ActionWithVector::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
@@ -41,6 +60,7 @@ ActionWithVector::ActionWithVector(const ActionOptions&ao):
   ActionWithValue(ao),
   ActionWithArguments(ao),
   serial(false),
+  forwardPass(false),
   action_to_do_before(NULL),
   action_to_do_after(NULL),
   never_reduce_tasks(false),
@@ -123,6 +143,8 @@ unsigned ActionWithVector::buildArgumentStore( const unsigned& argstart ) {
     ActionWithVector* av=dynamic_cast<ActionWithVector*>(getPntrToArgument(i)->getPntrToAction());
     if( !av || getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->hasDerivatives() ) { done_in_chain=false; break; }
   }
+  if( getenvChainForbidden()==Option::yes ) done_in_chain=false;
+
   if( done_in_chain ) {
     std::vector<std::string> alabels; std::vector<ActionWithVector*> f_actions;
     for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
@@ -366,7 +388,7 @@ void ActionWithVector::getAllActionLabelsInChain( std::vector<std::string>& myla
 }
 
 void ActionWithVector::taskIsActive( const unsigned& current, int& flag ) const {
-  if( isActive() ) flag = checkTaskStatus( current, flag );
+  flag = checkTaskStatus( current, flag );
   if( flag<=0 && action_to_do_after ) action_to_do_after->taskIsActive( current, flag );
 }
 
@@ -430,6 +452,21 @@ std::vector<unsigned>& ActionWithVector::getListOfActiveTasks( ActionWithVector*
   return active_tasks;
 }
 
+bool ActionWithVector::doNotCalculateDerivatives() const {
+  if( forwardPass ) return true;
+  return ActionWithValue::doNotCalculateDerivatives();
+}
+
+void ActionWithVector::clearMatrixBookeeping() {
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+    Value* myval = getPntrToComponent(i); if( !myval->storedata ) continue;
+    if( myval->getRank()==2 && myval->getNumberOfColumns()<myval->getShape()[1] ) {
+      std::fill(myval->matrix_bookeeping.begin(), myval->matrix_bookeeping.end(), 0);
+    }
+    myval->set(0);
+  }
+}
+
 void ActionWithVector::runAllTasks() {
 // Skip this if this is done elsewhere
   if( action_to_do_before ) return;
@@ -437,6 +474,9 @@ void ActionWithVector::runAllTasks() {
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
   if(serial) { stride=1; rank=0; }
+
+  // Clear matrix bookeeping arrays
+  if( stride>1 ) clearMatrixBookeeping();
 
   // Get the list of active tasks
   std::vector<unsigned> & partialTaskList( getListOfActiveTasks( this ) );
@@ -450,9 +490,15 @@ void ActionWithVector::runAllTasks() {
   // Now do all preparations required to run all the tasks
   // prepareForTaskLoop();
 
+  if( !action_to_do_after ) {
+    forwardPass=true;
+    for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+      if( getConstPntrToComponent(i)->getRank()==0 ) { forwardPass=false; break; }
+    }
+  }
   // Get the total number of streamed quantities that we need
-  unsigned nquants=0, nmatrices=0, maxcol=0, nbooks=0;
-  getNumberOfStreamedQuantities( getLabel(), nquants, nmatrices, maxcol, nbooks );
+  unsigned nquants=0, nmatrices=0, maxcol=0;
+  getNumberOfStreamedQuantities( getLabel(), nquants, nmatrices, maxcol );
   // Get size for buffer
   unsigned bufsize=0; getSizeOfBuffer( nactive_tasks, bufsize );
   if( buffer.size()!=bufsize ) buffer.resize( bufsize );
@@ -467,7 +513,7 @@ void ActionWithVector::runAllTasks() {
   {
     std::vector<double> omp_buffer;
     if( nt>1 ) omp_buffer.resize( bufsize, 0.0 );
-    MultiValue myvals( nquants, nderivatives, nmatrices, maxcol, nbooks );
+    MultiValue myvals( nquants, nderivatives, nmatrices, maxcol );
     myvals.clearAll();
 
     #pragma omp for nowait
@@ -483,20 +529,25 @@ void ActionWithVector::runAllTasks() {
       myvals.clearAll();
     }
     #pragma omp critical
-    gatherThreads( nt, bufsize, omp_buffer, buffer, myvals );
+    if( nt>1 ) for(unsigned i=0; i<bufsize; ++i) buffer[i]+=omp_buffer[i];
   }
 
   // MPI Gather everything
-  if( !serial && buffer.size()>0 ) gatherProcesses( buffer );
-  finishComputations( buffer );
+  if( !serial ) {
+    if( buffer.size()>0 ) comm.Sum( buffer );
+    gatherProcesses();
+  }
+  finishComputations( buffer ); forwardPass=false;
 }
 
-void ActionWithVector::gatherThreads( const unsigned& nt, const unsigned& bufsize, const std::vector<double>& omp_buffer, std::vector<double>& buffer, MultiValue& myvals ) {
-  if( nt>1 ) for(unsigned i=0; i<bufsize; ++i) buffer[i]+=omp_buffer[i];
-}
-
-void ActionWithVector::gatherProcesses( std::vector<double>& buffer ) {
-  comm.Sum( buffer );
+void ActionWithVector::gatherProcesses() {
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+    Value* myval = getPntrToComponent(i);
+    if( myval->storedata && !myval->hasDeriv ) {
+      comm.Sum( myval->data ); if( myval->getRank()==2 && myval->getNumberOfColumns()<myval->getShape()[1] ) comm.Sum( myval->matrix_bookeeping );
+    }
+  }
+  if( action_to_do_after ) action_to_do_after->gatherProcesses();
 }
 
 bool ActionWithVector::checkForGrids( unsigned& nder ) const {
@@ -531,20 +582,23 @@ void ActionWithVector::getNumberOfTasks( unsigned& ntasks ) {
   if( action_to_do_after ) action_to_do_after->getNumberOfTasks( ntasks );
 }
 
-void ActionWithVector::setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping ) {
+void ActionWithVector::setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol ) {
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     if( !getPntrToArgument(i)->ignoreStoredValue(headstr) ) { getPntrToArgument(i)->streampos=nquants; nquants++; }
   }
   for(int i=0; i<getNumberOfComponents(); ++i) { getPntrToComponent(i)->streampos=nquants; nquants++; }
 }
 
-void ActionWithVector::getNumberOfStreamedQuantities( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol, unsigned& nbookeeping ) {
-  setupStreamedComponents( headstr, nquants, nmat, maxcol, nbookeeping );
-  if( action_to_do_after ) action_to_do_after->getNumberOfStreamedQuantities( headstr, nquants, nmat, maxcol, nbookeeping );
+void ActionWithVector::getNumberOfStreamedQuantities( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol ) {
+  setupStreamedComponents( headstr, nquants, nmat, maxcol );
+  if( action_to_do_after ) action_to_do_after->getNumberOfStreamedQuantities( headstr, nquants, nmat, maxcol );
 }
 
 void ActionWithVector::getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize ) {
-  for(int i=0; i<getNumberOfComponents(); ++i) { getPntrToComponent(i)->bufstart=bufsize; bufsize += getPntrToComponent(i)->data.size(); }
+  for(int i=0; i<getNumberOfComponents(); ++i) {
+    getPntrToComponent(i)->bufstart=bufsize;
+    if( getPntrToComponent(i)->hasDerivatives() || getPntrToComponent(i)->getRank()==0 ) bufsize += getPntrToComponent(i)->data.size();
+  }
   if( action_to_do_after ) action_to_do_after->getSizeOfBuffer( nactive_tasks, bufsize );
 }
 
@@ -584,59 +638,50 @@ bool ActionWithVector::getNumberOfStoredValues( Value* startat, unsigned& nvals,
 }
 
 void ActionWithVector::runTask( const unsigned& current, MultiValue& myvals ) const {
-  if( isActive() ) {
-    myvals.setTaskIndex(current); myvals.vector_call=true; performTask( current, myvals );
+  myvals.setTaskIndex(current); myvals.vector_call=true; performTask( current, myvals );
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+    const Value* myval = getConstPntrToComponent(i);
+    if( myval->getRank()!=1 || myval->hasDerivatives() || !myval->valueIsStored() ) continue;
+    Value* myv = const_cast<Value*>( myval ); myv->set( current, myvals.get( myval->getPositionInStream() ) );
   }
   if( action_to_do_after ) action_to_do_after->runTask( current, myvals );
 }
 
 void ActionWithVector::gatherAccumulators( const unsigned& taskCode, const MultiValue& myvals, std::vector<double>& buffer ) const {
-  if( isActive() ) {
-    for(int i=0; i<getNumberOfComponents(); ++i) {
-      unsigned bufstart = getConstPntrToComponent(i)->bufstart;
-      // This looks after storing of scalars that are summed from vectors/matrices
-      if( getConstPntrToComponent(i)->getRank()==0 ) {
-        plumed_dbg_massert( bufstart<buffer.size(), "problem in " + getLabel() );
-        unsigned sind = getConstPntrToComponent(i)->streampos; buffer[bufstart] += myvals.get(sind);
-        if( getConstPntrToComponent(i)->hasDerivatives() ) {
-          for(unsigned k=0; k<myvals.getNumberActive(sind); ++k) {
-            unsigned kindex = myvals.getActiveIndex(sind,k);
-            plumed_dbg_massert( bufstart+1+kindex<buffer.size(), "problem in " + getLabel()  );
-            buffer[bufstart + 1 + kindex] += myvals.getDerivative(sind,kindex);
-          }
+  for(int i=0; i<getNumberOfComponents(); ++i) {
+    unsigned bufstart = getConstPntrToComponent(i)->bufstart;
+    // This looks after storing of scalars that are summed from vectors/matrices
+    if( getConstPntrToComponent(i)->getRank()==0 ) {
+      plumed_dbg_massert( bufstart<buffer.size(), "problem in " + getLabel() );
+      unsigned sind = getConstPntrToComponent(i)->streampos; buffer[bufstart] += myvals.get(sind);
+      if( getConstPntrToComponent(i)->hasDerivatives() ) {
+        for(unsigned k=0; k<myvals.getNumberActive(sind); ++k) {
+          unsigned kindex = myvals.getActiveIndex(sind,k);
+          plumed_dbg_massert( bufstart+1+kindex<buffer.size(), "problem in " + getLabel()  );
+          buffer[bufstart + 1 + kindex] += myvals.getDerivative(sind,kindex);
         }
-        // This looks after storing of vectors
-      } else if( getConstPntrToComponent(i)->storedata ) gatherStoredValue( i, taskCode, myvals, bufstart, buffer );
-    }
+      }
+      // This looks after storing of vectors
+    } else if( getConstPntrToComponent(i)->storedata ) gatherStoredValue( i, taskCode, myvals, bufstart, buffer );
   }
   if( action_to_do_after ) action_to_do_after->gatherAccumulators( taskCode, myvals, buffer );
 }
 
-void ActionWithVector::gatherStoredValue( const unsigned& valindex, const unsigned& taskCode, const MultiValue& myvals,
-    const unsigned& bufstart, std::vector<double>& buffer ) const {
-  plumed_dbg_assert( getConstPntrToComponent(valindex)->getRank()==1 && !getConstPntrToComponent(valindex)->hasDeriv );
-  unsigned vindex = getConstPntrToComponent(valindex)->bufstart + taskCode; plumed_dbg_massert( vindex<buffer.size(), "failing in " + getLabel() );
-  buffer[vindex] += myvals.get(getConstPntrToComponent(valindex)->streampos);
-}
-
 void ActionWithVector::finishComputations( const std::vector<double>& buf ) {
-  if( isActive() ) {
-    for(int i=0; i<getNumberOfComponents(); ++i) {
-      // This gathers vectors and grids at the end of the calculation
-      unsigned bufstart = getPntrToComponent(i)->bufstart;
-      getPntrToComponent(i)->data.assign( getPntrToComponent(i)->data.size(), 0 );
-      if( (getPntrToComponent(i)->getRank()>0 && getPntrToComponent(i)->hasDerivatives()) || getPntrToComponent(i)->storedata ) {
-        unsigned sz_v = getPntrToComponent(i)->data.size();
-        for(unsigned j=0; j<sz_v; ++j) {
-          plumed_dbg_assert( bufstart+j<buf.size() );
-          getPntrToComponent(i)->add( j, buf[bufstart+j] );
-        }
-        // Make sure single values are set
-      } else if( getPntrToComponent(i)->getRank()==0 ) getPntrToComponent(i)->set( buf[bufstart] );
-      // This gathers derivatives of scalars
-      if( !doNotCalculateDerivatives() && getPntrToComponent(i)->hasDeriv && getPntrToComponent(i)->getRank()==0 ) {
-        for(unsigned j=0; j<getPntrToComponent(i)->getNumberOfDerivatives(); ++j) getPntrToComponent(i)->setDerivative( j, buf[bufstart+1+j] );
+  for(int i=0; i<getNumberOfComponents(); ++i) {
+    // This gathers vectors and grids at the end of the calculation
+    unsigned bufstart = getPntrToComponent(i)->bufstart;
+    if( (getPntrToComponent(i)->getRank()>0 && getPntrToComponent(i)->hasDerivatives()) ) {
+      unsigned sz_v = getPntrToComponent(i)->data.size(); getPntrToComponent(i)->data.assign( getPntrToComponent(i)->data.size(), 0 );
+      for(unsigned j=0; j<sz_v; ++j) {
+        plumed_dbg_assert( bufstart+j<buf.size() );
+        getPntrToComponent(i)->add( j, buf[bufstart+j] );
       }
+      // Make sure single values are set
+    } else if( getPntrToComponent(i)->getRank()==0 ) getPntrToComponent(i)->set( buf[bufstart] );
+    // This gathers derivatives of scalars
+    if( !doNotCalculateDerivatives() && getPntrToComponent(i)->hasDeriv && getPntrToComponent(i)->getRank()==0 ) {
+      for(unsigned j=0; j<getPntrToComponent(i)->getNumberOfDerivatives(); ++j) getPntrToComponent(i)->setDerivative( j, buf[bufstart+1+j] );
     }
   }
   if( action_to_do_after ) action_to_do_after->finishComputations( buf );
@@ -672,10 +717,16 @@ bool ActionWithVector::checkForForces() {
   if( nt==0 ) nt=1;
 
   // Now determine how big the multivalue needs to be
-  unsigned nquants=0, nmatrices=0, maxcol=0, nbooks=0;
-  getNumberOfStreamedQuantities( getLabel(), nquants, nmatrices, maxcol, nbooks );
+  unsigned nquants=0, nmatrices=0, maxcol=0;
+  getNumberOfStreamedQuantities( getLabel(), nquants, nmatrices, maxcol );
   // Recover the number of derivatives we require (this should be equal to the number of forces)
   unsigned nderiv=0; getNumberOfStreamedDerivatives( nderiv, NULL );
+  if( !action_to_do_after && arg_deriv_starts.size()>0 ) {
+    nderiv = 0;
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      arg_deriv_starts[i] = nderiv; nderiv += getPntrToArgument(i)->getNumberOfStoredValues();
+    }
+  }
   if( forcesForApply.size()!=nderiv ) forcesForApply.resize( nderiv );
   // Clear force buffer
   forcesForApply.assign( forcesForApply.size(), 0.0 );
@@ -684,7 +735,7 @@ bool ActionWithVector::checkForForces() {
   {
     std::vector<double> omp_forces;
     if( nt>1 ) omp_forces.resize( forcesForApply.size(), 0.0 );
-    MultiValue myvals( nquants, nderiv, nmatrices, maxcol, nbooks );
+    MultiValue myvals( nquants, nderiv, nmatrices, maxcol );
     myvals.clearAll();
 
     #pragma omp for nowait
@@ -728,7 +779,7 @@ void ActionWithVector::updateForceTasksFromValue( const Value* myval, std::vecto
 }
 
 void ActionWithVector::getForceTasks( std::vector<unsigned>& force_tasks ) const {
-  if( isActive() && checkComponentsForForce() ) {
+  if( checkComponentsForForce() ) {
     for(unsigned k=0; k<values.size(); ++k) {
       updateForceTasksFromValue( getConstPntrToComponent(k), force_tasks );
     }
@@ -747,7 +798,7 @@ void ActionWithVector::gatherForcesOnStoredValue( const Value* myval, const unsi
 }
 
 void ActionWithVector::gatherForces( const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
-  if( isActive() && checkComponentsForForce() ) {
+  if( checkComponentsForForce() ) {
     for(unsigned k=0; k<getNumberOfComponents(); ++k) {
       const Value* myval=getConstPntrToComponent(k);
       if( myval->getRank()>0 && myval->forcesWereAdded() ) gatherForcesOnStoredValue( myval, itask, myvals, forces );

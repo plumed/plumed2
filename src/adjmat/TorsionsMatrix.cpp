@@ -138,7 +138,7 @@ void TorsionsMatrix::performTask( const std::string& controller, const unsigned&
 }
 
 void TorsionsMatrix::runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const {
-  if( doNotCalculateDerivatives() || !matrixChainContinues() ) return ;
+  if( doNotCalculateDerivatives() ) return ;
 
   unsigned mat1s = 3*ival, ss = getPntrToArgument(1)->getShape()[1];
   unsigned nmat = getConstPntrToComponent(0)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixRowDerivatives( nmat );
