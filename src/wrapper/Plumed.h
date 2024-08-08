@@ -3831,7 +3831,7 @@ void* plumed_attempt_dlopen(const char*path,int mode) {
       __PLUMED_FPRINTF(stderr,"+++ Allocation error +++\n");
       __PLUMED_WRAPPER_STD abort();
     }
-    __PLUMED_WRAPPER_STD strcpy(pathcopy,path);
+    __PLUMED_WRAPPER_STD memcpy(pathcopy,path,strlenpath+1);
     pc=pathcopy+strlenpath-6;
     while(pc>=pathcopy && __PLUMED_WRAPPER_STD memcmp(pc,"Kernel",6)) pc--;
     if(pc>=pathcopy) {
