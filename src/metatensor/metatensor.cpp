@@ -955,7 +955,7 @@ void MetatensorPlumedAction::registerKeywords(Keywords& keys) {
 
     keys.add("optional", "SPECIES_TO_TYPES", "mapping from PLUMED SPECIES to metatensor's atomic types");
 
-    keys.addOutputComponent("outputs", "default", "collective variable created by the model");
+    keys.addOutputComponent("outputs", "default", "scalar", "collective variable created by the model");
 }
 
 PLUMED_REGISTER_ACTION(MetatensorPlumedAction, "METATENSOR")

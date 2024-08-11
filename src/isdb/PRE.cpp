@@ -103,8 +103,8 @@ void PRE::registerKeywords( Keywords& keys ) {
   keys.add("numbered","RTWO","The relaxation of the atom/atoms in the corresponding GROUPA of atoms. "
            "Keywords like RTWO1, RTWO2, RTWO3,... should be listed.");
   keys.add("numbered","PREINT","Add an experimental value for each PRE.");
-  keys.addOutputComponent("pre","default","the # PRE");
-  keys.addOutputComponent("exp","PREINT","the # PRE experimental intensity");
+  keys.addOutputComponent("pre","default","scalar","the # PRE");
+  keys.addOutputComponent("exp","PREINT","scalar","the # PRE experimental intensity");
 }
 
 PRE::PRE(const ActionOptions&ao):

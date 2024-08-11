@@ -72,18 +72,18 @@ void MetainferenceBase::registerKeywords( Keywords& keys ) {
   keys.add("optional","SELECTOR","name of selector");
   keys.add("optional","NSELECT","range of values for selector [0, N-1]");
   keys.use("RESTART");
-  keys.addOutputComponent("score",        "default",      "the Metainference score");
-  keys.addOutputComponent("sigma",        "default",      "uncertainty parameter");
-  keys.addOutputComponent("sigmaMean",    "default",      "uncertainty in the mean estimate");
-  keys.addOutputComponent("neff",         "default",      "effective number of replicas");
-  keys.addOutputComponent("acceptSigma",  "default",      "MC acceptance for sigma values");
-  keys.addOutputComponent("acceptScale",  "SCALEDATA",    "MC acceptance for scale value");
-  keys.addOutputComponent("acceptFT",     "GENERIC",      "MC acceptance for general metainference f tilde value");
-  keys.addOutputComponent("weight",       "REWEIGHT",     "weights of the weighted average");
-  keys.addOutputComponent("biasDer",      "REWEIGHT",     "derivatives with respect to the bias");
-  keys.addOutputComponent("scale",        "SCALEDATA",    "scale parameter");
-  keys.addOutputComponent("offset",       "ADDOFFSET",    "offset parameter");
-  keys.addOutputComponent("ftilde",       "GENERIC",      "ensemble average estimator");
+  keys.addOutputComponent("score",        "default",      "scalar","the Metainference score");
+  keys.addOutputComponent("sigma",        "default",      "scalar","uncertainty parameter");
+  keys.addOutputComponent("sigmaMean",    "default",      "scalar","uncertainty in the mean estimate");
+  keys.addOutputComponent("neff",         "default",      "scalar","effective number of replicas");
+  keys.addOutputComponent("acceptSigma",  "default",      "scalar","MC acceptance for sigma values");
+  keys.addOutputComponent("acceptScale",  "SCALEDATA",    "scalar","MC acceptance for scale value");
+  keys.addOutputComponent("acceptFT",     "GENERIC",      "scalar","MC acceptance for general metainference f tilde value");
+  keys.addOutputComponent("weight",       "REWEIGHT",     "scalar","weights of the weighted average");
+  keys.addOutputComponent("biasDer",      "REWEIGHT",     "scalar","derivatives with respect to the bias");
+  keys.addOutputComponent("scale",        "SCALEDATA",    "scalar","scale parameter");
+  keys.addOutputComponent("offset",       "ADDOFFSET",    "scalar","offset parameter");
+  keys.addOutputComponent("ftilde",       "GENERIC",      "scalar","ensemble average estimator");
 }
 
 MetainferenceBase::MetainferenceBase(const ActionOptions&ao):

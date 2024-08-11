@@ -209,6 +209,7 @@ void FitToTemplate::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
   keys.add("compulsory","TYPE","SIMPLE","the manner in which RMSD alignment is performed.  Should be OPTIMAL or SIMPLE.");
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
+  keys.setValueDescription("scalar","the RMSD distance");
 }
 
 FitToTemplate::FitToTemplate(const ActionOptions&ao):

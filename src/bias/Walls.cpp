@@ -46,8 +46,8 @@ void Walls::registerKeywords(Keywords& keys) {
   keys.add("compulsory","EXP","2.0","the powers for the walls.  The e_i in the expression for a wall.");
   keys.add("compulsory","EPS","1.0","the values for s_i in the expression for a wall");
   keys.add("hidden","STRIDE","the frequency with which the forces due to the bias should be calculated.  This can be used to correctly set up multistep algorithms");
-  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
-  keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
+  keys.addOutputComponent("bias","default","scalar","the instantaneous value of the bias potential");
+  keys.addOutputComponent("force2","default","scalar","the instantaneous value of the squared force due to this bias potential");
   keys.addActionNameSuffix("_SCALAR"); keys.needsAction("COMBINE"); keys.needsAction("CUSTOM");
   keys.needsAction("SUM"); keys.needsAction("COMBINE"); keys.needsAction("BIASVALUE");
 }

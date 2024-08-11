@@ -210,8 +210,8 @@ void VesDeltaF::registerKeywords(Keywords& keys) {
   keys.use("RESTART");
 
 //output components
-  keys.addOutputComponent("rct","default","the reweighting factor c(t)");
-  keys.addOutputComponent("work","default","the work done by the bias in one AV_STRIDE");
+  keys.addOutputComponent("rct","default","scalar","the reweighting factor c(t)");
+  keys.addOutputComponent("work","default","scalar","the work done by the bias in one AV_STRIDE");
 }
 
 VesDeltaF::VesDeltaF(const ActionOptions&ao)

@@ -53,8 +53,8 @@ void GeometricPath::registerKeywords(Keywords& keys) {
   ActionWithVector::registerKeywords(keys); keys.use("ARG");
   PathProjectionCalculator::registerKeywords(keys);
   keys.add("compulsory","PROPERTY","the coordinates we are projecting these points onto");
-  keys.addOutputComponent("s","default","the position on the path");
-  keys.addOutputComponent("z","default","the distance from the path");
+  keys.addOutputComponent("s","default","scalar","the position on the path");
+  keys.addOutputComponent("z","default","scalar","the distance from the path");
   keys.needsAction("GEOMETRIC_PATH"); keys.needsAction("PDB2CONSTANT");
 }
 

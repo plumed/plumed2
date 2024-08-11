@@ -202,7 +202,7 @@ void OPESexpanded::registerKeywords(Keywords& keys)
   keys.use("UPDATE_UNTIL");
 
 //output components
-  keys.addOutputComponent("work","CALC_WORK","total accumulated work done by the bias");
+  keys.addOutputComponent("work","CALC_WORK","scalar","total accumulated work done by the bias");
 }
 
 OPESexpanded::OPESexpanded(const ActionOptions&ao)

@@ -216,7 +216,7 @@ void Histogram::registerKeywords( Keywords& keys ) {
   keys.add("optional","LOGWEIGHTS","the logarithm of the quantity to use as the weights when calculating averages");
   keys.add("compulsory","STRIDE","1","the frequency with which to store data for averaging");
   keys.add("compulsory","CLEAR","0","the frequency with whihc to clear the data that is being averaged");
-  keys.setValueDescription("the estimate of the histogram as a function of the argument that was obtained");
+  keys.setValueDescription("grid","the estimate of the histogram as a function of the argument that was obtained");
   keys.needsAction("COMBINE"); keys.needsAction("CUSTOM"); keys.needsAction("ONES");
   keys.needsAction("KDE"); keys.needsAction("ACCUMULATE");
 }

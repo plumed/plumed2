@@ -63,8 +63,8 @@ void SketchMap::registerKeywords( Keywords& keys ) {
   keys.addFlag("USE_SMACOF",false,"find the projection in the low dimensional space using the SMACOF algorithm");
   keys.add("compulsory","SMACTOL","1E-4","the tolerance for the smacof algorithm");
   keys.add("compulsory","SMACREG","0.001","this is used to ensure that we don't divide by zero when updating weights for SMACOF algorithm");
-  keys.setValueDescription("the sketch-map projection of the input points");
-  keys.addOutputComponent("osample","PROJECT_ALL","the out-of-sample projections");
+  keys.setValueDescription("matrix","the sketch-map projection of the input points");
+  keys.addOutputComponent("osample","PROJECT_ALL","matrix","the out-of-sample projections");
   keys.needsAction("CLASSICAL_MDS"); keys.needsAction("MORE_THAN"); keys.needsAction("SUM"); keys.needsAction("CUSTOM");
   keys.needsAction("OUTER_PRODUCT"); keys.needsAction("ARRANGE_POINTS"); keys.needsAction("PROJECT_POINTS"); keys.needsAction("VSTACK");
 }

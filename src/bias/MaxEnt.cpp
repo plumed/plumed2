@@ -187,13 +187,13 @@ void MaxEnt::registerKeywords(Keywords& keys) {
   keys.addFlag("REWEIGHT",false,"to be used with plumed driver in order to reweight a trajectory a posteriori");
   keys.addFlag("NO_BROADCAST",false,"If active will avoid Lagrangian multipliers to be communicated to other replicas.");
   keys.add("optional","TEMP","the system temperature.  This is required if you are reweighting.");
-  keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
-  keys.addOutputComponent("work","default","the instantaneous value of the work done by the biasing force");
-  keys.addOutputComponent("_work","default","the instantaneous value of the work done by the biasing force for each argument. "
+  keys.addOutputComponent("force2","default","scalar","the instantaneous value of the squared force due to this bias potential");
+  keys.addOutputComponent("work","default","scalar","the instantaneous value of the work done by the biasing force");
+  keys.addOutputComponent("_work","default","scalar","the instantaneous value of the work done by the biasing force for each argument. "
                           "These quantities will named with the arguments of the bias followed by "
                           "the character string _work.");
-  keys.addOutputComponent("_error","default","Instantaneous values of the discrepancy between the observable and the restraint center");
-  keys.addOutputComponent("_coupling","default","Instantaneous values of Lagrangian multipliers. They are also written by default in a separate output file.");
+  keys.addOutputComponent("_error","default","scalar","Instantaneous values of the discrepancy between the observable and the restraint center");
+  keys.addOutputComponent("_coupling","default","scalar","Instantaneous values of Lagrangian multipliers. They are also written by default in a separate output file.");
   keys.use("RESTART");
 }
 MaxEnt::MaxEnt(const ActionOptions&ao):

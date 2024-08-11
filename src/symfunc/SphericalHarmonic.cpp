@@ -72,8 +72,8 @@ PLUMED_REGISTER_ACTION(MatrixSpHarm,"SPHERICAL_HARMONIC_MATRIX")
 
 void SphericalHarmonic::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","L","the value of the angular momentum");
-  keys.addOutputComponent("rm","default","the real parts of the spherical harmonic values with the m value given");
-  keys.addOutputComponent("im","default","the real parts of the spherical harmonic values with the m value given");
+  keys.addOutputComponent("rm","default","matrix","the real parts of the spherical harmonic values with the m value given");
+  keys.addOutputComponent("im","default","matrix","the real parts of the spherical harmonic values with the m value given");
 }
 
 unsigned SphericalHarmonic::factorial( const unsigned& n ) const {

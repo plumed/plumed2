@@ -101,6 +101,7 @@ Energy::Energy(const ActionOptions&ao):
 
 void Energy::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
+  keys.setValueDescription("scalar","the internal energy");
 }
 
 void Energy::wait() {

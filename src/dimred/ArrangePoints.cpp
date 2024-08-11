@@ -83,7 +83,7 @@ void ArrangePoints::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","FGRID_SIZE","0","interpolate the grid onto this number of points -- only works in 2D");
   keys.add("compulsory","SMACTOL","1E-4","the tolerance for the smacof algorithm");
   keys.add("compulsory","SMACREG","0.001","this is used to ensure that we don't divide by zero when updating weights for SMACOF algorithm");
-  keys.addOutputComponent("coord","default","the coordinates of the points in the low dimensional space");
+  keys.addOutputComponent("coord","default","vector","the coordinates of the points in the low dimensional space");
 }
 
 

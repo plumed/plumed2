@@ -106,30 +106,35 @@ void Optimizer::registerKeywords(Keywords& keys) {
   keys.addOutputComponent(
     "x",
     "default",
+    "scalar",
     "Optimal biasing direction; x component."
   );
 
   keys.addOutputComponent(
     "y",
     "default",
+    "scalar",
     "Optimal biasing direction; y component."
   );
 
   keys.addOutputComponent(
     "z",
     "default",
+    "scalar",
     "Optimal biasing direction; z component."
   );
 
   keys.addOutputComponent(
     "loss",
     "default",
+    "scalar",
     "Loss function value defined by the provided pairing function."
   );
 
   keys.addOutputComponent(
     "sr",
     "default",
+    "scalar",
     "Sampling radius. Reduces sampling to the local proximity of the ligand "
     "position."
   );

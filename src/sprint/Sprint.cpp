@@ -96,7 +96,7 @@ void Sprint::registerKeywords(Keywords& keys) {
   keys.add("numbered","SWITCH","specify the switching function to use between two sets of indistinguishable atoms");
   keys.needsAction("CONTACT_MATRIX"); keys.needsAction("DIAGONALIZE"); keys.needsAction("CUSTOM");
   keys.needsAction("SELECT_COMPONENTS"); keys.needsAction("SORT"); keys.needsAction("COMBINE");
-  keys.addOutputComponent("coord","default","the sprint coordinates");
+  keys.addOutputComponent("coord","default","scalar","the sprint coordinates");
 }
 
 Sprint::Sprint(const ActionOptions& ao):

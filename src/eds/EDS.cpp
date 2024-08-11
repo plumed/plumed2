@@ -316,9 +316,9 @@ void EDS::registerKeywords(Keywords &keys)
 
   keys.use("RESTART");
 
-  keys.addOutputComponent("force2", "default", "squared value of force from the bias");
-  keys.addOutputComponent("pressure", "default", "If using virial keyword, this is the current sum of virial terms. It is in units of pressure (energy / vol^3)");
-  keys.addOutputComponent("_coupling", "default", "For each named CV biased, there will be a corresponding output CV_coupling storing the current linear bias prefactor.");
+  keys.addOutputComponent("force2", "default", "scalar", "squared value of force from the bias");
+  keys.addOutputComponent("pressure", "default", "scalar", "If using virial keyword, this is the current sum of virial terms. It is in units of pressure (energy / vol^3)");
+  keys.addOutputComponent("_coupling", "default", "scalar", "For each named CV biased, there will be a corresponding output CV_coupling storing the current linear bias prefactor.");
 }
 
 EDS::EDS(const ActionOptions &ao) : PLUMED_BIAS_INIT(ao),

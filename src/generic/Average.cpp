@@ -105,7 +105,7 @@ void Average::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","STRIDE","1","the frequency with which to store data for averaging");
   keys.add("compulsory","CLEAR","0","the frequency with whihc to clear the data that is being averaged");
   keys.add("optional","NORMALIZATION","keyword for old version of the code that is there to maintain back compatibility only. Adding this keyword does nothing");
-  keys.setValueDescription("the value of the average");
+  keys.setValueDescription("scalar/grid","the value of the average");
   keys.needsAction("COMBINE"); keys.needsAction("CUSTOM"); keys.needsAction("ONES"); keys.needsAction("ACCUMULATE");
 }
 

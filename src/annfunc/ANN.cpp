@@ -121,7 +121,7 @@ void ANN::registerKeywords( Keywords& keys ) {
   keys.add("numbered", "BIASES", "bias array for each layer of the neural network, "
            "BIASES0 represents bias array for layer 1, BIASES1 represents bias array for layer 2, ...");
   // since v2.2 plumed requires all components be registered
-  keys.addOutputComponent("node", "default", "components of ANN outputs");
+  keys.addOutputComponent("node", "default", "scalar", "components of ANN outputs");
 }
 
 ANN::ANN(const ActionOptions&ao):

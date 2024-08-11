@@ -191,8 +191,8 @@ void FISST::registerKeywords(Keywords& keys) {
   keys.add("optional","OBSERVABLE_FREQ","How often to write out observable weights (default=period).");
   keys.addFlag("FREEZE",false,"Fix bias weights at current level (only used for restarting).");
   keys.use("RESTART");
-  keys.addOutputComponent("force2","default","squared value of force from the bias.");
-  keys.addOutputComponent("_fbar","default", "For each named CV biased, there will be a corresponding output CV_fbar storing the current linear bias prefactor.");
+  keys.addOutputComponent("force2","default","scalar", "squared value of force from the bias.");
+  keys.addOutputComponent("_fbar","default", "scalar", "For each named CV biased, there will be a corresponding output CV_fbar storing the current linear bias prefactor.");
 }
 
 FISST::FISST(const ActionOptions&ao):

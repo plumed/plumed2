@@ -115,7 +115,7 @@ void Shadow::registerKeywords( Keywords& keys ) {
   keys.add("atoms","ATOMS","atoms for which we calculate the shadow RMSD");
   keys.add("compulsory","UPDATE","stride for updating reference coordinates");
   keys.addFlag("REFERENCE",false,"this is the reference replica");
-  keys.setValueDescription("the value of the shadow RMSD");
+  keys.setValueDescription("scalar","the value of the shadow RMSD");
 }
 
 Shadow::Shadow(const ActionOptions&ao):

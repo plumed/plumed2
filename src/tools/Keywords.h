@@ -90,6 +90,8 @@ private:
   std::map<std::string,std::string> ckey;
 /// The documentation for a particular component
   std::map<std::string,std::string> cdocs;
+/// The type of a particular component
+  std::map<std::string,std::string> ctypes;
 /// The list of actions that are needed by this action
   std::vector<std::string> neededActions;
 /// List of suffixes that can be used with this action
@@ -168,15 +170,22 @@ public:
 /// Set the text that introduces how the components for this action are introduced
   void setComponentsIntroduction( const std::string& instr );
 /// Add the description of the value
-  void setValueDescription( const std::string& descr );
+  void setValueDescription( const std::string& type, const std::string& descr );
 /// Add a potential component which can be output by this particular action
+  [[deprecated("Use addOutputComponent with four argument and specify valid types for value from scalar/vector/matrix/grid")]]
   void addOutputComponent( const std::string& name, const std::string& key, const std::string& descr );
+/// Add a potential component which can be output by this particular action
+  void addOutputComponent( const std::string& name, const std::string& key, const std::string& type, const std::string& descr );
 /// Remove a component that can be output by this particular action
   void removeOutputComponent( const std::string& name );
 /// Has a component with this name been added?
   bool outputComponentExists( const std::string& name ) const ;
+/// Check that type for component has been documented correctly
+  bool componentHasCorrectType( const std::string& name, const std::size_t& rank, const bool& hasderiv ) const ;
 /// Get the flag that forces this component to be calculated
   std::string getOutputComponentFlag( const std::string& name ) const ;
+/// Get the type for this output component
+  std::string getOutputComponentType( const std::string& name ) const ;
 /// Get the description of this component
   std::string getOutputComponentDescription( const std::string& name ) const ;
 /// Get the full list of output components

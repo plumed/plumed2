@@ -105,7 +105,7 @@ PLUMED_REGISTER_ACTION(MatrixFccubic,"FCCUBIC_FUNC_MATRIX")
 
 void Fccubic::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","ALPHA","3.0","The alpha parameter of the angular function");
-  keys.setValueDescription("a function that measures the similarity with an fcc environment");
+  keys.setValueDescription("matrix","a function that measures the similarity with an fcc environment");
 }
 
 void Fccubic::read( ActionWithArguments* action ) {

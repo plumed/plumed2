@@ -849,10 +849,10 @@ void Optimizer::registerKeywords( Keywords& keys ) {
   keys.use("UPDATE_FROM");
   keys.use("UPDATE_UNTIL");
   // Components that are always active
-  keys.addOutputComponent("gradrms","MONITOR_INSTANTANEOUS_GRADIENT","the root mean square value of the coefficient gradient. For multiple biases this component is labeled using the number of the bias as gradrms-#.");
-  keys.addOutputComponent("gradmax","MONITOR_INSTANTANEOUS_GRADIENT","the largest absolute value of the coefficient gradient. For multiple biases this component is labeled using the number of the bias as gradmax-#.");
+  keys.addOutputComponent("gradrms","MONITOR_INSTANTANEOUS_GRADIENT","scalar","the root mean square value of the coefficient gradient. For multiple biases this component is labeled using the number of the bias as gradrms-#.");
+  keys.addOutputComponent("gradmax","MONITOR_INSTANTANEOUS_GRADIENT","scalar","the largest absolute value of the coefficient gradient. For multiple biases this component is labeled using the number of the bias as gradmax-#.");
   // keys.addOutputComponent("gradmaxidx","default","the index of the maximum absolute value of the gradient");
-  keys.setValueDescription("a scalar");
+  keys.setValueDescription("scalar","a scalar");
 }
 
 
@@ -876,7 +876,7 @@ void Optimizer::useFixedStepSizeKeywords(Keywords& keys) {
 
 void Optimizer::useDynamicStepSizeKeywords(Keywords& keys) {
   keys.use("INITIAL_STEPSIZE");
-  keys.addOutputComponent("stepsize","default","the current value of step size used to update the coefficients. For multiple biases this component is labeled using the number of the bias as stepsize-#.");
+  keys.addOutputComponent("stepsize","default","scalar","the current value of step size used to update the coefficients. For multiple biases this component is labeled using the number of the bias as stepsize-#.");
 }
 
 
@@ -894,8 +894,8 @@ void Optimizer::useRestartKeywords(Keywords& keys) {
 void Optimizer::useMonitorAverageGradientKeywords(Keywords& keys) {
   keys.use("MONITOR_AVERAGE_GRADIENT");
   keys.use("MONITOR_AVERAGES_GRADIENT_EXP_DECAY");
-  keys.addOutputComponent("avergradrms","MONITOR_AVERAGE_GRADIENT","the root mean square value of the averaged coefficient gradient. For multiple biases this component is labeled using the number of the bias as gradrms-#.");
-  keys.addOutputComponent("avergradmax","MONITOR_AVERAGE_GRADIENT","the largest absolute value of the averaged coefficient gradient. For multiple biases this component is labeled using the number of the bias as gradmax-#.");
+  keys.addOutputComponent("avergradrms","MONITOR_AVERAGE_GRADIENT","scalar","the root mean square value of the averaged coefficient gradient. For multiple biases this component is labeled using the number of the bias as gradrms-#.");
+  keys.addOutputComponent("avergradmax","MONITOR_AVERAGE_GRADIENT","scalar","the largest absolute value of the averaged coefficient gradient. For multiple biases this component is labeled using the number of the bias as gradmax-#.");
 }
 
 

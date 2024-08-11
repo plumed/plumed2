@@ -46,8 +46,8 @@ PLUMED_REGISTER_ACTION(DistanceFromSphericalContour,"DISTANCE_FROM_SPHERICAL_CON
 
 void DistanceFromSphericalContour::registerKeywords( Keywords& keys ) {
   DistanceFromContourBase::registerKeywords( keys );
-  keys.addOutputComponent("dist","default","the distance between the reference atom and the nearest contour");
-  keys.addOutputComponent("radius","default","the radial distance from the center of the contour to the edge");
+  keys.addOutputComponent("dist","default","scalar","the distance between the reference atom and the nearest contour");
+  keys.addOutputComponent("radius","default","scalar","the radial distance from the center of the contour to the edge");
   keys.add("atoms","ORIGIN","The position of the center of the region that the contour encloses");
 }
 

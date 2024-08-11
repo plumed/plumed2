@@ -136,6 +136,7 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
         std::string compname=components[k]; if( components[k]==".#!value" ) { hasvalue=false; compname="value"; }
         std::cout<<"         \""<<compname<<"\" : {"<<std::endl;
         std::cout<<"           \"flag\": \""<<keys.getOutputComponentFlag( components[k] )<<"\","<<std::endl;
+        std::cout<<"           \"type\": \""<<keys.getOutputComponentType( components[k] )<<"\","<<std::endl;
         std::string desc=keys.getOutputComponentDescription( components[k] );
         std::size_t dot=desc.find_first_of("."); std::string mydescrip = desc.substr(0,dot);
         if( mydescrip.find("\\")!=std::string::npos ) error("found invalid backslash character documentation for output component " + compname + " in action " + action_names[i] );

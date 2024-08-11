@@ -84,16 +84,16 @@ void Puckering::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords( keys );
   keys.remove("NOPBC");
   keys.add("atoms","ATOMS","the five or six atoms of the sugar ring in the proper order");
-  keys.addOutputComponent("phs","default","Pseudorotation phase (5 membered rings)");
-  keys.addOutputComponent("amp","default","Pseudorotation amplitude (5 membered rings)");
-  keys.addOutputComponent("Zx","default","Pseudorotation x Cartesian component (5 membered rings)");
-  keys.addOutputComponent("Zy","default","Pseudorotation y Cartesian component (5 membered rings)");
-  keys.addOutputComponent("phi","default","Pseudorotation phase (6 membered rings)");
-  keys.addOutputComponent("theta","default","Theta angle (6 membered rings)");
-  keys.addOutputComponent("amplitude","default","Pseudorotation amplitude (6 membered rings)");
-  keys.addOutputComponent("qx","default","Cartesian component x (6 membered rings)");
-  keys.addOutputComponent("qy","default","Cartesian component y (6 membered rings)");
-  keys.addOutputComponent("qz","default","Cartesian component z (6 membered rings)");
+  keys.addOutputComponent("phs","default","scalar","Pseudorotation phase (5 membered rings)");
+  keys.addOutputComponent("amp","default","scalar","Pseudorotation amplitude (5 membered rings)");
+  keys.addOutputComponent("Zx","default","scalar","Pseudorotation x Cartesian component (5 membered rings)");
+  keys.addOutputComponent("Zy","default","scalar","Pseudorotation y Cartesian component (5 membered rings)");
+  keys.addOutputComponent("phi","default","scalar","Pseudorotation phase (6 membered rings)");
+  keys.addOutputComponent("theta","default","scalar","Theta angle (6 membered rings)");
+  keys.addOutputComponent("amplitude","default","scalar","Pseudorotation amplitude (6 membered rings)");
+  keys.addOutputComponent("qx","default","scalar","Cartesian component x (6 membered rings)");
+  keys.addOutputComponent("qy","default","scalar","Cartesian component y (6 membered rings)");
+  keys.addOutputComponent("qz","default","scalar","Cartesian component z (6 membered rings)");
 }
 
 Puckering::Puckering(const ActionOptions&ao):

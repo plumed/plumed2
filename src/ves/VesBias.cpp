@@ -304,7 +304,7 @@ void VesBias::useProjectionArgKeywords(Keywords& keys) {
 
 void VesBias::useReweightFactorKeywords(Keywords& keys) {
   keys.use("CALC_REWEIGHT_FACTOR");
-  keys.addOutputComponent("rct","CALC_REWEIGHT_FACTOR","the reweight factor c(t).");
+  keys.addOutputComponent("rct","CALC_REWEIGHT_FACTOR","scalar","the reweight factor c(t).");
 }
 
 

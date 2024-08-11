@@ -93,8 +93,8 @@ void NOE::registerKeywords( Keywords& keys ) {
   keys.reset_style("GROUPA","atoms");
   keys.reset_style("GROUPB","atoms");
   keys.add("numbered","NOEDIST","Add an experimental value for each NOE.");
-  keys.addOutputComponent("noe","default","the # NOE");
-  keys.addOutputComponent("exp","NOEDIST","the # NOE experimental distance");
+  keys.addOutputComponent("noe","default","scalar","the # NOE");
+  keys.addOutputComponent("exp","NOEDIST","scalar","the # NOE experimental distance");
 }
 
 NOE::NOE(const ActionOptions&ao):

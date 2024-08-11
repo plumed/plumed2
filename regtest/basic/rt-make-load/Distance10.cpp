@@ -46,6 +46,7 @@ void Distance::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords( keys );
   keys.add("atoms","ATOMS","the pair of atom that we are calculating the distance between");
   keys.addFlag("COMPONENTS",false,"calculate the x, y and z components of the distance separately and store them as label.x, label.y and label.z");  
+  keys.setValueDescription("scalar","the DISTANCE between this pair of atoms");
 }
 
 Distance::Distance(const ActionOptions&ao):

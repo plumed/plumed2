@@ -51,7 +51,7 @@ void MFilterMore::registerKeywords(Keywords& keys) {
   keys.add("compulsory","SWITCH","the switching function that transform");
   keys.addFlag("LOWMEM",false,"this flag does nothing and is present only to ensure back-compatibility");
   keys.addFlag("HIGHEST",false,"this flag allows you to recover the highest of these variables.");
-  keys.addOutputComponent("highest","HIGHEST","the largest of the colvars");
+  keys.addOutputComponent("highest","HIGHEST","scalar","the largest of the colvars");
   keys.needsAction("CUSTOM"); keys.needsAction("GROUP");
   keys.needsAction("MORE_THAN"); keys.needsAction("HIGHEST");
 }

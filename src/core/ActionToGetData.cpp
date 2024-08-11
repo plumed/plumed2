@@ -41,7 +41,7 @@ void ActionToGetData::registerKeywords(Keywords& keys) {
   keys.add("compulsory","STRIDE","1","the frequency with which the quantities of interest should be stored");
   keys.add("compulsory","TYPE","value","what do you want to collect for the value can be derivative/force");
   keys.use("ARG");
-  keys.setValueDescription("a copy of the data in the value specified by the ARG keyword");
+  keys.setValueDescription("scalar/vector/matrix/grid","a copy of the data in the value specified by the ARG keyword");
 }
 
 ActionToGetData::ActionToGetData(const ActionOptions&ao):

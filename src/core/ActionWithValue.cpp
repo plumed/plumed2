@@ -45,7 +45,7 @@ void ActionWithValue::noAnalyticalDerivatives(Keywords& keys) {
 }
 
 void ActionWithValue::useCustomisableComponents(Keywords& keys) {
-  if( !keys.outputComponentExists(".#!custom") ) keys.addOutputComponent(".#!custom","default","the names of the output components for this action depend on the actions input file see the example inputs below for details");
+  if( !keys.outputComponentExists(".#!custom") ) keys.addOutputComponent(".#!custom","default","scalar","the names of the output components for this action depend on the actions input file see the example inputs below for details");
   keys.setComponentsIntroduction("The names of the components in this action can be customized by the user in the "
                                  "actions input file.  However, in addition to the components that can be customized the "
                                  "following quantities will always be output");
@@ -109,12 +109,14 @@ Value* ActionWithValue::copyOutput( const unsigned& n ) const {
 
 void ActionWithValue::addValue( const std::vector<unsigned>& shape ) {
   if( !keywords.outputComponentExists(".#!value") ) warning("documentation for the value calculated by this action has not been included");
+  else plumed_massert( keywords.componentHasCorrectType(".#!value",shape.size(),false), "documentation for type of value is incorrect");
   plumed_massert(values.empty(),"You have already added the default value for this action");
   values.emplace_back(Tools::make_unique<Value>(this,getLabel(), false, shape ) );
 }
 
 void ActionWithValue::addValueWithDerivatives( const std::vector<unsigned>& shape ) {
   if( !keywords.outputComponentExists(".#!value") ) warning("documentation for the value calculated by this action has not been included");
+  else plumed_massert( keywords.componentHasCorrectType(".#!value",shape.size(),true), "documentation for type of value is incorrect");
   plumed_massert(values.empty(),"You have already added the default value for this action");
   values.emplace_back(Tools::make_unique<Value>(this,getLabel(), true, shape ) );
 }
@@ -139,6 +141,7 @@ void ActionWithValue::addComponent( const std::string& name, const std::vector<u
     plumed_merror("a description of component " + name + " has not been added to the manual. Components should be registered like keywords in "
                   "registerKeywords as described in the developer docs.");
   }
+  plumed_massert( keywords.componentHasCorrectType(name,shape.size(),false), "documentation for type of component " + name + " is incorrect");
   std::string thename; thename=getLabel() + "." + name;
   for(unsigned i=0; i<values.size(); ++i) {
     plumed_massert(values[i]->name!=getLabel(),"Cannot mix single values with components");
@@ -156,6 +159,7 @@ void ActionWithValue::addComponentWithDerivatives( const std::string& name, cons
     plumed_merror("a description of component " + name + " has not been added to the manual. Components should be registered like keywords in "
                   "registerKeywords as described in the developer doc.");
   }
+  plumed_massert( keywords.componentHasCorrectType(name,shape.size(),true), "documentation for type of component " + name + " is incorrect");
   std::string thename; thename=getLabel() + "." + name;
   for(unsigned i=0; i<values.size(); ++i) {
     plumed_massert(values[i]->name!=getLabel(),"Cannot mix single values with components");

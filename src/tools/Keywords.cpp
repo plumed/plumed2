@@ -198,7 +198,7 @@ void Keywords::add( const std::string & t, const std::string & k, const std::str
 }
 
 void Keywords::add( const std::string & t, const std::string & k, const std::string &  def, const std::string & d ) {
-  plumed_assert( !exists(k) && !reserved(k) &&  (t=="compulsory" || t=="hidden" )); // An optional keyword can't have a default
+  plumed_massert( !exists(k) && !reserved(k) &&  (t=="compulsory" || t=="hidden" ), "failing on keyword " + k ); // An optional keyword can't have a default
   types.insert(  std::pair<std::string,KeyType>(k, KeyType(t)) );
   documentation.insert( std::pair<std::string,std::string>(k,"( default=" + def + " ) " + d) );
   allowmultiple.insert( std::pair<std::string,bool>(k,false) );
@@ -595,6 +595,10 @@ void Keywords::setComponentsIntroduction( const std::string& instr ) {
 }
 
 void Keywords::addOutputComponent( const std::string& name, const std::string& key, const std::string& descr ) {
+  addOutputComponent( name, key, "scalar", descr );
+}
+
+void Keywords::addOutputComponent( const std::string& name, const std::string& key, const std::string& type, const std::string& descr ) {
   plumed_assert( !outputComponentExists(name) );
   plumed_massert( name!=".#!value", name + " is reserved for storing description of value" );
   plumed_massert( name.find("-")==std::string::npos,"dash is reseved character in component names" );
@@ -612,6 +616,7 @@ void Keywords::addOutputComponent( const std::string& name, const std::string& k
 
   ckey.insert( std::pair<std::string,std::string>(name,key) );
   cdocs.insert( std::pair<std::string,std::string>(name,descr) );
+  ctypes.insert( std::pair<std::string,std::string>(name,type) );
   cnames.push_back(name);
 }
 
@@ -625,12 +630,13 @@ void Keywords::removeOutputComponent( const std::string& name ) {
   cdocs.erase(name);
 }
 
-void Keywords::setValueDescription( const std::string& descr ) {
+void Keywords::setValueDescription( const std::string& type, const std::string& descr ) {
   if( !outputComponentExists(".#!value") ) {
     ckey.insert( std::pair<std::string,std::string>(".#!value","default") );
     cdocs.insert( std::pair<std::string,std::string>(".#!value",descr) );
+    ctypes.insert( std::pair<std::string,std::string>(".#!value",type) );
     cnames.push_back(".#!value");
-  } else cdocs[".#!value"] = descr;
+  } else { cdocs[".#!value"] = descr; ctypes[".#!value"] = type; }
 }
 
 bool Keywords::outputComponentExists( const std::string& name ) const {
@@ -650,8 +656,36 @@ bool Keywords::outputComponentExists( const std::string& name ) const {
   return false;
 }
 
+bool Keywords::componentHasCorrectType( const std::string& name, const std::size_t& rank, const bool& hasderiv ) const {
+  if( cstring.find("customize")!=std::string::npos ) return true;
+
+  std::string sname;
+  std::size_t num=name.find_first_of("-");
+  std::size_t num2=name.find_last_of("_");
+  if( num2!=std::string::npos ) sname=name.substr(num2);
+  else if( num!=std::string::npos ) sname=name.substr(0,num);
+  else sname=name;
+
+  if( thisactname=="CENTER" && ctypes.find(sname)->second=="atom" ) return true;
+
+  if( rank==0 ) {
+    return (ctypes.find(sname)->second.find("scalar")!=std::string::npos);
+  } else if( hasderiv ) {
+    return (ctypes.find(sname)->second.find("grid")!=std::string::npos);
+  } else if( rank==1 ) {
+    return (ctypes.find(sname)->second.find("vector")!=std::string::npos);
+  } else if( rank==2 ) {
+    return (ctypes.find(sname)->second.find("matrix")!=std::string::npos);
+  } else plumed_merror("found value without type");
+  return false;
+}
+
 std::string Keywords::getOutputComponentFlag( const std::string& name ) const {
   return ckey.find(name)->second;
+}
+
+std::string Keywords::getOutputComponentType( const std::string& name ) const {
+  return ctypes.find(name)->second;
 }
 
 std::string Keywords::getOutputComponentDescription( const std::string& name ) const {

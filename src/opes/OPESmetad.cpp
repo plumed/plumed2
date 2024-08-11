@@ -348,13 +348,13 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys)
   keys.use("UPDATE_UNTIL");
 
 //output components
-  keys.addOutputComponent("rct","default","estimate of c(t). log(exp(beta V)/beta, should become flat as the simulation converges. Do NOT use for reweighting");
-  keys.addOutputComponent("zed","default","estimate of Z_n. should become flat once no new CV-space region is explored");
-  keys.addOutputComponent("neff","default","effective sample size");
-  keys.addOutputComponent("nker","default","total number of compressed kernels used to represent the bias");
-  keys.addOutputComponent("work","CALC_WORK","total accumulated work done by the bias");
-  keys.addOutputComponent("nlker","NLIST","number of kernels in the neighbor list");
-  keys.addOutputComponent("nlsteps","NLIST","number of steps from last neighbor list update");
+  keys.addOutputComponent("rct","default","scalar","estimate of c(t). log(exp(beta V)/beta, should become flat as the simulation converges. Do NOT use for reweighting");
+  keys.addOutputComponent("zed","default","scalar","estimate of Z_n. should become flat once no new CV-space region is explored");
+  keys.addOutputComponent("neff","default","scalar","effective sample size");
+  keys.addOutputComponent("nker","default","scalar","total number of compressed kernels used to represent the bias");
+  keys.addOutputComponent("work","CALC_WORK","scalar","total accumulated work done by the bias");
+  keys.addOutputComponent("nlker","NLIST","scalar","number of kernels in the neighbor list");
+  keys.addOutputComponent("nlsteps","NLIST","scalar","number of steps from last neighbor list update");
 }
 
 template <class mode>

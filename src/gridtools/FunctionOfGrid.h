@@ -63,9 +63,11 @@ void FunctionOfGrid<T>::registerKeywords(Keywords& keys ) {
   keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
   T tfunc; tfunc.registerKeywords( keys ); if( typeid(tfunc)==typeid(function::Custom()) ) keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
   if( keys.getDisplayName()=="INTEGRATE") {
-    keys.setValueDescription("the numerical integral of the input function over its whole domain");
+    keys.setValueDescription("scalar","the numerical integral of the input function over its whole domain");
+  } else if( keys.getDisplayName()=="SUM") {
+    keys.setValueDescription("scalar","the sum of the value of the function over all the grid points where it has been evaluated");
   } else if( keys.outputComponentExists(".#!value") ) {
-    keys.setValueDescription("the grid obtained by doing an element-wise application of " + keys.getOutputComponentDescription(".#!value") + " to the input grid");
+    keys.setValueDescription("grid","the grid obtained by doing an element-wise application of " + keys.getOutputComponentDescription(".#!value") + " to the input grid");
   }
 }
 

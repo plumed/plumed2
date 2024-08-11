@@ -77,11 +77,11 @@ void Stats::registerKeywords(Keywords& keys) {
   keys.addFlag("SQDEVSUM",false,"calculates only SQDEVSUM");
   keys.addFlag("SQDEV",false,"calculates and store the SQDEV as components");
   keys.addFlag("UPPERDISTS",false,"calculates and store the SQDEV as components");
-  keys.addOutputComponent("sqdevsum","default","the sum of the squared deviations between arguments and parameters");
-  keys.addOutputComponent("corr","default","the correlation between arguments and parameters");
-  keys.addOutputComponent("slope","default","the slope of a linear fit between arguments and parameters");
-  keys.addOutputComponent("intercept","default","the intercept of a linear fit between arguments and parameters");
-  keys.addOutputComponent("sqd","SQDEV","the squared deviations between arguments and parameters");
+  keys.addOutputComponent("sqdevsum","default","scalar","the sum of the squared deviations between arguments and parameters");
+  keys.addOutputComponent("corr","default","scalar","the correlation between arguments and parameters");
+  keys.addOutputComponent("slope","default","scalar","the slope of a linear fit between arguments and parameters");
+  keys.addOutputComponent("intercept","default","scalar","the intercept of a linear fit between arguments and parameters");
+  keys.addOutputComponent("sqd","SQDEV","scalar","the squared deviations between arguments and parameters");
 }
 
 Stats::Stats(const ActionOptions&ao):

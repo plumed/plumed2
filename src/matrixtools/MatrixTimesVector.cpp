@@ -57,7 +57,7 @@ PLUMED_REGISTER_ACTION(MatrixTimesVector,"MATRIX_VECTOR_PRODUCT")
 
 void MatrixTimesVector::registerKeywords( Keywords& keys ) {
   ActionWithMatrix::registerKeywords(keys); keys.use("ARG");
-  keys.setValueDescription("the vector that is obtained by taking the product between the matrix and the vector that were input");
+  keys.setValueDescription("vector","the vector that is obtained by taking the product between the matrix and the vector that were input");
   ActionWithValue::useCustomisableComponents(keys);
 }
 

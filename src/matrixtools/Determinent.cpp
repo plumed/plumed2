@@ -45,7 +45,7 @@ PLUMED_REGISTER_ACTION(Determinant,"DETERMINANT")
 void Determinant::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords(keys);
   keys.add("compulsory","ARG","The matrix that we are calculating the determinant for");
-  keys.setValueDescription("the determinant of the matrix");
+  keys.setValueDescription("scalar","the determinant of the matrix");
 }
 
 Determinant::Determinant( const ActionOptions& ao):

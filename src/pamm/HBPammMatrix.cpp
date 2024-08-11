@@ -211,6 +211,7 @@ void HBPammShortcut::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","HYDROGENS","The list of hydrogen atoms that can form part of a hydrogen bond.  The atoms must be specified using a comma separated list, "
            "an index range or by using a \\ref GROUP");
   multicolvar::MultiColvarShortcuts::shortcutKeywords( keys ); keys.needsAction("HBPAMM_MATRIX");
+  keys.setValueDescription("vector","a vector specifiying the number of hydrogen bonds each of the specified atoms participates within");
 }
 
 HBPammShortcut::HBPammShortcut(const ActionOptions&ao):

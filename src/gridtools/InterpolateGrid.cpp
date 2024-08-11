@@ -79,6 +79,7 @@ void InterpolateGrid::registerKeywords( Keywords& keys ) {
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
   keys.addFlag("MIDPOINTS",false,"interpolate the values of the function at the midpoints of the grid coordinates of the input grid");
   EvaluateGridFunction ii; ii.registerKeywords( keys );
+  keys.setValueDescription("grid","the function evaluated onto the interpolated grid");
 }
 
 InterpolateGrid::InterpolateGrid(const ActionOptions&ao):

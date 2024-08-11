@@ -55,7 +55,7 @@ PLUMED_REGISTER_ACTION(TransposeMatrix,"TRANSPOSE")
 
 void TransposeMatrix::registerKeywords( Keywords& keys ) {
   MatrixOperationBase::registerKeywords( keys );
-  keys.setValueDescription("the transpose of the input matrix");
+  keys.setValueDescription("vector/matrix","the transpose of the input matrix");
 }
 
 TransposeMatrix::TransposeMatrix(const ActionOptions& ao):

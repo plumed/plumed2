@@ -78,7 +78,7 @@ typedef function::FunctionOfVector<Difference> VectorDifference;
 PLUMED_REGISTER_ACTION(VectorDifference,"DIFFERENCE_VECTOR")
 
 void Difference::registerKeywords(Keywords& keys) {
-  keys.setValueDescription("a function that measures the difference");
+  keys.setValueDescription("scalar/vector","a function that measures the difference");
 }
 
 void Difference::read( ActionWithArguments* action ) {

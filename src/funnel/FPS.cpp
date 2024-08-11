@@ -122,8 +122,8 @@ void FUNNEL_PS::registerKeywords(Keywords& keys) {
   keys.add("atoms","ANCHOR","Closest protein atom to the ligand, picked to avoid pbc problems during the simulation");
   keys.add("compulsory","POINTS","6 values defining x, y, and z of the 2 points used to construct the line. The order should be A_x,A_y,A_z,B_x,B_y,B_z.");
   keys.addFlag("SQUARED-ROOT",false,"Used to initialize the creation of the alignment variable");
-  keys.addOutputComponent("lp","default","the position along the funnel line");
-  keys.addOutputComponent("ld","default","the distance from the funnel line");
+  keys.addOutputComponent("lp","default","scalar","the position along the funnel line");
+  keys.addOutputComponent("ld","default","scalar","the distance from the funnel line");
 }
 
 FUNNEL_PS::FUNNEL_PS(const ActionOptions&ao):

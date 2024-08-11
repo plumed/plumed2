@@ -65,7 +65,7 @@ void ProjectPoints::registerKeywords( Keywords& keys ) {
   keys.add("numbered","FUNC","a function that is applied on the distances between the points in the low dimensional space");
   keys.add("numbered","WEIGHTS","the matrix with the weights of the target quantities");
   keys.add("compulsory","CGTOL","1E-6","the tolerance for the conjugate gradient minimization");
-  keys.addOutputComponent("coord","default","the coordinates of the points in the low dimensional space");
+  keys.addOutputComponent("coord","default","scalar/vector","the coordinates of the points in the low dimensional space");
 }
 
 

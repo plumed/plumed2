@@ -47,9 +47,9 @@ void RMSDVector::registerKeywords(Keywords& keys) {
   keys.addFlag("SQUARED",false," This should be set if you want mean squared displacement instead of RMSD ");
   keys.addFlag("UNORMALIZED",false,"by default the mean sequare deviation or root mean square deviation is calculated.  If this option is given no averaging is done");
   keys.addFlag("DISPLACEMENT",false,"Calculate the vector of displacements instead of the length of this vector");
-  keys.addOutputComponent("disp","DISPLACEMENT","the vector of displacements for the atoms");
-  keys.addOutputComponent("dist","DISPLACEMENT","the RMSD distance the atoms have moved");
-  keys.setValueDescription("a vector containing the RMSD between the instantaneous structure and each of the reference structures that were input");
+  keys.addOutputComponent("disp","DISPLACEMENT","vector/matrix","the vector of displacements for the atoms");
+  keys.addOutputComponent("dist","DISPLACEMENT","scalar/vector","the RMSD distance the atoms have moved");
+  keys.setValueDescription("scalar/vector","a vector containing the RMSD between the instantaneous structure and each of the reference structures that were input");
 }
 
 RMSDVector::RMSDVector(const ActionOptions&ao):

@@ -55,8 +55,8 @@ void CollectFrames::registerKeywords( Keywords& keys ) {
   keys.add("optional","ARG","the arguments you would like to collect");
   keys.add("optional","ATOMS","list of atomic positions that you would like to collect and store for later analysis");
   keys.add("optional","LOGWEIGHTS","list of actions that calculates log weights that should be used to weight configurations when calculating averages");
-  keys.addOutputComponent("data","default","the data that is being collected by this action");
-  keys.addOutputComponent("logweights","default","the logarithms of the weights of the data points");
+  keys.addOutputComponent("data","default","matrix","the data that is being collected by this action");
+  keys.addOutputComponent("logweights","default","vector","the logarithms of the weights of the data points");
   keys.needsAction("POSITION"); keys.needsAction("CONCATENATE"); keys.needsAction("MEAN"); keys.needsAction("CUSTOM");
   keys.needsAction("CONCATENATE"); keys.needsAction("COLLECT"); keys.needsAction("TRANSPOSE"); keys.needsAction("RMSD_VECTOR");
   keys.needsAction("COMBINE"); keys.needsAction("VSTACK"); keys.needsAction("CONSTANT");

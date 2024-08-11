@@ -97,6 +97,7 @@ void XYTorsions::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
   keys.add("numbered","ATOMS","the pairs of atoms that you would like to calculate the angles for");
   keys.reset_style("ATOMS","atoms"); MultiColvarShortcuts::shortcutKeywords( keys );
+  keys.setValueDescription("vector","the angle between the vector connecting each pair of atoms and the the positive X/Y/Z direction around the X/Y/Z axis");
   keys.needsAction("FIXEDATOM"); keys.needsAction("TORSION");
 }
 

@@ -93,7 +93,7 @@ void LWalls::registerKeywords(Keywords& keys) {
   keys.add("compulsory","OFFSET","0.0","the offset for the start of the wall.  The o_i in the expression for a wall.");
   keys.add("compulsory","EXP","2.0","the powers for the walls.  The e_i in the expression for a wall.");
   keys.add("compulsory","EPS","1.0","the values for s_i in the expression for a wall");
-  keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
+  keys.addOutputComponent("force2","default","scalar","the instantaneous value of the squared force due to this bias potential");
 }
 
 LWalls::LWalls(const ActionOptions&ao):

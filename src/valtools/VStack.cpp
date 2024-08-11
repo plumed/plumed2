@@ -61,7 +61,7 @@ PLUMED_REGISTER_ACTION(VStack,"VSTACK")
 
 void VStack::registerKeywords( Keywords& keys ) {
   ActionWithMatrix::registerKeywords( keys ); keys.use("ARG");
-  keys.setValueDescription("a matrix that contains the input vectors in its columns");
+  keys.setValueDescription("matrix","a matrix that contains the input vectors in its columns");
 }
 
 VStack::VStack(const ActionOptions& ao):

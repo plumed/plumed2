@@ -92,9 +92,9 @@ void FourierTransform::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","FOURIER_PARAMETERS","default","what kind of normalization is applied to the output and if the Fourier transform in FORWARD or BACKWARD. This keyword takes the form FOURIER_PARAMETERS=A,B, where A and B can be 0, 1 or -1. The default values are A=1 (no normalization at all) and B=1 (forward FFT). Other possible choices for A are: "
            "A=-1: normalize by the number of data, "
            "A=0: normalize by the square root of the number of data (one forward and followed by backward FFT recover the original data). ");
-  keys.addOutputComponent("real","FT_TYPE","the real part of the function");
-  keys.addOutputComponent("imag","FT_TYPE","the imaginary part of the function");
-  keys.setValueDescription("the fourier transform of the input grid");
+  keys.addOutputComponent("real","FT_TYPE","grid","the real part of the function");
+  keys.addOutputComponent("imag","FT_TYPE","grid","the imaginary part of the function");
+  keys.setValueDescription("grid","the fourier transform of the input grid");
 }
 
 FourierTransform::FourierTransform(const ActionOptions&ao):

@@ -183,8 +183,8 @@ void PCAVars::registerKeywords( Keywords& keys ) {
            "\\ref dists");
   keys.add("optional","ARG","if there are arguments to be used specify them here");
   keys.addFlag("NOPBC",false,"do not use periodic boundary conditions when computing this quantity");
-  keys.addOutputComponent("eig","default","the projections on the eigenvalues");
-  keys.addOutputComponent("residual","default","the residual distance that is not projected on any of the eigenvalues");
+  keys.addOutputComponent("eig","default","vector","the projections on the eigenvalues");
+  keys.addOutputComponent("residual","default","scalar","the residual distance that is not projected on any of the eigenvalues");
   keys.needsAction("RMSD"); keys.needsAction("PDB2CONSTANT"); keys.needsAction("TRANSPOSE");
   keys.needsAction("EUCLIDEAN_DISTANCE"); keys.needsAction("CONCATENATE"); keys.needsAction("COMBINE"); keys.needsAction("CONSTANT");
   keys.needsAction("COMBINE"); keys.needsAction("MATRIX_VECTOR_PRODUCT"); keys.needsAction("CUSTOM"); keys.needsAction("SUM");

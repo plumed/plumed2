@@ -228,30 +228,35 @@ void OptimizerBias::registerKeywords(Keywords& keys) {
   keys.addOutputComponent(
     "force2",
     "default",
+    "scalar",
     "Square of the biasing force."
   );
 
   keys.addOutputComponent(
     "x",
     "default",
+    "scalar",
     "Optimal biasing direction: x component."
   );
 
   keys.addOutputComponent(
     "y",
     "default",
+    "scalar",
     "Optimal biasing direction: y component."
   );
 
   keys.addOutputComponent(
     "z",
     "default",
+    "scalar",
     "Optimal biasing direction: z component."
   );
 
   keys.addOutputComponent(
     "tdist",
     "default",
+    "scalar",
     "Total distance traveled by biased atoms."
   );
 }

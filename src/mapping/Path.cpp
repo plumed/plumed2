@@ -212,10 +212,10 @@ void Path::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys ); Path::registerInputFileKeywords( keys );
   keys.add("optional","PROPERTY","the property to be used in the index. This should be in the REMARK of the reference");
   keys.add("compulsory","LAMBDA","the lambda parameter is needed for smoothing, is in the units of plumed");
-  keys.addOutputComponent("gspath","GPATH","the position along the path calculated using the geometric formula");
-  keys.addOutputComponent("gzpath","GPATH","the distance from the path calculated using the geometric formula");
-  keys.addOutputComponent("spath","default","the position along the path calculated");
-  keys.addOutputComponent("zpath","default","the distance from the path calculated");
+  keys.addOutputComponent("gspath","GPATH","scalar","the position along the path calculated using the geometric formula");
+  keys.addOutputComponent("gzpath","GPATH","scalar","the distance from the path calculated using the geometric formula");
+  keys.addOutputComponent("spath","default","scalar","the position along the path calculated");
+  keys.addOutputComponent("zpath","default","scalar","the distance from the path calculated");
 }
 
 void Path::registerInputFileKeywords( Keywords& keys ) {

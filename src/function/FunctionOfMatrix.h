@@ -81,13 +81,13 @@ void FunctionOfMatrix<T>::registerKeywords(Keywords& keys ) {
   keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
   T tfunc; tfunc.registerKeywords( keys );
   if( keys.getDisplayName()=="SUM" ) {
-    keys.setValueDescription("the sum of all the elements in the input matrix");
+    keys.setValueDescription("scalar","the sum of all the elements in the input matrix");
   } else if( keys.getDisplayName()=="HIGHEST" ) {
-    keys.setValueDescription("the largest element of the input matrix");
+    keys.setValueDescription("scalar","the largest element of the input matrix");
   } else if( keys.getDisplayName()=="LOWEST" ) {
-    keys.setValueDescription("the smallest element in the input matrix");
+    keys.setValueDescription("scalar","the smallest element in the input matrix");
   } else if( keys.outputComponentExists(".#!value") ) {
-    keys.setValueDescription("the matrix obtained by doing an element-wise application of " + keys.getOutputComponentDescription(".#!value") + " to the input matrix");
+    keys.setValueDescription("matrix","the matrix obtained by doing an element-wise application of " + keys.getOutputComponentDescription(".#!value") + " to the input matrix");
   }
 }
 

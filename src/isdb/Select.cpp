@@ -82,7 +82,7 @@ void Select::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","SELECTOR","name of the variable used to select");
-  keys.setValueDescription("the value of the selected argument");
+  keys.setValueDescription("scalar","the value of the selected argument");
 }
 
 Select::Select(const ActionOptions&ao):

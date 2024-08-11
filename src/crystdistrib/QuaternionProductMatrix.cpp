@@ -51,10 +51,10 @@ PLUMED_REGISTER_ACTION(QuaternionProductMatrix,"QUATERNION_PRODUCT_MATRIX")
 
 void QuaternionProductMatrix::registerKeywords( Keywords& keys ) {
   ActionWithMatrix::registerKeywords(keys); keys.use("ARG");
-  keys.addOutputComponent("w","default","the real component of quaternion");
-  keys.addOutputComponent("i","default","the i component of the quaternion");
-  keys.addOutputComponent("j","default","the j component of the quaternion");
-  keys.addOutputComponent("k","default","the k component of the quaternion");
+  keys.addOutputComponent("w","default","matrix","the real component of quaternion");
+  keys.addOutputComponent("i","default","matrix","the i component of the quaternion");
+  keys.addOutputComponent("j","default","matrix","the j component of the quaternion");
+  keys.addOutputComponent("k","default","matrix","the k component of the quaternion");
 }
 
 QuaternionProductMatrix::QuaternionProductMatrix(const ActionOptions&ao):

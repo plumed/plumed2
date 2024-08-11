@@ -58,8 +58,8 @@ void FunctionOfScalar<T>::registerKeywords(Keywords& keys) {
   std::size_t und=name.find("_SCALAR"); keys.setDisplayName( name.substr(0,und) );
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
   T tfunc; tfunc.registerKeywords( keys );
-  if( keys.getDisplayName()=="SUM" ) keys.setValueDescription("the sum of all the input arguments");
-  else if( keys.getDisplayName()=="MEAN" ) keys.setValueDescription("the mean of all the input arguments");
+  if( keys.getDisplayName()=="SUM" ) keys.setValueDescription("scalar","the sum of all the input arguments");
+  else if( keys.getDisplayName()=="MEAN" ) keys.setValueDescription("scalar","the mean of all the input arguments");
 }
 
 template <class T>

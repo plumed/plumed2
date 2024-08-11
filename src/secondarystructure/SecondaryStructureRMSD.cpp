@@ -88,8 +88,9 @@ void SecondaryStructureRMSD::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","NN","8","The n parameter of the switching function");
   keys.add("compulsory","MM","12","The m parameter of the switching function");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
-  keys.addOutputComponent("struct","default","the vectors containing the rmsd distances between the residues and each of the reference structures");
-  keys.addOutputComponent("lessthan","default","the number blocks of residues that have an RMSD from the secondary structure that is less than the threshold");
+  keys.setValueDescription("vector","a vector containing the rmsd distance between each of the residue segments and the reference structure");
+  keys.addOutputComponent("struct","default","vector","the vectors containing the rmsd distances between the residues and each of the reference structures");
+  keys.addOutputComponent("lessthan","default","scalar","the number blocks of residues that have an RMSD from the secondary structure that is less than the threshold");
   keys.needsAction("SECONDARY_STRUCTURE_RMSD"); keys.needsAction("LESS_THAN"); keys.needsAction("SUM");
 }
 

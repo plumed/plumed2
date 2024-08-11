@@ -59,8 +59,8 @@ PLUMED_REGISTER_ACTION(DiagonalizeMatrix,"DIAGONALIZE")
 void DiagonalizeMatrix::registerKeywords( Keywords& keys ) {
   MatrixOperationBase::registerKeywords( keys );
   keys.add("compulsory","VECTORS","all","the eigenvalues and vectors that you would like to calculate.  1=largest, 2=second largest and so on");
-  keys.addOutputComponent("vals","default","the eigevalues of the input matrix");
-  keys.addOutputComponent("vecs","default","the eigenvectors of the input matrix");
+  keys.addOutputComponent("vals","default","scalar","the eigevalues of the input matrix");
+  keys.addOutputComponent("vecs","default","vector","the eigenvectors of the input matrix");
 }
 
 DiagonalizeMatrix::DiagonalizeMatrix(const ActionOptions& ao):
