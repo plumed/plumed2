@@ -48,11 +48,12 @@ class DumpPDB :
   std::string fmt;
   std::string file;
   std::string description;
+  std::vector<unsigned> pdb_resid_indices;
   std::vector<double> beta, occupancy;
   std::vector<std::string> argnames;
   std::vector<AtomNumber> pdb_atom_indices;
   void buildArgnames();
-  void printAtom( OFile& opdbf, const unsigned& anum, const Vector& pos, const double& m, const double& q ) const ;
+  void printAtom( OFile& opdbf, const unsigned& anum, const unsigned& rnum, const Vector& pos, const double& m, const double& q ) const ;
 public:
   static void registerKeywords( Keywords& keys );
   explicit DumpPDB(const ActionOptions&);
@@ -75,6 +76,7 @@ void DumpPDB::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","BETA","1.0","vector of values to output in the beta column of the pdb file");
   keys.add("optional","DESCRIPTION","the title to use for your PDB output");
   keys.add("optional","ATOM_INDICES","the indices of the atoms in your PDB output");
+  keys.add("optional","RESIDUE_INDICES","the indices of the residues in your PDB output");
   keys.add("optional","ARG_NAMES","the names of the arguments that are being output");
 }
 
@@ -99,6 +101,11 @@ DumpPDB::DumpPDB(const ActionOptions&ao):
     if( pdb_atom_indices.size()!=atom_args[0]->getShape()[1]/3 ) error("mismatch between size of matrix containing positions and vector of atom indices");
     beta.resize( atom_args[0]->getShape()[1]/3 ); occupancy.resize( atom_args[0]->getShape()[1]/3 );
     parseVector("OCCUPANCY", occupancy ); parseVector("BETA", beta );
+    parseVector("RESIDUE_INDICES",pdb_resid_indices);
+    if( pdb_resid_indices.size()==0 ) {
+      pdb_resid_indices.resize( pdb_atom_indices.size() );
+      for(unsigned i=0; i<pdb_resid_indices.size(); ++i) pdb_resid_indices[i] = pdb_atom_indices[i].serial();
+    } else if( pdb_resid_indices.size()!=pdb_atom_indices.size() ) error("mismatch between number of atom indices provided and number of residue indices provided");
   }
   log.printf("  printing configurations to PDB file to file named %s \n", file.c_str() );
   parseVector("ARG_NAMES",argnames); if( argnames.size()==0 ) buildArgnames();
@@ -114,11 +121,12 @@ DumpPDB::DumpPDB(const ActionOptions&ao):
   }
 }
 
-void DumpPDB::printAtom( OFile& opdbf, const unsigned& anum, const Vector& pos, const double& m, const double& q ) const {
+void DumpPDB::printAtom( OFile& opdbf, const unsigned& anum, const unsigned& rnum, const Vector& pos, const double& m, const double& q ) const {
+  if( rnum>999 ) plumed_merror("atom number too large to be used as residue number");
   std::array<char,6> at; const char* msg = h36::hy36encode(5,anum,&at[0]);
   plumed_assert(msg==nullptr) << msg; at[5]=0; double lunits = plumed.getUnits().getLength()/0.1;
   opdbf.printf("ATOM  %s  X   RES  %4u    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
-               &at[0], anum, lunits*pos[0], lunits*pos[1], lunits*pos[2], m, q );
+               &at[0], rnum, lunits*pos[0], lunits*pos[1], lunits*pos[2], m, q );
 }
 
 void DumpPDB::buildArgnames() {
@@ -177,7 +185,7 @@ void DumpPDB::update() {
         pos[0]=getPntrToArgument(atomarg)->get(npos*(3*i+0) + k);
         pos[1]=getPntrToArgument(atomarg)->get(npos*(3*i+1) + k);
         pos[2]=getPntrToArgument(atomarg)->get(npos*(3*i+2) + k);
-        printAtom( opdbf, pdb_atom_indices[k].serial(), pos, occupancy[k], beta[k] );
+        printAtom( opdbf, pdb_atom_indices[k].serial(), pdb_resid_indices[k], pos, occupancy[k], beta[k] );
       }
     }
     opdbf.printf("END\n");

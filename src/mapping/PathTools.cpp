@@ -160,6 +160,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
     fprintf(out,"Reparameterising path in file named %s so that all frames are equally spaced \n",ifilename.c_str() );
     FILE* fp=fopen(ifilename.c_str(),"r"); PDB mypdb; bool do_read=mypdb.readFromFilepointer(fp,false,0.1);
     std::vector<double> alig( mypdb.getOccupancy() ), disp( mypdb.getBeta() ); std::vector<AtomNumber> indices( mypdb.getAtomNumbers() );
+    std::vector<unsigned> residue_indices( indices.size() ); for(unsigned i=0; i<residue_indices.size(); ++i) residue_indices[i] = mypdb.getResidueNumber( indices[i] );
     // Count the number of frames in the input file
     unsigned nfram=1; while ( do_read ) { if( !mypdb.readFromFilepointer(fp,false,0.1) ) break; nfram++; }
     if( argstr.size()>0 ) {
@@ -214,6 +215,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
       pinput += " ARG=" + argstr[0]; for(unsigned i=1; i<argstr.size(); ++i ) pinput += "," + argstr[i];
     } else {
       std::string num; Tools::convert( indices[0].serial(), num ); pinput += " ATOMS=data ATOM_INDICES=" + num; for(unsigned i=1; i<indices.size(); ++i ) { Tools::convert( indices[i].serial(), num ); pinput += "," + num; }
+      Tools::convert( residue_indices[0], num ); pinput += " RESIDUE_INDICES=" + num; for(unsigned i=1; i<residue_indices.size(); ++i ) { Tools::convert( residue_indices[i], num ); pinput += "," + num; }
       std::string anum, dnum; Tools::convert( alig[0], anum ); Tools::convert( disp[0], dnum );
       pinput += " OCCUPANCY=" + anum; for(unsigned i=1; i<alig.size(); ++i) { Tools::convert( alig[i], anum ); pinput += "," + anum; }
       pinput += " BETA=" + dnum; for(unsigned i=1; i<disp.size(); ++i) { Tools::convert( disp[i], dnum ); pinput += "," + dnum; }
@@ -276,7 +278,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   }
 
 // Now create the metric object
-  std::vector<double> alig, disp;
+  std::vector<double> alig, disp; std::vector<unsigned> residue_indices;
   if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) {
     std::string trinput = "endT: TRANSPOSE ARG=end";
     const char* tinp=trinput.c_str(); plmd.cmd("readInputLine",tinp);
@@ -292,6 +294,9 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
     for(unsigned i=1; i<disp.size(); ++i) { Tools::convert( disp[i], dnum ); minput += "," + dnum; }
     const char* mcinp=minput.c_str(); plmd.cmd("readInputLine",mcinp);
     std::string tinput = "CUSTOM ARG=d.disp FUNC=x PERIODIC=NO"; const char* tcinp=tinput.c_str(); plmd.cmd("readInputLine",tcinp);
+    // Get the residue numbers
+    residue_indices.resize( pdb.size() );
+    for(unsigned i=0; i<residue_indices.size(); ++i) residue_indices[i] = pdb.getResidueNumber( indices[i] );
   } else if( mtype=="EUCLIDEAN" ) {
     std::string end_args="ARG1=" + argstr[0] + "_end", start_args="ARG2=" + argstr[0] + "_start";
     for(unsigned i=1; i<argstr.size(); ++i ) { end_args += "," + argstr[i] + "_end"; start_args += "," + argstr[i] + "_start"; }
@@ -361,6 +366,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
     }
     const char* icinp=inpt.c_str(); plmd.cmd("readInputLine",icinp); std::string num; Tools::convert( indices[0].serial(), num );
     pinput += " ATOMS=atom_data ATOM_INDICES=" + num; for(unsigned i=1; i<indices.size(); ++i ) { Tools::convert( indices[i].serial(), num ); pinput += "," + num; }
+    Tools::convert( residue_indices[0], num ); pinput += " RESIDUE_INDICES=" + num; for(unsigned i=1; i<residue_indices.size(); ++i ) { Tools::convert( residue_indices[i], num ); pinput += "," + num; }
     std::string anum, dnum; Tools::convert( alig[0], anum ); Tools::convert( disp[0], dnum );
     pinput += " OCCUPANCY=" + anum; for(unsigned i=1; i<alig.size(); ++i) { Tools::convert( alig[i], anum ); pinput += "," + anum; }
     pinput += " BETA=" + dnum; for(unsigned i=1; i<disp.size(); ++i) { Tools::convert( disp[i], dnum ); pinput += "," + dnum; }
