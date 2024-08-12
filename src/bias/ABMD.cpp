@@ -96,7 +96,6 @@ PLUMED_REGISTER_ACTION(ABMD,"ABMD")
 
 void ABMD::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
-  keys.use("ARG");
   keys.add("compulsory","TO","The array of target values");
   keys.add("compulsory","KAPPA","The array of force constants.");
   keys.add("optional","MIN","Array of starting values for the bias (set rho_m(t), otherwise it is set using the current value of ARG)");

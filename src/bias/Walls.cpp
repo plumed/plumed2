@@ -39,7 +39,7 @@ PLUMED_REGISTER_ACTION(Walls,"LOWER_WALLS")
 
 void Walls::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords(keys);
-  keys.add("numbered","ARG","the arguments on which the bias is acting");
+  keys.addInputKeyword("numbered","ARG","scalar/vector","the arguments on which the bias is acting");
   keys.add("compulsory","AT","the positions of the wall. The a_i in the expression for a wall.");
   keys.add("compulsory","KAPPA","the force constant for the wall.  The k_i in the expression for a wall.");
   keys.add("compulsory","OFFSET","0.0","the offset for the start of the wall.  The o_i in the expression for a wall.");

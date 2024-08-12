@@ -163,7 +163,6 @@ PLUMED_REGISTER_ACTION(Rescale,"RESCALE")
 
 void Rescale::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
-  keys.use("ARG");
   keys.add("compulsory","TEMP","temperature");
   keys.add("compulsory","SELECTOR", "name of the SELECTOR used for rescaling");
   keys.add("compulsory","MAX_RESCALE","maximum values for rescaling");

@@ -67,7 +67,8 @@ PLUMED_REGISTER_ACTION(FindGridOptimum,"FIND_GRID_MAXIMUM")
 PLUMED_REGISTER_ACTION(FindGridOptimum,"FIND_GRID_MINIMUM")
 
 void FindGridOptimum::registerKeywords( Keywords& keys ) {
-  ActionWithGrid::registerKeywords( keys ); keys.use("ARG");
+  ActionWithGrid::registerKeywords( keys );
+  keys.addInputKeyword("compulsory","ARG","grid","the label for the function on the grid that you would like to find the optimum in");
   keys.addFlag("NOINTERPOL",false,"do not interpolate the function when finding the optimum");
   keys.add("compulsory","CGTOL","1E-4","the tolerance for the conjugate gradient optimization");
   keys.addOutputComponent("optval","default","scalar","the value of the function at the optimum");

@@ -71,8 +71,8 @@ PLUMED_REGISTER_ACTION(VectorEvalGrid,"EVALUATE_FUNCTION_FROM_GRID_VECTOR")
 
 void EvaluateFunctionOnGrid::registerKeywords(Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
-  keys.add("compulsory","GRID","the name of the grid that we are using to evaluate the function");
-  keys.add("optional","ARG","the arguments that you would like to use when evaluating the function.  If not specified these are determined from the names of the grid dimensions");
+  keys.addInputKeyword("compulsory","GRID","grid","the name of the grid that we are using to evaluate the function");
+  keys.addInputKeyword("optional","ARG","scalar/vector","the arguments that you would like to use when evaluating the function.  If not specified these are determined from the names of the grid dimensions");
   keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
   EvaluateGridFunction ii; ii.registerKeywords( keys );
   keys.addActionNameSuffix("_SCALAR"); keys.addActionNameSuffix("_VECTOR");

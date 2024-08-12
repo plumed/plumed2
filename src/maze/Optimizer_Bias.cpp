@@ -200,8 +200,6 @@ PLUMED_REGISTER_ACTION(OptimizerBias, "MAZE_OPTIMIZER_BIAS")
 void OptimizerBias::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
 
-  keys.use("ARG");
-
   keys.add(
     "compulsory",
     "BIASING_RATE",

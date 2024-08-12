@@ -38,9 +38,9 @@ PLUMED_REGISTER_ACTION(ActionToGetData,"GET")
 
 void ActionToGetData::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys); ActionPilot::registerKeywords(keys); ActionWithArguments::registerKeywords(keys);
+  keys.addInputKeyword("optional","ARG","scalar/vector/matrix/grid","the label of the value that you would like to GET");
   keys.add("compulsory","STRIDE","1","the frequency with which the quantities of interest should be stored");
   keys.add("compulsory","TYPE","value","what do you want to collect for the value can be derivative/force");
-  keys.use("ARG");
   keys.setValueDescription("scalar/vector/matrix/grid","a copy of the data in the value specified by the ARG keyword");
 }
 

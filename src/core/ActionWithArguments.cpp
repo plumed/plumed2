@@ -35,19 +35,20 @@
 namespace PLMD {
 
 void ActionWithArguments::registerKeywords(Keywords& keys) {
-  keys.reserve("numbered","ARG","the input for this action is the scalar output from one or more other actions. The particular scalars that you will use "
-               "are referenced using the label of the action. If the label appears on its own then it is assumed that the Action calculates "
-               "a single scalar value.  The value of this scalar is thus used as the input to this new action.  If * or *.* appears the "
-               "scalars calculated by all the proceeding actions in the input file are taken.  Some actions have multi-component outputs and "
-               "each component of the output has a specific label.  For example a \\ref DISTANCE action labelled dist may have three components "
-               "x, y and z.  To take just the x component you should use dist.x, if you wish to take all three components then use dist.*."
-               "More information on the referencing of Actions can be found in the section of the manual on the PLUMED \\ref Syntax.  "
-               "Scalar values can also be "
-               "referenced using POSIX regular expressions as detailed in the section on \\ref Regex. To use this feature you you must compile "
-               "PLUMED with the appropriate flag.");
+//  keys.reserve("numbered","ARG","the input for this action is the scalar output from one or more other actions. The particular scalars that you will use "
+//               "are referenced using the label of the action. If the label appears on its own then it is assumed that the Action calculates "
+//               "a single scalar value.  The value of this scalar is thus used as the input to this new action.  If * or *.* appears the "
+//               "scalars calculated by all the proceeding actions in the input file are taken.  Some actions have multi-component outputs and "
+//               "each component of the output has a specific label.  For example a \\ref DISTANCE action labelled dist may have three components "
+//               "x, y and z.  To take just the x component you should use dist.x, if you wish to take all three components then use dist.*."
+//               "More information on the referencing of Actions can be found in the section of the manual on the PLUMED \\ref Syntax.  "
+//               "Scalar values can also be "
+//               "referenced using POSIX regular expressions as detailed in the section on \\ref Regex. To use this feature you you must compile "
+//               "PLUMED with the appropriate flag.");
 }
 
 void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Value*>&arg) {
+  if( keywords.getArgumentType(key).length()==0 ) warning("keyword " + key + " for reading arguments should is registered using Keyword::add rather than Keyword::addInputKeyword.  The keyword will thus not appear in the correct place in the manual");
   std::string def; std::vector<std::string> c; arg.clear(); parseVector(key,c);
   if( c.size()==0 && (keywords.style(key,"compulsory") || keywords.style(key,"hidden")) ) {
     if( keywords.getDefaultValue(key,def) ) c.push_back( def );
@@ -57,6 +58,7 @@ void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Va
 }
 
 bool ActionWithArguments::parseArgumentList(const std::string&key,int i,std::vector<Value*>&arg) {
+  if( keywords.getArgumentType(key).length()==0 ) warning("keyword " + key + " for reading argument should is registered using Keyword::add rather than Keyword::addInputKeyword.  The keyword will thus not appear in the correct place in the manual");
   std::vector<std::string> c;
   arg.clear();
   if(parseNumberedVector(key,i,c)) {
@@ -188,6 +190,9 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
         }
       }
     }
+  }
+  for(unsigned i=0; i<arg.size(); ++i) {
+    if( !readact->keywords.checkArgumentType( arg[i]->getRank(), arg[i]->hasDerivatives() ) ) readact->warning("documentation for input type is not provided in " + readact->getName() );
   }
 }
 

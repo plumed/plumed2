@@ -124,7 +124,6 @@ PLUMED_REGISTER_ACTION(Caliber,"CALIBER")
 
 void Caliber::registerKeywords( Keywords& keys ) {
   Bias::registerKeywords(keys);
-  keys.use("ARG");
   keys.addFlag("NOENSEMBLE",false,"don't perform any replica-averaging");
   keys.add("compulsory","FILE","the name of the file containing the time-resolved values");
   keys.add("compulsory","KAPPA","a force constant, this can be use to scale a constant estimated on-the-fly using AVERAGING");

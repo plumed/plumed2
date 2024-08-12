@@ -166,7 +166,6 @@ PLUMED_REGISTER_ACTION(FISST,"FISST")
 
 void FISST::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
-  keys.use("ARG");
   keys.add("compulsory","PERIOD","Steps corresponding to the learning rate");
   keys.add("optional","RESET_PERIOD","Reset the learning statistics every time this number of steps comes around.");
   keys.add("compulsory","NINTERPOLATE","Number of grid points on which to do interpolation.");

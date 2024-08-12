@@ -79,8 +79,7 @@ public:
 PLUMED_REGISTER_ACTION(Restraint,"RESTRAINT_SCALAR")
 
 void Restraint::registerKeywords(Keywords& keys) {
-  Bias::registerKeywords(keys);
-  keys.use("ARG"); keys.setDisplayName("RESTRAINT");
+  Bias::registerKeywords(keys); keys.setDisplayName("RESTRAINT");
   keys.add("compulsory","SLOPE","0.0","specifies that the restraint is linear and what the values of the force constants on each of the variables are");
   keys.add("compulsory","KAPPA","0.0","specifies that the restraint is harmonic and what the values of the force constants on each of the variables are");
   keys.add("compulsory","AT","the position of the restraint");

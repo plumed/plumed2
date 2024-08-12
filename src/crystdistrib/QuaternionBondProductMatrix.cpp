@@ -73,7 +73,8 @@ PLUMED_REGISTER_ACTION(QuaternionBondProductMatrix,"QUATERNION_BOND_PRODUCT_MATR
 
 
 void QuaternionBondProductMatrix::registerKeywords( Keywords& keys ) {
-  ActionWithMatrix::registerKeywords(keys); keys.use("ARG");
+  ActionWithMatrix::registerKeywords(keys);
+  keys.addInputKeyword("compulsory","ARG","vector/matrix","this action takes 8 arguments.  The first four should be the w,i,j and k components of a quaternion vector.  The second four should be contact matrix and the matrices should be the x, y and z components of the bond vectors");
   keys.addOutputComponent("w","default","matrix","the real component of quaternion");
   keys.addOutputComponent("i","default","matrix","the i component of the quaternion");
   keys.addOutputComponent("j","default","matrix","the j component of the quaternion");

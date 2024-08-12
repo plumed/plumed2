@@ -73,7 +73,6 @@ PLUMED_REGISTER_ACTION(Ensemble,"ENSEMBLE")
 
 void Ensemble::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
-  keys.use("ARG");
   keys.addFlag("REWEIGHT",false,"simple REWEIGHT using the latest ARG as energy");
   keys.addFlag("CENTRAL",false,"calculate a central moment instead of a standard moment");
   keys.add("optional","TEMP","the system temperature - this is only needed if you are reweighting");

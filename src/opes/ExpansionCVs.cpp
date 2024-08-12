@@ -30,6 +30,7 @@ void ExpansionCVs::registerKeywords(Keywords& keys)
   ActionWithArguments::registerKeywords(keys);
   ActionWithValue::useCustomisableComponents(keys);
   keys.add("compulsory","TEMP","-1","temperature. If not specified tries to get it from MD engine");
+  keys.addInputKeyword("compulsory","ARG","scalar","the labels of the scalar values that are input to this action");
 }
 
 ExpansionCVs::ExpansionCVs(const ActionOptions&ao)

@@ -75,7 +75,8 @@ PLUMED_REGISTER_ACTION(InterpolateGrid,"INTERPOLATE_GRID")
 
 void InterpolateGrid::registerKeywords( Keywords& keys ) {
   ActionWithGrid::registerKeywords( keys );
-  keys.add("optional","GRID_BIN","the number of bins for the grid"); keys.use("ARG");
+  keys.add("optional","GRID_BIN","the number of bins for the grid");
+  keys.addInputKeyword("compulsory","ARG","grid","the label for function on the grid that you would like to interpolate");
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
   keys.addFlag("MIDPOINTS",false,"interpolate the values of the function at the midpoints of the grid coordinates of the input grid");
   EvaluateGridFunction ii; ii.registerKeywords( keys );

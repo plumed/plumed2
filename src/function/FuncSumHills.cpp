@@ -200,7 +200,6 @@ PLUMED_REGISTER_ACTION(FuncSumHills,"FUNCSUMHILLS")
 
 void FuncSumHills::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
-  keys.use("ARG");
   keys.add("optional","HILLSFILES"," source file for hills creation(may be the same as HILLS)"); // this can be a vector!
   keys.add("optional","HISTOFILES"," source file for histogram creation(may be the same as HILLS)"); // also this can be a vector!
   keys.add("optional","HISTOSIGMA"," sigmas for binning when the histogram correction is needed    ");

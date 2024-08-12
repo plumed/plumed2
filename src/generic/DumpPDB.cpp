@@ -67,7 +67,8 @@ PLUMED_REGISTER_ACTION(DumpPDB,"DUMPPDB")
 void DumpPDB::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
-  ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
+  ActionWithArguments::registerKeywords( keys );
+  keys.addInputKeyword("optional","ARG","vector/matrix","the values that are being output in the PDB file");
   keys.add("optional","ATOMS","value containing positions of atoms that should be output");
   keys.add("compulsory","STRIDE","0","the frequency with which the atoms should be output");
   keys.add("compulsory","FILE","the name of the file on which to output these quantities");

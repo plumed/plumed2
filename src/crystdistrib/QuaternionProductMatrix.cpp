@@ -50,7 +50,8 @@ public:
 PLUMED_REGISTER_ACTION(QuaternionProductMatrix,"QUATERNION_PRODUCT_MATRIX")
 
 void QuaternionProductMatrix::registerKeywords( Keywords& keys ) {
-  ActionWithMatrix::registerKeywords(keys); keys.use("ARG");
+  ActionWithMatrix::registerKeywords(keys);
+  keys.addInputKeyword("compulsory","ARG","vector","the labels of the quaternion vectors that you are outer product of");
   keys.addOutputComponent("w","default","matrix","the real component of quaternion");
   keys.addOutputComponent("i","default","matrix","the i component of the quaternion");
   keys.addOutputComponent("j","default","matrix","the j component of the quaternion");

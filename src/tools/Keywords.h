@@ -76,6 +76,8 @@ private:
   std::map<std::string,bool> allowmultiple;
 /// The documentation for the keywords
   std::map<std::string,std::string> documentation;
+/// The type for the arguments in this action
+  std::map<std::string,std::string> argument_types;
 /// The default values for the flags (are they on or of)
   std::map<std::string,bool> booldefs;
 /// The default values (if there are default values) for compulsory keywords
@@ -182,6 +184,13 @@ public:
   bool outputComponentExists( const std::string& name ) const ;
 /// Check that type for component has been documented correctly
   bool componentHasCorrectType( const std::string& name, const std::size_t& rank, const bool& hasderiv ) const ;
+/// Create the documentation for a keyword that reads arguments
+  void addInputKeyword( const std::string & t, const std::string & k, const std::string & ttt, const std::string & d );
+  void addInputKeyword( const std::string & t, const std::string & k, const std::string & ttt, const std::string& def, const std::string & d );
+/// Check the documentation of the argument types
+  bool checkArgumentType( const std::size_t& rank, const bool& hasderiv ) const ;
+/// Get the valid types that can be used as argument for this keyword
+  std::string getArgumentType( const std::string& name ) const ;
 /// Get the flag that forces this component to be calculated
   std::string getOutputComponentFlag( const std::string& name ) const ;
 /// Get the type for this output component

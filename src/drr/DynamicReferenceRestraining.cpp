@@ -246,7 +246,6 @@ PLUMED_REGISTER_ACTION(DynamicReferenceRestraining, "DRR")
 
 void DynamicReferenceRestraining::registerKeywords(Keywords &keys) {
   Bias::registerKeywords(keys);
-  keys.use("ARG");
   keys.add("optional", "KAPPA", "specifies that the restraint is harmonic and "
            "what the values of the force constants on "
            "each of the variables are (default to "

@@ -302,7 +302,6 @@ template <class mode>
 void OPESmetad<mode>::registerKeywords(Keywords& keys)
 {
   Bias::registerKeywords(keys);
-  keys.use("ARG");
   keys.add("compulsory","TEMP","-1","temperature. If not set, it is taken from MD engine, but not all MD codes provide it");
   keys.add("compulsory","PACE","the frequency for kernel deposition");
   std::string info_sigma("the initial widths of the kernels");
@@ -337,9 +336,9 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys)
   keys.add("optional","STATE_WSTRIDE","number of MD steps between writing the STATE_WFILE. Default is only on CPT events (but not all MD codes set them)");
   keys.addFlag("STORE_STATES",false,"append to STATE_WFILE instead of ovewriting it each time");
 //miscellaneous
-  keys.add("optional","EXCLUDED_REGION","kernels are not deposited when the action provided here has a nonzero value, see example above");
+  keys.addInputKeyword("optional","EXCLUDED_REGION","scalar","kernels are not deposited when the action provided here has a nonzero value, see example above");
   if(!mode::explore)
-    keys.add("optional","EXTRA_BIAS","consider also these other bias potentials for the internal reweighting. This can be used e.g. for sampling a custom target distribution (see example above)");
+    keys.addInputKeyword("optional","EXTRA_BIAS","scalar","consider also these other bias potentials for the internal reweighting. This can be used e.g. for sampling a custom target distribution (see example above)");
   keys.addFlag("CALC_WORK",false,"calculate the total accumulated work done by the bias since last restart");
   keys.addFlag("WALKERS_MPI",false,"switch on MPI version of multiple walkers");
   keys.addFlag("SERIAL",false,"perform calculations in serial");

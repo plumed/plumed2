@@ -80,7 +80,6 @@ PLUMED_REGISTER_ACTION(Select,"SELECT")
 
 void Select::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
-  keys.use("ARG");
   keys.add("compulsory","SELECTOR","name of the variable used to select");
   keys.setValueDescription("scalar","the value of the selected argument");
 }

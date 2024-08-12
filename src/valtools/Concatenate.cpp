@@ -57,8 +57,9 @@ public:
 PLUMED_REGISTER_ACTION(Concatenate,"CONCATENATE")
 
 void Concatenate::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys ); ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
-  keys.add("numbered","MATRIX","specify the matrices that you wish to join together into a single matrix"); keys.reset_style("MATRIX","compulsory");
+  Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys ); ActionWithArguments::registerKeywords( keys );
+  keys.addInputKeyword("optional","ARG","scalar/vector","the values that should be concatenated together to form the output vector");
+  keys.addInputKeyword("numbered","MATRIX","scalar/matrix","specify the matrices that you wish to join together into a single matrix"); keys.reset_style("MATRIX","compulsory");
   keys.setValueDescription("vector/matrix","the concatenated vector/matrix that was constructed from the input values");
 }
 

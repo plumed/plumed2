@@ -530,7 +530,6 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("pace","FREQUENCY_ADAPTIVE","scalar","the hill addition frequency when employing frequency adaptive metadynamics");
   keys.addOutputComponent("nlker","NLIST","scalar","number of hills in the neighbor list");
   keys.addOutputComponent("nlsteps","NLIST","scalar","number of steps from last neighbor list update");
-  keys.use("ARG");
   keys.add("compulsory","SIGMA","the widths of the Gaussian hills");
   keys.add("compulsory","PACE","the frequency for hill addition");
   keys.add("compulsory","FILE","HILLS","a file in which the list of added hills is stored");

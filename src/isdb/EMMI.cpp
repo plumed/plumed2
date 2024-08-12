@@ -389,7 +389,7 @@ void EMMI::registerKeywords( Keywords& keys ) {
   ActionAtomistic::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys );
-  keys.use("ARG");
+  keys.addInputKeyword("compulsory","ARG","scalar","the labels of the values from which the function is calculated");
   keys.add("atoms","ATOMS","atoms for which we calculate the density map, typically all heavy atoms");
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.add("compulsory","GMM_FILE","file with the parameters of the GMM components");

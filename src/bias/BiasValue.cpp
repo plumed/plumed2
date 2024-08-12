@@ -83,7 +83,7 @@ PLUMED_REGISTER_ACTION(BiasValue,"BIASVALUE")
 
 void BiasValue::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
-  keys.use("ARG");
+  keys.addInputKeyword("compulsory","ARG","scalar/vector","the labels of the scalar/vector arguments whose values will be used as a bias on the system");
   // Should be _bias below
   keys.addOutputComponent("_bias","default","scalar","one or multiple instances of this quantity can be referenced elsewhere in the input file. "
                           "these quantities will named with  the arguments of the bias followed by "

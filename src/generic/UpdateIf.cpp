@@ -100,7 +100,7 @@ void UpdateIf::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys);
   ActionPilot::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
-  keys.use("ARG");
+  keys.addInputKeyword("compulsory","ARG","scalar","the labels of values that should be used to make the decision on whether to update or not");
   keys.add("compulsory","STRIDE","1","the frequency with which the quantities of interest should be output");
   keys.addFlag("END",false,"end");
   keys.add("optional","LESS_THAN","upper bound");

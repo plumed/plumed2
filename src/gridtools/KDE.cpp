@@ -94,7 +94,8 @@ PLUMED_REGISTER_ACTION(KDE,"KDE")
 PLUMED_REGISTER_ACTION(KDE,"SPHERICAL_KDE")
 
 void KDE::registerKeywords( Keywords& keys ) {
-  ActionWithGrid::registerKeywords( keys ); keys.use("ARG");
+  ActionWithGrid::registerKeywords( keys );
+  keys.addInputKeyword("compulsory","ARG","scalar/vector/matrix","the label for the value that should be used to construct the histogram");
   keys.add("optional","HEIGHTS","this keyword takes the label of an action that calculates a vector of values.  The elements of this vector "
            "are used as weights for the Gaussians.");
   keys.add("optional","VOLUMES","this keyword take the label of an action that calculates a vector of values.  The elements of this vector "

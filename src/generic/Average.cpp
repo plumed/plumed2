@@ -100,7 +100,7 @@ PLUMED_REGISTER_ACTION(Average,"AVERAGE")
 
 void Average::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
-  keys.add("compulsory","ARG","the quantity that is being averaged");
+  keys.addInputKeyword("compulsory","ARG","scalar/grid","the quantity that is being averaged");
   keys.add("optional","LOGWEIGHTS","the logarithm of the quantity to use as the weights when calculating averages");
   keys.add("compulsory","STRIDE","1","the frequency with which to store data for averaging");
   keys.add("compulsory","CLEAR","0","the frequency with whihc to clear the data that is being averaged");

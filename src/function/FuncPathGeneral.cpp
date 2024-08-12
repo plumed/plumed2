@@ -155,7 +155,6 @@ void FuncPathGeneral::loadReference() {
 
 void FuncPathGeneral::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
-  keys.use("ARG");
   keys.add("compulsory", "LAMBDA", "Lambda parameter required for smoothing");
   keys.add("compulsory", "COEFFICIENTS", "Coefficients to be assigned to the CVs");
   keys.add("compulsory", "REFERENCE", "Colvar file needed to provide the CV milestones");

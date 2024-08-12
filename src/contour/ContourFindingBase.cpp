@@ -25,7 +25,8 @@ namespace PLMD {
 namespace contour {
 
 void ContourFindingBase::registerKeywords( Keywords& keys ) {
-  gridtools::ActionWithGrid::registerKeywords( keys ); keys.use("ARG");
+  gridtools::ActionWithGrid::registerKeywords( keys );
+  keys.addInputKeyword("compulsory","ARG","grid","the labels of the grid in which the contour will be found");
   keys.add("compulsory","CONTOUR","the value we would like to draw the contour at in the space");
   gridtools::EvaluateGridFunction gg; gg.registerKeywords(keys);
 }

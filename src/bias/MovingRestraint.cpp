@@ -124,7 +124,6 @@ PLUMED_REGISTER_ACTION(MovingRestraint,"MOVINGRESTRAINT")
 
 void MovingRestraint::registerKeywords( Keywords& keys ) {
   Bias::registerKeywords(keys);
-  keys.use("ARG");
   keys.add("compulsory","VERSE","B","Tells plumed whether the restraint is only acting for CV larger (U) or smaller (L) than "
            "the restraint or whether it is acting on both sides (B)");
   keys.add("numbered","STEP","This keyword appears multiple times as STEPx with x=0,1,2,...,n. Each value given represents "

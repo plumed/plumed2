@@ -62,10 +62,11 @@ PLUMED_REGISTER_ACTION(SelectWithMask,"SELECT_WITH_MASK")
 
 void SelectWithMask::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
-  ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
-  keys.add("optional","ROW_MASK","an array with ones in the rows of the matrix that you want to discard");
-  keys.add("optional","COLUMN_MASK","an array with ones in the columns of the matrix that you want to discard");
-  keys.add("compulsory","MASK","an array with ones in the components that you want to discard");
+  ActionWithArguments::registerKeywords( keys );
+  keys.addInputKeyword("compulsory","ARG","scalar/vector/matrix","the label for the value upon which you are going to apply the mask");
+  keys.addInputKeyword("optional","ROW_MASK","vector","an array with ones in the rows of the matrix that you want to discard");
+  keys.addInputKeyword("optional","COLUMN_MASK","vector","an array with ones in the columns of the matrix that you want to discard");
+  keys.addInputKeyword("compulsory","MASK","vector/matrix","an array with ones in the components that you want to discard");
   keys.setValueDescription("vector/matrix","a vector/matrix of values that is obtained using a mask to select elements of interest");
 }
 

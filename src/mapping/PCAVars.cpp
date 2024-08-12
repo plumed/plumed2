@@ -181,7 +181,7 @@ void PCAVars::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","TYPE","OPTIMAL-FAST","the manner in which distances are calculated. More information on the different "
            "metrics that are available in PLUMED can be found in the section of the manual on "
            "\\ref dists");
-  keys.add("optional","ARG","if there are arguments to be used specify them here");
+  keys.addInputKeyword("optional","ARG","scalar/vector","if there are arguments to be used specify them here");
   keys.addFlag("NOPBC",false,"do not use periodic boundary conditions when computing this quantity");
   keys.addOutputComponent("eig","default","vector","the projections on the eigenvalues");
   keys.addOutputComponent("residual","default","scalar","the residual distance that is not projected on any of the eigenvalues");

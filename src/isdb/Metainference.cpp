@@ -286,8 +286,7 @@ PLUMED_REGISTER_ACTION(Metainference,"METAINFERENCE")
 
 void Metainference::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
-  keys.use("ARG");
-  keys.add("optional","PARARG","reference values for the experimental data, these can be provided as arguments without derivatives");
+  keys.addInputKeyword("optional","PARARG","scalar","reference values for the experimental data, these can be provided as arguments without derivatives");
   keys.add("optional","PARAMETERS","reference values for the experimental data");
   keys.addFlag("NOENSEMBLE",false,"don't perform any replica-averaging");
   keys.addFlag("REWEIGHT",false,"simple REWEIGHT using the latest ARG as energy");

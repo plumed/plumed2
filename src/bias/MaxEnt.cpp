@@ -163,7 +163,6 @@ PLUMED_REGISTER_ACTION(MaxEnt,"MAXENT")
 
 void MaxEnt::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
-  keys.use("ARG");
   keys.add("compulsory","KAPPA","0.0","specifies the initial value for the learning rate");
   keys.add("compulsory","TAU","Specify the dumping time for the learning rate.");
   keys.add("compulsory","TYPE","specify the restraint type. "

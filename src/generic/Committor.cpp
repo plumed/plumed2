@@ -80,7 +80,7 @@ void Committor::registerKeywords( Keywords& keys ) {
   Action::registerKeywords(keys);
   ActionPilot::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
-  keys.use("ARG");
+  keys.addInputKeyword("compulsory","ARG","scalar","the labels of the values which is being used to define the committor surface");
   keys.add("numbered", "BASIN_LL","List of lower limits for basin #");
   keys.add("numbered", "BASIN_UL","List of upper limits for basin #");
   keys.reset_style("BASIN_LL","compulsory"); keys.reset_style("BASIN_UL","compulsory");

@@ -204,7 +204,7 @@ PLUMED_REGISTER_ACTION(Histogram,"HISTOGRAM")
 void Histogram::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys ); keys.use("UPDATE_FROM"); keys.use("UPDATE_UNTIL");
   keys.add("compulsory","NORMALIZATION","ndata","This controls how the data is normalized it can be set equal to true, false or ndata.  See above for an explanation");
-  keys.add("optional","ARG","the quantity that is being averaged");
+  keys.addInputKeyword("optional","ARG","scalar/vector/matrix","the quantities that are being used to construct the histogram");
   keys.add("optional","DATA","an alternative to the ARG keyword");
   keys.add("compulsory","GRID_MIN","auto","the lower bounds for the grid");
   keys.add("compulsory","GRID_MAX","auto","the upper bounds for the grid");

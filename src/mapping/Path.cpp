@@ -223,7 +223,7 @@ void Path::registerInputFileKeywords( Keywords& keys ) {
   keys.add("compulsory","TYPE","OPTIMAL-FAST","the manner in which distances are calculated. More information on the different "
            "metrics that are available in PLUMED can be found in the section of the manual on "
            "\\ref dists");
-  keys.add("optional","ARG","the list of arguments you would like to use in your definition of the path");
+  keys.addInputKeyword("optional","ARG","scalar","the list of arguments you would like to use in your definition of the path");
   keys.add("optional","COEFFICIENTS","the coefficients of the displacements along each argument that should be used when calculating the euclidean distance");
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("NOSPATH",false,"do not calculate the spath CV");

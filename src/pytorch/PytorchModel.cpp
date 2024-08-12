@@ -94,7 +94,6 @@ PLUMED_REGISTER_ACTION(PytorchModel,"PYTORCH_MODEL")
 
 void PytorchModel::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
-  keys.use("ARG");
   keys.add("optional","FILE","Filename of the PyTorch compiled model");
   keys.addOutputComponent("node", "default", "Model outputs");
 }

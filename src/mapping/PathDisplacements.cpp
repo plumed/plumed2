@@ -60,7 +60,7 @@ PLUMED_REGISTER_ACTION(PathDisplacements,"AVERAGE_PATH_DISPLACEMENT")
 
 void PathDisplacements::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys ); ActionPilot::registerKeywords( keys );
-  ActionWithArguments::registerKeywords( keys ); keys.use("ARG"); PathProjectionCalculator::registerKeywords( keys );
+  ActionWithArguments::registerKeywords( keys ); PathProjectionCalculator::registerKeywords( keys );
   keys.add("compulsory","STRIDE","1","the frequency with which the average displacements should be collected and added to the average displacements");
   keys.add("compulsory","HALFLIFE","-1","the number of MD steps after which a previously measured path distance weighs only 50 percent in the average. This option may increase convergence by allowing to forget the memory of a bad initial guess path. The default is to set this to infinity");
   keys.add("compulsory","CLEAR","0","the frequency with which to clear all the accumulated data.  The default value "

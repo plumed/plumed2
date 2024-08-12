@@ -25,7 +25,7 @@
 namespace PLMD {
 
 void ActionWithMatrix::registerKeywords( Keywords& keys ) {
-  ActionWithVector::registerKeywords( keys ); keys.use("ARG");
+  ActionWithVector::registerKeywords( keys );
 }
 
 ActionWithMatrix::ActionWithMatrix(const ActionOptions&ao):

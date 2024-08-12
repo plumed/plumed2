@@ -48,7 +48,7 @@ PLUMED_REGISTER_ACTION(SelectComponents,"SELECT_COMPONENTS")
 
 void SelectComponents::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
-  keys.add("compulsory","ARG","the argument we are using to build the shortcut");
+  keys.addInputKeyword("compulsory","ARG","vector/matrix","the value from which we are selecting components");
   keys.add("compulsory","COMPONENTS","the components in the input value that you woul like to build a new vector from");
   keys.needsAction("FLATTEN"); keys.needsAction("CONSTANT"); keys.needsAction("SELECT_WITH_MASK");
   keys.setValueDescription("vector","a vector containing the selected components");

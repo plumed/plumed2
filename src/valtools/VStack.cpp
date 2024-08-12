@@ -60,7 +60,8 @@ public:
 PLUMED_REGISTER_ACTION(VStack,"VSTACK")
 
 void VStack::registerKeywords( Keywords& keys ) {
-  ActionWithMatrix::registerKeywords( keys ); keys.use("ARG");
+  ActionWithMatrix::registerKeywords( keys );
+  keys.addInputKeyword("compulsory","ARG","scalar/vector","the values that you would like to stack together to construct the output matrix");
   keys.setValueDescription("matrix","a matrix that contains the input vectors in its columns");
 }
 

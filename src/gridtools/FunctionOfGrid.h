@@ -58,16 +58,19 @@ public:
 
 template <class T>
 void FunctionOfGrid<T>::registerKeywords(Keywords& keys ) {
-  ActionWithGrid::registerKeywords(keys); keys.use("ARG"); std::string name = keys.getDisplayName();
+  ActionWithGrid::registerKeywords(keys); std::string name = keys.getDisplayName();
   std::size_t und=name.find("_GRID"); keys.setDisplayName( name.substr(0,und) );
   keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
   T tfunc; tfunc.registerKeywords( keys ); if( typeid(tfunc)==typeid(function::Custom()) ) keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
   if( keys.getDisplayName()=="INTEGRATE") {
     keys.setValueDescription("scalar","the numerical integral of the input function over its whole domain");
+    keys.addInputKeyword("compulsory","ARG","grid","the label of the function on a grid that is being integrated");
   } else if( keys.getDisplayName()=="SUM") {
     keys.setValueDescription("scalar","the sum of the value of the function over all the grid points where it has been evaluated");
+    keys.addInputKeyword("compulsory","ARG","grid","the label of the function on a grid from which we are computing a sum");
   } else if( keys.outputComponentExists(".#!value") ) {
     keys.setValueDescription("grid","the grid obtained by doing an element-wise application of " + keys.getOutputComponentDescription(".#!value") + " to the input grid");
+    keys.addInputKeyword("compulsory","ARG","scalar/grid","the labels of the scalars and functions on a grid that we are using to compute the required function");
   }
 }
 

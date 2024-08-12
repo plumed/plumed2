@@ -197,6 +197,16 @@ void Keywords::add( const std::string & t, const std::string & k, const std::str
   keys.push_back(k);
 }
 
+void Keywords::addInputKeyword( const std::string & t, const std::string & k, const std::string & ttt, const std::string & d ) {
+  if( exists(k) ) { remove(k); argument_types[k] = ttt; } else { argument_types.insert( std::pair<std::string,std::string>(k,ttt) ); }
+  add( t, k, d );
+}
+
+void Keywords::addInputKeyword( const std::string & t, const std::string & k, const std::string & ttt, const std::string& def, const std::string & d ) {
+  if( exists(k) ) { remove(k); argument_types[k] = ttt; } else { argument_types.insert( std::pair<std::string,std::string>(k,ttt) ); }
+  add( t, k, def, d );
+}
+
 void Keywords::add( const std::string & t, const std::string & k, const std::string &  def, const std::string & d ) {
   plumed_massert( !exists(k) && !reserved(k) &&  (t=="compulsory" || t=="hidden" ), "failing on keyword " + k ); // An optional keyword can't have a default
   types.insert(  std::pair<std::string,KeyType>(k, KeyType(t)) );
@@ -676,8 +686,24 @@ bool Keywords::componentHasCorrectType( const std::string& name, const std::size
     return (ctypes.find(sname)->second.find("vector")!=std::string::npos);
   } else if( rank==2 ) {
     return (ctypes.find(sname)->second.find("matrix")!=std::string::npos);
-  } else plumed_merror("found value without type");
+  }
   return false;
+}
+
+bool Keywords::checkArgumentType( const std::size_t& rank, const bool& hasderiv ) const {
+  for(auto const& x : argument_types ) {
+    if( rank==0 && x.second.find("scalar")!=std::string::npos ) return true;
+    if( hasderiv && x.second.find("grid")!=std::string::npos ) return true;
+    if( rank==1 && x.second.find("vector")!=std::string::npos ) return true;
+    if( rank==2 && x.second.find("matrix")!=std::string::npos ) return true;
+  }
+  plumed_merror("WARNING: type for input argument has not been specified");
+  return false;
+}
+
+std::string Keywords::getArgumentType( const std::string& name ) const {
+  if( argument_types.find(name)==argument_types.end() ) return "";
+  return argument_types.find(name)->second;
 }
 
 std::string Keywords::getOutputComponentFlag( const std::string& name ) const {

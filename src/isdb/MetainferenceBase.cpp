@@ -36,7 +36,7 @@ void MetainferenceBase::registerKeywords( Keywords& keys ) {
   ActionAtomistic::registerKeywords(keys);
   ActionWithValue::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
-  keys.use("ARG");
+  keys.addInputKeyword("optional","ARG","scalar","the labels of the values from which the function is calculated");
   keys.addFlag("DOSCORE",false,"activate metainference");
   keys.addFlag("NOENSEMBLE",false,"don't perform any replica-averaging");
   keys.addFlag("REWEIGHT",false,"simple REWEIGHT using the ARG as energy");

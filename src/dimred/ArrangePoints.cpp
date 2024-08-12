@@ -70,10 +70,11 @@ PLUMED_REGISTER_ACTION(ArrangePoints,"ARRANGE_POINTS")
 
 void ArrangePoints::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
-  ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
-  keys.add("numbered","TARGET","the matrix of target quantities that you would like to match");
+  ActionWithArguments::registerKeywords( keys );
+  keys.addInputKeyword("compulsory","ARG","vector","the initial positions for the projections");
+  keys.addInputKeyword("numbered","TARGET","matrix","the matrix of target quantities that you would like to match");
   keys.add("numbered","FUNC","a function that is applied on the distances between the points in the low dimensional space");
-  keys.add("numbered","WEIGHTS","the matrix with the weights of the target quantities");
+  keys.addInputKeyword("numbered","WEIGHTS","matrix","the matrix with the weights of the target quantities");
   keys.add("compulsory","MINTYPE","conjgrad","the method to use for the minimisation");
   keys.add("compulsory","MAXITER","1000","maximum number of optimization cycles for optimisation algorithms");
   keys.add("compulsory","CGTOL","1E-6","the tolerance for the conjugate gradient minimization");

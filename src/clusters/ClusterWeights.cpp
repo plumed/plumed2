@@ -64,9 +64,9 @@ PLUMED_REGISTER_ACTION(ClusterWeights,"CLUSTER_WEIGHTS")
 
 void ClusterWeights::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
-  ActionWithArguments::registerKeywords( keys ); keys.remove("ARG");
+  ActionWithArguments::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys ); keys.remove("NUMERICAL_DERIVATIVES");
-  keys.add("compulsory","CLUSTERS","the label of the action that does the clustering");
+  keys.addInputKeyword("compulsory","CLUSTERS","vector","the label of the action that does the clustering");
   keys.add("compulsory","CLUSTER","1","which cluster would you like to look at 1 is the largest cluster, 2 is the second largest, 3 is the the third largest and so on.");
   keys.addFlag("LOWMEM",false,"this flag does nothing and is present only to ensure back-compatibility");
   // keys.add("hidden","FROM_PROPERTIES","indicates that this is created from CLUSTER_PROPERTIES shortcut");

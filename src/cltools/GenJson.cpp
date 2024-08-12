@@ -121,7 +121,9 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
       }
       std::size_t dot=desc.find_first_of("."); std::string mydescrip = desc.substr(0,dot);
       if( mydescrip.find("\\")!=std::string::npos ) error("found invalid backslash character documentation for keyword " + keys.getKeyword(j) + " in action " + action_names[i] );
-      std::cout<<"       \""<<keys.getKeyword(j)<<"\" : { \"type\": \""<<keys.getStyle(keys.getKeyword(j))<<"\", \"description\": \""<<mydescrip<<"\", \"multiple\": "<<keys.numbered( keys.getKeyword(j) )<<"}";
+      std::string argtype = keys.getArgumentType( keys.getKeyword(j) );
+      if( argtype.length()>0 ) std::cout<<"       \""<<keys.getKeyword(j)<<"\" : { \"type\": \""<<keys.getStyle(keys.getKeyword(j))<<"\", \"description\": \""<<mydescrip<<"\", \"multiple\": "<<keys.numbered( keys.getKeyword(j) )<<", \"argtype\": \""<<argtype<<"\"}";
+      else std::cout<<"       \""<<keys.getKeyword(j)<<"\" : { \"type\": \""<<keys.getStyle(keys.getKeyword(j))<<"\", \"description\": \""<<mydescrip<<"\", \"multiple\": "<<keys.numbered( keys.getKeyword(j) )<<"}";
       if( j==keys.size()-1 && !keys.exists("HAS_VALUES") ) std::cout<<std::endl; else std::cout<<","<<std::endl;
     }
     if( keys.exists("HAS_VALUES") ) {

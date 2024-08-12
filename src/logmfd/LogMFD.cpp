@@ -461,7 +461,6 @@ PLUMED_REGISTER_ACTION(LogMFD,"LOGMFD")
 */
 void LogMFD::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
-  keys.use("ARG");
   keys.add("compulsory","INTERVAL",
            "Period of MD steps (N_m) to update fictitious dynamical variables." );
   keys.add("compulsory","DELTA_T",

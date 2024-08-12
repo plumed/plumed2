@@ -71,8 +71,7 @@ PLUMED_REGISTER_ACTION(Stats,"STATS")
 
 void Stats::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
-  keys.use("ARG");
-  keys.add("optional","PARARG","the input for this action is the scalar output from one or more other actions without derivatives.");
+  keys.addInputKeyword("optional","PARARG","scalar","the input for this action is the scalar output from one or more other actions without derivatives.");
   keys.add("optional","PARAMETERS","the parameters of the arguments in your function");
   keys.addFlag("SQDEVSUM",false,"calculates only SQDEVSUM");
   keys.addFlag("SQDEV",false,"calculates and store the SQDEV as components");

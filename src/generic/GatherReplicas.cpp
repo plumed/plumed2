@@ -54,7 +54,7 @@ PLUMED_REGISTER_ACTION(GatherReplicas,"GATHER_REPLICAS")
 
 void GatherReplicas::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys ); ActionWithArguments::registerKeywords( keys );
-  keys.remove("ARG"); keys.add("compulsory","ARG","the argument from the various replicas that you would like to gather");
+  keys.addInputKeyword("compulsory","ARG","scalar/vector/matrix/grid","the argument from the various replicas that you would like to gather");
   keys.addOutputComponent("rep","default","scalar/vector/matrix/grid","the input arguments for each of the replicas");
 }
 
