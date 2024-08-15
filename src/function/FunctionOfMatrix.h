@@ -233,9 +233,9 @@ unsigned FunctionOfMatrix<T>::getNumberOfColumns() const {
 template <class T>
 void FunctionOfMatrix<T>::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {
   for(unsigned i=0; i<getNumberOfArguments(); ++i) plumed_assert( getPntrToArgument(i)->getRank()==2 );
-  unsigned start_n = getPntrToArgument(0)->getShape()[0], size_v = getPntrToArgument(0)->getShape()[1];
+  unsigned start_n = getPntrToArgument(0)->getShape()[0], size_v = getPntrToArgument(0)->getRowLength(task_index);
   if( indices.size()!=size_v+1 ) indices.resize( size_v+1 );
-  for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + i;
+  for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + getPntrToArgument(0)->getRowIndex(task_index, i);
   myvals.setSplitIndex( size_v + 1 );
 }
 
@@ -337,7 +337,7 @@ void FunctionOfMatrix<T>::performTask( const std::string& controller, const unsi
       if( getPntrToArgument(j)->getRank()==2 ) {
         for(int i=0; i<getNumberOfComponents(); ++i) {
           unsigned ostrn=getConstPntrToComponent(i)->getPositionInStream();
-          unsigned myind = base + getPntrToArgument(j)->getShape()[1]*index1 + ind2;
+          unsigned myind = base + getPntrToArgument(j)->getNumberOfColumns()*index1 + ind2;
           myvals.addDerivative( ostrn, myind, derivatives(i,j) );
           myvals.updateIndex( ostrn, myind );
         }
@@ -348,7 +348,7 @@ void FunctionOfMatrix<T>::performTask( const std::string& controller, const unsi
           myvals.updateIndex( ostrn, base );
         }
       }
-      base += getPntrToArgument(j)->getNumberOfValues();
+      base += getPntrToArgument(j)->getNumberOfStoredValues();
     }
   }
 }
@@ -413,9 +413,9 @@ void FunctionOfMatrix<T>::runEndOfRowJobs( const unsigned& ind, const std::vecto
       if( mat_indices.size()<nderivatives ) mat_indices.resize( nderivatives ); unsigned matderbase = 0;
       for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
         if( getPntrToArgument(i)->getRank()==0 ) continue ;
-        unsigned ss = getPntrToArgument(i)->getShape()[1]; unsigned tbase = matderbase + ss*myvals.getTaskIndex();
+        unsigned ss = getPntrToArgument(i)->getNumberOfColumns(); unsigned tbase = matderbase + ss*myvals.getTaskIndex();
         for(unsigned k=0; k<ss; ++k) mat_indices[ntot_mat + k] = tbase + k;
-        ntot_mat += ss; matderbase += getPntrToArgument(i)->getNumberOfValues();
+        ntot_mat += ss; matderbase += getPntrToArgument(i)->getNumberOfStoredValues();
       }
       myvals.setNumberOfMatrixRowDerivatives( nmat, ntot_mat );
     }

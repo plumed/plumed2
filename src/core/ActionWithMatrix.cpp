@@ -162,9 +162,9 @@ void ActionWithMatrix::runTask( const std::string& controller, const unsigned& c
       unsigned matindex = myval->getPositionInMatrixStash(), col_stash_index = colno;
       if( colno>=myval->getShape()[0] ) col_stash_index = colno - myval->getShape()[0];
       if( myval->forcesWereAdded() ) {
-        unsigned sind = myval->getPositionInStream();
-        double fforce = myval->getForce( myvals.getTaskIndex()*ncols + myval->matrix_bookeeping[current*(1+ncols)] );
-        if( ncols>=myval->getShape()[1] ) fforce = myval->getForce( myvals.getTaskIndex()*myval->getShape()[1] + col_stash_index );
+        unsigned sind = myval->getPositionInStream(); double fforce;
+        if( ncols<myval->getShape()[1] ) fforce = myval->getForce( myvals.getTaskIndex()*ncols + myval->matrix_bookeeping[current*(1+ncols)] );
+        else fforce = myval->getForce( myvals.getTaskIndex()*myval->getShape()[1] + col_stash_index );
         for(unsigned j=0; j<myvals.getNumberActive(sind); ++j) {
           unsigned kindex = myvals.getActiveIndex(sind,j); myvals.addMatrixForce( matindex, kindex, fforce*myvals.getDerivative(sind,kindex ) );
         }
