@@ -53,7 +53,7 @@ public:
   explicit MatrixTimesMatrix(const ActionOptions&);
   void prepare() override ;
   unsigned getNumberOfDerivatives();
-  unsigned getNumberOfColumns() const override { return getConstPntrToComponent(0)->getShape()[1]; }
+  unsigned getNumberOfColumns() const override ;
   void getAdditionalTasksRequired( ActionWithVector* action, std::vector<unsigned>& atasks ) override ;
   void setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const ;
   void performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const override;
@@ -65,6 +65,7 @@ PLUMED_REGISTER_ACTION(MatrixTimesMatrix,"DISSIMILARITIES")
 
 void MatrixTimesMatrix::registerKeywords( Keywords& keys ) {
   ActionWithMatrix::registerKeywords(keys); keys.use("ARG");
+  keys.add("optional","MASK","the label for a sparse matrix that should be used to determine which elements of the matrix should be computed");
   keys.addFlag("SQUARED",false,"calculate the squares of the dissimilarities (this option cannot be used with MATRIX_PRODUCT)");
   keys.setValueDescription("the product of the two input matrices");
 }
@@ -86,10 +87,23 @@ MatrixTimesMatrix::MatrixTimesMatrix(const ActionOptions&ao):
     parseFlag("SQUARED",squared);
     if( squared ) log.printf("  calculating the squares of the dissimilarities \n");
   } else squared=true;
+
+  std::vector<Value*> mask; parseArgumentList("MASK",mask);
+  if( mask.size()==1 ) {
+    if( mask[0]->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) error("argument passed to MASK keyword should be a matrix");
+    if( mask[0]->getShape()[0]!=shape[0] || mask[0]->getShape()[1]!=shape[1] ) error("argument passed to MASK keyword has the wrong shape");
+    log.printf("  only computing elements of matrix product that correspond to non-zero elements of matrix %s \n", mask[0]->getName().c_str() );
+    std::vector<Value*> allargs( getArguments() ); allargs.push_back( mask[0] ); requestArguments( allargs );
+  } else if( mask.size()!=0 ) error("MASK should only have one argument");
 }
 
 unsigned MatrixTimesMatrix::getNumberOfDerivatives() {
   return nderivatives;
+}
+
+unsigned MatrixTimesMatrix::getNumberOfColumns() const {
+  if( getNumberOfArguments()>2 ) return getPntrToArgument(2)->getNumberOfColumns();
+  return getConstPntrToComponent(0)->getShape()[1];
 }
 
 void MatrixTimesMatrix::prepare() {
@@ -107,10 +121,17 @@ void MatrixTimesMatrix::getAdditionalTasksRequired( ActionWithVector* action, st
 }
 
 void MatrixTimesMatrix::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {
-  unsigned start_n = getPntrToArgument(0)->getShape()[0], size_v = getPntrToArgument(1)->getShape()[1];
-  if( indices.size()!=size_v+1 ) indices.resize( size_v+1 );
-  for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + i;
-  myvals.setSplitIndex( size_v + 1 );
+  if( getNumberOfArguments()>2 ) {
+    unsigned start_n = getPntrToArgument(0)->getShape()[0], size_v = getPntrToArgument(2)->getRowLength(task_index);
+    if( indices.size()!=size_v+1 ) indices.resize( size_v+1 );
+    for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + getPntrToArgument(2)->getRowIndex(task_index, i);
+    myvals.setSplitIndex( size_v + 1 );
+  } else {
+    unsigned start_n = getPntrToArgument(0)->getShape()[0], size_v = getPntrToArgument(1)->getShape()[1];
+    if( indices.size()!=size_v+1 ) indices.resize( size_v+1 );
+    for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + i;
+    myvals.setSplitIndex( size_v + 1 );
+  }
 }
 
 void MatrixTimesMatrix::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {

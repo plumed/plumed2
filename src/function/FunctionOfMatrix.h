@@ -60,8 +60,6 @@ public:
   void prepare() override ;
 /// This gets the number of columns
   unsigned getNumberOfColumns() const override ;
-/// This checks for tasks in the parent class
-//  void buildTaskListFromArgumentRequests( const unsigned& ntasks, bool& reduce, std::set<AtomNumber>& otasks ) override ;
 /// This ensures that we create some bookeeping stuff during the first step
   void setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol ) override ;
 /// This sets up for the task
@@ -69,7 +67,6 @@ public:
 /// Calculate the full matrix
   void performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const override ;
 /// This updates the indices for the matrix
-//  void updateCentralMatrixIndex( const unsigned& ind, const std::vector<unsigned>& indices, MultiValue& myvals ) const override ;
   void runEndOfRowJobs( const unsigned& ind, const std::vector<unsigned> & indices, MultiValue& myvals ) const override ;
 };
 
@@ -232,20 +229,37 @@ unsigned FunctionOfMatrix<T>::getNumberOfColumns() const {
 
 template <class T>
 void FunctionOfMatrix<T>::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) plumed_assert( getPntrToArgument(i)->getRank()==2 );
-  unsigned start_n = getPntrToArgument(0)->getShape()[0], size_v = getPntrToArgument(0)->getRowLength(task_index);
+  int ncols = -1, basemat=-1; bool redo=false;
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    if( ncols<0 && getPntrToArgument(i)->getRank()==2 ) { basemat=i; ncols = getPntrToArgument(i)->getNumberOfColumns(); }
+    else if( getPntrToArgument(i)->getRank()==2 && ncols!=getPntrToArgument(i)->getNumberOfColumns() ) redo=true;
+  }
+  redo = ncols>=getPntrToArgument(basemat)->getShape()[1];
+  unsigned start_n = getPntrToArgument(basemat)->getShape()[0];
+  if( !redo ) {
+    unsigned size_v = getPntrToArgument(basemat)->getRowLength(task_index);
+    for(unsigned j=basemat; j<getNumberOfArguments(); ++j) {
+      if( size_v!=getPntrToArgument(j)->getRowLength(task_index) ) { redo=true; break; }
+    }
+    if( !redo ) {
+      if( indices.size()!=size_v+1 ) indices.resize( size_v+1 );
+      for(unsigned i=0; i<size_v; ++i) {
+        unsigned colind = getPntrToArgument(basemat)->getRowIndex(task_index, i);
+        for(unsigned j=basemat; j<getNumberOfArguments(); ++j) {
+          if( colind!=getPntrToArgument(j)->getRowIndex(task_index, i) ) { redo=true; break; }
+        }
+        if( !redo ) break;
+        indices[i+1] = start_n + colind;
+      }
+      myvals.setSplitIndex( size_v + 1 );
+    }
+  }
+  if( !redo ) return;
+  unsigned size_v = getPntrToArgument(basemat)->getShape()[1];
   if( indices.size()!=size_v+1 ) indices.resize( size_v+1 );
-  for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + getPntrToArgument(0)->getRowIndex(task_index, i);
+  for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + i;
   myvals.setSplitIndex( size_v + 1 );
 }
-
-// template <class T>
-// void FunctionOfMatrix<T>::buildTaskListFromArgumentRequests( const unsigned& ntasks, bool& reduce, std::set<AtomNumber>& otasks ) {
-//   // Check if this is the first element in a chain
-//   if( actionInChain() ) return;
-//   // If it is computed outside a chain get the tassks the daughter chain needs
-//   propegateTaskListsForValue( 0, ntasks, reduce, otasks );
-// }
 
 template <class T>
 void FunctionOfMatrix<T>::setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol ) {

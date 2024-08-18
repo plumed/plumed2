@@ -27,6 +27,25 @@
 
 namespace PLMD {
 
+enum class Option { no, yes };
+
+Option interpretEnv(const char* env,const char* str) {
+  if(!str) return Option::no;
+  if(!std::strcmp(str,"yes"))return Option::yes;
+  if(!std::strcmp(str,"no"))return Option::no;
+  plumed_error()<<"Cannot understand env var "<<env<<"\nPossible values: yes/no\nActual value: "<<str;
+}
+
+/// Switch on/off chains of actions using PLUMED environment variable
+/// export PLUMED_FORBID_CHAINS=yes  # forbid the use of chains in this run
+/// export PLUMED_FORBID_CHAINS=no   # allow chains to be used in the run
+/// default: yes
+Option getenvChainAllowed() {
+  static const char* name="PLUMED_FORBID_CHAINS";
+  static const auto opt = interpretEnv(name,std::getenv(name));
+  return opt;
+}
+
 void ActionShortcut::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   keys.add("hidden","IS_SHORTCUT","hidden keyword to tell if actions are shortcuts so that example generator can provide expansions of shortcuts");
@@ -63,6 +82,10 @@ ActionShortcut::ActionShortcut(const ActionOptions&ao):
     std::string t; Tools::convert(plumed.getActionSet().size(),t);
     shortcutlabel="@" + t;
   } else label = ("@s" + s);
+}
+
+bool ActionShortcut::chainsAreOff() const {
+  return getenvChainAllowed()==Option::yes;
 }
 
 void ActionShortcut::readInputLine( const std::string& input, bool saveline ) {

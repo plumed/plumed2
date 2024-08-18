@@ -39,6 +39,7 @@ private:
   std::vector<std::string> savedOutputs;
   void addToSavedInputLines( const std::string& line );
 protected:
+  bool chainsAreOff() const ;
   std::string getUpdateLimits() const ;
 public:
   const std::string & getShortcutLabel() const ;

@@ -43,7 +43,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit TorsionsMatrix(const ActionOptions&);
   unsigned getNumberOfDerivatives();
-  unsigned getNumberOfColumns() const override { return getConstPntrToComponent(0)->getShape()[1]; }
+  unsigned getNumberOfColumns() const override ;
   void setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const ;
   void performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const override;
   void runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const override ;
@@ -55,6 +55,7 @@ void TorsionsMatrix::registerKeywords( Keywords& keys ) {
   ActionWithMatrix::registerKeywords(keys); keys.use("ARG");
   keys.add("atoms","POSITIONS1","the positions to use for the molecules specified using the first argument");
   keys.add("atoms","POSITIONS2","the positions to use for the molecules specified using the second argument");
+  keys.add("optional","MASK","the label for a sparse matrix that should be used to determine which elements of the matrix should be computed");
   keys.setValueDescription("the matrix of torsions between the two vectors of input directors");
 }
 
@@ -88,17 +89,37 @@ TorsionsMatrix::TorsionsMatrix(const ActionOptions&ao):
   std::string headstr=getFirstActionInChain()->getLabel();
   stored_matrix1 = getPntrToArgument(0)->ignoreStoredValue( headstr );
   stored_matrix2 = getPntrToArgument(1)->ignoreStoredValue( headstr );
+
+  std::vector<Value*> mask; parseArgumentList("MASK",mask);
+  if( mask.size()==1 ) {
+    if( mask[0]->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) error("argument passed to MASK keyword should be a matrix");
+    if( mask[0]->getShape()[0]!=shape[0] || mask[0]->getShape()[1]!=shape[1] ) error("argument passed to MASK keyword has the wrong shape");
+    log.printf("  only computing elements of matrix product that correspond to non-zero elements of matrix %s \n", mask[0]->getName().c_str() );
+    std::vector<Value*> allargs( getArguments() ); allargs.push_back( mask[0] ); requestArguments( allargs );
+  } else if( mask.size()!=0 ) error("MASK should only have one argument");
 }
 
 unsigned TorsionsMatrix::getNumberOfDerivatives() {
   return nderivatives;
 }
 
+unsigned TorsionsMatrix::getNumberOfColumns() const {
+  if( getNumberOfArguments()>2 ) return getPntrToArgument(2)->getNumberOfColumns();
+  return getConstPntrToComponent(0)->getShape()[1];
+}
+
 void TorsionsMatrix::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {
-  unsigned start_n = getPntrToArgument(0)->getShape()[0], size_v = getPntrToArgument(1)->getShape()[1];
-  if( indices.size()!=size_v+1 ) indices.resize( size_v+1 );
-  for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + i;
-  myvals.setSplitIndex( size_v + 1 );
+  if( getNumberOfArguments()>2 ) {
+    unsigned start_n = getPntrToArgument(0)->getShape()[0], size_v = getPntrToArgument(2)->getRowLength(task_index);
+    if( indices.size()!=size_v+1 ) indices.resize( size_v+1 );
+    for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + getPntrToArgument(2)->getRowIndex(task_index, i);
+    myvals.setSplitIndex( size_v + 1 );
+  } else {
+    unsigned start_n = getPntrToArgument(0)->getShape()[0], size_v = getPntrToArgument(1)->getShape()[1];
+    if( indices.size()!=size_v+1 ) indices.resize( size_v+1 );
+    for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + i;
+    myvals.setSplitIndex( size_v + 1 );
+  }
 }
 
 void TorsionsMatrix::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
