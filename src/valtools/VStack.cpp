@@ -151,21 +151,21 @@ void VStack::runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> 
   std::vector<unsigned>& matrix_indices( myvals.getMatrixRowDerivativeIndices( nmat ) );
   plumed_assert( nmat_ind<matrix_indices.size() );
   if( actionInChain() ) {
-      for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-        unsigned istrn = getPntrToArgument(i)->getPositionInStream();
-        for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
-            bool found=false; unsigned thisind=myvals.getActiveIndex(istrn,k);
-            for(unsigned j=0; j<nmat_ind; ++j) {
-                if( thisind==matrix_indices[j] ) { found=true; break; }
-            }
-            if( !found ) { matrix_indices[nmat_ind] = thisind; nmat_ind++; }
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      unsigned istrn = getPntrToArgument(i)->getPositionInStream();
+      for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
+        bool found=false; unsigned thisind=myvals.getActiveIndex(istrn,k);
+        for(unsigned j=0; j<nmat_ind; ++j) {
+          if( thisind==matrix_indices[j] ) { found=true; break; }
         }
+        if( !found ) { matrix_indices[nmat_ind] = thisind; nmat_ind++; }
       }
-      myvals.setNumberOfMatrixRowDerivatives( nmat, nmat_ind );
+    }
+    myvals.setNumberOfMatrixRowDerivatives( nmat, nmat_ind );
   } else {
-      unsigned ncols = getConstPntrToComponent(0)->getShape()[0];
-      for(unsigned i=0; i<getNumberOfArguments(); ++i) matrix_indices[i] = i*ncols + ival;
-      myvals.setNumberOfMatrixRowDerivatives( nmat, getNumberOfArguments() );
+    unsigned ncols = getConstPntrToComponent(0)->getShape()[0];
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) matrix_indices[i] = i*ncols + ival;
+    myvals.setNumberOfMatrixRowDerivatives( nmat, getNumberOfArguments() );
   }
 }
 

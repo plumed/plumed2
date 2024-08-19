@@ -58,9 +58,9 @@ void MultiValue::clearAll() {
   for(unsigned i=0; i<values.size(); ++i) values[i]=0;
   // Clear matrix derivative indices
   for(unsigned i=0; i<matrix_row_nderivatives.size(); ++i) {
-      unsigned base = i*nderivatives;
-      for(unsigned j=0; j<matrix_row_nderivatives[i]; ++j) matrix_force_stash[base + matrix_row_derivative_indices[i][j]] = 0;
-      matrix_row_nderivatives[i]=0;
+    unsigned base = i*nderivatives;
+    for(unsigned j=0; j<matrix_row_nderivatives[i]; ++j) matrix_force_stash[base + matrix_row_derivative_indices[i][j]] = 0;
+    matrix_row_nderivatives[i]=0;
   }
 #ifndef NDEBUG
   for(unsigned i=0; i<matrix_force_stash.size(); ++i) plumed_assert( fabs(matrix_force_stash[i])<epsilon );
