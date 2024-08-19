@@ -57,9 +57,14 @@ void MultiValue::resize( const size_t& nvals, const size_t& nder, const size_t& 
 void MultiValue::clearAll() {
   for(unsigned i=0; i<values.size(); ++i) values[i]=0;
   // Clear matrix derivative indices
-  std::fill( matrix_row_nderivatives.begin(), matrix_row_nderivatives.end(), 0 );
-  // Clear matrix forces
-  std::fill(matrix_force_stash.begin(),matrix_force_stash.end(),0);
+  for(unsigned i=0; i<matrix_row_nderivatives.size(); ++i) {
+      unsigned base = i*nderivatives;
+      for(unsigned j=0; j<matrix_row_nderivatives[i]; ++j) matrix_force_stash[base + matrix_row_derivative_indices[i][j]] = 0;
+      matrix_row_nderivatives[i]=0;
+  }
+#ifndef NDEBUG
+  for(unsigned i=0; i<matrix_force_stash.size(); ++i) plumed_assert( fabs(matrix_force_stash[i])<epsilon );
+#endif
   if( !atLeastOneSet ) return;
   for(unsigned i=0; i<values.size(); ++i) clearDerivatives(i);
   atLeastOneSet=false;

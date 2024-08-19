@@ -145,24 +145,28 @@ void VStack::gatherForcesOnStoredValue( const Value* myval, const unsigned& itas
 }
 
 void VStack::runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const {
-  if( doNotCalculateDerivatives() || !matrixChainContinues() ) return ;
+  if( doNotCalculateDerivatives() ) return ;
 
   unsigned nmat = getConstPntrToComponent(0)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixRowDerivatives( nmat );
   std::vector<unsigned>& matrix_indices( myvals.getMatrixRowDerivativeIndices( nmat ) );
   plumed_assert( nmat_ind<matrix_indices.size() );
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    bool found=false; ActionWithValue* iav = getPntrToArgument(i)->getPntrToAction();
-    for(unsigned j=0; j<i; ++j) {
-      if( iav==getPntrToArgument(j)->getPntrToAction() ) { found=true; break; }
-    }
-    if( found ) continue ;
-
-    unsigned istrn = getPntrToArgument(i)->getPositionInStream();
-    for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
-      matrix_indices[nmat_ind] = myvals.getActiveIndex(istrn,k); nmat_ind++;
-    }
+  if( actionInChain() ) {
+      for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+        unsigned istrn = getPntrToArgument(i)->getPositionInStream();
+        for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
+            bool found=false; unsigned thisind=myvals.getActiveIndex(istrn,k);
+            for(unsigned j=0; j<nmat_ind; ++j) {
+                if( thisind==matrix_indices[j] ) { found=true; break; }
+            }
+            if( !found ) { matrix_indices[nmat_ind] = thisind; nmat_ind++; }
+        }
+      }
+      myvals.setNumberOfMatrixRowDerivatives( nmat, nmat_ind );
+  } else {
+      unsigned ncols = getConstPntrToComponent(0)->getShape()[0];
+      for(unsigned i=0; i<getNumberOfArguments(); ++i) matrix_indices[i] = i*ncols + ival;
+      myvals.setNumberOfMatrixRowDerivatives( nmat, getNumberOfArguments() );
   }
-  myvals.setNumberOfMatrixRowDerivatives( nmat, nmat_ind );
 }
 
 }

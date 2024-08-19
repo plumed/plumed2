@@ -299,7 +299,7 @@ void MatrixTimesVector::performTask( const std::string& controller, const unsign
 }
 
 void MatrixTimesVector::runEndOfRowJobs( const unsigned& ind, const std::vector<unsigned> & indices, MultiValue& myvals ) const {
-  if( doNotCalculateDerivatives() || !actionInChain() ) return ;
+  if( doNotCalculateDerivatives() ) return ;
 
   if( getPntrToArgument(1)->getRank()==1 ) {
     unsigned istrn = getPntrToArgument(0)->getPositionInMatrixStash();
