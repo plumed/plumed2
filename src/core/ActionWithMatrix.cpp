@@ -156,6 +156,7 @@ void ActionWithMatrix::runTask( const std::string& controller, const unsigned& c
   }
 
   if( hasval ) {
+    double checkval = myvals.get( getConstPntrToComponent(0)->getPositionInStream() );
     for(int i=0; i<getNumberOfComponents(); ++i) {
       const Value* myval=getConstPntrToComponent(i); unsigned ncols = myval->getNumberOfColumns();
       if( myval->getRank()!=2 || myval->hasDerivatives() || !myval->valueIsStored() ) continue;
@@ -169,8 +170,8 @@ void ActionWithMatrix::runTask( const std::string& controller, const unsigned& c
           unsigned kindex = myvals.getActiveIndex(sind,j); myvals.addMatrixForce( matindex, kindex, fforce*myvals.getDerivative(sind,kindex ) );
         }
       }
-      double finalval = myvals.get( myval->getPositionInStream() );
-      if( fabs(finalval)>0 ) {
+      double finalval = myvals.get( myval->getPositionInStream() ); if( !isAdjacencyMatrix() ) checkval=finalval;
+      if( fabs(checkval)>0 ) {
         Value* myv = const_cast<Value*>( myval );
         if( ncols<myval->getShape()[1] ) {
           myv->set( current*ncols + myval->matrix_bookeeping[current*(1+ncols)], finalval );

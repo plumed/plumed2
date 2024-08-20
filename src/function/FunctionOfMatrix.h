@@ -248,7 +248,7 @@ void FunctionOfMatrix<T>::setupForTask( const unsigned& task_index, std::vector<
         for(unsigned j=basemat; j<getNumberOfArguments(); ++j) {
           if( colind!=getPntrToArgument(j)->getRowIndex(task_index, i) ) { redo=true; break; }
         }
-        if( !redo ) break;
+        if( redo ) break;
         indices[i+1] = start_n + colind;
       }
       myvals.setSplitIndex( size_v + 1 );
