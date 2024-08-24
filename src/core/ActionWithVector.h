@@ -38,7 +38,7 @@ class ActionWithVector:
   friend class Value;
 private:
 /// Check if there is a mask value
-  bool hasmask;
+  unsigned nmask;
 /// Is the calculation to be done in serial
   bool serial;
 /// Are we in the forward pass through the calculation
@@ -129,7 +129,7 @@ public:
   virtual void prepare() override;
   void retrieveAtoms( const bool& force=false ) override;
 /// Check if a mask has been set
-  bool hasMask() const ;
+  unsigned getNumberOfMasks() const ;
   void calculateNumericalDerivatives(ActionWithValue* av) override;
 /// Turn off the calculation of the derivatives during the forward pass through a calculation
   bool doNotCalculateDerivatives() const override ;
@@ -197,13 +197,13 @@ bool ActionWithVector::runInSerial() const {
 }
 
 inline
-bool ActionWithVector::hasMask() const {
-  return hasmask;
+unsigned ActionWithVector::getNumberOfMasks() const {
+  return nmask;
 }
 
 inline
 void ActionWithVector::ignoreMaskArguments() {
-  hasmask=false;
+  nmask=0;
 }
 
 }

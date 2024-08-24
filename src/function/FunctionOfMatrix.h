@@ -155,7 +155,7 @@ FunctionOfMatrix<T>::FunctionOfMatrix(const ActionOptions&ao):
     if( argname=="NEIGHBORS" ) { foundneigh=true; break; }
     ActionWithVector* av=dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
     if( !av ) done_in_chain=false;
-    else if( av->hasMask() && !myfunc.checkIfMaskAllowed( getArguments() ) ) error("cannot use argument masks in input as not all elements are computed");
+    else if( av->getNumberOfMasks()>0 && !myfunc.checkIfMaskAllowed( getArguments() ) ) error("cannot use argument masks in input as not all elements are computed");
 
     if( getPntrToArgument(i)->getRank()==0 ) {
       function::FunctionOfVector<function::Sum>* as = dynamic_cast<function::FunctionOfVector<function::Sum>*>( getPntrToArgument(i)->getPntrToAction() );

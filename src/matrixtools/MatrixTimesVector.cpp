@@ -91,7 +91,7 @@ MatrixTimesVector::MatrixTimesVector(const ActionOptions&ao):
     if( getPntrToArgument(i)->hasDerivatives() ) error("arguments should be vectors or matrices");
     if( getPntrToArgument(i)->getRank()<=1 ) {
       nvectors++; ActionWithVector* av=dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
-      if( av && av->hasMask() ) vectormask=true;
+      if( av && av->getNumberOfMasks()>0 ) vectormask=true;
     }
     if( getPntrToArgument(i)->getRank()==2 ) nmatrices++;
   }
