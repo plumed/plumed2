@@ -52,6 +52,7 @@ public:
   virtual void registerKeywords( Keywords& keys ) = 0;
   virtual void read( ActionWithArguments* action ) = 0;
   virtual bool doWithTasks() const { return true; }
+  virtual bool checkIfMaskAllowed( const std::vector<Value*>& args ) const { return false; }
   virtual std::vector<Value*> getArgumentsToCheck( const std::vector<Value*>& args );
   bool allComponentsRequired( const std::vector<Value*>& args, const std::vector<ActionWithVector*>& actions );
   virtual bool zeroRank() const { return false; }

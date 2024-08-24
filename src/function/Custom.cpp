@@ -333,6 +333,25 @@ bool Custom::getDerivativeZeroIfValueIsZero() const {
   return check_multiplication_vars.size()>0;
 }
 
+bool Custom::checkIfMaskAllowed( const std::vector<Value*>& args ) const {
+  bool nomask=true;
+  for(unsigned i=0; i<args.size(); ++i) {
+    bool found=false;
+    for(unsigned j=0; j<check_multiplication_vars.size(); ++j) {
+      if( i==check_multiplication_vars[j] ) { found=true; break; }
+    }
+    if( found ) continue;
+    ActionWithVector* av=dynamic_cast<ActionWithVector*>( args[i]->getPntrToAction() );
+    if( av && av->hasMask() ) {
+      nomask=false; Value* maskarg = av->getPntrToArgument( av->getNumberOfArguments()-1 );
+      for(unsigned j=0; j<check_multiplication_vars.size(); ++j) {
+        if( maskarg==args[check_multiplication_vars[j]] ) return true;
+      }
+    }
+  }
+  return nomask;
+}
+
 std::vector<Value*> Custom::getArgumentsToCheck( const std::vector<Value*>& args ) {
   std::vector<Value*> fargs( check_multiplication_vars.size() );
   for(unsigned i=0; i<check_multiplication_vars.size(); ++i) fargs[i] = args[check_multiplication_vars[i]];

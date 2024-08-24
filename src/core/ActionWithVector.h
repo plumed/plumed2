@@ -37,6 +37,8 @@ class ActionWithVector:
 {
   friend class Value;
 private:
+/// Check if there is a mask value
+  bool hasmask;
 /// Is the calculation to be done in serial
   bool serial;
 /// Are we in the forward pass through the calculation
@@ -102,6 +104,8 @@ protected:
   std::vector<unsigned> arg_deriv_starts;
 /// Assert if this action is part of a chain
   bool done_in_chain;
+/// Turn off the flag that says this action has a masked input
+  void ignoreMaskArguments();
 /// This updates whether or not we are using all the task reduction stuff
   void updateTaskListReductionStatus();
 /// Run all calculations in serial
@@ -124,6 +128,8 @@ public:
   void unlockRequests() override;
   virtual void prepare() override;
   void retrieveAtoms( const bool& force=false ) override;
+/// Check if a mask has been set
+  bool hasMask() const ;
   void calculateNumericalDerivatives(ActionWithValue* av) override;
 /// Turn off the calculation of the derivatives during the forward pass through a calculation
   bool doNotCalculateDerivatives() const override ;
@@ -188,6 +194,16 @@ bool ActionWithVector::actionInChain() const {
 inline
 bool ActionWithVector::runInSerial() const {
   return serial;
+}
+
+inline
+bool ActionWithVector::hasMask() const {
+  return hasmask;
+}
+
+inline
+void ActionWithVector::ignoreMaskArguments() {
+  hasmask=false;
 }
 
 }

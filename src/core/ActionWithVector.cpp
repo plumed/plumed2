@@ -52,6 +52,7 @@ void ActionWithVector::registerKeywords( Keywords& keys ) {
   ActionWithValue::registerKeywords( keys ); keys.remove("NUMERICAL_DERIVATIVES");
   ActionWithArguments::registerKeywords( keys );
   keys.addFlag("SERIAL",false,"do the calculation in serial.  Do not parallelize");
+  keys.reserve("optional","MASK","the label for a sparse matrix that should be used to determine which elements of the matrix should be computed");
 }
 
 ActionWithVector::ActionWithVector(const ActionOptions&ao):
@@ -59,6 +60,7 @@ ActionWithVector::ActionWithVector(const ActionOptions&ao):
   ActionAtomistic(ao),
   ActionWithValue(ao),
   ActionWithArguments(ao),
+  hasmask(false),
   serial(false),
   forwardPass(false),
   action_to_do_before(NULL),
@@ -68,7 +70,21 @@ ActionWithVector::ActionWithVector(const ActionOptions&ao):
   atomsWereRetrieved(false),
   done_in_chain(false)
 {
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    ActionWithVector* av = dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
+    if( av && av->hasMask() ) hasmask=true;
+  }
+
   if( keywords.exists("SERIAL") ) parseFlag("SERIAL",serial);
+  if( keywords.exists("MASK") ) {
+    std::vector<Value*> mask; parseArgumentList("MASK",mask);
+    if( mask.size()==1 ) {
+      if( getPntrToArgument(0)->hasDerivatives() ) error("input for mask should be vector or matrix");
+      else if( mask[0]->getRank()==2 ) log.printf("  only computing elements of matrix that correspond to non-zero elements of matrix %s \n", mask[0]->getName().c_str() );
+      else if( mask[0]->getRank()==1 ) log.printf("  only computing elements of vector that correspond to non-zero elements of vector %s \n", mask[0]->getName().c_str() );
+      std::vector<Value*> allargs( getArguments() ); allargs.push_back( mask[0] ); requestArguments( allargs ); hasmask=true;
+    } else if( mask.size()!=0 ) error("MASK should only have one argument");
+  }
 }
 
 ActionWithVector::~ActionWithVector() {

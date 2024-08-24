@@ -79,6 +79,7 @@ void FunctionOfVector<T>::registerKeywords(Keywords& keys ) {
   keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
   T tfunc; tfunc.registerKeywords( keys );
+  if( keys.getDisplayName()=="CUSTOM" || keys.getDisplayName()=="MATHEVAL" || keys.getDisplayName()=="SUM" ) keys.add("hidden","MASKED_INPUT_ALLOWED","turns on that you are allowed to use masked inputs ");
   if( keys.getDisplayName()=="SUM" ) {
     keys.setValueDescription("the sum of all the elements in the input vector");
   } else if( keys.getDisplayName()=="MEAN" ) {
@@ -161,6 +162,7 @@ FunctionOfVector<T>::FunctionOfVector(const ActionOptions&ao):
     } else {
       ActionWithVector* av=dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
       if( !av ) done_in_chain=false;
+      else if( av->hasMask() && !myfunc.checkIfMaskAllowed( getArguments() ) ) error("cannot use argument masks in input as not all elements are computed");
     }
   }
   // Don't need to do the calculation in a chain if the input is constant

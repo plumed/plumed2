@@ -60,6 +60,7 @@ PLUMED_REGISTER_ACTION(MatrixTimesVector,"MATRIX_VECTOR_PRODUCT")
 void MatrixTimesVector::registerKeywords( Keywords& keys ) {
   ActionWithMatrix::registerKeywords(keys); keys.use("ARG");
   keys.setValueDescription("the vector that is obtained by taking the product between the matrix and the vector that were input");
+  keys.add("hidden","MASKED_INPUT_ALLOWED","turns on that you are allowed to use masked inputs ");
   ActionWithValue::useCustomisableComponents(keys);
 }
 
@@ -85,12 +86,16 @@ MatrixTimesVector::MatrixTimesVector(const ActionOptions&ao):
   sumrows(false)
 {
   if( getNumberOfArguments()<2 ) error("Not enough arguments specified");
-  unsigned nvectors=0, nmatrices=0;
+  unsigned nvectors=0, nmatrices=0; bool vectormask=false;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     if( getPntrToArgument(i)->hasDerivatives() ) error("arguments should be vectors or matrices");
-    if( getPntrToArgument(i)->getRank()<=1 ) nvectors++;
+    if( getPntrToArgument(i)->getRank()<=1 ) {
+      nvectors++; ActionWithVector* av=dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
+      if( av && av->hasMask() ) vectormask=true;
+    }
     if( getPntrToArgument(i)->getRank()==2 ) nmatrices++;
   }
+  if( !vectormask ) ignoreMaskArguments();
 
   std::vector<unsigned> shape(1); shape[0]=getPntrToArgument(0)->getShape()[0];
   if( nvectors==1 ) {

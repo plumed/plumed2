@@ -189,6 +189,11 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
       }
     }
   }
+  if( readact->keywords.exists("MASKED_INPUT_ALLOWED") ) return;
+  for(unsigned i=0; i<arg.size(); ++i) {
+    ActionWithVector* av=dynamic_cast<ActionWithVector*>( arg[i]->getPntrToAction() );
+    if( av && av->hasMask() ) readact->error("cannot use argument " + arg[i]->getName() + " in input as not all elements are computed");
+  }
 }
 
 void ActionWithArguments::expandArgKeywordInPDB( const PDB& pdb ) {

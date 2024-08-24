@@ -64,8 +64,7 @@ PLUMED_REGISTER_ACTION(MatrixTimesMatrix,"MATRIX_PRODUCT")
 PLUMED_REGISTER_ACTION(MatrixTimesMatrix,"DISSIMILARITIES")
 
 void MatrixTimesMatrix::registerKeywords( Keywords& keys ) {
-  ActionWithMatrix::registerKeywords(keys); keys.use("ARG");
-  keys.add("optional","MASK","the label for a sparse matrix that should be used to determine which elements of the matrix should be computed");
+  ActionWithMatrix::registerKeywords(keys); keys.use("ARG"); keys.use("MASK");
   keys.addFlag("SQUARED",false,"calculate the squares of the dissimilarities (this option cannot be used with MATRIX_PRODUCT)");
   keys.setValueDescription("the product of the two input matrices");
 }
@@ -74,7 +73,8 @@ MatrixTimesMatrix::MatrixTimesMatrix(const ActionOptions&ao):
   Action(ao),
   ActionWithMatrix(ao)
 {
-  if( getNumberOfArguments()!=2 ) error("should be two arguments to this action, a matrix and a vector");
+  unsigned nmask = 0; if( hasMask() ) nmask = 1;
+  if( getNumberOfArguments()-nmask!=2 ) error("should be two arguments to this action, a matrix and a vector");
   if( getPntrToArgument(0)->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) error("first argument to this action should be a matrix");
   if( getPntrToArgument(1)->getRank()!=2 || getPntrToArgument(1)->hasDerivatives() ) error("second argument to this action should be a matrix");
   if( getPntrToArgument(0)->getShape()[1]!=getPntrToArgument(1)->getShape()[0] ) error("number of columns in first matrix does not equal number of rows in second matrix");
@@ -88,13 +88,11 @@ MatrixTimesMatrix::MatrixTimesMatrix(const ActionOptions&ao):
     if( squared ) log.printf("  calculating the squares of the dissimilarities \n");
   } else squared=true;
 
-  std::vector<Value*> mask; parseArgumentList("MASK",mask);
-  if( mask.size()==1 ) {
-    if( mask[0]->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) error("argument passed to MASK keyword should be a matrix");
-    if( mask[0]->getShape()[0]!=shape[0] || mask[0]->getShape()[1]!=shape[1] ) error("argument passed to MASK keyword has the wrong shape");
-    log.printf("  only computing elements of matrix product that correspond to non-zero elements of matrix %s \n", mask[0]->getName().c_str() );
-    std::vector<Value*> allargs( getArguments() ); allargs.push_back( mask[0] ); requestArguments( allargs );
-  } else if( mask.size()!=0 ) error("MASK should only have one argument");
+  if( hasMask() ) {
+    unsigned iarg = getNumberOfArguments()-1;
+    if( getPntrToArgument(iarg)->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) error("argument passed to MASK keyword should be a matrix");
+    if( getPntrToArgument(iarg)->getShape()[0]!=shape[0] || getPntrToArgument(iarg)->getShape()[1]!=shape[1] ) error("argument passed to MASK keyword has the wrong shape");
+  }
 }
 
 unsigned MatrixTimesMatrix::getNumberOfDerivatives() {
