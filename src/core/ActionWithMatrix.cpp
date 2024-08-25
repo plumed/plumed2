@@ -98,6 +98,10 @@ void ActionWithMatrix::setupMatrixStore() {
   if( next_action_in_chain ) next_action_in_chain->setupMatrixStore();
 }
 
+int ActionWithMatrix::checkTaskIsActive( const unsigned& itask ) const {
+  return 1;
+}
+
 void ActionWithMatrix::calculate() {
   if( actionInChain() ) return ;
   // Update all the neighbour lists

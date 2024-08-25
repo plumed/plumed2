@@ -79,8 +79,15 @@ ActionWithVector::ActionWithVector(const ActionOptions&ao):
   if( keywords.exists("MASK") ) {
     std::vector<Value*> mask; parseArgumentList("MASK",mask);
     if( mask.size()>0 ) {
-      if( nmask>0 ) error("should not have a mask if you have read the mask keyword");
-      if( getPntrToArgument(0)->hasDerivatives() ) error("input for mask should be vector or matrix");
+      if( nmask>0 && getNumberOfArguments()==1 ) {
+          ActionWithVector* av=dynamic_cast<ActionWithVector*>( getPntrToArgument(0)->getPntrToAction() ); 
+          plumed_massert( av, "input should be a vector from ActionWithVector" ); unsigned j=0, nargs = av->getNumberOfArguments();
+          for(unsigned i=nargs-av->nmask; i<nargs; ++i) {
+              if( av->getPntrToArgument(i)!=mask[j] ) error("the masks in subsequent actions do not match");
+              j++;
+          }
+      } else if( nmask>0 ) error("should not have a mask if you have read the mask keyword");
+      if( getNumberOfArguments()>0 && getPntrToArgument(0)->hasDerivatives() ) error("input for mask should be vector or matrix");
       else if( mask[0]->getRank()==2 ) {
          if( mask.size()>1 ) error("MASK should only have one argument");
          log.printf("  only computing elements of matrix that correspond to non-zero elements of matrix %s \n", mask[0]->getName().c_str() );
@@ -428,9 +435,40 @@ void ActionWithVector::prepare() {
   active_tasks.resize(0); atomsWereRetrieved=false;
 }
 
+int ActionWithVector::checkTaskIsActive( const unsigned& itask ) const {
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      Value* myarg = getPntrToArgument(i);
+      if( myarg->getRank()==0 ) continue;
+      else if( myarg->getRank()==1 && !myarg->hasDerivatives() ) {
+          if( fabs(myarg->get(itask))>0 ) return 1;          
+      } else plumed_merror("should not be in action " + getName() );
+  }
+  return -1;
+}
+
 std::vector<unsigned>& ActionWithVector::getListOfActiveTasks( ActionWithVector* action ) {
   if( active_tasks.size()>0 ) return active_tasks;
   unsigned ntasks=0; getNumberOfTasks( ntasks );
+
+  if( getenvChainForbidden()==Option::yes ) {
+      if( getNumberOfArguments()==0 ) {
+          active_tasks.resize( ntasks );
+          for(unsigned i=0; i<ntasks; ++i) active_tasks[i]=i;
+          return active_tasks;
+      }
+
+      std::vector<int> taskFlags( ntasks, -1 );
+      for(unsigned i=0; i<ntasks; ++i) taskFlags[i] = checkTaskIsActive(i);
+      unsigned nt=0;
+      for(unsigned i=0; i<ntasks; ++i) {
+          if( taskFlags[i]>0 ) nt++; 
+      }
+      active_tasks.resize(nt); nt=0;
+      for(unsigned i=0; i<ntasks; ++i) {
+        if( taskFlags[i]>0 ) { active_tasks[nt]=i; nt++; }
+      }
+      return active_tasks;
+  } 
 
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();

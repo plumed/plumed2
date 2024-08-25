@@ -131,6 +131,8 @@ public:
 /// Check if a mask has been set
   unsigned getNumberOfMasks() const ;
   void calculateNumericalDerivatives(ActionWithValue* av) override;
+/// Determine if a particular task is active based on the values of the input argument
+  virtual int checkTaskIsActive( const unsigned& itask ) const ;
 /// Turn off the calculation of the derivatives during the forward pass through a calculation
   bool doNotCalculateDerivatives() const override ;
 /// Are we running this command in a chain

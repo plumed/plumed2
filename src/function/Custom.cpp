@@ -343,9 +343,12 @@ bool Custom::checkIfMaskAllowed( const std::vector<Value*>& args ) const {
     if( found ) continue;
     ActionWithVector* av=dynamic_cast<ActionWithVector*>( args[i]->getPntrToAction() );
     if( av && av->getNumberOfMasks()>0 ) {
-      nomask=false; Value* maskarg = av->getPntrToArgument( av->getNumberOfArguments()-1 );
-      for(unsigned j=0; j<check_multiplication_vars.size(); ++j) {
-        if( maskarg==args[check_multiplication_vars[j]] ) return true;
+      unsigned nargs = av->getNumberOfArguments(), nm = av->getNumberOfMasks();
+      for(unsigned k=nargs-nm; k<nargs; ++k ) {
+          nomask=false; Value* maskarg = av->getPntrToArgument( k );
+          for(unsigned j=0; j<check_multiplication_vars.size(); ++j) {
+            if( maskarg==args[check_multiplication_vars[j]] ) return true;
+          }
       }
     }
   }

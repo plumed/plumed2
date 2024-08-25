@@ -28,7 +28,7 @@ namespace PLMD {
 namespace adjmat {
 
 void AdjacencyMatrixBase::registerKeywords( Keywords& keys ) {
-  ActionWithMatrix::registerKeywords( keys ); keys.remove("ARG");
+  ActionWithMatrix::registerKeywords( keys ); keys.remove("ARG"); keys.use("MASK");
   keys.add("atoms","GROUP","the atoms for which you would like to calculate the adjacency matrix");
   keys.add("atoms","GROUPA","");
   keys.add("atoms","GROUPB","");

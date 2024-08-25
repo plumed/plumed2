@@ -91,6 +91,7 @@ void FunctionOfVector<T>::registerKeywords(Keywords& keys ) {
   } else if( keys.getDisplayName()=="SORT" ) {
     keys.setValueDescription("a vector that has been sorted into ascending order");
   } else if( keys.outputComponentExists(".#!value") ) {
+    keys.add("optional","MASK","the label for a sparse matrix that should be used to determine which elements of the matrix should be computed");
     keys.setValueDescription("the vector obtained by doing an element-wise application of " + keys.getOutputComponentDescription(".#!value") + " to the input vectors");
   }
 }

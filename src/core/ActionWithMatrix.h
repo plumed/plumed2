@@ -61,6 +61,8 @@ public:
 ///
   virtual bool isAdjacencyMatrix() const { return false; }
 ///
+  int checkTaskIsActive( const unsigned& itask ) const override ;
+///
   void getAllActionLabelsInMatrixChain( std::vector<std::string>& mylabels ) const override ;
 /// Get the first matrix in this chain
   const ActionWithMatrix* getFirstMatrixInChain() const ;
