@@ -38,7 +38,7 @@ class ActionWithVector:
   friend class Value;
 private:
 /// Check if there is a mask value
-  unsigned nmask;
+  int nmask;
 /// Is the calculation to be done in serial
   bool serial;
 /// Are we in the forward pass through the calculation
@@ -129,7 +129,7 @@ public:
   virtual void prepare() override;
   void retrieveAtoms( const bool& force=false ) override;
 /// Check if a mask has been set
-  unsigned getNumberOfMasks() const ;
+  int getNumberOfMasks() const ;
   void calculateNumericalDerivatives(ActionWithValue* av) override;
 /// Determine if a particular task is active based on the values of the input argument
   virtual int checkTaskIsActive( const unsigned& itask ) const ;
@@ -199,13 +199,13 @@ bool ActionWithVector::runInSerial() const {
 }
 
 inline
-unsigned ActionWithVector::getNumberOfMasks() const {
+int ActionWithVector::getNumberOfMasks() const {
   return nmask;
 }
 
 inline
 void ActionWithVector::ignoreMaskArguments() {
-  nmask=0;
+  plumed_assert( nmask<=0 ); nmask=-1;
 }
 
 }

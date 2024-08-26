@@ -60,7 +60,7 @@ ActionWithVector::ActionWithVector(const ActionOptions&ao):
   ActionAtomistic(ao),
   ActionWithValue(ao),
   ActionWithArguments(ao),
-  nmask(0),
+  nmask(-1),
   serial(false),
   forwardPass(false),
   action_to_do_before(NULL),
@@ -72,21 +72,21 @@ ActionWithVector::ActionWithVector(const ActionOptions&ao):
 {
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     ActionWithVector* av = dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
-    if( av && av->getNumberOfMasks()>0 ) nmask=1;
+    if( av && av->getNumberOfMasks()>=0 ) nmask=0;
   }
 
   if( keywords.exists("SERIAL") ) parseFlag("SERIAL",serial);
   if( keywords.exists("MASK") ) {
     std::vector<Value*> mask; parseArgumentList("MASK",mask);
     if( mask.size()>0 ) {
-      if( nmask>0 && getNumberOfArguments()==1 ) {
+      if( nmask>=0 && getNumberOfArguments()==1 ) {
           ActionWithVector* av=dynamic_cast<ActionWithVector*>( getPntrToArgument(0)->getPntrToAction() ); 
           plumed_massert( av, "input should be a vector from ActionWithVector" ); unsigned j=0, nargs = av->getNumberOfArguments();
           for(unsigned i=nargs-av->nmask; i<nargs; ++i) {
               if( av->getPntrToArgument(i)!=mask[j] ) error("the masks in subsequent actions do not match");
               j++;
           }
-      } else if( nmask>0 ) error("should not have a mask if you have read the mask keyword");
+      } else if( nmask>=0 ) error("should not have a mask if you have read the mask keyword");
       if( getNumberOfArguments()>0 && getPntrToArgument(0)->hasDerivatives() ) error("input for mask should be vector or matrix");
       else if( mask[0]->getRank()==2 ) {
          if( mask.size()>1 ) error("MASK should only have one argument");

@@ -46,6 +46,7 @@ public:
   unsigned getNumberOfColumns() const override { plumed_error(); }
   void getNumberOfStreamedDerivatives( unsigned& nderivatives, Value* stopat ) override ;
   unsigned getNumberOfDerivatives() override ;
+  int checkTaskIsActive( const unsigned& itask ) const override ;
   void prepare() override ;
   void performTask( const unsigned& task_index, MultiValue& myvals ) const override ;
   bool isInSubChain( unsigned& nder ) override { nder = arg_deriv_starts[0]; return true; }
@@ -91,7 +92,7 @@ MatrixTimesVector::MatrixTimesVector(const ActionOptions&ao):
     if( getPntrToArgument(i)->hasDerivatives() ) error("arguments should be vectors or matrices");
     if( getPntrToArgument(i)->getRank()<=1 ) {
       nvectors++; ActionWithVector* av=dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
-      if( av && av->getNumberOfMasks()>0 ) vectormask=true;
+      if( av && av->getNumberOfMasks()>=0 ) vectormask=true;
     }
     if( getPntrToArgument(i)->getRank()==2 ) nmatrices++;
   }
@@ -166,6 +167,19 @@ void MatrixTimesVector::prepare() {
   ActionWithVector::prepare(); Value* myval = getPntrToComponent(0);
   if( myval->getShape()[0]==getPntrToArgument(0)->getShape()[0] ) return;
   std::vector<unsigned> shape(1); shape[0] = getPntrToArgument(0)->getShape()[0]; myval->setShape(shape);
+}
+
+int MatrixTimesVector::checkTaskIsActive( const unsigned& itask ) const {
+  if( getPntrToArgument(1)->getRank()==1 ) {
+      ActionWithMatrix* am=dynamic_cast<ActionWithMatrix*>( getPntrToArgument(0)->getPntrToAction() );
+      plumed_assert( am ); return am->checkTaskIsActive(itask);
+  } else {
+      unsigned n=getNumberOfArguments()-1;
+      for(unsigned i=0; i<n; ++i) {
+          ActionWithMatrix* am=dynamic_cast<ActionWithMatrix*>( getPntrToArgument(i)->getPntrToAction() );
+          plumed_assert( am ); if( am->checkTaskIsActive(itask)>0 ) return 1;
+      }
+  }
 }
 
 void MatrixTimesVector::getNumberOfStreamedDerivatives( unsigned& nderivatives, Value* stopat ) {

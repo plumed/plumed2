@@ -163,7 +163,7 @@ FunctionOfVector<T>::FunctionOfVector(const ActionOptions&ao):
     } else {
       ActionWithVector* av=dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
       if( !av ) done_in_chain=false;
-      else if( av->getNumberOfMasks()>0 && !myfunc.checkIfMaskAllowed( getArguments() ) ) error("cannot use argument masks in input as not all elements are computed");
+      else if( av->getNumberOfMasks()>=0 && !myfunc.checkIfMaskAllowed( getArguments() ) ) error("cannot use argument masks in input as not all elements are computed");
     }
   }
   // Don't need to do the calculation in a chain if the input is constant

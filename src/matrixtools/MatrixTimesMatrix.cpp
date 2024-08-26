@@ -73,7 +73,8 @@ MatrixTimesMatrix::MatrixTimesMatrix(const ActionOptions&ao):
   Action(ao),
   ActionWithMatrix(ao)
 {
-  if( getNumberOfArguments()-getNumberOfMasks()!=2 ) error("should be two arguments to this action, a matrix and a vector");
+  int nm=getNumberOfMasks(); if( nm<0 ) nm = 0;
+  if( getNumberOfArguments()-nm!=2 ) error("should be two arguments to this action, a matrix and a vector");
   if( getPntrToArgument(0)->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) error("first argument to this action should be a matrix");
   if( getPntrToArgument(1)->getRank()!=2 || getPntrToArgument(1)->hasDerivatives() ) error("second argument to this action should be a matrix");
   if( getPntrToArgument(0)->getShape()[1]!=getPntrToArgument(1)->getShape()[0] ) error("number of columns in first matrix does not equal number of rows in second matrix");
@@ -87,7 +88,7 @@ MatrixTimesMatrix::MatrixTimesMatrix(const ActionOptions&ao):
     if( squared ) log.printf("  calculating the squares of the dissimilarities \n");
   } else squared=true;
 
-  if( getNumberOfMasks()>0 ) {
+  if( nm>0 ) {
     unsigned iarg = getNumberOfArguments()-1;
     if( getPntrToArgument(iarg)->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) error("argument passed to MASK keyword should be a matrix");
     if( getPntrToArgument(iarg)->getShape()[0]!=shape[0] || getPntrToArgument(iarg)->getShape()[1]!=shape[1] ) error("argument passed to MASK keyword has the wrong shape");
