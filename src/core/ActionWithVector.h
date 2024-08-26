@@ -99,6 +99,8 @@ private:
   bool atomsWereRetrieved;
 /// This is used to build the argument store when we cannot use the chain
   unsigned reallyBuildArgumentStore( const unsigned& argstart );
+/// Determine if a particular task is active based on the values of the input argument
+  int checkTaskIsActive( const unsigned& itask ) const ; 
 protected:
 /// A vector that contains the start point for the argument derivatives
   std::vector<unsigned> arg_deriv_starts;
@@ -131,8 +133,6 @@ public:
 /// Check if a mask has been set
   int getNumberOfMasks() const ;
   void calculateNumericalDerivatives(ActionWithValue* av) override;
-/// Determine if a particular task is active based on the values of the input argument
-  virtual int checkTaskIsActive( const unsigned& itask ) const ;
 /// Turn off the calculation of the derivatives during the forward pass through a calculation
   bool doNotCalculateDerivatives() const override ;
 /// Are we running this command in a chain

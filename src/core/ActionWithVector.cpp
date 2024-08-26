@@ -436,12 +436,34 @@ void ActionWithVector::prepare() {
 }
 
 int ActionWithVector::checkTaskIsActive( const unsigned& itask ) const {
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    Value* myarg = getPntrToArgument(i);
-    if( myarg->getRank()==0 ) continue;
-    else if( myarg->getRank()==1 && !myarg->hasDerivatives() ) {
-      if( fabs(myarg->get(itask))>0 ) return 1;
-    } else plumed_merror("should not be in action " + getName() );
+  unsigned nargs = getNumberOfArguments();
+  if( nmask>0 ) {
+     for(unsigned j=nargs-nmask; j<nargs; ++j) {
+         Value* myarg = getPntrToArgument(j);
+         if( myarg->getRank()==1 && !myarg->hasDerivatives() ) {
+             if( fabs(myarg->get(itask))>0 ) return 1;
+         } else if( myarg->getRank()==2 && !myarg->hasDerivatives() ) {
+             unsigned ncol = myarg->getRowLength(itask);
+             unsigned base = itask*myarg->getNumberOfColumns();
+             for(unsigned k=0; k<ncol; ++k) {
+                 if( fabs(myarg->get(base+k,false))>0 ) return 1;
+             }
+         } else plumed_merror("only matrices and vectors should be used as masks"); 
+     }
+  } else {
+     for(unsigned i=0; i<nargs; ++i) {
+       Value* myarg = getPntrToArgument(i);
+       if( myarg->getRank()==0 ) continue;
+       else if( myarg->getRank()==1 && !myarg->hasDerivatives() ) {
+         if( fabs(myarg->get(itask))>0 ) return 1;
+       } else if( myarg->getRank()==2 && !myarg->hasDerivatives() ) {
+           unsigned ncol = myarg->getRowLength(itask);
+           unsigned base = itask*myarg->getNumberOfColumns();
+           for(unsigned k=0; k<ncol; ++k) {
+               if( fabs(myarg->get(base+k,false))>0 ) return 1;
+           }
+       } else plumed_merror("should not be in action " + getName() );
+     }
   }
   return -1;
 }

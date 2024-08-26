@@ -98,20 +98,6 @@ void ActionWithMatrix::setupMatrixStore() {
   if( next_action_in_chain ) next_action_in_chain->setupMatrixStore();
 }
 
-int ActionWithMatrix::checkTaskIsActive( const unsigned& itask ) const {
-  int nm = getNumberOfMasks(); if( nm<0 ) return 1;
-
-  // This checks for matrices that are masking some elements
-  unsigned nargs = getNumberOfArguments();
-  if( nm==1 && getPntrToArgument(nargs-1)->getRank()==2 ) return 1;
-
-  for(unsigned j=nargs-nm; j<nargs; ++j) {
-    plumed_assert( getPntrToArgument(j)->getRank()==1 );
-    if( fabs(getPntrToArgument(j)->get(itask))>0 ) return 1;
-  }
-  return 0;
-}
-
 void ActionWithMatrix::calculate() {
   if( actionInChain() ) return ;
   // Update all the neighbour lists

@@ -56,8 +56,6 @@ public:
   void turnOnDerivatives() override;
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives() override ;
-/// Check if the task is active
-  int checkTaskIsActive( const unsigned& itask ) const override ;
 /// Resize the matrices
   void prepare() override ;
 /// This gets the number of columns
@@ -230,17 +228,6 @@ unsigned FunctionOfMatrix<T>::getNumberOfColumns() const {
     }
   }
   plumed_error(); return 0;
-}
-
-template <class T>
-int FunctionOfMatrix<T>::checkTaskIsActive( const unsigned& itask ) const {
-  const ActionWithVector* av=dynamic_cast<const ActionWithVector*>( getPntrToArgument(0)->getPntrToAction() );
-  unsigned status=1; if( av ) status = av->checkTaskIsActive( itask );
-  for(unsigned i=1; i<getNumberOfArguments(); ++i) {
-    const ActionWithVector* av=dynamic_cast<const ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
-    if( av && status!=av->checkTaskIsActive( itask ) ) plumed_merror("this doesn't work");
-  }
-  return status;
 }
 
 template <class T>
