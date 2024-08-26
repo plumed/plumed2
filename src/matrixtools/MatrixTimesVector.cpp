@@ -171,14 +171,14 @@ void MatrixTimesVector::prepare() {
 
 int MatrixTimesVector::checkTaskIsActive( const unsigned& itask ) const {
   if( getPntrToArgument(1)->getRank()==1 ) {
-      ActionWithMatrix* am=dynamic_cast<ActionWithMatrix*>( getPntrToArgument(0)->getPntrToAction() );
-      plumed_assert( am ); return am->checkTaskIsActive(itask);
+    ActionWithMatrix* am=dynamic_cast<ActionWithMatrix*>( getPntrToArgument(0)->getPntrToAction() );
+    plumed_assert( am ); return am->checkTaskIsActive(itask);
   } else {
-      unsigned n=getNumberOfArguments()-1;
-      for(unsigned i=0; i<n; ++i) {
-          ActionWithMatrix* am=dynamic_cast<ActionWithMatrix*>( getPntrToArgument(i)->getPntrToAction() );
-          plumed_assert( am ); if( am->checkTaskIsActive(itask)>0 ) return 1;
-      }
+    unsigned n=getNumberOfArguments()-1;
+    for(unsigned i=0; i<n; ++i) {
+      ActionWithMatrix* am=dynamic_cast<ActionWithMatrix*>( getPntrToArgument(i)->getPntrToAction() );
+      plumed_assert( am ); if( am->checkTaskIsActive(itask)>0 ) return 1;
+    }
   }
 }
 

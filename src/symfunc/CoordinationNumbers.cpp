@@ -183,11 +183,11 @@ CoordinationNumbers::CoordinationNumbers(const ActionOptions& ao):
   readInputLine( getShortcutLabel() + ": MATRIX_VECTOR_PRODUCT  ARG=" + matlab + "," + getShortcutLabel() + "_ones");
   std::vector<std::string> moments; parseVector("MOMENTS",moments); Tools::interpretRanges( moments );
   if( moments.size()>0 ) {
-      readInputLine( getShortcutLabel() + "_caverage: MEAN ARG=" + getShortcutLabel() + " PERIODIC=NO");
-      for(unsigned i=0; i<moments.size(); ++i) {
-        readInputLine( getShortcutLabel() + "_diffpow-" + moments[i] + ": CUSTOM ARG=" + getShortcutLabel() + "," + getShortcutLabel() + "_caverage PERIODIC=NO FUNC=(x-y)^" + moments[i] );
-        readInputLine( getShortcutLabel() + "_moment-" + moments[i] + ": MEAN ARG=" + getShortcutLabel() + "_diffpow-" + moments[i] + " PERIODIC=NO");
-      }
+    readInputLine( getShortcutLabel() + "_caverage: MEAN ARG=" + getShortcutLabel() + " PERIODIC=NO");
+    for(unsigned i=0; i<moments.size(); ++i) {
+      readInputLine( getShortcutLabel() + "_diffpow-" + moments[i] + ": CUSTOM ARG=" + getShortcutLabel() + "," + getShortcutLabel() + "_caverage PERIODIC=NO FUNC=(x-y)^" + moments[i] );
+      readInputLine( getShortcutLabel() + "_moment-" + moments[i] + ": MEAN ARG=" + getShortcutLabel() + "_diffpow-" + moments[i] + " PERIODIC=NO");
+    }
   }
   // Read in all the shortcut stuff
   std::map<std::string,std::string> keymap; multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );

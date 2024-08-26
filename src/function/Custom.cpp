@@ -345,10 +345,10 @@ bool Custom::checkIfMaskAllowed( const std::vector<Value*>& args ) const {
     if( av && av->getNumberOfMasks()>=0 ) {
       unsigned nargs = av->getNumberOfArguments(), nm = av->getNumberOfMasks();
       for(unsigned k=nargs-nm; k<nargs; ++k ) {
-          nomask=false; Value* maskarg = av->getPntrToArgument( k );
-          for(unsigned j=0; j<check_multiplication_vars.size(); ++j) {
-            if( maskarg==args[check_multiplication_vars[j]] ) return true;
-          }
+        nomask=false; Value* maskarg = av->getPntrToArgument( k );
+        for(unsigned j=0; j<check_multiplication_vars.size(); ++j) {
+          if( maskarg==args[check_multiplication_vars[j]] ) return true;
+        }
       }
     }
   }

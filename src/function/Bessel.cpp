@@ -90,8 +90,8 @@ void Bessel::registerKeywords(Keywords& keys) {
 
 void Bessel::read( ActionWithArguments* action ) {
   if( action->getNumberOfArguments()!=1 ) {
-      ActionWithVector* av = dynamic_cast<ActionWithVector*>( action );
-      if( !av || (av && action->getNumberOfArguments()-av->getNumberOfMasks()!=1) ) action->error("should only be one argument to less_than actions");
+    ActionWithVector* av = dynamic_cast<ActionWithVector*>( action );
+    if( !av || (av && action->getNumberOfArguments()-av->getNumberOfMasks()!=1) ) action->error("should only be one argument to less_than actions");
   }
   if( action->getPntrToArgument(0)->isPeriodic() ) action->error("cannot use this function on periodic functions");
   action->parse("ORDER",order); action->log.printf("  computing %dth order bessel function \n", order );

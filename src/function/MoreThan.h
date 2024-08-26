@@ -34,7 +34,7 @@ class MoreThan : public FunctionTemplateBase {
 public:
   void registerKeywords( Keywords& keys ) override;
   void read( ActionWithArguments* action ) override;
-  bool checkIfMaskAllowed( const std::vector<Value*>& args ) const override { return args.size()>1; } 
+  bool checkIfMaskAllowed( const std::vector<Value*>& args ) const override { return args.size()>1; }
   bool getDerivativeZeroIfValueIsZero() const override { return true; }
   void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
 };
