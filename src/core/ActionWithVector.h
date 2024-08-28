@@ -99,8 +99,6 @@ private:
   bool atomsWereRetrieved;
 /// This is used to build the argument store when we cannot use the chain
   unsigned reallyBuildArgumentStore( const unsigned& argstart );
-/// Determine if a particular task is active based on the values of the input argument
-  int checkTaskIsActive( const unsigned& itask ) const ; 
 protected:
 /// A vector that contains the start point for the argument derivatives
   std::vector<unsigned> arg_deriv_starts;
@@ -168,6 +166,8 @@ public:
   virtual void getAdditionalTasksRequired( ActionWithVector* action, std::vector<unsigned>& atasks );
 /// setup the streamed quantities
   virtual void setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol );
+/// Determine if a particular task is active based on the values of the input argument
+  virtual int checkTaskIsActive( const unsigned& itask ) const ;
 /// This we override to perform each individual task
   virtual void performTask( const unsigned& current, MultiValue& myvals ) const = 0;
 /// This is used to ensure that all indices are updated when you do local average

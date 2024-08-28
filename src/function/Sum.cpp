@@ -106,6 +106,7 @@ typedef FunctionOfMatrix<Sum> MatrixSum;
 PLUMED_REGISTER_ACTION(MatrixSum,"SUM_MATRIX")
 
 void Sum::registerKeywords( Keywords& keys ) {
+  keys.add("hidden","MASKED_INPUT_ALLOWED","turns on that you are allowed to use masked inputs ");
   keys.use("PERIODIC"); keys.setValueDescription("the sum");
 }
 
