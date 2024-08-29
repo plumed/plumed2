@@ -354,6 +354,7 @@ void FunctionOfMatrix<T>::performTask( const std::string& controller, const unsi
         for(int i=0; i<getNumberOfComponents(); ++i) {
           unsigned ostrn=getConstPntrToComponent(i)->getPositionInStream();
           unsigned myind = base + getPntrToArgument(j)->getNumberOfColumns()*index1 + ind2;
+          // if( getConstPntrToComponent(i)->valueIsStored() ) myind = base + getPntrToArgument(j)->getNumberOfColumns()*index1 + getConstPntrToComponent(i)->getRowLength(index1);
           myvals.addDerivative( ostrn, myind, derivatives(i,j) );
           myvals.updateIndex( ostrn, myind );
         }
@@ -429,7 +430,7 @@ void FunctionOfMatrix<T>::runEndOfRowJobs( const unsigned& ind, const std::vecto
       if( mat_indices.size()<nderivatives ) mat_indices.resize( nderivatives ); unsigned matderbase = 0;
       for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
         if( getPntrToArgument(i)->getRank()==0 ) continue ;
-        unsigned ss = getPntrToArgument(i)->getNumberOfColumns(); unsigned tbase = matderbase + ss*myvals.getTaskIndex();
+        unsigned ss = getPntrToArgument(i)->getRowLength(ind); unsigned tbase = matderbase + getPntrToArgument(i)->getNumberOfColumns()*myvals.getTaskIndex();
         for(unsigned k=0; k<ss; ++k) mat_indices[ntot_mat + k] = tbase + k;
         ntot_mat += ss; matderbase += getPntrToArgument(i)->getNumberOfStoredValues();
       }
