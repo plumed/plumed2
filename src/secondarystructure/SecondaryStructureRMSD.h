@@ -65,6 +65,7 @@ public:
   unsigned getNumberOfDerivatives() override ;
   void areAllTasksRequired( std::vector<ActionWithVector*>& task_reducing_actions ) override;
   int checkTaskStatus( const unsigned& taskno, int& flag ) const override;
+  int checkTaskIsActive( const unsigned& itask ) const override ;
   void calculate() override;
   void performTask( const unsigned&, MultiValue& ) const override;
 };

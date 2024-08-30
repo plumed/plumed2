@@ -338,7 +338,8 @@ void Value::clearDerivatives( const bool force ) {
   if( !force && (valtype==constant || valtype==average) ) return;
 
   value_set=false;
-  if( data.size()>1 ) std::fill(data.begin()+1, data.end(), 0);
+  if( shape.size()>0 ) std::fill(data.begin(), data.end(), 0);
+  else if( data.size()>1 ) std::fill(data.begin()+1, data.end(), 0);
 }
 
 inline
