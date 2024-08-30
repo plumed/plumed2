@@ -291,6 +291,7 @@ void LocalSteinhardt::registerKeywords( Keywords& keys ) {
   keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
            "The following provides information on the \\ref switchingfunction that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
+  keys.add("optional","MASK","the label/s for vectors that are used to determine which local steinhardt parameters to compute");
   keys.addFlag("LOWMEM",false,"this flag does nothing and is present only to ensure back-compatibility");
   multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
   keys.needsAction("CONTACT_MATRIX"); keys.needsAction("MATRIX_PRODUCT"); keys.needsAction("GROUP");
@@ -364,7 +365,8 @@ LocalSteinhardt::LocalSteinhardt(const ActionOptions& ao):
     readInputLine( getShortcutLabel() + "_vecs: CUSTOM ARG=" + getShortcutLabel() + "_uvecs," + getShortcutLabel() + "_nmat FUNC=x/y PERIODIC=NO");
     // And transpose the matrix
     readInputLine( getShortcutLabel() + "_vecsT: TRANSPOSE ARG=" + getShortcutLabel() + "_vecs" );
-    std::string sw_str; parse("SWITCH",sw_str); readInputLine( getShortcutLabel() + "_cmap: CONTACT_MATRIX GROUP=" + sp_str + " SWITCH={" + sw_str + "}");
+    std::string sw_str; parse("SWITCH",sw_str); std::string maskstr; parse("MASK",maskstr); if( maskstr.length()>0 ) maskstr=" MASK=" + maskstr;
+    readInputLine( getShortcutLabel() + "_cmap: CONTACT_MATRIX GROUP=" + sp_str + " SWITCH={" + sw_str + "}" + maskstr );
     // And the matrix of dot products
     if( chainsAreOff() ) readInputLine( getShortcutLabel() + "_dpmat: MATRIX_PRODUCT ARG=" + getShortcutLabel() + "_vecs," + getShortcutLabel() + "_vecsT MASK=" + getShortcutLabel() + "_cmap" );
     else readInputLine( getShortcutLabel() + "_dpmat: MATRIX_PRODUCT ARG=" + getShortcutLabel() + "_vecs," + getShortcutLabel() + "_vecsT");
@@ -422,7 +424,8 @@ LocalSteinhardt::LocalSteinhardt(const ActionOptions& ao):
     }
     // Now normalise all the vectors by doing Hadammard "product" with normalising matrix
     readInputLine( getShortcutLabel() + "_vecsB: CUSTOM ARG=" + getShortcutLabel() + "_uvecsB," + getShortcutLabel() + "_nmatB FUNC=x/y PERIODIC=NO");
-    std::string sw_str; parse("SWITCH",sw_str); readInputLine( getShortcutLabel() + "_cmap: CONTACT_MATRIX GROUPA=" + spa_str + " GROUPB=" + spb_str + " SWITCH={" + sw_str + "}");
+    std::string sw_str; parse("SWITCH",sw_str); std::string maskstr; parse("MASK",maskstr); if( maskstr.length()>0 ) maskstr=" MASK=" + maskstr;
+    readInputLine( getShortcutLabel() + "_cmap: CONTACT_MATRIX GROUPA=" + spa_str + " GROUPB=" + spb_str + " SWITCH={" + sw_str + "}" + maskstr );
     if( chainsAreOff() ) readInputLine( getShortcutLabel() + "_dpmat: MATRIX_PRODUCT ARG=" + getShortcutLabel() + "_vecsA," + getShortcutLabel() + "_vecsB MASK=" + getShortcutLabel() + "_cmap");
     else readInputLine( getShortcutLabel() + "_dpmat: MATRIX_PRODUCT ARG=" + getShortcutLabel() + "_vecsA," + getShortcutLabel() + "_vecsB");
   }

@@ -437,7 +437,9 @@ void ActionWithVector::prepare() {
 
 int ActionWithVector::checkTaskIsActive( const unsigned& itask ) const {
   unsigned nargs = getNumberOfArguments();
-  if( nmask>0 ) {
+  if( nargs==0 ) {
+     return 1;
+  } else if( nmask>0 ) {
      for(unsigned j=nargs-nmask; j<nargs; ++j) {
          Value* myarg = getPntrToArgument(j);
          if( myarg->getRank()==1 && !myarg->hasDerivatives() ) {
@@ -473,12 +475,6 @@ std::vector<unsigned>& ActionWithVector::getListOfActiveTasks( ActionWithVector*
   unsigned ntasks=0; getNumberOfTasks( ntasks );
 
   if( getenvChainForbidden()==Option::yes ) {
-    if( getNumberOfArguments()==0 ) {
-      active_tasks.resize( ntasks );
-      for(unsigned i=0; i<ntasks; ++i) active_tasks[i]=i;
-      return active_tasks;
-    }
-
     std::vector<int> taskFlags( ntasks, -1 );
     for(unsigned i=0; i<ntasks; ++i) taskFlags[i] = checkTaskIsActive(i);
     unsigned nt=0;
