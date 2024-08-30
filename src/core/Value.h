@@ -448,6 +448,7 @@ bool Value::valueIsStored() const {
 
 inline
 unsigned Value::getRowLength( const unsigned& irow ) const {
+  if( matrix_bookeeping.size()==0 ) return 0;
   plumed_dbg_assert( (1+ncols)*irow<matrix_bookeeping.size() );
   return matrix_bookeeping[(1+ncols)*irow];
 }

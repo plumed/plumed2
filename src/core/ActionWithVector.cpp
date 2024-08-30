@@ -794,6 +794,10 @@ bool ActionWithVector::checkForForces() {
   // Get the number of tasks
   std::vector<unsigned> force_tasks; getForceTasks( force_tasks );
   Tools::removeDuplicates(force_tasks); unsigned nf_tasks=force_tasks.size();
+  if( nf_tasks==0 ) {
+      for(unsigned j=0; j<getNumberOfArguments(); ++j) getPntrToArgument(j)->hasForce=true;
+      return false;
+  }
 
   // Get number of threads for OpenMP
   unsigned nt=OpenMP::getNumThreads();

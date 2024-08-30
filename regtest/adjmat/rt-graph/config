@@ -1,3 +1,11 @@
 type=plumed
 plumed_modules=adjmat
-arg="show_graph --plumed plumed.dat --out graph.md" 
+arg="show_graph --plumed plumed.dat --out graph.md"
+
+function plumed_regtest_before() {
+   export PLUMED_FORBID_CHAINS=yes
+}
+
+function plumed_regtest_after() {
+   export PLUMED_FORBID_CHAINS=no
+}

@@ -7,40 +7,34 @@ flowchart BT
  BIASVALUE 
 "])
 10 -- d1c --> d1c
-subgraph subd1 [d1]
-d1(["label=d1 
- DISTANCE 
-"])
-d1l(["label=d1l 
- LESS_THAN 
-"])
-d1 -. d1 .-> d1l
-linkStyle 2 stroke:blue,color:blue;
-d1b(["label=d1b 
- BETWEEN 
-"])
-d1 -. d1 .-> d1b
-linkStyle 3 stroke:blue,color:blue;
-b(["label=b 
- SUM 
-"])
-d1b -. d1b .-> b
-linkStyle 4 stroke:blue,color:blue;
 d1c(["label=d1c 
  SUM 
 "])
-d1l -. d1l .-> d1c
+d1c -- d1l --> d1l
+linkStyle 2 stroke:blue,color:blue;
+b(["label=b 
+ SUM 
+"])
+b -- d1b --> d1b
+linkStyle 3 stroke:blue,color:blue;
+d1b(["label=d1b 
+ BETWEEN 
+"])
+d1b -- d1 --> d1
+linkStyle 4 stroke:blue,color:blue;
+d1l(["label=d1l 
+ LESS_THAN 
+"])
+d1l -- d1 --> d1
 linkStyle 5 stroke:blue,color:blue;
-end
-d1c == d1c ==> d1
-subgraph subd1 [d1]
-end
-b == b ==> d1
+d1(["label=d1 
+ DISTANCE 
+"])
 Box("label=Box 
  PBC 
 ")
-d1 -- Box --> Box
-linkStyle 8 stroke:red,color:red;
-d1 --> MD
-linkStyle 9 stroke:violet,color:violet;
+Box -- Box --> d1
+linkStyle 6 stroke:red,color:red;
+MD --> d1
+linkStyle 7 stroke:violet,color:violet;
 MD(positions from MD)
