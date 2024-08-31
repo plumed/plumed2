@@ -241,7 +241,8 @@ void AdjacencyMatrixBase::setupForTask( const unsigned& current, std::vector<uns
     unsigned nelements = myval->getRowLength(current), startr = current*myval->getNumberOfColumns();
     for(unsigned j=0; j<nelements; ++j ) {
       unsigned jind = myval->getRowIndex( current, j );
-      if( ablocks[jind]!=indices[0] && fabs( myval->getForce( startr + j ) )>epsilon ) { indices[natoms] = ablocks[jind]; natoms++; }
+      double totforce=myval->getForce( startr + j ); for(unsigned k=1; k<getNumberOfComponents(); ++k) totforce += getConstPntrToComponent(k)->getForce(startr+j);
+      if( ablocks[jind]!=indices[0] && fabs( totforce )>epsilon ) { indices[natoms] = ablocks[jind]; natoms++; }
     }
   } else natoms=retrieveNeighbours( current, indices );
   unsigned ntwo_atoms=natoms; myvals.setSplitIndex( ntwo_atoms );

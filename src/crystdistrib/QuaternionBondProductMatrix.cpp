@@ -253,6 +253,7 @@ void QuaternionBondProductMatrix::performTask( const std::string& controller, co
   //addDerivativeOnMatrixArgument( false, 0, 4, index1, ind2, 0.0, myvals );
   for(unsigned i=0; i<4; ++i) {
     tempDot=dotProduct(Vector4d(quat[0],-quat[1],-quat[2],-quat[3]), dqt[1].getCol(i))*normFac;
+    if( doNotCalculateDerivatives() ) continue ;
     if (i!=0 )addDerivativeOnMatrixArgument( stored[4+i], 0, 4+i, index1, ind2, tempDot, myvals );
     else addDerivativeOnMatrixArgument( stored[4+i], 0, 4+i, index1, ind2, 0.0, myvals );
   }
@@ -282,6 +283,7 @@ void QuaternionBondProductMatrix::performTask( const std::string& controller, co
 
   for(unsigned i=0; i<4; ++i) {
     tempDot=dotProduct(Vector4d(quat[1],quat[0],quat[3],-quat[2]), dqt[1].getCol(i))*normFac;
+    if( doNotCalculateDerivatives() ) continue ;
     if (i!=0) addDerivativeOnMatrixArgument( stored[4+i], 1, 4+i, index1, ind2, tempDot+(-bond[i]*normFac*normFac*xf), myvals );
     else  addDerivativeOnMatrixArgument( stored[4+i], 1, 4+i, index1, ind2, 0.0, myvals );
 
@@ -307,6 +309,7 @@ void QuaternionBondProductMatrix::performTask( const std::string& controller, co
 
   for(unsigned i=0; i<4; ++i) {
     tempDot=dotProduct(Vector4d(quat[2],-quat[3],quat[0],quat[1]), dqt[1].getCol(i))*normFac;
+    if( doNotCalculateDerivatives() ) continue ;
     if (i!=0) addDerivativeOnMatrixArgument( stored[4+i], 2, 4+i, index1, ind2, tempDot+(-bond[i]*normFac*normFac*yf), myvals );
     else  addDerivativeOnMatrixArgument( stored[4+i], 2, 4+i, index1, ind2, 0.0, myvals );
 
@@ -332,6 +335,7 @@ void QuaternionBondProductMatrix::performTask( const std::string& controller, co
 
   for(unsigned i=0; i<4; ++i) {
     tempDot=dotProduct(Vector4d(quat[3],quat[2],-quat[1],quat[0]), dqt[1].getCol(i))*normFac;
+    if( doNotCalculateDerivatives() ) continue ;
     if (i!=0) addDerivativeOnMatrixArgument( stored[4+i], 3, 4+i, index1, ind2, tempDot+(-bond[i]*normFac*normFac*zf), myvals );
     else addDerivativeOnMatrixArgument( stored[4+i], 3, 4+i, index1, ind2, 0.0, myvals );
 
@@ -357,24 +361,37 @@ void QuaternionBondProductMatrix::performTask( const std::string& controller, co
 }
 
 void QuaternionBondProductMatrix::runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const {
-  if( doNotCalculateDerivatives() || !matrixChainContinues() ) return ;
+  if( doNotCalculateDerivatives() ) return ;
 
   for(unsigned j=0; j<getNumberOfComponents(); ++j) {
     unsigned nmat = getConstPntrToComponent(j)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixRowDerivatives( nmat );
     std::vector<unsigned>& matrix_indices( myvals.getMatrixRowDerivativeIndices( nmat ) ); unsigned ntwo_atoms = myvals.getSplitIndex();
     // Quaternion
     for(unsigned k=0; k<4; ++k) { matrix_indices[nmat_ind] = arg_deriv_starts[k] + ival; nmat_ind++; }
-    // Loop over row of matrix
-    for(unsigned n=4; n<8; ++n) {
-      bool found=false;
-      for(unsigned k=4; k<n; ++k) {
-        if( arg_deriv_starts[k]==arg_deriv_starts[n] ) { found=true; break; }
-      }
-      if( found ) continue;
-      unsigned istrn = getPntrToArgument(n)->getPositionInMatrixStash();
-      std::vector<unsigned>& imat_indices( myvals.getMatrixRowDerivativeIndices( istrn ) );
-      for(unsigned k=0; k<myvals.getNumberOfMatrixRowDerivatives( istrn ); ++k) matrix_indices[nmat_ind + k] = arg_deriv_starts[n] + imat_indices[k];
-      nmat_ind += myvals.getNumberOfMatrixRowDerivatives( getPntrToArgument(4)->getPositionInMatrixStash() );
+
+    if( actionInChain() ) {
+        // Loop over row of matrix
+        for(unsigned n=4; n<8; ++n) {
+          bool found=false;
+          for(unsigned k=4; k<n; ++k) {
+            if( arg_deriv_starts[k]==arg_deriv_starts[n] ) { found=true; break; }
+          }
+          if( found ) continue;
+          unsigned istrn = getPntrToArgument(n)->getPositionInMatrixStash();
+          std::vector<unsigned>& imat_indices( myvals.getMatrixRowDerivativeIndices( istrn ) );
+          for(unsigned k=0; k<myvals.getNumberOfMatrixRowDerivatives( istrn ); ++k) matrix_indices[nmat_ind + k] = arg_deriv_starts[n] + imat_indices[k];
+          nmat_ind += myvals.getNumberOfMatrixRowDerivatives( getPntrToArgument(4)->getPositionInMatrixStash() );
+        }
+    } else {
+       unsigned base=0; for(unsigned k=0; k<4; ++k) base += getPntrToArgument(k)->getNumberOfStoredValues();
+       for(unsigned n=4; n<8; ++n) {
+          unsigned coltot = ival*getPntrToArgument(n)->getNumberOfColumns();
+          for(unsigned k=1; k<indices.size(); ++k) {
+              unsigned ind2=indices[k]; if( ind2>=getPntrToArgument(0)->getShape()[0] ) ind2 = ind2 - getPntrToArgument(0)->getShape()[0];
+              matrix_indices[nmat_ind] = base + coltot + ind2; nmat_ind++; 
+          }
+          base += getPntrToArgument(n)->getNumberOfStoredValues();
+       } 
     }
     myvals.setNumberOfMatrixRowDerivatives( nmat, nmat_ind );
   }
