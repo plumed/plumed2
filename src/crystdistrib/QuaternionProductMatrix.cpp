@@ -174,7 +174,7 @@ void QuaternionProductMatrix::performTask( const std::string& controller, const 
 }
 
 void QuaternionProductMatrix::runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const {
-  if( doNotCalculateDerivatives() || !matrixChainContinues() ) return ;
+  if( doNotCalculateDerivatives() ) return ;
 
   for(unsigned j=0; j<getNumberOfComponents(); ++j) {
     unsigned nmat = getConstPntrToComponent(j)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixRowDerivatives( nmat );

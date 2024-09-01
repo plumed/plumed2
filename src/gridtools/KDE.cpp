@@ -82,6 +82,7 @@ public:
   void setupOnFirstStep( const bool incalc ) override ;
   void getNumberOfTasks( unsigned& ntasks ) override ;
   void areAllTasksRequired( std::vector<ActionWithVector*>& task_reducing_actions ) override ;
+  int checkTaskIsActive( const unsigned& itask ) const override ;
   int checkTaskStatus( const unsigned& taskno, int& flag ) const override ;
   void performTask( const unsigned& current, MultiValue& myvals ) const override ;
   void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
@@ -363,6 +364,18 @@ void KDE::getNumberOfTasks( unsigned& ntasks ) {
   } else gridobject.getNeighbors( center, nneigh, num_neigh, neighbors );
   ntasks = getPntrToComponent(0)->getNumberOfValues();
   return;
+}
+
+int KDE::checkTaskIsActive( const unsigned& itask ) const {
+  if( numberOfKernels>1 ) {
+    if( hasheight && getPntrToArgument(gridobject.getDimension())->getRank()>0
+        && fabs(getPntrToArgument(gridobject.getDimension())->get(itask))<epsilon ) return -1;
+    return 1;
+  }     
+  for(unsigned i=0; i<num_neigh; ++i) {
+    if( itask==neighbors[i] ) return 1; 
+  }         
+  return -1; 
 }
 
 int KDE::checkTaskStatus( const unsigned& taskno, int& flag ) const {
