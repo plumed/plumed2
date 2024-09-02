@@ -202,6 +202,8 @@ void AdjacencyMatrixBase::updateNeighbourList() {
   for(unsigned i=1; i<getConstPntrToComponent(0)->getShape()[0]; ++i) {
     if( nlist[i]>maxcol ) maxcol = nlist[i];
   }
+  // This ensures that we never store the diagonal elements of the matrix if they are guaranteed to be zero.
+  if( read_one_group && maxcol==getConstPntrToComponent(0)->getShape()[1] ) maxcol = maxcol-1;
 }
 
 void AdjacencyMatrixBase::getAdditionalTasksRequired( ActionWithVector* action, std::vector<unsigned>& atasks ) {

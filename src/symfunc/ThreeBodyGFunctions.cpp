@@ -38,6 +38,7 @@ Calculate functions of the coordinates of the coordinates of all pairs of bonds 
 
 class ThreeBodyGFunctions : public ActionWithVector {
 private:
+  bool multi_action_input;
   std::vector<LeptonCall> functions;
 public:
   static void registerKeywords( Keywords& keys );
@@ -96,7 +97,7 @@ ThreeBodyGFunctions::ThreeBodyGFunctions(const ActionOptions&ao):
     }
     functions[i-1].set( myfunc, argnames, this, true );
   }
-  checkRead();
+  checkRead(); multi_action_input = getPntrToArgument(3)->getPntrToAction()!=getPntrToArgument(0)->getPntrToAction();
 }
 
 std::string ThreeBodyGFunctions::getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const {
@@ -121,24 +122,27 @@ void ThreeBodyGFunctions::performTask( const unsigned& task_index, MultiValue& m
   const Value* xval = getPntrToArgument(0);
   const Value* yval = getPntrToArgument(1);
   const Value* zval = getPntrToArgument(2);
-  Angle angle; Vector disti, distj; unsigned matsize = wval->getNumberOfValues();
+  Angle angle; Vector disti, distj; unsigned matsize = wval->getNumberOfStoredValues();
   std::vector<double> values(4); std::vector<Vector> der_i(4), der_j(4);
-  unsigned nbonds = wval->getRowLength( task_index ), ncols = wval->getShape()[1];
+  unsigned nbonds = wval->getRowLength( task_index ), ncols = wval->getNumberOfColumns();
+  if( multi_action_input ) { matsize = wval->getNumberOfValues(); ncols = wval->getShape()[1]; }
   for(unsigned i=0; i<nbonds; ++i) {
-    unsigned ipos = ncols*task_index + wval->getRowIndex( task_index, i );
-    double weighti = wval->get( ipos );
+    unsigned ipos = ncols*task_index + i;  //wval->getRowIndex( task_index, i );
+    if( multi_action_input ) ipos = ncols*task_index + wval->getRowIndex( task_index, i );
+    double weighti = wval->get( ipos, multi_action_input );
     if( weighti<epsilon ) continue ;
-    disti[0] = xval->get( ipos );
-    disti[1] = yval->get( ipos );
-    disti[2] = zval->get( ipos );
+    disti[0] = xval->get( ipos, multi_action_input );
+    disti[1] = yval->get( ipos, multi_action_input );
+    disti[2] = zval->get( ipos, multi_action_input );
     values[1] = disti.modulo2(); der_i[1]=2*disti; der_i[2].zero();
     for(unsigned j=0; j<i; ++j) {
-      unsigned jpos = ncols*task_index + wval->getRowIndex( task_index, j );
-      double weightj = wval->get( jpos );
+      unsigned jpos = ncols*task_index + j;  // wval->getRowIndex( task_index, j );
+      if( multi_action_input ) jpos = ncols*task_index + wval->getRowIndex( task_index, j );
+      double weightj = wval->get( jpos, multi_action_input );
       if( weightj<epsilon ) continue ;
-      distj[0] = xval->get( jpos );
-      distj[1] = yval->get( jpos );
-      distj[2] = zval->get( jpos );
+      distj[0] = xval->get( jpos, multi_action_input );
+      distj[1] = yval->get( jpos, multi_action_input );
+      distj[2] = zval->get( jpos, multi_action_input );
       values[2] = distj.modulo2(); der_j[1].zero(); der_j[2]=2*distj;
       der_i[3] = ( disti - distj ); values[3] = der_i[3].modulo2();
       der_i[3] = 2*der_i[3]; der_j[3] = -der_i[3];
@@ -171,8 +175,8 @@ void ThreeBodyGFunctions::performTask( const unsigned& task_index, MultiValue& m
   // And update the elements that have derivatives
   // Needs a separate loop here as there may be forces from j
   for(unsigned i=0; i<nbonds; ++i) {
-    unsigned ipos = ncols*task_index + wval->getRowIndex( task_index, i );
-    double weighti = wval->get( ipos );
+    unsigned ipos = ncols*task_index + i; // wval->getRowIndex( task_index, i );
+    double weighti = wval->get( ipos, false );
     if( weighti<epsilon ) continue ;
 
     for(unsigned n=0; n<functions.size(); ++n) {

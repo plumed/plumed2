@@ -243,6 +243,7 @@ void FunctionOfMatrix<T>::setupForTask( const unsigned& task_index, std::vector<
     for(unsigned i=0; i<size_v; ++i) {
       unsigned colind = getPntrToArgument(basemat)->getRowIndex(task_index, i);
       for(unsigned j=basemat; j<getNumberOfArguments(); ++j) {
+        if( getPntrToArgument(j)->getRank()==0 ) continue;
         if( colind!=getPntrToArgument(j)->getRowIndex(task_index, i) ) { redo=true; break; }
       }
       if( redo ) break;
@@ -423,10 +424,14 @@ void FunctionOfMatrix<T>::runEndOfRowJobs( const unsigned& ind, const std::vecto
       std::vector<unsigned>& mat_indices( myvals.getMatrixRowDerivativeIndices( nmat ) ); unsigned ntot_mat=0;
       if( mat_indices.size()<nderivatives ) mat_indices.resize( nderivatives ); unsigned matderbase = 0;
       for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
-        if( getPntrToArgument(i)->getRank()==0 ) continue ;
-        unsigned ss = getPntrToArgument(i)->getRowLength(ind); unsigned tbase = matderbase + getPntrToArgument(i)->getNumberOfColumns()*myvals.getTaskIndex();
-        for(unsigned k=0; k<ss; ++k) mat_indices[ntot_mat + k] = tbase + k;
-        ntot_mat += ss; matderbase += getPntrToArgument(i)->getNumberOfStoredValues();
+        if( getPntrToArgument(i)->getRank()==0 ) {
+            mat_indices[ntot_mat] = matderbase; ntot_mat++;
+        } else {
+            unsigned ss = getPntrToArgument(i)->getRowLength(ind); unsigned tbase = matderbase + getPntrToArgument(i)->getNumberOfColumns()*myvals.getTaskIndex();
+            for(unsigned k=0; k<ss; ++k) mat_indices[ntot_mat + k] = tbase + k;
+            ntot_mat += ss; 
+        }
+        matderbase += getPntrToArgument(i)->getNumberOfStoredValues(); 
       }
       myvals.setNumberOfMatrixRowDerivatives( nmat, ntot_mat );
     }

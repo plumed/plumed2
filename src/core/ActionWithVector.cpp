@@ -465,7 +465,7 @@ int ActionWithVector::checkTaskIsActive( const unsigned& itask ) const {
                if( fabs(myarg->get(base+k,false))>0 ) return 1;
            }
        } else if( myarg->getRank()>0 ) {
-           if( fabs(myarg->get(itask))>0 ) return 1; 
+           return 1; 
        } else plumed_merror("should not be in action " + getName() );
      }
   }
