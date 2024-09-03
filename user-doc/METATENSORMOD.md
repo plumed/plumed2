@@ -29,7 +29,7 @@ pre-built Python wheels with `pip`. This is the same set of wheels you will need
 to define custom models.
 
 ```bash
-pip install "metatensor-torch ==0.5.1"  # change this version to get newer releases
+pip install "metatensor-torch ==0.5.5"  # change this version to get newer releases
 
 # optional: get the other metatensor tools to define models (these are only usable from Python).
 pip install metatensor-operations metatensor-learn
@@ -100,7 +100,7 @@ METATENSOR_TORCH_PREFIX="$METATENSOR_PREFIX"
 
 git clone https://github.com/lab-cosmo/metatensor
 # or a more recent release of metatensor-torch
-git checkout metatensor-torch-v0.5.0
+git checkout metatensor-torch-v0.5.5
 cd metatensor
 
 mkdir build && cd build
