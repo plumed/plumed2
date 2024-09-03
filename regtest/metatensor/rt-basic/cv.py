@@ -31,11 +31,12 @@ class TestCollectiveVariable(torch.nn.Module):
     CV^2 are returned.
     """
 
-    def __init__(self, cutoff, multiple_properties):
+    def __init__(self, cutoff, multiple_properties, output_name):
         super().__init__()
 
         self._nl_request = NeighborListOptions(cutoff=cutoff, full_list=True)
         self._multiple_properties = multiple_properties
+        self._output_name = output_name
 
     def forward(
         self,
@@ -44,7 +45,7 @@ class TestCollectiveVariable(torch.nn.Module):
         selected_atoms: Optional[Labels],
     ) -> Dict[str, TensorMap]:
 
-        if "plumed::cv" not in outputs:
+        if self._output_name not in outputs:
             return {}
 
         device = torch.device("cpu")
@@ -54,7 +55,7 @@ class TestCollectiveVariable(torch.nn.Module):
         if selected_atoms is not None:
             raise ValueError("selected atoms is not supported")
 
-        output = outputs["plumed::cv"]
+        output = outputs[self._output_name]
 
         if output.per_atom:
             samples_list: List[List[int]] = []
@@ -117,7 +118,7 @@ class TestCollectiveVariable(torch.nn.Module):
             blocks=[block],
         )
 
-        return {"plumed::cv": cv}
+        return {self._output_name: cv}
 
     def requested_neighbor_lists(self) -> List[NeighborListOptions]:
         return [self._nl_request]
@@ -126,7 +127,7 @@ class TestCollectiveVariable(torch.nn.Module):
 CUTOFF = 3.5
 
 capabilities = ModelCapabilities(
-    outputs={"plumed::cv": ModelOutput(per_atom=True)},
+    outputs={"features": ModelOutput(per_atom=True)},
     interaction_range=CUTOFF,
     supported_devices=["cpu", "mps", "cuda"],
     length_unit="A",
@@ -135,15 +136,23 @@ capabilities = ModelCapabilities(
 )
 
 # export all variations of the model
-cv = TestCollectiveVariable(cutoff=CUTOFF, multiple_properties=False)
+cv = TestCollectiveVariable(
+    cutoff=CUTOFF,
+    multiple_properties=False,
+    output_name="features",
+)
 cv.eval()
 model = MetatensorAtomisticModel(cv, ModelMetadata(), capabilities)
-model.export("scalar-per-atom.pt")
+model.save("scalar-per-atom.pt")
 
-cv = TestCollectiveVariable(cutoff=CUTOFF, multiple_properties=True)
+cv = TestCollectiveVariable(
+    cutoff=CUTOFF,
+    multiple_properties=True,
+    output_name="features",
+)
 cv.eval()
 model = MetatensorAtomisticModel(cv, ModelMetadata(), capabilities)
-model.export("vector-per-atom.pt")
+model.save("vector-per-atom.pt")
 
 capabilities = ModelCapabilities(
     outputs={"plumed::cv": ModelOutput(per_atom=False)},
@@ -154,12 +163,20 @@ capabilities = ModelCapabilities(
     dtype="float32",
 )
 
-cv = TestCollectiveVariable(cutoff=CUTOFF, multiple_properties=False)
+cv = TestCollectiveVariable(
+    cutoff=CUTOFF,
+    multiple_properties=False,
+    output_name="plumed::cv",
+)
 cv.eval()
 model = MetatensorAtomisticModel(cv, ModelMetadata(), capabilities)
-model.export("scalar-global.pt")
+model.save("scalar-global.pt")
 
-cv = TestCollectiveVariable(cutoff=CUTOFF, multiple_properties=True)
+cv = TestCollectiveVariable(
+    cutoff=CUTOFF,
+    multiple_properties=True,
+    output_name="plumed::cv",
+)
 cv.eval()
 model = MetatensorAtomisticModel(cv, ModelMetadata(), capabilities)
-model.export("vector-global.pt")
+model.save("vector-global.pt")
