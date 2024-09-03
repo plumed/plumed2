@@ -654,6 +654,7 @@ bool PDB::allowedResidue( const std::string& type, const std::string& residuenam
     else if(residuename=="HSE") return true; // HIS-E charmm
     else if(residuename=="HIP") return true; // HIS-P amber
     else if(residuename=="HSP") return true; // HIS-P charmm
+    else if(residuename=="CYX") return true; // disulfide bridge CYS
 // Weird amino acids
     else if(residuename=="NLE") return true;
     else if(residuename=="SFO") return true;
