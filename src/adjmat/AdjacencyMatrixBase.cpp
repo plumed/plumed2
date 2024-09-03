@@ -237,17 +237,8 @@ void AdjacencyMatrixBase::setupForTask( const unsigned& current, std::vector<uns
   if( indices.size()!=(1+ablocks.size()+threeblocks.size()) ) indices.resize( 1+ablocks.size()+threeblocks.size() );
 
   // Now get the positions
-  unsigned natoms; const Value* myval = getConstPntrToComponent(0);
-  if( myval->forcesWereAdded() ) {
-    natoms = 0; indices[natoms] = current; natoms++;
-    unsigned nelements = myval->getRowLength(current), startr = current*myval->getNumberOfColumns();
-    for(unsigned j=0; j<nelements; ++j ) {
-      unsigned jind = myval->getRowIndex( current, j );
-      double totforce=myval->getForce( startr + j ); for(unsigned k=1; k<getNumberOfComponents(); ++k) totforce += getConstPntrToComponent(k)->getForce(startr+j);
-      if( ablocks[jind]!=indices[0] && fabs( totforce )>epsilon ) { indices[natoms] = ablocks[jind]; natoms++; }
-    }
-  } else natoms=retrieveNeighbours( current, indices );
-  unsigned ntwo_atoms=natoms; myvals.setSplitIndex( ntwo_atoms );
+  const Value* myval = getConstPntrToComponent(0);
+  unsigned natoms=retrieveNeighbours( current, indices ); myvals.setSplitIndex( natoms );
 
   // Now retrieve everything for the third atoms
   if( threeblocks.size()>0 ) {

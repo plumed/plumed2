@@ -794,8 +794,18 @@ bool ActionWithVector::checkForForces() {
   if(serial) { stride=1; rank=0; }
 
   // Get the number of tasks
-  std::vector<unsigned> force_tasks; getForceTasks( force_tasks );
-  Tools::removeDuplicates(force_tasks); unsigned nf_tasks=force_tasks.size();
+  std::vector<unsigned> force_tasks;
+  if( getenvChainForbidden()==Option::yes ) {
+      std::vector<unsigned> & partialTaskList( getListOfActiveTasks( this ) );
+      for(unsigned i=0; i<partialTaskList.size(); ++i) {
+          for(unsigned j=0; j<getNumberOfComponents(); ++j) {
+              if( checkForTaskForce( partialTaskList[i], getPntrToComponent(j) ) ) { force_tasks.push_back( partialTaskList[i] ); break; } 
+          }
+      }
+  } else {
+      getForceTasks( force_tasks ); Tools::removeDuplicates(force_tasks); 
+  }
+  unsigned nf_tasks=force_tasks.size();
   if( nf_tasks==0 ) {
       for(unsigned j=0; j<getNumberOfArguments(); ++j) getPntrToArgument(j)->hasForce=true;
       return false;
