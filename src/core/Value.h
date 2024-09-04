@@ -158,6 +158,8 @@ public:
   void clearInputForce();
 /// Special method for clearing forces on variables used by DataPassingObject
   void clearInputForce( const std::vector<AtomNumber>& index );
+/// Set hasForce equal to true
+  void addForce();
 /// Add some force on this value
   void addForce(double f);
 /// Add some force on the ival th component of this value
@@ -340,6 +342,11 @@ void Value::clearDerivatives( const bool force ) {
   value_set=false;
   if( shape.size()>0 ) std::fill(data.begin(), data.end(), 0);
   else if( data.size()>1 ) std::fill(data.begin()+1, data.end(), 0);
+}
+
+inline
+void Value::addForce() {
+  hasForce=true;
 }
 
 inline

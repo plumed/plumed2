@@ -30,6 +30,7 @@
 #include "core/ActionToPutData.h"
 #include "core/ActionWithVirtualAtom.h"
 #include "core/ActionWithValue.h"
+#include "core/ActionWithVector.h"
 #include "core/ActionWithArguments.h"
 #include <cstdio>
 #include <string>
@@ -190,13 +191,15 @@ int ShowGraph::main(FILE* in, FILE*out,Communicator& pc) {
         ActionWithValue* av=dynamic_cast<ActionWithValue*>(a);
         if( !av ) continue ;
         // Now apply the force if there is one
-        a->apply();
+        ActionWithVector* avv=dynamic_cast<ActionWithVector*>(a);
+        ActionWithArguments* aaa=dynamic_cast<ActionWithArguments*>(a);
+        if( avv ) {
+            for(const auto & v : aaa->getArguments() ) v->addForce();
+        } else a->apply();
         bool hasforce=false;
         for(int i=0; i<av->getNumberOfComponents(); ++i) {
           if( (av->copyOutput(i))->forcesWereAdded() ) { hasforce=true; break; }
         }
-        //Check if there are forces here
-        ActionWithArguments* aaa=dynamic_cast<ActionWithArguments*>(a);
         if( aaa ) {
           for(const auto & v : aaa->getArguments() ) {
             if( v->forcesWereAdded() ) { hasforce=true; break; }

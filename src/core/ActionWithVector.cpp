@@ -797,19 +797,12 @@ bool ActionWithVector::checkForForces() {
   std::vector<unsigned> force_tasks;
   if( getenvChainForbidden()==Option::yes ) {
       std::vector<unsigned> & partialTaskList( getListOfActiveTasks( this ) );
-      for(unsigned i=0; i<partialTaskList.size(); ++i) {
-          for(unsigned j=0; j<getNumberOfComponents(); ++j) {
-              if( checkForTaskForce( partialTaskList[i], getPntrToComponent(j) ) ) { force_tasks.push_back( partialTaskList[i] ); break; } 
-          }
-      }
+      for(unsigned i=0; i<partialTaskList.size(); ++i) force_tasks.push_back( partialTaskList[i] );
   } else {
       getForceTasks( force_tasks ); Tools::removeDuplicates(force_tasks); 
   }
   unsigned nf_tasks=force_tasks.size();
-  if( nf_tasks==0 ) {
-      for(unsigned j=0; j<getNumberOfArguments(); ++j) getPntrToArgument(j)->hasForce=true;
-      return false;
-  }
+  if( nf_tasks==0 ) return false;
 
   // Get number of threads for OpenMP
   unsigned nt=OpenMP::getNumThreads();
