@@ -819,6 +819,8 @@ bool ActionWithVector::checkForForces() {
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
       arg_deriv_starts[i] = nderiv; nderiv += getPntrToArgument(i)->getNumberOfStoredValues();
     }
+    ActionAtomistic* aa=castToActionAtomistic();
+    if(aa) nderiv += 3*aa->getNumberOfAtoms() + 9;
   }
   if( forcesForApply.size()!=nderiv ) forcesForApply.resize( nderiv );
   // Clear force buffer

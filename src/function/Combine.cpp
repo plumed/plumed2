@@ -123,12 +123,14 @@ void Combine::registerKeywords(Keywords& keys) {
 }
 
 void Combine::read( ActionWithArguments* action ) {
-  coefficients.resize( action->getNumberOfArguments() ); parameters.resize( action->getNumberOfArguments() ); powers.resize( action->getNumberOfArguments() );
+  unsigned nargs = action->getNumberOfArguments(); ActionWithVector* av=dynamic_cast<ActionWithVector*>(action); 
+  if(av && av->getNumberOfMasks()>0) nargs = nargs - av->getNumberOfMasks();
+  coefficients.resize( nargs ); parameters.resize( nargs ); powers.resize( nargs );
   parseVector(action,"COEFFICIENTS",coefficients);
-  if(coefficients.size()!=static_cast<unsigned>(action->getNumberOfArguments())) action->error("Size of COEFFICIENTS array should be the same as number for arguments");
+  if(coefficients.size()!=nargs) action->error("Size of COEFFICIENTS array should be the same as number for arguments");
   parseVector(action,"PARAMETERS",parameters);
-  if(parameters.size()!=static_cast<unsigned>(action->getNumberOfArguments())) action->error("Size of PARAMETERS array should be the same as number for arguments");
-  parseVector(action,"POWERS",powers); if(powers.size()!=static_cast<unsigned>(action->getNumberOfArguments())) action->error("Size of POWERS array should be the same as number for arguments");
+  if(parameters.size()!=nargs) action->error("Size of PARAMETERS array should be the same as number for arguments");
+  parseVector(action,"POWERS",powers); if(powers.size()!=nargs) action->error("Size of POWERS array should be the same as number for arguments");
 
   parseFlag(action,"NORMALIZE",normalize);
   if(normalize) {

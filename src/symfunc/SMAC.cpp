@@ -94,10 +94,10 @@ SMAC::SMAC(const ActionOptions& ao):
     std::vector<std::string> words = Tools::getWords(kstr_inpt);
     std::string center, var; Tools::parse(words,"CENTER",center); Tools::parse(words,"SIGMA",var);
     double nsig; Tools::convert( var, nsig ); std::string coeff; Tools::convert( 1/(nsig*nsig), coeff );
-    readInputLine( getShortcutLabel() + "_kf" + istr + "_r2: COMBINE PERIODIC=NO ARG=" + getShortcutLabel() + "_tpmat COEFFICIENTS=" + coeff + " PARAMETERS=" + center + " POWERS=2");
-    if( words[0]=="GAUSSIAN" ) readInputLine( getShortcutLabel() + "_kf" + istr + ": CUSTOM PERIODIC=NO FUNC=exp(-x/2) ARG=" +  getShortcutLabel() + "_kf" + istr + "_r2" );
-    else if( words[0]=="TRIANGULAR" ) readInputLine( getShortcutLabel() + "_kf" + istr + ": CUSTOM PERIODIC=NO FUNC=step(1-sqrt(x))*(1-sqrt(x)) ARG=" + getShortcutLabel() + "_kf" + istr + "_r2" );
-    else readInputLine( getShortcutLabel() + "_kf" + istr + ": CUSTOM PERIODIC=NO FUNC=" + words[0] + " ARG=" + getShortcutLabel() + "_kf" + istr + "_r2" );
+    readInputLine( getShortcutLabel() + "_kf" + istr + "_r2: COMBINE MASK=" + getShortcutLabel() + "_cmap PERIODIC=NO ARG=" + getShortcutLabel() + "_tpmat COEFFICIENTS=" + coeff + " PARAMETERS=" + center + " POWERS=2");
+    if( words[0]=="GAUSSIAN" ) readInputLine( getShortcutLabel() + "_kf" + istr + ": CUSTOM MASK=" + getShortcutLabel() + "_cmap PERIODIC=NO FUNC=exp(-x/2) ARG=" +  getShortcutLabel() + "_kf" + istr + "_r2" );
+    else if( words[0]=="TRIANGULAR" ) readInputLine( getShortcutLabel() + "_kf" + istr + ": CUSTOM MASK=" + getShortcutLabel() + "_cmap PERIODIC=NO FUNC=step(1-sqrt(x))*(1-sqrt(x)) ARG=" + getShortcutLabel() + "_kf" + istr + "_r2" );
+    else readInputLine( getShortcutLabel() + "_kf" + istr + ": CUSTOM PERIODIC=NO MASK=" + getShortcutLabel() + "_cmap FUNC=" + words[0] + " ARG=" + getShortcutLabel() + "_kf" + istr + "_r2" );
     if( i==1 ) kmap_input += " ARG=" + getShortcutLabel() + "_kf" + istr;
     else kmap_input += "," + getShortcutLabel() + "_kf" + istr;
   }

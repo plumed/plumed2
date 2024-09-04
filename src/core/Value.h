@@ -462,7 +462,7 @@ unsigned Value::getRowLength( const unsigned& irow ) const {
 
 inline
 unsigned Value::getRowIndex( const unsigned& irow, const unsigned& jind ) const {
-  plumed_dbg_assert( (1+ncols)*irow+1+jind<matrix_bookeeping.size() && jind<matrix_bookeeping[(1+ncols)*irow] );
+  plumed_dbg_massert( (1+ncols)*irow+1+jind<matrix_bookeeping.size() && jind<matrix_bookeeping[(1+ncols)*irow], "failing in value " + name );
   return matrix_bookeeping[(1+ncols)*irow+1+jind];
 }
 

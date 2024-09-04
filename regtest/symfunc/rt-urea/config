@@ -2,3 +2,11 @@ type=driver
 plumed_modules="symfunc adjmat clusters"
 # this is to test a different name
 arg="--ixyz traj.xyz --box 26.699,26.717,28.643"
+
+function plumed_regtest_before() {
+   export PLUMED_FORBID_CHAINS=yes
+}
+
+function plumed_regtest_after() {
+   export PLUMED_FORBID_CHAINS=no
+}
