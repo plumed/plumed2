@@ -86,7 +86,7 @@ ActionWithVector::ActionWithVector(const ActionOptions&ao):
           if( av->getPntrToArgument(i)!=mask[j] ) error("the masks in subsequent actions do not match");
           j++;
         }
-      } else if( nmask>=0 ) error("should not have a mask if you have read the mask keyword");
+      } 
       if( getNumberOfArguments()>0 && getPntrToArgument(0)->hasDerivatives() ) error("input for mask should be vector or matrix");
       else if( mask[0]->getRank()==2 ) {
         if( mask.size()>1 ) error("MASK should only have one argument");

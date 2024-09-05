@@ -230,31 +230,27 @@ unsigned FunctionOfMatrix<T>::getNumberOfColumns() const {
 
 template <class T>
 void FunctionOfMatrix<T>::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {
-  int size_v = -1, basemat=-1; bool redo=false;
+  unsigned basemat;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    if( size_v<0 && getPntrToArgument(i)->getRank()==2 ) { basemat=i; size_v = getPntrToArgument(i)->getRowLength(task_index); }
-    else if( getPntrToArgument(i)->getRank()==2 && size_v!=getPntrToArgument(i)->getRowLength(task_index) ) redo=true;
+      if( getPntrToArgument(i)->getRank()==2 ) { basemat=i; break; }
   }
-  redo = size_v>=getPntrToArgument(basemat)->getShape()[1];
-  unsigned start_n = getPntrToArgument(basemat)->getShape()[0];
-  if( !redo ) {
+  unsigned start_n = getPntrToArgument(basemat)->getShape()[0], size_v = getPntrToArgument(basemat)->getShape()[1];
+  if( getNumberOfMasks()>0 ) {
+    unsigned maskarg = getNumberOfArguments() - getNumberOfMasks();
+    size_v = getPntrToArgument(maskarg)->getRowLength(task_index);
     if( indices.size()!=size_v+1 ) indices.resize( size_v+1 );
-    for(unsigned i=0; i<size_v; ++i) {
-      unsigned colind = getPntrToArgument(basemat)->getRowIndex(task_index, i);
-      for(unsigned j=basemat; j<getNumberOfArguments(); ++j) {
-        if( getPntrToArgument(j)->getRank()==0 ) continue;
-        if( colind!=getPntrToArgument(j)->getRowIndex(task_index, i) ) { redo=true; break; }
-      }
-      if( redo ) break;
-      indices[i+1] = start_n + colind;
-    }
-    myvals.setSplitIndex( size_v + 1 );
+    for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + getPntrToArgument(maskarg)->getRowIndex(task_index, i);
+    myvals.setSplitIndex( size_v + 1 ); return;
+  } 
+  unsigned maskarg=0; size_v = size_v+1;
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      if( getPntrToArgument(i)->getRank()!=2 ) continue ;
+      unsigned ss = getPntrToArgument(i)->getRowLength(task_index);
+      if( ss<size_v ) { maskarg=i; size_v = ss; }
   }
-  if( !redo ) return;
-  size_v = getPntrToArgument(basemat)->getShape()[1];
   if( indices.size()!=size_v+1 ) indices.resize( size_v+1 );
-  for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + i;
-  myvals.setSplitIndex( size_v + 1 );
+  for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + getPntrToArgument(maskarg)->getRowIndex(task_index, i);
+  myvals.setSplitIndex( size_v + 1 ); 
 }
 
 template <class T>

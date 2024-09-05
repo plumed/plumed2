@@ -87,7 +87,7 @@ SMAC::SMAC(const ActionOptions& ao):
     else readInputLine( getShortcutLabel() + "_tpmat: TORSIONS_MATRIX ARG=" + getShortcutLabel() + "_vecsa," + getShortcutLabel() + "_vecsbT POSITIONS1=" + sp_laba + " POSITIONS2=" + sp_labb );
   }
   // Now need the Gaussians
-  std::string kmap_input= getShortcutLabel() + "_ksum: COMBINE PERIODIC=NO";
+  std::string kmap_input= getShortcutLabel() + "_ksum: COMBINE MASK=" + getShortcutLabel() + "_cmap PERIODIC=NO";
   for(unsigned i=1;; ++i) {
     std::string kstr_inpt, istr; Tools::convert( i, istr );
     if( !parseNumbered("KERNEL",i,kstr_inpt ) ) { break; }

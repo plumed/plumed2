@@ -152,7 +152,7 @@ void ActionWithMatrix::runTask( const std::string& controller, const unsigned& c
   performTask( controller, current, colno, myvals );
   bool hasval = !isAdjacencyMatrix();
   for(int i=0; i<getNumberOfComponents(); ++i) {
-    if( fabs(myvals.get( getConstPntrToComponent(i)->getPositionInStream()) )>0 ) { hasval=true; break; }
+    if( std::fabs(myvals.get( getConstPntrToComponent(i)->getPositionInStream()) )>epsilon ) { hasval=true; break; }
   }
 
   if( hasval ) {
@@ -171,7 +171,7 @@ void ActionWithMatrix::runTask( const std::string& controller, const unsigned& c
         }
       }
       double finalval = myvals.get( myval->getPositionInStream() ); if( !isAdjacencyMatrix() ) checkval=finalval;
-      if( fabs(checkval)>0 ) {
+      if( std::fabs(checkval)>epsilon ) {
         Value* myv = const_cast<Value*>( myval );
         if( ncols<myval->getShape()[1] ) {
           myv->set( current*ncols + myval->matrix_bookeeping[current*(1+ncols)], finalval );
