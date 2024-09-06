@@ -2,3 +2,11 @@ type=driver
 plumed_modules="adjmat crystdistrib"
 arg="--plumed plumed.dat --mf_xtc em.xtc --mc mcfile --timestep=0.001 --trajectory-stride=25"
 extra_files="../../trajectories/em.xtc" 
+
+function plumed_regtest_before() {
+   export PLUMED_FORBID_CHAINS=yes
+}
+
+function plumed_regtest_after() {
+   export PLUMED_FORBID_CHAINS=no
+}
