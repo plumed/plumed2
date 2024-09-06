@@ -127,9 +127,9 @@ unsigned QuaternionBondProductMatrix::getNumberOfColumns() const {
 }
 
 void QuaternionBondProductMatrix::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {
-  unsigned start_n = getPntrToArgument(4)->getShape()[0], size_v = getPntrToArgument(4)->getShape()[1];
+  Value* myarg = getPntrToArgument(4); unsigned start_n = myarg->getShape()[0], size_v = myarg->getRowLength(task_index);
   if( indices.size()!=size_v+1 ) indices.resize( size_v+1 );
-  for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + i;
+  for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + myarg->getRowIndex( task_index, i);
   myvals.setSplitIndex( size_v + 1 );
 }
 

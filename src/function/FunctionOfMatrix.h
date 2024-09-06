@@ -343,8 +343,7 @@ void FunctionOfMatrix<T>::performTask( const std::string& controller, const unsi
       if( getPntrToArgument(j)->getRank()==2 ) {
         for(int i=0; i<getNumberOfComponents(); ++i) {
           unsigned ostrn=getConstPntrToComponent(i)->getPositionInStream();
-          unsigned myind = base + getPntrToArgument(j)->getNumberOfColumns()*index1 + ind2;
-          if( getConstPntrToComponent(i)->valueIsStored() && getConstPntrToComponent(i)->getNumberOfColumns()<getConstPntrToComponent(i)->getShape()[1] ) myind = base + getPntrToArgument(j)->getNumberOfColumns()*index1 + getConstPntrToComponent(i)->getRowLength(index1);
+          unsigned myind = base + getPntrToArgument(j)->getIndexInStore( index1*getPntrToArgument(j)->getShape()[1] + ind2 );  
           myvals.addDerivative( ostrn, myind, derivatives(i,j) );
           myvals.updateIndex( ostrn, myind );
         }

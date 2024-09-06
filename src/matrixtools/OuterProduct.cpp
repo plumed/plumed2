@@ -55,7 +55,7 @@ public:
 PLUMED_REGISTER_ACTION(OuterProduct,"OUTER_PRODUCT")
 
 void OuterProduct::registerKeywords( Keywords& keys ) {
-  ActionWithMatrix::registerKeywords(keys); keys.use("ARG");
+  ActionWithMatrix::registerKeywords(keys); keys.use("ARG"); keys.use("MASK");
   keys.add("compulsory","FUNC","x*y","the function of the input vectors that should be put in the elements of the outer product");
   keys.addFlag("ELEMENTS_ON_DIAGONAL_ARE_ZERO",false,"set all diagonal elements to zero");
   keys.setValueDescription("a matrix containing the outer product of the two input vectors that was obtained using the function that was input");
@@ -67,9 +67,15 @@ OuterProduct::OuterProduct(const ActionOptions&ao):
   domin(false),
   domax(false)
 {
-  if( getNumberOfArguments()!=2 ) error("should be two arguments to this action, a matrix and a vector");
+  unsigned nargs=getNumberOfArguments(); if( getNumberOfMasks()>0 ) nargs = nargs - getNumberOfMasks();
+  if( nargs!=2 ) error("should be two arguments to this action, they should both be vectors");
   if( getPntrToArgument(0)->getRank()!=1 || getPntrToArgument(0)->hasDerivatives() ) error("first argument to this action should be a vector");
   if( getPntrToArgument(1)->getRank()!=1 || getPntrToArgument(1)->hasDerivatives() ) error("first argument to this action should be a vector");
+  if( getNumberOfMasks()==1 ) {
+      if( getPntrToArgument(2)->getRank()!=2 || getPntrToArgument(2)->hasDerivatives() ) error("mask argument should be a matrix");
+      if( getPntrToArgument(2)->getShape()[0]!=getPntrToArgument(0)->getShape()[0] ) error("mask argument has wrong size");
+      if( getPntrToArgument(2)->getShape()[1]!=getPntrToArgument(1)->getShape()[0] ) error("mask argument has wrong size");
+  }
 
   std::string func; parse("FUNC",func);
   if( func=="min") {
@@ -106,7 +112,15 @@ void OuterProduct::prepare() {
 }
 
 void OuterProduct::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {
-  unsigned start_n = getPntrToArgument(0)->getShape()[0], size_v = getPntrToArgument(1)->getShape()[0];
+  unsigned start_n = getPntrToArgument(0)->getShape()[0];
+  if( getNumberOfMasks()>0 ) {
+      Value* maskarg = getPntrToArgument(2); unsigned size_v = maskarg->getRowLength(task_index);
+      if( indices.size()!=size_v+1 ) indices.resize( size_v+1 );
+      for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + maskarg->getRowIndex( task_index, i );
+      myvals.setSplitIndex( 1 + size_v ); return;
+  }
+
+  unsigned size_v = getPntrToArgument(1)->getShape()[0];
   if( diagzero ) {
     if( indices.size()!=size_v ) indices.resize( size_v );
     unsigned k=1;
