@@ -46,6 +46,7 @@ namespace matrixtools {
 class MatrixTimesMatrix : public ActionWithMatrix {
 private:
   bool squared;
+  bool diagzero;
   unsigned nderivatives;
   bool stored_matrix1, stored_matrix2;
 public:
@@ -66,6 +67,7 @@ PLUMED_REGISTER_ACTION(MatrixTimesMatrix,"DISSIMILARITIES")
 void MatrixTimesMatrix::registerKeywords( Keywords& keys ) {
   ActionWithMatrix::registerKeywords(keys); keys.use("ARG"); keys.use("MASK");
   keys.addFlag("SQUARED",false,"calculate the squares of the dissimilarities (this option cannot be used with MATRIX_PRODUCT)");
+  keys.addFlag("ELEMENTS_ON_DIAGONAL_ARE_ZERO",false,"set all diagonal elements to zero");
   keys.setValueDescription("the product of the two input matrices");
 }
 
@@ -83,6 +85,9 @@ MatrixTimesMatrix::MatrixTimesMatrix(const ActionOptions&ao):
   std::string headstr=getFirstActionInChain()->getLabel();
   stored_matrix1 = getPntrToArgument(0)->ignoreStoredValue( headstr );
   stored_matrix2 = getPntrToArgument(1)->ignoreStoredValue( headstr );
+  parseFlag("ELEMENTS_ON_DIAGONAL_ARE_ZERO",diagzero);
+  if( diagzero ) log.printf("  setting diagonal elements equal to zero\n");
+
   if( getName()=="DISSIMILARITIES" ) {
     parseFlag("SQUARED",squared);
     if( squared ) log.printf("  calculating the squares of the dissimilarities \n");
@@ -119,13 +124,24 @@ void MatrixTimesMatrix::getAdditionalTasksRequired( ActionWithVector* action, st
 }
 
 void MatrixTimesMatrix::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {
+  unsigned start_n = getPntrToArgument(0)->getShape()[0]; 
   if( getNumberOfArguments()>2 ) {
-    unsigned start_n = getPntrToArgument(0)->getShape()[0], size_v = getPntrToArgument(2)->getRowLength(task_index);
+    unsigned size_v = getPntrToArgument(2)->getRowLength(task_index);
     if( indices.size()!=size_v+1 ) indices.resize( size_v+1 );
     for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + getPntrToArgument(2)->getRowIndex(task_index, i);
-    myvals.setSplitIndex( size_v + 1 );
+    myvals.setSplitIndex( size_v + 1 ); return;
+  } 
+
+  unsigned size_v = getPntrToArgument(1)->getShape()[1];
+  if( diagzero ) {
+    if( indices.size()!=size_v ) indices.resize( size_v );
+    unsigned k=1;
+    for(unsigned i=0; i<size_v; ++i) {
+      if( task_index==i ) continue ;
+      indices[k] = size_v + i; k++;
+    }
+    myvals.setSplitIndex( size_v );
   } else {
-    unsigned start_n = getPntrToArgument(0)->getShape()[0], size_v = getPntrToArgument(1)->getShape()[1];
     if( indices.size()!=size_v+1 ) indices.resize( size_v+1 );
     for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + i;
     myvals.setSplitIndex( size_v + 1 );
