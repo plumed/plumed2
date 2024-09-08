@@ -454,6 +454,8 @@ int ActionWithVector::checkTaskIsActive( const unsigned& itask ) const {
      }
   } else {
      for(unsigned i=0; i<nargs; ++i) {
+       if( getName()=="OUTER_PRODUCT" && i>0 ) return -1;
+
        Value* myarg = getPntrToArgument(i);
        if( myarg->getRank()==0 ) continue;
        else if( myarg->getRank()==1 && !myarg->hasDerivatives() ) {
