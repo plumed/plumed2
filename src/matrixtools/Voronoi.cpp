@@ -67,7 +67,7 @@ Voronoi::Voronoi(const ActionOptions&ao):
 }
 
 void Voronoi::prepare() {
-  Value* myval = getPntrToComponent(0);
+  ActionWithVector::prepare(); Value* myval = getPntrToComponent(0);
   if( myval->getShape()[0]==getPntrToArgument(0)->getShape()[0] && myval->getShape()[1]==getPntrToArgument(0)->getShape()[1] ) return;
   std::vector<unsigned> shape( getPntrToArgument(0)->getShape() ); myval->setShape(shape);
 }
