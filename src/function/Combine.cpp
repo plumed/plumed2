@@ -123,7 +123,7 @@ void Combine::registerKeywords(Keywords& keys) {
 }
 
 void Combine::read( ActionWithArguments* action ) {
-  unsigned nargs = action->getNumberOfArguments(); ActionWithVector* av=dynamic_cast<ActionWithVector*>(action); 
+  unsigned nargs = action->getNumberOfArguments(); ActionWithVector* av=dynamic_cast<ActionWithVector*>(action);
   if(av && av->getNumberOfMasks()>0) nargs = nargs - av->getNumberOfMasks();
   coefficients.resize( nargs ); parameters.resize( nargs ); powers.resize( nargs );
   parseVector(action,"COEFFICIENTS",coefficients);

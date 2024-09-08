@@ -372,11 +372,11 @@ int KDE::checkTaskIsActive( const unsigned& itask ) const {
     if( hasheight && getPntrToArgument(gridobject.getDimension())->getRank()>0
         && fabs(getPntrToArgument(gridobject.getDimension())->get(itask))<epsilon ) return -1;
     return 1;
-  }     
+  }
   for(unsigned i=0; i<num_neigh; ++i) {
-    if( itask==neighbors[i] ) return 1; 
-  }         
-  return -1; 
+    if( itask==neighbors[i] ) return 1;
+  }
+  return -1;
 }
 
 int KDE::checkTaskStatus( const unsigned& taskno, int& flag ) const {

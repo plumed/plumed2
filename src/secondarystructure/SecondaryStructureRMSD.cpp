@@ -212,10 +212,10 @@ SecondaryStructureRMSD::SecondaryStructureRMSD(const ActionOptions&ao):
 
 int SecondaryStructureRMSD::checkTaskIsActive( const unsigned& itask ) const {
   if( s_cutoff2>0 ) {
-       Vector distance=pbcDistance( ActionAtomistic::getPosition( getAtomIndex(itask,align_atom_1) ),
-                                    ActionAtomistic::getPosition( getAtomIndex(itask,align_atom_2) ) );
-       if( distance.modulo2()<s_cutoff2 ) return 1;
-       return -1;
+    Vector distance=pbcDistance( ActionAtomistic::getPosition( getAtomIndex(itask,align_atom_1) ),
+                                 ActionAtomistic::getPosition( getAtomIndex(itask,align_atom_2) ) );
+    if( distance.modulo2()<s_cutoff2 ) return 1;
+    return -1;
   } return 1;
 }
 

@@ -86,7 +86,7 @@ ActionWithVector::ActionWithVector(const ActionOptions&ao):
           if( av->getPntrToArgument(i)!=mask[j] ) error("the masks in subsequent actions do not match");
           j++;
         }
-      } 
+      }
       if( getNumberOfArguments()>0 && getPntrToArgument(0)->hasDerivatives() ) error("input for mask should be vector or matrix");
       else if( mask[0]->getRank()==2 ) {
         if( mask.size()>1 ) error("MASK should only have one argument");
@@ -438,38 +438,38 @@ void ActionWithVector::prepare() {
 int ActionWithVector::checkTaskIsActive( const unsigned& itask ) const {
   unsigned nargs = getNumberOfArguments();
   if( nargs==0 ) {
-     return 1;
+    return 1;
   } else if( nmask>0 ) {
-     for(unsigned j=nargs-nmask; j<nargs; ++j) {
-         Value* myarg = getPntrToArgument(j);
-         if( myarg->getRank()==1 && !myarg->hasDerivatives() ) {
-             if( fabs(myarg->get(itask))>0 ) return 1;
-         } else if( myarg->getRank()==2 && !myarg->hasDerivatives() ) {
-             unsigned ncol = myarg->getRowLength(itask);
-             unsigned base = itask*myarg->getNumberOfColumns();
-             for(unsigned k=0; k<ncol; ++k) {
-                 if( fabs(myarg->get(base+k,false))>0 ) return 1;
-             }
-         } else plumed_merror("only matrices and vectors should be used as masks"); 
-     }
+    for(unsigned j=nargs-nmask; j<nargs; ++j) {
+      Value* myarg = getPntrToArgument(j);
+      if( myarg->getRank()==1 && !myarg->hasDerivatives() ) {
+        if( fabs(myarg->get(itask))>0 ) return 1;
+      } else if( myarg->getRank()==2 && !myarg->hasDerivatives() ) {
+        unsigned ncol = myarg->getRowLength(itask);
+        unsigned base = itask*myarg->getNumberOfColumns();
+        for(unsigned k=0; k<ncol; ++k) {
+          if( fabs(myarg->get(base+k,false))>0 ) return 1;
+        }
+      } else plumed_merror("only matrices and vectors should be used as masks");
+    }
   } else {
-     for(unsigned i=0; i<nargs; ++i) {
-       if( getName()=="OUTER_PRODUCT" && i>0 ) return -1;
+    for(unsigned i=0; i<nargs; ++i) {
+      if( getName()=="OUTER_PRODUCT" && i>0 ) return -1;
 
-       Value* myarg = getPntrToArgument(i);
-       if( myarg->getRank()==0 ) continue;
-       else if( myarg->getRank()==1 && !myarg->hasDerivatives() ) {
-         if( fabs(myarg->get(itask))>0 ) return 1;
-       } else if( myarg->getRank()==2 && !myarg->hasDerivatives() ) {
-           unsigned ncol = myarg->getRowLength(itask);
-           unsigned base = itask*myarg->getNumberOfColumns();
-           for(unsigned k=0; k<ncol; ++k) {
-               if( fabs(myarg->get(base+k,false))>0 ) return 1;
-           }
-       } else if( myarg->getRank()>0 ) {
-           return 1; 
-       } else plumed_merror("should not be in action " + getName() );
-     }
+      Value* myarg = getPntrToArgument(i);
+      if( myarg->getRank()==0 ) continue;
+      else if( myarg->getRank()==1 && !myarg->hasDerivatives() ) {
+        if( fabs(myarg->get(itask))>0 ) return 1;
+      } else if( myarg->getRank()==2 && !myarg->hasDerivatives() ) {
+        unsigned ncol = myarg->getRowLength(itask);
+        unsigned base = itask*myarg->getNumberOfColumns();
+        for(unsigned k=0; k<ncol; ++k) {
+          if( fabs(myarg->get(base+k,false))>0 ) return 1;
+        }
+      } else if( myarg->getRank()>0 ) {
+        return 1;
+      } else plumed_merror("should not be in action " + getName() );
+    }
   }
   return -1;
 }
@@ -798,10 +798,10 @@ bool ActionWithVector::checkForForces() {
   // Get the number of tasks
   std::vector<unsigned> force_tasks;
   if( getenvChainForbidden()==Option::yes ) {
-      std::vector<unsigned> & partialTaskList( getListOfActiveTasks( this ) );
-      for(unsigned i=0; i<partialTaskList.size(); ++i) force_tasks.push_back( partialTaskList[i] );
+    std::vector<unsigned> & partialTaskList( getListOfActiveTasks( this ) );
+    for(unsigned i=0; i<partialTaskList.size(); ++i) force_tasks.push_back( partialTaskList[i] );
   } else {
-      getForceTasks( force_tasks ); Tools::removeDuplicates(force_tasks); 
+    getForceTasks( force_tasks ); Tools::removeDuplicates(force_tasks);
   }
   unsigned nf_tasks=force_tasks.size();
   if( nf_tasks==0 ) return false;

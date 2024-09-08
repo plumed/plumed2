@@ -72,9 +72,9 @@ OuterProduct::OuterProduct(const ActionOptions&ao):
   if( getPntrToArgument(0)->getRank()!=1 || getPntrToArgument(0)->hasDerivatives() ) error("first argument to this action should be a vector");
   if( getPntrToArgument(1)->getRank()!=1 || getPntrToArgument(1)->hasDerivatives() ) error("first argument to this action should be a vector");
   if( getNumberOfMasks()==1 ) {
-      if( getPntrToArgument(2)->getRank()!=2 || getPntrToArgument(2)->hasDerivatives() ) error("mask argument should be a matrix");
-      if( getPntrToArgument(2)->getShape()[0]!=getPntrToArgument(0)->getShape()[0] ) error("mask argument has wrong size");
-      if( getPntrToArgument(2)->getShape()[1]!=getPntrToArgument(1)->getShape()[0] ) error("mask argument has wrong size");
+    if( getPntrToArgument(2)->getRank()!=2 || getPntrToArgument(2)->hasDerivatives() ) error("mask argument should be a matrix");
+    if( getPntrToArgument(2)->getShape()[0]!=getPntrToArgument(0)->getShape()[0] ) error("mask argument has wrong size");
+    if( getPntrToArgument(2)->getShape()[1]!=getPntrToArgument(1)->getShape()[0] ) error("mask argument has wrong size");
   }
 
   std::string func; parse("FUNC",func);
@@ -114,10 +114,10 @@ void OuterProduct::prepare() {
 void OuterProduct::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {
   unsigned start_n = getPntrToArgument(0)->getShape()[0];
   if( getNumberOfMasks()>0 ) {
-      Value* maskarg = getPntrToArgument(2); unsigned size_v = maskarg->getRowLength(task_index);
-      if( indices.size()!=size_v+1 ) indices.resize( size_v+1 );
-      for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + maskarg->getRowIndex( task_index, i );
-      myvals.setSplitIndex( 1 + size_v ); return;
+    Value* maskarg = getPntrToArgument(2); unsigned size_v = maskarg->getRowLength(task_index);
+    if( indices.size()!=size_v+1 ) indices.resize( size_v+1 );
+    for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + maskarg->getRowIndex( task_index, i );
+    myvals.setSplitIndex( 1 + size_v ); return;
   }
 
   unsigned size_v = getPntrToArgument(1)->getShape()[0];

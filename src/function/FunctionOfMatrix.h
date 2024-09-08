@@ -232,7 +232,7 @@ template <class T>
 void FunctionOfMatrix<T>::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {
   unsigned basemat;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      if( getPntrToArgument(i)->getRank()==2 ) { basemat=i; break; }
+    if( getPntrToArgument(i)->getRank()==2 ) { basemat=i; break; }
   }
   unsigned start_n = getPntrToArgument(basemat)->getShape()[0], size_v = getPntrToArgument(basemat)->getShape()[1];
   if( getNumberOfMasks()>0 ) {
@@ -241,16 +241,16 @@ void FunctionOfMatrix<T>::setupForTask( const unsigned& task_index, std::vector<
     if( indices.size()!=size_v+1 ) indices.resize( size_v+1 );
     for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + getPntrToArgument(maskarg)->getRowIndex(task_index, i);
     myvals.setSplitIndex( size_v + 1 ); return;
-  } 
+  }
   unsigned maskarg=0; size_v = size_v+1;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      if( getPntrToArgument(i)->getRank()!=2 ) continue ;
-      unsigned ss = getPntrToArgument(i)->getRowLength(task_index);
-      if( ss<size_v ) { maskarg=i; size_v = ss; }
+    if( getPntrToArgument(i)->getRank()!=2 ) continue ;
+    unsigned ss = getPntrToArgument(i)->getRowLength(task_index);
+    if( ss<size_v ) { maskarg=i; size_v = ss; }
   }
   if( indices.size()!=size_v+1 ) indices.resize( size_v+1 );
   for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + getPntrToArgument(maskarg)->getRowIndex(task_index, i);
-  myvals.setSplitIndex( size_v + 1 ); 
+  myvals.setSplitIndex( size_v + 1 );
 }
 
 template <class T>
@@ -343,7 +343,7 @@ void FunctionOfMatrix<T>::performTask( const std::string& controller, const unsi
       if( getPntrToArgument(j)->getRank()==2 ) {
         for(int i=0; i<getNumberOfComponents(); ++i) {
           unsigned ostrn=getConstPntrToComponent(i)->getPositionInStream();
-          unsigned myind = base + getPntrToArgument(j)->getIndexInStore( index1*getPntrToArgument(j)->getShape()[1] + ind2 );  
+          unsigned myind = base + getPntrToArgument(j)->getIndexInStore( index1*getPntrToArgument(j)->getShape()[1] + ind2 );
           myvals.addDerivative( ostrn, myind, derivatives(i,j) );
           myvals.updateIndex( ostrn, myind );
         }
@@ -419,13 +419,13 @@ void FunctionOfMatrix<T>::runEndOfRowJobs( const unsigned& ind, const std::vecto
       if( mat_indices.size()<nderivatives ) mat_indices.resize( nderivatives ); unsigned matderbase = 0;
       for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
         if( getPntrToArgument(i)->getRank()==0 ) {
-            mat_indices[ntot_mat] = matderbase; ntot_mat++;
+          mat_indices[ntot_mat] = matderbase; ntot_mat++;
         } else {
-            unsigned ss = getPntrToArgument(i)->getRowLength(ind); unsigned tbase = matderbase + getPntrToArgument(i)->getNumberOfColumns()*myvals.getTaskIndex();
-            for(unsigned k=0; k<ss; ++k) mat_indices[ntot_mat + k] = tbase + k;
-            ntot_mat += ss; 
+          unsigned ss = getPntrToArgument(i)->getRowLength(ind); unsigned tbase = matderbase + getPntrToArgument(i)->getNumberOfColumns()*myvals.getTaskIndex();
+          for(unsigned k=0; k<ss; ++k) mat_indices[ntot_mat + k] = tbase + k;
+          ntot_mat += ss;
         }
-        matderbase += getPntrToArgument(i)->getNumberOfStoredValues(); 
+        matderbase += getPntrToArgument(i)->getNumberOfStoredValues();
       }
       myvals.setNumberOfMatrixRowDerivatives( nmat, ntot_mat );
     }

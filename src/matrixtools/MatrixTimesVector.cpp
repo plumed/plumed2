@@ -183,13 +183,13 @@ int MatrixTimesVector::checkTaskIsActive( const unsigned& itask ) const {
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     Value* myarg = getPntrToArgument(i);
     if( myarg->getRank()==1 && !myarg->hasDerivatives() ) {
-        return 0;
+      return 0;
     } else if( myarg->getRank()==2 && !myarg->hasDerivatives() ) {
-        unsigned ncol = myarg->getRowLength(itask);
-        unsigned base = itask*myarg->getNumberOfColumns();
-        for(unsigned k=0; k<ncol; ++k) {
-            if( fabs(myarg->get(base+k,false))>0 ) return 1;
-        }
+      unsigned ncol = myarg->getRowLength(itask);
+      unsigned base = itask*myarg->getNumberOfColumns();
+      for(unsigned k=0; k<ncol; ++k) {
+        if( fabs(myarg->get(base+k,false))>0 ) return 1;
+      }
     } else plumed_merror("should not be in action " + getName() );
   }
   return 0;

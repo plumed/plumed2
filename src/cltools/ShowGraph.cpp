@@ -194,7 +194,7 @@ int ShowGraph::main(FILE* in, FILE*out,Communicator& pc) {
         ActionWithVector* avv=dynamic_cast<ActionWithVector*>(a);
         ActionWithArguments* aaa=dynamic_cast<ActionWithArguments*>(a);
         if( avv ) {
-            for(const auto & v : aaa->getArguments() ) v->addForce();
+          for(const auto & v : aaa->getArguments() ) v->addForce();
         } else a->apply();
         bool hasforce=false;
         for(int i=0; i<av->getNumberOfComponents(); ++i) {
