@@ -4,11 +4,12 @@ ow: GROUP ATOMS=1-16500:4
 # Fixed virtual atom which serves as the probe volume's center (pos. in nm)
 center: FIXEDATOM AT=2.5,2.5,2.5
 
+sphere: INSPHERE ATOMS=ow CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
+
 # Calculates q3 values
-q3: Q3 SPECIES=ow SWITCH={GAUSSIAN D_0=0.32 R_0=0.01 D_MAX=0.34} 
+q3: Q3 SPECIES=ow SWITCH={GAUSSIAN D_0=0.32 R_0=0.01 D_MAX=0.34} MASK=sphere
 
 # Probe volume
-sphere: INSPHERE ATOMS=q3 CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52}
 prod: CUSTOM ARG=q3,sphere FUNC=x*y PERIODIC=NO
 sphere_sum: SUM ARG=prod PERIODIC=NO
 

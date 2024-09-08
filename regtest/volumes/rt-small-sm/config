@@ -2,3 +2,11 @@ plumed_modules=symfunc
 mpiprocs=4
 type=driver
 arg="--timestep 0.002 --trajectory-stride 500 --dump-forces forces_bias_lambdav.out --ixyz subset.xyz --dump-forces-fmt %8.4f" # --debug-forces=forces.num"
+
+function plumed_regtest_before() {
+   export PLUMED_FORBID_CHAINS=yes
+}
+
+function plumed_regtest_after() {
+   export PLUMED_FORBID_CHAINS=no
+}
