@@ -7,4 +7,11 @@ See [the main documentation](../../user-doc/METATENSORMOD.md) for more
 information on how to compile and use this module.
 
 
-<!-- TODO: explain vesin update process -->
+This module uses [vesin](https://github.com/Luthaf/vesin) to compute neighbor
+lists. If you need to update it, you should use the `import.sh` script:
+
+```bash
+git clone https://github.com/Luthaf/vesin
+cd /path/to/plumed2/src/metatensor
+./import.sh /path/to/vesin
+```

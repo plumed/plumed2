@@ -51,9 +51,7 @@ directory defines a custom machine learning CV that can be used with PLUMED.
 The following input shows how you can call metatensor and evaluate the model
 that is described in the file `custom_cv.pt` from PLUMED.
 
-\plumedfile
-metatensor_cv: METATENSOR ...
-    MODEL=custom_cv.pt
+\plumedfile metatensor_cv: METATENSOR ... MODEL=custom_cv.pt
 
     SPECIES1=1-26
     SPECIES2=27-62
@@ -75,7 +73,7 @@ using the `SPECIES2` flag and so on.
   TorchScript extensions (as shared libraries) that are required to load and
   execute the model. This matches the `collect_extensions` argument to
   `MetatensorAtomisticModel.export` in Python.
-- `NO_CONSISTENCY_CHECK` can be used to disable internal consistency checks;
+- `CHECK_CONSISTENCY` can be used to enable internal consistency checks;
 - `SELECTED_ATOMS` can be used to signal the metatensor models that it should
   only run its calculation for the selected subset of atoms. The model still
   need to know about all the atoms in the system (through the `SPECIES`
@@ -87,11 +85,8 @@ using the `SPECIES2` flag and so on.
 
 Here is another example with all the possible keywords:
 
-\plumedfile
-soap: METATENSOR ...
-    MODEL=soap.pt
-    EXTENSION_DIRECTORY=extensions
-    NO_CONSISTENCY_CHECK
+\plumedfile soap: METATENSOR ... MODEL=soap.pt EXTENSION_DIRECTORY=extensions
+CHECK_CONSISTENCY
 
     SPECIES1=1-10
     SPECIES2=11-20
@@ -105,29 +100,18 @@ soap: METATENSOR ...
 
 \par Collective variables and metatensor models
 
-Collective variables are not yet part of the [known outputs][mts_outputs] for
-metatensor models. Until the output format is standardized, this action expects
-the following:
-
-- the output name should be `"plumed::cv"`;
-- the output should contain a single [block][mts_block];
-- the output samples should be named `["system", "atom"]` for per-atom outputs;
-  or `["system"]` for global outputs. The `"system"` index should always be 0,
-  and the `"atom"` index should be the index of the atom (between 0 and the
-  total number of atoms);
-- the output should not have any components;
-- the output can have arbitrary properties;
-- the output should not have any explicit gradients, all gradient calculations
-  are done using autograd.
+PLUMED can use the [`"features"` output][features_output] of metatensor
+atomistic models as a collective variables. Alternatively, the code also accepts
+an output named `"plumed::cv"`, with the same metadata structure as the
+`"features"` output.
 
 */ /*
 
 [TorchScript]: https://pytorch.org/docs/stable/jit.html
 [mts_models]: https://docs.metatensor.org/latest/atomistic/index.html
 [mts_tutorials]: https://docs.metatensor.org/latest/examples/atomistic/index.html
-[mts_outputs]: https://docs.metatensor.org/latest/atomistic/outputs.html
 [mts_block]: https://docs.metatensor.org/latest/torch/reference/block.html
-
+[features_output]: https://docs.metatensor.org/latest/examples/atomistic/outputs/features.html
 */
 //+ENDPLUMEDOC
 
@@ -224,8 +208,10 @@ private:
 
     torch::jit::Module model_;
 
-    // neighbor lists requests made by the model
     metatensor_torch::ModelCapabilities capabilities_;
+    std::string model_output_;
+
+    // neighbor lists requests made by the model
     std::vector<metatensor_torch::NeighborListOptions> nl_requests_;
 
     // dtype/device to use to execute the model
@@ -360,9 +346,8 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
     this->atomic_types_ = torch::tensor(std::move(atomic_types));
     this->requestAtoms(all_atoms);
 
-    bool no_consistency_check = false;
-    this->parseFlag("NO_CONSISTENCY_CHECK", no_consistency_check);
-    this->check_consistency_ = !no_consistency_check;
+    this->check_consistency_ = false;
+    this->parseFlag("CHECK_CONSISTENCY", this->check_consistency_);
     if (this->check_consistency_) {
         log.printf("  checking for internal consistency of the model\n");
     }
@@ -372,26 +357,48 @@ MetatensorPlumedAction::MetatensorPlumedAction(const ActionOptions& options):
     evaluations_options_ = torch::make_intrusive<metatensor_torch::ModelEvaluationOptionsHolder>();
     evaluations_options_->set_length_unit(getUnits().getLengthString());
 
-    if (!this->capabilities_->outputs().contains("plumed::cv")) {
+    auto outputs = this->capabilities_->outputs();
+    if (outputs.contains("features")) {
+        this->model_output_ = "features";
+    }
+
+    if (outputs.contains("plumed::cv")) {
+        if (outputs.contains("features")) {
+            this->warning(
+                "this model exposes both 'features' and 'plumed::cv' outputs, "
+                "we will use 'features'. 'plumed::cv' is deprecated, please "
+                "remove it from your models"
+            );
+        } else {
+            this->warning(
+                "this model is using 'plumed::cv' output, which is deprecated. "
+                "Please replace it with a 'features' output"
+            );
+            this->model_output_ = "plumed::cv";
+        }
+    }
+
+
+    if (this->model_output_.empty()) {
         auto existing_outputs = std::vector<std::string>();
         for (const auto& it: this->capabilities_->outputs()) {
             existing_outputs.push_back(it.key());
         }
 
         this->error(
-            "expected 'plumed::cv' in the capabilities of the model, could not find it. "
-            "the following outputs exist: " + torch::str(existing_outputs)
+            "expected 'features' or 'plumed::cv' in the capabilities of the model, "
+            "could not find it. the following outputs exist: " + torch::str(existing_outputs)
         );
     }
 
     auto output = torch::make_intrusive<metatensor_torch::ModelOutputHolder>();
     // this output has no quantity or unit to set
 
-    output->per_atom = this->capabilities_->outputs().at("plumed::cv")->per_atom;
+    output->per_atom = this->capabilities_->outputs().at(this->model_output_)->per_atom;
     // we are using torch autograd system to compute gradients,
     // so we don't need any explicit gradients.
     output->explicit_gradients = {};
-    evaluations_options_->outputs.insert("plumed::cv", output);
+    evaluations_options_->outputs.insert(this->model_output_, output);
 
     // Determine which device we should use based on user input, what the model
     // supports and what's available
@@ -595,8 +602,6 @@ void MetatensorPlumedAction::createSystem() {
     auto cpu_f64_tensor = torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCPU);
     auto torch_cell = torch::zeros({3, 3}, cpu_f64_tensor);
 
-    // TODO: check if cell is stored in row or column major order
-    // TODO: check if cell is zero for non-periodic systems
     torch_cell[0][0] = cell(0, 0);
     torch_cell[0][1] = cell(0, 1);
     torch_cell[0][2] = cell(0, 2);
@@ -747,7 +752,7 @@ metatensor_torch::TorchTensorBlock MetatensorPlumedAction::executeModel(metatens
         });
 
         auto dict_output = ivalue_output.toGenericDict();
-        auto cv = dict_output.at("plumed::cv");
+        auto cv = dict_output.at(this->model_output_);
         this->output_ = cv.toCustomClass<metatensor_torch::TensorMapHolder>();
     } catch (const std::exception& e) {
         plumed_merror("failed to evaluate the model: " + std::string(e.what()));
@@ -944,8 +949,7 @@ void MetatensorPlumedAction::registerKeywords(Keywords& keys) {
     keys.add("optional", "EXTENSIONS_DIRECTORY", "path to the directory containing TorchScript extensions to load");
     keys.add("optional", "DEVICE", "Torch device to use for the calculation");
 
-    // TODO: change the default?
-    keys.addFlag("NO_CONSISTENCY_CHECK", false, "Should we disable internal consistency of the model");
+    keys.addFlag("CHECK_CONSISTENCY", false, "Should we enable internal consistency of the model");
 
     keys.add("numbered", "SPECIES", "the atoms in each PLUMED species");
     keys.reset_style("SPECIES", "atoms");
@@ -955,7 +959,8 @@ void MetatensorPlumedAction::registerKeywords(Keywords& keys) {
 
     keys.add("optional", "SPECIES_TO_TYPES", "mapping from PLUMED SPECIES to metatensor's atomic types");
 
-    keys.addOutputComponent("outputs", "default", "scalar", "collective variable created by the model");
+    keys.addOutputComponent("outputs", "default", "scalar", "collective variable created by the metatensor model");
+    keys.setValueDescription("scalar/vector/matrix","collective variable created by the metatensor model");
 }
 
 PLUMED_REGISTER_ACTION(MetatensorPlumedAction, "METATENSOR")
