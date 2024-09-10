@@ -208,6 +208,7 @@ SecondaryStructureRMSD::SecondaryStructureRMSD(const ActionOptions&ao):
       componentIsNotPeriodic( "struct-" + num );
     }
   }
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->setDerivativeIsZeroWhenValueIsZero();
 }
 
 int SecondaryStructureRMSD::checkTaskIsActive( const unsigned& itask ) const {

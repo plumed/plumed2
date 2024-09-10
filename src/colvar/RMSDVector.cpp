@@ -124,6 +124,10 @@ unsigned RMSDVector::getNumberOfDerivatives() {
   return getPntrToArgument(0)->getNumberOfValues() + getPntrToArgument(1)->getNumberOfValues();
 }
 
+int RMSDVector::checkTaskIsActive( const unsigned& itask ) const {
+  return 1;
+}
+
 void RMSDVector::setReferenceConfigurations() {
   unsigned natoms = getPntrToArgument(0)->getShape()[0] / 3;
   Vector center; std::vector<Vector> pos( natoms );

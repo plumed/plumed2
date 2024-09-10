@@ -1,3 +1,11 @@
 type=driver
 plumed_modules="adjmat crystdistrib"
-arg="--plumed plumed.dat --ixyz small.xyz --timestep=0.001 --trajectory-stride=25 --dump-forces forces --dump-forces-fmt=%8.4f" # --debug-forces=forces.num" 
+arg="--plumed plumed.dat --ixyz small.xyz --timestep=0.001 --trajectory-stride=25 --dump-forces forces --dump-forces-fmt=%8.4f" # --debug-forces=forces.num"
+
+function plumed_regtest_before() {
+   export PLUMED_FORBID_CHAINS=no
+}
+
+function plumed_regtest_after() {
+   export PLUMED_FORBID_CHAINS=yes
+} 

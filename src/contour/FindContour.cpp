@@ -165,9 +165,9 @@ void FindContour::getNumberOfTasks( unsigned& ntasks ) {
   }
 }
 
-int FindContour::checkTaskStatus( const unsigned& taskno, int& flag ) const {
+int FindContour::checkTaskIsActive( const unsigned& taskno ) const {
   if( active_cells[taskno]>0 ) return 1;
-  return 0;
+  return -1;
 }
 
 void FindContour::performTask( const unsigned& current, MultiValue& myvals ) const {

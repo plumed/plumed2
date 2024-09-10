@@ -30,7 +30,7 @@ namespace PLMD {
 enum class Option { no, yes };
 
 Option interpretEnvString(const char* env,const char* str) {
-  if(!str) return Option::no;
+  if(!str) return Option::yes;
   if(!std::strcmp(str,"yes"))return Option::yes;
   if(!std::strcmp(str,"no"))return Option::no;
   plumed_error()<<"Cannot understand env var "<<env<<"\nPossible values: yes/no\nActual value: "<<str;
@@ -457,8 +457,11 @@ int ActionWithVector::checkTaskIsActive( const unsigned& itask ) const {
       if( getName()=="OUTER_PRODUCT" && i>0 ) return -1;
 
       Value* myarg = getPntrToArgument(i);
-      if( myarg->getRank()==0 ) continue;
-      else if( myarg->getRank()==1 && !myarg->hasDerivatives() ) {
+      if( !myarg->isDerivativeZeroWhenValueIsZero() ) return 1;
+
+      if( myarg->getRank()==0 ) {
+        return 1;
+      } else if( myarg->getRank()==1 && !myarg->hasDerivatives() ) {
         if( fabs(myarg->get(itask))>0 ) return 1;
       } else if( myarg->getRank()==2 && !myarg->hasDerivatives() ) {
         unsigned ncol = myarg->getRowLength(itask);

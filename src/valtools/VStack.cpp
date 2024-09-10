@@ -49,6 +49,8 @@ public:
   unsigned getNumberOfColumns() const override { return getNumberOfArguments(); }
 ///
   void setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const override ;
+/// 
+  int checkTaskIsActive( const unsigned& itask ) const override ;
 ///
   void performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const override ;
 ///
@@ -130,6 +132,10 @@ void VStack::setupForTask( const unsigned& task_index, std::vector<unsigned>& in
   for(unsigned i=0; i<nargs; ++i) indices[i+1] = nvals + i;
   myvals.setSplitIndex( nargs + 1 );
 }
+
+int VStack::checkTaskIsActive( const unsigned& itask ) const {
+  return 1;
+} 
 
 void VStack::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
   unsigned ind2 = index2; if( index2>=getConstPntrToComponent(0)->getShape()[0] ) ind2 = index2 - getConstPntrToComponent(0)->getShape()[0];

@@ -42,6 +42,7 @@ public:
   static void registerKeywords(Keywords& keys);
   explicit RMSDVector(const ActionOptions&);
   unsigned getNumberOfDerivatives() override ;
+  int checkTaskIsActive( const unsigned& itask ) const override ;
   void performTask( const unsigned& current, MultiValue& myvals ) const override ;
   void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
                           const unsigned& bufstart, std::vector<double>& buffer ) const override ;
