@@ -52,14 +52,8 @@ bool SecondaryStructureRMSD::readShortcutWords( std::string& ltmap, ActionShortc
   return true;
 }
 
-void SecondaryStructureRMSD::expandShortcut( const bool& uselessthan, const std::string& labout, const std::string& labin, const std::string& ltmap, ActionShortcut* action ) {
-  action->readInputLine( labout + "_lt: LESS_THAN ARG=" + labin + " SWITCH={" + ltmap  +"}");
-  if( uselessthan ) action->readInputLine( labout + "_lessthan: SUM ARG=" + labout + "_lt PERIODIC=NO");
-  else action->readInputLine( labout + ": SUM ARG=" + labout + "_lt PERIODIC=NO");
-}
-
 void SecondaryStructureRMSD::registerKeywords( Keywords& keys ) {
-  ActionWithVector::registerKeywords( keys );
+  ActionWithVector::registerKeywords( keys ); keys.use("MASK");
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions");
   keys.add("residues","RESIDUES","this command is used to specify the set of residues that could conceivably form part of the secondary structure. "
            "It is possible to use residues numbers as the various chains and residues should have been identified else using an instance of the "
@@ -75,11 +69,6 @@ void SecondaryStructureRMSD::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","TYPE","DRMSD","the manner in which RMSD alignment is performed. Should be OPTIMAL, SIMPLE or DRMSD. "
            "For more details on the OPTIMAL and SIMPLE methods see \\ref RMSD. For more details on the "
            "DRMSD method see \\ref DRMSD.");
-  keys.add("optional","STRANDS_CUTOFF","If in a segment of protein the two strands are further apart then the calculation "
-           "of the actual RMSD is skipped as the structure is very far from being beta-sheet like. "
-           "This keyword speeds up the calculation enormously when you are using the LESS_THAN option. "
-           "However, if you are using some other option, then this cannot be used");
-  keys.add("optional","CUTOFF_ATOMS","the pair of atoms that are used to calculate the strand cutoff");
   keys.addFlag("VERBOSE",false,"write a more detailed output");
   keys.add("optional","LESS_THAN","calculate the number of a residue segments that are within a certain target distance of this secondary structure type. "
            "This quantity is calculated using \\f$\\sum_i \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ is a \\ref switchingfunction.");
@@ -87,13 +76,13 @@ void SecondaryStructureRMSD::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","NN","8","The n parameter of the switching function");
   keys.add("compulsory","MM","12","The m parameter of the switching function");
-  keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
+  keys.addFlag("ALIGN_STRANDS",false,"ensure that the two halves of a beta sheet are not broken by the periodic boundaries before doing alignment");
   keys.addOutputComponent("struct","default","the vectors containing the rmsd distances between the residues and each of the reference structures");
   keys.addOutputComponent("lessthan","default","the number blocks of residues that have an RMSD from the secondary structure that is less than the threshold");
   keys.needsAction("SECONDARY_STRUCTURE_RMSD"); keys.needsAction("LESS_THAN"); keys.needsAction("SUM");
 }
 
-void SecondaryStructureRMSD::readBackboneAtoms( ActionShortcut* action, PlumedMain& plumed, const std::string& moltype, std::vector<unsigned>& chain_lengths, std::string& all_atoms ) {
+void SecondaryStructureRMSD::readBackboneAtoms( ActionShortcut* action, PlumedMain& plumed, const std::string& moltype, std::vector<unsigned>& chain_lengths, std::vector<std::string>& all_atoms ) {
   auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(action);
   if( ! moldat ) action->error("Unable to find MOLINFO in input");
 
@@ -115,8 +104,7 @@ void SecondaryStructureRMSD::readBackboneAtoms( ActionShortcut* action, PlumedMa
     chain_lengths[i]=backatoms[i].size();
     for(unsigned j=0; j<backatoms[i].size(); ++j) {
       std::string bat_str; Tools::convert( backatoms[i][j].serial(), bat_str );
-      if( i==0 && j==0 ) all_atoms = "ATOMS=" + bat_str;
-      else all_atoms += "," + bat_str;
+      all_atoms.push_back( bat_str );
     }
   }
 }
@@ -125,11 +113,7 @@ void SecondaryStructureRMSD::readBackboneAtoms( ActionShortcut* action, PlumedMa
 SecondaryStructureRMSD::SecondaryStructureRMSD(const ActionOptions&ao):
   Action(ao),
   ActionWithVector(ao),
-  nopbc(false),
-  align_strands(false),
-  s_cutoff2(0),
-  align_atom_1(0),
-  align_atom_2(0)
+  nopbc(false)
 {
   if( plumed.usingNaturalUnits() ) error("cannot use this collective variable when using natural units");
 
@@ -137,20 +121,8 @@ SecondaryStructureRMSD::SecondaryStructureRMSD(const ActionOptions&ao):
   log.printf("  distances from secondary structure elements are calculated using %s algorithm\n",alignType.c_str() );
   log<<"  Bibliography "<<plumed.cite("Pietrucci and Laio, J. Chem. Theory Comput. 5, 2197 (2009)"); log<<"\n";
 
-  parseFlag("VERBOSE",verbose_output);
-
-  if( keywords.exists("STRANDS_CUTOFF") ) {
-    double s_cutoff = 0;
-    parse("STRANDS_CUTOFF",s_cutoff); align_strands=true;
-    if( s_cutoff>0) {
-      log.printf("  ignoring contributions from strands that are more than %f apart\n",s_cutoff);
-      std::vector<unsigned> cutatoms; parseVector("CUTOFF_ATOMS",cutatoms);
-      if( cutatoms.size()==2 ) {
-        align_atom_1=cutatoms[0]; align_atom_2=cutatoms[1];
-      } else error("did not find CUTOFF_ATOMS in input");
-    }
-    s_cutoff2=s_cutoff*s_cutoff;
-  }
+  parseFlag("VERBOSE",verbose_output); parseFlag("ALIGN_STRANDS",align_strands);
+  log.printf("  ensuring atoms 7 and 22 in each residue are not separated by pbc before doing alignment\n"); 
 
   // Read in the atoms
   std::vector<AtomNumber> all_atoms; parseAtomList("ATOMS",all_atoms); requestAtoms( all_atoms );
@@ -211,28 +183,6 @@ SecondaryStructureRMSD::SecondaryStructureRMSD(const ActionOptions&ao):
   for(unsigned i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->setDerivativeIsZeroWhenValueIsZero();
 }
 
-int SecondaryStructureRMSD::checkTaskIsActive( const unsigned& itask ) const {
-  if( s_cutoff2>0 ) {
-    Vector distance=pbcDistance( ActionAtomistic::getPosition( getAtomIndex(itask,align_atom_1) ),
-                                 ActionAtomistic::getPosition( getAtomIndex(itask,align_atom_2) ) );
-    if( distance.modulo2()<s_cutoff2 ) return 1;
-    return -1;
-  } return 1;
-}
-
-void SecondaryStructureRMSD::areAllTasksRequired( std::vector<ActionWithVector*>& task_reducing_actions ) {
-  if( s_cutoff2>0 ) task_reducing_actions.push_back(this);
-}
-
-int SecondaryStructureRMSD::checkTaskStatus( const unsigned& taskno, int& flag ) const {
-  if( s_cutoff2>0 ) {
-    Vector distance=pbcDistance( ActionAtomistic::getPosition( getAtomIndex(taskno,align_atom_1) ),
-                                 ActionAtomistic::getPosition( getAtomIndex(taskno,align_atom_2) ) );
-    if( distance.modulo2()<s_cutoff2 ) return 1;
-    return 0;
-  } return flag;
-}
-
 void SecondaryStructureRMSD::calculate() {
   runAllTasks();
 }
@@ -247,10 +197,10 @@ void SecondaryStructureRMSD::performTask( const unsigned& current, MultiValue& m
   for(unsigned i=0; i<natoms; ++i) pos[i]=ActionAtomistic::getPosition( getAtomIndex(current,i) );
 
   // This aligns the two strands if this is required
-  Vector distance=pbcDistance( pos[align_atom_1],pos[align_atom_2] );
   if( align_strands ) {
-    Vector origin_old, origin_new; origin_old=pos[align_atom_2];
-    origin_new=pos[align_atom_1]+distance;
+    Vector distance=pbcDistance( pos[6],pos[21] );
+    Vector origin_old, origin_new; origin_old=pos[21];
+    origin_new=pos[6]+distance;
     for(unsigned i=15; i<30; ++i) {
       pos[i]+=( origin_new - origin_old );
     }

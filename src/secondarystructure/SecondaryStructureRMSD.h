@@ -51,21 +51,15 @@ private:
   std::vector<std::map<std::pair<unsigned,unsigned>, double> > drmsd_targets;
 /// Variables for strands cutoff
   bool align_strands;
-  double s_cutoff2;
-  unsigned align_atom_1, align_atom_2;
   bool verbose_output;
 /// Get the index of an atom
   unsigned getAtomIndex( const unsigned& current, const unsigned& iatom ) const ;
 public:
   static void registerKeywords( Keywords& keys );
-  static void readBackboneAtoms( ActionShortcut* action, PlumedMain& plumed, const std::string& backnames, std::vector<unsigned>& chain_lengths, std::string& all_atoms );
+  static void readBackboneAtoms( ActionShortcut* action, PlumedMain& plumed, const std::string& backnames, std::vector<unsigned>& chain_lengths, std::vector<std::string>& all_atoms );
   static bool readShortcutWords( std::string& ltmap, ActionShortcut* action );
-  static void expandShortcut( const bool& uselessthan, const std::string& labout, const std::string& labin, const std::string& ltmap, ActionShortcut* action );
   explicit SecondaryStructureRMSD(const ActionOptions&);
   unsigned getNumberOfDerivatives() override ;
-  void areAllTasksRequired( std::vector<ActionWithVector*>& task_reducing_actions ) override;
-  int checkTaskStatus( const unsigned& taskno, int& flag ) const override;
-  int checkTaskIsActive( const unsigned& itask ) const override ;
   void calculate() override;
   void performTask( const unsigned&, MultiValue& ) const override;
 };

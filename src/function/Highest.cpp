@@ -90,6 +90,7 @@ public:
   void read( ActionWithArguments* action ) override;
   bool zeroRank() const override { return scalar_out; }
   bool doWithTasks() const override { return !scalar_out; }
+  bool checkIfMaskAllowed( const std::vector<Value*>& args ) const override ;
   void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
 };
 
@@ -106,6 +107,7 @@ PLUMED_REGISTER_ACTION(VectorHighest,"LOWEST_VECTOR")
 void Highest::registerKeywords( Keywords& keys ) {
   if( keys.getDisplayName().find("LOWEST") ) keys.setValueDescription("the lowest of the input values");
   else keys.setValueDescription("the highest of the input values");
+  keys.add("hidden","MASKED_INPUT_ALLOWED","turns on that you are allowed to use masked inputs");
 }
 
 void Highest::read( ActionWithArguments* action ) {
@@ -115,6 +117,10 @@ void Highest::read( ActionWithArguments* action ) {
   }
   scalar_out = action->getNumberOfArguments()==1;
   if( scalar_out && action->getPntrToArgument(0)->getRank()==0 ) action->error("sorting a single scalar is trivial");
+}
+
+bool Highest::checkIfMaskAllowed( const std::vector<Value*>& args ) const {
+  return !scalar_out;
 }
 
 void Highest::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {

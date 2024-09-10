@@ -95,8 +95,7 @@ PLUMED_REGISTER_ACTION(AlphaRMSD,"ALPHARMSD")
 
 void AlphaRMSD::registerKeywords( Keywords& keys ) {
   SecondaryStructureRMSD::registerKeywords( keys );
-  keys.remove("ATOMS"); keys.remove("SEGMENT"); keys.remove("BONDLENGTH"); keys.remove("CUTOFF_ATOMS");
-  keys.remove("NO_ACTION_LOG"); keys.remove("STRANDS_CUTOFF"); keys.remove("STRUCTURE");
+  keys.remove("ATOMS"); keys.remove("SEGMENT"); keys.remove("BONDLENGTH"); keys.remove("STRUCTURE");
 }
 
 AlphaRMSD::AlphaRMSD(const ActionOptions&ao):
@@ -106,7 +105,7 @@ AlphaRMSD::AlphaRMSD(const ActionOptions&ao):
   // Read in the input and create a string that describes how to compute the less than
   std::string ltmap; bool uselessthan=SecondaryStructureRMSD::readShortcutWords( ltmap, this );
   // read in the backbone atoms
-  std::vector<unsigned> chains; std::string atoms; SecondaryStructureRMSD::readBackboneAtoms( this, plumed, "protein", chains, atoms );
+  std::vector<unsigned> chains; std::vector<std::string> all_atoms; SecondaryStructureRMSD::readBackboneAtoms( this, plumed, "protein", chains, all_atoms );
 
   // This constructs all conceivable sections of alpha helix in the backbone of the chains
   unsigned nprevious=0, segno=1; std::string seglist;
@@ -166,9 +165,14 @@ AlphaRMSD::AlphaRMSD(const ActionOptions&ao):
 
   std::string type; parse("TYPE",type); std::string lab = getShortcutLabel() + "_rmsd"; if( uselessthan ) lab = getShortcutLabel();
   std::string nopbcstr=""; bool nopbc; parseFlag("NOPBC",nopbc); if( nopbc ) nopbcstr = " NOPBC";
+  std::string atoms="ATOMS=" + all_atoms[0]; for(unsigned i=1; i<all_atoms.size(); ++i) atoms += "," + all_atoms[i];
   readInputLine( lab + ": SECONDARY_STRUCTURE_RMSD BONDLENGTH=0.17" + seglist + structure + " " + atoms + " TYPE=" + type + nopbcstr );
   // Create the less than object
-  if( ltmap.length()>0 ) SecondaryStructureRMSD::expandShortcut( uselessthan, getShortcutLabel(), lab, ltmap, this );
+  if( ltmap.length()>0 ) {
+      readInputLine( getShortcutLabel() + "_lt: LESS_THAN ARG=" + lab + " SWITCH={" + ltmap  +"}");
+      if( uselessthan ) readInputLine( getShortcutLabel() + "_lessthan: SUM ARG=" + getShortcutLabel() + "_lt PERIODIC=NO");
+      else readInputLine( getShortcutLabel() + ": SUM ARG=" + getShortcutLabel() + "_lt PERIODIC=NO");
+  }
 }
 
 }
