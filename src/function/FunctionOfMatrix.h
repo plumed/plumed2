@@ -246,7 +246,7 @@ void FunctionOfMatrix<T>::setupForTask( const unsigned& task_index, std::vector<
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     if( getPntrToArgument(i)->getRank()!=2 ) continue ;
     unsigned ss = getPntrToArgument(i)->getRowLength(task_index);
-    if( ss<size_v ) { maskarg=i; size_v = ss; }
+    if( ss<size_v+1 ) { maskarg=i; size_v = ss; }
   }
   if( indices.size()!=size_v+1 ) indices.resize( size_v+1 );
   for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + getPntrToArgument(maskarg)->getRowIndex(task_index, i);
