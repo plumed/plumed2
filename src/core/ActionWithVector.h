@@ -69,8 +69,6 @@ private:
   void gatherForces( const unsigned& i, const MultiValue& myvals, std::vector<double>& forces ) const ;
 /// Get the size of the buffer array that holds the data we are gathering over the MPI loop
   void getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize );
-/// Get the number of quantities in the stream
-  void getNumberOfStreamedQuantities( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol );
 /// Get the number of stored values in the stream
   bool getNumberOfStoredValues( Value* startat, unsigned& nvals, const unsigned& astart, const std::vector<Value*>& stopat );
 /// Add this action to the recursive chain
@@ -110,8 +108,6 @@ protected:
   void updateTaskListReductionStatus();
 /// Run all calculations in serial
   bool runInSerial() const ;
-/// Get the list of tasks that are active
-  std::vector<unsigned>& getListOfActiveTasks( ActionWithVector* action );
 /// Check if the arguments of this action depend on thearg
   bool argumentDependsOn( const std::string& headstr, ActionWithVector* faction, Value* thearg );
 /// This sets up the arguments at the start of the calculation
@@ -142,6 +138,8 @@ public:
 /// Return a pointer to the first action in the chain
   const ActionWithVector* getFirstActionInChain() const ;
   ActionWithVector* getFirstActionInChain();
+/// Get the list of tasks that are active
+  virtual std::vector<unsigned>& getListOfActiveTasks( ActionWithVector* action ); 
 /// This is overridden in ActionWithMatrix
   virtual void getAllActionLabelsInMatrixChain( std::vector<std::string>& matchain ) const {}
 /// Get the number of derivatives in the stream
