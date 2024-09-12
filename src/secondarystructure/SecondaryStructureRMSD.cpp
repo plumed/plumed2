@@ -122,7 +122,7 @@ SecondaryStructureRMSD::SecondaryStructureRMSD(const ActionOptions&ao):
   log<<"  Bibliography "<<plumed.cite("Pietrucci and Laio, J. Chem. Theory Comput. 5, 2197 (2009)"); log<<"\n";
 
   parseFlag("VERBOSE",verbose_output); parseFlag("ALIGN_STRANDS",align_strands);
-  log.printf("  ensuring atoms 7 and 22 in each residue are not separated by pbc before doing alignment\n"); 
+  log.printf("  ensuring atoms 7 and 22 in each residue are not separated by pbc before doing alignment\n");
 
   // Read in the atoms
   std::vector<AtomNumber> all_atoms; parseAtomList("ATOMS",all_atoms); requestAtoms( all_atoms );

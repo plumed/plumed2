@@ -233,22 +233,22 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
   std::string atoms="ATOMS=" + all_atoms[0]; for(unsigned i=1; i<all_atoms.size(); ++i) atoms += "," + all_atoms[i];
 
   if( strands_cutoff>0 ) {
-      readInputLine( scutoff_action ); std::string str_cut; Tools::convert( strands_cutoff, str_cut );
-      readInputLine( getShortcutLabel() + "_cut: CUSTOM ARG=" + getShortcutLabel() + "_cut_dists FUNC=step(" + str_cut + "-x) PERIODIC=NO");
-      readInputLine( lab + ": SECONDARY_STRUCTURE_RMSD ALIGN_STRANDS MASK=" + getShortcutLabel() + "_cut BONDLENGTH=0.17" + seglist + structure + " " + atoms + " TYPE=" + type + nopbcstr );
-      if( ltmap.length()>0 ) {
-          readInputLine( getShortcutLabel() + "_ltu: LESS_THAN ARG=" + lab + " SWITCH={" + ltmap  +"} MASK=" + getShortcutLabel() + "_cut");
-          readInputLine( getShortcutLabel() + "_lt: CUSTOM ARG=" + getShortcutLabel() + "_ltu," + getShortcutLabel() + "_cut FUNC=x*y PERIODIC=NO");
-      }
+    readInputLine( scutoff_action ); std::string str_cut; Tools::convert( strands_cutoff, str_cut );
+    readInputLine( getShortcutLabel() + "_cut: CUSTOM ARG=" + getShortcutLabel() + "_cut_dists FUNC=step(" + str_cut + "-x) PERIODIC=NO");
+    readInputLine( lab + ": SECONDARY_STRUCTURE_RMSD ALIGN_STRANDS MASK=" + getShortcutLabel() + "_cut BONDLENGTH=0.17" + seglist + structure + " " + atoms + " TYPE=" + type + nopbcstr );
+    if( ltmap.length()>0 ) {
+      readInputLine( getShortcutLabel() + "_ltu: LESS_THAN ARG=" + lab + " SWITCH={" + ltmap  +"} MASK=" + getShortcutLabel() + "_cut");
+      readInputLine( getShortcutLabel() + "_lt: CUSTOM ARG=" + getShortcutLabel() + "_ltu," + getShortcutLabel() + "_cut FUNC=x*y PERIODIC=NO");
+    }
   } else {
-      readInputLine( lab + ": SECONDARY_STRUCTURE_RMSD ALIGN_STRANDS BONDLENGTH=0.17" + seglist + structure + " " + atoms + " TYPE=" + type + nopbcstr );
-      if( ltmap.length()>0 ) readInputLine( getShortcutLabel() + "_lt: LESS_THAN ARG=" + lab + " SWITCH={" + ltmap  +"}");
+    readInputLine( lab + ": SECONDARY_STRUCTURE_RMSD ALIGN_STRANDS BONDLENGTH=0.17" + seglist + structure + " " + atoms + " TYPE=" + type + nopbcstr );
+    if( ltmap.length()>0 ) readInputLine( getShortcutLabel() + "_lt: LESS_THAN ARG=" + lab + " SWITCH={" + ltmap  +"}");
   }
   // Create the less than object
   if( ltmap.length()>0 ) {
-      if( uselessthan ) readInputLine( getShortcutLabel() + "_lessthan: SUM ARG=" + getShortcutLabel() + "_lt PERIODIC=NO");
-      else readInputLine( getShortcutLabel() + ": SUM ARG=" + getShortcutLabel() + "_lt PERIODIC=NO");
-  } 
+    if( uselessthan ) readInputLine( getShortcutLabel() + "_lessthan: SUM ARG=" + getShortcutLabel() + "_lt PERIODIC=NO");
+    else readInputLine( getShortcutLabel() + ": SUM ARG=" + getShortcutLabel() + "_lt PERIODIC=NO");
+  }
 }
 
 }
