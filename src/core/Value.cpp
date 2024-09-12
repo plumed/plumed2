@@ -306,6 +306,13 @@ void Value::reshapeMatrixStore( const unsigned& n ) {
   }
 }
 
+void Value::copyBookeepingArrayFromArgument( Value* myarg ) {
+  plumed_dbg_assert( shape.size()==2 && !hasDeriv );
+  ncols = myarg->getNumberOfColumns(); matrix_bookeeping.resize( myarg->matrix_bookeeping.size() );
+  for(unsigned i=0; i<matrix_bookeeping.size(); ++i) matrix_bookeeping[i] = myarg->matrix_bookeeping[i];
+  data.resize( shape[0]*ncols ); inputForce.resize( shape[0]*ncols );
+}
+
 void Value::setPositionInMatrixStash( const unsigned& p ) {
   plumed_dbg_assert( shape.size()==2 && !hasDeriv );
   matpos=p;

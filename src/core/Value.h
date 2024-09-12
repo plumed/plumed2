@@ -191,6 +191,8 @@ public:
   void buildDataStore( const bool forprint=false );
 /// Reshape the storage for sparse matrices
   void reshapeMatrixStore( const unsigned& n );
+/// Copy the matrix bookeeping stuff
+  void copyBookeepingArrayFromArgument( Value* myarg );
 /// Set the symmetric flag equal true for this matrix
   void setSymmetric( const bool& sym );
 /// Get the total number of scalars that are stored here

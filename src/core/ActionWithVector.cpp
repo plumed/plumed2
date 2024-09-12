@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithVector.h"
+#include "ActionWithMatrix.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
 #include "tools/OpenMP.h"
@@ -721,11 +722,14 @@ bool ActionWithVector::getNumberOfStoredValues( Value* startat, unsigned& nvals,
 }
 
 void ActionWithVector::runTask( const unsigned& current, MultiValue& myvals ) const {
+  const ActionWithMatrix* am = dynamic_cast<const ActionWithMatrix*>(this);
   myvals.setTaskIndex(current); myvals.vector_call=true; performTask( current, myvals );
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     const Value* myval = getConstPntrToComponent(i);
-    if( myval->getRank()!=1 || myval->hasDerivatives() || !myval->valueIsStored() ) continue;
-    Value* myv = const_cast<Value*>( myval ); myv->set( current, myvals.get( myval->getPositionInStream() ) );
+    if( am || myval->hasDerivatives() || !myval->valueIsStored() ) continue;
+    Value* myv = const_cast<Value*>( myval ); 
+    if( getName()=="RMSD_VECTOR" && myv->getRank()==2 ) continue;
+    myv->set( current, myvals.get( myval->getPositionInStream() ) );
   }
   if( action_to_do_after ) action_to_do_after->runTask( current, myvals );
 }
