@@ -113,7 +113,7 @@ s(r) = 1 - \tanh\left( \frac{ r - d_0 }{ r_0 } \right)
 \f$s(r) =\left\{\begin{array}{ll}
    1                                                           & \mathrm{if } r \leq d_0 \\
    0.5 \left( \cos ( \frac{ r - d_0 }{ r_0 } \pi ) + 1 \right) & \mathrm{if } d_0 < r\leq d_0 + r_0 \\
-   0                                                           & \mathrm{if } r < d_0 + r_0
+   0                                                           & \mathrm{if } r > d_0 + r_0
   \end{array}\right.
 \f$
 </td> <td>
