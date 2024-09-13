@@ -76,7 +76,7 @@ RadialTetra::RadialTetra( const ActionOptions& ao):
   // Get the neighbors matrix
   readInputLine( getShortcutLabel() + "_neigh: NEIGHBORS ARG=" + getShortcutLabel() + "_mat NLOWEST=4");
   // Now get distance matrix that just contains four nearest distances
-  readInputLine( getShortcutLabel() + "_near4: CUSTOM ARG=" + getShortcutLabel() + "_mat," + getShortcutLabel() + "_neigh FUNC=x*y PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_near4: CUSTOM ARG=" + getShortcutLabel() + "_mat," + getShortcutLabel() + "_neigh MASK=" + getShortcutLabel() + "_neigh FUNC=x*y PERIODIC=NO");
   //Now compute sum of four nearest distances
   ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_mat");
   plumed_assert( av && av->getNumberOfComponents()>0 && (av->copyOutput(0))->getRank()==2 );

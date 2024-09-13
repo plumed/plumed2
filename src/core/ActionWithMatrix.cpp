@@ -91,7 +91,7 @@ const ActionWithMatrix* ActionWithMatrix::getFirstMatrixInChain() const {
 
 void ActionWithMatrix::setupMatrixStore() {
   for(int i=0; i<getNumberOfComponents(); ++i) {
-    Value* myval=getPntrToComponent(i);
+    Value* myval=getPntrToComponent(i); 
     if( myval->getRank()!=2 || myval->hasDerivatives() || !myval->valueIsStored() ) continue;
     myval->reshapeMatrixStore( getNumberOfColumns() );
   }
@@ -171,7 +171,7 @@ void ActionWithMatrix::runTask( const std::string& controller, const unsigned& c
         }
       }
       double finalval = myvals.get( myval->getPositionInStream() ); if( !isAdjacencyMatrix() ) checkval=finalval;
-      if( std::fabs(checkval)>epsilon ) {
+      if( std::fabs(checkval)>epsilon || (!isAdjacencyMatrix() && getNumberOfMasks()>0) ) {
         Value* myv = const_cast<Value*>( myval );
         if( ncols<myval->getShape()[1] ) {
           myv->set( current*ncols + myval->matrix_bookeeping[current*(1+ncols)], finalval );

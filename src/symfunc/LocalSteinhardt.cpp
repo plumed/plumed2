@@ -368,8 +368,7 @@ LocalSteinhardt::LocalSteinhardt(const ActionOptions& ao):
     std::string sw_str; parse("SWITCH",sw_str); std::string maskstr; parse("MASK",maskstr); if( maskstr.length()>0 ) maskstr=" MASK=" + maskstr;
     readInputLine( getShortcutLabel() + "_cmap: CONTACT_MATRIX GROUP=" + sp_str + " SWITCH={" + sw_str + "}" + maskstr );
     // And the matrix of dot products
-    if( chainsAreOff() ) readInputLine( getShortcutLabel() + "_dpmat: MATRIX_PRODUCT ARG=" + getShortcutLabel() + "_vecs," + getShortcutLabel() + "_vecsT MASK=" + getShortcutLabel() + "_cmap" );
-    else readInputLine( getShortcutLabel() + "_dpmat: MATRIX_PRODUCT ARG=" + getShortcutLabel() + "_vecs," + getShortcutLabel() + "_vecsT");
+    readInputLine( getShortcutLabel() + "_dpmat: MATRIX_PRODUCT ARG=" + getShortcutLabel() + "_vecs," + getShortcutLabel() + "_vecsT MASK=" + getShortcutLabel() + "_cmap" );
   } else if( spa_str.length()>0 ) {
     // Create a group with these atoms
     readInputLine( getShortcutLabel() + "_grp: GROUP ATOMS=" + spa_str );
@@ -426,8 +425,7 @@ LocalSteinhardt::LocalSteinhardt(const ActionOptions& ao):
     readInputLine( getShortcutLabel() + "_vecsB: CUSTOM ARG=" + getShortcutLabel() + "_uvecsB," + getShortcutLabel() + "_nmatB FUNC=x/y PERIODIC=NO");
     std::string sw_str; parse("SWITCH",sw_str); std::string maskstr; parse("MASK",maskstr); if( maskstr.length()>0 ) maskstr=" MASK=" + maskstr;
     readInputLine( getShortcutLabel() + "_cmap: CONTACT_MATRIX GROUPA=" + spa_str + " GROUPB=" + spb_str + " SWITCH={" + sw_str + "}" + maskstr );
-    if( chainsAreOff() ) readInputLine( getShortcutLabel() + "_dpmat: MATRIX_PRODUCT ARG=" + getShortcutLabel() + "_vecsA," + getShortcutLabel() + "_vecsB MASK=" + getShortcutLabel() + "_cmap");
-    else readInputLine( getShortcutLabel() + "_dpmat: MATRIX_PRODUCT ARG=" + getShortcutLabel() + "_vecsA," + getShortcutLabel() + "_vecsB");
+    readInputLine( getShortcutLabel() + "_dpmat: MATRIX_PRODUCT ARG=" + getShortcutLabel() + "_vecsA," + getShortcutLabel() + "_vecsB MASK=" + getShortcutLabel() + "_cmap");
   }
 
   // Now create the product matrix

@@ -56,6 +56,7 @@ PLUMED_REGISTER_ACTION(Flatten,"FLATTEN")
 void Flatten::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
+  keys.add("hidden","MASKED_INPUT_ALLOWED","turns on that you are allowed to use masked inputs ");
   keys.setValueDescription("a vector containing all the elements of the input matrix");
 }
 

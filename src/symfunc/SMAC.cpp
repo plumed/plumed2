@@ -75,16 +75,14 @@ SMAC::SMAC(const ActionOptions& ao):
     readInputLine( getShortcutLabel() + "_vecs: VSTACK ARG=" + sp_lab + ".x," + sp_lab + ".y," + sp_lab + ".z" );
     readInputLine( getShortcutLabel() + "_vecsT: TRANSPOSE ARG=" + getShortcutLabel() + "_vecs" );
     readInputLine( getShortcutLabel() + "_cmap: CONTACT_MATRIX GROUP=" + sp_lab + " SWITCH={" + sw_input + "}");
-    if( chainsAreOff() ) readInputLine( getShortcutLabel() + "_tpmat: TORSIONS_MATRIX ARG=" + getShortcutLabel() + "_vecs," + getShortcutLabel() + "_vecsT POSITIONS1=" + sp_lab + " POSITIONS2=" + sp_lab + " MASK=" + getShortcutLabel() + "_cmap");
-    else readInputLine( getShortcutLabel() + "_tpmat: TORSIONS_MATRIX ARG=" + getShortcutLabel() + "_vecs," + getShortcutLabel() + "_vecsT POSITIONS1=" + sp_lab + " POSITIONS2=" + sp_lab );
+    readInputLine( getShortcutLabel() + "_tpmat: TORSIONS_MATRIX ARG=" + getShortcutLabel() + "_vecs," + getShortcutLabel() + "_vecsT POSITIONS1=" + sp_lab + " POSITIONS2=" + sp_lab + " MASK=" + getShortcutLabel() + "_cmap");
   } else if( sp_laba.length()>0 ) {
     std::string sp_labb; parse("SPECIESB",sp_labb);
     readInputLine( getShortcutLabel() + "_vecsa: VSTACK ARG=" + sp_laba + ".x," + sp_laba + ".y," + sp_laba + ".z" );
     readInputLine( getShortcutLabel() + "_vecsb: VSTACK ARG=" + sp_labb + ".x," + sp_labb + ".y," + sp_labb + ".z" );
     readInputLine( getShortcutLabel() + "_vecsbT: TRANSPOSE ARG=" + getShortcutLabel() + "_vecsb" );
     readInputLine( getShortcutLabel() + "_cmap: CONTACT_MATRIX GROUPA=" + sp_laba + " GROUPB=" + sp_labb + " SWITCH={" + sw_input + "}");
-    if( chainsAreOff() ) readInputLine( getShortcutLabel() + "_tpmat: TORSIONS_MATRIX ARG=" + getShortcutLabel() + "_vecsa," + getShortcutLabel() + "_vecsbT POSITIONS1=" + sp_laba + " POSITIONS2=" + sp_labb + " MASK=" + getShortcutLabel() + "_cmap");
-    else readInputLine( getShortcutLabel() + "_tpmat: TORSIONS_MATRIX ARG=" + getShortcutLabel() + "_vecsa," + getShortcutLabel() + "_vecsbT POSITIONS1=" + sp_laba + " POSITIONS2=" + sp_labb );
+    readInputLine( getShortcutLabel() + "_tpmat: TORSIONS_MATRIX ARG=" + getShortcutLabel() + "_vecsa," + getShortcutLabel() + "_vecsbT POSITIONS1=" + sp_laba + " POSITIONS2=" + sp_labb + " MASK=" + getShortcutLabel() + "_cmap");
   }
   // Now need the Gaussians
   std::string kmap_input= getShortcutLabel() + "_ksum: COMBINE MASK=" + getShortcutLabel() + "_cmap PERIODIC=NO";

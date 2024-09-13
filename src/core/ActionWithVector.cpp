@@ -568,7 +568,8 @@ void ActionWithVector::runAllTasks() {
   if(serial) { stride=1; rank=0; }
 
   // Clear matrix bookeeping arrays
-  if( stride>1 ) clearMatrixBookeeping();
+  ActionWithMatrix* am=dynamic_cast<ActionWithMatrix*>(this);
+  if( am && stride>1 ) clearMatrixBookeeping();
 
   // Get the list of active tasks
   std::vector<unsigned> & partialTaskList( getListOfActiveTasks( this ) );
@@ -633,10 +634,11 @@ void ActionWithVector::runAllTasks() {
 }
 
 void ActionWithVector::gatherProcesses() {
+  ActionWithMatrix* am=dynamic_cast<ActionWithMatrix*>(this);
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     Value* myval = getPntrToComponent(i);
     if( myval->storedata && !myval->hasDeriv ) {
-      comm.Sum( myval->data ); if( myval->getRank()==2 && myval->getNumberOfColumns()<myval->getShape()[1] ) comm.Sum( myval->matrix_bookeeping );
+      comm.Sum( myval->data ); if( am && myval->getRank()==2 && myval->getNumberOfColumns()<myval->getShape()[1] ) comm.Sum( myval->matrix_bookeeping );
     }
   }
   if( action_to_do_after ) action_to_do_after->gatherProcesses();
@@ -884,7 +886,7 @@ void ActionWithVector::getForceTasks( std::vector<unsigned>& force_tasks ) const
 }
 
 void ActionWithVector::gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
-  plumed_dbg_assert( myval->storedata && !(myval->getRank()==2 && !myval->hasDerivatives()) );
+  plumed_dbg_assert( myval->storedata );
   double fforce = myval->getForce(itask);
   unsigned sspos = myval->getPositionInStream();
   for(unsigned j=0; j<myvals.getNumberActive(sspos); ++j) {

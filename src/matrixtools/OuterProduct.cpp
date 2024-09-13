@@ -46,7 +46,7 @@ public:
   explicit OuterProduct(const ActionOptions&);
   unsigned getNumberOfDerivatives();
   void prepare() override ;
-  unsigned getNumberOfColumns() const override { return getConstPntrToComponent(0)->getShape()[1]; }
+  unsigned getNumberOfColumns() const override ;
   void setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const ;
   void performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const override;
   void runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const override ;
@@ -102,6 +102,11 @@ OuterProduct::OuterProduct(const ActionOptions&ao):
 
 unsigned OuterProduct::getNumberOfDerivatives() {
   return nderivatives;
+}
+
+unsigned OuterProduct::getNumberOfColumns() const {
+  if( getNumberOfMasks()>0 ) return getPntrToArgument(2)->getNumberOfColumns();
+  return getConstPntrToComponent(0)->getShape()[1];
 }
 
 void OuterProduct::prepare() {

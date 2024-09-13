@@ -114,6 +114,7 @@ void KDE::registerKeywords( Keywords& keys ) {
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
   // Keywords for spherical KDE
   keys.add("compulsory","CONCENTRATION","the concentration parameter for Von Mises-Fisher distributions (only required for SPHERICAL_KDE)");
+  keys.add("hidden","MASKED_INPUT_ALLOWED","turns on that you are allowed to use masked inputs ");
   keys.setValueDescription("a function on a grid that was obtained by doing a Kernel Density Estimation using the input arguments");
 }
 

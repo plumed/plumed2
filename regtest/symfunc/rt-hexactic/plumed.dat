@@ -6,8 +6,8 @@ PRINT ARG=hex.mean,bb.* FILE=colvar FMT=%8.4f
 dmat: DISTANCE_MATRIX GROUP=1-400 CUTOFF=3.0 COMPONENTS
 neigh: NEIGHBORS ARG=dmat.w NLOWEST=6
 harm: CYLINDRICAL_HARMONIC DEGREE=6 ARG=dmat.x,dmat.y
-rprod: CUSTOM ARG=neigh,harm.rm FUNC=x*y PERIODIC=NO
-iprod: CUSTOM ARG=neigh,harm.im FUNC=x*y PERIODIC=NO
+rprod: CUSTOM ARG=neigh,harm.rm MASK=neigh FUNC=x*y PERIODIC=NO
+iprod: CUSTOM ARG=neigh,harm.im MASK=neigh FUNC=x*y PERIODIC=NO
 hex2_ones: ONES SIZE=400
 hex2_denom: MATRIX_VECTOR_PRODUCT ARG=neigh,hex2_ones
 harm_rm: MATRIX_VECTOR_PRODUCT ARG=rprod,hex2_ones

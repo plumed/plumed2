@@ -41,7 +41,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit QuaternionProductMatrix(const ActionOptions&);
   unsigned getNumberOfDerivatives();
-  unsigned getNumberOfColumns() const override { return getConstPntrToComponent(0)->getShape()[1]; }
+  unsigned getNumberOfColumns() const override ;
   void setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const ;
   void performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const override;
   void runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const override ;
@@ -50,7 +50,7 @@ public:
 PLUMED_REGISTER_ACTION(QuaternionProductMatrix,"QUATERNION_PRODUCT_MATRIX")
 
 void QuaternionProductMatrix::registerKeywords( Keywords& keys ) {
-  ActionWithMatrix::registerKeywords(keys); keys.use("ARG");
+  ActionWithMatrix::registerKeywords(keys); keys.use("ARG"); keys.use("MASK");
   keys.addOutputComponent("w","default","the real component of quaternion");
   keys.addOutputComponent("i","default","the i component of the quaternion");
   keys.addOutputComponent("j","default","the j component of the quaternion");
@@ -61,7 +61,8 @@ QuaternionProductMatrix::QuaternionProductMatrix(const ActionOptions&ao):
   Action(ao),
   ActionWithMatrix(ao)
 {
-  if( getNumberOfArguments()!=8 ) error("should be eight arguments to this action.  Four quaternions for each set of atoms.  You can repeat actions");
+  unsigned nargs=getNumberOfArguments(); if( getNumberOfMasks()>0 ) nargs = nargs - getNumberOfMasks();
+  if( nargs!=8 ) error("should be eight arguments to this action.  Four quaternions for each set of atoms.  You can repeat actions");
   unsigned nquat = getPntrToArgument(0)->getNumberOfValues();
   for(unsigned i=0; i<8; ++i) {
     Value* myarg=getPntrToArgument(i); if( i==4 ) nquat = getPntrToArgument(i)->getNumberOfValues();
@@ -85,8 +86,20 @@ unsigned QuaternionProductMatrix::getNumberOfDerivatives() {
   return nderivatives;
 }
 
+unsigned QuaternionProductMatrix::getNumberOfColumns() const {
+  if( getNumberOfMasks()>0 ) return getPntrToArgument(8)->getNumberOfColumns();
+  return getConstPntrToComponent(0)->getShape()[1];
+}
+
 void QuaternionProductMatrix::setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const {
-  unsigned start_n = getPntrToArgument(0)->getShape()[0], size_v = getPntrToArgument(4)->getShape()[0];
+  unsigned start_n = getPntrToArgument(0)->getShape()[0];
+  if( getNumberOfMasks()>0 ) {
+    Value* maskarg = getPntrToArgument(8); unsigned size_v = maskarg->getRowLength(task_index);
+    if( indices.size()!=size_v+1 ) indices.resize( size_v+1 );
+    for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + maskarg->getRowIndex( task_index, i );
+    myvals.setSplitIndex( 1 + size_v ); return;
+  }
+  unsigned size_v = getPntrToArgument(4)->getShape()[0];
   if( indices.size()!=size_v+1 ) indices.resize( size_v+1 );
   for(unsigned i=0; i<size_v; ++i) indices[i+1] = start_n + i;
   myvals.setSplitIndex( size_v + 1 );

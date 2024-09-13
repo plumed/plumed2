@@ -274,15 +274,17 @@ void Custom::registerKeywords(Keywords& keys) {
 
 void Custom::read( ActionWithArguments* action ) {
   // Read in the variables
+  unsigned nargs = action->getNumberOfArguments(); ActionWithVector* av=dynamic_cast<ActionWithVector*>(action); 
+  if( av && av->getNumberOfMasks()>0 ) nargs = nargs - av->getNumberOfMasks();
   std::vector<std::string> var; parseVector(action,"VAR",var); parse(action,"FUNC",func);
   if(var.size()==0) {
-    var.resize(action->getNumberOfArguments());
+    var.resize(nargs);
     if(var.size()>3) action->error("Using more than 3 arguments you should explicitly write their names with VAR");
     if(var.size()>0) var[0]="x";
     if(var.size()>1) var[1]="y";
     if(var.size()>2) var[2]="z";
   }
-  if(var.size()!=action->getNumberOfArguments()) action->error("Size of VAR array should be the same as number of arguments");
+  if(var.size()!=nargs) action->error("Size of VAR array should be the same as number of arguments");
   // Check for operations that are not multiplication (this can probably be done much more cleverly)
   bool onlymultiplication = func.find("*")!=std::string::npos;
   // Find first bracket in expression
@@ -321,7 +323,7 @@ void Custom::read( ActionWithArguments* action ) {
   action->log.printf("  with variables :");
   for(unsigned i=0; i<var.size(); i++) action->log.printf(" %s",var[i].c_str());
   action->log.printf("\n"); function.set( func, var, action );
-  std::vector<double> zeros( action->getNumberOfArguments(), 0 ); double fval = abs(function.evaluate(zeros));
+  std::vector<double> zeros( nargs, 0 ); double fval = abs(function.evaluate(zeros));
   zerowhenallzero=(fval<epsilon );
   if( zerowhenallzero ) action->log.printf("  not calculating when all arguments are zero \n");
 }
