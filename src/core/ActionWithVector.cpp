@@ -729,7 +729,7 @@ void ActionWithVector::runTask( const unsigned& current, MultiValue& myvals ) co
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     const Value* myval = getConstPntrToComponent(i);
     if( am || myval->hasDerivatives() || !myval->valueIsStored() ) continue;
-    Value* myv = const_cast<Value*>( myval ); 
+    Value* myv = const_cast<Value*>( myval );
     if( getName()=="RMSD_VECTOR" && myv->getRank()==2 ) continue;
     myv->set( current, myvals.get( myval->getPositionInStream() ) );
   }

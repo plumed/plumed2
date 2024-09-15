@@ -274,7 +274,7 @@ void Custom::registerKeywords(Keywords& keys) {
 
 void Custom::read( ActionWithArguments* action ) {
   // Read in the variables
-  unsigned nargs = action->getNumberOfArguments(); ActionWithVector* av=dynamic_cast<ActionWithVector*>(action); 
+  unsigned nargs = action->getNumberOfArguments(); ActionWithVector* av=dynamic_cast<ActionWithVector*>(action);
   if( av && av->getNumberOfMasks()>0 ) nargs = nargs - av->getNumberOfMasks();
   std::vector<std::string> var; parseVector(action,"VAR",var); parse(action,"FUNC",func);
   if(var.size()==0) {

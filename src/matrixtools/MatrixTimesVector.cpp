@@ -145,7 +145,7 @@ MatrixTimesVector::MatrixTimesVector(const ActionOptions&ao):
 }
 
 unsigned MatrixTimesVector::getNumberOfDerivatives() {
-  unsigned nderivatives=0; 
+  unsigned nderivatives=0;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) nderivatives += getPntrToArgument(i)->getNumberOfStoredValues();
   return nderivatives;
 }

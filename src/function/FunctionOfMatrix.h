@@ -157,7 +157,7 @@ std::vector<unsigned> FunctionOfMatrix<T>::getValueShapeFromArguments() {
 
 template <class T>
 unsigned FunctionOfMatrix<T>::getNumberOfDerivatives() {
-  unsigned nder=0, argstart = myfunc.getArgStart(); 
+  unsigned nder=0, argstart = myfunc.getArgStart();
   unsigned nargs = getNumberOfArguments(); if( getNumberOfMasks()>0 ) nargs = nargs - getNumberOfMasks();
   for(unsigned i=argstart; i<nargs; ++i) nder += getPntrToArgument(i)->getNumberOfStoredValues();
   return nder;
@@ -175,7 +175,7 @@ void FunctionOfMatrix<T>::prepare() {
   }
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     Value* myval = getPntrToComponent(i);
-    if( myval->getRank()==2 && (myval->getShape()[0]!=shape[0] || myval->getShape()[1]!=shape[1]) ) myval->setShape(shape); 
+    if( myval->getRank()==2 && (myval->getShape()[0]!=shape[0] || myval->getShape()[1]!=shape[1]) ) myval->setShape(shape);
   }
   ActionWithVector::prepare(); active_tasks.resize(0);
 }
@@ -184,7 +184,7 @@ template <class T>
 Value* FunctionOfMatrix<T>::getPntrToFirstMatrixArgument() const {
   unsigned argstart=myfunc.getArgStart();
   for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
-      if( getPntrToArgument(i)->getRank()==2 ) return getPntrToArgument(i);
+    if( getPntrToArgument(i)->getRank()==2 ) return getPntrToArgument(i);
   }
   plumed_merror("could not find matrix argument");
   return NULL;
@@ -195,29 +195,29 @@ std::vector<unsigned>& FunctionOfMatrix<T>::getListOfActiveTasks( ActionWithVect
   if( active_tasks.size()>0 ) return active_tasks;
 
   Value* myarg = NULL;
-  if( getNumberOfMasks()>0 ) myarg = getPntrToArgument(getNumberOfArguments()-getNumberOfMasks()); 
+  if( getNumberOfMasks()>0 ) myarg = getPntrToArgument(getNumberOfArguments()-getNumberOfMasks());
   else myarg = getPntrToFirstMatrixArgument();
 
   unsigned base=0; unsigned nrows = myarg->getShape()[0];
   for(unsigned i=0; i<nrows; ++i) {
-      unsigned ncols = myarg->getRowLength(i);
-      for(unsigned j=0; j<ncols; ++j) active_tasks.push_back(base+j);
-      base += myarg->getNumberOfColumns();
+    unsigned ncols = myarg->getRowLength(i);
+    for(unsigned j=0; j<ncols; ++j) active_tasks.push_back(base+j);
+    base += myarg->getNumberOfColumns();
   }
   if( getNumberOfMasks()>0 && doNotCalculateDerivatives() ) return active_tasks;
 // All the matrices input have to have the same sparsity pattern.
-// I can do everything I want to do with this limitation.  If 
+// I can do everything I want to do with this limitation.  If
 // anyone wants to make this smarter in the future they can
 #ifndef DNDEBUG
   unsigned argstart=myfunc.getArgStart();
   for(unsigned k=argstart; k<getNumberOfArguments(); ++k) {
-      if( getPntrToArgument(k)->getRank()!=2 ) continue ;
-      for(unsigned i=0; i<nrows; ++i) {
-          unsigned ncols = myarg->getRowLength(i);
-          if( getNumberOfMasks()>0 && ncols==0 ) continue;
-          plumed_massert( ncols==getPntrToArgument(k)->getRowLength(i), "failing in " + getLabel() );
-          for(unsigned j=0; j<ncols; ++j) plumed_assert( myarg->getRowIndex(i,j)==getPntrToArgument(k)->getRowIndex(i,j) ); 
-      }
+    if( getPntrToArgument(k)->getRank()!=2 ) continue ;
+    for(unsigned i=0; i<nrows; ++i) {
+      unsigned ncols = myarg->getRowLength(i);
+      if( getNumberOfMasks()>0 && ncols==0 ) continue;
+      plumed_massert( ncols==getPntrToArgument(k)->getRowLength(i), "failing in " + getLabel() );
+      for(unsigned j=0; j<ncols; ++j) plumed_assert( myarg->getRowIndex(i,j)==getPntrToArgument(k)->getRowIndex(i,j) );
+    }
   }
 #endif
   return active_tasks;
@@ -230,23 +230,23 @@ void FunctionOfMatrix<T>::performTask( const unsigned& taskno, MultiValue& myval
 
   // Retrieve the arguments
   if( getNumberOfMasks()>0 ) {
-      Value* maskarg = getPntrToArgument(getNumberOfArguments()-getNumberOfMasks()); 
-      unsigned index1 = std::floor( taskno / maskarg->getNumberOfColumns() );
-      unsigned index2 = taskno - index1*maskarg->getNumberOfColumns();
-      unsigned tind2 = maskarg->getRowIndex( index1, index2 );
-      unsigned maskncol = maskarg->getRowLength(index1);
-      for(unsigned i=argstart; i<nargs; ++i) {
-          if( getPntrToArgument(i)->getRank()==2 && getPntrToArgument(i)->getRowLength(index1)>maskncol ) args[i-argstart]=getPntrToArgument(i)->get( index1*getPntrToArgument(i)->getShape()[1] + tind2 );
-          else if( getPntrToArgument(i)->getRank()==2 ) { 
-             plumed_dbg_assert( maskncol==getPntrToArgument(i)->getRowLength(index1) ); 
-             args[i-argstart]=getPntrToArgument(i)->get( taskno, false ); 
-          } else args[i-argstart] = getPntrToArgument(i)->get();
-      } 
+    Value* maskarg = getPntrToArgument(getNumberOfArguments()-getNumberOfMasks());
+    unsigned index1 = std::floor( taskno / maskarg->getNumberOfColumns() );
+    unsigned index2 = taskno - index1*maskarg->getNumberOfColumns();
+    unsigned tind2 = maskarg->getRowIndex( index1, index2 );
+    unsigned maskncol = maskarg->getRowLength(index1);
+    for(unsigned i=argstart; i<nargs; ++i) {
+      if( getPntrToArgument(i)->getRank()==2 && getPntrToArgument(i)->getRowLength(index1)>maskncol ) args[i-argstart]=getPntrToArgument(i)->get( index1*getPntrToArgument(i)->getShape()[1] + tind2 );
+      else if( getPntrToArgument(i)->getRank()==2 ) {
+        plumed_dbg_assert( maskncol==getPntrToArgument(i)->getRowLength(index1) );
+        args[i-argstart]=getPntrToArgument(i)->get( taskno, false );
+      } else args[i-argstart] = getPntrToArgument(i)->get();
+    }
   } else {
-      for(unsigned i=argstart; i<nargs; ++i) {
-        if( getPntrToArgument(i)->getRank()==2 ) args[i-argstart]=getPntrToArgument(i)->get( taskno, false );
-        else args[i-argstart] = getPntrToArgument(i)->get();
-      }
+    for(unsigned i=argstart; i<nargs; ++i) {
+      if( getPntrToArgument(i)->getRank()==2 ) args[i-argstart]=getPntrToArgument(i)->get( taskno, false );
+      else args[i-argstart] = getPntrToArgument(i)->get();
+    }
   }
   // Calculate the function and its derivatives
   std::vector<double> vals( getNumberOfComponents() ); Matrix<double> derivatives( getNumberOfComponents(), nargs-argstart );
@@ -276,13 +276,13 @@ void FunctionOfMatrix<T>::performTask( const unsigned& taskno, MultiValue& myval
 
 template <class T>
 void FunctionOfMatrix<T>::calculate() {
-  Value* myarg = NULL; 
-  if( getNumberOfMasks()>0 ) myarg = getPntrToArgument(getNumberOfArguments()-getNumberOfMasks()); 
-  else myarg = getPntrToFirstMatrixArgument(); 
+  Value* myarg = NULL;
+  if( getNumberOfMasks()>0 ) myarg = getPntrToArgument(getNumberOfArguments()-getNumberOfMasks());
+  else myarg = getPntrToFirstMatrixArgument();
   // Copy bookeeping arrays from input matrices to output matrices
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
-      if( getPntrToComponent(i)->getRank()==2 ) getPntrToComponent(i)->copyBookeepingArrayFromArgument( myarg );
-      else getPntrToComponent(i)->resizeDerivatives( getNumberOfDerivatives() );
+    if( getPntrToComponent(i)->getRank()==2 ) getPntrToComponent(i)->copyBookeepingArrayFromArgument( myarg );
+    else getPntrToComponent(i)->resizeDerivatives( getNumberOfDerivatives() );
   }
   runAllTasks();
 }

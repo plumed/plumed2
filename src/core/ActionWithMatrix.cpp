@@ -91,7 +91,7 @@ const ActionWithMatrix* ActionWithMatrix::getFirstMatrixInChain() const {
 
 void ActionWithMatrix::setupMatrixStore() {
   for(int i=0; i<getNumberOfComponents(); ++i) {
-    Value* myval=getPntrToComponent(i); 
+    Value* myval=getPntrToComponent(i);
     if( myval->getRank()!=2 || myval->hasDerivatives() || !myval->valueIsStored() ) continue;
     myval->reshapeMatrixStore( getNumberOfColumns() );
   }

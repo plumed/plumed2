@@ -139,7 +139,7 @@ public:
   const ActionWithVector* getFirstActionInChain() const ;
   ActionWithVector* getFirstActionInChain();
 /// Get the list of tasks that are active
-  virtual std::vector<unsigned>& getListOfActiveTasks( ActionWithVector* action ); 
+  virtual std::vector<unsigned>& getListOfActiveTasks( ActionWithVector* action );
 /// This is overridden in ActionWithMatrix
   virtual void getAllActionLabelsInMatrixChain( std::vector<std::string>& matchain ) const {}
 /// Get the number of derivatives in the stream

@@ -128,9 +128,9 @@ std::vector<unsigned>& QuaternionBondProductMatrix::getListOfActiveTasks( Action
   Value* myarg = getPntrToArgument(4); unsigned base=0;
   unsigned nrows = myarg->getShape()[0];
   for(unsigned i=0; i<nrows; ++i) {
-      unsigned ncols = myarg->getRowLength(i);
-      for(unsigned j=0; j<ncols; ++j) active_tasks.push_back(base+j);
-      base += myarg->getNumberOfColumns();
+    unsigned ncols = myarg->getRowLength(i);
+    for(unsigned j=0; j<ncols; ++j) active_tasks.push_back(base+j);
+    base += myarg->getNumberOfColumns();
   }
   return active_tasks;
 }
@@ -144,11 +144,11 @@ void QuaternionBondProductMatrix::performTask( const unsigned& taskno, MultiValu
   //[dit/dw1 dit/di1 dit/dj1 dit/dk1] etc, and dqt[1] is w.r.t the vector-turned-quaternion called bond
 
   // Retrieve the quaternion
-  for(unsigned i=0; i<4; ++i) quat[i] = getPntrToArgument(i)->get(index1); 
+  for(unsigned i=0; i<4; ++i) quat[i] = getPntrToArgument(i)->get(index1);
 
   // Retrieve the components of the matrix
   double weight = getPntrToArgument(4)->get(taskno, false );
-  for(unsigned i=1; i<4; ++i) bond[i] = getPntrToArgument(4+i)->get(taskno, false ); 
+  for(unsigned i=1; i<4; ++i) bond[i] = getPntrToArgument(4+i)->get(taskno, false );
 
   // calculate normalization factor
   bond[0]=0.0;
@@ -328,7 +328,7 @@ void QuaternionBondProductMatrix::calculate() {
   // Copy bookeeping arrays from input matrices to output matrices
   for(unsigned i=0; i<4; ++i) getPntrToComponent(i)->copyBookeepingArrayFromArgument( getPntrToArgument(4+i) );
   runAllTasks();
-} 
+}
 
 }
 }
