@@ -97,7 +97,7 @@ FunctionOfVector<T>::FunctionOfVector(const ActionOptions&ao):
   myfunc.read( this );
   // Create the task list
   if( myfunc.doWithTasks() ) {
-    doAtEnd=false; if( shape[0]>0 ) done_in_chain=true;
+    doAtEnd=false; 
   } else { plumed_assert( getNumberOfArguments()==1 ); getPntrToArgument(0)->buildDataStore(); }
   // Get the names of the components
   std::vector<std::string> components( keywords.getOutputComponents() );

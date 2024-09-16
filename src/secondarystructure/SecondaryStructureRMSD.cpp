@@ -235,22 +235,21 @@ void SecondaryStructureRMSD::performTask( const unsigned& current, MultiValue& m
       }
 
       const double inpairs = 1./static_cast<double>(drmsd_targets[i].size());
-      unsigned ostrn = getConstPntrToComponent(i)->getPositionInStream();
-      drmsd = sqrt(inpairs*drmsd); myvals.setValue( ostrn, drmsd );
+      drmsd = sqrt(inpairs*drmsd); myvals.setValue( i, drmsd );
 
       if( !doNotCalculateDerivatives() ) {
         double scalef = inpairs / drmsd;
         for(unsigned j=0; j<natoms; ++j) {
           const unsigned ja = getAtomIndex( current, j );
-          myvals.addDerivative( ostrn, 3*ja + 0, scalef*deriv[j][0] ); myvals.updateIndex( ostrn, 3*ja+0 );
-          myvals.addDerivative( ostrn, 3*ja + 1, scalef*deriv[j][1] ); myvals.updateIndex( ostrn, 3*ja+1 );
-          myvals.addDerivative( ostrn, 3*ja + 2, scalef*deriv[j][2] ); myvals.updateIndex( ostrn, 3*ja+2 );
+          myvals.addDerivative( i, 3*ja + 0, scalef*deriv[j][0] ); myvals.updateIndex( i, 3*ja+0 );
+          myvals.addDerivative( i, 3*ja + 1, scalef*deriv[j][1] ); myvals.updateIndex( i, 3*ja+1 );
+          myvals.addDerivative( i, 3*ja + 2, scalef*deriv[j][2] ); myvals.updateIndex( i, 3*ja+2 );
         }
         unsigned nbase = myvals.getNumberOfDerivatives() - 9;
         for(unsigned k=0; k<3; ++k) {
           for(unsigned j=0; j<3; ++j) {
-            myvals.addDerivative( ostrn, nbase + 3*k + j, scalef*vir(k,j) );
-            myvals.updateIndex( ostrn, nbase + 3*k + j );
+            myvals.addDerivative( i, nbase + 3*k + j, scalef*vir(k,j) );
+            myvals.updateIndex( i, nbase + 3*k + j );
           }
         }
       }
@@ -259,23 +258,22 @@ void SecondaryStructureRMSD::performTask( const unsigned& current, MultiValue& m
     const unsigned rs = myrmsd.size();
     for(unsigned i=0; i<rs; ++i) {
       double nr = myrmsd[i].calculate( pos, deriv, false );
-      unsigned ostrn = getConstPntrToComponent(i)->getPositionInStream();
-      myvals.setValue( ostrn, nr );
+      myvals.setValue( i, nr );
 
       if( !doNotCalculateDerivatives() ) {
         Tensor vir; vir.zero();
         for(unsigned j=0; j<natoms; ++j) {
           const unsigned ja = getAtomIndex( current, j );
-          myvals.addDerivative( ostrn, 3*ja + 0, deriv[j][0] ); myvals.updateIndex( ostrn, 3*colvar_atoms[current][j]+0 );
-          myvals.addDerivative( ostrn, 3*ja + 1, deriv[j][1] ); myvals.updateIndex( ostrn, 3*colvar_atoms[current][j]+1 );
-          myvals.addDerivative( ostrn, 3*ja + 2, deriv[j][2] ); myvals.updateIndex( ostrn, 3*colvar_atoms[current][j]+2 );
+          myvals.addDerivative( i, 3*ja + 0, deriv[j][0] ); myvals.updateIndex( i, 3*colvar_atoms[current][j]+0 );
+          myvals.addDerivative( i, 3*ja + 1, deriv[j][1] ); myvals.updateIndex( i, 3*colvar_atoms[current][j]+1 );
+          myvals.addDerivative( i, 3*ja + 2, deriv[j][2] ); myvals.updateIndex( i, 3*colvar_atoms[current][j]+2 );
           vir+=(-1.0*Tensor( pos[j], deriv[j] ));
         }
         unsigned nbase = myvals.getNumberOfDerivatives() - 9;
         for(unsigned k=0; k<3; ++k) {
           for(unsigned j=0; j<3; ++j) {
-            myvals.addDerivative( ostrn, nbase + 3*k + j, vir(k,j) );
-            myvals.updateIndex( ostrn, nbase + 3*k + j );
+            myvals.addDerivative( i, nbase + 3*k + j, vir(k,j) );
+            myvals.updateIndex( i, nbase + 3*k + j );
           }
         }
       }

@@ -152,21 +152,20 @@ void ThreeBodyGFunctions::performTask( const unsigned& task_index, MultiValue& m
       double weightij = weighti*weightj;
       // Now compute all symmetry functions
       for(unsigned n=0; n<functions.size(); ++n) {
-        unsigned ostrn = getConstPntrToComponent(n)->getPositionInStream();
-        double nonweight = functions[n].evaluate( values ); myvals.addValue( ostrn, nonweight*weightij );
+        double nonweight = functions[n].evaluate( values ); myvals.addValue( n, nonweight*weightij );
         if( doNotCalculateDerivatives() ) continue;
 
         for(unsigned m=0; m<functions[n].getNumberOfArguments(); ++m) {
           double der = weightij*functions[n].evaluateDeriv( m, values );
-          myvals.addDerivative( ostrn, ipos, der*der_i[m][0] );
-          myvals.addDerivative( ostrn, matsize+ipos, der*der_i[m][1] );
-          myvals.addDerivative( ostrn, 2*matsize+ipos, der*der_i[m][2] );
-          myvals.addDerivative( ostrn, jpos, der*der_j[m][0] );
-          myvals.addDerivative( ostrn, matsize+jpos, der*der_j[m][1] );
-          myvals.addDerivative( ostrn, 2*matsize+jpos, der*der_j[m][2] );
+          myvals.addDerivative( n, ipos, der*der_i[m][0] );
+          myvals.addDerivative( n, matsize+ipos, der*der_i[m][1] );
+          myvals.addDerivative( n, 2*matsize+ipos, der*der_i[m][2] );
+          myvals.addDerivative( n, jpos, der*der_j[m][0] );
+          myvals.addDerivative( n, matsize+jpos, der*der_j[m][1] );
+          myvals.addDerivative( n, 2*matsize+jpos, der*der_j[m][2] );
         }
-        myvals.addDerivative( ostrn, 3*matsize+ipos, nonweight*weightj );
-        myvals.addDerivative( ostrn, 3*matsize+jpos, nonweight*weighti );
+        myvals.addDerivative( n, 3*matsize+ipos, nonweight*weightj );
+        myvals.addDerivative( n, 3*matsize+jpos, nonweight*weighti );
       }
     }
   }
@@ -180,9 +179,8 @@ void ThreeBodyGFunctions::performTask( const unsigned& task_index, MultiValue& m
     if( weighti<epsilon ) continue ;
 
     for(unsigned n=0; n<functions.size(); ++n) {
-      unsigned ostrn = getConstPntrToComponent(n)->getPositionInStream();
-      myvals.updateIndex( ostrn, ipos ); myvals.updateIndex( ostrn, matsize+ipos );
-      myvals.updateIndex( ostrn, 2*matsize+ipos ); myvals.updateIndex( ostrn, 3*matsize+ipos );
+      myvals.updateIndex( n, ipos ); myvals.updateIndex( n, matsize+ipos );
+      myvals.updateIndex( n, 2*matsize+ipos ); myvals.updateIndex( n, 3*matsize+ipos );
     }
   }
 }

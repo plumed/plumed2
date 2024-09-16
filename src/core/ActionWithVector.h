@@ -100,8 +100,6 @@ private:
 protected:
 /// A vector that contains the start point for the argument derivatives
   std::vector<unsigned> arg_deriv_starts;
-/// Assert if this action is part of a chain
-  bool done_in_chain;
 /// Turn off the flag that says this action has a masked input
   void ignoreMaskArguments();
 /// This updates whether or not we are using all the task reduction stuff
@@ -179,7 +177,7 @@ public:
 /// Check if there is a force that needs to be accumulated on the ith task
   virtual bool checkForTaskForce( const unsigned& itask, const Value* myval ) const ;
 /// Gather the forces on a particular value
-  virtual void gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const ;
+  virtual void gatherForcesOnStoredValue( const unsigned& ival, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const ;
 /// This is to transfer data from the buffer to the final value
   void finishComputations( const std::vector<double>& buf );
 /// Apply the forces on this data

@@ -58,7 +58,7 @@ public:
 ///
   void getMatrixColumnTitles( std::vector<std::string>& argnames ) const override ;
 ///
-  void gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const override ;
+  void gatherForcesOnStoredValue( const unsigned& ival, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const override ;
 };
 
 PLUMED_REGISTER_ACTION(VStack,"VSTACK")
@@ -95,15 +95,15 @@ VStack::VStack(const ActionOptions& ao):
   // And store this value
   getPntrToComponent(0)->buildDataStore(); getPntrToComponent(0)->reshapeMatrixStore( shape[1] );
   // Setup everything so we can build the store
-  done_in_chain=true; ActionWithVector* av=dynamic_cast<ActionWithVector*>( getPntrToArgument(0)->getPntrToAction() );
+  ActionWithVector* av=dynamic_cast<ActionWithVector*>( getPntrToArgument(0)->getPntrToAction() );
   if( av ) {
     const ActionWithVector* head0 = av->getFirstActionInChain();
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
       ActionWithVector* avv=dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
       if( !avv ) continue;
-      if( head0!=avv->getFirstActionInChain() ) { done_in_chain=false; break; }
+      if( head0!=avv->getFirstActionInChain() ) { break; }
     }
-  } else done_in_chain=false;
+  } 
   unsigned nder = buildArgumentStore(0);
   // This checks which values have been stored
   stored.resize( getNumberOfArguments() ); std::string headstr=getFirstActionInChain()->getLabel();
@@ -139,14 +139,14 @@ int VStack::checkTaskIsActive( const unsigned& itask ) const {
 
 void VStack::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
   unsigned ind2 = index2; if( index2>=getConstPntrToComponent(0)->getShape()[0] ) ind2 = index2 - getConstPntrToComponent(0)->getShape()[0];
-  myvals.addValue( getConstPntrToComponent(0)->getPositionInStream(), getArgumentElement( ind2, index1, myvals ) );
+  myvals.addValue( 0, getArgumentElement( ind2, index1, myvals ) );
 
   if( doNotCalculateDerivatives() ) return;
   addDerivativeOnVectorArgument( stored[ind2], 0, ind2, index1, 1.0, myvals );
 }
 
-void VStack::gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
-  unsigned matind = myval->getPositionInMatrixStash();
+void VStack::gatherForcesOnStoredValue( const unsigned& ival, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
+  unsigned matind = getConstPntrToComponent(ival)->getPositionInMatrixStash();
   for(unsigned i=0; i<forces.size(); ++i) forces[i] += myvals.getStashedMatrixForce( matind, i );
 }
 
@@ -156,23 +156,9 @@ void VStack::runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> 
   unsigned nmat = getConstPntrToComponent(0)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixRowDerivatives( nmat );
   std::vector<unsigned>& matrix_indices( myvals.getMatrixRowDerivativeIndices( nmat ) );
   plumed_assert( nmat_ind<matrix_indices.size() );
-  if( actionInChain() ) {
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      unsigned istrn = getPntrToArgument(i)->getPositionInStream();
-      for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
-        bool found=false; unsigned thisind=myvals.getActiveIndex(istrn,k);
-        for(unsigned j=0; j<nmat_ind; ++j) {
-          if( thisind==matrix_indices[j] ) { found=true; break; }
-        }
-        if( !found ) { matrix_indices[nmat_ind] = thisind; nmat_ind++; }
-      }
-    }
-    myvals.setNumberOfMatrixRowDerivatives( nmat, nmat_ind );
-  } else {
-    unsigned ncols = getConstPntrToComponent(0)->getShape()[0];
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) matrix_indices[i] = i*ncols + ival;
-    myvals.setNumberOfMatrixRowDerivatives( nmat, getNumberOfArguments() );
-  }
+  unsigned ncols = getConstPntrToComponent(0)->getShape()[0];
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) matrix_indices[i] = i*ncols + ival;
+  myvals.setNumberOfMatrixRowDerivatives( nmat, getNumberOfArguments() );
 }
 
 }

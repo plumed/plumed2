@@ -259,13 +259,12 @@ void RMSDVector::performTask( const unsigned& current, MultiValue& myvals ) cons
     for(unsigned j=0; j<3; ++j) pos[i][j] = getPntrToArgument(0)->get( j*natoms + i );
   }
   double r = calculateRMSD( current, pos, der, direction );
-  unsigned ostrn = getConstPntrToComponent(0)->getPositionInStream();
-  myvals.setValue( ostrn, r );
+  myvals.setValue( 0, r );
 
   if( doNotCalculateDerivatives() ) return;
 
   for(unsigned i=0; i<natoms; i++) {
-    for(unsigned j=0; j<3; ++j ) { myvals.addDerivative( ostrn, j*natoms+i, der[i][j] ); myvals.updateIndex( ostrn, j*natoms+i ); }
+    for(unsigned j=0; j<3; ++j ) { myvals.addDerivative( 0, j*natoms+i, der[i][j] ); myvals.updateIndex( 0, j*natoms+i ); }
   }
 }
 
@@ -279,8 +278,8 @@ void RMSDVector::gatherStoredValue( const unsigned& valindex, const unsigned& co
   }
 }
 
-void RMSDVector::gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
-  if( myval->getRank()==1 ) { ActionWithVector::gatherForcesOnStoredValue( myval, itask, myvals, forces ); return; }
+void RMSDVector::gatherForcesOnStoredValue( const unsigned& ival, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
+  if( getConstPntrToComponent(ival)->getRank()==1 ) { ActionWithVector::gatherForcesOnStoredValue( ival, itask, myvals, forces ); return; }
   const std::vector<Vector>& direction( myvals.getConstFirstAtomDerivativeVector()[1] ); unsigned natoms = direction.size();
   for(unsigned i=0; i<natoms; ++i) {
     for(unsigned j=0; j<3; ++j ) forces[j*natoms+i] += direction[i][j];

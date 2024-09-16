@@ -149,7 +149,7 @@ void MatrixTimesMatrix::setupForTask( const unsigned& task_index, std::vector<un
 }
 
 void MatrixTimesMatrix::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
-  unsigned ostrn = getConstPntrToComponent(0)->getPositionInStream(), ind2=index2;
+  unsigned ind2=index2;
   if( index2>=getPntrToArgument(0)->getShape()[0] ) ind2 = index2 - getPntrToArgument(0)->getShape()[0];
 
   Value* myarg = getPntrToArgument(0);
@@ -179,18 +179,18 @@ void MatrixTimesMatrix::performTask( const std::string& controller, const unsign
       } else matval+= val1*val2;
 
       if( !squared || doNotCalculateDerivatives() ) continue ;
-      myvals.addDerivative( ostrn, index1*ncols + i, val2 ); myvals.updateIndex( ostrn, index1*ncols + i );
-      myvals.addDerivative( ostrn, base + kind*ncols2 + colno[i], val1 ); myvals.updateIndex( ostrn, base + kind*ncols2 + colno[i] );
+      myvals.addDerivative( 0, index1*ncols + i, val2 ); myvals.updateIndex( 0, index1*ncols + i );
+      myvals.addDerivative( 0, base + kind*ncols2 + colno[i], val1 ); myvals.updateIndex( 0, base + kind*ncols2 + colno[i] );
     }
     // And add this part of the product
     if( !squared ) matval = sqrt(matval);
-    myvals.addValue( ostrn, matval );
+    myvals.addValue( 0, matval );
     if( squared || doNotCalculateDerivatives() ) return;
 
     for(unsigned i=0; i<nmult; ++i) {
       unsigned kind = myarg->getRowIndex( index1, i ); if( colno[i]<0 ) continue;
-      myvals.addDerivative( ostrn, index1*ncols + i, dvec1[i]/(2*matval) ); myvals.updateIndex( ostrn, index1*ncols + i );
-      myvals.addDerivative( ostrn, base + i*ncols2 + colno[i], dvec2[i]/(2*matval) ); myvals.updateIndex( ostrn, base + i*ncols2 + colno[i] );
+      myvals.addDerivative( 0, index1*ncols + i, dvec1[i]/(2*matval) ); myvals.updateIndex( 0, index1*ncols + i );
+      myvals.addDerivative( 0, base + i*ncols2 + colno[i], dvec2[i]/(2*matval) ); myvals.updateIndex( 0, base + i*ncols2 + colno[i] );
     }
   } else {
     for(unsigned i=0; i<nmult; ++i) {
@@ -211,7 +211,7 @@ void MatrixTimesMatrix::performTask( const std::string& controller, const unsign
     }
     // And add this part of the product
     if( !squared ) matval = sqrt(matval);
-    myvals.addValue( ostrn, matval );
+    myvals.addValue( 0, matval );
     if( squared || doNotCalculateDerivatives() ) return;
 
     for(unsigned i=0; i<nmult; ++i) {

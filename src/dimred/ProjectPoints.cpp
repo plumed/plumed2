@@ -169,7 +169,7 @@ void ProjectPoints::getProjection( const unsigned& current, std::vector<double>&
 
 void ProjectPoints::performTask( const unsigned& current, MultiValue& myvals ) const {
   std::vector<double> point( dimout ); getProjection( current, point );
-  for(unsigned j=0; j<dimout; ++j) myvals.setValue( getConstPntrToComponent(j)->getPositionInStream(), point[j] );
+  for(unsigned j=0; j<dimout; ++j) myvals.setValue( j, point[j] );
 }
 
 void ProjectPoints::calculate() {

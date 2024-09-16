@@ -142,7 +142,7 @@ void OuterProduct::setupForTask( const unsigned& task_index, std::vector<unsigne
 }
 
 void OuterProduct::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
-  unsigned ostrn = getConstPntrToComponent(0)->getPositionInStream(), ind2=index2;
+  unsigned ind2=index2;
   if( index2>=getPntrToArgument(0)->getShape()[0] ) ind2 = index2 - getPntrToArgument(0)->getShape()[0];
   if( diagzero && index1==ind2 ) return;
 
@@ -156,7 +156,7 @@ void OuterProduct::performTask( const std::string& controller, const unsigned& i
     fval=args[0]; if( args[1]>args[0] ) { fval=args[1]; jarg=1; kelem=ind2; jstore=stored_vector2; }
   } else { fval=function.evaluate( args ); }
 
-  myvals.addValue( ostrn, fval );
+  myvals.addValue( 0, fval );
   if( doNotCalculateDerivatives() ) return ;
 
   if( domin || domax ) {

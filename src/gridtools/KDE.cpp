@@ -89,7 +89,7 @@ public:
                           const unsigned& bufstart, std::vector<double>& buffer ) const override ;
   bool checkForTaskForce( const unsigned& itask, const Value* myval ) const override ;
   void updateForceTasksFromValue( const Value* myval, std::vector<unsigned>& force_tasks ) const override ;
-  void gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const override ;
+  void gatherForcesOnStoredValue( const unsigned& ival, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const override ;
 };
 
 PLUMED_REGISTER_ACTION(KDE,"KDE")
@@ -395,7 +395,6 @@ int KDE::checkTaskStatus( const unsigned& taskno, int& flag ) const {
 void KDE::performTask( const unsigned& current, MultiValue& myvals ) const {
   if( numberOfKernels==1 ) {
     double newval; std::vector<double> args( gridobject.getDimension() ), der( gridobject.getDimension() );
-    unsigned valout = getConstPntrToComponent(0)->getPositionInStream();
     gridobject.getGridPointCoordinates( current, args );
     if( getName()=="KDE" ) {
       if( kerneltype=="DISCRETE" ) {
@@ -422,8 +421,8 @@ void KDE::performTask( const unsigned& current, MultiValue& myvals ) const {
       newval = hh*von_misses_norm*exp( von_misses_concentration*dot );
       for(unsigned i=0; i<der.size(); ++i) der[i] = von_misses_concentration*newval*args[i];
     }
-    myvals.setValue( valout, newval );
-    for(unsigned i=0; i<der.size(); ++i) { myvals.addDerivative( valout, i, der[i] ); myvals.updateIndex( valout, i ); }
+    myvals.setValue( 0, newval );
+    for(unsigned i=0; i<der.size(); ++i) { myvals.addDerivative( 0, i, der[i] ); myvals.updateIndex( 0, i ); }
   }
 }
 
@@ -488,8 +487,8 @@ void KDE::gatherStoredValue( const unsigned& valindex, const unsigned& code, con
   plumed_dbg_assert( valindex==0 );
   if( numberOfKernels==1 ) {
     unsigned istart = bufstart + (1+gridobject.getDimension())*code;
-    unsigned valout = getConstPntrToComponent(0)->getPositionInStream(); buffer[istart] += myvals.get( valout );
-    for(unsigned i=0; i<gridobject.getDimension(); ++i) buffer[istart+1+i] += myvals.getDerivative( valout, i );
+    buffer[istart] += myvals.get( 0 );
+    for(unsigned i=0; i<gridobject.getDimension(); ++i) buffer[istart+1+i] += myvals.getDerivative( 0, i );
     return;
   }
   std::vector<double> args( gridobject.getDimension() ); double height; retrieveArgumentsAndHeight( myvals, args, height );
@@ -551,7 +550,7 @@ bool KDE::checkForTaskForce( const unsigned& itask, const Value* myval ) const {
   return checkTaskIsActive( itask );
 }
 
-void KDE::gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
+void KDE::gatherForcesOnStoredValue( const unsigned& ival, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
   if( numberOfKernels==1 ) {
     plumed_error();
     return;
@@ -586,7 +585,7 @@ void KDE::gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, 
       for(unsigned i=0; i<num_neigh; ++i) {
         gridobject.getGridPointCoordinates( neighbors[i], gpoint );
         double dot=0; for(unsigned j=0; j<gpoint.size(); ++j) dot += args[j]*gpoint[j];
-        double fforce = myval->getForce( neighbors[i] ); double newval = height*von_misses_norm*exp( von_misses_concentration*dot );
+        double fforce = getConstPntrToComponent(ival)->getForce( neighbors[i] ); double newval = height*von_misses_norm*exp( von_misses_concentration*dot );
         if( hasheight && getPntrToArgument(args.size())->getRank()==0 ) forces[ hforce_start ] += newval*fforce / height;
         else if( hasheight ) forces[ hforce_start + getPntrToArgument(args.size())->getIndexInStore(itask) ] += newval*fforce / height;
         unsigned n=0; for(unsigned j=0; j<gpoint.size(); ++j) { forces[n + getPntrToArgument(j)->getIndexInStore(itask)] += von_misses_concentration*newval*gpoint[j]*fforce; n += getPntrToArgument(j)->getNumberOfStoredValues(); }

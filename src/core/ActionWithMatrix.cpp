@@ -152,25 +152,25 @@ void ActionWithMatrix::runTask( const std::string& controller, const unsigned& c
   performTask( controller, current, colno, myvals );
   bool hasval = !isAdjacencyMatrix();
   for(int i=0; i<getNumberOfComponents(); ++i) {
-    if( std::fabs(myvals.get( getConstPntrToComponent(i)->getPositionInStream()) )>epsilon ) { hasval=true; break; }
+    if( std::fabs(myvals.get(i))>epsilon ) { hasval=true; break; }
   }
 
   if( hasval ) {
-    double checkval = myvals.get( getConstPntrToComponent(0)->getPositionInStream() );
+    double checkval = myvals.get( 0 );
     for(int i=0; i<getNumberOfComponents(); ++i) {
       const Value* myval=getConstPntrToComponent(i); unsigned ncols = myval->getNumberOfColumns();
       if( myval->getRank()!=2 || myval->hasDerivatives() || !myval->valueIsStored() ) continue;
       unsigned matindex = myval->getPositionInMatrixStash(), col_stash_index = colno;
       if( colno>=myval->getShape()[0] ) col_stash_index = colno - myval->getShape()[0];
       if( myval->forcesWereAdded() ) {
-        unsigned sind = myval->getPositionInStream(); double fforce;
+        double fforce;
         if( ncols<myval->getShape()[1] ) fforce = myval->getForce( myvals.getTaskIndex()*ncols + myval->matrix_bookeeping[current*(1+ncols)] );
         else fforce = myval->getForce( myvals.getTaskIndex()*myval->getShape()[1] + col_stash_index );
-        for(unsigned j=0; j<myvals.getNumberActive(sind); ++j) {
-          unsigned kindex = myvals.getActiveIndex(sind,j); myvals.addMatrixForce( matindex, kindex, fforce*myvals.getDerivative(sind,kindex ) );
+        for(unsigned j=0; j<myvals.getNumberActive(i); ++j) {
+          unsigned kindex = myvals.getActiveIndex(i,j); myvals.addMatrixForce( matindex, kindex, fforce*myvals.getDerivative(i,kindex ) );
         }
       }
-      double finalval = myvals.get( myval->getPositionInStream() ); if( !isAdjacencyMatrix() ) checkval=finalval;
+      double finalval = myvals.get( i ); if( !isAdjacencyMatrix() ) checkval=finalval;
       if( std::fabs(checkval)>epsilon || (!isAdjacencyMatrix() && getNumberOfMasks()>0) ) {
         Value* myv = const_cast<Value*>( myval );
         if( ncols<myval->getShape()[1] ) {
@@ -192,9 +192,9 @@ bool ActionWithMatrix::checkForTaskForce( const unsigned& itask, const Value* my
   return false;
 }
 
-void ActionWithMatrix::gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
-  if( myval->getRank()==1 ) { ActionWithVector::gatherForcesOnStoredValue( myval, itask, myvals, forces ); return; }
-  unsigned matind = myval->getPositionInMatrixStash(); const std::vector<unsigned>& mat_indices( myvals.getMatrixRowDerivativeIndices( matind ) );
+void ActionWithMatrix::gatherForcesOnStoredValue( const unsigned& ival, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
+  if( getConstPntrToComponent(ival)->getRank()==1 ) { ActionWithVector::gatherForcesOnStoredValue( ival, itask, myvals, forces ); return; }
+  unsigned matind = getConstPntrToComponent(ival)->getPositionInMatrixStash(); const std::vector<unsigned>& mat_indices( myvals.getMatrixRowDerivativeIndices( matind ) );
   for(unsigned i=0; i<myvals.getNumberOfMatrixRowDerivatives(matind); ++i) { unsigned kind = mat_indices[i]; forces[kind] += myvals.getStashedMatrixForce( matind, kind ); }
 }
 
@@ -202,7 +202,7 @@ void ActionWithMatrix::clearMatrixElements( MultiValue& myvals ) const {
   if( clearOnEachCycle ) {
     for(int i=0; i<getNumberOfComponents(); ++i) {
       const Value* myval=getConstPntrToComponent(i);
-      if( myval->getRank()==2 && !myval->hasDerivatives() ) myvals.clearDerivatives( myval->getPositionInStream() );
+      if( myval->getRank()==2 && !myval->hasDerivatives() ) myvals.clearDerivatives( i );
     }
   }
   if( matrix_to_do_after ) matrix_to_do_after->clearMatrixElements( myvals );

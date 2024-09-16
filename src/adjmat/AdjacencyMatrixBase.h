@@ -75,36 +75,33 @@ void AdjacencyMatrixBase::addAtomDerivatives( const unsigned& indno, const Vecto
   if( doNotCalculateDerivatives() ) return;
   plumed_dbg_assert( indno<2 ); unsigned index = myvals.getTaskIndex();
   if( indno==1 ) index = myvals.getSecondTaskIndex();
-  unsigned w_index = getConstPntrToComponent(0)->getPositionInStream();
-  myvals.addDerivative( w_index, 3*index+0, der[0] );
-  myvals.addDerivative( w_index, 3*index+1, der[1] );
-  myvals.addDerivative( w_index, 3*index+2, der[2] );
+  myvals.addDerivative( 0, 3*index+0, der[0] );
+  myvals.addDerivative( 0, 3*index+1, der[1] );
+  myvals.addDerivative( 0, 3*index+2, der[2] );
 }
 
 inline
 void AdjacencyMatrixBase::addThirdAtomDerivatives( const unsigned& indno, const Vector& der, MultiValue& myvals ) const {
   if( doNotCalculateDerivatives() ) return;
   unsigned index = myvals.getIndices()[ indno + myvals.getSplitIndex() ];
-  unsigned w_index = getConstPntrToComponent(0)->getPositionInStream();
-  myvals.addDerivative( w_index, 3*index+0, der[0] );
-  myvals.addDerivative( w_index, 3*index+1, der[1] );
-  myvals.addDerivative( w_index, 3*index+2, der[2] );
+  myvals.addDerivative( 0, 3*index+0, der[0] );
+  myvals.addDerivative( 0, 3*index+1, der[1] );
+  myvals.addDerivative( 0, 3*index+2, der[2] );
 }
 
 inline
 void AdjacencyMatrixBase::addBoxDerivatives( const Tensor& vir, MultiValue& myvals ) const {
   if( doNotCalculateDerivatives() ) return;
   unsigned nbase = 3*getNumberOfAtoms();
-  unsigned w_index = getConstPntrToComponent(0)->getPositionInStream();
-  myvals.addDerivative( w_index, nbase+0, vir(0,0) );
-  myvals.addDerivative( w_index, nbase+1, vir(0,1) );
-  myvals.addDerivative( w_index, nbase+2, vir(0,2) );
-  myvals.addDerivative( w_index, nbase+3, vir(1,0) );
-  myvals.addDerivative( w_index, nbase+4, vir(1,1) );
-  myvals.addDerivative( w_index, nbase+5, vir(1,2) );
-  myvals.addDerivative( w_index, nbase+6, vir(2,0) );
-  myvals.addDerivative( w_index, nbase+7, vir(2,1) );
-  myvals.addDerivative( w_index, nbase+8, vir(2,2) );
+  myvals.addDerivative( 0, nbase+0, vir(0,0) );
+  myvals.addDerivative( 0, nbase+1, vir(0,1) );
+  myvals.addDerivative( 0, nbase+2, vir(0,2) );
+  myvals.addDerivative( 0, nbase+3, vir(1,0) );
+  myvals.addDerivative( 0, nbase+4, vir(1,1) );
+  myvals.addDerivative( 0, nbase+5, vir(1,2) );
+  myvals.addDerivative( 0, nbase+6, vir(2,0) );
+  myvals.addDerivative( 0, nbase+7, vir(2,1) );
+  myvals.addDerivative( 0, nbase+8, vir(2,2) );
 }
 
 inline

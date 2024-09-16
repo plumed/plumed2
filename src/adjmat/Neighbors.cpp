@@ -130,7 +130,7 @@ void Neighbors::setupForTask( const unsigned& task_index, std::vector<unsigned>&
 }
 
 void Neighbors::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
-  myvals.addValue( getConstPntrToComponent(0)->getPositionInStream(), 1.0 );
+  myvals.addValue( 0, 1.0 );
 }
 
 }

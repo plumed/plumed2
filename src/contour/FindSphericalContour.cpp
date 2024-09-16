@@ -186,7 +186,7 @@ void FindSphericalContour::performTask( const unsigned& current, MultiValue& myv
     if( val1*val2<0 ) {
       findContour( direction, contour_point );
       double norm=0; for(unsigned j=0; j<3; ++j) norm += contour_point[j]*contour_point[j];
-      myvals.setValue( getConstPntrToComponent(0)->getPositionInStream(), sqrt(norm) ); found=true; break;
+      myvals.setValue( 0, sqrt(norm) ); found=true; break;
     }
     for(unsigned j=0; j<3; ++j) contour_point[j] = tmp[j];
   }
@@ -196,7 +196,7 @@ void FindSphericalContour::performTask( const unsigned& current, MultiValue& myv
 void FindSphericalContour::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
     const unsigned& bufstart, std::vector<double>& buffer ) const {
   plumed_assert( valindex==0 ); unsigned istart = bufstart + (1+gridcoords.getDimension())*code;
-  unsigned valout = getConstPntrToComponent(0)->getPositionInStream(); buffer[istart] += myvals.get( valout );
+  buffer[istart] += myvals.get( 0 );
 }
 
 }

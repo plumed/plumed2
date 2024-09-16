@@ -87,7 +87,7 @@ private:
 /// Does this quanity have derivatives
   bool hasDeriv;
 /// Variables for storing data
-  unsigned bufstart, streampos, matpos, ngrid_der, ncols;
+  unsigned bufstart, matpos, ngrid_der, ncols;
 /// If we are storing a matrix is it symmetric?
   bool symmetric;
 /// This is a bookeeping array that holds the non-zero elements of the "sparse" matrix
@@ -213,8 +213,6 @@ public:
   void setDerivativeIsZeroWhenValueIsZero();
 /// Return a bool that tells us if the derivative is zero when the value is zero
   bool isDerivativeZeroWhenValueIsZero() const ;
-///
-  unsigned getPositionInStream() const ;
 /// This stuff handles where to look for the start of the row that contains the row of the matrix
   void setPositionInMatrixStash( const unsigned& p );
   unsigned getPositionInMatrixStash() const ;
@@ -432,11 +430,6 @@ void Value::setDerivativeIsZeroWhenValueIsZero() {
 inline
 bool Value::isDerivativeZeroWhenValueIsZero() const {
   return derivativeIsZeroWhenValueIsZero;
-}
-
-inline
-unsigned Value::getPositionInStream() const {
-  return streampos;
 }
 
 inline

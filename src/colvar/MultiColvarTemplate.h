@@ -166,7 +166,7 @@ void MultiColvarTemplate<T>::performTask( const unsigned& task_index, MultiValue
   }
   // Calculate the CVs using the method in the Colvar
   T::calculateCV( mode, mass, charge, fpositions, values, derivs, virial, this );
-  for(unsigned i=0; i<values.size(); ++i) myvals.setValue( getConstPntrToComponent(i)->getPositionInStream(), values[i] );
+  for(unsigned i=0; i<values.size(); ++i) myvals.setValue( i, values[i] );
   // Finish if there are no derivatives
   if( doNotCalculateDerivatives() ) return;
 
@@ -174,10 +174,9 @@ void MultiColvarTemplate<T>::performTask( const unsigned& task_index, MultiValue
   for(unsigned i=0; i<ablocks.size(); ++i) {
     unsigned base=3*ablocks[i][task_index];
     for(int j=0; j<getNumberOfComponents(); ++j) {
-      unsigned jval=getConstPntrToComponent(j)->getPositionInStream();
-      myvals.addDerivative( jval, base + 0, derivs[j][i][0] );
-      myvals.addDerivative( jval, base + 1, derivs[j][i][1] );
-      myvals.addDerivative( jval, base + 2, derivs[j][i][2] );
+      myvals.addDerivative( j, base + 0, derivs[j][i][0] );
+      myvals.addDerivative( j, base + 1, derivs[j][i][1] );
+      myvals.addDerivative( j, base + 2, derivs[j][i][2] );
     }
     // Check for duplicated indices during update to avoid double counting
     bool newi=true;
@@ -186,19 +185,17 @@ void MultiColvarTemplate<T>::performTask( const unsigned& task_index, MultiValue
     }
     if( !newi ) continue;
     for(int j=0; j<getNumberOfComponents(); ++j) {
-      unsigned jval=getConstPntrToComponent(j)->getPositionInStream();
-      myvals.updateIndex( jval, base );
-      myvals.updateIndex( jval, base + 1 );
-      myvals.updateIndex( jval, base + 2 );
+      myvals.updateIndex( j, base );
+      myvals.updateIndex( j, base + 1 );
+      myvals.updateIndex( j, base + 2 );
     }
   }
   unsigned nvir=3*getNumberOfAtoms();
   for(int j=0; j<getNumberOfComponents(); ++j) {
-    unsigned jval=getConstPntrToComponent(j)->getPositionInStream();
     for(unsigned i=0; i<3; ++i) {
       for(unsigned k=0; k<3; ++k) {
-        myvals.addDerivative( jval, nvir + 3*i + k, virial[j][i][k] );
-        myvals.updateIndex( jval, nvir + 3*i + k );
+        myvals.addDerivative( j, nvir + 3*i + k, virial[j][i][k] );
+        myvals.updateIndex( j, nvir + 3*i + k );
       }
     }
   }

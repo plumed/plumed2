@@ -226,13 +226,13 @@ void FindContourSurface::performTask( const unsigned& current, MultiValue& myval
     std::string num; Tools::convert( getStep(), num );
     error("On step " + num + " failed to find required grid point");
   }
-  myvals.setValue( getConstPntrToComponent(0)->getPositionInStream(), minp );
+  myvals.setValue( 0, minp );
 }
 
 void FindContourSurface::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
     const unsigned& bufstart, std::vector<double>& buffer ) const {
   plumed_dbg_assert( valindex==0 ); unsigned istart = bufstart + (1+gridcoords.getDimension())*code;
-  unsigned valout = getConstPntrToComponent(0)->getPositionInStream(); buffer[istart] += myvals.get( valout );
+  buffer[istart] += myvals.get( 0 );
 }
 
 }

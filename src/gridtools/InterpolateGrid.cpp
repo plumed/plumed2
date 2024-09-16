@@ -68,7 +68,7 @@ public:
   void performTask( const unsigned& current, MultiValue& myvals ) const override ;
   void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
                           const unsigned& bufstart, std::vector<double>& buffer ) const ;
-  void gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const override ;
+  void gatherForcesOnStoredValue( const unsigned& ival, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const override ;
 };
 
 PLUMED_REGISTER_ACTION(InterpolateGrid,"INTERPOLATE_GRID")
@@ -161,19 +161,19 @@ std::vector<std::string> InterpolateGrid::getGridCoordinateNames() const {
 void InterpolateGrid::performTask( const unsigned& current, MultiValue& myvals ) const {
   std::vector<double> pos( output_grid.getDimension() ); output_grid.getGridPointCoordinates( current, pos );
   std::vector<double> val(1); Matrix<double> der( 1, output_grid.getDimension() ); input_grid.calc( this, pos, val, der );
-  unsigned ostrn = getConstPntrToComponent(0)->getPositionInStream(); myvals.setValue( ostrn, val[0] );
-  for(unsigned i=0; i<output_grid.getDimension(); ++i) { myvals.addDerivative( ostrn, i, der(0,i) ); myvals.updateIndex( ostrn, i ); }
+  myvals.setValue( 0, val[0] );
+  for(unsigned i=0; i<output_grid.getDimension(); ++i) { myvals.addDerivative( 0, i, der(0,i) ); myvals.updateIndex( 0, i ); }
 }
 
 void InterpolateGrid::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
     const unsigned& bufstart, std::vector<double>& buffer ) const {
-  plumed_dbg_assert( valindex==0 ); unsigned ostrn = getConstPntrToComponent(0)->getPositionInStream();
-  unsigned istart = bufstart + (1+output_grid.getDimension())*code; buffer[istart] += myvals.get( ostrn );
-  for(unsigned i=0; i<output_grid.getDimension(); ++i) buffer[istart+1+i] += myvals.getDerivative( ostrn, i );
+  plumed_dbg_assert( valindex==0 ); 
+  unsigned istart = bufstart + (1+output_grid.getDimension())*code; buffer[istart] += myvals.get( 0 );
+  for(unsigned i=0; i<output_grid.getDimension(); ++i) buffer[istart+1+i] += myvals.getDerivative( 0, i );
 }
 
-void InterpolateGrid::gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
-  std::vector<double> pos(output_grid.getDimension()); double ff = myval->getForce(itask);
+void InterpolateGrid::gatherForcesOnStoredValue( const unsigned& ival, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
+  std::vector<double> pos(output_grid.getDimension()); double ff = getConstPntrToComponent(ival)->getForce(itask);
   output_grid.getGridPointCoordinates( itask, pos ); input_grid.applyForce( this, pos, ff, forces );
 }
 

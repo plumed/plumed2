@@ -121,7 +121,7 @@ void TorsionsMatrix::setupForTask( const unsigned& task_index, std::vector<unsig
 }
 
 void TorsionsMatrix::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
-  unsigned ostrn = getConstPntrToComponent(0)->getPositionInStream(), ind2=index2;
+  unsigned ind2=index2;
   if( index2>=getPntrToArgument(0)->getShape()[0] ) ind2 = index2 - getPntrToArgument(0)->getShape()[0];
 
   Vector v1, v2, dv1, dv2, dconn;
@@ -136,7 +136,7 @@ void TorsionsMatrix::performTask( const std::string& controller, const unsigned&
   }
   // Evaluate angle
   Torsion t; double angle = t.compute( v1, conn, v2, dv1, dconn, dv2 );
-  myvals.addValue( ostrn, angle );
+  myvals.addValue( 0, angle );
 
   if( doNotCalculateDerivatives() ) return;
 
@@ -148,12 +148,12 @@ void TorsionsMatrix::performTask( const std::string& controller, const unsigned&
   // And derivatives on positions
   unsigned narg_derivatives = getPntrToArgument(0)->getNumberOfValues() + getPntrToArgument(1)->getNumberOfValues();
   for(unsigned i=0; i<3; ++i) {
-    myvals.addDerivative( ostrn, narg_derivatives + 3*index1+i, -dconn[i] ); myvals.addDerivative( ostrn, narg_derivatives + 3*index2+i, dconn[i] );
-    myvals.updateIndex( ostrn, narg_derivatives + 3*index1+i ); myvals.updateIndex( ostrn, narg_derivatives + 3*index2+i );
+    myvals.addDerivative( 0, narg_derivatives + 3*index1+i, -dconn[i] ); myvals.addDerivative( 0, narg_derivatives + 3*index2+i, dconn[i] );
+    myvals.updateIndex( 0, narg_derivatives + 3*index1+i ); myvals.updateIndex( 0, narg_derivatives + 3*index2+i );
   }
   //And virial
   Tensor vir( -extProduct( conn, dconn ) ); unsigned virbase = narg_derivatives + 3*getNumberOfAtoms();
-  for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j ) { myvals.addDerivative( ostrn, virbase+3*i+j, vir(i,j) ); myvals.updateIndex( ostrn, virbase+3*i+j ); }
+  for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j ) { myvals.addDerivative( 0, virbase+3*i+j, vir(i,j) ); myvals.updateIndex( 0, virbase+3*i+j ); }
 }
 
 void TorsionsMatrix::runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const {

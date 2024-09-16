@@ -87,20 +87,19 @@ unsigned MatrixProductDiagonal::getNumberOfDerivatives() {
 }
 
 void MatrixProductDiagonal::performTask( const unsigned& task_index, MultiValue& myvals ) const {
-  unsigned ostrn = getConstPntrToComponent(0)->getPositionInStream();
   Value* arg1 = getPntrToArgument(0); Value* arg2 = getPntrToArgument(1);
   if( arg1->getRank()==1 ) {
     double val1 = arg1->get( task_index );
     double val2 = arg2->get( task_index );
-    myvals.addValue( ostrn, val1*val2 );
+    myvals.addValue( 0, val1*val2 );
 
     if( doNotCalculateDerivatives() ) return;
 
-    myvals.addDerivative( ostrn, task_index, val2 );
-    myvals.updateIndex( ostrn, task_index );
+    myvals.addDerivative( 0, task_index, val2 );
+    myvals.updateIndex( 0, task_index );
     unsigned nvals = getPntrToArgument(0)->getNumberOfValues();
-    myvals.addDerivative( ostrn, nvals + task_index, val1 );
-    myvals.updateIndex( ostrn, nvals + task_index );
+    myvals.addDerivative( 0, nvals + task_index, val1 );
+    myvals.updateIndex( 0, nvals + task_index );
   } else {
     unsigned nmult = arg1->getRowLength(task_index);
     unsigned nrowsA = getPntrToArgument(0)->getShape()[1];
@@ -116,13 +115,13 @@ void MatrixProductDiagonal::performTask( const unsigned& task_index, MultiValue&
 
       if( doNotCalculateDerivatives() ) continue;
 
-      myvals.addDerivative( ostrn, task_index*nrowsA + kind, val2 );
-      myvals.updateIndex( ostrn, task_index*nrowsA + kind );
-      myvals.addDerivative( ostrn, nvals1 + kind*nrowsB + task_index, val1 );
-      myvals.updateIndex( ostrn, nvals1 + kind*nrowsB + task_index );
+      myvals.addDerivative( 0, task_index*nrowsA + kind, val2 );
+      myvals.updateIndex( 0, task_index*nrowsA + kind );
+      myvals.addDerivative( 0, nvals1 + kind*nrowsB + task_index, val1 );
+      myvals.updateIndex( 0, nvals1 + kind*nrowsB + task_index );
     }
     // And add this part of the product
-    myvals.addValue( ostrn, matval );
+    myvals.addValue( 0, matval );
   }
 }
 

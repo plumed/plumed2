@@ -184,7 +184,7 @@ void FindContour::performTask( const unsigned& current, MultiValue& myvals ) con
   // Now find the contour
   findContour( direction, point );
   // And transfer to the store data vessel
-  for(unsigned i=0; i<getPntrToArgument(0)->getRank(); ++i) myvals.setValue( getConstPntrToComponent(i)->getPositionInStream(), point[i] );
+  for(unsigned i=0; i<getPntrToArgument(0)->getRank(); ++i) myvals.setValue( i, point[i] );
 }
 
 }

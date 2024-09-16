@@ -68,8 +68,7 @@ ActionWithVector::ActionWithVector(const ActionOptions&ao):
   action_to_do_after(NULL),
   never_reduce_tasks(false),
   reduce_tasks(false),
-  atomsWereRetrieved(false),
-  done_in_chain(false)
+  atomsWereRetrieved(false)
 {
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     ActionWithVector* av = dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
@@ -173,140 +172,6 @@ bool ActionWithVector::argumentDependsOn( const std::string& headstr, ActionWith
 }
 
 unsigned ActionWithVector::buildArgumentStore( const unsigned& argstart ) {
-  // Don't use chains for grids
-  for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
-    if( getPntrToArgument(i)->isConstant() ) continue;
-    ActionWithVector* av=dynamic_cast<ActionWithVector*>(getPntrToArgument(i)->getPntrToAction());
-    if( !av || getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->hasDerivatives() ) { done_in_chain=false; break; }
-  }
-  if( getenvChainForbidden()==Option::yes ) done_in_chain=false;
-
-  if( done_in_chain ) {
-    std::vector<std::string> alabels; std::vector<ActionWithVector*> f_actions;
-    for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
-      bool found=false; std::string mylab = (getPntrToArgument(i)->getPntrToAction())->getLabel();
-      for(unsigned j=0; j<alabels.size(); ++j) {
-        if( alabels[j]==mylab ) { found=true; break; }
-      }
-      if( !found ) alabels.push_back( mylab );
-
-      // If this is calculated in setup we never need to add to chain
-      if( getPntrToArgument(i)->isConstant() ) continue;
-      // Find the chain we need to add this to from the arguments
-      ActionWithVector* av=dynamic_cast<ActionWithVector*>(getPntrToArgument(i)->getPntrToAction()); plumed_assert( av );
-      found=false; ActionWithVector* myact = av->getFirstActionInChain();
-      if( getPntrToArgument(i)->getRank()==1 && getPntrToArgument(i)->storedata ) {
-        for(unsigned j=argstart; j<getNumberOfArguments(); ++j) {
-          ActionWithArguments* aarg=dynamic_cast<ActionWithArguments*>( getPntrToArgument(j)->getPntrToAction() );
-          if( !aarg || i==j ) continue;
-          for(unsigned k=0; k<aarg->getNumberOfArguments(); ++k) {
-            if( aarg->getPntrToArgument(k)==getPntrToArgument(i) ) { done_in_chain=false; return reallyBuildArgumentStore( argstart ); }
-          }
-        }
-      }
-      for(unsigned j=0; j<f_actions.size(); ++j) {
-        if( f_actions[j]==myact ) { found=true; break; }
-      }
-      if( !found ) {
-        if( f_actions.size()>0 ) {
-          if( f_actions[0]->checkForDependency(myact) ) getPntrToArgument(i)->buildDataStore();
-          if( myact->checkForDependency(f_actions[0]) ) error("cannot deal with arguments in this order. Try swapping argument order");
-        }
-        if( !getPntrToArgument(i)->storedata && getPntrToArgument(i)->getRank()>0 ) f_actions.push_back( myact );
-      }
-    }
-    // Now make sure that everything we need is in the chain
-    if( f_actions.size()>0 ) {
-      // Check everything for later f_actions is done before f_actions[0]
-      for(unsigned i=1; i<f_actions.size(); ++i) {
-        ActionWithArguments* aarg = dynamic_cast<ActionWithArguments*>( f_actions[i] );
-        if( !aarg || aarg->getNumberOfArguments()==0 ) continue;
-        for(unsigned j=0; j<aarg->getNumberOfArguments(); ++j) {
-          if( (aarg->getPntrToArgument(j))->isConstant() ) continue ;
-          bool found=false; std::string dep_argname = (aarg->getPntrToArgument(j))->getPntrToAction()->getLabel();
-          for(const auto & pp : plumed.getActionSet()) {
-            Action* p(pp.get());
-            // Check if this is the dependency
-            if( p->getLabel()==dep_argname ) { found=true; break; }
-            // Check if this is the first of the arguments that will appear in this chain
-            else if( p->getLabel()==f_actions[0]->getLabel() ) break;
-          }
-          if( !found ) { done_in_chain=false; break; }
-        }
-        // Stop trying to add things in the chain if we cannot
-        if( !done_in_chain ) return reallyBuildArgumentStore( argstart );
-      }
-      std::vector<std::string> empty(1); empty[0] = f_actions[0]->getLabel();
-      for(unsigned i=1; i<f_actions.size(); ++i) f_actions[0]->addActionToChain( empty, f_actions[i] );
-    }
-    // Now add this argument to the chain
-    bool added=false;
-    for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
-      // Add this function to jobs to do in recursive loop in previous action
-      if( getPntrToArgument(i)->getRank()>0 && !getPntrToArgument(i)->isConstant() ) {
-        ActionWithVector* av=dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
-        if( av && av->addActionToChain( alabels, this ) ) { added=true; break; }
-      }
-    }
-    plumed_massert(added, "could not add action " + getLabel() + " to chain of any of its arguments");
-    // And get the number of derivatives
-    ActionWithVector* head=getFirstActionInChain();
-    unsigned nder=0; arg_deriv_starts.resize( getNumberOfArguments() );
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      // Ensures that we ignore the grid (first argument) if we are evaluating a function on a grid
-      if( i==0 && getName().find("EVALUATE_FUNCTION_FROM_GRID")!=std::string::npos ) continue ;
-      ActionWithVector* iaction=dynamic_cast<ActionWithVector*>(getPntrToArgument(i)->getPntrToAction());
-      if( actionInChain() && !getPntrToArgument(i)->ignoreStoredValue(head->getLabel()) ) {
-        arg_deriv_starts[i] = 0; head->getNumberOfStreamedDerivatives( arg_deriv_starts[i], getPntrToArgument(i) );
-      } else if( iaction && iaction->isInSubChain(nder) ) {
-        arg_deriv_starts[i] = nder;
-        // Add the total number of derivatives that we have by this point in the chain to nder
-        if( iaction ) { nder=0; head->getNumberOfStreamedDerivatives( nder, getPntrToArgument(i) ); }
-      } else {
-        // Check if we have already found this action
-        int k=-1;
-        if( iaction ) {
-          ActionWithVector* ider_action=iaction->getActionWithDerivatives( iaction );
-          for(unsigned j=0; j<i; ++j) {
-            if( j==0 && getName().find("EVALUATE_FUNCTION_FROM_GRID")!=std::string::npos ) continue ;
-            ActionWithVector* jaction=dynamic_cast<ActionWithVector*>(getPntrToArgument(j)->getPntrToAction());
-            if( jaction->getActionWithDerivatives(jaction)==ider_action || jaction->checkForDependency(ider_action) ) { k=j; break; }
-          }
-          if( k>=0 ) { arg_deriv_starts[i] = arg_deriv_starts[k]; continue; }
-        }
-
-        if( i>0 ) {
-          // This is a fudge so that inputs like this work:
-          // c: CONTACT_MATRIX ATOMS=1-100
-          // d: MATRIX_PRODUCT ARG=mat1,mat2
-          // e: CUSTOM ARG=c,d
-          // f: MATRIX_PRODUCT ARG=mat3,mat4
-          // g: CUSTOM ARG=c,f
-          // See symfunc rt-nbonds-q6 for an example
-          // In this example when we set arg_deriv_starts[1] for f in g nder=number of derivatives of c
-          // mder is equal to the number of derivatives by the time you get to f minus the number of derivatives for c
-          unsigned mder=0;
-          ActionWithVector* jaction=dynamic_cast<ActionWithVector*>(getPntrToArgument(i-1)->getPntrToAction());
-          if( jaction->action_to_do_after && !(jaction->action_to_do_after)->getNumberOfStoredValues( getPntrToArgument(i-1), mder, i, getArguments() ) ) mder=0;
-          if( mder>0 ) nder = nder + mder;
-        }
-
-        arg_deriv_starts[i] = nder;
-        // Add the total number of derivatives that we have by this point in the chain to nder
-        if( iaction ) {
-          nder=0;
-          if( (getPntrToArgument(i)->getPntrToAction())->getName().find("DIFFERENCE")!=std::string::npos ) {
-            ActionWithArguments* aarg=dynamic_cast<ActionWithArguments*>( getPntrToArgument(i)->getPntrToAction() );
-            plumed_assert( aarg && aarg->getNumberOfArguments()==2 );
-            head->getNumberOfStreamedDerivatives( nder, aarg->getPntrToArgument(0) );
-            nder += (aarg->getPntrToArgument(1))->getNumberOfValues();
-          } else head->getNumberOfStreamedDerivatives( nder, getPntrToArgument(i) );
-        }
-      }
-    }
-    nder=0; head->getNumberOfStreamedDerivatives( nder, NULL );
-    return nder;
-  }
   return reallyBuildArgumentStore( argstart );
 }
 
@@ -677,7 +542,7 @@ void ActionWithVector::getNumberOfTasks( unsigned& ntasks ) {
 }
 
 void ActionWithVector::setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol ) {
-  for(int i=0; i<getNumberOfComponents(); ++i) { getPntrToComponent(i)->streampos=nquants; nquants++; }
+  for(int i=0; i<getNumberOfComponents(); ++i) { nquants++; }
 }
 
 void ActionWithVector::getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize ) {
@@ -731,7 +596,7 @@ void ActionWithVector::runTask( const unsigned& current, MultiValue& myvals ) co
     if( am || myval->hasDerivatives() || !myval->valueIsStored() ) continue;
     Value* myv = const_cast<Value*>( myval );
     if( getName()=="RMSD_VECTOR" && myv->getRank()==2 ) continue;
-    myv->set( current, myvals.get( myval->getPositionInStream() ) );
+    myv->set( current, myvals.get( i ) );
   }
   if( action_to_do_after ) action_to_do_after->runTask( current, myvals );
 }
@@ -742,12 +607,12 @@ void ActionWithVector::gatherAccumulators( const unsigned& taskCode, const Multi
     // This looks after storing of scalars that are summed from vectors/matrices
     if( getConstPntrToComponent(i)->getRank()==0 ) {
       plumed_dbg_massert( bufstart<buffer.size(), "problem in " + getLabel() );
-      unsigned sind = getConstPntrToComponent(i)->streampos; buffer[bufstart] += myvals.get(sind);
+      buffer[bufstart] += myvals.get(i);
       if( getConstPntrToComponent(i)->hasDerivatives() ) {
-        for(unsigned k=0; k<myvals.getNumberActive(sind); ++k) {
-          unsigned kindex = myvals.getActiveIndex(sind,k);
+        for(unsigned k=0; k<myvals.getNumberActive(i); ++k) {
+          unsigned kindex = myvals.getActiveIndex(i,k);
           plumed_dbg_massert( bufstart+1+kindex<buffer.size(), "problem in " + getLabel()  );
-          buffer[bufstart + 1 + kindex] += myvals.getDerivative(sind,kindex);
+          buffer[bufstart + 1 + kindex] += myvals.getDerivative(i,kindex);
         }
       }
       // This looks after storing of vectors
@@ -885,13 +750,12 @@ void ActionWithVector::getForceTasks( std::vector<unsigned>& force_tasks ) const
   if( action_to_do_after ) action_to_do_after->getForceTasks( force_tasks );
 }
 
-void ActionWithVector::gatherForcesOnStoredValue( const Value* myval, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
-  plumed_dbg_assert( myval->storedata );
+void ActionWithVector::gatherForcesOnStoredValue( const unsigned& ival, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
+  const Value* myval = getConstPntrToComponent(ival); plumed_dbg_assert( myval->storedata );
   double fforce = myval->getForce(itask);
-  unsigned sspos = myval->getPositionInStream();
-  for(unsigned j=0; j<myvals.getNumberActive(sspos); ++j) {
-    unsigned jder=myvals.getActiveIndex(sspos, j); plumed_dbg_assert( jder<forces.size() );
-    forces[jder] += fforce*myvals.getDerivative( sspos, jder );
+  for(unsigned j=0; j<myvals.getNumberActive(ival); ++j) {
+    unsigned jder=myvals.getActiveIndex(ival, j); plumed_dbg_assert( jder<forces.size() );
+    forces[jder] += fforce*myvals.getDerivative( ival, jder );
   }
 }
 
@@ -899,7 +763,7 @@ void ActionWithVector::gatherForces( const unsigned& itask, const MultiValue& my
   if( checkComponentsForForce() ) {
     for(unsigned k=0; k<getNumberOfComponents(); ++k) {
       const Value* myval=getConstPntrToComponent(k);
-      if( myval->getRank()>0 && myval->forcesWereAdded() ) gatherForcesOnStoredValue( myval, itask, myvals, forces );
+      if( myval->getRank()>0 && myval->forcesWereAdded() ) gatherForcesOnStoredValue( k, itask, myvals, forces );
     }
   }
   if( action_to_do_after ) action_to_do_after->gatherForces( itask, myvals, forces );
