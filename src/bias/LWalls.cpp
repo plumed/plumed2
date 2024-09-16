@@ -133,7 +133,7 @@ void LWalls::calculate() {
     if( lscale < 0.) {
       const double k=kappa[i];
       const double exponent=exp[i];
-      double power = std::pow( lscale, exponent );
+      double power = std::pow( -lscale, exponent );
       f = -( k / epsilon ) * exponent * power / lscale;
       ene += k * power;
       totf2 += f * f;
