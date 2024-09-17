@@ -79,8 +79,6 @@ private:
   bool checkComponentsForForce() const ;
 /// Get the tasks that we need for forces
   void getForceTasks( std::vector<unsigned>& force_tasks ) const ;
-/// Add the gathered forces to the inputs across the whole chain
-  void addForcesToInput( const std::vector<double>& forcesToApply, unsigned& ind );
 /// Check if this ation can reduce the number of tasks we perform
   void canReduceTasks( std::vector<ActionWithVector*>& task_reducing_actions );
 /// Send information to arguments that tasks are reduced in depedent actions

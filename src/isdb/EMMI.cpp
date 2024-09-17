@@ -349,7 +349,7 @@ void EMMI::apply() {
     }
   }
   if( wasforced ) {
-    unsigned ind=0; addForcesOnArguments( 0, forcesToApply, ind, getLabel() );
+    unsigned ind=0; addForcesOnArguments( 0, forcesToApply, ind );
     if( getNumberOfAtoms()>0 ) setForcesOnAtoms( forcesToApply, ind );
   }
 }

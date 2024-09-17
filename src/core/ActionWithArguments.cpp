@@ -301,12 +301,12 @@ double ActionWithArguments::getProjection(unsigned i,unsigned j)const {
   return Value::projection(*v1,*v2);
 }
 
-void ActionWithArguments::addForcesOnArguments( const unsigned& argstart, const std::vector<double>& forces, unsigned& ind, const std::string& c  ) {
+void ActionWithArguments::addForcesOnArguments( const unsigned& argstart, const std::vector<double>& forces, unsigned& ind ) {
   unsigned nargs=arguments.size(); const ActionWithVector* av=dynamic_cast<const ActionWithVector*>( this );
   if( av && av->getNumberOfMasks()>0 ) nargs=nargs-av->getNumberOfMasks();
   for(unsigned i=0; i<nargs; ++i) {
     if( i==0 && getName().find("EVALUATE_FUNCTION_FROM_GRID")!=std::string::npos ) continue ;
-    if( !arguments[i]->ignoreStoredValue(c) || arguments[i]->getRank()==0 || (arguments[i]->getRank()>0 && arguments[i]->hasDerivatives()) ) {
+    if( arguments[i]->storedata || arguments[i]->getRank()==0 || (arguments[i]->getRank()>0 && arguments[i]->hasDerivatives()) ) {
       unsigned nvals = arguments[i]->getNumberOfStoredValues();
       for(unsigned j=0; j<nvals; ++j) { arguments[i]->addForce( j, forces[ind], false ); ind++; }
     }

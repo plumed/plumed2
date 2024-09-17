@@ -244,7 +244,7 @@ void RMSDVector::apply() {
       }
       wasforced=true;
     }
-    if( wasforced ) { unsigned ss=0; addForcesOnArguments( 0, forces, ss, getLabel() ); }
+    if( wasforced ) { unsigned ss=0; addForcesOnArguments( 0, forces, ss  ); }
   } else ActionWithVector::apply();
 }
 

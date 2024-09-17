@@ -55,7 +55,7 @@ void Function::addComponentWithDerivatives( const std::string& name ) {
 void Function::apply()
 {
   if( !checkForForces() ) return;
-  unsigned ind=0; addForcesOnArguments( 0, getForcesToApply(), ind, getLabel() );
+  unsigned ind=0; addForcesOnArguments( 0, getForcesToApply(), ind );
 }
 
 }

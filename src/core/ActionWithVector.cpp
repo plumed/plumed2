@@ -772,13 +772,7 @@ void ActionWithVector::gatherForces( const unsigned& itask, const MultiValue& my
 void ActionWithVector::apply() {
   if( !checkForForces() ) return;
   // Find the top of the chain and add forces
-  unsigned ind=0; getFirstActionInChain()->addForcesToInput( getForcesToApply(), ind );
-}
-
-void ActionWithVector::addForcesToInput( const std::vector<double>& forcesToApply, unsigned& ind ) {
-  if( ind>=forcesToApply.size() ) return;
-  addForcesOnArguments( 0, forcesToApply, ind, getFirstActionInChain()->getLabel() ); setForcesOnAtoms( forcesToApply, ind );
-  if( action_to_do_after ) action_to_do_after->addForcesToInput( forcesToApply, ind );
+  unsigned ind=0; addForcesOnArguments( 0, forcesForApply, ind ); setForcesOnAtoms( forcesForApply, ind );
 }
 
 }

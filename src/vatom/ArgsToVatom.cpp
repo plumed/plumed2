@@ -154,7 +154,7 @@ void ArgsToVatom::calculate() {
 void ArgsToVatom::apply() {
   if( !checkForForces() ) return ;
 
-  unsigned start=0; addForcesOnArguments( 0, getForcesToApply(), start, getLabel() );
+  unsigned start=0; addForcesOnArguments( 0, getForcesToApply(), start );
 }
 
 }

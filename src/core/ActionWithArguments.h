@@ -72,7 +72,7 @@ public:
   void requestArguments(const std::vector<Value*> &arg);
   void requestExtraDependencies(const std::vector<Value*> &extra);
 /// Add forces to arguments (used in apply)
-  void addForcesOnArguments( const unsigned& argstart, const std::vector<double>& forces, unsigned& ind, const std::string& c );
+  void addForcesOnArguments( const unsigned& argstart, const std::vector<double>& forces, unsigned& ind );
 public:
   explicit ActionWithArguments(const ActionOptions&);
   virtual ~ActionWithArguments() {}
