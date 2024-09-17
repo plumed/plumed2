@@ -74,23 +74,107 @@ equal to the number of arguments to the action.
 */
 //+ENDPLUMEDOC
 
-class UWalls : public Bias {
+//+PLUMEDOC BIAS LOWER_WALLS
+/*
+Defines a wall for the value of one or more collective variables,
+ which limits the region of the phase space accessible during the simulation.
+
+If the inputs to the arguments are scalars the restraining potential starts acting on the system when the value of the CV is
+lower than a certain limit $a_i$ (AT) minus an offset $o_i$ (OFFSET).  The expression for the bias due to the wall is given by:
+
+$$
+  \sum_i {k_i}|(x_i-a_i-o_i)/s_i|^e_i
+$$
+
+In this expression $k_i$ (KAPPA) is an energy constant in internal unit of the code, $s_i$ (EPS) a rescaling factor and
+$e_i$ (EXP) the exponent determining the power law. By default: EXP = 2, EPS = 1.0, OFFSET = 0.
+
+The following input tells plumed to add both a lower and an upper walls on the distance
+between atoms 3 and 5 and the distance between atoms 2 and 4. The lower and upper limits
+are defined at different values. The strength of the walls is the same for the four cases.
+It also tells plumed to print the energy of the walls.
+
+```plumed
+d1: DISTANCE ATOMS=3,5
+d2: DISTANCE ATOMS=2,4
+uwall: UPPER_WALLS ARG=d1,d2 AT=1.0,1.5 KAPPA=150.0,150.0 EXP=2,2 EPS=1,1 OFFSET=0,0
+lwall: LOWER_WALLS ARG=d1,d2 AT=0.0,1.0 KAPPA=150.0,150.0 EXP=2,2 EPS=1,1 OFFSET=0,0
+PRINT ARG=uwall.bias,lwall.bias
+```
+
+Alternatively, if the input to this action is a vector as in the example shown below:
+
+```plumed
+d1: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6
+lwall: LOWER_WALLS ARG=d1 AT=1.0 KAPPA=150.0 EXP=2 EPS=1 OFFSET=0
+PRINT ARG=lwall.bias
+```
+
+The bias that acts is given by the following expression:
+
+$$
+  \sum_i \sum_j {k_i}|(x_{ij}-a_i-o_i)/s_i|^e_i
+$$
+
+The sum over $i$ here is runs over the two arguments, while the sum over $j$ runs over the three components of the input vectors.
+Notice, that regardless of whether the input is a scalar, vector or matrix the number of $k_i$, $a_i$, $o_i$, $e_i$ and $s_i$ values must be
+equal to the number of arguments to the action.
+
+*/
+//+ENDPLUMEDOC
+
+enum class WallType {UPPER,LOWER};
+
+template<WallType W>
+class WallsScalar : public Bias {
   std::vector<double> at;
   std::vector<double> kappa;
   std::vector<double> exp;
   std::vector<double> eps;
   std::vector<double> offset;
+  static constexpr auto force2="force2";
+  inline double walloff(double cv, double off) {
+    if constexpr(W==WallType::UPPER) {
+      return cv+off;
+    } else {
+      return cv-off;
+    }
+  }
+  inline double wallpow(double scale, double exponent) {
+    if constexpr(W==WallType::UPPER) {
+      return std::pow(scale,exponent);
+    } else {
+      return std::pow(-scale,exponent);
+    }
+  }
+  inline bool check(double scale) {
+    if constexpr(W==WallType::UPPER) {
+      return scale > 0.0;
+    } else {
+      return scale < 0.0;
+    }
+  }
 public:
-  explicit UWalls(const ActionOptions&);
+  explicit WallsScalar(const ActionOptions&);
   void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 
+using UWalls = WallsScalar<WallType::UPPER>;
 PLUMED_REGISTER_ACTION(UWalls,"UPPER_WALLS_SCALAR")
 
-void UWalls::registerKeywords(Keywords& keys) {
+using LWalls = WallsScalar<WallType::LOWER>;
+PLUMED_REGISTER_ACTION(LWalls,"LOWER_WALLS_SCALAR")
+
+template<WallType W>
+void WallsScalar<W>::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
-  keys.setDisplayName("UPPER_WALLS");
+  if constexpr(W==WallType::UPPER) {
+    keys.setDisplayName("UPPER_WALLS");
+  } else {
+    keys.setDisplayName("LOWER_WALLS");
+  }
+
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
   keys.add("compulsory","AT","the positions of the wall. The a_i in the expression for a wall.");
   keys.add("compulsory","KAPPA","the force constant for the wall.  The k_i in the expression for a wall.");
@@ -100,14 +184,15 @@ void UWalls::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("force2","default","scalar","the instantaneous value of the squared force due to this bias potential");
 }
 
-UWalls::UWalls(const ActionOptions&ao):
+template<WallType W>
+WallsScalar<W>::WallsScalar(const ActionOptions&ao):
   PLUMED_BIAS_INIT(ao),
   at(getNumberOfArguments(),0),
   kappa(getNumberOfArguments(),0.0),
   exp(getNumberOfArguments(),2.0),
   eps(getNumberOfArguments(),1.0),
   offset(getNumberOfArguments(),0.0) {
-  // Note : the sizes of these vectors are checked automatically by parseVector
+  // Note sizes of these vectors are automatically checked by parseVector :-)
   parseVector("OFFSET",offset);
   parseVector("EPS",eps);
   parseVector("EXP",exp);
@@ -141,31 +226,34 @@ UWalls::UWalls(const ActionOptions&ao):
   }
   log.printf("\n");
 
-  addComponent("force2");
-  componentIsNotPeriodic("force2");
+  addComponent(force2);
+  componentIsNotPeriodic(force2);
 }
 
-void UWalls::calculate() {
-  double ene=0.0;
-  double totf2=0.0;
+
+
+template<WallType W>
+void WallsScalar<W>::calculate() {
+  double ene = 0.0;
+  double totf2 = 0.0;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     double f = 0.0;
     const double cv=difference(i,at[i],getArgument(i));
     const double off=offset[i];
     const double epsilon=eps[i];
-    const double uscale = (cv+off)/epsilon;
-    if( uscale > 0.) {
+    const double scale = walloff(cv,off)/epsilon;
+    if( check(scale) ) {
       const double k=kappa[i];
       const double exponent=exp[i];
-      double power = pow( uscale, exponent );
-      f = -( k / epsilon ) * exponent * power / uscale;
+      double power = wallpow( scale, exponent );
+      f = -( k / epsilon ) * exponent * power / scale;
       ene += k * power;
       totf2 += f * f;
     }
     setOutputForce(i,f);
   }
   setBias(ene);
-  getPntrToComponent("force2")->set(totf2);
+  getPntrToComponent(force2)->set(totf2);
 }
 
 }
