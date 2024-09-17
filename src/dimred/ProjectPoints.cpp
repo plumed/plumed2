@@ -95,7 +95,7 @@ ProjectPoints::ProjectPoints( const ActionOptions& ao ) :
     if( weights.size()!=1 ) error("should only be one value in input to WEIGHTS" + inum );
     if( weights[0]->getRank()!=1 || weights[0]->hasDerivatives() ) error("input to WEIGHTS" + inum + " keyword should be a vector");
     if( weights[0]->getShape()[0]!=nvals ) error("number of weights should match number of input coordinates");
-    target[0]->buildDataStore(); weights[0]->buildDataStore(); args.push_back( target[0] ); args.push_back( weights[0] );
+    args.push_back( target[0] ); args.push_back( weights[0] );
     bool has_sf = parseNumbered("FUNC",i,sfd); switchingFunction.push_back( SwitchingFunction() );
     if( !has_sf ) {
       switchingFunction[i-1].set( "CUSTOM FUNC=1-sqrt(x2) R_0=1.0", errors );

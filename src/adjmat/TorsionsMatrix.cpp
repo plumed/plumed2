@@ -36,9 +36,6 @@ namespace PLMD {
 namespace adjmat {
 
 class TorsionsMatrix : public ActionWithMatrix {
-private:
-  unsigned nderivatives;
-  bool stored_matrix1, stored_matrix2;
 public:
   static void registerKeywords( Keywords& keys );
   explicit TorsionsMatrix(const ActionOptions&);
@@ -85,10 +82,7 @@ TorsionsMatrix::TorsionsMatrix(const ActionOptions&ao):
   log.printf("\n"); requestAtoms( atoms_a, false );
 
   std::vector<unsigned> shape(2); shape[0]=getPntrToArgument(0)->getShape()[0]; shape[1]=getPntrToArgument(1)->getShape()[1];
-  addValue( shape ); setPeriodic("-pi","pi"); nderivatives = buildArgumentStore(0) + 3*getNumberOfAtoms() + 9;
-  std::string headstr=getFirstActionInChain()->getLabel();
-  stored_matrix1 = getPntrToArgument(0)->ignoreStoredValue( headstr );
-  stored_matrix2 = getPntrToArgument(1)->ignoreStoredValue( headstr );
+  addValue( shape ); setPeriodic("-pi","pi");
 
   if( nm>0 ) {
     unsigned iarg = getNumberOfArguments()-1;
@@ -98,7 +92,7 @@ TorsionsMatrix::TorsionsMatrix(const ActionOptions&ao):
 }
 
 unsigned TorsionsMatrix::getNumberOfDerivatives() {
-  return nderivatives;
+  return 3*getNumberOfAtoms() + 9 + getPntrToArgument(0)->getNumberOfStoredValues() + getPntrToArgument(1)->getNumberOfStoredValues();
 }
 
 unsigned TorsionsMatrix::getNumberOfColumns() const {
@@ -131,8 +125,8 @@ void TorsionsMatrix::performTask( const std::string& controller, const unsigned&
 
   // Get the two vectors
   for(unsigned i=0; i<3; ++i) {
-    v1[i] = getElementOfMatrixArgument( 0, index1, i, myvals );
-    v2[i] = getElementOfMatrixArgument( 1, i, ind2, myvals );
+    v1[i] = getPntrToArgument(0)->get( index1*getPntrToArgument(0)->getNumberOfColumns() + i, false );
+    v2[i] = getPntrToArgument(1)->get( i*getPntrToArgument(1)->getNumberOfColumns() + ind2, false );
   }
   // Evaluate angle
   Torsion t; double angle = t.compute( v1, conn, v2, dv1, dconn, dv2 );
@@ -141,9 +135,12 @@ void TorsionsMatrix::performTask( const std::string& controller, const unsigned&
   if( doNotCalculateDerivatives() ) return;
 
   // Add the derivatives on the matrices
+  unsigned base1 = index1*getPntrToArgument(0)->getNumberOfColumns();
+  unsigned ncols = getPntrToArgument(1)->getNumberOfColumns();
+  unsigned base2 = getPntrToArgument(0)->getNumberOfStoredValues() + ind2;
   for(unsigned i=0; i<3; ++i) {
-    addDerivativeOnMatrixArgument( stored_matrix1, 0, 0, index1, i, dv1[i], myvals );
-    addDerivativeOnMatrixArgument( stored_matrix2, 0, 1, i, ind2, dv2[i], myvals );
+    myvals.addDerivative( 0, base1 + i, dv1[i] ); myvals.updateIndex( 0, base1 + i );
+    myvals.addDerivative( 0, base2 + i*ncols, dv2[i] ); myvals.updateIndex( 0, base2 + i*ncols );
   }
   // And derivatives on positions
   unsigned narg_derivatives = getPntrToArgument(0)->getNumberOfValues() + getPntrToArgument(1)->getNumberOfValues();
@@ -160,20 +157,20 @@ void TorsionsMatrix::runEndOfRowJobs( const unsigned& ival, const std::vector<un
   if( doNotCalculateDerivatives() ) return ;
 
   unsigned mat1s = 3*ival, ss = getPntrToArgument(1)->getShape()[1];
-  unsigned nmat = getConstPntrToComponent(0)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixRowDerivatives( nmat );
+  unsigned nmat_ind = myvals.getNumberOfMatrixRowDerivatives();
   unsigned narg_derivatives = getPntrToArgument(0)->getNumberOfValues() + getPntrToArgument(1)->getNumberOfValues();
-  std::vector<unsigned>& matrix_indices( myvals.getMatrixRowDerivativeIndices( nmat ) ); unsigned ntwo_atoms = myvals.getSplitIndex();
+  std::vector<unsigned>& matrix_indices( myvals.getMatrixRowDerivativeIndices() ); unsigned ntwo_atoms = myvals.getSplitIndex();
   for(unsigned j=0; j<3; ++j) {
     matrix_indices[nmat_ind] = mat1s + j; nmat_ind++;
     matrix_indices[nmat_ind] = narg_derivatives + mat1s + j; nmat_ind++;
     for(unsigned i=1; i<ntwo_atoms; ++i) {
       unsigned ind2 = indices[i]; if( ind2>=getPntrToArgument(0)->getShape()[0] ) ind2 = indices[i] - getPntrToArgument(0)->getShape()[0];
-      matrix_indices[nmat_ind] = arg_deriv_starts[1] + j*ss + ind2; nmat_ind++;
+      matrix_indices[nmat_ind] = getPntrToArgument(0)->getNumberOfStoredValues() + j*ss + ind2; nmat_ind++;
       matrix_indices[nmat_ind] = narg_derivatives + 3*indices[i] + j; nmat_ind++;
     }
   }
   unsigned base = narg_derivatives + 3*getNumberOfAtoms(); for(unsigned j=0; j<9; ++j) { matrix_indices[nmat_ind] = base + j; nmat_ind++; }
-  myvals.setNumberOfMatrixRowDerivatives( nmat, nmat_ind );
+  myvals.setNumberOfMatrixRowDerivatives( nmat_ind );
 }
 
 }

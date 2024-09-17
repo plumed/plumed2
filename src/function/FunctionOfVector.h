@@ -97,8 +97,8 @@ FunctionOfVector<T>::FunctionOfVector(const ActionOptions&ao):
   myfunc.read( this );
   // Create the task list
   if( myfunc.doWithTasks() ) {
-    doAtEnd=false; 
-  } else { plumed_assert( getNumberOfArguments()==1 ); getPntrToArgument(0)->buildDataStore(); }
+    doAtEnd=false;
+  } else if( getNumberOfArguments()!=1 ) error("number of arguments should be equal to one");
   // Get the names of the components
   std::vector<std::string> components( keywords.getOutputComponents() );
   // Create the values to hold the output
@@ -133,8 +133,6 @@ FunctionOfVector<T>::FunctionOfVector(const ActionOptions&ao):
   unsigned argstart=myfunc.getArgStart();
   // Set the periodicities of the output components
   myfunc.setPeriodicityForOutputs( this );
-  // Setup the derivatives
-  unsigned nderivatives = buildArgumentStore(myfunc.getArgStart());
 }
 
 template <class T>

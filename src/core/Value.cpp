@@ -36,11 +36,9 @@ Value::Value():
   action(NULL),
   value_set(false),
   hasForce(false),
-  storedata(false),
   shape(std::vector<unsigned>()),
   hasDeriv(true),
   bufstart(0),
-  matpos(0),
   ngrid_der(0),
   ncols(0),
   symmetric(false),
@@ -59,12 +57,10 @@ Value::Value(const std::string& name):
   value_set(false),
   hasForce(false),
   name(name),
-  storedata(false),
   shape(std::vector<unsigned>()),
   hasDeriv(true),
   bufstart(0),
   ngrid_der(0),
-  matpos(0),
   ncols(0),
   symmetric(false),
   periodicity(unset),
@@ -83,11 +79,9 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   value_set(false),
   hasForce(false),
   name(name),
-  storedata(false),
   hasDeriv(withderiv),
   bufstart(0),
   ngrid_der(0),
-  matpos(0),
   ncols(0),
   symmetric(false),
   periodicity(unset),
@@ -100,8 +94,6 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   if( action ) {
     if( action->getName()=="ACCUMULATE" || action->getName()=="COLLECT" ) valtype=average;
   }
-  if( action ) storedata=action->getName()=="PUT" || valtype==average;
-  if( ss.size() && withderiv ) storedata=true;
   setShape( ss );
 }
 
@@ -126,7 +118,7 @@ void Value::setShape( const std::vector<unsigned>&ss ) {
   } else if( shape.size()==0 ) {
     // This is for scalars
     data.resize(1); inputForce.resize(1);
-  } else if( storedata && shape.size()<2 ) {
+  } else if( shape.size()<2 ) {
     // This is for vectors (matrices have special version because we have sparse storage)
     data.resize( tot ); inputForce.resize( tot );
   }
@@ -278,17 +270,8 @@ void Value::addForce(const std::size_t& iforce, double f, const bool trueind) {
 }
 
 
-void Value::buildDataStore( const bool forprint ) {
-  if( getRank()==0 ) return;
-  storedata=true; setShape( shape );
-  if( !forprint ) return ;
-  ActionWithVector* av=dynamic_cast<ActionWithVector*>( action );
-  if( av ) (av->getFirstActionInChain())->never_reduce_tasks=true;
-}
-
 void Value::reshapeMatrixStore( const unsigned& n ) {
   plumed_dbg_assert( shape.size()==2 && !hasDeriv );
-  if( !storedata ) return ;
   ncols=n; if( ncols>shape[1] ) ncols=shape[1];
   unsigned size=shape[0]*ncols;
   if( matrix_bookeeping.size()!=(size+shape[0]) ) {
@@ -310,20 +293,12 @@ void Value::copyBookeepingArrayFromArgument( Value* myarg ) {
   data.resize( shape[0]*ncols ); inputForce.resize( shape[0]*ncols );
 }
 
-void Value::setPositionInMatrixStash( const unsigned& p ) {
-  plumed_dbg_assert( shape.size()==2 && !hasDeriv );
-  matpos=p;
-}
-
 bool Value::ignoreStoredValue(const std::string& c) const {
-  if( !storedata && shape.size()>0 ) return true;
-  ActionWithVector* av=dynamic_cast<ActionWithVector*>(action);
-  if( av ) return (av->getFirstActionInChain())->getLabel()==c;
   return false;
 }
 
 void Value::setConstant() {
-  valtype=constant; storedata=true; setShape( shape );
+  valtype=constant; setShape( shape );
   if( getRank()==2 && !hasDeriv ) reshapeMatrixStore( shape[1] );
 }
 

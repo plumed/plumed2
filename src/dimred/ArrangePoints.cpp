@@ -99,7 +99,7 @@ ArrangePoints::ArrangePoints( const ActionOptions& ao ) :
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     if( shape[0]!=getPntrToArgument(i)->getNumberOfValues() ) error("mismatch between sizes of input coordinates");
     std::string num; Tools::convert( i+1, num ); addComponent( "coord-" + num, shape );
-    componentIsNotPeriodic( "coord-" + num ); getPntrToArgument(i)->buildDataStore();
+    componentIsNotPeriodic( "coord-" + num );
   }
   std::vector<Value*> args( getArguments() ), target, weights; std::string sfd, errors;
   // Read in target "distances" and target weights
@@ -154,7 +154,6 @@ ArrangePoints::ArrangePoints( const ActionOptions& ao ) :
 }
 
 void ArrangePoints::checkInputMatrix( const std::string& key, const unsigned& nvals, const std::vector<Value*>& mat ) const {
-  mat[0]->buildDataStore();
   if( mat.size()!=1 ) error("should only be one value in input to " + key );
   if( mat[0]->getRank()!=2 || mat[0]->hasDerivatives() ) error("input to " + key + " keyword should be a matrix");
   if( mat[0]->getShape()[0]!=nvals || mat[0]->getShape()[1]!=nvals ) error("input to " + key + " keyword has the wrong size");

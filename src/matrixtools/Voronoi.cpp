@@ -62,8 +62,7 @@ Voronoi::Voronoi(const ActionOptions&ao):
   if( getNumberOfArguments()!=1 ) error("should be one arguments to this action, a matrix");
   if( getPntrToArgument(0)->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) error("argument to this action should be a matrix");
   if( getPntrToArgument(0)->getShape()[1]>getPntrToArgument(0)->getShape()[0] ) warning("would expect number of columns in matrix to exceed number of rows");
-  getPntrToArgument(0)->buildDataStore(); std::vector<unsigned> shape( getPntrToArgument(0)->getShape() );
-  addValue( shape ); setNotPeriodic(); getPntrToComponent(0)->buildDataStore();
+  std::vector<unsigned> shape( getPntrToArgument(0)->getShape() ); addValue( shape ); setNotPeriodic();
 }
 
 void Voronoi::prepare() {

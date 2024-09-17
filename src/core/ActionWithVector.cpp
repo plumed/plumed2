@@ -28,25 +28,6 @@
 
 namespace PLMD {
 
-enum class Option { no, yes };
-
-Option interpretEnvString(const char* env,const char* str) {
-  if(!str) return Option::yes;
-  if(!std::strcmp(str,"yes"))return Option::yes;
-  if(!std::strcmp(str,"no"))return Option::no;
-  plumed_error()<<"Cannot understand env var "<<env<<"\nPossible values: yes/no\nActual value: "<<str;
-}
-
-/// Switch on/off chains of actions using PLUMED environment variable
-/// export PLUMED_FORBID_CHAINS=yes  # forbid the use of chains in this run
-/// export PLUMED_FORBID_CHAINS=no   # allow chains to be used in the run
-/// default: yes
-Option getenvChainForbidden() {
-  static const char* name="PLUMED_FORBID_CHAINS";
-  static const auto opt = interpretEnvString(name,std::getenv(name));
-  return opt;
-}
-
 void ActionWithVector::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
@@ -63,12 +44,7 @@ ActionWithVector::ActionWithVector(const ActionOptions&ao):
   ActionWithArguments(ao),
   nmask(-1),
   serial(false),
-  forwardPass(false),
-  action_to_do_before(NULL),
-  action_to_do_after(NULL),
-  never_reduce_tasks(false),
-  reduce_tasks(false),
-  atomsWereRetrieved(false)
+  forwardPass(false)
 {
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     ActionWithVector* av = dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
@@ -106,10 +82,6 @@ ActionWithVector::ActionWithVector(const ActionOptions&ao):
   }
 }
 
-ActionWithVector::~ActionWithVector() {
-  if( action_to_do_before ) action_to_do_before->action_to_do_after=NULL;
-}
-
 void ActionWithVector::lockRequests() {
   ActionAtomistic::lockRequests();
   ActionWithArguments::lockRequests();
@@ -124,181 +96,8 @@ void ActionWithVector::calculateNumericalDerivatives(ActionWithValue* av) {
   plumed_merror("cannot calculate numerical derivative for action " + getName() + " with label " + getLabel() );
 }
 
-void ActionWithVector::clearDerivatives( const bool& force ) {
-  if( !force && actionInChain() ) return;
-  ActionWithValue::clearDerivatives();
-  if( action_to_do_after ) action_to_do_after->clearDerivatives( true );
-}
-
-void ActionWithVector::clearInputForces( const bool& force ) {
-  if( !force && actionInChain() ) return;
-  ActionWithValue::clearInputForces();
-  if( action_to_do_after ) action_to_do_after->clearInputForces( true );
-}
-
-const ActionWithVector* ActionWithVector::getFirstActionInChain() const {
-  if( !actionInChain() ) return this;
-  return action_to_do_before->getFirstActionInChain();
-}
-
-ActionWithVector* ActionWithVector::getFirstActionInChain() {
-  if( !actionInChain() ) return this;
-  return action_to_do_before->getFirstActionInChain();
-}
-
-void ActionWithVector::retrieveAtoms( const bool& force ) {
-  if( !force && actionInChain() || atomsWereRetrieved ) return;
-  ActionAtomistic::retrieveAtoms(); atomsWereRetrieved = !actionInChain();
-  if( action_to_do_after ) action_to_do_after->retrieveAtoms( true );
-}
-
-bool ActionWithVector::hasStoredArguments() const {
-  std::string headstr=getFirstActionInChain()->getLabel();
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    if( !getPntrToArgument(i)->ignoreStoredValue(headstr) ) return true;
-  }
-  return false;
-}
-
-bool ActionWithVector::argumentDependsOn( const std::string& headstr, ActionWithVector* faction, Value* thearg ) {
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    if( this!=faction && thearg==getPntrToArgument(i) ) return true;
-    ActionWithVector* av = dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
-    if( av && (av->getFirstActionInChain())->getLabel()==headstr ) {
-      if( av->argumentDependsOn( headstr, faction, thearg ) ) return true;;
-    }
-  }
-  return false;
-}
-
-unsigned ActionWithVector::buildArgumentStore( const unsigned& argstart ) {
-  return reallyBuildArgumentStore( argstart );
-}
-
-unsigned ActionWithVector::reallyBuildArgumentStore( const unsigned& argstart ) {
-  for(unsigned i=argstart; i<getNumberOfArguments(); ++i) { if( getPntrToArgument(i)->getRank()>0 ) getPntrToArgument(i)->buildDataStore(); }
-  unsigned nder=0; arg_deriv_starts.resize( getNumberOfArguments() );
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) { arg_deriv_starts[i] = nder; nder += getPntrToArgument(i)->getNumberOfValues(); }
-  return nder;
-}
-
-ActionWithVector* ActionWithVector::getActionWithDerivatives( ActionWithVector* depaction ) {
-  if( depaction==this || depaction->checkForDependency(this) ) {
-    if( getNumberOfAtoms()>0 ) return this;
-    std::string c=getFirstActionInChain()->getLabel();
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      if( !getPntrToArgument(i)->ignoreStoredValue(c) && !getPntrToArgument(i)->isConstant() ) return this;
-    }
-  }
-  plumed_assert( action_to_do_before );
-  return action_to_do_before->getActionWithDerivatives(depaction);
-}
-
-bool ActionWithVector::addActionToChain( const std::vector<std::string>& alabels, ActionWithVector* act ) {
-  if( action_to_do_after ) { bool state=action_to_do_after->addActionToChain( alabels, act ); return state; }
-  // Check action is not already in chain
-  std::vector<std::string> mylabels; getFirstActionInChain()->getAllActionLabelsInChain( mylabels );
-  for(unsigned i=0; i<mylabels.size(); ++i) {
-    if( act->getLabel()==mylabels[i] ) return true;
-  }
-
-  // Check that everything that is required has been calculated
-  for(unsigned i=0; i<alabels.size(); ++i) {
-    bool found=false;
-    for(unsigned j=0; j<mylabels.size(); ++j) {
-      if( alabels[i]==mylabels[j] ) { found=true; break; }
-    }
-    if( !found ) {
-      ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( alabels[i] );
-      plumed_massert( av, "could not cast " + alabels[i] ); bool storingall=true;
-      for(int j=0; j<av->getNumberOfComponents(); ++j) {
-        if( !(av->getPntrToComponent(j))->storedata ) storingall=false;
-      }
-      if( !storingall ) return false;
-    }
-  }
-  // This checks that there is nothing that will cause problems in the chain
-  mylabels.resize(0); getFirstActionInChain()->getAllActionLabelsInChain( mylabels );
-  for(unsigned i=0; i<mylabels.size(); ++i) {
-    ActionWithVector* av1=plumed.getActionSet().selectWithLabel<ActionWithVector*>( mylabels[i] );
-    for(unsigned j=0; j<i; ++j) {
-      ActionWithVector* av2=plumed.getActionSet().selectWithLabel<ActionWithVector*>( mylabels[j] );
-      if( !av1->canBeAfterInChain( av2 ) ) error("must calculate " + mylabels[j] + " before " + mylabels[i] );
-    }
-  }
-  action_to_do_after=act; act->action_to_do_before=this; updateTaskListReductionStatus();
-  ActionWithVector* head = getFirstActionInChain();
-  head->broadcastThatTasksAreReduced( head ); head->finishChainBuild( act );
-  return true;
-}
-
-void ActionWithVector::updateTaskListReductionStatus() {
-  ActionWithVector* head = getFirstActionInChain();
-  std::vector<ActionWithVector*> task_reducing_actions; head->canReduceTasks( task_reducing_actions );
-  if( task_reducing_actions.size()>0 ) head->reduce_tasks=true;
-}
-
-void ActionWithVector::broadcastThatTasksAreReduced( ActionWithVector* aselect ) {
-  std::string c=getFirstActionInChain()->getLabel();
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    if( !getPntrToArgument(i)->ignoreStoredValue(c) ) {
-      ActionWithVector* av = dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
-      if( av ) {
-        bool found=false;
-        ActionWithVector* av_head = av->getFirstActionInChain();
-        for(unsigned i=0; i<av_head->task_control_list.size(); ++i) {
-          if( aselect==av_head->task_control_list[i] ) { found=true; break; }
-        }
-        if( !found ) av_head->task_control_list.insert( av_head->task_control_list.begin(), aselect );
-
-        av_head->reduce_tasks=true; av_head->updateTaskReductionFlag( av_head->reduce_tasks );
-      }
-    }
-  }
-  if( action_to_do_after ) action_to_do_after->broadcastThatTasksAreReduced( aselect );
-}
-
-void ActionWithVector::updateTaskReductionFlag( bool& head_reduce_tasks ) {
-  if( actionInChain() ) {
-    plumed_assert( task_control_list.size()==0 );
-  } else {
-    for(unsigned i=0; i<task_control_list.size(); ++i) {
-      if( !(task_control_list[i]->getFirstActionInChain())->reduce_tasks ) head_reduce_tasks=false;
-    }
-  }
-  broadcastThatTasksAreReduced( getFirstActionInChain() );
-  if( action_to_do_after ) action_to_do_after->updateTaskReductionFlag( head_reduce_tasks );
-}
-
-void ActionWithVector::canReduceTasks( std::vector<ActionWithVector*>& task_reducing_actions ) {
-  areAllTasksRequired( task_reducing_actions );
-  if( action_to_do_after ) action_to_do_after->canReduceTasks( task_reducing_actions );
-}
-
-void ActionWithVector::finishChainBuild( ActionWithVector* act ) {
-  if( action_to_do_after ) action_to_do_after->finishChainBuild( act );
-}
-
-void ActionWithVector::getAllActionLabelsInChain( std::vector<std::string>& mylabels ) const {
-  bool found = false ;
-  for(unsigned i=0; i<mylabels.size(); ++i) {
-    if( getLabel()==mylabels[i] ) { found=true; }
-  }
-  if( !found ) mylabels.push_back( getLabel() );
-  if( action_to_do_after ) action_to_do_after->getAllActionLabelsInChain( mylabels );
-}
-
-void ActionWithVector::taskIsActive( const unsigned& current, int& flag ) const {
-  flag = checkTaskStatus( current, flag );
-  if( flag<=0 && action_to_do_after ) action_to_do_after->taskIsActive( current, flag );
-}
-
-void ActionWithVector::getAdditionalTasksRequired( ActionWithVector* action, std::vector<unsigned>& atasks ) {
-  for(unsigned i=0; i<task_control_list.size(); ++i ) task_control_list[i]->getAdditionalTasksRequired( action, atasks );
-}
-
 void ActionWithVector::prepare() {
-  active_tasks.resize(0); atomsWereRetrieved=false;
+  active_tasks.resize(0);
 }
 
 int ActionWithVector::checkTaskIsActive( const unsigned& itask ) const {
@@ -347,64 +146,15 @@ std::vector<unsigned>& ActionWithVector::getListOfActiveTasks( ActionWithVector*
   if( active_tasks.size()>0 ) return active_tasks;
   unsigned ntasks=0; getNumberOfTasks( ntasks );
 
-  if( getenvChainForbidden()==Option::yes ) {
-    std::vector<int> taskFlags( ntasks, -1 );
-    for(unsigned i=0; i<ntasks; ++i) taskFlags[i] = checkTaskIsActive(i);
-    unsigned nt=0;
-    for(unsigned i=0; i<ntasks; ++i) {
-      if( taskFlags[i]>0 ) nt++;
-    }
-    active_tasks.resize(nt); nt=0;
-    for(unsigned i=0; i<ntasks; ++i) {
-      if( taskFlags[i]>0 ) { active_tasks[nt]=i; nt++; }
-    }
-    return active_tasks;
+  std::vector<int> taskFlags( ntasks, -1 );
+  for(unsigned i=0; i<ntasks; ++i) taskFlags[i] = checkTaskIsActive(i);
+  unsigned nt=0;
+  for(unsigned i=0; i<ntasks; ++i) {
+    if( taskFlags[i]>0 ) nt++;
   }
-
-  unsigned stride=comm.Get_size();
-  unsigned rank=comm.Get_rank();
-  if(serial) { stride=1; rank=0; }
-
-  // Get number of threads for OpenMP
-  unsigned nt=OpenMP::getNumThreads();
-  if( nt*stride*10>ntasks ) nt=ntasks/stride/10;
-  if( nt==0 ) nt=1;
-
-  if( !never_reduce_tasks && reduce_tasks ) {
-    if( task_control_list.size()>0 ) {
-      // Get the list of tasks that are active in the action that uses the output of this action
-      for(unsigned i=0; i<task_control_list.size(); ++i) {
-        task_control_list[i]->retrieveAtoms();
-        active_tasks = task_control_list[i]->getListOfActiveTasks( action );
-      }
-      // Now work out else we need from here to calculate the later action
-      getAdditionalTasksRequired( action, active_tasks );
-    } else {
-      std::vector<int> taskFlags( ntasks, -1 );
-
-      #pragma omp parallel num_threads(nt)
-      {
-        #pragma omp for nowait
-        for(unsigned i=rank; i<ntasks; i+=stride ) {
-          taskIsActive( i, taskFlags[i] );
-        }
-      }
-      for(unsigned i=0; i<ntasks; ++i) taskFlags[i] = std::abs( taskFlags[i] );
-      if( !serial ) comm.Sum( taskFlags );
-
-      unsigned nt=0;
-      for(unsigned i=0; i<ntasks; ++i) {
-        if( taskFlags[i]>=stride ) nt++;
-      }
-      active_tasks.resize(nt); nt=0;
-      for(unsigned i=0; i<ntasks; ++i) {
-        if( taskFlags[i]>=stride ) { active_tasks[nt]=i; nt++; }
-      }
-      getAdditionalTasksRequired( this, active_tasks );
-    }
-  } else {
-    active_tasks.resize( ntasks );
-    for(unsigned i=0; i<ntasks; ++i) active_tasks[i]=i;
+  active_tasks.resize(nt); nt=0;
+  for(unsigned i=0; i<ntasks; ++i) {
+    if( taskFlags[i]>0 ) { active_tasks[nt]=i; nt++; }
   }
   return active_tasks;
 }
@@ -416,7 +166,7 @@ bool ActionWithVector::doNotCalculateDerivatives() const {
 
 void ActionWithVector::clearMatrixBookeeping() {
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
-    Value* myval = getPntrToComponent(i); if( !myval->storedata ) continue;
+    Value* myval = getPntrToComponent(i);
     if( myval->getRank()==2 && myval->getNumberOfColumns()<myval->getShape()[1] ) {
       std::fill(myval->matrix_bookeeping.begin(), myval->matrix_bookeeping.end(), 0);
     }
@@ -425,9 +175,6 @@ void ActionWithVector::clearMatrixBookeeping() {
 }
 
 void ActionWithVector::runAllTasks() {
-// Skip this if this is done elsewhere
-  if( action_to_do_before ) return;
-
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
   if(serial) { stride=1; rank=0; }
@@ -445,33 +192,33 @@ void ActionWithVector::runAllTasks() {
   if( nt*stride*10>nactive_tasks ) nt=nactive_tasks/stride/10;
   if( nt==0 ) nt=1;
 
-  // Now do all preparations required to run all the tasks
-  // prepareForTaskLoop();
-
-  if( !action_to_do_after ) {
-    forwardPass=true;
-    for(unsigned i=0; i<getNumberOfComponents(); ++i) {
-      if( getConstPntrToComponent(i)->getRank()==0 ) { forwardPass=false; break; }
+  // Get the total number of streamed quantities that we need
+  // Get size for buffer
+  unsigned bufsize=0, nderivatives = 0; bool gridsInStream=false; forwardPass=true;
+  for(int i=0; i<getNumberOfComponents(); ++i) {
+    getPntrToComponent(i)->bufstart=bufsize;
+    if( getPntrToComponent(i)->hasDerivatives() || getPntrToComponent(i)->getRank()==0 ) {
+      forwardPass=false; bufsize += getPntrToComponent(i)->data.size();
+    }
+    if( getConstPntrToComponent(i)->getRank()>0 && getConstPntrToComponent(i)->hasDerivatives() ) {
+      nderivatives=getConstPntrToComponent(i)->getNumberOfGridDerivatives(); gridsInStream=true;
     }
   }
-  // Get the total number of streamed quantities that we need
-  unsigned nquants=0, nmatrices=0, maxcol=0;
-  setupStreamedComponents( getLabel(), nquants, nmatrices, maxcol );
-  // Get size for buffer
-  unsigned bufsize=0; getSizeOfBuffer( nactive_tasks, bufsize );
   if( buffer.size()!=bufsize ) buffer.resize( bufsize );
   // Clear buffer
   buffer.assign( buffer.size(), 0.0 );
 
   // Recover the number of derivatives we require
-  unsigned nderivatives = 0; bool gridsInStream=checkForGrids(nderivatives);
-  if( !doNotCalculateDerivatives() && !gridsInStream ) getNumberOfStreamedDerivatives( nderivatives, NULL );
+  if( !doNotCalculateDerivatives() && !gridsInStream ) {
+    if( getNumberOfAtoms()>0 ) nderivatives += 3*getNumberOfAtoms() + 9;
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) nderivatives += getPntrToArgument(i)->getNumberOfValues();
+  }
 
   #pragma omp parallel num_threads(nt)
   {
     std::vector<double> omp_buffer;
     if( nt>1 ) omp_buffer.resize( bufsize, 0.0 );
-    MultiValue myvals( nquants, nderivatives, nmatrices, maxcol );
+    MultiValue myvals( getNumberOfComponents(), nderivatives, 0 );
     myvals.clearAll();
 
     #pragma omp for nowait
@@ -493,30 +240,14 @@ void ActionWithVector::runAllTasks() {
   // MPI Gather everything
   if( !serial ) {
     if( buffer.size()>0 ) comm.Sum( buffer );
-    gatherProcesses();
+    for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+      Value* myval = getPntrToComponent(i);
+      if( !myval->hasDeriv ) {
+        comm.Sum( myval->data ); if( am && myval->getRank()==2 && myval->getNumberOfColumns()<myval->getShape()[1] ) comm.Sum( myval->matrix_bookeeping );
+      }
+    }
   }
   finishComputations( buffer ); forwardPass=false;
-}
-
-void ActionWithVector::gatherProcesses() {
-  ActionWithMatrix* am=dynamic_cast<ActionWithMatrix*>(this);
-  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
-    Value* myval = getPntrToComponent(i);
-    if( myval->storedata && !myval->hasDeriv ) {
-      comm.Sum( myval->data ); if( am && myval->getRank()==2 && myval->getNumberOfColumns()<myval->getShape()[1] ) comm.Sum( myval->matrix_bookeeping );
-    }
-  }
-  if( action_to_do_after ) action_to_do_after->gatherProcesses();
-}
-
-bool ActionWithVector::checkForGrids( unsigned& nder ) const {
-  for(int i=0; i<getNumberOfComponents(); ++i) {
-    if( getConstPntrToComponent(i)->getRank()>0 && getConstPntrToComponent(i)->hasDerivatives() ) {
-      nder=getConstPntrToComponent(i)->getNumberOfGridDerivatives(); return true;
-    }
-  }
-  if( action_to_do_after ) return action_to_do_after->checkForGrids(nder);
-  return false;
 }
 
 void ActionWithVector::getNumberOfTasks( unsigned& ntasks ) {
@@ -538,54 +269,6 @@ void ActionWithVector::getNumberOfTasks( unsigned& ntasks ) {
     } else if( getPntrToComponent(i)->hasDerivatives() && ntasks!=getPntrToComponent(i)->getNumberOfValues() ) error("mismatched numbers of tasks in streamed quantities");
     else if( !getPntrToComponent(i)->hasDerivatives() && ntasks!=getPntrToComponent(i)->getShape()[0] ) error("mismatched numbers of tasks in streamed quantities");
   }
-  if( action_to_do_after ) action_to_do_after->getNumberOfTasks( ntasks );
-}
-
-void ActionWithVector::setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol ) {
-  for(int i=0; i<getNumberOfComponents(); ++i) { nquants++; }
-}
-
-void ActionWithVector::getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize ) {
-  for(int i=0; i<getNumberOfComponents(); ++i) {
-    getPntrToComponent(i)->bufstart=bufsize;
-    if( getPntrToComponent(i)->hasDerivatives() || getPntrToComponent(i)->getRank()==0 ) bufsize += getPntrToComponent(i)->data.size();
-  }
-  if( action_to_do_after ) action_to_do_after->getSizeOfBuffer( nactive_tasks, bufsize );
-}
-
-void ActionWithVector::getNumberOfStreamedDerivatives( unsigned& nderivatives, Value* stopat ) {
-  std::string c=getFirstActionInChain()->getLabel();
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    if( !getPntrToArgument(i)->ignoreStoredValue(c) ) {
-      if( getPntrToArgument(i)==stopat ) return;
-      nderivatives += getPntrToArgument(i)->getNumberOfValues();
-    }
-  }
-  if( getNumberOfAtoms()>0 ) nderivatives += 3*getNumberOfAtoms() + 9;
-  // Don't do the whole chain if we have been told to stop early
-  if( stopat && stopat->getPntrToAction()==this ) return;
-
-  if( action_to_do_after ) action_to_do_after->getNumberOfStreamedDerivatives( nderivatives, stopat );
-}
-
-bool ActionWithVector::getNumberOfStoredValues( Value* startat, unsigned& nvals, const unsigned& astart, const std::vector<Value*>& stopat ) {
-  for(unsigned j=astart; j<stopat.size(); ++j) {
-    if( stopat[j] && (stopat[j]->getPntrToAction()==this || (stopat[j]->getPntrToAction())->checkForDependency(this)) ) return true;
-  }
-
-  std::string c=getFirstActionInChain()->getLabel();
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    if( !getPntrToArgument(i)->ignoreStoredValue(c) ) {
-      for(unsigned j=astart; j<stopat.size(); ++j) {
-        if( getPntrToArgument(i)==stopat[j] ) return true;
-      }
-      nvals += getPntrToArgument(i)->getNumberOfValues();
-    }
-  }
-  if( startat->getPntrToAction()!=this && getNumberOfAtoms()>0 ) return false;
-
-  if( action_to_do_after ) return action_to_do_after->getNumberOfStoredValues( startat, nvals, astart, stopat );
-  return false;
 }
 
 void ActionWithVector::runTask( const unsigned& current, MultiValue& myvals ) const {
@@ -593,12 +276,11 @@ void ActionWithVector::runTask( const unsigned& current, MultiValue& myvals ) co
   myvals.setTaskIndex(current); myvals.vector_call=true; performTask( current, myvals );
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     const Value* myval = getConstPntrToComponent(i);
-    if( am || myval->hasDerivatives() || !myval->valueIsStored() ) continue;
+    if( am || myval->hasDerivatives() ) continue;
     Value* myv = const_cast<Value*>( myval );
     if( getName()=="RMSD_VECTOR" && myv->getRank()==2 ) continue;
     myv->set( current, myvals.get( i ) );
   }
-  if( action_to_do_after ) action_to_do_after->runTask( current, myvals );
 }
 
 void ActionWithVector::gatherAccumulators( const unsigned& taskCode, const MultiValue& myvals, std::vector<double>& buffer ) const {
@@ -616,9 +298,8 @@ void ActionWithVector::gatherAccumulators( const unsigned& taskCode, const Multi
         }
       }
       // This looks after storing of vectors
-    } else if( getConstPntrToComponent(i)->storedata ) gatherStoredValue( i, taskCode, myvals, bufstart, buffer );
+    } else gatherStoredValue( i, taskCode, myvals, bufstart, buffer );
   }
-  if( action_to_do_after ) action_to_do_after->gatherAccumulators( taskCode, myvals, buffer );
 }
 
 void ActionWithVector::finishComputations( const std::vector<double>& buf ) {
@@ -638,20 +319,17 @@ void ActionWithVector::finishComputations( const std::vector<double>& buf ) {
       for(unsigned j=0; j<getPntrToComponent(i)->getNumberOfDerivatives(); ++j) getPntrToComponent(i)->setDerivative( j, buf[bufstart+1+j] );
     }
   }
-  if( action_to_do_after ) action_to_do_after->finishComputations( buf );
 }
 
 bool ActionWithVector::checkChainForNonScalarForces() const {
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     if( getConstPntrToComponent(i)->getRank()>0 && getConstPntrToComponent(i)->forcesWereAdded() ) return true;
   }
-  if( action_to_do_after ) return action_to_do_after->checkChainForNonScalarForces();
   return false;
 }
 
 bool ActionWithVector::checkForForces() {
   if( getPntrToComponent(0)->getRank()==0 ) return ActionWithValue::checkForForces();
-  else if( actionInChain() ) return false;
 
   // Check if there are any forces
   if( !checkChainForNonScalarForces() ) return false;
@@ -662,13 +340,8 @@ bool ActionWithVector::checkForForces() {
   if(serial) { stride=1; rank=0; }
 
   // Get the number of tasks
-  std::vector<unsigned> force_tasks;
-  if( getenvChainForbidden()==Option::yes ) {
-    std::vector<unsigned> & partialTaskList( getListOfActiveTasks( this ) );
-    for(unsigned i=0; i<partialTaskList.size(); ++i) force_tasks.push_back( partialTaskList[i] );
-  } else {
-    getForceTasks( force_tasks ); Tools::removeDuplicates(force_tasks);
-  }
+  std::vector<unsigned> force_tasks; std::vector<unsigned> & partialTaskList( getListOfActiveTasks( this ) );
+  for(unsigned i=0; i<partialTaskList.size(); ++i) force_tasks.push_back( partialTaskList[i] );
   unsigned nf_tasks=force_tasks.size();
   if( nf_tasks==0 ) return false;
 
@@ -678,17 +351,17 @@ bool ActionWithVector::checkForForces() {
   if( nt==0 ) nt=1;
 
   // Now determine how big the multivalue needs to be
-  unsigned nquants=0, nmatrices=0, maxcol=0;
-  setupStreamedComponents( getLabel(), nquants, nmatrices, maxcol );
-  // Recover the number of derivatives we require (this should be equal to the number of forces)
-  unsigned nderiv=0; getNumberOfStreamedDerivatives( nderiv, NULL );
-  if( !action_to_do_after && arg_deriv_starts.size()>0 ) {
-    nderiv = 0;
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      arg_deriv_starts[i] = nderiv; nderiv += getPntrToArgument(i)->getNumberOfStoredValues();
+  unsigned nmatrices=0; ActionWithMatrix* am=dynamic_cast<ActionWithMatrix*>(this);
+  if(am) {
+    for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+      if( getConstPntrToComponent(i)->getRank()==2 && !getConstPntrToComponent(i)->hasDerivatives() ) { nmatrices=getNumberOfComponents(); }
     }
-    ActionAtomistic* aa=castToActionAtomistic();
-    if(aa) nderiv += 3*aa->getNumberOfAtoms() + 9;
+  }
+  // Recover the number of derivatives we require (this should be equal to the number of forces)
+  unsigned nderiv=0;
+  if( getNumberOfAtoms()>0 ) nderiv += 3*getNumberOfAtoms() + 9;
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    nderiv += getPntrToArgument(i)->getNumberOfStoredValues();
   }
   if( forcesForApply.size()!=nderiv ) forcesForApply.resize( nderiv );
   // Clear force buffer
@@ -698,7 +371,7 @@ bool ActionWithVector::checkForForces() {
   {
     std::vector<double> omp_forces;
     if( nt>1 ) omp_forces.resize( forcesForApply.size(), 0.0 );
-    MultiValue myvals( nquants, nderiv, nmatrices, maxcol );
+    MultiValue myvals( getNumberOfComponents(), nderiv, nmatrices );
     myvals.clearAll();
 
     #pragma omp for nowait
@@ -731,27 +404,8 @@ bool ActionWithVector::checkForTaskForce( const unsigned& itask, const Value* my
   return fabs(myval->getForce(itask))>epsilon;
 }
 
-void ActionWithVector::updateForceTasksFromValue( const Value* myval, std::vector<unsigned>& force_tasks ) const {
-  if( myval->getRank()>0 && myval->forcesWereAdded() ) {
-    unsigned nt = myval->getNumberOfValues();
-    if( !myval->hasDerivatives() ) nt = myval->getShape()[0];
-    for(unsigned i=0; i<nt; ++i) {
-      if( checkForTaskForce(i, myval) ) force_tasks.push_back( i );
-    }
-  }
-}
-
-void ActionWithVector::getForceTasks( std::vector<unsigned>& force_tasks ) const {
-  if( checkComponentsForForce() ) {
-    for(unsigned k=0; k<values.size(); ++k) {
-      updateForceTasksFromValue( getConstPntrToComponent(k), force_tasks );
-    }
-  }
-  if( action_to_do_after ) action_to_do_after->getForceTasks( force_tasks );
-}
-
 void ActionWithVector::gatherForcesOnStoredValue( const unsigned& ival, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
-  const Value* myval = getConstPntrToComponent(ival); plumed_dbg_assert( myval->storedata );
+  const Value* myval = getConstPntrToComponent(ival);
   double fforce = myval->getForce(itask);
   for(unsigned j=0; j<myvals.getNumberActive(ival); ++j) {
     unsigned jder=myvals.getActiveIndex(ival, j); plumed_dbg_assert( jder<forces.size() );
@@ -766,7 +420,6 @@ void ActionWithVector::gatherForces( const unsigned& itask, const MultiValue& my
       if( myval->getRank()>0 && myval->forcesWereAdded() ) gatherForcesOnStoredValue( k, itask, myvals, forces );
     }
   }
-  if( action_to_do_after ) action_to_do_after->gatherForces( itask, myvals, forces );
 }
 
 void ActionWithVector::apply() {

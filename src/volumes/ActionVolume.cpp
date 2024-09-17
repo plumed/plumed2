@@ -54,12 +54,6 @@ ActionVolume::ActionVolume(const ActionOptions&ao):
   setNotPeriodic(); getPntrToComponent(0)->setDerivativeIsZeroWhenValueIsZero();
 }
 
-bool ActionVolume::isInSubChain( unsigned& nder ) {
-  nder = 0; getFirstActionInChain()->getNumberOfStreamedDerivatives( nder, getPntrToComponent(0) );
-  nder = nder - getNumberOfDerivatives();
-  return true;
-}
-
 void ActionVolume::requestAtoms( const std::vector<AtomNumber> & a ) {
   std::vector<AtomNumber> all_atoms( getAbsoluteIndexes() );
   for(unsigned i=0; i<a.size(); ++i) all_atoms.push_back( a[i] );
@@ -85,7 +79,6 @@ int ActionVolume::checkTaskStatus( const unsigned& taskno, int& flag ) const {
 }
 
 void ActionVolume::calculate() {
-  if( actionInChain() ) return;
   if( getPntrToComponent(0)->getRank()==0 ) {
     setupRegions(); unsigned nref = getNumberOfAtoms() - 1;
     Vector wdf; Tensor vir; std::vector<Vector> refders( nref );

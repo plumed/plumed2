@@ -94,13 +94,13 @@ RMSDVector::RMSDVector(const ActionOptions&ao):
   if( displacement && (getPntrToArgument(1)->getRank()==1 || getPntrToArgument(1)->getShape()[0]<=1) ) {
     addComponentWithDerivatives("dist"); componentIsNotPeriodic("dist");
     std::vector<unsigned> shape( 1, getPntrToArgument(0)->getNumberOfValues() );
-    addComponent( "disp", shape ); getPntrToComponent(1)->buildDataStore(); componentIsNotPeriodic("disp");
+    addComponent( "disp", shape ); componentIsNotPeriodic("disp");
   } else if( displacement ) {
     std::vector<unsigned> shape( 1, getPntrToArgument(1)->getShape()[0] );
-    addComponent( "dist", shape ); getPntrToComponent(0)->buildDataStore();
+    addComponent( "dist", shape );
     componentIsNotPeriodic("dist");
     shape.resize(2); shape[0] = getPntrToArgument(1)->getShape()[0]; shape[1] = getPntrToArgument(0)->getNumberOfValues();
-    addComponent( "disp", shape ); getPntrToComponent(1)->buildDataStore(); getPntrToComponent(1)->reshapeMatrixStore( shape[1] );
+    addComponent( "disp", shape ); getPntrToComponent(1)->reshapeMatrixStore( shape[1] );
     componentIsNotPeriodic("disp");
   } else if( (getPntrToArgument(1)->getRank()==1 || getPntrToArgument(1)->getShape()[0]==1) ) {
     addValue(); setNotPeriodic();
@@ -278,11 +278,18 @@ void RMSDVector::gatherStoredValue( const unsigned& valindex, const unsigned& co
   }
 }
 
-void RMSDVector::gatherForcesOnStoredValue( const unsigned& ival, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
-  if( getConstPntrToComponent(ival)->getRank()==1 ) { ActionWithVector::gatherForcesOnStoredValue( ival, itask, myvals, forces ); return; }
-  const std::vector<Vector>& direction( myvals.getConstFirstAtomDerivativeVector()[1] ); unsigned natoms = direction.size();
-  for(unsigned i=0; i<natoms; ++i) {
-    for(unsigned j=0; j<3; ++j ) forces[j*natoms+i] += direction[i][j];
+void RMSDVector::gatherForces( const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
+  if( checkComponentsForForce() ) {
+    for(unsigned ival=0; ival<getNumberOfComponents(); ++ival) {
+      if( getConstPntrToComponent(ival)->getRank()==1 ) {
+        gatherForcesOnStoredValue( ival, itask, myvals, forces );
+      } else {
+        const std::vector<Vector>& direction( myvals.getConstFirstAtomDerivativeVector()[1] ); unsigned natoms = direction.size();
+        for(unsigned i=0; i<natoms; ++i) {
+          for(unsigned j=0; j<3; ++j ) forces[j*natoms+i] += direction[i][j];
+        }
+      }
+    }
   }
 }
 

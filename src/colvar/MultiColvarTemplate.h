@@ -44,7 +44,6 @@ public:
   unsigned getNumberOfDerivatives() override ;
   void addValueWithDerivatives( const std::vector<unsigned>& shape=std::vector<unsigned>() ) override ;
   void addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape=std::vector<unsigned>() ) override ;
-  void setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol ) override ;
   void performTask( const unsigned&, MultiValue& ) const override ;
   void calculate() override;
 };
@@ -114,6 +113,7 @@ unsigned MultiColvarTemplate<T>::getNumberOfDerivatives() {
 
 template <class T>
 void MultiColvarTemplate<T>::calculate() {
+  if( wholemolecules ) makeWhole();
   runAllTasks();
 }
 
@@ -125,12 +125,6 @@ void MultiColvarTemplate<T>::addValueWithDerivatives( const std::vector<unsigned
 template <class T>
 void MultiColvarTemplate<T>::addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape ) {
   std::vector<unsigned> s(1); s[0]=ablocks[0].size(); addComponent( name, s );
-}
-
-template <class T>
-void MultiColvarTemplate<T>::setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol ) {
-  if( wholemolecules ) makeWhole();
-  ActionWithVector::setupStreamedComponents( headstr, nquants, nmat, maxcol );
 }
 
 template <class T>

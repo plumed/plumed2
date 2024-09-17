@@ -57,7 +57,6 @@ public:
   int checkTaskStatus( const unsigned& taskno, int& flag ) const override;
   void calculate();
   virtual void setupRegions() = 0;
-  bool isInSubChain( unsigned& nder ) override ;
   void performTask( const unsigned&, MultiValue& ) const ;
   virtual double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const=0;
 };

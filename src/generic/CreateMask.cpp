@@ -79,11 +79,11 @@ CreateMask::CreateMask( const ActionOptions& ao ) :
   } else if( stype=="stride" ) {
     type=stride; log.printf("  setting every %d equally spaced points in output mask to zero \n", nzeros );
   } else if( stype=="random" ) {
-    unsigned seed=230623; parse("SEED",seed); r.setSeed(-seed); getPntrToArgument(0)->buildDataStore();
+    unsigned seed=230623; parse("SEED",seed); r.setSeed(-seed);
     type=random; log.printf("  choosing %d points to set to non-zero in mask in accordance with input weights \n", nzeros );
   } else error( stype + " is not a valid way input for TYPE");
   std::vector<unsigned> shape(1); shape[0] = getPntrToArgument(0)->getShape()[0];
-  addValue( shape ); setNotPeriodic(); getPntrToComponent(0)->buildDataStore();
+  addValue( shape ); setNotPeriodic();
   for(unsigned i=0; i<shape[0]; ++i) getPntrToComponent(0)->set( i, 1.0 );
 }
 

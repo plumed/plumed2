@@ -129,8 +129,6 @@ FunctionOfMatrix<T>::FunctionOfMatrix(const ActionOptions&ao):
   }
   // Set the periodicities of the output components
   myfunc.setPeriodicityForOutputs( this );
-  // Now setup the action in the chain if we can
-  unsigned nderivatives = buildArgumentStore(myfunc.getArgStart());
 }
 
 template <class T>

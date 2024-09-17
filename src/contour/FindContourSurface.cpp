@@ -149,7 +149,6 @@ FindContourSurface::FindContourSurface(const ActionOptions&ao):
   // Now add a value
   std::vector<unsigned> shape( getInputGridObject().getDimension()-1 );
   addValueWithDerivatives( shape ); setNotPeriodic();
-  getPntrToComponent(0)->buildDataStore();
 }
 
 void FindContourSurface::setupValuesOnFirstStep() {

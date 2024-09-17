@@ -54,7 +54,6 @@ public:
   unsigned getNumberOfDerivatives() override ;
   unsigned getNumberOfColumns() const override;
   void prepare() override;
-  void getAdditionalTasksRequired( ActionWithVector* action, std::vector<unsigned>& atasks ) override ;
   void setupForTask( const unsigned& current, std::vector<unsigned> & indices, MultiValue& myvals ) const override;
   // void setupCurrentTaskList() override;
   void updateNeighbourList() override ;

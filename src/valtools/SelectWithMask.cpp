@@ -75,7 +75,7 @@ SelectWithMask::SelectWithMask(const ActionOptions& ao):
   ActionWithArguments(ao)
 {
   if( getNumberOfArguments()!=1 ) error("should only be one argument for this action");
-  getPntrToArgument(0)->buildDataStore(); std::vector<unsigned> shape;
+  std::vector<unsigned> shape;
   if( getPntrToArgument(0)->getRank()==1 ) {
     std::vector<Value*> mask; parseArgumentList("MASK",mask);
     if( mask.size()!=1 ) error("should only be one input for mask");
@@ -97,13 +97,13 @@ SelectWithMask::SelectWithMask(const ActionOptions& ao):
       ActionWithArguments::interpretArgumentList( labs, plumed.getActionSet(), this, rmask );
     }
     shape.resize(2);
-    rmask[0]->buildDataStore(); shape[0] = getOutputVectorLength( rmask[0] );
-    cmask[0]->buildDataStore(); shape[1] = getOutputVectorLength( cmask[0] );
+    shape[0] = getOutputVectorLength( rmask[0] );
+    shape[1] = getOutputVectorLength( cmask[0] );
     std::vector<Value*> args( getArguments() ); args.push_back( rmask[0] );
     args.push_back( cmask[0] ); requestArguments( args );
   } else error("input should be vector or matrix");
 
-  addValue( shape ); getPntrToComponent(0)->buildDataStore();
+  addValue( shape );
   if( getPntrToArgument(0)->isPeriodic() ) {
     std::string min, max; getPntrToArgument(0)->getDomain( min, max ); setPeriodic( min, max );
   } else setNotPeriodic();

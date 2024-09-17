@@ -92,7 +92,6 @@ DiagonalizeMatrix::DiagonalizeMatrix(const ActionOptions& ao):
     addComponent( "vals-" + num, eval_shape ); componentIsNotPeriodic( "vals-" + num );
     addComponent( "vecs-" + num, evec_shape ); componentIsNotPeriodic( "vecs-" + num );
     // Make sure eigenvalues are always stored
-    getPntrToComponent( 2*i+1 )->buildDataStore();
   }
 
   std::vector<unsigned> eigvecs_shape(2); eigvecs_shape[0]=eigvecs_shape[1]=getPntrToArgument(0)->getShape()[0];

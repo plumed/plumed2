@@ -151,7 +151,6 @@ FindSphericalContour::FindSphericalContour(const ActionOptions&ao):
   // Now create a value
   std::vector<unsigned> shape( 3 ); shape[0]=npoints; shape[1]=shape[2]=1;
   addValueWithDerivatives( shape ); setNotPeriodic();
-  getPntrToComponent(0)->buildDataStore(); checkRead();
 }
 
 unsigned FindSphericalContour::getNumberOfDerivatives() {

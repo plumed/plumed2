@@ -73,7 +73,6 @@ ThreeBodyGFunctions::ThreeBodyGFunctions(const ActionOptions&ao):
   log.printf("  using bond weights from matrix labelled %s \n",wval[0]->getName().c_str() );
   // Rerequest the arguments
   std::vector<Value*> myargs( getArguments() ); myargs.push_back( wval[0] ); requestArguments( myargs );
-  for(unsigned i=0; i<myargs.size(); ++i) myargs[i]->buildDataStore();
   std::vector<unsigned> shape(1); shape[0] = getPntrToArgument(0)->getShape()[0];
 
   // And now read the functions to compute

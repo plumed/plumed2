@@ -71,7 +71,7 @@ Concatenate::Concatenate(const ActionOptions& ao):
     vectors=true; std::vector<unsigned> shape(1); shape[0]=0;
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
       if( getPntrToArgument(i)->getRank()>1 ) error("cannot concatenate matrix with vectors");
-      getPntrToArgument(i)->buildDataStore(); shape[0] += getPntrToArgument(i)->getNumberOfValues();
+      shape[0] += getPntrToArgument(i)->getNumberOfValues();
     }
     log.printf("  creating vector with %d elements \n", shape[0] );
     addValue( shape ); bool period=getPntrToArgument(0)->isPeriodic();
@@ -84,7 +84,6 @@ Concatenate::Concatenate(const ActionOptions& ao):
       }
     }
     if( period ) setPeriodic( min, max ); else setNotPeriodic();
-    getPntrToComponent(0)->buildDataStore();
     if( getPntrToComponent(0)->getRank()==2 ) getPntrToComponent(0)->reshapeMatrixStore( shape[1] );
   } else {
     unsigned nrows=0, ncols=0; std::vector<Value*> arglist; vectors=false;
@@ -96,7 +95,7 @@ Concatenate::Concatenate(const ActionOptions& ao):
         if( argn.size()==0 ) break;
         if( argn.size()>1 ) error("should only be one argument to each matrix keyword");
         if( argn[0]->getRank()!=0 && argn[0]->getRank()!=2 ) error("input arguments for this action should be matrices");
-        argn[0]->buildDataStore(); arglist.push_back( argn[0] ); nt_cols++;
+        arglist.push_back( argn[0] ); nt_cols++;
         if( argn[0]->getRank()==0 ) log.printf("  %d %d component of composed matrix is scalar labelled %s\n", i, j, argn[0]->getName().c_str() );
         else log.printf("  %d %d component of composed matrix is %d by %d matrix labelled %s\n", i, j, argn[0]->getShape()[0], argn[0]->getShape()[1], argn[0]->getName().c_str() );
       }
@@ -125,7 +124,7 @@ Concatenate::Concatenate(const ActionOptions& ao):
       else shape[0] += arglist[k-1]->getShape()[0];
     }
     // Now request the arguments to make sure we store things we need
-    requestArguments(arglist); addValue( shape ); setNotPeriodic(); getPntrToComponent(0)->buildDataStore();
+    requestArguments(arglist); addValue( shape ); setNotPeriodic();
     if( getPntrToComponent(0)->getRank()==2 ) getPntrToComponent(0)->reshapeMatrixStore( shape[1] );
   }
 }

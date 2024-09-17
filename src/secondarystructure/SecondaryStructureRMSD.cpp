@@ -190,7 +190,7 @@ void SecondaryStructureRMSD::calculate() {
 void SecondaryStructureRMSD::performTask( const unsigned& current, MultiValue& myvals ) const {
   // Resize the derivatives if need be
   unsigned nderi = 3*getNumberOfAtoms()+9;
-  if( myvals.getNumberOfDerivatives()!=nderi ) myvals.resize( myvals.getNumberOfValues(), nderi, 0, 0 );
+  if( myvals.getNumberOfDerivatives()!=nderi ) myvals.resize( myvals.getNumberOfValues(), nderi, 0 );
   // Retrieve the positions
   const unsigned natoms = colvar_atoms[current].size();
   std::vector<Vector> pos( natoms ), deriv( natoms );

@@ -28,48 +28,17 @@ namespace PLMD {
 
 class ActionWithMatrix : public ActionWithVector {
 private:
-  ActionWithMatrix* next_action_in_chain;
-  ActionWithMatrix* matrix_to_do_before;
-  ActionWithMatrix* matrix_to_do_after;
-/// Update all the neighbour lists in the chain
-  void updateAllNeighbourLists();
-/// This clears all bookeeping arrays before the ith task
-  void clearBookeepingBeforeTask( const unsigned& task_index ) const ;
 /// This is used to clear up the matrix elements
   void clearMatrixElements( MultiValue& myvals ) const ;
-/// This is used to find the total amount of space we need for storing matrix elements
-  void setupMatrixStore();
 /// This does the calculation of a particular matrix element
   void runTask( const std::string& controller, const unsigned& current, const unsigned colno, MultiValue& myvals ) const ;
-protected:
-/// This turns off derivative clearing for contact matrix if we are not storing derivatives
-  bool clearOnEachCycle;
-/// Does the matrix chain continue on from this action
-  bool matrixChainContinues() const ;
-/// This returns the jelem th element of argument ic
-  double getArgumentElement( const unsigned& ic, const unsigned& jelem, const MultiValue& myvals ) const ;
-/// This returns an element of a matrix that is passed an argument
-  double getElementOfMatrixArgument( const unsigned& imat, const unsigned& irow, const unsigned& jcol, const MultiValue& myvals ) const ;
-/// Add derivatives given the derivative wrt to the input vector element as input
-  void addDerivativeOnVectorArgument( const bool& inchain, const unsigned& ival, const unsigned& jarg, const unsigned& jelem, const double& der, MultiValue& myvals ) const ;
-/// Add derivatives given the derative wrt to the input matrix element as input
-  void addDerivativeOnMatrixArgument( const bool& inchain, const unsigned& ival, const unsigned& jarg, const unsigned& irow, const unsigned& jcol, const double& der, MultiValue& myvals ) const ;
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithMatrix(const ActionOptions&);
-  virtual ~ActionWithMatrix();
 ///
   virtual bool isAdjacencyMatrix() const { return false; }
-///
-  void getAllActionLabelsInMatrixChain( std::vector<std::string>& mylabels ) const override ;
-/// Get the first matrix in this chain
-  const ActionWithMatrix* getFirstMatrixInChain() const ;
-///
-  void finishChainBuild( ActionWithVector* act );
 /// This should return the number of columns to help with sparse storage of matrices
   virtual unsigned getNumberOfColumns() const = 0;
-/// This requires some thought
-  void setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol ) override;
 //// This does some setup before we run over the row of the matrix
   virtual void setupForTask( const unsigned& task_index, std::vector<unsigned>& indices, MultiValue& myvals ) const = 0;
 /// Run over one row of the matrix
@@ -85,37 +54,8 @@ public:
 /// Check if there are forces we need to account for on this task
   bool checkForTaskForce( const unsigned& itask, const Value* myval ) const override ;
 /// This gathers the force on a particular value
-  virtual void gatherForcesOnStoredValue( const unsigned& ival, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const;
+  void gatherForces( const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const override ;
 };
-
-inline
-bool ActionWithMatrix::matrixChainContinues() const {
-  return matrix_to_do_after!=NULL;
-}
-
-inline
-double ActionWithMatrix::getArgumentElement( const unsigned& ic, const unsigned& jelem, const MultiValue& myvals ) const {
-  return getPntrToArgument(ic)->get( jelem );
-}
-
-inline
-double ActionWithMatrix::getElementOfMatrixArgument( const unsigned& imat, const unsigned& irow, const unsigned& jcol, const MultiValue& myvals ) const {
-  plumed_dbg_assert( imat<getNumberOfArguments() && getPntrToArgument(imat)->getRank()==2 && !getPntrToArgument(imat)->hasDerivatives() );
-  return getArgumentElement( imat, irow*getPntrToArgument(imat)->getShape()[1] + jcol, myvals );
-}
-
-inline
-void ActionWithMatrix::addDerivativeOnVectorArgument( const bool& inchain, const unsigned& ival, const unsigned& jarg, const unsigned& jelem, const double& der, MultiValue& myvals ) const {
-  plumed_dbg_massert( jarg<getNumberOfArguments() && getPntrToArgument(jarg)->getRank()<2, "failing in action " + getName() + " with label " + getLabel() );
-  unsigned vstart=arg_deriv_starts[jarg]; myvals.addDerivative( ival, vstart + jelem, der ); myvals.updateIndex( ival, vstart + jelem );
-}
-
-inline
-void ActionWithMatrix::addDerivativeOnMatrixArgument( const bool& inchain, const unsigned& ival, const unsigned& jarg, const unsigned& irow, const unsigned& jcol, const double& der, MultiValue& myvals ) const {
-  plumed_dbg_assert( jarg<getNumberOfArguments() && getPntrToArgument(jarg)->getRank()==2 && !getPntrToArgument(jarg)->hasDerivatives() );
-  unsigned dloc = arg_deriv_starts[jarg] + irow*getPntrToArgument(jarg)->getNumberOfColumns() + jcol;
-  myvals.addDerivative( ival, dloc, der ); myvals.updateIndex( ival, dloc );
-}
 
 }
 #endif

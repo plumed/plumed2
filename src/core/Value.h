@@ -80,14 +80,12 @@ private:
   std::map<AtomNumber,Vector> gradients;
 /// The name of this quantiy
   std::string name;
-/// Are we storing the data for this value if it is vector or matrix
-  bool storedata;
 /// What is the shape of the value (0 dimensional=scalar, n dimensional with derivatives=grid, 1 dimensional no derivatives=vector, 2 dimensional no derivatives=matrix)
   std::vector<unsigned> shape;
 /// Does this quanity have derivatives
   bool hasDeriv;
 /// Variables for storing data
-  unsigned bufstart, matpos, ngrid_der, ncols;
+  unsigned bufstart, ngrid_der, ncols;
 /// If we are storing a matrix is it symmetric?
   bool symmetric;
 /// This is a bookeeping array that holds the non-zero elements of the "sparse" matrix
@@ -187,8 +185,6 @@ public:
   unsigned getRank() const ;
 /// Get the shape of the object that is contained in this value
   const std::vector<unsigned>& getShape() const ;
-/// This turns on storing of vectors/matrices
-  void buildDataStore( const bool forprint=false );
 /// Reshape the storage for sparse matrices
   void reshapeMatrixStore( const unsigned& n );
 /// Copy the matrix bookeeping stuff
@@ -213,9 +209,6 @@ public:
   void setDerivativeIsZeroWhenValueIsZero();
 /// Return a bool that tells us if the derivative is zero when the value is zero
   bool isDerivativeZeroWhenValueIsZero() const ;
-/// This stuff handles where to look for the start of the row that contains the row of the matrix
-  void setPositionInMatrixStash( const unsigned& p );
-  unsigned getPositionInMatrixStash() const ;
 /// Convert the input index to its corresponding indices
   void convertIndexToindices(const std::size_t& index, std::vector<unsigned>& indices ) const ;
 /// Print out all the values in this Value
@@ -228,8 +221,6 @@ public:
   unsigned getRowLength( const unsigned& irow ) const ;
 ///
   unsigned getRowIndex( const unsigned& irow, const unsigned& jind ) const ;
-/// Are we storing this value
-  bool valueIsStored() const ;
 ///
   unsigned getNumberOfColumns() const ;
 ///
@@ -433,19 +424,9 @@ bool Value::isDerivativeZeroWhenValueIsZero() const {
 }
 
 inline
-unsigned Value::getPositionInMatrixStash() const {
-  return matpos;
-}
-
-inline
 void Value::setMatrixBookeepingElement( const unsigned& i, const unsigned& n ) {
   plumed_dbg_assert( i<matrix_bookeeping.size() );
   matrix_bookeeping[i]=n;
-}
-
-inline
-bool Value::valueIsStored() const {
-  return storedata;
 }
 
 inline

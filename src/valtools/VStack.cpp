@@ -35,8 +35,6 @@ namespace PLMD {
 namespace valtools {
 
 class VStack : public ActionWithMatrix {
-private:
-  std::vector<bool> stored;
 public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
@@ -57,8 +55,6 @@ public:
   void runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const override ;
 ///
   void getMatrixColumnTitles( std::vector<std::string>& argnames ) const override ;
-///
-  void gatherForcesOnStoredValue( const unsigned& ival, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const override ;
 };
 
 PLUMED_REGISTER_ACTION(VStack,"VSTACK")
@@ -93,21 +89,7 @@ VStack::VStack(const ActionOptions& ao):
   std::vector<unsigned> shape(2); shape[0]=nvals; shape[1]=getNumberOfArguments(); addValue( shape );
   if( periodic ) setPeriodic( smin, smax ); else setNotPeriodic();
   // And store this value
-  getPntrToComponent(0)->buildDataStore(); getPntrToComponent(0)->reshapeMatrixStore( shape[1] );
-  // Setup everything so we can build the store
-  ActionWithVector* av=dynamic_cast<ActionWithVector*>( getPntrToArgument(0)->getPntrToAction() );
-  if( av ) {
-    const ActionWithVector* head0 = av->getFirstActionInChain();
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      ActionWithVector* avv=dynamic_cast<ActionWithVector*>( getPntrToArgument(i)->getPntrToAction() );
-      if( !avv ) continue;
-      if( head0!=avv->getFirstActionInChain() ) { break; }
-    }
-  } 
-  unsigned nder = buildArgumentStore(0);
-  // This checks which values have been stored
-  stored.resize( getNumberOfArguments() ); std::string headstr=getFirstActionInChain()->getLabel();
-  for(unsigned i=0; i<stored.size(); ++i) stored[i] = getPntrToArgument(i)->ignoreStoredValue( headstr );
+  getPntrToComponent(0)->reshapeMatrixStore( shape[1] );
 }
 
 void VStack::getMatrixColumnTitles( std::vector<std::string>& argnames ) const {
@@ -139,26 +121,22 @@ int VStack::checkTaskIsActive( const unsigned& itask ) const {
 
 void VStack::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
   unsigned ind2 = index2; if( index2>=getConstPntrToComponent(0)->getShape()[0] ) ind2 = index2 - getConstPntrToComponent(0)->getShape()[0];
-  myvals.addValue( 0, getArgumentElement( ind2, index1, myvals ) );
+  myvals.addValue( 0, getPntrToArgument(ind2)->get( index1 ) );
 
   if( doNotCalculateDerivatives() ) return;
-  addDerivativeOnVectorArgument( stored[ind2], 0, ind2, index1, 1.0, myvals );
-}
-
-void VStack::gatherForcesOnStoredValue( const unsigned& ival, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
-  unsigned matind = getConstPntrToComponent(ival)->getPositionInMatrixStash();
-  for(unsigned i=0; i<forces.size(); ++i) forces[i] += myvals.getStashedMatrixForce( matind, i );
+  unsigned vstart=0; for(unsigned i=0; i<ind2; ++i) vstart += getPntrToArgument(i)->getNumberOfStoredValues();
+  myvals.addDerivative( 0, vstart + index1, 1.0 ); myvals.updateIndex( 0, vstart + index1 );
 }
 
 void VStack::runEndOfRowJobs( const unsigned& ival, const std::vector<unsigned> & indices, MultiValue& myvals ) const {
   if( doNotCalculateDerivatives() ) return ;
 
-  unsigned nmat = getConstPntrToComponent(0)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixRowDerivatives( nmat );
-  std::vector<unsigned>& matrix_indices( myvals.getMatrixRowDerivativeIndices( nmat ) );
+  unsigned nmat_ind = myvals.getNumberOfMatrixRowDerivatives();
+  std::vector<unsigned>& matrix_indices( myvals.getMatrixRowDerivativeIndices() );
   plumed_assert( nmat_ind<matrix_indices.size() );
   unsigned ncols = getConstPntrToComponent(0)->getShape()[0];
   for(unsigned i=0; i<getNumberOfArguments(); ++i) matrix_indices[i] = i*ncols + ival;
-  myvals.setNumberOfMatrixRowDerivatives( nmat, getNumberOfArguments() );
+  myvals.setNumberOfMatrixRowDerivatives( getNumberOfArguments() );
 }
 
 }

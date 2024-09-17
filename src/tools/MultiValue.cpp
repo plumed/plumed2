@@ -24,7 +24,7 @@
 
 namespace PLMD {
 
-MultiValue::MultiValue( const size_t& nvals, const size_t& nder, const size_t& nmat, const size_t& maxcol ):
+MultiValue::MultiValue( const size_t& nvals, const size_t& nder, const size_t& nmat ):
   task_index(0),
   task2_index(0),
   values(nvals),
@@ -37,31 +37,26 @@ MultiValue::MultiValue( const size_t& nvals, const size_t& nder, const size_t& n
   vector_call(false),
   nindices(0),
   nsplit(0),
-  nmatrix_cols(maxcol),
-  matrix_force_stash(nder*nmat),
-  matrix_row_nderivatives(nmat,0),
-  matrix_row_derivative_indices(nmat)
+  matrix_force_stash(0),
+  matrix_row_nderivatives(0),
+  matrix_row_derivative_indices(nder)
 {
-  for(unsigned i=0; i<nmat; ++i) matrix_row_derivative_indices[i].resize( nder );
+  if( nmat>0 ) matrix_force_stash.resize(nder,0);
 }
 
-void MultiValue::resize( const size_t& nvals, const size_t& nder, const size_t& nmat, const size_t& maxcol ) {
-  if( values.size()==nvals && nderivatives==nder && matrix_row_nderivatives.size()==nmat && nmatrix_cols==maxcol ) return;
+void MultiValue::resize( const size_t& nvals, const size_t& nder, const size_t& nmat ) {
+  if( values.size()==nvals && nderivatives==nder ) return;
   values.resize(nvals); nderivatives=nder; derivatives.resize( nvals*nder );
   hasderiv.resize(nvals*nder,false); nactive.resize(nvals); active_list.resize(nvals*nder);
-  nmatrix_cols=maxcol; matrix_force_stash.resize(nmat*nder,0);
-  matrix_row_nderivatives.resize(nmat,0); matrix_row_derivative_indices.resize(nmat); atLeastOneSet=false;
-  for(unsigned i=0; i<nmat; ++i) matrix_row_derivative_indices[i].resize( nder );
+  if( nmat>0 ) matrix_force_stash.resize(nder,0);
+  matrix_row_nderivatives=0; matrix_row_derivative_indices.resize(nder); atLeastOneSet=false;
 }
 
 void MultiValue::clearAll() {
   for(unsigned i=0; i<values.size(); ++i) values[i]=0;
   // Clear matrix derivative indices
-  for(unsigned i=0; i<matrix_row_nderivatives.size(); ++i) {
-    unsigned base = i*nderivatives;
-    for(unsigned j=0; j<matrix_row_nderivatives[i]; ++j) matrix_force_stash[base + matrix_row_derivative_indices[i][j]] = 0;
-    matrix_row_nderivatives[i]=0;
-  }
+  for(unsigned j=0; j<matrix_row_nderivatives; ++j) matrix_force_stash[matrix_row_derivative_indices[j]] = 0;
+  matrix_row_nderivatives=0;
 #ifndef NDEBUG
   for(unsigned i=0; i<matrix_force_stash.size(); ++i) plumed_assert( fabs(matrix_force_stash[i])<epsilon );
 #endif

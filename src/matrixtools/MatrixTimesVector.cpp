@@ -41,7 +41,6 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit MatrixTimesVector(const ActionOptions&);
   std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const override ;
-  void getNumberOfStreamedDerivatives( unsigned& nderivatives, Value* stopat ) override ;
   unsigned getNumberOfDerivatives() override ;
   void prepare() override ;
   void calculate() override ;
@@ -103,7 +102,6 @@ MatrixTimesVector::MatrixTimesVector(const ActionOptions&ao):
     if( getPntrToArgument(n)->getRank()>0 ) {
       if( getPntrToArgument(n)->getRank()!=1 || getPntrToArgument(n)->hasDerivatives() ) error("last argument to this action should be a vector");
     }
-    getPntrToArgument(n)->buildDataStore();
 
     if( getNumberOfArguments()==2 ) {
       addValue( shape ); setNotPeriodic();
@@ -131,7 +129,6 @@ MatrixTimesVector::MatrixTimesVector(const ActionOptions&ao):
       if( getPntrToArgument(i)->getRank()==0 ) {
         if( getPntrToArgument(0)->getShape()[1]!=1 ) error("number of columns in input matrix does not equal number of elements in vector");
       } else if( getPntrToArgument(0)->getShape()[1]!=getPntrToArgument(i)->getShape()[0] ) error("number of columns in input matrix does not equal number of elements in vector");
-      getPntrToArgument(i)->buildDataStore();
     }
 
     for(unsigned i=1; i<getNumberOfArguments(); ++i) {
@@ -140,8 +137,6 @@ MatrixTimesVector::MatrixTimesVector(const ActionOptions&ao):
       addComponent( name, shape ); componentIsNotPeriodic( name );
     }
   } else error("You should either have one vector or one matrix in input");
-
-  unsigned nderivatives = buildArgumentStore(0);
 }
 
 unsigned MatrixTimesVector::getNumberOfDerivatives() {
@@ -154,14 +149,6 @@ void MatrixTimesVector::prepare() {
   ActionWithVector::prepare(); Value* myval = getPntrToComponent(0);
   if( myval->getShape()[0]==getPntrToArgument(0)->getShape()[0] ) return;
   std::vector<unsigned> shape(1); shape[0] = getPntrToArgument(0)->getShape()[0]; myval->setShape(shape);
-}
-
-void MatrixTimesVector::getNumberOfStreamedDerivatives( unsigned& nderivatives, Value* stopat ) {
-  nderivatives = 0;
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    arg_deriv_starts[i] = nderivatives;
-    nderivatives += getPntrToArgument(i)->getNumberOfStoredValues();
-  }
 }
 
 void MatrixTimesVector::calculate() {
@@ -186,7 +173,7 @@ int MatrixTimesVector::checkTaskIsActive( const unsigned& itask ) const {
 
 void MatrixTimesVector::performTask( const unsigned& task_index, MultiValue& myvals ) const {
   if( sumrows ) {
-    unsigned n=getNumberOfArguments()-1; Value* myvec = getPntrToArgument(n);
+    unsigned base=0, n=getNumberOfArguments()-1; Value* myvec = getPntrToArgument(n);
     for(unsigned i=0; i<n; ++i) {
       Value* mymat = getPntrToArgument(i);
       unsigned ncol = mymat->getNumberOfColumns();
@@ -197,18 +184,20 @@ void MatrixTimesVector::performTask( const unsigned& task_index, MultiValue& myv
       // And the derivatives
       if( doNotCalculateDerivatives() ) continue;
 
-      unsigned dloc = arg_deriv_starts[i] + task_index*ncol;
+      unsigned dloc = base + task_index*ncol;
       for(unsigned j=0; j<nmat; ++j) {
         myvals.addDerivative( i, dloc + j, 1.0 ); myvals.updateIndex( i, dloc + j );
       }
+      base += mymat->getNumberOfStoredValues();
     }
   } else if( getPntrToArgument(1)->getRank()==1 ) {
     Value* mymat = getPntrToArgument(0);
+    unsigned base = 0;
     unsigned ncol = mymat->getNumberOfColumns();
     unsigned nmat = mymat->getRowLength(task_index);
-    unsigned dloc = arg_deriv_starts[0] + task_index*ncol;
+    unsigned dloc = task_index*ncol;
     for(unsigned i=0; i<getNumberOfArguments()-1; ++i) {
-      Value* myvec = getPntrToArgument(i+1);
+      Value* myvec = getPntrToArgument(i+1); base += getPntrToArgument(i)->getNumberOfStoredValues();
       double val=0; for(unsigned j=0; j<nmat; ++j) val += mymat->get( task_index*ncol + j, false )*myvec->get( mymat->getRowIndex( task_index, j ) );
       myvals.setValue( i, val );
 
@@ -220,11 +209,12 @@ void MatrixTimesVector::performTask( const unsigned& task_index, MultiValue& myv
         double vecval = myvec->get( kind );
         double matval = mymat->get( task_index*ncol + j, false );
         myvals.addDerivative( i, dloc + j, vecval ); myvals.updateIndex( i, dloc + j );
-        myvals.addDerivative( i, arg_deriv_starts[i+1] + kind, matval ); myvals.updateIndex( i, arg_deriv_starts[i+1] + kind );
+        myvals.addDerivative( i, base + kind, matval ); myvals.updateIndex( i, base + kind );
       }
     }
   } else {
-    unsigned n=getNumberOfArguments()-1; Value* myvec = getPntrToArgument(n);
+    unsigned base=0, n=getNumberOfArguments()-1; Value* myvec = getPntrToArgument(n);
+    unsigned nmat_der = 0; for(unsigned i=0; i<n; ++i) nmat_der += getPntrToArgument(i)->getNumberOfStoredValues();
     for(unsigned i=0; i<n; ++i) {
       Value* mymat = getPntrToArgument(i);
       unsigned ncol = mymat->getNumberOfColumns();
@@ -235,14 +225,15 @@ void MatrixTimesVector::performTask( const unsigned& task_index, MultiValue& myv
       // And the derivatives
       if( doNotCalculateDerivatives() ) continue;
 
-      unsigned dloc = arg_deriv_starts[i] + task_index*ncol;
+      unsigned dloc = base + task_index*ncol;
       for(unsigned j=0; j<nmat; ++j) {
         unsigned kind = mymat->getRowIndex( task_index, j );
         double vecval = myvec->get( kind );
         double matval = mymat->get( task_index*ncol + j, false );
         myvals.addDerivative( i, dloc + j, vecval ); myvals.updateIndex( i, dloc + j );
-        myvals.addDerivative( i, arg_deriv_starts[n] + kind, matval ); myvals.updateIndex( i, arg_deriv_starts[n] + kind );
+        myvals.addDerivative( i, nmat_der + kind, matval ); myvals.updateIndex( i, nmat_der + kind );
       }
+      base += mymat->getNumberOfStoredValues();
     }
   }
 }

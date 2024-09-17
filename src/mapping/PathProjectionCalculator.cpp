@@ -45,7 +45,6 @@ PathProjectionCalculator::PathProjectionCalculator( Action* act ):
     if( aarg->getNumberOfArguments()!=1 ) act->error("should only have one argument to this function");
   }
   // Ensure that values are stored in base calculation and that PLUMED doesn't try to calculate this in the stream
-  if( mypath_obj ) mypath_obj->buildDataStore();
   // Check that the input is a matrix
   if( mypath_obj ) if( mypath_obj->getRank()!=2 ) act->error("the input to this action should be a matrix");
   // Get the labels for the reference points

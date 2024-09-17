@@ -88,8 +88,7 @@ public:
   void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
                           const unsigned& bufstart, std::vector<double>& buffer ) const override ;
   bool checkForTaskForce( const unsigned& itask, const Value* myval ) const override ;
-  void updateForceTasksFromValue( const Value* myval, std::vector<unsigned>& force_tasks ) const override ;
-  void gatherForcesOnStoredValue( const unsigned& ival, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const override ;
+  void gatherForces( const unsigned& i, const MultiValue& myvals, std::vector<double>& forces ) const override ;
 };
 
 PLUMED_REGISTER_ACTION(KDE,"KDE")
@@ -248,10 +247,8 @@ KDE::KDE(const ActionOptions&ao):
   if( ignore_out_of_bounds ) log.printf("  ignoring kernels that are outside of grid \n");
   addValueWithDerivatives( shape ); setNotPeriodic();
   getPntrToComponent(0)->setDerivativeIsZeroWhenValueIsZero();
-  // Make sure we store all the arguments
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) getPntrToArgument(i)->buildDataStore();
   // Check for task reduction
-  updateTaskListReductionStatus(); setupOnFirstStep( false );
+  setupOnFirstStep( false );
 }
 
 void KDE::setupOnFirstStep( const bool incalc ) {
@@ -534,27 +531,18 @@ void KDE::gatherStoredValue( const unsigned& valindex, const unsigned& code, con
   }
 }
 
-void KDE::updateForceTasksFromValue( const Value* myval, std::vector<unsigned>& force_tasks ) const {
-  if( !myval->forcesWereAdded() ) return ;
-  if( numberOfKernels==1 ) plumed_error();
-
-  int flag=1;
-  for(unsigned i=0; i<numberOfKernels; ++i) {
-    if( checkTaskStatus( i, flag ) ) force_tasks.push_back(i);
-  }
-}
-
 bool KDE::checkForTaskForce( const unsigned& itask, const Value* myval ) const {
   if( !myval->forcesWereAdded() ) return false;
   if( numberOfKernels==1 ) plumed_error();
   return checkTaskIsActive( itask );
 }
 
-void KDE::gatherForcesOnStoredValue( const unsigned& ival, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
+void KDE::gatherForces( const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
   if( numberOfKernels==1 ) {
     plumed_error();
     return;
   }
+  if( !checkComponentsForForce() ) return;
   double height; std::vector<double> args( gridobject.getDimension() );
   retrieveArgumentsAndHeight( myvals, args, height );
   unsigned num_neigh; std::vector<unsigned> neighbors;
@@ -585,7 +573,7 @@ void KDE::gatherForcesOnStoredValue( const unsigned& ival, const unsigned& itask
       for(unsigned i=0; i<num_neigh; ++i) {
         gridobject.getGridPointCoordinates( neighbors[i], gpoint );
         double dot=0; for(unsigned j=0; j<gpoint.size(); ++j) dot += args[j]*gpoint[j];
-        double fforce = getConstPntrToComponent(ival)->getForce( neighbors[i] ); double newval = height*von_misses_norm*exp( von_misses_concentration*dot );
+        double fforce = getConstPntrToComponent(0)->getForce( neighbors[i] ); double newval = height*von_misses_norm*exp( von_misses_concentration*dot );
         if( hasheight && getPntrToArgument(args.size())->getRank()==0 ) forces[ hforce_start ] += newval*fforce / height;
         else if( hasheight ) forces[ hforce_start + getPntrToArgument(args.size())->getIndexInStore(itask) ] += newval*fforce / height;
         unsigned n=0; for(unsigned j=0; j<gpoint.size(); ++j) { forces[n + getPntrToArgument(j)->getIndexInStore(itask)] += von_misses_concentration*newval*gpoint[j]*fforce; n += getPntrToArgument(j)->getNumberOfStoredValues(); }

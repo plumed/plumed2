@@ -86,7 +86,7 @@ QuaternionBondProductMatrix::QuaternionBondProductMatrix(const ActionOptions&ao)
   if( getNumberOfArguments()!=8 ) error("should be eight arguments to this action, 4 quaternion components and 4 matrices");
   unsigned nquat = getPntrToArgument(0)->getNumberOfValues();
   for(unsigned i=0; i<4; ++i) {
-    Value* myarg=getPntrToArgument(i); myarg->buildDataStore();
+    Value* myarg=getPntrToArgument(i);
     if( myarg->getRank()!=1 ) error("first four arguments to this action should be vectors");
     if( (myarg->getPntrToAction())->getName()!="QUATERNION_VECTOR" ) error("first four arguments to this action should be quaternions");
     std::string mylab=getPntrToArgument(i)->getName(); std::size_t dot=mylab.find_first_of(".");
@@ -110,7 +110,6 @@ QuaternionBondProductMatrix::QuaternionBondProductMatrix(const ActionOptions&ao)
   addComponent( "i", shape ); componentIsNotPeriodic("i");
   addComponent( "j", shape ); componentIsNotPeriodic("j");
   addComponent( "k", shape ); componentIsNotPeriodic("k");
-  unsigned nderivatives = buildArgumentStore(0);
 }
 
 unsigned QuaternionBondProductMatrix::getNumberOfDerivatives() {

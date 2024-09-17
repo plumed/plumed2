@@ -98,7 +98,6 @@ PathDisplacements::PathDisplacements(const ActionOptions& ao):
   // And create a value to hold the displacements
   std::vector<unsigned> shape(2); shape[0]=nrows; shape[1]=ncols;
   addValue( shape ); setNotPeriodic();
-  getPntrToComponent(0)->buildDataStore();
   getPntrToComponent(0)->reshapeMatrixStore( shape[1] );
 }
 

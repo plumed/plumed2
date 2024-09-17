@@ -45,7 +45,6 @@ ActionWithGrid::ActionWithGrid(const ActionOptions&ao):
 }
 
 void ActionWithGrid::calculate() {
-  plumed_assert( !actionInChain() );
   if( firststep ) { setupOnFirstStep( true ); firststep=false; }
 
   runAllTasks();

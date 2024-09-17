@@ -98,7 +98,7 @@ Collect::Collect( const ActionOptions& ao ):
     nvals=(clearstride/getStride());
   }
 
-  std::vector<unsigned> shape(1); shape[0]=nvals; getPntrToArgument(0)->buildDataStore();
+  std::vector<unsigned> shape(1); shape[0]=nvals;
   if( type=="matrix" ) { shape.resize(2); shape[1] = getPntrToArgument(0)->getNumberOfValues(); }
   if( type=="vector" ) { shape[0] = nvals*getPntrToArgument(0)->getNumberOfValues(); }
   addValue( shape ); if( shape.size()==2 ) getPntrToComponent(0)->reshapeMatrixStore( shape[1] );

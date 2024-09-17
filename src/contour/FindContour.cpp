@@ -109,11 +109,7 @@ FindContour::FindContour(const ActionOptions&ao):
   std::vector<std::string> argn( ag->getGridCoordinateNames() );
 
   std::vector<unsigned> shape(1); shape[0]=0;
-  for(unsigned i=0; i<argn.size(); ++i ) {
-    addComponent( argn[i], shape ); componentIsNotPeriodic( argn[i] ); getPntrToComponent(i)->buildDataStore();
-  }
-  // Check for task reduction
-  updateTaskListReductionStatus();
+  for(unsigned i=0; i<argn.size(); ++i ) { addComponent( argn[i], shape ); componentIsNotPeriodic( argn[i] ); }
 }
 
 std::string FindContour::getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const {

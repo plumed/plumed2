@@ -89,7 +89,7 @@ ClusterWeights::ClusterWeights(const ActionOptions&ao):
   requestArguments( clusters );
   // Now create the value
   std::vector<unsigned> shape(1); shape[0]=clusters[0]->getShape()[0];
-  addValue( shape ); setNotPeriodic(); getPntrToComponent(0)->buildDataStore();
+  addValue( shape ); setNotPeriodic();
   // Find out which cluster we want
   parse("CLUSTER",clustr);
   if( clustr<1 ) error("cannot look for a cluster larger than the largest cluster");

@@ -246,7 +246,7 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
       if( getPntrToArgument(i)->getRank()!=1 || getPntrToArgument(i)->hasDerivatives() ) error("arguments for xyz output should be vectors");
       if( getPntrToArgument(i)->getNumberOfValues()!=atoms.size() ) error("number of elements in vector " + getPntrToArgument(i)->getName() + " is not equal to number of atoms output");
-      getPntrToArgument(i)->buildDataStore(true); argnames.push_back( getPntrToArgument(i)->getName() );
+      argnames.push_back( getPntrToArgument(i)->getName() );
     }
     std::vector<std::string> str_upper, str_lower; std::string errors;
     parseVector("LESS_THAN_OR_EQUAL",str_upper); parseVector("GREATER_THAN_OR_EQUAL",str_lower);

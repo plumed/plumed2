@@ -206,25 +206,6 @@ void AdjacencyMatrixBase::updateNeighbourList() {
   if( read_one_group && maxcol==getConstPntrToComponent(0)->getShape()[1] ) maxcol = maxcol-1;
 }
 
-void AdjacencyMatrixBase::getAdditionalTasksRequired( ActionWithVector* action, std::vector<unsigned>& atasks ) {
-  if( action==this ) return;
-  // Update the neighbour list
-  updateNeighbourList();
-
-  unsigned nactive = atasks.size();
-  std::vector<unsigned> indlist( 1 + ablocks.size() + threeblocks.size() );
-  for(unsigned i=0; i<nactive; ++i) {
-    unsigned num = retrieveNeighbours( atasks[i], indlist );
-    for(unsigned j=0; j<num; ++j) {
-      bool found=false;
-      for(unsigned k=0; k<atasks.size(); ++k ) {
-        if( indlist[j]==atasks[k] ) { found=true; break; }
-      }
-      if( !found ) atasks.push_back( indlist[j] );
-    }
-  }
-}
-
 unsigned AdjacencyMatrixBase::retrieveNeighbours( const unsigned& current, std::vector<unsigned> & indices ) const {
   unsigned natoms=nlist[current]; indices[0]=current;
   unsigned lstart = getConstPntrToComponent(0)->getShape()[0] + current*(1+natoms_per_list); plumed_dbg_assert( nlist[lstart]==current );
@@ -278,10 +259,9 @@ void AdjacencyMatrixBase::performTask( const std::string& controller, const unsi
     // Update dynamic list indices for virial
     unsigned base = 3*getNumberOfAtoms(); for(unsigned j=0; j<9; ++j) myvals.updateIndex( 0, base+j );
     // And the indices for the derivatives of the row of the matrix
-    unsigned nmat = getConstPntrToComponent(0)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixRowDerivatives( nmat );
-    std::vector<unsigned>& matrix_indices( myvals.getMatrixRowDerivativeIndices( nmat ) );
+    unsigned nmat_ind = myvals.getNumberOfMatrixRowDerivatives(); std::vector<unsigned>& matrix_indices( myvals.getMatrixRowDerivativeIndices() );
     matrix_indices[nmat_ind+0]=3*index2+0; matrix_indices[nmat_ind+1]=3*index2+1; matrix_indices[nmat_ind+2]=3*index2+2;
-    myvals.setNumberOfMatrixRowDerivatives( nmat, nmat_ind+3 );
+    myvals.setNumberOfMatrixRowDerivatives( nmat_ind+3 );
   }
 
   // Calculate the components if we need them
@@ -319,12 +299,6 @@ void AdjacencyMatrixBase::performTask( const std::string& controller, const unsi
       myvals.addDerivative( 3, base+1, 0 ); myvals.addDerivative( 3, base+4, 0 ); myvals.addDerivative( 3, base+7, 0 );
       myvals.addDerivative( 3, base+2, -atom[0] ); myvals.addDerivative( 3, base+5, -atom[1] ); myvals.addDerivative( 3, base+8, -atom[2] );
       for(unsigned k=0; k<9; ++k) { myvals.updateIndex( 1, base+k ); myvals.updateIndex( 2, base+k ); myvals.updateIndex( 3, base+k ); }
-      for(unsigned k=1; k<4; ++k) {
-        unsigned nmat = getConstPntrToComponent(k)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixRowDerivatives( nmat );
-        std::vector<unsigned>& matrix_indices( myvals.getMatrixRowDerivativeIndices( nmat ) );
-        matrix_indices[nmat_ind+0]=3*index2+0; matrix_indices[nmat_ind+1]=3*index2+1; matrix_indices[nmat_ind+2]=3*index2+2;
-        myvals.setNumberOfMatrixRowDerivatives( nmat, nmat_ind+3 );
-      }
     }
   }
 }
@@ -332,25 +306,23 @@ void AdjacencyMatrixBase::performTask( const std::string& controller, const unsi
 void AdjacencyMatrixBase::runEndOfRowJobs( const unsigned& ind, const std::vector<unsigned> & indices, MultiValue& myvals ) const {
   if( doNotCalculateDerivatives() ) return;
 
-  for(int k=0; k<getNumberOfComponents(); ++k) {
-    unsigned nmat = getConstPntrToComponent(k)->getPositionInMatrixStash(), nmat_ind = myvals.getNumberOfMatrixRowDerivatives( nmat );
-    std::vector<unsigned>& matrix_indices( myvals.getMatrixRowDerivativeIndices( nmat ) );
-    plumed_assert( nmat_ind<matrix_indices.size() );
-    matrix_indices[nmat_ind+0]=3*ind+0;
-    matrix_indices[nmat_ind+1]=3*ind+1;
-    matrix_indices[nmat_ind+2]=3*ind+2;
+  unsigned nmat_ind = myvals.getNumberOfMatrixRowDerivatives();
+  std::vector<unsigned>& matrix_indices( myvals.getMatrixRowDerivativeIndices() );
+  plumed_assert( nmat_ind<matrix_indices.size() );
+  matrix_indices[nmat_ind+0]=3*ind+0;
+  matrix_indices[nmat_ind+1]=3*ind+1;
+  matrix_indices[nmat_ind+2]=3*ind+2;
+  nmat_ind+=3;
+  for(unsigned i=myvals.getSplitIndex(); i<myvals.getNumberOfIndices(); ++i) {
+    matrix_indices[nmat_ind+0]=3*indices[i]+0;
+    matrix_indices[nmat_ind+1]=3*indices[i]+1;
+    matrix_indices[nmat_ind+2]=3*indices[i]+2;
     nmat_ind+=3;
-    for(unsigned i=myvals.getSplitIndex(); i<myvals.getNumberOfIndices(); ++i) {
-      matrix_indices[nmat_ind+0]=3*indices[i]+0;
-      matrix_indices[nmat_ind+1]=3*indices[i]+1;
-      matrix_indices[nmat_ind+2]=3*indices[i]+2;
-      nmat_ind+=3;
-    }
-    unsigned virbase = 3*getNumberOfAtoms();
-    for(unsigned i=0; i<9; ++i) matrix_indices[nmat_ind+i]=virbase+i;
-    nmat_ind+=9; plumed_dbg_massert( nmat_ind<=3*getNumberOfAtoms() + 9, "found too many derivatives in " + getLabel() );
-    myvals.setNumberOfMatrixRowDerivatives( nmat, nmat_ind );
   }
+  unsigned virbase = 3*getNumberOfAtoms();
+  for(unsigned i=0; i<9; ++i) matrix_indices[nmat_ind+i]=virbase+i;
+  nmat_ind+=9; plumed_dbg_massert( nmat_ind<=3*getNumberOfAtoms() + 9, "found too many derivatives in " + getLabel() );
+  myvals.setNumberOfMatrixRowDerivatives( nmat_ind );
 }
 
 }

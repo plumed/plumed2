@@ -67,10 +67,9 @@ Flatten::Flatten(const ActionOptions& ao):
 {
   if( getNumberOfArguments()!=1 ) error("should only be one argument for this action");
   if( getPntrToArgument(0)->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) error("input to this action should be a matrix");
-  getPntrToArgument(0)->buildDataStore(true);
   std::vector<unsigned> inshape( getPntrToArgument(0)->getShape() );
   std::vector<unsigned> shape( 1 ); shape[0]=inshape[0]*inshape[1];
-  addValue( shape ); setNotPeriodic(); getPntrToComponent(0)->buildDataStore();
+  addValue( shape ); setNotPeriodic();
 }
 
 void Flatten::calculate() {

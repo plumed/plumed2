@@ -44,7 +44,6 @@ MatrixOperationBase::MatrixOperationBase(const ActionOptions&ao):
       if (getPntrToArgument(0)->getRank()!=1 || getPntrToArgument(0)->hasDerivatives() ) error("input to this argument should be a matrix or vector");
     } else error("input to this argument should be a matrix");
   }
-  getPntrToArgument(0)->buildDataStore();
 }
 
 void MatrixOperationBase::retrieveFullMatrix( Matrix<double>& mymatrix ) {

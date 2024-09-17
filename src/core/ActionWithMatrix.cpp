@@ -30,110 +30,33 @@ void ActionWithMatrix::registerKeywords( Keywords& keys ) {
 
 ActionWithMatrix::ActionWithMatrix(const ActionOptions&ao):
   Action(ao),
-  ActionWithVector(ao),
-  next_action_in_chain(NULL),
-  matrix_to_do_before(NULL),
-  matrix_to_do_after(NULL),
-  clearOnEachCycle(true)
+  ActionWithVector(ao)
 {
 }
 
-ActionWithMatrix::~ActionWithMatrix() {
-  if( matrix_to_do_before ) { matrix_to_do_before->matrix_to_do_after=NULL; matrix_to_do_before->next_action_in_chain=NULL; }
-}
-
-void ActionWithMatrix::getAllActionLabelsInMatrixChain( std::vector<std::string>& mylabels ) const {
-  bool found=false;
-  for(unsigned i=0; i<mylabels.size(); ++i) {
-    if( getLabel()==mylabels[i] ) { found=true; }
-  }
-  if( !found ) mylabels.push_back( getLabel() );
-  if( matrix_to_do_after ) matrix_to_do_after->getAllActionLabelsInMatrixChain( mylabels );
-}
-
-void ActionWithMatrix::setupStreamedComponents( const std::string& headstr, unsigned& nquants, unsigned& nmat, unsigned& maxcol ) {
-  ActionWithVector::setupStreamedComponents( headstr, nquants, nmat, maxcol );
-
+void ActionWithMatrix::calculate() {
+  // Update all the neighbour lists
+  updateNeighbourList();
+  // Setup the matrix indices
   for(int i=0; i<getNumberOfComponents(); ++i) {
     Value* myval=getPntrToComponent(i);
     if( myval->getRank()!=2 || myval->hasDerivatives() ) continue;
-    myval->setPositionInMatrixStash(nmat); nmat++;
-    if( !myval->valueIsStored() ) continue;
-    if( myval->getShape()[1]>maxcol ) maxcol=myval->getShape()[1];
-  }
-  // Turn off clearning of derivatives after each matrix run if there are no matrices in the output of this action
-  clearOnEachCycle = false;
-  for(int i=0; i<getNumberOfComponents(); ++i) {
-    const Value* myval=getConstPntrToComponent(i);
-    if( myval->getRank()==2 && !myval->hasDerivatives() ) { clearOnEachCycle = true; break; }
-  }
-  // Turn off clearing of derivatives if we have only the values of adjacency matrices
-  if( doNotCalculateDerivatives() && isAdjacencyMatrix() ) clearOnEachCycle = false;
-}
-
-void ActionWithMatrix::finishChainBuild( ActionWithVector* act ) {
-  ActionWithMatrix* am=dynamic_cast<ActionWithMatrix*>(act); if( !am || act==this ) return;
-  // Build the list that contains everything we are going to loop over in getTotalMatrixBookeepgin and updateAllNeighbourLists
-  if( next_action_in_chain ) next_action_in_chain->finishChainBuild( act );
-  else {
-    next_action_in_chain=am;
-    // Build the list of things we are going to loop over in runTask
-    if( am->isAdjacencyMatrix() || act->getName()=="VSTACK" ) return ;
-    plumed_massert( !matrix_to_do_after, "cannot add " + act->getLabel() + " in " + getLabel() + " as have already added " + matrix_to_do_after->getLabel() );
-    matrix_to_do_after=am; am->matrix_to_do_before=this;
-  }
-}
-
-const ActionWithMatrix* ActionWithMatrix::getFirstMatrixInChain() const {
-  if( !actionInChain() ) return this;
-  return matrix_to_do_before->getFirstMatrixInChain();
-}
-
-void ActionWithMatrix::setupMatrixStore() {
-  for(int i=0; i<getNumberOfComponents(); ++i) {
-    Value* myval=getPntrToComponent(i);
-    if( myval->getRank()!=2 || myval->hasDerivatives() || !myval->valueIsStored() ) continue;
     myval->reshapeMatrixStore( getNumberOfColumns() );
   }
-  if( next_action_in_chain ) next_action_in_chain->setupMatrixStore();
-}
-
-void ActionWithMatrix::calculate() {
-  if( actionInChain() ) return ;
-  // Update all the neighbour lists
-  updateAllNeighbourLists();
-  // Setup the matrix indices
-  setupMatrixStore();
   // And run all the tasks
   runAllTasks();
 }
 
-void ActionWithMatrix::updateAllNeighbourLists() {
-  updateNeighbourList();
-  if( next_action_in_chain ) next_action_in_chain->updateAllNeighbourLists();
-}
-
-void ActionWithMatrix::clearBookeepingBeforeTask( const unsigned& task_index ) const {
-  // Reset the bookeeping elements for storage
-  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
-    Value* myval = const_cast<Value*>( getConstPntrToComponent(i) ); unsigned ncols = myval->getNumberOfColumns();
-    if( myval->getRank()!=2 || myval->hasDerivatives() || !myval->valueIsStored() || ncols>=myval->getShape()[1] ) continue;
-    myval->matrix_bookeeping[task_index*(1+ncols)]=0;
-  }
-  if( matrix_to_do_after ) matrix_to_do_after->clearBookeepingBeforeTask( task_index );
-}
-
 void ActionWithMatrix::performTask( const unsigned& task_index, MultiValue& myvals ) const {
   std::vector<unsigned> & indices( myvals.getIndices() );
-  if( matrix_to_do_before ) {
-    plumed_dbg_assert( myvals.inVectorCall() );
-    runEndOfRowJobs( task_index, indices, myvals );
-    return;
-  }
   setupForTask( task_index, indices, myvals );
 
   // Reset the bookeeping elements for storage
-  clearBookeepingBeforeTask( task_index );
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+    Value* myval = const_cast<Value*>( getConstPntrToComponent(i) ); unsigned ncols = myval->getNumberOfColumns();
+    if( myval->getRank()!=2 || myval->hasDerivatives() || ncols>=myval->getShape()[1] ) continue;
+    myval->matrix_bookeeping[task_index*(1+ncols)]=0;
+  }
 
   // Now loop over the row of the matrix
   unsigned ntwo_atoms = myvals.getSplitIndex();
@@ -159,15 +82,15 @@ void ActionWithMatrix::runTask( const std::string& controller, const unsigned& c
     double checkval = myvals.get( 0 );
     for(int i=0; i<getNumberOfComponents(); ++i) {
       const Value* myval=getConstPntrToComponent(i); unsigned ncols = myval->getNumberOfColumns();
-      if( myval->getRank()!=2 || myval->hasDerivatives() || !myval->valueIsStored() ) continue;
-      unsigned matindex = myval->getPositionInMatrixStash(), col_stash_index = colno;
+      if( myval->getRank()!=2 || myval->hasDerivatives() ) continue;
+      unsigned col_stash_index = colno;
       if( colno>=myval->getShape()[0] ) col_stash_index = colno - myval->getShape()[0];
       if( myval->forcesWereAdded() ) {
         double fforce;
         if( ncols<myval->getShape()[1] ) fforce = myval->getForce( myvals.getTaskIndex()*ncols + myval->matrix_bookeeping[current*(1+ncols)] );
         else fforce = myval->getForce( myvals.getTaskIndex()*myval->getShape()[1] + col_stash_index );
         for(unsigned j=0; j<myvals.getNumberActive(i); ++j) {
-          unsigned kindex = myvals.getActiveIndex(i,j); myvals.addMatrixForce( matindex, kindex, fforce*myvals.getDerivative(i,kindex ) );
+          unsigned kindex = myvals.getActiveIndex(i,j); myvals.addMatrixForce( kindex, fforce*myvals.getDerivative(i,kindex ) );
         }
       }
       double finalval = myvals.get( i ); if( !isAdjacencyMatrix() ) checkval=finalval;
@@ -180,7 +103,6 @@ void ActionWithMatrix::runTask( const std::string& controller, const unsigned& c
       }
     }
   }
-  if( matrix_to_do_after ) matrix_to_do_after->runTask( controller, current, colno, myvals );
 }
 
 bool ActionWithMatrix::checkForTaskForce( const unsigned& itask, const Value* myval ) const {
@@ -192,20 +114,18 @@ bool ActionWithMatrix::checkForTaskForce( const unsigned& itask, const Value* my
   return false;
 }
 
-void ActionWithMatrix::gatherForcesOnStoredValue( const unsigned& ival, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
-  if( getConstPntrToComponent(ival)->getRank()==1 ) { ActionWithVector::gatherForcesOnStoredValue( ival, itask, myvals, forces ); return; }
-  unsigned matind = getConstPntrToComponent(ival)->getPositionInMatrixStash(); const std::vector<unsigned>& mat_indices( myvals.getMatrixRowDerivativeIndices( matind ) );
-  for(unsigned i=0; i<myvals.getNumberOfMatrixRowDerivatives(matind); ++i) { unsigned kind = mat_indices[i]; forces[kind] += myvals.getStashedMatrixForce( matind, kind ); }
+void ActionWithMatrix::gatherForces( const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
+  if( checkComponentsForForce() ) {
+    const std::vector<unsigned>& mat_indices( myvals.getMatrixRowDerivativeIndices() );
+    for(unsigned i=0; i<myvals.getNumberOfMatrixRowDerivatives(); ++i) { unsigned kind = mat_indices[i]; forces[kind] += myvals.getStashedMatrixForce( kind ); }
+  }
 }
 
 void ActionWithMatrix::clearMatrixElements( MultiValue& myvals ) const {
-  if( clearOnEachCycle ) {
-    for(int i=0; i<getNumberOfComponents(); ++i) {
-      const Value* myval=getConstPntrToComponent(i);
-      if( myval->getRank()==2 && !myval->hasDerivatives() ) myvals.clearDerivatives( i );
-    }
+  for(int i=0; i<getNumberOfComponents(); ++i) {
+    const Value* myval=getConstPntrToComponent(i);
+    if( myval->getRank()==2 && !myval->hasDerivatives() ) myvals.clearDerivatives( i );
   }
-  if( matrix_to_do_after ) matrix_to_do_after->clearMatrixElements( myvals );
 }
 
 }

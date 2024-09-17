@@ -94,7 +94,6 @@ void DumpVector::buildArgnames() {
     } else if( getPntrToArgument(i)->getRank()==2 ) {
       (getPntrToArgument(i)->getPntrToAction())->getMatrixColumnTitles( argnames );
     }
-    getPntrToArgument(i)->buildDataStore();
   }
 }
 
