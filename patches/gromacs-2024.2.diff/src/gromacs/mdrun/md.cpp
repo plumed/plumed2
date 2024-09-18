@@ -1089,6 +1089,13 @@ void gmx::LegacySimulator::do_md()
                                     do_verbose && !bPMETunePrinting);
                 upd.updateAfterPartition(state_->numAtoms(), md->cFREEZE, md->cTC, md->cACC);
                 fr_->longRangeNonbondeds->updateAfterPartition(*md);
+                /* PLUMED */
+                if(plumedswitch){
+                  int nat_home = dd_numHomeAtoms(*cr_->dd);
+                  plumed_cmd(plumedmain,"setAtomsNlocal",&nat_home);
+                  plumed_cmd(plumedmain,"setAtomsGatindex",cr_->dd->globalAtomIndices.data());
+                }
+                /* END PLUMED */
             }
         }
 
@@ -1721,7 +1728,6 @@ void gmx::LegacySimulator::do_md()
                 trotter_update(ir,
                                step,
                                ekind_,
-                               enerd_,
                                state_,
                                total_vir,
                                md->homenr,
