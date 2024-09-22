@@ -24,31 +24,11 @@
 
 namespace PLMD {
 
-MultiValue::MultiValue( const size_t& nvals, const size_t& nder, const size_t& nmat ):
-  task_index(0),
-  task2_index(0),
-  values(nvals),
-  nderivatives(nder),
-  derivatives(nvals*nder),
-  hasderiv(nvals*nder,false),
-  nactive(nvals),
-  active_list(nvals*nder),
-  atLeastOneSet(false),
-  vector_call(false),
-  nindices(0),
-  nsplit(0),
-  matrix_force_stash(0),
-  matrix_row_nderivatives(0),
-  matrix_row_derivative_indices(nder)
-{
-  if( nmat>0 ) matrix_force_stash.resize(nder,0);
-}
-
-void MultiValue::resize( const size_t& nvals, const size_t& nder, const size_t& nmat ) {
-  if( values.size()==nvals && nderivatives==nder ) return;
+void MultiValue::resize( const size_t& nvals, const size_t& nder ) {
+  if( values.size()==nvals && nderivatives>nder ) return;
   values.resize(nvals); nderivatives=nder; derivatives.resize( nvals*nder );
   hasderiv.resize(nvals*nder,false); nactive.resize(nvals); active_list.resize(nvals*nder);
-  if( nmat>0 ) matrix_force_stash.resize(nder,0);
+  matrix_force_stash.resize(nder,0);
   matrix_row_nderivatives=0; matrix_row_derivative_indices.resize(nder); atLeastOneSet=false;
 }
 

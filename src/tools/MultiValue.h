@@ -62,8 +62,8 @@ private:
   std::vector<Tensor> tmp_atom_virial;
   std::vector<std::vector<double> > tmp_vectors;
 public:
-  MultiValue( const std::size_t& nvals, const std::size_t& nder, const std::size_t& nmat=0 );
-  void resize( const std::size_t& nvals, const std::size_t& nder, const std::size_t& nmat=0 );
+  MultiValue() : task_index(0), task2_index(0), nderivatives(0), atLeastOneSet(false), vector_call(false), nindices(0), nsplit(0), matrix_row_nderivatives(0) {}
+  void resize( const std::size_t& nvals, const std::size_t& nder );
 /// Set the task index prior to the loop
   void setTaskIndex( const std::size_t& tindex );
 ///

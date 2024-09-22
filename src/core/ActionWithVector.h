@@ -45,6 +45,10 @@ private:
   bool forwardPass;
 /// The buffer that we use (we keep a copy here to avoid resizing)
   std::vector<double> buffer;
+/// A tempory vector of MultiValue so we can avoid doing lots of resizes
+  std::vector<MultiValue> myvals;
+/// A tempory set of vectors for holding forces over threads
+  std::vector<std::vector<double> > omp_forces;
 /// The list of active tasks
   std::vector<unsigned> active_tasks;
 /// Clear all the bookeeping arrays

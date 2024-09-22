@@ -172,8 +172,9 @@ void FunctionOfVector<T>::prepare() {
 
 template <class T>
 void FunctionOfVector<T>::performTask( const unsigned& current, MultiValue& myvals ) const {
-  unsigned argstart=myfunc.getArgStart(); std::vector<double> args( getNumberOfArguments()-argstart);
-  for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
+  unsigned nargs=getNumberOfArguments(); if( getNumberOfMasks()>0 ) nargs = nargs - getNumberOfMasks();
+  unsigned argstart=myfunc.getArgStart(); std::vector<double> args( nargs-argstart);
+  for(unsigned i=argstart; i<nargs; ++i) {
     if( getPntrToArgument(i)->getRank()==1 ) args[i-argstart]=getPntrToArgument(i)->get(current);
     else args[i-argstart] = getPntrToArgument(i)->get();
   }

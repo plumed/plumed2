@@ -191,6 +191,7 @@ void ActionWithVector::runAllTasks() {
   unsigned nt=OpenMP::getNumThreads();
   if( nt*stride*10>nactive_tasks ) nt=nactive_tasks/stride/10;
   if( nt==0 ) nt=1;
+  if( myvals.size()!=nt ) myvals.resize(nt);
 
   // Get the total number of streamed quantities that we need
   // Get size for buffer
@@ -210,6 +211,8 @@ void ActionWithVector::runAllTasks() {
 
   // Recover the number of derivatives we require
   if( !doNotCalculateDerivatives() && !gridsInStream ) {
+    unsigned nargs = getNumberOfArguments(); int nmasks=getNumberOfMasks();
+    if( nargs>=nmasks && nmasks>0 ) nargs = nargs - nmasks;
     if( getNumberOfAtoms()>0 ) nderivatives += 3*getNumberOfAtoms() + 9;
     for(unsigned i=0; i<getNumberOfArguments(); ++i) nderivatives += getPntrToArgument(i)->getNumberOfValues();
   }
@@ -217,21 +220,22 @@ void ActionWithVector::runAllTasks() {
   #pragma omp parallel num_threads(nt)
   {
     std::vector<double> omp_buffer;
+    const unsigned t=OpenMP::getThreadNum();
     if( nt>1 ) omp_buffer.resize( bufsize, 0.0 );
-    MultiValue myvals( getNumberOfComponents(), nderivatives, 0 );
-    myvals.clearAll();
+    if( myvals[t].getNumberOfValues()!=getNumberOfComponents() || myvals[t].getNumberOfDerivatives()!=nderivatives ) myvals[t].resize( getNumberOfComponents(), nderivatives );
+    myvals[t].clearAll();
 
     #pragma omp for nowait
     for(unsigned i=rank; i<nactive_tasks; i+=stride) {
       // Calculate the stuff in the loop for this action
-      runTask( partialTaskList[i], myvals );
+      runTask( partialTaskList[i], myvals[t] );
 
       // Now transfer the data to the actions that accumulate values from the calculated quantities
-      if( nt>1 ) gatherAccumulators( partialTaskList[i], myvals, omp_buffer );
-      else gatherAccumulators( partialTaskList[i], myvals, buffer );
+      if( nt>1 ) gatherAccumulators( partialTaskList[i], myvals[t], omp_buffer );
+      else gatherAccumulators( partialTaskList[i], myvals[t], buffer );
 
       // Clear the value
-      myvals.clearAll();
+      myvals[t].clearAll();
     }
     #pragma omp critical
     if( nt>1 ) for(unsigned i=0; i<bufsize; ++i) buffer[i]+=omp_buffer[i];
@@ -349,18 +353,14 @@ bool ActionWithVector::checkForForces() {
   unsigned nt=OpenMP::getNumThreads();
   if( nt*stride*10>nf_tasks ) nt=nf_tasks/stride/10;
   if( nt==0 ) nt=1;
+  if( myvals.size()!=nt ) myvals.resize(nt);
+  if( omp_forces.size()!=nt ) omp_forces.resize(nt);
 
-  // Now determine how big the multivalue needs to be
-  unsigned nmatrices=0; ActionWithMatrix* am=dynamic_cast<ActionWithMatrix*>(this);
-  if(am) {
-    for(unsigned i=0; i<getNumberOfComponents(); ++i) {
-      if( getConstPntrToComponent(i)->getRank()==2 && !getConstPntrToComponent(i)->hasDerivatives() ) { nmatrices=getNumberOfComponents(); }
-    }
-  }
   // Recover the number of derivatives we require (this should be equal to the number of forces)
-  unsigned nderiv=0;
+  unsigned nderiv=0, nargs = getNumberOfArguments(); int nmasks = getNumberOfMasks();
+  if( nargs>=nmasks && nmasks>0 ) nargs = nargs - nmasks;
   if( getNumberOfAtoms()>0 ) nderiv += 3*getNumberOfAtoms() + 9;
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+  for(unsigned i=0; i<nargs; ++i) {
     nderiv += getPntrToArgument(i)->getNumberOfStoredValues();
   }
   if( forcesForApply.size()!=nderiv ) forcesForApply.resize( nderiv );
@@ -369,23 +369,26 @@ bool ActionWithVector::checkForForces() {
 
   #pragma omp parallel num_threads(nt)
   {
-    std::vector<double> omp_forces;
-    if( nt>1 ) omp_forces.resize( forcesForApply.size(), 0.0 );
-    MultiValue myvals( getNumberOfComponents(), nderiv, nmatrices );
-    myvals.clearAll();
+    const unsigned t=OpenMP::getThreadNum();
+    if( nt>1 ) {
+      if( omp_forces[t].size()!=forcesForApply.size() ) omp_forces[t].resize( forcesForApply.size(), 0.0 );
+      else omp_forces[t].assign( forcesForApply.size(), 0.0 );
+    }
+    if( myvals[t].getNumberOfValues()!=getNumberOfComponents() || myvals[t].getNumberOfDerivatives()!=nderiv ) myvals[t].resize( getNumberOfComponents(), nderiv );
+    myvals[t].clearAll();
 
     #pragma omp for nowait
     for(unsigned i=rank; i<nf_tasks; i+=stride) {
-      runTask( force_tasks[i], myvals );
+      runTask( force_tasks[i], myvals[t] );
 
       // Now get the forces
-      if( nt>1 ) gatherForces( force_tasks[i], myvals, omp_forces );
-      else gatherForces( force_tasks[i], myvals, forcesForApply );
+      if( nt>1 ) gatherForces( force_tasks[i], myvals[t], omp_forces[t] );
+      else gatherForces( force_tasks[i], myvals[t], forcesForApply );
 
-      myvals.clearAll();
+      myvals[t].clearAll();
     }
     #pragma omp critical
-    if(nt>1) for(unsigned i=0; i<forcesForApply.size(); ++i) forcesForApply[i]+=omp_forces[i];
+    if(nt>1) for(unsigned i=0; i<forcesForApply.size(); ++i) forcesForApply[i]+=omp_forces[t][i];
   }
   // MPI Gather on forces
   if( !serial ) comm.Sum( forcesForApply );
