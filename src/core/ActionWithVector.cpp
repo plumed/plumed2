@@ -332,6 +332,16 @@ bool ActionWithVector::checkChainForNonScalarForces() const {
   return false;
 }
 
+void ActionWithVector::getNumberOfForceDerivatives( unsigned& nforces, unsigned& nderiv ) const {
+  nforces=0; unsigned nargs = getNumberOfArguments(); int nmasks = getNumberOfMasks();
+  if( nargs>=nmasks && nmasks>0 ) nargs = nargs - nmasks;
+  if( getNumberOfAtoms()>0 ) nforces += 3*getNumberOfAtoms() + 9;
+  for(unsigned i=0; i<nargs; ++i) {
+    nforces += getPntrToArgument(i)->getNumberOfStoredValues();
+  }
+  nderiv = nforces;
+}
+
 bool ActionWithVector::checkForForces() {
   if( getPntrToComponent(0)->getRank()==0 ) return ActionWithValue::checkForForces();
 
@@ -357,13 +367,8 @@ bool ActionWithVector::checkForForces() {
   if( omp_forces.size()!=nt ) omp_forces.resize(nt);
 
   // Recover the number of derivatives we require (this should be equal to the number of forces)
-  unsigned nderiv=0, nargs = getNumberOfArguments(); int nmasks = getNumberOfMasks();
-  if( nargs>=nmasks && nmasks>0 ) nargs = nargs - nmasks;
-  if( getNumberOfAtoms()>0 ) nderiv += 3*getNumberOfAtoms() + 9;
-  for(unsigned i=0; i<nargs; ++i) {
-    nderiv += getPntrToArgument(i)->getNumberOfStoredValues();
-  }
-  if( forcesForApply.size()!=nderiv ) forcesForApply.resize( nderiv );
+  unsigned nderiv, nforces; getNumberOfForceDerivatives( nforces, nderiv );
+  if( forcesForApply.size()!=nforces ) forcesForApply.resize( nforces );
   // Clear force buffer
   forcesForApply.assign( forcesForApply.size(), 0.0 );
 
@@ -408,8 +413,7 @@ bool ActionWithVector::checkForTaskForce( const unsigned& itask, const Value* my
 }
 
 void ActionWithVector::gatherForcesOnStoredValue( const unsigned& ival, const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
-  const Value* myval = getConstPntrToComponent(ival);
-  double fforce = myval->getForce(itask);
+  const Value* myval = getConstPntrToComponent(ival); double fforce = myval->getForce(itask);
   for(unsigned j=0; j<myvals.getNumberActive(ival); ++j) {
     unsigned jder=myvals.getActiveIndex(ival, j); plumed_dbg_assert( jder<forces.size() );
     forces[jder] += fforce*myvals.getDerivative( ival, jder );

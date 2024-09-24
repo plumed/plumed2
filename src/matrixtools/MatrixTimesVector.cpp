@@ -46,6 +46,8 @@ public:
   void calculate() override ;
   void performTask( const unsigned& task_index, MultiValue& myvals ) const override ;
   int checkTaskIsActive( const unsigned& itask ) const override ;
+  void getNumberOfForceDerivatives( unsigned& nforces, unsigned& nderiv ) const override ;
+  void gatherForces( const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const override ;
 };
 
 PLUMED_REGISTER_ACTION(MatrixTimesVector,"MATRIX_VECTOR_PRODUCT")
@@ -173,7 +175,7 @@ int MatrixTimesVector::checkTaskIsActive( const unsigned& itask ) const {
 
 void MatrixTimesVector::performTask( const unsigned& task_index, MultiValue& myvals ) const {
   if( sumrows ) {
-    unsigned base=0, n=getNumberOfArguments()-1; Value* myvec = getPntrToArgument(n);
+    unsigned n=getNumberOfArguments()-1; Value* myvec = getPntrToArgument(n);
     for(unsigned i=0; i<n; ++i) {
       Value* mymat = getPntrToArgument(i);
       unsigned ncol = mymat->getNumberOfColumns();
@@ -184,11 +186,10 @@ void MatrixTimesVector::performTask( const unsigned& task_index, MultiValue& myv
       // And the derivatives
       if( doNotCalculateDerivatives() ) continue;
 
-      unsigned dloc = base + task_index*ncol;
+      unsigned dloc = task_index*ncol;
       for(unsigned j=0; j<nmat; ++j) {
         myvals.addDerivative( i, dloc + j, 1.0 ); myvals.updateIndex( i, dloc + j );
       }
-      base += mymat->getNumberOfStoredValues();
     }
   } else if( getPntrToArgument(1)->getRank()==1 ) {
     Value* mymat = getPntrToArgument(0);
@@ -234,6 +235,29 @@ void MatrixTimesVector::performTask( const unsigned& task_index, MultiValue& myv
         myvals.addDerivative( i, nmat_der + kind, matval ); myvals.updateIndex( i, nmat_der + kind );
       }
       base += mymat->getNumberOfStoredValues();
+    }
+  }
+}
+
+void MatrixTimesVector::getNumberOfForceDerivatives( unsigned& nforces, unsigned& nderiv ) const {
+  ActionWithVector::getNumberOfForceDerivatives( nforces, nderiv );
+  if( sumrows ) nderiv = getPntrToArgument(0)->getNumberOfStoredValues() + getPntrToArgument(getNumberOfArguments()-1)->getNumberOfStoredValues();
+}
+
+void MatrixTimesVector::gatherForces( const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
+  if( !sumrows ) { ActionWithVector::gatherForces( itask, myvals, forces ); return; }
+  if( checkComponentsForForce() ) {
+    unsigned base = 0;
+    for(unsigned ival=0; ival<getNumberOfComponents(); ++ival) {
+      const Value* myval=getConstPntrToComponent(ival);
+      if( myval->forcesWereAdded() ) {
+        double fforce = myval->getForce(itask);
+        for(unsigned j=0; j<myvals.getNumberActive(ival); ++j) {
+          unsigned jder=myvals.getActiveIndex(ival, j); plumed_dbg_assert( jder<forces.size() );
+          forces[base+jder] += fforce*myvals.getDerivative( ival, jder );
+        }
+      }
+      base += getPntrToArgument(ival)->getNumberOfStoredValues();
     }
   }
 }

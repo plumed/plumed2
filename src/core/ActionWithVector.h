@@ -110,6 +110,8 @@ public:
   virtual void gatherForces( const unsigned& i, const MultiValue& myvals, std::vector<double>& forces ) const ;
 /// This is to transfer data from the buffer to the final value
   void finishComputations( const std::vector<double>& buf );
+/// Get the number of forces to use
+  virtual void getNumberOfForceDerivatives( unsigned& nforces, unsigned& nderiv ) const ;
 /// Apply the forces on this data
   virtual void apply();
 };
