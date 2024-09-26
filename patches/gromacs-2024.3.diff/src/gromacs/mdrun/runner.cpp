@@ -2248,11 +2248,15 @@ int Mdrunner::mdrunner()
                         deviceStreamManager->context(),
                         deviceStreamManager->stream(gmx::DeviceStreamType::NonBondedLocal),
                         wcycle.get());
-                fr->gpuForceReduction[gmx::AtomLocality::NonLocal] =
-                        std::make_unique<gmx::GpuForceReduction>(
-                                deviceStreamManager->context(),
-                                deviceStreamManager->stream(gmx::DeviceStreamType::NonBondedNonLocal),
-                                wcycle.get());
+
+                if (runScheduleWork.simulationWork.havePpDomainDecomposition)
+                {
+                    fr->gpuForceReduction[gmx::AtomLocality::NonLocal] =
+                            std::make_unique<gmx::GpuForceReduction>(
+                                    deviceStreamManager->context(),
+                                    deviceStreamManager->stream(gmx::DeviceStreamType::NonBondedNonLocal),
+                                    wcycle.get());
+                }
 
                 if (runScheduleWork.simulationWork.useMdGpuGraph)
                 {
