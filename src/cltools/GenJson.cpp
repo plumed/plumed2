@@ -117,8 +117,8 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
     std::cout<<"     \"dois\" : [";
     unsigned ndoi = keys.getDOIList().size();
     if( ndoi>0 ) {
-        std::cout<<"\"" + keys.getDOIList()[0] + "\""; 
-        for(unsigned j=1; j<ndoi; ++j) std::cout<<", \"" + keys.getDOIList()[j] + "\"";
+      std::cout<<"\"" + keys.getDOIList()[0] + "\"";
+      for(unsigned j=1; j<ndoi; ++j) std::cout<<", \"" + keys.getDOIList()[j] + "\"";
     }
     std::cout<<"],\n";
     std::cout<<"    \"syntax\" : {"<<std::endl;

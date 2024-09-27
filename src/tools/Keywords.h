@@ -203,7 +203,7 @@ public:
   void setDisplayName( const std::string& name );
 /// Add a DOI to the list in the manual page for this action
   void addDOI( const std::string& doi );
-/// Get the list of DOI 
+/// Get the list of DOI
   const std::vector<std::string>& getDOIList() const ;
 };
 
