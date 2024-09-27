@@ -716,4 +716,12 @@ std::string Keywords::getDisplayName() const {
   return thisactname;
 }
 
+void Keywords::addDOI( const std::string& doi ) {
+  doilist.push_back( doi );
+}
+
+const std::vector<std::string>& Keywords::getDOIList() const {
+  return doilist;
+}
+
 }

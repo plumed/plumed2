@@ -113,6 +113,14 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
     // Now output keyword information
     Keywords keys; actionRegister().getKeywords( action_names[i], keys );
     std::cout<<"    \"displayname\" : \""<<keys.getDisplayName()<<"\",\n";
+    //
+    std::cout<<"     \"dois\" : [";
+    unsigned ndoi = keys.getDOIList().size();
+    if( ndoi>0 ) {
+        std::cout<<"\"" + keys.getDOIList()[0] + "\""; 
+        for(unsigned j=1; j<ndoi; ++j) std::cout<<", \"" + keys.getDOIList()[j] + "\"";
+    }
+    std::cout<<"],\n";
     std::cout<<"    \"syntax\" : {"<<std::endl;
     for(unsigned j=0; j<keys.size(); ++j) {
       std::string desc = keys.getKeywordDescription( keys.getKeyword(j) );
