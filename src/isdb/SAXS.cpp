@@ -468,8 +468,8 @@ void SAXS::registerKeywords(Keywords& keys) {
   keys.add("compulsory","N","10","Number of points in the resolution function integral");
   keys.add("compulsory","SOLVATION_STRIDE","10","Number of steps between every new residues solvation estimation via LCPO (ONEBEAD only)");
   keys.add("compulsory","SCALE_EXPINT","1.0","Scaling value for experimental data normalization");
-  keys.addOutputComponent("q","default","The # SAXS of q");
-  keys.addOutputComponent("exp","EXPINT","The # experimental intensity");
+  keys.addOutputComponent("q","default","scalar","The # SAXS of q");
+  keys.addOutputComponent("exp","EXPINT","scalar","The # experimental intensity");
 }
 
 SAXS::SAXS(const ActionOptions&ao):

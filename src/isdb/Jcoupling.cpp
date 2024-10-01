@@ -118,8 +118,8 @@ void JCoupling::registerKeywords(Keywords& keys) {
   keys.add("optional", "C", "Karplus parameter C");
   keys.add("optional", "SHIFT", "Angle shift in radians");
   keys.add("numbered", "COUPLING", "Add an experimental value for each coupling");
-  keys.addOutputComponent("j", "default", "the calculated J-coupling");
-  keys.addOutputComponent("exp", "COUPLING", "the experimental J-coupling");
+  keys.addOutputComponent("j", "default","scalar", "the calculated J-coupling");
+  keys.addOutputComponent("exp", "COUPLING","scalar", "the experimental J-coupling");
 }
 
 JCoupling::JCoupling(const ActionOptions&ao):

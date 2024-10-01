@@ -155,15 +155,14 @@ void FuncPathGeneral::loadReference() {
 
 void FuncPathGeneral::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
-  keys.use("ARG");
   keys.add("compulsory", "LAMBDA", "Lambda parameter required for smoothing");
   keys.add("compulsory", "COEFFICIENTS", "Coefficients to be assigned to the CVs");
   keys.add("compulsory", "REFERENCE", "Colvar file needed to provide the CV milestones");
   keys.add("optional", "COLUMNS", "List of columns in the reference colvar file specifying the CVs");
   keys.add("optional", "NEIGH_SIZE", "Size of the neighbor list");
   keys.add("optional", "NEIGH_STRIDE", "How often the neighbor list needs to be calculated in time units");
-  keys.addOutputComponent("s", "default", "Position on the path");
-  keys.addOutputComponent("z", "default", "Distance from the path");
+  keys.addOutputComponent("s", "default", "scalar","Position on the path");
+  keys.addOutputComponent("z", "default", "scalar","Distance from the path");
 }
 
 FuncPathGeneral::FuncPathGeneral(const ActionOptions&ao):

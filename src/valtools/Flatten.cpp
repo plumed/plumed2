@@ -55,8 +55,9 @@ PLUMED_REGISTER_ACTION(Flatten,"FLATTEN")
 
 void Flatten::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
-  ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
-  keys.setValueDescription("a vector containing all the elements of the input matrix");
+  ActionWithArguments::registerKeywords( keys );
+  keys.addInputKeyword("compulsory","ARG","matrix","the label for the matrix that you would like to flatten to a vector");
+  keys.setValueDescription("vector","a vector containing all the elements of the input matrix");
 }
 
 Flatten::Flatten(const ActionOptions& ao):

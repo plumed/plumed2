@@ -520,17 +520,16 @@ PLUMED_REGISTER_ACTION(MetaD,"METAD")
 
 void MetaD::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
-  keys.addOutputComponent("rbias","CALC_RCT","the instantaneous value of the bias normalized using the c(t) reweighting factor [rbias=bias-rct]."
+  keys.addOutputComponent("rbias","CALC_RCT","scalar","the instantaneous value of the bias normalized using the c(t) reweighting factor [rbias=bias-rct]."
                           "This component can be used to obtain a reweighted histogram.");
-  keys.addOutputComponent("rct","CALC_RCT","the reweighting factor c(t).");
-  keys.addOutputComponent("work","CALC_WORK","accumulator for work");
-  keys.addOutputComponent("acc","ACCELERATION","the metadynamics acceleration factor");
-  keys.addOutputComponent("maxbias", "CALC_MAX_BIAS", "the maximum of the metadynamics V(s, t)");
-  keys.addOutputComponent("transbias", "CALC_TRANSITION_BIAS", "the metadynamics transition bias V*(t)");
-  keys.addOutputComponent("pace","FREQUENCY_ADAPTIVE","the hill addition frequency when employing frequency adaptive metadynamics");
-  keys.addOutputComponent("nlker","NLIST","number of hills in the neighbor list");
-  keys.addOutputComponent("nlsteps","NLIST","number of steps from last neighbor list update");
-  keys.use("ARG");
+  keys.addOutputComponent("rct","CALC_RCT","scalar","the reweighting factor c(t).");
+  keys.addOutputComponent("work","CALC_WORK","scalar","accumulator for work");
+  keys.addOutputComponent("acc","ACCELERATION","scalar","the metadynamics acceleration factor");
+  keys.addOutputComponent("maxbias", "CALC_MAX_BIAS", "scalar","the maximum of the metadynamics V(s, t)");
+  keys.addOutputComponent("transbias", "CALC_TRANSITION_BIAS", "scalar","the metadynamics transition bias V*(t)");
+  keys.addOutputComponent("pace","FREQUENCY_ADAPTIVE","scalar","the hill addition frequency when employing frequency adaptive metadynamics");
+  keys.addOutputComponent("nlker","NLIST","scalar","number of hills in the neighbor list");
+  keys.addOutputComponent("nlsteps","NLIST","scalar","number of steps from last neighbor list update");
   keys.add("compulsory","SIGMA","the widths of the Gaussian hills");
   keys.add("compulsory","PACE","the frequency for hill addition");
   keys.add("compulsory","FILE","HILLS","a file in which the list of added hills is stored");

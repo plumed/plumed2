@@ -96,13 +96,13 @@ PLUMED_REGISTER_ACTION(Wham,"WHAM")
 
 void Wham::registerKeywords(Keywords& keys ) {
   Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
-  ActionWithArguments::registerKeywords( keys ); keys.remove("ARG");
-  keys.add("compulsory","ARG","the stored values for the bias");
+  ActionWithArguments::registerKeywords( keys );
+  keys.addInputKeyword("compulsory","ARG","scalar/vector/matrix","the stored values for the bias");
   keys.add("compulsory","MAXITER","1000","maximum number of iterations for WHAM algorithm");
   keys.add("compulsory","WHAMTOL","1e-10","threshold for convergence of WHAM algorithm");
   keys.add("optional","TEMP","the system temperature.  This is not required if your MD code passes this quantity to PLUMED");
   keys.remove("NUMERICAL_DERIVATIVES");
-  keys.setValueDescription("the vector of WHAM weights to use for reweighting the elements in a time series");
+  keys.setValueDescription("vector","the vector of WHAM weights to use for reweighting the elements in a time series");
 }
 
 Wham::Wham(const ActionOptions&ao):

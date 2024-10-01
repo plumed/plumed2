@@ -99,9 +99,9 @@ void ClusterDistribution::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys ); keys.remove("NUMERICAL_DERIVATIVES");
-  keys.add("compulsory","CLUSTERS","the label of the action that does the clustering"); keys.setDisplayName("CLUSTER_DISTRIBUTION");
-  keys.add("optional","WEIGHTS","use the vector of values calculated by this action as weights rather than giving each atom a unit weight");
-  keys.setValueDescription("a vector containing the sum of a atomic-cv that is calculated for each of the identified clusters");
+  keys.addInputKeyword("compulsory","CLUSTERS","vector","the label of the action that does the clustering"); keys.setDisplayName("CLUSTER_DISTRIBUTION");
+  keys.addInputKeyword("optional","WEIGHTS","vector","use the vector of values calculated by this action as weights rather than giving each atom a unit weight");
+  keys.setValueDescription("vector","a vector containing the sum of a atomic-cv that is calculated for each of the identified clusters");
 }
 
 ClusterDistribution::ClusterDistribution(const ActionOptions&ao):

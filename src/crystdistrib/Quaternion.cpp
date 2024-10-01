@@ -121,10 +121,10 @@ PLUMED_REGISTER_ACTION(QuaternionMulti,"QUATERNION_VECTOR")
 void Quaternion::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys ); keys.setDisplayName("QUATERNION");
   keys.add("atoms","ATOMS","the three atom that we are using to calculate the quaternion");
-  keys.addOutputComponent("w","default","the real component of quaternion");
-  keys.addOutputComponent("i","default","the i component of the quaternion");
-  keys.addOutputComponent("j","default","the j component of the quaternion");
-  keys.addOutputComponent("k","default","the k component of the quaternion");
+  keys.addOutputComponent("w","default","scalar/vector","the real component of quaternion");
+  keys.addOutputComponent("i","default","scalar/vector","the i component of the quaternion");
+  keys.addOutputComponent("j","default","scalar/vector","the j component of the quaternion");
+  keys.addOutputComponent("k","default","scalar/vector","the k component of the quaternion");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
 }
 

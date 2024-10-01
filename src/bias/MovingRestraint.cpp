@@ -124,7 +124,6 @@ PLUMED_REGISTER_ACTION(MovingRestraint,"MOVINGRESTRAINT")
 
 void MovingRestraint::registerKeywords( Keywords& keys ) {
   Bias::registerKeywords(keys);
-  keys.use("ARG");
   keys.add("compulsory","VERSE","B","Tells plumed whether the restraint is only acting for CV larger (U) or smaller (L) than "
            "the restraint or whether it is acting on both sides (B)");
   keys.add("numbered","STEP","This keyword appears multiple times as STEPx with x=0,1,2,...,n. Each value given represents "
@@ -138,17 +137,17 @@ void MovingRestraint::registerKeywords( Keywords& keys ) {
            "parameter is linearly interpolated.  If no KAPPAx is specified for STEPx then the values of KAPPAx "
            "are kept constant during the interval of time between STEP(x-1) and STEPx.");
   keys.reset_style("KAPPA","compulsory");
-  keys.addOutputComponent("work","default","the total work performed changing this restraint");
-  keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
-  keys.addOutputComponent("_cntr","default","one or multiple instances of this quantity can be referenced elsewhere in the input file. "
+  keys.addOutputComponent("work","default","scalar","the total work performed changing this restraint");
+  keys.addOutputComponent("force2","default","scalar","the instantaneous value of the squared force due to this bias potential");
+  keys.addOutputComponent("_cntr","default","scalar","one or multiple instances of this quantity can be referenced elsewhere in the input file. "
                           "these quantities will named with  the arguments of the bias followed by "
                           "the character string _cntr. These quantities give the instantaneous position "
                           "of the center of the harmonic potential.");
-  keys.addOutputComponent("_work","default","one or multiple instances of this quantity can be referenced elsewhere in the input file. "
+  keys.addOutputComponent("_work","default","scalar","one or multiple instances of this quantity can be referenced elsewhere in the input file. "
                           "These quantities will named with the arguments of the bias followed by "
                           "the character string _work. These quantities tell the user how much work has "
                           "been done by the potential in dragging the system along the various colvar axis.");
-  keys.addOutputComponent("_kappa","default","one or multiple instances of this quantity can be referenced elsewhere in the input file. "
+  keys.addOutputComponent("_kappa","default","scalar","one or multiple instances of this quantity can be referenced elsewhere in the input file. "
                           "These quantities will named with the arguments of the bias followed by "
                           "the character string _kappa. These quantities tell the user the time dependent value of kappa.");
 }

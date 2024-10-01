@@ -55,10 +55,11 @@ public:
 PLUMED_REGISTER_ACTION(OuterProduct,"OUTER_PRODUCT")
 
 void OuterProduct::registerKeywords( Keywords& keys ) {
-  ActionWithMatrix::registerKeywords(keys); keys.use("ARG");
+  ActionWithMatrix::registerKeywords(keys);
+  keys.addInputKeyword("compulsory","ARG","vector","the labels of the two vectors from which the outer product is being computed");
   keys.add("compulsory","FUNC","x*y","the function of the input vectors that should be put in the elements of the outer product");
   keys.addFlag("ELEMENTS_ON_DIAGONAL_ARE_ZERO",false,"set all diagonal elements to zero");
-  keys.setValueDescription("a matrix containing the outer product of the two input vectors that was obtained using the function that was input");
+  keys.setValueDescription("matrix","a matrix containing the outer product of the two input vectors that was obtained using the function that was input");
 }
 
 OuterProduct::OuterProduct(const ActionOptions&ao):

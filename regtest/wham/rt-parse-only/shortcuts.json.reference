@@ -1,7 +1,7 @@
 {
    "hh" : {
       "defaults" : " STRIDE=1",
-      "expansion" : "hh_gather: GATHER_REPLICAS ARG=rp.bias\nhh_gatherv: CONCATENATE ARG=hh_gather.*\nhh_collect: COLLECT TYPE=vector ARG=hh_gatherv STRIDE=1 \nhh_wham: WHAM ARG=hh_collect TEMP=300\nhh_data_phi: COLLECT ARG=phi \nhh: KDE ARG=hh_data_phi HEIGHTS=hh_wham KERNEL=DISCRETE GRID_MIN=-pi GRID_MAX=pi GRID_BIN=50 "
+      "expansion" : "hh_gather: GATHER_REPLICAS ARG=rp.bias\nhh_gatherv: CONCATENATE ARG=hh_gather.*\nhh_collect: COLLECT TYPE=vector ARG=hh_gatherv STRIDE=1\nhh_wham: WHAM ARG=hh_collect TEMP=300\nhh_data_phi: COLLECT ARG=phi\nhh: KDE  ARG=hh_data_phi HEIGHTS=hh_wham KERNEL=DISCRETE GRID_MIN=-pi GRID_MAX=pi GRID_BIN=50"
    },
    "rp" : {
       "defaults" : " SLOPE=0.0"

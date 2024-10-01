@@ -231,14 +231,14 @@ void RDC::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","SCALE","1.","Add the scaling factor to take into account concentration and other effects. ");
   keys.addFlag("SVD",false,"Set to TRUE if you want to back calculate using Single Value Decomposition (need GSL at compilation time).");
   keys.add("numbered","COUPLING","Add an experimental value for each coupling (needed by SVD and useful for STATS).");
-  keys.addOutputComponent("rdc","default","the calculated # RDC");
-  keys.addOutputComponent("exp","SVD/COUPLING","the experimental # RDC");
-  keys.addOutputComponent("Sxx","SVD","Tensor component");
-  keys.addOutputComponent("Syy","SVD","Tensor component");
-  keys.addOutputComponent("Szz","SVD","Tensor component");
-  keys.addOutputComponent("Sxy","SVD","Tensor component");
-  keys.addOutputComponent("Sxz","SVD","Tensor component");
-  keys.addOutputComponent("Syz","SVD","Tensor component");
+  keys.addOutputComponent("rdc","default","scalar","the calculated # RDC");
+  keys.addOutputComponent("exp","SVD/COUPLING","scalar","the experimental # RDC");
+  keys.addOutputComponent("Sxx","SVD","scalar","Tensor component");
+  keys.addOutputComponent("Syy","SVD","scalar","Tensor component");
+  keys.addOutputComponent("Szz","SVD","scalar","Tensor component");
+  keys.addOutputComponent("Sxy","SVD","scalar","Tensor component");
+  keys.addOutputComponent("Sxz","SVD","scalar","Tensor component");
+  keys.addOutputComponent("Syz","SVD","scalar","Tensor component");
 }
 
 RDC::RDC(const ActionOptions&ao):

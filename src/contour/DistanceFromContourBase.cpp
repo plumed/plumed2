@@ -27,7 +27,8 @@ namespace contour {
 void DistanceFromContourBase::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys ); ActionWithArguments::registerKeywords( keys );
-  keys.remove("NUMERICAL_DERIVATIVES"); keys.use("ARG");
+  keys.remove("NUMERICAL_DERIVATIVES");
+  keys.addInputKeyword("optional","ARG","vector","the label of the weights to use when constructing the density.  If this keyword is not here the weights are assumed to be one.");
   keys.add("atoms","POSITIONS","the positions of the atoms that we are calculating the contour from");
   keys.add("atoms","ATOM","The atom whose perpendicular distance we are calculating from the contour");
   keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");

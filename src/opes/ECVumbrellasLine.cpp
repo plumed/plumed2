@@ -99,7 +99,6 @@ PLUMED_REGISTER_ACTION(ECVumbrellasLine,"ECV_UMBRELLAS_LINE")
 void ECVumbrellasLine::registerKeywords(Keywords& keys)
 {
   ExpansionCVs::registerKeywords(keys);
-  keys.use("ARG");
   keys.add("compulsory","CV_MIN","the minimum of the CV range to be explored");
   keys.add("compulsory","CV_MAX","the maximum of the CV range to be explored");
   keys.add("compulsory","SIGMA","sigma of the umbrella Gaussians");

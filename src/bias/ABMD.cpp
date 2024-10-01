@@ -96,14 +96,13 @@ PLUMED_REGISTER_ACTION(ABMD,"ABMD")
 
 void ABMD::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
-  keys.use("ARG");
   keys.add("compulsory","TO","The array of target values");
   keys.add("compulsory","KAPPA","The array of force constants.");
   keys.add("optional","MIN","Array of starting values for the bias (set rho_m(t), otherwise it is set using the current value of ARG)");
   keys.add("optional","NOISE","Array of white noise intensities (add a temperature to the ABMD)");
   keys.add("optional","SEED","Array of seeds for the white noise (add a temperature to the ABMD)");
-  keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
-  keys.addOutputComponent("_min","default","one or multiple instances of this quantity can be referenced elsewhere in the input file. "
+  keys.addOutputComponent("force2","default","scalar","the instantaneous value of the squared force due to this bias potential");
+  keys.addOutputComponent("_min","default","scalar","one or multiple instances of this quantity can be referenced elsewhere in the input file. "
                           " These quantities will be named with the arguments of the bias followed by "
                           "the character string _min. These quantities tell the user the minimum value assumed by rho_m(t).");
 }

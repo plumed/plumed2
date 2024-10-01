@@ -58,6 +58,7 @@ void SMAC::registerKeywords(Keywords& keys) {
   keys.add("numbered","KERNEL","The kernels used in the function of the angle");
   keys.add("optional","SWITCH_COORD","This keyword is used to define the coordination switching function.");
   keys.reset_style("KERNEL","optional");
+  keys.setValueDescription("vector","the value of the smac parameter for each of the input molecules");
   multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
   keys.needsAction("VSTACK"); keys.needsAction("TRANSPOSE"); keys.needsAction("CONTACT_MATRIX");
   keys.needsAction("TORSIONS_MATRIX"); keys.needsAction("COMBINE"); keys.needsAction("CUSTOM");

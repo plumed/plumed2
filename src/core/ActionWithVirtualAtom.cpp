@@ -29,11 +29,11 @@ void ActionWithVirtualAtom::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys);
   ActionAtomistic::registerKeywords(keys);
   keys.add("atoms","ATOMS","the list of atoms which are involved the virtual atom's definition");
-  keys.addOutputComponent("x","default","the x coordinate of the virtual atom");
-  keys.addOutputComponent("y","default","the y coordinate of the virtual atom");
-  keys.addOutputComponent("z","default","the z coordinate of the virtual atom");
-  keys.addOutputComponent("mass","default","the mass of the virtual atom");
-  keys.addOutputComponent("charge","default","the charge of the virtual atom");
+  keys.addOutputComponent("x","default","scalar","the x coordinate of the virtual atom");
+  keys.addOutputComponent("y","default","scalar","the y coordinate of the virtual atom");
+  keys.addOutputComponent("z","default","scalar","the z coordinate of the virtual atom");
+  keys.addOutputComponent("mass","default","scalar","the mass of the virtual atom");
+  keys.addOutputComponent("charge","default","scalar","the charge of the virtual atom");
 }
 
 ActionWithVirtualAtom::ActionWithVirtualAtom(const ActionOptions&ao):

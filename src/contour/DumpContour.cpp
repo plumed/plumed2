@@ -57,7 +57,8 @@ PLUMED_REGISTER_ACTION(DumpContour,"DUMPCONTOUR")
 void DumpContour::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
-  ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
+  ActionWithArguments::registerKeywords( keys );
+  keys.addInputKeyword("compulsory","ARG","vector","the labels of the values that should be output to the file");
   keys.add("compulsory","STRIDE","1","the frequency with which the grid should be output to the file.");
   keys.add("compulsory","FILE","density","the file on which to write the grid.");
   keys.add("optional","FMT","the format that should be used to output real numbers");

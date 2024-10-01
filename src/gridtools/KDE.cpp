@@ -94,7 +94,8 @@ PLUMED_REGISTER_ACTION(KDE,"KDE")
 PLUMED_REGISTER_ACTION(KDE,"SPHERICAL_KDE")
 
 void KDE::registerKeywords( Keywords& keys ) {
-  ActionWithGrid::registerKeywords( keys ); keys.use("ARG");
+  ActionWithGrid::registerKeywords( keys );
+  keys.addInputKeyword("compulsory","ARG","scalar/vector/matrix","the label for the value that should be used to construct the histogram");
   keys.add("optional","HEIGHTS","this keyword takes the label of an action that calculates a vector of values.  The elements of this vector "
            "are used as weights for the Gaussians.");
   keys.add("optional","VOLUMES","this keyword take the label of an action that calculates a vector of values.  The elements of this vector "
@@ -112,7 +113,7 @@ void KDE::registerKeywords( Keywords& keys ) {
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
   // Keywords for spherical KDE
   keys.add("compulsory","CONCENTRATION","the concentration parameter for Von Mises-Fisher distributions (only required for SPHERICAL_KDE)");
-  keys.setValueDescription("a function on a grid that was obtained by doing a Kernel Density Estimation using the input arguments");
+  keys.setValueDescription("grid","a function on a grid that was obtained by doing a Kernel Density Estimation using the input arguments");
 }
 
 KDE::KDE(const ActionOptions&ao):

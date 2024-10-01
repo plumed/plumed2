@@ -189,13 +189,12 @@ PLUMED_REGISTER_ACTION(ReweightTemperaturePressure,"REWEIGHT_TEMP_PRESS")
 
 void ReweightTemperaturePressure::registerKeywords(Keywords& keys ) {
   ReweightBase::registerKeywords( keys );
-  keys.remove("ARG");
-  keys.add("optional","ENERGY","Energy");
-  keys.add("optional","VOLUME","Volume");
+  keys.addInputKeyword("optional","ENERGY","scalar","Energy");
+  keys.addInputKeyword("optional","VOLUME","scalar","Volume");
   keys.add("optional","REWEIGHT_PRESSURE","Reweighting pressure");
   keys.add("optional","PRESSURE","The system pressure");
   keys.add("optional","REWEIGHT_TEMP","Reweighting temperature");
-  keys.setValueDescription("the weight to use for this frame to determine its contribution at a different temperature/pressure");
+  keys.setValueDescription("scalar","the weight to use for this frame to determine its contribution at a different temperature/pressure");
 }
 
 ReweightTemperaturePressure::ReweightTemperaturePressure(const ActionOptions&ao):

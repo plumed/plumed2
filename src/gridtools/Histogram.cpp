@@ -204,7 +204,7 @@ PLUMED_REGISTER_ACTION(Histogram,"HISTOGRAM")
 void Histogram::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys ); keys.use("UPDATE_FROM"); keys.use("UPDATE_UNTIL");
   keys.add("compulsory","NORMALIZATION","ndata","This controls how the data is normalized it can be set equal to true, false or ndata.  See above for an explanation");
-  keys.add("optional","ARG","the quantity that is being averaged");
+  keys.addInputKeyword("optional","ARG","scalar/vector/matrix","the quantities that are being used to construct the histogram");
   keys.add("optional","DATA","an alternative to the ARG keyword");
   keys.add("compulsory","GRID_MIN","auto","the lower bounds for the grid");
   keys.add("compulsory","GRID_MAX","auto","the upper bounds for the grid");
@@ -216,7 +216,7 @@ void Histogram::registerKeywords( Keywords& keys ) {
   keys.add("optional","LOGWEIGHTS","the logarithm of the quantity to use as the weights when calculating averages");
   keys.add("compulsory","STRIDE","1","the frequency with which to store data for averaging");
   keys.add("compulsory","CLEAR","0","the frequency with whihc to clear the data that is being averaged");
-  keys.setValueDescription("the estimate of the histogram as a function of the argument that was obtained");
+  keys.setValueDescription("grid","the estimate of the histogram as a function of the argument that was obtained");
   keys.needsAction("COMBINE"); keys.needsAction("CUSTOM"); keys.needsAction("ONES");
   keys.needsAction("KDE"); keys.needsAction("ACCUMULATE");
 }

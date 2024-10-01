@@ -328,9 +328,8 @@ void VesLinearExpansion::registerKeywords( Keywords& keys ) {
   VesBias::useGridBinKeywords(keys);
   VesBias::useProjectionArgKeywords(keys);
   //
-  keys.use("ARG");
   keys.add("compulsory","BASIS_FUNCTIONS","the label of the one dimensional basis functions that should be used.");
-  keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential.");
+  keys.addOutputComponent("force2","default","scalar","the instantaneous value of the squared force due to this bias potential.");
 }
 
 VesLinearExpansion::VesLinearExpansion(const ActionOptions&ao):

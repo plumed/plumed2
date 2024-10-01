@@ -96,6 +96,7 @@ PLUMED_REGISTER_ACTION(AntibetaRMSD,"ANTIBETARMSD")
 
 void AntibetaRMSD::registerKeywords( Keywords& keys ) {
   SecondaryStructureRMSD::registerKeywords( keys );
+  keys.setValueDescription("scalar/vector","if LESS_THAN is present the RMSD distance between each residue and the ideal antiparallel beta sheet.  If LESS_THAN is not present the number of residue segments where the structure is similar to an anti parallel beta sheet");
   keys.remove("ATOMS"); keys.remove("SEGMENT"); keys.remove("BONDLENGTH");
   keys.remove("NO_ACTION_LOG"); keys.remove("CUTOFF_ATOMS"); keys.remove("STRUCTURE");
   keys.add("compulsory","STYLE","all","Antiparallel beta sheets can either form in a single chain or from a pair of chains. If STYLE=all all "

@@ -40,16 +40,17 @@ namespace colvar {
 PLUMED_REGISTER_ACTION(RMSDVector,"RMSD_VECTOR")
 
 void RMSDVector::registerKeywords(Keywords& keys) {
-  ActionWithVector::registerKeywords(keys); keys.use("ARG"); keys.setDisplayName("RMSD");
+  ActionWithVector::registerKeywords(keys); keys.setDisplayName("RMSD");
+  keys.addInputKeyword("compulsory","ARG","vector/matrix","the labels of two actions that you are calculating the RMSD between");
   keys.add("compulsory","TYPE","SIMPLE","the manner in which RMSD alignment is performed.  Should be OPTIMAL or SIMPLE.");
   keys.add("compulsory","ALIGN","1.0","the weights to use when aligning to the reference structure");
   keys.add("compulsory","DISPLACE","1.0","the weights to use when calculating the displacement from the reference structure");
   keys.addFlag("SQUARED",false," This should be set if you want mean squared displacement instead of RMSD ");
   keys.addFlag("UNORMALIZED",false,"by default the mean sequare deviation or root mean square deviation is calculated.  If this option is given no averaging is done");
   keys.addFlag("DISPLACEMENT",false,"Calculate the vector of displacements instead of the length of this vector");
-  keys.addOutputComponent("disp","DISPLACEMENT","the vector of displacements for the atoms");
-  keys.addOutputComponent("dist","DISPLACEMENT","the RMSD distance the atoms have moved");
-  keys.setValueDescription("a vector containing the RMSD between the instantaneous structure and each of the reference structures that were input");
+  keys.addOutputComponent("disp","DISPLACEMENT","vector/matrix","the vector of displacements for the atoms");
+  keys.addOutputComponent("dist","DISPLACEMENT","scalar/vector","the RMSD distance the atoms have moved");
+  keys.setValueDescription("scalar/vector","a vector containing the RMSD between the instantaneous structure and each of the reference structures that were input");
 }
 
 RMSDVector::RMSDVector(const ActionOptions&ao):

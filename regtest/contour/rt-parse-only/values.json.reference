@@ -76,12 +76,6 @@
 "dens_dist.y" : { "type": "vector", "desciption": "" }
 "dens_dist.z" : { "type": "vector", "desciption": "" }
 }, 
-"shortcut_dens_dist" : { 
-"action" : "DISTANCES", 
-"dens_dist.x" : { "type": "vector", "desciption": "" }
-"dens_dist.y" : { "type": "vector", "desciption": "" }
-"dens_dist.z" : { "type": "vector", "desciption": "" }
-}, 
 "dens_numer_sigma" : { 
 "action" : "CONSTANT", 
 "dens_numer_sigma" : { "type": "vector", "desciption": "" }

@@ -53,8 +53,8 @@ void MassChargeInput::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
   keys.add("optional","FILE","input file that contains the masses and charges that should be used");
   keys.add("compulsory","PDBFILE","a pdb file that contains the masses and charges of the atoms in the beta and occupancy columns");
-  keys.addOutputComponent("mass","default","the masses of the atoms in the system");
-  keys.addOutputComponent("charges","default","the masses of the atoms in the system");
+  keys.addOutputComponent("mass","default","vector","the masses of the atoms in the system");
+  keys.addOutputComponent("charges","default","vector","the masses of the atoms in the system");
   keys.needsAction("CONSTANT");
 }
 

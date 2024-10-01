@@ -31,40 +31,40 @@ void MultiColvarShortcuts::shortcutKeywords( Keywords& keys ) {
   keys.add("numbered","LESS_THAN","calculate the number of variables that are less than a certain target value. "
            "This quantity is calculated using \\f$\\sum_i \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
            "is a \\ref switchingfunction.");
-  keys.addOutputComponent("lessthan","LESS_THAN","the number of colvars that have a value less than a threshold");
+  keys.addOutputComponent("lessthan","LESS_THAN","scalar","the number of colvars that have a value less than a threshold");
   keys.add("numbered","MORE_THAN","calculate the number of variables that are more than a certain target value. "
            "This quantity is calculated using \\f$\\sum_i 1 - \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
            "is a \\ref switchingfunction.");
-  keys.addOutputComponent("morethan","MORE_THAN","the number of colvars that have a value more than a threshold");
+  keys.addOutputComponent("morethan","MORE_THAN","scalar","the number of colvars that have a value more than a threshold");
   keys.add("optional","ALT_MIN","calculate the minimum value. "
            "To make this quantity continuous the minimum is calculated using "
            "\\f$ \\textrm{min} = -\\frac{1}{\\beta} \\log \\sum_i \\exp\\left( -\\beta s_i \\right)  \\f$ "
            "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$).");
-  keys.addOutputComponent("altmin","ALT_MIN","the minimum value of the cv");
+  keys.addOutputComponent("altmin","ALT_MIN","scalar","the minimum value of the cv");
   keys.add("optional","MIN","calculate the minimum value. "
            "To make this quantity continuous the minimum is calculated using "
            "\\f$ \\textrm{min} = \\frac{\\beta}{ \\log \\sum_i \\exp\\left( \\frac{\\beta}{s_i} \\right) } \\f$ "
            "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$)");
-  keys.addOutputComponent("min","MIN","the minimum colvar");
+  keys.addOutputComponent("min","MIN","scalar","the minimum colvar");
   keys.add("optional","MAX","calculate the maximum value. "
            "To make this quantity continuous the maximum is calculated using "
            "\\f$ \\textrm{max} = \\beta \\log \\sum_i \\exp\\left( \\frac{s_i}{\\beta}\\right) \\f$ "
            "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$)");
-  keys.addOutputComponent("max","MAX","the maximum colvar");
+  keys.addOutputComponent("max","MAX","scalar","the maximum colvar");
   keys.add("numbered","BETWEEN","calculate the number of values that are within a certain range. "
            "These quantities are calculated using kernel density estimation as described on "
            "\\ref histogrambead.");
-  keys.addOutputComponent("between","BETWEEN","the number of colvars that have a value that lies in a particular interval");
+  keys.addOutputComponent("between","BETWEEN","scalar","the number of colvars that have a value that lies in a particular interval");
   keys.addFlag("HIGHEST",false,"this flag allows you to recover the highest of these variables.");
-  keys.addOutputComponent("highest","HIGHEST","the largest of the colvars");
+  keys.addOutputComponent("highest","HIGHEST","scalar","the largest of the colvars");
   keys.add("optional","HISTOGRAM","calculate a discretized histogram of the distribution of values. "
            "This shortcut allows you to calculates NBIN quantites like BETWEEN.");
   keys.addFlag("LOWEST",false,"this flag allows you to recover the lowest of these variables.");
-  keys.addOutputComponent("lowest","LOWEST","the smallest of the colvars");
+  keys.addOutputComponent("lowest","LOWEST","scalar","the smallest of the colvars");
   keys.addFlag("SUM",false,"calculate the sum of all the quantities.");
-  keys.addOutputComponent("sum","SUM","the sum of the colvars");
+  keys.addOutputComponent("sum","SUM","scalar","the sum of the colvars");
   keys.addFlag("MEAN",false,"calculate the mean of all the quantities.");
-  keys.addOutputComponent("mean","MEAN","the mean of the colvars");
+  keys.addOutputComponent("mean","MEAN","scalar","the mean of the colvars");
   keys.needsAction("SUM"); keys.needsAction("MEAN"); keys.needsAction("CUSTOM"); keys.needsAction("HIGHEST"); keys.needsAction("LOWEST");
   keys.needsAction("LESS_THAN"); keys.needsAction("MORE_THAN"); keys.needsAction("BETWEEN");
 }

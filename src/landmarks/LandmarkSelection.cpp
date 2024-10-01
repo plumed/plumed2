@@ -74,10 +74,10 @@ void LandmarkSelection::registerKeywords( Keywords& keys ) {
   keys.add("optional","SEED","a random number seed");
   keys.addFlag("NOVORONOI",false,"do not do a Voronoi analysis of the data to determine weights of final points");
   keys.addFlag("NODISSIMILARITIES",false,"do not calculate the dissimilarities");
-  keys.addOutputComponent("data","ARG","the data that is being collected by this action");
-  keys.addOutputComponent("logweights","ARG","the logarithms of the weights of the data points");
-  keys.addOutputComponent("rectdissims","DISSIMILARITIES","a rectangular matrix containing the distances between the landmark points and the rest of the points");
-  keys.addOutputComponent("sqrdissims","DISSIMILARITIES","a square matrix containing the distances between each pair of landmark points");
+  keys.addOutputComponent("data","ARG","matrix","the data that is being collected by this action");
+  keys.addOutputComponent("logweights","ARG","vector","the logarithms of the weights of the data points");
+  keys.addOutputComponent("rectdissims","DISSIMILARITIES","matrix","a rectangular matrix containing the distances between the landmark points and the rest of the points");
+  keys.addOutputComponent("sqrdissims","DISSIMILARITIES","matrix","a square matrix containing the distances between each pair of landmark points");
   keys.needsAction("LOGSUMEXP"); keys.needsAction("TRANSPOSE"); keys.needsAction("DISSIMILARITIES");
   keys.needsAction("ONES"); keys.needsAction("CREATE_MASK"); keys.needsAction("FARTHEST_POINT_SAMPLING");
   keys.needsAction("SELECT_WITH_MASK"); keys.needsAction("COMBINE"); keys.needsAction("VORONOI");

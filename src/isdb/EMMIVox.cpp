@@ -251,12 +251,12 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   keys.addFlag("BFACT_READ",false,"Read Bfactor on RESTART (automatic with DBFACT>0)");
   keys.addFlag("BFACT_MINIMIZE",false,"Accept only moves that decrease energy");
   keys.addFlag("MARTINI",false,"Use Martini scattering factors");
-  keys.addOutputComponent("scoreb","default","Bayesian score");
-  keys.addOutputComponent("scale", "default","scale factor");
-  keys.addOutputComponent("offset","default","offset");
-  keys.addOutputComponent("accB",  "default", "Bfactor MC acceptance");
-  keys.addOutputComponent("kbt",   "default", "temperature in energy unit");
-  keys.addOutputComponent("corr",  "CORRELATION", "correlation coefficient");
+  keys.addOutputComponent("scoreb","default","scalar","Bayesian score");
+  keys.addOutputComponent("scale", "default","scalar","scale factor");
+  keys.addOutputComponent("offset","default","scalar","offset");
+  keys.addOutputComponent("accB",  "default","scalar", "Bfactor MC acceptance");
+  keys.addOutputComponent("kbt",   "default","scalar", "temperature in energy unit");
+  keys.addOutputComponent("corr",  "CORRELATION","scalar", "correlation coefficient");
 }
 
 EMMIVOX::EMMIVOX(const ActionOptions&ao):

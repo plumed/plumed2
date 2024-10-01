@@ -219,12 +219,11 @@ PLUMED_REGISTER_ACTION(FuncPathMSD,"FUNCPATHMSD")
 
 void FuncPathMSD::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
-  keys.use("ARG");
   keys.add("compulsory","LAMBDA","the lambda parameter is needed for smoothing, is in the units of plumed");
   keys.add("optional","NEIGH_SIZE","size of the neighbor list");
   keys.add("optional","NEIGH_STRIDE","how often the neighbor list needs to be calculated in time units");
-  keys.addOutputComponent("s","default","the position on the path");
-  keys.addOutputComponent("z","default","the distance from the path");
+  keys.addOutputComponent("s","default","scalar","the position on the path");
+  keys.addOutputComponent("z","default","scalar","the distance from the path");
 }
 FuncPathMSD::FuncPathMSD(const ActionOptions&ao):
   Action(ao),

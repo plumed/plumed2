@@ -39,15 +39,15 @@ PLUMED_REGISTER_ACTION(Walls,"LOWER_WALLS")
 
 void Walls::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords(keys);
-  keys.add("numbered","ARG","the arguments on which the bias is acting");
+  keys.addInputKeyword("numbered","ARG","scalar/vector","the arguments on which the bias is acting");
   keys.add("compulsory","AT","the positions of the wall. The a_i in the expression for a wall.");
   keys.add("compulsory","KAPPA","the force constant for the wall.  The k_i in the expression for a wall.");
   keys.add("compulsory","OFFSET","0.0","the offset for the start of the wall.  The o_i in the expression for a wall.");
   keys.add("compulsory","EXP","2.0","the powers for the walls.  The e_i in the expression for a wall.");
   keys.add("compulsory","EPS","1.0","the values for s_i in the expression for a wall");
   keys.add("hidden","STRIDE","the frequency with which the forces due to the bias should be calculated.  This can be used to correctly set up multistep algorithms");
-  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
-  keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
+  keys.addOutputComponent("bias","default","scalar","the instantaneous value of the bias potential");
+  keys.addOutputComponent("force2","default","scalar","the instantaneous value of the squared force due to this bias potential");
   keys.addActionNameSuffix("_SCALAR"); keys.needsAction("COMBINE"); keys.needsAction("CUSTOM");
   keys.needsAction("SUM"); keys.needsAction("COMBINE"); keys.needsAction("BIASVALUE");
 }

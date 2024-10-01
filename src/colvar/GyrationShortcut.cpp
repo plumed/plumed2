@@ -66,7 +66,8 @@ void GyrationShortcut::registerKeywords( Keywords& keys ) {
   keys.addFlag("MASS",false,"calculate the center of mass");
   keys.addFlag("MASS_WEIGHTED",false,"set the masses of all the atoms equal to one");
   keys.addFlag("UNORMALIZED",false,"do not divide by the sum of the weights");
-  keys.setValueDescription("the radius that was computed from the weights");
+  if( keys.getDisplayName()=="GYRATION" ) keys.setValueDescription("scalar","the radius that was computed from the weights");
+  else if( keys.getDisplayName()=="GYRATION_TENSOR" ) keys.setValueDescription("matrix","the gyration tensor that was computed from the weights");
   keys.addActionNameSuffix("_FAST"); keys.needsAction("CENTER"); keys.needsAction("CONSTANT");
   keys.needsAction("ONES"); keys.needsAction("MASS"); keys.needsAction("DISTANCE");
   keys.needsAction("COVARIANCE_MATRIX"); keys.needsAction("SELECT_COMPONENTS");

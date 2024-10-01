@@ -54,6 +54,7 @@ PLUMED_REGISTER_ACTION(LocalCrystallinity,"LOCAL_CRYSTALINITY")
 void LocalCrystallinity::registerKeywords( Keywords& keys ) {
   CoordinationNumbers::shortcutKeywords( keys );
   keys.add("numbered","GVECTOR","the coefficients of the linear combinations to compute for the CV");
+  keys.setValueDescription("vector","the value of the local crystalinity for each of the input atoms");
   keys.needsAction("ONES"); keys.needsAction("MATRIX_VECTOR_PRODUCT");
   keys.needsAction("COMBINE"); keys.needsAction("CUSTOM");
 }

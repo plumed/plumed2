@@ -98,7 +98,6 @@ PLUMED_REGISTER_ACTION(ECVumbrellasFile,"ECV_UMBRELLAS_FILE")
 void ECVumbrellasFile::registerKeywords(Keywords& keys)
 {
   ExpansionCVs::registerKeywords(keys);
-  keys.use("ARG");
   keys.add("compulsory","FILE","the name of the file containing the umbrellas");
   keys.add("optional","BARRIER","a guess of the free energy barrier to be overcome (better to stay higher than lower)");
   keys.addFlag("ADD_P0",false,"add the unbiased Boltzmann distribution to the target distribution, to make sure to sample it");

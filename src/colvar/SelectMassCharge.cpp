@@ -111,7 +111,7 @@ void SelectMassCharge::registerKeywords( Keywords& keys ) {
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
   std::string acname = keys.getDisplayName(); std::size_t und = acname.find("_SCALAR");
   if( und==std::string::npos ) und = acname.find("_VECTOR");
-  keys.setDisplayName( acname.substr(0,und) ); keys.setValueDescription("the " + keys.getDisplayName() + " of the atom");
+  keys.setDisplayName( acname.substr(0,und) ); keys.setValueDescription("scalar/vector","the " + keys.getDisplayName() + " of the atom");
 }
 
 SelectMassCharge::SelectMassCharge(const ActionOptions&ao):

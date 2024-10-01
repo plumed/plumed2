@@ -26,7 +26,8 @@ namespace matrixtools {
 
 void MatrixOperationBase::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionWithArguments::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
-  keys.use("ARG"); keys.remove("NUMERICAL_DERIVATIVES");
+  keys.addInputKeyword("compulsory","ARG","matrix","the input matrix");
+  keys.remove("NUMERICAL_DERIVATIVES");
   keys.add("optional","MATRIX","the input matrix (can use ARG instead)");
 }
 

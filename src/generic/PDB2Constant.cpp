@@ -50,8 +50,8 @@ void PDB2Constant::registerKeywords(Keywords& keys) {
   keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure");
   keys.add("compulsory","NUMBER","0","if there are multiple structures in the pdb file you can specify that you want the RMSD from a specific structure by specifying its place in the file here. If NUMBER=0 then the RMSD from all structures are computed");
   keys.addFlag("NOARGS",false,"the arguments that are being read from the PDB file are not in the plumed input");
-  keys.add("optional","ARG","read this single argument from the input rather than the atomic structure");
-  keys.setValueDescription("a value that is constructed from the information in the PDB file");
+  keys.addInputKeyword("optional","ARG","scalar/vector","read this single argument from the input rather than the atomic structure");
+  keys.setValueDescription("scalar/vector/matrix","a value that is constructed from the information in the PDB file");
   keys.needsAction("CONSTANT");
 }
 

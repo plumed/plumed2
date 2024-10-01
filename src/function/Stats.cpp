@@ -71,17 +71,16 @@ PLUMED_REGISTER_ACTION(Stats,"STATS")
 
 void Stats::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
-  keys.use("ARG");
-  keys.add("optional","PARARG","the input for this action is the scalar output from one or more other actions without derivatives.");
+  keys.addInputKeyword("optional","PARARG","scalar","the input for this action is the scalar output from one or more other actions without derivatives.");
   keys.add("optional","PARAMETERS","the parameters of the arguments in your function");
   keys.addFlag("SQDEVSUM",false,"calculates only SQDEVSUM");
   keys.addFlag("SQDEV",false,"calculates and store the SQDEV as components");
   keys.addFlag("UPPERDISTS",false,"calculates and store the SQDEV as components");
-  keys.addOutputComponent("sqdevsum","default","the sum of the squared deviations between arguments and parameters");
-  keys.addOutputComponent("corr","default","the correlation between arguments and parameters");
-  keys.addOutputComponent("slope","default","the slope of a linear fit between arguments and parameters");
-  keys.addOutputComponent("intercept","default","the intercept of a linear fit between arguments and parameters");
-  keys.addOutputComponent("sqd","SQDEV","the squared deviations between arguments and parameters");
+  keys.addOutputComponent("sqdevsum","default","scalar","the sum of the squared deviations between arguments and parameters");
+  keys.addOutputComponent("corr","default","scalar","the correlation between arguments and parameters");
+  keys.addOutputComponent("slope","default","scalar","the slope of a linear fit between arguments and parameters");
+  keys.addOutputComponent("intercept","default","scalar","the intercept of a linear fit between arguments and parameters");
+  keys.addOutputComponent("sqd","SQDEV","scalar","the squared deviations between arguments and parameters");
 }
 
 Stats::Stats(const ActionOptions&ao):

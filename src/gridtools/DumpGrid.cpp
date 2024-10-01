@@ -198,7 +198,8 @@ PLUMED_REGISTER_ACTION(DumpGrid,"DUMPGRID")
 void DumpGrid::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
-  ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
+  ActionWithArguments::registerKeywords( keys );
+  keys.addInputKeyword("compulsory","ARG","grid","the label for the grid that you would like to output");
   keys.add("optional","GRID","the grid you would like to print (can also use ARG for specifying what is being printed)");
   keys.add("compulsory","STRIDE","0","the frequency with which the grid should be output to the file.  Default of zero means dump at end of calculation");
   keys.add("compulsory","FILE","density","the file on which to write the grid.");

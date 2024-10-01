@@ -106,7 +106,7 @@ typedef FunctionOfMatrix<Sum> MatrixSum;
 PLUMED_REGISTER_ACTION(MatrixSum,"SUM_MATRIX")
 
 void Sum::registerKeywords( Keywords& keys ) {
-  keys.use("PERIODIC"); keys.setValueDescription("the sum");
+  keys.use("PERIODIC"); keys.setValueDescription("scalar","the sum");
 }
 
 void Sum::read( ActionWithArguments* action ) {

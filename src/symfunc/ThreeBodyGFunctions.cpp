@@ -51,8 +51,9 @@ public:
 PLUMED_REGISTER_ACTION(ThreeBodyGFunctions,"GSYMFUNC_THREEBODY")
 
 void ThreeBodyGFunctions::registerKeywords( Keywords& keys ) {
-  ActionWithVector::registerKeywords( keys ); keys.use("ARG");
-  keys.add("compulsory","WEIGHT","the matrix that contains the weights that should be used for each connection");
+  ActionWithVector::registerKeywords( keys );
+  keys.addInputKeyword("compulsory","ARG","matrix","three matrices containing the bond vectors of interest");
+  keys.addInputKeyword("compulsory","WEIGHT","matrix","the matrix that contains the weights that should be used for each connection");
   keys.add("numbered","FUNCTION","the parameters of the function you would like to compute");
   ActionWithValue::useCustomisableComponents( keys );
 }

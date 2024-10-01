@@ -94,7 +94,7 @@ void DomainDecomposition::registerKeywords(Keywords& keys) {
            "to deal with pbc");
   keys.add("numbered","ROLE","Get the role this value plays in the code can be x/y/z/m/q to signify that this is x, y, z positions of atoms or masses or charges of atoms");
   keys.add("compulsory","PBCLABEL","Box","the label to use for the PBC action that will be created");
-  keys.setValueDescription("the domain that each atom is within");
+  keys.setValueDescription("vector","the domain that each atom is within");
 }
 
 DomainDecomposition::DomainDecomposition(const ActionOptions&ao):

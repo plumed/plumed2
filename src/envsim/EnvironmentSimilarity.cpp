@@ -219,6 +219,7 @@ void EnvironmentSimilarity::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","LAMBDA","100","Lambda parameter.  This is only used if you have more than one reference environment");
   keys.add("compulsory","CUTOFF","3","how many multiples of sigma would you like to consider beyond the maximum distance in the environment");
   keys.add("optional","ATOM_NAMES_FILE","PDB file with atom names for all atoms in SPECIES. Atoms in reference environments will be compared only if atom names match.");
+  keys.setValueDescription("vector","the environmental similar parameter for each of the input atoms");
   multicolvar::MultiColvarShortcuts::shortcutKeywords( keys ); keys.needsAction("GROUP");
   keys.needsAction("DISTANCE_MATRIX"); keys.needsAction("ONES"); keys.needsAction("CONSTANT");
   keys.needsAction("CUSTOM"); keys.needsAction("MATRIX_VECTOR_PRODUCT"); keys.needsAction("COMBINE");

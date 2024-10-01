@@ -181,8 +181,7 @@ PLUMED_REGISTER_ACTION(OPESexpanded,"OPES_EXPANDED")
 void OPESexpanded::registerKeywords(Keywords& keys)
 {
   Bias::registerKeywords(keys);
-  keys.remove("ARG");
-  keys.add("compulsory","ARG","the label of the ECVs that define the expansion. You can use an * to make sure all the output components of the ECVs are used, as in the examples above");
+  keys.addInputKeyword("compulsory","ARG","scalar","the label of the ECVs that define the expansion. You can use an * to make sure all the output components of the ECVs are used, as in the examples above");
   keys.add("compulsory","PACE","how often the bias is updated");
   keys.add("compulsory","OBSERVATION_STEPS","100","number of unbiased initial PACE steps to collect statistics for initialization");
 //DeltaFs and state files
@@ -202,7 +201,7 @@ void OPESexpanded::registerKeywords(Keywords& keys)
   keys.use("UPDATE_UNTIL");
 
 //output components
-  keys.addOutputComponent("work","CALC_WORK","total accumulated work done by the bias");
+  keys.addOutputComponent("work","CALC_WORK","scalar","total accumulated work done by the bias");
 }
 
 OPESexpanded::OPESexpanded(const ActionOptions&ao)

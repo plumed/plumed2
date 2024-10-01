@@ -67,8 +67,8 @@ PLUMED_REGISTER_ACTION(MatrixCyHarm,"CYLINDRICAL_HARMONIC_MATRIX")
 
 void CylindricalHarmonic::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","DEGREE","the value of the n parameter in the equation above");
-  keys.addOutputComponent("rm","default","the real part of the cylindrical harmonic");
-  keys.addOutputComponent("im","default","the imaginary part of the cylindrical harmonic");
+  keys.addOutputComponent("rm","default","matrix","the real part of the cylindrical harmonic");
+  keys.addOutputComponent("im","default","matrix","the imaginary part of the cylindrical harmonic");
 }
 
 void CylindricalHarmonic::read( ActionWithArguments* action ) {

@@ -74,23 +74,24 @@ public:
 
 template <class T>
 void FunctionOfVector<T>::registerKeywords(Keywords& keys ) {
-  Action::registerKeywords(keys); ActionWithValue::registerKeywords(keys); ActionWithArguments::registerKeywords(keys); keys.use("ARG");
+  Action::registerKeywords(keys); ActionWithValue::registerKeywords(keys); ActionWithArguments::registerKeywords(keys);
   std::string name = keys.getDisplayName(); std::size_t und=name.find("_VECTOR"); keys.setDisplayName( name.substr(0,und) );
+  keys.addInputKeyword("compulsory","ARG","scalar/vector","the labels of the scalar and vector that on which the function is being calculated elementwise");
   keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
   T tfunc; tfunc.registerKeywords( keys );
   if( keys.getDisplayName()=="SUM" ) {
-    keys.setValueDescription("the sum of all the elements in the input vector");
+    keys.setValueDescription("scalar","the sum of all the elements in the input vector");
   } else if( keys.getDisplayName()=="MEAN" ) {
-    keys.setValueDescription("the mean of all the elements in the input vector");
+    keys.setValueDescription("scalar","the mean of all the elements in the input vector");
   } else if( keys.getDisplayName()=="HIGHEST" ) {
-    keys.setValueDescription("the largest element of the input vector");
+    keys.setValueDescription("scalar/vector","the largest element of the input vector if one vector specified.  If multiple vectors of the same size specified the largest elements of these vector computed elementwise.");
   } else if( keys.getDisplayName()=="LOWEST" ) {
-    keys.setValueDescription("the smallest element in the input vector");
+    keys.setValueDescription("scalar/vector","the smallest element in the input vector if one vector specified.  If multiple vectors of the same size specified the largest elements of these vector computed elementwise.");
   } else if( keys.getDisplayName()=="SORT" ) {
-    keys.setValueDescription("a vector that has been sorted into ascending order");
+    keys.setValueDescription("vector","a vector that has been sorted into ascending order");
   } else if( keys.outputComponentExists(".#!value") ) {
-    keys.setValueDescription("the vector obtained by doing an element-wise application of " + keys.getOutputComponentDescription(".#!value") + " to the input vectors");
+    keys.setValueDescription("vector","the vector obtained by doing an element-wise application of " + keys.getOutputComponentDescription(".#!value") + " to the input vectors");
   }
 }
 

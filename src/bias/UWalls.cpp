@@ -86,13 +86,13 @@ PLUMED_REGISTER_ACTION(UWalls,"UPPER_WALLS_SCALAR")
 
 void UWalls::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys); keys.setDisplayName("UPPER_WALLS");
-  keys.use("ARG"); keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
+  keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
   keys.add("compulsory","AT","the positions of the wall. The a_i in the expression for a wall.");
   keys.add("compulsory","KAPPA","the force constant for the wall.  The k_i in the expression for a wall.");
   keys.add("compulsory","OFFSET","0.0","the offset for the start of the wall.  The o_i in the expression for a wall.");
   keys.add("compulsory","EXP","2.0","the powers for the walls.  The e_i in the expression for a wall.");
   keys.add("compulsory","EPS","1.0","the values for s_i in the expression for a wall");
-  keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
+  keys.addOutputComponent("force2","default","scalar","the instantaneous value of the squared force due to this bias potential");
 }
 
 UWalls::UWalls(const ActionOptions&ao):

@@ -183,7 +183,7 @@ void Plumed::registerKeywords( Keywords& keys ) {
   keys.add("optional","LOG","log file for the guest PLUMED instance. By default the host log is used");
   keys.add("optional","CHDIR","run guest in a separate directory");
   keys.addFlag("NOREPLICAS",false,"run multiple replicas as isolated ones, without letting them know that the host has multiple replicas");
-  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
+  keys.addOutputComponent("bias","default","scalar","the instantaneous value of the bias potential");
 }
 
 Plumed::Plumed(const ActionOptions&ao):
