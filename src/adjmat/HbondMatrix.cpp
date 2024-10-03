@@ -96,6 +96,8 @@ PLUMED_REGISTER_ACTION(HbondMatrix,"HBOND_MATRIX")
 
 void HbondMatrix::registerKeywords( Keywords& keys ) {
   AdjacencyMatrixBase::registerKeywords( keys );
+  keys.add("atoms-2","DONORS","The list of atoms which can donate a hydrogen bond");
+  keys.add("atoms-2","ACCEPTORS","The list of atoms which can accept a hydrogen bond");
   keys.add("atoms","HYDROGENS","The list of atoms that can form the bridge between the two interesting parts "
            "of the structure.");
   keys.add("numbered","SWITCH","The switchingfunction that specifies how close a pair of atoms must be together for there to be a hydrogen bond between them");
