@@ -63,7 +63,9 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
 
   if( t.size()==0 ) {
     std::vector<AtomNumber> ta; parseAtomList("GROUPA",ta);
+    if( ta.size()==0 && getName()=="HBOND_MATRIX") parseAtomList("DONORS",ta);
     std::vector<AtomNumber> tb; parseAtomList("GROUPB",tb);
+    if( tb.size()==0 && getName()=="HBOND_MATRIX") parseAtomList("ACCEPTORS",tb);
     if( ta.size()==0 || tb.size()==0 ) error("no atoms have been specified in input");
 
     // Create list of tasks
