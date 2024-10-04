@@ -30,8 +30,7 @@ void ValueVessel::registerKeywords( Keywords& keys ) {
 }
 
 ValueVessel::ValueVessel( const VesselOptions& da ):
-  Vessel(da)
-{
+  Vessel(da) {
   parse("COMPONENT",mycomp);
   ActionWithValue* a=dynamic_cast<ActionWithValue*>( getAction() );
   plumed_massert(a,"cannot create passable values as base action does not inherit from ActionWithValue");
@@ -53,17 +52,23 @@ ValueVessel::ValueVessel( const VesselOptions& da ):
 }
 
 std::string ValueVessel::description() {
-  if( final_value->getName()==getAction()->getLabel() ) return "value " + getAction()->getLabel() + " contains " + value_descriptor();
-  std::string compstr; Tools::convert(mycomp,compstr);
+  if( final_value->getName()==getAction()->getLabel() ) {
+    return "value " + getAction()->getLabel() + " contains " + value_descriptor();
+  }
+  std::string compstr;
+  Tools::convert(mycomp,compstr);
   return "value " + getAction()->getLabel() + "." + getLabel() + " is obtained by taking the " + compstr + "th component and finding " + value_descriptor();
 }
 
 bool ValueVessel::applyForce( std::vector<double>& forces ) {
   std::vector<double> tmpforce( forces.size() );
-  forces.assign(forces.size(),0.0); bool wasforced=false;
+  forces.assign(forces.size(),0.0);
+  bool wasforced=false;
   if( final_value->applyForce( tmpforce ) ) {
     wasforced=true;
-    for(unsigned j=0; j<forces.size(); ++j) forces[j]+=tmpforce[j];
+    for(unsigned j=0; j<forces.size(); ++j) {
+      forces[j]+=tmpforce[j];
+    }
   }
   return wasforced;
 }

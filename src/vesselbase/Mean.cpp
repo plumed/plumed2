@@ -48,9 +48,10 @@ void Mean::reserveKeyword( Keywords& keys ) {
 }
 
 Mean::Mean( const vesselbase::VesselOptions& da ) :
-  FunctionVessel(da)
-{
-  if( getAction()->isPeriodic() ) error("MEAN cannot be used with periodic variables");
+  FunctionVessel(da) {
+  if( getAction()->isPeriodic() ) {
+    error("MEAN cannot be used with periodic variables");
+  }
   norm=true;   // Makes sure we calculate the average
 }
 
@@ -59,7 +60,8 @@ std::string Mean::value_descriptor() {
 }
 
 double Mean::calcTransform( const double& val, double& dv ) const {
-  dv=1.0; return val;
+  dv=1.0;
+  return val;
 }
 
 }

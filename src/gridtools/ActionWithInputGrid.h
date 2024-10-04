@@ -42,14 +42,19 @@ public:
   explicit ActionWithInputGrid(const ActionOptions&ao);
   void clearAverage() override;
   void prepareForAveraging() override;
-  virtual bool checkAllActive() const { return true; }
+  virtual bool checkAllActive() const {
+    return true;
+  }
   void performOperations( const bool& from_update ) override;
   void apply() override {};
 };
 
 inline
 double ActionWithInputGrid::getFunctionValue( const unsigned& ipoint ) const {
-  unsigned dim=ingrid->getDimension(); if( ingrid->noderiv ) dim=0;
+  unsigned dim=ingrid->getDimension();
+  if( ingrid->noderiv ) {
+    dim=0;
+  }
   return ingrid->getGridElement( ipoint, mycomp*(1+dim) );
 }
 

@@ -47,8 +47,7 @@ class VesBias;
 class TargetDistribution;
 
 class BasisFunctions :
-  public Action
-{
+  public Action {
 private:
   // print extra info about the basis set
   bool print_debug_info_;
@@ -103,7 +102,9 @@ protected:
   // setup various stuff
   void setupBF();
   void setupInterval();
-  void setNumericalIntegrationBins(const unsigned int nbins) {nbins_=nbins;}
+  void setNumericalIntegrationBins(const unsigned int nbins) {
+    nbins_=nbins;
+  }
   void numericalUniformIntegrals();
   std::vector<double> numericalTargetDistributionIntegralsFromGrid(const Grid*) const ;
   virtual void setupLabels();
@@ -114,24 +115,46 @@ protected:
   void addKeywordToList(const std::string&, const std::vector<T>&);
   void addKeywordToList(const std::string&, const bool);
   //
-  void setPeriodic() {periodic_=true;}
-  void setNonPeriodic() {periodic_=false;}
-  void setIntervalBounded() {interval_bounded_=true;}
-  void setIntervalNonBounded() {interval_bounded_=false;}
-  void setType(const std::string& type_in) {type_=type_in;}
-  void setDescription(const std::string& description_in) {description_=description_in;}
+  void setPeriodic() {
+    periodic_=true;
+  }
+  void setNonPeriodic() {
+    periodic_=false;
+  }
+  void setIntervalBounded() {
+    interval_bounded_=true;
+  }
+  void setIntervalNonBounded() {
+    interval_bounded_=false;
+  }
+  void setType(const std::string& type_in) {
+    type_=type_in;
+  }
+  void setDescription(const std::string& description_in) {
+    description_=description_in;
+  }
   //
   void setNumberOfBasisFunctions(const unsigned int);
-  void setOrder(const unsigned int norder_in) {norder_=norder_in;}
+  void setOrder(const unsigned int norder_in) {
+    norder_=norder_in;
+  }
   void setIntrinsicInterval(const double, const double);
   void setIntrinsicInterval(const std::string&, const std::string&);
   void setInterval(const double, const double);
   void setInterval(const std::string&, const std::string&);
   //
-  double intrinsicIntervalMin() const {return interval_intrinsic_min_;}
-  double intrinsicIntervalMax() const {return interval_intrinsic_max_;}
-  std::string intrinsicIntervalMinStr() const {return interval_intrinsic_min_str_;}
-  std::string intrinsicIntervalMaxStr() const {return interval_intrinsic_max_str_;}
+  double intrinsicIntervalMin() const {
+    return interval_intrinsic_min_;
+  }
+  double intrinsicIntervalMax() const {
+    return interval_intrinsic_max_;
+  }
+  std::string intrinsicIntervalMinStr() const {
+    return interval_intrinsic_min_str_;
+  }
+  std::string intrinsicIntervalMaxStr() const {
+    return interval_intrinsic_max_str_;
+  }
   //
   void setUniformIntegral(const unsigned int, const double);
   void setUniformIntegrals(const std::vector<double>&);
@@ -144,30 +167,70 @@ protected:
 public:
   static void registerKeywords(Keywords&);
   explicit BasisFunctions(const ActionOptions&ao);
-  bool hasBeenSet() const {return has_been_set;}
-  std::string getType() const {return type_;}
-  std::string getDescription() const {return description_;}
-  unsigned int getOrder() const {return norder_;}
-  unsigned int getNumberOfBasisFunctions() const {return nbasis_;}
-  unsigned int numberOfBasisFunctions() const {return nbasis_;}
-  unsigned int getSize() const {return nbasis_;}
-  bool arePeriodic() const {return periodic_;}
-  bool intervalBounded() const {return interval_bounded_;}
-  double intervalMin() const {return interval_min_;}
-  double intervalMax() const {return interval_max_;}
-  double intervalRange() const {return interval_range_;}
-  double intervalMean() const {return interval_mean_;}
-  double intervalDerivf() const {return argT_derivf_;}
-  std::string intervalMinStr() const {return interval_min_str_;}
-  std::string intervalMaxStr() const {return interval_max_str_;}
-  std::vector<double> getUniformIntegrals() const {return uniform_integrals_;}
+  bool hasBeenSet() const {
+    return has_been_set;
+  }
+  std::string getType() const {
+    return type_;
+  }
+  std::string getDescription() const {
+    return description_;
+  }
+  unsigned int getOrder() const {
+    return norder_;
+  }
+  unsigned int getNumberOfBasisFunctions() const {
+    return nbasis_;
+  }
+  unsigned int numberOfBasisFunctions() const {
+    return nbasis_;
+  }
+  unsigned int getSize() const {
+    return nbasis_;
+  }
+  bool arePeriodic() const {
+    return periodic_;
+  }
+  bool intervalBounded() const {
+    return interval_bounded_;
+  }
+  double intervalMin() const {
+    return interval_min_;
+  }
+  double intervalMax() const {
+    return interval_max_;
+  }
+  double intervalRange() const {
+    return interval_range_;
+  }
+  double intervalMean() const {
+    return interval_mean_;
+  }
+  double intervalDerivf() const {
+    return argT_derivf_;
+  }
+  std::string intervalMinStr() const {
+    return interval_min_str_;
+  }
+  std::string intervalMaxStr() const {
+    return interval_max_str_;
+  }
+  std::vector<double> getUniformIntegrals() const {
+    return uniform_integrals_;
+  }
   std::vector<double> getTargetDistributionIntegrals(const TargetDistribution*) const;
   //
-  std::vector<std::string> getKeywordList() const {return bf_keywords_;}
+  std::vector<std::string> getKeywordList() const {
+    return bf_keywords_;
+  }
   std::string getKeywordString() const;
   //
-  std::string getBasisFunctionLabel(const unsigned int index) const {return bf_labels_[index];}
-  std::vector<std::string> getBasisFunctionLabels() const {return bf_labels_;}
+  std::string getBasisFunctionLabel(const unsigned int index) const {
+    return bf_labels_[index];
+  }
+  std::vector<std::string> getBasisFunctionLabels() const {
+    return bf_labels_;
+  }
   //
   void linkVesBias(VesBias*);
   void linkAction(Action*);
@@ -257,8 +320,7 @@ double BasisFunctions::translateArgument(const double arg, bool& inside_interval
   if(argT < interval_intrinsic_min_) {
     inside_interval=false;
     argT=interval_intrinsic_min_;
-  }
-  else if(argT > interval_intrinsic_max_) {
+  } else if(argT > interval_intrinsic_max_) {
     inside_interval=false;
     argT=interval_intrinsic_max_;
   }
@@ -273,8 +335,7 @@ double BasisFunctions::checkIfArgumentInsideInterval(const double arg, bool& ins
   if(arg < interval_min_) {
     inside_interval=false;
     argT=interval_min_;
-  }
-  else if(arg > interval_max_) {
+  } else if(arg > interval_max_) {
     inside_interval=false;
     argT=interval_max_;
   }
@@ -307,7 +368,9 @@ void BasisFunctions::addKeywordToList(const std::string& keyword, const std::vec
 
 inline
 void BasisFunctions::addKeywordToList(const std::string& keyword, const bool value) {
-  if(value) {bf_keywords_.push_back(keyword);}
+  if(value) {
+    bf_keywords_.push_back(keyword);
+  }
 }
 
 

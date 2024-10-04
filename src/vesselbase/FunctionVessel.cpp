@@ -32,8 +32,7 @@ void FunctionVessel::registerKeywords( Keywords& keys ) {
 FunctionVessel::FunctionVessel( const VesselOptions& da ):
   ValueVessel(da),
   norm(false),
-  usetol(false)
-{
+  usetol(false) {
   diffweight=getAction()->weightHasDerivatives;
 }
 
@@ -58,17 +57,27 @@ void FunctionVessel::calculate( const unsigned& current, MultiValue& myvals, std
   double dval, f=calcTransform( myvals.get(mycomp), dval );
 
   if( norm ) {
-    if( usetol && weight<getTolerance() ) return;
+    if( usetol && weight<getTolerance() ) {
+      return;
+    }
     buffer[bufstart+1+nderivatives] += weight;
-    if( getAction()->derivativesAreRequired() && diffweight ) myvals.chainRule( 0, 1, 1, 0, 1.0, bufstart, buffer );
+    if( getAction()->derivativesAreRequired() && diffweight ) {
+      myvals.chainRule( 0, 1, 1, 0, 1.0, bufstart, buffer );
+    }
   }
 
   double contr=weight*f;
-  if( usetol && contr<getTolerance() ) return;
+  if( usetol && contr<getTolerance() ) {
+    return;
+  }
   buffer[bufstart] += contr;
 
-  if( diffweight ) myvals.chainRule( 0, 0, 1, 0, f, bufstart, buffer );
-  if( getAction()->derivativesAreRequired() && std::fabs(dval)>0.0 ) myvals.chainRule( mycomp, 0, 1, 0, weight*dval, bufstart, buffer );
+  if( diffweight ) {
+    myvals.chainRule( 0, 0, 1, 0, f, bufstart, buffer );
+  }
+  if( getAction()->derivativesAreRequired() && std::fabs(dval)>0.0 ) {
+    myvals.chainRule( mycomp, 0, 1, 0, weight*dval, bufstart, buffer );
+  }
 
   return;
 }
@@ -88,15 +97,21 @@ void FunctionVessel::finish( const std::vector<double>& buffer ) {
   } else if( norm ) {
     double dv, val=finalTransform( buffer[bufstart], dv), weight=buffer[bufstart+1+nderivatives];
     getFinalValue()->set( val / weight );
-    for(unsigned i=0; i<nderivatives; ++i) getFinalValue()->addDerivative( i, buffer[bufstart+1+i]/weight );
+    for(unsigned i=0; i<nderivatives; ++i) {
+      getFinalValue()->addDerivative( i, buffer[bufstart+1+i]/weight );
+    }
   } else {
-    double dv, val=finalTransform( buffer[bufstart], dv); getFinalValue()->set( val );
-    for(unsigned i=0; i<nderivatives; ++i) getFinalValue()->addDerivative( i, dv*buffer[bufstart+1+i] );
+    double dv, val=finalTransform( buffer[bufstart], dv);
+    getFinalValue()->set( val );
+    for(unsigned i=0; i<nderivatives; ++i) {
+      getFinalValue()->addDerivative( i, dv*buffer[bufstart+1+i] );
+    }
   }
 }
 
 double FunctionVessel::finalTransform( const double& val, double& dv ) {
-  dv=1.0; return val;
+  dv=1.0;
+  return val;
 }
 
 }

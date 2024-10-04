@@ -37,8 +37,7 @@ class PlumedMain;
 /// Finally, since it holds pointers, there is a clearDelete() function
 /// which deletes the pointers before deleting the vector
 class ActionSet:
-  public std::vector<std::unique_ptr<Action>>
-{
+  public std::vector<std::unique_ptr<Action>> {
   PlumedMain& plumed;
 public:
   explicit ActionSet(PlumedMain&p);
@@ -85,7 +84,9 @@ std::vector<T> ActionSet::select()const {
   std::vector<T> ret;
   for(const auto & p : (*this)) {
     T t=dynamic_cast<T>(p.get());
-    if(t) ret.push_back(t);
+    if(t) {
+      ret.push_back(t);
+    }
   };
   return ret;
 }
@@ -94,7 +95,9 @@ template <class T>
 T ActionSet::selectWithLabel(const std::string&s)const {
   for(const auto & p : (*this)) {
     T t=dynamic_cast<T>(p.get());
-    if(t && dynamic_cast<Action*>(t)->getLabel()==s) return t;
+    if(t && dynamic_cast<Action*>(t)->getLabel()==s) {
+      return t;
+    }
   };
   return NULL;
 }
@@ -104,7 +107,9 @@ std::vector<Action*> ActionSet::selectNot()const {
   std::vector<Action*> ret;
   for(const auto & p : (*this)) {
     T t=dynamic_cast<T>(p);
-    if(!t) ret.push_back(p.get());
+    if(!t) {
+      ret.push_back(p.get());
+    }
   };
   return ret;
 }
@@ -113,7 +118,9 @@ template <class T>
 std::string ActionSet::getLabelList() const {
   std::string outlist;
   for(const auto & p : (*this)) {
-    if(dynamic_cast<T>(p.get())) outlist+=p->getLabel()+" ";
+    if(dynamic_cast<T>(p.get())) {
+      outlist+=p->getLabel()+" ";
+    }
   };
   return  outlist;
 }
@@ -123,7 +130,9 @@ template <class T>
 std::vector<std::string> ActionSet::getLabelVector() const {
   std::vector<std::string> outlist;
   for(const auto & p : (*this)) {
-    if(dynamic_cast<T>(p.get())) outlist.push_back(p->getLabel());
+    if(dynamic_cast<T>(p.get())) {
+      outlist.push_back(p->getLabel());
+    }
   };
   return  outlist;
 }
@@ -132,9 +141,13 @@ template <class T>
 T ActionSet::selectLatest(const Action*action) const {
   T t=nullptr;
   for(const auto & p : (*this)) {
-    if(p.get()==action) return t;
+    if(p.get()==action) {
+      return t;
+    }
     T r=dynamic_cast<T>(p.get());
-    if(r) t=r;
+    if(r) {
+      t=r;
+    }
   }
   return t;
 }

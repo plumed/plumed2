@@ -45,8 +45,7 @@ class CoeffsMatrix;
 
 
 class CoeffsVector:
-  public CoeffsBase
-{
+  public CoeffsBase {
 public:
 private:
   std::vector<double> data;
@@ -87,12 +86,16 @@ public:
   //
   ~CoeffsVector();
   //
-  size_t getSize() const {return numberOfCoeffs();}
+  size_t getSize() const {
+    return numberOfCoeffs();
+  }
   // clear coeffs
   void clear();
   void setAllValuesToZero();
   //
-  std::vector<double> getDataAsVector() const {return data;}
+  std::vector<double> getDataAsVector() const {
+    return data;
+  }
   //
   bool sameShape(CoeffsVector&) const;
   bool sameShape(CoeffsMatrix&) const;
@@ -191,9 +194,15 @@ public:
   // Random values
   void randomizeValuesGaussian(int);
   //
-  void resetAveragingCounter() {averaging_counter=0;}
-  void setupExponentiallyDecayingAveraging(const unsigned int averaging_exp_decay_in) {averaging_exp_decay_=averaging_exp_decay_in;}
-  void turnOffExponentiallyDecayingAveraging() {averaging_exp_decay_=0;}
+  void resetAveragingCounter() {
+    averaging_counter=0;
+  }
+  void setupExponentiallyDecayingAveraging(const unsigned int averaging_exp_decay_in) {
+    averaging_exp_decay_=averaging_exp_decay_in;
+  }
+  void turnOffExponentiallyDecayingAveraging() {
+    averaging_exp_decay_=0;
+  }
   void resetAveraging();
   void addToAverage(const CoeffsVector&);
   //
@@ -216,7 +225,9 @@ private:
   void readHeaderFromFile(IFile&, const bool ignore_coeffs_info=false);
   size_t readDataFromFile(IFile&, const bool ignore_missing_coeffs=false);
 public:
-  Communicator& getCommunicator() const {return mycomm;}
+  Communicator& getCommunicator() const {
+    return mycomm;
+  }
 };
 
 

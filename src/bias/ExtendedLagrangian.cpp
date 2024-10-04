@@ -156,31 +156,42 @@ ExtendedLagrangian::ExtendedLagrangian(const ActionOptions&ao):
   friction(getNumberOfArguments(),0.0),
   fictValue(getNumberOfArguments(),NULL),
   vfictValue(getNumberOfArguments(),NULL),
-  kbt(0.0)
-{
+  kbt(0.0) {
   parseVector("TAU",tau);
   parseVector("FRICTION",friction);
   parseVector("KAPPA",kappa);
   double temp=-1.0;
   parse("TEMP",temp);
-  if(temp>=0.0) kbt=plumed.getAtoms().getKBoltzmann()*temp;
-  else kbt=plumed.getAtoms().getKbT();
+  if(temp>=0.0) {
+    kbt=plumed.getAtoms().getKBoltzmann()*temp;
+  } else {
+    kbt=plumed.getAtoms().getKbT();
+  }
   checkRead();
 
   log.printf("  with harmonic force constant");
-  for(unsigned i=0; i<kappa.size(); i++) log.printf(" %f",kappa[i]);
+  for(unsigned i=0; i<kappa.size(); i++) {
+    log.printf(" %f",kappa[i]);
+  }
   log.printf("\n");
 
   log.printf("  with relaxation time");
-  for(unsigned i=0; i<tau.size(); i++) log.printf(" %f",tau[i]);
+  for(unsigned i=0; i<tau.size(); i++) {
+    log.printf(" %f",tau[i]);
+  }
   log.printf("\n");
 
   bool hasFriction=false;
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) if(friction[i]>0.0) hasFriction=true;
+  for(unsigned i=0; i<getNumberOfArguments(); ++i)
+    if(friction[i]>0.0) {
+      hasFriction=true;
+    }
 
   if(hasFriction) {
     log.printf("  with friction");
-    for(unsigned i=0; i<friction.size(); i++) log.printf(" %f",friction[i]);
+    for(unsigned i=0; i<friction.size(); i++) {
+      log.printf(" %f",friction[i]);
+    }
     log.printf("\n");
   }
 
@@ -195,7 +206,9 @@ ExtendedLagrangian::ExtendedLagrangian(const ActionOptions&ao):
       std::string a,b;
       getPntrToArgument(i)->getDomain(a,b);
       componentIsPeriodic(comp,a,b);
-    } else componentIsNotPeriodic(comp);
+    } else {
+      componentIsNotPeriodic(comp);
+    }
     fictValue[i]=getPntrToComponent(comp);
     comp=getPntrToArgument(i)->getName()+"_vfict";
     addComponent(comp);

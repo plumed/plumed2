@@ -54,7 +54,9 @@ void RootFindingBase<FCLASS>::doSearch( const std::vector<double>& dir, std::vec
   double ax=0.0, xx=1.0;
   bb.bracket( ax, xx, &F1dim<FCLASS>::getEng );
   double xmin=bb.search( &F1dim<FCLASS>::getEng );
-  for(unsigned i=0; i<p.size(); ++i) p[i] += xmin*dir[i];
+  for(unsigned i=0; i<p.size(); ++i) {
+    p[i] += xmin*dir[i];
+  }
 }
 
 template <class FCLASS>

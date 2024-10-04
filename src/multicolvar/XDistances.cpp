@@ -179,7 +179,9 @@ public:
 // active methods:
   double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
 /// Returns the number of coordinates of the field
-  bool isPeriodic() override { return false; }
+  bool isPeriodic() override {
+    return false;
+  }
 };
 
 PLUMED_REGISTER_ACTION(XDistances,"XDISTANCES")
@@ -188,10 +190,17 @@ PLUMED_REGISTER_ACTION(XDistances,"ZDISTANCES")
 
 void XDistances::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );
-  keys.use("MAX"); keys.use("ALT_MIN");
-  keys.use("MEAN"); keys.use("MIN"); keys.use("LESS_THAN");
-  keys.use("LOWEST"); keys.use("HIGHEST");
-  keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
+  keys.use("MAX");
+  keys.use("ALT_MIN");
+  keys.use("MEAN");
+  keys.use("MIN");
+  keys.use("LESS_THAN");
+  keys.use("LOWEST");
+  keys.use("HIGHEST");
+  keys.use("MORE_THAN");
+  keys.use("BETWEEN");
+  keys.use("HISTOGRAM");
+  keys.use("MOMENTS");
   keys.add("numbered","ATOMS","the atoms involved in each of the distances you wish to calculate. "
            "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one distance will be "
            "calculated for each ATOM keyword you specify (all ATOM keywords should "
@@ -207,17 +216,23 @@ void XDistances::registerKeywords( Keywords& keys ) {
 
 XDistances::XDistances(const ActionOptions&ao):
   Action(ao),
-  MultiColvarBase(ao)
-{
-  if( getName().find("X")!=std::string::npos) myc=0;
-  else if( getName().find("Y")!=std::string::npos) myc=1;
-  else if( getName().find("Z")!=std::string::npos) myc=2;
-  else plumed_error();
+  MultiColvarBase(ao) {
+  if( getName().find("X")!=std::string::npos) {
+    myc=0;
+  } else if( getName().find("Y")!=std::string::npos) {
+    myc=1;
+  } else if( getName().find("Z")!=std::string::npos) {
+    myc=2;
+  } else {
+    plumed_error();
+  }
 
   // Read in the atoms
   std::vector<AtomNumber> all_atoms;
   readTwoGroups( "GROUP", "GROUPA", "GROUPB", all_atoms );
-  if( atom_lab.size()==0 ) readAtomsLikeKeyword( "ATOMS", 2, all_atoms );
+  if( atom_lab.size()==0 ) {
+    readAtomsLikeKeyword( "ATOMS", 2, all_atoms );
+  }
   setupMultiColvarBase( all_atoms );
   // And check everything has been read in correctly
   checkRead();
@@ -228,10 +243,13 @@ double XDistances::compute( const unsigned& tindex, AtomValuePack& myatoms ) con
   distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
   const double value=distance[myc];
 
-  Vector myvec; myvec.zero();
+  Vector myvec;
+  myvec.zero();
   // And finish the calculation
-  myvec[myc]=+1; addAtomDerivatives( 1, 1, myvec, myatoms );
-  myvec[myc]=-1; addAtomDerivatives( 1, 0, myvec, myatoms );
+  myvec[myc]=+1;
+  addAtomDerivatives( 1, 1, myvec, myatoms );
+  myvec[myc]=-1;
+  addAtomDerivatives( 1, 0, myvec, myatoms );
   myatoms.addBoxDerivatives( 1, Tensor(distance,myvec) );
   return value;
 }

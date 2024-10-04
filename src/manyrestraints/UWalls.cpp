@@ -85,8 +85,7 @@ void UWalls::registerKeywords( Keywords& keys ) {
 
 UWalls::UWalls(const ActionOptions& ao):
   Action(ao),
-  ManyRestraintsBase(ao)
-{
+  ManyRestraintsBase(ao) {
   parse("AT",at);
   parse("OFFSET",offset);
   parse("EPS",eps);

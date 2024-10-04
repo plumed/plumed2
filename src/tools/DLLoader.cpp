@@ -59,7 +59,9 @@ const std::string & DLLoader::error() {
 DLLoader::~DLLoader() {
   auto debug=std::getenv("PLUMED_LOAD_DEBUG");
 #ifdef __PLUMED_HAS_DLOPEN
-  if(debug) std::fprintf(stderr,"delete dlloader\n");
+  if(debug) {
+    std::fprintf(stderr,"delete dlloader\n");
+  }
   while(!handles.empty()) {
     int ret=dlclose(handles.top());
     if(ret) {
@@ -67,7 +69,9 @@ DLLoader::~DLLoader() {
     }
     handles.pop();
   }
-  if(debug) std::fprintf(stderr,"end delete dlloader\n");
+  if(debug) {
+    std::fprintf(stderr,"end delete dlloader\n");
+  }
 #endif
 }
 

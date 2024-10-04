@@ -55,27 +55,33 @@ void Min::reserveKeyword( Keywords& keys ) {
 }
 
 Min::Min( const VesselOptions& da ) :
-  FunctionVessel(da)
-{
-  if( getAction()->isPeriodic() ) error("min is not a meaningful option for periodic variables");
+  FunctionVessel(da) {
+  if( getAction()->isPeriodic() ) {
+    error("min is not a meaningful option for periodic variables");
+  }
   parse("BETA",beta);
 
-  if( diffweight ) error("can't calculate min if weight is differentiable");
+  if( diffweight ) {
+    error("can't calculate min if weight is differentiable");
+  }
 }
 
 std::string Min::value_descriptor() {
-  std::string str_beta; Tools::convert( beta, str_beta );
+  std::string str_beta;
+  Tools::convert( beta, str_beta );
   return "the minimum value. Beta is equal to " + str_beta;
 }
 
 double Min::calcTransform( const double& val, double& dv ) const {
-  double f = exp(beta/val); dv=f/(val*val);
+  double f = exp(beta/val);
+  dv=f/(val*val);
   return f;
 }
 
 double Min::finalTransform( const double& val, double& dv ) {
   double dist=beta/std::log( val );
-  dv = dist*dist/val; return dist;
+  dv = dist*dist/val;
+  return dist;
 }
 
 }

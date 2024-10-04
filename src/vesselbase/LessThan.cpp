@@ -42,12 +42,16 @@ void LessThan::reserveKeyword( Keywords& keys ) {
 }
 
 LessThan::LessThan( const VesselOptions& da ) :
-  FunctionVessel(da)
-{
+  FunctionVessel(da) {
   usetol=true;
-  if( getAction()->isPeriodic() ) error("LESS_THAN is not a meaningful option for periodic variables");
-  std::string errormsg; sf.set( getAllInput(), errormsg );
-  if( errormsg.size()!=0 ) error( errormsg );
+  if( getAction()->isPeriodic() ) {
+    error("LESS_THAN is not a meaningful option for periodic variables");
+  }
+  std::string errormsg;
+  sf.set( getAllInput(), errormsg );
+  if( errormsg.size()!=0 ) {
+    error( errormsg );
+  }
 }
 
 std::string LessThan::value_descriptor() {
@@ -55,7 +59,9 @@ std::string LessThan::value_descriptor() {
 }
 
 double LessThan::calcTransform( const double& val, double& dv ) const {
-  double f = sf.calculate(val, dv); dv*=val; return f;
+  double f = sf.calculate(val, dv);
+  dv*=val;
+  return f;
 }
 
 double LessThan::getCutoff() {

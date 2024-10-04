@@ -41,8 +41,7 @@ class Mapping :
   public ActionAtomistic,
   public ActionWithArguments,
   public ActionWithValue,
-  public vesselbase::ActionWithVessel
-{
+  public vesselbase::ActionWithVessel {
   friend class PropertyMap;
   friend class TrigonometricPathVessel;
   friend class AdaptivePath;
@@ -81,7 +80,9 @@ public:
   void lockRequests() override;
   void unlockRequests() override;
 /// Distance from a point is never periodic
-  bool isPeriodic() override { return false; }
+  bool isPeriodic() override {
+    return false;
+  }
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives() override;  // N.B. This is replacing the virtual function in ActionWithValue
 /// Get the value of lambda for paths and property maps
@@ -106,7 +107,9 @@ unsigned Mapping::getNumberOfReferencePoints() const {
 inline
 unsigned Mapping::getNumberOfDerivatives() {
   unsigned nat=getNumberOfAtoms();
-  if(nat>0) return 3*nat + 9 + getNumberOfArguments();
+  if(nat>0) {
+    return 3*nat + 9 + getNumberOfArguments();
+  }
   return getNumberOfArguments();
 }
 

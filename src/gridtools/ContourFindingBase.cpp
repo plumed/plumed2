@@ -27,15 +27,17 @@ namespace gridtools {
 void ContourFindingBase::registerKeywords( Keywords& keys ) {
   ActionWithInputGrid::registerKeywords( keys );
   keys.add("compulsory","CONTOUR","the value we would like to draw the contour at in the space");
-  keys.remove("KERNEL"); keys.remove("BANDWIDTH");
+  keys.remove("KERNEL");
+  keys.remove("BANDWIDTH");
 }
 
 ContourFindingBase::ContourFindingBase(const ActionOptions&ao):
   Action(ao),
   ActionWithInputGrid(ao),
-  mymin(this)
-{
-  if( ingrid->noDerivatives() ) error("cannot find contours if input grid has no derivatives");
+  mymin(this) {
+  if( ingrid->noDerivatives() ) {
+    error("cannot find contours if input grid has no derivatives");
+  }
   parse("CONTOUR",contour);
   log.printf("  calculating dividing surface along which function equals %f \n", contour);
 }

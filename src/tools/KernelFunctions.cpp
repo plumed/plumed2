@@ -105,26 +105,48 @@ KernelFunctions::KernelFunctions( const std::string& input ) {
 
   std::vector<double> at;
   bool foundc = Tools::parseVector(data,"CENTER",at);
-  if(!foundc) plumed_merror("failed to find center keyword in definition of kernel");
+  if(!foundc) {
+    plumed_merror("failed to find center keyword in definition of kernel");
+  }
   std::vector<double> sig;
   bool founds = Tools::parseVector(data,"SIGMA",sig);
-  if(!founds) plumed_merror("failed to find sigma keyword in definition of kernel");
+  if(!founds) {
+    plumed_merror("failed to find sigma keyword in definition of kernel");
+  }
 
-  bool multi=false; Tools::parseFlag(data,"MULTIVARIATE",multi);
-  bool vonmises=false; Tools::parseFlag(data,"VON-MISSES",vonmises);
-  if( center.size()==1 && multi ) plumed_merror("one dimensional kernel cannot be multivariate");
-  if( center.size()==1 && vonmises ) plumed_merror("one dimensional kernal cannot be von-misses");
-  if( center.size()==1 && sig.size()!=1 ) plumed_merror("size mismatch between center size and sigma size");
-  if( multi && center.size()>1 && sig.size()!=0.5*center.size()*(center.size()-1) ) plumed_merror("size mismatch between center size and sigma size");
-  if( !multi && center.size()>1 && sig.size()!=center.size() ) plumed_merror("size mismatch between center size and sigma size");
+  bool multi=false;
+  Tools::parseFlag(data,"MULTIVARIATE",multi);
+  bool vonmises=false;
+  Tools::parseFlag(data,"VON-MISSES",vonmises);
+  if( center.size()==1 && multi ) {
+    plumed_merror("one dimensional kernel cannot be multivariate");
+  }
+  if( center.size()==1 && vonmises ) {
+    plumed_merror("one dimensional kernal cannot be von-misses");
+  }
+  if( center.size()==1 && sig.size()!=1 ) {
+    plumed_merror("size mismatch between center size and sigma size");
+  }
+  if( multi && center.size()>1 && sig.size()!=0.5*center.size()*(center.size()-1) ) {
+    plumed_merror("size mismatch between center size and sigma size");
+  }
+  if( !multi && center.size()>1 && sig.size()!=center.size() ) {
+    plumed_merror("size mismatch between center size and sigma size");
+  }
 
   double h;
   bool foundh = Tools::parse(data,"HEIGHT",h);
-  if( !foundh) h=1.0;
+  if( !foundh) {
+    h=1.0;
+  }
 
-  if( multi ) setData( at, sig, name, "MULTIVARIATE", h );
-  else if( vonmises ) setData( at, sig, name, "VON-MISSES", h );
-  else setData( at, sig, name, "DIAGONAL", h );
+  if( multi ) {
+    setData( at, sig, name, "MULTIVARIATE", h );
+  } else if( vonmises ) {
+    setData( at, sig, name, "VON-MISSES", h );
+  } else {
+    setData( at, sig, name, "DIAGONAL", h );
+  }
 }
 
 KernelFunctions::KernelFunctions( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const std::string& mtype, const double& w ) {
@@ -142,8 +164,7 @@ KernelFunctions::KernelFunctions( const KernelFunctions* in ):
   ktype(in->ktype),
   center(in->center),
   width(in->width),
-  height(in->height)
-{
+  height(in->height) {
   if(!dp2cutoffNoStretch()) {
     stretchA=dp2cutoffA;
     stretchB=dp2cutoffB;
@@ -153,12 +174,23 @@ KernelFunctions::KernelFunctions( const KernelFunctions* in ):
 void KernelFunctions::setData( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const std::string& mtype, const double& w ) {
 
   height=w;
-  center.resize( at.size() ); for(unsigned i=0; i<at.size(); ++i) center[i]=at[i];
-  width.resize( sig.size() ); for(unsigned i=0; i<sig.size(); ++i) width[i]=sig[i];
-  if( mtype=="MULTIVARIATE" ) dtype=multi;
-  else if( mtype=="VON-MISSES" ) dtype=vonmises;
-  else if( mtype=="DIAGONAL" ) dtype=diagonal;
-  else plumed_merror(mtype + " is not a valid metric type");
+  center.resize( at.size() );
+  for(unsigned i=0; i<at.size(); ++i) {
+    center[i]=at[i];
+  }
+  width.resize( sig.size() );
+  for(unsigned i=0; i<sig.size(); ++i) {
+    width[i]=sig[i];
+  }
+  if( mtype=="MULTIVARIATE" ) {
+    dtype=multi;
+  } else if( mtype=="VON-MISSES" ) {
+    dtype=vonmises;
+  } else if( mtype=="DIAGONAL" ) {
+    dtype=diagonal;
+  } else {
+    plumed_merror(mtype + " is not a valid metric type");
+  }
 
   // Setup the kernel type
   if(type=="GAUSSIAN" || type=="gaussian" ) {
@@ -181,10 +213,13 @@ void KernelFunctions::normalize( const std::vector<Value*>& myvals ) {
   double det=1.;
   unsigned ncv=ndim();
   if(dtype==diagonal) {
-    for(unsigned i=0; i<width.size(); ++i) det*=width[i]*width[i];
+    for(unsigned i=0; i<width.size(); ++i) {
+      det*=width[i]*width[i];
+    }
   } else if(dtype==multi) {
     Matrix<double> mymatrix( getMatrix() ), myinv( ncv, ncv );
-    Invert(mymatrix,myinv); double logd;
+    Invert(mymatrix,myinv);
+    double logd;
     logdet( myinv, logd );
     det=std::exp(logd);
   }
@@ -199,15 +234,22 @@ void KernelFunctions::normalize( const std::vector<Value*>& myvals ) {
     } else if( ktype==uniform || ktype==triangular ) {
       if( ncv%2==1 ) {
         double dfact=1;
-        for(unsigned i=1; i<ncv; i+=2) dfact*=static_cast<double>(i);
+        for(unsigned i=1; i<ncv; i+=2) {
+          dfact*=static_cast<double>(i);
+        }
         volume=( pow( pi, (ncv-1)/2 ) ) * ( pow( 2., (ncv+1)/2 ) ) / dfact;
       } else {
         double fact=1.;
-        for(unsigned i=1; i<ncv/2; ++i) fact*=static_cast<double>(i);
+        for(unsigned i=1; i<ncv/2; ++i) {
+          fact*=static_cast<double>(i);
+        }
         volume=pow( pi,ncv/2 ) / fact;
       }
-      if(ktype==uniform) volume*=det;
-      else if(ktype==triangular) volume*=det / 3.;
+      if(ktype==uniform) {
+        volume*=det;
+      } else if(ktype==triangular) {
+        volume*=det / 3.;
+      }
     } else {
       plumed_merror("not a valid kernel type");
     }
@@ -218,7 +260,9 @@ void KernelFunctions::normalize( const std::vector<Value*>& myvals ) {
   // Now calculate determinant for aperiodic variables
   unsigned naper=0;
   for(unsigned i=0; i<ncv; ++i) {
-    if( !myvals[i]->isPeriodic() ) naper++;
+    if( !myvals[i]->isPeriodic() ) {
+      naper++;
+    }
   }
   // Now construct sub matrix
   double volume=1;
@@ -226,16 +270,23 @@ void KernelFunctions::normalize( const std::vector<Value*>& myvals ) {
     unsigned isub=0;
     Matrix<double> mymatrix( getMatrix() ), mysub( naper, naper );
     for(unsigned i=0; i<ncv; ++i) {
-      if( myvals[i]->isPeriodic() ) continue;
+      if( myvals[i]->isPeriodic() ) {
+        continue;
+      }
       unsigned jsub=0;
       for(unsigned j=0; j<ncv; ++j) {
-        if( myvals[j]->isPeriodic() ) continue;
-        mysub( isub, jsub ) = mymatrix( i, j ); jsub++;
+        if( myvals[j]->isPeriodic() ) {
+          continue;
+        }
+        mysub( isub, jsub ) = mymatrix( i, j );
+        jsub++;
       }
       isub++;
     }
-    Matrix<double> myisub( naper, naper ); double logd;
-    Invert( mysub, myisub ); logdet( myisub, logd );
+    Matrix<double> myisub( naper, naper );
+    double logd;
+    Invert( mysub, myisub );
+    logdet( myisub, logd );
     det=std::exp(logd);
     volume=pow( 2*pi, 0.5*ncv ) * pow( det, 0.5 );
   }
@@ -243,7 +294,9 @@ void KernelFunctions::normalize( const std::vector<Value*>& myvals ) {
   // Calculate volume of periodic variables
   unsigned nper=0;
   for(unsigned i=0; i<ncv; ++i) {
-    if( myvals[i]->isPeriodic() ) nper++;
+    if( myvals[i]->isPeriodic() ) {
+      nper++;
+    }
   }
 
   // Now construct sub matrix
@@ -251,18 +304,24 @@ void KernelFunctions::normalize( const std::vector<Value*>& myvals ) {
     unsigned isub=0;
     Matrix<double> mymatrix( getMatrix() ),  mysub( nper, nper );
     for(unsigned i=0; i<ncv; ++i) {
-      if( !myvals[i]->isPeriodic() ) continue;
+      if( !myvals[i]->isPeriodic() ) {
+        continue;
+      }
       unsigned jsub=0;
       for(unsigned j=0; j<ncv; ++j) {
-        if( !myvals[j]->isPeriodic() ) continue;
-        mysub( isub, jsub ) = mymatrix( i, j ); jsub++;
+        if( !myvals[j]->isPeriodic() ) {
+          continue;
+        }
+        mysub( isub, jsub ) = mymatrix( i, j );
+        jsub++;
       }
       isub++;
     }
     Matrix<double>  eigvec( nper, nper );
     std::vector<double> eigval( nper );
     diagMat( mysub, eigval, eigvec );
-    unsigned iper=0; volume=1;
+    unsigned iper=0;
+    volume=1;
     for(unsigned i=0; i<ncv; ++i) {
       if( myvals[i]->isPeriodic() ) {
         volume *= myvals[i]->getMaxMinusMin()*Tools::bessel0(eigval[iper])*std::exp(-eigval[iper]);
@@ -275,10 +334,15 @@ void KernelFunctions::normalize( const std::vector<Value*>& myvals ) {
 
 double KernelFunctions::getCutoff( const double& width ) const {
   const double DP2CUTOFF=6.25;
-  if( ktype==gaussian || ktype==truncatedgaussian || ktype==stretchedgaussian ) return std::sqrt(2.0*DP2CUTOFF)*width;
-  else if(ktype==triangular ) return width;
-  else if(ktype==uniform) return width;
-  else plumed_merror("No valid kernel type");
+  if( ktype==gaussian || ktype==truncatedgaussian || ktype==stretchedgaussian ) {
+    return std::sqrt(2.0*DP2CUTOFF)*width;
+  } else if(ktype==triangular ) {
+    return width;
+  } else if(ktype==uniform) {
+    return width;
+  } else {
+    plumed_merror("No valid kernel type");
+  }
   return 0.0;
 }
 
@@ -286,16 +350,22 @@ std::vector<double> KernelFunctions::getContinuousSupport( ) const {
   unsigned ncv=ndim();
   std::vector<double> support( ncv );
   if(dtype==diagonal) {
-    for(unsigned i=0; i<ncv; ++i) support[i]=getCutoff(width[i]);
+    for(unsigned i=0; i<ncv; ++i) {
+      support[i]=getCutoff(width[i]);
+    }
   } else if(dtype==multi) {
     Matrix<double> mymatrix( getMatrix() ), myinv( ncv,ncv );
     Invert(mymatrix,myinv);
-    Matrix<double> myautovec(ncv,ncv); std::vector<double> myautoval(ncv);
+    Matrix<double> myautovec(ncv,ncv);
+    std::vector<double> myautoval(ncv);
     diagMat(myinv,myautoval,myautovec);
     double maxautoval=0.;
     unsigned ind_maxautoval=0;
     for (unsigned i=0; i<ncv; i++) {
-      if(myautoval[i]>maxautoval) {maxautoval=myautoval[i]; ind_maxautoval=i;}
+      if(myautoval[i]>maxautoval) {
+        maxautoval=myautoval[i];
+        ind_maxautoval=i;
+      }
     }
     for(unsigned i=0; i<ncv; ++i) {
       double extent=std::fabs(std::sqrt(maxautoval)*myautovec(i,ind_maxautoval));
@@ -311,19 +381,27 @@ std::vector<unsigned> KernelFunctions::getSupport( const std::vector<double>& dx
   plumed_assert( ndim()==dx.size() );
   std::vector<unsigned> support( dx.size() );
   std::vector<double> vv=getContinuousSupport( );
-  for(unsigned i=0; i<dx.size(); ++i) support[i]=static_cast<unsigned>(ceil( vv[i]/dx[i] ));
+  for(unsigned i=0; i<dx.size(); ++i) {
+    support[i]=static_cast<unsigned>(ceil( vv[i]/dx[i] ));
+  }
   return support;
 }
 
 double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<double>& derivatives, bool usederiv, bool doInt, double lowI_, double uppI_) const {
   plumed_dbg_assert( pos.size()==ndim() && derivatives.size()==ndim() );
 #ifndef NDEBUG
-  if( usederiv ) plumed_massert( ktype!=uniform, "step function can not be differentiated" );
+  if( usederiv ) {
+    plumed_massert( ktype!=uniform, "step function can not be differentiated" );
+  }
 #endif
   if(doInt) {
     plumed_dbg_assert(center.size()==1);
-    if(pos[0]->get()<lowI_) pos[0]->set(lowI_);
-    if(pos[0]->get()>uppI_) pos[0]->set(uppI_);
+    if(pos[0]->get()<lowI_) {
+      pos[0]->set(lowI_);
+    }
+    if(pos[0]->get()>uppI_) {
+      pos[0]->set(uppI_);
+    }
   }
   double r2=0;
   if(dtype==diagonal) {
@@ -335,11 +413,15 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<do
   } else if(dtype==multi) {
     Matrix<double> mymatrix( getMatrix() );
     for(unsigned i=0; i<mymatrix.nrows(); ++i) {
-      double dp_i, dp_j; derivatives[i]=0;
+      double dp_i, dp_j;
+      derivatives[i]=0;
       dp_i=-pos[i]->difference( center[i] );
       for(unsigned j=0; j<mymatrix.ncols(); ++j) {
-        if(i==j) dp_j=dp_i;
-        else dp_j=-pos[j]->difference( center[j] );
+        if(i==j) {
+          dp_j=dp_i;
+        } else {
+          dp_j=-pos[j]->difference( center[j] );
+        }
 
         derivatives[i]+=mymatrix(i,j)*dp_j;
         r2+=dp_i*dp_j*mymatrix(i,j);
@@ -366,16 +448,23 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<do
         r2+=sintmp[i]*sintmp[i]*mymatrix(i,i);
       }
       for(unsigned j=0; j<mymatrix.ncols(); ++j) {
-        if( i!=j ) sinout[i]+=mymatrix(i,j)*sintmp[j];
+        if( i!=j ) {
+          sinout[i]+=mymatrix(i,j)*sintmp[j];
+        }
       }
       derivatives[i] = mymatrix(i,i)*sintmp[i] + sinout[i]*costmp[i];
-      if( pos[i]->isPeriodic() ) derivatives[i] *= (2*pi/pos[i]->getMaxMinusMin());
+      if( pos[i]->isPeriodic() ) {
+        derivatives[i] *= (2*pi/pos[i]->getMaxMinusMin());
+      }
     }
-    for(unsigned i=0; i<sinout.size(); ++i) r2+=sintmp[i]*sinout[i];
+    for(unsigned i=0; i<sinout.size(); ++i) {
+      r2+=sintmp[i]*sinout[i];
+    }
   }
   double kderiv, kval;
   if(ktype==gaussian || ktype==truncatedgaussian) {
-    kval=height*std::exp(-0.5*r2); kderiv=-kval;
+    kval=height*std::exp(-0.5*r2);
+    kderiv=-kval;
   } else if(ktype==stretchedgaussian) {
     auto dp=0.5*r2;
     if(dp<dp2cutoff) {
@@ -390,45 +479,67 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<do
     double r=std::sqrt(r2);
     if(ktype==triangular) {
       if( r<1.0 ) {
-        if(r==0) kderiv=0;
-        kderiv=-1; kval=height*( 1. - std::fabs(r) );
+        if(r==0) {
+          kderiv=0;
+        }
+        kderiv=-1;
+        kval=height*( 1. - std::fabs(r) );
       } else {
-        kval=0.; kderiv=0.;
+        kval=0.;
+        kderiv=0.;
       }
     } else if(ktype==uniform) {
       kderiv=0.;
-      if(r<1.0) kval=height;
-      else kval=0;
+      if(r<1.0) {
+        kval=height;
+      } else {
+        kval=0;
+      }
     } else {
       plumed_merror("Not a valid kernel type");
     }
     kderiv*=height / r ;
   }
-  for(unsigned i=0; i<ndim(); ++i) derivatives[i]*=kderiv;
+  for(unsigned i=0; i<ndim(); ++i) {
+    derivatives[i]*=kderiv;
+  }
   if(doInt) {
-    if((pos[0]->get() <= lowI_ || pos[0]->get() >= uppI_) && usederiv ) for(unsigned i=0; i<ndim(); ++i)derivatives[i]=0;
+    if((pos[0]->get() <= lowI_ || pos[0]->get() >= uppI_) && usederiv )
+      for(unsigned i=0; i<ndim(); ++i) {
+        derivatives[i]=0;
+      }
   }
   return kval;
 }
 
 std::unique_ptr<KernelFunctions> KernelFunctions::read( IFile* ifile, const bool& cholesky, const std::vector<std::string>& valnames ) {
   double h;
-  if( !ifile->scanField("height",h) ) return NULL;;
+  if( !ifile->scanField("height",h) ) {
+    return NULL;
+  };
 
-  std::string sss; ifile->scanField("multivariate",sss);
-  std::string ktype="stretched-gaussian"; if( ifile->FieldExist("kerneltype") ) ifile->scanField("kerneltype",ktype);
+  std::string sss;
+  ifile->scanField("multivariate",sss);
+  std::string ktype="stretched-gaussian";
+  if( ifile->FieldExist("kerneltype") ) {
+    ifile->scanField("kerneltype",ktype);
+  }
   plumed_massert( sss=="false" || sss=="true" || sss=="von-misses", "multivariate flag must be either false, true or von-misses");
 
   // Read the position of the center
   std::vector<double> cc( valnames.size() );
-  for(unsigned i=0; i<valnames.size(); ++i) ifile->scanField(valnames[i],cc[i]);
+  for(unsigned i=0; i<valnames.size(); ++i) {
+    ifile->scanField(valnames[i],cc[i]);
+  }
 
   std::vector<double> sig;
   if( sss=="false" ) {
     sig.resize( valnames.size() );
     for(unsigned i=0; i<valnames.size(); ++i) {
       ifile->scanField("sigma_"+valnames[i],sig[i]);
-      if( !cholesky ) sig[i]=std::sqrt(sig[i]);
+      if( !cholesky ) {
+        sig[i]=std::sqrt(sig[i]);
+      }
     }
     return Tools::make_unique<KernelFunctions>(cc, sig, ktype, "DIAGONAL", h);
   }
@@ -439,16 +550,24 @@ std::unique_ptr<KernelFunctions> KernelFunctions::read( IFile* ifile, const bool
   for(unsigned i=0; i<ncv; ++i) {
     for(unsigned j=0; j<ncv-i; j++) {
       ifile->scanField("sigma_" +valnames[j+i] + "_" + valnames[j], lower(j+i,j) );
-      upper(j,j+i)=lower(j+i,j); mymult(j+i,j)=mymult(j,j+i)=lower(j+i,j);
+      upper(j,j+i)=lower(j+i,j);
+      mymult(j+i,j)=mymult(j,j+i)=lower(j+i,j);
     }
   }
-  if( cholesky ) mult(lower,upper,mymult);
+  if( cholesky ) {
+    mult(lower,upper,mymult);
+  }
   Invert( mymult, invmatrix );
   unsigned k=0;
   for(unsigned i=0; i<ncv; i++) {
-    for(unsigned j=i; j<ncv; j++) { sig[k]=invmatrix(i,j); k++; }
+    for(unsigned j=i; j<ncv; j++) {
+      sig[k]=invmatrix(i,j);
+      k++;
+    }
   }
-  if( sss=="true" ) return Tools::make_unique<KernelFunctions>(cc, sig, ktype, "MULTIVARIATE", h);
+  if( sss=="true" ) {
+    return Tools::make_unique<KernelFunctions>(cc, sig, ktype, "MULTIVARIATE", h);
+  }
   return Tools::make_unique<KernelFunctions>( cc, sig, ktype, "VON-MISSES", h );
 }
 

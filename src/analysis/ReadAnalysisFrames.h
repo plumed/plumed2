@@ -55,7 +55,9 @@ public:
 /// This does nothing
   void performAnalysis() override {}
 /// This does nothing - it just ensures the final class is not abstract
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override { plumed_error(); }
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override {
+    plumed_error();
+  }
 /// Get the number of data points
   unsigned getNumberOfDataPoints() const override;
 /// Get the index of the data point
@@ -91,7 +93,9 @@ bool ReadAnalysisFrames::dissimilaritiesWereSet() const {
 
 inline
 double ReadAnalysisFrames::getWeight( const unsigned& idat ) {
-  if( !weights_calculated ) calculateWeights();
+  if( !weights_calculated ) {
+    calculateWeights();
+  }
   return weights[idat];
 }
 

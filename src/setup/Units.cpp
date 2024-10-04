@@ -88,8 +88,7 @@ UNITS LENGTH=0.1 TIME=0.001
 //+ENDPLUMEDOC
 
 class Units :
-  public virtual ActionSetup
-{
+  public virtual ActionSetup {
 public:
   static void registerKeywords( Keywords& keys );
   explicit Units(const ActionOptions&ao);
@@ -109,74 +108,73 @@ void Units::registerKeywords( Keywords& keys ) {
 
 Units::Units(const ActionOptions&ao):
   Action(ao),
-  ActionSetup(ao)
-{
+  ActionSetup(ao) {
   PLMD::Units u;
 
   std::string s;
 
   s="";
   parse("LENGTH",s);
-  if(s.length()>0) u.setLength(s);
+  if(s.length()>0) {
+    u.setLength(s);
+  }
   if(u.getLengthString().length()>0 && u.getLengthString()=="nm") {
     log.printf("  length: %s\n",u.getLengthString().c_str());
-  }
-  else if(u.getLengthString().length()>0 && u.getLengthString()!="nm") {
+  } else if(u.getLengthString().length()>0 && u.getLengthString()!="nm") {
     log.printf("  length: %s = %g nm\n",u.getLengthString().c_str(),u.getLength());
-  }
-  else {
+  } else {
     log.printf("  length: %g nm\n",u.getLength());
   }
 
   s="";
   parse("ENERGY",s);
-  if(s.length()>0) u.setEnergy(s);
+  if(s.length()>0) {
+    u.setEnergy(s);
+  }
   if(u.getEnergyString().length()>0 && u.getEnergyString()=="kj/mol") {
     log.printf("  energy: %s\n",u.getEnergyString().c_str());
-  }
-  else if(u.getEnergyString().length()>0 && u.getEnergyString()!="kj/mol") {
+  } else if(u.getEnergyString().length()>0 && u.getEnergyString()!="kj/mol") {
     log.printf("  energy: %s = %g kj/mol\n",u.getEnergyString().c_str(),u.getEnergy());
-  }
-  else {
+  } else {
     log.printf("  energy: %g kj/mol\n",u.getEnergy());
   }
 
   s="";
   parse("TIME",s);
-  if(s.length()>0) u.setTime(s);
+  if(s.length()>0) {
+    u.setTime(s);
+  }
   if(u.getTimeString().length()>0 && u.getTimeString()=="ps") {
     log.printf("  time: %s\n",u.getTimeString().c_str());
-  }
-  else if(u.getTimeString().length()>0 && u.getTimeString()!="ps") {
+  } else if(u.getTimeString().length()>0 && u.getTimeString()!="ps") {
     log.printf("  time: %s = %g ps\n",u.getTimeString().c_str(),u.getTime());
-  }
-  else {
+  } else {
     log.printf("  time: %g ps\n",u.getTime());
   }
 
   s="";
   parse("CHARGE",s);
-  if(s.length()>0) u.setCharge(s);
+  if(s.length()>0) {
+    u.setCharge(s);
+  }
   if(u.getChargeString().length()>0 && u.getChargeString()=="e") {
     log.printf("  charge: %s\n",u.getChargeString().c_str());
-  }
-  else if(u.getChargeString().length()>0 && u.getChargeString()!="e") {
+  } else if(u.getChargeString().length()>0 && u.getChargeString()!="e") {
     log.printf("  charge: %s = %g e\n",u.getChargeString().c_str(),u.getCharge());
-  }
-  else {
+  } else {
     log.printf("  charge: %g e\n",u.getCharge());
   }
 
   s="";
   parse("MASS",s);
-  if(s.length()>0) u.setMass(s);
+  if(s.length()>0) {
+    u.setMass(s);
+  }
   if(u.getMassString().length()>0 && u.getMassString()=="amu") {
     log.printf("  mass: %s\n",u.getMassString().c_str());
-  }
-  else if(u.getMassString().length()>0 && u.getMassString()!="amu") {
+  } else if(u.getMassString().length()>0 && u.getMassString()!="amu") {
     log.printf("  mass: %s = %g amu\n",u.getMassString().c_str(),u.getMass());
-  }
-  else {
+  } else {
     log.printf("  mass: %g amu\n",u.getMass());
   }
 

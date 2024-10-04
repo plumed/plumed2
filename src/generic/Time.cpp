@@ -48,7 +48,9 @@ public:
 // active methods:
   void calculate() override;
   void apply() override {}
-  unsigned getNumberOfDerivatives() override { return 0; }
+  unsigned getNumberOfDerivatives() override {
+    return 0;
+  }
 };
 
 PLUMED_REGISTER_ACTION(Time,"TIME")
@@ -59,9 +61,9 @@ void Time::registerKeywords( Keywords& keys ) {
 }
 
 Time::Time(const ActionOptions&ao):
-  Action(ao),ActionWithValue(ao)
-{
-  addValueWithDerivatives(); setNotPeriodic();
+  Action(ao),ActionWithValue(ao) {
+  addValueWithDerivatives();
+  setNotPeriodic();
   // resize derivative by hand to a nonzero value
   getPntrToValue()->resizeDerivatives(1);
 }

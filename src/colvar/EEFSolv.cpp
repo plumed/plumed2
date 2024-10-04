@@ -117,8 +117,7 @@ EEFSolv::EEFSolv(const ActionOptions&ao):
   delta_g_ref(0.),
   nl_buffer(0.1),
   nl_stride(40),
-  nl_update(0)
-{
+  nl_update(0) {
   std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS", atoms);
   const unsigned size = atoms.size();
@@ -135,7 +134,8 @@ EEFSolv::EEFSolv(const ActionOptions&ao):
 
   checkRead();
 
-  log << "  Bibliography " << plumed.cite("Lazaridis T, Karplus M, Proteins Struct. Funct. Genet. 35, 133 (1999)"); log << "\n";
+  log << "  Bibliography " << plumed.cite("Lazaridis T, Karplus M, Proteins Struct. Funct. Genet. 35, 133 (1999)");
+  log << "\n";
 
   nl.resize(size);
   nlexpo.resize(size);
@@ -157,7 +157,9 @@ void EEFSolv::update_neighb() {
     const Vector posi = getPosition(i);
     // Loop through neighboring atoms, add the ones below cutoff
     for (unsigned j=i+1; j<size; j++) {
-      if(parameter[i][1]==0&&parameter[j][1]==0) continue;
+      if(parameter[i][1]==0&&parameter[j][1]==0) {
+        continue;
+      }
       const double d2 = delta(posi, getPosition(j)).modulo2();
       if (d2 < lower_c2 && j < i+14) {
         // crude approximation for i-i+1/2 interactions,
@@ -166,22 +168,32 @@ void EEFSolv::update_neighb() {
       }
       // We choose the maximum lambda value and use a more conservative cutoff
       double mlambda = 1./parameter[i][2];
-      if (1./parameter[j][2] > mlambda) mlambda = 1./parameter[j][2];
+      if (1./parameter[j][2] > mlambda) {
+        mlambda = 1./parameter[j][2];
+      }
       const double c2 = (2. * mlambda + nl_buffer) * (2. * mlambda + nl_buffer);
       if (d2 < c2 ) {
         nl[i].push_back(j);
         if(parameter[i][2] == parameter[j][2] && parameter[i][3] == parameter[j][3]) {
           nlexpo[i].push_back(true);
-        } else nlexpo[i].push_back(false);
+        } else {
+          nlexpo[i].push_back(false);
+        }
       }
     }
   }
 }
 
 void EEFSolv::calculate() {
-  if(pbc) makeWhole();
-  if(getExchangeStep()) nl_update = 0;
-  if(nl_update==0) update_neighb();
+  if(pbc) {
+    makeWhole();
+  }
+  if(getExchangeStep()) {
+    nl_update = 0;
+  }
+  if(nl_update==0) {
+    update_neighb();
+  }
 
   const unsigned size=getNumberOfAtoms();
   double bias = 0.0;
@@ -198,7 +210,9 @@ void EEFSolv::calculate() {
   }
 
   unsigned nt=OpenMP::getNumThreads();
-  if(nt*stride*10>size) nt=1;
+  if(nt*stride*10>size) {
+    nt=1;
+  }
 
   #pragma omp parallel num_threads(nt)
   {
@@ -231,8 +245,7 @@ void EEFSolv::calculate() {
         // in this case we can calculate a single exponential
         if(!nlexpo[i][i_nl]) {
           // i-j interaction
-          if(inv_rij > 0.5*inv_lambda_i && delta_g_free_i!=0.)
-          {
+          if(inv_rij > 0.5*inv_lambda_i && delta_g_free_i!=0.) {
             const double e_arg = (rij - vdw_radius_i)*inv_lambda_i;
             const double expo  = std::exp(-e_arg*e_arg);
             const double fact  = expo*fact_ij;
@@ -240,13 +253,15 @@ void EEFSolv::calculate() {
             const Vector dd    = e_deriv*dist;
             fedensity    += fact;
             deriv_i      += dd;
-            if(nt>1) deriv_omp[j] -= dd;
-            else deriv[j] -= dd;
+            if(nt>1) {
+              deriv_omp[j] -= dd;
+            } else {
+              deriv[j] -= dd;
+            }
           }
 
           // j-i interaction
-          if(inv_rij > 0.5*inv_lambda_j && delta_g_free_j!=0.)
-          {
+          if(inv_rij > 0.5*inv_lambda_j && delta_g_free_j!=0.) {
             const double e_arg = (rij - vdw_radius_j)*inv_lambda_j;
             const double expo  = std::exp(-e_arg*e_arg);
             const double fact  = expo*fact_ji;
@@ -254,13 +269,15 @@ void EEFSolv::calculate() {
             const Vector dd    = e_deriv*dist;
             fedensity    += fact;
             deriv_i      += dd;
-            if(nt>1) deriv_omp[j] -= dd;
-            else deriv[j] -= dd;
+            if(nt>1) {
+              deriv_omp[j] -= dd;
+            } else {
+              deriv[j] -= dd;
+            }
           }
         } else {
           // i-j interaction
-          if(inv_rij > 0.5*inv_lambda_i)
-          {
+          if(inv_rij > 0.5*inv_lambda_i) {
             const double e_arg = (rij - vdw_radius_i)*inv_lambda_i;
             const double expo  = std::exp(-e_arg*e_arg);
             const double fact  = expo*(fact_ij + fact_ji);
@@ -268,23 +285,34 @@ void EEFSolv::calculate() {
             const Vector dd    = e_deriv*dist;
             fedensity    += fact;
             deriv_i      += dd;
-            if(nt>1) deriv_omp[j] -= dd;
-            else deriv[j] -= dd;
+            if(nt>1) {
+              deriv_omp[j] -= dd;
+            } else {
+              deriv[j] -= dd;
+            }
           }
         }
 
       }
-      if(nt>1) deriv_omp[i] += deriv_i;
-      else deriv[i] += deriv_i;
+      if(nt>1) {
+        deriv_omp[i] += deriv_i;
+      } else {
+        deriv[i] += deriv_i;
+      }
       bias += 0.5*fedensity;
     }
     #pragma omp critical
-    if(nt>1) for(unsigned i=0; i<size; i++) deriv[i]+=deriv_omp[i];
+    if(nt>1)
+      for(unsigned i=0; i<size; i++) {
+        deriv[i]+=deriv_omp[i];
+      }
   }
 
   if(!serial) {
     comm.Sum(bias);
-    if(!deriv.empty()) comm.Sum(&deriv[0][0],3*deriv.size());
+    if(!deriv.empty()) {
+      comm.Sum(&deriv[0][0],3*deriv.size());
+    }
   }
 
   Tensor virial;
@@ -391,7 +419,9 @@ void EEFSolv::setupConstants(const std::vector<AtomNumber> &atoms, std::vector<s
   } else {
     error("MOLINFO DATA not found\n");
   }
-  for(unsigned i=0; i<atoms.size(); ++i) delta_g_ref += parameter_temp[i][1];
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    delta_g_ref += parameter_temp[i][1];
+  }
 }
 
 std::map<std::string, std::map<std::string, std::string> > EEFSolv::setupTypeMap()  {

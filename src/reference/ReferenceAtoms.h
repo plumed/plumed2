@@ -42,8 +42,7 @@ class Pbc;
 /// and \ref PLMD::ActionWithArguments respectively but for distances.
 
 class ReferenceAtoms :
-  virtual public ReferenceConfiguration
-{
+  virtual public ReferenceConfiguration {
   friend class Direction;
   friend class SingleDomainRMSD;
   friend class MultiDomainRMSD;

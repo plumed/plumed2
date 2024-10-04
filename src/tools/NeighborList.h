@@ -34,8 +34,7 @@ class Communicator;
 
 /// \ingroup TOOLBOX
 /// A class that implements neighbor lists from two lists or a single list of atoms
-class NeighborList
-{
+class NeighborList {
   bool reduced;
   bool serial_;
   bool do_pair_,do_pbc_,twolists_;
