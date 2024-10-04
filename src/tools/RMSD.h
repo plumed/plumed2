@@ -61,8 +61,7 @@ val=rmsd.calculate(getPositions(),derivs,true);
 
 **/
 
-class RMSD
-{
+class RMSD {
   enum AlignmentMethod {SIMPLE, OPTIMAL, OPTIMAL_FAST};
   AlignmentMethod alignmentMethod;
 // Reference coordinates
@@ -82,18 +81,28 @@ class RMSD
 // calculates the center from the position provided
   Vector calculateCenter(const std::vector<Vector> &p,const std::vector<double> &w) {
     plumed_massert(p.size()==w.size(),"mismatch in dimension of position/align arrays while calculating the center");
-    unsigned n; n=p.size();
-    Vector c; c.zero();
-    for(unsigned i=0; i<n; i++)c+=p[i]*w[i];
+    unsigned n;
+    n=p.size();
+    Vector c;
+    c.zero();
+    for(unsigned i=0; i<n; i++) {
+      c+=p[i]*w[i];
+    }
     return c;
   };
 // removes the center for the position provided
   void removeCenter(std::vector<Vector> &p, const Vector &c) {
-    unsigned n; n=p.size();
-    for(unsigned i=0; i<n; i++)p[i]-=c;
+    unsigned n;
+    n=p.size();
+    for(unsigned i=0; i<n; i++) {
+      p[i]-=c;
+    }
   };
 // add center
-  void addCenter(std::vector<Vector> &p, const Vector &c) {Vector cc=c*-1.; removeCenter(p,cc);};
+  void addCenter(std::vector<Vector> &p, const Vector &c) {
+    Vector cc=c*-1.;
+    removeCenter(p,cc);
+  };
 
 public:
 /// Constructor
@@ -250,17 +259,22 @@ public:
 /// static convenience method to get the matrix i,a from drotdpos (which is a bit tricky)
   static  Tensor getMatrixFromDRot(const Matrix< std::vector<Vector> > &drotdpos, const unsigned &i, const unsigned &a) {
     Tensor t;
-    t[0][0]=drotdpos(0,0)[i][a]; t[0][1]=drotdpos(0,1)[i][a]; t[0][2]=drotdpos(0,2)[i][a];
-    t[1][0]=drotdpos(1,0)[i][a]; t[1][1]=drotdpos(1,1)[i][a]; t[1][2]=drotdpos(1,2)[i][a];
-    t[2][0]=drotdpos(2,0)[i][a]; t[2][1]=drotdpos(2,1)[i][a]; t[2][2]=drotdpos(2,2)[i][a];
+    t[0][0]=drotdpos(0,0)[i][a];
+    t[0][1]=drotdpos(0,1)[i][a];
+    t[0][2]=drotdpos(0,2)[i][a];
+    t[1][0]=drotdpos(1,0)[i][a];
+    t[1][1]=drotdpos(1,1)[i][a];
+    t[1][2]=drotdpos(1,2)[i][a];
+    t[2][0]=drotdpos(2,0)[i][a];
+    t[2][1]=drotdpos(2,1)[i][a];
+    t[2][2]=drotdpos(2,2)[i][a];
     return t;
   };
 };
 
 /// this is a class which is needed to share information across the various non-threadsafe routines
 /// so that the public function of rmsd are threadsafe while the inner core can safely share information
-class RMSDCoreData
-{
+class RMSDCoreData {
 private:
   bool alEqDis;
   bool distanceIsMSD; // default is RMSD but can deliver the MSD
@@ -308,28 +322,54 @@ public:
   RMSDCoreData(const std::vector<double> &a,const std::vector<double> &d,const std::vector<Vector> &p, const std::vector<Vector> &r):
     alEqDis(false),distanceIsMSD(false),hasDistance(false),isInitialized(false),safe(false),
     creference_is_calculated(false),creference_is_removed(false),
-    cpositions_is_calculated(false),cpositions_is_removed(false),retrieve_only_rotation(false),positions(p),reference(r),align(a),displace(d),dist(0.0),rr00(0.0),rr11(0.0)
-  {cpositions.zero(); creference.zero();};
+    cpositions_is_calculated(false),cpositions_is_removed(false),retrieve_only_rotation(false),positions(p),reference(r),align(a),displace(d),dist(0.0),rr00(0.0),rr11(0.0) {
+    cpositions.zero();
+    creference.zero();
+  };
 
   // set the center on the fly without subtracting
   void calcPositionsCenter() {
     plumed_massert(!cpositions_is_calculated,"the center was already calculated");
-    cpositions.zero(); for(unsigned i=0; i<positions.size(); i++) {cpositions+=positions[i]*align[i];} cpositions_is_calculated=true;
+    cpositions.zero();
+    for(unsigned i=0; i<positions.size(); i++) {
+      cpositions+=positions[i]*align[i];
+    }
+    cpositions_is_calculated=true;
   }
   void calcReferenceCenter() {
     plumed_massert(!creference_is_calculated,"the center was already calculated");
-    creference.zero(); for(unsigned i=0; i<reference.size(); i++) {creference+=reference[i]*align[i];} creference_is_calculated=true;
+    creference.zero();
+    for(unsigned i=0; i<reference.size(); i++) {
+      creference+=reference[i]*align[i];
+    }
+    creference_is_calculated=true;
   };
   // assume the center is given externally
   // cppcheck-suppress passedByValue
-  void setPositionsCenter(Vector v) {plumed_massert(!cpositions_is_calculated,"You are setting the center two times!"); cpositions=v; cpositions_is_calculated=true;};
+  void setPositionsCenter(Vector v) {
+    plumed_massert(!cpositions_is_calculated,"You are setting the center two times!");
+    cpositions=v;
+    cpositions_is_calculated=true;
+  };
   // cppcheck-suppress passedByValue
-  void setReferenceCenter(Vector v) {plumed_massert(!creference_is_calculated,"You are setting the center two times!"); creference=v; creference_is_calculated=true;};
+  void setReferenceCenter(Vector v) {
+    plumed_massert(!creference_is_calculated,"You are setting the center two times!");
+    creference=v;
+    creference_is_calculated=true;
+  };
   // the center is already removed
-  void setPositionsCenterIsRemoved(bool t) {cpositions_is_removed=t;};
-  void setReferenceCenterIsRemoved(bool t) {creference_is_removed=t;};
-  bool getPositionsCenterIsRemoved() {return cpositions_is_removed;};
-  bool getReferenceCenterIsRemoved() {return creference_is_removed;};
+  void setPositionsCenterIsRemoved(bool t) {
+    cpositions_is_removed=t;
+  };
+  void setReferenceCenterIsRemoved(bool t) {
+    creference_is_removed=t;
+  };
+  bool getPositionsCenterIsRemoved() {
+    return cpositions_is_removed;
+  };
+  bool getReferenceCenterIsRemoved() {
+    return creference_is_removed;
+  };
   //  does the core calc : first thing to call after the constructor:
   // only_rotation=true does not retrieve the derivatives, just retrieve the optimal rotation (the same calc cannot be exploit further)
   void doCoreCalc(bool safe,bool alEqDis, bool only_rotation=false);

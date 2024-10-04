@@ -84,15 +84,29 @@ public:
     periodic = true;
   }
   /// Getters
-  double getMin() const { return this->min; }
-  double getMax() const { return this->max; }
-  double getWidth() const { return binWidth; }
-  double getDomainMax() const { return this->domainMax; }
-  double getDomainMin() const { return this->domainMin; }
-  size_t getBins() const { return this->nbins; }
+  double getMin() const {
+    return this->min;
+  }
+  double getMax() const {
+    return this->max;
+  }
+  double getWidth() const {
+    return binWidth;
+  }
+  double getDomainMax() const {
+    return this->domainMax;
+  }
+  double getDomainMin() const {
+    return this->domainMin;
+  }
+  size_t getBins() const {
+    return this->nbins;
+  }
 
   /// Check periodicity
-  bool isPeriodic() const { return this->periodic; }
+  bool isPeriodic() const {
+    return this->periodic;
+  }
   /// Check real periodicity, i.e. the maximum == the domain maximum
   bool isRealPeriodic() const;
 
@@ -198,9 +212,13 @@ public:
   static vector<DRRAxis> merge(const vector<DRRAxis> &dA,
                                const vector<DRRAxis> &dB);
   /// Get suffix
-  string getSuffix() const { return suffix; }
+  string getSuffix() const {
+    return suffix;
+  }
   /// Set unit for .grad output
-  void setOutputUnit(double unit) { outputunit = unit; }
+  void setOutputUnit(double unit) {
+    outputunit = unit;
+  }
   /// Destructor
   virtual ~DRRForceGrid() {}
 
@@ -266,10 +284,11 @@ protected:
       ss.precision(std::numeric_limits<double>::max_digits10);
       ss << std::fixed << "# " << dimensions[i].min << ' '
          << dimensions[i].binWidth << ' ' << dimensions[i].nbins;
-      if (dimensions[i].isPeriodic())
+      if (dimensions[i].isPeriodic()) {
         ss << " 1" << '\n';
-      else
+      } else {
         ss << " 0" << '\n';
+      }
     }
     fillTable(mp);
     headers = ss.str();
@@ -336,8 +355,12 @@ public:
     : DRRForceGrid(p_dimensions, p_suffix, initializeTable), kbt(p_kbt) {}
   vector<double> getGradient(const vector<double> &pos,
                              bool SkipCheck = false) const;
-  double getkbt() const { return kbt; }
-  void setkbt(double p_kbt) { kbt = p_kbt; }
+  double getkbt() const {
+    return kbt;
+  }
+  void setkbt(double p_kbt) {
+    kbt = p_kbt;
+  }
   static CZAR mergewindow(const CZAR &cWA, const CZAR &cWB);
   void writeZCountZGrad(const string &filename, bool addition = false) const;
   ~CZAR() {}

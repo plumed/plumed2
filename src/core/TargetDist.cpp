@@ -50,9 +50,14 @@ void TargetDist::read( const PDB& pdb, const std::vector<Value*> & ar ) {
 void TargetDist::read( const std::vector<double>& targ, const std::vector<Value*> & ar ) {
   plumed_assert( targ.size()==ar.size() );
 
-  target.resize( ar.size() ); args.resize( ar.size() );
+  target.resize( ar.size() );
+  args.resize( ar.size() );
   log.printf("  distance from this point in cv space : ");
-  for(unsigned i=0; i<target.size(); ++i) { log.printf("%f ", targ[i]); target[i]=targ[i]; args[i]=ar[i]; }
+  for(unsigned i=0; i<target.size(); ++i) {
+    log.printf("%f ", targ[i]);
+    target[i]=targ[i];
+    args[i]=ar[i];
+  }
   log.printf("\n");
 }
 
@@ -61,10 +66,13 @@ double TargetDist::calculate( std::vector<double>& derivs ) {
   double dist=0;
   for(unsigned i=0; i<args.size(); ++i) {
     double tmp=args[i]->difference( target[i], args[i]->get() );
-    derivs[i]=tmp; dist+=tmp*tmp;
+    derivs[i]=tmp;
+    dist+=tmp*tmp;
   }
   dist=std::sqrt(dist);
-  for(unsigned i=0; i<args.size(); ++i) derivs[i]/=dist;
+  for(unsigned i=0; i<args.size(); ++i) {
+    derivs[i]/=dist;
+  }
   return dist;
 }
 

@@ -30,20 +30,25 @@ namespace bias {
 
 class ReweightBase :
   public ActionWithValue,
-  public ActionWithArguments
-{
+  public ActionWithArguments {
 protected:
 /// The temperature at which you are running the simulation
   double simtemp;
 public:
   static void registerKeywords(Keywords&);
   explicit ReweightBase(const ActionOptions&ao);
-  unsigned getNumberOfDerivatives() override { return 0; }
-  virtual bool buildsWeightStore() const { return false; }
+  unsigned getNumberOfDerivatives() override {
+    return 0;
+  }
+  virtual bool buildsWeightStore() const {
+    return false;
+  }
   void calculate() override;
   virtual void calculateWeights( const unsigned& nframes ) {}
   virtual double getLogWeight() = 0;
-  virtual double getWeight( const unsigned& iweight ) const { plumed_error(); }
+  virtual double getWeight( const unsigned& iweight ) const {
+    plumed_error();
+  }
   virtual void clearData() {}
   void apply() override {}
 };

@@ -28,14 +28,17 @@ ActionSet::ActionSet(PlumedMain&p):
   (void) plumed; // to suppress warning about "unused plumed"
 }
 
-ActionSet::~ActionSet()
-{
+ActionSet::~ActionSet() {
 // required in order to deallocate in reverse order:
-  for(int i=size()-1; i>=0; i--) (*this)[i].reset();
+  for(int i=size()-1; i>=0; i--) {
+    (*this)[i].reset();
+  }
 }
 
 void ActionSet::clearDelete() {
-  for(int i=size()-1; i>=0; i--) (*this)[i].reset();
+  for(int i=size()-1; i>=0; i--) {
+    (*this)[i].reset();
+  }
   clear();
 }
 
@@ -43,9 +46,13 @@ ActionShortcut* ActionSet::getShortcutActionWithLabel( const std::string& s ) co
   ActionShortcut* scf = NULL;
   for(const auto & p : (*this)) {
     ActionShortcut* sc=dynamic_cast<ActionShortcut*>(p.get());
-    if( sc && sc->shortcutlabel==s ) scf = sc;
+    if( sc && sc->shortcutlabel==s ) {
+      scf = sc;
+    }
   }
-  if( scf ) return scf;
+  if( scf ) {
+    return scf;
+  }
   return NULL;
 }
 

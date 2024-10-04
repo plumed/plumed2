@@ -113,7 +113,9 @@ extern "C" {
   static void plumed_plumedmain_cmd_safe(void*plumed,const char*key,plumed_safeptr_x safe) {
     plumed_massert(plumed,"trying to use a plumed object which is not initialized");
     auto p=static_cast<PLMD::PlumedMain*>(plumed);
-    if(getenvTypesafeDebug()) typesafeDebug(key,safe);
+    if(getenvTypesafeDebug()) {
+      typesafeDebug(key,safe);
+    }
     p->cmd(key,PLMD::TypesafePtr::fromSafePtr(&safe));
   }
 }
@@ -130,70 +132,120 @@ static void translate_current(plumed_nothrow_handler_x nothrow,void**nested=null
     // cppcheck-suppress rethrowNoCurrentException
     throw;
   } catch(const PLMD::ExceptionTypeError & e) {
-    if(!msg) msg=e.what();
+    if(!msg) {
+      msg=e.what();
+    }
     nothrow.handler(nothrow.ptr,20300,msg,opt);
   } catch(const PLMD::ExceptionError & e) {
-    if(!msg) msg=e.what();
+    if(!msg) {
+      msg=e.what();
+    }
     nothrow.handler(nothrow.ptr,20200,msg,opt);
   } catch(const PLMD::ExceptionDebug & e) {
-    if(!msg) msg=e.what();
+    if(!msg) {
+      msg=e.what();
+    }
     nothrow.handler(nothrow.ptr,20100,msg,opt);
   } catch(const PLMD::Exception & e) {
-    if(!msg) msg=e.what();
+    if(!msg) {
+      msg=e.what();
+    }
     nothrow.handler(nothrow.ptr,20000,msg,opt);
   } catch(const PLMD::lepton::Exception & e) {
-    if(!msg) msg=e.what();
+    if(!msg) {
+      msg=e.what();
+    }
     nothrow.handler(nothrow.ptr,19900,msg,opt);
     // 11000 to 12000 are "bad exceptions". message will be copied without new allocations
   } catch(const std::bad_variant_access & e) {
-    if(!msg) msg=e.what();
+    if(!msg) {
+      msg=e.what();
+    }
     nothrow.handler(nothrow.ptr,11700,msg,opt);
   } catch(const std::bad_optional_access & e) {
-    if(!msg) msg=e.what();
+    if(!msg) {
+      msg=e.what();
+    }
     nothrow.handler(nothrow.ptr,11600,msg,opt);
   } catch(const std::bad_exception & e) {
-    if(!msg) msg=e.what();
+    if(!msg) {
+      msg=e.what();
+    }
     nothrow.handler(nothrow.ptr,11500,msg,opt);
   } catch(const std::bad_array_new_length & e) {
-    if(!msg) msg=e.what();
+    if(!msg) {
+      msg=e.what();
+    }
     nothrow.handler(nothrow.ptr,11410,msg,opt);
   } catch(const std::bad_alloc & e) {
-    if(!msg) msg=e.what();
+    if(!msg) {
+      msg=e.what();
+    }
     nothrow.handler(nothrow.ptr,11400,msg,opt);
   } catch(const std::bad_function_call & e) {
-    if(!msg) msg=e.what();
+    if(!msg) {
+      msg=e.what();
+    }
     nothrow.handler(nothrow.ptr,11300,msg,opt);
   } catch(const std::bad_weak_ptr & e) {
-    if(!msg) msg=e.what();
+    if(!msg) {
+      msg=e.what();
+    }
     nothrow.handler(nothrow.ptr,11200,msg,opt);
   } catch(const std::bad_any_cast & e) {
-    if(!msg) msg=e.what();
+    if(!msg) {
+      msg=e.what();
+    }
     nothrow.handler(nothrow.ptr,11150,msg,opt);
   } catch(const std::bad_cast & e) {
-    if(!msg) msg=e.what();
+    if(!msg) {
+      msg=e.what();
+    }
     nothrow.handler(nothrow.ptr,11100,msg,opt);
   } catch(const std::bad_typeid & e) {
-    if(!msg) msg=e.what();
+    if(!msg) {
+      msg=e.what();
+    }
     nothrow.handler(nothrow.ptr,11000,msg,opt);
   } catch(const std::regex_error & e) {
-    if(!msg) msg=e.what();
-    if(e.code()==std::regex_constants::error_collate) nothrow.handler(nothrow.ptr,10240,msg,opt);
-    else if(e.code()==std::regex_constants::error_ctype) nothrow.handler(nothrow.ptr,10241,msg,opt);
-    else if(e.code()==std::regex_constants::error_escape) nothrow.handler(nothrow.ptr,10242,msg,opt);
-    else if(e.code()==std::regex_constants::error_backref) nothrow.handler(nothrow.ptr,10243,msg,opt);
-    else if(e.code()==std::regex_constants::error_brack) nothrow.handler(nothrow.ptr,10244,msg,opt);
-    else if(e.code()==std::regex_constants::error_paren) nothrow.handler(nothrow.ptr,10245,msg,opt);
-    else if(e.code()==std::regex_constants::error_brace) nothrow.handler(nothrow.ptr,10246,msg,opt);
-    else if(e.code()==std::regex_constants::error_badbrace) nothrow.handler(nothrow.ptr,10247,msg,opt);
-    else if(e.code()==std::regex_constants::error_range) nothrow.handler(nothrow.ptr,10248,msg,opt);
-    else if(e.code()==std::regex_constants::error_space) nothrow.handler(nothrow.ptr,10249,msg,opt);
-    else if(e.code()==std::regex_constants::error_badrepeat) nothrow.handler(nothrow.ptr,10250,msg,opt);
-    else if(e.code()==std::regex_constants::error_complexity) nothrow.handler(nothrow.ptr,10251,msg,opt);
-    else if(e.code()==std::regex_constants::error_stack) nothrow.handler(nothrow.ptr,10252,msg,opt);
+    if(!msg) {
+      msg=e.what();
+    }
+    if(e.code()==std::regex_constants::error_collate) {
+      nothrow.handler(nothrow.ptr,10240,msg,opt);
+    } else if(e.code()==std::regex_constants::error_ctype) {
+      nothrow.handler(nothrow.ptr,10241,msg,opt);
+    } else if(e.code()==std::regex_constants::error_escape) {
+      nothrow.handler(nothrow.ptr,10242,msg,opt);
+    } else if(e.code()==std::regex_constants::error_backref) {
+      nothrow.handler(nothrow.ptr,10243,msg,opt);
+    } else if(e.code()==std::regex_constants::error_brack) {
+      nothrow.handler(nothrow.ptr,10244,msg,opt);
+    } else if(e.code()==std::regex_constants::error_paren) {
+      nothrow.handler(nothrow.ptr,10245,msg,opt);
+    } else if(e.code()==std::regex_constants::error_brace) {
+      nothrow.handler(nothrow.ptr,10246,msg,opt);
+    } else if(e.code()==std::regex_constants::error_badbrace) {
+      nothrow.handler(nothrow.ptr,10247,msg,opt);
+    } else if(e.code()==std::regex_constants::error_range) {
+      nothrow.handler(nothrow.ptr,10248,msg,opt);
+    } else if(e.code()==std::regex_constants::error_space) {
+      nothrow.handler(nothrow.ptr,10249,msg,opt);
+    } else if(e.code()==std::regex_constants::error_badrepeat) {
+      nothrow.handler(nothrow.ptr,10250,msg,opt);
+    } else if(e.code()==std::regex_constants::error_complexity) {
+      nothrow.handler(nothrow.ptr,10251,msg,opt);
+    } else if(e.code()==std::regex_constants::error_stack) {
+      nothrow.handler(nothrow.ptr,10252,msg,opt);
+    }
     // fallback to generic runtime_error
-    else nothrow.handler(nothrow.ptr,10200,msg,opt);
+    else {
+      nothrow.handler(nothrow.ptr,10200,msg,opt);
+    }
   } catch(const std::filesystem::filesystem_error & e) {
-    if(!msg) msg=e.what();
+    if(!msg) {
+      msg=e.what();
+    }
     int value=e.code().value();
 
     opt[2]="c"; // "c" passes the error code.
@@ -204,11 +256,17 @@ static void translate_current(plumed_nothrow_handler_x nothrow,void**nested=null
     int system_category=2;
     int iostream_category=3;
     int future_category=4;
-    if(e.code().category()==std::generic_category()) opt[5]=&generic_category;
-    else if(e.code().category()==std::system_category()) opt[5]=&system_category;
-    else if(e.code().category()==std::iostream_category()) opt[5]=&iostream_category;
-    else if(e.code().category()==std::future_category()) opt[5]=&future_category;
-    else opt[5]=nullptr;
+    if(e.code().category()==std::generic_category()) {
+      opt[5]=&generic_category;
+    } else if(e.code().category()==std::system_category()) {
+      opt[5]=&system_category;
+    } else if(e.code().category()==std::iostream_category()) {
+      opt[5]=&iostream_category;
+    } else if(e.code().category()==std::future_category()) {
+      opt[5]=&future_category;
+    } else {
+      opt[5]=nullptr;
+    }
 
     // local class, just needed to propely pass path information
     // path is stored as a span of bytes.
@@ -240,74 +298,124 @@ static void translate_current(plumed_nothrow_handler_x nothrow,void**nested=null
 
     nothrow.handler(nothrow.ptr,10229,msg,opt);
   } catch(const std::ios_base::failure & e) {
-    if(!msg) msg=e.what();
+    if(!msg) {
+      msg=e.what();
+    }
     int value=e.code().value();
     opt[2]="c"; // "c" passes the error code.
     opt[3]=&value;
-    if(e.code().category()==std::generic_category()) nothrow.handler(nothrow.ptr,10230,msg,opt);
-    else if(e.code().category()==std::system_category()) nothrow.handler(nothrow.ptr,10231,msg,opt);
-    else if(e.code().category()==std::iostream_category()) nothrow.handler(nothrow.ptr,10232,msg,opt);
-    else if(e.code().category()==std::future_category()) nothrow.handler(nothrow.ptr,10233,msg,opt);
-    else
+    if(e.code().category()==std::generic_category()) {
+      nothrow.handler(nothrow.ptr,10230,msg,opt);
+    } else if(e.code().category()==std::system_category()) {
+      nothrow.handler(nothrow.ptr,10231,msg,opt);
+    } else if(e.code().category()==std::iostream_category()) {
+      nothrow.handler(nothrow.ptr,10232,msg,opt);
+    } else if(e.code().category()==std::future_category()) {
+      nothrow.handler(nothrow.ptr,10233,msg,opt);
+    } else
       // 10239 represents std::ios_base::failure with default constructur
+    {
       nothrow.handler(nothrow.ptr,10239,msg,opt);
+    }
   } catch(const std::system_error & e) {
-    if(!msg) msg=e.what();
+    if(!msg) {
+      msg=e.what();
+    }
     int value=e.code().value();
     opt[2]="c"; // "c" passes the error code.
     opt[3]=&value;
-    if(e.code().category()==std::generic_category()) nothrow.handler(nothrow.ptr,10220,msg,opt);
-    else if(e.code().category()==std::system_category()) nothrow.handler(nothrow.ptr,10221,msg,opt);
-    else if(e.code().category()==std::iostream_category()) nothrow.handler(nothrow.ptr,10222,msg,opt);
-    else if(e.code().category()==std::future_category()) nothrow.handler(nothrow.ptr,10223,msg,opt);
+    if(e.code().category()==std::generic_category()) {
+      nothrow.handler(nothrow.ptr,10220,msg,opt);
+    } else if(e.code().category()==std::system_category()) {
+      nothrow.handler(nothrow.ptr,10221,msg,opt);
+    } else if(e.code().category()==std::iostream_category()) {
+      nothrow.handler(nothrow.ptr,10222,msg,opt);
+    } else if(e.code().category()==std::future_category()) {
+      nothrow.handler(nothrow.ptr,10223,msg,opt);
+    }
     // fallback to generic runtime_error
-    else nothrow.handler(nothrow.ptr,10200,msg,opt);
+    else {
+      nothrow.handler(nothrow.ptr,10200,msg,opt);
+    }
   } catch(const std::underflow_error &e) {
-    if(!msg) msg=e.what();
+    if(!msg) {
+      msg=e.what();
+    }
     nothrow.handler(nothrow.ptr,10215,msg,opt);
   } catch(const std::overflow_error &e) {
-    if(!msg) msg=e.what();
+    if(!msg) {
+      msg=e.what();
+    }
     nothrow.handler(nothrow.ptr,10210,msg,opt);
   } catch(const std::range_error &e) {
-    if(!msg) msg=e.what();
+    if(!msg) {
+      msg=e.what();
+    }
     nothrow.handler(nothrow.ptr,10205,msg,opt);
   } catch(const std::runtime_error & e) {
-    if(!msg) msg=e.what();
+    if(!msg) {
+      msg=e.what();
+    }
     nothrow.handler(nothrow.ptr,10200,msg,opt);
   } catch(const std::future_error & e) {
-    if(!msg) msg=e.what();
-    if(e.code()==std::make_error_code(std::future_errc::broken_promise)) nothrow.handler(nothrow.ptr,10125,msg,opt);
-    else if(e.code()==std::make_error_code(std::future_errc::future_already_retrieved)) nothrow.handler(nothrow.ptr,10126,msg,opt);
-    else if(e.code()==std::make_error_code(std::future_errc::promise_already_satisfied)) nothrow.handler(nothrow.ptr,10127,msg,opt);
-    else if(e.code()==std::make_error_code(std::future_errc::no_state)) nothrow.handler(nothrow.ptr,10128,msg,opt);
+    if(!msg) {
+      msg=e.what();
+    }
+    if(e.code()==std::make_error_code(std::future_errc::broken_promise)) {
+      nothrow.handler(nothrow.ptr,10125,msg,opt);
+    } else if(e.code()==std::make_error_code(std::future_errc::future_already_retrieved)) {
+      nothrow.handler(nothrow.ptr,10126,msg,opt);
+    } else if(e.code()==std::make_error_code(std::future_errc::promise_already_satisfied)) {
+      nothrow.handler(nothrow.ptr,10127,msg,opt);
+    } else if(e.code()==std::make_error_code(std::future_errc::no_state)) {
+      nothrow.handler(nothrow.ptr,10128,msg,opt);
+    }
     // fallback to generic logic_error
-    else nothrow.handler(nothrow.ptr,10100,msg,opt);
+    else {
+      nothrow.handler(nothrow.ptr,10100,msg,opt);
+    }
   } catch(const std::out_of_range & e) {
-    if(!msg) msg=e.what();
+    if(!msg) {
+      msg=e.what();
+    }
     nothrow.handler(nothrow.ptr,10120,msg,opt);
   } catch(const std::length_error & e) {
-    if(!msg) msg=e.what();
+    if(!msg) {
+      msg=e.what();
+    }
     nothrow.handler(nothrow.ptr,10115,msg,opt);
   } catch(const std::domain_error & e) {
-    if(!msg) msg=e.what();
+    if(!msg) {
+      msg=e.what();
+    }
     nothrow.handler(nothrow.ptr,10110,msg,opt);
   } catch(const std::invalid_argument & e) {
-    if(!msg) msg=e.what();
+    if(!msg) {
+      msg=e.what();
+    }
     nothrow.handler(nothrow.ptr,10105,msg,opt);
   } catch(const std::logic_error & e) {
-    if(!msg) msg=e.what();
+    if(!msg) {
+      msg=e.what();
+    }
     nothrow.handler(nothrow.ptr,10100,msg,opt);
     // generic exception. message will be copied without new allocations
     // reports all non caught exceptions that are derived from std::exception
     // for instance, boost exceptions would end up here
   } catch(const std::exception & e) {
-    if(!msg) msg=e.what();
+    if(!msg) {
+      msg=e.what();
+    }
     nothrow.handler(nothrow.ptr,10000,msg,opt);
   } catch(const char* m) {
-    if(!msg) msg=m;
+    if(!msg) {
+      msg=m;
+    }
     nothrow.handler(nothrow.ptr,10000,msg,opt);
   } catch(const std::string & s) {
-    if(!msg) msg=s.c_str();
+    if(!msg) {
+      msg=s.c_str();
+    }
     nothrow.handler(nothrow.ptr,10000,msg,opt);
   } catch (...) {
     // if exception cannot be translated, we add a bad_exception to the stack
@@ -357,7 +465,9 @@ extern "C" {
 // was linked against a different C++ library
     try {
       plumed_massert(plumed,"trying to use a plumed object which is not initialized");
-      if(getenvTypesafeDebug()) typesafeDebug(key,safe);
+      if(getenvTypesafeDebug()) {
+        typesafeDebug(key,safe);
+      }
       p->cmd(key,PLMD::TypesafePtr::fromSafePtr(&safe));
     } catch(...) {
       if(p->getNestedExceptions()) {
@@ -436,33 +546,41 @@ class PlumedMainInitializer {
   const bool debug;
 public:
   PlumedMainInitializer():
-    debug(std::getenv("PLUMED_LOAD_DEBUG"))
-  {
+    debug(std::getenv("PLUMED_LOAD_DEBUG")) {
 // make sure static plumed_function_pointers is initialized here
     plumed_symbol_table_init();
-    if(debug) std::fprintf(stderr,"+++ Initializing PLUMED with plumed_symbol_table version %i at %p\n",plumed_symbol_table.version,(void*)&plumed_symbol_table);
+    if(debug) {
+      std::fprintf(stderr,"+++ Initializing PLUMED with plumed_symbol_table version %i at %p\n",plumed_symbol_table.version,(void*)&plumed_symbol_table);
+    }
 #if defined(__PLUMED_HAS_DLOPEN)
     if(std::getenv("PLUMED_LOAD_SKIP_REGISTRATION")) {
-      if(debug) std::fprintf(stderr,"+++ Skipping registration +++\n");
+      if(debug) {
+        std::fprintf(stderr,"+++ Skipping registration +++\n");
+      }
       return;
     }
     typedef plumed_plumedmain_function_holder_x* (*plumed_kernel_register_type_x)(const plumed_plumedmain_function_holder_x*);
     plumed_kernel_register_type_x plumed_kernel_register=nullptr;
     void* handle=nullptr;
 #if defined(__PLUMED_HAS_RTLD_DEFAULT)
-    if(debug) std::fprintf(stderr,"+++ Registering functions. Looking in RTLD_DEFAULT +++\n");
+    if(debug) {
+      std::fprintf(stderr,"+++ Registering functions. Looking in RTLD_DEFAULT +++\n");
+    }
     void* dls=dlsym(RTLD_DEFAULT,"plumed_kernel_register");
 #else
     handle=dlopen(NULL,RTLD_LOCAL);
-    if(debug) std::fprintf(stderr,"+++ Registering functions. dlopen handle at %p +++\n",handle);
+    if(debug) {
+      std::fprintf(stderr,"+++ Registering functions. dlopen handle at %p +++\n",handle);
+    }
     void* dls=dlsym(handle,"plumed_kernel_register");
 #endif
     *(void **)(&plumed_kernel_register)=dls;
     if(debug) {
       if(plumed_kernel_register) {
         std::fprintf(stderr,"+++ plumed_kernel_register found at %p +++\n",dls);
+      } else {
+        std::fprintf(stderr,"+++ plumed_kernel_register not found +++\n");
       }
-      else std::fprintf(stderr,"+++ plumed_kernel_register not found +++\n");
     }
     void*createp;
     void*cmdp;
@@ -470,17 +588,24 @@ public:
     plumed_convert_fptr(createp,plumed_symbol_table.functions.create);
     plumed_convert_fptr(cmdp,plumed_symbol_table.functions.cmd);
     plumed_convert_fptr(finalizep,plumed_symbol_table.functions.finalize);
-    if(plumed_kernel_register && debug) std::fprintf(stderr,"+++ Registering functions at %p (%p,%p,%p) +++\n",
-          (void*)&plumed_symbol_table.functions,createp,cmdp,finalizep);
-    if(plumed_kernel_register) (*plumed_kernel_register)(&plumed_symbol_table.functions);
+    if(plumed_kernel_register && debug)
+      std::fprintf(stderr,"+++ Registering functions at %p (%p,%p,%p) +++\n",
+                   (void*)&plumed_symbol_table.functions,createp,cmdp,finalizep);
+    if(plumed_kernel_register) {
+      (*plumed_kernel_register)(&plumed_symbol_table.functions);
+    }
 // Notice that handle could be null in the following cases:
 // - if we use RTLD_DEFAULT
 // - on Linux if we don't use RTLD_DEFAULT, since dlopen(NULL,RTLD_LOCAL) returns a null pointer.
-    if(handle) dlclose(handle);
+    if(handle) {
+      dlclose(handle);
+    }
 #endif
   }
   ~PlumedMainInitializer() {
-    if(debug) std::fprintf(stderr,"+++ Finalizing PLUMED with plumed_symbol_table at %p\n",(void*)&plumed_symbol_table);
+    if(debug) {
+      std::fprintf(stderr,"+++ Finalizing PLUMED with plumed_symbol_table at %p\n",(void*)&plumed_symbol_table);
+    }
   }
 } PlumedMainInitializerRegisterMe;
 }

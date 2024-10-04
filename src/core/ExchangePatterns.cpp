@@ -43,28 +43,30 @@ void ExchangePatterns::getFlag(int &flag) {
   flag=PatternFlag;
 }
 
-void ExchangePatterns::setSeed(const int seed)
-{
+void ExchangePatterns::setSeed(const int seed) {
   random.setSeed(seed);
 }
 
-void ExchangePatterns::getList(const TypesafePtr & ind)
-{
+void ExchangePatterns::getList(const TypesafePtr & ind) {
   auto iind=ind.get<int*>({NumberOfReplicas});
-  switch(PatternFlag)
-  {
+  switch(PatternFlag) {
   case RANDOM:
     for(int i=0; i<NumberOfReplicas; i++) {
       int stat=1;
       while(stat) {
         stat=0;
         iind[i] = (int) (random.U01()*NumberOfReplicas);
-        for(int j=0; j<i; j++) if(iind[i]==iind[j]) stat=1;
+        for(int j=0; j<i; j++)
+          if(iind[i]==iind[j]) {
+            stat=1;
+          }
       }
     }
     break;
   case NEIGHBOR:
-    for(int i=0; i<NumberOfReplicas; i++) iind[i]=i;
+    for(int i=0; i<NumberOfReplicas; i++) {
+      iind[i]=i;
+    }
     break;
   }
 }

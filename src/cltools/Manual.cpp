@@ -52,8 +52,7 @@ plumed manual --action DISTANCE
 //+ENDPLUMEDOC
 
 class Manual:
-  public CLTool
-{
+  public CLTool {
 public:
   static void registerKeywords( Keywords& keys );
   explicit Manual(const CLToolOptions& co );
@@ -73,22 +72,27 @@ void Manual::registerKeywords( Keywords& keys ) {
 }
 
 Manual::Manual(const CLToolOptions& co ):
-  CLTool(co)
-{
+  CLTool(co) {
   inputdata=commandline;
 }
 
 int Manual::main(FILE* in, FILE*out,Communicator& pc) {
 
   std::string action;
-  if( !parse("--action",action) ) return 1;
+  if( !parse("--action",action) ) {
+    return 1;
+  }
   std::cerr<<"LIST OF DOCUMENTED ACTIONS:\n";
   std::cerr<<actionRegister()<<"\n";
   std::cerr<<"LIST OF DOCUMENTED COMMAND LINE TOOLS:\n";
   std::cerr<<cltoolRegister()<<"\n\n";
-  bool vimout; parseFlag("--vim",vimout);
-  bool spellout; parseFlag("--spelling",spellout);
-  if( vimout && spellout ) error("can only use one of --vim and --spelling at a time");
+  bool vimout;
+  parseFlag("--vim",vimout);
+  bool spellout;
+  parseFlag("--spelling",spellout);
+  if( vimout && spellout ) {
+    error("can only use one of --vim and --spelling at a time");
+  }
   if( !actionRegister().printManual(action,vimout,spellout) && !cltoolRegister().printManual(action,spellout) ) {
     std::fprintf(stderr,"specified action is not registered\n");
     return 1;

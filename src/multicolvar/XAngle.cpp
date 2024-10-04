@@ -67,20 +67,26 @@ PLUMED_REGISTER_ACTION(XAngle,"ZANGLES")
 void XAngle::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
   keys.add("numbered","ATOMS","the pairs of atoms that you would like to calculate the angles for");
-  keys.reset_style("ATOMS","atoms"); MultiColvarShortcuts::shortcutKeywords( keys );
-  keys.needsAction("DISTANCE"); keys.needsAction("COMBINE"); keys.needsAction("CUSTOM");
+  keys.reset_style("ATOMS","atoms");
+  MultiColvarShortcuts::shortcutKeywords( keys );
+  keys.needsAction("DISTANCE");
+  keys.needsAction("COMBINE");
+  keys.needsAction("CUSTOM");
 }
 
 XAngle::XAngle(const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
+  ActionShortcut(ao) {
   // Create distances
   std::string dline = getShortcutLabel() + "_dists: DISTANCE COMPONENTS";
   for(unsigned i=1;; ++i) {
-    std::string atstring; parseNumbered("ATOMS",i,atstring);
-    if( atstring.length()==0 ) break;
-    std::string num; Tools::convert( i, num );
+    std::string atstring;
+    parseNumbered("ATOMS",i,atstring);
+    if( atstring.length()==0 ) {
+      break;
+    }
+    std::string num;
+    Tools::convert( i, num );
     dline += " ATOMS" + num + "=" + atstring;
   }
   readInputLine( dline );
@@ -91,9 +97,15 @@ XAngle::XAngle(const ActionOptions& ao):
   readInputLine( getShortcutLabel() + "_norm_y: CUSTOM ARG=" + getShortcutLabel() + "_dists.y," + getShortcutLabel() + "_norm FUNC=x/y PERIODIC=NO");
   readInputLine( getShortcutLabel() + "_norm_z: CUSTOM ARG=" + getShortcutLabel() + "_dists.z," + getShortcutLabel() + "_norm FUNC=x/y PERIODIC=NO");
   // Now compute the angles with matheval
-  if( getName()=="XANGLES" ) readInputLine( getShortcutLabel() + "_ang: CUSTOM FUNC=acos(x) PERIODIC=NO ARG=" + getShortcutLabel() + "_norm_x");
-  if( getName()=="YANGLES" ) readInputLine( getShortcutLabel() + "_ang: CUSTOM FUNC=acos(x) PERIODIC=NO ARG=" + getShortcutLabel() + "_norm_y");
-  if( getName()=="ZANGLES" ) readInputLine( getShortcutLabel() + "_ang: CUSTOM FUNC=acos(x) PERIODIC=NO ARG=" + getShortcutLabel() + "_norm_z");
+  if( getName()=="XANGLES" ) {
+    readInputLine( getShortcutLabel() + "_ang: CUSTOM FUNC=acos(x) PERIODIC=NO ARG=" + getShortcutLabel() + "_norm_x");
+  }
+  if( getName()=="YANGLES" ) {
+    readInputLine( getShortcutLabel() + "_ang: CUSTOM FUNC=acos(x) PERIODIC=NO ARG=" + getShortcutLabel() + "_norm_y");
+  }
+  if( getName()=="ZANGLES" ) {
+    readInputLine( getShortcutLabel() + "_ang: CUSTOM FUNC=acos(x) PERIODIC=NO ARG=" + getShortcutLabel() + "_norm_z");
+  }
   // Add shortcuts to label
   MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel() + "_ang", "", this );
 }

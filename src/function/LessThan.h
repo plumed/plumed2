@@ -34,7 +34,9 @@ class LessThan : public FunctionTemplateBase {
 public:
   void registerKeywords( Keywords& keys ) override;
   void read( ActionWithArguments* action ) override;
-  bool getDerivativeZeroIfValueIsZero() const override { return true; }
+  bool getDerivativeZeroIfValueIsZero() const override {
+    return true;
+  }
   void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
 };
 

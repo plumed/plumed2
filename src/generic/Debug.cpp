@@ -45,8 +45,7 @@ DEBUG logRequestedAtoms STRIDE=2
 */
 //+ENDPLUMEDOC
 class Debug:
-  public ActionPilot
-{
+  public ActionPilot {
   OFile ofile;
   bool logActivity;
   bool logRequestedAtoms;
@@ -80,12 +79,20 @@ Debug::Debug(const ActionOptions&ao):
   logRequestedAtoms(false),
   novirial(false) {
   parseFlag("logActivity",logActivity);
-  if(logActivity) log.printf("  logging activity\n");
+  if(logActivity) {
+    log.printf("  logging activity\n");
+  }
   parseFlag("logRequestedAtoms",logRequestedAtoms);
-  if(logRequestedAtoms) log.printf("  logging requested atoms\n");
+  if(logRequestedAtoms) {
+    log.printf("  logging requested atoms\n");
+  }
   parseFlag("NOVIRIAL",novirial);
-  if(novirial) log.printf("  Switching off virial contribution\n");
-  if(novirial) plumed.novirial=true;
+  if(novirial) {
+    log.printf("  Switching off virial contribution\n");
+  }
+  if(novirial) {
+    plumed.novirial=true;
+  }
   parseFlag("DETAILED_TIMERS",detailedTimers);
   if(detailedTimers) {
     log.printf("  Detailed timing on\n");
@@ -109,15 +116,24 @@ void Debug::apply() {
     const ActionSet&actionSet(plumed.getActionSet());
     int a=0;
     for(const auto & p : actionSet) {
-      if(dynamic_cast<Debug*>(p.get()))continue;
-      if(p->isActive()) a++;
+      if(dynamic_cast<Debug*>(p.get())) {
+        continue;
+      }
+      if(p->isActive()) {
+        a++;
+      }
     };
     if(a>0) {
       ofile<<"activity at step "<<getStep()<<": ";
       for(const auto & p : actionSet) {
-        if(dynamic_cast<Debug*>(p.get()))continue;
-        if(p->isActive()) ofile.printf("+");
-        else                 ofile.printf("-");
+        if(dynamic_cast<Debug*>(p.get())) {
+          continue;
+        }
+        if(p->isActive()) {
+          ofile.printf("+");
+        } else {
+          ofile.printf("-");
+        }
       };
       ofile.printf("\n");
     };
@@ -128,7 +144,9 @@ void Debug::apply() {
     int n;
     plumed.cmd("createFullList",&n);
     plumed.cmd("getFullList",&l);
-    for(int i=0; i<n; i++) ofile.printf(" %d",l[i]);
+    for(int i=0; i<n; i++) {
+      ofile.printf(" %d",l[i]);
+    }
     ofile.printf("\n");
     plumed.cmd("clearFullList");
   }

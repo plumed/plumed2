@@ -63,7 +63,9 @@ public:
   std::string convertInputLineToString();
 /// This sorts out the reading of arguments from shortcuts
   void interpretDataLabel( const std::string& mystr, Action* myuser, std::vector<Value*>& args ) const ;
-  ActionShortcut* castToActionShortcut() noexcept final { return this; }
+  ActionShortcut* castToActionShortcut() noexcept final {
+    return this;
+  }
 };
 
 }

@@ -33,8 +33,7 @@ namespace PLMD {
 /// lines with the "PLUMED:" prefix, useful to grep out plumed
 /// log from output
 class Log :
-  public OFile
-{
+  public OFile {
 };
 
 }

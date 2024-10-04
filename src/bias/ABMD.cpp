@@ -115,35 +115,50 @@ ABMD::ABMD(const ActionOptions&ao):
   kappa(getNumberOfArguments(),0.0),
   temp(getNumberOfArguments(),0.0),
   seed(getNumberOfArguments(),std::time(0)),
-  random(getNumberOfArguments())
-{
+  random(getNumberOfArguments()) {
   // Note : parseVector will check that number of arguments is correct
   parseVector("KAPPA",kappa);
   parseVector("MIN",min);
-  if(min.size()==0) min.assign(getNumberOfArguments(),-1.0);
-  if(min.size()!=getNumberOfArguments()) error("MIN array should have the same size as ARG array");
+  if(min.size()==0) {
+    min.assign(getNumberOfArguments(),-1.0);
+  }
+  if(min.size()!=getNumberOfArguments()) {
+    error("MIN array should have the same size as ARG array");
+  }
   parseVector("NOISE",temp);
   parseVector("SEED",seed);
   parseVector("TO",to);
   checkRead();
 
   log.printf("  min");
-  for(unsigned i=0; i<min.size(); i++) log.printf(" %f",min[i]);
+  for(unsigned i=0; i<min.size(); i++) {
+    log.printf(" %f",min[i]);
+  }
   log.printf("\n");
   log.printf("  to");
-  for(unsigned i=0; i<to.size(); i++) log.printf(" %f",to[i]);
+  for(unsigned i=0; i<to.size(); i++) {
+    log.printf(" %f",to[i]);
+  }
   log.printf("\n");
   log.printf("  with force constant");
-  for(unsigned i=0; i<kappa.size(); i++) log.printf(" %f",kappa[i]);
+  for(unsigned i=0; i<kappa.size(); i++) {
+    log.printf(" %f",kappa[i]);
+  }
   log.printf("\n");
 
   for(unsigned i=0; i<getNumberOfArguments(); i++) {
     std::string str_min=getPntrToArgument(i)->getName()+"_min";
-    addComponent(str_min); componentIsNotPeriodic(str_min);
-    if(min[i]!=-1.0) getPntrToComponent(str_min)->set(min[i]);
+    addComponent(str_min);
+    componentIsNotPeriodic(str_min);
+    if(min[i]!=-1.0) {
+      getPntrToComponent(str_min)->set(min[i]);
+    }
   }
-  for(unsigned i=0; i<getNumberOfArguments(); i++) {random[i].setSeed(-seed[i]);}
-  addComponent("force2"); componentIsNotPeriodic("force2");
+  for(unsigned i=0; i<getNumberOfArguments(); i++) {
+    random[i].setSeed(-seed[i]);
+  }
+  addComponent("force2");
+  componentIsNotPeriodic("force2");
 }
 
 
@@ -158,7 +173,10 @@ void ABMD::calculate() {
     double diff=temp[i];
     if(diff>0) {
       noise = 2.*random[i].Gaussian()*diff;
-      if(cv2<=diff) { diff=0.; temp[i]=0.; }
+      if(cv2<=diff) {
+        diff=0.;
+        temp[i]=0.;
+      }
     }
 
     // min < 0 means that the variable has not been used in the input file, so the current position of the CV is used

@@ -85,8 +85,7 @@ int main(){
 */
 template <unsigned n,unsigned m>
 class TensorGeneric:
-  public MatrixSquareBracketsAccess<TensorGeneric<n,m>,double>
-{
+  public MatrixSquareBracketsAccess<TensorGeneric<n,m>,double> {
   std::array<double,n*m> d;
 /// Auxiliary private function for constructor
   void auxiliaryConstructor();
@@ -212,16 +211,14 @@ void TensorGeneric<n,m>::auxiliaryConstructor()
 
 template <unsigned n,unsigned m>
 template<typename... Args>
-void TensorGeneric<n,m>::auxiliaryConstructor(double first,Args... arg)
-{
+void TensorGeneric<n,m>::auxiliaryConstructor(double first,Args... arg) {
   d[n*m-(sizeof...(Args))-1]=first;
   auxiliaryConstructor(arg...);
 }
 
 template <unsigned n,unsigned m>
 template<typename... Args>
-TensorGeneric<n,m>::TensorGeneric(double first,Args... arg)
-{
+TensorGeneric<n,m>::TensorGeneric(double first,Args... arg) {
   static_assert((sizeof...(Args))+1==n*m,"you are trying to initialize a Tensor with the wrong number of arguments");
   auxiliaryConstructor(first,arg...);
 }
@@ -233,7 +230,10 @@ TensorGeneric<n,m>::TensorGeneric() {
 
 template<unsigned n,unsigned m>
 TensorGeneric<n,m>::TensorGeneric(const VectorGeneric<n>&v1,const VectorGeneric<m>&v2) {
-  for(unsigned i=0; i<n; i++)for(unsigned j=0; j<m; j++)d[i*m+j]=v1[i]*v2[j];
+  for(unsigned i=0; i<n; i++)
+    for(unsigned j=0; j<m; j++) {
+      d[i*m+j]=v1[i]*v2[j];
+    }
 }
 
 template<unsigned n,unsigned m>
@@ -297,27 +297,35 @@ TensorGeneric<n,m> TensorGeneric<n,m>::operator-()const {
 
 template<unsigned n,unsigned m>
 TensorGeneric<n,m>& TensorGeneric<n,m>::setCol(unsigned j,const VectorGeneric<n> & c) {
-  for(unsigned i=0; i<n; ++i) (*this)(i,j)=c(i);
+  for(unsigned i=0; i<n; ++i) {
+    (*this)(i,j)=c(i);
+  }
   return *this;
 }
 
 template<unsigned n,unsigned m>
 TensorGeneric<n,m>& TensorGeneric<n,m>::setRow(unsigned i,const VectorGeneric<m> & r) {
-  for(unsigned j=0; j<m; ++j) (*this)(i,j)=r(j);
+  for(unsigned j=0; j<m; ++j) {
+    (*this)(i,j)=r(j);
+  }
   return *this;
 }
 
 template<unsigned n,unsigned m>
 VectorGeneric<n> TensorGeneric<n,m>::getCol(unsigned j)const {
   VectorGeneric<n> v;
-  for(unsigned i=0; i<n; ++i) v(i)=(*this)(i,j);
+  for(unsigned i=0; i<n; ++i) {
+    v(i)=(*this)(i,j);
+  }
   return v;
 }
 
 template<unsigned n,unsigned m>
 VectorGeneric<m> TensorGeneric<n,m>::getRow(unsigned i)const {
   VectorGeneric<m> v;
-  for(unsigned j=0; j<m; ++j) v(j)=(*this)(i,j);
+  for(unsigned j=0; j<m; ++j) {
+    v(j)=(*this)(i,j);
+  }
   return v;
 }
 
@@ -368,14 +376,19 @@ template<unsigned n,unsigned m>
 inline
 TensorGeneric<n,n> TensorGeneric<n,m>::identity() {
   TensorGeneric<n,n> t;
-  for(unsigned i=0; i<n; i++) t(i,i)=1.0;
+  for(unsigned i=0; i<n; i++) {
+    t(i,i)=1.0;
+  }
   return t;
 }
 
 template<unsigned n,unsigned m>
 TensorGeneric<m,n> TensorGeneric<n,m>::transpose()const {
   TensorGeneric<m,n> t;
-  for(unsigned i=0; i<m; i++)for(unsigned j=0; j<n; j++) t(i,j)=(*this)(j,i);
+  for(unsigned i=0; i<m; i++)
+    for(unsigned j=0; j<n; j++) {
+      t(i,j)=(*this)(j,i);
+    }
   return t;
 }
 
@@ -384,7 +397,8 @@ inline
 TensorGeneric<3,3> TensorGeneric<3,3>::inverse()const {
   TensorGeneric t;
   double invdet=1.0/determinant();
-  for(unsigned i=0; i<3; i++) for(unsigned j=0; j<3; j++)
+  for(unsigned i=0; i<3; i++)
+    for(unsigned j=0; j<3; j++)
       t(j,i)=invdet*(   (*this)((i+1)%3,(j+1)%3)*(*this)((i+2)%3,(j+2)%3)
                         -(*this)((i+1)%3,(j+2)%3)*(*this)((i+2)%3,(j+1)%3));
   return t;
@@ -393,7 +407,9 @@ TensorGeneric<3,3> TensorGeneric<3,3>::inverse()const {
 template<unsigned n,unsigned m,unsigned l>
 TensorGeneric<n,l> matmul(const TensorGeneric<n,m>&a,const TensorGeneric<m,l>&b) {
   TensorGeneric<n,l> t;
-  for(unsigned i=0; i<n; i++) for(unsigned j=0; j<l; j++) for(unsigned k=0; k<m; k++) {
+  for(unsigned i=0; i<n; i++)
+    for(unsigned j=0; j<l; j++)
+      for(unsigned k=0; k<m; k++) {
         t(i,j)+=a(i,k)*b(k,j);
       }
   return t;
@@ -402,14 +418,20 @@ TensorGeneric<n,l> matmul(const TensorGeneric<n,m>&a,const TensorGeneric<m,l>&b)
 template<unsigned n,unsigned m>
 VectorGeneric<n> matmul(const TensorGeneric<n,m>&a,const VectorGeneric<m>&b) {
   VectorGeneric<n> t;
-  for(unsigned i=0; i<n; i++) for(unsigned j=0; j<m; j++) t(i)+=a(i,j)*b(j);
+  for(unsigned i=0; i<n; i++)
+    for(unsigned j=0; j<m; j++) {
+      t(i)+=a(i,j)*b(j);
+    }
   return t;
 }
 
 template<unsigned n,unsigned m>
 VectorGeneric<n> matmul(const VectorGeneric<m>&a,const TensorGeneric<m,n>&b) {
   VectorGeneric<n> t;
-  for(unsigned i=0; i<n; i++) for(unsigned j=0; j<m; j++) t(i)+=a(j)*b(j,i);
+  for(unsigned i=0; i<n; i++)
+    for(unsigned j=0; j<m; j++) {
+      t(i)+=a(j)*b(j,i);
+    }
   return t;
 }
 
@@ -478,9 +500,13 @@ TensorGeneric<3,3> dcrossDv2(const VectorGeneric<3>&v1,const VectorGeneric<3>&v2
 
 template<unsigned n,unsigned m>
 std::ostream & operator<<(std::ostream &os, const TensorGeneric<n,m>& t) {
-  for(unsigned i=0; i<n; i++)for(unsigned j=0; j<m; j++) {
-      if(i!=(n-1) || j!=(m-1)) os<<t(i,j)<<" ";
-      else os<<t(i,j);
+  for(unsigned i=0; i<n; i++)
+    for(unsigned j=0; j<m; j++) {
+      if(i!=(n-1) || j!=(m-1)) {
+        os<<t(i,j)<<" ";
+      } else {
+        os<<t(i,j);
+      }
     }
   return os;
 }
@@ -550,19 +576,29 @@ void diagMatSym(const TensorGeneric<n,n>&mat,VectorGeneric<m>&evals,TensorGeneri
   TensorGenericAux::local_dsyevr("V", (n==m?"A":"I"), "U", &nn, const_cast<double*>(&mat_copy[0][0]), &nn, &vl, &vu, &one, &mm,
                                  &abstol, &mout, &evals_tmp[0], &evec[0][0], &nn,
                                  isup.data(), work.data(), &lwork, iwork.data(), &liwork, &info);
-  if(info!=0) plumed_error()<<"Error diagonalizing matrix\n"
-                              <<"Matrix:\n"<<mat<<"\n"
-                              <<"Info: "<<info<<"\n";
+  if(info!=0)
+    plumed_error()<<"Error diagonalizing matrix\n"
+                  <<"Matrix:\n"<<mat<<"\n"
+                  <<"Info: "<<info<<"\n";
   plumed_assert(mout==m);
-  for(unsigned i=0; i<m; i++) evals[i]=evals_tmp[i];
+  for(unsigned i=0; i<m; i++) {
+    evals[i]=evals_tmp[i];
+  }
   // This changes eigenvectors so that the first non-null element
   // of each of them is positive
   // We can do it because the phase is arbitrary, and helps making
   // the result reproducible
   for(unsigned i=0; i<m; ++i) {
     unsigned j=0;
-    for(j=0; j<n; j++) if(evec(i,j)*evec(i,j)>1e-14) break;
-    if(j<n) if(evec(i,j)<0.0) for(j=0; j<n; j++) evec(i,j)*=-1;
+    for(j=0; j<n; j++)
+      if(evec(i,j)*evec(i,j)>1e-14) {
+        break;
+      }
+    if(j<n)
+      if(evec(i,j)<0.0)
+        for(j=0; j<n; j++) {
+          evec(i,j)*=-1;
+        }
   }
 }
 

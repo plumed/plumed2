@@ -159,25 +159,33 @@ MovingRestraint::MovingRestraint(const ActionOptions&ao):
   kk(getNumberOfArguments()),
   aa(getNumberOfArguments()),
   f(getNumberOfArguments()),
-  dpotdk(getNumberOfArguments())
-{
+  dpotdk(getNumberOfArguments()) {
   parseVector("VERSE",verse);
-  std::vector<long long int> ss(1); ss[0]=-1;
+  std::vector<long long int> ss(1);
+  ss[0]=-1;
   std::vector<double> kk( getNumberOfArguments() ), aa( getNumberOfArguments() );
   for(int i=0;; i++) {
     // Read in step
-    if( !parseNumberedVector("STEP",i,ss) ) break;
+    if( !parseNumberedVector("STEP",i,ss) ) {
+      break;
+    }
     for(unsigned j=0; j<step.size(); j++) {
-      if(ss[0]<step[j]) error("in moving restraint step number must always increase");
+      if(ss[0]<step[j]) {
+        error("in moving restraint step number must always increase");
+      }
     }
     step.push_back(ss[0]);
 
     // Try to read kappa
-    if( !parseNumberedVector("KAPPA",i,kk) ) kk=kappa[i-1];
+    if( !parseNumberedVector("KAPPA",i,kk) ) {
+      kk=kappa[i-1];
+    }
     kappa.push_back(kk);
 
     // Now read AT
-    if( !parseNumberedVector("AT",i,aa) ) aa=at[i-1];
+    if( !parseNumberedVector("AT",i,aa) ) {
+      aa=at[i-1];
+    }
     at.push_back(aa);
   }
   checkRead();
@@ -185,14 +193,19 @@ MovingRestraint::MovingRestraint(const ActionOptions&ao):
   for(unsigned i=0; i<step.size(); i++) {
     log.printf("  step%u %lld\n",i,step[i]);
     log.printf("  at");
-    for(unsigned j=0; j<at[i].size(); j++) log.printf(" %f",at[i][j]);
+    for(unsigned j=0; j<at[i].size(); j++) {
+      log.printf(" %f",at[i][j]);
+    }
     log.printf("\n");
     log.printf("  with force constant");
-    for(unsigned j=0; j<kappa[i].size(); j++) log.printf(" %f",kappa[i][j]);
+    for(unsigned j=0; j<kappa[i].size(); j++) {
+      log.printf(" %f",kappa[i][j]);
+    }
     log.printf("\n");
   };
 
-  addComponent("force2"); componentIsNotPeriodic("force2");
+  addComponent("force2");
+  componentIsNotPeriodic("force2");
   valueForce2=getPntrToComponent("force2");
 
   // add the centers of the restraint as additional components that can be retrieved (useful for debug)
@@ -200,17 +213,21 @@ MovingRestraint::MovingRestraint(const ActionOptions&ao):
   std::string comp;
   for(unsigned i=0; i< getNumberOfArguments() ; i++) {
     comp=getPntrToArgument(i)->getName()+"_cntr"; // each spring has its own center
-    addComponent(comp); componentIsNotPeriodic(comp);
+    addComponent(comp);
+    componentIsNotPeriodic(comp);
     valueCntr.push_back(getPntrToComponent(comp));
     comp=getPntrToArgument(i)->getName()+"_work"; // each spring has its own work
-    addComponent(comp); componentIsNotPeriodic(comp);
+    addComponent(comp);
+    componentIsNotPeriodic(comp);
     valueWork.push_back(getPntrToComponent(comp));
     comp=getPntrToArgument(i)->getName()+"_kappa"; // each spring has its own kappa
-    addComponent(comp); componentIsNotPeriodic(comp);
+    addComponent(comp);
+    componentIsNotPeriodic(comp);
     valueKappa.push_back(getPntrToComponent(comp));
     work.push_back(0.); // initialize the work value
   }
-  addComponent("work"); componentIsNotPeriodic("work");
+  addComponent("work");
+  componentIsNotPeriodic("work");
   valueTotWork=getPntrToComponent("work");
   tot_work=0.0;
 
@@ -237,10 +254,15 @@ void MovingRestraint::calculate() {
     aa=at[step.size()-1];
   } else {
     unsigned i=0;
-    for(i=1; i<step.size()-1; i++) if(now<step[i]) break;
+    for(i=1; i<step.size()-1; i++)
+      if(now<step[i]) {
+        break;
+      }
     double c2=(now-step[i-1])/double(step[i]-step[i-1]);
     double c1=1.0-c2;
-    for(unsigned j=0; j<narg; j++) kk[j]=(c1*kappa[i-1][j]+c2*kappa[i][j]);
+    for(unsigned j=0; j<narg; j++) {
+      kk[j]=(c1*kappa[i-1][j]+c2*kappa[i][j]);
+    }
     for(unsigned j=0; j<narg; j++) {
       const double a1=at[i-1][j];
       const double a2=at[i][j];
@@ -253,11 +275,17 @@ void MovingRestraint::calculate() {
     valueCntr[i]->set(aa[i]);
     const double k=kk[i];
     f[i]=-k*cv;
-    if(verse[i]=="U" && cv<0) continue;
-    if(verse[i]=="L" && cv>0) continue;
+    if(verse[i]=="U" && cv<0) {
+      continue;
+    }
+    if(verse[i]=="L" && cv>0) {
+      continue;
+    }
     plumed_assert(verse[i]=="U" || verse[i]=="L" || verse[i]=="B");
     dpotdk[i]=0.5*cv*cv;
-    if(oldaa.size()==aa.size() && oldf.size()==f.size()) work[i]+=0.5*(oldf[i]+f[i])*(aa[i]-oldaa[i]) + 0.5*( dpotdk[i]+olddpotdk[i] )*(kk[i]-oldk[i]);
+    if(oldaa.size()==aa.size() && oldf.size()==f.size()) {
+      work[i]+=0.5*(oldf[i]+f[i])*(aa[i]-oldaa[i]) + 0.5*( dpotdk[i]+olddpotdk[i] )*(kk[i]-oldk[i]);
+    }
     valueWork[i]->set(work[i]);
     valueKappa[i]->set(kk[i]);
     tot_work+=work[i];

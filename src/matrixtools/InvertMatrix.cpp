@@ -45,12 +45,16 @@ public:
 /// Constructor
   explicit InvertMatrix(const ActionOptions&);
 ///
-  unsigned getNumberOfDerivatives() override { return 0; }
+  unsigned getNumberOfDerivatives() override {
+    return 0;
+  }
 /// Do the calculation
   void calculate() override;
 ///
   void apply() override;
-  double getForceOnMatrixElement( const unsigned& jrow, const unsigned& krow ) const override { plumed_error(); }
+  double getForceOnMatrixElement( const unsigned& jrow, const unsigned& krow ) const override {
+    plumed_error();
+  }
 };
 
 PLUMED_REGISTER_ACTION(InvertMatrix,"INVERT_MATRIX")
@@ -63,16 +67,24 @@ void InvertMatrix::registerKeywords( Keywords& keys ) {
 InvertMatrix::InvertMatrix(const ActionOptions& ao):
   Action(ao),
   MatrixOperationBase(ao),
-  input_is_constant(false)
-{
-  if( getPntrToArgument(0)->getShape()[0]!=getPntrToArgument(0)->getShape()[1] ) error("input matrix should be square");
+  input_is_constant(false) {
+  if( getPntrToArgument(0)->getShape()[0]!=getPntrToArgument(0)->getShape()[1] ) {
+    error("input matrix should be square");
+  }
 
   ActionSetup* as = dynamic_cast<ActionSetup*>( getPntrToArgument(0)->getPntrToAction() );
-  if(as) input_is_constant=true;
+  if(as) {
+    input_is_constant=true;
+  }
 
-  std::vector<unsigned> shape(2); shape[0]=shape[1]=getPntrToArgument(0)->getShape()[0]; addValue( shape );
-  setNotPeriodic(); getPntrToComponent(0)->buildDataStore(); getPntrToComponent(0)->reshapeMatrixStore( shape[1] );
-  mymatrix.resize( shape[0], shape[1] ); inverse.resize( shape[0], shape[1] );
+  std::vector<unsigned> shape(2);
+  shape[0]=shape[1]=getPntrToArgument(0)->getShape()[0];
+  addValue( shape );
+  setNotPeriodic();
+  getPntrToComponent(0)->buildDataStore();
+  getPntrToComponent(0)->reshapeMatrixStore( shape[1] );
+  mymatrix.resize( shape[0], shape[1] );
+  inverse.resize( shape[0], shape[1] );
 }
 
 void InvertMatrix::calculate() {
@@ -81,18 +93,24 @@ void InvertMatrix::calculate() {
   // Now invert the matrix
   Invert( mymatrix, inverse );
   // And set the inverse
-  unsigned k = 0; Value* myval=getPntrToComponent(0);
+  unsigned k = 0;
+  Value* myval=getPntrToComponent(0);
   for(unsigned i=0; i<mymatrix.nrows(); ++i) {
     for(unsigned j=0; j<mymatrix.ncols(); ++j) {
-      myval->set( k, inverse(i,j) ); k++;
+      myval->set( k, inverse(i,j) );
+      k++;
     }
   }
 
-  if( !doNotCalculateDerivatives() && !input_is_constant ) error("derivatives of inverse matrix have not been implemented");
+  if( !doNotCalculateDerivatives() && !input_is_constant ) {
+    error("derivatives of inverse matrix have not been implemented");
+  }
 }
 
 void InvertMatrix::apply() {
-  if( doNotCalculateDerivatives() || input_is_constant ) return;
+  if( doNotCalculateDerivatives() || input_is_constant ) {
+    return;
+  }
   error("derivatives of inverse matrix have not been implemented");
 }
 

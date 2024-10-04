@@ -60,8 +60,7 @@ plumed gen_example --plumed plumed.dat --status working
 //+ENDPLUMEDOC
 
 class GenExample:
-  public CLTool
-{
+  public CLTool {
 private:
   int multi;
   std::string status, version;
@@ -93,8 +92,7 @@ GenExample::GenExample(const CLToolOptions& co ):
   CLTool(co),
   multi(0),
   status("nobadge"),
-  version("master")
-{
+  version("master") {
   inputdata=commandline;
 }
 
@@ -103,32 +101,61 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
 // set up for multi replica driver:
   parse("--multi",multi);
   if(multi) {
-    int ntot=pc.Get_size(); int nintra=ntot/multi;
-    if(multi*nintra!=ntot) error("invalid number of processes for multi environment");
+    int ntot=pc.Get_size();
+    int nintra=ntot/multi;
+    if(multi*nintra!=ntot) {
+      error("invalid number of processes for multi environment");
+    }
     pc.Split(pc.Get_rank()/nintra,pc.Get_rank(),intracomm);
     pc.Split(pc.Get_rank()%nintra,pc.Get_rank(),intercomm);
   } else {
     intracomm.Set_comm(pc.Get_comm());
   }
 
-  if( config::getVersionLong().find("dev")==std::string::npos ) version="v"+config::getVersion();
-  std::string fname, egname, outfile; parse("--plumed",fname);
-  parse("--name",egname); parse("--out",outfile); parse("--status",status);
+  if( config::getVersionLong().find("dev")==std::string::npos ) {
+    version="v"+config::getVersion();
+  }
+  std::string fname, egname, outfile;
+  parse("--plumed",fname);
+  parse("--name",egname);
+  parse("--out",outfile);
+  parse("--status",status);
 
   int r=0;
-  if(intracomm.Get_rank()==0) r=intercomm.Get_rank();
+  if(intracomm.Get_rank()==0) {
+    r=intercomm.Get_rank();
+  }
   intracomm.Bcast(r,0);
-  if(r>0) outfile="/dev/null";
+  if(r>0) {
+    outfile="/dev/null";
+  }
 
-  IFile ifile; ifile.open(fname); ifile.allowNoEOL(); std::ofstream ofile; ofile.open(outfile); std::vector<bool> shortcuts;
-  bool hasshortcuts=false, endplumed=false; std::vector<std::vector<std::string> > input; std::vector<std::string> words;
+  IFile ifile;
+  ifile.open(fname);
+  ifile.allowNoEOL();
+  std::ofstream ofile;
+  ofile.open(outfile);
+  std::vector<bool> shortcuts;
+  bool hasshortcuts=false, endplumed=false;
+  std::vector<std::vector<std::string> > input;
+  std::vector<std::string> words;
   while( Tools::getParsedLine(ifile, words, false) ) {
-    input.push_back( words ); shortcuts.push_back( false );
-    if( words.empty() || words[0].find("#")!=std::string::npos || endplumed ) continue;
-    std::vector<std::string> interpreted( words ); Tools::interpretLabel(interpreted);
-    if( interpreted[0]=="ENDPLUMED" ) { endplumed=true; continue; }
-    Keywords keys; actionRegister().getKeywords( interpreted[0], keys );
-    if( status=="working" && keys.exists("IS_SHORTCUT") ) hasshortcuts=shortcuts[shortcuts.size()-1]=true;
+    input.push_back( words );
+    shortcuts.push_back( false );
+    if( words.empty() || words[0].find("#")!=std::string::npos || endplumed ) {
+      continue;
+    }
+    std::vector<std::string> interpreted( words );
+    Tools::interpretLabel(interpreted);
+    if( interpreted[0]=="ENDPLUMED" ) {
+      endplumed=true;
+      continue;
+    }
+    Keywords keys;
+    actionRegister().getKeywords( interpreted[0], keys );
+    if( status=="working" && keys.exists("IS_SHORTCUT") ) {
+      hasshortcuts=shortcuts[shortcuts.size()-1]=true;
+    }
   }
   ifile.close();
   if( hasshortcuts ) {
@@ -139,11 +166,17 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
   }
   ofile<<"<div style=\"width: 10%; float:left\">";
   ofile<<"<img src=\"https://img.shields.io/badge/";
-  if(status=="working") ofile<<version<<"-passing-green";
-  else if(status=="broken") ofile<<version<<"-failed-red";
-  else if(status=="loads") ofile<<"with-LOAD-yellow";
-  else if(status=="incomplete") ofile<<version<<"-incomplete-yellow";
-  else error("unknown status");
+  if(status=="working") {
+    ofile<<version<<"-passing-green";
+  } else if(status=="broken") {
+    ofile<<version<<"-failed-red";
+  } else if(status=="loads") {
+    ofile<<"with-LOAD-yellow";
+  } else if(status=="incomplete") {
+    ofile<<version<<"-incomplete-yellow";
+  } else {
+    error("unknown status");
+  }
   ofile<<".svg\" alt=\"tested on "<<version<<"\" /></div>";
   ofile.flush();
   if( hasshortcuts ) {
@@ -169,107 +202,204 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
     std::vector<std::vector<std::string> > long_input = createLongInput( input );
     printExampleInput( long_input, egname + "long", egname, ofile );
     ofile<<"</div>"<<std::endl;
-  } else printExampleInput( input, egname, egname, ofile );
-  ofile.close(); return 0;
+  } else {
+    printExampleInput( input, egname, egname, ofile );
+  }
+  ofile.close();
+  return 0;
 }
 
 std::vector<std::vector<std::string> > GenExample::createLongInput( const std::vector<std::vector<std::string> >& input ) {
-  std::vector<std::vector<std::string> > long_input; PlumedMain myplumed; int rr=sizeof(double), natoms=10000000; double kt=2.49;
+  std::vector<std::vector<std::string> > long_input;
+  PlumedMain myplumed;
+  int rr=sizeof(double), natoms=10000000;
+  double kt=2.49;
   myplumed.cmd("setRealPrecision",&rr);
   if(Communicator::initialized()) {
     if(multi) {
-      if(intracomm.Get_rank()==0) myplumed.cmd("GREX setMPIIntercomm",&intercomm.Get_comm());
-      myplumed.cmd("GREX setMPIIntracomm",&intracomm.Get_comm()); myplumed.cmd("GREX init");
+      if(intracomm.Get_rank()==0) {
+        myplumed.cmd("GREX setMPIIntercomm",&intercomm.Get_comm());
+      }
+      myplumed.cmd("GREX setMPIIntracomm",&intracomm.Get_comm());
+      myplumed.cmd("GREX init");
     }
     myplumed.cmd("setMPIComm",&intracomm.Get_comm());
   }
-  bool endplumed=false; myplumed.cmd("setNatoms",&natoms); myplumed.cmd("setKbT",&kt); myplumed.cmd("init");
+  bool endplumed=false;
+  myplumed.cmd("setNatoms",&natoms);
+  myplumed.cmd("setKbT",&kt);
+  myplumed.cmd("init");
   for(unsigned ll=0; ll<input.size(); ++ll) {
-    if( input[ll].empty() || endplumed ) { long_input.push_back( input[ll] ); continue; }
-    if( input[ll][0].find("#")!=std::string::npos ) { long_input.push_back( input[ll] ); continue; }
-    std::vector<std::string> interpreted( input[ll] ); Tools::interpretLabel(interpreted);
-    if( interpreted[0]=="ENDPLUMED" ) { endplumed=true; long_input.push_back( input[ll] ); continue; }
-    Keywords keys; plumed_assert( actionRegister().check( interpreted[0] ) );
-    actionRegister().getKeywords( interpreted[0], keys ); std::string lab, myinputline;
-    if( Tools::parse(interpreted, "LABEL", lab ) ) myinputline = lab + ": ";
-    myinputline += interpreted[0] + " "; bool trailingcomment=false;
+    if( input[ll].empty() || endplumed ) {
+      long_input.push_back( input[ll] );
+      continue;
+    }
+    if( input[ll][0].find("#")!=std::string::npos ) {
+      long_input.push_back( input[ll] );
+      continue;
+    }
+    std::vector<std::string> interpreted( input[ll] );
+    Tools::interpretLabel(interpreted);
+    if( interpreted[0]=="ENDPLUMED" ) {
+      endplumed=true;
+      long_input.push_back( input[ll] );
+      continue;
+    }
+    Keywords keys;
+    plumed_assert( actionRegister().check( interpreted[0] ) );
+    actionRegister().getKeywords( interpreted[0], keys );
+    std::string lab, myinputline;
+    if( Tools::parse(interpreted, "LABEL", lab ) ) {
+      myinputline = lab + ": ";
+    }
+    myinputline += interpreted[0] + " ";
+    bool trailingcomment=false;
     for(unsigned i=1; i<interpreted.size(); ++i) {
-      if( trailingcomment && interpreted[i]=="@newline") { trailingcomment=false; continue; }
-      if( interpreted[i].find("#")!=std::string::npos ) { trailingcomment=true; continue; }
-      if( interpreted[i]=="@newline" || interpreted[i]=="..." ) continue;
-      std::size_t pos = 0;  while ((pos = interpreted[i].find("@newline",pos)) != std::string::npos) { interpreted[i].replace(pos, 8, "\n"); pos++; }
+      if( trailingcomment && interpreted[i]=="@newline") {
+        trailingcomment=false;
+        continue;
+      }
+      if( interpreted[i].find("#")!=std::string::npos ) {
+        trailingcomment=true;
+        continue;
+      }
+      if( interpreted[i]=="@newline" || interpreted[i]=="..." ) {
+        continue;
+      }
+      std::size_t pos = 0;
+      while ((pos = interpreted[i].find("@newline",pos)) != std::string::npos) {
+        interpreted[i].replace(pos, 8, "\n");
+        pos++;
+      }
       myinputline += interpreted[i] + " ";
     }
     if( status=="working" && keys.exists("IS_SHORTCUT") ) {
       myplumed.readInputLine( myinputline );
       ActionShortcut* as=dynamic_cast<ActionShortcut*>( myplumed.getActionSet()[myplumed.getActionSet().size()-1].get() );
-      plumed_assert( as ); std::vector<std::string> shortcut_commands = as->getSavedInputLines();
+      plumed_assert( as );
+      std::vector<std::string> shortcut_commands = as->getSavedInputLines();
       for(unsigned i=0; i<shortcut_commands.size(); ++i) {
-        std::vector<std::string> words = Tools::getWords( shortcut_commands[i] ); long_input.push_back( words );
+        std::vector<std::string> words = Tools::getWords( shortcut_commands[i] );
+        long_input.push_back( words );
       }
-    } else { long_input.push_back( input[ll] ); myplumed.readInputLine( myinputline ); }
+    } else {
+      long_input.push_back( input[ll] );
+      myplumed.readInputLine( myinputline );
+    }
   }
   return long_input;
 }
 
 void GenExample::printExampleInput( const std::vector<std::vector<std::string> >& input, const std::string& egname, const std::string& divname, std::ofstream& ofile ) {
-  PlumedMain myplumed; int rr=sizeof(double), natoms=10000000; double kt=2.49;
+  PlumedMain myplumed;
+  int rr=sizeof(double), natoms=10000000;
+  double kt=2.49;
   myplumed.cmd("setRealPrecision",&rr);
   if(Communicator::initialized()) {
     if(multi) {
-      if(intracomm.Get_rank()==0) myplumed.cmd("GREX setMPIIntercomm",&intercomm.Get_comm());
-      myplumed.cmd("GREX setMPIIntracomm",&intracomm.Get_comm()); myplumed.cmd("GREX init");
+      if(intracomm.Get_rank()==0) {
+        myplumed.cmd("GREX setMPIIntercomm",&intercomm.Get_comm());
+      }
+      myplumed.cmd("GREX setMPIIntracomm",&intracomm.Get_comm());
+      myplumed.cmd("GREX init");
     }
     myplumed.cmd("setMPIComm",&intracomm.Get_comm());
   }
-  myplumed.cmd("setNatoms",&natoms); myplumed.cmd("setKbT",&kt); myplumed.cmd("init");
-  std::vector<std::string> labellist; bool endplumed=false;
+  myplumed.cmd("setNatoms",&natoms);
+  myplumed.cmd("setKbT",&kt);
+  myplumed.cmd("init");
+  std::vector<std::string> labellist;
+  bool endplumed=false;
   ofile<<"<pre style=\"width: 97%;\" class=\"fragment\">"<<std::endl;
   for(unsigned ll=0; ll<input.size(); ++ll) {
-    if( input[ll].empty() ) { ofile<<std::endl; continue; }
+    if( input[ll].empty() ) {
+      ofile<<std::endl;
+      continue;
+    }
     if( input[ll][0].find("#")!=std::string::npos || endplumed ) {
       ofile<<"<span style=\"color:blue\">"<<input[ll][0];
-      for(unsigned i=1; i<input[ll].size(); ++i) ofile<<" "<<input[ll][i];
+      for(unsigned i=1; i<input[ll].size(); ++i) {
+        ofile<<" "<<input[ll][i];
+      }
       ofile<<"</span>"<<std::endl;;
     } else {
       // Interpret the label if this needs to be done
-      std::vector<std::string> interpreted( input[ll] ); Tools::interpretLabel(interpreted); std::string lab, myinputline;
+      std::vector<std::string> interpreted( input[ll] );
+      Tools::interpretLabel(interpreted);
+      std::string lab, myinputline;
       // Now read in the label
       if( Tools::parse(interpreted,"LABEL",lab) ) {
         ofile<<"<b name=\""<<egname<<lab<<"\" onclick=\'showPath(\""<<divname<<"\",\""<<egname<<lab<<"\")\'>"<<lab<<": </b>";
-        labellist.push_back(lab); myinputline = lab + ": ";
+        labellist.push_back(lab);
+        myinputline = lab + ": ";
       }
       // Print the keyword in use in the action
-      std::string action = interpreted[0]; myinputline += interpreted[0] + " ";
-      if( action=="ENDPLUMED" ) endplumed=true;
-      Keywords keys; actionRegister().getKeywords( interpreted[0], keys );
+      std::string action = interpreted[0];
+      myinputline += interpreted[0] + " ";
+      if( action=="ENDPLUMED" ) {
+        endplumed=true;
+      }
+      Keywords keys;
+      actionRegister().getKeywords( interpreted[0], keys );
       // Handle conversion of action names to links
-      std::transform(action.begin(), action.end(), action.begin(), [](unsigned char c) { return std::tolower(c); });
+      std::transform(action.begin(), action.end(), action.begin(), [](unsigned char c) {
+        return std::tolower(c);
+      });
       ofile<<"<a href=\"https://www.plumed.org/doc-"<<version<<"/user-doc/html/";
       for(unsigned n=0;; ++n) {
         std::size_t und=action.find_first_of("_");
-        if( und==std::string::npos ) break;
+        if( und==std::string::npos ) {
+          break;
+        }
         std::string first=action.substr(0,und);
-        for(auto c : first ) { if( isdigit(c) ) ofile<<c; else ofile<<"_"<<c; }
-        ofile<<"_"; action=action.substr(und+1);
+        for(auto c : first ) {
+          if( isdigit(c) ) {
+            ofile<<c;
+          } else {
+            ofile<<"_"<<c;
+          }
+        }
+        ofile<<"_";
+        action=action.substr(und+1);
       }
-      for(auto c : action ) { if( isdigit(c) ) ofile<<c; else ofile<<"_"<<c; }
+      for(auto c : action ) {
+        if( isdigit(c) ) {
+          ofile<<c;
+        } else {
+          ofile<<"_"<<c;
+        }
+      }
       ofile<<".html\" style=\"color:green\">"<<interpreted[0]<<"</a> ";
       // And write out everything else in the input line
       bool trailingcomment=false;
       for(unsigned i=1; i<interpreted.size(); ++i) {
-        if( interpreted[i]=="@newline" && i==1 ) { ofile<<"..."<<std::endl<<"   "; continue; }
-        else if( interpreted[i]=="@newline" ) {
-          if( trailingcomment ) { ofile<<"</span>"; trailingcomment=false; }
-          if( interpreted[i+1]=="..." ) ofile<<std::endl;
-          else ofile<<std::endl<<"   ";
+        if( interpreted[i]=="@newline" && i==1 ) {
+          ofile<<"..."<<std::endl<<"   ";
+          continue;
+        } else if( interpreted[i]=="@newline" ) {
+          if( trailingcomment ) {
+            ofile<<"</span>";
+            trailingcomment=false;
+          }
+          if( interpreted[i+1]=="..." ) {
+            ofile<<std::endl;
+          } else {
+            ofile<<std::endl<<"   ";
+          }
           continue;
         } else if( interpreted[i]=="__FILL__" ) {
-          if( status!="incomplete" ) error("found __FILL__ statement but status is " + status);
+          if( status!="incomplete" ) {
+            error("found __FILL__ statement but status is " + status);
+          }
           ofile<<"<span style=\"background-color:yellow\">__FILL__</span>";
           continue;
-        } else if( interpreted[i]==action ) continue;
-        if( interpreted[i].find("#")!=std::string::npos ) { trailingcomment=true; ofile<<"<span style=\"color:blue\">"; }
+        } else if( interpreted[i]==action ) {
+          continue;
+        }
+        if( interpreted[i].find("#")!=std::string::npos ) {
+          trailingcomment=true;
+          ofile<<"<span style=\"color:blue\">";
+        }
 
         if( !trailingcomment ) {
           std::size_t eq=interpreted[i].find_first_of("=");
@@ -277,22 +407,41 @@ void GenExample::printExampleInput( const std::vector<std::vector<std::string> >
             std::string keyword=interpreted[i].substr(0,eq), rest=interpreted[i].substr(eq+1);
             ofile<<"<div class=\"tooltip\">"<<keyword<<"<div class=\"right\">"<<keys.getTooltip(keyword)<<"<i></i></div></div>";
             if( rest=="__FILL__" ) {
-              if( status!="incomplete" ) error("found __FILL__ statement but status is " + status);
+              if( status!="incomplete" ) {
+                error("found __FILL__ statement but status is " + status);
+              }
               ofile<<"=<span style=\"background-color:yellow\">__FILL__</span>";
             } else if( rest.find_first_of("{")!=std::string::npos ) {
-              std::size_t pos = 0;  while ((pos = rest.find("@newline",pos)) != std::string::npos) { rest.replace(pos, 8, "\n"); pos++; }
-              ofile<<"="<<rest<<" "; myinputline += keyword + "=" + rest + " ";
+              std::size_t pos = 0;
+              while ((pos = rest.find("@newline",pos)) != std::string::npos) {
+                rest.replace(pos, 8, "\n");
+                pos++;
+              }
+              ofile<<"="<<rest<<" ";
+              myinputline += keyword + "=" + rest + " ";
             } else {
-              std::vector<std::string> args=Tools::getWords(rest,"\t\n ,"); ofile<<"=";
+              std::vector<std::string> args=Tools::getWords(rest,"\t\n ,");
+              ofile<<"=";
               for(unsigned i=0; i<args.size(); ++i) {
-                bool islabel=false; std::string thislab;
+                bool islabel=false;
+                std::string thislab;
                 for(unsigned j=0; j<labellist.size(); ++j) {
-                  std::size_t dot=args[i].find_first_of("."); std::string lll=args[i].substr(0,dot);
-                  if( lll==labellist[j] ) { islabel=true; thislab=labellist[j]; break; }
+                  std::size_t dot=args[i].find_first_of(".");
+                  std::string lll=args[i].substr(0,dot);
+                  if( lll==labellist[j] ) {
+                    islabel=true;
+                    thislab=labellist[j];
+                    break;
+                  }
                 }
-                if( islabel ) ofile<<"<b name=\""<<egname<<thislab<<"\">"<<args[i]<<"</b>";
-                else ofile<<args[i];
-                if( i!=args.size()-1 ) ofile<<",";
+                if( islabel ) {
+                  ofile<<"<b name=\""<<egname<<thislab<<"\">"<<args[i]<<"</b>";
+                } else {
+                  ofile<<args[i];
+                }
+                if( i!=args.size()-1 ) {
+                  ofile<<",";
+                }
               }
               myinputline += interpreted[i] + " ";
             }
@@ -300,10 +449,16 @@ void GenExample::printExampleInput( const std::vector<std::vector<std::string> >
           } else if( interpreted[i]!="@newline" && interpreted[i]!="..." ) {
             myinputline += interpreted[i] + " ";
             ofile<<"<div class=\"tooltip\">"<<interpreted[i]<<"<div class=\"right\">"<<keys.getTooltip(interpreted[i])<<"<i></i></div></div> ";
-          } else if( interpreted[i]=="..." ) ofile<<"...";
-        } else ofile<<interpreted[i]<<" ";
+          } else if( interpreted[i]=="..." ) {
+            ofile<<"...";
+          }
+        } else {
+          ofile<<interpreted[i]<<" ";
+        }
       }
-      if( trailingcomment ) ofile<<"</span>";
+      if( trailingcomment ) {
+        ofile<<"</span>";
+      }
       // This builds the hidden content that tells the user about what is calculated
       if( status=="working" ) {
         ofile<<"<span style=\"display:none;\" id=\""<<egname<<lab<<"\">";
@@ -311,14 +466,16 @@ void GenExample::printExampleInput( const std::vector<std::vector<std::string> >
         myplumed.readInputLine( myinputline );
         ActionWithValue* av=myplumed.getActionSet().selectWithLabel<ActionWithValue*>(lab);
         if( av ) {
-          if( av->getNumberOfComponents()==1 ) { ofile<<" calculates a single scalar value"; }
-          else if( av->getNumberOfComponents()>0 ) {
+          if( av->getNumberOfComponents()==1 ) {
+            ofile<<" calculates a single scalar value";
+          } else if( av->getNumberOfComponents()>0 ) {
             ofile<<" calculates the following quantities:"<<std::endl;
             ofile<<"<table  align=\"center\" frame=\"void\" width=\"95%%\" cellpadding=\"5%%\">"<<std::endl;
             ofile<<"<tr><td width=\"5%%\"><b> Quantity </b>  </td><td><b> Description </b> </td></tr>"<<std::endl;
             unsigned ncomp = av->getNumberOfComponents();
             for(unsigned k=0; k<ncomp; ++k ) {
-              std::string myname = av->copyOutput(k)->getName(); std::size_t dot=myname.find_first_of(".");
+              std::string myname = av->copyOutput(k)->getName();
+              std::size_t dot=myname.find_first_of(".");
               std::string tname=myname.substr(dot+1);
               ofile<<"<tr><td width=\"5%%\">"<<myname<<"</td><td>"<<av->getOutputComponentDescription(tname,keys)<<"</td></tr>"<<std::endl;
             }
@@ -326,8 +483,11 @@ void GenExample::printExampleInput( const std::vector<std::vector<std::string> >
           }
         } else {
           ActionWithVirtualAtom* avv=myplumed.getActionSet().selectWithLabel<ActionWithVirtualAtom*>(lab);
-          if( avv ) ofile<<" calculates the position of a virtual atom";
-          else if( interpreted[0]=="GROUP" ) ofile<<" defines a group of atoms so that they can be referred to later in the input";
+          if( avv ) {
+            ofile<<" calculates the position of a virtual atom";
+          } else if( interpreted[0]=="GROUP" ) {
+            ofile<<" defines a group of atoms so that they can be referred to later in the input";
+          }
         }
         ofile<<"</span>"<<std::endl;
       } else {

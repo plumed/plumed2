@@ -142,14 +142,17 @@ PLUMED_REGISTER_ACTION(Group,"GROUP")
 
 Group::Group(const ActionOptions&ao):
   Action(ao),
-  ActionAtomistic(ao)
-{
+  ActionAtomistic(ao) {
   parseAtomList("ATOMS",atoms);
   std::string ndxfile,ndxgroup;
   parse("NDX_FILE",ndxfile);
   parse("NDX_GROUP",ndxgroup);
-  if(ndxfile.length()>0 && atoms.size()>0) error("either use explicit atom list or import from index file");
-  if(ndxfile.length()==0 && ndxgroup.size()>0) error("NDX_GROUP can be only used is NDX_FILE is also used");
+  if(ndxfile.length()>0 && atoms.size()>0) {
+    error("either use explicit atom list or import from index file");
+  }
+  if(ndxfile.length()==0 && ndxgroup.size()>0) {
+    error("NDX_GROUP can be only used is NDX_FILE is also used");
+  }
 
   if(ndxfile.length()>0) {
 
@@ -169,16 +172,22 @@ Group::Group(const ActionOptions&ao):
     for(unsigned i=0; i<remove.size(); i++) {
       const auto it = find(atoms.begin(),atoms.end(),remove[i]);
       if(it!=atoms.end()) {
-        if(k%25==0) log<<"\n";
+        if(k%25==0) {
+          log<<"\n";
+        }
         log<<" "<<(*it).serial();
         k++;
         atoms.erase(it);
-      } else notfound.push_back(remove[i]);
+      } else {
+        notfound.push_back(remove[i]);
+      }
     }
     log<<"\n";
     if(notfound.size()>0) {
       log<<"  the following atoms were not found:";
-      for(unsigned i=0; i<notfound.size(); i++) log<<" "<<notfound[i].serial();
+      for(unsigned i=0; i<notfound.size(); i++) {
+        log<<" "<<notfound[i].serial();
+      }
       log<<"\n";
     }
   }
@@ -198,7 +207,9 @@ Group::Group(const ActionOptions&ao):
 
   log.printf("  list of atoms:");
   for(unsigned i=0; i<atoms.size(); i++) {
-    if(i%25==0) log<<"\n";
+    if(i%25==0) {
+      log<<"\n";
+    }
     log<<" "<<atoms[i].serial();
   }
   log.printf("\n");
@@ -219,8 +230,11 @@ std::vector<std::string> Group::getGroupAtoms() const {
   std::vector<std::string> atoms_str(atoms.size());
   for(unsigned i=0; i<atoms.size(); ++i) {
     std::pair<std::size_t,std::size_t> a = getValueIndices( atoms[i] );
-    if( xpos[a.first]->getNumberOfValues()==1 ) atoms_str[i] = (xpos[a.first]->getPntrToAction())->getLabel();
-    else { Tools::convert( atoms[i].serial(), atoms_str[i] ); }
+    if( xpos[a.first]->getNumberOfValues()==1 ) {
+      atoms_str[i] = (xpos[a.first]->getPntrToAction())->getLabel();
+    } else {
+      Tools::convert( atoms[i].serial(), atoms_str[i] );
+    }
   }
   return atoms_str;
 }

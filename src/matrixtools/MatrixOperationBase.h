@@ -31,8 +31,7 @@ namespace matrixtools {
 
 class MatrixOperationBase :
   public ActionWithArguments,
-  public ActionWithValue
-{
+  public ActionWithValue {
 private:
 /// These are used to hold the matrix
   std::vector<double> vals;

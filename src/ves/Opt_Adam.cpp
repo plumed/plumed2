@@ -66,10 +66,14 @@ public:
 };
 
 inline
-CoeffsVector& Opt_Adam::VarCoeffs(const unsigned int coeffs_id) const {return *var_coeffs_pntrs_[coeffs_id];}
+CoeffsVector& Opt_Adam::VarCoeffs(const unsigned int coeffs_id) const {
+  return *var_coeffs_pntrs_[coeffs_id];
+}
 
 inline
-CoeffsVector& Opt_Adam::VarmaxCoeffs(const unsigned int coeffs_id) const {return *varmax_coeffs_pntrs_[coeffs_id];}
+CoeffsVector& Opt_Adam::VarmaxCoeffs(const unsigned int coeffs_id) const {
+  return *varmax_coeffs_pntrs_[coeffs_id];
+}
 
 
 PLUMED_REGISTER_ACTION(Opt_Adam,"OPT_ADAM")
@@ -98,8 +102,7 @@ Opt_Adam::Opt_Adam(const ActionOptions&ao):
   one_minus_weight_decay_(1.0),
   amsgrad_(false),
   adamw_(false),
-  var_coeffs_pntrs_(0)
-{
+  var_coeffs_pntrs_(0) {
   // add citation and print it to log
   log << "  Adam type stochastic gradient decent\n";
   parseFlag("AMSGRAD",amsgrad_);
@@ -173,8 +176,7 @@ void Opt_Adam::coeffsUpdate(const unsigned int c_id) {
     for (size_t i = 0; i< VarCoeffs(c_id).getSize(); ++i) {
       var_coeffs_sqrt.push_back(1 / (sqrt(VarCoeffs(c_id).getValue(i)) + epsilon));
     }
-  }
-  else { // use VarmaxCoffs instead of VarCoeffs
+  } else { // use VarmaxCoffs instead of VarCoeffs
     for (size_t i = 0; i< VarmaxCoeffs(c_id).getSize(); ++i) {
       var_coeffs_sqrt.push_back(1 / (sqrt(VarmaxCoeffs(c_id).getValue(i)) + epsilon));
     }

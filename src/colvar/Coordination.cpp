@@ -118,21 +118,24 @@ void Coordination::registerKeywords( Keywords& keys ) {
 
 Coordination::Coordination(const ActionOptions&ao):
   Action(ao),
-  CoordinationBase(ao)
-{
+  CoordinationBase(ao) {
 
   std::string sw,errors;
   parse("SWITCH",sw);
   if(sw.length()>0) {
     switchingFunction.set(sw,errors);
-    if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
+    if( errors.length()!=0 ) {
+      error("problem reading SWITCH keyword : " + errors );
+    }
   } else {
     int nn=6;
     int mm=0;
     double d0=0.0;
     double r0=0.0;
     parse("R_0",r0);
-    if(r0<=0.0) error("R_0 should be explicitly specified and positive");
+    if(r0<=0.0) {
+      error("R_0 should be explicitly specified and positive");
+    }
     parse("D_0",d0);
     parse("NN",nn);
     parse("MM",mm);

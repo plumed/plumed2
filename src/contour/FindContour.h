@@ -41,8 +41,12 @@ public:
   void areAllTasksRequired( std::vector<ActionWithVector*>& task_reducing_actions ) override ;
   void getNumberOfTasks( unsigned& ntasks ) override ;
   int checkTaskStatus( const unsigned& taskno, int& flag ) const override ;
-  std::vector<std::string> getGridCoordinateNames() const override { plumed_error(); }
-  const gridtools::GridCoordinatesObject& getGridCoordinatesObject() const override { plumed_error(); }
+  std::vector<std::string> getGridCoordinateNames() const override {
+    plumed_error();
+  }
+  const gridtools::GridCoordinatesObject& getGridCoordinatesObject() const override {
+    plumed_error();
+  }
   void performTask( const unsigned& current, MultiValue& myvals ) const override;
 };
 

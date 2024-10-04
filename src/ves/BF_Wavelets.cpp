@@ -236,8 +236,7 @@ void BF_Wavelets::registerKeywords(Keywords& keys) {
 BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
   PLUMED_VES_BASISFUNCTIONS_INIT(ao),
   waveletGrid_(nullptr),
-  scale_(0.0)
-{
+  scale_(0.0) {
   log.printf("  Wavelet basis functions, see and cite ");
   log << plumed.cite("Pampel and Valsson, J. Chem. Theory Comput. 18, 4127-4141 (2022) - DOI:10.1021/acs.jctc.2c00197");
 
@@ -251,7 +250,9 @@ BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
 
   unsigned min_grid_size = 1000;
   parse("MIN_GRID_SIZE", min_grid_size);
-  if(min_grid_size != 1000) {addKeywordToList("MIN_GRID_SIZE",min_grid_size);}
+  if(min_grid_size != 1000) {
+    addKeywordToList("MIN_GRID_SIZE",min_grid_size);
+  }
 
   waveletGrid_ = WaveletGrid::setupGrid(getOrder(), min_grid_size, use_mother_wavelet, WaveletGrid::stringToType(wavelet_type_str));
   bool dump_wavelet_grid=false;
@@ -269,7 +270,9 @@ BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
 
   bool periodic = false;
   parseFlag("PERIODIC",periodic);
-  if (periodic) {addKeywordToList("PERIODIC",periodic);}
+  if (periodic) {
+    addKeywordToList("PERIODIC",periodic);
+  }
 
   // now set up properties of basis set
   unsigned intrinsic_length = 2*getOrder() - 1; // length of unscaled wavelet
@@ -282,8 +285,7 @@ BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
   plumed_massert(threshold < 1, "TAILS_THRESHOLD should be significantly smaller than 1.");
   if(threshold == 0.0) {
     cutoffpoints = {0.0, static_cast<double>(intrinsic_length)};
-  }
-  else {
+  } else {
     plumed_massert(!periodic, "TAILS_THRESHOLD can't be used with the periodic wavelet variant");
     addKeywordToList("TAILS_THRESHOLD",threshold);
     cutoffpoints = getCutoffPoints(threshold);
@@ -307,14 +309,12 @@ BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
     if (periodic) {
       // this is the same value as num_shifts above + constant
       num_BFs = static_cast<unsigned>(bias_length * scale_) + 1;
-    }
-    else {
+    } else {
       num_BFs = 1; // constant one
       // left shifts (w/o left cutoff) + right shifts - right cutoff - 1
       num_BFs += static_cast<unsigned>(ceil(cutoffpoints[1] + (bias_length)*scale_ - cutoffpoints[0]) - 1);
     }
-  }
-  else {
+  } else {
     plumed_massert(num_BFs > 0, "The number of basis functions has to be positive (NUM_BF > 0)");
     // check does not work if function length was given as intrinsic length, but can't check for keyword use directly
     plumed_massert(function_length==bias_length,"The keywords \"NUM_BF\" and \"FUNCTION_LENGTH\" cannot be used at the same time");
@@ -322,8 +322,7 @@ BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
 
     if (periodic) {  // inverted num_BFs calculation from where FUNCTION_LENGTH is specified
       scale_ = (num_BFs  - 1) / bias_length ;
-    }
-    else {
+    } else {
       double cutoff_length = cutoffpoints[1] - cutoffpoints [0];
       double intrinsic_bias_length = num_BFs - cutoff_length + 1; // length of bias in intrinsic scale of wavelets
       scale_ = intrinsic_bias_length / bias_length;
@@ -364,15 +363,19 @@ void BF_Wavelets::getAllValues(const double arg, double& argT, bool& inside_rang
     }
 
     if (x < 0 || x >= intrinsicIntervalMax()) { // Wavelets are 0 outside the defined range
-      values[i] = 0.0; derivs[i] = 0.0;
-    }
-    else {
+      values[i] = 0.0;
+      derivs[i] = 0.0;
+    } else {
       std::vector<double> temp_deriv (1);
       values[i] = GridLinearInterpolation::getGridValueAndDerivativesWithLinearInterpolation(waveletGrid_.get(), {x}, temp_deriv);
       derivs[i] = temp_deriv[0] * scale_; // scale derivative
     }
   }
-  if(!inside_range) {for(auto& deriv : derivs) {deriv=0.0;}}
+  if(!inside_range) {
+    for(auto& deriv : derivs) {
+      deriv=0.0;
+    }
+  }
 }
 
 
@@ -408,7 +411,8 @@ void BF_Wavelets::setupLabels() {
     if (arePeriodic()) {
       pos = pos - floor((pos-intervalMin())/intervalRange())*intervalRange();
     }
-    std::string is; Tools::convert(pos, is);
+    std::string is;
+    Tools::convert(pos, is);
     setLabel(i,"i="+is);
   }
 }

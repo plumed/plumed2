@@ -36,12 +36,14 @@ void ReweightBase::registerKeywords(Keywords& keys) {
 ReweightBase::ReweightBase(const ActionOptions&ao):
   Action(ao),
   ActionWithValue(ao),
-  ActionWithArguments(ao)
-{
+  ActionWithArguments(ao) {
   simtemp=getkBT();
-  if(simtemp==0) error("The MD engine does not pass the temperature to plumed so you have to specify it using TEMP");
+  if(simtemp==0) {
+    error("The MD engine does not pass the temperature to plumed so you have to specify it using TEMP");
+  }
   // Create something to hold the weight
-  addValue(); setNotPeriodic();
+  addValue();
+  setNotPeriodic();
 }
 
 void ReweightBase::calculate() {

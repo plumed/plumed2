@@ -117,8 +117,7 @@ the other objects.
 //+ENDPLUMEDOC
 
 class Load :
-  public virtual ActionAnyorder
-{
+  public virtual ActionAnyorder {
 public:
   static void registerKeywords( Keywords& keys );
   explicit Load(const ActionOptions&ao);
@@ -133,8 +132,7 @@ void Load::registerKeywords( Keywords& keys ) {
 
 Load::Load(const ActionOptions&ao):
   Action(ao),
-  ActionAnyorder(ao)
-{
+  ActionAnyorder(ao) {
   std::string f;
   parse("FILE",f);
   checkRead();

@@ -71,58 +71,87 @@ PLUMED_REGISTER_ACTION(ContactMatrixShortcut,"CONTACT_MATRIX")
 
 void ContactMatrixShortcut::registerKeywords(Keywords& keys) {
   AdjacencyMatrixBase::registerKeywords( keys );
-  keys.remove("GROUP"); keys.add("numbered","GROUP","specifies the list of atoms that should be assumed indistinguishable");
+  keys.remove("GROUP");
+  keys.add("numbered","GROUP","specifies the list of atoms that should be assumed indistinguishable");
   keys.add("compulsory","NN","6","The n parameter of the switching function ");
   keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
   keys.add("numbered","SWITCH","specify the switching function to use between two sets of indistinguishable atoms");
-  keys.addActionNameSuffix("_PROPER"); keys.needsAction("TRANSPOSE"); keys.needsAction("CONCATENATE");
+  keys.addActionNameSuffix("_PROPER");
+  keys.needsAction("TRANSPOSE");
+  keys.needsAction("CONCATENATE");
 }
 
 ContactMatrixShortcut::ContactMatrixShortcut(const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
-  std::vector<std::string> grp_str; std::string atomsstr="";
-  std::vector<std::string> atomsvec; parseVector("ATOMS",atomsvec);
+  ActionShortcut(ao) {
+  std::vector<std::string> grp_str;
+  std::string atomsstr="";
+  std::vector<std::string> atomsvec;
+  parseVector("ATOMS",atomsvec);
   if( atomsvec.size()>0 )  {
     for(unsigned i=0; i<atomsvec.size(); ++i) {
       Group* gg = plumed.getActionSet().selectWithLabel<Group*>( atomsvec[i] );
-      if( gg ) grp_str.push_back( atomsvec[i] );
+      if( gg ) {
+        grp_str.push_back( atomsvec[i] );
+      }
     }
     if( grp_str.size()!=atomsvec.size() ) {
       grp_str.resize(0);
-      atomsstr = " ATOMS=" + atomsvec[0]; for(unsigned i=1; i<atomsvec.size(); ++i) atomsstr += "," + atomsvec[i];
+      atomsstr = " ATOMS=" + atomsvec[0];
+      for(unsigned i=1; i<atomsvec.size(); ++i) {
+        atomsstr += "," + atomsvec[i];
+      }
     }
   } else {
     std::string grp_inpt;
     for(unsigned i=1;; ++i) {
-      if( !parseNumbered("GROUP",i,grp_inpt) ) break;
+      if( !parseNumbered("GROUP",i,grp_inpt) ) {
+        break;
+      }
       grp_str.push_back( grp_inpt );
     }
   }
-  if( grp_str.size()>9 ) error("cannot handle more than 9 groups");
-  if( grp_str.size()==0 )  { readInputLine( getShortcutLabel() + ": CONTACT_MATRIX_PROPER " + atomsstr + " " + convertInputLineToString() ); return; }
+  if( grp_str.size()>9 ) {
+    error("cannot handle more than 9 groups");
+  }
+  if( grp_str.size()==0 )  {
+    readInputLine( getShortcutLabel() + ": CONTACT_MATRIX_PROPER " + atomsstr + " " + convertInputLineToString() );
+    return;
+  }
 
   for(unsigned i=0; i<grp_str.size(); ++i) {
-    std::string sw_str, num; Tools::convert( i+1, num ); parseNumbered("SWITCH", (i+1)*10 + 1 + i,  sw_str );
-    if( sw_str.length()==0 ) error("missing SWITCH" + num + num + " keyword");
+    std::string sw_str, num;
+    Tools::convert( i+1, num );
+    parseNumbered("SWITCH", (i+1)*10 + 1 + i,  sw_str );
+    if( sw_str.length()==0 ) {
+      error("missing SWITCH" + num + num + " keyword");
+    }
     readInputLine( getShortcutLabel() + num +  num + ": CONTACT_MATRIX_PROPER GROUP=" + grp_str[i] + " SWITCH={" + sw_str + "}" );
     for(unsigned j=0; j<i; ++j) {
-      std::string sw_str2, jnum; Tools::convert( j+1, jnum ); parseNumbered("SWITCH", (j+1)*10 + 1 + i, sw_str2);
-      if( sw_str2.length()==0 ) error("missing SWITCH" + jnum + num + " keyword");
+      std::string sw_str2, jnum;
+      Tools::convert( j+1, jnum );
+      parseNumbered("SWITCH", (j+1)*10 + 1 + i, sw_str2);
+      if( sw_str2.length()==0 ) {
+        error("missing SWITCH" + jnum + num + " keyword");
+      }
       readInputLine( getShortcutLabel() + jnum + num + ": CONTACT_MATRIX_PROPER GROUPA=" + grp_str[j] + " GROUPB=" + grp_str[i] + " SWITCH={" + sw_str2 +"}");
       readInputLine( getShortcutLabel() + num +  jnum + ": TRANSPOSE ARG=" + getShortcutLabel() + jnum + num );
     }
   }
   std::string join_matrices = getShortcutLabel() + ": CONCATENATE";
   for(unsigned i=0; i<grp_str.size(); ++i) {
-    std::string inum; Tools::convert(i+1,inum);
+    std::string inum;
+    Tools::convert(i+1,inum);
     for(unsigned j=0; j<grp_str.size(); ++j) {
-      std::string jnum; Tools::convert(j+1,jnum);
-      if( i>j ) join_matrices += " MATRIX" + inum + jnum + "=" + getShortcutLabel() + inum +  jnum;
-      else join_matrices += " MATRIX" + inum + jnum + "=" + getShortcutLabel() + inum +  jnum;
+      std::string jnum;
+      Tools::convert(j+1,jnum);
+      if( i>j ) {
+        join_matrices += " MATRIX" + inum + jnum + "=" + getShortcutLabel() + inum +  jnum;
+      } else {
+        join_matrices += " MATRIX" + inum + jnum + "=" + getShortcutLabel() + inum +  jnum;
+      }
     }
   }
   readInputLine( join_matrices );

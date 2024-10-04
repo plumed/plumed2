@@ -50,9 +50,9 @@ void Determinant::registerKeywords( Keywords& keys ) {
 
 Determinant::Determinant( const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
-  std::string arg; parse("ARG",arg);
+  ActionShortcut(ao) {
+  std::string arg;
+  parse("ARG",arg);
   // Compose a vector from the args
   readInputLine( getShortcutLabel() + "_diag: DIAGONALIZE ARG=" + arg + " VECTORS=all");
   // Not sure about the regexp here - check with matrix with more than 10 rows

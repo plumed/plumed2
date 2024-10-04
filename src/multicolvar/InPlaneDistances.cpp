@@ -52,27 +52,37 @@ void InPlaneDistances::registerKeywords( Keywords& keys ) {
   keys.add("atoms","VECTORSTART","The first atom position that is used to define the normal to the plane of interest");
   keys.add("atoms","VECTOREND","The second atom position that is used to defin the normal to the plane of interest");
   MultiColvarShortcuts::shortcutKeywords( keys );
-  keys.needsAction("DISTANCE"); keys.needsAction("ANGLE");
+  keys.needsAction("DISTANCE");
+  keys.needsAction("ANGLE");
 }
 
 InPlaneDistances::InPlaneDistances(const ActionOptions&ao):
   Action(ao),
-  ActionShortcut(ao)
-{
-  std::vector<std::string> str_atomsA; parseVector("VECTORSTART",str_atomsA); Tools::interpretRanges( str_atomsA );
-  std::vector<std::string> str_atomsB; parseVector("VECTOREND",str_atomsB); Tools::interpretRanges( str_atomsB );
-  std::vector<std::string> str_atomsC; parseVector("GROUP",str_atomsC); Tools::interpretRanges( str_atomsC );
-  unsigned n=1; std::string dinput= getShortcutLabel() + "_dis: DISTANCE", ainput = getShortcutLabel() + "_ang: ANGLE";
+  ActionShortcut(ao) {
+  std::vector<std::string> str_atomsA;
+  parseVector("VECTORSTART",str_atomsA);
+  Tools::interpretRanges( str_atomsA );
+  std::vector<std::string> str_atomsB;
+  parseVector("VECTOREND",str_atomsB);
+  Tools::interpretRanges( str_atomsB );
+  std::vector<std::string> str_atomsC;
+  parseVector("GROUP",str_atomsC);
+  Tools::interpretRanges( str_atomsC );
+  unsigned n=1;
+  std::string dinput= getShortcutLabel() + "_dis: DISTANCE", ainput = getShortcutLabel() + "_ang: ANGLE";
   for(unsigned i=0; i<str_atomsA.size(); ++i ) {
     for(unsigned j=0; j<str_atomsB.size(); ++j ) {
       for(unsigned k=0; k<str_atomsC.size(); ++k) {
-        std::string str_n; Tools::convert( n, str_n ); n++;
+        std::string str_n;
+        Tools::convert( n, str_n );
+        n++;
         dinput += " ATOMS" + str_n + "=" + str_atomsA[j] + "," + str_atomsC[k];
         ainput += " ATOMS" + str_n + "=" + str_atomsB[j] + "," + str_atomsA[i] + "," + str_atomsC[k];
       }
     }
   }
-  readInputLine( dinput ); readInputLine( ainput );
+  readInputLine( dinput );
+  readInputLine( ainput );
   readInputLine( getShortcutLabel() + ": CUSTOM PERIODIC=NO FUNC=x*sin(y) ARG=" + getShortcutLabel() + "_dis," + getShortcutLabel() + "_ang");
   MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel(), "", this );
 }

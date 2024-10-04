@@ -52,22 +52,29 @@ void MFilterMore::registerKeywords(Keywords& keys) {
   keys.addFlag("LOWMEM",false,"this flag does nothing and is present only to ensure back-compatibility");
   keys.addFlag("HIGHEST",false,"this flag allows you to recover the highest of these variables.");
   keys.addOutputComponent("highest","HIGHEST","the largest of the colvars");
-  keys.needsAction("CUSTOM"); keys.needsAction("GROUP");
-  keys.needsAction("MORE_THAN"); keys.needsAction("HIGHEST");
+  keys.needsAction("CUSTOM");
+  keys.needsAction("GROUP");
+  keys.needsAction("MORE_THAN");
+  keys.needsAction("HIGHEST");
 }
 
 MFilterMore::MFilterMore(const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
+  ActionShortcut(ao) {
   warning("This action has been depracated.  Look at the log to see how the same result is achieved with the new syntax");
-  bool lowmem; parseFlag("LOWMEM",lowmem);
-  if( lowmem ) warning("LOWMEM flag is deprecated and is no longer required for this action");
-  std::string dd; parse("DATA",dd);
-  std::string swit; parse("SWITCH",swit);
+  bool lowmem;
+  parseFlag("LOWMEM",lowmem);
+  if( lowmem ) {
+    warning("LOWMEM flag is deprecated and is no longer required for this action");
+  }
+  std::string dd;
+  parse("DATA",dd);
+  std::string swit;
+  parse("SWITCH",swit);
   readInputLine( getShortcutLabel() + "_grp: GROUP ATOMS=" + dd + "_grp");
   readInputLine( getShortcutLabel() + ": MORE_THAN ARG=" + dd + " SWITCH={" + swit + "}");
-  bool highest; parseFlag("HIGHEST",highest);
+  bool highest;
+  parseFlag("HIGHEST",highest);
   if( highest ) {
     readInputLine( getShortcutLabel() + "_filtered: CUSTOM ARG=" + dd + "," + getShortcutLabel() + " FUNC=x*y PERIODIC=NO");
     readInputLine( getShortcutLabel() + "_highest: HIGHEST ARG=" + getShortcutLabel() + "_filtered");

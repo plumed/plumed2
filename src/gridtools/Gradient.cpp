@@ -51,40 +51,58 @@ void Gradient::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","KERNEL","gaussian-bin","the type of kernel function to be used in the grids");
   keys.add("compulsory","ATOMS","calculate the gradient of these atoms");
   keys.setValueDescription("the desired gradient");
-  keys.needsAction("DISTANCES"); keys.needsAction("KDE"); keys.needsAction("INTERPOLATE_GRID");
-  keys.needsAction("CUSTOM"); keys.needsAction("SUM_GRID"); keys.needsAction("COMBINE");
+  keys.needsAction("DISTANCES");
+  keys.needsAction("KDE");
+  keys.needsAction("INTERPOLATE_GRID");
+  keys.needsAction("CUSTOM");
+  keys.needsAction("SUM_GRID");
+  keys.needsAction("COMBINE");
 }
 
 Gradient::Gradient(const ActionOptions&ao):
   Action(ao),
-  ActionShortcut(ao)
-{
-  std::string atom_str; parse("ATOMS",atom_str);
-  std::string dir; parse("DIR",dir);
-  std::string origin_str; parse("ORIGIN",origin_str);
-  std::string nbin_str; parse("NBINS",nbin_str);
-  std::string band_str; parse("SIGMA",band_str);
-  std::string kernel_str; parse("KERNEL",kernel_str);
+  ActionShortcut(ao) {
+  std::string atom_str;
+  parse("ATOMS",atom_str);
+  std::string dir;
+  parse("DIR",dir);
+  std::string origin_str;
+  parse("ORIGIN",origin_str);
+  std::string nbin_str;
+  parse("NBINS",nbin_str);
+  std::string band_str;
+  parse("SIGMA",band_str);
+  std::string kernel_str;
+  parse("KERNEL",kernel_str);
   // First get positions of all atoms relative to origin
   readInputLine( getShortcutLabel() + "_dist: DISTANCES ORIGIN=" + origin_str + " ATOMS=" + atom_str + " COMPONENTS");
   // Now constrcut the histograms
   if( dir=="x" || dir=="xy" || dir=="xz" || dir=="xyz" ) {
     readInputLine( getShortcutLabel() + "_xhisto: KDE ARG=" + getShortcutLabel() + "_dist.x GRID_BIN=" + nbin_str + " KERNEL=" + kernel_str + " BANDWIDTH=" + band_str );
-    std::string thislab = getShortcutLabel() + "_xgrad"; if( dir=="x" ) thislab = getShortcutLabel();
+    std::string thislab = getShortcutLabel() + "_xgrad";
+    if( dir=="x" ) {
+      thislab = getShortcutLabel();
+    }
     readInputLine( thislab + "_shift: INTERPOLATE_GRID ARG=" + getShortcutLabel() + "_xhisto INTERPOLATION_TYPE=ceiling MIDPOINTS");
     readInputLine( thislab + "_x2: CUSTOM ARG=" + getShortcutLabel() + "_xhisto," + thislab + "_shift FUNC=(x-y)*(x-y) PERIODIC=NO");
     readInputLine( thislab + ": SUM_GRID ARG=" + thislab + "_x2 PERIODIC=NO");
   }
   if( dir=="y" || dir=="xy" || dir=="yz" || dir=="xyz" ) {
     readInputLine( getShortcutLabel() + "_yhisto: KDE ARG=" + getShortcutLabel() + "_dist.y GRID_BIN=" + nbin_str + " KERNEL=" + kernel_str + " BANDWIDTH=" + band_str );
-    std::string thislab = getShortcutLabel() + "_ygrad"; if( dir=="y" ) thislab = getShortcutLabel();
+    std::string thislab = getShortcutLabel() + "_ygrad";
+    if( dir=="y" ) {
+      thislab = getShortcutLabel();
+    }
     readInputLine( thislab + "_shift: INTERPOLATE_GRID ARG=" + getShortcutLabel() + "_yhisto INTERPOLATION_TYPE=ceiling MIDPOINTS");
     readInputLine( thislab + "_x2: CUSTOM ARG=" + getShortcutLabel() + "_yhisto," + thislab + "_shift FUNC=(x-y)*(x-y) PERIODIC=NO");
     readInputLine( thislab + ": SUM_GRID ARG=" + thislab + "_x2 PERIODIC=NO");
   }
   if( dir=="z" || dir=="yz" || dir=="xz" || dir=="xyz" ) {
     readInputLine( getShortcutLabel() + "_zhisto: KDE ARG=" + getShortcutLabel() + "_dist.z GRID_BIN=" + nbin_str + " KERNEL=" + kernel_str + " BANDWIDTH=" + band_str );
-    std::string thislab = getShortcutLabel() + "_zgrad"; if( dir=="z" ) thislab = getShortcutLabel();
+    std::string thislab = getShortcutLabel() + "_zgrad";
+    if( dir=="z" ) {
+      thislab = getShortcutLabel();
+    }
     readInputLine( thislab + "_shift: INTERPOLATE_GRID ARG=" + getShortcutLabel() + "_zhisto INTERPOLATION_TYPE=ceiling MIDPOINTS");
     readInputLine( thislab + "_x2: CUSTOM ARG=" + getShortcutLabel() + "_zhisto," + thislab + "_shift FUNC=(x-y)*(x-y) PERIODIC=NO");
     readInputLine( thislab + ": SUM_GRID ARG=" + thislab + "_x2 PERIODIC=NO");

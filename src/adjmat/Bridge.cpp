@@ -54,18 +54,30 @@ void Bridge::registerKeywords(Keywords& keys) {
            "group A");
   keys.add("optional","SWITCHB","The switchingfunction on the distance between the bridging atoms and the atoms in "
            "group B");
-  keys.needsAction("BRIDGE_MATRIX"); keys.needsAction("SUM");
+  keys.needsAction("BRIDGE_MATRIX");
+  keys.needsAction("SUM");
   keys.setValueDescription("the number of bridging atoms between the two groups");
 }
 
 Bridge::Bridge(const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
+  ActionShortcut(ao) {
   // Need to read in switch
-  std::string s_inp, sfinput; parse("SWITCH",sfinput); if( sfinput.length()>0 ) s_inp += "SWITCH={" + sfinput +"} ";
-  std::string sfinputa; parse("SWITCHA",sfinputa); if( sfinputa.length()>0 ) s_inp += "SWITCHA={" + sfinputa +"} ";
-  std::string sfinputb; parse("SWITCHB",sfinputb); if( sfinputb.length()>0 ) s_inp += "SWITCHB={" + sfinputb +"} ";
+  std::string s_inp, sfinput;
+  parse("SWITCH",sfinput);
+  if( sfinput.length()>0 ) {
+    s_inp += "SWITCH={" + sfinput +"} ";
+  }
+  std::string sfinputa;
+  parse("SWITCHA",sfinputa);
+  if( sfinputa.length()>0 ) {
+    s_inp += "SWITCHA={" + sfinputa +"} ";
+  }
+  std::string sfinputb;
+  parse("SWITCHB",sfinputb);
+  if( sfinputb.length()>0 ) {
+    s_inp += "SWITCHB={" + sfinputb +"} ";
+  }
   // Create the matrix object
   readInputLine( getShortcutLabel() + "_mat: BRIDGE_MATRIX " + s_inp + convertInputLineToString() );
   // Add all the elements of the matrix together

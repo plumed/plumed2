@@ -160,16 +160,14 @@ void VectorGeneric<n>::auxiliaryConstructor()
 
 template <unsigned n>
 template<typename... Args>
-void VectorGeneric<n>::auxiliaryConstructor(double first,Args... arg)
-{
+void VectorGeneric<n>::auxiliaryConstructor(double first,Args... arg) {
   d[n-(sizeof...(Args))-1]=first;
   auxiliaryConstructor(arg...);
 }
 
 template <unsigned n>
 template<typename... Args>
-VectorGeneric<n>::VectorGeneric(double first,Args... arg)
-{
+VectorGeneric<n>::VectorGeneric(double first,Args... arg) {
   static_assert((sizeof...(Args))+1==n,"you are trying to initialize a Vector with the wrong number of arguments");
   auxiliaryConstructor(first,arg...);
 }
@@ -308,7 +306,9 @@ double modulo(const VectorGeneric<n>&v) {
 
 template<unsigned n>
 std::ostream & operator<<(std::ostream &os, const VectorGeneric<n>& v) {
-  for(unsigned i=0; i<n-1; i++) os<<v(i)<<" ";
+  for(unsigned i=0; i<n-1; i++) {
+    os<<v(i)<<" ";
+  }
   os<<v(n-1);
   return os;
 }

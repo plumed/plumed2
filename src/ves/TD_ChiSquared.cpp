@@ -107,27 +107,38 @@ TD_ChiSquared::TD_ChiSquared(const ActionOptions& ao):
   minima_(0),
   sigma_(0),
   kappa_(0),
-  normalization_(0)
-{
+  normalization_(0) {
   parseVector("MINIMUM",minima_);
   parseVector("SIGMA",sigma_);
   for(unsigned int k=0; k<sigma_.size(); k++) {
-    if(sigma_[k] < 0.0) {plumed_merror(getName()+": the value given in SIGMA should be positive.");}
+    if(sigma_[k] < 0.0) {
+      plumed_merror(getName()+": the value given in SIGMA should be positive.");
+    }
   }
 
   std::vector<unsigned int> kappa_int(0);
   parseVector("KAPPA",kappa_int);
-  if(kappa_int.size()==0) {plumed_merror(getName()+": some problem with KAPPA keyword, should given as positive integer larger than 2");}
+  if(kappa_int.size()==0) {
+    plumed_merror(getName()+": some problem with KAPPA keyword, should given as positive integer larger than 2");
+  }
   kappa_.resize(kappa_int.size());
   for(unsigned int k=0; k<kappa_int.size(); k++) {
-    if(kappa_int[k] < 2) {plumed_merror(getName()+": KAPPA should be an integer 2 or higher");}
+    if(kappa_int[k] < 2) {
+      plumed_merror(getName()+": KAPPA should be an integer 2 or higher");
+    }
     kappa_[k] = static_cast<double>(kappa_int[k]);
   }
 
   setDimension(minima_.size());
-  if(getDimension()>1) {plumed_merror(getName()+": only defined for one dimension, for multiple dimensions it should be used in combination with the TD_PRODUCT_DISTRIBUTION action.");}
-  if(sigma_.size()!=getDimension()) {plumed_merror(getName()+": the SIGMA keyword does not match the given dimension in MINIMUM");}
-  if(kappa_.size()!=getDimension()) {plumed_merror(getName()+": the KAPPA keyword does not match the given dimension in MINIMUM");}
+  if(getDimension()>1) {
+    plumed_merror(getName()+": only defined for one dimension, for multiple dimensions it should be used in combination with the TD_PRODUCT_DISTRIBUTION action.");
+  }
+  if(sigma_.size()!=getDimension()) {
+    plumed_merror(getName()+": the SIGMA keyword does not match the given dimension in MINIMUM");
+  }
+  if(kappa_.size()!=getDimension()) {
+    plumed_merror(getName()+": the KAPPA keyword does not match the given dimension in MINIMUM");
+  }
 
   normalization_.resize(getDimension());
   for(unsigned int k=0; k<getDimension(); k++) {
@@ -141,7 +152,9 @@ double TD_ChiSquared::getValue(const std::vector<double>& argument) const {
   double value = 1.0;
   for(unsigned int k=0; k<argument.size(); k++) {
     double arg=(argument[k]-minima_[k])/sigma_[k];
-    if(arg<0.0) {plumed_merror(getName()+": the chi-squared istribution is not defined for values less that ones given in MINIMUM");}
+    if(arg<0.0) {
+      plumed_merror(getName()+": the chi-squared istribution is not defined for values less that ones given in MINIMUM");
+    }
     value *= normalization_[k] * pow(arg,0.5*kappa_[k]-1.0) * exp(-0.5*arg);
   }
   return value;

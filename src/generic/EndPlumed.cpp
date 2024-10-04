@@ -52,8 +52,7 @@ PRINT ARG=d FILE=COLVAR STRIDE=1
 */
 //+ENDPLUMEDOC
 class EndPlumed:
-  public Action
-{
+  public Action {
 public:
   explicit EndPlumed(const ActionOptions&ao);
 /// Register all the relevant keywords for the action
@@ -69,8 +68,7 @@ void EndPlumed::registerKeywords( Keywords& keys ) {
 }
 
 EndPlumed::EndPlumed(const ActionOptions&ao):
-  Action(ao)
-{
+  Action(ao) {
   checkRead();
   plumed.setEndPlumed();
 }

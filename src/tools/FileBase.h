@@ -113,7 +113,9 @@ public:
 /// Check for error/eof.
   operator bool () const;
 /// Set heavyFlush flag
-  void setHeavyFlush() { heavyFlush=true;}
+  void setHeavyFlush() {
+    heavyFlush=true;
+  }
 /// Opens the file
   virtual FileBase& open(const std::string&name)=0;
 /// Check if the file exists

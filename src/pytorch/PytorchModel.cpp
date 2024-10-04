@@ -75,8 +75,7 @@ PRINT FILE=COLVAR ARG=model.node-0,model.node-1
 
 
 class PytorchModel :
-  public Function
-{
+  public Function {
   unsigned _n_in;
   unsigned _n_out;
   torch::jit::script::Module _model;
@@ -106,8 +105,7 @@ std::vector<float> PytorchModel::tensor_to_vector(const torch::Tensor& x) {
 
 PytorchModel::PytorchModel(const ActionOptions&ao):
   Action(ao),
-  Function(ao)
-{
+  Function(ao) {
   // print libtorch version
   std::stringstream ss;
   ss << TORCH_VERSION_MAJOR << "." << TORCH_VERSION_MINOR << "." << TORCH_VERSION_PATCH;
@@ -134,8 +132,7 @@ PytorchModel::PytorchModel(const ActionOptions&ao):
     infile.close();
     if (exist) {
       plumed_merror("Cannot load FILE: '"+fname+"'. Please check that it is a Pytorch compiled model (exported with 'torch.jit.trace' or 'torch.jit.script').");
-    }
-    else {
+    } else {
       plumed_merror("The FILE: '"+fname+"' does not exist.");
     }
   }
@@ -200,8 +197,9 @@ void PytorchModel::calculate() {
 
   // retrieve arguments
   vector<float> current_S(_n_in);
-  for(unsigned i=0; i<_n_in; i++)
+  for(unsigned i=0; i<_n_in; i++) {
     current_S[i]=getArgument(i);
+  }
   //convert to tensor
   torch::Tensor input_S = torch::tensor(current_S).view({1,_n_in}).to(device);
   input_S.set_requires_grad(true);
@@ -223,8 +221,9 @@ void PytorchModel::calculate() {
     vector<float> der = this->tensor_to_vector ( gradient );
     string name_comp = "node-"+std::to_string(j);
     //set derivatives of component j
-    for(unsigned i=0; i<_n_in; i++)
+    for(unsigned i=0; i<_n_in; i++) {
       setDerivative( getPntrToComponent(name_comp),i, der[i] );
+    }
   }
 
   //set CV values

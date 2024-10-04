@@ -48,7 +48,10 @@ class BiasWeight:public WeightBase {
 public:
   double beta,invbeta;
   double shift=0.0;
-  explicit BiasWeight(double v) {beta=v; invbeta=1./beta;}
+  explicit BiasWeight(double v) {
+    beta=v;
+    invbeta=1./beta;
+  }
   //double projectInnerLoop(double &input, double &v) override {return  input+exp(beta*v);}
   //double projectOuterLoop(double &v) override {return -invbeta*std::log(v);}
   double projectInnerLoop(double &input, double &v) override {
@@ -71,9 +74,16 @@ public:
 class ProbWeight:public WeightBase {
 public:
   double beta,invbeta;
-  explicit ProbWeight(double v) {beta=v; invbeta=1./beta;}
-  double projectInnerLoop(double &input, double &v) override {return  input+v;}
-  double projectOuterLoop(double &v) override {return -invbeta*std::log(v);}
+  explicit ProbWeight(double v) {
+    beta=v;
+    invbeta=1./beta;
+  }
+  double projectInnerLoop(double &input, double &v) override {
+    return  input+v;
+  }
+  double projectOuterLoop(double &v) override {
+    return -invbeta*std::log(v);
+  }
 };
 
 
@@ -88,8 +98,7 @@ class KernelFunctions;
 class Communicator;
 
 /// \ingroup TOOLBOX
-class GridBase
-{
+class GridBase {
 public:
 // we use a size_t here
 // should be 8 bytes on all 64-bit machines
@@ -190,7 +199,9 @@ public:
     AcceleratorHandler & operator=(const AcceleratorHandler & other) {
       if(this!=&other) {
         ptr.reset();
-        if(other.ptr) ptr=AcceleratorBase::create(other->getDimension());
+        if(other.ptr) {
+          ptr=AcceleratorBase::create(other->getDimension());
+        }
       }
       return *this;
     }
@@ -251,7 +262,9 @@ public:
 /// get argument names  of this grid
   std::vector<std::string> getArgNames() const;
 /// get if the grid has derivatives
-  bool hasDerivatives() const {return usederiv_;}
+  bool hasDerivatives() const {
+    return usederiv_;
+  }
 
 /// methods to handle grid indices
   void getIndices(index_t index, std::vector<unsigned>& rindex) const;
@@ -330,17 +343,20 @@ public:
   virtual ~GridBase() = default;
 
 /// set output format
-  void setOutputFmt(const std::string & ss) {fmt_=ss;}
+  void setOutputFmt(const std::string & ss) {
+    fmt_=ss;
+  }
 /// reset output format to the default %14.9f format
-  void resetToDefaultOutputFmt() {fmt_="%14.9f";}
+  void resetToDefaultOutputFmt() {
+    fmt_="%14.9f";
+  }
 ///
 /// Find the maximum over paths of the minimum value of the gridded function along the paths
 /// for all paths of neighboring grid lattice points from a source point to a sink point.
   double findMaximalPathMinimum(const std::vector<double> &source, const std::vector<double> &sink);
 };
 
-class Grid : public GridBase
-{
+class Grid : public GridBase {
   std::vector<double> grid_;
   std::vector<double> der_;
   double contour_location=0.0;
@@ -348,20 +364,22 @@ public:
   Grid(const std::string& funcl, const std::vector<Value*> & args, const std::vector<std::string> & gmin,
        const std::vector<std::string> & gmax,
        const std::vector<unsigned> & nbin, bool dospline, bool usederiv):
-    GridBase(funcl,args,gmin,gmax,nbin,dospline,usederiv)
-  {
+    GridBase(funcl,args,gmin,gmax,nbin,dospline,usederiv) {
     grid_.assign(maxsize_,0.0);
-    if(usederiv_) der_.assign(maxsize_*dimension_,0.0);
+    if(usederiv_) {
+      der_.assign(maxsize_*dimension_,0.0);
+    }
   }
 /// this constructor here is not Value-aware
   Grid(const std::string& funcl, const std::vector<std::string> &names, const std::vector<std::string> & gmin,
        const std::vector<std::string> & gmax, const std::vector<unsigned> & nbin, bool dospline,
        bool usederiv, const std::vector<bool> &isperiodic, const std::vector<std::string> &pmin,
        const std::vector<std::string> &pmax ):
-    GridBase(funcl,names,gmin,gmax,nbin,dospline,usederiv,isperiodic,pmin,pmax)
-  {
+    GridBase(funcl,names,gmin,gmax,nbin,dospline,usederiv,isperiodic,pmin,pmax) {
     grid_.assign(maxsize_,0.0);
-    if(usederiv_) der_.assign(maxsize_*dimension_,0.0);
+    if(usederiv_) {
+      der_.assign(maxsize_*dimension_,0.0);
+    }
   }
   index_t getSize() const override;
 /// this is to access to Grid:: version of these methods (allowing overloading of virtual methods)
@@ -415,8 +433,7 @@ public:
 };
 
 
-class SparseGrid : public GridBase
-{
+class SparseGrid : public GridBase {
 
   std::map<index_t,double> map_;
   std::map< index_t,std::vector<double> > der_;
@@ -499,7 +516,9 @@ void GridBase::getIndices(index_t index, unsigned* indices, std::size_t indices_
 
 inline
 void GridBase::getIndices(index_t index, std::vector<unsigned>& indices) const {
-  if (indices.size()!=dimension_) indices.resize(dimension_);
+  if (indices.size()!=dimension_) {
+    indices.resize(dimension_);
+  }
   getIndices(index,indices.data(),indices.size());
 }
 

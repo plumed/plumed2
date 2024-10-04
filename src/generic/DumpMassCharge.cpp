@@ -25,8 +25,7 @@
 #include "tools/File.h"
 #include "core/PlumedMain.h"
 
-namespace PLMD
-{
+namespace PLMD {
 namespace generic {
 
 //+PLUMEDOC PRINTANALYSIS DUMPMASSCHARGE
@@ -75,8 +74,7 @@ DUMPMASSCHARGE FILE=mcfile ATOMS=solute_ions
 
 class DumpMassCharge:
   public ActionAtomistic,
-  public ActionPilot
-{
+  public ActionPilot {
   std::string file;
   bool first;
   bool second;
@@ -86,7 +84,9 @@ public:
   explicit DumpMassCharge(const ActionOptions&);
   ~DumpMassCharge();
   static void registerKeywords( Keywords& keys );
-  bool actionHasForces() override { return false; }
+  bool actionHasForces() override {
+    return false;
+  }
   void prepare() override;
   void calculate() override {}
   void apply() override {}
@@ -113,17 +113,20 @@ DumpMassCharge::DumpMassCharge(const ActionOptions&ao):
   first(true),
   second(true),
   print_masses(true),
-  print_charges(true)
-{
+  print_charges(true) {
   std::vector<AtomNumber> atoms;
   parse("FILE",file);
-  if(file.length()==0) error("name of output file was not specified");
+  if(file.length()==0) {
+    error("name of output file was not specified");
+  }
   log.printf("  output written to file %s\n",file.c_str());
 
   parseAtomList("ATOMS",atoms);
 
   if(atoms.size()==0) {
-    std::vector<std::string> strvec(1); strvec[0]="@mdatoms"; interpretAtomList( strvec,atoms );
+    std::vector<std::string> strvec(1);
+    strvec[0]="@mdatoms";
+    interpretAtomList( strvec,atoms );
   }
 
   bool only_masses = false;
@@ -144,7 +147,9 @@ DumpMassCharge::DumpMassCharge(const ActionOptions&ao):
   checkRead();
 
   log.printf("  printing the following atoms:" );
-  for(unsigned i=0; i<atoms.size(); ++i) log.printf(" %d",atoms[i].serial() );
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    log.printf(" %d",atoms[i].serial() );
+  }
   log.printf("\n");
   requestAtoms(atoms);
 
@@ -162,7 +167,9 @@ void DumpMassCharge::prepare() {
 }
 
 void DumpMassCharge::update() {
-  if(!first) return;
+  if(!first) {
+    return;
+  }
   first=false;
 
   OFile of;
@@ -172,8 +179,12 @@ void DumpMassCharge::update() {
   for(unsigned i=0; i<getNumberOfAtoms(); i++) {
     int ii=getAbsoluteIndex(i).index();
     of.printField("index",ii);
-    if(print_masses) {of.printField("mass",getMass(i));}
-    if(print_charges) {of.printField("charge",getCharge(i));}
+    if(print_masses) {
+      of.printField("mass",getMass(i));
+    }
+    if(print_charges) {
+      of.printField("charge",getCharge(i));
+    }
     of.printField();
   }
 }

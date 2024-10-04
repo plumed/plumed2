@@ -44,19 +44,22 @@ class SubprocessPid {
 public:
   const pid_t pid;
   explicit SubprocessPid(pid_t pid):
-    pid(pid)
-  {
+    pid(pid) {
     plumed_assert(pid!=0 && pid!=-1);
   }
   void stop() noexcept {
     // Signals give problems with MPI on Travis.
     // I disable them for now.
-    if(SubprocessPidGetenvSignals()) kill(pid,SIGSTOP);
+    if(SubprocessPidGetenvSignals()) {
+      kill(pid,SIGSTOP);
+    }
   }
   void cont() noexcept {
     // Signals give problems with MPI on Travis.
     // I disable them for now.
-    if(SubprocessPidGetenvSignals()) kill(pid,SIGCONT);
+    if(SubprocessPidGetenvSignals()) {
+      kill(pid,SIGCONT);
+    }
   }
   ~SubprocessPid() {
     // the destructor implies we do not need the subprocess anymore, so SIGKILL
@@ -83,30 +86,49 @@ Subprocess::Subprocess(const std::string & cmd) {
   };
   int cp[2];
   int pc[2];
-  if(pipe(pc)<0) plumed_error()<<"error creating parent to child pipe";
-  if(pipe(cp)<0) plumed_error()<<"error creating child to parent pipe";
+  if(pipe(pc)<0) {
+    plumed_error()<<"error creating parent to child pipe";
+  }
+  if(pipe(cp)<0) {
+    plumed_error()<<"error creating child to parent pipe";
+  }
   pid_t pid=fork();
   switch(pid) {
   case -1:
     plumed_error()<<"error forking";
     break;
 // CHILD:
-  case 0:
-  {
-    if(close(1)<0) plumed_error()<<"error closing file";
-    if(dup(cp[1])<0) plumed_error()<<"error duplicating file";
-    if(close(0)<0) plumed_error()<<"error closing file";
-    if(dup(pc[0])<0) plumed_error()<<"error duplicating file";
-    if(close(pc[1])<0) plumed_error()<<"error closing file";
-    if(close(cp[0])<0) plumed_error()<<"error closing file";
+  case 0: {
+    if(close(1)<0) {
+      plumed_error()<<"error closing file";
+    }
+    if(dup(cp[1])<0) {
+      plumed_error()<<"error duplicating file";
+    }
+    if(close(0)<0) {
+      plumed_error()<<"error closing file";
+    }
+    if(dup(pc[0])<0) {
+      plumed_error()<<"error duplicating file";
+    }
+    if(close(pc[1])<0) {
+      plumed_error()<<"error closing file";
+    }
+    if(close(cp[0])<0) {
+      plumed_error()<<"error closing file";
+    }
     auto err=execv(arr[0],arr);
     plumed_error()<<"error in script file " << cmd << ", execv returned "<<err;
   }
 // PARENT::
   default:
     this->pid=Tools::make_unique<SubprocessPid>(pid);
-    if(close(pc[0])<0) plumed_error()<<"error closing file";
-    if(close(cp[1])<0) plumed_error()<<"error closing file";
+    if(close(pc[0])<0) {
+      plumed_error()<<"error closing file";
+    }
+    if(close(cp[1])<0) {
+      plumed_error()<<"error closing file";
+    }
     fpc=pc[1];
     fcp=cp[0];
     fppc=fdopen(fpc,"w");
@@ -159,29 +181,33 @@ void Subprocess::flush() {
 
 Subprocess & Subprocess::getline(std::string & line) {
   child_to_parent.getline(line);
-  if(!child_to_parent) plumed_error() <<"error reading subprocess";
+  if(!child_to_parent) {
+    plumed_error() <<"error reading subprocess";
+  }
   return (*this);
 }
 
 Subprocess::Handler::Handler(Subprocess *sp) noexcept:
-  sp(sp)
-{
+  sp(sp) {
   sp->cont();
 }
 
 Subprocess::Handler::~Handler() {
-  if(sp) sp->stop();
+  if(sp) {
+    sp->stop();
+  }
 }
 
 Subprocess::Handler::Handler(Handler && handler) noexcept :
-  sp(handler.sp)
-{
+  sp(handler.sp) {
   handler.sp=nullptr;
 }
 
 Subprocess::Handler & Subprocess::Handler::operator=(Handler && handler) noexcept {
   if(this!=&handler) {
-    if(sp) sp->stop();
+    if(sp) {
+      sp->stop();
+    }
     sp=handler.sp;
     handler.sp=nullptr;
   }

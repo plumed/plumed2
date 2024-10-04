@@ -176,160 +176,193 @@ class CS2BackboneDB {
 public:
 
   inline unsigned kind(const std::string &s) {
-    if(s=="GLY") return GLY;
-    else if(s=="PRO") return PRO;
+    if(s=="GLY") {
+      return GLY;
+    } else if(s=="PRO") {
+      return PRO;
+    }
     return STD;
   }
 
   inline unsigned atom_kind(const std::string &s) {
-    if(s=="HA")return HA_ATOM;
-    else if(s=="H") return H_ATOM;
-    else if(s=="N") return N_ATOM;
-    else if(s=="CA")return CA_ATOM;
-    else if(s=="CB")return CB_ATOM;
-    else if(s=="C") return C_ATOM;
+    if(s=="HA") {
+      return HA_ATOM;
+    } else if(s=="H") {
+      return H_ATOM;
+    } else if(s=="N") {
+      return N_ATOM;
+    } else if(s=="CA") {
+      return CA_ATOM;
+    } else if(s=="CB") {
+      return CB_ATOM;
+    } else if(s=="C") {
+      return C_ATOM;
+    }
     return -1;
   }
 
-  unsigned get_numXtraDists() {return numXtraDists;}
+  unsigned get_numXtraDists() {
+    return numXtraDists;
+  }
 
   //PARAMETERS
-  inline double * CONSTAACURR(const unsigned a_kind, const unsigned at_kind) {return c_aa[a_kind][at_kind];}
-  inline double * CONSTAANEXT(const unsigned a_kind, const unsigned at_kind) {return c_aa_succ[a_kind][at_kind];}
-  inline double * CONSTAAPREV(const unsigned a_kind, const unsigned at_kind) {return c_aa_prev[a_kind][at_kind];}
-  inline double * CONST_BB2(const unsigned a_kind, const unsigned at_kind) {return co_bb[a_kind][at_kind];}
-  inline double * CONST_SC2(const unsigned a_kind, const unsigned at_kind, unsigned res_type) { return co_sc_[a_kind][at_kind][res_type];}
-  inline double * CONST_XD(const unsigned a_kind, const unsigned at_kind) { return co_xd[a_kind][at_kind];}
-  inline double * CO_SPHERE(const unsigned a_kind, const unsigned at_kind, unsigned exp_type) { return co_sphere[a_kind][at_kind][exp_type];}
-  inline double * CO_RING(const unsigned a_kind, const unsigned at_kind) { return co_ring[a_kind][at_kind];}
-  inline double * CO_DA(const unsigned a_kind, const unsigned at_kind) { return co_da[a_kind][at_kind];}
-  inline double * PARS_DA(const unsigned a_kind, const unsigned at_kind, const unsigned ang_kind) { return pars_da[a_kind][at_kind][ang_kind];}
+  inline double * CONSTAACURR(const unsigned a_kind, const unsigned at_kind) {
+    return c_aa[a_kind][at_kind];
+  }
+  inline double * CONSTAANEXT(const unsigned a_kind, const unsigned at_kind) {
+    return c_aa_succ[a_kind][at_kind];
+  }
+  inline double * CONSTAAPREV(const unsigned a_kind, const unsigned at_kind) {
+    return c_aa_prev[a_kind][at_kind];
+  }
+  inline double * CONST_BB2(const unsigned a_kind, const unsigned at_kind) {
+    return co_bb[a_kind][at_kind];
+  }
+  inline double * CONST_SC2(const unsigned a_kind, const unsigned at_kind, unsigned res_type) {
+    return co_sc_[a_kind][at_kind][res_type];
+  }
+  inline double * CONST_XD(const unsigned a_kind, const unsigned at_kind) {
+    return co_xd[a_kind][at_kind];
+  }
+  inline double * CO_SPHERE(const unsigned a_kind, const unsigned at_kind, unsigned exp_type) {
+    return co_sphere[a_kind][at_kind][exp_type];
+  }
+  inline double * CO_RING(const unsigned a_kind, const unsigned at_kind) {
+    return co_ring[a_kind][at_kind];
+  }
+  inline double * CO_DA(const unsigned a_kind, const unsigned at_kind) {
+    return co_da[a_kind][at_kind];
+  }
+  inline double * PARS_DA(const unsigned a_kind, const unsigned at_kind, const unsigned ang_kind) {
+    return pars_da[a_kind][at_kind][ang_kind];
+  }
 
   void parse(const std::string &file, const double dscale) {
     std::ifstream in;
     in.open(file.c_str());
-    if(!in) plumed_merror("Unable to open DB file: " + file);
+    if(!in) {
+      plumed_merror("Unable to open DB file: " + file);
+    }
 
     unsigned c_kind = 0;
     unsigned c_atom = 0;
     unsigned nline = 0;
 
-    for(unsigned i=0; i<3; i++) for(unsigned j=0; j<6; j++) {
+    for(unsigned i=0; i<3; i++)
+      for(unsigned j=0; j<6; j++) {
         for(unsigned k=0; k<20; k++) {
           c_aa[i][j][k]=0.;
           c_aa_prev[i][j][k]=0.;
           c_aa_succ[i][j][k]=0.;
-          for(unsigned m=0; m<20; m++) co_sc_[i][j][k][m]=0.;
+          for(unsigned m=0; m<20; m++) {
+            co_sc_[i][j][k][m]=0.;
+          }
         }
-        for(unsigned k=0; k<16; k++) {co_bb[i][j][k]=0.; }
-        for(unsigned k=0; k<8; k++) { co_sphere[i][j][0][k]=0.; co_sphere[i][j][1][k]=0.; }
+        for(unsigned k=0; k<16; k++) {
+          co_bb[i][j][k]=0.;
+        }
+        for(unsigned k=0; k<8; k++) {
+          co_sphere[i][j][0][k]=0.;
+          co_sphere[i][j][1][k]=0.;
+        }
         for(unsigned k=0; k<3; k++) {
           co_da[i][j][k]=0.;
-          for(unsigned l=0; l<5; l++) pars_da[i][j][k][l]=0.;
+          for(unsigned l=0; l<5; l++) {
+            pars_da[i][j][k][l]=0.;
+          }
         }
-        for(unsigned k=0; k<5; k++) co_ring[i][j][k]=0.;
-        for(unsigned k=0; k<numXtraDists; k++) co_xd[i][j][k]=0.;
+        for(unsigned k=0; k<5; k++) {
+          co_ring[i][j][k]=0.;
+        }
+        for(unsigned k=0; k<numXtraDists; k++) {
+          co_xd[i][j][k]=0.;
+        }
       }
 
     while(!in.eof()) {
       std::string line;
       getline(in,line);
       ++nline;
-      if(line.compare(0,1,"#")==0) continue;
+      if(line.compare(0,1,"#")==0) {
+        continue;
+      }
       std::vector<std::string> tok;
       std::vector<std::string> tmp;
       tok = split(line,' ');
       for(unsigned q=0; q<tok.size(); q++)
-        if(tok[q].size()) tmp.push_back(tok[q]);
+        if(tok[q].size()) {
+          tmp.push_back(tok[q]);
+        }
       tok = tmp;
-      if(tok.size()==0) continue;
+      if(tok.size()==0) {
+        continue;
+      }
       if(tok[0]=="PAR") {
         c_kind = kind(tok[2]);
         c_atom = atom_kind(tok[1]);
         continue;
-      }
-      else if(tok[0]=="WEIGHT") {
+      } else if(tok[0]=="WEIGHT") {
         continue;
-      }
-      else if(tok[0]=="FLATBTM") {
+      } else if(tok[0]=="FLATBTM") {
         continue;
-      }
-      else if (tok[0] == "SCALEHARM") {
+      } else if (tok[0] == "SCALEHARM") {
         continue;
-      }
-      else if (tok[0] == "TANHAMPLI") {
+      } else if (tok[0] == "TANHAMPLI") {
         continue;
-      }
-      else if (tok[0] == "ENDHARMON") {
+      } else if (tok[0] == "ENDHARMON") {
         continue;
-      }
-      else if (tok[0] == "MAXRCDEVI") {
+      } else if (tok[0] == "MAXRCDEVI") {
         continue;
-      }
-      else if (tok[0] == "RANDCOIL") {
+      } else if (tok[0] == "RANDCOIL") {
         continue;
-      }
-      else if (tok[0] == "CONST") {
+      } else if (tok[0] == "CONST") {
         continue;
-      }
-      else if (tok[0] == "CONSTAA") {
+      } else if (tok[0] == "CONSTAA") {
         assign(c_aa[c_kind][c_atom],tok,1);
         continue;
-      }
-      else if (tok[0] == "CONSTAA-1") {
+      } else if (tok[0] == "CONSTAA-1") {
         assign(c_aa_prev[c_kind][c_atom],tok,1);
         continue;
-      }
-      else if (tok[0] == "CONSTAA+1") {
+      } else if (tok[0] == "CONSTAA+1") {
         assign(c_aa_succ[c_kind][c_atom],tok,1);
         continue;
-      }
-      else if (tok[0] == "COBB1") {
+      } else if (tok[0] == "COBB1") {
         continue;
-      }
-      else if (tok[0] == "COBB2") {
+      } else if (tok[0] == "COBB2") {
         //angstrom to nm
         assign(co_bb[c_kind][c_atom],tok,dscale);
         continue;
-      }
-      else if (tok[0] == "SPHERE1") {
+      } else if (tok[0] == "SPHERE1") {
         // angstrom^-3 to nm^-3
         assign(co_sphere[c_kind][c_atom][0],tok,1./(dscale*dscale*dscale));
         continue;
-      }
-      else if (tok[0] == "SPHERE2") {
+      } else if (tok[0] == "SPHERE2") {
         //angstrom to nm
         assign(co_sphere[c_kind][c_atom][1],tok,dscale);
         continue;
-      }
-      else if (tok[0] == "DIHEDRALS") {
+      } else if (tok[0] == "DIHEDRALS") {
         assign(co_da[c_kind][c_atom],tok,1);
         continue;
-      }
-      else if (tok[0] == "RINGS") {
+      } else if (tok[0] == "RINGS") {
         // angstrom^-3 to nm^-3
         assign(co_ring[c_kind][c_atom],tok,1./(dscale*dscale*dscale));
-        for(unsigned i=1; i<tok.size(); i++)
+        for(unsigned i=1; i<tok.size(); i++) {
           co_ring[c_kind][c_atom][i-1] *= 1000;
+        }
         continue;
-      }
-      else if (tok[0] == "HBONDS") {
+      } else if (tok[0] == "HBONDS") {
         continue;
-      }
-      else if (tok[0] == "XTRADISTS") {
+      } else if (tok[0] == "XTRADISTS") {
         //angstrom to nm
         assign(co_xd[c_kind][c_atom],tok,dscale);
         continue;
-      }
-      else if(tok[0]=="DIHEDPHI") {
+      } else if(tok[0]=="DIHEDPHI") {
         assign(pars_da[c_kind][c_atom][0],tok,1);
         continue;
-      }
-      else if(tok[0]=="DIHEDPSI") {
+      } else if(tok[0]=="DIHEDPSI") {
         assign(pars_da[c_kind][c_atom][1],tok,1);
         continue;
-      }
-      else if(tok[0]=="DIHEDCHI1") {
+      } else if(tok[0]=="DIHEDCHI1") {
         assign(pars_da[c_kind][c_atom][2],tok,1);
         continue;
       }
@@ -346,7 +379,9 @@ public:
           break;
         }
       }
-      if(ok) continue;
+      if(ok) {
+        continue;
+      }
 
       const std::string scIdent2 [] = {"COSCALA2", "COSCARG2", "COSCASN2", "COSCASP2", "COSCCYS2", "COSCGLN2", "COSCGLU2",
                                        "COSCGLY2", "COSCHIS2", "COSCILE2", "COSCLEU2", "COSCLYS2", "COSCMET2", "COSCPHE2",
@@ -357,10 +392,13 @@ public:
         if(tok[0]==scIdent2[scC]) {
           //angstrom to nm
           assign(co_sc_[c_kind][c_atom][scC],tok,dscale);
-          ok = true; break;
+          ok = true;
+          break;
         }
       }
-      if(ok) continue;
+      if(ok) {
+        continue;
+      }
 
       if(tok.size()) {
         std::string str_err = "DB WARNING: unrecognized token: " + tok[0];
@@ -390,7 +428,9 @@ private:
   void assign(double * f, const std::vector<std::string> & v, const double scale) {
     for(unsigned i=1; i<v.size(); i++) {
       f[i-1] = scale*(atof(v[i].c_str()));
-      if(std::abs(f[i-1])<0.000001) f[i-1]=0.;
+      if(std::abs(f[i-1])<0.000001) {
+        f[i-1]=0.;
+      }
     }
   }
 };
@@ -433,8 +473,7 @@ class CS2Backbone : public MetainferenceBase {
       totcsatoms(0),
       res_num(0),
       chain(0),
-      ipos(0)
-    {
+      ipos(0) {
       xd1.reserve(26);
       xd2.reserve(26);
       box_nb.reserve(150);
@@ -455,9 +494,10 @@ class CS2Backbone : public MetainferenceBase {
       rtype(0),
       numAtoms(0),
       lengthN2(NAN),
-      lengthNV(NAN)
-    {
-      for(unsigned i=0; i<6; i++) atom[i]=0;
+      lengthNV(NAN) {
+      for(unsigned i=0; i<6; i++) {
+        atom[i]=0;
+      }
     }
   };
 
@@ -528,13 +568,14 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
   max_cs_atoms(0),
   camshift(false),
   pbc(true),
-  serial(false)
-{
+  serial(false) {
   std::vector<AtomNumber> used_atoms;
   parseAtomList("ATOMS",used_atoms);
 
   parseFlag("CAMSHIFT",camshift);
-  if(camshift&&getDoScore()) plumed_merror("It is not possible to use CAMSHIFT and DOSCORE at the same time");
+  if(camshift&&getDoScore()) {
+    plumed_merror("It is not possible to use CAMSHIFT and DOSCORE at the same time");
+  }
 
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
@@ -568,10 +609,13 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
   db.parse(stringadb,scale);
 
   PDB pdb;
-  if( !pdb.read(stringapdb,usingNaturalUnits(),1./scale) ) plumed_merror("missing input file " + stringapdb);
+  if( !pdb.read(stringapdb,usingNaturalUnits(),1./scale) ) {
+    plumed_merror("missing input file " + stringapdb);
+  }
 
   // first of all we build the list of chemical shifts we want to predict
-  log.printf("  Reading experimental data ...\n"); log.flush();
+  log.printf("  Reading experimental data ...\n");
+  log.flush();
   stringadb = stringa_data + std::string("/CAshifts.dat");
   log.printf("  Initializing CA shifts %s\n", stringadb.c_str());
   init_cs(stringadb, "CA", pdb);
@@ -591,15 +635,20 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
   log.printf("  Initializing N shifts %s\n", stringadb.c_str());
   init_cs(stringadb, "N", pdb);
 
-  if(chemicalshifts.size()==0) plumed_merror("There are no chemical shifts to calculate, there must be at least a not empty file (CA|CB|C|HA|H|N|shifts.dat)");
+  if(chemicalshifts.size()==0) {
+    plumed_merror("There are no chemical shifts to calculate, there must be at least a not empty file (CA|CB|C|HA|H|N|shifts.dat)");
+  }
 
   init_types(pdb);
   init_rings(pdb);
 
   log<<"  Bibliography "
      <<plumed.cite("Kohlhoff K, Robustelli P, Cavalli A, Salvatella A, Vendruscolo M, J. Am. Chem. Soc. 131, 13894 (2009)");
-  if(camshift) log<<plumed.cite("Granata D, Camilloni C, Vendruscolo M, Laio A, Proc. Natl. Acad. Sci. USA 110, 6817 (2013)");
-  else log<<plumed.cite("Camilloni C, Robustelli P, De Simone A, Cavalli A, Vendruscolo M, J. Am. Chem. Soc. 134, 3968 (2012)");
+  if(camshift) {
+    log<<plumed.cite("Granata D, Camilloni C, Vendruscolo M, Laio A, Proc. Natl. Acad. Sci. USA 110, 6817 (2013)");
+  } else {
+    log<<plumed.cite("Camilloni C, Robustelli P, De Simone A, Cavalli A, Vendruscolo M, J. Am. Chem. Soc. 134, 3968 (2012)");
+  }
   log<<plumed.cite("Bonomi M, Camilloni C, Bioinformatics, 33, 3999 (2017)");
   log<<"\n";
 
@@ -609,8 +658,10 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
     setNotPeriodic();
   } else {
     for(unsigned cs=0; cs<chemicalshifts.size(); cs++) {
-      std::string num; Tools::convert(chemicalshifts[cs].res_num,num);
-      std::string chain_num; Tools::convert(chemicalshifts[cs].chain,chain_num);
+      std::string num;
+      Tools::convert(chemicalshifts[cs].res_num,num);
+      std::string chain_num;
+      Tools::convert(chemicalshifts[cs].chain,chain_num);
       if(getDoScore()) {
         addComponent(chemicalshifts[cs].nucleus+chain_num+"-"+num);
         componentIsNotPeriodic(chemicalshifts[cs].nucleus+chain_num+"-"+num);
@@ -622,13 +673,17 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
         chemicalshifts[cs].comp = getPntrToComponent(chemicalshifts[cs].nucleus+chain_num+"-"+num);
       }
     }
-    if(getDoScore()) Initialise(chemicalshifts.size());
+    if(getDoScore()) {
+      Initialise(chemicalshifts.size());
+    }
   }
 
   if(!noexp) {
     for(unsigned cs=0; cs<chemicalshifts.size(); cs++) {
-      std::string num; Tools::convert(chemicalshifts[cs].res_num,num);
-      std::string chain_num; Tools::convert(chemicalshifts[cs].chain,chain_num);
+      std::string num;
+      Tools::convert(chemicalshifts[cs].res_num,num);
+      std::string chain_num;
+      Tools::convert(chemicalshifts[cs].chain,chain_num);
       addComponent("exp"+chemicalshifts[cs].nucleus+chain_num+"-"+num);
       componentIsNotPeriodic("exp"+chemicalshifts[cs].nucleus+chain_num+"-"+num);
       Value* comp=getPntrToComponent("exp"+chemicalshifts[cs].nucleus+chain_num+"-"+num);
@@ -649,7 +704,9 @@ void CS2Backbone::init_cs(const std::string &file, const std::string &nucl, cons
 
   std::ifstream in;
   in.open(file.c_str());
-  if(!in) return;
+  if(!in) {
+    return;
+  }
   std::istream_iterator<std::string> iter(in), end;
   unsigned begin=0;
 
@@ -661,42 +718,73 @@ void CS2Backbone::init_cs(const std::string &file, const std::string &nucl, cons
       if(begin==1) {
         begin=0;
         ichain++;
-      } else begin=1;
+      } else {
+        begin=1;
+      }
       continue;
     }
     int ro = atoi(tok.c_str());
-    if(ro<0) plumed_merror("Residue numbers should be positive\n");
+    if(ro<0) {
+      plumed_merror("Residue numbers should be positive\n");
+    }
     unsigned resnum = static_cast<unsigned> (ro);
     tok = *iter;
     ++iter;
     double cs = atof(tok.c_str());
-    if(cs==0) continue;
+    if(cs==0) {
+      continue;
+    }
 
     unsigned fres, lres;
     std::string errmsg;
     pdb.getResidueRange(chains[ichain], fres, lres, errmsg);
-    if(resnum==fres||resnum==lres) plumed_merror("First and Last residue of each chain should be annotated as # in " + file + " Remember that residue numbers should match");
+    if(resnum==fres||resnum==lres) {
+      plumed_merror("First and Last residue of each chain should be annotated as # in " + file + " Remember that residue numbers should match");
+    }
 
     // check in the PDB for the chain/residue/atom and enable the chemical shift
     std::string RES = pdb.getResidueName(resnum, chains[ichain]);
-    if(RES=="HIE"||RES=="HIP"||RES=="HIS"||RES=="HSP"||RES=="HSE"||RES=="CYS"||RES=="GLH"||RES=="ASH"||RES=="UNK") continue;
-    if(RES=="GLN"&&nucl=="CB") continue;
-    if(RES=="ILE"&&nucl=="CB") continue;
-    if(RES=="PRO"&&nucl=="N") continue;
-    if(RES=="PRO"&&nucl=="H") continue;
-    if(RES=="PRO"&&nucl=="CB") continue;
-    if(RES=="GLY"&&nucl=="HA") continue;
-    if(RES=="GLY"&&nucl=="CB") continue;
+    if(RES=="HIE"||RES=="HIP"||RES=="HIS"||RES=="HSP"||RES=="HSE"||RES=="CYS"||RES=="GLH"||RES=="ASH"||RES=="UNK") {
+      continue;
+    }
+    if(RES=="GLN"&&nucl=="CB") {
+      continue;
+    }
+    if(RES=="ILE"&&nucl=="CB") {
+      continue;
+    }
+    if(RES=="PRO"&&nucl=="N") {
+      continue;
+    }
+    if(RES=="PRO"&&nucl=="H") {
+      continue;
+    }
+    if(RES=="PRO"&&nucl=="CB") {
+      continue;
+    }
+    if(RES=="GLY"&&nucl=="HA") {
+      continue;
+    }
+    if(RES=="GLY"&&nucl=="CB") {
+      continue;
+    }
 
     ChemicalShift tmp_cs;
 
     tmp_cs.exp_cs = cs;
-    if(nucl=="CA")      tmp_cs.nucleus = "ca-";
-    else if(nucl=="CB") tmp_cs.nucleus = "cb-";
-    else if(nucl=="C")  tmp_cs.nucleus = "co-";
-    else if(nucl=="HA") tmp_cs.nucleus = "ha-";
-    else if(nucl=="H")  tmp_cs.nucleus = "hn-";
-    else if(nucl=="N")  tmp_cs.nucleus = "nh-";
+    if(nucl=="CA") {
+      tmp_cs.nucleus = "ca-";
+    } else if(nucl=="CB") {
+      tmp_cs.nucleus = "cb-";
+    } else if(nucl=="C") {
+      tmp_cs.nucleus = "co-";
+    } else if(nucl=="HA") {
+      tmp_cs.nucleus = "ha-";
+    } else if(nucl=="H") {
+      tmp_cs.nucleus = "hn-";
+    } else if(nucl=="N") {
+      tmp_cs.nucleus = "nh-";
+    }
     tmp_cs.chain = ichain;
     tmp_cs.res_num = resnum;
     tmp_cs.res_type_curr = frag2enum(RES);
@@ -705,44 +793,73 @@ void CS2Backbone::init_cs(const std::string &file, const std::string &nucl, cons
     tmp_cs.res_name = RES;
     tmp_cs.res_kind = db.kind(RES);
     tmp_cs.atm_kind = db.atom_kind(nucl);
-    if(RES!="ALA"&&RES!="GLY") {tmp_cs.bb.resize(18); tmp_cs.has_chi1=true;}
-    else {tmp_cs.bb.resize(16); tmp_cs.has_chi1=false;}
+    if(RES!="ALA"&&RES!="GLY") {
+      tmp_cs.bb.resize(18);
+      tmp_cs.has_chi1=true;
+    } else {
+      tmp_cs.bb.resize(16);
+      tmp_cs.has_chi1=false;
+    }
 
     std::vector<AtomNumber> res_atoms = pdb.getAtomsInResidue(resnum, chains[ichain]);
     // find the position of the nucleus and of the other backbone atoms as well as for phi/psi/chi
     for(unsigned a=0; a<res_atoms.size(); a++) {
       std::string AN = pdb.getAtomName(res_atoms[a]);
-      if(nucl=="HA"&&(AN=="HA"||AN=="HA1"||AN=="HA3")) tmp_cs.ipos = res_atoms[a].index();
-      else if(nucl=="H"&&(AN=="H"||AN=="HN"))          tmp_cs.ipos = res_atoms[a].index();
-      else if(nucl=="N"&&AN=="N")                      tmp_cs.ipos = res_atoms[a].index();
-      else if(nucl=="CA"&&AN=="CA")                    tmp_cs.ipos = res_atoms[a].index();
-      else if(nucl=="CB"&&AN=="CB")                    tmp_cs.ipos = res_atoms[a].index();
-      else if(nucl=="C"&&AN=="C" )                     tmp_cs.ipos = res_atoms[a].index();
+      if(nucl=="HA"&&(AN=="HA"||AN=="HA1"||AN=="HA3")) {
+        tmp_cs.ipos = res_atoms[a].index();
+      } else if(nucl=="H"&&(AN=="H"||AN=="HN")) {
+        tmp_cs.ipos = res_atoms[a].index();
+      } else if(nucl=="N"&&AN=="N") {
+        tmp_cs.ipos = res_atoms[a].index();
+      } else if(nucl=="CA"&&AN=="CA") {
+        tmp_cs.ipos = res_atoms[a].index();
+      } else if(nucl=="CB"&&AN=="CB") {
+        tmp_cs.ipos = res_atoms[a].index();
+      } else if(nucl=="C"&&AN=="C" ) {
+        tmp_cs.ipos = res_atoms[a].index();
+      }
     }
 
     std::vector<AtomNumber> prev_res_atoms = pdb.getAtomsInResidue(resnum-1, chains[ichain]);
     // find the position of the previous residues backbone atoms
     for(unsigned a=0; a<prev_res_atoms.size(); a++) {
       std::string AN = pdb.getAtomName(prev_res_atoms[a]);
-      if(AN=="N")                             { tmp_cs.bb[Np]  = prev_res_atoms[a].index(); }
-      else if(AN=="CA")                       { tmp_cs.bb[CAp] = prev_res_atoms[a].index(); }
-      else if(AN=="HA"||AN=="HA1"||AN=="HA3") { tmp_cs.bb[HAp] = prev_res_atoms[a].index(); }
-      else if(AN=="C" )                       { tmp_cs.bb[Cp]  = prev_res_atoms[a].index(); }
-      else if(AN=="O" )                       { tmp_cs.bb[Op]  = prev_res_atoms[a].index(); }
+      if(AN=="N")                             {
+        tmp_cs.bb[Np]  = prev_res_atoms[a].index();
+      } else if(AN=="CA")                       {
+        tmp_cs.bb[CAp] = prev_res_atoms[a].index();
+      } else if(AN=="HA"||AN=="HA1"||AN=="HA3") {
+        tmp_cs.bb[HAp] = prev_res_atoms[a].index();
+      } else if(AN=="C" )                       {
+        tmp_cs.bb[Cp]  = prev_res_atoms[a].index();
+      } else if(AN=="O" )                       {
+        tmp_cs.bb[Op]  = prev_res_atoms[a].index();
+      }
     }
 
     for(unsigned a=0; a<res_atoms.size(); a++) {
       std::string AN = pdb.getAtomName(res_atoms[a]);
-      if(AN=="N")                                         { tmp_cs.bb[Nc]  = res_atoms[a].index(); }
-      else if(AN=="H" ||AN=="HN"||(AN=="CD"&&RES=="PRO")) { tmp_cs.bb[Hc]  = res_atoms[a].index(); }
-      else if(AN=="CA")                                   { tmp_cs.bb[CAc] = res_atoms[a].index(); }
-      else if(AN=="HA"||AN=="HA1"||AN=="HA3")             { tmp_cs.bb[HAc] = res_atoms[a].index(); }
-      else if(AN=="C" )                                   { tmp_cs.bb[Cc]  = res_atoms[a].index(); }
-      else if(AN=="O" )                                   { tmp_cs.bb[Oc]  = res_atoms[a].index(); }
+      if(AN=="N")                                         {
+        tmp_cs.bb[Nc]  = res_atoms[a].index();
+      } else if(AN=="H" ||AN=="HN"||(AN=="CD"&&RES=="PRO")) {
+        tmp_cs.bb[Hc]  = res_atoms[a].index();
+      } else if(AN=="CA")                                   {
+        tmp_cs.bb[CAc] = res_atoms[a].index();
+      } else if(AN=="HA"||AN=="HA1"||AN=="HA3")             {
+        tmp_cs.bb[HAc] = res_atoms[a].index();
+      } else if(AN=="C" )                                   {
+        tmp_cs.bb[Cc]  = res_atoms[a].index();
+      } else if(AN=="O" )                                   {
+        tmp_cs.bb[Oc]  = res_atoms[a].index();
+      }
 
       if(RES!="ALA"&&RES!="GLY") {
-        if(AN=="CB") tmp_cs.bb[CBc] = res_atoms[a].index();
-        if(is_chi1_cx(RES,AN)) tmp_cs.bb[CGc] = res_atoms[a].index();
+        if(AN=="CB") {
+          tmp_cs.bb[CBc] = res_atoms[a].index();
+        }
+        if(is_chi1_cx(RES,AN)) {
+          tmp_cs.bb[CGc] = res_atoms[a].index();
+        }
       }
     }
 
@@ -751,11 +868,17 @@ void CS2Backbone::init_cs(const std::string &file, const std::string &nucl, cons
     // find the position of the previous residues backbone atoms
     for(unsigned a=0; a<next_res_atoms.size(); a++) {
       std::string AN = pdb.getAtomName(next_res_atoms[a]);
-      if(AN=="N")                                          { tmp_cs.bb[Nn]  = next_res_atoms[a].index(); }
-      else if(AN=="H" ||AN=="HN"||(AN=="CD"&&NRES=="PRO")) { tmp_cs.bb[Hn]  = next_res_atoms[a].index(); }
-      else if(AN=="CA")                                    { tmp_cs.bb[CAn] = next_res_atoms[a].index(); }
-      else if(AN=="HA"||AN=="HA1"||AN=="HA3")              { tmp_cs.bb[HAn] = next_res_atoms[a].index(); }
-      else if(AN=="C" )                                    { tmp_cs.bb[Cn]  = next_res_atoms[a].index(); }
+      if(AN=="N")                                          {
+        tmp_cs.bb[Nn]  = next_res_atoms[a].index();
+      } else if(AN=="H" ||AN=="HN"||(AN=="CD"&&NRES=="PRO")) {
+        tmp_cs.bb[Hn]  = next_res_atoms[a].index();
+      } else if(AN=="CA")                                    {
+        tmp_cs.bb[CAn] = next_res_atoms[a].index();
+      } else if(AN=="HA"||AN=="HA1"||AN=="HA3")              {
+        tmp_cs.bb[HAn] = next_res_atoms[a].index();
+      } else if(AN=="C" )                                    {
+        tmp_cs.bb[Cn]  = next_res_atoms[a].index();
+      }
     }
 
     // set sidechain atoms
@@ -778,14 +901,26 @@ void CS2Backbone::init_cs(const std::string &file, const std::string &nucl, cons
 
     for(unsigned q=0; q<db.get_numXtraDists()-1; q++) {
       std::vector<AtomNumber> at1;
-      if(resOffsetP1[q]== 0) at1 = res_atoms;
-      if(resOffsetP1[q]==-1) at1 = prev_res_atoms;
-      if(resOffsetP1[q]==+1) at1 = next_res_atoms;
+      if(resOffsetP1[q]== 0) {
+        at1 = res_atoms;
+      }
+      if(resOffsetP1[q]==-1) {
+        at1 = prev_res_atoms;
+      }
+      if(resOffsetP1[q]==+1) {
+        at1 = next_res_atoms;
+      }
 
       std::vector<AtomNumber> at2;
-      if(resOffsetP2[q]== 0) at2 = res_atoms;
-      if(resOffsetP2[q]==-1) at2 = prev_res_atoms;
-      if(resOffsetP2[q]==+1) at2 = next_res_atoms;
+      if(resOffsetP2[q]== 0) {
+        at2 = res_atoms;
+      }
+      if(resOffsetP2[q]==-1) {
+        at2 = prev_res_atoms;
+      }
+      if(resOffsetP2[q]==+1) {
+        at2 = next_res_atoms;
+      }
 
       int tmp1 = -1;
       for(unsigned a=0; a<at1.size(); a++) {
@@ -815,7 +950,9 @@ void CS2Backbone::init_cs(const std::string &file, const std::string &nucl, cons
 
     // ready to add a new chemical shifts
     tmp_cs.csatoms = 1 + 16 + tmp_cs.side_chain.size() + 2*tmp_cs.xd1.size();
-    if(tmp_cs.res_name!="ALA"&&tmp_cs.res_name!="GLY") tmp_cs.csatoms += 2;
+    if(tmp_cs.res_name!="ALA"&&tmp_cs.res_name!="GLY") {
+      tmp_cs.csatoms += 2;
+    }
     chemicalshifts.push_back(tmp_cs);
   }
 
@@ -831,28 +968,41 @@ void CS2Backbone::init_types(const PDB &pdb) {
     std::string fragName = pdb.getResidueName(aa[i]);
     std::string atom_name = pdb.getAtomName(aa[i]);
     char atom_type = atom_name[0];
-    if(isdigit(atom_name[0])) atom_type = atom_name[1];
+    if(isdigit(atom_name[0])) {
+      atom_type = atom_name[1];
+    }
     res_num.push_back(frag);
     unsigned t = 0;
     if (!isSP2(fragName, atom_name)) {
-      if (atom_type == 'C') t = D_C;
-      else if (atom_type == 'O') t = D_O;
-      else if (atom_type == 'H') t = D_H;
-      else if (atom_type == 'N') t = D_N;
-      else if (atom_type == 'S') t = D_S;
-      else plumed_merror("Unknown atom type: " + atom_name);
+      if (atom_type == 'C') {
+        t = D_C;
+      } else if (atom_type == 'O') {
+        t = D_O;
+      } else if (atom_type == 'H') {
+        t = D_H;
+      } else if (atom_type == 'N') {
+        t = D_N;
+      } else if (atom_type == 'S') {
+        t = D_S;
+      } else {
+        plumed_merror("Unknown atom type: " + atom_name);
+      }
     } else {
-      if (atom_type == 'C') t = D_C2;
-      else if (atom_type == 'O') t = D_O2;
-      else if (atom_type == 'N') t = D_N2;
-      else plumed_merror("Unknown atom type: " + atom_name);
+      if (atom_type == 'C') {
+        t = D_C2;
+      } else if (atom_type == 'O') {
+        t = D_O2;
+      } else if (atom_type == 'N') {
+        t = D_N2;
+      } else {
+        plumed_merror("Unknown atom type: " + atom_name);
+      }
     }
     type.push_back(t);
   }
 }
 
-void CS2Backbone::init_rings(const PDB &pdb)
-{
+void CS2Backbone::init_rings(const PDB &pdb) {
   const std::string pheTyr_n[] = {"CG","CD1","CE1","CZ","CE2","CD2"};
   const std::string trp1_n[]   = {"CD2","CE2","CZ2","CH2","CZ3","CE3"};
   const std::string trp2_n[]   = {"CG","CD1","NE1","CE2","CD2"};
@@ -874,7 +1024,9 @@ void CS2Backbone::init_rings(const PDB &pdb)
       if(!((frg=="PHE")||(frg=="TYR")||(frg=="TRP")||
            (frg=="HIS")||(frg=="HIP")||(frg=="HID")||
            (frg=="HIE")||(frg=="HSD")||(frg=="HSE")||
-           (frg=="HSP"))) continue;
+           (frg=="HSP"))) {
+        continue;
+      }
 
       std::vector<AtomNumber> frg_atoms = pdb.getAtomsInResidue(res,chains[i]);
 
@@ -891,8 +1043,12 @@ void CS2Backbone::init_rings(const PDB &pdb)
         }
         ri.numAtoms = 6;
         total_rings_atoms += 6;
-        if(frg=="PHE") ri.rtype = RingInfo::R_PHE;
-        if(frg=="TYR") ri.rtype = RingInfo::R_TYR;
+        if(frg=="PHE") {
+          ri.rtype = RingInfo::R_PHE;
+        }
+        if(frg=="TYR") {
+          ri.rtype = RingInfo::R_TYR;
+        }
         ringInfo.push_back(ri);
 
       } else if(frg=="TRP") {
@@ -950,14 +1106,21 @@ void CS2Backbone::init_rings(const PDB &pdb)
     }
   }
 
-  for(unsigned cs=0; cs<chemicalshifts.size(); cs++) chemicalshifts[cs].csatoms += total_rings_atoms;
+  for(unsigned cs=0; cs<chemicalshifts.size(); cs++) {
+    chemicalshifts[cs].csatoms += total_rings_atoms;
+  }
 }
 
-void CS2Backbone::calculate()
-{
-  if(pbc) makeWhole();
-  if(getExchangeStep()) box_count=0;
-  if(box_count==0) update_neighb();
+void CS2Backbone::calculate() {
+  if(pbc) {
+    makeWhole();
+  }
+  if(getExchangeStep()) {
+    box_count=0;
+  }
+  if(box_count==0) {
+    update_neighb();
+  }
   compute_ring_parameters();
 
   std::vector<double> camshift_sigma2(6);
@@ -976,7 +1139,9 @@ void CS2Backbone::calculate()
   cs_derivs.resize(chemicalshifts.size()*max_cs_atoms,Vector(0,0,0));
   cs_atoms.resize(chemicalshifts.size()*max_cs_atoms,0);
   all_shifts.resize(chemicalshifts.size(),0);
-  if(camshift||getDoScore()) aa_derivs.resize(getNumberOfAtoms(),Vector(0,0,0));
+  if(camshift||getDoScore()) {
+    aa_derivs.resize(getNumberOfAtoms(),Vector(0,0,0));
+  }
 
   unsigned stride = comm.Get_size();
   unsigned rank   = comm.Get_rank();
@@ -986,7 +1151,9 @@ void CS2Backbone::calculate()
   }
 
   unsigned nt=OpenMP::getNumThreads();
-  if(nt*stride*2>chemicalshifts.size()) nt=1;
+  if(nt*stride*2>chemicalshifts.size()) {
+    nt=1;
+  }
 
   // a single loop over all chemical shifts
   #pragma omp parallel num_threads(nt)
@@ -1011,9 +1178,13 @@ void CS2Backbone::calculate()
       const unsigned bbsize = 16;
       for(unsigned q=0; q<bbsize; q++) {
         const double cb2q = CONST_BB2[q];
-        if(cb2q==0.) continue;
+        if(cb2q==0.) {
+          continue;
+        }
         const unsigned jpos = myfrag->bb[q];
-        if(ipos==jpos) continue;
+        if(ipos==jpos) {
+          continue;
+        }
         const Vector distance = delta(getPosition(jpos),getPosition(ipos));
         const double d = distance.modulo();
         const double fact = cb2q/d;
@@ -1110,9 +1281,13 @@ void CS2Backbone::calculate()
       const unsigned sidsize = myfrag->side_chain.size();
       for(unsigned q=0; q<sidsize; q++) {
         const double cs2q = CONST_SC2[q];
-        if(cs2q==0.) continue;
+        if(cs2q==0.) {
+          continue;
+        }
         const unsigned jpos = myfrag->side_chain[q];
-        if(ipos==jpos) continue;
+        if(ipos==jpos) {
+          continue;
+        }
         const Vector distance = delta(getPosition(jpos),getPosition(ipos));
         const double d = distance.modulo();
         const double fact = cs2q/d;
@@ -1131,8 +1306,12 @@ void CS2Backbone::calculate()
       const unsigned xdsize=myfrag->xd1.size();
       for(unsigned q=0; q<xdsize; q++) {
         const double cxdq = CONST_XD[q];
-        if(cxdq==0.) continue;
-        if(myfrag->xd1[q]==-1||myfrag->xd2[q]==-1) continue;
+        if(cxdq==0.) {
+          continue;
+        }
+        if(myfrag->xd1[q]==-1||myfrag->xd2[q]==-1) {
+          continue;
+        }
         const Vector distance = delta(getPosition(myfrag->xd1[q]),getPosition(myfrag->xd2[q]));
         const double d = distance.modulo();
         const double fact = cxdq/d;
@@ -1184,7 +1363,9 @@ void CS2Backbone::calculate()
 
         const double fU       = fUU/nL;
         double OneOverN = 1./6.;
-        if(ringInfo[q].numAtoms==5) OneOverN=1./3.;
+        if(ringInfo[q].numAtoms==5) {
+          OneOverN=1./3.;
+        }
         const Vector factor2  = OneOverN*n;
         const Vector factor4  = (OneOverN/dL_nL)*d;
 
@@ -1274,7 +1455,9 @@ void CS2Backbone::calculate()
   }
 
   ++box_count;
-  if(box_count == box_nupdate) box_count = 0;
+  if(box_count == box_nupdate) {
+    box_count = 0;
+  }
 
   if(!camshift) {
     if(!serial) {
@@ -1287,8 +1470,9 @@ void CS2Backbone::calculate()
     for(unsigned cs=0; cs<chemicalshifts.size(); cs++) {
       Value *comp = chemicalshifts[cs].comp;
       comp->set(all_shifts[cs]);
-      if(getDoScore()) setCalcData(cs, all_shifts[cs]);
-      else {
+      if(getDoScore()) {
+        setCalcData(cs, all_shifts[cs]);
+      } else {
         const unsigned kdx=cs*max_cs_atoms;
         Tensor csvirial;
         for(unsigned i=0; i<chemicalshifts[cs].totcsatoms; i++) {
@@ -1298,7 +1482,9 @@ void CS2Backbone::calculate()
         setBoxDerivatives(comp,csvirial);
       }
     }
-    if(!getDoScore()) return;
+    if(!getDoScore()) {
+      return;
+    }
   }
 
   double score = 0.;
@@ -1329,7 +1515,9 @@ void CS2Backbone::calculate()
 
   if(!serial) {
     comm.Sum(&aa_derivs[0][0], 3*aa_derivs.size());
-    if(camshift) comm.Sum(&score, 1);
+    if(camshift) {
+      comm.Sum(&score, 1);
+    }
   }
 
   Tensor virial;
@@ -1352,7 +1540,9 @@ void CS2Backbone::calculate()
   }
 
   /* at this point we cycle over all atoms */
-  for(unsigned i=0; i<getNumberOfAtoms(); i++) setAtomsDerivatives(val, i,  aa_derivs[i]);
+  for(unsigned i=0; i<getNumberOfAtoms(); i++) {
+    setAtomsDerivatives(val, i,  aa_derivs[i]);
+  }
   setBoxDerivatives(val,-virial);
 }
 
@@ -1367,16 +1557,22 @@ void CS2Backbone::update_neighb() {
     const unsigned res_curr = res_num[chemicalshifts[cs].ipos];
     for(unsigned bat=0; bat<boxsize; bat++) {
       const unsigned res_dist = std::abs(static_cast<int>(res_curr-res_num[bat]));
-      if(res_dist<2) continue;
+      if(res_dist<2) {
+        continue;
+      }
       const Vector distance = delta(getPosition(bat),getPosition(chemicalshifts[cs].ipos));
       const double d2=distance.modulo2();
-      if(d2<cutOffNB2) chemicalshifts[cs].box_nb.push_back(bat);
+      if(d2<cutOffNB2) {
+        chemicalshifts[cs].box_nb.push_back(bat);
+      }
     }
     chemicalshifts[cs].totcsatoms = chemicalshifts[cs].csatoms + chemicalshifts[cs].box_nb.size();
   }
   max_cs_atoms=0;
   for(unsigned cs=0; cs<chemicalshifts.size(); cs++) {
-    if(chemicalshifts[cs].totcsatoms>max_cs_atoms) max_cs_atoms = chemicalshifts[cs].totcsatoms;
+    if(chemicalshifts[cs].totcsatoms>max_cs_atoms) {
+      max_cs_atoms = chemicalshifts[cs].totcsatoms;
+    }
   }
 }
 
@@ -1392,7 +1588,9 @@ void CS2Backbone::compute_ring_parameters() {
       ringInfo[i].g[5] = delta(getPosition(ringInfo[i].atom[3]),getPosition(ringInfo[i].atom[1]));
       // ring center
       Vector midP = getPosition(ringInfo[i].atom[0]);
-      for(unsigned j=1; j<size; j++) midP += getPosition(ringInfo[i].atom[j]);
+      for(unsigned j=1; j<size; j++) {
+        midP += getPosition(ringInfo[i].atom[j]);
+      }
       ringInfo[i].position = midP/6.;
       // compute normal std::vector to plane
       Vector n1 = crossProduct(ringInfo[i].g[2], -ringInfo[i].g[4]);
@@ -1416,37 +1614,69 @@ void CS2Backbone::compute_ring_parameters() {
 
 CS2Backbone::aa_t CS2Backbone::frag2enum(const std::string &aa) {
   aa_t type = ALA;
-  if (aa == "ALA") type = ALA;
-  else if (aa == "ARG") type = ARG;
-  else if (aa == "ASN") type = ASN;
-  else if (aa == "ASP") type = ASP;
-  else if (aa == "ASH") type = ASP;
-  else if (aa == "CYS") type = CYS;
-  else if (aa == "CYM") type = CYS;
-  else if (aa == "GLN") type = GLN;
-  else if (aa == "GLU") type = GLU;
-  else if (aa == "GLH") type = GLU;
-  else if (aa == "GLY") type = GLY;
-  else if (aa == "HIS") type = HIS;
-  else if (aa == "HSE") type = HIS;
-  else if (aa == "HIE") type = HIS;
-  else if (aa == "HSP") type = HIS;
-  else if (aa == "HIP") type = HIS;
-  else if (aa == "HSD") type = HIS;
-  else if (aa == "HID") type = HIS;
-  else if (aa == "ILE") type = ILE;
-  else if (aa == "LEU") type = LEU;
-  else if (aa == "LYS") type = LYS;
-  else if (aa == "MET") type = MET;
-  else if (aa == "PHE") type = PHE;
-  else if (aa == "PRO") type = PRO;
-  else if (aa == "SER") type = SER;
-  else if (aa == "THR") type = THR;
-  else if (aa == "TRP") type = TRP;
-  else if (aa == "TYR") type = TYR;
-  else if (aa == "VAL") type = VAL;
-  else if (aa == "UNK") type = UNK;
-  else plumed_merror("Error converting std::string " + aa + " into amino acid index: not a valid 3-letter code");
+  if (aa == "ALA") {
+    type = ALA;
+  } else if (aa == "ARG") {
+    type = ARG;
+  } else if (aa == "ASN") {
+    type = ASN;
+  } else if (aa == "ASP") {
+    type = ASP;
+  } else if (aa == "ASH") {
+    type = ASP;
+  } else if (aa == "CYS") {
+    type = CYS;
+  } else if (aa == "CYM") {
+    type = CYS;
+  } else if (aa == "GLN") {
+    type = GLN;
+  } else if (aa == "GLU") {
+    type = GLU;
+  } else if (aa == "GLH") {
+    type = GLU;
+  } else if (aa == "GLY") {
+    type = GLY;
+  } else if (aa == "HIS") {
+    type = HIS;
+  } else if (aa == "HSE") {
+    type = HIS;
+  } else if (aa == "HIE") {
+    type = HIS;
+  } else if (aa == "HSP") {
+    type = HIS;
+  } else if (aa == "HIP") {
+    type = HIS;
+  } else if (aa == "HSD") {
+    type = HIS;
+  } else if (aa == "HID") {
+    type = HIS;
+  } else if (aa == "ILE") {
+    type = ILE;
+  } else if (aa == "LEU") {
+    type = LEU;
+  } else if (aa == "LYS") {
+    type = LYS;
+  } else if (aa == "MET") {
+    type = MET;
+  } else if (aa == "PHE") {
+    type = PHE;
+  } else if (aa == "PRO") {
+    type = PRO;
+  } else if (aa == "SER") {
+    type = SER;
+  } else if (aa == "THR") {
+    type = THR;
+  } else if (aa == "TRP") {
+    type = TRP;
+  } else if (aa == "TYR") {
+    type = TYR;
+  } else if (aa == "VAL") {
+    type = VAL;
+  } else if (aa == "UNK") {
+    type = UNK;
+  } else {
+    plumed_merror("Error converting std::string " + aa + " into amino acid index: not a valid 3-letter code");
+  }
   return type;
 }
 
@@ -1759,85 +1989,153 @@ std::vector<std::string> CS2Backbone::side_chain_atoms(const std::string &s) {
     sc.push_back( "2HG2" );
     sc.push_back( "3HG2" );
     return sc;
-  } else plumed_merror("Sidechain atoms unknown: " + s);
+  } else {
+    plumed_merror("Sidechain atoms unknown: " + s);
+  }
 }
 
 bool CS2Backbone::isSP2(const std::string & resType, const std::string & atomName) {
   bool sp2 = false;
-  if (atomName == "C") return true;
-  if (atomName == "O") return true;
+  if (atomName == "C") {
+    return true;
+  }
+  if (atomName == "O") {
+    return true;
+  }
 
   if(resType == "TRP") {
-    if      (atomName == "CG")  sp2 = true;
-    else if (atomName == "CD1") sp2 = true;
-    else if (atomName == "CD2") sp2 = true;
-    else if (atomName == "CE2") sp2 = true;
-    else if (atomName == "CE3") sp2 = true;
-    else if (atomName == "CZ2") sp2 = true;
-    else if (atomName == "CZ3") sp2 = true;
-    else if (atomName == "CH2") sp2 = true;
+    if      (atomName == "CG") {
+      sp2 = true;
+    } else if (atomName == "CD1") {
+      sp2 = true;
+    } else if (atomName == "CD2") {
+      sp2 = true;
+    } else if (atomName == "CE2") {
+      sp2 = true;
+    } else if (atomName == "CE3") {
+      sp2 = true;
+    } else if (atomName == "CZ2") {
+      sp2 = true;
+    } else if (atomName == "CZ3") {
+      sp2 = true;
+    } else if (atomName == "CH2") {
+      sp2 = true;
+    }
   } else if (resType == "ASP") {
-    if      (atomName == "CG")  sp2 = true;
-    else if (atomName == "OD1") sp2 = true;
-    else if (atomName == "OD2") sp2 = true;
+    if      (atomName == "CG") {
+      sp2 = true;
+    } else if (atomName == "OD1") {
+      sp2 = true;
+    } else if (atomName == "OD2") {
+      sp2 = true;
+    }
   } else if (resType == "GLU") {
-    if      (atomName == "CD")  sp2 = true;
-    else if (atomName == "OE1") sp2 = true;
-    else if (atomName == "OE2") sp2 = true;
+    if      (atomName == "CD") {
+      sp2 = true;
+    } else if (atomName == "OE1") {
+      sp2 = true;
+    } else if (atomName == "OE2") {
+      sp2 = true;
+    }
   } else if (resType == "ARG") {
-    if (atomName == "CZ") sp2 = true;
+    if (atomName == "CZ") {
+      sp2 = true;
+    }
   } else if (resType == "HIS") {
-    if      (atomName == "CG")  sp2 = true;
-    else if (atomName == "ND1") sp2 = true;
-    else if (atomName == "CD2") sp2 = true;
-    else if (atomName == "CE1") sp2 = true;
-    else if (atomName == "NE2") sp2 = true;
+    if      (atomName == "CG") {
+      sp2 = true;
+    } else if (atomName == "ND1") {
+      sp2 = true;
+    } else if (atomName == "CD2") {
+      sp2 = true;
+    } else if (atomName == "CE1") {
+      sp2 = true;
+    } else if (atomName == "NE2") {
+      sp2 = true;
+    }
   } else if (resType == "PHE") {
-    if      (atomName == "CG")  sp2 = true;
-    else if (atomName == "CD1") sp2 = true;
-    else if (atomName == "CD2") sp2 = true;
-    else if (atomName == "CE1") sp2 = true;
-    else if (atomName == "CE2") sp2 = true;
-    else if (atomName == "CZ")  sp2 = true;
+    if      (atomName == "CG") {
+      sp2 = true;
+    } else if (atomName == "CD1") {
+      sp2 = true;
+    } else if (atomName == "CD2") {
+      sp2 = true;
+    } else if (atomName == "CE1") {
+      sp2 = true;
+    } else if (atomName == "CE2") {
+      sp2 = true;
+    } else if (atomName == "CZ") {
+      sp2 = true;
+    }
   } else if (resType == "TYR") {
-    if      (atomName == "CG")  sp2 = true;
-    else if (atomName == "CD1") sp2 = true;
-    else if (atomName == "CD2") sp2 = true;
-    else if (atomName == "CE1") sp2 = true;
-    else if (atomName == "CE2") sp2 = true;
-    else if (atomName == "CZ")  sp2 = true;
+    if      (atomName == "CG") {
+      sp2 = true;
+    } else if (atomName == "CD1") {
+      sp2 = true;
+    } else if (atomName == "CD2") {
+      sp2 = true;
+    } else if (atomName == "CE1") {
+      sp2 = true;
+    } else if (atomName == "CE2") {
+      sp2 = true;
+    } else if (atomName == "CZ") {
+      sp2 = true;
+    }
   } else if (resType == "ASN") {
-    if      (atomName == "CG")  sp2 = true;
-    else if (atomName == "OD1") sp2 = true;
+    if      (atomName == "CG") {
+      sp2 = true;
+    } else if (atomName == "OD1") {
+      sp2 = true;
+    }
   } else if (resType == "GLN") {
-    if      (atomName == "CD")  sp2 = true;
-    else if (atomName == "OE1") sp2 = true;
+    if      (atomName == "CD") {
+      sp2 = true;
+    } else if (atomName == "OE1") {
+      sp2 = true;
+    }
   }
 
   return sp2;
 }
 
 bool CS2Backbone::is_chi1_cx(const std::string & frg, const std::string & atm) {
-  if(atm=="CG")                                        return true;
-  if((frg == "CYS")&&(atm =="SG"))                     return true;
-  if(((frg == "ILE")||(frg == "VAL"))&&(atm == "CG1")) return true;
-  if((frg == "SER")&&(atm == "OG"))                    return true;
-  if((frg == "THR")&&(atm == "OG1"))                   return true;
+  if(atm=="CG") {
+    return true;
+  }
+  if((frg == "CYS")&&(atm =="SG")) {
+    return true;
+  }
+  if(((frg == "ILE")||(frg == "VAL"))&&(atm == "CG1")) {
+    return true;
+  }
+  if((frg == "SER")&&(atm == "OG")) {
+    return true;
+  }
+  if((frg == "THR")&&(atm == "OG1")) {
+    return true;
+  }
 
   return false;
 }
 
 void CS2Backbone::xdist_name_map(std::string & name) {
-  if((name == "OT1")||(name == "OC1")) name = "O";
-  else if ((name == "HN") || (name == "HT1") || (name == "H1")) name = "H";
-  else if ((name == "CG1")|| (name == "OG")||
-           (name == "SG") || (name == "OG1")) name = "CG";
-  else if ((name == "HA1")|| (name == "HA3")) name = "HA";
+  if((name == "OT1")||(name == "OC1")) {
+    name = "O";
+  } else if ((name == "HN") || (name == "HT1") || (name == "H1")) {
+    name = "H";
+  } else if ((name == "CG1")|| (name == "OG")||
+             (name == "SG") || (name == "OG1")) {
+    name = "CG";
+  } else if ((name == "HA1")|| (name == "HA3")) {
+    name = "HA";
+  }
 }
 
 void CS2Backbone::update() {
   // write status file
-  if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) writeStatus();
+  if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) {
+    writeStatus();
+  }
 }
 
 }

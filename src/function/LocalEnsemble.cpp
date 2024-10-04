@@ -74,8 +74,7 @@ res: RESTRAINT ARG=stca.*,stcb.*,stco.*,sthn.*,stnh.* AT=0.,0.,0.,0.,0. KAPPA=0.
 
 
 class LocalEnsemble :
-  public Function
-{
+  public Function {
   unsigned ens_dim;
   unsigned narg;
 public:
@@ -98,22 +97,31 @@ void LocalEnsemble::registerKeywords(Keywords& keys) {
 LocalEnsemble::LocalEnsemble(const ActionOptions&ao):
   Action(ao),
   Function(ao),
-  ens_dim(0)
-{
+  ens_dim(0) {
   parse("NUM",ens_dim);
-  if(ens_dim==0) error("NUM should be greater or equal to 1");
+  if(ens_dim==0) {
+    error("NUM should be greater or equal to 1");
+  }
 
   std::vector<Value*> arg;
   int oldsize=-1;
   for(unsigned i=1; i<=ens_dim; ++i ) {
     std::vector<Value*> larg;
-    if(!parseArgumentList("ARG",i,larg)) break;
-    for(unsigned j=0; j<larg.size(); j++) arg.push_back(larg[j]);
-    if(oldsize!=-1&&oldsize!=static_cast<int>(larg.size())) error("In LOCALENSEMBLE you should have the same number of arguments for each ARG keyword");
+    if(!parseArgumentList("ARG",i,larg)) {
+      break;
+    }
+    for(unsigned j=0; j<larg.size(); j++) {
+      arg.push_back(larg[j]);
+    }
+    if(oldsize!=-1&&oldsize!=static_cast<int>(larg.size())) {
+      error("In LOCALENSEMBLE you should have the same number of arguments for each ARG keyword");
+    }
     oldsize = larg.size();
     if(!larg.empty()) {
       log.printf("  with arguments %u: ", i);
-      for(unsigned j=0; j<larg.size(); j++) log.printf(" %s",larg[j]->getName().c_str());
+      for(unsigned j=0; j<larg.size(); j++) {
+        log.printf(" %s",larg[j]->getName().c_str());
+      }
       log.printf("\n");
     }
   }
@@ -134,8 +142,7 @@ std::string LocalEnsemble::getOutputComponentDescription( const std::string& cna
   return "the average for argument named " + cname;
 }
 
-void LocalEnsemble::calculate()
-{
+void LocalEnsemble::calculate() {
   const double fact = 1.0/static_cast<double>(ens_dim);
   #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for(unsigned i=0; i<narg; ++i) {

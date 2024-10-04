@@ -78,7 +78,9 @@ public:
   void extractdrr(const vector<string> &filename);
   void mergewindows(const vector<string> &filename, string outputname);
   void calcDivergence(const vector<string> &filename, const string &fmt);
-  string description() const { return "Extract or merge the drrstate files."; }
+  string description() const {
+    return "Extract or merge the drrstate files.";
+  }
 
 private:
   bool verbosity;
@@ -164,11 +166,13 @@ void drrtool::extractdrr(const vector<string> &filename) {
     }
     string outputname(filename[j]);
     outputname.resize(outputname.length() - suffix.length());
-    if (verbosity)
+    if (verbosity) {
       std::cout << "Writing ABF(naive) estimator files..." << '\n';
+    }
     abfgrid.writeAll(outputname);
-    if (verbosity)
+    if (verbosity) {
       std::cout << "Writing CZAR estimator files..." << '\n';
+    }
     czarestimator.writeAll(outputname);
     czarestimator.writeZCountZGrad(outputname);
   }
@@ -211,9 +215,13 @@ void drrtool::mergewindows(const vector<string> &filename, string outputname) {
     // Generate new file name for merged grad and count
     vector<string> tmp_name = filename;
     std::transform(std::begin(tmp_name), std::end(tmp_name), std::begin(tmp_name),
-    [&](const string & s) {return s.substr(0, s.find(suffix));});
+    [&](const string & s) {
+      return s.substr(0, s.find(suffix));
+    });
     outputname = std::accumulate(std::begin(tmp_name), std::end(tmp_name), string(""),
-    [](const string & a, const string & b) {return a + b + "+";});
+    [](const string & a, const string & b) {
+      return a + b + "+";
+    });
     outputname.resize(outputname.size() - 1);
     std::cerr << "You have not specified an output filename for the merged"
               << " result, so the default name \"" + outputname

@@ -124,58 +124,79 @@ void PAMM::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","REGULARISE","0.001","don't allow the denominator to be smaller then this value");
   keys.add("compulsory","KERNELS","all","which kernels are we computing the PAMM values for");
   multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
-  keys.needsAction("KERNEL"); keys.needsAction("COMBINE");
+  keys.needsAction("KERNEL");
+  keys.needsAction("COMBINE");
 }
 
 PAMM::PAMM(const ActionOptions& ao) :
   Action(ao),
-  ActionShortcut(ao)
-{
+  ActionShortcut(ao) {
   // Must get list of input value names
-  std::vector<std::string> valnames; parseVector("ARG",valnames);
+  std::vector<std::string> valnames;
+  parseVector("ARG",valnames);
   // Create input values
   std::string argstr=" ARG=" + valnames[0];
-  for(unsigned j=1; j<valnames.size(); ++j) argstr += "," + valnames[j];
+  for(unsigned j=1; j<valnames.size(); ++j) {
+    argstr += "," + valnames[j];
+  }
 
   // Create actions to calculate all pamm kernels
-  unsigned nkernels = 0;  double h;
-  std::string fname; parse("CLUSTERS",fname);
-  IFile ifile; ifile.open(fname); ifile.allowIgnoredFields();
+  unsigned nkernels = 0;
+  double h;
+  std::string fname;
+  parse("CLUSTERS",fname);
+  IFile ifile;
+  ifile.open(fname);
+  ifile.allowIgnoredFields();
   for(unsigned k=0;; ++k) {
-    if( !ifile.scanField("height",h) ) break;
+    if( !ifile.scanField("height",h) ) {
+      break;
+    }
     // Create a kernel for this cluster
-    std::string num, wstr, ktype; Tools::convert( k+1, num ); Tools::convert(h,wstr); ifile.scanField("kerneltype",ktype);
+    std::string num, wstr, ktype;
+    Tools::convert( k+1, num );
+    Tools::convert(h,wstr);
+    ifile.scanField("kerneltype",ktype);
     readInputLine( getShortcutLabel() + "_kernel-" + num + ": KERNEL NORMALIZED" + argstr  + " NUMBER=" + num + " REFERENCE=" + fname + " WEIGHT=" + wstr + " TYPE=" + ktype );
-    nkernels++; ifile.scanField();
+    nkernels++;
+    ifile.scanField();
   }
   ifile.close();
 
   // And add on the regularization
-  std::string regparam; parse("REGULARISE",regparam);
+  std::string regparam;
+  parse("REGULARISE",regparam);
   // Now combine all the PAMM objects with the regparam
   std::string paramstr, cinput = getShortcutLabel() + "_ksum: COMBINE PERIODIC=NO";
   for(unsigned k=0; k<nkernels; ++k) {
-    std::string num; Tools::convert( k+1, num );
+    std::string num;
+    Tools::convert( k+1, num );
     if( k==0 ) {
-      cinput += " ARG="; paramstr=" PARAMETERS=-" + regparam;
+      cinput += " ARG=";
+      paramstr=" PARAMETERS=-" + regparam;
     } else {
-      cinput += ","; paramstr += ",0";
+      cinput += ",";
+      paramstr += ",0";
     }
     cinput += getShortcutLabel() + "_kernel-" + num;
   }
   readInputLine( cinput + paramstr );
 
   // And now compute all the pamm kernels
-  std::string kchoice; parse("KERNELS",kchoice);
-  std::map<std::string,std::string> keymap; multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );
+  std::string kchoice;
+  parse("KERNELS",kchoice);
+  std::map<std::string,std::string> keymap;
+  multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );
   if( kchoice=="all" ) {
     for(unsigned k=0; k<nkernels; ++k) {
-      std::string num; Tools::convert( k+1, num );
+      std::string num;
+      Tools::convert( k+1, num );
       readInputLine( getShortcutLabel() + "-" + num + ": CUSTOM ARG=" + getShortcutLabel() + "_kernel-" + num + "," + getShortcutLabel() + "_ksum FUNC=x/y PERIODIC=NO");
       multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel() + "-" + num, getShortcutLabel() + "-" + num, "", keymap, this );
     }
   } else {
-    std::vector<std::string> awords=Tools::getWords(kchoice,"\t\n ,"); Tools::interpretRanges( awords );
+    std::vector<std::string> awords=Tools::getWords(kchoice,"\t\n ,");
+    Tools::interpretRanges( awords );
     for(unsigned k=0; k<awords.size(); ++k) {
       readInputLine( getShortcutLabel() + "-" + awords[k] + ": CUSTOM ARG=" + getShortcutLabel() + "_kernel-" + awords[k] + "," + getShortcutLabel() + "_ksum FUNC=x/y PERIODIC=NO");
       multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel() + "-" + awords[k], getShortcutLabel() + "-" + awords[k], "", keymap, this );

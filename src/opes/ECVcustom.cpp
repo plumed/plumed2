@@ -59,8 +59,7 @@ opes: OPES_EXPANDED ARG=ecv.* PACE=500
 //+ENDPLUMEDOC
 
 class ECVcustom :
-  public ExpansionCVs
-{
+  public ExpansionCVs {
 private:
   unsigned P0_contribution_;
   double barrier_;
@@ -84,8 +83,7 @@ public:
 
 PLUMED_REGISTER_ACTION(ECVcustom,"ECV_CUSTOM")
 
-void ECVcustom::registerKeywords(Keywords& keys)
-{
+void ECVcustom::registerKeywords(Keywords& keys) {
   ExpansionCVs::registerKeywords(keys);
   keys.remove("ARG");
   keys.add("compulsory","ARG","the labels of the single ECVs. Delta U_i, in energy units");
@@ -97,21 +95,22 @@ void ECVcustom::registerKeywords(Keywords& keys)
 ECVcustom::ECVcustom(const ActionOptions&ao)
   : Action(ao)
   , ExpansionCVs(ao)
-  , beta0_(1./kbt_)
-{
+  , beta0_(1./kbt_) {
 //set beta0_
   bool dimensionless;
   parseFlag("DIMENSIONLESS",dimensionless);
-  if(dimensionless)
+  if(dimensionless) {
     beta0_=1;
+  }
 
 //set P0_contribution_
   bool add_P0=false;
   parseFlag("ADD_P0",add_P0);
-  if(add_P0)
+  if(add_P0) {
     P0_contribution_=1;
-  else
+  } else {
     P0_contribution_=0;
+  }
 
 //set barrier_
   barrier_=std::numeric_limits<double>::infinity();
@@ -123,106 +122,105 @@ ECVcustom::ECVcustom(const ActionOptions&ao)
   totNumECVs_=getNumberOfArguments()+P0_contribution_;
   ECVs_.resize(getNumberOfArguments(),std::vector<double>(totNumECVs_));
   derECVs_.resize(getNumberOfArguments(),std::vector<double>(totNumECVs_));
-  for(unsigned j=0; j<getNumberOfArguments(); j++)
-    derECVs_[j][j+P0_contribution_]=beta0_; //always constant
+  for(unsigned j=0; j<getNumberOfArguments(); j++) {
+    derECVs_[j][j+P0_contribution_]=beta0_;  //always constant
+  }
 
 //print some info
-  if(dimensionless)
+  if(dimensionless) {
     log.printf(" -- DIMENSIONLESS: the ARG is not multiplied by beta\n");
-  if(barrier_!=std::numeric_limits<double>::infinity())
-  {
-    log.printf("  guess for free energy BARRIER = %g\n",barrier_);
-    if(dimensionless)
-      log.printf("    also the BARRIER is considered to be DIMENSIONLESS\n");
   }
-  if(P0_contribution_==1)
+  if(barrier_!=std::numeric_limits<double>::infinity()) {
+    log.printf("  guess for free energy BARRIER = %g\n",barrier_);
+    if(dimensionless) {
+      log.printf("    also the BARRIER is considered to be DIMENSIONLESS\n");
+    }
+  }
+  if(P0_contribution_==1) {
     log.printf(" -- ADD_P0: the target includes also the unbiased probability itself\n");
+  }
 }
 
-void ECVcustom::calculateECVs(const double * cv)
-{
-  for(unsigned j=0; j<getNumberOfArguments(); j++)
+void ECVcustom::calculateECVs(const double * cv) {
+  for(unsigned j=0; j<getNumberOfArguments(); j++) {
     ECVs_[j][j+P0_contribution_]=beta0_*cv[j];
+  }
   //derivative is constant
 }
 
-const double * ECVcustom::getPntrToECVs(unsigned j)
-{
+const double * ECVcustom::getPntrToECVs(unsigned j) {
   plumed_massert(isReady_,"cannot access ECVs before initialization");
   plumed_massert(j<getNumberOfArguments(),getName()+" has fewer CVs");
   return &ECVs_[j][0];
 }
 
-const double * ECVcustom::getPntrToDerECVs(unsigned j)
-{
+const double * ECVcustom::getPntrToDerECVs(unsigned j) {
   plumed_massert(isReady_,"cannot access ECVs before initialization");
   plumed_massert(j<getNumberOfArguments(),getName()+" has fewer CVs");
   return &derECVs_[j][0];
 }
 
-std::vector< std::vector<unsigned> > ECVcustom::getIndex_k() const
-{
+std::vector< std::vector<unsigned> > ECVcustom::getIndex_k() const {
   plumed_massert(isReady_ && totNumECVs_>0,"cannot access getIndex_k() of ECV before initialization");
   std::vector< std::vector<unsigned> > index_k(totNumECVs_,std::vector<unsigned>(getNumberOfArguments()));
   for(unsigned k=0; k<totNumECVs_; k++)
     for(unsigned j=0; j<getNumberOfArguments(); j++)
-      if(k==j+P0_contribution_)
+      if(k==j+P0_contribution_) {
         index_k[k][j]=k;
+      }
   return index_k;
 }
 
-std::vector<std::string> ECVcustom::getLambdas() const
-{
+std::vector<std::string> ECVcustom::getLambdas() const {
   std::vector<std::string> lambdas(totNumECVs_);
-  if(P0_contribution_==1)
-  {
+  if(P0_contribution_==1) {
     std::ostringstream subs;
     subs<<"P0";
-    for(unsigned j=1; j<getNumberOfArguments(); j++)
+    for(unsigned j=1; j<getNumberOfArguments(); j++) {
       subs<<"_P0";
+    }
     lambdas[0]=subs.str();
   }
-  for(unsigned k=P0_contribution_; k<totNumECVs_; k++)
-  {
+  for(unsigned k=P0_contribution_; k<totNumECVs_; k++) {
     const unsigned kk=k-P0_contribution_;
     std::ostringstream subs;
 //the getLambdas method is const, so it complains if one tries to access a non-const pointer, hence the const_cast
-    if(kk==0)
+    if(kk==0) {
       subs<<const_cast<ECVcustom *>(this)->getPntrToArgument(kk)->getName();
-    else
+    } else {
       subs<<"NaN";
-    for(unsigned j=1; j<getNumberOfArguments(); j++)
-    {
-      if(kk==j)
+    }
+    for(unsigned j=1; j<getNumberOfArguments(); j++) {
+      if(kk==j) {
         subs<<"_"<<const_cast<ECVcustom *>(this)->getPntrToArgument(kk)->getName();
-      else
+      } else {
         subs<<"_NaN";
+      }
     }
     lambdas[k]=subs.str();
   }
   return lambdas;
 }
 
-void ECVcustom::initECVs()
-{
+void ECVcustom::initECVs() {
   plumed_massert(!isReady_,"initialization should not be called twice");
   isReady_=true;
   log.printf("  *%4u ECVs for %s\n",totNumECVs_,getName().c_str());
 }
 
-void ECVcustom::initECVs_observ(const std::vector<double>& all_obs_cvs,const unsigned ncv,const unsigned index_j)
-{
+void ECVcustom::initECVs_observ(const std::vector<double>& all_obs_cvs,const unsigned ncv,const unsigned index_j) {
   initECVs();
   calculateECVs(&all_obs_cvs[index_j]);
-  for(unsigned j=0; j<getNumberOfArguments(); j++)
+  for(unsigned j=0; j<getNumberOfArguments(); j++) {
     ECVs_[j][j+P0_contribution_]=std::min(barrier_*beta0_,ECVs_[j][j+P0_contribution_]);
+  }
 }
 
-void ECVcustom::initECVs_restart(const std::vector<std::string>& lambdas)
-{
+void ECVcustom::initECVs_restart(const std::vector<std::string>& lambdas) {
   std::size_t pos=0;
-  for(unsigned j=0; j<getNumberOfArguments()-1; j++)
-    pos=lambdas[0].find("_",pos+1); //checking only lambdas[0] is hopefully enough
+  for(unsigned j=0; j<getNumberOfArguments()-1; j++) {
+    pos=lambdas[0].find("_",pos+1);  //checking only lambdas[0] is hopefully enough
+  }
   plumed_massert(pos<lambdas[0].length(),"this should not happen, fewer '_' than expected in "+getName());
   pos=lambdas[0].find("_",pos+1);
   plumed_massert(pos>lambdas[0].length(),"this should not happen, more '_' than expected in "+getName());

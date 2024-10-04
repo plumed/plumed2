@@ -26,8 +26,7 @@
 #include "TypesafePtr.h"
 #include <memory>
 
-namespace PLMD
-{
+namespace PLMD {
 
 class PlumedMain;
 
@@ -71,8 +70,7 @@ Thus, once constructed the object is guaranteed to be functional.
 
 */
 class PlumedHandle :
-  public WithCmd
-{
+  public WithCmd {
 /// Pointer to PlumedMain.
 /// Used when using the current kernel in order to avoid unneeded indirections.
   std::unique_ptr<PlumedMain> local;

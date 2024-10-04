@@ -36,10 +36,13 @@ std::unique_ptr<Action> ActionRegister::create(const ActionOptions&ao) {
 }
 
 std::unique_ptr<Action> ActionRegister::create(const std::vector<void*> & images,const ActionOptions&ao) {
-  if(ao.line.size()<1)return nullptr;
+  if(ao.line.size()<1) {
+    return nullptr;
+  }
 
   auto content=get(images,ao.line[0]);
-  Keywords keys; keys.thisactname = ao.line[0];
+  Keywords keys;
+  keys.thisactname = ao.line[0];
   content.keys(keys);
   ActionOptions nao( ao,keys );
   auto fullPath=getFullPath(images,ao.line[0]);
@@ -49,9 +52,12 @@ std::unique_ptr<Action> ActionRegister::create(const std::vector<void*> & images
 
 bool ActionRegister::printManual(const std::string& action, const bool& vimout, const bool& spellout) {
   if ( check(action) ) {
-    Keywords keys; getKeywords( action, keys );
+    Keywords keys;
+    getKeywords( action, keys );
     if( vimout ) {
-      printf("%s",action.c_str()); keys.print_vim(); printf("\n");
+      printf("%s",action.c_str());
+      keys.print_vim();
+      printf("\n");
     } else if( spellout ) {
       keys.print_spelling();
     } else {
@@ -65,7 +71,8 @@ bool ActionRegister::printManual(const std::string& action, const bool& vimout, 
 
 bool ActionRegister::printTemplate(const std::string& action, bool include_optional) {
   if( check(action) ) {
-    Keywords keys; keys.thisactname = action;
+    Keywords keys;
+    keys.thisactname = action;
     get(action).keys(keys);
     keys.print_template(action, include_optional);
     return true;
@@ -80,7 +87,10 @@ std::vector<std::string> ActionRegister::getActionNames() const {
 
 ActionRegister::ID ActionRegister::add(std::string key,creator_pointer cp,keywords_pointer kp) {
   // this force each action to be registered as an uppercase string
-  if ( std::any_of( std::begin( key ), std::end( key ), []( char c ) { return ( std::islower( c ) ); } ) ) plumed_error() << "Action: " + key + " cannot be registered, use only UPPERCASE characters";
+  if ( std::any_of( std::begin( key ), std::end( key ), []( char c ) {
+  return ( std::islower( c ) )
+           ;
+  } ) ) plumed_error() << "Action: " + key + " cannot be registered, use only UPPERCASE characters";
   return RegisterBase::add(key,Pointers{cp,kp});
 }
 
@@ -94,7 +104,9 @@ bool ActionRegister::getKeywords(const std::string& action, Keywords& keys) {
 }
 
 void ActionRegister::getKeywords(const std::vector<void*> & images, const std::string& action, Keywords& keys) {
-  auto content=get(images,action); keys.thisactname = action; content.keys(keys);
+  auto content=get(images,action);
+  keys.thisactname = action;
+  content.keys(keys);
 }
 
 }

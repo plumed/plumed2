@@ -52,13 +52,21 @@ public:
 /// Convert what comes from the MD code to a double
   virtual double MD2double(const TypesafePtr & m) const=0;
 ///
-  void setStart( const unsigned& s ) { start=s; }
+  void setStart( const unsigned& s ) {
+    start=s;
+  }
 /// Set the stride to use when getting data from the input array
-  void setStride( const unsigned& s ) { stride=s; }
+  void setStride( const unsigned& s ) {
+    stride=s;
+  }
 /// Set the unit for the value
-  void setUnit( const double& u ) { unit=u; }
+  void setUnit( const double& u ) {
+    unit=u;
+  }
 /// Set the unit for the force
-  void setForceUnit( const double& u ) { funit=u; }
+  void setForceUnit( const double& u ) {
+    funit=u;
+  }
 /// This is used when you want to save the passed object to a double variable in PLUMED rather than the pointer
 /// this can be used even when you don't pass a pointer from the MD code
   virtual void saveValueAsDouble( const TypesafePtr & val )=0;

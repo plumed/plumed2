@@ -65,39 +65,61 @@ void MultiColvarShortcuts::shortcutKeywords( Keywords& keys ) {
   keys.addOutputComponent("sum","SUM","the sum of the colvars");
   keys.addFlag("MEAN",false,"calculate the mean of all the quantities.");
   keys.addOutputComponent("mean","MEAN","the mean of the colvars");
-  keys.needsAction("SUM"); keys.needsAction("MEAN"); keys.needsAction("CUSTOM"); keys.needsAction("HIGHEST"); keys.needsAction("LOWEST");
-  keys.needsAction("LESS_THAN"); keys.needsAction("MORE_THAN"); keys.needsAction("BETWEEN");
+  keys.needsAction("SUM");
+  keys.needsAction("MEAN");
+  keys.needsAction("CUSTOM");
+  keys.needsAction("HIGHEST");
+  keys.needsAction("LOWEST");
+  keys.needsAction("LESS_THAN");
+  keys.needsAction("MORE_THAN");
+  keys.needsAction("BETWEEN");
 }
 
 void MultiColvarShortcuts::expandFunctions( const std::string& labout, const std::string& argin, const std::string& weights, ActionShortcut* action ) {
-  std::map<std::string,std::string> keymap; readShortcutKeywords( keymap, action ); expandFunctions( labout, argin, weights, keymap, action );
+  std::map<std::string,std::string> keymap;
+  readShortcutKeywords( keymap, action );
+  expandFunctions( labout, argin, weights, keymap, action );
 }
 
 void MultiColvarShortcuts::readShortcutKeywords( std::map<std::string,std::string>& keymap, ActionShortcut* action ) {
-  Keywords keys; shortcutKeywords( keys ); action->readShortcutKeywords( keys, keymap );
+  Keywords keys;
+  shortcutKeywords( keys );
+  action->readShortcutKeywords( keys, keymap );
 }
 
 void MultiColvarShortcuts::parseAtomList( const std::string& key, std::vector<std::string>& atoms, ActionShortcut* action ) {
-  std::vector<std::string> astr; action->parseVector(key,astr); if( astr.size()==0 ) return ;
+  std::vector<std::string> astr;
+  action->parseVector(key,astr);
+  if( astr.size()==0 ) {
+    return ;
+  }
   Tools::interpretRanges( astr );
   for(unsigned i=0; i<astr.size(); ++i) {
     Group* mygr=action->plumed.getActionSet().selectWithLabel<Group*>(astr[i]);
     if( mygr ) {
       std::vector<std::string> grstr( mygr->getGroupAtoms() );
-      for(unsigned j=0; j<grstr.size(); ++j) atoms.push_back(grstr[j]);
+      for(unsigned j=0; j<grstr.size(); ++j) {
+        atoms.push_back(grstr[j]);
+      }
     } else {
       Group* mygr2=action->plumed.getActionSet().selectWithLabel<Group*>(astr[i] + "_grp");
       if( mygr2 ) {
         std::vector<std::string> grstr( mygr2->getGroupAtoms() );
-        for(unsigned j=0; j<grstr.size(); ++j) atoms.push_back(grstr[j]);
-      } else atoms.push_back(astr[i]);
+        for(unsigned j=0; j<grstr.size(); ++j) {
+          atoms.push_back(grstr[j]);
+        }
+      } else {
+        atoms.push_back(astr[i]);
+      }
     }
   }
 }
 
 void MultiColvarShortcuts::expandFunctions( const std::string& labout, const std::string& argin, const std::string& weights,
     const std::map<std::string,std::string>& keymap, ActionShortcut* action ) {
-  if( keymap.empty() ) return;
+  if( keymap.empty() ) {
+    return;
+  }
   // Parse LESS_THAN
   if( keymap.count("LESS_THAN") ) {
     std::string sum_arg = labout + "_lt", lt_string = keymap.find("LESS_THAN")->second;
@@ -110,8 +132,11 @@ void MultiColvarShortcuts::expandFunctions( const std::string& labout, const std
   }
   if( keymap.count("LESS_THAN1") ) {
     for(unsigned i=1;; ++i) {
-      std::string istr; Tools::convert( i, istr );
-      if( !keymap.count("LESS_THAN" + istr ) ) { break; }
+      std::string istr;
+      Tools::convert( i, istr );
+      if( !keymap.count("LESS_THAN" + istr ) ) {
+        break;
+      }
       std::string sum_arg = labout + "_lt" + istr, lt_string1 = keymap.find("LESS_THAN" + istr)->second;
       action->readInputLine( labout + "_lt" + istr + ": LESS_THAN ARG=" + argin + " SWITCH={" + lt_string1 + "}");
       if( weights.length()>0 ) {
@@ -133,8 +158,11 @@ void MultiColvarShortcuts::expandFunctions( const std::string& labout, const std
   }
   if(  keymap.count("MORE_THAN1") ) {
     for(unsigned i=1;; ++i) {
-      std::string istr; Tools::convert( i, istr );
-      if( !keymap.count("MORE_THAN" + istr ) ) { break; }
+      std::string istr;
+      Tools::convert( i, istr );
+      if( !keymap.count("MORE_THAN" + istr ) ) {
+        break;
+      }
       std::string sum_arg = labout + "_mt" + istr, mt_string1 = keymap.find("MORE_THAN" + istr)->second;
       action->readInputLine( labout + "_mt" + istr + ": MORE_THAN ARG=" + argin + " SWITCH={" + mt_string1 + "}");
       if( weights.length()>0 ) {
@@ -146,9 +174,12 @@ void MultiColvarShortcuts::expandFunctions( const std::string& labout, const std
   }
   // Parse ALT_MIN
   if( keymap.count("ALT_MIN") ) {
-    if( weights.length()>0 ) plumed_merror("cannot use ALT_MIN with this shortcut");
+    if( weights.length()>0 ) {
+      plumed_merror("cannot use ALT_MIN with this shortcut");
+    }
     std::string amin_string = keymap.find("ALT_MIN")->second;
-    std::size_t dd = amin_string.find("BETA"); std::string beta_str = amin_string.substr(dd+5);
+    std::size_t dd = amin_string.find("BETA");
+    std::string beta_str = amin_string.substr(dd+5);
     beta_str.erase(std::remove_if(beta_str.begin(), beta_str.end(), ::isspace), beta_str.end());
     action->readInputLine( labout + "_me_altmin: CUSTOM ARG=" + argin + " FUNC=exp(-x*" + beta_str + ") PERIODIC=NO");
     action->readInputLine( labout + "_mec_altmin: SUM ARG=" + labout + "_me_altmin PERIODIC=NO");
@@ -156,9 +187,12 @@ void MultiColvarShortcuts::expandFunctions( const std::string& labout, const std
   }
   // Parse MIN
   if( keymap.count("MIN") ) {
-    if( weights.length()>0 ) plumed_merror("cannot use MIN with this shortcut");
+    if( weights.length()>0 ) {
+      plumed_merror("cannot use MIN with this shortcut");
+    }
     std::string min_string = keymap.find("MIN")->second;
-    std::size_t dd = min_string.find("BETA"); std::string beta_str = min_string.substr(dd+5);
+    std::size_t dd = min_string.find("BETA");
+    std::string beta_str = min_string.substr(dd+5);
     beta_str.erase(std::remove_if(beta_str.begin(), beta_str.end(), ::isspace), beta_str.end());
     action->readInputLine( labout + "_me_min: CUSTOM ARG=" + argin + " FUNC=exp(" + beta_str + "/x) PERIODIC=NO");
     action->readInputLine( labout + "_mec_min: SUM ARG=" + labout + "_me_min PERIODIC=NO");
@@ -166,9 +200,12 @@ void MultiColvarShortcuts::expandFunctions( const std::string& labout, const std
   }
   // Parse MAX
   if( keymap.count("MAX") ) {
-    if( weights.length()>0 ) plumed_merror("cannot use MAX with this shortcut");
+    if( weights.length()>0 ) {
+      plumed_merror("cannot use MAX with this shortcut");
+    }
     std::string max_string = keymap.find("MAX")->second;
-    std::size_t dd = max_string.find("BETA"); std::string beta_str = max_string.substr(dd+5);
+    std::size_t dd = max_string.find("BETA");
+    std::string beta_str = max_string.substr(dd+5);
     beta_str.erase(std::remove_if(beta_str.begin(), beta_str.end(), ::isspace), beta_str.end());
     action->readInputLine( labout + "_me_max: CUSTOM ARG=" + argin + " FUNC=exp(x/" + beta_str + ") PERIODIC=NO");
     action->readInputLine( labout + "_mec_max: SUM ARG=" + labout + "_me_max PERIODIC=NO");
@@ -176,12 +213,16 @@ void MultiColvarShortcuts::expandFunctions( const std::string& labout, const std
   }
   // Parse HIGHEST
   if( keymap.count("HIGHEST") ) {
-    if( weights.length()>0 ) plumed_merror("cannot use HIGHEST with this shortcut");
+    if( weights.length()>0 ) {
+      plumed_merror("cannot use HIGHEST with this shortcut");
+    }
     action->readInputLine( labout + "_highest: HIGHEST ARG=" + argin );
   }
   // Parse LOWEST
   if( keymap.count("LOWEST") ) {
-    if( weights.length()>0 ) plumed_merror("cannot use LOWEST with this shortcut");
+    if( weights.length()>0 ) {
+      plumed_merror("cannot use LOWEST with this shortcut");
+    }
     action->readInputLine( labout + "_lowest: LOWEST ARG=" + argin );
   }
   // Parse SUM
@@ -195,7 +236,9 @@ void MultiColvarShortcuts::expandFunctions( const std::string& labout, const std
   }
   // Parse MEAN
   if( keymap.count("MEAN") ) {
-    if( weights.length()>0 ) plumed_merror("cannot use MEAN with this shortcut");
+    if( weights.length()>0 ) {
+      plumed_merror("cannot use MEAN with this shortcut");
+    }
     action->readInputLine( labout + "_mean: MEAN ARG=" + argin + " PERIODIC=NO");
   }
   // Parse BETWEEN
@@ -211,8 +254,11 @@ void MultiColvarShortcuts::expandFunctions( const std::string& labout, const std
   std::string bt_string1;
   if( keymap.count("BETWEEN1") ) {
     for(unsigned i=1;; ++i) {
-      std::string istr; Tools::convert( i, istr );
-      if( !keymap.count("BETWEEN" + istr) ) break;
+      std::string istr;
+      Tools::convert( i, istr );
+      if( !keymap.count("BETWEEN" + istr) ) {
+        break;
+      }
       std::string sum_arg=labout + "_bt" + istr, bt_string1 = keymap.find("BETWEEN" + istr)->second;
       action->readInputLine( labout + "_bt" + istr + ": BETWEEN ARG=" + argin + " SWITCH={" + bt_string1 + "}" );
       if( weights.length()>0 ) {
@@ -225,18 +271,35 @@ void MultiColvarShortcuts::expandFunctions( const std::string& labout, const std
   // Parse HISTOGRAM
   if( keymap.count("HISTOGRAM") ) {
     std::vector<std::string> words=Tools::getWords( keymap.find("HISTOGRAM")->second );
-    unsigned nbins; bool found=Tools::parse(words,"NBINS",nbins,0); // Need replica index
-    if( !found ) plumed_merror("did not find NBINS in specification for HISTOGRAM");
-    double lower; found=Tools::parse(words,"LOWER",lower,0);
-    if( !found ) plumed_merror("did not find LOWER in specification for HISTOGRAM");
-    double upper; found=Tools::parse(words,"UPPER",upper,0);
-    if( !found ) plumed_merror("did not find UPPER in specification for HISTOGRAM");
+    unsigned nbins;
+    bool found=Tools::parse(words,"NBINS",nbins,0); // Need replica index
+    if( !found ) {
+      plumed_merror("did not find NBINS in specification for HISTOGRAM");
+    }
+    double lower;
+    found=Tools::parse(words,"LOWER",lower,0);
+    if( !found ) {
+      plumed_merror("did not find LOWER in specification for HISTOGRAM");
+    }
+    double upper;
+    found=Tools::parse(words,"UPPER",upper,0);
+    if( !found ) {
+      plumed_merror("did not find UPPER in specification for HISTOGRAM");
+    }
     double delr = ( upper - lower ) / static_cast<double>( nbins );
-    double smear=0.5; found=Tools::parse(words,"SMEAR",smear,0);
-    if( !found ) smear = 0.5;
+    double smear=0.5;
+    found=Tools::parse(words,"SMEAR",smear,0);
+    if( !found ) {
+      smear = 0.5;
+    }
     for(unsigned i=0; i<nbins; ++i) {
-      std::string smstr, istr; Tools::convert( i+1, istr ); Tools::convert( smear, smstr ); std::string sum_arg=labout + "_bt" + istr;
-      std::string low_str, high_str; Tools::convert( lower + i*delr, low_str ); Tools::convert( lower + (i+1)*delr, high_str );
+      std::string smstr, istr;
+      Tools::convert( i+1, istr );
+      Tools::convert( smear, smstr );
+      std::string sum_arg=labout + "_bt" + istr;
+      std::string low_str, high_str;
+      Tools::convert( lower + i*delr, low_str );
+      Tools::convert( lower + (i+1)*delr, high_str );
       action->readInputLine( labout + "_bt" + istr + ": BETWEEN ARG=" + argin + " SWITCH={" + words[0] + " LOWER=" + low_str + " UPPER=" + high_str + " SMEAR=" + smstr + "}");
       if( weights.length()>0 ) {
         sum_arg = labout + "_wbt" + istr;

@@ -42,8 +42,7 @@ class SelectMassCharge;
 /// \ingroup MULTIINHERIT
 /// Action used to create objects that access the positions of the atoms from the MD code
 class ActionAtomistic :
-  virtual public Action
-{
+  virtual public Action {
   friend class Group;
   friend class DomainDecomposition;
   friend class colvar::SelectMassCharge;
@@ -126,7 +125,9 @@ public:
 /// Get a reference to force on energy
   double & modifyForceOnEnergy();
 /// Get number of available atoms
-  unsigned getNumberOfAtoms()const {return indexes.size();}
+  unsigned getNumberOfAtoms()const {
+    return indexes.size();
+  }
 /// Compute the pbc distance between two positions
   Vector pbcDistance(const Vector&,const Vector&)const;
 /// Applies  PBCs to a seriens of positions or distances
@@ -160,11 +161,15 @@ public:
 /// not going to be retrieved. Can be used for optimization. Notice that
 /// calling getPosition(int) in an Action where DoNotRetrieve() was called might
 /// lead to undefined behavior.
-  void doNotRetrieve() {donotretrieve=true;}
+  void doNotRetrieve() {
+    donotretrieve=true;
+  }
 /// Skip atom forces - use with care.
 /// If this function is called during initialization, then forces are
 /// not going to be propagated. Can be used for optimization.
-  void doNotForce() {donotforce=true;}
+  void doNotForce() {
+    donotforce=true;
+  }
 /// Make atoms whole, assuming they are in the proper order
   void makeWhole();
 public:
@@ -192,7 +197,9 @@ public:
   void readAtomsFromPDB( const PDB& pdb ) override;
 /// Transfer the gradients
   void getGradient( const unsigned& ind, Vector& deriv, std::map<AtomNumber,Vector>& gradients ) const ;
-  ActionAtomistic* castToActionAtomistic() noexcept final { return this; }
+  ActionAtomistic* castToActionAtomistic() noexcept final {
+    return this;
+  }
   virtual bool actionHasForces();
 };
 
@@ -203,13 +210,17 @@ const Vector & ActionAtomistic::getPosition(int i)const {
 
 inline
 double ActionAtomistic::getMass(int i)const {
-  if( !massesWereSet ) log.printf("WARNING: masses were not passed to plumed\n");
+  if( !massesWereSet ) {
+    log.printf("WARNING: masses were not passed to plumed\n");
+  }
   return masses[i];
 }
 
 inline
 double ActionAtomistic::getCharge(int i) const {
-  if( !chargesWereSet ) error("charges were not passed to plumed");
+  if( !chargesWereSet ) {
+    error("charges were not passed to plumed");
+  }
   return charges[i];
 }
 

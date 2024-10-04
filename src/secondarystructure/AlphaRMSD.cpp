@@ -95,29 +95,47 @@ PLUMED_REGISTER_ACTION(AlphaRMSD,"ALPHARMSD")
 
 void AlphaRMSD::registerKeywords( Keywords& keys ) {
   SecondaryStructureRMSD::registerKeywords( keys );
-  keys.remove("ATOMS"); keys.remove("SEGMENT"); keys.remove("BONDLENGTH"); keys.remove("CUTOFF_ATOMS");
-  keys.remove("NO_ACTION_LOG"); keys.remove("STRANDS_CUTOFF"); keys.remove("STRUCTURE");
+  keys.remove("ATOMS");
+  keys.remove("SEGMENT");
+  keys.remove("BONDLENGTH");
+  keys.remove("CUTOFF_ATOMS");
+  keys.remove("NO_ACTION_LOG");
+  keys.remove("STRANDS_CUTOFF");
+  keys.remove("STRUCTURE");
 }
 
 AlphaRMSD::AlphaRMSD(const ActionOptions&ao):
   Action(ao),
-  ActionShortcut(ao)
-{
+  ActionShortcut(ao) {
   // Read in the input and create a string that describes how to compute the less than
-  std::string ltmap; bool uselessthan=SecondaryStructureRMSD::readShortcutWords( ltmap, this );
+  std::string ltmap;
+  bool uselessthan=SecondaryStructureRMSD::readShortcutWords( ltmap, this );
   // read in the backbone atoms
-  std::vector<unsigned> chains; std::string atoms; SecondaryStructureRMSD::readBackboneAtoms( this, plumed, "protein", chains, atoms );
+  std::vector<unsigned> chains;
+  std::string atoms;
+  SecondaryStructureRMSD::readBackboneAtoms( this, plumed, "protein", chains, atoms );
 
   // This constructs all conceivable sections of alpha helix in the backbone of the chains
-  unsigned nprevious=0, segno=1; std::string seglist;
+  unsigned nprevious=0, segno=1;
+  std::string seglist;
   for(unsigned i=0; i<chains.size(); ++i) {
-    if( chains[i]<30 ) error("segment of backbone defined is not long enough to form an alpha helix. Each backbone fragment must contain a minimum of 6 residues");
+    if( chains[i]<30 ) {
+      error("segment of backbone defined is not long enough to form an alpha helix. Each backbone fragment must contain a minimum of 6 residues");
+    }
     unsigned nres=chains[i]/5;
-    if( chains[i]%5!=0 ) error("backbone segment received does not contain a multiple of five residues");
+    if( chains[i]%5!=0 ) {
+      error("backbone segment received does not contain a multiple of five residues");
+    }
     for(unsigned ires=0; ires<nres-5; ires++) {
-      unsigned accum=nprevious + 5*ires; std::string strval, num; Tools::convert( segno, num );
-      Tools::convert( accum, strval ); seglist += " SEGMENT" + num + "=" + strval;
-      for(unsigned k=1; k<30; ++k) { Tools::convert( accum+k, strval ); seglist += "," + strval; }
+      unsigned accum=nprevious + 5*ires;
+      std::string strval, num;
+      Tools::convert( segno, num );
+      Tools::convert( accum, strval );
+      seglist += " SEGMENT" + num + "=" + strval;
+      for(unsigned k=1; k<30; ++k) {
+        Tools::convert( accum+k, strval );
+        seglist += "," + strval;
+      }
       segno++;
     }
     nprevious+=chains[i];
@@ -161,14 +179,29 @@ AlphaRMSD::AlphaRMSD(const ActionOptions&ao):
   Tools::convert(  reference[0][2], ref2 );
   std::string structure=" STRUCTURE1=" + ref0 + "," + ref1 + "," + ref2;
   for(unsigned i=1; i<30; ++i) {
-    for(unsigned k=0; k<3; ++k) { Tools::convert( reference[i][k], ref0 ); structure += "," + ref0; }
+    for(unsigned k=0; k<3; ++k) {
+      Tools::convert( reference[i][k], ref0 );
+      structure += "," + ref0;
+    }
   }
 
-  std::string type; parse("TYPE",type); std::string lab = getShortcutLabel() + "_rmsd"; if( uselessthan ) lab = getShortcutLabel();
-  std::string nopbcstr=""; bool nopbc; parseFlag("NOPBC",nopbc); if( nopbc ) nopbcstr = " NOPBC";
+  std::string type;
+  parse("TYPE",type);
+  std::string lab = getShortcutLabel() + "_rmsd";
+  if( uselessthan ) {
+    lab = getShortcutLabel();
+  }
+  std::string nopbcstr="";
+  bool nopbc;
+  parseFlag("NOPBC",nopbc);
+  if( nopbc ) {
+    nopbcstr = " NOPBC";
+  }
   readInputLine( lab + ": SECONDARY_STRUCTURE_RMSD BONDLENGTH=0.17" + seglist + structure + " " + atoms + " TYPE=" + type + nopbcstr );
   // Create the less than object
-  if( ltmap.length()>0 ) SecondaryStructureRMSD::expandShortcut( uselessthan, getShortcutLabel(), lab, ltmap, this );
+  if( ltmap.length()>0 ) {
+    SecondaryStructureRMSD::expandShortcut( uselessthan, getShortcutLabel(), lab, ltmap, this );
+  }
 }
 
 }

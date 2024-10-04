@@ -36,10 +36,16 @@ class MemoryView {
   double *ptr_;
 public:
   MemoryView(double* p) :ptr_(p) {}
-  constexpr size_t size()const {return N;}
+  constexpr size_t size()const {
+    return N;
+  }
   static constexpr size_t extent = N;
-  double & operator[](size_t i) { return ptr_[i];}
-  const double & operator[](size_t i) const { return ptr_[i];}
+  double & operator[](size_t i) {
+    return ptr_[i];
+  }
+  const double & operator[](size_t i) const {
+    return ptr_[i];
+  }
 };
 
 namespace helpers {
@@ -57,10 +63,14 @@ class mdMemoryView {
   size_t size_;
 public:
   mdMemoryView(double* p, size_t s) :ptr_(p), size_(s) {}
-  size_t size()const {return size_;}
+  size_t size()const {
+    return size_;
+  }
   static constexpr size_t extent = N;
   static constexpr size_t stride = STRIDE;
-  MemoryView<STRIDE> operator[](size_t i) { return MemoryView<STRIDE>(ptr_ + i * STRIDE);}
+  MemoryView<STRIDE> operator[](size_t i) {
+    return MemoryView<STRIDE>(ptr_ + i * STRIDE);
+  }
 };
 
 using VectorView = mdMemoryView<helpers::dynamic_extent, 3>;

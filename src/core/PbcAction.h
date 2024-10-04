@@ -47,7 +47,9 @@ public:
   Pbc& getPbc();
   void wait() override;
   void readBinary(std::istream&i) override;
-  PbcAction* castToPbcAction() noexcept final { return this; }
+  PbcAction* castToPbcAction() noexcept final {
+    return this;
+  }
 };
 
 inline

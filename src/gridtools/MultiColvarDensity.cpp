@@ -99,37 +99,76 @@ void MultiColvarDensity::registerKeywords( Keywords& keys ) {
   keys.addFlag("UNORMALIZED",false,"do not divide by the density");
   keys.add("optional","NORMALIZATION","set true/false to determine how to the data is normalised");
   keys.setValueDescription("the average value of the order parameters at each point on the grid");
-  keys.needsAction("DISTANCES"); keys.needsAction("KDE"); keys.needsAction("ACCUMULATE");
-  keys.needsAction("CUSTOM"); keys.needsAction("ONES"); keys.needsAction("CUSTOM");
+  keys.needsAction("DISTANCES");
+  keys.needsAction("KDE");
+  keys.needsAction("ACCUMULATE");
+  keys.needsAction("CUSTOM");
+  keys.needsAction("ONES");
+  keys.needsAction("CUSTOM");
 }
 
 MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
   Action(ao),
-  ActionShortcut(ao)
-{
+  ActionShortcut(ao) {
   // Read in the position of the origin
-  std::string origin_str; parse("ORIGIN",origin_str);
+  std::string origin_str;
+  parse("ORIGIN",origin_str);
   // Read in the quantity we are calculating the density for
-  std::string atoms_str, data_str; parse("ATOMS",atoms_str); parse("DATA",data_str);
-  if( atoms_str.length()==0 && data_str.length()==0 ) error("quantity to calculate the density for was not specified used DATA/ATOMS");
+  std::string atoms_str, data_str;
+  parse("ATOMS",atoms_str);
+  parse("DATA",data_str);
+  if( atoms_str.length()==0 && data_str.length()==0 ) {
+    error("quantity to calculate the density for was not specified used DATA/ATOMS");
+  }
   // Get the information on the direction for the density
-  std::string dir, direction_string; parse("DIR",dir); std::string nbins=""; parse("NBINS",nbins); if(nbins.length()>0) nbins=" GRID_BIN=" + nbins;
-  if( dir=="x" ) direction_string = "ARG=" + getShortcutLabel() + "_dist.x " + nbins;
-  else if( dir=="y" ) direction_string = "ARG=" + getShortcutLabel() + "_dist.y " + nbins;
-  else if( dir=="z" ) direction_string = "ARG=" + getShortcutLabel() + "_dist.z " + nbins;
-  else if( dir=="xy" ) direction_string = "ARG=" + getShortcutLabel() + "_dist.x," + getShortcutLabel() + "_dist.y " + nbins;
-  else if( dir=="xz" ) direction_string = "ARG=" + getShortcutLabel() + "_dist.x," + getShortcutLabel() + "_dist.z " + nbins;
-  else if( dir=="yz" ) direction_string = "ARG=" + getShortcutLabel() + "_dist.y," + getShortcutLabel() + "_dist.z " + nbins;
-  else if( dir=="xyz" ) direction_string = "ARG=" + getShortcutLabel() + "_dist.x," + getShortcutLabel() + "_dist.y," + getShortcutLabel() + "_dist.z " + nbins;
-  else error( dir + " is invalid dir specification use x/y/z/xy/xz/yz/xyz");
+  std::string dir, direction_string;
+  parse("DIR",dir);
+  std::string nbins="";
+  parse("NBINS",nbins);
+  if(nbins.length()>0) {
+    nbins=" GRID_BIN=" + nbins;
+  }
+  if( dir=="x" ) {
+    direction_string = "ARG=" + getShortcutLabel() + "_dist.x " + nbins;
+  } else if( dir=="y" ) {
+    direction_string = "ARG=" + getShortcutLabel() + "_dist.y " + nbins;
+  } else if( dir=="z" ) {
+    direction_string = "ARG=" + getShortcutLabel() + "_dist.z " + nbins;
+  } else if( dir=="xy" ) {
+    direction_string = "ARG=" + getShortcutLabel() + "_dist.x," + getShortcutLabel() + "_dist.y " + nbins;
+  } else if( dir=="xz" ) {
+    direction_string = "ARG=" + getShortcutLabel() + "_dist.x," + getShortcutLabel() + "_dist.z " + nbins;
+  } else if( dir=="yz" ) {
+    direction_string = "ARG=" + getShortcutLabel() + "_dist.y," + getShortcutLabel() + "_dist.z " + nbins;
+  } else if( dir=="xyz" ) {
+    direction_string = "ARG=" + getShortcutLabel() + "_dist.x," + getShortcutLabel() + "_dist.y," + getShortcutLabel() + "_dist.z " + nbins;
+  } else {
+    error( dir + " is invalid dir specification use x/y/z/xy/xz/yz/xyz");
+  }
 
   // Parse the keymap for this averaging stuff
-  std::string stride, clear; parse("STRIDE",stride); parse("CLEAR",clear); bool unorm; parseFlag("UNORMALIZED",unorm);
-  if( !unorm ) { std::string normstr; parse("NORMALIZATION",normstr); if( normstr=="false" ) unorm=true; }
+  std::string stride, clear;
+  parse("STRIDE",stride);
+  parse("CLEAR",clear);
+  bool unorm;
+  parseFlag("UNORMALIZED",unorm);
+  if( !unorm ) {
+    std::string normstr;
+    parse("NORMALIZATION",normstr);
+    if( normstr=="false" ) {
+      unorm=true;
+    }
+  }
   // Create distance action
-  bool hasheights; std::string dist_words = getShortcutLabel() + "_dist: DISTANCES COMPONENTS ORIGIN=" + origin_str;
-  if( atoms_str.length()>0 ) { hasheights=false; dist_words += " ATOMS=" + atoms_str; }
-  else { hasheights=true; dist_words += " ATOMS=" + data_str; }
+  bool hasheights;
+  std::string dist_words = getShortcutLabel() + "_dist: DISTANCES COMPONENTS ORIGIN=" + origin_str;
+  if( atoms_str.length()>0 ) {
+    hasheights=false;
+    dist_words += " ATOMS=" + atoms_str;
+  } else {
+    hasheights=true;
+    dist_words += " ATOMS=" + data_str;
+  }
   // plumed_massert( keys.count("ORIGIN"), "you must specify the position of the origin" );
   readInputLine( dist_words );
 
@@ -137,8 +176,12 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
   // Make the kde object for the numerator if needed
   if( hasheights ) {
     readInputLine( getShortcutLabel() + "_inumer: KDE VOLUMES=" + data_str + " " + direction_string + " " + inputLine );
-    if( unorm ) { readInputLine( getShortcutLabel() + ": ACCUMULATE ARG=" + getShortcutLabel() + "_inumer STRIDE=" + stride + " CLEAR=" + clear ); return; }
-    else readInputLine( getShortcutLabel() + "_numer: ACCUMULATE ARG=" + getShortcutLabel() + "_inumer STRIDE=" + stride + " CLEAR=" + clear );
+    if( unorm ) {
+      readInputLine( getShortcutLabel() + ": ACCUMULATE ARG=" + getShortcutLabel() + "_inumer STRIDE=" + stride + " CLEAR=" + clear );
+      return;
+    } else {
+      readInputLine( getShortcutLabel() + "_numer: ACCUMULATE ARG=" + getShortcutLabel() + "_inumer STRIDE=" + stride + " CLEAR=" + clear );
+    }
   }
   // Make the kde object
   readInputLine( getShortcutLabel() + "_kde: KDE " + inputLine  + " " + direction_string );

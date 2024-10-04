@@ -106,42 +106,63 @@ void Average::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","CLEAR","0","the frequency with whihc to clear the data that is being averaged");
   keys.add("optional","NORMALIZATION","keyword for old version of the code that is there to maintain back compatibility only. Adding this keyword does nothing");
   keys.setValueDescription("the value of the average");
-  keys.needsAction("COMBINE"); keys.needsAction("CUSTOM"); keys.needsAction("ONES"); keys.needsAction("ACCUMULATE");
+  keys.needsAction("COMBINE");
+  keys.needsAction("CUSTOM");
+  keys.needsAction("ONES");
+  keys.needsAction("ACCUMULATE");
 }
 
 Average::Average( const ActionOptions& ao ):
   Action(ao),
-  ActionShortcut(ao)
-{
+  ActionShortcut(ao) {
 
-  std::string lw; parse("LOGWEIGHTS",lw); std::string stride, clearstride; parse("STRIDE",stride); parse("CLEAR",clearstride);
+  std::string lw;
+  parse("LOGWEIGHTS",lw);
+  std::string stride, clearstride;
+  parse("STRIDE",stride);
+  parse("CLEAR",clearstride);
   if( lw.length()>0 ) {
     readInputLine( getShortcutLabel() + "_wsum: COMBINE ARG=" + lw + " PERIODIC=NO");
     readInputLine( getShortcutLabel() + "_weight: CUSTOM ARG=" + getShortcutLabel() + "_wsum FUNC=exp(x) PERIODIC=NO");
-  } else readInputLine( getShortcutLabel() + "_weight: ONES SIZE=1" );
+  } else {
+    readInputLine( getShortcutLabel() + "_weight: ONES SIZE=1" );
+  }
 
-  std::vector<std::string> arg; parseVector("ARG",arg);
-  if( arg.size()!=1 ) error("should only be one argument to this action");
-  std::vector<Value*> vals; ActionWithArguments::interpretArgumentList( arg, plumed.getActionSet(), this, vals );
+  std::vector<std::string> arg;
+  parseVector("ARG",arg);
+  if( arg.size()!=1 ) {
+    error("should only be one argument to this action");
+  }
+  std::vector<Value*> vals;
+  ActionWithArguments::interpretArgumentList( arg, plumed.getActionSet(), this, vals );
 
   readInputLine( getShortcutLabel() + "_denom: ACCUMULATE ARG=" + getShortcutLabel() + "_weight STRIDE=" + stride + " CLEAR=" + clearstride );
   if( vals[0]->isPeriodic() ) {
-    std::string lbound, ubound, pfactor; vals[0]->getDomain( lbound, ubound ); pfactor = "((" + ubound + "-" + lbound + ")/(pi+pi))";
+    std::string lbound, ubound, pfactor;
+    vals[0]->getDomain( lbound, ubound );
+    pfactor = "((" + ubound + "-" + lbound + ")/(pi+pi))";
     readInputLine( getShortcutLabel() + "_sin: CUSTOM ARG=" + arg[0] + "," + getShortcutLabel() + "_weight FUNC=y*sin((x-" + lbound + ")/" + pfactor + ") PERIODIC=NO");
     readInputLine( getShortcutLabel() + "_cos: CUSTOM ARG=" + arg[0] + "," + getShortcutLabel() + "_weight FUNC=y*cos((x-" + lbound + ")/" + pfactor + ") PERIODIC=NO");
     readInputLine( getShortcutLabel() + "_sinsum: ACCUMULATE ARG=" + getShortcutLabel() + "_sin STRIDE=" + stride + " CLEAR=" + clearstride );
     readInputLine( getShortcutLabel() + "_cossum: ACCUMULATE ARG=" + getShortcutLabel() + "_cos STRIDE=" + stride + " CLEAR=" + clearstride );
     readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_sinsum," + getShortcutLabel() + "_cossum," + getShortcutLabel() + "_denom FUNC=" + lbound + "+" + pfactor + "*atan2(x/z,y/z) PERIODIC=" + lbound +"," + ubound);
   } else {
-    std::string normstr; parse("NORMALIZATION",normstr);
-    if( normstr=="true" || normstr=="false" ) warning("NORMALIZATION is deprecated. You are advised to take this out of input files in future and use the new syntax with ACCUMULATE for unormalized data rather than the shortcut AVERAGE");
-    else if( normstr.length()>0 ) error("NORMALIZATION=" + normstr + " is not valid PLUMED input.  If you want an unormalised 'average' use ACCUMULATE");
+    std::string normstr;
+    parse("NORMALIZATION",normstr);
+    if( normstr=="true" || normstr=="false" ) {
+      warning("NORMALIZATION is deprecated. You are advised to take this out of input files in future and use the new syntax with ACCUMULATE for unormalized data rather than the shortcut AVERAGE");
+    } else if( normstr.length()>0 ) {
+      error("NORMALIZATION=" + normstr + " is not valid PLUMED input.  If you want an unormalised 'average' use ACCUMULATE");
+    }
     readInputLine( getShortcutLabel() + "_prod: CUSTOM ARG=" + arg[0] + "," + getShortcutLabel() + "_weight FUNC=x*y PERIODIC=NO");
     if( normstr.length()==0 || normstr=="true" ) {
       readInputLine( getShortcutLabel() + "_numer: ACCUMULATE ARG=" + getShortcutLabel() + "_prod STRIDE=" + stride + " CLEAR=" + clearstride  );
       readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_numer," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
-    } else if( normstr=="false" ) readInputLine( getShortcutLabel() + ": ACCUMULATE ARG=" + getShortcutLabel() + "_prod STRIDE=" + stride + " CLEAR=" + clearstride  );
-    else plumed_error();
+    } else if( normstr=="false" ) {
+      readInputLine( getShortcutLabel() + ": ACCUMULATE ARG=" + getShortcutLabel() + "_prod STRIDE=" + stride + " CLEAR=" + clearstride  );
+    } else {
+      plumed_error();
+    }
   }
 }
 

@@ -176,24 +176,35 @@ void ClassicalMultiDimensionalScaling::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","ARG","the arguments that you would like to make the histogram for");
   keys.add("compulsory","NLOW_DIM","number of low-dimensional coordinates required");
   keys.setValueDescription("the low dimensional projections for the input data points");
-  keys.needsAction("TRANSPOSE"); keys.needsAction("DISSIMILARITIES"); keys.needsAction("MATRIX_VECTOR_PRODUCT"); keys.needsAction("VSTACK");
-  keys.needsAction("SUM"); keys.needsAction("CUSTOM"); keys.needsAction("OUTER_PRODUCT"); keys.needsAction("DIAGONALIZE");
+  keys.needsAction("TRANSPOSE");
+  keys.needsAction("DISSIMILARITIES");
+  keys.needsAction("MATRIX_VECTOR_PRODUCT");
+  keys.needsAction("VSTACK");
+  keys.needsAction("SUM");
+  keys.needsAction("CUSTOM");
+  keys.needsAction("OUTER_PRODUCT");
+  keys.needsAction("DIAGONALIZE");
 }
 
 ClassicalMultiDimensionalScaling::ClassicalMultiDimensionalScaling( const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
+  ActionShortcut(ao) {
   // Find the argument name
-  std::string argn; parse("ARG",argn); std::string dissimilarities="";
+  std::string argn;
+  parse("ARG",argn);
+  std::string dissimilarities="";
   ActionShortcut* as = plumed.getActionSet().getShortcutActionWithLabel( argn );
-  if( !as ) error("found no action with name " + argn );
+  if( !as ) {
+    error("found no action with name " + argn );
+  }
   if( as->getName()!="COLLECT_FRAMES" ) {
     if( as->getName().find("LANDMARK_SELECT")==std::string::npos ) {
       error("found no COLLECT_FRAMES or LANDMARK_SELECT action with label " + argn );
     } else {
       ActionWithValue* dissims = plumed.getActionSet().selectWithLabel<ActionWithValue*>( argn + "_sqrdissims");
-      if( dissims ) dissimilarities = argn + "_sqrdissims";
+      if( dissims ) {
+        dissimilarities = argn + "_sqrdissims";
+      }
     }
   }
   if( dissimilarities.length()==0 ) {
@@ -219,16 +230,27 @@ ClassicalMultiDimensionalScaling::ClassicalMultiDimensionalScaling( const Action
   // Step 4: subtract the column sums
   readInputLine( getShortcutLabel() + "_cmat: CUSTOM ARG=" + getShortcutLabel() + "_csummat," + getShortcutLabel() + "_intT FUNC=y-x PERIODIC=NO");
   // And generate the multidimensional scaling projection
-  unsigned ndim; parse("NLOW_DIM",ndim);
-  std::string vecstr="1"; for(unsigned i=1; i<ndim; ++i) { std::string num; Tools::convert( i+1, num ); vecstr += "," + num; }
+  unsigned ndim;
+  parse("NLOW_DIM",ndim);
+  std::string vecstr="1";
+  for(unsigned i=1; i<ndim; ++i) {
+    std::string num;
+    Tools::convert( i+1, num );
+    vecstr += "," + num;
+  }
   readInputLine( getShortcutLabel() + "_eig: DIAGONALIZE ARG=" + getShortcutLabel() + "_cmat VECTORS=" + vecstr );
   for(unsigned i=0; i<ndim; ++i) {
-    std::string num; Tools::convert( i+1, num );
+    std::string num;
+    Tools::convert( i+1, num );
     readInputLine( getShortcutLabel() + "-" +  num + ": CUSTOM ARG=" + getShortcutLabel() + "_eig.vals-" + num + "," + getShortcutLabel() + "_eig.vecs-" + num + " FUNC=sqrt(x)*y PERIODIC=NO");
   }
   std::string eigvec_args = " ARG=" + getShortcutLabel() + "-1";
   // The final output is a stack of all the low dimensional coordinates
-  for(unsigned i=1; i<ndim; ++i) { std::string num; Tools::convert( i+1, num ); eigvec_args += "," + getShortcutLabel() + "-" + num; }
+  for(unsigned i=1; i<ndim; ++i) {
+    std::string num;
+    Tools::convert( i+1, num );
+    eigvec_args += "," + getShortcutLabel() + "-" + num;
+  }
   readInputLine( getShortcutLabel() + ": VSTACK" + eigvec_args );
 }
 

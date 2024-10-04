@@ -106,16 +106,22 @@ typedef FunctionOfMatrix<Sum> MatrixSum;
 PLUMED_REGISTER_ACTION(MatrixSum,"SUM_MATRIX")
 
 void Sum::registerKeywords( Keywords& keys ) {
-  keys.use("PERIODIC"); keys.setValueDescription("the sum");
+  keys.use("PERIODIC");
+  keys.setValueDescription("the sum");
 }
 
 void Sum::read( ActionWithArguments* action ) {
-  if( action->getNumberOfArguments()!=1 ) action->error("should only be one argument to sum actions");
+  if( action->getNumberOfArguments()!=1 ) {
+    action->error("should only be one argument to sum actions");
+  }
 }
 
 void Sum::setPrefactor( ActionWithArguments* action, const double pref ) {
-  if(action->getName().find("MEAN")!=std::string::npos) prefactor = pref / (action->getPntrToArgument(0))->getNumberOfValues();
-  else prefactor = pref;
+  if(action->getName().find("MEAN")!=std::string::npos) {
+    prefactor = pref / (action->getPntrToArgument(0))->getNumberOfValues();
+  } else {
+    prefactor = pref;
+  }
 }
 
 bool Sum::zeroRank() const {
@@ -123,7 +129,8 @@ bool Sum::zeroRank() const {
 }
 
 void Sum::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
-  vals[0]=prefactor*args[0]; derivatives(0,0)=prefactor;
+  vals[0]=prefactor*args[0];
+  derivatives(0,0)=prefactor;
 }
 
 }

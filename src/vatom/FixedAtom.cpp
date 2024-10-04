@@ -83,8 +83,7 @@ END
 
 
 class FixedAtom:
-  public ActionWithVirtualAtom
-{
+  public ActionWithVirtualAtom {
   Vector coord;
   std::vector<Tensor> deriv;
   double mass,charge;
@@ -107,17 +106,20 @@ void FixedAtom::registerKeywords(Keywords& keys) {
 
 FixedAtom::FixedAtom(const ActionOptions&ao):
   Action(ao),
-  ActionWithVirtualAtom(ao)
-{
+  ActionWithVirtualAtom(ao) {
   std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
-  if(atoms.size()!=0) error("ATOMS should be empty");
+  if(atoms.size()!=0) {
+    error("ATOMS should be empty");
+  }
 
   parseFlag("SCALED_COMPONENTS",scaled_components);
 
   std::vector<double> at;
   parseVector("AT",at);
-  if(at.size()!=3) error("AT should be a list of three real numbers");
+  if(at.size()!=3) {
+    error("AT should be a list of three real numbers");
+  }
 
   parse("SET_MASS",mass);
   parse("SET_CHARGE",charge);
@@ -128,7 +130,9 @@ FixedAtom::FixedAtom(const ActionOptions&ao):
 
   checkRead();
   log<<"  AT position "<<coord[0]<<" "<<coord[1]<<" "<<coord[2]<<"\n";
-  if(scaled_components) log<<"  position is in scaled components\n";
+  if(scaled_components) {
+    log<<"  position is in scaled components\n";
+  }
 }
 
 void FixedAtom::calculate() {
@@ -142,7 +146,9 @@ void FixedAtom::calculate() {
   setCharge(charge);
   setAtomsDerivatives(deriv);
 // Virial contribution
-  if(!scaled_components) setBoxDerivativesNoPbc();
+  if(!scaled_components) {
+    setBoxDerivativesNoPbc();
+  }
 // notice that with scaled components there is no additional virial contribution
 }
 

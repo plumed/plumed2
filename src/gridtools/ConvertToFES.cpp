@@ -73,21 +73,35 @@ void ConvertToFES::registerKeywords( Keywords& keys ) {
   keys.add("optional","TEMP","the temperature at which you are operating");
   keys.addFlag("MINTOZERO",false,"set the minimum in the free energy to be equal to zero");
   keys.setValueDescription("the free energy surface");
-  keys.needsAction("FIND_GRID_MINIMUM"); keys.needsAction("CUSTOM");
+  keys.needsAction("FIND_GRID_MINIMUM");
+  keys.needsAction("CUSTOM");
 }
 
 ConvertToFES::ConvertToFES(const ActionOptions&ao):
   Action(ao),
-  ActionShortcut(ao)
-{
-  bool minzero=false; parseFlag("MINTOZERO",minzero);
-  double simtemp=getkBT(); if( simtemp==0 ) error("TEMP not set - use keyword TEMP");
+  ActionShortcut(ao) {
+  bool minzero=false;
+  parseFlag("MINTOZERO",minzero);
+  double simtemp=getkBT();
+  if( simtemp==0 ) {
+    error("TEMP not set - use keyword TEMP");
+  }
 
-  std::vector<std::string> argv; parseVector("GRID",argv);
-  if( argv.size()==0 ) parseVector("ARG",argv);
-  if( argv.size()!=1 ) error("should only have one argument");
+  std::vector<std::string> argv;
+  parseVector("GRID",argv);
+  if( argv.size()==0 ) {
+    parseVector("ARG",argv);
+  }
+  if( argv.size()!=1 ) {
+    error("should only have one argument");
+  }
 
-  std::string str_temp; Tools::convert( simtemp, str_temp ); std::string flab=""; if( minzero ) flab="_unz";
+  std::string str_temp;
+  Tools::convert( simtemp, str_temp );
+  std::string flab="";
+  if( minzero ) {
+    flab="_unz";
+  }
   readInputLine( getShortcutLabel() + flab + ": CUSTOM ARG=" + argv[0] + " FUNC=-" + str_temp + "*log(x) PERIODIC=NO");
   if( minzero ) {
     readInputLine( getShortcutLabel() + "_min: FIND_GRID_MINIMUM ARG=" + getShortcutLabel() + "_unz" );

@@ -96,7 +96,8 @@ typedef VolumeShortcut<glob_around> VolumeAroundShortcut;
 PLUMED_REGISTER_ACTION(VolumeAroundShortcut,"AROUND")
 
 void VolumeAround::registerKeywords( Keywords& keys ) {
-  ActionVolume::registerKeywords( keys ); keys.setDisplayName("AROUND");
+  ActionVolume::registerKeywords( keys );
+  keys.setDisplayName("AROUND");
   keys.add("atoms","ORIGIN","the atom whose vicinity we are interested in examining");
   keys.add("atoms-2","ATOM","an alternative to ORIGIN");
   keys.add("compulsory","XLOWER","0.0","the lower boundary in x relative to the x coordinate of the atom (0 indicates use full extent of box).");
@@ -109,29 +110,50 @@ void VolumeAround::registerKeywords( Keywords& keys ) {
 
 VolumeAround::VolumeAround(const ActionOptions& ao):
   Action(ao),
-  ActionVolume(ao)
-{
-  std::vector<AtomNumber> atom; parseAtomList("ORIGIN",atom);
-  if( atom.size()==0 ) parseAtomList("ATOM",atom);
-  if( atom.size()!=1 ) error("should only be one atom specified");
+  ActionVolume(ao) {
+  std::vector<AtomNumber> atom;
+  parseAtomList("ORIGIN",atom);
+  if( atom.size()==0 ) {
+    parseAtomList("ATOM",atom);
+  }
+  if( atom.size()!=1 ) {
+    error("should only be one atom specified");
+  }
   log.printf("  boundaries for region are calculated based on positions of atom : %d\n",atom[0].serial() );
 
-  dox=true; parse("XLOWER",xlow); parse("XUPPER",xhigh);
-  doy=true; parse("YLOWER",ylow); parse("YUPPER",yhigh);
-  doz=true; parse("ZLOWER",zlow); parse("ZUPPER",zhigh);
-  if( xlow==0.0 && xhigh==0.0 ) dox=false;
-  if( ylow==0.0 && yhigh==0.0 ) doy=false;
-  if( zlow==0.0 && zhigh==0.0 ) doz=false;
-  if( !dox && !doy && !doz ) error("no subregion defined use XLOWER, XUPPER, YLOWER, YUPPER, ZLOWER, ZUPPER");
+  dox=true;
+  parse("XLOWER",xlow);
+  parse("XUPPER",xhigh);
+  doy=true;
+  parse("YLOWER",ylow);
+  parse("YUPPER",yhigh);
+  doz=true;
+  parse("ZLOWER",zlow);
+  parse("ZUPPER",zhigh);
+  if( xlow==0.0 && xhigh==0.0 ) {
+    dox=false;
+  }
+  if( ylow==0.0 && yhigh==0.0 ) {
+    doy=false;
+  }
+  if( zlow==0.0 && zhigh==0.0 ) {
+    doz=false;
+  }
+  if( !dox && !doy && !doz ) {
+    error("no subregion defined use XLOWER, XUPPER, YLOWER, YUPPER, ZLOWER, ZUPPER");
+  }
   log.printf("  boundaries for region (region of interest about atom) : x %f %f, y %f %f, z %f %f \n",xlow,xhigh,ylow,yhigh,zlow,zhigh);
-  checkRead(); requestAtoms(atom);
+  checkRead();
+  requestAtoms(atom);
 }
 
 void VolumeAround::setupRegions() { }
 
 double VolumeAround::calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const {
   // Setup the histogram bead
-  HistogramBead bead; bead.isNotPeriodic(); bead.setKernelType( getKernelType() );
+  HistogramBead bead;
+  bead.isNotPeriodic();
+  bead.setKernelType( getKernelType() );
 
   // Calculate position of atom wrt to origin
   Vector fpos=pbcDistance( getPosition(0), cpos );
@@ -140,19 +162,22 @@ double VolumeAround::calculateNumberInside( const Vector& cpos, Vector& derivati
     bead.set( xlow, xhigh, getSigma() );
     xcontr=bead.calculate( fpos[0], xder );
   } else {
-    xcontr=1.; xder=0.;
+    xcontr=1.;
+    xder=0.;
   }
   if( doy ) {
     bead.set( ylow, yhigh, getSigma() );
     ycontr=bead.calculate( fpos[1], yder );
   } else {
-    ycontr=1.; yder=0.;
+    ycontr=1.;
+    yder=0.;
   }
   if( doz ) {
     bead.set( zlow, zhigh, getSigma() );
     zcontr=bead.calculate( fpos[2], zder );
   } else {
-    zcontr=1.; zder=0.;
+    zcontr=1.;
+    zder=0.;
   }
   derivatives[0]=xder*ycontr*zcontr;
   derivatives[1]=xcontr*yder*zcontr;

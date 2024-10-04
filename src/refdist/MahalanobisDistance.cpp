@@ -53,44 +53,70 @@ void MahalanobisDistance::registerKeywords( Keywords& keys ) {
   keys.addFlag("SQUARED",false,"The squared distance should be calculated");
   keys.addFlag("VON_MISSES",false,"Compute the mahalanobis distance in a way that is more sympathetic to the periodic boundary conditions");
   keys.setValueDescription("the Mahalanobis distances between the input vectors");
-  keys.needsAction("DISPLACEMENT"); keys.needsAction("CUSTOM"); keys.needsAction("OUTER_PRODUCT");
-  keys.needsAction("TRANSPOSE"); keys.needsAction("MATRIX_PRODUCT_DIAGONAL"); keys.needsAction("CONSTANT");
-  keys.needsAction("MATRIX_VECTOR_PRODUCT"); keys.needsAction("MATRIX_PRODUCT"); keys.needsAction("COMBINE");
+  keys.needsAction("DISPLACEMENT");
+  keys.needsAction("CUSTOM");
+  keys.needsAction("OUTER_PRODUCT");
+  keys.needsAction("TRANSPOSE");
+  keys.needsAction("MATRIX_PRODUCT_DIAGONAL");
+  keys.needsAction("CONSTANT");
+  keys.needsAction("MATRIX_VECTOR_PRODUCT");
+  keys.needsAction("MATRIX_PRODUCT");
+  keys.needsAction("COMBINE");
 }
 
 MahalanobisDistance::MahalanobisDistance( const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
-  std::string arg1, arg2, metstr; parse("ARG1",arg1); parse("ARG2",arg2); parse("METRIC",metstr);
+  ActionShortcut(ao) {
+  std::string arg1, arg2, metstr;
+  parse("ARG1",arg1);
+  parse("ARG2",arg2);
+  parse("METRIC",metstr);
   // Check on input metric
   ActionWithValue* mav=plumed.getActionSet().selectWithLabel<ActionWithValue*>( metstr );
-  if( !mav ) error("could not find action named " + metstr + " to use for metric");
-  if( mav->copyOutput(0)->getRank()!=2 ) error("metric has incorrect rank");
+  if( !mav ) {
+    error("could not find action named " + metstr + " to use for metric");
+  }
+  if( mav->copyOutput(0)->getRank()!=2 ) {
+    error("metric has incorrect rank");
+  }
 
   readInputLine( getShortcutLabel() + "_diff: DISPLACEMENT ARG1=" + arg1 + " ARG2=" + arg2 );
   readInputLine( getShortcutLabel() + "_diffT: TRANSPOSE ARG=" + getShortcutLabel() + "_diff");
-  bool von_miss, squared; parseFlag("VON_MISSES",von_miss); parseFlag("SQUARED",squared);
+  bool von_miss, squared;
+  parseFlag("VON_MISSES",von_miss);
+  parseFlag("SQUARED",squared);
   if( von_miss ) {
     unsigned nrows = mav->copyOutput(0)->getShape()[0];
-    if( mav->copyOutput(0)->getShape()[1]!=nrows ) error("metric is not symmetric");
+    if( mav->copyOutput(0)->getShape()[1]!=nrows ) {
+      error("metric is not symmetric");
+    }
     // Create a matrix that can be used to compute the off diagonal elements
     std::string valstr, nrstr;
-    Tools::convert( mav->copyOutput(0)->get(0), valstr ); Tools::convert( nrows, nrstr );
+    Tools::convert( mav->copyOutput(0)->get(0), valstr );
+    Tools::convert( nrows, nrstr );
     std::string diagmet = getShortcutLabel() + "_diagmet: CONSTANT VALUES=" + valstr;
     std::string offdiagmet = getShortcutLabel() + "_offdiagmet: CONSTANT NROWS=" + nrstr + " NCOLS=" + nrstr + " VALUES=0";
     for(unsigned i=0; i<nrows; ++i) {
       for(unsigned j=0; j<nrows; ++j) {
         Tools::convert( mav->copyOutput(0)->get(i*nrows+j), valstr );
-        if( i==j && i>0 ) { offdiagmet += ",0"; diagmet += "," + valstr; }
-        else if( i!=j ) { offdiagmet += "," + valstr; }
+        if( i==j && i>0 ) {
+          offdiagmet += ",0";
+          diagmet += "," + valstr;
+        } else if( i!=j ) {
+          offdiagmet += "," + valstr;
+        }
       }
     }
-    readInputLine( diagmet ); readInputLine( offdiagmet );
+    readInputLine( diagmet );
+    readInputLine( offdiagmet );
     // Compute distances scaled by periods
-    ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_diff" ); plumed_assert( av );
-    if( !av->copyOutput(0)->isPeriodic() ) error("VON_MISSES only works with periodic variables");
-    std::string min, max; av->copyOutput(0)->getDomain(min,max);
+    ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_diff" );
+    plumed_assert( av );
+    if( !av->copyOutput(0)->isPeriodic() ) {
+      error("VON_MISSES only works with periodic variables");
+    }
+    std::string min, max;
+    av->copyOutput(0)->getDomain(min,max);
     readInputLine( getShortcutLabel() + "_scaled: CUSTOM ARG=" + getShortcutLabel() + "_diffT FUNC=2*pi*x/(" + max +"-" + min + ") PERIODIC=NO");
     // We start calculating off-diagonal elements by computing the sines of the scaled differences (this is a column vector)
     readInputLine( getShortcutLabel() + "_sinediffT: CUSTOM ARG=" + getShortcutLabel() + "_scaled FUNC=sin(x) PERIODIC=NO");
@@ -104,7 +130,10 @@ MahalanobisDistance::MahalanobisDistance( const ActionOptions& ao):
     // If this is a matrix we need create a matrix to multiply by
     if( av->copyOutput(0)->getShape()[0]>1 ) {
       // Create some ones
-      std::string ones=" VALUES=1"; for(unsigned i=1; i<av->copyOutput(0)->getShape()[0]; ++i ) ones += ",1";
+      std::string ones=" VALUES=1";
+      for(unsigned i=1; i<av->copyOutput(0)->getShape()[0]; ++i ) {
+        ones += ",1";
+      }
       readInputLine( getShortcutLabel() + "_ones: CONSTANT " + ones );
       // Now do some multiplication to create a matrix that can be multiplied by our "inverse variance" vector
       readInputLine( getShortcutLabel() + "_" + metstr + ": OUTER_PRODUCT ARG=" + metstr2 + "," + getShortcutLabel() + "_ones");
@@ -112,21 +141,38 @@ MahalanobisDistance::MahalanobisDistance( const ActionOptions& ao):
     }
     // Compute the diagonal elements
     readInputLine( getShortcutLabel() + "_prod: CUSTOM ARG=" + getShortcutLabel() + "_scaled," + metstr2 + " FUNC=2*(1-cos(x))*y PERIODIC=NO");
-    std::string ncstr; Tools::convert( nrows, ncstr ); Tools::convert( av->copyOutput(0)->getShape()[0], nrstr );
-    std::string ones=" VALUES=1"; for(unsigned i=1; i<av->copyOutput(0)->getNumberOfValues(); ++i) ones += ",1";
+    std::string ncstr;
+    Tools::convert( nrows, ncstr );
+    Tools::convert( av->copyOutput(0)->getShape()[0], nrstr );
+    std::string ones=" VALUES=1";
+    for(unsigned i=1; i<av->copyOutput(0)->getNumberOfValues(); ++i) {
+      ones += ",1";
+    }
     readInputLine( getShortcutLabel() + "_matones: CONSTANT NROWS=" + nrstr + " NCOLS=" + ncstr + ones );
     readInputLine( getShortcutLabel() + "_diag: MATRIX_PRODUCT_DIAGONAL ARG=" + getShortcutLabel() + "_matones," + getShortcutLabel() + "_prod");
     // Sum everything
-    if( !squared ) readInputLine( getShortcutLabel() + "_2: COMBINE ARG=" + getShortcutLabel() + "_offdiag," + getShortcutLabel() + "_diag PERIODIC=NO");
-    else readInputLine( getShortcutLabel() + ": COMBINE ARG=" + getShortcutLabel() + "_offdiag," + getShortcutLabel() + "_diag PERIODIC=NO");
+    if( !squared ) {
+      readInputLine( getShortcutLabel() + "_2: COMBINE ARG=" + getShortcutLabel() + "_offdiag," + getShortcutLabel() + "_diag PERIODIC=NO");
+    } else {
+      readInputLine( getShortcutLabel() + ": COMBINE ARG=" + getShortcutLabel() + "_offdiag," + getShortcutLabel() + "_diag PERIODIC=NO");
+    }
   } else {
-    ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_diffT" ); plumed_assert( av && av->getNumberOfComponents()==1 );
-    if( (av->copyOutput(0))->getRank()==1 ) readInputLine( getShortcutLabel() + "_matvec: MATRIX_VECTOR_PRODUCT ARG=" + metstr + "," + getShortcutLabel() +"_diffT");
-    else readInputLine( getShortcutLabel() + "_matvec: MATRIX_PRODUCT ARG=" + metstr + "," + getShortcutLabel() +"_diffT");
-    std::string olab = getShortcutLabel(); if( !squared ) olab += "_2";
+    ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_diffT" );
+    plumed_assert( av && av->getNumberOfComponents()==1 );
+    if( (av->copyOutput(0))->getRank()==1 ) {
+      readInputLine( getShortcutLabel() + "_matvec: MATRIX_VECTOR_PRODUCT ARG=" + metstr + "," + getShortcutLabel() +"_diffT");
+    } else {
+      readInputLine( getShortcutLabel() + "_matvec: MATRIX_PRODUCT ARG=" + metstr + "," + getShortcutLabel() +"_diffT");
+    }
+    std::string olab = getShortcutLabel();
+    if( !squared ) {
+      olab += "_2";
+    }
     readInputLine( olab + ": MATRIX_PRODUCT_DIAGONAL ARG=" + getShortcutLabel() + "_diff," + getShortcutLabel() +"_matvec");
   }
-  if( !squared ) readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_2 FUNC=sqrt(x) PERIODIC=NO");
+  if( !squared ) {
+    readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_2 FUNC=sqrt(x) PERIODIC=NO");
+  }
 }
 
 }

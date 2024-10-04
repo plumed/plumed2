@@ -96,19 +96,23 @@ void DFSClustering::registerKeywords( Keywords& keys ) {
 
 DFSClustering::DFSClustering(const ActionOptions&ao):
   Action(ao),
-  ClusteringBase(ao)
-{
+  ClusteringBase(ao) {
 #ifndef __PLUMED_HAS_BOOST_GRAPH
-  nneigh.resize( getNumberOfNodes() ); color.resize(getNumberOfNodes());
+  nneigh.resize( getNumberOfNodes() );
+  color.resize(getNumberOfNodes());
 #endif
-  bool lowmem; parseFlag("LOWMEM",lowmem);
-  if( lowmem ) warning("LOWMEM flag is deprecated and is no longer required for this action");
+  bool lowmem;
+  parseFlag("LOWMEM",lowmem);
+  if( lowmem ) {
+    warning("LOWMEM flag is deprecated and is no longer required for this action");
+  }
 }
 
 void DFSClustering::performClustering() {
 #ifdef __PLUMED_HAS_BOOST_GRAPH
   // Get the list of edges
-  unsigned nedges=0; retrieveEdgeList( 0, nedges );
+  unsigned nedges=0;
+  retrieveEdgeList( 0, nedges );
 
   // Build the graph using boost
   boost::adjacency_list<boost::vecS,boost::vecS,boost::undirectedS> sg(&pairs[0],&pairs[nedges],getNumberOfNodes());
@@ -117,15 +121,21 @@ void DFSClustering::performClustering() {
   number_of_cluster=boost::connected_components(sg,&which_cluster[0]) - 1;
 
   // And work out the size of each cluster
-  for(unsigned i=0; i<which_cluster.size(); ++i) cluster_sizes[which_cluster[i]].first++;
+  for(unsigned i=0; i<which_cluster.size(); ++i) {
+    cluster_sizes[which_cluster[i]].first++;
+  }
 #else
   // Get the adjacency matrix
   retrieveAdjacencyLists( nneigh, adj_list );
 
   // Perform clustering
-  number_of_cluster=-1; color.assign(color.size(),0);
+  number_of_cluster=-1;
+  color.assign(color.size(),0);
   for(unsigned i=0; i<getNumberOfNodes(); ++i) {
-    if( color[i]==0 ) { number_of_cluster++; color[i]=explore(i); }
+    if( color[i]==0 ) {
+      number_of_cluster++;
+      color[i]=explore(i);
+    }
   }
 #endif
 }
@@ -136,7 +146,9 @@ int DFSClustering::explore( const unsigned& index ) {
   color[index]=1;
   for(unsigned i=0; i<nneigh[index]; ++i) {
     unsigned j=adj_list(index,i);
-    if( color[j]==0 ) color[j]=explore(j);
+    if( color[j]==0 ) {
+      color[j]=explore(j);
+    }
   }
 
   // Count the size of the cluster

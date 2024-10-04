@@ -71,8 +71,7 @@ should be the same in all input files.
 //+ENDPLUMEDOC
 
 class RandomExchanges:
-  public Action
-{
+  public Action {
 public:
   static void registerKeywords( Keywords& keys );
   explicit RandomExchanges(const ActionOptions&ao);
@@ -88,13 +87,14 @@ void RandomExchanges::registerKeywords( Keywords& keys ) {
 }
 
 RandomExchanges::RandomExchanges(const ActionOptions&ao):
-  Action(ao)
-{
+  Action(ao) {
   plumed.getExchangePatterns().setFlag(ExchangePatterns::RANDOM);
 // I convert the seed to -seed because I think it is more general to use a positive seed in input
   int seed=-1;
   parse("SEED",seed);
-  if(seed>=0) plumed.getExchangePatterns().setSeed(-seed);
+  if(seed>=0) {
+    plumed.getExchangePatterns().setSeed(-seed);
+  }
 }
 
 }

@@ -58,8 +58,12 @@ void ContourFindingBase::findContour( const std::vector<double>& direction, std:
 
 inline
 double ContourFindingBase::getDifferenceFromContour( const std::vector<double>& x, std::vector<double>& der ) const {
-  std::vector<double> vals(1); Matrix<double> deriva( 1, x.size() ); function.calc( this, x, vals, deriva );
-  for(unsigned i=0; i<der.size(); ++i) der[i] = deriva(0,i);
+  std::vector<double> vals(1);
+  Matrix<double> deriva( 1, x.size() );
+  function.calc( this, x, vals, deriva );
+  for(unsigned i=0; i<der.size(); ++i) {
+    der[i] = deriva(0,i);
+  }
   return vals[0] - contour;
 }
 

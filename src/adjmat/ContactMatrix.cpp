@@ -72,13 +72,16 @@ public:
 /// This does nothing
   double calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const override;
 /// Override this so we write the graph properly
-  std::string writeInGraph() const override { return "CONTACT_MATRIX"; }
+  std::string writeInGraph() const override {
+    return "CONTACT_MATRIX";
+  }
 };
 
 PLUMED_REGISTER_ACTION(ContactMatrix,"CONTACT_MATRIX_PROPER")
 
 void ContactMatrix::registerKeywords( Keywords& keys ) {
-  AdjacencyMatrixBase::registerKeywords( keys ); keys.setDisplayName("CONTACT_MATRIX");
+  AdjacencyMatrixBase::registerKeywords( keys );
+  keys.setDisplayName("CONTACT_MATRIX");
   keys.add("compulsory","NN","6","The n parameter of the switching function ");
   keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
@@ -90,17 +93,24 @@ void ContactMatrix::registerKeywords( Keywords& keys ) {
 
 ContactMatrix::ContactMatrix( const ActionOptions& ao ):
   Action(ao),
-  AdjacencyMatrixBase(ao)
-{
-  std::string errors, input; parse("SWITCH",input);
+  AdjacencyMatrixBase(ao) {
+  std::string errors, input;
+  parse("SWITCH",input);
   if( input.length()>0 ) {
     switchingFunction.set( input, errors );
-    if( errors.length()!=0 ) error("problem reading switching function description " + errors);
+    if( errors.length()!=0 ) {
+      error("problem reading switching function description " + errors);
+    }
   } else {
-    double r_0=-1.0, d_0; int nn, mm;
-    parse("NN",nn); parse("MM",mm);
-    parse("R_0",r_0); parse("D_0",d_0);
-    if( r_0<0.0 ) error("you must set a value for R_0");
+    double r_0=-1.0, d_0;
+    int nn, mm;
+    parse("NN",nn);
+    parse("MM",mm);
+    parse("R_0",r_0);
+    parse("D_0",d_0);
+    if( r_0<0.0 ) {
+      error("you must set a value for R_0");
+    }
     switchingFunction.set(nn,mm,r_0,d_0);
   }
   // And set the link cell cutoff
@@ -109,11 +119,18 @@ ContactMatrix::ContactMatrix( const ActionOptions& ao ):
 }
 
 double ContactMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const {
-  Vector distance = pos2; double mod2 = distance.modulo2();
-  if( mod2<epsilon ) return 0.0;  // Atoms can't be bonded to themselves
+  Vector distance = pos2;
+  double mod2 = distance.modulo2();
+  if( mod2<epsilon ) {
+    return 0.0;  // Atoms can't be bonded to themselves
+  }
   double dfunc, val = switchingFunction.calculateSqr( mod2, dfunc );
-  if( val<epsilon ) return 0.0;
-  if( doNotCalculateDerivatives() ) return val;
+  if( val<epsilon ) {
+    return 0.0;
+  }
+  if( doNotCalculateDerivatives() ) {
+    return val;
+  }
   addAtomDerivatives( 0, (-dfunc)*distance, myvals );
   addAtomDerivatives( 1, (+dfunc)*distance, myvals );
   addBoxDerivatives( (-dfunc)*Tensor(distance,distance), myvals );

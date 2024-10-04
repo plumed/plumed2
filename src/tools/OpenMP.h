@@ -62,8 +62,11 @@ unsigned getGoodNumThreads(const T* /*getTheType*/,unsigned n) {
 /// Get a reasonable number of threads so as to access to vector v
 template<typename T>
 unsigned getGoodNumThreads(const std::vector<T> & v) {
-  if(v.size()==0) return 1;
-  else return getGoodNumThreads(&v[0],v.size());
+  if(v.size()==0) {
+    return 1;
+  } else {
+    return getGoodNumThreads(&v[0],v.size());
+  }
 }
 
 }//namespace OpenMP

@@ -85,8 +85,7 @@ PRINT ARG=jhanst.*,jhan.* FILE=COLVAR STRIDE=100
 //+ENDPLUMEDOC
 
 class JCoupling :
-  public MetainferenceBase
-{
+  public MetainferenceBase {
 private:
   bool pbc;
   enum { HAN, HAHN, CCG, NCG, CUSTOM };
@@ -124,8 +123,7 @@ void JCoupling::registerKeywords(Keywords& keys) {
 
 JCoupling::JCoupling(const ActionOptions&ao):
   PLUMED_METAINF_INIT(ao),
-  pbc(true)
-{
+  pbc(true) {
   bool nopbc = !pbc;
   parseFlag("NOPBC", nopbc);
   pbc =! nopbc;
@@ -180,13 +178,21 @@ JCoupling::JCoupling(const ActionOptions&ao):
   coupl.resize( ncoupl_ );
   unsigned ntarget=0;
   for(unsigned i=0; i<ncoupl_; ++i) {
-    if( !parseNumbered( "COUPLING", i+1, coupl[i] ) ) break;
+    if( !parseNumbered( "COUPLING", i+1, coupl[i] ) ) {
+      break;
+    }
     ntarget++;
   }
   bool addcoupling=false;
-  if(ntarget!=ncoupl_ && ntarget!=0) error("found wrong number of COUPLING values");
-  if(ntarget==ncoupl_) addcoupling=true;
-  if(getDoScore()&&!addcoupling) error("with DOSCORE you need to set the COUPLING values");
+  if(ntarget!=ncoupl_ && ntarget!=0) {
+    error("found wrong number of COUPLING values");
+  }
+  if(ntarget==ncoupl_) {
+    addcoupling=true;
+  }
+  if(getDoScore()&&!addcoupling) {
+    error("with DOSCORE you need to set the COUPLING values");
+  }
 
   // For custom types we allow use of custom Karplus parameters
   if (jtype_ == CUSTOM) {
@@ -260,13 +266,15 @@ JCoupling::JCoupling(const ActionOptions&ao):
 
   if(!getDoScore()) {
     for (unsigned i = 0; i < ncoupl_; i++) {
-      std::string num; Tools::convert(i, num);
+      std::string num;
+      Tools::convert(i, num);
       addComponentWithDerivatives("j-" + num);
       componentIsNotPeriodic("j-" + num);
     }
   } else {
     for (unsigned i = 0; i < ncoupl_; i++) {
-      std::string num; Tools::convert(i, num);
+      std::string num;
+      Tools::convert(i, num);
       addComponent("j-" + num);
       componentIsNotPeriodic("j-" + num);
     }
@@ -274,7 +282,8 @@ JCoupling::JCoupling(const ActionOptions&ao):
 
   if (addcoupling||getDoScore()) {
     for (unsigned i = 0; i < ncoupl_; i++) {
-      std::string num; Tools::convert(i, num);
+      std::string num;
+      Tools::convert(i, num);
       addComponent("exp-" + num);
       componentIsNotPeriodic("exp-" + num);
       Value* comp = getPntrToComponent("exp-" + num);
@@ -291,9 +300,10 @@ JCoupling::JCoupling(const ActionOptions&ao):
   checkRead();
 }
 
-void JCoupling::calculate()
-{
-  if (pbc) makeWhole();
+void JCoupling::calculate() {
+  if (pbc) {
+    makeWhole();
+  }
   std::vector<Vector> deriv(ncoupl_*6);
   std::vector<double> j(ncoupl_,0.);
 
@@ -326,7 +336,9 @@ void JCoupling::calculate()
       dd1 *= derj;
       dd2 *= derj;
 
-      if(getDoScore()) setCalcData(r, j[r]);
+      if(getDoScore()) {
+        setCalcData(r, j[r]);
+      }
       deriv[a0] =  dd0;
       deriv[a0+1] = -dd0;
       deriv[a0+2] =  dd1;
@@ -363,7 +375,8 @@ void JCoupling::calculate()
   } else {
     for (unsigned r=0; r<ncoupl_; r++) {
       const unsigned a0 = 6*r;
-      std::string num; Tools::convert(r,num);
+      std::string num;
+      Tools::convert(r,num);
       Value* val=getPntrToComponent("j-"+num);
       val->set(j[r]);
       setAtomsDerivatives(val, a0, deriv[a0]);
@@ -386,7 +399,9 @@ void JCoupling::calculate()
 
 void JCoupling::update() {
   // write status file
-  if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) writeStatus();
+  if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) {
+    writeStatus();
+  }
 }
 
 }

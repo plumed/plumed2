@@ -25,24 +25,34 @@ namespace PLMD {
 namespace matrixtools {
 
 void MatrixOperationBase::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys ); ActionWithArguments::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
-  keys.use("ARG"); keys.remove("NUMERICAL_DERIVATIVES");
+  Action::registerKeywords( keys );
+  ActionWithArguments::registerKeywords( keys );
+  ActionWithValue::registerKeywords( keys );
+  keys.use("ARG");
+  keys.remove("NUMERICAL_DERIVATIVES");
   keys.add("optional","MATRIX","the input matrix (can use ARG instead)");
 }
 
 MatrixOperationBase::MatrixOperationBase(const ActionOptions&ao):
   Action(ao),
   ActionWithArguments(ao),
-  ActionWithValue(ao)
-{
+  ActionWithValue(ao) {
   if( getNumberOfArguments()==0 ) {
-    std::vector<Value*> args; parseArgumentList("MATRIX",args); requestArguments(args);
+    std::vector<Value*> args;
+    parseArgumentList("MATRIX",args);
+    requestArguments(args);
   }
-  if( getNumberOfArguments()!=1 ) error("should only be one argument to this action");
+  if( getNumberOfArguments()!=1 ) {
+    error("should only be one argument to this action");
+  }
   if( getPntrToArgument(0)->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) {
     if( getName()=="TRANSPOSE" ) {
-      if (getPntrToArgument(0)->getRank()!=1 || getPntrToArgument(0)->hasDerivatives() ) error("input to this argument should be a matrix or vector");
-    } else error("input to this argument should be a matrix");
+      if (getPntrToArgument(0)->getRank()!=1 || getPntrToArgument(0)->hasDerivatives() ) {
+        error("input to this argument should be a matrix or vector");
+      }
+    } else {
+      error("input to this argument should be a matrix");
+    }
   }
   getPntrToArgument(0)->buildDataStore();
 }
@@ -51,29 +61,42 @@ void MatrixOperationBase::retrieveFullMatrix( Matrix<double>& mymatrix ) {
   if( mymatrix.nrows()!=getPntrToArgument(0)->getShape()[0] || mymatrix.nrows()!=getPntrToArgument(0)->getShape()[1] ) {
     mymatrix.resize( getPntrToArgument(0)->getShape()[0], getPntrToArgument(0)->getShape()[1] );
   }
-  unsigned nedge; getPntrToArgument(0)->retrieveEdgeList( nedge, pairs, vals  ); mymatrix=0;
+  unsigned nedge;
+  getPntrToArgument(0)->retrieveEdgeList( nedge, pairs, vals  );
+  mymatrix=0;
   bool symmetric = getPntrToArgument(0)->isSymmetric();
   for(unsigned i=0; i<nedge; ++i ) {
     mymatrix( pairs[i].first, pairs[i].second ) = vals[i];
-    if( symmetric ) mymatrix( pairs[i].second, pairs[i].first ) = vals[i];
+    if( symmetric ) {
+      mymatrix( pairs[i].second, pairs[i].first ) = vals[i];
+    }
   }
 }
 
 
 void MatrixOperationBase::apply() {
-  if( doNotCalculateDerivatives() ) return;
+  if( doNotCalculateDerivatives() ) {
+    return;
+  }
 
   bool forces=false;
   for(int i=0; i<getNumberOfComponents(); ++i) {
-    if( getPntrToComponent(i)->forcesWereAdded() ) { forces=true; break; }
+    if( getPntrToComponent(i)->forcesWereAdded() ) {
+      forces=true;
+      break;
+    }
   }
-  if( !forces ) return;
+  if( !forces ) {
+    return;
+  }
 
   Value* mat = getPntrToArgument(0);
   unsigned ncols=mat->getNumberOfColumns();
   for(unsigned i=0; i<mat->getShape()[0]; ++i) {
     unsigned ncol = mat->getRowLength(i);
-    for(unsigned j=0; j<ncol; ++j) mat->addForce( i*ncols+j, getForceOnMatrixElement( i, mat->getRowIndex(i,j) ), false );
+    for(unsigned j=0; j<ncol; ++j) {
+      mat->addForce( i*ncols+j, getForceOnMatrixElement( i, mat->getRowIndex(i,j) ), false );
+    }
   }
 }
 

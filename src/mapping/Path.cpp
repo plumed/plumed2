@@ -209,7 +209,8 @@ PLUMED_REGISTER_ACTION(Path,"PATH")
 PLUMED_REGISTER_ACTION(Path,"GPROPERTYMAP")
 
 void Path::registerKeywords( Keywords& keys ) {
-  ActionShortcut::registerKeywords( keys ); Path::registerInputFileKeywords( keys );
+  ActionShortcut::registerKeywords( keys );
+  Path::registerInputFileKeywords( keys );
   keys.add("optional","PROPERTY","the property to be used in the index. This should be in the REMARK of the reference");
   keys.add("compulsory","LAMBDA","the lambda parameter is needed for smoothing, is in the units of plumed");
   keys.addOutputComponent("gspath","GPATH","the position along the path calculated using the geometric formula");
@@ -229,34 +230,57 @@ void Path::registerInputFileKeywords( Keywords& keys ) {
   keys.addFlag("NOSPATH",false,"do not calculate the spath CV");
   keys.addFlag("NOZPATH",false,"do not calculate the zpath CV");
   keys.addFlag("GPATH",false,"calculate the trigonometric path");
-  keys.needsAction("DRMSD"); keys.needsAction("RMSD"); keys.needsAction("LOWEST"); keys.needsAction("GPATH");
-  keys.needsAction("EUCLIDEAN_DISTANCE"); keys.needsAction("CUSTOM"); keys.needsAction("SUM"); keys.needsAction("COMBINE");
-  keys.needsAction("NORMALIZED_EUCLIDEAN_DISTANCE"); keys.needsAction("PDB2CONSTANT"); keys.needsAction("CONSTANT");
+  keys.needsAction("DRMSD");
+  keys.needsAction("RMSD");
+  keys.needsAction("LOWEST");
+  keys.needsAction("GPATH");
+  keys.needsAction("EUCLIDEAN_DISTANCE");
+  keys.needsAction("CUSTOM");
+  keys.needsAction("SUM");
+  keys.needsAction("COMBINE");
+  keys.needsAction("NORMALIZED_EUCLIDEAN_DISTANCE");
+  keys.needsAction("PDB2CONSTANT");
+  keys.needsAction("CONSTANT");
 }
 
 Path::Path( const ActionOptions& ao ):
   Action(ao),
-  ActionShortcut(ao)
-{
-  bool nospath, nozpath, gpath; parseFlag("NOSPATH",nospath); parseFlag("NOZPATH",nozpath); parseFlag("GPATH",gpath);
+  ActionShortcut(ao) {
+  bool nospath, nozpath, gpath;
+  parseFlag("NOSPATH",nospath);
+  parseFlag("NOZPATH",nozpath);
+  parseFlag("GPATH",gpath);
   if( gpath ) {
     readInputLine( getShortcutLabel() + "_gpath: GPATH " + convertInputLineToString() );
     readInputLine( getShortcutLabel() + "_gspath: COMBINE ARG=" + getShortcutLabel() + "_gpath.s PERIODIC=NO");
     readInputLine( getShortcutLabel() + "_gzpath: COMBINE ARG=" + getShortcutLabel() + "_gpath.z PERIODIC=NO");
   }
-  if( nospath && nozpath ) return;
+  if( nospath && nozpath ) {
+    return;
+  }
   // Setup the properties
   std::vector<std::string> properties, pnames;
-  if( getName()=="PATH") { properties.resize(1); }
-  else { parseVector("PROPERTY",pnames); properties.resize( pnames.size() ); }
-  std::string type, reference_data, reference; parse("REFERENCE",reference);
-  std::vector<std::string> argnames; parseVector("ARG",argnames); parse("TYPE",type);
-  if( type.find("DRMSD")!=std::string::npos ) readInputLine( getShortcutLabel() + "_data: DRMSD SQUARED TYPE=" + type + " REFERENCE=" + reference );
-  else readInputFrames( reference, type, argnames, false, this, reference_data );
+  if( getName()=="PATH") {
+    properties.resize(1);
+  } else {
+    parseVector("PROPERTY",pnames);
+    properties.resize( pnames.size() );
+  }
+  std::string type, reference_data, reference;
+  parse("REFERENCE",reference);
+  std::vector<std::string> argnames;
+  parseVector("ARG",argnames);
+  parse("TYPE",type);
+  if( type.find("DRMSD")!=std::string::npos ) {
+    readInputLine( getShortcutLabel() + "_data: DRMSD SQUARED TYPE=" + type + " REFERENCE=" + reference );
+  } else {
+    readInputFrames( reference, type, argnames, false, this, reference_data );
+  }
   // Find the shortest distance to the frames
   readInputLine( getShortcutLabel() + "_mindist: LOWEST ARG=" + getShortcutLabel() + "_data");
   // Now create all other parts of the calculation
-  std::string lambda; parse("LAMBDA",lambda);
+  std::string lambda;
+  parse("LAMBDA",lambda);
   // Now create MATHEVAL object to compute exponential functions
   readInputLine( getShortcutLabel() + "_weights: CUSTOM ARG=" + getShortcutLabel() + "_data," + getShortcutLabel() + "_mindist FUNC=exp(-(x-y)*" + lambda + ") PERIODIC=NO" );
   // Create denominator
@@ -284,48 +308,86 @@ Path::Path( const ActionOptions& ao ):
 }
 
 std::string Path::fixArgumentName( const std::string& argin ) {
-  std::string argout = argin; std::size_t dot=argin.find(".");
-  if( dot!=std::string::npos ) argout = argin.substr(0,dot) + "_" + argin.substr(dot+1);
+  std::string argout = argin;
+  std::size_t dot=argin.find(".");
+  if( dot!=std::string::npos ) {
+    argout = argin.substr(0,dot) + "_" + argin.substr(dot+1);
+  }
   return argout;
 }
 
 void Path::readInputFrames( const std::string& reference, const std::string& type, std::vector<std::string>& argnames, const bool& displacements, ActionShortcut* action, std::string& reference_data ) {
-  FILE* fp=std::fopen(reference.c_str(),"r"); PDB pdb; if(!fp) action->error("could not open reference file " + reference );
-  bool do_read=pdb.readFromFilepointer(fp,false,0.1); if( !do_read ) action->error("missing file " + reference );
+  FILE* fp=std::fopen(reference.c_str(),"r");
+  PDB pdb;
+  if(!fp) {
+    action->error("could not open reference file " + reference );
+  }
+  bool do_read=pdb.readFromFilepointer(fp,false,0.1);
+  if( !do_read ) {
+    action->error("missing file " + reference );
+  }
   if( pdb.getPositions().size()!=0 && argnames.size()==0 ) {
     reference_data = action->getShortcutLabel() + "_data_ref";
-    if( displacements ) action->readInputLine( action->getShortcutLabel() + "_data: RMSD DISPLACEMENT SQUARED REFERENCE=" + reference + " TYPE=" + type );
-    else action->readInputLine( action->getShortcutLabel() + "_data: RMSD SQUARED REFERENCE=" + reference + " TYPE=" + type );
+    if( displacements ) {
+      action->readInputLine( action->getShortcutLabel() + "_data: RMSD DISPLACEMENT SQUARED REFERENCE=" + reference + " TYPE=" + type );
+    } else {
+      action->readInputLine( action->getShortcutLabel() + "_data: RMSD SQUARED REFERENCE=" + reference + " TYPE=" + type );
+    }
   } else if( pdb.getPositions().size()!=0 ) {
     reference_data = action->getShortcutLabel() + "_atomdata_ref";
-    if( displacements ) action->readInputLine( action->getShortcutLabel() + "_atomdata: RMSD DISPLACEMENT SQUARED REFERENCE=" + reference + " TYPE=" + type );
-    else action->readInputLine( action->getShortcutLabel() + "_atomdata: RMSD SQUARED REFERENCE=" + reference + " TYPE=" + type );
+    if( displacements ) {
+      action->readInputLine( action->getShortcutLabel() + "_atomdata: RMSD DISPLACEMENT SQUARED REFERENCE=" + reference + " TYPE=" + type );
+    } else {
+      action->readInputLine( action->getShortcutLabel() + "_atomdata: RMSD SQUARED REFERENCE=" + reference + " TYPE=" + type );
+    }
   } else if( argnames.size()==0 ) {
     argnames.resize( pdb.getArgumentNames().size() );
-    for(unsigned i=0; i<argnames.size(); ++i) argnames[i] = pdb.getArgumentNames()[i];
+    for(unsigned i=0; i<argnames.size(); ++i) {
+      argnames[i] = pdb.getArgumentNames()[i];
+    }
   }
-  std::vector<Value*> theargs; if( argnames.size()>0 ) ActionWithArguments::interpretArgumentList( argnames, action->plumed.getActionSet(), action, theargs );
+  std::vector<Value*> theargs;
+  if( argnames.size()>0 ) {
+    ActionWithArguments::interpretArgumentList( argnames, action->plumed.getActionSet(), action, theargs );
+  }
 
   if( theargs.size()>0 ) {
     std::string instargs, refargs;
     for(unsigned i=0; i<theargs.size(); ++i) {
       std::string iargn = fixArgumentName( theargs[i]->getName() );
       action->readInputLine( action->getShortcutLabel() + "_ref_" + iargn + ": PDB2CONSTANT REFERENCE=" + reference + " ARG=" + theargs[i]->getName() );
-      if( i==0 ) { instargs=" ARG1=" + theargs[i]->getName(); refargs=" ARG2=" + action->getShortcutLabel() + "_ref_" + iargn; }
-      else { instargs +="," + theargs[i]->getName(); refargs +="," + action->getShortcutLabel() + "_ref_" + iargn; }
-      if( pdb.getPositions().size()==0 && i==0 ) reference_data = action->getShortcutLabel() + "_ref_" + iargn;
-      else reference_data += "," + action->getShortcutLabel() + "_ref_" + iargn;
+      if( i==0 ) {
+        instargs=" ARG1=" + theargs[i]->getName();
+        refargs=" ARG2=" + action->getShortcutLabel() + "_ref_" + iargn;
+      } else {
+        instargs +="," + theargs[i]->getName();
+        refargs +="," + action->getShortcutLabel() + "_ref_" + iargn;
+      }
+      if( pdb.getPositions().size()==0 && i==0 ) {
+        reference_data = action->getShortcutLabel() + "_ref_" + iargn;
+      } else {
+        reference_data += "," + action->getShortcutLabel() + "_ref_" + iargn;
+      }
     }
-    std::string comname="EUCLIDEAN_DISTANCE SQUARED"; std::string coeffstr; action->parse("COEFFICIENTS",coeffstr);
+    std::string comname="EUCLIDEAN_DISTANCE SQUARED";
+    std::string coeffstr;
+    action->parse("COEFFICIENTS",coeffstr);
     if( coeffstr.length()>0 ) {
-      if( displacements ) action->error("cannot use COEFFICIENTS arguments with GEOMETRIC PATH");
+      if( displacements ) {
+        action->error("cannot use COEFFICIENTS arguments with GEOMETRIC PATH");
+      }
       action->readInputLine( action->getShortcutLabel() + "_coeff: CONSTANT VALUES=" + coeffstr );
       action->readInputLine( action->getShortcutLabel() + "_coeff2: CUSTOM ARG=" + action->getShortcutLabel() + "_coeff FUNC=x*x PERIODIC=NO");
       comname = "NORMALIZED_EUCLIDEAN_DISTANCE SQUARED METRIC=" + action->getShortcutLabel() + "_coeff2";
-    } else if( displacements ) comname = "DISPLACEMENT";
+    } else if( displacements ) {
+      comname = "DISPLACEMENT";
+    }
 
-    if( pdb.getPositions().size()==0 ) action->readInputLine( action->getShortcutLabel() + "_data: " + comname + instargs + refargs );
-    else action->readInputLine( action->getShortcutLabel() + "_argdata: " + comname + instargs + refargs );
+    if( pdb.getPositions().size()==0 ) {
+      action->readInputLine( action->getShortcutLabel() + "_data: " + comname + instargs + refargs );
+    } else {
+      action->readInputLine( action->getShortcutLabel() + "_argdata: " + comname + instargs + refargs );
+    }
   }
 }
 
@@ -337,8 +399,13 @@ void Path::readPropertyInformation( const std::vector<std::string>& pnames, cons
     }
   } else {
     ActionWithValue* av=action->plumed.getActionSet().selectWithLabel<ActionWithValue*>( lab + "_data" );
-    unsigned nfram = av->copyOutput(0)->getShape()[0]; std::string indices = "VALUES=1";
-    for(unsigned i=1; i<nfram; ++i) { std::string num; Tools::convert( i+1, num ); indices += "," + num; }
+    unsigned nfram = av->copyOutput(0)->getShape()[0];
+    std::string indices = "VALUES=1";
+    for(unsigned i=1; i<nfram; ++i) {
+      std::string num;
+      Tools::convert( i+1, num );
+      indices += "," + num;
+    }
     action->readInputLine( lab + "_ind: CONSTANT " + indices );
   }
 }

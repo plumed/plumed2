@@ -40,7 +40,9 @@ void RDF::createX2ReferenceObject( const std::string& lab, const std::string& gr
   // Create grid with normalizing function
   action->readInputLine( lab  + "_x2: REFERENCE_GRID PERIODIC=NO FUNC=x*x " + grid_setup );
   // Compute density if required
-  if( calc_dens ) action->readInputLine( lab + "_vol: VOLUME" );
+  if( calc_dens ) {
+    action->readInputLine( lab + "_vol: VOLUME" );
+  }
 }
 
 void RDF::registerKeywords( Keywords& keys ) {
@@ -58,44 +60,68 @@ void RDF::registerKeywords( Keywords& keys ) {
   keys.add("optional","DENSITY","the reference density to use when normalizing the RDF");
   keys.add("hidden","REFERENCE","this is the label of the reference objects");
   keys.setValueDescription("the radial distribution function");
-  keys.needsAction("REFERENCE_GRID"); keys.needsAction("VOLUME"); keys.needsAction("DISTANCE_MATRIX");
-  keys.needsAction("CUSTOM"); keys.needsAction("KDE"); keys.needsAction("ACCUMULATE");
+  keys.needsAction("REFERENCE_GRID");
+  keys.needsAction("VOLUME");
+  keys.needsAction("DISTANCE_MATRIX");
+  keys.needsAction("CUSTOM");
+  keys.needsAction("KDE");
+  keys.needsAction("ACCUMULATE");
   keys.needsAction("CONSTANT");
 }
 
 RDF::RDF(const ActionOptions&ao):
   Action(ao),
-  ActionShortcut(ao)
-{
+  ActionShortcut(ao) {
   // Read in grid extent and number of bins
-  std::string maxr, nbins, dens; parse("MAXR",maxr); parse("GRID_BIN",nbins); parse("DENSITY",dens);
+  std::string maxr, nbins, dens;
+  parse("MAXR",maxr);
+  parse("GRID_BIN",nbins);
+  parse("DENSITY",dens);
   std::string grid_setup = "GRID_MIN=0 GRID_MAX=" + maxr + " GRID_BIN=" + nbins;
   // Create grid with normalizing function on it
-  std::string refstr; parse("REFERENCE",refstr);
+  std::string refstr;
+  parse("REFERENCE",refstr);
   if( refstr.length()==0 ) {
-    createX2ReferenceObject( getShortcutLabel(), grid_setup, dens.length()==0, this ); refstr = getShortcutLabel();
+    createX2ReferenceObject( getShortcutLabel(), grid_setup, dens.length()==0, this );
+    refstr = getShortcutLabel();
   }
   // Read input to histogram
-  std::string cutoff, kernel, bandwidth, kernel_data; parse("KERNEL",kernel);
+  std::string cutoff, kernel, bandwidth, kernel_data;
+  parse("KERNEL",kernel);
   if( kernel=="DISCRETE" ) {
-    cutoff = maxr; kernel_data="KERNEL=DISCRETE";
+    cutoff = maxr;
+    kernel_data="KERNEL=DISCRETE";
     warning("rdf is normalised by dividing by the surface area at the grid value and not by the volume of the bin as it should be with discrete kernels");
   } else {
-    parse("BANDWIDTH",bandwidth); double rcut; parse("CUTOFF",rcut); kernel_data="KERNEL=" + kernel + " IGNORE_IF_OUT_OF_RANGE BANDWIDTH=" + bandwidth;
-    double bw; Tools::convert( bandwidth, bw ); double fcut; Tools::convert( maxr, fcut ); Tools::convert( fcut + sqrt(2.0*rcut)*bw, cutoff );
+    parse("BANDWIDTH",bandwidth);
+    double rcut;
+    parse("CUTOFF",rcut);
+    kernel_data="KERNEL=" + kernel + " IGNORE_IF_OUT_OF_RANGE BANDWIDTH=" + bandwidth;
+    double bw;
+    Tools::convert( bandwidth, bw );
+    double fcut;
+    Tools::convert( maxr, fcut );
+    Tools::convert( fcut + sqrt(2.0*rcut)*bw, cutoff );
   }
 
   // Create contact matrix
-  std::string natoms, str_norm_atoms, atom_str, group_str, groupa_str, groupb_str; parse("GROUP",group_str);
+  std::string natoms, str_norm_atoms, atom_str, group_str, groupa_str, groupb_str;
+  parse("GROUP",group_str);
   if( group_str.length()>0 ) {
-    atom_str="GROUP=" + group_str; std::vector<std::string> awords=Tools::getWords(group_str,"\t\n ,");
-    Tools::interpretRanges( awords ); Tools::convert( awords.size(), natoms ); str_norm_atoms = natoms;
+    atom_str="GROUP=" + group_str;
+    std::vector<std::string> awords=Tools::getWords(group_str,"\t\n ,");
+    Tools::interpretRanges( awords );
+    Tools::convert( awords.size(), natoms );
+    str_norm_atoms = natoms;
   } else {
-    parse("GROUPA",groupa_str); parse("GROUPB",groupb_str);
+    parse("GROUPA",groupa_str);
+    parse("GROUPB",groupb_str);
     std::vector<std::string> awords=Tools::getWords(groupb_str,"\t\n ,");
-    Tools::interpretRanges( awords ); Tools::convert( awords.size(), natoms );
+    Tools::interpretRanges( awords );
+    Tools::convert( awords.size(), natoms );
     atom_str="GROUPA=" + groupa_str + " GROUPB=" + groupb_str;
-    std::vector<std::string> bwords=Tools::getWords(groupa_str,"\t\n ,"); Tools::interpretRanges( bwords );
+    std::vector<std::string> bwords=Tools::getWords(groupa_str,"\t\n ,");
+    Tools::interpretRanges( bwords );
     Tools::convert( bwords.size()+1, str_norm_atoms );
   }
   // Retrieve the number of atoms
@@ -104,11 +130,15 @@ RDF::RDF(const ActionOptions&ao):
   // Calculate weights of distances
   readInputLine( getShortcutLabel() + "_wmat: CUSTOM ARG=" + getShortcutLabel() + "_mat FUNC=step(" + cutoff + "-x) PERIODIC=NO");
   // Now create a histogram from the contact matrix
-  unsigned clear, stride; parse("CLEAR",clear); parse("STRIDE",stride);
+  unsigned clear, stride;
+  parse("CLEAR",clear);
+  parse("STRIDE",stride);
   if( clear==1 ) {
     readInputLine( getShortcutLabel() + "_kde: KDE ARG=" + getShortcutLabel() + "_mat VOLUMES=" + getShortcutLabel() + "_wmat " + grid_setup + " " + kernel_data);
   } else {
-    std::string stridestr, clearstr; Tools::convert( stride, stridestr ); Tools::convert( clear, clearstr );
+    std::string stridestr, clearstr;
+    Tools::convert( stride, stridestr );
+    Tools::convert( clear, clearstr );
     readInputLine( getShortcutLabel() + "_okde: KDE ARG=" + getShortcutLabel() + "_mat HEIGHTS=" + getShortcutLabel() + "_wmat " + grid_setup + " " + kernel_data);
     readInputLine( getShortcutLabel() + "_kde: ACCUMULATE ARG=" + getShortcutLabel() + "_okde STRIDE=" + stridestr + " CLEAR=" + clearstr );
     readInputLine( getShortcutLabel() + "_one: CONSTANT VALUE=1");
@@ -119,11 +149,17 @@ RDF::RDF(const ActionOptions&ao):
   // And normalize by density and number of atoms (separated from above to avoid nans)
   std::string func_str = "PERIODIC=NO ARG=" + getShortcutLabel() + "_vrdf";
   if( dens.length()>0 ) {
-    if( clear==1 ) func_str += " FUNC=x/(" + dens + "*" + str_norm_atoms + ")";
-    else func_str += "," + getShortcutLabel() + "_norm FUNC=x/(y*" + dens + "*" + str_norm_atoms + ")";
+    if( clear==1 ) {
+      func_str += " FUNC=x/(" + dens + "*" + str_norm_atoms + ")";
+    } else {
+      func_str += "," + getShortcutLabel() + "_norm FUNC=x/(y*" + dens + "*" + str_norm_atoms + ")";
+    }
   } else {
-    if( clear==1 ) func_str += "," + refstr + "_vol FUNC=x*y/(" + natoms + "*" + str_norm_atoms + ")";
-    else func_str += "," + refstr + "_vol," + getShortcutLabel() + "_norm FUNC=x*y/(z*" + natoms + "*" + str_norm_atoms + ")";
+    if( clear==1 ) {
+      func_str += "," + refstr + "_vol FUNC=x*y/(" + natoms + "*" + str_norm_atoms + ")";
+    } else {
+      func_str += "," + refstr + "_vol," + getShortcutLabel() + "_norm FUNC=x*y/(z*" + natoms + "*" + str_norm_atoms + ")";
+    }
   }
   readInputLine( getShortcutLabel() + ": CUSTOM " + func_str);
 }

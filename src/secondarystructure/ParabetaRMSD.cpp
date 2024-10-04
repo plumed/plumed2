@@ -97,8 +97,12 @@ PLUMED_REGISTER_ACTION(ParabetaRMSD,"PARABETARMSD")
 
 void ParabetaRMSD::registerKeywords( Keywords& keys ) {
   SecondaryStructureRMSD::registerKeywords( keys );
-  keys.remove("ATOMS"); keys.remove("SEGMENT"); keys.remove("BONDLENGTH");
-  keys.remove("NO_ACTION_LOG"); keys.remove("CUTOFF_ATOMS"); keys.remove("STRUCTURE");
+  keys.remove("ATOMS");
+  keys.remove("SEGMENT");
+  keys.remove("BONDLENGTH");
+  keys.remove("NO_ACTION_LOG");
+  keys.remove("CUTOFF_ATOMS");
+  keys.remove("STRUCTURE");
   keys.add("compulsory","STYLE","all","Parallel beta sheets can either form in a single chain or from a pair of chains. If STYLE=all all "
            "chain configuration with the appropriate geometry are counted.  If STYLE=inter "
            "only sheet-like configurations involving two chains are counted, while if STYLE=intra "
@@ -108,33 +112,46 @@ void ParabetaRMSD::registerKeywords( Keywords& keys ) {
 
 ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
   Action(ao),
-  ActionShortcut(ao)
-{
+  ActionShortcut(ao) {
   // Read in the input and create a string that describes how to compute the less than
-  std::string ltmap; bool uselessthan=SecondaryStructureRMSD::readShortcutWords( ltmap, this );
+  std::string ltmap;
+  bool uselessthan=SecondaryStructureRMSD::readShortcutWords( ltmap, this );
   // read in the backbone atoms
-  std::vector<unsigned> chains; std::string atoms; SecondaryStructureRMSD::readBackboneAtoms( this, plumed, "protein", chains, atoms );
+  std::vector<unsigned> chains;
+  std::string atoms;
+  SecondaryStructureRMSD::readBackboneAtoms( this, plumed, "protein", chains, atoms );
 
-  bool intra_chain(false), inter_chain(false); std::string seglist;
-  std::string style; parse("STYLE",style); unsigned jjkk=1;
+  bool intra_chain(false), inter_chain(false);
+  std::string seglist;
+  std::string style;
+  parse("STYLE",style);
+  unsigned jjkk=1;
   if( Tools::caseInSensStringCompare(style, "all") ) {
-    intra_chain=true; inter_chain=true;
+    intra_chain=true;
+    inter_chain=true;
   } else if( Tools::caseInSensStringCompare(style, "inter") ) {
-    intra_chain=false; inter_chain=true;
+    intra_chain=false;
+    inter_chain=true;
   } else if( Tools::caseInSensStringCompare(style, "intra") ) {
-    intra_chain=true; inter_chain=false;
+    intra_chain=true;
+    inter_chain=false;
   } else {
     error( style + " is not a valid directive for the STYLE keyword");
   }
 
   // This constructs all conceivable sections of antibeta sheet in the backbone of the chains
   if( intra_chain ) {
-    unsigned nprevious=0; std::vector<unsigned> nlist(30);
+    unsigned nprevious=0;
+    std::vector<unsigned> nlist(30);
     for(unsigned i=0; i<chains.size(); ++i) {
-      if( chains[i]<40 ) error("segment of backbone is not long enough to form an antiparallel beta hairpin. Each backbone fragment must contain a minimum of 8 residues");
+      if( chains[i]<40 ) {
+        error("segment of backbone is not long enough to form an antiparallel beta hairpin. Each backbone fragment must contain a minimum of 8 residues");
+      }
       // Loop over all possible triples in each 8 residue segment of protein
       unsigned nres=chains[i]/5;
-      if( chains[i]%5!=0 ) error("backbone segment received does not contain a multiple of five residues");
+      if( chains[i]%5!=0 ) {
+        error("backbone segment received does not contain a multiple of five residues");
+      }
       for(unsigned ires=0; ires<nres-8; ires++) {
         for(unsigned jres=ires+6; jres<nres-2; jres++) {
           for(unsigned k=0; k<15; ++k) {
@@ -143,9 +160,13 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
           }
           std::string nlstr, num;
           Tools::convert( nlist[0], nlstr );
-          Tools::convert(jjkk, num); jjkk++;
+          Tools::convert(jjkk, num);
+          jjkk++;
           seglist += " SEGMENT" + num + "=" + nlstr;
-          for(unsigned kk=1; kk<nlist.size(); ++kk ) { Tools::convert( nlist[kk], nlstr ); seglist += "," + nlstr; }
+          for(unsigned kk=1; kk<nlist.size(); ++kk ) {
+            Tools::convert( nlist[kk], nlstr );
+            seglist += "," + nlstr;
+          }
         }
       }
       nprevious+=chains[i];
@@ -153,17 +174,29 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
   }
   // This constructs all conceivable sections of antibeta sheet that form between chains
   if( inter_chain ) {
-    if( chains.size()==1 && !Tools::caseInSensStringCompare(style, "all") ) error("there is only one chain defined so cannot use inter_chain option");
+    if( chains.size()==1 && !Tools::caseInSensStringCompare(style, "all") ) {
+      error("there is only one chain defined so cannot use inter_chain option");
+    }
     std::vector<unsigned> nlist(30);
     for(unsigned ichain=1; ichain<chains.size(); ++ichain) {
-      unsigned iprev=0; for(unsigned i=0; i<ichain; ++i) iprev+=chains[i];
+      unsigned iprev=0;
+      for(unsigned i=0; i<ichain; ++i) {
+        iprev+=chains[i];
+      }
       unsigned inres=chains[ichain]/5;
-      if( chains[ichain]%5!=0 ) error("backbone segment received does not contain a multiple of five residues");
+      if( chains[ichain]%5!=0 ) {
+        error("backbone segment received does not contain a multiple of five residues");
+      }
       for(unsigned ires=0; ires<inres-2; ++ires) {
         for(unsigned jchain=0; jchain<ichain; ++jchain) {
-          unsigned jprev=0; for(unsigned i=0; i<jchain; ++i) jprev+=chains[i];
+          unsigned jprev=0;
+          for(unsigned i=0; i<jchain; ++i) {
+            jprev+=chains[i];
+          }
           unsigned jnres=chains[jchain]/5;
-          if( chains[jchain]%5!=0 ) error("backbone segment received does not contain a multiple of five residues");
+          if( chains[jchain]%5!=0 ) {
+            error("backbone segment received does not contain a multiple of five residues");
+          }
           for(unsigned jres=0; jres<jnres-2; ++jres) {
             for(unsigned k=0; k<15; ++k) {
               nlist[k]=iprev + ires*5+k;
@@ -171,9 +204,13 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
             }
             std::string nlstr, num;
             Tools::convert( nlist[0], nlstr );
-            Tools::convert(jjkk, num); jjkk++;
+            Tools::convert(jjkk, num);
+            jjkk++;
             seglist += " SEGMENT" + num + "=" + nlstr;
-            for(unsigned kk=1; kk<nlist.size(); ++kk ) { Tools::convert( nlist[kk], nlstr ); seglist += "," + nlstr; }
+            for(unsigned kk=1; kk<nlist.size(); ++kk ) {
+              Tools::convert( nlist[kk], nlstr );
+              seglist += "," + nlstr;
+            }
           }
         }
       }
@@ -219,7 +256,10 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
   Tools::convert(  reference[0][2], ref2 );
   std::string structure=" STRUCTURE1=" + ref0 + "," + ref1 + "," + ref2;
   for(unsigned i=1; i<30; ++i) {
-    for(unsigned k=0; k<3; ++k) { Tools::convert( reference[i][k], ref0 ); structure += "," + ref0; }
+    for(unsigned k=0; k<3; ++k) {
+      Tools::convert( reference[i][k], ref0 );
+      structure += "," + ref0;
+    }
   }
 
   reference[0]=Vector(-1.439, -5.122, -1.144); // N    i
@@ -258,13 +298,29 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
   Tools::convert(  reference[0][2], ref2 );
   structure +=" STRUCTURE2=" + ref0 + "," + ref1 + "," + ref2;
   for(unsigned i=1; i<30; ++i) {
-    for(unsigned k=0; k<3; ++k) { Tools::convert( reference[i][k], ref0 ); structure += "," + ref0; }
+    for(unsigned k=0; k<3; ++k) {
+      Tools::convert( reference[i][k], ref0 );
+      structure += "," + ref0;
+    }
   }
 
-  std::string strands_cutoff; parse("STRANDS_CUTOFF",strands_cutoff);
-  std::string nopbcstr=""; bool nopbc; parseFlag("NOPBC",nopbc); if( nopbc ) nopbcstr = " NOPBC";
-  if( strands_cutoff.length()>0 ) strands_cutoff=" CUTOFF_ATOMS=6,21 STRANDS_CUTOFF="+strands_cutoff;
-  std::string type; parse("TYPE",type); std::string lab = getShortcutLabel() + "_low"; if( uselessthan ) lab = getShortcutLabel();
+  std::string strands_cutoff;
+  parse("STRANDS_CUTOFF",strands_cutoff);
+  std::string nopbcstr="";
+  bool nopbc;
+  parseFlag("NOPBC",nopbc);
+  if( nopbc ) {
+    nopbcstr = " NOPBC";
+  }
+  if( strands_cutoff.length()>0 ) {
+    strands_cutoff=" CUTOFF_ATOMS=6,21 STRANDS_CUTOFF="+strands_cutoff;
+  }
+  std::string type;
+  parse("TYPE",type);
+  std::string lab = getShortcutLabel() + "_low";
+  if( uselessthan ) {
+    lab = getShortcutLabel();
+  }
   readInputLine( getShortcutLabel() + "_both: SECONDARY_STRUCTURE_RMSD BONDLENGTH=0.17" + seglist + structure + " " + atoms + " TYPE=" + type + strands_cutoff + nopbcstr );
   if( ltmap.length()>0 ) {
     // Create the lowest line

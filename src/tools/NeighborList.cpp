@@ -119,8 +119,9 @@ void NeighborList::initialize() {
   }
   //TODO: test if this is feasible for accelerating the loop
   //#pragma omp parallel for default(shared)
-  for(unsigned int i=0; i<nallpairs_; ++i)
+  for(unsigned int i=0; i<nallpairs_; ++i) {
     neighbors_[i]=getIndexPair(i);
+  }
 }
 
 std::vector<AtomNumber>& NeighborList::getFullAtomList() {
@@ -129,11 +130,11 @@ std::vector<AtomNumber>& NeighborList::getFullAtomList() {
 
 NeighborList::pairIDs NeighborList::getIndexPair(const unsigned ipair) {
   pairIDs index;
-  if(twolists_ && do_pair_)
+  if(twolists_ && do_pair_) {
     index=pairIDs(ipair,ipair+nlist0_);
-  else if (twolists_ && !do_pair_)
+  } else if (twolists_ && !do_pair_) {
     index=pairIDs(ipair/nlist1_,ipair%nlist1_+nlist0_);
-  else if (!twolists_) {
+  } else if (!twolists_) {
     unsigned ii = nallpairs_-1-ipair;
     unsigned  K = unsigned(std::floor((std::sqrt(double(8*ii+1))+1)/2));
     unsigned jj = ii-K*(K-1)/2;
@@ -187,8 +188,9 @@ void NeighborList::update(const std::vector<Vector>& positions) {
   // find total dimension of neighborlist
   std::vector <int> local_nl_size(stride, 0);
   local_nl_size[rank] = local_flat_nl.size();
-  if(!serial_)
+  if(!serial_) {
     comm.Sum(&local_nl_size[0], stride);
+  }
   int tot_size = std::accumulate(local_nl_size.begin(), local_nl_size.end(), 0);
   if(tot_size==0) {
     setRequestList();
@@ -211,8 +213,9 @@ void NeighborList::update(const std::vector<Vector>& positions) {
                     &merge_nl[0],
                     &local_nl_size[0],
                     &disp[0]);
-  } else
+  } else {
     merge_nl = local_flat_nl;
+  }
   // resize neighbor stuff
   neighbors_.resize(tot_size/2);
   for(unsigned i=0; i<tot_size/2; i++) {
@@ -283,10 +286,12 @@ NeighborList::getClosePairAtomNumber(const unsigned i) const {
 std::vector<unsigned> NeighborList::getNeighbors(const unsigned index) {
   std::vector<unsigned> neighbors;
   for(unsigned int i=0; i<size(); ++i) {
-    if(neighbors_[i].first==index)
+    if(neighbors_[i].first==index) {
       neighbors.push_back(neighbors_[i].second);
-    if(neighbors_[i].second==index)
+    }
+    if(neighbors_[i].second==index) {
       neighbors.push_back(neighbors_[i].first);
+    }
   }
   return neighbors;
 }

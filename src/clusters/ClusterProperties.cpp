@@ -75,12 +75,13 @@ void ClusterProperties::registerKeywords(Keywords& keys) {
 
 ClusterProperties::ClusterProperties(const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
+  ActionShortcut(ao) {
   // Read the property we are interested in
-  std::string argstr; parse("ARG",argstr);
+  std::string argstr;
+  parse("ARG",argstr);
   // Read in the shortcut keywords
-  std::map<std::string,std::string> keymap; multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );
+  std::map<std::string,std::string> keymap;
+  multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );
   // Create a cluster weights object
   readInputLine( getShortcutLabel() + ": CLUSTER_WEIGHTS " + convertInputLineToString() );
   // Now do the multicolvar bit

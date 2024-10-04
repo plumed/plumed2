@@ -33,8 +33,7 @@ namespace PLMD {
 class ActionWithVector:
   public ActionAtomistic,
   public ActionWithValue,
-  public ActionWithArguments
-{
+  public ActionWithArguments {
   friend class Value;
 private:
 /// Is the calculation to be done in serial
@@ -139,15 +138,21 @@ public:
 /// We override clearDerivatives here to prevent data in streams from being deleted
   void clearDerivatives( const bool& force=false ) override;
 /// Check if we can be after another ActionWithVector
-  virtual bool canBeAfterInChain( ActionWithVector* av ) { return true; }
+  virtual bool canBeAfterInChain( ActionWithVector* av ) {
+    return true;
+  }
 /// Do we always need to do all the tasks for this action
   virtual void areAllTasksRequired( std::vector<ActionWithVector*>& task_reducing_actions ) {}
 /// Find out how many tasks we need to perform in this loop
   virtual void getNumberOfTasks( unsigned& ntasks );
 /// Check the status of the ith task
-  virtual int checkTaskStatus( const unsigned& taskno, int& flag ) const { return flag; }
+  virtual int checkTaskStatus( const unsigned& taskno, int& flag ) const {
+    return flag;
+  }
 /// Check if we are in a subchain
-  virtual bool isInSubChain( unsigned& nder ) { return false; }
+  virtual bool isInSubChain( unsigned& nder ) {
+    return false;
+  }
 /// Get the additional tasks that are required here
   virtual void getAdditionalTasksRequired( ActionWithVector* action, std::vector<unsigned>& atasks );
 /// setup the streamed quantities

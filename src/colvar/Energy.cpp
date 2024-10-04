@@ -81,18 +81,28 @@ PLUMED_REGISTER_ACTION(Energy,"ENERGY")
 Energy::Energy(const ActionOptions&ao):
   Action(ao),
   ActionToPutData(ao),
-  interface(NULL)
-{
-  plumed.setEnergyValue( getLabel() ); std::vector<unsigned> shape;
-  addValue( shape ); setNotPeriodic(); setUnit( "energy", "default" );
+  interface(NULL) {
+  plumed.setEnergyValue( getLabel() );
+  std::vector<unsigned> shape;
+  addValue( shape );
+  setNotPeriodic();
+  setUnit( "energy", "default" );
   ActionToPutData* px=plumed.getActionSet().selectWithLabel< ActionToPutData*>("posx");
-  plumed_assert(px); forces_to_scale.push_back(px); addDependency( px );
+  plumed_assert(px);
+  forces_to_scale.push_back(px);
+  addDependency( px );
   ActionToPutData* py=plumed.getActionSet().selectWithLabel< ActionToPutData*>("posy");
-  plumed_assert(py); forces_to_scale.push_back(py); addDependency( py );
+  plumed_assert(py);
+  forces_to_scale.push_back(py);
+  addDependency( py );
   ActionToPutData* pz=plumed.getActionSet().selectWithLabel< ActionToPutData*>("posz");
-  plumed_assert(pz); forces_to_scale.push_back(pz); addDependency( pz );
+  plumed_assert(pz);
+  forces_to_scale.push_back(pz);
+  addDependency( pz );
   ActionToPutData* bx=plumed.getActionSet().selectWithLabel< ActionToPutData*>("Box");
-  plumed_assert(bx); forces_to_scale.push_back(bx); addDependency( bx );
+  plumed_assert(bx);
+  forces_to_scale.push_back(bx);
+  addDependency( bx );
   log<<"  Bibliography ";
   log<<plumed.cite("Bartels and Karplus, J. Phys. Chem. B 102, 865 (1998)");
   log<<plumed.cite("Bonomi and Parrinello, J. Comp. Chem. 30, 1615 (2009)");
@@ -106,15 +116,22 @@ void Energy::registerKeywords( Keywords& keys ) {
 void Energy::wait() {
   if( !interface ) {
     std::vector<DomainDecomposition*> allput=plumed.getActionSet().select<DomainDecomposition*>();
-    if( allput.size()>1 ) warning("found more than one interface so don't know how to sum energy");
+    if( allput.size()>1 ) {
+      warning("found more than one interface so don't know how to sum energy");
+    }
     interface = allput[0];
   }
-  ActionToPutData::wait(); if( interface ) interface->sumOverDomains( copyOutput(0) );
+  ActionToPutData::wait();
+  if( interface ) {
+    interface->sumOverDomains( copyOutput(0) );
+  }
 }
 
 void Energy::apply() {
   if( getPntrToValue()->forcesWereAdded() ) {
-    for(unsigned i=0; i<forces_to_scale.size(); ++i) forces_to_scale[i]->rescaleForces( 1.- getPntrToValue()->getForce(0));
+    for(unsigned i=0; i<forces_to_scale.size(); ++i) {
+      forces_to_scale[i]->rescaleForces( 1.- getPntrToValue()->getForce(0));
+    }
   }
 }
 

@@ -123,26 +123,45 @@ void Combine::registerKeywords(Keywords& keys) {
 }
 
 void Combine::read( ActionWithArguments* action ) {
-  coefficients.resize( action->getNumberOfArguments() ); parameters.resize( action->getNumberOfArguments() ); powers.resize( action->getNumberOfArguments() );
+  coefficients.resize( action->getNumberOfArguments() );
+  parameters.resize( action->getNumberOfArguments() );
+  powers.resize( action->getNumberOfArguments() );
   parseVector(action,"COEFFICIENTS",coefficients);
-  if(coefficients.size()!=static_cast<unsigned>(action->getNumberOfArguments())) action->error("Size of COEFFICIENTS array should be the same as number for arguments");
+  if(coefficients.size()!=static_cast<unsigned>(action->getNumberOfArguments())) {
+    action->error("Size of COEFFICIENTS array should be the same as number for arguments");
+  }
   parseVector(action,"PARAMETERS",parameters);
-  if(parameters.size()!=static_cast<unsigned>(action->getNumberOfArguments())) action->error("Size of PARAMETERS array should be the same as number for arguments");
-  parseVector(action,"POWERS",powers); if(powers.size()!=static_cast<unsigned>(action->getNumberOfArguments())) action->error("Size of POWERS array should be the same as number for arguments");
+  if(parameters.size()!=static_cast<unsigned>(action->getNumberOfArguments())) {
+    action->error("Size of PARAMETERS array should be the same as number for arguments");
+  }
+  parseVector(action,"POWERS",powers);
+  if(powers.size()!=static_cast<unsigned>(action->getNumberOfArguments())) {
+    action->error("Size of POWERS array should be the same as number for arguments");
+  }
 
   parseFlag(action,"NORMALIZE",normalize);
   if(normalize) {
     double n=0.0;
-    for(unsigned i=0; i<coefficients.size(); i++) n+=coefficients[i];
-    for(unsigned i=0; i<coefficients.size(); i++) coefficients[i]*=(1.0/n);
+    for(unsigned i=0; i<coefficients.size(); i++) {
+      n+=coefficients[i];
+    }
+    for(unsigned i=0; i<coefficients.size(); i++) {
+      coefficients[i]*=(1.0/n);
+    }
   }
 
   action->log.printf("  with coefficients:");
-  for(unsigned i=0; i<coefficients.size(); i++) action->log.printf(" %f",coefficients[i]);
+  for(unsigned i=0; i<coefficients.size(); i++) {
+    action->log.printf(" %f",coefficients[i]);
+  }
   action->log.printf("\n  with parameters:");
-  for(unsigned i=0; i<parameters.size(); i++) action->log.printf(" %f",parameters[i]);
+  for(unsigned i=0; i<parameters.size(); i++) {
+    action->log.printf(" %f",parameters[i]);
+  }
   action->log.printf("\n  and powers:");
-  for(unsigned i=0; i<powers.size(); i++) action->log.printf(" %f",powers[i]);
+  for(unsigned i=0; i<powers.size(); i++) {
+    action->log.printf(" %f",powers[i]);
+  }
   action->log.printf("\n");
 }
 

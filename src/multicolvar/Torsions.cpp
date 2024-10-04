@@ -78,14 +78,14 @@ public:
 PLUMED_REGISTER_ACTION(Torsions,"TORSIONS")
 
 void Torsions::registerKeywords(Keywords& keys) {
-  ActionShortcut::registerKeywords( keys ); MultiColvarShortcuts::shortcutKeywords( keys );
+  ActionShortcut::registerKeywords( keys );
+  MultiColvarShortcuts::shortcutKeywords( keys );
   keys.needsAction("TORSION");
 }
 
 Torsions::Torsions(const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
+  ActionShortcut(ao) {
   log.printf("Action TORSION\n");
   log.printf("  with label %s \n", getShortcutLabel().c_str() );
   readInputLine( getShortcutLabel() + ": TORSION " + convertInputLineToString() );

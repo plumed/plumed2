@@ -70,8 +70,7 @@ Notice that by defauly LAMBDA=0, LAMBDA_MIN=0 and LAMBDA_MAX=1, which is the typ
 //+ENDPLUMEDOC
 
 class ECVlinear :
-  public ExpansionCVs
-{
+  public ExpansionCVs {
 private:
   bool todoAutomatic_;
   bool geom_spacing_;
@@ -94,8 +93,7 @@ public:
 
 PLUMED_REGISTER_ACTION(ECVlinear,"ECV_LINEAR")
 
-void ECVlinear::registerKeywords(Keywords& keys)
-{
+void ECVlinear::registerKeywords(Keywords& keys) {
   ExpansionCVs::registerKeywords(keys);
   keys.remove("ARG");
   keys.add("compulsory","ARG","the label of the Hamiltonian difference. Delta U");
@@ -112,15 +110,15 @@ ECVlinear::ECVlinear(const ActionOptions&ao)
   : Action(ao)
   , ExpansionCVs(ao)
   , todoAutomatic_(false)
-  , beta0_(1./kbt_)
-{
+  , beta0_(1./kbt_) {
   plumed_massert(getNumberOfArguments()==1,"only DeltaU should be given as ARG");
 
 //set beta0_
   bool dimensionless;
   parseFlag("DIMENSIONLESS",dimensionless);
-  if(dimensionless)
+  if(dimensionless) {
     beta0_=1;
+  }
 
 //parse lambda info
   parse("LAMBDA",lambda0_);
@@ -138,28 +136,26 @@ ECVlinear::ECVlinear(const ActionOptions&ao)
   checkRead();
 
 //set the diff vector using lambdas
-  if(lambdas.size()>0)
-  {
+  if(lambdas.size()>0) {
     plumed_massert(lambda_steps==0,"cannot set both LAMBDA_STEPS and LAMBDA_SET_ALL");
     plumed_massert(lambda_min==myNone && lambda_max==myNone,"cannot set both LAMBDA_SET_ALL and LAMBDA_MIN/MAX");
     plumed_massert(lambdas.size()>=2,"set at least 2 lambdas with LAMBDA_SET_ALL");
-    for(unsigned k=0; k<lambdas.size()-1; k++)
+    for(unsigned k=0; k<lambdas.size()-1; k++) {
       plumed_massert(lambdas[k]<=lambdas[k+1],"LAMBDA_SET_ALL must be properly ordered");
+    }
     lambda_min=lambdas[0];
     lambda_max=lambdas[lambdas.size()-1];
     derECVs_.resize(lambdas.size());
-    for(unsigned k=0; k<derECVs_.size(); k++)
+    for(unsigned k=0; k<derECVs_.size(); k++) {
       derECVs_[k]=beta0_*(lambdas[k]-lambda0_);
-  }
-  else
-  { //get LAMBDA_MIN and LAMBDA_MAX
-    if(lambda_min==myNone)
-    {
+    }
+  } else {
+    //get LAMBDA_MIN and LAMBDA_MAX
+    if(lambda_min==myNone) {
       lambda_min=0;
       log.printf("  no LAMBDA_MIN provided, using LAMBDA_MIN = %g\n",lambda_min);
     }
-    if(lambda_max==myNone)
-    {
+    if(lambda_max==myNone) {
       lambda_max=1;
       log.printf("  no LAMBDA_MAX provided, using LAMBDA_MAX = %g\n",lambda_max);
     }
@@ -167,52 +163,53 @@ ECVlinear::ECVlinear(const ActionOptions&ao)
     derECVs_.resize(2);
     derECVs_[0]=beta0_*(lambda_min-lambda0_);
     derECVs_[1]=beta0_*(lambda_max-lambda0_);
-    if(lambda_min==lambda_max && lambda_steps==0)
+    if(lambda_min==lambda_max && lambda_steps==0) {
       lambda_steps=1;
-    if(lambda_steps>0)
+    }
+    if(lambda_steps>0) {
       derECVs_=getSteps(derECVs_[0],derECVs_[1],lambda_steps,"LAMBDA",geom_spacing_,beta0_*lambda0_);
-    else
+    } else {
       todoAutomatic_=true;
+    }
   }
-  if(lambda0_<lambda_min || lambda0_>lambda_max)
+  if(lambda0_<lambda_min || lambda0_>lambda_max) {
     log.printf(" +++ WARNING +++ running at LAMBDA=%g which is outside the chosen lambda range\n",lambda0_);
+  }
 
 //print some info
   log.printf("  running at LAMBDA=%g\n",lambda0_);
   log.printf("  targeting a lambda range from LAMBDA_MIN=%g to LAMBDA_MAX=%g\n",lambda_min,lambda_max);
-  if(dimensionless)
+  if(dimensionless) {
     log.printf(" -- DIMENSIONLESS: the ARG is not multiplied by beta\n");
-  if(geom_spacing_)
+  }
+  if(geom_spacing_) {
     log.printf(" -- GEOM_SPACING: lambdas will be geometrically spaced\n");
+  }
 }
 
-void ECVlinear::calculateECVs(const double * DeltaU)
-{
-  for(unsigned k=0; k<derECVs_.size(); k++)
+void ECVlinear::calculateECVs(const double * DeltaU) {
+  for(unsigned k=0; k<derECVs_.size(); k++) {
     ECVs_[k]=derECVs_[k]*DeltaU[0];
+  }
 // derivatives never change: derECVs_k=beta0*(lambda_k-lambda0)
 }
 
-const double * ECVlinear::getPntrToECVs(unsigned j)
-{
+const double * ECVlinear::getPntrToECVs(unsigned j) {
   plumed_massert(isReady_,"cannot access ECVs before initialization");
   plumed_massert(j==0,getName()+" has only one CV, the DeltaU");
   return &ECVs_[0];
 }
 
-const double * ECVlinear::getPntrToDerECVs(unsigned j)
-{
+const double * ECVlinear::getPntrToDerECVs(unsigned j) {
   plumed_massert(isReady_,"cannot access ECVs before initialization");
   plumed_massert(j==0,getName()+" has only one CV, the DeltaU");
   return &derECVs_[0];
 }
 
-std::vector<std::string> ECVlinear::getLambdas() const
-{
+std::vector<std::string> ECVlinear::getLambdas() const {
   plumed_massert(!todoAutomatic_,"cannot access lambdas before initializing them");
   std::vector<std::string> lambdas(derECVs_.size());
-  for(unsigned k=0; k<derECVs_.size(); k++)
-  {
+  for(unsigned k=0; k<derECVs_.size(); k++) {
     std::ostringstream subs;
     subs<<derECVs_[k]/beta0_+lambda0_; //lambda_k
     lambdas[k]=subs.str();
@@ -220,8 +217,7 @@ std::vector<std::string> ECVlinear::getLambdas() const
   return lambdas;
 }
 
-void ECVlinear::initECVs()
-{
+void ECVlinear::initECVs() {
   plumed_massert(!isReady_,"initialization should not be called twice");
   plumed_massert(!todoAutomatic_,"this should not happen");
   totNumECVs_=derECVs_.size();
@@ -230,17 +226,17 @@ void ECVlinear::initECVs()
   log.printf("  *%4lu lambdas for %s\n",derECVs_.size(),getName().c_str());
 }
 
-void ECVlinear::initECVs_observ(const std::vector<double>& all_obs_cvs,const unsigned ncv,const unsigned index_j)
-{
-  if(todoAutomatic_) //estimate the steps in lambda from observations
-  {
+void ECVlinear::initECVs_observ(const std::vector<double>& all_obs_cvs,const unsigned ncv,const unsigned index_j) {
+  if(todoAutomatic_) { //estimate the steps in lambda from observations
     plumed_massert(all_obs_cvs.size()%ncv==0 && index_j<ncv,"initECVs_observ parameters are inconsistent");
     std::vector<double> obs_cv(all_obs_cvs.size()/ncv); //copy only useful observation (would be better not to copy...)
-    for(unsigned t=0; t<obs_cv.size(); t++)
+    for(unsigned t=0; t<obs_cv.size(); t++) {
       obs_cv[t]=all_obs_cvs[t*ncv+index_j];
+    }
     const unsigned lambda_steps=estimateNumSteps(derECVs_[0],derECVs_[1],obs_cv,"LAMBDA");
-    if(beta0_!=1)
+    if(beta0_!=1) {
       log.printf("    (spacing is in beta0 units)\n");
+    }
     derECVs_=getSteps(derECVs_[0],derECVs_[1],lambda_steps,"LAMBDA",geom_spacing_,beta0_*lambda0_);
     todoAutomatic_=false;
   }
@@ -248,12 +244,10 @@ void ECVlinear::initECVs_observ(const std::vector<double>& all_obs_cvs,const uns
   calculateECVs(&all_obs_cvs[index_j]);
 }
 
-void ECVlinear::initECVs_restart(const std::vector<std::string>& lambdas)
-{
+void ECVlinear::initECVs_restart(const std::vector<std::string>& lambdas) {
   std::size_t pos=lambdas[0].find("_");
   plumed_massert(pos==std::string::npos,"this should not happen, only one CV is used in "+getName());
-  if(todoAutomatic_)
-  {
+  if(todoAutomatic_) {
     derECVs_=getSteps(derECVs_[0],derECVs_[1],lambdas.size(),"LAMBDA",geom_spacing_,beta0_*lambda0_);
     todoAutomatic_=false;
   }

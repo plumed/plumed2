@@ -163,7 +163,8 @@ int SwitchingPlotter::main( FILE*, FILE*, Communicator& ) {
       return  (r0-lowerLimit)/(interval *Nsteps);
     }
     return (upperLimit-lowerLimit)/double(Nsteps);
-  }();
+  }
+  ();
   if (step <0.0) {
     error("I calculated a negative step");
   }

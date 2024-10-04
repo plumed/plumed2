@@ -108,14 +108,15 @@ DHEnergy::DHEnergy(const ActionOptions&ao):
   Action(ao),
   CoordinationBase(ao),
   k(0.0),
-  constant(0.0)
-{
+  constant(0.0) {
   double I,T;
   parse("I",I);
   parse("TEMP",T);
   parse("EPSILON",epsilon);
   checkRead();
-  if( usingNaturalUnits() ) error("DHENERGY cannot be used for calculations performed with natural units");
+  if( usingNaturalUnits() ) {
+    error("DHENERGY cannot be used for calculations performed with natural units");
+  }
   constant=138.935458111/getUnits().getEnergy()/getUnits().getLength()*getUnits().getCharge()*getUnits().getCharge();
   k=std::sqrt(I/(epsilon*T))*502.903741125*getUnits().getLength();
   checkRead();

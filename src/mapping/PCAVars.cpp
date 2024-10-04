@@ -185,55 +185,99 @@ void PCAVars::registerKeywords( Keywords& keys ) {
   keys.addFlag("NOPBC",false,"do not use periodic boundary conditions when computing this quantity");
   keys.addOutputComponent("eig","default","the projections on the eigenvalues");
   keys.addOutputComponent("residual","default","the residual distance that is not projected on any of the eigenvalues");
-  keys.needsAction("RMSD"); keys.needsAction("PDB2CONSTANT"); keys.needsAction("TRANSPOSE");
-  keys.needsAction("EUCLIDEAN_DISTANCE"); keys.needsAction("CONCATENATE"); keys.needsAction("COMBINE"); keys.needsAction("CONSTANT");
-  keys.needsAction("COMBINE"); keys.needsAction("MATRIX_VECTOR_PRODUCT"); keys.needsAction("CUSTOM"); keys.needsAction("SUM");
+  keys.needsAction("RMSD");
+  keys.needsAction("PDB2CONSTANT");
+  keys.needsAction("TRANSPOSE");
+  keys.needsAction("EUCLIDEAN_DISTANCE");
+  keys.needsAction("CONCATENATE");
+  keys.needsAction("COMBINE");
+  keys.needsAction("CONSTANT");
+  keys.needsAction("COMBINE");
+  keys.needsAction("MATRIX_VECTOR_PRODUCT");
+  keys.needsAction("CUSTOM");
+  keys.needsAction("SUM");
   keys.needsAction("SELECT_COMPONENTS");
 }
 
 PCAVars::PCAVars( const ActionOptions& ao ):
   Action(ao),
-  ActionShortcut(ao)
-{
-  std::string reference; parse("REFERENCE",reference);
+  ActionShortcut(ao) {
+  std::string reference;
+  parse("REFERENCE",reference);
   // Create the object that holds the atomic positions by reading the first frame
-  FILE* fp=std::fopen(reference.c_str(),"r"); PDB pdb; if(!fp) error("could not open reference file " + reference );
-  bool do_read=pdb.readFromFilepointer(fp,false,0.1); if( !do_read ) plumed_merror("missing file " + reference );
-  std::string mtype; parse("TYPE",mtype);
+  FILE* fp=std::fopen(reference.c_str(),"r");
+  PDB pdb;
+  if(!fp) {
+    error("could not open reference file " + reference );
+  }
+  bool do_read=pdb.readFromFilepointer(fp,false,0.1);
+  if( !do_read ) {
+    plumed_merror("missing file " + reference );
+  }
+  std::string mtype;
+  parse("TYPE",mtype);
 
   if( pdb.getPositions().size()>0 ) {
     // And now create the rmsd object
     std::string rmsd_line =  getShortcutLabel() + "_at: RMSD DISPLACEMENT SQUARED NUMBER=1 REFERENCE=" + reference;
-    bool nopbc; parseFlag("NOPBC",nopbc); if(nopbc) rmsd_line += " NOPBC";
+    bool nopbc;
+    parseFlag("NOPBC",nopbc);
+    if(nopbc) {
+      rmsd_line += " NOPBC";
+    }
     // Now create the RMSD object
     readInputLine( rmsd_line + " TYPE=" + mtype );
   }
-  std::vector<std::string> argnames; parseVector("ARG",argnames); unsigned nargs=0; std::string instargs, refargs; std::vector<Value*> theargs;
-  if( argnames.size()>0 ) ActionWithArguments::interpretArgumentList( argnames, plumed.getActionSet(), this, theargs );
+  std::vector<std::string> argnames;
+  parseVector("ARG",argnames);
+  unsigned nargs=0;
+  std::string instargs, refargs;
+  std::vector<Value*> theargs;
+  if( argnames.size()>0 ) {
+    ActionWithArguments::interpretArgumentList( argnames, plumed.getActionSet(), this, theargs );
+  }
   for(unsigned i=0; i<theargs.size(); ++i) {
-    std::string iargn = Path::fixArgumentName( theargs[i]->getName() ); nargs += theargs[i]->getNumberOfValues();
+    std::string iargn = Path::fixArgumentName( theargs[i]->getName() );
+    nargs += theargs[i]->getNumberOfValues();
     if( theargs[i]->getNumberOfValues()>1 ) {
       readInputLine( getShortcutLabel() + "_ref_" + iargn + "T: PDB2CONSTANT NUMBER=1 REFERENCE=" + reference + " ARG=" + theargs[i]->getName() );
       readInputLine( getShortcutLabel() + "_ref_" + iargn + ": TRANSPOSE ARG=" + getShortcutLabel() + "_ref_" + iargn + "T");
-    } else readInputLine( getShortcutLabel() + "_ref_" + iargn + ": PDB2CONSTANT NUMBER=1 REFERENCE=" + reference + " ARG=" + theargs[i]->getName() );
-    if( i==0 ) { instargs=" ARG1=" + theargs[i]->getName(); refargs=" ARG2=" + getShortcutLabel() + "_ref_" + iargn; }
-    else { instargs +="," + theargs[i]->getName(); refargs +="," + getShortcutLabel() + "_ref_" + iargn; }
+    } else {
+      readInputLine( getShortcutLabel() + "_ref_" + iargn + ": PDB2CONSTANT NUMBER=1 REFERENCE=" + reference + " ARG=" + theargs[i]->getName() );
+    }
+    if( i==0 ) {
+      instargs=" ARG1=" + theargs[i]->getName();
+      refargs=" ARG2=" + getShortcutLabel() + "_ref_" + iargn;
+    } else {
+      instargs +="," + theargs[i]->getName();
+      refargs +="," + getShortcutLabel() + "_ref_" + iargn;
+    }
   }
-  if( theargs.size()>0 ) readInputLine( getShortcutLabel() + "_argdist: EUCLIDEAN_DISTANCE SQUARED" + instargs + refargs );
+  if( theargs.size()>0 ) {
+    readInputLine( getShortcutLabel() + "_argdist: EUCLIDEAN_DISTANCE SQUARED" + instargs + refargs );
+  }
   if( pdb.getPositions().size()>0 && theargs.size()>0 ) {
     readInputLine( getShortcutLabel() + ": CONCATENATE ARG=" + getShortcutLabel() + "_at.disp," + getShortcutLabel() + "_argdist_diffT");
     readInputLine( getShortcutLabel() + "_dist: COMBINE ARG=" + getShortcutLabel() + "_at.dist," + getShortcutLabel() + "_argdist PERIODIC=NO");
   }
 
   // Get the displace stuff
-  std::vector<double> displace( pdb.getBeta() ); double dtot = 0;
-  for(unsigned i=0; i<displace.size(); ++i) dtot += displace[i];
-  for(unsigned i=0; i<displace.size(); ++i) displace[i] = displace[i] / dtot;
+  std::vector<double> displace( pdb.getBeta() );
+  double dtot = 0;
+  for(unsigned i=0; i<displace.size(); ++i) {
+    dtot += displace[i];
+  }
+  for(unsigned i=0; i<displace.size(); ++i) {
+    displace[i] = displace[i] / dtot;
+  }
 
   // Now read in the directions and create matheval objects to compute the pca components
-  unsigned nfram=0, ncomp=0; std::string pvec;
+  unsigned nfram=0, ncomp=0;
+  std::string pvec;
   while( do_read ) {
-    std::vector<double> argdir(nargs); PDB mypdb; do_read=mypdb.readFromFilepointer(fp,plumed.usingNaturalUnits(),0.1/plumed.getUnits().getLength());
+    std::vector<double> argdir(nargs);
+    PDB mypdb;
+    do_read=mypdb.readFromFilepointer(fp,plumed.usingNaturalUnits(),0.1/plumed.getUnits().getLength());
     if( do_read ) {
       nfram++;
       // Normalize the eigenvector in the input
@@ -246,10 +290,17 @@ PCAVars::PCAVars( const ActionOptions& ao ):
       unsigned k=0;
       for(unsigned i=0; i<theargs.size(); ++i) {
         std::vector<double> argval( theargs[i]->getNumberOfValues() );
-        if( !mypdb.getArgumentValue(theargs[i]->getName(), argval) ) error("argument " + theargs[i]->getName() + " was not set in pdb input");
-        for(unsigned j=0; j<argval.size(); ++j) { argdir[k] = argval[j]; norm += argdir[k]*argdir[k]; k++; }
+        if( !mypdb.getArgumentValue(theargs[i]->getName(), argval) ) {
+          error("argument " + theargs[i]->getName() + " was not set in pdb input");
+        }
+        for(unsigned j=0; j<argval.size(); ++j) {
+          argdir[k] = argval[j];
+          norm += argdir[k]*argdir[k];
+          k++;
+        }
       }
-      norm = sqrt( norm ); std::vector<double> normed_coeffs( 3*mypdb.getPositions().size() );
+      norm = sqrt( norm );
+      std::vector<double> normed_coeffs( 3*mypdb.getPositions().size() );
       for(unsigned i=0; i<mypdb.getPositions().size(); ++i) {
         if( mtype=="SIMPLE" ) {
           normed_coeffs[0*mypdb.getPositions().size()+i] = mypdb.getPositions()[i][0] / norm;
@@ -263,35 +314,63 @@ PCAVars::PCAVars( const ActionOptions& ao ):
       }
       std::string coeff1;
       if( mypdb.getPositions().size()>0 ) {
-        if( nfram==1 ) Tools::convert( normed_coeffs[0], pvec );
-        else { Tools::convert( normed_coeffs[0], coeff1 ); pvec += "," + coeff1; }
+        if( nfram==1 ) {
+          Tools::convert( normed_coeffs[0], pvec );
+        } else {
+          Tools::convert( normed_coeffs[0], coeff1 );
+          pvec += "," + coeff1;
+        }
         for(unsigned i=1; i<normed_coeffs.size(); ++i) {
           Tools::convert( normed_coeffs[i], coeff1 );
           pvec += "," + coeff1;
         }
-        for(unsigned i=0; i<argdir.size(); ++i) { Tools::convert( argdir[i] / norm, coeff1 ); pvec += "," + coeff1; }
+        for(unsigned i=0; i<argdir.size(); ++i) {
+          Tools::convert( argdir[i] / norm, coeff1 );
+          pvec += "," + coeff1;
+        }
       } else if( theargs.size()>0 ) {
-        if( nfram==1 ) Tools::convert( argdir[0] / norm, pvec );
-        else { Tools::convert( argdir[0] / norm, coeff1 ); pvec += "," + coeff1; }
-        for(unsigned i=1; i<argdir.size(); ++i) { Tools::convert( argdir[i] / norm, coeff1 ); pvec += "," + coeff1; }
+        if( nfram==1 ) {
+          Tools::convert( argdir[0] / norm, pvec );
+        } else {
+          Tools::convert( argdir[0] / norm, coeff1 );
+          pvec += "," + coeff1;
+        }
+        for(unsigned i=1; i<argdir.size(); ++i) {
+          Tools::convert( argdir[i] / norm, coeff1 );
+          pvec += "," + coeff1;
+        }
       }
       ncomp = 3*mypdb.getPositions().size() + nargs;
-    } else { break; }
+    } else {
+      break;
+    }
   }
-  std::fclose(fp); std::string neig, ncols; Tools::convert( nfram, neig ); Tools::convert( ncomp, ncols );
+  std::fclose(fp);
+  std::string neig, ncols;
+  Tools::convert( nfram, neig );
+  Tools::convert( ncomp, ncols );
   readInputLine( getShortcutLabel() + "_peig: CONSTANT VALUES=" + pvec + " NROWS=" + neig + " NCOLS=" + ncols );
-  if( pdb.getPositions().size()>0 && theargs.size()>0 ) readInputLine( getShortcutLabel() + "_eig: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_peig," + getShortcutLabel() );
-  else if( pdb.getPositions().size()>0 ) readInputLine( getShortcutLabel() + "_eig: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_peig," + getShortcutLabel() + "_at.disp");
-  else if( theargs.size()>0 ) readInputLine( getShortcutLabel() + "_eig: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_peig," + getShortcutLabel() + "_argdist_diffT");
+  if( pdb.getPositions().size()>0 && theargs.size()>0 ) {
+    readInputLine( getShortcutLabel() + "_eig: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_peig," + getShortcutLabel() );
+  } else if( pdb.getPositions().size()>0 ) {
+    readInputLine( getShortcutLabel() + "_eig: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_peig," + getShortcutLabel() + "_at.disp");
+  } else if( theargs.size()>0 ) {
+    readInputLine( getShortcutLabel() + "_eig: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_peig," + getShortcutLabel() + "_argdist_diffT");
+  }
   for(unsigned i=0; i<nfram; ++i) {
-    std::string num; Tools::convert( i+1, num );
+    std::string num;
+    Tools::convert( i+1, num );
     readInputLine( getShortcutLabel() + "_eig-" + num + ": SELECT_COMPONENTS ARG=" + getShortcutLabel() + "_eig COMPONENTS=" + num );
   }
   readInputLine( getShortcutLabel() + "_eig2: CUSTOM ARG=" + getShortcutLabel() + "_eig FUNC=x*x PERIODIC=NO");
   readInputLine( getShortcutLabel() + "_eigsum2: SUM ARG=" +  getShortcutLabel() + "_eig2 PERIODIC=NO");
-  if( pdb.getPositions().size()>0 && theargs.size()>0 ) readInputLine( getShortcutLabel() + "_residual: CUSTOM ARG=" + getShortcutLabel() + "_dist," + getShortcutLabel() + "_eigsum2 FUNC=sqrt(x-y) PERIODIC=NO");
-  else if( pdb.getPositions().size()>0 ) readInputLine( getShortcutLabel() + "_residual: CUSTOM ARG=" + getShortcutLabel() + "_at.dist," + getShortcutLabel() + "_eigsum2 FUNC=sqrt(x-y) PERIODIC=NO");
-  else if( theargs.size()>0 ) readInputLine( getShortcutLabel() + "_residual: CUSTOM ARG=" + getShortcutLabel() + "_argdist," + getShortcutLabel() + "_eigsum2 FUNC=sqrt(x-y) PERIODIC=NO");
+  if( pdb.getPositions().size()>0 && theargs.size()>0 ) {
+    readInputLine( getShortcutLabel() + "_residual: CUSTOM ARG=" + getShortcutLabel() + "_dist," + getShortcutLabel() + "_eigsum2 FUNC=sqrt(x-y) PERIODIC=NO");
+  } else if( pdb.getPositions().size()>0 ) {
+    readInputLine( getShortcutLabel() + "_residual: CUSTOM ARG=" + getShortcutLabel() + "_at.dist," + getShortcutLabel() + "_eigsum2 FUNC=sqrt(x-y) PERIODIC=NO");
+  } else if( theargs.size()>0 ) {
+    readInputLine( getShortcutLabel() + "_residual: CUSTOM ARG=" + getShortcutLabel() + "_argdist," + getShortcutLabel() + "_eigsum2 FUNC=sqrt(x-y) PERIODIC=NO");
+  }
 }
 
 }

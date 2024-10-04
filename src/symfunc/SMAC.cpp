@@ -59,25 +59,34 @@ void SMAC::registerKeywords(Keywords& keys) {
   keys.add("optional","SWITCH_COORD","This keyword is used to define the coordination switching function.");
   keys.reset_style("KERNEL","optional");
   multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
-  keys.needsAction("VSTACK"); keys.needsAction("TRANSPOSE"); keys.needsAction("CONTACT_MATRIX");
-  keys.needsAction("TORSIONS_MATRIX"); keys.needsAction("COMBINE"); keys.needsAction("CUSTOM");
-  keys.needsAction("ONES"); keys.needsAction("MATRIX_VECTOR_PRODUCT"); keys.needsAction("MORE_THAN");
+  keys.needsAction("VSTACK");
+  keys.needsAction("TRANSPOSE");
+  keys.needsAction("CONTACT_MATRIX");
+  keys.needsAction("TORSIONS_MATRIX");
+  keys.needsAction("COMBINE");
+  keys.needsAction("CUSTOM");
+  keys.needsAction("ONES");
+  keys.needsAction("MATRIX_VECTOR_PRODUCT");
+  keys.needsAction("MORE_THAN");
 }
 
 SMAC::SMAC(const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
+  ActionShortcut(ao) {
   // Create the matrices
-  std::string sw_input; parse("SWITCH",sw_input);
-  std::string sp_lab, sp_laba; parse("SPECIES",sp_lab); parse("SPECIESA",sp_laba);
+  std::string sw_input;
+  parse("SWITCH",sw_input);
+  std::string sp_lab, sp_laba;
+  parse("SPECIES",sp_lab);
+  parse("SPECIESA",sp_laba);
   if( sp_lab.length()>0 ) {
     readInputLine( getShortcutLabel() + "_vecs: VSTACK ARG=" + sp_lab + ".x," + sp_lab + ".y," + sp_lab + ".z" );
     readInputLine( getShortcutLabel() + "_vecsT: TRANSPOSE ARG=" + getShortcutLabel() + "_vecs" );
     readInputLine( getShortcutLabel() + "_cmap: CONTACT_MATRIX GROUP=" + sp_lab + " SWITCH={" + sw_input + "}");
     readInputLine( getShortcutLabel() + "_tpmat: TORSIONS_MATRIX ARG=" + getShortcutLabel() + "_vecs," + getShortcutLabel() + "_vecsT POSITIONS1=" + sp_lab + " POSITIONS2=" + sp_lab );
   } else if( sp_laba.length()>0 ) {
-    std::string sp_labb; parse("SPECIESB",sp_labb);
+    std::string sp_labb;
+    parse("SPECIESB",sp_labb);
     readInputLine( getShortcutLabel() + "_vecsa: VSTACK ARG=" + sp_laba + ".x," + sp_laba + ".y," + sp_laba + ".z" );
     readInputLine( getShortcutLabel() + "_vecsb: VSTACK ARG=" + sp_labb + ".x," + sp_labb + ".y," + sp_labb + ".z" );
     readInputLine( getShortcutLabel() + "_vecsbT: TRANSPOSE ARG=" + getShortcutLabel() + "_vecsb" );
@@ -87,17 +96,32 @@ SMAC::SMAC(const ActionOptions& ao):
   // Now need the Gaussians
   std::string kmap_input= getShortcutLabel() + "_ksum: COMBINE PERIODIC=NO";
   for(unsigned i=1;; ++i) {
-    std::string kstr_inpt, istr; Tools::convert( i, istr );
-    if( !parseNumbered("KERNEL",i,kstr_inpt ) ) { break; }
+    std::string kstr_inpt, istr;
+    Tools::convert( i, istr );
+    if( !parseNumbered("KERNEL",i,kstr_inpt ) ) {
+      break;
+    }
     std::vector<std::string> words = Tools::getWords(kstr_inpt);
-    std::string center, var; Tools::parse(words,"CENTER",center); Tools::parse(words,"SIGMA",var);
-    double nsig; Tools::convert( var, nsig ); std::string coeff; Tools::convert( 1/(nsig*nsig), coeff );
+    std::string center, var;
+    Tools::parse(words,"CENTER",center);
+    Tools::parse(words,"SIGMA",var);
+    double nsig;
+    Tools::convert( var, nsig );
+    std::string coeff;
+    Tools::convert( 1/(nsig*nsig), coeff );
     readInputLine( getShortcutLabel() + "_kf" + istr + "_r2: COMBINE PERIODIC=NO ARG=" + getShortcutLabel() + "_tpmat COEFFICIENTS=" + coeff + " PARAMETERS=" + center + " POWERS=2");
-    if( words[0]=="GAUSSIAN" ) readInputLine( getShortcutLabel() + "_kf" + istr + ": CUSTOM PERIODIC=NO FUNC=exp(-x/2) ARG=" +  getShortcutLabel() + "_kf" + istr + "_r2" );
-    else if( words[0]=="TRIANGULAR" ) readInputLine( getShortcutLabel() + "_kf" + istr + ": CUSTOM PERIODIC=NO FUNC=step(1-sqrt(x))*(1-sqrt(x)) ARG=" + getShortcutLabel() + "_kf" + istr + "_r2" );
-    else readInputLine( getShortcutLabel() + "_kf" + istr + ": CUSTOM PERIODIC=NO FUNC=" + words[0] + " ARG=" + getShortcutLabel() + "_kf" + istr + "_r2" );
-    if( i==1 ) kmap_input += " ARG=" + getShortcutLabel() + "_kf" + istr;
-    else kmap_input += "," + getShortcutLabel() + "_kf" + istr;
+    if( words[0]=="GAUSSIAN" ) {
+      readInputLine( getShortcutLabel() + "_kf" + istr + ": CUSTOM PERIODIC=NO FUNC=exp(-x/2) ARG=" +  getShortcutLabel() + "_kf" + istr + "_r2" );
+    } else if( words[0]=="TRIANGULAR" ) {
+      readInputLine( getShortcutLabel() + "_kf" + istr + ": CUSTOM PERIODIC=NO FUNC=step(1-sqrt(x))*(1-sqrt(x)) ARG=" + getShortcutLabel() + "_kf" + istr + "_r2" );
+    } else {
+      readInputLine( getShortcutLabel() + "_kf" + istr + ": CUSTOM PERIODIC=NO FUNC=" + words[0] + " ARG=" + getShortcutLabel() + "_kf" + istr + "_r2" );
+    }
+    if( i==1 ) {
+      kmap_input += " ARG=" + getShortcutLabel() + "_kf" + istr;
+    } else {
+      kmap_input += "," + getShortcutLabel() + "_kf" + istr;
+    }
   }
   readInputLine( kmap_input );
   // Now create the product matrix
@@ -105,13 +129,15 @@ SMAC::SMAC(const ActionOptions& ao):
   // Now the sum of coordination numbers times the switching functions
   ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_cmap");
   plumed_assert( av && av->getNumberOfComponents()>0 && (av->copyOutput(0))->getRank()==2 );
-  std::string size; Tools::convert( (av->copyOutput(0))->getShape()[1], size );
+  std::string size;
+  Tools::convert( (av->copyOutput(0))->getShape()[1], size );
   readInputLine( getShortcutLabel() + "_ones: ONES SIZE=" + size );
   readInputLine( getShortcutLabel() + ": MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_prod," + getShortcutLabel() + "_ones");
   // And just the sum of the coordination numbers
   readInputLine( getShortcutLabel() + "_denom: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_cmap," + getShortcutLabel() + "_ones");
   // And the transformed switching functions
-  std::string swcoord_str; parse("SWITCH_COORD",swcoord_str);
+  std::string swcoord_str;
+  parse("SWITCH_COORD",swcoord_str);
   readInputLine( getShortcutLabel() + "_mtdenom: MORE_THAN ARG=" + getShortcutLabel() + "_denom SWITCH={" + swcoord_str +"}");
 // And matheval to get the final quantity
   readInputLine( getShortcutLabel() + "_smac: CUSTOM ARG=" + getShortcutLabel() + "," + getShortcutLabel() + "_mtdenom," + getShortcutLabel() + "_denom FUNC=(x*y)/z PERIODIC=NO");

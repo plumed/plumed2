@@ -83,23 +83,37 @@ void BridgeMatrix::registerKeywords( Keywords& keys ) {
 
 BridgeMatrix::BridgeMatrix(const ActionOptions&ao):
   Action(ao),
-  AdjacencyMatrixBase(ao)
-{
-  bool oneswitch; std::string sfinput,errors; parse("SWITCH",sfinput);
+  AdjacencyMatrixBase(ao) {
+  bool oneswitch;
+  std::string sfinput,errors;
+  parse("SWITCH",sfinput);
   if( sfinput.length()>0 ) {
-    sf1.set(sfinput,errors); oneswitch=true;
-    if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
+    sf1.set(sfinput,errors);
+    oneswitch=true;
+    if( errors.length()!=0 ) {
+      error("problem reading SWITCH keyword : " + errors );
+    }
     sf2.set(sfinput,errors);
-    if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
+    if( errors.length()!=0 ) {
+      error("problem reading SWITCH keyword : " + errors );
+    }
   } else {
     parse("SWITCHA",sfinput);
     if(sfinput.length()>0) {
-      sf1.set(sfinput,errors); oneswitch=false;
-      if( errors.length()!=0 ) error("problem reading SWITCHA keyword : " + errors );
-      sfinput.clear(); parse("SWITCHB",sfinput);
-      if(sfinput.length()==0) error("found SWITCHA keyword without SWITCHB");
+      sf1.set(sfinput,errors);
+      oneswitch=false;
+      if( errors.length()!=0 ) {
+        error("problem reading SWITCHA keyword : " + errors );
+      }
+      sfinput.clear();
+      parse("SWITCHB",sfinput);
+      if(sfinput.length()==0) {
+        error("found SWITCHA keyword without SWITCHB");
+      }
       sf2.set(sfinput,errors);
-      if( errors.length()!=0 ) error("problem reading SWITCHB keyword : " + errors );
+      if( errors.length()!=0 ) {
+        error("problem reading SWITCHB keyword : " + errors );
+      }
     } else {
       error("missing definition of switching functions");
     }
@@ -115,12 +129,25 @@ BridgeMatrix::BridgeMatrix(const ActionOptions&ao):
 }
 
 double BridgeMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const {
-  double tot=0; if( pos2.modulo2()<epsilon ) return 0.0;
+  double tot=0;
+  if( pos2.modulo2()<epsilon ) {
+    return 0.0;
+  }
   for(unsigned i=0; i<natoms; ++i) {
-    Vector dij= getPosition(i,myvals); double dijm = dij.modulo2();
-    double dw1, w1=sf1.calculateSqr( dijm, dw1 ); if( dijm<epsilon ) { w1=0.0; dw1=0.0; }
-    Vector dik=pbcDistance( getPosition(i,myvals), pos2 ); double dikm=dik.modulo2();
-    double dw2, w2=sf2.calculateSqr( dikm, dw2 ); if( dikm<epsilon ) { w2=0.0; dw2=0.0; }
+    Vector dij= getPosition(i,myvals);
+    double dijm = dij.modulo2();
+    double dw1, w1=sf1.calculateSqr( dijm, dw1 );
+    if( dijm<epsilon ) {
+      w1=0.0;
+      dw1=0.0;
+    }
+    Vector dik=pbcDistance( getPosition(i,myvals), pos2 );
+    double dikm=dik.modulo2();
+    double dw2, w2=sf2.calculateSqr( dikm, dw2 );
+    if( dikm<epsilon ) {
+      w2=0.0;
+      dw2=0.0;
+    }
 
     tot += w1*w2;
     // And finish the calculation

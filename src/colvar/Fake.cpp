@@ -43,7 +43,9 @@ class ColvarFake : public Colvar {
 public:
   static void registerKeywords( Keywords& keys );
   explicit ColvarFake(const ActionOptions&);
-  std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const override { plumed_error(); }
+  std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const override {
+    plumed_error();
+  }
 // active methods:
   void calculate() override;
 };
@@ -60,8 +62,7 @@ void ColvarFake::registerKeywords( Keywords& keys ) {
 }
 
 ColvarFake::ColvarFake(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao)
-{
+  PLUMED_COLVAR_INIT(ao) {
   std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
 

@@ -64,9 +64,9 @@ void UWalls::registerKeywords(Keywords& keys) {
 
 UWalls::UWalls(const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
-  std::string data; parse("DATA",data);
+  ActionShortcut(ao) {
+  std::string data;
+  parse("DATA",data);
   readInputLine( getShortcutLabel() + ": UPPER_WALLS ARG=" + data + " " + convertInputLineToString() );
 }
 

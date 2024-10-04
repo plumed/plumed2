@@ -199,8 +199,7 @@ private:
   double threshold2_;
   bool recursive_merge_;
 //kernels are truncated diagonal Gaussians
-  struct kernel
-  {
+  struct kernel {
     double height;
     std::vector<double> center;
     std::vector<double> sigma;
@@ -250,7 +249,9 @@ public:
   static void registerKeywords(Keywords& keys);
 };
 
-struct convergence { static const bool explore=false; };
+struct convergence {
+  static const bool explore=false;
+};
 typedef OPESmetad<convergence> OPESmetad_c;
 PLUMED_REGISTER_ACTION(OPESmetad_c,"OPES_METAD")
 
@@ -294,20 +295,22 @@ PRINT STRIDE=100 FILE=COLVAR ARG=cv,opes.*
 */
 //+ENDPLUMEDOC
 
-struct exploration { static const bool explore=true; };
+struct exploration {
+  static const bool explore=true;
+};
 typedef OPESmetad<exploration> OPESmetad_e;
 PLUMED_REGISTER_ACTION(OPESmetad_e,"OPES_METAD_EXPLORE")
 
 template <class mode>
-void OPESmetad<mode>::registerKeywords(Keywords& keys)
-{
+void OPESmetad<mode>::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","TEMP","-1","temperature. If not set, it is taken from MD engine, but not all MD codes provide it");
   keys.add("compulsory","PACE","the frequency for kernel deposition");
   std::string info_sigma("the initial widths of the kernels");
-  if(mode::explore)
+  if(mode::explore) {
     info_sigma+=", divided by the square root of gamma";
+  }
   info_sigma+=". If not set, an adaptive sigma will be used with the given ADAPTIVE_SIGMA_STRIDE";
   keys.add("compulsory","SIGMA","ADAPTIVE",info_sigma);
   keys.add("compulsory","BARRIER","the free energy barrier to be overcome. It is used to set BIASFACTOR, EPSILON, and KERNEL_CUTOFF to reasonable values");
@@ -316,10 +319,11 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys)
   keys.add("optional","ADAPTIVE_SIGMA_STRIDE","number of steps for measuring adaptive sigma. Default is 10xPACE");
   keys.add("optional","SIGMA_MIN","never reduce SIGMA below this value");
   std::string info_biasfactor("the gamma bias factor used for the well-tempered target distribution. ");
-  if(mode::explore)
+  if(mode::explore) {
     info_biasfactor+="Cannot be 'inf'";
-  else
+  } else {
     info_biasfactor+="Set to 'inf' for uniform flat target";
+  }
   keys.add("optional","BIASFACTOR",info_biasfactor);
   keys.add("optional","EPSILON","the value of the regularization constant for the probability");
   keys.add("optional","KERNEL_CUTOFF","truncate kernels at this distance, in units of sigma");
@@ -338,8 +342,9 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys)
   keys.addFlag("STORE_STATES",false,"append to STATE_WFILE instead of ovewriting it each time");
 //miscellaneous
   keys.add("optional","EXCLUDED_REGION","kernels are not deposited when the action provided here has a nonzero value, see example above");
-  if(!mode::explore)
+  if(!mode::explore) {
     keys.add("optional","EXTRA_BIAS","consider also these other bias potentials for the internal reweighting. This can be used e.g. for sampling a custom target distribution (see example above)");
+  }
   keys.addFlag("CALC_WORK",false,"calculate the total accumulated work done by the bias since last restart");
   keys.addFlag("WALKERS_MPI",false,"switch on MPI version of multiple walkers");
   keys.addFlag("SERIAL",false,"perform calculations in serial");
@@ -365,8 +370,7 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   , ncv_(getNumberOfArguments())
   , Zed_(1)
   , work_(0)
-  , excluded_region_(NULL)
-{
+  , excluded_region_(NULL) {
   std::string error_in_input1("Error in input in action "+getName()+" with label "+getLabel()+": the keyword ");
   std::string error_in_input2(" could not be read correctly");
 
@@ -384,20 +388,17 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   biasfactor_=barrier/kbt_;
   std::string biasfactor_str;
   parse("BIASFACTOR",biasfactor_str);
-  if(biasfactor_str=="inf" || biasfactor_str=="INF")
-  {
+  if(biasfactor_str=="inf" || biasfactor_str=="INF") {
     biasfactor_=std::numeric_limits<double>::infinity();
     bias_prefactor_=1;
-  }
-  else
-  {
-    if(biasfactor_str.length()>0)
+  } else {
+    if(biasfactor_str.length()>0) {
       plumed_massert(Tools::convertNoexcept(biasfactor_str,biasfactor_),error_in_input1+"BIASFACTOR"+error_in_input2);
+    }
     plumed_massert(biasfactor_>1,"BIASFACTOR must be greater than one (use 'inf' for uniform target)");
     bias_prefactor_=1-1./biasfactor_;
   }
-  if(mode::explore)
-  {
+  if(mode::explore) {
     plumed_massert(!std::isinf(biasfactor_),"BIASFACTOR=inf is not compatible with EXPLORE mode");
     bias_prefactor_=biasfactor_-1;
   }
@@ -409,35 +410,33 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   parseVector("SIGMA",sigma_str);
   sigma0_.resize(ncv_);
   double dummy;
-  if(sigma_str.size()==1 && !Tools::convertNoexcept(sigma_str[0],dummy))
-  {
+  if(sigma_str.size()==1 && !Tools::convertNoexcept(sigma_str[0],dummy)) {
     plumed_massert(sigma_str[0]=="ADAPTIVE" || sigma_str[0]=="adaptive",error_in_input1+"SIGMA"+error_in_input2);
     plumed_massert(!std::isinf(biasfactor_),"cannot use BIASFACTOR=inf with adaptive SIGMA");
     adaptive_counter_=0;
-    if(adaptive_sigma_stride_==0)
-      adaptive_sigma_stride_=10*stride_; //NB: this is arbitrary, chosen from few tests
+    if(adaptive_sigma_stride_==0) {
+      adaptive_sigma_stride_=10*stride_;  //NB: this is arbitrary, chosen from few tests
+    }
     av_cv_.resize(ncv_,0);
     av_M2_.resize(ncv_,0);
     plumed_massert(adaptive_sigma_stride_>=stride_,"better to chose ADAPTIVE_SIGMA_STRIDE > PACE");
     adaptive_sigma_=true;
-  }
-  else
-  {
+  } else {
     plumed_massert(sigma_str.size()==ncv_,"number of SIGMA parameters does not match number of arguments");
     plumed_massert(adaptive_sigma_stride_==0,"if SIGMA is not ADAPTIVE you cannot set an ADAPTIVE_SIGMA_STRIDE");
-    for(unsigned i=0; i<ncv_; i++)
-    {
+    for(unsigned i=0; i<ncv_; i++) {
       plumed_massert(Tools::convertNoexcept(sigma_str[i],sigma0_[i]),error_in_input1+"SIGMA"+error_in_input2);
-      if(mode::explore)
-        sigma0_[i]*=std::sqrt(biasfactor_); //the sigma of the target is broader Ftg(s)=1/gamma*F(s)
+      if(mode::explore) {
+        sigma0_[i]*=std::sqrt(biasfactor_);  //the sigma of the target is broader Ftg(s)=1/gamma*F(s)
+      }
     }
   }
   parseVector("SIGMA_MIN",sigma_min_);
   plumed_massert(sigma_min_.size()==0 || sigma_min_.size()==ncv_,"number of SIGMA_MIN does not match number of arguments");
-  if(sigma_min_.size()>0 && !adaptive_sigma_)
-  {
-    for(unsigned i=0; i<ncv_; i++)
+  if(sigma_min_.size()>0 && !adaptive_sigma_) {
+    for(unsigned i=0; i<ncv_; i++) {
       plumed_massert(sigma_min_[i]<=sigma0_[i],"SIGMA_MIN should be smaller than SIGMA");
+    }
   }
 
   epsilon_=std::exp(-barrier/bias_prefactor_/kbt_);
@@ -447,8 +446,9 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   sum_weights2_=sum_weights_*sum_weights_;
 
   double cutoff=sqrt(2.*barrier/bias_prefactor_/kbt_);
-  if(mode::explore)
-    cutoff=sqrt(2.*barrier/kbt_); //otherwise it is too small
+  if(mode::explore) {
+    cutoff=sqrt(2.*barrier/kbt_);  //otherwise it is too small
+  }
   parse("KERNEL_CUTOFF",cutoff);
   plumed_massert(cutoff>0,"you must choose a value for KERNEL_CUTOFF greater than zero");
   cutoff2_=cutoff*cutoff;
@@ -457,25 +457,24 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   threshold2_=1;
   parse("COMPRESSION_THRESHOLD",threshold2_);
   threshold2_*=threshold2_;
-  if(threshold2_!=0)
+  if(threshold2_!=0) {
     plumed_massert(threshold2_>0 && threshold2_<cutoff2_,"COMPRESSION_THRESHOLD cannot be bigger than the KERNEL_CUTOFF");
+  }
 
 //setup neighbor list
   nlist_=false;
   parseFlag("NLIST",nlist_);
   nlist_pace_reset_=false;
   parseFlag("NLIST_PACE_RESET",nlist_pace_reset_);
-  if(nlist_pace_reset_)
+  if(nlist_pace_reset_) {
     nlist_=true;
+  }
   std::vector<double> nlist_param;
   parseVector("NLIST_PARAMETERS",nlist_param);
-  if(nlist_param.size()==0)
-  {
+  if(nlist_param.size()==0) {
     nlist_param_[0]=3.0;//*cutoff2_ -> max distance of neighbors
     nlist_param_[1]=0.5;//*nlist_dev2_[i] -> condition for rebuilding
-  }
-  else
-  {
+  } else {
     nlist_=true;
     plumed_massert(nlist_param.size()==2,"two cutoff parameters are needed for the neighbor list");
     plumed_massert(nlist_param[0]>1.0,"the first of NLIST_PARAMETERS must be greater than 1. The smaller the first, the smaller should be the second as well");
@@ -493,8 +492,8 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
 //optional stuff
   no_Zed_=false;
   parseFlag("NO_ZED",no_Zed_);
-  if(no_Zed_)
-  { //this makes it more gentle in the initial phase
+  if(no_Zed_) {
+    //this makes it more gentle in the initial phase
     sum_weights_=1;
     sum_weights2_=1;
   }
@@ -508,17 +507,16 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
 //options involving extra arguments
   std::vector<Value*> args;
   parseArgumentList("EXCLUDED_REGION",args);
-  if(args.size()>0)
-  {
+  if(args.size()>0) {
     plumed_massert(args.size()==1,"only one characteristic function should define the region to be excluded");
     requestExtraDependencies(args);
     excluded_region_=args[0];
   }
-  if(!mode::explore)
-  {
+  if(!mode::explore) {
     parseArgumentList("EXTRA_BIAS",extra_biases_);
-    if(extra_biases_.size()>0)
+    if(extra_biases_.size()>0) {
       requestExtraDependencies(extra_biases_);
+    }
   }
 
 //kernels file
@@ -536,32 +534,31 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   parse("STATE_WSTRIDE",wStateStride_);
   storeOldStates_=false;
   parseFlag("STORE_STATES",storeOldStates_);
-  if(wStateStride_!=0 || storeOldStates_)
+  if(wStateStride_!=0 || storeOldStates_) {
     plumed_massert(stateFileName.length()>0,"filename for storing simulation status not specified, use STATE_WFILE");
-  if(wStateStride_>0)
+  }
+  if(wStateStride_>0) {
     plumed_massert(wStateStride_>=(int)stride_,"STATE_WSTRIDE is in units of MD steps, thus it is suggested to use a multiple of PACE");
-  if(stateFileName.length()>0 && wStateStride_==0)
-    wStateStride_=-1;//will print only on CPT events (checkpoints set by some MD engines, like gromacs)
+  }
+  if(stateFileName.length()>0 && wStateStride_==0) {
+    wStateStride_=-1;  //will print only on CPT events (checkpoints set by some MD engines, like gromacs)
+  }
 
 //multiple walkers //TODO implement also external mw for cp2k
   bool walkers_mpi=false;
   parseFlag("WALKERS_MPI",walkers_mpi);
-  if(walkers_mpi)
-  {
+  if(walkers_mpi) {
     //If this Action is not compiled with MPI the user is informed and we exit gracefully
     plumed_massert(Communicator::plumedHasMPI(),"Invalid walkers configuration: WALKERS_MPI flag requires MPI compilation");
     plumed_massert(Communicator::initialized(),"Invalid walkers configuration: WALKERS_MPI needs the communicator correctly initialized.");
 
-    if(comm.Get_rank()==0)//multi_sim_comm works on first rank only
-    {
+    if(comm.Get_rank()==0) { //multi_sim_comm works on first rank only
       NumWalkers_=multi_sim_comm.Get_size();
       walker_rank_=multi_sim_comm.Get_rank();
     }
     comm.Bcast(NumWalkers_,0); //if each walker has more than one processor update them all
     comm.Bcast(walker_rank_,0);
-  }
-  else
-  {
+  } else {
     NumWalkers_=1;
     walker_rank_=0;
   }
@@ -572,8 +569,7 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   rank_=comm.Get_rank();
   bool serial=false;
   parseFlag("SERIAL",serial);
-  if(serial)
-  {
+  if(serial) {
     NumOMP_=1;
     NumParallel_=1;
     rank_=0;
@@ -583,31 +579,25 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
 
 //restart if needed
   bool convertKernelsToState=false;
-  if(getRestart())
-  {
+  if(getRestart()) {
     bool stateRestart=true;
-    if(restartFileName.length()==0)
-    {
+    if(restartFileName.length()==0) {
       stateRestart=false;
       restartFileName=kernelsFileName;
     }
     IFile ifile;
     ifile.link(*this);
-    if(ifile.FileExist(restartFileName))
-    {
+    if(ifile.FileExist(restartFileName)) {
       bool tmp_nlist=nlist_;
       nlist_=false; // NLIST is not needed while restarting
       ifile.open(restartFileName);
       log.printf("  RESTART - make sure all used options are compatible\n");
       log.printf("    restarting from: %s\n",restartFileName.c_str());
       std::string action_name=getName();
-      if(stateRestart)
-      {
+      if(stateRestart) {
         log.printf("    it should be a STATE file (not a KERNELS file)\n");
         action_name+="_state";
-      }
-      else
-      {
+      } else {
         log.printf(" +++ WARNING +++ RESTART from KERNELS might be approximate, use STATE_WFILE and STATE_RFILE to restart from the exact state\n");
         action_name+="_kernels";
       }
@@ -616,61 +606,55 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
       plumed_massert(action_name==old_action_name,"RESTART - mismatch between old and new action name. Expected '"+action_name+"', but found '"+old_action_name+"'");
       std::string old_biasfactor_str;
       ifile.scanField("biasfactor",old_biasfactor_str);
-      if(old_biasfactor_str=="inf" || old_biasfactor_str=="INF")
-      {
-        if(!std::isinf(biasfactor_))
+      if(old_biasfactor_str=="inf" || old_biasfactor_str=="INF") {
+        if(!std::isinf(biasfactor_)) {
           log.printf(" +++ WARNING +++ previous bias factor was inf while now it is %g\n",biasfactor_);
-      }
-      else
-      {
+        }
+      } else {
         double old_biasfactor;
         ifile.scanField("biasfactor",old_biasfactor);
-        if(std::abs(biasfactor_-old_biasfactor)>1e-6*biasfactor_)
+        if(std::abs(biasfactor_-old_biasfactor)>1e-6*biasfactor_) {
           log.printf(" +++ WARNING +++ previous bias factor was %g while now it is %g. diff = %g\n",old_biasfactor,biasfactor_,biasfactor_-old_biasfactor);
+        }
       }
       double old_epsilon;
       ifile.scanField("epsilon",old_epsilon);
-      if(std::abs(epsilon_-old_epsilon)>1e-6*epsilon_)
+      if(std::abs(epsilon_-old_epsilon)>1e-6*epsilon_) {
         log.printf(" +++ WARNING +++ previous epsilon was %g while now it is %g. diff = %g\n",old_epsilon,epsilon_,epsilon_-old_epsilon);
+      }
       double old_cutoff;
       ifile.scanField("kernel_cutoff",old_cutoff);
-      if(std::abs(cutoff-old_cutoff)>1e-6*cutoff)
+      if(std::abs(cutoff-old_cutoff)>1e-6*cutoff) {
         log.printf(" +++ WARNING +++ previous kernel_cutoff was %g while now it is %g. diff = %g\n",old_cutoff,cutoff,cutoff-old_cutoff);
+      }
       double old_threshold;
       const double threshold=sqrt(threshold2_);
       ifile.scanField("compression_threshold",old_threshold);
-      if(std::abs(threshold-old_threshold)>1e-6*threshold)
+      if(std::abs(threshold-old_threshold)>1e-6*threshold) {
         log.printf(" +++ WARNING +++ previous compression_threshold was %g while now it is %g. diff = %g\n",old_threshold,threshold,threshold-old_threshold);
-      if(stateRestart)
-      {
+      }
+      if(stateRestart) {
         ifile.scanField("zed",Zed_);
         ifile.scanField("sum_weights",sum_weights_);
         ifile.scanField("sum_weights2",sum_weights2_);
         ifile.scanField("counter",counter_);
-        if(adaptive_sigma_)
-        {
+        if(adaptive_sigma_) {
           ifile.scanField("adaptive_counter",adaptive_counter_);
-          if(NumWalkers_==1)
-          {
-            for(unsigned i=0; i<ncv_; i++)
-            {
+          if(NumWalkers_==1) {
+            for(unsigned i=0; i<ncv_; i++) {
               ifile.scanField("sigma0_"+getPntrToArgument(i)->getName(),sigma0_[i]);
               ifile.scanField("av_cv_"+getPntrToArgument(i)->getName(),av_cv_[i]);
               ifile.scanField("av_M2_"+getPntrToArgument(i)->getName(),av_M2_[i]);
             }
-          }
-          else
-          {
+          } else {
             for(unsigned w=0; w<NumWalkers_; w++)
-              for(unsigned i=0; i<ncv_; i++)
-              {
+              for(unsigned i=0; i<ncv_; i++) {
                 double tmp0,tmp1,tmp2;
                 const std::string arg_iw=getPntrToArgument(i)->getName()+"_"+std::to_string(w);
                 ifile.scanField("sigma0_"+arg_iw,tmp0);
                 ifile.scanField("av_cv_"+arg_iw,tmp1);
                 ifile.scanField("av_M2_"+arg_iw,tmp2);
-                if(w==walker_rank_)
-                {
+                if(w==walker_rank_) {
                   sigma0_[i]=tmp0;
                   av_cv_[i]=tmp1;
                   av_M2_[i]=tmp2;
@@ -679,10 +663,8 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
           }
         }
       }
-      for(unsigned i=0; i<ncv_; i++)
-      {
-        if(getPntrToArgument(i)->isPeriodic())
-        {
+      for(unsigned i=0; i<ncv_; i++) {
+        if(getPntrToArgument(i)->isPeriodic()) {
           std::string arg_min,arg_max;
           getPntrToArgument(i)->getDomain(arg_min,arg_max);
           std::string file_min,file_max;
@@ -692,40 +674,40 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
           plumed_massert(file_max==arg_max,"RESTART - mismatch between old and new ARG periodicity");
         }
       }
-      if(stateRestart)
-      {
+      if(stateRestart) {
         double time;
-        while(ifile.scanField("time",time))
-        {
+        while(ifile.scanField("time",time)) {
           std::vector<double> center(ncv_);
           std::vector<double> sigma(ncv_);
           double height;
-          for(unsigned i=0; i<ncv_; i++)
+          for(unsigned i=0; i<ncv_; i++) {
             ifile.scanField(getPntrToArgument(i)->getName(),center[i]);
-          for(unsigned i=0; i<ncv_; i++)
+          }
+          for(unsigned i=0; i<ncv_; i++) {
             ifile.scanField("sigma_"+getPntrToArgument(i)->getName(),sigma[i]);
+          }
           ifile.scanField("height",height);
           ifile.scanField();
           kernels_.emplace_back(height,center,sigma);
         }
         log.printf("    a total of %lu kernels where read\n",kernels_.size());
-      }
-      else
-      {
+      } else {
         ifile.allowIgnoredFields(); //this allows for multiple restart, but without checking for consistency between them!
         double time;
-        while(ifile.scanField("time",time))
-        {
+        while(ifile.scanField("time",time)) {
           std::vector<double> center(ncv_);
           std::vector<double> sigma(ncv_);
           double height;
           double logweight;
-          for(unsigned i=0; i<ncv_; i++)
+          for(unsigned i=0; i<ncv_; i++) {
             ifile.scanField(getPntrToArgument(i)->getName(),center[i]);
-          for(unsigned i=0; i<ncv_; i++)
+          }
+          for(unsigned i=0; i<ncv_; i++) {
             ifile.scanField("sigma_"+getPntrToArgument(i)->getName(),sigma[i]);
-          if(counter_==(1+walker_rank_) && adaptive_sigma_)
+          }
+          if(counter_==(1+walker_rank_) && adaptive_sigma_) {
             sigma0_=sigma;
+          }
           ifile.scanField("height",height);
           ifile.scanField("logweight",logweight);
           ifile.scanField();
@@ -736,14 +718,15 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
           counter_++;
         }
         KDEnorm_=mode::explore?counter_:sum_weights_;
-        if(!no_Zed_)
-        {
+        if(!no_Zed_) {
           double sum_uprob=0;
           for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
-            for(unsigned kk=0; kk<kernels_.size(); kk++)
+            for(unsigned kk=0; kk<kernels_.size(); kk++) {
               sum_uprob+=evaluateKernel(kernels_[kk],kernels_[k].center);
-          if(NumParallel_>1)
+            }
+          if(NumParallel_>1) {
             comm.Sum(sum_uprob);
+          }
           Zed_=sum_uprob/KDEnorm_/kernels_.size();
         }
         log.printf("    a total of %llu kernels where read, and compressed to %lu\n",counter_-1,kernels_.size());
@@ -752,42 +735,45 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
       ifile.reset(false);
       ifile.close();
       nlist_=tmp_nlist;
-    }
-    else //same behaviour as METAD
+    } else { //same behaviour as METAD
       plumed_merror("RESTART requested, but file '"+restartFileName+"' was not found!\n  Set RESTART=NO or provide a restart file");
-    if(NumWalkers_>1) //make sure that all walkers are doing the same thing
-    {
+    }
+    if(NumWalkers_>1) { //make sure that all walkers are doing the same thing
       const unsigned kernels_size=kernels_.size();
       std::vector<unsigned> all_kernels_size(NumWalkers_);
-      if(comm.Get_rank()==0)
+      if(comm.Get_rank()==0) {
         multi_sim_comm.Allgather(kernels_size,all_kernels_size);
+      }
       comm.Bcast(all_kernels_size,0);
       bool same_number_of_kernels=true;
       for(unsigned w=1; w<NumWalkers_; w++)
-        if(all_kernels_size[0]!=all_kernels_size[w])
+        if(all_kernels_size[0]!=all_kernels_size[w]) {
           same_number_of_kernels=false;
+        }
       plumed_massert(same_number_of_kernels,"RESTART - not all walkers are reading the same file!");
     }
-  }
-  else if(restartFileName.length()>0)
+  } else if(restartFileName.length()>0) {
     log.printf(" +++ WARNING +++ the provided STATE_RFILE will be ignored, since RESTART was not requested\n");
+  }
 
 //sync all walkers to avoid opening files before reading is over (see also METAD)
   comm.Barrier();
-  if(comm.Get_rank()==0 && walkers_mpi)
+  if(comm.Get_rank()==0 && walkers_mpi) {
     multi_sim_comm.Barrier();
+  }
 
 //setup output kernels file
   kernelsOfile_.link(*this);
-  if(NumWalkers_>1)
-  {
-    if(walker_rank_>0)
-      kernelsFileName="/dev/null"; //only first walker writes on file
+  if(NumWalkers_>1) {
+    if(walker_rank_>0) {
+      kernelsFileName="/dev/null";  //only first walker writes on file
+    }
     kernelsOfile_.enforceSuffix("");
   }
   kernelsOfile_.open(kernelsFileName);
-  if(fmt.length()>0)
+  if(fmt.length()>0) {
     kernelsOfile_.fmtField(" "+fmt);
+  }
   kernelsOfile_.setHeavyFlush(); //do I need it?
   //define and set const fields
   kernelsOfile_.addConstantField("action");
@@ -795,8 +781,9 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   kernelsOfile_.addConstantField("epsilon");
   kernelsOfile_.addConstantField("kernel_cutoff");
   kernelsOfile_.addConstantField("compression_threshold");
-  for(unsigned i=0; i<ncv_; i++)
+  for(unsigned i=0; i<ncv_; i++) {
     kernelsOfile_.setupPrintValue(getPntrToArgument(i));
+  }
   kernelsOfile_.printField("action",getName()+"_kernels");
   kernelsOfile_.printField("biasfactor",biasfactor_);
   kernelsOfile_.printField("epsilon",epsilon_);
@@ -804,20 +791,21 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   kernelsOfile_.printField("compression_threshold",sqrt(threshold2_));
 
 //open file for storing state
-  if(wStateStride_!=0)
-  {
+  if(wStateStride_!=0) {
     stateOfile_.link(*this);
-    if(NumWalkers_>1)
-    {
-      if(walker_rank_>0)
-        stateFileName="/dev/null"; //only first walker writes on file
+    if(NumWalkers_>1) {
+      if(walker_rank_>0) {
+        stateFileName="/dev/null";  //only first walker writes on file
+      }
       stateOfile_.enforceSuffix("");
     }
     stateOfile_.open(stateFileName);
-    if(fmt.length()>0)
+    if(fmt.length()>0) {
       stateOfile_.fmtField(" "+fmt);
-    if(convertKernelsToState)
+    }
+    if(convertKernelsToState) {
       dumpStateToFile();
+    }
   }
 
 //set initial old values
@@ -837,13 +825,11 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   addComponent("nker");
   componentIsNotPeriodic("nker");
   getPntrToComponent("nker")->set(kernels_.size());
-  if(calc_work_)
-  {
+  if(calc_work_) {
     addComponent("work");
     componentIsNotPeriodic("work");
   }
-  if(nlist_)
-  {
+  if(nlist_) {
     addComponent("nlker");
     componentIsNotPeriodic("nlker");
     addComponent("nlsteps");
@@ -856,116 +842,129 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   log.printf("  depositing new kernels with PACE = %u\n",stride_);
   log.printf("  expected BARRIER is %g\n",barrier);
   log.printf("  using target distribution with BIASFACTOR gamma = %g\n",biasfactor_);
-  if(std::isinf(biasfactor_))
+  if(std::isinf(biasfactor_)) {
     log.printf("    (thus a uniform flat target distribution, no well-tempering)\n");
-  if(excluded_region_!=NULL)
+  }
+  if(excluded_region_!=NULL) {
     log.printf(" -- EXCLUDED_REGION: kernels will be deposited only when '%s' is equal to zero\n",excluded_region_->getName().c_str());
-  if(extra_biases_.size()>0)
-  {
+  }
+  if(extra_biases_.size()>0) {
     log.printf(" -- EXTRA_BIAS: ");
-    for(unsigned e=0; e<extra_biases_.size(); e++)
+    for(unsigned e=0; e<extra_biases_.size(); e++) {
       log.printf("%s ",extra_biases_[e]->getName().c_str());
+    }
     log.printf("will be reweighted\n");
   }
-  if(adaptive_sigma_)
-  {
+  if(adaptive_sigma_) {
     log.printf("  adaptive SIGMA will be used, with ADAPTIVE_SIGMA_STRIDE = %u\n",adaptive_sigma_stride_);
     unsigned x=std::ceil(adaptive_sigma_stride_/stride_);
     log.printf("    thus the first x kernel depositions will be skipped, x = ADAPTIVE_SIGMA_STRIDE/PACE = %u\n",x);
-  }
-  else
-  {
+  } else {
     log.printf("  kernels have initial SIGMA = ");
-    for(unsigned i=0; i<ncv_; i++)
+    for(unsigned i=0; i<ncv_; i++) {
       log.printf(" %g",sigma0_[i]);
+    }
     log.printf("\n");
   }
-  if(sigma_min_.size()>0)
-  {
+  if(sigma_min_.size()>0) {
     log.printf("  kernels have a SIGMA_MIN = ");
-    for(unsigned i=0; i<ncv_; i++)
+    for(unsigned i=0; i<ncv_; i++) {
       log.printf(" %g",sigma_min_[i]);
+    }
     log.printf("\n");
   }
-  if(fixed_sigma_)
+  if(fixed_sigma_) {
     log.printf(" -- FIXED_SIGMA: sigma will not decrease as the simulation proceeds\n");
+  }
   log.printf("  kernels are truncated with KERNELS_CUTOFF = %g\n",cutoff);
-  if(cutoff<3.5)
+  if(cutoff<3.5) {
     log.printf(" +++ WARNING +++ probably kernels are truncated too much\n");
+  }
   log.printf("  the value at cutoff is = %g\n",val_at_cutoff_);
   log.printf("  regularization EPSILON = %g\n",epsilon_);
-  if(val_at_cutoff_>epsilon_*(1+1e-6))
+  if(val_at_cutoff_>epsilon_*(1+1e-6)) {
     log.printf(" +++ WARNING +++ the KERNEL_CUTOFF might be too small for the given EPSILON\n");
+  }
   log.printf("  kernels will be compressed when closer than COMPRESSION_THRESHOLD = %g\n",sqrt(threshold2_));
-  if(threshold2_==0)
+  if(threshold2_==0) {
     log.printf(" +++ WARNING +++ kernels will never merge, expect slowdowns\n");
-  if(!recursive_merge_)
+  }
+  if(!recursive_merge_) {
     log.printf(" -- RECURSIVE_MERGE_OFF: only one merge for each new kernel will be attempted. This is faster only if total number of kernels does not grow too much\n");
-  if(nlist_)
+  }
+  if(nlist_) {
     log.printf(" -- NLIST: using neighbor list for kernels, with parameters: %g,%g\n",nlist_param_[0],nlist_param_[1]);
-  if(nlist_pace_reset_)
+  }
+  if(nlist_pace_reset_) {
     log.printf(" -- NLIST_PACE_RESET: forcing the neighbor list to update every PACE\n");
-  if(no_Zed_)
+  }
+  if(no_Zed_) {
     log.printf(" -- NO_ZED: using fixed normalization factor = %g\n",Zed_);
-  if(wStateStride_>0)
+  }
+  if(wStateStride_>0) {
     log.printf("  state checkpoints are written on file %s every %d MD steps\n",stateFileName.c_str(),wStateStride_);
-  if(wStateStride_==-1)
+  }
+  if(wStateStride_==-1) {
     log.printf("  state checkpoints are written on file %s only on CPT events (or never if MD code does define them!)\n",stateFileName.c_str());
-  if(walkers_mpi)
+  }
+  if(walkers_mpi) {
     log.printf(" -- WALKERS_MPI: if multiple replicas are present, they will share the same bias via MPI\n");
-  if(NumWalkers_>1)
-  {
+  }
+  if(NumWalkers_>1) {
     log.printf("  using multiple walkers\n");
     log.printf("    number of walkers: %u\n",NumWalkers_);
     log.printf("    walker rank: %u\n",walker_rank_);
   }
   int mw_warning=0;
-  if(!walkers_mpi && comm.Get_rank()==0 && multi_sim_comm.Get_size()>(int)NumWalkers_)
+  if(!walkers_mpi && comm.Get_rank()==0 && multi_sim_comm.Get_size()>(int)NumWalkers_) {
     mw_warning=1;
+  }
   comm.Bcast(mw_warning,0);
-  if(mw_warning) //log.printf messes up with comm, so never use it without Bcast!
+  if(mw_warning) { //log.printf messes up with comm, so never use it without Bcast!
     log.printf(" +++ WARNING +++ multiple replicas will NOT communicate unless the flag WALKERS_MPI is used\n");
-  if(NumParallel_>1)
+  }
+  if(NumParallel_>1) {
     log.printf("  using multiple MPI processes per simulation: %u\n",NumParallel_);
-  if(NumOMP_>1)
+  }
+  if(NumOMP_>1) {
     log.printf("  using multiple OpenMP threads per simulation: %u\n",NumOMP_);
-  if(serial)
+  }
+  if(serial) {
     log.printf(" -- SERIAL: no loop parallelization, despite %d MPI processes and %u OpenMP threads available\n",comm.Get_size(),OpenMP::getNumThreads());
+  }
   log.printf("  Bibliography: ");
   log<<plumed.cite("M. Invernizzi and M. Parrinello, J. Phys. Chem. Lett. 11, 2731-2736 (2020)");
-  if(mode::explore || adaptive_sigma_)
+  if(mode::explore || adaptive_sigma_) {
     log<<plumed.cite("M. Invernizzi and M. Parrinello, J. Chem. Theory Comput. 18, 3988-3996 (2022)");
+  }
   log.printf("\n");
 }
 
 template <class mode>
-void OPESmetad<mode>::calculate()
-{
+void OPESmetad<mode>::calculate() {
 //get cv
   std::vector<double> cv(ncv_);
-  for(unsigned i=0; i<ncv_; i++)
+  for(unsigned i=0; i<ncv_; i++) {
     cv[i]=getArgument(i);
+  }
 
 //check neighbor list
-  if(nlist_)
-  {
+  if(nlist_) {
     nlist_steps_++;
-    if(getExchangeStep())
+    if(getExchangeStep()) {
       nlist_update_=true;
-    else
-    {
-      for(unsigned i=0; i<ncv_; i++)
-      {
+    } else {
+      for(unsigned i=0; i<ncv_; i++) {
         const double diff_i=difference(i,cv[i],nlist_center_[i]);
-        if(diff_i*diff_i>nlist_param_[1]*nlist_dev2_[i])
-        {
+        if(diff_i*diff_i>nlist_param_[1]*nlist_dev2_[i]) {
           nlist_update_=true;
           break;
         }
       }
     }
-    if(nlist_update_)
+    if(nlist_update_) {
       updateNlist(cv);
+    }
   }
 
 //set bias and forces
@@ -973,57 +972,55 @@ void OPESmetad<mode>::calculate()
   const double prob=getProbAndDerivatives(cv,der_prob);
   const double bias=kbt_*bias_prefactor_*std::log(prob/Zed_+epsilon_);
   setBias(bias);
-  for(unsigned i=0; i<ncv_; i++)
+  for(unsigned i=0; i<ncv_; i++) {
     setOutputForce(i,-kbt_*bias_prefactor_/(prob/Zed_+epsilon_)*der_prob[i]/Zed_);
+  }
 }
 
 template <class mode>
-void OPESmetad<mode>::update()
-{
-  if(isFirstStep_)//same in MetaD, useful for restarts?
-  {
+void OPESmetad<mode>::update() {
+  if(isFirstStep_) { //same in MetaD, useful for restarts?
     isFirstStep_=false;
     return;
   }
 
 //update variance if adaptive sigma
-  if(adaptive_sigma_)
-  {
+  if(adaptive_sigma_) {
     adaptive_counter_++;
     unsigned tau=adaptive_sigma_stride_;
-    if(adaptive_counter_<adaptive_sigma_stride_)
+    if(adaptive_counter_<adaptive_sigma_stride_) {
       tau=adaptive_counter_;
-    for(unsigned i=0; i<ncv_; i++)
-    { //Welford's online algorithm for standard deviation
+    }
+    for(unsigned i=0; i<ncv_; i++) {
+      //Welford's online algorithm for standard deviation
       const double cv_i=getArgument(i);
       const double diff_i=difference(i,av_cv_[i],cv_i);
       av_cv_[i]+=diff_i/tau; //exponentially decaying average
       av_M2_[i]+=diff_i*difference(i,av_cv_[i],cv_i);
     }
-    if(adaptive_counter_<adaptive_sigma_stride_ && counter_==1) //counter_>1 if restarting
-      return; //do not apply bias before having measured sigma
+    if(adaptive_counter_<adaptive_sigma_stride_ && counter_==1) { //counter_>1 if restarting
+      return;  //do not apply bias before having measured sigma
+    }
   }
 
 //do update
-  if(getStep()%stride_==0 && (excluded_region_==NULL || excluded_region_->get()==0))
-  {
+  if(getStep()%stride_==0 && (excluded_region_==NULL || excluded_region_->get()==0)) {
     old_KDEnorm_=KDEnorm_;
     delta_kernels_.clear();
     unsigned old_nker=kernels_.size();
 
     //get new kernel height
     double log_weight=getOutputQuantity(0)/kbt_; //first value is always the current bias
-    for(unsigned e=0; e<extra_biases_.size(); e++)
-      log_weight+=extra_biases_[e]->get()/kbt_; //extra biases contribute to the weight
+    for(unsigned e=0; e<extra_biases_.size(); e++) {
+      log_weight+=extra_biases_[e]->get()/kbt_;  //extra biases contribute to the weight
+    }
     double height=std::exp(log_weight);
 
     //update sum_weights_ and neff
     double sum_heights=height;
     double sum_heights2=height*height;
-    if(NumWalkers_>1)
-    {
-      if(comm.Get_rank()==0)
-      {
+    if(NumWalkers_>1) {
+      if(comm.Get_rank()==0) {
         multi_sim_comm.Sum(sum_heights);
         multi_sim_comm.Sum(sum_heights2);
       }
@@ -1036,90 +1033,85 @@ void OPESmetad<mode>::update()
     const double neff=std::pow(1+sum_weights_,2)/(1+sum_weights2_); //adding 1 makes it more robust at the start
     getPntrToComponent("rct")->set(kbt_*std::log(sum_weights_/counter_));
     getPntrToComponent("neff")->set(neff);
-    if(mode::explore)
-    {
+    if(mode::explore) {
       KDEnorm_=counter_;
       height=1; //plain KDE, bias reweight does not enter here
-    }
-    else
+    } else {
       KDEnorm_=sum_weights_;
+    }
 
     //if needed, rescale sigma and height
     std::vector<double> sigma=sigma0_;
-    if(adaptive_sigma_)
-    {
+    if(adaptive_sigma_) {
       const double factor=mode::explore?1:biasfactor_;
-      if(counter_==1+NumWalkers_) //first time only
-      {
-        for(unsigned i=0; i<ncv_; i++)
-          av_M2_[i]*=biasfactor_; //from unbiased, thus must be adjusted
-        for(unsigned i=0; i<ncv_; i++)
-          sigma0_[i]=std::sqrt(av_M2_[i]/adaptive_counter_/factor);
-        if(sigma_min_.size()==0)
-        {
-          for(unsigned i=0; i<ncv_; i++)
-            plumed_massert(sigma0_[i]>1e-6,"ADAPTIVE SIGMA is suspiciously small for CV i="+std::to_string(i)+"\nManually provide SIGMA or set a safe SIGMA_MIN to avoid possible issues");
+      if(counter_==1+NumWalkers_) { //first time only
+        for(unsigned i=0; i<ncv_; i++) {
+          av_M2_[i]*=biasfactor_;  //from unbiased, thus must be adjusted
         }
-        else
-        {
-          for(unsigned i=0; i<ncv_; i++)
+        for(unsigned i=0; i<ncv_; i++) {
+          sigma0_[i]=std::sqrt(av_M2_[i]/adaptive_counter_/factor);
+        }
+        if(sigma_min_.size()==0) {
+          for(unsigned i=0; i<ncv_; i++) {
+            plumed_massert(sigma0_[i]>1e-6,"ADAPTIVE SIGMA is suspiciously small for CV i="+std::to_string(i)+"\nManually provide SIGMA or set a safe SIGMA_MIN to avoid possible issues");
+          }
+        } else {
+          for(unsigned i=0; i<ncv_; i++) {
             sigma0_[i]=std::max(sigma0_[i],sigma_min_[i]);
+          }
         }
       }
-      for(unsigned i=0; i<ncv_; i++)
+      for(unsigned i=0; i<ncv_; i++) {
         sigma[i]=std::sqrt(av_M2_[i]/adaptive_counter_/factor);
-      if(sigma_min_.size()==0)
-      {
-        for(unsigned i=0; i<ncv_; i++)
-        {
-          if(sigma[i]<1e-6)
-          {
+      }
+      if(sigma_min_.size()==0) {
+        for(unsigned i=0; i<ncv_; i++) {
+          if(sigma[i]<1e-6) {
             log.printf("+++ WARNING +++ the ADAPTIVE SIGMA is suspiciously small, you should set a safe SIGMA_MIN. 1e-6 will be used here\n");
             sigma[i]=1e-6;
             sigma_min_.resize(ncv_,1e-6);
           }
         }
-      }
-      else
-      {
-        for(unsigned i=0; i<ncv_; i++)
+      } else {
+        for(unsigned i=0; i<ncv_; i++) {
           sigma[i]=std::max(sigma[i],sigma_min_[i]);
+        }
       }
     }
-    if(!fixed_sigma_)
-    {
+    if(!fixed_sigma_) {
       const double size=mode::explore?counter_:neff; //for EXPLORE neff is not relevant
       const double s_rescaling=std::pow(size*(ncv_+2.)/4.,-1./(4+ncv_));
-      for(unsigned i=0; i<ncv_; i++)
+      for(unsigned i=0; i<ncv_; i++) {
         sigma[i]*=s_rescaling;
-      if(sigma_min_.size()>0)
-      {
-        for(unsigned i=0; i<ncv_; i++)
+      }
+      if(sigma_min_.size()>0) {
+        for(unsigned i=0; i<ncv_; i++) {
           sigma[i]=std::max(sigma[i],sigma_min_[i]);
+        }
       }
     }
     //the height should be divided by sqrt(2*pi)*sigma0_,
     //but this overall factor would be canceled when dividing by Zed
     //thus we skip it altogether, but keep any other sigma rescaling
-    for(unsigned i=0; i<ncv_; i++)
+    for(unsigned i=0; i<ncv_; i++) {
       height*=(sigma0_[i]/sigma[i]);
+    }
 
     //get new kernel center
     std::vector<double> center(ncv_);
-    for(unsigned i=0; i<ncv_; i++)
+    for(unsigned i=0; i<ncv_; i++) {
       center[i]=getArgument(i);
+    }
 
     //add new kernel(s)
-    if(NumWalkers_==1)
+    if(NumWalkers_==1) {
       addKernel(height,center,sigma,log_weight);
-    else
-    {
+    } else {
       std::vector<double> all_height(NumWalkers_,0.0);
       std::vector<double> all_center(NumWalkers_*ncv_,0.0);
       std::vector<double> all_sigma(NumWalkers_*ncv_,0.0);
       std::vector<double> all_logweight(NumWalkers_,0.0);
-      if(comm.Get_rank()==0)
-      {
+      if(comm.Get_rank()==0) {
         multi_sim_comm.Allgather(height,all_height);
         multi_sim_comm.Allgather(center,all_center);
         multi_sim_comm.Allgather(sigma,all_sigma);
@@ -1129,111 +1121,102 @@ void OPESmetad<mode>::update()
       comm.Bcast(all_center,0);
       comm.Bcast(all_sigma,0);
       comm.Bcast(all_logweight,0);
-      if(nlist_)
-      { //gather all the nlist_index_, so merging can be done using it
+      if(nlist_) {
+        //gather all the nlist_index_, so merging can be done using it
         std::vector<int> all_nlist_size(NumWalkers_);
-        if(comm.Get_rank()==0)
-        {
+        if(comm.Get_rank()==0) {
           all_nlist_size[walker_rank_]=nlist_index_.size();
           multi_sim_comm.Sum(all_nlist_size);
         }
         comm.Bcast(all_nlist_size,0);
         unsigned tot_size=0;
-        for(unsigned w=0; w<NumWalkers_; w++)
+        for(unsigned w=0; w<NumWalkers_; w++) {
           tot_size+=all_nlist_size[w];
-        if(tot_size>0)
-        {
+        }
+        if(tot_size>0) {
           std::vector<int> disp(NumWalkers_);
-          for(unsigned w=0; w<NumWalkers_-1; w++)
+          for(unsigned w=0; w<NumWalkers_-1; w++) {
             disp[w+1]=disp[w]+all_nlist_size[w];
+          }
           std::vector<unsigned> all_nlist_index(tot_size);
-          if(comm.Get_rank()==0)
+          if(comm.Get_rank()==0) {
             multi_sim_comm.Allgatherv(nlist_index_,all_nlist_index,&all_nlist_size[0],&disp[0]);
+          }
           comm.Bcast(all_nlist_index,0);
           std::set<unsigned> nlist_index_set(all_nlist_index.begin(),all_nlist_index.end()); //remove duplicates and sort
           nlist_index_.assign(nlist_index_set.begin(),nlist_index_set.end());
         }
       }
-      for(unsigned w=0; w<NumWalkers_; w++)
-      {
+      for(unsigned w=0; w<NumWalkers_; w++) {
         std::vector<double> center_w(all_center.begin()+ncv_*w,all_center.begin()+ncv_*(w+1));
         std::vector<double> sigma_w(all_sigma.begin()+ncv_*w,all_sigma.begin()+ncv_*(w+1));
         addKernel(all_height[w],center_w,sigma_w,all_logweight[w]);
       }
     }
     getPntrToComponent("nker")->set(kernels_.size());
-    if(nlist_)
-    {
+    if(nlist_) {
       getPntrToComponent("nlker")->set(nlist_index_.size());
-      if(nlist_pace_reset_)
+      if(nlist_pace_reset_) {
         nlist_update_=true;
+      }
     }
 
     //update Zed_
-    if(!no_Zed_)
-    {
+    if(!no_Zed_) {
       double sum_uprob=0;
       const unsigned ks=kernels_.size();
       const unsigned ds=delta_kernels_.size();
       const bool few_kernels=(ks*ks<(3*ks*ds+2*ds*ds*NumParallel_+100)); //this seems reasonable, but is not rigorous...
-      if(few_kernels) //really needed? Probably is almost always false
-      {
+      if(few_kernels) { //really needed? Probably is almost always false
         #pragma omp parallel num_threads(NumOMP_)
         {
           #pragma omp for reduction(+:sum_uprob) nowait
           for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
-            for(unsigned kk=0; kk<kernels_.size(); kk++)
+            for(unsigned kk=0; kk<kernels_.size(); kk++) {
               sum_uprob+=evaluateKernel(kernels_[kk],kernels_[k].center);
+            }
         }
-        if(NumParallel_>1)
+        if(NumParallel_>1) {
           comm.Sum(sum_uprob);
-      }
-      else
-      {
+        }
+      } else {
         // Here instead of redoing the full summation, we add only the changes, knowing that
         // uprob = old_uprob + delta_uprob
         // and we also need to consider that in the new sum there are some novel centers and some disappeared ones
         double delta_sum_uprob=0;
-        if(!nlist_)
-        {
+        if(!nlist_) {
           #pragma omp parallel num_threads(NumOMP_)
           {
             #pragma omp for reduction(+:delta_sum_uprob) nowait
-            for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
-            {
-              for(unsigned d=0; d<delta_kernels_.size(); d++)
-              {
+            for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_) {
+              for(unsigned d=0; d<delta_kernels_.size(); d++) {
                 const double sign=delta_kernels_[d].height<0?-1:1; //take away contribution from kernels that are gone, and add the one from new ones
                 delta_sum_uprob+=evaluateKernel(delta_kernels_[d],kernels_[k].center)+sign*evaluateKernel(kernels_[k],delta_kernels_[d].center);
               }
             }
           }
-        }
-        else
-        {
+        } else {
           #pragma omp parallel num_threads(NumOMP_)
           {
             #pragma omp for reduction(+:delta_sum_uprob) nowait
-            for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_)
-            {
+            for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_) {
               const unsigned k=nlist_index_[nk];
-              for(unsigned d=0; d<delta_kernels_.size(); d++)
-              {
+              for(unsigned d=0; d<delta_kernels_.size(); d++) {
                 const double sign=delta_kernels_[d].height<0?-1:1; //take away contribution from kernels that are gone, and add the one from new ones
                 delta_sum_uprob+=evaluateKernel(delta_kernels_[d],kernels_[k].center)+sign*evaluateKernel(kernels_[k],delta_kernels_[d].center);
               }
             }
           }
         }
-        if(NumParallel_>1)
+        if(NumParallel_>1) {
           comm.Sum(delta_sum_uprob);
+        }
         #pragma omp parallel num_threads(NumOMP_)
         {
           #pragma omp for reduction(+:delta_sum_uprob)
-          for(unsigned d=0; d<delta_kernels_.size(); d++)
-          {
-            for(unsigned dd=0; dd<delta_kernels_.size(); dd++)
-            { //now subtract the delta_uprob added before, but not needed
+          for(unsigned d=0; d<delta_kernels_.size(); d++) {
+            for(unsigned dd=0; dd<delta_kernels_.size(); dd++) {
+              //now subtract the delta_uprob added before, but not needed
               const double sign=delta_kernels_[d].height<0?-1:1;
               delta_sum_uprob-=sign*evaluateKernel(delta_kernels_[dd],delta_kernels_[d].center);
             }
@@ -1246,8 +1229,7 @@ void OPESmetad<mode>::update()
     }
 
     //calculate work if requested
-    if(calc_work_)
-    {
+    if(calc_work_) {
       std::vector<double> dummy(ncv_); //derivatives are not actually needed
       const double prob=getProbAndDerivatives(center,dummy);
       const double new_bias=kbt_*bias_prefactor_*std::log(prob/Zed_+epsilon_);
@@ -1257,113 +1239,104 @@ void OPESmetad<mode>::update()
   }
 
 //dump state if requested
-  if( (wStateStride_>0 && getStep()%wStateStride_==0) || (wStateStride_==-1 && getCPT()) )
+  if( (wStateStride_>0 && getStep()%wStateStride_==0) || (wStateStride_==-1 && getCPT()) ) {
     dumpStateToFile();
+  }
 }
 
 template <class mode>
-double OPESmetad<mode>::getProbAndDerivatives(const std::vector<double>& cv,std::vector<double>& der_prob)
-{
+double OPESmetad<mode>::getProbAndDerivatives(const std::vector<double>& cv,std::vector<double>& der_prob) {
   double prob=0.0;
-  if(!nlist_)
-  {
-    if(NumOMP_==1 || (unsigned)kernels_.size()<2*NumOMP_*NumParallel_)
-    {
+  if(!nlist_) {
+    if(NumOMP_==1 || (unsigned)kernels_.size()<2*NumOMP_*NumParallel_) {
       // for performances and thread safety
       std::vector<double> dist(ncv_);
-      for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
+      for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_) {
         prob+=evaluateKernel(kernels_[k],cv,der_prob,dist);
-    }
-    else
-    {
+      }
+    } else {
       #pragma omp parallel num_threads(NumOMP_)
       {
         std::vector<double> omp_deriv(der_prob.size(),0.);
         // for performances and thread safety
         std::vector<double> dist(ncv_);
         #pragma omp for reduction(+:prob) nowait
-        for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
+        for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_) {
           prob+=evaluateKernel(kernels_[k],cv,omp_deriv,dist);
+        }
         #pragma omp critical
-        for(unsigned i=0; i<ncv_; i++)
+        for(unsigned i=0; i<ncv_; i++) {
           der_prob[i]+=omp_deriv[i];
+        }
       }
     }
-  }
-  else
-  {
-    if(NumOMP_==1 || (unsigned)nlist_index_.size()<2*NumOMP_*NumParallel_)
-    {
+  } else {
+    if(NumOMP_==1 || (unsigned)nlist_index_.size()<2*NumOMP_*NumParallel_) {
       // for performances and thread safety
       std::vector<double> dist(ncv_);
-      for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_)
+      for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_) {
         prob+=evaluateKernel(kernels_[nlist_index_[nk]],cv,der_prob,dist);
-    }
-    else
-    {
+      }
+    } else {
       #pragma omp parallel num_threads(NumOMP_)
       {
         std::vector<double> omp_deriv(der_prob.size(),0.);
         // for performances and thread safety
         std::vector<double> dist(ncv_);
         #pragma omp for reduction(+:prob) nowait
-        for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_)
+        for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_) {
           prob+=evaluateKernel(kernels_[nlist_index_[nk]],cv,omp_deriv,dist);
+        }
         #pragma omp critical
-        for(unsigned i=0; i<ncv_; i++)
+        for(unsigned i=0; i<ncv_; i++) {
           der_prob[i]+=omp_deriv[i];
+        }
       }
     }
   }
-  if(NumParallel_>1)
-  {
+  if(NumParallel_>1) {
     comm.Sum(prob);
     comm.Sum(der_prob);
   }
 //normalize the estimate
   prob/=KDEnorm_;
-  for(unsigned i=0; i<ncv_; i++)
+  for(unsigned i=0; i<ncv_; i++) {
     der_prob[i]/=KDEnorm_;
+  }
 
   return prob;
 }
 
 template <class mode>
-void OPESmetad<mode>::addKernel(const double height,const std::vector<double>& center,const std::vector<double>& sigma)
-{
+void OPESmetad<mode>::addKernel(const double height,const std::vector<double>& center,const std::vector<double>& sigma) {
   bool no_match=true;
-  if(threshold2_!=0)
-  {
+  if(threshold2_!=0) {
     unsigned taker_k=getMergeableKernel(center,kernels_.size());
-    if(taker_k<kernels_.size())
-    {
+    if(taker_k<kernels_.size()) {
       no_match=false;
       delta_kernels_.emplace_back(-1*kernels_[taker_k].height,kernels_[taker_k].center,kernels_[taker_k].sigma);
       mergeKernels(kernels_[taker_k],kernel(height,center,sigma));
       delta_kernels_.push_back(kernels_[taker_k]);
-      if(recursive_merge_) //the overhead is worth it if it keeps low the total number of kernels
-      {
+      if(recursive_merge_) { //the overhead is worth it if it keeps low the total number of kernels
         unsigned giver_k=taker_k;
         taker_k=getMergeableKernel(kernels_[giver_k].center,giver_k);
-        while(taker_k<kernels_.size())
-        {
+        while(taker_k<kernels_.size()) {
           delta_kernels_.pop_back();
           delta_kernels_.emplace_back(-1*kernels_[taker_k].height,kernels_[taker_k].center,kernels_[taker_k].sigma);
-          if(taker_k>giver_k) //saves time when erasing
+          if(taker_k>giver_k) { //saves time when erasing
             std::swap(taker_k,giver_k);
+          }
           mergeKernels(kernels_[taker_k],kernels_[giver_k]);
           delta_kernels_.push_back(kernels_[taker_k]);
           kernels_.erase(kernels_.begin()+giver_k);
-          if(nlist_)
-          {
+          if(nlist_) {
             unsigned giver_nk=0;
             bool found_giver=false;
-            for(unsigned nk=0; nk<nlist_index_.size(); nk++)
-            {
-              if(found_giver)
-                nlist_index_[nk]--; //all the indexes shift due to erase
-              if(nlist_index_[nk]==giver_k)
-              {
+            for(unsigned nk=0; nk<nlist_index_.size(); nk++) {
+              if(found_giver) {
+                nlist_index_[nk]--;  //all the indexes shift due to erase
+              }
+              if(nlist_index_[nk]==giver_k) {
                 giver_nk=nk;
                 found_giver=true;
               }
@@ -1377,108 +1350,101 @@ void OPESmetad<mode>::addKernel(const double height,const std::vector<double>& c
       }
     }
   }
-  if(no_match)
-  {
+  if(no_match) {
     kernels_.emplace_back(height,center,sigma);
     delta_kernels_.emplace_back(height,center,sigma);
-    if(nlist_)
+    if(nlist_) {
       nlist_index_.push_back(kernels_.size()-1);
+    }
   }
 }
 
 template <class mode>
-void OPESmetad<mode>::addKernel(const double height,const std::vector<double>& center,const std::vector<double>& sigma,const double logweight)
-{
+void OPESmetad<mode>::addKernel(const double height,const std::vector<double>& center,const std::vector<double>& sigma,const double logweight) {
   addKernel(height,center,sigma);
 //write to file
   kernelsOfile_.printField("time",getTime());
-  for(unsigned i=0; i<ncv_; i++)
+  for(unsigned i=0; i<ncv_; i++) {
     kernelsOfile_.printField(getPntrToArgument(i),center[i]);
-  for(unsigned i=0; i<ncv_; i++)
+  }
+  for(unsigned i=0; i<ncv_; i++) {
     kernelsOfile_.printField("sigma_"+getPntrToArgument(i)->getName(),sigma[i]);
+  }
   kernelsOfile_.printField("height",height);
   kernelsOfile_.printField("logweight",logweight);
   kernelsOfile_.printField();
 }
 
 template <class mode>
-unsigned OPESmetad<mode>::getMergeableKernel(const std::vector<double>& giver_center,const unsigned giver_k)
-{ //returns kernels_.size() if no match is found
+unsigned OPESmetad<mode>::getMergeableKernel(const std::vector<double>& giver_center,const unsigned giver_k) {
+  //returns kernels_.size() if no match is found
   unsigned min_k=kernels_.size();
   double min_norm2=threshold2_;
-  if(!nlist_)
-  {
+  if(!nlist_) {
     #pragma omp parallel num_threads(NumOMP_)
     {
       unsigned min_k_omp = min_k;
       double min_norm2_omp = threshold2_;
       #pragma omp for nowait
-      for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
-      {
-        if(k==giver_k) //a kernel should not be merged with itself
+      for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_) {
+        if(k==giver_k) { //a kernel should not be merged with itself
           continue;
+        }
         double norm2=0;
-        for(unsigned i=0; i<ncv_; i++)
-        {
+        for(unsigned i=0; i<ncv_; i++) {
           const double dist_i=difference(i,giver_center[i],kernels_[k].center[i])/kernels_[k].sigma[i];
           norm2+=dist_i*dist_i;
-          if(norm2>=min_norm2_omp)
+          if(norm2>=min_norm2_omp) {
             break;
+          }
         }
-        if(norm2<min_norm2_omp)
-        {
+        if(norm2<min_norm2_omp) {
           min_norm2_omp=norm2;
           min_k_omp=k;
         }
       }
       #pragma omp critical
       {
-        if(min_norm2_omp < min_norm2)
-        {
+        if(min_norm2_omp < min_norm2) {
           min_norm2 = min_norm2_omp;
           min_k = min_k_omp;
         }
       }
     }
-  }
-  else
-  {
+  } else {
     #pragma omp parallel num_threads(NumOMP_)
     {
       unsigned min_k_omp = min_k;
       double min_norm2_omp = threshold2_;
       #pragma omp for nowait
-      for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_)
-      {
+      for(unsigned nk=rank_; nk<nlist_index_.size(); nk+=NumParallel_) {
         const unsigned k=nlist_index_[nk];
-        if(k==giver_k) //a kernel should not be merged with itself
+        if(k==giver_k) { //a kernel should not be merged with itself
           continue;
+        }
         double norm2=0;
-        for(unsigned i=0; i<ncv_; i++)
-        {
+        for(unsigned i=0; i<ncv_; i++) {
           const double dist_i=difference(i,giver_center[i],kernels_[k].center[i])/kernels_[k].sigma[i];
           norm2+=dist_i*dist_i;
-          if(norm2>=min_norm2)
+          if(norm2>=min_norm2) {
             break;
+          }
         }
-        if(norm2<min_norm2_omp)
-        {
+        if(norm2<min_norm2_omp) {
           min_norm2_omp=norm2;
           min_k_omp=k;
         }
       }
       #pragma omp critical
       {
-        if(min_norm2_omp < min_norm2)
-        {
+        if(min_norm2_omp < min_norm2) {
           min_norm2 = min_norm2_omp;
           min_k = min_k_omp;
         }
       }
     }
   }
-  if(NumParallel_>1)
-  {
+  if(NumParallel_>1) {
     std::vector<double> all_min_norm2(NumParallel_);
     std::vector<unsigned> all_min_k(NumParallel_);
     comm.Allgather(min_norm2,all_min_norm2);
@@ -1490,89 +1456,85 @@ unsigned OPESmetad<mode>::getMergeableKernel(const std::vector<double>& giver_ce
 }
 
 template <class mode>
-void OPESmetad<mode>::updateNlist(const std::vector<double>& new_center)
-{
-  if(kernels_.size()==0) //no need to check for neighbors
+void OPESmetad<mode>::updateNlist(const std::vector<double>& new_center) {
+  if(kernels_.size()==0) { //no need to check for neighbors
     return;
+  }
 
   nlist_center_=new_center;
   nlist_index_.clear();
   //first we gather all the nlist_index
-  if(NumOMP_==1 || (unsigned)kernels_.size()<2*NumOMP_*NumParallel_)
-  {
-    for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
-    {
+  if(NumOMP_==1 || (unsigned)kernels_.size()<2*NumOMP_*NumParallel_) {
+    for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_) {
       double norm2_k=0;
-      for(unsigned i=0; i<ncv_; i++)
-      {
+      for(unsigned i=0; i<ncv_; i++) {
         const double dist_ik=difference(i,nlist_center_[i],kernels_[k].center[i])/kernels_[k].sigma[i];
         norm2_k+=dist_ik*dist_ik;
       }
-      if(norm2_k<=nlist_param_[0]*cutoff2_)
+      if(norm2_k<=nlist_param_[0]*cutoff2_) {
         nlist_index_.push_back(k);
+      }
     }
-  }
-  else
-  {
+  } else {
     #pragma omp parallel num_threads(NumOMP_)
     {
       std::vector<unsigned> private_nlist_index;
       #pragma omp for nowait
-      for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_)
-      {
+      for(unsigned k=rank_; k<kernels_.size(); k+=NumParallel_) {
         double norm2_k=0;
-        for(unsigned i=0; i<ncv_; i++)
-        {
+        for(unsigned i=0; i<ncv_; i++) {
           const double dist_ik=difference(i,nlist_center_[i],kernels_[k].center[i])/kernels_[k].sigma[i];
           norm2_k+=dist_ik*dist_ik;
         }
-        if(norm2_k<=nlist_param_[0]*cutoff2_)
+        if(norm2_k<=nlist_param_[0]*cutoff2_) {
           private_nlist_index.push_back(k);
+        }
       }
       #pragma omp critical
       nlist_index_.insert(nlist_index_.end(),private_nlist_index.begin(),private_nlist_index.end());
     }
-    if(recursive_merge_)
+    if(recursive_merge_) {
       std::sort(nlist_index_.begin(),nlist_index_.end());
+    }
   }
-  if(NumParallel_>1)
-  {
+  if(NumParallel_>1) {
     std::vector<int> all_nlist_size(NumParallel_);
     all_nlist_size[rank_]=nlist_index_.size();
     comm.Sum(all_nlist_size);
     unsigned tot_size=0;
-    for(unsigned r=0; r<NumParallel_; r++)
+    for(unsigned r=0; r<NumParallel_; r++) {
       tot_size+=all_nlist_size[r];
-    if(tot_size>0)
-    {
+    }
+    if(tot_size>0) {
       std::vector<int> disp(NumParallel_);
-      for(unsigned r=0; r<NumParallel_-1; r++)
+      for(unsigned r=0; r<NumParallel_-1; r++) {
         disp[r+1]=disp[r]+all_nlist_size[r];
+      }
       std::vector<unsigned> local_nlist_index=nlist_index_;
       nlist_index_.resize(tot_size);
       comm.Allgatherv(local_nlist_index,nlist_index_,&all_nlist_size[0],&disp[0]);
-      if(recursive_merge_)
+      if(recursive_merge_) {
         std::sort(nlist_index_.begin(),nlist_index_.end());
+      }
     }
   }
   //calculate the square deviation
   std::vector<double> dev2(ncv_,0.);
-  for(unsigned k=rank_; k<nlist_index_.size(); k+=NumParallel_)
-  {
-    for(unsigned i=0; i<ncv_; i++)
-    {
+  for(unsigned k=rank_; k<nlist_index_.size(); k+=NumParallel_) {
+    for(unsigned i=0; i<ncv_; i++) {
       const double diff_ik=difference(i,nlist_center_[i],kernels_[nlist_index_[k]].center[i]);
       dev2[i]+=diff_ik*diff_ik;
     }
   }
-  if(NumParallel_>1)
+  if(NumParallel_>1) {
     comm.Sum(dev2);
-  for(unsigned i=0; i<ncv_; i++)
-  {
-    if(dev2[i]==0) //e.g. if nlist_index_.size()==0
+  }
+  for(unsigned i=0; i<ncv_; i++) {
+    if(dev2[i]==0) { //e.g. if nlist_index_.size()==0
       nlist_dev2_[i]=std::pow(kernels_.back().sigma[i],2);
-    else
+    } else {
       nlist_dev2_[i]=dev2[i]/nlist_index_.size();
+    }
   }
   getPntrToComponent("nlker")->set(nlist_index_.size());
   getPntrToComponent("nlsteps")->set(nlist_steps_);
@@ -1581,20 +1543,17 @@ void OPESmetad<mode>::updateNlist(const std::vector<double>& new_center)
 }
 
 template <class mode>
-void OPESmetad<mode>::dumpStateToFile()
-{
+void OPESmetad<mode>::dumpStateToFile() {
 //gather adaptive sigma info if needed
 //doing this while writing to file can lead to misterious slowdowns
   std::vector<double> all_sigma0;
   std::vector<double> all_av_cv;
   std::vector<double> all_av_M2;
-  if(adaptive_sigma_ && NumWalkers_>1)
-  {
+  if(adaptive_sigma_ && NumWalkers_>1) {
     all_sigma0.resize(NumWalkers_*ncv_);
     all_av_cv.resize(NumWalkers_*ncv_);
     all_av_M2.resize(NumWalkers_*ncv_);
-    if(comm.Get_rank()==0)
-    {
+    if(comm.Get_rank()==0) {
       multi_sim_comm.Allgather(sigma0_,all_sigma0);
       multi_sim_comm.Allgather(av_cv_,all_av_cv);
       multi_sim_comm.Allgather(av_M2_,all_av_M2);
@@ -1605,10 +1564,11 @@ void OPESmetad<mode>::dumpStateToFile()
   }
 
 //rewrite header or rewind file
-  if(storeOldStates_)
+  if(storeOldStates_) {
     stateOfile_.clearFields();
-  else if(walker_rank_==0)
+  } else if(walker_rank_==0) {
     stateOfile_.rewind();
+  }
 //define fields
   stateOfile_.addConstantField("action");
   stateOfile_.addConstantField("biasfactor");
@@ -1619,23 +1579,17 @@ void OPESmetad<mode>::dumpStateToFile()
   stateOfile_.addConstantField("sum_weights");
   stateOfile_.addConstantField("sum_weights2");
   stateOfile_.addConstantField("counter");
-  if(adaptive_sigma_)
-  {
+  if(adaptive_sigma_) {
     stateOfile_.addConstantField("adaptive_counter");
-    if(NumWalkers_==1)
-    {
-      for(unsigned i=0; i<ncv_; i++)
-      {
+    if(NumWalkers_==1) {
+      for(unsigned i=0; i<ncv_; i++) {
         stateOfile_.addConstantField("sigma0_"+getPntrToArgument(i)->getName());
         stateOfile_.addConstantField("av_cv_"+getPntrToArgument(i)->getName());
         stateOfile_.addConstantField("av_M2_"+getPntrToArgument(i)->getName());
       }
-    }
-    else
-    {
+    } else {
       for(unsigned w=0; w<NumWalkers_; w++)
-        for(unsigned i=0; i<ncv_; i++)
-        {
+        for(unsigned i=0; i<ncv_; i++) {
           const std::string arg_iw=getPntrToArgument(i)->getName()+"_"+std::to_string(w);
           stateOfile_.addConstantField("sigma0_"+arg_iw);
           stateOfile_.addConstantField("av_cv_"+arg_iw);
@@ -1644,8 +1598,9 @@ void OPESmetad<mode>::dumpStateToFile()
     }
   }
 //print fields
-  for(unsigned i=0; i<ncv_; i++) //periodicity of CVs
+  for(unsigned i=0; i<ncv_; i++) { //periodicity of CVs
     stateOfile_.setupPrintValue(getPntrToArgument(i));
+  }
   stateOfile_.printField("action",getName()+"_state");
   stateOfile_.printField("biasfactor",biasfactor_);
   stateOfile_.printField("epsilon",epsilon_);
@@ -1655,23 +1610,17 @@ void OPESmetad<mode>::dumpStateToFile()
   stateOfile_.printField("sum_weights",sum_weights_);
   stateOfile_.printField("sum_weights2",sum_weights2_);
   stateOfile_.printField("counter",counter_);
-  if(adaptive_sigma_)
-  {
+  if(adaptive_sigma_) {
     stateOfile_.printField("adaptive_counter",adaptive_counter_);
-    if(NumWalkers_==1)
-    {
-      for(unsigned i=0; i<ncv_; i++)
-      {
+    if(NumWalkers_==1) {
+      for(unsigned i=0; i<ncv_; i++) {
         stateOfile_.printField("sigma0_"+getPntrToArgument(i)->getName(),sigma0_[i]);
         stateOfile_.printField("av_cv_"+getPntrToArgument(i)->getName(),av_cv_[i]);
         stateOfile_.printField("av_M2_"+getPntrToArgument(i)->getName(),av_M2_[i]);
       }
-    }
-    else
-    {
+    } else {
       for(unsigned w=0; w<NumWalkers_; w++)
-        for(unsigned i=0; i<ncv_; i++)
-        {
+        for(unsigned i=0; i<ncv_; i++) {
           const std::string arg_iw=getPntrToArgument(i)->getName()+"_"+std::to_string(w);
           stateOfile_.printField("sigma0_"+arg_iw,all_sigma0[w*ncv_+i]);
           stateOfile_.printField("av_cv_"+arg_iw,all_av_cv[w*ncv_+i]);
@@ -1680,69 +1629,72 @@ void OPESmetad<mode>::dumpStateToFile()
     }
   }
 //print kernels
-  for(unsigned k=0; k<kernels_.size(); k++)
-  {
+  for(unsigned k=0; k<kernels_.size(); k++) {
     stateOfile_.printField("time",getTime()); //this is not very usefull
-    for(unsigned i=0; i<ncv_; i++)
+    for(unsigned i=0; i<ncv_; i++) {
       stateOfile_.printField(getPntrToArgument(i),kernels_[k].center[i]);
-    for(unsigned i=0; i<ncv_; i++)
+    }
+    for(unsigned i=0; i<ncv_; i++) {
       stateOfile_.printField("sigma_"+getPntrToArgument(i)->getName(),kernels_[k].sigma[i]);
+    }
     stateOfile_.printField("height",kernels_[k].height);
     stateOfile_.printField();
   }
 //make sure file is written even if small
-  if(!storeOldStates_)
+  if(!storeOldStates_) {
     stateOfile_.flush();
+  }
 }
 
 template <class mode>
-inline double OPESmetad<mode>::evaluateKernel(const kernel& G,const std::vector<double>& x) const
-{ //NB: cannot be a method of kernel class, because uses external variables (for cutoff)
+inline double OPESmetad<mode>::evaluateKernel(const kernel& G,const std::vector<double>& x) const {
+  //NB: cannot be a method of kernel class, because uses external variables (for cutoff)
   double norm2=0;
-  for(unsigned i=0; i<ncv_; i++)
-  {
+  for(unsigned i=0; i<ncv_; i++) {
     const double dist_i=difference(i,G.center[i],x[i])/G.sigma[i];
     norm2+=dist_i*dist_i;
-    if(norm2>=cutoff2_)
+    if(norm2>=cutoff2_) {
       return 0;
+    }
   }
   return G.height*(std::exp(-0.5*norm2)-val_at_cutoff_);
 }
 
 template <class mode>
-inline double OPESmetad<mode>::evaluateKernel(const kernel& G,const std::vector<double>& x, std::vector<double>& acc_der, std::vector<double>& dist)
-{ //NB: cannot be a method of kernel class, because uses external variables (for cutoff)
+inline double OPESmetad<mode>::evaluateKernel(const kernel& G,const std::vector<double>& x, std::vector<double>& acc_der, std::vector<double>& dist) {
+  //NB: cannot be a method of kernel class, because uses external variables (for cutoff)
   double norm2=0;
-  for(unsigned i=0; i<ncv_; i++)
-  {
+  for(unsigned i=0; i<ncv_; i++) {
     dist[i]=difference(i,G.center[i],x[i])/G.sigma[i];
     norm2+=dist[i]*dist[i];
-    if(norm2>=cutoff2_)
+    if(norm2>=cutoff2_) {
       return 0;
+    }
   }
   const double val=G.height*(std::exp(-0.5*norm2)-val_at_cutoff_);
-  for(unsigned i=0; i<ncv_; i++)
-    acc_der[i]-=dist[i]/G.sigma[i]*val; //NB: we accumulate the derivative into der
+  for(unsigned i=0; i<ncv_; i++) {
+    acc_der[i]-=dist[i]/G.sigma[i]*val;  //NB: we accumulate the derivative into der
+  }
   return val;
 }
 
 template <class mode>
-inline void OPESmetad<mode>::mergeKernels(kernel& k1,const kernel& k2)
-{
+inline void OPESmetad<mode>::mergeKernels(kernel& k1,const kernel& k2) {
   const double h=k1.height+k2.height;
-  for(unsigned i=0; i<k1.center.size(); i++)
-  {
+  for(unsigned i=0; i<k1.center.size(); i++) {
     const bool isPeriodic_i=getPntrToArgument(i)->isPeriodic();
-    if(isPeriodic_i)
-      k1.center[i]=k2.center[i]+difference(i,k2.center[i],k1.center[i]); //fix PBC
+    if(isPeriodic_i) {
+      k1.center[i]=k2.center[i]+difference(i,k2.center[i],k1.center[i]);  //fix PBC
+    }
     const double c_i=(k1.height*k1.center[i]+k2.height*k2.center[i])/h;
     const double ss_k1_part=k1.height*(k1.sigma[i]*k1.sigma[i]+k1.center[i]*k1.center[i]);
     const double ss_k2_part=k2.height*(k2.sigma[i]*k2.sigma[i]+k2.center[i]*k2.center[i]);
     const double ss_i=(ss_k1_part+ss_k2_part)/h-c_i*c_i;
-    if(isPeriodic_i)
+    if(isPeriodic_i) {
       k1.center[i]=bringBackInPbc(i,c_i);
-    else
+    } else {
       k1.center[i]=c_i;
+    }
     k1.sigma[i]=sqrt(ss_i);
   }
   k1.height=h;

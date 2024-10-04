@@ -79,8 +79,7 @@ plumed driver --plumed plumed.dat --igro configuration.gro
 
 
 class OutputTargetDistribution :
-  public Action
-{
+  public Action {
 public:
   explicit OutputTargetDistribution(const ActionOptions&);
   void calculate() override {}
@@ -105,8 +104,7 @@ void OutputTargetDistribution::registerKeywords(Keywords& keys) {
 }
 
 OutputTargetDistribution::OutputTargetDistribution(const ActionOptions&ao):
-  Action(ao)
-{
+  Action(ao) {
 
   std::string targetdist_fname;
   parse("TARGETDIST_FILE",targetdist_fname);
@@ -127,7 +125,9 @@ OutputTargetDistribution::OutputTargetDistribution(const ActionOptions&ao):
 
   std::vector<std::string> grid_periodicity(nargs);
   parseVector("GRID_PERIODICITY",grid_periodicity);
-  if(grid_periodicity.size()==0) {grid_periodicity.assign(nargs,"NO");}
+  if(grid_periodicity.size()==0) {
+    grid_periodicity.assign(nargs,"NO");
+  }
 
   std::string fmt_grids="%14.9f";
   parse("FMT_GRIDS",fmt_grids);
@@ -148,23 +148,26 @@ OutputTargetDistribution::OutputTargetDistribution(const ActionOptions&ao):
   //
   std::vector<std::unique_ptr<Value>> arguments(nargs);
   for(unsigned int i=0; i < nargs; i++) {
-    std::string is; Tools::convert(i+1,is);
-    if(nargs==1) {is="";}
+    std::string is;
+    Tools::convert(i+1,is);
+    if(nargs==1) {
+      is="";
+    }
     arguments[i]= Tools::make_unique<Value>(nullptr,"arg"+is,false);
     if(grid_periodicity[i]=="YES") {
       arguments[i]->setDomain(grid_min[i],grid_max[i]);
-    }
-    else if(grid_periodicity[i]=="NO") {
+    } else if(grid_periodicity[i]=="NO") {
       arguments[i]->setNotPeriodic();
-    }
-    else {
+    } else {
       plumed_merror("wrong value given in GRID_PERIODICITY, either specify YES or NO");
     }
   }
 
   std::string error_msg = "";
   TargetDistribution* targetdist_pntr = VesTools::getPointerFromLabel<TargetDistribution*>(targetdist_label,plumed.getActionSet(),error_msg);
-  if(error_msg.size()>0) {plumed_merror("Error in keyword TARGET_DISTRIBUTION of "+getName()+": "+error_msg);}
+  if(error_msg.size()>0) {
+    plumed_merror("Error in keyword TARGET_DISTRIBUTION of "+getName()+": "+error_msg);
+  }
   //
   if(targetdist_pntr->isDynamic()) {
     plumed_merror(getName() + " only works for static target distributions");

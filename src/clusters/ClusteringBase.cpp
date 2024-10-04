@@ -26,32 +26,42 @@ namespace PLMD {
 namespace clusters {
 
 void ClusteringBase::registerKeywords( Keywords& keys ) {
-  matrixtools::MatrixOperationBase::registerKeywords( keys ); keys.use("ARG");
+  matrixtools::MatrixOperationBase::registerKeywords( keys );
+  keys.use("ARG");
   keys.setValueDescription("vector with length that is equal to the number of rows in the input matrix.  Elements of this vector are equal to the cluster that each node is a part of");
 }
 
 ClusteringBase::ClusteringBase(const ActionOptions&ao):
   Action(ao),
   matrixtools::MatrixOperationBase(ao),
-  number_of_cluster(-1)
-{
+  number_of_cluster(-1) {
   // Do some checks on the input
-  if( getPntrToArgument(0)->getShape()[0]!=getPntrToArgument(0)->getShape()[1] ) error("input matrix should be square");
+  if( getPntrToArgument(0)->getShape()[0]!=getPntrToArgument(0)->getShape()[1] ) {
+    error("input matrix should be square");
+  }
 
   // Now create a value - this holds the data on which cluster each guy is in
-  std::vector<unsigned> shape(1); shape[0]=getPntrToArgument(0)->getShape()[0];
+  std::vector<unsigned> shape(1);
+  shape[0]=getPntrToArgument(0)->getShape()[0];
   // Build the store here to make sure that next action has all data
-  addValue( shape ); setNotPeriodic(); getPntrToValue()->buildDataStore();
+  addValue( shape );
+  setNotPeriodic();
+  getPntrToValue()->buildDataStore();
   // Resize local variables
-  which_cluster.resize( getPntrToArgument(0)->getShape()[0] ); cluster_sizes.resize( getPntrToArgument(0)->getShape()[0] );
+  which_cluster.resize( getPntrToArgument(0)->getShape()[0] );
+  cluster_sizes.resize( getPntrToArgument(0)->getShape()[0] );
 }
 
 void ClusteringBase::retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matrix<unsigned>& adj_list ) {
   // Make sure we have the edges stored
-  std::vector<std::pair<unsigned,unsigned> > pairs; std::vector<double> vals;
-  unsigned nedge; getPntrToArgument(0)->retrieveEdgeList( nedge, pairs, vals );
+  std::vector<std::pair<unsigned,unsigned> > pairs;
+  std::vector<double> vals;
+  unsigned nedge;
+  getPntrToArgument(0)->retrieveEdgeList( nedge, pairs, vals );
   // Currently everything has zero neighbors
-  for(unsigned i=0; i<nneigh.size(); ++i) nneigh[i]=0;
+  for(unsigned i=0; i<nneigh.size(); ++i) {
+    nneigh[i]=0;
+  }
   // Resize the adjacency list if it is needed
   if( adj_list.ncols()!=getPntrToArgument(0)->getNumberOfColumns() ) {
     unsigned nrows = getPntrToArgument(0)->getShape()[0];
@@ -62,15 +72,22 @@ void ClusteringBase::retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matr
   for(unsigned i=0; i<nedge; ++i) {
     // Store if atoms are connected
     unsigned j=pairs[i].first, k=pairs[i].second;
-    if( j==k ) continue;
-    adj_list(j,nneigh[j])=k; nneigh[j]++;
-    adj_list(k,nneigh[k])=j; nneigh[k]++;
+    if( j==k ) {
+      continue;
+    }
+    adj_list(j,nneigh[j])=k;
+    nneigh[j]++;
+    adj_list(k,nneigh[k])=j;
+    nneigh[k]++;
   }
 }
 
 void ClusteringBase::calculate() {
   // All the clusters have zero size initially
-  for(unsigned i=0; i<cluster_sizes.size(); ++i) { cluster_sizes[i].first=0; cluster_sizes[i].second=i; }
+  for(unsigned i=0; i<cluster_sizes.size(); ++i) {
+    cluster_sizes[i].first=0;
+    cluster_sizes[i].second=i;
+  }
   // Do the clustering bit
   performClustering();
   // Order the clusters in the system by size (this returns ascending order )
@@ -79,13 +96,17 @@ void ClusteringBase::calculate() {
   for(unsigned i=0; i<cluster_sizes.size(); ++i) {
     double this_size = static_cast<double>(cluster_sizes.size()-i);
     for(unsigned j=0; j<cluster_sizes.size(); ++j) {
-      if( which_cluster[j]==cluster_sizes[i].second ) getPntrToValue()->set( j, this_size );
+      if( which_cluster[j]==cluster_sizes[i].second ) {
+        getPntrToValue()->set( j, this_size );
+      }
     }
   }
 }
 
 void ClusteringBase::apply() {
-  if( getPntrToComponent(0)->forcesWereAdded() ) error("forces on clustering actions cannot work as clustering is not differentiable");
+  if( getPntrToComponent(0)->forcesWereAdded() ) {
+    error("forces on clustering actions cannot work as clustering is not differentiable");
+  }
 }
 
 }

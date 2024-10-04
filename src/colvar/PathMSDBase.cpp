@@ -51,8 +51,7 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
   debugClose(0),
   logClose(0),
   computeRefClose(false),
-  nframes(0)
-{
+  nframes(0) {
   parse("LAMBDA",lambda);
   parse("NEIGH_SIZE",neigh_size);
   parse("NEIGH_STRIDE",neigh_stride);
@@ -63,10 +62,11 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
   parseFlag("NOPBC",nopbc);
 
   // open the file
-  if (FILE* fp=this->fopen(reference.c_str(),"r"))
-  {
+  if (FILE* fp=this->fopen(reference.c_str(),"r")) {
 // call fclose when exiting this block
-    auto deleter=[this](FILE* f) { this->fclose(f); };
+    auto deleter=[this](FILE* f) {
+      this->fclose(f);
+    };
     std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
 
     std::vector<AtomNumber> aaa;
@@ -79,30 +79,44 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
       do_read=mypdb.readFromFilepointer(fp,usingNaturalUnits(),0.1/getUnits().getLength());
       if(do_read) {
         nframes++;
-        if(mypdb.getAtomNumbers().size()==0) error("number of atoms in a frame should be more than zero");
-        if(nat==0) nat=mypdb.getAtomNumbers().size();
-        if(nat!=mypdb.getAtomNumbers().size()) error("frames should have the same number of atoms");
+        if(mypdb.getAtomNumbers().size()==0) {
+          error("number of atoms in a frame should be more than zero");
+        }
+        if(nat==0) {
+          nat=mypdb.getAtomNumbers().size();
+        }
+        if(nat!=mypdb.getAtomNumbers().size()) {
+          error("frames should have the same number of atoms");
+        }
         if(aaa.empty()) {
           aaa=mypdb.getAtomNumbers();
           log.printf("  found %zu atoms in input \n",aaa.size());
           log.printf("  with indices : ");
           for(unsigned i=0; i<aaa.size(); ++i) {
-            if(i%25==0) log<<"\n";
+            if(i%25==0) {
+              log<<"\n";
+            }
             log.printf("%d ",aaa[i].serial());
           }
           log.printf("\n");
         }
-        if(aaa!=mypdb.getAtomNumbers()) error("frames should contain same atoms in same order");
+        if(aaa!=mypdb.getAtomNumbers()) {
+          error("frames should contain same atoms in same order");
+        }
         log<<"Found PDB: "<<nframes<<" containing  "<<mypdb.getAtomNumbers().size()<<" atoms\n";
         pdbv.push_back(mypdb);
         derivs_s.resize(mypdb.getAtomNumbers().size());
         derivs_z.resize(mypdb.getAtomNumbers().size());
         mymsd.set(mypdb,"OPTIMAL");
         msdv.push_back(mymsd); // the vector that stores the frames
-      } else {break ;}
+      } else {
+        break ;
+      }
     }
     log<<"Found TOTAL "<<nframes<< " PDB in the file "<<reference.c_str()<<" \n";
-    if(nframes==0) error("at least one frame expected");
+    if(nframes==0) {
+      error("at least one frame expected");
+    }
     //set up rmsdRefClose, initialize it to the first structure loaded from reference file
     rmsdPosClose.set(pdbv[0], "OPTIMAL");
     firstPosClose = true;
@@ -121,19 +135,22 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
   if (epsilonClose > 0) {
     log.printf(" Computing with the close structure, epsilon = %lf\n", epsilonClose);
     log << "  Bibliography " << plumed.cite("Pazurikova J, Krenek A, Spiwok V, Simkova M J. Chem. Phys. 146, 115101 (2017)") << "\n";
-  }
-  else {
+  } else {
     debugClose = 0;
     logClose = 0;
   }
-  if (debugClose)
+  if (debugClose) {
     log.printf(" Extensive debug info regarding close structure turned on\n");
+  }
 
   rotationRefClose.resize(nframes);
   savedIndices = std::vector<unsigned>(nframes);
 
-  if(nopbc) log.printf("  without periodic boundary conditions\n");
-  else      log.printf("  using periodic boundary conditions\n");
+  if(nopbc) {
+    log.printf("  without periodic boundary conditions\n");
+  } else {
+    log.printf("  using periodic boundary conditions\n");
+  }
 
 }
 
@@ -142,11 +159,15 @@ PathMSDBase::~PathMSDBase() {
 
 void PathMSDBase::calculate() {
 
-  if(neigh_size>0 && getExchangeStep()) error("Neighbor lists for this collective variable are not compatible with replica exchange, sorry for that!");
+  if(neigh_size>0 && getExchangeStep()) {
+    error("Neighbor lists for this collective variable are not compatible with replica exchange, sorry for that!");
+  }
 
   //log.printf("NOW CALCULATE! \n");
 
-  if(!nopbc) makeWhole();
+  if(!nopbc) {
+    makeWhole();
+  }
 
 
   // resize the list to full
@@ -175,8 +196,9 @@ void PathMSDBase::calculate() {
     //if we compute for the first time or the existing close structure is too far from current structure
     if (firstPosClose || (posclose > epsilonClose)) {
       //set the current structure as close one for a few next steps
-      if (logClose)
+      if (logClose) {
         log << "PLUMED_CLOSE: new close structure, rmsd pos close " << posclose << "\n";
+      }
       rmsdPosClose.clear();
       rmsdPosClose.setReference(getPositions());
       //as this is a new close structure, we need to save the rotation matrices fitted to the reference structures
@@ -188,11 +210,11 @@ void PathMSDBase::calculate() {
         imgVec[i].index=i;
       }
       firstPosClose = false;
-    }
-    else {
+    } else {
       //the current structure is pretty close to the close structure, so we use saved rotation matrices to decrease the complexity of rmsd comuptation
-      if (debugClose)
+      if (debugClose) {
         log << "PLUMED-CLOSE: old close structure, rmsd pos close " << posclose << "\n";
+      }
       computeRefClose = false;
     }
   }
@@ -210,16 +232,19 @@ void PathMSDBase::calculate() {
         tmp_distances[i] = msdv[imgVec[i].index].calc_Rot(getPositions(), tmp_derivs, tmp_rotationRefClose[imgVec[i].index], true);
         plumed_assert(tmp_derivs.size()==nat);
         #pragma omp simd
-        for(unsigned j=0; j<nat; j++) tmp_derivs2[i*nat+j]=tmp_derivs[j];
+        for(unsigned j=0; j<nat; j++) {
+          tmp_derivs2[i*nat+j]=tmp_derivs[j];
+        }
       }
-    }
-    else {
+    } else {
       //approximate distance with saved rotation matrices
       for(unsigned i=rank; i<imgVec.size(); i+=stride) {
         tmp_distances[i] = msdv[imgVec[i].index].calculateWithCloseStructure(getPositions(), tmp_derivs, rotationPosClose, rotationRefClose[imgVec[i].index], drotationPosCloseDrr01, true);
         plumed_assert(tmp_derivs.size()==nat);
         #pragma omp simd
-        for(unsigned j=0; j<nat; j++) tmp_derivs2[i*nat+j]=tmp_derivs[j];
+        for(unsigned j=0; j<nat; j++) {
+          tmp_derivs2[i*nat+j]=tmp_derivs[j];
+        }
         if (debugClose) {
           double withclose = tmp_distances[i];
           RMSD opt;
@@ -233,14 +258,15 @@ void PathMSDBase::calculate() {
         }
       }
     }
-  }
-  else {
+  } else {
     // store temporary local results
     for(unsigned i=rank; i<imgVec.size(); i+=stride) {
       tmp_distances[i]=msdv[imgVec[i].index].calculate(getPositions(),tmp_derivs,true);
       plumed_assert(tmp_derivs.size()==nat);
       #pragma omp simd
-      for(unsigned j=0; j<nat; j++) tmp_derivs2[i*nat+j]=tmp_derivs[j];
+      for(unsigned j=0; j<nat; j++) {
+        tmp_derivs2[i*nat+j]=tmp_derivs[j];
+      }
     }
   }
 
@@ -263,16 +289,23 @@ void PathMSDBase::calculate() {
 
   std::vector<Value*> val_s_path;
   if(labels.size()>0) {
-    for(unsigned i=0; i<labels.size(); i++) { val_s_path.push_back(getPntrToComponent(labels[i].c_str()));}
+    for(unsigned i=0; i<labels.size(); i++) {
+      val_s_path.push_back(getPntrToComponent(labels[i].c_str()));
+    }
   } else {
     val_s_path.push_back(getPntrToComponent("sss"));
   }
   Value* val_z_path=getPntrToComponent("zzz");
 
-  std::vector<double> s_path(val_s_path.size()); for(unsigned i=0; i<s_path.size(); i++)s_path[i]=0.;
+  std::vector<double> s_path(val_s_path.size());
+  for(unsigned i=0; i<s_path.size(); i++) {
+    s_path[i]=0.;
+  }
   double min_distance=1e10;
   for(auto & it : imgVec) {
-    if(it.distance < min_distance) min_distance=it.distance;
+    if(it.distance < min_distance) {
+      min_distance=it.distance;
+    }
   }
 
   double partition=0.;
@@ -283,7 +316,10 @@ void PathMSDBase::calculate() {
     }
     partition+=it.similarity;
   }
-  for(unsigned i=0; i<s_path.size(); i++) { s_path[i]/=partition;  val_s_path[i]->set(s_path[i]) ;}
+  for(unsigned i=0; i<s_path.size(); i++) {
+    s_path[i]/=partition;
+    val_s_path[i]->set(s_path[i]) ;
+  }
   val_z_path->set(-(1./lambda)*std::log(partition) + min_distance);
 
   // clean vector
@@ -297,18 +333,26 @@ void PathMSDBase::calculate() {
       double expval=it.similarity;
       tmp=lambda*expval*(s_path[j]-it.property[j])/partition;
       #pragma omp simd
-      for(unsigned i=0; i< derivs_s.size(); i++) { derivs_s[i]+=tmp*it.distder[i] ;}
+      for(unsigned i=0; i< derivs_s.size(); i++) {
+        derivs_s[i]+=tmp*it.distder[i] ;
+      }
       if(j==0) {
         #pragma omp simd
-        for(unsigned i=0; i< derivs_z.size(); i++) { derivs_z[i]+=it.distder[i]*expval/partition;}
+        for(unsigned i=0; i< derivs_z.size(); i++) {
+          derivs_z[i]+=it.distder[i]*expval/partition;
+        }
       }
     }
     for(unsigned i=0; i< derivs_s.size(); i++) {
       setAtomsDerivatives (val_s_path[j],i,derivs_s[i]);
-      if(j==0) {setAtomsDerivatives (val_z_path,i,derivs_z[i]);}
+      if(j==0) {
+        setAtomsDerivatives (val_z_path,i,derivs_z[i]);
+      }
     }
   }
-  for(unsigned i=0; i<val_s_path.size(); ++i) setBoxDerivativesNoPbc(val_s_path[i]);
+  for(unsigned i=0; i<val_s_path.size(); ++i) {
+    setBoxDerivativesNoPbc(val_s_path[i]);
+  }
   setBoxDerivativesNoPbc(val_z_path);
   //
   //  here set next round neighbors

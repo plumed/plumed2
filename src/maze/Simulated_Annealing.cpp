@@ -143,8 +143,7 @@ void Simulated_Annealing::registerKeywords(Keywords& keys) {
 }
 
 Simulated_Annealing::Simulated_Annealing(const ActionOptions& ao)
-  : PLUMED_OPT_INIT(ao)
-{
+  : PLUMED_OPT_INIT(ao) {
   log.printf("maze> Simulated annealing optimizer.\n");
 
   if(keywords.exists("COOLING")) {
@@ -184,17 +183,13 @@ Simulated_Annealing::Simulated_Annealing(const ActionOptions& ao)
 void Simulated_Annealing::decrease_probability(unsigned int time) {
   if (cooling_scheme_ == "linear") {
     probability_decreaser_ -= time * cooling_factor_;
-  }
-  else if (cooling_scheme_ == "exponential") {
+  } else if (cooling_scheme_ == "exponential") {
     probability_decreaser_ *= pow(cooling_factor_, time);
-  }
-  else if (cooling_scheme_ == "geometric") {
+  } else if (cooling_scheme_ == "geometric") {
     probability_decreaser_ *= cooling_factor_;
-  }
-  else if (cooling_scheme_ == "logarithmic") {
+  } else if (cooling_scheme_ == "logarithmic") {
     probability_decreaser_ = cooling_factor_ / std::log(time + 1);
-  }
-  else if (cooling_scheme_ == "hoffman") {
+  } else if (cooling_scheme_ == "hoffman") {
     probability_decreaser_ = (cooling_factor_ - 1) / std::log(time);
   }
 }
@@ -234,8 +229,7 @@ void Simulated_Annealing::optimize() {
                             getPosition(i0) + dev,
                             getPosition(i1)
                           );
-        }
-        else {
+        } else {
           distance = delta(
                        getPosition(i0) + get_opt(),
                        getPosition(i1)

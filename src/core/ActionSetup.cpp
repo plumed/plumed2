@@ -29,8 +29,7 @@
 namespace PLMD {
 
 ActionSetup::ActionSetup(const ActionOptions&ao):
-  Action(ao)
-{
+  Action(ao) {
   const ActionSet& actionset(plumed.getActionSet());
   for(const auto & p : actionset) {
     // check that all the preceding actions are ActionSetup
