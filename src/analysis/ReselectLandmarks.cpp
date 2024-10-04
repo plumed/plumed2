@@ -56,18 +56,24 @@ void ReselectLandmarks::registerKeywords( Keywords& keys ) {
 
 ReselectLandmarks::ReselectLandmarks( const ActionOptions& ao ):
   Action(ao),
-  LandmarkSelectionBase(ao)
-{
-  std::string datastr; parse("LANDMARKS",datastr);
+  LandmarkSelectionBase(ao) {
+  std::string datastr;
+  parse("LANDMARKS",datastr);
   mylandmarks = plumed.getActionSet().selectWithLabel<LandmarkSelectionBase*>( datastr );
-  if( !mylandmarks ) error("input to LANDMARKS is not a landmark selection action");
+  if( !mylandmarks ) {
+    error("input to LANDMARKS is not a landmark selection action");
+  }
   nlandmarks = mylandmarks->nlandmarks;
 
-  if( (mylandmarks->my_input_data)->getNumberOfDataPoints()!=my_input_data->getNumberOfDataPoints() ) error("mismatch between amount of landmark class and base class");
+  if( (mylandmarks->my_input_data)->getNumberOfDataPoints()!=my_input_data->getNumberOfDataPoints() ) {
+    error("mismatch between amount of landmark class and base class");
+  }
 }
 
 void ReselectLandmarks::selectLandmarks() {
-  for(unsigned i=0; i<mylandmarks->getNumberOfDataPoints(); ++i) selectFrame( mylandmarks->getDataPointIndexInBase(i) );
+  for(unsigned i=0; i<mylandmarks->getNumberOfDataPoints(); ++i) {
+    selectFrame( mylandmarks->getDataPointIndexInBase(i) );
+  }
 }
 
 }

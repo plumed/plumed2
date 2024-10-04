@@ -66,16 +66,26 @@ public:
   explicit InPlaneDistances(const ActionOptions&);
 // active methods:
   double compute(const unsigned& tindex, AtomValuePack& myatoms ) const override;
-  bool isPeriodic() override { return false; }
+  bool isPeriodic() override {
+    return false;
+  }
 };
 
 PLUMED_REGISTER_ACTION(InPlaneDistances,"INPLANEDISTANCES")
 
 void InPlaneDistances::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );
-  keys.use("ALT_MIN"); keys.use("LOWEST"); keys.use("HIGHEST");
-  keys.use("MEAN"); keys.use("MIN"); keys.use("MAX"); keys.use("LESS_THAN");
-  keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
+  keys.use("ALT_MIN");
+  keys.use("LOWEST");
+  keys.use("HIGHEST");
+  keys.use("MEAN");
+  keys.use("MIN");
+  keys.use("MAX");
+  keys.use("LESS_THAN");
+  keys.use("MORE_THAN");
+  keys.use("BETWEEN");
+  keys.use("HISTOGRAM");
+  keys.use("MOMENTS");
   keys.add("atoms","VECTORSTART","The first atom position that is used to define the normal to the plane of interest");
   keys.add("atoms","VECTOREND","The second atom position that is used to define the normal to the plane of interest");
   keys.add("atoms-2","GROUP","The set of atoms for which you wish to calculate the in plane distance ");
@@ -83,30 +93,35 @@ void InPlaneDistances::registerKeywords( Keywords& keys ) {
 
 InPlaneDistances::InPlaneDistances(const ActionOptions&ao):
   Action(ao),
-  MultiColvarBase(ao)
-{
+  MultiColvarBase(ao) {
   // Read in the atoms
   std::vector<AtomNumber> all_atoms;
   readThreeGroups("GROUP","VECTORSTART","VECTOREND",false,false,all_atoms);
   setupMultiColvarBase( all_atoms );
 
   // Setup the multicolvar base
-  setupMultiColvarBase( all_atoms ); readVesselKeywords();
+  setupMultiColvarBase( all_atoms );
+  readVesselKeywords();
   // Check atoms are OK
-  if( getFullNumberOfTasks()!=getNumberOfAtoms()-2 ) error("you should specify one atom for VECTORSTART and one atom for VECTOREND only");
+  if( getFullNumberOfTasks()!=getNumberOfAtoms()-2 ) {
+    error("you should specify one atom for VECTORSTART and one atom for VECTOREND only");
+  }
   // And check everything has been read in correctly
   checkRead();
 
 // Now check if we can use link cells
   if( getNumberOfVessels()>0 ) {
-    bool use_link=false; double rcut;
+    bool use_link=false;
+    double rcut;
     vesselbase::LessThan* lt=dynamic_cast<vesselbase::LessThan*>( getPntrToVessel(0) );
     if( lt ) {
-      use_link=true; rcut=lt->getCutoff();
+      use_link=true;
+      rcut=lt->getCutoff();
     } else {
       vesselbase::Between* bt=dynamic_cast<vesselbase::Between*>( getPntrToVessel(0) );
       if( bt ) {
-        use_link=true; rcut=bt->getCutoff();
+        use_link=true;
+        rcut=bt->getCutoff();
       }
     }
     if( use_link ) {
@@ -115,23 +130,31 @@ InPlaneDistances::InPlaneDistances(const ActionOptions&ao):
         vesselbase::Between* bt=dynamic_cast<vesselbase::Between*>( getPntrToVessel(i) );
         if( lt2 ) {
           double tcut=lt2->getCutoff();
-          if( tcut>rcut ) rcut=tcut;
+          if( tcut>rcut ) {
+            rcut=tcut;
+          }
         } else if( bt ) {
           double tcut=bt->getCutoff();
-          if( tcut>rcut ) rcut=tcut;
+          if( tcut>rcut ) {
+            rcut=tcut;
+          }
         } else {
           use_link=false;
         }
       }
     }
-    if( use_link ) setLinkCellCutoff( rcut );
+    if( use_link ) {
+      setLinkCellCutoff( rcut );
+    }
   }
 }
 
 double InPlaneDistances::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
   Vector normal=getSeparation( myatoms.getPosition(1), myatoms.getPosition(2) );
   Vector dir=getSeparation( myatoms.getPosition(1), myatoms.getPosition(0) );
-  PLMD::Angle a; Vector ddij, ddik; double angle=a.compute(normal,dir,ddij,ddik);
+  PLMD::Angle a;
+  Vector ddij, ddik;
+  double angle=a.compute(normal,dir,ddij,ddik);
   double sangle=std::sin(angle), cangle=std::cos(angle);
   double dd=dir.modulo(), invdd=1.0/dd, val=dd*sangle;
 

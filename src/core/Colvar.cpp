@@ -31,8 +31,7 @@ Colvar::Colvar(const ActionOptions&ao):
   ActionAtomistic(ao),
   ActionWithValue(ao),
   isEnergy(false),
-  isExtraCV(false)
-{
+  isExtraCV(false) {
 }
 
 void Colvar::registerKeywords( Keywords& keys ) {
@@ -47,7 +46,9 @@ void Colvar::requestAtoms(const std::vector<AtomNumber> & a) {
 // Tell actionAtomistic what atoms we are getting
   ActionAtomistic::requestAtoms(a);
 // Resize the derivatives of all atoms
-  for(int i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->resizeDerivatives(3*a.size()+9);
+  for(int i=0; i<getNumberOfComponents(); ++i) {
+    getPntrToComponent(i)->resizeDerivatives(3*a.size()+9);
+  }
 }
 
 void Colvar::apply() {
@@ -65,7 +66,9 @@ void Colvar::apply() {
   }
 
   unsigned nt=OpenMP::getNumThreads();
-  if(nt>ncp/(4*stride)) nt=1;
+  if(nt>ncp/(4*stride)) {
+    nt=1;
+  }
 
   if(!isEnergy && !isExtraCV) {
     #pragma omp parallel num_threads(nt)
@@ -94,32 +97,41 @@ void Colvar::apply() {
       }
       #pragma omp critical
       {
-        for(unsigned j=0; j<nat; ++j) f[j]+=omp_f[j];
+        for(unsigned j=0; j<nat; ++j) {
+          f[j]+=omp_f[j];
+        }
         v+=omp_v;
       }
     }
 
     if(ncp>4*comm.Get_size()) {
-      if(fsz>0) comm.Sum(&f[0][0],3*fsz);
+      if(fsz>0) {
+        comm.Sum(&f[0][0],3*fsz);
+      }
       comm.Sum(&v[0][0],9);
     }
 
   } else if( isEnergy ) {
     std::vector<double> forces(1);
-    if(getPntrToComponent(0)->applyForce(forces)) modifyForceOnEnergy()+=forces[0];
+    if(getPntrToComponent(0)->applyForce(forces)) {
+      modifyForceOnEnergy()+=forces[0];
+    }
   } else if( isExtraCV ) {
     std::vector<double> forces(1);
-    if(getPntrToComponent(0)->applyForce(forces)) modifyForceOnExtraCV()+=forces[0];
+    if(getPntrToComponent(0)->applyForce(forces)) {
+      modifyForceOnExtraCV()+=forces[0];
+    }
   }
 }
 
 void Colvar::setBoxDerivativesNoPbc(Value* v) {
   Tensor virial;
   unsigned nat=getNumberOfAtoms();
-  for(unsigned i=0; i<nat; i++) virial-=Tensor(getPosition(i),
-                                          Vector(v->getDerivative(3*i+0),
-                                              v->getDerivative(3*i+1),
-                                              v->getDerivative(3*i+2)));
+  for(unsigned i=0; i<nat; i++)
+    virial-=Tensor(getPosition(i),
+                   Vector(v->getDerivative(3*i+0),
+                          v->getDerivative(3*i+1),
+                          v->getDerivative(3*i+2)));
   setBoxDerivatives(v,virial);
 }
 }

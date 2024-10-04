@@ -26,9 +26,13 @@ namespace PLMD {
 namespace pamm {
 
 void HBPammObject::setup( const std::string& filename, const double& reg, multicolvar::MultiColvarBase* mybase, std::string& errorstr ) {
-  mymulti=mybase; std::vector<std::string> valnames(3);
-  valnames[0]="ptc"; valnames[1]="ssc"; valnames[2]="adc";
-  std::vector<std::string> min(3), max(3); std::vector<bool> pbc(3, false);
+  mymulti=mybase;
+  std::vector<std::string> valnames(3);
+  valnames[0]="ptc";
+  valnames[1]="ssc";
+  valnames[2]="adc";
+  std::vector<std::string> min(3), max(3);
+  std::vector<bool> pbc(3, false);
   mypamm.setup( filename, reg, valnames, pbc, min, max, errorstr );
 }
 
@@ -36,23 +40,31 @@ double HBPammObject::get_cutoff() const {
   double sfmax=0;
   for(unsigned k=0; k<mypamm.getNumberOfKernels(); ++k) {
     double rcut = mypamm.getKernelCenter(k)[2] + mypamm.getKernelSupport(k)[2];
-    if( rcut>sfmax ) { sfmax=rcut; }
+    if( rcut>sfmax ) {
+      sfmax=rcut;
+    }
   }
   return sfmax;
 }
 
 double HBPammObject::evaluate( const unsigned& dno, const unsigned& ano, const unsigned& hno,
                                const Vector& d_da, const double& md_da, multicolvar::AtomValuePack& myatoms ) const {
-  Vector d_dh = mymulti->getSeparation( myatoms.getPosition(dno), myatoms.getPosition(hno) ); double md_dh = d_dh.modulo(); // hydrogen - donor
-  Vector d_ah = mymulti->getSeparation( myatoms.getPosition(ano), myatoms.getPosition(hno) ); double md_ah = d_ah.modulo(); // hydrogen - acceptor
+  Vector d_dh = mymulti->getSeparation( myatoms.getPosition(dno), myatoms.getPosition(hno) );
+  double md_dh = d_dh.modulo(); // hydrogen - donor
+  Vector d_ah = mymulti->getSeparation( myatoms.getPosition(ano), myatoms.getPosition(hno) );
+  double md_ah = d_ah.modulo(); // hydrogen - acceptor
 
   // Create some vectors locally for pamm evaluation
   std::vector<double> invals( 3 ), outvals( mypamm.getNumberOfKernels() );
   std::vector<std:: vector<double> > der( mypamm.getNumberOfKernels() );
-  for(unsigned i=0; i<der.size(); ++i) der[i].resize(3);
+  for(unsigned i=0; i<der.size(); ++i) {
+    der[i].resize(3);
+  }
 
   // Evaluate the pamm object
-  invals[0]=md_dh - md_ah; invals[1]=md_dh+md_ah; invals[2]=md_da;
+  invals[0]=md_dh - md_ah;
+  invals[1]=md_dh+md_ah;
+  invals[2]=md_da;
   mypamm.evaluate( invals, outvals, der );
 
   if( !mymulti->doNotCalculateDerivatives() ) {

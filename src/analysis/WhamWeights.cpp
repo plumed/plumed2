@@ -75,7 +75,8 @@ public:
 PLUMED_REGISTER_ACTION(WhamWeights,"WHAM_WEIGHTS")
 
 void WhamWeights::registerKeywords( Keywords& keys ) {
-  ActionShortcut::registerKeywords( keys ); keys.remove("LABEL");
+  ActionShortcut::registerKeywords( keys );
+  keys.remove("LABEL");
   keys.add("compulsory","BIAS","*.bias","the value of the biases to use when performing WHAM");
   keys.add("compulsory","TEMP","the temperature at which the simulation was run");
   keys.add("compulsory","STRIDE","1","the frequency with which the bias should be stored to perform WHAM");
@@ -85,21 +86,30 @@ void WhamWeights::registerKeywords( Keywords& keys ) {
 
 WhamWeights::WhamWeights( const ActionOptions& ao ) :
   Action(ao),
-  ActionShortcut(ao)
-{
+  ActionShortcut(ao) {
   // Input for REWEIGHT_WHAM
   std::string rew_line = getShortcutLabel() + "_weights: REWEIGHT_WHAM";
-  std::string bias; parse("BIAS",bias); rew_line += " ARG=" + bias;
-  std::string temp; parse("TEMP",temp); rew_line += " TEMP=" + temp;
+  std::string bias;
+  parse("BIAS",bias);
+  rew_line += " ARG=" + bias;
+  std::string temp;
+  parse("TEMP",temp);
+  rew_line += " TEMP=" + temp;
   readInputLine( rew_line );
   // Input for COLLECT_FRAMES
   std::string col_line = getShortcutLabel() + "_collect: COLLECT_FRAMES LOGWEIGHTS=" + getShortcutLabel() + "_weights";
-  std::string stride; parse("STRIDE",stride); col_line += " STRIDE=" + stride;
+  std::string stride;
+  parse("STRIDE",stride);
+  col_line += " STRIDE=" + stride;
   readInputLine( col_line );
   // Input for line to output data
   std::string out_line="OUTPUT_ANALYSIS_DATA_TO_COLVAR USE_OUTPUT_DATA_FROM=" + getShortcutLabel() + "_collect";
-  std::string file; parse("FILE",file); out_line += " FILE=" + file;
-  std::string fmt="%f"; parse("FMT",fmt); out_line += " FMT=" + fmt;
+  std::string file;
+  parse("FILE",file);
+  out_line += " FILE=" + file;
+  std::string fmt="%f";
+  parse("FMT",fmt);
+  out_line += " FMT=" + fmt;
   readInputLine( out_line );
 }
 

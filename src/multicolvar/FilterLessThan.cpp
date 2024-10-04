@@ -134,18 +134,25 @@ void FilterLess::registerKeywords( Keywords& keys ) {
 
 FilterLess::FilterLess(const ActionOptions& ao):
   Action(ao),
-  MultiColvarFilter(ao)
-{
+  MultiColvarFilter(ao) {
   // Read in the switching function
-  std::string sw, errors; parse("SWITCH",sw);
+  std::string sw, errors;
+  parse("SWITCH",sw);
   if(sw.length()>0) {
     sf.set(sw,errors);
-    if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
+    if( errors.length()!=0 ) {
+      error("problem reading SWITCH keyword : " + errors );
+    }
   } else {
-    double r_0=-1.0, d_0; int nn, mm;
-    parse("NN",nn); parse("MM",mm);
-    parse("R_0",r_0); parse("D_0",d_0);
-    if( r_0<0.0 ) error("you must set a value for R_0");
+    double r_0=-1.0, d_0;
+    int nn, mm;
+    parse("NN",nn);
+    parse("MM",mm);
+    parse("R_0",r_0);
+    parse("D_0",d_0);
+    if( r_0<0.0 ) {
+      error("you must set a value for R_0");
+    }
     sf.set(nn,mm,r_0,d_0);
   }
   log.printf("  filtering colvar values and focussing only on those less than %s\n",( sf.description() ).c_str() );
@@ -154,7 +161,8 @@ FilterLess::FilterLess(const ActionOptions& ao):
 }
 
 double FilterLess::applyFilter( const double& val, double& df ) const {
-  double f = sf.calculate( val, df ); df*=val;
+  double f = sf.calculate( val, df );
+  df*=val;
   return f;
 }
 

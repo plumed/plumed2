@@ -121,8 +121,7 @@ Sprint::Sprint(const ActionOptions&ao):
   eigvals( getNumberOfNodes() ),
   maxeig( getNumberOfNodes() ),
   thematrix( getNumberOfNodes(), getNumberOfNodes() ),
-  eigenvecs( getNumberOfNodes(), getNumberOfNodes() )
-{
+  eigenvecs( getNumberOfNodes(), getNumberOfNodes() ) {
   // Check on setup
   // if( getNumberOfVessels()!=1 ) error("there should be no vessel keywords");
   // Check for bad colvar input ( we  are going to get rid of this because we are going to have input adjacency matrix in future )
@@ -131,13 +130,17 @@ Sprint::Sprint(const ActionOptions&ao):
   //    // if( !getBaseMultiColvar(i)->hasDifferentiableOrientation() ) error("cannot use multicolvar of type " + getBaseMultiColvar(i)->getName() );
   // }
 
-  if( !getAdjacencyVessel()->isSymmetric() ) error("input contact matrix is not symmetric");
-  std::vector<AtomNumber> fake_atoms; setupMultiColvarBase( fake_atoms );
+  if( !getAdjacencyVessel()->isSymmetric() ) {
+    error("input contact matrix is not symmetric");
+  }
+  std::vector<AtomNumber> fake_atoms;
+  setupMultiColvarBase( fake_atoms );
 
   // Create all the values
   sqrtn = std::sqrt( static_cast<double>( getNumberOfNodes() ) );
   for(unsigned i=0; i<getNumberOfNodes(); ++i) {
-    std::string num; Tools::convert(i,num);
+    std::string num;
+    Tools::convert(i,num);
     addComponentWithDerivatives("coord-"+num);
     componentIsNotPeriodic("coord-"+num);
     getPntrToComponent(i)->resizeDerivatives( getNumberOfDerivatives() );
@@ -145,7 +148,9 @@ Sprint::Sprint(const ActionOptions&ao):
 
   // Setup the dynamic list to hold all the tasks
   unsigned ntriangle = 0.5*getNumberOfNodes()*(getNumberOfNodes()-1);
-  for(unsigned i=0; i<ntriangle; ++i) active_elements.addIndexToList( i );
+  for(unsigned i=0; i<ntriangle; ++i) {
+    active_elements.addIndexToList( i );
+  }
 }
 
 void Sprint::calculate() {
@@ -179,16 +184,23 @@ void Sprint::calculate() {
 
   // Parallelism
   unsigned rank, stride;
-  if( serialCalculation() ) { stride=1; rank=0; }
-  else { rank=comm.Get_rank(); stride=comm.Get_size(); }
+  if( serialCalculation() ) {
+    stride=1;
+    rank=0;
+  } else {
+    rank=comm.Get_rank();
+    stride=comm.Get_size();
+  }
 
   // Derivatives
   MultiValue myvals( 2, getNumberOfDerivatives() );
   Matrix<double> mymat_ders( getNumberOfComponents(), getNumberOfDerivatives() );
   // std::vector<unsigned> catoms(2);
-  unsigned nval = getNumberOfNodes(); mymat_ders=0;
+  unsigned nval = getNumberOfNodes();
+  mymat_ders=0;
   for(unsigned i=rank; i<active_elements.getNumberActive(); i+=stride) {
-    unsigned j, k; getAdjacencyVessel()->getMatrixIndices( active_elements[i], j, k );
+    unsigned j, k;
+    getAdjacencyVessel()->getMatrixIndices( active_elements[i], j, k );
     double tmp1 = 2 * eigenvecs(nval-1,j)*eigenvecs(nval-1,k);
     for(int icomp=0; icomp<getNumberOfComponents(); ++icomp) {
       double tmp2 = 0.;
@@ -203,11 +215,15 @@ void Sprint::calculate() {
       }
     }
   }
-  if( !serialCalculation() ) comm.Sum( mymat_ders );
+  if( !serialCalculation() ) {
+    comm.Sum( mymat_ders );
+  }
 
   for(int j=0; j<getNumberOfComponents(); ++j) {
     Value* val=getPntrToComponent(j);
-    for(unsigned i=0; i<getNumberOfDerivatives(); ++i) val->addDerivative( i, mymat_ders(j,i) );
+    for(unsigned i=0; i<getNumberOfDerivatives(); ++i) {
+      val->addDerivative( i, mymat_ders(j,i) );
+    }
   }
 }
 

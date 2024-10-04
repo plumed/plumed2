@@ -31,8 +31,7 @@
 namespace PLMD {
 
 ReferenceConfigurationOptions::ReferenceConfigurationOptions( const std::string& type ):
-  tt(type)
-{
+  tt(type) {
 }
 
 bool ReferenceConfigurationOptions::usingFastOption() const {
@@ -46,12 +45,10 @@ std::string ReferenceConfigurationOptions::getMultiRMSDType() const {
 }
 
 ReferenceConfiguration::ReferenceConfiguration( const ReferenceConfigurationOptions& ro ):
-  name(ro.tt)
-{
+  name(ro.tt) {
 }
 
-ReferenceConfiguration::~ReferenceConfiguration()
-{
+ReferenceConfiguration::~ReferenceConfiguration() {
 }
 
 std::string ReferenceConfiguration::getName() const {
@@ -65,39 +62,60 @@ std::string ReferenceConfiguration::getName() const {
 double ReferenceConfiguration::calculate( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals,
     ReferenceValuePack& myder, const bool& squared ) const {
   std::vector<double> tmparg( vals.size() );
-  for(unsigned i=0; i<vals.size(); ++i) tmparg[i]=vals[i]->get();
+  for(unsigned i=0; i<vals.size(); ++i) {
+    tmparg[i]=vals[i]->get();
+  }
   return calc( pos, pbc, vals, tmparg, myder, squared );
 }
 
 void ReferenceConfiguration::displaceReferenceConfiguration( const double& weight, Direction& dir ) {
   ReferenceArguments* args=dynamic_cast<ReferenceArguments*>(this);
-  if( args ) args->displaceReferenceArguments( weight, dir.getReferenceArguments() );
+  if( args ) {
+    args->displaceReferenceArguments( weight, dir.getReferenceArguments() );
+  }
   ReferenceAtoms* atoms=dynamic_cast<ReferenceAtoms*>(this);
-  if( atoms ) atoms->displaceReferenceAtoms( weight, dir.getReferencePositions() );
+  if( atoms ) {
+    atoms->displaceReferenceAtoms( weight, dir.getReferencePositions() );
+  }
 }
 
 void ReferenceConfiguration::extractDisplacementVector( const std::vector<Vector>& pos, const std::vector<Value*>& vals,
     const std::vector<double>& arg, const bool& nflag,
     Direction& mydir ) const {
   const ReferenceAtoms* atoms=dynamic_cast<const ReferenceAtoms*>( this );
-  if( atoms ) atoms->extractAtomicDisplacement( pos, mydir.reference_atoms );
+  if( atoms ) {
+    atoms->extractAtomicDisplacement( pos, mydir.reference_atoms );
+  }
   const ReferenceArguments* args=dynamic_cast<const ReferenceArguments*>( this );
-  if( args ) args->extractArgumentDisplacement( vals, arg, mydir.reference_args );
+  if( args ) {
+    args->extractArgumentDisplacement( vals, arg, mydir.reference_args );
+  }
 
   // Normalize direction if required
   if( nflag ) {
     // Calculate length of vector
-    double tmp, norm=0; mydir.normalized = true;
+    double tmp, norm=0;
+    mydir.normalized = true;
     for(unsigned i=0; i<mydir.getReferencePositions().size(); ++i) {
-      for(unsigned k=0; k<3; ++k) { tmp=mydir.getReferencePositions()[i][k]; norm+=tmp*tmp; }
+      for(unsigned k=0; k<3; ++k) {
+        tmp=mydir.getReferencePositions()[i][k];
+        norm+=tmp*tmp;
+      }
     }
-    for(unsigned i=0; i<mydir.getReferenceArguments().size(); ++i) { tmp=mydir.getReferenceArguments()[i]; norm+=tmp*tmp; }
+    for(unsigned i=0; i<mydir.getReferenceArguments().size(); ++i) {
+      tmp=mydir.getReferenceArguments()[i];
+      norm+=tmp*tmp;
+    }
     norm = std::sqrt( norm );
     // And normalize
     for(unsigned i=0; i<mydir.getReferencePositions().size(); ++i) {
-      for(unsigned k=0; k<3; ++k) { mydir.reference_atoms[i][k] /=norm; }
+      for(unsigned k=0; k<3; ++k) {
+        mydir.reference_atoms[i][k] /=norm;
+      }
     }
-    for(unsigned i=0; i<mydir.getReferenceArguments().size(); ++i) { mydir.reference_args[i] /= norm; }
+    for(unsigned i=0; i<mydir.getReferenceArguments().size(); ++i) {
+      mydir.reference_args[i] /= norm;
+    }
   }
 }
 
@@ -106,18 +124,26 @@ double ReferenceConfiguration::projectDisplacementOnVector( const Direction& myd
     ReferenceValuePack& mypack ) const {
   double proj=0;
   const ReferenceAtoms* atoms=dynamic_cast<const ReferenceAtoms*>( this );
-  if( atoms ) proj += atoms->projectAtomicDisplacementOnVector( mydir.normalized, mydir.getReferencePositions(), mypack );
+  if( atoms ) {
+    proj += atoms->projectAtomicDisplacementOnVector( mydir.normalized, mydir.getReferencePositions(), mypack );
+  }
   const ReferenceArguments* args=dynamic_cast<const ReferenceArguments*>( this );
-  if( args ) proj += args->projectArgDisplacementOnVector( mydir.getReferenceArguments(), vals, arg, mypack );
+  if( args ) {
+    proj += args->projectArgDisplacementOnVector( mydir.getReferenceArguments(), vals, arg, mypack );
+  }
   return proj;
 }
 
 double distance( const Pbc& pbc, const std::vector<Value*> & vals, ReferenceConfiguration* ref1, ReferenceConfiguration* ref2, const bool& squared ) {
   unsigned nder;
-  if( ref1->getReferencePositions().size()>0 ) nder=ref1->getReferenceArguments().size() + 3*ref1->getReferencePositions().size() + 9;
-  else nder=ref1->getReferenceArguments().size();
+  if( ref1->getReferencePositions().size()>0 ) {
+    nder=ref1->getReferenceArguments().size() + 3*ref1->getReferencePositions().size() + 9;
+  } else {
+    nder=ref1->getReferenceArguments().size();
+  }
 
-  MultiValue myvals( 1, nder ); ReferenceValuePack myder( ref1->getReferenceArguments().size(), ref1->getReferencePositions().size(), myvals );
+  MultiValue myvals( 1, nder );
+  ReferenceValuePack myder( ref1->getReferenceArguments().size(), ref1->getReferencePositions().size(), myvals );
   double dist1=ref1->calc( ref2->getReferencePositions(), pbc, vals, ref2->getReferenceArguments(), myder, squared );
 #ifndef NDEBUG
   // Check that A - B = B - A

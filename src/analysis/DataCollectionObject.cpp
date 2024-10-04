@@ -26,20 +26,31 @@ namespace PLMD {
 namespace analysis {
 
 void DataCollectionObject::setAtomNumbersAndArgumentNames( const std::string& action_label, const std::vector<AtomNumber>& ind, const std::vector<std::string>& arg_names ) {
-  myaction=action_label; indices.resize( ind.size() ); positions.resize( indices.size() );
-  for(unsigned i=0; i<ind.size(); ++i) indices[i]=ind[i];
-  for(unsigned i=0; i<arg_names.size(); ++i) args.insert( std::pair<std::string,double>( arg_names[i], 0.0 ) );
+  myaction=action_label;
+  indices.resize( ind.size() );
+  positions.resize( indices.size() );
+  for(unsigned i=0; i<ind.size(); ++i) {
+    indices[i]=ind[i];
+  }
+  for(unsigned i=0; i<arg_names.size(); ++i) {
+    args.insert( std::pair<std::string,double>( arg_names[i], 0.0 ) );
+  }
 }
 
 void DataCollectionObject::setAtomPositions( const std::vector<Vector>& pos ) {
   plumed_dbg_assert( pos.size()==positions.size() && pos.size()==indices.size() );
-  for(unsigned i=0; i<positions.size(); ++i) positions[i]=pos[i];
+  for(unsigned i=0; i<positions.size(); ++i) {
+    positions[i]=pos[i];
+  }
 }
 
 void DataCollectionObject::setArgument( const std::string& name, const double& value ) {
   std::map<std::string,double>::iterator it = args.find(name);
-  if( it!=args.end() ) it->second = value;
-  else args.insert( std::pair<std::string,double>( name, value ) );
+  if( it!=args.end() ) {
+    it->second = value;
+  } else {
+    args.insert( std::pair<std::string,double>( name, value ) );
+  }
 }
 
 bool DataCollectionObject::transferDataToPDB( PDB& mypdb ) {
@@ -49,13 +60,18 @@ bool DataCollectionObject::transferDataToPDB( PDB& mypdb ) {
   std::map<std::string,double>::iterator it;
   for(unsigned i=0; i<pdb_args.size(); ++i) {
     it=args.find( pdb_args[i] );
-    if( it==args.end() ) return false;
+    if( it==args.end() ) {
+      return false;
+    }
     mypdb.setArgumentValue( pdb_args[i], it->second );
   }
   // Now set the atomic positions
   std::vector<AtomNumber> pdb_pos( mypdb.getAtomNumbers() );
-  if( pdb_pos.size()==positions.size() ) mypdb.setAtomPositions( positions );
-  else if( pdb_pos.size()>0 ) plumed_merror("This feature is currently not ready");
+  if( pdb_pos.size()==positions.size() ) {
+    mypdb.setAtomPositions( positions );
+  } else if( pdb_pos.size()>0 ) {
+    plumed_merror("This feature is currently not ready");
+  }
   return true;
 }
 

@@ -33,25 +33,35 @@ DRMSD::DRMSD( const ReferenceConfigurationOptions& ro ):
   nopbc(true),
   bounds_were_set(false),
   lower(0),
-  upper(std::numeric_limits<double>::max( ))
-{
+  upper(std::numeric_limits<double>::max( )) {
 }
 
 void DRMSD::setBoundsOnDistances( bool dopbc, double lbound, double ubound ) {
-  bounds_were_set=true; nopbc=!dopbc;
-  lower=lbound; upper=ubound;
+  bounds_were_set=true;
+  nopbc=!dopbc;
+  lower=lbound;
+  upper=ubound;
 }
 
 void DRMSD::readBounds( const PDB& pdb ) {
-  if( bounds_were_set ) return;
-  double tmp; nopbc=pdb.hasFlag("NOPBC");
-  if( pdb.getArgumentValue("LOWER_CUTOFF",tmp) ) lower=tmp;
-  if( pdb.getArgumentValue("UPPER_CUTOFF",tmp) ) upper=tmp;
+  if( bounds_were_set ) {
+    return;
+  }
+  double tmp;
+  nopbc=pdb.hasFlag("NOPBC");
+  if( pdb.getArgumentValue("LOWER_CUTOFF",tmp) ) {
+    lower=tmp;
+  }
+  if( pdb.getArgumentValue("UPPER_CUTOFF",tmp) ) {
+    upper=tmp;
+  }
   bounds_were_set=true;
 }
 
 void DRMSD::read( const PDB& pdb ) {
-  readAtomsFromPDB( pdb ); readBounds( pdb ); setup_targets();
+  readAtomsFromPDB( pdb );
+  readBounds( pdb );
+  setup_targets();
 }
 
 void DRMSD::setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in ) {
@@ -71,7 +81,9 @@ void DRMSD::setup_targets() {
       }
     }
   }
-  if( targets.empty() ) error("drmsd will compare no distances - check upper and lower bounds are sensible");
+  if( targets.empty() ) {
+    error("drmsd will compare no distances - check upper and lower bounds are sensible");
+  }
 }
 
 double DRMSD::calc( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceValuePack& myder, const bool& squared ) const {
@@ -85,8 +97,11 @@ double DRMSD::calc( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceVal
     const unsigned i=getAtomIndex( it.first.first );
     const unsigned j=getAtomIndex( it.first.second );
 
-    if(nopbc) distance=delta( pos[i], pos[j] );
-    else      distance=pbc.distance( pos[i], pos[j] );
+    if(nopbc) {
+      distance=delta( pos[i], pos[j] );
+    } else {
+      distance=pbc.distance( pos[i], pos[j] );
+    }
 
     const double len = distance.modulo();
     const double diff = len - it.second;

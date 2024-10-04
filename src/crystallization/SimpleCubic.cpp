@@ -83,8 +83,7 @@ void SimpleCubic::registerKeywords( Keywords& keys ) {
 
 SimpleCubic::SimpleCubic(const ActionOptions&ao):
   Action(ao),
-  CubicHarmonicBase(ao)
-{
+  CubicHarmonicBase(ao) {
   checkRead();
 }
 

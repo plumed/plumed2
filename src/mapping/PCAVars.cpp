@@ -170,8 +170,7 @@ namespace mapping {
 class PCAVars :
   public ActionWithValue,
   public ActionAtomistic,
-  public ActionWithArguments
-{
+  public ActionWithArguments {
 private:
 /// The holders for the derivatives
   MultiValue myvals;
@@ -201,7 +200,8 @@ void PCAVars::registerKeywords( Keywords& keys ) {
   ActionWithValue::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys );
-  componentsAreNotOptional(keys); keys.use("ARG");
+  componentsAreNotOptional(keys);
+  keys.use("ARG");
   keys.addOutputComponent("eig","default","the projections on each eigenvalue are stored on values labeled eig-1, eig-2, ...");
   keys.addOutputComponent("residual","default","the distance of the configuration from the linear subspace defined "
                           "by the vectors, eig-1, eig2, ... that are contained in the rows of A.");
@@ -217,27 +217,33 @@ PCAVars::PCAVars(const ActionOptions& ao):
   ActionWithArguments(ao),
   myvals(1,0),
   mypack(0,0,myvals),
-  nopbc(false)
-{
+  nopbc(false) {
 
   // What type of distance are we calculating
-  std::string mtype; parse("TYPE",mtype);
+  std::string mtype;
+  parse("TYPE",mtype);
 
   parseFlag("NOPBC",nopbc);
 
   // Open reference file
-  std::string reference; parse("REFERENCE",reference);
+  std::string reference;
+  parse("REFERENCE",reference);
   FILE* fp=this->fopen(reference.c_str(),"r");
-  if(!fp) error("could not open reference file " + reference );
+  if(!fp) {
+    error("could not open reference file " + reference );
+  }
 
   // call fclose when exiting this block
-  auto deleter=[this](FILE* f) { this->fclose(f); };
+  auto deleter=[this](FILE* f) {
+    this->fclose(f);
+  };
   std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
 
   // Read all reference configurations
   // MultiReferenceBase myframes( "", false );
   std::vector<std::unique_ptr<ReferenceConfiguration> > myframes;
-  bool do_read=true; unsigned nfram=0;
+  bool do_read=true;
+  unsigned nfram=0;
   while (do_read) {
     PDB mypdb;
     // Read the pdb file
@@ -247,8 +253,12 @@ PCAVars::PCAVars(const ActionOptions& ao):
       if( nfram==0 ) {
         myref=metricRegister().create<ReferenceConfiguration>( mtype, mypdb );
         Direction* tdir = dynamic_cast<Direction*>( myref.get() );
-        if( tdir ) error("first frame should be reference configuration - not direction of vector");
-        if( !myref->pcaIsEnabledForThisReference() ) error("can't do PCA with reference type " + mtype );
+        if( tdir ) {
+          error("first frame should be reference configuration - not direction of vector");
+        }
+        if( !myref->pcaIsEnabledForThisReference() ) {
+          error("can't do PCA with reference type " + mtype );
+        }
         // std::vector<std::string> remarks( mypdb.getRemark() ); std::string rtype;
         // bool found=Tools::parse( remarks, "TYPE", rtype );
         // if(!found){ std::vector<std::string> newrem(1); newrem[0]="TYPE="+mtype; mypdb.addRemark(newrem); }
@@ -263,52 +273,78 @@ PCAVars::PCAVars(const ActionOptions& ao):
     }
   }
 
-  if( nfram<=1 ) error("no eigenvectors were specified");
+  if( nfram<=1 ) {
+    error("no eigenvectors were specified");
+  }
   log.printf("  found %u eigenvectors in file %s \n",nfram-1,reference.c_str() );
 
   // Finish the setup of the mapping object
   // Get the arguments and atoms that are required
-  std::vector<AtomNumber> atoms; myref->getAtomRequests( atoms, false );
-  std::vector<std::string> args; myref->getArgumentRequests( args, false );
+  std::vector<AtomNumber> atoms;
+  myref->getAtomRequests( atoms, false );
+  std::vector<std::string> args;
+  myref->getArgumentRequests( args, false );
   if( atoms.size()>0 ) {
     log.printf("  found %zu atoms in input \n",atoms.size());
     log.printf("  with indices : ");
     for(unsigned i=0; i<atoms.size(); ++i) {
-      if(i%25==0) log<<"\n";
+      if(i%25==0) {
+        log<<"\n";
+      }
       log.printf("%d ",atoms[i].serial());
     }
     log.printf("\n");
   }
-  requestAtoms( atoms ); std::vector<Value*> req_args;
-  interpretArgumentList( args, req_args ); requestArguments( req_args );
+  requestAtoms( atoms );
+  std::vector<Value*> req_args;
+  interpretArgumentList( args, req_args );
+  requestArguments( req_args );
 
   // And now check that the atoms/arguments are the same in all the eigenvalues
-  for(unsigned i=0; i<myframes.size(); ++i) { myframes[i]->getAtomRequests( atoms, false ); myframes[i]->getArgumentRequests( args, false ); }
+  for(unsigned i=0; i<myframes.size(); ++i) {
+    myframes[i]->getAtomRequests( atoms, false );
+    myframes[i]->getArgumentRequests( args, false );
+  }
 
   // Setup the derivative pack
-  if( atoms.size()>0 ) myvals.resize( 1, args.size() + 3*atoms.size() + 9 );
-  else myvals.resize( 1, args.size() );
+  if( atoms.size()>0 ) {
+    myvals.resize( 1, args.size() + 3*atoms.size() + 9 );
+  } else {
+    myvals.resize( 1, args.size() );
+  }
   mypack.resize( args.size(), atoms.size() );
-  for(unsigned i=0; i<atoms.size(); ++i) mypack.setAtomIndex( i, i );
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    mypack.setAtomIndex( i, i );
+  }
   /// This sets up all the storage data required by PCA in the pack
   myref->setupPCAStorage( mypack );
 
   // Check there are no periodic arguments
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    if( getPntrToArgument(i)->isPeriodic() ) error("cannot use periodic variables in pca projections");
+    if( getPntrToArgument(i)->isPeriodic() ) {
+      error("cannot use periodic variables in pca projections");
+    }
   }
   // Work out if the user wants to normalise the input vector
   checkRead();
 
-  if(nopbc) log.printf("  without periodic boundary conditions\n");
-  else      log.printf("  using periodic boundary conditions\n");
+  if(nopbc) {
+    log.printf("  without periodic boundary conditions\n");
+  } else {
+    log.printf("  using periodic boundary conditions\n");
+  }
 
   // Resize the matrices that will hold our eivenvectors
-  PDB mypdb; mypdb.setAtomNumbers( atoms ); mypdb.addBlockEnd( atoms.size() );
-  if( args.size()>0 ) mypdb.setArgumentNames( args );
+  PDB mypdb;
+  mypdb.setAtomNumbers( atoms );
+  mypdb.addBlockEnd( atoms.size() );
+  if( args.size()>0 ) {
+    mypdb.setArgumentNames( args );
+  }
   // Resize the matrices that will hold our eivenvectors
   for(unsigned i=0; i<myframes.size(); ++i) {
-    directions.push_back( Direction(ReferenceConfigurationOptions("DIRECTION"))); directions[i].read( mypdb );
+    directions.push_back( Direction(ReferenceConfigurationOptions("DIRECTION")));
+    directions[i].read( mypdb );
   }
 
   // Create fake periodic boundary condition (these would only be used for DRMSD which is not allowed)
@@ -317,10 +353,13 @@ PCAVars::PCAVars(const ActionOptions& ao):
     // Calculate distance from reference configuration
     myframes[i]->extractDisplacementVector( myref->getReferencePositions(), getArguments(), myref->getReferenceArguments(), true, directions[i] );
     // Create a component to store the output
-    std::string num; Tools::convert( i+1, num );
-    addComponentWithDerivatives("eig-"+num); componentIsNotPeriodic("eig-"+num);
+    std::string num;
+    Tools::convert( i+1, num );
+    addComponentWithDerivatives("eig-"+num);
+    componentIsNotPeriodic("eig-"+num);
   }
-  addComponentWithDerivatives("residual"); componentIsNotPeriodic("residual");
+  addComponentWithDerivatives("residual");
+  componentIsNotPeriodic("residual");
 
   // Get appropriate number of derivatives
   unsigned nder;
@@ -331,8 +370,11 @@ PCAVars::PCAVars(const ActionOptions& ao):
   }
 
   // Resize all derivative arrays
-  forces.resize( nder ); forcesToApply.resize( nder );
-  for(int i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->resizeDerivatives(nder);
+  forces.resize( nder );
+  forcesToApply.resize( nder );
+  for(int i=0; i<getNumberOfComponents(); ++i) {
+    getPntrToComponent(i)->resizeDerivatives(nder);
+  }
 }
 
 unsigned PCAVars::getNumberOfDerivatives() {
@@ -354,7 +396,9 @@ void PCAVars::unlockRequests() {
 
 void PCAVars::calculate() {
 
-  if(!nopbc && getNumberOfAtoms()>0) makeWhole();
+  if(!nopbc && getNumberOfAtoms()>0) {
+    makeWhole();
+  }
 
   // Clear the reference value pack
   mypack.clear();
@@ -362,22 +406,33 @@ void PCAVars::calculate() {
   double dist = myref->calculate( getPositions(), getPbc(), getArguments(), mypack, true );
 
   // Start accumulating residual by adding derivatives of distance
-  Value* resid=getPntrToComponent( getNumberOfComponents()-1 ); unsigned nargs=getNumberOfArguments();
-  for(unsigned j=0; j<getNumberOfArguments(); ++j) resid->addDerivative( j, mypack.getArgumentDerivative(j) );
+  Value* resid=getPntrToComponent( getNumberOfComponents()-1 );
+  unsigned nargs=getNumberOfArguments();
+  for(unsigned j=0; j<getNumberOfArguments(); ++j) {
+    resid->addDerivative( j, mypack.getArgumentDerivative(j) );
+  }
   for(unsigned j=0; j<getNumberOfAtoms(); ++j) {
     Vector ader=mypack.getAtomDerivative( j );
-    for(unsigned k=0; k<3; ++k) resid->addDerivative( nargs +3*j+k, ader[k] );
+    for(unsigned k=0; k<3; ++k) {
+      resid->addDerivative( nargs +3*j+k, ader[k] );
+    }
   }
   // Retrieve the values of all arguments
-  std::vector<double> args( getNumberOfArguments() ); for(unsigned i=0; i<getNumberOfArguments(); ++i) args[i]=getArgument(i);
+  std::vector<double> args( getNumberOfArguments() );
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    args[i]=getArgument(i);
+  }
 
   // Now calculate projections on pca vectors
-  Vector adif, ader; Tensor fvir, tvir;
+  Vector adif, ader;
+  Tensor fvir, tvir;
   for(int i=0; i<getNumberOfComponents()-1; ++i) { // One less component as we also have residual
     double proj=myref->projectDisplacementOnVector( directions[i], getArguments(), args, mypack );
     // And now accumulate derivatives
     Value* eid=getPntrToComponent(i);
-    for(unsigned j=0; j<getNumberOfArguments(); ++j) eid->addDerivative( j, mypack.getArgumentDerivative(j) );
+    for(unsigned j=0; j<getNumberOfArguments(); ++j) {
+      eid->addDerivative( j, mypack.getArgumentDerivative(j) );
+    }
     if( getNumberOfAtoms()>0 ) {
       tvir.zero();
       for(unsigned j=0; j<getNumberOfAtoms(); ++j) {
@@ -389,12 +444,16 @@ void PCAVars::calculate() {
         tvir += -1.0*Tensor( getPosition(j), myader );
       }
       for(unsigned j=0; j<3; ++j) {
-        for(unsigned k=0; k<3; ++k) eid->addDerivative( nargs + 3*getNumberOfAtoms() + 3*j + k, tvir(j,k) );
+        for(unsigned k=0; k<3; ++k) {
+          eid->addDerivative( nargs + 3*getNumberOfAtoms() + 3*j + k, tvir(j,k) );
+        }
       }
     }
     dist -= proj*proj; // Subtract square from total squared distance to get residual squared
     // Derivatives of residual
-    for(unsigned j=0; j<getNumberOfArguments(); ++j) resid->addDerivative( j, -2*proj*eid->getDerivative(j) );
+    for(unsigned j=0; j<getNumberOfArguments(); ++j) {
+      resid->addDerivative( j, -2*proj*eid->getDerivative(j) );
+    }
     // for(unsigned j=0;j<getNumberOfArguments();++j) resid->addDerivative( j, -2*proj*arg_eigv(i,j) );
     // And set final value
     getPntrToComponent(i)->set( proj );
@@ -404,20 +463,29 @@ void PCAVars::calculate() {
 
   // Take square root of residual derivatives
   double prefactor = 0.5 / dist;
-  for(unsigned j=0; j<getNumberOfArguments(); ++j) resid->setDerivative( j, prefactor*resid->getDerivative(j) );
+  for(unsigned j=0; j<getNumberOfArguments(); ++j) {
+    resid->setDerivative( j, prefactor*resid->getDerivative(j) );
+  }
   for(unsigned j=0; j<getNumberOfAtoms(); ++j) {
-    for(unsigned k=0; k<3; ++k) resid->setDerivative( nargs + 3*j+k, prefactor*resid->getDerivative( nargs+3*j+k ) );
+    for(unsigned k=0; k<3; ++k) {
+      resid->setDerivative( nargs + 3*j+k, prefactor*resid->getDerivative( nargs+3*j+k ) );
+    }
   }
 
   // And finally virial for residual
   if( getNumberOfAtoms()>0 ) {
     tvir.zero();
     for(unsigned j=0; j<getNumberOfAtoms(); ++j) {
-      Vector ader; for(unsigned k=0; k<3; ++k) ader[k]=resid->getDerivative( nargs + 3*j+k );
+      Vector ader;
+      for(unsigned k=0; k<3; ++k) {
+        ader[k]=resid->getDerivative( nargs + 3*j+k );
+      }
       tvir += -1.0*Tensor( getPosition(j), ader );
     }
     for(unsigned j=0; j<3; ++j) {
-      for(unsigned k=0; k<3; ++k) resid->addDerivative( nargs + 3*getNumberOfAtoms() + 3*j + k, tvir(j,k) );
+      for(unsigned k=0; k<3; ++k) {
+        resid->addDerivative( nargs + 3*getNumberOfAtoms() + 3*j + k, tvir(j,k) );
+      }
     }
   }
 
@@ -430,27 +498,36 @@ void PCAVars::calculateNumericalDerivatives( ActionWithValue* a ) {
   if( getNumberOfAtoms()>0 ) {
     Matrix<double> save_derivatives( getNumberOfComponents(), getNumberOfArguments() );
     for(int j=0; j<getNumberOfComponents(); ++j) {
-      for(unsigned i=0; i<getNumberOfArguments(); ++i) save_derivatives(j,i)=getPntrToComponent(j)->getDerivative(i);
+      for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+        save_derivatives(j,i)=getPntrToComponent(j)->getDerivative(i);
+      }
     }
     calculateAtomicNumericalDerivatives( a, getNumberOfArguments() );
     for(int j=0; j<getNumberOfComponents(); ++j) {
-      for(unsigned i=0; i<getNumberOfArguments(); ++i) getPntrToComponent(j)->addDerivative( i, save_derivatives(j,i) );
+      for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+        getPntrToComponent(j)->addDerivative( i, save_derivatives(j,i) );
+      }
     }
   }
 }
 
 void PCAVars::apply() {
 
-  bool wasforced=false; forcesToApply.assign(forcesToApply.size(),0.0);
+  bool wasforced=false;
+  forcesToApply.assign(forcesToApply.size(),0.0);
   for(int i=0; i<getNumberOfComponents(); ++i) {
     if( getPntrToComponent(i)->applyForce( forces ) ) {
       wasforced=true;
-      for(unsigned i=0; i<forces.size(); ++i) forcesToApply[i]+=forces[i];
+      for(unsigned i=0; i<forces.size(); ++i) {
+        forcesToApply[i]+=forces[i];
+      }
     }
   }
   if( wasforced ) {
     addForcesOnArguments( forcesToApply );
-    if( getNumberOfAtoms()>0 ) setForcesOnAtoms( forcesToApply, getNumberOfArguments() );
+    if( getNumberOfAtoms()>0 ) {
+      setForcesOnAtoms( forcesToApply, getNumberOfArguments() );
+    }
   }
 
 }

@@ -28,17 +28,25 @@ namespace PLMD {
 
 ReferenceAtoms::ReferenceAtoms( const ReferenceConfigurationOptions& ro ):
   ReferenceConfiguration(ro),
-  checks_were_disabled(false)
-{
+  checks_were_disabled(false) {
 }
 
 void ReferenceAtoms::readAtomsFromPDB( const PDB& pdb, const bool allowblocks  ) {
-  if( !allowblocks && pdb.getNumberOfAtomBlocks()!=1 ) error("found multi-atom-block pdb format but expecting only one block of atoms");
+  if( !allowblocks && pdb.getNumberOfAtomBlocks()!=1 ) {
+    error("found multi-atom-block pdb format but expecting only one block of atoms");
+  }
 
-  indices.resize(0); reference_atoms.resize(0); align.resize(0); displace.resize(0); atom_der_index.resize(0);
+  indices.resize(0);
+  reference_atoms.resize(0);
+  align.resize(0);
+  displace.resize(0);
+  atom_der_index.resize(0);
   for(unsigned i=0; i<pdb.size(); ++i) {
-    indices.push_back( pdb.getAtomNumbers()[i] ); reference_atoms.push_back( pdb.getPositions()[i] );
-    align.push_back( pdb.getOccupancy()[i] ); displace.push_back( pdb.getBeta()[i] ); atom_der_index.push_back(i);
+    indices.push_back( pdb.getAtomNumbers()[i] );
+    reference_atoms.push_back( pdb.getPositions()[i] );
+    align.push_back( pdb.getOccupancy()[i] );
+    displace.push_back( pdb.getBeta()[i] );
+    atom_der_index.push_back(i);
   }
 }
 
@@ -97,20 +105,29 @@ void ReferenceAtoms::singleDomainRequests( std::vector<AtomNumber>& numbers, boo
     }
   } else {
     if(!disable_checks) {
-      if( numbers.size()!=indices.size() ) error("mismatched numbers of atoms in pdb frames");
+      if( numbers.size()!=indices.size() ) {
+        error("mismatched numbers of atoms in pdb frames");
+      }
     }
 
     for(unsigned i=0; i<indices.size(); ++i) {
       bool found=false;
       if(!disable_checks) {
-        if( indices[i]!=numbers[i] ) error("found mismatched reference atoms in pdb frames");
+        if( indices[i]!=numbers[i] ) {
+          error("found mismatched reference atoms in pdb frames");
+        }
         atom_der_index[i]=i;
       } else {
         for(unsigned j=0; j<numbers.size(); ++j) {
-          if( indices[i]==numbers[j] ) { found=true; atom_der_index[i]=j; break; }
+          if( indices[i]==numbers[j] ) {
+            found=true;
+            atom_der_index[i]=j;
+            break;
+          }
         }
         if( !found ) {
-          atom_der_index[i]=numbers.size(); numbers.push_back( indices[i] );
+          atom_der_index[i]=numbers.size();
+          numbers.push_back( indices[i] );
         }
       }
     }
@@ -119,7 +136,9 @@ void ReferenceAtoms::singleDomainRequests( std::vector<AtomNumber>& numbers, boo
 
 void ReferenceAtoms::displaceReferenceAtoms( const double& weight, const std::vector<Vector>& dir ) {
   plumed_dbg_assert( dir.size()==reference_atoms.size() );
-  for(unsigned i=0; i<dir.size(); ++i) reference_atoms[i] += weight*dir.size()*dir[i];
+  for(unsigned i=0; i<dir.size(); ++i) {
+    reference_atoms[i] += weight*dir.size()*dir[i];
+  }
 }
 
 }

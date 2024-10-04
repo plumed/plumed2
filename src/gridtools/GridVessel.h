@@ -185,7 +185,9 @@ public:
 /// Is this point active
   bool inactive( const unsigned& ip ) const ;
 /// This retrieves the final force
-  virtual void getFinalForces( const std::vector<double>& buffer, std::vector<double>& finalForces ) { plumed_error(); }
+  virtual void getFinalForces( const std::vector<double>& buffer, std::vector<double>& finalForces ) {
+    plumed_error();
+  }
 /// Apply the forces
   void setForce( const std::vector<double>& inforces );
 /// Was a force added to the grid
@@ -206,14 +208,19 @@ unsigned GridVessel::getNumberOfPoints() const {
 
 inline
 const std::vector<double>& GridVessel::getGridSpacing() const {
-  if( gtype==flat ) return dx;
+  if( gtype==flat ) {
+    return dx;
+  }
   plumed_merror("dont understand what spacing means for spherical grids");
 }
 
 inline
 double GridVessel::getCellVolume() const {
   if( gtype==flat ) {
-    double myvol=1.0; for(unsigned i=0; i<dimension; ++i) myvol *= dx[i];
+    double myvol=1.0;
+    for(unsigned i=0; i<dimension; ++i) {
+      myvol *= dx[i];
+    }
     return myvol;
   } else {
     return 4*pi / static_cast<double>( getNumberOfPoints() );
@@ -238,7 +245,9 @@ std::string GridVessel::getComponentName( const unsigned& i ) const {
 
 inline
 unsigned GridVessel::getNumberOfComponents() const {
-  if( noderiv ) return nper;
+  if( noderiv ) {
+    return nper;
+  }
   return nper / ( dimension + 1 );
 }
 
@@ -272,8 +281,11 @@ unsigned GridVessel::getNumberOfBufferPoints() const {
 
 inline
 std::string GridVessel::getType() const {
-  if( gtype==flat ) return "flat";
-  else if( gtype==fibonacci ) return "fibonacci";
+  if( gtype==flat ) {
+    return "flat";
+  } else if( gtype==fibonacci ) {
+    return "fibonacci";
+  }
   plumed_error();
 }
 

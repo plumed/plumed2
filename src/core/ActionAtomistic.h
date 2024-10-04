@@ -38,8 +38,7 @@ class PDB;
 /// \ingroup MULTIINHERIT
 /// Action used to create objects that access the positions of the atoms from the MD code
 class ActionAtomistic :
-  virtual public Action
-{
+  virtual public Action {
 
   std::vector<AtomNumber> indexes;         // the set of needed atoms
 /// unique should be an ordered set since we later create a vector containing the corresponding indexes
@@ -127,7 +126,9 @@ public:
 /// Get a reference to force on extraCV
   double & modifyForceOnExtraCV();
 /// Get number of available atoms
-  unsigned getNumberOfAtoms()const {return indexes.size();}
+  unsigned getNumberOfAtoms()const {
+    return indexes.size();
+  }
 /// Compute the pbc distance between two positions
   Vector pbcDistance(const Vector&,const Vector&)const;
 /// Applies  PBCs to a seriens of positions or distances
@@ -153,15 +154,21 @@ public:
 /// not going to be retrieved. Can be used for optimization. Notice that
 /// calling getPosition(int) in an Action where DoNotRetrieve() was called might
 /// lead to undefined behavior.
-  void doNotRetrieve() {donotretrieve=true;}
+  void doNotRetrieve() {
+    donotretrieve=true;
+  }
 /// Skip atom forces - use with care.
 /// If this function is called during initialization, then forces are
 /// not going to be propagated. Can be used for optimization.
-  void doNotForce() {donotforce=true;}
+  void doNotForce() {
+    donotforce=true;
+  }
 /// Make atoms whole, assuming they are in the proper order
   void makeWhole();
 /// Allow calls to modifyGlobalForce()
-  void allowToAccessGlobalForces() {atoms.zeroallforces=true;}
+  void allowToAccessGlobalForces() {
+    atoms.zeroallforces=true;
+  }
 /// updates local unique atoms
   void updateUniqueLocal();
 public:
@@ -225,7 +232,9 @@ double ActionAtomistic::getMass(int i)const {
 
 inline
 double ActionAtomistic::getCharge(int i) const {
-  if( !chargesWereSet ) error("charges were not passed to plumed");
+  if( !chargesWereSet ) {
+    error("charges were not passed to plumed");
+  }
   return charges[i];
 }
 

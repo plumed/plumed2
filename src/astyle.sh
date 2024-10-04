@@ -8,6 +8,8 @@ echo "$DIRS"
 # shellcheck disable=SC2125
 test -z "$DIRS" && DIRS=*
 
+options=../../.astyle.options
+
 for dir in $DIRS; do
   test -d "$dir" || continue
 
@@ -29,7 +31,7 @@ for dir in $DIRS; do
 
     echo -n "astyle $file"
 
-    ../../astyle/astyle --options=../../.astyle.options <"$file" >"$file.tmp" && {
+    ../../astyle/astyle --options="$options" <"$file" >"$file.tmp" && {
       if cmp -s "$file" "$file.tmp"; then
         echo
       else
@@ -42,7 +44,6 @@ for dir in $DIRS; do
     rm "$file.tmp"
 
   done
-
   cd - || {
     echo "Problem with 'cd -' from '$dir'"
     exit 1

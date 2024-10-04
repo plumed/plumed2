@@ -116,27 +116,32 @@ unsigned AtomValuePack::getNumberOfDerivatives() const {
 
 inline
 void AtomValuePack::setIndex( const unsigned& j, const unsigned& ind ) {
-  plumed_dbg_assert( j<natoms ); indices[j]=ind;
+  plumed_dbg_assert( j<natoms );
+  indices[j]=ind;
 }
 
 inline
 void AtomValuePack::setAtomIndex( const unsigned& j, const unsigned& ind ) {
-  plumed_dbg_assert( j<natoms ); indices[j]=ind;
+  plumed_dbg_assert( j<natoms );
+  indices[j]=ind;
 }
 
 inline
 void AtomValuePack::setAtom( const unsigned& j, const unsigned& ind ) {
-  setAtomIndex( j, ind ); myatoms[j]=mycolv->getPositionOfAtomForLinkCells( ind );
+  setAtomIndex( j, ind );
+  myatoms[j]=mycolv->getPositionOfAtomForLinkCells( ind );
 }
 
 inline
 unsigned AtomValuePack::getIndex( const unsigned& j ) const {
-  plumed_dbg_assert( j<natoms ); return indices[j];
+  plumed_dbg_assert( j<natoms );
+  return indices[j];
 }
 
 inline
 AtomNumber AtomValuePack::getAbsoluteIndex( const unsigned& j ) const {
-  plumed_dbg_assert( j<natoms ); unsigned jatom=indices[j];
+  plumed_dbg_assert( j<natoms );
+  unsigned jatom=indices[j];
   if( mycolv->atom_lab[jatom].first>0 ) {
     unsigned mmc=mycolv->atom_lab[jatom].first - 1;
     return (mycolv->mybasemulticolvars[mmc])->getAbsoluteIndexOfCentralAtom( mycolv->atom_lab[jatom].second );
@@ -189,18 +194,26 @@ void AtomValuePack::addTemporyAtomsDerivatives( const unsigned& jder, const Vect
 inline
 void AtomValuePack::addTemporyBoxDerivatives( const Tensor& vir ) {
   unsigned nvir=3*mycolv->getNumberOfAtoms();
-  for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) myvals.addTemporyDerivative( nvir + 3*i+j, vir(i,j) );
+  for(unsigned i=0; i<3; ++i)
+    for(unsigned j=0; j<3; ++j) {
+      myvals.addTemporyDerivative( nvir + 3*i+j, vir(i,j) );
+    }
 }
 
 inline
 void AtomValuePack::addBoxDerivatives( const unsigned& ival, const Tensor& vir ) {
   unsigned nvir=3*mycolv->getNumberOfAtoms();
-  for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) myvals.addDerivative( ival, nvir + 3*i+j, vir(i,j) );
+  for(unsigned i=0; i<3; ++i)
+    for(unsigned j=0; j<3; ++j) {
+      myvals.addDerivative( ival, nvir + 3*i+j, vir(i,j) );
+    }
 }
 
 inline
 void AtomValuePack::updateDynamicList() {
-  if( myvals.updateComplete() ) return;
+  if( myvals.updateComplete() ) {
+    return;
+  }
   myvals.updateDynamicList();
 }
 

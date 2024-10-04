@@ -210,14 +210,17 @@ public:
 template <typename T>
 std::vector<T> DynamicList<T>::retrieveActiveList() {
   std::vector<T> this_active(nactive);
-  for(unsigned k=0; k<nactive; ++k) this_active[k]=all[ active[k] ];
+  for(unsigned k=0; k<nactive; ++k) {
+    this_active[k]=all[ active[k] ];
+  }
   return this_active;
 }
 
 template <typename T>
 void DynamicList<T>::clear() {
   all.resize(0);
-  onoff.resize(0); active.resize(0);
+  onoff.resize(0);
+  active.resize(0);
 }
 
 template <typename T>
@@ -237,25 +240,31 @@ unsigned DynamicList<T>::getNumberActive() const {
 
 template <typename T>
 void DynamicList<T>::addIndexToList( const T & ii ) {
-  all.push_back(ii); active.resize( all.size() ); onoff.push_back(0);
+  all.push_back(ii);
+  active.resize( all.size() );
+  onoff.push_back(0);
 }
 
 template <typename T>
 void DynamicList<T>::createIndexListFromVector( const std::vector<T>& myind ) {
-  plumed_dbg_assert( all.size()==0 ); onoff.resize( myind.size(), 0 );
+  plumed_dbg_assert( all.size()==0 );
+  onoff.resize( myind.size(), 0 );
   active.resize( myind.size() );
   all.insert( all.end(), myind.begin(), myind.end() );
 }
 
 template <typename T>
 void DynamicList<T>::setupMPICommunication( Communicator& comm ) {
-  nprocessors=comm.Get_size(); rank=comm.Get_rank();
+  nprocessors=comm.Get_size();
+  rank=comm.Get_rank();
 }
 
 template <typename T>
 int DynamicList<T>::getIndexOfElement( const T& t ) const {
   for(unsigned i=0; i<all.size(); ++i) {
-    if( t==all[i] ) {return i; }
+    if( t==all[i] ) {
+      return i;
+    }
   }
   plumed_merror("Could not find an element in the dynamic list");
 }
@@ -264,19 +273,29 @@ template <typename T>
 void DynamicList<T>::deactivate( const T& t ) {
   plumed_dbg_assert( allWereActivated );
   unsigned ii=getIndexOfElement( t );
-  if( onoff[ii]==0 || onoff[ii]%nprocessors!=0 ) return;
+  if( onoff[ii]==0 || onoff[ii]%nprocessors!=0 ) {
+    return;
+  }
   // Deactivates the component
-  if( rank==0 ) onoff[ii]=nprocessors-1;
-  else onoff[ii]=nprocessors-rank;
+  if( rank==0 ) {
+    onoff[ii]=nprocessors-1;
+  } else {
+    onoff[ii]=nprocessors-rank;
+  }
 }
 
 template <typename T>
 void DynamicList<T>::deactivateAll() {
-  allWereDeactivated=true; allWereActivated=false;
-  for(unsigned i=0; i<nactive; ++i) onoff[ active[i] ]= 0;
+  allWereDeactivated=true;
+  allWereActivated=false;
+  for(unsigned i=0; i<nactive; ++i) {
+    onoff[ active[i] ]= 0;
+  }
   nactive=0;
 #ifndef NDEBUG
-  for(unsigned i=0; i<onoff.size(); ++i) plumed_dbg_assert( onoff[i]==0 );
+  for(unsigned i=0; i<onoff.size(); ++i) {
+    plumed_dbg_assert( onoff[i]==0 );
+  }
 #endif
 }
 
@@ -289,8 +308,12 @@ void DynamicList<T>::activate( const unsigned ii ) {
 
 template <typename T>
 void DynamicList<T>::activateAll() {
-  for(unsigned i=0; i<onoff.size(); ++i) onoff[i]=nprocessors;
-  allWereActivated=true; updateActiveMembers(); allWereActivated=true;
+  for(unsigned i=0; i<onoff.size(); ++i) {
+    onoff[i]=nprocessors;
+  }
+  allWereActivated=true;
+  updateActiveMembers();
+  allWereActivated=true;
 
 }
 
@@ -299,16 +322,23 @@ void DynamicList<T>::mpi_gatherActiveMembers(Communicator& comm) {
   plumed_massert( comm.Get_size()==nprocessors, "error missing a call to DynamicList::setupMPICommunication");
   comm.Sum(&onoff[0],onoff.size());
   // When we mpi gather onoff to be on it should be active on ALL nodes
-  for(unsigned i=0; i<all.size(); ++i) if( onoff[i]>0 && onoff[i]%nprocessors==0 ) { onoff[i]=nprocessors; }
+  for(unsigned i=0; i<all.size(); ++i)
+    if( onoff[i]>0 && onoff[i]%nprocessors==0 ) {
+      onoff[i]=nprocessors;
+    }
   updateActiveMembers();
 }
 
 template <typename T>
 void DynamicList<T>::updateActiveMembers() {
   plumed_dbg_assert( allWereActivated || allWereDeactivated );
-  unsigned kk=0; allWereActivated=allWereDeactivated=false;
+  unsigned kk=0;
+  allWereActivated=allWereDeactivated=false;
   for(unsigned i=0; i<all.size(); ++i) {
-    if( onoff[i]>0 && onoff[i]%nprocessors==0 ) { active[kk]=i; kk++; }
+    if( onoff[i]>0 && onoff[i]%nprocessors==0 ) {
+      active[kk]=i;
+      kk++;
+    }
   }
   nactive=kk;
 }
@@ -323,7 +353,8 @@ template <typename T>
 void DynamicList<T>::putIndexInActiveArray( const unsigned& ii ) {
   plumed_dbg_assert( allWereActivated || allWereDeactivated );
   plumed_dbg_assert( onoff[ii]>0 && onoff[ii]%nprocessors==0 );
-  active[nactive]=ii; nactive++;
+  active[nactive]=ii;
+  nactive++;
 }
 
 template <typename T>
@@ -341,14 +372,17 @@ void DynamicList<T>::sortActiveList() {
 
 template <typename T>
 bool DynamicList<T>::updateComplete() const {
-  if( !allWereActivated && !allWereDeactivated ) return true;
+  if( !allWereActivated && !allWereDeactivated ) {
+    return true;
+  }
   return false;
 }
 
 template <typename U>
 void mpi_gatherActiveMembers(Communicator& comm, std::vector< DynamicList<U> >& ll ) {
   // Setup an array to hold all data
-  unsigned bufsize=0; unsigned size=comm.Get_size();
+  unsigned bufsize=0;
+  unsigned size=comm.Get_size();
   for(unsigned i=0; i<ll.size(); ++i) {
     plumed_dbg_massert( ll[i].nprocessors==size, "missing a call to DynamicList::setupMPICommunication" );
     bufsize+=ll[i].onoff.size();
@@ -357,7 +391,10 @@ void mpi_gatherActiveMembers(Communicator& comm, std::vector< DynamicList<U> >& 
   // Gather all onoff data into a single array
   bufsize=0;
   for(unsigned i=0; i<ll.size(); ++i) {
-    for(unsigned j=0; j<ll[i].onoff.size(); ++j) { buffer[bufsize]=ll[i].onoff[j]; bufsize++; }
+    for(unsigned j=0; j<ll[i].onoff.size(); ++j) {
+      buffer[bufsize]=ll[i].onoff[j];
+      bufsize++;
+    }
   }
   // GATHER from all nodes
   comm.Sum(&buffer[0],buffer.size());
@@ -365,12 +402,17 @@ void mpi_gatherActiveMembers(Communicator& comm, std::vector< DynamicList<U> >& 
   bufsize=0;
   for(unsigned i=0; i<ll.size(); ++i) {
     for(unsigned j=0; j<ll[i].onoff.size(); ++j) {
-      if( buffer[bufsize]>0 && buffer[bufsize]%size==0 ) ll[i].onoff[j]=size;
-      else ll[i].onoff[j]=size-1;
+      if( buffer[bufsize]>0 && buffer[bufsize]%size==0 ) {
+        ll[i].onoff[j]=size;
+      } else {
+        ll[i].onoff[j]=size-1;
+      }
       bufsize++;
     }
   }
-  for(unsigned i=0; i<ll.size(); ++i) ll[i].updateActiveMembers();
+  for(unsigned i=0; i<ll.size(); ++i) {
+    ll[i].updateActiveMembers();
+  }
 }
 
 }

@@ -33,8 +33,7 @@ BridgeVessel::BridgeVessel( const VesselOptions& da ):
 // in_normal_calculate(false)
   myOutputAction(NULL),
   myOutputValues(NULL),
-  my_tmp_val(0,0)
-{
+  my_tmp_val(0,0) {
 }
 
 void BridgeVessel::resize() {
@@ -47,9 +46,12 @@ void BridgeVessel::resize() {
   // from a bridge
   if( myOutputAction->mydata ) {
     unsigned dsize=(myOutputAction->mydata)->getSizeOfDerivativeList();
-    if( getAction()->der_list.size()!=dsize ) getAction()->der_list.resize( dsize );
+    if( getAction()->der_list.size()!=dsize ) {
+      getAction()->der_list.resize( dsize );
+    }
   }
-  unsigned tmp=0; resizeBuffer( myOutputAction->getSizeOfBuffer( tmp ) );
+  unsigned tmp=0;
+  resizeBuffer( myOutputAction->getSizeOfBuffer( tmp ) );
 }
 
 void BridgeVessel::setOutputAction( ActionWithVessel* myact ) {
@@ -84,7 +86,9 @@ MultiValue& BridgeVessel::transformDerivatives( const unsigned& current, MultiVa
 
 void BridgeVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
   // in_normal_calculate=true;
-  if( myvals.get(0)<myOutputAction->getTolerance() ) return;
+  if( myvals.get(0)<myOutputAction->getTolerance() ) {
+    return;
+  }
   myOutputAction->calculateAllVessels( current, myvals, myvals, buffer, der_list );
   return;
 }
@@ -109,22 +113,32 @@ void BridgeVessel::completeNumericalDerivatives() {
   Matrix<double> tmpder( myOutputValues->getNumberOfComponents(), nextra );
   ActionWithVessel* vval=dynamic_cast<ActionWithVessel*>( myOutputAction );
   for(unsigned i=0; i<nextra; ++i) {
-    vval->bridgeVariable=i; getAction()->calculate();
-    for(int j=0; j<myOutputValues->getNumberOfComponents(); ++j) tmpder(j,i) = myOutputValues->getOutputQuantity(j);
+    vval->bridgeVariable=i;
+    getAction()->calculate();
+    for(int j=0; j<myOutputValues->getNumberOfComponents(); ++j) {
+      tmpder(j,i) = myOutputValues->getOutputQuantity(j);
+    }
   }
-  vval->bridgeVariable=nextra; getAction()->calculate();
-  plumed_assert( inum==mynumerical_values.size() ); inum=0;  // Reset inum now that we have finished calling calculate
+  vval->bridgeVariable=nextra;
+  getAction()->calculate();
+  plumed_assert( inum==mynumerical_values.size() );
+  inum=0;  // Reset inum now that we have finished calling calculate
   std::vector<double> base( myOutputValues->getNumberOfComponents() );
-  for(int j=0; j<myOutputValues->getNumberOfComponents(); ++j) base[j] = myOutputValues->getOutputQuantity(j);
+  for(int j=0; j<myOutputValues->getNumberOfComponents(); ++j) {
+    base[j] = myOutputValues->getOutputQuantity(j);
+  }
 
   const double delta=std::sqrt(epsilon);
   ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>( getAction() );
   unsigned nvals=myOutputValues->getNumberOfComponents();
-  for(unsigned j=0; j<nvals; ++j) ( myOutputValues->copyOutput(j) )->clearDerivatives();
+  for(unsigned j=0; j<nvals; ++j) {
+    ( myOutputValues->copyOutput(j) )->clearDerivatives();
+  }
 
   if( aa ) {
     ActionWithArguments* aarg=dynamic_cast<ActionWithArguments*>( getAction() );
-    plumed_assert( !aarg ); Tensor box=aa->getBox();
+    plumed_assert( !aarg );
+    Tensor box=aa->getBox();
     unsigned natoms=aa->getNumberOfAtoms();
     for(unsigned j=0; j<nvals; ++j) {
       double ref=( myOutputValues->copyOutput(j) )->get();
@@ -134,11 +148,15 @@ void BridgeVessel::completeNumericalDerivatives() {
           ( myOutputValues->copyOutput(j) )->addDerivative(i,d);
         }
         Tensor virial;
-        for(int i=0; i<3; i++) for(int k=0; k<3; k++) {
+        for(int i=0; i<3; i++)
+          for(int k=0; k<3; k++) {
             virial(i,k)=( mynumerical_values[ nvals*(3*natoms + 3*i + k) + j ]-ref)/delta;
           }
         virial=-matmul(box.transpose(),virial);
-        for(int i=0; i<3; i++) for(int k=0; k<3; k++) ( myOutputValues->copyOutput(j) )->addDerivative(3*natoms+3*k+i,virial(k,i));
+        for(int i=0; i<3; i++)
+          for(int k=0; k<3; k++) {
+            ( myOutputValues->copyOutput(j) )->addDerivative(3*natoms+3*k+i,virial(k,i));
+          }
       }
     }
   } else {
@@ -157,30 +175,40 @@ void BridgeVessel::completeNumericalDerivatives() {
   for(unsigned j=0; j<nvals; ++j) {
     unsigned k=0;
     for(unsigned i=getAction()->getNumberOfDerivatives(); i<myOutputAction->getNumberOfDerivatives(); ++i) {
-      ( myOutputValues->copyOutput(j) )->addDerivative( i, (tmpder(j,k)-base[j])/std::sqrt(epsilon) ); k++;
+      ( myOutputValues->copyOutput(j) )->addDerivative( i, (tmpder(j,k)-base[j])/std::sqrt(epsilon) );
+      k++;
     }
   }
 }
 
 bool BridgeVessel::applyForce( std::vector<double>& outforces ) {
-  bool hasforce=false; outforces.assign(outforces.size(),0.0);
+  bool hasforce=false;
+  outforces.assign(outforces.size(),0.0);
   unsigned ndertot = myOutputAction->getNumberOfDerivatives();
   unsigned nextra = ndertot - getAction()->getNumberOfDerivatives();
   std::vector<double> forces( ndertot ), eforces( nextra, 0.0 );
   for(unsigned i=0; i<myOutputAction->getNumberOfVessels(); ++i) {
     if( ( myOutputAction->getPntrToVessel(i) )->applyForce( forces ) ) {
       hasforce=true;
-      for(unsigned j=0; j<outforces.size(); ++j) outforces[j]+=forces[j];
-      for(unsigned j=0; j<nextra; ++j) eforces[j]+=forces[ outforces.size()+j ];
+      for(unsigned j=0; j<outforces.size(); ++j) {
+        outforces[j]+=forces[j];
+      }
+      for(unsigned j=0; j<nextra; ++j) {
+        eforces[j]+=forces[ outforces.size()+j ];
+      }
     }
   }
-  if(hasforce) myOutputAction->applyBridgeForces( eforces );
+  if(hasforce) {
+    myOutputAction->applyBridgeForces( eforces );
+  }
   return hasforce;
 }
 
 void BridgeVessel::copyTaskFlags() {
   myOutputAction->deactivateAllTasks();
-  for(unsigned i=0; i<getAction()->nactive_tasks; ++i) myOutputAction->taskFlags[ getAction()->indexOfTaskInFullList[i] ] = 1;
+  for(unsigned i=0; i<getAction()->nactive_tasks; ++i) {
+    myOutputAction->taskFlags[ getAction()->indexOfTaskInFullList[i] ] = 1;
+  }
   myOutputAction->lockContributors();
 }
 

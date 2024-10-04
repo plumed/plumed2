@@ -32,7 +32,9 @@ namespace crystallization {
 
 void CubicHarmonicBase::registerKeywords( Keywords& keys ) {
   multicolvar::MultiColvarBase::registerKeywords( keys );
-  keys.use("SPECIES"); keys.use("SPECIESA"); keys.use("SPECIESB");
+  keys.use("SPECIES");
+  keys.use("SPECIESA");
+  keys.use("SPECIESB");
   keys.add("compulsory","NN","6","The n parameter of the switching function ");
   keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
@@ -45,29 +47,47 @@ void CubicHarmonicBase::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","PSI","0.0","The Euler rotational angle psi");
   keys.addFlag("UNORMALIZED",false,"calculate the sum of the components of the vector rather than the mean");
   // Use actionWithDistributionKeywords
-  keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("LESS_THAN"); keys.use("MAX");
-  keys.use("MIN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
-  keys.use("ALT_MIN"); keys.use("LOWEST"); keys.use("HIGHEST");
+  keys.use("MEAN");
+  keys.use("MORE_THAN");
+  keys.use("LESS_THAN");
+  keys.use("MAX");
+  keys.use("MIN");
+  keys.use("BETWEEN");
+  keys.use("HISTOGRAM");
+  keys.use("MOMENTS");
+  keys.use("ALT_MIN");
+  keys.use("LOWEST");
+  keys.use("HIGHEST");
 }
 
 CubicHarmonicBase::CubicHarmonicBase(const ActionOptions&ao):
   Action(ao),
-  MultiColvarBase(ao)
-{
+  MultiColvarBase(ao) {
   // Read in the switching function
-  std::string sw, errors; parse("SWITCH",sw);
+  std::string sw, errors;
+  parse("SWITCH",sw);
   if(sw.length()>0) {
     switchingFunction.set(sw,errors);
-    if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
+    if( errors.length()!=0 ) {
+      error("problem reading SWITCH keyword : " + errors );
+    }
   } else {
-    double r_0=-1.0, d_0; int nn, mm;
-    parse("NN",nn); parse("MM",mm);
-    parse("R_0",r_0); parse("D_0",d_0);
-    if( r_0<0.0 ) error("you must set a value for R_0");
+    double r_0=-1.0, d_0;
+    int nn, mm;
+    parse("NN",nn);
+    parse("MM",mm);
+    parse("R_0",r_0);
+    parse("D_0",d_0);
+    if( r_0<0.0 ) {
+      error("you must set a value for R_0");
+    }
     switchingFunction.set(nn,mm,r_0,d_0);
   }
 
-  double phi, theta, psi; parse("PHI",phi); parse("THETA",theta); parse("PSI",psi);
+  double phi, theta, psi;
+  parse("PHI",phi);
+  parse("THETA",theta);
+  parse("PSI",psi);
   log.printf("  creating rotation matrix with Euler angles phi=%f, theta=%f and psi=%f\n",phi,theta,psi);
   // Calculate the rotation matrix http://mathworld.wolfram.com/EulerAngles.html
   rotationmatrix[0][0]=std::cos(psi)*std::cos(phi)-std::cos(theta)*std::sin(phi)*std::sin(psi);
@@ -85,20 +105,26 @@ CubicHarmonicBase::CubicHarmonicBase(const ActionOptions&ao):
 
   log.printf("  measure crystallinity around central atom.  Includes those atoms within %s\n",( switchingFunction.description() ).c_str() );
   parseFlag("UNORMALIZED",unormalized);
-  if( unormalized ) log.printf("  output sum of vector functions \n");
-  else log.printf("  output mean of vector functions \n");
+  if( unormalized ) {
+    log.printf("  output sum of vector functions \n");
+  } else {
+    log.printf("  output mean of vector functions \n");
+  }
   // Set the link cell cutoff
   rcut2 = switchingFunction.get_dmax()*switchingFunction.get_dmax();
   setLinkCellCutoff( switchingFunction.get_dmax() );
   // And setup the ActionWithVessel
-  std::vector<AtomNumber> all_atoms; setupMultiColvarBase( all_atoms );
+  std::vector<AtomNumber> all_atoms;
+  setupMultiColvarBase( all_atoms );
 }
 
 double CubicHarmonicBase::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {
-  double dfunc; Vector rotatedis;
+  double dfunc;
+  Vector rotatedis;
 
   // Calculate the coordination number
-  Vector myder, rotateder, fder; unsigned nat=myatoms.getNumberOfAtoms();
+  Vector myder, rotateder, fder;
+  unsigned nat=myatoms.getNumberOfAtoms();
 
   for(unsigned i=1; i<nat; ++i) {
     Vector& distance=myatoms.getPosition(i);
@@ -141,7 +167,9 @@ double CubicHarmonicBase::compute( const unsigned& tindex, multicolvar::AtomValu
   }
   // values -> der of... value [0], weight[1], x coord [2], y, z... [more magic]
   updateActiveAtoms( myatoms );
-  if( !unormalized ) myatoms.getUnderlyingMultiValue().quotientRule( 1, 1 );
+  if( !unormalized ) {
+    myatoms.getUnderlyingMultiValue().quotientRule( 1, 1 );
+  }
   return myatoms.getValue(1); // this is equivalent to getting an "atomic" CV
 }
 

@@ -57,9 +57,9 @@ void LandmarkStaged::registerKeywords( Keywords& keys ) {
 
 LandmarkStaged::LandmarkStaged( const ActionOptions& ao ):
   Action(ao),
-  LandmarkSelectionBase(ao)
-{
-  parse("SEED",seed); parse("GAMMA",gamma);
+  LandmarkSelectionBase(ao) {
+  parse("SEED",seed);
+  parse("GAMMA",gamma);
   log.printf("  probability of selecting voronoi polyhedra equal to exp(-weight/%f) \n", gamma );
 }
 
@@ -69,7 +69,9 @@ void LandmarkStaged::selectLandmarks() {
   unsigned int m = static_cast<int>( std::sqrt(n*N) );
   std::vector<unsigned> fpslandmarks(m);
   // Select first point at random
-  Random random; random.setSeed(-seed); double rand=random.RandU01();
+  Random random;
+  random.setSeed(-seed);
+  double rand=random.RandU01();
   fpslandmarks[0] = std::floor( N*rand );
 
   // using FPS we want to find m landmarks where m = sqrt(nN)
@@ -86,11 +88,18 @@ void LandmarkStaged::selectLandmarks() {
     for(unsigned j=0; j<N; ++j) {
       double mind=distances(0,j);
       for(unsigned k=1; k<i; ++k) {
-        if( distances(k,j)<mind ) { mind=distances(k,j); }
+        if( distances(k,j)<mind ) {
+          mind=distances(k,j);
+        }
       }
-      if( mind>maxd ) { maxd=mind; fpslandmarks[i]=j; }
+      if( mind>maxd ) {
+        maxd=mind;
+        fpslandmarks[i]=j;
+      }
     }
-    for(unsigned k=0; k<N; ++k) distances(i,k) = my_input_data->getDissimilarity( fpslandmarks[i], k );
+    for(unsigned k=0; k<N; ++k) {
+      distances(i,k) = my_input_data->getDissimilarity( fpslandmarks[i], k );
+    }
   }
 
   // Initial FPS selection of m landmarks completed
@@ -100,9 +109,13 @@ void LandmarkStaged::selectLandmarks() {
   voronoiAnalysis( fpslandmarks, weights, poly_assign );
 
   //Calculate total weight of voronoi polyhedras
-  double vweight=0; for(unsigned i=0; i<m; i++) vweight += std::exp( -weights[i] / gamma );
+  double vweight=0;
+  for(unsigned i=0; i<m; i++) {
+    vweight += std::exp( -weights[i] / gamma );
+  }
 
-  std::vector<bool> selected(N, false); unsigned ncount=0;
+  std::vector<bool> selected(N, false);
+  unsigned ncount=0;
   while ( ncount<n) {
 //  generate random number and check which point it belongs to. select only it was not selected before
     double rand = vweight*random.RandU01();
@@ -112,7 +125,9 @@ void LandmarkStaged::selectLandmarks() {
       if( running_vweight>=rand ) {
         double tweight=0;
         for(unsigned i=0; i<poly_assign.size(); ++i) {
-          if( poly_assign[i]==jpoly ) tweight += getWeight( i );
+          if( poly_assign[i]==jpoly ) {
+            tweight += getWeight( i );
+          }
         }
         double rand_poly = tweight*random.RandU01();
         double running_tweight=0;
@@ -120,7 +135,10 @@ void LandmarkStaged::selectLandmarks() {
           if( poly_assign[i]==jpoly ) {
             running_tweight += getWeight( i );
             if( running_tweight>=rand_poly && !selected[i] ) {
-              selectFrame(i); selected[i]=true; ncount++; break;
+              selectFrame(i);
+              selected[i]=true;
+              ncount++;
+              break;
             } else if( running_tweight>=rand_poly ) {
               break;
             }

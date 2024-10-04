@@ -173,8 +173,7 @@ RMSD::RMSD(const ActionOptions&ao):
   myvals(1,0),
   mypack(0,0,myvals),
   squared(false),
-  nopbc(false)
-{
+  nopbc(false) {
   std::string reference;
   parse("REFERENCE",reference);
   std::string type;
@@ -186,12 +185,14 @@ RMSD::RMSD(const ActionOptions&ao):
   checkRead();
 
 
-  addValueWithDerivatives(); setNotPeriodic();
+  addValueWithDerivatives();
+  setNotPeriodic();
   PDB pdb;
 
   // read everything in ang and transform to nm if we are not in natural units
-  if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) )
+  if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) ) {
     error("missing input file " + reference );
+  }
 
   rmsd=metricRegister().create<RMSDBase>(type,pdb);
 
@@ -201,33 +202,48 @@ RMSD::RMSD(const ActionOptions&ao):
   requestAtoms( atoms );
 
   // Setup the derivative pack
-  myvals.resize( 1, 3*atoms.size()+9 ); mypack.resize( 0, atoms.size() );
-  for(unsigned i=0; i<atoms.size(); ++i) mypack.setAtomIndex( i, i );
+  myvals.resize( 1, 3*atoms.size()+9 );
+  mypack.resize( 0, atoms.size() );
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    mypack.setAtomIndex( i, i );
+  }
 
   log.printf("  reference from file %s\n",reference.c_str());
   log.printf("  which contains %d atoms\n",getNumberOfAtoms());
   log.printf("  with indices : ");
   for(unsigned i=0; i<atoms.size(); ++i) {
-    if(i%25==0) log<<"\n";
+    if(i%25==0) {
+      log<<"\n";
+    }
     log.printf("%d ",atoms[i].serial());
   }
   log.printf("\n");
   log.printf("  method for alignment : %s \n",type.c_str() );
-  if(squared)log.printf("  chosen to use SQUARED option for MSD instead of RMSD\n");
-  if(nopbc) log.printf("  without periodic boundary conditions\n");
-  else      log.printf("  using periodic boundary conditions\n");
+  if(squared) {
+    log.printf("  chosen to use SQUARED option for MSD instead of RMSD\n");
+  }
+  if(nopbc) {
+    log.printf("  without periodic boundary conditions\n");
+  } else {
+    log.printf("  using periodic boundary conditions\n");
+  }
 }
 
 
 // calculator
 void RMSD::calculate() {
-  if(!nopbc) makeWhole();
+  if(!nopbc) {
+    makeWhole();
+  }
   double r=rmsd->calculate( getPositions(), mypack, squared );
 
   setValue(r);
-  for(unsigned i=0; i<getNumberOfAtoms(); i++) setAtomsDerivatives( i, mypack.getAtomDerivative(i) );
+  for(unsigned i=0; i<getNumberOfAtoms(); i++) {
+    setAtomsDerivatives( i, mypack.getAtomDerivative(i) );
+  }
 
-  Tensor virial; plumed_dbg_assert( !mypack.virialWasSet() );
+  Tensor virial;
+  plumed_dbg_assert( !mypack.virialWasSet() );
   setBoxDerivativesNoPbc();
 }
 

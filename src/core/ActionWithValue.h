@@ -64,8 +64,7 @@ PLMD::Action you should use <b> the routines with the word component in the name
 */
 
 class ActionWithValue :
-  public virtual Action
-{
+  public virtual Action {
 private:
 /// An array containing the values for this action
   std::vector<std::unique_ptr<Value>> values;
@@ -164,7 +163,9 @@ public:
 /// This forces the class to use numerical derivatives
   void useNumericalDerivatives();
 // These are things for using vectors of values as fields
-  virtual void checkFieldsAllowed() { error("cannot use this action as a field"); }
+  virtual void checkFieldsAllowed() {
+    error("cannot use this action as a field");
+  }
   virtual unsigned getNumberOfDerivatives()=0;
 /// Activate the calculation of derivatives
   virtual void turnOnDerivatives();
@@ -178,9 +179,12 @@ double ActionWithValue::getOutputQuantity(const unsigned j) const {
 
 inline
 double ActionWithValue::getOutputQuantity( const std::string& name ) const {
-  std::string thename; thename=getLabel() + "." + name;
+  std::string thename;
+  thename=getLabel() + "." + name;
   for(unsigned i=0; i<values.size(); ++i) {
-    if( values[i]->name==thename ) return values[i]->value;
+    if( values[i]->name==thename ) {
+      return values[i]->value;
+    }
   }
   return 0.0;
 }

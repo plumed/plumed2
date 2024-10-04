@@ -111,7 +111,9 @@ public:
 /// Copy derivatives from one frame to this frame
   void copyDerivatives( const ReferenceConfiguration* );
 /// Get one of the referene arguments
-  virtual double getReferenceArgument( const unsigned& i ) const { plumed_error(); }
+  virtual double getReferenceArgument( const unsigned& i ) const {
+    plumed_error();
+  }
 /// These are overwritten in ReferenceArguments and ReferenceAtoms but are required here
 /// to make PLMD::distance work
   virtual const std::vector<Vector>& getReferencePositions() const ;
@@ -125,11 +127,15 @@ public:
                                   const std::vector<double>& arg, const bool& nflag,
                                   Direction& mydir ) const ;
 /// Stuff for pca
-  virtual bool pcaIsEnabledForThisReference() { return false; }
+  virtual bool pcaIsEnabledForThisReference() {
+    return false;
+  }
   double projectDisplacementOnVector( const Direction& mydir, const std::vector<Value*>& vals,
                                       const std::vector<double>& arg, ReferenceValuePack& mypack ) const ;
 /// Stuff to setup pca
-  virtual void setupPCAStorage( ReferenceValuePack& mypack ) { plumed_error(); }
+  virtual void setupPCAStorage( ReferenceValuePack& mypack ) {
+    plumed_error();
+  }
 /// Move the reference configuration by an amount specified using a Direction
   void displaceReferenceConfiguration( const double& weight, Direction& dir );
 };

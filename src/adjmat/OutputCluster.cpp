@@ -103,33 +103,52 @@ void OutputCluster::registerKeywords( Keywords& keys ) {
 OutputCluster::OutputCluster(const ActionOptions& ao):
   Action(ao),
   ActionPilot(ao),
-  myclusters(NULL)
-{
+  myclusters(NULL) {
   // Setup output file
-  ofile.link(*this); std::string file; parse("FILE",file);
-  if( file.length()==0 ) error("output file name was not specified");
+  ofile.link(*this);
+  std::string file;
+  parse("FILE",file);
+  if( file.length()==0 ) {
+    error("output file name was not specified");
+  }
   // Search for xyz extension
   output_xyz=false;
   if( file.find(".")!=std::string::npos ) {
     std::size_t dot=file.find_first_of('.');
-    if( file.substr(dot+1)=="xyz" ) output_xyz=true;
+    if( file.substr(dot+1)=="xyz" ) {
+      output_xyz=true;
+    }
   }
 
-  ofile.open(file); log.printf("  on file %s \n",file.c_str());
-  parseFlag("MAKE_WHOLE",makewhole); parse("MAXDEPTH",maxdepth); parse("MAXGOES",maxgoes);
-  if( makewhole && !output_xyz) error("MAKE_WHOLE flag is not compatible with output of non-xyz files");
+  ofile.open(file);
+  log.printf("  on file %s \n",file.c_str());
+  parseFlag("MAKE_WHOLE",makewhole);
+  parse("MAXDEPTH",maxdepth);
+  parse("MAXGOES",maxgoes);
+  if( makewhole && !output_xyz) {
+    error("MAKE_WHOLE flag is not compatible with output of non-xyz files");
+  }
 
   // Find what action we are taking the clusters from
-  std::vector<std::string> matname(1); parse("CLUSTERS",matname[0]);
+  std::vector<std::string> matname(1);
+  parse("CLUSTERS",matname[0]);
   myclusters = plumed.getActionSet().selectWithLabel<ClusteringBase*>( matname[0] );
-  if( !myclusters ) error( matname[0] + " does not calculate perform a clustering of the atomic positions");
+  if( !myclusters ) {
+    error( matname[0] + " does not calculate perform a clustering of the atomic positions");
+  }
   // N.B. the +0.3 is a fudge factor.  Reconstrucing PBC doesnt work without this GAT
-  addDependency( myclusters ); double rcut=myclusters->getCutoffForConnection() + 0.3; rcut2=rcut*rcut;
+  addDependency( myclusters );
+  double rcut=myclusters->getCutoffForConnection() + 0.3;
+  rcut2=rcut*rcut;
 
   // Read in the cluster we are calculating
   parse("CLUSTER",clustr);
-  if( clustr<1 ) error("cannot look for a cluster larger than the largest cluster");
-  if( clustr>myclusters->getNumberOfNodes() ) error("cluster selected is invalid - too few atoms in system");
+  if( clustr<1 ) {
+    error("cannot look for a cluster larger than the largest cluster");
+  }
+  if( clustr>myclusters->getNumberOfNodes() ) {
+    error("cluster selected is invalid - too few atoms in system");
+  }
   log.printf("  outputting atoms in %u th largest cluster found by %s \n",clustr,matname[0].c_str() );
 }
 
@@ -141,35 +160,58 @@ void OutputCluster::update() {
     if( makewhole ) {
       // Retrieve the atom positions
       atomsin.resize( myatoms.size() );
-      for(unsigned i=0; i<myatoms.size(); ++i) atomsin[i]=myclusters->getPositionOfAtomForLinkCells( myatoms[i] );
+      for(unsigned i=0; i<myatoms.size(); ++i) {
+        atomsin[i]=myclusters->getPositionOfAtomForLinkCells( myatoms[i] );
+      }
       // Build a connectivity matrix neglecting the pbc
-      nneigh.resize( myatoms.size(), 0 ); adj_list.resize( myatoms.size(), myatoms.size() );
+      nneigh.resize( myatoms.size(), 0 );
+      adj_list.resize( myatoms.size(), myatoms.size() );
       for(unsigned i=1; i<myatoms.size(); ++i) {
         for(unsigned j=0; j<i; ++j) {
-          if( delta( atomsin[i], atomsin[j] ).modulo2()<=rcut2 ) { adj_list(i,nneigh[i])=j; adj_list(j,nneigh[j])=i; nneigh[i]++; nneigh[j]++; }
+          if( delta( atomsin[i], atomsin[j] ).modulo2()<=rcut2 ) {
+            adj_list(i,nneigh[i])=j;
+            adj_list(j,nneigh[j])=i;
+            nneigh[i]++;
+            nneigh[j]++;
+          }
         }
       }
       // Use DFS to find the largest cluster not broken by PBC
-      number_of_cluster=-1; visited.resize( myatoms.size(), false );
-      cluster_sizes.resize( myatoms.size() ); which_cluster.resize( myatoms.size() );
-      for(unsigned i=0; i<cluster_sizes.size(); ++i) { cluster_sizes[i].first=0; cluster_sizes[i].second=i; }
+      number_of_cluster=-1;
+      visited.resize( myatoms.size(), false );
+      cluster_sizes.resize( myatoms.size() );
+      which_cluster.resize( myatoms.size() );
+      for(unsigned i=0; i<cluster_sizes.size(); ++i) {
+        cluster_sizes[i].first=0;
+        cluster_sizes[i].second=i;
+      }
 
       for(unsigned i=0; i<myatoms.size(); ++i) {
-        if( !visited[i] ) { number_of_cluster++; visited[i]=explore_dfs(i); }
+        if( !visited[i] ) {
+          number_of_cluster++;
+          visited[i]=explore_dfs(i);
+        }
       }
       std::sort( cluster_sizes.begin(), cluster_sizes.end() );
 
       // Now set visited so that only those atoms in largest cluster will be start points for PBCing
       visited.assign( visited.size(), false );
       for(unsigned i=0; i<myatoms.size(); ++i) {
-        if( which_cluster[i]==cluster_sizes[cluster_sizes.size()-1].second ) visited[i]=true;
+        if( which_cluster[i]==cluster_sizes[cluster_sizes.size()-1].second ) {
+          visited[i]=true;
+        }
       }
 
       // Now retrieve the original connectivity matrix (including pbc)
       nneigh.assign( nneigh.size(), 0 );
       for(unsigned i=1; i<myatoms.size(); ++i) {
         for(unsigned j=0; j<i; ++j) {
-          if( myclusters->areConnected( myatoms[i], myatoms[j] ) ) { adj_list(i,nneigh[i])=j; adj_list(j,nneigh[j])=i; nneigh[i]++; nneigh[j]++; }
+          if( myclusters->areConnected( myatoms[i], myatoms[j] ) ) {
+            adj_list(i,nneigh[i])=j;
+            adj_list(j,nneigh[j])=i;
+            nneigh[i]++;
+            nneigh[j]++;
+          }
         }
       }
 
@@ -177,18 +219,24 @@ void OutputCluster::update() {
       for(unsigned jj=0; jj<maxgoes; ++jj) {
 
         for(unsigned j=0; j<myatoms.size(); ++j) {
-          if( !visited[j] ) continue;
+          if( !visited[j] ) {
+            continue;
+          }
 
           for(unsigned k=0; k<nneigh[j]; ++k) {
             if( delta( atomsin[j],atomsin[adj_list(j,k)] ).modulo2()>rcut2 ) {
               visited[j]=true;
-              for(unsigned depth=0; depth<=maxdepth; ++depth) explore( j, depth );
+              for(unsigned depth=0; depth<=maxdepth; ++depth) {
+                explore( j, depth );
+              }
             }
           }
         }
       }
       // And print final positions
-      for(unsigned i=0; i<myatoms.size(); ++i) ofile.printf( "X %f %f %f \n", atomsin[i][0], atomsin[i][1], atomsin[i][2] );
+      for(unsigned i=0; i<myatoms.size(); ++i) {
+        ofile.printf( "X %f %f %f \n", atomsin[i][0], atomsin[i][1], atomsin[i][2] );
+      }
     } else {
       for(unsigned i=0; i<myatoms.size(); ++i) {
         Vector pos=myclusters->getPositionOfAtomForLinkCells( myatoms[i] );
@@ -198,16 +246,21 @@ void OutputCluster::update() {
   } else {
     ofile.printf("CLUSTERING RESULTS AT TIME %f : NUMBER OF ATOMS IN %u TH LARGEST CLUSTER EQUALS %u \n",getTime(),clustr,static_cast<unsigned>(myatoms.size()) );
     ofile.printf("INDICES OF ATOMS : ");
-    for(unsigned i=0; i<myatoms.size(); ++i) ofile.printf("%d ",(myclusters->getAbsoluteIndexOfCentralAtom(myatoms[i])).index());
+    for(unsigned i=0; i<myatoms.size(); ++i) {
+      ofile.printf("%d ",(myclusters->getAbsoluteIndexOfCentralAtom(myatoms[i])).index());
+    }
     ofile.printf("\n");
   }
 }
 
 void OutputCluster::explore( const unsigned& index, const unsigned& depth ) {
-  if( depth==0 ) return ;
+  if( depth==0 ) {
+    return ;
+  }
 
   for(unsigned i=0; i<nneigh[index]; ++i) {
-    unsigned j=adj_list(index,i); visited[j]=true;
+    unsigned j=adj_list(index,i);
+    visited[j]=true;
     Vector svec=myclusters->pbcDistance( atomsin[index], atomsin[j] );
     atomsin[j] = atomsin[index] + svec;
     explore( j, depth-1 );
@@ -218,7 +271,9 @@ bool OutputCluster::explore_dfs( const unsigned& index ) {
   visited[index]=true;
   for(unsigned i=0; i<nneigh[index]; ++i) {
     unsigned j=adj_list(index,i);
-    if( !visited[j] ) visited[j]=explore_dfs(j);
+    if( !visited[j] ) {
+      visited[j]=explore_dfs(j);
+    }
   }
 
   // Count the size of the cluster

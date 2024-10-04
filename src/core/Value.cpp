@@ -41,8 +41,7 @@ Value::Value():
   min(0.0),
   max(0.0),
   max_minus_min(0.0),
-  inv_max_minus_min(0.0)
-{
+  inv_max_minus_min(0.0) {
 }
 
 Value::Value(const std::string& name):
@@ -57,8 +56,7 @@ Value::Value(const std::string& name):
   min(0.0),
   max(0.0),
   max_minus_min(0.0),
-  inv_max_minus_min(0.0)
-{
+  inv_max_minus_min(0.0) {
 }
 
 Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv):
@@ -73,8 +71,7 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv)
   min(0.0),
   max(0.0),
   max_minus_min(0.0),
-  inv_max_minus_min(0.0)
-{
+  inv_max_minus_min(0.0) {
 }
 
 void Value::setupPeriodicity() {
@@ -94,22 +91,32 @@ bool Value::isPeriodic()const {
 }
 
 bool Value::applyForce(std::vector<double>& forces ) const {
-  if( !hasForce ) return false;
+  if( !hasForce ) {
+    return false;
+  }
   plumed_dbg_massert( derivatives.size()==forces.size()," forces array has wrong size" );
   const unsigned N=derivatives.size();
-  for(unsigned i=0; i<N; ++i) forces[i]=inputForce*derivatives[i];
+  for(unsigned i=0; i<N; ++i) {
+    forces[i]=inputForce*derivatives[i];
+  }
   return true;
 }
 
 void Value::setNotPeriodic() {
-  min=0; max=0; periodicity=notperiodic;
+  min=0;
+  max=0;
+  periodicity=notperiodic;
 }
 
 void Value::setDomain(const std::string& pmin,const std::string& pmax) {
   str_min=pmin;
-  if( !Tools::convertNoexcept(str_min,min) ) action->error("could not convert period string " + str_min + " to real");
+  if( !Tools::convertNoexcept(str_min,min) ) {
+    action->error("could not convert period string " + str_min + " to real");
+  }
   str_max=pmax;
-  if( !Tools::convertNoexcept(str_max,max) ) action->error("could not convert period string " + str_max + " to read");
+  if( !Tools::convertNoexcept(str_max,max) ) {
+    action->error("could not convert period string " + str_max + " to read");
+  }
   setupPeriodicity();
 }
 
@@ -127,7 +134,9 @@ void Value::getDomain(double&minout,double&maxout) const {
 
 void Value::setGradients() {
   // Can't do gradients if we don't have derivatives
-  if( !hasDeriv ) return;
+  if( !hasDeriv ) {
+    return;
+  }
   gradients.clear();
   ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(action);
   ActionWithArguments*aw=dynamic_cast<ActionWithArguments*>(action);
@@ -142,7 +151,9 @@ void Value::setGradients() {
           gradients[p.first]+=matmul(Vector(derivatives[3*j],derivatives[3*j+1],derivatives[3*j+2]),p.second);
         }
       } else {
-        for(unsigned i=0; i<3; i++) gradients[an][i]+=derivatives[3*j+i];
+        for(unsigned i=0; i<3; i++) {
+          gradients[an][i]+=derivatives[3*j+i];
+        }
       }
     }
   } else if(aw) {
@@ -153,7 +164,9 @@ void Value::setGradients() {
         gradients[iatom]+=p.second*derivatives[j];
       }
     }
-  } else plumed_error();
+  } else {
+    plumed_error();
+  }
 }
 
 double Value::projection(const Value& v1,const Value&v2) {
@@ -177,23 +190,33 @@ ActionWithValue* Value::getPntrToAction() {
 
 void copy( const Value& val1, Value& val2 ) {
   unsigned nder=val1.getNumberOfDerivatives();
-  if( nder!=val2.getNumberOfDerivatives() ) { val2.resizeDerivatives( nder ); }
+  if( nder!=val2.getNumberOfDerivatives() ) {
+    val2.resizeDerivatives( nder );
+  }
   val2.clearDerivatives();
-  for(unsigned i=0; i<val1.getNumberOfDerivatives(); ++i) val2.addDerivative( i, val1.getDerivative(i) );
+  for(unsigned i=0; i<val1.getNumberOfDerivatives(); ++i) {
+    val2.addDerivative( i, val1.getDerivative(i) );
+  }
   val2.set( val1.get() );
 }
 
 void copy( const Value& val1, Value* val2 ) {
   unsigned nder=val1.getNumberOfDerivatives();
-  if( nder!=val2->getNumberOfDerivatives() ) { val2->resizeDerivatives( nder ); }
+  if( nder!=val2->getNumberOfDerivatives() ) {
+    val2->resizeDerivatives( nder );
+  }
   val2->clearDerivatives();
-  for(unsigned i=0; i<val1.getNumberOfDerivatives(); ++i) val2->addDerivative( i, val1.getDerivative(i) );
+  for(unsigned i=0; i<val1.getNumberOfDerivatives(); ++i) {
+    val2->addDerivative( i, val1.getDerivative(i) );
+  }
   val2->set( val1.get() );
 }
 
 void add( const Value& val1, Value* val2 ) {
   plumed_assert( val1.getNumberOfDerivatives()==val2->getNumberOfDerivatives() );
-  for(unsigned i=0; i<val1.getNumberOfDerivatives(); ++i) val2->addDerivative( i, val1.getDerivative(i) );
+  for(unsigned i=0; i<val1.getNumberOfDerivatives(); ++i) {
+    val2->addDerivative( i, val1.getDerivative(i) );
+  }
   val2->set( val1.get() + val2->get() );
 }
 

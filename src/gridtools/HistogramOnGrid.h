@@ -54,7 +54,9 @@ public:
   unsigned getNumberOfBufferPoints() const override;
   std::unique_ptr<KernelFunctions> getKernelAndNeighbors( std::vector<double>& point, unsigned& num_neigh, std::vector<unsigned>& neighbors ) const;
   std::vector<std::unique_ptr<Value>> getVectorOfValues() const ;
-  void addOneKernelEachTimeOnly() { addOneKernelAtATime=true; }
+  void addOneKernelEachTimeOnly() {
+    addOneKernelAtATime=true;
+  }
   void getFinalForces( const std::vector<double>& buffer, std::vector<double>& finalForces ) override;
   bool noDiscreteKernels() const ;
   double getFibonacciCutoff() const override;
@@ -62,7 +64,9 @@ public:
 
 inline
 unsigned HistogramOnGrid::getNumberOfBufferPoints() const {
-  if( addOneKernelAtATime ) return neigh_tot;
+  if( addOneKernelAtATime ) {
+    return neigh_tot;
+  }
   return GridVessel::getNumberOfBufferPoints();
 }
 

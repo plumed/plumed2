@@ -36,8 +36,7 @@ void Function::registerKeywords(Keywords& keys) {
 Function::Function(const ActionOptions&ao):
   Action(ao),
   ActionWithValue(ao),
-  ActionWithArguments(ao)
-{
+  ActionWithArguments(ao) {
 }
 
 void Function::addValueWithDerivatives() {
@@ -52,7 +51,9 @@ void Function::addValueWithDerivatives() {
       setNotPeriodic();
     } else if(period.size()==2) {
       setPeriodic(period[0],period[1]);
-    } else error("missing PERIODIC keyword");
+    } else {
+      error("missing PERIODIC keyword");
+    }
   }
 }
 
@@ -62,8 +63,7 @@ void Function::addComponentWithDerivatives( const std::string& name ) {
   getPntrToComponent(name)->resizeDerivatives(getNumberOfArguments());
 }
 
-void Function::apply()
-{
+void Function::apply() {
   const unsigned noa=getNumberOfArguments();
   const unsigned ncp=getNumberOfComponents();
   const unsigned cgs=comm.Get_size();
@@ -86,16 +86,26 @@ void Function::apply()
     for(unsigned i=rank; i<ncp; i+=stride) {
       if(getPntrToComponent(i)->applyForce(forces)) {
         at_least_one_forced+=1;
-        for(unsigned j=0; j<noa; j++) omp_f[j]+=forces[j];
+        for(unsigned j=0; j<noa; j++) {
+          omp_f[j]+=forces[j];
+        }
       }
     }
     #pragma omp critical
-    for(unsigned j=0; j<noa; j++) f[j]+=omp_f[j];
+    for(unsigned j=0; j<noa; j++) {
+      f[j]+=omp_f[j];
+    }
   }
 
-  if(noa>0&&ncp>4*cgs) { comm.Sum(&f[0],noa); comm.Sum(at_least_one_forced); }
+  if(noa>0&&ncp>4*cgs) {
+    comm.Sum(&f[0],noa);
+    comm.Sum(at_least_one_forced);
+  }
 
-  if(at_least_one_forced>0) for(unsigned i=0; i<noa; ++i) getPntrToArgument(i)->addForce(f[i]);
+  if(at_least_one_forced>0)
+    for(unsigned i=0; i<noa; ++i) {
+      getPntrToArgument(i)->addForce(f[i]);
+    }
 }
 
 }

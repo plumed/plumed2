@@ -89,8 +89,13 @@ public:
 /// Actually do the calculation
   double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
 /// Is the variable periodic
-  bool isPeriodic() { return true; }
-  void retrieveDomain( std::string& min, std::string& max ) { min="-pi"; max="+pi"; }
+  bool isPeriodic() {
+    return true;
+  }
+  void retrieveDomain( std::string& min, std::string& max ) {
+    min="-pi";
+    max="+pi";
+  }
 };
 
 PLUMED_REGISTER_ACTION(InterMolecularTorsions,"INTERMOLECULARTORSIONS")
@@ -116,37 +121,49 @@ void InterMolecularTorsions::registerKeywords( Keywords& keys ) {
 
 InterMolecularTorsions::InterMolecularTorsions(const ActionOptions& ao):
   Action(ao),
-  MultiColvarBase(ao)
-{
+  MultiColvarBase(ao) {
   for(unsigned i=0; i<getNumberOfBaseMultiColvars(); ++i) {
-    if( getBaseMultiColvar(i)->getNumberOfQuantities()!=5 ) error("input multicolvar does not calculate molecular orientations");
+    if( getBaseMultiColvar(i)->getNumberOfQuantities()!=5 ) {
+      error("input multicolvar does not calculate molecular orientations");
+    }
   }
   // The weight of this does have derivatives
   weightHasDerivatives=true;
 
   // Read in the switching function
-  std::string sw, errors; parse("SWITCH",sw);
+  std::string sw, errors;
+  parse("SWITCH",sw);
   if(sw.length()>0) {
     switchingFunction.set(sw,errors);
   } else {
-    double r_0=-1.0, d_0; int nn, mm;
-    parse("NN",nn); parse("MM",mm);
-    parse("R_0",r_0); parse("D_0",d_0);
-    if( r_0<0.0 ) error("you must set a value for R_0");
+    double r_0=-1.0, d_0;
+    int nn, mm;
+    parse("NN",nn);
+    parse("MM",mm);
+    parse("R_0",r_0);
+    parse("D_0",d_0);
+    if( r_0<0.0 ) {
+      error("you must set a value for R_0");
+    }
     switchingFunction.set(nn,mm,r_0,d_0);
   }
   log.printf("  calculating number of links with atoms separation of %s\n",( switchingFunction.description() ).c_str() );
-  std::vector<AtomNumber> all_atoms; readTwoGroups( "MOLS", "MOLSA", "MOLSB", all_atoms );
-  setupMultiColvarBase( all_atoms ); setLinkCellCutoff( switchingFunction.get_dmax() );
+  std::vector<AtomNumber> all_atoms;
+  readTwoGroups( "MOLS", "MOLSA", "MOLSB", all_atoms );
+  setupMultiColvarBase( all_atoms );
+  setLinkCellCutoff( switchingFunction.get_dmax() );
 
   for(unsigned i=0; i<getNumberOfBaseMultiColvars(); ++i) {
-    if( !getBaseMultiColvar(i)->hasDifferentiableOrientation() ) error("cannot use multicolvar of type " + getBaseMultiColvar(i)->getName() );
+    if( !getBaseMultiColvar(i)->hasDifferentiableOrientation() ) {
+      error("cannot use multicolvar of type " + getBaseMultiColvar(i)->getName() );
+    }
   }
 
   // Create holders for the collective variable
   readVesselKeywords();
   plumed_assert( getNumberOfVessels()==0 );
-  std::string input; addVessel( "SUM", input, -1 );
+  std::string input;
+  addVessel( "SUM", input, -1 );
   readVesselKeywords();
 }
 
@@ -169,12 +186,21 @@ double InterMolecularTorsions::compute( const unsigned& tindex, multicolvar::Ato
   std::vector<double> orient0( 5 ), orient1( 5 );
   getInputData( 0, true, myatoms, orient0 );
   getInputData( 1, true, myatoms, orient1 );
-  for(unsigned i=0; i<3; ++i) { v1[i]=orient0[2+i]; v2[i]=orient1[2+i]; }
-  if( getBaseMultiColvar(0)->getNumberOfQuantities()<3 ) return 1.0;
+  for(unsigned i=0; i<3; ++i) {
+    v1[i]=orient0[2+i];
+    v2[i]=orient1[2+i];
+  }
+  if( getBaseMultiColvar(0)->getNumberOfQuantities()<3 ) {
+    return 1.0;
+  }
 
   // Evaluate angle
-  Torsion t; double angle = t.compute( v1, conn, v2, dv1, dconn, dv2 );
-  for(unsigned i=0; i<3; ++i) { orient0[i+2]=dv1[i]; orient1[i+2]=dv2[i]; }
+  Torsion t;
+  double angle = t.compute( v1, conn, v2, dv1, dconn, dv2 );
+  for(unsigned i=0; i<3; ++i) {
+    orient0[i+2]=dv1[i];
+    orient1[i+2]=dv2[i];
+  }
 
   // And accumulate derivatives
   if( !doNotCalculateDerivatives() ) {
@@ -182,7 +208,8 @@ double InterMolecularTorsions::compute( const unsigned& tindex, multicolvar::Ato
     mergeInputDerivatives( 1, 2, orient1.size(), 0, orient0, myder0, myatoms );
     MultiValue& myder1=getInputDerivatives( 1, true, myatoms );
     mergeInputDerivatives( 1, 2, orient0.size(), 1, orient1, myder1, myatoms );
-    addAtomDerivatives( 1, 0, -dconn, myatoms ); addAtomDerivatives( 1, 1, dconn, myatoms );
+    addAtomDerivatives( 1, 0, -dconn, myatoms );
+    addAtomDerivatives( 1, 1, dconn, myatoms );
     myatoms.addBoxDerivatives( 1, -extProduct( conn, dconn ) );
   }
 

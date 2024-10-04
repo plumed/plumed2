@@ -99,12 +99,12 @@ void Position::registerKeywords( Keywords& keys ) {
 Position::Position(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   scaled_components(false),
-  pbc(true)
-{
+  pbc(true) {
   std::vector<AtomNumber> atoms;
   parseAtomList("ATOM",atoms);
-  if(atoms.size()!=1)
+  if(atoms.size()!=1) {
     error("Number of specified atoms should be 1");
+  }
   parseFlag("SCALED_COMPONENTS",scaled_components);
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
@@ -112,17 +112,26 @@ Position::Position(const ActionOptions&ao):
   checkRead();
 
   log.printf("  for atom %d\n",atoms[0].serial());
-  if(pbc) log.printf("  using periodic boundary conditions\n");
-  else    log.printf("  without periodic boundary conditions\n");
+  if(pbc) {
+    log.printf("  using periodic boundary conditions\n");
+  } else {
+    log.printf("  without periodic boundary conditions\n");
+  }
 
   if(scaled_components) {
-    addComponentWithDerivatives("a"); componentIsPeriodic("a","-0.5","+0.5");
-    addComponentWithDerivatives("b"); componentIsPeriodic("b","-0.5","+0.5");
-    addComponentWithDerivatives("c"); componentIsPeriodic("c","-0.5","+0.5");
+    addComponentWithDerivatives("a");
+    componentIsPeriodic("a","-0.5","+0.5");
+    addComponentWithDerivatives("b");
+    componentIsPeriodic("b","-0.5","+0.5");
+    addComponentWithDerivatives("c");
+    componentIsPeriodic("c","-0.5","+0.5");
   } else {
-    addComponentWithDerivatives("x"); componentIsNotPeriodic("x");
-    addComponentWithDerivatives("y"); componentIsNotPeriodic("y");
-    addComponentWithDerivatives("z"); componentIsNotPeriodic("z");
+    addComponentWithDerivatives("x");
+    componentIsNotPeriodic("x");
+    addComponentWithDerivatives("y");
+    componentIsNotPeriodic("y");
+    addComponentWithDerivatives("z");
+    componentIsNotPeriodic("z");
     log<<"  WARNING: components will not have the proper periodicity - see manual\n";
   }
 

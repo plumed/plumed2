@@ -81,18 +81,21 @@ void Dipole::registerKeywords(Keywords& keys) {
 
 Dipole::Dipole(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
-  components(false)
-{
+  components(false) {
   parseAtomList("GROUP",ga_lista);
   parseFlag("COMPONENTS",components);
   parseFlag("NOPBC",nopbc);
   checkRead();
   if(components) {
-    addComponentWithDerivatives("x"); componentIsNotPeriodic("x");
-    addComponentWithDerivatives("y"); componentIsNotPeriodic("y");
-    addComponentWithDerivatives("z"); componentIsNotPeriodic("z");
+    addComponentWithDerivatives("x");
+    componentIsNotPeriodic("x");
+    addComponentWithDerivatives("y");
+    componentIsNotPeriodic("y");
+    addComponentWithDerivatives("z");
+    componentIsNotPeriodic("z");
   } else {
-    addValueWithDerivatives(); setNotPeriodic();
+    addValueWithDerivatives();
+    setNotPeriodic();
   }
 
   log.printf("  of %u atoms\n",static_cast<unsigned>(ga_lista.size()));
@@ -100,16 +103,20 @@ Dipole::Dipole(const ActionOptions&ao):
     log.printf("  %d", ga_lista[i].serial());
   }
   log.printf("  \n");
-  if(nopbc) log.printf("  without periodic boundary conditions\n");
-  else      log.printf("  using periodic boundary conditions\n");
+  if(nopbc) {
+    log.printf("  without periodic boundary conditions\n");
+  } else {
+    log.printf("  using periodic boundary conditions\n");
+  }
 
   requestAtoms(ga_lista);
 }
 
 // calculator
-void Dipole::calculate()
-{
-  if(!nopbc) makeWhole();
+void Dipole::calculate() {
+  if(!nopbc) {
+    makeWhole();
+  }
   double ctot=0.;
   unsigned N=getNumberOfAtoms();
   std::vector<double> charges(N);

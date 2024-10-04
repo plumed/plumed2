@@ -49,8 +49,7 @@ class ActionWithAveraging :
   public ActionAtomistic,
   public ActionWithArguments,
   public ActionWithValue,
-  public ActionWithVessel
-{
+  public ActionWithVessel {
   friend class AveragingVessel;
 private:
 /// The vessel which is used to compute averages
@@ -81,7 +80,9 @@ public:
   void lockRequests() override;
   void unlockRequests() override;
   void calculateNumericalDerivatives(PLMD::ActionWithValue*) override;
-  unsigned getNumberOfDerivatives() override { return 0; }
+  unsigned getNumberOfDerivatives() override {
+    return 0;
+  }
   unsigned getNumberOfQuantities() const override;
   unsigned getNumberOfArguments() const override;
 /// Overwrite ActionWithArguments getArguments() so that we don't return the bias
@@ -97,7 +98,9 @@ public:
 /// Does the calculation
   void performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const override;
 ///
-  virtual void runTask( const unsigned& current, MultiValue& myvals ) const { plumed_error(); }
+  virtual void runTask( const unsigned& current, MultiValue& myvals ) const {
+    plumed_error();
+  }
 ///
   virtual void accumulateAverage( MultiValue& myvals ) const {}
 /// This is done once the averaging is finished
@@ -116,7 +119,9 @@ unsigned ActionWithAveraging::getNumberOfArguments() const {
 inline
 std::vector<Value*> ActionWithAveraging::getArguments() {
   std::vector<Value*> arg_vals( ActionWithArguments::getArguments() );
-  for(unsigned i=0; i<weights.size(); ++i) arg_vals.erase(arg_vals.end()-1);
+  for(unsigned i=0; i<weights.size(); ++i) {
+    arg_vals.erase(arg_vals.end()-1);
+  }
   return arg_vals;
 }
 
@@ -127,7 +132,9 @@ bool ActionWithAveraging::noNormalization() const {
 
 inline
 bool ActionWithAveraging::storeThenAverage() const {
-  if( my_analysis_object ) return true;
+  if( my_analysis_object ) {
+    return true;
+  }
   return false;
 }
 

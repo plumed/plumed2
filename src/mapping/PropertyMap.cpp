@@ -111,14 +111,15 @@ void PropertyMap::registerKeywords( Keywords& keys ) {
 
 PropertyMap::PropertyMap(const ActionOptions& ao):
   Action(ao),
-  PathBase(ao)
-{
-  bool nos; parseFlag("NOMAPPING",nos);
+  PathBase(ao) {
+  bool nos;
+  parseFlag("NOMAPPING",nos);
 
   std::string empty;
   if(!nos) {
     for(std::map<std::string,std::vector<double> >::iterator it=property.begin(); it!=property.end(); ++it) {
-      empty="LABEL="+it->first; addVessel( "SPATH", empty, 0 );
+      empty="LABEL="+it->first;
+      addVessel( "SPATH", empty, 0 );
     }
   }
   readVesselKeywords();

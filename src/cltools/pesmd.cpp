@@ -115,8 +115,7 @@ public:
   }
 
   explicit PesMD( const CLToolOptions& co ) :
-    CLTool(co)
-  {
+    CLTool(co) {
     inputdata=ifile;
   }
 
@@ -131,29 +130,43 @@ private:
                   int&    nstep,
                   bool&   lperiod,
                   std::vector<double>& periods,
-                  int&    idum)
-  {
+                  int&    idum) {
     // Read everything from input file
-    std::string tempstr; parse("temperature",tempstr);
-    if( tempstr!="NVE" ) Tools::convert(tempstr,temperature);
-    parse("tstep",tstep);
-    std::string frictionstr; parse("friction",frictionstr);
+    std::string tempstr;
+    parse("temperature",tempstr);
     if( tempstr!="NVE" ) {
-      if(frictionstr=="off") error("pecify friction for thermostat");
+      Tools::convert(tempstr,temperature);
+    }
+    parse("tstep",tstep);
+    std::string frictionstr;
+    parse("friction",frictionstr);
+    if( tempstr!="NVE" ) {
+      if(frictionstr=="off") {
+        error("pecify friction for thermostat");
+      }
       Tools::convert(frictionstr,friction);
     }
-    parse("plumed",plumedin); parse("dimension",dim);
-    parse("nstep",nstep); parse("idum",idum);
-    ipos.resize( dim ); parseVector("ipos",ipos);
+    parse("plumed",plumedin);
+    parse("dimension",dim);
+    parse("nstep",nstep);
+    parse("idum",idum);
+    ipos.resize( dim );
+    parseVector("ipos",ipos);
 
     parseFlag("periodic",lperiod);
     if( lperiod ) {
-      if( dim>3 ) error("can only do three dimensional periodic functions");
-      std::vector<double> min( dim ); parseVector("min",min);
-      std::vector<double> max( dim ); parseVector("max",max);
+      if( dim>3 ) {
+        error("can only do three dimensional periodic functions");
+      }
+      std::vector<double> min( dim );
+      parseVector("min",min);
+      std::vector<double> max( dim );
+      parseVector("max",max);
       periods.resize( dim );
       for(int i=0; i<dim; ++i) {
-        if( max[i]<min[i] ) error("invalid periods specified max is less than min");
+        if( max[i]<min[i] ) {
+          error("invalid periods specified max is less than min");
+        }
         periods[i]=max[i]-min[i];
       }
     }
@@ -163,9 +176,12 @@ private:
 public:
 
   int main( FILE* in, FILE* out, PLMD::Communicator& pc) override {
-    std::string plumedin; std::vector<double> ipos;
-    double temp, tstep, friction; bool lperiod;
-    int dim, nsteps, seed; std::vector<double> periods;
+    std::string plumedin;
+    std::vector<double> ipos;
+    double temp, tstep, friction;
+    bool lperiod;
+    int dim, nsteps, seed;
+    std::vector<double> periods;
     int plumedWantsToStop;
     Random random;
 
@@ -175,16 +191,26 @@ public:
 
     // Setup box if we have periodic domain
     std::vector<double> box(9, 0.0);
-    if( lperiod && dim==1 ) { box[0]=box[4]=box[8]=periods[0]; }
-    else if( lperiod && dim==2 ) { box[0]=periods[0]; box[4]=box[8]=periods[1]; }
-    else if( lperiod && dim==3 ) { box[0]=periods[0]; box[4]=periods[1]; box[8]=periods[2]; }
-    else if( lperiod ) error("invalid dimension for periodic potential must be 1, 2 or 3");
+    if( lperiod && dim==1 ) {
+      box[0]=box[4]=box[8]=periods[0];
+    } else if( lperiod && dim==2 ) {
+      box[0]=periods[0];
+      box[4]=box[8]=periods[1];
+    } else if( lperiod && dim==3 ) {
+      box[0]=periods[0];
+      box[4]=periods[1];
+      box[8]=periods[2];
+    } else if( lperiod ) {
+      error("invalid dimension for periodic potential must be 1, 2 or 3");
+    }
 
     // Create plumed object and initialize
     auto plumed=Tools::make_unique<PLMD::PlumedMain>();
     int s=sizeof(double);
     plumed->cmd("setRealPrecision",&s);
-    if(Communicator::initialized()) plumed->cmd("setMPIComm",&pc.Get_comm());
+    if(Communicator::initialized()) {
+      plumed->cmd("setMPIComm",&pc.Get_comm());
+    }
     plumed->cmd("setNoVirial");
     int natoms=( std::floor(dim/3) +  2 );
     plumed->cmd("setNatoms",&natoms);
@@ -198,30 +224,44 @@ public:
     std::vector<double> masses( 1+nat, 1 );
     std::vector<Vector> velocities( nat ), positions( nat+1 ), forces( nat+1 );
     // Will set these properly eventually
-    int k=0; positions[0].zero(); // Atom zero is fixed at origin
-    for(int i=0; i<nat; ++i) for(unsigned j=0; j<3; ++j) {
-        if( k<dim ) { positions[1+i][j]=ipos[k]; } else { positions[1+i][j]=0;}
+    int k=0;
+    positions[0].zero(); // Atom zero is fixed at origin
+    for(int i=0; i<nat; ++i)
+      for(unsigned j=0; j<3; ++j) {
+        if( k<dim ) {
+          positions[1+i][j]=ipos[k];
+        } else {
+          positions[1+i][j]=0;
+        }
         k++;
       }
     // And initialize the velocities
-    for(int i=0; i<nat; ++i) for(int j=0; j<3; ++j) velocities[i][j]=random.Gaussian() * std::sqrt( temp );
+    for(int i=0; i<nat; ++i)
+      for(int j=0; j<3; ++j) {
+        velocities[i][j]=random.Gaussian() * std::sqrt( temp );
+      }
     // And calculate the kinetic energy
     double tke=0;
     for(int i=0; i<nat; ++i) {
       for(int j=0; j<3; ++j) {
-        if( 3*i+j>dim-1 ) break;
+        if( 3*i+j>dim-1 ) {
+          break;
+        }
         tke += 0.5*velocities[i][j]*velocities[i][j];
       }
     }
 
     // Now call plumed to get initial forces
-    int istep=0; double zero=0;
+    int istep=0;
+    double zero=0;
     plumed->cmd("setStep",&istep);
     plumed->cmd("setMasses",&masses[0]);
     Tools::set_to_zero(forces);
     plumed->cmd("setForces",&forces[0][0]);
     plumed->cmd("setEnergy",&zero);
-    if( lperiod ) plumed->cmd("setBox",&box[0]);
+    if( lperiod ) {
+      plumed->cmd("setBox",&box[0]);
+    }
     plumed->cmd("setPositions",&positions[0][0]);
     plumed->cmd("calc");
 
@@ -231,14 +271,18 @@ public:
 
     for(int istep=0; istep<nsteps; ++istep) {
 
-      if( istep%20==0 && pc.Get_rank()==0 ) std::printf("Doing step %i\n",istep);
+      if( istep%20==0 && pc.Get_rank()==0 ) {
+        std::printf("Doing step %i\n",istep);
+      }
 
       // Langevin thermostat
       double lscale=std::exp(-0.5*tstep/friction);
       double lrand=std::sqrt((1.-lscale*lscale)*temp);
       for(int j=0; j<nat; ++j) {
         for(int k=0; k<3; ++k) {
-          if( 3*j+k>dim-1 ) break;
+          if( 3*j+k>dim-1 ) {
+            break;
+          }
           therm_eng=therm_eng+0.5*velocities[j][k]*velocities[j][k];
           velocities[j][k]=lscale*velocities[j][k]+lrand*random.Gaussian();
           therm_eng=therm_eng-0.5*velocities[j][k]*velocities[0][k];
@@ -248,7 +292,9 @@ public:
       // First step of velocity verlet
       for(int j=0; j<nat; ++j) {
         for(int k=0; k<3; ++k) {
-          if( 3*j+k>dim-1 ) break;
+          if( 3*j+k>dim-1 ) {
+            break;
+          }
           velocities[j][k] = velocities[j][k] + 0.5*tstep*forces[1+j][k];
           positions[1+j][k] = positions[1+j][k] + tstep*velocities[j][k];
         }
@@ -266,12 +312,16 @@ public:
       plumed->cmd("setStopFlag",&plumedWantsToStop);
       plumed->cmd("calc");
       // if(istep%2000==0) plumed->cmd("writeCheckPointFile");
-      if(plumedWantsToStop) nsteps=istep;
+      if(plumedWantsToStop) {
+        nsteps=istep;
+      }
 
       // Second step of velocity verlet
       for(int j=0; j<nat; ++j) {
         for(int k=0; k<3; ++k) {
-          if( 3*j+k>dim-1 ) break;
+          if( 3*j+k>dim-1 ) {
+            break;
+          }
           velocities[j][k] = velocities[j][k] + 0.5*tstep*forces[1+j][k];
         }
       }
@@ -281,7 +331,9 @@ public:
       lrand=std::sqrt((1.-lscale*lscale)*temp);
       for(int j=0; j<nat; ++j) {
         for(int k=0; k<3; ++k) {
-          if( 3*j+k>dim-1) break;
+          if( 3*j+k>dim-1) {
+            break;
+          }
           therm_eng=therm_eng+0.5*velocities[j][k]*velocities[j][k];
           velocities[j][k]=lscale*velocities[j][k]+lrand*random.Gaussian();
           therm_eng=therm_eng-0.5*velocities[j][k]*velocities[j][k];
@@ -291,14 +343,18 @@ public:
       tke=0;
       for(int i=0; i<nat; ++i) {
         for(int j=0; j<3; ++j) {
-          if( 3*i+j>dim-1 ) break;
+          if( 3*i+j>dim-1 ) {
+            break;
+          }
           tke += 0.5*velocities[i][j]*velocities[i][j];
         }
       }
 
       // Print everything
       // conserved = potential+1.5*ttt+therm_eng;
-      if( pc.Get_rank()==0 ) std::fprintf(fp,"%i %f %f %f \n", istep, istep*tstep, tke, therm_eng );
+      if( pc.Get_rank()==0 ) {
+        std::fprintf(fp,"%i %f %f %f \n", istep, istep*tstep, tke, therm_eng );
+      }
     }
 
     fclose(fp);

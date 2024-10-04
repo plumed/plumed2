@@ -69,41 +69,53 @@ void BondOrientation::registerKeywords( Keywords& keys ) {
   keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous switching function defined above. "
            "The following provides information on the \\ref switchingfunction that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
-  keys.use("VMEAN"); keys.use("VSUM");
+  keys.use("VMEAN");
+  keys.use("VSUM");
 }
 
 BondOrientation::BondOrientation( const ActionOptions& ao ):
   Action(ao),
-  VectorMultiColvar(ao)
-{
+  VectorMultiColvar(ao) {
   // Read atoms
   weightHasDerivatives=true;
   std::vector<AtomNumber> all_atoms;
   readTwoGroups( "GROUP", "GROUPA", "GROUPB", all_atoms );
-  if( atom_lab.size()==0 ) readAtomsLikeKeyword( "ATOMS", 2, all_atoms );
+  if( atom_lab.size()==0 ) {
+    readAtomsLikeKeyword( "ATOMS", 2, all_atoms );
+  }
   setupMultiColvarBase( all_atoms );
   // Read in the switching function
-  std::string sw, errors; parse("SWITCH",sw);
+  std::string sw, errors;
+  parse("SWITCH",sw);
   if(sw.length()>0) {
     switchingFunction.set(sw,errors);
   } else {
-    double r_0=-1.0, d_0; int nn, mm;
-    parse("NN",nn); parse("MM",mm);
-    parse("R_0",r_0); parse("D_0",d_0);
-    if( r_0<0.0 ) error("you must set a value for R_0");
+    double r_0=-1.0, d_0;
+    int nn, mm;
+    parse("NN",nn);
+    parse("MM",mm);
+    parse("R_0",r_0);
+    parse("D_0",d_0);
+    if( r_0<0.0 ) {
+      error("you must set a value for R_0");
+    }
     switchingFunction.set(nn,mm,r_0,d_0);
   }
   log.printf("  orientation of those bonds with lengths are less than %s\n",( switchingFunction.description() ).c_str() );
   // Set the link cell cutoff
   setLinkCellCutoff( switchingFunction.get_dmax() );
-  double rcut = switchingFunction.get_dmax(); rcut2 = rcut*rcut;
+  double rcut = switchingFunction.get_dmax();
+  rcut2 = rcut*rcut;
   // Set the dimensionality of the vectors
   setVectorDimensionality(3);
 }
 
 double BondOrientation::calculateWeight( const unsigned& current, const double& weight, multicolvar::AtomValuePack& myatoms ) const {
-  Vector distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) ); double distm=distance.modulo2();
-  if( distm>rcut2 ) return 0.0;
+  Vector distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
+  double distm=distance.modulo2();
+  if( distm>rcut2 ) {
+    return 0.0;
+  }
   double df, ww=switchingFunction.calculateSqr( distm, df );
   // Derivatives of weights
   addAtomDerivatives( 0, 0, -df*weight*distance, myatoms );

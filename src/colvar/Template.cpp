@@ -68,22 +68,26 @@ void Template::registerKeywords(Keywords& keys) {
 
 Template::Template(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
-  pbc(true)
-{
+  pbc(true) {
   std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
-  if(atoms.size()!=2)
+  if(atoms.size()!=2) {
     error("Number of specified atoms should be 2");
+  }
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
   checkRead();
 
   log.printf("  between atoms %d %d\n",atoms[0].serial(),atoms[1].serial());
-  if(pbc) log.printf("  using periodic boundary conditions\n");
-  else    log.printf("  without periodic boundary conditions\n");
+  if(pbc) {
+    log.printf("  using periodic boundary conditions\n");
+  } else {
+    log.printf("  without periodic boundary conditions\n");
+  }
 
-  addValueWithDerivatives(); setNotPeriodic();
+  addValueWithDerivatives();
+  setNotPeriodic();
 
   requestAtoms(atoms);
 }
