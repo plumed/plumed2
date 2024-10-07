@@ -368,7 +368,7 @@ public:
           section=handler.section;
           key=std::move(handler.key);
         }
-        handler.watch=nullptr;
+        handler.section=nullptr;
         return *this;
       }
       /// Destructor
@@ -517,4 +517,3 @@ std::vector<const T*> Tools::unique2raw(const std::vector<std::unique_ptr<const 
 }
 
 #endif
-
