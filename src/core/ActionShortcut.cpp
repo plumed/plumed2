@@ -177,8 +177,8 @@ void ActionShortcut::addToSavedInputLines( const std::string& line ) {
         std::string num; Tools::convert( ninstances[j], num );
         if( ninstances[j]>0 ) reducedline += num + " further " + numberedkeys[j] + "n keywords, ";
       }
-    }
-    savedInputLines.push_back( reducedline );
+      savedInputLines.push_back( reducedline );
+    } else savedInputLines.push_back( line );
   } else savedInputLines.push_back( line );
 }
 
