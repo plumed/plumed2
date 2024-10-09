@@ -43,6 +43,8 @@
 !/unittest
 !/wham
 !/metatensor
+!/sizeshape
+
 # These files we just want to ignore completely
 tmp
 report.txt
