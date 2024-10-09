@@ -35,8 +35,14 @@ The restraining potential starts acting on the system when the value of the CV i
 minus an offset \f$o_i\f$ (OFFSET).
 The expression for the bias due to the wall is given by:
 
+for UPPER_WALLS:
 \f$
   \sum_i {k_i}((x_i-a_i+o_i)/s_i)^e_i
+\f$
+
+for LOWER_WALLS:
+\f$
+  \sum_i {k_i}|(x_i-a_i-o_i)/s_i|^e_i
 \f$
 
 \f$k_i\f$ (KAPPA) is an energy constant in internal unit of the code, \f$s_i\f$ (EPS) a rescaling factor and
@@ -133,7 +139,7 @@ void LWalls::calculate() {
     if( lscale < 0.) {
       const double k=kappa[i];
       const double exponent=exp[i];
-      double power = std::pow( lscale, exponent );
+      double power = std::pow( -lscale, exponent );
       f = -( k / epsilon ) * exponent * power / lscale;
       ene += k * power;
       totf2 += f * f;
