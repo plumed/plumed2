@@ -29,7 +29,7 @@ jobs:
         - -intel-
         - -pycv-mpi-
 #this does not install mpi but uses the internal one
-        - -nvhpc-
+        - -nvhpc-mpi-
     steps:
     - uses: actions/checkout@v4
     - uses: actions/cache@v4
@@ -149,17 +149,6 @@ jobs:
         echo 'deb [signed-by=/usr/share/keyrings/nvidia-hpcsdk-archive-keyring.gpg] https://developer.download.nvidia.com/hpc-sdk/ubuntu/amd64 /' | sudo tee /etc/apt/sources.list.d/nvhpc.list
         sudo apt-get update -y
         sudo apt-get install -y nvhpc-24-3
-        printenv >> $GITHUB_ENV
-        echo "CXX=mpic++" >> $GITHUB_ENV
-        echo "CC=mpicc" >> $GITHUB_ENV
-        echo "FC=mpif90" >> $GITHUB_ENV
-        echo "OMPI_MCA_btl_base_warn_component_unused=0" >> $GITHUB_ENV
-        echo "OMPI_MCA_btl_base_verbose=0" >> $GITHUB_ENV
-        echo "OMPI_MCA_plm=isolated" >> $GITHUB_ENV
-        echo "OMPI_MCA_btl_vader_single_copy_mechanism=none" >> $GITHUB_ENV
-        echo "OMPI_MCA_rmaps_base_oversubscribe=yes" >> $GITHUB_ENV
-      #  pip install --user mpi4py
-      #  python -c "import mpi4py"
       # nvhpcinstalls his own mpi compilers
     - name: Install MPI
       # install MPI at last since it modifies CC and CXX
