@@ -86,20 +86,27 @@ void ClusterDiameter::registerKeywords( Keywords& keys ) {
 
 ClusterDiameter::ClusterDiameter(const ActionOptions&ao):
   Action(ao),
-  ClusterAnalysisBase(ao)
-{
+  ClusterAnalysisBase(ao) {
   // Find out which cluster we want
   parse("CLUSTER",clustr);
 
-  if( clustr<1 ) error("cannot look for a cluster larger than the largest cluster");
-  if( clustr>getNumberOfNodes() ) error("cluster selected is invalid - too few atoms in system");
+  if( clustr<1 ) {
+    error("cannot look for a cluster larger than the largest cluster");
+  }
+  if( clustr>getNumberOfNodes() ) {
+    error("cluster selected is invalid - too few atoms in system");
+  }
 
   // Create the task list
   for(unsigned  i=0; i<getNumberOfNodes(); ++i) {
-    for(unsigned j=0; j<getNumberOfNodes(); ++j) addTaskToList( i*getNumberOfNodes() + j );
+    for(unsigned j=0; j<getNumberOfNodes(); ++j) {
+      addTaskToList( i*getNumberOfNodes() + j );
+    }
   }
   // Now create a highest vessel
-  addVessel("HIGHEST", "", -1); std::vector<AtomNumber> fake_atoms; setupMultiColvarBase( fake_atoms );
+  addVessel("HIGHEST", "", -1);
+  std::vector<AtomNumber> fake_atoms;
+  setupMultiColvarBase( fake_atoms );
 }
 
 void ClusterDiameter::turnOnDerivatives() {
@@ -108,11 +115,14 @@ void ClusterDiameter::turnOnDerivatives() {
 
 void ClusterDiameter::calculate() {
   // Retrieve the atoms in the largest cluster
-  std::vector<unsigned> myatoms; retrieveAtomsInCluster( clustr, myatoms );
+  std::vector<unsigned> myatoms;
+  retrieveAtomsInCluster( clustr, myatoms );
   // Activate the relevant tasks
   deactivateAllTasks();
   for(unsigned i=1; i<myatoms.size(); ++i) {
-    for(unsigned j=0; j<i; ++j) taskFlags[ myatoms[i]*getNumberOfNodes() + myatoms[j] ] = 1;
+    for(unsigned j=0; j<i; ++j) {
+      taskFlags[ myatoms[i]*getNumberOfNodes() + myatoms[j] ] = 1;
+    }
   }
   lockContributors();
   // Now do the calculation
@@ -123,7 +133,8 @@ void ClusterDiameter::performTask( const unsigned& task_index, const unsigned& c
   unsigned iatom=std::floor(current/getNumberOfNodes()), jatom = current - iatom*getNumberOfNodes();
   Vector distance=getSeparation( getPosition(iatom), getPosition(jatom) );
   double dd = distance.modulo();
-  myvals.setValue( 0, 1.0 ); myvals.setValue( 1, dd );
+  myvals.setValue( 0, 1.0 );
+  myvals.setValue( 1, dd );
 }
 
 }

@@ -146,8 +146,7 @@ DUMPATOMS FILE=dump.xyz ATOMS=solute,water
 
 class WrapAround:
   public ActionPilot,
-  public ActionAtomistic
-{
+  public ActionAtomistic {
   // cppcheck-suppress duplInheritedMember
   std::vector<AtomNumber> atoms;
   std::vector<AtomNumber> reference;
@@ -178,31 +177,44 @@ WrapAround::WrapAround(const ActionOptions&ao):
   ActionPilot(ao),
   ActionAtomistic(ao),
   groupby(1),
-  pair_(false)
-{
+  pair_(false) {
   parseAtomList("ATOMS",atoms);
   parseAtomList("AROUND",reference);
   parse("GROUPBY",groupby);
   parseFlag("PAIR", pair_);
 
   log.printf("  atoms in reference :");
-  for(unsigned j=0; j<reference.size(); ++j) log.printf(" %d",reference[j].serial() );
+  for(unsigned j=0; j<reference.size(); ++j) {
+    log.printf(" %d",reference[j].serial() );
+  }
   log.printf("\n");
   log.printf("  atoms to be wrapped :");
-  for(unsigned j=0; j<atoms.size(); ++j) log.printf(" %d",atoms[j].serial() );
+  for(unsigned j=0; j<atoms.size(); ++j) {
+    log.printf(" %d",atoms[j].serial() );
+  }
   log.printf("\n");
-  if(groupby>1) log<<"  atoms will be grouped by "<<groupby<<"\n";
-  if(pair_) log.printf("  pairing atoms and references\n");
+  if(groupby>1) {
+    log<<"  atoms will be grouped by "<<groupby<<"\n";
+  }
+  if(pair_) {
+    log.printf("  pairing atoms and references\n");
+  }
 
-  if(atoms.size()%groupby!=0) error("number of atoms should be a multiple of groupby option");
+  if(atoms.size()%groupby!=0) {
+    error("number of atoms should be a multiple of groupby option");
+  }
   // additional checks with PAIR
-  if(pair_ && atoms.size()!=reference.size()*groupby) error("with PAIR you must have: #ATOMS = #AROUND * #GROUPBY");
+  if(pair_ && atoms.size()!=reference.size()*groupby) {
+    error("with PAIR you must have: #ATOMS = #AROUND * #GROUPBY");
+  }
 
   checkRead();
 
   // do not remove duplicates with pair
   if(!pair_) {
-    if(groupby<=1) Tools::removeDuplicates(atoms);
+    if(groupby<=1) {
+      Tools::removeDuplicates(atoms);
+    }
     Tools::removeDuplicates(reference);
   }
 

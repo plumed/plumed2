@@ -55,8 +55,7 @@ void VectorSum::reserveKeyword( Keywords& keys ) {
 
 VectorSum::VectorSum( const vesselbase::VesselOptions& da ) :
   FunctionVessel(da),
-  nder(0)
-{
+  nder(0) {
 }
 
 std::string VectorSum::value_descriptor() {
@@ -68,9 +67,11 @@ void VectorSum::resize() {
 
   if( getAction()->derivativesAreRequired() ) {
     nder=getAction()->getNumberOfDerivatives();
-    resizeBuffer( (1+nder)*ncomp ); getFinalValue()->resizeDerivatives( nder );
+    resizeBuffer( (1+nder)*ncomp );
+    getFinalValue()->resizeDerivatives( nder );
   } else {
-    nder=0; resizeBuffer(ncomp);
+    nder=0;
+    resizeBuffer(ncomp);
   }
 }
 
@@ -79,13 +80,19 @@ void VectorSum::calculate( const unsigned& current, MultiValue& myvals, std::vec
 
   double weight=myvals.get(0);
   plumed_dbg_assert( weight>=getTolerance() );
-  for(unsigned i=0; i<ncomp; ++i) buffer[bufstart + i*(1+nder)] += weight*myvals.get(2+i);
-  if( !getAction()->derivativesAreRequired() ) return;
+  for(unsigned i=0; i<ncomp; ++i) {
+    buffer[bufstart + i*(1+nder)] += weight*myvals.get(2+i);
+  }
+  if( !getAction()->derivativesAreRequired() ) {
+    return;
+  }
 
   for(unsigned i=0; i<ncomp; ++i) {
     double colvar=myvals.get(2+i);
     myvals.chainRule( 2+i, i, 1, 0, weight, bufstart, buffer );
-    if( diffweight ) myvals.chainRule( 0, i, 1, 0, colvar, bufstart, buffer );
+    if( diffweight ) {
+      myvals.chainRule( 0, i, 1, 0, colvar, bufstart, buffer );
+    }
   }
   return;
 }
@@ -100,13 +107,17 @@ void VectorSum::finish( const std::vector<double>& buffer ) {
   }
   double tw = 1.0 / sqrt(sum);
   setOutputValue( sqrt(sum) );
-  if( !getAction()->derivativesAreRequired() ) return;
+  if( !getAction()->derivativesAreRequired() ) {
+    return;
+  }
 
   Value* fval=getFinalValue();
   for(unsigned icomp=0; icomp<ncomp; ++icomp) {
     double tmp = buffer[bufstart + icomp*(1+nder)];
     unsigned bstart = bufstart + icomp*(nder+1) + 1;
-    for(unsigned jder=0; jder<nder; ++jder) fval->addDerivative( jder, tw*tmp*buffer[bstart + jder] );
+    for(unsigned jder=0; jder<nder; ++jder) {
+      fval->addDerivative( jder, tw*tmp*buffer[bstart + jder] );
+    }
   }
 }
 

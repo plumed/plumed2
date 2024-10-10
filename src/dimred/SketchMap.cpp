@@ -60,38 +60,75 @@ void SketchMap::registerKeywords( Keywords& keys ) {
 
 SketchMap::SketchMap( const ActionOptions& ao ) :
   Action(ao),
-  ActionShortcut(ao)
-{
+  ActionShortcut(ao) {
   // Input for MDS
   std::string mds_line = getShortcutLabel() + "_mds: CLASSICAL_MDS";
-  std::string nlow; parse("NLOW_DIM",nlow); mds_line += " NLOW_DIM=" + nlow;
-  std::string mat; parse("MATRIX",mat); mds_line += " USE_OUTPUT_DATA_FROM=" + mat;
+  std::string nlow;
+  parse("NLOW_DIM",nlow);
+  mds_line += " NLOW_DIM=" + nlow;
+  std::string mat;
+  parse("MATRIX",mat);
+  mds_line += " USE_OUTPUT_DATA_FROM=" + mat;
   readInputLine( mds_line );
   // Create generic input for all conjgrad cycles
-  std::string cgtol; parse("CGTOL",cgtol); std::string ncyc; parse("NCYCLES",ncyc); std::string buf; parse("BUFFER",buf);
-  std::string cg_grid; parse("CGRID_SIZE",cg_grid); std::string fg_grid; parse("FGRID_SIZE",fg_grid);
-  std::string cg_step_input = " CGTOL=" + cgtol; unsigned nlow_dim; Tools::convert( nlow, nlow_dim );
+  std::string cgtol;
+  parse("CGTOL",cgtol);
+  std::string ncyc;
+  parse("NCYCLES",ncyc);
+  std::string buf;
+  parse("BUFFER",buf);
+  std::string cg_grid;
+  parse("CGRID_SIZE",cg_grid);
+  std::string fg_grid;
+  parse("FGRID_SIZE",fg_grid);
+  std::string cg_step_input = " CGTOL=" + cgtol;
+  unsigned nlow_dim;
+  Tools::convert( nlow, nlow_dim );
   std::string pw_step_input = cg_step_input + " NCYCLES=" + ncyc + " BUFFER=" + buf;
-  pw_step_input += " CGRID_SIZE=" + cg_grid; for(unsigned i=1; i<nlow_dim; ++i) pw_step_input += "," + cg_grid;
-  pw_step_input += " FGRID_SIZE=" + fg_grid; for(unsigned i=1; i<nlow_dim; ++i) pw_step_input += "," + fg_grid;
+  pw_step_input += " CGRID_SIZE=" + cg_grid;
+  for(unsigned i=1; i<nlow_dim; ++i) {
+    pw_step_input += "," + cg_grid;
+  }
+  pw_step_input += " FGRID_SIZE=" + fg_grid;
+  for(unsigned i=1; i<nlow_dim; ++i) {
+    pw_step_input += "," + fg_grid;
+  }
   // Input for iterative distance matching
   std::string imds_line_cg = getShortcutLabel() + "_smap1_cg: SKETCHMAP_CONJGRAD USE_OUTPUT_DATA_FROM=" + getShortcutLabel() + "_mds";
-  std::string hd_func; parse("HIGH_DIM_FUNCTION",hd_func); imds_line_cg += " HIGH_DIM_FUNCTION={" + hd_func + "}";
-  std::string ld_func; parse("LOW_DIM_FUNCTION",ld_func); imds_line_cg += " LOW_DIM_FUNCTION={" + ld_func + "}";
-  imds_line_cg += cg_step_input + " MIXPARAM=1.0"; readInputLine( imds_line_cg );
+  std::string hd_func;
+  parse("HIGH_DIM_FUNCTION",hd_func);
+  imds_line_cg += " HIGH_DIM_FUNCTION={" + hd_func + "}";
+  std::string ld_func;
+  parse("LOW_DIM_FUNCTION",ld_func);
+  imds_line_cg += " LOW_DIM_FUNCTION={" + ld_func + "}";
+  imds_line_cg += cg_step_input + " MIXPARAM=1.0";
+  readInputLine( imds_line_cg );
   std::string imds_line_pw = getShortcutLabel() + "_smap1_pw: SKETCHMAP_POINTWISE USE_OUTPUT_DATA_FROM=" + getShortcutLabel() + "_smap1_cg";
-  imds_line_pw += pw_step_input + " MIXPARAM=1.0"; readInputLine( imds_line_pw );
+  imds_line_pw += pw_step_input + " MIXPARAM=1.0";
+  readInputLine( imds_line_pw );
   // Now sketch-map
-  unsigned asteps; parse("ANNEAL_STEPS",asteps); std::string psmap = getShortcutLabel() + "_smap1_pw";
+  unsigned asteps;
+  parse("ANNEAL_STEPS",asteps);
+  std::string psmap = getShortcutLabel() + "_smap1_pw";
   if( asteps>1 ) {
-    double smear; parse("ANNEAL_RATE", smear); double old_mix = 1.0; double new_mix = old_mix*smear;
+    double smear;
+    parse("ANNEAL_RATE", smear);
+    double old_mix = 1.0;
+    double new_mix = old_mix*smear;
     for(unsigned i=0; i<asteps; ++i) {
-      std::string omix; Tools::convert( old_mix, omix ); std::string nmix; Tools::convert( new_mix, nmix );
+      std::string omix;
+      Tools::convert( old_mix, omix );
+      std::string nmix;
+      Tools::convert( new_mix, nmix );
       imds_line_cg = getShortcutLabel() + "_smap" + nmix + "_cg: SKETCHMAP_CONJGRAD USE_OUTPUT_DATA_FROM=" + getShortcutLabel() + "_smap" + omix + "_pw";
-      imds_line_cg += cg_step_input + " MIXPARAM=" + nmix; readInputLine( imds_line_cg );
+      imds_line_cg += cg_step_input + " MIXPARAM=" + nmix;
+      readInputLine( imds_line_cg );
       imds_line_pw = getShortcutLabel() + "_smap" + nmix + "_pw: SKETCHMAP_POINTWISE USE_OUTPUT_DATA_FROM=" + getShortcutLabel() + "_smap" + omix + "_cg";
-      imds_line_pw += pw_step_input + " MIXPARAM=" + nmix; readInputLine( imds_line_pw );
-      old_mix = new_mix; new_mix = old_mix*smear; psmap = getShortcutLabel() + "_smap" + nmix + "_pw";
+      imds_line_pw += pw_step_input + " MIXPARAM=" + nmix;
+      readInputLine( imds_line_pw );
+      old_mix = new_mix;
+      new_mix = old_mix*smear;
+      psmap = getShortcutLabel() + "_smap" + nmix + "_pw";
     }
   }
   // Final sketch-map with no mixing of distance matching

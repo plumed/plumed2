@@ -124,7 +124,8 @@ unsigned ReferenceValuePack::getNumberOfAtoms() const {
 
 inline
 void ReferenceValuePack::setAtomIndex( const unsigned& iatom, const unsigned& jindex ) {
-  plumed_dbg_assert( iatom<atom_indices.size() ); atom_indices[iatom]=jindex;
+  plumed_dbg_assert( iatom<atom_indices.size() );
+  atom_indices[iatom]=jindex;
 }
 
 inline
@@ -135,12 +136,14 @@ unsigned ReferenceValuePack::getAtomIndex( const unsigned& iatom ) const {
 
 inline
 void ReferenceValuePack::addArgumentDerivatives( const unsigned& iarg, const double& der ) {
-  plumed_dbg_assert( iarg<numberOfArgs && oind_set ); myvals.addDerivative( oind, iarg, der );
+  plumed_dbg_assert( iarg<numberOfArgs && oind_set );
+  myvals.addDerivative( oind, iarg, der );
 }
 
 inline
 void ReferenceValuePack::setArgumentDerivatives( const unsigned& iarg, const double& der ) {
-  plumed_dbg_assert( iarg<numberOfArgs && oind_set ); myvals.setDerivative( oind, iarg, der );
+  plumed_dbg_assert( iarg<numberOfArgs && oind_set );
+  myvals.setDerivative( oind, iarg, der );
 }
 
 inline
@@ -167,13 +170,18 @@ void ReferenceValuePack::addAtomDerivatives( const unsigned& jder, const Vector&
 inline
 void ReferenceValuePack::addBoxDerivatives( const Tensor& vir ) {
   plumed_dbg_assert( oind_set && atom_indices.size()>0 );
-  boxWasSet=true; unsigned nbase = myvals.getNumberOfDerivatives() - 9;
-  for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) myvals.addDerivative( oind, nbase + 3*i + j, vir(i,j) );
+  boxWasSet=true;
+  unsigned nbase = myvals.getNumberOfDerivatives() - 9;
+  for(unsigned i=0; i<3; ++i)
+    for(unsigned j=0; j<3; ++j) {
+      myvals.addDerivative( oind, nbase + 3*i + j, vir(i,j) );
+    }
 }
 
 inline
 void ReferenceValuePack::setValIndex( const unsigned& ind ) {
-  oind=ind; oind_set=true;
+  oind=ind;
+  oind_set=true;
 }
 
 inline
@@ -183,7 +191,8 @@ bool ReferenceValuePack::virialWasSet() const {
 
 inline
 Vector ReferenceValuePack::getAtomDerivative( const unsigned& iatom ) const {
-  Vector tmp; plumed_dbg_assert( oind_set && iatom<atom_indices.size() );
+  Vector tmp;
+  plumed_dbg_assert( oind_set && iatom<atom_indices.size() );
   tmp[0]=myvals.getDerivative( oind, numberOfArgs + 3*atom_indices[iatom] + 0 );
   tmp[1]=myvals.getDerivative( oind, numberOfArgs + 3*atom_indices[iatom] + 1 );
   tmp[2]=myvals.getDerivative( oind, numberOfArgs + 3*atom_indices[iatom] + 2 );
@@ -198,8 +207,13 @@ double ReferenceValuePack::getArgumentDerivative( const unsigned& ival ) const {
 
 inline
 Tensor ReferenceValuePack::getBoxDerivatives() const {
-  plumed_dbg_assert( oind_set && boxWasSet ); Tensor tvir; unsigned nbase = myvals.getNumberOfDerivatives() - 9;
-  for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) tvir(i,j)=myvals.getDerivative( oind, nbase + 3*i + j );
+  plumed_dbg_assert( oind_set && boxWasSet );
+  Tensor tvir;
+  unsigned nbase = myvals.getNumberOfDerivatives() - 9;
+  for(unsigned i=0; i<3; ++i)
+    for(unsigned j=0; j<3; ++j) {
+      tvir(i,j)=myvals.getDerivative( oind, nbase + 3*i + j );
+    }
   return tvir;
 }
 

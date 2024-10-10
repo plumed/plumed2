@@ -73,19 +73,29 @@ public:
 
 inline
 double SketchMapBase::transformLowDimensionalDistance( const double& val, double& df ) const {
-  if( reuse_ld ) return smapbase->transformLowDimensionalDistance( val, df );
-  double ans=1.0 - lowdf.calculate( val, df ); df*=-val; return ans;
+  if( reuse_ld ) {
+    return smapbase->transformLowDimensionalDistance( val, df );
+  }
+  double ans=1.0 - lowdf.calculate( val, df );
+  df*=-val;
+  return ans;
 }
 
 inline
 double SketchMapBase::transformHighDimensionalDistance( const double& val, double& df ) const {
-  if( reuse_hd ) return smapbase->transformHighDimensionalDistance( val, df );
-  double ans=1.0 - highdf.calculate( val, df ); df*=-val; return ans;
+  if( reuse_hd ) {
+    return smapbase->transformHighDimensionalDistance( val, df );
+  }
+  double ans=1.0 - highdf.calculate( val, df );
+  df*=-val;
+  return ans;
 }
 
 inline
 void SketchMapBase::setTargetDistance( const unsigned& idata, const double& dist ) {
-  double df; dtargets[idata]=dist; ftargets[idata]=transformHighDimensionalDistance( dist, df );
+  double df;
+  dtargets[idata]=dist;
+  ftargets[idata]=transformHighDimensionalDistance( dist, df );
 }
 
 }

@@ -94,7 +94,9 @@ public:
 /// virtual function mapping to the specific main for each tool
   virtual int main( FILE* in, FILE*out, Communicator&pc )=0;
 /// virtual function returning a one-line descriptor for the tool
-  virtual std::string description()const {return "(no description available)";}
+  virtual std::string description()const {
+    return "(no description available)";
+  }
 /// virtual destructor to allow inheritance
   virtual ~CLTool() {}
 };
@@ -103,12 +105,18 @@ template<class T>
 bool CLTool::parse(const std::string&key,T&t) {
   plumed_massert(keywords.exists(key),"keyword " + key + " has not been registered");
   if(keywords.style(key,"compulsory") ) {
-    if(inputData.count(key)==0) error("missing data for keyword " + key);
+    if(inputData.count(key)==0) {
+      error("missing data for keyword " + key);
+    }
     bool check=Tools::convertNoexcept(inputData[key],t);
-    if(!check) error("data input for keyword " + key + " has wrong type");
+    if(!check) {
+      error("data input for keyword " + key + " has wrong type");
+    }
     return true;
   }
-  if( inputData.count(key)==0 ) return false;
+  if( inputData.count(key)==0 ) {
+    return false;
+  }
   Tools::convert(inputData[key],t);
   return true;
 }
@@ -121,14 +129,18 @@ bool CLTool::parseVector(const std::string&key,std::vector<T>&t) {
   // initial size
   unsigned size=t.size();
   bool skipcheck=false;
-  if(size==0) skipcheck=true; // if the vector in input has size zero, skip the check if size of input vector is the same of argument read
+  if(size==0) {
+    skipcheck=true;  // if the vector in input has size zero, skip the check if size of input vector is the same of argument read
+  }
 
   // check if there is some value
 
   plumed_massert(inputData[key]!="false","compulsory keyword "+std::string(key)+"has no data");
   std::vector<std::string> words=Tools::getWords(inputData[key],"\t\n ,");
   t.resize(0);
-  if(words.size()==0)return false;
+  if(words.size()==0) {
+    return false;
+  }
 
   for(unsigned i=0; i<words.size(); ++i) {
     T v;

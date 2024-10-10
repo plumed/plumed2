@@ -29,8 +29,7 @@ namespace PLMD {
 
 class Direction :
   public ReferenceAtoms,
-  public ReferenceArguments
-{
+  public ReferenceArguments {
 public:
   bool normalized;
   explicit Direction( const ReferenceConfigurationOptions& ro );
@@ -39,7 +38,9 @@ public:
                ReferenceValuePack& myder, const bool& squared ) const override;
   void setDirection( const std::vector<Vector>& conf, const std::vector<double>& args );
   void addDirection( const double& weight, const Direction& dir );
-  void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in ) override { plumed_error(); }
+  void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in ) override {
+    plumed_error();
+  }
 /// This allows us to extract the reference positions, which are the direction in this case
   void extractArgumentDisplacement( const std::vector<Value*>& vals, const std::vector<double>& arg, std::vector<double>& dirout ) const override;
   void extractAtomicDisplacement( const std::vector<Vector>& pos, std::vector<Vector>& dirout ) const override;

@@ -59,8 +59,7 @@ void ColvarFake::registerKeywords( Keywords& keys ) {
 }
 
 ColvarFake::ColvarFake(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao)
-{
+  PLUMED_COLVAR_INIT(ao) {
   std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
 

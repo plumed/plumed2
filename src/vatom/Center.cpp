@@ -117,8 +117,7 @@ PRINT ARG=d1
 
 
 class Center:
-  public ActionWithVirtualAtom
-{
+  public ActionWithVirtualAtom {
   std::vector<double> weights;
   std::vector<Tensor> dcenter_sin;
   std::vector<Tensor> dcenter_cos;
@@ -159,41 +158,60 @@ Center::Center(const ActionOptions&ao):
   weight_mass(false),
   nopbc(false),
   first(true),
-  phases(false)
-{
+  phases(false) {
   std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
-  if(atoms.size()==0) error("at least one atom should be specified");
+  if(atoms.size()==0) {
+    error("at least one atom should be specified");
+  }
   parseVector("WEIGHTS",weights);
   parseFlag("MASS",weight_mass);
   parseFlag("NOPBC",nopbc);
   parseFlag("PHASES",phases);
   parse("SET_CHARGE",charge_);
-  if(!std::isnan(charge_)) isChargeSet_=true;
+  if(!std::isnan(charge_)) {
+    isChargeSet_=true;
+  }
   parse("SET_MASS",mass_);
-  if(mass_>0.) isMassSet_=true;
-  if(mass_==0.) error("SETMASS must be greater than 0");
-  if( getName()=="COM") weight_mass=true;
+  if(mass_>0.) {
+    isMassSet_=true;
+  }
+  if(mass_==0.) {
+    error("SETMASS must be greater than 0");
+  }
+  if( getName()=="COM") {
+    weight_mass=true;
+  }
   checkRead();
   log.printf("  of atoms:");
   for(unsigned i=0; i<atoms.size(); ++i) {
-    if(i%25==0) log<<"\n";
+    if(i%25==0) {
+      log<<"\n";
+    }
     log.printf(" %d",atoms[i].serial());
   }
   log<<"\n";
   if(weight_mass) {
     log<<"  mass weighted\n";
-    if(weights.size()!=0) error("WEIGHTS and MASS keywords cannot not be used simultaneously");
+    if(weights.size()!=0) {
+      error("WEIGHTS and MASS keywords cannot not be used simultaneously");
+    }
   } else {
     if( weights.size()==0) {
       log<<" using the geometric center\n";
       weights.resize( atoms.size() );
-      for(unsigned i=0; i<atoms.size(); i++) weights[i] = 1.;
+      for(unsigned i=0; i<atoms.size(); i++) {
+        weights[i] = 1.;
+      }
     } else {
       log<<" with weights:";
-      if( weights.size()!=atoms.size() ) error("number of elements in weight vector does not match the number of atoms");
+      if( weights.size()!=atoms.size() ) {
+        error("number of elements in weight vector does not match the number of atoms");
+      }
       for(unsigned i=0; i<weights.size(); ++i) {
-        if(i%25==0) log<<"\n";
+        if(i%25==0) {
+          log<<"\n";
+        }
         log.printf(" %f",weights[i]);
       }
       log.printf("\n");
@@ -214,7 +232,9 @@ void Center::calculate() {
   double mass(0.0);
   const bool dophases=(getPbc().isSet() ? phases : false);
 
-  if(!nopbc && !dophases) makeWhole();
+  if(!nopbc && !dophases) {
+    makeWhole();
+  }
 
   if( first && weight_mass) {
     for(unsigned i=0; i<getNumberOfAtoms(); i++) {
@@ -229,10 +249,14 @@ void Center::calculate() {
   }
 
   std::vector<Tensor> deriv(getNumberOfAtoms());
-  for(unsigned i=0; i<getNumberOfAtoms(); i++) mass+=getMass(i);
+  for(unsigned i=0; i<getNumberOfAtoms(); i++) {
+    mass+=getMass(i);
+  }
   if( plumed.getAtoms().chargesWereSet() && !isChargeSet_) {
     double charge(0.0);
-    for(unsigned i=0; i<getNumberOfAtoms(); i++) charge+=getCharge(i);
+    for(unsigned i=0; i<getNumberOfAtoms(); i++) {
+      charge+=getCharge(i);
+    }
     setCharge(charge);
   } else if(isChargeSet_) {
     setCharge(charge_);
@@ -240,7 +264,9 @@ void Center::calculate() {
     setCharge(0.0);
   }
   double wtot=0.0;
-  for(unsigned i=0; i<weights.size(); i++) wtot+=weights[i];
+  for(unsigned i=0; i<weights.size(); i++) {
+    wtot+=weights[i];
+  }
 
   if(dophases) {
     dcenter_sin.resize(getNumberOfAtoms());
@@ -251,8 +277,11 @@ void Center::calculate() {
     Tensor box2pi=getPbc().getBox() / (2*pi);
     for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
       double w=0;
-      if(weight_mass) w=getMass(i)/mass;
-      else w=weights[i]/wtot;
+      if(weight_mass) {
+        w=getMass(i)/mass;
+      } else {
+        w=weights[i]/wtot;
+      }
 
       // real to scaled
       const Vector scaled=matmul(getPosition(i),invbox2pi);
@@ -268,7 +297,8 @@ void Center::calculate() {
       );
       center_cos+=ccos;
       center_sin+=csin;
-      for(unsigned l=0; l<3; l++) for(unsigned k=0; k<3; k++) {
+      for(unsigned l=0; l<3; l++)
+        for(unsigned k=0; k<3; k++) {
           // k over real coordinates
           // l over scaled coordinates
           dcenter_sin[i][l][k]=ccos[l]*invbox2pi[k][l];
@@ -290,7 +320,8 @@ void Center::calculate() {
 
     for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
       Tensor dd;
-      for(unsigned l=0; l<3; l++) for(unsigned k=0; k<3; k++) {
+      for(unsigned l=0; l<3; l++)
+        for(unsigned k=0; k<3; k++) {
           // k over real coordinates
           // l over scaled coordinates
           dd[l][k]= (center_cos[l]*dcenter_sin[i][l][k] - center_sin[l]*dcenter_cos[i][l][k]);
@@ -298,22 +329,31 @@ void Center::calculate() {
       // scaled to real
       deriv[i]=matmul(dd,box2pi);
     }
-    if(!isMassSet_) setMass(mass);
-    else setMass(mass_);
+    if(!isMassSet_) {
+      setMass(mass);
+    } else {
+      setMass(mass_);
+    }
     setAtomsDerivatives(deriv);
     // scaled to real
     setPosition(matmul(c,box2pi));
   } else {
     for(unsigned i=0; i<getNumberOfAtoms(); i++) {
       double w=0;
-      if(weight_mass) w=getMass(i)/mass;
-      else w=weights[i]/wtot;
+      if(weight_mass) {
+        w=getMass(i)/mass;
+      } else {
+        w=weights[i]/wtot;
+      }
       pos+=w*getPosition(i);
       deriv[i]=w*Tensor::identity();
     }
     setPosition(pos);
-    if(!isMassSet_) setMass(mass);
-    else setMass(mass_);
+    if(!isMassSet_) {
+      setMass(mass);
+    } else {
+      setMass(mass_);
+    }
     setAtomsDerivatives(deriv);
   }
 }

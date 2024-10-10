@@ -27,14 +27,12 @@ Keywords CLToolOptions::emptyKeys;
 
 CLToolOptions::CLToolOptions(const std::string &name):
   line(1,name),
-  keys(emptyKeys)
-{
+  keys(emptyKeys) {
 }
 
 CLToolOptions::CLToolOptions(const CLToolOptions& co, const Keywords& k):
   line(co.line),
-  keys(k)
-{
+  keys(k) {
 }
 
 void CLTool::registerKeywords( Keywords& keys ) {
@@ -44,17 +42,20 @@ void CLTool::registerKeywords( Keywords& keys ) {
 CLTool::CLTool(const CLToolOptions& co ):
   name(co.line[0]),
   keywords(co.keys),
-  inputdata(unset)
-{
+  inputdata(unset) {
 }
 
 void CLTool::parseFlag( const std::string&key, bool&t ) {
   plumed_massert(keywords.exists(key),"keyword " + key + " has not been registered");
   plumed_massert(keywords.style(key,"flag"),"keyword " + key + " has not been registered as a flag");
   plumed_assert(inputData.count(key)>0);
-  if( inputData[key]=="true") t=true;
-  else if( inputData[key]=="false") t=false;
-  else plumed_error();
+  if( inputData[key]=="true") {
+    t=true;
+  } else if( inputData[key]=="false") {
+    t=false;
+  } else {
+    plumed_error();
+  }
 }
 
 bool CLTool::readInput( int argc, char**argv, FILE* in, FILE*out ) {
@@ -62,8 +63,12 @@ bool CLTool::readInput( int argc, char**argv, FILE* in, FILE*out ) {
                   "If it is from the command line (like driver) add inputdata=commandline to the "
                   "tools constructor. If it reads everything from an input file (like simplemd) "
                   "add inputdata=ifile to the tools constructor");
-  if(inputdata==commandline) return readCommandLineArgs( argc, argv, out );
-  if(inputdata==ifile) return readInputFile( argc, argv, in, out );
+  if(inputdata==commandline) {
+    return readCommandLineArgs( argc, argv, out );
+  }
+  if(inputdata==ifile) {
+    return readInputFile( argc, argv, in, out );
+  }
   return true;
 }
 
@@ -74,14 +79,18 @@ bool CLTool::readCommandLineArgs( int argc, char**argv, FILE*out ) {
   // Set all flags to default false
   for(unsigned k=0; k<keywords.size(); ++k) {
     thiskey=keywords.get(k);
-    if( keywords.style(thiskey,"flag") ) inputData.insert(std::pair<std::string,std::string>(thiskey,"false"));
+    if( keywords.style(thiskey,"flag") ) {
+      inputData.insert(std::pair<std::string,std::string>(thiskey,"false"));
+    }
   }
 
   // Read command line arguments
   bool printhelp=false;
   for(int i=1; i<argc; i++) {
     a=prefix+argv[i];
-    if(a.length()==0) continue;
+    if(a.length()==0) {
+      continue;
+    }
     if(a=="-h" || a=="--help") {
       printhelp=true;
     } else {
@@ -89,13 +98,19 @@ bool CLTool::readCommandLineArgs( int argc, char**argv, FILE*out ) {
       for(unsigned k=0; k<keywords.size(); ++k) {
         thiskey=keywords.get(k);
         if( keywords.style(thiskey,"flag") ) {
-          if( a==thiskey ) { found=true; inputData[thiskey]="true"; }
+          if( a==thiskey ) {
+            found=true;
+            inputData[thiskey]="true";
+          }
         } else {
           if( a==thiskey ) {
-            prefix=thiskey+"="; found=true;
+            prefix=thiskey+"=";
+            found=true;
             inputData.insert(std::pair<std::string,std::string>(thiskey,""));
           } else if(Tools::startWith(a,thiskey+"=")) {
-            a.erase(0,a.find("=")+1); prefix=""; found=true;
+            a.erase(0,a.find("=")+1);
+            prefix="";
+            found=true;
             if(inputData.count(thiskey)==0) {
               inputData.insert(std::pair<std::string,std::string>(thiskey,a));
             } else {
@@ -112,10 +127,14 @@ bool CLTool::readCommandLineArgs( int argc, char**argv, FILE*out ) {
         printhelp=true;
       }
     }
-    if(printhelp) break;
+    if(printhelp) {
+      break;
+    }
   }
 
-  if(!printhelp) setRemainingToDefault(out);
+  if(!printhelp) {
+    setRemainingToDefault(out);
+  }
 
   if(printhelp) {
     std::fprintf(out,"Usage: %s [options] \n\n", name.c_str() );
@@ -150,7 +169,9 @@ bool CLTool::readInputFile( int argc, char**argv, FILE* in, FILE*out ) {
   std::string a;
   for(int i=1; i<argc; i++) {
     a=argv[i];
-    if(a.length()==0) continue;
+    if(a.length()==0) {
+      continue;
+    }
     if(a=="-h" || a=="--help") {
       std::fprintf(out,"Usage: %s < inputFile \n", name.c_str() );
       std::fprintf(out,"inputFile should contain one directive per line.  The directives should come from amongst the following\n\n");
@@ -161,7 +182,9 @@ bool CLTool::readInputFile( int argc, char**argv, FILE* in, FILE*out ) {
 
   FILE* mystdin=in;
 // call fclose when fp_deleter goes out of scope
-  auto deleter=[](FILE* f) { std::fclose(f); };
+  auto deleter=[](FILE* f) {
+    std::fclose(f);
+  };
   std::unique_ptr<FILE,decltype(deleter)> fp_deleter(nullptr,deleter);
 
   if(argc==2) {
@@ -178,14 +201,22 @@ bool CLTool::readInputFile( int argc, char**argv, FILE* in, FILE*out ) {
 
   plumed_assert(mystdin);
 
-  char buffer[256]; std::string line; line.resize(256);
+  char buffer[256];
+  std::string line;
+  line.resize(256);
   while(fgets(buffer,256,mystdin)) {
     line=buffer;
-    for(unsigned i=0; i<line.length(); ++i) if(line[i]=='#' || line[i]=='\n') line.erase(i);
+    for(unsigned i=0; i<line.length(); ++i)
+      if(line[i]=='#' || line[i]=='\n') {
+        line.erase(i);
+      }
     Tools::stripLeadingAndTrailingBlanks( line );
-    if(line.length()==0) continue;
+    if(line.length()==0) {
+      continue;
+    }
     std::sscanf(line.c_str(),"%255s",buffer);
-    std::string keyword=buffer; bool found=false;
+    std::string keyword=buffer;
+    bool found=false;
     for(unsigned i=0; i<keywords.size(); ++i) {
       std::string thiskey=keywords.get(i);
       if(thiskey==keyword) {

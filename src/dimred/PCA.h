@@ -48,9 +48,15 @@ public:
   void performAnalysis() override;
   void getProjection( const unsigned& idata, std::vector<double>& point, double& weight ) override;
   void getProjection( analysis::DataCollectionObject& myidata, std::vector<double>& point );
-  void calculateProjections( const Matrix<double>&, Matrix<double>& ) override { plumed_error(); }
-  void setTargetDistance( const unsigned&, const double& ) override { plumed_error(); }
-  double calculateStress( const std::vector<double>& pp, std::vector<double>& der ) override { plumed_error(); }
+  void calculateProjections( const Matrix<double>&, Matrix<double>& ) override {
+    plumed_error();
+  }
+  void setTargetDistance( const unsigned&, const double& ) override {
+    plumed_error();
+  }
+  double calculateStress( const std::vector<double>& pp, std::vector<double>& der ) override {
+    plumed_error();
+  }
 };
 
 }

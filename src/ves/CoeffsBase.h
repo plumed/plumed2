@@ -39,8 +39,7 @@ class BasisFunctions;
 class VesBias;
 
 /// \ingroup TOOLBOX
-class CoeffsBase
-{
+class CoeffsBase {
 public:
   // the type of 1D index
   // typedef size_t index_t;
@@ -112,47 +111,83 @@ public:
   //
   ~CoeffsBase();
   //
-  std::string getLabel() const {return label_;}
+  std::string getLabel() const {
+    return label_;
+  }
   void setLabel(const std::string&);
-  std::string getDataLabel() const {return data_label_;};
+  std::string getDataLabel() const {
+    return data_label_;
+  };
   void setDataLabel(const std::string&);
   void setLabels(const std::string&);
   void setLabels(const std::string&, const std::string&);
   //
-  CoeffsType getType() const {return coeffs_type_;}
+  CoeffsType getType() const {
+    return coeffs_type_;
+  }
   std::string getTypeStr() const;
   void setType(const CoeffsType coeffs_type);
   void linkVesBias(VesBias*);
   void linkAction(Action*);
-  VesBias* getPntrToVesBias() const {return vesbias_pntr_;}
-  Action* getPntrToAction() const {return action_pntr_;}
-  bool isGenericCoeffs() const {return coeffs_type_==Generic;}
-  bool isLinearBasisSetCoeffs() const {return coeffs_type_==LinearBasisSet;}
-  bool isMultiLinearBasisSetCoeffs() const {return coeffs_type_==MultiCoeffs_LinearBasisSet;}
+  VesBias* getPntrToVesBias() const {
+    return vesbias_pntr_;
+  }
+  Action* getPntrToAction() const {
+    return action_pntr_;
+  }
+  bool isGenericCoeffs() const {
+    return coeffs_type_==Generic;
+  }
+  bool isLinearBasisSetCoeffs() const {
+    return coeffs_type_==LinearBasisSet;
+  }
+  bool isMultiLinearBasisSetCoeffs() const {
+    return coeffs_type_==MultiCoeffs_LinearBasisSet;
+  }
   //
-  std::vector<unsigned int> shapeOfIndices() const {return indices_shape_;}
-  unsigned int shapeOfIndices(const unsigned int dim_index) const {return indices_shape_[dim_index];}
-  size_t numberOfCoeffs() const {return ncoeffs_;}
-  unsigned int numberOfDimensions() const {return ndimensions_;}
+  std::vector<unsigned int> shapeOfIndices() const {
+    return indices_shape_;
+  }
+  unsigned int shapeOfIndices(const unsigned int dim_index) const {
+    return indices_shape_[dim_index];
+  }
+  size_t numberOfCoeffs() const {
+    return ncoeffs_;
+  }
+  unsigned int numberOfDimensions() const {
+    return ndimensions_;
+  }
   //
-  bool isActive() const {return active;}
-  void activate() {active=true;}
-  void deactivate() {active=false;}
+  bool isActive() const {
+    return active;
+  }
+  void activate() {
+    active=true;
+  }
+  void deactivate() {
+    active=false;
+  }
   //
   size_t getIndex(const std::vector<unsigned int>&) const;
   std::vector<unsigned int> getIndices(const size_t) const;
   bool indicesExist(const std::vector<unsigned int>&) const;
   //
-  std::string getCoeffDescription(const size_t index) const {return coeffs_descriptions_[index];}
+  std::string getCoeffDescription(const size_t index) const {
+    return coeffs_descriptions_[index];
+  }
   std::string getCoeffDescription(const std::vector<unsigned int>&) const;
-  std::vector<std::string> getAllCoeffsDescriptions() const {return coeffs_descriptions_;}
+  std::vector<std::string> getAllCoeffsDescriptions() const {
+    return coeffs_descriptions_;
+  }
   void setCoeffDescription(const size_t, const std::string&);
   void setCoeffDescription(const std::vector<unsigned int>&, const std::string&);
   void setAllCoeffsDescriptions(const std::string& description_prefix="C");
   void setAllCoeffsDescriptions(const std::vector<std::string>&);
   //
   std::string getDimensionLabel(const unsigned int) const;
-  std::vector<std::string> getAllDimensionLabels() const {return dimension_labels_;}
+  std::vector<std::string> getAllDimensionLabels() const {
+    return dimension_labels_;
+  }
   void setDimensionLabel(const unsigned int, const std::string&);
   void setAllDimensionLabels(const std::string&);
   void setAllDimensionLabels(const std::vector<std::string>&);
@@ -161,18 +196,34 @@ public:
   void getCoeffsInfoFromFile(IFile&, const bool ignore_coeffs_info=false);
   void checkCoeffsInfo(const std::string&, const std::string&, const unsigned int, const size_t, const std::vector<unsigned int>&);
   //
-  void turnOnIterationCounter() {iteration_and_time_active_=true;}
-  void turnOffIterationCounter() {iteration_and_time_active_=false;}
-  bool isIterationCounterActive() const {return iteration_and_time_active_;}
+  void turnOnIterationCounter() {
+    iteration_and_time_active_=true;
+  }
+  void turnOffIterationCounter() {
+    iteration_and_time_active_=false;
+  }
+  bool isIterationCounterActive() const {
+    return iteration_and_time_active_;
+  }
   void setIterationCounter(const unsigned int);
   void setTime(const double);
   void setIterationCounterAndTime(const unsigned int, const double);
-  unsigned int getIterationCounter() const {return iteration_opt;}
-  double getTimeValue() const {return time_md;}
+  unsigned int getIterationCounter() const {
+    return iteration_opt;
+  }
+  double getTimeValue() const {
+    return time_md;
+  }
   //
-  void setOutputFmt(const std::string& ss) { output_fmt_=ss; }
-  void resetOutputFmt() {output_fmt_="%30.16e";}
-  std::string getOutputFmt() const {return output_fmt_;}
+  void setOutputFmt(const std::string& ss) {
+    output_fmt_=ss;
+  }
+  void resetOutputFmt() {
+    output_fmt_="%30.16e";
+  }
+  std::string getOutputFmt() const {
+    return output_fmt_;
+  }
   //
   void replaceLabelString(const std::string&, const std::string&);
 protected:

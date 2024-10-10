@@ -57,13 +57,17 @@ public:
   void fromString(const std::string & str);
   void toString(std::string & str)const;
   friend std::ostream & operator<<(std::ostream & out,const Random & rng) {
-    rng.WriteStateFull(out); return out;
+    rng.WriteStateFull(out);
+    return out;
   }
   friend std::istream & operator>>(std::istream & in,Random & rng) {
-    rng.ReadStateFull(in); return in;
+    rng.ReadStateFull(in);
+    return in;
   }
   double Gaussian();
-  void IncreasedPrecis(bool i) {incPrec=i;}
+  void IncreasedPrecis(bool i) {
+    incPrec=i;
+  }
 };
 
 }

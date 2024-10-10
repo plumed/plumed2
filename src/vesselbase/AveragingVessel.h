@@ -45,7 +45,9 @@ protected:
 /// Get the value of one of the data element
   double getDataElement( const unsigned& myelem ) const ;
 /// Are we averaging the data
-  bool noAverage() const { return unormalised; }
+  bool noAverage() const {
+    return unormalised;
+  }
 public:
 /// keywords
   static void registerKeywords( Keywords& keys );
@@ -62,25 +64,31 @@ public:
 /// Functions for dealing with normalisation constant
   void setNorm( const double& snorm );
   double getNorm() const ;
-  bool applyForce(  std::vector<double>& forces ) override { return false; }
+  bool applyForce(  std::vector<double>& forces ) override {
+    return false;
+  }
 };
 
 inline
 void AveragingVessel::setDataElement( const unsigned& myelem, const double& value ) {
   plumed_dbg_assert( myelem<1+data.size() );
-  wascleared=false; data[1+myelem]=value;
+  wascleared=false;
+  data[1+myelem]=value;
 }
 
 inline
 void AveragingVessel::addDataElement( const unsigned& myelem, const double& value ) {
   plumed_dbg_assert( myelem<1+data.size() );
-  wascleared=false; data[1+myelem]+=value;
+  wascleared=false;
+  data[1+myelem]+=value;
 }
 
 inline
 double AveragingVessel::getDataElement( const unsigned& myelem ) const {
   plumed_dbg_assert( myelem<data.size()-1 );
-  if( unormalised ) return data[1+myelem];
+  if( unormalised ) {
+    return data[1+myelem];
+  }
   return data[1+myelem] / data[0];
 }
 

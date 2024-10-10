@@ -40,12 +40,15 @@ public:
   virtual double computeVectorFunction( const Vector& conn, const std::vector<double>& vec1, const std::vector<double>& vec2,
                                         Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const = 0;
   virtual double calculateCoordinationPrefactor( const double& coord, double& df ) const ;
-  bool isPeriodic() { return false; }
+  bool isPeriodic() {
+    return false;
+  }
 };
 
 inline
 double OrientationSphere::calculateCoordinationPrefactor( const double& coord, double& df ) const {
-  df=0.0; return 1.0;
+  df=0.0;
+  return 1.0;
 }
 
 }

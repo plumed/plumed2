@@ -56,12 +56,16 @@ void MoreThan::reserveKeyword( Keywords& keys ) {
 }
 
 MoreThan::MoreThan( const VesselOptions& da ) :
-  FunctionVessel(da)
-{
+  FunctionVessel(da) {
   usetol=true;
-  if( getAction()->isPeriodic() ) error("more than is not a meaningful option for periodic variables");
-  std::string errormsg; sf.set( getAllInput(), errormsg );
-  if( errormsg.size()!=0 ) error( errormsg );
+  if( getAction()->isPeriodic() ) {
+    error("more than is not a meaningful option for periodic variables");
+  }
+  std::string errormsg;
+  sf.set( getAllInput(), errormsg );
+  if( errormsg.size()!=0 ) {
+    error( errormsg );
+  }
 }
 
 std::string MoreThan::value_descriptor() {
@@ -69,7 +73,9 @@ std::string MoreThan::value_descriptor() {
 }
 
 double MoreThan::calcTransform( const double& val, double& dv ) const {
-  double f = 1.0 - sf.calculate(val, dv); dv*=-val; return f;
+  double f = 1.0 - sf.calculate(val, dv);
+  dv*=-val;
+  return f;
 }
 
 }

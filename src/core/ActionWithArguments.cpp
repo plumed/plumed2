@@ -46,10 +46,16 @@ void ActionWithArguments::registerKeywords(Keywords& keys) {
 }
 
 void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Value*>&arg) {
-  std::string def; std::vector<std::string> c; arg.clear(); parseVector(key,c);
+  std::string def;
+  std::vector<std::string> c;
+  arg.clear();
+  parseVector(key,c);
   if( c.size()==0 && (keywords.style(key,"compulsory") || keywords.style(key,"hidden")) ) {
-    if( keywords.getDefaultValue(key,def) ) c.push_back( def );
-    else return;
+    if( keywords.getDefaultValue(key,def) ) {
+      c.push_back( def );
+    } else {
+      return;
+    }
   }
   interpretArgumentList(c,arg);
 }
@@ -60,7 +66,9 @@ bool ActionWithArguments::parseArgumentList(const std::string&key,int i,std::vec
   if(parseNumberedVector(key,i,c)) {
     interpretArgumentList(c,arg);
     return true;
-  } else return false;
+  } else {
+    return false;
+  }
 }
 
 void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& c, std::vector<Value*>&arg) {
@@ -87,14 +95,18 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
         }
 
         // call regfree when reg goes out of scope
-        auto deleter=[](regex_t* r) { regfree(r); };
+        auto deleter=[](regex_t* r) {
+          regfree(r);
+        };
         std::unique_ptr<regex_t,decltype(deleter)> reg_deleter(&reg,deleter);
 
         plumed_massert(reg.re_nsub==1,"I can parse with only one subexpression");
         regmatch_t match;
         // select all the actions that have a value
         std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
-        if( all.empty() ) error("your input file is not telling plumed to calculate anything");
+        if( all.empty() ) {
+          error("your input file is not telling plumed to calculate anything");
+        }
         bool found_something=false;
         for(unsigned j=0; j<all.size(); j++) {
           std::vector<std::string> ss=all[j]->getComponentsVector();
@@ -125,7 +137,9 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
             }
           }
         }
-        if(!found_something) plumed_error()<<"There isn't any action matching your regex " << myregex;
+        if(!found_something) {
+          plumed_error()<<"There isn't any action matching your regex " << myregex;
+        }
 #else
         plumed_merror("Regexp support not compiled!");
 #endif
@@ -140,9 +154,13 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
         if(a=="*" && name=="*") {
           // Take all values from all actions
           std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
-          if( all.empty() ) error("your input file is not telling plumed to calculate anything");
+          if( all.empty() ) {
+            error("your input file is not telling plumed to calculate anything");
+          }
           for(unsigned j=0; j<all.size(); j++) {
-            for(int k=0; k<all[j]->getNumberOfComponents(); ++k) arg.push_back(all[j]->copyOutput(k));
+            for(int k=0; k<all[j]->getNumberOfComponents(); ++k) {
+              arg.push_back(all[j]->copyOutput(k));
+            }
           }
         } else if ( name=="*") {
           // Take all the values from an action with a specific name
@@ -152,18 +170,30 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
             str+=plumed.getActionSet().getLabelList<ActionWithValue*>()+")";
             error("cannot find action named " + a + str);
           }
-          if( action->getNumberOfComponents()==0 ) error("found " + a +".* indicating use all components calculated by action with label " + a + " but this action has no components");
-          for(int k=0; k<action->getNumberOfComponents(); ++k) arg.push_back(action->copyOutput(k));
+          if( action->getNumberOfComponents()==0 ) {
+            error("found " + a +".* indicating use all components calculated by action with label " + a + " but this action has no components");
+          }
+          for(int k=0; k<action->getNumberOfComponents(); ++k) {
+            arg.push_back(action->copyOutput(k));
+          }
         } else if ( a=="*" ) {
           // Take components from all actions with a specific name
           std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
-          if( all.empty() ) error("your input file is not telling plumed to calculate anything");
+          if( all.empty() ) {
+            error("your input file is not telling plumed to calculate anything");
+          }
           unsigned nval=0;
           for(unsigned j=0; j<all.size(); j++) {
-            std::string flab; flab=all[j]->getLabel() + "." + name;
-            if( all[j]->exists(flab) ) { arg.push_back(all[j]->copyOutput(flab)); nval++; }
+            std::string flab;
+            flab=all[j]->getLabel() + "." + name;
+            if( all[j]->exists(flab) ) {
+              arg.push_back(all[j]->copyOutput(flab));
+              nval++;
+            }
           }
-          if(nval==0) error("found no actions with a component called " + name );
+          if(nval==0) {
+            error("found no actions with a component called " + name );
+          }
         } else {
           // Take values with a specific name
           ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(a);
@@ -183,9 +213,13 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
         if(c[i]=="*") {
           // Take all values from all actions
           std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
-          if( all.empty() ) error("your input file is not telling plumed to calculate anything");
+          if( all.empty() ) {
+            error("your input file is not telling plumed to calculate anything");
+          }
           for(unsigned j=0; j<all.size(); j++) {
-            for(int k=0; k<all[j]->getNumberOfComponents(); ++k) arg.push_back(all[j]->copyOutput(k));
+            for(int k=0; k<all[j]->getNumberOfComponents(); ++k) {
+              arg.push_back(all[j]->copyOutput(k));
+            }
           }
         } else {
           ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(c[i]);
@@ -254,15 +288,16 @@ void ActionWithArguments::requestExtraDependencies(const std::vector<Value*> &ex
 
 ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
   Action(ao),
-  lockRequestArguments(false)
-{
+  lockRequestArguments(false) {
   if( keywords.exists("ARG") ) {
     std::vector<Value*> arg;
     parseArgumentList("ARG",arg);
 
     if(!arg.empty()) {
       log.printf("  with arguments");
-      for(unsigned i=0; i<arg.size(); i++) log.printf(" %s",arg[i]->getName().c_str());
+      for(unsigned i=0; i<arg.size(); i++) {
+        log.printf(" %s",arg[i]->getName().c_str());
+      }
       log.printf("\n");
     }
     requestArguments(arg);
@@ -291,7 +326,10 @@ void ActionWithArguments::calculateNumericalDerivatives( ActionWithValue* a ) {
   a->clearDerivatives();
   for(int j=0; j<nval; j++) {
     Value* v=a->copyOutput(j);
-    if( v->hasDerivatives() ) for(int i=0; i<npar; i++) v->addDerivative(i,(value[i*nval+j]-a->getOutputQuantity(j))/std::sqrt(epsilon));
+    if( v->hasDerivatives() )
+      for(int i=0; i<npar; i++) {
+        v->addDerivative(i,(value[i*nval+j]-a->getOutputQuantity(j))/std::sqrt(epsilon));
+      }
   }
 }
 
@@ -304,7 +342,9 @@ double ActionWithArguments::getProjection(unsigned i,unsigned j)const {
 }
 
 void ActionWithArguments::addForcesOnArguments( const std::vector<double>& forces ) {
-  for(unsigned i=0; i<arguments.size(); ++i) arguments[i]->addForce( forces[i] );
+  for(unsigned i=0; i<arguments.size(); ++i) {
+    arguments[i]->addForce( forces[i] );
+  }
 }
 
 }

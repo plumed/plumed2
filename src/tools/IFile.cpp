@@ -44,16 +44,24 @@ size_t IFile::llread(char*ptr,size_t s) {
   if(gzfp) {
 #ifdef __PLUMED_HAS_ZLIB
     int rr=gzread(gzFile(gzfp),ptr,s);
-    if(rr==0)   eof=true;
-    if(rr<0)    err=true;
+    if(rr==0) {
+      eof=true;
+    }
+    if(rr<0) {
+      err=true;
+    }
     r=rr;
 #else
     plumed_merror("file " + getPath() + ": trying to use a gz file without zlib being linked");
 #endif
   } else {
     r=std::fread(ptr,1,s,fp);
-    if(std::feof(fp))   eof=true;
-    if(std::ferror(fp)) err=true;
+    if(std::feof(fp)) {
+      eof=true;
+    }
+    if(std::ferror(fp)) {
+      err=true;
+    }
   }
   return r;
 }
@@ -65,7 +73,9 @@ IFile& IFile::advanceField() {
   while(!done) {
     getline(line);
 // using explicit conversion not to confuse cppcheck 1.86
-    if(!bool(*this)) {return *this;}
+    if(!bool(*this)) {
+      return *this;
+    }
     std::vector<std::string> words=Tools::getWords(line);
     if(words.size()>=2 && words[0]=="#!" && words[1]=="FIELDS") {
       fields.clear();
@@ -82,13 +92,18 @@ IFile& IFile::advanceField() {
       fields.push_back(field);
     } else {
       unsigned nf=0;
-      for(unsigned i=0; i<fields.size(); i++) if(!fields[i].constant) nf++;
+      for(unsigned i=0; i<fields.size(); i++)
+        if(!fields[i].constant) {
+          nf++;
+        }
       Tools::trimComments(line);
       words=Tools::getWords(line);
       if( words.size()==nf ) {
         unsigned j=0;
         for(unsigned i=0; i<fields.size(); i++) {
-          if(fields[i].constant) continue;
+          if(fields[i].constant) {
+            continue;
+          }
           fields[i].value=words[j];
           fields[i].read=false;
           j++;
@@ -119,17 +134,24 @@ IFile& IFile::open(const std::string&path) {
     plumed_merror("file " + getPath() + ": trying to use a gz file without zlib being linked");
 #endif
   }
-  if(plumed) plumed->insertFile(*this);
+  if(plumed) {
+    plumed->insertFile(*this);
+  }
   return *this;
 }
 
 IFile& IFile::scanFieldList(std::vector<std::string>&s) {
-  if(!inMiddleOfField) advanceField();
+  if(!inMiddleOfField) {
+    advanceField();
+  }
 // using explicit conversion not to confuse cppcheck 1.86
-  if(!bool(*this)) return *this;
+  if(!bool(*this)) {
+    return *this;
+  }
   s.clear();
-  for(unsigned i=0; i<fields.size(); i++)
+  for(unsigned i=0; i<fields.size(); i++) {
     s.push_back(fields[i].name);
+  }
   return *this;
 }
 
@@ -137,14 +159,21 @@ bool IFile::FieldExist(const std::string& s) {
   std::vector<std::string> slist;
   scanFieldList(slist);
   int mycount = (int) std::count(slist.begin(), slist.end(), s);
-  if(mycount>0) return true;
-  else return false;
+  if(mycount>0) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 IFile& IFile::scanField(const std::string&name,std::string&str) {
-  if(!inMiddleOfField) advanceField();
+  if(!inMiddleOfField) {
+    advanceField();
+  }
 // using explicit conversion not to confuse cppcheck 1.86
-  if(!bool(*this)) return *this;
+  if(!bool(*this)) {
+    return *this;
+  }
   unsigned i=findField(name);
   str=fields[i].value;
   fields[i].read=true;
@@ -154,49 +183,63 @@ IFile& IFile::scanField(const std::string&name,std::string&str) {
 IFile& IFile::scanField(const std::string&name,double &x) {
   std::string str;
   scanField(name,str);
-  if(*this) Tools::convert(str,x);
+  if(*this) {
+    Tools::convert(str,x);
+  }
   return *this;
 }
 
 IFile& IFile::scanField(const std::string&name,int &x) {
   std::string str;
   scanField(name,str);
-  if(*this) Tools::convert(str,x);
+  if(*this) {
+    Tools::convert(str,x);
+  }
   return *this;
 }
 
 IFile& IFile::scanField(const std::string&name,long int &x) {
   std::string str;
   scanField(name,str);
-  if(*this) Tools::convert(str,x);
+  if(*this) {
+    Tools::convert(str,x);
+  }
   return *this;
 }
 
 IFile& IFile::scanField(const std::string&name,long long int &x) {
   std::string str;
   scanField(name,str);
-  if(*this) Tools::convert(str,x);
+  if(*this) {
+    Tools::convert(str,x);
+  }
   return *this;
 }
 
 IFile& IFile::scanField(const std::string&name,unsigned &x) {
   std::string str;
   scanField(name,str);
-  if(*this) Tools::convert(str,x);
+  if(*this) {
+    Tools::convert(str,x);
+  }
   return *this;
 }
 
 IFile& IFile::scanField(const std::string&name,long unsigned &x) {
   std::string str;
   scanField(name,str);
-  if(*this) Tools::convert(str,x);
+  if(*this) {
+    Tools::convert(str,x);
+  }
   return *this;
 }
 
 IFile& IFile::scanField(const std::string&name,long long unsigned &x) {
   std::string str;
   scanField(name,str);
-  if(*this) Tools::convert(str,x);
+  if(*this) {
+    Tools::convert(str,x);
+  }
   return *this;
 }
 
@@ -228,12 +271,13 @@ IFile& IFile::scanField() {
 IFile::IFile():
   inMiddleOfField(false),
   ignoreFields(false),
-  noEOL(false)
-{
+  noEOL(false) {
 }
 
 IFile::~IFile() {
-  if(inMiddleOfField) std::cerr<<"WARNING: IFile closed in the middle of reading. seems strange!\n";
+  if(inMiddleOfField) {
+    std::cerr<<"WARNING: IFile closed in the middle of reading. seems strange!\n";
+  }
 }
 
 IFile& IFile::getline(std::string &str) {
@@ -249,11 +293,15 @@ IFile& IFile::getline(std::string &str) {
     plumed_massert(tmp=='\n',"plumed only accepts \\n (unix) or \\r\\n (dos) new lines");
   }
   if(eof && noEOL) {
-    if(str.length()>0) eof=false;
+    if(str.length()>0) {
+      eof=false;
+    }
   } else if(eof || err || tmp!='\n') {
     eof = true;
     str="";
-    if(!err) fsetpos(fp,&pos);
+    if(!err) {
+      fsetpos(fp,&pos);
+    }
 // there was a fsetpos here that apparently is not necessary
 //  fsetpos(fp,&pos);
 // I think it was necessary to have rewind working correctly
@@ -267,7 +315,10 @@ IFile& IFile::getline(std::string &str) {
 
 unsigned IFile::findField(const std::string&name)const {
   unsigned i;
-  for(i=0; i<fields.size(); i++) if(fields[i].name==name) break;
+  for(i=0; i<fields.size(); i++)
+    if(fields[i].name==name) {
+      break;
+    }
   if(i>=fields.size()) {
     plumed_merror("file " + getPath() + ": field " + name + " cannot be found");
   }
@@ -277,9 +328,13 @@ unsigned IFile::findField(const std::string&name)const {
 void IFile::reset(bool reset) {
   eof = reset;
   err = reset;
-  if(!reset && fp) clearerr(fp);
+  if(!reset && fp) {
+    clearerr(fp);
+  }
 #ifdef __PLUMED_HAS_ZLIB
-  if(!reset && gzfp) gzclearerr(gzFile(gzfp));
+  if(!reset && gzfp) {
+    gzclearerr(gzFile(gzfp));
+  }
 #endif
   return;
 }

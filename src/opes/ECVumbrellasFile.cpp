@@ -68,8 +68,7 @@ The umbrellas file might look like this:
 //+ENDPLUMEDOC
 
 class ECVumbrellasFile :
-  public ExpansionCVs
-{
+  public ExpansionCVs {
 private:
   double barrier_;
   unsigned P0_contribution_;
@@ -95,8 +94,7 @@ public:
 
 PLUMED_REGISTER_ACTION(ECVumbrellasFile,"ECV_UMBRELLAS_FILE")
 
-void ECVumbrellasFile::registerKeywords(Keywords& keys)
-{
+void ECVumbrellasFile::registerKeywords(Keywords& keys) {
   ExpansionCVs::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","FILE","the name of the file containing the umbrellas");
@@ -107,8 +105,7 @@ void ECVumbrellasFile::registerKeywords(Keywords& keys)
 
 ECVumbrellasFile::ECVumbrellasFile(const ActionOptions&ao):
   Action(ao),
-  ExpansionCVs(ao)
-{
+  ExpansionCVs(ao) {
 //get number of CVs
   const unsigned ncv=getNumberOfArguments();
   centers_.resize(ncv);
@@ -117,10 +114,11 @@ ECVumbrellasFile::ECVumbrellasFile(const ActionOptions&ao):
 //set P0_contribution_
   bool add_P0=false;
   parseFlag("ADD_P0",add_P0);
-  if(add_P0)
+  if(add_P0) {
     P0_contribution_=1;
-  else
+  } else {
     P0_contribution_=0;
+  }
 
 //set barrier_
   barrier_=std::numeric_limits<double>::infinity();
@@ -132,38 +130,33 @@ ECVumbrellasFile::ECVumbrellasFile(const ActionOptions&ao):
   parse("FILE",umbrellasFileName);
   IFile ifile;
   ifile.link(*this);
-  if(ifile.FileExist(umbrellasFileName))
-  {
+  if(ifile.FileExist(umbrellasFileName)) {
     log.printf("  reading from FILE '%s'\n",umbrellasFileName.c_str());
     ifile.open(umbrellasFileName);
     ifile.allowIgnoredFields();
     double time; //first field is ignored
-    while(ifile.scanField("time",time))
-    {
-      for(unsigned j=0; j<ncv; j++)
-      {
+    while(ifile.scanField("time",time)) {
+      for(unsigned j=0; j<ncv; j++) {
         double centers_j;
         ifile.scanField(getPntrToArgument(j)->getName(),centers_j);
         centers_[j].push_back(centers_j); //this might be slow
       }
-      for(unsigned j=0; j<ncv; j++)
-      {
+      for(unsigned j=0; j<ncv; j++) {
         double sigmas_j;
         ifile.scanField("sigma_"+getPntrToArgument(j)->getName(),sigmas_j);
         sigmas_[j].push_back(sigmas_j);
       }
       ifile.scanField();
     }
-  }
-  else
+  } else {
     plumed_merror("Umbrellas FILE '"+umbrellasFileName+"' not found");
+  }
 
   checkRead();
 
 //extra consistency checks
   const unsigned sizeUmbrellas=centers_[0].size();
-  for(unsigned j=0; j<ncv; j++)
-  {
+  for(unsigned j=0; j<ncv; j++) {
     plumed_massert(centers_[j].size()==sizeUmbrellas,"mismatch in the number of centers read from file");
     plumed_massert(sigmas_[j].size()==sizeUmbrellas,"mismatch in the number of sigmas read from file");
   }
@@ -175,43 +168,35 @@ ECVumbrellasFile::ECVumbrellasFile(const ActionOptions&ao):
 
 //printing some info
   log.printf("  total number of umbrellas = %u\n",sizeUmbrellas);
-  if(barrier_!=std::numeric_limits<double>::infinity())
+  if(barrier_!=std::numeric_limits<double>::infinity()) {
     log.printf("  guess for free energy BARRIER = %g\n",barrier_);
-  if(P0_contribution_==1)
+  }
+  if(P0_contribution_==1) {
     log.printf(" -- ADD_P0: the target includes also the unbiased probability itself\n");
-  if(lower_only_)
+  }
+  if(lower_only_) {
     log.printf(" -- LOWER_HALF_ONLY: the ECVs are set to zero for values of the CV above the respective center\n");
+  }
 }
 
-void ECVumbrellasFile::calculateECVs(const double * cv)
-{
-  if(lower_only_)
-  {
-    for(unsigned j=0; j<getNumberOfArguments(); j++)
-    {
-      for(unsigned k=P0_contribution_; k<totNumECVs_; k++) //if ADD_P0, the first ECVs=0
-      {
+void ECVumbrellasFile::calculateECVs(const double * cv) {
+  if(lower_only_) {
+    for(unsigned j=0; j<getNumberOfArguments(); j++) {
+      for(unsigned k=P0_contribution_; k<totNumECVs_; k++) { //if ADD_P0, the first ECVs=0
         const unsigned kk=k-P0_contribution_;
         const double dist_jk=difference(j,centers_[j][kk],cv[j])/sigmas_[j][kk]; //PBC might be present
-        if(dist_jk>=0)
-        {
+        if(dist_jk>=0) {
           ECVs_[j][k]=0;
           derECVs_[j][k]=0;
-        }
-        else
-        {
+        } else {
           ECVs_[j][k]=0.5*std::pow(dist_jk,2);
           derECVs_[j][k]=dist_jk/sigmas_[j][kk];
         }
       }
     }
-  }
-  else
-  {
-    for(unsigned j=0; j<getNumberOfArguments(); j++)
-    {
-      for(unsigned k=P0_contribution_; k<totNumECVs_; k++) //if ADD_P0, the first ECVs=0
-      {
+  } else {
+    for(unsigned j=0; j<getNumberOfArguments(); j++) {
+      for(unsigned k=P0_contribution_; k<totNumECVs_; k++) { //if ADD_P0, the first ECVs=0
         const unsigned kk=k-P0_contribution_;
         const double dist_jk=difference(j,centers_[j][kk],cv[j])/sigmas_[j][kk]; //PBC might be present
         ECVs_[j][k]=0.5*std::pow(dist_jk,2);
@@ -221,65 +206,62 @@ void ECVumbrellasFile::calculateECVs(const double * cv)
   }
 }
 
-const double * ECVumbrellasFile::getPntrToECVs(unsigned j)
-{
+const double * ECVumbrellasFile::getPntrToECVs(unsigned j) {
   plumed_massert(isReady_,"cannot access ECVs before initialization");
   plumed_massert(j<getNumberOfArguments(),getName()+" has fewer CVs");
   return &ECVs_[j][0];
 }
 
-const double * ECVumbrellasFile::getPntrToDerECVs(unsigned j)
-{
+const double * ECVumbrellasFile::getPntrToDerECVs(unsigned j) {
   plumed_massert(isReady_,"cannot access ECVs before initialization");
   plumed_massert(j<getNumberOfArguments(),getName()+" has fewer CVs");
   return &derECVs_[j][0];
 }
 
-std::vector<std::string> ECVumbrellasFile::getLambdas() const
-{ //notice that sigmas are not considered!
+std::vector<std::string> ECVumbrellasFile::getLambdas() const {
+  //notice that sigmas are not considered!
   std::vector<std::string> lambdas(totNumECVs_);
-  if(P0_contribution_==1)
-  {
+  if(P0_contribution_==1) {
     std::ostringstream subs;
     subs<<"P0";
-    for(unsigned j=1; j<getNumberOfArguments(); j++)
+    for(unsigned j=1; j<getNumberOfArguments(); j++) {
       subs<<"_P0";
+    }
     lambdas[0]=subs.str();
   }
-  for(unsigned k=P0_contribution_; k<totNumECVs_; k++)
-  {
+  for(unsigned k=P0_contribution_; k<totNumECVs_; k++) {
     const unsigned kk=k-P0_contribution_;
     std::ostringstream subs;
     subs<<centers_[0][kk];
-    for(unsigned j=1; j<getNumberOfArguments(); j++)
+    for(unsigned j=1; j<getNumberOfArguments(); j++) {
       subs<<"_"<<centers_[j][kk];
+    }
     lambdas[k]=subs.str();
   }
   return lambdas;
 }
 
-void ECVumbrellasFile::initECVs()
-{
+void ECVumbrellasFile::initECVs() {
   plumed_massert(!isReady_,"initialization should not be called twice");
   isReady_=true;
   log.printf("  *%4u windows for %s\n",totNumECVs_,getName().c_str());
 }
 
-void ECVumbrellasFile::initECVs_observ(const std::vector<double>& all_obs_cvs,const unsigned ncv,const unsigned index_j)
-{
+void ECVumbrellasFile::initECVs_observ(const std::vector<double>& all_obs_cvs,const unsigned ncv,const unsigned index_j) {
   //this non-linear exansion never uses automatic initialization
   initECVs();
   calculateECVs(&all_obs_cvs[index_j]); //use only first obs point
   for(unsigned j=0; j<getNumberOfArguments(); j++)
-    for(unsigned k=P0_contribution_; k<totNumECVs_; k++)
+    for(unsigned k=P0_contribution_; k<totNumECVs_; k++) {
       ECVs_[j][k]=std::min(barrier_/kbt_,ECVs_[j][k]);
+    }
 }
 
-void ECVumbrellasFile::initECVs_restart(const std::vector<std::string>& lambdas)
-{
+void ECVumbrellasFile::initECVs_restart(const std::vector<std::string>& lambdas) {
   std::size_t pos=0;
-  for(unsigned j=0; j<getNumberOfArguments()-1; j++)
-    pos=lambdas[0].find("_",pos+1); //checking only lambdas[0] is hopefully enough
+  for(unsigned j=0; j<getNumberOfArguments()-1; j++) {
+    pos=lambdas[0].find("_",pos+1);  //checking only lambdas[0] is hopefully enough
+  }
   plumed_massert(pos<lambdas[0].length(),"this should not happen, fewer '_' than expected in "+getName());
   pos=lambdas[0].find("_",pos+1);
   plumed_massert(pos>lambdas[0].length(),"this should not happen, more '_' than expected in "+getName());

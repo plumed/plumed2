@@ -55,7 +55,9 @@ public:
   double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
 ///
 /// Used to check for connections between atoms
-  bool checkForConnection( const std::vector<double>& myvals ) const { return !(myvals[1]>epsilon); }
+  bool checkForConnection( const std::vector<double>& myvals ) const {
+    return !(myvals[1]>epsilon);
+  }
 };
 
 PLUMED_REGISTER_ACTION(HBPammMatrix,"HBPAMM_MATRIX")
@@ -81,18 +83,19 @@ void HBPammMatrix::registerKeywords( Keywords& keys ) {
   keys.add("atoms","HYDROGENS","The list of hydrogen atoms that can form part of a hydrogen bond.  The atoms must be specified using a comma separated list, "
            "an index range or by using a \\ref GROUP");
   keys.add("numbered","CLUSTERS","the name of the file that contains the definitions of all the kernels for PAMM");
-  keys.reset_style("CLUSTERS","compulsory"); keys.use("SUM");
+  keys.reset_style("CLUSTERS","compulsory");
+  keys.use("SUM");
   keys.add("compulsory","REGULARISE","0.001","don't allow the denominator to be smaller then this value");
 }
 
 
 HBPammMatrix::HBPammMatrix(const ActionOptions& ao):
   Action(ao),
-  AdjacencyMatrixBase(ao)
-{
+  AdjacencyMatrixBase(ao) {
   readMaxThreeSpeciesMatrix("SITES", "DONORS", "ACCEPTORS", "HYDROGENS", false );
   // Retrieve dimensions of hbonding matrix and resize
-  unsigned nrows, ncols; retrieveTypeDimensions( nrows, ncols, ndonor_types );
+  unsigned nrows, ncols;
+  retrieveTypeDimensions( nrows, ncols, ndonor_types );
   myhb_objs.resize( nrows, ncols );
   // Read in the regularisation parameter
   parse("REGULARISE",regulariser);
@@ -104,7 +107,9 @@ HBPammMatrix::HBPammMatrix(const ActionOptions& ao):
   for(unsigned i=0; i<myhb_objs.ncols(); ++i) {
     for(unsigned j=i; j<myhb_objs.nrows(); ++j) {
       double rcut=myhb_objs(i,j).get_cutoff();
-      if( rcut>sfmax ) { sfmax=rcut; }
+      if( rcut>sfmax ) {
+        sfmax=rcut;
+      }
     }
   }
   setLinkCellCutoff( sfmax );
@@ -112,23 +117,30 @@ HBPammMatrix::HBPammMatrix(const ActionOptions& ao):
 
 void HBPammMatrix::setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ) {
   log.printf("  reading definition of hydrogen bond between between type %u and %u from file %s \n",i,j,desc[0].c_str() );
-  plumed_assert( desc.size()==1 ); std::string errors;
+  plumed_assert( desc.size()==1 );
+  std::string errors;
   if( i==j ) {
     myhb_objs( i, j ).setup( desc[0], regulariser, this, errors );
   } else {
     myhb_objs( i, j ).setup( desc[0], regulariser, this, errors );
     myhb_objs( j, i ).setup( desc[0], regulariser, this, errors );
   }
-  if( errors.length()>0 ) error( errors );
+  if( errors.length()>0 ) {
+    error( errors );
+  }
 }
 
 double HBPammMatrix::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {
-  Vector d_da = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) ); double md_da = d_da.modulo(); // acceptor - donor
+  Vector d_da = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
+  double md_da = d_da.modulo(); // acceptor - donor
 
   // Get the base colvar numbers
   unsigned ano, dno = getBaseColvarNumber( myatoms.getIndex(0) );
-  if( ndonor_types==0 ) ano = getBaseColvarNumber( myatoms.getIndex(1) );
-  else ano = getBaseColvarNumber( myatoms.getIndex(1) ) - ndonor_types;
+  if( ndonor_types==0 ) {
+    ano = getBaseColvarNumber( myatoms.getIndex(1) );
+  } else {
+    ano = getBaseColvarNumber( myatoms.getIndex(1) ) - ndonor_types;
+  }
 
   double value=0;
   if( myatoms.getNumberOfAtoms()>3 ) {

@@ -48,24 +48,31 @@ std::unique_ptr<DataFetchingObject> DataFetchingObject::create(unsigned n, Plume
   } else  if(n==sizeof(float)) {
     return Tools::make_unique<DataFetchingObjectTyped<float>>(p);
   }
-  std::string pp; Tools::convert(n,pp);
+  std::string pp;
+  Tools::convert(n,pp);
   plumed_merror("cannot create an MD interface with sizeof(real)=="+ pp);
 }
 
 DataFetchingObject::DataFetchingObject(PlumedMain&p):
-  plumed(p)
-{
+  plumed(p) {
 }
 
 bool DataFetchingObject::activate() const {
-  for(unsigned j=0; j<myactions.size(); ++j) myactions[j]->activate();
-  if( myactions.size()>0 ) return true;
+  for(unsigned j=0; j<myactions.size(); ++j) {
+    myactions[j]->activate();
+  }
+  if( myactions.size()>0 ) {
+    return true;
+  }
   return false;
 }
 
 ActionWithValue* DataFetchingObject::findAction( const ActionSet& a, const std::string& key ) {
-  std::string aname = key; std::size_t dot = key.find(".");
-  if( dot!=std::string::npos ) aname = key.substr(0,dot);
+  std::string aname = key;
+  std::size_t dot = key.find(".");
+  if( dot!=std::string::npos ) {
+    aname = key.substr(0,dot);
+  }
   return a.selectWithLabel<ActionWithValue*>( aname );
 }
 
@@ -113,8 +120,7 @@ void DataFetchingObject::get_shape( const ActionSet& a, const std::string& key, 
 
 template <class T>
 DataFetchingObjectTyped<T>::DataFetchingObjectTyped(PlumedMain&p):
-  DataFetchingObject(p)
-{
+  DataFetchingObject(p) {
 }
 
 template <class T>
@@ -131,9 +137,14 @@ void DataFetchingObjectTyped<T>::setData( const std::string& key, const std::str
   // Store the action if not already stored
   bool found=false;
   for(const auto & p : myactions) {
-    if( p->getLabel()==myv->getLabel() ) { found=true; break; }
+    if( p->getLabel()==myv->getLabel() ) {
+      found=true;
+      break;
+    }
   }
-  if( !found ) myactions.push_back( myv );
+  if( !found ) {
+    myactions.push_back( myv );
+  }
   // Store the value
   myvalues.push_back( myv->copyOutput( key ) );
 }

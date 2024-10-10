@@ -81,13 +81,17 @@ public:
   void performOperations( const bool& from_update ) override;
 #endif
   void compute( const unsigned&, MultiValue& ) const override {}
-  bool isPeriodic() override { return false; }
+  bool isPeriodic() override {
+    return false;
+  }
 };
 
 PLUMED_REGISTER_ACTION(FourierTransform,"FOURIER_TRANSFORM")
 
 void FourierTransform::registerKeywords( Keywords& keys ) {
-  ActionWithInputGrid::registerKeywords( keys ); keys.remove("BANDWIDTH"); keys.remove("KERNEL");
+  ActionWithInputGrid::registerKeywords( keys );
+  keys.remove("BANDWIDTH");
+  keys.remove("KERNEL");
   keys.add("optional","FT_TYPE","choose what kind of data you want as output on the grid. Possible values are: ABS = compute the complex modulus of Fourier coefficients (DEFAULT); NORM = compute the norm (i.e. ABS^2) of Fourier coefficients; COMPLEX = store the FFTW complex output on the grid (as a vector).");
   keys.add("compulsory","FOURIER_PARAMETERS","default","what kind of normalization is applied to the output and if the Fourier transform in FORWARD or BACKWARD. This keyword takes the form FOURIER_PARAMETERS=A,B, where A and B can be 0, 1 or -1. The default values are A=1 (no normalization at all) and B=1 (forward FFT). Other possible choices for A are: "
            "A=-1: normalize by the number of data, "
@@ -99,12 +103,13 @@ FourierTransform::FourierTransform(const ActionOptions&ao):
   ActionWithInputGrid(ao),
   real_output(true),
   store_norm(false),
-  fourier_params(2)
-{
+  fourier_params(2) {
 #ifndef __PLUMED_HAS_FFTW
   error("this feature is only available if you compile PLUMED with FFTW");
 #else
-  if( ingrid->getDimension()!=2 ) error("fourier transform currently only works with two dimensional grids");
+  if( ingrid->getDimension()!=2 ) {
+    error("fourier transform currently only works with two dimensional grids");
+  }
 
   // Get the type of FT
   parse("FT_TYPE",output_type);
@@ -118,19 +123,26 @@ FourierTransform::FourierTransform(const ActionOptions&ao):
   } else if ( output_type=="COMPLEX" || output_type=="complex" ) {
     log<<"  keyword FT_TYPE is '"<< output_type <<"' : output grid will contain the COMPLEX Fourier coefficients\n";
     real_output=false;
-  } else error("keyword FT_TYPE unrecognized!");
+  } else {
+    error("keyword FT_TYPE unrecognized!");
+  }
 
   // Normalize output?
-  std::string params_str; parse("FOURIER_PARAMETERS",params_str);
+  std::string params_str;
+  parse("FOURIER_PARAMETERS",params_str);
   if (params_str=="default") {
     fourier_params.assign( fourier_params.size(), 1 );
     log.printf("  default values of Fourier parameters A=%i, B=%i : the output will NOT be normalized and BACKWARD Fourier transform is computed \n", fourier_params[0],fourier_params[1]);
   } else {
     std::vector<std::string> fourier_str = Tools::getWords(params_str, "\t\n ,");
-    if (fourier_str.size()>2) error("FOURIER_PARAMETERS can take just two values");
+    if (fourier_str.size()>2) {
+      error("FOURIER_PARAMETERS can take just two values");
+    }
     for (unsigned i=0; i<fourier_str.size(); ++i) {
       Tools::convert(fourier_str[i],fourier_params[i]);
-      if (fourier_params[i]>1 || fourier_params[i]<-1) error("values accepted for FOURIER_PARAMETERS are only -1, 1 or 0");
+      if (fourier_params[i]>1 || fourier_params[i]<-1) {
+        error("values accepted for FOURIER_PARAMETERS are only -1, 1 or 0");
+      }
     }
     log.printf("  Fourier parameters are A=%i, B=%i \n", fourier_params[0],fourier_params[1]);
   }
@@ -139,25 +151,42 @@ FourierTransform::FourierTransform(const ActionOptions&ao):
   // Create the input from the old string
   std::string vstring;
   if (real_output) {
-    if (!store_norm) vstring="COMPONENTS=" + getLabel() + "_abs";
-    else vstring="COMPONENTS=" + getLabel() + "_norm";
-  } else vstring="COMPONENTS=" + getLabel() + "_real," + getLabel() + "_imag";
+    if (!store_norm) {
+      vstring="COMPONENTS=" + getLabel() + "_abs";
+    } else {
+      vstring="COMPONENTS=" + getLabel() + "_norm";
+    }
+  } else {
+    vstring="COMPONENTS=" + getLabel() + "_real," + getLabel() + "_imag";
+  }
 
   // Set COORDINATES keyword
   vstring += " COORDINATES=" + ingrid->getComponentName( 0 );
-  for(unsigned i=1; i<ingrid->getDimension(); ++i) vstring += "," + ingrid->getComponentName( i );
+  for(unsigned i=1; i<ingrid->getDimension(); ++i) {
+    vstring += "," + ingrid->getComponentName( i );
+  }
 
   // Set PBC keyword
   vstring += " PBC=";
-  if( ingrid->isPeriodic(0) ) vstring+="T"; else vstring+="F";
+  if( ingrid->isPeriodic(0) ) {
+    vstring+="T";
+  } else {
+    vstring+="F";
+  }
   for(unsigned i=1; i<ingrid->getDimension(); ++i) {
-    if( ingrid->isPeriodic(i) ) vstring+=",T"; else vstring+=",F";
+    if( ingrid->isPeriodic(i) ) {
+      vstring+=",T";
+    } else {
+      vstring+=",F";
+    }
   }
 
 
   // Create a grid on which to store the fourier transform of the input grid
   auto grid=createGrid( "grid", vstring );
-  if( ingrid->noDerivatives() ) grid->setNoDerivatives();
+  if( ingrid->noDerivatives() ) {
+    grid->setNoDerivatives();
+  }
   setAveragingAction( std::move(grid), false );
 
   checkRead();
@@ -168,9 +197,11 @@ void FourierTransform::clearAverage() {
   std::vector<double> fspacing;
   std::vector<std::string> ft_min( ingrid->getMin() ), ft_max( ingrid->getMax() );
   for(unsigned i=0; i<ingrid->getDimension(); ++i) {
-    Tools::convert( 0.0, ft_min[i] ); Tools::convert( 2.0*pi*ingrid->getNbin()[i]/ ingrid->getGridExtent(i), ft_max[i] );
+    Tools::convert( 0.0, ft_min[i] );
+    Tools::convert( 2.0*pi*ingrid->getNbin()[i]/ ingrid->getGridExtent(i), ft_max[i] );
   }
-  mygrid->setBounds( ft_min, ft_max, ingrid->getNbin(), fspacing); resizeFunctions();
+  mygrid->setBounds( ft_min, ft_max, ingrid->getNbin(), fspacing);
+  resizeFunctions();
   ActionWithAveraging::clearAverage();
 }
 
@@ -191,7 +222,10 @@ void FourierTransform::performOperations( const bool& from_update ) {
   // Get the size of the input data arrays (to allocate FFT data)
   size_t fft_dimension=static_cast<size_t>( ingrid->getNumberOfPoints() );
   std::vector<unsigned> N_input_data( ingrid->getNbin() );
-  for(unsigned i=0; i<N_input_data.size(); ++i) if( !ingrid->isPeriodic(i) ) N_input_data[i]++;
+  for(unsigned i=0; i<N_input_data.size(); ++i)
+    if( !ingrid->isPeriodic(i) ) {
+      N_input_data[i]++;
+    }
   // size_t fft_dimension=1; for(unsigned i=0; i<N_input_data.size(); ++i) fft_dimension*=static_cast<size_t>( N_input_data[i] );
 
   // FFT arrays
@@ -228,8 +262,11 @@ void FourierTransform::performOperations( const bool& from_update ) {
     if (real_output) {
       double ft_value;
       // Compute abs/norm and fix normalization
-      if (!store_norm) ft_value=std::abs( fft_data[out_ind[0]*N_out_data[0]+out_ind[1]] / norm );
-      else ft_value=std::norm( fft_data[out_ind[0]*N_out_data[0]+out_ind[1]] / norm );
+      if (!store_norm) {
+        ft_value=std::abs( fft_data[out_ind[0]*N_out_data[0]+out_ind[1]] / norm );
+      } else {
+        ft_value=std::norm( fft_data[out_ind[0]*N_out_data[0]+out_ind[1]] / norm );
+      }
       // Set the value
       mygrid->setGridElement( i, 0, ft_value );
     } else {

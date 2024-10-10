@@ -46,8 +46,7 @@ void Sum::reserveKeyword( Keywords& keys ) {
 }
 
 Sum::Sum( const VesselOptions& da ) :
-  FunctionVessel(da)
-{
+  FunctionVessel(da) {
 }
 
 std::string Sum::value_descriptor() {
@@ -55,7 +54,8 @@ std::string Sum::value_descriptor() {
 }
 
 double Sum::calcTransform( const double& val, double& dv ) const {
-  dv=1.0; return val;
+  dv=1.0;
+  return val;
 }
 
 }

@@ -34,8 +34,7 @@
 #include "vesselbase/ActionWithInputVessel.h"
 #include "vesselbase/StoreDataVessel.h"
 
-namespace PLMD
-{
+namespace PLMD {
 namespace multicolvar {
 
 //+PLUMEDOC PRINTANALYSIS DUMPMULTICOLVAR
@@ -64,8 +63,7 @@ DUMPMULTICOLVAR DATA=slt FILE=MULTICOLVAR.xyz
 class DumpMultiColvar:
   public ActionPilot,
   public ActionAtomistic,
-  public vesselbase::ActionWithInputVessel
-{
+  public vesselbase::ActionWithInputVessel {
   OFile of;
   double lenunit;
   MultiColvarBase* mycolv;
@@ -75,7 +73,9 @@ public:
   ~DumpMultiColvar();
   static void registerKeywords( Keywords& keys );
   void calculate() override {}
-  void calculateNumericalDerivatives( ActionWithValue* vv ) override { plumed_error(); }
+  void calculateNumericalDerivatives( ActionWithValue* vv ) override {
+    plumed_error();
+  }
   void apply() override {}
   void update() override;
 };
@@ -98,30 +98,42 @@ DumpMultiColvar::DumpMultiColvar(const ActionOptions&ao):
   Action(ao),
   ActionPilot(ao),
   ActionAtomistic(ao),
-  ActionWithInputVessel(ao)
-{
+  ActionWithInputVessel(ao) {
   readArgument("store");
   mycolv = dynamic_cast<MultiColvarBase*>( getDependencies()[0] );
   plumed_assert( getDependencies().size()==1 );
-  if(!mycolv) error("action labeled " + getDependencies()[0]->getLabel() + " is not a multicolvar");
+  if(!mycolv) {
+    error("action labeled " + getDependencies()[0]->getLabel() + " is not a multicolvar");
+  }
   log.printf("  printing colvars calculated by action %s \n",mycolv->getLabel().c_str() );
 
   std::vector<AtomNumber> atom;
   parseAtomList("ORIGIN",atom);
-  if( atom.size()>1 ) error("should only be one atom specified");
-  if( atom.size()==1 ) log.printf("  origin is at position of atom : %d\n",atom[0].serial() );
+  if( atom.size()>1 ) {
+    error("should only be one atom specified");
+  }
+  if( atom.size()==1 ) {
+    log.printf("  origin is at position of atom : %d\n",atom[0].serial() );
+  }
 
-  std::string file; parse("FILE",file);
-  if(file.length()==0) error("name out output file was not specified");
+  std::string file;
+  parse("FILE",file);
+  if(file.length()==0) {
+    error("name out output file was not specified");
+  }
   std::string type=Tools::extension(file);
   log<<"  file name "<<file<<"\n";
-  if(type!="xyz") error("can only print xyz file type with DUMPMULTICOLVAR");
+  if(type!="xyz") {
+    error("can only print xyz file type with DUMPMULTICOLVAR");
+  }
 
   fmt_xyz="%f";
 
-  std::string precision; parse("PRECISION",precision);
+  std::string precision;
+  parse("PRECISION",precision);
   if(precision.length()>0) {
-    int p; Tools::convert(precision,p);
+    int p;
+    Tools::convert(precision,p);
     log<<"  with precision "<<p<<"\n";
     std::string a,b;
     Tools::convert(p+5,a);
@@ -129,18 +141,22 @@ DumpMultiColvar::DumpMultiColvar(const ActionOptions&ao):
     fmt_xyz="%"+a+"."+b+"f";
   }
 
-  std::string unitname; parse("UNITS",unitname);
+  std::string unitname;
+  parse("UNITS",unitname);
   if(unitname!="PLUMED") {
-    Units myunit; myunit.setLength(unitname);
+    Units myunit;
+    myunit.setLength(unitname);
     lenunit=plumed.getAtoms().getUnits().getLength()/myunit.getLength();
+  } else {
+    lenunit=1.0;
   }
-  else lenunit=1.0;
 
   checkRead();
   of.link(*this);
   of.open(file);
   log.printf("  printing atom positions in %s units \n", unitname.c_str() );
-  requestAtoms(atom); addDependency( mycolv );
+  requestAtoms(atom);
+  addDependency( mycolv );
 }
 
 void DumpMultiColvar::update() {
@@ -163,13 +179,19 @@ void DumpMultiColvar::update() {
     const char* name=defname;
 
     Vector apos = mycolv->getCentralAtomPos( mycolv->getPositionInFullTaskList(i) );
-    if( getNumberOfAtoms()>0 ) apos=pbcDistance( getPosition(0), apos );
+    if( getNumberOfAtoms()>0 ) {
+      apos=pbcDistance( getPosition(0), apos );
+    }
     of.printf(("%s "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz).c_str(),name,lenunit*apos[0],lenunit*apos[1],lenunit*apos[2]);
     stash->retrieveSequentialValue( i, true, cvals );
     if( mycolv->weightWithDerivatives() ) {
-      for(unsigned j=0; j<cvals.size(); ++j) of.printf((" "+fmt_xyz).c_str(),cvals[j]);
+      for(unsigned j=0; j<cvals.size(); ++j) {
+        of.printf((" "+fmt_xyz).c_str(),cvals[j]);
+      }
     } else {
-      for(unsigned j=1; j<cvals.size(); ++j) of.printf((" "+fmt_xyz).c_str(),cvals[j]);
+      for(unsigned j=1; j<cvals.size(); ++j) {
+        of.printf((" "+fmt_xyz).c_str(),cvals[j]);
+      }
     }
     of.printf("\n");
   }

@@ -53,8 +53,7 @@ void SketchMapConjGrad::registerKeywords( Keywords& keys ) {
 
 SketchMapConjGrad::SketchMapConjGrad( const ActionOptions& ao ):
   Action(ao),
-  SketchMapBase(ao)
-{
+  SketchMapBase(ao) {
   parse("CGTOL",cgtol);
   log.printf("  tolerance for conjugate gradient algorithm equals %f \n",cgtol);
 }

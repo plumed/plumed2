@@ -49,7 +49,9 @@ public:
   explicit VectorMultiColvar(const ActionOptions&);
   ~VectorMultiColvar() {}
 /// The norm of a vector is not periodic
-  virtual bool isPeriodic() { return false; }
+  virtual bool isPeriodic() {
+    return false;
+  }
 /// Calculate the multicolvar
 //  double doCalculation( const unsigned& taskIndex, multicolvar::AtomValuePack& myatoms ) const ;
 /// This shouldn't do anything
@@ -61,7 +63,9 @@ public:
 /// Get the number of quantities we are calculating per step
   unsigned getNumberOfQuantities() const ;
 /// Can we differentiate the orientation - yes we can the multicolvar is a vector
-  bool hasDifferentiableOrientation() const { return true; }
+  bool hasDifferentiableOrientation() const {
+    return true;
+  }
 ///  This makes sure we are not calculating the director when we do LocalAverage
   virtual void doNotCalculateDirector();
 /// This does normalizeing of vectors for storeDataVessel

@@ -93,26 +93,36 @@ void ContactAlignedMatrix::registerKeywords( Keywords& keys ) {
 
 ContactAlignedMatrix::ContactAlignedMatrix( const ActionOptions& ao ):
   Action(ao),
-  AlignedMatrixBase(ao)
-{
-  unsigned nrows, ncols, ig; retrieveTypeDimensions( nrows, ncols, ig );
+  AlignedMatrixBase(ao) {
+  unsigned nrows, ncols, ig;
+  retrieveTypeDimensions( nrows, ncols, ig );
   sf.resize( nrows, ncols );
   parseConnectionDescriptions("ORIENTATION_SWITCH",false,0);
 }
 
 void ContactAlignedMatrix::readOrientationConnector( const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ) {
-  plumed_assert( desc.size()==1 ); std::string errors; sf(j,i).set(desc[0],errors);
-  if( j!=i ) sf(i,j).set(desc[0],errors);
+  plumed_assert( desc.size()==1 );
+  std::string errors;
+  sf(j,i).set(desc[0],errors);
+  if( j!=i ) {
+    sf(i,j).set(desc[0],errors);
+  }
   log.printf("  vectors in %u th and %u th groups must have a dot product that is greater than %s \n",i+1,j+1,(sf(i,j).description()).c_str() );
 }
 
 double ContactAlignedMatrix::computeVectorFunction( const unsigned& iv, const unsigned& jv,
     const Vector& conn, const std::vector<double>& vec1, const std::vector<double>& vec2,
     Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const {
-  double dot_df, dot=0; dconn.zero();
-  for(unsigned k=2; k<vec1.size(); ++k) dot+=vec1[k]*vec2[k];
+  double dot_df, dot=0;
+  dconn.zero();
+  for(unsigned k=2; k<vec1.size(); ++k) {
+    dot+=vec1[k]*vec2[k];
+  }
   double f_dot = sf(iv,jv).calculate( dot, dot_df );
-  for(unsigned k=2; k<vec1.size(); ++k) { dvec1[k]=dot_df*vec2[k]; dvec2[k]=dot_df*vec1[k]; }
+  for(unsigned k=2; k<vec1.size(); ++k) {
+    dvec1[k]=dot_df*vec2[k];
+    dvec2[k]=dot_df*vec1[k];
+  }
   return f_dot;
 }
 

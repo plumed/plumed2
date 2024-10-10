@@ -48,7 +48,8 @@ public:
 PLUMED_REGISTER_ACTION(MoleculePlane,"PLANES")
 
 void MoleculePlane::registerKeywords( Keywords& keys ) {
-  VectorMultiColvar::registerKeywords( keys ); keys.use("VMEAN");
+  VectorMultiColvar::registerKeywords( keys );
+  keys.use("VMEAN");
   keys.add("numbered","MOL","The numerical indices of the atoms in the molecule. If three atoms are specified the orientation "
            "of the molecule is taken as the normal to the plane containing the vector connecting the first and "
            "second atoms and the vector connecting the second and third atoms.  If four atoms are specified the "
@@ -60,14 +61,18 @@ void MoleculePlane::registerKeywords( Keywords& keys ) {
 
 MoleculePlane::MoleculePlane( const ActionOptions& ao ):
   Action(ao),
-  VectorMultiColvar(ao)
-{
+  VectorMultiColvar(ao) {
   std::vector<AtomNumber> all_atoms;
   readAtomsLikeKeyword("MOL",-1,all_atoms);
-  if( ablocks.size()!=3 && ablocks.size()!=4 ) error("number of atoms in molecule specification is wrong.  Should be three or four.");
+  if( ablocks.size()!=3 && ablocks.size()!=4 ) {
+    error("number of atoms in molecule specification is wrong.  Should be three or four.");
+  }
 
-  if( all_atoms.size()==0 ) error("No atoms were specified");
-  setVectorDimensionality( 3 ); setupMultiColvarBase( all_atoms );
+  if( all_atoms.size()==0 ) {
+    error("No atoms were specified");
+  }
+  setVectorDimensionality( 3 );
+  setupMultiColvarBase( all_atoms );
 }
 
 AtomNumber MoleculePlane::getAbsoluteIndexOfCentralAtom( const unsigned& iatom ) const {

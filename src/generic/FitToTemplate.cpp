@@ -170,8 +170,7 @@ the ligand.
 class FitToTemplate:
   public ActionPilot,
   public ActionAtomistic,
-  public ActionWithValue
-{
+  public ActionWithValue {
   std::string type;
   bool nopbc;
   std::vector<double> weights;
@@ -195,7 +194,9 @@ public:
   static void registerKeywords( Keywords& keys );
   void calculate() override;
   void apply() override;
-  unsigned getNumberOfDerivatives() override {plumed_merror("You should not call this function");};
+  unsigned getNumberOfDerivatives() override {
+    plumed_merror("You should not call this function");
+  };
 };
 
 PLUMED_REGISTER_ACTION(FitToTemplate,"FIT_TO_TEMPLATE")
@@ -214,8 +215,7 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
   ActionPilot(ao),
   ActionAtomistic(ao),
   ActionWithValue(ao),
-  nopbc(false)
-{
+  nopbc(false) {
   std::string reference;
   parse("REFERENCE",reference);
   type.assign("SIMPLE");
@@ -229,14 +229,17 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
   PDB pdb;
 
   // read everything in ang and transform to nm if we are not in natural units
-  if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) )
+  if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) ) {
     error("missing input file " + reference );
+  }
 
   requestAtoms(pdb.getAtomNumbers());
   log.printf("  found %zu atoms in input \n",pdb.getAtomNumbers().size());
   log.printf("  with indices : ");
   for(unsigned i=0; i<pdb.getAtomNumbers().size(); ++i) {
-    if(i%25==0) log<<"\n";
+    if(i%25==0) {
+      log<<"\n";
+    }
     log.printf("%d ",pdb.getAtomNumbers()[i].serial());
   }
   log.printf("\n");
@@ -247,21 +250,36 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
 
 
   // normalize weights
-  double n=0.0; for(unsigned i=0; i<weights.size(); ++i) n+=weights[i];
+  double n=0.0;
+  for(unsigned i=0; i<weights.size(); ++i) {
+    n+=weights[i];
+  }
   if(n==0.0) {
     error("PDB file " + reference + " has zero weights. Please check the occupancy column.");
   }
   n=1.0/n;
-  for(unsigned i=0; i<weights.size(); ++i) weights[i]*=n;
+  for(unsigned i=0; i<weights.size(); ++i) {
+    weights[i]*=n;
+  }
 
   // normalize weights for rmsd calculation
   std::vector<double> weights_measure=pdb.getBeta();
-  n=0.0; for(unsigned i=0; i<weights_measure.size(); ++i) n+=weights_measure[i]; n=1.0/n;
-  for(unsigned i=0; i<weights_measure.size(); ++i) weights_measure[i]*=n;
+  n=0.0;
+  for(unsigned i=0; i<weights_measure.size(); ++i) {
+    n+=weights_measure[i];
+  }
+  n=1.0/n;
+  for(unsigned i=0; i<weights_measure.size(); ++i) {
+    weights_measure[i]*=n;
+  }
 
   // subtract the center
-  for(unsigned i=0; i<weights.size(); ++i) center+=positions[i]*weights[i];
-  for(unsigned i=0; i<weights.size(); ++i) positions[i]-=center;
+  for(unsigned i=0; i<weights.size(); ++i) {
+    center+=positions[i]*weights[i];
+  }
+  for(unsigned i=0; i<weights.size(); ++i) {
+    positions[i]-=center;
+  }
 
   if(type=="OPTIMAL" or type=="OPTIMAL-FAST" ) {
     rmsd=Tools::make_unique<RMSD>();
@@ -272,7 +290,8 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
     log<<"  Ignoring PBCs when doing alignment, make sure your molecule is whole!<n";
   }
   // register the value of rmsd (might be useful sometimes)
-  addValue(); setNotPeriodic();
+  addValue();
+  setNotPeriodic();
 
   // I remove this optimization now in order to use makeWhole()
   // Notice that for FIT_TO_TEMPLATE TYPE=OPTIMAL a copy was made anyway
@@ -291,7 +310,9 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
 
 void FitToTemplate::calculate() {
 
-  if(!nopbc) makeWhole();
+  if(!nopbc) {
+    makeWhole();
+  }
 
   if (type=="SIMPLE") {
     Vector cc;
@@ -306,8 +327,7 @@ void FitToTemplate::calculate() {
       Vector & ato (modifyGlobalPosition(AtomNumber::index(i)));
       ato+=shift;
     }
-  }
-  else if( type=="OPTIMAL" or type=="OPTIMAL-FAST") {
+  } else if( type=="OPTIMAL" or type=="OPTIMAL-FAST") {
     // specific stuff that provides all that is needed
     double r=rmsd->calc_FitElements( getPositions(), rotation,  drotdpos, centeredpositions, center_positions);
     setValue(r);

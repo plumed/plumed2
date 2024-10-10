@@ -53,14 +53,17 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit OutputColvarFile( const ActionOptions& );
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override { plumed_error(); }
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override {
+    plumed_error();
+  }
   void performAnalysis() override;
 };
 
 PLUMED_REGISTER_ACTION(OutputColvarFile,"OUTPUT_ANALYSIS_DATA_TO_COLVAR")
 
 void OutputColvarFile::registerKeywords( Keywords& keys ) {
-  AnalysisBase::registerKeywords( keys ); keys.use("ARG");
+  AnalysisBase::registerKeywords( keys );
+  keys.use("ARG");
   keys.add("compulsory","FILE","the name of the file to output to");
   keys.add("compulsory","REPLICA","0","the replicas for which you would like to output this information");
   keys.add("compulsory","STRIDE","0","the frequency with which to perform the required analysis and to output the data.  The default value of 0 tells plumed to use all the data");
@@ -71,44 +74,72 @@ OutputColvarFile::OutputColvarFile( const ActionOptions& ao ):
   Action(ao),
   AnalysisBase(ao),
   fmt("%f"),
-  output_for_all_replicas(false)
-{
-  parse("FILE",filename); parse("FMT",fmt);
-  if( !getRestart() ) { OFile ofile; ofile.link(*this); ofile.setBackupString("analysis"); ofile.backupAllFiles(filename); }
+  output_for_all_replicas(false) {
+  parse("FILE",filename);
+  parse("FMT",fmt);
+  if( !getRestart() ) {
+    OFile ofile;
+    ofile.link(*this);
+    ofile.setBackupString("analysis");
+    ofile.backupAllFiles(filename);
+  }
   log.printf("  printing data to file named %s \n",filename.c_str() );
   if( getArguments().size()==0 ) {
     std::vector<std::string> tmp_vals( my_input_data->getArgumentNames() );
-    req_vals.resize( tmp_vals.size() ); for(unsigned i=0; i<tmp_vals.size(); ++i) req_vals[i]=tmp_vals[i];
+    req_vals.resize( tmp_vals.size() );
+    for(unsigned i=0; i<tmp_vals.size(); ++i) {
+      req_vals[i]=tmp_vals[i];
+    }
   } else {
-    req_vals.resize( getArguments().size() ); for(unsigned i=0; i<req_vals.size(); ++i) req_vals[i]=getPntrToArgument(i)->getName();
+    req_vals.resize( getArguments().size() );
+    for(unsigned i=0; i<req_vals.size(); ++i) {
+      req_vals[i]=getPntrToArgument(i)->getName();
+    }
   }
   if( req_vals.size()==0 ) {
     log.printf("  outputting weights from input action \n");
   } else {
     log.printf("  outputting %s", req_vals[0].c_str() );
-    for(unsigned i=1; i<req_vals.size(); ++i) log.printf(",", req_vals[i].c_str() );
+    for(unsigned i=1; i<req_vals.size(); ++i) {
+      log.printf(",", req_vals[i].c_str() );
+    }
     log.printf("\n");
   }
-  std::string rep_data; parse("REPLICA",rep_data);
-  if( rep_data=="all" ) output_for_all_replicas=true;
-  else { preps.resize(1); Tools::convert( rep_data, preps[0] ); }
-  if( output_for_all_replicas ) log.printf("  outputting files for all replicas \n");
-  else {
+  std::string rep_data;
+  parse("REPLICA",rep_data);
+  if( rep_data=="all" ) {
+    output_for_all_replicas=true;
+  } else {
+    preps.resize(1);
+    Tools::convert( rep_data, preps[0] );
+  }
+  if( output_for_all_replicas ) {
+    log.printf("  outputting files for all replicas \n");
+  } else {
     log.printf("  outputting data for replicas ");
-    for(unsigned i=0; i<preps.size(); ++i) log.printf("%d ", preps[i] );
+    for(unsigned i=0; i<preps.size(); ++i) {
+      log.printf("%d ", preps[i] );
+    }
   }
 }
 
 void OutputColvarFile::performAnalysis() {
   if( !output_for_all_replicas ) {
-    bool found=false; unsigned myrep=plumed.multi_sim_comm.Get_rank();
+    bool found=false;
+    unsigned myrep=plumed.multi_sim_comm.Get_rank();
     for(unsigned i=0; i<preps.size(); ++i) {
-      if( myrep==preps[i] ) { found=true; break; }
+      if( myrep==preps[i] ) {
+        found=true;
+        break;
+      }
     }
-    if( !found ) return;
+    if( !found ) {
+      return;
+    }
   }
   // Output the embedding as long lists of data
-  OFile gfile; gfile.link(*this);
+  OFile gfile;
+  gfile.link(*this);
   gfile.setBackupString("analysis");
   gfile.fmtField(fmt+" ");
   gfile.open( filename );
@@ -116,8 +147,11 @@ void OutputColvarFile::performAnalysis() {
   // Print embedding coordinates
   for(unsigned i=0; i<getNumberOfDataPoints(); ++i) {
     const DataCollectionObject& mydata=getStoredData(i, false);
-    for(unsigned j=0; j<req_vals.size(); ++j) gfile.printField( req_vals[j], mydata.getArgumentValue(req_vals[j]) );
-    gfile.printField( "weight", getWeight(i) ); gfile.printField();
+    for(unsigned j=0; j<req_vals.size(); ++j) {
+      gfile.printField( req_vals[j], mydata.getArgumentValue(req_vals[j]) );
+    }
+    gfile.printField( "weight", getWeight(i) );
+    gfile.printField();
   }
   gfile.close();
 }

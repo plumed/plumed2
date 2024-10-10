@@ -60,7 +60,9 @@ public:
 /// Get the squared dissimilarity between two reference configurations
   double getDissimilarity( const unsigned& i, const unsigned& j ) override;
 /// This does nothing - it just ensures the final class is not abstract
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override { plumed_error(); }
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override {
+    plumed_error();
+  }
 };
 
 inline

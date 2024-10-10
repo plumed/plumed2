@@ -73,20 +73,22 @@ BasisFunctions::BasisFunctions(const ActionOptions&ao):
   nbins_(1001),
   uniform_integrals_(nbasis_,0.0),
   vesbias_pntr_(NULL),
-  action_pntr_(NULL)
-{
+  action_pntr_(NULL) {
   bf_keywords_.push_back(getName());
   if(keywords.exists("ORDER")) {
-    parse("ORDER",norder_); addKeywordToList("ORDER",norder_);
+    parse("ORDER",norder_);
+    addKeywordToList("ORDER",norder_);
   }
   nbasis_=norder_+1;
   //
-  std::string str_imin; std::string str_imax;
+  std::string str_imin;
+  std::string str_imax;
   if(keywords.exists("MINIMUM") && keywords.exists("MAXIMUM")) {
-    parse("MINIMUM",str_imin); addKeywordToList("MINIMUM",str_imin);
-    parse("MAXIMUM",str_imax); addKeywordToList("MAXIMUM",str_imax);
-  }
-  else {
+    parse("MINIMUM",str_imin);
+    addKeywordToList("MINIMUM",str_imin);
+    parse("MAXIMUM",str_imax);
+    addKeywordToList("MAXIMUM",str_imax);
+  } else {
     str_imin = "-1.0";
     str_imax = "1.0";
   }
@@ -98,7 +100,9 @@ BasisFunctions::BasisFunctions(const ActionOptions&ao):
   if(!Tools::convertNoexcept(str_imax,interval_max_)) {
     plumed_merror(getName()+": cannot convert the value given in MAXIMUM to a double");
   }
-  if(interval_min_>interval_max_) {plumed_merror(getName()+": MINIMUM and MAXIMUM are not correctly defined");}
+  if(interval_min_>interval_max_) {
+    plumed_merror(getName()+": MINIMUM and MAXIMUM are not correctly defined");
+  }
   //
   parseFlag("DEBUG_INFO",print_debug_info_);
   if(keywords.exists("NUMERICAL_INTEGRALS")) {
@@ -168,7 +172,8 @@ void BasisFunctions::setupInterval() {
 
 void BasisFunctions::setupLabels() {
   for(unsigned int i=0; i < nbasis_; i++) {
-    std::string is; Tools::convert(i,is);
+    std::string is;
+    Tools::convert(i,is);
     bf_labels_[i]=bf_label_prefix_+is+"(s)";
   }
 }
@@ -181,32 +186,51 @@ void BasisFunctions::setupUniformIntegrals() {
 
 
 void BasisFunctions::setupBF() {
-  if(interval_intrinsic_min_>interval_intrinsic_max_) {plumed_merror("setupBF: default intervals are not correctly set");}
+  if(interval_intrinsic_min_>interval_intrinsic_max_) {
+    plumed_merror("setupBF: default intervals are not correctly set");
+  }
   setupInterval();
   setupLabels();
-  if(bf_labels_.size()==1) {plumed_merror("setupBF: the labels of the basis functions are not correct.");}
-  if(!numerical_uniform_integrals_) {setupUniformIntegrals();}
-  else {numericalUniformIntegrals();}
-  if(uniform_integrals_.size()==1) {plumed_merror("setupBF: the integrals of the basis functions is not correct.");}
-  if(type_=="Undefined") {plumed_merror("setupBF: the type of the basis function is not defined.");}
-  if(description_=="Undefined") {plumed_merror("setupBF: the description of the basis function is not defined.");}
+  if(bf_labels_.size()==1) {
+    plumed_merror("setupBF: the labels of the basis functions are not correct.");
+  }
+  if(!numerical_uniform_integrals_) {
+    setupUniformIntegrals();
+  } else {
+    numericalUniformIntegrals();
+  }
+  if(uniform_integrals_.size()==1) {
+    plumed_merror("setupBF: the integrals of the basis functions is not correct.");
+  }
+  if(type_=="Undefined") {
+    plumed_merror("setupBF: the type of the basis function is not defined.");
+  }
+  if(description_=="Undefined") {
+    plumed_merror("setupBF: the description of the basis function is not defined.");
+  }
   has_been_set=true;
   printInfo();
 }
 
 
 void BasisFunctions::printInfo() const {
-  if(!has_been_set) {plumed_merror("the basis set has not be setup correctly");}
+  if(!has_been_set) {
+    plumed_merror("the basis set has not be setup correctly");
+  }
   log.printf("  One-dimensional basis set\n");
   log.printf("   Description: %s\n",description_.c_str());
   log.printf("   Type: %s\n",type_.c_str());
-  if(periodic_) {log.printf("   The basis functions are periodic\n");}
+  if(periodic_) {
+    log.printf("   The basis functions are periodic\n");
+  }
   log.printf("   Order of basis set: %u\n",norder_);
   log.printf("   Number of basis functions: %u\n",nbasis_);
   // log.printf("   Interval of basis set: %f to %f\n",interval_min_,interval_max_);
   log.printf("   Interval of basis set: %s to %s\n",interval_min_str_.c_str(),interval_max_str_.c_str());
   log.printf("   Description of basis functions:\n");
-  for(unsigned int i=0; i < nbasis_; i++) {log.printf("    %2u       %10s\n",i,bf_labels_[i].c_str());}
+  for(unsigned int i=0; i < nbasis_; i++) {
+    log.printf("    %2u       %10s\n",i,bf_labels_[i].c_str());
+  }
   //
   if(print_debug_info_) {
     log.printf("  Debug information:\n");
@@ -218,8 +242,12 @@ void BasisFunctions::printInfo() const {
     log.printf("   Defined interval of basis set: range=%f,  mean=%f\n",interval_range_,interval_mean_);
     log.printf("   Derivative factor due to interval translation: %f\n",argT_derivf_);
     log.printf("   Integral of basis functions over the interval:\n");
-    if(numerical_uniform_integrals_) {log.printf("   Note: calculated numerically\n");}
-    for(unsigned int i=0; i < nbasis_; i++) {log.printf("    %2u       %16.10f\n",i,uniform_integrals_[i]);}
+    if(numerical_uniform_integrals_) {
+      log.printf("   Note: calculated numerically\n");
+    }
+    for(unsigned int i=0; i < nbasis_; i++) {
+      log.printf("    %2u       %16.10f\n",i,uniform_integrals_[i]);
+    }
     log.printf("   --------------------------\n");
   }
 }
@@ -237,12 +265,19 @@ void BasisFunctions::linkAction(Action* action_pntr_in) {
 
 
 void BasisFunctions::numericalUniformIntegrals() {
-  std::vector<std::string> grid_min(1); grid_min[0]=intervalMinStr();
-  std::vector<std::string> grid_max(1); grid_max[0]=intervalMaxStr();
-  std::vector<unsigned int> grid_bins(1); grid_bins[0]=nbins_;
-  std::vector<std::unique_ptr<Value>> arguments(1); arguments[0]= Tools::make_unique<Value>(nullptr,"arg",false);
-  if(arePeriodic()) {arguments[0]->setDomain(intervalMinStr(),intervalMaxStr());}
-  else {arguments[0]->setNotPeriodic();}
+  std::vector<std::string> grid_min(1);
+  grid_min[0]=intervalMinStr();
+  std::vector<std::string> grid_max(1);
+  grid_max[0]=intervalMaxStr();
+  std::vector<unsigned int> grid_bins(1);
+  grid_bins[0]=nbins_;
+  std::vector<std::unique_ptr<Value>> arguments(1);
+  arguments[0]= Tools::make_unique<Value>(nullptr,"arg",false);
+  if(arePeriodic()) {
+    arguments[0]->setDomain(intervalMinStr(),intervalMaxStr());
+  } else {
+    arguments[0]->setNotPeriodic();
+  }
   auto uniform_grid = Tools::make_unique<Grid>("uniform",Tools::unique2raw(arguments),grid_min,grid_max,grid_bins,false,false);
   //
   double inverse_normalization = 1.0/(intervalMax()-intervalMin());
@@ -282,8 +317,7 @@ std::vector<double> BasisFunctions::numericalTargetDistributionIntegralsFromGrid
 std::vector<double> BasisFunctions::getTargetDistributionIntegrals(const TargetDistribution* targetdist_pntr) const {
   if(targetdist_pntr==NULL) {
     return getUniformIntegrals();
-  }
-  else {
+  } else {
     Grid* targetdist_grid = targetdist_pntr->getTargetDistGridPntr();
     return numericalTargetDistributionIntegralsFromGrid(targetdist_grid);
   }
@@ -292,7 +326,9 @@ std::vector<double> BasisFunctions::getTargetDistributionIntegrals(const TargetD
 
 std::string BasisFunctions::getKeywordString() const {
   std::string str_keywords=bf_keywords_[0];
-  for(unsigned int i=1; i<bf_keywords_.size(); i++) {str_keywords+=" "+bf_keywords_[i];}
+  for(unsigned int i=1; i<bf_keywords_.size(); i++) {
+    str_keywords+=" "+bf_keywords_[i];
+  }
   return str_keywords;
 }
 
@@ -344,13 +380,19 @@ void BasisFunctions::getMultipleValue(const std::vector<double>& args, std::vect
 
 
 void BasisFunctions::writeBasisFunctionsToFile(OFile& ofile_values, OFile& ofile_derivs, const std::string& min_in, const std::string& max_in, unsigned int nbins_in, const bool ignore_periodicity, const std::string& output_fmt_values, const std::string& output_fmt_derivs, const bool numerical_deriv) const {
-  std::vector<std::string> min(1); min[0]=min_in;
-  std::vector<std::string> max(1); max[0]=max_in;
-  std::vector<unsigned int> nbins(1); nbins[0]=nbins_in;
+  std::vector<std::string> min(1);
+  min[0]=min_in;
+  std::vector<std::string> max(1);
+  max[0]=max_in;
+  std::vector<unsigned int> nbins(1);
+  nbins[0]=nbins_in;
   std::vector<std::unique_ptr<Value>> value_pntr(1);
   value_pntr[0]= Tools::make_unique<Value>(nullptr,"arg",false);
-  if(arePeriodic() && !ignore_periodicity) {value_pntr[0]->setDomain(intervalMinStr(),intervalMaxStr());}
-  else {value_pntr[0]->setNotPeriodic();}
+  if(arePeriodic() && !ignore_periodicity) {
+    value_pntr[0]->setDomain(intervalMinStr(),intervalMaxStr());
+  } else {
+    value_pntr[0]->setNotPeriodic();
+  }
   Grid args_grid = Grid("grid",Tools::unique2raw(value_pntr),min,max,nbins,false,false);
 
   std::vector<double> args(args_grid.getSize(),0.0);
@@ -376,8 +418,7 @@ void BasisFunctions::writeBasisFunctionsToFile(OFile& ofile_values, OFile& ofile
   if(arePeriodic()) {
     ofile_values.addConstantField("periodic").printField("periodic","true");
     ofile_derivs.addConstantField("periodic").printField("periodic","true");
-  }
-  else {
+  } else {
     ofile_values.addConstantField("periodic").printField("periodic","false");
     ofile_derivs.addConstantField("periodic").printField("periodic","false");
   }

@@ -35,38 +35,56 @@ void Steinhardt::registerKeywords( Keywords& keys ) {
   keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous switching function defined above. "
            "The following provides information on the \\ref switchingfunction that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
-  keys.use("SPECIES"); keys.use("SPECIESA"); keys.use("SPECIESB");
-  keys.use("MEAN"); keys.use("LESS_THAN"); keys.use("MORE_THAN"); keys.use("VMEAN");
-  keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS"); keys.use("MIN"); keys.use("ALT_MIN");
-  keys.use("LOWEST"); keys.use("HIGHEST");
+  keys.use("SPECIES");
+  keys.use("SPECIESA");
+  keys.use("SPECIESB");
+  keys.use("MEAN");
+  keys.use("LESS_THAN");
+  keys.use("MORE_THAN");
+  keys.use("VMEAN");
+  keys.use("BETWEEN");
+  keys.use("HISTOGRAM");
+  keys.use("MOMENTS");
+  keys.use("MIN");
+  keys.use("ALT_MIN");
+  keys.use("LOWEST");
+  keys.use("HIGHEST");
 }
 
 Steinhardt::Steinhardt( const ActionOptions& ao ):
   Action(ao),
   VectorMultiColvar(ao),
-  tmom(0)
-{
+  tmom(0) {
   // Read in the switching function
-  std::string sw, errors; parse("SWITCH",sw);
+  std::string sw, errors;
+  parse("SWITCH",sw);
   if(sw.length()>0) {
     switchingFunction.set(sw,errors);
   } else {
-    double r_0=-1.0, d_0; int nn, mm;
-    parse("NN",nn); parse("MM",mm);
-    parse("R_0",r_0); parse("D_0",d_0);
-    if( r_0<0.0 ) error("you must set a value for R_0");
+    double r_0=-1.0, d_0;
+    int nn, mm;
+    parse("NN",nn);
+    parse("MM",mm);
+    parse("R_0",r_0);
+    parse("D_0",d_0);
+    if( r_0<0.0 ) {
+      error("you must set a value for R_0");
+    }
     switchingFunction.set(nn,mm,r_0,d_0);
   }
   log.printf("  Steinhardt parameter of central atom and those within %s\n",( switchingFunction.description() ).c_str() );
   log<<"  Bibliography "<<plumed.cite("Tribello, Giberti, Sosso, Salvalaglio and Parrinello, J. Chem. Theory Comput. 13, 1317 (2017)")<<"\n";
   // Set the link cell cutoff
   setLinkCellCutoff( switchingFunction.get_dmax() );
-  rcut = switchingFunction.get_dmax(); rcut2 = rcut*rcut;
-  std::vector<AtomNumber> all_atoms; setupMultiColvarBase( all_atoms );
+  rcut = switchingFunction.get_dmax();
+  rcut2 = rcut*rcut;
+  std::vector<AtomNumber> all_atoms;
+  setupMultiColvarBase( all_atoms );
 }
 
 void Steinhardt::setAngularMomentum( const unsigned& ang ) {
-  tmom=ang; setVectorDimensionality( 2*(2*ang + 1) );
+  tmom=ang;
+  setVectorDimensionality( 2*(2*ang + 1) );
 }
 
 void Steinhardt::calculateVector( multicolvar::AtomValuePack& myatoms ) const {
@@ -76,7 +94,8 @@ void Steinhardt::calculateVector( multicolvar::AtomValuePack& myatoms ) const {
   std::complex<double> ii( 0.0, 1.0 ), dp_x, dp_y, dp_z;
 
   unsigned ncomp=2*tmom+1;
-  double sw, poly_ass, dlen; std::complex<double> powered;
+  double sw, poly_ass, dlen;
+  std::complex<double> powered;
   for(unsigned i=1; i<myatoms.getNumberOfAtoms(); ++i) {
     Vector& distance=myatoms.getPosition(i);  // getSeparation( myatoms.getPosition(0), myatoms.getPosition(i) );
     double d2;
@@ -92,7 +111,8 @@ void Steinhardt::calculateVector( multicolvar::AtomValuePack& myatoms ) const {
       // Do stuff for m=0
       poly_ass=deriv_poly( 0, distance[2]/dlen, dpoly_ass );
       // Derivatives of z/r wrt x, y, z
-      dz = -( distance[2] / dlen3 )*distance; dz[2] += (1.0 / dlen);
+      dz = -( distance[2] / dlen3 )*distance;
+      dz[2] += (1.0 / dlen);
       // Derivative wrt to the vector connecting the two atoms
       myrealvec = (+sw)*dpoly_ass*dz + poly_ass*(+dfunc)*distance;
       // Accumulate the derivatives
@@ -111,7 +131,8 @@ void Steinhardt::calculateVector( multicolvar::AtomValuePack& myatoms ) const {
         // else if(m==1) powered=std::complex<double>(1.,0);
         // else powered = std::complex<double>(0.,0.);
         // Real and imaginary parts of z
-        real_z = real(com1*powered); imag_z = imag(com1*powered );
+        real_z = real(com1*powered);
+        imag_z = imag(com1*powered );
 
         // Calculate steinhardt parameter
         tq6=poly_ass*real_z;   // Real part of steinhardt parameter
@@ -124,8 +145,12 @@ void Steinhardt::calculateVector( multicolvar::AtomValuePack& myatoms ) const {
         dp_z = md*powered*( -(distance[0]*distance[2])/dlen3-ii*(distance[1]*distance[2])/dlen3 );
 
         // Derivatives of real and imaginary parts of above
-        real_dz[0] = real( dp_x ); real_dz[1] = real( dp_y ); real_dz[2] = real( dp_z );
-        imag_dz[0] = imag( dp_x ); imag_dz[1] = imag( dp_y ); imag_dz[2] = imag( dp_z );
+        real_dz[0] = real( dp_x );
+        real_dz[1] = real( dp_y );
+        real_dz[2] = real( dp_z );
+        imag_dz[0] = imag( dp_x );
+        imag_dz[1] = imag( dp_y );
+        imag_dz[2] = imag( dp_z );
 
         // Complete derivative of steinhardt parameter
         myrealvec = (+sw)*dpoly_ass*real_z*dz + (+dfunc)*distance*tq6 + (+sw)*poly_ass*real_dz;
@@ -151,21 +176,30 @@ void Steinhardt::calculateVector( multicolvar::AtomValuePack& myatoms ) const {
 
   // Normalize
   updateActiveAtoms( myatoms );
-  for(unsigned i=0; i<getNumberOfComponentsInVector(); ++i) myatoms.getUnderlyingMultiValue().quotientRule( 2+i, 2+i );
+  for(unsigned i=0; i<getNumberOfComponentsInVector(); ++i) {
+    myatoms.getUnderlyingMultiValue().quotientRule( 2+i, 2+i );
+  }
 }
 
 double Steinhardt::deriv_poly( const unsigned& m, const double& val, double& df ) const {
   double fact=1.0;
-  for(unsigned j=1; j<=m; ++j) fact=fact*j;
+  for(unsigned j=1; j<=m; ++j) {
+    fact=fact*j;
+  }
   double res=coeff_poly[m]*fact;
 
-  double pow=1.0, xi=val, dxi=1.0; df=0.0;
+  double pow=1.0, xi=val, dxi=1.0;
+  df=0.0;
   for(int i=m+1; i<=tmom; ++i) {
     double fact=1.0;
-    for(unsigned j=i-m+1; j<=i; ++j) fact=fact*j;
+    for(unsigned j=i-m+1; j<=i; ++j) {
+      fact=fact*j;
+    }
     res=res+coeff_poly[i]*fact*xi;
     df = df + pow*coeff_poly[i]*fact*dxi;
-    xi=xi*val; dxi=dxi*val; pow+=1.0;
+    xi=xi*val;
+    dxi=dxi*val;
+    pow+=1.0;
   }
   df = df*normaliz[m];
   return normaliz[m]*res;

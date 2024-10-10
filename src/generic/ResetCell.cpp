@@ -91,8 +91,7 @@ END
 
 class ResetCell:
   public ActionPilot,
-  public ActionAtomistic
-{
+  public ActionAtomistic {
   std::string type;
   Tensor rotation,newbox;
 
@@ -115,13 +114,14 @@ void ResetCell::registerKeywords( Keywords& keys ) {
 ResetCell::ResetCell(const ActionOptions&ao):
   Action(ao),
   ActionPilot(ao),
-  ActionAtomistic(ao)
-{
+  ActionAtomistic(ao) {
   type.assign("TRIANGULAR");
   parse("TYPE",type);
 
   log<<"  type: "<<type<<"\n";
-  if(type!="TRIANGULAR") error("undefined type "+type);
+  if(type!="TRIANGULAR") {
+    error("undefined type "+type);
+  }
 
   checkRead();
 }
@@ -150,7 +150,9 @@ void ResetCell::calculate() {
   newbox[2][1]=c*(bc-ac*ab)/std::sqrt(1-ab*ab);
   newbox[2][2]=std::sqrt(c*c-newbox[2][0]*newbox[2][0]-newbox[2][1]*newbox[2][1]);
 
-  if(determinant(newbox)*determinant(box)<0) newbox[2][2]=-newbox[2][2];
+  if(determinant(newbox)*determinant(box)<0) {
+    newbox[2][2]=-newbox[2][2];
+  }
 
 // rotation matrix from old to new coordinates
   rotation=transpose(matmul(inverse(box),newbox));

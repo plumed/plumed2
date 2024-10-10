@@ -55,8 +55,7 @@ void VectorMean::reserveKeyword( Keywords& keys ) {
 
 VectorMean::VectorMean( const vesselbase::VesselOptions& da ) :
   FunctionVessel(da),
-  nder(0)
-{
+  nder(0) {
 }
 
 std::string VectorMean::value_descriptor() {
@@ -68,25 +67,36 @@ void VectorMean::resize() {
 
   if( getAction()->derivativesAreRequired() ) {
     nder=getAction()->getNumberOfDerivatives();
-    resizeBuffer( (1+nder)*(ncomp+1) ); getFinalValue()->resizeDerivatives( nder );
+    resizeBuffer( (1+nder)*(ncomp+1) );
+    getFinalValue()->resizeDerivatives( nder );
   } else {
-    nder=0; resizeBuffer(ncomp+1);
+    nder=0;
+    resizeBuffer(ncomp+1);
   }
 }
 
 void VectorMean::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
   unsigned ncomp=getAction()->getNumberOfQuantities()-2;
 
-  double weight=myvals.get(0); plumed_dbg_assert( weight>=getTolerance() );
+  double weight=myvals.get(0);
+  plumed_dbg_assert( weight>=getTolerance() );
   buffer[bufstart] += weight;
-  for(unsigned i=0; i<ncomp; ++i) buffer[bufstart + (1+i)*(1+nder)] += weight*myvals.get(2+i);
-  if( !getAction()->derivativesAreRequired() ) return;
+  for(unsigned i=0; i<ncomp; ++i) {
+    buffer[bufstart + (1+i)*(1+nder)] += weight*myvals.get(2+i);
+  }
+  if( !getAction()->derivativesAreRequired() ) {
+    return;
+  }
 
-  if( diffweight ) myvals.chainRule( 0, 0, 1, 0, 1.0, bufstart, buffer );
+  if( diffweight ) {
+    myvals.chainRule( 0, 0, 1, 0, 1.0, bufstart, buffer );
+  }
   for(unsigned i=0; i<ncomp; ++i) {
     double colvar=myvals.get(2+i);
     myvals.chainRule( 2+i, 1+i, 1, 0, weight, bufstart, buffer );
-    if( diffweight ) myvals.chainRule( 0, 1+i, 1, 0, colvar, bufstart, buffer );
+    if( diffweight ) {
+      myvals.chainRule( 0, 1+i, 1, 0, colvar, bufstart, buffer );
+    }
   }
   return;
 }
@@ -99,13 +109,18 @@ void VectorMean::finish( const std::vector<double>& buffer ) {
     sum+=tmp*tmp;
   }
   setOutputValue( sqrt(sum) );
-  if( !getAction()->derivativesAreRequired() ) return;
+  if( !getAction()->derivativesAreRequired() ) {
+    return;
+  }
 
-  Value* fval=getFinalValue(); double tw = 1.0 / sqrt(sum);
+  Value* fval=getFinalValue();
+  double tw = 1.0 / sqrt(sum);
   for(unsigned icomp=0; icomp<ncomp; ++icomp) {
     double tmp = buffer[bufstart + (icomp+1)*(1+nder)] / ww;
     unsigned bstart = bufstart + (1+icomp)*(nder+1) + 1;
-    for(unsigned jder=0; jder<nder; ++jder) fval->addDerivative( jder, (tw*tmp/ww)*( buffer[bstart + jder] - tmp*buffer[bufstart + 1 + jder] ) );
+    for(unsigned jder=0; jder<nder; ++jder) {
+      fval->addDerivative( jder, (tw*tmp/ww)*( buffer[bstart + jder] - tmp*buffer[bufstart + 1 + jder] ) );
+    }
   }
 }
 

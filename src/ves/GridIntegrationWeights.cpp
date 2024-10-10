@@ -39,8 +39,7 @@ std::vector<double> GridIntegrationWeights::getIntegrationWeights(const Grid* gr
     std::vector<double> weights_tmp;
     if(weights_type=="trapezoidal") {
       weights_tmp = getOneDimensionalTrapezoidalWeights(nbins[k],dx[k],isPeriodic[k]);
-    }
-    else {
+    } else {
       plumed_merror("getIntegrationWeights: unknown weight type, the available type is trapezoidal");
     }
     weights_perdim.push_back(weights_tmp);
@@ -75,11 +74,12 @@ std::vector<double> GridIntegrationWeights::getIntegrationWeights(const Grid* gr
 void GridIntegrationWeights::getOneDimensionalIntegrationPointsAndWeights(std::vector<double>& points, std::vector<double>& weights, const unsigned int nbins, const double min, const double max, const std::string& weights_type) {
   double dx = (max-min)/(static_cast<double>(nbins)-1.0);
   points.resize(nbins);
-  for(unsigned int i=0; i<nbins; i++) {points[i] = min + i*dx;}
+  for(unsigned int i=0; i<nbins; i++) {
+    points[i] = min + i*dx;
+  }
   if(weights_type=="trapezoidal") {
     weights = getOneDimensionalTrapezoidalWeights(nbins,dx,false);
-  }
-  else {
+  } else {
     plumed_merror("getOneDimensionalIntegrationWeights: unknown weight type, the available type is trapezoidal");
   }
 }
@@ -93,8 +93,7 @@ std::vector<double> GridIntegrationWeights::getOneDimensionalTrapezoidalWeights(
   if(!periodic) {
     weights_1d[0]= 0.5*dx;
     weights_1d[(nbins-1)]= 0.5*dx;
-  }
-  else {
+  } else {
     // as for periodic arguments the first point should be counted twice as the
     // grid doesn't include its periodic copy
     weights_1d[0]= dx;

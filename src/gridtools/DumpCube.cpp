@@ -79,18 +79,27 @@ void DumpCube::registerKeywords( Keywords& keys ) {
 
 DumpCube::DumpCube(const ActionOptions&ao):
   Action(ao),
-  GridPrintingBase(ao)
-{
+  GridPrintingBase(ao) {
   fmt = fmt + " ";
-  if( ingrid->getType()!="flat" ) error("cannot dump grid of type " + ingrid->getType() + " using DUMPCUBE");
-  if( ingrid->getDimension()!=3 ) error("cannot print cube file if grid does not contain three dimensional data");
+  if( ingrid->getType()!="flat" ) {
+    error("cannot dump grid of type " + ingrid->getType() + " using DUMPCUBE");
+  }
+  if( ingrid->getDimension()!=3 ) {
+    error("cannot print cube file if grid does not contain three dimensional data");
+  }
 
   if( ingrid->getNumberOfComponents()==1 ) {
     mycomp=0;
   } else {
-    int tcomp=-1; parse("COMPONENT",tcomp);
-    if( tcomp<0 ) error("component of vector field was not specified - use COMPONENT keyword");
-    mycomp=tcomp*(1+ingrid->getDimension()); if( ingrid->noDerivatives() ) mycomp=tcomp;
+    int tcomp=-1;
+    parse("COMPONENT",tcomp);
+    if( tcomp<0 ) {
+      error("component of vector field was not specified - use COMPONENT keyword");
+    }
+    mycomp=tcomp*(1+ingrid->getDimension());
+    if( ingrid->noDerivatives() ) {
+      mycomp=tcomp;
+    }
     log.printf("  using %dth component of grid \n",tcomp );
   }
 
@@ -109,12 +118,15 @@ void DumpCube::printGrid( OFile& ofile ) const {
   ofile.printf(ostr.c_str(),ingrid->getNbin()[1],0.0,lunit*ingrid->getGridSpacing()[1],0.0);  // shape of voxel
   ofile.printf(ostr.c_str(),ingrid->getNbin()[2],0.0,0.0,lunit*ingrid->getGridSpacing()[2]);
   ofile.printf(ostr.c_str(),1,0.0,0.0,0.0); // Fake atom otherwise VMD doesn't work
-  std::vector<unsigned> pp(3); std::vector<unsigned> nbin( ingrid->getNbin() );
+  std::vector<unsigned> pp(3);
+  std::vector<unsigned> nbin( ingrid->getNbin() );
   for(pp[0]=0; pp[0]<nbin[0]; ++pp[0]) {
     for(pp[1]=0; pp[1]<nbin[1]; ++pp[1]) {
       for(pp[2]=0; pp[2]<nbin[2]; ++pp[2]) {
         ofile.printf(fmt.c_str(), ingrid->getGridElement( ingrid->getIndex(pp), mycomp ) );
-        if(pp[2]%6==5) ofile.printf("\n");
+        if(pp[2]%6==5) {
+          ofile.printf("\n");
+        }
       }
       ofile.printf("\n");
     }

@@ -37,8 +37,7 @@ PLUMED_REGISTER_METRIC(DotProductDistance,"DOTPRODUCT")
 
 DotProductDistance::DotProductDistance( const ReferenceConfigurationOptions& ro ):
   ReferenceConfiguration(ro),
-  ArgumentOnlyDistance(ro)
-{
+  ArgumentOnlyDistance(ro) {
 }
 
 void DotProductDistance::read( const PDB& pdb ) {
@@ -48,9 +47,15 @@ void DotProductDistance::read( const PDB& pdb ) {
 double DotProductDistance::calculateArgumentDistance( const std::vector<Value*> & vals, const std::vector<double>& arg,
     ReferenceValuePack& myder, const bool& squared ) const {
   double dot=0.0;
-  for (std::size_t i=0; i<vals.size(); ++i) dot+=getReferenceArgument(i)*arg[i];
-  for (std::size_t i=0; i<vals.size(); ++i) myder.setArgumentDerivatives( i, -getReferenceArgument(i)/dot );
-  if(dot==0.0) dot=std::numeric_limits<double>::min();
+  for (std::size_t i=0; i<vals.size(); ++i) {
+    dot+=getReferenceArgument(i)*arg[i];
+  }
+  for (std::size_t i=0; i<vals.size(); ++i) {
+    myder.setArgumentDerivatives( i, -getReferenceArgument(i)/dot );
+  }
+  if(dot==0.0) {
+    dot=std::numeric_limits<double>::min();
+  }
   return -log(dot);
 }
 

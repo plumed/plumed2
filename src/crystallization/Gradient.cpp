@@ -73,61 +73,103 @@ void Gradient::registerKeywords( Keywords& keys ) {
 Gradient::Gradient(const ActionOptions&ao):
   Action(ao),
   VolumeGradientBase(ao),
-  nbins(3)
-{
+  nbins(3) {
   std::vector<AtomNumber> atom;
   parseAtomList("ORIGIN",atom);
-  if( atom.size()!=1 ) error("should only be one atom specified");
+  if( atom.size()!=1 ) {
+    error("should only be one atom specified");
+  }
   log.printf("  origin is at position of atom : %d\n",atom[0].serial() );
 
-  std::string direction; parse("DIR",direction);
-  std::vector<unsigned> tbins; parseVector("NBINS",tbins);
+  std::string direction;
+  parse("DIR",direction);
+  std::vector<unsigned> tbins;
+  parseVector("NBINS",tbins);
   for(unsigned i=0; i<tbins.size(); ++i) {
-    if( tbins[i]<2 ) error("Number of grid points should be greater than 1");
+    if( tbins[i]<2 ) {
+      error("Number of grid points should be greater than 1");
+    }
   }
 
   if( direction=="x" ) {
-    if( tbins.size()!=1 ) error("mismatch between number of bins and direction");
-    nbins[0]=tbins[0]; nbins[1]=0; nbins[2]=0;
+    if( tbins.size()!=1 ) {
+      error("mismatch between number of bins and direction");
+    }
+    nbins[0]=tbins[0];
+    nbins[1]=0;
+    nbins[2]=0;
   } else if( direction=="y" ) {
-    if( tbins.size()!=1 ) error("mismatch between number of bins and direction");
-    nbins[0]=0; nbins[1]=tbins[0]; nbins[2]=0;
+    if( tbins.size()!=1 ) {
+      error("mismatch between number of bins and direction");
+    }
+    nbins[0]=0;
+    nbins[1]=tbins[0];
+    nbins[2]=0;
   } else if( direction=="z" ) {
-    if( tbins.size()!=1 ) error("mismatch between number of bins and direction");
-    nbins[0]=0; nbins[1]=0; nbins[2]=tbins[0];
+    if( tbins.size()!=1 ) {
+      error("mismatch between number of bins and direction");
+    }
+    nbins[0]=0;
+    nbins[1]=0;
+    nbins[2]=tbins[0];
   } else if( direction=="xy" ) {
-    if( tbins.size()!=2 ) error("mismatch between number of bins and direction");
-    nbins[0]=tbins[0]; nbins[1]=tbins[1]; nbins[2]=0;
+    if( tbins.size()!=2 ) {
+      error("mismatch between number of bins and direction");
+    }
+    nbins[0]=tbins[0];
+    nbins[1]=tbins[1];
+    nbins[2]=0;
   } else if( direction=="xz" ) {
-    if( tbins.size()!=2 ) error("mismatch between number of bins and direction");
-    nbins[0]=tbins[0]; nbins[1]=0; nbins[2]=tbins[1];
+    if( tbins.size()!=2 ) {
+      error("mismatch between number of bins and direction");
+    }
+    nbins[0]=tbins[0];
+    nbins[1]=0;
+    nbins[2]=tbins[1];
   } else if( direction=="yz" ) {
-    if( tbins.size()!=2 ) error("mismatch between number of bins and direction");
-    nbins[0]=0; nbins[1]=tbins[0]; nbins[2]=tbins[1];
+    if( tbins.size()!=2 ) {
+      error("mismatch between number of bins and direction");
+    }
+    nbins[0]=0;
+    nbins[1]=tbins[0];
+    nbins[2]=tbins[1];
   } else if( direction=="xyz" ) {
-    if( tbins.size()!=3 ) error("mismatch between number of bins and direction");
-    nbins[0]=tbins[0]; nbins[1]=tbins[1]; nbins[2]=tbins[2];
+    if( tbins.size()!=3 ) {
+      error("mismatch between number of bins and direction");
+    }
+    nbins[0]=tbins[0];
+    nbins[1]=tbins[1];
+    nbins[2]=tbins[2];
   } else {
     error( direction + " is not valid gradient direction");
   }
 
   // Find number of quantities
-  if( getPntrToMultiColvar()->isDensity() ) vend=2;
-  else if( getPntrToMultiColvar()->getNumberOfQuantities()==2 ) vend=2;
-  else vend = getPntrToMultiColvar()->getNumberOfQuantities();
+  if( getPntrToMultiColvar()->isDensity() ) {
+    vend=2;
+  } else if( getPntrToMultiColvar()->getNumberOfQuantities()==2 ) {
+    vend=2;
+  } else {
+    vend = getPntrToMultiColvar()->getNumberOfQuantities();
+  }
   nquantities = vend + nbins[0] + nbins[1] + nbins[2];
 
   // Output some nice information
   std::string functype=getPntrToMultiColvar()->getName();
-  std::transform( functype.begin(), functype.end(), functype.begin(), [](unsigned char c) { return std::tolower(c); } );
+  std::transform( functype.begin(), functype.end(), functype.begin(), [](unsigned char c) {
+    return std::tolower(c);
+  } );
   log.printf("  calculating gradient of %s in %s direction \n",functype.c_str(), direction.c_str() );
   log<<"  Bibliography:"<<plumed.cite("Giberti, Tribello and Parrinello, J. Chem. Theory Comput., 9, 2526 (2013)")<<"\n";
 
-  parse("SIGMA",sigma); parse("KERNEL",kerneltype);
-  checkRead(); requestAtoms(atom);
+  parse("SIGMA",sigma);
+  parse("KERNEL",kerneltype);
+  checkRead();
+  requestAtoms(atom);
 
   // And setup the vessel
-  std::string input; addVessel( "GRADIENT", input, -1 );
+  std::string input;
+  addVessel( "GRADIENT", input, -1 );
   // And resize everything
   readVesselKeywords();
 }
@@ -138,13 +180,19 @@ void Gradient::setupRegions() {
 
 void Gradient::calculateAllVolumes( const unsigned& curr, MultiValue& outvals ) const {
   // Setup the bead
-  HistogramBead bead; bead.isNotPeriodic(); bead.setKernelType( kerneltype );
+  HistogramBead bead;
+  bead.isNotPeriodic();
+  bead.setKernelType( kerneltype );
 
   Vector cpos = pbcDistance( getPosition(0), getPntrToMultiColvar()->getCentralAtomPos( curr ) );
   // Note we use the pbc from base multicolvar so that we get numerical derivatives correct
   Vector oderiv, fpos = (getPntrToMultiColvar()->getPbc()).realToScaled( cpos );
 
-  Vector deriv; unsigned nbase=vend; std::vector<Vector> refder(1); Tensor vir; vir.zero();
+  Vector deriv;
+  unsigned nbase=vend;
+  std::vector<Vector> refder(1);
+  Tensor vir;
+  vir.zero();
   for(unsigned idir=0; idir<3; ++idir) {
     deriv[0]=deriv[1]=deriv[2]=0.0;
     double delx = 1.0 / static_cast<double>( nbins[idir] );

@@ -194,8 +194,7 @@ void Q3::registerKeywords( Keywords& keys ) {
 
 Q3::Q3(const ActionOptions& ao ):
   Action(ao),
-  Steinhardt(ao)
-{
+  Steinhardt(ao) {
   setAngularMomentum(3);
 
 // Spherical harmonics normalization:

@@ -45,8 +45,7 @@ ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
   lockRequestAtoms(false),
   donotretrieve(false),
   donotforce(false),
-  atoms(plumed.getAtoms())
-{
+  atoms(plumed.getAtoms()) {
   atoms.add(this);
 //  if(atoms.getNatoms()==0) error("Cannot perform calculations involving atoms without atoms");
 }
@@ -65,13 +64,23 @@ void ActionAtomistic::requestAtoms(const std::vector<AtomNumber> & a, const bool
   masses.resize(nat);
   charges.resize(nat);
   int n=atoms.positions.size();
-  if(clearDep) clearDependencies();
+  if(clearDep) {
+    clearDependencies();
+  }
   unique.clear();
   for(unsigned i=0; i<indexes.size(); i++) {
-    if(indexes[i].index()>=n) { std::string num; Tools::convert( indexes[i].serial(),num ); error("atom " + num + " out of range"); }
-    if(atoms.isVirtualAtom(indexes[i])) addDependency(atoms.getVirtualAtomsAction(indexes[i]));
+    if(indexes[i].index()>=n) {
+      std::string num;
+      Tools::convert( indexes[i].serial(),num );
+      error("atom " + num + " out of range");
+    }
+    if(atoms.isVirtualAtom(indexes[i])) {
+      addDependency(atoms.getVirtualAtomsAction(indexes[i]));
+    }
 // only real atoms are requested to lower level Atoms class
-    else unique.push_back(indexes[i]);
+    else {
+      unique.push_back(indexes[i]);
+    }
   }
   Tools::removeDuplicates(unique);
   updateUniqueLocal();
@@ -107,7 +116,8 @@ void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, c
   std::vector<Vector> savedPositions(natoms);
   const double delta=std::sqrt(epsilon);
 
-  for(int i=0; i<natoms; i++) for(int k=0; k<3; k++) {
+  for(int i=0; i<natoms; i++)
+    for(int k=0; k<3; k++) {
       savedPositions[i][k]=positions[i][k];
       positions[i][k]=positions[i][k]+delta;
       a->calculate();
@@ -117,17 +127,26 @@ void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, c
       }
     }
   Tensor box(pbc.getBox());
-  for(int i=0; i<3; i++) for(int k=0; k<3; k++) {
+  for(int i=0; i<3; i++)
+    for(int k=0; k<3; k++) {
       double arg0=box(i,k);
-      for(int j=0; j<natoms; j++) positions[j]=pbc.realToScaled(positions[j]);
+      for(int j=0; j<natoms; j++) {
+        positions[j]=pbc.realToScaled(positions[j]);
+      }
       box(i,k)=box(i,k)+delta;
       pbc.setBox(box);
-      for(int j=0; j<natoms; j++) positions[j]=pbc.scaledToReal(positions[j]);
+      for(int j=0; j<natoms; j++) {
+        positions[j]=pbc.scaledToReal(positions[j]);
+      }
       a->calculate();
       box(i,k)=arg0;
       pbc.setBox(box);
-      for(int j=0; j<natoms; j++) positions[j]=savedPositions[j];
-      for(int j=0; j<nval; j++) valuebox[j](i,k)=a->getOutputQuantity(j);
+      for(int j=0; j<natoms; j++) {
+        positions[j]=savedPositions[j];
+      }
+      for(int j=0; j<nval; j++) {
+        valuebox[j](i,k)=a->getOutputQuantity(j);
+      }
     }
 
   a->calculate();
@@ -136,15 +155,22 @@ void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, c
     Value* v=a->copyOutput(j);
     double ref=v->get();
     if(v->hasDerivatives()) {
-      for(int i=0; i<natoms; i++) for(int k=0; k<3; k++) {
+      for(int i=0; i<natoms; i++)
+        for(int k=0; k<3; k++) {
           double d=(value[j*natoms+i][k]-ref)/delta;
           v->addDerivative(startnum+3*i+k,d);
         }
       Tensor virial;
-      for(int i=0; i<3; i++) for(int k=0; k<3; k++)virial(i,k)= (valuebox[j](i,k)-ref)/delta;
+      for(int i=0; i<3; i++)
+        for(int k=0; k<3; k++) {
+          virial(i,k)= (valuebox[j](i,k)-ref)/delta;
+        }
 // BE CAREFUL WITH NON ORTHOROMBIC CELL
       virial=-matmul(box.transpose(),virial);
-      for(int i=0; i<3; i++) for(int k=0; k<3; k++) v->addDerivative(startnum+3*natoms+3*k+i,virial(k,i));
+      for(int i=0; i<3; i++)
+        for(int k=0; k<3; k++) {
+          v->addDerivative(startnum+3*natoms+3*k+i,virial(k,i));
+        }
     }
   }
 }
@@ -158,38 +184,54 @@ void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::ve
   std::vector<std::string> strings;
   if( num<0 ) {
     parseVector(key,strings);
-    if(strings.empty()) return;
+    if(strings.empty()) {
+      return;
+    }
   } else {
-    if ( !parseNumberedVector(key,num,strings) ) return;
+    if ( !parseNumberedVector(key,num,strings) ) {
+      return;
+    }
   }
   interpretAtomList( strings, t );
 }
 
 void ActionAtomistic::interpretAtomList(std::vector<std::string>& strings, std::vector<AtomNumber> &t) {
-  Tools::interpretRanges(strings); t.resize(0);
+  Tools::interpretRanges(strings);
+  t.resize(0);
   for(unsigned i=0; i<strings.size(); ++i) {
     AtomNumber atom;
     bool ok=Tools::convertNoexcept(strings[i],atom); // this is converting strings to AtomNumbers
-    if(ok) t.push_back(atom);
+    if(ok) {
+      t.push_back(atom);
+    }
 // here we check if this is a special symbol for MOLINFO
     if( !ok && strings[i].compare(0,1,"@")==0 ) {
       std::string symbol=strings[i].substr(1);
       if(symbol=="allatoms") {
         const auto n=plumed.getAtoms().getNatoms() + plumed.getAtoms().getNVirtualAtoms();
         t.reserve(t.size()+n);
-        for(unsigned i=0; i<n; i++) t.push_back(AtomNumber::index(i));
+        for(unsigned i=0; i<n; i++) {
+          t.push_back(AtomNumber::index(i));
+        }
         ok=true;
       } else if(symbol=="mdatoms") {
         const auto n=plumed.getAtoms().getNatoms();
         t.reserve(t.size()+n);
-        for(unsigned i=0; i<n; i++) t.push_back(AtomNumber::index(i));
+        for(unsigned i=0; i<n; i++) {
+          t.push_back(AtomNumber::index(i));
+        }
         ok=true;
       } else {
         auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
         if( moldat ) {
-          std::vector<AtomNumber> atom_list; moldat->interpretSymbol( symbol, atom_list );
-          if( atom_list.size()>0 ) { ok=true; t.insert(t.end(),atom_list.begin(),atom_list.end()); }
-          else { error(strings[i] + " is not a label plumed knows"); }
+          std::vector<AtomNumber> atom_list;
+          moldat->interpretSymbol( symbol, atom_list );
+          if( atom_list.size()>0 ) {
+            ok=true;
+            t.insert(t.end(),atom_list.begin(),atom_list.end());
+          } else {
+            error(strings[i] + " is not a label plumed knows");
+          }
         } else {
           error("atoms specified using @ symbol but no MOLINFO was available");
         }
@@ -208,14 +250,17 @@ void ActionAtomistic::interpretAtomList(std::vector<std::string>& strings, std::
       const ActionSet&actionSet(plumed.getActionSet());
       for(const auto & a : actionSet) {
         ActionWithVirtualAtom* c=dynamic_cast<ActionWithVirtualAtom*>(a.get());
-        if(c) if(c->getLabel()==strings[i]) {
+        if(c)
+          if(c->getLabel()==strings[i]) {
             ok=true;
             t.push_back(c->getIndex());
             break;
           }
       }
     }
-    if(!ok) error("it was not possible to interpret atom name " + strings[i]);
+    if(!ok) {
+      error("it was not possible to interpret atom name " + strings[i]);
+    }
     // plumed_massert(ok,"it was not possible to interpret atom name " + strings[i]);
   }
 }
@@ -223,49 +268,80 @@ void ActionAtomistic::interpretAtomList(std::vector<std::string>& strings, std::
 void ActionAtomistic::retrieveAtoms() {
   pbc=atoms.pbc;
   Colvar*cc=dynamic_cast<Colvar*>(this);
-  if(cc && cc->checkIsEnergy()) energy=atoms.getEnergy();
-  if(donotretrieve) return;
+  if(cc && cc->checkIsEnergy()) {
+    energy=atoms.getEnergy();
+  }
+  if(donotretrieve) {
+    return;
+  }
   chargesWereSet=atoms.chargesWereSet();
   const std::vector<Vector> & p(atoms.positions);
   const std::vector<double> & c(atoms.charges);
   const std::vector<double> & m(atoms.masses);
-  for(unsigned j=0; j<indexes.size(); j++) positions[j]=p[indexes[j].index()];
-  for(unsigned j=0; j<indexes.size(); j++) charges[j]=c[indexes[j].index()];
-  for(unsigned j=0; j<indexes.size(); j++) masses[j]=m[indexes[j].index()];
+  for(unsigned j=0; j<indexes.size(); j++) {
+    positions[j]=p[indexes[j].index()];
+  }
+  for(unsigned j=0; j<indexes.size(); j++) {
+    charges[j]=c[indexes[j].index()];
+  }
+  for(unsigned j=0; j<indexes.size(); j++) {
+    masses[j]=m[indexes[j].index()];
+  }
 }
 
 void ActionAtomistic::setForcesOnAtoms(const std::vector<double>& forcesToApply, unsigned ind) {
-  if(donotforce) return;
-  for(unsigned i=0; i<indexes.size(); ++i) {
-    forces[i][0]=forcesToApply[ind]; ind++;
-    forces[i][1]=forcesToApply[ind]; ind++;
-    forces[i][2]=forcesToApply[ind]; ind++;
+  if(donotforce) {
+    return;
   }
-  virial(0,0)=forcesToApply[ind]; ind++;
-  virial(0,1)=forcesToApply[ind]; ind++;
-  virial(0,2)=forcesToApply[ind]; ind++;
-  virial(1,0)=forcesToApply[ind]; ind++;
-  virial(1,1)=forcesToApply[ind]; ind++;
-  virial(1,2)=forcesToApply[ind]; ind++;
-  virial(2,0)=forcesToApply[ind]; ind++;
-  virial(2,1)=forcesToApply[ind]; ind++;
+  for(unsigned i=0; i<indexes.size(); ++i) {
+    forces[i][0]=forcesToApply[ind];
+    ind++;
+    forces[i][1]=forcesToApply[ind];
+    ind++;
+    forces[i][2]=forcesToApply[ind];
+    ind++;
+  }
+  virial(0,0)=forcesToApply[ind];
+  ind++;
+  virial(0,1)=forcesToApply[ind];
+  ind++;
+  virial(0,2)=forcesToApply[ind];
+  ind++;
+  virial(1,0)=forcesToApply[ind];
+  ind++;
+  virial(1,1)=forcesToApply[ind];
+  ind++;
+  virial(1,2)=forcesToApply[ind];
+  ind++;
+  virial(2,0)=forcesToApply[ind];
+  ind++;
+  virial(2,1)=forcesToApply[ind];
+  ind++;
   virial(2,2)=forcesToApply[ind];
   plumed_dbg_assert( ind+1==forcesToApply.size());
 }
 
 void ActionAtomistic::applyForces() {
-  if(donotforce) return;
+  if(donotforce) {
+    return;
+  }
   std::vector<Vector>& f(atoms.forces);
   Tensor& v(atoms.virial);
-  for(unsigned j=0; j<indexes.size(); j++) f[indexes[j].index()]+=forces[j];
+  for(unsigned j=0; j<indexes.size(); j++) {
+    f[indexes[j].index()]+=forces[j];
+  }
   v+=virial;
   atoms.forceOnEnergy+=forceOnEnergy;
-  if(extraCV.length()>0) atoms.updateExtraCVForce(extraCV,forceOnExtraCV);
+  if(extraCV.length()>0) {
+    atoms.updateExtraCVForce(extraCV,forceOnExtraCV);
+  }
 }
 
 void ActionAtomistic::clearOutputForces() {
   virial.zero();
-  if(donotforce) return;
+  if(donotforce) {
+    return;
+  }
   Tools::set_to_zero(forces);
   forceOnEnergy=0.0;
   forceOnExtraCV=0.0;
@@ -274,15 +350,25 @@ void ActionAtomistic::clearOutputForces() {
 
 void ActionAtomistic::readAtomsFromPDB(const PDB& pdb) {
   Colvar*cc=dynamic_cast<Colvar*>(this);
-  if(cc && cc->checkIsEnergy()) error("can't read energies from pdb files");
+  if(cc && cc->checkIsEnergy()) {
+    error("can't read energies from pdb files");
+  }
 
   for(unsigned j=0; j<indexes.size(); j++) {
-    if( indexes[j].index()>pdb.size() ) error("there are not enough atoms in the input pdb file");
-    if( pdb.getAtomNumbers()[j].index()!=indexes[j].index() ) error("there are atoms missing in the pdb file");
+    if( indexes[j].index()>pdb.size() ) {
+      error("there are not enough atoms in the input pdb file");
+    }
+    if( pdb.getAtomNumbers()[j].index()!=indexes[j].index() ) {
+      error("there are atoms missing in the pdb file");
+    }
     positions[j]=pdb.getPositions()[indexes[j].index()];
   }
-  for(unsigned j=0; j<indexes.size(); j++) charges[j]=pdb.getBeta()[indexes[j].index()];
-  for(unsigned j=0; j<indexes.size(); j++) masses[j]=pdb.getOccupancy()[indexes[j].index()];
+  for(unsigned j=0; j<indexes.size(); j++) {
+    charges[j]=pdb.getBeta()[indexes[j].index()];
+  }
+  for(unsigned j=0; j<indexes.size(); j++) {
+    masses[j]=pdb.getOccupancy()[indexes[j].index()];
+  }
 }
 
 void ActionAtomistic::makeWhole() {
@@ -297,7 +383,9 @@ void ActionAtomistic::updateUniqueLocal() {
   if(atoms.dd && atoms.shuffledAtoms>0) {
     unique_local.clear();
     for(auto pp=unique.begin(); pp!=unique.end(); ++pp) {
-      if(atoms.g2l[pp->index()]>=0) unique_local.push_back(*pp); // already sorted
+      if(atoms.g2l[pp->index()]>=0) {
+        unique_local.push_back(*pp);  // already sorted
+      }
     }
   } else {
     unique_local=unique; // copy

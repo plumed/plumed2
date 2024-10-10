@@ -32,26 +32,38 @@ void ActionShortcut::registerKeywords( Keywords& keys ) {
 
 ActionShortcut::ActionShortcut(const ActionOptions&ao):
   Action(ao),
-  shortcutlabel(label)
-{
-  std::string s; Tools::convert(plumed.getActionSet().size(),s);
+  shortcutlabel(label) {
+  std::string s;
+  Tools::convert(plumed.getActionSet().size(),s);
   if( shortcutlabel==("@" + s) ) {
-    std::string t; Tools::convert(plumed.getActionSet().size()+1,t);
+    std::string t;
+    Tools::convert(plumed.getActionSet().size()+1,t);
     shortcutlabel="@" + t;
-  } else label = ("@" + s);
+  } else {
+    label = ("@" + s);
+  }
 }
 
 void ActionShortcut::readInputLine( const std::string& input ) {
-  std::string f_input = input; savedInputLines.push_back( input );
+  std::string f_input = input;
+  savedInputLines.push_back( input );
   if( update_from!=std::numeric_limits<double>::max() ) {
-    std::string ufrom; Tools::convert( update_from, ufrom ); f_input += " UPDATE_FROM=" + ufrom;
+    std::string ufrom;
+    Tools::convert( update_from, ufrom );
+    f_input += " UPDATE_FROM=" + ufrom;
   }
   if( update_until!=std::numeric_limits<double>::max() ) {
-    std::string util; Tools::convert( update_until, util ); f_input += " UPDATE_UNTIL=" + util;
+    std::string util;
+    Tools::convert( update_until, util );
+    f_input += " UPDATE_UNTIL=" + util;
   }
   if( keywords.exists("RESTART") ) {
-    if( restart ) f_input += " RESTART=YES";
-    if( !restart ) f_input += " RESTART=NO";
+    if( restart ) {
+      f_input += " RESTART=YES";
+    }
+    if( !restart ) {
+      f_input += " RESTART=NO";
+    }
   }
   plumed.readInputLine( f_input );
 }

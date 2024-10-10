@@ -35,8 +35,7 @@
 #include "xdrfile/xdrfile_trr.h"
 
 
-namespace PLMD
-{
+namespace PLMD {
 namespace generic {
 
 //+PLUMEDOC PRINTANALYSIS DUMPATOMS
@@ -118,8 +117,7 @@ DUMPATOMS STRIDE=10 FILE=file.xtc ATOMS=1-10,c1 PRECISION=7
 
 class DumpAtoms:
   public ActionAtomistic,
-  public ActionPilot
-{
+  public ActionPilot {
   OFile of;
   double lenunit;
   int iprecision;
@@ -161,12 +159,13 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao),
   ActionPilot(ao),
-  iprecision(3)
-{
+  iprecision(3) {
   std::vector<AtomNumber> atoms;
   std::string file;
   parse("FILE",file);
-  if(file.length()==0) error("name out output file was not specified");
+  if(file.length()==0) {
+    error("name out output file was not specified");
+  }
   type=Tools::extension(file);
   log<<"  file name "<<file<<"\n";
   if(type=="gro" || type=="xyz" || type=="xtc" || type=="trr") {
@@ -179,7 +178,9 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
   parse("TYPE",ntype);
   if(ntype.length()>0) {
     if(ntype!="xyz" && ntype!="gro" && ntype!="xtc" && ntype!="trr"
-      ) error("TYPE cannot be understood");
+      ) {
+      error("TYPE cannot be understood");
+    }
     log<<"  file type enforced to be "<<ntype<<"\n";
     type=ntype;
   }
@@ -203,15 +204,26 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
 
   parseAtomList("ATOMS",atoms);
 
-  std::string unitname; parse("UNITS",unitname);
+  std::string unitname;
+  parse("UNITS",unitname);
   if(unitname!="PLUMED") {
-    Units myunit; myunit.setLength(unitname);
-    if(myunit.getLength()!=1.0 && type=="gro") error("gro files should be in nm");
-    if(myunit.getLength()!=1.0 && type=="xtc") error("xtc files should be in nm");
-    if(myunit.getLength()!=1.0 && type=="trr") error("trr files should be in nm");
+    Units myunit;
+    myunit.setLength(unitname);
+    if(myunit.getLength()!=1.0 && type=="gro") {
+      error("gro files should be in nm");
+    }
+    if(myunit.getLength()!=1.0 && type=="xtc") {
+      error("xtc files should be in nm");
+    }
+    if(myunit.getLength()!=1.0 && type=="trr") {
+      error("trr files should be in nm");
+    }
     lenunit=plumed.getAtoms().getUnits().getLength()/myunit.getLength();
-  } else if(type=="gro" || type=="xtc" || type=="trr") lenunit=plumed.getAtoms().getUnits().getLength();
-  else lenunit=1.0;
+  } else if(type=="gro" || type=="xtc" || type=="trr") {
+    lenunit=plumed.getAtoms().getUnits().getLength();
+  } else {
+    lenunit=1.0;
+  }
 
   checkRead();
   of.link(*this);
@@ -227,18 +239,29 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
     xd=xdrfile::xdrfile_open(path.c_str(),mode.c_str());
   }
   log.printf("  printing the following atoms in %s :", unitname.c_str() );
-  for(unsigned i=0; i<atoms.size(); ++i) log.printf(" %d",atoms[i].serial() );
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    log.printf(" %d",atoms[i].serial() );
+  }
   log.printf("\n");
   requestAtoms(atoms);
   auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   if( moldat ) {
     log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
     names.resize(atoms.size());
-    for(unsigned i=0; i<atoms.size(); i++) if(atoms[i].index()<moldat->getPDBsize()) names[i]=moldat->getAtomName(atoms[i]);
+    for(unsigned i=0; i<atoms.size(); i++)
+      if(atoms[i].index()<moldat->getPDBsize()) {
+        names[i]=moldat->getAtomName(atoms[i]);
+      }
     residueNumbers.resize(atoms.size());
-    for(unsigned i=0; i<residueNumbers.size(); ++i) if(atoms[i].index()<moldat->getPDBsize()) residueNumbers[i]=moldat->getResidueNumber(atoms[i]);
+    for(unsigned i=0; i<residueNumbers.size(); ++i)
+      if(atoms[i].index()<moldat->getPDBsize()) {
+        residueNumbers[i]=moldat->getResidueNumber(atoms[i]);
+      }
     residueNames.resize(atoms.size());
-    for(unsigned i=0; i<residueNames.size(); ++i) if(atoms[i].index()<moldat->getPDBsize()) residueNames[i]=moldat->getResidueName(atoms[i]);
+    for(unsigned i=0; i<residueNames.size(); ++i)
+      if(atoms[i].index()<moldat->getPDBsize()) {
+        residueNames[i]=moldat->getResidueName(atoms[i]);
+      }
   }
 }
 
@@ -258,7 +281,10 @@ void DumpAtoms::update() {
     for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
       const char* defname="X";
       const char* name=defname;
-      if(names.size()>0) if(names[i].length()>0) name=names[i].c_str();
+      if(names.size()>0)
+        if(names[i].length()>0) {
+          name=names[i].c_str();
+        }
       of.printf(("%s "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+"\n").c_str(),name,lenunit*getPosition(i)(0),lenunit*getPosition(i)(1),lenunit*getPosition(i)(2));
     }
   } else if(type=="gro") {
@@ -269,10 +295,17 @@ void DumpAtoms::update() {
       const char* defname="X";
       const char* name=defname;
       unsigned residueNumber=0;
-      if(names.size()>0) if(names[i].length()>0) name=names[i].c_str();
-      if(residueNumbers.size()>0) residueNumber=residueNumbers[i];
+      if(names.size()>0)
+        if(names[i].length()>0) {
+          name=names[i].c_str();
+        }
+      if(residueNumbers.size()>0) {
+        residueNumber=residueNumbers[i];
+      }
       std::string resname="";
-      if(residueNames.size()>0) resname=residueNames[i];
+      if(residueNames.size()>0) {
+        resname=residueNames[i];
+      }
       of.printf(("%5u%-5s%5s%5d"+fmt_gro_pos+fmt_gro_pos+fmt_gro_pos+"\n").c_str(),
                 residueNumber%100000,resname.c_str(),name,getAbsoluteIndex(i).serial()%100000,
                 lenunit*getPosition(i)(0),lenunit*getPosition(i)(1),lenunit*getPosition(i)(2));
@@ -288,17 +321,25 @@ void DumpAtoms::update() {
     int step=getStep();
     float time=getTime()/plumed.getAtoms().getUnits().getTime();
     float precision=Tools::fastpow(10.0,iprecision);
-    for(int i=0; i<3; i++) for(int j=0; j<3; j++) box[i][j]=lenunit*t(i,j);
+    for(int i=0; i<3; i++)
+      for(int j=0; j<3; j++) {
+        box[i][j]=lenunit*t(i,j);
+      }
 // here we cannot use a std::vector<rvec> since it does not compile.
 // we thus use a std::unique_ptr<rvec[]>
     auto pos = Tools::make_unique<xdrfile::rvec[]>(natoms);
-    for(int i=0; i<natoms; i++) for(int j=0; j<3; j++) pos[i][j]=lenunit*getPosition(i)(j);
+    for(int i=0; i<natoms; i++)
+      for(int j=0; j<3; j++) {
+        pos[i][j]=lenunit*getPosition(i)(j);
+      }
     if(type=="xtc") {
       write_xtc(xd,natoms,step,time,box,&pos[0],precision);
     } else if(type=="trr") {
       write_trr(xd,natoms,step,time,0.0,box,&pos[0],NULL,NULL);
     }
-  } else plumed_merror("unknown file type "+type);
+  } else {
+    plumed_merror("unknown file type "+type);
+  }
 }
 
 DumpAtoms::~DumpAtoms() {

@@ -48,8 +48,7 @@ plumed kt --temp 300 --units eV
 //+ENDPLUMEDOC
 
 class kt:
-  public CLTool
-{
+  public CLTool {
 public:
   static void registerKeywords( Keywords& keys );
   explicit kt(const CLToolOptions& co );
@@ -68,16 +67,18 @@ void kt::registerKeywords( Keywords& keys ) {
 }
 
 kt::kt(const CLToolOptions& co ):
-  CLTool(co)
-{
+  CLTool(co) {
   inputdata=commandline;
 }
 
 int kt::main(FILE* in, FILE*out,Communicator& pc) {
 
-  std::string unitname; parse("--units",unitname);
-  Units units; units.setEnergy( unitname );
-  double temp; parse("--temp",temp);
+  std::string unitname;
+  parse("--units",unitname);
+  Units units;
+  units.setEnergy( unitname );
+  double temp;
+  parse("--temp",temp);
   double kk=(kBoltzmann*temp)/units.getEnergy();
   std::fprintf(out,"When the temperature is %f kelvin kT is equal to %f %s\n",temp,kk,unitname.c_str());
   return 0;

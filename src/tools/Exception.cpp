@@ -37,8 +37,7 @@ namespace {
 
 // function to simplify a Unix - styled
 // absolute path
-std::string simplify(const std::string & path)
-{
+std::string simplify(const std::string & path) {
   // using vector in place of stack
   std::vector<std::string> v;
   int n = path.length();
@@ -53,13 +52,12 @@ std::string simplify(const std::string & path)
 
     // if ".." , we pop.
     if (dir == "..") {
-      if (!v.empty())
+      if (!v.empty()) {
         v.pop_back();
-    }
-    else if (dir == "." || dir == "") {
+      }
+    } else if (dir == "." || dir == "") {
       // do nothing (added for better understanding.)
-    }
-    else {
+    } else {
       // push the current directory into the vector.
       v.push_back(dir);
     }
@@ -68,22 +66,24 @@ std::string simplify(const std::string & path)
   // forming the ans
   bool first=true;
   for (auto i : v) {
-    if(!first) ans += "/";
+    if(!first) {
+      ans += "/";
+    }
     first=false;
     ans += i;
   }
 
   // vector is empty
-  if (ans == "")
+  if (ans == "") {
     return "/";
+  }
 
   return ans;
 }
 
 }
 
-Exception::Exception()
-{
+Exception::Exception() {
   callstack.fill(nullptr);
 #ifdef __PLUMED_HAS_EXECINFO
   callstack_n = backtrace(&callstack[0], callstack.size()-1);
@@ -96,18 +96,18 @@ Exception::Exception()
 #endif
 }
 
-Exception& Exception::operator<<(const std::string&msg)
-{
+Exception& Exception::operator<<(const std::string&msg) {
   if(msg.length()>0) {
-    if(note) this->msg +="\n";
+    if(note) {
+      this->msg +="\n";
+    }
     this->msg +=msg;
     note=false;
   }
   return *this;
 }
 
-Exception& Exception::operator<<(const Location&loc)
-{
+Exception& Exception::operator<<(const Location&loc) {
   if(loc.file) {
     const std::size_t clinelen=1000;
     char cline[clinelen];
@@ -130,8 +130,7 @@ Exception& Exception::operator<<(const Location&loc)
   return *this;
 }
 
-Exception& Exception::operator<<(const Assertion&as)
-{
+Exception& Exception::operator<<(const Assertion&as) {
   if(as.assertion) {
     this->msg += "\n+++ assertion failed: ";
     this->msg += as.assertion;
@@ -144,7 +143,10 @@ const char* Exception::stack() const {
 #ifdef __PLUMED_HAS_EXECINFO
   if(stackTrace.length()==0) {
     char** strs = backtrace_symbols(&callstack[0], callstack_n);
-    for (int i = 0; i < callstack_n; ++i) {stackTrace+=strs[i]; stackTrace+="\n";}
+    for (int i = 0; i < callstack_n; ++i) {
+      stackTrace+=strs[i];
+      stackTrace+="\n";
+    }
     free(strs);
   }
 #endif

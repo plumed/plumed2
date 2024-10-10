@@ -121,8 +121,7 @@ void OutputFesBias::registerKeywords(Keywords& keys) {
 
 
 OutputFesBias::OutputFesBias(const ActionOptions&ao):
-  Action(ao)
-{
+  Action(ao) {
 
   std::vector<std::string> bias_labels;
   parseVector("BIAS",bias_labels);
@@ -132,7 +131,9 @@ OutputFesBias::OutputFesBias(const ActionOptions&ao):
 
   std::string error_msg = "";
   std::vector<VesBias*> bias_pntrs = VesTools::getPointersFromLabels<VesBias*>(bias_labels,plumed.getActionSet(),error_msg);
-  if(error_msg.size()>0) {plumed_merror("Error in keyword BIAS of "+getName()+": "+error_msg);}
+  if(error_msg.size()>0) {
+    plumed_merror("Error in keyword BIAS of "+getName()+": "+error_msg);
+  }
 
   for(unsigned int i=0; i<bias_pntrs.size(); i++) {
     if(bias_pntrs[i]->numberOfCoeffsSets()>1) {

@@ -39,7 +39,9 @@ public:
   void resize() override;
 /// This does nothing
   void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const override;
-  std::string description() override { return ""; }
+  std::string description() override {
+    return "";
+  }
 /// Accumulate the average
   void accumulate( const double& weight, const double& val );
 /// Get the average value

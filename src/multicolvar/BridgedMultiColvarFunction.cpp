@@ -34,26 +34,36 @@ void BridgedMultiColvarFunction::registerKeywords( Keywords& keys ) {
 
 BridgedMultiColvarFunction::BridgedMultiColvarFunction(const ActionOptions&ao):
   Action(ao),
-  MultiColvarBase(ao)
-{
-  std::string mlab; parse("DATA",mlab);
+  MultiColvarBase(ao) {
+  std::string mlab;
+  parse("DATA",mlab);
   mycolv = plumed.getActionSet().selectWithLabel<MultiColvarBase*>(mlab);
-  if(!mycolv) error("action labeled " + mlab + " does not exist or is not a multicolvar");
+  if(!mycolv) {
+    error("action labeled " + mlab + " does not exist or is not a multicolvar");
+  }
 
   // When using numerical derivatives here we must use numerical derivatives
   // in base multicolvar
-  if( checkNumericalDerivatives() ) mycolv->useNumericalDerivatives();
+  if( checkNumericalDerivatives() ) {
+    mycolv->useNumericalDerivatives();
+  }
 
-  myBridgeVessel = mycolv->addBridgingVessel( this ); addDependency(mycolv);
-  weightHasDerivatives=true; usespecies=mycolv->usespecies;
+  myBridgeVessel = mycolv->addBridgingVessel( this );
+  addDependency(mycolv);
+  weightHasDerivatives=true;
+  usespecies=mycolv->usespecies;
   // Number of tasks is the same as the number in the underlying MultiColvar
-  for(unsigned i=0; i<mycolv->getFullNumberOfTasks(); ++i) addTaskToList( mycolv->getTaskCode(i) );
+  for(unsigned i=0; i<mycolv->getFullNumberOfTasks(); ++i) {
+    addTaskToList( mycolv->getTaskCode(i) );
+  }
 }
 
 void BridgedMultiColvarFunction::turnOnDerivatives() {
   BridgedMultiColvarFunction* check = dynamic_cast<BridgedMultiColvarFunction*>( mycolv );
   if( check ) {
-    if( check->getNumberOfAtoms()>0 ) error("cannot calculate required derivatives of this quantity");
+    if( check->getNumberOfAtoms()>0 ) {
+      error("cannot calculate required derivatives of this quantity");
+    }
   }
   MultiColvarBase::turnOnDerivatives();
 }
@@ -65,12 +75,20 @@ void BridgedMultiColvarFunction::transformBridgedDerivatives( const unsigned& cu
   if( derivativesAreRequired() ) {
     outvals.emptyActiveMembers();
     if( mycolv->isDensity() ) {
-      for(unsigned j=0; j<3; ++j) outvals.putIndexInActiveArray( 3*current+j );
-      for(unsigned j=invals.getNumberOfDerivatives()-9; j<invals.getNumberOfDerivatives(); ++j) outvals.putIndexInActiveArray(j);
+      for(unsigned j=0; j<3; ++j) {
+        outvals.putIndexInActiveArray( 3*current+j );
+      }
+      for(unsigned j=invals.getNumberOfDerivatives()-9; j<invals.getNumberOfDerivatives(); ++j) {
+        outvals.putIndexInActiveArray(j);
+      }
     } else {
-      for(unsigned j=0; j<invals.getNumberActive(); ++j) outvals.putIndexInActiveArray( invals.getActiveIndex(j) );
+      for(unsigned j=0; j<invals.getNumberActive(); ++j) {
+        outvals.putIndexInActiveArray( invals.getActiveIndex(j) );
+      }
     }
-    for(unsigned j=invals.getNumberOfDerivatives(); j<outvals.getNumberOfDerivatives(); ++j) outvals.putIndexInActiveArray( j );
+    for(unsigned j=invals.getNumberOfDerivatives(); j<outvals.getNumberOfDerivatives(); ++j) {
+      outvals.putIndexInActiveArray( j );
+    }
     outvals.completeUpdate();
   }
 }
@@ -82,7 +100,8 @@ void BridgedMultiColvarFunction::performTask( const unsigned& taskIndex, const u
       invals.getNumberOfDerivatives()!=mycolv->getNumberOfDerivatives() ) {
     invals.resize( mycolv->getNumberOfQuantities(), mycolv->getNumberOfDerivatives() );
   }
-  invals.clearAll(); mycolv->performTask( taskIndex, current, invals );
+  invals.clearAll();
+  mycolv->performTask( taskIndex, current, invals );
   transformBridgedDerivatives( taskIndex, invals, myvals );
 }
 
@@ -99,11 +118,15 @@ void BridgedMultiColvarFunction::calculateNumericalDerivatives( ActionWithValue*
 }
 
 void BridgedMultiColvarFunction::applyBridgeForces( const std::vector<double>& bb ) {
-  if( getNumberOfAtoms()==0 ) return ;
+  if( getNumberOfAtoms()==0 ) {
+    return ;
+  }
 
   std::vector<Vector>& f( modifyForces() );
   for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
-    f[i][0]+=bb[3*i+0]; f[i][1]+=bb[3*i+1]; f[i][2]+=bb[3*i+2];
+    f[i][0]+=bb[3*i+0];
+    f[i][1]+=bb[3*i+1];
+    f[i][2]+=bb[3*i+2];
   }
   applyForces();
 }

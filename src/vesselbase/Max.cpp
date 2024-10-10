@@ -56,26 +56,33 @@ void Max::reserveKeyword( Keywords& keys ) {
 }
 
 Max::Max( const VesselOptions& da ) :
-  FunctionVessel(da)
-{
-  if( getAction()->isPeriodic() ) error("max is not a meaningful option for periodic variables");
+  FunctionVessel(da) {
+  if( getAction()->isPeriodic() ) {
+    error("max is not a meaningful option for periodic variables");
+  }
   parse("BETA",beta);
 
-  if( diffweight ) error("can't calculate max if weight is differentiable");
+  if( diffweight ) {
+    error("can't calculate max if weight is differentiable");
+  }
 }
 
 std::string Max::value_descriptor() {
-  std::string str_beta; Tools::convert( beta, str_beta );
+  std::string str_beta;
+  Tools::convert( beta, str_beta );
   return "the maximum value. Beta is equal to " + str_beta;
 }
 
 double Max::calcTransform( const double& val, double& dv ) const {
-  double f = exp(val/beta); dv=f/beta; return f;
+  double f = exp(val/beta);
+  dv=f/beta;
+  return f;
 }
 
 double Max::finalTransform( const double& val, double& dv ) {
   double dist=beta*std::log( val );
-  dv = beta/val; return dist;
+  dv = beta/val;
+  return dist;
 }
 
 }

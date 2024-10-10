@@ -34,26 +34,39 @@ ClusterAnalysisBase::ClusterAnalysisBase(const ActionOptions& ao):
   MultiColvarBase(ao),
   myfvals(0,0),
   myfatoms( myfvals, this ),
-  myclusters(NULL)
-{
+  myclusters(NULL) {
   // This makes these colvars behave appropriately with dump and analysis
-  matsums=usespecies=true; std::vector<AtomNumber> fake_atoms;
+  matsums=usespecies=true;
+  std::vector<AtomNumber> fake_atoms;
   // Find what action we are taking the clusters from
-  if( !parseMultiColvarAtomList("CLUSTERS",-1,fake_atoms ) ) error("unable to interpret input CLUSTERS" );
-  if( mybasemulticolvars.size()!=1 ) error("should be exactly one multicolvar input");
-  atom_lab.resize(0); myclusters = dynamic_cast<ClusteringBase*>( mybasemulticolvars[0] );
-  if( !myclusters ) error("input label is not that of a DFS object");
+  if( !parseMultiColvarAtomList("CLUSTERS",-1,fake_atoms ) ) {
+    error("unable to interpret input CLUSTERS" );
+  }
+  if( mybasemulticolvars.size()!=1 ) {
+    error("should be exactly one multicolvar input");
+  }
+  atom_lab.resize(0);
+  myclusters = dynamic_cast<ClusteringBase*>( mybasemulticolvars[0] );
+  if( !myclusters ) {
+    error("input label is not that of a DFS object");
+  }
   // Setup the atom pack
   myfatoms.setNumberOfAtoms( myclusters->getNumberOfNodes() );
   myfvals.getIndices().resize( myclusters->getNumberOfNodes() );
-  for(unsigned i=0; i<myclusters->getNumberOfNodes(); ++i) myfatoms.setAtomIndex( i, i );
+  for(unsigned i=0; i<myclusters->getNumberOfNodes(); ++i) {
+    myfatoms.setAtomIndex( i, i );
+  }
 }
 
 void ClusterAnalysisBase::turnOnDerivatives() {
   // Check for dubious vessels
   for(unsigned i=0; i<getNumberOfVessels(); ++i) {
-    if( getPntrToVessel(i)->getName()=="MEAN" ) error("MEAN of cluster is not differentiable");
-    if( getPntrToVessel(i)->getName()=="VMEAN" ) error("VMEAN of cluster is not differentiable");
+    if( getPntrToVessel(i)->getName()=="MEAN" ) {
+      error("MEAN of cluster is not differentiable");
+    }
+    if( getPntrToVessel(i)->getName()=="VMEAN" ) {
+      error("VMEAN of cluster is not differentiable");
+    }
   }
   MultiColvarBase::turnOnDerivatives();
 }

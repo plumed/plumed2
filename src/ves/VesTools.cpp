@@ -46,7 +46,8 @@ void VesTools::copyGridValues(GridBase* grid_pntr_orig, GridBase* grid_pntr_copy
 
 unsigned int VesTools::getGridFileInfo(const std::string& filepath, std::string& grid_label, std::vector<std::string>& arg_labels, std::vector<std::string>& arg_min, std::vector<std::string>& arg_max, std::vector<bool>& arg_periodic, std::vector<unsigned int>& arg_nbins, bool& derivatives) {
 
-  IFile ifile; ifile.open(filepath);
+  IFile ifile;
+  ifile.open(filepath);
   std::vector<std::string> fields;
   ifile.scanFieldList(fields);
   ifile.allowIgnoredFields();
@@ -58,8 +59,7 @@ unsigned int VesTools::getGridFileInfo(const std::string& filepath, std::string&
       derivatives = false;
       nargs = i-1;
       break;
-    }
-    else if(fields[i]=="der_"+fields[0]) {
+    } else if(fields[i]=="der_"+fields[0]) {
       derivatives = true;
       nargs = i-1;
       break;
@@ -79,7 +79,9 @@ unsigned int VesTools::getGridFileInfo(const std::string& filepath, std::string&
     ifile.scanField("max_"+arg_labels[i],arg_max[i]);
     std::string str_periodic;
     ifile.scanField("periodic_"+arg_labels[i],str_periodic);
-    if(str_periodic=="true") {arg_periodic[i]=true;}
+    if(str_periodic=="true") {
+      arg_periodic[i]=true;
+    }
     int nbins;
     ifile.scanField("nbins_"+arg_labels[i],nbins);
     arg_nbins[i] = static_cast<unsigned int>(nbins);

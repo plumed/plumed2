@@ -26,19 +26,28 @@ namespace multicolvar {
 
 void MultiColvarFilter::registerKeywords( Keywords& keys ) {
   BridgedMultiColvarFunction::registerKeywords( keys );
-  if( keys.reserved("VMEAN") ) keys.use("VMEAN");
-  keys.use("MEAN"); keys.use("MOMENTS"); keys.use("MIN"); keys.use("MAX");
-  keys.use("ALT_MIN"); keys.use("LOWEST"); keys.use("HIGHEST");
+  if( keys.reserved("VMEAN") ) {
+    keys.use("VMEAN");
+  }
+  keys.use("MEAN");
+  keys.use("MOMENTS");
+  keys.use("MIN");
+  keys.use("MAX");
+  keys.use("ALT_MIN");
+  keys.use("LOWEST");
+  keys.use("HIGHEST");
 }
 
 MultiColvarFilter::MultiColvarFilter(const ActionOptions&ao):
   Action(ao),
-  BridgedMultiColvarFunction(ao)
-{
-  if( getPntrToMultiColvar()->isDensity() ) error("filtering/transforming density makes no sense");
+  BridgedMultiColvarFunction(ao) {
+  if( getPntrToMultiColvar()->isDensity() ) {
+    error("filtering/transforming density makes no sense");
+  }
 
-  if( getName().find("MFILTER")!=std::string::npos ) filter=true;
-  else {
+  if( getName().find("MFILTER")!=std::string::npos ) {
+    filter=true;
+  } else {
     plumed_assert( getName().find("MTRANSFORM")!=std::string::npos );
     filter=false;
   }
@@ -53,7 +62,9 @@ void MultiColvarFilter::doJobsRequiredBeforeTaskList() {
 
 void MultiColvarFilter::completeTask( const unsigned& curr, MultiValue& invals, MultiValue& outvals ) const {
   invals.copyValues( outvals );
-  if( derivativesAreRequired() ) invals.copyDerivatives( outvals );
+  if( derivativesAreRequired() ) {
+    invals.copyDerivatives( outvals );
+  }
 
   // Retrieve the value of the multicolvar and apply filter
   double val=invals.get(1), df, weight=applyFilter( val, df );
@@ -68,7 +79,8 @@ void MultiColvarFilter::completeTask( const unsigned& curr, MultiValue& invals, 
       }
     }
   } else if( filter ) {
-    double ww=outvals.get(0); outvals.setValue( 0, ww*weight );
+    double ww=outvals.get(0);
+    outvals.setValue( 0, ww*weight );
     if( derivativesAreRequired() ) {
       for(unsigned i=0; i<outvals.getNumberActive(); ++i) {
         unsigned ider=outvals.getActiveIndex(i);

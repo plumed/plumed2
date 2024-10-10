@@ -217,12 +217,13 @@ void CLToolSumHills::registerKeywords( Keywords& keys ) {
 }
 
 CLToolSumHills::CLToolSumHills(const CLToolOptions& co ):
-  CLTool(co)
-{
+  CLTool(co) {
   inputdata=commandline;
 }
 
-std::string CLToolSumHills::description()const { return "sum the hills with  plumed"; }
+std::string CLToolSumHills::description()const {
+  return "sum the hills with  plumed";
+}
 
 int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
 
@@ -257,7 +258,9 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
     findCvsAndPeriodic(histoFiles[0], hcvs, hpmin, hpmax, hmultivariate, lowI_, uppI_);
     // here need also the vector of sigmas
     parseVector("--sigma",sigma);
-    if(sigma.size()==0)plumed_merror("you should define --sigma vector when using histogram");
+    if(sigma.size()==0) {
+      plumed_merror("you should define --sigma vector when using histogram");
+    }
     lowI_=uppI_="-1.";  // Interval is not use for histograms
   }
 
@@ -289,24 +292,34 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
   unsigned grid_check=0;
   std::vector<std::string> gmin(cvs.size());
   if(parseVector("--min",gmin)) {
-    if(gmin.size()!=cvs.size() && gmin.size()!=0) plumed_merror("not enough values for --min");
+    if(gmin.size()!=cvs.size() && gmin.size()!=0) {
+      plumed_merror("not enough values for --min");
+    }
     grid_check++;
   }
   std::vector<std::string> gmax(cvs.size() );
   if(parseVector("--max",gmax)) {
-    if(gmax.size()!=cvs.size() && gmax.size()!=0) plumed_merror("not enough values for --max");
+    if(gmax.size()!=cvs.size() && gmax.size()!=0) {
+      plumed_merror("not enough values for --max");
+    }
     grid_check++;
   }
   std::vector<std::string> gbin(cvs.size());
-  bool grid_has_bin; grid_has_bin=false;
+  bool grid_has_bin;
+  grid_has_bin=false;
   if(parseVector("--bin",gbin)) {
-    if(gbin.size()!=cvs.size() && gbin.size()!=0) plumed_merror("not enough values for --bin");
+    if(gbin.size()!=cvs.size() && gbin.size()!=0) {
+      plumed_merror("not enough values for --bin");
+    }
     grid_has_bin=true;
   }
   std::vector<std::string> gspacing(cvs.size());
-  bool grid_has_spacing; grid_has_spacing=false;
+  bool grid_has_spacing;
+  grid_has_spacing=false;
   if(parseVector("--spacing",gspacing)) {
-    if(gspacing.size()!=cvs.size() && gspacing.size()!=0) plumed_merror("not enough values for --spacing");
+    if(gspacing.size()!=cvs.size() && gspacing.size()!=0) {
+      plumed_merror("not enough values for --spacing");
+    }
     grid_has_spacing=true;
   }
   // allowed: no grids only bin
@@ -320,7 +333,9 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
   unsigned nn=1;
   ss="setNatoms";
   plumed.cmd(ss,&nn);
-  if(Communicator::initialized())  plumed.cmd("setMPIComm",&pc.Get_comm());
+  if(Communicator::initialized()) {
+    plumed.cmd("setMPIComm",&pc.Get_comm());
+  }
   plumed.cmd("init",&nn);
   std::vector <bool> isdone(cvs.size(),false);
   for(unsigned i=0; i<cvs.size(); i++) {
@@ -332,15 +347,23 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
       actioninput.push_back("ATOMS=1");
       actioninput.push_back("LABEL="+cvs[i][0]);
       std::vector<std::string> comps, periods;
-      if(cvs[i].size()>1) {comps.push_back(cvs[i][1]); inds.push_back(i);}
-      periods.push_back(pmin[i]); periods.push_back(pmax[i]);
+      if(cvs[i].size()>1) {
+        comps.push_back(cvs[i][1]);
+        inds.push_back(i);
+      }
+      periods.push_back(pmin[i]);
+      periods.push_back(pmax[i]);
       for(unsigned j=i+1; j<cvs.size(); j++) {
         if(cvs[i][0]==cvs[j][0] && !isdone[j]) {
-          if(cvs[i].size()==1 || cvs[j].size()==1  )plumed_merror("you cannot have twice the same label and no components ");
+          if(cvs[i].size()==1 || cvs[j].size()==1  ) {
+            plumed_merror("you cannot have twice the same label and no components ");
+          }
           if(cvs[j].size()>1) {
             comps.push_back(cvs[j][1]);
-            periods.push_back(pmin[j]); periods.push_back(pmax[j]);
-            isdone[j]=true; inds.push_back(j);
+            periods.push_back(pmin[j]);
+            periods.push_back(pmax[j]);
+            isdone[j]=true;
+            inds.push_back(j);
           }
         }
 
@@ -349,7 +372,9 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
       std::string addme;
       if(comps.size()>0) {
         addme="COMPONENTS=";
-        for(unsigned i=0; i<comps.size()-1; i++)addme+=comps[i]+",";
+        for(unsigned i=0; i<comps.size()-1; i++) {
+          addme+=comps[i]+",";
+        }
         addme+=comps.back();
         actioninput.push_back(addme);
       }
@@ -361,7 +386,8 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
       addme+=periods.back();
       actioninput.push_back(addme);
       for(unsigned j=0; j<inds.size(); j++) {
-        unsigned jj; jj=inds[j];
+        unsigned jj;
+        jj=inds[j];
         if(grid_check==2) {
           double gm;
           double pm;
@@ -398,18 +424,25 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
       bool found=false;
       for(unsigned j=0; j<cvs.size(); j++) {
         if(cvs[j].size()>1) {
-          if(idw[i]==cvs[j][0]+"."+cvs[j][1])found=true;
+          if(idw[i]==cvs[j][0]+"."+cvs[j][1]) {
+            found=true;
+          }
         } else {
-          if(idw[i]==cvs[j][0])found=true;
+          if(idw[i]==cvs[j][0]) {
+            found=true;
+          }
         }
       }
-      if(!found)plumed_merror("variable "+idw[i]+" is not found in the bunch of cvs: revise your --idw option" );
+      if(!found) {
+        plumed_merror("variable "+idw[i]+" is not found in the bunch of cvs: revise your --idw option" );
+      }
     }
     plumed_massert( idw.size()<=cvs.size(),"the number of variables to be integrated should be at most equal to the total number of cvs  ");
     // in this case you need a beta factor!
   }
 
-  std::string kt; kt=std::string("1.");// assign an arbitrary value just in case that idw.size()==cvs.size()
+  std::string kt;
+  kt=std::string("1.");// assign an arbitrary value just in case that idw.size()==cvs.size()
   if ( dohisto || idw.size()!=0  ) {
     plumed_massert(parse("--kt",kt),"if you make a dimensionality reduction (--idw) or a histogram (--histo) then you need to define --kt ");
   }
@@ -448,25 +481,46 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
   //  cerr<<"AA "<<actioninput[i]<<endl;
   //}
   if(dohills) {
-    addme="HILLSFILES="; for(unsigned i=0; i<hillsFiles.size()-1; i++)addme+=hillsFiles[i]+","; addme+=hillsFiles[hillsFiles.size()-1];
+    addme="HILLSFILES=";
+    for(unsigned i=0; i<hillsFiles.size()-1; i++) {
+      addme+=hillsFiles[i]+",";
+    }
+    addme+=hillsFiles[hillsFiles.size()-1];
     actioninput.push_back(addme);
     // set the grid
   }
   if(grid_check==2) {
-    addme="GRID_MAX="; for(unsigned i=0; i<(ncv-1); i++)addme+=gmax[i]+","; addme+=gmax[ncv-1];
+    addme="GRID_MAX=";
+    for(unsigned i=0; i<(ncv-1); i++) {
+      addme+=gmax[i]+",";
+    }
+    addme+=gmax[ncv-1];
     actioninput.push_back(addme);
-    addme="GRID_MIN="; for(unsigned i=0; i<(ncv-1); i++)addme+=gmin[i]+","; addme+=gmin[ncv-1];
+    addme="GRID_MIN=";
+    for(unsigned i=0; i<(ncv-1); i++) {
+      addme+=gmin[i]+",";
+    }
+    addme+=gmin[ncv-1];
     actioninput.push_back(addme);
   }
   if(grid_has_bin) {
-    addme="GRID_BIN="; for(unsigned i=0; i<(ncv-1); i++)addme+=gbin[i]+","; addme+=gbin[ncv-1];
+    addme="GRID_BIN=";
+    for(unsigned i=0; i<(ncv-1); i++) {
+      addme+=gbin[i]+",";
+    }
+    addme+=gbin[ncv-1];
     actioninput.push_back(addme);
   }
   if(grid_has_spacing) {
-    addme="GRID_SPACING="; for(unsigned i=0; i<(ncv-1); i++)addme+=gspacing[i]+","; addme+=gspacing[ncv-1];
+    addme="GRID_SPACING=";
+    for(unsigned i=0; i<(ncv-1); i++) {
+      addme+=gspacing[i]+",";
+    }
+    addme+=gspacing[ncv-1];
     actioninput.push_back(addme);
   }
-  std::string  stride; stride="";
+  std::string  stride;
+  stride="";
   if(parse("--stride",stride)) {
     actioninput.push_back("INITSTRIDE="+stride);
     bool  nohistory;
@@ -482,16 +536,22 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
   }
   if(idw.size()!=0) {
     addme="PROJ=";
-    for(unsigned i=0; i<idw.size()-1; i++) {addme+=idw[i]+",";}
+    for(unsigned i=0; i<idw.size()-1; i++) {
+      addme+=idw[i]+",";
+    }
     addme+=idw.back();
     actioninput.push_back(addme);
   }
 
   if(dohisto) {
     if(idw.size()==0) {
-      if(sigma.size()!=hcvs.size()) plumed_merror("you should define as many --sigma vector as the number of collective variable used for the histogram ");
+      if(sigma.size()!=hcvs.size()) {
+        plumed_merror("you should define as many --sigma vector as the number of collective variable used for the histogram ");
+      }
     } else {
-      if(idw.size()!=sigma.size()) plumed_merror("you should define as many --sigma vector as the number of collective variable used for the histogram ");
+      if(idw.size()!=sigma.size()) {
+        plumed_merror("you should define as many --sigma vector as the number of collective variable used for the histogram ");
+      }
     }
   }
 
@@ -499,11 +559,17 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
     actioninput.push_back("KT="+kt);
   }
   if(dohisto) {
-    addme="HISTOFILES="; for(unsigned i=0; i<histoFiles.size()-1; i++) {addme+=histoFiles[i]+",";} addme+=histoFiles[histoFiles.size()-1];
+    addme="HISTOFILES=";
+    for(unsigned i=0; i<histoFiles.size()-1; i++) {
+      addme+=histoFiles[i]+",";
+    }
+    addme+=histoFiles[histoFiles.size()-1];
     actioninput.push_back(addme);
 
     addme="HISTOSIGMA=";
-    for(unsigned i=0; i<sigma.size()-1; i++) {addme+=sigma[i]+",";}
+    for(unsigned i=0; i<sigma.size()-1; i++) {
+      addme+=sigma[i]+",";
+    }
     addme+=sigma.back();
     actioninput.push_back(addme);
   }
@@ -515,13 +581,18 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
   }
 
   if(lowI_!=uppI_) {
-    addme="INTERVAL="; addme+=lowI_+","; addme+=uppI_;
+    addme="INTERVAL=";
+    addme+=lowI_+",";
+    addme+=uppI_;
     actioninput.push_back(addme);
   }
 
-  std::string fmt; fmt="";
+  std::string fmt;
+  fmt="";
   parse("--fmt",fmt);
-  if(fmt!="")actioninput.push_back("FMT="+fmt);
+  if(fmt!="") {
+    actioninput.push_back("FMT="+fmt);
+  }
 
 
 //  for(unsigned i=0;i< actioninput.size();i++){
@@ -537,7 +608,9 @@ bool CLToolSumHills::findCvsAndPeriodic(const std::string & filename, std::vecto
   ifile.allowIgnoredFields();
   std::vector<std::string> fields;
   if(ifile.FileExist(filename)) {
-    cvs.clear(); pmin.clear(); pmax.clear();
+    cvs.clear();
+    pmin.clear();
+    pmax.clear();
     ifile.open(filename);
     ifile.scanFieldList(fields);
     bool before_sigma=true;
@@ -548,7 +621,9 @@ bool CLToolSumHills::findCvsAndPeriodic(const std::string & filename, std::vecto
       founds=fields[i].find("sigma_", pos)  ;
       foundm=fields[i].find("min_", pos)  ;
       foundp=fields[i].find("max_", pos)  ;
-      if (founds!=std::string::npos || foundm!=std::string::npos ||  foundp!=std::string::npos )before_sigma=false;
+      if (founds!=std::string::npos || foundm!=std::string::npos ||  foundp!=std::string::npos ) {
+        before_sigma=false;
+      }
       // cvs are after time and before sigmas
       size_t  found;
       found=fields[i].find("time", pos);
@@ -575,7 +650,12 @@ bool CLToolSumHills::findCvsAndPeriodic(const std::string & filename, std::vecto
         // get periodicity
         pmin.push_back("none");
         pmax.push_back("none");
-        std::string mm; if((cvs.back()).size()>1) {mm=cvs.back()[0]+"."+cvs.back()[1];} else {mm=cvs.back()[0];}
+        std::string mm;
+        if((cvs.back()).size()>1) {
+          mm=cvs.back()[0]+"."+cvs.back()[1];
+        } else {
+          mm=cvs.back()[0];
+        }
         if(ifile.FieldExist("min_"+mm)) {
           std::string val;
           ifile.scanField("min_"+mm,val);
@@ -598,8 +678,11 @@ bool CLToolSumHills::findCvsAndPeriodic(const std::string & filename, std::vecto
     if(ifile.FieldExist("multivariate")) {
       ;
       ifile.scanField("multivariate",sss);
-      if(sss=="true") { multivariate=true;}
-      else if(sss=="false") { multivariate=false;}
+      if(sss=="true") {
+        multivariate=true;
+      } else if(sss=="false") {
+        multivariate=false;
+      }
     }
     // do interval?
     if(ifile.FieldExist("lower_int")) {

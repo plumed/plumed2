@@ -133,8 +133,7 @@ void DRMSD::registerKeywords(Keywords& keys) {
 }
 
 DRMSD::DRMSD(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao), pbc_(true), myvals(1,0), mypack(0,0,myvals)
-{
+  PLUMED_COLVAR_INIT(ao), pbc_(true), myvals(1,0), mypack(0,0,myvals) {
   std::string reference;
   parse("REFERENCE",reference);
   double lcutoff;
@@ -145,15 +144,18 @@ DRMSD::DRMSD(const ActionOptions&ao):
   parseFlag("NOPBC",nopbc);
   pbc_=!nopbc;
 
-  addValueWithDerivatives(); setNotPeriodic();
+  addValueWithDerivatives();
+  setNotPeriodic();
 
   // read everything in ang and transform to nm if we are not in natural units
   PDB pdb;
-  if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) )
+  if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) ) {
     error("missing input file " + reference );
+  }
 
   // store target_ distance
-  std::string type; parse("TYPE",type);
+  std::string type;
+  parse("TYPE",type);
   drmsd_=metricRegister().create<PLMD::DRMSD>( type );
   drmsd_->setBoundsOnDistances( !nopbc, lcutoff, ucutoff );
   drmsd_->read( pdb );
@@ -165,14 +167,19 @@ DRMSD::DRMSD(const ActionOptions&ao):
   requestAtoms( atoms );
 
   // Setup the derivative pack
-  myvals.resize( 1, 3*atoms.size()+9 ); mypack.resize( 0, atoms.size() );
-  for(unsigned i=0; i<atoms.size(); ++i) mypack.setAtomIndex( i, i );
+  myvals.resize( 1, 3*atoms.size()+9 );
+  mypack.resize( 0, atoms.size() );
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    mypack.setAtomIndex( i, i );
+  }
 
   log.printf("  reference from file %s\n",reference.c_str());
   log.printf("  which contains %d atoms\n",getNumberOfAtoms());
   log.printf("  with indices : ");
   for(unsigned i=0; i<atoms.size(); ++i) {
-    if(i%25==0) log<<"\n";
+    if(i%25==0) {
+      log<<"\n";
+    }
     log.printf("%d ",atoms[i].serial());
   }
   log.printf("\n");
@@ -181,11 +188,17 @@ DRMSD::DRMSD(const ActionOptions&ao):
 // calculator
 void DRMSD::calculate() {
 
-  double drmsd; Tensor virial; mypack.clear();
+  double drmsd;
+  Tensor virial;
+  mypack.clear();
   drmsd=drmsd_->calculate(getPositions(), getPbc(), mypack, false);
 
   setValue(drmsd);
-  for(unsigned i=0; i<getNumberOfAtoms(); ++i) { if( myvals.isActive(3*i) ) setAtomsDerivatives( i, mypack.getAtomDerivative(i) ); }
+  for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
+    if( myvals.isActive(3*i) ) {
+      setAtomsDerivatives( i, mypack.getAtomDerivative(i) );
+    }
+  }
   setBoxDerivatives( mypack.getBoxDerivatives() );
 }
 
