@@ -2346,7 +2346,7 @@ private:
     char msg[__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER];
     void init(const char* msg) __PLUMED_WRAPPER_CXX_NOEXCEPT {
       this->msg[0]='\0';
-      __PLUMED_WRAPPER_STD strncat(this->msg,msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1);
+      __PLUMED_WRAPPER_STD strncpy(this->msg,msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER);
       this->msg[__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1]='\0';
       if(PlumedGetenvExceptionsDebug() && __PLUMED_WRAPPER_STD strlen(msg) > __PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1) __PLUMED_WRAPPER_STD fprintf(stderr,"+++ WARNING: message will be truncated\n");
     }
@@ -3831,7 +3831,7 @@ void* plumed_attempt_dlopen(const char*path,int mode) {
       __PLUMED_FPRINTF(stderr,"+++ Allocation error +++\n");
       __PLUMED_WRAPPER_STD abort();
     }
-    __PLUMED_WRAPPER_STD strncpy(pathcopy,path,strlenpath+1);
+    __PLUMED_WRAPPER_STD memcpy(pathcopy,path,strlenpath+1);
     pc=pathcopy+strlenpath-6;
     while(pc>=pathcopy && __PLUMED_WRAPPER_STD memcmp(pc,"Kernel",6)) pc--;
     if(pc>=pathcopy) {
