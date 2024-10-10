@@ -94,7 +94,7 @@ Walls::Walls(const ActionOptions&ao):
       readInputLine( getShortcutLabel() + "_pow_" + argn + ": CUSTOM PERIODIC=NO FUNC=step(x)*x^" + exp[i] + " ARG=" + getShortcutLabel() + "_scale_" + argn );
     } else if( getName()=="LOWER_WALLS" ) {
       readInputLine( getShortcutLabel() + "_scale_" + argn + ": CUSTOM PERIODIC=NO FUNC=(x-" + offset[i] +")/" + eps[i] + " ARG=" + getShortcutLabel() + "_cv_" + argn );
-      readInputLine( getShortcutLabel() + "_pow_" + argn + ": CUSTOM PERIODIC=NO FUNC=step(-x)*x^" + exp[i] + " ARG=" + getShortcutLabel() + "_scale_" + argn );
+      readInputLine( getShortcutLabel() + "_pow_" + argn + ": CUSTOM PERIODIC=NO FUNC=step(-x)*(-x)^" + exp[i] + " ARG=" + getShortcutLabel() + "_scale_" + argn );
     }
     readInputLine( getShortcutLabel() + "_v_wall_" + argn + ": CUSTOM PERIODIC=NO FUNC=" + kappa[i] +"*x" + " ARG=" + getShortcutLabel() + "_pow_" + argn );
     readInputLine( getShortcutLabel() + "_wall_" + argn + ": SUM ARG=" + getShortcutLabel() + "_v_wall_" + argn + " PERIODIC=NO");
