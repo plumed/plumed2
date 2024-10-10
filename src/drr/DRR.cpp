@@ -414,33 +414,46 @@ void DRRForceGrid::writeDivergence(const string &filename, const string &fmt) co
   fclose(pDiv);
 }
 
-bool ABF::store_getbias(const vector<double> &pos, const vector<double> &f,
-                        vector<double> &fbias) {
+bool ABF::getbias(const vector<double> &pos, const vector<double> &f,
+                  vector<double> &fbias) const {
   if (!isInBoundary(pos)) {
     std::fill(begin(fbias), end(fbias), 0.0);
     return false;
   }
   const size_t baseaddr = sampleAddress(pos);
-  unsigned long int &count = samples[baseaddr];
-  ++count;
+  const unsigned long int count = samples[baseaddr] + 1;
   double factor = 2 * (static_cast<double>(count)) / mFullSamples - 1;
   auto it_fa = begin(forces) + baseaddr * ndims;
   auto it_fb = begin(fbias);
   auto it_f = begin(f);
   auto it_maxFactor = begin(mMaxFactors);
-  do {
+  while (it_f != end(f)) {
     // Clamp to [0,maxFactors]
     factor = factor < 0 ? 0 : factor > (*it_maxFactor) ? (*it_maxFactor) : factor;
-    (*it_fa) += (*it_f); // Accumulate instantaneous force
-    (*it_fb) = factor * (*it_fa) * (-1.0) /
+    (*it_fb) = factor * ((*it_fa) + (*it_f)) * (-1.0) /
                static_cast<double>(count); // Calculate bias force
     ++it_fa;
     ++it_fb;
     ++it_f;
     ++it_maxFactor;
-  } while (it_f != end(f));
-
+  };
   return true;
+}
+
+void ABF::store_force(const vector<double> &pos,
+                      const vector<double> &f) {
+  if (!isInBoundary(pos)) {
+    return;
+  }
+  const size_t baseaddr = sampleAddress(pos);
+  samples[baseaddr] += 1;
+  auto it_fa = begin(forces) + baseaddr * ndims;
+  auto it_f = begin(f);
+  while (it_f != end(f)) {
+    *it_fa += *it_f;
+    ++it_fa;
+    ++it_f;
+  };
 }
 
 ABF ABF::mergewindow(const ABF &aWA, const ABF &aWB) {
