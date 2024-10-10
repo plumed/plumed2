@@ -310,9 +310,11 @@ public:
     mMaxFactors = maxFactors;
   }
   // Store the "instantaneous" spring force of a point and get ABF bias forces.
-  bool store_getbias(const vector<double> &pos,
-                     const vector<double> &f,
-                     vector<double> &fbias);
+  bool getbias(const vector<double> &pos,
+               const vector<double> &f,
+               vector<double> &fbias) const;
+  void store_force(const vector<double> &pos,
+                   const vector<double> &f);
   static ABF mergewindow(const ABF &aWA, const ABF &aWB);
   ~ABF() {}
 

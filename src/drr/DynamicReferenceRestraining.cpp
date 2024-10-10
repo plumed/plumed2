@@ -701,7 +701,6 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
 }
 
 void DynamicReferenceRestraining::calculate() {
-  long long int step_now = getStep();
   if (firsttime) {
     for (size_t i = 0; i < ndims; ++i) {
       fict[i] = getArgument(i);
@@ -711,6 +710,46 @@ void DynamicReferenceRestraining::calculate() {
     }
     firsttime = false;
   }
+  if (withExternalForce == false) {
+    double ene = 0.0;
+    for (size_t i = 0; i < ndims; ++i) {
+      real[i] = getArgument(i);
+      springlength[i] = difference(i, fict[i], real[i]);
+      fictNoPBC[i] = real[i] - springlength[i];
+      double f = -kappa[i] * springlength[i];
+      ffict_measured[i] = -f;
+      ene += 0.5 * kappa[i] * springlength[i] * springlength[i];
+      setOutputForce(i, f);
+      ffict[i] = -f;
+      fict[i] = fictValue[i]->bringBackInPbc(fict[i]);
+      fictValue[i]->set(fict[i]);
+      vfictValue[i]->set(vfict_laststep[i]);
+      springforceValue[i]->set(ffict_measured[i]);
+      fictNoPBCValue[i]->set(fictNoPBC[i]);
+    }
+    setBias(ene);
+    ABFGrid.getbias(fict, ffict_measured, fbias);
+  } else {
+    for (size_t i = 0; i < ndims; ++i) {
+      real[i] = getArgument(i);
+      ffict_measured[i] = externalForceValue[i]->get();
+      if (withExternalFict) {
+        fictNoPBC[i] = externalFictValue[i]->get();
+      }
+      springforceValue[i]->set(ffict_measured[i]);
+      fictNoPBCValue[i]->set(fictNoPBC[i]);
+    }
+    ABFGrid.getbias(real, ffict_measured, fbias);
+    if (!nobias) {
+      for (size_t i = 0; i < ndims; ++i) {
+        setOutputForce(i, fbias[i]);
+      }
+    }
+  }
+}
+
+void DynamicReferenceRestraining::update() {
+  const long long int step_now = getStep();
   if (step_now != 0) {
     if ((step_now % int(outputfreq)) == 0) {
       save(outputname, step_now);
@@ -748,40 +787,18 @@ void DynamicReferenceRestraining::calculate() {
     }
   }
   if (withExternalForce == false) {
-    double ene = 0.0;
     for (size_t i = 0; i < ndims; ++i) {
       real[i] = getArgument(i);
       springlength[i] = difference(i, fict[i], real[i]);
-      fictNoPBC[i] = real[i] - springlength[i];
-      double f = -kappa[i] * springlength[i];
-      ffict_measured[i] = -f;
-      ene += 0.5 * kappa[i] * springlength[i] * springlength[i];
-      setOutputForce(i, f);
-      ffict[i] = -f;
-      fict[i] = fictValue[i]->bringBackInPbc(fict[i]);
-      fictValue[i]->set(fict[i]);
-      vfictValue[i]->set(vfict_laststep[i]);
-      springforceValue[i]->set(ffict_measured[i]);
-      fictNoPBCValue[i]->set(fictNoPBC[i]);
+      ffict_measured[i] = kappa[i] * springlength[i];
     }
-    setBias(ene);
-    ABFGrid.store_getbias(fict, ffict_measured, fbias);
+    ABFGrid.store_force(fict, ffict_measured);
   } else {
     for (size_t i = 0; i < ndims; ++i) {
       real[i] = getArgument(i);
       ffict_measured[i] = externalForceValue[i]->get();
-      if (withExternalFict) {
-        fictNoPBC[i] = externalFictValue[i]->get();
-      }
-      springforceValue[i]->set(ffict_measured[i]);
-      fictNoPBCValue[i]->set(fictNoPBC[i]);
     }
-    ABFGrid.store_getbias(real, ffict_measured, fbias);
-    if (!nobias) {
-      for (size_t i = 0; i < ndims; ++i) {
-        setOutputForce(i, fbias[i]);
-      }
-    }
+    ABFGrid.store_force(real, ffict_measured);
   }
   if (useCZARestimator) {
     CZARestimator.store(real, ffict_measured);
@@ -790,9 +807,6 @@ void DynamicReferenceRestraining::calculate() {
     eabf_UI.update_output_filename(outputprefix);
     eabf_UI.update(int(step_now), real, fictNoPBC);
   }
-}
-
-void DynamicReferenceRestraining::update() {
   if (withExternalForce == false) {
     for (size_t i = 0; i < ndims; ++i) {
       // consider additional forces on the fictitious particle
