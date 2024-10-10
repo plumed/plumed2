@@ -1,0 +1,11 @@
+type=driver
+arg="--plumed plumed.dat --ixyz trajectory.xyz"
+
+
+function plumed_regtest_before() {
+    for x in {-5..5}; do
+        echo "1" 
+        echo "100 100 100"
+        echo "C $x 0 0"
+    done > trajectory.xyz    
+}
