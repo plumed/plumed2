@@ -99,13 +99,23 @@ public:
 /// Class representing an error in a register
 class ExceptionRegisterError :
   public Exception {
+  /// The missing key
   std::string missingKey;
 public:
   using Exception::Exception;
+  /// Sets the missing key
+  /// \param key The missing key
+  /// \return This exception
+  ///
+  /// ExceptionRegisterError can be used as a builder pattern:
+  /// `throw ExceptionRegisterError().setMissingKey(key);`
+  ///
+  /// the key can be retrieved with ExceptionRegisterError::getMissingKey()
   ExceptionRegisterError& setMissingKey (std::string_view key) {
     missingKey=key;
     return *this;
   }
+  /// Returns the missing key
   const std::string& getMissingKey() const {return missingKey;}
   template<typename T>
   ExceptionRegisterError& operator<<(const T & x) {
