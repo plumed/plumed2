@@ -21,7 +21,7 @@ jobs:
       matrix:
         variant: [ "" , "+allmodules" ]
         # this is to test both intel and arm64 macs
-        os: [ macos-12 , macos-14 ]
+        os: [ macos-13 , macos-14 ]
         exclude:
         # many tests on contributed modules are still failing for numerical reasons on arm64, see https://github.com/plumed/plumed2/pull/950
         # once fixed we could introduce this back:
@@ -68,7 +68,7 @@ jobs:
       fail-fast: false
       matrix:
         # this is to test both intel and arm64 macs
-        os: [ macos-12 , macos-14 ]
+        os: [ macos-13 , macos-14 ]
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4

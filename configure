@@ -2341,7 +2341,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 # PLUMED_CHECK_LDFLAGS(flag)
-# use it to check if a flag is available on this compiler
+# use it to check if a flag is available for linking
 
 
 # PLUMED_SEARCH_LIBS(function,search-libs[,action-if-found][,action-if-not-found][,other-libraries])
@@ -9664,24 +9664,11 @@ fi
 if test $libtorch = true ; then
   # disable as-needed in linking libraries (both static and shared)
 
-  save_CXXFLAGS="$CXXFLAGS"
-  CXXFLAGS="$CXXFLAGS -Wl,--no-as-needed"
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -Wl,--no-as-needed" >&5
-$as_echo_n "checking whether $CXX accepts -Wl,--no-as-needed... " >&6; }
+  save_LDFLAGS="$LDFLAGS"
+  LDFLAGS="$LDFLAGS -Wl,--no-as-needed"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether LDFLAGS can contain -Wl,--no-as-needed" >&5
+$as_echo_n "checking whether LDFLAGS can contain -Wl,--no-as-needed... " >&6; }
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_compile "$LINENO"; then :
-
-      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 int
@@ -9696,20 +9683,12 @@ if ac_fn_cxx_try_link "$LINENO"; then :
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not linking" >&5
-$as_echo "not linking" >&6; }; CXXFLAGS="$save_CXXFLAGS"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }; LDFLAGS="$save_LDFLAGS"
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-  LDSHARED="$LDSHARED -Wl,--no-as-needed "
 
   # CUDA and CPU libtorch libs have different libraries
   # first test CUDA program
