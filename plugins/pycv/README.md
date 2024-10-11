@@ -16,6 +16,21 @@ You can see the original PyCV [here](https://giorginolab.github.io/plumed2-pycv)
 [![DOI](https://joss.theoj.org/papers/10.21105/joss.01773/status.svg)](https://doi.org/10.21105/joss.01773)
 [![plumID:19.075](https://www.plumed-nest.org/eggs/19/075/badge.svg)](https://www.plumed-nest.org/eggs/19/075/)
 
+## Updating the readme for the new pip installation
+
+**WIP**
+
+As usual if you are not working in a virtual environment you are doing this at your own risk
+`pip install .` should be enough, with a plumed version (>=2.10) avaiable with a pkg-config or in the `PATH`s.
+
+
+>[!NOTE]
+>On linux If you use `make` and `make check` note that the tests will find pycv only if you are working in the same python environment that you had active when compiling/installing plumed
+
+> [!NOTE]
+>We have some problem with the macs:
+you may need to explicitly declare and export some environmental variables like the `PYTHON_PATH` to make pycv work when plumed is called
+
 
 ## Documentation
 
@@ -51,38 +66,6 @@ The interface to python as anticipated before depends on the following keywords:
 
 If not specified INIT will default to `"plumedInit` and CALCULATE  to 
 `"plumedCalculate"`, on the other hand, if PREPARE and UPDATE are not present, will be ignored.
-
-## Preparation
-
-For compiling the plugin you just need pybind11 and numpy.
-I always recomend to create and ad-hoc environment for your projects:
-```bash
-python3 -m venv pycvenv
-source ./pycvenv/bin/activate
-pip install -U pip
-pip install -r requirements.txt
-```
-The requirements.txt file is in the home of the plug in
-
-### Standard compilation
-
-If you have a plumed that supports plumed mklib (that will be release in the 2.10 version, but it is avaiable in the master branch) with multiple files you can simply
-```bash
-./standaloneCompile.sh
-```
-
-### Developer compilation
-
-If you want to contribute to this module,
-the procedure is slighly more compex:
-```bash
-./prepareMakeForDevelop.sh
-```
-will prepare a Make.inc in this directory that will be included by the Makefile.
-Then simply:
-```bash
-make
-```
 
 #### Set up tests
 
