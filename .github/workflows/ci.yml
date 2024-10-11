@@ -219,7 +219,7 @@ jobs:
         make -C docker fedora34
 
   macports:
-    runs-on: macos-12
+    runs-on: macos-13
     strategy:
       fail-fast: false
       matrix:
@@ -260,7 +260,7 @@ jobs:
         #done
 
   macsimple:
-    runs-on: macos-12
+    runs-on: macos-13
     steps:
     - uses: actions/checkout@v4
     - name: Set paths
@@ -289,7 +289,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04 , macos-12, macos-14 ]
+        os: [ubuntu-20.04 , macos-13, macos-14 ]
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
