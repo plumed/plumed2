@@ -51,6 +51,7 @@ plumed gen_json
 class GenJson : public CLTool {
 private:
   std::string version;
+  void printHyperlink(std::string action );
 public:
   static void registerKeywords( Keywords& keys );
   explicit GenJson(const CLToolOptions& co );
@@ -75,6 +76,20 @@ GenJson::GenJson(const CLToolOptions& co ):
   if( config::getVersionLong().find("dev")==std::string::npos ) version="v"+config::getVersion();
 }
 
+void GenJson::printHyperlink( std::string action ) {
+  std::cout<<"    \"hyperlink\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/";
+  std::transform(action.begin(), action.end(), action.begin(), [](unsigned char c) { return std::tolower(c); });
+  while(true) {
+    std::size_t und=action.find_first_of("_");
+    if( und==std::string::npos ) break;
+    std::string first=action.substr(0,und);
+    for(auto c : first ) { if( isdigit(c) ) std::cout<<c; else std::cout<<"_"<<c; }
+    std::cout<<"_"; action=action.substr(und+1);
+  }
+  for(auto c : action ) { if( isdigit(c) ) std::cout<<c; else std::cout<<"_"<<c; }
+  std::cout<<".html\","<<std::endl;
+}
+
 int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
   std::string line(""), actionfile; parse("--actions",actionfile);
   IFile myfile; myfile.open(actionfile); bool stat;
@@ -93,23 +108,18 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
   // And the replicas link
   std::cout<<"  \"replicalink\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/special-replica-syntax.html\","<<std::endl;
   // Get the names of all the actions
-  std::vector<std::string> action_names( actionRegister().getActionNames() );
+  std::vector<std::string> action_names( actionRegister().getActionNames() ); std::vector<std::string> allmodules;
   for(unsigned i=0; i<action_names.size(); ++i) {
     std::cout<<"  \""<<action_names[i]<<'"'<<": {"<<std::endl; std::string action=action_names[i];
     // Handle conversion of action names to links
-    std::cout<<"    \"hyperlink\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/";
-    std::transform(action.begin(), action.end(), action.begin(), [](unsigned char c) { return std::tolower(c); });
-    while(true) {
-      std::size_t und=action.find_first_of("_");
-      if( und==std::string::npos ) break;
-      std::string first=action.substr(0,und);
-      for(auto c : first ) { if( isdigit(c) ) std::cout<<c; else std::cout<<"_"<<c; }
-      std::cout<<"_"; action=action.substr(und+1);
-    }
-    for(auto c : action ) { if( isdigit(c) ) std::cout<<c; else std::cout<<"_"<<c; }
-    std::cout<<".html\","<<std::endl;
+    printHyperlink( action );
     std::cout<<"    \"description\" : \""<<action_map[action_names[i]]<<"\",\n";
-    std::cout<<"    \"module\" : \""<<getModuleMap().find(action_names[i])->second<<"\",\n";
+    bool found=false; std::string thismodule = getModuleMap().find(action_names[i])->second;
+    for(unsigned i=0; i<allmodules.size(); ++i) {
+      if( allmodules[i]==thismodule ) { found=true; break; }
+    }
+    if( !found ) allmodules.push_back( thismodule );
+    std::cout<<"    \"module\" : \""<<thismodule<<"\",\n";
     // Now output keyword information
     Keywords keys; actionRegister().getKeywords( action_names[i], keys );
     std::cout<<"    \"displayname\" : \""<<keys.getDisplayName()<<"\",\n";
@@ -187,6 +197,18 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
     std::cout<<"    \""<<s.first<<"\" : { \n"<<std::endl;
     std::cout<<"        \"description\" : \""<<s.second<<"\","<<std::endl;
     std::cout<<"        \"link\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/_m_o_l_i_n_f_o.html\""<<std::endl;
+  }
+  std::cout<<"        }"<<std::endl;
+  std::cout<<"  },"<<std::endl;
+  std::cout<<"  \"modules\" : {"<<std::endl;
+  std::cout<<"    \""<<allmodules[0]<<"\" : { "<<std::endl;
+  printHyperlink( allmodules[0] );
+  std::cout<<"        \"description\" : \"A module that will be used for something\""<<std::endl;
+  for(unsigned i=1; i<allmodules.size(); ++i) {
+    std::cout<<"    },"<<std::endl;
+    std::cout<<"    \""<<allmodules[i]<<"\" : { "<<std::endl;
+    printHyperlink( allmodules[i] );
+    std::cout<<"        \"description\" : \"A module that will be used for something\""<<std::endl;
   }
   std::cout<<"        }"<<std::endl;
   std::cout<<"  }"<<std::endl;
