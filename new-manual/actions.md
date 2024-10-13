@@ -17,6 +17,8 @@ d1: DISTANCE ...
 ...
 ```
 
+## Adding comments
+
 If you are an organized sort of person who likes to remember what the hell you were trying to do when you ran a
 particular simulation you might find it useful to put comments in your input file.  In PLUMED you can do this as
 comments can be added using a # sign.  On any given line everything after the # sign is ignored so
@@ -45,3 +47,35 @@ d2: DISTANCE ATOMS=3,4
 ```
 
 PLUMED will evaluate the distance between atom 1 and 2 but will not evaluate the distance between atoms 3 and 4.
+
+## Using INCLUDE files
+
+If, for some reason, you want to spread your PLUMED input over a number of files you can use INCLUDE as shown below:
+
+````
+INCLUDE FILE=filename
+````
+
+So, for example, instead of having a single "plumed.dat" file:
+
+```plumed
+DISTANCE ATOMS=1,2 LABEL=dist
+RESTRAINT ARG=dist AT=2.0 KAPPA=1.0
+```
+
+you can split the input over a file like the one below and a file called `toBeIncluded.inc` 
+
+```plumed
+DISTANCE ATOMS=1,2 LABEL=dist
+INCLUDE FILE=toBeIncluded.inc
+```
+
+However, when you do this it is important to recognize that INCLUDE is a real directive that is only resolved
+after all the comments have been stripped and the continuation lines have been unrolled.  This means it
+is not possible to do things like:
+
+```plumed
+# this is wrong:
+DISTANCE INCLUDE FILE=options.dat
+RESTRAINT ARG=dist AT=2.0 KAPPA=1.0
+```
