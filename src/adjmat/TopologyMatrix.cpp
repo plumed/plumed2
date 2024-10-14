@@ -31,8 +31,6 @@
 /*
 Adjacency matrix in which two atoms are adjacent if they are connected topologically
 
-\par Examples
-
 
 */
 //+ENDPLUMEDOC

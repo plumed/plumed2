@@ -28,8 +28,6 @@
 /*
 Calculate a matrix of distances
 
-\par Examples
-
 */
 //+ENDPLUMEDOC
 

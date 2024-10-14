@@ -26,40 +26,38 @@
 #include "core/Group.h"
 #include "AdjacencyMatrixBase.h"
 
+namespace PLMD {
+namespace adjmat {
+
 //+PLUMEDOC MATRIX CONTACT_MATRIX
 /*
 Adjacency matrix in which two atoms are adjacent if they are within a certain cutoff.
 
-As discussed in the section of the manual on \ref contactmatrix a useful tool for developing complex collective variables is the notion of the
-so called adjacency matrix.  An adjacency matrix is an \f$N \times N\f$ matrix in which the \f$i\f$th, \f$j\f$th element tells you whether
-or not the \f$i\f$th and \f$j\f$th atoms/molecules from a set of \f$N\f$ atoms/molecules are adjacent or not.  These matrices can then be further
+A useful tool for developing complex collective variables is the notion of the
+so called adjacency matrix.  An adjacency matrix is an $N \times N$ matrix in which the $i$th, $j$th element tells you whether
+or not the $i$th and $j$th atoms/molecules from a set of $N$ atoms/molecules are adjacent or not.  These matrices can then be further
 analyzed using a number of other algorithms as is detailed in \cite tribello-clustering.
-
+  
 For this action the elements of the contact matrix are calculated using:
 
-\f[
- a_{ij} = \sigma( |\mathbf{r}_{ij}| )
-\f]
-
-where \f$|\mathbf{r}_{ij}|\f$ is the magnitude of the vector connecting atoms \f$i\f$ and \f$j\f$ and where \f$\sigma\f$ is a \ref switchingfunction.
-
-\par Examples
-
-The input shown below calculates a \f$6 \times 6\f$ matrix whose elements are equal to one if atom \f$i\f$ and atom \f$j\f$ are within 0.3 nm
+$$
+a_{ij} = \sigma( |\mathbf{r}_{ij}| )
+$$
+  
+where $|\mathbf{r}_{ij}|$ is the magnitude of the vector connecting atoms $i$ and $j$ and where $\sigma$ is a switching function.
+  
+The input shown below calculates a $6 \times 6$ matrix whose elements are equal to one if atom $i$ and atom $j$ are within 0.3 nm
 of each other and which is zero otherwise.  The columns in this matrix are then summed so as to give the coordination number for each atom.
 The final quantity output in the colvar file is thus the average coordination number.
-
-\plumedfile
+  
+```plumed
 mat: CONTACT_MATRIX ATOMS=1-6 SWITCH={EXP D_0=0.2 R_0=0.1 D_MAX=0.66}
 COLUMNSUMS MATRIX=mat MEAN LABEL=csums
 PRINT ARG=csums.* FILE=colvar
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC
-
-namespace PLMD {
-namespace adjmat {
 
 class ContactMatrixShortcut : public ActionShortcut {
 public:

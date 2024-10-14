@@ -27,8 +27,6 @@
 /*
 Calculate the matrix of torsions between two vectors of molecules
 
-\par Examples
-
 */
 //+ENDPLUMEDOC
 

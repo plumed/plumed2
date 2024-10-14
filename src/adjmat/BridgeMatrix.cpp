@@ -31,27 +31,7 @@ namespace adjmat {
 
 //+PLUMEDOC MCOLVAR BRIDGE_MATRIX
 /*
-Calculate the number of atoms that bridge two parts of a structure
-
-This quantity calculates:
-
-\f[
- f(x) = \sum_{ijk} s_A(r_{ij})s_B(r_{ik})
-\f]
-
-where the sum over \f$i\f$ is over all the ``bridging atoms" and
-\f$s_A\f$ and \f$s_B\f$ are \ref switchingfunction.
-
-\par Examples
-
-The following example instructs plumed to calculate the number of water molecules
-that are bridging between atoms 1-10 and atoms 11-20 and to print the value
-to a file
-
-\plumedfile
-w1: BRIDGE BRIDGING_ATOMS=100-200 GROUPA=1-10 GROUPB=11-20 SWITCH={RATIONAL R_0=0.2}
-PRINT ARG=w1 FILE=colvar
-\endplumedfile
+Calculate a matrix with elements equal to one if there is a bridging atom between the two atoms
 
 */
 //+ENDPLUMEDOC

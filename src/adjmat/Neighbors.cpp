@@ -26,8 +26,6 @@
 /*
 Build a matrix with ones in for the N nearest neighbours of an atom
 
-\par Examples
-
 */
 //+ENDPLUMEDOC
 
