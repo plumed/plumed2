@@ -186,6 +186,7 @@ cdef class Plumed:
          cplumed.plumed_error_init(&error)
          nothrow.ptr=&error
          nothrow.handler=cplumed.plumed_error_set
+         # see https://github.com/plumed/plumed2/pull/1129#issuecomment-2410867829
          with cython.nogil():
             cplumed.plumed_cmd_safe_nothrow(self.c_plumed,ckey,safe,nothrow)
          if(error.code):

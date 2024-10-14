@@ -46,6 +46,8 @@ cdef extern from "Plumed.h":
         plumed_error_filesystem_path path1
         plumed_error_filesystem_path path2
         # ignore other members
+    # C functions declared as nogil
+    # see https://github.com/plumed/plumed2/pull/1129#issuecomment-2410867829
     void plumed_cmd_safe_nothrow(plumed p,const char*key,plumed_safeptr safe,plumed_nothrow_handler nothrow) nogil
     void plumed_error_set(void*ptr,int code,const char*what,const void* opt) nogil
     void plumed_error_init(plumed_error* error) nogil
