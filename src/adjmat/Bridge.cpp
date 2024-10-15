@@ -32,7 +32,7 @@ $$
 f(x) = \sum_{ijk} s_A(r_{ij})s_B(r_{ik})
 $$
 
-where the sum over $i$ is over all the ``bridging atoms" and
+where the sum over $i$ is over all the "bridging atoms" and
 $s_A$ and $s_B$ are switching functions.
 
 The following example instructs plumed to calculate the number of water molecules
