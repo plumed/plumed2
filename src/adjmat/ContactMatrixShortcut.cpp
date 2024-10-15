@@ -41,10 +41,10 @@ analyzed using a number of other algorithms as is detailed in \cite tribello-clu
 For this action the elements of the contact matrix are calculated using:
 
 $$
-a_{ij} = \sigma( |\mathbf{r}_{ij}| )
+a_{ij} = \sigma( r_{ij} )
 $$
   
-where $|\mathbf{r}_{ij}|$ is the magnitude of the vector connecting atoms $i$ and $j$ and where $\sigma$ is a switching function.
+where $r_{ij}$ is the magnitude of the vector connecting atoms $i$ and $j$ and where $\sigma$ is a switching function.
   
 The input shown below calculates a $6 \times 6$ matrix whose elements are equal to one if atom $i$ and atom $j$ are within 0.3 nm
 of each other and which is zero otherwise.  The columns in this matrix are then summed so as to give the coordination number for each atom.
