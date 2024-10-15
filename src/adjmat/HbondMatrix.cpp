@@ -33,20 +33,20 @@ Adjacency matrix in which two atoms are adjacent if there is a hydrogen bond bet
 
 A useful tool for developing complex collective variables is the notion of the
 so called adjacency matrix.  An adjacency matrix is an $N \times N$ matrix in which the $i$th, $j$th element tells you whether
-or not the $i$th and $j$th atoms/molecules from a set of $N$ atoms/molecules are adjacent or not.  These matrices can then be further
-analyzed using a number of other algorithms as is detailed in \cite tribello-clustering.
+or not the $i$th and $j$th atoms/molecules from a set of $N$ atoms/molecules are adjacent or not.  As detailed in the documentation
+for CONTACT_MATRIX there are then a range of further analyses that you can perform on these matrices.  
 
 For this action the elements of the adjacency matrix are calculated using:
 
 $$
-a_{ij} = \sigma_{oo}( |\mathbf{r}_{ij}| ) \sum_{k=1}^N \sigma_{oh}( |\mathbf{r}_{ik}| ) \sigma_{\theta}( \theta_{kij} )
+a_{ij} = \sigma_{oo}( \mathbf{r}_{ij} ) \sum_{k=1}^N \sigma_{oh}( \mathbf{r}_{ik} ) \sigma_{\theta}( \theta_{kij} )
 $$
 
 This expression was derived by thinking about how to detect if there is a hydrogen bond between atoms $i$ and $j$.  The notion is that
 if the hydrogen bond is present atoms $i$ and $j$ should be within a certain cutoff distance.  In addition, there should be a hydrogen
 within a certain cutoff distance of atom $i$ and this hydrogen should lie on or close to the vector connecting atoms $i$ and $j$.
-As such $\sigma_{oo}( |\mathbf{r}_{ij}| )$ is a switching function that acts on the modulus of the vector connecting atom $i$ to atom
-$j$.  The sum over $k$ then runs over all the hydrogen atoms that are specified using using HYDROGEN keyword.  $\sigma_{oh}(|\mathbf{r}_{ik}|)$
+As such $\sigma_{oo}( \mathbf{r}_{ij} )$ is a switching function that acts on the modulus of the vector connecting atom $i$ to atom
+$j$.  The sum over $k$ then runs over all the hydrogen atoms that are specified using using HYDROGEN keyword.  $\sigma_{oh}(\mathbf{r}_{ik})$
 is a switching function that acts on the modulus of the vector connecting atom $i$ to atom $k$ and $\sigma_{\theta}(\theta_{kij})$
 is a switching function that acts on the angle between the vector connecting atoms $i$ and $j$ and the vector connecting atoms $i$ and
 $k$.

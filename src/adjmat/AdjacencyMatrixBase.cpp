@@ -30,11 +30,11 @@ namespace adjmat {
 void AdjacencyMatrixBase::registerKeywords( Keywords& keys ) {
   ActionWithMatrix::registerKeywords( keys );
   keys.add("atoms","GROUP","the atoms for which you would like to calculate the adjacency matrix");
-  keys.add("atoms","GROUPA","");
-  keys.add("atoms","GROUPB","");
+  keys.add("atoms","GROUPA","when you are calculating the adjacency matrix between two sets of atoms this keyword is used to specify the atoms along with the keyword GROUPB");
+  keys.add("atoms","GROUPB","when you are calculating the adjacency matrix between two sets of atoms this keyword is used to specify the atoms along with the keyword GROUPA");
   keys.add("atoms-2","ATOMS","the atoms for which you would like to calculate the adjacency matrix. This is a depracated syntax that is equivalent to GROUP.  You are strongly recommened to use GROUP instead of ATOMS.");
   keys.reserve("atoms","GROUPC","");
-  keys.addFlag("COMPONENTS",false,"also calculate the components of the vector connecting the atoms in the contact matrix");
+  keys.addFlag("COMPONENTS",false,"also calculate the components of the vectors connecting the atoms in the contact matrix");
   keys.addFlag("NOPBC",false,"don't use pbc");
   keys.add("compulsory","NL_CUTOFF","0.0","The cutoff for the neighbor list.  A value of 0 means we are not using a neighbor list");
   keys.add("compulsory","NL_STRIDE","1","The frequency with which we are updating the atoms in the neighbor list");
