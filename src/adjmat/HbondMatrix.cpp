@@ -45,7 +45,7 @@ $$
 This expression was derived by thinking about how to detect if there is a hydrogen bond between atoms $i$ and $j$.  The notion is that
 if the hydrogen bond is present atoms $i$ and $j$ should be within a certain cutoff distance.  In addition, there should be a hydrogen
 within a certain cutoff distance of atom $i$ and this hydrogen should lie on or close to the vector connecting atoms $i$ and $j$.
-As such $\sigma_{oo}( \mathbf{r}_{ij} )$ is a switching function that acts on the modulus of the vector connecting atom $i$ to atom
+As such $\sigma_{oo}(\mathbf{r}_{ij})$ is a switching function that acts on the modulus of the vector connecting atom $i$ to atom
 $j$.  The sum over $k$ then runs over all the hydrogen atoms that are specified using using HYDROGEN keyword.  $\sigma_{oh}(\mathbf{r}_{ik})$
 is a switching function that acts on the modulus of the vector connecting atom $i$ to atom $k$ and $\sigma_{\theta}(\theta_{kij})$
 is a switching function that acts on the angle between the vector connecting atoms $i$ and $j$ and the vector connecting atoms $i$ and

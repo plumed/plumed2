@@ -51,7 +51,7 @@ In this expression $s_1$ and $s_2$ are switching functions, while $\mathbf{r}_{l
 We then calculate the density for a grid of $M$ points along the vector connecting atom $i$ and atom $j$ using and find the maximum density on this grid using:
 
 $$
-\rho_{ij} = \max_{m \in M} \left[ \frac{M}{d_\textrm{max}} \sum_k f(\mathbf{r}_{ik}, \mathbf{r}_{ij}) \int_{(m-1)_d_{\textrm{max}}/M}^{ md_{\textrm{max}} /M } \textrm{d}x K\left( x - \mathbf{r}_{ks} \cdot \mathbf{r}_{ij}} / | \mathbf{r}_{ks} | \right) \right]
+\rho_{ij} = \max_{m \in M} \left[ \frac{M}{d_\textrm{max}} \sum_k f(\mathbf{r}_{ik}, \mathbf{r}_{ij}) \int_{(m-1)d_{\textrm{max}}/M}^{ md_{\textrm{max}} /M } \textrm{d}x K\left( x - \mathbf{r}_{ks} \cdot \mathbf{r}_{ij}} / | \mathbf{r}_{ks} | \right) \right]
 $$
 
 where $d_\textrm{max}$ is the `D_MAX` parameter of the switching function $s_3$ that appears in the next equation, $K$ is a kernal function and $s$ is used to represent a point in space that is $d_\textrm{max}$ from atom $j$ along the vector connecting atom $j$ to atom $i$.  

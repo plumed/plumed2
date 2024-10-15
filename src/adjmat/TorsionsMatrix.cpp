@@ -50,7 +50,7 @@ around the vector connecting the corresponding atomic positions that are specifi
 
 You can also calculate a matrix of torsional angles between two different groups of molecules by using an input like the one below:
 
-```plmed
+```plumed
 pA: PLANE ATOMS1=1,2,3 ATOMS2=11,12,13 
 sA: VSTACK ARG=pA.x,pA.y pA.z
 pB: PLANE ATOMS1=21,22,23 ATOMS2=31,32,33 ATOMS3=41,42,43 
