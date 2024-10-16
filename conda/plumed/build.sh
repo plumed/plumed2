@@ -19,6 +19,10 @@ export CXXFLAGS="${CXXFLAGS//-O2/-O3}"
 if [[ $(uname) == "Darwin" ]]; then
 # see https://conda-forge.org/docs/maintainer/knowledge_base.html#newer-c-features-with-old-sdk
   CXXFLAGS="${CXXFLAGS} -D_LIBCPP_DISABLE_AVAILABILITY"
+
+# for some unexpected reason, when building on MacOS plumed 2.10 (likely because of C++17) # we need to pass the arguments below.
+# if we do not do so, linking plumed-runtime fails because the destructor of std::bad_function_call is not found
+  export STATIC_LIBS="-Wl,-rpath,$PREFIX/lib -L$PREFIX/lib"
 fi
 
 # libraries are explicitly listed here due to --disable-libsearch
