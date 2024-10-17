@@ -50,8 +50,7 @@ plumed completion
 //+ENDPLUMEDOC
 
 class Completion:
-  public CLTool
-{
+  public CLTool {
 public:
   static void registerKeywords( Keywords& keys );
   explicit Completion(const CLToolOptions& co );
@@ -68,8 +67,7 @@ void Completion::registerKeywords( Keywords& keys ) {
 }
 
 Completion::Completion(const CLToolOptions& co ):
-  CLTool(co)
-{
+  CLTool(co) {
   inputdata=commandline;
 }
 
@@ -86,11 +84,19 @@ int Completion::main(FILE* in, FILE*out,Communicator& pc) {
   std::vector<std::string> tmp=Tools::ls(std::string(config::getPlumedRoot()+"/scripts"));
   for(unsigned j=0; j<tmp.size(); ++j) {
     size_t ff=tmp[j].find(".sh");
-    if(ff==std::string::npos) tmp[j].erase();
-    else                 tmp[j].erase(ff);
+    if(ff==std::string::npos) {
+      tmp[j].erase();
+    } else {
+      tmp[j].erase(ff);
+    }
   }
-  for(unsigned j=0; j<availableCxx.size(); j++) std::fprintf(out," %s",availableCxx[j].c_str());
-  for(unsigned j=0; j<tmp.size(); ++j) if(tmp[j].length()>0) std::fprintf(out," %s",tmp[j].c_str());
+  for(unsigned j=0; j<availableCxx.size(); j++) {
+    std::fprintf(out," %s",availableCxx[j].c_str());
+  }
+  for(unsigned j=0; j<tmp.size(); ++j)
+    if(tmp[j].length()>0) {
+      std::fprintf(out," %s",tmp[j].c_str());
+    }
   std::fprintf(out,"\"\n");
 
   for(unsigned j=0; j<availableCxx.size(); j++) {
@@ -98,7 +104,9 @@ int Completion::main(FILE* in, FILE*out,Communicator& pc) {
 // handle - sign (convert to underscore)
     for(;;) {
       size_t n=s.find("-");
-      if(n==std::string::npos) break;
+      if(n==std::string::npos) {
+        break;
+      }
       s[n]='_';
     }
     std::fprintf(out,"local cmd_keys_%s=\"",s.c_str());
@@ -108,7 +116,9 @@ int Completion::main(FILE* in, FILE*out,Communicator& pc) {
       std::string s=keys[k];
       for(;;) {
         size_t n=s.find("/");
-        if(n==std::string::npos) break;
+        if(n==std::string::npos) {
+          break;
+        }
         s[n]=' ';
       }
       std::fprintf(out," %s",s.c_str());

@@ -75,12 +75,12 @@ public:
 PLUMED_REGISTER_ACTION(Energy,"ENERGY")
 
 Energy::Energy(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao)
-{
+  PLUMED_COLVAR_INIT(ao) {
 //  if(checkNumericalDerivatives())
 //    error("Cannot use NUMERICAL_DERIVATIVES with ENERGY");
   isEnergy=true;
-  addValueWithDerivatives(); setNotPeriodic();
+  addValueWithDerivatives();
+  setNotPeriodic();
   getPntrToValue()->resizeDerivatives(1);
   log<<"  Bibliography ";
   log<<plumed.cite("Bartels and Karplus, J. Phys. Chem. B 102, 865 (1998)");

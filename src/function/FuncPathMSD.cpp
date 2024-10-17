@@ -192,9 +192,11 @@ class FuncPathMSD : public Function {
     }
     // now sort according the second value
     std::sort(order.begin(), order.end(), ordering());
-    std::vector<int> vv(v.size()); n=0;
+    std::vector<int> vv(v.size());
+    n=0;
     for (const auto & it : order) {
-      vv[n]=it.first; n++;
+      vv[n]=it.first;
+      n++;
     }
     return vv;
   }
@@ -231,8 +233,7 @@ FuncPathMSD::FuncPathMSD(const ActionOptions&ao):
   Action(ao),
   Function(ao),
   neigh_size(-1),
-  neigh_stride(-1.)
-{
+  neigh_stride(-1.) {
 
   parse("LAMBDA",lambda);
   parse("NEIGH_SIZE",neigh_size);
@@ -241,10 +242,14 @@ FuncPathMSD::FuncPathMSD(const ActionOptions&ao):
   log.printf("  lambda is %f\n",lambda);
   // list the action involved and check the type
   std::string myname=getPntrToArgument(0)->getPntrToAction()->getName();
-  if(myname!="RMSD"&&myname!="CONTACTMAP"&&myname!="DISTANCE"&&myname!="PIV") error("One or more of your arguments is not of RMSD/CONTACTMAP/DISTANCE/PIV type!!!");
+  if(myname!="RMSD"&&myname!="CONTACTMAP"&&myname!="DISTANCE"&&myname!="PIV") {
+    error("One or more of your arguments is not of RMSD/CONTACTMAP/DISTANCE/PIV type!!!");
+  }
   for(unsigned i=1; i<getNumberOfArguments(); i++) {
     // for each value get the name and the label of the corresponding action
-    if( getPntrToArgument(i)->getPntrToAction()->getName()!=myname ) error("mismatch between the types of arguments");
+    if( getPntrToArgument(i)->getPntrToAction()->getName()!=myname ) {
+      error("mismatch between the types of arguments");
+    }
   }
   log.printf("  Consistency check completed! Your path cvs look good!\n");
   // do some neighbor printout
@@ -260,14 +265,19 @@ FuncPathMSD::FuncPathMSD(const ActionOptions&ao):
     log.printf("  Neighbor list NOT enabled \n");
   }
 
-  addComponentWithDerivatives("s"); componentIsNotPeriodic("s");
-  addComponentWithDerivatives("z"); componentIsNotPeriodic("z");
+  addComponentWithDerivatives("s");
+  componentIsNotPeriodic("s");
+  addComponentWithDerivatives("z");
+  componentIsNotPeriodic("z");
 
   // now backup the arguments
-  for(unsigned i=0; i<getNumberOfArguments(); i++)allArguments.push_back(getPntrToArgument(i));
+  for(unsigned i=0; i<getNumberOfArguments(); i++) {
+    allArguments.push_back(getPntrToArgument(i));
+  }
   double i=1.;
   for(const auto & it : allArguments) {
-    indexmap[it]=i; i+=1.;
+    indexmap[it]=i;
+    i+=1.;
   }
 
 }
@@ -278,7 +288,9 @@ void FuncPathMSD::calculate() {
   double partition=0.;
   if(neighpair.empty()) { // at first step, resize it
     neighpair.resize(allArguments.size());
-    for(unsigned i=0; i<allArguments.size(); i++)neighpair[i].first=allArguments[i];
+    for(unsigned i=0; i<allArguments.size(); i++) {
+      neighpair[i].first=allArguments[i];
+    }
   }
 
   Value* val_s_path=getPntrToComponent("s");
@@ -323,18 +335,25 @@ void FuncPathMSD::prepare() {
       // resize the effective list
       neighpair.resize(neigh_size);
       log.printf("  NEIGH LIST NOW INCLUDE INDEXES: ");
-      for(int i=0; i<neigh_size; ++i) {log.printf(" %f ",indexmap[neighpair[i].first]);} log.printf(" \n");
+      for(int i=0; i<neigh_size; ++i) {
+        log.printf(" %f ",indexmap[neighpair[i].first]);
+      }
+      log.printf(" \n");
     } else {
       if( int(getStep())%int(neigh_stride/getTimeStep())==0 ) {
         log.printf(" Time %f : recalculating full neighlist \n",getStep()*getTimeStep());
         neighpair.resize(allArguments.size());
-        for(unsigned i=0; i<allArguments.size(); i++)neighpair[i].first=allArguments[i];
+        for(unsigned i=0; i<allArguments.size(); i++) {
+          neighpair[i].first=allArguments[i];
+        }
       }
     }
   } else {
     if( int(getStep())==0) {
       neighpair.resize(allArguments.size());
-      for(unsigned i=0; i<allArguments.size(); i++)neighpair[i].first=allArguments[i];
+      for(unsigned i=0; i<allArguments.size(); i++) {
+        neighpair[i].first=allArguments[i];
+      }
     }
   }
   std::vector<Value*> argstocall;

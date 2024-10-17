@@ -36,8 +36,7 @@ VesselOptions::VesselOptions(const std::string& thisname, const std::string& thi
   numlab(nlab),
   action(aa),
   keywords(emptyKeys),
-  parameters(params)
-{
+  parameters(params) {
 }
 
 VesselOptions::VesselOptions(const VesselOptions& da, const Keywords& keys ):
@@ -46,8 +45,7 @@ VesselOptions::VesselOptions(const VesselOptions& da, const Keywords& keys ):
   numlab(da.numlab),
   action(da.action),
   keywords(keys),
-  parameters(da.parameters)
-{
+  parameters(da.parameters) {
 }
 
 void Vessel::registerKeywords( Keywords& keys ) {
@@ -58,11 +56,15 @@ void Vessel::registerKeywords( Keywords& keys ) {
 std::string Vessel::transformName( const std::string& name ) {
   std::string tlabel=name;
   // Convert to lower case
-  std::transform( tlabel.begin(), tlabel.end(), tlabel.begin(), [](unsigned char c) { return std::tolower(c); } );
+  std::transform( tlabel.begin(), tlabel.end(), tlabel.begin(), [](unsigned char c) {
+    return std::tolower(c);
+  } );
   // Remove any underscore characters (as these are reserved)
   for(unsigned i=0;; ++i) {
     std::size_t num=tlabel.find_first_of("_");
-    if( num==std::string::npos ) break;
+    if( num==std::string::npos ) {
+      break;
+    }
     tlabel.erase( tlabel.begin() + num, tlabel.begin() + num + 1 );
   }
   return tlabel;
@@ -74,15 +76,20 @@ Vessel::Vessel( const VesselOptions& da ):
   action(da.action),
   line(Tools::getWords( da.parameters )),
   keywords(da.keywords),
-  finished_read(false)
-{
+  finished_read(false) {
   if( da.mylabel.length()>0) {
     mylabel=da.mylabel;
   } else {
-    if( keywords.exists("LABEL") ) parse("LABEL",mylabel);
+    if( keywords.exists("LABEL") ) {
+      parse("LABEL",mylabel);
+    }
     if( mylabel.length()==0 && numlab>=0 ) {
-      mylabel=transformName( myname ); std::string nn;
-      if(numlab>0) { Tools::convert( numlab, nn ); mylabel =  mylabel + "-" + nn; }
+      mylabel=transformName( myname );
+      std::string nn;
+      if(numlab>0) {
+        Tools::convert( numlab, nn );
+        mylabel =  mylabel + "-" + nn;
+      }
     }
   }
 }
@@ -100,7 +107,8 @@ std::string Vessel::getAllInput() {
   for(unsigned i=0; i<line.size(); ++i) {
     fullstring = fullstring + " " + line[i];
   }
-  line.clear(); line.resize(0);
+  line.clear();
+  line.resize(0);
   return fullstring;
 }
 
@@ -126,20 +134,26 @@ void Vessel::checkRead() {
   if(!line.empty()) {
     std::string msg="cannot understand the following words from input : ";
     for(unsigned i=0; i<line.size(); i++) {
-      if(i>0) msg = msg + ", ";
+      if(i>0) {
+        msg = msg + ", ";
+      }
       msg = msg + line[i];
     }
     error(msg);
   }
   finished_read=true;
   std::string describe=description();
-  if( describe.length()>0 && action ) action->log.printf("  %s\n", describe.c_str() );
+  if( describe.length()>0 && action ) {
+    action->log.printf("  %s\n", describe.c_str() );
+  }
 }
 
 [[noreturn]] void Vessel::error( const std::string& msg ) {
   if( action ) {
     action->log.printf("ERROR for keyword %s in action %s with label %s : %s \n \n",myname.c_str(), (action->getName()).c_str(), (action->getLabel()).c_str(), msg.c_str() );
-    if(finished_read) keywords.print( action->log );
+    if(finished_read) {
+      keywords.print( action->log );
+    }
     plumed_merror("ERROR for keyword " + myname + " in action "  + action->getName() + " with label " + action->getLabel() + " : " + msg );
   } else {
     plumed_merror("ERROR: " + msg);

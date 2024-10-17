@@ -55,13 +55,11 @@ PRINT ARG=d2 STRIDE=10 FILE=colvar2
 //+ENDPLUMEDOC
 
 class Flush:
-  public ActionPilot
-{
+  public ActionPilot {
 public:
   explicit Flush(const ActionOptions&ao):
     Action(ao),
-    ActionPilot(ao)
-  {
+    ActionPilot(ao) {
     checkRead();
   }
   static void registerKeywords( Keywords& keys );
@@ -71,8 +69,9 @@ public:
     plumed.fflush();
     log.flush();
     const ActionSet & actionSet(plumed.getActionSet());
-    for(const auto & p : actionSet)
+    for(const auto & p : actionSet) {
       p->fflush();
+    }
   }
 };
 

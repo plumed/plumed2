@@ -115,7 +115,9 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit FindSphericalContour(const ActionOptions&ao);
-  unsigned getNumberOfQuantities() const override { return 2; }
+  unsigned getNumberOfQuantities() const override {
+    return 2;
+  }
   void compute( const unsigned& current, MultiValue& myvals ) const override;
 };
 
@@ -131,27 +133,36 @@ void FindSphericalContour::registerKeywords( Keywords& keys ) {
 
 FindSphericalContour::FindSphericalContour(const ActionOptions&ao):
   Action(ao),
-  ContourFindingBase(ao)
-{
-  if( ingrid->getDimension()!=3 ) error("input grid must be three dimensional");
+  ContourFindingBase(ao) {
+  if( ingrid->getDimension()!=3 ) {
+    error("input grid must be three dimensional");
+  }
 
-  unsigned npoints; parse("NPOINTS",npoints);
+  unsigned npoints;
+  parse("NPOINTS",npoints);
   log.printf("  searching for %u points on dividing surface \n",npoints);
-  parse("INNER_RADIUS",min); parse("OUTER_RADIUS",max); parse("NBINS",nbins);
+  parse("INNER_RADIUS",min);
+  parse("OUTER_RADIUS",max);
+  parse("NBINS",nbins);
   log.printf("  expecting to find dividing surface at radii between %f and %f \n",min,max);
   log.printf("  looking for contour in windows of length %f \n", (max-min)/nbins);
   // Set this here so the same set of grid points are used on every turn
   std::string vstring = "TYPE=fibonacci COMPONENTS=" + getLabel() + " COORDINATES=x,y,z PBC=F,F,F";
-  auto grid=createGrid( "grid", vstring ); grid->setNoDerivatives();
+  auto grid=createGrid( "grid", vstring );
+  grid->setNoDerivatives();
   setAveragingAction( std::move(grid), true );
   // use mygrid, since at this point grid has been moved
   mygrid->setupFibonacciGrid( npoints );
 
   checkRead();
   // Create a task list
-  for(unsigned i=0; i<npoints; ++i) addTaskToList( i );
+  for(unsigned i=0; i<npoints; ++i) {
+    addTaskToList( i );
+  }
   deactivateAllTasks();
-  for(unsigned i=0; i<getFullNumberOfTasks(); ++i) taskFlags[i]=1;
+  for(unsigned i=0; i<getFullNumberOfTasks(); ++i) {
+    taskFlags[i]=1;
+  }
   lockContributors();
 }
 
@@ -167,17 +178,28 @@ void FindSphericalContour::compute( const unsigned& current, MultiValue& myvals 
   }
   bool found=false;
   for(unsigned k=0; k<nbins; ++k) {
-    for(unsigned j=0; j<3; ++j) tmp[j] = contour_point[j] + direction[j];
+    for(unsigned j=0; j<3; ++j) {
+      tmp[j] = contour_point[j] + direction[j];
+    }
     double val1 = getDifferenceFromContour( contour_point, der );
     double val2 = getDifferenceFromContour( tmp, der );
     if( val1*val2<0 ) {
       findContour( direction, contour_point );
-      double norm=0; for(unsigned j=0; j<3; ++j) norm += contour_point[j]*contour_point[j];
-      myvals.setValue( 1, std::sqrt(norm) ); found=true; break;
+      double norm=0;
+      for(unsigned j=0; j<3; ++j) {
+        norm += contour_point[j]*contour_point[j];
+      }
+      myvals.setValue( 1, std::sqrt(norm) );
+      found=true;
+      break;
     }
-    for(unsigned j=0; j<3; ++j) contour_point[j] = tmp[j];
+    for(unsigned j=0; j<3; ++j) {
+      contour_point[j] = tmp[j];
+    }
   }
-  if( !found ) error("range does not bracket the dividing surface");
+  if( !found ) {
+    error("range does not bracket the dividing surface");
+  }
 }
 
 }

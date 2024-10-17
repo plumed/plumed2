@@ -90,12 +90,12 @@ void Fccubic::registerKeywords( Keywords& keys ) {
 
 Fccubic::Fccubic(const ActionOptions&ao):
   Action(ao),
-  CubicHarmonicBase(ao)
-{
+  CubicHarmonicBase(ao) {
   // Scaling factors such that '1' corresponds to fcc lattice
   // and '0' corresponds to isotropic (liquid)
   parse("ALPHA",alpha);
-  a1 = 80080. / (2717. + 16*alpha); b1 = 16.*(alpha-143)/(2717+16*alpha);
+  a1 = 80080. / (2717. + 16*alpha);
+  b1 = 16.*(alpha-143)/(2717+16*alpha);
   log.printf("  setting alpha parameter equal to %f \n",alpha);
   // And setup the ActionWithVessel
   checkRead();

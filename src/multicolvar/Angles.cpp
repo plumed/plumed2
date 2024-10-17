@@ -95,15 +95,20 @@ public:
   double compute( const unsigned& tindex, AtomValuePack& ) const override;
 /// Returns the number of coordinates of the field
   double calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& ) const override;
-  bool isPeriodic() override { return false; }
+  bool isPeriodic() override {
+    return false;
+  }
 };
 
 PLUMED_REGISTER_ACTION(Angles,"ANGLES")
 
 void Angles::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );
-  keys.use("MEAN"); keys.use("LESS_THAN");
-  keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MORE_THAN");
+  keys.use("MEAN");
+  keys.use("LESS_THAN");
+  keys.use("BETWEEN");
+  keys.use("HISTOGRAM");
+  keys.use("MORE_THAN");
   // Could also add Region here in theory
   keys.add("numbered","ATOMS","the atoms involved in each of the angles you wish to calculate. "
            "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one angle will be "
@@ -132,16 +137,20 @@ void Angles::registerKeywords( Keywords& keys ) {
 Angles::Angles(const ActionOptions&ao):
   Action(ao),
   MultiColvarBase(ao),
-  use_sf(false)
-{
-  std::string sfinput,errors; parse("SWITCH",sfinput);
+  use_sf(false) {
+  std::string sfinput,errors;
+  parse("SWITCH",sfinput);
   if( sfinput.length()>0 ) {
     use_sf=true;
     weightHasDerivatives=true;
     sf1.set(sfinput,errors);
-    if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
+    if( errors.length()!=0 ) {
+      error("problem reading SWITCH keyword : " + errors );
+    }
     sf2.set(sfinput,errors);
-    if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
+    if( errors.length()!=0 ) {
+      error("problem reading SWITCH keyword : " + errors );
+    }
     log.printf("  only calculating angles for atoms separated by less than %s\n", sf1.description().c_str() );
   } else {
     parse("SWITCHA",sfinput);
@@ -149,11 +158,18 @@ Angles::Angles(const ActionOptions&ao):
       use_sf=true;
       weightHasDerivatives=true;
       sf1.set(sfinput,errors);
-      if( errors.length()!=0 ) error("problem reading SWITCHA keyword : " + errors );
-      sfinput.clear(); parse("SWITCHB",sfinput);
-      if(sfinput.length()==0) error("found SWITCHA keyword without SWITCHB");
+      if( errors.length()!=0 ) {
+        error("problem reading SWITCHA keyword : " + errors );
+      }
+      sfinput.clear();
+      parse("SWITCHB",sfinput);
+      if(sfinput.length()==0) {
+        error("found SWITCHA keyword without SWITCHB");
+      }
       sf2.set(sfinput,errors);
-      if( errors.length()!=0 ) error("problem reading SWITCHB keyword : " + errors );
+      if( errors.length()!=0 ) {
+        error("problem reading SWITCHB keyword : " + errors );
+      }
       log.printf("  only calculating angles when the distance between GROUPA and GROUPB atoms is less than %s\n", sf1.description().c_str() );
       log.printf("  only calculating angles when the distance between GROUPA and GROUPC atoms is less than %s\n", sf2.description().c_str() );
     }
@@ -161,7 +177,9 @@ Angles::Angles(const ActionOptions&ao):
   // Read in the atoms
   std::vector<AtomNumber> all_atoms;
   readGroupKeywords( "GROUP", "GROUPA", "GROUPB", "GROUPC", false, true, all_atoms );
-  if( atom_lab.size()==0 ) readAtomsLikeKeyword( "ATOMS", 3, all_atoms );
+  if( atom_lab.size()==0 ) {
+    readAtomsLikeKeyword( "ATOMS", 3, all_atoms );
+  }
   setupMultiColvarBase( all_atoms );
   // Set cutoff for link cells
   if( use_sf ) {
@@ -173,12 +191,15 @@ Angles::Angles(const ActionOptions&ao):
   // And check everything has been read in correctly
   checkRead();
   // Setup stuff for central atom
-  std::vector<bool> catom_ind(3, false); catom_ind[0]=true;
+  std::vector<bool> catom_ind(3, false);
+  catom_ind[0]=true;
   setAtomsForCentralAtom( catom_ind );
 }
 
 double Angles::calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& myatoms ) const {
-  if(!use_sf) return 1.0;
+  if(!use_sf) {
+    return 1.0;
+  }
   Vector dij=getSeparation( myatoms.getPosition(0), myatoms.getPosition(2) );
   Vector dik=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
 
@@ -186,12 +207,16 @@ double Angles::calculateWeight( const unsigned& taskCode, const double& weight, 
   double ldij = dij.modulo2(), ldik = dik.modulo2();
 
   if( use_sf ) {
-    if( ldij>rcut2_1 || ldik>rcut2_2 ) return 0.0;
+    if( ldij>rcut2_1 || ldik>rcut2_2 ) {
+      return 0.0;
+    }
   }
 
   w1=sf1.calculateSqr( ldij, dw1 );
   w2=sf2.calculateSqr( ldik, dw2 );
-  wtot=w1*w2; dw1*=weight*w2; dw2*=weight*w1;
+  wtot=w1*w2;
+  dw1*=weight*w2;
+  dw2*=weight*w1;
 
   addAtomDerivatives( 0, 1, dw2*dik, myatoms );
   addAtomDerivatives( 0, 0, -dw1*dij - dw2*dik, myatoms );
@@ -204,7 +229,8 @@ double Angles::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
   Vector dij=getSeparation( myatoms.getPosition(0), myatoms.getPosition(2) );
   Vector dik=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
 
-  Vector ddij,ddik; PLMD::Angle a;
+  Vector ddij,ddik;
+  PLMD::Angle a;
   double angle=a.compute(dij,dik,ddij,ddik);
 
   // And finish the calculation

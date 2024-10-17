@@ -45,7 +45,11 @@ public:
   PammObject( const PammObject& );
 /// GB: I fixed this (should return PammObject&, it was returning PammObject
 // However I am not sure the implementation makes sense.
-  PammObject& operator=(const PammObject& po) { plumed_error(); regulariser=po.regulariser; return *this; }
+  PammObject& operator=(const PammObject& po) {
+    plumed_error();
+    regulariser=po.regulariser;
+    return *this;
+  }
 /// Setup the Pamm object
   void setup( const std::string& filename, const double& reg, const std::vector<std::string>& valnames,
               const std::vector<bool>& pbcin, const std::vector<std::string>& imin, const std::vector<std::string>& imax,

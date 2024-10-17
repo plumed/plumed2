@@ -142,8 +142,13 @@ public:
   double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
   double calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& ) const override;
 /// Returns the number of coordinates of the field
-  bool isPeriodic() override { return true; }
-  void retrieveDomain( std::string& min, std::string& max) override { min="-pi"; max="pi"; }
+  bool isPeriodic() override {
+    return true;
+  }
+  void retrieveDomain( std::string& min, std::string& max) override {
+    min="-pi";
+    max="pi";
+  }
 };
 
 PLUMED_REGISTER_ACTION(XYTorsion,"XYTORSIONS")
@@ -155,10 +160,15 @@ PLUMED_REGISTER_ACTION(XYTorsion,"ZYTORSIONS")
 
 void XYTorsion::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );
-  keys.use("MAX"); keys.use("ALT_MIN");
-  keys.use("MEAN"); keys.use("MIN");
-  keys.use("LOWEST"); keys.use("HIGHEST");
-  keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
+  keys.use("MAX");
+  keys.use("ALT_MIN");
+  keys.use("MEAN");
+  keys.use("MIN");
+  keys.use("LOWEST");
+  keys.use("HIGHEST");
+  keys.use("BETWEEN");
+  keys.use("HISTOGRAM");
+  keys.use("MOMENTS");
   keys.add("numbered","ATOMS","the atoms involved in each of the torsion angles you wish to calculate. "
            "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one torsion will be "
            "calculated for each ATOM keyword you specify (all ATOM keywords should "
@@ -177,22 +187,39 @@ void XYTorsion::registerKeywords( Keywords& keys ) {
 XYTorsion::XYTorsion(const ActionOptions&ao):
   Action(ao),
   MultiColvarBase(ao),
-  use_sf(false)
-{
-  if( getName().find("XY")!=std::string::npos) { myc1=0; myc2=1; }
-  else if( getName().find("XZ")!=std::string::npos) { myc1=0; myc2=2; }
-  else if( getName().find("YX")!=std::string::npos) { myc1=1; myc2=0; }
-  else if( getName().find("YZ")!=std::string::npos) { myc1=1; myc2=2; }
-  else if( getName().find("ZX")!=std::string::npos) { myc1=2; myc2=0; }
-  else if( getName().find("ZY")!=std::string::npos) { myc1=2; myc2=1; }
-  else plumed_error();
+  use_sf(false) {
+  if( getName().find("XY")!=std::string::npos) {
+    myc1=0;
+    myc2=1;
+  } else if( getName().find("XZ")!=std::string::npos) {
+    myc1=0;
+    myc2=2;
+  } else if( getName().find("YX")!=std::string::npos) {
+    myc1=1;
+    myc2=0;
+  } else if( getName().find("YZ")!=std::string::npos) {
+    myc1=1;
+    myc2=2;
+  } else if( getName().find("ZX")!=std::string::npos) {
+    myc1=2;
+    myc2=0;
+  } else if( getName().find("ZY")!=std::string::npos) {
+    myc1=2;
+    myc2=1;
+  } else {
+    plumed_error();
+  }
 
   // Read in switching function
-  std::string sfinput, errors; parse("SWITCH",sfinput);
+  std::string sfinput, errors;
+  parse("SWITCH",sfinput);
   if( sfinput.length()>0 ) {
-    use_sf=true; weightHasDerivatives=true;
+    use_sf=true;
+    weightHasDerivatives=true;
     sf1.set(sfinput,errors);
-    if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
+    if( errors.length()!=0 ) {
+      error("problem reading SWITCH keyword : " + errors );
+    }
     log.printf("  only calculating angles for atoms separated by less than %s\n", sf1.description().c_str() );
     setLinkCellCutoff( sf1.get_dmax() );
   }
@@ -200,14 +227,18 @@ XYTorsion::XYTorsion(const ActionOptions&ao):
   // Read in the atoms
   std::vector<AtomNumber> all_atoms;
   readTwoGroups( "GROUP", "GROUPA", "GROUPB", all_atoms );
-  if( atom_lab.size()==0 ) readAtomsLikeKeyword( "ATOMS", 2, all_atoms );
+  if( atom_lab.size()==0 ) {
+    readAtomsLikeKeyword( "ATOMS", 2, all_atoms );
+  }
   setupMultiColvarBase( all_atoms );
   // And check everything has been read in correctly
   checkRead();
 }
 
 double XYTorsion::calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& myatoms ) const {
-  if(!use_sf) return 1.0;
+  if(!use_sf) {
+    return 1.0;
+  }
 
   Vector distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
   double dw, w = sf1.calculateSqr( distance.modulo2(), dw );
@@ -219,9 +250,13 @@ double XYTorsion::calculateWeight( const unsigned& taskCode, const double& weigh
 
 double XYTorsion::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
   Vector dd0, dd1, dd2, axis, rot, distance;
-  axis.zero(); rot.zero(); rot[myc1]=1; axis[myc2]=1;
+  axis.zero();
+  rot.zero();
+  rot[myc1]=1;
+  axis[myc2]=1;
   distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
-  PLMD::Torsion t; double torsion=t.compute( distance, rot, axis, dd0, dd1, dd2 );
+  PLMD::Torsion t;
+  double torsion=t.compute( distance, rot, axis, dd0, dd1, dd2 );
 
   addAtomDerivatives( 1, 0, -dd0, myatoms );
   addAtomDerivatives( 1, 1, dd0, myatoms );

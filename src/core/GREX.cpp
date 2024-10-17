@@ -38,8 +38,7 @@ GREX::GREX(PlumedMain&p):
   foreignDeltaBias(0),
   localUNow(0),
   localUSwap(0),
-  myreplica(-1) // = unset
-{
+  myreplica(-1) { // = unset
   p.setSuffix(".NA");
 }
 
@@ -69,7 +68,9 @@ void GREX::cmd(const std::string&key,const TypesafePtr & val) {
   } else {
     int iword=-1;
     const auto it=word_map.find(words[0]);
-    if(it!=word_map.end()) iword=it->second;
+    if(it!=word_map.end()) {
+      iword=it->second;
+    }
     switch(iword) {
     case cmd_initialized:
       CHECK_NOTNULL(val,key);
@@ -107,7 +108,9 @@ void GREX::cmd(const std::string&key,const TypesafePtr & val) {
       break;
     case cmd_prepare:
       CHECK_INIT(initialized,key);
-      if(intracomm.Get_rank()==0) return;
+      if(intracomm.Get_rank()==0) {
+        return;
+      }
       intracomm.Bcast(partner,0);
       calculate();
       break;
@@ -121,7 +124,9 @@ void GREX::cmd(const std::string&key,const TypesafePtr & val) {
       break;
     case cmd_calculate:
       CHECK_INIT(initialized,key);
-      if(intracomm.Get_rank()!=0) return;
+      if(intracomm.Get_rank()!=0) {
+        return;
+      }
       intracomm.Bcast(partner,0);
       calculate();
       break;
@@ -157,7 +162,9 @@ void GREX::cmd(const std::string&key,const TypesafePtr & val) {
       break;
     case cmd_shareAllDeltaBias:
       CHECK_INIT(initialized,key);
-      if(intracomm.Get_rank()!=0) return;
+      if(intracomm.Get_rank()!=0) {
+        return;
+      }
       allDeltaBias.assign(intercomm.Get_size(),0.0);
       allDeltaBias[intercomm.Get_rank()]=localDeltaBias;
       intercomm.Sum(allDeltaBias);

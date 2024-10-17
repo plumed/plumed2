@@ -59,12 +59,17 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   dertime(true),
   contributorsAreUnlocked(false),
   weightHasDerivatives(false),
-  mydata(NULL)
-{
-  maxderivatives=309; parse("MAXDERIVATIVES",maxderivatives);
-  if( keywords.exists("SERIAL") ) parseFlag("SERIAL",serial);
-  else serial=true;
-  if(serial)log.printf("  doing calculation in serial\n");
+  mydata(NULL) {
+  maxderivatives=309;
+  parse("MAXDERIVATIVES",maxderivatives);
+  if( keywords.exists("SERIAL") ) {
+    parseFlag("SERIAL",serial);
+  } else {
+    serial=true;
+  }
+  if(serial) {
+    log.printf("  doing calculation in serial\n");
+  }
   if( keywords.exists("LOWMEM") ) {
     plumed_assert( !keywords.exists("HIGHMEM") );
     parseFlag("LOWMEM",lowmem);
@@ -75,21 +80,28 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   }
   if( keywords.exists("HIGHMEM") ) {
     plumed_assert( !keywords.exists("LOWMEM") );
-    bool highmem; parseFlag("HIGHMEM",highmem);
+    bool highmem;
+    parseFlag("HIGHMEM",highmem);
     lowmem=!highmem;
-    if(!lowmem) log.printf("  increasing the memory requirements\n");
+    if(!lowmem) {
+      log.printf("  increasing the memory requirements\n");
+    }
   }
   tolerance=nl_tolerance=epsilon;
-  if( keywords.exists("TOL") ) parse("TOL",tolerance);
+  if( keywords.exists("TOL") ) {
+    parse("TOL",tolerance);
+  }
   if( tolerance>epsilon) {
     log.printf(" Ignoring contributions less than %f \n",tolerance);
   }
   parseFlag("TIMINGS",timers);
-  stopwatch.start(); stopwatch.pause();
+  stopwatch.start();
+  stopwatch.pause();
 }
 
 ActionWithVessel::~ActionWithVessel() {
-  stopwatch.start(); stopwatch.stop();
+  stopwatch.start();
+  stopwatch.stop();
   if(timers) {
     log.printf("timings for action %s with label %s \n", getName().c_str(), getLabel().c_str() );
     log<<stopwatch;
@@ -112,14 +124,20 @@ void ActionWithVessel::addVessel( std::unique_ptr<Vessel> vv_ptr ) {
 // In the original code, the dynamically casted pointer was deleted here.
 // Now that vv_ptr is a unique_ptr, the object will be deleted automatically when
 // exiting this routine.
-  if(dynamic_cast<ShortcutVessel*>(vv_ptr.get())) return;
+  if(dynamic_cast<ShortcutVessel*>(vv_ptr.get())) {
+    return;
+  }
 
   vv_ptr->checkRead();
 
   StoreDataVessel* mm=dynamic_cast<StoreDataVessel*>( vv_ptr.get() );
-  if( mydata && mm ) error("cannot have more than one StoreDataVessel in one action");
-  else if( mm ) mydata=mm;
-  else dertime_can_be_off=false;
+  if( mydata && mm ) {
+    error("cannot have more than one StoreDataVessel in one action");
+  } else if( mm ) {
+    mydata=mm;
+  } else {
+    dertime_can_be_off=false;
+  }
 
 // Ownership is transferred to functions
   functions.emplace_back(std::move(vv_ptr));
@@ -129,7 +147,8 @@ BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ) {
   VesselOptions da("","",0,"",this);
   auto bv=Tools::make_unique<BridgeVessel>(da);
   bv->setOutputAction( tome );
-  tome->actionIsBridged=true; dertime_can_be_off=false;
+  tome->actionIsBridged=true;
+  dertime_can_be_off=false;
 // store this pointer in order to return it later.
 // notice that I cannot access this with functions.tail().get()
 // since functions contains pointers to a different class (Vessel)
@@ -141,13 +160,17 @@ BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ) {
 
 StoreDataVessel* ActionWithVessel::buildDataStashes( ActionWithVessel* actionThatUses ) {
   if(mydata) {
-    if( actionThatUses ) mydata->addActionThatUses( actionThatUses );
+    if( actionThatUses ) {
+      mydata->addActionThatUses( actionThatUses );
+    }
     return mydata;
   }
 
   VesselOptions da("","",0,"",this);
   auto mm=Tools::make_unique<StoreDataVessel>(da);
-  if( actionThatUses ) mm->addActionThatUses( actionThatUses );
+  if( actionThatUses ) {
+    mm->addActionThatUses( actionThatUses );
+  }
   addVessel(std::move(mm));
 
   // Make sure resizing of vessels is done
@@ -157,30 +180,40 @@ StoreDataVessel* ActionWithVessel::buildDataStashes( ActionWithVessel* actionTha
 }
 
 void ActionWithVessel::addTaskToList( const unsigned& taskCode ) {
-  fullTaskList.push_back( taskCode ); taskFlags.push_back(0);
+  fullTaskList.push_back( taskCode );
+  taskFlags.push_back(0);
   plumed_assert( fullTaskList.size()==taskFlags.size() );
 }
 
 void ActionWithVessel::readVesselKeywords() {
   // Set maxderivatives if it is too big
-  if( maxderivatives>getNumberOfDerivatives() ) maxderivatives=getNumberOfDerivatives();
+  if( maxderivatives>getNumberOfDerivatives() ) {
+    maxderivatives=getNumberOfDerivatives();
+  }
 
   // Loop over all keywords find the vessels and create appropriate functions
   for(unsigned i=0; i<keywords.size(); ++i) {
-    std::string thiskey,input; thiskey=keywords.getKeyword(i);
+    std::string thiskey,input;
+    thiskey=keywords.getKeyword(i);
     // Check if this is a key for a vessel
     if( vesselRegister().check(thiskey) ) {
       plumed_assert( keywords.style(thiskey,"vessel") );
-      bool dothis=false; parseFlag(thiskey,dothis);
-      if(dothis) addVessel( thiskey, input );
+      bool dothis=false;
+      parseFlag(thiskey,dothis);
+      if(dothis) {
+        addVessel( thiskey, input );
+      }
 
       parse(thiskey,input);
       if(input.size()!=0) {
         addVessel( thiskey, input );
       } else {
         for(unsigned i=1;; ++i) {
-          if( !parseNumbered(thiskey,i,input) ) break;
-          std::string ss; Tools::convert(i,ss);
+          if( !parseNumbered(thiskey,i,input) ) {
+            break;
+          }
+          std::string ss;
+          Tools::convert(i,ss);
           addVessel( thiskey, input, i );
           input.clear();
         }
@@ -189,29 +222,39 @@ void ActionWithVessel::readVesselKeywords() {
   }
 
   // Make sure all vessels have had been resized at start
-  if( functions.size()>0 ) resizeFunctions();
+  if( functions.size()>0 ) {
+    resizeFunctions();
+  }
 }
 
 void ActionWithVessel::resizeFunctions() {
-  for(unsigned i=0; i<functions.size(); ++i) functions[i]->resize();
+  for(unsigned i=0; i<functions.size(); ++i) {
+    functions[i]->resize();
+  }
 }
 
 void ActionWithVessel::needsDerivatives() {
   // Turn on the derivatives and resize
-  noderiv=false; resizeFunctions();
+  noderiv=false;
+  resizeFunctions();
   // Setting contributors unlocked here ensures that link cells are ignored
-  contributorsAreUnlocked=true; contributorsAreUnlocked=false;
+  contributorsAreUnlocked=true;
+  contributorsAreUnlocked=false;
   // And turn on the derivatives in all actions on which we are dependent
   for(unsigned i=0; i<getDependencies().size(); ++i) {
     ActionWithVessel* vv=dynamic_cast<ActionWithVessel*>( getDependencies()[i] );
-    if(vv) vv->needsDerivatives();
+    if(vv) {
+      vv->needsDerivatives();
+    }
   }
 }
 
 void ActionWithVessel::lockContributors() {
   nactive_tasks = 0;
   for(unsigned i=0; i<fullTaskList.size(); ++i) {
-    if( taskFlags[i]>0 ) nactive_tasks++;
+    if( taskFlags[i]>0 ) {
+      nactive_tasks++;
+    }
   }
 
   unsigned n=0;
@@ -228,33 +271,47 @@ void ActionWithVessel::lockContributors() {
   plumed_dbg_assert( n==nactive_tasks );
   for(unsigned i=0; i<functions.size(); ++i) {
     BridgeVessel* bb = dynamic_cast<BridgeVessel*>( functions[i].get() );
-    if( bb ) bb->copyTaskFlags();
+    if( bb ) {
+      bb->copyTaskFlags();
+    }
   }
   // Resize mydata to accommodate all active tasks
-  if( mydata ) mydata->resize();
+  if( mydata ) {
+    mydata->resize();
+  }
   contributorsAreUnlocked=false;
 }
 
 void ActionWithVessel::deactivateAllTasks() {
-  contributorsAreUnlocked=true; nactive_tasks = 0;
+  contributorsAreUnlocked=true;
+  nactive_tasks = 0;
   taskFlags.assign(taskFlags.size(),0);
 }
 
 bool ActionWithVessel::taskIsCurrentlyActive( const unsigned& index ) const {
-  plumed_dbg_assert( index<taskFlags.size() ); return (taskFlags[index]>0);
+  plumed_dbg_assert( index<taskFlags.size() );
+  return (taskFlags[index]>0);
 }
 
 void ActionWithVessel::doJobsRequiredBeforeTaskList() {
   // Do any preparatory stuff for functions
-  for(unsigned j=0; j<functions.size(); ++j) functions[j]->prepare();
+  for(unsigned j=0; j<functions.size(); ++j) {
+    functions[j]->prepare();
+  }
 }
 
 unsigned ActionWithVessel::getSizeOfBuffer( unsigned& bufsize ) {
-  for(unsigned i=0; i<functions.size(); ++i) functions[i]->setBufferStart( bufsize );
-  if( buffer.size()!=bufsize ) buffer.resize( bufsize );
+  for(unsigned i=0; i<functions.size(); ++i) {
+    functions[i]->setBufferStart( bufsize );
+  }
+  if( buffer.size()!=bufsize ) {
+    buffer.resize( bufsize );
+  }
   if( mydata ) {
     unsigned dsize=mydata->getSizeOfDerivativeList();
-    if( der_list.size()!=dsize ) der_list.resize( dsize );
+    if( der_list.size()!=dsize ) {
+      der_list.resize( dsize );
+    }
   }
   return bufsize;
 }
@@ -263,32 +320,48 @@ void ActionWithVessel::runAllTasks() {
   plumed_massert( !contributorsAreUnlocked && functions.size()>0, "you must have a call to readVesselKeywords somewhere" );
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
-  if(serial) { stride=1; rank=0; }
+  if(serial) {
+    stride=1;
+    rank=0;
+  }
 
   // Make sure jobs are done
-  if(timers) stopwatch.start("1 Prepare Tasks");
+  if(timers) {
+    stopwatch.start("1 Prepare Tasks");
+  }
   doJobsRequiredBeforeTaskList();
-  if(timers) stopwatch.stop("1 Prepare Tasks");
+  if(timers) {
+    stopwatch.stop("1 Prepare Tasks");
+  }
 
   // Get number of threads for OpenMP
   unsigned nt=OpenMP::getNumThreads();
-  if( nt*stride*2>nactive_tasks || !threadSafe()) nt=1;
+  if( nt*stride*2>nactive_tasks || !threadSafe()) {
+    nt=1;
+  }
 
   // Get size for buffer
   unsigned bsize=0, bufsize=getSizeOfBuffer( bsize );
   // Clear buffer
   buffer.assign( buffer.size(), 0.0 );
   // Switch off calculation of derivatives in main loop
-  if( dertime_can_be_off ) dertime=false;
+  if( dertime_can_be_off ) {
+    dertime=false;
+  }
 
-  if(timers) stopwatch.start("2 Loop over tasks");
+  if(timers) {
+    stopwatch.start("2 Loop over tasks");
+  }
   #pragma omp parallel num_threads(nt)
   {
     std::vector<double> omp_buffer;
-    if( nt>1 ) omp_buffer.resize( bufsize, 0.0 );
+    if( nt>1 ) {
+      omp_buffer.resize( bufsize, 0.0 );
+    }
     MultiValue myvals( getNumberOfQuantities(), getNumberOfDerivatives() );
     MultiValue bvals( getNumberOfQuantities(), getNumberOfDerivatives() );
-    myvals.clearAll(); bvals.clearAll();
+    myvals.clearAll();
+    bvals.clearAll();
 
     #pragma omp for nowait schedule(dynamic)
     for(unsigned i=rank; i<nactive_tasks; i+=stride) {
@@ -317,26 +390,42 @@ void ActionWithVessel::runAllTasks() {
       myvals.clearAll();
     }
     #pragma omp critical
-    if(nt>1) for(unsigned i=0; i<bufsize; ++i) buffer[i]+=omp_buffer[i];
+    if(nt>1)
+      for(unsigned i=0; i<bufsize; ++i) {
+        buffer[i]+=omp_buffer[i];
+      }
   }
-  if(timers) stopwatch.stop("2 Loop over tasks");
+  if(timers) {
+    stopwatch.stop("2 Loop over tasks");
+  }
   // Turn back on derivative calculation
   dertime=true;
 
-  if(timers) stopwatch.start("3 MPI gather");
+  if(timers) {
+    stopwatch.start("3 MPI gather");
+  }
   // MPI Gather everything
-  if( !serial && buffer.size()>0 ) comm.Sum( buffer );
+  if( !serial && buffer.size()>0 ) {
+    comm.Sum( buffer );
+  }
   // MPI Gather index stores
   if( mydata && !lowmem && !noderiv ) {
-    comm.Sum( der_list ); mydata->setActiveValsAndDerivatives( der_list );
+    comm.Sum( der_list );
+    mydata->setActiveValsAndDerivatives( der_list );
   }
   // Update the elements that are makign contributions to the sum here
   // this causes problems if we do it in prepare
-  if(timers) stopwatch.stop("3 MPI gather");
+  if(timers) {
+    stopwatch.stop("3 MPI gather");
+  }
 
-  if(timers) stopwatch.start("4 Finishing computations");
+  if(timers) {
+    stopwatch.start("4 Finishing computations");
+  }
   finishComputations( buffer );
-  if(timers) stopwatch.stop("4 Finishing computations");
+  if(timers) {
+    stopwatch.stop("4 Finishing computations");
+  }
 }
 
 void ActionWithVessel::transformBridgedDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals ) const {
@@ -348,28 +437,38 @@ void ActionWithVessel::calculateAllVessels( const unsigned& taskCode, MultiValue
     // Calculate returns a bool that tells us if this particular
     // quantity is contributing more than the tolerance
     functions[j]->calculate( taskCode, functions[j]->transformDerivatives(taskCode, myvals, bvals), buffer, der_list );
-    if( !actionIsBridged ) bvals.clearAll();
+    if( !actionIsBridged ) {
+      bvals.clearAll();
+    }
   }
   return;
 }
 
 void ActionWithVessel::finishComputations( const std::vector<double>& buffer ) {
   // Set the final value of the function
-  for(unsigned j=0; j<functions.size(); ++j) functions[j]->finish( buffer );
+  for(unsigned j=0; j<functions.size(); ++j) {
+    functions[j]->finish( buffer );
+  }
 }
 
 bool ActionWithVessel::getForcesFromVessels( std::vector<double>& forcesToApply ) {
 #ifndef NDEBUG
-  if( forcesToApply.size()>0 ) plumed_dbg_assert( forcesToApply.size()==getNumberOfDerivatives() );
+  if( forcesToApply.size()>0 ) {
+    plumed_dbg_assert( forcesToApply.size()==getNumberOfDerivatives() );
+  }
 #endif
-  if(tmpforces.size()!=forcesToApply.size() ) tmpforces.resize( forcesToApply.size() );
+  if(tmpforces.size()!=forcesToApply.size() ) {
+    tmpforces.resize( forcesToApply.size() );
+  }
 
   forcesToApply.assign( forcesToApply.size(),0.0 );
   bool wasforced=false;
   for(unsigned i=0; i<getNumberOfVessels(); ++i) {
     if( (functions[i]->applyForce( tmpforces )) ) {
       wasforced=true;
-      for(unsigned j=0; j<forcesToApply.size(); ++j) forcesToApply[j]+=tmpforces[j];
+      for(unsigned j=0; j<forcesToApply.size(); ++j) {
+        forcesToApply[j]+=tmpforces[j];
+      }
     }
   }
   return wasforced;
@@ -383,8 +482,11 @@ Vessel* ActionWithVessel::getVesselWithName( const std::string& mynam ) {
   int target=-1;
   for(unsigned i=0; i<functions.size(); ++i) {
     if( functions[i]->getName().find(mynam)!=std::string::npos ) {
-      if( target<0 ) target=i;
-      else error("found more than one " + mynam + " object in action");
+      if( target<0 ) {
+        target=i;
+      } else {
+        error("found more than one " + mynam + " object in action");
+      }
     }
   }
   plumed_assert(target>=0);

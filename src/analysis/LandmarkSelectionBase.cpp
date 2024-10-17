@@ -34,17 +34,23 @@ void LandmarkSelectionBase::registerKeywords( Keywords& keys ) {
 LandmarkSelectionBase::LandmarkSelectionBase( const ActionOptions& ao ):
   Action(ao),
   AnalysisBase(ao),
-  nlandmarks(0)
-{
-  if( keywords.exists("NLANDMARKS") ) parse("NLANDMARKS",nlandmarks);
+  nlandmarks(0) {
+  if( keywords.exists("NLANDMARKS") ) {
+    parse("NLANDMARKS",nlandmarks);
+  }
   log.printf("  selecting %u landmark points \n",nlandmarks);
   lweights.resize( nlandmarks );
 
   parseFlag("NOVORONOI",novoronoi);
-  if( !novoronoi && !dissimilaritiesWereSet() ) error("cannot calculate voronoi weights without dissimilarity mesaure");
+  if( !novoronoi && !dissimilaritiesWereSet() ) {
+    error("cannot calculate voronoi weights without dissimilarity mesaure");
+  }
 
-  if( !novoronoi ) log.printf("  ascribing weights to landmarks using voronoi analysis\n");
-  else log.printf("  ascribing weights of original points to landmark\n");
+  if( !novoronoi ) {
+    log.printf("  ascribing weights to landmarks using voronoi analysis\n");
+  } else {
+    log.printf("  ascribing weights of original points to landmark\n");
+  }
 }
 
 void LandmarkSelectionBase::selectFrame( const unsigned& iframe ) {
@@ -52,16 +58,21 @@ void LandmarkSelectionBase::selectFrame( const unsigned& iframe ) {
 }
 
 void LandmarkSelectionBase::performAnalysis() {
-  landmark_indices.resize(0); selectLandmarks();
+  landmark_indices.resize(0);
+  selectLandmarks();
   plumed_dbg_assert( nlandmarks==getNumberOfDataPoints() );
-  if( lweights.size()!=nlandmarks ) lweights.resize( nlandmarks );
+  if( lweights.size()!=nlandmarks ) {
+    lweights.resize( nlandmarks );
+  }
 
   if( !novoronoi ) {
     lweights.assign(lweights.size(),0.0);
     std::vector<unsigned> tmpass( my_input_data->getNumberOfDataPoints() );
     voronoiAnalysis( landmark_indices, lweights, tmpass );
   } else {
-    for(unsigned i=0; i<nlandmarks; ++i) lweights[i]=my_input_data->getWeight( landmark_indices[i] );
+    for(unsigned i=0; i<nlandmarks; ++i) {
+      lweights[i]=my_input_data->getWeight( landmark_indices[i] );
+    }
   }
 }
 
@@ -74,7 +85,10 @@ void LandmarkSelectionBase::voronoiAnalysis( const std::vector<unsigned>& myindi
     double mindist=my_input_data->getDissimilarity( i, myindices[0] );
     for(unsigned j=1; j<nlandmarks; ++j) {
       double dist=my_input_data->getDissimilarity( i, myindices[j] );
-      if( dist<mindist ) { mindist=dist; assignments[i]=j; }
+      if( dist<mindist ) {
+        mindist=dist;
+        assignments[i]=j;
+      }
     }
     lweights[ assignments[i] ] += my_input_data->getWeight(i);
   }

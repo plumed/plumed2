@@ -34,7 +34,9 @@ void LatticeReduction::sort(Vector v[3]) {
   m[0]=modulo2(v[0]);
   m[1]=modulo2(v[1]);
   m[2]=modulo2(v[2]);
-  for(int i=0; i<3; i++) for(int j=i+1; j<3; j++) if(m[i]>m[j]) {
+  for(int i=0; i<3; i++)
+    for(int j=i+1; j<3; j++)
+      if(m[i]>m[j]) {
         std::swap(v[i],v[j]);
         std::swap(m[i],m[j]);
       }
@@ -54,13 +56,17 @@ void LatticeReduction::reduce(Vector&a,Vector&b) {
     }
     a-=b*floor(dotProduct(a,b)/mb+0.5);
     ma=modulo2(a);
-    if(mb<=ma*onePlusEpsilon) break;
+    if(mb<=ma*onePlusEpsilon) {
+      break;
+    }
     counter++;
     if(counter%100==0) { // only test rarely since this might be expensive
       plumed_assert(!std::isnan(ma));
       plumed_assert(!std::isnan(mb));
     }
-    if(counter%10000==0) std::fprintf(stderr,"WARNING: LatticeReduction::reduce stuck after %u iterations\n",counter);
+    if(counter%10000==0) {
+      std::fprintf(stderr,"WARNING: LatticeReduction::reduce stuck after %u iterations\n",counter);
+    }
   }
 
   std::swap(a,b);
@@ -68,32 +74,42 @@ void LatticeReduction::reduce(Vector&a,Vector&b) {
 
 void LatticeReduction::reduce2(Vector&a,Vector&b,Vector&c) {
   Vector v[3];
-  v[0]=a; v[1]=b; v[2]=c;
+  v[0]=a;
+  v[1]=b;
+  v[2]=c;
   int iter=0;
   int ok=0;
   while(ok<3) {
     int i,j;
     if(iter%3==0) {
-      i=0; j=1;
+      i=0;
+      j=1;
     } else if(iter%3==1) {
-      i=0; j=2;
+      i=0;
+      j=2;
     } else {
-      i=1; j=2;
+      i=1;
+      j=2;
     }
-    if(isReduced(v[i],v[j])) ok++;
-    else {
+    if(isReduced(v[i],v[j])) {
+      ok++;
+    } else {
       reduce(v[i],v[j]);
       ok=1;
     }
     iter++;
   }
-  a=v[0]; b=v[1]; c=v[2];
+  a=v[0];
+  b=v[1];
+  c=v[2];
 }
 
 bool LatticeReduction::isReduced(const Vector&a,const Vector&b) {
   const int cut=5;
   for(int i=-cut; i<=cut; i++) {
-    if(modulo2(b+i*a)<modulo2(b)) return false;
+    if(modulo2(b+i*a)<modulo2(b)) {
+      return false;
+    }
   }
   return modulo2(a)<=modulo2(b) && 2.0*dotProduct(a,b)<=modulo2(a);
 }
@@ -147,9 +163,13 @@ void LatticeReduction::reduceFast(Tensor&t) {
           first=false;
         }
       }
-    if(modulo2(best)*onePlusEpsilon>=modulo2(v[2])) break;
+    if(modulo2(best)*onePlusEpsilon>=modulo2(v[2])) {
+      break;
+    }
     counter++;
-    if(counter%10000==0) std::fprintf(stderr,"WARNING: LatticeReduction::reduceFast stuck after %u iterations\n",counter);
+    if(counter%10000==0) {
+      std::fprintf(stderr,"WARNING: LatticeReduction::reduceFast stuck after %u iterations\n",counter);
+    }
     v[2]=best;
   }
   sort(v);
@@ -169,10 +189,21 @@ void LatticeReduction::reduceSlow(Tensor&t) {
   double e02=dotProduct(v[0],v[2]);
   double e12=dotProduct(v[1],v[2]);
   if(e01*e02*e12<0) {
-    int eps01=0; if(e01>0.0) eps01=1; else if(e01<0.0) eps01=-1;
-    int eps02=0; if(e02>0.0) eps02=1; else if(e02<0.0) eps02=-1;
+    int eps01=0;
+    if(e01>0.0) {
+      eps01=1;
+    } else if(e01<0.0) {
+      eps01=-1;
+    }
+    int eps02=0;
+    if(e02>0.0) {
+      eps02=1;
+    } else if(e02<0.0) {
+      eps02=-1;
+    }
     Vector n=v[0]-eps01*v[1]-eps02*v[2];
-    int i=0; double mx=modulo2(v[i]);
+    int i=0;
+    double mx=modulo2(v[i]);
     for(int j=1; j<3; j++) {
       double f=modulo2(v[j]);
       if(f>mx) {
@@ -180,7 +211,9 @@ void LatticeReduction::reduceSlow(Tensor&t) {
         mx=f;
       }
     }
-    if(modulo2(n)<mx) v[i]=n;
+    if(modulo2(n)<mx) {
+      v[i]=n;
+    }
   }
   sort(v);
   t.setRow(0,v[0]);
@@ -198,15 +231,23 @@ bool LatticeReduction::isReduced(const Tensor&t) {
   v[0]=t.getRow(0);
   v[1]=t.getRow(1);
   v[2]=t.getRow(2);
-  for(int i=0; i<3; i++) m[i]=modulo2(v[i]);
-  if(!((m[0]<=m[1]) && m[1]<=m[2])) return false;
+  for(int i=0; i<3; i++) {
+    m[i]=modulo2(v[i]);
+  }
+  if(!((m[0]<=m[1]) && m[1]<=m[2])) {
+    return false;
+  }
   const int cut=5;
   for(int i=-cut; i<=cut; i++) {
     double mm=modulo2(v[1]+i*v[0]);
-    if(mm<m[1]) return false;
+    if(mm<m[1]) {
+      return false;
+    }
     for(int j=-cut; j<=cut; j++) {
       double mx=modulo2(v[2]+i*v[1]+j*v[0]);
-      if(mx<m[2])return false;
+      if(mx<m[2]) {
+        return false;
+      }
     }
   }
   return true;

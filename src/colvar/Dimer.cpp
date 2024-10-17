@@ -160,8 +160,7 @@ void Dimer::registerKeywords( Keywords& keys) {
 
 
 Dimer::Dimer(const ActionOptions& ao):
-  PLUMED_COLVAR_INIT(ao)
-{
+  PLUMED_COLVAR_INIT(ao) {
 
   log<<" Bibliography "<<plumed.cite("M Nava, F. Palazzesi, C. Perego and M. Parrinello, J. Chem. Theory Comput. 13, 425(2017)")<<"\n";
   parseVector("DSIGMA",dsigmas);
@@ -178,47 +177,43 @@ Dimer::Dimer(const ActionOptions& ao):
 
   nranks=multi_sim_comm.Get_size();
   myrank=multi_sim_comm.Get_rank();
-  if(dsigmas.size()==1)
+  if(dsigmas.size()==1) {
     dsigma=dsigmas[0];
-  else
+  } else {
     dsigma=dsigmas[myrank];
+  }
 
 
 
 
-  if(useall)
-  {
+  if(useall) {
     // go with every atom in the system but not the virtuals...
     int natoms;
-    if(trimer)
+    if(trimer) {
       natoms= 2*getTotAtoms()/3;
-    else
+    } else {
       natoms=getTotAtoms()/2;
+    }
 
-    for(unsigned int i=0; i<((unsigned int)natoms); i++)
-    {
+    for(unsigned int i=0; i<((unsigned int)natoms); i++) {
       AtomNumber ati;
       ati.setIndex(i);
       atoms.push_back(ati);
     }
-  }
-  else  // serials for the first beads of each dimer are given
-  {
+  } else { // serials for the first beads of each dimer are given
     parseAtomList("ATOMS1",usedatoms1);
     parseAtomList("ATOMS2",usedatoms2);
 
     int isz1 = usedatoms1.size();
 
-    for(unsigned int i=0; i<isz1; i++)
-    {
+    for(unsigned int i=0; i<isz1; i++) {
       AtomNumber ati;
       ati.setIndex(usedatoms1[i].index());
       atoms.push_back(ati);
     }
 
     int isz2 = usedatoms2.size();
-    for(unsigned int i=0; i<isz2; i++)
-    {
+    for(unsigned int i=0; i<isz2; i++) {
       AtomNumber atip2;
       atip2.setIndex(usedatoms2[i].index());
       atoms.push_back(atip2);
@@ -234,21 +229,20 @@ Dimer::Dimer(const ActionOptions& ao):
   setNotPeriodic();
 }
 
-void Dimer::calculate()
-{
+void Dimer::calculate() {
   double cv_val=0;
   Tensor virial;
   std::vector<Vector> derivatives;
   std::vector<Vector> my_pos=getPositions();
   int atms = my_pos.size();
   std::vector<Vector> der_b2;
-  for(int i=0; i<atms/2; i++)
-  {
+  for(int i=0; i<atms/2; i++) {
     Vector dist;
     dist = pbcDistance(my_pos[i],my_pos[i+atms/2]);
     double distquad=0;
-    for(int j=0; j<3; j++)
+    for(int j=0; j<3; j++) {
       distquad += dist[j]*dist[j];
+    }
 
     double dsigquad = dsigma*dsigma;
     double fac1 = 1.0 + distquad/(2*qexp*dsigquad);
@@ -258,8 +252,7 @@ void Dimer::calculate()
     cv_val += (fac1*fac1qm1-1.0)/beta;
     Vector der_val;
     Vector mder_val;
-    for(int j=0; j<3; j++)
-    {
+    for(int j=0; j<3; j++) {
       der_val[j] = -fac1qm1*dist[j]/(dsigquad*beta);
       mder_val[j]=-der_val[j];
     }
@@ -276,8 +269,9 @@ void Dimer::calculate()
 
   derivatives.insert(derivatives.end(), der_b2.begin(), der_b2.end());
 
-  for(unsigned int i=0; i<derivatives.size(); i++)
+  for(unsigned int i=0; i<derivatives.size(); i++) {
     setAtomsDerivatives(i,derivatives[i]);
+  }
 
   setValue(cv_val);
   setBoxDerivatives(virial);
@@ -290,24 +284,28 @@ void Dimer::calculate()
 There are some conditions that a valid input should satisfy.
 These are checked here and PLUMED error handlers are (eventually) called.
 ******************/
-void Dimer::consistencyCheck()
-{
-  if(!useall && usedatoms1.size()!=usedatoms2.size())
+void Dimer::consistencyCheck() {
+  if(!useall && usedatoms1.size()!=usedatoms2.size()) {
     error("The provided atom lists are of different sizes.");
+  }
 
-  if(qexp<0.5 || qexp>1)
+  if(qexp<0.5 || qexp>1) {
     warning("Dimer CV is meant to be used with q-exponents between 0.5 and 1. We are not responsible for any black hole. :-)");
+  }
 
-  if(dsigma<0)
+  if(dsigma<0) {
     error("Please use positive sigma values for the Dimer strength constant");
+  }
 
-  if(temperature<0)
+  if(temperature<0) {
     error("Please, use a positive value for the temperature...");
+  }
 
   // if dsigmas has only one element means that either
   // you are using different plumed.x.dat files or a plumed.dat with a single replica
-  if(dsigmas.size()!=nranks && dsigmas.size()!=1)
+  if(dsigmas.size()!=nranks && dsigmas.size()!=1) {
     error("Mismatch between provided sigmas and number of replicas");
+  }
 
 }
 

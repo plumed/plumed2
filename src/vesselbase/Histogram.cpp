@@ -49,14 +49,21 @@ void Histogram::reserveKeyword( Keywords& keys ) {
 }
 
 Histogram::Histogram( const VesselOptions& da ):
-  ShortcutVessel(da)
-{
-  bool norm; parseFlag("NORM",norm); std::string normstr="";
-  if(norm) normstr=" NORM";
-  std::string compstr; parse("COMPONENT",compstr);
+  ShortcutVessel(da) {
+  bool norm;
+  parseFlag("NORM",norm);
+  std::string normstr="";
+  if(norm) {
+    normstr=" NORM";
+  }
+  std::string compstr;
+  parse("COMPONENT",compstr);
   normstr+=" COMPONENT=" + compstr;
-  std::vector<std::string> bins; HistogramBead::generateBins( getAllInput(), bins );
-  for(unsigned i=0; i<bins.size(); ++i) addVessel("BETWEEN",bins[i] + normstr);
+  std::vector<std::string> bins;
+  HistogramBead::generateBins( getAllInput(), bins );
+  for(unsigned i=0; i<bins.size(); ++i) {
+    addVessel("BETWEEN",bins[i] + normstr);
+  }
 }
 
 }

@@ -126,7 +126,9 @@ public:
 /// This returns the position of the central atom
   Vector getCentralAtom();
 /// Is the variable periodic
-  bool isPeriodic() override { return false; }
+  bool isPeriodic() override {
+    return false;
+  }
 };
 
 PLUMED_REGISTER_ACTION(PAMM,"PAMM")
@@ -136,8 +138,18 @@ void PAMM::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","DATA","the multicolvars from which the pamm coordinates are calculated");
   keys.add("compulsory","CLUSTERS","the name of the file that contains the definitions of all the clusters");
   keys.add("compulsory","REGULARISE","0.001","don't allow the denominator to be smaller then this value");
-  keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("SUM"); keys.use("LESS_THAN"); keys.use("HISTOGRAM");
-  keys.use("MIN"); keys.use("MAX"); keys.use("LOWEST"); keys.use("HIGHEST"); keys.use("ALT_MIN"); keys.use("BETWEEN"); keys.use("MOMENTS");
+  keys.use("MEAN");
+  keys.use("MORE_THAN");
+  keys.use("SUM");
+  keys.use("LESS_THAN");
+  keys.use("HISTOGRAM");
+  keys.use("MIN");
+  keys.use("MAX");
+  keys.use("LOWEST");
+  keys.use("HIGHEST");
+  keys.use("ALT_MIN");
+  keys.use("BETWEEN");
+  keys.use("MOMENTS");
   keys.setComponentsIntroduction("When the label of this action is used as the input for a second you are not referring to a scalar quantity as you are in "
                                  "regular collective variables.  The label is used to reference the full set of quantities calculated by "
                                  "the action.  This is usual when using \\ref multicolvarfunction. Generally when doing this the set of PAMM variables "
@@ -158,13 +170,14 @@ void PAMM::registerKeywords( Keywords& keys ) {
 
 PAMM::PAMM(const ActionOptions& ao):
   Action(ao),
-  MultiColvarBase(ao)
-{
+  MultiColvarBase(ao) {
   // This builds the lists
   buildSets();
   // Check for reasonable input
   for(unsigned i=0; i<getNumberOfBaseMultiColvars(); ++i) {
-    if( getBaseMultiColvar(i)->getNumberOfQuantities()!=2 ) error("cannot use PAMM with " + getBaseMultiColvar(i)->getName() );
+    if( getBaseMultiColvar(i)->getNumberOfQuantities()!=2 ) {
+      error("cannot use PAMM with " + getBaseMultiColvar(i)->getName() );
+    }
   }
 
   bool mixed=getBaseMultiColvar(0)->isPeriodic();
@@ -172,16 +185,24 @@ PAMM::PAMM(const ActionOptions& ao):
   std::vector<std::string> valnames( getNumberOfBaseMultiColvars() );
   std::vector<std::string> min( getNumberOfBaseMultiColvars() ), max( getNumberOfBaseMultiColvars() );
   for(unsigned i=0; i<getNumberOfBaseMultiColvars(); ++i) {
-    if( getBaseMultiColvar(i)->isPeriodic()!=mixed ) warning("mixing of periodic and aperiodic base variables in pamm is untested");
+    if( getBaseMultiColvar(i)->isPeriodic()!=mixed ) {
+      warning("mixing of periodic and aperiodic base variables in pamm is untested");
+    }
     pbc[i]=getBaseMultiColvar(i)->isPeriodic();
-    if( pbc[i] ) getBaseMultiColvar(i)->retrieveDomain( min[i], max[i] );
+    if( pbc[i] ) {
+      getBaseMultiColvar(i)->retrieveDomain( min[i], max[i] );
+    }
     valnames[i]=getBaseMultiColvar(i)->getLabel();
   }
 
-  double regulariser; parse("REGULARISE",regulariser);
-  std::string errorstr, filename; parse("CLUSTERS",filename);
+  double regulariser;
+  parse("REGULARISE",regulariser);
+  std::string errorstr, filename;
+  parse("CLUSTERS",filename);
   mypamm.setup( filename, regulariser, valnames, pbc, min, max, errorstr );
-  if( errorstr.length()>0 ) error( errorstr );
+  if( errorstr.length()>0 ) {
+    error( errorstr );
+  }
 }
 
 unsigned PAMM::getNumberOfQuantities() const {
@@ -191,9 +212,11 @@ unsigned PAMM::getNumberOfQuantities() const {
 void PAMM::calculateWeight( multicolvar::AtomValuePack& myatoms ) {
   unsigned nvars = getNumberOfBaseMultiColvars();
   // Weight of point is average of weights of input colvars?
-  std::vector<double> tval(2); double ww=0;
+  std::vector<double> tval(2);
+  double ww=0;
   for(unsigned i=0; i<nvars; ++i) {
-    getInputData( i, false, myatoms, tval ); ww+=tval[0];
+    getInputData( i, false, myatoms, tval );
+    ww+=tval[0];
   }
   myatoms.setValue( 0, ww / static_cast<double>( nvars ) );
 
@@ -213,17 +236,22 @@ void PAMM::calculateWeight( multicolvar::AtomValuePack& myatoms ) {
 double PAMM::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {
   unsigned nvars = getNumberOfBaseMultiColvars();
   std::vector<std::vector<double> > tderiv( mypamm.getNumberOfKernels() );
-  for(unsigned i=0; i<tderiv.size(); ++i) tderiv[i].resize( nvars );
+  for(unsigned i=0; i<tderiv.size(); ++i) {
+    tderiv[i].resize( nvars );
+  }
   std::vector<double> tval(2), invals( nvars ), vals( mypamm.getNumberOfKernels() );
 
   for(unsigned i=0; i<nvars; ++i) {
-    getInputData( i, false, myatoms, tval ); invals[i]=tval[1];
+    getInputData( i, false, myatoms, tval );
+    invals[i]=tval[1];
   }
   mypamm.evaluate( invals, vals, tderiv );
 
   // Now set all values other than the first one
   // This is because of some peverse choices in multicolvar
-  for(unsigned i=1; i<vals.size(); ++i) myatoms.setValue( 1+i, vals[i] );
+  for(unsigned i=1; i<vals.size(); ++i) {
+    myatoms.setValue( 1+i, vals[i] );
+  }
 
   if( !doNotCalculateDerivatives() ) {
     std::vector<double> mypref( 1 + vals.size() );
@@ -231,7 +259,9 @@ double PAMM::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatom
       // Get the values of the derivatives
       MultiValue& myder = getInputDerivatives( ivar, false, myatoms );
       // And calculate the derivatives
-      for(unsigned i=0; i<vals.size(); ++i) mypref[1+i] = tderiv[i][ivar];
+      for(unsigned i=0; i<vals.size(); ++i) {
+        mypref[1+i] = tderiv[i][ivar];
+      }
       // This is basically doing the chain rule to get the final derivatives
       splitInputDerivatives( 1, 1, 1+vals.size(), ivar, mypref, myder, myatoms );
       // And clear the derivatives

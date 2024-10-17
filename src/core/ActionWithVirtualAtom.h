@@ -39,8 +39,7 @@ Inherit from here if you are calculating the position of a virtual atom (eg a ce
 /// Class to add a single virtual atom to the system.
 /// (it might be extended to add multiple virtual atoms).
 class ActionWithVirtualAtom:
-  public ActionAtomistic
-{
+  public ActionAtomistic {
   const AtomNumber index;
   std::vector<Tensor> derivatives;
   std::array<Tensor,3> boxDerivatives;

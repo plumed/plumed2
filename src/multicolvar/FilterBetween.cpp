@@ -158,13 +158,16 @@ void FilterBetween::registerKeywords( Keywords& keys ) {
 
 FilterBetween::FilterBetween(const ActionOptions& ao):
   Action(ao),
-  MultiColvarFilter(ao)
-{
+  MultiColvarFilter(ao) {
   // Read in the switching function
-  std::string sw, errors; parse("BEAD",sw);
+  std::string sw, errors;
+  parse("BEAD",sw);
   if( getPntrToMultiColvar()->isPeriodic() ) {
-    std::string min, max; getPntrToMultiColvar()->retrieveDomain( min, max );
-    double mlow, mhigh; Tools::convert( min,mlow ); Tools::convert( max, mhigh);
+    std::string min, max;
+    getPntrToMultiColvar()->retrieveDomain( min, max );
+    double mlow, mhigh;
+    Tools::convert( min,mlow );
+    Tools::convert( max, mhigh);
     hb.isPeriodic( mlow, mhigh );
   } else {
     hb.isNotPeriodic();
@@ -172,13 +175,21 @@ FilterBetween::FilterBetween(const ActionOptions& ao):
 
   if(sw.length()>0) {
     hb.set(sw,errors);
-    if( errors.length()!=0 ) error("problem reading BEAD keyword : " + errors );
+    if( errors.length()!=0 ) {
+      error("problem reading BEAD keyword : " + errors );
+    }
   } else {
-    double l, u, s; std::string ll, uu, ss;
-    parse("LOWER",l); parse("UPPER",u); parse("SMEAR",s);
-    Tools::convert(l,ll); Tools::convert(u,uu); Tools::convert(s,ss);
+    double l, u, s;
+    std::string ll, uu, ss;
+    parse("LOWER",l);
+    parse("UPPER",u);
+    parse("SMEAR",s);
+    Tools::convert(l,ll);
+    Tools::convert(u,uu);
+    Tools::convert(s,ss);
     sw="GAUSSIAN LOWER=" + ll + " UPPER=" + uu + " SMEAR=" + ss;
-    hb.set(sw,errors); plumed_massert(errors.length()==0,"problems with bead" + errors);
+    hb.set(sw,errors);
+    plumed_massert(errors.length()==0,"problems with bead" + errors);
   }
   log.printf("  filtering colvar values and focussing only on those values in range %s\n",( hb.description() ).c_str() );
 

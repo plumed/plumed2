@@ -203,23 +203,33 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   bool present;
 
   present=Tools::findKeyword(data,"D_0");
-  if(present && !Tools::parse(data,"D_0",d0)) errormsg="could not parse D_0";
+  if(present && !Tools::parse(data,"D_0",d0)) {
+    errormsg="could not parse D_0";
+  }
 
   present=Tools::findKeyword(data,"D_MAX");
-  if(present && !Tools::parse(data,"D_MAX",dmax)) errormsg="could not parse D_MAX";
-  if(dmax<std::sqrt(std::numeric_limits<double>::max())) dmax_2=dmax*dmax;
+  if(present && !Tools::parse(data,"D_MAX",dmax)) {
+    errormsg="could not parse D_MAX";
+  }
+  if(dmax<std::sqrt(std::numeric_limits<double>::max())) {
+    dmax_2=dmax*dmax;
+  }
   bool dostretch=false;
   Tools::parseFlag(data,"STRETCH",dostretch); // this is ignored now
   dostretch=true;
   bool dontstretch=false;
   Tools::parseFlag(data,"NOSTRETCH",dontstretch); // this is ignored now
-  if(dontstretch) dostretch=false;
+  if(dontstretch) {
+    dostretch=false;
+  }
   double r0;
   if(name=="CUBIC") {
     r0 = dmax - d0;
   } else {
     bool found_r0=Tools::parse(data,"R_0",r0);
-    if(!found_r0) errormsg="R_0 is required";
+    if(!found_r0) {
+      errormsg="R_0 is required";
+    }
   }
   invr0=1.0/r0;
   invr0_2=invr0*invr0;
@@ -229,45 +239,66 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     nn=6;
     mm=0;
     present=Tools::findKeyword(data,"NN");
-    if(present && !Tools::parse(data,"NN",nn)) errormsg="could not parse NN";
+    if(present && !Tools::parse(data,"NN",nn)) {
+      errormsg="could not parse NN";
+    }
     present=Tools::findKeyword(data,"MM");
-    if(present && !Tools::parse(data,"MM",mm)) errormsg="could not parse MM";
-    if(mm==0) mm=2*nn;
+    if(present && !Tools::parse(data,"MM",mm)) {
+      errormsg="could not parse MM";
+    }
+    if(mm==0) {
+      mm=2*nn;
+    }
     fastrational=(nn%2==0 && mm%2==0 && d0==0.0);
   } else if(name=="SMAP") {
     type=smap;
     present=Tools::findKeyword(data,"A");
-    if(present && !Tools::parse(data,"A",a)) errormsg="could not parse A";
+    if(present && !Tools::parse(data,"A",a)) {
+      errormsg="could not parse A";
+    }
     present=Tools::findKeyword(data,"B");
-    if(present && !Tools::parse(data,"B",b)) errormsg="could not parse B";
+    if(present && !Tools::parse(data,"B",b)) {
+      errormsg="could not parse B";
+    }
     c=std::pow(2., static_cast<double>(a)/static_cast<double>(b) ) - 1;
     d = -static_cast<double>(b) / static_cast<double>(a);
-  }
-  else if(name=="Q") {
+  } else if(name=="Q") {
     type=nativeq;
     beta = 50.0;  // nm-1
     lambda = 1.8; // unitless
     present=Tools::findKeyword(data,"BETA");
-    if(present && !Tools::parse(data, "BETA", beta)) errormsg="could not parse BETA";
+    if(present && !Tools::parse(data, "BETA", beta)) {
+      errormsg="could not parse BETA";
+    }
     present=Tools::findKeyword(data,"LAMBDA");
-    if(present && !Tools::parse(data, "LAMBDA", lambda)) errormsg="could not parse LAMBDA";
+    if(present && !Tools::parse(data, "LAMBDA", lambda)) {
+      errormsg="could not parse LAMBDA";
+    }
     bool found_ref=Tools::parse(data,"REF",ref); // nm
-    if(!found_ref) errormsg="REF (reference disatance) is required for native Q";
+    if(!found_ref) {
+      errormsg="REF (reference disatance) is required for native Q";
+    }
 
-  }
-  else if(name=="EXP") type=exponential;
-  else if(name=="GAUSSIAN") type=gaussian;
-  else if(name=="CUBIC") type=cubic;
-  else if(name=="TANH") type=tanh;
-  else if(name=="COSINUS") type=cosinus;
-  else if((name=="MATHEVAL" || name=="CUSTOM")) {
+  } else if(name=="EXP") {
+    type=exponential;
+  } else if(name=="GAUSSIAN") {
+    type=gaussian;
+  } else if(name=="CUBIC") {
+    type=cubic;
+  } else if(name=="TANH") {
+    type=tanh;
+  } else if(name=="COSINUS") {
+    type=cosinus;
+  } else if((name=="MATHEVAL" || name=="CUSTOM")) {
     type=leptontype;
     std::string func;
     Tools::parse(data,"FUNC",func);
     lepton::ParsedExpression pe=lepton::Parser::parse(func).optimize(lepton::Constants());
     lepton_func=func;
     expression.resize(OpenMP::getNumThreads());
-    for(auto & e : expression) e=pe.createCompiledExpression();
+    for(auto & e : expression) {
+      e=pe.createCompiledExpression();
+    }
     lepton_ref.resize(expression.size());
     for(unsigned t=0; t<lepton_ref.size(); t++) {
       auto vars=expression[t].getVariables();
@@ -289,10 +320,14 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
       }
     }
     std::string arg="x";
-    if(leptonx2) arg="x2";
+    if(leptonx2) {
+      arg="x2";
+    }
     lepton::ParsedExpression ped=lepton::Parser::parse(func).differentiate(arg).optimize(lepton::Constants());
     expression_deriv.resize(OpenMP::getNumThreads());
-    for(auto & e : expression_deriv) e=ped.createCompiledExpression();
+    for(auto & e : expression_deriv) {
+      e=ped.createCompiledExpression();
+    }
     lepton_ref_deriv.resize(expression_deriv.size());
     for(unsigned t=0; t<lepton_ref_deriv.size(); t++) {
       try {
@@ -304,11 +339,14 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
       }
     }
 
+  } else {
+    errormsg="cannot understand switching function type '"+name+"'";
   }
-  else errormsg="cannot understand switching function type '"+name+"'";
   if( !data.empty() ) {
     errormsg="found the following rogue keywords in switching function input : ";
-    for(unsigned i=0; i<data.size(); ++i) errormsg = errormsg + data[i] + " ";
+    for(unsigned i=0; i<data.size(); ++i) {
+      errormsg = errormsg + data[i] + " ";
+    }
   }
 
   if(dostretch && dmax!=std::numeric_limits<double>::max()) {
@@ -412,8 +450,12 @@ double SwitchingFunction::calculateSqr(double distance2,double&dfunc)const {
     const unsigned t=OpenMP::getThreadNum();
     const double rdist_2 = distance2*invr0_2;
     plumed_assert(t<expression.size());
-    if(lepton_ref[t]) *lepton_ref[t]=rdist_2;
-    if(lepton_ref_deriv[t]) *lepton_ref_deriv[t]=rdist_2;
+    if(lepton_ref[t]) {
+      *lepton_ref[t]=rdist_2;
+    }
+    if(lepton_ref_deriv[t]) {
+      *lepton_ref_deriv[t]=rdist_2;
+    }
     double result=expression[t].evaluate();
     dfunc=expression_deriv[t].evaluate();
 // chain rule:
@@ -490,11 +532,17 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
     } else if(type==leptontype) {
       const unsigned t=OpenMP::getThreadNum();
       plumed_assert(t<expression.size());
-      if(lepton_ref[t]) *lepton_ref[t]=rdist;
-      if(lepton_ref_deriv[t]) *lepton_ref_deriv[t]=rdist;
+      if(lepton_ref[t]) {
+        *lepton_ref[t]=rdist;
+      }
+      if(lepton_ref_deriv[t]) {
+        *lepton_ref_deriv[t]=rdist;
+      }
       result=expression[t].evaluate();
       dfunc=expression_deriv[t].evaluate();
-    } else plumed_merror("Unknown switching function type");
+    } else {
+      plumed_merror("Unknown switching function type");
+    }
 // this is for the chain rule (derivative of rdist):
     dfunc*=invr0;
 // for any future switching functions, be aware that multiplying invr0 is only correct for functions of rdist = (r-d0)/r0.
@@ -513,7 +561,9 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
 void SwitchingFunction::set(int nn,int mm,double r0,double d0) {
   init=true;
   type=rational;
-  if(mm==0) mm=2*nn;
+  if(mm==0) {
+    mm=2*nn;
+  }
   this->nn=nn;
   this->mm=mm;
   this->invr0=1.0/r0;

@@ -96,8 +96,7 @@ void Opt_Dummy::registerKeywords(Keywords& keys) {
 
 
 Opt_Dummy::Opt_Dummy(const ActionOptions&ao):
-  PLUMED_VES_OPTIMIZER_INIT(ao)
-{
+  PLUMED_VES_OPTIMIZER_INIT(ao) {
   log.printf("  fake optimizer that does not update coefficients\n");
   log.printf("  can be used to monitor gradient and Hessian for debugging purposes\n");
   bool monitor_hessian = false;
@@ -105,8 +104,7 @@ Opt_Dummy::Opt_Dummy(const ActionOptions&ao):
   if(monitor_hessian) {
     turnOnHessian();
     log.printf("  the Hessian will also be monitored\n");
-  }
-  else {
+  } else {
     turnOffHessian();
   }
   turnOffCoeffsOutputFiles();

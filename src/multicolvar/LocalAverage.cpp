@@ -97,7 +97,9 @@ public:
 /// We overwrite this in order to have dumpmulticolvar working for local average
   void normalizeVector( std::vector<double>& vals ) const override {}
 /// Is the variable periodic
-  bool isPeriodic() override { return false; }
+  bool isPeriodic() override {
+    return false;
+  }
 };
 
 PLUMED_REGISTER_ACTION(LocalAverage,"LOCAL_AVERAGE")
@@ -112,34 +114,53 @@ void LocalAverage::registerKeywords( Keywords& keys ) {
            "The following provides information on the \\ref switchingfunction that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   // Use actionWithDistributionKeywords
-  keys.use("SPECIES"); keys.use("SPECIESA"); keys.use("SPECIESB");
-  keys.remove("LOWMEM"); keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("LESS_THAN");
-  keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
+  keys.use("SPECIES");
+  keys.use("SPECIESA");
+  keys.use("SPECIESB");
+  keys.remove("LOWMEM");
+  keys.use("MEAN");
+  keys.use("MORE_THAN");
+  keys.use("LESS_THAN");
+  keys.use("BETWEEN");
+  keys.use("HISTOGRAM");
+  keys.use("MOMENTS");
   keys.addFlag("LOWMEM",false,"lower the memory requirements");
-  if( keys.reserved("VMEAN") ) keys.use("VMEAN");
-  if( keys.reserved("VSUM") ) keys.use("VSUM");
+  if( keys.reserved("VMEAN") ) {
+    keys.use("VMEAN");
+  }
+  if( keys.reserved("VSUM") ) {
+    keys.use("VSUM");
+  }
 }
 
 LocalAverage::LocalAverage(const ActionOptions& ao):
   Action(ao),
-  MultiColvarBase(ao)
-{
-  if( getNumberOfBaseMultiColvars()>1 ) error("local average with more than one base colvar makes no sense");
+  MultiColvarBase(ao) {
+  if( getNumberOfBaseMultiColvars()>1 ) {
+    error("local average with more than one base colvar makes no sense");
+  }
   // Read in the switching function
-  std::string sw, errors; parse("SWITCH",sw);
+  std::string sw, errors;
+  parse("SWITCH",sw);
   if(sw.length()>0) {
     switchingFunction.set(sw,errors);
   } else {
-    double r_0=-1.0, d_0; int nn, mm;
-    parse("NN",nn); parse("MM",mm);
-    parse("R_0",r_0); parse("D_0",d_0);
-    if( r_0<0.0 ) error("you must set a value for R_0");
+    double r_0=-1.0, d_0;
+    int nn, mm;
+    parse("NN",nn);
+    parse("MM",mm);
+    parse("R_0",r_0);
+    parse("D_0",d_0);
+    if( r_0<0.0 ) {
+      error("you must set a value for R_0");
+    }
     switchingFunction.set(nn,mm,r_0,d_0);
   }
   log.printf("  averaging over central molecule and those within %s\n",( switchingFunction.description() ).c_str() );
   rcut2 = switchingFunction.get_dmax()*switchingFunction.get_dmax();
   setLinkCellCutoff( switchingFunction.get_dmax() );
-  std::vector<AtomNumber> all_atoms; setupMultiColvarBase( all_atoms );
+  std::vector<AtomNumber> all_atoms;
+  setupMultiColvarBase( all_atoms );
 }
 
 unsigned LocalAverage::getNumberOfQuantities() const {
@@ -147,13 +168,16 @@ unsigned LocalAverage::getNumberOfQuantities() const {
 }
 
 double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
-  double sw, dfunc; MultiValue& myvals = myatoms.getUnderlyingMultiValue();
+  double sw, dfunc;
+  MultiValue& myvals = myatoms.getUnderlyingMultiValue();
   std::vector<double> values( getBaseMultiColvar(0)->getNumberOfQuantities() );
 
   getInputData( 0, false, myatoms, values );
   myvals.addTemporyValue( values[0] );
   if( values.size()>2 ) {
-    for(unsigned j=2; j<values.size(); ++j) myatoms.addValue( j, values[0]*values[j] );
+    for(unsigned j=2; j<values.size(); ++j) {
+      myatoms.addValue( j, values[0]*values[j] );
+    }
   } else {
     myatoms.addValue( 1, values[0]*values[1] );
   }
@@ -162,11 +186,17 @@ double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) c
     MultiValue& myder=getInputDerivatives( 0, false, myatoms );
 
     // Convert input atom to local index
-    unsigned katom = myatoms.getIndex( 0 ); plumed_dbg_assert( katom<atom_lab.size() ); plumed_dbg_assert( atom_lab[katom].first>0 );
+    unsigned katom = myatoms.getIndex( 0 );
+    plumed_dbg_assert( katom<atom_lab.size() );
+    plumed_dbg_assert( atom_lab[katom].first>0 );
     // Find base colvar
-    unsigned mmc=atom_lab[katom].first - 1; plumed_dbg_assert( mybasemulticolvars[mmc]->taskIsCurrentlyActive( atom_lab[katom].second ) );
+    unsigned mmc=atom_lab[katom].first - 1;
+    plumed_dbg_assert( mybasemulticolvars[mmc]->taskIsCurrentlyActive( atom_lab[katom].second ) );
     // Get start of indices for this atom
-    unsigned basen=0; for(unsigned i=0; i<mmc; ++i) basen+=mybasemulticolvars[i]->getNumberOfDerivatives() - 9;
+    unsigned basen=0;
+    for(unsigned i=0; i<mmc; ++i) {
+      basen+=mybasemulticolvars[i]->getNumberOfDerivatives() - 9;
+    }
     plumed_dbg_assert( basen%3==0 ); // Check the number of atoms is consistent with input derivatives
 
     unsigned virbas = myvals.getNumberOfDerivatives()-9;
@@ -226,7 +256,9 @@ double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) c
 
       getInputData( i, false, myatoms, values );
       if( values.size()>2 ) {
-        for(unsigned j=2; j<values.size(); ++j) myatoms.addValue( j, sw*values[0]*values[j] );
+        for(unsigned j=2; j<values.size(); ++j) {
+          myatoms.addValue( j, sw*values[0]*values[j] );
+        }
       } else {
         myatoms.addValue( 1, sw*values[0]*values[1] );
       }
@@ -237,11 +269,17 @@ double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) c
         MultiValue& myder=getInputDerivatives( i, false, myatoms );
 
         // Convert input atom to local index
-        unsigned katom = myatoms.getIndex( i ); plumed_dbg_assert( katom<atom_lab.size() ); plumed_dbg_assert( atom_lab[katom].first>0 );
+        unsigned katom = myatoms.getIndex( i );
+        plumed_dbg_assert( katom<atom_lab.size() );
+        plumed_dbg_assert( atom_lab[katom].first>0 );
         // Find base colvar
-        unsigned mmc=atom_lab[katom].first - 1; plumed_dbg_assert( mybasemulticolvars[mmc]->taskIsCurrentlyActive( atom_lab[katom].second ) );
+        unsigned mmc=atom_lab[katom].first - 1;
+        plumed_dbg_assert( mybasemulticolvars[mmc]->taskIsCurrentlyActive( atom_lab[katom].second ) );
         // Get start of indices for this atom
-        unsigned basen=0; for(unsigned j=0; j<mmc; ++j) basen+=mybasemulticolvars[j]->getNumberOfDerivatives() - 9;
+        unsigned basen=0;
+        for(unsigned j=0; j<mmc; ++j) {
+          basen+=mybasemulticolvars[j]->getNumberOfDerivatives() - 9;
+        }
         plumed_dbg_assert( basen%3==0 ); // Check the number of atoms is consistent with input derivatives
 
         unsigned virbas = myvals.getNumberOfDerivatives()-9;
@@ -312,7 +350,9 @@ double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) c
       // Calculate length of vector
       norm+=myvals.get(i)*myvals.get(i);
     }
-    norm=sqrt(norm); myatoms.setValue(1, norm); double inorm = 1.0 / norm;
+    norm=sqrt(norm);
+    myatoms.setValue(1, norm);
+    double inorm = 1.0 / norm;
     for(unsigned j=0; j<myvals.getNumberActive(); ++j) {
       unsigned jder=myvals.getActiveIndex(j);
       for(unsigned i=2; i<values.size(); ++i) {

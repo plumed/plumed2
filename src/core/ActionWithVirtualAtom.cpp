@@ -33,8 +33,7 @@ void ActionWithVirtualAtom::registerKeywords(Keywords& keys) {
 ActionWithVirtualAtom::ActionWithVirtualAtom(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao),
-  index(atoms.addVirtualAtom(this))
-{
+  index(atoms.addVirtualAtom(this)) {
   log<<"  serial associated to this virtual atom is "<<index.serial()<<"\n";
 }
 
@@ -44,9 +43,13 @@ ActionWithVirtualAtom::~ActionWithVirtualAtom() {
 
 void ActionWithVirtualAtom::apply() {
   Vector & f(atoms.forces[index.index()]);
-  for(unsigned i=0; i<getNumberOfAtoms(); i++) modifyForces()[i]=matmul(derivatives[i],f);
+  for(unsigned i=0; i<getNumberOfAtoms(); i++) {
+    modifyForces()[i]=matmul(derivatives[i],f);
+  }
   Tensor & v(modifyVirial());
-  for(unsigned i=0; i<3; i++) v+=boxDerivatives[i]*f[i];
+  for(unsigned i=0; i<3; i++) {
+    v+=boxDerivatives[i]*f[i];
+  }
   f.zero(); // after propagating the force to the atoms used to compute the vatom, we reset this to zero
   // this is necessary to avoid double counting if then one tries to compute the total force on the c.o.m. of the system.
   // notice that this is currently done in FIT_TO_TEMPLATE
@@ -80,12 +83,17 @@ void ActionWithVirtualAtom::setBoxDerivatives(const std::array<Tensor,3> &d) {
 // Notice that this part alone should exactly cancel the already accumulated virial
 // due to forces on this atom.
   Vector pos=atoms.positions[index.index()];
-  for(unsigned i=0; i<3; i++) for(unsigned j=0; j<3; j++) boxDerivatives[j][i][j]+=pos[i];
+  for(unsigned i=0; i<3; i++)
+    for(unsigned j=0; j<3; j++) {
+      boxDerivatives[j][i][j]+=pos[i];
+    }
 }
 
 void ActionWithVirtualAtom::setBoxDerivativesNoPbc() {
   std::array<Tensor,3> bd;
-  for(unsigned i=0; i<3; i++) for(unsigned j=0; j<3; j++) for(unsigned k=0; k<3; k++) {
+  for(unsigned i=0; i<3; i++)
+    for(unsigned j=0; j<3; j++)
+      for(unsigned k=0; k<3; k++) {
 // Notice that this expression is very similar to the one used in Colvar::setBoxDerivativesNoPbc().
 // Indeed, we have the negative of a sum over dependent atoms (l) of the external product between positions
 // and derivatives. Notice that this only works only when Pbc have not been used to compute

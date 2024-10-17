@@ -78,8 +78,13 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Torsions(const ActionOptions&);
   double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
-  bool isPeriodic() override { return true; }
-  void retrieveDomain( std::string& min, std::string& max ) override { min="-pi"; max="pi"; }
+  bool isPeriodic() override {
+    return true;
+  }
+  void retrieveDomain( std::string& min, std::string& max ) override {
+    min="-pi";
+    max="pi";
+  }
 };
 
 PLUMED_REGISTER_ACTION(Torsions,"TORSIONS")
@@ -92,15 +97,16 @@ void Torsions::registerKeywords( Keywords& keys ) {
            "provide the indices of four atoms).  The eventual number of quantities calculated by this "
            "action will depend on what functions of the distribution you choose to calculate.");
   keys.reset_style("ATOMS","atoms");
-  keys.use("BETWEEN"); keys.use("HISTOGRAM");
+  keys.use("BETWEEN");
+  keys.use("HISTOGRAM");
 }
 
 Torsions::Torsions(const ActionOptions&ao):
   Action(ao),
-  MultiColvarBase(ao)
-{
+  MultiColvarBase(ao) {
   // Read in the atoms
-  int natoms=4; std::vector<AtomNumber> all_atoms;
+  int natoms=4;
+  std::vector<AtomNumber> all_atoms;
   readAtomsLikeKeyword( "ATOMS", natoms, all_atoms );
   setupMultiColvarBase( all_atoms );
   std::vector<bool> catom_ind(4, false);
@@ -118,7 +124,8 @@ double Torsions::compute( const unsigned& tindex, AtomValuePack& myatoms ) const
   d1=getSeparation(myatoms.getPosition(2),myatoms.getPosition(1));
   d2=getSeparation(myatoms.getPosition(3),myatoms.getPosition(2));
 
-  Vector dd0,dd1,dd2; PLMD::Torsion t;
+  Vector dd0,dd1,dd2;
+  PLMD::Torsion t;
   double value  = t.compute(d0,d1,d2,dd0,dd1,dd2);
 
   addAtomDerivatives(1,0,dd0,myatoms);

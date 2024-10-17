@@ -31,7 +31,9 @@ namespace PLMD {
 CLToolRegister::~CLToolRegister() {
   if(m.size()>0) {
     std::string names="";
-    for(const auto & p : m) names+=p.first+" ";
+    for(const auto & p : m) {
+      names+=p.first+" ";
+    }
     std::cerr<<"WARNING: CLTools "+ names +" has not been properly unregistered. This might lead to memory leak!!\n";
   }
 }
@@ -44,7 +46,8 @@ CLToolRegister& cltoolRegister() {
 void CLToolRegister::remove(creator_pointer f) {
   for(auto p=m.begin(); p!=m.end(); ++p) {
     if((*p).second==f) {
-      m.erase(p); break;
+      m.erase(p);
+      break;
     }
   }
 }
@@ -55,18 +58,23 @@ void CLToolRegister::add(std::string key,creator_pointer f,keywords_pointer kf) 
     disabled.insert(key);
   } else {
     m.insert(std::pair<std::string,creator_pointer>(key,f));
-    Keywords keys; kf(keys);
+    Keywords keys;
+    kf(keys);
     mk.insert(std::pair<std::string,Keywords>(key,keys));
   };
 }
 
 bool CLToolRegister::check(const std::string & key)const {
-  if(m.count(key)>0) return true;
+  if(m.count(key)>0) {
+    return true;
+  }
   return false;
 }
 
 std::unique_ptr<CLTool> CLToolRegister::create(const CLToolOptions&ao) {
-  if(ao.line.size()<1)return NULL;
+  if(ao.line.size()<1) {
+    return NULL;
+  }
   std::unique_ptr<CLTool> cltool;
   if(check(ao.line[0])) {
     CLToolOptions nao( ao,mk[ao.line[0]] );
@@ -78,14 +86,18 @@ std::unique_ptr<CLTool> CLToolRegister::create(const CLToolOptions&ao) {
 
 std::ostream & operator<<(std::ostream &log,const CLToolRegister&ar) {
   std::vector<std::string> s(ar.list());
-  for(unsigned i=0; i<s.size(); i++) log<<"  "<<s[i]<<"\n";
+  for(unsigned i=0; i<s.size(); i++) {
+    log<<"  "<<s[i]<<"\n";
+  }
   if(!ar.disabled.empty()) {
     s.assign(ar.disabled.size(),"");
     std::copy(ar.disabled.begin(),ar.disabled.end(),s.begin());
     std::sort(s.begin(),s.end());
     log<<"+++++++ WARNING +++++++\n";
     log<<"The following keywords have been registered more than once and will be disabled:\n";
-    for(unsigned i=0; i<s.size(); i++) log<<"  - "<<s[i]<<"\n";
+    for(unsigned i=0; i<s.size(); i++) {
+      log<<"  - "<<s[i]<<"\n";
+    }
     log<<"+++++++ END WARNING +++++++\n";
   };
   return log;
@@ -115,7 +127,9 @@ std::vector<std::string> CLToolRegister::getKeys(const std::string& cltool)const
 
 std::vector<std::string> CLToolRegister::list()const {
   std::vector<std::string> s;
-  for(const auto & it : m) s.push_back(it.first);
+  for(const auto & it : m) {
+    s.push_back(it.first);
+  }
   std::sort(s.begin(),s.end());
   return s;
 }

@@ -61,15 +61,18 @@ F1dim<FCLASS>::F1dim( const std::vector<double>& pp, const std::vector<double>& 
   fake_der(pp.size()),
   func(ff),
   calc(cc),
-  calc2(cc2)
-{
+  calc2(cc2) {
   plumed_assert( calc || calc2 );
 }
 
 template <class FCLASS>
 double F1dim<FCLASS>::getEng( const double& xt ) {
-  for(unsigned j=0; j<pt.size(); ++j) pt[j] = p[j] + xt*dir[j];
-  if( calc ) return (func->*calc)(pt,fake_der);
+  for(unsigned j=0; j<pt.size(); ++j) {
+    pt[j] = p[j] + xt*dir[j];
+  }
+  if( calc ) {
+    return (func->*calc)(pt,fake_der);
+  }
   return (func->*calc2)(pt,fake_der);
 }
 
@@ -102,7 +105,9 @@ double MinimiseBase<FCLASS>::linemin( const std::vector<double>& dir, std::vecto
   double ax=0.0, xx=1.0;
   bb.bracket( ax, xx, &F1dim<FCLASS>::getEng );
   double xmin=bb.minimise( &F1dim<FCLASS>::getEng );
-  for(unsigned i=0; i<p.size(); ++i) p[i] += xmin*dir[i];
+  for(unsigned i=0; i<p.size(); ++i) {
+    p[i] += xmin*dir[i];
+  }
   return bb.getMinimumValue();
 }
 

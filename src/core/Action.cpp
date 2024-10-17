@@ -35,15 +35,13 @@ Keywords ActionOptions::emptyKeys;
 ActionOptions::ActionOptions(PlumedMain&p,const std::vector<std::string>&l):
   plumed(p),
   line(l),
-  keys(emptyKeys)
-{
+  keys(emptyKeys) {
 }
 
 ActionOptions::ActionOptions(const ActionOptions&ao,const Keywords&keys):
   plumed(ao.plumed),
   line(ao.line),
-  keys(keys)
-{
+  keys(keys) {
 }
 
 void Action::registerKeywords( Keywords& keys ) {
@@ -66,8 +64,7 @@ Action::Action(const ActionOptions&ao):
   log(plumed.getLog()),
   comm(plumed.comm),
   multi_sim_comm(plumed.multi_sim_comm),
-  keywords(ao.keys)
-{
+  keywords(ao.keys) {
   line.erase(line.begin());
   log.printf("Action %s\n",name.c_str());
 
@@ -76,27 +73,45 @@ Action::Action(const ActionOptions&ao):
   }
   comm.Bcast(replica_index,0);
 
-  if ( keywords.exists("LABEL") ) { parse("LABEL",label); }
+  if ( keywords.exists("LABEL") ) {
+    parse("LABEL",label);
+  }
 
   if(label.length()==0) {
-    std::string s; Tools::convert(plumed.getActionSet().size(),s);
+    std::string s;
+    Tools::convert(plumed.getActionSet().size(),s);
     label="@"+s;
   }
-  if( plumed.getActionSet().selectWithLabel<Action*>(label) ) error("label " + label + " has been already used");
+  if( plumed.getActionSet().selectWithLabel<Action*>(label) ) {
+    error("label " + label + " has been already used");
+  }
   log.printf("  with label %s\n",label.c_str());
-  if ( keywords.exists("UPDATE_FROM") ) parse("UPDATE_FROM",update_from);
-  if(update_from!=std::numeric_limits<double>::max()) log.printf("  only update from time %f\n",update_from);
-  if ( keywords.exists("UPDATE_UNTIL") ) parse("UPDATE_UNTIL",update_until);
-  if(update_until!=std::numeric_limits<double>::max()) log.printf("  only update until time %f\n",update_until);
+  if ( keywords.exists("UPDATE_FROM") ) {
+    parse("UPDATE_FROM",update_from);
+  }
+  if(update_from!=std::numeric_limits<double>::max()) {
+    log.printf("  only update from time %f\n",update_from);
+  }
+  if ( keywords.exists("UPDATE_UNTIL") ) {
+    parse("UPDATE_UNTIL",update_until);
+  }
+  if(update_until!=std::numeric_limits<double>::max()) {
+    log.printf("  only update until time %f\n",update_until);
+  }
   if ( keywords.exists("RESTART") ) {
     std::string srestart="AUTO";
     parse("RESTART",srestart);
-    if( plumed.parseOnlyMode() ) restart=false;
-    else if(srestart=="YES") restart=true;
-    else if(srestart=="NO")  restart=false;
-    else if(srestart=="AUTO") {
+    if( plumed.parseOnlyMode() ) {
+      restart=false;
+    } else if(srestart=="YES") {
+      restart=true;
+    } else if(srestart=="NO") {
+      restart=false;
+    } else if(srestart=="AUTO") {
       // do nothing, this is the default
-    } else error("RESTART should be either YES, NO, or AUTO");
+    } else {
+      error("RESTART should be either YES, NO, or AUTO");
+    }
   }
 }
 
@@ -108,10 +123,16 @@ Action::~Action() {
 
 FILE* Action::fopen(const char *path, const char *mode) {
   bool write(false);
-  for(const char*p=mode; *p; p++) if(*p=='w' || *p=='a' || *p=='+') write=true;
+  for(const char*p=mode; *p; p++)
+    if(*p=='w' || *p=='a' || *p=='+') {
+      write=true;
+    }
   FILE* fp;
-  if(write && comm.Get_rank()!=0) fp=plumed.fopen("/dev/null",mode);
-  else      fp=plumed.fopen(path,mode);
+  if(write && comm.Get_rank()!=0) {
+    fp=plumed.fopen("/dev/null",mode);
+  } else {
+    fp=plumed.fopen(path,mode);
+  }
   files.insert(fp);
   return fp;
 }
@@ -132,11 +153,15 @@ std::string Action::getKeyword(const std::string& key) {
   plumed_massert(keywords.exists(key), "keyword " + key + " has not been registered");
 
   std::string outkey;
-  if( Tools::getKey(line,key,outkey ) ) return key + outkey;
+  if( Tools::getKey(line,key,outkey ) ) {
+    return key + outkey;
+  }
 
   if( keywords.style(key,"compulsory") ) {
     if( keywords.getDefaultValue(key,outkey) ) {
-      if( outkey.length()==0 ) error("keyword " + key + " has weird default value");
+      if( outkey.length()==0 ) {
+        error("keyword " + key + " has weird default value");
+      }
       return key + "=" +  outkey;
     } else {
       error("keyword " + key + " is compulsory for this action");
@@ -177,15 +202,21 @@ void Action::activate() {
     this->unlockRequests();
     prepare();
     this->lockRequests();
-  } else return;
-  for(const auto & p : after) p->activate();
+  } else {
+    return;
+  }
+  for(const auto & p : after) {
+    p->activate();
+  }
   active=true;
 }
 
 void Action::setOption(const std::string &s) {
 // This overloads the action and activate some options
   options.insert(s);
-  for(const auto & p : after) p->setOption(s);
+  for(const auto & p : after) {
+    p->setOption(s);
+  }
 }
 
 void Action::clearOptions() {
@@ -202,7 +233,9 @@ void Action::checkRead() {
   if(!line.empty()) {
     std::string msg="cannot understand the following words from the input line : ";
     for(unsigned i=0; i<line.size(); i++) {
-      if(i>0) msg = msg + ", ";
+      if(i>0) {
+        msg = msg + ", ";
+      }
       msg = msg + line[i];
     }
     error(msg);
@@ -248,7 +281,10 @@ void Action::calculateFromPDB( const PDB& pdb ) {
   activate();
   for(const auto & p : after) {
     ActionWithValue*av=dynamic_cast<ActionWithValue*>(p);
-    if(av) { av->clearInputForces(); av->clearDerivatives(); }
+    if(av) {
+      av->clearInputForces();
+      av->clearDerivatives();
+    }
     p->readAtomsFromPDB( pdb );
     p->calculate();
   }
@@ -267,8 +303,11 @@ std::string Action::cite(const std::string&s) {
 /// Check if action should be updated.
 bool Action::checkUpdate()const {
   double t=getTime();
-  if(t<update_until && (update_from==std::numeric_limits<double>::max() || t>=update_from)) return true;
-  else return false;
+  if(t<update_until && (update_from==std::numeric_limits<double>::max() || t>=update_from)) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 bool Action::getCPT()const {

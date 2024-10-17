@@ -64,9 +64,9 @@ public:
 PLUMED_REGISTER_ACTION(ExtraCV,"EXTRACV")
 
 ExtraCV::ExtraCV(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao)
-{
-  addValueWithDerivatives(); setNotPeriodic();
+  PLUMED_COLVAR_INIT(ao) {
+  addValueWithDerivatives();
+  setNotPeriodic();
   getPntrToValue()->resizeDerivatives(1);
   parse("NAME",name);
   log<<"  name: "<<name<<"\n";

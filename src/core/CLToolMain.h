@@ -76,8 +76,7 @@ See the file \ref main.cpp for a similar example.
 
 */
 class CLToolMain:
-  public WithCmd
-{
+  public WithCmd {
 /// arguments for command-line mode:
   int argc;
 /// arguments for command-line mode:

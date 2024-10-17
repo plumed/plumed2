@@ -88,7 +88,8 @@ void GridBase::Init(const std::string& funcl, const std::vector<std::string> &na
   plumed_massert(names.size()==nbin.size(),"grid dimensions in input do not match number of arguments");
   plumed_massert(names.size()==gmax.size(),"grid dimensions in input do not match number of arguments");
   dimension_=gmax.size();
-  str_min_=gmin; str_max_=gmax;
+  str_min_=gmin;
+  str_max_=gmax;
   argnames.resize( dimension_ );
   min_.resize( dimension_ );
   max_.resize( dimension_ );
@@ -111,11 +112,16 @@ void GridBase::Init(const std::string& funcl, const std::vector<std::string> &na
   nbin_=nbin;
   dospline_=dospline;
   usederiv_=usederiv;
-  if(dospline_) plumed_assert(dospline_==usederiv_);
+  if(dospline_) {
+    plumed_assert(dospline_==usederiv_);
+  }
   maxsize_=1;
   for(unsigned int i=0; i<dimension_; ++i) {
     dx_.push_back( (max_[i]-min_[i])/static_cast<double>( nbin_[i] ) );
-    if( !pbc_[i] ) { max_[i] += dx_[i]; nbin_[i] += 1; }
+    if( !pbc_[i] ) {
+      max_[i] += dx_[i];
+      nbin_[i] += 1;
+    }
     maxsize_*=nbin_[i];
   }
 }
@@ -138,7 +144,9 @@ double GridBase::getDx(index_t j) const {
 
 double GridBase::getBinVolume() const {
   double vol=1.;
-  for(unsigned i=0; i<dx_.size(); ++i) vol*=dx_[i];
+  for(unsigned i=0; i<dx_.size(); ++i) {
+    vol*=dx_[i];
+  }
   return vol;
 }
 
@@ -195,7 +203,9 @@ std::vector<unsigned> GridBase::getIndices(index_t index) const {
 }
 
 void GridBase::getIndices(index_t index, std::vector<unsigned>& indices) const {
-  if (indices.size()!=dimension_) indices.resize(dimension_);
+  if (indices.size()!=dimension_) {
+    indices.resize(dimension_);
+  }
   index_t kk=index;
   indices[0]=(index%nbin_[0]);
   for(unsigned int i=1; i<dimension_-1; ++i) {
@@ -218,7 +228,9 @@ std::vector<unsigned> GridBase::getIndices(const std::vector<double> & x) const 
 
 void GridBase::getIndices(const std::vector<double> & x, std::vector<unsigned>& indices) const {
   plumed_dbg_assert(x.size()==dimension_);
-  if (indices.size()!=dimension_) indices.resize(dimension_);
+  if (indices.size()!=dimension_) {
+    indices.resize(dimension_);
+  }
   for(unsigned int i=0; i<dimension_; ++i) {
     indices[i] = unsigned(std::floor((x[i]-min_[i])/dx_[i]));
   }
@@ -289,15 +301,25 @@ std::vector<GridBase::index_t> GridBase::getNeighbors(const std::vector<unsigned
     unsigned ll=0;
     for(unsigned i=0; i<dimension_; ++i) {
       int i0=small_indices[i]-nneigh[i]+indices[i];
-      if(!pbc_[i] && i0<0)         continue;
-      if(!pbc_[i] && i0>=static_cast<int>(nbin_[i])) continue;
-      if( pbc_[i] && i0<0)         i0=nbin_[i]-(-i0)%nbin_[i];
-      if( pbc_[i] && i0>=static_cast<int>(nbin_[i])) i0%=nbin_[i];
+      if(!pbc_[i] && i0<0) {
+        continue;
+      }
+      if(!pbc_[i] && i0>=static_cast<int>(nbin_[i])) {
+        continue;
+      }
+      if( pbc_[i] && i0<0) {
+        i0=nbin_[i]-(-i0)%nbin_[i];
+      }
+      if( pbc_[i] && i0>=static_cast<int>(nbin_[i])) {
+        i0%=nbin_[i];
+      }
       tmp_indices[ll]=static_cast<unsigned>(i0);
       ll++;
     }
     tmp_indices.resize(ll);
-    if(tmp_indices.size()==dimension_) {neighbors.push_back(getIndex(tmp_indices));}
+    if(tmp_indices.size()==dimension_) {
+      neighbors.push_back(getIndex(tmp_indices));
+    }
   }
   return neighbors;
 }
@@ -315,20 +337,30 @@ std::vector<GridBase::index_t> GridBase::getNeighbors(index_t index,const std::v
 void GridBase::getSplineNeighbors(const std::vector<unsigned> & indices, std::vector<GridBase::index_t>& neighbors, unsigned& nneighbors)const {
   plumed_dbg_assert(indices.size()==dimension_);
   unsigned nneigh=unsigned(std::pow(2.0,int(dimension_)));
-  if (neighbors.size()!=nneigh) neighbors.resize(nneigh);
+  if (neighbors.size()!=nneigh) {
+    neighbors.resize(nneigh);
+  }
 
   std::vector<unsigned> nindices(dimension_);
-  unsigned inind; nneighbors = 0;
+  unsigned inind;
+  nneighbors = 0;
   for(unsigned int i=0; i<nneigh; ++i) {
-    unsigned tmp=i; inind=0;
+    unsigned tmp=i;
+    inind=0;
     for(unsigned int j=0; j<dimension_; ++j) {
       unsigned i0=tmp%2+indices[j];
       tmp/=2;
-      if(!pbc_[j] && i0==nbin_[j]) continue;
-      if( pbc_[j] && i0==nbin_[j]) i0=0;
+      if(!pbc_[j] && i0==nbin_[j]) {
+        continue;
+      }
+      if( pbc_[j] && i0==nbin_[j]) {
+        i0=0;
+      }
       nindices[inind++]=i0;
     }
-    if(inind==dimension_) neighbors[nneighbors++]=getIndex(nindices);
+    if(inind==dimension_) {
+      neighbors[nneighbors++]=getIndex(nindices);
+    }
   }
 }
 
@@ -381,10 +413,15 @@ void GridBase::addKernel( const KernelFunctions& kernel ) {
   for(unsigned i=0; i<neighbors.size(); ++i) {
     index_t ineigh=neighbors[i];
     getPoint( ineigh, xx );
-    for(unsigned j=0; j<dimension_; ++j) vv[j]->set(xx[j]);
+    for(unsigned j=0; j<dimension_; ++j) {
+      vv[j]->set(xx[j]);
+    }
     double newval = kernel.evaluate( vv_ptr, der, usederiv_ );
-    if( usederiv_ ) addValueAndDerivatives( ineigh, newval, der );
-    else addValue( ineigh, newval );
+    if( usederiv_ ) {
+      addValueAndDerivatives( ineigh, newval, der );
+    } else {
+      addValue( ineigh, newval );
+    }
   }
 }
 
@@ -414,13 +451,17 @@ double GridBase::getValueAndDerivatives(const std::vector<double> & x, std::vect
     std::vector<double> dder(dimension_);
 // reset
     value=0.0;
-    for(unsigned int i=0; i<dimension_; ++i) der[i]=0.0;
+    for(unsigned int i=0; i<dimension_; ++i) {
+      der[i]=0.0;
+    }
 
     std::vector<unsigned> indices(dimension_);
     getIndices(x, indices);
     std::vector<double> xfloor(dimension_);
     getPoint(indices, xfloor);
-    std::vector<index_t> neigh; unsigned nneigh; getSplineNeighbors(indices, neigh, nneigh);
+    std::vector<index_t> neigh;
+    unsigned nneigh;
+    getSplineNeighbors(indices, neigh, nneigh);
 
 // loop over neighbors
     std::vector<unsigned> nindices;
@@ -431,14 +472,19 @@ double GridBase::getValueAndDerivatives(const std::vector<double> & x, std::vect
 
       for(unsigned j=0; j<dimension_; ++j) {
         int x0=1;
-        if(nindices[j]==indices[j]) x0=0;
+        if(nindices[j]==indices[j]) {
+          x0=0;
+        }
         double dx=getDx(j);
         X=std::abs((x[j]-xfloor[j])/dx-(double)x0);
         X2=X*X;
         X3=X2*X;
         double yy;
-        if(std::abs(grid)<0.0000001) yy=0.0;
-        else yy=-dder[j]/grid;
+        if(std::abs(grid)<0.0000001) {
+          yy=0.0;
+        } else {
+          yy=-dder[j]/grid;
+        }
         C[j]=(1.0-3.0*X2+2.0*X3) - (x0?-1.0:1.0)*yy*(X-2.0*X2+X3)*dx;
         D[j]=( -6.0*X +6.0*X2) - (x0?-1.0:1.0)*yy*(1.0-4.0*X +3.0*X2)*dx;
         D[j]*=(x0?-1.0:1.0)/dx;
@@ -446,10 +492,15 @@ double GridBase::getValueAndDerivatives(const std::vector<double> & x, std::vect
       }
       for(unsigned j=0; j<dimension_; ++j) {
         fd[j]=D[j];
-        for(unsigned i=0; i<dimension_; ++i) if(i!=j) fd[j]*=C[i];
+        for(unsigned i=0; i<dimension_; ++i)
+          if(i!=j) {
+            fd[j]*=C[i];
+          }
       }
       value+=grid*ff;
-      for(unsigned j=0; j<dimension_; ++j) der[j]+=grid*fd[j];
+      for(unsigned j=0; j<dimension_; ++j) {
+        der[j]+=grid*fd[j];
+      }
     }
     return value;
   } else {
@@ -484,7 +535,9 @@ void GridBase::writeHeader(OFile& ofile) {
 
 void Grid::clear() {
   grid_.assign(maxsize_,0.0);
-  if(usederiv_) der_.assign(maxsize_*dimension_,0.0);
+  if(usederiv_) {
+    der_.assign(maxsize_*dimension_,0.0);
+  }
 }
 
 void Grid::writeToFile(OFile& ofile) {
@@ -494,19 +547,35 @@ void Grid::writeToFile(OFile& ofile) {
   writeHeader(ofile);
   for(index_t i=0; i<getSize(); ++i) {
     xx=getPoint(i);
-    if(usederiv_) {f=getValueAndDerivatives(i,der);}
-    else {f=getValue(i);}
-    if(i>0 && dimension_>1 && getIndices(i)[dimension_-2]==0) ofile.printf("\n");
+    if(usederiv_) {
+      f=getValueAndDerivatives(i,der);
+    } else {
+      f=getValue(i);
+    }
+    if(i>0 && dimension_>1 && getIndices(i)[dimension_-2]==0) {
+      ofile.printf("\n");
+    }
     for(unsigned j=0; j<dimension_; ++j) {
       ofile.printField("min_" + argnames[j], str_min_[j] );
       ofile.printField("max_" + argnames[j], str_max_[j] );
       ofile.printField("nbins_" + argnames[j], static_cast<int>(nbin_[j]) );
-      if( pbc_[j] ) ofile.printField("periodic_" + argnames[j], "true" );
-      else          ofile.printField("periodic_" + argnames[j], "false" );
+      if( pbc_[j] ) {
+        ofile.printField("periodic_" + argnames[j], "true" );
+      } else {
+        ofile.printField("periodic_" + argnames[j], "false" );
+      }
     }
-    for(unsigned j=0; j<dimension_; ++j) { ofile.fmtField(" "+fmt_); ofile.printField(argnames[j],xx[j]); }
-    ofile.fmtField(" "+fmt_); ofile.printField(funcname,f);
-    if(usederiv_) for(unsigned j=0; j<dimension_; ++j) { ofile.fmtField(" "+fmt_); ofile.printField("der_" + argnames[j],der[j]); }
+    for(unsigned j=0; j<dimension_; ++j) {
+      ofile.fmtField(" "+fmt_);
+      ofile.printField(argnames[j],xx[j]);
+    }
+    ofile.fmtField(" "+fmt_);
+    ofile.printField(funcname,f);
+    if(usederiv_)
+      for(unsigned j=0; j<dimension_; ++j) {
+        ofile.fmtField(" "+fmt_);
+        ofile.printField("der_" + argnames[j],der[j]);
+      }
     ofile.printField();
   }
 }
@@ -526,7 +595,9 @@ void GridBase::writeCubeFile(OFile& ofile, const double& lunit) {
     for(pp[1]=0; pp[1]<nbin_[1]; ++pp[1]) {
       for(pp[2]=0; pp[2]<nbin_[2]; ++pp[2]) {
         ofile.printf("%f ",getValue(pp) );
-        if(pp[2]%6==5) ofile.printf("\n");
+        if(pp[2]%6==5) {
+          ofile.printf("\n");
+        }
       }
       ofile.printf("\n");
     }
@@ -551,15 +622,20 @@ std::unique_ptr<GridBase> GridBase::create(const std::string& funcl, const std::
   return grid;
 }
 
-std::unique_ptr<GridBase> GridBase::create(const std::string& funcl, const std::vector<Value*> & args, IFile& ifile, bool dosparse, bool dospline, bool doder)
-{
+std::unique_ptr<GridBase> GridBase::create(const std::string& funcl, const std::vector<Value*> & args, IFile& ifile, bool dosparse, bool dospline, bool doder) {
   std::unique_ptr<GridBase> grid;
-  unsigned nvar=args.size(); bool hasder=false; std::string pstring;
-  std::vector<int> gbin1(nvar); std::vector<unsigned> gbin(nvar);
+  unsigned nvar=args.size();
+  bool hasder=false;
+  std::string pstring;
+  std::vector<int> gbin1(nvar);
+  std::vector<unsigned> gbin(nvar);
   std::vector<std::string> labels(nvar),gmin(nvar),gmax(nvar);
-  std::vector<std::string> fieldnames; ifile.scanFieldList( fieldnames );
+  std::vector<std::string> fieldnames;
+  ifile.scanFieldList( fieldnames );
 // Retrieve names for fields
-  for(unsigned i=0; i<args.size(); ++i) labels[i]=args[i]->getName();
+  for(unsigned i=0; i<args.size(); ++i) {
+    labels[i]=args[i]->getName();
+  }
 // And read the stuff from the header
   plumed_massert( ifile.FieldExist( funcl ), "no column labelled " + funcl + " in in grid input");
   for(unsigned i=0; i<args.size(); ++i) {
@@ -571,40 +647,60 @@ std::unique_ptr<GridBase> GridBase::create(const std::string& funcl, const std::
     if( args[i]->isPeriodic() ) {
       plumed_massert( pstring=="true", "input value is periodic but grid is not");
       std::string pmin, pmax;
-      args[i]->getDomain( pmin, pmax ); gbin[i]=gbin1[i];
-      if( pmin!=gmin[i] || pmax!=gmax[i] ) plumed_merror("mismatch between grid boundaries and periods of values");
+      args[i]->getDomain( pmin, pmax );
+      gbin[i]=gbin1[i];
+      if( pmin!=gmin[i] || pmax!=gmax[i] ) {
+        plumed_merror("mismatch between grid boundaries and periods of values");
+      }
     } else {
       gbin[i]=gbin1[i]-1;  // Note header in grid file indicates one more bin that there should be when data is not periodic
       plumed_massert( pstring=="false", "input value is not periodic but grid is");
     }
     hasder=ifile.FieldExist( "der_" + args[i]->getName() );
-    if( doder && !hasder ) plumed_merror("missing derivatives from grid file");
+    if( doder && !hasder ) {
+      plumed_merror("missing derivatives from grid file");
+    }
     for(unsigned j=0; j<fieldnames.size(); ++j) {
       for(unsigned k=i+1; k<args.size(); ++k) {
-        if( fieldnames[j]==labels[k] ) plumed_merror("arguments in input are not in same order as in grid file");
+        if( fieldnames[j]==labels[k] ) {
+          plumed_merror("arguments in input are not in same order as in grid file");
+        }
       }
-      if( fieldnames[j]==labels[i] ) break;
+      if( fieldnames[j]==labels[i] ) {
+        break;
+      }
     }
   }
 
-  if(!dosparse) {grid=Tools::make_unique<Grid>(funcl,args,gmin,gmax,gbin,dospline,doder);}
-  else {grid=Tools::make_unique<SparseGrid>(funcl,args,gmin,gmax,gbin,dospline,doder);}
+  if(!dosparse) {
+    grid=Tools::make_unique<Grid>(funcl,args,gmin,gmax,gbin,dospline,doder);
+  } else {
+    grid=Tools::make_unique<SparseGrid>(funcl,args,gmin,gmax,gbin,dospline,doder);
+  }
 
   std::vector<double> xx(nvar),dder(nvar);
   std::vector<double> dx=grid->getDx();
   double f,x;
   while( ifile.scanField(funcl,f) ) {
     for(unsigned i=0; i<nvar; ++i) {
-      ifile.scanField(labels[i],x); xx[i]=x+dx[i]/2.0;
+      ifile.scanField(labels[i],x);
+      xx[i]=x+dx[i]/2.0;
       ifile.scanField( "min_" + labels[i], gmin[i]);
       ifile.scanField( "max_" + labels[i], gmax[i]);
       ifile.scanField( "nbins_" + labels[i], gbin1[i]);
       ifile.scanField( "periodic_" + labels[i], pstring );
     }
-    if(hasder) { for(unsigned i=0; i<nvar; ++i) { ifile.scanField( "der_" + args[i]->getName(), dder[i] ); } }
+    if(hasder) {
+      for(unsigned i=0; i<nvar; ++i) {
+        ifile.scanField( "der_" + args[i]->getName(), dder[i] );
+      }
+    }
     index_t index=grid->getIndex(xx);
-    if(doder) {grid->setValueAndDerivatives(index,f,dder);}
-    else {grid->setValue(index,f);}
+    if(doder) {
+      grid->setValueAndDerivatives(index,f,dder);
+    } else {
+      grid->setValue(index,f);
+    }
     ifile.scanField();
   }
   return grid;
@@ -614,7 +710,9 @@ double Grid::getMinValue() const {
   double minval;
   minval=DBL_MAX;
   for(index_t i=0; i<grid_.size(); ++i) {
-    if(grid_[i]<minval)minval=grid_[i];
+    if(grid_[i]<minval) {
+      minval=grid_[i];
+    }
   }
   return minval;
 }
@@ -623,7 +721,9 @@ double Grid::getMaxValue() const {
   double maxval;
   maxval=DBL_MIN;
   for(index_t i=0; i<grid_.size(); ++i) {
-    if(grid_[i]>maxval)maxval=grid_[i];
+    if(grid_[i]>maxval) {
+      maxval=grid_[i];
+    }
   }
   return maxval;
 }
@@ -632,10 +732,14 @@ void Grid::scaleAllValuesAndDerivatives( const double& scalef ) {
   if(usederiv_) {
     for(index_t i=0; i<grid_.size(); ++i) {
       grid_[i]*=scalef;
-      for(unsigned j=0; j<dimension_; ++j) der_[i*dimension_+j]*=scalef;
+      for(unsigned j=0; j<dimension_; ++j) {
+        der_[i*dimension_+j]*=scalef;
+      }
     }
   } else {
-    for(index_t i=0; i<grid_.size(); ++i) grid_[i]*=scalef;
+    for(index_t i=0; i<grid_.size(); ++i) {
+      grid_[i]*=scalef;
+    }
   }
 }
 
@@ -643,27 +747,40 @@ void Grid::logAllValuesAndDerivatives( const double& scalef ) {
   if(usederiv_) {
     for(index_t i=0; i<grid_.size(); ++i) {
       grid_[i] = scalef*std::log(grid_[i]);
-      for(unsigned j=0; j<dimension_; ++j) der_[i*dimension_+j] = scalef/der_[i*dimension_+j];
+      for(unsigned j=0; j<dimension_; ++j) {
+        der_[i*dimension_+j] = scalef/der_[i*dimension_+j];
+      }
     }
   } else {
-    for(index_t i=0; i<grid_.size(); ++i) grid_[i] = scalef*std::log(grid_[i]);
+    for(index_t i=0; i<grid_.size(); ++i) {
+      grid_[i] = scalef*std::log(grid_[i]);
+    }
   }
 }
 
 void Grid::setMinToZero() {
   double min=grid_[0];
-  for(index_t i=1; i<grid_.size(); ++i) if(grid_[i]<min) min=grid_[i];
-  for(index_t i=0; i<grid_.size(); ++i) grid_[i] -= min;
+  for(index_t i=1; i<grid_.size(); ++i)
+    if(grid_[i]<min) {
+      min=grid_[i];
+    }
+  for(index_t i=0; i<grid_.size(); ++i) {
+    grid_[i] -= min;
+  }
 }
 
 void Grid::applyFunctionAllValuesAndDerivatives( double (*func)(double val), double (*funcder)(double valder) ) {
   if(usederiv_) {
     for(index_t i=0; i<grid_.size(); ++i) {
       grid_[i]=func(grid_[i]);
-      for(unsigned j=0; j<dimension_; ++j) der_[i*dimension_+j]=funcder(der_[i*dimension_+j]);
+      for(unsigned j=0; j<dimension_; ++j) {
+        der_[i*dimension_+j]=funcder(der_[i*dimension_+j]);
+      }
     }
   } else {
-    for(index_t i=0; i<grid_.size(); ++i) grid_[i]=func(grid_[i]);
+    for(index_t i=0; i<grid_.size(); ++i) {
+      grid_[i]=func(grid_[i]);
+    }
   }
 }
 
@@ -683,9 +800,12 @@ void Grid::findSetOfPointsOnContour(const double& target, const std::vector<bool
   std::vector<double> direction( dimension_, 0 );
 
 // Run over whole grid
-  npoints=0; RootFindingBase<Grid> mymin( this );
+  npoints=0;
+  RootFindingBase<Grid> mymin( this );
   for(unsigned i=0; i<maxsize_; ++i) {
-    for(unsigned j=0; j<dimension_; ++j) ind[j]=getIndices(i)[j];
+    for(unsigned j=0; j<dimension_; ++j) {
+      ind[j]=getIndices(i)[j];
+    }
 
     // Get the value of a point on the grid
     double val1=getValue(i) - target;
@@ -693,23 +813,38 @@ void Grid::findSetOfPointsOnContour(const double& target, const std::vector<bool
     // Now search for contour in each direction
     bool edge=false;
     for(unsigned j=0; j<dimension_; ++j) {
-      if( nosearch[j] ) continue ;
+      if( nosearch[j] ) {
+        continue ;
+      }
       // Make sure we don't search at the edge of the grid
-      if( !pbc_[j] && (ind[j]+1)==nbin_[j] ) continue;
-      else if( (ind[j]+1)==nbin_[j] ) { edge=true; ind[j]=0; }
-      else ind[j]+=1;
+      if( !pbc_[j] && (ind[j]+1)==nbin_[j] ) {
+        continue;
+      } else if( (ind[j]+1)==nbin_[j] ) {
+        edge=true;
+        ind[j]=0;
+      } else {
+        ind[j]+=1;
+      }
       double val2=getValue(ind) - target;
       if( val1*val2<0 ) {
         // Use initial point location as first guess for search
-        points[npoints].resize(dimension_); for(unsigned k=0; k<dimension_; ++k) points[npoints][k]=getPoint(i)[k];
+        points[npoints].resize(dimension_);
+        for(unsigned k=0; k<dimension_; ++k) {
+          points[npoints][k]=getPoint(i)[k];
+        }
         // Setup direction vector
         direction[j]=0.999999999*dx_[j];
         // And do proper search for contour point
         mymin.linesearch( direction, points[npoints], &Grid::getDifferenceFromContour );
-        direction[j]=0.0; npoints++;
+        direction[j]=0.0;
+        npoints++;
       }
-      if( pbc_[j] && edge ) { edge=false; ind[j]=nbin_[j]-1; }
-      else ind[j]-=1;
+      if( pbc_[j] && edge ) {
+        edge=false;
+        ind[j]=nbin_[j]-1;
+      } else {
+        ind[j]-=1;
+      }
     }
   }
 }
@@ -728,7 +863,9 @@ double Grid::getValue(index_t index) const {
 double Grid::getValueAndDerivatives(index_t index, std::vector<double>& der) const {
   plumed_dbg_assert(index<maxsize_ && usederiv_ && der.size()==dimension_);
   der.resize(dimension_);
-  for(unsigned i=0; i<dimension_; i++) der[i]=der_[dimension_*index+i];
+  for(unsigned i=0; i<dimension_; i++) {
+    der[i]=der_[dimension_*index+i];
+  }
   return grid_[index];
 }
 
@@ -740,7 +877,9 @@ void Grid::setValue(index_t index, double value) {
 void Grid::setValueAndDerivatives(index_t index, double value, std::vector<double>& der) {
   plumed_dbg_assert(index<maxsize_ && usederiv_ && der.size()==dimension_);
   grid_[index]=value;
-  for(unsigned i=0; i<dimension_; i++) der_[dimension_*index+i]=der[i];
+  for(unsigned i=0; i<dimension_; i++) {
+    der_[dimension_*index+i]=der[i];
+  }
 }
 
 void Grid::addValue(index_t index, double value) {
@@ -751,7 +890,9 @@ void Grid::addValue(index_t index, double value) {
 void Grid::addValueAndDerivatives(index_t index, double value, std::vector<double>& der) {
   plumed_dbg_assert(index<maxsize_ && usederiv_ && der.size()==dimension_);
   grid_[index]+=value;
-  for(unsigned int i=0; i<dimension_; ++i) der_[index*dimension_+i]+=der[i];
+  for(unsigned int i=0; i<dimension_; ++i) {
+    der_[index*dimension_+i]+=der[i];
+  }
 }
 
 Grid::index_t SparseGrid::getSize() const {
@@ -766,18 +907,26 @@ double SparseGrid::getValue(index_t index)const {
   plumed_assert(index<maxsize_);
   double value=0.0;
   const auto it=map_.find(index);
-  if(it!=map_.end()) value=it->second;
+  if(it!=map_.end()) {
+    value=it->second;
+  }
   return value;
 }
 
 double SparseGrid::getValueAndDerivatives(index_t index, std::vector<double>& der)const {
   plumed_assert(index<maxsize_ && usederiv_ && der.size()==dimension_);
   double value=0.0;
-  for(unsigned int i=0; i<dimension_; ++i) der[i]=0.0;
+  for(unsigned int i=0; i<dimension_; ++i) {
+    der[i]=0.0;
+  }
   const auto it=map_.find(index);
-  if(it!=map_.end()) value=it->second;
+  if(it!=map_.end()) {
+    value=it->second;
+  }
   const auto itder=der_.find(index);
-  if(itder!=der_.end()) der=itder->second;
+  if(itder!=der_.end()) {
+    der=itder->second;
+  }
   return value;
 }
 
@@ -801,7 +950,9 @@ void SparseGrid::addValueAndDerivatives(index_t index, double value, std::vector
   plumed_assert(index<maxsize_ && usederiv_ && der.size()==dimension_);
   map_[index]+=value;
   der_[index].resize(dimension_);
-  for(unsigned int i=0; i<dimension_; ++i) der_[index][i]+=der[i];
+  for(unsigned int i=0; i<dimension_; ++i) {
+    der_[index][i]+=der[i];
+  }
 }
 
 void SparseGrid::writeToFile(OFile& ofile) {
@@ -813,19 +964,33 @@ void SparseGrid::writeToFile(OFile& ofile) {
   for(const auto & it : map_) {
     index_t i=it.first;
     xx=getPoint(i);
-    if(usederiv_) {f=getValueAndDerivatives(i,der);}
-    else {f=getValue(i);}
-    if(i>0 && dimension_>1 && getIndices(i)[dimension_-2]==0) ofile.printf("\n");
+    if(usederiv_) {
+      f=getValueAndDerivatives(i,der);
+    } else {
+      f=getValue(i);
+    }
+    if(i>0 && dimension_>1 && getIndices(i)[dimension_-2]==0) {
+      ofile.printf("\n");
+    }
     for(unsigned j=0; j<dimension_; ++j) {
       ofile.printField("min_" + argnames[j], str_min_[j] );
       ofile.printField("max_" + argnames[j], str_max_[j] );
       ofile.printField("nbins_" + argnames[j], static_cast<int>(nbin_[j]) );
-      if( pbc_[j] ) ofile.printField("periodic_" + argnames[j], "true" );
-      else          ofile.printField("periodic_" + argnames[j], "false" );
+      if( pbc_[j] ) {
+        ofile.printField("periodic_" + argnames[j], "true" );
+      } else {
+        ofile.printField("periodic_" + argnames[j], "false" );
+      }
     }
-    for(unsigned j=0; j<dimension_; ++j) ofile.printField(argnames[j],xx[j]);
+    for(unsigned j=0; j<dimension_; ++j) {
+      ofile.printField(argnames[j],xx[j]);
+    }
     ofile.printField(funcname, f);
-    if(usederiv_) { for(unsigned j=0; j<dimension_; ++j) ofile.printField("der_" + argnames[j],der[j]); }
+    if(usederiv_) {
+      for(unsigned j=0; j<dimension_; ++j) {
+        ofile.printField("der_" + argnames[j],der[j]);
+      }
+    }
     ofile.printField();
   }
 }
@@ -834,7 +999,9 @@ double SparseGrid::getMinValue() const {
   double minval;
   minval=0.0;
   for(auto const & i : map_) {
-    if(i.second<minval) minval=i.second;
+    if(i.second<minval) {
+      minval=i.second;
+    }
   }
   return minval;
 }
@@ -843,7 +1010,9 @@ double SparseGrid::getMaxValue() const {
   double maxval;
   maxval=0.0;
   for(auto const & i : map_) {
-    if(i.second>maxval) maxval=i.second;
+    if(i.second>maxval) {
+      maxval=i.second;
+    }
   }
   return maxval;
 }
@@ -868,7 +1037,9 @@ void Grid::projectOnLowDimension(double &val, std::vector<int> &vHigh, WeightBas
     //   std::cerr<<vHigh[j]<<" ";
     //}
     std::vector<unsigned> vv(vHigh.size());
-    for(unsigned j=0; j<vHigh.size(); j++)vv[j]=unsigned(vHigh[j]);
+    for(unsigned j=0; j<vHigh.size(); j++) {
+      vv[j]=unsigned(vHigh[j]);
+    }
     //
     // this is the real assignment !!!!! (hack this to have bias or other stuff)
     //
@@ -892,14 +1063,20 @@ Grid Grid::project(const std::vector<std::string> & proj, WeightBase *ptr2obj ) 
 
   // check if the two key methods are there
   WeightBase* pp = dynamic_cast<WeightBase*>(ptr2obj);
-  if (!pp)plumed_merror("This WeightBase is not complete: you need a projectInnerLoop and projectOuterLoop ");
+  if (!pp) {
+    plumed_merror("This WeightBase is not complete: you need a projectInnerLoop and projectOuterLoop ");
+  }
 
   for(unsigned j=0; j<proj.size(); j++) {
     for(unsigned i=0; i<getArgNames().size(); i++) {
       if(proj[j]==getArgNames()[i]) {
         unsigned offset;
         // note that at sizetime the non periodic dimension get a bin more
-        if(getIsPeriodic()[i]) {offset=0;} else {offset=1;}
+        if(getIsPeriodic()[i]) {
+          offset=0;
+        } else {
+          offset=1;
+        }
         smallMax.push_back(getMax()[i]);
         smallMin.push_back(getMin()[i]);
         smallBin.push_back(getNbin()[i]-offset);
@@ -921,9 +1098,14 @@ Grid Grid::project(const std::vector<std::string> & proj, WeightBase *ptr2obj ) 
   for(unsigned i=0; i<getArgNames().size(); i++) {
     bool doappend=true;
     for(unsigned j=0; j<dimMapping.size(); j++) {
-      if(dimMapping[j]==i) {doappend=false; break;}
+      if(dimMapping[j]==i) {
+        doappend=false;
+        break;
+      }
     }
-    if(doappend)toBeIntegrated.push_back(i);
+    if(doappend) {
+      toBeIntegrated.push_back(i);
+    }
   }
 
   // loop over all the points in the Grid, find the corresponding fixed index, rotate over all the other ones
@@ -931,7 +1113,9 @@ Grid Grid::project(const std::vector<std::string> & proj, WeightBase *ptr2obj ) 
     std::vector<unsigned> v;
     v=smallgrid.getIndices(i);
     std::vector<int> vHigh((getArgNames()).size(),-1);
-    for(unsigned j=0; j<dimMapping.size(); j++)vHigh[dimMapping[j]]=int(v[j]);
+    for(unsigned j=0; j<dimMapping.size(); j++) {
+      vHigh[dimMapping[j]]=int(v[j]);
+    }
     // the vector vhigh now contains at the beginning the index of the low dimension and -1 for the values that need to be integrated
     double initval=0.;
     projectOnLowDimension(initval,vHigh, ptr2obj);
@@ -942,9 +1126,11 @@ Grid Grid::project(const std::vector<std::string> & proj, WeightBase *ptr2obj ) 
 }
 
 double Grid::integrate( std::vector<unsigned>& npoints ) {
-  plumed_dbg_assert( npoints.size()==dimension_ ); plumed_assert( dospline_ );
+  plumed_dbg_assert( npoints.size()==dimension_ );
+  plumed_assert( dospline_ );
 
-  unsigned ntotgrid=1; double box_vol=1.0;
+  unsigned ntotgrid=1;
+  double box_vol=1.0;
   std::vector<double> ispacing( npoints.size() );
   for(unsigned j=0; j<dimension_; ++j) {
     if( !pbc_[j] ) {
@@ -953,18 +1139,27 @@ double Grid::integrate( std::vector<unsigned>& npoints ) {
     } else {
       ispacing[j] = ( max_[j] - min_[j] ) / static_cast<double>( npoints[j] );
     }
-    ntotgrid*=npoints[j]; box_vol*=ispacing[j];
+    ntotgrid*=npoints[j];
+    box_vol*=ispacing[j];
   }
 
   std::vector<double> vals( dimension_ );
-  std::vector<unsigned> t_index( dimension_ ); double integral=0.0;
+  std::vector<unsigned> t_index( dimension_ );
+  double integral=0.0;
   for(unsigned i=0; i<ntotgrid; ++i) {
     t_index[0]=(i%npoints[0]);
     unsigned kk=i;
-    for(unsigned j=1; j<dimension_-1; ++j) { kk=(kk-t_index[j-1])/npoints[j-1]; t_index[j]=(kk%npoints[j]); }
-    if( dimension_>=2 ) t_index[dimension_-1]=((kk-t_index[dimension_-2])/npoints[dimension_-2]);
+    for(unsigned j=1; j<dimension_-1; ++j) {
+      kk=(kk-t_index[j-1])/npoints[j-1];
+      t_index[j]=(kk%npoints[j]);
+    }
+    if( dimension_>=2 ) {
+      t_index[dimension_-1]=((kk-t_index[dimension_-2])/npoints[dimension_-2]);
+    }
 
-    for(unsigned j=0; j<dimension_; ++j) vals[j]=min_[j] + t_index[j]*ispacing[j];
+    for(unsigned j=0; j<dimension_; ++j) {
+      vals[j]=min_[j] + t_index[j]*ispacing[j];
+    }
 
     integral += getValue( vals );
   }
@@ -973,7 +1168,10 @@ double Grid::integrate( std::vector<unsigned>& npoints ) {
 }
 
 void Grid::mpiSumValuesAndDerivatives( Communicator& comm ) {
-  comm.Sum( grid_ ); for(unsigned i=0; i<der_.size(); ++i) comm.Sum( der_[i] );
+  comm.Sum( grid_ );
+  for(unsigned i=0; i<der_.size(); ++i) {
+    comm.Sum( der_[i] );
+  }
 }
 
 

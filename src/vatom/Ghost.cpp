@@ -50,8 +50,7 @@ PRINT ARG=d1
 
 
 class Ghost:
-  public ActionWithVirtualAtom
-{
+  public ActionWithVirtualAtom {
   std::vector<double> coord;
 public:
   explicit Ghost(const ActionOptions&ao);
@@ -68,18 +67,23 @@ void Ghost::registerKeywords(Keywords& keys) {
 
 Ghost::Ghost(const ActionOptions&ao):
   Action(ao),
-  ActionWithVirtualAtom(ao)
-{
+  ActionWithVirtualAtom(ao) {
   std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
-  if(atoms.size()!=3) error("ATOMS should contain a list of three atoms");
+  if(atoms.size()!=3) {
+    error("ATOMS should contain a list of three atoms");
+  }
 
   parseVector("COORDINATES",coord);
-  if(coord.size()!=3) error("COORDINATES should be a list of three real numbers");
+  if(coord.size()!=3) {
+    error("COORDINATES should be a list of three real numbers");
+  }
 
   checkRead();
   log.printf("  of atoms");
-  for(unsigned i=0; i<atoms.size(); ++i) log.printf(" %d",atoms[i].serial());
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    log.printf(" %d",atoms[i].serial());
+  }
   log.printf("\n");
   requestAtoms(atoms);
 }

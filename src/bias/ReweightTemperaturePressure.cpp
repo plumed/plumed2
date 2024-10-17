@@ -201,8 +201,7 @@ void ReweightTemperaturePressure::registerKeywords(Keywords& keys ) {
 
 ReweightTemperaturePressure::ReweightTemperaturePressure(const ActionOptions&ao):
   Action(ao),
-  ReweightBase(ao)
-{
+  ReweightBase(ao) {
   // Initialize to not defined (negative)
   rpress_=-1;
   press_=-1;
@@ -215,7 +214,9 @@ ReweightTemperaturePressure::ReweightTemperaturePressure(const ActionOptions&ao)
   parseArgumentList("ENERGY",myenergy);
   if(!myenergy.empty()) {
     log.printf("  with energies: ");
-    for(unsigned i=0; i<myenergy.size(); i++) log.printf(" %s",myenergy[i]->getName().c_str());
+    for(unsigned i=0; i<myenergy.size(); i++) {
+      log.printf(" %s",myenergy[i]->getName().c_str());
+    }
     log.printf("\n");
   }
   //requestArguments(myenergy);
@@ -223,7 +224,9 @@ ReweightTemperaturePressure::ReweightTemperaturePressure(const ActionOptions&ao)
   parseArgumentList("VOLUME",myvol);
   if(!myvol.empty()) {
     log.printf("  with volumes: ");
-    for(unsigned i=0; i<myvol.size(); i++) log.printf(" %s",myvol[i]->getName().c_str());
+    for(unsigned i=0; i<myvol.size(); i++) {
+      log.printf(" %s",myvol[i]->getName().c_str());
+    }
     log.printf("\n");
   }
 
@@ -239,27 +242,49 @@ ReweightTemperaturePressure::ReweightTemperaturePressure(const ActionOptions&ao)
     log.printf("  WARNING: If the simulation is performed at constant pressure add the keywords PRESSURE and VOLUME \n" );
   }
   // Case 2) Reweight from T to T' with P=const (isothermal-isobaric)
-  else if (rtemp_>=0 && press_>=0 && rpress_<0 && !myenergy.empty() && !myvol.empty() ) log.printf("  reweighting simulation from temperature %f to temperature %f at constant pressure %f \n",simtemp/plumed.getAtoms().getKBoltzmann(),rtemp_/plumed.getAtoms().getKBoltzmann(), press_ );
+  else if (rtemp_>=0 && press_>=0 && rpress_<0 && !myenergy.empty() && !myvol.empty() ) {
+    log.printf("  reweighting simulation from temperature %f to temperature %f at constant pressure %f \n",simtemp/plumed.getAtoms().getKBoltzmann(),rtemp_/plumed.getAtoms().getKBoltzmann(), press_ );
+  }
   // Case 3) Reweight from P to P' with T=const (isothermal-isobaric)
-  else if (rtemp_<0 && press_>=0 && rpress_>=0 && myenergy.empty() && !myvol.empty() ) log.printf("  reweighting simulation from pressure %f to pressure %f at constant temperature %f\n",press_,rpress_,simtemp/plumed.getAtoms().getKBoltzmann() );
+  else if (rtemp_<0 && press_>=0 && rpress_>=0 && myenergy.empty() && !myvol.empty() ) {
+    log.printf("  reweighting simulation from pressure %f to pressure %f at constant temperature %f\n",press_,rpress_,simtemp/plumed.getAtoms().getKBoltzmann() );
+  }
   // Case 4) Reweight from T,P to T',P' (isothermal-isobaric)
-  else if (rtemp_>0 && press_>=0 && rpress_>=0 && !myenergy.empty() && !myvol.empty() ) log.printf("  reweighting simulation from temperature %f and pressure %f to temperature %f and pressure %f \n",simtemp/plumed.getAtoms().getKBoltzmann(), press_, rtemp_/plumed.getAtoms().getKBoltzmann(), rpress_);
-  else error("Combination of ENERGY, VOLUME, REWEIGHT_PRESSURE, PRESSURE and REWEIGHT_TEMP not supported. Please refer to the manual for supported combinations.");
+  else if (rtemp_>0 && press_>=0 && rpress_>=0 && !myenergy.empty() && !myvol.empty() ) {
+    log.printf("  reweighting simulation from temperature %f and pressure %f to temperature %f and pressure %f \n",simtemp/plumed.getAtoms().getKBoltzmann(), press_, rtemp_/plumed.getAtoms().getKBoltzmann(), rpress_);
+  } else {
+    error("Combination of ENERGY, VOLUME, REWEIGHT_PRESSURE, PRESSURE and REWEIGHT_TEMP not supported. Please refer to the manual for supported combinations.");
+  }
 }
 
 double ReweightTemperaturePressure::getLogWeight() {
-  double energy=0.0; for(unsigned i=0; i<myenergy.size(); ++i) energy+=getArgument(i);
-  double volume=0.0; for(unsigned i=0; i<myvol.size(); ++i) volume+=getArgument(myenergy.size()+i);
+  double energy=0.0;
+  for(unsigned i=0; i<myenergy.size(); ++i) {
+    energy+=getArgument(i);
+  }
+  double volume=0.0;
+  for(unsigned i=0; i<myvol.size(); ++i) {
+    volume+=getArgument(myenergy.size()+i);
+  }
   // 4 possible cases
   // Case 1) Reweight from T to T' with V=const (canonical)
-  if (rtemp_>=0 && press_<0 && rpress_<0) return ((1.0/simtemp)- (1.0/rtemp_) )*energy;
+  if (rtemp_>=0 && press_<0 && rpress_<0) {
+    return ((1.0/simtemp)- (1.0/rtemp_) )*energy;
+  }
   // Case 2) Reweight from T to T' with P=const (isothermal-isobaric)
-  else if (rtemp_>=0 && press_>=0 && rpress_<0)  return ((1.0/simtemp)- (1.0/rtemp_) )*energy + ((1.0/simtemp) - (1.0/rtemp_))*press_*volume;
+  else if (rtemp_>=0 && press_>=0 && rpress_<0) {
+    return ((1.0/simtemp)- (1.0/rtemp_) )*energy + ((1.0/simtemp) - (1.0/rtemp_))*press_*volume;
+  }
   // Case 3) Reweight from P to P' with T=const (isothermal-isobaric)
-  else if (rtemp_<0 && press_>=0 && rpress_>=0)  return (1.0/simtemp)*(press_ - rpress_)*volume;
+  else if (rtemp_<0 && press_>=0 && rpress_>=0) {
+    return (1.0/simtemp)*(press_ - rpress_)*volume;
+  }
   // Case 4) Reweight from T,P to T',P' (isothermal-isobaric)
-  else if (rtemp_>0 && press_>=0 && rpress_>=0) return ((1.0/simtemp)- (1.0/rtemp_) )*energy + ((1.0/simtemp)*press_ - (1.0/rtemp_)*rpress_ )*volume;
-  else return 0;
+  else if (rtemp_>0 && press_>=0 && rpress_>=0) {
+    return ((1.0/simtemp)- (1.0/rtemp_) )*energy + ((1.0/simtemp)*press_ - (1.0/rtemp_)*rpress_ )*volume;
+  } else {
+    return 0;
+  }
 }
 
 }

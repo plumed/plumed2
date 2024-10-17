@@ -68,8 +68,7 @@ void Opt_RobbinsMonroSGD::registerKeywords(Keywords& keys) {
 
 Opt_RobbinsMonroSGD::Opt_RobbinsMonroSGD(const ActionOptions&ao):
   PLUMED_VES_OPTIMIZER_INIT(ao),
-  decay_constant_(1.0)
-{
+  decay_constant_(1.0) {
   parse("DECAY_CONSTANT",decay_constant_);
   if(decay_constant_<1.0) {
     plumed_merror("the value given in DECAY_CONSTANT doesn't make sense, it should be larger than 1.0");

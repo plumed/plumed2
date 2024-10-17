@@ -59,15 +59,17 @@ void SketchMapSmacof::registerKeywords( Keywords& keys ) {
 
 SketchMapSmacof::SketchMapSmacof( const ActionOptions& ao ):
   Action(ao),
-  SketchMapBase(ao)
-{
+  SketchMapBase(ao) {
   parse("REGULARISE_PARAM",regulariser);
-  parse("SMACOF_MAXCYC",max_smap); parse("SMAP_MAXCYC",maxiter);
-  parse("SMACOF_TOL",smap_tol); parse("SMAP_TOL",iter_tol);
+  parse("SMACOF_MAXCYC",max_smap);
+  parse("SMAP_MAXCYC",maxiter);
+  parse("SMACOF_TOL",smap_tol);
+  parse("SMAP_TOL",iter_tol);
 }
 
 void SketchMapSmacof::minimise( Matrix<double>& projections ) {
-  Matrix<double> weights( distances.nrows(), distances.ncols() ); weights=0.;
+  Matrix<double> weights( distances.nrows(), distances.ncols() );
+  weights=0.;
   double filt = recalculateWeights( projections, weights );
 
   for(unsigned i=0; i<maxiter; ++i) {
@@ -75,17 +77,21 @@ void SketchMapSmacof::minimise( Matrix<double>& projections ) {
     // Recalculate weights matrix and sigma
     double newsig = recalculateWeights( projections, weights );
     // Test whether or not the algorithm has converged
-    if( std::fabs( newsig - filt )<iter_tol ) break;
+    if( std::fabs( newsig - filt )<iter_tol ) {
+      break;
+    }
     // Make initial sigma into new sigma so that the value of new sigma is used every time so that the error can be reduced
     filt=newsig;
   }
 }
 
 double SketchMapSmacof::recalculateWeights( const Matrix<double>& projections, Matrix<double>& weights ) {
-  double filt=0, totalWeight=0.;; double dr;
+  double filt=0, totalWeight=0.;;
+  double dr;
   for(unsigned i=1; i<weights.nrows(); ++i) {
     for(unsigned j=0; j<i; ++j) {
-      double ninj=getWeight(i)*getWeight(j); totalWeight += ninj;
+      double ninj=getWeight(i)*getWeight(j);
+      totalWeight += ninj;
 
       double tempd=0;
       for(unsigned k=0; k<projections.ncols(); ++k) {
@@ -98,8 +104,11 @@ double SketchMapSmacof::recalculateWeights( const Matrix<double>& projections, M
       double filter=transformed(i,j)-fij;
       double diff=distances(i,j) - dij;
 
-      if( std::fabs(diff)<regulariser ) weights(i,j)=weights(j,i)=0.0;
-      else weights(i,j)=weights(j,i) = ninj*( (1-mixparam)*( filter*dr )/diff + mixparam );
+      if( std::fabs(diff)<regulariser ) {
+        weights(i,j)=weights(j,i)=0.0;
+      } else {
+        weights(i,j)=weights(j,i) = ninj*( (1-mixparam)*( filter*dr )/diff + mixparam );
+      }
       filt += ninj*( (1-mixparam)*filter*filter + mixparam*diff*diff );
     }
   }

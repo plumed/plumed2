@@ -93,16 +93,17 @@ void ContactMatrix::registerKeywords( Keywords& keys ) {
            "The following provides information on the \\ref switchingfunction that are available. ");
 // I added these keywords so I can test the results I get for column and row sums against output from COORDINATIONNUMBERS
 /// These  should never be used in production as I think they will be much slower than COORDINATIONNUMBERS
-  keys.add("hidden","ATOMSA",""); keys.add("hidden","ATOMSB","");
+  keys.add("hidden","ATOMSA","");
+  keys.add("hidden","ATOMSB","");
 }
 
 ContactMatrix::ContactMatrix( const ActionOptions& ao ):
   Action(ao),
-  AdjacencyMatrixBase(ao)
-{
+  AdjacencyMatrixBase(ao) {
   // Read in the atoms and setup the matrix
   readMaxTwoSpeciesMatrix( "ATOMS", "ATOMSA", "ATOMSB", true );
-  unsigned nrows, ncols; retrieveTypeDimensions( nrows, ncols, ncol_t );
+  unsigned nrows, ncols;
+  retrieveTypeDimensions( nrows, ncols, ncol_t );
   switchingFunction.resize( nrows, ncols );
   // Read in the switching functions
   parseConnectionDescriptions("SWITCH",false,ncol_t);
@@ -112,7 +113,9 @@ ContactMatrix::ContactMatrix( const ActionOptions& ao ):
   for(unsigned i=0; i<switchingFunction.nrows(); ++i) {
     for(unsigned j=0; j<switchingFunction.ncols(); ++j) {
       double tsf=switchingFunction(i,j).get_dmax();
-      if( tsf>sfmax ) sfmax=tsf;
+      if( tsf>sfmax ) {
+        sfmax=tsf;
+      }
     }
   }
   // And set the link cell cutoff
@@ -120,15 +123,23 @@ ContactMatrix::ContactMatrix( const ActionOptions& ao ):
 }
 
 void ContactMatrix::setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ) {
-  plumed_assert( id==0 && desc.size()==1 ); std::string errors; switchingFunction(j,i).set(desc[0],errors);
-  if( errors.length()!=0 ) error("problem reading switching function description " + errors);
-  if( j!=i) switchingFunction(i,j).set(desc[0],errors);
+  plumed_assert( id==0 && desc.size()==1 );
+  std::string errors;
+  switchingFunction(j,i).set(desc[0],errors);
+  if( errors.length()!=0 ) {
+    error("problem reading switching function description " + errors);
+  }
+  if( j!=i) {
+    switchingFunction(i,j).set(desc[0],errors);
+  }
   log.printf("  %u th and %u th multicolvar groups must be within %s\n",i+1,j+1,(switchingFunction(i,j).description()).c_str() );
 }
 
 double ContactMatrix::calculateWeight( const unsigned& taskCode, const double& weight, multicolvar::AtomValuePack& myatoms ) const {
   Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
-  if( distance.modulo2()<switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) - ncol_t ).get_dmax2() ) return 1.0;
+  if( distance.modulo2()<switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) - ncol_t ).get_dmax2() ) {
+    return 1.0;
+  }
   return 0.0;
 }
 

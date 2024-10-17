@@ -131,9 +131,15 @@ In addition, as of PLUMED 2.5, we provide a \ref pdbrenumber "command line tool"
 namespace PLMD {
 
 void PDB::setAtomNumbers( const std::vector<AtomNumber>& atoms ) {
-  positions.resize( atoms.size() ); occupancy.resize( atoms.size() );
-  beta.resize( atoms.size() ); numbers.resize( atoms.size() );
-  for(unsigned i=0; i<atoms.size(); ++i) { numbers[i]=atoms[i]; beta[i]=1.0; occupancy[i]=1.0; }
+  positions.resize( atoms.size() );
+  occupancy.resize( atoms.size() );
+  beta.resize( atoms.size() );
+  numbers.resize( atoms.size() );
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    numbers[i]=atoms[i];
+    beta[i]=1.0;
+    occupancy[i]=1.0;
+  }
 }
 
 void PDB::setArgumentNames( const std::vector<std::string>& argument_names ) {
@@ -146,13 +152,18 @@ void PDB::setArgumentNames( const std::vector<std::string>& argument_names ) {
 
 bool PDB::getArgumentValue( const std::string& name, double& value ) const {
   std::map<std::string,double>::const_iterator it = arg_data.find(name);
-  if( it!=arg_data.end() ) { value = it->second; return true; }
+  if( it!=arg_data.end() ) {
+    value = it->second;
+    return true;
+  }
   return false;
 }
 
 void PDB::setAtomPositions( const std::vector<Vector>& pos ) {
   plumed_assert( pos.size()==positions.size() );
-  for(unsigned i=0; i<positions.size(); ++i) positions[i]=pos[i];
+  for(unsigned i=0; i<positions.size(); ++i) {
+    positions[i]=pos[i];
+  }
 }
 
 void PDB::setArgumentValue( const std::string& argname, const double& val ) {
@@ -218,7 +229,8 @@ void PDB::addRemark( std::vector<std::string>& v1 ) {
       std::size_t eq=v1[i].find_first_of('=');
       std::string name=v1[i].substr(0,eq);
       std::string sval=v1[i].substr(eq+1);
-      double val; Tools::convert( sval, val );
+      double val;
+      Tools::convert( sval, val );
       arg_data.insert( std::pair<std::string,double>( name, val ) );
     } else {
       flags.push_back(v1[i]);
@@ -228,7 +240,9 @@ void PDB::addRemark( std::vector<std::string>& v1 ) {
 
 bool PDB::hasFlag( const std::string& fname ) const {
   for(unsigned i=0; i<flags.size(); ++i) {
-    if( flags[i]==fname ) return true;
+    if( flags[i]==fname ) {
+      return true;
+    }
   }
   return false;
 }
@@ -253,25 +267,34 @@ const Tensor & PDB::getBoxVec()const {
 std::string PDB::getAtomName(AtomNumber a)const {
   const auto p=number2index.find(a);
   if(p==number2index.end()) {
-    std::string num; Tools::convert( a.serial(), num );
+    std::string num;
+    Tools::convert( a.serial(), num );
     plumed_merror("Name of atom " + num + " not found" );
-  } else return atomsymb[p->second];
+  } else {
+    return atomsymb[p->second];
+  }
 }
 
 unsigned PDB::getResidueNumber(AtomNumber a)const {
   const auto p=number2index.find(a);
   if(p==number2index.end()) {
-    std::string num; Tools::convert( a.serial(), num );
+    std::string num;
+    Tools::convert( a.serial(), num );
     plumed_merror("Residue for atom " + num + " not found" );
-  } else return residue[p->second];
+  } else {
+    return residue[p->second];
+  }
 }
 
 std::string PDB::getResidueName(AtomNumber a) const {
   const auto p=number2index.find(a);
   if(p==number2index.end()) {
-    std::string num; Tools::convert( a.serial(), num );
+    std::string num;
+    Tools::convert( a.serial(), num );
     plumed_merror("Residue for atom " + num + " not found" );
-  } else return residuenames[p->second];
+  } else {
+    return residuenames[p->second];
+  }
 }
 
 unsigned PDB::size()const {
@@ -281,13 +304,18 @@ unsigned PDB::size()const {
 bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
   //cerr<<file<<endl;
   bool file_is_alive=false;
-  if(naturalUnits) scale=1.0;
+  if(naturalUnits) {
+    scale=1.0;
+  }
   std::string line;
-  fpos_t pos; bool between_ters=true;
+  fpos_t pos;
+  bool between_ters=true;
   while(Tools::getline(fp,line)) {
     //cerr<<line<<"\n";
     fgetpos (fp,&pos);
-    while(line.length()<80) line.push_back(' ');
+    while(line.length()<80) {
+      line.push_back(' ');
+    }
     std::string record=line.substr(0,6);
     std::string serial=line.substr(6,5);
     std::string atomname=line.substr(12,4);
@@ -306,11 +334,21 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
     std::string BoxB=line.substr(40,7);
     std::string BoxG=line.substr(47,7);
     Tools::trim(record);
-    if(record=="TER") { between_ters=false; block_ends.push_back( positions.size() ); }
-    if(record=="END") { file_is_alive=true;  break;}
-    if(record=="ENDMDL") { file_is_alive=true;  break;}
+    if(record=="TER") {
+      between_ters=false;
+      block_ends.push_back( positions.size() );
+    }
+    if(record=="END") {
+      file_is_alive=true;
+      break;
+    }
+    if(record=="ENDMDL") {
+      file_is_alive=true;
+      break;
+    }
     if(record=="REMARK") {
-      std::vector<std::string> v1;  v1=Tools::getWords(line.substr(6));
+      std::vector<std::string> v1;
+      v1=Tools::getWords(line.substr(6));
       addRemark( v1 );
     }
     if(record=="CRYST1") {
@@ -325,7 +363,11 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
       double cosB=std::cos(BoxABG[1]*pi/180.);
       double cosG=std::cos(BoxABG[2]*pi/180.);
       double sinG=std::sin(BoxABG[2]*pi/180.);
-      for (unsigned i=0; i<3; i++) {Box[i][0]=0.; Box[i][1]=0.; Box[i][2]=0.;}
+      for (unsigned i=0; i<3; i++) {
+        Box[i][0]=0.;
+        Box[i][1]=0.;
+        Box[i][2]=0.;
+      }
       Box[0][0]=BoxXYZ[0];
       Box[1][0]=BoxXYZ[1]*cosG;
       Box[1][1]=BoxXYZ[1]*sinG;
@@ -343,7 +385,9 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
         int result;
         auto trimmed=serial;
         Tools::trim(trimmed);
-        while(trimmed.length()<5) trimmed = std::string(" ") + trimmed;
+        while(trimmed.length()<5) {
+          trimmed = std::string(" ") + trimmed;
+        }
         const char* errmsg = h36::hy36decode(5, trimmed.c_str(),trimmed.length(), &result);
         if(errmsg) {
           std::string msg(errmsg);
@@ -358,7 +402,9 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
         Tools::trim(trimmed);
         if(trimmed.length()>0) {
           int result;
-          while(trimmed.length()<4) trimmed = std::string(" ") + trimmed;
+          while(trimmed.length()<4) {
+            trimmed = std::string(" ") + trimmed;
+          }
           const char* errmsg = h36::hy36decode(4, trimmed.c_str(),trimmed.length(), &result);
           if(errmsg) {
             std::string msg(errmsg);
@@ -388,15 +434,21 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
       residuenames.push_back(residuename);
     }
   }
-  if( between_ters ) block_ends.push_back( positions.size() );
+  if( between_ters ) {
+    block_ends.push_back( positions.size() );
+  }
   return file_is_alive;
 }
 
 bool PDB::read(const std::string&file,bool naturalUnits,double scale) {
   FILE* fp=std::fopen(file.c_str(),"r");
-  if(!fp) return false;
+  if(!fp) {
+    return false;
+  }
 // call fclose when exiting this function
-  auto deleter=[](FILE* f) { std::fclose(f); };
+  auto deleter=[](FILE* f) {
+    std::fclose(f);
+  };
   std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
   readFromFilepointer(fp,naturalUnits,scale);
   return true;
@@ -406,7 +458,9 @@ void PDB::getChainNames( std::vector<std::string>& chains ) const {
   chains.resize(0);
   chains.push_back( chain[0] );
   for(unsigned i=1; i<size(); ++i) {
-    if( chains[chains.size()-1]!=chain[i] ) chains.push_back( chain[i] );
+    if( chains[chains.size()-1]!=chain[i] ) {
+      chains.push_back( chain[i] );
+    }
   }
 }
 
@@ -415,16 +469,21 @@ void PDB::getResidueRange( const std::string& chainname, unsigned& res_start, un
   for(unsigned i=0; i<size(); ++i) {
     if( chain[i]==chainname ) {
       if(!inres) {
-        if(foundchain) errmsg="found second start of chain named " + chainname;
+        if(foundchain) {
+          errmsg="found second start of chain named " + chainname;
+        }
         res_start=residue[i];
       }
-      inres=true; foundchain=true;
+      inres=true;
+      foundchain=true;
     } else if( inres && chain[i]!=chainname ) {
       inres=false;
       res_end=residue[i-1];
     }
   }
-  if(inres) res_end=residue[size()-1];
+  if(inres) {
+    res_end=residue[size()-1];
+  }
 }
 
 void PDB::getAtomRange( const std::string& chainname, AtomNumber& a_start, AtomNumber& a_end, std::string& errmsg ) const {
@@ -432,58 +491,78 @@ void PDB::getAtomRange( const std::string& chainname, AtomNumber& a_start, AtomN
   for(unsigned i=0; i<size(); ++i) {
     if( chain[i]==chainname ) {
       if(!inres) {
-        if(foundchain) errmsg="found second start of chain named " + chainname;
+        if(foundchain) {
+          errmsg="found second start of chain named " + chainname;
+        }
         a_start=numbers[i];
       }
-      inres=true; foundchain=true;
+      inres=true;
+      foundchain=true;
     } else if( inres && chain[i]!=chainname ) {
       inres=false;
       a_end=numbers[i-1];
     }
   }
-  if(inres) a_end=numbers[size()-1];
+  if(inres) {
+    a_end=numbers[size()-1];
+  }
 }
 
 std::string PDB::getResidueName( const unsigned& resnum ) const {
   for(unsigned i=0; i<size(); ++i) {
-    if( residue[i]==resnum ) return residuenames[i];
+    if( residue[i]==resnum ) {
+      return residuenames[i];
+    }
   }
-  std::string num; Tools::convert( resnum, num );
+  std::string num;
+  Tools::convert( resnum, num );
   plumed_merror("residue " + num + " not found" );
 }
 
 std::string PDB::getResidueName(const unsigned& resnum,const std::string& chainid ) const {
   for(unsigned i=0; i<size(); ++i) {
-    if( residue[i]==resnum && ( chainid=="*" || chain[i]==chainid) ) return residuenames[i];
+    if( residue[i]==resnum && ( chainid=="*" || chain[i]==chainid) ) {
+      return residuenames[i];
+    }
   }
-  std::string num; Tools::convert( resnum, num );
+  std::string num;
+  Tools::convert( resnum, num );
   plumed_merror("residue " + num + " not found in chain " + chainid );
 }
 
 
 AtomNumber PDB::getNamedAtomFromResidue( const std::string& aname, const unsigned& resnum ) const {
   for(unsigned i=0; i<size(); ++i) {
-    if( residue[i]==resnum && atomsymb[i]==aname ) return numbers[i];
+    if( residue[i]==resnum && atomsymb[i]==aname ) {
+      return numbers[i];
+    }
   }
-  std::string num; Tools::convert( resnum, num );
+  std::string num;
+  Tools::convert( resnum, num );
   plumed_merror("residue " + num + " does not contain an atom named " + aname );
 }
 
 AtomNumber PDB::getNamedAtomFromResidueAndChain( const std::string& aname, const unsigned& resnum, const std::string& chainid ) const {
   for(unsigned i=0; i<size(); ++i) {
-    if( residue[i]==resnum && atomsymb[i]==aname && ( chainid=="*" || chain[i]==chainid) ) return numbers[i];
+    if( residue[i]==resnum && atomsymb[i]==aname && ( chainid=="*" || chain[i]==chainid) ) {
+      return numbers[i];
+    }
   }
-  std::string num; Tools::convert( resnum, num );
+  std::string num;
+  Tools::convert( resnum, num );
   plumed_merror("residue " + num + " from chain " + chainid + " does not contain an atom named " + aname );
 }
 
 std::vector<AtomNumber> PDB::getAtomsInResidue(const unsigned& resnum,const std::string& chainid)const {
   std::vector<AtomNumber> tmp;
   for(unsigned i=0; i<size(); ++i) {
-    if( residue[i]==resnum && ( chainid=="*" || chain[i]==chainid) ) tmp.push_back(numbers[i]);
+    if( residue[i]==resnum && ( chainid=="*" || chain[i]==chainid) ) {
+      tmp.push_back(numbers[i]);
+    }
   }
   if(tmp.size()==0) {
-    std::string num; Tools::convert( resnum, num );
+    std::string num;
+    Tools::convert( resnum, num );
     plumed_merror("Cannot find residue " + num + " from chain " + chainid  );
   }
   return tmp;
@@ -492,7 +571,9 @@ std::vector<AtomNumber> PDB::getAtomsInResidue(const unsigned& resnum,const std:
 std::vector<AtomNumber> PDB::getAtomsInChain(const std::string& chainid)const {
   std::vector<AtomNumber> tmp;
   for(unsigned i=0; i<size(); ++i) {
-    if( chainid=="*" || chain[i]==chainid ) tmp.push_back(numbers[i]);
+    if( chainid=="*" || chain[i]==chainid ) {
+      tmp.push_back(numbers[i]);
+    }
   }
   if(tmp.size()==0) {
     plumed_merror("Cannot find atoms from chain " + chainid  );
@@ -502,7 +583,9 @@ std::vector<AtomNumber> PDB::getAtomsInChain(const std::string& chainid)const {
 
 std::string PDB::getChainID(const unsigned& resnumber) const {
   for(unsigned i=0; i<size(); ++i) {
-    if(resnumber==residue[i]) return chain[i];
+    if(resnumber==residue[i]) {
+      return chain[i];
+    }
   }
   plumed_merror("Not enough residues in pdb input file");
 }
@@ -510,7 +593,8 @@ std::string PDB::getChainID(const unsigned& resnumber) const {
 std::string PDB::getChainID(AtomNumber a) const {
   const auto p=number2index.find(a);
   if(p==number2index.end()) {
-    std::string num; Tools::convert( a.serial(), num );
+    std::string num;
+    Tools::convert( a.serial(), num );
     plumed_merror("Chain for atom " + num + " not found" );
   }
   return chain[p->second];
@@ -518,14 +602,18 @@ std::string PDB::getChainID(AtomNumber a) const {
 
 bool PDB::checkForResidue( const std::string& name ) const {
   for(unsigned i=0; i<size(); ++i) {
-    if( residuenames[i]==name ) return true;
+    if( residuenames[i]==name ) {
+      return true;
+    }
   }
   return false;
 }
 
 bool PDB::checkForAtom( const std::string& name ) const {
   for(unsigned i=0; i<size(); ++i) {
-    if( atomsymb[i]==name ) return true;
+    if( atomsymb[i]==name ) {
+      return true;
+    }
   }
   return false;
 }
@@ -547,8 +635,11 @@ Log& operator<<(Log& ostr, const PDB&  pdb) {
 
 Vector PDB::getPosition(AtomNumber a)const {
   const auto p=number2index.find(a);
-  if(p==number2index.end()) plumed_merror("atom not available");
-  else return positions[p->second];
+  if(p==number2index.end()) {
+    plumed_merror("atom not available");
+  } else {
+    return positions[p->second];
+  }
 }
 
 std::vector<std::string> PDB::getArgumentNames()const {
@@ -562,8 +653,11 @@ std::string PDB::getMtype() const {
 void PDB::print( const double& lunits, GenericMolInfo* mymoldat, OFile& ofile, const std::string& fmt ) {
   if( argnames.size()>0 ) {
     ofile.printf("REMARK ARG=%s", argnames[0].c_str() );
-    for(unsigned i=1; i<argnames.size(); ++i) ofile.printf(",%s",argnames[i].c_str() );
-    ofile.printf("\n"); ofile.printf("REMARK ");
+    for(unsigned i=1; i<argnames.size(); ++i) {
+      ofile.printf(",%s",argnames[i].c_str() );
+    }
+    ofile.printf("\n");
+    ofile.printf("REMARK ");
   }
   std::string descr2;
   if(fmt.find("-")!=std::string::npos) {
@@ -574,8 +668,12 @@ void PDB::print( const double& lunits, GenericMolInfo* mymoldat, OFile& ofile, c
     plumed_assert( psign!=std::string::npos );
     descr2="%s=%-" + fmt.substr(psign+1) + " ";
   }
-  for(std::map<std::string,double>::iterator it=arg_data.begin(); it!=arg_data.end(); ++it) ofile.printf( descr2.c_str(),it->first.c_str(), it->second );
-  if( argnames.size()>0 ) ofile.printf("\n");
+  for(std::map<std::string,double>::iterator it=arg_data.begin(); it!=arg_data.end(); ++it) {
+    ofile.printf( descr2.c_str(),it->first.c_str(), it->second );
+  }
+  if( argnames.size()>0 ) {
+    ofile.printf("\n");
+  }
   if( !mymoldat ) {
     for(unsigned i=0; i<positions.size(); ++i) {
       std::array<char,6> at;
@@ -621,127 +719,258 @@ void PDB::print( const double& lunits, GenericMolInfo* mymoldat, OFile& ofile, c
 
 bool PDB::allowedResidue( const std::string& type, const std::string& residuename ) const {
   if( type=="protein" ) {
-    if(residuename=="ALA") return true;
-    else if(residuename=="ARG") return true;
-    else if(residuename=="ASN") return true;
-    else if(residuename=="ASP") return true;
-    else if(residuename=="CYS") return true;
-    else if(residuename=="GLN") return true;
-    else if(residuename=="GLU") return true;
-    else if(residuename=="GLY") return true;
-    else if(residuename=="HIS") return true;
-    else if(residuename=="ILE") return true;
-    else if(residuename=="LEU") return true;
-    else if(residuename=="LYS") return true;
-    else if(residuename=="MET") return true;
-    else if(residuename=="PHE") return true;
-    else if(residuename=="PRO") return true;
-    else if(residuename=="SER") return true;
-    else if(residuename=="THR") return true;
-    else if(residuename=="TRP") return true;
-    else if(residuename=="TYR") return true;
-    else if(residuename=="VAL") return true;
+    if(residuename=="ALA") {
+      return true;
+    } else if(residuename=="ARG") {
+      return true;
+    } else if(residuename=="ASN") {
+      return true;
+    } else if(residuename=="ASP") {
+      return true;
+    } else if(residuename=="CYS") {
+      return true;
+    } else if(residuename=="GLN") {
+      return true;
+    } else if(residuename=="GLU") {
+      return true;
+    } else if(residuename=="GLY") {
+      return true;
+    } else if(residuename=="HIS") {
+      return true;
+    } else if(residuename=="ILE") {
+      return true;
+    } else if(residuename=="LEU") {
+      return true;
+    } else if(residuename=="LYS") {
+      return true;
+    } else if(residuename=="MET") {
+      return true;
+    } else if(residuename=="PHE") {
+      return true;
+    } else if(residuename=="PRO") {
+      return true;
+    } else if(residuename=="SER") {
+      return true;
+    } else if(residuename=="THR") {
+      return true;
+    } else if(residuename=="TRP") {
+      return true;
+    } else if(residuename=="TYR") {
+      return true;
+    } else if(residuename=="VAL") {
+      return true;
+    }
 // Terminal groups
-    else if(residuename=="ACE") return true;
-    else if(residuename=="NME") return true;
-    else if(residuename=="NH2") return true;
+    else if(residuename=="ACE") {
+      return true;
+    } else if(residuename=="NME") {
+      return true;
+    } else if(residuename=="NH2") {
+      return true;
+    }
 // Alternative residue names in common force fields
-    else if(residuename=="GLH") return true; // neutral GLU
-    else if(residuename=="ASH") return true; // neutral ASP
-    else if(residuename=="HID") return true; // HIS-D amber
-    else if(residuename=="HSD") return true; // HIS-D charmm
-    else if(residuename=="HIE") return true; // HIS-E amber
-    else if(residuename=="HSE") return true; // HIS-E charmm
-    else if(residuename=="HIP") return true; // HIS-P amber
-    else if(residuename=="HSP") return true; // HIS-P charmm
-    else if(residuename=="CYX") return true; // disulfide bridge CYS
+    else if(residuename=="GLH") {
+      return true;  // neutral GLU
+    } else if(residuename=="ASH") {
+      return true;  // neutral ASP
+    } else if(residuename=="HID") {
+      return true;  // HIS-D amber
+    } else if(residuename=="HSD") {
+      return true;  // HIS-D charmm
+    } else if(residuename=="HIE") {
+      return true;  // HIS-E amber
+    } else if(residuename=="HSE") {
+      return true;  // HIS-E charmm
+    } else if(residuename=="HIP") {
+      return true;  // HIS-P amber
+    } else if(residuename=="HSP") {
+      return true;  // HIS-P charmm
+    } else if(residuename=="CYX") {
+      return true;  // disulfide bridge CYS
+    }
 // Weird amino acids
-    else if(residuename=="NLE") return true;
-    else if(residuename=="SFO") return true;
-    else return false;
+    else if(residuename=="NLE") {
+      return true;
+    } else if(residuename=="SFO") {
+      return true;
+    } else {
+      return false;
+    }
   } else if( type=="dna" ) {
-    if(residuename=="A") return true;
-    else if(residuename=="A5") return true;
-    else if(residuename=="A3") return true;
-    else if(residuename=="AN") return true;
-    else if(residuename=="G") return true;
-    else if(residuename=="G5") return true;
-    else if(residuename=="G3") return true;
-    else if(residuename=="GN") return true;
-    else if(residuename=="T") return true;
-    else if(residuename=="T5") return true;
-    else if(residuename=="T3") return true;
-    else if(residuename=="TN") return true;
-    else if(residuename=="C") return true;
-    else if(residuename=="C5") return true;
-    else if(residuename=="C3") return true;
-    else if(residuename=="CN") return true;
-    else if(residuename=="DA") return true;
-    else if(residuename=="DA5") return true;
-    else if(residuename=="DA3") return true;
-    else if(residuename=="DAN") return true;
-    else if(residuename=="DG") return true;
-    else if(residuename=="DG5") return true;
-    else if(residuename=="DG3") return true;
-    else if(residuename=="DGN") return true;
-    else if(residuename=="DT") return true;
-    else if(residuename=="DT5") return true;
-    else if(residuename=="DT3") return true;
-    else if(residuename=="DTN") return true;
-    else if(residuename=="DC") return true;
-    else if(residuename=="DC5") return true;
-    else if(residuename=="DC3") return true;
-    else if(residuename=="DCN") return true;
-    else return false;
+    if(residuename=="A") {
+      return true;
+    } else if(residuename=="A5") {
+      return true;
+    } else if(residuename=="A3") {
+      return true;
+    } else if(residuename=="AN") {
+      return true;
+    } else if(residuename=="G") {
+      return true;
+    } else if(residuename=="G5") {
+      return true;
+    } else if(residuename=="G3") {
+      return true;
+    } else if(residuename=="GN") {
+      return true;
+    } else if(residuename=="T") {
+      return true;
+    } else if(residuename=="T5") {
+      return true;
+    } else if(residuename=="T3") {
+      return true;
+    } else if(residuename=="TN") {
+      return true;
+    } else if(residuename=="C") {
+      return true;
+    } else if(residuename=="C5") {
+      return true;
+    } else if(residuename=="C3") {
+      return true;
+    } else if(residuename=="CN") {
+      return true;
+    } else if(residuename=="DA") {
+      return true;
+    } else if(residuename=="DA5") {
+      return true;
+    } else if(residuename=="DA3") {
+      return true;
+    } else if(residuename=="DAN") {
+      return true;
+    } else if(residuename=="DG") {
+      return true;
+    } else if(residuename=="DG5") {
+      return true;
+    } else if(residuename=="DG3") {
+      return true;
+    } else if(residuename=="DGN") {
+      return true;
+    } else if(residuename=="DT") {
+      return true;
+    } else if(residuename=="DT5") {
+      return true;
+    } else if(residuename=="DT3") {
+      return true;
+    } else if(residuename=="DTN") {
+      return true;
+    } else if(residuename=="DC") {
+      return true;
+    } else if(residuename=="DC5") {
+      return true;
+    } else if(residuename=="DC3") {
+      return true;
+    } else if(residuename=="DCN") {
+      return true;
+    } else {
+      return false;
+    }
   } else if( type=="rna" ) {
-    if(residuename=="A") return true;
-    else if(residuename=="A5") return true;
-    else if(residuename=="A3") return true;
-    else if(residuename=="AN") return true;
-    else if(residuename=="G") return true;
-    else if(residuename=="G5") return true;
-    else if(residuename=="G3") return true;
-    else if(residuename=="GN") return true;
-    else if(residuename=="U") return true;
-    else if(residuename=="U5") return true;
-    else if(residuename=="U3") return true;
-    else if(residuename=="UN") return true;
-    else if(residuename=="C") return true;
-    else if(residuename=="C5") return true;
-    else if(residuename=="C3") return true;
-    else if(residuename=="CN") return true;
-    else if(residuename=="RA") return true;
-    else if(residuename=="RA5") return true;
-    else if(residuename=="RA3") return true;
-    else if(residuename=="RAN") return true;
-    else if(residuename=="RG") return true;
-    else if(residuename=="RG5") return true;
-    else if(residuename=="RG3") return true;
-    else if(residuename=="RGN") return true;
-    else if(residuename=="RU") return true;
-    else if(residuename=="RU5") return true;
-    else if(residuename=="RU3") return true;
-    else if(residuename=="RUN") return true;
-    else if(residuename=="RC") return true;
-    else if(residuename=="RC5") return true;
-    else if(residuename=="RC3") return true;
-    else if(residuename=="RCN") return true;
-    else return false;
+    if(residuename=="A") {
+      return true;
+    } else if(residuename=="A5") {
+      return true;
+    } else if(residuename=="A3") {
+      return true;
+    } else if(residuename=="AN") {
+      return true;
+    } else if(residuename=="G") {
+      return true;
+    } else if(residuename=="G5") {
+      return true;
+    } else if(residuename=="G3") {
+      return true;
+    } else if(residuename=="GN") {
+      return true;
+    } else if(residuename=="U") {
+      return true;
+    } else if(residuename=="U5") {
+      return true;
+    } else if(residuename=="U3") {
+      return true;
+    } else if(residuename=="UN") {
+      return true;
+    } else if(residuename=="C") {
+      return true;
+    } else if(residuename=="C5") {
+      return true;
+    } else if(residuename=="C3") {
+      return true;
+    } else if(residuename=="CN") {
+      return true;
+    } else if(residuename=="RA") {
+      return true;
+    } else if(residuename=="RA5") {
+      return true;
+    } else if(residuename=="RA3") {
+      return true;
+    } else if(residuename=="RAN") {
+      return true;
+    } else if(residuename=="RG") {
+      return true;
+    } else if(residuename=="RG5") {
+      return true;
+    } else if(residuename=="RG3") {
+      return true;
+    } else if(residuename=="RGN") {
+      return true;
+    } else if(residuename=="RU") {
+      return true;
+    } else if(residuename=="RU5") {
+      return true;
+    } else if(residuename=="RU3") {
+      return true;
+    } else if(residuename=="RUN") {
+      return true;
+    } else if(residuename=="RC") {
+      return true;
+    } else if(residuename=="RC5") {
+      return true;
+    } else if(residuename=="RC3") {
+      return true;
+    } else if(residuename=="RCN") {
+      return true;
+    } else {
+      return false;
+    }
   } else if( type=="water" ) {
-    if(residuename=="SOL") return true;
-    if(residuename=="WAT") return true;
+    if(residuename=="SOL") {
+      return true;
+    }
+    if(residuename=="WAT") {
+      return true;
+    }
     return false;
   } else if( type=="ion" ) {
-    if(residuename=="IB+") return true;
-    if(residuename=="CA") return true;
-    if(residuename=="CL") return true;
-    if(residuename=="NA") return true;
-    if(residuename=="MG") return true;
-    if(residuename=="K") return true;
-    if(residuename=="RB") return true;
-    if(residuename=="CS") return true;
-    if(residuename=="LI") return true;
-    if(residuename=="ZN") return true;
+    if(residuename=="IB+") {
+      return true;
+    }
+    if(residuename=="CA") {
+      return true;
+    }
+    if(residuename=="CL") {
+      return true;
+    }
+    if(residuename=="NA") {
+      return true;
+    }
+    if(residuename=="MG") {
+      return true;
+    }
+    if(residuename=="K") {
+      return true;
+    }
+    if(residuename=="RB") {
+      return true;
+    }
+    if(residuename=="CS") {
+      return true;
+    }
+    if(residuename=="LI") {
+      return true;
+    }
+    if(residuename=="ZN") {
+      return true;
+    }
     return false;
   }
   return false;

@@ -89,14 +89,18 @@ public:
 // active methods:
   double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
 /// Returns the number of coordinates of the field
-  bool isPeriodic() override { return false; }
+  bool isPeriodic() override {
+    return false;
+  }
 };
 
 PLUMED_REGISTER_ACTION(CoordinationNumbers,"COORDINATIONNUMBER")
 
 void CoordinationNumbers::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );
-  keys.use("SPECIES"); keys.use("SPECIESA"); keys.use("SPECIESB");
+  keys.use("SPECIES");
+  keys.use("SPECIESA");
+  keys.use("SPECIESB");
   keys.add("compulsory","NN","6","The n parameter of the switching function ");
   keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
@@ -107,27 +111,42 @@ void CoordinationNumbers::registerKeywords( Keywords& keys ) {
            "The following provides information on the \\ref switchingfunction that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   // Use actionWithDistributionKeywords
-  keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("LESS_THAN"); keys.use("MAX");
-  keys.use("MIN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
-  keys.use("ALT_MIN"); keys.use("LOWEST"); keys.use("HIGHEST");
+  keys.use("MEAN");
+  keys.use("MORE_THAN");
+  keys.use("LESS_THAN");
+  keys.use("MAX");
+  keys.use("MIN");
+  keys.use("BETWEEN");
+  keys.use("HISTOGRAM");
+  keys.use("MOMENTS");
+  keys.use("ALT_MIN");
+  keys.use("LOWEST");
+  keys.use("HIGHEST");
 }
 
 CoordinationNumbers::CoordinationNumbers(const ActionOptions&ao):
   Action(ao),
   MultiColvarBase(ao),
-  r_power(0)
-{
+  r_power(0) {
 
   // Read in the switching function
-  std::string sw, errors; parse("SWITCH",sw);
+  std::string sw, errors;
+  parse("SWITCH",sw);
   if(sw.length()>0) {
     switchingFunction.set(sw,errors);
-    if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
+    if( errors.length()!=0 ) {
+      error("problem reading SWITCH keyword : " + errors );
+    }
   } else {
-    double r_0=-1.0, d_0; int nn, mm;
-    parse("NN",nn); parse("MM",mm);
-    parse("R_0",r_0); parse("D_0",d_0);
-    if( r_0<0.0 ) error("you must set a value for R_0");
+    double r_0=-1.0, d_0;
+    int nn, mm;
+    parse("NN",nn);
+    parse("MM",mm);
+    parse("R_0",r_0);
+    parse("D_0",d_0);
+    if( r_0<0.0 ) {
+      error("you must set a value for R_0");
+    }
     switchingFunction.set(nn,mm,r_0,d_0);
 
   }
@@ -150,7 +169,9 @@ CoordinationNumbers::CoordinationNumbers(const ActionOptions&ao):
   rcut2 = rcut * rcut;
 
   // And setup the ActionWithVessel
-  std::vector<AtomNumber> all_atoms; setupMultiColvarBase( all_atoms ); checkRead();
+  std::vector<AtomNumber> all_atoms;
+  setupMultiColvarBase( all_atoms );
+  checkRead();
 }
 
 double CoordinationNumbers::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
@@ -166,7 +187,8 @@ double CoordinationNumbers::compute( const unsigned& tindex, AtomValuePack& myat
 
       sw = switchingFunction.calculateSqr( d2, dfunc );
       if(r_power > 0) {
-        d = std::sqrt(d2); raised = std::pow( d, r_power - 1 );
+        d = std::sqrt(d2);
+        raised = std::pow( d, r_power - 1 );
         accumulateSymmetryFunction( 1, i, sw * raised * d,
                                     (dfunc * d * raised + sw * r_power * raised / d) * distance,
                                     (-dfunc * d * raised - sw * r_power * raised / d) * Tensor(distance, distance),
