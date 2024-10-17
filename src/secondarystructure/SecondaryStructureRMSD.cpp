@@ -165,6 +165,7 @@ SecondaryStructureRMSD::SecondaryStructureRMSD(const ActionOptions&ao):
     }
     colvar_atoms.push_back( newatoms );
   }
+  if( colvar_atoms.size()==0 ) error("missing SEGMENT keywords -- no atoms have been specified for comparison");
 
   double bondlength; parse("BONDLENGTH",bondlength); bondlength=bondlength/getUnits().getLength();
 
