@@ -1,3 +1,10 @@
 mpiprocs=1
 type=driver
 arg="--plumed plumed.dat --mf_pdb structure.pdb --box 100,100,100" 
+
+
+plumed_regtest_after(){
+
+    ls MISTATUSgmmnd MY_MISTATUSgmm > status_file_list
+
+}
