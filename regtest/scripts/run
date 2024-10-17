@@ -164,12 +164,12 @@ if type -t plumed_custom_skip 1>/dev/null ; then
   if plumed_custom_skip ; then
     if [ "$TRAVIS" = true ] || [ "$GITHUB_ACTIONS" = true ] ; then
       if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
-        echo "NOT_APPLIABLE (plumed_custom_skip)"
+        echo "NOT_APPLICABLE (plumed_custom_skip)"
       else
         echo "SKIP_ON_TRAVIS found!"
       fi
     else
-      echo "NOT_APPLIABLE (plumed_custom_skip)"
+      echo "NOT_APPLICABLE (plumed_custom_skip)"
     fi
     exit 0;
   fi
