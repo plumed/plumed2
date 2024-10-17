@@ -266,6 +266,7 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
   std::string nopbcstr=""; bool nopbc; parseFlag("NOPBC",nopbc); if( nopbc ) nopbcstr = " NOPBC";
   if( strands_cutoff.length()>0 ) strands_cutoff=" CUTOFF_ATOMS=6,21 STRANDS_CUTOFF="+strands_cutoff;
   std::string type; parse("TYPE",type); std::string lab = getShortcutLabel() + "_low"; if( uselessthan ) lab = getShortcutLabel();
+  if( seglist.length()==0 ) error("no segments to investigate");
   readInputLine( getShortcutLabel() + "_both: SECONDARY_STRUCTURE_RMSD BONDLENGTH=0.17" + seglist + structure + " " + atoms + " TYPE=" + type + strands_cutoff + nopbcstr );
   if( ltmap.length()>0 ) {
     // Create the lowest line
