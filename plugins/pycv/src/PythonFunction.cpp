@@ -16,8 +16,8 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "PythonFunction.h"
 
-#include "core/ActionRegister.h"
-#include "core/PlumedMain.h" // cite
+#include "plumed/core/ActionRegister.h"
+#include "plumed/core/PlumedMain.h" // cite
 
 #include <pybind11/embed.h> // everything needed for embedding
 #include <pybind11/numpy.h>

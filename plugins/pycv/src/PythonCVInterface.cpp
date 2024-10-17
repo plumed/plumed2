@@ -16,10 +16,10 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "PythonCVInterface.h"
 
-#include "core/ActionRegister.h"
-#include "core/PlumedMain.h"
-#include "tools/NeighborList.h"
-#include "tools/Pbc.h"
+#include "plumed/core/ActionRegister.h"
+#include "plumed/core/PlumedMain.h"
+#include "plumed/tools/NeighborList.h"
+#include "plumed/tools/Pbc.h"
 
 #include <pybind11/embed.h> // everything needed for embedding
 #include <pybind11/numpy.h>

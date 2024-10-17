@@ -1,4 +1,4 @@
-LOAD FILE=../../../../PythonCVInterface.so
+LOAD FILE=@pycvpath@
 
 cvPY: PYCVINTERFACE GROUPA=1,4 IMPORT=pydistancegetAtPos CALCULATE=pydist
 
