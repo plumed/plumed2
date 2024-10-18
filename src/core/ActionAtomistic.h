@@ -104,6 +104,7 @@ public:
 /// \warning Should be only used by actions that need to modify the shared position array.
 ///          This array is insensitive to local changes such as makeWhole(), numerical derivatives, etc.
   void setGlobalPosition(const std::pair<std::size_t,std::size_t>&, const Vector& pos);
+  std::array<double*,3> getValueData(std::size_t nn);
 /// Get total number of atoms, including virtual ones.
 /// Can be used to make a loop on modifyGlobalPosition or getGlobalPosition.
   unsigned getTotAtoms()const;
@@ -282,6 +283,15 @@ void ActionAtomistic::setGlobalPosition(const std::pair<std::size_t, std::size_t
   xpos[a.first]->data[a.second]=pos[0];
   ypos[a.first]->data[a.second]=pos[1];
   zpos[a.first]->data[a.second]=pos[2];
+}
+
+inline
+std::array<double*,3> ActionAtomistic::getValueData(std::size_t nn) {
+   std::array<double*,3> ptr;
+   ptr[0]=xpos[nn]->data.data();
+   ptr[1]=ypos[nn]->data.data();
+   ptr[2]=zpos[nn]->data.data();
+   return ptr;
 }
 
 inline
