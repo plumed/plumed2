@@ -51,19 +51,19 @@ public:
   void stop() noexcept {
     // Signals give problems with MPI on Travis.
     // I disable them for now.
-    if(SubprocessPidGetenvSignals()) kill(pid,SIGSTOP);
+    if(SubprocessPidGetenvSignals()) kill(-pid,SIGSTOP);
   }
   void cont() noexcept {
     // Signals give problems with MPI on Travis.
     // I disable them for now.
-    if(SubprocessPidGetenvSignals()) kill(pid,SIGCONT);
+    if(SubprocessPidGetenvSignals()) kill(-pid,SIGCONT);
   }
   ~SubprocessPid() {
     // the destructor implies we do not need the subprocess anymore, so SIGKILL
     // is the fastest exit.
     // if we want to gracefully kill the process with a delay, it would be cleaner
     // to have another member function
-    kill(pid,SIGKILL);
+    kill(-pid,SIGINT);
     // Wait for the child process to terminate
     // This is anyway required to avoid leaks
     int status;
@@ -99,6 +99,7 @@ Subprocess::Subprocess(const std::string & cmd) {
     if(dup(pc[0])<0) plumed_error()<<"error duplicating file";
     if(close(pc[1])<0) plumed_error()<<"error closing file";
     if(close(cp[0])<0) plumed_error()<<"error closing file";
+    if(setpgid(0,0)<0) plumed_error()<<"error setting process group";;
     auto err=execv(arr[0],arr);
     plumed_error()<<"error in script file " << cmd << ", execv returned "<<err;
   }
