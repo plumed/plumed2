@@ -97,8 +97,7 @@ void Angle::registerKeywords( Keywords& keys ) {
 
 Angle::Angle(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
-  pbc(true)
-{
+  pbc(true) {
   std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   bool nopbc=!pbc;
@@ -112,12 +111,18 @@ Angle::Angle(const ActionOptions&ao):
     atoms[2]=atoms[1];
   } else if(atoms.size()==4) {
     log.printf("  between lines %d-%d and %d-%d\n",atoms[0].serial(),atoms[1].serial(),atoms[2].serial(),atoms[3].serial());
-  } else error("Number of specified atoms should be either 3 or 4");
+  } else {
+    error("Number of specified atoms should be either 3 or 4");
+  }
 
-  if(pbc) log.printf("  using periodic boundary conditions\n");
-  else    log.printf("  without periodic boundary conditions\n");
+  if(pbc) {
+    log.printf("  using periodic boundary conditions\n");
+  } else {
+    log.printf("  without periodic boundary conditions\n");
+  }
 
-  addValueWithDerivatives(); setNotPeriodic();
+  addValueWithDerivatives();
+  setNotPeriodic();
   requestAtoms(atoms);
   checkRead();
 }
@@ -125,7 +130,9 @@ Angle::Angle(const ActionOptions&ao):
 // calculator
 void Angle::calculate() {
 
-  if(pbc) makeWhole();
+  if(pbc) {
+    makeWhole();
+  }
 
   Vector dij,dik;
   dij=delta(getPosition(2),getPosition(3));

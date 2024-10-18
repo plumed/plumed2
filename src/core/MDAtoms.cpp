@@ -56,8 +56,7 @@ static void getPointers(const TypesafePtr & p,const TypesafePtr & px,const Types
 /// IT IS STILL UNDOCUMENTED. IT PROBABLY NEEDS A STRONG CLEANUP
 template <class T>
 class MDAtomsTyped:
-  public MDAtomsBase
-{
+  public MDAtomsBase {
   T scalep=1.0; // factor to scale positions
   T scalef=1.0; // factor to scale forces
   T scaleb=1.0; // factor to scale box
@@ -112,12 +111,16 @@ public:
 
   bool isExtraCVNeeded(const std::string &name) const override {
     auto search=extraCVNeeded.find(name);
-    if(search != extraCVNeeded.end()) return search->second;
+    if(search != extraCVNeeded.end()) {
+      return search->second;
+    }
     return false;
   }
 
   void resetExtraCVNeeded() override {
-    for(auto & i : extraCVNeeded) i.second=false;
+    for(auto & i : extraCVNeeded) {
+      i.second=false;
+    }
   }
 
   void MD2double(const TypesafePtr & m,double&d)const override {
@@ -169,8 +172,13 @@ void MDAtomsTyped<T>::setUnits(const Units& units,const Units& MDUnits) {
 template <class T>
 void MDAtomsTyped<T>::getBox(Tensor&box)const {
   auto b=this->box.template get<const T*>({3,3});
-  if(b) for(int i=0; i<3; i++)for(int j=0; j<3; j++) box(i,j)=b[3*i+j]*scaleb;
-  else box.zero();
+  if(b)
+    for(int i=0; i<3; i++)
+      for(int j=0; j<3; j++) {
+        box(i,j)=b[3*i+j]*scaleb;
+      } else {
+    box.zero();
+  }
 }
 
 template <class T>
@@ -250,21 +258,35 @@ void MDAtomsTyped<T>::getLocalPositions(std::vector<Vector>&positions)const {
 template <class T>
 void MDAtomsTyped<T>::getMasses(const std::vector<int>&index,std::vector<double>&masses)const {
   auto mm=m.get<const T*>(index.size());
-  if(mm) for(unsigned i=0; i<index.size(); ++i) masses[index[i]]=scalem*mm[i];
-  else  for(unsigned i=0; i<index.size(); ++i) masses[index[i]]=0.0;
+  if(mm)
+    for(unsigned i=0; i<index.size(); ++i) {
+      masses[index[i]]=scalem*mm[i];
+    } else
+    for(unsigned i=0; i<index.size(); ++i) {
+      masses[index[i]]=0.0;
+    }
 }
 
 template <class T>
 void MDAtomsTyped<T>::getCharges(const std::vector<int>&index,std::vector<double>&charges)const {
   auto cc=c.get<const T*>(index.size());
-  if(cc) for(unsigned i=0; i<index.size(); ++i) charges[index[i]]=scalec*cc[i];
-  else  for(unsigned i=0; i<index.size(); ++i) charges[index[i]]=0.0;
+  if(cc)
+    for(unsigned i=0; i<index.size(); ++i) {
+      charges[index[i]]=scalec*cc[i];
+    } else
+    for(unsigned i=0; i<index.size(); ++i) {
+      charges[index[i]]=0.0;
+    }
 }
 
 template <class T>
 void MDAtomsTyped<T>::updateVirial(const Tensor&virial)const {
   auto v=this->virial.template get<T*>({3,3});
-  if(v) for(int i=0; i<3; i++)for(int j=0; j<3; j++) v[3*i+j]+=T(virial(i,j)*scalev);
+  if(v)
+    for(int i=0; i<3; i++)
+      for(int j=0; j<3; j++) {
+        v[3*i+j]+=T(virial(i,j)*scalev);
+      }
 }
 
 template <class T>
@@ -315,7 +337,11 @@ void MDAtomsTyped<T>::rescaleForces(const std::vector<int>&index,double factor) 
   getPointers(f,fx,fy,fz,index.size(),ffx,ffy,ffz,stride);
   plumed_assert(index.size()==0 || (ffx && ffy && ffz));
   auto v=virial.get<T*>({3,3});
-  if(v) for(unsigned i=0; i<3; i++)for(unsigned j=0; j<3; j++) v[3*i+j]*=T(factor);
+  if(v)
+    for(unsigned i=0; i<3; i++)
+      for(unsigned j=0; j<3; j++) {
+        v[3*i+j]*=T(factor);
+      }
   #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(ffx,stride*index.size()))
   for(unsigned i=0; i<index.size(); ++i) {
     ffx[stride*i]*=T(factor);
@@ -358,9 +384,15 @@ template <class T>
 void MDAtomsTyped<T>::setp(const TypesafePtr & pp,int i) {
   p=TypesafePtr();
   pp.get<const T*>(); // just check type and discard pointer
-  if(i==0)px=pp.copy();
-  if(i==1)py=pp.copy();
-  if(i==2)pz=pp.copy();
+  if(i==0) {
+    px=pp.copy();
+  }
+  if(i==1) {
+    py=pp.copy();
+  }
+  if(i==2) {
+    pz=pp.copy();
+  }
 }
 
 template <class T>
@@ -374,9 +406,15 @@ template <class T>
 void MDAtomsTyped<T>::setf(const TypesafePtr & ff,int i) {
   f=TypesafePtr();;
   ff.get<T*>(); // just check type and discard pointer
-  if(i==0)fx=ff.copy();
-  if(i==1)fy=ff.copy();
-  if(i==2)fz=ff.copy();
+  if(i==0) {
+    fx=ff.copy();
+  }
+  if(i==1) {
+    fy=ff.copy();
+  }
+  if(i==2) {
+    fz=ff.copy();
+  }
 }
 
 template <class T>

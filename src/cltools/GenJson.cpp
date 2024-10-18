@@ -68,19 +68,26 @@ void GenJson::registerKeywords( Keywords& keys ) {
 
 GenJson::GenJson(const CLToolOptions& co ):
   CLTool(co),
-  version("master")
-{
+  version("master") {
   inputdata=commandline;
-  if( config::getVersionLong().find("dev")==std::string::npos ) version="v"+config::getVersion();
+  if( config::getVersionLong().find("dev")==std::string::npos ) {
+    version="v"+config::getVersion();
+  }
 }
 
 int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
-  std::string line(""), actionfile; parse("--actions",actionfile);
-  IFile myfile; myfile.open(actionfile); bool stat;
+  std::string line(""), actionfile;
+  parse("--actions",actionfile);
+  IFile myfile;
+  myfile.open(actionfile);
+  bool stat;
   std::map<std::string,std::string> action_map;
   while((stat=myfile.getline(line))) {
-    std::size_t col = line.find_first_of(":"); std::string docs = line.substr(col+1);
-    if( docs.find("\\")!=std::string::npos ) error("found invalid backslash character in first line of documentation for action " + line.substr(0,col) );
+    std::size_t col = line.find_first_of(":");
+    std::string docs = line.substr(col+1);
+    if( docs.find("\\")!=std::string::npos ) {
+      error("found invalid backslash character in first line of documentation for action " + line.substr(0,col) );
+    }
     action_map.insert(std::pair<std::string,std::string>( line.substr(0,col), docs ) );
   }
   myfile.close();
@@ -94,31 +101,55 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
   // Get the names of all the actions
   std::vector<std::string> action_names( actionRegister().getActionNames() );
   for(unsigned i=0; i<action_names.size(); ++i) {
-    std::cout<<"  \""<<action_names[i]<<'"'<<": {"<<std::endl; std::string action=action_names[i];
+    std::cout<<"  \""<<action_names[i]<<'"'<<": {"<<std::endl;
+    std::string action=action_names[i];
     // Handle conversion of action names to links
     std::cout<<"    \"hyperlink\" : \"https://www.plumed.org/doc-"<<version<<"/user-doc/html/";
-    std::transform(action.begin(), action.end(), action.begin(), [](unsigned char c) { return std::tolower(c); });
+    std::transform(action.begin(), action.end(), action.begin(), [](unsigned char c) {
+      return std::tolower(c);
+    });
     while(true) {
       std::size_t und=action.find_first_of("_");
-      if( und==std::string::npos ) break;
+      if( und==std::string::npos ) {
+        break;
+      }
       std::string first=action.substr(0,und);
-      for(auto c : first ) { if( isdigit(c) ) std::cout<<c; else std::cout<<"_"<<c; }
-      std::cout<<"_"; action=action.substr(und+1);
+      for(auto c : first ) {
+        if( isdigit(c) ) {
+          std::cout<<c;
+        } else {
+          std::cout<<"_"<<c;
+        }
+      }
+      std::cout<<"_";
+      action=action.substr(und+1);
     }
-    for(auto c : action ) { if( isdigit(c) ) std::cout<<c; else std::cout<<"_"<<c; }
+    for(auto c : action ) {
+      if( isdigit(c) ) {
+        std::cout<<c;
+      } else {
+        std::cout<<"_"<<c;
+      }
+    }
     std::cout<<".html\","<<std::endl;
     std::cout<<"    \"description\" : \""<<action_map[action_names[i]]<<"\",\n";
     // Now output keyword information
-    Keywords keys; actionRegister().getKeywords( action_names[i], keys );
+    Keywords keys;
+    actionRegister().getKeywords( action_names[i], keys );
     std::cout<<"    \"syntax\" : {"<<std::endl;
     for(unsigned j=0; j<keys.size(); ++j) {
       std::string desc = keys.getKeywordDescription( keys.getKeyword(j) );
       if( desc.find("default=")!=std::string::npos ) {
-        std::size_t brac=desc.find_first_of(")"); desc = desc.substr(brac+1);
+        std::size_t brac=desc.find_first_of(")");
+        desc = desc.substr(brac+1);
       }
       std::size_t dot=desc.find_first_of(".");
       std::cout<<"       \""<<keys.getKeyword(j)<<"\" : { \"type\": \""<<keys.getStyle(keys.getKeyword(j))<<"\", \"description\": \""<<desc.substr(0,dot)<<"\", \"multiple\": "<<keys.numbered( keys.getKeyword(j) )<<"}";
-      if( j==keys.size()-1 && !keys.exists("HAS_VALUES") ) std::cout<<std::endl; else std::cout<<","<<std::endl;
+      if( j==keys.size()-1 && !keys.exists("HAS_VALUES") ) {
+        std::cout<<std::endl;
+      } else {
+        std::cout<<","<<std::endl;
+      }
     }
     if( keys.exists("HAS_VALUES") ) {
       std::cout<<"       \"output\" : {"<<std::endl;
@@ -126,20 +157,32 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
       // Check if we have a value
       bool hasvalue=true;
       for(unsigned k=0; k<components.size(); ++k) {
-        if( keys.getOutputComponentFlag( components[k] )=="default" ) { hasvalue=false; break; }
+        if( keys.getOutputComponentFlag( components[k] )=="default" ) {
+          hasvalue=false;
+          break;
+        }
       }
       if( hasvalue ) {
         std::cout<<"         \"value\": {"<<std::endl;
         std::cout<<"           \"flag\": \"value\","<<std::endl;
         std::cout<<"           \"description\": \"a scalar quantity\""<<std::endl;
-        if( components.size()==0 ) std::cout<<"         }"<<std::endl; else std::cout<<"         },"<<std::endl;
+        if( components.size()==0 ) {
+          std::cout<<"         }"<<std::endl;
+        } else {
+          std::cout<<"         },"<<std::endl;
+        }
       }
       for(unsigned k=0; k<components.size(); ++k) {
         std::cout<<"         \""<<components[k]<<"\" : {"<<std::endl;
         std::cout<<"           \"flag\": \""<<keys.getOutputComponentFlag( components[k] )<<"\","<<std::endl;
-        std::string desc=keys.getOutputComponentDescription( components[k] ); std::size_t dot=desc.find_first_of(".");
+        std::string desc=keys.getOutputComponentDescription( components[k] );
+        std::size_t dot=desc.find_first_of(".");
         std::cout<<"           \"description\": \""<<desc.substr(0,dot)<<"\""<<std::endl;
-        if( k==components.size()-1 ) std::cout<<"         }"<<std::endl; else std::cout<<"         },"<<std::endl;
+        if( k==components.size()-1 ) {
+          std::cout<<"         }"<<std::endl;
+        } else {
+          std::cout<<"         },"<<std::endl;
+        }
       }
       std::cout<<"       }"<<std::endl;
 
@@ -150,7 +193,10 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
     for( std::size_t pos = helpstr.find("\n");
          pos != std::string::npos;
          pos = helpstr.find("\n", pos)
-       ) { helpstr.replace(pos, unsafen.size(), safen); pos += safen.size(); }
+       ) {
+      helpstr.replace(pos, unsafen.size(), safen);
+      pos += safen.size();
+    }
     std::cout<<"    \"help\" : \""<<helpstr<<"\"\n";
     std::cout<<"  },"<<std::endl;
   }

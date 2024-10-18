@@ -69,31 +69,43 @@ public:
 PLUMED_REGISTER_ACTION(Constant,"CONSTANT")
 
 Constant::Constant(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao)
-{
+  PLUMED_COLVAR_INIT(ao) {
   bool noderiv=false;
   parseFlag("NODERIV",noderiv);
   parseVector("VALUES",values);
   std::vector<double> value;
   parseVector("VALUE",value);
-  if(values.size()==0&&value.size()==0) error("One should use either VALUE or VALUES");
-  if(values.size()!=0&&value.size()!=0) error("One should use either VALUE or VALUES");
-  if(value.size()>1) error("VALUE cannot take more than one number");
+  if(values.size()==0&&value.size()==0) {
+    error("One should use either VALUE or VALUES");
+  }
+  if(values.size()!=0&&value.size()!=0) {
+    error("One should use either VALUE or VALUES");
+  }
+  if(value.size()>1) {
+    error("VALUE cannot take more than one number");
+  }
   if(values.size()==0) {
     values.resize(1);
     values[0]=value[0];
   }
   checkRead();
   if(values.size()==1) {
-    if(!noderiv) addValueWithDerivatives();
-    else addValue();
+    if(!noderiv) {
+      addValueWithDerivatives();
+    } else {
+      addValue();
+    }
     setNotPeriodic();
     setValue(values[0]);
   } else if(values.size()>1) {
     for(unsigned i=0; i<values.size(); i++) {
-      std::string num; Tools::convert(i,num);
-      if(!noderiv) addComponentWithDerivatives("v-"+num);
-      else addComponent("v-"+num);
+      std::string num;
+      Tools::convert(i,num);
+      if(!noderiv) {
+        addComponentWithDerivatives("v-"+num);
+      } else {
+        addComponent("v-"+num);
+      }
       componentIsNotPeriodic("v-"+num);
       Value* comp=getPntrToComponent("v-"+num);
       comp->set(values[i]);

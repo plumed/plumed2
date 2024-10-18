@@ -73,8 +73,12 @@ public:
 /// Create the connection object
   virtual void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ) = 0;
 /// None of these things are allowed
-  bool isPeriodic() { return false; }
-  Vector getCentralAtom() { plumed_merror("cannot find central atoms for adjacency matrix actions"); }
+  bool isPeriodic() {
+    return false;
+  }
+  Vector getCentralAtom() {
+    plumed_merror("cannot find central atoms for adjacency matrix actions");
+  }
 /// Get the atom number
   AtomNumber getAbsoluteIndexOfCentralAtom( const unsigned& i ) const ;
 };
@@ -86,7 +90,9 @@ AdjacencyMatrixVessel* AdjacencyMatrixBase::getAdjacencyVessel() {
 
 inline
 unsigned AdjacencyMatrixBase::getBaseColvarNumber( const unsigned& inum ) const {
-  if( atom_lab[inum].first>0 ) return atom_lab[inum].first-1;
+  if( atom_lab[inum].first>0 ) {
+    return atom_lab[inum].first-1;
+  }
   return 0;
 }
 

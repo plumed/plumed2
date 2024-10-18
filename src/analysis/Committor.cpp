@@ -56,8 +56,7 @@ COMMITTOR ...
 
 class Committor :
   public ActionPilot,
-  public ActionWithArguments
-{
+  public ActionWithArguments {
 private:
   std::string file;
   OFile ofile;
@@ -83,7 +82,8 @@ void Committor::registerKeywords( Keywords& keys ) {
   keys.use("ARG");
   keys.add("numbered", "BASIN_LL","List of lower limits for basin #");
   keys.add("numbered", "BASIN_UL","List of upper limits for basin #");
-  keys.reset_style("BASIN_LL","compulsory"); keys.reset_style("BASIN_UL","compulsory");
+  keys.reset_style("BASIN_LL","compulsory");
+  keys.reset_style("BASIN_UL","compulsory");
   keys.add("compulsory","STRIDE","1","the frequency with which the CVs are analyzed");
   keys.add("optional","FILE","the name of the file on which to output the reached basin");
   keys.add("optional","FMT","the format that should be used to output real numbers");
@@ -96,8 +96,7 @@ Committor::Committor(const ActionOptions&ao):
   ActionWithArguments(ao),
   fmt("%f"),
   basin(0),
-  doNotStop(false)
-{
+  doNotStop(false) {
   ofile.link(*this);
   parse("FILE",file);
   if(file.length()>0) {
@@ -115,9 +114,15 @@ Committor::Committor(const ActionOptions&ao):
     std::vector<double> tmpl, tmpu;
     parseNumberedVector("BASIN_LL", b, tmpl );
     parseNumberedVector("BASIN_UL", b, tmpu );
-    if( tmpl.empty() && tmpu.empty() ) break;
-    if( tmpl.size()!=getNumberOfArguments()) error("Wrong number of values for BASIN_LL: they should be equal to the number of arguments");
-    if( tmpu.size()!=getNumberOfArguments()) error("Wrong number of values for BASIN_UL: they should be equal to the number of arguments");
+    if( tmpl.empty() && tmpu.empty() ) {
+      break;
+    }
+    if( tmpl.size()!=getNumberOfArguments()) {
+      error("Wrong number of values for BASIN_LL: they should be equal to the number of arguments");
+    }
+    if( tmpu.size()!=getNumberOfArguments()) {
+      error("Wrong number of values for BASIN_UL: they should be equal to the number of arguments");
+    }
     lowerlimits.push_back(tmpl);
     upperlimits.push_back(tmpu);
     nbasins=b;
@@ -131,13 +136,19 @@ Committor::Committor(const ActionOptions&ao):
   for(unsigned b=0; b<nbasins; b++) {
     log.printf("  BASIN %u definition:\n", b+1);
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      if(lowerlimits[b][i]>upperlimits[b][i]) error("COMMITTOR: UPPER bounds must always be greater than LOWER bounds");
+      if(lowerlimits[b][i]>upperlimits[b][i]) {
+        error("COMMITTOR: UPPER bounds must always be greater than LOWER bounds");
+      }
       log.printf(" %f - %f\n", lowerlimits[b][i], upperlimits[b][i]);
     }
-    if(doNotStop) log.printf(" COMMITOR will keep track of the visited basins without stopping the simulations\n");
+    if(doNotStop) {
+      log.printf(" COMMITOR will keep track of the visited basins without stopping the simulations\n");
+    }
   }
 
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) ofile.setupPrintValue( getPntrToArgument(i) );
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    ofile.setupPrintValue( getPntrToArgument(i) );
+  }
 }
 
 void Committor::calculate() {
@@ -174,11 +185,14 @@ void Committor::calculate() {
       break;
     }
   }
-  if(!inonebasin) basin = 0;
+  if(!inonebasin) {
+    basin = 0;
+  }
 
   // then check if the simulation should be stopped
   if(inonebasin&&(!doNotStop)) {
-    std::string num; Tools::convert( basin, num );
+    std::string num;
+    Tools::convert( basin, num );
     std::string str = "COMMITTED TO BASIN " + num;
     ofile.addConstantField(str);
     ofile.printField();

@@ -41,8 +41,7 @@ class ActionVolume;
 class MultiColvarBase :
   public ActionAtomistic,
   public ActionWithValue,
-  public vesselbase::ActionWithVessel
-{
+  public vesselbase::ActionWithVessel {
   friend class BridgedMultiColvarFunction;
   friend class VolumeGradientBase;
   friend class MultiColvarFilter;
@@ -158,7 +157,9 @@ public:
 /// Apply PBCs over a set of distance vectors
   void applyPbc(std::vector<Vector>& dlist, unsigned max_index=0) const;
 /// Is it safe to use multithreading
-  bool threadSafe() const override { return !(mybasemulticolvars.size()>0); }
+  bool threadSafe() const override {
+    return !(mybasemulticolvars.size()>0);
+  }
 /// Do some setup before the calculation
   void prepare() override;
 /// This is overwritten here in order to make sure that we do not retrieve atoms multiple times
@@ -192,11 +193,15 @@ public:
 /// You can use this to screen contributions that are very small so we can avoid expensive (and pointless) calculations
   virtual double calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& myatoms ) const ;
 /// Is this a density?
-  virtual bool isDensity() const { return false; }
+  virtual bool isDensity() const {
+    return false;
+  }
 /// Is the iatom'th stored value currently active
   bool storedValueIsActive( const unsigned& iatom );
 /// This is true if multicolvar is calculating a vector or if the multicolvar is the density
-  virtual bool hasDifferentiableOrientation() const { return false; }
+  virtual bool hasDifferentiableOrientation() const {
+    return false;
+  }
 /// This makes sure we are not calculating the director when we do LocalAverage
   virtual void doNotCalculateDirector() {}
 /// Ensure that derivatives are only calculated when needed
@@ -253,7 +258,9 @@ bool MultiColvarBase::usesPbc() const {
 
 inline
 bool MultiColvarBase::doNotCalculateDerivatives() const {
-  if( !dertime ) return true;
+  if( !dertime ) {
+    return true;
+  }
   return ActionWithValue::doNotCalculateDerivatives();
 }
 

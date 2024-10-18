@@ -58,8 +58,7 @@ to include functions related to the variational approach.
 */
 
 class VesBias:
-  public bias::Bias
-{
+  public bias::Bias {
 private:
   unsigned int ncoeffssets_;
   std::vector<std::unique_ptr<CoeffsVector>> coeffs_pntrs_;
@@ -134,7 +133,9 @@ protected:
   void addCoeffsSet(std::unique_ptr<CoeffsVector>);
   //
   std::string getCoeffsSetLabelString(const std::string&, const unsigned int coeffs_id = 0) const;
-  void clearCoeffsPntrsVector() {coeffs_pntrs_.clear();}
+  void clearCoeffsPntrsVector() {
+    coeffs_pntrs_.clear();
+  }
   void addToSampledAverages(const std::vector<double>&, const unsigned int c_id = 0);
   void setTargetDistAverages(const std::vector<double>&, const unsigned int coeffs_id = 0);
   void setTargetDistAverages(const CoeffsVector&, const unsigned int coeffs_id= 0);
@@ -161,39 +162,83 @@ public:
   static void useProjectionArgKeywords(Keywords&);
   static void useReweightFactorKeywords(Keywords&);
   //
-  std::vector<CoeffsVector*> getCoeffsPntrs() const {return Tools::unique2raw(coeffs_pntrs_);}
-  std::vector<CoeffsVector*> getTargetDistAveragesPntrs() const {return Tools::unique2raw(targetdist_averages_pntrs_);}
-  std::vector<CoeffsVector*> getGradientPntrs()const {return Tools::unique2raw(gradient_pntrs_);}
-  std::vector<CoeffsMatrix*> getHessianPntrs() const {return Tools::unique2raw(hessian_pntrs_);}
-  std::vector<TargetDistribution*> getTargetDistributionPntrs() const {return targetdist_pntrs_;}
+  std::vector<CoeffsVector*> getCoeffsPntrs() const {
+    return Tools::unique2raw(coeffs_pntrs_);
+  }
+  std::vector<CoeffsVector*> getTargetDistAveragesPntrs() const {
+    return Tools::unique2raw(targetdist_averages_pntrs_);
+  }
+  std::vector<CoeffsVector*> getGradientPntrs()const {
+    return Tools::unique2raw(gradient_pntrs_);
+  }
+  std::vector<CoeffsMatrix*> getHessianPntrs() const {
+    return Tools::unique2raw(hessian_pntrs_);
+  }
+  std::vector<TargetDistribution*> getTargetDistributionPntrs() const {
+    return targetdist_pntrs_;
+  }
   //
-  CoeffsVector* getCoeffsPntr(const unsigned int coeffs_id = 0) const {return coeffs_pntrs_[coeffs_id].get();}
-  CoeffsVector* getTargetDistAveragesPntr(const unsigned int coeffs_id = 0) const {return targetdist_averages_pntrs_[coeffs_id].get();}
-  CoeffsVector* getGradientPntr(const unsigned int coeffs_id = 0)const {return gradient_pntrs_[coeffs_id].get();}
-  CoeffsMatrix* getHessianPntr(const unsigned int coeffs_id = 0) const {return hessian_pntrs_[coeffs_id].get();}
+  CoeffsVector* getCoeffsPntr(const unsigned int coeffs_id = 0) const {
+    return coeffs_pntrs_[coeffs_id].get();
+  }
+  CoeffsVector* getTargetDistAveragesPntr(const unsigned int coeffs_id = 0) const {
+    return targetdist_averages_pntrs_[coeffs_id].get();
+  }
+  CoeffsVector* getGradientPntr(const unsigned int coeffs_id = 0)const {
+    return gradient_pntrs_[coeffs_id].get();
+  }
+  CoeffsMatrix* getHessianPntr(const unsigned int coeffs_id = 0) const {
+    return hessian_pntrs_[coeffs_id].get();
+  }
   //
-  unsigned int getNumberOfTargetDistributionPntrs() const {return targetdist_pntrs_.size();}
+  unsigned int getNumberOfTargetDistributionPntrs() const {
+    return targetdist_pntrs_.size();
+  }
   //
-  size_t numberOfCoeffs(const unsigned int coeffs_id = 0) const {return coeffs_pntrs_[coeffs_id]->numberOfCoeffs();}
-  size_t totalNumberOfCoeffs() const {return ncoeffs_total_;}
-  unsigned int numberOfCoeffsSets() const {return ncoeffssets_;}
-  double getKbT() const {return kbt_;}
+  size_t numberOfCoeffs(const unsigned int coeffs_id = 0) const {
+    return coeffs_pntrs_[coeffs_id]->numberOfCoeffs();
+  }
+  size_t totalNumberOfCoeffs() const {
+    return ncoeffs_total_;
+  }
+  unsigned int numberOfCoeffsSets() const {
+    return ncoeffssets_;
+  }
+  double getKbT() const {
+    return kbt_;
+  }
   double getBeta() const;
   //
-  CoeffsVector& Coeffs(const unsigned int coeffs_id = 0) const {return *coeffs_pntrs_[coeffs_id];}
-  CoeffsVector& TargetDistAverages(const unsigned int coeffs_id = 0) const {return *targetdist_averages_pntrs_[coeffs_id];}
-  CoeffsVector& Gradient(const unsigned int coeffs_id = 0) const {return *gradient_pntrs_[coeffs_id];}
-  CoeffsMatrix& Hessian(const unsigned int coeffs_id = 0) const {return *hessian_pntrs_[coeffs_id];}
+  CoeffsVector& Coeffs(const unsigned int coeffs_id = 0) const {
+    return *coeffs_pntrs_[coeffs_id];
+  }
+  CoeffsVector& TargetDistAverages(const unsigned int coeffs_id = 0) const {
+    return *targetdist_averages_pntrs_[coeffs_id];
+  }
+  CoeffsVector& Gradient(const unsigned int coeffs_id = 0) const {
+    return *gradient_pntrs_[coeffs_id];
+  }
+  CoeffsMatrix& Hessian(const unsigned int coeffs_id = 0) const {
+    return *hessian_pntrs_[coeffs_id];
+  }
   //
   size_t getCoeffsIndex(const std::vector<unsigned int>& indices, const unsigned int coeffs_id = 0) const;
   std::vector<unsigned int> getCoeffsIndices(const size_t index, const unsigned int coeffs_id = 0) const;
   size_t getHessianIndex(const size_t index1, const size_t index2, const unsigned int coeffs_id = 0) const;
   //
-  bool computeHessian() const {return compute_hessian_;}
-  bool diagonalHessian() const {return diagonal_hessian_;}
+  bool computeHessian() const {
+    return compute_hessian_;
+  }
+  bool diagonalHessian() const {
+    return diagonal_hessian_;
+  }
   //
-  bool optimizeCoeffs() const {return optimize_coeffs_;}
-  Optimizer* getOptimizerPntr() const {return optimizer_pntr_;}
+  bool optimizeCoeffs() const {
+    return optimize_coeffs_;
+  }
+  Optimizer* getOptimizerPntr() const {
+    return optimizer_pntr_;
+  }
   bool useMultipleWalkers() const;
   //
   unsigned int getIterationCounter() const;
@@ -208,66 +253,142 @@ public:
   void enableHessian(const bool diagonal_hessian=true);
   void disableHessian();
   //
-  void enableMultipleCoeffsSets() {use_multiple_coeffssets_=true;}
+  void enableMultipleCoeffsSets() {
+    use_multiple_coeffssets_=true;
+  }
   //
-  void enableDynamicTargetDistribution() {dynamic_targetdist_=true;}
-  void disableDynamicTargetDistribution() {dynamic_targetdist_=false;}
-  bool dynamicTargetDistribution() const {return dynamic_targetdist_;}
+  void enableDynamicTargetDistribution() {
+    dynamic_targetdist_=true;
+  }
+  void disableDynamicTargetDistribution() {
+    dynamic_targetdist_=false;
+  }
+  bool dynamicTargetDistribution() const {
+    return dynamic_targetdist_;
+  }
   //
-  std::vector<unsigned int> getGridBins() const {return grid_bins_;}
+  std::vector<unsigned int> getGridBins() const {
+    return grid_bins_;
+  }
   void setGridBins(const std::vector<unsigned int>&);
   void setGridBins(const unsigned int);
-  std::vector<double> getGridMax() const {return grid_max_;}
+  std::vector<double> getGridMax() const {
+    return grid_max_;
+  }
   void setGridMax(const std::vector<double>&);
-  std::vector<double> getGridMin() const {return grid_min_;}
+  std::vector<double> getGridMin() const {
+    return grid_min_;
+  }
   void setGridMin(const std::vector<double>&);
   //
-  bool filenamesIncludeIterationNumber() const {return filenames_have_iteration_number_;}
-  void enableIterationNumberInFilenames() {filenames_have_iteration_number_=true;}
+  bool filenamesIncludeIterationNumber() const {
+    return filenames_have_iteration_number_;
+  }
+  void enableIterationNumberInFilenames() {
+    filenames_have_iteration_number_=true;
+  }
   //
   std::string getIterationFilenameSuffix() const;
   std::string getCoeffsSetFilenameSuffix(const unsigned int coeffs_id) const;
   std::string getCurrentOutputFilename(const std::string&, const std::string& suffix="") const;
-  std::string getBiasOutputFilename() const {return bias_filename_;}
+  std::string getBiasOutputFilename() const {
+    return bias_filename_;
+  }
   std::string getCurrentBiasOutputFilename(const std::string& suffix="") const;
-  std::string getFesOutputFilename() const {return fes_filename_;}
+  std::string getFesOutputFilename() const {
+    return fes_filename_;
+  }
   std::string getCurrentFesOutputFilename(const std::string& suffix="") const;
-  std::string getTargetDistOutputFilename() const {return targetdist_filename_;}
+  std::string getTargetDistOutputFilename() const {
+    return targetdist_filename_;
+  }
   std::string getCurrentTargetDistOutputFilename(const std::string& suffix="") const;
   //
-  void enableBiasFileOutput() {bias_fileoutput_active_=true;}
-  void disableBiasFileOutput() {bias_fileoutput_active_=false;}
-  bool isBiasFileOutputActive() const {return bias_fileoutput_active_;}
-  std::string getBiasFileFmt() const {return bias_file_fmt_;}
+  void enableBiasFileOutput() {
+    bias_fileoutput_active_=true;
+  }
+  void disableBiasFileOutput() {
+    bias_fileoutput_active_=false;
+  }
+  bool isBiasFileOutputActive() const {
+    return bias_fileoutput_active_;
+  }
+  std::string getBiasFileFmt() const {
+    return bias_file_fmt_;
+  }
   //
-  void enableFesFileOutput() {fes_fileoutput_active_=true;}
-  void disableFesFileOutput() {fes_fileoutput_active_=false;}
-  bool isFesFileOutputActive() const {return fes_fileoutput_active_;}
-  std::string getFesFileFmt() const {return fes_file_fmt_;}
+  void enableFesFileOutput() {
+    fes_fileoutput_active_=true;
+  }
+  void disableFesFileOutput() {
+    fes_fileoutput_active_=false;
+  }
+  bool isFesFileOutputActive() const {
+    return fes_fileoutput_active_;
+  }
+  std::string getFesFileFmt() const {
+    return fes_file_fmt_;
+  }
   //
-  void enableFesProjFileOutput() {fesproj_fileoutput_active_=true;}
-  void disableFesFileProjOutput() {fesproj_fileoutput_active_=false;}
-  bool isFesProjFileOutputActive() const {return fesproj_fileoutput_active_;}
+  void enableFesProjFileOutput() {
+    fesproj_fileoutput_active_=true;
+  }
+  void disableFesFileProjOutput() {
+    fesproj_fileoutput_active_=false;
+  }
+  bool isFesProjFileOutputActive() const {
+    return fesproj_fileoutput_active_;
+  }
   //
-  void enableDynamicTargetDistFileOutput() {dynamic_targetdist_fileoutput_active_=true;}
-  void disableDynamicTargetDistFileOutput() {dynamic_targetdist_fileoutput_active_=false;}
-  bool isDynamicTargetDistFileOutputActive() const {return dynamic_targetdist_fileoutput_active_;}
-  std::string getTargetDistFileFmt() const {return targetdist_file_fmt_;}
-  std::string getTargetDistRestartFileFmt() const {return targetdist_restart_file_fmt_;}
+  void enableDynamicTargetDistFileOutput() {
+    dynamic_targetdist_fileoutput_active_=true;
+  }
+  void disableDynamicTargetDistFileOutput() {
+    dynamic_targetdist_fileoutput_active_=false;
+  }
+  bool isDynamicTargetDistFileOutputActive() const {
+    return dynamic_targetdist_fileoutput_active_;
+  }
+  std::string getTargetDistFileFmt() const {
+    return targetdist_file_fmt_;
+  }
+  std::string getTargetDistRestartFileFmt() const {
+    return targetdist_restart_file_fmt_;
+  }
   //
-  void enableStaticTargetDistFileOutput() {static_targetdist_fileoutput_active_=true;}
-  void disableStaticTargetDistFileOutput() {static_targetdist_fileoutput_active_=false;}
-  bool isStaticTargetDistFileOutputActive() const {return static_targetdist_fileoutput_active_;}
+  void enableStaticTargetDistFileOutput() {
+    static_targetdist_fileoutput_active_=true;
+  }
+  void disableStaticTargetDistFileOutput() {
+    static_targetdist_fileoutput_active_=false;
+  }
+  bool isStaticTargetDistFileOutputActive() const {
+    return static_targetdist_fileoutput_active_;
+  }
   //
-  std::vector< std::vector<std::string> > getProjectionArguments() const {return projection_args_;}
-  std::vector<std::string> getProjectionArgument(unsigned int i) const {return projection_args_[i];}
-  unsigned int getNumberOfProjectionArguments() const {return projection_args_.size();}
+  std::vector< std::vector<std::string> > getProjectionArguments() const {
+    return projection_args_;
+  }
+  std::vector<std::string> getProjectionArgument(unsigned int i) const {
+    return projection_args_[i];
+  }
+  unsigned int getNumberOfProjectionArguments() const {
+    return projection_args_.size();
+  }
   //
   void setupBiasCutoff(const double, const double);
-  bool biasCutoffActive() const {return bias_cutoff_active_;}
-  double getBiasCutoffValue() const {return bias_cutoff_value_;}
-  void setCurrentBiasMaxValue(const double max_value) {bias_current_max_value=max_value;}
-  double getCurrentBiasMaxValue() const {return bias_current_max_value;}
+  bool biasCutoffActive() const {
+    return bias_cutoff_active_;
+  }
+  double getBiasCutoffValue() const {
+    return bias_cutoff_value_;
+  }
+  void setCurrentBiasMaxValue(const double max_value) {
+    bias_current_max_value=max_value;
+  }
+  double getCurrentBiasMaxValue() const {
+    return bias_current_max_value;
+  }
   double getBiasCutoffSwitchingFunction(const double, double&) const;
   double getBiasCutoffSwitchingFunction(const double) const;
   void applyBiasCutoff(double&, std::vector<double>&) const;
@@ -297,18 +418,26 @@ public:
   //
   void updateReweightFactor();
   virtual double calculateReweightFactor() const;
-  bool isReweightFactorCalculated() const {return calc_reweightfactor_;}
+  bool isReweightFactorCalculated() const {
+    return calc_reweightfactor_;
+  }
 };
 
 
 inline
-size_t VesBias::getCoeffsIndex(const std::vector<unsigned int>& indices, const unsigned int coeffs_id) const {return coeffs_pntrs_[coeffs_id]->getIndex(indices);}
+size_t VesBias::getCoeffsIndex(const std::vector<unsigned int>& indices, const unsigned int coeffs_id) const {
+  return coeffs_pntrs_[coeffs_id]->getIndex(indices);
+}
 
 inline
-std::vector<unsigned int> VesBias::getCoeffsIndices(const size_t index, const unsigned int coeffs_id) const {return coeffs_pntrs_[coeffs_id]->getIndices(index);}
+std::vector<unsigned int> VesBias::getCoeffsIndices(const size_t index, const unsigned int coeffs_id) const {
+  return coeffs_pntrs_[coeffs_id]->getIndices(index);
+}
 
 inline
-size_t VesBias::getHessianIndex(const size_t index1, const size_t index2, const unsigned int coeffs_id) const {return hessian_pntrs_[coeffs_id]->getMatrixIndex(index1,index2);}
+size_t VesBias::getHessianIndex(const size_t index1, const size_t index2, const unsigned int coeffs_id) const {
+  return hessian_pntrs_[coeffs_id]->getMatrixIndex(index1,index2);
+}
 
 
 inline
@@ -392,7 +521,8 @@ bool VesBias::parseMultipleValues(const std::string& keyword, std::vector<T>& va
     identical_values=true;
   }
   if(values.size()>0 && values.size()!=nvalues) {
-    std::string s1; Tools::convert(nvalues,s1);
+    std::string s1;
+    Tools::convert(nvalues,s1);
     plumed_merror("Error in " + keyword + " keyword: either give 1 common parameter value or " + s1 + " separate parameter values");
   }
   return identical_values;

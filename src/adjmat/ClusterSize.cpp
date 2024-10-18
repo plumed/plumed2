@@ -71,7 +71,9 @@ public:
 ///
   void calculate() override;
 ///
-  void performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const override { plumed_error(); }
+  void performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const override {
+    plumed_error();
+  }
 ///
   void turnOnDerivatives() override;
 };
@@ -85,19 +87,26 @@ void ClusterSize::registerKeywords( Keywords& keys ) {
 
 ClusterSize::ClusterSize(const ActionOptions&ao):
   Action(ao),
-  ClusterAnalysisBase(ao)
-{
+  ClusterAnalysisBase(ao) {
   // Find out which cluster we want
   parse("CLUSTER",clustr);
 
-  if( clustr<1 ) error("cannot look for a cluster larger than the largest cluster");
-  if( clustr>getNumberOfNodes() ) error("cluster selected is invalid - too few atoms in system");
+  if( clustr<1 ) {
+    error("cannot look for a cluster larger than the largest cluster");
+  }
+  if( clustr>getNumberOfNodes() ) {
+    error("cluster selected is invalid - too few atoms in system");
+  }
 
   // Create all tasks by copying those from underlying DFS object (which is actually MultiColvar)
-  for(unsigned i=0; i<getNumberOfNodes(); ++i) addTaskToList(i);
+  for(unsigned i=0; i<getNumberOfNodes(); ++i) {
+    addTaskToList(i);
+  }
   // And now finish the setup of everything in the base
-  std::vector<AtomNumber> fake_atoms; setupMultiColvarBase( fake_atoms );
-  addValue(); setNotPeriodic();
+  std::vector<AtomNumber> fake_atoms;
+  setupMultiColvarBase( fake_atoms );
+  addValue();
+  setNotPeriodic();
 }
 
 void ClusterSize::turnOnDerivatives() {
@@ -106,7 +115,9 @@ void ClusterSize::turnOnDerivatives() {
 
 void ClusterSize::calculate() {
   // Retrieve the atoms in the largest cluster
-  std::vector<unsigned> myatoms; retrieveAtomsInCluster( clustr, myatoms ); setValue( myatoms.size() );
+  std::vector<unsigned> myatoms;
+  retrieveAtomsInCluster( clustr, myatoms );
+  setValue( myatoms.size() );
 }
 
 }

@@ -73,16 +73,14 @@ void legendre_compute_glr ( int n, double x[], double w[] )
 //
 //  If N is odd, then zero is a root.
 //
-  if ( n % 2 == 1 )
-  {
+  if ( n % 2 == 1 ) {
     x[(n-1)/2] = p;
     w[(n-1)/2] = pp;
   }
 //
 //  If N is even, we have to call a function to find the first root.
 //
-  else
-  {
+  else {
     legendre_compute_glr2 ( p, n, &x[n/2], &w[n/2] );
   }
 //
@@ -92,17 +90,14 @@ void legendre_compute_glr ( int n, double x[], double w[] )
 //
 //  Compute the W.
 //
-  for ( i = 0; i < n; i++ )
-  {
+  for ( i = 0; i < n; i++ ) {
     w[i] = 2.0 / ( 1.0 - x[i] ) / ( 1.0 + x[i] ) / w[i] / w[i];
   }
   w_sum = 0.0;
-  for ( i = 0; i < n; i++ )
-  {
+  for ( i = 0; i < n; i++ ) {
     w_sum = w_sum + w[i];
   }
-  for ( i = 0; i < n; i++ )
-  {
+  for ( i = 0; i < n; i++ ) {
     w[i] = 2.0 * w[i] / w_sum;
   }
   return;
@@ -157,8 +152,7 @@ void legendre_compute_glr0 ( int n, double *p, double *pp )
   ppm2 = 0.0;
   ppm1 = 0.0;
 
-  for ( k = 0; k < n; k++)
-  {
+  for ( k = 0; k < n; k++) {
     dk = ( double ) k;
     *p = - dk * pm2 / ( dk + 1.0 );
     *pp = ( ( 2.0 * dk + 1.0 ) * pm1 - dk * ppm2 ) / ( dk + 1.0 );
@@ -236,13 +230,10 @@ void legendre_compute_glr1 ( int n, double *x, double *w )
   double *up;
   double xp;
 
-  if ( n % 2 == 1 )
-  {
+  if ( n % 2 == 1 ) {
     n2 = ( n - 1 ) / 2 - 1;
     s = 1;
-  }
-  else
-  {
+  } else {
     n2 = n / 2 - 1;
     s = 0;
   }
@@ -252,8 +243,7 @@ void legendre_compute_glr1 ( int n, double *x, double *w )
 
   dn = ( double ) n;
 
-  for ( j = n2 + 1; j < n - 1; j++ )
-  {
+  for ( j = n2 + 1; j < n - 1; j++ ) {
     xp = x[j];
 
     h = rk2_leg ( pi/2.0, -pi/2.0, xp, n ) - xp;
@@ -265,8 +255,7 @@ void legendre_compute_glr1 ( int n, double *x, double *w )
     up[0] = 0.0;
     up[1] = u[2];
 
-    for ( k = 0; k <= m - 2; k++ )
-    {
+    for ( k = 0; k <= m - 2; k++ ) {
       dk = ( double ) k;
 
       u[k+3] =
@@ -278,8 +267,7 @@ void legendre_compute_glr1 ( int n, double *x, double *w )
       up[k+2] = ( dk + 2.0 ) * u[k+3];
     }
 
-    for ( l = 0; l < 5; l++ )
-    {
+    for ( l = 0; l < 5; l++ ) {
       h = h - ts_mult ( u, h, m ) / ts_mult ( up, h, m-1 );
     }
 
@@ -287,8 +275,7 @@ void legendre_compute_glr1 ( int n, double *x, double *w )
     w[j+1] = ts_mult ( up, h, m - 1 );
   }
 
-  for ( k = 0; k <= n2 + s; k++ )
-  {
+  for ( k = 0; k <= n2 + s; k++ ) {
     x[k] = - x[n-1-k];
     w[k] = w[n-1-k];
   }
@@ -371,8 +358,7 @@ void legendre_compute_glr2 ( double pn0, int n, double *x1, double *d1 )
 
   up[0] = 0.0;
 
-  for ( k = 0; k <= m - 2; k = k + 2 )
-  {
+  for ( k = 0; k <= m - 2; k = k + 2 ) {
     dk = ( double ) k;
 
     u[k+2] = 0.0;
@@ -383,8 +369,7 @@ void legendre_compute_glr2 ( double pn0, int n, double *x1, double *d1 )
     up[k+2] = ( dk + 2.0 ) * u[k+3];
   }
 
-  for ( l = 0; l < 5; l++ )
-  {
+  for ( l = 0; l < 5; l++ ) {
     *x1 = *x1 - ts_mult ( u, *x1, m ) / ts_mult ( up, *x1, m-1 );
   }
   *d1 = ts_mult ( up, *x1, m-1 );
@@ -437,12 +422,10 @@ void rescale ( double a, double b, int n, double x[], double w[] )
 {
   int i;
 
-  for ( i = 0; i < n; i++ )
-  {
+  for ( i = 0; i < n; i++ ) {
     x[i] = ( ( a + b ) + ( b - a ) * x[i] ) / 2.0;
   }
-  for ( i = 0; i < n; i++ )
-  {
+  for ( i = 0; i < n; i++ ) {
     w[i] = ( b - a ) * w[i] / 2.0;
   }
   return;
@@ -494,8 +477,7 @@ double rk2_leg ( double t1, double t2, double x, int n )
   snn1 = sqrt ( ( double ) ( n * ( n + 1 ) ) );
   t = t1;
 
-  for ( j = 0; j < m; j++ )
-  {
+  for ( j = 0; j < m; j++ ) {
     f = ( 1.0 - x ) * ( 1.0 + x );
     k1 = - h * f / ( snn1 * sqrt ( f ) - 0.5 * x * sin ( 2.0 * t ) );
     x = x + k1;
@@ -549,8 +531,7 @@ double ts_mult ( double *u, double h, int n )
 
   ts = 0.0;
   hk = 1.0;
-  for ( k = 1; k<= n; k++ )
-  {
+  for ( k = 1; k<= n; k++ ) {
     ts = ts + u[k] * hk;
     hk = hk * h;
   }

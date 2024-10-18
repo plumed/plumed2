@@ -67,7 +67,9 @@ public:
   explicit Bridge(const ActionOptions&);
 // active methods:
   double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
-  bool isPeriodic() override { return false; }
+  bool isPeriodic() override {
+    return false;
+  }
 };
 
 PLUMED_REGISTER_ACTION(Bridge,"BRIDGE")
@@ -87,33 +89,45 @@ void Bridge::registerKeywords( Keywords& keys ) {
 
 Bridge::Bridge(const ActionOptions&ao):
   Action(ao),
-  MultiColvarBase(ao)
-{
+  MultiColvarBase(ao) {
   // Read in the atoms
   std::vector<AtomNumber> all_atoms;
   readThreeGroups("GROUPA","GROUPB","BRIDGING_ATOMS",false,true,all_atoms);
   // Setup the multicolvar base
   setupMultiColvarBase( all_atoms );
   // Setup Central atom atoms
-  std::vector<bool> catom_ind(3, false); catom_ind[0]=true;
+  std::vector<bool> catom_ind(3, false);
+  catom_ind[0]=true;
   setAtomsForCentralAtom( catom_ind );
 
-  std::string sfinput,errors; parse("SWITCH",sfinput);
+  std::string sfinput,errors;
+  parse("SWITCH",sfinput);
   if( sfinput.length()>0 ) {
     sf1.set(sfinput,errors);
-    if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
+    if( errors.length()!=0 ) {
+      error("problem reading SWITCH keyword : " + errors );
+    }
     sf2.set(sfinput,errors);
-    if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
+    if( errors.length()!=0 ) {
+      error("problem reading SWITCH keyword : " + errors );
+    }
   } else {
     parse("SWITCHA",sfinput);
     if(sfinput.length()>0) {
       weightHasDerivatives=true;
       sf1.set(sfinput,errors);
-      if( errors.length()!=0 ) error("problem reading SWITCHA keyword : " + errors );
-      sfinput.clear(); parse("SWITCHB",sfinput);
-      if(sfinput.length()==0) error("found SWITCHA keyword without SWITCHB");
+      if( errors.length()!=0 ) {
+        error("problem reading SWITCHA keyword : " + errors );
+      }
+      sfinput.clear();
+      parse("SWITCHB",sfinput);
+      if(sfinput.length()==0) {
+        error("found SWITCHA keyword without SWITCHB");
+      }
       sf2.set(sfinput,errors);
-      if( errors.length()!=0 ) error("problem reading SWITCHB keyword : " + errors );
+      if( errors.length()!=0 ) {
+        error("problem reading SWITCHB keyword : " + errors );
+      }
     } else {
       error("missing definition of switching functions");
     }
@@ -125,7 +139,9 @@ Bridge::Bridge(const ActionOptions&ao):
   setLinkCellCutoff( sf1.get_dmax() + sf2.get_dmax() );
 
   // And setup the ActionWithVessel
-  if( getNumberOfVessels()!=0 ) error("should not have vessels for this action");
+  if( getNumberOfVessels()!=0 ) {
+    error("should not have vessels for this action");
+  }
   std::string fake_input;
   addVessel( "SUM", fake_input, -1 );  // -1 here means that this value will be named getLabel()
   readVesselKeywords();

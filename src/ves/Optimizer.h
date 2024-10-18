@@ -52,8 +52,7 @@ class VesBias;
 
 class Optimizer :
   public ActionPilot,
-  public ActionWithValue
-{
+  public ActionWithValue {
 private:
   const std::string description_;
   const std::string type_;
@@ -170,11 +169,19 @@ public:
   //
   explicit Optimizer(const ActionOptions&ao);
   ~Optimizer();
-  std::string getType() const {return type_;}
-  std::string getDescription() const {return description_;}
+  std::string getType() const {
+    return type_;
+  }
+  std::string getDescription() const {
+    return description_;
+  }
   //
-  unsigned int numberOfBiases() const {return nbiases_;}
-  unsigned int numberOfCoeffsSets() const {return ncoeffssets_;}
+  unsigned int numberOfBiases() const {
+    return nbiases_;
+  }
+  unsigned int numberOfCoeffsSets() const {
+    return ncoeffssets_;
+  }
   //
   std::vector<double> getStepSizes() const;
   std::vector<double> getCurrentStepSizes() const;
@@ -192,62 +199,126 @@ public:
   void apply() override {};
   void calculate() override {};
   void update() override;
-  unsigned int getNumberOfDerivatives() override {return 0;}
+  unsigned int getNumberOfDerivatives() override {
+    return 0;
+  }
   //
-  bool fixedStepSize() const {return fixed_stepsize_;}
-  bool dynamicStepSize() const {return !fixed_stepsize_;}
+  bool fixedStepSize() const {
+    return fixed_stepsize_;
+  }
+  bool dynamicStepSize() const {
+    return !fixed_stepsize_;
+  }
   //
-  bool useHessian() const {return use_hessian_;}
-  bool diagonalHessian() const {return diagonal_hessian_;}
+  bool useHessian() const {
+    return use_hessian_;
+  }
+  bool diagonalHessian() const {
+    return diagonal_hessian_;
+  }
   //
-  bool useMultipleWalkers() const {return use_mwalkers_mpi_;}
+  bool useMultipleWalkers() const {
+    return use_mwalkers_mpi_;
+  }
   //
-  std::vector<VesBias*> getBiasPntrs() const {return bias_pntrs_;}
-  std::vector<CoeffsVector*> getCoeffsPntrs() const {return coeffs_pntrs_;}
-  std::vector<CoeffsVector*> getAuxCoeffsPntrs() const {return Tools::unique2raw(aux_coeffs_pntrs_);}
-  std::vector<CoeffsVector*> getGradientPntrs()const {return gradient_pntrs_;}
-  std::vector<CoeffsMatrix*> getHessianPntrs() const {return hessian_pntrs_;}
-  std::vector<CoeffsVector*> getCoeffsMaskPntrs() const {return Tools::unique2raw(coeffs_mask_pntrs_);}
-  std::vector<CoeffsVector*> getTargetDistAveragesPntrs() const {return targetdist_averages_pntrs_;}
+  std::vector<VesBias*> getBiasPntrs() const {
+    return bias_pntrs_;
+  }
+  std::vector<CoeffsVector*> getCoeffsPntrs() const {
+    return coeffs_pntrs_;
+  }
+  std::vector<CoeffsVector*> getAuxCoeffsPntrs() const {
+    return Tools::unique2raw(aux_coeffs_pntrs_);
+  }
+  std::vector<CoeffsVector*> getGradientPntrs()const {
+    return gradient_pntrs_;
+  }
+  std::vector<CoeffsMatrix*> getHessianPntrs() const {
+    return hessian_pntrs_;
+  }
+  std::vector<CoeffsVector*> getCoeffsMaskPntrs() const {
+    return Tools::unique2raw(coeffs_mask_pntrs_);
+  }
+  std::vector<CoeffsVector*> getTargetDistAveragesPntrs() const {
+    return targetdist_averages_pntrs_;
+  }
   //
-  bool isBiasOutputActive() const {return bias_output_active_;}
-  unsigned int getBiasOutputStride() const {return bias_output_stride_;}
-  void setBiasOutputStride(unsigned int stride) {bias_output_stride_=stride;}
+  bool isBiasOutputActive() const {
+    return bias_output_active_;
+  }
+  unsigned int getBiasOutputStride() const {
+    return bias_output_stride_;
+  }
+  void setBiasOutputStride(unsigned int stride) {
+    bias_output_stride_=stride;
+  }
   void writeBiasOutputFiles() const;
   //
-  bool isFesOutputActive() const {return fes_output_active_;}
-  unsigned int getFesOutputStride() const {return fes_output_stride_;}
-  void setFesOutputStride(unsigned int stride) {fes_output_stride_=stride;}
+  bool isFesOutputActive() const {
+    return fes_output_active_;
+  }
+  unsigned int getFesOutputStride() const {
+    return fes_output_stride_;
+  }
+  void setFesOutputStride(unsigned int stride) {
+    fes_output_stride_=stride;
+  }
   void writeFesOutputFiles() const;
   //
-  bool isFesProjOutputActive() const {return fesproj_output_active_;}
-  unsigned int getFesProjOutputStride() const {return fesproj_output_stride_;}
-  void setFesProjOutputStride(unsigned int stride) {fesproj_output_stride_=stride;}
+  bool isFesProjOutputActive() const {
+    return fesproj_output_active_;
+  }
+  unsigned int getFesProjOutputStride() const {
+    return fesproj_output_stride_;
+  }
+  void setFesProjOutputStride(unsigned int stride) {
+    fesproj_output_stride_=stride;
+  }
   void writeFesProjOutputFiles() const;
   //
-  bool isTargetDistOutputActive() const {return targetdist_output_active_;}
-  unsigned int getTargetDistOutputStride() const {return targetdist_output_stride_;}
-  void setTargetDistOutputStride(unsigned int stride) {targetdist_output_stride_=stride;}
+  bool isTargetDistOutputActive() const {
+    return targetdist_output_active_;
+  }
+  unsigned int getTargetDistOutputStride() const {
+    return targetdist_output_stride_;
+  }
+  void setTargetDistOutputStride(unsigned int stride) {
+    targetdist_output_stride_=stride;
+  }
   void writeTargetDistOutputFiles() const;
   //
-  bool isTargetDistProjOutputActive() const {return targetdist_proj_output_active_;}
-  unsigned int getTargetDistProjOutputStride() const {return targetdist_proj_output_stride_;}
-  void setTargetDistProjOutputStride(unsigned int stride) {targetdist_proj_output_stride_=stride;}
+  bool isTargetDistProjOutputActive() const {
+    return targetdist_proj_output_active_;
+  }
+  unsigned int getTargetDistProjOutputStride() const {
+    return targetdist_proj_output_stride_;
+  }
+  void setTargetDistProjOutputStride(unsigned int stride) {
+    targetdist_proj_output_stride_=stride;
+  }
   void writeTargetDistProjOutputFiles() const;
   //
 };
 
 inline
-double Optimizer::StepSize(const unsigned int coeffs_id) const {return stepsizes_[coeffs_id];}
+double Optimizer::StepSize(const unsigned int coeffs_id) const {
+  return stepsizes_[coeffs_id];
+}
 
 inline
-CoeffsVector& Optimizer::Coeffs(const unsigned int coeffs_id) const {return *coeffs_pntrs_[coeffs_id];}
+CoeffsVector& Optimizer::Coeffs(const unsigned int coeffs_id) const {
+  return *coeffs_pntrs_[coeffs_id];
+}
 
 inline
-CoeffsVector& Optimizer::AuxCoeffs(const unsigned int coeffs_id) const {return *aux_coeffs_pntrs_[coeffs_id];}
+CoeffsVector& Optimizer::AuxCoeffs(const unsigned int coeffs_id) const {
+  return *aux_coeffs_pntrs_[coeffs_id];
+}
 
 inline
-CoeffsVector& Optimizer::Gradient(const unsigned int coeffs_id) const {return *gradient_pntrs_[coeffs_id];}
+CoeffsVector& Optimizer::Gradient(const unsigned int coeffs_id) const {
+  return *gradient_pntrs_[coeffs_id];
+}
 
 inline
 CoeffsMatrix& Optimizer::Hessian(const unsigned int coeffs_id) const {
@@ -256,19 +327,29 @@ CoeffsMatrix& Optimizer::Hessian(const unsigned int coeffs_id) const {
 }
 
 inline
-CoeffsVector& Optimizer::CoeffsMask(const unsigned int coeffs_id) const {return *coeffs_mask_pntrs_[coeffs_id];}
+CoeffsVector& Optimizer::CoeffsMask(const unsigned int coeffs_id) const {
+  return *coeffs_mask_pntrs_[coeffs_id];
+}
 
 inline
-std::vector<double> Optimizer::getStepSizes() const {return stepsizes_;}
+std::vector<double> Optimizer::getStepSizes() const {
+  return stepsizes_;
+}
 
 inline
-std::vector<double> Optimizer::getCurrentStepSizes() const {return current_stepsizes;}
+std::vector<double> Optimizer::getCurrentStepSizes() const {
+  return current_stepsizes;
+}
 
 inline
-double Optimizer::getStepSize(const unsigned int coeffs_id) const {return stepsizes_[coeffs_id];}
+double Optimizer::getStepSize(const unsigned int coeffs_id) const {
+  return stepsizes_[coeffs_id];
+}
 
 inline
-double Optimizer::getCurrentStepSize(const unsigned int coeffs_id) const {return current_stepsizes[coeffs_id];}
+double Optimizer::getCurrentStepSize(const unsigned int coeffs_id) const {
+  return current_stepsizes[coeffs_id];
+}
 
 inline
 void Optimizer::setStepSizes(const std::vector<double>& stepsizes_in) {
@@ -293,16 +374,24 @@ void Optimizer::setCurrentStepSizes(const std::vector<double>& current_stepsizes
 }
 
 inline
-unsigned int Optimizer::getIterationCounter() const {return iter_counter;}
+unsigned int Optimizer::getIterationCounter() const {
+  return iter_counter;
+}
 
 inline
-double Optimizer::getIterationCounterDbl() const {return static_cast<double>(iter_counter);}
+double Optimizer::getIterationCounterDbl() const {
+  return static_cast<double>(iter_counter);
+}
 
 inline
-void Optimizer::increaseIterationCounter() {iter_counter++;}
+void Optimizer::increaseIterationCounter() {
+  iter_counter++;
+}
 
 inline
-void Optimizer::setIterationCounter(const unsigned int iter_counter_in) {iter_counter = iter_counter_in;}
+void Optimizer::setIterationCounter(const unsigned int iter_counter_in) {
+  iter_counter = iter_counter_in;
+}
 
 
 template<class T>
@@ -317,7 +406,8 @@ bool Optimizer::parseMultipleValues(const std::string& keyword, std::vector<T>& 
     identical_values=true;
   }
   if(values.size()>0 && values.size()!=ncoeffssets_) {
-    std::string s1; Tools::convert(ncoeffssets_,s1);
+    std::string s1;
+    Tools::convert(ncoeffssets_,s1);
     plumed_merror("Error in " + keyword + " keyword: either give 1 common value for all coefficient sets or " + s1 + " separate value for each set");
   }
   return identical_values;

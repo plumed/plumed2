@@ -99,34 +99,44 @@ public:
   void apply() override {}
   void performOperations( const bool& from_update ) override;
   void finishAveraging() override;
-  bool isPeriodic() override { return false; }
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override { plumed_error(); }
+  bool isPeriodic() override {
+    return false;
+  }
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override {
+    plumed_error();
+  }
   void accumulateAverage( MultiValue& myvals ) const override;
 };
 
 PLUMED_REGISTER_ACTION(Average,"AVERAGE")
 
 void Average::registerKeywords( Keywords& keys ) {
-  vesselbase::ActionWithAveraging::registerKeywords( keys ); keys.use("ARG");
-  keys.remove("SERIAL"); keys.remove("LOWMEM");
+  vesselbase::ActionWithAveraging::registerKeywords( keys );
+  keys.use("ARG");
+  keys.remove("SERIAL");
+  keys.remove("LOWMEM");
 }
 
 Average::Average( const ActionOptions& ao ):
   Action(ao),
-  ActionWithAveraging(ao)
-{
+  ActionWithAveraging(ao) {
   addValue(); // Create a value so that we can output the average
-  if( getNumberOfArguments()!=1 ) error("only one quantity can be averaged at a time");
+  if( getNumberOfArguments()!=1 ) {
+    error("only one quantity can be averaged at a time");
+  }
   std::string instring;
   if( getPntrToArgument(0)->isPeriodic() ) {
-    std::string min, max; getPntrToArgument(0)->getDomain(min,max);
-    instring = "PERIODIC=" + min + "," + max; setPeriodic( min, max );
+    std::string min, max;
+    getPntrToArgument(0)->getDomain(min,max);
+    instring = "PERIODIC=" + min + "," + max;
+    setPeriodic( min, max );
   } else {
     setNotPeriodic();
   }
   // Create a vessel to hold the average
   vesselbase::VesselOptions da("myaverage","",-1,instring,this);
-  Keywords keys; AverageVessel::registerKeywords( keys );
+  Keywords keys;
+  AverageVessel::registerKeywords( keys );
   vesselbase::VesselOptions dar( da, keys );
   auto average=Tools::make_unique<AverageVessel>(dar);
   myaverage = average.get();

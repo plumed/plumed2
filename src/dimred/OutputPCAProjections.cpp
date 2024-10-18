@@ -51,7 +51,9 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit OutputPCAProjection( const ActionOptions& );
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const { plumed_error(); }
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const {
+    plumed_error();
+  }
   void performAnalysis();
 };
 
@@ -67,11 +69,12 @@ void OutputPCAProjection::registerKeywords( Keywords& keys ) {
 OutputPCAProjection::OutputPCAProjection( const ActionOptions& ao ):
   Action(ao),
   analysis::AnalysisBase(ao),
-  fmt("%f")
-{
+  fmt("%f") {
   // Setup the PCA object
   mypca = dynamic_cast<PCA*>( my_input_data );
-  if( !mypca ) error("input must be a PCA object");
+  if( !mypca ) {
+    error("input must be a PCA object");
+  }
 
   // Get setup the pdb
   mypdb.setAtomNumbers( my_input_data->getAtomIndexes() );
@@ -79,10 +82,18 @@ OutputPCAProjection::OutputPCAProjection( const ActionOptions& ao ):
 
   // Find a moldata object
   auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
-  if( moldat ) warning("PDB output files do not have atom types unless you use MOLDATA");
+  if( moldat ) {
+    warning("PDB output files do not have atom types unless you use MOLDATA");
+  }
 
-  parse("FILE",filename); parse("FMT",fmt);
-  if( !getRestart() ) { OFile ofile; ofile.link(*this); ofile.setBackupString("analysis"); ofile.backupAllFiles(filename); }
+  parse("FILE",filename);
+  parse("FMT",fmt);
+  if( !getRestart() ) {
+    OFile ofile;
+    ofile.link(*this);
+    ofile.setBackupString("analysis");
+    ofile.backupAllFiles(filename);
+  }
   log.printf("  printing data to file named %s \n",filename.c_str() );
 }
 
@@ -90,20 +101,33 @@ void OutputPCAProjection::performAnalysis() {
   // Find a moldata object
   auto* mymoldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   // Output the embedding in plumed pdb format
-  OFile afile; afile.link(*this); afile.setBackupString("analysis");
+  OFile afile;
+  afile.link(*this);
+  afile.setBackupString("analysis");
   mypdb.setAtomPositions( (mypca->myref)->getReferencePositions() );
-  for(unsigned j=0; j<mypca->getArguments().size(); ++j) mypdb.setArgumentValue( (mypca->getArguments()[j])->getName(), (mypca->myref)->getReferenceArgument(j) );
+  for(unsigned j=0; j<mypca->getArguments().size(); ++j) {
+    mypdb.setArgumentValue( (mypca->getArguments()[j])->getName(), (mypca->myref)->getReferenceArgument(j) );
+  }
   // And output the first frame
-  afile.open( filename ); afile.printf("REMARK TYPE=%s \n", mypca->mtype.c_str() );
-  if( plumed.getAtoms().usingNaturalUnits() ) mypdb.print( 1.0, mymoldat, afile, fmt );
-  else mypdb.print( atoms.getUnits().getLength()/0.1, mymoldat, afile, fmt );
+  afile.open( filename );
+  afile.printf("REMARK TYPE=%s \n", mypca->mtype.c_str() );
+  if( plumed.getAtoms().usingNaturalUnits() ) {
+    mypdb.print( 1.0, mymoldat, afile, fmt );
+  } else {
+    mypdb.print( atoms.getUnits().getLength()/0.1, mymoldat, afile, fmt );
+  }
   // And now output the eigenvectors
   for(unsigned dim=0; dim<mypca->nlow; ++dim) {
     afile.printf("REMARK TYPE=DIRECTION \n");
     mypdb.setAtomPositions( mypca->directions[dim].getReferencePositions() );
-    for(unsigned j=0; j<mypca->getArguments().size(); ++j) mypdb.setArgumentValue( (mypca->getArguments()[j])->getName(), mypca->directions[dim].getReferenceArgument(j) );
-    if( plumed.getAtoms().usingNaturalUnits() ) mypdb.print( 1.0, mymoldat, afile, fmt );
-    else mypdb.print( atoms.getUnits().getLength()/0.1, mymoldat, afile, fmt );
+    for(unsigned j=0; j<mypca->getArguments().size(); ++j) {
+      mypdb.setArgumentValue( (mypca->getArguments()[j])->getName(), mypca->directions[dim].getReferenceArgument(j) );
+    }
+    if( plumed.getAtoms().usingNaturalUnits() ) {
+      mypdb.print( 1.0, mymoldat, afile, fmt );
+    } else {
+      mypdb.print( atoms.getUnits().getLength()/0.1, mymoldat, afile, fmt );
+    }
   }
   afile.close();
 }

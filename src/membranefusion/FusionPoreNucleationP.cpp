@@ -27,10 +27,8 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 #endif
 
-namespace PLMD
-{
-namespace membranefusion
-{
+namespace PLMD {
+namespace membranefusion {
 //+PLUMEDOC MEMBRANEFUSIONMOD_COLVAR FUSIONPORENUCLEATIONP
 /*
 A CV for inducing the nucleation of the fusion pore from a hemifusion stalk.
@@ -74,8 +72,7 @@ PRINT ARG=fusionPoreNucleation FILE=COLVAR STRIDE=1
 
 */
 //+ENDPLUMEDOC
-class fusionPoreNucleationP : public Colvar
-{
+class fusionPoreNucleationP : public Colvar {
   std::vector<AtomNumber> UMEM, LMEM, TAILS, WATERS, POXYGENS;
   std::vector<double> NSMEM, DSMEM, HMEM, NS, DS, HCH, RCYL, ZETA, ONEOVERS2C2CUTOFF, XCYL, YCYL;
 
@@ -87,8 +84,7 @@ public:
 
 PLUMED_REGISTER_ACTION(fusionPoreNucleationP, "FUSIONPORENUCLEATIONP")
 
-void fusionPoreNucleationP::registerKeywords(Keywords &keys)
-{
+void fusionPoreNucleationP::registerKeywords(Keywords &keys) {
   Colvar::registerKeywords(keys);
   keys.add("atoms", "UMEMBRANE", "all the beads of the upper membrane.");
   keys.add("atoms", "LMEMBRANE", "all the beads of the lower membrane.");
@@ -108,111 +104,130 @@ void fusionPoreNucleationP::registerKeywords(Keywords &keys)
   keys.add("optional", "YCYL", "X coordinate of the fixed cylinder, if not present this will be calculated.");
 }
 
-fusionPoreNucleationP::fusionPoreNucleationP(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao)
-{
+fusionPoreNucleationP::fusionPoreNucleationP(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao) {
   parseAtomList("UMEMBRANE", UMEM);
-  if (UMEM.size() == 0)
+  if (UMEM.size() == 0) {
     error("UMEMBRANE has not any atom specified.");
+  }
 
   parseAtomList("LMEMBRANE", LMEM);
-  if (LMEM.size() == 0)
+  if (LMEM.size() == 0) {
     error("LMEMBRANE has not any atom specified.");
+  }
 
   parseAtomList("TAILS", TAILS);
-  if (TAILS.size() == 0)
+  if (TAILS.size() == 0) {
     error("TAILS has not any atom specified.");
+  }
 
   parseAtomList("WATERS", WATERS);
-  if (WATERS.size() == 0)
+  if (WATERS.size() == 0) {
     error("WATERS has not any atom specified.");
+  }
 
   parseAtomList("PHOSPHATEOXYGENS", POXYGENS);
-  if (POXYGENS.size() == 0)
+  if (POXYGENS.size() == 0) {
     error("PHOSPHATEOXYGENS has not any atom specified.");
+  }
 
   parseVector("NSMEM", NSMEM);
-  if (NSMEM.size() > 1)
+  if (NSMEM.size() > 1) {
     error("NSMEM cannot take more than one value.");
+  }
 
   parseVector("DSMEM", DSMEM);
-  if (DSMEM.size() > 1)
+  if (DSMEM.size() > 1) {
     error("DSMEM cannot take more than one value.");
-  if (DSMEM.size() == 0)
+  }
+  if (DSMEM.size() == 0) {
     DSMEM.push_back(0.1);
+  }
 
   parseVector("HMEM", HMEM);
-  if (HMEM.size() > 1)
+  if (HMEM.size() > 1) {
     error("HMEM cannot take more than one value.");
-  if (HMEM.size() == 0)
+  }
+  if (HMEM.size() == 0) {
     HMEM.push_back(0.25);
+  }
 
   parseVector("NS", NS);
-  if (NS.size() > 1)
+  if (NS.size() > 1) {
     error("NS cannot take more than one value.");
+  }
 
   parseVector("DS", DS);
-  if (DS.size() > 1)
+  if (DS.size() > 1) {
     error("DS cannot take more than one value.");
-  if (DS.size() == 0)
+  }
+  if (DS.size() == 0) {
     DS.push_back(0.25);
+  }
 
   parseVector("HCH", HCH);
-  if (HCH.size() > 1)
+  if (HCH.size() > 1) {
     error("H cannot take more than one value.");
-  if (HCH.size() == 0)
+  }
+  if (HCH.size() == 0) {
     HCH.push_back(0.25);
+  }
 
   parseVector("RCYL", RCYL);
-  if (RCYL.size() > 1)
+  if (RCYL.size() > 1) {
     error("RCYL cannot take more than one value.");
-  if (RCYL.size() == 0)
+  }
+  if (RCYL.size() == 0) {
     RCYL.push_back(0.8);
+  }
 
   parseVector("ZETA", ZETA);
-  if (ZETA.size() > 1)
+  if (ZETA.size() > 1) {
     error("ZETA cannot take more than one value.");
-  if (ZETA.size() == 0)
+  }
+  if (ZETA.size() == 0) {
     ZETA.push_back(0.75);
+  }
 
   parseVector("ONEOVERS2C2CUTOFF", ONEOVERS2C2CUTOFF);
-  if (ONEOVERS2C2CUTOFF.size() > 1)
+  if (ONEOVERS2C2CUTOFF.size() > 1) {
     error("ONEOVERS2C2CUTOFF cannot take more than one value.");
-  if (ONEOVERS2C2CUTOFF.size() == 0)
+  }
+  if (ONEOVERS2C2CUTOFF.size() == 0) {
     ONEOVERS2C2CUTOFF.push_back(500);
+  }
 
   parseVector("XCYL", XCYL);
-  if (XCYL.size() > 1)
+  if (XCYL.size() > 1) {
     error("XCYL cannot take more than one value.");
-  if (XCYL.size() == 0)
+  }
+  if (XCYL.size() == 0) {
     XCYL.push_back(-1.0);
+  }
 
   parseVector("YCYL", YCYL);
-  if (YCYL.size() > 1)
+  if (YCYL.size() > 1) {
     error("YCYL cannot take more than one value.");
-  if (YCYL.size() == 0)
+  }
+  if (YCYL.size() == 0) {
     YCYL.push_back(-1.0);
+  }
 
   checkRead();
 
   std::vector<AtomNumber> atoms;
-  for (unsigned i = 0; i < UMEM.size(); i++)
-  {
+  for (unsigned i = 0; i < UMEM.size(); i++) {
     atoms.push_back(UMEM[i]);
   }
-  for (unsigned i = 0; i < LMEM.size(); i++)
-  {
+  for (unsigned i = 0; i < LMEM.size(); i++) {
     atoms.push_back(LMEM[i]);
   }
-  for (unsigned i = 0; i < TAILS.size(); i++)
-  {
+  for (unsigned i = 0; i < TAILS.size(); i++) {
     atoms.push_back(TAILS[i]);
   }
-  for (unsigned i = 0; i < WATERS.size(); i++)
-  {
+  for (unsigned i = 0; i < WATERS.size(); i++) {
     atoms.push_back(WATERS[i]);
   }
-  for (unsigned i = 0; i < POXYGENS.size(); i++)
-  {
+  for (unsigned i = 0; i < POXYGENS.size(); i++) {
     atoms.push_back(POXYGENS[i]);
   }
 
@@ -221,8 +236,7 @@ fusionPoreNucleationP::fusionPoreNucleationP(const ActionOptions &ao) : PLUMED_C
   requestAtoms(atoms);
 }
 
-void fusionPoreNucleationP::calculate()
-{
+void fusionPoreNucleationP::calculate() {
   /*************************
   *                        *
   *         System         *
@@ -240,8 +254,7 @@ void fusionPoreNucleationP::calculate()
   #pragma omp parallel for private(uMemAngle, lMemAngle) reduction(+:ZuMemcos, ZuMemsin, ZlMemcos, ZlMemsin)
 #endif
 #endif
-  for (unsigned i = 0; i < UMEM.size(); i++)
-  {
+  for (unsigned i = 0; i < UMEM.size(); i++) {
     uMemAngle = 2.0 * M_PI * getPbc().realToScaled(pbcDistance(Vector(0.0, 0.0, 0.0), getPosition(i)))[2];
     lMemAngle = 2.0 * M_PI * getPbc().realToScaled(pbcDistance(Vector(0.0, 0.0, 0.0), getPosition(i + UMEM.size())))[2];
     ZuMemcos += cos(uMemAngle);
@@ -320,48 +333,36 @@ void fusionPoreNucleationP::calculate()
   #pragma omp parallel for private(ZTailDistance, PositionS_Mem, s1_Mem, s2_Mem, TailPosition, x, aux) reduction(vec_double_plus:Fs_Mem, sx_Mem, sy_Mem, cx_Mem, cy_Mem)
 #endif
 #endif
-  for (unsigned i = 0; i < TAILS.size(); i++)
-  {
+  for (unsigned i = 0; i < TAILS.size(); i++) {
     ZTailDistance = pbcDistance(Vector(0.0, 0.0, ZMems), getPosition(i + membraneBeads))[2];
     PositionS_Mem = (ZTailDistance + firstSliceZDist_Mem) / DSMEM[0];
     // If the following condition is met the particle is in the Z space of the cylinder.
-    if ((PositionS_Mem >= (-0.5 - HMEM[0])) && (PositionS_Mem <= (NSMEM[0] + 0.5 - 1.0 + HMEM[0])))
-    {
+    if ((PositionS_Mem >= (-0.5 - HMEM[0])) && (PositionS_Mem <= (NSMEM[0] + 0.5 - 1.0 + HMEM[0]))) {
       //Defining the slices to analyze each particle.
-      if (PositionS_Mem < 1)
-      {
+      if (PositionS_Mem < 1) {
         s1_Mem = 0;
         s2_Mem = 2;
-      }
-      else if (PositionS_Mem <= (NSMEM[0] - 2.0))
-      {
+      } else if (PositionS_Mem <= (NSMEM[0] - 2.0)) {
         s1_Mem = floor(PositionS_Mem) - 1;
         s2_Mem = floor(PositionS_Mem) + 1;
-      }
-      else
-      {
+      } else {
         s1_Mem = NSMEM[0] - 3;
         s2_Mem = NSMEM[0] - 1;
       }
 
       TailPosition = getPbc().realToScaled(pbcDistance(Vector(0.0, 0.0, 0.0), getPosition(i + membraneBeads)));
 
-      for (unsigned s = s1_Mem; s <= s2_Mem; s++)
-      {
+      for (unsigned s = s1_Mem; s <= s2_Mem; s++) {
         x = (ZTailDistance - (s + 0.5 - NSMEM[0] / 2.0) * DSMEM[0]) * 2.0 / DSMEM[0];
-        if (!((x <= -1.0 - HMEM[0]) || (x >= 1.0 + HMEM[0])))
-        {
-          if (((-1.0 + HMEM[0]) <= x) && (x <= (1.0 - HMEM[0])))
-          {
+        if (!((x <= -1.0 - HMEM[0]) || (x >= 1.0 + HMEM[0]))) {
+          if (((-1.0 + HMEM[0]) <= x) && (x <= (1.0 - HMEM[0]))) {
             faxial_Mem[i + TAILS.size() * s] = 1.0;
             Fs_Mem[s] += 1.0;
             sx_Mem[s] += sin(2.0 * M_PI * TailPosition[0]);
             sy_Mem[s] += sin(2.0 * M_PI * TailPosition[1]);
             cx_Mem[s] += cos(2.0 * M_PI * TailPosition[0]);
             cy_Mem[s] += cos(2.0 * M_PI * TailPosition[1]);
-          }
-          else if (((1.0 - HMEM[0]) < x) && (x < (1.0 + HMEM[0])))
-          {
+          } else if (((1.0 - HMEM[0]) < x) && (x < (1.0 + HMEM[0]))) {
             aux = 0.5 - ((3.0 * x - 3.0) / (4.0 * HMEM[0])) + (pow((x - 1.0), 3) / (4.0 * pow(HMEM[0], 3)));
             faxial_Mem[i + TAILS.size() * s] = aux;
             Fs_Mem[s] += aux;
@@ -369,9 +370,7 @@ void fusionPoreNucleationP::calculate()
             sy_Mem[s] += aux * sin(2.0 * M_PI * TailPosition[1]);
             cx_Mem[s] += aux * cos(2.0 * M_PI * TailPosition[0]);
             cy_Mem[s] += aux * cos(2.0 * M_PI * TailPosition[1]);
-          }
-          else if (((-1.0 - HMEM[0]) < x) && (x < (-1.0 + HMEM[0])))
-          {
+          } else if (((-1.0 - HMEM[0]) < x) && (x < (-1.0 + HMEM[0]))) {
             aux = 0.5 + ((3.0 * x + 3.0) / (4.0 * HMEM[0])) - (pow((x + 1.0), 3) / (4.0 * pow(HMEM[0], 3)));
             faxial_Mem[i + TAILS.size() * s] = aux;
             Fs_Mem[s] += aux;
@@ -385,10 +384,8 @@ void fusionPoreNucleationP::calculate()
     }
   }
 
-  for (unsigned s = 0; s < NSMEM[0]; s++)
-  {
-    if (Fs_Mem[s] != 0.0)
-    {
+  for (unsigned s = 0; s < NSMEM[0]; s++) {
+    if (Fs_Mem[s] != 0.0) {
       ws_Mem[s] = tanh(Fs_Mem[s]);
       W_Mem += ws_Mem[s];
       sx_Mem[s] = sx_Mem[s] / Fs_Mem[s];
@@ -410,13 +407,10 @@ void fusionPoreNucleationP::calculate()
   // Eq. 12 Hub & Awasthi JCTC 2017.
   double Xcyl_Mem, Ycyl_Mem;
 
-  if ((XCYL[0] > 0.0) && (YCYL[0] > 0.0))
-  {
+  if ((XCYL[0] > 0.0) && (YCYL[0] > 0.0)) {
     Xcyl_Mem = XCYL[0];
     Ycyl_Mem = YCYL[0];
-  }
-  else
-  {
+  } else {
     Xcyl_Mem = (atan2(-Xsc_Mem, -Xcc_Mem) + M_PI) * Lx / (2 * M_PI);
     Ycyl_Mem = (atan2(-Ysc_Mem, -Ycc_Mem) + M_PI) * Ly / (2 * M_PI);
   }
@@ -495,57 +489,44 @@ void fusionPoreNucleationP::calculate()
   #pragma omp parallel for private(distCylinder, aux, condition1, condition2, condition3, ZMemDistance, PositionS, Position, x) reduction(vec_double_plus:Fs, sx, sy, cx, cy)
 #endif
 #endif
-  for (unsigned i = 0; i < chainBeads; i++)
-{
+  for (unsigned i = 0; i < chainBeads; i++) {
   distCylinder = pbcDistance(xyzCyl_Mem, pbcDistance(Vector(0.0, 0.0, 0.0), getPosition(i + noChainBeads)));
     aux = sqrt(pow(distCylinder[0], 2) + pow(distCylinder[1], 2));
     condition1 = ((aux / RCYLAVERAGE) < 1.0);
     condition2 = ((pbcDistance(Vector(0.0, 0.0, ZuMem), getPosition(i + noChainBeads))[2] > 0) && (aux / RCYLAVERAGE) < 2.0);
     condition3 = ((pbcDistance(getPosition(i + noChainBeads), Vector(0.0, 0.0, ZlMem))[2] > 0) && (aux / RCYLAVERAGE) < 2.0);
-    if (condition1 || condition2 || condition3)
-    {
+    if (condition1 || condition2 || condition3) {
       ZMemDistance = pbcDistance(Vector(0.0, 0.0, ZMems), getPosition(i + noChainBeads))[2];
       PositionS = (ZMemDistance + firstSliceZDist) / DS[0];
       // If the following condition is met the particle is in the Z space of the cylinder.
-      if ((PositionS >= (-0.5 - HCH[0])) && (PositionS <= (NS[0] + 0.5 - 1.0 + HCH[0])))
-      {
+      if ((PositionS >= (-0.5 - HCH[0])) && (PositionS <= (NS[0] + 0.5 - 1.0 + HCH[0]))) {
         analyzeThisParticle[i] = 1.0;
 
         //Defining the slices to analyze each particle.
-        if (PositionS < 1)
-        {
+        if (PositionS < 1) {
           s1[i] = 0;
           s2[i] = 2;
-        }
-        else if (PositionS <= (NS[0] - 2.0))
-        {
+        } else if (PositionS <= (NS[0] - 2.0)) {
           s1[i] = floor(PositionS) - 1;
           s2[i] = floor(PositionS) + 1;
-        }
-        else
-        {
+        } else {
           s1[i] = NS[0] - 3;
           s2[i] = NS[0] - 1;
         }
 
         Position = getPbc().realToScaled(pbcDistance(Vector(0.0, 0.0, 0.0), getPosition(i + noChainBeads)));
 
-        for (unsigned s = s1[i]; s <= s2[i]; s++)
-        {
+        for (unsigned s = s1[i]; s <= s2[i]; s++) {
           x = (ZMemDistance - (s + 0.5 - NS[0] / 2.0) * DS[0]) * 2.0 / DS[0];
-          if (!((x <= -1.0 - HCH[0]) || (x >= 1.0 + HCH[0])))
-          {
-            if (((-1.0 + HCH[0]) <= x) && (x <= (1.0 - HCH[0])))
-            {
+          if (!((x <= -1.0 - HCH[0]) || (x >= 1.0 + HCH[0]))) {
+            if (((-1.0 + HCH[0]) <= x) && (x <= (1.0 - HCH[0]))) {
               faxial[i + chainBeads * s] = 1.0;
               Fs[s] += 1.0;
               sx[s] += sin(2.0 * M_PI * Position[0]);
               sy[s] += sin(2.0 * M_PI * Position[1]);
               cx[s] += cos(2.0 * M_PI * Position[0]);
               cy[s] += cos(2.0 * M_PI * Position[1]);
-            }
-            else if (((1.0 - HCH[0]) < x) && (x < (1.0 + HCH[0])))
-            {
+            } else if (((1.0 - HCH[0]) < x) && (x < (1.0 + HCH[0]))) {
               aux = 0.5 - ((3.0 * x - 3.0) / (4.0 * HCH[0])) + (pow((x - 1.0), 3) / (4.0 * pow(HCH[0], 3)));
               faxial[i + chainBeads * s] = aux;
               d_faxial_dz[i + chainBeads * s] = ((-3.0 / (4.0 * HCH[0])) + ((3.0 * pow((x - 1), 2)) / (4.0 * pow(HCH[0], 3)))) * 2.0 / DS[0];
@@ -554,9 +535,7 @@ void fusionPoreNucleationP::calculate()
               sy[s] += aux * sin(2.0 * M_PI * Position[1]);
               cx[s] += aux * cos(2.0 * M_PI * Position[0]);
               cy[s] += aux * cos(2.0 * M_PI * Position[1]);
-            }
-            else if (((-1.0 - HCH[0]) < x) && (x < (-1.0 + HCH[0])))
-            {
+            } else if (((-1.0 - HCH[0]) < x) && (x < (-1.0 + HCH[0]))) {
               aux = 0.5 + ((3.0 * x + 3.0) / (4.0 * HCH[0])) - (pow((x + 1.0), 3) / (4.0 * pow(HCH[0], 3)));
               faxial[i + chainBeads * s] = aux;
               d_faxial_dz[i + chainBeads * s] = ((3.0 / (4.0 * HCH[0])) - ((3.0 * pow((x + 1), 2)) / (4.0 * pow(HCH[0], 3)))) * 2.0 / DS[0];
@@ -572,10 +551,8 @@ void fusionPoreNucleationP::calculate()
     }
   }
 
-  for (unsigned s = 0; s < NS[0]; s++)
-  {
-    if (Fs[s] != 0.0)
-    {
+  for (unsigned s = 0; s < NS[0]; s++) {
+    if (Fs[s] != 0.0) {
       ws[s] = tanh(Fs[s]);
       W += ws[s];
       sx[s] = sx[s] / Fs[s];
@@ -630,21 +607,15 @@ void fusionPoreNucleationP::calculate()
   // To avoid rare instabilities auxX and auxY are truncated at a configurable value (default 500).
   double auxX = (1 / (pow(Xsc, 2) + pow(Xcc, 2))), auxY = (1 / (pow(Ysc, 2) + pow(Ycc, 2)));
 
-  if (auxX > ONEOVERS2C2CUTOFF[0])
-  {
+  if (auxX > ONEOVERS2C2CUTOFF[0]) {
     auxX = Lx * ONEOVERS2C2CUTOFF[0] / (2 * M_PI);
-  }
-  else
-  {
+  } else {
     auxX = Lx * auxX / (2 * M_PI);
   }
 
-  if (auxY > ONEOVERS2C2CUTOFF[0])
-  {
+  if (auxY > ONEOVERS2C2CUTOFF[0]) {
     auxY = Ly * ONEOVERS2C2CUTOFF[0] / (2 * M_PI);
-  }
-  else
-  {
+  } else {
     auxY = Ly * auxY / (2 * M_PI);
   }
 
@@ -665,11 +636,9 @@ void fusionPoreNucleationP::calculate()
   #pragma omp parallel for private(d_Xsc_dx,d_Xcc_dx,d_Ysc_dy,d_Ycc_dy,d_Xsc_dz,d_Xcc_dz,d_Ysc_dz,d_Ycc_dz,d_sx_dx,d_sy_dy,d_cx_dx,d_cy_dy,d_sx_dz,d_sy_dz,d_cx_dz,d_cy_dz,d_ws_dz,ri,x,fradial) reduction(vec_double_plus: Nsp, Axs, Ays)
 #endif
 #endif
-  for (unsigned i = 0; i < chainBeads; i++)
-{
+  for (unsigned i = 0; i < chainBeads; i++) {
   CylDistances[i] = pbcDistance(xyzCyl, pbcDistance(Vector(0.0, 0.0, 0.0), getPosition(i + noChainBeads)));
-    if (analyzeThisParticle[i])
-    {
+    if (analyzeThisParticle[i]) {
       Position = getPbc().realToScaled(pbcDistance(Vector(0.0, 0.0, 0.0), getPosition(i + noChainBeads)));
       d_Xsc_dx = 0.0;
       d_Xcc_dx = 0.0;
@@ -679,10 +648,8 @@ void fusionPoreNucleationP::calculate()
       d_Xcc_dz = 0.0;
       d_Ysc_dz = 0.0;
       d_Ycc_dz = 0.0;
-      for (unsigned s = s1[i]; s <= s2[i]; s++)
-      {
-        if (Fs[s] != 0.0)
-        {
+      for (unsigned s = s1[i]; s <= s2[i]; s++) {
+        if (Fs[s] != 0.0) {
           d_sx_dx = faxial[i + chainBeads * s] * 2.0 * M_PI * cos(2.0 * M_PI * Position[0]) / (Lx * Fs[s]);
           d_sy_dy = faxial[i + chainBeads * s] * 2.0 * M_PI * cos(2.0 * M_PI * Position[1]) / (Ly * Fs[s]);
           d_cx_dx = -faxial[i + chainBeads * s] * 2.0 * M_PI * sin(2.0 * M_PI * Position[0]) / (Lx * Fs[s]);
@@ -710,27 +677,20 @@ void fusionPoreNucleationP::calculate()
 
       ri = sqrt(pow(CylDistances[i][0], 2) + pow(CylDistances[i][1], 2));
       x = ri / RCYL[0];
-      if (!((x <= -1.0 - HCH[0]) || (x >= 1.0 + HCH[0])))
-      {
-        if (((-1.0 + HCH[0]) <= x) && (x <= (1.0 - HCH[0])))
-        {
+      if (!((x <= -1.0 - HCH[0]) || (x >= 1.0 + HCH[0]))) {
+        if (((-1.0 + HCH[0]) <= x) && (x <= (1.0 - HCH[0]))) {
           fradial = 1.0;
-        }
-        else if (((1.0 - HCH[0]) < x) && (x < (1.0 + HCH[0])))
-        {
+        } else if (((1.0 - HCH[0]) < x) && (x < (1.0 + HCH[0]))) {
           fradial = 0.5 - ((3.0 * x - 3.0) / (4.0 * HCH[0])) + (pow((x - 1.0), 3) / (4.0 * pow(HCH[0], 3)));
           d_fradial_dx[i] = ((-3.0 / (4.0 * HCH[0])) + ((3.0 * pow((x - 1), 2)) / (4.0 * pow(HCH[0], 3)))) * CylDistances[i][0] / (RCYL[0] * ri);
           d_fradial_dy[i] = ((-3.0 / (4.0 * HCH[0])) + ((3.0 * pow((x - 1), 2)) / (4.0 * pow(HCH[0], 3)))) * CylDistances[i][1] / (RCYL[0] * ri);
-        }
-        else if (((-1.0 - HCH[0]) < x) && (x < (-1.0 + HCH[0])))
-        {
+        } else if (((-1.0 - HCH[0]) < x) && (x < (-1.0 + HCH[0]))) {
           fradial = 0.5 + ((3.0 * x + 3.0) / (4.0 * HCH[0])) - (pow((x + 1.0), 3) / (4.0 * pow(HCH[0], 3)));
           d_fradial_dx[i] = ((3.0 / (4.0 * HCH[0])) - ((3.0 * pow((x + 1), 2)) / (4.0 * pow(HCH[0], 3)))) * CylDistances[i][0] / (RCYL[0] * ri);
           d_fradial_dy[i] = ((3.0 / (4.0 * HCH[0])) - ((3.0 * pow((x + 1), 2)) / (4.0 * pow(HCH[0], 3)))) * CylDistances[i][1] / (RCYL[0] * ri);
         }
 
-        for (unsigned s = s1[i]; s <= s2[i]; s++)
-        {
+        for (unsigned s = s1[i]; s <= s2[i]; s++) {
           Nsp[s] += fradial * faxial[i + chainBeads * s];
           Axs[s] += faxial[i + chainBeads * s] * d_fradial_dx[i];
           Ays[s] += faxial[i + chainBeads * s] * d_fradial_dy[i];
@@ -740,16 +700,12 @@ void fusionPoreNucleationP::calculate()
     }
   }
 
-  for (unsigned s = 0; s < NS[0]; s++)
-  {
-    if (Nsp[s] <= 1.0)
-    {
+  for (unsigned s = 0; s < NS[0]; s++) {
+    if (Nsp[s] <= 1.0) {
       psi[s] = ZETA[0] * Nsp[s];
       d_psi[s] = ZETA[0];
       Xi_n += psi[s];
-    }
-    else
-    {
+    } else {
       psi[s] = 1.0 - c * exp(-b * Nsp[s]);
       d_psi[s] = b * c * exp(-b * Nsp[s]);
       Xi_n += psi[s];
@@ -769,22 +725,17 @@ void fusionPoreNucleationP::calculate()
   #pragma omp parallel for private(aux)
 #endif
 #endif
-  for (unsigned i = 0; i < chainBeads; i++)
-{
-  if (analyzeThisParticle[i])
-    {
-      for (unsigned s = s1[i]; s <= s2[i]; s++)
-      {
-        if (faxial[i + chainBeads * s])
-        {
+  for (unsigned i = 0; i < chainBeads; i++) {
+  if (analyzeThisParticle[i]) {
+      for (unsigned s = s1[i]; s <= s2[i]; s++) {
+        if (faxial[i + chainBeads * s]) {
           faxial_d_fradial_dx[i + chainBeads * s] = faxial[i + chainBeads * s] * d_fradial_dx[i] - d_Xcyl_dx[i] * Axs[s];
           faxial_d_fradial_dy[i + chainBeads * s] = faxial[i + chainBeads * s] * d_fradial_dy[i] - d_Ycyl_dy[i] * Ays[s];
           faxial_d_fradial_dz[i + chainBeads * s] = -d_Xcyl_dz[i] * Axs[s] - d_Ycyl_dz[i] * Ays[s];
         }
       }
 
-      for (unsigned s = s1[i]; s <= s2[i]; s++)
-      {
+      for (unsigned s = s1[i]; s <= s2[i]; s++) {
         aux = d_psi[s] / NS[0];
         derivatives_Chain[i][0] += aux * faxial_d_fradial_dx[i + chainBeads * s];
         derivatives_Chain[i][1] += aux * faxial_d_fradial_dy[i + chainBeads * s];
@@ -794,8 +745,7 @@ void fusionPoreNucleationP::calculate()
   }
 
   Tensor virial;
-  for (unsigned i = 0; i < chainBeads; i++)
-{
+  for (unsigned i = 0; i < chainBeads; i++) {
   setAtomsDerivatives((i + noChainBeads), derivatives_Chain[i]);
     virial -= Tensor(CylDistances[i], derivatives_Chain[i]);
   }

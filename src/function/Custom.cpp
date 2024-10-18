@@ -160,8 +160,7 @@ progression (S) and distance (Z) variables \cite perez2015atp.
 
 
 class Custom :
-  public Function
-{
+  public Function {
   lepton::CompiledExpression expression;
   std::vector<lepton::CompiledExpression> expression_deriv;
   std::vector<std::string> var;
@@ -212,7 +211,8 @@ PLUMED_REGISTER_ACTION(Custom,"MATHEVAL")
 
 void Custom::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
-  keys.use("ARG"); keys.use("PERIODIC");
+  keys.use("ARG");
+  keys.use("PERIODIC");
   keys.add("compulsory","FUNC","the function you wish to evaluate");
   keys.add("optional","VAR","the names to give each of the arguments in the function.  If you have up to three arguments in your function you can use x, y and z to refer to them.  Otherwise you must use this flag to give your variables names.");
 }
@@ -224,26 +224,35 @@ Custom::Custom(const ActionOptions&ao):
   values(getNumberOfArguments()),
   names(getNumberOfArguments()),
   lepton_ref(getNumberOfArguments(),nullptr),
-  lepton_ref_deriv(getNumberOfArguments()*getNumberOfArguments(),nullptr)
-{
+  lepton_ref_deriv(getNumberOfArguments()*getNumberOfArguments(),nullptr) {
   parseVector("VAR",var);
   if(var.size()==0) {
     var.resize(getNumberOfArguments());
-    if(getNumberOfArguments()>3)
+    if(getNumberOfArguments()>3) {
       error("Using more than 3 arguments you should explicitly write their names with VAR");
-    if(var.size()>0) var[0]="x";
-    if(var.size()>1) var[1]="y";
-    if(var.size()>2) var[2]="z";
+    }
+    if(var.size()>0) {
+      var[0]="x";
+    }
+    if(var.size()>1) {
+      var[1]="y";
+    }
+    if(var.size()>2) {
+      var[2]="z";
+    }
   }
-  if(var.size()!=getNumberOfArguments())
+  if(var.size()!=getNumberOfArguments()) {
     error("Size of VAR array should be the same as number of arguments");
+  }
   parse("FUNC",func);
   addValueWithDerivatives();
   checkRead();
 
   log.printf("  with function : %s\n",func.c_str());
   log.printf("  with variables :");
-  for(unsigned i=0; i<var.size(); i++) log.printf(" %s",var[i].c_str());
+  for(unsigned i=0; i<var.size(); i++) {
+    log.printf(" %s",var[i].c_str());
+  }
   log.printf("\n");
 
   lepton::ParsedExpression pe=lepton::Parser::parse(func).optimize(lepton::Constants());
@@ -283,12 +292,16 @@ Custom::Custom(const ActionOptions&ao):
 
 void Custom::calculate() {
   for(unsigned i=0; i<getNumberOfArguments(); i++) {
-    if(lepton_ref[i]) *lepton_ref[i]=getArgument(i);
+    if(lepton_ref[i]) {
+      *lepton_ref[i]=getArgument(i);
+    }
   }
   setValue(expression.evaluate());
   for(unsigned i=0; i<getNumberOfArguments(); i++) {
     for(unsigned j=0; j<getNumberOfArguments(); j++) {
-      if(lepton_ref_deriv[i*getNumberOfArguments()+j]) *lepton_ref_deriv[i*getNumberOfArguments()+j]=getArgument(j);
+      if(lepton_ref_deriv[i*getNumberOfArguments()+j]) {
+        *lepton_ref_deriv[i*getNumberOfArguments()+j]=getArgument(j);
+      }
     }
     setDerivative(i,expression_deriv[i].evaluate());
   }

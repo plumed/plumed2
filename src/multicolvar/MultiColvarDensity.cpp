@@ -97,7 +97,9 @@ public:
   explicit MultiColvarDensity(const ActionOptions&);
   static void registerKeywords( Keywords& keys );
   unsigned getNumberOfQuantities() const override;
-  bool isPeriodic() override { return false; }
+  bool isPeriodic() override {
+    return false;
+  }
   void clearAverage() override;
   void prepareForAveraging() override;
   void compute( const unsigned&, MultiValue& ) const override;
@@ -133,101 +135,166 @@ void MultiColvarDensity::registerKeywords( Keywords& keys ) {
 
 MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
   Action(ao),
-  ActionWithGrid(ao)
-{
+  ActionWithGrid(ao) {
   std::vector<AtomNumber> atom;
   parseAtomList("ORIGIN",atom);
-  if( atom.size()!=1 ) error("should only be one atom specified");
+  if( atom.size()!=1 ) {
+    error("should only be one atom specified");
+  }
   log.printf("  origin is at position of atom : %d\n",atom[0].serial() );
 
-  std::string mlab; parse("DATA",mlab);
+  std::string mlab;
+  parse("DATA",mlab);
   mycolv = plumed.getActionSet().selectWithLabel<MultiColvarBase*>(mlab);
-  if(!mycolv) error("action labelled " +  mlab + " does not exist or is not a MultiColvar");
+  if(!mycolv) {
+    error("action labelled " +  mlab + " does not exist or is not a MultiColvar");
+  }
   stash = mycolv->buildDataStashes( NULL );
 
   parseFlag("FRACTIONAL",fractional);
-  std::string direction; parse("DIR",direction);
+  std::string direction;
+  parse("DIR",direction);
   log.printf("  calculating for %s density profile along ", mycolv->getLabel().c_str() );
   if( direction=="x" ) {
     log.printf("x axis");
-    directions.resize(1); directions[0]=0;
+    directions.resize(1);
+    directions[0]=0;
   } else if( direction=="y" ) {
     log.printf("y axis");
-    directions.resize(1); directions[0]=1;
+    directions.resize(1);
+    directions[0]=1;
   } else if( direction=="z" ) {
     log.printf("z axis");
-    directions.resize(1); directions[0]=2;
+    directions.resize(1);
+    directions[0]=2;
   } else if( direction=="xy" ) {
     log.printf("x and y axes");
-    directions.resize(2); directions[0]=0; directions[1]=1;
+    directions.resize(2);
+    directions[0]=0;
+    directions[1]=1;
   } else if( direction=="xz" ) {
     log.printf("x and z axes");
-    directions.resize(2); directions[0]=0; directions[1]=2;
+    directions.resize(2);
+    directions[0]=0;
+    directions[1]=2;
   } else if( direction=="yz" ) {
     log.printf("y and z axis");
-    directions.resize(2); directions[0]=1; directions[1]=2;
+    directions.resize(2);
+    directions[0]=1;
+    directions[1]=2;
   } else if( direction=="xyz" ) {
     log.printf("x, y and z axes");
-    directions.resize(3); directions[0]=0; directions[1]=1; directions[2]=2;
+    directions.resize(3);
+    directions[0]=0;
+    directions[1]=1;
+    directions[2]=2;
   } else {
     error( direction + " is not valid gradient direction");
   }
   log.printf(" for colvars calculated by action %s \n",mycolv->getLabel().c_str() );
-  parseVector("NBINS",nbins); parseVector("SPACING",gspacing);
-  if( nbins.size()!=directions.size() && gspacing.size()!=directions.size() ) error("NBINS or SPACING must be set");
+  parseVector("NBINS",nbins);
+  parseVector("SPACING",gspacing);
+  if( nbins.size()!=directions.size() && gspacing.size()!=directions.size() ) {
+    error("NBINS or SPACING must be set");
+  }
 
-  confined.resize( directions.size() ); cmin.resize( directions.size(), 0 ); cmax.resize( directions.size(), 0 );
+  confined.resize( directions.size() );
+  cmin.resize( directions.size(), 0 );
+  cmax.resize( directions.size(), 0 );
   for(unsigned i=0; i<directions.size(); ++i) {
     if( directions[i]==0 ) {
-      bool tflag; parseFlag("XREDUCED",tflag); confined[i]=tflag;
+      bool tflag;
+      parseFlag("XREDUCED",tflag);
+      confined[i]=tflag;
       if( confined[i] ) {
-        cmin[i]=cmax[i]=0.0; parse("XLOWER",cmin[i]); parse("XUPPER",cmax[i]);
-        if( fractional ) error("XREDUCED is incompatible with FRACTIONAL");
-        if( std::abs(cmin[i]-cmax[i])<epsilon ) error("range set for x axis makes no sense");
+        cmin[i]=cmax[i]=0.0;
+        parse("XLOWER",cmin[i]);
+        parse("XUPPER",cmax[i]);
+        if( fractional ) {
+          error("XREDUCED is incompatible with FRACTIONAL");
+        }
+        if( std::abs(cmin[i]-cmax[i])<epsilon ) {
+          error("range set for x axis makes no sense");
+        }
         log.printf("  confining calculation in x direction to between %f and %f \n",cmin[i],cmax[i]);
       }
     } else if( directions[i]==1 ) {
-      bool tflag; parseFlag("YREDUCED",tflag); confined[i]=tflag;
+      bool tflag;
+      parseFlag("YREDUCED",tflag);
+      confined[i]=tflag;
       if( confined[i] ) {
-        cmin[i]=cmax[i]=0.0; parse("YLOWER",cmin[i]); parse("YUPPER",cmax[i]);
-        if( fractional ) error("YREDUCED is incompatible with FRACTIONAL");
-        if( std::abs(cmin[i]-cmax[i])<epsilon ) error("range set for y axis makes no sense");
+        cmin[i]=cmax[i]=0.0;
+        parse("YLOWER",cmin[i]);
+        parse("YUPPER",cmax[i]);
+        if( fractional ) {
+          error("YREDUCED is incompatible with FRACTIONAL");
+        }
+        if( std::abs(cmin[i]-cmax[i])<epsilon ) {
+          error("range set for y axis makes no sense");
+        }
         log.printf("  confining calculation in y direction to between %f and %f \n",cmin[i],cmax[i]);
       }
     } else if( directions[i]==2 ) {
-      bool tflag; parseFlag("ZREDUCED",tflag); confined[i]=tflag;
+      bool tflag;
+      parseFlag("ZREDUCED",tflag);
+      confined[i]=tflag;
       if( confined[i] ) {
-        cmin[i]=cmax[i]=0.0; parse("ZLOWER",cmin[i]); parse("ZUPPER",cmax[i]);
-        if( fractional ) error("ZREDUCED is incompatible with FRACTIONAL");
-        if( std::abs(cmin[i]-cmax[i])<epsilon ) error("range set for z axis search makes no sense");
+        cmin[i]=cmax[i]=0.0;
+        parse("ZLOWER",cmin[i]);
+        parse("ZUPPER",cmax[i]);
+        if( fractional ) {
+          error("ZREDUCED is incompatible with FRACTIONAL");
+        }
+        if( std::abs(cmin[i]-cmax[i])<epsilon ) {
+          error("range set for z axis search makes no sense");
+        }
         log.printf("  confining calculation in z direction to between %f and %f \n",cmin[i],cmax[i]);
       }
     }
   }
 
   std::string vstring;
-  if( confined[0] ) vstring +="PBC=F";
-  else vstring += " PBC=T";
+  if( confined[0] ) {
+    vstring +="PBC=F";
+  } else {
+    vstring += " PBC=T";
+  }
   for(unsigned i=1; i<directions.size(); ++i) {
-    if( confined[i] ) vstring += ",F";
-    else vstring += ",T";
+    if( confined[i] ) {
+      vstring += ",F";
+    } else {
+      vstring += ",T";
+    }
   }
   vstring +=" COMPONENTS=" + mycolv->getLabel() + ".dens";
   vstring +=" COORDINATES=";
-  if( directions[0]==0 ) vstring+="x";
-  else if( directions[0]==1 ) vstring+="y";
-  else if( directions[0]==2 ) vstring+="z";
+  if( directions[0]==0 ) {
+    vstring+="x";
+  } else if( directions[0]==1 ) {
+    vstring+="y";
+  } else if( directions[0]==2 ) {
+    vstring+="z";
+  }
   for(unsigned i=1; i<directions.size(); ++i) {
-    if( directions[i]==0 ) vstring+=",x";
-    else if( directions[i]==1 ) vstring+=",y";
-    else if( directions[i]==2 ) vstring+=",z";
+    if( directions[i]==0 ) {
+      vstring+=",x";
+    } else if( directions[i]==1 ) {
+      vstring+=",y";
+    } else if( directions[i]==2 ) {
+      vstring+=",z";
+    }
   }
   // Create a task list
-  for(unsigned i=0; i<mycolv->getFullNumberOfTasks(); ++i) addTaskToList(i);
+  for(unsigned i=0; i<mycolv->getFullNumberOfTasks(); ++i) {
+    addTaskToList(i);
+  }
   // And create the grid
   std::unique_ptr<gridtools::GridVessel> grid;
-  if( mycolv->isDensity() ) grid=createGrid( "histogram", vstring );
-  else grid=createGrid( "average", vstring );
+  if( mycolv->isDensity() ) {
+    grid=createGrid( "histogram", vstring );
+  } else {
+    grid=createGrid( "average", vstring );
+  }
   // cppcheck-suppress danglingLifetime
   mygrid=grid.get();
   // And finish the grid setup
@@ -235,11 +302,15 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
 
   // Enusre units for cube files are set correctly
   if( !fractional ) {
-    if( plumed.getAtoms().usingNaturalUnits() ) mygrid->setCubeUnits( 1.0/0.5292 );
-    else mygrid->setCubeUnits( plumed.getAtoms().getUnits().getLength()/.05929 );
+    if( plumed.getAtoms().usingNaturalUnits() ) {
+      mygrid->setCubeUnits( 1.0/0.5292 );
+    } else {
+      mygrid->setCubeUnits( plumed.getAtoms().getUnits().getLength()/.05929 );
+    }
   }
 
-  checkRead(); requestAtoms(atom);
+  checkRead();
+  requestAtoms(atom);
   // Stupid dependencies cleared by requestAtoms - why GBussi why? That's got me so many times
   addDependency( mycolv );
 }
@@ -251,7 +322,10 @@ unsigned MultiColvarDensity::getNumberOfQuantities() const {
 void MultiColvarDensity::clearAverage() {
   std::vector<double> min(directions.size()), max(directions.size());
   std::vector<std::string> gmin(directions.size()), gmax(directions.size());;
-  for(unsigned i=0; i<directions.size(); ++i) { min[i]=-0.5; max[i]=0.5; }
+  for(unsigned i=0; i<directions.size(); ++i) {
+    min[i]=-0.5;
+    max[i]=0.5;
+  }
   if( !fractional ) {
     if( !mycolv->getPbc().isOrthorombic() ) {
       error("I think that density profiles with non-orthorhombic cells don't work.  If you want it have a look and see if you can work it out");
@@ -262,35 +336,55 @@ void MultiColvarDensity::clearAverage() {
         min[i]*=mycolv->getBox()(directions[i],directions[i]);
         max[i]*=mycolv->getBox()(directions[i],directions[i]);
       } else {
-        min[i]=cmin[i]; max[i]=cmax[i];
+        min[i]=cmin[i];
+        max[i]=cmax[i];
       }
     }
   }
-  for(unsigned i=0; i<directions.size(); ++i) { Tools::convert(min[i],gmin[i]); Tools::convert(max[i],gmax[i]); }
+  for(unsigned i=0; i<directions.size(); ++i) {
+    Tools::convert(min[i],gmin[i]);
+    Tools::convert(max[i],gmax[i]);
+  }
   ActionWithAveraging::clearAverage();
-  mygrid->setBounds( gmin, gmax, nbins, gspacing ); resizeFunctions();
+  mygrid->setBounds( gmin, gmax, nbins, gspacing );
+  resizeFunctions();
 }
 
 void MultiColvarDensity::prepareForAveraging() {
   for(unsigned i=0; i<directions.size(); ++i) {
-    if( confined[i] ) continue;
-    std::string max; Tools::convert( 0.5*mycolv->getBox()(directions[i],directions[i]), max );
-    if( max!=mygrid->getMax()[i] ) error("box size should be fixed.  Use FRACTIONAL");
+    if( confined[i] ) {
+      continue;
+    }
+    std::string max;
+    Tools::convert( 0.5*mycolv->getBox()(directions[i],directions[i]), max );
+    if( max!=mygrid->getMax()[i] ) {
+      error("box size should be fixed.  Use FRACTIONAL");
+    }
   }
   // Ensure we only work with active multicolvars
   deactivateAllTasks();
-  for(unsigned i=0; i<stash->getNumberOfStoredValues(); ++i) taskFlags[i]=1;
+  for(unsigned i=0; i<stash->getNumberOfStoredValues(); ++i) {
+    taskFlags[i]=1;
+  }
   lockContributors();
   // Retrieve the origin
   origin = getPosition(0);
 }
 
 void MultiColvarDensity::compute( const unsigned& current, MultiValue& myvals ) const {
-  std::vector<double> cvals( mycolv->getNumberOfQuantities() ); stash->retrieveSequentialValue( current, false, cvals );
+  std::vector<double> cvals( mycolv->getNumberOfQuantities() );
+  stash->retrieveSequentialValue( current, false, cvals );
   Vector fpos, apos = pbcDistance( origin, mycolv->getCentralAtomPos( mycolv->getPositionInFullTaskList(current) ) );
-  if( fractional ) { fpos = getPbc().realToScaled( apos ); } else { fpos=apos; }
+  if( fractional ) {
+    fpos = getPbc().realToScaled( apos );
+  } else {
+    fpos=apos;
+  }
 
-  myvals.setValue( 0, cweight*cvals[0] ); for(unsigned j=0; j<directions.size(); ++j) myvals.setValue( 1+j, fpos[ directions[j] ] );
+  myvals.setValue( 0, cweight*cvals[0] );
+  for(unsigned j=0; j<directions.size(); ++j) {
+    myvals.setValue( 1+j, fpos[ directions[j] ] );
+  }
   myvals.setValue( 1+directions.size(), cvals[1] );
 }
 

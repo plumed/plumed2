@@ -107,19 +107,28 @@ void ClusterWithSurface::registerKeywords( Keywords& keys ) {
 
 ClusterWithSurface::ClusterWithSurface(const ActionOptions&ao):
   Action(ao),
-  ClusteringBase(ao)
-{
+  ClusteringBase(ao) {
   std::vector<AtomNumber> fake_atoms;
-  if( !parseMultiColvarAtomList("CLUSTERS",-1,fake_atoms ) ) error("unable to find CLUSTERS input");
-  if( mybasemulticolvars.size()!=1 ) error("should be exactly one multicolvar input");
+  if( !parseMultiColvarAtomList("CLUSTERS",-1,fake_atoms ) ) {
+    error("unable to find CLUSTERS input");
+  }
+  if( mybasemulticolvars.size()!=1 ) {
+    error("should be exactly one multicolvar input");
+  }
 
   // Retrieve the adjacency matrix of interest
-  atom_lab.resize(0); myclusters = dynamic_cast<ClusteringBase*>( mybasemulticolvars[0] );
-  if( !myclusters ) error( mybasemulticolvars[0]->getLabel() + " does not calculate clusters");
+  atom_lab.resize(0);
+  myclusters = dynamic_cast<ClusteringBase*>( mybasemulticolvars[0] );
+  if( !myclusters ) {
+    error( mybasemulticolvars[0]->getLabel() + " does not calculate clusters");
+  }
 
   // Setup switching function for surface atoms
-  double rcut_surf; parse("RCUT_SURF",rcut_surf);
-  if( rcut_surf>0 ) log.printf("  counting surface atoms that are within %f of the cluster atoms \n",rcut_surf);
+  double rcut_surf;
+  parse("RCUT_SURF",rcut_surf);
+  if( rcut_surf>0 ) {
+    log.printf("  counting surface atoms that are within %f of the cluster atoms \n",rcut_surf);
+  }
   rcut_surf2=rcut_surf*rcut_surf;
 
   // And now finish the setup of everything in the base
@@ -152,35 +161,51 @@ unsigned ClusterWithSurface::getNumberOfQuantities() const {
 
 double  ClusterWithSurface::getCutoffForConnection() const {
   double tcut = myclusters->getCutoffForConnection();
-  if( tcut>std::sqrt(rcut_surf2) ) return tcut;
+  if( tcut>std::sqrt(rcut_surf2) ) {
+    return tcut;
+  }
   return std::sqrt(rcut_surf2);
 }
 
 void ClusterWithSurface::retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const {
-  std::vector<unsigned> tmpat; myclusters->retrieveAtomsInCluster( clust, tmpat );
+  std::vector<unsigned> tmpat;
+  myclusters->retrieveAtomsInCluster( clust, tmpat );
 
   // Prevent double counting
   std::vector<bool> incluster( getNumberOfNodes(), false );
-  for(unsigned i=0; i<tmpat.size(); ++i) incluster[tmpat[i]]=true;
+  for(unsigned i=0; i<tmpat.size(); ++i) {
+    incluster[tmpat[i]]=true;
+  }
 
   // Find the atoms in the the clusters
   std::vector<bool> surface_atom( getNumberOfNodes(), false );
   for(unsigned i=0; i<tmpat.size(); ++i) {
     for(unsigned j=0; j<getNumberOfNodes(); ++j) {
-      if( incluster[j] ) continue;
+      if( incluster[j] ) {
+        continue;
+      }
       double dist2=getSeparation( getPosition(tmpat[i]), getPosition(j) ).modulo2();
-      if( dist2<rcut_surf2 ) { surface_atom[j]=true; }
+      if( dist2<rcut_surf2 ) {
+        surface_atom[j]=true;
+      }
     }
   }
   unsigned nsurf_at=0;
   for(unsigned j=0; j<getNumberOfNodes(); ++j) {
-    if( surface_atom[j] ) nsurf_at++;
+    if( surface_atom[j] ) {
+      nsurf_at++;
+    }
   }
   myatoms.resize( nsurf_at + tmpat.size() );
-  for(unsigned i=0; i<tmpat.size(); ++i) myatoms[i]=tmpat[i];
+  for(unsigned i=0; i<tmpat.size(); ++i) {
+    myatoms[i]=tmpat[i];
+  }
   unsigned nn=tmpat.size();
   for(unsigned j=0; j<getNumberOfNodes(); ++j) {
-    if( surface_atom[j] ) { myatoms[nn]=j; nn++; }
+    if( surface_atom[j] ) {
+      myatoms[nn]=j;
+      nn++;
+    }
   }
   plumed_assert( nn==myatoms.size() );
 }

@@ -82,21 +82,26 @@ Restraint::Restraint(const ActionOptions&ao):
   PLUMED_BIAS_INIT(ao),
   at(getNumberOfArguments()),
   kappa(getNumberOfArguments(),0.0),
-  slope(getNumberOfArguments(),0.0)
-{
+  slope(getNumberOfArguments(),0.0) {
   parseVector("SLOPE",slope);
   parseVector("KAPPA",kappa);
   parseVector("AT",at);
   checkRead();
 
   log.printf("  at");
-  for(unsigned i=0; i<at.size(); i++) log.printf(" %f",at[i]);
+  for(unsigned i=0; i<at.size(); i++) {
+    log.printf(" %f",at[i]);
+  }
   log.printf("\n");
   log.printf("  with harmonic force constant");
-  for(unsigned i=0; i<kappa.size(); i++) log.printf(" %f",kappa[i]);
+  for(unsigned i=0; i<kappa.size(); i++) {
+    log.printf(" %f",kappa[i]);
+  }
   log.printf("\n");
   log.printf("  and linear force constant");
-  for(unsigned i=0; i<slope.size(); i++) log.printf(" %f",slope[i]);
+  for(unsigned i=0; i<slope.size(); i++) {
+    log.printf(" %f",slope[i]);
+  }
   log.printf("\n");
 
   addComponent("force2");

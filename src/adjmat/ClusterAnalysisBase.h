@@ -50,7 +50,9 @@ public:
   void turnOnDerivatives() override;
   void setupActiveTaskSet( std::vector<unsigned>& active_tasks, const std::string& input_label ) {}
   Vector getPositionOfAtomForLinkCells( const unsigned& ) const override;
-  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const override { plumed_error(); }
+  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const override {
+    plumed_error();
+  }
 };
 
 }

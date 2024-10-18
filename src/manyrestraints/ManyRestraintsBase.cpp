@@ -41,8 +41,7 @@ ManyRestraintsBase::ManyRestraintsBase(const ActionOptions& ao):
   ActionWithValue(ao),
   ActionPilot(ao),
   ActionWithVessel(ao),
-  ActionWithInputVessel(ao)
-{
+  ActionWithInputVessel(ao) {
   // Read in the vessel we are action on
   readArgument("bridge");
   aves=dynamic_cast<ActionWithVessel*>( getDependencies()[0] );
@@ -52,9 +51,12 @@ ManyRestraintsBase::ManyRestraintsBase(const ActionOptions& ao):
              aves->getName().c_str(),aves->getLabel().c_str());
 
   // Add a task list in order to avoid problems
-  for(unsigned i=0; i<aves->getFullNumberOfTasks(); ++i) addTaskToList( aves->getTaskCode(i) );
+  for(unsigned i=0; i<aves->getFullNumberOfTasks(); ++i) {
+    addTaskToList( aves->getTaskCode(i) );
+  }
   // And turn on the derivatives (note problems here because of ActionWithValue)
-  turnOnDerivatives(); needsDerivatives();
+  turnOnDerivatives();
+  needsDerivatives();
 
   // Now create the vessel
   std::string fake_input="LABEL=bias";
@@ -81,7 +83,9 @@ void ManyRestraintsBase::transformBridgedDerivatives( const unsigned& current, M
 
   // Now update the outvals derivatives lists
   outvals.emptyActiveMembers();
-  for(unsigned j=0; j<invals.getNumberActive(); ++j) outvals.updateIndex( invals.getActiveIndex(j) );
+  for(unsigned j=0; j<invals.getNumberActive(); ++j) {
+    outvals.updateIndex( invals.getActiveIndex(j) );
+  }
   outvals.completeUpdate();
   return;
 }

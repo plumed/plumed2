@@ -57,8 +57,7 @@ CoeffsMatrix::CoeffsMatrix(
   diagonal_(diagonal),
   averaging_counter(0),
   averaging_exp_decay_(0),
-  mycomm(cc)
-{
+  mycomm(cc) {
   setupMatrix();
 }
 
@@ -78,8 +77,7 @@ CoeffsMatrix::CoeffsMatrix(
   diagonal_(diagonal),
   averaging_counter(0),
   averaging_exp_decay_(0),
-  mycomm(cc)
-{
+  mycomm(cc) {
   setupMatrix();
 }
 
@@ -100,8 +98,7 @@ CoeffsMatrix::CoeffsMatrix(
   diagonal_(diagonal),
   averaging_counter(0),
   averaging_exp_decay_(0),
-  mycomm(cc)
-{
+  mycomm(cc) {
   setupMatrix();
 }
 
@@ -119,8 +116,7 @@ CoeffsMatrix::CoeffsMatrix(
   diagonal_(diagonal),
   averaging_counter(0),
   averaging_exp_decay_(0),
-  mycomm(cc)
-{
+  mycomm(cc) {
   setLabels(label);
   setupMatrix();
 }
@@ -134,8 +130,7 @@ void CoeffsMatrix::setupMatrix() {
   ncolumns_=nrows_;
   if(diagonal_) {
     size_=nrows_;
-  }
-  else {
+  } else {
     size_=(nrows_*nrows_-nrows_)/2+nrows_;
   }
   clear();
@@ -204,11 +199,9 @@ size_t CoeffsMatrix::getMatrixIndex(const size_t index1, const size_t index2) co
   if(diagonal_) {
     // plumed_massert(index1==index2,"CoeffsMatrix: you trying to access a off-diagonal element of a diagonal coeffs matrix");
     matrix_idx=index1;
-  }
-  else if (index1<=index2) {
+  } else if (index1<=index2) {
     matrix_idx=index2+index1*(nrows_-1)-index1*(index1-1)/2;
-  }
-  else {
+  } else {
     matrix_idx=index1+index2*(nrows_-1)-index2*(index2-1)/2;
   }
   return matrix_idx;
@@ -279,8 +272,7 @@ CoeffsVector operator*(const CoeffsMatrix& coeffs_matrix, const CoeffsVector& co
     for(size_t i=0; i<numcoeffs; i++) {
       new_coeffs_vector(i) = coeffs_matrix(i,i)*coeffs_vector(i);
     }
-  }
-  else {
+  } else {
     for(size_t i=0; i<numcoeffs; i++) {
       for(size_t j=0; j<numcoeffs; j++) {
         new_coeffs_vector(i) += coeffs_matrix(i,j)*coeffs_vector(j);
@@ -572,7 +564,9 @@ double CoeffsMatrix::getMaxValue() const {
 
 void CoeffsMatrix::randomizeValuesGaussian(int randomSeed) {
   Random rnd;
-  if (randomSeed<0) {randomSeed = -randomSeed;}
+  if (randomSeed<0) {
+    randomSeed = -randomSeed;
+  }
   rnd.setSeed(-randomSeed);
   for(size_t i=0; i<data.size(); i++) {
     data[i]=rnd.Gaussian();
@@ -611,11 +605,12 @@ void CoeffsMatrix::writeToFile(const std::string& filepath, const bool append_fi
   OFile file;
   if(action_pntr!=NULL) {
     file.link(*action_pntr);
-  }
-  else {
+  } else {
     file.link(mycomm);
   }
-  if(append_file) { file.enforceRestart(); }
+  if(append_file) {
+    file.enforceRestart();
+  }
   file.open(filepath);
   writeToFile(file);
   file.close();
@@ -641,8 +636,7 @@ void CoeffsMatrix::writeHeaderToFile(OFile& ofile) {
 void CoeffsMatrix::writeDataToFile(OFile& ofile) {
   if(diagonal_) {
     writeDataDiagonalToFile(ofile);
-  }
-  else {
+  } else {
     writeDataFullToFile(ofile);
   }
 }
@@ -671,7 +665,8 @@ void CoeffsMatrix::writeDataDiagonalToFile(OFile& ofile) {
       ofile.printField(ilabels[k],s1.data());
     }
     ofile.fmtField(" "+getOutputFmt()).printField(field_coeffs,getValue(i,i));
-    std::snprintf(s1.data(),s1.size(),int_fmt.c_str(),i); ofile.printField(field_index,s1.data());
+    std::snprintf(s1.data(),s1.size(),int_fmt.c_str(),i);
+    ofile.printField(field_index,s1.data());
     ofile.printField();
   }
   ofile.fmtField();

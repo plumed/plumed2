@@ -193,8 +193,7 @@ void Q4::registerKeywords( Keywords& keys ) {
 
 Q4::Q4(const ActionOptions& ao ):
   Action(ao),
-  Steinhardt(ao)
-{
+  Steinhardt(ao) {
   setAngularMomentum(4);
 
   normaliz.resize( 5 );
@@ -205,8 +204,10 @@ Q4::Q4(const ActionOptions& ao ):
   normaliz[4] = sqrt( (9.0*1) / (4.0*pi*40320.0) );
 
   coeff_poly.resize( 5 );
-  coeff_poly[0]=0.375; coeff_poly[1]=0.0;
-  coeff_poly[2]=-3.75; coeff_poly[3]=0.0;
+  coeff_poly[0]=0.375;
+  coeff_poly[1]=0.0;
+  coeff_poly[2]=-3.75;
+  coeff_poly[3]=0.0;
   coeff_poly[4]=4.375;
 }
 

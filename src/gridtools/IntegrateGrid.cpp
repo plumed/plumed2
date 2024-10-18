@@ -49,13 +49,15 @@ void IntegrateGrid::registerKeywords( Keywords& keys ) {
 
 IntegrateGrid::IntegrateGrid(const ActionOptions&ao):
   Action(ao),
-  ActionWithIntegral(ao)
-{
+  ActionWithIntegral(ao) {
 }
 
 void IntegrateGrid::compute( const unsigned& current, MultiValue& myvals ) const {
-  myvals.setValue( 0, 1.0 ); myvals.setValue( 1, getVolume()*getFunctionValue( current ) );
-  if( !doNotCalculateDerivatives() ) myvals.addDerivative( 1, current, getVolume() );
+  myvals.setValue( 0, 1.0 );
+  myvals.setValue( 1, getVolume()*getFunctionValue( current ) );
+  if( !doNotCalculateDerivatives() ) {
+    myvals.addDerivative( 1, current, getVolume() );
+  }
 }
 
 }

@@ -47,8 +47,7 @@ create(n), where n is the actual size of MD-reals e.g.
   std::unique_ptr<MDAtomsBase> mdatoms=MDAtomsBase::create(sizeof(float));
 \endverbatim
 */
-class MDAtomsBase
-{
+class MDAtomsBase {
 public:
 /// Creates an MDAtomsTyped<T> object such that sizeof(T)==n
   static std::unique_ptr<MDAtomsBase> create(unsigned n);

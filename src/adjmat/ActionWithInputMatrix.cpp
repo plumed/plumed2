@@ -38,25 +38,38 @@ void ActionWithInputMatrix::registerKeywords( Keywords& keys ) {
 ActionWithInputMatrix::ActionWithInputMatrix(const ActionOptions& ao):
   Action(ao),
   MultiColvarBase(ao),
-  mymatrix(NULL)
-{
+  mymatrix(NULL) {
   matsums=true;
   if( keywords.exists("MATRIX") ) {
     std::vector<AtomNumber> fake_atoms;
-    if( !parseMultiColvarAtomList("MATRIX",-1,fake_atoms ) ) error("unable to interpret input matrix");
-    if( mybasemulticolvars.size()!=1 ) error("should be exactly one matrix input");
+    if( !parseMultiColvarAtomList("MATRIX",-1,fake_atoms ) ) {
+      error("unable to interpret input matrix");
+    }
+    if( mybasemulticolvars.size()!=1 ) {
+      error("should be exactly one matrix input");
+    }
 
     // Retrieve the adjacency matrix of interest
     for(unsigned i=0; i<mybasemulticolvars[0]->getNumberOfVessels(); ++i) {
       mymatrix = dynamic_cast<AdjacencyMatrixVessel*>( mybasemulticolvars[0]->getPntrToVessel(i) );
-      if( mymatrix ) break ;
+      if( mymatrix ) {
+        break ;
+      }
     }
-    if( !mymatrix ) error( mybasemulticolvars[0]->getLabel() + " does not calculate an adjacency matrix");
+    if( !mymatrix ) {
+      error( mybasemulticolvars[0]->getLabel() + " does not calculate an adjacency matrix");
+    }
 
-    atom_lab.resize(0); unsigned nnodes; // Delete all the atom labels that have been created
-    if( mymatrix->undirectedGraph() ) nnodes = (mymatrix->function)->ablocks[0].size();
-    else nnodes = (mymatrix->function)->ablocks[0].size() + (mymatrix->function)->ablocks[1].size();
-    for(unsigned i=0; i<nnodes; ++i) atom_lab.push_back( std::pair<unsigned,unsigned>( 1, i ) );
+    atom_lab.resize(0);
+    unsigned nnodes; // Delete all the atom labels that have been created
+    if( mymatrix->undirectedGraph() ) {
+      nnodes = (mymatrix->function)->ablocks[0].size();
+    } else {
+      nnodes = (mymatrix->function)->ablocks[0].size() + (mymatrix->function)->ablocks[1].size();
+    }
+    for(unsigned i=0; i<nnodes; ++i) {
+      atom_lab.push_back( std::pair<unsigned,unsigned>( 1, i ) );
+    }
   }
 }
 
@@ -77,7 +90,9 @@ AtomNumber ActionWithInputMatrix::getAbsoluteIndexOfCentralAtom(const unsigned& 
 }
 
 double ActionWithInputMatrix::retrieveConnectionValue( const unsigned& i, const unsigned& j, std::vector<double>& vals ) const {
-  if( !mymatrix->matrixElementIsActive( i, j ) ) return 0;
+  if( !mymatrix->matrixElementIsActive( i, j ) ) {
+    return 0;
+  }
   unsigned myelem = mymatrix->getStoreIndexFromMatrixIndices( i, j );
 
   // unsigned vi; double df;
@@ -87,18 +102,24 @@ double ActionWithInputMatrix::retrieveConnectionValue( const unsigned& i, const 
 
 void ActionWithInputMatrix::getInputData( const unsigned& ind, const bool& normed, const multicolvar::AtomValuePack& myatoms, std::vector<double>& orient0 ) const {
   if( (mymatrix->function)->mybasemulticolvars.size()==0  ) {
-    std::vector<double> tvals( mymatrix->getNumberOfComponents() ); orient0.assign(orient0.size(),0);
+    std::vector<double> tvals( mymatrix->getNumberOfComponents() );
+    orient0.assign(orient0.size(),0);
     for(unsigned i=0; i<mymatrix->getNumberOfColumns(); ++i) {
-      if( mymatrix->undirectedGraph() && ind==i ) continue;
+      if( mymatrix->undirectedGraph() && ind==i ) {
+        continue;
+      }
       orient0[1]+=retrieveConnectionValue( ind, i, tvals );
     }
-    orient0[0]=1.0; return;
+    orient0[0]=1.0;
+    return;
   }
   (mymatrix->function)->getInputData( ind, normed, myatoms, orient0 );
 }
 
 void ActionWithInputMatrix::addConnectionDerivatives( const unsigned& i, const unsigned& j, MultiValue& myvals, MultiValue& myvout ) const {
-  if( !mymatrix->matrixElementIsActive( i, j ) ) return;
+  if( !mymatrix->matrixElementIsActive( i, j ) ) {
+    return;
+  }
   unsigned myelem = mymatrix->getStoreIndexFromMatrixIndices( i, j );
   // Get derivatives and add
   mymatrix->retrieveDerivatives( myelem, false, myvals );
@@ -117,22 +138,29 @@ MultiValue& ActionWithInputMatrix::getInputDerivatives( const unsigned& ind, con
     myder.clearAll();
     MultiValue myvals( (mymatrix->function)->getNumberOfQuantities(), (mymatrix->function)->getNumberOfDerivatives() );
     for(unsigned i=0; i<mymatrix->getNumberOfColumns(); ++i) {
-      if( mymatrix->undirectedGraph() && ind==i ) continue;
+      if( mymatrix->undirectedGraph() && ind==i ) {
+        continue;
+      }
       addConnectionDerivatives( ind, i, myvals, myder );
     }
-    myder.updateDynamicList(); return myder;
+    myder.updateDynamicList();
+    return myder;
   }
   return (mymatrix->function)->getInputDerivatives( ind, normed, myatoms );
 }
 
 unsigned ActionWithInputMatrix::getNumberOfNodeTypes() const {
   unsigned size = (mymatrix->function)->mybasemulticolvars.size();
-  if( size==0 ) return 1;
+  if( size==0 ) {
+    return 1;
+  }
   return size;
 }
 
 unsigned ActionWithInputMatrix::getNumberOfQuantities() const {
-  if( (mymatrix->function)->mybasemulticolvars.size()==0 ) return 2;
+  if( (mymatrix->function)->mybasemulticolvars.size()==0 ) {
+    return 2;
+  }
   return (mymatrix->function)->mybasemulticolvars[0]->getNumberOfQuantities();
 }
 

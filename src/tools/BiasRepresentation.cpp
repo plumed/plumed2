@@ -43,8 +43,7 @@ BiasRepresentation::BiasRepresentation(const std::vector<Value*> & tmpvalues, Co
 
 /// overload the constructor: add the sigma  at constructor time
 BiasRepresentation::BiasRepresentation(const std::vector<Value*> & tmpvalues, Communicator &cc, const std::vector<double> & sigma ):
-  hasgrid(false), rescaledToBias(false), histosigma(sigma),mycomm(cc)
-{
+  hasgrid(false), rescaledToBias(false), histosigma(sigma),mycomm(cc) {
   lowI_=0.0;
   uppI_=0.0;
   doInt_=false;
@@ -58,8 +57,7 @@ BiasRepresentation::BiasRepresentation(const std::vector<Value*> & tmpvalues, Co
 /// overload the constructor: add the grid at constructor time
 BiasRepresentation::BiasRepresentation(const std::vector<Value*> & tmpvalues, Communicator &cc, const std::vector<std::string> & gmin, const std::vector<std::string> & gmax,
                                        const std::vector<unsigned> & nbin, bool doInt, double lowI, double uppI):
-  hasgrid(false), rescaledToBias(false), mycomm(cc)
-{
+  hasgrid(false), rescaledToBias(false), mycomm(cc) {
   ndim=tmpvalues.size();
   for(int i=0; i<ndim; i++) {
     values.push_back(tmpvalues[i]);
@@ -75,8 +73,7 @@ BiasRepresentation::BiasRepresentation(const std::vector<Value*> & tmpvalues, Co
 /// overload the constructor with some external sigmas: needed for histogram
 BiasRepresentation::BiasRepresentation(const std::vector<Value*> & tmpvalues, Communicator &cc, const std::vector<std::string> & gmin, const std::vector<std::string> & gmax,
                                        const std::vector<unsigned> & nbin, const std::vector<double> & sigma):
-  hasgrid(false), rescaledToBias(false),histosigma(sigma),mycomm(cc)
-{
+  hasgrid(false), rescaledToBias(false),histosigma(sigma),mycomm(cc) {
   lowI_=0.0;
   uppI_=0.0;
   doInt_=false;
@@ -92,14 +89,22 @@ BiasRepresentation::BiasRepresentation(const std::vector<Value*> & tmpvalues, Co
 void BiasRepresentation::addGrid(const std::vector<std::string> & gmin, const std::vector<std::string> & gmax, const std::vector<unsigned> & nbin ) {
   plumed_massert(hills.size()==0,"you can set the grid before loading the hills");
   plumed_massert(hasgrid==false,"to build the grid you should not having the grid in this bias representation");
-  std::string ss; ss="file.free";
-  std::vector<Value*> vv; for(unsigned i=0; i<values.size(); i++) vv.push_back(values[i]);
+  std::string ss;
+  ss="file.free";
+  std::vector<Value*> vv;
+  for(unsigned i=0; i<values.size(); i++) {
+    vv.push_back(values[i]);
+  }
   BiasGrid_=Tools::make_unique<Grid>(ss,vv,gmin,gmax,nbin,false,true);
   hasgrid=true;
 }
 
 bool BiasRepresentation::hasSigmaInInput() {
-  if(histosigma.size()==0) {return false;} else {return true;}
+  if(histosigma.size()==0) {
+    return false;
+  } else {
+    return true;
+  }
 }
 
 void BiasRepresentation::setRescaledToBias(bool rescaled) {
@@ -153,14 +158,19 @@ void BiasRepresentation::pushKernel( IFile *ifile ) {
   }
   // the bias factor is not something about the kernels but
   // must be stored to keep the  bias/free energy duality
-  std::string dummy; double dummyd;
+  std::string dummy;
+  double dummyd;
   if(ifile->FieldExist("biasf")) {
     ifile->scanField("biasf",dummy);
     Tools::convert(dummy,dummyd);
-  } else {dummyd=1.0;}
+  } else {
+    dummyd=1.0;
+  }
   biasf.push_back(dummyd);
   // the domain does not pertain to the kernel but to the values here defined
-  std::string mins,maxs,minv,maxv,mini,maxi; mins="min_"; maxs="max_";
+  std::string mins,maxs,minv,maxv,mini,maxi;
+  mins="min_";
+  maxs="max_";
   for(int i=0 ; i<ndim; i++) {
     if(values[i]->isPeriodic()) {
       ifile->scanField(mins+names[i],minv);
@@ -177,24 +187,35 @@ void BiasRepresentation::pushKernel( IFile *ifile ) {
     std::vector<unsigned> nneighb;
     if(doInt_&&(kk->getCenter()[0]+kk->getContinuousSupport()[0] > uppI_ || kk->getCenter()[0]-kk->getContinuousSupport()[0] < lowI_ )) {
       nneighb=BiasGrid_->getNbin();
-    } else nneighb=kk->getSupport(BiasGrid_->getDx());
+    } else {
+      nneighb=kk->getSupport(BiasGrid_->getDx());
+    }
     std::vector<Grid::index_t> neighbors=BiasGrid_->getNeighbors(kk->getCenter(),nneighb);
     std::vector<double> der(ndim);
     std::vector<double> xx(ndim);
     if(mycomm.Get_size()==1) {
       for(unsigned i=0; i<neighbors.size(); ++i) {
         Grid::index_t ineigh=neighbors[i];
-        for(int j=0; j<ndim; ++j) {der[j]=0.0;}
+        for(int j=0; j<ndim; ++j) {
+          der[j]=0.0;
+        }
         BiasGrid_->getPoint(ineigh,xx);
         // assign xx to a new vector of values
-        for(int j=0; j<ndim; ++j) {values[j]->set(xx[j]);}
+        for(int j=0; j<ndim; ++j) {
+          values[j]->set(xx[j]);
+        }
         double bias;
-        if(doInt_) bias=kk->evaluate(values,der,true,doInt_,lowI_,uppI_);
-        else bias=kk->evaluate(values,der,true);
+        if(doInt_) {
+          bias=kk->evaluate(values,der,true,doInt_,lowI_,uppI_);
+        } else {
+          bias=kk->evaluate(values,der,true);
+        }
         if(rescaledToBias) {
           double f=(biasf.back()-1.)/(biasf.back());
           bias*=f;
-          for(int j=0; j<ndim; ++j) {der[j]*=f;}
+          for(int j=0; j<ndim; ++j) {
+            der[j]*=f;
+          }
         }
         BiasGrid_->addValueAndDerivatives(ineigh,bias,der);
       }
@@ -207,23 +228,35 @@ void BiasRepresentation::pushKernel( IFile *ifile ) {
       for(unsigned i=rank; i<neighbors.size(); i+=stride) {
         Grid::index_t ineigh=neighbors[i];
         BiasGrid_->getPoint(ineigh,xx);
-        for(int j=0; j<ndim; ++j) {values[j]->set(xx[j]);}
-        if(doInt_) allbias[i]=kk->evaluate(values,der,true,doInt_,lowI_,uppI_);
-        else allbias[i]=kk->evaluate(values,der,true);
+        for(int j=0; j<ndim; ++j) {
+          values[j]->set(xx[j]);
+        }
+        if(doInt_) {
+          allbias[i]=kk->evaluate(values,der,true,doInt_,lowI_,uppI_);
+        } else {
+          allbias[i]=kk->evaluate(values,der,true);
+        }
         if(rescaledToBias) {
           double f=(biasf.back()-1.)/(biasf.back());
           allbias[i]*=f;
-          for(int j=0; j<ndim; ++j) {tmpder[j]*=f;}
+          for(int j=0; j<ndim; ++j) {
+            tmpder[j]*=f;
+          }
         }
         // this solution with the temporary vector is rather bad, probably better to take
         // a pointer of double as it was in old gaussian
-        for(int j=0; j<ndim; ++j) { allder[ndim*i+j]=tmpder[j]; tmpder[j]=0.;}
+        for(int j=0; j<ndim; ++j) {
+          allder[ndim*i+j]=tmpder[j];
+          tmpder[j]=0.;
+        }
       }
       mycomm.Sum(allbias);
       mycomm.Sum(allder);
       for(unsigned i=0; i<neighbors.size(); ++i) {
         Grid::index_t ineigh=neighbors[i];
-        for(int j=0; j<ndim; ++j) {der[j]=allder[ndim*i+j];}
+        for(int j=0; j<ndim; ++j) {
+          der[j]=allder[ndim*i+j];
+        }
         BiasGrid_->addValueAndDerivatives(ineigh,allbias[i],der);
       }
     }
@@ -242,10 +275,14 @@ Grid* BiasRepresentation::getGridPtr() {
 
 void BiasRepresentation::getMinMaxBin(std::vector<double> &vmin, std::vector<double> &vmax, std::vector<unsigned> &vbin) {
   std::vector<double> ss,cc,binsize;
-  vmin.clear(); vmin.resize(ndim,10.e20);
-  vmax.clear(); vmax.resize(ndim,-10.e20);
-  vbin.clear(); vbin.resize(ndim);
-  binsize.clear(); binsize.resize(ndim,10.e20);
+  vmin.clear();
+  vmin.resize(ndim,10.e20);
+  vmax.clear();
+  vmax.resize(ndim,-10.e20);
+  vbin.clear();
+  vbin.resize(ndim);
+  binsize.clear();
+  binsize.resize(ndim,10.e20);
   int ndiv=10; // adjustable parameter: division per support
   for(unsigned i=0; i<hills.size(); i++) {
     if(histosigma.size()!=0) {
@@ -258,9 +295,15 @@ void BiasRepresentation::getMinMaxBin(std::vector<double> &vmin, std::vector<dou
       double dmin=cc[j]-ss[j];
       double dmax=cc[j]+ss[j];
       double ddiv=ss[j]/double(ndiv);
-      if(dmin<vmin[j])vmin[j]=dmin;
-      if(dmax>vmax[j])vmax[j]=dmax;
-      if(ddiv<binsize[j])binsize[j]=ddiv;
+      if(dmin<vmin[j]) {
+        vmin[j]=dmin;
+      }
+      if(dmax>vmax[j]) {
+        vmax[j]=dmax;
+      }
+      if(ddiv<binsize[j]) {
+        binsize[j]=ddiv;
+      }
     }
   }
   for(int j=0; j<ndim; j++) {
@@ -268,8 +311,12 @@ void BiasRepresentation::getMinMaxBin(std::vector<double> &vmin, std::vector<dou
     if(values[j]->isPeriodic()) {
       double minv,maxv;
       values[j]->getDomain(minv,maxv);
-      if(minv>vmin[j])vmin[j]=minv;
-      if(maxv<vmax[j])vmax[j]=maxv;
+      if(minv>vmin[j]) {
+        vmin[j]=minv;
+      }
+      if(maxv<vmax[j]) {
+        vmax[j]=maxv;
+      }
     }
     vbin[j]=static_cast<unsigned>(std::ceil((vmax[j]-vmin[j])/binsize[j]) );
   }

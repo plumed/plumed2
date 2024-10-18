@@ -32,8 +32,7 @@ AtomValuePack::AtomValuePack( MultiValue& vals, MultiColvarBase const * mcolv ):
   natoms(0),
   indices( vals.getIndices() ),
   sort_vector( vals.getSortIndices() ),
-  myatoms( vals.getAtomVector() )
-{
+  myatoms( vals.getAtomVector() ) {
   if( indices.size()!=mcolv->getNumberOfAtoms() ) {
     indices.resize( mcolv->getNumberOfAtoms() );
     sort_vector.resize( mcolv->getNumberOfAtoms() );
@@ -42,25 +41,40 @@ AtomValuePack::AtomValuePack( MultiValue& vals, MultiColvarBase const * mcolv ):
 }
 
 unsigned AtomValuePack::setupAtomsFromLinkCells( const std::vector<unsigned>& cind, const Vector& cpos, const LinkCells& linkcells ) {
-  if( cells_required.size()!=linkcells.getNumberOfCells() ) cells_required.resize( linkcells.getNumberOfCells() );
+  if( cells_required.size()!=linkcells.getNumberOfCells() ) {
+    cells_required.resize( linkcells.getNumberOfCells() );
+  }
   // Build the list of cells that we need
-  unsigned ncells_required=0; linkcells.addRequiredCells( linkcells.findMyCell( cpos ), ncells_required, cells_required );
+  unsigned ncells_required=0;
+  linkcells.addRequiredCells( linkcells.findMyCell( cpos ), ncells_required, cells_required );
   // Now build the list of atoms we need
-  natoms=cind.size(); for(unsigned i=0; i<natoms; ++i) indices[i]=cind[i];
+  natoms=cind.size();
+  for(unsigned i=0; i<natoms; ++i) {
+    indices[i]=cind[i];
+  }
   linkcells.retrieveAtomsInCells( ncells_required, cells_required, natoms, indices );
 //  linkcells.retrieveNeighboringAtoms( cpos, natoms, indices );
-  for(unsigned i=0; i<natoms; ++i) myatoms[i]=mycolv->getPositionOfAtomForLinkCells( indices[i] ) - cpos;
-  if( mycolv->usesPbc() ) mycolv->applyPbc( myatoms, natoms );
+  for(unsigned i=0; i<natoms; ++i) {
+    myatoms[i]=mycolv->getPositionOfAtomForLinkCells( indices[i] ) - cpos;
+  }
+  if( mycolv->usesPbc() ) {
+    mycolv->applyPbc( myatoms, natoms );
+  }
   return natoms;
 }
 
 void AtomValuePack::updateUsingIndices() {
-  if( myvals.updateComplete() ) return;
+  if( myvals.updateComplete() ) {
+    return;
+  }
 
   unsigned jactive=0;
   for(unsigned i=0; i<natoms; ++i) {
     unsigned base=3*indices[i];
-    if( myvals.isActive( base ) ) { sort_vector[jactive]=indices[i]; jactive++; }
+    if( myvals.isActive( base ) ) {
+      sort_vector[jactive]=indices[i];
+      jactive++;
+    }
   }
   std::sort( sort_vector.begin(), sort_vector.begin()+jactive );
 
@@ -73,7 +87,9 @@ void AtomValuePack::updateUsingIndices() {
   }
   unsigned nvir=3*mycolv->getNumberOfAtoms();
   if( myvals.isActive( nvir ) ) {
-    for(unsigned i=0; i<9; ++i) myvals.putIndexInActiveArray( nvir + i );
+    for(unsigned i=0; i<9; ++i) {
+      myvals.putIndexInActiveArray( nvir + i );
+    }
   }
   myvals.completeUpdate();
 }

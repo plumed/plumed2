@@ -99,21 +99,29 @@ void TopologyMatrix::registerKeywords( Keywords& keys ) {
 TopologyMatrix::TopologyMatrix( const ActionOptions& ao ):
   Action(ao),
   AdjacencyMatrixBase(ao),
-  maxbins(0)
-{
+  maxbins(0) {
   readMaxThreeSpeciesMatrix("NODES", "FAKE", "FAKE", "ATOMS", true );
-  unsigned nrows, ncols, ndonor_types; retrieveTypeDimensions( nrows, ncols, ndonor_types );
-  switchingFunction.resize( nrows, ncols ); parseConnectionDescriptions("SWITCH",false,ndonor_types);
-  cylinder_sw.resize( nrows, ncols ); parseConnectionDescriptions("RADIUS",false,ndonor_types);
-  low_sf.resize( nrows, ncols ); parseConnectionDescriptions("CYLINDER_SWITCH",false,ndonor_types);
-  binw_mat.resize( nrows, ncols ); cell_volume.resize( nrows, ncols );
+  unsigned nrows, ncols, ndonor_types;
+  retrieveTypeDimensions( nrows, ncols, ndonor_types );
+  switchingFunction.resize( nrows, ncols );
+  parseConnectionDescriptions("SWITCH",false,ndonor_types);
+  cylinder_sw.resize( nrows, ncols );
+  parseConnectionDescriptions("RADIUS",false,ndonor_types);
+  low_sf.resize( nrows, ncols );
+  parseConnectionDescriptions("CYLINDER_SWITCH",false,ndonor_types);
+  binw_mat.resize( nrows, ncols );
+  cell_volume.resize( nrows, ncols );
   parseConnectionDescriptions("BIN_SIZE",false,ndonor_types);
   // Read in stuff for grid
-  parse("SIGMA",sigma); parse("KERNEL",kerneltype);
+  parse("SIGMA",sigma);
+  parse("KERNEL",kerneltype);
   // Read in threshold for density cutoff
-  std::string errors, thresh_sw_str; parse("DENSITY_THRESHOLD",thresh_sw_str);
+  std::string errors, thresh_sw_str;
+  parse("DENSITY_THRESHOLD",thresh_sw_str);
   threshold_switch.set(thresh_sw_str, errors );
-  if( errors.length()>0 ) error("errors in DENSITY_THRESHOLD switching function : " + errors );
+  if( errors.length()>0 ) {
+    error("errors in DENSITY_THRESHOLD switching function : " + errors );
+  }
   log.printf("  threshold on density of atoms in cylinder equals %s\n",threshold_switch.description().c_str() );
 
   for(unsigned i=0; i<getNumberOfNodeTypes(); ++i) {
@@ -130,16 +138,24 @@ TopologyMatrix::TopologyMatrix( const ActionOptions& ao ):
   for(unsigned i=0; i<getNumberOfNodeTypes(); ++i) {
     for(unsigned j=0; j<getNumberOfNodeTypes(); ++j) {
       double tsf=switchingFunction(i,j).get_dmax();
-      if( tsf>sfmax ) sfmax=tsf;
+      if( tsf>sfmax ) {
+        sfmax=tsf;
+      }
       double rsf=cylinder_sw(i,j).get_dmax();
-      if( rsf>rfmax ) rfmax=rsf;
+      if( rsf>rfmax ) {
+        rfmax=rsf;
+      }
       double lsf=low_sf(i,j).get_dmax();
-      if( lsf>lsfmax ) lsfmax=lsf;
+      if( lsf>lsfmax ) {
+        lsfmax=lsf;
+      }
     }
   }
   // Get the width of the bead
-  HistogramBead bead; bead.isNotPeriodic();
-  bead.setKernelType( kerneltype ); bead.set( 0.0, 1.0, sigma );
+  HistogramBead bead;
+  bead.isNotPeriodic();
+  bead.setKernelType( kerneltype );
+  bead.set( 0.0, 1.0, sigma );
   beadrad = bead.getCutoff();
 
   // Set the link cell cutoff
@@ -149,7 +165,9 @@ TopologyMatrix::TopologyMatrix( const ActionOptions& ao ):
   double maxsize=0;
   for(unsigned i=0; i<getNumberOfNodeTypes(); ++i) {
     for(unsigned j=0; j<getNumberOfNodeTypes(); ++j) {
-      if( binw_mat(i,j)>maxsize ) maxsize=binw_mat(i,j);
+      if( binw_mat(i,j)>maxsize ) {
+        maxsize=binw_mat(i,j);
+      }
     }
   }
   // Set the maximum number of bins that we will need to compute
@@ -166,55 +184,85 @@ unsigned TopologyMatrix::getNumberOfQuantities() const {
 void TopologyMatrix::setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ) {
   plumed_assert( id<4 );
   if( id==0 ) {
-    std::string errors; switchingFunction(j,i).set(desc[0],errors);
-    if( errors.length()!=0 ) error("problem reading switching function description " + errors);
-    if( j!=i) switchingFunction(i,j).set(desc[0],errors);
+    std::string errors;
+    switchingFunction(j,i).set(desc[0],errors);
+    if( errors.length()!=0 ) {
+      error("problem reading switching function description " + errors);
+    }
+    if( j!=i) {
+      switchingFunction(i,j).set(desc[0],errors);
+    }
     log.printf("  %u th and %u th multicolvar groups must be within %s\n",i+1,j+1,(switchingFunction(i,j).description()).c_str() );
   } else if( id==1 ) {
-    std::string errors; cylinder_sw(j,i).set(desc[0],errors);
-    if( errors.length()!=0 ) error("problem reading switching function description " + errors);
-    if( j!=i) cylinder_sw(i,j).set(desc[0],errors);
+    std::string errors;
+    cylinder_sw(j,i).set(desc[0],errors);
+    if( errors.length()!=0 ) {
+      error("problem reading switching function description " + errors);
+    }
+    if( j!=i) {
+      cylinder_sw(i,j).set(desc[0],errors);
+    }
     log.printf("  there must be not atoms within the cylinder connections atoms of multicolvar groups %u th and %u th.  This cylinder has radius %s \n",i+1,j+1,(cylinder_sw(i,j).description()).c_str() );
   } else if( id==2 ) {
-    std::string errors; low_sf(j,i).set(desc[0],errors);
-    if( errors.length()!=0 ) error("problem reading switching function description " + errors);
-    if( j!=i ) low_sf(i,j).set(desc[0],errors);
+    std::string errors;
+    low_sf(j,i).set(desc[0],errors);
+    if( errors.length()!=0 ) {
+      error("problem reading switching function description " + errors);
+    }
+    if( j!=i ) {
+      low_sf(i,j).set(desc[0],errors);
+    }
     log.printf("  %u th and %u th multicolvar groups must be further apart than %s\n",i+1,j+1,(low_sf(j,i).description()).c_str() );
   } else if( id==3 ) {
     Tools::convert( desc[0], binw_mat(j,i) );
-    if( i!=j ) binw_mat(i,j)=binw_mat(j,i);
+    if( i!=j ) {
+      binw_mat(i,j)=binw_mat(j,i);
+    }
     log.printf("  cylinder for %u th and %u th multicolvar groups is split into bins of length %f \n",i,j,binw_mat(i,j) );
   }
 }
 
 double TopologyMatrix::calculateWeight( const unsigned& taskCode, const double& weight, multicolvar::AtomValuePack& myatoms ) const {
   Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
-  if( distance.modulo2()<switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) ).get_dmax2() ) return 1.0;
+  if( distance.modulo2()<switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) ).get_dmax2() ) {
+    return 1.0;
+  }
   return 0.0;
 }
 
 double TopologyMatrix::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {
-  HistogramBead bead; bead.isNotPeriodic(); bead.setKernelType( kerneltype );
+  HistogramBead bead;
+  bead.isNotPeriodic();
+  bead.setKernelType( kerneltype );
 
   // Initialise to zero density on all bins
-  for(unsigned bin=0; bin<maxbins; ++bin) myatoms.setValue(bin+1,0);
+  for(unsigned bin=0; bin<maxbins; ++bin) {
+    myatoms.setValue(bin+1,0);
+  }
   // Calculate whether or not atoms 1 and 2 are within cutoff (can use delta here as pbc are done in atom setup)
-  Vector d1 = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) ); double d1_len = d1.modulo();
+  Vector d1 = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
+  double d1_len = d1.modulo();
   d1 = d1 / d1_len;  // Convert vector into director
   AtomNumber a1 = myatoms.getAbsoluteIndex( 0 );
   AtomNumber a2 = myatoms.getAbsoluteIndex( 1 );
   for(unsigned i=2; i<myatoms.getNumberOfAtoms(); ++i) {
     AtomNumber a3 = myatoms.getAbsoluteIndex( i );
-    if( a3!=a1 && a3!=a2 ) calculateForThreeAtoms( i, d1, d1_len, bead, myatoms );
+    if( a3!=a1 && a3!=a2 ) {
+      calculateForThreeAtoms( i, d1, d1_len, bead, myatoms );
+    }
   }
   // std::vector<double> binvals( 1+maxbins ); for(unsigned i=1;i<maxbins;++i) binvals[i]=myatoms.getValue(i);
   // unsigned ii; double fdf;
   //std::cout<<"HELLO DENSITY "<<myatoms.getIndex(0)<<" "<<myatoms.getIndex(1)<<" "<<transformStoredValues( binvals, ii, fdf )<<std::endl;
 
   // Now find the element for which the density is maximal
-  unsigned vout=2; double max=myatoms.getValue( 2 );
+  unsigned vout=2;
+  double max=myatoms.getValue( 2 );
   for(unsigned i=3; i<myatoms.getUnderlyingMultiValue().getNumberOfValues()-1; ++i) {
-    if( myatoms.getValue(i)>max ) { max=myatoms.getValue(i); vout=i; }
+    if( myatoms.getValue(i)>max ) {
+      max=myatoms.getValue(i);
+      vout=i;
+    }
   }
   // Calculate value and derivative of switching function between atoms 1 and 2
   double dfuncl, sw = switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ),
@@ -248,12 +296,16 @@ void TopologyMatrix::calculateForThreeAtoms( const unsigned& iat, const Vector& 
   // This tells us if we are outside the end of the cylinder
   double excess = proj - d1_len;
   // Return if we are outside of the cylinder as calculated based on excess
-  if( excess>low_sf( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) ).get_dmax() ) return;
+  if( excess>low_sf( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) ).get_dmax() ) {
+    return;
+  }
   // Find the length of the cylinder
   double binw = binw_mat( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) );
   double lcylinder = (std::floor( d1_len / binw ) + 1)*binw;
   // Return if the projection is outside the length of interest
-  if( proj<-bead.getCutoff() || proj>(lcylinder+bead.getCutoff()) ) return;
+  if( proj<-bead.getCutoff() || proj>(lcylinder+bead.getCutoff()) ) {
+    return;
+  }
 
   // Calculate the excess swiching function
   double edf, eval = low_sf( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) ).calculate( excess, edf );
@@ -297,11 +349,15 @@ void TopologyMatrix::calculateForThreeAtoms( const unsigned& iat, const Vector& 
 
     Vector pos1 = myatoms.getPosition(0) + d1_len*d1;
     Vector pos2 = myatoms.getPosition(0) + d2;
-    Vector g1derivf,g2derivf,lderivf; Tensor vir;
+    Vector g1derivf,g2derivf,lderivf;
+    Tensor vir;
     for(unsigned bin=0; bin<maxbins; ++bin) {
       bead.set( bin*binw, (bin+1)*binw, sigma );
-      if( proj<(bin*binw-bead.getCutoff()) || proj>binw*(bin+1)+bead.getCutoff() ) continue;
-      double der, contr=bead.calculateWithCutoff( proj, der ) / cellv; der /= cellv;
+      if( proj<(bin*binw-bead.getCutoff()) || proj>binw*(bin+1)+bead.getCutoff() ) {
+        continue;
+      }
+      double der, contr=bead.calculateWithCutoff( proj, der ) / cellv;
+      der /= cellv;
       myatoms.addValue( 2+bin, contr*val*eval );
 
       if( !doNotCalculateDerivatives() ) {

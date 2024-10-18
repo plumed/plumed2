@@ -32,15 +32,21 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit AverageOnGrid( const vesselbase::VesselOptions& da );
   void accumulate( const unsigned& ipoint, const double& weight, const double& dens, const std::vector<double>& der, std::vector<double>& buffer ) const override;
-  void accumulateForce( const unsigned& ipoint, const double& weight, const std::vector<double>& der, std::vector<double>& intforce ) const override { plumed_error(); }
+  void accumulateForce( const unsigned& ipoint, const double& weight, const std::vector<double>& der, std::vector<double>& intforce ) const override {
+    plumed_error();
+  }
   double getGridElement( const unsigned& ipoint, const unsigned& jelement ) const override;
   unsigned getNumberOfComponents() const override;
-  void getFinalForces( const std::vector<double>& buffer, std::vector<double>& finalForces ) override { plumed_error(); }
+  void getFinalForces( const std::vector<double>& buffer, std::vector<double>& finalForces ) override {
+    plumed_error();
+  }
 };
 
 inline
 unsigned AverageOnGrid::getNumberOfComponents() const {
-  if( noderiv ) return nper - 1;
+  if( noderiv ) {
+    return nper - 1;
+  }
   return nper / ( dimension + 1 ) - 1;
 }
 

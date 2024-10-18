@@ -81,8 +81,12 @@ public:
 /// Is this atom currently being copied
   bool isCurrentlyActive( const unsigned& ) override;
 /// This should not be called
-  Vector calculateCentralAtomPosition() { plumed_error(); }
-  double compute( const unsigned& tindex, AtomValuePack& myvals ) const override { plumed_error(); }
+  Vector calculateCentralAtomPosition() {
+    plumed_error();
+  }
+  double compute( const unsigned& tindex, AtomValuePack& myvals ) const override {
+    plumed_error();
+  }
   Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const override;
   void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
   void applyBridgeForces( const std::vector<double>& bb ) override;

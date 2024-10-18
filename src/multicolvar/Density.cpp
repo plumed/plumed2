@@ -55,9 +55,15 @@ public:
 // active methods:
   double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
   /// Returns the number of coordinates of the field
-  bool isPeriodic() override { return false; }
-  bool isDensity() const override { return true; }
-  bool hasDifferentiableOrientation() const override { return true; }
+  bool isPeriodic() override {
+    return false;
+  }
+  bool isDensity() const override {
+    return true;
+  }
+  bool hasDifferentiableOrientation() const override {
+    return true;
+  }
 //  void addOrientationDerivativesToBase( const unsigned& iatom, const unsigned& jstore, const unsigned& base_cv_no,
 //                                        const std::vector<double>& weight, MultiColvarFunction* func ){}
   void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
@@ -74,11 +80,15 @@ void Density::registerKeywords( Keywords& keys ) {
 
 Density::Density(const ActionOptions&ao):
   Action(ao),
-  MultiColvarBase(ao)
-{
-  std::vector<AtomNumber> all_atoms; parseMultiColvarAtomList("SPECIES", -1, all_atoms);
-  ablocks.resize(1); ablocks[0].resize( atom_lab.size() );
-  for(unsigned i=0; i<atom_lab.size(); ++i) { addTaskToList(i); ablocks[0][i]=i; }
+  MultiColvarBase(ao) {
+  std::vector<AtomNumber> all_atoms;
+  parseMultiColvarAtomList("SPECIES", -1, all_atoms);
+  ablocks.resize(1);
+  ablocks[0].resize( atom_lab.size() );
+  for(unsigned i=0; i<atom_lab.size(); ++i) {
+    addTaskToList(i);
+    ablocks[0][i]=i;
+  }
   setupMultiColvarBase( all_atoms );
   // And check everything has been read in correctly
   checkRead();
@@ -97,7 +107,8 @@ void Density::getIndexList( const unsigned& ntotal, const unsigned& jstore, cons
 // }
 
 void Density::getValueForTask( const unsigned& iatom, std::vector<double>& vals ) {
-  plumed_dbg_assert( vals.size()==2 ); vals[0]=vals[1]=1.0;
+  plumed_dbg_assert( vals.size()==2 );
+  vals[0]=vals[1]=1.0;
 }
 
 }

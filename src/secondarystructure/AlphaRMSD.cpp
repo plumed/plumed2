@@ -99,20 +99,27 @@ void AlphaRMSD::registerKeywords( Keywords& keys ) {
 
 AlphaRMSD::AlphaRMSD(const ActionOptions&ao):
   Action(ao),
-  SecondaryStructureRMSD(ao)
-{
+  SecondaryStructureRMSD(ao) {
   // read in the backbone atoms
-  std::vector<unsigned> chains; readBackboneAtoms( "protein", chains);
+  std::vector<unsigned> chains;
+  readBackboneAtoms( "protein", chains);
 
   // This constructs all conceivable sections of alpha helix in the backbone of the chains
-  unsigned nprevious=0; std::vector<unsigned> nlist(30);
+  unsigned nprevious=0;
+  std::vector<unsigned> nlist(30);
   for(unsigned i=0; i<chains.size(); ++i) {
-    if( chains[i]<30 ) error("segment of backbone defined is not long enough to form an alpha helix. Each backbone fragment must contain a minimum of 6 residues");
+    if( chains[i]<30 ) {
+      error("segment of backbone defined is not long enough to form an alpha helix. Each backbone fragment must contain a minimum of 6 residues");
+    }
     unsigned nres=chains[i]/5;
-    if( chains[i]%5!=0 ) error("backbone segment received does not contain a multiple of five residues");
+    if( chains[i]%5!=0 ) {
+      error("backbone segment received does not contain a multiple of five residues");
+    }
     for(unsigned ires=0; ires<nres-5; ires++) {
       unsigned accum=nprevious + 5*ires;
-      for(unsigned k=0; k<30; ++k) nlist[k] = accum+k;
+      for(unsigned k=0; k<30; ++k) {
+        nlist[k] = accum+k;
+      }
       addColvar( nlist );
     }
     nprevious+=chains[i];

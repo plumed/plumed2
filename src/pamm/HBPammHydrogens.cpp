@@ -54,7 +54,9 @@ public:
 // active methods:
   double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const override;
 /// Returns the number of coordinates of the field
-  bool isPeriodic() override { return false; }
+  bool isPeriodic() override {
+    return false;
+  }
 };
 
 PLUMED_REGISTER_ACTION(HBPammHydrogens,"HBPAMM_SH")
@@ -82,44 +84,77 @@ void HBPammHydrogens::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","REGULARISE","0.001","don't allow the denominator to be smaller then this value");
   keys.reset_style("CLUSTERS","compulsory");
   // Use actionWithDistributionKeywords
-  keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("LESS_THAN"); keys.use("MAX");
-  keys.use("MIN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
-  keys.use("ALT_MIN"); keys.use("LOWEST"); keys.use("HIGHEST"); keys.use("SUM");
+  keys.use("MEAN");
+  keys.use("MORE_THAN");
+  keys.use("LESS_THAN");
+  keys.use("MAX");
+  keys.use("MIN");
+  keys.use("BETWEEN");
+  keys.use("HISTOGRAM");
+  keys.use("MOMENTS");
+  keys.use("ALT_MIN");
+  keys.use("LOWEST");
+  keys.use("HIGHEST");
+  keys.use("SUM");
 }
 
 HBPammHydrogens::HBPammHydrogens(const ActionOptions&ao):
   Action(ao),
-  MultiColvarBase(ao)
-{
+  MultiColvarBase(ao) {
   // Read in the atoms
-  usespecies=true; weightHasDerivatives=false;
+  usespecies=true;
+  weightHasDerivatives=false;
   // Read in hydrogen atom indicees
-  std::vector<AtomNumber> all_atoms; parseMultiColvarAtomList("HYDROGENS",-1,all_atoms);
-  if( atom_lab.size()==0 ) error("no hydrogens specified in input file");
+  std::vector<AtomNumber> all_atoms;
+  parseMultiColvarAtomList("HYDROGENS",-1,all_atoms);
+  if( atom_lab.size()==0 ) {
+    error("no hydrogens specified in input file");
+  }
   // Now create a task list - one task per hydrogen
-  unsigned nH = atom_lab.size(); for(unsigned i=0; i<nH; ++i) addTaskToList(i);
+  unsigned nH = atom_lab.size();
+  for(unsigned i=0; i<nH; ++i) {
+    addTaskToList(i);
+  }
   // Read in other atoms in hydrogen bond
-  ablocks.resize(1); parseMultiColvarAtomList("SITES",-1,all_atoms);
+  ablocks.resize(1);
+  parseMultiColvarAtomList("SITES",-1,all_atoms);
   if( atom_lab.size()>nH ) {
-    block1upper=atom_lab.size() - nH + 1; block2lower=0; ablocks[0].resize( atom_lab.size() - nH );
-    for(unsigned i=nH; i<atom_lab.size(); ++i) ablocks[0][i-nH]=i;
+    block1upper=atom_lab.size() - nH + 1;
+    block2lower=0;
+    ablocks[0].resize( atom_lab.size() - nH );
+    for(unsigned i=nH; i<atom_lab.size(); ++i) {
+      ablocks[0][i-nH]=i;
+    }
   } else {
     parseMultiColvarAtomList("DONORS",-1,all_atoms);
     block1upper=block2lower=atom_lab.size() - nH + 1;
-    for(unsigned i=nH; i<atom_lab.size(); ++i) ablocks[0].push_back(i);
+    for(unsigned i=nH; i<atom_lab.size(); ++i) {
+      ablocks[0].push_back(i);
+    }
     parseMultiColvarAtomList("ACCEPTORS",-1,all_atoms);
-    if( atom_lab.size()>(block1upper+nH-1) || (block1upper-1)>0 ) error("no acceptor donor pairs in input specified therefore no hydrogen bonds");
-    for(unsigned i=nH+block2lower-1; i<atom_lab.size(); ++i) ablocks[0].push_back(i);
+    if( atom_lab.size()>(block1upper+nH-1) || (block1upper-1)>0 ) {
+      error("no acceptor donor pairs in input specified therefore no hydrogen bonds");
+    }
+    for(unsigned i=nH+block2lower-1; i<atom_lab.size(); ++i) {
+      ablocks[0].push_back(i);
+    }
   }
   setupMultiColvarBase( all_atoms );
 
-  double reg; parse("REGULARISE",reg);
-  unsigned nnode_t=mybasemulticolvars.size(); if( nnode_t==0 ) nnode_t=1;
+  double reg;
+  parse("REGULARISE",reg);
+  unsigned nnode_t=mybasemulticolvars.size();
+  if( nnode_t==0 ) {
+    nnode_t=1;
+  }
   if( nnode_t==1 ) {
-    std::string errormsg, desc; parse("CLUSTERS",desc);
+    std::string errormsg, desc;
+    parse("CLUSTERS",desc);
     hbpamm_obj.resize(1,1);
     hbpamm_obj(0,0).setup(desc, reg, this, errormsg );
-    if( errormsg.length()>0 ) error( errormsg );
+    if( errormsg.length()>0 ) {
+      error( errormsg );
+    }
   } else {
     unsigned nr=nnode_t, nc=nnode_t;
     hbpamm_obj.resize( nr, nc );
@@ -135,14 +170,19 @@ HBPammHydrogens::HBPammHydrogens(const ActionOptions&ao):
       }
 
       for(unsigned j=i; j<nc; ++j) {
-        std::string errormsg, desc; parseNumbered("CLUSTERS",ibase+j+1,desc);
+        std::string errormsg, desc;
+        parseNumbered("CLUSTERS",ibase+j+1,desc);
         if( i==j ) {
           hbpamm_obj(i,j).setup( desc, reg, this, errormsg );
-          if( errormsg.length()>0 ) error( errormsg );
+          if( errormsg.length()>0 ) {
+            error( errormsg );
+          }
         } else {
           hbpamm_obj(i,j).setup( desc, reg, this, errormsg );
           hbpamm_obj(j,i).setup( desc, reg, this, errormsg );
-          if( errormsg.length()>0 ) error( errormsg );
+          if( errormsg.length()>0 ) {
+            error( errormsg );
+          }
         }
       }
     }
@@ -153,7 +193,9 @@ HBPammHydrogens::HBPammHydrogens(const ActionOptions&ao):
   for(unsigned i=0; i<hbpamm_obj.ncols(); ++i) {
     for(unsigned j=i; j<hbpamm_obj.nrows(); ++j) {
       double rcut=hbpamm_obj(i,j).get_cutoff();
-      if( rcut>sfmax ) { sfmax=rcut; }
+      if( rcut>sfmax ) {
+        sfmax=rcut;
+      }
     }
   }
   setLinkCellCutoff( sfmax );
@@ -170,16 +212,22 @@ double HBPammHydrogens::compute( const unsigned& tindex, multicolvar::AtomValueP
 
   // Calculate the coordination number
   for(unsigned i=1; i<myatoms.getNumberOfAtoms(); ++i) {
-    if( i>block1upper ) continue;
+    if( i>block1upper ) {
+      continue;
+    }
     for(unsigned j=1; j<myatoms.getNumberOfAtoms(); ++j) {
-      if( i==j || j<block2lower ) continue ;
+      if( i==j || j<block2lower ) {
+        continue ;
+      }
       // Get the base colvar numbers
       unsigned dno = atom_lab[myatoms.getIndex(i)].first;
       unsigned ano = atom_lab[myatoms.getIndex(j)].first;
       Vector d_da=getSeparation( myatoms.getPosition(i), myatoms.getPosition(j) );
       if ( (md_da=d_da[0]*d_da[0])<rcut2 &&
            (md_da+=d_da[1]*d_da[1])<rcut2 &&
-           (md_da+=d_da[2]*d_da[2])<rcut2) value += hbpamm_obj(dno,ano).evaluate( i, j, 0, d_da, sqrt(md_da), myatoms );
+           (md_da+=d_da[2]*d_da[2])<rcut2) {
+        value += hbpamm_obj(dno,ano).evaluate( i, j, 0, d_da, sqrt(md_da), myatoms );
+      }
     }
   }
 

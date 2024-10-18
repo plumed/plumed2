@@ -158,14 +158,18 @@ inline
 void Value::applyPeriodicity() {
   if(periodicity==periodic) {
     value=min+difference(min,value);
-    if(value<min)value+=max_minus_min;
+    if(value<min) {
+      value+=max_minus_min;
+    }
   }
 }
 
 inline
 void product( const Value& val1, const Value& val2, Value& valout ) {
   plumed_assert( val1.derivatives.size()==val2.derivatives.size() );
-  if( valout.derivatives.size()!=val1.derivatives.size() ) valout.resizeDerivatives( val1.derivatives.size() );
+  if( valout.derivatives.size()!=val1.derivatives.size() ) {
+    valout.resizeDerivatives( val1.derivatives.size() );
+  }
   valout.value_set=false;
   valout.clearDerivatives();
   double u=val1.value;
@@ -179,7 +183,9 @@ void product( const Value& val1, const Value& val2, Value& valout ) {
 inline
 void quotient( const Value& val1, const Value& val2, Value* valout ) {
   plumed_assert( val1.derivatives.size()==val2.derivatives.size() );
-  if( valout->derivatives.size()!=val1.derivatives.size() ) valout->resizeDerivatives( val1.derivatives.size() );
+  if( valout->derivatives.size()!=val1.derivatives.size() ) {
+    valout->resizeDerivatives( val1.derivatives.size() );
+  }
   valout->value_set=false;
   valout->clearDerivatives();
   double u=val1.get();
@@ -187,7 +193,8 @@ void quotient( const Value& val1, const Value& val2, Value* valout ) {
   for(unsigned i=0; i<val1.getNumberOfDerivatives(); ++i) {
     valout->addDerivative(i, v*val1.getDerivative(i) - u*val2.getDerivative(i) );
   }
-  valout->chainRule( 1/(v*v) ); valout->set( u / v );
+  valout->chainRule( 1/(v*v) );
+  valout->set( u / v );
 }
 
 inline
@@ -238,7 +245,9 @@ bool Value::hasDerivatives() const {
 
 inline
 void Value::resizeDerivatives(int n) {
-  if(hasDeriv) derivatives.resize(n);
+  if(hasDeriv) {
+    derivatives.resize(n);
+  }
 }
 
 inline
@@ -255,7 +264,9 @@ void Value::setDerivative(unsigned i, double d) {
 
 inline
 void Value::chainRule(double df) {
-  for(unsigned i=0; i<derivatives.size(); ++i) derivatives[i]*=df;
+  for(unsigned i=0; i<derivatives.size(); ++i) {
+    derivatives[i]*=df;
+  }
 }
 
 inline
@@ -291,7 +302,9 @@ double Value::difference(double d1,double d2)const {
     // remember: pbc brings the difference in a range of -0.5:0.5
     s=Tools::pbc(s);
     return s*max_minus_min;
-  } else plumed_merror("periodicity should be set to compute differences");
+  } else {
+    plumed_merror("periodicity should be set to compute differences");
+  }
 }
 
 inline

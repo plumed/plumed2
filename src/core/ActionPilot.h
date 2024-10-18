@@ -37,8 +37,7 @@ it in order to run.  This class is used in PLMD::Bias
  which is specified on the directive line with a STRIDE= keyword
 */
 class ActionPilot:
-  public virtual Action
-{
+  public virtual Action {
   int stride; // multiple time step
 public:
   explicit ActionPilot(const ActionOptions&);

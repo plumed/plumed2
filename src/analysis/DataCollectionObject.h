@@ -67,10 +67,16 @@ Vector DataCollectionObject::getAtomPosition( const AtomNumber& ind ) const {
 inline
 double DataCollectionObject::getArgumentValue( const std::string& name ) const {
   std::map<std::string,double>::const_iterator it = args.find(name);
-  if( it != args.end() ) return it->second;
-  std::size_t dot=name.find_first_of('.'); std::string a=name.substr(0,dot);
-  if( a==myaction ) return args.find( name.substr(dot+1) )->second;
-  else plumed_merror("could not find required data in collection object");
+  if( it != args.end() ) {
+    return it->second;
+  }
+  std::size_t dot=name.find_first_of('.');
+  std::string a=name.substr(0,dot);
+  if( a==myaction ) {
+    return args.find( name.substr(dot+1) )->second;
+  } else {
+    plumed_merror("could not find required data in collection object");
+  }
 }
 
 }

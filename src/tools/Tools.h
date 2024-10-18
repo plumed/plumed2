@@ -240,20 +240,26 @@ public:
   make_unique(Args&&...) = delete;
 
   static void set_to_zero(double*ptr,unsigned n) {
-    for(unsigned i=0; i<n; i++) ptr[i]=0.0;
+    for(unsigned i=0; i<n; i++) {
+      ptr[i]=0.0;
+    }
   }
 
   template<unsigned n>
   static void set_to_zero(std::vector<VectorGeneric<n>> & vec) {
     unsigned s=vec.size();
-    if(s==0) return;
+    if(s==0) {
+      return;
+    }
     set_to_zero(&vec[0][0],s*n);
   }
 
   template<unsigned n,unsigned m>
   static void set_to_zero(std::vector<TensorGeneric<n,m>> & vec) {
     unsigned s=vec.size();
-    if(s==0) return;
+    if(s==0) {
+      return;
+    }
     set_to_zero(&vec[0](0,0),s*n*m);
   }
 
@@ -269,16 +275,19 @@ public:
   static void mergeSortedVectors(const std::vector<C*> & vecs, std::vector<typename C::value_type> & result,bool priority_queue=false) {
 
     /// local class storing the range of remaining objects to be pushed
-    struct Entry
-    {
+    struct Entry {
       typename C::const_iterator fwdIt,endIt;
 
       explicit Entry(C const& v) : fwdIt(v.begin()), endIt(v.end()) {}
       /// check if this vector still contains something to be pushed
-      explicit operator bool () const { return fwdIt != endIt; }
+      explicit operator bool () const {
+        return fwdIt != endIt;
+      }
       /// to allow using a priority_queu, which selects the highest element.
       /// we here (counterintuitively) define < as >
-      bool operator< (Entry const& rhs) const { return *fwdIt > *rhs.fwdIt; }
+      bool operator< (Entry const& rhs) const {
+        return *fwdIt > *rhs.fwdIt;
+      }
     };
 
     if(priority_queue) {
@@ -289,28 +298,40 @@ public:
       {
         std::size_t maxsize=0;
         for(unsigned i=0; i<vecs.size(); i++) {
-          if(vecs[i]->size()>maxsize) maxsize=vecs[i]->size();
-          if(!vecs[i]->empty())queue.push(Entry(*vecs[i]));
+          if(vecs[i]->size()>maxsize) {
+            maxsize=vecs[i]->size();
+          }
+          if(!vecs[i]->empty()) {
+            queue.push(Entry(*vecs[i]));
+          }
         }
         // this is just to save multiple reallocations on push_back
         result.reserve(maxsize);
       }
 
       // first iteration (to avoid a if in the main loop)
-      if(queue.empty()) return;
+      if(queue.empty()) {
+        return;
+      }
       auto tmp=queue.top();
       queue.pop();
       result.push_back(*tmp.fwdIt);
       tmp.fwdIt++;
-      if(tmp) queue.push(tmp);
+      if(tmp) {
+        queue.push(tmp);
+      }
 
       // main loop
       while(!queue.empty()) {
         auto tmp=queue.top();
         queue.pop();
-        if(result.back() < *tmp.fwdIt) result.push_back(*tmp.fwdIt);
+        if(result.back() < *tmp.fwdIt) {
+          result.push_back(*tmp.fwdIt);
+        }
         tmp.fwdIt++;
-        if(tmp) queue.push(tmp);
+        if(tmp) {
+          queue.push(tmp);
+        }
       }
     } else {
 
@@ -320,8 +341,12 @@ public:
       {
         std::size_t maxsize=0;
         for(int i=0; i<vecs.size(); i++) {
-          if(vecs[i]->size()>maxsize) maxsize=vecs[i]->size();
-          if(!vecs[i]->empty())entries.push_back(Entry(*vecs[i]));
+          if(vecs[i]->size()>maxsize) {
+            maxsize=vecs[i]->size();
+          }
+          if(!vecs[i]->empty()) {
+            entries.push_back(Entry(*vecs[i]));
+          }
         }
         // this is just to save multiple reallocations on push_back
         result.reserve(maxsize);
@@ -336,10 +361,15 @@ public:
         result.push_back(minval);
 
         // fast forward vectors with elements equal to minval (to avoid duplicates)
-        for(auto & e : entries) while(e && *e.fwdIt==minval) ++e.fwdIt;
+        for(auto & e : entries)
+          while(e && *e.fwdIt==minval) {
+            ++e.fwdIt;
+          }
 
         // remove from the entries vector all exhausted vectors
-        auto erase=std::remove_if(entries.begin(),entries.end(),[](const Entry & e) {return !e;});
+        auto erase=std::remove_if(entries.begin(),entries.end(),[](const Entry & e) {
+          return !e;
+        });
         entries.erase(erase,entries.end());
       }
     }
@@ -354,15 +384,21 @@ public:
 template <class T>
 bool Tools::parse(std::vector<std::string>&line,const std::string&key,T&val,int rep) {
   std::string s;
-  if(!getKey(line,key+"=",s,rep)) return false;
-  if(s.length()>0 && !convertNoexcept(s,val))return false;
+  if(!getKey(line,key+"=",s,rep)) {
+    return false;
+  }
+  if(s.length()>0 && !convertNoexcept(s,val)) {
+    return false;
+  }
   return true;
 }
 
 template <class T>
 bool Tools::parseVector(std::vector<std::string>&line,const std::string&key,std::vector<T>&val,int rep) {
   std::string s;
-  if(!getKey(line,key+"=",s,rep)) return false;
+  if(!getKey(line,key+"=",s,rep)) {
+    return false;
+  }
   val.clear();
   std::vector<std::string> words=getWords(s,"\t\n ,");
   for(unsigned i=0; i<words.size(); ++i) {
@@ -375,15 +411,16 @@ bool Tools::parseVector(std::vector<std::string>&line,const std::string&key,std:
       plumed_assert(rep<static_cast<int>(words.size()));
       s=words[rep];
     }
-    if(!convertNoexcept(s,v))return false;
+    if(!convertNoexcept(s,v)) {
+      return false;
+    }
     val.push_back(v);
   }
   return true;
 }
 
 template<typename T>
-void Tools::removeDuplicates(std::vector<T>& vec)
-{
+void Tools::removeDuplicates(std::vector<T>& vec) {
   std::sort(vec.begin(), vec.end());
   vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
 }
@@ -404,18 +441,27 @@ bool Tools::parseFlag(std::vector<std::string>&line,const std::string&key,bool&v
 inline
 double Tools::pbc(double x) {
 #ifdef __PLUMED_PBC_WHILE
-  while (x>0.5) x-=1.0;
-  while (x<-0.5) x+=1.0;
+  while (x>0.5) {
+    x-=1.0;
+  }
+  while (x<-0.5) {
+    x+=1.0;
+  }
   return x;
 #else
   if(std::numeric_limits<int>::round_style == std::round_toward_zero) {
     const double offset=100.0;
     const double y=x+offset;
-    if(y>=0) return y-int(y+0.5);
-    else     return y-int(y-0.5);
+    if(y>=0) {
+      return y-int(y+0.5);
+    } else {
+      return y-int(y-0.5);
+    }
   } else if(std::numeric_limits<int>::round_style == std::round_to_nearest) {
     return x-int(x);
-  } else return x-floor(x+0.5);
+  } else {
+    return x-floor(x+0.5);
+  }
 #endif
 }
 
@@ -428,17 +474,16 @@ bool Tools::convertNoexcept(T i,std::string & str) {
 }
 
 inline
-double Tools::fastpow(double base, int exp)
-{
+double Tools::fastpow(double base, int exp) {
   if(exp<0) {
     exp=-exp;
     base=1.0/base;
   }
   double result = 1.0;
-  while (exp)
-  {
-    if (exp & 1)
+  while (exp) {
+    if (exp & 1) {
       result *= base;
+    }
     exp >>= 1;
     base *= base;
   }
@@ -449,14 +494,18 @@ double Tools::fastpow(double base, int exp)
 template<typename T>
 std::vector<T*> Tools::unique2raw(const std::vector<std::unique_ptr<T>> & x) {
   std::vector<T*> v(x.size());
-  for(unsigned i=0; i<x.size(); i++) v[i]=x[i].get();
+  for(unsigned i=0; i<x.size(); i++) {
+    v[i]=x[i].get();
+  }
   return v;
 }
 
 template<typename T>
 std::vector<const T*> Tools::unique2raw(const std::vector<std::unique_ptr<const T>> & x) {
   std::vector<const T*> v(x.size());
-  for(unsigned i=0; i<x.size(); i++) v[i]=x[i].get();
+  for(unsigned i=0; i<x.size(); i++) {
+    v[i]=x[i].get();
+  }
   return v;
 }
 

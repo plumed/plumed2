@@ -68,13 +68,24 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit ConvertToFES(const ActionOptions&ao);
   unsigned getNumberOfQuantities() const override;
-  bool ignoreNormalization() const override { return true; }
-  void prepare() override { activated=true; }
-  void prepareForAveraging() override { ActionWithInputGrid::prepareForAveraging(); activated=false; }
+  bool ignoreNormalization() const override {
+    return true;
+  }
+  void prepare() override {
+    activated=true;
+  }
+  void prepareForAveraging() override {
+    ActionWithInputGrid::prepareForAveraging();
+    activated=false;
+  }
   void compute( const unsigned& current, MultiValue& myvals ) const override;
   void finishComputations( const std::vector<double>& buffer ) override;
-  bool isPeriodic() override { return false; }
-  bool onStep() const override { return activated; }
+  bool isPeriodic() override {
+    return false;
+  }
+  bool onStep() const override {
+    return activated;
+  }
   void runFinalJobs() override;
 };
 
@@ -84,63 +95,91 @@ void ConvertToFES::registerKeywords( Keywords& keys ) {
   ActionWithInputGrid::registerKeywords( keys );
   keys.add("optional","TEMP","the temperature at which you are operating");
   keys.addFlag("MINTOZERO",false,"set the minimum in the free energy to be equal to zero");
-  keys.remove("STRIDE"); keys.remove("KERNEL"); keys.remove("BANDWIDTH");
-  keys.remove("LOGWEIGHTS"); keys.remove("CLEAR"); keys.remove("NORMALIZATION");
+  keys.remove("STRIDE");
+  keys.remove("KERNEL");
+  keys.remove("BANDWIDTH");
+  keys.remove("LOGWEIGHTS");
+  keys.remove("CLEAR");
+  keys.remove("NORMALIZATION");
 }
 
 ConvertToFES::ConvertToFES(const ActionOptions&ao):
   Action(ao),
   ActionWithInputGrid(ao),
-  activated(false)
-{
+  activated(false) {
   plumed_assert( ingrid->getNumberOfComponents()==1 );
 
   // Create a grid
   auto grid=createGrid( "grid", "COMPONENTS=" + getLabel() + " " + ingrid->getInputString() );
-  if( ingrid->noDerivatives() ) grid->setNoDerivatives();
+  if( ingrid->noDerivatives() ) {
+    grid->setNoDerivatives();
+  }
   std::vector<double> fspacing;
   grid->setBounds( ingrid->getMin(), ingrid->getMax(), ingrid->getNbin(), fspacing);
   setAveragingAction( std::move(grid), true );
 
-  simtemp=0.; parse("TEMP",simtemp); parseFlag("MINTOZERO",mintozero);
-  if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
-  else simtemp=plumed.getAtoms().getKbT();
-  if( simtemp==0 ) error("TEMP not set - use keyword TEMP");
+  simtemp=0.;
+  parse("TEMP",simtemp);
+  parseFlag("MINTOZERO",mintozero);
+  if(simtemp>0) {
+    simtemp*=plumed.getAtoms().getKBoltzmann();
+  } else {
+    simtemp=plumed.getAtoms().getKbT();
+  }
+  if( simtemp==0 ) {
+    error("TEMP not set - use keyword TEMP");
+  }
 
   // Now create task list
-  for(unsigned i=0; i<mygrid->getNumberOfPoints(); ++i) addTaskToList(i);
+  for(unsigned i=0; i<mygrid->getNumberOfPoints(); ++i) {
+    addTaskToList(i);
+  }
   // And activate all tasks
   deactivateAllTasks();
-  for(unsigned i=0; i<mygrid->getNumberOfPoints(); ++i) taskFlags[i]=1;
+  for(unsigned i=0; i<mygrid->getNumberOfPoints(); ++i) {
+    taskFlags[i]=1;
+  }
   lockContributors();
 }
 
 unsigned ConvertToFES::getNumberOfQuantities() const {
-  if( mygrid->noDerivatives() ) return 2;
+  if( mygrid->noDerivatives() ) {
+    return 2;
+  }
   return 2 + mygrid->getDimension();
 }
 
 void ConvertToFES::compute( const unsigned& current, MultiValue& myvals ) const {
-  double val=getFunctionValue( current ); myvals.setValue(1, -simtemp*std::log(val) );
+  double val=getFunctionValue( current );
+  myvals.setValue(1, -simtemp*std::log(val) );
   if( !mygrid->noDerivatives() && val>0 ) {
-    for(unsigned i=0; i<mygrid->getDimension(); ++i) myvals.setValue( 2+i, -(simtemp/val)*ingrid->getGridElement(current,i+1) );
+    for(unsigned i=0; i<mygrid->getDimension(); ++i) {
+      myvals.setValue( 2+i, -(simtemp/val)*ingrid->getGridElement(current,i+1) );
+    }
   }
 }
 
 void ConvertToFES::finishComputations( const std::vector<double>& buffer ) {
   ActionWithVessel::finishComputations( buffer );
-  if(!mintozero) return;
+  if(!mintozero) {
+    return;
+  }
 
   double optval = mygrid->getGridElement( 0, 0 );
   for(unsigned i=0; i<mygrid->getNumberOfPoints(); ++i) {
     double tval = mygrid->getGridElement( i, 0 );
-    if( tval<optval || std::isnan(optval) ) { optval=tval; }
+    if( tval<optval || std::isnan(optval) ) {
+      optval=tval;
+    }
   }
-  for(unsigned i=0; i<mygrid->getNumberOfPoints(); ++i) mygrid->addToGridElement( i, 0, -optval );
+  for(unsigned i=0; i<mygrid->getNumberOfPoints(); ++i) {
+    mygrid->addToGridElement( i, 0, -optval );
+  }
 }
 
 void ConvertToFES::runFinalJobs() {
-  activated=true; update();
+  activated=true;
+  update();
 }
 
 }

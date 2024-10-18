@@ -50,11 +50,11 @@ void ZpathVessel::reserveKeyword( Keywords& keys ) {
 }
 
 ZpathVessel::ZpathVessel( const vesselbase::VesselOptions& da ):
-  FunctionVessel(da)
-{
+  FunctionVessel(da) {
   Mapping* mymap=dynamic_cast<Mapping*>( getAction() );
   plumed_massert( mymap, "ZpathVessel should only be used with mappings");
-  invlambda = 1.0 / mymap->getLambda(); usetol=true;
+  invlambda = 1.0 / mymap->getLambda();
+  usetol=true;
 }
 
 std::string ZpathVessel::value_descriptor() {
@@ -62,7 +62,8 @@ std::string ZpathVessel::value_descriptor() {
 }
 
 double ZpathVessel::calcTransform( const double& val, double& dv ) const {
-  dv=0.0; return 1.0;
+  dv=0.0;
+  return 1.0;
 }
 
 double ZpathVessel::finalTransform( const double& val, double& dv ) {

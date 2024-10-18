@@ -34,8 +34,7 @@ class Atoms;
 class Communicator;
 
 class GREX:
-  public WithCmd
-{
+  public WithCmd {
   bool initialized;
   ForwardDecl<Communicator> intracomm_fwd;
   Communicator& intracomm=*intracomm_fwd;

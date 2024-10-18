@@ -95,8 +95,12 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit FindContourSurface(const ActionOptions&ao);
-  unsigned getNumberOfQuantities() const override { return 2; }
-  bool checkAllActive() const override { return gbuffer==0; }
+  unsigned getNumberOfQuantities() const override {
+    return 2;
+  }
+  bool checkAllActive() const override {
+    return gbuffer==0;
+  }
   void clearAverage() override;
   void prepareForAveraging() override;
   void compute( const unsigned& current, MultiValue& myvals ) const override;
@@ -115,48 +119,72 @@ FindContourSurface::FindContourSurface(const ActionOptions&ao):
   Action(ao),
   ContourFindingBase(ao),
   firsttime(true),
-  ones(ingrid->getDimension(),1)
-{
-  if( ingrid->getDimension()<2 ) error("cannot find dividing surface if input grid is one dimensional");
+  ones(ingrid->getDimension(),1) {
+  if( ingrid->getDimension()<2 ) {
+    error("cannot find dividing surface if input grid is one dimensional");
+  }
 
-  std::string dir; parse("SEARCHDIR",dir); parse("BUFFER",gbuffer);
+  std::string dir;
+  parse("SEARCHDIR",dir);
+  parse("BUFFER",gbuffer);
   log.printf("  calculating location of contour on %d dimensional grid \n", ingrid->getDimension()-1 );
-  if( gbuffer>0 ) log.printf("  after first step a subset of only %u grid points around where the countour was found will be checked\n",gbuffer);
+  if( gbuffer>0 ) {
+    log.printf("  after first step a subset of only %u grid points around where the countour was found will be checked\n",gbuffer);
+  }
   checkRead();
 
-  unsigned n=0; gdirs.resize( ingrid->getDimension()-1 );
+  unsigned n=0;
+  gdirs.resize( ingrid->getDimension()-1 );
   for(unsigned i=0; i<ingrid->getDimension(); ++i) {
     if( ingrid->getComponentName(i)==dir ) {
       dir_n=i;
     } else {
-      if( n==gdirs.size() ) error("could not find " + dir + " direction in input grid");
-      gdirs[n]=i; n++;
+      if( n==gdirs.size() ) {
+        error("could not find " + dir + " direction in input grid");
+      }
+      gdirs[n]=i;
+      n++;
     }
   }
-  if( n!=(ingrid->getDimension()-1) ) error("output of grid is not understood");
+  if( n!=(ingrid->getDimension()-1) ) {
+    error("output of grid is not understood");
+  }
 
   // Create the input from the old string
   std::string vstring = "COMPONENTS=" + getLabel() + " COORDINATES=" + ingrid->getComponentName( gdirs[0] );
-  for(unsigned i=1; i<gdirs.size(); ++i) vstring += "," + ingrid->getComponentName( gdirs[i] );
-  vstring += " PBC=";
-  if( ingrid->isPeriodic(gdirs[0]) ) vstring+="T";
-  else vstring+="F";
   for(unsigned i=1; i<gdirs.size(); ++i) {
-    if( ingrid->isPeriodic(gdirs[i]) ) vstring+=",T"; else vstring+=",F";
+    vstring += "," + ingrid->getComponentName( gdirs[i] );
   }
-  auto grid=createGrid( "grid", vstring ); grid->setNoDerivatives();
+  vstring += " PBC=";
+  if( ingrid->isPeriodic(gdirs[0]) ) {
+    vstring+="T";
+  } else {
+    vstring+="F";
+  }
+  for(unsigned i=1; i<gdirs.size(); ++i) {
+    if( ingrid->isPeriodic(gdirs[i]) ) {
+      vstring+=",T";
+    } else {
+      vstring+=",F";
+    }
+  }
+  auto grid=createGrid( "grid", vstring );
+  grid->setNoDerivatives();
   setAveragingAction( std::move(grid), true );
 }
 
 void FindContourSurface::clearAverage() {
   // Set the boundaries of the output grid
-  std::vector<double> fspacing; std::vector<unsigned> snbins( ingrid->getDimension()-1 );
+  std::vector<double> fspacing;
+  std::vector<unsigned> snbins( ingrid->getDimension()-1 );
   std::vector<std::string> smin( ingrid->getDimension()-1 ), smax( ingrid->getDimension()-1 );
   for(unsigned i=0; i<gdirs.size(); ++i) {
-    smin[i]=ingrid->getMin()[gdirs[i]]; smax[i]=ingrid->getMax()[gdirs[i]];
+    smin[i]=ingrid->getMin()[gdirs[i]];
+    smax[i]=ingrid->getMax()[gdirs[i]];
     snbins[i]=ingrid->getNbin()[gdirs[i]];
   }
-  mygrid->setBounds( smin, smax, snbins, fspacing); resizeFunctions();
+  mygrid->setBounds( smin, smax, snbins, fspacing);
+  resizeFunctions();
   ActionWithAveraging::clearAverage();
 }
 
@@ -166,14 +194,19 @@ void FindContourSurface::prepareForAveraging() {
     std::vector<unsigned> find( ingrid->getDimension() );
     std::vector<unsigned> ind( mygrid->getDimension() );
     for(unsigned i=0; i<mygrid->getNumberOfPoints(); ++i) {
-      find.assign( find.size(), 0 ); mygrid->getIndices( i, ind );
-      for(unsigned j=0; j<gdirs.size(); ++j) find[gdirs[j]]=ind[j];
+      find.assign( find.size(), 0 );
+      mygrid->getIndices( i, ind );
+      for(unsigned j=0; j<gdirs.size(); ++j) {
+        find[gdirs[j]]=ind[j];
+      }
       // Current will be set equal to the start point for this grid index
       addTaskToList( ingrid->getIndex(find) );
     }
     // And prepare the task list
     deactivateAllTasks();
-    for(unsigned i=0; i<getFullNumberOfTasks(); ++i) taskFlags[i]=1;
+    for(unsigned i=0; i<getFullNumberOfTasks(); ++i) {
+      taskFlags[i]=1;
+    }
     lockContributors();
     // Set the direction in which to look for the contour
     direction.resize( ingrid->getDimension(), 0 );
@@ -188,7 +221,8 @@ void FindContourSurface::finishAveraging() {
     std::vector<double> dx( ingrid->getGridSpacing() );
     std::vector<double> point( ingrid->getDimension() );
     std::vector<double> lpoint( mygrid->getDimension() );
-    std::vector<unsigned> neighbours; unsigned num_neighbours;
+    std::vector<unsigned> neighbours;
+    unsigned num_neighbours;
     std::vector<unsigned> ugrid_indices( ingrid->getDimension() );
     std::vector<bool> active( ingrid->getNumberOfPoints(), false );
     std::vector<unsigned> gbuffer_vec( ingrid->getDimension(), gbuffer );
@@ -197,11 +231,15 @@ void FindContourSurface::finishAveraging() {
       mygrid->getGridPointCoordinates( i, lpoint );
       point[dir_n] = mygrid->getGridElement( i, 0 );
       // 0.5*dx added here to prevent problems with flooring of grid points
-      for(unsigned j=0; j<gdirs.size(); ++j) point[gdirs[j]]=lpoint[j] + 0.5*dx[gdirs[j]];
+      for(unsigned j=0; j<gdirs.size(); ++j) {
+        point[gdirs[j]]=lpoint[j] + 0.5*dx[gdirs[j]];
+      }
       ingrid->getIndices( point, ugrid_indices );
       // Now activate buffer region
       ingrid->getNeighbors( ugrid_indices, gbuffer_vec, num_neighbours, neighbours );
-      for(unsigned n=0; n<num_neighbours; ++n) active[ neighbours[n] ]=true;
+      for(unsigned n=0; n<num_neighbours; ++n) {
+        active[ neighbours[n] ]=true;
+      }
     }
     ingrid->activateThesePoints( active );
   }
@@ -209,43 +247,69 @@ void FindContourSurface::finishAveraging() {
 }
 
 void FindContourSurface::compute( const unsigned& current, MultiValue& myvals ) const {
-  std::vector<unsigned> neighbours; unsigned num_neighbours; unsigned nfound=0; double minp=0;
-  std::vector<unsigned> bins_n( ingrid->getNbin() ); unsigned shiftn=current;
-  std::vector<unsigned> ind( ingrid->getDimension() ); std::vector<double> point( ingrid->getDimension() );
+  std::vector<unsigned> neighbours;
+  unsigned num_neighbours;
+  unsigned nfound=0;
+  double minp=0;
+  std::vector<unsigned> bins_n( ingrid->getNbin() );
+  unsigned shiftn=current;
+  std::vector<unsigned> ind( ingrid->getDimension() );
+  std::vector<double> point( ingrid->getDimension() );
 #ifndef NDEBUG
-  std::vector<unsigned> oind( mygrid->getDimension() ); mygrid->getIndices( current, oind );
+  std::vector<unsigned> oind( mygrid->getDimension() );
+  mygrid->getIndices( current, oind );
 #endif
   for(unsigned i=0; i<bins_n[dir_n]; ++i) {
 #ifndef NDEBUG
-    std::vector<unsigned> base_ind( ingrid->getDimension() ); ingrid->getIndices( shiftn, base_ind );
-    for(unsigned j=0; j<gdirs.size(); ++j) plumed_dbg_assert( base_ind[gdirs[j]]==oind[j] );
+    std::vector<unsigned> base_ind( ingrid->getDimension() );
+    ingrid->getIndices( shiftn, base_ind );
+    for(unsigned j=0; j<gdirs.size(); ++j) {
+      plumed_dbg_assert( base_ind[gdirs[j]]==oind[j] );
+    }
 #endif
     // Ensure inactive grid points are ignored
-    if( ingrid->inactive( shiftn ) ) { shiftn += ingrid->getStride()[dir_n]; continue; }
+    if( ingrid->inactive( shiftn ) ) {
+      shiftn += ingrid->getStride()[dir_n];
+      continue;
+    }
     // Get the index of the current grid point
     ingrid->getIndices( shiftn, ind );
     // Exit if we are at the edge of the grid
     if( !ingrid->isPeriodic(dir_n) && (ind[dir_n]+1)==bins_n[dir_n] ) {
-      shiftn += ingrid->getStride()[dir_n]; continue;
+      shiftn += ingrid->getStride()[dir_n];
+      continue;
     }
 
     // Ensure points with inactive neighbours are ignored
     ingrid->getNeighbors( ind, ones, num_neighbours, neighbours );
     bool cycle=false;
     for(unsigned j=0; j<num_neighbours; ++j) {
-      if( ingrid->inactive( neighbours[j]) ) { cycle=true; break; }
+      if( ingrid->inactive( neighbours[j]) ) {
+        cycle=true;
+        break;
+      }
     }
-    if( cycle ) { shiftn += ingrid->getStride()[dir_n]; continue; }
+    if( cycle ) {
+      shiftn += ingrid->getStride()[dir_n];
+      continue;
+    }
 
     // Now get the function value at two points
-    double val1=getFunctionValue( shiftn ) - contour; double val2;
-    if( (ind[dir_n]+1)==bins_n[dir_n] ) val2 = getFunctionValue( current ) - contour;
-    else val2=getFunctionValue( shiftn + ingrid->getStride()[dir_n] ) - contour;
+    double val1=getFunctionValue( shiftn ) - contour;
+    double val2;
+    if( (ind[dir_n]+1)==bins_n[dir_n] ) {
+      val2 = getFunctionValue( current ) - contour;
+    } else {
+      val2=getFunctionValue( shiftn + ingrid->getStride()[dir_n] ) - contour;
+    }
 
     // Check if the minimum is bracketed
     if( val1*val2<0 ) {
-      ingrid->getGridPointCoordinates( shiftn, point ); findContour( direction, point );
-      minp=point[dir_n]; nfound++; break;
+      ingrid->getGridPointCoordinates( shiftn, point );
+      findContour( direction, point );
+      minp=point[dir_n];
+      nfound++;
+      break;
     }
 
 
@@ -253,7 +317,8 @@ void FindContourSurface::compute( const unsigned& current, MultiValue& myvals ) 
     shiftn += ingrid->getStride()[dir_n];
   }
   if( nfound==0 ) {
-    std::string num; Tools::convert( getStep(), num );
+    std::string num;
+    Tools::convert( getStep(), num );
     error("On step " + num + " failed to find required grid point");
   }
   myvals.setValue( 1, minp );

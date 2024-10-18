@@ -73,7 +73,8 @@ public:
 
 inline
 Matrix<double> KernelFunctions::getMatrix() const {
-  unsigned k=0, ncv=ndim(); Matrix<double> mymatrix(ncv,ncv);
+  unsigned k=0, ncv=ndim();
+  Matrix<double> mymatrix(ncv,ncv);
   for(unsigned i=0; i<ncv; i++) {
     for(unsigned j=i; j<ncv; j++) {
       mymatrix(i,j)=mymatrix(j,i)=width[k]; // recompose the full inverse matrix

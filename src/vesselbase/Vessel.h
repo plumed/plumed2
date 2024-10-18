@@ -158,7 +158,8 @@ void Vessel::parse(const std::string&key, T&t ) {
   plumed_massert(keywords.exists(key),"keyword " + key + " has not been registered");
 
   // Now try to read the keyword
-  bool found=Tools::parse(line,key,t); std::string def;
+  bool found=Tools::parse(line,key,t);
+  std::string def;
   if ( !found && keywords.style(key,"compulsory") ) {
     if( keywords.getDefaultValue(key,def) ) {
       plumed_massert( def.length()!=0 && Tools::convertNoexcept(def,t), "default value is dubious");
@@ -172,16 +173,23 @@ template<class T>
 void Vessel::parseVector(const std::string&key,std::vector<T>&t) {
   // Check keyword has been registered
   plumed_massert(keywords.exists(key), "keyword " + key + " has not been registered");
-  unsigned size=t.size(); bool skipcheck=false;
-  if(size==0) skipcheck=true;
+  unsigned size=t.size();
+  bool skipcheck=false;
+  if(size==0) {
+    skipcheck=true;
+  }
 
   // Now try to read the keyword
-  bool found; std::string def; T val;
+  bool found;
+  std::string def;
+  T val;
   found=Tools::parseVector(line,key,t);
 
   // Check vectors size is correct (not if this is atoms or ARG)
   if( !keywords.style(key,"atoms") && found ) {
-    if( !skipcheck && t.size()!=size ) error("vector read in for keyword " + key + " has the wrong size");
+    if( !skipcheck && t.size()!=size ) {
+      error("vector read in for keyword " + key + " has the wrong size");
+    }
   }
 
   // If it isn't read and it is compulsory see if a default value was specified
@@ -190,7 +198,9 @@ void Vessel::parseVector(const std::string&key,std::vector<T>&t) {
       if( def.length()==0 || !Tools::convertNoexcept(def,val) ) {
         plumed_merror("weird default value for keyword " + key );
       } else {
-        for(unsigned i=0; i<t.size(); ++i) t[i]=val;
+        for(unsigned i=0; i<t.size(); ++i) {
+          t[i]=val;
+        }
       }
     } else {
       error("keyword " + key + " is compulsory");
@@ -207,7 +217,8 @@ int Vessel::getNumericalLabel() const {
 
 inline
 void Vessel::setBufferStart( unsigned& start ) {
-  bufstart=start; start+=bufsize;
+  bufstart=start;
+  start+=bufsize;
 }
 
 inline

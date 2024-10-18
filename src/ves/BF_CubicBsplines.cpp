@@ -109,8 +109,7 @@ void BF_CubicBsplines::registerKeywords(Keywords& keys) {
 }
 
 BF_CubicBsplines::BF_CubicBsplines(const ActionOptions&ao):
-  PLUMED_VES_BASISFUNCTIONS_INIT(ao)
-{
+  PLUMED_VES_BASISFUNCTIONS_INIT(ao) {
   log.printf("  Cubic B spline basis functions, see and cite ");
   log << plumed.cite("Pampel and Valsson, J. Chem. Theory Comput. 18, 4127-4141 (2022) - DOI:10.1021/acs.jctc.2c00197");
 
@@ -120,7 +119,9 @@ BF_CubicBsplines::BF_CubicBsplines(const ActionOptions&ao):
 
   bool periodic = false;
   parseFlag("PERIODIC",periodic);
-  if (periodic) {addKeywordToList("PERIODIC",periodic);}
+  if (periodic) {
+    addKeywordToList("PERIODIC",periodic);
+  }
 
   // 1 constant, getOrder() on interval, 1 (left) + 2 (right) at boundaries if not periodic
   unsigned int num_BFs = periodic ? getOrder()+1U : getOrder()+4U;
@@ -128,7 +129,9 @@ BF_CubicBsplines::BF_CubicBsplines(const ActionOptions&ao):
 
   double normfactor_=2.0;
   parse("NORMALIZATION",normfactor_);
-  if(normfactor_!=2.0) {addKeywordToList("NORMALIZATION",normfactor_);}
+  if(normfactor_!=2.0) {
+    addKeywordToList("NORMALIZATION",normfactor_);
+  }
   inv_normfactor_=1.0/normfactor_;
 
   periodic ? setPeriodic() : setNonPeriodic();
@@ -161,7 +164,11 @@ void BF_CubicBsplines::getAllValues(const double arg, double& argT, bool& inside
     values[i] = spline(argx, derivs[i]);
     derivs[i] *= inv_spacing_;
   }
-  if(!inside_range) {for(unsigned int i=0; i<derivs.size(); i++) {derivs[i]=0.0;}}
+  if(!inside_range) {
+    for(unsigned int i=0; i<derivs.size(); i++) {
+      derivs[i]=0.0;
+    }
+  }
 }
 
 
@@ -178,14 +185,12 @@ double BF_CubicBsplines::spline(const double arg, double& deriv) const {
   if(x > 2) {
     value=0.0;
     deriv=0.0;
-  }
-  else if(x >= 1) {
+  } else if(x >= 1) {
     value = ((2.0-x)*(2.0-x)*(2.0-x));
     deriv = dx*(-3.0*(2.0-x)*(2.0-x));
     // value=((2.0-x)*(2.0-x)*(2.0-x))/6.0;
     // deriv=-x*x*(2.0-x)*(2.0-x);
-  }
-  else {
+  } else {
     value = 4.0-6.0*x*x+3.0*x*x*x;
     deriv = dx*(-12.0*x+9.0*x*x);
     // value=x*x*x*0.5-x*x+2.0/3.0;

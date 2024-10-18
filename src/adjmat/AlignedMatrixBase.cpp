@@ -47,13 +47,17 @@ void AlignedMatrixBase::registerKeywords( Keywords& keys ) {
 
 AlignedMatrixBase::AlignedMatrixBase( const ActionOptions& ao ):
   Action(ao),
-  AdjacencyMatrixBase(ao)
-{
+  AdjacencyMatrixBase(ao) {
   // Read in the atomic positions
   readMaxTwoSpeciesMatrix( "ATOMS", "ATOMSA", "ATOMSB", true );
-  unsigned nrows, ncols; retrieveTypeDimensions( nrows, ncols, ncol_t );
-  if( mybasemulticolvars.size()==0 ) error("cannot use atom indices as input to this variable / input was not specified");
-  if( getSizeOfInputVectors()<3 ) error("base multicolvars do not calculate an orientation");
+  unsigned nrows, ncols;
+  retrieveTypeDimensions( nrows, ncols, ncol_t );
+  if( mybasemulticolvars.size()==0 ) {
+    error("cannot use atom indices as input to this variable / input was not specified");
+  }
+  if( getSizeOfInputVectors()<3 ) {
+    error("base multicolvars do not calculate an orientation");
+  }
   // Read in the switching function
   switchingFunction.resize( nrows, ncols );
   parseConnectionDescriptions("SWITCH",false,ncol_t);
@@ -63,7 +67,9 @@ AlignedMatrixBase::AlignedMatrixBase( const ActionOptions& ao ):
   for(unsigned i=0; i<getNumberOfNodeTypes(); ++i) {
     for(unsigned j=0; j<getNumberOfNodeTypes(); ++j) {
       double tsf=switchingFunction(i,j).get_dmax();
-      if( tsf>sfmax ) sfmax=tsf;
+      if( tsf>sfmax ) {
+        sfmax=tsf;
+      }
     }
   }
   // And set the link cell cutoff
@@ -73,9 +79,15 @@ AlignedMatrixBase::AlignedMatrixBase( const ActionOptions& ao ):
 void AlignedMatrixBase::setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ) {
   plumed_assert( id<2 );
   if( id==0 ) {
-    plumed_assert( desc.size()==1 ); std::string errors; switchingFunction(j,i).set(desc[0],errors);
-    if( errors.length()!=0 ) error("problem reading switching function in SWITCH keywrd description " + errors);
-    if( j!=i) switchingFunction(i,j).set(desc[0],errors);
+    plumed_assert( desc.size()==1 );
+    std::string errors;
+    switchingFunction(j,i).set(desc[0],errors);
+    if( errors.length()!=0 ) {
+      error("problem reading switching function in SWITCH keywrd description " + errors);
+    }
+    if( j!=i) {
+      switchingFunction(i,j).set(desc[0],errors);
+    }
     log.printf("  %u th and %u th multicolvar groups must be within %s\n",i+1,j+1,(switchingFunction(i,j).description()).c_str() );
   } else if( id==1 ) {
     readOrientationConnector( i, j, desc );
@@ -84,15 +96,19 @@ void AlignedMatrixBase::setupConnector( const unsigned& id, const unsigned& i, c
 
 double AlignedMatrixBase::calculateWeight( const unsigned& taskCode, const double& weight, multicolvar::AtomValuePack& myatoms ) const {
   Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
-  if( distance.modulo2()<switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) )-ncol_t ).get_dmax2() ) return 1.0;
+  if( distance.modulo2()<switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) )-ncol_t ).get_dmax2() ) {
+    return 1.0;
+  }
   return 0.0;
 }
 
 double AlignedMatrixBase::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {
-  unsigned ncomp=getSizeOfInputVectors(); Vector ddistance;
+  unsigned ncomp=getSizeOfInputVectors();
+  Vector ddistance;
   std::vector<double> orient0(ncomp), orient1(ncomp), dorient0(ncomp), dorient1(ncomp);
   Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
-  getInputData( 0, true, myatoms, orient0 ); getInputData( 1, true, myatoms, orient1 );
+  getInputData( 0, true, myatoms, orient0 );
+  getInputData( 1, true, myatoms, orient1 );
   double f_dot = computeVectorFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) )-ncol_t,
                                         distance, orient0, orient1, ddistance, dorient0, dorient1 );
 
@@ -105,7 +121,10 @@ double AlignedMatrixBase::compute( const unsigned& tindex, multicolvar::AtomValu
     myatoms.addBoxDerivatives( 1, (-dfunc)*f_dot*Tensor(distance,distance) - sw*extProduct( distance, ddistance ) );
 
     // Add derivatives of orientation
-    for(unsigned k=2; k<orient0.size(); ++k) { dorient0[k]*=sw; dorient1[k]*=sw; }
+    for(unsigned k=2; k<orient0.size(); ++k) {
+      dorient0[k]*=sw;
+      dorient1[k]*=sw;
+    }
     mergeInputDerivatives( 1, 2, orient0.size(), 0, dorient0, getInputDerivatives( 0, true, myatoms ), myatoms );
     mergeInputDerivatives( 1, 2, orient1.size(), 1, dorient1, getInputDerivatives( 1, true, myatoms ), myatoms );
   }

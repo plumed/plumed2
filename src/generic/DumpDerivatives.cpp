@@ -54,8 +54,7 @@ DUMPDERIVATIVES ARG=distance,distanceN STRIDE=1 FILE=deriv
 
 class DumpDerivatives :
   public ActionPilot,
-  public ActionWithArguments
-{
+  public ActionWithArguments {
   std::string file;
   std::string fmt;
   OFile of;
@@ -87,10 +86,11 @@ DumpDerivatives::DumpDerivatives(const ActionOptions&ao):
   Action(ao),
   ActionPilot(ao),
   ActionWithArguments(ao),
-  fmt("%15.10f")
-{
+  fmt("%15.10f") {
   parse("FILE",file);
-  if( file.length()==0 ) error("name of output file was not specified");
+  if( file.length()==0 ) {
+    error("name of output file was not specified");
+  }
   parse("FMT",fmt);
   fmt=" "+fmt;
   of.link(*this);
@@ -98,13 +98,19 @@ DumpDerivatives::DumpDerivatives(const ActionOptions&ao):
   log.printf("  on file %s\n",file.c_str());
   log.printf("  with format %s\n",fmt.c_str());
   unsigned nargs=getNumberOfArguments();
-  if( nargs==0 ) error("no arguments specified");
+  if( nargs==0 ) {
+    error("no arguments specified");
+  }
   (getPntrToArgument(0)->getPntrToAction())->turnOnDerivatives();
   unsigned npar=getPntrToArgument(0)->getNumberOfDerivatives();
-  if( npar==0 ) error("one or more arguments has no derivatives");
+  if( npar==0 ) {
+    error("one or more arguments has no derivatives");
+  }
   for(unsigned i=1; i<nargs; i++) {
     (getPntrToArgument(i)->getPntrToAction())->turnOnDerivatives();
-    if( npar!=getPntrToArgument(i)->getNumberOfDerivatives() ) error("the number of derivatives must be the same in all values being dumped");
+    if( npar!=getPntrToArgument(i)->getNumberOfDerivatives() ) {
+      error("the number of derivatives must be the same in all values being dumped");
+    }
   }
   checkRead();
 }

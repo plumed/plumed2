@@ -128,20 +128,27 @@ TD_GeneralizedExtremeValue::TD_GeneralizedExtremeValue(const ActionOptions& ao):
   center_(0),
   scale_(0),
   shape_(0),
-  normalization_(0)
-{
+  normalization_(0) {
   parseVector("LOCATION",center_);
   parseVector("SCALE",scale_);
   parseVector("SHAPE",shape_);
 
   setDimension(center_.size());
-  if(getDimension()>1) {plumed_merror(getName()+": only defined for one dimension, for multiple dimensions it should be used in combination with the TD_PRODUCT_DISTRIBUTION action.");}
-  if(scale_.size()!=getDimension()) {plumed_merror(getName()+": the SCALE keyword does not match the given dimension in MINIMA");}
-  if(shape_.size()!=getDimension()) {plumed_merror(getName()+": the SHAPE keyword does not match the given dimension in MINIMA");}
+  if(getDimension()>1) {
+    plumed_merror(getName()+": only defined for one dimension, for multiple dimensions it should be used in combination with the TD_PRODUCT_DISTRIBUTION action.");
+  }
+  if(scale_.size()!=getDimension()) {
+    plumed_merror(getName()+": the SCALE keyword does not match the given dimension in MINIMA");
+  }
+  if(shape_.size()!=getDimension()) {
+    plumed_merror(getName()+": the SHAPE keyword does not match the given dimension in MINIMA");
+  }
 
   normalization_.resize(getDimension());
   for(unsigned int k=0; k<getDimension(); k++) {
-    if(scale_[k]<0.0) {plumed_merror(getName()+": the value given for the scale parameter in SCALE should be larger than 0.0");}
+    if(scale_[k]<0.0) {
+      plumed_merror(getName()+": the value given for the scale parameter in SCALE should be larger than 0.0");
+    }
     normalization_[k] = 1.0/scale_[k];
   }
   checkRead();
@@ -159,11 +166,14 @@ double TD_GeneralizedExtremeValue::GEVdiagonal(const std::vector<double>& argume
     double arg=(argument[k]-center[k])/scale[k];
     double tx;
     if(shape_[k]!=0.0) {
-      if( shape_[k]>0 && argument[k] <= (center[k]-scale[k]/shape[k]) ) {return 0.0;}
-      if( shape_[k]<0 && argument[k] > (center[k]-scale[k]/shape[k]) ) {return 0.0;}
+      if( shape_[k]>0 && argument[k] <= (center[k]-scale[k]/shape[k]) ) {
+        return 0.0;
+      }
+      if( shape_[k]<0 && argument[k] > (center[k]-scale[k]/shape[k]) ) {
+        return 0.0;
+      }
       tx = pow( (1.0+arg*shape[k]), -1.0/shape[k] );
-    }
-    else {
+    } else {
       tx = exp(-arg);
     }
     value *= normalization[k] * pow(tx,shape[k]+1.0) * exp(-tx);

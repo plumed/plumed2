@@ -55,10 +55,13 @@ void ActionWithValue::useCustomisableComponents(Keywords& keys) {
 ActionWithValue::ActionWithValue(const ActionOptions&ao):
   Action(ao),
   noderiv(true),
-  numericalDerivatives(false)
-{
-  if( keywords.exists("NUMERICAL_DERIVATIVES") ) parseFlag("NUMERICAL_DERIVATIVES",numericalDerivatives);
-  if(numericalDerivatives) log.printf("  using numerical derivatives\n");
+  numericalDerivatives(false) {
+  if( keywords.exists("NUMERICAL_DERIVATIVES") ) {
+    parseFlag("NUMERICAL_DERIVATIVES",numericalDerivatives);
+  }
+  if(numericalDerivatives) {
+    log.printf("  using numerical derivatives\n");
+  }
 }
 
 ActionWithValue::~ActionWithValue() {
@@ -66,7 +69,9 @@ ActionWithValue::~ActionWithValue() {
 }
 
 void ActionWithValue::clearInputForces() {
-  for(unsigned i=0; i<values.size(); i++) values[i]->clearInputForce();
+  for(unsigned i=0; i<values.size(); i++) {
+    values[i]->clearInputForce();
+  }
 }
 
 void ActionWithValue::clearDerivatives() {
@@ -74,7 +79,9 @@ void ActionWithValue::clearDerivatives() {
   #pragma omp parallel num_threads(nt)
   {
     #pragma omp for
-    for(unsigned i=0; i<values.size(); i++) values[i]->clearDerivatives();
+    for(unsigned i=0; i<values.size(); i++) {
+      values[i]->clearDerivatives();
+    }
   }
 }
 
@@ -82,14 +89,18 @@ void ActionWithValue::clearDerivatives() {
 
 bool ActionWithValue::exists( const std::string& name ) const {
   for(unsigned i=0; i<values.size(); ++i) {
-    if (values[i]->name==name) return true;
+    if (values[i]->name==name) {
+      return true;
+    }
   }
   return false;
 }
 
 Value* ActionWithValue::copyOutput( const std::string& name ) const {
   for(unsigned i=0; i<values.size(); ++i) {
-    if (values[i]->name==name) return values[i].get();
+    if (values[i]->name==name) {
+      return values[i].get();
+    }
   }
   plumed_merror("there is no pointer with name " + name);
 }
@@ -114,7 +125,8 @@ void ActionWithValue::addValueWithDerivatives() {
 void ActionWithValue::setNotPeriodic() {
   plumed_massert(values.size()==1,"The number of components is not equal to one");
   plumed_massert(values[0]->name==getLabel(), "The value you are trying to set is not the default");
-  values[0]->min=0; values[0]->max=0;
+  values[0]->min=0;
+  values[0]->max=0;
   values[0]->setupPeriodicity();
 }
 
@@ -137,7 +149,8 @@ void ActionWithValue::addComponent( const std::string& name ) {
     plumed_merror("a description of component " + name + " has not been added to the manual. Components should be registered like keywords in "
                   "registerKeywords as described in the developer docs.");
   }
-  std::string thename; thename=getLabel() + "." + name;
+  std::string thename;
+  thename=getLabel() + "." + name;
   for(unsigned i=0; i<values.size(); ++i) {
     plumed_massert(values[i]->name!=getLabel(),"Cannot mix single values with components");
     plumed_massert(values[i]->name!=thename,"there is already a value with this name: "+thename);
@@ -154,7 +167,8 @@ void ActionWithValue::addComponentWithDerivatives( const std::string& name ) {
     plumed_merror("a description of component " + name + " has not been added to the manual. Components should be registered like keywords in "
                   "registerKeywords as described in the developer doc.");
   }
-  std::string thename; thename=getLabel() + "." + name;
+  std::string thename;
+  thename=getLabel() + "." + name;
   for(unsigned i=0; i<values.size(); ++i) {
     plumed_massert(values[i]->name!=getLabel(),"Cannot mix single values with components");
     plumed_massert(values[i]->name!=thename,"there is already a value with this name: "+thename);
@@ -168,9 +182,12 @@ void ActionWithValue::addComponentWithDerivatives( const std::string& name ) {
 
 int ActionWithValue::getComponent( const std::string& name ) const {
   plumed_massert( !exists( getLabel() ), "You should not be calling this routine if you are using a value");
-  std::string thename; thename=getLabel() + "." + name;
+  std::string thename;
+  thename=getLabel() + "." + name;
   for(unsigned i=0; i<values.size(); ++i) {
-    if (values[i]->name==thename) return i;
+    if (values[i]->name==thename) {
+      return i;
+    }
   }
   plumed_merror("there is no component with name " + name);
 }
@@ -193,7 +210,8 @@ std::vector<std::string> ActionWithValue::getComponentsVector( ) const {
 
 void ActionWithValue::componentIsNotPeriodic( const std::string& name ) {
   int kk=getComponent(name);
-  values[kk]->min=0; values[kk]->max=0;
+  values[kk]->min=0;
+  values[kk]->max=0;
   values[kk]->setupPeriodicity();
 }
 
@@ -204,7 +222,9 @@ void ActionWithValue::componentIsPeriodic( const std::string& name, const std::s
 
 void ActionWithValue::setGradientsIfNeeded() {
   if(isOptionOn("GRADIENTS")) {
-    for(unsigned i=0; i<values.size(); i++) values[i]->setGradients();
+    for(unsigned i=0; i<values.size(); i++) {
+      values[i]->setGradients();
+    }
   }
 }
 
@@ -212,11 +232,15 @@ void ActionWithValue::turnOnDerivatives() {
   // Turn on the derivatives
   noderiv=false;
   // Resize the derivatives
-  for(unsigned i=0; i<values.size(); ++i) values[i]->resizeDerivatives( getNumberOfDerivatives() );
+  for(unsigned i=0; i<values.size(); ++i) {
+    values[i]->resizeDerivatives( getNumberOfDerivatives() );
+  }
   // And turn on the derivatives in all actions on which we are dependent
   for(unsigned i=0; i<getDependencies().size(); ++i) {
     ActionWithValue* vv=dynamic_cast<ActionWithValue*>( getDependencies()[i] );
-    if(vv) vv->turnOnDerivatives();
+    if(vv) {
+      vv->turnOnDerivatives();
+    }
   }
 }
 

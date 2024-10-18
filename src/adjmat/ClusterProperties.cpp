@@ -76,45 +76,72 @@ PLUMED_REGISTER_ACTION(ClusterProperties,"CLUSTER_PROPERTIES")
 void ClusterProperties::registerKeywords( Keywords& keys ) {
   ClusterAnalysisBase::registerKeywords( keys );
   keys.add("compulsory","CLUSTER","1","which cluster would you like to look at 1 is the largest cluster, 2 is the second largest, 3 is the the third largest and so on.");
-  keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("LESS_THAN");
-  if( keys.reserved("VMEAN") ) keys.use("VMEAN");
-  if( keys.reserved("VSUM") ) keys.use("VSUM");
-  keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS"); keys.use("ALT_MIN");
-  keys.use("MIN"); keys.use("MAX"); keys.use("SUM"); keys.use("LOWEST"); keys.use("HIGHEST");
+  keys.use("MEAN");
+  keys.use("MORE_THAN");
+  keys.use("LESS_THAN");
+  if( keys.reserved("VMEAN") ) {
+    keys.use("VMEAN");
+  }
+  if( keys.reserved("VSUM") ) {
+    keys.use("VSUM");
+  }
+  keys.use("BETWEEN");
+  keys.use("HISTOGRAM");
+  keys.use("MOMENTS");
+  keys.use("ALT_MIN");
+  keys.use("MIN");
+  keys.use("MAX");
+  keys.use("SUM");
+  keys.use("LOWEST");
+  keys.use("HIGHEST");
 }
 
 ClusterProperties::ClusterProperties(const ActionOptions&ao):
   Action(ao),
-  ClusterAnalysisBase(ao)
-{
+  ClusterAnalysisBase(ao) {
   // Find out which cluster we want
   parse("CLUSTER",clustr);
 
-  if( clustr<1 ) error("cannot look for a cluster larger than the largest cluster");
-  if( clustr>getNumberOfNodes() ) error("cluster selected is invalid - too few atoms in system");
+  if( clustr<1 ) {
+    error("cannot look for a cluster larger than the largest cluster");
+  }
+  if( clustr>getNumberOfNodes() ) {
+    error("cluster selected is invalid - too few atoms in system");
+  }
 
   // Create all tasks by copying those from underlying DFS object (which is actually MultiColvar)
-  for(unsigned i=0; i<getNumberOfNodes(); ++i) addTaskToList(i);
+  for(unsigned i=0; i<getNumberOfNodes(); ++i) {
+    addTaskToList(i);
+  }
 
   // And now finish the setup of everything in the base
-  std::vector<AtomNumber> fake_atoms; setupMultiColvarBase( fake_atoms );
+  std::vector<AtomNumber> fake_atoms;
+  setupMultiColvarBase( fake_atoms );
 }
 
 void ClusterProperties::calculate() {
   // Retrieve the atoms in the largest cluster
-  std::vector<unsigned> myatoms; retrieveAtomsInCluster( clustr, myatoms );
+  std::vector<unsigned> myatoms;
+  retrieveAtomsInCluster( clustr, myatoms );
   // Activate the relevant tasks
   deactivateAllTasks();
-  for(unsigned i=0; i<myatoms.size(); ++i) taskFlags[myatoms[i]]=1;
+  for(unsigned i=0; i<myatoms.size(); ++i) {
+    taskFlags[myatoms[i]]=1;
+  }
   lockContributors();
   // Now do the calculation
   runAllTasks();
 }
 
 void ClusterProperties::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
-  std::vector<double> vals( myvals.getNumberOfValues() ); getPropertiesOfNode( current, vals );
-  if( !doNotCalculateDerivatives() ) getNodePropertyDerivatives( current, myvals );
-  for(unsigned k=0; k<vals.size(); ++k) myvals.setValue( k, vals[k] );
+  std::vector<double> vals( myvals.getNumberOfValues() );
+  getPropertiesOfNode( current, vals );
+  if( !doNotCalculateDerivatives() ) {
+    getNodePropertyDerivatives( current, myvals );
+  }
+  for(unsigned k=0; k<vals.size(); ++k) {
+    myvals.setValue( k, vals[k] );
+  }
 }
 
 }

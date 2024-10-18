@@ -357,8 +357,7 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     useCZARestimator(true), useUIestimator(false), mergeHistoryFiles(false),
     textoutput(false), withExternalForce(false), withExternalFict(false),
     reflectingWall(getNumberOfArguments(), 0),
-    maxFactors(getNumberOfArguments(), 1.0)
-{
+    maxFactors(getNumberOfArguments(), 1.0) {
   log << "eABF/DRR: You now are using the extended adaptive biasing "
       "force(eABF) method."
       << '\n';
@@ -427,9 +426,9 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
       withExternalFict = true;
     }
   }
-  if (temp >= 0.0)
+  if (temp >= 0.0) {
     kbt = plumed.getAtoms().getKBoltzmann() * temp;
-  else {
+  } else {
     kbt = plumed.getAtoms().getKbT();
     if (kbt <= std::numeric_limits<double>::epsilon()) {
       error("eABF/DRR: It seems the MD engine does not setup the temperature correctly for PLUMED."
@@ -459,8 +458,9 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   vector<string> zgmin(ndims);
   parseVector("GRID_MIN", gmin);
   parseVector("ZGRID_MIN", zgmin);
-  if (gmin.size() != ndims)
+  if (gmin.size() != ndims) {
     error("eABF/DRR: not enough values for GRID_MIN");
+  }
   if (zgmin.size() != ndims) {
     log << "eABF/DRR: You didn't specify ZGRID_MIN. " << '\n'
         << "eABF/DRR: The GRID_MIN will be used instead.";
@@ -470,8 +470,9 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   vector<string> zgmax(ndims);
   parseVector("GRID_MAX", gmax);
   parseVector("ZGRID_MAX", zgmax);
-  if (gmax.size() != ndims)
+  if (gmax.size() != ndims) {
     error("eABF/DRR: not enough values for GRID_MAX");
+  }
   if (zgmax.size() != ndims) {
     log << "eABF/DRR: You didn't specify ZGRID_MAX. " << '\n'
         << "eABF/DRR: The GRID_MAX will be used instead.";
@@ -619,8 +620,9 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
       componentIsPeriodic(comp, a, b);
       delim[i].setPeriodicity(c, d);
       zdelim[i].setPeriodicity(c, d);
-    } else
+    } else {
       componentIsNotPeriodic(comp);
+    }
     fictValue[i] = getPntrToComponent(comp);
     // Velocity output
     comp = getPntrToArgument(i)->getName() + "_vfict";

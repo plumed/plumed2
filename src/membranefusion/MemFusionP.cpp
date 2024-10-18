@@ -27,10 +27,8 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 #endif
 
-namespace PLMD
-{
-namespace membranefusion
-{
+namespace PLMD {
+namespace membranefusion {
 //+PLUMEDOC MEMBRANEFUSIONMOD_COLVAR MEMFUSIONP
 /*
 Calculate a CV that can induce the formation of the hemifusion stalk between two initially flat and planar bilayers.
@@ -75,8 +73,7 @@ You can test this CV with another example in this <a href="https://github.com/la
 */
 //+ENDPLUMEDOC
 
-class memFusionP : public Colvar
-{
+class memFusionP : public Colvar {
   std::vector<AtomNumber> UMEM, LMEM, TAILS;
   std::vector<double> NSMEM, DSMEM, HMEM, RCYLMEM, ZETAMEM, ONEOVERS2C2CUTOFF, XCYL, YCYL;
 
@@ -88,8 +85,7 @@ public:
 
 PLUMED_REGISTER_ACTION(memFusionP, "MEMFUSIONP")
 
-void memFusionP::registerKeywords(Keywords &keys)
-{
+void memFusionP::registerKeywords(Keywords &keys) {
   Colvar::registerKeywords(keys);
   keys.add("atoms", "UMEMBRANE", "all the beads of the upper membrane");
   keys.add("atoms", "LMEMBRANE", "all the beads of the lower membrane");
@@ -104,79 +100,93 @@ void memFusionP::registerKeywords(Keywords &keys)
   keys.add("optional", "YCYL", "Y coordinate of the fixed cylinder, if not present this will be calculated.");
 }
 
-memFusionP::memFusionP(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao)
-{
+memFusionP::memFusionP(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao) {
   parseAtomList("UMEMBRANE", UMEM);
-  if (UMEM.size() == 0)
+  if (UMEM.size() == 0) {
     error("UMEMBRANE has not any atom specified.");
+  }
 
   parseAtomList("LMEMBRANE", LMEM);
-  if (LMEM.size() == 0)
+  if (LMEM.size() == 0) {
     error("LMEMBRANE has not any atom specified.");
+  }
 
   parseAtomList("TAILS", TAILS);
-  if (TAILS.size() == 0)
+  if (TAILS.size() == 0) {
     error("TAILS has not any atom specified.");
+  }
 
   parseVector("NSMEM", NSMEM);
-  if (NSMEM.size() > 1)
+  if (NSMEM.size() > 1) {
     error("NSMEM cannot take more than one value.");
+  }
 
   parseVector("DSMEM", DSMEM);
-  if (DSMEM.size() > 1)
+  if (DSMEM.size() > 1) {
     error("DSMEM cannot take more than one value.");
-  if (DSMEM.size() == 0)
+  }
+  if (DSMEM.size() == 0) {
     DSMEM.push_back(0.1);
+  }
 
   parseVector("HMEM", HMEM);
-  if (HMEM.size() > 1)
+  if (HMEM.size() > 1) {
     error("HMEM cannot take more than one value.");
-  if (HMEM.size() == 0)
+  }
+  if (HMEM.size() == 0) {
     HMEM.push_back(0.25);
+  }
 
   parseVector("RCYLMEM", RCYLMEM);
-  if (RCYLMEM.size() > 1)
+  if (RCYLMEM.size() > 1) {
     error("RCYLMEM cannot take more than one value.");
-  if (RCYLMEM.size() == 0)
+  }
+  if (RCYLMEM.size() == 0) {
     RCYLMEM.push_back(1.75);
+  }
 
   parseVector("ZETAMEM", ZETAMEM);
-  if (ZETAMEM.size() > 1)
+  if (ZETAMEM.size() > 1) {
     error("ZETA cannot take more than one value.");
-  if (ZETAMEM.size() == 0)
+  }
+  if (ZETAMEM.size() == 0) {
     ZETAMEM.push_back(0.5);
+  }
 
   parseVector("ONEOVERS2C2CUTOFF", ONEOVERS2C2CUTOFF);
-  if (ONEOVERS2C2CUTOFF.size() > 1)
+  if (ONEOVERS2C2CUTOFF.size() > 1) {
     error("ONEOVERS2C2CUTOFF cannot take more than one value.");
-  if (ONEOVERS2C2CUTOFF.size() == 0)
+  }
+  if (ONEOVERS2C2CUTOFF.size() == 0) {
     ONEOVERS2C2CUTOFF.push_back(500);
+  }
 
   parseVector("XCYL", XCYL);
-  if (XCYL.size() > 1)
+  if (XCYL.size() > 1) {
     error("XCYL cannot take more than one value.");
-  if (XCYL.size() == 0)
+  }
+  if (XCYL.size() == 0) {
     XCYL.push_back(-1.0);
+  }
 
   parseVector("YCYL", YCYL);
-  if (YCYL.size() > 1)
+  if (YCYL.size() > 1) {
     error("YCYL cannot take more than one value.");
-  if (YCYL.size() == 0)
+  }
+  if (YCYL.size() == 0) {
     YCYL.push_back(-1.0);
+  }
 
   checkRead();
 
   std::vector<AtomNumber> atoms;
-  for (unsigned i = 0; i < UMEM.size(); i++)
-  {
+  for (unsigned i = 0; i < UMEM.size(); i++) {
     atoms.push_back(UMEM[i]);
   }
-  for (unsigned i = 0; i < LMEM.size(); i++)
-  {
+  for (unsigned i = 0; i < LMEM.size(); i++) {
     atoms.push_back(LMEM[i]);
   }
-  for (unsigned i = 0; i < TAILS.size(); i++)
-  {
+  for (unsigned i = 0; i < TAILS.size(); i++) {
     atoms.push_back(TAILS[i]);
   }
 
@@ -185,8 +195,7 @@ memFusionP::memFusionP(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao)
   requestAtoms(atoms);
 }
 
-void memFusionP::calculate()
-{
+void memFusionP::calculate() {
   /**************************
    *                        *
    *         System         *
@@ -204,8 +213,7 @@ void memFusionP::calculate()
   #pragma omp parallel for private(uMemAngle, lMemAngle) reduction(+:ZuMemcos, ZuMemsin, ZlMemcos, ZlMemsin)
 #endif
 #endif
-  for (unsigned i = 0; i < UMEM.size(); i++)
-  {
+  for (unsigned i = 0; i < UMEM.size(); i++) {
     uMemAngle = 2.0 * M_PI * getPbc().realToScaled(pbcDistance(Vector(0.0, 0.0, 0.0), getPosition(i)))[2];
     lMemAngle = 2.0 * M_PI * getPbc().realToScaled(pbcDistance(Vector(0.0, 0.0, 0.0), getPosition(i + UMEM.size())))[2];
     ZuMemcos += cos(uMemAngle);
@@ -293,49 +301,37 @@ void memFusionP::calculate()
   #pragma omp parallel for private(ZTailDistance, PositionS_Mem, TailPosition, x, aux) reduction(vec_double_plus:Fs_Mem, sx_Mem, sy_Mem, cx_Mem, cy_Mem)
 #endif
 #endif
-  for (unsigned i = 0; i < TAILS.size(); i++)
-  {
+  for (unsigned i = 0; i < TAILS.size(); i++) {
     ZTailDistance = pbcDistance(Vector(0.0, 0.0, ZMems), getPosition(i + membraneBeads))[2];
     PositionS_Mem = (ZTailDistance + firstSliceZDist_Mem) / DSMEM[0];
     // If the following condition is met the particle is in the Z space of the cylinder.
-    if ((PositionS_Mem >= (-0.5 - HMEM[0])) && (PositionS_Mem <= (NSMEM[0] + 0.5 - 1.0 + HMEM[0])))
-    {
+    if ((PositionS_Mem >= (-0.5 - HMEM[0])) && (PositionS_Mem <= (NSMEM[0] + 0.5 - 1.0 + HMEM[0]))) {
       analyzeThisParticle_Mem[i] = 1.0;
       // Defining the slices to analyze each particle.
-      if (PositionS_Mem < 1)
-      {
+      if (PositionS_Mem < 1) {
         s1_Mem[i] = 0;
         s2_Mem[i] = 2;
-      }
-      else if (PositionS_Mem <= (NSMEM[0] - 2.0))
-      {
+      } else if (PositionS_Mem <= (NSMEM[0] - 2.0)) {
         s1_Mem[i] = floor(PositionS_Mem) - 1;
         s2_Mem[i] = floor(PositionS_Mem) + 1;
-      }
-      else
-      {
+      } else {
         s1_Mem[i] = NSMEM[0] - 3;
         s2_Mem[i] = NSMEM[0] - 1;
       }
 
       TailPosition = getPbc().realToScaled(pbcDistance(Vector(0.0, 0.0, 0.0), getPosition(i + membraneBeads)));
 
-      for (unsigned s = s1_Mem[i]; s <= s2_Mem[i]; s++)
-      {
+      for (unsigned s = s1_Mem[i]; s <= s2_Mem[i]; s++) {
         x = (ZTailDistance - (s + 0.5 - NSMEM[0] / 2.0) * DSMEM[0]) * 2.0 / DSMEM[0];
-        if (!((x <= -1.0 - HMEM[0]) || (x >= 1.0 + HMEM[0])))
-        {
-          if (((-1.0 + HMEM[0]) <= x) && (x <= (1.0 - HMEM[0])))
-          {
+        if (!((x <= -1.0 - HMEM[0]) || (x >= 1.0 + HMEM[0]))) {
+          if (((-1.0 + HMEM[0]) <= x) && (x <= (1.0 - HMEM[0]))) {
             faxial_Mem[i + TAILS.size() * s] = 1.0;
             Fs_Mem[s] += 1.0;
             sx_Mem[s] += sin(2.0 * M_PI * TailPosition[0]);
             sy_Mem[s] += sin(2.0 * M_PI * TailPosition[1]);
             cx_Mem[s] += cos(2.0 * M_PI * TailPosition[0]);
             cy_Mem[s] += cos(2.0 * M_PI * TailPosition[1]);
-          }
-          else if (((1.0 - HMEM[0]) < x) && (x < (1.0 + HMEM[0])))
-          {
+          } else if (((1.0 - HMEM[0]) < x) && (x < (1.0 + HMEM[0]))) {
             aux = 0.5 - ((3.0 * x - 3.0) / (4.0 * HMEM[0])) + (pow((x - 1.0), 3) / (4.0 * pow(HMEM[0], 3)));
             faxial_Mem[i + TAILS.size() * s] = aux;
             d_faxial_Mem_dz[i + TAILS.size() * s] = ((-3.0 / (4.0 * HMEM[0])) + ((3.0 * pow((x - 1), 2)) / (4.0 * pow(HMEM[0], 3)))) * 2.0 / DSMEM[0];
@@ -344,9 +340,7 @@ void memFusionP::calculate()
             sy_Mem[s] += aux * sin(2.0 * M_PI * TailPosition[1]);
             cx_Mem[s] += aux * cos(2.0 * M_PI * TailPosition[0]);
             cy_Mem[s] += aux * cos(2.0 * M_PI * TailPosition[1]);
-          }
-          else if (((-1.0 - HMEM[0]) < x) && (x < (-1.0 + HMEM[0])))
-          {
+          } else if (((-1.0 - HMEM[0]) < x) && (x < (-1.0 + HMEM[0]))) {
             aux = 0.5 + ((3.0 * x + 3.0) / (4.0 * HMEM[0])) - (pow((x + 1.0), 3) / (4.0 * pow(HMEM[0], 3)));
             faxial_Mem[i + TAILS.size() * s] = aux;
             d_faxial_Mem_dz[i + TAILS.size() * s] = ((3.0 / (4.0 * HMEM[0])) - ((3.0 * pow((x + 1), 2)) / (4.0 * pow(HMEM[0], 3)))) * 2.0 / DSMEM[0];
@@ -361,10 +355,8 @@ void memFusionP::calculate()
     }
   }
 
-  for (unsigned s = 0; s < NSMEM[0]; s++)
-  {
-    if (Fs_Mem[s] != 0.0)
-    {
+  for (unsigned s = 0; s < NSMEM[0]; s++) {
+    if (Fs_Mem[s] != 0.0) {
       ws_Mem[s] = tanh(Fs_Mem[s]);
       W_Mem += ws_Mem[s];
       sx_Mem[s] = sx_Mem[s] / Fs_Mem[s];
@@ -386,13 +378,10 @@ void memFusionP::calculate()
   // Eq. 12 Hub & Awasthi JCTC 2017.
   double Xcyl_Mem, Ycyl_Mem;
 
-  if ((XCYL[0] > 0.0) && (YCYL[0] > 0.0))
-  {
+  if ((XCYL[0] > 0.0) && (YCYL[0] > 0.0)) {
     Xcyl_Mem = XCYL[0];
     Ycyl_Mem = YCYL[0];
-  }
-  else
-  {
+  } else {
     Xcyl_Mem = (atan2(-Xsc_Mem, -Xcc_Mem) + M_PI) * Lx / (2 * M_PI);
     Ycyl_Mem = (atan2(-Ysc_Mem, -Ycc_Mem) + M_PI) * Ly / (2 * M_PI);
   }
@@ -427,21 +416,15 @@ void memFusionP::calculate()
   // To avoid rare instabilities auxX_Mem and auxY_Mem are truncated at a configurable value (default = 500).
   double auxX_Mem = (1 / (pow(Xsc_Mem, 2) + pow(Xcc_Mem, 2))), auxY_Mem = (1 / (pow(Ysc_Mem, 2) + pow(Ycc_Mem, 2)));
 
-  if (auxX_Mem > ONEOVERS2C2CUTOFF[0])
-  {
+  if (auxX_Mem > ONEOVERS2C2CUTOFF[0]) {
     auxX_Mem = Lx * ONEOVERS2C2CUTOFF[0] / (2 * M_PI);
-  }
-  else
-  {
+  } else {
     auxX_Mem = Lx * auxX_Mem / (2 * M_PI);
   }
 
-  if (auxY_Mem > ONEOVERS2C2CUTOFF[0])
-  {
+  if (auxY_Mem > ONEOVERS2C2CUTOFF[0]) {
     auxY_Mem = Ly * ONEOVERS2C2CUTOFF[0] / (2 * M_PI);
-  }
-  else
-  {
+  } else {
     auxY_Mem = Ly * auxY_Mem / (2 * M_PI);
   }
 
@@ -465,10 +448,8 @@ void memFusionP::calculate()
   #pragma omp parallel for private(TailPosition,d_Xsc_Mem_dx,d_Xcc_Mem_dx,d_Ysc_Mem_dy,d_Ycc_Mem_dy,d_Xsc_Mem_dz,d_Xcc_Mem_dz,d_Ysc_Mem_dz,d_Ycc_Mem_dz,d_sx_Mem_dx,d_sy_Mem_dy,d_cx_Mem_dx,d_cy_Mem_dy,d_sx_Mem_dz,d_sy_Mem_dz,d_cx_Mem_dz,d_cy_Mem_dz,d_ws_Mem_dz,ri_Mem,x,fradial_Mem) reduction(vec_double_plus: Nsp_Mem, Axs_Mem, Ays_Mem)
 #endif
 #endif
-  for (unsigned i = 0; i < TAILS.size(); i++)
-  {
-    if (analyzeThisParticle_Mem[i])
-    {
+  for (unsigned i = 0; i < TAILS.size(); i++) {
+    if (analyzeThisParticle_Mem[i]) {
       TailPosition = getPbc().realToScaled(pbcDistance(Vector(0.0, 0.0, 0.0), getPosition(i + membraneBeads)));
       d_Xsc_Mem_dx = 0.0;
       d_Xcc_Mem_dx = 0.0;
@@ -478,10 +459,8 @@ void memFusionP::calculate()
       d_Xcc_Mem_dz = 0.0;
       d_Ysc_Mem_dz = 0.0;
       d_Ycc_Mem_dz = 0.0;
-      for (unsigned s = s1_Mem[i]; s <= s2_Mem[i]; s++)
-      {
-        if (Fs_Mem[s] != 0.0)
-        {
+      for (unsigned s = s1_Mem[i]; s <= s2_Mem[i]; s++) {
+        if (Fs_Mem[s] != 0.0) {
           d_sx_Mem_dx = faxial_Mem[i + TAILS.size() * s] * 2.0 * M_PI * cos(2.0 * M_PI * TailPosition[0]) / (Lx * Fs_Mem[s]);
           d_sy_Mem_dy = faxial_Mem[i + TAILS.size() * s] * 2.0 * M_PI * cos(2.0 * M_PI * TailPosition[1]) / (Ly * Fs_Mem[s]);
           d_cx_Mem_dx = -faxial_Mem[i + TAILS.size() * s] * 2.0 * M_PI * sin(2.0 * M_PI * TailPosition[0]) / (Lx * Fs_Mem[s]);
@@ -510,27 +489,20 @@ void memFusionP::calculate()
       CylDistances_Mem[i] = pbcDistance(xyzCyl_Mem, pbcDistance(Vector(0.0, 0.0, 0.0), getPosition(i + membraneBeads)));
       ri_Mem = sqrt(pow(CylDistances_Mem[i][0], 2) + pow(CylDistances_Mem[i][1], 2));
       x = ri_Mem / RCYLMEM[0];
-      if (!((x <= -1.0 - HMEM[0]) || (x >= 1.0 + HMEM[0])))
-      {
-        if (((-1.0 + HMEM[0]) <= x) && (x <= (1.0 - HMEM[0])))
-        {
+      if (!((x <= -1.0 - HMEM[0]) || (x >= 1.0 + HMEM[0]))) {
+        if (((-1.0 + HMEM[0]) <= x) && (x <= (1.0 - HMEM[0]))) {
           fradial_Mem = 1.0;
-        }
-        else if (((1.0 - HMEM[0]) < x) && (x < (1.0 + HMEM[0])))
-        {
+        } else if (((1.0 - HMEM[0]) < x) && (x < (1.0 + HMEM[0]))) {
           fradial_Mem = 0.5 - ((3.0 * x - 3.0) / (4.0 * HMEM[0])) + (pow((x - 1.0), 3) / (4.0 * pow(HMEM[0], 3)));
           d_fradial_Mem_dx[i] = ((-3.0 / (4.0 * HMEM[0])) + ((3.0 * pow((x - 1), 2)) / (4.0 * pow(HMEM[0], 3)))) * CylDistances_Mem[i][0] / (RCYLMEM[0] * ri_Mem);
           d_fradial_Mem_dy[i] = ((-3.0 / (4.0 * HMEM[0])) + ((3.0 * pow((x - 1), 2)) / (4.0 * pow(HMEM[0], 3)))) * CylDistances_Mem[i][1] / (RCYLMEM[0] * ri_Mem);
-        }
-        else if (((-1.0 - HMEM[0]) < x) && (x < (-1.0 + HMEM[0])))
-        {
+        } else if (((-1.0 - HMEM[0]) < x) && (x < (-1.0 + HMEM[0]))) {
           fradial_Mem = 0.5 + ((3.0 * x + 3.0) / (4.0 * HMEM[0])) - (pow((x + 1.0), 3) / (4.0 * pow(HMEM[0], 3)));
           d_fradial_Mem_dx[i] = ((3.0 / (4.0 * HMEM[0])) - ((3.0 * pow((x + 1), 2)) / (4.0 * pow(HMEM[0], 3)))) * CylDistances_Mem[i][0] / (RCYLMEM[0] * ri_Mem);
           d_fradial_Mem_dy[i] = ((3.0 / (4.0 * HMEM[0])) - ((3.0 * pow((x + 1), 2)) / (4.0 * pow(HMEM[0], 3)))) * CylDistances_Mem[i][1] / (RCYLMEM[0] * ri_Mem);
         }
 
-        for (unsigned s = s1_Mem[i]; s <= s2_Mem[i]; s++)
-        {
+        for (unsigned s = s1_Mem[i]; s <= s2_Mem[i]; s++) {
           Nsp_Mem[s] += fradial_Mem * faxial_Mem[i + TAILS.size() * s];
           Axs_Mem[s] += faxial_Mem[i + TAILS.size() * s] * d_fradial_Mem_dx[i];
           Ays_Mem[s] += faxial_Mem[i + TAILS.size() * s] * d_fradial_Mem_dy[i];
@@ -540,16 +512,12 @@ void memFusionP::calculate()
     }
   }
 
-  for (unsigned s = 0; s < NSMEM[0]; s++)
-  {
-    if (Nsp_Mem[s] <= 1.0)
-    {
+  for (unsigned s = 0; s < NSMEM[0]; s++) {
+    if (Nsp_Mem[s] <= 1.0) {
       psi_Mem[s] = ZETAMEM[0] * Nsp_Mem[s];
       d_psi_Mem[s] = ZETAMEM[0];
       Xi_Mem += psi_Mem[s];
-    }
-    else
-    {
+    } else {
       psi_Mem[s] = 1.0 - c_Mem * exp(-b_Mem * Nsp_Mem[s]);
       d_psi_Mem[s] = b_Mem * c_Mem * exp(-b_Mem * Nsp_Mem[s]);
       Xi_Mem += psi_Mem[s];
@@ -569,22 +537,17 @@ void memFusionP::calculate()
   #pragma omp parallel for private(aux)
 #endif
 #endif
-  for (unsigned i = 0; i < TAILS.size(); i++)
-  {
-    if (analyzeThisParticle_Mem[i])
-    {
-      for (unsigned s = s1_Mem[i]; s <= s2_Mem[i]; s++)
-      {
-        if (faxial_Mem[i + TAILS.size() * s])
-        {
+  for (unsigned i = 0; i < TAILS.size(); i++) {
+    if (analyzeThisParticle_Mem[i]) {
+      for (unsigned s = s1_Mem[i]; s <= s2_Mem[i]; s++) {
+        if (faxial_Mem[i + TAILS.size() * s]) {
           faxial_Mem_d_fradial_Mem_dx[i + TAILS.size() * s] = faxial_Mem[i + TAILS.size() * s] * d_fradial_Mem_dx[i] - d_Xcyl_Mem_dx[i] * Axs_Mem[s];
           faxial_Mem_d_fradial_Mem_dy[i + TAILS.size() * s] = faxial_Mem[i + TAILS.size() * s] * d_fradial_Mem_dy[i] - d_Ycyl_Mem_dy[i] * Ays_Mem[s];
           faxial_Mem_d_fradial_Mem_dz[i + TAILS.size() * s] = -d_Xcyl_Mem_dz[i] * Axs_Mem[s] - d_Ycyl_Mem_dz[i] * Ays_Mem[s];
         }
       }
 
-      for (unsigned s = s1_Mem[i]; s <= s2_Mem[i]; s++)
-      {
+      for (unsigned s = s1_Mem[i]; s <= s2_Mem[i]; s++) {
         aux = d_psi_Mem[s] / NSMEM[0];
         derivatives_Mem[i][0] += aux * faxial_Mem_d_fradial_Mem_dx[i + TAILS.size() * s];
         derivatives_Mem[i][1] += aux * faxial_Mem_d_fradial_Mem_dy[i + TAILS.size() * s];
@@ -595,8 +558,7 @@ void memFusionP::calculate()
 
   // Derivatives and virial for the Xi_Mem.
   Tensor virial;
-  for (unsigned i = 0; i < TAILS.size(); i++)
-  {
+  for (unsigned i = 0; i < TAILS.size(); i++) {
     setAtomsDerivatives((i + membraneBeads), derivatives_Mem[i]);
     virial -= Tensor(CylDistances_Mem[i], derivatives_Mem[i]);
   }

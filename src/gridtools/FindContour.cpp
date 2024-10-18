@@ -102,10 +102,16 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit FindContour(const ActionOptions&ao);
-  bool checkAllActive() const override { return gbuffer==0; }
+  bool checkAllActive() const override {
+    return gbuffer==0;
+  }
   void prepareForAveraging() override;
-  bool isPeriodic() override { return false; }
-  unsigned getNumberOfQuantities() const override { return 1 + ingrid->getDimension(); }
+  bool isPeriodic() override {
+    return false;
+  }
+  unsigned getNumberOfQuantities() const override {
+    return 1 + ingrid->getDimension();
+  }
   void compute( const unsigned& current, MultiValue& myvals ) const override;
   void finishAveraging() override;
 };
@@ -124,75 +130,110 @@ void FindContour::registerKeywords( Keywords& keys ) {
 FindContour::FindContour(const ActionOptions&ao):
   Action(ao),
   ContourFindingBase(ao),
-  firsttime(true)
-{
+  firsttime(true) {
 
   parse("BUFFER",gbuffer);
-  if( gbuffer>0 ) log.printf("  after first step a subset of only %u grid points around where the countour was found will be checked\n",gbuffer);
+  if( gbuffer>0 ) {
+    log.printf("  after first step a subset of only %u grid points around where the countour was found will be checked\n",gbuffer);
+  }
 
-  std::string file; parse("FILE",file);
-  if( file.length()==0 ) error("name out output file was not specified");
+  std::string file;
+  parse("FILE",file);
+  if( file.length()==0 ) {
+    error("name out output file was not specified");
+  }
   std::string type=Tools::extension(file);
   log<<"  file name "<<file<<"\n";
-  if(type!="xyz") error("can only print xyz file type with contour finding");
+  if(type!="xyz") {
+    error("can only print xyz file type with contour finding");
+  }
 
   fmt_xyz="%f";
-  std::string precision; parse("PRECISION",precision);
+  std::string precision;
+  parse("PRECISION",precision);
   if(precision.length()>0) {
-    int p; Tools::convert(precision,p);
+    int p;
+    Tools::convert(precision,p);
     log<<"  with precision "<<p<<"\n";
     std::string a,b;
     Tools::convert(p+5,a);
     Tools::convert(p,b);
     fmt_xyz="%"+a+"."+b+"f";
   }
-  std::string unitname; parse("UNITS",unitname);
+  std::string unitname;
+  parse("UNITS",unitname);
   if(unitname!="PLUMED") {
-    Units myunit; myunit.setLength(unitname);
+    Units myunit;
+    myunit.setLength(unitname);
     lenunit=plumed.getAtoms().getUnits().getLength()/myunit.getLength();
+  } else {
+    lenunit=1.0;
   }
-  else lenunit=1.0;
-  of.link(*this); of.open(file);
-  checkRead(); mydata=buildDataStashes( NULL );
+  of.link(*this);
+  of.open(file);
+  checkRead();
+  mydata=buildDataStashes( NULL );
 }
 
 void FindContour::prepareForAveraging() {
   // Create a task list if first time
   if( firsttime ) {
-    for(unsigned i=0; i<ingrid->getDimension()*ingrid->getNumberOfPoints(); ++i) addTaskToList( i );
+    for(unsigned i=0; i<ingrid->getDimension()*ingrid->getNumberOfPoints(); ++i) {
+      addTaskToList( i );
+    }
   }
-  firsttime=false; deactivateAllTasks();
+  firsttime=false;
+  deactivateAllTasks();
 
   // We now need to identify the grid points that we need to search through
   std::vector<unsigned> nbin( ingrid->getNbin() );
   std::vector<unsigned> ind( ingrid->getDimension() );
   std::vector<unsigned> ones( ingrid->getDimension(), 1 );
-  unsigned num_neighbours; std::vector<unsigned> neighbours;
+  unsigned num_neighbours;
+  std::vector<unsigned> neighbours;
   for(unsigned i=0; i<ingrid->getNumberOfPoints(); ++i) {
     // Ensure inactive grid points are ignored
-    if( ingrid->inactive(i) ) continue;
+    if( ingrid->inactive(i) ) {
+      continue;
+    }
 
     // Get the index of the current grid point
     ingrid->getIndices( i, ind );
     ingrid->getNeighbors( ind, ones, num_neighbours, neighbours );
     bool cycle=false;
     for(unsigned j=0; j<num_neighbours; ++j) {
-      if( ingrid->inactive( neighbours[j]) ) { cycle=true; break; }
+      if( ingrid->inactive( neighbours[j]) ) {
+        cycle=true;
+        break;
+      }
     }
-    if( cycle ) continue;
+    if( cycle ) {
+      continue;
+    }
 
     // Get the value of a point on the grid
     double val1=getFunctionValue( i ) - contour;
     bool edge=false;
     for(unsigned j=0; j<ingrid->getDimension(); ++j) {
       // Make sure we don't search at the edge of the grid
-      if( !ingrid->isPeriodic(j) && (ind[j]+1)==nbin[j] ) continue;
-      else if( (ind[j]+1)==nbin[j] ) { edge=true; ind[j]=0; }
-      else ind[j]+=1;
+      if( !ingrid->isPeriodic(j) && (ind[j]+1)==nbin[j] ) {
+        continue;
+      } else if( (ind[j]+1)==nbin[j] ) {
+        edge=true;
+        ind[j]=0;
+      } else {
+        ind[j]+=1;
+      }
       double val2=getFunctionValue( ind ) - contour;
-      if( val1*val2<0 ) taskFlags[ ingrid->getDimension()*i + j ] = 1;
-      if( ingrid->isPeriodic(j) && edge ) { edge=false; ind[j]=nbin[j]-1; }
-      else ind[j]-=1;
+      if( val1*val2<0 ) {
+        taskFlags[ ingrid->getDimension()*i + j ] = 1;
+      }
+      if( ingrid->isPeriodic(j) && edge ) {
+        edge=false;
+        ind[j]=nbin[j]-1;
+      } else {
+        ind[j]-=1;
+      }
     }
   }
   lockContributors();
@@ -212,13 +253,16 @@ void FindContour::compute( const unsigned& current, MultiValue& myvals ) const {
   // Now find the contour
   findContour( direction, point );
   // And transfer to the store data vessel
-  for(unsigned i=0; i<ingrid->getDimension(); ++i) myvals.setValue( 1+i, point[i] );
+  for(unsigned i=0; i<ingrid->getDimension(); ++i) {
+    myvals.setValue( 1+i, point[i] );
+  }
 }
 
 void FindContour::finishAveraging() {
   // And update the list of active grid points
   if( gbuffer>0 ) {
-    std::vector<unsigned> neighbours; unsigned num_neighbours;
+    std::vector<unsigned> neighbours;
+    unsigned num_neighbours;
     std::vector<unsigned> ugrid_indices( ingrid->getDimension() );
     std::vector<bool> active( ingrid->getNumberOfPoints(), false );
     std::vector<unsigned> gbuffer_vec( ingrid->getDimension(), gbuffer );
@@ -229,7 +273,9 @@ void FindContour::finishAveraging() {
       ingrid->getIndices( ipoint, ugrid_indices );
       // Now activate buffer region
       ingrid->getNeighbors( ugrid_indices, gbuffer_vec, num_neighbours, neighbours );
-      for(unsigned n=0; n<num_neighbours; ++n) active[ neighbours[n] ]=true;
+      for(unsigned n=0; n<num_neighbours; ++n) {
+        active[ neighbours[n] ]=true;
+      }
     }
     ingrid->activateThesePoints( active );
   }
@@ -237,8 +283,11 @@ void FindContour::finishAveraging() {
   of.printf("%u\n",mydata->getNumberOfStoredValues());
   of.printf("Points found on isocontour\n");
   for(unsigned i=0; i<mydata->getNumberOfStoredValues(); ++i) {
-    mydata->retrieveSequentialValue( i, false, point ); of.printf("X");
-    for(unsigned j=0; j<ingrid->getDimension(); ++j) of.printf( (" " + fmt_xyz).c_str(), lenunit*point[1+j] );
+    mydata->retrieveSequentialValue( i, false, point );
+    of.printf("X");
+    for(unsigned j=0; j<ingrid->getDimension(); ++j) {
+      of.printf( (" " + fmt_xyz).c_str(), lenunit*point[1+j] );
+    }
     of.printf("\n");
   }
 }

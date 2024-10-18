@@ -76,34 +76,54 @@ PLUMED_REGISTER_ACTION(MatrixColumnSums,"COLUMNSUMS")
 
 void MatrixColumnSums::registerKeywords( Keywords& keys ) {
   ActionWithInputMatrix::registerKeywords( keys );
-  keys.use("ALT_MIN"); keys.use("LOWEST"); keys.use("HIGHEST");
-  keys.use("MEAN"); keys.use("MIN"); keys.use("MAX"); keys.use("LESS_THAN");
-  keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
+  keys.use("ALT_MIN");
+  keys.use("LOWEST");
+  keys.use("HIGHEST");
+  keys.use("MEAN");
+  keys.use("MIN");
+  keys.use("MAX");
+  keys.use("LESS_THAN");
+  keys.use("MORE_THAN");
+  keys.use("BETWEEN");
+  keys.use("HISTOGRAM");
+  keys.use("MOMENTS");
 }
 
 MatrixColumnSums::MatrixColumnSums(const ActionOptions& ao):
   Action(ao),
-  ActionWithInputMatrix(ao)
-{
-  if( (mymatrix->getMatrixAction())->mybasemulticolvars.size()>0 ) error("matrix row sums should only be calculated when inputs are atoms");
+  ActionWithInputMatrix(ao) {
+  if( (mymatrix->getMatrixAction())->mybasemulticolvars.size()>0 ) {
+    error("matrix row sums should only be calculated when inputs are atoms");
+  }
   // Setup the tasks
   unsigned ncols = mymatrix->getNumberOfColumns();
-  ablocks.resize(1); ablocks[0].resize( ncols );
-  for(unsigned i=0; i<ncols; ++i) addTaskToList( i );
+  ablocks.resize(1);
+  ablocks[0].resize( ncols );
+  for(unsigned i=0; i<ncols; ++i) {
+    addTaskToList( i );
+  }
   // Set the positions - this is only used when getting positions for central atoms
   if( mymatrix->undirectedGraph() ) {
-    for(unsigned i=0; i<ncols; ++i) ablocks[0][i]=i;
+    for(unsigned i=0; i<ncols; ++i) {
+      ablocks[0][i]=i;
+    }
   } else {
-    for(unsigned i=0; i<ncols; ++i) ablocks[0][i]=mymatrix->getNumberOfRows() + i;
+    for(unsigned i=0; i<ncols; ++i) {
+      ablocks[0][i]=mymatrix->getNumberOfRows() + i;
+    }
   }
-  std::vector<AtomNumber> fake_atoms; setupMultiColvarBase( fake_atoms );
+  std::vector<AtomNumber> fake_atoms;
+  setupMultiColvarBase( fake_atoms );
 }
 
 double MatrixColumnSums::compute( const unsigned& tinded, multicolvar::AtomValuePack& myatoms ) const {
-  double sum=0.0; std::vector<double> tvals( mymatrix->getNumberOfComponents() );
+  double sum=0.0;
+  std::vector<double> tvals( mymatrix->getNumberOfComponents() );
   unsigned nrows = mymatrix->getNumberOfRows();
   for(unsigned i=0; i<nrows; ++i) {
-    if( mymatrix->undirectedGraph() && tinded==i ) continue;
+    if( mymatrix->undirectedGraph() && tinded==i ) {
+      continue;
+    }
     sum+=retrieveConnectionValue( i, tinded, tvals );
   }
 
@@ -111,7 +131,9 @@ double MatrixColumnSums::compute( const unsigned& tinded, multicolvar::AtomValue
     MultiValue myvals( mymatrix->getNumberOfComponents(), myatoms.getNumberOfDerivatives() );
     MultiValue& myvout=myatoms.getUnderlyingMultiValue();
     for(unsigned i=0; i<nrows; ++i) {
-      if( mymatrix->isSymmetric() && tinded==i ) continue ;
+      if( mymatrix->isSymmetric() && tinded==i ) {
+        continue ;
+      }
       addConnectionDerivatives( i, tinded, myvals, myvout );
     }
   }
