@@ -43,6 +43,7 @@ void AdjacencyMatrixBase::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("y","COMPONENTS","matrix","the projection of the bond on the y axis");
   keys.addOutputComponent("z","COMPONENTS","matrix","the projection of the bond on the z axis");
   keys.setValueDescription("matrix","a matrix containing the weights for the bonds between each pair of atoms");
+  keys.addDOI("https://doi.org/10.1021/acs.jctc.6b01073");
 }
 
 AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
