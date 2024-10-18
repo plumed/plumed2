@@ -38,7 +38,7 @@ to a ndx file.
 
 ```plumed
 mat: CONTACT_MATRIX ATOMS=1-1996 SWITCH={CUBIC D_0=0.34 D_MAX=0.38}
-dfs: DFSCLUSTERING MATRIX=mat
+dfs: DFSCLUSTERING ARG=mat
 OUTPUT_CLUSTER CLUSTERS=dfs CLUSTER=1 FILE=dfs.ndx
 ```
 
@@ -63,7 +63,7 @@ void OutputCluster::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","CLUSTER","1","which cluster would you like to look at 1 is the largest cluster, 2 is the second largest, 3 is the the third largest and so on");
   keys.add("compulsory","STRIDE","1","the frequency with which you would like to output the atoms in the cluster");
   keys.add("compulsory","FILE","the name of the file on which to output the details of the cluster");
-  keys.remove("HAS_VALUES"); keys.needsAction("PRINT_NDX");
+  keys.remove("HAS_VALUES"); keys.needsAction("PRINT_NDX"); keys.addDOI("https://doi.org/10.1021/acs.jctc.6b01073");
 }
 
 OutputCluster::OutputCluster(const ActionOptions& ao):

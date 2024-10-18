@@ -45,11 +45,11 @@ numbers for the atoms in this largest connected component are then computed and 
 file.  
 
 ```plumed
-lq: COORDINATIONNUMBER SPECIES=1-100 SWITCH={CUBIC D_0=0.45  D_MAX=0.55} LOWMEM
+lq: COORDINATIONNUMBER SPECIES=1-100 SWITCH={CUBIC D_0=0.45  D_MAX=0.55} 
 cm: CONTACT_MATRIX GROUP=lq  SWITCH={CUBIC D_0=0.45  D_MAX=0.55}
-dfs: DFSCLUSTERING MATRIX=cm
+dfs: DFSCLUSTERING ARG=cm
 clust1: CLUSTER_PROPERTIES CLUSTERS=dfs CLUSTER=1 SUM
-PRINT ARG=clust1.* FILE=colvar
+PRINT ARG=clust1.sum FILE=colvar
 ```
 
 */

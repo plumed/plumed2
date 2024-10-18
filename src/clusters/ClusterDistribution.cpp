@@ -49,8 +49,8 @@ lq6: LOCAL_Q6 SPECIES=q6 SWITCH={GAUSSIAN D_0=5.29 R_0=0.01 D_MAX=5.3}
 flq6: MORE_THAN ARG=lq6 SWITCH={GAUSSIAN D_0=0.19 R_0=0.01 D_MAX=0.2}
 cc: COORDINATIONNUMBER SPECIES=flq6 SWITCH={GAUSSIAN D_0=3.59 R_0=0.01 D_MAX=3.6}
 fcc: MORE_THAN ARG=cc SWITCH={GAUSSIAN D_0=5.99 R_0=0.01 D_MAX=6.0}
-mat: CONTACT_MATRIX ATOMS=fcc SWITCH={GAUSSIAN D_0=3.59 R_0=0.01 D_MAX=3.6}
-dfs: DFSCLUSTERING MATRIX=mat
+mat: CONTACT_MATRIX GROUP=1-300 SWITCH={GAUSSIAN D_0=3.59 R_0=0.01 D_MAX=3.6}
+dfs: DFSCLUSTERING ARG=mat
 nclust: CLUSTER_DISTRIBUTION CLUSTERS=dfs TRANSFORM={GAUSSIAN D_0=5.99 R_0=0.01 D_MAX=6.0} MORE_THAN={GAUSSIAN D_0=26.99 R_0=0.01 D_MAX=27}
 PRINT ARG=nclust.* FILE=colvar
 ```
@@ -98,6 +98,7 @@ void ClusterDistribution::registerKeywords( Keywords& keys ) {
   keys.addInputKeyword("compulsory","CLUSTERS","vector","the label of the action that does the clustering"); keys.setDisplayName("CLUSTER_DISTRIBUTION");
   keys.addInputKeyword("optional","WEIGHTS","vector","use the vector of values calculated by this action as weights rather than giving each atom a unit weight");
   keys.setValueDescription("vector","a vector containing the sum of a atomic-cv that is calculated for each of the identified clusters");
+  keys.addDOI("https://doi.org/10.1021/acs.jctc.6b01073");
 }
 
 ClusterDistribution::ClusterDistribution(const ActionOptions&ao):

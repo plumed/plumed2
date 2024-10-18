@@ -30,7 +30,19 @@
 /*
 Calclulate the distance between segments of a protein and a reference structure of interest
 
-\par Examples
+This action is used in the shortcuts ALPHARMSD, ANTIBETARMSD and PARABETARMSD.  It calculates a 
+vector of RMSD values between a single reference multiple configurations and the instantaneous 
+positions of various groups of atoms.  For example, in the following input we define a single set of reference
+set of coordinates for 3 atoms.
+
+```plumed
+c1: SECONDARY_STRUCTURE_RMSD STRUCTURE1=1,0,0,0,1,0,0,0,1 SEGMENT1=1,2,3 SEGMENT2=4,5,6 SEGMENT3=7,8,9 SEGMENT4=10,11,12 TYPE=OPTIMAL
+PRINT ARG=c1 FILE=colvar
+```
+
+A four dimensional vector is then returned that contains the RMSD distances between the 4 sets of atoms that were specified using the `SEGMENT` keywords 
+and the reference coordinates.  Notice that you can use multiple instances of the `STRUCTURE` keyword.  In general the the number of vectors output
+is equal to the number of times the `STRUCTURE` keyword is used.
 
 */
 //+ENDPLUMEDOC
@@ -92,6 +104,7 @@ void SecondaryStructureRMSD::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("struct","default","vector","the vectors containing the rmsd distances between the residues and each of the reference structures");
   keys.addOutputComponent("lessthan","default","scalar","the number blocks of residues that have an RMSD from the secondary structure that is less than the threshold");
   keys.needsAction("SECONDARY_STRUCTURE_RMSD"); keys.needsAction("LESS_THAN"); keys.needsAction("SUM");
+  keys.addDOI("https://doi.org/10.1021/ct900202f");
 }
 
 void SecondaryStructureRMSD::readBackboneAtoms( ActionShortcut* action, PlumedMain& plumed, const std::string& moltype, std::vector<unsigned>& chain_lengths, std::string& all_atoms ) {

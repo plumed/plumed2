@@ -35,7 +35,7 @@ cm: CONTACT_MATRIX GROUP=1-100 SWITCH={CUBIC D_0=0.45  D_MAX=0.55}
 # Find the connected components from the contact matrix
 dfs: DFSCLUSTERING ARG=cm
 # And determine the size of the second largest cluster that was identified
-c1: CLUSTER_DIAMETER CLUSTERS=dfs CLUSTER=2
+c1: CLUSTER_DIAMETER ATOMS=1-100 CLUSTERS=dfs CLUSTER=2
 PRINT ARG=c1 FILE=colvar
 ```
 
@@ -64,6 +64,7 @@ void ClusterDiameter::registerKeywords( Keywords& keys ) {
   keys.setValueDescription("scalar","the largest of all the distances between the pairs of atom in the cluster");
   keys.needsAction("DISTANCE_MATRIX"); keys.needsAction("OUTER_PRODUCT"); keys.needsAction("CUSTOM");
   keys.needsAction("FLATTEN"); keys.needsAction("HIGHEST");
+  keys.addDOI("https://doi.org/10.1021/acs.jctc.6b01073");
 }
 
 ClusterDiameter::ClusterDiameter(const ActionOptions& ao):

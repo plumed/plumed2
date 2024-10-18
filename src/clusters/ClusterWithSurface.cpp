@@ -78,7 +78,7 @@ void ClusterWithSurface::registerKeywords(Keywords& keys) {
   keys.setValueDescription("vector","a vector that is one for those atoms that are within the cluster or that are within a cetain cutoff of one of the atoms in the cluster and zero otherwise");
   keys.needsAction("CLUSTER_WEIGHTS"); keys.needsAction("CONTACT_MATRIX");
   keys.needsAction("OUTER_PRODUCT"); keys.needsAction("CUSTOM");
-  keys.needsAction("DFSCLUSTERING");
+  keys.needsAction("DFSCLUSTERING"); keys.addDOI("https://doi.org/10.1021/acs.jctc.6b01073");
 }
 
 ClusterWithSurface::ClusterWithSurface(const ActionOptions& ao):

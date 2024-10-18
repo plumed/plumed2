@@ -38,18 +38,17 @@ aligning the instantaneous structure with the reference structure and measuring 
 atomic displacement or by calculating differences between the set of inter-atomic
 distances in the reference and instantaneous structures.
 
-This colvar is based on the following reference \cite pietrucci09jctc.  The authors of
-this paper use the set of distances from the alpha helix configurations to measure
+In the original paper on this method (see below) the authors used the set of distances from the alpha helix configurations to measure
 the number of segments that have an alpha helical configuration. This is done by calculating
 the following sum of functions of the rmsd distances:
 
-\f[
+$$
 s = \sum_i \frac{ 1 - \left(\frac{r_i-d_0}{r_0}\right)^n } { 1 - \left(\frac{r_i-d_0}{r_0}\right)^m }
-\f]
+$$
 
 where the sum runs over all possible segments of alpha helix.  By default the
-NN, MM and D_0 parameters are set equal to those used in \cite pietrucci09jctc.  The R_0
-parameter must be set by the user - the value used in \cite pietrucci09jctc was 0.08 nm.
+NN, MM and D_0 parameters are set equal to those used in the paper cited below.  The R_0
+parameter must be set by the user - the value used in the paper cited below was 0.08 nm.
 
 If you change the function in the above sum you can calculate quantities such as the average
 distance from a purely the alpha helical configuration or the distance between the set of
@@ -58,29 +57,25 @@ calculations you can use the AVERAGE and MIN keywords. In addition you can use t
 keyword if you would like to change the form of the switching function. If you use any of these
 options you no longer need to specify NN, R_0, MM and D_0.
 
-Please be aware that for codes like gromacs you must ensure that plumed
-reconstructs the chains involved in your CV when you calculate this CV using
-anything other than TYPE=DRMSD.  For more details as to how to do this see \ref WHOLEMOLECULES.
-
-\par Examples
-
 The following input calculates the number of six residue segments of
 protein that are in an alpha helical configuration.
 
-\plumedfile
+```plumed
 #SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO STRUCTURE=helix.pdb
-alpha: ALPHARMSD RESIDUES=all
-\endplumedfile
+alpha: ALPHARMSD RESIDUES=all R_0=0.1
+PRINT ARG=alpha FILE=colvar
+```
 
 Here the same is done use RMSD instead of DRMSD
 
-\plumedfile
+```plumed
 #SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO STRUCTURE=helix.pdb
 WHOLEMOLECULES ENTITY0=1-100
-alpha: ALPHARMSD RESIDUES=all TYPE=OPTIMAL R_0=0.1
-\endplumedfile
+alpha: ALPHARMSD RESIDUES=all TYPE=OPTIMAL LESS_THAN={RATIONAL R_0=0.1 NN=8 MM=12}
+PRINT ARG=alpha.lessthan FILE=colvar
+```
 
 */
 //+ENDPLUMEDOC

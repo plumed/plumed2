@@ -69,7 +69,7 @@ $$
  \tilde{k}_{\chi_0}(\chi)  = \frac{1}{n} \sum\limits_{i\in\chi} \sum\limits_{j\in\chi_0} \exp\left( - \frac{|\mathbf{r}_i-\mathbf{r}^0_j|^2} {4\sigma^2} \right),
 $$
 
-such that $\tilde{k}_{\chi_0}(\chi_0) = 1$.
+such that $\tilde{k}_{\chi_0}(\chi_0)=1$.
 The above kernel is computed for each atom in the SPECIES or SPECIESA keywords.
 This quantity is a multicolvar so you can compute it for multiple atoms using a single PLUMED action and then compute
 the average value for the atoms in your system, the number of atoms that have an $\tilde{k}_{\chi_0}$ value that is more that some target and
