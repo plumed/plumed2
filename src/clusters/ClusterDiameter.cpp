@@ -24,7 +24,7 @@
 
 //+PLUMEDOC CONCOMP CLUSTER_DIAMETER
 /*
-Print out the diameter of one of the connected components
+Print out the diameter of one of the connected components.
 
 An example input that determines the diameter of the second largest cluster that is identified by 
 analysing the connected components of a CONTACT_MATRIX using DFSCLUSTERING is shown below:

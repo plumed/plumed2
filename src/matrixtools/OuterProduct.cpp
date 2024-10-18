@@ -27,7 +27,50 @@
 /*
 Calculate the outer product matrix of two vectors
 
-\par Examples
+This action can be used to calculate the [outer product](https://en.wikipedia.org/wiki/Outer_product) of two 
+vectors.  As a (useless) example of what can be done with this action consider the following simple input:
+
+```plumed
+d1: DISTANCE ATOMS1=1,2 ATOMS2=3,4
+d2: DISTANCE ATOMS1=5,6 ATOMS2=7,8 ATOMS3=9,10
+pp: OUTER_PRODUCT ARG=d1,d2
+PRINT ARG=pp FILE=colvar
+``` 
+
+This input outputs a $2 \times 3$ matrix. If we call the 2 dimensional vector output by the first DISTANCE action
+$d$ and the 3 dimensional vector output by the second DISTANCE action $h$ then the $(i,j)$ element of the matrix 
+output by the action with the label `pp` is given by:
+
+$$
+p_{ij} = d_i h_j
+$$
+
+These outer product matrices are useful if you are trying to calculate an adjacency matrix that says atoms are 
+connected if they are within a certain distance of each other and if they satisfy a certain criterion.  For example,
+consider the following input:
+
+```plumed
+# Determine if atoms are within 5.3 nm of each other
+c1: CONTACT_MATRIX GROUP=1-100 SWITCH={GAUSSIAN D_0=5.29 R_0=0.01 D_MAX=5.3}
+# Calculate the coordination numbers
+ones: ONES SIZE=100
+cc: MATRIX_VECTOR PRODUCT ARG=c1,ones
+# Now use MORE_THAN to work out which atoms have a coordination number that is bigger than six
+cf: MORE_THAN ARG=cc SWITCH={RATIONAL D_0=5.5 R_0=0.5}
+# Now make a matrix in which element i,j is one if atom i and atom j both have a coordination number that is greater than 6
+cfm: OUTER_PRODUCT ARG=cf,cf
+# And multiply this by our contact matrix to determine the desired adjacency matrix
+m: CUSTOM ARG=c1,cfm FUNC=x*y PERIODIC=NO
+PRINT ARG=m FILE=colvar
+```
+
+This input calculates a adjacency matrix which has element $(i,j)$ equal to one if atoms $i$ and $j$ have coordination numbers
+that are greater than 6 and if they are within 5.3 nm of each other.
+
+Notice that you can specify the function of the two input vectors that is to be calculated by using the `FUNC` keyword which accepts 
+mathematical expressions of $x$ and $y$.  In other words, the elements of the outer product are calculated using the lepton library 
+that is used in the CUSTOM action.  In addition, you can set `FUNC=min` or `FUNC=max` to set the elements of the outer product equal to
+the minimum of the two input variables or the maximum respectively.
 
 */
 //+ENDPLUMEDOC

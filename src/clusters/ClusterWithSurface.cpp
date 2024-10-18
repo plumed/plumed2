@@ -24,7 +24,7 @@
 
 //+PLUMEDOC CONCOMP CLUSTER_WITHSURFACE
 /*
-Determine the atoms that are within a certain cutoff of the atoms in a cluster
+Determine the atoms that are within a certain cutoff of the atoms in a cluster.
 
 This shortcut action can be used to identify the atoms within the largest connected cluster in a system as well 
 as the atoms around the cluster as shown in the example input below:
