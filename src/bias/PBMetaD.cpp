@@ -632,6 +632,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   parse("SELECTOR", selector_);
   if(selector_.length()>0) {
     do_select_ = true;
+    select_value_ = 0; // set defalt value or it might be not initialized if the user does not pass SELECTOR_ID
     parse("SELECTOR_ID", select_value_);
   }
 
