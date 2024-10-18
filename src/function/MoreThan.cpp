@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MoreThan.h"
 #include "FunctionShortcut.h"
+#include "FunctionOfScalar.h"
 #include "FunctionOfVector.h"
 #include "FunctionOfMatrix.h"
 #include "core/ActionRegister.h"
@@ -34,7 +35,70 @@ namespace function {
 /*
 Use a switching function to determine how many of the input variables are more than a certain cutoff.
 
-\par Examples
+This action takes one argument, $r$ and evaluates the following function:
+
+$$
+w(s) = 1 - s(r)
+$$
+
+In this equation $s(r)$ is one of the switching functions described in the documentation for the action [LESS_THAN](LESS_THAN.md).
+The output value $w$ is thus a number between 0 and 1 that tells you if the input value is greater than some cutoff.  Furthermore,
+the value of $w$ smoothly from zero to one as the input value $r$ crosses the threshold of interest so any function of this value
+is differentiable.
+
+The following example, shows how we can apply the function above on the instantaneous value of the distance between atom 1 and 2.
+The MORE_THAN action here is used to determine whether the input distance is greater than 0.2 nm.
+
+```plumed
+d: DISTANCE ATOMS=1,2
+b: MORE_THAN ARG=d SWITCH={RATIONAL R_0=0.2}
+```
+
+You can use all the switching function options described in the documentation for [LESS_THAN](LESS_THAN.md) here in place of RATIONAL.
+
+## Non rank zero arguments
+
+Instead of passing a single scalar in the input to the `MORE_THAN` action you can pass a single vector as shown here:
+
+```plumed
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8
+b: MORE_THAN ARG=d SWITCH={RATIONAL R_0=0.2}
+```
+
+The input to the `MORE_THAN` action here is a vector with four elements. The output from the action `b` is similarly
+a vector with four elements. In calculating the elements of this vector PLUMED applies the function described in the previous
+section on each of the distances in turn. The first element of `b` thus tells you if the distance between atoms 1 and 2 is between
+greater than 0.2 nm, the second element tells you if the distance between atoms 3 and 4 is greater than 0.2 nm and so on.
+
+You can use the commands in the above example input to evaluate the number of distances that greater than a threshold as follows:
+
+```plumed
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8
+b: MORE_THAN ARG=d SWITCH={RATIONAL R_0=0.2}
+s: SUM ARG=b PERIODIC=NO
+PRINT ARG=s FILE=colvar
+```
+
+The final scalar that is output here is evaluated using the following summation:
+
+$$
+s = \sum_i 1 - s(d_i)
+$$
+
+where the sum over $i$ here runs over the four distances in the above expression. This scalar tells you the number of distances that are
+more than 0.2 nm.
+
+Notice that you can do something similar with a matrix as input as shown below:
+
+```plumed
+d: DISTANCE_MATRIX GROUPA=1-10 GROUPB=11-20
+b: MORE_THAN ARG=d SWITCH={RATIONAL R_0=0.2}
+s: SUM ARG=b PERIODIC=NO
+PRINT ARG=s FILE=colvar
+```
+
+This input tells PLUMED to calculate the 100 distances between the atoms in the two input groups. The final value that is printed to the colvar file then
+tells you how many of these distances are greater than 0.2 nm.
 
 */
 //+ENDPLUMEDOC
@@ -59,6 +123,8 @@ Transform all the elements of a matrix using a switching function that is one wh
 
 typedef FunctionShortcut<MoreThan> MoreThanShortcut;
 PLUMED_REGISTER_ACTION(MoreThanShortcut,"MORE_THAN")
+typedef FunctionOfScalar<MoreThan> ScalarMoreThan;
+PLUMED_REGISTER_ACTION(ScalarMoreThan,"MORE_THAN_SCALAR")
 typedef FunctionOfVector<MoreThan> VectorMoreThan;
 PLUMED_REGISTER_ACTION(VectorMoreThan,"MORE_THAN_VECTOR")
 typedef FunctionOfMatrix<MoreThan> MatrixMoreThan;

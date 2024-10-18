@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Between.h"
 #include "FunctionShortcut.h"
+#include "FunctionOfScalar.h"
 #include "FunctionOfVector.h"
 #include "FunctionOfMatrix.h"
 #include "core/ActionRegister.h"
@@ -34,58 +35,106 @@ namespace function {
 /*
 Use a switching function to determine how many of the input variables are within a certain range.
 
-If we have multiple instances of a variable we can estimate the probability density function
-for that variable using a process called kernel density estimation:
+This action takes one argument, $s$ and evaluates the following function:
 
-\f[
-P(s) = \sum_i K\left( \frac{s - s_i}{w} \right)
-\f]
+$$
+w(s) = \int_a^b K\left( \frac{x - s}{\sigma} \right) \textrm{d}x
+$$
 
-In this equation \f$K\f$ is a symmetric function that must integrate to one that is often
-called a kernel function and \f$w\f$ is a smearing parameter.  From a probability density function calculated using
-kernel density estimation we can calculate the number/fraction of values between an upper and lower
-bound using:
+In this equation $K$ is a symmetric function that must integrate to one and that is often
+called a [kernel function](https://en.wikipedia.org/wiki/Kernel_(statistics)) and $\sigma$ is a smearing parameter.
+The above function can be used to evaluate whether $s$ is between $a$ and $b$. The advantage of using the function above is that
+the resulting quantity has continuous derivatives. It can thus be used when calculating a collective variable upon which a simulation
+bias will be applied.
 
-\f[
-w(s) = \int_a^b \sum_i K\left( \frac{s - s_i}{w} \right)
-\f]
+The following example, shows how we can apply the function above on the instantaneous value of the distance between atom 1 and 2.
+The BETWEEN action here is used to determine whether the input distance is between 0.1 and 0.2 nm.
 
-All the input to calculate a quantity like \f$w(s)\f$ is generally provided through a single
-keyword that will have the following form:
+```plumed
+d: DISTANCE ATOMS=1,2
+b: BETWEEN ARG=d SWITCH={GAUSSIAN LOWER=0.1 UPPER=0.2 SMEAR=0.5}
+```
 
-KEYWORD={TYPE UPPER=\f$a\f$ LOWER=\f$b\f$ SMEAR=\f$\frac{w}{b-a}\f$}
+## The Kernel function
 
-This will calculate the number of values between \f$a\f$ and \f$b\f$.  To calculate
-the fraction of values you add the word NORM to the input specification.  If the
-function keyword SMEAR is not present \f$w\f$ is set equal to \f$0.5(b-a)\f$. Finally,
-type should specify one of the kernel types that is present in plumed. These are listed
-in the table below:
+The $\sigma$ values in the expressions above is calculated from the parameters $a$, $b$ and $s$ that are provided using the
+`LOWER`, `UPPER` and `SMEAR` parameters respectively using the following function:
 
-<table align=center frame=void width=95%% cellpadding=5%%>
-<tr>
-<td> TYPE </td> <td> FUNCTION </td>
-</tr> <tr>
-<td> GAUSSIAN </td> <td> \f$\frac{1}{\sqrt{2\pi}w} \exp\left( -\frac{(s-s_i)^2}{2w^2} \right)\f$ </td>
-</tr> <tr>
-<td> TRIANGULAR </td> <td> \f$ \frac{1}{2w} \left( 1. - \left| \frac{s-s_i}{w} \right| \right) \quad \frac{s-s_i}{w}<1 \f$ </td>
-</tr>
-</table>
+$$
+\sigma = s(b-a)
+$$
 
-Some keywords can also be used to calculate a discrete version of the histogram.  That
-is to say the number of values between \f$a\f$ and \f$b\f$, the number of values between
-\f$b\f$ and \f$c\f$ and so on.  A keyword that specifies this sort of calculation would look
-something like
+Also note that the Kernel function $K$ that is used in the first example is a Gaussian. The actual integral that is evaluated is thus:
 
-KEYWORD={TYPE UPPER=\f$a\f$ LOWER=\f$b\f$ NBINS=\f$n\f$ SMEAR=\f$\frac{w}{n(b-a)}\f$}
+$$
+w(s) = \frac{1}{\sqrt{2\pi}\sigma} \int_a^b \exp\left( -\frac{(x-s)^2}{2\sigma^2}\right) \textrm{d}x
+$$
 
-This specification would calculate the following vector of quantities:
+The Gaussian kernel in this expression can be replaced by a triangular Kernel by changing the input to:
 
-\f[
-w_j(s) = \int_{a + \frac{j-1}{n}(b-a)}^{a + \frac{j}{n}(b-a)} \sum_i K\left( \frac{s - s_i}{w} \right)
-\f]
+```plumed
+d: DISTANCE ATOMS=1,2
+b: BETWEEN ARG=d SWITCH={TRIANGULAR LOWER=0.1 UPPER=0.2 SMEAR=0.5}
+```
 
+With this input the integral is then evaluated using:
 
-\par Examples
+$$
+w(s) = \frac{1}{2\sigma} \int_a^b 1 - H\left( \frac{x-s}{\sigma} \right) \textrm{d}x
+$$
+
+where:
+
+$$
+H(x) = \begin{cases}
+x & \textrm{if} \quad x<1 \\
+0 & \textrm{otherwise}
+\end{cases}
+$$
+
+## Non rank zero arguments
+
+Instead of passing a single scalar in the input to the `BETWEEN` action you can pass a single vector as shown here:
+
+```plumed
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8
+b: BETWEEN ARG=d SWITCH={GAUSSIAN LOWER=0.1 UPPER=0.2 SMEAR=0.5}
+```
+
+The input to the `BETWEEN` action here is a vector with four elements. The output from the action `b` is similarly
+a vector with four elements. In calculating the elements of this vector PLUMED applies the function described in the previous
+section on each of the distances in turn. The first element of `b` thus tells you if the distance between atoms 1 and 2 is between
+0.1 and 0.2 nm, the second element tells you if the distance between atoms 3 and 4 is between 0.1 and 0.2 nm and so on.
+
+You can use the commands in the above example input to evaluate the number of distances that are within the range of interest as follows:
+
+```plumed
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8
+b: BETWEEN ARG=d SWITCH={GAUSSIAN LOWER=0.1 UPPER=0.2 SMEAR=0.5}
+s: SUM ARG=b PERIODIC=NO
+PRINT ARG=s FILE=colvar
+```
+
+The final scalar that is output here is evaluated using the following summation:
+
+$$
+s = \sum_i \int_a^b \left( \frac{x - d_i}{\sigma} \right) \textrm{d}x
+$$
+
+where the sum over $i$ here runs over the four distances in the above expression. This scalar tells you the number of distances that are
+between 0.1 and 0.2.
+
+Notice that you can do something similar with a matrix as input as shown below:
+
+```plumed
+d: DISTANCE_MATRIX GROUPA=1-10 GROUPB=11-20
+b: BETWEEN ARG=d SWITCH={GAUSSIAN LOWER=0.1 UPPER=0.2 SMEAR=0.5}
+s: SUM ARG=b PERIODIC=NO
+PRINT ARG=s FILE=colvar
+```
+
+This input tells PLUMED to calculate the 100 distances between the atoms in the two input groups. The final value that is printed to the colvar file then
+tells you how many of these distances are between 0.1 and 0.2 nm.
 
 */
 //+ENDPLUMEDOC
@@ -110,6 +159,8 @@ Transform all the elements of a matrix using a switching function that is oen wh
 
 typedef FunctionShortcut<Between> BetweenShortcut;
 PLUMED_REGISTER_ACTION(BetweenShortcut,"BETWEEN")
+typedef FunctionOfScalar<Between> ScalarBetween;
+PLUMED_REGISTER_ACTION(ScalarBetween,"BETWEEN_SCALAR")
 typedef FunctionOfVector<Between> VectorBetween;
 PLUMED_REGISTER_ACTION(VectorBetween,"BETWEEN_VECTOR")
 typedef FunctionOfMatrix<Between> MatrixBetween;

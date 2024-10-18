@@ -27,7 +27,46 @@
 /*
 Get data from PLUMED for another code
 
-\par Examples
+The GET command takes in the label of a Value and transfers the contents of the Value to
+to a void pointer that is accessible in the code that called PLUMED. As the calling code does not know the shape of the Value in advance,
+we provide the functionality to get the data rank and shape. The following Python snippet illustrates how this works in practice:
+
+```python
+import plumed
+
+# Create a PLUMED object
+p = plumed.Plumed()
+# Setup PLUMED
+num_atoms = 10
+p.cmd("setNatoms",num_atoms)
+p.cmd("setLogFile","test.log")
+p.cmd("init")
+# Tell PLUMED to calculate the distance between two atoms
+p.cmd("readInputLine", "d1: DISTANCE ATOMS=1,2")
+# Get the rank of the PLMD::Value that holds the distance
+# This command sets up the GET object
+rank = np.zeros( 1, dtype=np.int_ )
+p.cmd("getDataRank d1", rank )
+# Now get the shape of the PLMD::Value d1 that we are asking for in the GET object
+shape = np.zeros( rank, dtype=np.int_ )
+p.cmd("getDataShape d1", shape )
+# And now set the void pointer that the data in PLMD::Value d1 should be
+# transferred to so it can be accessed in our python script when asking PLMD to do a calculation
+d1 = np.zeros( shape )
+p.cmd("setMemoryForData d1", data )
+
+# if we now transfer some atomic positions to plumed and call calc the variable d1 is set equal to the distance between atom 1 and atom 2.
+```
+
+Notice that you can have as many GET actions as you need. The data is transferred from the PLMD::Value to the void pointer when the `calculate` method of GET is called.
+Transferring variables is thus seamlessly integrated into the PLUMED calculation cycle.
+
+You would only use the GET command if you were calling PLUMED from python or an MD code. The equivalent commands that you would use for this action in a conventional PLUMED input file as follows.
+
+```plumed
+d: DISTANCE ATOMS=1,2
+GET ARG=d
+```
 
 */
 //+ENDPLUMEDOC

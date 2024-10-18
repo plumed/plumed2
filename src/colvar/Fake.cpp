@@ -27,13 +27,13 @@ namespace colvar {
 
 //+PLUMEDOC COLVAR FAKE
 /*
-This is a fake colvar container used by cltools or various other actions that supports input and period definitions
+This is a fake colvar container that is used by cltools or various other actions that supports input and period definitions
 
-\par Examples
+This action is used in the code for sum_hills. The following example shows how a fake input can be setup
 
-\plumedfile
-FAKE ATOMS=1 PERIODIC=-3.14,3.14   LABEL=d2
-\endplumedfile
+```plumed
+d2: FAKE ATOMS=1 PERIODIC=-3.14,3.14
+```
 
 */
 //+ENDPLUMEDOC

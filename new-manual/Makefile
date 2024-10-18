@@ -17,7 +17,10 @@ else
 all:
 ifeq ($(make_doc),yes)
 	rm -rf docs site
+	mkdir docs
+	ln -s ../../regtest/ docs/regtest
 	python build_manual.py
+	rm docs/regtest
 	mkdocs build
 endif
 endif

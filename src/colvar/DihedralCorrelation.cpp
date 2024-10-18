@@ -35,8 +35,34 @@ namespace colvar {
 /*
 Measure the correlation between a pair of dihedral angles
 
+This CV measures the correlation between two dihedral angles, $\phi$ and $\psi$, as follows:
 
-\par Examples
+$$
+s = \frac{1}{2} \left[ 1 + \cos( \phi - \psi ) \right]
+$$
+
+An example input that computes and calculates this quantity with $\phi$ being the dihedral
+angle involving atoms 1, 2, 3 and 4 and $\psi$ being the angle involving atoms 7, 8, 9 and 10
+is shown below:
+
+```plumed
+d: DIHEDRAL_CORRELATION ATOMS=1,2,3,4,5,6,7,8
+PRINT ARG=d FILE=colvar
+```
+
+If you want to calculate the dihedral correlations between multiple pairs of dihedral angles using
+this action you would use an input like this one shown below:
+
+```plumed
+d: DIHEDRAL_CORRELATION ...
+  ATOMS1=1,2,3,4,5,6,7,8
+  ATOMS2=9,10,11,12,13,14,15,16
+...
+PRINT ARG=d FILE=colvar
+```
+
+This input calculates and outputs a two dimensional vector that contains two of these dihedral correlation
+values. Commands similar to these are used within the [DIHCOR](DIHCOR.md) shortcut.
 
 */
 //+ENDPLUMEDOC
@@ -114,6 +140,8 @@ DihedralCorrelation::DihedralCorrelation(const ActionOptions&ao):
   } else {
     log.printf("  without periodic boundary conditions\n");
   }
+  addValueWithDerivatives();
+  setNotPeriodic();
 }
 
 void DihedralCorrelation::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {

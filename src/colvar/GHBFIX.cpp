@@ -34,23 +34,30 @@ namespace colvar {
 
 //+PLUMEDOC COLVAR GHBFIX
 /*
-Calculate the GHBFIX interaction energy among GROUPA and GROUPB
-using a potential defined in Kührová et al., Improving the performance of the AMBER RNA force field by
-tuning the hydrogen-bonding interactions, JCTC, 2019. Essentially it is a switching function being -1 for small distances and 0 for large distances with a smooth interpolation in the middle. This can be scaled as desired by specifying interaction scaling parameters and energy units.
+Calculate the GHBFIX interaction energy between GROUPA and GROUPB
+
+The GHBFIX interaction energy between GROUPA and GROUPB is computed
+using a potential that is defiend in the paper cited in the bibliogrpahy below.  The potential introduced in that paper is
+essentially a switching function that is -1 for small distances and 0 for large distances with a smooth interpolation in the middle.
+This function can be scaled as desired by specifying interaction scaling parameters and energy units.
 
 This collective variable can be used to analyze hydrogen bond interactions, or to generate bias potentials.
-Notice that the value of the GHBFIX is returned in plumed units (see \ref UNITS), if not specified differently via ENERGY_UNITS.
+Notice that the value of the GHBFIX is returned in plumed units (see [UNITS](UNITS.md)), unless the ENERGY_UNITS keyword is employed.
 
-\par Examples
 This example prints the GHBFIX interaction in kcal/mol between two groups of atoms using D_0, D_MAX and C
 It is applied in the functional form introduced in the pioneering paper.
 The types of atoms 1-6 should be defined in typesTable_examples.dat while their interaction parameters should be defined in scalingParameters_examples.dat in kBT units.
 
-\plumedfile
-#SETTINGS AUXFOLDER=regtest/basic/rt-ghbfix
-gh: GHBFIX PAIR GROUPA=1,2,3 GROUP=4,5,6 D_0=0.2 D_MAX=0.3 C=0.8 TYPES=typesTable_examples.dat PARAMS=scalingParameters_examples.dat ENERGY_UNITS=kcal/mol
+```plumed
+#SETTINGS INPUTFILES=regtest/basic/rt-ghbfix/typesTable_examples.dat,regtest/basic/rt-ghbfix/scalingParameters_examples.dat
+gh: GHBFIX ...
+   PAIR GROUPA=1,2,3 GROUP=4,5,6 D_0=0.2 D_MAX=0.3 C=0.8
+   TYPES=regtest/basic/rt-ghbfix/typesTable_examples.dat
+   PARAMS=regtest/basic/rt-ghbfix/scalingParameters_examples.dat
+   ENERGY_UNITS=kcal/mol
+...
 PRINT FILE=output ARG=gh
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC
@@ -93,6 +100,7 @@ void GHBFIX::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","D_0","the value of D_0 in the switching function");
   keys.add("compulsory","C","the value of C in the switching function");
   keys.setValueDescription("scalar","the GHBFIX interaction energy between the atoms in GROUPA and GROUPB");
+  keys.addDOI("10.1021/acs.jctc.8b00955");
 }
 
 GHBFIX::GHBFIX(const ActionOptions&ao):

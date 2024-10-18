@@ -29,41 +29,38 @@ namespace colvar {
 
 //+PLUMEDOC COLVAR PUCKERING
 /*
- Calculate sugar pseudorotation coordinates.
+Calculate sugar pseudorotation coordinates.
 
- This command can be used to calculate ring's pseudorotations in sugars (puckers). It works for both
- 5-membered and 6-membered rings. Notice that there are two different implementations depending if
- one passes 5 or 6 atoms in the ATOMS keyword.
+This command can be used to calculate pseudorotations for the rings in sugars (puckers). It works for both
+5-membered and 6-membered rings. Notice that there are two different implementations depending if
+one passes 5 or 6 atoms in the ATOMS keyword. This input tells plumed to print the puckering phase angle of the
+ second nucleotide of a RNA molecule on file COLVAR.
 
- For 5-membered rings the implementation is the one discussed in \cite huang2014improvement .
- This implementation is simple and can be used in RNA to distinguish C2'-endo and C3'-endo conformations.
- Both the polar coordinates (phs and amp) and the Cartesian coordinates (Zx and Zy) are provided.
- C2'-endo conformations have negative Zx, whereas C3'-endo conformations have positive Zy.
- Notation is consistent with \cite huang2014improvement .
- The five atoms should be provided as C4',O4',C1',C2',C3'.
- Notice that this is the same order that can be obtained using the \ref MOLINFO syntax (see example below).
+```plumed
+#SETTINGS MOLFILE=regtest/basic/rt65/AA.pdb
+MOLINFO STRUCTURE=regtest/basic/rt65/AA.pdb MOLTYPE=rna
+puck: PUCKERING ATOMS=@sugar-2
+PRINT ARG=puck.phs FILE=COLVAR
+```
 
- For 6-membered rings the implementation is the general Cremer-Pople one \cite cremer1975general
- as also discussed in \cite biarnes2007conformational .
- This implementation provides both a triplet with Cartesian components (qx, qy, and qz)
- and a triplet of polar components (amplitude, phi, and theta).
- Applications of this particular implementation are to be published (paper in preparation).
+For 5-membered rings the implementation is the one discussed in the first of the papers in the bibliography below.
+This implementation is simple and can be used in RNA to distinguish C2'-endo and C3'-endo conformations.
+Both the polar coordinates (phs and amp) and the Cartesian coordinates (Zx and Zy) are provided.
+C2'-endo conformations have negative Zx, whereas C3'-endo conformations have positive Zy.
+The notation is consistent with the notation in that first paper.
+The five atoms should be provided as C4',O4',C1',C2',C3'.
+Notice that this is the same order that can be obtained using the [MOLINFO](MOLINFO.md) syntax (see example below).
 
- \note The 6-membered ring implementation distributed with previous versions of PLUMED lead to
- qx and qy values that had an opposite sign with respect to those originally defined in \cite cremer1975general.
- The bug is fixed in version 2.5.
+For 6-membered rings the implementation is the general Cremer-Pople one that is discussed in the second and third
+papers in the bibliography.
+This implementation provides both a triplet with Cartesian components (qx, qy, and qz)
+and a triplet of polar components (amplitude, phi, and theta).
+Applications of this particular implementation are yet to be published (paper in preparation).
 
- Components of this action are:
-
- \par Examples
-
- This input tells plumed to print the puckering phase angle of the second nucleotide of a RNA molecule on file COLVAR.
- \plumedfile
- #SETTINGS MOLFILE=regtest/basic/rt65/AA.pdb
- MOLINFO STRUCTURE=rna.pdb MOLTYPE=rna
- PUCKERING ATOMS=@sugar-2 LABEL=puck
- PRINT ARG=puck.phs FILE=COLVAR
- \endplumedfile
+> [!NOTE]
+> The 6-membered ring implementation distributed with previous versions of PLUMED lead to
+> qx and qy values that had an opposite sign with respect to those originally defined in the
+> thid reference in the bibliograph below.  The bug was fixed in version 2.5.
 
 */
 //+ENDPLUMEDOC
@@ -94,6 +91,9 @@ void Puckering::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("qx","default","scalar","Cartesian component x (6 membered rings)");
   keys.addOutputComponent("qy","default","scalar","Cartesian component y (6 membered rings)");
   keys.addOutputComponent("qz","default","scalar","Cartesian component z (6 membered rings)");
+  keys.addDOI("10.1021/ct401013s");
+  keys.addDOI("10.1021/ja00839a011");
+  keys.addDOI("10.1021/ja068411o");
 }
 
 Puckering::Puckering(const ActionOptions&ao):

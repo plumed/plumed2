@@ -29,32 +29,32 @@ namespace colvar {
 
 //+PLUMEDOC COLVAR DHENERGY
 /*
-Calculate Debye-Huckel interaction energy among GROUPA and GROUPB.
+Calculate Debye-Huckel interaction energy between the atoms in GROUPA and GROUPB.
 
 This variable calculates the electrostatic interaction among GROUPA and GROUPB
 using a Debye-Huckel approximation defined as
-\f[
+
+$$
 \frac{1}{4\pi\epsilon_r\epsilon_0}
 \sum_{i\in A} \sum_{j \in B} q_i q_j
-\frac{e^{-\kappa |{\bf r}_{ij}|}}{|{\bf r}_{ij}|}
-\f]
+\frac{e^{-\kappa |r_{ij}|}}{| r_{ij}|}
+$$
 
-This collective variable can be used to analyze or induce electrostatically driven reactions \cite do13jctc.
-Notice that the value of the DHENERGY is returned in plumed units (see \ref UNITS).
+This collective variable can be used to analyze or induce electrostatically driven reactions and is discussed in the paper in the bibliography below.
+Notice that the value of the DHENERGY is returned in plumed units (see [UNITS](UNITS.md)).
 
-If GROUPB is empty, it will sum the N*(N-1)/2 pairs in GROUPA. This avoids computing
-twice permuted indexes (e.g. pair (i,j) and (j,i)) thus running at twice the speed.
+If GROUPB is empty, the variable will be calculated based on the $\frac{N(N-1)}{2}$ pairs in GROUPA. This avoids computing
+permuted indexes (e.g. pair (i,j) and (j,i)) twice and ensures that the calculation runs at twice the speed.
 
 Notice that if there are common atoms between GROUPA and GROUPB their interaction is discarded.
 
+## Examples
 
-\par Examples
-
-\plumedfile
+```plumed
 # this is printing the electrostatic interaction between two groups of atoms
 dh: DHENERGY GROUPA=1-10 GROUPB=11-20 EPSILON=80.0 I=0.1 TEMP=300.0
 PRINT ARG=dh
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC
@@ -79,6 +79,7 @@ void DHEnergy::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","TEMP","300.0","Simulation temperature (K)");
   keys.add("compulsory","EPSILON","80.0","Dielectric constant of solvent");
   keys.setValueDescription("scalar","the value of the DHENERGY");
+  keys.addDOI("10.1021/ct3009914");
 }
 
 /*

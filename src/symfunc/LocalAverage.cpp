@@ -36,11 +36,11 @@ namespace symfunc {
 /*
 Calculate averages over spherical regions centered on atoms
 
-As is explained in <a href="http://www.youtube.com/watch?v=iDvZmbWE5ps"> this video </a> certain multicolvars
+As is explained in <a href="http://www.youtube.com/watch?v=iDvZmbWE5ps"> this video </a> certain PLUMED actions
 calculate one scalar quantity or one vector for each of the atoms in the system.  For example
-\ref COORDINATIONNUMBER measures the coordination number of each of the atoms in the system and \ref Q4 measures
+[COORDINATIONNUMBER](COORDINATIONNUMBER.md) measures the coordination number of each of the atoms in the system and [Q4](Q4.md) measures
 the 4th order Steinhardt parameter for each of the atoms in the system.  These quantities provide tell us something about
-the disposition of the atoms in the first coordination sphere of each of the atoms of interest.  Lechner and Dellago \cite dellago-q6
+the disposition of the atoms in the first coordination sphere of each of the atoms of interest.  In the paper in the bibliography Lechner and Dellago
 have suggested that one can probe local order in a system by taking the average value of such symmetry functions over
 the atoms within a spherical cutoff of each of these atoms in the systems.  When this is done with Steinhardt parameters
 they claim this gives a coordinate that is better able to distinguish solid and liquid configurations of Lennard-Jones atoms.
@@ -48,40 +48,40 @@ they claim this gives a coordinate that is better able to distinguish solid and 
 You can calculate such locally averaged quantities within plumed by using the LOCAL_AVERAGE command.  This command calculates
 the following atom-centered quantities:
 
-\f[
+$$
 s_i = \frac{ c_i + \sum_j \sigma(r_{ij})c_j }{ 1 + \sum_j \sigma(r_{ij}) }
-\f]
+$$
 
-where the \f$c_i\f$ and \f$c_j\f$ values can be for any one of the symmetry functions that can be calculated using plumed
-multicolvars.  The function \f$\sigma( r_{ij} )\f$ is a \ref switchingfunction that acts on the distance between
-atoms \f$i\f$ and \f$j\f$.  Lechner and Dellago suggest that the parameters of this function should be set so that it the function is equal to one
-when atom \f$j\f$ is in the first coordination sphere of atom \f$i\f$ and is zero otherwise.
+where the $c_i$ and $c_j$ values can be any vector of [symmetry functions](https://www.plumed-tutorials.org/lessons/23/001/data/SymmetryFunction.html)
+ that can be calculated using plumed multicolvars.  The function $\sigma( r_{ij} )$ is a switching function that acts on the distance between
+atoms $i$ and $j$.  Lechner and Dellago suggest that the parameters of this function should be set so that it the function is equal to one
+when atom $j$ is in the first coordination sphere of atom $i$ and is zero otherwise.
 
-The \f$s_i\f$ quantities calculated using the above command can be again thought of as atom-centred symmetry functions.  They
-thus operate much like multicolvars.  You can thus calculate properties of the distribution of \f$s_i\f$ values using MEAN, LESS_THAN, HISTOGRAM
-and so on.  You can also probe the value of these averaged variables in regions of the box by using the command in tandem with the
-\ref AROUND command.
+To see how this works in practice consider the following example input.
 
-\par Examples
-
-This example input calculates the coordination numbers for all the atoms in the system.  These coordination numbers are then averaged over
-spherical regions.  The number of averaged coordination numbers that are greater than 4 is then output to a file.
-
-\plumedfile
-COORDINATIONNUMBER SPECIES=1-64 D_0=1.3 R_0=0.2 LABEL=d1
-LOCAL_AVERAGE ARG=d1 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MORE_THAN={RATIONAL R_0=4} LABEL=la
+```plumed
+d1: COORDINATIONNUMBER SPECIES=1-64 D_0=1.3 R_0=0.2
+la: LOCAL_AVERAGE SPECIES=d1 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MORE_THAN={RATIONAL R_0=4}
 PRINT ARG=la.* FILE=colvar
-\endplumedfile
+```
 
-This example input calculates the \f$q_4\f$ (see \ref Q4) vectors for each of the atoms in the system.  These vectors are then averaged
-component by component over a spherical region.  The average value for this quantity is then outputeed to a file.  This calculates the
-quantities that were used in the paper by Lechner and Dellago \cite dellago-q6
+This input calculates the coordination numbers for all the atoms in the system.  These coordination numbers are then averaged over
+spherical regions.  The number of averaged coordination numbers that are greater than 4 is then output to a file.  Furthermore, if you
+expand the input above you can see how the LOCAL_AVERAGE command is a shortcut action that expands to a longer input that you should be able to
+interpret.
 
-\plumedfile
+What Lechner and Dellago did in their paper was a little more complicated than this first example. To reproduce what they did you would use
+an input something like this:
+
+```plumed
 Q4 SPECIES=1-64 SWITCH={RATIONAL D_0=1.3 R_0=0.2} LABEL=q4
-LOCAL_AVERAGE ARG=q4 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN LABEL=la
+LOCAL_AVERAGE SPECIES=q4 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN LABEL=la
 PRINT ARG=la.* FILE=colvar
-\endplumedfile
+```
+
+This example input calculates the [Q4](Q4.md) vectors for each of the atoms in the system.  These vectors are then averaged
+component by component over a spherical region.  The average value for this quantity is then outputeed to a file.  If you want
+to understand more about the shortcut that is used here you can read [this page](https://www.plumed-tutorials.org/lessons/23/001/data/Steinhardt.html).
 
 */
 //+ENDPLUMEDOC
@@ -104,6 +104,7 @@ void LocalAverage::registerKeywords( Keywords& keys ) {
   keys.needsAction("CUSTOM");
   keys.needsAction("OUTER_PRODUCT");
   keys.setValueDescription("vector","the values of the local averages");
+  keys.addDOI("10.1063/1.2977970");
 }
 
 LocalAverage::LocalAverage(const ActionOptions&ao):

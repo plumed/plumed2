@@ -1,0 +1,4 @@
+name: pamm
+authors: Gareth Tribello
+description: implementations of the pamm methodology one application of which can be to determine if atoms are hydrogen bonded or not
+dois: ["10.1063/1.4900655", "10.1021/acs.jctc.7b00993"]

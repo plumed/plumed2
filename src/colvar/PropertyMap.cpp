@@ -29,60 +29,44 @@ namespace colvar {
 /*
 Calculate generic property maps.
 
-This Colvar calculates the property maps according to the work of Spiwok \cite Spiwok:2011ce.
+This colvar calculates the property maps according that is discussed in the paper by Spiwok in the bibligraphy below.
+The idea is to calculate properties like as $X$ and $Y$ as follows:
 
+$$
+\begin{align}
+X & = \frac{\sum_i X_i*\exp(-\lambda D_i(x))}{\sum_i  \exp(-\lambda D_i(x))} \\
+Y & = \frac{\sum_i Y_i*\exp(-\lambda D_i(x))}{\sum_i  \exp(-\lambda D_i(x))} \\
+& \cdots\\
+zzz & =-\frac{1}{\lambda}\log(\sum_i  \exp(-\lambda D_i(x)))
+\end{align}
+$$
 
-Basically it calculates
-\f{eqnarray*}{
-X=\frac{\sum_i X_i*\exp(-\lambda D_i(x))}{\sum_i  \exp(-\lambda D_i(x))} \\
-Y=\frac{\sum_i Y_i*\exp(-\lambda D_i(x))}{\sum_i  \exp(-\lambda D_i(x))} \\
-\cdots\\
-zzz=-\frac{1}{\lambda}\log(\sum_i  \exp(-\lambda D_i(x)))
-\f}
+The example input below shows how this works:
 
-where the parameters \f$X_i\f$  and  \f$Y_i\f$ are provided in the input pdb (allv.pdb in this case) and
- \f$D_i(x)\f$  is the mean squared displacement after optimal alignment calculated on the pdb frames you input (see Kearsley).
+```plumed
+#SETTINGS INPUTFILES=regtest/basic/rt40/allv.pdb
+p3: PROPERTYMAP REFERENCE=regtest/basic/rt40/allv.pdb PROPERTY=X,Y LAMBDA=69087 NEIGH_SIZE=8 NEIGH_STRIDE=4
+PRINT ARG=p3.X,p3.Y,p3.zzz STRIDE=1 FILE=colvar FMT=%8.4f
+```
+
+In this case the input line instructs plumed to look for two properties X and Y with attached values in the REMARK
+line of the reference pdb.  The parameters $X_i$ and $Y_i$ are provided in the input pdb and
+$D_i(x)$  is the mean squared displacement after optimal alignment calculated on the pdb frames you input (see Kearsley).
+The `NEIGH_STRIDE=4 NEIGH_SIZE=8` control the neighbor list parameter (optional but
+recommended for performance) and states that the neighbor list will be calculated every 4
+steps and consider only the closest 8 member to the actual md snapshots.
 
 
 When running with periodic boundary conditions, the atoms should be
 in the proper periodic image. This is done automatically since PLUMED 2.5,
-by rebuilding molecules using a procedure
-that is equivalent to that done in \ref WHOLEMOLECULES . Notice that
-rebuilding is local to this action. This is different from \ref WHOLEMOLECULES
-which actually modifies the coordinates stored in PLUMED.
-
-In case you want to recover the old behavior you should use the NOPBC flag.
+by considering the ordered list of atoms and rebuilding molecules using a procedure
+that is equivalent to that done in [WHOLEMOLECULES](WHOLEMOLECULES.md) . Notice that
+rebuilding is local to this action. This is different from [WHOLEMOLECULES](WHOLEMOLECULES.md)
+which actually modifies the coordinates stored in PLUMED.  If you want to recover the old behavior you should use the NOPBC flag.
 In that case you need to take care that atoms are in the correct
 periodic image.
 
-\par Examples
-
-\plumedfile
-p3: PROPERTYMAP REFERENCE=allv.pdb PROPERTY=X,Y LAMBDA=69087 NEIGH_SIZE=8 NEIGH_STRIDE=4
-PRINT ARG=p3.X,p3.Y,p3.zzz STRIDE=1 FILE=colvar FMT=%8.4f
-\endplumedfile
-
-note that NEIGH_STRIDE=4 NEIGH_SIZE=8 control the neighbor list parameter (optional but
-recommended for performance) and states that the neighbor list will be calculated every 4
-steps and consider only the closest 8 member to the actual md snapshots.
-
-In this case the input line instructs plumed to look for two properties X and Y with attached values in the REMARK
-line of the reference pdb (Note: No spaces from X and = and 1 !!!!).
-e.g.
-
-\auxfile{allv.pdb}
-REMARK X=1 Y=2
-ATOM      1  CL  ALA     1      -3.171   0.295   2.045  1.00  1.00
-ATOM      5  CLP ALA     1      -1.819  -0.143   1.679  1.00  1.00
-END
-REMARK X=2 Y=3
-ATOM      1  CL  ALA     1      -3.175   0.365   2.024  1.00  1.00
-ATOM      5  CLP ALA     1      -1.814  -0.106   1.685  1.00  1.00
-END
-\endauxfile
-
-\note
-The implementation of this collective variable and of \ref PATHMSD
+The implementation of this collective variable and of [PATHMSD](PATHMSD.md)
 is shared, as well as most input options.
 
 */
@@ -102,6 +86,7 @@ void PropertyMap::registerKeywords(Keywords& keys) {
   keys.add("compulsory","PROPERTY","the property to be used in the indexing: this goes in the REMARK field of the reference");
   keys.addOutputComponent("zzz","default","scalar","the minimum distance from the reference points");
   ActionWithValue::useCustomisableComponents(keys);
+  keys.addDOI("10.1063/1.3660208");
 }
 
 PropertyMap::PropertyMap(const ActionOptions&ao):

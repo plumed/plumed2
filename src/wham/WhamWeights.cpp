@@ -107,7 +107,10 @@ WhamWeights::WhamWeights( const ActionOptions& ao ) :
   std::string filename, fmt;
   parse("FILE",filename);
   parse("FMT",fmt);
-  readInputLine( "DUMPVECTOR STRIDE=0 ARG=" + getShortcutLabel() + " FILE=" + filename + " FMT=" + fmt );
+  if(fmt.length()>0) {
+    fmt=" FMT=" + fmt;
+  }
+  readInputLine( "DUMPVECTOR STRIDE=0 ARG=" + getShortcutLabel() + " FILE=" + filename + fmt );
 }
 
 }

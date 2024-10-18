@@ -32,7 +32,74 @@ namespace function {
 /*
 This function can be used to find the highest colvar by magnitude in a set.
 
-\par Examples
+This action allows you to find the highest of the input arguments.  As a first example of how it might be used consider the following input:
+
+```plumed
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+h1: HIGHEST ARG=d1,d2
+PRINT ARG=h1 FILE=colvar
+```
+
+The value, `h1`, that is output to the file `colvar` here will be equal to `d1` if `d1>d2` and will be equal to `d2` if `d2>d1`.  In other words, if
+all the arguments input to a HIGHEST action are scalars then the output value will be a scalar that is equal to the largest of the input arguments.
+Notice that you can also use this command with more than two arguments as illustrated below:
+
+```plumed
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+d3: DISTANCE ATOMS=5,6
+d4: DISTANCE ATOMS=7,8
+h1: HIGHEST ARG=d1,d2,d3,d4
+PRINT ARG=h1 FILE=colvar
+```
+
+## Using a single vector as input
+
+Instead of inputting multiple scalars you can input a single vector to this action instead as is illustrated below:
+
+```plumed
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4
+h1: HIGHEST ARG=d
+PRINT ARG=h1 FILE=colvar
+```
+
+The output from this action is a single scalar once again.  This single scalar is equal to the largest element of the input vector.
+
+## Using multiple vectors in input
+
+If you input multiple vectors with the same numbers of elements to this action, as shown below, the output will be a vector.
+
+
+```plumed
+d1: DISTANCE ATOMS1=1,2 ATOMS2=3,4
+d2: DISTANCE ATOMS1=5,6 ATOMS2=7,8
+d3: DISTANCE ATOMS1=9,10 ATOMS2=11,12
+h2: HIGHEST ARG=d1,d2,d3
+PRINT ARG=h2 FILE=colvar
+```
+
+The elements of the output vector here are determined by doing an elementwise comparison of the elements in the input vectors.  In the above
+input the first element of `h2` is equal to the distance between atoms 1 and 2 if this distance is larger than the distances between atoms 5 and 6 and the distance between atoms 9 and 10.
+By the same token the second element of `h2` is equal to the distance between atoms 3 and 4 if this is larger than the distance between atoms 7 and 8 and the distance between atoms 11 and 12.
+In other words, if the elements of the $j$th input vector are given by $v_i^{(j)}$ then the elements of the output vector, $h_i$ are given by:
+
+$$
+h_i = \max_j v_i^{(j)}
+$$
+
+Notice that you can also use a combination of scalars and vectors in the input to this action as shown below:
+
+```plumed
+c: CONSTANT VALUE=0.05
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4
+h: HIGHEST ARG=d,c
+PRINT ARG=h FILE=colvar
+```
+
+For the input above the HIGHEST action outputs a vector with two elements.  The elements of this vector are equal to the distances between the pairs
+of atoms that are specified in the DISTANCE command as long as those distances are greater than 0.05 nm.  If either of the two input distances is less
+than 0.05 nm then the corresponding value in the vector `h` is set equal to 0.05 nm.
 
 */
 //+ENDPLUMEDOC
@@ -59,7 +126,74 @@ Calculate the largest element in a vector of inputs
 /*
 This function can be used to find the lowest colvar by magnitude in a set.
 
-\par Examples
+This action allows you to find the lowest of the input arguments.  As a first example of how it might be used consider the following input:
+
+```plumed
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+l1: LOWEST ARG=d1,d2
+PRINT ARG=l1 FILE=colvar
+```
+
+The value, `l1`, that is output to the file `colvar` here will be equal to `d1` if `d1<d2` and will be equal to `d2` if `d2<d1`.  In other words, if
+all the arguments input to a LOWEST action are scalars then the output value will be a scalar that is equal to the smallest of the input arguments.
+Notice that you can also use this command with more than two arguments as illustrated below:
+
+```plumed
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+d3: DISTANCE ATOMS=5,6
+d4: DISTANCE ATOMS=7,8
+l1: LOWEST ARG=d1,d2,d3,d4
+PRINT ARG=l1 FILE=colvar
+```
+
+## Using a single vector as input
+
+Instead of inputting multiple scalars you can input a single vector to this action instead as is illustrated below:
+
+```plumed
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4
+l1: LOWEST ARG=d
+PRINT ARG=l1 FILE=colvar
+```
+
+The output from this action is a single scalar once again.  This single scalar is equal to the smallest element of the input vector.
+
+## Using multiple vectors in input
+
+If you input multiple vectors with the same numbers of elements to this action, as shown below, the output will be a vector.
+
+
+```plumed
+d1: DISTANCE ATOMS1=1,2 ATOMS2=3,4
+d2: DISTANCE ATOMS1=5,6 ATOMS2=7,8
+d3: DISTANCE ATOMS1=9,10 ATOMS2=11,12
+l2: LOWEST ARG=d1,d2,d3
+PRINT ARG=l2 FILE=colvar
+```
+
+The elements of the output vector here are determined by doing an elementwise comparison of the elements in the input vectors.  In the above
+input the first element of `h2` is equal to the distance between atoms 1 and 2 if this distance is smaller than the distances between atoms 5 and 6 and the distance between atoms 9 and 10.
+By the same token the second element of `h2` is equal to the distance between atoms 3 and 4 if this is smaller than the distance between atoms 7 and 8 and the distance between atoms 11 and 12.
+In other words, if the elements of the $j$th input vector are given by $v_i^{(j)}$ then the elements of the output vector, $h_i$ are given by:
+
+$$
+h_i = \min_j v_i^{(j)}
+$$
+
+Notice that you can also use a combination of scalars and vectors in the input to this action as shown below:
+
+```plumed
+c: CONSTANT VALUE=0.5
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4
+h: LOWEST ARG=d,c
+PRINT ARG=h FILE=colvar
+```
+
+For the input above the LOWEST action outputs a vector with two elements.  The elements of this vector are equal to the distances between the pairs
+of atoms that are specified in the DISTANCE command as long as those distances are less than 0.5 nm.  If either of the two input distances is more
+han 0.5 nm then the corresponding value in the vector `h` is set equal to 0.5 nm.
 
 */
 //+ENDPLUMEDOC

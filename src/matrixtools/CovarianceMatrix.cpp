@@ -26,7 +26,20 @@
 /*
 Calculate a covariance matix
 
-\par Examples
+This shortcut takes multiple vectors in input as well as a vector of weights. A
+[covariance matrix](https://en.wikipedia.org/wiki/Covariance_matrix) is then computed from this input
+data. The example below shows how this action can be used to calculate a gyration tensor that describes
+the shape for a cluster of atoms.
+
+```plumed
+# Calculate the geometric center for 100 atoms
+com: CENTER ATOMS=1-100
+# Calculate the vector connecting each of the 100 atoms to the geometric center
+d: DISTANCES ATOMS=1-100 ORIGIN=com COMPONENTS
+# Now compute the covariance matrix
+ones: ONES SIZE=100
+covar: COVARIANCE_MATRIX ARG=d.x,d.y,d.z WEIGHTS=ones
+```
 
 */
 //+ENDPLUMEDOC

@@ -32,9 +32,66 @@ namespace refdist {
 
 //+PLUMEDOC FUNCTION DIFFERENCE
 /*
-Calculate the differences between two scalars
+Calculate the differences between two scalars or vectors
 
-\par Examples
+This action can be used to calculate the difference between two values.  For example, if we want to calculate the difference
+between the distances between atoms 1 and 2 and 3 and 4 we can use an input like the one shown below:
+
+```plumed
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+diff: DIFFERENCE ARG=d1,d2
+PRINT ARG=diff FILE=colvar
+```
+
+At first sight this action appears pointless as you can achieve the same result with the following input:
+
+```plumed
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+diff: CUSTOM ARG=d1,d2 FUNC=x-y PERIODIC=NO
+PRINT ARG=diff FILE=colvar
+```
+
+However, this second example will not give an equivalent result to the following input:
+
+```plumed
+t1: TORSION ATOMS=1,2,3,4
+t2: TORSION ATOMS=5,6,7,8
+diff: DIFFERENCE ARG=t1,t2
+PRINT ARG=diff FILE=colvar
+```
+
+as the [CUSTOM](CUSTOM.md) command cannot caclulate differences between periodic input variables.  In this case you have to
+use DIFFERENCE to ensure that the periodic boundary conditions are applied when the final difference is calculated.
+
+## Difference from reference value/s
+
+The DIFFERENCE command is frequently used to determine the difference between the instantaneous value of a quantity and
+a reference value as illustrated in the example below:
+
+```plumed
+ref_psi: CONSTANT VALUES=2.25029540
+t: TORSION ATOMS=1,2,3,4
+diff: DIFFERENCE ARG=t,ref_psi
+PRINT ARG=diff FILE=colvar
+```
+
+You can also use this action to calculate the difference between the instaneous values of a vector of quantities and a
+reference vector as illustrated in the example below:
+
+```plumed
+ref: CONSTANT VALUES=1.387980,1.126120,1.269380,1.321120,1.212420
+d: DISTANCES ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8 ATOMS5=9,10
+diff: DIFFERENCE ARG=d,ref
+PRINT ARG=diff FILE=colvar
+```
+
+The output in this case is a five dimensional vector.  Each element of this vector contains the difference between the
+corresponding elements of the two input vectors.
+
+Notice that you __cannot__ use a mixture of scalars and vectors in the input for this action. Only two values can be input
+to this action and these two input values __must__ have the same rank and the same number of elements.
 
 */
 //+ENDPLUMEDOC
@@ -113,7 +170,7 @@ void Difference::read( ActionWithArguments* action ) {
   } else if( action->getPntrToArgument(1)->isPeriodic() ) {
     periodic=true;
     action->getPntrToArgument(1)->getDomain( min0, max0 );
-    if( !action->getPntrToArgument(1)->isConstant() ) {
+    if( !action->getPntrToArgument(0)->isConstant() ) {
       action->error("period for input variables " + action->getPntrToArgument(0)->getName() + " and " + action->getPntrToArgument(1)->getName() + " should be the same 1");
     } else {
       action->getPntrToArgument(0)->setDomain( min0, max0 );

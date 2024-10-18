@@ -30,44 +30,49 @@ namespace colvar {
 
 //+PLUMEDOC COLVAR POSITION
 /*
-Calculate the components of the position of an atom.
+Calculate the components of the position of an atom or atoms.
 
+To print the position of atom one to a file you can use an input like this:
+
+```plumed
+p: POSITION ATOM=1
+PRINT ARG=p.x,p.y,p.z FILE=colvar
+```
+
+To print the position of four atoms you can use an input like this:
+
+```plumed
+p: POSITION ATOMS=1-4
+PRINT ARG=p.x,p.y,p.z FILE=colvar
+```
+
+The three output values, p.x, p.y and p.z, here are all four dimensional vectors.
+
+[!CAUTION]
 Notice that single components will not have the proper periodicity!
-If you need the values to be consistent through PBC you should use SCALED_COMPONENTS,
+
+If you need the values to be consistent through PBC you can use SCALED_COMPONENTS,
 which defines values that by construction are in the -0.5,0.5 domain. This is
-similar to the equivalent flag for \ref DISTANCE.
+similar to the equivalent flag for [DISTANCE](DISTANCE.md).
 Also notice that by default the minimal image distance from the
 origin is considered (can be changed with NOPBC).
 
-\attention
-This variable should be used with extreme care since it allows to easily go into troubles. See comments below.
-
-This variable can be safely used only if
+[!CAUTION]
+This variable should be used with extreme care since it allows you to easily get in troubles.
+It can be only be used if the
 Hamiltonian is not invariant for translation (i.e. there are other absolute positions which are biased, e.g. by position restraints)
 and cell size and shapes are fixed through the simulation.
 
-If you are not in this situation and still want to use the absolute position of an atom you should first fix the reference frame.
-This can be done e.g. using \ref FIT_TO_TEMPLATE.
+If you are not in this situation and still want to use the absolute position of an atom you should first fix the reference frame
+by using [FIT_TO_TEMPLATE](FIT_TO_TEMPLATE.md) as shown in the example below
 
-\par Examples
-
-\plumedfile
+```plumed
+#SETTINGS INPUTFILES=regtest/basic/rt63/align.pdb
 # align to a template
-FIT_TO_TEMPLATE REFERENCE=ref.pdb
+FIT_TO_TEMPLATE REFERENCE=regtest/basic/rt63/align.pdb
 p: POSITION ATOM=3
 PRINT ARG=p.x,p.y,p.z
-\endplumedfile
-
-The reference position is specified in a pdb file like the one shown below
-
-\auxfile{ref.pdb}
-ATOM      3  HT3 ALA     2      -1.480  -1.560   1.212  1.00  1.00      DIA  H
-ATOM      9  CAY ALA     2      -0.096   2.144  -0.669  1.00  1.00      DIA  C
-ATOM     10  HY1 ALA     2       0.871   2.385  -0.588  1.00  1.00      DIA  H
-ATOM     12  HY3 ALA     2      -0.520   2.679  -1.400  1.00  1.00      DIA  H
-ATOM     14  OY  ALA     2      -1.139   0.931  -0.973  1.00  1.00      DIA  O
-END
-\endauxfile
+```
 
 */
 //+ENDPLUMEDOC

@@ -31,87 +31,94 @@ namespace setup {
 /*
 Loads a library, possibly defining new actions.
 
-It is available only
-on systems allowing for dynamic loading. It can also be fed with a cpp file,
-in which case the file is compiled first.
+The LOAD action is only available on systems that allow dynamic loading.
+This action allows you load new funcionality into PLUMED at runtime.
+This new functionality can be in a .so file or a .cpp file. If the
+new functionality is in a cpp file then the code is compiled and the
+the resulting object is loaded.
 
-\par Examples
+Using the LOAD action is useful for making quick tests while developing your own
+actions. Of course, once your implementation is ready you should
+add it to the PLUMED source tree and recompile PLUMED.
 
-If you have a shared object named extensions.so and want to
-use the functions implemented within it within PLUMED you can
-load it with the following syntax
+One way to use the LOAD action is to directly load a cpp file as illustrated in the input below.
 
-\plumedfile
-LOAD FILE=extensions.so
-\endplumedfile
-
-As a more practical example, imagine that you want to make a
-small change to one collective variable that is already implemented
-in PLUMED, say \ref DISTANCE . Copy the file `src/colvar/Distance.cpp`
-into your work directory, rename it as `Distance2.cpp`
-and  edit it as you wish. It might be better
-to also replace any occurrence of the string DISTANCE within the file
-with DISTANCE2, so that both old and new implementation will be available
-with different names. Then you can compile it into a shared object using
-\verbatim
-> plumed mklib Distance2.cpp
-\endverbatim
-This will generate a file `Distance2.so` (or `Distance2.dylib` on a mac)
-that can be loaded.
-Now you can use your new implementation with the following input
-\plumedfile
-# load the new library
-LOAD FILE=Distance2.so
-# compute standard distance
-d: DISTANCE ATOMS=1,10
-# compute modified distance
-d2: DISTANCE2 ATOMS=1,10
-# print them on a file
-PRINT ARG=d,d2 FILE=compare-them
-\endplumedfile
-
-You can even skip the initial step and directly feed PLUMED
-with the `Distance2.cpp` file: it will be compiled on the fly.
-\plumedfile
+```plumed
+#SETTINGS INPUTFILES=regtest/basic/rt15/Distance2.cpp
 # load the new definition
 # this is a cpp file so it will be compiled
-LOAD FILE=Distance2.cpp
+LOAD FILE=regtest/basic/rt15/Distance2.cpp
 # compute standard distance
 d: DISTANCE ATOMS=1,10
 # compute modified distance
 d2: DISTANCE2 ATOMS=1,10
 # print them on a file
 PRINT ARG=d,d2 FILE=compare-them
-\endplumedfile
+```
 
-This will allow to make quick tests while developing your own
-variables. Of course, after your implementation is ready you might
-want to add it to the PLUMED source tree and recompile
-the whole PLUMED.
+When PLUMED reads the input above it first compiles the code in `Distance2.cpp`. The resulting object file
+is then loaded into PLUMED. If you look at the cpp file that is input in the command above you can see that
+a new action called `DISTANCE2` is defined within it.  We can thus use this new action in the input above.
 
-Starting with PLUMED 2.10, the LOAD action can be placed in any point of the input
-file, and will only affect commands that are placed after the LOAD action.
-In other words, you can create a file named `Distance.cpp` and that reimplement
-the \ref DISTANCE action and use it like this:
+Instead of compiling the code at runtime you can construct a shared object from the Distance2.cpp file and LOAD the shared library instead of
+the cpp file.  To construct the shared object you would use the following command:
 
-\plumedfile
+````
+> plumed mklib Distance2.cpp
+````
+
+When you run this command a new file called `Distance2.so` (or `Distance2.dylib` on a mac) is created.
+You can then load this shared object in PLUMED by using the following LOAD command
+
+````
+LOAD FILE=Distance2.so
+````
+
+The new functionality within the Distance2.cpp file can then be used in the remainder of the input in the same way it was
+used in the previous example.
+(Notice that the only reason for not using the usual PLUMED syntax highlightling in the example above is that we have no
+file called Distance2.so.)
+
+From PLUMED 2.10 onwards the LOAD action can be placed at any point of the input
+file. The loaded functionality will then only affect commands that are placed after the LOAD action.
+These features are illustrated in the input below:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/basic/rt15/Distance3.cpp
 # compute standard distance
 d: DISTANCE ATOMS=1,10
 # load the new definition
-LOAD FILE=Distance.so
+LOAD FILE=regtest/basic/rt15/Distance3.cpp
 # compute modified distance
 d2: DISTANCE ATOMS=1,10
 # print them on a file
 PRINT ARG=d,d2 FILE=compare-them
-\endplumedfile
+```
 
-In addition, starting with PLUMED 2.10 the LOAD action can be used in contexts where
+Notice that the `Distance3.cpp` uses the command:
+
+```c++
+PLUMED_REGISTER_ACTION(Distance,"DISTANCE")
+```
+
+Instead of the command:
+
+```c++
+PLUMED_REGISTER_ACTION(Distance,"DISTANCE2")
+```
+
+that was used in `Distance2.cpp`. Consequently, when we load the `Distance3.cpp` file here we redefine the DISTANCE command.
+The functions that compute `d` and `d2` in the above input are thus different.
+
+A final point to note is that, starting with PLUMED 2.10, the LOAD action can be used in contexts where
 multiple Plumed objects exist. A possible example is multithreading: loading an action
 from a Plumed object used in one thread will not affect other threads.
 Another example is if multiple Plumed objects are created in the C/C++ or Python interface.
 If a LOAD command is used in one of these objects, the loaded action will not affect
 the other objects.
 
+> [!NOTE]
+> The example inputs on this page appear as not working because you cannot use the dynamic loading on GitHub Actions. On a machine where this functionality is available these inputs should work.
 
 */
 //+ENDPLUMEDOC
