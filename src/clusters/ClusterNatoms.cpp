@@ -26,7 +26,20 @@
 /*
 Calculate the number of atoms in the cluster of interest
 
-\par Examples
+An example input that determines the number of atoms in the second largest cluster that is identified by 
+analysing the connected components of a CONTACT_MATRIX using DFSCLUSTERING is shown below:
+
+```plumed
+# Calculate a contact matrix between the first 100 atoms in the configuration
+cm: CONTACT_MATRIX GROUP=1-100 SWITCH={CUBIC D_0=0.45  D_MAX=0.55}
+# Find the connected components from the contact matrix
+dfs: DFSCLUSTERING ARG=cm
+# And determine the size of the second largest cluster that was identified
+c1: CLUSTER_NATOMS CLUSTERS=dfs CLUSTER=2
+PRINT ARG=c1 FILE=colvar
+```
+
+__The output from this action is NOT differentiable__
 
 */
 //+ENDPLUMEDOC

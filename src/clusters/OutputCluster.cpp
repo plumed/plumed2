@@ -26,30 +26,21 @@
 /*
 Output the indices of the atoms in one of the clusters identified by a clustering object
 
-This action provides one way of getting output from a \ref DFSCLUSTERING calculation.
-The output in question here is either
+This action provides one way of getting output from a DFSCLUSTERING calculation.
+The output in question here is a [gromacs ndx file](https://manual.gromacs.org/archive/5.0.6/online/ndx.html) 
+that contains a list of the atom indices 
+that form part of one of the clusters that was identified using DFSCLUSTERING
 
-- a file that contains a list of the atom indices that form part of one of the clusters that was identified using \ref DFSCLUSTERING
-- an xyz file containing the positions of the atoms in one of the the clusters that was identified using \ref DFSCLUSTERING
+The input shown below constructs a CONTACT_MATRIX that describes the connectivity between the atoms.  
+The DFS algorithm is then used to find the connected components
+in this matrix.  The indices of the atoms in the largest connected component are then output
+to a ndx file.
 
-Notice also that if you choose to output an xyz file you can ask PLUMED to try to reconstruct the cluster
-taking the periodic boundary conditions into account by using the MAKE_WHOLE flag.
-
-\par Examples
-
-The input shown below identifies those atoms with a coordination number less than 13
-and then constructs a contact matrix that describes the connectivity between the atoms
-that satisfy this criteria.  The DFS algorithm is then used to find the connected components
-in this matrix and the indices of the atoms in the largest connected component are then output
-to a file.
-
-\plumedfile
-c1: COORDINATIONNUMBER SPECIES=1-1996 SWITCH={CUBIC D_0=0.34 D_MAX=0.38}
-cf: MFILTER_LESS DATA=c1 SWITCH={CUBIC D_0=13 D_MAX=13.5}
-mat: CONTACT_MATRIX ATOMS=cf SWITCH={CUBIC D_0=0.34 D_MAX=0.38}
+```plumed
+mat: CONTACT_MATRIX ATOMS=1-1996 SWITCH={CUBIC D_0=0.34 D_MAX=0.38}
 dfs: DFSCLUSTERING MATRIX=mat
-OUTPUT_CLUSTER CLUSTERS=dfs CLUSTER=1 FILE=dfs.dat
-\endplumedfile
+OUTPUT_CLUSTER CLUSTERS=dfs CLUSTER=1 FILE=dfs.ndx
+```
 
 */
 //+ENDPLUMEDOC

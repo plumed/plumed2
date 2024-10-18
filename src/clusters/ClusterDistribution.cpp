@@ -31,33 +31,29 @@
 /*
 Calculate functions of the distribution of properties in your connected components.
 
-This collective variable was developed for looking at nucleation phenomena, where you are
-interested in using studying the behavior of atoms in small aggregates or nuclei.  In these sorts of
-problems you might be interested in the distribution of the sizes of the clusters in your system.
-A detailed description of this CV can be found in \cite tribello-clustering.
-
-\par Examples
+__This shortcut action is present to ensure that inputs for older PLUMED versions remain compatible.  We STRONGLY
+encourage you to use the newer (and simpler) syntax for clustering calculations__  Look at the documentation for 
+CLUSTER_WEIGHTS and the expanded version of the input below to see how this new input syntax operates.
 
 The input provided below calculates the local q6 Steinhardt parameter on each atom.  The coordination number
 that atoms with a high value for the local q6 Steinhardt parameter have with other atoms that have a high
 value for the local q6 Steinhardt parameter is then computed.  A contact matrix is then computed that measures
-whether atoms atoms \f$i\f$ and \f$j\f$ have a high value for this coordination number and if they are within
+whether atoms atoms $i$ and $j$ have a high value for this coordination number and if they are within
 3.6 nm of each other.  The connected components of this matrix are then found using a depth first clustering
 algorithm on the corresponding graph. The number of components in this graph that contain more than 27 atoms is then computed.
-As discussed in \cite tribello-clustering an input similar to this one was used to analyze the formation of a polycrystal of GeTe from amorphous
-GeTe.
+An input similar to this one was used to analyze the formation of a polycrystal of GeTe from amorphous GeTe in the paper cited below
 
-\plumedfile
-q6: Q6 SPECIES=1-300 SWITCH={GAUSSIAN D_0=5.29 R_0=0.01 D_MAX=5.3} LOWMEM
-lq6: LOCAL_Q6 SPECIES=q6 SWITCH={GAUSSIAN D_0=5.29 R_0=0.01 D_MAX=5.3} LOWMEM
-flq6: MFILTER_MORE DATA=lq6 SWITCH={GAUSSIAN D_0=0.19 R_0=0.01 D_MAX=0.2}
+```plumed
+q6: Q6 SPECIES=1-300 SWITCH={GAUSSIAN D_0=5.29 R_0=0.01 D_MAX=5.3} 
+lq6: LOCAL_Q6 SPECIES=q6 SWITCH={GAUSSIAN D_0=5.29 R_0=0.01 D_MAX=5.3} 
+flq6: MORE_THAN ARG=lq6 SWITCH={GAUSSIAN D_0=0.19 R_0=0.01 D_MAX=0.2}
 cc: COORDINATIONNUMBER SPECIES=flq6 SWITCH={GAUSSIAN D_0=3.59 R_0=0.01 D_MAX=3.6}
-fcc: MFILTER_MORE DATA=cc SWITCH={GAUSSIAN D_0=5.99 R_0=0.01 D_MAX=6.0}
+fcc: MORE_THAN ARG=cc SWITCH={GAUSSIAN D_0=5.99 R_0=0.01 D_MAX=6.0}
 mat: CONTACT_MATRIX ATOMS=fcc SWITCH={GAUSSIAN D_0=3.59 R_0=0.01 D_MAX=3.6}
 dfs: DFSCLUSTERING MATRIX=mat
 nclust: CLUSTER_DISTRIBUTION CLUSTERS=dfs TRANSFORM={GAUSSIAN D_0=5.99 R_0=0.01 D_MAX=6.0} MORE_THAN={GAUSSIAN D_0=26.99 R_0=0.01 D_MAX=27}
 PRINT ARG=nclust.* FILE=colvar
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC

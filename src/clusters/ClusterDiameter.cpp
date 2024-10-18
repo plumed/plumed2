@@ -26,33 +26,22 @@
 /*
 Print out the diameter of one of the connected components
 
-As discussed in the section of the manual on \ref contactmatrix a useful tool for developing complex collective variables is the notion of the
-so called adjacency matrix.  An adjacency matrix is an \f$N \times N\f$ matrix in which the \f$i\f$th, \f$j\f$th element tells you whether
-or not the \f$i\f$th and \f$j\f$th atoms/molecules from a set of \f$N\f$ atoms/molecules are adjacent or not.  When analyzing these matrix
-we can treat them as a graph and find connected components using some clustering algorithm.  This action is used in tandem with this form of analysis
-to output the largest of the distances between the pairs of atoms that are connected together in a particular connected component.  It is important to
-note that the quantity that is output by this action cannot be differentiated.  As such it cannot be used as a collective variable in a biased simulation.
+An example input that determines the diameter of the second largest cluster that is identified by 
+analysing the connected components of a CONTACT_MATRIX using DFSCLUSTERING is shown below:
 
-\par Examples
+```plumed
+# Calculate a contact matrix between the first 100 atoms in the configuration
+cm: CONTACT_MATRIX GROUP=1-100 SWITCH={CUBIC D_0=0.45  D_MAX=0.55}
+# Find the connected components from the contact matrix
+dfs: DFSCLUSTERING ARG=cm
+# And determine the size of the second largest cluster that was identified
+c1: CLUSTER_DIAMETER CLUSTERS=dfs CLUSTER=2
+PRINT ARG=c1 FILE=colvar
+```
 
-The following input uses PLUMED to calculate a adjacency matrix that connects a pair of atoms if they both have a coordination number that is greater
-than 2.0 and if they are within 6.0 nm of each other.  Depth first search clustering is used to find the connected components in this matrix.  The distance
-between every pair of atoms that are within the largest of the clusters found is then calculated and the largest of these distances is output to a file named
-colvar.
+The diameter here is defined as the largest of all the distances between the pairs of atom in the cluster
 
-\plumedfile
-# Calculate coordination numbers
-c1: COORDINATIONNUMBER SPECIES=1-512 SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0}
-# Select coordination numbers that are more than 2.0
-cf: MFILTER_MORE DATA=c1 SWITCH={RATIONAL D_0=2.0 R_0=0.1} LOWMEM
-# Build a contact matrix
-mat: CONTACT_MATRIX ATOMS=cf SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0}
-# Find largest cluster
-dfs: DFSCLUSTERING MATRIX=mat
-clust1: CLUSTER_PROPERTIES CLUSTERS=dfs CLUSTER=1
-dia: CLUSTER_DIAMETER CLUSTERS=dfs CLUSTER=1
-PRINT ARG=dia FILE=colvar
-\endplumedfile
+__The output from this action is NOT differentiable__
 
 */
 //+ENDPLUMEDOC

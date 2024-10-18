@@ -36,45 +36,55 @@ namespace envsim {
 /*
 Measure how similar the environment around atoms is to that found in some reference crystal structure.
 
-This CV was introduced in this article \cite Piaggi-JCP-2019.
 The starting point for the definition of the CV is the local atomic density around an atom.
-We consider an environment \f$\chi\f$ around this atom and we define the density by
-\f[
- \rho_{\chi}(\mathbf{r})=\sum\limits_{i\in\chi} \exp\left(- \frac{|\mathbf{r}_i-\mathbf{r}|^2} {2\sigma^2} \right),
-\f]
-where \f$i\f$ runs over the neighbors in the environment \f$\chi\f$, \f$\sigma\f$ is a broadening parameter, and \f$\mathbf{r}_i\f$ are the
+We consider an environment $\chi$ around this atom and we define the density by
+
+$$
+ \rho_{\chi}(\mathbf{r})=\sum\limits_{i\in\chi} \exp\left(- \frac{|r_i-r|^2} {2\sigma^2} \right),
+$$
+
+where $i$ runs over the neighbors in the environment $\chi$, $\sigma$ is a broadening parameter, and $r_i$ are the
 coordinates of the neighbors relative to the central atom.
-We now define a reference environment or template \f$\chi_0\f$ that contains \f$n\f$ reference positions \f$\{\mathbf{r}^0_1,...,\mathbf{r}^0_n\}\f$
+We now define a reference environment or template $\chi_0$ that contains $n$ reference positions $\{r^0_1,...,r^0_n\}$
 that describe, for instance, the nearest neighbors in a given lattice.
-\f$\sigma\f$ is set using the SIGMA keyword and \f$\chi_0\f$ is chosen with the CRYSTAL_STRUCTURE keyword.
+$\sigma$ is set using the SIGMA keyword and $\chi_0$ is chosen with the CRYSTAL_STRUCTURE keyword.
 If only the SPECIES keyword is given then the atoms defined there will be the central and neighboring atoms.
 If instead the SPECIESA and SPECIESB keywords are given then SPECIESA determines the central atoms and SPECIESB the neighbors.
 
-The environments \f$\chi\f$ and \f$\chi_0\f$ are compared using the kernel,
-\f[
+The environments $\chi$ and $\chi_0$ are compared using the kernel,
+
+$$
  k_{\chi_0}(\chi)= \int d\mathbf{r} \rho_{\chi}(\mathbf{r}) \rho_{\chi_0}(\mathbf{r}) .
-\f]
+$$
+
 Combining the two equations above and performing the integration analytically we obtain,
-\f[
+
+$$
  k_{\chi_0}(\chi)= \sum\limits_{i\in\chi} \sum\limits_{j\in\chi_0} \pi^{3/2} \sigma^3  \exp\left(- \frac{|\mathbf{r}_i-\mathbf{r}^0_j|^2} {4\sigma^2} \right).
-\f]
+$$
+
 The kernel is finally normalized,
-\f[
+
+$$
  \tilde{k}_{\chi_0}(\chi)  = \frac{1}{n} \sum\limits_{i\in\chi} \sum\limits_{j\in\chi_0} \exp\left( - \frac{|\mathbf{r}_i-\mathbf{r}^0_j|^2} {4\sigma^2} \right),
-\f]
-such that \f$\tilde{k}_{\chi_0}(\chi_0) = 1\f$.
+$$
+
+such that $\tilde{k}_{\chi_0}(\chi_0) = 1$.
 The above kernel is computed for each atom in the SPECIES or SPECIESA keywords.
 This quantity is a multicolvar so you can compute it for multiple atoms using a single PLUMED action and then compute
-the average value for the atoms in your system, the number of atoms that have an \f$\tilde{k}_{\chi_0}\f$ value that is more that some target and
+the average value for the atoms in your system, the number of atoms that have an $\tilde{k}_{\chi_0}$ value that is more that some target and
 so on.
 
 The kernel can be generalized to crystal structures described as a lattice with a basis of more than one atom.
 In this case there is more than one type of environment.
-We consider the case of \f$M\f$ environments \f$X = \chi_1,\chi_2,...,\chi_M\f$ and we define the kernel through a best match strategy:
-\f[
+We consider the case of $M$ environments $X = \chi_1,\chi_2,...,\chi_M$ and we define the kernel through a best match strategy:
+
+
+$$
  \tilde{k}_X(\chi)= \frac{1}{\lambda} \log \left ( \sum\limits_{l=1}^{M}\exp \left (\lambda \: \tilde{k}_{\chi_l}(\chi) \right ) \right ).
-\f]
-For a large enough \f$\lambda\f$ this expression will select the largest \f$\tilde{k}_{\chi_l}(\chi)\f$ with \f$\chi_l \in X\f$.
+$$
+
+For a large enough $\lambda$ this expression will select the largest $\tilde{k}_{\chi_l}(\chi)$ with $\chi_l \in X$.
 This approach can be used, for instance, to target the hexagonal closed packed (HCP keyword) or the diamond structure (DIAMOND keyword).
 
 The CRYSTAL_STRUCTURE keyword can take the values SC (simple cubic), BCC (body centered cubic), FCC (face centered cubic),
@@ -85,9 +95,9 @@ One value has to be specified for SC, BCC, FCC, and DIAMOND and two values have 
 
 If the CUSTOM option is used then the reference environments have to be specified by the user.
 The reference environments are specified in pdb files containing the distance vectors from the central atom to the neighbors.
-Make sure your PDB file is correctly formatted as explained \ref pdbreader "in this page"
+Make sure your PDB file is correctly formatted as explained in the documenation for MOLINFO
 If only one reference environment is specified then the filename should be given as argument of the keyword REFERENCE.
-If instead several reference environments are given, then they have to be provided in separate pdb files and given as arguments of the
+If instead several reference environments are given, then they have to be provided in separate pdb files and given as arguments for the
 keywords REFERENCE_1, REFERENCE_2, etc.
 If you have a reference crystal structure configuration you can use the [Environment Finder](https://github.com/PabloPiaggi/EnvironmentFinder) app to determine the reference environments that you should use.
 
@@ -95,23 +105,23 @@ If multiple chemical species are involved in the calculation, it is possible to 
 This information is provided in pdb files using the atom name field.
 The comparison between environments is performed taking into account whether the atom names match.
 
-\par Examples
+### Examples
 
 The following input calculates the ENVIRONMENTSIMILARITY kernel for 250 atoms in the system
 using the BCC atomic environment as target, and then calculates and prints the average value
  for this quantity.
 
-\plumedfile
-ENVIRONMENTSIMILARITY SPECIES=1-250 SIGMA=0.05 LATTICE_CONSTANTS=0.423 CRYSTAL_STRUCTURE=BCC MEAN LABEL=es
+```plumed
+es: ENVIRONMENTSIMILARITY SPECIES=1-250 SIGMA=0.05 LATTICE_CONSTANTS=0.423 CRYSTAL_STRUCTURE=BCC MEAN 
 
 PRINT ARG=es.mean FILE=COLVAR
-\endplumedfile
+```
 
 The next example compares the environments of the 96 selected atoms with a user specified reference
 environment. The reference environment is contained in the env1.pdb file. Once the kernel is computed
  the average and the number of atoms with a kernel larger than 0.5 are computed.
 
-\plumedfile
+```plumed
 ENVIRONMENTSIMILARITY ...
  SPECIES=1-288:3
  SIGMA=0.05
@@ -123,12 +133,12 @@ ENVIRONMENTSIMILARITY ...
 ... ENVIRONMENTSIMILARITY
 
 PRINT ARG=es.mean,es.morethan FILE=COLVAR
-\endplumedfile
+```
 
 The next example is similar to the one above but in this case 4 reference environments are specified.
  Each reference environment is given in a separate pdb file.
 
-\plumedfile
+```plumed
 ENVIRONMENTSIMILARITY ...
  SPECIES=1-288:3
  SIGMA=0.05
@@ -143,10 +153,12 @@ ENVIRONMENTSIMILARITY ...
 ... ENVIRONMENTSIMILARITY
 
 PRINT ARG=es.mean,es.morethan FILE=COLVAR
-\endplumedfile
+```
 
 The following examples illustrates the use of pdb files to provide information about different chemical species:
-\plumedfile
+
+
+```plumed
 ENVIRONMENTSIMILARITY ...
  SPECIES=1-6
  SIGMA=0.05
@@ -157,21 +169,26 @@ ENVIRONMENTSIMILARITY ...
  MORE_THAN={RATIONAL R_0=0.5 NN=12 MM=24}
  ATOM_NAMES_FILE=atom-names.pdb
 ... ENVIRONMENTSIMILARITY
-\endplumedfile
+```
+
 Here the file env.pdb is:
-\verbatim
+
+````
 ATOM      1    O MOL     1      -2.239  -1.296  -0.917  1.00  0.00           O
 ATOM      2    O MOL     1       0.000   0.000   2.751  1.00  0.00           O
-\endverbatim
+````
+
 where atoms are of type O, and the atom-names.pdb file is:
-\verbatim
+
+````
 ATOM      1  O       X   1       0.000   2.593   4.126  0.00  0.00           O
 ATOM      2  H       X   1       0.000   3.509   3.847  0.00  0.00           H
 ATOM      3  H       X   1       0.000   2.635   5.083  0.00  0.00           H
 ATOM      4  O       X   1       0.000   2.593  11.462  0.00  0.00           O
 ATOM      5  H       X   1       0.000   3.509  11.183  0.00  0.00           H
 ATOM      6  H       X   1       0.000   2.635  12.419  0.00  0.00           H
-\endverbatim
+````
+
 where atoms are of type O and H.
 In this case, all atoms are used as centers, but only neighbors of type O are taken into account.
 
@@ -223,6 +240,7 @@ void EnvironmentSimilarity::registerKeywords( Keywords& keys ) {
   multicolvar::MultiColvarShortcuts::shortcutKeywords( keys ); keys.needsAction("GROUP");
   keys.needsAction("DISTANCE_MATRIX"); keys.needsAction("ONES"); keys.needsAction("CONSTANT");
   keys.needsAction("CUSTOM"); keys.needsAction("MATRIX_VECTOR_PRODUCT"); keys.needsAction("COMBINE");
+  keys.addDOI("https://doi.org/10.1063/1.5102104");
 }
 
 EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):

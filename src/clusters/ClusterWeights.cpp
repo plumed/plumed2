@@ -30,8 +30,28 @@
 /*
 Setup a vector that has one for all the atoms that form part of the cluster of interest and that has zero for all other atoms.
 
-\par Examples
+This method is designed to be used in tandem with the DFSCLUSTERING action.  An example input that uses this action and
+that calculates the average coordination number for the atoms in the largest cluster in the system is shown below.
 
+```plumed
+# Calculate a contact matrix between the first 100 atoms in the configuration
+cm: CONTACT_MATRIX GROUP=1-100 SWITCH={CUBIC D_0=0.45  D_MAX=0.55}
+# Evaluate the coordination numbers of the 100 atoms with themselves
+ones: ONES SIZE=100
+coord: MATRIX_VECTOR_PRODUCT ARG=cm,ones
+# Find the connected components from the contact matrix
+dfs: DFSCLUSTERING ARG=cm
+# Returns a 100-dimensional vector that is 1 if the correpsonding atom index is in the largest cluster and is zero otherwise
+c1: CLUSTER_WEIGHTS CLUSTERS=dfs CLUSTER=1
+# Now evaluate the sum of the coordination numbers of the atoms in the larget cluster
+numerv: CUSTOM ARG=c1,coord FUNC=x*y PERIODIC=NO
+numer: SUM ARG=numerv PERIODIC=NO
+# Evaluate the total number of atoms in the largest cluster
+denom: SUM ARG=c1 PERIODIC=NO
+# And finally calculate the average coordination number for the atoms in the largest cluster
+f: CUSTOM ARG=numer/denom FUNC=x/y PERIODIC=NO
+PRINT ARG=f FILE=colvar
+```  
 
 */
 //+ENDPLUMEDOC
