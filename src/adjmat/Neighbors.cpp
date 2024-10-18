@@ -37,7 +37,7 @@ n: NEIGHBORS ARG=d1 NLOWEST=6
 Alternatively, if you would like to use a CONTACT_MATRIX to do something similar you would do the following:
 
 ```plumed
-d1: CONTACT_MATRIX GROUP=1-100 SWITCH={RATIONAL R_0=0.5}
+c1: CONTACT_MATRIX GROUP=1-100 SWITCH={RATIONAL R_0=0.5}
 n: NEIGHBORS ARG=c1 NHIGHEST=6
 ```
 
@@ -48,10 +48,10 @@ this coordination sphere contains only the four nearest atoms.  You can implemen
 
 ```plumed
 d1: DISTANCE_MATRIX GROUP=1-100 COMPONENTS
-n: NEIGHBORS ARG=d1 NLOWEST=4 
+n: NEIGHBORS ARG=d1.w NLOWEST=4 
 f: CUSTOM ARG=n,d1.x,d1.y,d1.z,d1.w VAR=w,x,y,z,r PERIODIC=NO FUNC=w*(((x+y+z)/r)^3+((x-y-z)/r)^3+((-x+y-z)/r)^3+((-x-y+z)/r)^3)
 ones: ONES SIZE=100
-ucv: MATRIX_VECTOR_FUNCTION ARG=f,ones
+ucv: MATRIX_VECTOR_PRODUCT ARG=f,ones
 cv: CUSTOM ARG=ucv PERIODIC=NO FUNC=x/4
 ```
 
