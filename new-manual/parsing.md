@@ -129,11 +129,11 @@ d: DISTANCE ATOMS=10,20
 t: TORSION ATOMS=30,31,32,33
 
 # Apply a restraint:
-# RESTRAINT ...
-#  ARG=d,t
-#  AT=@replicas:{{1.0,2.0} {3.0,4.0} {5.0,6.0}}
-#  KAPPA=1.0,3.0
-# ...
+RESTRAINT ...
+ ARG=d,t
+ AT=@replicas:{{1.0,2.0} {3.0,4.0} {5.0,6.0}}
+ KAPPA=1.0,3.0
+...
 # On replica 0 this means:
 #  RESTRAINT ARG=d AT=1.0,2.0 KAPPA=1.0,3.0
 # On replica 1 this means:
@@ -151,18 +151,18 @@ within multi-line statements (enclosed by pairs of `...`) newlines are replaced 
 #SETTINGS NREPLICAS=3
 d: DISTANCE ATOMS=10,20
 t: TORSION ATOMS=30,31,32,33
-# RESTRAINT ...
-#  ARG=d,t
-# indentation is not required (this is not python!)
-# but makes the input easier to read
-# NEED TO WORK ON THIS INPUT WITH PLUMED2HTML
-#  AT=@replicas:{
-#    {1.0,2.0}
-#    {3.0,4.0}
-#    {5.0,6.0}
-#  }
-#  KAPPA=1.0,3.0
-# ...
+RESTRAINT ...
+ ARG=d,t
+indentation is not required (this is not python!)
+but makes the input easier to read
+NEED TO WORK ON THIS INPUT WITH PLUMED2HTML
+ AT=@replicas:{
+   {1.0,2.0}
+   {3.0,4.0}
+   {5.0,6.0}
+ }
+ KAPPA=1.0,3.0
+...
 ```
 
 In short, whenever there are keywords that should vary across replicas, you should set them using the `@replicas:` keyword.
