@@ -52,6 +52,7 @@ class GenJson : public CLTool {
 private:
   std::string version;
   void printHyperlink(std::string action );
+  void printKeywordDocs( const std::string& k, const std::string& mydescrip, const Keywords& keys );
 public:
   static void registerKeywords( Keywords& keys );
   explicit GenJson(const CLToolOptions& co );
@@ -88,6 +89,10 @@ void GenJson::printHyperlink( std::string action ) {
   }
   for(auto c : action ) { if( isdigit(c) ) std::cout<<c; else std::cout<<"_"<<c; }
   std::cout<<".html\","<<std::endl;
+}
+
+void GenJson::printKeywordDocs( const std::string& k, const std::string& mydescrip, const Keywords& keys ) {
+  std::cout<<"       \""<<k<<"\" : { \"type\": \""<<keys.getStyle(k)<<"\", \"description\": \""<<mydescrip<<"\", \"multiple\": "<<keys.numbered(k)<<", \"actionlink\": \""<<keys.getLinkedActions(k)<<"\"";
 }
 
 int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
@@ -141,9 +146,13 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
       std::size_t dot=desc.find_first_of("."); std::string mydescrip = desc.substr(0,dot);
       if( mydescrip.find("\\")!=std::string::npos ) error("found invalid backslash character documentation for keyword " + keys.getKeyword(j) + " in action " + action_names[i] );
       std::string argtype = keys.getArgumentType( keys.getKeyword(j) );
-      if( argtype.length()>0 ) std::cout<<"       \""<<keys.getKeyword(j)<<"\" : { \"type\": \""<<keys.getStyle(keys.getKeyword(j))<<"\", \"description\": \""<<mydescrip<<"\", \"multiple\": "<<keys.numbered( keys.getKeyword(j) )<<", \"argtype\": \""<<argtype<<"\"}";
-      else if( defa.length()>0 ) std::cout<<"       \""<<keys.getKeyword(j)<<"\" : { \"type\": \""<<keys.getStyle(keys.getKeyword(j))<<"\", \"description\": \""<<mydescrip<<"\", \"multiple\": "<<keys.numbered( keys.getKeyword(j) )<<", \"default\": \""<<defa<<"\"}";
-      else std::cout<<"       \""<<keys.getKeyword(j)<<"\" : { \"type\": \""<<keys.getStyle(keys.getKeyword(j))<<"\", \"description\": \""<<mydescrip<<"\", \"multiple\": "<<keys.numbered( keys.getKeyword(j) )<<"}";
+      if( argtype.length()>0 ) {
+          printKeywordDocs( keys.getKeyword(j), mydescrip, keys ); std::cout<<", \"argtype\": \""<<argtype<<"\"}";
+      } else if( defa.length()>0 ) {
+          printKeywordDocs( keys.getKeyword(j), mydescrip, keys ); std::cout<<", \"default\": \""<<defa<<"\"}";
+      } else {
+          printKeywordDocs( keys.getKeyword(j), mydescrip, keys ); std::cout<<"}"; 
+      }
       if( j==keys.size()-1 && !keys.exists("HAS_VALUES") ) std::cout<<std::endl; else std::cout<<","<<std::endl;
     }
     if( keys.exists("HAS_VALUES") ) {

@@ -96,10 +96,13 @@ void HbondMatrix::registerKeywords( Keywords& keys ) {
   keys.add("atoms","HYDROGENS","The list of atoms that can form the bridge between the two interesting parts "
            "of the structure.");
   keys.add("numbered","SWITCH","The switchingfunction that specifies how close a pair of atoms must be together for there to be a hydrogen bond between them");
+  keys.linkActionInDocs("SWITCH","LESS_THAN");
   keys.add("numbered","HSWITCH","The switchingfunction that specifies how close the hydrogen must be to the donor atom of the hydrogen bond for it to be "
            "considered a hydrogen bond");
+  keys.linkActionInDocs("HSWITCH","LESS_THAN");
   keys.add("numbered","ASWITCH","A switchingfunction that is used to specify what the angle between the vector connecting the donor atom to the acceptor atom and "
            "the vector connecting the donor atom to the hydrogen must be in order for it considered to be a hydrogen bond");
+  keys.linkActionInDocs("ASWITCH","LESS_THAN");
 }
 
 HbondMatrix::HbondMatrix(const ActionOptions&ao):

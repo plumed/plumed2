@@ -117,10 +117,14 @@ void TopologyMatrix::registerKeywords( Keywords& keys ) {
   AdjacencyMatrixBase::registerKeywords( keys );
   keys.add("atoms","BACKGROUND_ATOMS","the list of atoms that should be considered as part of the background density");
   keys.add("compulsory","SWITCH","switching function that acts upon the distance between the two atoms that define our cylinder");
+  keys.linkActionInDocs("SWITCH","LESS_THAN");
   keys.add("compulsory","RADIUS","swtiching function that acts upon the radial distance of the atom from the center of the cylinder");
+  keys.linkActionInDocs("RADIUS","LESS_THAN");
   keys.add("compulsory","CYLINDER_SWITCH","a switching function on ( r_ij . r_ik - 1 )/r_ij");
+  keys.linkActionInDocs("CYLINDER_SWITCH","LESS_THAN");
   keys.add("compulsory","BIN_SIZE","the size to use for the bins");
   keys.add("compulsory","DENSITY_THRESHOLD","a switching function that acts upon the maximum density in the cylinder");
+  keys.linkActionInDocs("DENSITY_THRESHOLD","LESS_THAN");
   keys.add("compulsory","SIGMA","the width of the function to be used for kernel density estimation");
   keys.add("compulsory","KERNEL","gaussian","the type of kernel function to be used");
 }
