@@ -139,11 +139,11 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
       if( mydescrip.find("\\")!=std::string::npos ) error("found invalid backslash character documentation for keyword " + keys.getKeyword(j) + " in action " + action_names[i] );
       std::string argtype = keys.getArgumentType( keys.getKeyword(j) );
       if( argtype.length()>0 ) {
-          printKeywordDocs( keys.getKeyword(j), mydescrip, keys ); std::cout<<", \"argtype\": \""<<argtype<<"\"}";
+        printKeywordDocs( keys.getKeyword(j), mydescrip, keys ); std::cout<<", \"argtype\": \""<<argtype<<"\"}";
       } else if( defa.length()>0 ) {
-          printKeywordDocs( keys.getKeyword(j), mydescrip, keys ); std::cout<<", \"default\": \""<<defa<<"\"}";
+        printKeywordDocs( keys.getKeyword(j), mydescrip, keys ); std::cout<<", \"default\": \""<<defa<<"\"}";
       } else {
-          printKeywordDocs( keys.getKeyword(j), mydescrip, keys ); std::cout<<"}"; 
+        printKeywordDocs( keys.getKeyword(j), mydescrip, keys ); std::cout<<"}";
       }
       if( j==keys.size()-1 && !keys.exists("HAS_VALUES") ) std::cout<<std::endl; else std::cout<<","<<std::endl;
     }
