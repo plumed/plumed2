@@ -153,9 +153,8 @@ d: DISTANCE ATOMS=10,20
 t: TORSION ATOMS=30,31,32,33
 RESTRAINT ...
  ARG=d,t
-indentation is not required (this is not python!)
-but makes the input easier to read
-NEED TO WORK ON THIS INPUT WITH PLUMED2HTML
+# indentation is not required (this is not python!)
+# but makes the input easier to read
  AT=@replicas:{
    {1.0,2.0}
    {3.0,4.0}
