@@ -86,6 +86,7 @@ void ContactMatrix::registerKeywords( Keywords& keys ) {
   keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
            "The following provides information on the \\ref switchingfunction that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
+  keys.linkActionInDocs("SWITCH","LESS_THAN");
 }
 
 ContactMatrix::ContactMatrix( const ActionOptions& ao ):

@@ -75,10 +75,13 @@ void BridgeMatrix::registerKeywords( Keywords& keys ) {
   keys.add("atoms","BRIDGING_ATOMS","The list of atoms that can form the bridge between the two interesting parts "
            "of the structure.");
   keys.add("optional","SWITCH","The parameters of the two switchingfunction in the above formula");
+  keys.linkActionInDocs("SWITCH","LESS_THAN");
   keys.add("optional","SWITCHA","The switchingfunction on the distance between bridging atoms and the atoms in "
            "group A");
+  keys.linkActionInDocs("SWITCHA","LESS_THAN");
   keys.add("optional","SWITCHB","The switchingfunction on the distance between the bridging atoms and the atoms in "
            "group B");
+  keys.linkActionInDocs("SWITCHB","LESS_THAN");
 }
 
 BridgeMatrix::BridgeMatrix(const ActionOptions&ao):
