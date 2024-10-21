@@ -190,7 +190,7 @@ void ContactMatrixShortcut::registerKeywords(Keywords& keys) {
   keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
-  keys.add("numbered","SWITCH","specify the switching function to use between two sets of indistinguishable atoms");
+  keys.add("numbered","SWITCH","the input for the switching function that acts upon the distance between each pair of atoms");
   keys.linkActionInDocs("SWITCH","LESS_THAN");
   keys.addActionNameSuffix("_PROPER"); keys.needsAction("TRANSPOSE"); keys.needsAction("CONCATENATE");
 }
