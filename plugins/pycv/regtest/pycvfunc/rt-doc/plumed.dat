@@ -1,4 +1,4 @@
-LOAD FILE=../../../../PythonCVInterface.so
+LOAD FILE=@pycvpath@
 
 cvdist: PYFUNCTION IMPORT=pyhelp
 

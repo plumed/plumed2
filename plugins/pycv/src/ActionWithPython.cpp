@@ -17,8 +17,8 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "ActionWithPython.h"
 
-#include "core/ActionWithValue.h"
-#include "tools/DLLoader.h"
+#include "plumed/core/ActionWithValue.h"
+#include "plumed/tools/DLLoader.h"
 
 #include <pybind11/embed.h> // everything needed for embedding
 #include <pybind11/numpy.h>

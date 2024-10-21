@@ -1,0 +1,1 @@
+../regtest/pycvcomm/rt-getPosition/pydistancegetAtPos.py
