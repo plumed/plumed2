@@ -29,7 +29,29 @@
 /*
 Create a new value to hold a subset of the components that are in a vector or matrix
 
-\par Examples
+Output a scalar or vector that contains a subset of the elements in the input vector or matrix.
+In the example below the value `s` is a scalar that contains the distance between atoms 3 and 4.
+
+```plumed
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8
+s: SELECT_COMPONENTS ARG=d COMPONENTS=2
+```
+
+In this example the output z is a 2 dimensional vector containing the distances between atoms 3 and 4
+and 7 and 8.
+
+```plumed
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8
+s: SELECT_COMPONENTS ARG=d COMPONENTS=2,4
+```
+
+Lastly, in this example we calculate a matrix of distances.  The scalar `s` that is output from the 
+SELECT_COMPONENTS action contains the distance between atoms 1 and 3 and 3 and 4.
+
+```plumed
+d: DISTANCE_MATRIX GROUP=1-5 
+s: SELECT_COMPONENTS ARG=d COMPONENTS=1.3,3.4
+```
 
 */
 //+ENDPLUMEDOC
