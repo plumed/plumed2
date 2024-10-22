@@ -38,10 +38,14 @@ private:
   Communicator & comm;
 /// Check that the link cells were set up correctly
   bool cutoffwasset;
+/// Are there periodic boundary conditions setup
+  bool nopbc;
 /// The cutoff to use for the sizes of the cells
   double link_cutoff;
 /// The pbc we are using for link cells
   Pbc mypbc;
+/// The location of the origin if we are not using periodic boundary conditions
+  Vector origin;
 /// The number of cells in each direction
   std::vector<unsigned> ncells;
 /// The number of cells to stride through to get the link cells
