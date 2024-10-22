@@ -53,7 +53,7 @@ The lepton library is able to interpret any of thse following constants:
 | `sqrt1_2 ` | $\sqrt(0.5)$ |
 
 Notice that this functionality cannot be used when the keyword takes integer numbers in input 
-(e.g.: the PACE argument for METAD).
+(e.g.: the PACE argument for [METAD](METAD.md)).
 
 ## Special replica syntax
 
@@ -61,7 +61,7 @@ PLUMED provides a number of ways to prepare the multiple replicas with almost id
 
 * You can repare input files for such calculation using cut-and-paste but that is is very error prone.
 * You can write a smart bash or python script to generate all the inputs.
-* You can use different inputs for the various replicas that all contain an INCLUDE directive to include a file that contains the parts of the input that are common to all replicas 
+* You can use different inputs for the various replicas that all contain an [INCLUDE](INCLUDE.md) directive to include a file that contains the parts of the input that are common to all replicas 
 
 We think, however, the best option is to use features that have been available from PLUMED 2.4 onwards that allow you 
 manipulate multiple replica inputs that have only tiny differences in the the input.  The following example illustrates how the syntax 
@@ -86,7 +86,7 @@ If you prepare a single `plumed.dat` file like this one and feeds it to PLUMED w
 the 3 replicas will see PLUMED input files that are the same except for the `AT` keyword, that sets the position of the restraint.
 Replica 0 will see a restraint centered at 1.0, replica 1 centered at 1.1, and replica 2 centered at 1.2.
 
-The `@replicas:` keyword is not specific to RESTRAINT and the `AT` keyword. Any keyword in PLUMED can accept that syntax.
+The `@replicas:` keyword is not specific to [RESTRAINT](RESTRAINT.md) and the `AT` keyword. Any keyword in PLUMED can accept that syntax.
 For instance, the following single input file can be used to setup a bias exchange metadynamics simulations:
 
 ```plumed

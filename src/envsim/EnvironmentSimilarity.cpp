@@ -98,7 +98,7 @@ One value has to be specified for SC, BCC, FCC, and DIAMOND and two values have 
 
 If the CUSTOM option is used then the reference environments have to be specified by the user.
 The reference environments are specified in pdb files containing the distance vectors from the central atom to the neighbors.
-Make sure your PDB file is correctly formatted as explained in the documenation for MOLINFO
+Make sure your PDB file is correctly formatted as explained in the documenation for [MOLINFO](MOLINFO.md)
 If only one reference environment is specified then the filename should be given as argument of the keyword REFERENCE.
 If instead several reference environments are given, then they have to be provided in separate pdb files and given as arguments for the
 keywords REFERENCE_1, REFERENCE_2, etc.

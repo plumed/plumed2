@@ -33,7 +33,7 @@ Calculate functions of the distribution of properties in your connected componen
 
 __This shortcut action is present to ensure that inputs for older PLUMED versions remain compatible.  We STRONGLY
 encourage you to use the newer (and simpler) syntax for clustering calculations__  Look at the documentation for 
-CLUSTER_WEIGHTS and the expanded version of the input below to see how this new input syntax operates.
+[CLUSTER_WEIGHTS](CLUSTER_WEIGHTS.md) and the expanded version of the input below to see how this new input syntax operates.
 
 The input provided below calculates the local q6 Steinhardt parameter on each atom.  The coordination number
 that atoms with a high value for the local q6 Steinhardt parameter have with other atoms that have a high

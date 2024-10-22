@@ -34,7 +34,7 @@ Adjacency matrix in which two atoms are adjacent if there is a hydrogen bond bet
 A useful tool for developing complex collective variables is the notion of the
 so called adjacency matrix.  An adjacency matrix is an $N \times N$ matrix in which the $i$th, $j$th element tells you whether
 or not the $i$th and $j$th atoms/molecules from a set of $N$ atoms/molecules are adjacent or not.  As detailed in the documentation
-for CONTACT_MATRIX there are then a range of further analyses that you can perform on these matrices.  
+for [CONTACT_MATRIX](CONTACT_MATRIX.md) there are then a range of further analyses that you can perform on these matrices.  
 
 For this action the elements of the adjacency matrix are calculated using:
 
@@ -53,7 +53,7 @@ $k$.
 
 It is important to note that hydrogen bonds, unlike regular bonds, are asymmetric. In other words, the hydrogen atom does not sit at the
 mid point between the two other atoms in this three-center bond.  As a result of this adjacency matrices calculated using HBOND_MATRIX are not
-symmetric like those calculated by CONTACT_MATRIX.  
+symmetric like those calculated by [CONTACT_MATRIX](CONTACT_MATRIX.md).  
 
 The following input can be used to analyze the number of hydrogen bonds each of the oxygen atoms in a box of water participates in.  Each
 water molecule can participate in a hydrogen bond in one of two ways.  It can either donate one of its hydrogen atom to the neighboring oxygen or

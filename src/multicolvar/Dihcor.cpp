@@ -56,7 +56,7 @@ involving atoms 5, 6, 7 and 8.	This is then added to the correlation between the
 correlation angle involving atoms 9, 10, 11 and 12.
 
 Writing out the atoms involved in all the torsion angles in this way can be rather tedious. Thankfully if you are working with protein you
-can avoid this by using the MOLINFO command.  PLUMED uses the pdb file that you provide to this command to learn
+can avoid this by using the [MOLINFO](MOLINFO.md) command.  PLUMED uses the pdb file that you provide to this command to learn
 about the topology of the protein molecule.  This means that you can specify torsion angles using the following syntax:
 
 ```plumed

@@ -37,7 +37,7 @@ $$
 s = \frac{1}{2} \sum_i \left[ 1 + \cos( \phi_i - \phi_i^{\textrm{Ref}} ) \right]
 $$
 
-where the $\phi_i$ values are the instantaneous values for the TORSION angles of interest.
+where the $\phi_i$ values are the instantaneous values for the [TORSION](TORSION.md) angles of interest.
 The $\phi_i^{\textrm{Ref}}$ values are reference values for the torsional angles that are specified in the input file.
 
 The following provides an example of the input for an alpha beta similarity.
@@ -65,7 +65,7 @@ PRINT ARG=ab FILE=colvar STRIDE=10
 ```
 
 Writing out the atoms involved in all the torsion angles in this way can be rather tedious. Thankfully if you are working with protein you
-can avoid this by using the MOLINFO command.  PLUMED uses the pdb file that you provide to this command to learn
+can avoid this by using the [MOLINFO](MOLINFO.md) command.  PLUMED uses the pdb file that you provide to this command to learn
 about the topology of the protein molecule.  This means that you can specify torsion angles using the following syntax:
 
 ```plumed

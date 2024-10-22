@@ -7,8 +7,8 @@ scalars, vectors, matrices or functions evaluated on a grid.
 ## Single component actions
 
 If an action outputs only one value it is referenced later in the input using the label of the action that calculated it.
-For example, in the input below, the DISTANCE action calculates one scalar every MD time step.  This scalar is then reused 
-by the PRINT action, which the time-series of scalars to a file called colvar1.
+For example, in the input below, the [DISTANCE](DISTANCE.md) action calculates one scalar every MD time step.  This scalar is then reused 
+by the [PRINT](PRINT.md) action, which the time-series of scalars to a file called colvar1.
 
 ```plumed
 d1: DISTANCE ATOMS=1,2
@@ -204,10 +204,10 @@ for inputs that use shortcuts to not have regular expressions that match the lab
 There may be cases where it is useful to access a particular element of a vector or matrix or to combine multiple scalars or vectors into a new value.  The following
 actions allow you to complete operations of this type:
 
-- SELECT_COMPONENTS - take $n$ of the elements from the input vector/matrix and output an $n$-dimensional vector that contains these components only.
-- CONCATENATE - combine all the input scalar/vectors/matrices into a single output vector/matrix.
-- FLATTEN - vectorise a matrix
-- VSTACK - construct a matrix by stacking multiple input vectors together 
+- [SELECT_COMPONENTS](SELECT_COMPONENTS.md) - take $n$ of the elements from the input vector/matrix and output an $n$-dimensional vector that contains these components only.
+- [CONCATENATE](CONCATENATE.md) - combine all the input scalar/vectors/matrices into a single output vector/matrix.
+- [FLATTEN](FLATTEN.md) - vectorise a matrix
+- [VSTACK](VSTACK.md) - construct a matrix by stacking multiple input vectors together 
 
 You can then use these outputs from these actions in the input to later actions in your input file.
 

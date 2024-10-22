@@ -66,7 +66,7 @@ d1: DISTANCES ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8 ATOMS5=9,10 LESS_THAN=
 PRINT ARG=d1.* FILE=colvar2
 ```
 
-The values `d1_lessthan` and `d1_mean` will be output in the colvar2 file as these are the components of the DISTANCES shortcut that are defined in the manual. `d1_lt` is not output as this is an intermediate value that is not defined in the manual.
+The values `d1_lessthan` and `d1_mean` will be output in the colvar2 file as these are the components of the [DISTANCES](DISTANCES.md) shortcut that are defined in the manual. `d1_lt` is not output as this is an intermediate value that is not defined in the manual.
 
 The same result can be obtained using the following input:
 

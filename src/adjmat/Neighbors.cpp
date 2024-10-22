@@ -26,7 +26,7 @@
 /*
 Build a matrix with ones in for the N nearest neighbours of an atom
 
-The following input illustrates how to use this action in tandem with DISTANCE_MATRIX to find the six
+The following input illustrates how to use this action in tandem with [DISTANCE_MATRIX](DISTANCE_MATRIX.md) to find the six
 nearest atoms to each of the first 100 atoms in the input file:
 
 ```plumed
@@ -34,7 +34,7 @@ d1: DISTANCE_MATRIX GROUP=1-100
 n: NEIGHBORS ARG=d1 NLOWEST=6
 ```
 
-Alternatively, if you would like to use a CONTACT_MATRIX to do something similar you would do the following:
+Alternatively, if you would like to use a [CONTACT_MATRIX](CONTACT_MATRIX.md) to do something similar you would do the following:
 
 ```plumed
 c1: CONTACT_MATRIX GROUP=1-100 SWITCH={RATIONAL R_0=0.5}
@@ -42,7 +42,7 @@ n: NEIGHBORS ARG=c1 NHIGHEST=6
 ```
 
 This command is useful for implementing alternatives to the symmatry functions that are defined by the shortcuts
-in the module symfunc.  For example, suppose that you want to calculate a variant on the TETRAHEDRAL symmetry function.
+in the module symfunc.  For example, suppose that you want to calculate a variant on the [TETRAHEDRAL](TETRAHEDRAL.md) symmetry function.
 In this variant on the CV the coordination sphere around each central atom is not defined using a switching function.  Instad
 this coordination sphere contains only the four nearest atoms.  You can implement this CV by using the following input:
 

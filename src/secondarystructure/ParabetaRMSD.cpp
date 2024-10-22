@@ -34,7 +34,7 @@ Two protein segments containing three contiguous residues can form a parallel be
 Although if the two segments are part of the same protein chain they must be separated by
 a minimum of 3 residues to make room for the turn. This colvar thus generates the set of
 all possible six residue sections that could conceivably form a parallel beta sheet
-and calculates the RMSD distance between the configuration in which the residues find themselves
+and calculates the [DRMSD](DRMSD.md) or [RMSD](RMSD.md) distance between the configuration in which the residues find themselves
 and an idealized parallel beta sheet structure. These distances can be calculated by either
 aligning the instantaneous structure with the reference structure and measuring each
 atomic displacement or by calculating differences between the set of inter-atomic
@@ -70,7 +70,7 @@ pb: PARABETARMSD RESIDUES=all STRANDS_CUTOFF=1 R_0=0.1
 PRINT ARG=pb FILE=colvar
 ```
 
-Here the same is done use RMSD instead of DRMSD
+Here the same is done use [RMSD](RMSD.md) instead of [DRMSD](DRMSD.md)
 
 ```plumed
 #SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb

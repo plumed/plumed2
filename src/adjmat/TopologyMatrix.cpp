@@ -34,7 +34,7 @@ Adjacency matrix in which two atoms are adjacent if they are connected topologic
 The functionality in this action was developed as part of a project that attempted to study 
 the nucleation of bubbles.  The idea was to develop a criterion that would allow one to determine
 if two gas atoms $i$ and $j$ are part of the same bubble or not.  This criterion would then be used 
-to construct a adjacency matrix, which could be used in the same way that CONTACT_MATRIX is used in other
+to construct a adjacency matrix, which could be used in the same way that [CONTACT_MATRIX](CONTACT_MATRIX.md) is used in other
 methods.
 
 The criterion that was developed to determine whether atom $i$ and $j$ are connected in this way works by 

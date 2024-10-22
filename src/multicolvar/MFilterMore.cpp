@@ -26,7 +26,7 @@
 /*
 Apply one minus a switching function to the input vector.
 
-This action has been depracated as it is equivalent to MORE_THAN.
+This action has been depracated as it is equivalent to [MORE_THAN](MORE_THAN.md).
 
 */
 //+ENDPLUMEDOC

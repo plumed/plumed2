@@ -26,12 +26,12 @@
 /*
 Output the indices of the atoms in one of the clusters identified by a clustering object
 
-This action provides one way of getting output from a DFSCLUSTERING calculation.
+This action provides one way of getting output from a [DFSCLUSTERING](DFSCLUSTERING.md) calculation.
 The output in question here is a [gromacs ndx file](https://manual.gromacs.org/archive/5.0.6/online/ndx.html) 
 that contains a list of the atom indices 
 that form part of one of the clusters that was identified using DFSCLUSTERING
 
-The input shown below constructs a CONTACT_MATRIX that describes the connectivity between the atoms.  
+The input shown below constructs a [CONTACT_MATRIX](CONTACT_MATRIX.md) that describes the connectivity between the atoms.  
 The DFS algorithm is then used to find the connected components
 in this matrix.  The indices of the atoms in the largest connected component are then output
 to a ndx file.

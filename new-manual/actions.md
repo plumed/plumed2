@@ -37,7 +37,7 @@ PLUMED ignores any text in comments.  Consequently, if you provide the input for
 # d1: DISTANCE ATOMS=1,2 COMPONENTS
 ```
 
-a DISTANCE command is not created. Similar behaviour is observed when you use the ENDPLUMED comand.  For example, if your 
+a [DISTANCE](DISTANCE.md) command is not created. Similar behaviour is observed when you use the [ENDPLUMED](ENDPLUMED.md) comand.  For example, if your 
 input is as follows:
 
 ```plumed
@@ -50,7 +50,7 @@ PLUMED will evaluate the distance between atom 1 and 2 but will not evaluate the
 
 ## Using INCLUDE files
 
-If, for some reason, you want to spread your PLUMED input over a number of files you can use INCLUDE as shown below:
+If, for some reason, you want to spread your PLUMED input over a number of files you can use [INCLUDE](INCLUDE.md) as shown below:
 
 ````
 INCLUDE FILE=filename

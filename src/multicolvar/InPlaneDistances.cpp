@@ -49,7 +49,7 @@ d1: INPLANEDISTANCES VECTORSTART=1 VECTOREND=2 GROUP=3-100 LESS_THAN={RATIONAL D
 PRINT ARG=d1.lessthan FILE=colvar
 ```
 
-Notice that the INPLANEDISTANCES is an action. The syntax that is described in the expanded version of the input above provides much more flexibility for designing new CVs.
+Notice that the INPLANEDISTANCES is a shortcut. The syntax that is described in the expanded version of the input above provides much more flexibility for designing new CVs.
 
 */
 //+ENDPLUMEDOC

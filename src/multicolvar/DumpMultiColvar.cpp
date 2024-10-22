@@ -26,7 +26,7 @@
 /*
 Dump atom positions and a vector of values to a file.
 
-This action has been depracated as the same result can be be achieved using DUMPATOMS as you can if you look 
+This action has been depracated as the same result can be be achieved using [DUMPATOMS](DUMPATOMS.md) as you can if you look 
 at the expanded version of the shortct in the example input below:
 
 ```plumed

@@ -42,7 +42,7 @@ PRINT ARG=ab.* FILE=colvar STRIDE=10
 The input above calculates how many of torsion angles for the three groups of atoms that have been specified are between 0 and $\pi$.
 
 Writing out the atoms involved in all the torsion angles in this way can be rather tedious. Thankfully if you are working with protein you
-can avoid this by using the MOLINFO command.  PLUMED uses the pdb file that you provide to this command to learn
+can avoid this by using the [MOLINFO](MOLINFO.md) command.  PLUMED uses the pdb file that you provide to this command to learn
 about the topology of the protein molecule.  This means that you can specify torsion angles using the following syntax:
 
 ```plumed

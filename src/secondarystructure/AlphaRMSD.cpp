@@ -32,7 +32,7 @@ Probe the alpha helical content of a protein structure.
 
 Any chain of six contiguous residues in a protein chain can form an alpha helix. This
 colvar thus generates the set of all possible six residue sections and calculates
-the RMSD distance between the configuration in which the residues find themselves
+the [DRMSD](DRMSD.md) or [RMSD](RMSD.md) distance between the configuration in which the residues find themselves
 and an idealized alpha helical structure. These distances can be calculated by either
 aligning the instantaneous structure with the reference structure and measuring each
 atomic displacement or by calculating differences between the set of inter-atomic
@@ -67,7 +67,7 @@ alpha: ALPHARMSD RESIDUES=all R_0=0.1
 PRINT ARG=alpha FILE=colvar
 ```
 
-Here the same is done use RMSD instead of DRMSD
+Here the same is done use [RMSD](RMSD.md) instead of [DRMSD](DRMSD.md)
 
 ```plumed
 #SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb

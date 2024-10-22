@@ -79,9 +79,9 @@ PRINT ARG=cc FILE=colvar
 Implmenting the coordination number this way is useful as there are many different ways to define whether two atoms/molecules and to construct a "contact" matrix based on
 the result.  For example:
 
-* You could say that two molecules are connected if they are within a certain distance of each other and if they have the same orientation (see TORSIONS_MATRIX).
-* You could say that two water molecules are connected if they are hydrogen bonded to each other (see HBOND_MATRIX).
-* You could say that two atoms are connected if they are within a certain distance of each other and if they have similar values for a CV (see OUTER_PRODUCT).
+* You could say that two molecules are connected if they are within a certain distance of each other and if they have the same orientation (see [TORSIONS_MATRIX](TORSIONS_MATRIX.md)).
+* You could say that two water molecules are connected if they are hydrogen bonded to each other (see [HBOND_MATRIX](HBOND_MATRIX.md)).
+* You could say that two atoms are connected if they are within a certain distance of each other and if they have similar values for a CV (see [OUTER_PRODUCT](OUTER_PRODUCT.md)).
 
 When the coordination numbers is implemented in the way described above (by doing the matrix-vector multiplication) you have the flexibility to define the contact matrix that
 is used in the multiplication in whatever way you choose.  In other words, this implementation of the coordination number is much more flexible. For example, suppose you want 

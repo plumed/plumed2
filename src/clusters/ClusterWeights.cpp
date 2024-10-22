@@ -30,7 +30,7 @@
 /*
 Setup a vector that has one for all the atoms that form part of the cluster of interest and that has zero for all other atoms.
 
-This method is designed to be used in tandem with the DFSCLUSTERING action.  An example input that uses this action and
+This method is designed to be used in tandem with the [DFSCLUSTERING](DFSCLUSTERING.md) action.  An example input that uses this action and
 that calculates the average coordination number for the atoms in the largest cluster in the system is shown below.
 
 ```plumed

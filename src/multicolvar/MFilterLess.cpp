@@ -26,7 +26,7 @@
 /*
 Apply a switching function to the input vector.
 
-This action has been depracated as it is equivalent to LESS_THAN.
+This action has been depracated as it is equivalent to [LESS_THAN](LESS_THAN.md).
 
 */
 //+ENDPLUMEDOC

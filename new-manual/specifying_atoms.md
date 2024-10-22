@@ -5,7 +5,7 @@ Many of the actions in PLUMED take a list of atom positions in input.  Within PL
 atoms are specified using their numerical indices in the molecular dynamics input file.
 
 In PLUMED lists of atoms can be either provided directly inside the definition of each action, or
-predefined as a GROUP that can be reused multiple times. Lists of atoms can be written as:
+predefined as a [GROUP](GROUP.md) that can be reused multiple times. Lists of atoms can be written as:
 
 - comma separated lists of numbers (`g1: GROUP ATOMS=10,11,15,20`)
 - numerical ranges.  So `g2: GROUP ATOMS=10-20` is equivalent to `g2: GROUP ATOMS=10,11,12,13,14,15,16,17,18,19,20`
@@ -28,7 +28,7 @@ A few other wasys of using groups in the input to actions are also available:
 
 ## The MOLINFO command
 
-You can access many useful shortcuts for specifying atomic positions to PLUMED by using the MOLINFO, which takes 
+You can access many useful shortcuts for specifying atomic positions to PLUMED by using the [MOLINFO](MOLINFO.md), which takes 
 a PDB structure file in input. This command allows you to access the following list of shortcuts.
 
 {:#browse-table .display}
@@ -54,7 +54,7 @@ d1: DISTANCE ATOMS=11,com1
 ```
 
 If you don't want to calculate CVs from the virtual atom.  That is to say you just want to monitor the position of a virtual atom
-(or any set of atoms) over the course of your trajectory you can do this using DUMPATOMS.
+(or any set of atoms) over the course of your trajectory you can do this using [DUMPATOMS](DUMPATOMS.md).
 
 The list of the virtual atoms defined in PLUMED can be obtained by using the command `GROUP ATOMS=@allatoms REMOVE=@mdatoms`.
 
@@ -66,7 +66,7 @@ you are using involve some property of a molecule.  These codes allow the atoms 
 periodic boundaries, a fact which PLUMED could only deal with if the topology is passed from the MD code to PLUMED.  Doing this
 work would involve a lot laborious programming and goes against our original aim of having a general patch that can be implemented
 in a wide variety of MD codes.  Consequentially, we have implemented a more pragmatic solution to this problem - the user specifies
-in input any molecules (or parts of molecules) that must be kept in tact throughout the simulation run using the WHOLEMOLECULES command.
+in input any molecules (or parts of molecules) that must be kept in tact throughout the simulation run using the [WHOLEMOLECULES](WHOLEMOLECULES.md) command.
 
 The following input computes the end-to-end distance for a polymer of 100 atoms and keeps it at a value around 5.
 
@@ -76,7 +76,7 @@ e2e: DISTANCE ATOMS=1,100 NOPBC
 RESTRAINT ARG=e2e KAPPA=1 AT=5
 ```
 
-Notice that NOPBC is used to in the DISTANCE action so as to ensure that if the end-to-end distance is larger than half the simulation box the distance
+Notice that NOPBC is used to in the [DISTANCE](DISTANCE.md) action so as to ensure that if the end-to-end distance is larger than half the simulation box the distance
 is compute properly. Also notice that, since many MD codes break molecules across cell boundary, it might be necessary to use the
 WHOLEMOLECULES keyword (also notice that it should be before distance).
 
@@ -93,9 +93,9 @@ DUMPATOMS FILE=dump.xyz ATOMS=1-20
 
 Notice that there are other ways to manipulate the coordinates stored within PLUMED:
 
-- FIT_TO_TEMPLATE aligns atoms to a template structure.
-- WRAPAROUND brings a set of atom as close as possible to another set of atoms.
-- RESET_CELL rotates the periodic cell.
+- [FIT_TO_TEMPLATE](FIT_TO_TEMPLATE.md) aligns atoms to a template structure.
+- [WRAPAROUND](WRAPAROUND.md) brings a set of atom as close as possible to another set of atoms.
+- [RESET_CELL](RESET_CELL.md) rotates the periodic cell.
 
 <script>
 $(document).ready(function() {

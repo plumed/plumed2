@@ -27,7 +27,7 @@
 Calculate the number of atoms in the cluster of interest
 
 An example input that determines the number of atoms in the second largest cluster that is identified by 
-analysing the connected components of a CONTACT_MATRIX using DFSCLUSTERING is shown below:
+analysing the connected components of a [CONTACT_MATRIX](CONTACT_MATRIX.md) using [DFSCLUSTERING](DFSCLUSTERING.md) is shown below:
 
 ```plumed
 # Calculate a contact matrix between the first 100 atoms in the configuration

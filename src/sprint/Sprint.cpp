@@ -62,7 +62,7 @@ If you explore the inputs above you can see that when PLUMED reads them it creat
 for calculating the SPRINT CVs. You can get a sense of how these CVs are calculated by looking at the
 expanded versions of the shortcuts in the inputs above. The insight into these methods that you can obtain by looking
 at these expanded input should hopefully give you ideas for developing new versions of these methods that use the same 
-body of theory.  For example, if you look at the inputs above you can see that one or more CONTACT_MATRIX actions are 
+body of theory.  For example, if you look at the inputs above you can see that one or more [CONTACT_MATRIX](CONTACT_MATRIX.md) actions are 
 used to calculate sprint.  These CONTACT_MATRIX determine whether atoms are adjacent or not.  However, you can 
 use different quantities to measure whether or not two given atoms/molecules are
 adjacent or not and compute a different type of adjacency matrix. For example you can say that two molecules are 

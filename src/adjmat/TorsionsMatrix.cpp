@@ -27,11 +27,11 @@
 /*
 Calculate the matrix of torsions between two vectors of molecules
 
-This action was implemented to ensure that we can calculate the SMAC collective variable that is discussed in 
+This action was implemented to ensure that we can calculate the [SMAC](SMAC.md) collective variable that is discussed in 
 [this paper](https://www.sciencedirect.com/science/article/abs/pii/S0009250914004503?via%3Dihub). This particular action 
 tracks the relative orientations for all the pairs of molecules in a set much like the variables described in the crystdistrib module. 
 
-The orientations of molecules can be specified using either PLANE or DISTANCE.  The example below shows how you can use 
+The orientations of molecules can be specified using either [PLANE](PLANE.md) or [DISTANCE](DISTANCE.md).  The example below shows how you can use 
 internal vectors connecting two atoms in the molecules to define the orientation of that molecule.  Three of these internal
 vectors are calculated using a DISTANCE command in the input below.  The matrix of torsional angles between these various
 vectors is then computed:
@@ -46,7 +46,7 @@ PRINT ARG=m FILE=matrix
 
 In this example, the torsional angle in element $(1,2)$ of the matrix with label `m` is the angle between the plane containing atoms 1,5 and 10 and the plane
 connecting atoms 1,10 and 15.  In other words, the elements in this matrix are the torsional angles between the vectors in the input matrices
-around the vector connecting the corresponding atomic positions that are specified using the POSTIONS keyword.
+around the vector connecting the corresponding atomic positions that are specified using the `POSTIONS` keyword.
 
 You can also calculate a matrix of torsional angles between two different groups of molecules by using an input like the one below:
 
@@ -60,7 +60,7 @@ m: TORSIONS_MATRIX ARG=sA,sBT POSITIONS1=1,11 POSITIONS2=21,31,41
 PRINT ARG=m FILE=matrix
 ```
 
-In this example, the orientations of the molecules are specified using the PLANE action and is given by a normal to the plane containing the three atoms from the molecule
+In this example, the orientations of the molecules are specified using the [PLANE](PLANE.md) action and is given by a normal to the plane containing the three atoms from the molecule
 that was specified.  The final output is $2 \times 3$ matrix that contains all the torsional angles between the molecules defined by the two PLANE actions.
 
 */

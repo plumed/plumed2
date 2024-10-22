@@ -44,7 +44,7 @@ c1: COORD_ANGLES ...
 PRINT ARG=c1.mean FILE=colvar
 ```
 
-The input above will output the SUM of all the angles in the first coordination sphere.
+The input above will output the sum of all the angles in the first coordination sphere.
 
 */
 //+ENDPLUMEDOC

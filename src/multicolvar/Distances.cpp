@@ -85,8 +85,8 @@ $$
 where $\beta$ is a user specified parameter.
 
 This input is used rather than a separate MINDIST colvar so that the same routine and the same input style can be
-used to calculate minimum coordination numbers (see COORDINATIONNUMBER), minimum
-angles (see ANGLES) and many other variables.
+used to calculate minimum coordination numbers (see [COORDINATIONNUMBER](COORDINATIONNUMBER.md)), minimum
+angles (see [ANGLES](ANGLES.md)) and many other variables.
 
 This new way of calculating mindist is part of plumed 2's multicolvar functionality.  These special actions
 allow you to calculate multiple functions of a distribution of simple collective variables.  As an example you

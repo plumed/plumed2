@@ -27,7 +27,7 @@
 Print out the diameter of one of the connected components.
 
 An example input that determines the diameter of the second largest cluster that is identified by 
-analysing the connected components of a CONTACT_MATRIX using DFSCLUSTERING is shown below:
+analysing the connected components of a [CONTACT_MATRIX](CONTACT_MATRIX.md) using [DFSCLUSTERING](DFSCLUSTERING.md) is shown below:
 
 ```plumed
 # Calculate a contact matrix between the first 100 atoms in the configuration

@@ -36,15 +36,15 @@ This action is useful if you are looking at a phenomenon such as nucleation wher
 in your simulation cell and is used in conjustion with tools from the adjmat module.  The adjmat modlule contains a number of different methods that can be 
 used to calculate adjacency matrices. An adjacency matrix is an $N \times N$ matrix 
 in which the $i$th, $j$th element tells you whether or not the $i$th and $j$th atoms/molecules from a set of $N$ atoms/molecules are adjacent or not.  The 
-simplest of these adjcency matrix methods is the one for calculating a CONTACT_MATRIX.  All adjacency matrices provide a representation of a graph and can thus 
+simplest of these adjcency matrix methods is the one for calculating a [CONTACT_MATRIX](CONTACT_MATRIX.md).  All adjacency matrices provide a representation of a graph and can thus 
 can be analyzed using tools from graph theory. This particular action thus performs
 [a depth first search clustering](https://en.wikipedia.org/wiki/Depth-first_search) to find the connected components of this graph.  
 
 The input below calculates a CONTACT_MATRIX for 100 atoms. In the graph that is created from this CONTACT_MATRIX atoms are connected if they are within 
-a distance of D_MAX of each other and are disconnected otherwise.  The DFSCLUSTERING method is used to find the connected components in this graph.  This 
+a distance of D_MAX of each other and are disconnected otherwise.  The [DFSCLUSTERING](DFSCLUSTERING.md) method is used to find the connected components in this graph.  This 
 method outputs a 100-dimensional vector.  The 1st element in this vector tells you which cluster the first atom is within, the second element tells you which 
 cluster the second atom is in and so on.  If an atom is in the largest cluster its corresponding element in the vector `dfs` will be one. We can thus print 
-the positions of the atoms in the largest cluster by using a DUMPATOMS command like the one shown below:   
+the positions of the atoms in the largest cluster by using a [DUMPATOMS](DUMPATOMS.md) command like the one shown below:   
 
 ```plumed
 cm: CONTACT_MATRIX GROUP=1-100 SWITCH={CUBIC D_0=0.45  D_MAX=0.55}
