@@ -109,6 +109,10 @@ Sprint::Sprint(const ActionOptions& ao):
     if( !av ) break ;
     unsigned natoms = (av->copyOutput(0))->getShape()[0]; nin_group.push_back( natoms ); ntot_atoms += natoms;
   }
+  if( nin_group.size()==0 ) {
+     ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( matinp ); 
+     unsigned natoms = (av->copyOutput(0))->getShape()[0]; nin_group.push_back( natoms ); ntot_atoms = natoms;  
+  }
 
   // Diagonalization
   readInputLine( getShortcutLabel() + "_diag: DIAGONALIZE ARG=" + matinp + " VECTORS=1");
