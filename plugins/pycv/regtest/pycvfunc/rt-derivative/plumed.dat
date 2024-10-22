@@ -1,4 +1,4 @@
-LOAD FILE=../../../../PythonCVInterface.so
+LOAD FILE=@pycvpath@
 
 d1: DISTANCE ATOMS=1,2
 d2: DISTANCE ATOMS=1,3 

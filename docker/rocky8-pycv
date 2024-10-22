@@ -1,11 +1,20 @@
 FROM plumed:rocky8
 
-RUN source ./.bashrc \
+RUN . ./.bashrc \
  && module load mpi \
+ && export OMPI_MCA_btl_base_warn_component_unused=0 \
+ && export OMPI_MCA_btl_base_verbose=0 \
+ && export OMPI_MCA_plm=isolated \
+ && export OMPI_MCA_btl_vader_single_copy_mechanism=none \
+ && export OMPI_MCA_rmaps_base_oversubscribe=yes \
+ && export PATH=$HOME/opt/bin:$PATH \
+ && export CPATH=$HOME/opt/include:$CPATH \
+ && export INCLUDE=$HOME/opt/include:$INCLUDE \
+ && export LIBRARY_PATH=$HOME/opt/lib:$LIBRARY_PATH \
+ && export LD_LIBRARY_PATH=$HOME/opt/lib:$LD_LIBRARY_PATH \
  && cd plumed2 \
  && source ./sourceme.sh \
  && cd plugins/pycv \
- && pip3 install --user -r requirements.txt  \
+ && ./configurePyCV.sh \
  && ln -s $(realpath ../../regtest/scripts) ./regtest/scripts \
- && python_bin=python3 ./prepareMakeForDevelop.sh \
  && make check
