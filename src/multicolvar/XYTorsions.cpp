@@ -27,7 +27,15 @@
 /*
 Calculate the torsional angle around the x axis between an arbitrary vector and the positive y direction
 
-\par Examples
+The following input tells plumed to calculate the angle around the x direction between the positive y-axis and the vector connecting atom 3 to atom 5 and
+the angle around the x direction between the positive y axis and the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then output
+
+```plumed
+d1: XYTORSIONS ATOMS1=3,5 ATOMS2=1,2 MIN
+PRINT ARG=d1_min
+```
+
+Notice that this command is a shortcut. You can thus learn more about how to use PLUMED by examining the expanded version of the input above.
 
 */
 //+ENDPLUMEDOC
@@ -36,7 +44,15 @@ Calculate the torsional angle around the x axis between an arbitrary vector and 
 /*
 Calculate the torsional angle around the x axis between an arbitrary vector and the positive z direction
 
-\par Examples
+The following input tells plumed to calculate the angle around the x direction between the positive z-axis and the vector connecting atom 3 to atom 5 and
+the angle around the x direction between the positive z axis and the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then output
+
+```plumed
+d1: XZTORSIONS ATOMS1=3,5 ATOMS2=1,2 MIN
+PRINT ARG=d1_min
+```
+
+Notice that this command is a shortcut. You can thus learn more about how to use PLUMED by examining the expanded version of the input above.
 
 */
 //+ENDPLUMEDOC
@@ -45,7 +61,15 @@ Calculate the torsional angle around the x axis between an arbitrary vector and 
 /*
 Calculate the torsional angle around the y axis between an arbitrary vector and the positive x direction
 
-\par Examples
+The following input tells plumed to calculate the angle around the y direction between the positive x-axis and the vector connecting atom 3 to atom 5 and
+the angle around the y direction between the positive x axis and the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then output
+
+```plumed
+d1: YXTORSIONS ATOMS1=3,5 ATOMS2=1,2 MIN
+PRINT ARG=d1_min
+```
+
+Notice that this command is a shortcut. You can thus learn more about how to use PLUMED by examining the expanded version of the input above.
 
 */
 //+ENDPLUMEDOC
@@ -54,7 +78,15 @@ Calculate the torsional angle around the y axis between an arbitrary vector and 
 /*
 Calculate the torsional angle around the y axis between an arbitrary vector and the positive z direction
 
-\par Examples
+The following input tells plumed to calculate the angle around the y direction between the positive z-axis and the vector connecting atom 3 to atom 5 and
+the angle around the y direction between the positive z axis and the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then output
+
+```plumed
+d1: YZTORSIONS ATOMS1=3,5 ATOMS2=1,2 MIN
+PRINT ARG=d1_min
+```
+
+Notice that this command is a shortcut. You can thus learn more about how to use PLUMED by examining the expanded version of the input above.
 
 */
 //+ENDPLUMEDOC
@@ -63,7 +95,15 @@ Calculate the torsional angle around the y axis between an arbitrary vector and 
 /*
 Calculate the torsional angle around the z axis between an arbitrary vector and the positive x direction
 
-\par Examples
+The following input tells plumed to calculate the angle around the z direction between the positive x-axis and the vector connecting atom 3 to atom 5 and
+the angle around the z direction between the positive x axis and the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then output
+
+```plumed
+d1: ZXTORSIONS ATOMS1=3,5 ATOMS2=1,2 MIN
+PRINT ARG=d1_min
+```
+
+Notice that this command is a shortcut. You can thus learn more about how to use PLUMED by examining the expanded version of the input above.
 
 */
 //+ENDPLUMEDOC
@@ -72,7 +112,15 @@ Calculate the torsional angle around the z axis between an arbitrary vector and 
 /*
 Calculate the torsional angle around the z axis between an arbitrary vector and the positive y direction
 
-\par Examples
+The following input tells plumed to calculate the angle around the z direction between the positive y-axis and the vector connecting atom 3 to atom 5 and
+the angle around the z direction between the positive y-axis and the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then output
+
+```plumed
+d1: ZYTORSIONS ATOMS1=3,5 ATOMS2=1,2 MIN
+PRINT ARG=d1_min
+```
+
+Notice that this command is a shortcut. You can thus learn more about how to use PLUMED by examining the expanded version of the input above.
 
 */
 //+ENDPLUMEDOC

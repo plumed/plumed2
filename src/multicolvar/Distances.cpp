@@ -29,7 +29,82 @@
 /*
 Calculate the distances between multiple piars of atoms
 
-\par Examples
+__This shortcut action allows you to calculate function of the distribution of distatnces and reproduces the syntax in older PLUMED versions. 
+If you look at the example inputs below you can 
+see how the new syntax operates. We would strongly encourage you to use the newer syntax as it offers greater flexibility.__ 
+
+The following input tells plumed to calculate the distances between atoms 3 and 5 and 
+between atoms 1 and 2 and to print the minimum for these two distances.
+
+```plumed
+d1: DISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1}
+PRINT ARG=d1.min
+```
+
+The following input tells plumed to calculate the distances between atoms 3 and 5 and between atoms 1 and 2
+and then to calculate the number of these distances that are less than 0.1 nm.  The number of distances
+less than 0.1nm is then printed to a file.
+
+```plumed
+d1: DISTANCES ATOMS1=3,5 ATOMS2=1,2 LESS_THAN={RATIONAL R_0=0.1}
+PRINT ARG=d1.lessthan
+```
+
+The following input tells plumed to calculate all the distances between atoms 1, 2 and 3 (i.e. the distances between atoms
+1 and 2, atoms 1 and 3 and atoms 2 and 3).  The average of these distances is then calculated.
+
+```plumed
+d1: DISTANCES GROUP=1-3 MEAN
+PRINT ARG=d1.mean
+```
+
+The following input tells plumed to calculate all the distances between the atoms in GROUPA and the atoms in GROUPB.
+In other words the distances between atoms 1 and 2 and the distance between atoms 1 and 3.  The number of distances
+more than 0.1 is then printed to a file.
+
+```plumed
+d1: DISTANCES GROUPA=1 GROUPB=2,3 MORE_THAN={RATIONAL R_0=0.1}
+PRINT ARG=d1.morethan
+```
+
+## Calculating minimum distances
+
+To calculate and print the minimum distance between two groups of atoms you use the following commands
+
+```plumed
+d1: DISTANCES GROUPA=1-10 GROUPB=11-20 MIN={BETA=500.}
+PRINT ARG=d1.min FILE=colvar STRIDE=10
+```
+
+In order to ensure that the minimum value has continuous derivatives we use the following function:
+
+$$
+s = \frac{\beta}{ \log \sum_i \exp\left( \frac{\beta}{s_i} \right) }
+$$
+
+where $\beta$ is a user specified parameter.
+
+This input is used rather than a separate MINDIST colvar so that the same routine and the same input style can be
+used to calculate minimum coordination numbers (see COORDINATIONNUMBER), minimum
+angles (see ANGLES) and many other variables.
+
+This new way of calculating mindist is part of plumed 2's multicolvar functionality.  These special actions
+allow you to calculate multiple functions of a distribution of simple collective variables.  As an example you
+can calculate the number of distances less than 1.0, the minimum distance, the number of distances more than
+2.0 and the number of distances between 1.0 and 2.0 by using the following command:
+
+```plumed
+d1: DISTANCES ...
+ GROUPA=1-10 GROUPB=11-20
+ LESS_THAN={RATIONAL R_0=1.0}
+ MORE_THAN={RATIONAL R_0=2.0}
+ BETWEEN={GAUSSIAN LOWER=1.0 UPPER=2.0}
+ MIN={BETA=500.}
+...
+PRINT ARG=d1.lessthan,d1.morethan,d1.between,d1.min FILE=colvar STRIDE=10
+```
+
+A calculation performed this way is fast because the expensive part of the calculation - the calculation of all the distances - is only done once per step. 
 
 */
 //+ENDPLUMEDOC
@@ -37,46 +112,48 @@ Calculate the distances between multiple piars of atoms
 //+PLUMEDOC MCOLVAR XDISTANCES
 /*
 Calculate the x components of the vectors connecting one or many pairs of atoms.
-You can then calculate functions of the distribution of values such as the minimum, the number less than a certain quantity and so on.
 
-\par Examples
+__This shortcut action allows you to calculate functions of the distribution of the x components of the vectors connecting pairs of atoms and
+reproduces the syntax in older PLUMED versions. 
+If you look at the example inputs below you can 
+see how the new syntax operates. We would strongly encourage you to use the newer syntax as it offers greater flexibility.__  
 
 The following input tells plumed to calculate the x-component of the vector connecting atom 3 to atom 5 and
 the x-component of the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then
 printed
-\plumedfile
+
+```plumed
 d1: XDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1}
 PRINT ARG=d1.min
-\endplumedfile
-(See also \ref PRINT).
-
+```
 
 The following input tells plumed to calculate the x-component of the vector connecting atom 3 to atom 5 and
 the x-component of the vector connecting atom 1 to atom 2.  The number of values that are
 less than 0.1nm is then printed to a file.
-\plumedfile
+
+```plumed
 d1: XDISTANCES ATOMS1=3,5 ATOMS2=1,2 LESS_THAN={RATIONAL R_0=0.1}
 PRINT ARG=d1.lessthan
-\endplumedfile
-(See also \ref PRINT \ref switchingfunction).
+```
 
 The following input tells plumed to calculate the x-components of all the distinct vectors that can be created
 between atoms 1, 2 and 3 (i.e. the vectors between atoms 1 and 2, atoms 1 and 3 and atoms 2 and 3).
 The average of these quantities is then calculated.
-\plumedfile
+
+```plumed
 d1: XDISTANCES GROUP=1-3 MEAN
 PRINT ARG=d1.mean
-\endplumedfile
-(See also \ref PRINT)
+```
 
 The following input tells plumed to calculate all the vectors connecting the the atoms in GROUPA to the atoms in GROUPB.
 In other words the vector between atoms 1 and 2 and the vector between atoms 1 and 3.  The number of values
 more than 0.1 is then printed to a file.
-\plumedfile
+
+```plumed
 d1: XDISTANCES GROUPA=1 GROUPB=2,3 MORE_THAN={RATIONAL R_0=0.1}
 PRINT ARG=d1.morethan
-\endplumedfile
-(See also \ref PRINT \ref switchingfunction)
+```
+
 */
 //+ENDPLUMEDOC
 
@@ -84,46 +161,47 @@ PRINT ARG=d1.morethan
 //+PLUMEDOC MCOLVAR YDISTANCES
 /*
 Calculate the y components of the vectors connecting one or many pairs of atoms.
-You can then calculate functions of the distribution of values such as the minimum, the number less than a certain quantity and so on.
 
-\par Examples
+__This shortcut action allows you to calculate functions of the distribution of the y components of the vectors connecting pairs of atoms and
+reproduces the syntax in older PLUMED versions. 
+If you look at the example inputs below you can 
+see how the new syntax operates. We would strongly encourage you to use the newer syntax as it offers greater flexibility.__  
 
 The following input tells plumed to calculate the y-component of the vector connecting atom 3 to atom 5 and
 the y-component of the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then
 printed
-\plumedfile
+
+```plumed
 d1: YDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1}
 PRINT ARG=d1.min
-\endplumedfile
-(See also \ref PRINT).
-
+```
 
 The following input tells plumed to calculate the y-component of the vector connecting atom 3 to atom 5 and
 the y-component of the vector connecting atom 1 to atom 2.  The number of values that are
 less than 0.1nm is then printed to a file.
-\plumedfile
+
+```plumed
 d1: YDISTANCES ATOMS1=3,5 ATOMS2=1,2 LESS_THAN={RATIONAL R_0=0.1}
 PRINT ARG=d1.lessthan
-\endplumedfile
-(See also \ref PRINT \ref switchingfunction).
+```
 
 The following input tells plumed to calculate the y-components of all the distinct vectors that can be created
 between atoms 1, 2 and 3 (i.e. the vectors between atoms 1 and 2, atoms 1 and 3 and atoms 2 and 3).
 The average of these quantities is then calculated.
-\plumedfile
+
+```plumed
 d1: YDISTANCES GROUP=1-3 MEAN
 PRINT ARG=d1.mean
-\endplumedfile
-(See also \ref PRINT)
+```
 
 The following input tells plumed to calculate all the vectors connecting the the atoms in GROUPA to the atoms in GROUPB.
 In other words the vector between atoms 1 and 2 and the vector between atoms 1 and 3.  The number of values
 more than 0.1 is then printed to a file.
-\plumedfile
+
+```plumed
 d1: YDISTANCES GROUPA=1 GROUPB=2,3 MORE_THAN={RATIONAL R_0=0.1}
 PRINT ARG=d1.morethan
-\endplumedfile
-(See also \ref PRINT \ref switchingfunction)
+```
 
 */
 //+ENDPLUMEDOC
@@ -131,46 +209,47 @@ PRINT ARG=d1.morethan
 //+PLUMEDOC MCOLVAR ZDISTANCES
 /*
 Calculate the z components of the vectors connecting one or many pairs of atoms.
-You can then calculate functions of the distribution of values such as the minimum, the number less than a certain quantity and so on.
 
-\par Examples
+__This shortcut action allows you to calculate functions of the distribution of the z components of the vectors connecting pairs of atoms and
+reproduces the syntax in older PLUMED versions. 
+If you look at the example inputs below you can 
+see how the new syntax operates. We would strongly encourage you to use the newer syntax as it offers greater flexibility.__  
 
 The following input tells plumed to calculate the z-component of the vector connecting atom 3 to atom 5 and
 the z-component of the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then
 printed
-\plumedfile
+
+```plumed
 d1: ZDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1}
 PRINT ARG=d1.min
-\endplumedfile
-(See also \ref PRINT).
-
+```
 
 The following input tells plumed to calculate the z-component of the vector connecting atom 3 to atom 5 and
 the z-component of the vector connecting atom 1 to atom 2.  The number of values that are
 less than 0.1nm is then printed to a file.
-\plumedfile
+
+```plumed
 d1: ZDISTANCES ATOMS1=3,5 ATOMS2=1,2 LESS_THAN={RATIONAL R_0=0.1}
 PRINT ARG=d1.lessthan
-\endplumedfile
-(See also \ref PRINT \ref switchingfunction).
+```
 
 The following input tells plumed to calculate the z-components of all the distinct vectors that can be created
 between atoms 1, 2 and 3 (i.e. the vectors between atoms 1 and 2, atoms 1 and 3 and atoms 2 and 3).
 The average of these quantities is then calculated.
-\plumedfile
+
+```plumed
 d1: ZDISTANCES GROUP=1-3 MEAN
 PRINT ARG=d1.mean
-\endplumedfile
-(See also \ref PRINT)
+```
 
 The following input tells plumed to calculate all the vectors connecting the the atoms in GROUPA to the atoms in GROUPB.
 In other words the vector between atoms 1 and 2 and the vector between atoms 1 and 3.  The number of values
 more than 0.1 is then printed to a file.
-\plumedfile
+
+```plumed
 d1: ZDISTANCES GROUPA=1 GROUPB=2,3 MORE_THAN={RATIONAL R_0=0.1}
 PRINT ARG=d1.morethan
-\endplumedfile
-(See also \ref PRINT \ref switchingfunction)
+```
 
 */
 //+ENDPLUMEDOC

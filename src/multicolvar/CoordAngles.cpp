@@ -25,10 +25,26 @@
 
 //+PLUMEDOC MCOLVAR COORD_ANGLES
 /*
-Calculate all the angles between bonds in the first coordination spheres of a set of atoms
+Calculate functions of the distribution of angles between bonds in the first coordination spheres of a set of atoms
 
-\par Examples
+This action ncan be used to calculate functions, $g$, such as:
 
+$$
+f(x) = \sum_{ijk} s(r_{ij})s(r_{jk}) g(\theta_{ijk})
+$$
+
+where $\theta_{ijk}$ is the angle between the vector connecting atom $i$ and and $j$ and the vector connecting atom $j$ and atom $k$ and
+where $s(r)$ is a switching function.  The switching functions in the expression above ensure that we can calculate all the angles in the first coordination
+spheres of an atom using an input like the one shown below:
+
+```plumed
+c1: COORD_ANGLES ...
+  CATOMS=1 GROUP=2-100 SWITCH={RATIONAL R_0=1.0} SUM
+...
+PRINT ARG=c1.mean FILE=colvar
+```
+
+The input above will output the SUM of all the angles in the first coordination sphere.
 
 */
 //+ENDPLUMEDOC

@@ -29,9 +29,29 @@
 
 //+PLUMEDOC MCOLVAR PLANES
 /*
-Calculate the components of the normal to the plane containing three atoms
+Calculate the components of the normals to the planes containing groups of three atoms.
 
-\par Examples
+An example input using this shortcut is shown below:
+
+```plumed
+v3: PLANES ...
+   ATOMS1=9,10,11
+   ATOMS2=89,90,91
+   ATOMS3=473,474,475
+   ATOMS4=1161,1162,1163
+   ATOMS5=1521,1522,1523
+   ATOMS6=1593,1594,1595
+   ATOMS7=1601,1602,1603
+   ATOMS8=2201,2202,2203
+   VMEAN
+...
+PRINT ARG=v3_vmean FILE=colvar
+```
+
+As you can see if you expand the shortcut above, the input calculates the vectors perpendicular to the planes containing
+each group of three atoms. The mean value is then computed by adding all these three dimensional vectors together.  The final
+value output is the norm of this mean vector.  This norm is large if the orientations of the planes containing the groups of 
+atoms are the same and small if they are not.
 
 */
 //+ENDPLUMEDOC

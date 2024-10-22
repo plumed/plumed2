@@ -31,60 +31,54 @@ namespace multicolvar {
 
 //+PLUMEDOC COLVAR ANGLES
 /*
-Calculate an angle.
+Calculate functions of the distribution of angles.
 
-This command can be used to compute the angle between three atoms. Alternatively
-if four atoms appear in the atom
-specification it calculates the angle between
-two vectors identified by two pairs of atoms.
+__This shortcut action allows you to calculate function of a distribution of angles and reproduces the syntax in older PLUMED versions. 
+If you look at the example inputs below you can 
+see how the new syntax operates. We would strongly encourage you to use the newer syntax as it offers greater flexibility.__ 
 
-If _three_ atoms are given, the angle is defined as:
-\f[
-\theta=\arccos\left(\frac{ {\bf r}_{21}\cdot {\bf r}_{23}}{
-|{\bf r}_{21}| |{\bf r}_{23}|}\right)
-\f]
-Here \f$ {\bf r}_{ij}\f$ is the distance vector among the
-i-th and the j-th listed atom.
+You can use this command to calculate functions, $g$, such as:
 
-If _four_ atoms are given, the angle is defined as:
-\f[
-\theta=\arccos\left(\frac{ {\bf r}_{21}\cdot {\bf r}_{34}}{
-|{\bf r}_{21}| |{\bf r}_{34}|}\right)
-\f]
+$$
+ f(x) = \sum_{ijk} g( \theta_{ijk} )
+$$
 
-Notice that angles defined in this way are non-periodic variables and
-their value is limited by definition between 0 and \f$\pi\f$.
+where $\theta_{ijk}$ is the angle between the vector connecting atom $i$ and and $j$ and the vector connecting atom $j$ and atom $k$.
+Alternatively you can use this command to calculate functions such as:
 
-The vectors \f$ {\bf r}_{ij}\f$ are by default evaluated taking
-periodic boundary conditions into account.
-This behavior can be changed with the NOPBC flag.
+$$
+f(x) = \sum_{ijk} s(r_{ij})s(r_{jk}) g(\theta_{ijk})
+$$
 
-\par Examples
+where $s(r)$ is a switching function.  This second form means that you can
+use this to calculate functions of the angles in the first coordination sphere of
+an atom / molecule and hence use the CVs described in the paper in the bibliography below.
 
-This command tells plumed to calculate the angle between the vector connecting atom 1 to atom 2 and
-the vector connecting atom 2 to atom 3 and to print it on file COLVAR1. At the same time,
-the angle between vector connecting atom 1 to atom 2 and the vector connecting atom 3 to atom 4 is printed
-on file COLVAR2.
-\plumedfile
+The following example instructs plumed to find the average of two angles and to
+print it to a file
 
-a: ANGLE ATOMS=1,2,3
-# equivalently one could state:
-# a: ANGLE ATOMS=1,2,2,3
+```plumed
+ANGLES ATOMS1=1,2,3 ATOMS2=4,5,6 MEAN LABEL=a1
+PRINT ARG=a1.mean FILE=colvar
+```
 
-b: ANGLE ATOMS=1,2,3,4
+The following example tells plumed to calculate all angles involving
+at least one atom from GROUPA and two atoms from GROUPB in which the distances
+are less than 1.0. The number of angles between $\frac{\pi}{4}$ and
+$\frac{3\pi}{4}$ is then output
 
-PRINT ARG=a FILE=COLVAR1
-PRINT ARG=b FILE=COLVAR2
-\endplumedfile
+```plumed
+ANGLES GROUPA=1-10 GROUPB=11-100 BETWEEN={GAUSSIAN LOWER=0.25pi UPPER=0.75pi} SWITCH={GAUSSIAN R_0=1.0} LABEL=a1
+PRINT ARG=a1.between FILE=colvar
+```
 
 This final example instructs plumed to calculate all the angles in the first coordination
 spheres of the atoms. The bins for a normalized histogram of the distribution is then output
 
-\plumedfile
+```plumed
 ANGLES GROUP=1-38 HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=pi NBINS=20} SWITCH={GAUSSIAN R_0=1.0} LABEL=a1
 PRINT ARG=a1.* FILE=colvar
-\endplumedfile
-
+```
 
 */
 //+ENDPLUMEDOC
@@ -109,6 +103,7 @@ void Angles::registerKeywords( Keywords& keys ) {
            "GROUPC are calculated. The GROUPA atoms are assumed to be the central "
            "atoms");
   keys.add("optional","SWITCH","the switching function specifies that only those bonds that have a length that is less than a certain threshold are considered");
+  keys.addDOI("https://doi.org/10.1063/1.3628676");
   keys.setValueDescription("vector","the ANGLE for each set of three atoms that were specified");
   MultiColvarShortcuts::shortcutKeywords( keys ); keys.needsAction("ANGLE"); keys.needsAction("COORD_ANGLES");
 }
