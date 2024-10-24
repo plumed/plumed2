@@ -31,8 +31,8 @@ The following input tells plumed to calculate the angles between the x-axis and 
 and the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then output
 
 ```plumed
-XANGLES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
-PRINT ARG=d1.min FILE-colvar
+d1: XANGLES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} 
+PRINT ARG=d1.min FILE=colvar
 ```
 
 Notice that this command is a shortcut. You can thus learn more about how to use PLUMED by examining the expanded version of the input above.
@@ -48,8 +48,8 @@ The following input tells plumed to calculate the angles between the y-axis and 
 and the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then output
 
 ```plumed
-YANGLES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
-PRINT ARG=d1.min FILE-colvar
+d1: YANGLES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} 
+PRINT ARG=d1.min FILE=colvar
 ```
 
 Notice that this command is a shortcut. You can thus learn more about how to use PLUMED by examining the expanded version of the input above.
@@ -65,8 +65,8 @@ The following input tells plumed to calculate the angles between the z-axis and 
 and the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then output
 
 ```plumed
-ZANGLES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
-PRINT ARG=d1.min FILE-colvar
+d1: ZANGLES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} 
+PRINT ARG=d1.min FILE=colvar
 ```
 
 Notice that this command is a shortcut. You can thus learn more about how to use PLUMED by examining the expanded version of the input above.
