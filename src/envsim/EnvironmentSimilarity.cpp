@@ -125,11 +125,12 @@ environment. The reference environment is contained in the env1.pdb file. Once t
  the average and the number of atoms with a kernel larger than 0.5 are computed.
 
 ```plumed
+#SETTINGS INPUTFILES=regtest/envsim/rt-env-sim-atom-names-match/env1.pdb
 ENVIRONMENTSIMILARITY ...
  SPECIES=1-288:3
  SIGMA=0.05
  CRYSTAL_STRUCTURE=CUSTOM
- REFERENCE=env1.pdb
+ REFERENCE=regtest/envsim/rt-env-sim-atom-names-match/env1.pdb
  LABEL=es
  MEAN
  MORE_THAN={RATIONAL R_0=0.5 NN=12 MM=24}
@@ -147,10 +148,10 @@ ENVIRONMENTSIMILARITY ...
  SPECIES=1-288:3
  SIGMA=0.05
  CRYSTAL_STRUCTURE=CUSTOM
- REFERENCE_1=env1.pdb
- REFERENCE_2=env2.pdb
- REFERENCE_3=env3.pdb
- REFERENCE_4=env4.pdb
+ REFERENCE_1=regtest/envsim/rt-env-sim-atom-names-match/env1.pdb
+ REFERENCE_2=regtest/envsim/rt-env-sim-atom-names-match/env2.pdb
+ REFERENCE_3=regtest/envsim/rt-env-sim-atom-names-match/env3.pdb
+ REFERENCE_4=regtest/envsim/rt-env-sim-atom-names-match/env4.pdb
  LABEL=es
  MEAN
  MORE_THAN={RATIONAL R_0=0.5 NN=12 MM=24}
@@ -164,15 +165,15 @@ The following examples illustrates the use of pdb files to provide information a
 
 ```plumed
 ENVIRONMENTSIMILARITY ...
-#SETTINGS INPUTFILES=regtest/envsim/rt-env-sim-custom-1env/env1.pdb,regtest/envsim/rt-env-sim-custom-1env/IceIh-atom-names.pdb
+#SETTINGS INPUTFILES=regtest/envsim/rt-env-sim-custom-1env/env1.pdb,regtest/envsim/rt-env-sim-atom-names-match/IceIh-atom-names.pdb
  SPECIES=1-6
  SIGMA=0.05
  CRYSTAL_STRUCTURE=CUSTOM
- REFERENCE=env1.pdb
+ REFERENCE=regtest/envsim/rt-env-sim-custom-1env/env1.pdb
  LABEL=es
  MEAN
  MORE_THAN={RATIONAL R_0=0.5 NN=12 MM=24}
- ATOM_NAMES_FILE=regtest/envsim/rt-env-sim-custom-1env/IceIh-atom-names.pdb 
+ ATOM_NAMES_FILE=regtest/envsim/rt-env-sim-atom-names-match/IceIh-atom-names.pdb 
 ... ENVIRONMENTSIMILARITY
 ```
 

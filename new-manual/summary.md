@@ -19,9 +19,9 @@ __List of actions that have broken examples__
 There are {{ failed.size }} action pages with failing inputs.
 
 {:#browse-table .display}
-| Name | # fails |
-|:----:|:-------:|
-{% for item in failed %} | [{{ item.name }}]( {{ item.path }}) | {{ item.nfail }} |
+| Name | Module | # fails |
+|:----:|:-------:|:-------:|
+{% for item in failed %} | [{{ item.name }}]( {{ item.path }}) | {{ item.module }} | {{ item.nfail }} |
 {% endfor %}
 
 __List of actions that have no examples in manual__
@@ -29,7 +29,7 @@ __List of actions that have no examples in manual__
 There are {{ noexamples.size }} action pages with no examples.
 
 {:#browse-table .display}
-| Name | # fails |
-|:----:|:-------:|
-{% for item in noexamples %} | [{{ item.name }}]( {{ item.path }}) | {{ item.nfail }} |
+| Name | Module | # fails |
+|:----:|:-------:|:-------:|
+{% for item in noexamples %} | [{{ item.name }}]( {{ item.path }}) | {{ item.module }} | {{ item.nfail }} |
 {% endfor %}
