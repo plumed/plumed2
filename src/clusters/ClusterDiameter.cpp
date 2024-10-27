@@ -37,7 +37,7 @@ dfs: DFSCLUSTERING ARG=cm
 # Returns a 100-dimensional vector that is 1 if the correpsonding atom index is in the largest cluster and is zero otherwise
 clust: CLUSTER_WEIGHTS CLUSTERS=dfs CLUSTER=1
 # And determine the size of the largest cluster that was identified
-c1: CLUSTER_DIAMETER ARG=clust ATOMS=1-100 CLUSTERS=dfs
+c1: CLUSTER_DIAMETER ARG=clust ATOMS=1-100
 PRINT ARG=c1 FILE=colvar
 ```
 

@@ -65,7 +65,7 @@ protein that are in an antiparallel beta sheet configuration.
 
 ```plumed
 #SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
-MOLINFO STRUCTURE=beta.pdb
+MOLINFO STRUCTURE=regtest/basic/rt32/helix.pdb
 ab: ANTIBETARMSD RESIDUES=all STRANDS_CUTOFF=1 R_0=0.1
 PRINT ARG=ab FILE=colvar
 ```
@@ -74,7 +74,7 @@ Here the same is done use [RMSD](RMSD.md) instead of [DRMSD](DRMSD.md)
 
 ```plumed
 #SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
-MOLINFO STRUCTURE=helix.pdb
+MOLINFO STRUCTURE=regtest/basic/rt32/helix.pdb
 WHOLEMOLECULES ENTITY0=1-100
 hh: ANTIBETARMSD RESIDUES=all TYPE=OPTIMAL LESS_THAN={RATIONAL R_0=0.1 NN=8 MM=12}  STRANDS_CUTOFF=1
 PRINT ARG=hh.lessthan FILE=colvar

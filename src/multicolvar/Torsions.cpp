@@ -47,7 +47,7 @@ about the topology of the protein molecule.  This means that you can specify tor
 
 ```plumed
 #SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
-MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
+MOLINFO MOLTYPE=protein STRUCTURE=regtest/basic/rt32/helix.pdb
 TORSIONS ...
 ATOMS1=@phi-3
 ATOMS2=@psi-3

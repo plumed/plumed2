@@ -62,7 +62,7 @@ protein that are in an alpha helical configuration.
 
 ```plumed
 #SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
-MOLINFO STRUCTURE=helix.pdb
+MOLINFO STRUCTURE=regtest/basic/rt32/helix.pdb
 alpha: ALPHARMSD RESIDUES=all R_0=0.1
 PRINT ARG=alpha FILE=colvar
 ```
@@ -71,7 +71,7 @@ Here the same is done use [RMSD](RMSD.md) instead of [DRMSD](DRMSD.md)
 
 ```plumed
 #SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
-MOLINFO STRUCTURE=helix.pdb
+MOLINFO STRUCTURE=regtest/basic/rt32/helix.pdb
 WHOLEMOLECULES ENTITY0=1-100
 alpha: ALPHARMSD RESIDUES=all TYPE=OPTIMAL LESS_THAN={RATIONAL R_0=0.1 NN=8 MM=12}
 PRINT ARG=alpha.lessthan FILE=colvar

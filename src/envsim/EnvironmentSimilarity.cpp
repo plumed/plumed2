@@ -142,6 +142,7 @@ The next example is similar to the one above but in this case 4 reference enviro
  Each reference environment is given in a separate pdb file.
 
 ```plumed
+#SETTINGS INPUTFILES=regtest/envsim/rt-env-sim-atom-names-match/env1.pdb,regtest/envsim/rt-env-sim-atom-names-match/env2.pdb,regtest/envsim/rt-env-sim-atom-names-match/env3.pdb,regtest/envsim/rt-env-sim-atom-names-match/env4.pdb
 ENVIRONMENTSIMILARITY ...
  SPECIES=1-288:3
  SIGMA=0.05
@@ -163,36 +164,18 @@ The following examples illustrates the use of pdb files to provide information a
 
 ```plumed
 ENVIRONMENTSIMILARITY ...
+#SETTINGS INPUTFILES=regtest/envsim/rt-env-sim-custom-1env/env1.pdb,regtest/envsim/rt-env-sim-custom-1env/IceIh-atom-names.pdb
  SPECIES=1-6
  SIGMA=0.05
  CRYSTAL_STRUCTURE=CUSTOM
- REFERENCE=env.pdb
+ REFERENCE=env1.pdb
  LABEL=es
  MEAN
  MORE_THAN={RATIONAL R_0=0.5 NN=12 MM=24}
- ATOM_NAMES_FILE=atom-names.pdb
+ ATOM_NAMES_FILE=regtest/envsim/rt-env-sim-custom-1env/IceIh-atom-names.pdb 
 ... ENVIRONMENTSIMILARITY
 ```
 
-Here the file env.pdb is:
-
-````
-ATOM      1    O MOL     1      -2.239  -1.296  -0.917  1.00  0.00           O
-ATOM      2    O MOL     1       0.000   0.000   2.751  1.00  0.00           O
-````
-
-where atoms are of type O, and the atom-names.pdb file is:
-
-````
-ATOM      1  O       X   1       0.000   2.593   4.126  0.00  0.00           O
-ATOM      2  H       X   1       0.000   3.509   3.847  0.00  0.00           H
-ATOM      3  H       X   1       0.000   2.635   5.083  0.00  0.00           H
-ATOM      4  O       X   1       0.000   2.593  11.462  0.00  0.00           O
-ATOM      5  H       X   1       0.000   3.509  11.183  0.00  0.00           H
-ATOM      6  H       X   1       0.000   2.635  12.419  0.00  0.00           H
-````
-
-where atoms are of type O and H.
 In this case, all atoms are used as centers, but only neighbors of type O are taken into account.
 
 */
