@@ -2,6 +2,7 @@
 
 {% assign failed = ''  | split: ',' %}
 {% assign noexamples = ''  | split: ',' %}
+{% assign undockey = ''  | split: ',' %}
 {% assign date = "now" | date: "%Y-%m-%d %H:%M" %}
 
 {% for item in site.data.actionlist %}
@@ -10,6 +11,9 @@
    {% endif %}
    {% if item.ninp == 0 %}
      {% assign noexamples = noexamples | push: item %}
+   {% endif %}
+   {% if item.nukey > 0 %}
+      {% assign undockey = undockey | push: item %}
    {% endif %}
 {% endfor %}
 
@@ -23,6 +27,16 @@ There are {{ failed.size }} action pages with failing inputs.
 | Name | Module | # fails |
 |:----:|:-------:|:-------:|
 {% for item in failed %} | [{{ item.name }}]( {{ item.path }}) | {{ item.module }} | {{ item.nfail }} |
+{% endfor %}
+
+__List of actions that have undocumented keywords__
+
+There are {{ undockey.size }} actions with undocumented keywords
+
+{:#browse-table .display}
+| Name | Module | # undocumented |
+|:----:|:-------:|:-------:|
+{% for item in undockey %} | [{{ item.name }}]( {{ item.path }}) | {{ item.module }} | {{ item.nukey }} |
 {% endfor %}
 
 __List of actions that have no examples in manual__

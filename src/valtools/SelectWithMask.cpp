@@ -51,7 +51,7 @@ of the matrix whose corresponding elements in `m` are non-zero are not transferr
 ```plumed
 d: DISTANCE_MATRIX GROUP=1-5 
 m: CONSTANT VALUES=0,1,1,0,0
-v: SELECT_WITH MASK ARG=d ROW_MASK=m
+v: SELECT_WITH_MASK ARG=d ROW_MASK=m
 ```
 
 For this second example the output matrix is $5 \times 3$ as columns of the matrix whose corresponding elements in `m` are non-zero 
@@ -60,7 +60,7 @@ are not transferred:
 ```plumed
 d: DISTANCE_MATRIX GROUP=1-5 
 m: CONSTANT VALUES=0,1,1,0,0
-v: SELECT_WITH MASK ARG=d COLUMN_MASK=m
+v: SELECT_WITH_MASK ARG=d COLUMN_MASK=m
 ```
 
 For this final example the output matrix is $3 \times 3$ as we do not transfer the rows and the columns in `d` whose corresponding 
@@ -69,7 +69,7 @@ elements in `m` are non-zero.
 ```plumed
 d: DISTANCE_MATRIX GROUP=1-5 
 m: CONSTANT VALUES=0,1,1,0,0
-v: SELECT_WITH MASK ARG=d ROW_MASK=m COLUMN_MASK=m
+v: SELECT_WITH_MASK ARG=d ROW_MASK=m COLUMN_MASK=m
 ```
 
 */

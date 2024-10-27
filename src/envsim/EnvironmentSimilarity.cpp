@@ -126,15 +126,14 @@ environment. The reference environment is contained in the env1.pdb file. Once t
 
 ```plumed
 #SETTINGS INPUTFILES=regtest/envsim/rt-env-sim-atom-names-match/env1.pdb
-ENVIRONMENTSIMILARITY ...
+es: ENVIRONMENTSIMILARITY ...
  SPECIES=1-288:3
  SIGMA=0.05
  CRYSTAL_STRUCTURE=CUSTOM
  REFERENCE=regtest/envsim/rt-env-sim-atom-names-match/env1.pdb
- LABEL=es
  MEAN
  MORE_THAN={RATIONAL R_0=0.5 NN=12 MM=24}
-... ENVIRONMENTSIMILARITY
+... 
 
 PRINT ARG=es.mean,es.morethan FILE=COLVAR
 ```
@@ -144,7 +143,7 @@ The next example is similar to the one above but in this case 4 reference enviro
 
 ```plumed
 #SETTINGS INPUTFILES=regtest/envsim/rt-env-sim-atom-names-match/env1.pdb,regtest/envsim/rt-env-sim-atom-names-match/env2.pdb,regtest/envsim/rt-env-sim-atom-names-match/env3.pdb,regtest/envsim/rt-env-sim-atom-names-match/env4.pdb
-ENVIRONMENTSIMILARITY ...
+es: ENVIRONMENTSIMILARITY ...
  SPECIES=1-288:3
  SIGMA=0.05
  CRYSTAL_STRUCTURE=CUSTOM
@@ -152,10 +151,9 @@ ENVIRONMENTSIMILARITY ...
  REFERENCE_2=regtest/envsim/rt-env-sim-atom-names-match/env2.pdb
  REFERENCE_3=regtest/envsim/rt-env-sim-atom-names-match/env3.pdb
  REFERENCE_4=regtest/envsim/rt-env-sim-atom-names-match/env4.pdb
- LABEL=es
  MEAN
  MORE_THAN={RATIONAL R_0=0.5 NN=12 MM=24}
-... ENVIRONMENTSIMILARITY
+... 
 
 PRINT ARG=es.mean,es.morethan FILE=COLVAR
 ```
@@ -165,16 +163,15 @@ The following examples illustrates the use of pdb files to provide information a
 
 ```plumed
 #SETTINGS INPUTFILES=regtest/envsim/rt-env-sim-custom-1env/env1.pdb,regtest/envsim/rt-env-sim-atom-names-match/IceIh-atom-names.pdb
-ENVIRONMENTSIMILARITY ...
- SPECIES=1-6
+es: ENVIRONMENTSIMILARITY ...
+ SPECIES=1-288:3
  SIGMA=0.05
  CRYSTAL_STRUCTURE=CUSTOM
  REFERENCE=regtest/envsim/rt-env-sim-custom-1env/env1.pdb
- LABEL=es
  MEAN
  MORE_THAN={RATIONAL R_0=0.5 NN=12 MM=24}
  ATOM_NAMES_FILE=regtest/envsim/rt-env-sim-atom-names-match/IceIh-atom-names.pdb 
-... ENVIRONMENTSIMILARITY
+... 
 ```
 
 In this case, all atoms are used as centers, but only neighbors of type O are taken into account.

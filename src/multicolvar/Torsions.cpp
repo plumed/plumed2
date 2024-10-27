@@ -88,9 +88,10 @@ Torsions::Torsions(const ActionOptions& ao):
 {
   log.printf("Action TORSION\n");
   log.printf("  with label %s \n", getShortcutLabel().c_str() );
+  std::map<std::string,std::string> keymap; MultiColvarShortcuts::readShortcutKeywords( keymap, this );
   readInputLine( getShortcutLabel() + ": TORSION " + convertInputLineToString() );
   // Add shortcuts to label
-  MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel(), "", this );
+  MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel(), "", keymap, this );
 }
 
 }
