@@ -54,7 +54,7 @@ consider the following input:
 c1: CONTACT_MATRIX GROUP=1-100 SWITCH={GAUSSIAN D_0=5.29 R_0=0.01 D_MAX=5.3}
 # Calculate the coordination numbers
 ones: ONES SIZE=100
-cc: MATRIX_VECTOR PRODUCT ARG=c1,ones
+cc: MATRIX_VECTOR_PRODUCT ARG=c1,ones
 # Now use MORE_THAN to work out which atoms have a coordination number that is bigger than six
 cf: MORE_THAN ARG=cc SWITCH={RATIONAL D_0=5.5 R_0=0.5}
 # Now make a matrix in which element i,j is one if atom i and atom j both have a coordination number that is greater than 6

@@ -79,6 +79,7 @@ PLUMED_REGISTER_ACTION(Torsions,"TORSIONS")
 void Torsions::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys ); MultiColvarShortcuts::shortcutKeywords( keys );
   keys.needsAction("TORSION");
+  keys.add("atoms","ATOMS","the four atoms involved in the torsional angle");
   keys.setValueDescription("vector","the TORSION for each set of three atoms that were specified");
 }
 

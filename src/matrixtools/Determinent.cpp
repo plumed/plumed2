@@ -56,6 +56,7 @@ void Determinant::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords(keys);
   keys.addInputKeyword("compulsory","ARG","matrix","The matrix that we are calculating the determinant for");
   keys.setValueDescription("scalar","the determinant of the matrix");
+  keys.needsAction("DIAGONALIZE"); keys.needsAction("PRODUCT");
 }
 
 Determinant::Determinant( const ActionOptions& ao):

@@ -51,7 +51,7 @@ The following example shows how this action is used in practise:
 ```plumed
 c: DISTANCE_MATRIX ATOMS=1-4
 ci: INVERT_MATRIX ARG=c
-PRINT ARG=c1 FILE=colvar
+PRINT ARG=ci FILE=colvar
 ```
 
 */

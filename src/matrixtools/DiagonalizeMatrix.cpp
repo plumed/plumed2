@@ -31,7 +31,7 @@ function from the [LAPACK](https://www.netlib.org/lapack/explore-html/) library 
  of a real symmetric matrix. For example, the following input can be used to calculate and print all four eigenvalues of the input [DISTANCE_MATRIX](DISTANCE_MATRIX.md).
 
 ```plumed
-d: DISTANCE_MATRIX ARG=1-4 
+d: DISTANCE_MATRIX GROUP=1-4 
 diag: DIAGONALIZE ARG=d
 PRINT ARG=diag.vals-1,diag.vals-2,diag.vals-3,diag.vals-4 FILE=colvar
 ```
@@ -40,7 +40,7 @@ If you wish to calculate only a subset of the eigenvalues and eigenvectors you w
 and its corresponding eigenvector.
 
 ```plumed
-d: DISTANCE_MATRIX ARG=1-4 
+d: DISTANCE_MATRIX GROUP=1-4 
 diag: DIAGONALIZE ARG=d VECTORS=1
 PRINT ARG=diag.vals-1,diag.vecs-1 FILE=colvar
 ```

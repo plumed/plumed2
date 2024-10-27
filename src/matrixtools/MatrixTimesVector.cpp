@@ -54,7 +54,7 @@ You can also multiply a single matrix by multiple vectors:
 c1: CONTACT_MATRIX GROUP=1-7 SWITCH={RATIONAL R_0=2.6 NN=6 MM=12 D_MAX=10.0}
 ones: ONES SIZE=7
 twos: CONSTANT VALUES=1,2,3,4,5,6,7
-cc: MATRIX_VECTOR_PRODUCT=c1,ones,twos
+cc: MATRIX_VECTOR_PRODUCT ARG=c1,ones,twos
 PRINT ARG=cc.ones,cc.twos FILE=colvar
 ```
 

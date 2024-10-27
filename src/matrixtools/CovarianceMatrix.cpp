@@ -38,7 +38,7 @@ com: CENTER ATOMS=1-100
 d: DISTANCES ATOMS=1-100 ORIGIN=com COMPONENTS
 # Now compute the covariance matrix
 ones: ONES SIZE=100
-covar: COVARIANCE ARG=d.x,d.y,d.z WEIGHTS=ones
+covar: COVARIANCE_MATRIX ARG=d.x,d.y,d.z WEIGHTS=ones
 ```  
 
 */
