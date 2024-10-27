@@ -35,7 +35,7 @@ by using the mask vector `m` to select this element from the three element vecto
 
 ```plumed
 d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6
-m: CONSTANT VALUE=1,0,1
+m: CONSTANT VALUES=1,0,1
 v: SELECT_WITH_MASK ARG=d MASK=m
 ```
 
@@ -50,7 +50,7 @@ of the matrix whose corresponding elements in `m` are non-zero are not transferr
 
 ```plumed
 d: DISTANCE_MATRIX GROUP=1-5 
-m: CONSTANT VALUE=0,1,1,0,0
+m: CONSTANT VALUES=0,1,1,0,0
 v: SELECT_WITH MASK ARG=d ROW_MASK=m
 ```
 
@@ -59,7 +59,7 @@ are not transferred:
 
 ```plumed
 d: DISTANCE_MATRIX GROUP=1-5 
-m: CONSTANT VALUE=0,1,1,0,0
+m: CONSTANT VALUES=0,1,1,0,0
 v: SELECT_WITH MASK ARG=d COLUMN_MASK=m
 ```
 
@@ -68,7 +68,7 @@ elements in `m` are non-zero.
 
 ```plumed
 d: DISTANCE_MATRIX GROUP=1-5 
-m: CONSTANT VALUE=0,1,1,0,0
+m: CONSTANT VALUES=0,1,1,0,0
 v: SELECT_WITH MASK ARG=d ROW_MASK=m COLUMN_MASK=m
 ```
 

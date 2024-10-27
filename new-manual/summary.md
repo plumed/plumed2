@@ -1,6 +1,7 @@
 # Summary of manual coverage
 
 {% assign failed = ''  | split: ',' %}
+{% assign noexamples = ''  | split: ',' %}
 {% assign date = "now" | date: "%Y-%m-%d %H:%M" %}
 
 {% for item in site.data.actionlist %}

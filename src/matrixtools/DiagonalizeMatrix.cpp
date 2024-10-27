@@ -26,7 +26,24 @@
 /*
 Calculate the eigenvalues and eigenvectors of a square matrix
 
-\par Examples
+This action allows you to use the [dsyevr](https://www.netlib.org/lapack/explore-html/d1/d56/group__heevr_gaa334ac0c11113576db0fc37b7565e8b5.html#gaa334ac0c11113576db0fc37b7565e8b5) 
+function from the [LAPACK](https://www.netlib.org/lapack/explore-html/) library to calculate the [eigenvalues and eigenvectors](https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix)
+ of a real symmetric matrix. For example, the following input can be used to calculate and print all four eigenvalues of the input [DISTANCE_MATRIX](DISTANCE_MATRIX.md).
+
+```plumed
+d: DISTANCE_MATRIX ARG=1-4 
+diag: DIAGONALIZE ARG=d
+PRINT ARG=diag.vals-1,diag.vals-2,diag.vals-3,diag.vals-4 FILE=colvar
+```
+
+If you wish to calculate only a subset of the eigenvalues and eigenvectors you would use an input like the one shown below.  This input calculates and outputs the largest eigenvalue
+and its corresponding eigenvector.
+
+```plumed
+d: DISTANCE_MATRIX ARG=1-4 
+diag: DIAGONALIZE ARG=d VECTORS=1
+PRINT ARG=diag.vals-1,diag.vecs-1 FILE=colvar
+```
 
 */
 //+ENDPLUMEDOC

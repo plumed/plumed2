@@ -26,7 +26,17 @@
 /*
 Calculate the determinant of a matrix
 
-\par Examples
+This shorctu allows you to calculate the [determinant](https://en.wikipedia.org/wiki/Determinant) of 
+a square matrix. The following example shows how the action is used:
+
+```plumed
+d1: DISTANCE_MATRIX ATOMS=1-5
+det: DETERMINANT ARG=d1
+PRINT ARG=det FILE=colvar
+```
+
+If you look at the expanded version of the input above you can see that PLUMED calculates the determinant
+by first diagonalising the input matrix and then calculating the product of the eigenvalues.
 
 */
 //+ENDPLUMEDOC

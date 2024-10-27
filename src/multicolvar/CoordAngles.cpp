@@ -41,7 +41,7 @@ spheres of an atom using an input like the one shown below:
 c1: COORD_ANGLES ...
   CATOMS=1 GROUP=2-100 SWITCH={RATIONAL R_0=1.0} SUM
 ...
-PRINT ARG=c1.mean FILE=colvar
+PRINT ARG=c1.sum FILE=colvar
 ```
 
 The input above will output the sum of all the angles in the first coordination sphere.

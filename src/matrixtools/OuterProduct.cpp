@@ -69,7 +69,7 @@ that are greater than 6 and if they are within 5.3 nm of each other.
 
 Notice that you can specify the function of the two input vectors that is to be calculated by using the `FUNC` keyword which accepts 
 mathematical expressions of $x$ and $y$.  In other words, the elements of the outer product are calculated using the lepton library 
-that is used in the CUSTOM action.  In addition, you can set `FUNC=min` or `FUNC=max` to set the elements of the outer product equal to
+that is used in the [CUSTOM](CUSTOM.md) action.  In addition, you can set `FUNC=min` or `FUNC=max` to set the elements of the outer product equal to
 the minimum of the two input variables or the maximum respectively.
 
 */

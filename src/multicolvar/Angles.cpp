@@ -54,30 +54,14 @@ where $s(r)$ is a switching function.  This second form means that you can
 use this to calculate functions of the angles in the first coordination sphere of
 an atom / molecule and hence use the CVs described in the paper in the bibliography below.
 
-The following example instructs plumed to find the average of two angles and to
-print it to a file
-
-```plumed
-ANGLES ATOMS1=1,2,3 ATOMS2=4,5,6 MEAN LABEL=a1
-PRINT ARG=a1.mean FILE=colvar
-```
-
 The following example tells plumed to calculate all angles involving
 at least one atom from GROUPA and two atoms from GROUPB in which the distances
 are less than 1.0. The number of angles between $\frac{\pi}{4}$ and
 $\frac{3\pi}{4}$ is then output
 
 ```plumed
-ANGLES GROUPA=1-10 GROUPB=11-100 BETWEEN={GAUSSIAN LOWER=0.25pi UPPER=0.75pi} SWITCH={GAUSSIAN R_0=1.0} LABEL=a1
+a1: ANGLES GROUPA=1-10 GROUPB=11-100 BETWEEN={GAUSSIAN LOWER=0.25pi UPPER=0.75pi} SWITCH={GAUSSIAN R_0=1.0} 
 PRINT ARG=a1.between FILE=colvar
-```
-
-This final example instructs plumed to calculate all the angles in the first coordination
-spheres of the atoms. The bins for a normalized histogram of the distribution is then output
-
-```plumed
-ANGLES GROUP=1-38 HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=pi NBINS=20} SWITCH={GAUSSIAN R_0=1.0} LABEL=a1
-PRINT ARG=a1.* FILE=colvar
 ```
 
 */
