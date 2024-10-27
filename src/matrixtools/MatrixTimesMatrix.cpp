@@ -26,7 +26,32 @@
 /*
 Calculate the product of two matrices
 
-\par Examples
+This action allows you to [multiply](https://en.wikipedia.org/wiki/Matrix_multiplication) two matrices. The following input shows an 
+example where two contact matrices are multiplied together.
+
+```plumed
+c1: CONTACT_MATRIX GROUP=1-100 SWITCH={RATIONAL R_0=0.1}
+c2: CONTACT_MATRIX GROUP=1-100 SWITCH={RATIONAL R_0=0.2}
+m: MATRIX_PRODUCT ARG=c1,c2
+PRINT ARG=m FILE=colvar
+```
+
+The functionality in this action is useful for claculating the relative orientations of large numbers of molecules.  For example in
+his input the [DISTANCE](DISTANCE.md) command is used to calculate the orientation of a collection of molecules.  We then can then use the [VSTACK](VSTACK.md), [TRANSPOSE](TRANSPOSE.md) and the 
+MATRIX_PRODUCT commands to calculate the dot products between all these vectors
+
+```plumed
+# Calculate the vectors connecting these three pairs of atoms
+d: DISTANCE COMPONENTS ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6
+# Construct a matrix that contains all the components of the vectors calculated
+v: VSTACK ARG=d.x,d.y,d.z
+# Transpose v
+vT: TRANSPOSE ARG=v
+# And now calculate the 3x3 matrix of dot products
+m: MATRIX_PRODUCT ARG=v,vT
+# And output the matrix product to a file
+PRINT ARG=m FILE=colvar
+```
 
 */
 //+ENDPLUMEDOC
@@ -35,7 +60,22 @@ Calculate the product of two matrices
 /*
 Calculate the matrix of dissimilarities between a trajectory of atomic configurations.
 
-\par Examples
+This action allows you to calculate a dissimilarity matrix, which is a square matrix tht describes the 
+pairwise distinction between a set of objects. This action is routinely used in dimensionality reduction 
+calculations. The example shown below shows how we might get a matrix of dissimilarities upon which we can run a 
+dimensionality reduction calculation.
+
+```plumed
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+# Collect the values of the two distances and store them for later analysis
+ff: COLLECT_FRAMES ARG=d1,d2 STRIDE=1 
+# Transpose the matrix that is collected above
+ff_dataT: TRANSPOSE ARG=ff_data
+# Now compute all the dissimilarities between the collected frames
+ss1: DISSIMILARITIES ARG=ff_data,ff_dataT
+DUMPVECTOR ARG=ss1 FILE=mymatrix.dat 
+```
 
 */
 //+ENDPLUMEDOC
