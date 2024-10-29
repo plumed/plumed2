@@ -13,7 +13,7 @@ JCOUPLING ...
     ATOMS6=@psi-7
     ATOMS7=@psi-8
     LABEL=jhahn
-    REGRES_ZERO=1
+   
 ... JCOUPLING
 
 METAINFERENCE ...
@@ -44,6 +44,8 @@ JCOUPLING ...
     DSIGMA=0
     TEMP=300
     RESTART=YES
+
+    REGRES_ZERO=1
 ... JCOUPLING
 
 BIASVALUE ARG=jmi.score
