@@ -164,7 +164,7 @@ The following examples illustrates the use of pdb files to provide information a
 ```plumed
 #SETTINGS INPUTFILES=regtest/envsim/rt-env-sim-custom-1env/env1.pdb,regtest/envsim/rt-env-sim-atom-names-match/IceIh-atom-names.pdb
 es: ENVIRONMENTSIMILARITY ...
- SPECIES=1-288:3
+ SPECIES=-1-384
  SIGMA=0.05
  CRYSTAL_STRUCTURE=CUSTOM
  REFERENCE=regtest/envsim/rt-env-sim-custom-1env/env1.pdb

@@ -57,10 +57,13 @@ ones: ONES SIZE=100
 cc: MATRIX_VECTOR_PRODUCT ARG=c1,ones
 # Now use MORE_THAN to work out which atoms have a coordination number that is bigger than six
 cf: MORE_THAN ARG=cc SWITCH={RATIONAL D_0=5.5 R_0=0.5}
+# Now recalculate the contact matrix above as first step towards calculating adjacency matrix that measures if
+# atoms are close to each other and both have a coordination number that is bigger than six
+c2: CONTACT_MATRIX GROUP=1-100 SWITCH={GAUSSIAN D_0=5.29 R_0=0.01 D_MAX=5.3}
 # Now make a matrix in which element i,j is one if atom i and atom j both have a coordination number that is greater than 6
 cfm: OUTER_PRODUCT ARG=cf,cf
 # And multiply this by our contact matrix to determine the desired adjacency matrix
-m: CUSTOM ARG=c1,cfm FUNC=x*y PERIODIC=NO
+m: CUSTOM ARG=c2,cfm FUNC=x*y PERIODIC=NO
 PRINT ARG=m FILE=colvar
 ```
 
