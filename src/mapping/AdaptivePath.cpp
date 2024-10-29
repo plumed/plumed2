@@ -103,7 +103,7 @@ void AdaptivePath::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","TOLERANCE","1E-6","the tolerance to use for the path updating algorithm that makes all frames equidistant");
   keys.add("optional","WFILE","file on which to write out the path");
   keys.add("compulsory","FMT","%f","the format to use for output files");
-  keys.add("compulsory","WSTRIDE","frequency with which to write out the path");
+  keys.add("compulsory","WSTRIDE","0,","frequency with which to write out the path");
   keys.setValueDescription("the position along and from the adaptive path");
   keys.needsAction("GEOMETRIC_PATH"); keys.needsAction("AVERAGE_PATH_DISPLACEMENT");
   keys.needsAction("REPARAMETERIZE_PATH"); keys.needsAction("DUMPPDB");
@@ -140,8 +140,7 @@ AdaptivePath::AdaptivePath(const ActionOptions& ao):
 
   // Create the object to update the path
   std::string fixedn; parse("FIXED",fixedn); std::string component="METRIC_COMPONENT=disp"; if( argnames.size()>0 ) { metric="DIFFERENCE"; component=""; }
-  if( fixedn.length()>0 ) readInputLine("REPARAMETERIZE_PATH DISPLACE_FRAMES=" + getShortcutLabel() + "_disp FIXED=" + fixedn + " STRIDE=" + update + " METRIC={" + metric + "} " + component + " REFERENCE=" + reference_data );
-  else readInputLine("REPARAMETERIZE_PATH DISPLACE_FRAMES=" + getShortcutLabel() + "_disp STRIDE=" + update + " METRIC={" + metric + "} " + component + " REFERENCE=" + reference_data );
+  readInputLine("REPARAMETERIZE_PATH DISPLACE_FRAMES=" + getShortcutLabel() + "_disp FIXED=" + fixedn + " STRIDE=" + update + " METRIC={" + metric + "} " + component + " REFERENCE=" + reference_data );
 
   // Information for write out
   std::string wfilename; parse("WFILE",wfilename);
@@ -152,6 +151,11 @@ AdaptivePath::AdaptivePath(const ActionOptions& ao):
       FILE* fp=std::fopen(reference.c_str(),"r"); double fake_unit=0.1; PDB mypdb; bool do_read=mypdb.readFromFilepointer(fp,false,fake_unit);
       std::string num; Tools::convert( mypdb.getAtomNumbers()[0].serial(), atomstr );
       for(unsigned j=1; j<mypdb.getAtomNumbers().size(); ++j ) { Tools::convert( mypdb.getAtomNumbers()[j].serial(), num ); atomstr += "," + num; }
+      Tools::convert( mypdb.getResidueNumber( mypdb.getAtomNumbers()[0] ), num ); atomstr += " RESIDUE_INDICES=" + num;
+      for(unsigned i=1; i<mypdb.getAtomNumbers().size(); ++i ) { Tools::convert( mypdb.getResidueNumber( mypdb.getAtomNumbers()[i] ), num ); atomstr += "," + num; }
+      std::string anum, dnum; Tools::convert( mypdb.getOccupancy()[0], anum ); Tools::convert( mypdb.getBeta()[0], dnum );
+      atomstr += " OCCUPANCY=" + anum; for(unsigned i=1; i<mypdb.getOccupancy().size(); ++i) { Tools::convert( mypdb.getOccupancy()[i], anum ); atomstr += "," + anum; }
+      atomstr += " BETA=" + dnum; for(unsigned i=1; i<mypdb.getBeta().size(); ++i) { Tools::convert( mypdb.getBeta()[i], dnum ); atomstr += "," + dnum; }
     }
 
     if( wfilename.find(".pdb")==std::string::npos ) error("output must be to a pdb file");
