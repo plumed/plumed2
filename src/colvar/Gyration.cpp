@@ -55,9 +55,9 @@ In the above input the weights in the expressions above are set equal to the ele
 approach is to use the masses of the atoms as in the input below:
 
 ```plumed
-g: GYRATION ATOMS=1-5 TYPE=RADIUS WEIGHTS=@Masses
+g: GYRATION ATOMS=1-5 TYPE=RADIUS USEMASS
 # This input is equivalent
-# g: GYRATION ATOMS=1-5 TYPE=RADIUS USEMASS 
+# g: GYRATION ATOMS=1-5 TYPE=RADIUS WEIGHTS=@Masses
 PRINT ARG=g FILE=colvar
 ```
 
