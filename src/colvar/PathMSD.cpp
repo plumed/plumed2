@@ -75,7 +75,7 @@ void PathMSD::registerKeywords(Keywords& keys) {
   PathMSDBase::registerKeywords(keys);
   keys.addOutputComponent("sss","default","scalar","the position on the path");
   keys.addOutputComponent("zzz","default","scalar","the distance from the path");
-  keys.addDOI("10.1063/1.2432340")
+  keys.addDOI("10.1063/1.2432340");
 }
 
 PathMSD::PathMSD(const ActionOptions&ao):
