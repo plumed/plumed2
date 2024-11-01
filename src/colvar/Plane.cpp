@@ -32,8 +32,36 @@
 /*
 Calculate the plane perpendicular to two vectors in order to represent the orientation of a planar molecule.
 
-\par Examples
+To calculate the orientation of the plane connecting atoms 1, 2 and 3 you use an input like this:
 
+```plumed
+p: PLANE ATOMS=1,2,3
+PRINT ARG=p.x,p.y,p.z FILE=colvar
+```
+
+The three components, p.x, p.y and p.z, output by the PLANE action here are the x, y and z components of the normal 
+vector to the plane that is obtained by taking the cross product between the vector connecting atoms 1 and 2 and 
+the vector connecting atoms 2 and 3.
+
+To calculate the cross product of the vector connecting atoms 1 and 2 and the vector connecting atoms 3 and 4 you use 
+an input like this:
+
+```plumed
+p: PLANE ATOMS=1,2,3,4
+PRINT ARG=p.x,p.y,p.z FILE=colvar
+```  
+
+If you have multiple molecules and wish to determine the orientations of the planes containing all them with one line of PLUMED 
+input you can use an input like this:
+
+```plumed
+p: PLANE ATOMS1=1,2,3 ATOMS2=4,5,6 ATOMS3=7,8,9 ATOMS4=10,11,12
+PRINT ARG=p.x,p.y,p.z FILE=colvar
+``` 
+
+The output from this command consists of 3 vectors with 4 components. These vectors, p.x, p.y and p.z, contain the x, y and z components
+of the normals to the planes of the molecules.  Commands similar to this are useful for variables that can be used to monitor
+nucleation of molecular crystals such as [SMAC](SMAC.md).  
 
 */
 //+ENDPLUMEDOC

@@ -51,6 +51,7 @@ void RMSDShortcut::registerKeywords(Keywords& keys) {
   keys.addActionNameSuffix("_SCALAR"); keys.addActionNameSuffix("_VECTOR");
   keys.needsAction("PDB2CONSTANT"); keys.needsAction("WHOLEMOLECULES");
   keys.needsAction("POSITION"); keys.needsAction("CONCATENATE");
+  keys.addDOI("10.1107/S0108767388010128");
 }
 
 RMSDShortcut::RMSDShortcut(const ActionOptions& ao):

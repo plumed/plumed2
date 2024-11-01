@@ -53,113 +53,156 @@ Calculate the RMSD with respect to a reference structure.
 /*
 Calculate the RMSD with respect to a reference structure.
 
-The aim with this colvar it to calculate something like:
+The aim of this colvar is to calculate something like:
 
-\f[
+$$
 d(X,X') = \vert X-X' \vert
-\f]
+$$
 
-where \f$ X \f$ is the instantaneous position of all the atoms in the system and
-\f$ X' \f$ is the positions of the atoms in some reference structure provided as input.
-\f$ d(X,X') \f$ thus measures the distance all the atoms have moved away from this reference configuration.
+where $X$ is the instantaneous position of all the atoms in the system and
+$X'$ is the positions of the atoms in some reference structure that is provided as input.
+$d(X,X')$ thus measures the distance all the atoms have moved away from this reference configuration.
 Oftentimes, it is only the internal motions of the structure - i.e. not the translations of the center of
-mass or the rotations of the reference frame - that are interesting.  Hence, when calculating the
+mass or the rotations of the reference frame - that are interesting.  Hence, when calculating 
 the root-mean-square deviation between the atoms in two configurations
 you must first superimpose the two structures in some way. At present PLUMED provides two distinct ways
 of performing this superposition.  The first method is applied when you use TYPE=SIMPLE in the input
 line.  This instruction tells PLUMED that the root mean square deviation is to be calculated after the
 positions of the geometric centers in the reference and instantaneous configurations are aligned.  In
-other words \f$d(X,x')\f$ is to be calculated using:
+other words $d(X,x')$ is to be calculated using:
 
-\f[
+$$
  d(X,X') = \sqrt{ \sum_i \sum_\alpha^{x,y,z}  \frac{w_i}{\sum_j w_j}( X_{i,\alpha}-com_\alpha(X)-{X'}_{i,\alpha}+com_\alpha(X') )^2 }
-\f]
+$$
 with
-\f[
+$$
 com_\alpha(X)= \sum_i  \frac{w'_{i}}{\sum_j w'_j}X_{i,\alpha}
-\f]
+$$
 and
-\f[
+$$
 com_\alpha(X')= \sum_i  \frac{w'_{i}}{\sum_j w'_j}X'_{i,\alpha}
-\f]
-Obviously, \f$ com_\alpha(X) \f$ and  \f$ com_\alpha(X') \f$  represent the positions of the center of mass in the reference
+$$
+
+Obviously, $com_\alpha(X)$ and  $com_\alpha(X')$  represent the positions of the center of mass in the reference
 and instantaneous configurations if the weights $w'$ are set equal to the atomic masses.  If the weights are all set equal to
-one, however, \f$com_\alpha(X) \f$ and  \f$ com_\alpha(X') \f$ are the positions of the geometric centers.
-Notice that there are sets of weights:  \f$ w' \f$ and  \f$ w \f$. The first is used to calculate the position of the center of mass
-(so it determines how the atoms are \e aligned).  Meanwhile, the second is used when calculating how far the atoms have actually been
-\e displaced.  These weights are assigned in the reference configuration that you provide as input (i.e. the appear in the input file
-to this action that you set using REFERENCE=whatever.pdb).  This input reference configuration consists of a simple pdb file
+one, however, $com_\alpha(X)$ and  $com_\alpha(X')$ are the positions of the geometric centers.
+
+An example input that can be used to calculate and print this RMSD distance is shown below:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/basic/rt19/test0.pdb
+rmsd0: RMSD TYPE=SIMPLE REFERENCE=regtest/basic/rt19/test0.pdb
+PRINT ARG=rmsd0 FILE=colvar
+```
+
+Notice that there are sets of weights: $w'$ and $w$ in the formulas above. The first of these weights is used to calculate the position of the center of mass
+(so it determines how the atoms are _aligned_).  The second set of weights, $w$ is used when calculating how far the atoms have been
+_displaced_. These weights are assigned in the reference configuration that you provide as input (i.e. the appear in the input file
+to this action that you set using REFERENCE=whatever.pdb). As you can see in the input above, this input consists of a simple pdb file
 containing the set of atoms for which you want to calculate the RMSD displacement and their positions in the reference configuration.
 It is important to note that the indices in this pdb need to be set correctly.  The indices in this file determine the indices of the
 instantaneous atomic positions that are used by PLUMED when calculating this colvar.  As such if you want to calculate the RMSD distance
 moved by the first, fourth, sixth and twenty eighth atoms in the MD codes input file then the indices of the corresponding reference positions in this pdb
 file should be set equal to 1, 4, 6 and 28.
 
-The pdb input file should also contain the values of \f$w\f$ and \f$w'\f$. In particular, the OCCUPANCY column (the first column after the coordinates)
-is used provides the values of \f$ w'\f$ that are used to calculate the position of the center of mass.  The BETA column (the second column
-after the Cartesian coordinates) is used to provide the \f$ w \f$ values which are used in the the calculation of the displacement.
+The pdb input file should also contain the weights $w$ and $w'$. These second of these sets of weights, $w'$, appears in the OCCUPANCY column (the first column after the coordinates).
+These are the weights that are used to calculate the position of the center of mass.  The BETA column (the second column
+after the Cartesian coordinates) is used to provide the $w$ values which are used in the the calculation of the displacement.
 Please note that it is possible to use fractional values for beta and for the occupancy. However, we recommend you only do this when
-you really know what you are doing however as the results can be rather strange.
+you really know what you are doing however as the results can be rather strange.  A more common practise is to use different sets of atoms
+for the alignment and the displacement.  You can do this by setting the $w$ and $w'$ values for all the atoms you wish to use for alignment only equal to zero and 
+one respectively and by setting the $w$ and $w'$ values for all the atoms you wish to use for displacement only to one and zero respectively.
 
-In PDB files the atomic coordinates and box lengths should be in Angstroms unless
+In the PDB input files that you use for RMSD the atomic coordinates and box lengths should be in Angstroms unless
 you are working with natural units.  If you are working with natural units then the coordinates
 should be in your natural length unit.  For more details on the PDB file format visit http://www.wwpdb.org/docs.html.
-Make sure your PDB file is correctly formatted as explained \ref pdbreader "in this page".
+Please make sure your PDB file is correctly formatted.  More detail on the format for PDB files can be found in the documentation for the [PDB2CONSTANT](PDB2CONSTANT.md) action.
 
-A different method is used to calculate the RMSD distance when you use TYPE=OPTIMAL on the input line.  In this case  the root mean square
-deviation is calculated after the positions of geometric centers in the reference and instantaneous configurations are aligned AND after
+The following input uses a different method to calculate the RMSD distance as you can tell from the TYPE=OPTIMAL on the input line.
+
+```plumed
+#SETTINGS INPUTFILES=regtest/basic/rt19/test0.pdb
+rmsd0: RMSD TYPE=OPTIMAL REFERENCE=regtest/basic/rt19/test0.pdb
+PRINT ARG=rmsd0 FILE=colvar
+```
+
+In this case  the root mean square deviation is calculated after the positions of geometric centers in the reference and instantaneous configurations are aligned AND after
 an optimal alignment of the two frames is performed so that motion due to rotation of the reference frame between the two structures is
-removed.  The equation for \f$d(X,X')\f$ in this case reads:
+removed.  The equation for $d(X,X')$ in this case is:
 
-\f[
+$$
 d(X,X') = \sqrt{ \sum_i \sum_\alpha^{x,y,z}  \frac{w_i}{\sum_j w_j}[ X_{i,\alpha}-com_\alpha(X)- \sum_\beta M(X,X',w')_{\alpha,\beta}({X'}_{i,\beta}-com_\beta(X')) ]^2 }
-\f]
+$$
 
-where \f$ M(X,X',w') \f$ is the optimal alignment matrix which is calculated using the Kearsley \cite kearsley algorithm.  Again different sets of
-weights are used for the alignment (\f$w'\f$) and for the displacement calculations (\f$w\f$).
+where $M(X,X',w')$ is the optimal alignment matrix which is calculated using the Kearsley algorithm that is described in the paper from the bibliography below.  Again different sets of
+weights are used for the alignment ($w'$) and for the displacement calculations ($w$).
 This gives a great deal of flexibility as it allows you to use a different sets of atoms (which may or may not overlap) for the alignment and displacement
 parts of the calculation. This may be very useful when you want to calculate how a ligand moves about in a protein cavity as you can use the protein as a reference
 system and do no alignment of the ligand.
 
-(Note: when this form of RMSD is used to calculate the secondary structure variables (\ref ALPHARMSD, \ref ANTIBETARMSD and \ref PARABETARMSD
+(Note: when this form of RMSD is used to calculate the secondary structure variables ([ALPHARMSD](ALPHARMSD.md), [ANTIBETARMSD](ANTIBETARMSD.md) and [PARABETARMSD](PARABETARMSD.md)
 all the atoms in the segment are assumed to be part of both the alignment and displacement sets and all weights are set equal to one)
 
-Please note that there are a number of other methods for calculating the distance between the instantaneous configuration and a reference configuration
-that are available in plumed.  More information on these various methods can be found in the section of the manual on \ref dists.
+The $d(X,X')$ values that are calculated when you use the TYPE=SIMPLE and TYPE=OPTIMAL variants of RMSD are scalars. These scalars tell you the length of the vector of displacements, 
+$X - X'$, between the instantaneous and reference positions.  If you would like to access this vector of displacements instead of its length you can by using the DISPLACEMENT keyword
+as shown below for TYPE=SIMPLE
 
-When running with periodic boundary conditions, the atoms should be
-in the proper periodic image. This is done automatically since PLUMED 2.5,
+```plumed
+#SETTINGS INPUTFILES=regtest/basic/rt19/test0.pdb
+rmsd0: RMSD TYPE=SIMPLE DISPLACEMENT REFERENCE=regtest/basic/rt19/test0.pdb
+PRINT ARG=rmsd0.disp,rmsd0.dist FILE=colvar
+```
+
+or as shown below for TYPE=OPTIMAL
+
+```plumed
+#SETTINGS INPUTFILES=regtest/basic/rt19/test0.pdb
+rmsd0: RMSD TYPE=OPTIMAL DISPLACEMENT REFERENCE=regtest/basic/rt19/test0.pdb
+PRINT ARG=rmsd0.disp,rmsd0.dist FILE=colvar
+```
+
+The RMSD command for these inputs output two components 
+
+- `dist` - the length of displacement vector that is output when you don't use the DISPLACEMENT keyword
+- `disp` - the 3N dimensional vector of atomic dispacements, where N is the number of atoms.  
+
+These vectors of displacements are used if you use the [PCAVARS](PCAVARS.md) action to compute the projection of the displacement on a particular reference vector.
+
+You can also define multiple reference configurations in the reference input as is done in the following example:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/mapping/rt39/all1.pdb
+rmsd: RMSD TYPE=OPTIMAL REFERENCE=regtest/mapping/rt39/all1.pdb
+PRINT ARG=rmsd FILE=colvar
+```
+
+The output from RMSD in this case is a vector that contains the RMSD distances from each of the reference configurations in your input file.  This feature is used in the 
+[PATH](PATH.md) shortcut.  Furthermore, you can use the DISPLACEMENT keyword when there are multiple reference configurations in the input file as shown below:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/mapping/rt39/all1.pdb
+rmsd: RMSD TYPE=OPTIMAL DISPLACEMENT REFERENCE=regtest/mapping/rt39/all1.pdb
+PRINT ARG=rmsd.disp,rmsd.dist FILE=colvar
+```
+
+The RMSD command here still outputs the `dist` and `disp` components but now `dist` is a vector and `disp` is a matrix.  This type of command is used to implement
+the [GEOMETRIC_PATH](GEOMETRIC_PATH.md) shortcut.  For this command you need information on the distances from a set of reference configurations that can be found 
+in the `dist` component as well as the information on the displacement vectors between the instantaneous position and each of the reference configurations that is contained in the `dist` matrix.
+
+Please note that there are a number of other methods for calculating the distance between the instantaneous configuration and a reference configuration that are available in plumed.  
+
+## A note on periodic boundary conditions
+
+When periodic boundary conditions are used, the atoms should be
+in the proper periodic image. This has been done automatically since PLUMED 2.5,
 by considering the ordered list of atoms and rebuilding molecules using a procedure
-that is equivalent to that done in \ref WHOLEMOLECULES . Notice that
-rebuilding is local to this action. This is different from \ref WHOLEMOLECULES
+that is equivalent to that done in [WHOLEMOLECULES](WHOLEMOLECULES.md). Notice that
+rebuilding is local to this action. This is different from [WHOLEMOLECULES](WHOLEMOLECULES.md)
 which actually modifies the coordinates stored in PLUMED.
 
 In case you want to recover the old behavior you should use the NOPBC flag.
 In that case you need to take care that atoms are in the correct
 periodic image.
-
-\par Examples
-
-The following tells plumed to calculate the RMSD distance between
-the positions of the atoms in the reference file and their instantaneous
-position.  The Kearsley algorithm is used so this is done optimally.
-
-\plumedfile
-RMSD REFERENCE=file.pdb TYPE=OPTIMAL
-\endplumedfile
-
-The reference configuration is specified in a pdb file that will have a format similar to the one shown below:
-
-\auxfile{file.pdb}
-ATOM      1  CL  ALA     1      -3.171   0.295   2.045  1.00  1.00
-ATOM      5  CLP ALA     1      -1.819  -0.143   1.679  1.00  1.00
-ATOM      6  OL  ALA     1      -1.177  -0.889   2.401  1.00  1.00
-ATOM      7  NL  ALA     1      -1.313   0.341   0.529  1.00  1.00
-ATOM      8  HL  ALA     1      -1.845   0.961  -0.011  1.00  1.00
-END
-\endauxfile
-
-...
 
 */
 //+ENDPLUMEDOC

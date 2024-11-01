@@ -30,52 +30,60 @@ namespace colvar {
 
 //+PLUMEDOC COLVAR ANGLE
 /*
-Calculate an angle.
+Calculate one or multiple angle/s.
 
-This command can be used to compute the angle between three atoms. Alternatively
-if four atoms appear in the atom
-specification it calculates the angle between
-two vectors identified by two pairs of atoms.
+The following input instructs PLUMED to calculate and print the angle between the vector 
+connecting atom 2 and atom 1 and the vector connecting atom 2 and atom 3.
 
-If _three_ atoms are given, the angle is defined as:
-\f[
+```plumed
+a1: ANGLE ATOMS=1,2,3
+PRINT ARG=a1 FILE=colvar
+```
+
+In other words, the angle that is output by the input above is calculated as:
+$$
 \theta=\arccos\left(\frac{ {\bf r}_{21}\cdot {\bf r}_{23}}{
 |{\bf r}_{21}| |{\bf r}_{23}|}\right)
-\f]
-Here \f$ {\bf r}_{ij}\f$ is the distance vector among the
-\f$i\f$th and the \f$j\f$th listed atom.
+$$
 
-If _four_ atoms are given, the angle is defined as:
-\f[
+Here ${\bf r}_{ij}$ is the vector connecting the $i$th and $j$th atoms, which by default is evaluated
+in a way that takes periodic boundary conditions into account. If you wish to disregard the PBC you 
+can use the NOPBC flag.
+
+Alternatively, we can instruct PLUMED to calculate the angle between the vectors connecting
+atoms 1 and atom 2 and atoms 3 and atom 4 by using the following input:
+
+```plumed
+a2: ANGLE ATOMS=1,2,3,4
+PRINT ARG=a2 FILE=colvar
+
+The angle in this input is calculated using:
+
+$$
 \theta=\arccos\left(\frac{ {\bf r}_{21}\cdot {\bf r}_{34}}{
 |{\bf r}_{21}| |{\bf r}_{34}|}\right)
-\f]
+$$
 
-Notice that angles defined in this way are non-periodic variables and
-their value is limited by definition between 0 and \f$\pi\f$.
+Notice that angles defined in this way are non-periodic variables - their values must lie in between 0 and $\pi$.
 
-The vectors \f$ {\bf r}_{ij}\f$ are by default evaluated taking
-periodic boundary conditions into account.
-This behavior can be changed with the NOPBC flag.
+You can specify multiple sets of three or four atoms to calculate vectors of angles as illustrated in the following 
+input which instructs PLUMED to calculate and output three angles:
 
-\par Examples
+```plumed
+a3: ANGLE ATOMS1=1,2,3 ATOMS2=4,5,6 ATOMS3=7,8,9
+PRINT ARG=a3 FILE=colvar
+```
 
-This command tells plumed to calculate the angle between the vector connecting atom 1 to atom 2 and
-the vector connecting atom 2 to atom 3 and to print it on file COLVAR1. At the same time,
-the angle between vector connecting atom 1 to atom 2 and the vector connecting atom 3 to atom 4 is printed
-on file COLVAR2.
-\plumedfile
+It is common to assume when using this feature that all the angles being computed are indistinguishable
+so it makes sense to perform the same series of operations on every element of the output vector. The input
+file below is more approrpriate if the angles are not indistinguishable:
 
-a: ANGLE ATOMS=1,2,3
-# equivalently one could state:
-# a: ANGLE ATOMS=1,2,2,3
-
-b: ANGLE ATOMS=1,2,3,4
-
-PRINT ARG=a FILE=COLVAR1
-PRINT ARG=b FILE=COLVAR2
-\endplumedfile
-
+```plumed
+a4: ANGLE ATOMS=1,2,3
+a5: ANGLE ATOMS=4,5,6
+a6: ANGLE ATOMS=7,8,9
+PRINT ARG=a4,a5,a6 FILE=colvar
+```
 
 */
 //+ENDPLUMEDOC

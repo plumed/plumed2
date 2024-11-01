@@ -31,17 +31,13 @@ This file provides a template for if you want to introduce a new CV.
 
 <!-----You should add a description of your CV here---->
 
-\par Examples
+You can (and should) include examples showing how to use your CV as follows:
 
-<!---You should put an example of how to use your CV here--->
-
-\plumedfile
+```plumed
 # This should be a sample input.
 t: TEMPLATE ATOMS=1,2
 PRINT ARG=t STRIDE=100 FILE=COLVAR
-\endplumedfile
-<!---You should reference here the other actions used in this example--->
-(see also \ref PRINT)
+```
 
 */
 //+ENDPLUMEDOC

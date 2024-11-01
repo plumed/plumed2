@@ -31,12 +31,13 @@ namespace colvar {
 /*
 This CV computes the dimer interaction energy for a collection of dimers.
 
-Each dimer represents an atom, as described in the dimer paper \cite dimer-metad.
+Each dimer represents an atom, as described in the dimer paper that is referenced in the bibliography
 A system of N atoms is thus represented with N dimers, each
-Dimer being composed of two beads and eventually a virtual site representing its center of mass.
+Dimer being composed of two beads and a virtual site representing its center of mass.
 
 A typical configuration for a dimerized system has the following ordering of atoms:
 
+````
 1    TAG1 X Y Z          N atoms representing the first bead of each Dimer
 
 2    TAG2 X Y Z
@@ -66,59 +67,61 @@ N+2  TAG2 X Y Z
 3N+2
 
 ...
-
+````
 
 The Dimer interaction energy is defined between atoms x and N+x, for x=1,...,N and is
 characterized by two parameters Q and DSIGMA. These are passed as mandatory arguments along with
 the temperature of the system.
 
-\par Examples
+## Examples
 
 This line tells Plumed to compute the Dimer interaction energy for every dimer in the system.
 
-\plumedfile
+```plumed
 dim: DIMER TEMP=300 Q=0.5 ALLATOMS DSIGMA=0.002
-\endplumedfile
+```
 
 If the simulation doesn't use virtual sites for the dimers centers of mass,
 Plumed has to know in order to determine correctly the total number of dimers from
 the total number of atoms:
-\plumedfile
+
+```plumed
 dim: DIMER TEMP=300 Q=0.5 ALLATOMS DSIGMA=0.002 NOVSITES
-\endplumedfile
+```
 
 The NOVSITES flag is not required if one provides the atom serials of each Dimer. These are
 defined through two lists of atoms provided __instead__ of the ALLATOMS keyword.
 For example, the Dimer interaction energy of dimers specified by beads (1;23),(5;27),(7;29) is:
-\plumedfile
+
+```plumed
 dim: DIMER TEMP=300 Q=0.5 ATOMS1=1,5,7 ATOMS2=23,27,29 DSIGMA=0.002
-\endplumedfile
+```
 
 Note that the ATOMS1,ATOMS2 keywords can support atom groups and
-interval notation as defined in \ref GROUP.
+interval notation as defined in [GROUP](GROUP.md).
 
-
-In a Replica Exchange simulation the keyword DSIGMA can be used in two ways:
+In a Replica Exchange simulations the keyword DSIGMA can be used in two ways:
 if a plumed.n.dat file is provided for each replica, then DSIGMA is passed as a single value,
 like in the previous examples, and each replica will read its own DSIGMA value. If
 a unique plumed.dat is given, DSIGMA has to be a list containing a value for each replica.
 For 4 replicas:
-\plumedfile
+
+```plumed
 #SETTINGS NREPLICAS=4
 dim: DIMER TEMP=300 Q=0.5 ATOMS1=1,5,7 ATOMS2=23,27,29 DSIGMA=0.002,0.002,0.004,0.01
-\endplumedfile
+```
 
-
-\par Usage of the CV
+## Using the CV
 
 The dimer interaction is not coded in the driver program and has to be inserted
-in the Hamiltonian of the system as a linear RESTRAINT (see \ref RESTRAINT):
-\plumedfile
+in the Hamiltonian of the system as a linear RESTRAINT (see [RESTRAINT](RESTRAINT.md)):
+
+```plumed
 dim: DIMER TEMP=300 Q=0.5 ALLATOMS DSIGMA=0.002
 RESTRAINT ARG=dim AT=0 KAPPA=0 SLOPE=1 LABEL=dimforces
-\endplumedfile
+```
 
-In a replica exchange, Metadynamics (see \ref METAD) can be used on the Dimer CV to reduce
+In a replica exchange, Metadynamics (see [METAD](METAD.md)) can be used on the Dimer CV to reduce
 the number of replicas. Just keep in mind that METAD SIGMA values should be tuned
 in the standard way for each replica according to the value of DSIGMA.
 */
@@ -156,6 +159,7 @@ void Dimer::registerKeywords( Keywords& keys) {
   keys.addFlag("ALLATOMS", false, "Use EVERY atom of the system. Overrides ATOMS keyword.");
   keys.addFlag("NOVSITES", false, "If present the configuration is without virtual sites at the centroid positions.");
   keys.setValueDescription("scalar","the dimer interaction energy");
+  keys.addDOI("10.1021/acs.jctc.6b00691");
 }
 
 

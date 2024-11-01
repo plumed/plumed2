@@ -27,15 +27,14 @@ namespace colvar {
 
 //+PLUMEDOC COLVAR VOLUME
 /*
-Calculate the volume of the simulation box.
+Calculate the volume the simulation box.
 
-\par Examples
+The following input tells plumed to calculate and print the volume of the system
 
-The following input tells plumed to print the volume of the system
-\plumedfile
+```plumed
 vol: VOLUME
 PRINT ARG=vol
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC

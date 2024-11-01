@@ -29,60 +29,34 @@ namespace colvar {
 /*
 This Colvar calculates path collective variables.
 
-This is the Path Collective Variables implementation
-( see \cite brand07 ).
-This variable computes the progress along a given set of frames that is provided
-in input ("sss" component) and the distance from them ("zzz" component).
-(see below).
+Path collective variables were introduced in the paper cited in the bibliography.
+This CV defines a a curvilinear path using a set of reference configurations. Variables
+that measure the instantaneous position, sss, of the system on this path and the distance from 
+this path, zzz, are then computed.  The following input illustrates the syntax that is used 
+with this variable
+
+```plumed
+#SETTINGS INPUTFILES=regtest/basic/rt39/all.pdb
+p1: PATHMSD REFERENCE=regtest/basic/rt39/all.pdb LAMBDA=500.0 NEIGH_STRIDE=4 NEIGH_SIZE=8
+PRINT ARG=p1.sss,p1.zzz STRIDE=1 FILE=colvar 
+``` 
+
+The NEIGH_STRIDE=4 and NEIGH_SIZE=8 keywords here control the neighbor list parameter (optional but
+recommended for performance) and states that the neighbor list will be calculated every 4
+steps and consider only the closest 8 member to the actual md snapshots.
 
 When running with periodic boundary conditions, the atoms should be
 in the proper periodic image. This is done automatically since PLUMED 2.5,
 by considering the ordered list of atoms and rebuilding molecules with a procedure
-that is equivalent to that done in \ref WHOLEMOLECULES . Notice that
-rebuilding is local to this action. This is different from \ref WHOLEMOLECULES
+that is equivalent to that done in [WHOLEMOLECULES](WHOLEMOLECULES.md). Notice that
+rebuilding is local to this action. This is different from [WHOLEMOLECULES](WHOLEMOLECULES.md)
 which actually modifies the coordinates stored in PLUMED.
 
 In case you want to recover the old behavior you should use the NOPBC flag.
 In that case you need to take care that atoms are in the correct
 periodic image.
 
-\par Examples
-
-Here below is a case where you have defined three frames and you want to
-calculate the progress along the path and the distance from it in p1
-
-\plumedfile
-p1: PATHMSD REFERENCE=file.pdb  LAMBDA=500.0 NEIGH_STRIDE=4 NEIGH_SIZE=8
-PRINT ARG=p1.sss,p1.zzz STRIDE=1 FILE=colvar FMT=%8.4f
-\endplumedfile
-
-note that NEIGH_STRIDE=4 NEIGH_SIZE=8 control the neighbor list parameter (optional but
-recommended for performance) and states that the neighbor list will be calculated every 4
-steps and consider only the closest 8 member to the actual md snapshots.
-
-This input must be accompanied by a REFERENCE PDB file in which the positions of each of the frames are specified
-separated using either END or ENDMDL as shown below:
-
-\auxfile{file.pdb}
-ATOM      1  CL  ALA     1      -3.171   0.295   2.045  1.00  1.00
-ATOM      5  CLP ALA     1      -1.819  -0.143   1.679  1.00  1.00
-ATOM      6  OL  ALA     1      -1.177  -0.889   2.401  1.00  1.00
-ATOM      7  NL  ALA     1      -1.313   0.341   0.529  1.00  1.00
-END
-ATOM      1  CL  ALA     1      -3.175   0.365   2.024  1.00  1.00
-ATOM      5  CLP ALA     1      -1.814  -0.106   1.685  1.00  1.00
-ATOM      6  OL  ALA     1      -1.201  -0.849   2.425  1.00  1.00
-ATOM      7  NL  ALA     1      -1.296   0.337   0.534  1.00  1.00
-END
-ATOM      1  CL  ALA     1      -2.990   0.383   2.277  1.00  1.00
-ATOM      5  CLP ALA     1      -1.664  -0.085   1.831  1.00  1.00
-ATOM      6  OL  ALA     1      -0.987  -0.835   2.533  1.00  1.00
-ATOM      7  NL  ALA     1      -1.227   0.364   0.646  1.00  1.00
-END
-\endauxfile
-
-\note
-The implementation of this collective variable and of \ref PROPERTYMAP
+The implementation of this collective variable and of [PROPERTYMAP](PROPERTYMAP.md)
 is shared, as well as most input options.
 
 
@@ -101,6 +75,7 @@ void PathMSD::registerKeywords(Keywords& keys) {
   PathMSDBase::registerKeywords(keys);
   keys.addOutputComponent("sss","default","scalar","the position on the path");
   keys.addOutputComponent("zzz","default","scalar","the distance from the path");
+  keys.addDOI("10.1063/1.2432340")
 }
 
 PathMSD::PathMSD(const ActionOptions&ao):
