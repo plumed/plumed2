@@ -29,33 +29,33 @@ namespace colvar {
 
 //+PLUMEDOC COLVAR PUCKERING
 /*
- Calculate sugar pseudorotation coordinates.
+Calculate sugar pseudorotation coordinates.
 
- This command can be used to calculate pseudorotations for the rings in sugars (puckers). It works for both
- 5-membered and 6-membered rings. Notice that there are two different implementations depending if
- one passes 5 or 6 atoms in the ATOMS keyword. This input tells plumed to print the puckering phase angle of the 
-  second nucleotide of a RNA molecule on file COLVAR.
+This command can be used to calculate pseudorotations for the rings in sugars (puckers). It works for both
+5-membered and 6-membered rings. Notice that there are two different implementations depending if
+one passes 5 or 6 atoms in the ATOMS keyword. This input tells plumed to print the puckering phase angle of the 
+ second nucleotide of a RNA molecule on file COLVAR.
 
 ```plumed
- #SETTINGS MOLFILE=regtest/basic/rt65/AA.pdb
- MOLINFO STRUCTURE=regtest/basic/rt65/AA.pdb MOLTYPE=rna
- puck: PUCKERING ATOMS=@sugar-2 
- PRINT ARG=puck.phs FILE=COLVAR
+#SETTINGS MOLFILE=regtest/basic/rt65/AA.pdb
+MOLINFO STRUCTURE=regtest/basic/rt65/AA.pdb MOLTYPE=rna
+puck: PUCKERING ATOMS=@sugar-2 
+PRINT ARG=puck.phs FILE=COLVAR
 ```
 
- For 5-membered rings the implementation is the one discussed in the first of the papers in the bibliography below. 
- This implementation is simple and can be used in RNA to distinguish C2'-endo and C3'-endo conformations.
- Both the polar coordinates (phs and amp) and the Cartesian coordinates (Zx and Zy) are provided.
- C2'-endo conformations have negative Zx, whereas C3'-endo conformations have positive Zy.
- The notation is consistent with the notation in that first paper.
- The five atoms should be provided as C4',O4',C1',C2',C3'.
- Notice that this is the same order that can be obtained using the [MOLINFO](MOLINFO.md) syntax (see example below).
+For 5-membered rings the implementation is the one discussed in the first of the papers in the bibliography below. 
+This implementation is simple and can be used in RNA to distinguish C2'-endo and C3'-endo conformations.
+Both the polar coordinates (phs and amp) and the Cartesian coordinates (Zx and Zy) are provided.
+C2'-endo conformations have negative Zx, whereas C3'-endo conformations have positive Zy.
+The notation is consistent with the notation in that first paper.
+The five atoms should be provided as C4',O4',C1',C2',C3'.
+Notice that this is the same order that can be obtained using the [MOLINFO](MOLINFO.md) syntax (see example below).
 
- For 6-membered rings the implementation is the general Cremer-Pople one that is discussed in the second and third
- papers in the bibliography. 
- This implementation provides both a triplet with Cartesian components (qx, qy, and qz)
- and a triplet of polar components (amplitude, phi, and theta).
- Applications of this particular implementation are yet to be published (paper in preparation).
+For 6-membered rings the implementation is the general Cremer-Pople one that is discussed in the second and third
+papers in the bibliography. 
+This implementation provides both a triplet with Cartesian components (qx, qy, and qz)
+and a triplet of polar components (amplitude, phi, and theta).
+Applications of this particular implementation are yet to be published (paper in preparation).
 
 [!NOTE] 
 The 6-membered ring implementation distributed with previous versions of PLUMED lead to

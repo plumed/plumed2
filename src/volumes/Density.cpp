@@ -26,10 +26,12 @@
 /*
 Depreciated command that is bascially equivalant to GROUP.
 
-Plase don't use this anymore
+Here is an example but Plase don't use this anymore.  Use [GROUP](GROUP.md) instead.
 
-\par Examples
-
+```plumed
+g1: DENSITY SPECIES=1-100
+DUMPATOMS ATOMS=g1 FILE=group.xyz
+```
 
 */
 //+ENDPLUMEDOC
