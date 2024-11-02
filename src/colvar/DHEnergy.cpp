@@ -37,7 +37,7 @@ using a Debye-Huckel approximation defined as
 $$
 \frac{1}{4\pi\epsilon_r\epsilon_0}
 \sum_{i\in A} \sum_{j \in B} q_i q_j
-\frac{e^{-\kappa |{\bf r}_{ij}|}}{|{\bf r}_{ij}|}
+\frac{e^{-\kappa |r_{ij}|}}{| r_{ij}|}
 $$
 
 This collective variable can be used to analyze or induce electrostatically driven reactions and is discussed in the paper in the bibliography below.

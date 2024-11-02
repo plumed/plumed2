@@ -42,11 +42,11 @@ PRINT ARG=a1 FILE=colvar
 
 In other words, the angle that is output by the input above is calculated as:
 $$
-\theta=\arccos\left(\frac{ {\bf r}_{21}\cdot {\bf r}_{23}}{
-|{\bf r}_{21}| |{\bf r}_{23}|}\right)
+\theta=\arccos\left(\frac{ r_{21}\cdot r_{23}}{
+| r_{21}| | r_{23}|}\right)
 $$
 
-Here ${\bf r}_{ij}$ is the vector connecting the $i$th and $j$th atoms, which by default is evaluated
+Here $r_{ij}$ is the vector connecting the $i$th and $j$th atoms, which by default is evaluated
 in a way that takes periodic boundary conditions into account. If you wish to disregard the PBC you 
 can use the NOPBC flag.
 
@@ -60,8 +60,8 @@ PRINT ARG=a2 FILE=colvar
 The angle in this input is calculated using:
 
 $$
-\theta=\arccos\left(\frac{ {\bf r}_{21}\cdot {\bf r}_{34}}{
-|{\bf r}_{21}| |{\bf r}_{34}|}\right)
+\theta=\arccos\left(\frac{ r_{21}\cdot r_{34}}{
+| r_{21}| | r_{34}|}\right)
 $$
 
 Notice that angles defined in this way are non-periodic variables - their values must lie in between 0 and $\pi$.

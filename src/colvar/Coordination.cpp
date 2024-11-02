@@ -42,7 +42,7 @@ In actuality, $s_{ij}$ is replaced with a switching function so as to ensure tha
 
 The default switching function is:
 $$
-s_{ij} = \frac{ 1 - \left(\frac{{\bf r}_{ij}-d_0}{r_0}\right)^n } { 1 - \left(\frac{{\bf r}_{ij}-d_0}{r_0}\right)^m }
+s_{ij} = \frac{ 1 - \left(\frac{r_{ij}-d_0}{r_0}\right)^n } { 1 - \left(\frac{r_{ij}-d_0}{r_0}\right)^m }
 $$
 but it can be changed using the optional SWITCH option.  You can find more information about the various switching functions that you can 
 use with this action in the documentation for [LESS_THAN](LESS_THAN.md).
