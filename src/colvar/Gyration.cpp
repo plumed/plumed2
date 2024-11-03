@@ -36,7 +36,7 @@ $$
 s_{\rm Gyr}=\Big ( \frac{\sum_i^{n} w_i \vert {r}_i -{r}_{\rm COM} \vert ^2 }{\sum_i^{n} w_i} \Big)^{1/2}
 $$
 
-with the position of the center \f${r}_{\rm COM}\f$ given by:
+with the position of the center ${r}_{\rm COM}$ given by:
 
 $$
 {r}_{\rm COM}=\frac{\sum_i^{n} {r}_i\ w_i }{\sum_i^{n} w_i}
