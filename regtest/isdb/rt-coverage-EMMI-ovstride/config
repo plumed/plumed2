@@ -1,0 +1,24 @@
+mpiprocs=2
+type=driver
+arg="--plumed plumed.dat --mf_pdb structure.pdb --box 100,100,100" 
+
+
+function plumed_regtest_after() {
+    for i in ovfile.dat*; do 
+     if [[ $i = *.reference ]]; then
+        continue 
+     fi 
+        
+     echo "found $i"
+     
+    done > ovfiles.txt
+
+}
+
+
+
+
+
+
+
+

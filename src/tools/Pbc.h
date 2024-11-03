@@ -27,6 +27,7 @@
 #include "small_vector/small_vector.h"
 #include <vector>
 #include <cstddef>
+#include <limits>
 
 namespace PLMD {
 
@@ -43,7 +44,7 @@ public:
 };
 
 namespace helpers {
-inline constexpr std::size_t dynamic_extent = -1;
+inline constexpr std::size_t dynamic_extent = std::numeric_limits<std::size_t>::max();
 }
 //this more or less mocks c++23 mdspan without the fancy multi-indexed operator[]
 //the idea is to take an address that you know to be strided in a certain way and
