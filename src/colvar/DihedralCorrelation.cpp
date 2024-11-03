@@ -54,9 +54,9 @@ If you want to calculate the dihedral correlations between multiple pairs of dih
 this action you would use an input like this one shown below:
 
 ```plumed
-d: DIHEDRAL_CORRELATION
+d: DIHEDRAL_CORRELATION ...
   ATOMS1=1,2,3,4,5,6,7,8
-  ATOMS2=5,6,7,8,9,10,11,12
+  ATOMS2=9,10,11,12,13,14,15,16
 ...
 PRINT ARG=d FILE=colvar 
 ```
@@ -132,6 +132,7 @@ DihedralCorrelation::DihedralCorrelation(const ActionOptions&ao):
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
 
+  addValueWithDerivatives(); setNotPeriodic();
   if(pbc) log.printf("  using periodic boundary conditions\n");
   else    log.printf("  without periodic boundary conditions\n");
 }

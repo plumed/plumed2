@@ -87,9 +87,11 @@ void GyrationShortcut::registerKeywords( Keywords& keys ) {
   keys.addFlag("MASS",false,"calculate the center of mass");
   keys.addFlag("MASS_WEIGHTED",false,"set the masses of all the atoms equal to one");
   keys.addFlag("UNORMALIZED",false,"do not divide by the sum of the weights");
-  if( keys.getDisplayName()=="GYRATION" ) keys.setValueDescription("scalar","the radius that was computed from the weights");
-  else if( keys.getDisplayName()=="GYRATION_TENSOR" ) keys.setValueDescription("matrix","the gyration tensor that was computed from the weights");
-  keys.addActionNameSuffix("_FAST"); keys.needsAction("CENTER"); keys.needsAction("CONSTANT");
+  if( keys.getDisplayName()=="GYRATION" ) {
+      keys.setValueDescription("scalar","the radius that was computed from the weights");
+      keys.addActionNameSuffix("_FAST");
+  } else if( keys.getDisplayName()=="GYRATION_TENSOR" ) keys.setValueDescription("matrix","the gyration tensor that was computed from the weights");
+  keys.needsAction("CENTER"); keys.needsAction("CONSTANT");
   keys.needsAction("ONES"); keys.needsAction("MASS"); keys.needsAction("DISTANCE");
   keys.needsAction("COVARIANCE_MATRIX"); keys.needsAction("SELECT_COMPONENTS");
   keys.needsAction("SUM"); keys.needsAction("CUSTOM"); keys.needsAction("DIAGONALIZE");
@@ -102,7 +104,7 @@ GyrationShortcut::GyrationShortcut(const ActionOptions& ao):
 {
   bool usemass, phases; parseFlag("MASS",usemass); parseFlag("PHASES",phases);
   std::vector<std::string> str_weights; parseVector("WEIGHTS",str_weights); std::string wflab;
-  if( !phases ) {
+  if( !phases && getName()=="GYRATION" ) {
     if( usemass || str_weights.size()==0 || (str_weights.size()==1 && str_weights[0]=="@Masses") ) {
       std::string wt_str;
       if( str_weights.size()>0 ) {
@@ -121,8 +123,11 @@ GyrationShortcut::GyrationShortcut(const ActionOptions& ao):
   bool nopbc; parseFlag("NOPBC",nopbc); std::string pbcstr; if(nopbc) pbcstr = " NOPBC";
   std::string phasestr; if(phases) phasestr = " PHASES";
   // Create the geometric center of the molecule
-  std::string weights_str=" WEIGHTS=" + str_weights[0];
-  for(unsigned i=1; i<str_weights.size(); ++i) weights_str += "," + str_weights[i];
+  std::string weights_str=""; 
+  if( str_weights.size()>0 ) {
+      weights_str=" WEIGHTS=" + str_weights[0];
+      for(unsigned i=1; i<str_weights.size(); ++i) weights_str += "," + str_weights[i];
+  }
   readInputLine( getShortcutLabel() + "_cent: CENTER ATOMS=" + atlist + pbcstr + phasestr + weights_str );
   if( str_weights.size()==0 ) {
     wflab = getShortcutLabel() + "_w"; std::string str_natoms; Tools::convert( atoms.size(), str_natoms );

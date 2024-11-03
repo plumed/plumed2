@@ -50,8 +50,11 @@ Calculate the PCA components for a number of provided eigenvectors and an averag
 Information about this method can be found in the reference papers in the bibliography below.  An example input is provided below:
 
 ```plumed
-#SETTINGS INPUTFILES=regtest/basic/rt64-pca/average.pdb,regtest/basic/rt64-pca/eigenvec.pdb
-PCARMSD AVERAGE=regtest/basic/rt64-pca/average.pdb EIGENVECTORS=regtest/basic/rt64-pca/eigenvec.pdb
+#SETTINGS INPUTFILES=regtest/trajectories/pca/average.pdb,regtest/trajectories/pca/eigenvec.pdb
+PCARMSD ... 
+  AVERAGE=regtest/trajectories/pca/average.pdb 
+  EIGENVECTORS=regtest/trajectories/pca/eigenvec.pdb
+...
 ```
 
 This input performs optimal alignment at every step and reports the rmsd so you know if you are far or close from the average structure.
