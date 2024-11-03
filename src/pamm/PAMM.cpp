@@ -83,13 +83,17 @@ angles in a protein (Note the use of [MOLINFO](MOLINFO.md) to make specification
 the second time it is the $\phi$ and $\psi$ angles of the third residue of the protein and the third time it is the $\phi$ and $\psi$ angles
 of the fourth residue in the protein.  The final two quantities that are output by the print command, p.mean-1 and p.mean-2, are the averages
 over these three residues for the quantities:
+
 $$
 s_1 = \frac{ \phi_1}{ \phi_1 + \phi_2 }
 $$
+
 and
+
 $$
 s_2 = \frac{ \phi_2}{ \phi_1 + \phi_2 }
 $$
+
 There is a great deal of flexibility in this input.  We can work with, and examine, any number of components, we can use any set of collective variables
 and compute these PAMM variables and we can transform the PAMM variables themselves in a large number of different ways when computing these sums.  Furthermore,
 by expanding the shortcuts in the example above we can obtain insight into how the PAMM method operates.

@@ -48,12 +48,12 @@ $$
 where $N$ is the number of atoms and $d({\bf x}_i,{\bf x}_j)$ represents the distance between
 atoms $i$ and $j$.  Clearly, this representation of the configuration is invariant to translation and rotation.
 However, it can become expensive to calculate when the number of atoms is large.  This can be resolved
-within the DRMSD colvar by setting LOWER_CUTOFF and UPPER_CUTOFF.  These keywords ensure that only
+within the DRMSD colvar by setting `LOWER_CUTOFF` and `UPPER_CUTOFF`.  These keywords ensure that only
 pairs of atoms that are within a certain range are incorporated into the above sum.
 
 In PDB files the atomic coordinates and box lengths should be in Angstroms unless
 you are working with natural units.  If you are working with natural units then the coordinates
-should be in your natural length unit.  For more details on the PDB file format visit http://www.wwpdb.org/docs.html
+should be in your natural length unit.  [Click here](http://www.wwpdb.org/docs.html) for more details on the PDB file format.
 
 ## Examples
 

@@ -62,7 +62,7 @@ atoms 21-30.  You can also obtain vector components for the three dipoles above 
 
 ```plumed
 d: DIPOLE COMPONENTS GROUP1=1-10 GROUP2=11-20 GROUP3=21-30
-PRINT ARG=d FILE=output 
+PRINT ARG=d.x,d.y,d.z FILE=output 
 ```
 
 The output from the DIPOLE command now consists of three three dimensional vectors called d.x, d.y and d.z that contain the 
@@ -77,10 +77,10 @@ which actually modifies the coordinates stored in PLUMED.  If you want to recove
 you should use the NOPBC flag.  In that case you need to take care that atoms are in the correct
 periodic image.
 
-[!CAUTION]
-If the total charge Q of any of the specified groups is non zero, then a charge Q/N will be subtracted from every atom,
-where N is the number of atoms. This implies that the dipole (which for a charged system depends
-on the position) is computed on the geometric center of the group.
+> [!CAUTION]
+> If the total charge Q of any of the specified groups is non zero, then a charge Q/N will be subtracted from every atom,
+> where N is the number of atoms. This implies that the dipole (which for a charged system depends
+> on the position) is computed on the geometric center of the group.
 
 */
 //+ENDPLUMEDOC

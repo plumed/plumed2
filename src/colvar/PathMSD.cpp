@@ -41,7 +41,7 @@ p1: PATHMSD REFERENCE=regtest/basic/rt39/all.pdb LAMBDA=500.0 NEIGH_STRIDE=4 NEI
 PRINT ARG=p1.sss,p1.zzz STRIDE=1 FILE=colvar 
 ``` 
 
-The NEIGH_STRIDE=4 and NEIGH_SIZE=8 keywords here control the neighbor list parameter (optional but
+The `NEIGH_STRIDE=4` and `NEIGH_SIZE=8` keywords here control the neighbor list parameter (optional but
 recommended for performance) and states that the neighbor list will be calculated every 4
 steps and consider only the closest 8 member to the actual md snapshots.
 

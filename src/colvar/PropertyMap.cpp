@@ -38,6 +38,7 @@ X & = \frac{\sum_i X_i*\exp(-\lambda D_i(x))}{\sum_i  \exp(-\lambda D_i(x))} \\
 Y & = \frac{\sum_i Y_i*\exp(-\lambda D_i(x))}{\sum_i  \exp(-\lambda D_i(x))} \\
 & \cdots\\
 zzz & =-\frac{1}{\lambda}\log(\sum_i  \exp(-\lambda D_i(x)))
+\end{align}
 $$ 
 
 The example input below shows how this works:
@@ -51,7 +52,7 @@ PRINT ARG=p3.X,p3.Y,p3.zzz STRIDE=1 FILE=colvar FMT=%8.4f
 In this case the input line instructs plumed to look for two properties X and Y with attached values in the REMARK
 line of the reference pdb.  The parameters $X_i$ and $Y_i$ are provided in the input pdb and
 $D_i(x)$  is the mean squared displacement after optimal alignment calculated on the pdb frames you input (see Kearsley).
-The NEIGH_STRIDE=4 NEIGH_SIZE=8 control the neighbor list parameter (optional but
+The `NEIGH_STRIDE=4 NEIGH_SIZE=8` control the neighbor list parameter (optional but
 recommended for performance) and states that the neighbor list will be calculated every 4
 steps and consider only the closest 8 member to the actual md snapshots.
 
@@ -65,7 +66,7 @@ which actually modifies the coordinates stored in PLUMED.  If you want to recove
 In that case you need to take care that atoms are in the correct
 periodic image.
 
-The implementation of this collective variable and of \ref PATHMSD
+The implementation of this collective variable and of [PATHMSD](PATHMSD.md)
 is shared, as well as most input options.
 
 */

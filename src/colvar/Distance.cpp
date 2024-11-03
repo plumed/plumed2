@@ -43,14 +43,14 @@ PRINT ARG=d FILE=colvar
 By default the distance is computed in a way that takes periodic
 boundary conditions in account. This behavior can be changed by using the NOPBC flag.
 Furthermore, if you wish to calculate the vector connecting a pair of atoms you can use the 
-COMPONENTS flag as shown below:
+`COMPONENTS` flag as shown below:
 
 ```plumed
 d: DISTANCE ATOMS=1,2 COMPONENTS
 PRINT ARG=d.x,d.y,d.z FILE=colvar
 ```
 
-Alternatively, you can claculate the components projected on the lattice vector by using the SCALED_COMPONENTS
+Alternatively, you can calculate the components projected on the lattice vector by using the `SCALED_COMPONENTS`
 flag as shown below;
 
 ```plumed
@@ -58,8 +58,8 @@ d: DISTANCE ATOMS=1,2 SCALED_COMPONENTS
 PRINT ARG=d.a,d.b,d.c FILE=colvar
 ```
 
-The advantage of using SCALED_COMPONENTS over COMPONENTS is that the a, b and c variables 
-that are calculated when SCALED_COMPONENTS is employed have the proper periodicity. This feature is useful 
+The advantage of using `SCALED_COMPONENTS` over `COMPONENTS` is that the a, b and c variables 
+that are calculated when `SCALED_COMPONENTS` is employed have the proper periodicity. This feature is useful 
 if you wish to study the motion of a molecule across a membrane.
 
 You can also use this command to calculate multiple indistinguishable distances or vectors with a single
@@ -76,7 +76,7 @@ components of the vectors connecting the four atoms:
 
 ```plumed
 d: DISTANCE COMPONENTS ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8 
-PRINT ARG=d FILE=colvar
+PRINT ARG=d.x,d.y.d.z FILE=colvar
 ```
 
 You can also replace COMPONENTS with SCALED_COMPONENTS in the above input and obtain the projects of these vectors
@@ -195,7 +195,7 @@ void Distance::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("c","SCALED_COMPONENTS","scalar/vector","the normalized projection on the third lattice vector of the vector connecting the two atoms");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
   keys.setValueDescription("scalar/vector","the DISTANCE between this pair of atoms");
-  keys.addDOI("10.48550/arXiv.1812.08213");
+  keys.addDOI("10.1007/978-1-4939-9608-7_21");
 }
 
 Distance::Distance(const ActionOptions&ao):

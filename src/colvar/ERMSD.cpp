@@ -51,7 +51,7 @@ eRMSD measures the distance between structures by considering only the relative 
 
 2. Calculate all pairwise distance vectors $\vec{r}_{i,j}$ among base centers.
 
-3. Rescale distance vectors as $\tilde{\vec{r}}_{i,j}=(r_x/a,r_y/a,r_z/b)$, where  a=b=5 $\r{A}$, c=3 $\r{A}$. This rescaling has the effect of weighting more deviations on the z-axis with respect to the x/y directions.
+3. Rescale distance vectors as $\tilde{\vec{r}}_{i,j}=(r_x/a,r_y/a,r_z/b)$, where a=b=5 Angstrom, c=3 Angstrom. This rescaling has the effect of weighting more deviations on the z-axis with respect to the x/y directions.
 
 4. Calculate the G vectors
 
@@ -78,13 +78,13 @@ The different order for purines and pyrimidines is fundamental and allows you to
 sequences as well! Notice that the simplest way to avoid mistakes in choosing these atoms is to use the `@lcs-#` strings
 as shown in the examples (see also [MOLINFO](MOLINFO.md)).
 
-[!CAUTION]
-Notice that the ERMSD implemented here is not integrated with the other metrics in plumed. As a consequence, it is not (yet) possible
-to e.g. build path collective variables using ERMSD
+> [!CAUTION]
+> Notice that the ERMSD implemented here is not integrated with the other metrics in plumed. As a consequence, it is not (yet) possible
+> to e.g. build path collective variables using ERMSD
 
-[!CAUTION]
-Notice that ERMSD expect a single molecule and makes coordinates whole before anything else. As such, results might be unexpected
-for a multi molecular system.
+> [!CAUTION]
+> Notice that ERMSD expect a single molecule and makes coordinates whole before anything else. As such, results might be unexpected
+> for a multi molecular system.
 
 ## Examples
 

@@ -37,13 +37,15 @@ $$
 \sum_{i\in A} \sum_{i\in B} s_{ij}
 $$
 
-where $s_{ij}$ is 1 if the contact between atoms $i$ and \f$j\f$ is formed and zero otherwise.
+where $s_{ij}$ is 1 if the contact between atoms $i$ and $j$ is formed and zero otherwise.
 In actuality, $s_{ij}$ is replaced with a switching function so as to ensure that the calculated CV has continuous derivatives.
 
 The default switching function is:
+
 $$
 s_{ij} = \frac{ 1 - \left(\frac{r_{ij}-d_0}{r_0}\right)^n } { 1 - \left(\frac{r_{ij}-d_0}{r_0}\right)^m }
 $$
+
 but it can be changed using the optional SWITCH option.  You can find more information about the various switching functions that you can 
 use with this action in the documentation for [LESS_THAN](LESS_THAN.md).
 
@@ -56,7 +58,7 @@ Notice that if there are common atoms between GROUPA and GROUPB the switching fu
 equal to one. These "self contacts" are discarded by plumed (since version 2.1),
 so that they actually count as "zero".
 
-\par Examples
+## Examples
 
 The following example instructs plumed to calculate the total coordination number of the atoms in group 1-10 with the atoms in group 20-100.  For atoms 1-10 coordination numbers are calculated that count the number of atoms from the second group that are within 0.3 nm of the central atom.  A neighbor list is used to make this calculation faster, this neighbor list is updated every 100 steps.
 
