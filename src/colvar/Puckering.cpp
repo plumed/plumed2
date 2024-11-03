@@ -57,10 +57,10 @@ This implementation provides both a triplet with Cartesian components (qx, qy, a
 and a triplet of polar components (amplitude, phi, and theta).
 Applications of this particular implementation are yet to be published (paper in preparation).
 
-[!NOTE] 
-The 6-membered ring implementation distributed with previous versions of PLUMED lead to
- qx and qy values that had an opposite sign with respect to those originally defined in the 
-thid reference in the bibliograph below.  The bug was fixed in version 2.5.
+> [!NOTE] 
+> The 6-membered ring implementation distributed with previous versions of PLUMED lead to
+> qx and qy values that had an opposite sign with respect to those originally defined in the 
+> thid reference in the bibliograph below.  The bug was fixed in version 2.5.
 
 */
 //+ENDPLUMEDOC

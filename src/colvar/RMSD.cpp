@@ -72,15 +72,19 @@ positions of the geometric centers in the reference and instantaneous configurat
 other words $d(X,x')$ is to be calculated using:
 
 $$
- d(X,X') = \sqrt{ \sum_i \sum_\alpha^{x,y,z}  \frac{w_i}{\sum_j w_j}( X_{i,\alpha}-com_\alpha(X)-{X'}_{i,\alpha}+com_\alpha(X') )^2 }
+d(X,X') = \sqrt{ \sum_i \sum_\alpha^{x,y,z}  \frac{w_i}{\sum_j w_j} ( X _{i,\alpha}-com _\alpha(X)-{X'} _{i,\alpha}+com _\alpha(X') )^2 }
 $$
+
 with
+
 $$
-com_\alpha(X)= \sum_i  \frac{w'_{i}}{\sum_j w'_j}X_{i,\alpha}
+com_\alpha (X) = \sum_i \frac{w'_{i}}{\sum_j w'_j} X _{i,\alpha}
 $$
+
 and
+
 $$
-com_\alpha(X')= \sum_i  \frac{w'_{i}}{\sum_j w'_j}X'_{i,\alpha}
+com_\alpha(X')= \sum_i  \frac{w'_{i}}{\sum_j w'_j}X' _{i,\alpha}
 $$
 
 Obviously, $com_\alpha(X)$ and  $com_\alpha(X')$  represent the positions of the center of mass in the reference
@@ -115,7 +119,7 @@ one respectively and by setting the $w$ and $w'$ values for all the atoms you wi
 
 In the PDB input files that you use for RMSD the atomic coordinates and box lengths should be in Angstroms unless
 you are working with natural units.  If you are working with natural units then the coordinates
-should be in your natural length unit.  For more details on the PDB file format visit http://www.wwpdb.org/docs.html.
+should be in your natural length unit.  You can find more details on the PDB file format [here](http://www.wwpdb.org/docs.html).
 Please make sure your PDB file is correctly formatted.  More detail on the format for PDB files can be found in the documentation for the [PDB2CONSTANT](PDB2CONSTANT.md) action.
 
 The following input uses a different method to calculate the RMSD distance as you can tell from the TYPE=OPTIMAL on the input line.

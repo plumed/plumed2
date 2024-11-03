@@ -42,7 +42,7 @@ PRINT ARG=p.x,p.y,p.z FILE=colvar
 To print the position of four atoms you can use an input like this:
 
 ```plumed
-p: POSITION ATOM=1-4
+p: POSITION ATOMS=1-4
 PRINT ARG=p.x,p.y,p.z FILE=colvar
 ```
 

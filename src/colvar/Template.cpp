@@ -29,7 +29,8 @@ namespace colvar {
 /*
 This file provides a template for if you want to introduce a new CV.
 
-<!-----You should add a description of your CV here---->
+The descrition of the CV that you include here will appear in the further details and examples 
+section of the manual
 
 You can (and should) include examples showing how to use your CV as follows:
 

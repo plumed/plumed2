@@ -82,7 +82,7 @@ t1: TORSION ATOMS1=@phi-3 ATOMS2=@phi-4 ATOMS3=@phi-5 ATOMS4=@phi-6 ATOMS5=@phi-
 PRINT ARG=t1 FILE=colvar STRIDE=10
 ```
 
-This input tells PLUMED to calculate the $\phi$ angles in residues 3-7 of the protein.  The outupt, t1, is a 5 dimensional vector.
+This input tells PLUMED to calculate the $\phi$ angles in residues 3-7 of the protein.  The output, `t1`, is a 5 dimensional vector.
 
 
 */
