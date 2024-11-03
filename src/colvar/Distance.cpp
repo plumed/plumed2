@@ -76,7 +76,7 @@ components of the vectors connecting the four atoms:
 
 ```plumed
 d: DISTANCE COMPONENTS ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8 
-PRINT ARG=d.x,d.y.d.z FILE=colvar
+PRINT ARG=d.x,d.y,d.z FILE=colvar
 ```
 
 You can also replace COMPONENTS with SCALED_COMPONENTS in the above input and obtain the projects of these vectors
