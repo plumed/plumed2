@@ -42,10 +42,10 @@ $$
 w(x_i,y_i,z_i) = \int_{xl}^{xu} \int_{yl}^{yu} \int_{zl}^{zu} \textrm{d}x\textrm{d}y\textrm{d}z K\left( \frac{x - x_i}{\sigma} \right)K\left( \frac{y - y_i}{\sigma} \right)K\left( \frac{z - z_i}{\sigma} \right)
 $$ 
 
-where \f$K\f$ is one of the kernel functions described in the documentation for the function [BETWEEN](BETWEEN.md), $\sigma$ is a bandwidth parameter and the limits
+where $K$ is one of the kernel functions described in the documentation for the function [BETWEEN](BETWEEN.md), $\sigma$ is a bandwidth parameter and the limits
 for the integrals are the values specified using the keywords XLOWER, XUPPER, YLOWER, YUPPER, YUPPER, ZLOWER and ZUPPER.  $x_i$, $y_i$ and $z_i$ are then the components
 of the vector that connects the $i$th atom that was specified using the ATOMS keyword to the atom that was specified using the ORIGIN keyword.  In other words, 
-$w((x_i,y_i,z_i)$ is 1 if the atom is within a rectangular box that is centered on the atom that is specified as the origin and zero otherwise.
+$w(x_i,y_i,z_i)$ is 1 if the atom is within a rectangular box that is centered on the atom that is specified as the origin and zero otherwise.
 
 ## Calculating the number of atoms in a particular part of the box
 

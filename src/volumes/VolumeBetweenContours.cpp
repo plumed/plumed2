@@ -31,29 +31,32 @@
 /*
 This quantity can be used to calculate functions of the distribution of collective variables for the atoms that lie in a region where the density of a certain type of atom is high.
 
-This collective variable can be used to determine whether colvars are within region where the density
-of a particular atom is high.  This is achieved by calculating the following function at the point where
-the atom is located \f$(x,y,z)\f$:
+This collective variable can be used to determine whether atoms are within region where the density
+of a particular atom type is high.  This is achieved by calculating the following function at the point where
+each atom is located $(x_i,y_i,z_i)$:
 
-\f[
-w_j = 1 - \sigma\left[ \sum_{i=1}^N K\left( \frac{x-x_i}{\sigma_x},\frac{y-y_i}{\sigma_y},\frac{z-z_i}{\sigma_z} \right) \right]
-\f]
+$$
+w_i = 1 - \sigma\left[ \sum_{i=1}^N K\left( \frac{x-x_i}{\sigma_x},\frac{y-y_i}{\sigma_y},\frac{z-z_i}{\sigma_z} \right) \right]
+$$
 
-Here \f$\sigma\f$ is a \ref switchingfunction and \f$K\f$ is a \ref kernelfunctions.  The sum runs over the atoms
-specified using the ATOMS keyword and a \f$w_j\f$ value is calculated for each of the central atoms of the input
+Here $\sigma$ is one of the switching functions that is discussed in the documentation for the action [LESS_THAN](LESS_THAN.md) and $K$ is 
+one of the kernel functions that is discussed in the documentation for the action [BETWEEN](BETWEEN.md).  The sum runs over the atoms
+specified using the FIELD_ATOMS keyword and a $w_j$ value is calculated for each of the central atoms of the input
 multicolvar.
 
-\par Examples
+The input below shows how this action works in practise.  This input calculates a density field from the positions of atoms 1-14400. A vector which has 
+as many elements as atoms that were specified using the ATOMS keyword.  The $i$th element of this vector is calculated using the expression above with $(x_i,y_i,z_i)$
+being the position of the $i$th atom that was specified using that ATOMS keyword.
 
-The input below calculates a density field from the positions of atoms 1-14400.  The number of the atoms
-that are specified in the DENSITY action that are within a region where the density field is greater than
-2.0 is then calculated.
-
-\plumedfile
-d1: DENSITY SPECIES=14401-74134:3 LOWMEM
-fi: INENVELOPE DATA=d1 ATOMS=1-14400 CONTOUR={RATIONAL D_0=2.0 R_0=1.0} BANDWIDTH=0.1,0.1,0.1 LOWMEM
+```plumed
+fi: INENVELOPE ATOMS=14401-74134:3 FIELD_ATOMS=1-14400 CONTOUR={RATIONAL D_0=2.0 R_0=1.0} BANDWIDTH=0.1,0.1,0.1 
 PRINT ARG=fi FILE=colvar
-\endplumedfile
+```
+
+This particular action was developed with the intention of determining whether water molecules had penetrated a membrane or not. The FIELD_ATOMS were thus the atoms of the 
+lipid molecules that made up the membrane and the ATOMS were the oxygens of the water molecules. The vector that is output by this action can be used in all the ways that the 
+vector that is output by the [AROUND](AROUND.md) action is used.  In other words, this action can be used to calculate the number of water molecules in the membrane or the average
+values for a symmetry function for those atoms that are within the membrane.
 
 */
 //+ENDPLUMEDOC
