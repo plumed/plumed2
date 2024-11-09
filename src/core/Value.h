@@ -213,6 +213,8 @@ public:
   void convertIndexToindices(const std::size_t& index, std::vector<unsigned>& indices ) const ;
 /// Print out all the values in this Value
   void print( OFile& ofile ) const ;
+/// Print out all the forces in this Value
+  void printForce( OFile& ofile ) const ;
 /// Are we to ignore the stored value
   bool ignoreStoredValue(const std::string& n) const ;
 /// Set a matrix element to be non zero
