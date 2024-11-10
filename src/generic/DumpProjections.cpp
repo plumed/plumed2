@@ -116,7 +116,7 @@ DumpProjections::DumpProjections(const ActionOptions&ao):
   checkRead();
 
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    if( getPntrToAction(i)->getRank()!=0 ) error("cannot use DUMPPROJECTIONS with actions that are not scalars");
+    if( getPntrToArgument(i)->getRank()!=0 ) error("cannot use DUMPPROJECTIONS with actions that are not scalars");
     (getPntrToArgument(i)->getPntrToAction())->turnOnDerivatives();
   }
 }

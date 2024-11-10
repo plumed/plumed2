@@ -31,13 +31,8 @@ namespace wham {
 /*
 This can be used to output the a histogram using the weighted histogram technique
 
-This shortcut action allows you to calculate a histogram using the weighted histogram
-analysis technique.  For more detail on how this the weights for configurations are
-computed see \ref REWEIGHT_WHAM
-
-\par Examples
-
-The following input can be used to analyze the output from a series of umbrella sampling calculations.
+This shortcut action allows you to calculate a histogram using the weighted histogram analysis technique.
+The following input illustrates how this is used in practise to analyze the output from a series of umbrella sampling calculations.
 The trajectory from each of the simulations run with the different biases should be concatenated into a
 single trajectory before running the following analysis script on the concatenated trajectory using PLUMED
 driver.  The umbrella sampling simulations that will be analyzed using the script below applied a harmonic
@@ -47,7 +42,7 @@ to determine a weight for each configuration in the concatenated trajectory.  A 
 the configurations visited and their weights.  This histogram is then converted into a free energy surface and output
 to a file called fes.dat
 
-\plumedfile
+```plumed
 #SETTINGS NREPLICAS=4
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
@@ -63,13 +58,16 @@ rp: RESTRAINT ARG=phi KAPPA=50.0 ...
 hh: WHAM_HISTOGRAM ARG=phi BIAS=rp.bias TEMP=300 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=50
 fes: CONVERT_TO_FES GRID=hh TEMP=300
 DUMPGRID GRID=fes FILE=fes.dat
-\endplumedfile
+```
 
 The script above must be run with multiple replicas using the following command:
 
-\verbatim
+````
 mpirun -np 4 plumed driver --mf_xtc alltraj.xtc --multi 4
-\endverbatim
+````
+
+For more details on how the weights for configurations are determined using the wham method see the documentation 
+for the [WHAM](WHAM.md) action.
 
 */
 //+ENDPLUMEDOC
