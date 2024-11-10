@@ -36,9 +36,9 @@ input below demonstates two useful ways you can use the DEBUG command
 
 ```plumed
 # print detailed (action-by-action) timers at the end of simulation
-DEBUG DETAILED_TIMERS
+a: DEBUG DETAILED_TIMERS
 # dump every two steps which are the atoms required from the MD code
-DEBUG logRequestedAtoms STRIDE=2
+b: DEBUG logRequestedAtoms STRIDE=2
 ```
 
 */
