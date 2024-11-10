@@ -78,7 +78,7 @@ that were generated when the MD simulation was run are read in.
 d: DISTANCE ATOMS=1,2 
 # This CV is being read in from a file that was output with the same frequency as frames
 # were output from the trajectory
-r1: READ VALUES=rmsd0  FILE=regtest/basic/rt19/input_colvar.gz
+# r1: READ VALUES=rmsd0  FILE=regtest/basic/rt19/input_colvar.gz
 # This CV is being read in from a file that was output with twice as frequency as frames
 # were output to the trajectory
 r2: READ VALUES=rmsd0  FILE=regtest/basic/rt19/input_colvar2 EVERY=2 IGNORE_TIME
