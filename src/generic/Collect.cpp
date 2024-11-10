@@ -30,7 +30,89 @@
 /*
 Collect data from the trajectory for later analysis
 
-\par Examples
+The way this command can be used is illustrated by the following example:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+c: COLLECT ARG=d STRIDE=1
+DUMPVECTOR ARG=c FILE=timeseries
+```
+
+The COLLECT command in the input above stores the time series of distances over the whole 
+trajectory. The STRIDE keyword controls how frequently data is stored and the [DUMPVECTOR](DUMPVECTOR.md) 
+command then outputs the full time series of `d` values at the end of the calculation.
+
+The above example is not particularly useful as you can achieve the same result by using simply 
+a DISTANCE command and the [PRINT](PRINT.md) command.  The COLLECT command is useful if you want 
+use the whole trajectory to perform a analysis such as  dimensionality reduction (see [dimred](dimred.md)).
+The shortcut command [COLLECT_FRAMES](COLLECT_FRAMES.md) uses this action heavily and allows one to easily 
+deal with the fact that COLLECT can only collect the time series for one PLUMED Value at a time.
+
+## Collecting a part of the trajectory
+
+You can use the CLEAR keyword to collect a subset of the trajectory as illustrated below:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+c: COLLECT ARG=d STRIDE=1 CLEAR=1000
+DUMPVECTOR ARG=c FILE=timeseries STRIDE=1000
+```  
+
+This outputs files contain from this input contain 1000-frame blocks of the trajectory for the distance between atom 1 and 2. 
+This type of input might proove useful if you wish to perform separate analysis on different parts of the trajectory for 
+later comparison.
+
+## Collecting vectors
+
+You can use the collect command even if the input value has a rank that is greater than zero.  For example, the following
+input collects vectors of distances from the trajectory:
+
+```plumed
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8
+c: COLLECT ARG=d TYPE=vector STRIDE=1 CLEAR=100
+DUMPVECTOR ARG=c FILE=timeseries STRIDE=100
+```
+
+Notice that if the input to the collect action is a value with rank>0 you __must__ use the TYPE keyword to specify whether 
+the output Value is a vector or matrix.  In the above input we are storing a vector so the DUMPVECTOR command outputs 
+a list of 400 distances - 4 distances for each frame.  The assumption in the input above is that the four distances that have
+been computed by the DISTANCES command are indistinguishable. 
+
+By using the following input we can ensure the the four distances are treated as distinguishable when we do any analysis:
+
+```plumed
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8
+c: COLLECT ARG=d TYPE=matrix STRIDE=1 CLEAR=100
+DUMPVECTOR ARG=c FILE=timeseries STRIDE=100
+```
+
+The value `c` is now a $100\times 4$ matrix.  Furthermore, when we use DUMPVECTOR to output the output file will contain 
+four columns of data.
+
+## Collecting matrices 
+
+You can also use this action to collect a matrix as illustrated by the following example:
+
+```plumed
+d: DISTANCE_MATRIX GROUPA=1,2 GROUPB=3,4,5 
+c: COLLECT ARG=d TYPE=vector STRIDE=1 CLEAR=100
+DUMPVECTOR ARG=c FILE=timeseries STRIDE=100
+```
+
+The value `c` here is a vector with 600 elements as the input matrix is converted to a vector. These vectors are then stored in 
+one contiguous object.
+ 
+If by contrast we use `TYPE=matrix` as shown below:
+
+```plumed
+d: DISTANCE_MATRIX GROUPA=1,2 GROUPB=3,4,5 
+c: COLLECT ARG=d TYPE=matrix STRIDE=1 CLEAR=100
+DUMPVECTOR ARG=c FILE=timeseries STRIDE=100
+```
+
+A $100 \times 6$ matrix is stored.  Each row of this matrix contains a vectorized version of the input matrix.  
+There is currently no way to store the collected data in a way that recognises that each of the input PLUMED Value
+was a matrix. You also cannot use this action to store functions evaluated on a grid.
 
 */
 //+ENDPLUMEDOC

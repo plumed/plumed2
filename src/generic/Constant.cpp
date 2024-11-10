@@ -27,29 +27,86 @@
 /*
 Create a constant value that can be passed to actions
 
-Useful in combination with functions that
-takes in input constants or parameters.
+This action can be used to create constant scalars, vectors or matrices.  These 
+constants are assigned to a value, which can then be used later in the input.  For example,
+the following input creates a value `c` and sets it equal to the constant value 4.5.
 
-\par Examples
+```plumed
+c: CONSTANT VALUE=4.5
+PRINT ARG=c STRIDE=1 FILE=constant
+``` 
 
-The following input instructs plumed to compute the distance
+The output file printed by this input will contain a column in which every element is 4.5
+
+By contrast, this input creates a five element vector called `v` with elements equal to 
+1, 2, 3, 4 and 5:
+
+```plumed
+v: CONSTANT VALUES=1,2,3,4,5
+PRINT ARG=v FILE=constant_vector
+```
+
+The PRINT action will now output a file with 6 columns.  The first of these columns will be the time.  
+Every element of the second column will be 1, every element of the second column will be 2 and so on.
+
+Notice that can generate 5 scalar constant rather than a vector using an input like this:
+
+```plumed
+c: CONSTANT VALUES=1,2,3,4,5 SCALARS
+PRINT ARG=c.v-0,c.v-1,c.v-2,c.v-3,c.v-4 FILE=five_scalars
+```
+
+or you can use five separate constant actions like this:
+
+```plumed
+c1: CONSTANT VALUE=1
+c2: CONSTANT VALUE=2
+c3: CONSTANT VALUE=3
+c4: CONSTANT VALUE=4
+c5: CONSTANT VALUE=5 
+PRINT ARG=c1,c2,c3,c4,c5 FILE=five_scalars
+```
+
+Lastly, if you want to create a constant $2\times 3$ matrix you would use an input like the one below:
+
+```plumed
+c: CONSTANT VALUE=1,2,3,4,5,6 NROWS=2 NCOLS=3
+PRINT ARG=c FILE=matrix
+```
+
+The constant matrix that this action generates is as follows:
+
+$$
+M = \left(
+\begin{matrix}
+1 & 2 & 3 \\
+4 & 5 & 6
+\end{matrix}
+\right)
+$$
+
+The print action ensures that the six elements of this constant matrix are output on every step.
+
+The CONSTANT  action is useful in combination with functions that take in input constants or parameters.
+For example, the following input instructs plumed to compute the distance
 between atoms 1 and 2. If this distance is between 1.0 and 2.0, it is
 printed. If it is lower than 1.0 (larger than 2.0), 1.0 (2.0) is printed
 
-\plumedfile
-cn: CONSTANT VALUES=1.0,2.0
+```plumed
+cn: CONSTANT VALUES=1.0,2.0 SCALARS
 dis: DISTANCE ATOMS=1,2
 sss: SORT ARG=cn.v-0,dis,cn.v-1
 PRINT ARG=sss.2
-\endplumedfile
+```
 
-In case you want to pass a single value you can use VALUE:
-\plumedfile
+By contrast this input only prints the distance between atom 1 and 2 if it is less than 1.
+
+```plumed
 cn: CONSTANT VALUE=1.0
 dis: DISTANCE ATOMS=1,2
 sss: SORT ARG=cn,dis
 PRINT ARG=sss.1
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC

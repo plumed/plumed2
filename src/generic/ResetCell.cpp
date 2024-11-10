@@ -38,43 +38,44 @@ namespace generic {
 /*
 This action is used to rotate the full cell
 
-This can be used to modify the periodic box. Notice that
+Rotating the full cell is useful if you want to modify the periodic box. Notice that
 this is done at fixed scaled coordinates,
 so that also atomic coordinates for the entire system are affected.
-To see what effect try
-the \ref DUMPATOMS directive to output the atomic positions.
+To see what effect try using [DUMPATOMS](DUMPATOMS.md) directive to output the atomic positions.
 
 Also notice that PLUMED propagate forces correctly so that you can add a bias on a CV computed
-after rotation. See also \ref FIT_TO_TEMPLATE
+after rotation. You can read the documentation for [FIT_TO_TEMPLATE](FIT_TO_TEMPLATE.md) for more
+detail. 
 
 Currently, only TYPE=TRIANGULAR is implemented, which allows one to reset
-the cell to a lower triangular one. Namely, a proper rotation is found that allows
-rotating the box so that the first lattice vector is in the form (ax,0,0),
+the cell to a lower triangular one. This command finds a proper rotation 
+rotates the box so that the first lattice vector is in the form (ax,0,0),
 the second lattice vector is in the form (bx,by,0), and the third lattice vector is
 arbitrary.
 
-\attention
-The implementation of this action is available but should be considered in testing phase. Please report any
-strange behavior.
+> [!CAUTION]
+> The implementation of this action is available but should be considered in testing phase. Please report any
+> strange behavior.
 
-\attention
-This directive modifies the stored position at the precise moment
-it is executed. This means that only collective variables
-which are below it in the input script will see the corrected positions.
-Unless you
-know exactly what you are doing, leave the default stride (1), so that
-this action is performed at every MD step.
+> [!CAUTION]
+> This directive modifies the stored position at the precise moment
+> it is executed. This means that only collective variables
+> which are below it in the input script will see the corrected positions.
+> Unless you
+> know exactly what you are doing, leave the default stride (1), so that
+> this action is performed at every MD step.
 
-\par Examples
+## Examples
 
 Reset cell to be triangular after a rototranslational fit
-\plumedfile
+
+```plumed
 DUMPATOMS FILE=dump-original.xyz ATOMS=1-20
 FIT_TO_TEMPLATE STRIDE=1 REFERENCE=ref.pdb TYPE=OPTIMAL
 DUMPATOMS FILE=dump-fit.xyz ATOMS=1-20
 RESET_CELL TYPE=TRIANGULAR
 DUMPATOMS FILE=dump-reset.xyz ATOMS=1-20
-\endplumedfile
+```
 
 The reference file for the FIT_TO_TEMPLATE is just a normal pdb file with the format shown below:
 

@@ -28,8 +28,41 @@
 /*
 Create a vector that contains the copies of the input quantities from all replicas
 
-\par Examples
+There are three ways that you can generate indistinguishable replicas of a system for calculating
+ensemble averages:
 
+- You can take a time average.
+- You can run a multiple replica simulation and average over the replicas.
+- You can do a spatial average and assume that there are multiple replicas of the system in the same simulation box and average over them.  
+
+Many actions within PLUMED will perform average over more than one of these type of replica.  However, since v2.10
+we have tried to separate out these three ways of generating multiple replicas for averaging.  There are thus many actions 
+where you take time averages by using [ACCUMULATE](ACCUMULATE.md) or [COLLECT](COLLECT.md).  You take spatial averages by passing
+working the vectors of values.  You then use this action to average over replicas.  The way this works in practise is illustrated by the simple
+example shown below.
+
+```plumed
+# Calculate distance between atoms 1 and 2 on for all 2 replicas
+d: DISTANCE ATOMS=1,2
+# Now gather the values of this distance on all the replicas:
+g: GATHER_REPLICAS ARG=d
+# Now average the two distances on the two replicas
+s: COMBINE ARG=g.rep-0,g.rep-1 COEFFICIENTS=0.5,0.5 PERIODIC=NO
+# And print the instaneous average for the distance on the two replicas
+PRINT ARG=s FILE=colvar
+```
+
+Now suppose that we wanted to calculate a time average of the distance and an average over the replicas.  We could use an input like this:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+g: GATHER_REPLICAS ARG=d
+s: COMBINE ARG=g.rep-0,g.rep-1 COEFFICIENTS=0.5,0.5 PERIODIC=NO
+# This does the time averaging
+a: AVERAGE ARG=s 
+# And output the final average
+PRINT ARG=a FILE=colvar
+```
 
 */
 //+ENDPLUMEDOC

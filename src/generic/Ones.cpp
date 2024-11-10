@@ -29,7 +29,25 @@ namespace generic {
 /*
 Create a constant vector with all elements equal to one
 
-\par Examples
+The following input creates and outputs a constant vector with 10 elements that are all equal to one
+
+```plumed
+ones: ONES SIZE=10
+PRINT ARG=ones FILES=onesfile
+```
+
+Notice that the ONES action is a shortcut to [CONSTANT](CONSTANT.md).
+
+This action is used extensively when calculating coordination numbers in inputs similar to this one:
+
+```plumed
+c1: CONTACT_MATRIX GROUP=1-7 SWITCH={RATIONAL R_0=2.6 NN=6 MM=12}
+ones: ONES SIZE=7
+cc: MATRIX_VECTOR_PRODUCT ARG=c1,ones
+PRINT ARG=cc FILE=colvar
+```
+
+For more information on why this is useful see [CONTACT_MATRIX](CONTACT_MATRIX.md)
 
 */
 //+ENDPLUMEDOC

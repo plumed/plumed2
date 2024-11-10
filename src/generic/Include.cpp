@@ -32,117 +32,94 @@ namespace generic {
 /*
 Includes an external input file, similar to #include in C preprocessor.
 
-Useful to split very large plumed.dat files. Notice that in PLUMED 2.4 this action
-cannot be used before the initial setup part of the file (e.g. in the part with \ref UNITS, \ref MOLINFO, etc).
-As of PLUMED 2.5, \ref INCLUDE can be used in any position of the file.
+The INCLUDE command is Useful when you want to split very large plumed.dat files. 
 
-\par Examples
+In PLUMED 2.4 this action was now allowed to appear before the initial setup part of the file 
+(e.g. in the part that conained any [UNITS](UNITS.md) and [MOLINFO](MOLINFO.md) commands).
+However, from PLUMED 2.5 onwards, INCLUDE commands can be used in any position of the file.
+
+## Basic example
 
 This input:
-\plumedfile
+
+```plumed
 c1: COM ATOMS=1-100
 c2: COM ATOMS=101-202
 d: DISTANCE ATOMS=c1,c2
 PRINT ARG=d
-\endplumedfile
+```
+
 can be replaced with this input:
-\plumedfile
+
+```plumed
 INCLUDE FILE=pippo.dat
 d: DISTANCE ATOMS=c1,c2
 PRINT ARG=d
-\endplumedfile
-where the content of file pippo.dat is
-\plumedfile
-#SETTINGS FILENAME=pippo.dat
-# this is pippo.dat
-c1: COM ATOMS=1-100
-c2: COM ATOMS=101-202
-\endplumedfile
+```
 
-The files in this example are rather short, but imagine a case like this one:
-\plumedfile
+Notice that you can see the contents of pippo.dat by clicking on the name of the file
+
+## Using INCLUDE to define replicas
+
+Using INCLUDE for the input in the previous section is rather pointless as the included file is rather short.
+In a case like the one shown below the INCLUDE command is much more useful:
+
+```plumed 
 INCLUDE FILE=groups.dat
 c: COORDINATION GROUPA=groupa GROUPB=groupb R_0=0.5
 METAD ARG=c HEIGHT=0.2 PACE=100 SIGMA=0.2 BIASFACTOR=5
-\endplumedfile
-Here `groups.dat` could be a huge file containing group definitions.  This groups.dat file might look something
-like the following example but with more atom indices in the groups.
-\plumedfile
-#SETTINGS FILENAME=groups.dat
-# this is groups.dat
-groupa: GROUP ...
-  ATOMS={
-    10
-    50
-    60
-    70
-    80
-    120
-  }
-...
-groupb: GROUP ...
-  ATOMS={
-    11
-    51
-    61
-    71
-    81
-    121
-  }
-...
-\endplumedfile
-So, included files are the best place where one can store long definitions.
+```
 
-Another case where INCLUDE is very useful is when running multi-replica simulations.
+Although the `groups.dat` file here is short again it could be much larger if the groups 
+contained very lage numbers of atoms.  
+
+## INCLUDE and multiple replicas
+
+Another case where INCLUDE can be useful is when running multi-replica simulations.
 Here different replicas might have different input files, but perhaps a large part of the
-input is shared. This part can be put in a common included file. For instance you could have
-`common.dat`:
-\plumedfile
-#SETTINGS FILENAME=common.dat
-# this is common.dat
-t: TORSION ATOMS=1,2,3,4
-\endplumedfile
-Then `plumed.0.dat`:
-\plumedfile
+input is shared. This part can be put in a common included file. For instance you could use
+a `common.dat` to share part of the input across the input for the two replica simulation
+which has the following `plumed.0.dat` input file:
+
+```plumed
 # this is plumed.0.dat
 INCLUDE FILE=common.dat
 RESTRAINT ARG=t AT=1.0 KAPPA=10
-\endplumedfile
-And `plumed.1.dat`:
-\plumedfile
+```
+
+and the following `plumed.1.dat` input file
+
+```plumed
 # this is plumed.1.dat
 INCLUDE FILE=common.dat
 RESTRAINT ARG=t AT=1.2 KAPPA=10
-\endplumedfile
+```
 
-\warning
-Remember that when using multi replica simulations whenever plumed tried to open
-a file for reading it looks for a file with the replica suffix first.
-This is true also for files opened by INCLUDE!
+When you run calculations in this way it is important to reember that PLUMED will always try to open 
+files for reading with a replica suffix first.  This is also even for files opened by INCLUDE!
+We can thus implement the calculation above using the following common input for the two replicas:
 
-As an example, the same result of the inputs above could have been obtained using
-the following `plumed.dat` file:
-\plumedfile
+```plumed
 #SETTINGS NREPLICAS=2
 t: TORSION ATOMS=1,2,3,4
 INCLUDE FILE=other.inc
-\endplumedfile
-Then `other.0.inc`:
-\plumedfile
-#SETTINGS FILENAME=other.0.inc
-# this is other.0.inc
-RESTRAINT ARG=t AT=1.0 KAPPA=10
-\endplumedfile
-And `other.1.inc`:
-\plumedfile
-#SETTINGS FILENAME=other.1.inc
-# this is other.1.inc
-RESTRAINT ARG=t AT=1.2 KAPPA=10
-\endplumedfile
+```
 
+We would then have an other.0.inc file that contains the defintion of the RESTRAINT command with AT=1.0
+and an other.1.inc file that contains the defintion of the RESTRAINT command with AT=1.2.
 
+In practice, however, we recommend using the special replica syntax that is discussed on [this page](parsing.md)
+in place of the INCLUDE file approach that has been described above.  If you are using this syntax the input
+for the calculation above is as follows:
 
+```plumed
+#SETTINGS NREPLICAS=2
+t: TORSION ATOMS=1,2,3,4
+RESTRAINT ARG=t AT=@replicas:1.0,1.2 KAPPA=10
+```
 
+The version of this input that uses INCLUDE files is an older syntax that was used in older versions of PLUMED
+before the special replica syntax was made available. 
 
 */
 //+ENDPLUMEDOC

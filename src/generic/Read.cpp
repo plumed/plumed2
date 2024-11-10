@@ -35,41 +35,72 @@ namespace generic {
 Read quantities from a colvar file.
 
 This Action can be used with driver to read in a colvar file that was generated during
-an MD simulation
+an MD simulation. The following example shows how this works.
 
-\par Description of components
+```plumed
+#SETTINGS INPUTFILES=regtest/basic/rt-fametad-1/Input-COLVAR
+sum_abs: READ VALUES=sum_abs FILE=regtest/basic/rt-fametad-1/Input-COLVAR IGNORE_FORCES
+PRINT ARG=sum_abs STRIDE=1 FILE=colvar
+```
 
-The READ command will read those fields that are labelled with the text string given to the
-VALUE keyword.  It will also read in any fields that are labeled with the text string
-given to the VALUE keyword followed by a dot and a further string. If a single Value is read in
-this value can be referenced using the label of the Action.  Alternatively, if multiple quantities
-are read in, they can be referenced elsewhere in the input by using the label for the Action
-followed by a dot and the character string that appeared after the dot in the title of the field.
+The input file `Input-COLVAR` is a colvar file that was generated using a [PRINT](PRINT.md) 
+command.  The instruction `VALUES=sum_abs` tells PLUMED that we want to read the column headed 
+`sum_abs` from that file.  The value outputted from a read command is thus always a scalar.
 
-\par Examples
+The `IGNORE_FORCES` flag tells PLUMED that any forces that are applied on
+this action can be safely ignored.  If you try to run a simulation in which a bias acts upon a 
+quantity that is read in from a file using a READ command PLUMED will crash with an error.
 
-This input reads in data from a file called input_colvar.data that was generated
-in a calculation that involved PLUMED.  The first command reads in the data from the
-column headed phi1 while the second reads in the data from the column headed phi2.
+## Dealing with components
 
-\plumedfile
-rphi1:       READ FILE=input_colvar.data  VALUES=phi1
-rphi2:       READ FILE=input_colvar.data  VALUES=phi2
-PRINT ARG=rphi1,rphi2 STRIDE=500  FILE=output_colvar.data
-\endplumedfile
+The following example provides another example where the READ command is used:
 
-The file input_colvar.data is just a normal colvar file as shown below
+```plumed
+#SETTINGS INPUTFILES=regtest/basic/rt41/input_colvar
+r1: READ VALUES=p2.X  FILE=regtest/basic/rt41/input_colvar
+r2: READ VALUES=p3.* FILE=regtest/basic/rt41/input_colvar
+PRINT ARG=r1.X,r2.* FILE=colvar
+```
 
-\auxfile{input_colvar.data}
-#! FIELDS time phi psi metad.bias metad.rbias metad.rct
-#! SET min_phi -pi
-#! SET max_phi pi
-#! SET min_psi -pi
-#! SET max_psi pi
- 0.000000  -1.2379   0.8942   0.0000   0.0000   0.0000
- 1.000000  -1.4839   1.0482   0.0000   0.0000   0.0089
- 2.000000  -1.3243   0.6055   0.0753   0.0664   0.0184
-\endauxfile
+Notice that the READ command preseves the part of the name that appears after the ".".  Consequently, 
+when we read the value `p2.X` from the input file the output value the action with label `r1` calls the output
+value that contains this information `r1.X`.  The READ command is implemented this way so that you can use the 
+wildcard syntax that is illustrated in the command labelled `r2` in the above input. 
+
+## Reading COLVAR files and trajectories
+
+The example input below indicates a case where a trajectory is being post processed and where some COLVAR files 
+that were generated when the MD simulation was run are read in.
+
+```plumed
+#SETTINGS INPUTFILES=regtest/basic/rt19/input_colvar.gz,regtest/basic/rt19/input_colvar2
+# The distance here is being calculated from the trajectory
+d: DISTANCE ATOMS=1,2 
+# This CV is being read in from a file that was output with the same frequency as frames
+# were output from the trajectory
+r1: READ VALUES=rmsd0  FILE=regtest/basic/rt19/input_colvar.gz
+# This CV is being read in from a file that was output with twice as frequency as frames
+# were output to the trajectory
+r2: READ VALUES=rmsd0  FILE=regtest/basic/rt19/input_colvar2 EVERY=2 IGNORE_TIME
+# This outputs our three quantities
+PRINT ARG=d,r1,r2 FILE=colvar 
+```
+
+The driver command to run this script as follows:
+
+````
+plumed driver --plumed plumed.dat --trajectory-stride 10 --timestep 0.005 --ixyz trajectory.xyz
+````
+
+When you are doing analyses like these, which involve mixing using READ command and analysing a trajectory, PLUMED forces you 
+to take care to ensure that everything in the input file was generated from the same step in the input trajectory.  You must 
+use the `--trajectory-stride` and `--timestep` commands when using driver above so PLUMED can correctly calculate the simulation
+time and compare it with the time stamps in any colvar files that are being read in using READ commands.
+
+If you want to turn off these checks either because you are confident that you have set things up correctly or if you are not 
+mixing variables that have been calculated from a trajectory with variables that are being read from a file you can use the 
+`IGNORE_TIME` flag.  Notice also that you can use the `EVERY` flag to tell PLUMED to ignore parts of the COLVAR file if data 
+has been output to that file more frequently that data has been output to the trajectory. 
 
 */
 //+ENDPLUMEDOC

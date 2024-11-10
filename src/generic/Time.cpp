@@ -31,12 +31,12 @@ namespace generic {
 /*
 retrieve the time of the simulation to be used elsewhere
 
-\par Examples
+To retrieve and print the time you can use an input similar to the one shown below:
 
-\plumedfile
-TIME            LABEL=t1
+```plumed
+t1: TIME
 PRINT ARG=t1
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC

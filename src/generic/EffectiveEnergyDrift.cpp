@@ -47,27 +47,28 @@ namespace generic {
 /*
 Print the effective energy drift
 
-The method used to calculate the effective energy drift is described in Ref \cite Ferrarotti2015
+The method that is used to calculate the effective energy drift here is described in the 
+paper in the bibliography.  
 
+## Examples
 
-\par Examples
-
-
-This is to monitor the effective energy drift for a metadynamics
+This input is to monitor the effective energy drift for a metadynamics
 simulation on the Debye-Huckel energy. Since this variable is very expensive,
 it could be conveniently computed every second step.
-\plumedfile
+
+```plumed
 dh: DHENERGY GROUPA=1-10 GROUPB=11-20 EPSILON=80.0 I=0.1 TEMP=300.0
 METAD ARG=dh HEIGHT=0.5 SIGMA=0.1 PACE=500 STRIDE=2
 EFFECTIVE_ENERGY_DRIFT PRINT_STRIDE=100 FILE=eff
-\endplumedfile
+```
 
-This is to monitor if a restraint is too stiff
-\plumedfile
+This exampls shows how to monitor if a restraint is too stiff
+
+```plumed
 d: DISTANCE ATOMS=10,20
 RESTRAINT ARG=d KAPPA=100000 AT=0.6
 EFFECTIVE_ENERGY_DRIFT PRINT_STRIDE=100 FILE=eff
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC
@@ -142,6 +143,7 @@ void EffectiveEnergyDrift::registerKeywords( Keywords& keys ) {
   keys.use("RESTART");
   keys.use("UPDATE_FROM");
   keys.use("UPDATE_UNTIL");
+  keys.addDOI("10.1021/ct5007086");
 }
 
 EffectiveEnergyDrift::EffectiveEnergyDrift(const ActionOptions&ao):

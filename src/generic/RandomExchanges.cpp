@@ -32,40 +32,57 @@ namespace generic {
 /*
 Set random pattern for exchanges.
 
-In this way, exchanges will not be done between replicas with consecutive index, but
-will be done using a random pattern.  Typically used in bias exchange \cite piana.
+This command is typically used if you are using the bias exchange method that is 
+discussed in the paper in the bibliography.  When it is present it tells PLUMED
+not do do exchanges between replicas with consecutive indices and instad to use 
+use a random pattern.  
 
-\par Examples
-
-Using the following three input files one can run a bias exchange
+The following three example input files show how one can run a bias exchange
 metadynamics simulation using a different angle in each replica.
-Exchanges will be randomly tried between replicas 0-1, 0-2 and 1-2
+Exchanges are randomly tried between replicas 0-1, 0-2 and 1-2
 
 Here is plumed.0.dat
-\plumedfile
+
+```plumed
 RANDOM_EXCHANGES
 t: TORSION ATOMS=1,2,3,4
 METAD ARG=t HEIGHT=0.1 PACE=100 SIGMA=0.3
-\endplumedfile
+```
 
 Here is plumed.1.dat
-\plumedfile
+
+```plumed
 RANDOM_EXCHANGES
 t: TORSION ATOMS=2,3,4,5
 METAD ARG=t HEIGHT=0.1 PACE=100 SIGMA=0.3
-\endplumedfile
+```
 
 Here is plumed.2.dat
-\plumedfile
+
+```plumed
 RANDOM_EXCHANGES
 t: TORSION ATOMS=3,4,5,6
 METAD ARG=t HEIGHT=0.1 PACE=100 SIGMA=0.3
-\endplumedfile
+```
 
-\warning Multi replica simulations are presently only working with gromacs.
+Notice that you can perform the same calculation with the following single PLUMED input file:
 
-\warning The directive should appear in input files for every replicas. In case SEED is specified, it
-should be the same in all input files.
+```plumed
+#SETTINGS NREPLICAS=3
+
+RANDOM_EXCHANGES
+t1: TORSION ATOMS=1,2,3,4
+t2: TORSION ATOMS=2,3,4,5
+t3: TORSION ATOMS=3,4,5,6
+METAD ARG=@replicas:t1,t2,t3 HEIGHT=0.1 PACE=100 SIGMA=0.3
+```
+
+> [!CAUTION]
+> Multi replica simulations are presently only working with gromacs.
+
+> [!CAUTION]
+> The directive should appear in the input file for every replica. If SEED is specified, it
+> should be the same in all input files.
 
 */
 //+ENDPLUMEDOC
@@ -85,6 +102,7 @@ PLUMED_REGISTER_ACTION(RandomExchanges,"RANDOM_EXCHANGES")
 void RandomExchanges::registerKeywords( Keywords& keys ) {
   Action::registerKeywords(keys);
   keys.add("optional","SEED","seed for random exchanges");
+  keys.addDOI("10.1021/jp067873l");
 }
 
 RandomExchanges::RandomExchanges(const ActionOptions&ao):

@@ -30,24 +30,31 @@ namespace generic {
 
 //+PLUMEDOC PRINTANALYSIS DUMPDERIVATIVES
 /*
-Dump the derivatives with respect to the input parameters for one or more objects (generally CVs, functions or biases).
+Dump the derivatives with respect to the input parameters for scalar values (generally CVs, functions or biases).
 
-For a CV this line in input instructs plumed to print the derivative of the CV with respect to the atom positions
-and the cell vectors (virial-like form).  In contrast, for a function or bias the derivative with respect to the input "CVs"
-will be output.  This command is most often used to test whether or not analytic derivatives have been implemented correctly.  This
-can be done by outputting the derivatives calculated analytically and numerically.  You can control the buffering of output using the \ref FLUSH keyword.
-
-\par Examples
-
-The following input instructs plumed to write a file called deriv that contains both the
+You can use this command to output the derivatives of a scalar with respect to whatever input parameters are used to 
+calculate that scalar.  For example, the following input instructs plumed to write a file called deriv that contains both the
 analytical and numerical derivatives of the distance between atoms 1 and 2.
-\plumedfile
-DISTANCE ATOMS=1,2 LABEL=distance
-DISTANCE ATOMS=1,2 LABEL=distanceN NUMERICAL_DERIVATIVES
-DUMPDERIVATIVES ARG=distance,distanceN STRIDE=1 FILE=deriv
-\endplumedfile
 
-(See also \ref DISTANCE)
+```plumed
+distance: DISTANCE ATOMS=1,2 
+distanceN: DISTANCE ATOMS=1,2 NUMERICAL_DERIVATIVES
+DUMPDERIVATIVES ARG=distance,distanceN STRIDE=1 FILE=deriv
+```
+
+This input outputs the derivative of the distance with respect to the atom positions and the cell vectors (virial-like form).
+It will thus output 15 deriatives for the two quantities output - the derivatives with respect to the x,y and z components of the input atoms 
+and the 9 components of the virial.
+
+By contast the following input will only output 1 derivative; namely, the derivative of the switching function, `f`, with respect to the input distance, `d`.
+
+```plumed
+d: DISTANCE ATOMS=1,2 
+f: LESS_THAN ARG=d SWITCH={RATIONAL R_0=0.2}
+DUMPDERIVATIVES ARG=f STRIDE=1 FILE=deriv
+```
+
+__You can only use this command to output the derivatives of rank 0 (scalar) values. You cannot use it to output derivatives of vector, matrix of function values.__
 
 */
 //+ENDPLUMEDOC

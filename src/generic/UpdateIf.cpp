@@ -31,16 +31,14 @@ namespace generic {
 /*
 Conditional update of other actions.
 
-
 This action can be used to enable and disable the update step for the following actions
-depending on the value of its arguments. This allows for example to extract snapshots
+depending on the value of its arguments. This allows one to extract snapshots
 with value of some CVs in a given range.
 
 When called with MORE_THAN and/or LESS_THAN keywords, this action starts an if block.
 The block is executed if all the arguments are less than all the respective values
 in the LESS_THAN keyword (if present) and all the arguments are more than all the
-respective values
-in the MORE_THAN keyword (if present).
+respective values in the MORE_THAN keyword (if present).
 
 When called with the END flag, this action ends the corresponding IF block.
 Notice that in this case one should also provide the ARG keyword. It is recommended to
@@ -51,17 +49,18 @@ Of course, blocks can be nested at will.
 There are many potential usages for this keyword. One might e.g. decide to analyze some variable
 only when another variable is within a given range.
 
-\warning
-Notice that not all the possible usage make
-particular sense. For example, conditionally updating a \ref METAD keyword
-(that is: adding hills only if a variable is within a given range)
-can lead to unexpected results.
+> [!CAUTION]
+> Notice that not all the possible usage make
+> particular sense. For example, conditionally updating a \ref METAD keyword
+> (that is: adding hills only if a variable is within a given range)
+> can lead to unexpected results.
 
-\par Examples
+## Examples
 
 The following input instructs plumed dump all the snapshots where an atom is in touch with
 the solute.
-\plumedfile
+
+```plumed
 solute: GROUP ATOMS=1-124
 coord: COORDINATION GROUPA=solute GROUPB=500 R_0=0.5
 
@@ -71,7 +70,7 @@ coord: COORDINATION GROUPA=solute GROUPB=500 R_0=0.5
 UPDATE_IF ARG=coord MORE_THAN=0.5
 DUMPATOMS ATOMS=solute,500 FILE=output.xyz
 UPDATE_IF ARG=coord END
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC

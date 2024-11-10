@@ -31,16 +31,15 @@ namespace generic {
 /*
 Set some debug options.
 
-Can be used while debugging or optimizing plumed.
+This action can be used while debugging or optimizing plumed. The example 
+input below demonstates two useful ways you can use the DEBUG command 
 
-\par Examples
-
-\plumedfile
+```plumed
 # print detailed (action-by-action) timers at the end of simulation
 DEBUG DETAILED_TIMERS
 # dump every two steps which are the atoms required from the MD code
 DEBUG logRequestedAtoms STRIDE=2
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC

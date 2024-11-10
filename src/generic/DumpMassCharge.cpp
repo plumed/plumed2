@@ -33,42 +33,35 @@ namespace generic {
 /*
 Dump masses and charges on a selected file.
 
-This command dumps a file containing charges and masses.
-It does so only once in the simulation (at first step).
-File can be recycled in the \ref driver tool.
+This command dumps a file that contains charges and masses of the atoms.  The following 
+example shows how it is used:
 
-Notice that masses and charges are only written once at the beginning
-of the simulation. In case no atom list is provided, charges and
-masses for all atoms are written.
-
-\par Examples
-
-You can add the DUMPMASSCHARGE action at the end of the plumed.dat
-file that you use during an MD simulations:
-
-\plumedfile
+```plumed
 c1: COM ATOMS=1-10
 c2: COM ATOMS=11-20
 DUMPATOMS ATOMS=c1,c2 FILE=coms.xyz STRIDE=100
 
 DUMPMASSCHARGE FILE=mcfile
-\endplumedfile
+```
 
-In this way, you will be able to use the same masses while processing
-a trajectory from the \ref driver . To do so, you need to
-add the --mc flag on the driver command line, e.g.
+The DUMPMASSCHARGE command only outputs the masses and charges once in the simulation (during the first step).
+
+Output the masses and charges in this way is useful if you want to do some postprocessing that relies
+on knowing the masses and charges of atoms.  To use the mcfile tht is output by the command above you would 
+use the following driver command to read in the charges and masses from the mcfile.
+
 \verbatim
 plumed driver --mc mcfile --plumed plumed.dat --ixyz traj.xyz
 \endverbatim
 
-With the following input you can dump only the charges for a specific
-group:
+DUMPMASSCHARGE outputs the masses of all the atoms by default.  However, if you want to write the masses and charges 
+for a particular subset of the atoms you can use the `ATOMS` keyword as illustrated in the example input below: 
 
-\plumedfile
+```plumed
 solute_ions: GROUP ATOMS=1-121,200-2012
 DUMPATOMS FILE=traj.gro ATOMS=solute_ions STRIDE=100
 DUMPMASSCHARGE FILE=mcfile ATOMS=solute_ions
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC

@@ -35,8 +35,39 @@ namespace generic {
 /*
 Output PDB file.
 
+This command can be used to output a PDB file that contains the result from a dimensionality reduction 
+calculation.  To understand how to use this command you are best off looking at the examples of dimensionality
+reduction calculations that are explained in the documentation of the actions in the [dimred](dimred.md) module.
 
-\par Examples
+Please note that this command __cannot__ be used in place of [DUMPATOMS](DUMPATOMS.md) to output a pdb file rather than
+a gro or xyz file.  This is an example where this command is used to output atomic positions:
+
+```plumed
+ff: COLLECT_FRAMES ATOMS=1-22 STRIDE=1
+DUMPPDB ATOM_INDICES=1-22 ATOMS=ff_data FILE=pos.pdb 
+```
+
+From this example alone it is clear that this command works very differently to the [DUMPATOMS](DUMPATOMS.md) command.
+Notice, furthermore, that you can output the positions of atoms along with the argument values that correspond to each 
+set of atomic positions as follows:
+
+```plumed
+# Calculate the distance between atoms 1 and 2
+d: DISTANCE ATOMS=1,2
+# Collect the distance between atoms 1 and 2
+cd: COLLECT ARG=d
+# Calculate the angle involving atoms 1, 2 and 3 
+a: ANGLE ATOMS=1,2,3
+# Collect the angle involving atoms 1, 2 and 3
+ca: COLLECT ARG=a
+# Now collect the positions
+ff: COLLECT_FRAMES ATOMS=1-22 STRIDE=1
+# Output a PDB file that contains the collected atomic positions
+# and the collected distances and angles
+DUMPPDB ATOM_INDICES=1-22 ATOMS=ff_data ARG=cd,ca FILE=pos.pdb 
+```
+
+The outputted pdb file has the format described in the documentation for the [PDB2CONSTANT](PDB2CONSTANT.md) action.
 
 */
 //+ENDPLUMEDOC
