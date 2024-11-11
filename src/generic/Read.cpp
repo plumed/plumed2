@@ -73,14 +73,13 @@ The example input below indicates a case where a trajectory is being post proces
 that were generated when the MD simulation was run are read in.
 
 ```plumed
-#SETTINGS INPUTFILES=regtest/basic/rt19/input_colvar.gz,regtest/basic/rt19/input_colvar2
+#SETTINGS INPUTFILES=regtest/basic/rt19/input_colvar2
 # The distance here is being calculated from the trajectory
 d: DISTANCE ATOMS=1,2 
 # This CV is being read in from a file that was output with the same frequency as frames
-# were output from the trajectory
-# r1: READ VALUES=rmsd0  FILE=regtest/basic/rt19/input_colvar.gz
+# were output from the trajectory. Notice that you can read from zip files
+r1: READ VALUES=rmsd0  FILE=regtest/basic/rt19/input_colvar.gz
 # This CV is being read in from a file that was output with twice as frequency as frames
-# were output to the trajectory
 r2: READ VALUES=rmsd0  FILE=regtest/basic/rt19/input_colvar2 EVERY=2 IGNORE_TIME
 # This outputs our three quantities
 PRINT ARG=d,r1,r2 FILE=colvar 
