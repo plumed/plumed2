@@ -33,7 +33,7 @@ are in the backbone of a protein to the [ALPHARMSD](ALPHARMSD.md) action is show
 
 ```plumed
 #SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
-MOLINFO STRUCTURE=reference.pdb
+MOLINFO STRUCTURE=regtest/basic/rt32/helix.pdb
 ALPHARMSD RESIDUES=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} LABEL=a
 ```
 
@@ -42,7 +42,7 @@ in a GC Watson-Crick pair.
 
 ```plumed
 #SETTINGS MOLFILE=regtest/basic/rt-ermsd/ref.pdb
-MOLINFO STRUCTURE=reference.pdb MOLTYPE=dna
+MOLINFO STRUCTURE=regtest/basic/rt-ermsd/ref.pdb MOLTYPE=dna
 hb1: DISTANCE ATOMS=@N2-2,@O2-15
 hb2: DISTANCE ATOMS=@N1-2,@N3-15
 hb3: DISTANCE ATOMS=@O6-2,@N4-15
@@ -53,7 +53,7 @@ The last example shows you how you can use MOLINFO to calculate torsion angles
 
 ```plumed
 #SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
-MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
+MOLINFO MOLTYPE=protein STRUCTURE=regtest/basic/rt32/helix.pdb
 t1: TORSION ATOMS=@phi-3
 t2: TORSION ATOMS=@psi-4
 PRINT ARG=t1,t2 FILE=colvar STRIDE=10
@@ -205,7 +205,8 @@ Finally, notice that some shortcuts are available even when you not using the MO
 Since PLUMED 2.6 it is possible to use the expressive selection syntax of [mdtraj](http://mdtraj.org/latest/atom_selection.html) and/or [MDAnalysis](https://www.mdanalysis.org/docs/documentation_pages/selections.html):
 
 ```plumed
-MOLINFO STRUCTURE=helix.pdb PYTHON_BIN=python
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
+MOLINFO STRUCTURE=regtest/basic/rt32/helix.pdb PYTHON_BIN=python
 g1: GROUP ATOMS=@mda:backbone
 g2: GROUP ATOMS={@mda:{resnum 1 or resid 3:5}}
 #g3: GROUP ATOMS={@mda:{resid 3:5} @mda:{resnum 1}}

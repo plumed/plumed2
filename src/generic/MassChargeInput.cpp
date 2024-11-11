@@ -49,7 +49,7 @@ The first column of numbers is a numerical index, the second column is the masse
 You can read masses and charges from a PDB file instead by using an input like the one shown below:
 
 ```plumed
-#SETTINGS INPUTFILES=regtest/basic/rt-readmasscharge/test.pdb
+#SETTINGS NATOMS=108 INPUTFILES=regtest/basic/rt-readmasscharge/test.pdb
 mq: READMASSCHARGE PDBFILE=regtest/basic/rt-readmasscharge/test.pdb
 ```
 

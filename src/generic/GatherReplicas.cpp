@@ -42,6 +42,7 @@ working the vectors of values.  You then use this action to average over replica
 example shown below.
 
 ```plumed
+#SETTINGS NREPLICAS=2
 # Calculate distance between atoms 1 and 2 on for all 2 replicas
 d: DISTANCE ATOMS=1,2
 # Now gather the values of this distance on all the replicas:
@@ -55,6 +56,7 @@ PRINT ARG=s FILE=colvar
 Now suppose that we wanted to calculate a time average of the distance and an average over the replicas.  We could use an input like this:
 
 ```plumed
+#SETTINGS NREPLICAS=2
 d: DISTANCE ATOMS=1,2
 g: GATHER_REPLICAS ARG=d
 s: COMBINE ARG=g.rep-0,g.rep-1 COEFFICIENTS=0.5,0.5 PERIODIC=NO

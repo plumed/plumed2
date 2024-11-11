@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "LessThan.h"
 #include "FunctionShortcut.h"
+#include "FunctionOfScalar.h"
 #include "FunctionOfVector.h"
 #include "FunctionOfMatrix.h"
 #include "core/ActionRegister.h"
@@ -196,6 +197,8 @@ Transform all the elements of a matrix using a switching function that is one wh
 
 typedef FunctionShortcut<LessThan> LessThanShortcut;
 PLUMED_REGISTER_ACTION(LessThanShortcut,"LESS_THAN")
+typedef FunctionOfScalar<LessThan> ScalarLessThan;
+PLUMED_REGISTER_ACTION(ScalarLessThan,"LESS_THAN_SCALAR")
 typedef FunctionOfVector<LessThan> VectorLessThan;
 PLUMED_REGISTER_ACTION(VectorLessThan,"LESS_THAN_VECTOR")
 typedef FunctionOfMatrix<LessThan> MatrixLessThan;

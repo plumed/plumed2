@@ -30,7 +30,7 @@ This action has been depracated as the same result can be be achieved using [DUM
 at the expanded version of the shortct in the example input below:
 
 ```plumed
-c1: COORDINATION SPECIES=1-100 SWITCH={RATIONAL R_0=0.1}
+c1: COORDINATIONNUMBER SPECIES=1-100 SWITCH={RATIONAL R_0=0.1}
 DUMPMULTICOLVAR DATA=dd FILE=coords.xyz
 ```
 

@@ -70,7 +70,7 @@ PRINT ARG=c1,c2,c3,c4,c5 FILE=five_scalars
 Lastly, if you want to create a constant $2\times 3$ matrix you would use an input like the one below:
 
 ```plumed
-c: CONSTANT VALUE=1,2,3,4,5,6 NROWS=2 NCOLS=3
+c: CONSTANT VALUES=1,2,3,4,5,6 NROWS=2 NCOLS=3
 PRINT ARG=c FILE=matrix
 ```
 

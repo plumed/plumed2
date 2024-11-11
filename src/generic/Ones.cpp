@@ -33,7 +33,7 @@ The following input creates and outputs a constant vector with 10 elements that 
 
 ```plumed
 ones: ONES SIZE=10
-PRINT ARG=ones FILES=onesfile
+PRINT ARG=ones FILE=onesfile
 ```
 
 Notice that the ONES action is a shortcut to [CONSTANT](CONSTANT.md).

@@ -106,7 +106,7 @@ You can also enforce the output file type by using the `TYPE` keyword as shown b
 
 ```plumed
 c1: COM ATOMS=11-20 
-DUMPATOMS STRIDE=10 FILE=file.xyz ATOMS=1-10,c1 UNITS=A TYPE=gro
+DUMPATOMS STRIDE=10 FILE=file.xyz ATOMS=1-10,c1 TYPE=gro
 FLUSH STRIDE=1
 ```
 
@@ -120,7 +120,7 @@ your input file as shown below:
 ```plumed
 #SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 # this is required to have proper atom names:
-MOLINFO STRUCTURE=regtest/basic/rt32/reference.pdb
+MOLINFO STRUCTURE=regtest/basic/rt32/helix.pdb
 # if omitted, atoms will have "X" name...
 
 c1: COM ATOMS=11-20 

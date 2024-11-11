@@ -43,7 +43,7 @@ The following example illustrates how this action can be used to read a set of r
 
 ```plumed
 #SETTINGS INPUTFILES=regtest/basic/rt19/test0.pdb
-ref: PDB2CONSTANT FILE=regtest/basic/rt19/test0.pdb
+ref: PDB2CONSTANT REFERENCE=regtest/basic/rt19/test0.pdb
 ```
 
 You can see how the reference positions are converted to [CONSTANT](CONSTANT.md) action that outputs a vector by expanding the shortcut.
@@ -52,7 +52,7 @@ You can also use this command to read in multiple reference positions as illustr
 
 ```plumed
 #SETTINGS INPUTFILES=regtest/mapping/rt-pathtools-3/all.pdb
-ref: PDB2CONSTANT FILE=regtest/mapping/rt-pathtools-3/all.pdb
+ref: PDB2CONSTANT REFERENCE=regtest/mapping/rt-pathtools-3/all.pdb
 ```
 
 The [CONSTANT](CONSTANT.md) that is created by this action is a matrix. Each row of the output matrix contains one set of reference positions.
@@ -61,7 +61,7 @@ keyword to specify the particular configuration that you would like to read in a
 
 ```plumed
 #SETTINGS INPUTFILES=regtest/mapping/rt-pathtools-3/all.pdb
-ref: PDB2CONSTANT FILE=regtest/mapping/rt-pathtools-3/all.pdb NUMBER=4
+ref: PDB2CONSTANT REFERENCE=regtest/mapping/rt-pathtools-3/all.pdb NUMBER=4
 ```
 
 The input above will reads in the fourth configuration in the input PDB file only.
@@ -123,8 +123,8 @@ You can read in these reference values by using the PDB2CONSTANT command as foll
 
 ```plumed
 #SETTINGS INPUTFILES=regtest/mapping/rt-pathtools-4/epath.pdb
-t1_ref: PDB2CONSTANT FILE=regtest/mapping/rt-pathtools-4/epath.pdb ARG=t1
-t2_ref: PDB2CONSTANT FILE=regtest/mapping/rt-pathtools-4/epath.pdb ARG=t2
+t1_ref: PDB2CONSTANT REFERENCE=regtest/mapping/rt-pathtools-4/epath.pdb ARG=t1
+t2_ref: PDB2CONSTANT REFERENCE=regtest/mapping/rt-pathtools-4/epath.pdb ARG=t2
 ``` 
 
 Notice that separate PDB2CONSTANT commands are required for reading in `t1` and `t2`.  Furthermore, because the 
