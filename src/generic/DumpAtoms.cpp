@@ -140,7 +140,7 @@ If the xdrfile library is installed properly the PLUMED configure script should 
 detect it and enable it.  The following example shows how you can use DUMPATOMS to output an xtc file:
 
 ```plumed
-c1: COM ATOMS=11-20 LABEL=c1
+c1: COM ATOMS=11-20
 DUMPATOMS STRIDE=10 FILE=file.xtc ATOMS=1-10,c1
 ```
 

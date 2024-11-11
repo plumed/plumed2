@@ -123,11 +123,14 @@ You can read in these reference values by using the PDB2CONSTANT command as foll
 
 ```plumed
 #SETTINGS INPUTFILES=regtest/mapping/rt-pathtools-4/epath.pdb
+t1: TORSION ATOMS=1,2,3,4
+t2: TORSION ATOMS=5,6,7,8
 t1_ref: PDB2CONSTANT REFERENCE=regtest/mapping/rt-pathtools-4/epath.pdb ARG=t1
 t2_ref: PDB2CONSTANT REFERENCE=regtest/mapping/rt-pathtools-4/epath.pdb ARG=t2
 ``` 
 
-Notice that separate PDB2CONSTANT commands are required for reading in `t1` and `t2`.  Furthermore, because the 
+Notice that the input must define values with the labels that are being read in from the reference file
+and that separate PDB2CONSTANT commands are required for reading in `t1` and `t2`.  Furthermore, because the 
 input PDB file contains multiple frames vectors containing all the values for `t1` and `t2` are output from 
 the constant commands that are created by the shortcuts in the above input.  If you want to read only one of the 
 configurations in the input PDB file you can use a pdb with a single frame or the `NUMBER` keyword described above.

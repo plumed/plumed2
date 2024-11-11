@@ -48,7 +48,7 @@ d: DISTANCE ATOMS=1,2
 # Now gather the values of this distance on all the replicas:
 g: GATHER_REPLICAS ARG=d
 # Now average the two distances on the two replicas
-s: COMBINE ARG=g.rep-0,g.rep-1 COEFFICIENTS=0.5,0.5 PERIODIC=NO
+s: COMBINE ARG=g.rep-1,g.rep-2 COEFFICIENTS=0.5,0.5 PERIODIC=NO
 # And print the instaneous average for the distance on the two replicas
 PRINT ARG=s FILE=colvar
 ```
@@ -59,7 +59,7 @@ Now suppose that we wanted to calculate a time average of the distance and an av
 #SETTINGS NREPLICAS=2
 d: DISTANCE ATOMS=1,2
 g: GATHER_REPLICAS ARG=d
-s: COMBINE ARG=g.rep-0,g.rep-1 COEFFICIENTS=0.5,0.5 PERIODIC=NO
+s: COMBINE ARG=g.rep-1,g.rep-2 COEFFICIENTS=0.5,0.5 PERIODIC=NO
 # This does the time averaging
 a: AVERAGE ARG=s 
 # And output the final average

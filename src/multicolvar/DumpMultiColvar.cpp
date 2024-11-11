@@ -31,7 +31,7 @@ at the expanded version of the shortct in the example input below:
 
 ```plumed
 c1: COORDINATIONNUMBER SPECIES=1-100 SWITCH={RATIONAL R_0=0.1}
-DUMPMULTICOLVAR DATA=dd FILE=coords.xyz
+DUMPMULTICOLVAR DATA=c1 FILE=coords.xyz
 ```
 
 */
