@@ -209,10 +209,10 @@ Since PLUMED 2.6 it is possible to use the expressive selection syntax of [mdtra
 MOLINFO STRUCTURE=regtest/basic/rt32/helix.pdb PYTHON_BIN=python
 g1: GROUP ATOMS=@mda:backbone
 g2: GROUP ATOMS={@mda:{resnum 1 or resid 3:5}}
-#g3: GROUP ATOMS={@mda:{resid 3:5} @mda:{resnum 1}}
-#g4: GROUP ATOMS={@mdt:{protein and (backbone or resname ALA)}}
-#g5: GROUP ATOMS={@mdt:{mass 5.5 to 20}} # masses guessed by mdtraj based on atom type!
-#g6: GROUP ATOMS={@mda:{resid 3:5} @mda:{resnum 1} 1-10}
+g3: GROUP ATOMS={@mda:{resid 3:5} @mda:{resnum 1}}
+g4: GROUP ATOMS={@mdt:{protein and (backbone or resname ALA)}}
+g5: GROUP ATOMS={@mdt:{mass 5.5 to 20}} # masses guessed by mdtraj based on atom type!
+g6: GROUP ATOMS={@mda:{resid 3:5} 1-10 @mda:{resnum 1}}
 ```
 
 Here `@mda:` indicates that the `MDAnalysis` language is used, whereas `@mdt:` indicates that the `mdtraj` language is used. Notice that these languages typically select atoms in order. If you want to specify a different order, you can chain definitions as in `g3` above (compare with `g2`). Selections can be also chained with standard PLUMED selections (see `g6`).
