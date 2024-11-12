@@ -35,15 +35,7 @@ The example input below shows how this command is used.
 #SETTINGS NREPLICAS=4
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
-rp: RESTRAINT ARG=phi KAPPA=50.0 ...
-  AT=@replicas:{
-        -3.00000000000000000000
-        -1.45161290322580645168
-        .09677419354838709664
-        1.64516129032258064496
-     }
-...
-
+rp: RESTRAINT ARG=phi KAPPA=50.0 AT=@replicas:{-3.00,-1.45,0.10,1.65}
 # Get the bias on each of the replicas
 rep: GATHER_REPLICAS ARG=rp.bias
 # Merge the biases on each of the replicas into a single vector

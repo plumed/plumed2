@@ -42,15 +42,7 @@ to determine a weight for each configuration in the concatenated trajectory.
 ```plumed
 #SETTINGS NREPLICAS=4
 phi: TORSION ATOMS=5,7,9,15
-rp: RESTRAINT ARG=phi KAPPA=50.0 ...
-  AT=@replicas:{
-        -3.00000000000000000000
-        -1.45161290322580645168
-        .09677419354838709664
-        1.64516129032258064496
-     }
-...
-
+rp: RESTRAINT ARG=phi KAPPA=50.0 AT=@replicas:{-3.00,-1.45,0.10,1.65}
 WHAM_WEIGHTS BIAS=rp.bias TEMP=300 FILE=wham-weights
 ```
 
