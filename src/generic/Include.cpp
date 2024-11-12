@@ -59,7 +59,7 @@ PRINT ARG=d
 
 Notice that you can see the contents of pippo.dat by clicking on the name of the file
 
-## Using INCLUDE to define replicas
+## Using INCLUDE to define groups
 
 Using INCLUDE for the input in the previous section is rather pointless as the included file is rather short.
 In a case like the one shown below the INCLUDE command is much more useful:
