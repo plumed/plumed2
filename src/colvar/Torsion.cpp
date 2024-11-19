@@ -116,13 +116,13 @@ class Torsion : public Colvar {
 public:
   explicit Torsion(const ActionOptions&);
   static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
-  static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
-  static void calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                           std::vector<Tensor>& virial, const ActionAtomistic* aa );
   static void registerKeywords(Keywords& keys);
+  enum class torsionModes {
+    torsion,cosine
+  };
+  MULTICOLVAR_SETTINGS(torsionModes);
 };
 
 typedef ColvarShortcut<Torsion> TorsionShortcut;
@@ -168,8 +168,10 @@ Torsion::Torsion(const ActionOptions&ao):
     log.printf("  between lines %d-%d and %d-%d, projected on the plane orthogonal to line %d-%d\n",
                v1[0].serial(),v1[1].serial(),v2[0].serial(),v2[1].serial(),axis[0].serial(),axis[1].serial());
   } else parseAtomList(-1,atoms,this);
-  unsigned mode=getModeAndSetupValues(this);
-  if( mode==1 ) do_cosine=true;
+  Modetype mode=getModeAndSetupValues(this);
+  if( mode==Modetype::cosine ) {
+    do_cosine=true;
+  }
 
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
@@ -213,25 +215,37 @@ void Torsion::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionA
   } else if( t.size()!=4 ) aa->error("ATOMS should specify 4 atoms");
 }
 
-unsigned Torsion::getModeAndSetupValues( ActionWithValue* av ) {
-  bool do_cos; av->parseFlag("COSINE",do_cos);
-  if(do_cos) av->log.printf("  calculating cosine instead of torsion\n");
-
+Torsion::Modetype Torsion::getModeAndSetupValues( ActionWithValue* av ) {
+  bool do_cos;
+  av->parseFlag("COSINE",do_cos);
   av->addValueWithDerivatives();
-  if(!do_cos) { av->setPeriodic("-pi","pi"); return 0; }
-  av->setNotPeriodic(); return 1;
+  if(do_cos) {
+    av->log.printf("  calculating cosine instead of torsion\n");
+    av->setNotPeriodic();
+    return Modetype::cosine;
+  }
+  av->setPeriodic("-pi","pi");
+  return Modetype::torsion;
 }
 
 // calculator
 void Torsion::calculate() {
-  if(pbc) makeWhole();
-  if(do_cosine) calculateCV( 1, masses, charges, getPositions(), value, derivs, virial, this );
-  else calculateCV( 0, masses, charges, getPositions(), value, derivs, virial, this );
-  for(unsigned i=0; i<6; ++i) setAtomsDerivatives(i,derivs[0][i] );
-  setValue(value[0]); setBoxDerivatives( virial[0] );
+  if(pbc) {
+    makeWhole();
+  }
+  if(do_cosine) {
+    calculateCV( Modetype::cosine, masses, charges, getPositions(), value, derivs, virial, this );
+  } else {
+    calculateCV( Modetype::torsion, masses, charges, getPositions(), value, derivs, virial, this );
+  }
+  for(unsigned i=0; i<6; ++i) {
+    setAtomsDerivatives(i,derivs[0][i] );
+  }
+  setValue(value[0]);
+  setBoxDerivatives( virial[0] );
 }
 
-void Torsion::calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
+void Torsion::calculateCV( Modetype mode, const std::vector<double>& masses, const std::vector<double>& charges,
                            const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
                            std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
   Vector d0=delta(pos[1],pos[0]);
@@ -240,7 +254,7 @@ void Torsion::calculateCV( const unsigned& mode, const std::vector<double>& mass
   Vector dd0,dd1,dd2;
   PLMD::Torsion t;
   vals[0] = t.compute(d0,d1,d2,dd0,dd1,dd2);
-  if(mode==1) {
+  if(mode==Modetype::cosine) {
     dd0 *= -std::sin(vals[0]);
     dd1 *= -std::sin(vals[0]);
     dd2 *= -std::sin(vals[0]);

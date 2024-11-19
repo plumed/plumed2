@@ -27,11 +27,47 @@
 namespace PLMD {
 namespace colvar {
 
-template <class T>
+namespace multiColvars {
+struct emptyMode {};
+enum class components {
+  withCompontents,
+  noComponents
+};
+enum class plainOrScaled {
+  scaled,
+  plain
+};
+enum class scaledComponents {
+  withCompontents,
+  scaledComponents,
+  noComponents
+};
+}
+#define MULTICOLVAR_SETTINGS_MODE(type) using  Modetype=type
+#define MULTICOLVAR_SETTINGS_SETUPF() static Modetype getModeAndSetupValues( ActionWithValue* av )
+#define MULTICOLVAR_SETTINGS_CALCULATE_CONST() static void calculateCV( Modetype mode, \
+                          const std::vector<double>& masses, \
+                          const std::vector<double>& charges, \
+                          const std::vector<Vector>& pos, \
+                          std::vector<double>& vals, \
+                          std::vector<std::vector<Vector> >& derivs,\
+                          std::vector<Tensor>& virial, \
+                          const ActionAtomistic* aa )
+
+#define MULTICOLVAR_SETTINGS(type) MULTICOLVAR_SETTINGS_MODE(type); \
+          MULTICOLVAR_SETTINGS_SETUPF(); \
+          MULTICOLVAR_SETTINGS_CALCULATE_CONST()
+
+
+
+//^no ';' here so that the macro will "consume" it and not generate a double semicolon error
+
+template <class Colvar>
 class MultiColvarTemplate : public ActionWithVector {
 private:
+  using Modetype =typename Colvar::Modetype;
 /// An index that decides what we are calculating
-  unsigned mode;
+  Modetype mode;
 /// Are we using pbc to calculate the CVs
   bool usepbc;
 /// Do we reassemble the molecule
@@ -48,9 +84,9 @@ public:
   void calculate() override;
 };
 
-template <class T>
-void MultiColvarTemplate<T>::registerKeywords(Keywords& keys ) {
-  T::registerKeywords( keys );
+template <class Colvar>
+void MultiColvarTemplate<Colvar>::registerKeywords(Keywords& keys ) {
+  Colvar::registerKeywords( keys );
   keys.add("optional","MASK","the label for a sparse matrix that should be used to determine which elements of the matrix should be computed");
   unsigned nkeys = keys.size();
   for(unsigned i=0; i<nkeys; ++i) {
@@ -59,11 +95,11 @@ void MultiColvarTemplate<T>::registerKeywords(Keywords& keys ) {
   if( keys.outputComponentExists(".#!value") ) keys.setValueDescription("the " + keys.getDisplayName() + " for each set of specified atoms");
 }
 
-template <class T>
-MultiColvarTemplate<T>::MultiColvarTemplate(const ActionOptions&ao):
+template <class Colvar>
+MultiColvarTemplate<Colvar>::MultiColvarTemplate(const ActionOptions&ao):
   Action(ao),
   ActionWithVector(ao),
-  mode(0),
+  mode(),
   usepbc(true),
   wholemolecules(false)
 {
@@ -75,7 +111,7 @@ MultiColvarTemplate<T>::MultiColvarTemplate(const ActionOptions&ao):
   } else {
     std::vector<AtomNumber> t;
     for(int i=1;; ++i ) {
-      T::parseAtomList( i, t, this );
+      Colvar::parseAtomList( i, t, this );
       if( t.empty() ) break;
 
       if( i==1 ) { ablocks.resize(t.size()); }
@@ -103,36 +139,40 @@ MultiColvarTemplate<T>::MultiColvarTemplate(const ActionOptions&ao):
   else    log.printf("  without periodic boundary conditions\n");
 
   // Setup the values
-  mode = T::getModeAndSetupValues( this );
+  mode = Colvar::getModeAndSetupValues( this );
 }
 
-template <class T>
-unsigned MultiColvarTemplate<T>::getNumberOfDerivatives() {
+template <class Colvar>
+unsigned MultiColvarTemplate<Colvar>::getNumberOfDerivatives() {
   return 3*getNumberOfAtoms()+9;
 }
 
-template <class T>
-void MultiColvarTemplate<T>::calculate() {
+template <class Colvar>
+void MultiColvarTemplate<Colvar>::calculate() {
   if( wholemolecules ) makeWhole();
   runAllTasks();
 }
 
-template <class T>
-void MultiColvarTemplate<T>::addValueWithDerivatives( const std::vector<unsigned>& shape ) {
+template <class Colvar>
+void MultiColvarTemplate<Colvar>::addValueWithDerivatives( const std::vector<unsigned>& shape ) {
   std::vector<unsigned> s(1); s[0]=ablocks[0].size(); addValue( s );
 }
 
-template <class T>
-void MultiColvarTemplate<T>::addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape ) {
+template <class Colvar>
+void MultiColvarTemplate<Colvar>::addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape ) {
   std::vector<unsigned> s(1); s[0]=ablocks[0].size(); addComponent( name, s );
 }
 
-template <class T>
-void MultiColvarTemplate<T>::performTask( const unsigned& task_index, MultiValue& myvals ) const {
+template <class Colvar>
+void MultiColvarTemplate<Colvar>::performTask( const unsigned& task_index, MultiValue& myvals ) const {
   // Retrieve the positions
   std::vector<Vector> & fpositions( myvals.getFirstAtomVector() );
-  if( fpositions.size()!=ablocks.size() ) fpositions.resize( ablocks.size() );
-  for(unsigned i=0; i<ablocks.size(); ++i) fpositions[i] = getPosition( ablocks[i][task_index] );
+  if( fpositions.size()!=ablocks.size() ) {
+    fpositions.resize( ablocks.size() );
+  }
+  for(unsigned i=0; i<ablocks.size(); ++i) {
+    fpositions[i] = getPosition( ablocks[i][task_index] );
+  }
   // If we are using pbc make whole
   if( usepbc ) {
     if( fpositions.size()==1 ) {
@@ -143,23 +183,36 @@ void MultiColvarTemplate<T>::performTask( const unsigned& task_index, MultiValue
         second=first+pbcDistance(first,second);
       }
     }
-  } else if( fpositions.size()==1 ) fpositions[0]=delta(Vector(0.0,0.0,0.0),getPosition( ablocks[0][task_index] ) );
+  } else if( fpositions.size()==1 ) {
+    fpositions[0]=delta(Vector(0.0,0.0,0.0),getPosition( ablocks[0][task_index] ) );
+  }
   // Retrieve the masses and charges
   myvals.resizeTemporyVector(2);
   std::vector<double> & mass( myvals.getTemporyVector(0) );
   std::vector<double> & charge( myvals.getTemporyVector(1) );
-  if( mass.size()!=ablocks.size() ) { mass.resize(ablocks.size()); charge.resize(ablocks.size()); }
-  for(unsigned i=0; i<ablocks.size(); ++i) { mass[i]=getMass( ablocks[i][task_index] ); charge[i]=getCharge( ablocks[i][task_index] ); }
+  if( mass.size()!=ablocks.size() ) {
+    mass.resize(ablocks.size());
+    charge.resize(ablocks.size());
+  }
+  for(unsigned i=0; i<ablocks.size(); ++i) {
+    mass[i]=getMass( ablocks[i][task_index] );
+    charge[i]=getCharge( ablocks[i][task_index] );
+  }
   // Make some space to store various things
   std::vector<double> values( getNumberOfComponents() );
   std::vector<Tensor> & virial( myvals.getFirstAtomVirialVector() );
   std::vector<std::vector<Vector> > & derivs( myvals.getFirstAtomDerivativeVector() );
-  if( derivs.size()!=values.size() ) { derivs.resize( values.size() ); virial.resize( values.size() ); }
+  if( derivs.size()!=values.size() ) {
+    derivs.resize( values.size() );
+    virial.resize( values.size() );
+  }
   for(unsigned i=0; i<derivs.size(); ++i) {
-    if( derivs[i].size()<ablocks.size() ) derivs[i].resize( ablocks.size() );
+    if( derivs[i].size()<ablocks.size() ) {
+      derivs[i].resize( ablocks.size() );
+    }
   }
   // Calculate the CVs using the method in the Colvar
-  T::calculateCV( mode, mass, charge, fpositions, values, derivs, virial, this );
+  Colvar::calculateCV( mode, mass, charge, fpositions, values, derivs, virial, this );
   for(unsigned i=0; i<values.size(); ++i) myvals.setValue( i, values[i] );
   // Finish if there are no derivatives
   if( doNotCalculateDerivatives() ) return;

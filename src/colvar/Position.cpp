@@ -100,12 +100,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Position(const ActionOptions&);
   static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
-  static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
-  static void calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                           std::vector<Tensor>& virial, const ActionAtomistic* aa );
+  MULTICOLVAR_SETTINGS(multiColvars::plainOrScaled);
 };
 
 typedef ColvarShortcut<Position> PositionShortcut;
@@ -139,8 +136,10 @@ Position::Position(const ActionOptions&ao):
 {
   for(unsigned i=0; i<3; ++i) derivs[i].resize(1);
   std::vector<AtomNumber> atoms; parseAtomList(-1,atoms,this);
-  unsigned mode=getModeAndSetupValues(this);
-  if( mode==1 ) scaled_components=true;
+  Modetype mode=getModeAndSetupValues(this);
+  if( mode==Modetype::scaled ) {
+    scaled_components=true;
+  }
 
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
@@ -159,19 +158,20 @@ void Position::parseAtomList( const int& num, std::vector<AtomNumber>& t, Action
   else if( num<0 || t.size()!=0 ) aa->error("Number of specified atoms should be 1");
 }
 
-unsigned Position::getModeAndSetupValues( ActionWithValue* av ) {
-  bool sc; av->parseFlag("SCALED_COMPONENTS",sc);
+Position::Modetype Position::getModeAndSetupValues( ActionWithValue* av ) {
+  bool sc;
+  av->parseFlag("SCALED_COMPONENTS",sc);
   if(sc) {
     av->addComponentWithDerivatives("a"); av->componentIsPeriodic("a","-0.5","+0.5");
     av->addComponentWithDerivatives("b"); av->componentIsPeriodic("b","-0.5","+0.5");
     av->addComponentWithDerivatives("c"); av->componentIsPeriodic("c","-0.5","+0.5");
-    return 1;
+    return Modetype::scaled;
   }
   av->addComponentWithDerivatives("x"); av->componentIsNotPeriodic("x");
   av->addComponentWithDerivatives("y"); av->componentIsNotPeriodic("y");
   av->addComponentWithDerivatives("z"); av->componentIsNotPeriodic("z");
   av->log<<"  WARNING: components will not have the proper periodicity - see manual\n";
-  return 0;
+  return Modetype::plain;
 }
 
 // calculator
@@ -185,7 +185,7 @@ void Position::calculate() {
   }
 
   if(scaled_components) {
-    calculateCV( 1, masses, charges, distance, value, derivs, virial, this );
+    calculateCV( Modetype::scaled, masses, charges, distance, value, derivs, virial, this );
     Value* valuea=getPntrToComponent("a");
     Value* valueb=getPntrToComponent("b");
     Value* valuec=getPntrToComponent("c");
@@ -196,7 +196,7 @@ void Position::calculate() {
     setAtomsDerivatives (valuec,0,derivs[2][0]);
     valuec->set(value[2]);
   } else {
-    calculateCV( 0, masses, charges, distance, value, derivs, virial, this );
+    calculateCV( Modetype::plain, masses, charges, distance, value, derivs, virial, this );
     Value* valuex=getPntrToComponent("x");
     Value* valuey=getPntrToComponent("y");
     Value* valuez=getPntrToComponent("z");
@@ -215,10 +215,10 @@ void Position::calculate() {
   }
 }
 
-void Position::calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
+void Position::calculateCV( Modetype mode, const std::vector<double>& masses, const std::vector<double>& charges,
                             const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
                             std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
-  if( mode==1 ) {
+  if( mode==Modetype::scaled ) {
     Vector d=aa->getPbc().realToScaled(pos[0]);
     vals[0]=Tools::pbc(d[0]); vals[1]=Tools::pbc(d[1]); vals[2]=Tools::pbc(d[2]);
     derivs[0][0]=matmul(aa->getPbc().getInvBox(),Vector(+1,0,0));

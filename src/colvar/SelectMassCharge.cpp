@@ -87,12 +87,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit SelectMassCharge(const ActionOptions&);
   static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
-  static unsigned getModeAndSetupValues( ActionWithValue* av );
 // active methods:
   void calculate() override;
-  static void calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                           std::vector<Tensor>& virial, const ActionAtomistic* aa );
+  MULTICOLVAR_SETTINGS(multiColvars::emptyMode);
 };
 
 typedef ColvarShortcut<SelectMassCharge> MQShortcut;
@@ -118,7 +115,7 @@ SelectMassCharge::SelectMassCharge(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao)
 {
   std::vector<AtomNumber> atoms; parseAtomList(-1,atoms,this);
-  unsigned mode=getModeAndSetupValues(this);
+  /*Modetype mode=*/getModeAndSetupValues(this);
   requestAtoms(atoms);
 }
 
@@ -128,7 +125,7 @@ void SelectMassCharge::parseAtomList( const int& num, std::vector<AtomNumber>& t
   else if( num<0 || t.size()!=0 ) aa->error("Number of specified atoms should be 1");
 }
 
-unsigned SelectMassCharge::getModeAndSetupValues( ActionWithValue* av ) {
+SelectMassCharge::Modetype SelectMassCharge::getModeAndSetupValues( ActionWithValue* av ) {
   av->addValueWithDerivatives(); av->setNotPeriodic(); bool constant=true;
   ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>( av ); plumed_assert( aa );
   for(unsigned i=0; i<aa->getNumberOfAtoms(); ++i) {
@@ -138,21 +135,24 @@ unsigned SelectMassCharge::getModeAndSetupValues( ActionWithValue* av ) {
   }
   if( !constant ) av->error("cannot deal with non-constant " + av->getName() + " values");
   (av->copyOutput(0))->setConstant();
-  return 0;
+  return {};
 }
 
 // calculator
 void SelectMassCharge::calculate() {
   std::vector<double> masses(1), charges(1), vals(1);
   std::vector<Vector> pos; std::vector<std::vector<Vector> > derivs; std::vector<Tensor> virial;
-  calculateCV( 0, masses, charges, pos, vals, derivs, virial, this ); setValue( vals[0] );
+  calculateCV( {}, masses, charges, pos, vals, derivs, virial, this ); setValue( vals[0] );
 }
 
-void SelectMassCharge::calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
+void SelectMassCharge::calculateCV( Modetype /*mode*/, const std::vector<double>& masses, const std::vector<double>& charges,
                                     const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
                                     std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
-  if( aa->getName().find("MASSES")!=std::string::npos ) vals[0]=masses[0];
-  else if( aa->chargesWereSet ) vals[0]=charges[0];
+  if( aa->getName().find("MASSES")!=std::string::npos ) {
+    vals[0]=masses[0];
+  } else if( aa->chargesWereSet ) {
+    vals[0]=charges[0];
+  }
 }
 
 }

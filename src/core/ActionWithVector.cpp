@@ -277,12 +277,16 @@ void ActionWithVector::getNumberOfTasks( unsigned& ntasks ) {
 
 void ActionWithVector::runTask( const unsigned& current, MultiValue& myvals ) const {
   const ActionWithMatrix* am = dynamic_cast<const ActionWithMatrix*>(this);
-  myvals.setTaskIndex(current); myvals.vector_call=true; performTask( current, myvals );
+  myvals.setTaskIndex(current);
+  myvals.vector_call=true;
+  performTask( current, myvals );
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
     const Value* myval = getConstPntrToComponent(i);
-    if( am || myval->hasDerivatives() ) continue;
+    if( am || myval->hasDerivatives() )
+      continue;
     Value* myv = const_cast<Value*>( myval );
-    if( getName()=="RMSD_VECTOR" && myv->getRank()==2 ) continue;
+    if( getName()=="RMSD_VECTOR" && myv->getRank()==2 )
+      continue;
     myv->set( current, myvals.get( i ) );
   }
 }

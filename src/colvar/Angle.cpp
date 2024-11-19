@@ -104,15 +104,13 @@ class Angle : public Colvar {
   std::vector<std::vector<Vector> > derivs;
   std::vector<Tensor> virial;
 public:
+  MULTICOLVAR_SETTINGS(multiColvars::emptyMode);
   explicit Angle(const ActionOptions&);
 // active methods:
   void calculate() override;
   static void registerKeywords( Keywords& keys );
   static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
-  static unsigned getModeAndSetupValues( ActionWithValue* av );
-  static void calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                           std::vector<Tensor>& virial, const ActionAtomistic* aa );
+
 };
 
 typedef ColvarShortcut<Angle> AngleShortcut;
@@ -140,8 +138,10 @@ void Angle::parseAtomList( const int& num, std::vector<AtomNumber>& atoms, Actio
   } else if( num<0 || atoms.size()>0 ) aa->error("Number of specified atoms should be either 3 or 4");
 }
 
-unsigned Angle::getModeAndSetupValues( ActionWithValue* av ) {
-  av->addValueWithDerivatives(); av->setNotPeriodic(); return 0;
+Angle::Modetype Angle::getModeAndSetupValues( ActionWithValue* av ) {
+  av->addValueWithDerivatives();
+  av->setNotPeriodic();
+  return {};
 }
 
 Angle::Angle(const ActionOptions&ao):
@@ -169,19 +169,21 @@ Angle::Angle(const ActionOptions&ao):
 void Angle::calculate() {
 
   if(pbc) makeWhole();
-  calculateCV( 0, masses, charges, getPositions(), value, derivs, virial, this );
+  calculateCV( {}, masses, charges, getPositions(), value, derivs, virial, this );
   setValue( value[0] );
-  for(unsigned i=0; i<derivs[0].size(); ++i) setAtomsDerivatives( i, derivs[0][i] );
+  for(unsigned i=0; i<derivs[0].size(); ++i)
+    setAtomsDerivatives( i, derivs[0][i] );
   setBoxDerivatives( virial[0] );
 }
 
-void Angle::calculateCV( const unsigned& mode, const std::vector<double>& masses, const std::vector<double>& charges,
+void Angle::calculateCV( Modetype /*mode*/, const std::vector<double>& /*masses*/, const std::vector<double>& /*charges*/,
                          const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                         std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
+                         std::vector<Tensor>& virial, const ActionAtomistic* /*aa*/ ) {
   Vector dij,dik;
   dij=delta(pos[2],pos[3]);
   dik=delta(pos[1],pos[0]);
-  Vector ddij,ddik; PLMD::Angle a;
+  Vector ddij,ddik;
+  PLMD::Angle a;
   vals[0]=a.compute(dij,dik,ddij,ddik);
   derivs[0][0]=ddik; derivs[0][1]=-ddik;
   derivs[0][2]=-ddij; derivs[0][3]=ddij;

@@ -361,7 +361,7 @@ void Value::print( OFile& ofile ) const {
 
 void Value::printForce( OFile& ofile ) const {
   if( shape.size()==0 || getNumberOfValues()==1 ) {
-    ofile.printField( name, getForce(0) ); 
+    ofile.printField( name, getForce(0) );
   } else {
     std::vector<unsigned> indices( shape.size() );
     for(unsigned i=0; i<getNumberOfValues(); ++i) {
@@ -371,7 +371,7 @@ void Value::printForce( OFile& ofile ) const {
       ofile.printField( fname,  getForce(i) );
     }
   }
-} 
+}
 
 unsigned Value::getGoodNumThreads( const unsigned& j, const unsigned& k ) const {
   return OpenMP::getGoodNumThreads( &data[j], (k-j) );
