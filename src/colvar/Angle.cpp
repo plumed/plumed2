@@ -104,12 +104,11 @@ class Angle : public Colvar {
   std::vector<std::vector<Vector> > derivs;
   std::vector<Tensor> virial;
 public:
-  MULTICOLVAR_SETTINGS(multiColvars::emptyMode);
+  MULTICOLVAR_DEFAULT(multiColvars::emptyMode);
   explicit Angle(const ActionOptions&);
 // active methods:
   void calculate() override;
   static void registerKeywords( Keywords& keys );
-  static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
 
 };
 
@@ -126,7 +125,7 @@ void Angle::registerKeywords( Keywords& keys ) {
   keys.setValueDescription("the ANGLE involving these atoms");
 }
 
-void Angle::parseAtomList( const int& num, std::vector<AtomNumber>& atoms, ActionAtomistic* aa ) {
+void Angle::parseAtomList( int const num, std::vector<AtomNumber>& atoms, ActionAtomistic* aa ) {
   aa->parseAtomList("ATOMS",num,atoms);
   if(atoms.size()==3) {
     aa->log.printf("  between atoms %d %d %d\n",atoms[0].serial(),atoms[1].serial(),atoms[2].serial());

@@ -68,11 +68,9 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit Plane(const ActionOptions&);
-  static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
-
 // active methods:
   void calculate() override;
-  MULTICOLVAR_SETTINGS(multiColvars::emptyMode);
+  MULTICOLVAR_DEFAULT(multiColvars::emptyMode);
 };
 
 typedef ColvarShortcut<Plane> PlaneShortcut;
@@ -90,7 +88,7 @@ void Plane::registerKeywords( Keywords& keys ) {
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
 }
 
-void Plane::parseAtomList( const int& num, std::vector<AtomNumber>& atoms, ActionAtomistic* aa ) {
+void Plane::parseAtomList( int const num, std::vector<AtomNumber>& atoms, ActionAtomistic* aa ) {
   aa->parseAtomList("ATOMS",num,atoms);
   if(atoms.size()==3) {
     aa->log.printf("  containing atoms %d %d %d\n",atoms[0].serial(),atoms[1].serial(),atoms[2].serial());

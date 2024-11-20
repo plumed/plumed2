@@ -68,10 +68,9 @@ private:
   std::vector<std::vector<Vector> > derivs;
   std::vector<Tensor> virial;
 public:
-  MULTICOLVAR_SETTINGS(multiColvars::emptyMode);
+  MULTICOLVAR_DEFAULT(multiColvars::emptyMode);
   static void registerKeywords( Keywords& keys );
   explicit DihedralCorrelation(const ActionOptions&);
-  static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
   void calculate() override;
 };
 
@@ -107,7 +106,7 @@ DihedralCorrelation::DihedralCorrelation(const ActionOptions&ao):
   else    log.printf("  without periodic boundary conditions\n");
 }
 
-void DihedralCorrelation::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
+void DihedralCorrelation::parseAtomList( int const num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
   aa->parseAtomList("ATOMS",num,t);
   if( num<0 && t.size()!=8 ) aa->error("Number of specified atoms should be 8");
   if( t.size()==8 ) {

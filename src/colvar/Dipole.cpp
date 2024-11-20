@@ -90,11 +90,9 @@ class Dipole : public Colvar {
   Value* valuez=nullptr;
 public:
   explicit Dipole(const ActionOptions&);
-  static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
   void calculate() override;
   static void registerKeywords(Keywords& keys);
-  MULTICOLVAR_SETTINGS_MODE(multiColvars::components);
-  MULTICOLVAR_SETTINGS_SETUPF();
+  MULTICOLVAR_SETTINGS_BASE(multiColvars::components);
   //Declaring this playinly becasue we are using modifying the charges
   static void calculateCV( Modetype mode,
                            const std::vector<double>& masses,
@@ -149,7 +147,7 @@ Dipole::Dipole(const ActionOptions&ao):
   requestAtoms(ga_lista);
 }
 
-void Dipole::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
+void Dipole::parseAtomList( int num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
   aa->parseAtomList("GROUP",num,t);
   if( t.size()>0 ) {
     aa->log.printf("  of %u atoms\n",static_cast<unsigned>(t.size()));

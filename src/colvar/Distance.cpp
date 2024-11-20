@@ -134,10 +134,9 @@ class Distance : public Colvar {
 public:
   static void registerKeywords( Keywords& keys );
   explicit Distance(const ActionOptions&);
-  static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
 // active methods:
   void calculate() override;
-  MULTICOLVAR_SETTINGS(multiColvars::scaledComponents);
+  MULTICOLVAR_DEFAULT(multiColvars::scaledComponents);
 };
 
 typedef ColvarShortcut<Distance> DistanceShortcut;
@@ -199,7 +198,7 @@ Distance::Distance(const ActionOptions&ao):
   requestAtoms(atoms);
 }
 
-void Distance::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
+void Distance::parseAtomList( int const num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
   aa->parseAtomList("ATOMS",num,t);
   if( t.size()==2 ) aa->log.printf("  between atoms %d %d\n",t[0].serial(),t[1].serial());
 }

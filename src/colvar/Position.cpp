@@ -99,10 +99,9 @@ class Position : public Colvar {
 public:
   static void registerKeywords( Keywords& keys );
   explicit Position(const ActionOptions&);
-  static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
 // active methods:
   void calculate() override;
-  MULTICOLVAR_SETTINGS(multiColvars::plainOrScaled);
+  MULTICOLVAR_DEFAULT(multiColvars::plainOrScaled);
 };
 
 typedef ColvarShortcut<Position> PositionShortcut;
@@ -152,7 +151,7 @@ Position::Position(const ActionOptions&ao):
   requestAtoms(atoms);
 }
 
-void Position::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
+void Position::parseAtomList(int const num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
   aa->parseAtomList("ATOM",num,t);
   if( t.size()==1 ) aa->log.printf("  for atom %d\n",t[0].serial());
   else if( num<0 || t.size()!=0 ) aa->error("Number of specified atoms should be 1");

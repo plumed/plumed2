@@ -115,14 +115,13 @@ class Torsion : public Colvar {
   std::vector<Tensor> virial;
 public:
   explicit Torsion(const ActionOptions&);
-  static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
 // active methods:
   void calculate() override;
   static void registerKeywords(Keywords& keys);
   enum class torsionModes {
     torsion,cosine
   };
-  MULTICOLVAR_SETTINGS(torsionModes);
+  MULTICOLVAR_DEFAULT(torsionModes);
 };
 
 typedef ColvarShortcut<Torsion> TorsionShortcut;
@@ -183,7 +182,7 @@ Torsion::Torsion(const ActionOptions&ao):
   requestAtoms(atoms);
 }
 
-void Torsion::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
+void Torsion::parseAtomList( int const num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
   std::vector<AtomNumber> v1,v2,axis;
   aa->parseAtomList("ATOMS",num,t);
   aa->parseAtomList("VECTORA",num,v1);

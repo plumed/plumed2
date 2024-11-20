@@ -86,10 +86,9 @@ class SelectMassCharge : public Colvar {
 public:
   static void registerKeywords( Keywords& keys );
   explicit SelectMassCharge(const ActionOptions&);
-  static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
 // active methods:
   void calculate() override;
-  MULTICOLVAR_SETTINGS(multiColvars::emptyMode);
+  MULTICOLVAR_DEFAULT(multiColvars::emptyMode);
 };
 
 typedef ColvarShortcut<SelectMassCharge> MQShortcut;
@@ -119,7 +118,7 @@ SelectMassCharge::SelectMassCharge(const ActionOptions&ao):
   requestAtoms(atoms);
 }
 
-void SelectMassCharge::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
+void SelectMassCharge::parseAtomList(  int const num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
   aa->parseAtomList("ATOM",num,t);
   if( t.size()==1 ) aa->log.printf("  for atom %d\n",t[0].serial());
   else if( num<0 || t.size()!=0 ) aa->error("Number of specified atoms should be 1");

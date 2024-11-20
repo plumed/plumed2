@@ -107,7 +107,7 @@ public:
 
 // active methods:
   void calculate() override;
-  MULTICOLVAR_SETTINGS(::PLMD::colvar::multiColvars::emptyMode);
+  MULTICOLVAR_DEFAULT(::PLMD::colvar::multiColvars::emptyMode);
 };
 
 typedef colvar::ColvarShortcut<Quaternion> QuaternionShortcut;

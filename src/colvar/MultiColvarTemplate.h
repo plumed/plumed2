@@ -43,8 +43,9 @@ enum class scaledComponents {
   noComponents
 };
 }
-#define MULTICOLVAR_SETTINGS_MODE(type) using  Modetype=type
-#define MULTICOLVAR_SETTINGS_SETUPF() static Modetype getModeAndSetupValues( ActionWithValue* av )
+#define MULTICOLVAR_SETTINGS_BASE(type) using  Modetype=type; \
+  static void parseAtomList( int num, std::vector<AtomNumber>& t, ActionAtomistic* aa ); \
+  static Modetype getModeAndSetupValues( ActionWithValue* av )
 #define MULTICOLVAR_SETTINGS_CALCULATE_CONST() static void calculateCV( Modetype mode, \
                           const std::vector<double>& masses, \
                           const std::vector<double>& charges, \
@@ -54,8 +55,7 @@ enum class scaledComponents {
                           std::vector<Tensor>& virial, \
                           const ActionAtomistic* aa )
 
-#define MULTICOLVAR_SETTINGS(type) MULTICOLVAR_SETTINGS_MODE(type); \
-          MULTICOLVAR_SETTINGS_SETUPF(); \
+#define MULTICOLVAR_DEFAULT(type) MULTICOLVAR_SETTINGS_BASE(type); \
           MULTICOLVAR_SETTINGS_CALCULATE_CONST()
 
 
@@ -106,34 +106,46 @@ MultiColvarTemplate<Colvar>::MultiColvarTemplate(const ActionOptions&ao):
   std::vector<AtomNumber> all_atoms;
   if( getName()=="POSITION_VECTOR" || getName()=="MASS_VECTOR" || getName()=="CHARGE_VECTOR" ) parseAtomList( "ATOMS", all_atoms );
   if( all_atoms.size()>0 ) {
-    ablocks.resize(1); ablocks[0].resize( all_atoms.size() );
-    for(unsigned i=0; i<all_atoms.size(); ++i) ablocks[0][i] = i;
+    ablocks.resize(1);
+    ablocks[0].resize( all_atoms.size() );
+    for(unsigned i=0; i<all_atoms.size(); ++i) {
+      ablocks[0][i] = i;
+    }
   } else {
     std::vector<AtomNumber> t;
     for(int i=1;; ++i ) {
       Colvar::parseAtomList( i, t, this );
       if( t.empty() ) break;
 
-      if( i==1 ) { ablocks.resize(t.size()); }
+      if( i==1 ) {
+        ablocks.resize(t.size());
+      }
       if( t.size()!=ablocks.size() ) {
-        std::string ss; Tools::convert(i,ss);
+        std::string ss;
+        Tools::convert(i,ss);
         error("ATOMS" + ss + " keyword has the wrong number of atoms");
       }
       for(unsigned j=0; j<ablocks.size(); ++j) {
-        ablocks[j].push_back( ablocks.size()*(i-1)+j ); all_atoms.push_back( t[j] );
+        ablocks[j].push_back( ablocks.size()*(i-1)+j );
+        all_atoms.push_back( t[j] );
       }
       t.resize(0);
     }
   }
-  if( all_atoms.size()==0 ) error("No atoms have been specified");
+  if( all_atoms.size()==0 ) {
+    error("No atoms have been specified");
+  }
   requestAtoms(all_atoms);
   if( keywords.exists("NOPBC") ) {
-    bool nopbc=!usepbc; parseFlag("NOPBC",nopbc);
+    bool nopbc=!usepbc;
+    parseFlag("NOPBC",nopbc);
     usepbc=!nopbc;
   }
   if( keywords.exists("WHOLEMOLECULES") ) {
     parseFlag("WHOLEMOLECULES",wholemolecules);
-    if( wholemolecules ) usepbc=false;
+    if( wholemolecules ) {
+      usepbc=false;
+    }
   }
   if( usepbc ) log.printf("  using periodic boundary conditions\n");
   else    log.printf("  without periodic boundary conditions\n");
