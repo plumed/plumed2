@@ -145,10 +145,10 @@ void Torsion::registerKeywords(Keywords& keys) {
 
 Torsion::Torsion(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
-  pbc(true),
   value(1),
   derivs(1),
-  virial(1)
+  virial(1),
+  pbc(true)
 {
   derivs[0].resize(6); std::vector<AtomNumber> atoms;
   std::vector<AtomNumber> v1; ActionAtomistic::parseAtomList("VECTOR1",v1);

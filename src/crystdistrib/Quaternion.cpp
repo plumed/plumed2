@@ -145,7 +145,7 @@ Quaternion::Quaternion(const ActionOptions&ao):
   requestAtoms(atoms);
 }
 
-void Quaternion::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
+void Quaternion::parseAtomList(int num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
   aa->parseAtomList("ATOMS",num,t);
   if( t.size()==3 ) aa->log.printf("  involving atoms %d %d %d\n",t[0].serial(),t[1].serial(),t[0].serial());
 }
