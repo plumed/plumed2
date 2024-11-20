@@ -43,6 +43,30 @@ enum class scaledComponents {
   noComponents
 };
 }
+/*MANUAL DRAFT
+To setup a CV compatible with multicolvartemplate you need to add
+ - A type that will be used to pass to calculateCV the calculation settings
+   - this type will be called `Modetype`
+   - using  Modetype=type;
+   - some default types are already defined in MultiColvarTemplate.h
+   - for example `using  Modetype=PLME::colvar::multiColvars::emptyMode;` when no setting inmact the calculation
+   - others predefined types are:
+     - `enum class components {withCompontents, noComponents};`
+     - `enum class plainOrScaled {scaled, plain};`
+     - `enum class scaledComponents {withCompontents, scaledComponents, noComponents};`
+ - some static function that will be called by the MultiColvarTemplate:
+   - these functions will need to match the foloowing signatures (withour the constness of the non const& arguments):
+   - `static void parseAtomList( int num, std::vector<AtomNumber>& t, ActionAtomistic* aa );`
+   - `Modetype getModeAndSetupValues( ActionWithValue* av )`
+   - `static void calculateCV( Modetype mode, const std::vector<double>& masses, const std::vector<double>& charges, const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, std::vector<Tensor>& virial, const ActionAtomistic* aa )
+     - this function will be called by MultiColvarTemplate to calculate the CV value on the inputs
+     - to avoid code repetitition you should change ::calculate() to call this function
+     - By default all the inputs are const ref, but the constedness can be changed, since the MulticolvarTemplate will pass the plain references
+ - By default you can decorate the public part of your CV wiht `MULTICOLVAR_DEFAULT(modetype here)` to "conver" the declaration of the CV in MultiColvarTemplate-compatible one, you will need to manually declare and implement the methods
+   - If you need to change some constness of the `calculateCV` signature use `MULTICOLVAR_SETTINGS_BASE(modetype here)` and then declare `calculateCV` with the desired constness in the signature (see Dipole.cpp)
+*/
+
+
 #define MULTICOLVAR_SETTINGS_BASE(type) using  Modetype=type; \
   static void parseAtomList( int num, std::vector<AtomNumber>& t, ActionAtomistic* aa ); \
   static Modetype getModeAndSetupValues( ActionWithValue* av )
@@ -119,7 +143,7 @@ MultiColvarTemplate<Colvar>::MultiColvarTemplate(const ActionOptions&ao):
 
       if( i==1 ) {
         ablocks.resize(t.size());
-      }
+        }
       if( t.size()!=ablocks.size() ) {
         std::string ss;
         Tools::convert(i,ss);
@@ -132,7 +156,7 @@ MultiColvarTemplate<Colvar>::MultiColvarTemplate(const ActionOptions&ao):
       t.resize(0);
     }
   }
-  if( all_atoms.size()==0 ) {
+  if( all_atoms.size()==0 ){
     error("No atoms have been specified");
   }
   requestAtoms(all_atoms);
@@ -143,7 +167,7 @@ MultiColvarTemplate<Colvar>::MultiColvarTemplate(const ActionOptions&ao):
   }
   if( keywords.exists("WHOLEMOLECULES") ) {
     parseFlag("WHOLEMOLECULES",wholemolecules);
-    if( wholemolecules ) {
+    if( wholemolecules ){
       usepbc=false;
     }
   }
