@@ -107,12 +107,6 @@ Calculate multiple torsional angles.
 //+ENDPLUMEDOC
 
 class Torsion : public Colvar {
-  bool pbc;
-  bool do_cosine;
-
-  std::vector<double> value, masses, charges;
-  std::vector<std::vector<Vector> > derivs;
-  std::vector<Tensor> virial;
 public:
   explicit Torsion(const ActionOptions&);
 // active methods:
@@ -122,6 +116,12 @@ public:
     torsion,cosine
   };
   MULTICOLVAR_DEFAULT(torsionModes);
+private:
+  std::vector<double> value, masses, charges;
+  std::vector<std::vector<Vector> > derivs;
+  std::vector<Tensor> virial;
+  bool pbc;
+  Modetype mode;
 };
 
 typedef ColvarShortcut<Torsion> TorsionShortcut;
@@ -146,7 +146,6 @@ void Torsion::registerKeywords(Keywords& keys) {
 Torsion::Torsion(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true),
-  do_cosine(false),
   value(1),
   derivs(1),
   virial(1)
@@ -167,10 +166,7 @@ Torsion::Torsion(const ActionOptions&ao):
     log.printf("  between lines %d-%d and %d-%d, projected on the plane orthogonal to line %d-%d\n",
                v1[0].serial(),v1[1].serial(),v2[0].serial(),v2[1].serial(),axis[0].serial(),axis[1].serial());
   } else parseAtomList(-1,atoms,this);
-  Modetype mode=getModeAndSetupValues(this);
-  if( mode==Modetype::cosine ) {
-    do_cosine=true;
-  }
+  mode=getModeAndSetupValues(this);
 
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
@@ -232,11 +228,7 @@ void Torsion::calculate() {
   if(pbc) {
     makeWhole();
   }
-  if(do_cosine) {
-    calculateCV( Modetype::cosine, masses, charges, getPositions(), value, derivs, virial, this );
-  } else {
-    calculateCV( Modetype::torsion, masses, charges, getPositions(), value, derivs, virial, this );
-  }
+  calculateCV( mode, masses, charges, getPositions(), multiColvars::Ouput(value, derivs, virial), this );
   for(unsigned i=0; i<6; ++i) {
     setAtomsDerivatives(i,derivs[0][i] );
   }
@@ -245,8 +237,12 @@ void Torsion::calculate() {
 }
 
 void Torsion::calculateCV( Modetype mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                           std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
+                           const std::vector<Vector>& pos,
+                           multiColvars::Ouput out, const ActionAtomistic* aa ) {
+  auto & vals=out.vals();
+  auto & derivs=out.derivs();
+  auto & virial=out.virial();
+
   Vector d0=delta(pos[1],pos[0]);
   Vector d1=delta(pos[3],pos[2]);
   Vector d2=delta(pos[5],pos[4]);

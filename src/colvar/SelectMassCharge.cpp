@@ -139,14 +139,14 @@ SelectMassCharge::Modetype SelectMassCharge::getModeAndSetupValues( ActionWithVa
 
 // calculator
 void SelectMassCharge::calculate() {
-  std::vector<double> masses(1), charges(1), vals(1);
+  std::vector<double> masses(1), charges(1), value(1);
   std::vector<Vector> pos; std::vector<std::vector<Vector> > derivs; std::vector<Tensor> virial;
-  calculateCV( {}, masses, charges, pos, vals, derivs, virial, this ); setValue( vals[0] );
+  calculateCV( {}, masses, charges, pos, multiColvars::Ouput(value, derivs, virial), this ); setValue( value[0] );
 }
 
 void SelectMassCharge::calculateCV( Modetype /*mode*/, const std::vector<double>& masses, const std::vector<double>& charges,
-                                    const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                                    std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
+                                    const std::vector<Vector>& pos,multiColvars::Ouput out, const ActionAtomistic* aa ) {
+  auto & vals=out.vals();
   if( aa->getName().find("MASSES")!=std::string::npos ) {
     vals[0]=masses[0];
   } else if( aa->chargesWereSet ) {

@@ -221,7 +221,7 @@ Distance::Modetype Distance::getModeAndSetupValues( ActionWithValue* av ) {
 void Distance::calculate() {
 
   if(pbc) makeWhole();
-  calculateCV( mode_, masses, charges, getPositions(), value, derivs, virial, this );
+  calculateCV( mode_, masses, charges, getPositions(), multiColvars::Ouput(value, derivs, virial), this );
 
   switch (mode_) {
   case Modetype::withCompontents: {
@@ -279,12 +279,15 @@ void Distance::calculate() {
 }
 
 void Distance::calculateCV( Modetype mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                            const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                            std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
+                            const std::vector<Vector>& pos,
+                            multiColvars::Ouput out, const ActionAtomistic* aa ) {
+  auto & vals=out.vals();
+  auto & derivs=out.derivs();
+  auto & virial=out.virial();
   Vector distance=delta(pos[0],pos[1]);
   const double value=distance.modulo();
   const double invvalue=1.0/value;
-
+  //the compiler will alert me if I forgot a case :)
   switch (mode) {
   case Modetype::withCompontents: {
     derivs[0][0] = Vector(-1,0,0);

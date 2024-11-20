@@ -42,7 +42,46 @@ enum class scaledComponents {
   scaledComponents,
   noComponents
 };
-}
+
+
+//TODO: test this
+class Ouput
+{
+  //these are const pointers to non const data,meaning YOU can't change the pointer
+  std::vector<double> * vals_=nullptr;
+  std::vector<std::vector<Vector> >* derivs_=nullptr;
+  std::vector<Tensor> * virial_=nullptr;
+  Ouput()=default;
+public:
+//const because the data in the class is not changing: we are modifying data pointed by the const pointers
+  std::vector<double>&vals() const {return *vals_;}
+  std::vector<std::vector<Vector> >&derivs() const {return *derivs_;}
+  std::vector<Tensor>&virial() const {return *virial_;}
+  Ouput(std::vector<double>& vals,
+        std::vector<std::vector<Vector> >& derivs,
+        std::vector<Tensor>& virial)
+    : vals_(&vals), derivs_(&derivs), virial_(&virial) {}
+  Ouput(Ouput const& other) : vals_(other.vals_), derivs_(other.derivs_), virial_(other.virial_) {};
+  Ouput(Ouput && other) noexcept : Ouput() {
+    swap(*this, other);
+  };
+  // the input is initialized as copy or move ctor
+  Ouput& operator=(Ouput other) =delete;
+  //  {
+  //   //Self assignment protection is free[cit]
+  //   swap(*this, other);
+  //   return *this;
+  // };
+  friend void swap(Ouput& a, Ouput& b) noexcept {
+    std::swap(a.vals_, b.vals_);
+    std::swap(a.derivs_, b.derivs_);
+    std::swap(a.virial_, b.virial_);
+  }
+  ~Ouput() {}//this does not own anything
+};
+
+} // namespace multiColvars
+
 /*MANUAL DRAFT
 To setup a CV compatible with multicolvartemplate you need to add
  - A type that will be used to pass to calculateCV the calculation settings
@@ -58,7 +97,7 @@ To setup a CV compatible with multicolvartemplate you need to add
    - these functions will need to match the foloowing signatures (withour the constness of the non const& arguments):
    - `static void parseAtomList( int num, std::vector<AtomNumber>& t, ActionAtomistic* aa );`
    - `Modetype getModeAndSetupValues( ActionWithValue* av )`
-   - `static void calculateCV( Modetype mode, const std::vector<double>& masses, const std::vector<double>& charges, const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs, std::vector<Tensor>& virial, const ActionAtomistic* aa )
+   - `static void calculateCV( Modetype mode, const std::vector<double>& masses, const std::vector<double>& charges, const std::vector<Vector>& pos, PLMD::colvars::multiColvars::Ouput out, const ActionAtomistic* aa )
      - this function will be called by MultiColvarTemplate to calculate the CV value on the inputs
      - to avoid code repetitition you should change ::calculate() to call this function
      - By default all the inputs are const ref, but the constedness can be changed, since the MulticolvarTemplate will pass the plain references
@@ -74,9 +113,7 @@ To setup a CV compatible with multicolvartemplate you need to add
                           const std::vector<double>& masses, \
                           const std::vector<double>& charges, \
                           const std::vector<Vector>& pos, \
-                          std::vector<double>& vals, \
-                          std::vector<std::vector<Vector> >& derivs,\
-                          std::vector<Tensor>& virial, \
+                          PLMD::colvar::multiColvars::Ouput out, \
                           const ActionAtomistic* aa )
 
 #define MULTICOLVAR_DEFAULT(type) MULTICOLVAR_SETTINGS_BASE(type); \
@@ -86,10 +123,10 @@ To setup a CV compatible with multicolvartemplate you need to add
 
 //^no ';' here so that the macro will "consume" it and not generate a double semicolon error
 
-template <class Colvar>
+template <class CV>
 class MultiColvarTemplate : public ActionWithVector {
 private:
-  using Modetype =typename Colvar::Modetype;
+  using Modetype =typename CV::Modetype;
 /// An index that decides what we are calculating
   Modetype mode;
 /// Are we using pbc to calculate the CVs
@@ -108,9 +145,9 @@ public:
   void calculate() override;
 };
 
-template <class Colvar>
-void MultiColvarTemplate<Colvar>::registerKeywords(Keywords& keys ) {
-  Colvar::registerKeywords( keys );
+template <class CV>
+void MultiColvarTemplate<CV>::registerKeywords(Keywords& keys ) {
+  CV::registerKeywords( keys );
   keys.add("optional","MASK","the label for a sparse matrix that should be used to determine which elements of the matrix should be computed");
   unsigned nkeys = keys.size();
   for(unsigned i=0; i<nkeys; ++i) {
@@ -119,8 +156,8 @@ void MultiColvarTemplate<Colvar>::registerKeywords(Keywords& keys ) {
   if( keys.outputComponentExists(".#!value") ) keys.setValueDescription("the " + keys.getDisplayName() + " for each set of specified atoms");
 }
 
-template <class Colvar>
-MultiColvarTemplate<Colvar>::MultiColvarTemplate(const ActionOptions&ao):
+template <class CV>
+MultiColvarTemplate<CV>::MultiColvarTemplate(const ActionOptions&ao):
   Action(ao),
   ActionWithVector(ao),
   mode(),
@@ -138,7 +175,7 @@ MultiColvarTemplate<Colvar>::MultiColvarTemplate(const ActionOptions&ao):
   } else {
     std::vector<AtomNumber> t;
     for(int i=1;; ++i ) {
-      Colvar::parseAtomList( i, t, this );
+      CV::parseAtomList( i, t, this );
       if( t.empty() ) break;
 
       if( i==1 ) {
@@ -175,32 +212,32 @@ MultiColvarTemplate<Colvar>::MultiColvarTemplate(const ActionOptions&ao):
   else    log.printf("  without periodic boundary conditions\n");
 
   // Setup the values
-  mode = Colvar::getModeAndSetupValues( this );
+  mode = CV::getModeAndSetupValues( this );
 }
 
-template <class Colvar>
-unsigned MultiColvarTemplate<Colvar>::getNumberOfDerivatives() {
+template <class CV>
+unsigned MultiColvarTemplate<CV>::getNumberOfDerivatives() {
   return 3*getNumberOfAtoms()+9;
 }
 
-template <class Colvar>
-void MultiColvarTemplate<Colvar>::calculate() {
+template <class CV>
+void MultiColvarTemplate<CV>::calculate() {
   if( wholemolecules ) makeWhole();
   runAllTasks();
 }
 
-template <class Colvar>
-void MultiColvarTemplate<Colvar>::addValueWithDerivatives( const std::vector<unsigned>& shape ) {
+template <class CV>
+void MultiColvarTemplate<CV>::addValueWithDerivatives( const std::vector<unsigned>& shape ) {
   std::vector<unsigned> s(1); s[0]=ablocks[0].size(); addValue( s );
 }
 
-template <class Colvar>
-void MultiColvarTemplate<Colvar>::addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape ) {
+template <class CV>
+void MultiColvarTemplate<CV>::addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape ) {
   std::vector<unsigned> s(1); s[0]=ablocks[0].size(); addComponent( name, s );
 }
 
-template <class Colvar>
-void MultiColvarTemplate<Colvar>::performTask( const unsigned& task_index, MultiValue& myvals ) const {
+template <class CV>
+void MultiColvarTemplate<CV>::performTask( const unsigned& task_index, MultiValue& myvals ) const {
   // Retrieve the positions
   std::vector<Vector> & fpositions( myvals.getFirstAtomVector() );
   if( fpositions.size()!=ablocks.size() ) {
@@ -248,7 +285,7 @@ void MultiColvarTemplate<Colvar>::performTask( const unsigned& task_index, Multi
     }
   }
   // Calculate the CVs using the method in the Colvar
-  Colvar::calculateCV( mode, mass, charge, fpositions, values, derivs, virial, this );
+  CV::calculateCV( mode, mass, charge, fpositions, multiColvars::Ouput{values, derivs, virial}, this );
   for(unsigned i=0; i<values.size(); ++i) myvals.setValue( i, values[i] );
   // Finish if there are no derivatives
   if( doNotCalculateDerivatives() ) return;

@@ -79,15 +79,6 @@ Calculate a vector of dipole moments for a set of groups of atoms.
 //+ENDPLUMEDOC
 
 class Dipole : public Colvar {
-  std::vector<AtomNumber> ga_lista;
-  bool components;
-  bool nopbc;
-  std::vector<double> value, masses, charges;
-  std::vector<std::vector<Vector> > derivs;
-  std::vector<Tensor> virial;
-  Value* valuex=nullptr;
-  Value* valuey=nullptr;
-  Value* valuez=nullptr;
 public:
   explicit Dipole(const ActionOptions&);
   void calculate() override;
@@ -98,10 +89,18 @@ public:
                            const std::vector<double>& masses,
                            std::vector<double>& charges,
                            const std::vector<Vector>& pos,
-                           std::vector<double>& vals,
-                           std::vector<std::vector<Vector> >& derivs,
-                           std::vector<Tensor>& virial,
+                           multiColvars::Ouput out,
                            const ActionAtomistic* aa );
+private:
+  std::vector<AtomNumber> ga_lista;
+  std::vector<double> value, masses, charges;
+  std::vector<std::vector<Vector> > derivs;
+  std::vector<Tensor> virial;
+  Value* valuex=nullptr;
+  Value* valuey=nullptr;
+  Value* valuez=nullptr;
+  Modetype components;
+  bool nopbc=false;
 };
 
 typedef ColvarShortcut<Dipole> DipoleShortcut;
@@ -123,21 +122,24 @@ void Dipole::registerKeywords(Keywords& keys) {
 
 Dipole::Dipole(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
-  components(false),
+
   value(1),
   derivs(1),
-  virial(1)
+  virial(1),
+  components(getModeAndSetupValues(this))
 {
   parseAtomList(-1,ga_lista,this);
   charges.resize(ga_lista.size());
-  components=(getModeAndSetupValues(this)==Modetype::withCompontents);
-  if( components ) {
+  // components=getModeAndSetupValues(this);
+  if( components == Modetype::withCompontents ) {
     value.resize(3); derivs.resize(3); virial.resize(3);
     valuex=getPntrToComponent("x");
     valuey=getPntrToComponent("y");
     valuez=getPntrToComponent("z");
   }
-  for(unsigned i=0; i<derivs.size(); ++i) derivs[i].resize( ga_lista.size() );
+  for(unsigned i=0; i<derivs.size(); ++i) {
+    derivs[i].resize( ga_lista.size() );
+  }
   parseFlag("NOPBC",nopbc);
   checkRead();
 
@@ -177,14 +179,12 @@ void Dipole::calculate()
   if(!nopbc) makeWhole();
   unsigned N=getNumberOfAtoms();
   for(unsigned i=0; i<N; ++i) charges[i]=getCharge(i);
-
-  if(!components) {
-    calculateCV( Modetype::noComponents, masses, charges, getPositions(), value, derivs, virial, this );
+  calculateCV( components, masses, charges, getPositions(), multiColvars::Ouput(value, derivs, virial), this );
+  if(components == Modetype::noComponents) {
     for(unsigned i=0; i<N; i++) setAtomsDerivatives(i,derivs[0][i]);
     setBoxDerivatives(virial[0]);
     setValue(value[0]);
   } else {
-    calculateCV( Modetype::withCompontents, masses, charges, getPositions(), value, derivs, virial, this );
     for(unsigned i=0; i<N; i++) {
       setAtomsDerivatives(valuex,i,derivs[0][i]);
       setAtomsDerivatives(valuey,i,derivs[1][i]);
@@ -200,10 +200,18 @@ void Dipole::calculate()
 }
 
 void Dipole::calculateCV( Modetype mode, const std::vector<double>& masses, std::vector<double>& charges,
-                          const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                          std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
-  unsigned N=pos.size(); double ctot=0.;
-  for(unsigned i=0; i<N; ++i) ctot += charges[i];
+                          const std::vector<Vector>& pos,multiColvars::Ouput out, const ActionAtomistic* aa ) {
+  auto & vals=out.vals();
+  auto & derivs=out.derivs();
+  auto & virial=out.virial();
+  unsigned N=pos.size();
+  double ctot=0.;
+  for(unsigned i=0; i<N; ++i) {
+    ctot += charges[i];
+  }
+  //check if
+  //std::accumulate(charges.begin(),charges.end(),ctot);
+  // is faster
   ctot/=(double)N;
 
   Vector dipje;
@@ -214,11 +222,13 @@ void Dipole::calculateCV( Modetype mode, const std::vector<double>& masses, std:
 
   if( mode==Modetype::withCompontents ) {
     for(unsigned i=0; i<N; i++) {
-      derivs[0][i]=charges[i]*Vector(1.0,0.0,0.0);
-      derivs[1][i]=charges[i]*Vector(0.0,1.0,0.0);
-      derivs[2][i]=charges[i]*Vector(0.0,0.0,1.0);
+      derivs[0][i]=Vector(charges[i],0.0,0.0);
+      derivs[1][i]=Vector(0.0,charges[i],0.0);
+      derivs[2][i]=Vector(0.0,0.0,charges[i]);
     }
-    for(unsigned i=0; i<3; ++i ) vals[i] = dipje[i];
+    for(unsigned i=0; i<3; ++i ) {
+      vals[i] = dipje[i];
+    }
   } else {
     vals[0] = dipje.modulo();
     double idip = 1./vals[0];

@@ -91,17 +91,20 @@ Create a vector that holds the components of the position of a set of atoms.
 //+ENDPLUMEDOC
 
 class Position : public Colvar {
-  bool scaled_components;
-  bool pbc;
-  std::vector<double> value, masses, charges;
-  std::vector<std::vector<Vector> > derivs;
-  std::vector<Tensor> virial;
 public:
   static void registerKeywords( Keywords& keys );
   explicit Position(const ActionOptions&);
 // active methods:
   void calculate() override;
   MULTICOLVAR_DEFAULT(multiColvars::plainOrScaled);
+private:
+  Modetype components;
+  bool pbc;
+  std::vector<double> value;
+  std::vector<double> masses;
+  std::vector<double> charges;
+  std::vector<std::vector<Vector> > derivs;
+  std::vector<Tensor> virial;
 };
 
 typedef ColvarShortcut<Position> PositionShortcut;
@@ -127,7 +130,6 @@ void Position::registerKeywords( Keywords& keys ) {
 
 Position::Position(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
-  scaled_components(false),
   pbc(true),
   value(3),
   derivs(3),
@@ -135,10 +137,7 @@ Position::Position(const ActionOptions&ao):
 {
   for(unsigned i=0; i<3; ++i) derivs[i].resize(1);
   std::vector<AtomNumber> atoms; parseAtomList(-1,atoms,this);
-  Modetype mode=getModeAndSetupValues(this);
-  if( mode==Modetype::scaled ) {
-    scaled_components=true;
-  }
+  components=getModeAndSetupValues(this);
 
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
@@ -182,9 +181,9 @@ void Position::calculate() {
   } else {
     distance[0]=delta(Vector(0.0,0.0,0.0),getPosition(0));
   }
-
-  if(scaled_components) {
-    calculateCV( Modetype::scaled, masses, charges, distance, value, derivs, virial, this );
+  calculateCV( components, masses, charges, distance, multiColvars::Ouput(value, derivs, virial), this );
+  switch (components) {
+  case Modetype::scaled: {
     Value* valuea=getPntrToComponent("a");
     Value* valueb=getPntrToComponent("b");
     Value* valuec=getPntrToComponent("c");
@@ -194,8 +193,10 @@ void Position::calculate() {
     valueb->set(value[1]);
     setAtomsDerivatives (valuec,0,derivs[2][0]);
     valuec->set(value[2]);
-  } else {
-    calculateCV( Modetype::plain, masses, charges, distance, value, derivs, virial, this );
+  }
+  break;
+
+  case Modetype::plain: {
     Value* valuex=getPntrToComponent("x");
     Value* valuey=getPntrToComponent("y");
     Value* valuez=getPntrToComponent("z");
@@ -212,26 +213,33 @@ void Position::calculate() {
     setBoxDerivatives   (valuez,virial[2]);
     valuez->set(value[2]);
   }
+  }
 }
 
 void Position::calculateCV( Modetype mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                            const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
-                            std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
-  if( mode==Modetype::scaled ) {
+                            const std::vector<Vector>& pos,
+                            multiColvars::Ouput out, const ActionAtomistic* aa ) {
+  auto & vals=out.vals();
+  auto & derivs=out.derivs();
+  auto & virial=out.virial();
+  switch (mode)
+  {
+  case Modetype::scaled: {
     Vector d=aa->getPbc().realToScaled(pos[0]);
     vals[0]=Tools::pbc(d[0]); vals[1]=Tools::pbc(d[1]); vals[2]=Tools::pbc(d[2]);
     derivs[0][0]=matmul(aa->getPbc().getInvBox(),Vector(+1,0,0));
     derivs[1][0]=matmul(aa->getPbc().getInvBox(),Vector(0,+1,0));
     derivs[2][0]=matmul(aa->getPbc().getInvBox(),Vector(0,0,+1));
-  } else {
+  }
+  break;
+
+  case Modetype::plain: {
     for(unsigned i=0; i<3; ++i) vals[i]=pos[0][i];
     derivs[0][0]=Vector(+1,0,0); derivs[1][0]=Vector(0,+1,0); derivs[2][0]=Vector(0,0,+1);
     virial[0]=Tensor(pos[0],Vector(-1,0,0)); virial[1]=Tensor(pos[0],Vector(0,-1,0)); virial[2]=Tensor(pos[0],Vector(0,0,-1));
   }
+  }
 }
 
-}
-}
-
-
-
+} // namespace colvar
+} // namespacs PLMD
