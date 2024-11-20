@@ -103,8 +103,6 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit Quaternion(const ActionOptions&);
-  static void parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa );
-
 // active methods:
   void calculate() override;
   MULTICOLVAR_DEFAULT(::PLMD::colvar::multiColvars::emptyMode);
