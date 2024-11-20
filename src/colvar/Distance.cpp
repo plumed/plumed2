@@ -124,19 +124,20 @@ Calculate a vector containing the distances between various pairs of atoms
 //+ENDPLUMEDOC
 
 class Distance : public Colvar {
-  bool components;
-  bool scaled_components;
-  bool pbc;
-
-  std::vector<double> value, masses, charges;
-  std::vector<std::vector<Vector> > derivs;
-  std::vector<Tensor> virial;
 public:
   static void registerKeywords( Keywords& keys );
   explicit Distance(const ActionOptions&);
 // active methods:
   void calculate() override;
   MULTICOLVAR_DEFAULT(multiColvars::scaledComponents);
+private:
+  std::vector<double> value{{0.0}};
+  std::vector<double>masses{{0.0}};
+  std::vector<double> charges{{0.0}};
+  std::vector<std::vector<Vector> > derivs{std::vector<Vector>{Vector{},Vector{}}};
+  std::vector<Tensor> virial{Tensor()};
+  Modetype mode_;
+  bool pbc=true;
 };
 
 typedef ColvarShortcut<Distance> DistanceShortcut;
@@ -161,13 +162,7 @@ void Distance::registerKeywords( Keywords& keys ) {
 }
 
 Distance::Distance(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao),
-  components(false),
-  scaled_components(false),
-  pbc(true),
-  value(1),
-  derivs(1),
-  virial(1)
+  PLUMED_COLVAR_INIT(ao)
 {
   derivs[0].resize(2);
   std::vector<AtomNumber> atoms;
@@ -182,13 +177,8 @@ Distance::Distance(const ActionOptions&ao):
   if(pbc) log.printf("  using periodic boundary conditions\n");
   else    log.printf("  without periodic boundary conditions\n");
 
-  Modetype mode = getModeAndSetupValues( this );
-  if(mode==Modetype::withCompontents) {
-    components=true;
-  } else if(mode==Modetype::scaledComponents) {
-    scaled_components=true;
-  }
-  if( components || scaled_components ) {
+  mode_ = getModeAndSetupValues( this );
+  if(mode_==Modetype::withCompontents || mode_==Modetype::scaledComponents) {
     value.resize(3);
     derivs.resize(3);
     virial.resize(3);
@@ -231,41 +221,60 @@ Distance::Modetype Distance::getModeAndSetupValues( ActionWithValue* av ) {
 void Distance::calculate() {
 
   if(pbc) makeWhole();
+  calculateCV( mode_, masses, charges, getPositions(), value, derivs, virial, this );
 
-  if( components ) {
-    calculateCV( Modetype::withCompontents, masses, charges, getPositions(), value, derivs, virial, this );
+  switch (mode_) {
+  case Modetype::withCompontents: {
     Value* valuex=getPntrToComponent("x");
     Value* valuey=getPntrToComponent("y");
     Value* valuez=getPntrToComponent("z");
 
-    for(unsigned i=0; i<2; ++i) setAtomsDerivatives(valuex,i,derivs[0][i] );
+    for(unsigned i=0; i<2; ++i) {
+      setAtomsDerivatives(valuex,i,derivs[0][i] );
+    }
     setBoxDerivatives(valuex,virial[0]);
     valuex->set(value[0]);
 
-    for(unsigned i=0; i<2; ++i) setAtomsDerivatives(valuey,i,derivs[1][i] );
+    for(unsigned i=0; i<2; ++i) {
+      setAtomsDerivatives(valuey,i,derivs[1][i] );
+    }
     setBoxDerivatives(valuey,virial[1]);
     valuey->set(value[1]);
 
-    for(unsigned i=0; i<2; ++i) setAtomsDerivatives(valuez,i,derivs[2][i] );
+    for(unsigned i=0; i<2; ++i) {
+      setAtomsDerivatives(valuez,i,derivs[2][i] );
+    }
     setBoxDerivatives(valuez,virial[2]);
     valuez->set(value[2]);
-  } else if( scaled_components ) {
-    calculateCV( Modetype::scaledComponents, masses, charges, getPositions(), value, derivs, virial, this );
+  }
+  break;
 
+  case Modetype::scaledComponents: {
     Value* valuea=getPntrToComponent("a");
     Value* valueb=getPntrToComponent("b");
     Value* valuec=getPntrToComponent("c");
-    for(unsigned i=0; i<2; ++i) setAtomsDerivatives(valuea,i,derivs[0][i] );
+    for(unsigned i=0; i<2; ++i) {
+      setAtomsDerivatives(valuea,i,derivs[0][i] );
+    }
     valuea->set(value[0]);
-    for(unsigned i=0; i<2; ++i) setAtomsDerivatives(valueb,i,derivs[1][i] );
+    for(unsigned i=0; i<2; ++i) {
+      setAtomsDerivatives(valueb,i,derivs[1][i] );
+    }
     valueb->set(value[1]);
-    for(unsigned i=0; i<2; ++i) setAtomsDerivatives(valuec,i,derivs[2][i] );
+    for(unsigned i=0; i<2; ++i) {
+      setAtomsDerivatives(valuec,i,derivs[2][i] );
+    }
     valuec->set(value[2]);
-  } else  {
-    calculateCV( Modetype::noComponents, masses, charges, getPositions(), value, derivs, virial, this );
-    for(unsigned i=0; i<2; ++i) setAtomsDerivatives(i,derivs[0][i] );
+  }
+  break;
+
+  case Modetype::noComponents: {
+    for(unsigned i=0; i<2; ++i) {
+      setAtomsDerivatives(i,derivs[0][i] );
+    }
     setBoxDerivatives(virial[0]);
     setValue           (value[0]);
+  }
   }
 }
 
@@ -276,7 +285,8 @@ void Distance::calculateCV( Modetype mode, const std::vector<double>& masses, co
   const double value=distance.modulo();
   const double invvalue=1.0/value;
 
-  if(mode==Modetype::withCompontents) {
+  switch (mode) {
+  case Modetype::withCompontents: {
     derivs[0][0] = Vector(-1,0,0);
     derivs[0][1] = Vector(+1,0,0);
     vals[0] = distance[0];
@@ -289,7 +299,10 @@ void Distance::calculateCV( Modetype mode, const std::vector<double>& masses, co
     derivs[2][1] = Vector(0,0,+1);
     vals[2] = distance[2];
     setBoxDerivativesNoPbc( pos, derivs, virial );
-  } else if(mode==Modetype::scaledComponents) {
+  }
+  break;
+
+  case Modetype::scaledComponents: {
     Vector d=aa->getPbc().realToScaled(distance);
     derivs[0][0] = matmul(aa->getPbc().getInvBox(),Vector(-1,0,0));
     derivs[0][1] = matmul(aa->getPbc().getInvBox(),Vector(+1,0,0));
@@ -300,16 +313,18 @@ void Distance::calculateCV( Modetype mode, const std::vector<double>& masses, co
     derivs[2][0] = matmul(aa->getPbc().getInvBox(),Vector(0,0,-1));
     derivs[2][1] = matmul(aa->getPbc().getInvBox(),Vector(0,0,+1));
     vals[2] = Tools::pbc(d[2]);
-  } else {
+  }
+  break;
+
+  case Modetype::noComponents: {
     derivs[0][0] = -invvalue*distance;
     derivs[0][1] = invvalue*distance;
     setBoxDerivativesNoPbc( pos, derivs, virial );
     vals[0] = value;
   }
-}
+  }
 
 }
-}
+} // namespace colvar
 
-
-
+} // namespace PLMD

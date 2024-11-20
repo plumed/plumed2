@@ -143,7 +143,7 @@ MultiColvarTemplate<Colvar>::MultiColvarTemplate(const ActionOptions&ao):
 
       if( i==1 ) {
         ablocks.resize(t.size());
-        }
+      }
       if( t.size()!=ablocks.size() ) {
         std::string ss;
         Tools::convert(i,ss);
@@ -156,7 +156,7 @@ MultiColvarTemplate<Colvar>::MultiColvarTemplate(const ActionOptions&ao):
       t.resize(0);
     }
   }
-  if( all_atoms.size()==0 ){
+  if( all_atoms.size()==0 ) {
     error("No atoms have been specified");
   }
   requestAtoms(all_atoms);
@@ -167,7 +167,7 @@ MultiColvarTemplate<Colvar>::MultiColvarTemplate(const ActionOptions&ao):
   }
   if( keywords.exists("WHOLEMOLECULES") ) {
     parseFlag("WHOLEMOLECULES",wholemolecules);
-    if( wholemolecules ){
+    if( wholemolecules ) {
       usepbc=false;
     }
   }
