@@ -35,10 +35,6 @@ namespace PLMD {
 class Pbc;
 class PDB;
 
-namespace colvar {
-class SelectMassCharge;
-}
-
 /// \ingroup MULTIINHERIT
 /// Action used to create objects that access the positions of the atoms from the MD code
 class ActionAtomistic :
@@ -46,7 +42,6 @@ class ActionAtomistic :
 {
   friend class Group;
   friend class DomainDecomposition;
-  friend class colvar::SelectMassCharge;
   friend class ActionWithVirtualAtom;
 
   std::vector<AtomNumber> indexes;         // the set of needed atoms
@@ -82,9 +77,9 @@ class ActionAtomistic :
 protected:
   bool                  chargesWereSet;
   void setExtraCV(const std::string &name);
+public:
 /// Used to interpret whether this index is a virtual atom or a real atom
   std::pair<std::size_t, std::size_t> getValueIndices( const AtomNumber& i ) const ;
-public:
 /// Request an array of atoms.
 /// This method is used to ask for a list of atoms. Atoms
 /// should be asked for by number. If this routine is called
@@ -116,8 +111,12 @@ public:
   const double & getEnergy()const;
 /// Get mass of i-th atom
   double getMass(int i)const;
+/// Check if the mass of the i-th atom is constant
+  bool isMassConstant(int i) const;
 /// Get charge of i-th atom
   double getCharge(int i)const;
+/// Check if the charge of the i-th atom is constant
+  bool isChargeConstant(int i) const;
 /// Get the force acting on a particular atom
   Vector getForce( const std::pair<std::size_t, std::size_t>& a ) const ;
 /// Add force to an atom
@@ -206,9 +205,20 @@ double ActionAtomistic::getMass(int i)const {
 }
 
 inline
+bool ActionAtomistic::isMassConstant(int i)const {
+  return masv[i]->isConstant();
+}
+
+inline
 double ActionAtomistic::getCharge(int i) const {
   if( !chargesWereSet ) error("charges were not passed to plumed");
   return charges[i];
+}
+
+inline
+bool ActionAtomistic::isChargeConstant(int i) const {
+  if( !chargesWereSet ) error("charges were not passed to plumed");
+  return chargev[i]->isConstant();
 }
 
 inline
