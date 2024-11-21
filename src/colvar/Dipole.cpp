@@ -83,17 +83,11 @@ public:
   explicit Dipole(const ActionOptions&);
   void calculate() override;
   static void registerKeywords(Keywords& keys);
-  MULTICOLVAR_SETTINGS_BASE(multiColvars::components);
-  //Declaring this playinly becasue we are using modifying the charges
-  static void calculateCV( Modetype mode,
-                           const std::vector<double>& masses,
-                           std::vector<double>& charges,
-                           const std::vector<Vector>& pos,
-                           multiColvars::Ouput out,
-                           const ActionAtomistic* aa );
+  MULTICOLVAR_DEFAULT(multiColvars::components);
 private:
   std::vector<AtomNumber> ga_lista;
-  std::vector<double> value, masses, charges;
+  std::vector<double> value;
+  std::vector<double> charges;
   std::vector<std::vector<Vector> > derivs;
   std::vector<Tensor> virial;
   Value* valuex=nullptr;
@@ -179,7 +173,9 @@ void Dipole::calculate()
   if(!nopbc) makeWhole();
   unsigned N=getNumberOfAtoms();
   for(unsigned i=0; i<N; ++i) charges[i]=getCharge(i);
-  calculateCV( components, masses, charges, getPositions(), multiColvars::Ouput(value, derivs, virial), this );
+  auto inputs = multiColvars::Input().positions(getPositions())
+                .charges(charges);
+  calculateCV( components, inputs, multiColvars::Ouput(value, derivs, virial), this );
   if(components == Modetype::noComponents) {
     for(unsigned i=0; i<N; i++) setAtomsDerivatives(i,derivs[0][i]);
     setBoxDerivatives(virial[0]);
@@ -199,11 +195,15 @@ void Dipole::calculate()
   }
 }
 
-void Dipole::calculateCV( Modetype mode, const std::vector<double>& masses, std::vector<double>& charges,
-                          const std::vector<Vector>& pos,multiColvars::Ouput out, const ActionAtomistic* aa ) {
+void Dipole::calculateCV( Modetype mode,
+                          multiColvars::Input const in,
+                          multiColvars::Ouput out,
+                          const ActionAtomistic* aa ) {
   auto & vals=out.vals();
   auto & derivs=out.derivs();
   auto & virial=out.virial();
+  const auto & pos=in.positions();
+  auto & charges=in.var_charges();
   unsigned N=pos.size();
   double ctot=0.;
   for(unsigned i=0; i<N; ++i) {

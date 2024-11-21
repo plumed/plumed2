@@ -117,7 +117,7 @@ public:
   };
   MULTICOLVAR_DEFAULT(torsionModes);
 private:
-  std::vector<double> value, masses, charges;
+  std::vector<double> value;
   std::vector<std::vector<Vector> > derivs;
   std::vector<Tensor> virial;
   bool pbc;
@@ -228,7 +228,7 @@ void Torsion::calculate() {
   if(pbc) {
     makeWhole();
   }
-  calculateCV( mode, masses, charges, getPositions(), multiColvars::Ouput(value, derivs, virial), this );
+  calculateCV( mode, multiColvars::Input().positions(getPositions()), multiColvars::Ouput(value, derivs, virial), this );
   for(unsigned i=0; i<6; ++i) {
     setAtomsDerivatives(i,derivs[0][i] );
   }
@@ -236,13 +236,13 @@ void Torsion::calculate() {
   setBoxDerivatives( virial[0] );
 }
 
-void Torsion::calculateCV( Modetype mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                           const std::vector<Vector>& pos,
+void Torsion::calculateCV( Modetype mode,
+                           multiColvars::Input const in,
                            multiColvars::Ouput out, const ActionAtomistic* aa ) {
   auto & vals=out.vals();
   auto & derivs=out.derivs();
   auto & virial=out.virial();
-
+  const auto & pos = in.positions();
   Vector d0=delta(pos[1],pos[0]);
   Vector d1=delta(pos[3],pos[2]);
   Vector d2=delta(pos[5],pos[4]);

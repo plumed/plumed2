@@ -101,8 +101,6 @@ private:
   Modetype components;
   bool pbc;
   std::vector<double> value;
-  std::vector<double> masses;
-  std::vector<double> charges;
   std::vector<std::vector<Vector> > derivs;
   std::vector<Tensor> virial;
 };
@@ -181,7 +179,7 @@ void Position::calculate() {
   } else {
     distance[0]=delta(Vector(0.0,0.0,0.0),getPosition(0));
   }
-  calculateCV( components, masses, charges, distance, multiColvars::Ouput(value, derivs, virial), this );
+  calculateCV( components, multiColvars::Input().positions(distance), multiColvars::Ouput(value, derivs, virial), this );
   switch (components) {
   case Modetype::scaled: {
     Value* valuea=getPntrToComponent("a");
@@ -216,12 +214,16 @@ void Position::calculate() {
   }
 }
 
-void Position::calculateCV( Modetype mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                            const std::vector<Vector>& pos,
+void Position::calculateCV( Modetype mode,
+                            multiColvars::Input const in,
                             multiColvars::Ouput out, const ActionAtomistic* aa ) {
   auto & vals=out.vals();
   auto & derivs=out.derivs();
   auto & virial=out.virial();
+  const auto &pos = in.positions();
+  ////////////////////////////////////////////////////////////////////////////
+  //why here there is not the distance from 000 treatment??????
+  ///////////////////////////////////////////////////////////////////////////
   switch (mode)
   {
   case Modetype::scaled: {

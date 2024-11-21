@@ -100,7 +100,7 @@ Calculate multiple angles.
 
 class Angle : public Colvar {
   bool pbc;
-  std::vector<double> value, masses, charges;
+  std::vector<double> value;
   std::vector<std::vector<Vector> > derivs;
   std::vector<Tensor> virial;
 public:
@@ -168,19 +168,21 @@ Angle::Angle(const ActionOptions&ao):
 void Angle::calculate() {
 
   if(pbc) makeWhole();
-  calculateCV( {}, masses, charges, getPositions(), multiColvars::Ouput(value, derivs, virial), this );
+  calculateCV( {}, multiColvars::Input().positions(getPositions()), multiColvars::Ouput(value, derivs, virial), this );
   setValue( value[0] );
   for(unsigned i=0; i<derivs[0].size(); ++i)
     setAtomsDerivatives( i, derivs[0][i] );
   setBoxDerivatives( virial[0] );
 }
 
-void Angle::calculateCV( Modetype /*mode*/, const std::vector<double>& /*masses*/, const std::vector<double>& /*charges*/,
-                         const std::vector<Vector>& pos,
-                         multiColvars::Ouput out, const ActionAtomistic* aa ) {
+void Angle::calculateCV( Modetype /*mode*/,
+                         multiColvars::Input const in,
+                         multiColvars::Ouput out,
+                         const ActionAtomistic* aa ) {
   auto & vals=out.vals();
   auto & derivs=out.derivs();
   auto & virial=out.virial();
+  const auto & pos=in.positions();
   Vector dij,dik;
   dij=delta(pos[2],pos[3]);
   dik=delta(pos[1],pos[0]);

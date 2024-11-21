@@ -172,19 +172,18 @@ typename SelectMassCharge<mq>::Modetype SelectMassCharge<mq>::getModeAndSetupVal
 
 template <MC mq>
 void SelectMassCharge<mq>::calculate() {
-  std::vector<Vector> posdummy;
+
   std::vector<std::vector<Vector> > derivsdummy;
   std::vector<Tensor> virialdummy;
-
-  std::vector<double> massesOrCharges(1);
-  if constexpr( mq == MC::Mass ) {
-    massesOrCharges[0]=getMass(theAtom.index());
-  } else {
-    massesOrCharges[0]=getCharge(theAtom.index());
-  }
   std::vector<double> vals(1);
 
-  calculateCV( {}, massesOrCharges, massesOrCharges, posdummy, multiColvars::Ouput(vals, derivsdummy, virialdummy), this );
+  if constexpr( mq == MC::Mass ) {
+    std::vector<double> mass{getMass(theAtom.index())};
+    calculateCV( {}, multiColvars::Input().masses(mass), multiColvars::Ouput(vals, derivsdummy, virialdummy), this );
+  } else {
+    std::vector<double> charge{getCharge(theAtom.index())};
+    calculateCV( {}, multiColvars::Input().charges(charge), multiColvars::Ouput(vals, derivsdummy, virialdummy), this );
+  }
 
   setValue( vals[0] );
   // does the code above give the same result as doing:
@@ -198,14 +197,15 @@ void SelectMassCharge<mq>::calculate() {
 }
 
 template <MC mq>
-void SelectMassCharge<mq>::calculateCV( Modetype /*mode*/, const std::vector<double>& masses, const std::vector<double>& charges,
-                                        const std::vector<Vector>& pos,multiColvars::Ouput out, const ActionAtomistic* aa ) {
+void SelectMassCharge<mq>::calculateCV( Modetype /*mode*/,
+                                        multiColvars::Input const in,
+                                        multiColvars::Ouput out, const ActionAtomistic* aa ) {
   auto & vals=out.vals();
   if constexpr(mq == MC::Mass)  {
-    vals[0]=masses[0];
+    vals[0]= in.masses()[0];
     // } else if( aa->chargesWereSet ) { this is done in the getModeAndSetupValues by isChargeConstant
   } else {
-    vals[0]=charges[0];
+    vals[0]=in.charges()[0];
   }
 }
 

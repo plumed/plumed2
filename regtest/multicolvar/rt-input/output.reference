@@ -1,0 +1,66 @@
+*dotestWithReference:
+*Passing full input:
+ Masses: (2) 3, 4
+ Charges: (2) -1, 1
+ Positions: (2) 0 0 0, 1 1 1
+
+*Passing only positions:
+ There are no masses
+ There are no charges
+ Positions: (2) 0 0 0, 1 1 1
+
+*Passing only masses:
+ Masses: (2) 3, 4
+ There are no charges
+ There are no positions
+
+*Passing only charges:
+ There are no masses
+ Charges: (2) -1, 1
+ There are no positions
+
+*dotestWithConstReference:
+*Passing full input:
+ Masses: (2) 3, 4
+ Charges: (2) -1, 1
+ Positions: (2) 0 0 0, 1 1 1
+
+*Passing only positions:
+ There are no masses
+ There are no charges
+ Positions: (2) 0 0 0, 1 1 1
+
+*Passing only masses:
+ Masses: (2) 3, 4
+ There are no charges
+ There are no positions
+
+*Passing only charges:
+ There are no masses
+ Charges: (2) -1, 1
+ There are no positions
+
+*testUsingInputAsBuffer_masses:
+*Passing constant_reference:
+ should throw
+*Passing reference:
+ Initial values
+ Masses:(2) 3, 4
+ Values after call
+ Masses:(2) 6, 8
+*testUsingInputAsBuffer_charges:
+*Passing constant_reference:
+ should throw
+*Passing reference:
+ Initial values
+ Charges:(2) -1, 1
+ Values after call
+ Charges:(2) -2, 2
+*testUsingInputAsBuffer_positions:
+*Passing constant_reference:
+ should throw
+*Passing reference:
+ Initial values
+ Positions:(2) 0 0 0, 1 1 1
+ Values after call
+ Positions:(2) 0 0 0, 2 2 2

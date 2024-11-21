@@ -132,8 +132,6 @@ public:
   MULTICOLVAR_DEFAULT(multiColvars::scaledComponents);
 private:
   std::vector<double> value{{0.0}};
-  std::vector<double>masses{{0.0}};
-  std::vector<double> charges{{0.0}};
   std::vector<std::vector<Vector> > derivs{std::vector<Vector>{Vector{},Vector{}}};
   std::vector<Tensor> virial{Tensor()};
   Modetype mode_;
@@ -221,7 +219,7 @@ Distance::Modetype Distance::getModeAndSetupValues( ActionWithValue* av ) {
 void Distance::calculate() {
 
   if(pbc) makeWhole();
-  calculateCV( mode_, masses, charges, getPositions(), multiColvars::Ouput(value, derivs, virial), this );
+  calculateCV( mode_, multiColvars::Input().positions(getPositions()), multiColvars::Ouput(value, derivs, virial), this );
 
   switch (mode_) {
   case Modetype::withCompontents: {
@@ -278,12 +276,13 @@ void Distance::calculate() {
   }
 }
 
-void Distance::calculateCV( Modetype mode, const std::vector<double>& masses, const std::vector<double>& charges,
-                            const std::vector<Vector>& pos,
+void Distance::calculateCV( Modetype mode,
+                            multiColvars::Input const in,
                             multiColvars::Ouput out, const ActionAtomistic* aa ) {
   auto & vals=out.vals();
   auto & derivs=out.derivs();
   auto & virial=out.virial();
+  const auto & pos = in.positions();
   Vector distance=delta(pos[0],pos[1]);
   const double value=distance.modulo();
   const double invvalue=1.0/value;

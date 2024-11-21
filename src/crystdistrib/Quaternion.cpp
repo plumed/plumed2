@@ -97,7 +97,7 @@ See \ref QUATERNION for more details
 class Quaternion : public Colvar {
 private:
   bool pbc;
-  std::vector<double> value, masses, charges;
+  std::vector<double> value;
   std::vector<std::vector<Vector> > derivs;
   std::vector<Tensor> virial;
 public:
@@ -162,7 +162,7 @@ Quaternion::Modetype Quaternion::getModeAndSetupValues( ActionWithValue* av ) {
 void Quaternion::calculate() {
   if(pbc) makeWhole();
 
-  calculateCV( {}, masses, charges, getPositions(), PLMD::colvar::multiColvars::Ouput(value, derivs, virial), this );
+  calculateCV( {}, PLMD::colvar::multiColvars::Input().positions(getPositions()), PLMD::colvar::multiColvars::Ouput(value, derivs, virial), this );
   for(unsigned j=0; j<4; ++j) {
     Value* valuej=getPntrToComponent(j);
     for(unsigned i=0; i<3; ++i) setAtomsDerivatives(valuej,i,derivs[j][i] );
@@ -172,12 +172,13 @@ void Quaternion::calculate() {
 }
 
 // calculator
-void Quaternion::calculateCV( Modetype /*mode*/, const std::vector<double>& masses, const std::vector<double>& charges,
-                              const std::vector<Vector>& pos,
+void Quaternion::calculateCV( Modetype /*mode*/,
+                              PLMD::colvar::multiColvars::Input const in,
                               PLMD::colvar::multiColvars::Ouput out, const ActionAtomistic* aa ) {
   auto & vals=out.vals();
   auto & derivs=out.derivs();
   auto & virial=out.virial();
+  const auto & pos = in.positions();
   //declarations
   Vector vec1_comp = delta( pos[0], pos[1] ); //components between atom 1 and 2
   Vector vec2_comp = delta( pos[0], pos[2] ); //components between atom 1 and 3

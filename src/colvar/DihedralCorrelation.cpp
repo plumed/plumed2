@@ -64,7 +64,7 @@ Measure the correlation between a multiple pairs of dihedral angles
 class DihedralCorrelation : public Colvar {
 private:
   bool pbc;
-  std::vector<double> value, masses, charges;
+  std::vector<double> value;
   std::vector<std::vector<Vector> > derivs;
   std::vector<Tensor> virial;
 public:
@@ -124,18 +124,19 @@ DihedralCorrelation::Modetype DihedralCorrelation::getModeAndSetupValues( Action
 void DihedralCorrelation::calculate() {
 
   if(pbc) makeWhole();
-  calculateCV( {}, masses, charges, getPositions(), multiColvars::Ouput(value, derivs, virial), this );
+  calculateCV( {}, multiColvars::Input().positions(getPositions()), multiColvars::Ouput(value, derivs, virial), this );
   setValue( value[0] );
   for(unsigned i=0; i<derivs[0].size(); ++i) setAtomsDerivatives( i, derivs[0][i] );
   setBoxDerivatives( virial[0] );
 }
 
-void DihedralCorrelation::calculateCV(Modetype  /*mode*/, const std::vector<double>& masses, const std::vector<double>& charges,
-                                      const std::vector<Vector>& pos,
+void DihedralCorrelation::calculateCV(Modetype  /*mode*/,
+                                      multiColvars::Input const in,
                                       multiColvars::Ouput out, const ActionAtomistic* aa ) {
   auto & vals=out.vals();
   auto & derivs=out.derivs();
   auto & virial=out.virial();
+  const auto& pos = in.positions();
   const Vector d10=delta(pos[1],pos[0]);
   const Vector d11=delta(pos[2],pos[1]);
   const Vector d12=delta(pos[3],pos[2]);

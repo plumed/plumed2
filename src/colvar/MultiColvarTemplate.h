@@ -22,6 +22,9 @@
 #ifndef __PLUMED_colvar_MultiColvarTemplate_h
 #define __PLUMED_colvar_MultiColvarTemplate_h
 
+#include <variant>
+#include <type_traits>
+
 #include "core/ActionWithVector.h"
 
 namespace PLMD {
@@ -45,12 +48,10 @@ enum class scaledComponents {
 
 
 //TODO: test this
-class Ouput
-{
-  //these are const pointers to non const data,meaning YOU can't change the pointer
-  std::vector<double> * vals_=nullptr;
+class Ouput final {
+  std::vector<double>* vals_=nullptr;
   std::vector<std::vector<Vector> >* derivs_=nullptr;
-  std::vector<Tensor> * virial_=nullptr;
+  std::vector<Tensor>* virial_=nullptr;
   Ouput()=default;
 public:
 //const because the data in the class is not changing: we are modifying data pointed by the const pointers
@@ -60,9 +61,15 @@ public:
   Ouput(std::vector<double>& vals,
         std::vector<std::vector<Vector> >& derivs,
         std::vector<Tensor>& virial)
-    : vals_(&vals), derivs_(&derivs), virial_(&virial) {}
-  Ouput(Ouput const& other) : vals_(other.vals_), derivs_(other.derivs_), virial_(other.virial_) {};
-  Ouput(Ouput && other) noexcept : Ouput() {
+    : vals_(&vals),
+      derivs_(&derivs),
+      virial_(&virial) {}
+  Ouput(Ouput const& other)
+    : vals_(other.vals_),
+      derivs_(other.derivs_),
+      virial_(other.virial_) {};
+  Ouput(Ouput && other) noexcept
+    : Ouput() {
     swap(*this, other);
   };
   // the input is initialized as copy or move ctor
@@ -78,6 +85,104 @@ public:
     std::swap(a.virial_, b.virial_);
   }
   ~Ouput() {}//this does not own anything
+};
+
+class Input final {
+  using vd=std::vector<double>*;
+  using cvd = const std::vector<double>*;
+  using vv=std::vector<Vector>*;
+  using cvv = const std::vector<Vector>*;
+  std::variant<std::monostate,std::vector<double>*,const std::vector<double>*> masses_;
+  std::variant<std::monostate,std::vector<double>*,const std::vector<double>*> charges_;
+  std::variant<std::monostate,std::vector<Vector>*,const std::vector<Vector>*> positions_;
+public:
+//const because the data in the class is not changing: we are modifying data pointed by the const pointers
+//get_if return nullptr on error
+//get throws on error
+//references to variable data, work only if the data passed is a reference to variable data
+  std::vector<double>&var_masses() const {return *std::get<std::vector<double>*>(masses_);}
+  std::vector<double>&var_charges() const {return *std::get<std::vector<double>*>(charges_);}
+  std::vector<Vector>&var_positions() const {return *std::get<std::vector<Vector>*>(positions_);}
+  //references to constant data, must ALWAYS work
+  const std::vector<double>&masses() const {
+    if(auto *p=std::get_if<cvd>(&masses_)) {
+      return **p;
+    }
+    //get_if takes a ptr, get takes a ref...
+    //this throws if there is no data
+    return *std::get<vd>(masses_);
+  }
+  const std::vector<double>&charges() const {
+    if(auto *p=std::get_if<cvd>(&charges_)) {
+      return **p;
+    }
+    //get_if takes a ptr, get takes a ref...
+    //this throws if there is no data
+    return *std::get<vd>(charges_);
+  }
+  const std::vector<Vector>&positions() const {
+    if(auto *p=std::get_if<cvv>(&positions_)) {
+      return **p;
+    }
+    //get_if takes a ptr, get takes a ref...
+    //this throws if there is no data
+    return *std::get<vv>(positions_);
+  }
+
+  Input()=default;
+  template<typename masses_T, typename charges_T, typename positions_T>
+  Input(masses_T& masses,
+        charges_T& charges,
+        positions_T& positions)
+    : masses_(&masses),
+      charges_(&charges),
+      positions_(&positions) {
+    static_assert(std::is_same_v<masses_T,    std::vector<double>> || std::is_same_v<masses_T,    const std::vector<double>>);
+    static_assert(std::is_same_v<charges_T,   std::vector<double>> || std::is_same_v<charges_T,   const std::vector<double>>);
+    static_assert(std::is_same_v<positions_T, std::vector<Vector>> || std::is_same_v<positions_T, const std::vector<Vector>>);
+  }
+  Input(Input const& other)
+    : masses_(other.masses_),
+      charges_(other.charges_),
+      positions_(other.positions_) {};
+  Input(Input && other) noexcept
+    : Input() {
+    swap(*this, other);
+  };
+  //with the builder pattern I ma not need the ubercomplex ctor  and the just things that I set up...
+  Input& charges(std::vector<double>& charges) {
+    charges_=&charges;
+    return *this;
+  }
+  Input& charges(const std::vector<double>& charges) {
+    charges_=&charges;
+    return *this;
+  }
+  Input& masses(std::vector<double>& masses) {
+    masses_=&masses;
+    return *this;
+  }
+  Input& masses(const std::vector<double>& masses) {
+    masses_=&masses;
+    return *this;
+  }
+  Input& positions(std::vector<Vector>& positions) {
+    positions_=&positions;
+    return *this;
+  }
+  Input& positions(const std::vector<Vector>& positions) {
+    positions_=&positions;
+    return *this;
+  }
+
+  // the input is initialized as copy or move ctor
+  Input& operator=(Input other) =delete;
+  friend void swap(Input& a, Input& b) noexcept {
+    std::swap(a.masses_, b.masses_);
+    std::swap(a.charges_, b.charges_);
+    std::swap(a.positions_, b.positions_);
+  }
+  ~Input() {}//this does not own anything
 };
 
 } // namespace multiColvars
@@ -97,7 +202,9 @@ To setup a CV compatible with multicolvartemplate you need to add
    - these functions will need to match the foloowing signatures (withour the constness of the non const& arguments):
    - `static void parseAtomList( int num, std::vector<AtomNumber>& t, ActionAtomistic* aa );`
    - `Modetype getModeAndSetupValues( ActionWithValue* av )`
-   - `static void calculateCV( Modetype mode, const std::vector<double>& masses, const std::vector<double>& charges, const std::vector<Vector>& pos, PLMD::colvars::multiColvars::Ouput out, const ActionAtomistic* aa )
+   - `static void calculateCV( Modetype mode, PLMD::colvar::multiColvars::Input in, PLMD::colvar::multiColvars::Ouput out, const ActionAtomistic* aa )
+     - the input variable contain the references to position, masses, charges
+     - the output variable contain the references to value, derivs, virial,and acts as a return argument
      - this function will be called by MultiColvarTemplate to calculate the CV value on the inputs
      - to avoid code repetitition you should change ::calculate() to call this function
      - By default all the inputs are const ref, but the constedness can be changed, since the MulticolvarTemplate will pass the plain references
@@ -110,17 +217,12 @@ To setup a CV compatible with multicolvartemplate you need to add
   static void parseAtomList( int num, std::vector<AtomNumber>& t, ActionAtomistic* aa ); \
   static Modetype getModeAndSetupValues( ActionWithValue* av )
 #define MULTICOLVAR_SETTINGS_CALCULATE_CONST() static void calculateCV( Modetype mode, \
-                          const std::vector<double>& masses, \
-                          const std::vector<double>& charges, \
-                          const std::vector<Vector>& pos, \
+                          PLMD::colvar::multiColvars::Input in, \
                           PLMD::colvar::multiColvars::Ouput out, \
                           const ActionAtomistic* aa )
 
 #define MULTICOLVAR_DEFAULT(type) MULTICOLVAR_SETTINGS_BASE(type); \
           MULTICOLVAR_SETTINGS_CALCULATE_CONST()
-
-
-
 //^no ';' here so that the macro will "consume" it and not generate a double semicolon error
 
 template <class CV>
@@ -285,7 +387,7 @@ void MultiColvarTemplate<CV>::performTask( const unsigned& task_index, MultiValu
     }
   }
   // Calculate the CVs using the method in the Colvar
-  CV::calculateCV( mode, mass, charge, fpositions, multiColvars::Ouput{values, derivs, virial}, this );
+  CV::calculateCV( mode, multiColvars::Input(mass, charge, fpositions), multiColvars::Ouput{values, derivs, virial}, this );
   for(unsigned i=0; i<values.size(); ++i) myvals.setValue( i, values[i] );
   // Finish if there are no derivatives
   if( doNotCalculateDerivatives() ) return;

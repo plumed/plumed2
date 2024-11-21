@@ -62,7 +62,7 @@ namespace colvar {
 class Plane : public Colvar {
 private:
   bool pbc;
-  std::vector<double> value, masses, charges;
+  std::vector<double> value;
   std::vector<std::vector<Vector> > derivs;
   std::vector<Tensor> virial;
 public:
@@ -131,17 +131,19 @@ Plane::Plane(const ActionOptions&ao):
 void Plane::calculate() {
 
   if(pbc) makeWhole();
-  calculateCV( {}, masses, charges, getPositions(), multiColvars::Ouput(value, derivs, virial), this );
+  calculateCV( {}, multiColvars::Input().positions(getPositions()), multiColvars::Ouput(value, derivs, virial), this );
   setValue( value[0] );
   for(unsigned i=0; i<derivs[0].size(); ++i) setAtomsDerivatives( i, derivs[0][i] );
   setBoxDerivatives( virial[0] );
 }
 
-void Plane::calculateCV( Modetype /*mode*/, const std::vector<double>& masses, const std::vector<double>& charges,
-                         const std::vector<Vector>& pos,multiColvars::Ouput out, const ActionAtomistic* aa ) {
+void Plane::calculateCV( Modetype /*mode*/,
+                         multiColvars::Input const in,
+                         multiColvars::Ouput out, const ActionAtomistic* aa ) {
   auto & vals=out.vals();
   auto & derivs=out.derivs();
   auto & virial=out.virial();
+  const auto & pos = in.positions();
   Vector d1=delta( pos[1], pos[0] );
   Vector d2=delta( pos[2], pos[3] );
   Vector cp = crossProduct( d1, d2 );
