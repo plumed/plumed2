@@ -26,7 +26,19 @@
 /*
 Calculate the product of the input quantities
 
-\par Examples
+This shortcut can be used to calculate the product of a collection of scalar inputs as illustrated by the following
+simple example.
+
+```plumed
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+p: PRODUCT ARG=d1,d2
+```
+
+This action is currently only used in the [DETERMINANT](DETERMINANT.md) shortcut. In that
+action the determinant of the input square matrix is found by finding the eigenvalues of the 
+input matrix using [DIAGONALIZE](DIAGONALIZE.md). The determinant is then found by evaluating 
+the product of these eigenvalues.
 
 */
 //+ENDPLUMEDOC
@@ -44,7 +56,7 @@ PLUMED_REGISTER_ACTION(Product,"PRODUCT")
 
 void Product::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords(keys);
-  keys.add("compulsory","ARG","The point that we are calculating the distance from");
+  keys.add("compulsory","ARG","The set of scalars that you would like to multiply together");
   keys.setValueDescription("scalar","the product of all the elements in the input vector");
   keys.needsAction("CONCATENATE"); keys.needsAction("CUSTOM"); keys.needsAction("SUM");
 }

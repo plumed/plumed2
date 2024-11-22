@@ -32,9 +32,39 @@ namespace function {
 
 //+PLUMEDOC FUNCTION MOMENTS
 /*
-Calculate the moments of the distribution of input quantities
+Calculate central moments from the distribution of input quantities
 
-\par Examples
+This action takes a set of $N$ input arguments, $s_i$, and evaluates the $k$th central moment of the distribution of input arguments using:
+
+$$
+\mu_k = \frac{1}{N} \sum_{i=1}^N ( s_i - \langle s \rangle )^k \qquad \textrm{where} \qquad \langle s \rangle = \frac{1}{N} \sum_{i=1}^N s_i
+$$
+
+A single moments action can evaluate more than one central moment at once so, for example, the input below can be used to calculate the second
+and third central moment for the distribution of the four input distances.
+
+```plumed
+d12:  DISTANCE ATOMS=1,2
+d13:  DISTANCE ATOMS=1,3
+d14:  DISTANCE ATOMS=1,4
+d15:  DISTANCE ATOMS=1,5
+mv: MOMENTS ARG=d12,d13,d14,d15 POWERS=2,3
+PRINT ARG=mv.moment-2,mv.moment-3 FILE=colvar
+```
+
+Notice that you can also achieve the same result using the following input:
+
+```plumed
+d: DISTANCE ATOMS1=1,2 ATOMS2=1,3 ATOMS3=1,4 ATOMS4=1,5
+sort: SORT ARG=d
+PRINT ARG=mv.moment-2,mv.moment-3 FILE=colvar
+```
+
+In this second case the four distances are passed to the MOMENTS action as a vector.  The MOMENTS action then outputs 2 components - the 
+two central moments that were requested.
+
+These examples are representative the only two ways you can use this action.  In input it can accept either a list of scalars or a single vector.
+It does not accept matrices or a list of vectors in input.
 
 */
 //+ENDPLUMEDOC

@@ -32,26 +32,26 @@ namespace function {
 /*
 This function calculates path collective variables (PCVs) using an arbitrary combination of collective variables.
 
-The method used to calculate the PCVs that is used in this method is described in \cite Hovan2019.
+The method used to calculate the PCVs that is used in this method is described in the paper from the bibliography below.
 
 This variable computes the progress along a given set of frames that is provided in an input file ("s" component) and the distance from them ("z" component).
 The input file could be a colvar file generated with plumed driver on a trajectory containing the frames.
 
 The metric for the path collective variables takes the following form:
 
-\f[
+$$
 R[X - X_i] = \sum_{j=1}^M c_j^2 (x_j - x_{i,j})^2\,.
-\f]
+$$
 
-Here, the coefficients \f$c_j\f$ determine the relative weights of the collective variables \f$c_j\f$ in the metric.
+Here, the coefficients $c_j$ determine the relative weights of the collective variables $c_j$ in the metric.
 A value for the lambda coefficient also needs to be provided, typically chosen in such a way that it ensures a smooth variation of the "s" component.
 
-\par Examples
+## Examples
 
 This command calculates the PCVs using the values from the file COLVAR_TRAJ and the provided values for the lambda and the coefficients.
 Since the columns in the file were not specified, the first one will be ignored (assumed to correspond to the time) and the rest used.
 
-\plumedfile
+```plumed
 FUNCPATHGENERAL ...
 LABEL=path
 LAMBDA=12.2
@@ -59,13 +59,13 @@ REFERENCE=COLVAR_TRAJ
 COEFFICIENTS=0.3536,0.3536,0.3536,0.3536,0.7071
 ARG=d1,d2,d,t,drmsd
 ... FUNCPATHGENERAL
-\endplumedfile
+```
 
 The command below is a variation of the previous one, specifying a subset of the collective variables and using a neighbor list.
 The columns are zero-indexed.
 The neighbor list will include the 10 closest frames and will be recalculated every 20 steps.
 
-\plumedfile
+```plumed
 FUNCPATHGENERAL ...
 LABEL=path
 LAMBDA=5.0
@@ -76,7 +76,7 @@ ARG=d2,d,t
 NEIGH_SIZE=10
 NEIGH_STRIDE=20
 ... FUNCPATHGENERAL
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC
@@ -163,6 +163,7 @@ void FuncPathGeneral::registerKeywords(Keywords& keys) {
   keys.add("optional", "NEIGH_STRIDE", "How often the neighbor list needs to be calculated in time units");
   keys.addOutputComponent("s", "default", "scalar","Position on the path");
   keys.addOutputComponent("z", "default", "scalar","Distance from the path");
+  keys.addDOI("10.1021/acs.jctc.8b00563");
 }
 
 FuncPathGeneral::FuncPathGeneral(const ActionOptions&ao):

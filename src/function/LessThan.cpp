@@ -35,144 +35,364 @@ namespace function {
 /*
 Use a switching function to determine how many of the input variables are less than a certain cutoff.
 
-Switching functions \f$s(r)\f$ take a minimum of one input parameter \f$r_0\f$.
-For \f$r \le d_0 \quad s(r)=1.0\f$ while for \f$r > d_0\f$ the function decays smoothly to 0.
-The various switching functions available in PLUMED differ in terms of how this decay is performed.
+This action takes one argument, $r$ and evaluates the following function:
 
-Where there is an accepted convention in the literature (e.g. \ref COORDINATION) on the form of the
-switching function we use the convention as the default.  However, the flexibility to use different
-switching functions is always present generally through a single keyword. This keyword generally
-takes an input with the following form:
+$$
+w(r) = s(r)
+$$
 
-\verbatim
-KEYWORD={TYPE <list of parameters>}
-\endverbatim
+The function $s(r)$ here is a switching function so the output value $w$ is a number between 0 and 1.
+Switching functions are typically used to determine if an input value is less than some cutoff.  The value
+of $w$ the switches smoothly from one to zero as the input value $r$ crosses the threshold of interest.
 
-The following table contains a list of the various switching functions that are available in PLUMED 2
-together with an example input.
+The following example, shows how we can apply a switching function on the instantaneous value of the 
+distance between atom 1 and atom 2.
 
-<table align=center frame=void width=95%% cellpadding=5%%>
-<tr>
-<td> TYPE </td> <td> FUNCTION </td> <td> EXAMPLE INPUT </td> <td> DEFAULT PARAMETERS </td>
-</tr> <tr> <td>RATIONAL </td> <td>
-\f$
-s(r)=\frac{ 1 - \left(\frac{ r - d_0 }{ r_0 }\right)^{n} }{ 1 - \left(\frac{ r - d_0 }{ r_0 }\right)^{m} }
-\f$
-</td> <td>
-{RATIONAL R_0=\f$r_0\f$ D_0=\f$d_0\f$ NN=\f$n\f$ MM=\f$m\f$}
-</td> <td> \f$d_0=0.0\f$, \f$n=6\f$, \f$m=2n\f$ </td>
-</tr> <tr>
-<td> EXP </td> <td>
-\f$
-s(r)=\exp\left(-\frac{ r - d_0 }{ r_0 }\right)
-\f$
-</td> <td>
-{EXP  R_0=\f$r_0\f$ D_0=\f$d_0\f$}
-</td> <td> \f$d_0=0.0\f$ </td>
-</tr> <tr>
-<td> GAUSSIAN </td> <td>
-\f$
-s(r)=\exp\left(-\frac{ (r - d_0)^2 }{ 2r_0^2 }\right)
-\f$
-</td> <td>
-{GAUSSIAN R_0=\f$r_0\f$ D_0=\f$d_0\f$}
-</td> <td> \f$d_0=0.0\f$ </td>
-</tr> <tr>
-<td> SMAP </td> <td>
-\f$
-s(r) = \left[ 1 + ( 2^{a/b} -1 )\left( \frac{r-d_0}{r_0} \right)^a \right]^{-b/a}
-\f$
-</td> <td>
-{SMAP R_0=\f$r_0\f$ D_0=\f$d_0\f$ A=\f$a\f$ B=\f$b\f$}
-</td> <td> \f$d_0=0.0\f$ </td>
-</tr> <tr>
-<td> Q </td> <td>
-\f$
-s(r) = \frac{1}{1 + \exp(\beta(r_{ij} - \lambda r_{ij}^0))}
-\f$
-</td> <td>
-{Q REF=\f$r_{ij}^0\f$ BETA=\f$\beta\f$ LAMBDA=\f$\lambda\f$ }
-</td> <td> \f$\lambda=1.8\f$,  \f$\beta=50 nm^-1\f$ (all-atom)<br/>\f$\lambda=1.5\f$,  \f$\beta=50 nm^-1\f$ (coarse-grained)  </td>
-</tr> <tr>
-<td> CUBIC </td> <td>
-\f$
-s(r) = (y-1)^2(1+2y) \qquad \textrm{where} \quad y = \frac{r - r_1}{r_0-r_1}
-\f$
-</td> <td>
-{CUBIC D_0=\f$r_1\f$ D_MAX=\f$r_0\f$}
-</td> <td> </td>
-</tr> <tr>
-<td> TANH </td> <td>
-\f$
-s(r) = 1 - \tanh\left( \frac{ r - d_0 }{ r_0 } \right)
-\f$
-</td> <td>
-{TANH R_0=\f$r_0\f$ D_0=\f$d_0\f$}
-</td> <td> </td>
-</tr> <tr>
-<td> COSINUS </td> <td>
-\f$s(r) =\left\{\begin{array}{ll}
+```plumed
+d: DISTANCE ATOMS=1,2
+s: LESS_THAN ARG=d SWITCH={RATIONAL R_0=0.2}
+```
+
+The output here is close to one when the distance between atoms 1 and 2 is less than 0.2 nm close to zero
+for values that are greater than 0.2.
+
+## Non rank zero arguments
+
+Instead of passing a single scalar in the input to the `LESS_THAN` action you can pass a single vector as shown here:
+
+```plumed
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8
+b: LESS_THAN ARG=d SWITCH={RATIONAL R_0=0.2}
+```
+
+The input to the `LESS_THAN` action here is a vector with four elements. The output from the action `b` is similarly 
+a vector with four elements. In calculating the elements of this vector PLUMED applies the function described in the previous 
+section on each of the distances in turn. The first element of `b` thus tells you if the distance between atoms 1 and 2 is less than
+0.2 nm, the second element tells you if the distance between atoms 3 and 4 is less than 0.2 nm and so on.
+
+You can use the commands in the above example input to evaluate the number of distances that are less than a cutoff as follows:
+
+```plumed
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8
+b: LESS_THAN ARG=d SWITCH={RATIONAL R_0=0.2} 
+s: SUM ARG=b PERIODIC=NO
+PRINT ARG=s FILE=colvar
+```
+
+The final scalar that is output here is evaluated using the following summation:
+
+$$
+s = \sum_i s(d_i)
+$$
+
+where the sum over $i$ here runs over the four distances in the above expression. This scalar tells you the number of distances that are 
+less than 0.2 nm.
+
+Notice that you can do something similar with a matrix as input as shown below:
+
+```plumed
+d: DISTANCE_MATRIX GROUPA=1-10 GROUPB=11-20
+b: LESS_THAN ARG=d SWITCH={RATIONAL R_0=0.2} 
+s: SUM ARG=b PERIODIC=NO
+PRINT ARG=s FILE=colvar
+```
+
+This input tells PLUMED to calculate the 100 distances between the atoms in the two input groups. The final value that is printed to the colvar file then 
+tells you how many of these distances are less than 0.2 nm. 
+
+## Switching functions types
+
+PLUMED allows you to use a range of different switching function types.  Most of these
+require you to provide at least one input parameter $r_0$. The switching function is then defined so that for 
+$r \le d_0 \quad s(r)=1.0$ while for $r > d_0$ the function decays smoothly to 0.  By changing the switching 
+function you are using you change the decay that occurs in the switching function for $r$ values that are greater
+that $d_0$.
+
+You can specify the value at which the the switching function goes to zero by using the D_MAX keyword.   
+PLUMED will ensure that the swtiching function is definitely zero for for input values that are greater than 
+or equal to D_MAX by by stretching and shifting the function using the following transformations.
+
+$
+s(r) = \frac{s'(r)-s'(d_{max})}{s'(0)-s'(d_{max})}
+$
+
+The various expressions that are used for $s'(r)$ in the above expression are described in the following sections.
+Scaling the switching function so that it is exactly zero at $d_{max}$ using the transformation described above 
+has been the default behaviour within PLUMED since version 2.2.
+If you wish to use a D_MAX parameter and the $s'(r)$ functions described in the following sections directly you can use the 
+keyword `NOSTRETCH`. However, the advangage of performing the stretching and scaling in this way is that the function has 
+no discontinuities.  If you use the `NOSTRETCH` option the switching function may have a discontinuity at $d_{max}$.
+
+### Rational switching function
+
+The rational switching function is the most commonly used of the switching functions.  The implementation of this function within PLUMED has been carefully 
+optimised so calculations using this switching function should be fast.  
+
+For this function $s'(r)$ has the following functional form:
+
+$$
+s'(r) = \begin{cases}
+1 & \textrm{if} \quad r<d_0 \\
+\frac{ 1 - \left(\frac{ r - d_0 }{ r_0 }\right)^{n} }{ 1 - \left(\frac{ r - d_0 }{ r_0 }\right)^{m} } & \textrm{if} \quad d_0 < r < d_{max} \\
+0 & \textrm{otherwise}
+$$
+
+The following example illustrates how you can use the rational switching function is used in practice:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+s: LESS_THAN ARG=d SWITCH={RATIONAL R_0=0.5 D_0=0.1 NN=8 MM=16 D_MAX=1.0}
+```
+
+As was discussed in earlier parts of this page, you can also specify a rational switching function using the following input:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+s: LESS_THAN ARG=d SWITCH={RATIONAL R_0=0.2}
+```
+
+In this case, the paramers $d_0$, $n$ and $m$ are set to their default values of 0, 6 and 12 respectively. Meanwhile, if D_MAX is unset the stretching and scaling that 
+was described in the previous section is not performed.
+
+Notice that you can choose to set a subset of the switching function parameters and to use the default values for the unset parameters by using an input like this one:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+s: LESS_THAN ARG=d SWITCH={RATIONAL R_0=0.2 NN=8}
+```
+
+The input above sets $n=8$ and $m=2n=16$. Meanwhile, $d_0$ is set to its default value of 0. 
+
+Lastly, note that you can also specify the parameters for the rational switching function without using the SWITCH keyword as indicated below:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+s: LESS_THAN ARG=d D_0=0.1 R_0=0.2 NN=6 MM=12
+```
+
+The newer syntax using the SWITCH keyword is better than this option as there is no way to set the D_MAX parameter this way and because if you use this syntax you are forced to 
+use the RATIONAL switching function type.
+
+### Expoential switching function
+
+The way that the exponential switching function can be used is illustrated in the following example input:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+s: LESS_THAN ARG=d SWITCH={EXP D_0=0.1 R_0=0.2 D_MAX=1.0}
+```
+
+The $s'(r)$ that is used in this input is given by the following expression:
+
+$$
+s'(r) = \begin{cases}
+1 & \textrm{if} \quad r<d_0 \\
+\exp\left(-\frac{ r - d_0 }{ r_0 }\right) & \textrm{if} \quad d_0 < r < d_{max} \\
+0 & \textrm{otherwise}
+$$
+
+You can also specify that an exponential switching function is to be used by using the following input:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+s: LESS_THAN ARG=d SWITCH={EXP R_0=0.2}
+```
+
+For this input $d_0$ is set to its default value of 0.  Furthermore, as D_MAX is unset the stretching and scaling that 
+was described in the previous section is not performed.
+
+### Gaussian switching function
+
+The way that the gaussian switching function can be used is illustrated in the following example input:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+s: LESS_THAN ARG=d SWITCH={GAUSSIAN D_0=0.1 R_0=0.2 D_MAX=1.0}
+```
+
+The $s'(r)$ that is used in this input is given by the following expression:
+
+$$
+s'(r) = \begin{cases}
+1 & \textrm{if} \quad r<d_0 \\
+\exp\left(-\frac{ (r - d_0)^2 }{ 2r_0^2 }\right) & \textrm{if} \quad d_0 < r < d_{max} \\
+0 & \textrm{otherwise}
+$$
+
+You can also specify that an gaussian switching function is to be used by using the following input:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+s: LESS_THAN ARG=d SWITCH={GAUSSIAN R_0=0.2}
+```
+
+For this input $d_0$ is set to its default value of 0.  Furthermore, as D_MAX is unset the stretching and scaling that 
+was described in the previous section is not performed.
+
+### Sketch-map switching function
+
+You can specify that the sketch-map switching function is to be used by using the following input:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+s: LESS_THAN ARG=d SWITCH={SMAP D_0=1 R_0=4 A=3 B=2 D_MAX=10}
+```
+
+The $s'(r)$ that is used in this input is given by the following expression:
+
+$$
+s'(r) = \begin{cases}
+1 & \textrm{if} \quad r<d_0 \\
+\left[ 1 + ( 2^{a/b} -1 )\left( \frac{r-d_0}{r_0} \right)^a \right]^{-b/a} & \textrm{if} \quad d_0 < r < d_{max} \\
+0 & \textrm{otherwise}
+$$
+
+This type of swtiching function would be used with PLUMED's implementation of [SKETCHMAP](SKETCHMAP.md). If you are 
+performing a sketch-map projection an input like the one below would be more common:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+s: LESS_THAN ARG=d SWITCH={SMAP R_0=4 A=3 B=2}
+```
+
+With this input $d_0$ is set to its default value of 0.  Furthermore, as D_MAX is unset the stretching and scaling that 
+was described in the previous section is not performed.
+
+### Q switching function
+
+You can specify that the Q switching function is to be used by using the following input:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+s: LESS_THAN ARG=d SWITCH={Q D_0=0 REF=0.498366 BETA=50.0 LAMBDA=1.8 R_0=0.01 D_MAX=20}
+```
+
+The $s'(r)$ that is used in this input is given by the following expression:
+
+$$
+s'(r) = \begin{cases}
+1 & \textrm{if} \quad r<d_0 \\
+s(r) = \frac{1}{1 + \exp(\beta(r_{ij} - \lambda r_{ij}^0))} & \textrm{if} \quad d_0 < r < d_{max} \\
+0 & \textrm{otherwise}
+$$
+
+The value of $r_{ij}^0$ is specified in the above input by the `REF` keyword.  Notice that you can also specify this type of switching function using
+the following input:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+s: LESS_THAN ARG=d SWITCH={Q REF=0.498366 R_0=0.01 }
+```
+
+With this input $_0$, $\lambda$ and $\beta$ are set equal to their default values of 0, 1.8 and 50 nm$^{-1}$ respectively. Furthermore, as D_MAX is unset the stretching and scaling that 
+was described in the previous section is not performed. These default values for $\lambda$ and $\beta$ are suitable if you are simulating all atom models.  However, if you are using 
+a coarse grainded models values of $\lambda=1.5$ and $\beta=50 nm^-1$ are more appropriate.
+
+### Cubic switching function
+
+You can specify that the cubic swtiching function is to be used by using the following input:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+s: LESS_THAN ARG=d SWITCH={CUBIC D_0=0.1 D_MAX=0.5}
+```
+
+If this type of expression is used then the $s(r)$ is calculated as: 
+
+$$
+s(r) = (y-1)^2(1+2y) \qquad \textrm{where} \quad y = \frac{d_0 - d_{max}}{d_0-d_{max}}$
+$$
+
+No stretching is required for this type of switching function as its functional form ensures that it is zero at $d_{max}$.
+
+### Tanh switching function
+
+You can specify that the cubic swtiching function is to be used by using the following input:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+s: LESS_THAN ARG=d SWITCH={TANH D_0=0.1 R_0=0.1 D_MAX=1.0}
+```
+
+The $s'(r)$ that is used in this input is given by the following expression:
+
+$$
+s'(r) = \begin{cases}
+1 & \textrm{if} \quad r<d_0 \\
+1 - \tanh\left( \frac{ r - d_0 }{ r_0 } \right) & \textrm{if} \quad d_0 < r < d_{max} \\
+0 & \textrm{otherwise}
+$$
+
+You can also specify that a tanh switching function is to be used by using the following input:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+s: LESS_THAN ARG=d SWITCH={TANH R_0=0.2}
+```
+
+For this input $d_0$ is set to its default value of 0.  Furthermore, as D_MAX is unset the stretching and scaling that 
+was described in the previous section is not performed.
+
+### Cosinus switching function
+
+You can specify that the cosinum function is to be used by using the following input:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+s: LESS_THAN ARG=d SWITCH={COSINUS D_0=0.1 R_0=0.1}
+```
+
+The $s'(r)$ that is used in this input is given by the following expression:
+
+$$
+s(r) =\left\{\begin{array}{ll}
    1                                                           & \mathrm{if } r \leq d_0 \\
    0.5 \left( \cos ( \frac{ r - d_0 }{ r_0 } \pi ) + 1 \right) & \mathrm{if } d_0 < r\leq d_0 + r_0 \\
-   0                                                           & \mathrm{if } r > d_0 + r_0
-  \end{array}\right.
-\f$
-</td> <td>
-{COSINUS R_0=\f$r_0\f$ D_0=\f$d_0\f$}
-</td> <td> </td>
-</tr> <tr>
-<td> CUSTOM </td> <td>
-\f$
-s(r) = FUNC
-\f$
-</td> <td>
-{CUSTOM FUNC=1/(1+x^6) R_0=\f$r_0\f$ D_0=\f$d_0\f$}
-</td> <td> </td>
-</tr>
-</table>
+   0 
+$$
 
-Notice that most commonly used rational functions are better optimized and might run faster.
+No stretching is required for this type of switching function as its functional form ensures that it is zero at $d_0+r_0$
 
-Notice that for backward compatibility we allow using `MATHEVAL` instead of `CUSTOM`.
-Also notice that if the a `CUSTOM` switching function only depends on even powers of `x` it can be
-made faster by using `x2` as a variable. For instance
-\verbatim
-{CUSTOM FUNC=1/(1+x2^3) R_0=0.3}
-\endverbatim
-is equivalent to
-\verbatim
-{CUSTOM FUNC=1/(1+x^6) R_0=0.3}
-\endverbatim
-but runs faster. The reason is that there is an expensive square root calculation that can be optimized out.
+### Custom switching function
 
+If you want to use a switching function that is different to all of the functions listed above you can use the cusom option that is illustrated below:
 
-\attention
-With the default implementation CUSTOM is slower than other functions
-(e.g., it is slower than an equivalent RATIONAL function by approximately a factor 2).
-Checkout page \ref Lepton to see how to improve its performance.
+```plumed
+d: DISTANCE ATOMS=1,2
+s: LESS_THAN ARG=d SWITCH={CUSTOM FUNC=1/(1+x^6) D_0=0.1 R_0=0.1 D_MAX=10}
+```
 
-For all the switching functions in the above table one can also specify a further (optional) parameter using the parameter
-keyword D_MAX to assert that for \f$r>d_{\textrm{max}}\f$ the switching function can be assumed equal to zero.
-In this case the function is brought smoothly to zero by stretching and shifting it.
-\verbatim
-KEYWORD={RATIONAL R_0=1 D_MAX=3}
-\endverbatim
-the resulting switching function will be
-\f$
-s(r) = \frac{s'(r)-s'(d_{max})}{s'(0)-s'(d_{max})}
-\f$
-where
-\f$
-s'(r)=\frac{1-r^6}{1-r^{12}}
-\f$
-Since PLUMED 2.2 this is the default. The old behavior (no stretching) can be obtained with the
-NOSTRETCH flag. The NOSTRETCH keyword is only provided for backward compatibility and might be
-removed in the future. Similarly, the STRETCH keyword is still allowed but has no effect.
+This option allows you to use the lepton library that is used to implement the [CUSTOM](CUSTOM.md) action to evaluate your switching function. With this 
+option you specify the functional form for $s'(r)$ by providing a function of `x` to the `FUNC` keyword.  The `x` that enters the switching function 
+definition that you provide is given by:
 
-Notice that switching functions defined with the simplified syntax are never stretched
-for backward compatibility. This might change in the future.
+$$
+x = \frac{r - d_0}{r_0}
+$$
 
-\par Examples
+Notice, that you can also express your switching function in terms of $x^2$ as illustrated in the input below:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+s: LESS_THAN ARG=d SWITCH={CUSTOM FUNC=1/(1+x2^3) D_0=0.1 R_0=0.1 D_MAX=10}
+```
+
+which is equivalent to the earlier input with the CUSTOM switching function.  However, using `x2` in place of `x` is often more computationally efficient 
+as you can avoid an expensive square root operation.  Notice, lastly, that just as there is a [MATHEVAL](MATHEVAL.md) action that is equivalent to [CUSTOM](CUSTOM.md),
+there is also a matheval equivalent that you can use here:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+s: LESS_THAN ARG=d SWITCH={MATHEVAL FUNC=1/(1+x2^3) R_0=0.1}
+``` 
+
+For this input $d_0$ is set to its default value of 0. Furthermore, as D_MAX is unset the stretching and scaling that 
+was described in the previous section is not performed.
+
+> [!CAUTION]
+> With the default implementation CUSTOM is slower than other functions
+> (e.g., it is slower than an equivalent RATIONAL function by approximately a factor 2).
+> You can find information on how to improve its performance in the documenation for [CUSTOM](CUSTOM.md) 
 
 */
 //+ENDPLUMEDOC

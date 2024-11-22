@@ -31,17 +31,18 @@ namespace function {
 /*
 Calculates the replica averaging of a collective variable over multiple replicas.
 
-Each collective variable is averaged separately and stored in a component labelled <em>label</em>.cvlabel.
+Each collective variable is averaged separately and stored in a component labelled _label_.cvlabel.
 
-\par Examples
+## Examples
 
 The following input tells plumed to calculate the distance between atoms 3 and 5
 and the average it over the available replicas.
-\plumedfile
+
+```plumed
 dist: DISTANCE ATOMS=3,5
 ens: ENSEMBLE ARG=dist
 PRINT ARG=dist,ens.dist
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC

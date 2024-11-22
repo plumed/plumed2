@@ -27,8 +27,8 @@ t: METAD ARG=e1 SIGMA=0.15 PACE=10 HEIGHT=2 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=20
 
 Notice here that the boundaries for `GRID_MIN` and `GRID_MAX` are `-pi` and `pi`. 
 
-Any real numbers that are read in from input are interpretted using the [Lepton library](Custom.md) so you can thus employ
-complicated expressions such as `1+2` or `exp(10)` as shown in the in the input as shown below:
+Any real numbers that are read in from input are interpretted using the [Lepton library] that is described in the documtation for the [CUSTOM](CUSTOM.md) 
+action. You can thus employ complicated expressions such as `1+2` or `exp(10)` as shown in the in the input as shown below:
 
 ```plumed
 #SETTINGS MOLFILE=regtest/basic/rt65/AA.pdb
@@ -37,7 +37,7 @@ e1: TORSION ATOMS=@epsilon-1
 RESTRAINT ARG=e1 AT=1+0.5
 ```
 
-The lepton library is able to interpret any of thse following constants:
+You can also also write expressions in terms of any of the following constants:
 
 | Symbol | Description | 
 | :----- |:------------|

@@ -31,15 +31,16 @@ namespace function {
 Calculates the average over multiple arguments.
 
 If more than one collective variable is given for each argument then they
-are averaged separately. The average is stored in a component labelled <em>label</em>.cvlabel.
+are averaged separately. The average is stored in a component labelled _label_.cvlabel.
 
-\par Examples
+## Examples
 
 The following input tells plumed to calculate the chemical shifts for four
 different proteins in the same simulation box then average them, calculated
 the sum of the squared deviation with respect to the experimental values and
 applies a linear restraint.
-\plumedfile
+
+```plumed
 MOLINFO STRUCTURE=data/template.pdb
 
 chaina: GROUP ATOMS=1-1640
@@ -67,7 +68,7 @@ sthn: STATS ARG=(enshn\.csa\.hn_.*) PARARG=(csa\.exphn_.*) SQDEVSUM
 stnh: STATS ARG=(ensnh\.csa\.nh_.*) PARARG=(csa\.expnh_.*) SQDEVSUM
 
 res: RESTRAINT ARG=stca.*,stcb.*,stco.*,sthn.*,stnh.* AT=0.,0.,0.,0.,0. KAPPA=0.,0.,0.,0.,0 SLOPE=16.,16.,12.,24.,0.5
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC

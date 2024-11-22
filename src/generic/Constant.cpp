@@ -108,6 +108,17 @@ sss: SORT ARG=cn,dis
 PRINT ARG=sss.1
 ```
 
+Lastly, note that if you have an action that only takes constant values in input its output values will be treated as constants.  For example,
+in the following input the values `d` and `f` are  evaluated on every step.  `c`, however, is only evaluated once during start up.
+
+```plumed
+p: CONSTANT VALUE=1.0
+c: CUSTOM ARG=p FUNC=2*x+1 PERIODIC=NO
+d: DISTANCE ATOMS=1,2
+f: CUSTOM ARG=p,d FUNX=x*y PERIODIC=NO
+PRINT ARG=f FILE=colvar STRIDE=1
+``` 
+
 */
 //+ENDPLUMEDOC
 

@@ -30,63 +30,31 @@ namespace function {
 /*
 This function calculates path collective variables.
 
-This is the Path Collective Variables implementation
-( see \cite brand07 ).
+This is the Path Collective Variables implementation described in the paper from the bibliography.
 This variable computes the progress along a given set of frames that is provided
 in input ("s" component) and the distance from them ("z" component).
 It is a function of mean squared displacement that are obtained by the joint use of mean squared displacement variables with the SQUARED flag
 (see below).
 
-\par Examples
+## Examples
 
 Here below is a case where you have defined three frames and you want to
 calculate the progress along the path and the distance from it in p1
 
-\plumedfile
-t1: RMSD REFERENCE=frame_1.pdb TYPE=OPTIMAL SQUARED
-t2: RMSD REFERENCE=frame_21.pdb TYPE=OPTIMAL SQUARED
-t3: RMSD REFERENCE=frame_42.pdb TYPE=OPTIMAL SQUARED
+```plumed
+#SETTINGS INPUTFILES=regtest/trajectories/path_msd/frame_1.dat,regtest/trajectories/path_msd/frame_21.dat,regtest/trajectories/path_msd/frame_42.dat
+t1: RMSD REFERENCE=regtest/trajectories/path_msd/frame_1.pdb TYPE=OPTIMAL SQUARED
+t2: RMSD REFERENCE=regtest/trajectories/path_msd/frame_21.pdb TYPE=OPTIMAL SQUARED
+t3: RMSD REFERENCE=regtest/trajectories/path_msd/frame_42.pdb TYPE=OPTIMAL SQUARED
 p1: FUNCPATHMSD ARG=t1,t2,t3 LAMBDA=500.0
 PRINT ARG=t1,t2,t3,p1.s,p1.z STRIDE=1 FILE=colvar FMT=%8.4f
-\endplumedfile
+```
 
-For this input you would then define the position of the reference coordinates in three separate pdb files.  The contents of the
-file frame_1.pdb are shown below:
+You can see that the reference coordinates here are described in three separate pdb files that you view above.
 
-\auxfile{frame_1.pdb}
-ATOM      1  CL  ALA     1      -3.171   0.295   2.045  1.00  1.00
-ATOM      5  CLP ALA     1      -1.819  -0.143   1.679  1.00  1.00
-ATOM      6  OL  ALA     1      -1.177  -0.889   2.401  1.00  1.00
-ATOM      7  NL  ALA     1      -1.313   0.341   0.529  1.00  1.00
-ATOM      8  HL  ALA     1      -1.845   0.961  -0.011  1.00  1.00
-END
-\endauxfile
+This second example shows how to define a PATH in [CONTACTMAP](CONTACTMAP.md) space:
 
-This is then frame.21.pdb:
-
-\auxfile{frame_21.pdb}
-ATOM      1  CL  ALA     1      -3.089   1.850   1.546  1.00  1.00
-ATOM      5  CLP ALA     1      -1.667   1.457   1.629  1.00  1.00
-ATOM      6  OL  ALA     1      -0.974   1.868   2.533  1.00  1.00
-ATOM      7  NL  ALA     1      -1.204   0.683   0.642  1.00  1.00
-ATOM      8  HL  ALA     1      -1.844   0.360  -0.021  1.00  1.00
-END
-\endauxfile
-
-and finally this is frame_42.pdb:
-
-\auxfile{frame_42.pdb}
-ATOM      1  CL  ALA     1      -3.257   1.605   1.105  1.00  1.00
-ATOM      5  CLP ALA     1      -1.941   1.459   0.447  1.00  1.00
-ATOM      6  OL  ALA     1      -1.481   2.369  -0.223  1.00  1.00
-ATOM      7  NL  ALA     1      -1.303   0.291   0.647  1.00  1.00
-ATOM      8  HL  ALA     1      -1.743  -0.379   1.229  1.00  1.00
-END
-\endauxfile
-
-This second example shows how to define a PATH in \ref CONTACTMAP space:
-
-\plumedfile
+```plumed
 CONTACTMAP ...
 ATOMS1=1,2 REFERENCE1=0.1
 ATOMS2=3,4 REFERENCE2=0.5
@@ -119,16 +87,17 @@ CMDIST
 
 p1: FUNCPATHMSD ARG=c1,c2,c3 LAMBDA=500.0
 PRINT ARG=c1,c2,c3,p1.s,p1.z STRIDE=1 FILE=colvar FMT=%8.4f
-\endplumedfile
+```
 
-This third example shows how to define a PATH in \ref PIV space:
+This third example shows how to define a PATH in [PIV](PIV.md) space:
 
-\plumedfile
+```plumed
+#SETTINGS INPUTFILES=regtest/piv/rt-piv-distance/Liq.pdb,regtest/piv/rt-piv-distance/Ice.pdb
 PIV ...
 LABEL=c1
 PRECISION=1000
 NLIST
-REF_FILE=Ref1.pdb
+REF_FILE=regtest/piv/rt-piv-distance/Liq.pdb
 PIVATOMS=2
 ATOMTYPES=A,B
 ONLYDIRECT
@@ -144,7 +113,7 @@ PIV ...
 LABEL=c2
 PRECISION=1000
 NLIST
-REF_FILE=Ref2.pdb
+REF_FILE=regtest/piv/rt-piv-distance/Ice.pdb
 PIVATOMS=2
 ATOMTYPES=A,B
 ONLYDIRECT
@@ -160,7 +129,7 @@ NL_SKIN=0.1,0.1
 p1: FUNCPATHMSD ARG=c1,c2 LAMBDA=0.180338
 METAD ARG=p1.s,p1.z SIGMA=0.01,0.2 HEIGHT=0.8 PACE=500   LABEL=res
 PRINT ARG=c1,c2,p1.s,p1.z,res.bias STRIDE=500  FILE=colvar FMT=%15.6f
-\endplumedfile
+```
 
 */
 //+ENDPLUMEDOC
@@ -224,6 +193,7 @@ void FuncPathMSD::registerKeywords(Keywords& keys) {
   keys.add("optional","NEIGH_STRIDE","how often the neighbor list needs to be calculated in time units");
   keys.addOutputComponent("s","default","scalar","the position on the path");
   keys.addOutputComponent("z","default","scalar","the distance from the path");
+  keys.addDOI("10.1063/1.2432340");
 }
 FuncPathMSD::FuncPathMSD(const ActionOptions&ao):
   Action(ao),
