@@ -101,7 +101,7 @@ that you can use in in the input to the `FUNC` keyword for CUSTOM.
 | cos(x)        | The cosine of x | 
 | sec(x)        | The reciprocal of the cosine of $x$. $\frac{1}{\cos(x)}$ |
 | csc(x)        | The reciprocal of the sine of $x$. $\frac{1}{\sin(x)}$ |
-| tan(x)        | The tangent of x i.e. $\frac{\sin(x)}(\cos(x)}$ | 
+| tan(x)        | The tangent of x i.e. $\frac{\sin(x)}{\cos(x)}$ | 
 | cot(x)        | The reciprocal of the tangent of $x$. $\frac{1}{\tan(x)}$ |
 | asin(x)       | The principal arc sine of x. Returns $-\frac{\pi}{2} \le y \le \frac{\pi}{2}$ which gives $x = \sin(y)$ |
 | acos(x)       | The principal arc cosine of x. Returns $0 \le y \le \pi$ which gives $x=\cos(y)$ | 
@@ -110,8 +110,8 @@ that you can use in in the input to the `FUNC` keyword for CUSTOM.
 | sinh(x)       | The hyperbolic sine of $x$ |
 | cosh(x)       | the hyperbolic cosine of $x$ |
 | tanh(x)       | The hyperbolic tangent of $x$ |
-| erf(x)        | The [error function](https://en.wikipedia.org/wiki/Error_function) $\frac{2}{\sqrt{\pi}}\int_0^x e^{-t^2} \txtrm{d}t$ |
-| erfc(x)       | The complementary error function $1-\frac{2}{\sqrt{\pi}}\int_0^x e^{-t^2} \txtrm{d}t$ |
+| erf(x)        | The [error function](https://en.wikipedia.org/wiki/Error_function) $\frac{2}{\sqrt{\pi}}\int_0^x e^{-t^2} \textrm{d}t$ |
+| erfc(x)       | The complementary error function $1-\frac{2}{\sqrt{\pi}}\int_0^x e^{-t^2} \textrm{d}t$ |
 | step(x)       | 1 if $x \ge 0$ and 0 otherwise |
 | delta(x)      | inf if $x=0$ and 0 otherwise |
 | nandelta(x)   | nan if $x=0$ and 0 otherwise |
@@ -120,7 +120,7 @@ that you can use in in the input to the `FUNC` keyword for CUSTOM.
 | recip(x)      | The reciprocal of x i.e. $\frac{1}{x}$ |
 | min(x,y)      | If $x<y$ this function returns $x$.  If $y\le x$ this function returns $y$ |  
 | max(x,y)      | If $x>y$ this function returns $x$.  If $y\ge x$ this function returns $y$ |
-| abs(x)        | The absolute value of x i.e. $|x|$ |
+| abs(x)        | The absolute value of x |
 | floor(x)      | The largest integer that is less than $x$ |
 | ceil(x)       | The smallest integer that is greater than $x$ |
 | select(x,y,z) | If $x==0$ this returns $z$ otherwise this returns $y$ |
@@ -208,7 +208,7 @@ Notice that you can use CUSTOM to implement a [MOVINGRESTRAINT](MOVINGRESTRAINT.
 ```plumed
 t: TIME 
 d: DISTANCE ATOMS=1,2 
-f: CUSTOM ARG=d,t FUNC=100*(d-((0.2-0.1)*t/100))^2 PERIODIC=NO
+f: CUSTOM ARG=d,t FUNC=100*(x-((0.2-0.1)*y/100))^2 PERIODIC=NO
 BIASVALUE ARG=f
 ```
 
@@ -310,9 +310,9 @@ d: DISTANCE COMPONENTS ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8
 # Calculate the norm of these four vectors 
 norm: CUSTOM ARG=d.x,d.y,d.z FUNC=sqrt(x*x+y*y+z*z) PERIODIC=NO
 # Now calculate the directors of the vectors
-norm_x: CUSTOM ARG=d.x,norm FUNC=x/y PEROIDIC=NO
-norm_y: CUSTOM ARG=d.y,norm FUNC=x/y PEROIDIC=NO
-norm_z: CUSTOM ARG=d.z,norm FUNC=x/y PEROIDIC=NO
+norm_x: CUSTOM ARG=d.x,norm FUNC=x/y PERIODIC=NO
+norm_y: CUSTOM ARG=d.y,norm FUNC=x/y PERIODIC=NO
+norm_z: CUSTOM ARG=d.z,norm FUNC=x/y PERIODIC=NO
 # And combine all these directors in a matrix
 stack: VSTACK ARG=norm_x,norm_y,norm_z 
 # Now calculate the matrix of dot products between directors (these are the cosines of the angles)
@@ -328,7 +328,7 @@ Notice that you can pass multiple $N\times M$ matrices in the input to a CUSTOM 
 ```plumed
 c1: CUSTOM VALUES=2,3,4,5 NROWS=2 NCOLS=2
 c2: CUSTOM VALUES=1,0,0,1 NROWS=2 NCOLS=2
-f: CUSTOM ARG=c1,c2 FUNC=x*y PEIRODIC=NO
+f: CUSTOM ARG=c1,c2 FUNC=x*y PERIODIC=NO
 PRINT ARG=f FILE=colvar
 ```
 

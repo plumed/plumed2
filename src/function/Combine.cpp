@@ -98,7 +98,7 @@ COMBINE action that takes vectors and scalars in input.
 ```plumed
 p: CONSTANT VALUE=2
 d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8
-c: COMBINE ARG=d,p COEFFICIENTS=4,-1 POWERS=2.5,1 
+c: COMBINE ARG=d,p COEFFICIENTS=4,-1 POWERS=2.5,1 PERIODIC=NO
 PRINT ARG=c FILE=colvar
 ```
 
@@ -117,7 +117,7 @@ Lastly, notice that if you pass a single vector in input to COMBINE as in the fo
 
 ```plumed
 d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8
-c: COMBINE ARG=d COEFFICIENTS=4 POWERS=2.5 PARAMETERS=0.5
+c: COMBINE ARG=d COEFFICIENTS=4 POWERS=2.5 PARAMETERS=0.5 PERIODIC=NO
 PRINT ARG=c FILE=colvar
 ```
 

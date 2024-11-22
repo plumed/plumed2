@@ -115,7 +115,7 @@ in the following input the values `d` and `f` are  evaluated on every step.  `c`
 p: CONSTANT VALUE=1.0
 c: CUSTOM ARG=p FUNC=2*x+1 PERIODIC=NO
 d: DISTANCE ATOMS=1,2
-f: CUSTOM ARG=p,d FUNX=x*y PERIODIC=NO
+f: CUSTOM ARG=p,d FUNC=x*y PERIODIC=NO
 PRINT ARG=f FILE=colvar STRIDE=1
 ``` 
 

@@ -46,7 +46,7 @@ This example calculates and outputs the number of distances that are less than 0
 You can do something similar by summing the elements of a matrix as shown below:
 
 ```plumed
-c: CONTACT_MAP SPECIES=1-100 SWITCH={RATIONAL R_0=0.1}
+c: CONTACT_MATRIX SPECIES=1-100 SWITCH={RATIONAL R_0=0.1}
 s: SUM ARG=c PERIODIC=NO
 PRINT ARG=s FILE=colvar
 ```

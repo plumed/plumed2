@@ -43,9 +43,9 @@ calculate the progress along the path and the distance from it in p1
 
 ```plumed
 #SETTINGS INPUTFILES=regtest/trajectories/path_msd/frame_1.dat,regtest/trajectories/path_msd/frame_21.dat,regtest/trajectories/path_msd/frame_42.dat
-t1: RMSD REFERENCE=regtest/trajectories/path_msd/frame_1.pdb TYPE=OPTIMAL SQUARED
-t2: RMSD REFERENCE=regtest/trajectories/path_msd/frame_21.pdb TYPE=OPTIMAL SQUARED
-t3: RMSD REFERENCE=regtest/trajectories/path_msd/frame_42.pdb TYPE=OPTIMAL SQUARED
+t1: RMSD REFERENCE=regtest/trajectories/path_msd/frame_1.dat TYPE=OPTIMAL SQUARED
+t2: RMSD REFERENCE=regtest/trajectories/path_msd/frame_21.dat TYPE=OPTIMAL SQUARED
+t3: RMSD REFERENCE=regtest/trajectories/path_msd/frame_42.dat TYPE=OPTIMAL SQUARED
 p1: FUNCPATHMSD ARG=t1,t2,t3 LAMBDA=500.0
 PRINT ARG=t1,t2,t3,p1.s,p1.z STRIDE=1 FILE=colvar FMT=%8.4f
 ```

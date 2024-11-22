@@ -56,7 +56,7 @@ Notice that you can also achieve the same result using the following input:
 
 ```plumed
 d: DISTANCE ATOMS1=1,2 ATOMS2=1,3 ATOMS3=1,4 ATOMS4=1,5
-sort: SORT ARG=d
+sort: MOMENTS ARG=d POWERS=2,3
 PRINT ARG=mv.moment-2,mv.moment-3 FILE=colvar
 ```
 

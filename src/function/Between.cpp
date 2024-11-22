@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Between.h"
 #include "FunctionShortcut.h"
+#include "FunctionOfScalar.h"
 #include "FunctionOfVector.h"
 #include "FunctionOfMatrix.h"
 #include "core/ActionRegister.h"
@@ -66,7 +67,7 @@ $$
 Also note that the Kernel function $K$ that is used in the first example is a Gaussian. The actual integral that is evaluated is thus:
 
 $$
-w(s) = \frac{1}{\sqrt{2\pi}\sigma} \int_a^b \exp\left( -\frac{(x-s)^2}{2\sigma^2} \textrm{d}x
+w(s) = \frac{1}{\sqrt{2\pi}\sigma} \int_a^b \exp\left( -\frac{(x-s)^2}{2\sigma^2}\right) \textrm{d}x
 $$
 
 The Gaussian kernel in this expression can be replaced by a triangular Kernel by changing the input to:
@@ -158,6 +159,8 @@ Transform all the elements of a matrix using a switching function that is oen wh
 
 typedef FunctionShortcut<Between> BetweenShortcut;
 PLUMED_REGISTER_ACTION(BetweenShortcut,"BETWEEN")
+typedef FunctionOfScalar<Between> ScalarBetween;
+PLUMED_REGISTER_ACTION(ScalarBetween,"BETWEEN_SCALAR")
 typedef FunctionOfVector<Between> VectorBetween;
 PLUMED_REGISTER_ACTION(VectorBetween,"BETWEEN_VECTOR")
 typedef FunctionOfMatrix<Between> MatrixBetween;
