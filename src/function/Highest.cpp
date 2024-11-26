@@ -93,7 +93,7 @@ Notice that you can also use a combination of scalars and vectors in the input t
 ```plumed
 c: CONSTANT VALUE=0.05
 d: DISTANCE ATOMS1=1,2 ATOMS2=3,4
-h: HIGHEST ARG=c,d
+h: HIGHEST ARG=d,c
 PRINT ARG=h FILE=colvar
 ``` 
 
@@ -187,7 +187,7 @@ Notice that you can also use a combination of scalars and vectors in the input t
 ```plumed
 c: CONSTANT VALUE=0.5
 d: DISTANCE ATOMS1=1,2 ATOMS2=3,4
-h: LOWEST ARG=c,d
+h: LOWEST ARG=d,c
 PRINT ARG=h FILE=colvar
 ``` 
 

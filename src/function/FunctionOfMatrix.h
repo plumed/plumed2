@@ -182,6 +182,11 @@ FunctionOfMatrix<T>::FunctionOfMatrix(const ActionOptions&ao):
       }
     }
   }
+  bool allconstant=true;
+  for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
+      if( !getPntrToArgument(i)->isConstant() ) { allconstant=false; break; } 
+  } 
+  if( allconstant ) done_in_chain=false;
   // Now setup the action in the chain if we can
   nderivatives = buildArgumentStore(myfunc.getArgStart());
 }

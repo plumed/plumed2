@@ -249,7 +249,32 @@ PRINT ARG=onaxis,fromaxis
 ```
 
 The equations in this input were also used to combine [RMSD](RMSD.md) values from different snapshots of a protein so as to define
-progression (S) and distance (Z) variables in the paper that is cited in the bibliography.
+progression (S) and distance (Z) variables in the paper that is cited in the bibliography.  We can understand how these expressions
+are derived by noting that $x$, $y$ and $z$ are the distances between atoms 1 and 3, 2 and 3 and 1 and 2 respectively.  The projection
+of the vector connecting atom 1 to atom 3 onto the vector connecting atom 1 to atom 2 is thus $x\cos(\theta)$, where theta is the angle
+between the vector connecting atoms 1 and 3 and the vector connecting atoms 1 and 2.  We can arrive at the following expression for $x\cos(\theta)$
+by rearranging the cosine rule:
+
+$$
+x\cos(\theta) = \frac{y^2 - x^2}{z} - \frac{z}{2}
+$$
+
+Notice that the value called `onaxis` in the above input is thus $o=x\cos(\theta) + \frac{z}{2}$.  Adding the factor of $\frac{z}{2}$ ensures that the origin
+is at the center of the bond connecting atom 1 to atom 2.
+
+The value `fromaxis` measures the square of the distance from the the line.  It is calculated using pythagoras theorem as follows:
+
+$$
+f^2 = y^2 - x^2\cos^2(\theta) 
+$$
+
+Inserting $x\cos(\theta) = o - \frac{z}{2}$ into this expression gives:
+
+$$
+f^2 = y^2 - (o -\frac{z}{2})^2 = y^2 - o^2 + oz - \frac{z^2}{4}
+$$
+
+Inserting the fact that $oz = \frac{y^2 - x^2}{2}$, which comes from the expression for $o$ that was used to calculate `onaxis`, gets us to the expression that is used to calculate `fromaxis`.
 
 ## CUSTOM with vector arguments
 
@@ -326,8 +351,8 @@ PRINT ARG=angles FILE=colvar
 Notice that you can pass multiple $N\times M$ matrices in the input to a CUSTOM action as illustrated in the example below:
 
 ```plumed
-c1: CUSTOM VALUES=2,3,4,5 NROWS=2 NCOLS=2
-c2: CUSTOM VALUES=1,0,0,1 NROWS=2 NCOLS=2
+c1: CONSTANT VALUES=2,3,4,5 NROWS=2 NCOLS=2
+c2: CONSTANT VALUES=1,0,0,1 NROWS=2 NCOLS=2
 f: CUSTOM ARG=c1,c2 FUNC=x*y PERIODIC=NO
 PRINT ARG=f FILE=colvar
 ```
