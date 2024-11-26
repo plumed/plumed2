@@ -41,7 +41,7 @@ std::unique_ptr<Action> ActionRegister::create(const std::vector<void*> & images
 
   auto content=get(images,ao.line[0]);
   Keywords keys; keys.thisactname = ao.line[0];
-  content.keys(keys);
+  keys.replaceaction = "none"; content.keys(keys);
   ActionOptions nao( ao,keys );
   auto fullPath=getFullPath(images,ao.line[0]);
   nao.setFullPath(fullPath);
@@ -79,7 +79,7 @@ bool ActionRegister::printTemplate(const std::string& action, bool include_optio
   //no need to insert the try/catch block: check will ensure that action is known
   if( check(action) ) {
     Keywords keys; keys.thisactname = action;
-    get(action).keys(keys);
+    keys.replaceaction = "none"; get(action).keys(keys);
     keys.print_template(action, include_optional);
     return true;
   } else {
@@ -101,6 +101,7 @@ bool ActionRegister::getKeywords(const std::string& action, Keywords& keys) {
   //no need to insert the try/catch block: check will ensure that action is known
   if(check(action)) {
     keys.thisactname = action;
+    keys.replaceaction = "none";
     get(action).keys(keys);
     return true;
   }
@@ -108,7 +109,7 @@ bool ActionRegister::getKeywords(const std::string& action, Keywords& keys) {
 }
 
 void ActionRegister::getKeywords(const std::vector<void*> & images, const std::string& action, Keywords& keys) {
-  auto content=get(images,action); keys.thisactname = action; content.keys(keys);
+  auto content=get(images,action); keys.thisactname = action; keys.replaceaction = "none"; content.keys(keys);
 }
 
 }

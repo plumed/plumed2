@@ -123,6 +123,16 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
     // Now output keyword information
     Keywords keys; actionRegister().getKeywords( action_names[i], keys );
     std::cout<<"    \"displayname\" : \""<<keys.getDisplayName()<<"\",\n";
+    // This is used for noting actions that have been deprecated
+    std::string replacement = keys.getReplacementAction();
+    if( replacement!="none" ) {
+        bool found=false;
+        for(unsigned j=0; j<action_names.size(); ++j) {
+            if( action_names[j]==replacement ) { found=true; break; }
+        }
+        if( !found ) error("could not find action named " + replacement + " that is supposed to be used to replace " + action_names[i] );
+    }
+    std::cout<<"    \"replacement\" : \""<<replacement<<"\",\n";
     std::cout<<"    \"syntax\" : {"<<std::endl;
     for(unsigned j=0; j<keys.size(); ++j) {
       std::string defa = "", desc = keys.getKeywordDescription( keys.getKeyword(j) );

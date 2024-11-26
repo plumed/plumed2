@@ -776,4 +776,13 @@ std::string Keywords::getDisplayName() const {
   return thisactname;
 }
 
+void Keywords::setDeprecated( const std::string& name ) {
+  replaceaction = name;
+}
+
+std::string Keywords::getReplacementAction() const {
+  return replaceaction;
+}  
+
+
 }
