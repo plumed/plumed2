@@ -126,11 +126,11 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
     // This is used for noting actions that have been deprecated
     std::string replacement = keys.getReplacementAction();
     if( replacement!="none" ) {
-        bool found=false;
-        for(unsigned j=0; j<action_names.size(); ++j) {
-            if( action_names[j]==replacement ) { found=true; break; }
-        }
-        if( !found ) error("could not find action named " + replacement + " that is supposed to be used to replace " + action_names[i] );
+      bool found=false;
+      for(unsigned j=0; j<action_names.size(); ++j) {
+        if( action_names[j]==replacement ) { found=true; break; }
+      }
+      if( !found ) error("could not find action named " + replacement + " that is supposed to be used to replace " + action_names[i] );
     }
     std::cout<<"    \"replacement\" : \""<<replacement<<"\",\n";
     std::cout<<"    \"syntax\" : {"<<std::endl;

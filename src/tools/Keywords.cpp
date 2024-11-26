@@ -782,7 +782,7 @@ void Keywords::setDeprecated( const std::string& name ) {
 
 std::string Keywords::getReplacementAction() const {
   return replaceaction;
-}  
+}
 
 
 }
