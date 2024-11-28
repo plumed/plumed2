@@ -48,8 +48,8 @@ phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
 rp: RESTRAINT ARG=phi KAPPA=50.0 AT=@replicas:{-3.00,-1.45,0.10,1.65}
 hh: WHAM_HISTOGRAM ARG=phi BIAS=rp.bias TEMP=300 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=50
-fes: CONVERT_TO_FES GRID=hh TEMP=300
-DUMPGRID GRID=fes FILE=fes.dat
+fes: CONVERT_TO_FES ARG=hh TEMP=300
+DUMPGRID ARG=fes FILE=fes.dat
 ```
 
 The script above must be run with multiple replicas using the following command:

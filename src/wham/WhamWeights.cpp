@@ -95,8 +95,8 @@ WhamWeights::WhamWeights( const ActionOptions& ao ) :
   std::string temp, tempstr=""; parse("TEMP",temp); if( temp.length()>0 ) tempstr="TEMP=" + temp;
   readInputLine( getShortcutLabel() + ": WHAM ARG=" + getShortcutLabel() + "_collect " + tempstr );
   // Input for PRINT (will just output at end of calc
-  std::string filename, fmt; parse("FILE",filename); parse("FMT",fmt);
-  readInputLine( "DUMPVECTOR STRIDE=0 ARG=" + getShortcutLabel() + " FILE=" + filename + " FMT=" + fmt );
+  std::string filename, fmt; parse("FILE",filename); parse("FMT",fmt); if(fmt.length()>0) fmt=" FMT=" + fmt;
+  readInputLine( "DUMPVECTOR STRIDE=0 ARG=" + getShortcutLabel() + " FILE=" + filename + fmt );
 }
 
 }
