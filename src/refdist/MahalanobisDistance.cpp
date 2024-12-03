@@ -27,9 +27,142 @@
 
 //+PLUMEDOC FUNCTION MAHALANOBIS_DISTANCE
 /*
-Calculate the mahalanobis distance between two points in CV space
+Calculate the Mahalanobis distance between two points in CV space
 
-\par Examples
+If we have two $n$-dimensional vectors $u$ and $v$ we can calculate the 
+[Mahalanobis distance](https://en.wikipedia.org/wiki/Mahalanobis_distance) between the two points as 
+
+$$
+d = \sqrt{ \sum_{i=1}^n \sum_{j=1}^n m_{ij} (u_i - v_i)(u_j - v_j) }
+$$
+
+which can be expressed in matrix form as:
+
+$$
+d^2 = (u-v)^T M (u-v)
+$$
+ 
+The inputs below shows an example where this is used to calculate the Mahalanobis distance 
+between the instaneous values of some torsional angles and some reference values 
+for these distances.  The inverse covriance values are provided in the constant value with label `m`. 
+In this first example the input values are vectors:
+
+```plumed
+m: CONSTANT VALUES=2.45960237E-0001,-1.30615381E-0001,-1.30615381E-0001,2.40239117E-0001 NROWS=2 NCOLS=2
+c: CONSTANT VALUES=1,2
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 
+dd: MAHALANOBIS_DISTANCE ARG1=c ARG2=d METRIC=m
+PRINT ARG=dd FILE=colvar
+```
+
+while this second example does the same thing but uses scalars in input.
+
+```plumed
+m: CONSTANT VALUES=2.45960237E-0001,-1.30615381E-0001,-1.30615381E-0001,2.40239117E-0001 NROWS=2 NCOLS=2
+c1: CONSTANT VALUE=1
+d1: DISTANCE ATOMS=1,2
+c2: CONSTANT VALUE=2
+d2: DISTANCE ATOMS=3,4
+dd: MAHALANOBIS_DISTANCE ARG1=c1,c2 ARG2=d1,d2 METRIC=m
+PRINT ARG=dd FILE=colvar
+```
+
+## Dealing with periodic variables
+
+When you are calculating a distance from a reference point you need to be careful when the input variables 
+are periodic. If you are calculating the distance using the [EUCLIDEAN_DISTANCE](EUCLIDEAN_DISTANCE.md) and 
+[NORMALIZED_EUCLIDEAN_DISTANCE](NORMALIZED_EUCLIDEAN_DISTANCE.md) commands this is not a problem. The problems are 
+specific to the Mahalanobis distance command and have been resolved in the papers that are cited below by defining 
+the following alternatative to the Mahalanobis distance:
+
+$$
+d^2 = 2\sum_{i=1}^n m_{ii} \left[ 1 - \cos\left( \frac{2\pi(u_i-v_i)}{P_i} \right) \right] + \sum_{i\ne j} m_{ij} \sin\left( \frac{2\pi(u_i-v_i)}{P_i} \right) \sin\left( \frac{2\pi(u_j-v_j)}{P_j} \right)
+$$
+
+In this expression, $P_i$ indicates the periodicity of the domain for variable $i$. If you would like to compute this
+distance with PLUMED you use the `VON_MISSES` shown below:
+
+```plumed
+m: CONSTANT VALUES=2.45960237E-0001,-1.30615381E-0001,-1.30615381E-0001,2.40239117E-0001 NROWS=2 NCOLS=2
+c: CONSTANT VALUES=1,2
+d: TORSION ATOMS1=1,2,3,4 ATOMS2=5,6,7,8 
+dd: MAHALANOBIS_DISTANCE ARG1=c ARG2=d METRIC=m VON_MISSES
+PRINT ARG=dd FILE=colvar
+```
+
+## Calculating multiple distances
+
+Suppose that we now have $m$ reference configurations we can define the following $m$ distances 
+from these reference configurations:
+
+$$
+d_j^2 = (u-v_j)^T M (u-v_j)
+$$
+
+Lets suppose that we put the $m$, $n$-dimensional $(u-v_j)$ vectors in this expression into a 
+$n\times m$ matrix, $A$, by using the [DISPLACEMENT](DISPLACEMENT.md) command.  It is then 
+straightforward to show that the $d_j^2$ values in the above expression are the diagonal 
+elements of the matrix product $A^T M A$. 
+
+We can use this idea to calculate multiple MAHALANOBIS_DISTANCE values in the following inputs.
+This first example calculates the three distances between the instaneoues values of two torsions 
+and three reference configurations.
+
+```plumed
+m: CONSTANT VALUES=2.45960237E-0001,-1.30615381E-0001,-1.30615381E-0001,2.40239117E-0001 NROWS=2 NCOLS=2
+ref_psi: CONSTANT VALUES=2.25,1.3,-1.5
+ref_phi: CONSTANT VALUES=-1.91,-0.6,2.4
+
+psi: TORSION ATOMS=1,2,3,4 
+phi: TORSION ATOMS=13,14,15,16
+
+dd: MAHALANOBIS_DISTANCE ARG1=psi,phi ARG2=ref_psi,ref_phi METRIC=m
+PRINT ARG=dd FILE=colvar
+```
+  
+This section example calculates the three distances between a single reference value for the two
+torsions and three instances of this pair of torsions.
+
+```plumed
+m: CONSTANT VALUES=2.45960237E-0001,-1.30615381E-0001,-1.30615381E-0001,2.40239117E-0001 NROWS=2 NCOLS=2
+ref_psi: CONSTANT VALUES=2.25
+ref_phi: CONSTANT VALUES=-1.91
+
+psi: TORSION ATOMS1=1,2,3,4 ATOMS2=5,6,7,8 ATOMS3=9,10,11,12
+phi: TORSION ATOMS1=13,14,15,16 ATOMS2=17,18,19,20 ATOMS3=21,22,23,24
+
+dd: MAHALANOBIS_DISTANCE ARG1=psi,phi ARG2=ref_psi,ref_phi METRIC=m
+PRINT ARG=dd FILE=colvar
+```
+
+This final example then computes three distances between three pairs of torsional angles and threee 
+reference values for these three values.
+
+```plumed
+m: CONSTANT VALUES=2.45960237E-0001,-1.30615381E-0001,-1.30615381E-0001,2.40239117E-0001 NROWS=2 NCOLS=2
+ref_psi: CONSTANT VALUES=2.25,1.3,-1.5
+ref_phi: CONSTANT VALUES=-1.91,-0.6,2.4
+
+psi: TORSION ATOMS1=1,2,3,4 ATOMS2=5,6,7,8 ATOMS3=9,10,11,12
+phi: TORSION ATOMS1=13,14,15,16 ATOMS2=17,18,19,20 ATOMS3=21,22,23,24
+
+dd: MAHALANOBIS_DISTANCE ARG1=psi,phi ARG2=ref_psi,ref_phi METRIC=m
+PRINT ARG=dd FILE=colvar
+```
+
+Notice, finally, that you can also calculate multiple distances if you use the `VON_MISSES` option:
+
+```plumed
+m: CONSTANT VALUES=2.45960237E-0001,-1.30615381E-0001,-1.30615381E-0001,2.40239117E-0001 NROWS=2 NCOLS=2
+ref_psi: CONSTANT VALUES=2.25,1.3,-1.5
+ref_phi: CONSTANT VALUES=-1.91,-0.6,2.4
+
+psi: TORSION ATOMS1=1,2,3,4 ATOMS2=5,6,7,8 ATOMS3=9,10,11,12
+phi: TORSION ATOMS1=13,14,15,16 ATOMS2=17,18,19,20 ATOMS3=21,22,23,24
+
+dd: MAHALANOBIS_DISTANCE ARG1=psi,phi ARG2=ref_psi,ref_phi METRIC=m VON_MISSES
+PRINT ARG=dd FILE=colvar
+```
 
 */
 //+ENDPLUMEDOC
@@ -56,6 +189,7 @@ void MahalanobisDistance::registerKeywords( Keywords& keys ) {
   keys.needsAction("DISPLACEMENT"); keys.needsAction("CUSTOM"); keys.needsAction("OUTER_PRODUCT");
   keys.needsAction("TRANSPOSE"); keys.needsAction("MATRIX_PRODUCT_DIAGONAL"); keys.needsAction("CONSTANT");
   keys.needsAction("MATRIX_VECTOR_PRODUCT"); keys.needsAction("MATRIX_PRODUCT"); keys.needsAction("COMBINE");
+  keys.addDOI("10.1073/pnas.1011511107"); keys.addDOI("10.1021/acs.jctc.7b00993");
 }
 
 MahalanobisDistance::MahalanobisDistance( const ActionOptions& ao):

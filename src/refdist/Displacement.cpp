@@ -29,8 +29,107 @@
 /*
 Calculate the displacement vector between the pair of input vectors
 
-\par Examples
+This shortcut can be used to calculate the vector of displacements between two input vectors as shown below.
 
+```plumed
+c: CONSTANT VALUES=1,2,3
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6
+dd: DISPLACEMENT ARG1=c ARG2=d
+PRINT ARG=dd FILE=colvar
+```
+
+The output here, `dd`, is a $1 \times 3$ matrix for reasons that will become clear later in this documentation.
+Notice that we can obtain the same result by specifying the input vectors here as two sets of three scalars as shown
+below:
+
+```plumed
+c1: CONSTANT VALUE=1
+d1: DISTANCE ATOMS=1,2
+c2: CONSTANT VALUE=2
+d2: DISTANCE ATOMS=3,4
+c3: CONSTANT VALUE=3
+d3: DISTANCE ATOMS=5,6
+dd: DISPLACEMENT ARG1=c1,c2,c3 ARG2=d1,d2,d3
+PRINT ARG=dd FILE=colvar
+```
+
+The DISPLACEMENT command that has been introduced in the above inputs is primarily used within the [EUCLIDEAN_DISTANCE](EUCLIDEAN_DISTANCE.md), 
+[NORMALIZED_EUCLIDEAN_DISTANCE](NORMALIZED_EUCLIDEAN_DISTANCE.md) and [MAHALANOBIS_DISTANCE](MAHALANOBIS_DISTANCE.md) shortcuts.  If the $1 \times N$ matrix
+of displacements that that we obtainfrom these commands is, $D$, these three actions calculate 
+
+$$
+d = D M D^T
+$$
+
+The $N \times N$ matrix $M$ here is the identity if you are using [EUCLIDEAN_DISTANCE](EUCLIDEAN_DISTANCE.md), a diagonal matrix if you are using 
+[NORMALIZED_EUCLIDEAN_DISTANCE](NORMALIZED_EUCLIDEAN_DISTANCE.md) and a full matrix if you are computing the [MAHALANOBIS_DISTANCE](MAHALANOBIS_DISTANCE.md).
+
+## Calculating multiple displacement vectors
+
+The reason the output of DISPLACEMENT is a $1 \times 3$ matrix here becomes clearer once we consider the following input:
+
+```plumed
+ref_psi: CONSTANT VALUES=2.25
+ref_phi: CONSTANT VALUES=-1.91
+
+psi: TORSION ATOMS1=1,2,3,4 ATOMS2=5,6,7,8 ATOMS3=9,10,11,12
+phi: TORSION ATOMS1=13,14,15,16 ATOMS2=17,18,19,20 ATOMS3=21,22,23,24
+
+dd: DISPLACEMENT ARG1=psi,phi ARG2=ref_psi,ref_phi
+PRINT ARG=dd FILE=colvar
+```
+
+The output from the input above is a $3\times 2$ matrix.  The rows of this matrix run over the 3 different 
+torsion values that have been specified in the `psi` and `phi` commands.  The first column of the matrix
+contains the differences between each of the instantaneous `psi` aingles and the reference value for this 
+angle, while the second columns contains the differences between the `phi` angles and the reference.
+
+In other words, we can calculate multiple displacement vectors at once as each row of the final output matrix will 
+contain a vector of displacements between two vectors.  Notice that we can use a similar input to calculate the 
+differences between the instantaneous value of a pair of torsions and 3 reference values as shown below:
+
+```plumed
+ref_psi: CONSTANT VALUES=2.25,1.3,-1.5
+ref_phi: CONSTANT VALUES=-1.91,-0.6,2.4
+
+psi: TORSION ATOMS=1,2,3,4 
+phi: TORSION ATOMS=13,14,15,16
+
+dd: DISPLACEMENT ARG1=psi,phi ARG2=ref_psi,ref_phi
+PRINT ARG=dd FILE=colvar
+```
+
+The output here will again be a $3\times 2$ matrix with each of the three rows holding a vector of displacements 
+between the 2 instananeous values and one of the three sets of reference values.
+
+Lastly, we can use two sets of vectors in the input to DISPLACEMENT as shown below:
+
+```plumed
+ref_psi: CONSTANT VALUES=2.25,1.3,-1.5
+ref_phi: CONSTANT VALUES=-1.91,-0.6,2.4
+
+psi: TORSION ATOMS1=1,2,3,4 ATOMS2=5,6,7,8 ATOMS3=9,10,11,12
+phi: TORSION ATOMS1=13,14,15,16 ATOMS2=17,18,19,20 ATOMS3=21,22,23,24
+
+dd: DISPLACEMENT ARG1=psi,phi ARG2=ref_psi,ref_phi
+PRINT ARG=dd FILE=colvar
+```
+
+The output here is still a $3 \times 2$ matrix. Now, however, each of the three instantaneous angles we have calculated 
+has its own set of reference values. A different pair of instaneous and reference values is used to calculate each element
+of the resulting matrix.
+
+DISPLACEMENT actions that compute $M\times N$ matrices, $D$, are used within the [EUCLIDEAN_DISTANCE](EUCLIDEAN_DISTANCE.md), 
+[NORMALIZED_EUCLIDEAN_DISTANCE](NORMALIZED_EUCLIDEAN_DISTANCE.md) and [MAHALANOBIS_DISTANCE](MAHALANOBIS_DISTANCE.md) shortcuts.
+Doing so is useful as if you take the diagonal elements of a product of matrices that is similar to the product of vectors and matrices that we introduced
+earlier:
+
+$$
+d = D M D^T
+$$
+
+you can calculate $M$ values for the [EUCLIDEAN_DISTANCE](EUCLIDEAN_DISTANCE.md), [NORMALIZED_EUCLIDEAN_DISTANCE](NORMALIZED_EUCLIDEAN_DISTANCE.md) 
+and [MAHALANOBIS_DISTANCE](MAHALANOBIS_DISTANCE.md).
 
 */
 //+ENDPLUMEDOC

@@ -28,7 +28,48 @@
 /*
 Pass data into PLUMED
 
-\par Examples
+The PUT command transfers the data from a void pointer passed to PLUMED from the calling code to a PLMD::Value. The calling
+object knows the shapes of the variables it is passing, so if you want to pass a 3x3 matrix from the MD code to PLUMED, you create the space to do so as follows:
+
+```c++
+plumed.cmd("readInputLine n: PUT SHAPE=3,3 UNIT=length PERIODIC=NO");
+```
+
+This command then creates a PLMD::Value called `n` that you can refer to later in your PLUMED input file. To transfer data from the void pointer called val into the PLMD::Value
+called `n`, you would then use the following command:
+
+```c++
+plumed.cmd("setValue n", val);
+```
+
+Notice also that if you expect PLUMED to try to apply forces on `n`, you can pass a void pointer called `force` to get the forces that PLUMED has applied on the elements of n as follows:
+
+```c++
+plumed.cmd("setValueForces n", force);
+```
+
+Within the PLMD::Value `n`, the forces that PLUMED wishes to apply on the components of the input object are stored in the std::vector called `inputForce`. Furthermore, whenever a PLMD::Value
+is created from a PUT action `storedata` is set to true. PUT also has a CONSTANT flag that allows you to transfer variables such as the value of the timestep that is set only once during the
+simulation (i.e. during startup).
+
+Data is transferred from the input void pointers to the PLMD value when the `share` and `wait` methods are called. Vectors, e.g. positions, that are split between the domains
+are transferred when the share and wait methods of the [DOMAIN_DECOMPOSITION](DOMAIN_DECOMPOSITION.md) action are called.
+
+You would only use the PUT command if you were calling PLUMED from python or an MD code. The equivalent commands in a convetional PLUMED input file would look like this.
+
+```plumed
+# This is how you create a value to hold the energy the MD code passes energy in plumed
+eng: PUT UNIT=energy PERIODIC=NO
+# This is how you create an vector of the 100 x positions to plumed
+xpos: PUT SHAPE=100 UNIT=length PERIODIC=NO
+# This is how you create a scalar to hold the timestep
+# The constant flag indicates that the value of the timestep doesn't change during the simulation
+tstep: PUT CONSTANT UNIT=time PERIODIC=NO
+# This is how you create a value to hold a 10 x 10 matrix in plumed whose elements are unitless
+matrix: PUT SHAPE=10,10 UNIT=number PERIODIC=NO
+# Lastly, if you want to pass a value that has a periodic domain you can do so as follows
+tor: PUT PERIODIC=-pi,pi
+```
 
 */
 //+ENDPLUMEDOC

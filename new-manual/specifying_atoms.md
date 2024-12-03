@@ -11,6 +11,7 @@ predefined as a [GROUP](GROUP.md) that can be reused multiple times. Lists of at
 - numerical ranges.  So `g2: GROUP ATOMS=10-20` is equivalent to `g2: GROUP ATOMS=10,11,12,13,14,15,16,17,18,19,20`
 - numerical ranges with a stride. So `g3: GROUP ATOMS=10-100:10` is equivalent to `g3: GROUP ATOMS=10,20,30,40,50,60,70,80,90,100`
 - atom ranges with a negative stride. So `g4: GROUP ATOMS=100-10:-10` is equivalent to `g4: GROUP ATOMS=100,90,80,70,60,50,40,30,20,10`
+- by using an auxiliary [ndx file](https://manual.gromacs.org/archive/5.0.4/online/ndx.html). So `g5: GROUP ATOMS={@ndx:{index.ndx Protein}}`
 
 If you want to use the atoms in a group as the input for a action you use the label of the group as shown in the following input:
 

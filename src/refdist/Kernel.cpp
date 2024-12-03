@@ -33,9 +33,92 @@ namespace refdist {
 
 //+PLUMEDOC FUNCTION KERNEL
 /*
-Use a switching function to determine how many of the input variables are less than a certain cutoff.
+Transform a set of input coordinates using a kernel function
 
-\par Examples
+This action takes a vector of arguments in input, $s$, the square of the [NORMALIZED_EUCLIDEAN_DISTANCE](NORMALIZED_EUCLIDEAN_DISTANCE.md) or 
+[MAHALANOBIS_DISTANCE](MAHALANOBIS_DISTANCE.md) between the instataneous values of these arguments
+and a set of reference values for them is then computed. If this squared distance is $x$ then the final quantity that is returned 
+by this function is:
+
+$$
+f = w K(x)
+$$ 
+
+where $w$ is a scalar that the user specifies using the `WEIGHT` keyword and $K$ can be a function of $x$ that the user 
+specifies using the `FUNC` keyword or one of the Kernel functions options from the following table that are available internally:
+
+| Instruction | Function |
+|:-----------:|:---------|
+| FUNC=gaussian | $exp(-x/2)$ |
+| FUNC=von-misses | $exp(-x/2)$ |
+| FUNC=triangular | $1-\sqrt{x} \textrm{if} \quad x<1 \quad \textrm{otherwise} 0$ |
+
+The `von-misses` options here is used if the input arguments have a periodic domain.  This instruction changes the way the
+[MAHALANOBIS_DISTANCE](MAHALANOBIS_DISTANCE.md) is computed so that the method that is appropriate for using with periodic 
+variables is employed in place of the default method.
+
+## Examples
+
+The following example demonstrates how this action can be used to evaluate a Kernel that is a function of one argument:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+k: KERNEL ARG=d TYPE=gaussian CENTER=1 SIGMA=0.1
+```
+
+The [NORMALIZED_EUCLIDEAN_DISTANCE](NORMALIZED_EUCLIDEAN_DISTANCE.md) between the instantaneous distance and the point 1 is evaluated here.
+The metric vector that is used to evaluate this distance is taking the reciprocal of the square of the input SIGMA value. Lastly, the weight, $w$,
+in the expression above is set equal to one.
+
+If your Kernel is a function of two arguments you can use the [NORMALIZED_EUCLIDEAN_DISTANCE](NORMALIZED_EUCLIDEAN_DISTANCE.md) to evaluate the 
+distance as is done in the following example:
+
+```plumed
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCEE ATOMS=3,4
+k: KERNEL ARG=d1,d2 TYPE=gaussian CENTER=1,1 SIGMA=0.1,0.1
+```
+
+or you can use the [MAHALANOBIS_DISTANCE](MAHALANOBIS_DISTANCE.md) as is done here:
+
+```plumed
+t1: TORSION ATOMS=1,2,3,4
+t2: TORSION ATOMS=5,6,7,8
+k: KERNEL ...
+   ARG=t1,t2 TYPE=von-misses
+   CENTER=-1.09648066E+0000,-7.17867907E-0001 
+   COVAR=1.40523052E-0001,-1.05385552E-0001,-1.05385552E-0001,1.63290557E-0001
+...
+```
+
+To switch to using the [MAHALANOBIS_DISTANCE](MAHALANOBIS_DISTANCE.md) you use `COVAR` instead of `SIGMA` and specify the covariance matrix of the kernel.
+The metric that is used when evaluating the distance is the inverse of the input covariance matrix. 
+
+Notice that you specify the Kernel function in a separate PLUMED input file by using an input like the one shown below:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/pamm/rt-pamm-periodic/2D-testc-0.75.pammp
+t1: TORSION ATOMS=1,2,3,4
+t2: TORSION ATOMS=5,6,7,8
+k: KERNEL ARG=t1,t2 REFERENCE=regtest/pamm/rt-pamm-periodic/2D-testc-0.75.pammp NUMBER=3
+```
+
+This command computes the same Kernel that was computed in the previous input.  The keyword `REFERENCE` specifies that the parameters are to be read
+from the file and the keyword `NUMBER` indicates that the parameters are found on the third line of that file. 
+
+Lastly, note that you can use vectors in the input to this shortcut as shown here:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/pamm/rt-pamm-periodic/2D-testc-0.75.pammp
+t1: TORSION ATOMS1=1,2,3,4 ATOMS2=9,10,11,12 ATOMS3=17,18,19,20
+t2: TORSION ATOMS1=5,6,7,8 ATOMS2=13,14,15,16 ATOMS3=21,22,23,24
+k: KERNEL ARG=t1,t2 REFERENCE=regtest/pamm/rt-pamm-periodic/2D-testc-0.75.pammp NUMBER=3
+```
+
+The output `k` here is a vector with three components. The first component is the kernel evaluated with the torsion involving atoms 1, 2, 3 and 4 and the 
+torsion involving atoms 5, 6, 7 and 8.  The second component is the kernel evaluated with the torsion involving atoms 9, 10, 11 and 12 and the 
+torsion involving atoms 13, 14, 15 and 16. The third component is the kernel evaluated with the torsion involving atoms 17, 18, 19 and 20 and the 
+torsion involving atoms 21, 22, 23 and 24.
 
 */
 //+ENDPLUMEDOC
