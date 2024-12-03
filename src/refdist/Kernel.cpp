@@ -75,17 +75,17 @@ distance as is done in the following example:
 
 ```plumed
 d1: DISTANCE ATOMS=1,2
-d2: DISTANCEE ATOMS=3,4
+d2: DISTANCE ATOMS=3,4
 k: KERNEL ARG=d1,d2 TYPE=gaussian CENTER=1,1 SIGMA=0.1,0.1
 ```
 
 or you can use the [MAHALANOBIS_DISTANCE](MAHALANOBIS_DISTANCE.md) as is done here:
 
 ```plumed
-t1: TORSION ATOMS=1,2,3,4
-t2: TORSION ATOMS=5,6,7,8
+phi: TORSION ATOMS=1,2,3,4
+psi: TORSION ATOMS=5,6,7,8
 k: KERNEL ...
-   ARG=t1,t2 TYPE=von-misses
+   ARG=phi,psi TYPE=von-misses
    CENTER=-1.09648066E+0000,-7.17867907E-0001 
    COVAR=1.40523052E-0001,-1.05385552E-0001,-1.05385552E-0001,1.63290557E-0001
 ...
@@ -98,9 +98,9 @@ Notice that you specify the Kernel function in a separate PLUMED input file by u
 
 ```plumed
 #SETTINGS INPUTFILES=regtest/pamm/rt-pamm-periodic/2D-testc-0.75.pammp
-t1: TORSION ATOMS=1,2,3,4
-t2: TORSION ATOMS=5,6,7,8
-k: KERNEL ARG=t1,t2 REFERENCE=regtest/pamm/rt-pamm-periodic/2D-testc-0.75.pammp NUMBER=3
+phi: TORSION ATOMS=1,2,3,4
+psi: TORSION ATOMS=5,6,7,8
+k: KERNEL ARG=phi,psi REFERENCE=regtest/pamm/rt-pamm-periodic/2D-testc-0.75.pammp NUMBER=3
 ```
 
 This command computes the same Kernel that was computed in the previous input.  The keyword `REFERENCE` specifies that the parameters are to be read
@@ -110,9 +110,9 @@ Lastly, note that you can use vectors in the input to this shortcut as shown her
 
 ```plumed
 #SETTINGS INPUTFILES=regtest/pamm/rt-pamm-periodic/2D-testc-0.75.pammp
-t1: TORSION ATOMS1=1,2,3,4 ATOMS2=9,10,11,12 ATOMS3=17,18,19,20
-t2: TORSION ATOMS1=5,6,7,8 ATOMS2=13,14,15,16 ATOMS3=21,22,23,24
-k: KERNEL ARG=t1,t2 REFERENCE=regtest/pamm/rt-pamm-periodic/2D-testc-0.75.pammp NUMBER=3
+phi: TORSION ATOMS1=1,2,3,4 ATOMS2=9,10,11,12 ATOMS3=17,18,19,20
+psi: TORSION ATOMS1=5,6,7,8 ATOMS2=13,14,15,16 ATOMS3=21,22,23,24
+k: KERNEL ARG=phi,psi REFERENCE=regtest/pamm/rt-pamm-periodic/2D-testc-0.75.pammp NUMBER=3
 ```
 
 The output `k` here is a vector with three components. The first component is the kernel evaluated with the torsion involving atoms 1, 2, 3 and 4 and the 
@@ -136,7 +136,7 @@ PLUMED_REGISTER_ACTION(Kernel,"KERNEL")
 
 void Kernel::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
-  keys.add("numbered","ARG","the arguments that should be used as input to this method");
+  keys.addInputKeyword("numbered","ARG","scalar/vector","the arguments that should be used as input to this method");
   keys.add("compulsory","TYPE","gaussian","the type of kernel to use");
   keys.add("compulsory","CENTER","the position of the center of the kernel");
   keys.add("optional","SIGMA","square root of variance of the cluster");

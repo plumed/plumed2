@@ -68,7 +68,7 @@ tstep: PUT CONSTANT UNIT=time PERIODIC=NO
 # This is how you create a value to hold a 10 x 10 matrix in plumed whose elements are unitless
 matrix: PUT SHAPE=10,10 UNIT=number PERIODIC=NO
 # Lastly, if you want to pass a value that has a periodic domain you can do so as follows
-tor: PUT PERIODIC=-pi,pi
+tor: PUT UNIT=number PERIODIC=-pi,pi
 ```
 
 */

@@ -46,7 +46,7 @@ pbc: PBC
 
 Instead this command would be called from python like this:
 
-```plumed
+```python
 import plumed
 
 # Create a PLUMED object

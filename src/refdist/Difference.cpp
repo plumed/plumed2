@@ -159,7 +159,7 @@ void Difference::read( ActionWithArguments* action ) {
     } else action->getPntrToArgument(1)->setDomain( min0, max0 );
   } else if( action->getPntrToArgument(1)->isPeriodic() ) {
     periodic=true; action->getPntrToArgument(1)->getDomain( min0, max0 );
-    if( !action->getPntrToArgument(1)->isConstant() ) {
+    if( !action->getPntrToArgument(0)->isConstant() ) {
       action->error("period for input variables " + action->getPntrToArgument(0)->getName() + " and " + action->getPntrToArgument(1)->getName() + " should be the same 1");
     } else action->getPntrToArgument(0)->setDomain( min0, max0 );
   }
