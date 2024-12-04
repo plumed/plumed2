@@ -31,30 +31,13 @@ namespace setup {
 /*
 This command sets the internal units for the code.
 
-A new unit can be set by either
-specifying a conversion factor from the plumed default unit or by using a string
-corresponding to one of the defined units given below.  This directive MUST
-appear at the BEGINNING of the plumed.dat file.  The same units must be used
-throughout the plumed.dat file.
+The default units in the plumed input and output files are discussed [here](parsing.md). If you would like 
+to use units that are different from these defaults you can use the UNITS command. This directive MUST
+appear at the BEGINNING of the plumed.dat file and same units must be used throughout the plumed.dat file. 
 
-Notice that all input/output will then be made using the specified units.
-That is: all the input parameters, all the output files, etc. The only
-exceptions are file formats for which there is a specific convention concerning
-the units. For example, trajectories written in .gro format (with \ref DUMPATOMS)
-are going to be always in nm.
+The following input demonstrates one way that you can use the UNITS command to change the units.
 
-The following strings can be used to specify units. Note that the strings are
-case sensitive.
-- LENGTH: nm (default), A (for Angstrom), um (for micrometer), Bohr (0.052917721067 nm)
-- ENERGY: kj/mol (default), j/mol, kcal/mol (4.184 kj/mol), eV (96.48530749925792 kj/mol), Ha (for Hartree, 2625.499638 kj/mol)
-- TIME: ps (default), fs, ns, atomic (2.418884326509e-5 ps)
-- MASS: amu (default)
-- CHARGE: e (default)
-
-
-\par Examples
-
-\plumedfile
+```plumed
 # this is using Angstrom - kj/mol - fs
 UNITS LENGTH=A TIME=fs
 
@@ -62,26 +45,47 @@ UNITS LENGTH=A TIME=fs
 d: DISTANCE ATOMS=1,4
 
 # print time and distance on a COLVAR file
+# times and distances in this file will be in fs and A respectively
 PRINT ARG=d FILE=COLVAR
 
 # dump atoms 1 to 100 on a 'out.gro' file
+# The positions in the gro file here will be written 
+# in nm because this is the convention for gro files.
 DUMPATOMS FILE=out.gro STRIDE=10 ATOMS=1-100
 
 # dump atoms 1 to 100 on a 'out.xyz' file
+# The position in the xyz file here will be written 
+# in A as there is no conventional units for xyz files
+# and the plumed length units has been set to Angstroms.
 DUMPATOMS FILE=out.xyz STRIDE=10 ATOMS=1-100
-\endplumedfile
+```
 
-In the `COLVAR` file, time and distance will appear in fs and A respectively, *irrespective* of which units
-you are using in the host MD code. The coordinates in the `out.gro` file will be expressed in nm,
-since `gro` files are by convention written in nm. The coordinates in the `out.xyz` file
-will be written in Angstrom *since we used the UNITS command setting Angstrom units*.
-Indeed, within PLUMED xyz files are using internal PLUMED units and not necessarily Angstrom!
+In the example input above strings are used to set the units. The following table details all the strings
+that can be used when setting units.  Note that the strings are case sensitive.
 
-If a number, x, is found instead of a string, the new unit is equal to x times the default units.
-Using the following command as first line of the previous example would have lead to an identical result:
-\plumedfile
+| Quantity | Default | Alternatives |
+|:---------|:--------|:-------------|
+| Length   | nm      | A (for Angstrom), um (for micrometer), Bohr (0.052917721067 nm) |
+| Energy   | kj/mol  | j/mol, kcal/mol (4.184 kj/mol), eV (96.48530749925792 kj/mol), Ha (for Hartree, 2625.499638 kj/mol) |
+| Time     | ps      | fs, ns, atomic (2.418884326509e-5 ps) |
+| Mass     | amu     | |
+| Charge   | e       | |
+
+If you want to use a unit that is not specified in the table above you can specify a factor for converting the default unit to 
+your chosen unit.  As an example of how this works in practice the example below converts lengths and times into A and fs by 
+giving explicit values for the conversion factors.
+
+```plumed
 UNITS LENGTH=0.1 TIME=0.001
-\endplumedfile
+```
+
+The input above tells PLUMED that lengths in nm should be divided by 0.1 so as to convert them to Anstroms. Times in ps
+should be divded by 0.001 to convert them from ps to fs.  
+
+To reitterate, the default or the units specified in the UNITS command are used in all input and output
+files.  The only exceptions are file formats for which there is a specific convention concerning
+the units. For example, trajectories written in .gro format (with [DUMPATOMS](DUMPATOMS.md)) will 
+always in nm.
 
 */
 //+ENDPLUMEDOC

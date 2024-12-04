@@ -13,6 +13,18 @@ Every example input you encounter in this manual, in the [nest](www.plumed-nest.
 that explain what options are turned on by flags and what the values provided in each keyword pair represents.  You will also find details of
 all the keywords and flags that are available for an action on the manual page for that action.
 
+By default the following units are used when reading the parameters that are specified using keywords.  
+
+| Quantity | Unit   |
+|:---------|:-------|
+| Length   | nm     |
+| Energy   | kj/mol |
+| Time     | ps     | 
+| Mass     | amu    |
+| Charge   | e      |
+
+These are also the units in any output files.  If you would like to change these units you can use the [UNITS](UNITS.md) command.
+
 ## Reading constants
 
 In the input to keywords that read real numbers you can use constants that are specified using strings rather than numbers.
