@@ -334,7 +334,7 @@ void Quaternion::calculateCV( const unsigned& mode, const std::vector<double>& m
     for(unsigned i=0; i<3; ++i) derivs[3][i] = (S)*(tdy[i].getRow(0) - tdx[i].getRow(1)) + (y[0]-x[1])*dS[i];
   }
   else if ((x[0] > y[1])&(x[0] > z[2])) {
-    float S = sqrt(1.0 + x[0] - y[1] - z[2]) * 2; // S=4*qx
+    double S = sqrt(1.0 + x[0] - y[1] - z[2]) * 2; // S=4*qx
     for(unsigned i=0; i<3; ++i) dS[i] = (2/S)*(tdx[i].getRow(0) - tdy[i].getRow(1) - tdz[i].getRow(2));
 
     vals[0] = (z[1] - y[2]) / S;
@@ -350,7 +350,7 @@ void Quaternion::calculateCV( const unsigned& mode, const std::vector<double>& m
     for(unsigned i=0; i<3; ++i) derivs[3][i] = (1/S)*(tdx[i].getRow(2) + tdz[i].getRow(0)) - (vals[3]/S)*dS[i];
   }
   else if (y[1] > z[2]) {
-    float S = sqrt(1.0 + y[1] - x[0] - z[2]) * 2; // S=4*qy
+    double S = sqrt(1.0 + y[1] - x[0] - z[2]) * 2; // S=4*qy
     for(unsigned i=0; i<3; ++i) dS[i] = (2/S)*( -tdx[i].getRow(0) + tdy[i].getRow(1) - tdz[i].getRow(2));
 
 
@@ -367,7 +367,7 @@ void Quaternion::calculateCV( const unsigned& mode, const std::vector<double>& m
     for(unsigned i=0; i<3; ++i) derivs[3][i] = (1/S)*(tdy[i].getRow(2) + tdz[i].getRow(1)) - (vals[3]/S)*dS[i];
   }
   else {
-    float S = sqrt(1.0 + z[2] - x[0] - y[1]) * 2; // S=4*qz
+    double S = sqrt(1.0 + z[2] - x[0] - y[1]) * 2; // S=4*qz
     for(unsigned i=0; i<3; ++i) dS[i] = (2/S)*(-tdx[i].getRow(0) - tdy[i].getRow(1) + tdz[i].getRow(2));
 
 
