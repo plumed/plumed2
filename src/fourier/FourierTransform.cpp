@@ -34,33 +34,43 @@ namespace fourier {
 /*
 Compute the Discrete Fourier Transform (DFT) by means of FFTW of data stored on a 2D grid.
 
-This action can operate on any other action that outputs scalar data on a two-dimensional grid.
+This action takes a function on a two-dimensional grid as input and computes a fourier transform upon the input function using [FFTW](https://www.fftw.org).
+Currently, this actions performs a complex fourier transition even if the input data is real.  The functionality here was developed and used in the paper cited
+below. The following input was used in that paper:
 
-Up to now, even if the input data are purely real the action uses a complex DFT.
+```plumed
+UNITS NATURAL
 
-Just as a quick reference, given a 1D array \f$\mathbf{X}\f$ of size \f$n\f$, this action computes the vector \f$\mathbf{Y}\f$ given by
+# These two commands calculate one symmetry function for each atom.  These 
+# symmetry functions tell us whether the environment around each atom resembles 
+# the environment in the solid or the environment in the liquid.
+fcc: FCCUBIC SPECIES=1-20736 SWITCH={CUBIC D_0=1.2 D_MAX=1.5} ALPHA=27 
+smapfcc: MORE_THAN ARG=fcc SWITCH={SMAP R_0=0.5 A=8 B=8} 
+smapfcc_grp: GROUP ATOMS=1-20736
+# This calculates the position of the center of the solid region of the simulation box.  What we are computing here a weighted average position 
+# the weights are the order parameters computed using the two commands above.
+center: CENTER PHASES ATOMS=fcc WEIGHTS=smapfcc
+# This calculates the phase field that tells us whether the structure in each part of the simulation box is solid-like or liquid like.
+dens: MULTICOLVARDENS DATA=smapfcc ORIGIN=center DIR=xyz NBINS=50,80,80 BANDWIDTH=1.0,1.0,1.0 GRID_MIN=0.0,auto,auto GRID_MAX=20.0,auto,auto STRIDE=1 CLEAR=1
+# This finds the instantaneous location of the interface between the solid and liquid phases
+contour: FIND_CONTOUR_SURFACE ARG=dens CONTOUR=0.5 SEARCHDIR=dens_dist.x 
+DUMPGRID ARG=contour FILE=contour.dat
+# This does the fourier transform of the location of the interface.  We can extract the interfacial stiffness from the average of this fourier transform
+ft: FOURIER_TRANSFORM ARG=contour FT_TYPE=norm FOURIER_PARAMETERS=-1,1
+DUMPGRID ARG=ft FILE=fourier.dat STRIDE=10
+```
 
-\f[
-Y_k = \sum_{j=0}^{n-1} X_j e^{2\pi\, j k \sqrt{-1}/n}.
-\f]
+We do not think this action has been used in any other paper. If you are interested in using the functionality here we would recommend you carefully 
+read the documentation for the FFTW library.  You may find it necessary to modify the code in this action for your particular purpose.  
 
-This can be easily extended to more than one dimension. All the other details can be found at http://www.fftw.org/doc/What-FFTW-Really-Computes.html#What-FFTW-Really-Computes.
+To what FFTW computes we would recommend reading [this page](http://www.fftw.org/doc/What-FFTW-Really-Computes.html#What-FFTW-Really-Computes).
 
-The keyword "FOURIER_PARAMETERS" deserves just a note on the usage. This keyword specifies how the Fourier transform will be normalized. The keyword takes two numerical parameters (\f$a,\,b\f$) that define the normalization according to the following expression
+Notice that the keyword "FOURIER_PARAMETERS" specifies how the Fourier transform will be normalized. The keyword takes two numerical parameters $a$ and $b$ that are both set equal to one by default.  
+The normalization is then defined as:
 
-\f[
+$$
 \frac{1}{n^{(1-a)/2}} \sum_{j=0}^{n-1} X_j e^{2\pi b\, j k \sqrt{-1}/n}
-\f]
-
-The default values of these parameters are: \f$a=1\f$ and \f$b=1\f$.
-
-\par Examples
-
-The following example tells Plumed to compute the complex 2D 'backward' Discrete Fourier Transform by taking the data saved on a grid called 'density', and normalizing the output by \f$ \frac{1}{\sqrt{N_x\, N_y}}\f$, where \f$N_x\f$ and \f$N_y\f$ are the number of data on the grid (it can be the case that \f$N_x\neq N_y\f$):
-
-\plumedfile
-FOURIER_TRANSFORM STRIDE=1 GRID=density FT_TYPE=complex FOURIER_PARAMETERS=0,-1
-\endplumedfile
+$$
 
 */
 //+ENDPLUMEDOC
@@ -96,6 +106,7 @@ void FourierTransform::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("real","FT_TYPE","grid","the real part of the function");
   keys.addOutputComponent("imag","FT_TYPE","grid","the imaginary part of the function");
   keys.setValueDescription("grid","the fourier transform of the input grid");
+  keys.addDOI("10.1088/1361-648X/aa893d");
 }
 
 FourierTransform::FourierTransform(const ActionOptions&ao):

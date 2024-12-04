@@ -649,7 +649,7 @@ bool Keywords::checkArgumentType( const std::size_t& rank, const bool& hasderiv 
     if( rank==1 && x.second.find("vector")!=std::string::npos ) return true;
     if( rank==2 && x.second.find("matrix")!=std::string::npos ) return true;
   }
-  plumed_merror("WARNING: type for input argument has not been specified");
+  if( argument_types.size()==0 ) plumed_merror("WARNING: type for input argument has not been specified");
   return false;
 }
 

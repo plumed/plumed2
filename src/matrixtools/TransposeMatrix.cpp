@@ -103,7 +103,11 @@ TransposeMatrix::TransposeMatrix(const ActionOptions& ao):
   else if( getPntrToArgument(0)->getRank()==1 ) { shape.resize(2); shape[0]=1; shape[1]=getPntrToArgument(0)->getShape()[0]; }
   else if( getPntrToArgument(0)->getShape()[0]==1 ) { shape.resize(1); shape[0] = getPntrToArgument(0)->getShape()[1]; }
   else { shape.resize(2); shape[0]=getPntrToArgument(0)->getShape()[1]; shape[1]=getPntrToArgument(0)->getShape()[0]; }
-  addValue( shape ); setNotPeriodic(); getPntrToComponent(0)->buildDataStore();
+  addValue( shape ); 
+  if( getPntrToArgument(0)->isPeriodic() ) {
+      std::string smin, smax; getPntrToArgument(0)->getDomain( smin, smax ); setPeriodic( smin, smax );
+  } else setNotPeriodic();
+  getPntrToComponent(0)->buildDataStore();
   if( shape.size()==2 ) getPntrToComponent(0)->reshapeMatrixStore( shape[1] );
 }
 

@@ -67,8 +67,13 @@ k: KERNEL ARG=d TYPE=gaussian CENTER=1 SIGMA=0.1
 ```
 
 The [NORMALIZED_EUCLIDEAN_DISTANCE](NORMALIZED_EUCLIDEAN_DISTANCE.md) between the instantaneous distance and the point 1 is evaluated here.
-The metric vector that is used to evaluate this distance is taking the reciprocal of the square of the input SIGMA value. Lastly, the weight, $w$,
-in the expression above is set equal to one.
+The metric vector that is used to evaluate this distance is taking the reciprocal of the square of the input SIGMA value. Lastly, the height of the Gaussian, $w$,
+in the expression above is set equal to one.  If you would like the total volume of the Gaussian to be equal to one you use the `NORMALIZED` keyword as shown here:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+k: KERNEL ARG=d TYPE=gaussian CENTER=1 SIGMA=0.1 NORMALIZED
+```
 
 If your Kernel is a function of two arguments you can use the [NORMALIZED_EUCLIDEAN_DISTANCE](NORMALIZED_EUCLIDEAN_DISTANCE.md) to evaluate the 
 distance as is done in the following example:
@@ -285,7 +290,7 @@ Kernel::Kernel(const ActionOptions&ao):
     // And the (suitably normalized) kernel
     readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_dist_2," + getShortcutLabel() + "_vol FUNC=" + wstr + "*exp(-x/2)/y PERIODIC=NO");
   } else {
-    readInputLine( getShortcutLabel() + ": CUSTOM ARG1=" + getShortcutLabel() + "_dist_2 FUNC=" + wstr + "*" + func_str + " PERIODIC=NO");
+    readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_dist_2 FUNC=" + wstr + "*" + func_str + " PERIODIC=NO");
   }
   checkRead();
 

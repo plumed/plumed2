@@ -231,7 +231,9 @@ MahalanobisDistance::MahalanobisDistance( const ActionOptions& ao):
     // Transpose sines to get a row vector
     readInputLine( getShortcutLabel() + "_sinediff: TRANSPOSE ARG=" + getShortcutLabel() + "_sinediffT");
     // Compute the off diagonal elements
-    readInputLine( getShortcutLabel() + "_matvec: MATRIX_PRODUCT ARG=" + getShortcutLabel() + "_offdiagmet," + getShortcutLabel() +"_sinediffT");
+    ActionWithValue* avs=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_sinediffT" ); plumed_assert( avs && avs->getNumberOfComponents()==1 );
+    if( (avs->copyOutput(0))->getRank()==1 ) readInputLine( getShortcutLabel() + "_matvec: MATRIX_VECTOR_PRODUCT ARG=" + metstr + "," + getShortcutLabel() +"_sinediffT"); 
+    else readInputLine( getShortcutLabel() + "_matvec: MATRIX_PRODUCT ARG=" + getShortcutLabel() + "_offdiagmet," + getShortcutLabel() +"_sinediffT");
     readInputLine( getShortcutLabel() + "_offdiag: MATRIX_PRODUCT_DIAGONAL ARG=" + getShortcutLabel() + "_sinediff," + getShortcutLabel() +"_matvec");
     // Sort out the metric for the diagonal elements
     std::string metstr2 = getShortcutLabel() + "_diagmet";
