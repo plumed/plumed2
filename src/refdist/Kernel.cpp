@@ -49,9 +49,9 @@ specifies using the `FUNC` keyword or one of the Kernel functions options from t
 
 | Instruction | Function |
 |:-----------:|:---------|
-| FUNC=gaussian | $exp(-x/2)$ |
-| FUNC=von-misses | $exp(-x/2)$ |
-| FUNC=triangular | $1-\sqrt{x} \textrm{if} \quad x<1 \quad \textrm{otherwise} 0$ |
+| FUNC=gaussian | $\exp(-x/2)$ |
+| FUNC=von-misses | $\exp(-x/2)$ |
+| FUNC=triangular | $1-\sqrt{x} \quad \textrm{if} \quad x<1 \quad \textrm{otherwise} \quad 0$ |
 
 The `von-misses` options here is used if the input arguments have a periodic domain.  This instruction changes the way the
 [MAHALANOBIS_DISTANCE](MAHALANOBIS_DISTANCE.md) is computed so that the method that is appropriate for using with periodic 
