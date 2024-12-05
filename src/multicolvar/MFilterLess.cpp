@@ -47,6 +47,7 @@ PLUMED_REGISTER_ACTION(MFilterLess,"MFILTER_LESS")
 
 void MFilterLess::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
+  keys.setDeprecated("LESS_THAN");
   keys.add("compulsory","DATA","the vector you wish to transform");
   keys.add("compulsory","SWITCH","the switching function that transform");
   keys.setValueDescription("vector","a vector that has the same dimension as the input vector with elements equal to one if the corresponding component of the vector is less than a tolerance and zero otherwise");

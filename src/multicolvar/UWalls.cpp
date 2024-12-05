@@ -48,6 +48,7 @@ PLUMED_REGISTER_ACTION(UWalls,"UWALLS")
 
 void UWalls::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
+  keys.setDeprecated("UPPER_WALLS");
   keys.add("compulsory","DATA","the values you want to restrain");
   keys.add("compulsory","AT","the radius of the sphere");
   keys.add("compulsory","KAPPA","the force constant for the wall.  The k_i in the expression for a wall.");
