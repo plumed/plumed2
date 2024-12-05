@@ -1,0 +1,11 @@
+type=driver
+# this is to test a different name
+arg="--plumed plumed.dat --ixyz traj-ortho.xyz"
+
+plumed_regtest_after() {
+  {
+    echo '#! FIELDS time parameter cpu-gpu'
+    awk 'NR>1{print $1, $2, $4-$3} ' <deriv
+  } >deriv_delta
+}
+extra_files="../../trajectories/traj-ortho.xyz"
