@@ -21,8 +21,8 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include <pybind11/operators.h>
 #include <pybind11/stl_bind.h>
 
-#include "tools/Vector.h"
-#include "tools/NeighborList.h"
+#include "plumed/tools/Vector.h"
+#include "plumed/tools/NeighborList.h"
 
 #include "PythonCVInterface.h"
 #include "PythonFunction.h"
@@ -35,7 +35,7 @@ namespace py=pybind11;
 
 //NB: the action methods are written two times due to the diamond inheritance
 
-PYBIND11_EMBEDDED_MODULE(plumedCommunications, m) {
+PYBIND11_MODULE(plumedCommunications, m) {
   /*******************************default submodule****************************/
   py::module_ defaults = m.def_submodule("defaults", "Submodule with the default definitions");
   defaults.attr("COMPONENT") = py::dict(py::arg("period")=py::none(),py::arg("derivative")=true);
