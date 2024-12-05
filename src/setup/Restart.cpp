@@ -42,7 +42,7 @@ trajetories by restarting calculations from a checkpoint file.
 RESTART is a Setup directive and, as such, should appear
 at the beginning of the input file. When you include the RESTART command
 in your plumed.dat file you are telling PLUMED that you want to restart all
-the actions. Restarting these actions ensures that that PLUMED appends
+the actions. Restarting these actions ensures that, as discussed [here](Files.md), PLUMED appends
 all the files that are open for writing. Appending to these files makes it 
 easier to analyze results from simulations that have been performed as a 
 chain of several sub-runs.
