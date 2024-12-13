@@ -31,7 +31,39 @@
 /*
 Create a virtual atom from the input scalars
 
-\par Examples
+This action takes five scalars that are computed by other actions in input and uses them to set the 
+x, y and z positions and the mass and charge of a virtual atom.  This action is used within the 
+[CENTER](CENTER.md) shortcut to compute a center of mass.  An example input that shows how you 
+can use this command to calculate the center of mass of atoms 1-10 is as follows:
+
+```plumed
+# Calculate the total mass of the atoms
+m: MASS ATOMS=1-10
+mass: SUM ARG=m PERIODIC=NO
+# Calculate the totla charge of the atoms
+q: CHARGE ATOMS=1-10
+charge: SUM ARG=q PERIODIC=NO
+# Now get the positions of the atoms
+pos: POSITION WHOLEMOLECULES ATOMS=1-10
+# Multiply each vector of positions by the masses
+xwvec: CUSTOM ARG=m,pos.x FUNC=x*y PERIODIC=NO
+ywvec: CUSTOM ARG=m,pos.y FUNC=x*y PERIODIC=NO
+zwvec: CUSTOM ARG=m,pos.z FUNC=x*y PERIODIC=NO
+# Sum the numerators in the expression for the center of mass
+xnum: SUM ARG=xwvec PERIODIC=NO
+ynum: SUM ARG=ywvec PERIODIC=NO
+znum: SUM ARG=zwvec PERIODIC=NO
+# And compute the x, y and z positions of the center of mass
+x: CUSTOM ARG=xnum,mass FUNC=x/y PERIODIC=NO
+y: CUSTOM ARG=ynum,mass FUNC=x/y PERIODIC=NO
+z: CUSTOM ARG=znum,mass FUNC=x/y PERIODIC=NO
+# And now create the virtual atom
+p: ARGS2VATOM XPOS=x YPOS=y ZPOS=z MASS=mass CHARGE=charge
+``` 
+
+This input provides a very slow way of providing a center of mass - PLUMED contains a faster implementation that does all this.
+This type of input is nevertheless useful if you are using arbitary weights when computing the sums in the numerator 
+and denominator of the expression for the center as is detailed in the documentation for the [CENTER](CENTER.md) command.
 
 */
 //+ENDPLUMEDOC

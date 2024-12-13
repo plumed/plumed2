@@ -41,50 +41,83 @@ Calculate the center for a group of atoms, with arbitrary weights.
 /*
 Calculate the center for a group of atoms, with arbitrary weights.
 
-The computed
-center is stored as a virtual atom that can be accessed in
-an atom list through the label for the CENTER action that creates it.
-Notice that the generated virtual atom has charge equal to the sum of the
-charges and mass equal to the sum of the masses. If used with the MASS flag,
-then it provides a result identical to \ref COM.
+The position of the center ${r}_{\rm COM}$ given by:
 
-When running with periodic boundary conditions, the atoms should be
-in the proper periodic image. This is done automatically since PLUMED 2.2,
-by considering the ordered list of atoms and rebuilding the molecule using a procedure
-that is equivalent to that done in \ref WHOLEMOLECULES . Notice that
-rebuilding is local to this action. This is different from \ref WHOLEMOLECULES
-which actually modifies the coordinates stored in PLUMED.
+$$
+{r}_{\rm COM}=\frac{\sum_{i=1}^{n} {r}_i\ w_i }{\sum_i^{n} w_i}
+$$
 
-In case you want to recover the old behavior you should use the NOPBC flag.
-In that case you need to take care that atoms are in the correct
-periodic image.
+In these expressions $r_i$ indicates the position of atom $i$ and $w_i$ is the weight for atom $i$. The following input
+shows how you can calculate the expressions for a set of atoms by using PLUMED:
 
-\note As an experimental feature, CENTER also supports a keyword PHASES.
-This keyword finds the center of mass for sets of atoms that have been split by the period boundaries by computing scaled coordinates and average
-trigonometric functions, similarly to \ref CENTER_OF_MULTICOLVAR.
-Notice that by construction this center position is
+```plumed
+# This action calculates the position of the point on the line connecting atoms 1 and 10 that is
+# twice as far atom 10 as it is from atom 1 
+c1: CENTER ATOMS=1,1,10
+# this is another way of calculating this position
+c1bis: CENTER ATOMS=1,10 WEIGHTS=2,1
+
+DUMPATOMS ATOMS=c1,c1bis FILE=atoms.xyz
+```
+
+Notice that center's position is stored as [a virtual atom](specifying_atoms.md). The positions of the centers in the above input
+used in the DUMPATOMS command by using the labels for the CENTER actions. Notice, furthermore, that the mass and charge of this new center 
+are equal to the sums of the masses and charges of the input atoms. 
+
+The input below shows how you can use the CENTER action in place of the [COM](COM) action to calculate the center of mass for a group of atoms.
+
+```plumed
+c: CENTER ATOMS=1-5 MASS
+```
+
+Center is more powerful than COM because you can use arbitrary vectors of weights as in the first example above or vector of weights that are calculated by 
+another action as has been done in the input below.
+
+```plumed
+fcc: FCCUBIC SPECIES=1-1000 SWITCH={RATIONAL D_0=3.0 R_0=1.5}
+sfcc: MORE_THAN ARG=fcc SWITCH={RATIONAL R_0=0.5}
+c: CENTER ATOMS=1-1000 WEIGHTS=sfcc
+DUMPATOMS ATOMS=c FILE=atom.xyz
+```
+
+This input assumes you have a cluster of solid atoms in a liquid. The actions with labels `fcc` and `sfcc`
+are used to differentiate between atoms in solid-like and liquid-like atoms. `sfcc` is thus a vector with 
+one element for each atom. These elements are equal to one if the environment around the corresponding atom 
+are solid like and zero if the environment around the atom is liquid like.
+
+## A note on periodic boundary conditions
+
+If you run with periodic boundary conditions
+these are taken into account automatically when computing the center of mass. The way this is 
+handled is akin to the way molecules are rebuilt in the [WHOLEMOLECULES](WHOLEMOLECULES.md) command.
+However, at variance to [WHOLEMOLECULES](WHOLEMOLECULES.md), the copies of the atomic positions in this 
+action are modified.  The global positions (i.e. those that are used in all other actions) 
+are not changed when the alignment is performed.
+
+If you believe that PBC should not be applied when calculating the position fo the center of mass you can use the 
+NOPBC flag.
+
+An additional way of managing periodic boundary conditions is offered in CENTER by using the PHASES keyword as shown 
+in the example input below
+
+```plumed
+c: CENTER ATOMS=1-100 PHASES
+```
+
+The scaled value for the $x$ component of the position of the center is calculated from the scaled components of the input atoms, $x_i$, 
+using the following expression when the PHASES option is employed
+
+$$
+x_\textrm{com} = \frac{1}{2\pi} \atan\left( \frac{\sum_{i=1}^n w_i \sin(2 \pi x_i ) }{ \sum_{i=1}^n w_i \cos(2 \pi x_i ) } \right) 
+$$
+
+Similar, expressions are used to calculae the values of the scaled $y$ and $z$ components.  The final cartesian coordinates of the center are then computed 
+by multiplying these scaled components by the cell vectors.  Notice that by construction this center position is
 not invariant with respect to rotations of the atoms at fixed cell lattice.
 In addition, for symmetric Bravais lattices, it is not invariant with respect
 to special symmetries. E.g., if you have an hexagonal cell, the center will
 not be invariant with respect to rotations of 120 degrees.
 On the other hand, it might make the treatment of PBC easier in difficult cases.
-
-\par Examples
-
-\plumedfile
-# a point which is on the line connecting atoms 1 and 10, so that its distance
-# from 10 is twice its distance from 1:
-c1: CENTER ATOMS=1,1,10
-# this is another way of stating the same:
-c1bis: CENTER ATOMS=1,10 WEIGHTS=2,1
-
-# center of mass among these atoms:
-c2: CENTER ATOMS=2,3,4,5 MASS
-
-d1: DISTANCE ATOMS=c1,c2
-
-PRINT ARG=d1
-\endplumedfile
 
 */
 //+ENDPLUMEDOC
@@ -93,33 +126,34 @@ PRINT ARG=d1
 /*
 Calculate the center of mass for a group of atoms.
 
-The computed
-center of mass is stored as a virtual atom that can be accessed in
-an atom list through the label for the COM action that creates it.
+The following example input shows how you can use this shortcut to calculate the center of 
+mass for atoms  1,2,3,4,5,6,7 and for atoms 15,20.  You can then compute the distance between
+the two center of masses.
 
-For arbitrary weights (e.g. geometric center) see \ref CENTER.
-
-When running with periodic boundary conditions, the atoms should be
-in the proper periodic image. This is done automatically since PLUMED 2.2,
-by considering the ordered list of atoms and rebuilding the molecule using a procedure
-that is equivalent to that done in \ref WHOLEMOLECULES . Notice that
-rebuilding is local to this action. This is different from \ref WHOLEMOLECULES
-which actually modifies the coordinates stored in PLUMED.
-
-In case you want to recover the old behavior you should use the NOPBC flag.
-In that case you need to take care that atoms are in the correct
-periodic image.
-
-\par Examples
-
-The following input instructs plumed to print the distance between the
-center of mass for atoms 1,2,3,4,5,6,7 and that for atoms 15,20:
-\plumedfile
+```plumed
 c1: COM ATOMS=1-7
 c2: COM ATOMS=15,20
 d1: DISTANCE ATOMS=c1,c2
 PRINT ARG=d1
-\endplumedfile
+```
+
+The center of mass is stored as a [virtual atom](specifying_atoms.md).  As you can see from the 
+above to refer to the position of the center of mass when specifying the atoms that should be used 
+when calculating some other action you use the lable of the COM action that computes the center of mass
+of interest.   
+
+The COM command is a shortcut because it is a wrapper to [CENTER](CENTER.md). CENTER is more powerful than
+comm as it allows you to use arbitrary weights in place of the masses.
+
+If you run with periodic boundary conditions
+these are taken into account automatically when computing the center of mass. The way this is 
+handled is akin to the way molecules are rebuilt in the [WHOLEMOLECULES](WHOLEMOLECULES.md) command.
+However, at variance to [WHOLEMOLECULES](WHOLEMOLECULES.md), the copies of the atomic positions in this 
+action are modified.  The global positions (i.e. those that are used in all other actions) 
+are not changed when the alignment is performed.
+
+If you believe that PBC should not be applied when calculating the position fo the center of mass you can use the 
+NOPBC flag.
 
 */
 //+ENDPLUMEDOC

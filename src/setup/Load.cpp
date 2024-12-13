@@ -107,7 +107,7 @@ Instead of the command:
 PLUMED_REGISTER_ACTION(Distance,"DISTANCE2")
 ```
 
-that was used in `Distance2.cpp. Consequently, when we load the `Distance3.cpp` file here we redefine the DISTANCE command.
+that was used in `Distance2.cpp`. Consequently, when we load the `Distance3.cpp` file here we redefine the DISTANCE command.
 The functions that compute `d` and `d2` in the above input are thus different.
 
 A final point to note is that, starting with PLUMED 2.10, the LOAD action can be used in contexts where
