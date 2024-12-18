@@ -23,10 +23,11 @@
 #define __PLUMED_tools_Keywords_h
 #include <vector>
 #include <string>
-#include <set>
+#include <string_view>
 #include <map>
 
 #include "Exception.h"
+#include "BitmaskEnum.h"
 
 namespace PLMD {
 
@@ -35,48 +36,56 @@ class Log;
 /// This class holds the keywords and their documentation
 class Keywords {
 /// This class lets me pass keyword types easily
-  class KeyType {
-  public:
-    enum {hidden,compulsory,flag,optional,atoms,vessel} style;
-    explicit KeyType( const std::string& type );
-    void setStyle( const std::string& type );
+  struct KeyType {
+    enum class keyStyle {hidden,compulsory,flag,optional,atoms,vessel} style;
+    static keyStyle keyStyleFromString(std::string_view type );
+    explicit KeyType( keyStyle type );
+    explicit KeyType( std::string_view type );
+    void setStyle( std::string_view type );
     bool isCompulsory() const {
-      return (style==compulsory);
+      return (style==keyStyle::compulsory);
     }
     bool isFlag() const {
-      return (style==flag);
+      return (style==keyStyle::flag);
     }
     bool isOptional() const {
-      return (style==optional);
+      return (style==keyStyle::optional);
     }
     bool isAtomList() const {
-      return (style==atoms);
+      return (style==keyStyle::atoms);
     }
     bool isVessel() const {
-      return (style==vessel);
+      return (style==keyStyle::vessel);
+    }
+    bool isHidden() const {
+      return (style==keyStyle::hidden);
     }
     std::string toString() const {
-      if(style==compulsory) {
+      //if you add a style and you forget to update this function the compiler will refuse to compile
+      switch(style) {
+      case keyStyle::compulsory:
         return "compulsory";
-      } else if(style==optional) {
+      case keyStyle::optional:
         return "optional";
-      } else if(style==atoms) {
+      case keyStyle::atoms:
         return "atoms";
-      } else if(style==flag) {
+      case keyStyle::flag:
         return "flag";
-      } else if(style==hidden) {
+      case keyStyle::hidden:
         return "hidden";
-      } else if(style==vessel) {
+      case keyStyle::vessel:
         return "vessel";
-      } else {
-        plumed_assert(0);
       }
       return "";
     }
   };
+
   friend class Action;
   friend class ActionShortcut;
   friend class ActionRegister;
+public:
+  enum class argType {scalar=1,grid=1<<2,vector=1<<3,matrix=1<<4};
+  enum class componentType {scalar=1,grid=1<<2,vector=1<<3,matrix=1<<4,atoms=1<<5,atom=1<<6};
 private:
 /// Is this an action or driver (this bool affects what style==atoms does in print)
   bool isaction;
@@ -88,14 +97,15 @@ private:
   std::vector<std::string> keys;
 /// The names of the reserved keywords
   std::vector<std::string> reserved_keys;
+  //std::less<void> make some magic and makes find and [] work with string_view
 /// Whether the keyword is compulsory, optional...
-  std::map<std::string,KeyType> types;
+  std::map<std::string,KeyType,std::less<void>> types;
 /// Do we allow stuff like key1, key2 etc
   std::map<std::string,bool> allowmultiple;
 /// The documentation for the keywords
   std::map<std::string,std::string> documentation;
 /// The type for the arguments in this action
-  std::map<std::string,std::string> argument_types;
+  std::map<std::string,argType> argument_types;
 /// The default values for the flags (are they on or of)
   std::map<std::string,bool> booldefs;
 /// The default values (if there are default values) for compulsory keywords
@@ -111,7 +121,7 @@ private:
 /// The documentation for a particular component
   std::map<std::string,std::string> cdocs;
 /// The type of a particular component
-  std::map<std::string,std::string> ctypes;
+  std::map<std::string,componentType> ctypes;
 /// The list of actions that are needed by this action
   std::vector<std::string> neededActions;
 /// List of suffixes that can be used with this action
@@ -150,25 +160,25 @@ public:
 /// Print a file containing the list of keywords for a particular action (used for spell checking)
   void print_spelling() const ;
 /// Reserve a keyword
-  void reserve( const std::string & t, const std::string & k, const std::string & d );
+  void reserve( const std::string & keytype, const std::string & key, const std::string & docstring );
 /// Reserve a flag
   void reserveFlag( const std::string & k, const bool def, const std::string & d );
 /// Use one of the reserved keywords
-  void use( const std::string  & k );
-/// Get the ith keyword
+  void use( std::string_view k );
+/// Get the ith keyword std::string_view
   std::string get( const unsigned k ) const ;
 /// Add a new keyword of type t with name k and description d
-  void add( const std::string & t, const std::string & k, const std::string & d );
+  void add( std::string_view keytype, std::string_view key, std::string_view docstring );
 /// Add a new compulsory keyword (t must equal compulsory) with name k, default value def and description d
-  void add( const std::string & t, const std::string & k, const std::string & def, const std::string & d );
+  void add( std::string_view keytype, std::string_view key, std::string_view defaultValue, std::string_view docstring );
 /// Add a falg with name k that is by default on if def is true and off if def is false.  d should provide a description of the flag
   void addFlag( const std::string & k, const bool def, const std::string & d );
 /// Remove the keyword with name k
   void remove( const std::string & k );
 /// Check if there is a keyword with name k
-  bool exists( const std::string & k ) const ;
+  bool exists( std::string_view k ) const ;
 /// Check the keyword k has been reserved
-  bool reserved( const std::string & k ) const ;
+  bool reserved( std::string_view k ) const ;
 /// Get the type for the keyword with string k
   std::string getStyle( const std::string & k ) const ;
 /// Check if the keyword with name k has style t
@@ -184,7 +194,7 @@ public:
 /// Add keywords from one keyword object to another
   void add( const Keywords& keys );
 /// Copy the keywords data
-  void copyData( std::vector<std::string>& kk, std::vector<std::string>& rk, std::map<std::string,KeyType>& tt, std::map<std::string,bool>& am,
+  void copyData( std::vector<std::string>& kk, std::vector<std::string>& rk, std::map<std::string,KeyType,std::less<void>>& tt, std::map<std::string,bool>& am,
                  std::map<std::string,std::string>& docs, std::map<std::string,bool>& bools, std::map<std::string,std::string>& nums,
                  std::map<std::string,std::string>& atags, std::vector<std::string>& cnam, std::map<std::string,std::string>& ck,
                  std::map<std::string,std::string>& cd ) const ;
@@ -207,8 +217,15 @@ public:
 /// Check that type for component has been documented correctly
   bool componentHasCorrectType( const std::string& name, const std::size_t& rank, const bool& hasderiv ) const ;
 /// Create the documentation for a keyword that reads arguments
-  void addInputKeyword( const std::string & t, const std::string & k, const std::string & ttt, const std::string & d );
-  void addInputKeyword( const std::string & t, const std::string & k, const std::string & ttt, const std::string& def, const std::string & d );
+  //[[deprecated("Please specify the data type for the argument from scalar/vector/matrix/grid with the Keywords::argType enum")]]
+  void addInputKeyword( const std::string & keyType, const std::string & key, const std::string & dataType, const std::string & docstring );
+  /// Create the documentation for a keyword that reads arguments
+  void addInputKeyword( const std::string & keyType, const std::string & key, argType dataType, const std::string & docstring );
+  /// Create the documentation for a keyword that reads arguments
+  //[[deprecated("Please specify the data type for the argument from scalar/vector/matrix/grid with the Keywords::argType enum")]]
+  void addInputKeyword( const std::string & keyType, const std::string & key, const std::string & dataType, const std::string& defaultValue, const std::string & docstring );
+  /// Create the documentation for a keyword that reads arguments
+  void addInputKeyword( const std::string & keyType, const std::string & key, argType dataType, const std::string& defaultValue, const std::string & docstring );
 /// Check the documentation of the argument types
   bool checkArgumentType( const std::size_t& rank, const bool& hasderiv ) const ;
 /// Get the valid types that can be used as argument for this keyword
@@ -243,6 +260,39 @@ public:
   void setDisplayName( const std::string& name );
 };
 
-}
+template<>
+struct BitmaskEnum< Keywords::componentType > {
+  static constexpr bool has_valid = true;
+  static constexpr bool has_bit_or = true;
+  static constexpr bool has_bit_and = true;
+};
+
+template<>
+struct BitmaskEnum< Keywords::argType > {
+  static constexpr bool has_valid = true;
+  static constexpr bool has_bit_or = true;
+  static constexpr bool has_bit_and = true;
+};
+
+std::string toString(Keywords::argType at);
+/**
+ * Converts a string to the corresponding Keywords::argType.
+ *
+ * @param str The string to convert.
+ * @return The Keywords::argType corresponding to the string.
+ * @throws std::invalid_argument If the string does not match any enum value.
+ */
+Keywords::argType stoat(std::string_view str);
+std::string toString(Keywords::componentType at);
+
+/**
+ * Converts a string to the corresponding Keywords::componentType.
+ * @param str The string to convert.
+ * @return The Keywords::componentType corresponding to the string.
+ * @throws std::invalid_argument if the string does not match any enum value.
+ */
+Keywords::componentType stoct(std::string_view str) ;
+
+} // namespace PLMD
 
 #endif
