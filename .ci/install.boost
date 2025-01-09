@@ -11,11 +11,19 @@ version=1.74.0
 version_=${version//./_}
 
 echo $version $version_
+file=https://archives.boost.io/release/${version}/source/boost_${version_}.tar.gz
+# gh actions comes with jq installed, here we are reading the sha256 to be sure that we are downloading the right file
+expectedSha256=$(curl "${file}.json" 2> /dev/null | jq -r ".sha256") 
 
-wget https://boostorg.jfrog.io/artifactory/main/release/$version/source/boost_${version_}.tar.gz > /dev/null 2> /dev/null
+wget "${file}" > /dev/null 2> /dev/null
+#checks sha256 of the file (this can be hardcoded instead of downloading it whith the json)
+sha256sum -c <<< "$expectedSha256 boost_${version_}.tar.gz" || exit 1
+
+#this was the original link
+# wget https://boostorg.jfrog.io/artifactory/main/release/$version/source/boost_${version_}.tar.gz > /dev/null 2> /dev/null
+
 tar xzf boost_${version_}.tar.gz
-
-cd boost_${version_}
+cd boost_${version_} || exit 1
 
 ./bootstrap.sh --with-libraries=serialization --prefix="$HOME/opt"
 
@@ -26,4 +34,3 @@ else
 # debug build:
 ./b2 debug cxxflags=-D_GLIBCXX_DEBUG install -j 4 > /dev/null 2> /dev/null
 fi
-
