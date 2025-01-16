@@ -100,7 +100,7 @@ bool hasDlopen();
 bool isInstalled();
 
 /// This will always return true for backward compatibility
-constexpr bool hasCregex(){return true;}
+constexpr bool hasCregex() {return true;}
 
 bool hasMolfile();
 
