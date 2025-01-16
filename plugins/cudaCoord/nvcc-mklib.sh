@@ -62,6 +62,13 @@ for opt in -f; do
   link_command=${link_command//${opt}/-Xcompiler ${opt}}
 done
 
+#this may be necessary for succesfully run on your GPU
+# search your GPU here https://developer.nvidia.com/cuda-gpus and specify sm_number
+# where "number" is the compute capability with no dots (the T1000 has CC of 7.5, so you write sm_75)
+
+#compile="$compile --gpu-architecture=sm_75 "
+#link_command="$link_command -shared -dlto --gpu-architecture=sm_75"
+
 eval "$compile" -o "$obj" "$file" && \
 eval "$compile" -o "ndReduction.o" "ndReduction.cu" && \
 eval "$link_command" -o "$lib" "ndReduction.o" "$obj"
