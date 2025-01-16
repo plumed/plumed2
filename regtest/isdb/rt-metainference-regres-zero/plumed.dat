@@ -24,6 +24,7 @@ DSIGMA=0
 LABEL=mij
 TEMP=300
 REGRES_ZERO=1
+FMT=%12.7lf
 ...
 
 JCOUPLING ...
@@ -43,6 +44,7 @@ JCOUPLING ...
     DSIGMA=0
     TEMP=300
     RESTART=YES
+    FMT=%12.7lf
 ... JCOUPLING
 
 BIASVALUE ARG=jmi.score
