@@ -155,14 +155,6 @@ bool hasDlopen() {
 #endif
 }
 
-bool hasCregex() {
-#ifdef __PLUMED_HAS_CREGEX
-  return true;
-#else
-  return false;
-#endif
-}
-
 bool hasMolfile() {
 #ifdef __PLUMED_HAS_MOLFILE_PLUGINS
   return true;
