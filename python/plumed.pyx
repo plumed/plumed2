@@ -535,7 +535,7 @@ def read_as_pandas(file_or_path,enable_constants=True,enable_conversion=True,ker
 
 # read the rest of the file
 # notice that if chunksize was provided the result will be an iterable object
-    df=pd.read_csv(file_or_path, delim_whitespace=True, comment="#", header=None,names=columns,
+    df=pd.read_csv(file_or_path, sep='\s+', comment="#", header=None,names=columns,
                     usecols=usecols,skiprows=skiprows,nrows=nrows,chunksize=chunksize,index_col=index_col)
 
     if chunksize is None:
