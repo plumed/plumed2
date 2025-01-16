@@ -66,6 +66,8 @@ private:
   bool isatoms;
 /// The name of the action that has this set of keywords
   std::string thisactname;
+/// The action to use in place of this deprecated action
+  std::string replaceaction;
 /// The names of the allowed keywords
   std::vector<std::string> keys;
 /// The names of the reserved keywords
@@ -217,6 +219,10 @@ public:
   std::string getDisplayName() const ;
 /// Set the display name
   void setDisplayName( const std::string& name );
+/// Get the action that should be used to replace this one if action has been deprecated
+  std::string getReplacementAction() const ;
+/// Note that this action has been deprecated
+  void setDeprecated( const std::string& name );
 };
 
 }

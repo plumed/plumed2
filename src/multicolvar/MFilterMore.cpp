@@ -47,6 +47,7 @@ PLUMED_REGISTER_ACTION(MFilterMore,"MFILTER_MORE")
 
 void MFilterMore::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
+  keys.setDeprecated("MORE_THAN");
   keys.add("compulsory","DATA","the vector you wish to transform");
   keys.add("compulsory","SWITCH","the switching function that transform");
   keys.addFlag("LOWMEM",false,"this flag does nothing and is present only to ensure back-compatibility");
