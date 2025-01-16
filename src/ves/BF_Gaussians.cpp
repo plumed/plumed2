@@ -122,8 +122,7 @@ void BF_Gaussians::registerKeywords(Keywords& keys) {
 }
 
 BF_Gaussians::BF_Gaussians(const ActionOptions&ao):
-  PLUMED_VES_BASISFUNCTIONS_INIT(ao)
-{
+  PLUMED_VES_BASISFUNCTIONS_INIT(ao) {
   log.printf("  Gaussian basis functions, see and cite ");
   log << plumed.cite("Pampel and Valsson, J. Chem. Theory Comput. 18, 4127-4141 (2022) - DOI:10.1021/acs.jctc.2c00197");
 
@@ -131,13 +130,19 @@ BF_Gaussians::BF_Gaussians(const ActionOptions&ao):
 
   double width = (intervalMax()-intervalMin()) / getOrder();
   parse("WIDTH",width);
-  if(width <= 0.0) {plumed_merror("WIDTH should be larger than 0");}
-  if(width != (intervalMax()-intervalMin())/getOrder()) {addKeywordToList("WIDTH",width);}
+  if(width <= 0.0) {
+    plumed_merror("WIDTH should be larger than 0");
+  }
+  if(width != (intervalMax()-intervalMin())/getOrder()) {
+    addKeywordToList("WIDTH",width);
+  }
   inv_sigma_ = 1/(width);
 
   bool periodic = false;
   parseFlag("PERIODIC",periodic);
-  if (periodic) {addKeywordToList("PERIODIC",periodic);}
+  if (periodic) {
+    addKeywordToList("PERIODIC",periodic);
+  }
 
   // 1 constant, getOrder() on interval, 1 (left) + 2 (right) at boundaries if not periodic
   unsigned int num_BFs = periodic ? getOrder()+1U : getOrder()+4U;
@@ -172,7 +177,11 @@ void BF_Gaussians::getAllValues(const double arg, double& argT, bool& inside_ran
     values[i] = exp(-0.5*pow(dist*inv_sigma_,2.0));
     derivs[i] = -values[i] * (dist)*pow(inv_sigma_,2.0);
   }
-  if(!inside_range) {for (auto& d: derivs) {d=0.0;}}
+  if(!inside_range) {
+    for (auto& d: derivs) {
+      d=0.0;
+    }
+  }
 }
 
 
@@ -180,7 +189,8 @@ void BF_Gaussians::getAllValues(const double arg, double& argT, bool& inside_ran
 void BF_Gaussians::setupLabels() {
   setLabel(0,"const");
   for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
-    std::string is; Tools::convert(centers_[i],is);
+    std::string is;
+    Tools::convert(centers_[i],is);
     setLabel(i,"m="+is);
   }
 }

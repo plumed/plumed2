@@ -66,8 +66,7 @@ PRINT ARG=pw,ppww.dist1_pfunc,ppww.dist2_pfunc
 
 
 class Piecewise :
-  public Function
-{
+  public Function {
   std::vector<std::pair<double,double> > points;
 public:
   explicit Piecewise(const ActionOptions&);
@@ -92,19 +91,25 @@ void Piecewise::registerKeywords(Keywords& keys) {
 
 Piecewise::Piecewise(const ActionOptions&ao):
   Action(ao),
-  Function(ao)
-{
+  Function(ao) {
   for(int i=0;; i++) {
     std::vector<double> pp;
-    if(!parseNumberedVector("POINT",i,pp) ) break;
-    if(pp.size()!=2) error("points should be in x,y format");
+    if(!parseNumberedVector("POINT",i,pp) ) {
+      break;
+    }
+    if(pp.size()!=2) {
+      error("points should be in x,y format");
+    }
     points.push_back(std::pair<double,double>(pp[0],pp[1]));
-    if(i>0 && points[i].first<=points[i-1].first) error("points abscissas should be monotonously increasing");
+    if(i>0 && points[i].first<=points[i-1].first) {
+      error("points abscissas should be monotonously increasing");
+    }
   }
 
   for(unsigned i=0; i<getNumberOfArguments(); i++)
-    if(getPntrToArgument(i)->isPeriodic())
+    if(getPntrToArgument(i)->isPeriodic()) {
       error("Cannot use PIECEWISE on periodic arguments");
+    }
 
   if(getNumberOfArguments()==1) {
     addValueWithDerivatives();
@@ -118,7 +123,9 @@ Piecewise::Piecewise(const ActionOptions&ao):
   checkRead();
 
   log.printf("  on points:");
-  for(unsigned i=0; i<points.size(); i++) log.printf("   (%f,%f)",points[i].first,points[i].second);
+  for(unsigned i=0; i<points.size(); i++) {
+    log.printf("   (%f,%f)",points[i].first,points[i].second);
+  }
   log.printf("\n");
 }
 
@@ -127,7 +134,9 @@ void Piecewise::calculate() {
     double val=getArgument(i);
     unsigned p=0;
     for(; p<points.size(); p++) {
-      if(val<points[p].first) break;
+      if(val<points[p].first) {
+        break;
+      }
     }
     double f,d;
     if(p==0) {

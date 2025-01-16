@@ -174,35 +174,51 @@ void ClassicalMultiDimensionalScaling::registerKeywords( Keywords& keys ) {
 
 ClassicalMultiDimensionalScaling::ClassicalMultiDimensionalScaling( const ActionOptions& ao):
   Action(ao),
-  DimensionalityReductionBase(ao)
-{
-  if( dimredbase ) error("input to CLASSICAL_MDS should not be output from dimensionality reduction object");
+  DimensionalityReductionBase(ao) {
+  if( dimredbase ) {
+    error("input to CLASSICAL_MDS should not be output from dimensionality reduction object");
+  }
 }
 
 void ClassicalMultiDimensionalScaling::calculateProjections( const Matrix<double>& targets, Matrix<double>& projections ) {
   // Retrieve the distances from the dimensionality reduction object
-  double half=(-0.5); Matrix<double> distances( half*targets );
+  double half=(-0.5);
+  Matrix<double> distances( half*targets );
 
   // Apply centering transtion
-  unsigned n=distances.nrows(); double sum;
+  unsigned n=distances.nrows();
+  double sum;
   // First HM
   for(unsigned i=0; i<n; ++i) {
-    sum=0; for(unsigned j=0; j<n; ++j) sum+=distances(i,j);
-    for(unsigned j=0; j<n; ++j) distances(i,j) -= sum/n;
+    sum=0;
+    for(unsigned j=0; j<n; ++j) {
+      sum+=distances(i,j);
+    }
+    for(unsigned j=0; j<n; ++j) {
+      distances(i,j) -= sum/n;
+    }
   }
   // Now (HM)H
   for(unsigned i=0; i<n; ++i) {
-    sum=0; for(unsigned j=0; j<n; ++j) sum+=distances(j,i);
-    for(unsigned j=0; j<n; ++j) distances(j,i) -= sum/n;
+    sum=0;
+    for(unsigned j=0; j<n; ++j) {
+      sum+=distances(j,i);
+    }
+    for(unsigned j=0; j<n; ++j) {
+      distances(j,i) -= sum/n;
+    }
   }
 
   // Diagonalize matrix
-  std::vector<double> eigval(n); Matrix<double> eigvec(n,n);
+  std::vector<double> eigval(n);
+  Matrix<double> eigvec(n,n);
   diagMat( distances, eigval, eigvec );
 
   // Pass final projections to map object
   for(unsigned i=0; i<n; ++i) {
-    for(unsigned j=0; j<projections.ncols(); ++j) projections(i,j)=std::sqrt(eigval[n-1-j])*eigvec(n-1-j,i);
+    for(unsigned j=0; j<projections.ncols(); ++j) {
+      projections(i,j)=std::sqrt(eigval[n-1-j])*eigvec(n-1-j,i);
+    }
   }
 }
 

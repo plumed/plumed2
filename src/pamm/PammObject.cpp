@@ -27,23 +27,24 @@ namespace PLMD {
 namespace pamm {
 
 PammObject::PammObject():
-  regulariser(0.001)
-{
+  regulariser(0.001) {
 }
 
 PammObject::PammObject( const PammObject& in ):
   regulariser(in.regulariser),
   pbc(in.pbc),
   min(in.min),
-  max(in.max)
-{
-  for(unsigned i=0; i<in.kernels.size(); ++i) kernels.emplace_back( Tools::make_unique<KernelFunctions>( in.kernels[i].get() ) );
+  max(in.max) {
+  for(unsigned i=0; i<in.kernels.size(); ++i) {
+    kernels.emplace_back( Tools::make_unique<KernelFunctions>( in.kernels[i].get() ) );
+  }
 }
 
 void PammObject::setup( const std::string& filename, const double& reg, const std::vector<std::string>& valnames,
                         const std::vector<bool>& pbcin, const std::vector<std::string>& imin, const std::vector<std::string>& imax,
                         std::string& errorstr ) {
-  IFile ifile; regulariser=reg;
+  IFile ifile;
+  regulariser=reg;
   if( !ifile.FileExist(filename) ) {
     errorstr = "could not find file named " + filename;
     return;
@@ -54,16 +55,25 @@ void PammObject::setup( const std::string& filename, const double& reg, const st
   min.resize( valnames.size() );
   max.resize( valnames.size() );
   for(unsigned i=0; i<valnames.size(); ++i) {
-    pbc[i]=pbcin[i]; min[i]=imin[i]; max[i]=imax[i];
+    pbc[i]=pbcin[i];
+    min[i]=imin[i];
+    max[i]=imax[i];
     pos.emplace_back( Tools::make_unique<Value>() );
-    if( !pbc[i] ) pos[i]->setNotPeriodic();
-    else pos[i]->setDomain( min[i], max[i] );
+    if( !pbc[i] ) {
+      pos[i]->setNotPeriodic();
+    } else {
+      pos[i]->setDomain( min[i], max[i] );
+    }
   }
 
-  ifile.open(filename); ifile.allowIgnoredFields(); kernels.resize(0);
+  ifile.open(filename);
+  ifile.allowIgnoredFields();
+  kernels.resize(0);
   for(unsigned k=0;; ++k) {
     std::unique_ptr<KernelFunctions> kk = KernelFunctions::read( &ifile, false, valnames );
-    if( !kk ) break ;
+    if( !kk ) {
+      break ;
+    }
     kk->normalize( Tools::unique2raw( pos ) );
     kernels.emplace_back( std::move(kk) );
     ifile.scanField();
@@ -75,8 +85,11 @@ void PammObject::evaluate( const std::vector<double>& invar, std::vector<double>
   std::vector<std::unique_ptr<Value>> pos;
   for(unsigned i=0; i<pbc.size(); ++i) {
     pos.emplace_back( Tools::make_unique<Value>() );
-    if( !pbc[i] ) pos[i]->setNotPeriodic();
-    else pos[i]->setDomain( min[i], max[i] );
+    if( !pbc[i] ) {
+      pos[i]->setNotPeriodic();
+    } else {
+      pos[i]->setDomain( min[i], max[i] );
+    }
     // And set the value
     pos[i]->set( invar[i] );
   }
@@ -85,15 +98,21 @@ void PammObject::evaluate( const std::vector<double>& invar, std::vector<double>
   auto pos_ptr=Tools::unique2raw(pos);
 
   // Evaluate the set of kernels
-  double denom=regulariser; std::vector<double> dderiv( der[0].size(), 0 );
+  double denom=regulariser;
+  std::vector<double> dderiv( der[0].size(), 0 );
   for(unsigned i=0; i<kernels.size(); ++i) {
-    outvals[i]=kernels[i]->evaluate( pos_ptr, der[i] ); denom+=outvals[i];
-    for(unsigned j=0; j<der[i].size(); ++j) dderiv[j] += der[i][j];
+    outvals[i]=kernels[i]->evaluate( pos_ptr, der[i] );
+    denom+=outvals[i];
+    for(unsigned j=0; j<der[i].size(); ++j) {
+      dderiv[j] += der[i][j];
+    }
   }
   // Evaluate the set of derivatives
   for(unsigned i=0; i<kernels.size(); ++i) {
     outvals[i]/=denom;
-    for(unsigned j=0; j<der[i].size(); ++j) der[i][j]=der[i][j]/denom - outvals[i]*dderiv[j]/denom;
+    for(unsigned j=0; j<der[i].size(); ++j) {
+      der[i][j]=der[i][j]/denom - outvals[i]*dderiv[j]/denom;
+    }
   }
 
 }

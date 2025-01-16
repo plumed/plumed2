@@ -49,13 +49,14 @@ void SelectWithStride::registerKeywords( Keywords& keys ) {
 
 SelectWithStride::SelectWithStride( const ActionOptions& ao ):
   Action(ao),
-  LandmarkSelectionBase(ao)
-{
+  LandmarkSelectionBase(ao) {
 }
 
 void SelectWithStride::selectLandmarks() {
   unsigned stride = std::floor( my_input_data->getNumberOfDataPoints() / getNumberOfDataPoints() ), max=stride*getNumberOfDataPoints();
-  for(unsigned i=0; i<max; i+=stride) selectFrame( i );
+  for(unsigned i=0; i<max; i+=stride) {
+    selectFrame( i );
+  }
 }
 
 }

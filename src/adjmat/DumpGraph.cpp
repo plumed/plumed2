@@ -63,7 +63,8 @@ public:
 PLUMED_REGISTER_ACTION(DumpGraph,"DUMPGRAPH")
 
 void DumpGraph::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys ); ActionPilot::registerKeywords( keys );
+  Action::registerKeywords( keys );
+  ActionPilot::registerKeywords( keys );
   keys.add("compulsory","MATRIX","the action that calculates the adjacency matrix vessel we would like to analyze");
   keys.add("compulsory","STRIDE","1","the frequency with which you would like to output the graph");
   keys.add("compulsory","FILE","the name of the file on which to output the data");
@@ -77,35 +78,54 @@ void DumpGraph::registerKeywords( Keywords& keys ) {
 DumpGraph::DumpGraph( const ActionOptions& ao):
   Action(ao),
   ActionPilot(ao),
-  mymatrix(NULL)
-{
-  parse("MAXCONNECT",maxconnections); std::string mstring; parse("MATRIX",mstring);
+  mymatrix(NULL) {
+  parse("MAXCONNECT",maxconnections);
+  std::string mstring;
+  parse("MATRIX",mstring);
   AdjacencyMatrixBase* mm = plumed.getActionSet().selectWithLabel<AdjacencyMatrixBase*>( mstring );
-  if( !mm ) error("found no action in set with label " + mstring + " that calculates matrix");
+  if( !mm ) {
+    error("found no action in set with label " + mstring + " that calculates matrix");
+  }
   log.printf("  printing graph for matrix calculated by action %s\n", mm->getLabel().c_str() );
 
   // Retrieve the adjacency matrix of interest
   for(unsigned i=0; i<mm->getNumberOfVessels(); ++i) {
     mymatrix = dynamic_cast<AdjacencyMatrixVessel*>( mm->getPntrToVessel(i) );
-    if( mymatrix ) break ;
+    if( mymatrix ) {
+      break ;
+    }
   }
-  if( !mymatrix ) error( mm->getLabel() + " does not calculate an adjacency matrix");
-  if( !mymatrix->isSymmetric() ) error("input contact matrix must be symmetric");
-  if( maxconnections==0 ) maxconnections=mymatrix->getNumberOfRows();
+  if( !mymatrix ) {
+    error( mm->getLabel() + " does not calculate an adjacency matrix");
+  }
+  if( !mymatrix->isSymmetric() ) {
+    error("input contact matrix must be symmetric");
+  }
+  if( maxconnections==0 ) {
+    maxconnections=mymatrix->getNumberOfRows();
+  }
   parse("FILE",filename);
   log.printf("  printing graph to file named %s \n",filename.c_str() );
   checkRead();
 }
 
 void DumpGraph::update() {
-  OFile ofile; ofile.link(*this); ofile.setBackupString("graph");
-  ofile.open( filename ); ofile.printf("graph G { \n");
+  OFile ofile;
+  ofile.link(*this);
+  ofile.setBackupString("graph");
+  ofile.open( filename );
+  ofile.printf("graph G { \n");
   // Print all nodes
-  for(unsigned i=0; i<mymatrix->getNumberOfRows(); ++i) ofile.printf("%u [label=\"%u\"];\n",i,i);
+  for(unsigned i=0; i<mymatrix->getNumberOfRows(); ++i) {
+    ofile.printf("%u [label=\"%u\"];\n",i,i);
+  }
   // Now retrieve connectivitives
-  unsigned nedge; std::vector<std::pair<unsigned,unsigned> > edge_list( mymatrix->getNumberOfRows()*maxconnections );
+  unsigned nedge;
+  std::vector<std::pair<unsigned,unsigned> > edge_list( mymatrix->getNumberOfRows()*maxconnections );
   mymatrix->retrieveEdgeList( nedge, edge_list );
-  for(unsigned i=0; i<nedge; ++i) ofile.printf("%u -- %u \n", edge_list[i].first, edge_list[i].second );
+  for(unsigned i=0; i<nedge; ++i) {
+    ofile.printf("%u -- %u \n", edge_list[i].first, edge_list[i].second );
+  }
   ofile.printf("} \n");
 }
 

@@ -86,7 +86,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit DihedralCorrelation(const ActionOptions&);
   double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
-  bool isPeriodic() override { return false; }
+  bool isPeriodic() override {
+    return false;
+  }
 };
 
 PLUMED_REGISTER_ACTION(DihedralCorrelation,"DIHCOR")
@@ -103,8 +105,7 @@ void DihedralCorrelation::registerKeywords( Keywords& keys ) {
 
 DihedralCorrelation::DihedralCorrelation(const ActionOptions&ao):
   Action(ao),
-  MultiColvarBase(ao)
-{
+  MultiColvarBase(ao) {
   // Read in the atoms
   std::vector<AtomNumber> all_atoms;
   readAtomsLikeKeyword( "ATOMS", 8, all_atoms );

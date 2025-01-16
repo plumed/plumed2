@@ -106,8 +106,9 @@ template<typename T>
 std::vector<T> tls::vector_n(const std::vector<T>& v) {
   double l=vector_l(v);
   std::vector<double> n;
-  for(std::size_t i=0; i<v.size(); ++i)
+  for(std::size_t i=0; i<v.size(); ++i) {
     n.push_back(v[i]/l);
+  }
 
   return n;
 }
@@ -136,8 +137,9 @@ std::vector<std::string> tls::get_labels_actions(const ActionSet& actionset) {
   std::vector<std::string> action_str(0);
   std::vector<T> action_pntrs=actionset.select<T>();
 
-  for(unsigned int i=0; i<action_pntrs.size(); i++)
+  for(unsigned int i=0; i<action_pntrs.size(); i++) {
     action_str.push_back(action_pntrs[i]->getLabel());
+  }
 
   return action_str;
 }
@@ -167,8 +169,9 @@ std::vector<T> tls::get_pointers_labels(
 
   for(unsigned int i=0; i<action_labels.size(); i++) {
     action_pntrs[i]=actionset.selectWithLabel<T>(action_labels[i]);
-    if(action_pntrs[i]==NULL)
+    if(action_pntrs[i]==NULL) {
       missing.push_back(action_labels[i]);
+    }
   }
 
   return action_pntrs;

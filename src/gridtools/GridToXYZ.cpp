@@ -59,35 +59,47 @@ void GridToXYZ::registerKeywords( Keywords& keys ) {
 
 GridToXYZ::GridToXYZ(const ActionOptions&ao):
   Action(ao),
-  GridPrintingBase(ao)
-{
-  if( ingrid->getDimension()!=3 ) error("cannot print grid xyz file if grid does not contain three dimensional data");
+  GridPrintingBase(ao) {
+  if( ingrid->getDimension()!=3 ) {
+    error("cannot print grid xyz file if grid does not contain three dimensional data");
+  }
   fmt = " " + fmt;
 
   if( ingrid->getNumberOfComponents()==1 ) {
     mycomp=0;
   } else {
-    int tcomp=-1; parse("COMPONENT",tcomp);
-    if( tcomp<0 ) error("component of vector field was not specified - use COMPONENT keyword");
-    mycomp=tcomp*(1+ingrid->getDimension()); if( ingrid->noDerivatives() ) mycomp=tcomp;
+    int tcomp=-1;
+    parse("COMPONENT",tcomp);
+    if( tcomp<0 ) {
+      error("component of vector field was not specified - use COMPONENT keyword");
+    }
+    mycomp=tcomp*(1+ingrid->getDimension());
+    if( ingrid->noDerivatives() ) {
+      mycomp=tcomp;
+    }
     log.printf("  using %dth component of grid \n",tcomp );
   }
   fmt="%f";
-  std::string precision; parse("PRECISION",precision);
+  std::string precision;
+  parse("PRECISION",precision);
   if(precision.length()>0) {
-    int p; Tools::convert(precision,p);
+    int p;
+    Tools::convert(precision,p);
     log<<"  with precision "<<p<<"\n";
     std::string a,b;
     Tools::convert(p+5,a);
     Tools::convert(p,b);
     fmt="%"+a+"."+b+"f";
   }
-  std::string unitname; parse("UNITS",unitname);
+  std::string unitname;
+  parse("UNITS",unitname);
   if(unitname!="PLUMED") {
-    Units myunit; myunit.setLength(unitname);
+    Units myunit;
+    myunit.setLength(unitname);
     lenunit=plumed.getAtoms().getUnits().getLength()/myunit.getLength();
+  } else {
+    lenunit=1.0;
   }
-  else lenunit=1.0;
   checkRead();
 }
 
@@ -99,9 +111,14 @@ void GridToXYZ::printGrid( OFile& ofile ) const {
     ingrid->getGridPointCoordinates( i, point );
     ofile.printf("X");
     double val;
-    if( ingrid->getType()=="flat" ) val=1.0;
-    else val=ingrid->getGridElement( i, 0 );
-    for(unsigned j=0; j<3; ++j) { ofile.printf( (" " + fmt).c_str(), val*lenunit*point[j] ); }
+    if( ingrid->getType()=="flat" ) {
+      val=1.0;
+    } else {
+      val=ingrid->getGridElement( i, 0 );
+    }
+    for(unsigned j=0; j<3; ++j) {
+      ofile.printf( (" " + fmt).c_str(), val*lenunit*point[j] );
+    }
     ofile.printf("\n");
   }
 }

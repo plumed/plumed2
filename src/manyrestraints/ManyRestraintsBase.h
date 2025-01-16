@@ -35,15 +35,16 @@ class ManyRestraintsBase :
   public ActionWithValue,
   public ActionPilot,
   public vesselbase::ActionWithVessel,
-  public vesselbase::ActionWithInputVessel
-{
+  public vesselbase::ActionWithInputVessel {
 private:
 /// Pointer to underlying action with vessel
   vesselbase::ActionWithVessel* aves;
 public:
   static void registerKeywords( Keywords& keys );
   explicit ManyRestraintsBase(const ActionOptions&);
-  bool isPeriodic() override { return false; }
+  bool isPeriodic() override {
+    return false;
+  }
   unsigned getNumberOfDerivatives() override;
 /// Routines that have to be defined so as not to have problems with virtual methods
   void deactivate_task( const unsigned & task_index ) {};
@@ -59,10 +60,14 @@ public:
 // Calculate does nothing
   void calculate() override {};
 /// This should never be called
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override { plumed_error(); }
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override {
+    plumed_error();
+  }
 /// Deactivate task now does nothing
   void apply() override;
-  void applyBridgeForces( const std::vector<double>& bb ) override { plumed_assert( bb.size()==0 ); }
+  void applyBridgeForces( const std::vector<double>& bb ) override {
+    plumed_assert( bb.size()==0 );
+  }
 };
 
 inline

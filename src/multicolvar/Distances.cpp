@@ -129,16 +129,26 @@ public:
 // active methods:
   double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
 /// Returns the number of coordinates of the field
-  bool isPeriodic() override { return false; }
+  bool isPeriodic() override {
+    return false;
+  }
 };
 
 PLUMED_REGISTER_ACTION(Distances,"DISTANCES")
 
 void Distances::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );
-  keys.use("ALT_MIN"); keys.use("LOWEST"); keys.use("HIGHEST");
-  keys.use("MEAN"); keys.use("MIN"); keys.use("MAX"); keys.use("LESS_THAN"); // keys.use("DHENERGY");
-  keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
+  keys.use("ALT_MIN");
+  keys.use("LOWEST");
+  keys.use("HIGHEST");
+  keys.use("MEAN");
+  keys.use("MIN");
+  keys.use("MAX");
+  keys.use("LESS_THAN"); // keys.use("DHENERGY");
+  keys.use("MORE_THAN");
+  keys.use("BETWEEN");
+  keys.use("HISTOGRAM");
+  keys.use("MOMENTS");
   keys.add("numbered","ATOMS","the atoms involved in each of the distances you wish to calculate. "
            "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one distance will be "
            "calculated for each ATOM keyword you specify (all ATOM keywords should "
@@ -154,25 +164,31 @@ void Distances::registerKeywords( Keywords& keys ) {
 
 Distances::Distances(const ActionOptions&ao):
   Action(ao),
-  MultiColvarBase(ao)
-{
+  MultiColvarBase(ao) {
   // Read in the atoms
   std::vector<AtomNumber> all_atoms;
   readTwoGroups( "GROUP", "GROUPA", "GROUPB", all_atoms );
-  if( atom_lab.size()==0 ) readAtomsLikeKeyword( "ATOMS", 2, all_atoms );
+  if( atom_lab.size()==0 ) {
+    readAtomsLikeKeyword( "ATOMS", 2, all_atoms );
+  }
   setupMultiColvarBase( all_atoms );
   // And check everything has been read in correctly
   checkRead();
 
   // Now check if we can use link cells
   if( getNumberOfVessels()>0 ) {
-    bool use_link=false; double rcut;
+    bool use_link=false;
+    double rcut;
     vesselbase::LessThan* lt=dynamic_cast<vesselbase::LessThan*>( getPntrToVessel(0) );
     if( lt ) {
-      use_link=true; rcut=lt->getCutoff();
+      use_link=true;
+      rcut=lt->getCutoff();
     } else {
       vesselbase::Between* bt=dynamic_cast<vesselbase::Between*>( getPntrToVessel(0) );
-      if( bt ) { use_link=true; rcut=bt->getCutoff(); }
+      if( bt ) {
+        use_link=true;
+        rcut=bt->getCutoff();
+      }
     }
     if( use_link ) {
       for(unsigned i=1; i<getNumberOfVessels(); ++i) {
@@ -180,16 +196,22 @@ Distances::Distances(const ActionOptions&ao):
         vesselbase::Between* bt=dynamic_cast<vesselbase::Between*>( getPntrToVessel(i) );
         if( lt2 ) {
           double tcut=lt2->getCutoff();
-          if( tcut>rcut ) rcut=tcut;
+          if( tcut>rcut ) {
+            rcut=tcut;
+          }
         } else if( bt ) {
           double tcut=bt->getCutoff();
-          if( tcut>rcut ) rcut=tcut;
+          if( tcut>rcut ) {
+            rcut=tcut;
+          }
         } else {
           use_link=false;
         }
       }
     }
-    if( use_link ) setLinkCellCutoff( rcut );
+    if( use_link ) {
+      setLinkCellCutoff( rcut );
+    }
   }
 }
 

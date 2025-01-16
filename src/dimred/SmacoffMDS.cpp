@@ -56,11 +56,13 @@ void SmacofMDS::registerKeywords( Keywords& keys ) {
 
 SmacofMDS::SmacofMDS( const ActionOptions& ao):
   Action(ao),
-  DimensionalityReductionBase(ao)
-{
-  if( !dimredbase ) error("SMACOF must be initialized using output from dimensionality reduction object");
+  DimensionalityReductionBase(ao) {
+  if( !dimredbase ) {
+    error("SMACOF must be initialized using output from dimensionality reduction object");
+  }
 
-  parse("SMACOF_TOL",tol); parse("SMACOF_MAXCYC",maxloops);
+  parse("SMACOF_TOL",tol);
+  parse("SMACOF_MAXCYC",maxloops);
   log.printf("  running smacof to convergence at %f or for a maximum of %u steps \n",tol,maxloops);
 }
 

@@ -29,24 +29,34 @@ ReferenceValuePack::ReferenceValuePack( const unsigned& nargs, const unsigned& n
   oind_set(false),
   myvals(vals),
   atom_indices(myvals.getIndices()),
-  pca(false)
-{
-  if( atom_indices.size()!=natoms ) { atom_indices.resize( natoms ); myvals.getAtomVector().resize( natoms ); }
-  if( vals.getNumberOfValues()==1 ) { oind=0; oind_set=true; }
+  pca(false) {
+  if( atom_indices.size()!=natoms ) {
+    atom_indices.resize( natoms );
+    myvals.getAtomVector().resize( natoms );
+  }
+  if( vals.getNumberOfValues()==1 ) {
+    oind=0;
+    oind_set=true;
+  }
 }
 
 void ReferenceValuePack::resize( const unsigned& nargs, const unsigned& natoms ) {
-  numberOfArgs=nargs; atom_indices.resize( natoms );
+  numberOfArgs=nargs;
+  atom_indices.resize( natoms );
   myvals.getAtomVector().resize( natoms );
 }
 
 void ReferenceValuePack::updateDynamicLists() {
   myvals.emptyActiveMembers();
-  for(unsigned i=0; i<numberOfArgs; ++i) myvals.putIndexInActiveArray( i );
+  for(unsigned i=0; i<numberOfArgs; ++i) {
+    myvals.putIndexInActiveArray( i );
+  }
   for(unsigned i=0; i<atom_indices.size(); ++i) {
     unsigned nbase = numberOfArgs + 3*atom_indices[i];
     if( atom_indices[i]<myvals.getNumberOfDerivatives() && myvals.isActive( nbase ) ) {
-      myvals.putIndexInActiveArray( nbase+0 ); myvals.putIndexInActiveArray( nbase+1 ); myvals.putIndexInActiveArray( nbase+2 );
+      myvals.putIndexInActiveArray( nbase+0 );
+      myvals.putIndexInActiveArray( nbase+1 );
+      myvals.putIndexInActiveArray( nbase+2 );
     }
   }
   unsigned nbase = myvals.getNumberOfDerivatives() - 9;
@@ -62,12 +72,17 @@ void ReferenceValuePack::updateDynamicLists() {
 }
 
 void ReferenceValuePack::clear() {
-  if( !myvals.updateComplete() ) updateDynamicLists();
-  myvals.clearAll(); boxWasSet=false;
+  if( !myvals.updateComplete() ) {
+    updateDynamicLists();
+  }
+  myvals.clearAll();
+  boxWasSet=false;
 }
 
 void ReferenceValuePack::scaleAllDerivatives( const double& scalef ) {
-  if( !myvals.updateComplete() ) updateDynamicLists();
+  if( !myvals.updateComplete() ) {
+    updateDynamicLists();
+  }
 
   for(unsigned i=0; i<myvals.getNumberActive(); ++i) {
     unsigned ider=myvals.getActiveIndex(i);
@@ -84,7 +99,9 @@ void ReferenceValuePack::copyScaledDerivatives( const unsigned& from, const doub
 }
 
 void ReferenceValuePack::moveDerivatives( const unsigned& from, const unsigned& to ) {
-  if( !myvals.updateComplete() ) updateDynamicLists();
+  if( !myvals.updateComplete() ) {
+    updateDynamicLists();
+  }
 
   for(unsigned i=0; i<myvals.getNumberActive(); ++i) {
     unsigned ider=myvals.getActiveIndex(i);

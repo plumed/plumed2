@@ -35,44 +35,58 @@ void ActionWithInputGrid::registerKeywords( Keywords& keys ) {
 ActionWithInputGrid::ActionWithInputGrid(const ActionOptions&ao):
   Action(ao),
   ActionWithGrid(ao),
-  ingrid(NULL)
-{
-  std::string mlab; parse("GRID",mlab);
+  ingrid(NULL) {
+  std::string mlab;
+  parse("GRID",mlab);
   vesselbase::ActionWithVessel* mves= plumed.getActionSet().selectWithLabel<vesselbase::ActionWithVessel*>(mlab);
-  if(!mves) error("action labelled " +  mlab + " does not exist or does not have vessels");
+  if(!mves) {
+    error("action labelled " +  mlab + " does not exist or does not have vessels");
+  }
   addDependency(mves);
 
   for(unsigned i=0; i<mves->getNumberOfVessels(); ++i) {
     ingrid=dynamic_cast<GridVessel*>( mves->getPntrToVessel(i) );
-    if( ingrid ) break;
+    if( ingrid ) {
+      break;
+    }
   }
-  if( !ingrid ) error("input action does not calculate a grid");
+  if( !ingrid ) {
+    error("input action does not calculate a grid");
+  }
 
   if( ingrid->getNumberOfComponents()==1 ) {
     mycomp=0;
   } else {
-    int tcomp=-1; parse("COMPONENT",tcomp);
-    if( tcomp<0 ) error("component of vector field was not specified - use COMPONENT keyword");
+    int tcomp=-1;
+    parse("COMPONENT",tcomp);
+    if( tcomp<0 ) {
+      error("component of vector field was not specified - use COMPONENT keyword");
+    }
     mycomp=tcomp;
   }
   log.printf("  using %uth component of grid calculated by action %s \n",mycomp,mves->getLabel().c_str() );
 }
 
 void ActionWithInputGrid::clearAverage() {
-  if( mygrid->getType()=="flat" ) mygrid->setBounds( ingrid->getMin(), ingrid->getMax(), mygrid->getNbin(), mygrid->getGridSpacing() );
+  if( mygrid->getType()=="flat" ) {
+    mygrid->setBounds( ingrid->getMin(), ingrid->getMax(), mygrid->getNbin(), mygrid->getGridSpacing() );
+  }
   ActionWithAveraging::clearAverage();
 }
 
 void ActionWithInputGrid::prepareForAveraging() {
   if( checkAllActive() ) {
     for(unsigned i=0; i<ingrid->getNumberOfPoints(); ++i) {
-      if( ingrid->inactive(i) ) error("if FIND_CONTOUR is used with BUFFER option then other actions cannot be performed with grid");
+      if( ingrid->inactive(i) ) {
+        error("if FIND_CONTOUR is used with BUFFER option then other actions cannot be performed with grid");
+      }
     }
   }
 }
 
 void ActionWithInputGrid::performOperations( const bool& from_update ) {
-  prepareForAveraging(); runAllTasks();
+  prepareForAveraging();
+  runAllTasks();
 }
 
 }

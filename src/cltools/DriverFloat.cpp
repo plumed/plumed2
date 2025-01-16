@@ -32,7 +32,9 @@ typedef Driver<float> DriverFloat;
 
 /// Specialized version
 template<>
-std::string Driver<float>::description()const { return "analyze trajectories with plumed (single precision version)"; }
+std::string Driver<float>::description()const {
+  return "analyze trajectories with plumed (single precision version)";
+}
 
 
 PLUMED_REGISTER_CLTOOL(DriverFloat,"driver-float")

@@ -33,8 +33,7 @@ namespace PLMD {
 */
 template <class T>
 class ForwardDecl:
-  std::unique_ptr<T>
-{
+  std::unique_ptr<T> {
 public:
 // Construction with arbitrary argument.
   template<typename ...Args>

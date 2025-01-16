@@ -126,8 +126,7 @@ void ERMSD::registerKeywords(Keywords& keys) {
 }
 
 ERMSD::ERMSD(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao), pbc(true)
-{
+  PLUMED_COLVAR_INIT(ao), pbc(true) {
   std::string reference;
   parse("REFERENCE",reference);
   double cutoff=2.4;
@@ -145,11 +144,18 @@ ERMSD::ERMSD(const ActionOptions&ao):
   parseVector("PAIRS",pairs_);
   checkRead();
 
-  addValueWithDerivatives(); setNotPeriodic();
+  addValueWithDerivatives();
+  setNotPeriodic();
 
-  if(atoms_.size()<6) error("at least six atoms should be specified");
-  if(atoms_.size()%3!=0) error("Atoms are not multiple of 3");
-  if(pairs_.size()%2!=0) error("pairs are not multiple of 2");
+  if(atoms_.size()<6) {
+    error("at least six atoms should be specified");
+  }
+  if(atoms_.size()%3!=0) {
+    error("Atoms are not multiple of 3");
+  }
+  if(pairs_.size()%2!=0) {
+    error("pairs are not multiple of 2");
+  }
 
 
   //checkRead();
@@ -159,8 +165,9 @@ ERMSD::ERMSD(const ActionOptions&ao):
 
   // read everything in ang and transform to nm if we are not in natural units
   PDB pdb;
-  if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) )
+  if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) ) {
     error("missing input file " + reference );
+  }
   // store target_ distance
   std::vector <Vector> reference_positions;
   unsigned natoms = atoms_.size();
@@ -173,7 +180,9 @@ ERMSD::ERMSD(const ActionOptions&ao):
   }
 
 // shift to count from zero
-  for(unsigned i=0; i<pairs_.size(); ++i) pairs_[i]--;
+  for(unsigned i=0; i<pairs_.size(); ++i) {
+    pairs_[i]--;
+  }
 
   ermsd.setReference(reference_positions,pairs_,cutoff/atoms.getUnits().getLength());
 
@@ -206,7 +215,9 @@ void ERMSD::calculate() {
   const double scale=atoms.getUnits().getLength();
   setValue(ermsdist*scale);
 
-  for(unsigned i=0; i<derivs.size(); ++i) {setAtomsDerivatives(i,derivs[i]*scale);}
+  for(unsigned i=0; i<derivs.size(); ++i) {
+    setAtomsDerivatives(i,derivs[i]*scale);
+  }
 
   setBoxDerivativesNoPbc();
 }

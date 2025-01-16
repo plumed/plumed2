@@ -77,11 +77,15 @@ Vector VolumeGradientBase::pbcDistance( const Vector& v1, const Vector& v2) cons
 
 inline
 Vector VolumeGradientBase::getPosition( int iatom ) const {
-  if( !checkNumericalDerivatives() ) return ActionAtomistic::getPosition(iatom);
+  if( !checkNumericalDerivatives() ) {
+    return ActionAtomistic::getPosition(iatom);
+  }
 // This is for numerical derivatives of quantity wrt to the local atoms
   Vector tmp_p = ActionAtomistic::getPosition(iatom);
   if( bridgeVariable<3*getNumberOfAtoms() ) {
-    if( static_cast<int>(bridgeVariable)>=3*iatom && static_cast<int>(bridgeVariable)<(iatom+1)*3 ) tmp_p[bridgeVariable%3]+=sqrt(epsilon);
+    if( static_cast<int>(bridgeVariable)>=3*iatom && static_cast<int>(bridgeVariable)<(iatom+1)*3 ) {
+      tmp_p[bridgeVariable%3]+=sqrt(epsilon);
+    }
   }
 // This makes sure that numerical derivatives of virial are calculated correctly
   tmp_p = ActionAtomistic::getPbc().realToScaled( tmp_p );

@@ -37,25 +37,30 @@ void ActionWithGrid::registerKeywords( Keywords& keys ) {
 ActionWithGrid::ActionWithGrid( const ActionOptions& ao):
   Action(ao),
   ActionWithAveraging(ao),
-  mygrid(NULL)
-{
+  mygrid(NULL) {
 }
 
 std::unique_ptr<GridVessel> ActionWithGrid::createGrid( const std::string& type, const std::string& inputstr ) {
   // Start creating the input for the grid
   std::string vstring = inputstr;
   if( keywords.exists("KERNEL") ) {
-    std::string vconc; parse("CONCENTRATION",vconc);
+    std::string vconc;
+    parse("CONCENTRATION",vconc);
     if( vconc.length()>0 ) {
       vstring += " TYPE=fibonacci CONCENTRATION=" + vconc;
     } else {
-      std::string kstring; parse("KERNEL",kstring);
-      if( kstring=="DISCRETE" ) vstring += " KERNEL=" + kstring;
-      else vstring += " KERNEL=" + kstring + " " + getKeyword("BANDWIDTH");
+      std::string kstring;
+      parse("KERNEL",kstring);
+      if( kstring=="DISCRETE" ) {
+        vstring += " KERNEL=" + kstring;
+      } else {
+        vstring += " KERNEL=" + kstring + " " + getKeyword("BANDWIDTH");
+      }
     }
   }
   vesselbase::VesselOptions da("mygrid","",-1,vstring,this);
-  Keywords keys; gridtools::AverageOnGrid::registerKeywords( keys );
+  Keywords keys;
+  gridtools::AverageOnGrid::registerKeywords( keys );
   vesselbase::VesselOptions dar( da, keys );
   std::unique_ptr<GridVessel> grid;
   if( type=="histogram" ) {
@@ -73,37 +78,59 @@ std::unique_ptr<GridVessel> ActionWithGrid::createGrid( const std::string& type,
 }
 
 void ActionWithGrid::turnOnDerivatives() {
-  needsDerivatives(); ActionWithValue::turnOnDerivatives();
-  if( getStride()==1 ) setStride(0);
-  else if( getStride()!=0 ) error("conflicting instructions for grid - stride was set but must be evaluated on every step for derivatives - remove STRIDE keyword");
-  if( clearstride>1 ) error("conflicting instructions for grid - CLEAR was set but grid must be reset on every step for derivatives - remove CLEAR keyword" );
-  if( weights.size()>0 ) error("conflicting instructions for grid - LOGWEIGHTS was set but weights are not considered when derivatives of grid are evaluated - remove LOGWEIGHTS keyword");
+  needsDerivatives();
+  ActionWithValue::turnOnDerivatives();
+  if( getStride()==1 ) {
+    setStride(0);
+  } else if( getStride()!=0 ) {
+    error("conflicting instructions for grid - stride was set but must be evaluated on every step for derivatives - remove STRIDE keyword");
+  }
+  if( clearstride>1 ) {
+    error("conflicting instructions for grid - CLEAR was set but grid must be reset on every step for derivatives - remove CLEAR keyword" );
+  }
+  if( weights.size()>0 ) {
+    error("conflicting instructions for grid - LOGWEIGHTS was set but weights are not considered when derivatives of grid are evaluated - remove LOGWEIGHTS keyword");
+  }
 }
 
 void ActionWithGrid::calculate() {
   // Do nothing if derivatives are not required
-  if( doNotCalculateDerivatives() ) return;
+  if( doNotCalculateDerivatives() ) {
+    return;
+  }
   // Clear on every step
-  if( mygrid ) clearAverage();
+  if( mygrid ) {
+    clearAverage();
+  }
   // Should not be any reweighting so just set these accordingly
-  lweight=0; cweight=1.0;
+  lweight=0;
+  cweight=1.0;
   // Prepare to do the averaging
   prepareForAveraging();
   // Run all the tasks (if required
-  if( useRunAllTasks ) runAllTasks();
+  if( useRunAllTasks ) {
+    runAllTasks();
+  }
   // This the averaging if it is not done using task list
-  else performOperations( true );
+  else {
+    performOperations( true );
+  }
   // Update the norm
-  if( mygrid ) mygrid->setNorm( cweight );
+  if( mygrid ) {
+    mygrid->setNorm( cweight );
+  }
   // Finish the averaging
   finishAveraging();
   // And reset for next step
-  if( mygrid ) mygrid->reset();
+  if( mygrid ) {
+    mygrid->reset();
+  }
 }
 
 void ActionWithGrid::runTask( const unsigned& current, MultiValue& myvals ) const {
   // Set the weight of this point
-  myvals.setValue( 0, cweight ); compute( current, myvals );
+  myvals.setValue( 0, cweight );
+  compute( current, myvals );
 }
 
 }

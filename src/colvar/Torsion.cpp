@@ -111,8 +111,7 @@ void Torsion::registerKeywords(Keywords& keys) {
 Torsion::Torsion(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true),
-  do_cosine(false)
-{
+  do_cosine(false) {
   std::vector<AtomNumber> atoms,v1,v2,axis;
   parseAtomList("ATOMS",atoms);
   parseAtomList("VECTOR1",v1);
@@ -127,8 +126,9 @@ Torsion::Torsion(const ActionOptions&ao):
   checkRead();
 
   if(atoms.size()==4) {
-    if(!(v1.empty() && v2.empty() && axis.empty()))
+    if(!(v1.empty() && v2.empty() && axis.empty())) {
       error("ATOMS keyword is not compatible with VECTOR1, VECTOR2 and AXIS keywords");
+    }
     log.printf("  between atoms %d %d %d %d\n",atoms[0].serial(),atoms[1].serial(),atoms[2].serial(),atoms[3].serial());
     atoms.resize(6);
     atoms[5]=atoms[3];
@@ -136,8 +136,9 @@ Torsion::Torsion(const ActionOptions&ao):
     atoms[3]=atoms[2];
     atoms[2]=atoms[1];
   } else if(atoms.empty()) {
-    if(!(v1.size()==2 && v2.size()==2 && axis.size()==2))
+    if(!(v1.size()==2 && v2.size()==2 && axis.size()==2)) {
       error("VECTOR1, VECTOR2 and AXIS should specify 2 atoms each");
+    }
     log.printf("  between lines %d-%d and %d-%d, projected on the plane orthogonal to line %d-%d\n",
                v1[0].serial(),v1[1].serial(),v2[0].serial(),v2[1].serial(),axis[0].serial(),axis[1].serial());
     atoms.resize(6);
@@ -147,16 +148,26 @@ Torsion::Torsion(const ActionOptions&ao):
     atoms[3]=axis[1];
     atoms[4]=v2[0];
     atoms[5]=v2[1];
-  } else error("ATOMS should specify 4 atoms");
+  } else {
+    error("ATOMS should specify 4 atoms");
+  }
 
-  if(pbc) log.printf("  using periodic boundary conditions\n");
-  else    log.printf("  without periodic boundary conditions\n");
+  if(pbc) {
+    log.printf("  using periodic boundary conditions\n");
+  } else {
+    log.printf("  without periodic boundary conditions\n");
+  }
 
-  if(do_cosine) log.printf("  calculating cosine instead of torsion\n");
+  if(do_cosine) {
+    log.printf("  calculating cosine instead of torsion\n");
+  }
 
   addValueWithDerivatives();
-  if(!do_cosine) setPeriodic("-pi","pi");
-  else setNotPeriodic();
+  if(!do_cosine) {
+    setPeriodic("-pi","pi");
+  } else {
+    setNotPeriodic();
+  }
   requestAtoms(atoms);
 }
 
@@ -164,7 +175,9 @@ Torsion::Torsion(const ActionOptions&ao):
 void Torsion::calculate() {
 
   Vector d0,d1,d2;
-  if(pbc) makeWhole();
+  if(pbc) {
+    makeWhole();
+  }
   d0=delta(getPosition(1),getPosition(0));
   d1=delta(getPosition(3),getPosition(2));
   d2=delta(getPosition(5),getPosition(4));

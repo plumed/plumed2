@@ -28,61 +28,88 @@ void SMACOF::run( const Matrix<double>& Weights, const Matrix<double>& Distances
   unsigned M = Distances.nrows();
 
   // Calculate V
-  Matrix<double> V(M,M); double totalWeight=0.;
+  Matrix<double> V(M,M);
+  double totalWeight=0.;
   for(unsigned i=0; i<M; ++i) {
     for(unsigned j=0; j<M; ++j) {
-      if(i==j) continue;
+      if(i==j) {
+        continue;
+      }
       V(i,j)=-Weights(i,j);
-      if( j<i ) totalWeight+=Weights(i,j);
+      if( j<i ) {
+        totalWeight+=Weights(i,j);
+      }
     }
     for(unsigned j=0; j<M; ++j) {
-      if(i==j)continue;
+      if(i==j) {
+        continue;
+      }
       V(i,i)-=V(i,j);
     }
   }
 
   // And pseudo invert V
-  Matrix<double> mypseudo(M, M); pseudoInvert(V, mypseudo);
-  Matrix<double> dists( M, M ); double myfirstsig = calculateSigma( Weights, Distances, InitialZ, dists ) / totalWeight;
+  Matrix<double> mypseudo(M, M);
+  pseudoInvert(V, mypseudo);
+  Matrix<double> dists( M, M );
+  double myfirstsig = calculateSigma( Weights, Distances, InitialZ, dists ) / totalWeight;
 
   // initial sigma is made up of the original distances minus the distances between the projections all squared.
   Matrix<double> temp( M, M ), BZ( M, M ), newZ( M, InitialZ.ncols() );
   for(unsigned n=0; n<maxloops; ++n) {
-    if(n==maxloops-1) plumed_merror("ran out of steps in SMACOF algorithm");
+    if(n==maxloops-1) {
+      plumed_merror("ran out of steps in SMACOF algorithm");
+    }
 
     // Recompute BZ matrix
     for(unsigned i=0; i<M; ++i) {
       for(unsigned j=0; j<M; ++j) {
-        if(i==j) continue;  //skips over the diagonal elements
+        if(i==j) {
+          continue;  //skips over the diagonal elements
+        }
 
-        if( dists(i,j)>0 ) BZ(i,j) = -Weights(i,j)*Distances(i,j) / dists(i,j);
-        else BZ(i,j)=0.;
+        if( dists(i,j)>0 ) {
+          BZ(i,j) = -Weights(i,j)*Distances(i,j) / dists(i,j);
+        } else {
+          BZ(i,j)=0.;
+        }
       }
       //the diagonal elements are -off diagonal elements BZ(i,i)-=BZ(i,j)   (Equation 8.25)
       BZ(i,i)=0; //create the space memory for the diagonal elements which are scalars
       for(unsigned j=0; j<M; ++j) {
-        if(i==j) continue;
+        if(i==j) {
+          continue;
+        }
         BZ(i,i)-=BZ(i,j);
       }
     }
 
-    mult( mypseudo, BZ, temp); mult(temp, InitialZ, newZ);
+    mult( mypseudo, BZ, temp);
+    mult(temp, InitialZ, newZ);
     //Compute new sigma
     double newsig = calculateSigma( Weights, Distances, newZ, dists ) / totalWeight;
     //Computing whether the algorithm has converged (has the mass of the potato changed
     //when we put it back in the oven!)
-    if( std::fabs( newsig - myfirstsig )<tol ) break;
+    if( std::fabs( newsig - myfirstsig )<tol ) {
+      break;
+    }
     myfirstsig=newsig;
     InitialZ = newZ;
   }
 }
 
 double SMACOF::calculateSigma( const Matrix<double>& Weights, const Matrix<double>& Distances, const Matrix<double>& InitialZ, Matrix<double>& dists ) {
-  unsigned M = Distances.nrows(); double sigma=0;
+  unsigned M = Distances.nrows();
+  double sigma=0;
   for(unsigned i=1; i<M; ++i) {
     for(unsigned j=0; j<i; ++j) {
-      double dlow=0; for(unsigned k=0; k<InitialZ.ncols(); ++k) { double tmp=InitialZ(i,k) - InitialZ(j,k); dlow+=tmp*tmp; }
-      dists(i,j)=dists(j,i)=std::sqrt(dlow); double tmp3 = Distances(i,j) - dists(i,j);
+      double dlow=0;
+      for(unsigned k=0; k<InitialZ.ncols(); ++k) {
+        double tmp=InitialZ(i,k) - InitialZ(j,k);
+        dlow+=tmp*tmp;
+      }
+      dists(i,j)=dists(j,i)=std::sqrt(dlow);
+      double tmp3 = Distances(i,j) - dists(i,j);
       sigma += Weights(i,j)*tmp3*tmp3;
     }
   }

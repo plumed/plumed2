@@ -32,8 +32,7 @@ public:
   static void registerKeywords( Keywords& keys ) {
     OrientationSphere::registerKeywords(keys);
   }
-  explicit LocalSteinhardt(const ActionOptions& ao): Action(ao), OrientationSphere(ao)
-  {
+  explicit LocalSteinhardt(const ActionOptions& ao): Action(ao), OrientationSphere(ao) {
     for(unsigned i=0; i<getNumberOfBaseMultiColvars(); ++i) {
       T* mc=dynamic_cast<T*>( getBaseMultiColvar(i) );
       if(!mc) {
@@ -42,16 +41,21 @@ public:
         }
         for(unsigned j=0; j<getBaseMultiColvar(i)->getNumberOfBaseMultiColvars(); ++j) {
           T* mmc=dynamic_cast<T*>( getBaseMultiColvar(i)->getBaseMultiColvar(j) );
-          if( !mmc ) error("input action is not calculating the correct vectors");
+          if( !mmc ) {
+            error("input action is not calculating the correct vectors");
+          }
         }
       }
     }
   }
   double computeVectorFunction( const Vector& conn, const std::vector<double>& vec1, const std::vector<double>& vec2,
                                 Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const override {
-    double dot=0; dconn.zero();
+    double dot=0;
+    dconn.zero();
     for(unsigned k=2; k<vec1.size(); ++k) {
-      dot+=vec1[k]*vec2[k]; dvec1[k]=vec2[k]; dvec2[k]=vec1[k];
+      dot+=vec1[k]*vec2[k];
+      dvec1[k]=vec2[k];
+      dvec2[k]=vec1[k];
     }
     return dot;
   }

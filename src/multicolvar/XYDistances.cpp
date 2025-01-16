@@ -104,7 +104,9 @@ public:
 // active methods:
   double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
 /// Returns the number of coordinates of the field
-  bool isPeriodic() override { return false; }
+  bool isPeriodic() override {
+    return false;
+  }
 };
 
 PLUMED_REGISTER_ACTION(XYDistances,"XYDISTANCES")
@@ -113,9 +115,17 @@ PLUMED_REGISTER_ACTION(XYDistances,"YZDISTANCES")
 
 void XYDistances::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );
-  keys.use("MAX"); keys.use("ALT_MIN");
-  keys.use("MEAN"); keys.use("MIN"); keys.use("LESS_THAN"); keys.use("LOWEST"); keys.use("HIGHEST");
-  keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
+  keys.use("MAX");
+  keys.use("ALT_MIN");
+  keys.use("MEAN");
+  keys.use("MIN");
+  keys.use("LESS_THAN");
+  keys.use("LOWEST");
+  keys.use("HIGHEST");
+  keys.use("MORE_THAN");
+  keys.use("BETWEEN");
+  keys.use("HISTOGRAM");
+  keys.use("MOMENTS");
   keys.add("numbered","ATOMS","the atoms involved in each of the distances you wish to calculate. "
            "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one distance will be "
            "calculated for each ATOM keyword you specify (all ATOM keywords should "
@@ -131,20 +141,26 @@ void XYDistances::registerKeywords( Keywords& keys ) {
 
 XYDistances::XYDistances(const ActionOptions&ao):
   Action(ao),
-  MultiColvarBase(ao)
-{
+  MultiColvarBase(ao) {
   if( getName().find("XY")!=std::string::npos) {
-    myc1=0; myc2=1;
+    myc1=0;
+    myc2=1;
   } else if( getName().find("XZ")!=std::string::npos) {
-    myc1=0; myc2=2;
+    myc1=0;
+    myc2=2;
   } else if( getName().find("YZ")!=std::string::npos) {
-    myc1=1; myc2=2;
-  } else plumed_error();
+    myc1=1;
+    myc2=2;
+  } else {
+    plumed_error();
+  }
 
   // Read in the atoms
   std::vector<AtomNumber> all_atoms;
   readTwoGroups( "GROUP", "GROUPA", "GROUPB", all_atoms );
-  if( atom_lab.size()==0 ) readAtomsLikeKeyword( "ATOMS", 2, all_atoms );
+  if( atom_lab.size()==0 ) {
+    readAtomsLikeKeyword( "ATOMS", 2, all_atoms );
+  }
   setupMultiColvarBase( all_atoms );
   // And check everything has been read in correctly
   checkRead();
@@ -156,10 +172,15 @@ double XYDistances::compute( const unsigned& tindex, AtomValuePack& myatoms ) co
   const double value=std::sqrt(distance[myc1]*distance[myc1] + distance[myc2]*distance[myc2] );
   const double invvalue=1.0/value;
 
-  Vector myvec; myvec.zero();
+  Vector myvec;
+  myvec.zero();
   // And finish the calculation
-  myvec[myc1]=+invvalue*distance[myc1]; myvec[myc2]=+invvalue*distance[myc2]; addAtomDerivatives( 1, 1, myvec, myatoms  );
-  myvec[myc1]=-invvalue*distance[myc1]; myvec[myc2]=-invvalue*distance[myc2]; addAtomDerivatives( 1, 0, myvec, myatoms );
+  myvec[myc1]=+invvalue*distance[myc1];
+  myvec[myc2]=+invvalue*distance[myc2];
+  addAtomDerivatives( 1, 1, myvec, myatoms  );
+  myvec[myc1]=-invvalue*distance[myc1];
+  myvec[myc2]=-invvalue*distance[myc2];
+  addAtomDerivatives( 1, 0, myvec, myatoms );
   myatoms.addBoxDerivatives( 1, Tensor(distance,myvec) );
   return value;
 }

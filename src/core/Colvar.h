@@ -38,8 +38,7 @@ This is the abstract base class to use for implementing new collective variables
 
 class Colvar :
   public ActionAtomistic,
-  public ActionWithValue
-{
+  public ActionWithValue {
 private:
 protected:
   bool isEnergy;
@@ -64,7 +63,9 @@ protected:
   void           setBoxDerivativesNoPbc();
   void           setBoxDerivativesNoPbc(Value*);
 public:
-  bool checkIsEnergy() {return isEnergy;}
+  bool checkIsEnergy() {
+    return isEnergy;
+  }
   explicit Colvar(const ActionOptions&);
   ~Colvar() {}
   static void registerKeywords( Keywords& keys );

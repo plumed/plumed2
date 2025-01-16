@@ -195,16 +195,19 @@ TD_Gaussian::TD_Gaussian(const ActionOptions& ao):
   correlation_(0),
   weights_(0),
   diagonal_(true),
-  ncenters_(0)
-{
+  ncenters_(0) {
   for(unsigned int i=1;; i++) {
     std::vector<double> tmp_center;
-    if(!parseNumberedVector("CENTER",i,tmp_center) ) {break;}
+    if(!parseNumberedVector("CENTER",i,tmp_center) ) {
+      break;
+    }
     centers_.push_back(tmp_center);
   }
   for(unsigned int i=1;; i++) {
     std::vector<double> tmp_sigma;
-    if(!parseNumberedVector("SIGMA",i,tmp_sigma) ) {break;}
+    if(!parseNumberedVector("SIGMA",i,tmp_sigma) ) {
+      break;
+    }
     sigmas_.push_back(tmp_sigma);
   }
 
@@ -235,8 +238,7 @@ TD_Gaussian::TD_Gaussian(const ActionOptions& ao):
     parseNumberedVector("CORRELATION",(i+1),corr);
     if(corr.size()>0) {
       diagonal_ = false;
-    }
-    else {
+    } else {
       corr.assign(1,0.0);
     }
     correlation_[i] = corr;
@@ -257,14 +259,20 @@ TD_Gaussian::TD_Gaussian(const ActionOptions& ao):
   }
   //
   parseVector("WEIGHTS",weights_);
-  if(weights_.size()==0) {weights_.assign(centers_.size(),1.0);}
+  if(weights_.size()==0) {
+    weights_.assign(centers_.size(),1.0);
+  }
   if(centers_.size()!=weights_.size()) {
     plumed_merror(getName()+": there has to be as many weights given in WEIGHTS as numbered CENTER keywords");
   }
   //
   double sum_weights=0.0;
-  for(unsigned int i=0; i<weights_.size(); i++) {sum_weights+=weights_[i];}
-  for(unsigned int i=0; i<weights_.size(); i++) {weights_[i]/=sum_weights;}
+  for(unsigned int i=0; i<weights_.size(); i++) {
+    sum_weights+=weights_[i];
+  }
+  for(unsigned int i=0; i<weights_.size(); i++) {
+    weights_[i]/=sum_weights;
+  }
   //
   checkRead();
 }
@@ -276,8 +284,7 @@ double TD_Gaussian::getValue(const std::vector<double>& argument) const {
     for(unsigned int i=0; i<ncenters_; i++) {
       value+=weights_[i]*GaussianDiagonal(argument, centers_[i], sigmas_[i]);
     }
-  }
-  else if(!diagonal_ && getDimension()==2) {
+  } else if(!diagonal_ && getDimension()==2) {
     for(unsigned int i=0; i<ncenters_; i++) {
       value+=weights_[i]*Gaussian2D(argument, centers_[i], sigmas_[i],correlation_[i]);
     }
@@ -291,7 +298,9 @@ double TD_Gaussian::GaussianDiagonal(const std::vector<double>& argument, const 
   for(unsigned int k=0; k<argument.size(); k++) {
     double arg=(argument[k]-center[k])/sigma[k];
     double tmp_exp = exp(-0.5*arg*arg);
-    if(normalize) {tmp_exp/=(sigma[k]*sqrt(2.0*pi));}
+    if(normalize) {
+      tmp_exp/=(sigma[k]*sqrt(2.0*pi));
+    }
     value*=tmp_exp;
   }
   return value;

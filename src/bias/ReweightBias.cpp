@@ -78,19 +78,22 @@ public:
 PLUMED_REGISTER_ACTION(ReweightBias,"REWEIGHT_BIAS")
 
 void ReweightBias::registerKeywords(Keywords& keys ) {
-  ReweightBase::registerKeywords( keys ); keys.remove("ARG");
+  ReweightBase::registerKeywords( keys );
+  keys.remove("ARG");
   keys.add("compulsory","ARG","*.bias","the biases that must be taken into account when reweighting");
 }
 
 ReweightBias::ReweightBias(const ActionOptions&ao):
   Action(ao),
-  ReweightBase(ao)
-{
+  ReweightBase(ao) {
 }
 
 double ReweightBias::getLogWeight() {
   // Retrieve the bias
-  double bias=0.0; for(unsigned i=0; i<getNumberOfArguments(); ++i) bias+=getArgument(i);
+  double bias=0.0;
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    bias+=getArgument(i);
+  }
   return bias / simtemp;
 }
 

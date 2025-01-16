@@ -121,13 +121,16 @@ Target::Target(const ActionOptions&ao):
   Action(ao),
   Function(ao),
   myvals(1,0),
-  mypack(0,0,myvals)
-{
-  std::string type; parse("TYPE",type);
-  std::string reference; parse("REFERENCE",reference);
-  checkRead(); PDB pdb;
-  if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength()) )
+  mypack(0,0,myvals) {
+  std::string type;
+  parse("TYPE",type);
+  std::string reference;
+  parse("REFERENCE",reference);
+  checkRead();
+  PDB pdb;
+  if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength()) ) {
     error("missing input file " + reference);
+  }
 
   // Use the base ActionWithArguments to expand things like a1.*
   expandArgKeywordInPDB( pdb );
@@ -149,12 +152,17 @@ Target::Target(const ActionOptions&ao):
   mypack.resize( myargs.size(), 0 );
 
   // Create the value
-  addValueWithDerivatives(); setNotPeriodic();
+  addValueWithDerivatives();
+  setNotPeriodic();
 }
 
 void Target::calculate() {
-  mypack.clear(); double r=target->calculate( getArguments(), mypack, false ); setValue(r);
-  for(unsigned i=0; i<getNumberOfArguments(); i++) setDerivative( i, mypack.getArgumentDerivative(i) );
+  mypack.clear();
+  double r=target->calculate( getArguments(), mypack, false );
+  setValue(r);
+  for(unsigned i=0; i<getNumberOfArguments(); i++) {
+    setDerivative( i, mypack.getArgumentDerivative(i) );
+  }
 }
 
 }

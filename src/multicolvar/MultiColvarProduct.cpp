@@ -46,7 +46,9 @@ public:
 /// Actually do the calculation
   double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
 /// Is the variable periodic
-  bool isPeriodic() override { return false; }
+  bool isPeriodic() override {
+    return false;
+  }
 };
 
 PLUMED_REGISTER_ACTION(MultiColvarProduct,"MCOLV_PRODUCT")
@@ -54,22 +56,34 @@ PLUMED_REGISTER_ACTION(MultiColvarProduct,"MCOLV_PRODUCT")
 void MultiColvarProduct::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );
   keys.add("compulsory","DATA","the multicolvars you are calculating the product of");
-  keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("SUM"); keys.use("LESS_THAN"); keys.use("HISTOGRAM");
-  keys.use("MIN"); keys.use("MAX"); keys.use("LOWEST"); keys.use("HIGHEST"); keys.use("ALT_MIN"); keys.use("BETWEEN"); keys.use("MOMENTS");
+  keys.use("MEAN");
+  keys.use("MORE_THAN");
+  keys.use("SUM");
+  keys.use("LESS_THAN");
+  keys.use("HISTOGRAM");
+  keys.use("MIN");
+  keys.use("MAX");
+  keys.use("LOWEST");
+  keys.use("HIGHEST");
+  keys.use("ALT_MIN");
+  keys.use("BETWEEN");
+  keys.use("MOMENTS");
 }
 
 MultiColvarProduct::MultiColvarProduct(const ActionOptions& ao):
   Action(ao),
-  MultiColvarBase(ao)
-{
+  MultiColvarBase(ao) {
   buildSets();
   for(unsigned i=0; i<getNumberOfBaseMultiColvars(); ++i) {
-    if( mybasemulticolvars[i]->weightWithDerivatives() ) error("cannot take product of multicolvars with weights");
+    if( mybasemulticolvars[i]->weightWithDerivatives() ) {
+      error("cannot take product of multicolvars with weights");
+    }
   }
 }
 
 double MultiColvarProduct::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
-  double dot=1; std::vector<double> tval(2);
+  double dot=1;
+  std::vector<double> tval(2);
   for(unsigned i=0; i<getNumberOfBaseMultiColvars(); ++i) {
     getInputData( i, false, myatoms, tval );
     dot *= tval[1];
@@ -77,7 +91,8 @@ double MultiColvarProduct::compute( const unsigned& tindex, AtomValuePack& myato
   if( !doNotCalculateDerivatives() ) {
     std::vector<double> cc(2);
     for(unsigned i=0; i<getNumberOfBaseMultiColvars(); ++i) {
-      getInputData( i, false, myatoms, cc ); cc[1] = dot / cc[1];
+      getInputData( i, false, myatoms, cc );
+      cc[1] = dot / cc[1];
       MultiValue& myder=getInputDerivatives( i, false, myatoms );
       splitInputDerivatives( 1, 1, 2, i, cc, myder, myatoms );
     }

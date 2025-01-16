@@ -49,7 +49,9 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit OutputPDBFile( const ActionOptions& );
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override { plumed_error(); }
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override {
+    plumed_error();
+  }
   void performAnalysis() override;
 };
 
@@ -65,18 +67,25 @@ void OutputPDBFile::registerKeywords( Keywords& keys ) {
 OutputPDBFile::OutputPDBFile( const ActionOptions& ao ):
   Action(ao),
   AnalysisBase(ao),
-  fmt("%f")
-{
+  fmt("%f") {
   // Get setup the pdb
   mypdb.setAtomNumbers( my_input_data->getAtomIndexes() );
   mypdb.setArgumentNames( my_input_data->getArgumentNames() );
 
   // Find a moldata object
   auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
-  if( ! moldat ) warning("PDB output files do not have atom types unless you use MOLDATA");
+  if( ! moldat ) {
+    warning("PDB output files do not have atom types unless you use MOLDATA");
+  }
 
-  parse("FILE",filename); parse("FMT",fmt);
-  if( !getRestart() ) { OFile ofile; ofile.link(*this); ofile.setBackupString("analysis"); ofile.backupAllFiles(filename); }
+  parse("FILE",filename);
+  parse("FMT",fmt);
+  if( !getRestart() ) {
+    OFile ofile;
+    ofile.link(*this);
+    ofile.setBackupString("analysis");
+    ofile.backupAllFiles(filename);
+  }
   log.printf("  printing data to file named %s \n",filename.c_str() );
 }
 
@@ -84,14 +93,24 @@ void OutputPDBFile::performAnalysis() {
   // Find a moldata object
   auto* mymoldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   // Output the embedding in plumed pdb format
-  OFile afile; afile.link(*this); afile.setBackupString("analysis"); std::size_t psign=fmt.find("%");
-  afile.open( filename ); std::string descr="REMARK WEIGHT=%-" + fmt.substr(psign+1) + "\n";
+  OFile afile;
+  afile.link(*this);
+  afile.setBackupString("analysis");
+  std::size_t psign=fmt.find("%");
+  afile.open( filename );
+  std::string descr="REMARK WEIGHT=%-" + fmt.substr(psign+1) + "\n";
   for(unsigned j=0; j<getNumberOfDataPoints(); ++j) {
     afile.printf("DESCRIPTION: analysis data from calculation done by %s at time %f \n",getLabel().c_str(),getTime() );
-    if( dissimilaritiesWereSet() ) afile.printf("REMARK %s \n", getDissimilarityInstruction().c_str() );
-    afile.printf(descr.c_str(),getWeight(j) ); getStoredData(j,false).transferDataToPDB( mypdb );
-    if( plumed.getAtoms().usingNaturalUnits() ) mypdb.print( 1.0, mymoldat, afile, fmt );
-    else mypdb.print( plumed.getAtoms().getUnits().getLength()/0.1, mymoldat, afile, fmt );
+    if( dissimilaritiesWereSet() ) {
+      afile.printf("REMARK %s \n", getDissimilarityInstruction().c_str() );
+    }
+    afile.printf(descr.c_str(),getWeight(j) );
+    getStoredData(j,false).transferDataToPDB( mypdb );
+    if( plumed.getAtoms().usingNaturalUnits() ) {
+      mypdb.print( 1.0, mymoldat, afile, fmt );
+    } else {
+      mypdb.print( plumed.getAtoms().getUnits().getLength()/0.1, mymoldat, afile, fmt );
+    }
   }
   afile.close();
 }

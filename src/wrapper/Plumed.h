@@ -895,7 +895,9 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_init(plumed_error* error) __PLU
 
 /** Finalize error - should be called when an error is raised to avoid leaks */
 __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_finalize(plumed_error error) __PLUMED_WRAPPER_CXX_NOEXCEPT {
-  if(!error.code) return;
+  if(!error.code) {
+    return;
+  }
   if(error.nested) {
     plumed_error_finalize(*error.nested);
     plumed_free(error.nested);
@@ -924,7 +926,9 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_set_bad_alloc(plumed_error*erro
 
 /** Recursive merge (for internal usage) */
 __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_recursive_merge(plumed_error* error,char*buffer,const char*join,__PLUMED_WRAPPER_STD size_t*len) __PLUMED_WRAPPER_CXX_NOEXCEPT {
-  if(error->nested) plumed_error_recursive_merge(error->nested,buffer,join,len);
+  if(error->nested) {
+    plumed_error_recursive_merge(error->nested,buffer,join,len);
+  }
   __PLUMED_WRAPPER_STD strncat(buffer,plumed_error_what(*error),*len);
   *len -= __PLUMED_WRAPPER_STD strlen(plumed_error_what(*error));
   __PLUMED_WRAPPER_STD strncat(buffer,join,*len);
@@ -943,7 +947,9 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_merge_with_nested(plumed_error*
   plumed_error*e;
 
   /* If exception is not nested, nothing to do */
-  if(!error->nested) return;
+  if(!error->nested) {
+    return;
+  }
 
   /* Accumulate the total length of the concatenated message */
   len_join=__PLUMED_WRAPPER_STD strlen(join);
@@ -973,7 +979,9 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_merge_with_nested(plumed_error*
   error->what=new_buffer;
 
   /* Deallocate the previous message */
-  if(error->what_buffer) plumed_free(error->what_buffer);
+  if(error->what_buffer) {
+    plumed_free(error->what_buffer);
+  }
   error->what_buffer=new_buffer;
 
   /* Finalize the chain of nested exceptions */
@@ -989,7 +997,9 @@ __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_merge_with_nested(plumed_error*
 
 /** Rethrow error (calling abort) */
 __PLUMED_WRAPPER_CXX_NORETURN __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_rethrow(plumed_error h) {
-  if(h.nested) plumed_error_merge_with_nested(&h);
+  if(h.nested) {
+    plumed_error_merge_with_nested(&h);
+  }
   __PLUMED_WRAPPER_STD fprintf(stderr,"Terminate due to exception. Code: %d\n%s\n",h.code,plumed_error_what(h));
   __PLUMED_WRAPPER_STD abort();
 }
@@ -1747,33 +1757,65 @@ private:
     finalize_plumed_error finalize(h);
     /* grab the message */
     const char* msg=plumed_error_what(h);
-    if(h.code==1) f(Plumed::Invalid(msg));
+    if(h.code==1) {
+      f(Plumed::Invalid(msg));
+    }
     /* logic errors */
     if(h.code>=10100 && h.code<10200) {
-      if(h.code>=10105 && h.code<10110) f(::std::invalid_argument(msg));
-      if(h.code>=10110 && h.code<10115) f(::std::domain_error(msg));
-      if(h.code>=10115 && h.code<10120) f(::std::length_error(msg));
-      if(h.code>=10120 && h.code<10125) f(::std::out_of_range(msg));
+      if(h.code>=10105 && h.code<10110) {
+        f(::std::invalid_argument(msg));
+      }
+      if(h.code>=10110 && h.code<10115) {
+        f(::std::domain_error(msg));
+      }
+      if(h.code>=10115 && h.code<10120) {
+        f(::std::length_error(msg));
+      }
+      if(h.code>=10120 && h.code<10125) {
+        f(::std::out_of_range(msg));
+      }
       f(::std::logic_error(msg));
     }
     /* runtime errors */
     if(h.code>=10200 && h.code<10300) {
-      if(h.code>=10205 && h.code<10210) f(::std::range_error(msg));
-      if(h.code>=10210 && h.code<10215) f(::std::overflow_error(msg));
-      if(h.code>=10215 && h.code<10220) f(::std::underflow_error(msg));
+      if(h.code>=10205 && h.code<10210) {
+        f(::std::range_error(msg));
+      }
+      if(h.code>=10210 && h.code<10215) {
+        f(::std::overflow_error(msg));
+      }
+      if(h.code>=10215 && h.code<10220) {
+        f(::std::underflow_error(msg));
+      }
 #if __cplusplus > 199711L && __PLUMED_WRAPPER_LIBCXX11
-      if(h.code==10220) f(::std::system_error(h.error_code,::std::generic_category(),msg));
-      if(h.code==10221) f(::std::system_error(h.error_code,::std::system_category(),msg));
-      if(h.code==10222) f(::std::system_error(h.error_code,::std::iostream_category(),msg));
-      if(h.code==10223) f(::std::system_error(h.error_code,::std::future_category(),msg));
+      if(h.code==10220) {
+        f(::std::system_error(h.error_code,::std::generic_category(),msg));
+      }
+      if(h.code==10221) {
+        f(::std::system_error(h.error_code,::std::system_category(),msg));
+      }
+      if(h.code==10222) {
+        f(::std::system_error(h.error_code,::std::iostream_category(),msg));
+      }
+      if(h.code==10223) {
+        f(::std::system_error(h.error_code,::std::future_category(),msg));
+      }
 #endif
       if(h.code>=10230 && h.code<10240) {
 #if __cplusplus > 199711L && __PLUMED_WRAPPER_LIBCXX11
 // These cases are probably useless as it looks like this should always be std::iostream_category
-        if(h.code==10230) f(::std::ios_base::failure(msg,::std::error_code(h.error_code,::std::generic_category())));
-        if(h.code==10231) f(::std::ios_base::failure(msg,::std::error_code(h.error_code,::std::system_category())));
-        if(h.code==10232) f(::std::ios_base::failure(msg,::std::error_code(h.error_code,::std::iostream_category())));
-        if(h.code==10233) f(::std::ios_base::failure(msg,::std::error_code(h.error_code,::std::future_category())));
+        if(h.code==10230) {
+          f(::std::ios_base::failure(msg,::std::error_code(h.error_code,::std::generic_category())));
+        }
+        if(h.code==10231) {
+          f(::std::ios_base::failure(msg,::std::error_code(h.error_code,::std::system_category())));
+        }
+        if(h.code==10232) {
+          f(::std::ios_base::failure(msg,::std::error_code(h.error_code,::std::iostream_category())));
+        }
+        if(h.code==10233) {
+          f(::std::ios_base::failure(msg,::std::error_code(h.error_code,::std::future_category())));
+        }
 #endif
         f(::std::ios_base::failure(msg));
       }
@@ -1781,29 +1823,49 @@ private:
     }
     /* "bad" errors */
     /* "< ::" space required in C++ < 11 */
-    if(h.code>=11000 && h.code<11100) f(add_buffer_to< ::std::bad_typeid>(msg));
-    if(h.code>=11100 && h.code<11200) f(add_buffer_to< ::std::bad_cast>(msg));
+    if(h.code>=11000 && h.code<11100) {
+      f(add_buffer_to< ::std::bad_typeid>(msg));
+    }
+    if(h.code>=11100 && h.code<11200) {
+      f(add_buffer_to< ::std::bad_cast>(msg));
+    }
 #if __cplusplus > 199711L && __PLUMED_WRAPPER_LIBCXX11
-    if(h.code>=11200 && h.code<11300) f(add_buffer_to< ::std::bad_weak_ptr>(msg));
-    if(h.code>=11300 && h.code<11400) f(add_buffer_to< ::std::bad_function_call>(msg));
+    if(h.code>=11200 && h.code<11300) {
+      f(add_buffer_to< ::std::bad_weak_ptr>(msg));
+    }
+    if(h.code>=11300 && h.code<11400) {
+      f(add_buffer_to< ::std::bad_function_call>(msg));
+    }
 #endif
     if(h.code>=11400 && h.code<11500) {
 #if __cplusplus > 199711L && __PLUMED_WRAPPER_LIBCXX11
-      if(h.code>=11410 && h.code<11420) f(add_buffer_to< ::std::bad_array_new_length>(msg));
+      if(h.code>=11410 && h.code<11420) {
+        f(add_buffer_to< ::std::bad_array_new_length>(msg));
+      }
 #endif
       f(add_buffer_to< ::std::bad_alloc>(msg));
     }
-    if(h.code>=11500 && h.code<11600) f(add_buffer_to< ::std::bad_exception>(msg));
+    if(h.code>=11500 && h.code<11600) {
+      f(add_buffer_to< ::std::bad_exception>(msg));
+    }
     /* lepton error */
-    if(h.code>=19900 && h.code<20000) f(Plumed::LeptonException(msg));
+    if(h.code>=19900 && h.code<20000) {
+      f(Plumed::LeptonException(msg));
+    }
     /* plumed exceptions */
     if(h.code>=20000 && h.code<30000) {
       /* debug - only raised with debug options */
-      if(h.code>=20100 && h.code<20200) f(Plumed::ExceptionDebug(msg));
+      if(h.code>=20100 && h.code<20200) {
+        f(Plumed::ExceptionDebug(msg));
+      }
       /* error - runtime check */
-      if(h.code>=20200 && h.code<20300) f(Plumed::ExceptionError(msg));
+      if(h.code>=20200 && h.code<20300) {
+        f(Plumed::ExceptionError(msg));
+      }
       /* error - type error */
-      if(h.code>=20300 && h.code<20400) f(Plumed::ExceptionTypeError(msg));
+      if(h.code>=20300 && h.code<20400) {
+        f(Plumed::ExceptionTypeError(msg));
+      }
       f(Plumed::Exception(msg));
     }
     /* fallback for any other exception */
@@ -1858,7 +1920,9 @@ private:
       When using C++11 nested exceptions, we need to rethrow recursively
     */
     try {
-      if(h.nested) rethrow(*h.nested); /* recursive throw */
+      if(h.nested) {
+        rethrow(*h.nested);  /* recursive throw */
+      }
     } catch(...) {
       exception_dispatch(h,rethrow_nested());
     }
@@ -1867,7 +1931,9 @@ private:
     /*
       When using C++<11 exceptions, we merge the message and then throw the resulting exception
     */
-    if(h.nested) plumed_error_merge_with_nested(&h);
+    if(h.nested) {
+      plumed_error_merge_with_nested(&h);
+    }
     exception_dispatch(h,rethrow_not_nested());
 #endif
   }
@@ -1972,12 +2038,13 @@ public:
     Base class used to rethrow PLUMED exceptions.
   */
   class Exception :
-    public ::std::exception
-  {
+    public ::std::exception {
     ::std::string msg;
   public:
     __PLUMED_WRAPPER_CXX_EXPLICIT Exception(const char* msg): msg(msg) {}
-    const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {return msg.c_str();}
+    const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {
+      return msg.c_str();
+    }
 #if ! (__cplusplus > 199711L)
     /* Destructor should be declared in order to have the correct throw() before C++11 */
     /* see https://stackoverflow.com/questions/50025862/why-is-the-stdexception-destructor-not-noexcept */
@@ -2063,12 +2130,13 @@ public:
   */
 
   class LeptonException :
-    public ::std::exception
-  {
+    public ::std::exception {
     ::std::string msg;
   public:
     __PLUMED_WRAPPER_CXX_EXPLICIT LeptonException(const char* msg): msg(msg) {}
-    const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {return msg.c_str();}
+    const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {
+      return msg.c_str();
+    }
 #if ! (__cplusplus > 199711L)
     /* Destructor should be declared in order to have the correct throw() before C++11 */
     /* see https://stackoverflow.com/questions/50025862/why-is-the-stdexception-destructor-not-noexcept */
@@ -2088,27 +2156,33 @@ private:
 
   template<typename T>
   class add_buffer_to:
-    public T
-  {
-    char msg[__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER]; \
+    public T {
+    char msg[__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER];
+    \
   public:
     __PLUMED_WRAPPER_CXX_EXPLICIT add_buffer_to(const char * msg) __PLUMED_WRAPPER_CXX_NOEXCEPT {
       this->msg[0]='\0';
       __PLUMED_WRAPPER_STD strncat(this->msg,msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1);
       this->msg[__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1]='\0';
-      if(PlumedGetenvExceptionsDebug() && __PLUMED_WRAPPER_STD strlen(msg) > __PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1) __PLUMED_WRAPPER_STD fprintf(stderr,"+++ WARNING: message will be truncated\n");
+      if(PlumedGetenvExceptionsDebug() && __PLUMED_WRAPPER_STD strlen(msg) > __PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1) {
+        __PLUMED_WRAPPER_STD fprintf(stderr,"+++ WARNING: message will be truncated\n");
+      }
     }
     add_buffer_to(const add_buffer_to & other) __PLUMED_WRAPPER_CXX_NOEXCEPT {
       msg[0]='\0';
       __PLUMED_WRAPPER_STD memcpy(msg,other.msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER);
     }
     add_buffer_to & operator=(const add_buffer_to & other) __PLUMED_WRAPPER_CXX_NOEXCEPT {
-      if(this==&other) return *this;
+      if(this==&other) {
+        return *this;
+      }
       msg[0]='\0';
       __PLUMED_WRAPPER_STD memcpy(msg,other.msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER);
       return *this;
     }
-    const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {return msg;}
+    const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {
+      return msg;
+    }
 #if ! (__cplusplus > 199711L)
     /* Destructor should be declared in order to have the correct throw() before C++11 */
     /* see https://stackoverflow.com/questions/50025862/why-is-the-stdexception-destructor-not-noexcept */
@@ -2147,8 +2221,12 @@ private:
     __PLUMED_WRAPPER_CXX_EXPLICIT SafePtr(const plumed_safeptr & safe,__PLUMED_WRAPPER_STD size_t nelem=0, const __PLUMED_WRAPPER_STD size_t* shape=__PLUMED_WRAPPER_CXX_NULLPTR) __PLUMED_WRAPPER_CXX_NOEXCEPT {
       this->safe=safe;
       buffer[0]='\0';
-      if(nelem>0) this->safe.nelem=nelem;
-      if(shape) this->safe.shape=const_cast<__PLUMED_WRAPPER_STD size_t*>(shape);
+      if(nelem>0) {
+        this->safe.nelem=nelem;
+      }
+      if(shape) {
+        this->safe.shape=const_cast<__PLUMED_WRAPPER_STD size_t*>(shape);
+      }
     }
 
 #if __cplusplus > 199711L
@@ -2414,16 +2492,14 @@ Plumed()__PLUMED_WRAPPER_CXX_NOEXCEPT :
      if the created object is still in scope.
   */
 __PLUMED_WRAPPER_CXX_EXPLICIT Plumed(const char*c)__PLUMED_WRAPPER_CXX_NOEXCEPT :
-  main(plumed_create_reference_f(c))
-  {
+  main(plumed_create_reference_f(c)) {
   }
 
   /**
     Create a reference from a void* pointer. Available as of PLUMED 2.5.
   */
 __PLUMED_WRAPPER_CXX_EXPLICIT Plumed(void*v)__PLUMED_WRAPPER_CXX_NOEXCEPT :
-  main(plumed_create_reference_v(v))
-  {
+  main(plumed_create_reference_v(v)) {
   }
 
   /**
@@ -2436,8 +2512,7 @@ __PLUMED_WRAPPER_CXX_EXPLICIT Plumed(void*v)__PLUMED_WRAPPER_CXX_NOEXCEPT :
      if the created object is still in scope.
   */
 __PLUMED_WRAPPER_CXX_EXPLICIT Plumed(plumed p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
-  main(plumed_create_reference(p))
-  {
+  main(plumed_create_reference(p)) {
   }
 
   /** Copy constructor.
@@ -2445,8 +2520,7 @@ __PLUMED_WRAPPER_CXX_EXPLICIT Plumed(plumed p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
     Takes a reference, incrementing the reference counter of the corresponding object.
   */
 Plumed(const Plumed& p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
-  main(plumed_create_reference(p.main))
-  {
+  main(plumed_create_reference(p.main)) {
   }
 
   /** Assignment operator. Available as of PLUMED 2.5.
@@ -2456,7 +2530,9 @@ Plumed(const Plumed& p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
   Plumed&operator=(const Plumed&p) __PLUMED_WRAPPER_CXX_NOEXCEPT {
     if(this != &p) {
 // the check is needed to avoid calling plumed_finalize on moved objects
-      if(main.p) plumed_finalize(main);
+      if(main.p) {
+        plumed_finalize(main);
+      }
       main=plumed_create_reference(p.main);
     }
     return *this;
@@ -2473,8 +2549,7 @@ Plumed(const Plumed& p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
     Only if move semantics is enabled.
   */
 Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
-  main(p.main)
-  {
+  main(p.main) {
     p.main.p=nullptr;
   }
   /** Move assignment. Available as of PLUMED 2.5.
@@ -2483,7 +2558,9 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
   Plumed& operator=(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT  {
     if(this != &p) {
 // the check is needed to avoid calling plumed_finalize on moved objects
-      if(main.p) plumed_finalize(main);
+      if(main.p) {
+        plumed_finalize(main);
+      }
       main=p.main;
       p.main.p=nullptr;
     }
@@ -2697,7 +2774,9 @@ private:
       rethrow();
     }
     /* plumed_error_rethrow is finalizing */
-    if(!error && error_cxx.code!=0) plumed_error_rethrow_cxx(error_cxx);
+    if(!error && error_cxx.code!=0) {
+      plumed_error_rethrow_cxx(error_cxx);
+    }
   }
 
 public:
@@ -2756,7 +2835,9 @@ public:
   */
   template<typename T>
   void cmd(const char*key,T* val, std::initializer_list<std::size_t> shape) {
-    if(shape.size()>4) throw Plumed::ExceptionTypeError("Maximum shape size is 4");
+    if(shape.size()>4) {
+      throw Plumed::ExceptionTypeError("Maximum shape size is 4");
+    }
     std::array<std::size_t,5> shape_;
     unsigned j=0;
     for(auto i : shape) {
@@ -2798,7 +2879,9 @@ public:
 #endif
   ~Plumed() __PLUMED_WRAPPER_CXX_NOEXCEPT {
 // the check is needed to avoid calling plumed_finalize on moved objects
-    if(main.p) plumed_finalize(main);
+    if(main.p) {
+      plumed_finalize(main);
+    }
   }
 
   /**
@@ -3313,7 +3396,9 @@ void* plumed_attempt_dlopen(const char*path,int mode) {
     }
     __PLUMED_WRAPPER_STD strncpy(pathcopy,path,strlenpath+1);
     pc=pathcopy+strlenpath-6;
-    while(pc>=pathcopy && __PLUMED_WRAPPER_STD memcmp(pc,"Kernel",6)) pc--;
+    while(pc>=pathcopy && __PLUMED_WRAPPER_STD memcmp(pc,"Kernel",6)) {
+      pc--;
+    }
     if(pc>=pathcopy) {
       __PLUMED_WRAPPER_STD memmove(pc, pc+6, __PLUMED_WRAPPER_STD strlen(pc)-5);
       __PLUMED_FPRINTF(stderr,"+++ This error is expected if you are trying to load a kernel <=2.4\n");
@@ -3327,7 +3412,9 @@ void* plumed_attempt_dlopen(const char*path,int mode) {
       __PLUMED_WRAPPER_STD fclose(fp);
       dlerror();
       p=dlopen(pathcopy,mode);
-      if(!p) __PLUMED_FPRINTF(stderr,"+++ An error occurred. Message from dlopen(): %s +++\n",dlerror());
+      if(!p) {
+        __PLUMED_FPRINTF(stderr,"+++ An error occurred. Message from dlopen(): %s +++\n",dlerror());
+      }
     }
     plumed_free(pathcopy);
   }
@@ -3375,7 +3462,9 @@ void plumed_search_symbols(void* handle, plumed_plumedmain_function_holder* f,pl
   */
   debug=__PLUMED_GETENV("PLUMED_LOAD_DEBUG");
   table_ptr=(plumed_symbol_table_type*) dlsym(handle,"plumed_symbol_table");
-  if(table_ptr) functions=table_ptr->functions;
+  if(table_ptr) {
+    functions=table_ptr->functions;
+  }
   if(debug) {
     if(table_ptr) {
       __PLUMED_FPRINTF(stderr,"+++ plumed_symbol_table version %i found at %p +++\n",table_ptr->version,(void*)table_ptr);
@@ -3398,17 +3487,29 @@ void plumed_search_symbols(void* handle, plumed_plumedmain_function_holder* f,pl
   __PLUMED_SEARCH_FUNCTION(tmpptr,handle,functions.finalize,"plumedmain_finalize",debug);
   __PLUMED_SEARCH_FUNCTION(tmpptr,handle,functions.finalize,"plumed_plumedmain_finalize",debug);
   if(functions.create && functions.cmd && functions.finalize) {
-    if(debug) __PLUMED_FPRINTF(stderr,"+++ PLUMED was loaded correctly +++\n");
+    if(debug) {
+      __PLUMED_FPRINTF(stderr,"+++ PLUMED was loaded correctly +++\n");
+    }
     *f=functions;
-    if(table) *table=table_ptr;
+    if(table) {
+      *table=table_ptr;
+    }
   } else {
-    if(!functions.create) __PLUMED_FPRINTF(stderr,"+++ Pointer to (plumed_)plumedmain_create not found +++\n");
-    if(!functions.cmd) __PLUMED_FPRINTF(stderr,"+++ Pointer to (plumed_)plumedmain_cmd not found +++\n");
-    if(!functions.finalize) __PLUMED_FPRINTF(stderr,"+++ Pointer to (plumed_)plumedmain_finalize not found +++\n");
+    if(!functions.create) {
+      __PLUMED_FPRINTF(stderr,"+++ Pointer to (plumed_)plumedmain_create not found +++\n");
+    }
+    if(!functions.cmd) {
+      __PLUMED_FPRINTF(stderr,"+++ Pointer to (plumed_)plumedmain_cmd not found +++\n");
+    }
+    if(!functions.finalize) {
+      __PLUMED_FPRINTF(stderr,"+++ Pointer to (plumed_)plumedmain_finalize not found +++\n");
+    }
     f->create=__PLUMED_WRAPPER_CXX_NULLPTR;
     f->cmd=__PLUMED_WRAPPER_CXX_NULLPTR;
     f->finalize=__PLUMED_WRAPPER_CXX_NULLPTR;
-    if(table) *table=__PLUMED_WRAPPER_CXX_NULLPTR;
+    if(table) {
+      *table=__PLUMED_WRAPPER_CXX_NULLPTR;
+    }
   }
 }
 __PLUMED_WRAPPER_INTERNALS_END
@@ -3475,18 +3576,30 @@ void plumed_retrieve_functions(plumed_plumedmain_function_holder* functions, plu
     This makes the symbols hardcoded and independent of a mis-set PLUMED_KERNEL variable.
   */
   plumed_symbol_table_type* ptr=plumed_symbol_table_reexport();
-  if(plumed_symbol_table_ptr) *plumed_symbol_table_ptr=ptr;
-  if(handle) *handle=__PLUMED_WRAPPER_CXX_NULLPTR;
-  if(functions) *functions=ptr->functions;
+  if(plumed_symbol_table_ptr) {
+    *plumed_symbol_table_ptr=ptr;
+  }
+  if(handle) {
+    *handle=__PLUMED_WRAPPER_CXX_NULLPTR;
+  }
+  if(functions) {
+    *functions=ptr->functions;
+  }
 #elif ! defined(__PLUMED_HAS_DLOPEN)
   /*
     When dlopen is not available, we hard code them to NULL
   */
   __PLUMED_FPRINTF(stderr,"+++ PLUMED has been compiled without dlopen and without a static kernel +++\n");
   plumed_plumedmain_function_holder g= {__PLUMED_WRAPPER_CXX_NULLPTR,__PLUMED_WRAPPER_CXX_NULLPTR,__PLUMED_WRAPPER_CXX_NULLPTR};
-  if(plumed_symbol_table_ptr) *plumed_symbol_table_ptr=__PLUMED_WRAPPER_CXX_NULLPTR;
-  if(handle) *handle=__PLUMED_WRAPPER_CXX_NULLPTR;
-  if(functions) *functions=g;
+  if(plumed_symbol_table_ptr) {
+    *plumed_symbol_table_ptr=__PLUMED_WRAPPER_CXX_NULLPTR;
+  }
+  if(handle) {
+    *handle=__PLUMED_WRAPPER_CXX_NULLPTR;
+  }
+  if(functions) {
+    *functions=g;
+  }
 #else
   /*
     On the other hand, for runtime binding, we use dlsym to find the relevant functions.
@@ -3504,8 +3617,12 @@ void plumed_retrieve_functions(plumed_plumedmain_function_holder* functions, plu
   p=__PLUMED_WRAPPER_CXX_NULLPTR;
   debug=__PLUMED_GETENV("PLUMED_LOAD_DEBUG");
   dlopenmode=0;
-  if(plumed_symbol_table_ptr) *plumed_symbol_table_ptr=__PLUMED_WRAPPER_CXX_NULLPTR;
-  if(handle) *handle=__PLUMED_WRAPPER_CXX_NULLPTR;
+  if(plumed_symbol_table_ptr) {
+    *plumed_symbol_table_ptr=__PLUMED_WRAPPER_CXX_NULLPTR;
+  }
+  if(handle) {
+    *handle=__PLUMED_WRAPPER_CXX_NULLPTR;
+  }
 #ifdef __PLUMED_DEFAULT_KERNEL
   /*
     This variable allows a default path for the kernel to be hardcoded.
@@ -3517,34 +3634,52 @@ void plumed_retrieve_functions(plumed_plumedmain_function_holder* functions, plu
   /* This is required to add quotes */
 #define PLUMED_QUOTE_DIRECT(name) #name
 #define PLUMED_QUOTE(macro) PLUMED_QUOTE_DIRECT(macro)
-  if(! (path && (*path) )) path=PLUMED_QUOTE(__PLUMED_DEFAULT_KERNEL);
+  if(! (path && (*path) )) {
+    path=PLUMED_QUOTE(__PLUMED_DEFAULT_KERNEL);
+  }
 #endif
   if(path && (*path)) {
     __PLUMED_FPRINTF(stderr,"+++ Loading the PLUMED kernel runtime +++\n");
     __PLUMED_FPRINTF(stderr,"+++ PLUMED_KERNEL=\"%s\" +++\n",path);
-    if(debug) __PLUMED_FPRINTF(stderr,"+++ Loading with mode RTLD_NOW");
+    if(debug) {
+      __PLUMED_FPRINTF(stderr,"+++ Loading with mode RTLD_NOW");
+    }
     dlopenmode=RTLD_NOW;
     if(__PLUMED_GETENV("PLUMED_LOAD_NAMESPACE") && !__PLUMED_WRAPPER_STD strcmp(__PLUMED_GETENV("PLUMED_LOAD_NAMESPACE"),"LOCAL")) {
       dlopenmode=dlopenmode|RTLD_LOCAL;
-      if(debug) __PLUMED_FPRINTF(stderr,"|RTLD_LOCAL");
+      if(debug) {
+        __PLUMED_FPRINTF(stderr,"|RTLD_LOCAL");
+      }
     } else {
       dlopenmode=dlopenmode|RTLD_GLOBAL;
-      if(debug) __PLUMED_FPRINTF(stderr,"|RTLD_GLOBAL");
+      if(debug) {
+        __PLUMED_FPRINTF(stderr,"|RTLD_GLOBAL");
+      }
     }
 #ifdef RTLD_DEEPBIND
 #if __PLUMED_WRAPPER_ENABLE_RTLD_DEEPBIND
     if(!__PLUMED_GETENV("PLUMED_LOAD_NODEEPBIND")) {
       dlopenmode=dlopenmode|RTLD_DEEPBIND;
-      if(debug) __PLUMED_FPRINTF(stderr,"|RTLD_DEEPBIND");
+      if(debug) {
+        __PLUMED_FPRINTF(stderr,"|RTLD_DEEPBIND");
+      }
     }
 #endif
 #endif
-    if(debug) __PLUMED_FPRINTF(stderr," +++\n");
+    if(debug) {
+      __PLUMED_FPRINTF(stderr," +++\n");
+    }
     p=plumed_attempt_dlopen(path,dlopenmode);
-    if(p) plumed_search_symbols(p,&g,plumed_symbol_table_ptr);
+    if(p) {
+      plumed_search_symbols(p,&g,plumed_symbol_table_ptr);
+    }
   }
-  if(handle) *handle=p;
-  if(functions) *functions=g;
+  if(handle) {
+    *handle=p;
+  }
+  if(functions) {
+    *functions=g;
+  }
 #endif
 }
 __PLUMED_WRAPPER_INTERNALS_END
@@ -3604,8 +3739,12 @@ __PLUMED_WRAPPER_INTERNALS_END
 
 __PLUMED_WRAPPER_INTERNALS_BEGIN
 int plumed_check_pimpl(plumed_implementation*pimpl) {
-  if(!pimpl) return 0;
-  if(__PLUMED_WRAPPER_STD memcmp(pimpl->magic,"pLuMEd",6)) return 0;
+  if(!pimpl) {
+    return 0;
+  }
+  if(__PLUMED_WRAPPER_STD memcmp(pimpl->magic,"pLuMEd",6)) {
+    return 0;
+  }
   return 1;
 }
 __PLUMED_WRAPPER_INTERNALS_END
@@ -3629,7 +3768,9 @@ plumed plumed_create(void) {
 #endif
   /* note if handle should not be dlclosed */
   pimpl->dlclose=1;
-  if(__PLUMED_GETENV("PLUMED_LOAD_DLCLOSE") && !__PLUMED_WRAPPER_STD strcmp(__PLUMED_GETENV("PLUMED_LOAD_DLCLOSE"),"no")) pimpl->dlclose=0;
+  if(__PLUMED_GETENV("PLUMED_LOAD_DLCLOSE") && !__PLUMED_WRAPPER_STD strcmp(__PLUMED_GETENV("PLUMED_LOAD_DLCLOSE"),"no")) {
+    pimpl->dlclose=0;
+  }
   /* in case of failure, return */
   /* the resulting object should be plumed_finalized, though you cannot use plumed_cmd */
   if(!pimpl->functions.create) {
@@ -3657,7 +3798,9 @@ plumed plumed_create_dlopen(const char*path) {
   dlopenmode=RTLD_NOW|RTLD_LOCAL;
 #ifdef RTLD_DEEPBIND
 #if __PLUMED_WRAPPER_ENABLE_RTLD_DEEPBIND
-  if(!__PLUMED_GETENV("PLUMED_LOAD_NODEEPBIND")) dlopenmode=dlopenmode|RTLD_DEEPBIND;
+  if(!__PLUMED_GETENV("PLUMED_LOAD_NODEEPBIND")) {
+    dlopenmode=dlopenmode|RTLD_DEEPBIND;
+  }
 #endif
 #endif
 #else
@@ -3705,7 +3848,9 @@ plumed plumed_create_dlopen2(const char*path,int mode) {
   /* handler */
   void* dlhandle;
   dlhandle=__PLUMED_WRAPPER_CXX_NULLPTR;
-  if(path) dlhandle=plumed_attempt_dlopen(path,mode);
+  if(path) {
+    dlhandle=plumed_attempt_dlopen(path,mode);
+  }
   /* a NULL handle implies the file could not be loaded */
   if(dlhandle) {
     p=plumed_create_dlsym(dlhandle);
@@ -3773,7 +3918,9 @@ void plumed_cmd(plumed p,const char*key,const void*val) {
   assert(plumed_check_pimpl(pimpl));
   if(!pimpl->p) {
     __PLUMED_FPRINTF(stderr,"+++ ERROR: You are trying to use an invalid plumed object. +++\n");
-    if(pimpl->used_plumed_kernel) __PLUMED_FPRINTF(stderr,"+++ Check your PLUMED_KERNEL environment variable. +++\n");
+    if(pimpl->used_plumed_kernel) {
+      __PLUMED_FPRINTF(stderr,"+++ Check your PLUMED_KERNEL environment variable. +++\n");
+    }
     __PLUMED_WRAPPER_STD abort();
   }
   assert(pimpl->functions.create);
@@ -3807,9 +3954,13 @@ void plumed_cmd_safe_nothrow(plumed p,const char*key,plumed_safeptr safe,plumed_
   assert(pimpl->functions.cmd);
   assert(pimpl->functions.finalize);
   /* execute */
-  if(pimpl->table && pimpl->table->version>2) (*(pimpl->table->cmd_safe_nothrow))(pimpl->p,key,safe,nothrow);
-  else if(pimpl->table && pimpl->table->version>1) (*(pimpl->table->cmd_nothrow))(pimpl->p,key,safe.ptr,nothrow);
-  else (*(pimpl->functions.cmd))(pimpl->p,key,safe.ptr);
+  if(pimpl->table && pimpl->table->version>2) {
+    (*(pimpl->table->cmd_safe_nothrow))(pimpl->p,key,safe,nothrow);
+  } else if(pimpl->table && pimpl->table->version>1) {
+    (*(pimpl->table->cmd_nothrow))(pimpl->p,key,safe.ptr,nothrow);
+  } else {
+    (*(pimpl->functions.cmd))(pimpl->p,key,safe.ptr);
+  }
 }
 __PLUMED_WRAPPER_C_END
 
@@ -3833,15 +3984,20 @@ void plumed_cmd_safe(plumed p,const char*key,plumed_safeptr safe) {
   assert(plumed_check_pimpl(pimpl));
   if(!pimpl->p) {
     __PLUMED_FPRINTF(stderr,"+++ ERROR: You are trying to use an invalid plumed object. +++\n");
-    if(pimpl->used_plumed_kernel) __PLUMED_FPRINTF(stderr,"+++ Check your PLUMED_KERNEL environment variable. +++\n");
+    if(pimpl->used_plumed_kernel) {
+      __PLUMED_FPRINTF(stderr,"+++ Check your PLUMED_KERNEL environment variable. +++\n");
+    }
     __PLUMED_WRAPPER_STD abort();
   }
   assert(pimpl->functions.create);
   assert(pimpl->functions.cmd);
   assert(pimpl->functions.finalize);
   /* execute */
-  if(pimpl->table && pimpl->table->version>2) (*(pimpl->table->cmd_safe))(pimpl->p,key,safe);
-  else (*(pimpl->functions.cmd))(pimpl->p,key,safe.ptr);
+  if(pimpl->table && pimpl->table->version>2) {
+    (*(pimpl->table->cmd_safe))(pimpl->p,key,safe);
+  } else {
+    (*(pimpl->functions.cmd))(pimpl->p,key,safe.ptr);
+  }
 }
 __PLUMED_WRAPPER_C_END
 
@@ -3857,9 +4013,13 @@ void plumed_finalize(plumed p) {
 #endif
   /* with PLUMED > 2.8, we can use an internal reference counter which is thread safe */
   if(pimpl->p && pimpl->table && pimpl->table->version>3) {
-    if(pimpl->table->delete_reference(pimpl->p)>0) return;
+    if(pimpl->table->delete_reference(pimpl->p)>0) {
+      return;
+    }
   } else {
-    if(--pimpl->refcount>0) return;
+    if(--pimpl->refcount>0) {
+      return;
+    }
   }
   /* to allow finalizing an invalid plumed object, we only call
      finalize if the object is valid */
@@ -3873,7 +4033,9 @@ void plumed_finalize(plumed p) {
 #ifdef __PLUMED_HAS_DLOPEN
   /* dlclose library */
   if(pimpl->dlhandle && pimpl->dlclose) {
-    if(__PLUMED_GETENV("PLUMED_LOAD_DEBUG")) __PLUMED_FPRINTF(stderr,"+++ Unloading library\n");
+    if(__PLUMED_GETENV("PLUMED_LOAD_DEBUG")) {
+      __PLUMED_FPRINTF(stderr,"+++ Unloading library\n");
+    }
     dlclose(pimpl->dlhandle);
   }
 #endif
@@ -3891,8 +4053,11 @@ int plumed_valid(plumed p) {
   /* obtain pimpl */
   pimpl=(plumed_implementation*) p.p;
   assert(plumed_check_pimpl(pimpl));
-  if(pimpl->p) return 1;
-  else return 0;
+  if(pimpl->p) {
+    return 1;
+  } else {
+    return 0;
+  }
 }
 __PLUMED_WRAPPER_C_END
 
@@ -3927,7 +4092,9 @@ void* plumed_malloc(__PLUMED_WRAPPER_STD size_t size) {
   void* ptr;
   ptr=__PLUMED_WRAPPER_STD malloc(size);
 #if __PLUMED_WRAPPER_DEBUG_REFCOUNT
-  if(ptr) fprintf(stderr,"plumed_malloc: %p\n",ptr);
+  if(ptr) {
+    fprintf(stderr,"plumed_malloc: %p\n",ptr);
+  }
 #endif
   return ptr;
 }
@@ -3975,8 +4142,11 @@ void plumed_gfinalize(void) {
 }
 
 int plumed_ginitialized(void) {
-  if(plumed_gmain.p) return 1;
-  else        return 0;
+  if(plumed_gmain.p) {
+    return 1;
+  } else {
+    return 0;
+  }
 }
 
 int plumed_gvalid() {
