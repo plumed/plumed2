@@ -154,10 +154,6 @@ bool hasDlopen() {
   return false;
 #endif
 }
-/// This will always return true for backward compatibility
-bool hasCregex() {
-  return true;
-}
 
 bool hasMolfile() {
 #ifdef __PLUMED_HAS_MOLFILE_PLUGINS
