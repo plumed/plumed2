@@ -37,21 +37,19 @@ class Keywords {
 /// This class lets me pass keyword types easily
   class KeyType {
   public:
-    enum {hidden,compulsory,flag,optional,atoms,vessel} style;
+    enum {hidden,compulsory,flag,optional,atoms} style;
     explicit KeyType( const std::string& type );
     void setStyle( const std::string& type );
     bool isCompulsory() const { return (style==compulsory); }
     bool isFlag() const { return (style==flag); }
     bool isOptional() const { return (style==optional); }
     bool isAtomList() const { return (style==atoms); }
-    bool isVessel() const { return (style==vessel); }
     std::string toString() const {
       if(style==compulsory) return "compulsory";
       else if(style==optional) return "optional";
       else if(style==atoms) return "atoms";
       else if(style==flag) return "flag";
       else if(style==hidden) return "hidden";
-      else if(style==vessel) return "vessel";
       else plumed_assert(0);
       return "";
     }
@@ -76,6 +74,8 @@ private:
   std::map<std::string,bool> allowmultiple;
 /// The documentation for the keywords
   std::map<std::string,std::string> documentation;
+/// This stores any action documentation that we should link to
+  std::map<std::string,std::string> linkaction;
 /// The type for the arguments in this action
   std::map<std::string,std::string> argument_types;
 /// The default values for the flags (are they on or of)
@@ -119,6 +119,8 @@ public:
   std::string getKeyword( const unsigned i ) const ;
 /// Get the documentation for a particular keyword
   std::string getKeywordDocs( const std::string& key ) const ;
+/// Get any actions that are linked to this keyword
+  std::string getLinkedActions( const std::string& key ) const ;
 /// Print the documentation to the log file (used by PLMD::Action::error)
   void print( Log& log ) const ;
 /// Print the documentation to a file (use by PLUMED::CLTool::readCommandLineArgs)
@@ -141,6 +143,8 @@ public:
   void add( const std::string & t, const std::string & k, const std::string & def, const std::string & d );
 /// Add a falg with name k that is by default on if def is true and off if def is false.  d should provide a description of the flag
   void addFlag( const std::string & k, const bool def, const std::string & d );
+/// Create a link to this action in the documentation for it
+  void linkActionInDocs( const std::string& k, const std::string& action );
 /// Remove the keyword with name k
   void remove( const std::string & k );
 /// Check if there is a keyword with name k
@@ -159,13 +163,6 @@ public:
   void print_template( const std::string& actionname, bool include_optional) const ;
 /// Change the style of a keyword
   void reset_style( const std::string & k, const std::string & style );
-/// Add keywords from one keyword object to another
-  void add( const Keywords& keys );
-/// Copy the keywords data
-  void copyData( std::vector<std::string>& kk, std::vector<std::string>& rk, std::map<std::string,KeyType>& tt, std::map<std::string,bool>& am,
-                 std::map<std::string,std::string>& docs, std::map<std::string,bool>& bools, std::map<std::string,std::string>& nums,
-                 std::map<std::string,std::string>& atags, std::vector<std::string>& cnam, std::map<std::string,std::string>& ck,
-                 std::map<std::string,std::string>& cd ) const ;
 /// Clear everything from the keywords object.
 /// Not actually needed if your Keywords object is going out of scope.
   void destroyData();
