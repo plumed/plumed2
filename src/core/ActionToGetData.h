@@ -30,8 +30,7 @@ namespace PLMD {
 
 class ActionToGetData :
   public ActionPilot,
-  public ActionWithArguments
-{
+  public ActionWithArguments {
 private:
 /// What do you want to collect to pass back to python
   enum {val,deriv,force} gtype;
@@ -51,7 +50,9 @@ public:
 /// Actually set the values for the output
   void calculate();
   void apply() {}
-  ActionToGetData* castToActionToGetData() noexcept final { return this; }
+  ActionToGetData* castToActionToGetData() noexcept final {
+    return this;
+  }
 };
 
 }

@@ -44,55 +44,85 @@ MultiValue::MultiValue( const size_t& nvals, const size_t& nder, const size_t& n
   matrix_force_stash(nder*nmat),
   matrix_bookeeping(nbook,0),
   matrix_row_nderivatives(nmat,0),
-  matrix_row_derivative_indices(nmat)
-{
-  for(unsigned i=0; i<nmat; ++i) matrix_row_derivative_indices[i].resize( nder );
+  matrix_row_derivative_indices(nmat) {
+  for(unsigned i=0; i<nmat; ++i) {
+    matrix_row_derivative_indices[i].resize( nder );
+  }
   // This is crap that will be deleted in future
   std::vector<unsigned> myind( nder );
-  for(unsigned i=0; i<nder; ++i) myind[i]=i;
+  for(unsigned i=0; i<nder; ++i) {
+    myind[i]=i;
+  }
 }
 
 void MultiValue::resize( const size_t& nvals, const size_t& nder, const size_t& nmat, const size_t& maxcol, const size_t& nbook ) {
-  values.resize(nvals); nderivatives=nder; derivatives.resize( nvals*nder );
-  hasderiv.resize(nvals*nder,false); nactive.resize(nvals); active_list.resize(nvals*nder);
-  nmatrix_cols=maxcol; matrix_row_stash.resize(nmat*maxcol,0); matrix_force_stash.resize(nmat*nder,0); matrix_bookeeping.resize(nbook, 0);
-  matrix_row_nderivatives.resize(nmat,0); matrix_row_derivative_indices.resize(nmat); atLeastOneSet=false;
-  for(unsigned i=0; i<nmat; ++i) matrix_row_derivative_indices[i].resize( nder );
+  values.resize(nvals);
+  nderivatives=nder;
+  derivatives.resize( nvals*nder );
+  hasderiv.resize(nvals*nder,false);
+  nactive.resize(nvals);
+  active_list.resize(nvals*nder);
+  nmatrix_cols=maxcol;
+  matrix_row_stash.resize(nmat*maxcol,0);
+  matrix_force_stash.resize(nmat*nder,0);
+  matrix_bookeeping.resize(nbook, 0);
+  matrix_row_nderivatives.resize(nmat,0);
+  matrix_row_derivative_indices.resize(nmat);
+  atLeastOneSet=false;
+  for(unsigned i=0; i<nmat; ++i) {
+    matrix_row_derivative_indices[i].resize( nder );
+  }
   // All crap from here onwards
-  tmpder.resize( nder ); std::vector<unsigned> myind( nder );
-  for(unsigned i=0; i<nder; ++i) myind[i]=i;
+  tmpder.resize( nder );
+  std::vector<unsigned> myind( nder );
+  for(unsigned i=0; i<nder; ++i) {
+    myind[i]=i;
+  }
 }
 
 void MultiValue::clearAll() {
-  for(unsigned i=0; i<values.size(); ++i) values[i]=0;
+  for(unsigned i=0; i<values.size(); ++i) {
+    values[i]=0;
+  }
   // Clear matrix row
   std::fill( matrix_row_stash.begin(), matrix_row_stash.end(), 0 );
   // Clear matrix derivative indices
   std::fill( matrix_row_nderivatives.begin(), matrix_row_nderivatives.end(), 0 );
   // Clear matrix forces
   std::fill(matrix_force_stash.begin(),matrix_force_stash.end(),0);
-  if( !atLeastOneSet ) return;
-  for(unsigned i=0; i<values.size(); ++i) clearDerivatives(i);
+  if( !atLeastOneSet ) {
+    return;
+  }
+  for(unsigned i=0; i<values.size(); ++i) {
+    clearDerivatives(i);
+  }
   atLeastOneSet=false;
 }
 
 void MultiValue::clearDerivatives( const unsigned& ival ) {
   values[ival]=0;
-  if( !atLeastOneSet ) return;
+  if( !atLeastOneSet ) {
+    return;
+  }
   unsigned base=ival*nderivatives;
   for(unsigned i=0; i<nactive[ival]; ++i) {
-    unsigned k = base+active_list[base+i]; derivatives[k]=0.; hasderiv[k]=false;
+    unsigned k = base+active_list[base+i];
+    derivatives[k]=0.;
+    hasderiv[k]=false;
   }
   nactive[ival]=0;
 #ifndef NDEBUG
   for(unsigned i=0; i<nderivatives; ++i) {
     if( hasderiv[base+i] ) {
       std::string num1, num2;
-      Tools::convert(ival,num1); Tools::convert(i,num2);
+      Tools::convert(ival,num1);
+      Tools::convert(i,num2);
       plumed_merror("FAILING TO CLEAR VALUE " + num1 + " DERIVATIVE " + num2 + " IS PROBLEMATIC");
     }
     // As this is debugging code we hard code an escape here otherwise this check is really expensive
-    if( i>1000 ) return;
+    if( i>1000 ) {
+      return;
+    }
   }
 #endif
 }

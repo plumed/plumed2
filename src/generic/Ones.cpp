@@ -51,10 +51,16 @@ void Ones::registerKeywords(Keywords& keys) {
 
 Ones::Ones(const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
-  unsigned size; parse("SIZE",size); if( size<1 ) error("size should be greater than 0");
-  std::string ones="1"; for(unsigned i=1; i<size; ++i) ones +=",1";
+  ActionShortcut(ao) {
+  unsigned size;
+  parse("SIZE",size);
+  if( size<1 ) {
+    error("size should be greater than 0");
+  }
+  std::string ones="1";
+  for(unsigned i=1; i<size; ++i) {
+    ones +=",1";
+  }
   readInputLine( getShortcutLabel() + ": CONSTANT NOLOG VALUES=" + ones );
 }
 

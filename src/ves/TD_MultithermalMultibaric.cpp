@@ -256,8 +256,7 @@ TD_MultithermalMultibaric::TD_MultithermalMultibaric(const ActionOptions& ao):
   epsilon_(10.0),
   smoothening_(true),
   steps_temp_(20),
-  steps_pressure_(20)
-{
+  steps_pressure_(20) {
   log.printf("  Multithermal-multibaric target distribution");
   log.printf("\n");
 
@@ -282,11 +281,17 @@ TD_MultithermalMultibaric::TD_MultithermalMultibaric(const ActionOptions& ao):
   parse("PRESSURE",press_);
   log.printf("  pressure of the barostat should have been set to %f. Please check this in the MD engine \n",press_);
   parseVector("SIGMA",sigma_);
-  if(sigma_.size()==0) smoothening_=false;
-  if(smoothening_ && (sigma_.size()<2 || sigma_.size()>3) ) plumed_merror(getName()+": SIGMA takes 2 or 3 values as input.");
+  if(sigma_.size()==0) {
+    smoothening_=false;
+  }
+  if(smoothening_ && (sigma_.size()<2 || sigma_.size()>3) ) {
+    plumed_merror(getName()+": SIGMA takes 2 or 3 values as input.");
+  }
   if (smoothening_) {
     log.printf("  the target distribution will be smoothed using sigma values");
-    for(unsigned i=0; i<sigma_.size(); ++i) log.printf(" %f",sigma_[i]);
+    for(unsigned i=0; i<sigma_.size(); ++i) {
+      log.printf(" %f",sigma_[i]);
+    }
     log.printf("\n");
   }
   parse("STEPS_TEMP",steps_temp_);
@@ -313,8 +318,12 @@ double TD_MultithermalMultibaric::getValue(const std::vector<double>& argument) 
 
 void TD_MultithermalMultibaric::updateGrid() {
   if (getStep() == 0) {
-    if(targetDistGrid().getDimension()>3 || targetDistGrid().getDimension()<2) plumed_merror(getName()+" works only with 2 or 3 arguments, i.e. energy and volume, or energy, volume, and CV");
-    if(smoothening_ && sigma_.size()!=targetDistGrid().getDimension()) plumed_merror(getName()+": mismatch between SIGMA dimension and number of arguments");
+    if(targetDistGrid().getDimension()>3 || targetDistGrid().getDimension()<2) {
+      plumed_merror(getName()+" works only with 2 or 3 arguments, i.e. energy and volume, or energy, volume, and CV");
+    }
+    if(smoothening_ && sigma_.size()!=targetDistGrid().getDimension()) {
+      plumed_merror(getName()+": mismatch between SIGMA dimension and number of arguments");
+    }
     // Use uniform TD
     std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(getTargetDistGridPntr());
     double norm = 0.0;
@@ -379,10 +388,16 @@ void TD_MultithermalMultibaric::updateGrid() {
           for(unsigned k=0; k<dim; k++) {
             int deltaBin=std::floor(6*sigma_[k]/dx[k]);
             minBin[k]=indices[k] - deltaBin;
-            if (minBin[k] < 0) minBin[k]=0;
-            if (minBin[k] > (nbin[k]-1)) minBin[k]=nbin[k]-1;
+            if (minBin[k] < 0) {
+              minBin[k]=0;
+            }
+            if (minBin[k] > (nbin[k]-1)) {
+              minBin[k]=nbin[k]-1;
+            }
             maxBin[k]=indices[k] + deltaBin;
-            if (maxBin[k] > (nbin[k]-1)) maxBin[k]=nbin[k]-1;
+            if (maxBin[k] > (nbin[k]-1)) {
+              maxBin[k]=nbin[k]-1;
+            }
           }
           if (dim==2) {
             for(unsigned l=minBin[0]; l<maxBin[0]+1; l++) {
@@ -446,8 +461,7 @@ double TD_MultithermalMultibaric::GaussianSwitchingFunc(const double argument, c
   if(sigma>0.0) {
     double arg=(argument-center)/sigma;
     return exp(-0.5*arg*arg);
-  }
-  else {
+  } else {
     return 0.0;
   }
 }

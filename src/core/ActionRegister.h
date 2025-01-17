@@ -97,13 +97,14 @@ class ActionRegistration {
 public:
   ///On construction register the ActionClass with the wanted directive
   ActionRegistration(std::string_view directive):
-    id(actionRegister().add(directive.data(),create,ActionClass::registerKeywords))
-  {
+    id(actionRegister().add(directive.data(),create,ActionClass::registerKeywords)) {
     static_assert(isActionType<ActionClass>,
                   "ActionRegistration accepts only class that inherit from Action");
   }
   ///On destruction deregister the ActionClass (useful when you unload a shared object)
-  ~ActionRegistration() {actionRegister().remove(id);}
+  ~ActionRegistration() {
+    actionRegister().remove(id);
+  }
 };
 } //PLMD
 

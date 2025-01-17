@@ -166,35 +166,52 @@ TD_LinearCombination::TD_LinearCombination(const ActionOptions& ao):
   distribution_pntrs_(0),
   grid_pntrs_(0),
   weights_(0),
-  ndist_(0)
-{
+  ndist_(0) {
   std::vector<std::string> targetdist_labels;
   parseVector("DISTRIBUTIONS",targetdist_labels);
 
   std::string error_msg = "";
   distribution_pntrs_ = VesTools::getPointersFromLabels<TargetDistribution*>(targetdist_labels,plumed.getActionSet(),error_msg);
-  if(error_msg.size()>0) {plumed_merror("Error in keyword DISTRIBUTIONS of "+getName()+": "+error_msg);}
+  if(error_msg.size()>0) {
+    plumed_merror("Error in keyword DISTRIBUTIONS of "+getName()+": "+error_msg);
+  }
 
   for(unsigned int i=0; i<distribution_pntrs_.size(); i++) {
-    if(distribution_pntrs_[i]->isDynamic()) {setDynamic();}
-    if(distribution_pntrs_[i]->fesGridNeeded()) {setFesGridNeeded();}
-    if(distribution_pntrs_[i]->biasGridNeeded()) {setBiasGridNeeded();}
+    if(distribution_pntrs_[i]->isDynamic()) {
+      setDynamic();
+    }
+    if(distribution_pntrs_[i]->fesGridNeeded()) {
+      setFesGridNeeded();
+    }
+    if(distribution_pntrs_[i]->biasGridNeeded()) {
+      setBiasGridNeeded();
+    }
   }
 
   ndist_ = distribution_pntrs_.size();
   grid_pntrs_.assign(ndist_,NULL);
-  if(ndist_==0) {plumed_merror(getName()+ ": no distributions are given.");}
-  if(ndist_==1) {plumed_merror(getName()+ ": giving only one distribution does not make sense.");}
+  if(ndist_==0) {
+    plumed_merror(getName()+ ": no distributions are given.");
+  }
+  if(ndist_==1) {
+    plumed_merror(getName()+ ": giving only one distribution does not make sense.");
+  }
   //
   parseVector("WEIGHTS",weights_);
-  if(weights_.size()==0) {weights_.assign(distribution_pntrs_.size(),1.0);}
+  if(weights_.size()==0) {
+    weights_.assign(distribution_pntrs_.size(),1.0);
+  }
   if(distribution_pntrs_.size()!=weights_.size()) {
     plumed_merror(getName()+ ": there has to be as many weights given in WEIGHTS as the number of target distribution labels given in DISTRIBUTIONS");
   }
   //
   double sum_weights=0.0;
-  for(unsigned int i=0; i<weights_.size(); i++) {sum_weights+=weights_[i];}
-  for(unsigned int i=0; i<weights_.size(); i++) {weights_[i]/=sum_weights;}
+  for(unsigned int i=0; i<weights_.size(); i++) {
+    sum_weights+=weights_[i];
+  }
+  for(unsigned int i=0; i<weights_.size(); i++) {
+    weights_[i]/=sum_weights;
+  }
   checkRead();
 }
 
@@ -225,7 +242,9 @@ void TD_LinearCombination::updateGrid() {
     for(unsigned int i=0; i<ndist_; i++) {
       value += weights_[i]*grid_pntrs_[i]->getValue(l);
     }
-    if(value==0.0) value=std::numeric_limits<double>::denorm_min();
+    if(value==0.0) {
+      value=std::numeric_limits<double>::denorm_min();
+    }
     targetDistGrid().setValue(l,value);
     logTargetDistGrid().setValue(l,-std::log(value));
   }

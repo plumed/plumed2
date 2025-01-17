@@ -77,30 +77,49 @@ void LessThan::registerKeywords(Keywords& keys) {
 }
 
 void LessThan::read( ActionWithArguments* action ) {
-  if( action->getNumberOfArguments()!=1 ) action->error("should only be one argument to less_than actions");
-  if( action->getPntrToArgument(0)->isPeriodic() ) action->error("cannot use this function on periodic functions");
+  if( action->getNumberOfArguments()!=1 ) {
+    action->error("should only be one argument to less_than actions");
+  }
+  if( action->getPntrToArgument(0)->isPeriodic() ) {
+    action->error("cannot use this function on periodic functions");
+  }
 
 
   std::string sw,errors;
   action->parse("SWITCH",sw);
   if(sw.length()>0) {
     switchingFunction.set(sw,errors);
-    if( errors.length()!=0 ) action->error("problem reading SWITCH keyword : " + errors );
+    if( errors.length()!=0 ) {
+      action->error("problem reading SWITCH keyword : " + errors );
+    }
   } else {
-    int nn=6; int mm=0; double d0=0.0; double r0=0.0; action->parse("R_0",r0);
-    if(r0<=0.0) action->error("R_0 should be explicitly specified and positive");
-    action->parse("D_0",d0); action->parse("NN",nn); action->parse("MM",mm);
+    int nn=6;
+    int mm=0;
+    double d0=0.0;
+    double r0=0.0;
+    action->parse("R_0",r0);
+    if(r0<=0.0) {
+      action->error("R_0 should be explicitly specified and positive");
+    }
+    action->parse("D_0",d0);
+    action->parse("NN",nn);
+    action->parse("MM",mm);
     switchingFunction.set(nn,mm,r0,d0);
   }
   action->log<<"  using switching function with cutoff "<<switchingFunction.description()<<"\n";
   action->parseFlag("SQUARED",squared);
-  if( squared ) action->log<<"  input quantity is square of quantity that switching function acts upon\n";
+  if( squared ) {
+    action->log<<"  input quantity is square of quantity that switching function acts upon\n";
+  }
 }
 
 void LessThan::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
   plumed_dbg_assert( args.size()==1 );
-  if( squared ) vals[0] = switchingFunction.calculateSqr( args[0], derivatives(0,0) );
-  else vals[0] = switchingFunction.calculate( args[0], derivatives(0,0) );
+  if( squared ) {
+    vals[0] = switchingFunction.calculateSqr( args[0], derivatives(0,0) );
+  } else {
+    vals[0] = switchingFunction.calculate( args[0], derivatives(0,0) );
+  }
   derivatives(0,0) = args[0]*derivatives(0,0);
 }
 

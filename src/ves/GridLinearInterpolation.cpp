@@ -38,9 +38,12 @@ double GridLinearInterpolation::getGridValueWithLinearInterpolation_1D(GridBase*
 
   double x = arg[0];
   double grid_dx = grid_pntr->getDx()[0];
-  double grid_min; Tools::convert( grid_pntr->getMin()[0], grid_min);
-  std::vector<unsigned int> i0(1); i0[0] = unsigned( std::floor( (x-grid_min)/grid_dx ) );
-  std::vector<unsigned int> i1(1); i1[0] = unsigned( std::ceil(  (x-grid_min)/grid_dx ) );
+  double grid_min;
+  Tools::convert( grid_pntr->getMin()[0], grid_min);
+  std::vector<unsigned int> i0(1);
+  i0[0] = unsigned( std::floor( (x-grid_min)/grid_dx ) );
+  std::vector<unsigned int> i1(1);
+  i1[0] = unsigned( std::ceil(  (x-grid_min)/grid_dx ) );
   //
   double x0 = grid_pntr->getPoint(i0)[0];
   double x1 = grid_pntr->getPoint(i1)[0];
@@ -122,11 +125,14 @@ double GridLinearInterpolation::getGridValueAndDerivativesWithLinearInterpolatio
 
   double x = arg[0];
   double grid_dx = grid_pntr->getDx()[0];
-  double grid_min; Tools::convert( grid_pntr->getMin()[0], grid_min);
+  double grid_min;
+  Tools::convert( grid_pntr->getMin()[0], grid_min);
 
   double xtoindex = (x-grid_min)/grid_dx;
-  std::vector<unsigned int> i0(1); i0[0] = unsigned(std::floor(xtoindex));
-  std::vector<unsigned int> i1(1); i1[0] = unsigned(std::ceil(xtoindex));
+  std::vector<unsigned int> i0(1);
+  i0[0] = unsigned(std::floor(xtoindex));
+  std::vector<unsigned int> i1(1);
+  i1[0] = unsigned(std::ceil(xtoindex));
   //
   std::vector<double> d0 (1), d1 (1);
   double x0 = grid_pntr->getPoint(i0)[0];
@@ -169,11 +175,9 @@ double GridLinearInterpolation::getGridValueWithLinearInterpolation(GridBase* gr
   unsigned int dim = grid_pntr->getDimension();
   if(dim==1) {
     return getGridValueWithLinearInterpolation_1D(grid_pntr,arg);
-  }
-  else if(dim==2) {
+  } else if(dim==2) {
     return getGridValueWithLinearInterpolation_2D(grid_pntr,arg);
-  }
-  else {
+  } else {
     return getGridValueWithLinearInterpolation_ND(grid_pntr,arg);
   }
 }
@@ -197,7 +201,8 @@ std::vector<std::vector<unsigned>> GridLinearInterpolation::getAdjacentIndices(G
     std::vector<unsigned> temp_indices(2);
     //
     double grid_dx = grid_pntr->getDx()[i];
-    double grid_min; Tools::convert( grid_pntr->getMin()[i], grid_min);
+    double grid_min;
+    Tools::convert( grid_pntr->getMin()[i], grid_min);
     double xtoindex = (arg[i]-grid_min)/grid_dx;
     temp_indices[0] = static_cast<unsigned>(std::floor(xtoindex));
     temp_indices[1] = static_cast<unsigned>(std::ceil(xtoindex));

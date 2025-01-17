@@ -44,7 +44,9 @@ private:
     std::vector<double> positionsToBeReceived;
     std::vector<int>    indexToBeSent;
     std::vector<int>    indexToBeReceived;
-    operator bool() const {return on;}
+    operator bool() const {
+      return on;
+    }
     DomainComms(): on(false), async(false) {}
     void enable(Communicator& c);
   };
@@ -105,9 +107,13 @@ public:
   void createFullList(const TypesafePtr & x);
   void getFullList(const TypesafePtr & x);
   void clearFullList();
-  bool onStep() const override { return getNumberOfAtoms()>0; }
+  bool onStep() const override {
+    return getNumberOfAtoms()>0;
+  }
   unsigned getNumberOfAtoms() const;
-  DomainDecomposition* castToDomainDecomposition() noexcept final { return this; }
+  DomainDecomposition* castToDomainDecomposition() noexcept final {
+    return this;
+  }
 };
 
 }

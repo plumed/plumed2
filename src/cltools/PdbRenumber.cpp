@@ -98,8 +98,7 @@ Additional lines in `list.txt` will just be ignored.
 //+ENDPLUMEDOC
 
 class PdbRenumber:
-  public CLTool
-{
+  public CLTool {
 public:
   static void registerKeywords( Keywords& keys );
   explicit PdbRenumber(const CLToolOptions& co );
@@ -120,8 +119,7 @@ void PdbRenumber::registerKeywords( Keywords& keys ) {
 }
 
 PdbRenumber::PdbRenumber(const CLToolOptions& co ):
-  CLTool(co)
-{
+  CLTool(co) {
   inputdata=commandline;
 }
 
@@ -158,7 +156,9 @@ int PdbRenumber::main(FILE* in, FILE*out,Communicator& pc) {
       serials.push_back(i);
     }
   } else {
-    if(iat==0) iat=1;
+    if(iat==0) {
+      iat=1;
+    }
     std::fprintf(out,"  with atoms starting from %u\n",iat);
   }
 
@@ -186,7 +186,9 @@ int PdbRenumber::main(FILE* in, FILE*out,Communicator& pc) {
       ofile << line.substr(0,6) << &at[0] << line.substr(11) << "\n";
       iat++;
     } else {
-      if(record=="END" || record=="ENDMDL") iat=0;
+      if(record=="END" || record=="ENDMDL") {
+        iat=0;
+      }
       ofile << line << "\n";
     }
   }

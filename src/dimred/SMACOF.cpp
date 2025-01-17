@@ -24,83 +24,120 @@
 namespace PLMD {
 namespace dimred {
 
-SMACOF::SMACOF( const Value* target)
-{
+SMACOF::SMACOF( const Value* target) {
   std::vector<unsigned> shape( target->getShape() );
-  Distances.resize( shape[0], shape[1] ); Weights.resize( shape[0], shape[1] );
+  Distances.resize( shape[0], shape[1] );
+  Weights.resize( shape[0], shape[1] );
   for(unsigned i=0; i<shape[0]; ++i) {
-    for(unsigned j=0; j<shape[1]; ++j) Distances(i,j) = sqrt( target->get(shape[0]*i+j) );
+    for(unsigned j=0; j<shape[1]; ++j) {
+      Distances(i,j) = sqrt( target->get(shape[0]*i+j) );
+    }
   }
 }
 
 void SMACOF::optimize( const double& tol, const unsigned& maxloops, std::vector<double>& proj ) {
-  unsigned M = Distances.nrows(); unsigned nlow=proj.size() / M; Matrix<double> Z( M, nlow );
+  unsigned M = Distances.nrows();
+  unsigned nlow=proj.size() / M;
+  Matrix<double> Z( M, nlow );
   // Transfer initial projection to matrix
   unsigned k = 0;
   for(unsigned i=0; i<M; ++i) {
-    for(unsigned j=0; j<nlow; ++j) { Z(i,j)=proj[k]; k++; }
+    for(unsigned j=0; j<nlow; ++j) {
+      Z(i,j)=proj[k];
+      k++;
+    }
   }
 
   // Calculate V
   Matrix<double> V(M,M);
   for(unsigned i=0; i<M; ++i) {
     for(unsigned j=0; j<M; ++j) {
-      if(i==j) continue;
+      if(i==j) {
+        continue;
+      }
       V(i,j)=-Weights(i,j);
     }
     for(unsigned j=0; j<M; ++j) {
-      if(i==j)continue;
+      if(i==j) {
+        continue;
+      }
       V(i,i)-=V(i,j);
     }
   }
   // And pseudo invert V
-  Matrix<double> mypseudo(M, M); pseudoInvert(V, mypseudo);
-  Matrix<double> dists( M, M ); double myfirstsig = calculateSigma( Z, dists );
+  Matrix<double> mypseudo(M, M);
+  pseudoInvert(V, mypseudo);
+  Matrix<double> dists( M, M );
+  double myfirstsig = calculateSigma( Z, dists );
 
   // initial sigma is made up of the original distances minus the distances between the projections all squared.
   Matrix<double> temp( M, M ), BZ( M, M ), newZ( M, nlow );
   for(unsigned n=0; n<maxloops; ++n) {
-    if(n==maxloops-1) plumed_merror("ran out of steps in SMACOF algorithm");
+    if(n==maxloops-1) {
+      plumed_merror("ran out of steps in SMACOF algorithm");
+    }
 
     // Recompute BZ matrix
     for(unsigned i=0; i<M; ++i) {
       for(unsigned j=0; j<M; ++j) {
-        if(i==j) continue;  //skips over the diagonal elements
+        if(i==j) {
+          continue;  //skips over the diagonal elements
+        }
 
-        if( dists(i,j)>0 ) BZ(i,j) = -Weights(i,j)*Distances(i,j) / dists(i,j);
-        else BZ(i,j)=0.;
+        if( dists(i,j)>0 ) {
+          BZ(i,j) = -Weights(i,j)*Distances(i,j) / dists(i,j);
+        } else {
+          BZ(i,j)=0.;
+        }
       }
       //the diagonal elements are -off diagonal elements BZ(i,i)-=BZ(i,j)   (Equation 8.25)
       BZ(i,i)=0; //create the space memory for the diagonal elements which are scalars
       for(unsigned j=0; j<M; ++j) {
-        if(i==j) continue;
+        if(i==j) {
+          continue;
+        }
         BZ(i,i)-=BZ(i,j);
       }
     }
 
-    mult( mypseudo, BZ, temp); mult(temp, Z, newZ);
+    mult( mypseudo, BZ, temp);
+    mult(temp, Z, newZ);
     //Compute new sigma
     double newsig = calculateSigma( newZ, dists );
     //Computing whether the algorithm has converged (has the mass of the potato changed
     //when we put it back in the oven!)
-    if( fabs( newsig - myfirstsig )<tol ) break;
-    myfirstsig=newsig; Z = newZ;
+    if( fabs( newsig - myfirstsig )<tol ) {
+      break;
+    }
+    myfirstsig=newsig;
+    Z = newZ;
   }
 
   // Transfer final projection matrix to output proj
   k = 0;
   for(unsigned i=0; i<M; ++i) {
-    for(unsigned j=0; j<nlow; ++j) { proj[k]=Z(i,j); k++; }
+    for(unsigned j=0; j<nlow; ++j) {
+      proj[k]=Z(i,j);
+      k++;
+    }
   }
 }
 
 double SMACOF::calculateSigma( const Matrix<double>& Z, Matrix<double>& dists ) {
-  unsigned M = Distances.nrows(); double sigma=0; double totalWeight=0;
+  unsigned M = Distances.nrows();
+  double sigma=0;
+  double totalWeight=0;
   for(unsigned i=1; i<M; ++i) {
     for(unsigned j=0; j<i; ++j) {
-      double dlow=0; for(unsigned k=0; k<Z.ncols(); ++k) { double tmp=Z(i,k) - Z(j,k); dlow+=tmp*tmp; }
-      dists(i,j)=dists(j,i)=sqrt(dlow); double tmp3 = Distances(i,j) - dists(i,j);
-      sigma += Weights(i,j)*tmp3*tmp3; totalWeight+=Weights(i,j);
+      double dlow=0;
+      for(unsigned k=0; k<Z.ncols(); ++k) {
+        double tmp=Z(i,k) - Z(j,k);
+        dlow+=tmp*tmp;
+      }
+      dists(i,j)=dists(j,i)=sqrt(dlow);
+      double tmp3 = Distances(i,j) - dists(i,j);
+      sigma += Weights(i,j)*tmp3*tmp3;
+      totalWeight+=Weights(i,j);
     }
   }
   return sigma / totalWeight;

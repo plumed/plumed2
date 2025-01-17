@@ -82,29 +82,50 @@ void TopologyMatrix::registerKeywords( Keywords& keys ) {
 
 TopologyMatrix::TopologyMatrix(const ActionOptions&ao):
   Action(ao),
-  AdjacencyMatrixBase(ao)
-{
-  std::string sfinput,errors; parse("SWITCH",sfinput);
-  if( sfinput.length()==0 ) error("could not find SWITCH keyword");
+  AdjacencyMatrixBase(ao) {
+  std::string sfinput,errors;
+  parse("SWITCH",sfinput);
+  if( sfinput.length()==0 ) {
+    error("could not find SWITCH keyword");
+  }
   switchingFunction.set(sfinput,errors);
-  if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
+  if( errors.length()!=0 ) {
+    error("problem reading SWITCH keyword : " + errors );
+  }
 
-  std::string hsfinput; parse("CYLINDER_SWITCH",hsfinput);
-  if( hsfinput.length()==0 ) error("could not find CYLINDER_SWITCH keyword");
+  std::string hsfinput;
+  parse("CYLINDER_SWITCH",hsfinput);
+  if( hsfinput.length()==0 ) {
+    error("could not find CYLINDER_SWITCH keyword");
+  }
   low_sf.set(hsfinput,errors);
-  if( errors.length()!=0 ) error("problem reading CYLINDER_SWITCH keyword : " + errors );
+  if( errors.length()!=0 ) {
+    error("problem reading CYLINDER_SWITCH keyword : " + errors );
+  }
 
-  std::string asfinput; parse("RADIUS",asfinput);
-  if( asfinput.length()==0 ) error("could not find RADIUS keyword");
+  std::string asfinput;
+  parse("RADIUS",asfinput);
+  if( asfinput.length()==0 ) {
+    error("could not find RADIUS keyword");
+  }
   cylinder_sw.set(asfinput,errors);
-  if( errors.length()!=0 ) error("problem reading RADIUS keyword : " + errors );
+  if( errors.length()!=0 ) {
+    error("problem reading RADIUS keyword : " + errors );
+  }
 
-  std::string tsfinput; parse("DENSITY_THRESHOLD",tsfinput);
-  if( tsfinput.length()==0 ) error("could not find DENSITY_THRESHOLD keyword");
+  std::string tsfinput;
+  parse("DENSITY_THRESHOLD",tsfinput);
+  if( tsfinput.length()==0 ) {
+    error("could not find DENSITY_THRESHOLD keyword");
+  }
   threshold_switch.set(tsfinput,errors);
-  if( errors.length()!=0 ) error("problem reading DENSITY_THRESHOLD keyword : " + errors );
+  if( errors.length()!=0 ) {
+    error("problem reading DENSITY_THRESHOLD keyword : " + errors );
+  }
   // Read in stuff for grid
-  parse("SIGMA",sigma); parse("KERNEL",kerneltype); parse("BIN_SIZE",binw_mat);
+  parse("SIGMA",sigma);
+  parse("KERNEL",kerneltype);
+  parse("BIN_SIZE",binw_mat);
 
   // Set the link cell cutoff
   setLinkCellCutoff( true, switchingFunction.get_dmax(), std::numeric_limits<double>::max() );
@@ -120,13 +141,20 @@ TopologyMatrix::TopologyMatrix(const ActionOptions&ao):
 
 double TopologyMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const {
   // Compute switching function on distance between atoms
-  Vector distance = pbcDistance( pos1, pos2 ); double len2 = distance.modulo2();
-  if( len2>switchingFunction.get_dmax2() ) return 0.0;
+  Vector distance = pbcDistance( pos1, pos2 );
+  double len2 = distance.modulo2();
+  if( len2>switchingFunction.get_dmax2() ) {
+    return 0.0;
+  }
   double dfuncl, sw = switchingFunction.calculateSqr( len2, dfuncl );
 
   // Now run through all sea atoms
-  HistogramBead bead; bead.isNotPeriodic(); bead.setKernelType( kerneltype );
-  Vector g1derivf,g2derivf,lderivf; Tensor vir; double binlength = maxbins * binw_mat;
+  HistogramBead bead;
+  bead.isNotPeriodic();
+  bead.setKernelType( kerneltype );
+  Vector g1derivf,g2derivf,lderivf;
+  Tensor vir;
+  double binlength = maxbins * binw_mat;
   MultiValue tvals( maxbins, myvals.getNumberOfDerivatives() );
   for(unsigned i=0; i<natoms; ++i) {
     // Position of sea atom (this will be the origin)
@@ -136,11 +164,16 @@ double TopologyMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, 
     // Vector connecting sea atom and second in bond taking pbc into account
     Vector d21 = pbcDistance( d2, pos2 );
     // Now length of bond modulus and so on -- no pbc here as we want sea atom in middle
-    Vector d1 = delta( d20, d21 ); double d1_len = d1.modulo(); d1 = d1 / d1_len;
+    Vector d1 = delta( d20, d21 );
+    double d1_len = d1.modulo();
+    d1 = d1 / d1_len;
     // Switching function on distance between nodes
-    if( d1_len>switchingFunction.get_dmax() ) continue ;
+    if( d1_len>switchingFunction.get_dmax() ) {
+      continue ;
+    }
     // Ensure that the center of the bins are on the center of the bond connecting the two atoms
-    double start2atom = 0.5*(binlength-d1_len); Vector dstart = d20 - start2atom*d1;
+    double start2atom = 0.5*(binlength-d1_len);
+    Vector dstart = d20 - start2atom*d1;
     // Now calculate projection of axis of cylinder
     double proj=dotProduct(-dstart,d1);
     // Calculate length of vector connecting start of cylinder to first atom
@@ -149,7 +182,9 @@ double TopologyMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, 
     // This tells us if we are outside the end of the cylinder
     double excess = proj_between - d1_len;
     // Return if we are outside of the cylinder as calculated based on excess
-    if( excess>low_sf.get_dmax() || -proj_between>low_sf.get_dmax() ) continue;
+    if( excess>low_sf.get_dmax() || -proj_between>low_sf.get_dmax() ) {
+      continue;
+    }
     // Calculate the excess swiching functions
     double edf1, eval1 = low_sf.calculate( excess, edf1 );
     double edf2, eval2 = low_sf.calculate( -proj_between, edf2 );
@@ -191,8 +226,11 @@ double TopologyMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, 
       }
       for(unsigned bin=0; bin<maxbins; ++bin) {
         bead.set( bin*binw_mat, (bin+1)*binw_mat, sigma );
-        if( proj<(bin*binw_mat-bead.getCutoff()) || proj>binw_mat*(bin+1)+bead.getCutoff() ) continue;
-        double der, contr=bead.calculateWithCutoff( proj, der ) / cell_volume; der /= cell_volume;
+        if( proj<(bin*binw_mat-bead.getCutoff()) || proj>binw_mat*(bin+1)+bead.getCutoff() ) {
+          continue;
+        }
+        double der, contr=bead.calculateWithCutoff( proj, der ) / cell_volume;
+        der /= cell_volume;
         tvals.addValue( bin, contr*val*eval1*eval2 );
 
         if( !doNotCalculateDerivatives() ) {
@@ -226,16 +264,24 @@ double TopologyMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, 
     }
   }
   // Find maximum density
-  double max = tvals.get(0); unsigned vout = 0;
+  double max = tvals.get(0);
+  unsigned vout = 0;
   for(unsigned i=1; i<maxbins; ++i) {
-    if( tvals.get(i)>max ) { max=tvals.get(i); vout=i; }
+    if( tvals.get(i)>max ) {
+      max=tvals.get(i);
+      vout=i;
+    }
   }
   // Transform the density
   double df, tsw = threshold_switch.calculate( max, df );
-  if( fabs(sw*tsw)<epsilon ) return 0;
+  if( fabs(sw*tsw)<epsilon ) {
+    return 0;
+  }
 
   if( !doNotCalculateDerivatives() ) {
-    Vector ader; Tensor vir; Vector ddd = tsw*dfuncl*distance;
+    Vector ader;
+    Tensor vir;
+    Vector ddd = tsw*dfuncl*distance;
     ader[0] = tvals.getDerivative( vout, 3*myvals.getTaskIndex()+0 );
     ader[1] = tvals.getDerivative( vout, 3*myvals.getTaskIndex()+1 );
     ader[2] = tvals.getDerivative( vout, 3*myvals.getTaskIndex()+2 );
@@ -251,7 +297,8 @@ double TopologyMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, 
       ader[2] = tvals.getDerivative( vout, 3*tindex+2 );
       addThirdAtomDerivatives( i, sw*df*max*ader, myvals );
     }
-    unsigned nbase = 3*getNumberOfAtoms(); Tensor vird(ddd,distance);
+    unsigned nbase = 3*getNumberOfAtoms();
+    Tensor vird(ddd,distance);
     vir(0,0) = sw*df*max*tvals.getDerivative( vout, nbase+0 ) - vird(0,0);
     vir(0,1) = sw*df*max*tvals.getDerivative( vout, nbase+1 ) - vird(0,1);
     vir(0,2) = sw*df*max*tvals.getDerivative( vout, nbase+2 ) - vird(0,2);
