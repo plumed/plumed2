@@ -27,65 +27,93 @@ namespace PLMD {
 
 SingleDomainRMSD::SingleDomainRMSD( const ReferenceConfigurationOptions& ro ):
   ReferenceConfiguration(ro),
-  ReferenceAtoms(ro)
-{
+  ReferenceAtoms(ro) {
 }
 
 void SingleDomainRMSD::readReference( const PDB& pdb ) {
   readAtomsFromPDB( pdb );
   double wa=0, wd=0;
-  for(unsigned i=0; i<pdb.size(); ++i) { wa+=align[i]; wd+=displace[i]; }
+  for(unsigned i=0; i<pdb.size(); ++i) {
+    wa+=align[i];
+    wd+=displace[i];
+  }
 
   if(wa>epsilon) {
     double w=1.0/wa;
-    for(unsigned i=0; i<pdb.size(); ++i) align[i] *= w;
+    for(unsigned i=0; i<pdb.size(); ++i) {
+      align[i] *= w;
+    }
   } else {
     double w=1.0/pdb.size();
-    for(unsigned i=0; i<pdb.size(); ++i) align[i] = w;
+    for(unsigned i=0; i<pdb.size(); ++i) {
+      align[i] = w;
+    }
   }
 
   if(wd>epsilon) {
     double w=1.0/wd;
-    for(unsigned i=0; i<pdb.size(); ++i) displace[i] *= w;
+    for(unsigned i=0; i<pdb.size(); ++i) {
+      displace[i] *= w;
+    }
   } else {
     double w=1.0/pdb.size();
-    for(unsigned i=0; i<pdb.size(); ++i) displace[i] = w;
+    for(unsigned i=0; i<pdb.size(); ++i) {
+      displace[i] = w;
+    }
   }
 
   Vector center;
   for(unsigned i=0; i<pdb.size(); ++i) {
     center+=reference_atoms[i]*align[i];
   }
-  for(unsigned i=0; i<pdb.size(); ++i) reference_atoms[i]-=center;
+  for(unsigned i=0; i<pdb.size(); ++i) {
+    reference_atoms[i]-=center;
+  }
 }
 
 void SingleDomainRMSD::setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in ) {
-  reference_atoms.resize( conf.size() ); align.resize( conf.size() );
-  displace.resize( conf.size() ); atom_der_index.resize( conf.size() );
+  reference_atoms.resize( conf.size() );
+  align.resize( conf.size() );
+  displace.resize( conf.size() );
+  atom_der_index.resize( conf.size() );
   double wa=0, wd=0;
-  for(unsigned i=0; i<conf.size(); ++i) { wa+=align_in[i]; wd+=displace_in[i]; }
+  for(unsigned i=0; i<conf.size(); ++i) {
+    wa+=align_in[i];
+    wd+=displace_in[i];
+  }
 
   if(wa>epsilon) {
     double w=1.0/wa;
-    for(unsigned i=0; i<conf.size(); ++i) align[i] = align_in[i] * w;
+    for(unsigned i=0; i<conf.size(); ++i) {
+      align[i] = align_in[i] * w;
+    }
   } else {
     double w=1.0/conf.size();
-    for(unsigned i=0; i<conf.size(); ++i) align[i] = w;
+    for(unsigned i=0; i<conf.size(); ++i) {
+      align[i] = w;
+    }
   }
 
   if(wd>epsilon) {
     double w=1.0/wd;
-    for(unsigned i=0; i<conf.size(); ++i) displace[i] = displace_in[i] * w;
+    for(unsigned i=0; i<conf.size(); ++i) {
+      displace[i] = displace_in[i] * w;
+    }
   } else {
     double w=1.0/conf.size();
-    for(unsigned i=0; i<conf.size(); ++i) displace[i] = w;
+    for(unsigned i=0; i<conf.size(); ++i) {
+      displace[i] = w;
+    }
   }
 
   Vector center;
   for(unsigned i=0; i<conf.size(); ++i) {
-    center+=conf[i]*align[i]; atom_der_index[i]=i;
+    center+=conf[i]*align[i];
+    atom_der_index[i]=i;
   }
-  for(unsigned i=0; i<conf.size(); ++i) reference_atoms[i]=conf[i]-center;
+  for(unsigned i=0; i<conf.size(); ++i) {
+    reference_atoms[i]=conf[i]-center;
+  }
   setupRMSDObject();
 }
 

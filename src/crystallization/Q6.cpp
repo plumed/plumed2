@@ -193,8 +193,7 @@ void Q6::registerKeywords( Keywords& keys ) {
 
 Q6::Q6(const ActionOptions& ao ):
   Action(ao),
-  Steinhardt(ao)
-{
+  Steinhardt(ao) {
   setAngularMomentum(6);
 
   normaliz.resize( 7 );
@@ -207,9 +206,12 @@ Q6::Q6(const ActionOptions& ao ):
   normaliz[6] = sqrt( (13.0*1) / (4.0*pi*479001600) );
 
   coeff_poly.resize( 7 );
-  coeff_poly[0]=-0.3125; coeff_poly[1]=0.0;
-  coeff_poly[2]=6.5625; coeff_poly[3]=0.0;
-  coeff_poly[4]=-19.6875; coeff_poly[5]=0.0;
+  coeff_poly[0]=-0.3125;
+  coeff_poly[1]=0.0;
+  coeff_poly[2]=6.5625;
+  coeff_poly[3]=0.0;
+  coeff_poly[4]=-19.6875;
+  coeff_poly[5]=0.0;
   coeff_poly[6]=14.4375;
 }
 

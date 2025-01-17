@@ -26,19 +26,21 @@ namespace PLMD {
 namespace vesselbase {
 
 void ShortcutVessel::registerKeywords( Keywords& keys ) {
-  Vessel::registerKeywords( keys ); keys.remove("LABEL");
+  Vessel::registerKeywords( keys );
+  keys.remove("LABEL");
   plumed_assert( keys.size()==0 );
 }
 
 ShortcutVessel::ShortcutVessel( const VesselOptions& da):
-  Vessel(da)
-{
+  Vessel(da) {
 }
 
 void ShortcutVessel::addVessel( const std::string& name, const std::string& input ) {
   unsigned numlab=1;
   for(unsigned i=0; i<(getAction()->functions).size(); ++i) {
-    if( (getAction()->functions[i])->getName()==name ) numlab++;
+    if( (getAction()->functions[i])->getName()==name ) {
+      numlab++;
+    }
   }
   getAction()->addVessel( name, input, numlab );
 }

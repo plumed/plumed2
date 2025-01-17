@@ -129,8 +129,7 @@ DUMPATOMS ATOMS=hy FILE=hy.gro
 //+ENDPLUMEDOC
 
 class Group:
-  public ActionAtomistic
-{
+  public ActionAtomistic {
 
 public:
   explicit Group(const ActionOptions&ao);
@@ -144,19 +143,25 @@ PLUMED_REGISTER_ACTION(Group,"GROUP")
 
 Group::Group(const ActionOptions&ao):
   Action(ao),
-  ActionAtomistic(ao)
-{
+  ActionAtomistic(ao) {
   std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   std::string ndxfile,ndxgroup;
   parse("NDX_FILE",ndxfile);
   parse("NDX_GROUP",ndxgroup);
-  if(ndxfile.length()>0 && atoms.size()>0) error("either use explicit atom list or import from index file");
-  if(ndxfile.length()==0 && ndxgroup.size()>0) error("NDX_GROUP can be only used is NDX_FILE is also used");
+  if(ndxfile.length()>0 && atoms.size()>0) {
+    error("either use explicit atom list or import from index file");
+  }
+  if(ndxfile.length()==0 && ndxgroup.size()>0) {
+    error("NDX_GROUP can be only used is NDX_FILE is also used");
+  }
 
   if(ndxfile.length()>0) {
-    if(ndxgroup.size()>0) log<<"  importing group '"+ndxgroup+"'";
-    else                  log<<"  importing first group";
+    if(ndxgroup.size()>0) {
+      log<<"  importing group '"+ndxgroup+"'";
+    } else {
+      log<<"  importing first group";
+    }
     log<<" from index file "<<ndxfile<<"\n";
 
     IFile ifile;
@@ -168,17 +173,24 @@ Group::Group(const ActionOptions&ao):
     while(ifile.getline(line)) {
       std::vector<std::string> words=Tools::getWords(line);
       if(words.size()>=3 && words[0]=="[" && words[2]=="]") {
-        if(groupname.length()>0) firstgroup=false;
+        if(groupname.length()>0) {
+          firstgroup=false;
+        }
         groupname=words[1];
-        if(groupname==ndxgroup || ndxgroup.length()==0) groupfound=true;
+        if(groupname==ndxgroup || ndxgroup.length()==0) {
+          groupfound=true;
+        }
       } else if(groupname==ndxgroup || (firstgroup && ndxgroup.length()==0)) {
         for(unsigned i=0; i<words.size(); i++) {
-          AtomNumber at; Tools::convert(words[i],at);
+          AtomNumber at;
+          Tools::convert(words[i],at);
           atoms.push_back(at);
         }
       }
     }
-    if(!groupfound) error("group has not been found in index file");
+    if(!groupfound) {
+      error("group has not been found in index file");
+    }
   }
 
   std::vector<AtomNumber> remove;
@@ -190,16 +202,22 @@ Group::Group(const ActionOptions&ao):
     for(unsigned i=0; i<remove.size(); i++) {
       const auto it = find(atoms.begin(),atoms.end(),remove[i]);
       if(it!=atoms.end()) {
-        if(k%25==0) log<<"\n";
+        if(k%25==0) {
+          log<<"\n";
+        }
         log<<" "<<(*it).serial();
         k++;
         atoms.erase(it);
-      } else notfound.push_back(remove[i]);
+      } else {
+        notfound.push_back(remove[i]);
+      }
     }
     log<<"\n";
     if(notfound.size()>0) {
       log<<"  the following atoms were not found:";
-      for(unsigned i=0; i<notfound.size(); i++) log<<" "<<notfound[i].serial();
+      for(unsigned i=0; i<notfound.size(); i++) {
+        log<<" "<<notfound[i].serial();
+      }
       log<<"\n";
     }
   }
@@ -220,7 +238,9 @@ Group::Group(const ActionOptions&ao):
   this->atoms.insertGroup(getLabel(),atoms);
   log.printf("  list of atoms:");
   for(unsigned i=0; i<atoms.size(); i++) {
-    if(i%25==0) log<<"\n";
+    if(i%25==0) {
+      log<<"\n";
+    }
     log<<" "<<atoms[i].serial();
   }
   log.printf("\n");

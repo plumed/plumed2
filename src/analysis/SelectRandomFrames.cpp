@@ -53,13 +53,13 @@ void SelectRandomFrames::registerKeywords( Keywords& keys ) {
 
 SelectRandomFrames::SelectRandomFrames( const ActionOptions& ao ):
   Action(ao),
-  LandmarkSelectionBase(ao)
-{
+  LandmarkSelectionBase(ao) {
   parse("SEED",seed);
 }
 
 void SelectRandomFrames::selectLandmarks() {
-  Random r; r.setSeed(-seed);
+  Random r;
+  r.setSeed(-seed);
   unsigned nframe=my_input_data->getNumberOfDataPoints();
   unsigned nland=getNumberOfDataPoints();
 

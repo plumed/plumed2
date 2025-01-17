@@ -145,8 +145,7 @@ Optimizer::Optimizer(const ActionOptions& ao)
     sampling_r_(0.0),
     serial_(false),
     validate_list_(true),
-    first_time_(true)
-{
+    first_time_(true) {
   parseFlag("SERIAL", serial_);
 
   if (keywords.exists("LOSS")) {
@@ -236,8 +235,7 @@ Optimizer::Optimizer(const ActionOptions& ao)
                          nl_cutoff_,
                          nl_stride_
                        );
-    }
-    else {
+    } else {
       neighbor_list_=Tools::make_unique<NeighborList>(
                        ga_list,
                        gb_list,
@@ -248,8 +246,7 @@ Optimizer::Optimizer(const ActionOptions& ao)
                        comm
                      );
     }
-  }
-  else {
+  } else {
     if (do_neigh) {
       neighbor_list_ = Tools::make_unique<NeighborList>(
                          ga_list,
@@ -260,8 +257,7 @@ Optimizer::Optimizer(const ActionOptions& ao)
                          nl_cutoff_,
                          nl_stride_
                        );
-    }
-    else {
+    } else {
       neighbor_list_=Tools::make_unique<NeighborList>(
                        ga_list,
                        serial_,
@@ -296,8 +292,7 @@ Optimizer::Optimizer(const ActionOptions& ao)
 
   if (pbc_) {
     log.printf("maze> Using periodic boundary conditions.\n");
-  }
-  else {
+  } else {
     log.printf("maze> Without periodic boundary conditions.\n");
   }
 
@@ -395,8 +390,7 @@ void Optimizer::prepare() {
 
       validate_list_ = true;
       first_time_ = false;
-    }
-    else {
+    } else {
       requestAtoms(neighbor_list_->getReducedAtomList());
 
       validate_list_ = false;
@@ -432,8 +426,7 @@ double Optimizer::score() {
 
       if (pbc_) {
         distance = pbcDistance(getPosition(i0), getPosition(i1));
-      }
-      else {
+      } else {
         distance = delta(getPosition(i0), getPosition(i1));
       }
 
@@ -450,8 +443,7 @@ void Optimizer::update_nl() {
   }
 }
 
-double Optimizer::sampling_radius()
-{
+double Optimizer::sampling_radius() {
   const unsigned nl_size=neighbor_list_->size();
   Vector d;
   double min=std::numeric_limits<int>::max();
@@ -466,8 +458,7 @@ double Optimizer::sampling_radius()
 
     if (pbc_) {
       d = pbcDistance(getPosition(i0), getPosition(i1));
-    }
-    else {
+    } else {
       d = delta(getPosition(i0), getPosition(i1));
     }
 
@@ -493,8 +484,7 @@ void Optimizer::calculate() {
 
     value_action_->set(score());
     value_sampling_radius_->set(sampling_radius());
-  }
-  else {
+  } else {
     first_step_=false;
 
     value_x_->set(opt_[0]);

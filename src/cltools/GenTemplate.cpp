@@ -49,8 +49,7 @@ plumed gentemplate --action DISTANCE
 //+ENDPLUMEDOC
 
 class GenTemplate:
-  public CLTool
-{
+  public CLTool {
 public:
   static void registerKeywords( Keywords& keys );
   explicit GenTemplate(const CLToolOptions& co );
@@ -70,8 +69,7 @@ void GenTemplate::registerKeywords( Keywords& keys ) {
 }
 
 GenTemplate::GenTemplate(const CLToolOptions& co ):
-  CLTool(co)
-{
+  CLTool(co) {
   inputdata=commandline;
 }
 
@@ -91,7 +89,9 @@ int GenTemplate::main(FILE* in, FILE*out,Communicator& pc) {
       error("there is no registered action named " + action);
       return 1;
     }
-  } else return 1;
+  } else {
+    return 1;
+  }
 
 
 

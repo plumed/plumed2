@@ -39,15 +39,22 @@ PLUMED_REGISTER_METRIC(IntramolecularDRMSD,"INTRA-DRMSD")
 IntramolecularDRMSD::IntramolecularDRMSD( const ReferenceConfigurationOptions& ro ):
   ReferenceConfiguration( ro ),
   DRMSD( ro ),
-  nblocks(0)
-{
+  nblocks(0) {
 }
 
 void IntramolecularDRMSD::read( const PDB& pdb ) {
-  readAtomsFromPDB( pdb, true ); nblocks = pdb.getNumberOfAtomBlocks(); blocks.resize( nblocks+1 );
-  if( nblocks==1 ) error("Trying to compute intramolecular rmsd but found no TERs in input PDB");
-  blocks[0]=0; for(unsigned i=0; i<nblocks; ++i) blocks[i+1]=pdb.getAtomBlockEnds()[i];
-  readBounds( pdb ); setup_targets();
+  readAtomsFromPDB( pdb, true );
+  nblocks = pdb.getNumberOfAtomBlocks();
+  blocks.resize( nblocks+1 );
+  if( nblocks==1 ) {
+    error("Trying to compute intramolecular rmsd but found no TERs in input PDB");
+  }
+  blocks[0]=0;
+  for(unsigned i=0; i<nblocks; ++i) {
+    blocks[i+1]=pdb.getAtomBlockEnds()[i];
+  }
+  readBounds( pdb );
+  setup_targets();
 }
 
 void IntramolecularDRMSD::setup_targets() {
@@ -57,7 +64,9 @@ void IntramolecularDRMSD::setup_targets() {
     for(unsigned iatom=blocks[i]+1; iatom<blocks[i+1]; ++iatom) {
       for(unsigned jatom=blocks[i]; jatom<iatom; ++jatom) {
         double distance = delta( getReferencePosition(iatom), getReferencePosition(jatom) ).modulo();
-        if(distance < upper && distance > lower ) targets[std::make_pair(iatom,jatom)] = distance;
+        if(distance < upper && distance > lower ) {
+          targets[std::make_pair(iatom,jatom)] = distance;
+        }
       }
     }
   }

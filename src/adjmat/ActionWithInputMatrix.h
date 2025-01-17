@@ -57,12 +57,16 @@ public:
   unsigned getNumberOfDerivatives() override;
 ///  Get the number of rows/cols in the adjacency matrix vessel
   virtual unsigned getNumberOfNodes() const;
-  bool isPeriodic() override { return false; }
+  bool isPeriodic() override {
+    return false;
+  }
   unsigned getNumberOfQuantities() const override;
 ///
   AtomNumber getAbsoluteIndexOfCentralAtom(const unsigned& i) const override;
 /// No loop over tasks for ActionWithInputMatrix
-  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const override { plumed_error(); }
+  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const override {
+    plumed_error();
+  }
 ///
   Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const override;
 };

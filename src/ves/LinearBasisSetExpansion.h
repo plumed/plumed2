@@ -102,20 +102,42 @@ private:
 public:
   ~LinearBasisSetExpansion();
   //
-  std::vector<Value*> getPntrsToArguments() const {return args_pntrs_;}
-  std::vector<BasisFunctions*> getPntrsToBasisFunctions() const {return basisf_pntrs_;}
-  CoeffsVector* getPntrToBiasCoeffs() const {return bias_coeffs_pntr_;}
-  Grid* getPntrToBiasGrid() const {return bias_grid_pntr_.get();};
+  std::vector<Value*> getPntrsToArguments() const {
+    return args_pntrs_;
+  }
+  std::vector<BasisFunctions*> getPntrsToBasisFunctions() const {
+    return basisf_pntrs_;
+  }
+  CoeffsVector* getPntrToBiasCoeffs() const {
+    return bias_coeffs_pntr_;
+  }
+  Grid* getPntrToBiasGrid() const {
+    return bias_grid_pntr_.get();
+  };
   //
-  unsigned int getNumberOfArguments() const {return nargs_;};
-  std::vector<unsigned int> getNumberOfBasisFunctions() const {return nbasisf_;};
-  size_t getNumberOfCoeffs() const {return ncoeffs_;};
+  unsigned int getNumberOfArguments() const {
+    return nargs_;
+  };
+  std::vector<unsigned int> getNumberOfBasisFunctions() const {
+    return nbasisf_;
+  };
+  size_t getNumberOfCoeffs() const {
+    return ncoeffs_;
+  };
   //
-  CoeffsVector& BiasCoeffs() const {return *bias_coeffs_pntr_;};
-  CoeffsVector& TargetDistAverages() const {return *targetdist_averages_pntr_;};
+  CoeffsVector& BiasCoeffs() const {
+    return *bias_coeffs_pntr_;
+  };
+  CoeffsVector& TargetDistAverages() const {
+    return *targetdist_averages_pntr_;
+  };
   //
-  void setSerial() {serial_=true;}
-  void setParallel() {serial_=false;}
+  void setSerial() {
+    serial_=true;
+  }
+  void setParallel() {
+    serial_=false;
+  }
   //
   void linkVesBias(VesBias*);
   void linkAction(Action*);
@@ -134,15 +156,27 @@ public:
   // Bias grid and output stuff
   void setupBiasGrid(const bool usederiv=false);
   void updateBiasGrid();
-  void resetStepOfLastBiasGridUpdate() {step_of_last_biasgrid_update = -1000;}
-  void setStepOfLastBiasGridUpdate(long long int step) {step_of_last_biasgrid_update = step;}
-  long long int getStepOfLastBiasGridUpdate() const {return step_of_last_biasgrid_update;}
+  void resetStepOfLastBiasGridUpdate() {
+    step_of_last_biasgrid_update = -1000;
+  }
+  void setStepOfLastBiasGridUpdate(long long int step) {
+    step_of_last_biasgrid_update = step;
+  }
+  long long int getStepOfLastBiasGridUpdate() const {
+    return step_of_last_biasgrid_update;
+  }
   void writeBiasGridToFile(OFile&, const bool append=false) const;
   //
   void updateBiasWithoutCutoffGrid();
-  void resetStepOfLastBiasWithoutCutoffGridUpdate() {step_of_last_biaswithoutcutoffgrid_update = -1000;}
-  void setStepOfLastBiasWithoutCutoffGridUpdate(long long int step) {step_of_last_biaswithoutcutoffgrid_update = step;}
-  long long int getStepOfLastBiasWithoutCutoffGridUpdate() const {return step_of_last_biaswithoutcutoffgrid_update;}
+  void resetStepOfLastBiasWithoutCutoffGridUpdate() {
+    step_of_last_biaswithoutcutoffgrid_update = -1000;
+  }
+  void setStepOfLastBiasWithoutCutoffGridUpdate(long long int step) {
+    step_of_last_biaswithoutcutoffgrid_update = step;
+  }
+  long long int getStepOfLastBiasWithoutCutoffGridUpdate() const {
+    return step_of_last_biaswithoutcutoffgrid_update;
+  }
   void writeBiasWithoutCutoffGridToFile(OFile&, const bool append=false) const;
   //
   void setBiasMinimumToZero();
@@ -150,9 +184,15 @@ public:
   //
   void setupFesGrid();
   void updateFesGrid();
-  void resetStepOfLastFesGridUpdate() {step_of_last_fesgrid_update = -1000;}
-  void setStepOfLastFesGridUpdate(long long int step) {step_of_last_fesgrid_update = step;}
-  long long int getStepOfLastFesGridUpdate() const {return step_of_last_fesgrid_update;}
+  void resetStepOfLastFesGridUpdate() {
+    step_of_last_fesgrid_update = -1000;
+  }
+  void setStepOfLastFesGridUpdate(long long int step) {
+    step_of_last_fesgrid_update = step;
+  }
+  long long int getStepOfLastFesGridUpdate() const {
+    return step_of_last_fesgrid_update;
+  }
   void writeFesGridToFile(OFile&, const bool append=false) const;
   //
   void setupFesProjGrid();
@@ -163,14 +203,24 @@ public:
   void writeTargetDistProjGridToFile(const std::vector<std::string>&, OFile&, const bool append=false) const;
   void writeTargetDistributionToFile(const std::string&) const;
   //
-  std::vector<unsigned int> getGridBins() const {return grid_bins_;}
+  std::vector<unsigned int> getGridBins() const {
+    return grid_bins_;
+  }
   void setGridBins(const std::vector<unsigned int>&);
   void setGridBins(const unsigned int);
   //
-  double getBeta() const {return beta_;}
-  double getKbT() const {return kbt_;}
-  double beta() const {return beta_;}
-  double kBT() const {return kbt_;}
+  double getBeta() const {
+    return beta_;
+  }
+  double getKbT() const {
+    return kbt_;
+  }
+  double beta() const {
+    return beta_;
+  }
+  double kBT() const {
+    return kbt_;
+  }
   //
   void setupUniformTargetDistribution();
   void setupTargetDistribution(TargetDistribution*);
@@ -212,8 +262,7 @@ double LinearBasisSetExpansion::getBias(const std::vector<double>& args_values, 
   std::vector<double> coeffsderivs_values_dummy(ncoeffs_);
   if(parallel) {
     return getBiasAndForces(args_values,all_inside,forces_dummy,coeffsderivs_values_dummy,basisf_pntrs_, bias_coeffs_pntr_, &mycomm_);
-  }
-  else {
+  } else {
     return getBiasAndForces(args_values,all_inside,forces_dummy,coeffsderivs_values_dummy,basisf_pntrs_, bias_coeffs_pntr_, NULL);
   }
 }
@@ -223,8 +272,7 @@ inline
 void LinearBasisSetExpansion::getBasisSetValues(const std::vector<double>& args_values, std::vector<double>& basisset_values, const bool parallel) {
   if(parallel) {
     getBasisSetValues(args_values,basisset_values,basisf_pntrs_, bias_coeffs_pntr_, &mycomm_);
-  }
-  else {
+  } else {
     getBasisSetValues(args_values,basisset_values,basisf_pntrs_, bias_coeffs_pntr_, NULL);
   }
 }

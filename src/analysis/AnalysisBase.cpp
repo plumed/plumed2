@@ -28,10 +28,16 @@ namespace PLMD {
 namespace analysis {
 
 void AnalysisBase::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys ); ActionPilot::registerKeywords( keys );
-  ActionWithValue::registerKeywords( keys ); ActionAtomistic::registerKeywords( keys );
-  ActionWithArguments::registerKeywords( keys ); keys.remove("NUMERICAL_DERIVATIVES");
-  ActionWithVessel::registerKeywords( keys ); keys.remove("TOL"); keys.reset_style("TIMINGS","hidden"); keys.isAnalysis();
+  Action::registerKeywords( keys );
+  ActionPilot::registerKeywords( keys );
+  ActionWithValue::registerKeywords( keys );
+  ActionAtomistic::registerKeywords( keys );
+  ActionWithArguments::registerKeywords( keys );
+  keys.remove("NUMERICAL_DERIVATIVES");
+  ActionWithVessel::registerKeywords( keys );
+  keys.remove("TOL");
+  keys.reset_style("TIMINGS","hidden");
+  keys.isAnalysis();
   keys.add("atoms-2","USE_OUTPUT_DATA_FROM","use the output of the analysis performed by this object as input to your new analysis object");
 }
 
@@ -42,16 +48,20 @@ AnalysisBase::AnalysisBase(const ActionOptions&ao):
   ActionAtomistic(ao),
   ActionWithArguments(ao),
   ActionWithVessel(ao),
-  my_input_data(NULL)
-{
+  my_input_data(NULL) {
   // We have an if statement here so that this doesn't break with READ_DISSIMILARITIES
   if( keywords.exists("USE_OUTPUT_DATA_FROM") ) {
-    std::string datastr; parse("USE_OUTPUT_DATA_FROM",datastr);
-    if( keywords.style("USE_OUTPUT_DATA_FROM","atoms") && datastr.length()==0 ) error("input analysis action was not specified use USE_OUTPUT_DATA_FROM");
+    std::string datastr;
+    parse("USE_OUTPUT_DATA_FROM",datastr);
+    if( keywords.style("USE_OUTPUT_DATA_FROM","atoms") && datastr.length()==0 ) {
+      error("input analysis action was not specified use USE_OUTPUT_DATA_FROM");
+    }
     if( datastr.length()>0 ) {
       my_input_data=plumed.getActionSet().selectWithLabel<AnalysisBase*>( datastr );
       log.printf("  performing analysis on output from %s \n",datastr.c_str() );
-      if( !my_input_data ) error("could not find analysis action named " + datastr );
+      if( !my_input_data ) {
+        error("could not find analysis action named " + datastr );
+      }
       addDependency( my_input_data );
     }
   }
@@ -68,13 +78,17 @@ std::vector<std::string> AnalysisBase::getArgumentNames() {
 }
 
 void AnalysisBase::update() {
-  if( getStep()==0 || ( getStride()>0 && !onStep() ) ) return;
+  if( getStep()==0 || ( getStride()>0 && !onStep() ) ) {
+    return;
+  }
   // And do the analysis
   performAnalysis();
 }
 
 void AnalysisBase::runFinalJobs() {
-  if( getStride()>0 ) return;
+  if( getStride()>0 ) {
+    return;
+  }
   performAnalysis();
 }
 

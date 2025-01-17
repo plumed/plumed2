@@ -38,20 +38,17 @@
 #define __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE_PLMD_EXCEPTIONS 1
 #include "../wrapper/Plumed.h"
 
-namespace PLMD
-{
+namespace PLMD {
 
 
 PlumedHandle::PlumedHandle():
-  local(Tools::make_unique<PlumedMain>())
-{
+  local(Tools::make_unique<PlumedMain>()) {
 }
 
 PlumedHandle::PlumedHandle(const char* kernel)
 #ifdef __PLUMED_HAS_DLOPEN
   :
-  loaded(plumed_c2v(plumed_create_dlopen(kernel)))
-{
+  loaded(plumed_c2v(plumed_create_dlopen(kernel))) {
   if(!plumed_valid(plumed_v2c(loaded))) {
     // this is necessary to make sure loaded is properly destroyed
     plumed_finalize(plumed_v2c(loaded));
@@ -65,7 +62,9 @@ PlumedHandle::PlumedHandle(const char* kernel)
 #endif
 
 PlumedHandle::~PlumedHandle() {
-  if(loaded) plumed_finalize(plumed_v2c(loaded));
+  if(loaded) {
+    plumed_finalize(plumed_v2c(loaded));
+  }
 }
 
 PlumedHandle PlumedHandle::dlopen(const char* path) {
@@ -83,19 +82,22 @@ void PlumedHandle::cmd(const std::string & key,const TypesafePtr & ptr) {
     safe.flags=ptr.getFlags();
     safe.opt=nullptr;
     plumed_cmd(plumed_v2c(loaded),key.c_str(),safe);
-  } else plumed_error() << "should never arrive here (either one or the other should work)";
+  } else {
+    plumed_error() << "should never arrive here (either one or the other should work)";
+  }
 }
 
 PlumedHandle::PlumedHandle(PlumedHandle && other) noexcept:
   local(std::move(other.local)),
-  loaded(other.loaded)
-{
+  loaded(other.loaded) {
   other.loaded=nullptr;
 }
 
 PlumedHandle & PlumedHandle::operator=(PlumedHandle && other) noexcept {
   if(this!=&other) {
-    if(loaded) plumed_finalize(plumed_v2c(loaded));
+    if(loaded) {
+      plumed_finalize(plumed_v2c(loaded));
+    }
     local=std::move(other.local);
     loaded=other.loaded;
     other.loaded=nullptr;

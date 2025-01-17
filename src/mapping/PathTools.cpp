@@ -102,8 +102,7 @@ plumed pathtools --path inpath.pdb --metric EUCLIDEAN --out outpath.pdb --fixed 
 //+ENDPLUMEDOC
 
 class PathTools :
-  public CLTool
-{
+  public CLTool {
 public:
   static void registerKeywords( Keywords& keys );
   explicit PathTools(const CLToolOptions& co );
@@ -131,23 +130,31 @@ void PathTools::registerKeywords( Keywords& keys ) {
 }
 
 PathTools::PathTools(const CLToolOptions& co ):
-  CLTool(co)
-{
+  CLTool(co) {
   inputdata=commandline;
 }
 
 int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
-  std::string mtype; parse("--metric",mtype);
-  std::string ifilename; parse("--path",ifilename);
-  std::string ofmt; parse("--arg-fmt",ofmt);
-  std::string ofilename; parse("--out",ofilename);
+  std::string mtype;
+  parse("--metric",mtype);
+  std::string ifilename;
+  parse("--path",ifilename);
+  std::string ofmt;
+  parse("--arg-fmt",ofmt);
+  std::string ofilename;
+  parse("--out",ofilename);
   if( ifilename.length()>0 ) {
     std::fprintf(out,"Reparameterising path in file named %s so that all frames are equally spaced \n",ifilename.c_str() );
     FILE* fp=std::fopen(ifilename.c_str(),"r");
 // call fclose when fp goes out of scope
-    auto deleter=[](FILE* f) { if(f) std::fclose(f); };
+    auto deleter=[](FILE* f) {
+      if(f) {
+        std::fclose(f);
+      }
+    };
     std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
-    bool do_read=true; std::vector<std::unique_ptr<ReferenceConfiguration>> frames;
+    bool do_read=true;
+    std::vector<std::unique_ptr<ReferenceConfiguration>> frames;
     while (do_read) {
       PDB mypdb;
       // Read the pdb file
@@ -157,10 +164,15 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
         frames.emplace_back( std::move(mymsd) );
       }
     }
-    std::vector<unsigned> fixed; parseVector("--fixed",fixed);
+    std::vector<unsigned> fixed;
+    parseVector("--fixed",fixed);
     if( fixed.size()==1 ) {
-      if( fixed[0]!=0 ) error("input to --fixed should be two integers");
-      fixed.resize(2); fixed[0]=0; fixed[1]=frames.size()-1;
+      if( fixed[0]!=0 ) {
+        error("input to --fixed should be two integers");
+      }
+      fixed.resize(2);
+      fixed[0]=0;
+      fixed[1]=frames.size()-1;
     } else if( fixed.size()==2 ) {
       if( fixed[0]>(frames.size()-1) || fixed[1]>(frames.size()-1) ) {
         error("input to --fixed should be two numbers between 0 and the number of frames-1");
@@ -168,15 +180,18 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
     } else {
       error("input to --fixed should be two integers");
     }
-    std::vector<AtomNumber> atoms; std::vector<std::string> arg_names;
+    std::vector<AtomNumber> atoms;
+    std::vector<std::string> arg_names;
     for(unsigned i=0; i<frames.size(); ++i) {
       frames[i]->getAtomRequests( atoms);
       frames[i]->getArgumentRequests( arg_names );
     }
     // Generate stuff to reparameterize
-    Pbc fake_pbc; std::vector<std::unique_ptr<Value>> vals;
+    Pbc fake_pbc;
+    std::vector<std::unique_ptr<Value>> vals;
     for(unsigned i=0; i<frames[0]->getNumberOfReferenceArguments(); ++i) {
-      vals.emplace_back(Tools::make_unique<Value>()); vals[vals.size()-1]->setNotPeriodic();
+      vals.emplace_back(Tools::make_unique<Value>());
+      vals[vals.size()-1]->setNotPeriodic();
     }
 
     // temporary pointes used to make the conversion once
@@ -185,7 +200,9 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
     // And reparameterize
     PathReparameterization myparam( fake_pbc, vals_ptr, frames );
     // And make all points equally spaced
-    double tol; parse("--tolerance",tol); myparam.reparameterize( fixed[0], fixed[1], tol );
+    double tol;
+    parse("--tolerance",tol);
+    myparam.reparameterize( fixed[0], fixed[1], tol );
 
     // Output data on spacings
     double mean=0;
@@ -199,13 +216,20 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
     printf("SUGGESTED LAMBDA PARAMETER IS THUS %f \n",2.3/(mean/static_cast<double>( frames.size()-1 )) );
 
     // Delete all the frames
-    OFile ofile; ofile.open(ofilename);
-    std::vector<std::string> argnames; frames[0]->getArgumentRequests( argnames );
-    std::vector<AtomNumber> atindices; frames[0]->getAtomRequests( atindices );
-    PDB mypdb; mypdb.setAtomNumbers( atindices ); mypdb.setArgumentNames( argnames );
+    OFile ofile;
+    ofile.open(ofilename);
+    std::vector<std::string> argnames;
+    frames[0]->getArgumentRequests( argnames );
+    std::vector<AtomNumber> atindices;
+    frames[0]->getAtomRequests( atindices );
+    PDB mypdb;
+    mypdb.setAtomNumbers( atindices );
+    mypdb.setArgumentNames( argnames );
     for(unsigned i=0; i<frames.size(); ++i) {
       mypdb.setAtomPositions( frames[i]->getReferencePositions() );
-      for(unsigned j=0; j<argnames.size(); ++j) mypdb.setArgumentValue( argnames[j], frames[i]->getReferenceArguments()[j] );
+      for(unsigned j=0; j<argnames.size(); ++j) {
+        mypdb.setArgumentValue( argnames[j], frames[i]->getReferenceArguments()[j] );
+      }
       ofile.printf("REMARK TYPE=%s\n",mtype.c_str() );
       mypdb.print( 10, NULL, ofile, ofmt );
     }
@@ -216,39 +240,58 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   }
 
 // Read initial frame
-  std::string istart; parse("--start",istart);
+  std::string istart;
+  parse("--start",istart);
   PDB mystartpdb;
   {
     FILE* fp2=std::fopen(istart.c_str(),"r");
 // call fclose when fp goes out of scope
-    auto deleter=[](FILE* f) { std::fclose(f); };
+    auto deleter=[](FILE* f) {
+      std::fclose(f);
+    };
     std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp2,deleter);
-    if( istart.length()==0 ) error("input is missing use --istart + --iend or --path");
-    if( !mystartpdb.readFromFilepointer(fp2,false,0.1) ) error("could not read fila " + istart);
+    if( istart.length()==0 ) {
+      error("input is missing use --istart + --iend or --path");
+    }
+    if( !mystartpdb.readFromFilepointer(fp2,false,0.1) ) {
+      error("could not read fila " + istart);
+    }
   }
   auto sframe=metricRegister().create<ReferenceConfiguration>( mtype, mystartpdb );
 
 // Read final frame
-  std::string iend; parse("--end",iend);
+  std::string iend;
+  parse("--end",iend);
   PDB myendpdb;
   {
     FILE* fp1=std::fopen(iend.c_str(),"r");
 // call fclose when fp goes out of scope
-    auto deleter=[](FILE* f) { std::fclose(f); };
+    auto deleter=[](FILE* f) {
+      std::fclose(f);
+    };
     std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp1,deleter);
-    if( iend.length()==0 ) error("input is missing using --istart + --iend or --path");
-    if( !myendpdb.readFromFilepointer(fp1,false,0.1) ) error("could not read fila " + iend);
+    if( iend.length()==0 ) {
+      error("input is missing using --istart + --iend or --path");
+    }
+    if( !myendpdb.readFromFilepointer(fp1,false,0.1) ) {
+      error("could not read fila " + iend);
+    }
   }
   auto eframe=metricRegister().create<ReferenceConfiguration>( mtype, myendpdb );
 
 // Get atoms and arg requests
-  std::vector<AtomNumber> atoms; std::vector<std::string> arg_names;
-  sframe->getAtomRequests( atoms); eframe->getAtomRequests( atoms);
-  sframe->getArgumentRequests( arg_names ); eframe->getArgumentRequests( arg_names );
+  std::vector<AtomNumber> atoms;
+  std::vector<std::string> arg_names;
+  sframe->getAtomRequests( atoms);
+  eframe->getAtomRequests( atoms);
+  sframe->getArgumentRequests( arg_names );
+  eframe->getArgumentRequests( arg_names );
 
 // Now read in the rest of the instructions
   unsigned nbefore, nbetween, nafter;
-  parse("--nframes-before-start",nbefore); parse("--nframes",nbetween); parse("--nframes-after-end",nafter);
+  parse("--nframes-before-start",nbefore);
+  parse("--nframes",nbetween);
+  parse("--nframes-after-end",nafter);
   nbetween++;
   std::fprintf(out,"Generating linear path connecting structure in file named %s to structure in file named %s \n",istart.c_str(),iend.c_str() );
   std::fprintf(out,"A path consisting of %u equally-spaced frames before the initial structure, %u frames between the initial and final structures "
@@ -258,7 +301,8 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   Pbc fpbc;
   std::vector<std::unique_ptr<Value>> args;
   for(unsigned i=0; i<eframe->getNumberOfReferenceArguments(); ++i) {
-    args.emplace_back(Tools::make_unique<Value>()); args[args.size()-1]->setNotPeriodic();
+    args.emplace_back(Tools::make_unique<Value>());
+    args[args.size()-1]->setNotPeriodic();
   }
 
   // convert pointer once:
@@ -271,40 +315,60 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
 // And the spacing between frames
   double delr = 1.0 / static_cast<double>( nbetween );
 // Calculate the vector connecting the start to the end
-  PDB mypdb; mypdb.setAtomNumbers( sframe->getAbsoluteIndexes() ); mypdb.addBlockEnd( sframe->getAbsoluteIndexes().size() );
-  if( sframe->getArgumentNames().size()>0 ) mypdb.setArgumentNames( sframe->getArgumentNames() );
-  Direction mydir(ReferenceConfigurationOptions("DIRECTION")); sframe->setupPCAStorage( mypack ); mydir.read( mypdb ); mydir.zeroDirection();
+  PDB mypdb;
+  mypdb.setAtomNumbers( sframe->getAbsoluteIndexes() );
+  mypdb.addBlockEnd( sframe->getAbsoluteIndexes().size() );
+  if( sframe->getArgumentNames().size()>0 ) {
+    mypdb.setArgumentNames( sframe->getArgumentNames() );
+  }
+  Direction mydir(ReferenceConfigurationOptions("DIRECTION"));
+  sframe->setupPCAStorage( mypack );
+  mydir.read( mypdb );
+  mydir.zeroDirection();
   sframe->extractDisplacementVector( eframe->getReferencePositions(), args_ptr, eframe->getReferenceArguments(), false, mydir );
 
 // Now create frames
-  OFile ofile; ofile.open(ofilename); unsigned nframes=0;
-  Direction pos(ReferenceConfigurationOptions("DIRECTION")); pos.read( mypdb );
+  OFile ofile;
+  ofile.open(ofilename);
+  unsigned nframes=0;
+  Direction pos(ReferenceConfigurationOptions("DIRECTION"));
+  pos.read( mypdb );
   for(int i=0; i<nbefore; ++i) {
     pos.setDirection( sframe->getReferencePositions(), sframe->getReferenceArguments() );
     pos.displaceReferenceConfiguration( -i*delr, mydir );
     mypdb.setAtomPositions( pos.getReferencePositions() );
-    for(unsigned j=0; j<pos.getReferenceArguments().size(); ++j) mypdb.setArgumentValue( sframe->getArgumentNames()[j], pos.getReferenceArgument(j) );
+    for(unsigned j=0; j<pos.getReferenceArguments().size(); ++j) {
+      mypdb.setArgumentValue( sframe->getArgumentNames()[j], pos.getReferenceArgument(j) );
+    }
     ofile.printf("REMARK TYPE=%s\n",mtype.c_str() );
-    mypdb.print( 10, NULL, ofile, ofmt ); nframes++;
+    mypdb.print( 10, NULL, ofile, ofmt );
+    nframes++;
   }
   for(unsigned i=1; i<nbetween; ++i) {
     pos.setDirection( sframe->getReferencePositions(), sframe->getReferenceArguments() );
     pos.displaceReferenceConfiguration( i*delr, mydir );
     mypdb.setAtomPositions( pos.getReferencePositions() );
-    for(unsigned j=0; j<pos.getReferenceArguments().size(); ++j) mypdb.setArgumentValue( sframe->getArgumentNames()[j], pos.getReferenceArgument(j) );
+    for(unsigned j=0; j<pos.getReferenceArguments().size(); ++j) {
+      mypdb.setArgumentValue( sframe->getArgumentNames()[j], pos.getReferenceArgument(j) );
+    }
     ofile.printf("REMARK TYPE=%s\n",mtype.c_str() );
-    mypdb.print( 10, NULL, ofile, ofmt ); nframes++;
+    mypdb.print( 10, NULL, ofile, ofmt );
+    nframes++;
   }
   for(unsigned i=0; i<nafter; ++i) {
     pos.setDirection( eframe->getReferencePositions(), eframe->getReferenceArguments() );
     pos.displaceReferenceConfiguration( i*delr, mydir );
     mypdb.setAtomPositions( pos.getReferencePositions() );
-    for(unsigned j=0; j<pos.getReferenceArguments().size(); ++j) mypdb.setArgumentValue( sframe->getArgumentNames()[j], pos.getReferenceArgument(j) );
+    for(unsigned j=0; j<pos.getReferenceArguments().size(); ++j) {
+      mypdb.setArgumentValue( sframe->getArgumentNames()[j], pos.getReferenceArgument(j) );
+    }
     ofile.printf("REMARK TYPE=%s\n",mtype.c_str() );
-    mypdb.print( 10, NULL, ofile, ofmt ); nframes++;
+    mypdb.print( 10, NULL, ofile, ofmt );
+    nframes++;
   }
 
-  ofile.close(); return 0;
+  ofile.close();
+  return 0;
 }
 
 } // End of namespace

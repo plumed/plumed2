@@ -134,12 +134,12 @@ Distance::Distance(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   components(false),
   scaled_components(false),
-  pbc(true)
-{
+  pbc(true) {
   std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
-  if(atoms.size()!=2)
+  if(atoms.size()!=2) {
     error("Number of specified atoms should be 2");
+  }
   parseFlag("COMPONENTS",components);
   parseFlag("SCALED_COMPONENTS",scaled_components);
   bool nopbc=!pbc;
@@ -148,22 +148,34 @@ Distance::Distance(const ActionOptions&ao):
   checkRead();
 
   log.printf("  between atoms %d %d\n",atoms[0].serial(),atoms[1].serial());
-  if(pbc) log.printf("  using periodic boundary conditions\n");
-  else    log.printf("  without periodic boundary conditions\n");
+  if(pbc) {
+    log.printf("  using periodic boundary conditions\n");
+  } else {
+    log.printf("  without periodic boundary conditions\n");
+  }
 
-  if(components && scaled_components) error("COMPONENTS and SCALED_COMPONENTS are not compatible");
+  if(components && scaled_components) {
+    error("COMPONENTS and SCALED_COMPONENTS are not compatible");
+  }
 
   if(components) {
-    addComponentWithDerivatives("x"); componentIsNotPeriodic("x");
-    addComponentWithDerivatives("y"); componentIsNotPeriodic("y");
-    addComponentWithDerivatives("z"); componentIsNotPeriodic("z");
+    addComponentWithDerivatives("x");
+    componentIsNotPeriodic("x");
+    addComponentWithDerivatives("y");
+    componentIsNotPeriodic("y");
+    addComponentWithDerivatives("z");
+    componentIsNotPeriodic("z");
     log<<"  WARNING: components will not have the proper periodicity - see manual\n";
   } else if(scaled_components) {
-    addComponentWithDerivatives("a"); componentIsPeriodic("a","-0.5","+0.5");
-    addComponentWithDerivatives("b"); componentIsPeriodic("b","-0.5","+0.5");
-    addComponentWithDerivatives("c"); componentIsPeriodic("c","-0.5","+0.5");
+    addComponentWithDerivatives("a");
+    componentIsPeriodic("a","-0.5","+0.5");
+    addComponentWithDerivatives("b");
+    componentIsPeriodic("b","-0.5","+0.5");
+    addComponentWithDerivatives("c");
+    componentIsPeriodic("c","-0.5","+0.5");
   } else {
-    addValueWithDerivatives(); setNotPeriodic();
+    addValueWithDerivatives();
+    setNotPeriodic();
   }
 
 
@@ -174,7 +186,9 @@ Distance::Distance(const ActionOptions&ao):
 // calculator
 void Distance::calculate() {
 
-  if(pbc) makeWhole();
+  if(pbc) {
+    makeWhole();
+  }
 
   Vector distance=delta(getPosition(0),getPosition(1));
   const double value=distance.modulo();

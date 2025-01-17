@@ -31,10 +31,8 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 
 using namespace std;
 
-namespace PLMD
-{
-namespace piv
-{
+namespace PLMD {
+namespace piv {
 
 //+PLUMEDOC PIVMOD_COLVAR PIV
 /*
@@ -182,8 +180,7 @@ When using PIV please cite \cite pipolo2017navigating .
 */
 //+ENDPLUMEDOC
 
-class PIV      : public Colvar
-{
+class PIV      : public Colvar {
 private:
   bool pbc, serial, timer;
   ForwardDecl<Stopwatch> stopwatch_fwd;
@@ -233,8 +230,7 @@ public:
 
 PLUMED_REGISTER_ACTION(PIV,"PIV")
 
-void PIV::registerKeywords( Keywords& keys )
-{
+void PIV::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   keys.add("numbered","SWITCH","The switching functions parameter."
            "You should specify a Switching function for all PIV blocks."
@@ -292,8 +288,7 @@ PIV::PIV(const ActionOptions&ao):
   doneigh(false),
   test(false),
   CompDer(false),
-  com(false)
-{
+  com(false) {
   log << "Starting PIV Constructor\n";
 
   {
@@ -320,7 +315,9 @@ PIV::PIV(const ActionOptions&ao):
 
   // Precision on the real-to-integer transformation for the sorting
   parse("PRECISION",Nprec);
-  if(Nprec<2) error("Precision must be => 2");
+  if(Nprec<2) {
+    error("Precision must be => 2");
+  }
 
   // PBC
   bool nopbc=!pbc;
@@ -342,7 +339,9 @@ PIV::PIV(const ActionOptions&ao):
 
   // Derivatives
   parseFlag("DERIVATIVES",CompDer);
-  if(CompDer) log << "Computing Derivatives\n";
+  if(CompDer) {
+    log << "Computing Derivatives\n";
+  }
 
   // Timing
   parseFlag("TIMER",timer);
@@ -362,7 +361,9 @@ PIV::PIV(const ActionOptions&ao):
 
   // Test
   parseFlag("COM",com);
-  if(com) log << "Building PIV using COMs\n";
+  if(com) {
+    log << "Building PIV using COMs\n";
+  }
 
   // Volume Scaling
   parse("VOLUME",Vol0);
@@ -544,9 +545,15 @@ PIV::PIV(const ActionOptions&ao):
     parseVector("NL_SKIN",nl_skin);
     //if(nl_skin.size()!=getNumberOfArguments() && nl_skin.size()!=0) error("not enough values for NL_SKIN");
     for (unsigned j=0; j<Nlist; j++) {
-      if(nl_cut[j]<=0.0) error("NL_CUTOFF should be explicitly specified and positive");
-      if(nl_st[j]<=0) error("NL_STRIDE should be explicitly specified and positive");
-      if(nl_skin[j]<=0.) error("NL_SKIN should be explicitly specified and positive");
+      if(nl_cut[j]<=0.0) {
+        error("NL_CUTOFF should be explicitly specified and positive");
+      }
+      if(nl_st[j]<=0) {
+        error("NL_STRIDE should be explicitly specified and positive");
+      }
+      if(nl_skin[j]<=0.) {
+        error("NL_SKIN should be explicitly specified and positive");
+      }
       nl_cut[j]=nl_cut[j]+nl_skin[j];
     }
     log << "Creating Neighbor Lists \n";
@@ -642,7 +649,9 @@ PIV::PIV(const ActionOptions&ao):
   r00.resize(Nlist);
   sw.resize(Nlist);
   for (unsigned j=0; j<Nlist; j++) {
-    if( !parseNumbered( "SWITCH", j+1, sw[j] ) ) break;
+    if( !parseNumbered( "SWITCH", j+1, sw[j] ) ) {
+      break;
+    }
   }
   if(CompDer) {
     // Set switching function parameters here only if computing derivatives
@@ -659,14 +668,17 @@ PIV::PIV(const ActionOptions&ao):
         Tools::parse(data,"R_0",old_r0);
         Tools::convert(old_r0,r0);
         r0*=Fvol;
-        std::string new_r0; Tools::convert(r0,new_r0);
+        std::string new_r0;
+        Tools::convert(r0,new_r0);
         std::size_t pos = sw[j].find("R_0");
         sw[j].replace(pos+4,old_r0.size(),new_r0);
       }
       sfs[j].set(sw[j],errors);
       std::string num;
       Tools::convert(j+1, num);
-      if( errors.length()!=0 ) error("problem reading SWITCH" + num + " keyword : " + errors );
+      if( errors.length()!=0 ) {
+        error("problem reading SWITCH" + num + " keyword : " + errors );
+      }
       r00[j]=sfs[j].get_r0();
       log << "  Swf: " << j << "  r0=" << (sfs[j].description()).c_str() << " \n";
     }
@@ -744,8 +756,7 @@ PIV::PIV(const ActionOptions&ao):
   m_deriv.resize(getNumberOfAtoms());
 }
 
-void PIV::calculate()
-{
+void PIV::calculate() {
 
   // Local variables
 
@@ -781,7 +792,9 @@ void PIV::calculate()
 
   // Transform (and sort) the rPIV before starting the dynamics
   if (((prev_stp==-1) || (init_stp==1)) &&!CompDer) {
-    if(prev_stp!=-1) {init_stp=0;}
+    if(prev_stp!=-1) {
+      init_stp=0;
+    }
     // Calculate the volume scaling factor
     if(Svol) {
       Fvol=cbrt(Vol0/getBox().determinant());
@@ -803,14 +816,17 @@ void PIV::calculate()
         Tools::parse(data,"R_0",old_r0);
         Tools::convert(old_r0,r0);
         r0*=Fvol;
-        std::string new_r0; Tools::convert(r0,new_r0);
+        std::string new_r0;
+        Tools::convert(r0,new_r0);
         std::size_t pos = sw[j].find("R_0");
         sw[j].replace(pos+4,old_r0.size(),new_r0);
       }
       sfs[j].set(sw[j],errors);
       std::string num;
       Tools::convert(j+1, num);
-      if( errors.length()!=0 ) error("problem reading SWITCH" + num + " keyword : " + errors );
+      if( errors.length()!=0 ) {
+        error("problem reading SWITCH" + num + " keyword : " + errors );
+      }
       r00[j]=sfs[j].get_r0();
       log << "  Swf: " << j << "  r0=" << (sfs[j].description()).c_str() << " \n";
     }
@@ -841,11 +857,15 @@ void PIV::calculate()
   }
   // Do the sorting only once per timestep to avoid building the PIV N times for N rPIV PDB structures!
   if ((getStep()>prev_stp&&getStep()%updatePIV==0)||CompDer) {
-    if (CompDer) log << " Step " << getStep() << "  Computing Derivatives NON-SORTED PIV \n";
+    if (CompDer) {
+      log << " Step " << getStep() << "  Computing Derivatives NON-SORTED PIV \n";
+    }
     //
     // build COMs from positions if requested
     if(com) {
-      if(pbc) makeWhole();
+      if(pbc) {
+        makeWhole();
+      }
       for(unsigned j=0; j<compos.size(); j++) {
         compos[j][0]=0.;
         compos[j][1]=0.;
@@ -924,7 +944,9 @@ void PIV::calculate()
         Atom0[j].resize(0);
         Atom1[j].resize(0);
         // Building distances for the PIV vector at time t
-        if(timer) stopwatch.start("1 Build cPIV");
+        if(timer) {
+          stopwatch.start("1 Build cPIV");
+        }
         for(unsigned i=rank; i<nl[j]->size(); i+=stride) {
           unsigned i0=(nl[j]->getClosePairAtomNumber(i).first).index();
           unsigned i1=(nl[j]->getClosePairAtomNumber(i).second).index();
@@ -951,8 +973,12 @@ void PIV::calculate()
           A0[Vint].push_back(i0);
           A1[Vint].push_back(i1);
         }
-        if(timer) stopwatch.stop("1 Build cPIV");
-        if(timer) stopwatch.start("2 Sort cPIV");
+        if(timer) {
+          stopwatch.stop("1 Build cPIV");
+        }
+        if(timer) {
+          stopwatch.start("2 Sort cPIV");
+        }
         if(!doserial && comm.initialized()) {
           // Vectors keeping track of the dimension and the starting-position of the rank-specific pair vector in the big pair vector.
           std:: vector<int> Vdim(stride,0);
@@ -1015,8 +1041,12 @@ void PIV::calculate()
           // Loop on blocks
           //for(unsigned m=0;m<Nlist;m++) {
           // Loop on Ordering Vector size excluding zeros (i=1)
-          if(timer) stopwatch.stop("2 Sort cPIV");
-          if(timer) stopwatch.start("3 Reconstruct cPIV");
+          if(timer) {
+            stopwatch.stop("2 Sort cPIV");
+          }
+          if(timer) {
+            stopwatch.start("3 Reconstruct cPIV");
+          }
           for(unsigned i=1; i<Nprec; i++) {
             // Loop on the ranks
             for(unsigned l=0; l<stride; l++) {
@@ -1030,7 +1060,9 @@ void PIV::calculate()
               }
             }
           }
-          if(timer) stopwatch.stop("3 Reconstruct cPIV");
+          if(timer) {
+            stopwatch.stop("3 Reconstruct cPIV");
+          }
         } else {
           for(unsigned i=1; i<Nprec; i++) {
             for(unsigned m=0; m<OrdVec[i]; m++) {
@@ -1101,14 +1133,18 @@ void PIV::calculate()
     exit();
   }
 
-  if(timer) stopwatch.start("4 Build For Derivatives");
+  if(timer) {
+    stopwatch.start("4 Build For Derivatives");
+  }
   // non-global variables Nder and Scalevol defined to speedup if structures in cycles
   bool Nder=CompDer;
   bool Scalevol=Svol;
   if(getStep()%updatePIV==0) {
     // set to zero PIVdistance, derivatives and virial when they are calculated
     for(unsigned j=0; j<m_deriv.size(); j++) {
-      for(unsigned k=0; k<3; k++) {m_deriv[j][k]=0.;}
+      for(unsigned k=0; k<3; k++) {
+        m_deriv[j][k]=0.;
+      }
     }
     for(unsigned j=0; j<3; j++) {
       for(unsigned k=0; k<3; k++) {
@@ -1238,21 +1274,27 @@ void PIV::calculate()
     if (!serial && comm.initialized()) {
       comm.Barrier();
       comm.Sum(&m_PIVdistance,1);
-      if(!m_deriv.empty()) comm.Sum(&m_deriv[0][0],3*m_deriv.size());
+      if(!m_deriv.empty()) {
+        comm.Sum(&m_deriv[0][0],3*m_deriv.size());
+      }
       comm.Sum(&m_virial[0][0],9);
     }
   }
   prev_stp=getStep();
 
   //Timing
-  if(timer) stopwatch.stop("4 Build For Derivatives");
+  if(timer) {
+    stopwatch.stop("4 Build For Derivatives");
+  }
   if(timer) {
     log.printf("Timings for action %s with label %s \n", getName().c_str(), getLabel().c_str() );
     log<<stopwatch;
   }
 
   // Update derivatives, virial, and variable (PIV-distance^2)
-  for(unsigned i=0; i<m_deriv.size(); ++i) setAtomsDerivatives(i,m_deriv[i]);
+  for(unsigned i=0; i<m_deriv.size(); ++i) {
+    setAtomsDerivatives(i,m_deriv[i]);
+  }
   setValue           (m_PIVdistance);
   setBoxDerivatives  (m_virial);
 }

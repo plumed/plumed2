@@ -254,13 +254,19 @@ public:
   bool isOptionOn(const std::string &s)const;
 
 /// Return dependencies
-  const Dependencies & getDependencies()const {return after;}
+  const Dependencies & getDependencies()const {
+    return after;
+  }
 
 /// Check if numerical derivatives should be performed
-  virtual bool checkNumericalDerivatives()const {return false;}
+  virtual bool checkNumericalDerivatives()const {
+    return false;
+  }
 
 /// Check if the action needs gradient
-  virtual bool checkNeedsGradients()const {return false;}
+  virtual bool checkNeedsGradients()const {
+    return false;
+  }
 
 /// Perform calculation using numerical derivatives
 /// N.B. only pass an ActionWithValue to this routine if you know exactly what you
@@ -314,7 +320,9 @@ void Action::parse(const std::string&key,T&t) {
   std::string def;
   bool present=Tools::findKeyword(line,key);
   bool found=Tools::parse(line,key,t,replica_index);
-  if(present && !found) error("keyword " + key +" could not be read correctly");
+  if(present && !found) {
+    error("keyword " + key +" could not be read correctly");
+  }
 
   // If it isn't read and it is compulsory see if a default value was specified
   if ( !found && (keywords.style(key,"compulsory") || keywords.style(key,"hidden")) ) {
@@ -333,10 +341,13 @@ template<class T>
 bool Action::parseNumbered(const std::string&key, const int no, T&t) {
   // Check keyword has been registered
   plumed_massert(keywords.exists(key),"keyword " + key + " has not been registered");
-  if( !keywords.numbered(key) ) error("numbered keywords are not allowed for " + key );
+  if( !keywords.numbered(key) ) {
+    error("numbered keywords are not allowed for " + key );
+  }
 
   // Now try to read the keyword
-  std::string num; Tools::convert(no,num);
+  std::string num;
+  Tools::convert(no,num);
   return Tools::parse(line,key+num,t,replica_index);
 }
 
@@ -344,20 +355,28 @@ template<class T>
 void Action::parseVector(const std::string&key,std::vector<T>&t) {
   // Check keyword has been registered
   plumed_massert(keywords.exists(key), "keyword " + key + " has not been registered");
-  unsigned size=t.size(); bool skipcheck=false;
-  if(size==0) skipcheck=true;
+  unsigned size=t.size();
+  bool skipcheck=false;
+  if(size==0) {
+    skipcheck=true;
+  }
 
   // Now try to read the keyword
-  std::string def; T val;
+  std::string def;
+  T val;
   bool present=Tools::findKeyword(line,key);
   bool found=Tools::parseVector(line,key,t,replica_index);
-  if(present && !found) error("keyword " + key +" could not be read correctly");
+  if(present && !found) {
+    error("keyword " + key +" could not be read correctly");
+  }
 
   // Check vectors size is correct (not if this is atoms or ARG)
   if( !keywords.style(key,"atoms") && found ) {
 //     bool skipcheck=false;
 //     if( keywords.style(key,"compulsory") ){ keywords.getDefaultValue(key,def); skipcheck=(def=="nosize"); }
-    if( !skipcheck && t.size()!=size ) error("vector read in for keyword " + key + " has the wrong size");
+    if( !skipcheck && t.size()!=size ) {
+      error("vector read in for keyword " + key + " has the wrong size");
+    }
   }
 
   // If it isn't read and it is compulsory see if a default value was specified
@@ -367,9 +386,17 @@ void Action::parseVector(const std::string&key,std::vector<T>&t) {
         plumed_error() <<"ERROR in action "<<name<<" with label "<<label<<" : keyword "<<key<<" has weird default value";
       } else {
         if(t.size()>0) {
-          for(unsigned i=0; i<t.size(); ++i) t[i]=val;
-          defaults += " " + key + "=" + def; for(unsigned i=1; i<t.size(); ++i) defaults += "," + def;
-        } else { t.push_back(val); defaults += " " + key + "=" + def; }
+          for(unsigned i=0; i<t.size(); ++i) {
+            t[i]=val;
+          }
+          defaults += " " + key + "=" + def;
+          for(unsigned i=1; i<t.size(); ++i) {
+            defaults += "," + def;
+          }
+        } else {
+          t.push_back(val);
+          defaults += " " + key + "=" + def;
+        }
       }
     } else if( keywords.style(key,"compulsory") ) {
       error("keyword " + key + " is compulsory for this action");
@@ -382,17 +409,27 @@ void Action::parseVector(const std::string&key,std::vector<T>&t) {
 template<class T>
 bool Action::parseNumberedVector(const std::string&key, const int no, std::vector<T>&t) {
   plumed_massert(keywords.exists(key),"keyword " + key + " has not been registered");
-  if( !keywords.numbered(key) ) error("numbered keywords are not allowed for " + key );
+  if( !keywords.numbered(key) ) {
+    error("numbered keywords are not allowed for " + key );
+  }
 
-  unsigned size=t.size(); bool skipcheck=false;
-  if(size==0) skipcheck=true;
-  std::string num; Tools::convert(no,num);
+  unsigned size=t.size();
+  bool skipcheck=false;
+  if(size==0) {
+    skipcheck=true;
+  }
+  std::string num;
+  Tools::convert(no,num);
   bool present=Tools::findKeyword(line,key);
   bool found=Tools::parseVector(line,key+num,t,replica_index);
-  if(present && !found) error("keyword " + key +" could not be read correctly");
+  if(present && !found) {
+    error("keyword " + key +" could not be read correctly");
+  }
 
   if(  keywords.style(key,"compulsory") ) {
-    if (!skipcheck && found && t.size()!=size ) error("vector read in for keyword " + key + num + " has the wrong size");
+    if (!skipcheck && found && t.size()!=size ) {
+      error("vector read in for keyword " + key + num + " has the wrong size");
+    }
   } else if ( !found ) {
     t.resize(0);
   }

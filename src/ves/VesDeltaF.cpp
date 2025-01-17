@@ -222,15 +222,13 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
   , afterCalculate_(false)
   , mean_counter_(0)
   , av_counter_(0)
-  , work_(0)
-{
+  , work_(0) {
 //set beta
   const double Kb=plumed.getAtoms().getKBoltzmann();
   double temp=0;
   parse("TEMP",temp);
   double KbT=Kb*temp;
-  if(KbT==0)
-  {
+  if(KbT==0) {
     KbT=plumed.getAtoms().getKbT();
     plumed_massert(KbT>0,"your MD engine does not pass the temperature to plumed, you must specify it using TEMP");
   }
@@ -242,11 +240,11 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
   std::string funcl="file.free"; //typical name given by sum_hills
 
   std::vector<std::string> fes_names;
-  for(unsigned n=0;; n++)//NB: here we start from FILE_F0 not from FILE_F1
-  {
+  for(unsigned n=0;; n++) { //NB: here we start from FILE_F0 not from FILE_F1
     std::string filename;
-    if(!parseNumbered("FILE_F",n,filename))
+    if(!parseNumbered("FILE_F",n,filename)) {
       break;
+    }
     fes_names.push_back(filename);
     IFile gridfile;
     gridfile.open(filename);
@@ -264,8 +262,7 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
   alpha_size_=grid_p_.size()-1;
   sym_alpha_size_=alpha_size_*(alpha_size_+1)/2; //useful for symmetric matrix [alpha_size_]x[alpha_size_]
   //check for consistency with first local free energy
-  for(unsigned n=1; n<grid_p_.size(); n++)
-  {
+  for(unsigned n=1; n<grid_p_.size(); n++) {
     std::string error_tag="FILE_F"+std::to_string(n)+" '"+fes_names[n]+"' not compatible with reference one, FILE_F0";
     plumed_massert(grid_p_[n]->getSize()==grid_p_[0]->getSize(),error_tag);
     plumed_massert(grid_p_[n]->getMin()==grid_p_[0]->getMin(),error_tag);
@@ -275,10 +272,10 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
 
   bool no_mintozero=false;
   parseFlag("NO_MINTOZERO",no_mintozero);
-  if(!no_mintozero)
-  {
-    for(unsigned n=0; n<grid_p_.size(); n++)
+  if(!no_mintozero) {
+    for(unsigned n=0; n<grid_p_.size(); n++) {
       grid_p_[n]->setMinToZero();
+    }
   }
   bool normalize=false;
   parseFlag("NORMALIZE",normalize);
@@ -287,20 +284,18 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
   //convert the FESs to probability distributions
   //NB: the spline interpolation will be done on the probability distributions, not on the given FESs
   const unsigned ncv=getNumberOfArguments(); //just for ease
-  for(unsigned n=0; n<grid_p_.size(); n++)
-  {
-    for(Grid::index_t t=0; t<grid_p_[n]->getSize(); t++)
-    {
+  for(unsigned n=0; n<grid_p_.size(); n++) {
+    for(Grid::index_t t=0; t<grid_p_[n]->getSize(); t++) {
       std::vector<double> der(ncv);
       const double val=std::exp(-beta_*grid_p_[n]->getValueAndDerivatives(t,der));
-      for(unsigned s=0; s<ncv; s++)
+      for(unsigned s=0; s<ncv; s++) {
         der[s]*=-beta_*val;
+      }
       grid_p_[n]->setValueAndDerivatives(t,val,der);
       norm_[n]+=val;
     }
     c_norm[n]=1./beta_*std::log(norm_[n]);
-    if(normalize)
-    {
+    if(normalize) {
       grid_p_[n]->scaleAllValuesAndDerivatives(1./norm_[n]);
       norm_[n]=1;
     }
@@ -310,10 +305,11 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
   double biasfactor=0;
   parse("BIASFACTOR",biasfactor);
   plumed_massert(biasfactor==0 || biasfactor>1,"BIASFACTOR must be zero (for uniform target) or greater than one");
-  if(biasfactor==0)
+  if(biasfactor==0) {
     inv_gamma_=0;
-  else
+  } else {
     inv_gamma_=1./biasfactor;
+  }
   tg_counter_=0;
   tg_stride_=1;
   parse("TG_STRIDE",tg_stride_);
@@ -332,31 +328,31 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
 
   mean_weight_tau_=0;
   parse("TAU_MEAN",mean_weight_tau_);
-  if(mean_weight_tau_!=1) //set it to 1 for basic SGD
-  {
+  if(mean_weight_tau_!=1) { //set it to 1 for basic SGD
     plumed_massert((mean_weight_tau_==0 || mean_weight_tau_>av_stride_),"TAU_MEAN is rescaled with AV_STRIDE, so it has to be greater");
     mean_weight_tau_/=av_stride_; //this way you can look at the number of simulation steps to choose TAU_MEAN
   }
 
   parseVector("INITIAL_ALPHA",mean_alpha_);
-  if(mean_alpha_.size()>0)
-  {
+  if(mean_alpha_.size()>0) {
     plumed_massert(mean_alpha_.size()==alpha_size_,"provide one INITIAL_ALPHA for each basin beyond the first one");
-  }
-  else
+  } else {
     mean_alpha_.resize(alpha_size_,0);
+  }
   inst_alpha_=mean_alpha_;
   exp_alpha_.resize(alpha_size_);
-  for(unsigned i=0; i<alpha_size_; i++)
+  for(unsigned i=0; i<alpha_size_; i++) {
     exp_alpha_[i]=std::exp(-beta_*mean_alpha_[i]);
+  }
   prev_exp_alpha_=exp_alpha_;
 
   damping_off_=false;
   parseFlag("DAMPING_OFF",damping_off_);
-  if(damping_off_)
+  if(damping_off_) {
     past_increment2_.resize(alpha_size_,1);
-  else
+  } else {
     past_increment2_.resize(alpha_size_,0);
+  }
 
 //file printing options
   std::string alphaFileName("ALPHA");
@@ -371,8 +367,7 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
   rank_=comm.Get_rank();
   bool serial=false;
   parseFlag("SERIAL",serial);
-  if(serial)
-  {
+  if(serial) {
     log.printf(" -- SERIAL: running without loop parallelization\n");
     NumParallel_=1;
     rank_=0;
@@ -380,37 +375,35 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
 
   bool multiple_walkers=false;
   parseFlag("MULTIPLE_WALKERS",multiple_walkers);
-  if(!multiple_walkers)
+  if(!multiple_walkers) {
     NumWalkers_=1;
-  else
-  {
-    if(comm.Get_rank()==0)//multi_sim_comm works well on first rank only
+  } else {
+    if(comm.Get_rank()==0) { //multi_sim_comm works well on first rank only
       NumWalkers_=multi_sim_comm.Get_size();
-    if(comm.Get_size()>1) //if each walker has more than one processor update them all
+    }
+    if(comm.Get_size()>1) { //if each walker has more than one processor update them all
       comm.Bcast(NumWalkers_,0);
+    }
   }
 
   checkRead();
 
 //restart if needed
-  if(getRestart())
-  {
+  if(getRestart()) {
     IFile ifile;
     ifile.link(*this);
-    if(NumWalkers_>1)
+    if(NumWalkers_>1) {
       ifile.enforceSuffix("");
-    if(ifile.FileExist(alphaFileName))
-    {
+    }
+    if(ifile.FileExist(alphaFileName)) {
       log.printf("  Restarting from: %s\n",alphaFileName.c_str());
       log.printf("    all options (also PRINT_STRIDE) must be consistent!\n");
       log.printf("    any INITIAL_ALPHA will be overwritten\n");
       ifile.open(alphaFileName);
       double time;
       std::vector<double> damping(alpha_size_);
-      while(ifile.scanField("time",time)) //room for improvements: only last line is important
-      {
-        for(unsigned i=0; i<alpha_size_; i++)
-        {
+      while(ifile.scanField("time",time)) { //room for improvements: only last line is important
+        for(unsigned i=0; i<alpha_size_; i++) {
           const std::string index(std::to_string(i+1));
           prev_exp_alpha_[i]=std::exp(-beta_*mean_alpha_[i]);
           ifile.scanField("alpha_"+index,mean_alpha_[i]);
@@ -420,80 +413,91 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
         ifile.scanField();
         mean_counter_+=print_stride_;
       }
-      for(unsigned i=0; i<alpha_size_; i++)
-      {
+      for(unsigned i=0; i<alpha_size_; i++) {
         exp_alpha_[i]=std::exp(-beta_*mean_alpha_[i]);
         past_increment2_[i]=damping[i]*damping[i];
       }
       //sync all walkers and treads. Not sure is mandatory but is no harm
       comm.Barrier();
-      if(comm.Get_rank()==0)
+      if(comm.Get_rank()==0) {
         multi_sim_comm.Barrier();
-    }
-    else
+      }
+    } else {
       log.printf("  -- WARNING: restart requested, but no '%s' file found!\n",alphaFileName.c_str());
+    }
   }
 
 //setup output file with Alpha values
   alphaOfile_.link(*this);
-  if(NumWalkers_>1)
-  {
-    if(comm.Get_rank()==0 && multi_sim_comm.Get_rank()>0)
-      alphaFileName="/dev/null"; //only first walker writes on file
+  if(NumWalkers_>1) {
+    if(comm.Get_rank()==0 && multi_sim_comm.Get_rank()>0) {
+      alphaFileName="/dev/null";  //only first walker writes on file
+    }
     alphaOfile_.enforceSuffix("");
   }
   alphaOfile_.open(alphaFileName);
-  if(fmt.length()>0)
+  if(fmt.length()>0) {
     alphaOfile_.fmtField(" "+fmt);
+  }
 
 //add other output components
-  addComponent("rct"); componentIsNotPeriodic("rct");
-  addComponent("work"); componentIsNotPeriodic("work");
+  addComponent("rct");
+  componentIsNotPeriodic("rct");
+  addComponent("work");
+  componentIsNotPeriodic("work");
 
 //print some info
   log.printf("  Temperature T: %g\n",1./(Kb*beta_));
   log.printf("  Beta (1/Kb*T): %g\n",beta_);
   log.printf("  Local free energy basins files and normalization constants:\n");
-  for(unsigned n=0; n<grid_p_.size(); n++)
+  for(unsigned n=0; n<grid_p_.size(); n++) {
     log.printf("    F_%d filename: %s  c_%d=%g\n",n,fes_names[n].c_str(),n,c_norm[n]);
-  if(no_mintozero)
+  }
+  if(no_mintozero) {
     log.printf(" -- NO_MINTOZERO: local free energies are not shifted to be zero at minimum\n");
-  if(normalize)
+  }
+  if(normalize) {
     log.printf(" -- NORMALIZE: F_n+=c_n, alpha=DeltaF\n");
+  }
   log.printf("  Using target distribution with 1/gamma = %g\n",inv_gamma_);
   log.printf("    and updated with stride %d\n",tg_stride_);
   log.printf("  Step for the minimization algorithm: %g\n",minimization_step_);
   log.printf("  Stride for the ensemble average: %d\n",av_stride_);
-  if(mean_weight_tau_>1)
+  if(mean_weight_tau_>1) {
     log.printf("  Exponentially decaying average with weight=tau/av_stride=%d\n",mean_weight_tau_);
-  if(mean_weight_tau_==1)
+  }
+  if(mean_weight_tau_==1) {
     log.printf(" +++ WARNING +++ setting TAU_MEAN=1 is equivalent to use simple SGD, without mean alpha nor hessian contribution\n");
+  }
   log.printf("  Initial guess for alpha:\n");
-  for(unsigned i=0; i<alpha_size_; i++)
+  for(unsigned i=0; i<alpha_size_; i++) {
     log.printf("    alpha_%d = %g\n",i+1,mean_alpha_[i]);
-  if(damping_off_)
+  }
+  if(damping_off_) {
     log.printf(" -- DAMPING_OFF: the minimization step will NOT become smaller as the simulation goes on\n");
+  }
   log.printf("  Printing on file %s with stride %d\n",alphaFileName.c_str(),print_stride_);
-  if(serial)
+  if(serial) {
     log.printf(" -- SERIAL: running without loop parallelization\n");
-  if(NumParallel_>1)
+  }
+  if(NumParallel_>1) {
     log.printf("  Using multiple threads per simulation: %d\n",NumParallel_);
-  if(multiple_walkers)
-  {
+  }
+  if(multiple_walkers) {
     log.printf(" -- MULTIPLE_WALKERS: multiple simulations will combine statistics for the optimization\n");
-    if(NumWalkers_>1)
-    {
+    if(NumWalkers_>1) {
       log.printf("    number of walkers: %d\n",NumWalkers_);
       log.printf("    walker rank: %d\n",multi_sim_comm.Get_rank()); //only comm.Get_rank()=0 prints, so this is fine
-    }
-    else
+    } else {
       log.printf(" +++ WARNING +++ only one replica found: are you sure you are running MPI-connected simulations?\n");
+    }
   }
   log.printf(" Bibliography ");
   log<<plumed.cite("Invernizzi and Parrinello, J. Chem. Theory Comput. 15, 2187-2194 (2019)");
   log<<plumed.cite("Valsson and Parrinello, Phys. Rev. Lett. 113, 090601 (2014)");
-  if(inv_gamma_>0)
+  if(inv_gamma_>0) {
     log<<plumed.cite("Valsson and Parrinello, J. Chem. Theory Comput. 11, 1996-2002 (2015)");
+  }
 
 //last initializations
   prob_.resize(grid_p_.size());
@@ -501,37 +505,37 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
   update_tg_and_rct();
 }
 
-void VesDeltaF::calculate()
-{
+void VesDeltaF::calculate() {
 //get CVs
   const unsigned ncv=getNumberOfArguments(); //just for ease
   std::vector<double> cv(ncv);
-  for(unsigned s=0; s<ncv; s++)
+  for(unsigned s=0; s<ncv; s++) {
     cv[s]=getArgument(s);
+  }
 //get probabilities for each basin, and total one
-  for(unsigned n=0; n<grid_p_.size(); n++)
+  for(unsigned n=0; n<grid_p_.size(); n++) {
     prob_[n]=grid_p_[n]->getValueAndDerivatives(cv,der_prob_[n]);
+  }
   tot_prob_=prob_[0];
-  for(unsigned i=0; i<alpha_size_; i++)
+  for(unsigned i=0; i<alpha_size_; i++) {
     tot_prob_+=prob_[i+1]*exp_alpha_[i];
+  }
 
 //update bias and forces: V=-(1-inv_gamma_)*fes
   setBias((1-inv_gamma_)/beta_*std::log(tot_prob_));
-  for(unsigned s=0; s<ncv; s++)
-  {
+  for(unsigned s=0; s<ncv; s++) {
     double dProb_dCV_s=der_prob_[0][s];
-    for(unsigned i=0; i<alpha_size_; i++)
+    for(unsigned i=0; i<alpha_size_; i++) {
       dProb_dCV_s+=der_prob_[i+1][s]*exp_alpha_[i];
+    }
     setOutputForce(s,-(1-inv_gamma_)/beta_/tot_prob_*dProb_dCV_s);
   }
   afterCalculate_=true;
 }
 
-void VesDeltaF::update()
-{
+void VesDeltaF::update() {
 //skip first step to sync getTime() and av_counter_, as in METAD
-  if(isFirstStep_)
-  {
+  if(isFirstStep_) {
     isFirstStep_=false;
     return;
   }
@@ -541,21 +545,20 @@ void VesDeltaF::update()
 //calculate derivatives for ensemble averages
   std::vector<double> dV_dAlpha(alpha_size_);
   std::vector<double> d2V_dAlpha2(sym_alpha_size_);
-  for(unsigned i=0; i<alpha_size_; i++)
+  for(unsigned i=0; i<alpha_size_; i++) {
     dV_dAlpha[i]=-(1-inv_gamma_)/tot_prob_*prob_[i+1]*exp_alpha_[i];
-  for(unsigned i=0; i<alpha_size_; i++)
-  {
+  }
+  for(unsigned i=0; i<alpha_size_; i++) {
     d2V_dAlpha2[get_index(i,i)]=-beta_*dV_dAlpha[i];
-    for(unsigned j=i; j<alpha_size_; j++)
+    for(unsigned j=i; j<alpha_size_; j++) {
       d2V_dAlpha2[get_index(i,j)]-=beta_/(1-inv_gamma_)*dV_dAlpha[i]*dV_dAlpha[j];
+    }
   }
 //update ensemble averages
   av_counter_++;
-  for(unsigned i=0; i<alpha_size_; i++)
-  {
+  for(unsigned i=0; i<alpha_size_; i++) {
     av_dV_dAlpha_[i]+=(dV_dAlpha[i]-av_dV_dAlpha_[i])/av_counter_;
-    for(unsigned j=i; j<alpha_size_; j++)
-    {
+    for(unsigned j=i; j<alpha_size_; j++) {
       const unsigned ij=get_index(i,j);
       av_dV_dAlpha_prod_[ij]+=(dV_dAlpha[i]*dV_dAlpha[j]-av_dV_dAlpha_prod_[ij])/av_counter_;
       av_d2V_dAlpha2_[ij]+=(d2V_dAlpha2[ij]-av_d2V_dAlpha2_[ij])/av_counter_;
@@ -563,17 +566,16 @@ void VesDeltaF::update()
   }
 //update work
   double prev_tot_prob=prob_[0];
-  for(unsigned i=0; i<alpha_size_; i++)
+  for(unsigned i=0; i<alpha_size_; i++) {
     prev_tot_prob+=prob_[i+1]*prev_exp_alpha_[i];
+  }
   work_+=(1-inv_gamma_)/beta_*std::log(tot_prob_/prev_tot_prob);
 
 //update coefficients
-  if(av_counter_==av_stride_)
-  {
+  if(av_counter_==av_stride_) {
     update_alpha();
     tg_counter_++;
-    if(tg_counter_==tg_stride_)
-    {
+    if(tg_counter_==tg_stride_) {
       update_tg_and_rct();
       tg_counter_=0;
     }
@@ -585,73 +587,75 @@ void VesDeltaF::update()
   }
 }
 
-void VesDeltaF::update_tg_and_rct()
-{
+void VesDeltaF::update_tg_and_rct() {
 //calculate target averages
   double Z_0=norm_[0];
-  for(unsigned i=0; i<alpha_size_; i++)
+  for(unsigned i=0; i<alpha_size_; i++) {
     Z_0+=norm_[i+1]*exp_alpha_[i];
+  }
   double Z_tg=0;
   std::fill(tg_dV_dAlpha_.begin(),tg_dV_dAlpha_.end(),0);
   std::fill(tg_d2V_dAlpha2_.begin(),tg_d2V_dAlpha2_.end(),0);
-  for(Grid::index_t t=rank_; t<grid_p_[0]->getSize(); t+=NumParallel_)
-  { //TODO can we recycle some code?
+  for(Grid::index_t t=rank_; t<grid_p_[0]->getSize(); t+=NumParallel_) {
+    //TODO can we recycle some code?
     std::vector<double> prob(grid_p_.size());
-    for(unsigned n=0; n<grid_p_.size(); n++)
+    for(unsigned n=0; n<grid_p_.size(); n++) {
       prob[n]=grid_p_[n]->getValue(t);
+    }
     double tot_prob=prob[0];
-    for(unsigned i=0; i<alpha_size_; i++)
+    for(unsigned i=0; i<alpha_size_; i++) {
       tot_prob+=prob[i+1]*exp_alpha_[i];
+    }
     std::vector<double> dV_dAlpha(alpha_size_);
     std::vector<double> d2V_dAlpha2(sym_alpha_size_);
-    for(unsigned i=0; i<alpha_size_; i++)
+    for(unsigned i=0; i<alpha_size_; i++) {
       dV_dAlpha[i]=-(1-inv_gamma_)/tot_prob*prob[i+1]*exp_alpha_[i];
-    for(unsigned i=0; i<alpha_size_; i++)
-    {
+    }
+    for(unsigned i=0; i<alpha_size_; i++) {
       d2V_dAlpha2[get_index(i,i)]=-beta_*dV_dAlpha[i];
-      for(unsigned j=i; j<alpha_size_; j++)
+      for(unsigned j=i; j<alpha_size_; j++) {
         d2V_dAlpha2[get_index(i,j)]-=beta_/(1-inv_gamma_)*dV_dAlpha[i]*dV_dAlpha[j];
+      }
     }
     const double unnorm_tg_p=std::pow(tot_prob,inv_gamma_);
     Z_tg+=unnorm_tg_p;
-    for(unsigned i=0; i<alpha_size_; i++)
+    for(unsigned i=0; i<alpha_size_; i++) {
       tg_dV_dAlpha_[i]+=unnorm_tg_p*dV_dAlpha[i];
-    for(unsigned ij=0; ij<sym_alpha_size_; ij++)
+    }
+    for(unsigned ij=0; ij<sym_alpha_size_; ij++) {
       tg_d2V_dAlpha2_[ij]+=unnorm_tg_p*d2V_dAlpha2[ij];
+    }
   }
-  if(NumParallel_>1)
-  {
+  if(NumParallel_>1) {
     comm.Sum(Z_tg);
     comm.Sum(tg_dV_dAlpha_);
     comm.Sum(tg_d2V_dAlpha2_);
   }
-  for(unsigned i=0; i<alpha_size_; i++)
+  for(unsigned i=0; i<alpha_size_; i++) {
     tg_dV_dAlpha_[i]/=Z_tg;
-  for(unsigned ij=0; ij<sym_alpha_size_; ij++)
+  }
+  for(unsigned ij=0; ij<sym_alpha_size_; ij++) {
     tg_d2V_dAlpha2_[ij]/=Z_tg;
+  }
   getPntrToComponent("rct")->set(-1./beta_*std::log(Z_tg/Z_0)); //Z_tg is the best available estimate of Z_V
 }
 
-void VesDeltaF::update_alpha()
-{
+void VesDeltaF::update_alpha() {
 //combining the averages of multiple walkers
-  if(NumWalkers_>1)
-  {
-    if(comm.Get_rank()==0) //sum only once: in the first rank of each walker
-    {
+  if(NumWalkers_>1) {
+    if(comm.Get_rank()==0) { //sum only once: in the first rank of each walker
       multi_sim_comm.Sum(av_dV_dAlpha_);
       multi_sim_comm.Sum(av_dV_dAlpha_prod_);
       multi_sim_comm.Sum(av_d2V_dAlpha2_);
-      for(unsigned i=0; i<alpha_size_; i++)
+      for(unsigned i=0; i<alpha_size_; i++) {
         av_dV_dAlpha_[i]/=NumWalkers_;
-      for(unsigned ij=0; ij<sym_alpha_size_; ij++)
-      {
+      }
+      for(unsigned ij=0; ij<sym_alpha_size_; ij++) {
         av_dV_dAlpha_prod_[ij]/=NumWalkers_;
         av_d2V_dAlpha2_[ij]/=NumWalkers_;
       }
     }
-    if(comm.Get_size()>1)//if there are more ranks for each walker, everybody has to know
-    {
+    if(comm.Get_size()>1) { //if there are more ranks for each walker, everybody has to know
       comm.Bcast(av_dV_dAlpha_,0);
       comm.Bcast(av_dV_dAlpha_prod_,0);
       comm.Bcast(av_d2V_dAlpha2_,0);
@@ -664,11 +668,9 @@ void VesDeltaF::update_alpha()
 //build the gradient and the Hessian of the functional
   std::vector<double> grad_omega(alpha_size_);
   std::vector<double> hess_omega(sym_alpha_size_);
-  for(unsigned i=0; i<alpha_size_; i++)
-  {
+  for(unsigned i=0; i<alpha_size_; i++) {
     grad_omega[i]=tg_dV_dAlpha_[i]-av_dV_dAlpha_[i];
-    for(unsigned j=i; j<alpha_size_; j++)
-    {
+    for(unsigned j=i; j<alpha_size_; j++) {
       const unsigned ij=get_index(i,j);
       hess_omega[ij]=beta_*(av_dV_dAlpha_prod_[ij]-av_dV_dAlpha_[i]*av_dV_dAlpha_[j])+tg_d2V_dAlpha2_[ij]-av_d2V_dAlpha2_[ij];
     }
@@ -676,16 +678,18 @@ void VesDeltaF::update_alpha()
 //calculate the increment and update alpha
   mean_counter_++;
   long long unsigned mean_weight=mean_counter_;
-  if(mean_weight_tau_>0 && mean_weight_tau_<mean_counter_)
+  if(mean_weight_tau_>0 && mean_weight_tau_<mean_counter_) {
     mean_weight=mean_weight_tau_;
+  }
   std::vector<double> damping(alpha_size_);
-  for(unsigned i=0; i<alpha_size_; i++)
-  {
+  for(unsigned i=0; i<alpha_size_; i++) {
     double increment_i=grad_omega[i];
-    for(unsigned j=0; j<alpha_size_; j++)
+    for(unsigned j=0; j<alpha_size_; j++) {
       increment_i+=hess_omega[get_index(i,j)]*(inst_alpha_[j]-mean_alpha_[j]);
-    if(!damping_off_)
+    }
+    if(!damping_off_) {
       past_increment2_[i]+=increment_i*increment_i;
+    }
     damping[i]=std::sqrt(past_increment2_[i]);
     prev_exp_alpha_[i]=std::exp(-beta_*mean_alpha_[i]);
     inst_alpha_[i]-=minimization_step_/damping[i]*increment_i;
@@ -694,11 +698,9 @@ void VesDeltaF::update_alpha()
   }
 
 //update the Alpha file
-  if(mean_counter_%print_stride_==0)
-  {
+  if(mean_counter_%print_stride_==0) {
     alphaOfile_.printField("time",getTime());
-    for(unsigned i=0; i<alpha_size_; i++)
-    {
+    for(unsigned i=0; i<alpha_size_; i++) {
       const std::string index(std::to_string(i+1));
       alphaOfile_.printField("alpha_"+index,mean_alpha_[i]);
       alphaOfile_.printField("auxiliary_"+index,inst_alpha_[i]);
@@ -709,12 +711,12 @@ void VesDeltaF::update_alpha()
 }
 
 //mapping of a [alpha_size_]x[alpha_size_] symmetric matrix into a vector of size sym_alpha_size_, useful for the communicator
-inline unsigned VesDeltaF::get_index(const unsigned i, const unsigned j) const
-{
-  if(i<=j)
+inline unsigned VesDeltaF::get_index(const unsigned i, const unsigned j) const {
+  if(i<=j) {
     return j+i*(alpha_size_-1)-i*(i-1)/2;
-  else
+  } else {
     return get_index(j,i);
+  }
 }
 
 }

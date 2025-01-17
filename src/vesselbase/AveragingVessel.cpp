@@ -31,16 +31,19 @@ void AveragingVessel::registerKeywords( Keywords& keys ) {
 
 AveragingVessel::AveragingVessel( const vesselbase::VesselOptions& vo ):
   Vessel(vo),
-  wascleared(true)
-{
+  wascleared(true) {
   if( getAction() ) {
     ActionWithAveraging* myav = dynamic_cast<ActionWithAveraging*>( getAction() );
-    plumed_assert( myav ); unormalised = myav->ignoreNormalization();
+    plumed_assert( myav );
+    unormalised = myav->ignoreNormalization();
   }
 }
 
 void AveragingVessel::finish( const std::vector<double>& buffer ) {
-  wascleared=false; for(unsigned i=1; i<data.size(); ++i) data[i]+=buffer[bufstart + i - 1];
+  wascleared=false;
+  for(unsigned i=1; i<data.size(); ++i) {
+    data[i]+=buffer[bufstart + i - 1];
+  }
 }
 
 bool AveragingVessel::wasreset() const {
@@ -48,7 +51,8 @@ bool AveragingVessel::wasreset() const {
 }
 
 void AveragingVessel::clear() {
-  plumed_assert( wascleared ); data.assign( data.size(), 0.0 );
+  plumed_assert( wascleared );
+  data.assign( data.size(), 0.0 );
 }
 
 void AveragingVessel::reset() {
@@ -56,7 +60,9 @@ void AveragingVessel::reset() {
 }
 
 void AveragingVessel::setDataSize( const unsigned& size ) {
-  if( data.size()!=(1+size) ) data.resize( 1+size, 0 );
+  if( data.size()!=(1+size) ) {
+    data.resize( 1+size, 0 );
+  }
 }
 
 }

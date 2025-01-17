@@ -100,7 +100,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit AlphaBeta(const ActionOptions&);
   double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
-  bool isPeriodic() override { return false; }
+  bool isPeriodic() override {
+    return false;
+  }
 };
 
 PLUMED_REGISTER_ACTION(AlphaBeta,"ALPHABETA")
@@ -123,8 +125,7 @@ void AlphaBeta::registerKeywords( Keywords& keys ) {
 
 AlphaBeta::AlphaBeta(const ActionOptions&ao):
   Action(ao),
-  MultiColvarBase(ao)
-{
+  MultiColvarBase(ao) {
   // Read in the atoms
   std::vector<AtomNumber> all_atoms;
   readAtomsLikeKeyword( "ATOMS", 4, all_atoms );
@@ -141,12 +142,16 @@ AlphaBeta::AlphaBeta(const ActionOptions&ao):
   // Read in reference values
   unsigned ntarget=0;
   for(unsigned i=0; i<target.size(); ++i) {
-    if( !parseNumbered( "REFERENCE", i+1, target[i] ) ) break;
+    if( !parseNumbered( "REFERENCE", i+1, target[i] ) ) {
+      break;
+    }
     ntarget++;
   }
   if( ntarget==0 ) {
     parse("REFERENCE",target[0]);
-    for(unsigned i=1; i<target.size(); ++i) target[i]=target[0];
+    for(unsigned i=1; i<target.size(); ++i) {
+      target[i]=target[0];
+    }
   } else if( ntarget!=target.size() ) {
     error("found wrong number of REFERENCE values");
   }
@@ -154,12 +159,16 @@ AlphaBeta::AlphaBeta(const ActionOptions&ao):
   // Read in reference values
   unsigned ncoefficient=0;
   for(unsigned i=0; i<coefficient.size(); ++i) {
-    if( !parseNumbered( "COEFFICIENT", i+1, coefficient[i] ) ) break;
+    if( !parseNumbered( "COEFFICIENT", i+1, coefficient[i] ) ) {
+      break;
+    }
     ncoefficient++;
   }
   if( ncoefficient==0 ) {
     parse("COEFFICIENT",coefficient[0]);
-    for(unsigned i=1; i<coefficient.size(); ++i) coefficient[i]=coefficient[0];
+    for(unsigned i=1; i<coefficient.size(); ++i) {
+      coefficient[i]=coefficient[0];
+    }
   } else if( ncoefficient !=coefficient.size() ) {
     error("found wrong number of COEFFICIENT values");
   }

@@ -38,28 +38,33 @@ void ActionWithInputVessel::registerKeywords(Keywords& keys) {
 ActionWithInputVessel::ActionWithInputVessel(const ActionOptions&ao):
   Action(ao),
   arguments(NULL),
-  myBridgeVessel(NULL)
-{
+  myBridgeVessel(NULL) {
 }
 
 void ActionWithInputVessel::readArgument( const std::string& type ) {
   std::string mlab;
-  if( keywords.exists("DATA") && type!="grid" ) parse("DATA",mlab);
+  if( keywords.exists("DATA") && type!="grid" ) {
+    parse("DATA",mlab);
+  }
   ActionWithVessel* mves= plumed.getActionSet().selectWithLabel<ActionWithVessel*>(mlab);
-  if(!mves) error("action labelled " +  mlab + " does not exist or does not have vessels");
+  if(!mves) {
+    error("action labelled " +  mlab + " does not exist or does not have vessels");
+  }
   addDependency(mves);
 
   ActionWithValue* aval=dynamic_cast<ActionWithValue*>( this );
   if(aval) {
     if( aval->checkNumericalDerivatives() ) {
       ActionWithValue* aval2=dynamic_cast<ActionWithValue*>( mves );
-      plumed_assert( aval2 ); aval2->useNumericalDerivatives();
+      plumed_assert( aval2 );
+      aval2->useNumericalDerivatives();
     }
   }
 
   if( type=="bridge" ) {
     ActionWithVessel* aves=dynamic_cast<ActionWithVessel*>( this );
-    plumed_assert(aves); myBridgeVessel = mves->addBridgingVessel( aves );
+    plumed_assert(aves);
+    myBridgeVessel = mves->addBridgingVessel( aves );
     arguments = dynamic_cast<Vessel*>( myBridgeVessel );
   } else  if( type=="store" ) {
     arguments = dynamic_cast<Vessel*>( mves->buildDataStashes( NULL ) );
@@ -81,7 +86,8 @@ void ActionWithInputVessel::calculateNumericalDerivatives( ActionWithValue* a ) 
 }
 
 void ActionWithInputVessel::applyBridgeForces( const std::vector<double>& bb ) {
-  plumed_dbg_assert( myBridgeVessel ); addBridgeForces( bb );
+  plumed_dbg_assert( myBridgeVessel );
+  addBridgeForces( bb );
 }
 
 }

@@ -60,16 +60,22 @@ unsigned OpenMP::getGoodNumThreads(const T*x,unsigned n) {
 // to cache line boundary
   unsigned m=n*sizeof(T)/(2*getCachelineSize());
   unsigned numThreads=getNumThreads();
-  if(m>=numThreads) m=numThreads;
-  else m=1;
+  if(m>=numThreads) {
+    m=numThreads;
+  } else {
+    m=1;
+  }
   return m;
 }
 
 
 template<typename T>
 unsigned OpenMP::getGoodNumThreads(const std::vector<T> & v) {
-  if(v.size()==0) return 1;
-  else return getGoodNumThreads(&v[0],v.size());
+  if(v.size()==0) {
+    return 1;
+  } else {
+    return getGoodNumThreads(&v[0],v.size());
+  }
 }
 
 

@@ -97,7 +97,9 @@ public:
 /// Add an action that uses this data
   void addActionThatUses( ActionWithVessel* actionThatUses );
 /// Return the number of components in the vector
-  unsigned getNumberOfComponents() const { return vecsize; }
+  unsigned getNumberOfComponents() const {
+    return vecsize;
+  }
 /// Get the values of all the components in the vector
   void retrieveSequentialValue( const unsigned& myelem, const bool& normed, std::vector<double>& values ) const ;
   void retrieveValueWithIndex( const unsigned& myelem, const bool& normed, std::vector<double>& values ) const ;
@@ -107,7 +109,9 @@ public:
 /// Do all resizing of data
   void resize() override;
 ///
-  std::string description() override { return ""; }
+  std::string description() override {
+    return "";
+  }
 /// Get the number of derivatives for the ith value
   unsigned getNumberOfDerivatives( const unsigned& );
 /// Get the size of the derivative list
@@ -123,7 +127,9 @@ public:
 /// Activate indexes (this is used at end of chain rule)
   virtual void activateIndices( ActionWithVessel* ) {}
 /// Forces on vectors should always be applied elsewhere
-  bool applyForce(std::vector<double>&) override { return false; }
+  bool applyForce(std::vector<double>&) override {
+    return false;
+  }
 ///  Get the number of data users
   unsigned getNumberOfDataUsers() const ;
 /// Get one of the ith data user
@@ -151,7 +157,9 @@ unsigned StoreDataVessel::getNumberOfDerivativeSpacesPerComponent() const {
 
 inline
 bool StoreDataVessel::storedValueIsActive( const unsigned& iatom ) const {
-  if( !getAction()->taskIsCurrentlyActive( iatom ) ) return false;
+  if( !getAction()->taskIsCurrentlyActive( iatom ) ) {
+    return false;
+  }
   unsigned jatom = getStoreIndex( iatom );
   plumed_dbg_assert( jatom<getNumberOfStoredValues() );
   return local_buffer[jatom*vecsize*nspace]>epsilon;
@@ -169,16 +177,22 @@ unsigned StoreDataVessel::getNumberOfStoredValues() const {
 
 inline
 unsigned StoreDataVessel::getStoreIndex( const unsigned& ind ) const {
-  if( getAction()->nactive_tasks==getAction()->getFullNumberOfTasks() ) return ind;
+  if( getAction()->nactive_tasks==getAction()->getFullNumberOfTasks() ) {
+    return ind;
+  }
 
   // Binary search for required element - faster scaling than sequential search
   unsigned l=0, r=getAction()->nactive_tasks-1;
   for(unsigned i=0; i<getAction()->nactive_tasks; ++i) {
     plumed_assert( l<=r );
     unsigned m = std::floor( (l + r)/2 );
-    if( ind==getAction()->indexOfTaskInFullList[m] ) return m;
-    else if( getAction()->indexOfTaskInFullList[m]<ind ) l=m+1;
-    else if( getAction()->indexOfTaskInFullList[m]>ind ) r=m-1;
+    if( ind==getAction()->indexOfTaskInFullList[m] ) {
+      return m;
+    } else if( getAction()->indexOfTaskInFullList[m]<ind ) {
+      l=m+1;
+    } else if( getAction()->indexOfTaskInFullList[m]>ind ) {
+      r=m-1;
+    }
   }
   plumed_merror("requested task is not active");
 }
@@ -200,7 +214,8 @@ unsigned StoreDataVessel::getNumberOfDataUsers() const {
 
 inline
 ActionWithVessel* StoreDataVessel::getDataUser( const unsigned& idata ) {
-  plumed_dbg_assert( idata<userActions.size() ); return userActions[idata];
+  plumed_dbg_assert( idata<userActions.size() );
+  return userActions[idata];
 }
 
 }

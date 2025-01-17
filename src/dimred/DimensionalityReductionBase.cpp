@@ -36,11 +36,12 @@ void DimensionalityReductionBase::registerKeywords( Keywords& keys ) {
 DimensionalityReductionBase::DimensionalityReductionBase( const ActionOptions& ao ):
   Action(ao),
   analysis::AnalysisBase(ao),
-  dimredbase(NULL)
-{
+  dimredbase(NULL) {
   // Check that some dissimilarity information is available
   if( my_input_data ) {
-    if( getName()!="PCA" && !dissimilaritiesWereSet() ) error("dissimilarities have not been calcualted in input actions");
+    if( getName()!="PCA" && !dissimilaritiesWereSet() ) {
+      error("dissimilarities have not been calcualted in input actions");
+    }
     // Now we check if the input was a dimensionality reduction object
     dimredbase = dynamic_cast<DimensionalityReductionBase*>( my_input_data );
   }
@@ -52,25 +53,36 @@ DimensionalityReductionBase::DimensionalityReductionBase( const ActionOptions& a
     log.printf("  projecting in %u dimensional space \n",nlow);
   } else if( keywords.exists("NLOW_DIM") ) {
     parse("NLOW_DIM",nlow);
-    if( nlow<1 ) error("dimensionality of low dimensional space must be at least one");
+    if( nlow<1 ) {
+      error("dimensionality of low dimensional space must be at least one");
+    }
     log.printf("  projecting in %u dimensional space \n",nlow);
   }
   // Now add fake components to the underlying ActionWithValue for the arguments
   std::string num;
   for(unsigned i=0; i<nlow; ++i) {
-    Tools::convert(i+1,num); addComponent( "coord-" + num ); componentIsNotPeriodic( "coord-" + num );
+    Tools::convert(i+1,num);
+    addComponent( "coord-" + num );
+    componentIsNotPeriodic( "coord-" + num );
   }
 }
 
 std::vector<Value*> DimensionalityReductionBase::getArgumentList() {
   std::vector<Value*> arglist( analysis::AnalysisBase::getArgumentList() );
-  for(unsigned i=0; i<nlow; ++i) arglist.push_back( getPntrToComponent(i) );
+  for(unsigned i=0; i<nlow; ++i) {
+    arglist.push_back( getPntrToComponent(i) );
+  }
   return arglist;
 }
 
 void DimensionalityReductionBase::getProjection( const unsigned& idata, std::vector<double>& point, double& weight ) {
-  if( point.size()!=nlow ) point.resize( nlow );
-  weight = getWeight(idata); for(unsigned i=0; i<nlow; ++i) point[i]=projections(idata,i);
+  if( point.size()!=nlow ) {
+    point.resize( nlow );
+  }
+  weight = getWeight(idata);
+  for(unsigned i=0; i<nlow; ++i) {
+    point[i]=projections(idata,i);
+  }
 }
 
 void DimensionalityReductionBase::performAnalysis() {
@@ -81,24 +93,35 @@ void DimensionalityReductionBase::performAnalysis() {
   projections.resize( getNumberOfDataPoints(), nlow );
   // Retrieve the projections from the previous calculation
   if( dimredbase ) {
-    std::vector<double> newp( nlow ); double w;
+    std::vector<double> newp( nlow );
+    double w;
     for(unsigned i=0; i<getNumberOfDataPoints(); ++i) {
-      dimredbase->getProjection( i, newp, w ); plumed_dbg_assert( newp.size()==nlow );
-      for(unsigned j=0; j<nlow; ++j) projections(i,j)=newp[j];
+      dimredbase->getProjection( i, newp, w );
+      plumed_dbg_assert( newp.size()==nlow );
+      for(unsigned j=0; j<nlow; ++j) {
+        projections(i,j)=newp[j];
+      }
     }
   }
   // Calculate matrix of dissimilarities
-  Matrix<double> targets( getNumberOfDataPoints(), getNumberOfDataPoints() ); targets=0;
+  Matrix<double> targets( getNumberOfDataPoints(), getNumberOfDataPoints() );
+  targets=0;
   for(unsigned i=1; i<getNumberOfDataPoints(); ++i) {
-    for(unsigned j=0; j<i; ++j) targets(i,j)=targets(j,i)=getDissimilarity( i, j );
+    for(unsigned j=0; j<i; ++j) {
+      targets(i,j)=targets(j,i)=getDissimilarity( i, j );
+    }
   }
   // This calculates the projections of the points
   calculateProjections( targets, projections );
   // Now set the projection values in the underlying object
   if( my_input_data ) {
     for(unsigned idat=0; idat<getNumberOfDataPoints(); ++idat) {
-      analysis::DataCollectionObject& myref=AnalysisBase::getStoredData(idat,false); std::string num;
-      for(unsigned i=0; i<nlow; ++i) { Tools::convert(i+1,num); myref.setArgument( getLabel() + ".coord-" + num, projections(idat,i) ); }
+      analysis::DataCollectionObject& myref=AnalysisBase::getStoredData(idat,false);
+      std::string num;
+      for(unsigned i=0; i<nlow; ++i) {
+        Tools::convert(i+1,num);
+        myref.setArgument( getLabel() + ".coord-" + num, projections(idat,i) );
+      }
     }
   }
   log.printf("Generated projections required by action %s \n",getLabel().c_str() );
@@ -107,16 +130,24 @@ void DimensionalityReductionBase::performAnalysis() {
 double DimensionalityReductionBase::calculateStress( const std::vector<double>& p, std::vector<double>& d ) {
 
   // Zero derivative and stress accumulators
-  for(unsigned i=0; i<p.size(); ++i) d[i]=0.0;
-  double stress=0; std::vector<double> dtmp( p.size() );
+  for(unsigned i=0; i<p.size(); ++i) {
+    d[i]=0.0;
+  }
+  double stress=0;
+  std::vector<double> dtmp( p.size() );
 
   // Now accumulate total stress on system
   for(unsigned i=0; i<dtargets.size(); ++i) {
-    if( dtargets[i]<epsilon ) continue ;
+    if( dtargets[i]<epsilon ) {
+      continue ;
+    }
 
     // Calculate distance in low dimensional space
     double dd=0;
-    for(unsigned j=0; j<p.size(); ++j) { dtmp[j]=p[j]-projections(i,j); dd+=dtmp[j]*dtmp[j]; }
+    for(unsigned j=0; j<p.size(); ++j) {
+      dtmp[j]=p[j]-projections(i,j);
+      dd+=dtmp[j]*dtmp[j];
+    }
     dd = std::sqrt(dd);
 
     // Now do transformations and calculate differences
@@ -124,7 +155,9 @@ double DimensionalityReductionBase::calculateStress( const std::vector<double>& 
 
     // Calculate derivatives
     double pref = 2.*getWeight(i) / dd;
-    for(unsigned j=0; j<p.size(); ++j) d[j] += pref*ddiff*dtmp[j];
+    for(unsigned j=0; j<p.size(); ++j) {
+      d[j] += pref*ddiff*dtmp[j];
+    }
 
     // Accumulate the total stress
     stress += getWeight(i)*ddiff*ddiff;

@@ -187,7 +187,9 @@ private:
   std::vector<std::unique_ptr<OFile>> combinedgradientOFiles_;
   double decaying_aver_tau_;
 private:
-  CoeffsVector& CombinedGradient(const unsigned int c_id) const {return *combinedgradient_pntrs_[c_id];}
+  CoeffsVector& CombinedGradient(const unsigned int c_id) const {
+    return *combinedgradient_pntrs_[c_id];
+  }
   double getAverDecay() const;
 public:
   static void registerKeywords(Keywords&);
@@ -219,8 +221,7 @@ void Opt_BachAveragedSGD::registerKeywords(Keywords& keys) {
 Opt_BachAveragedSGD::Opt_BachAveragedSGD(const ActionOptions&ao):
   PLUMED_VES_OPTIMIZER_INIT(ao),
   combinedgradient_wstride_(100),
-  decaying_aver_tau_(0.0)
-{
+  decaying_aver_tau_(0.0) {
   log.printf("  Averaged stochastic gradient decent, see and cite ");
   log << plumed.cite("Bach and Moulines, NIPS 26, 773-781 (2013)");
   log.printf("\n");
@@ -245,8 +246,7 @@ Opt_BachAveragedSGD::Opt_BachAveragedSGD(const ActionOptions&ao):
       std::string label = getGradientPntrs()[i]->getLabel();
       if(label.find("gradient")!=std::string::npos) {
         label.replace(label.find("gradient"), std::string("gradient").length(), "combined_gradient");
-      }
-      else {
+      } else {
         label += "_combined";
       }
       combinedgradient_tmp->setLabels(label);
@@ -258,8 +258,7 @@ Opt_BachAveragedSGD::Opt_BachAveragedSGD(const ActionOptions&ao):
     //
     if(numberOfCoeffsSets()==1) {
       log.printf("  Combined gradient (gradient + Hessian term) will be written out to file %s every %u iterations\n",combinedgradientOFiles_[0]->getPath().c_str(),combinedgradient_wstride_);
-    }
-    else {
+    } else {
       log.printf("  Combined gradient (gradient + Hessian term) will be written out to the following files every %u iterations:\n",combinedgradient_wstride_);
       for(unsigned int i=0; i<combinedgradientOFiles_.size(); i++) {
         log.printf("   coefficient set %u: %s\n",i,combinedgradientOFiles_[i]->getPath().c_str());

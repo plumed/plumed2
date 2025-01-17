@@ -172,8 +172,7 @@ TD_Custom::TD_Custom(const ActionOptions& ao):
 //
   use_fes_(false),
   use_kbt_(false),
-  use_beta_(false)
-{
+  use_beta_(false) {
   std::string func_str;
   parse("FUNCTION",func_str);
   checkRead();
@@ -182,8 +181,7 @@ TD_Custom::TD_Custom(const ActionOptions& ao):
     lepton::ParsedExpression pe=lepton::Parser::parse(func_str).optimize(lepton::Constants());
     log<<"  function as parsed by lepton: "<<pe<<"\n";
     expression=pe.createCompiledExpression();
-  }
-  catch(PLMD::lepton::Exception& exc) {
+  } catch(PLMD::lepton::Exception& exc) {
     plumed_merror("There was some problem in parsing the function "+func_str+" given in FUNCTION with lepton");
   }
 
@@ -192,19 +190,15 @@ TD_Custom::TD_Custom(const ActionOptions& ao):
     unsigned int cv_idx;
     if(curr_var.substr(0,cv_var_prefix_str_.size())==cv_var_prefix_str_ && Tools::convertNoexcept(curr_var.substr(cv_var_prefix_str_.size()),cv_idx) && cv_idx>0) {
       cv_var_idx_.push_back(cv_idx-1);
-    }
-    else if(curr_var==fes_var_str_) {
+    } else if(curr_var==fes_var_str_) {
       use_fes_=true;
       setDynamic();
       setFesGridNeeded();
-    }
-    else if(curr_var==kbt_var_str_) {
+    } else if(curr_var==kbt_var_str_) {
       use_kbt_=true;
-    }
-    else if(curr_var==beta_var_str_) {
+    } else if(curr_var==beta_var_str_) {
       use_beta_=true;
-    }
-    else {
+    } else {
       plumed_merror(getName()+": problem with parsing formula with lepton, cannot recognise the variable "+curr_var);
     }
   }
@@ -213,7 +207,8 @@ TD_Custom::TD_Custom(const ActionOptions& ao):
   cv_var_str_.resize(cv_var_idx_.size());
   cv_var_lepton_refs_.resize(cv_var_str_.size());
   for(unsigned int j=0; j<cv_var_idx_.size(); j++) {
-    std::string str1; Tools::convert(cv_var_idx_[j]+1,str1);
+    std::string str1;
+    Tools::convert(cv_var_idx_[j]+1,str1);
     cv_var_str_[j] = cv_var_prefix_str_+str1;
     try {
       cv_var_lepton_refs_[j] = &expression.getVariableReference(cv_var_str_[j]);
@@ -257,10 +252,14 @@ void TD_Custom::updateGrid() {
     plumed_massert(getFesGridPntr()!=NULL,"the FES grid has to be linked to the free energy in the target distribution");
   }
   if(use_kbt_) {
-    if(kbt_var_lepton_ref_) {*kbt_var_lepton_ref_= 1.0/getBeta();}
+    if(kbt_var_lepton_ref_) {
+      *kbt_var_lepton_ref_= 1.0/getBeta();
+    }
   }
   if(use_beta_) {
-    if(beta_var_lepton_ref_) {*beta_var_lepton_ref_= getBeta();}
+    if(beta_var_lepton_ref_) {
+      *beta_var_lepton_ref_= getBeta();
+    }
   }
   //
   std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(getTargetDistGridPntr());
@@ -269,22 +268,27 @@ void TD_Custom::updateGrid() {
   for(Grid::index_t l=0; l<targetDistGrid().getSize(); l++) {
     std::vector<double> point = targetDistGrid().getPoint(l);
     for(unsigned int k=0; k<cv_var_str_.size() ; k++) {
-      if(cv_var_lepton_refs_[k]) {*cv_var_lepton_refs_[k] = point[cv_var_idx_[k]];}
+      if(cv_var_lepton_refs_[k]) {
+        *cv_var_lepton_refs_[k] = point[cv_var_idx_[k]];
+      }
     }
     if(use_fes_) {
-      if(fes_var_lepton_ref_) {*fes_var_lepton_ref_ = getFesGridPntr()->getValue(l);}
+      if(fes_var_lepton_ref_) {
+        *fes_var_lepton_ref_ = getFesGridPntr()->getValue(l);
+      }
     }
     double value = expression.evaluate();
 
-    if(value<0.0 && !isTargetDistGridShiftedToZero()) {plumed_merror(getName()+": The target distribution function gives negative values. You should change the definition of the function used for the target distribution to avoid this. You can also use the SHIFT_TO_ZERO keyword to avoid this problem.");}
+    if(value<0.0 && !isTargetDistGridShiftedToZero()) {
+      plumed_merror(getName()+": The target distribution function gives negative values. You should change the definition of the function used for the target distribution to avoid this. You can also use the SHIFT_TO_ZERO keyword to avoid this problem.");
+    }
     targetDistGrid().setValue(l,value);
     norm += integration_weights[l]*value;
     logTargetDistGrid().setValue(l,-std::log(value));
   }
   if(norm>0.0) {
     targetDistGrid().scaleAllValuesAndDerivatives(1.0/norm);
-  }
-  else if(!isTargetDistGridShiftedToZero()) {
+  } else if(!isTargetDistGridShiftedToZero()) {
     plumed_merror(getName()+": The target distribution function cannot be normalized proberly. You should change the definition of the function used for the target distribution to avoid this. You can also use the SHIFT_TO_ZERO keyword to avoid this problem.");
   }
   logTargetDistGrid().setMinToZero();

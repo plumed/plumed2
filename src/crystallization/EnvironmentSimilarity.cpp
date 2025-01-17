@@ -203,7 +203,9 @@ public:
 // active methods:
   virtual double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
 // Returns the number of coordinates of the field
-  bool isPeriodic() { return false; }
+  bool isPeriodic() {
+    return false;
+  }
 // Calculates maximum distance in an environment
   double maxDistance(std::vector<Vector> environment);
   // Parse everything connected to the definition of the reference environments
@@ -218,7 +220,9 @@ PLUMED_REGISTER_ACTION(EnvironmentSimilarity,"ENVIRONMENTSIMILARITY")
 
 void EnvironmentSimilarity::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );
-  keys.use("SPECIES"); keys.use("SPECIESA"); keys.use("SPECIESB");
+  keys.use("SPECIES");
+  keys.use("SPECIESA");
+  keys.use("SPECIESB");
   keys.add("compulsory","SIGMA","0.1","Broadening parameter");
   keys.add("compulsory","CRYSTAL_STRUCTURE","FCC","Targeted crystal structure. Options are: "
            "SC: simple cubic, "
@@ -239,15 +243,22 @@ void EnvironmentSimilarity::registerKeywords( Keywords& keys ) {
   keys.add("optional","ATOM_NAMES_FILE","PDB file with atom names for all atoms in SPECIES."
            " Atoms in reference environments will be compared only if atom names match.");
   // Use actionWithDistributionKeywords
-  keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("LESS_THAN"); keys.use("MAX");
-  keys.use("MIN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
-  keys.use("ALT_MIN"); keys.use("LOWEST"); keys.use("HIGHEST");
+  keys.use("MEAN");
+  keys.use("MORE_THAN");
+  keys.use("LESS_THAN");
+  keys.use("MAX");
+  keys.use("MIN");
+  keys.use("BETWEEN");
+  keys.use("HISTOGRAM");
+  keys.use("MOMENTS");
+  keys.use("ALT_MIN");
+  keys.use("LOWEST");
+  keys.use("HIGHEST");
 }
 
 EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
   Action(ao),
-  MultiColvarBase(ao)
-{
+  MultiColvarBase(ao) {
   log.printf("  Please read and cite ");
   log << plumed.cite("Piaggi and Parrinello, J. Chem. Phys. 150 (24), 244119 (2019)");
   log.printf("\n");
@@ -263,7 +274,9 @@ EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
 
   lambda_=100;
   parse("LAMBDA", lambda_);
-  if (environments_.size()>1) log.printf("  using a soft max function with lambda %f\n",lambda_);
+  if (environments_.size()>1) {
+    log.printf("  using a soft max function with lambda %f\n",lambda_);
+  }
 
   // Set the link cell cutoff
   double rcut = max_dist_ref_vector + 3*sigma;
@@ -271,7 +284,9 @@ EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
   rcut2_ = rcut * rcut;
 
   // And setup the ActionWithVessel
-  std::vector<AtomNumber> all_atoms; setupMultiColvarBase( all_atoms ); checkRead();
+  std::vector<AtomNumber> all_atoms;
+  setupMultiColvarBase( all_atoms );
+  checkRead();
 
   plumed_massert(atomNames_.empty() || atomNames_.size()==getNumberOfAtoms(),"mismatch between atoms in SPECIES and ATOM_NAMES_FILE");
 }
@@ -398,7 +413,9 @@ double EnvironmentSimilarity::maxDistance( std::vector<Vector> environment ) {
   double max_dist = 0.0;
   for(unsigned i=0; i<environment.size(); ++i) {
     double norm=environment[i].modulo();
-    if (norm>max_dist) max_dist=norm;
+    if (norm>max_dist) {
+      max_dist=norm;
+    }
   }
   return max_dist;
 }
@@ -410,7 +427,9 @@ void EnvironmentSimilarity::parseReferenceEnvironments( std::vector<std::vector<
   parse("CRYSTAL_STRUCTURE", crystal_structure);
   // find crystal structure
   if (crystal_structure == "FCC") {
-    if (lattice_constants.size() != 1) error("Number of LATTICE_CONSTANTS arguments must be one for FCC");
+    if (lattice_constants.size() != 1) {
+      error("Number of LATTICE_CONSTANTS arguments must be one for FCC");
+    }
     environments.resize(1);
     environments[0].resize(12);
     environments[0][0]  = Vector(+0.5,+0.5,+0.0)*lattice_constants[0];
@@ -427,7 +446,9 @@ void EnvironmentSimilarity::parseReferenceEnvironments( std::vector<std::vector<
     environments[0][11] = Vector(+0.0,+0.5,-0.5)*lattice_constants[0];
     max_dist = std::sqrt(2)*lattice_constants[0]/2.;
   } else if (crystal_structure == "SC") {
-    if (lattice_constants.size() != 1) error("Number of LATTICE_CONSTANTS arguments must be one for SC");
+    if (lattice_constants.size() != 1) {
+      error("Number of LATTICE_CONSTANTS arguments must be one for SC");
+    }
     environments.resize(1);
     environments[0].resize(6);
     environments[0][0]  = Vector(+1.0,+0.0,+0.0)*lattice_constants[0];
@@ -438,7 +459,9 @@ void EnvironmentSimilarity::parseReferenceEnvironments( std::vector<std::vector<
     environments[0][5]  = Vector(+0.0,+0.0,-1.0)*lattice_constants[0];
     max_dist = lattice_constants[0];
   } else if (crystal_structure == "BCC") {
-    if (lattice_constants.size() != 1) error("Number of LATTICE_CONSTANTS arguments must be one for BCC");
+    if (lattice_constants.size() != 1) {
+      error("Number of LATTICE_CONSTANTS arguments must be one for BCC");
+    }
     environments.resize(1);
     environments[0].resize(14);
     environments[0][0]  = Vector(+0.5,+0.5,+0.5)*lattice_constants[0];
@@ -457,7 +480,9 @@ void EnvironmentSimilarity::parseReferenceEnvironments( std::vector<std::vector<
     environments[0][13] = Vector(+0.0,+0.0,-1.0)*lattice_constants[0];
     max_dist = lattice_constants[0];
   } else if (crystal_structure == "HCP") {
-    if (lattice_constants.size() != 2) error("Number of LATTICE_CONSTANTS arguments must be two for HCP");
+    if (lattice_constants.size() != 2) {
+      error("Number of LATTICE_CONSTANTS arguments must be two for HCP");
+    }
     environments.resize(2);
     environments[0].resize(12);
     environments[1].resize(12);
@@ -488,9 +513,12 @@ void EnvironmentSimilarity::parseReferenceEnvironments( std::vector<std::vector<
     environments[1][11] = Vector(+0.0,+sqrt3/3.0,+0.0)*lattice_constants[0] + Vector(+0.0,+0.0,-0.5)*lattice_constants[1];
     max_dist = lattice_constants[0];
   } else if (crystal_structure == "DIAMOND") {
-    if (lattice_constants.size() != 1) error("Number of LATTICE_CONSTANTS arguments must be one for DIAMOND");
+    if (lattice_constants.size() != 1) {
+      error("Number of LATTICE_CONSTANTS arguments must be one for DIAMOND");
+    }
     environments.resize(2);
-    environments[0].resize(4); environments[1].resize(4);
+    environments[0].resize(4);
+    environments[1].resize(4);
     environments[0][0]  = Vector(+1.0,+1.0,+1.0)*lattice_constants[0]/4.0;
     environments[0][1]  = Vector(-1.0,-1.0,+1.0)*lattice_constants[0]/4.0;
     environments[0][2]  = Vector(+1.0,-1.0,-1.0)*lattice_constants[0]/4.0;
@@ -505,49 +533,71 @@ void EnvironmentSimilarity::parseReferenceEnvironments( std::vector<std::vector<
     parse("REFERENCE",reffile);
     if (!reffile.empty()) {
       // Case with one reference environment
-      environments.resize(1); environmentsAtomNames.resize(1);
+      environments.resize(1);
+      environmentsAtomNames.resize(1);
       PDB pdb;
-      if( !pdb.read(reffile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength()) )
+      if( !pdb.read(reffile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength()) ) {
         error("missing input file " + reffile );
+      }
       unsigned natoms=pdb.getPositions().size();
-      environments[0].resize( natoms ); environmentsAtomNames[0].resize( natoms );
-      for(unsigned i=0; i<natoms; ++i) environments[0][i]=pdb.getPositions()[i];
-      for(unsigned i=0; i<natoms; ++i) environmentsAtomNames[0][i]=pdb.getAtomName(pdb.getAtomNumbers()[i]);
+      environments[0].resize( natoms );
+      environmentsAtomNames[0].resize( natoms );
+      for(unsigned i=0; i<natoms; ++i) {
+        environments[0][i]=pdb.getPositions()[i];
+      }
+      for(unsigned i=0; i<natoms; ++i) {
+        environmentsAtomNames[0][i]=pdb.getAtomName(pdb.getAtomNumbers()[i]);
+      }
       max_dist=maxDistance(environments[0]);
       log.printf("  reading %d reference vectors from %s \n", natoms, reffile.c_str() );
     } else {
       // Case with several reference environments
       max_dist=0;
       for(unsigned int i=1;; i++) {
-        if(!parseNumbered("REFERENCE_",i,reffile) ) {break;}
+        if(!parseNumbered("REFERENCE_",i,reffile) ) {
+          break;
+        }
         PDB pdb;
-        if( !pdb.read(reffile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength()) )
+        if( !pdb.read(reffile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength()) ) {
           error("missing input file " + reffile );
+        }
         unsigned natoms=pdb.getPositions().size();
-        std::vector<Vector> environment; std::vector<std::string> environmentAtomNames;
-        environment.resize( natoms ); environmentAtomNames.resize( natoms);
-        for(unsigned i=0; i<natoms; ++i) environment[i]=pdb.getPositions()[i];
-        for(unsigned i=0; i<natoms; ++i) environmentAtomNames[i]=pdb.getAtomName(pdb.getAtomNumbers()[i]);
+        std::vector<Vector> environment;
+        std::vector<std::string> environmentAtomNames;
+        environment.resize( natoms );
+        environmentAtomNames.resize( natoms);
+        for(unsigned i=0; i<natoms; ++i) {
+          environment[i]=pdb.getPositions()[i];
+        }
+        for(unsigned i=0; i<natoms; ++i) {
+          environmentAtomNames[i]=pdb.getAtomName(pdb.getAtomNumbers()[i]);
+        }
         environments.push_back(environment);
         environmentsAtomNames.push_back(environmentAtomNames);
         double norm = maxDistance(environment);
-        if (norm>max_dist) max_dist=norm;
+        if (norm>max_dist) {
+          max_dist=norm;
+        }
         log.printf("  Reference environment %d : reading %d reference vectors from %s \n", i, natoms, reffile.c_str() );
       }
     }
-    if (environments.size()==0) error("No environments have been found! Please specify a PDB file in the REFERENCE "
-                                        "or in the REFERENCE_1, REFERENCE_2, etc keywords");
+    if (environments.size()==0)
+      error("No environments have been found! Please specify a PDB file in the REFERENCE "
+            "or in the REFERENCE_1, REFERENCE_2, etc keywords");
     log.printf("  Number of reference environments is %lu\n",environments.size() );
     log.printf("  Number of vectors per reference environment is %lu\n",environments[0].size() );
     std::string atomNamesFile;
     parse("ATOM_NAMES_FILE",atomNamesFile);
     if (!atomNamesFile.empty()) {
       PDB pdb;
-      if( !pdb.read(atomNamesFile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength()) )
+      if( !pdb.read(atomNamesFile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength()) ) {
         error("missing input file " + atomNamesFile);
+      }
       unsigned natoms=pdb.getPositions().size();
       atomNames_.resize( natoms );
-      for(unsigned i=0; i<natoms; ++i) atomNames_[i]=pdb.getAtomName(pdb.getAtomNumbers()[i]);
+      for(unsigned i=0; i<natoms; ++i) {
+        atomNames_[i]=pdb.getAtomName(pdb.getAtomNumbers()[i]);
+      }
       log.printf("  Read %d atoms from atom names file %s \n", natoms, atomNamesFile.c_str() );
       log.printf("  Atoms in environments will be considered only if atom names match.\n");
     } else {
@@ -558,8 +608,11 @@ void EnvironmentSimilarity::parseReferenceEnvironments( std::vector<std::vector<
   }
 
   log.printf("  targeting the %s crystal structure",crystal_structure.c_str());
-  if (lattice_constants.size()>0) log.printf(" with lattice constants %f\n",lattice_constants[0]);
-  else log.printf("\n");
+  if (lattice_constants.size()>0) {
+    log.printf(" with lattice constants %f\n",lattice_constants[0]);
+  } else {
+    log.printf("\n");
+  }
 
   log.printf("  maximum distance in the reference environment is %f\n",max_dist);
 }

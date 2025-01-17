@@ -91,20 +91,27 @@ void VolumeInSphere::registerKeywords( Keywords& keys ) {
 
 VolumeInSphere::VolumeInSphere(const ActionOptions& ao):
   Action(ao),
-  ActionVolume(ao)
-{
+  ActionVolume(ao) {
   std::vector<AtomNumber> atom;
   parseAtomList("ATOM",atom);
-  if( atom.size()!=1 ) error("should only be one atom specified");
+  if( atom.size()!=1 ) {
+    error("should only be one atom specified");
+  }
   log.printf("  center of sphere is at position of atom : %d\n",atom[0].serial() );
 
-  std::string sw, errors; parse("RADIUS",sw);
-  if(sw.length()==0) error("missing RADIUS keyword");
+  std::string sw, errors;
+  parse("RADIUS",sw);
+  if(sw.length()==0) {
+    error("missing RADIUS keyword");
+  }
   switchingFunction.set(sw,errors);
-  if( errors.length()!=0 ) error("problem reading RADIUS keyword : " + errors );
+  if( errors.length()!=0 ) {
+    error("problem reading RADIUS keyword : " + errors );
+  }
   log.printf("  radius of sphere is given by %s \n", ( switchingFunction.description() ).c_str() );
 
-  checkRead(); requestAtoms(atom);
+  checkRead();
+  requestAtoms(atom);
 }
 
 void VolumeInSphere::setupRegions() { }
@@ -113,7 +120,9 @@ double VolumeInSphere::calculateNumberInside( const Vector& cpos, Vector& deriva
   // Calculate position of atom wrt to origin
   Vector fpos=pbcDistance( getPosition(0), cpos );
   double dfunc, value = switchingFunction.calculateSqr( fpos.modulo2(), dfunc );
-  derivatives.zero(); derivatives = dfunc*fpos; refders[0] = -derivatives;
+  derivatives.zero();
+  derivatives = dfunc*fpos;
+  refders[0] = -derivatives;
   // Add a virial contribution
   vir -= Tensor(fpos,derivatives);
   return value;

@@ -151,7 +151,9 @@ public:
 /// Are derivatives required for this quantity
   bool derivativesAreRequired() const ;
 /// Is this action thread safe
-  virtual bool threadSafe() const { return true; }
+  virtual bool threadSafe() const {
+    return true;
+  }
 /// Finish running all the calculations
   virtual void finishComputations( const std::vector<double>& buffer );
 /// Are the base quantities periodic
@@ -183,7 +185,9 @@ public:
 /// Ensure that data required in other vessels is stored
   StoreDataVessel* buildDataStashes( ActionWithVessel* actionThatUses );
 /// Apply forces from bridge vessel - this is rarely used - currently only in ActionVolume
-  virtual void applyBridgeForces( const std::vector<double>& bb ) { plumed_error(); }
+  virtual void applyBridgeForces( const std::vector<double>& bb ) {
+    plumed_error();
+  }
 /// These are overwritten in MultiColvarFunction
 //  virtual void activateIndexes( const unsigned&, const unsigned&, const std::vector<unsigned>& ){}
 /// Return a particular named vessel
@@ -193,8 +197,12 @@ public:
 /// Return the position in the current task list
   unsigned getPositionInCurrentTaskList( const unsigned& myind ) const ;
 /// These normalizes vectors and is used in StoreDataVessel
-  virtual void normalizeVector( std::vector<double>& vals ) const { plumed_error(); }
-  virtual void normalizeVectorDerivatives( MultiValue& myvals ) const { plumed_error(); }
+  virtual void normalizeVector( std::vector<double>& vals ) const {
+    plumed_error();
+  }
+  virtual void normalizeVectorDerivatives( MultiValue& myvals ) const {
+    plumed_error();
+  }
 };
 
 inline
@@ -278,10 +286,14 @@ bool ActionWithVessel::weightWithDerivatives() const {
 
 inline
 unsigned ActionWithVessel::getPositionInCurrentTaskList( const unsigned& myind ) const {
-  if( nactive_tasks==fullTaskList.size() ) return myind;
+  if( nactive_tasks==fullTaskList.size() ) {
+    return myind;
+  }
 
   for(unsigned i=0; i<nactive_tasks; ++i) {
-    if( myind==indexOfTaskInFullList[i] ) return i;
+    if( myind==indexOfTaskInFullList[i] ) {
+      return i;
+    }
   }
   plumed_merror("requested task is not active");
 }

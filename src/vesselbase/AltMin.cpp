@@ -54,23 +54,29 @@ void AltMin::reserveKeyword( Keywords& keys ) {
 }
 
 AltMin::AltMin( const vesselbase::VesselOptions& da ):
-  FunctionVessel(da)
-{
-  if( getAction()->isPeriodic() ) error("MIN is not a meaningful option for periodic variables");
-  parse("BETA",beta); usetol=true;
+  FunctionVessel(da) {
+  if( getAction()->isPeriodic() ) {
+    error("MIN is not a meaningful option for periodic variables");
+  }
+  parse("BETA",beta);
+  usetol=true;
 }
 
 std::string AltMin::value_descriptor() {
-  std::string str_beta; Tools::convert( beta, str_beta );
+  std::string str_beta;
+  Tools::convert( beta, str_beta );
   return "the minimum value. Beta is equal to " + str_beta;
 }
 
 double AltMin::calcTransform( const double& val, double& dv ) const {
-  double f = exp( -beta*val ); dv = -beta*f; return f;
+  double f = exp( -beta*val );
+  dv = -beta*f;
+  return f;
 }
 
 double AltMin::finalTransform( const double& val, double& dv ) {
-  dv = - 1.0 /(beta*val); return -std::log( val ) / beta;
+  dv = - 1.0 /(beta*val);
+  return -std::log( val ) / beta;
 }
 
 }

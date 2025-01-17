@@ -147,8 +147,7 @@ Memetic::Memetic(const ActionOptions& ao)
     score_best_(0),
     adaptation_(true),
     coding_len_(3),
-    local_search_on_(false)
-{
+    local_search_on_(false) {
   log.printf("maze> Memetic sampling.\n");
 
   if (keywords.exists("CAPACITY")) {

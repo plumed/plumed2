@@ -25,8 +25,7 @@ namespace PLMD {
 
 RMSDBase::RMSDBase( const ReferenceConfigurationOptions& ro ):
   ReferenceConfiguration(ro),
-  SingleDomainRMSD(ro)
-{
+  SingleDomainRMSD(ro) {
 }
 
 double RMSDBase::calculate( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const {

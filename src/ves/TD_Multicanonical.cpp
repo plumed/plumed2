@@ -179,8 +179,7 @@ TD_Multicanonical::TD_Multicanonical(const ActionOptions& ao):
   sigma_(0.0),
   steps_temp_(20),
   epsilon_(10.0),
-  smoothening_(true)
-{
+  smoothening_(true) {
   log.printf("  Multicanonical target distribution");
   log.printf("\n");
   log.printf("  Please read and cite ");
@@ -198,11 +197,17 @@ TD_Multicanonical::TD_Multicanonical(const ActionOptions& ao):
   parse("MAX_TEMP",max_temp_);
   log.printf("  temperatures between %f and %f will be explored \n",min_temp_,max_temp_);
   parseVector("SIGMA",sigma_);
-  if(sigma_.size()==0) smoothening_=false;
-  if(smoothening_ && (sigma_.size()<1 || sigma_.size()>2) ) plumed_merror(getName()+": SIGMA takes 1 or 2 values as input.");
+  if(sigma_.size()==0) {
+    smoothening_=false;
+  }
+  if(smoothening_ && (sigma_.size()<1 || sigma_.size()>2) ) {
+    plumed_merror(getName()+": SIGMA takes 1 or 2 values as input.");
+  }
   if (smoothening_) {
     log.printf("  the target distribution will be smoothed using sigma values");
-    for(unsigned i=0; i<sigma_.size(); ++i) log.printf(" %f",sigma_[i]);
+    for(unsigned i=0; i<sigma_.size(); ++i) {
+      log.printf(" %f",sigma_[i]);
+    }
     log.printf("\n");
   }
 
@@ -230,8 +235,12 @@ double TD_Multicanonical::getValue(const std::vector<double>& argument) const {
 
 void TD_Multicanonical::updateGrid() {
   if (getStep() == 0) {
-    if(targetDistGrid().getDimension()>2 || targetDistGrid().getDimension()<1) plumed_merror(getName()+" works only with 1 or 2 arguments, i.e. energy, or energy and CV");
-    if(smoothening_ && sigma_.size()!=targetDistGrid().getDimension()) plumed_merror(getName()+": mismatch between SIGMA dimension and number of arguments");
+    if(targetDistGrid().getDimension()>2 || targetDistGrid().getDimension()<1) {
+      plumed_merror(getName()+" works only with 1 or 2 arguments, i.e. energy, or energy and CV");
+    }
+    if(smoothening_ && sigma_.size()!=targetDistGrid().getDimension()) {
+      plumed_merror(getName()+": mismatch between SIGMA dimension and number of arguments");
+    }
     // Use uniform TD
     std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(getTargetDistGridPntr());
     double norm = 0.0;
@@ -343,14 +352,18 @@ void TD_Multicanonical::updateGrid() {
         double value = 1.0;
         double tmp;
         if(argument < minimum) {
-          if (smoothening_) tmp = GaussianSwitchingFunc(argument,minimum,sigma_[0]);
-          else tmp = exp(-1.0*epsilon_);
-        }
-        else if(argument > maximum) {
-          if (smoothening_) tmp = GaussianSwitchingFunc(argument,maximum,sigma_[0]);
-          else tmp = exp(-1.0*epsilon_);
-        }
-        else {
+          if (smoothening_) {
+            tmp = GaussianSwitchingFunc(argument,minimum,sigma_[0]);
+          } else {
+            tmp = exp(-1.0*epsilon_);
+          }
+        } else if(argument > maximum) {
+          if (smoothening_) {
+            tmp = GaussianSwitchingFunc(argument,maximum,sigma_[0]);
+          } else {
+            tmp = exp(-1.0*epsilon_);
+          }
+        } else {
           tmp = 1.0;
         }
         value *= tmp;
@@ -416,16 +429,28 @@ void TD_Multicanonical::updateGrid() {
               deltaBin[1]=std::floor(6*sigma_[1]/dx[1]);;
               // For energy
               minBin[0]=i - deltaBin[0];
-              if (minBin[0] < 0) minBin[0]=0;
-              if (minBin[0] > (nbin[0]-1)) minBin[0]=nbin[0]-1;
+              if (minBin[0] < 0) {
+                minBin[0]=0;
+              }
+              if (minBin[0] > (nbin[0]-1)) {
+                minBin[0]=nbin[0]-1;
+              }
               maxBin[0]=i +  deltaBin[0];
-              if (maxBin[0] > (nbin[0]-1)) maxBin[0]=nbin[0]-1;
+              if (maxBin[0] > (nbin[0]-1)) {
+                maxBin[0]=nbin[0]-1;
+              }
               // For volume
               minBin[1]=j - deltaBin[1];
-              if (minBin[1] < 0) minBin[1]=0;
-              if (minBin[1] > (nbin[1]-1)) minBin[1]=nbin[1]-1;
+              if (minBin[1] < 0) {
+                minBin[1]=0;
+              }
+              if (minBin[1] > (nbin[1]-1)) {
+                minBin[1]=nbin[1]-1;
+              }
               maxBin[1]=j +  deltaBin[1];
-              if (maxBin[1] > (nbin[1]-1)) maxBin[1]=nbin[1]-1;
+              if (maxBin[1] > (nbin[1]-1)) {
+                maxBin[1]=nbin[1]-1;
+              }
               for(unsigned l=minBin[0]; l<maxBin[0]+1; l++) {
                 for(unsigned m=minBin[1]; m<maxBin[1]+1; m++) {
                   std::vector<unsigned> indices_prime(2);
@@ -454,7 +479,9 @@ void TD_Multicanonical::updateGrid() {
         norm += integration_weights[l]*value;
       }
       targetDistGrid().scaleAllValuesAndDerivatives(1.0/norm);
-    } else plumed_merror(getName()+": Number of arguments for this target distribution must be 1 or 2");
+    } else {
+      plumed_merror(getName()+": Number of arguments for this target distribution must be 1 or 2");
+    }
   }
   updateLogTargetDistGrid();
 }
@@ -464,8 +491,7 @@ double TD_Multicanonical::GaussianSwitchingFunc(const double argument, const dou
   if(sigma>0.0) {
     double arg=(argument-center)/sigma;
     return exp(-0.5*arg*arg);
-  }
-  else {
+  } else {
     return 0.0;
   }
 }

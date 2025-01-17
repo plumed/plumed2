@@ -65,8 +65,7 @@ TargetDistribution::TargetDistribution(const ActionOptions&ao):
   fes_grid_pntr_(NULL),
   static_grid_calculated(false),
   allow_bias_cutoff_(true),
-  bias_cutoff_active_(false)
-{
+  bias_cutoff_active_(false) {
   //
   if(keywords.exists("WELLTEMPERED_FACTOR")) {
     double welltempered_factor=0.0;
@@ -75,8 +74,7 @@ TargetDistribution::TargetDistribution(const ActionOptions&ao):
     if(welltempered_factor>0.0) {
       auto pntr = Tools::make_unique<WellTemperedModifer>(welltempered_factor);
       targetdist_modifer_pntrs_.emplace_back(std::move(pntr));
-    }
-    else if(welltempered_factor<0.0) {
+    } else if(welltempered_factor<0.0) {
       plumed_merror(getName()+": negative value in WELLTEMPERED_FACTOR does not make sense");
     }
   }
@@ -84,7 +82,9 @@ TargetDistribution::TargetDistribution(const ActionOptions&ao):
   if(keywords.exists("SHIFT_TO_ZERO")) {
     parseFlag("SHIFT_TO_ZERO",shift_targetdist_to_zero_);
     if(shift_targetdist_to_zero_) {
-      if(bias_cutoff_active_) {plumed_merror(getName()+": using SHIFT_TO_ZERO with bias cutoff is not allowed.");}
+      if(bias_cutoff_active_) {
+        plumed_merror(getName()+": using SHIFT_TO_ZERO with bias cutoff is not allowed.");
+      }
       check_nonnegative_=false;
     }
   }
@@ -93,7 +93,9 @@ TargetDistribution::TargetDistribution(const ActionOptions&ao):
     bool force_normalization=false;
     parseFlag("NORMALIZE",force_normalization);
     if(force_normalization) {
-      if(shift_targetdist_to_zero_) {plumed_merror(getName()+" with label "+getLabel()+": using NORMALIZE with SHIFT_TO_ZERO is not needed, the target distribution will be automatically normalized.");}
+      if(shift_targetdist_to_zero_) {
+        plumed_merror(getName()+" with label "+getLabel()+": using NORMALIZE with SHIFT_TO_ZERO is not needed, the target distribution will be automatically normalized.");
+      }
       setForcedNormalization();
     }
   }
@@ -175,12 +177,13 @@ void TargetDistribution::setupGrids(const std::vector<Value*>& arguments, const 
 
 
 void TargetDistribution::calculateStaticDistributionGrid() {
-  if(static_grid_calculated && !bias_cutoff_active_) {return;}
+  if(static_grid_calculated && !bias_cutoff_active_) {
+    return;
+  }
   // plumed_massert(isStatic(),"this should only be used for static distributions");
   plumed_massert(targetdist_grid_pntr_,"the grids have not been setup using setupGrids");
   plumed_massert(log_targetdist_grid_pntr_,"the grids have not been setup using setupGrids");
-  for(Grid::index_t l=0; l<targetdist_grid_pntr_->getSize(); l++)
-  {
+  for(Grid::index_t l=0; l<targetdist_grid_pntr_->getSize(); l++) {
     std::vector<double> argument = targetdist_grid_pntr_->getPoint(l);
     double value = getValue(argument);
     targetdist_grid_pntr_->setValue(l,value);
@@ -216,7 +219,9 @@ Grid TargetDistribution::getMarginalDistributionGrid(Grid* grid_pntr, const std:
   std::vector<unsigned int> args_index(0);
   for(unsigned int i=0; i<argnames.size(); i++) {
     for(unsigned int l=0; l<args.size(); l++) {
-      if(argnames[i]==args[l]) {args_index.push_back(i);}
+      if(argnames[i]==args[l]) {
+        args_index.push_back(i);
+      }
     }
   }
   plumed_massert(args.size()==args_index.size(),"getMarginalDistributionGrid: problem with the arguments of the marginal");
@@ -250,17 +255,24 @@ void TargetDistribution::updateTargetDist() {
     applyTargetDistModiferToGrid(targetdist_modifer_pntrs_[i].get());
   }
   //
-  if(bias_cutoff_active_) {updateBiasCutoffForTargetDistGrid();}
+  if(bias_cutoff_active_) {
+    updateBiasCutoffForTargetDistGrid();
+  }
   //
-  if(shift_targetdist_to_zero_ && !(bias_cutoff_active_)) {setMinimumOfTargetDistGridToZero();}
-  if(force_normalization_ && !(bias_cutoff_active_) ) {normalizeTargetDistGrid();}
+  if(shift_targetdist_to_zero_ && !(bias_cutoff_active_)) {
+    setMinimumOfTargetDistGridToZero();
+  }
+  if(force_normalization_ && !(bias_cutoff_active_) ) {
+    normalizeTargetDistGrid();
+  }
   //
   // if(check_normalization_ && !force_normalization_ && !shift_targetdist_to_zero_){
   if(check_normalization_ && !(bias_cutoff_active_)) {
     double normalization = integrateGrid(targetdist_grid_pntr_.get());
     const double normalization_thrshold = 0.1;
     if(normalization < 1.0-normalization_thrshold || normalization > 1.0+normalization_thrshold) {
-      std::string norm_str; Tools::convert(normalization,norm_str);
+      std::string norm_str;
+      Tools::convert(normalization,norm_str);
       std::string msg = "the target distribution grid is not proberly normalized, integrating over the grid gives: " + norm_str + " - You can avoid this problem by using the NORMALIZE keyword";
       warning(msg);
     }
@@ -270,13 +282,16 @@ void TargetDistribution::updateTargetDist() {
     const double nonnegative_thrshold = -0.02;
     double grid_min_value = targetdist_grid_pntr_->getMinValue();
     if(grid_min_value<nonnegative_thrshold) {
-      std::string grid_min_value_str; Tools::convert(grid_min_value,grid_min_value_str);
+      std::string grid_min_value_str;
+      Tools::convert(grid_min_value,grid_min_value_str);
       std::string msg = "the target distribution grid has negative values, the lowest value is: " + grid_min_value_str + " - You can avoid this problem by using the SHIFT_TO_ZERO keyword";
       warning(msg);
     }
   }
   //
-  if(check_nan_inf_) {checkNanAndInf();}
+  if(check_nan_inf_) {
+    checkNanAndInf();
+  }
   //
 }
 
@@ -290,8 +305,7 @@ void TargetDistribution::updateBiasCutoffForTargetDistGrid() {
   //
   std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(targetdist_grid_pntr_.get());
   double norm = 0.0;
-  for(Grid::index_t l=0; l<targetdist_grid_pntr_->getSize(); l++)
-  {
+  for(Grid::index_t l=0; l<targetdist_grid_pntr_->getSize(); l++) {
     double value = targetdist_grid_pntr_->getValue(l);
     double bias = getBiasWithoutCutoffGridPntr()->getValue(l);
     double deriv_factor_swf = 0.0;
@@ -315,8 +329,7 @@ void TargetDistribution::applyTargetDistModiferToGrid(TargetDistModifer* modifer
   //
   std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(targetdist_grid_pntr_.get());
   double norm = 0.0;
-  for(Grid::index_t l=0; l<targetdist_grid_pntr_->getSize(); l++)
-  {
+  for(Grid::index_t l=0; l<targetdist_grid_pntr_->getSize(); l++) {
     double value = targetdist_grid_pntr_->getValue(l);
     std::vector<double> cv_values = targetdist_grid_pntr_->getPoint(l);
     value = modifer_pntr->getModifedTargetDistValue(value,cv_values);
@@ -330,8 +343,7 @@ void TargetDistribution::applyTargetDistModiferToGrid(TargetDistModifer* modifer
 
 
 void TargetDistribution::updateLogTargetDistGrid() {
-  for(Grid::index_t l=0; l<targetdist_grid_pntr_->getSize(); l++)
-  {
+  for(Grid::index_t l=0; l<targetdist_grid_pntr_->getSize(); l++) {
     log_targetdist_grid_pntr_->setValue(l,-std::log(targetdist_grid_pntr_->getValue(l)));
   }
   log_targetdist_grid_pntr_->setMinToZero();
@@ -366,16 +378,18 @@ void TargetDistribution::clearLogTargetDistGrid() {
 
 
 void TargetDistribution::checkNanAndInf() {
-  for(Grid::index_t l=0; l<targetdist_grid_pntr_->getSize(); l++)
-  {
+  for(Grid::index_t l=0; l<targetdist_grid_pntr_->getSize(); l++) {
     double value = targetdist_grid_pntr_->getValue(l);
     if(std::isnan(value) || std::isinf(value)) {
-      std::string vs; Tools::convert(value,vs);
+      std::string vs;
+      Tools::convert(value,vs);
       std::vector<double> p = targetdist_grid_pntr_->getPoint(l);
-      std::string ps; Tools::convert(p[0],ps);
+      std::string ps;
+      Tools::convert(p[0],ps);
       ps = "(" + ps;
       for(unsigned int k=1; k<p.size(); k++) {
-        std::string t1; Tools::convert(p[k],t1);
+        std::string t1;
+        Tools::convert(p[k],t1);
         ps = ps + "," + t1;
       }
       ps = ps + ")";

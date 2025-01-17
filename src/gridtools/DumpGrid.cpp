@@ -154,10 +154,12 @@ void DumpGrid::registerKeywords( Keywords& keys ) {
 
 DumpGrid::DumpGrid(const ActionOptions&ao):
   Action(ao),
-  GridPrintingBase(ao)
-{
-  if( ingrid->getType()!="flat" ) error("cannot dump grid of type " + ingrid->getType() + " using DUMPGRID");
-  fmt = " " + fmt; checkRead();
+  GridPrintingBase(ao) {
+  if( ingrid->getType()!="flat" ) {
+    error("cannot dump grid of type " + ingrid->getType() + " using DUMPGRID");
+  }
+  fmt = " " + fmt;
+  checkRead();
 }
 
 void DumpGrid::printGrid( OFile& ofile ) const {
@@ -173,20 +175,30 @@ void DumpGrid::printGrid( OFile& ofile ) const {
   std::vector<unsigned> ind( ingrid->getDimension() );
   for(unsigned i=0; i<ingrid->getNumberOfPoints(); ++i) {
     ingrid->getIndices( i, ind );
-    if(i>0 && ingrid->getDimension()==2 && ind[ingrid->getDimension()-2]==0) ofile.printf("\n");
-    ofile.fmtField(fmt); ofile.printField("normalisation", ingrid->getNorm() );
+    if(i>0 && ingrid->getDimension()==2 && ind[ingrid->getDimension()-2]==0) {
+      ofile.printf("\n");
+    }
+    ofile.fmtField(fmt);
+    ofile.printField("normalisation", ingrid->getNorm() );
     for(unsigned j=0; j<ingrid->getDimension(); ++j) {
       ofile.printField("min_" + ingrid->getComponentName(j), ingrid->getMin()[j] );
       ofile.printField("max_" + ingrid->getComponentName(j), ingrid->getMax()[j] );
       ofile.printField("nbins_" + ingrid->getComponentName(j), static_cast<int>(ingrid->getNbin()[j]) );
-      if( ingrid->isPeriodic(j) ) ofile.printField("periodic_" + ingrid->getComponentName(j), "true" );
-      else          ofile.printField("periodic_" + ingrid->getComponentName(j), "false" );
+      if( ingrid->isPeriodic(j) ) {
+        ofile.printField("periodic_" + ingrid->getComponentName(j), "true" );
+      } else {
+        ofile.printField("periodic_" + ingrid->getComponentName(j), "false" );
+      }
     }
     // Retrieve and print the grid coordinates
     ingrid->getGridPointCoordinates(i, xx );
-    for(unsigned j=0; j<ingrid->getDimension(); ++j) { ofile.fmtField(fmt); ofile.printField(ingrid->getComponentName(j),xx[j]); }
+    for(unsigned j=0; j<ingrid->getDimension(); ++j) {
+      ofile.fmtField(fmt);
+      ofile.printField(ingrid->getComponentName(j),xx[j]);
+    }
     for(unsigned j=0; j<ingrid->getNumberOfQuantities(); ++j) {
-      ofile.fmtField(fmt); ofile.printField(ingrid->arg_names[ingrid->dimension+j], ingrid->getGridElement( i, j ) );
+      ofile.fmtField(fmt);
+      ofile.printField(ingrid->arg_names[ingrid->dimension+j], ingrid->getGridElement( i, j ) );
     }
     ofile.printField();
   }

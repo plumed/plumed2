@@ -67,10 +67,16 @@ void ERMSD::setReference(const std::vector<Vector> & reference, const std::vecto
 
 bool ERMSD::inPair(unsigned i, unsigned j) {
 
-  if(pairs.size()==0) return true;
+  if(pairs.size()==0) {
+    return true;
+  }
   for(unsigned idx=0; idx<pairs.size(); idx++) {
-    if(pairs[idx].first == i && pairs[idx].second == j) return true;
-    if(pairs[idx].second == i && pairs[idx].first == j) return true;
+    if(pairs[idx].first == i && pairs[idx].second == j) {
+      return true;
+    }
+    if(pairs[idx].second == i && pairs[idx].first == j) {
+      return true;
+    }
   }
   return false;
 }
@@ -294,7 +300,9 @@ double ERMSD::calculate(const std::vector<Vector> & positions,const Pbc& pbc,\
 
   ermsd = std::sqrt(ermsd/nresidues);
   double iermsd = 1.0/(ermsd*nresidues);
-  for(unsigned i=0; i<natoms; ++i) {derivatives[i] *= iermsd;}
+  for(unsigned i=0; i<natoms; ++i) {
+    derivatives[i] *= iermsd;
+  }
 
   return ermsd;
 }

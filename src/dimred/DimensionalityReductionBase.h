@@ -61,7 +61,9 @@ public:
 /// It is used in PLMD::dimred::ProjectOutOfSample and in pointwise optimisation
   virtual double calculateStress( const std::vector<double>& pp, std::vector<double>& der );
 /// Overwrite virtual function in ActionWithVessel
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const { plumed_error(); }
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const {
+    plumed_error();
+  }
 };
 
 inline
