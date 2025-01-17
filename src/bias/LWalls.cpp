@@ -98,7 +98,8 @@ LWalls::LWalls(const ActionOptions&ao):
   kappa(getNumberOfArguments(),0.0),
   exp(getNumberOfArguments(),2.0),
   eps(getNumberOfArguments(),1.0),
-  offset(getNumberOfArguments(),0.0) {
+  offset(getNumberOfArguments(),0.0)
+{
   // Note sizes of these vectors are automatically checked by parseVector :-)
   parseVector("OFFSET",offset);
   parseVector("EPS",eps);
@@ -108,33 +109,22 @@ LWalls::LWalls(const ActionOptions&ao):
   checkRead();
 
   log.printf("  at");
-  for(unsigned i=0; i<at.size(); i++) {
-    log.printf(" %f",at[i]);
-  }
+  for(unsigned i=0; i<at.size(); i++) log.printf(" %f",at[i]);
   log.printf("\n");
   log.printf("  with an offset");
-  for(unsigned i=0; i<offset.size(); i++) {
-    log.printf(" %f",offset[i]);
-  }
+  for(unsigned i=0; i<offset.size(); i++) log.printf(" %f",offset[i]);
   log.printf("\n");
   log.printf("  with force constant");
-  for(unsigned i=0; i<kappa.size(); i++) {
-    log.printf(" %f",kappa[i]);
-  }
+  for(unsigned i=0; i<kappa.size(); i++) log.printf(" %f",kappa[i]);
   log.printf("\n");
   log.printf("  and exponent");
-  for(unsigned i=0; i<exp.size(); i++) {
-    log.printf(" %f",exp[i]);
-  }
+  for(unsigned i=0; i<exp.size(); i++) log.printf(" %f",exp[i]);
   log.printf("\n");
   log.printf("  rescaled");
-  for(unsigned i=0; i<eps.size(); i++) {
-    log.printf(" %f",eps[i]);
-  }
+  for(unsigned i=0; i<eps.size(); i++) log.printf(" %f",eps[i]);
   log.printf("\n");
 
-  addComponent("force2");
-  componentIsNotPeriodic("force2");
+  addComponent("force2"); componentIsNotPeriodic("force2");
 }
 
 void LWalls::calculate() {

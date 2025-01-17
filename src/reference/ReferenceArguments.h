@@ -41,7 +41,8 @@ namespace PLMD {
 /// \ref PLMD::ActionAtomistic respectively but for distances.
 
 class ReferenceArguments :
-  virtual public ReferenceConfiguration {
+  virtual public ReferenceConfiguration
+{
   friend class Direction;
   friend class ReferenceConfiguration;
 private:

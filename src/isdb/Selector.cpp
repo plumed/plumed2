@@ -60,7 +60,8 @@ PRINT FILE=COLVAR ARG=* STRIDE=100
 //+ENDPLUMEDOC
 
 class Selector:
-  public Action {
+  public Action
+{
 public:
   static void registerKeywords( Keywords& keys );
   explicit Selector(const ActionOptions&ao);
@@ -77,7 +78,8 @@ void Selector::registerKeywords( Keywords& keys ) {
 }
 
 Selector::Selector(const ActionOptions&ao):
-  Action(ao) {
+  Action(ao)
+{
   std::string name;
   parse("NAME", name);
   double value;

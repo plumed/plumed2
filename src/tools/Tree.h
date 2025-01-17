@@ -31,7 +31,8 @@ namespace PLMD {
 
 
 /// \ingroup TOOLBOX
-class Tree {
+class Tree
+{
 
 private:
   GenericMolInfo* moldat_;

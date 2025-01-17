@@ -148,7 +148,8 @@ RESTRAINT ARG=t AT=1.2 KAPPA=10
 //+ENDPLUMEDOC
 
 class Include :
-  public ActionAnyorder {
+  public ActionAnyorder
+{
 public:
   static void registerKeywords( Keywords& keys );
   explicit Include(const ActionOptions&ao);
@@ -165,7 +166,8 @@ void Include::registerKeywords( Keywords& keys ) {
 
 Include::Include(const ActionOptions&ao):
   Action(ao),
-  ActionAnyorder(ao) {
+  ActionAnyorder(ao)
+{
   std::string f;
   parse("FILE",f);
   checkRead();

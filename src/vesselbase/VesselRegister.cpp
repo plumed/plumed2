@@ -29,9 +29,7 @@ namespace vesselbase {
 VesselRegister::~VesselRegister() {
   if(m.size()>0) {
     std::string names="";
-    for(const auto & p : m) {
-      names+=p.first+" ";
-    }
+    for(const auto & p : m) names+=p.first+" ";
     std::cerr<<"WARNING: Vessel "+ names +" has not been properly unregistered. This might lead to memory leak!!\n";
   }
 }
@@ -44,8 +42,7 @@ VesselRegister& vesselRegister() {
 void VesselRegister::remove(creator_pointer f) {
   for(auto p=m.begin(); p!=m.end(); ++p) {
     if((*p).second==f) {
-      m.erase(p);
-      break;
+      m.erase(p); break;
     }
   }
 }
@@ -61,17 +58,14 @@ void VesselRegister::add(std::string keyword,creator_pointer f,keyword_pointer k
 }
 
 bool VesselRegister::check(const std::string & key) {
-  if( m.count(key)>0 ) {
-    return true;
-  }
+  if( m.count(key)>0 ) return true;
   return false;
 }
 
 std::unique_ptr<Vessel> VesselRegister::create(std::string keyword, const VesselOptions&da) {
   std::unique_ptr<Vessel> df;
   if(check(keyword)) {
-    Keywords keys;
-    mk[keyword](keys);
+    Keywords keys; mk[keyword](keys);
     VesselOptions nda( da,keys );
     df=m[keyword](nda);
   }

@@ -100,7 +100,8 @@ void BF_Cosine::registerKeywords(Keywords& keys) {
 
 
 BF_Cosine::BF_Cosine(const ActionOptions&ao):
-  PLUMED_VES_BASISFUNCTIONS_INIT(ao) {
+  PLUMED_VES_BASISFUNCTIONS_INIT(ao)
+{
   setNumberOfBasisFunctions(getOrder()+1);
   setIntrinsicInterval("-pi","+pi");
   setPeriodic();
@@ -127,9 +128,7 @@ void BF_Cosine::getAllValues(const double arg, double& argT, bool& inside_range,
     derivs[i] = -io*sin_tmp*intervalDerivf();
   }
   if(!inside_range) {
-    for(unsigned int i=0; i<derivs.size(); i++) {
-      derivs[i]=0.0;
-    }
+    for(unsigned int i=0; i<derivs.size(); i++) {derivs[i]=0.0;}
   }
 }
 
@@ -137,8 +136,7 @@ void BF_Cosine::getAllValues(const double arg, double& argT, bool& inside_range,
 void BF_Cosine::setupLabels() {
   setLabel(0,"1");
   for(unsigned int i=1; i < getOrder()+1; i++) {
-    std::string is;
-    Tools::convert(i,is);
+    std::string is; Tools::convert(i,is);
     setLabel(i,"cos("+is+"*s)");
   }
 }

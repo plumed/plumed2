@@ -42,9 +42,7 @@ Stopwatch::~Stopwatch() {
 // this is necessary e.g. to make sure the main watch present in PlumedMain
 // is stopped correctly.
     for(auto & w : watches) {
-      if(w.second.state==Watch::State::paused) {
-        w.second.start().stop();
-      }
+      if(w.second.state==Watch::State::paused) w.second.start().stop();
     }
     *mylog << *this;
   }
@@ -54,15 +52,11 @@ std::ostream& Stopwatch::log(std::ostream&os)const {
   const std::size_t bufferlen=1000;
   char buffer[bufferlen];
   buffer[0]=0;
-  for(unsigned i=0; i<40; i++) {
-    os<<" ";
-  }
+  for(unsigned i=0; i<40; i++) os<<" ";
   os<<"      Cycles        Total      Average      Minimum      Maximum\n";
 
   std::vector<std::string> names;
-  for(const auto & it : watches) {
-    names.push_back(it.first);
-  }
+  for(const auto & it : watches) names.push_back(it.first);
   std::sort(names.begin(),names.end());
 
   const double frac=1.0/1000000000.0;
@@ -70,9 +64,7 @@ std::ostream& Stopwatch::log(std::ostream&os)const {
   for(const auto & name : names) {
     const Watch&t(watches.find(name)->second);
     os<<name;
-    for(unsigned i=name.length(); i<40; i++) {
-      os<<" ";
-    }
+    for(unsigned i=name.length(); i<40; i++) os<<" ";
     std::snprintf(buffer,bufferlen,"%12u %12.6f %12.6f %12.6f %12.6f\n", t.cycles, frac*t.total, frac*t.total/t.cycles, frac*t.min,frac*t.max);
     os<<buffer;
   }

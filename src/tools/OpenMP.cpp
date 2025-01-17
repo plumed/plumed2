@@ -48,9 +48,7 @@ void OpenMP::setNumThreads(const unsigned nt) {
 
 unsigned OpenMP::getCachelineSize() {
   if(!getOpenMPVars().cache_set) {
-    if(std::getenv("PLUMED_CACHELINE_SIZE")) {
-      Tools::convert(std::getenv("PLUMED_CACHELINE_SIZE"),getOpenMPVars().cacheline_size);
-    }
+    if(std::getenv("PLUMED_CACHELINE_SIZE")) Tools::convert(std::getenv("PLUMED_CACHELINE_SIZE"),getOpenMPVars().cacheline_size);
     getOpenMPVars().cache_set = true;
   }
   return getOpenMPVars().cacheline_size;
@@ -58,9 +56,7 @@ unsigned OpenMP::getCachelineSize() {
 
 unsigned OpenMP::getNumThreads() {
   if(!getOpenMPVars().nt_env_set) {
-    if(std::getenv("PLUMED_NUM_THREADS")) {
-      Tools::convert(std::getenv("PLUMED_NUM_THREADS"),getOpenMPVars().num_threads);
-    }
+    if(std::getenv("PLUMED_NUM_THREADS")) Tools::convert(std::getenv("PLUMED_NUM_THREADS"),getOpenMPVars().num_threads);
     getOpenMPVars().nt_env_set = true;
   }
   return getOpenMPVars().num_threads;

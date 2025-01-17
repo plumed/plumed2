@@ -46,7 +46,8 @@ void Lowest::reserveKeyword( Keywords& keys ) {
 }
 
 Lowest::Lowest( const VesselOptions& da ) :
-  OrderingVessel(da) {
+  OrderingVessel(da)
+{
 }
 
 std::string Lowest::value_descriptor() {

@@ -36,7 +36,8 @@ This is the abstract base class to use for implementing new CV function, within 
 
 class Function:
   public ActionWithValue,
-  public ActionWithArguments {
+  public ActionWithArguments
+{
 protected:
   void setDerivative(int,double);
   void setDerivative(Value*,int,double);

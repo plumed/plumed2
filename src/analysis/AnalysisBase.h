@@ -47,7 +47,8 @@ class AnalysisBase :
   public ActionWithValue,
   public ActionAtomistic,
   public ActionWithArguments,
-  public vesselbase::ActionWithVessel {
+  public vesselbase::ActionWithVessel
+{
   friend class ReselectLandmarks;
   friend class ReadDissimilarityMatrix;
 protected:
@@ -88,15 +89,9 @@ public:
 /// This actually performs the analysis
   virtual void performAnalysis()=0;
 /// These overwrite things from inherited classes (this is a bit of a fudge)
-  bool isPeriodic() override {
-    plumed_error();
-  }
-  unsigned getNumberOfDerivatives() override {
-    plumed_error();
-  }
-  void calculateNumericalDerivatives( ActionWithValue* a=NULL ) override {
-    plumed_error();
-  }
+  bool isPeriodic() override { plumed_error(); }
+  unsigned getNumberOfDerivatives() override { plumed_error(); }
+  void calculateNumericalDerivatives( ActionWithValue* a=NULL ) override { plumed_error(); }
 /// Calculate and apply do nothing all analysis is done during update step
   void calculate() override {}
   void apply() override {}

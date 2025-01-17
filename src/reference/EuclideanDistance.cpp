@@ -33,7 +33,8 @@ PLUMED_REGISTER_METRIC(EuclideanDistance,"EUCLIDEAN")
 
 EuclideanDistance::EuclideanDistance( const ReferenceConfigurationOptions& ro ):
   ReferenceConfiguration(ro),
-  ArgumentOnlyDistance(ro) {
+  ArgumentOnlyDistance(ro)
+{
 }
 
 }

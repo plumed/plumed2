@@ -52,7 +52,8 @@ CoeffsVector::CoeffsVector(
   data(0),
   averaging_counter(0),
   averaging_exp_decay_(0),
-  mycomm(cc) {
+  mycomm(cc)
+{
   clear();
 }
 
@@ -67,7 +68,8 @@ CoeffsVector::CoeffsVector(
   data(0),
   averaging_counter(0),
   averaging_exp_decay_(0),
-  mycomm(cc) {
+  mycomm(cc)
+{
   clear();
 }
 
@@ -83,7 +85,8 @@ CoeffsVector::CoeffsVector(
   data(0),
   averaging_counter(0),
   averaging_exp_decay_(0),
-  mycomm(cc) {
+  mycomm(cc)
+{
   clear();
 }
 
@@ -96,7 +99,8 @@ CoeffsVector::CoeffsVector(
   data(0),
   averaging_counter(0),
   averaging_exp_decay_(0),
-  mycomm(cc) {
+  mycomm(cc)
+{
   clear();
 }
 
@@ -641,9 +645,7 @@ void CoeffsVector::normalizeCoeffs() {
 
 void CoeffsVector::randomizeValuesGaussian(int randomSeed) {
   Random rnd;
-  if (randomSeed<0) {
-    randomSeed = -randomSeed;
-  }
+  if (randomSeed<0) {randomSeed = -randomSeed;}
   rnd.setSeed(-randomSeed);
   for(size_t i=0; i<data.size(); i++) {
     data[i]=rnd.Gaussian();
@@ -687,12 +689,11 @@ void CoeffsVector::writeToFile(const std::string& filepath, const bool print_coe
   OFile file;
   if(action_pntr!=NULL) {
     file.link(*action_pntr);
-  } else {
+  }
+  else {
     file.link(mycomm);
   }
-  if(append_file) {
-    file.enforceRestart();
-  }
+  if(append_file) { file.enforceRestart(); }
   file.open(filepath);
   writeToFile(file,print_coeffs_descriptions);
   file.close();
@@ -720,12 +721,11 @@ void CoeffsVector::writeToFile(const std::string& filepath, const std::vector<Co
   OFile file;
   if(action_pntr!=NULL) {
     file.link(*action_pntr);
-  } else {
+  }
+  else {
     file.link(coeffsvecSet[0]->getCommunicator());
   }
-  if(append_file) {
-    file.enforceRestart();
-  }
+  if(append_file) { file.enforceRestart(); }
   file.open(filepath);
   writeToFile(file,coeffsvecSet,print_coeffs_descriptions);
   file.close();
@@ -785,11 +785,8 @@ void CoeffsVector::writeDataToFile(OFile& ofile, const std::vector<CoeffsVector*
     for(unsigned int l=0; l<numvec; l++) {
       ofile.fmtField(" "+output_fmt).printField(coeffs_datalabels[l],coeffsvecSet[l]->getValue(i));
     }
-    std::snprintf(s1.data(),s1.size(),int_fmt.c_str(),i);
-    ofile.printField(field_index,s1.data());
-    if(print_coeffs_descriptions) {
-      ofile.printField(field_description,"  "+coeffs_descriptions[i]);
-    }
+    std::snprintf(s1.data(),s1.size(),int_fmt.c_str(),i); ofile.printField(field_index,s1.data());
+    if(print_coeffs_descriptions) { ofile.printField(field_description,"  "+coeffs_descriptions[i]);}
     ofile.printField();
   }
   ofile.fmtField();
@@ -804,9 +801,7 @@ size_t CoeffsVector::readFromFile(IFile& ifile, const bool ignore_missing_coeffs
   ifile.allowIgnoredFields();
   size_t ncoeffs_read=0;
   while(ifile) {
-    if(!ignore_header) {
-      readHeaderFromFile(ifile);
-    }
+    if(!ignore_header) {readHeaderFromFile(ifile);}
     if(ifile) {
       ncoeffs_read=readDataFromFile(ifile,ignore_missing_coeffs);
     }
@@ -819,12 +814,8 @@ size_t CoeffsVector::readOneSetFromFile(IFile& ifile, const bool ignore_header) 
   ifile.allowIgnoredFields();
   size_t ncoeffs_read=0;
   if(ifile) {
-    if(!ignore_header) {
-      readHeaderFromFile(ifile);
-    }
-    if(ifile) {
-      ncoeffs_read=readDataFromFile(ifile,false);
-    }
+    if(!ignore_header) {readHeaderFromFile(ifile);}
+    if(ifile) {ncoeffs_read=readDataFromFile(ifile,false);}
   }
   return ncoeffs_read;
 }
@@ -876,14 +867,11 @@ size_t CoeffsVector::readDataFromFile(IFile& ifile, const bool ignore_missing_co
     data[getIndex(indices)] = coeff_tmp;
     ifile.scanField(field_index,idx_tmp);
     if(getIndex(indices)!=static_cast<unsigned int>(idx_tmp)) {
-      std::string is1;
-      Tools::convert(idx_tmp,is1);
+      std::string is1; Tools::convert(idx_tmp,is1);
       std::string msg="ERROR: problem with indices at index " + is1 + " when reading coefficients from file";
       plumed_merror(msg);
     }
-    if(ifile.FieldExist(field_description)) {
-      ifile.scanField(field_description,str_tmp);
-    }
+    if(ifile.FieldExist(field_description)) { ifile.scanField(field_description,str_tmp); }
     //
     ifile.scanField();
     ncoeffs_read++;
