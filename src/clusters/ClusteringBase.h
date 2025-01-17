@@ -46,14 +46,18 @@ public:
 /// Constructor
   explicit ClusteringBase(const ActionOptions&);
 ///
-  unsigned getNumberOfDerivatives() override { return 0; }
+  unsigned getNumberOfDerivatives() override {
+    return 0;
+  }
 ///
   void calculate() override;
 ///
   virtual void performClustering()=0;
 /// Cannot apply forces on a clustering object
   void apply() override ;
-  double getForceOnMatrixElement( const unsigned& jrow, const unsigned& krow ) const override { plumed_error(); }
+  double getForceOnMatrixElement( const unsigned& jrow, const unsigned& krow ) const override {
+    plumed_error();
+  }
 };
 
 inline

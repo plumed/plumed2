@@ -61,7 +61,9 @@ public:
   explicit ActionWithMatrix(const ActionOptions&);
   virtual ~ActionWithMatrix();
 ///
-  virtual bool isAdjacencyMatrix() const { return false; }
+  virtual bool isAdjacencyMatrix() const {
+    return false;
+  }
 ///
   void getAllActionLabelsInMatrixChain( std::vector<std::string>& mylabels ) const override ;
 /// Get the first matrix in this chain
@@ -103,14 +105,18 @@ bool ActionWithMatrix::matrixChainContinues() const {
 
 inline
 double ActionWithMatrix::getArgumentElement( const unsigned& ic, const unsigned& jelem, const MultiValue& myvals ) const {
-  if( !getPntrToArgument(ic)->valueHasBeenSet() ) return myvals.get( getPntrToArgument(ic)->getPositionInStream() );
+  if( !getPntrToArgument(ic)->valueHasBeenSet() ) {
+    return myvals.get( getPntrToArgument(ic)->getPositionInStream() );
+  }
   return getPntrToArgument(ic)->get( jelem );
 }
 
 inline
 double ActionWithMatrix::getElementOfMatrixArgument( const unsigned& imat, const unsigned& irow, const unsigned& jcol, const MultiValue& myvals ) const {
   plumed_dbg_assert( imat<getNumberOfArguments() && getPntrToArgument(imat)->getRank()==2 && !getPntrToArgument(imat)->hasDerivatives() );
-  if( !getPntrToArgument(imat)->valueHasBeenSet() ) return myvals.get( getPntrToArgument(imat)->getPositionInStream() );
+  if( !getPntrToArgument(imat)->valueHasBeenSet() ) {
+    return myvals.get( getPntrToArgument(imat)->getPositionInStream() );
+  }
   return getArgumentElement( imat, irow*getPntrToArgument(imat)->getShape()[1] + jcol, myvals );
 }
 
@@ -119,7 +125,8 @@ void ActionWithMatrix::addDerivativeOnVectorArgument( const bool& inchain, const
   plumed_dbg_massert( jarg<getNumberOfArguments() && getPntrToArgument(jarg)->getRank()<2, "failing in action " + getName() + " with label " + getLabel() );
   unsigned ostrn = getConstPntrToComponent(ival)->getPositionInStream(), vstart=arg_deriv_starts[jarg];
   if( !inchain ) {
-    myvals.addDerivative( ostrn, vstart + jelem, der ); myvals.updateIndex( ostrn, vstart + jelem );
+    myvals.addDerivative( ostrn, vstart + jelem, der );
+    myvals.updateIndex( ostrn, vstart + jelem );
   } else {
     unsigned istrn = getPntrToArgument(jarg)->getPositionInStream();
     for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
@@ -136,7 +143,8 @@ void ActionWithMatrix::addDerivativeOnMatrixArgument( const bool& inchain, const
   unsigned ostrn = getConstPntrToComponent(ival)->getPositionInStream(), vstart=arg_deriv_starts[jarg];
   if( !inchain ) {
     unsigned dloc = vstart + irow*getPntrToArgument(jarg)->getNumberOfColumns() + jcol;
-    myvals.addDerivative( ostrn, dloc, der ); myvals.updateIndex( ostrn, dloc );
+    myvals.addDerivative( ostrn, dloc, der );
+    myvals.updateIndex( ostrn, dloc );
   } else {
     unsigned istrn = getPntrToArgument(jarg)->getPositionInStream();
     for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {

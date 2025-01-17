@@ -40,7 +40,7 @@ struct DataInterface {
   double *ptr = nullptr;
   size_t size = 0;
   DataInterface() = delete;
-  
+
   // VectorGeneric is a "memory map" on an n linear array
   // &vg[0] gets the pointer to the first double in memory
   // C++ vectors align memory so we can safely use the vector variant of

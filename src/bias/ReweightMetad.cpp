@@ -82,13 +82,15 @@ void ReweightMetad::registerKeywords(Keywords& keys ) {
 
 ReweightMetad::ReweightMetad(const ActionOptions&ao):
   Action(ao),
-  ReweightBase(ao)
-{
+  ReweightBase(ao) {
 }
 
 double ReweightMetad::getLogWeight() {
   // Retrieve the bias
-  double bias=0.0; for(unsigned i=0; i<getNumberOfArguments(); ++i) bias+=getArgument(i);
+  double bias=0.0;
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    bias+=getArgument(i);
+  }
   return bias / simtemp;
 }
 

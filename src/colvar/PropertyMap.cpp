@@ -106,8 +106,7 @@ void PropertyMap::registerKeywords(Keywords& keys) {
 
 PropertyMap::PropertyMap(const ActionOptions&ao):
   Action(ao),
-  PathMSDBase(ao)
-{
+  PathMSDBase(ao) {
   // this is the only additional keyword needed
   parseVector("PROPERTY",labels);
   checkRead();
@@ -122,18 +121,21 @@ PropertyMap::PropertyMap(const ActionOptions&ao):
   } else {
     for(unsigned i=0; i<labels.size(); i++) {
       log<<" found custom propety to be found in the REMARK line: "<<labels[i].c_str()<<"\n";
-      addComponentWithDerivatives(labels[i]); componentIsNotPeriodic(labels[i]);
+      addComponentWithDerivatives(labels[i]);
+      componentIsNotPeriodic(labels[i]);
     }
     // add distance anyhow
-    addComponentWithDerivatives("zzz"); componentIsNotPeriodic("zzz");
+    addComponentWithDerivatives("zzz");
+    componentIsNotPeriodic("zzz");
     //reparse the REMARK field and pick the index
     for(unsigned i=0; i<pdbv.size(); i++) {
       // now look for X=1.34555 Y=5.6677
       std::vector<double> labelvals;
       for(unsigned j=0; j<labels.size(); j++) {
         std::vector<double> val(1);
-        if( pdbv[i].getArgumentValue(labels[j],val) ) {labelvals.push_back(val[0]);}
-        else {
+        if( pdbv[i].getArgumentValue(labels[j],val) ) {
+          labelvals.push_back(val[0]);
+        } else {
           const std::size_t buflen=500;
           char buf[buflen];
           std::snprintf(buf,buflen,"PROPERTY LABEL \" %s \" NOT FOUND IN REMARK FOR FRAME %u \n",labels[j].c_str(),i);
