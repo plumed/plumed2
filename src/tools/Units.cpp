@@ -34,7 +34,8 @@ Units::Units():
   charge(1.0),
   chargeString("e"),
   mass(1.0),
-  massString("amu") {
+  massString("amu")
+{
 }
 
 void Units::setEnergy(const std::string &s) {

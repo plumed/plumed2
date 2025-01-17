@@ -49,7 +49,8 @@ DUMPPROJECTIONS ARG=d FILE=proj STRIDE=20
 
 class DumpProjections :
   public ActionPilot,
-  public ActionWithArguments {
+  public ActionWithArguments
+{
   std::string file;
   std::string fmt;
   OFile of;
@@ -59,9 +60,7 @@ public:
   static void registerKeywords(Keywords& keys);
   void apply() override {}
   void update() override;
-  bool checkNeedsGradients()const override {
-    return true;
-  }
+  bool checkNeedsGradients()const override {return true;}
   ~DumpProjections();
 };
 
@@ -84,11 +83,10 @@ DumpProjections::DumpProjections(const ActionOptions&ao):
   Action(ao),
   ActionPilot(ao),
   ActionWithArguments(ao),
-  fmt("%15.10f") {
+  fmt("%15.10f")
+{
   parse("FILE",file);
-  if( file.length()==0 ) {
-    error("filename not specified");
-  }
+  if( file.length()==0 ) error("filename not specified");
   parse("FMT",fmt);
   fmt=" "+fmt;
   of.open(file);

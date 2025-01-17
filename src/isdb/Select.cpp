@@ -66,7 +66,8 @@ PRINT ARG=pbactive STRIDE=100 FILE=COLVAR
 */
 //+ENDPLUMEDOC
 
-class Select : public function::Function {
+class Select : public function::Function
+{
   std::string selector_;
 
 public:
@@ -84,12 +85,12 @@ void Select::registerKeywords(Keywords& keys) {
 }
 
 Select::Select(const ActionOptions&ao):
-  Action(ao), Function(ao) {
+  Action(ao), Function(ao)
+{
   // name of selector
   parse("SELECTOR", selector_);
 
-  addValueWithDerivatives();
-  setNotPeriodic();
+  addValueWithDerivatives(); setNotPeriodic();
   checkRead();
 
   log.printf("  select based on %s\n",selector_.c_str());
@@ -97,18 +98,15 @@ Select::Select(const ActionOptions&ao):
 
 }
 
-void Select::calculate() {
+void Select::calculate()
+{
   unsigned iselect = static_cast<unsigned>(plumed.passMap[selector_]);
 
   // check if iselect is smaller than the number of arguments
-  if(iselect>=getNumberOfArguments()) {
-    error("the value of the SELECTOR is greater than the number of arguments!");
-  }
+  if(iselect>=getNumberOfArguments()) error("the value of the SELECTOR is greater than the number of arguments!");
 
   // put all the derivatives to zero
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    setDerivative(i, 0.0);
-  }
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) setDerivative(i, 0.0);
 
   // set value and derivative for selected argument
   setValue(getArgument(iselect));

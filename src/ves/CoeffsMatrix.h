@@ -44,7 +44,8 @@ class CoeffsVector;
 
 
 class CoeffsMatrix:
-  public CoeffsBase {
+  public CoeffsBase
+{
 public:
 private:
   std::vector<double> data;
@@ -119,9 +120,7 @@ public:
   void clear();
   void setAllValuesToZero();
   //
-  std::vector<double> getDataAsVector() const {
-    return data;
-  }
+  std::vector<double> getDataAsVector() const {return data;}
   // get value
   double getValue(const size_t, const size_t) const;
   double getValue(const std::vector<unsigned int>&, const std::vector<unsigned int>&) const;
@@ -185,15 +184,9 @@ public:
   //
   void randomizeValuesGaussian(int);
   //
-  void resetAveragingCounter() {
-    averaging_counter=0;
-  }
-  void setupExponentiallyDecayingAveraging(const unsigned int averaging_exp_decay_in) {
-    averaging_exp_decay_=averaging_exp_decay_in;
-  }
-  void turnOffExponentiallyDecayingAveraging() {
-    averaging_exp_decay_=0;
-  }
+  void resetAveragingCounter() {averaging_counter=0;}
+  void setupExponentiallyDecayingAveraging(const unsigned int averaging_exp_decay_in) {averaging_exp_decay_=averaging_exp_decay_in;}
+  void turnOffExponentiallyDecayingAveraging() { averaging_exp_decay_=0;}
   void resetAveraging();
   void addToAverage(const CoeffsMatrix&);
   void addToAverage(const CoeffsMatrix&, const unsigned int);
@@ -208,9 +201,7 @@ private:
   void writeDataDiagonalToFile(OFile&);
   void writeDataFullToFile(OFile&);
 public:
-  Communicator& getCommunicator() const {
-    return mycomm;
-  }
+  Communicator& getCommunicator() const {return mycomm;}
 
 };
 }

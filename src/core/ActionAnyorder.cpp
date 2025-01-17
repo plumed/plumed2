@@ -27,7 +27,8 @@
 namespace PLMD {
 
 ActionAnyorder::ActionAnyorder(const ActionOptions&ao):
-  Action(ao) {
+  Action(ao)
+{
 }
 
 void ActionAnyorder::registerKeywords( Keywords& keys ) {

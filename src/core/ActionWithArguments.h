@@ -40,7 +40,8 @@ This is used in PLMD::Function and PLMD::Bias
 */
 
 class ActionWithArguments:
-  public virtual Action {
+  public virtual Action
+{
   std::vector<Value*> arguments;
   bool lockRequestArguments;
 protected:

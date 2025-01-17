@@ -46,7 +46,8 @@ void Highest::reserveKeyword( Keywords& keys ) {
 }
 
 Highest::Highest( const VesselOptions& da ) :
-  OrderingVessel(da) {
+  OrderingVessel(da)
+{
 }
 
 std::string Highest::value_descriptor() {

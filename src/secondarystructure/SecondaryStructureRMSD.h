@@ -38,7 +38,8 @@ namespace secondarystructure {
 class SecondaryStructureRMSD :
   public ActionAtomistic,
   public ActionWithValue,
-  public vesselbase::ActionWithVessel {
+  public vesselbase::ActionWithVessel
+{
 private:
 /// Are we operating without periodic boundary conditions
   bool nopbc;
@@ -79,9 +80,7 @@ public:
   void calculate() override;
   void performTask( const unsigned&, const unsigned&, MultiValue& ) const override;
   void apply() override;
-  bool isPeriodic() override {
-    return false;
-  }
+  bool isPeriodic() override { return false; }
 };
 
 inline

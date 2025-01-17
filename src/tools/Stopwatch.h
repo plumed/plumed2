@@ -287,18 +287,16 @@ public:
 inline
 Stopwatch::Handler::Handler(Watch* watch,bool stop) :
   watch(watch),
-  stop(stop) {
+  stop(stop)
+{
   watch->start();
 }
 
 inline
 Stopwatch::Handler::~Handler() {
   if(watch) {
-    if(stop) {
-      watch->stop();
-    } else {
-      watch->pause();
-    }
+    if(stop) watch->stop();
+    else watch->pause();
   }
 }
 
@@ -333,7 +331,8 @@ Stopwatch::Handler Stopwatch::startPause(const std::string&name) {
 inline
 Stopwatch::Handler::Handler(Handler && handler) noexcept :
   watch(handler.watch),
-  stop(handler.stop) {
+  stop(handler.stop)
+{
   handler.watch=nullptr;
 }
 
@@ -342,11 +341,8 @@ Stopwatch::Handler & Stopwatch::Handler::operator=(Handler && handler) noexcept 
   if(this!=&handler) {
     if(watch) {
       try {
-        if(stop) {
-          watch->stop();
-        } else {
-          watch->pause();
-        }
+        if(stop) watch->stop();
+        else watch->pause();
       } catch(...) {
 // this is to avoid problems with cppcheck, given than this method is declared as
 // noexcept and stop and pause might throw in case of an internal bug
@@ -374,12 +370,8 @@ Stopwatch::Watch & Stopwatch::Watch::stop() {
   state=State::stopped;
   cycles++;
   total+=lap;
-  if(lap>max) {
-    max=lap;
-  }
-  if(min>lap || cycles==1) {
-    min=lap;
-  }
+  if(lap>max)max=lap;
+  if(min>lap || cycles==1)min=lap;
   lap=0;
   return *this;
 }
@@ -394,9 +386,7 @@ Stopwatch::Watch & Stopwatch::Watch::pause() {
   running--;
 // notice: with exception safety the following might be converted to a plain error.
 // I leave it like this for now:
-  if(running!=0) {
-    return *this;
-  }
+  if(running!=0) return *this;
   auto t=std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-lastStart);
   lap+=t.count();
   return *this;

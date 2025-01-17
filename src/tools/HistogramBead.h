@@ -80,28 +80,20 @@ void HistogramBead::isNotPeriodic() {
 
 inline
 void HistogramBead::isPeriodic( const double& mlow, const double& mhigh ) {
-  periodicity=periodic;
-  min=mlow;
-  max=mhigh;
+  periodicity=periodic; min=mlow; max=mhigh;
   max_minus_min=max-min;
   plumed_massert(max_minus_min>0, "your function has a very strange domain?");
   inv_max_minus_min=1.0/max_minus_min;
 }
 
 inline
-double HistogramBead::getlowb() const {
-  return lowb;
-}
+double HistogramBead::getlowb() const { return lowb; }
 
 inline
-double HistogramBead::getbigb() const {
-  return highb;
-}
+double HistogramBead::getbigb() const { return highb; }
 
 inline
-double HistogramBead::getCutoff() const {
-  return cutoff*width;
-}
+double HistogramBead::getCutoff() const { return cutoff*width; }
 
 inline
 double HistogramBead::difference( const double& d1, const double& d2 ) const {
@@ -113,9 +105,7 @@ double HistogramBead::difference( const double& d1, const double& d2 ) const {
     newx=Tools::pbc(newx);
     newx*=max_minus_min;
     return d2-newx;
-  } else {
-    plumed_merror("periodicty was not set");
-  }
+  } else plumed_merror("periodicty was not set");
   return 0;
 }
 

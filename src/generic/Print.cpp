@@ -67,7 +67,8 @@ only when required.
 
 class Print :
   public ActionPilot,
-  public ActionWithArguments {
+  public ActionWithArguments
+{
   std::string file;
   OFile ofile;
   std::string fmt;
@@ -112,7 +113,8 @@ Print::Print(const ActionOptions&ao):
   ActionPilot(ao),
   ActionWithArguments(ao),
   fmt("%f"),
-  rotate(0) {
+  rotate(0)
+{
   ofile.link(*this);
   parse("FILE",file);
   if(file.length()>0) {
@@ -125,9 +127,7 @@ Print::Print(const ActionOptions&ao):
   parse("FMT",fmt);
   fmt=" "+fmt;
   log.printf("  with format %s\n",fmt.c_str());
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    ofile.setupPrintValue( getPntrToArgument(i) );
-  }
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) ofile.setupPrintValue( getPntrToArgument(i) );
 /////////////////////////////////////////
 // these are crazy things just for debug:
 // they allow to change regularly the
@@ -135,9 +135,7 @@ Print::Print(const ActionOptions&ao):
   parse("_ROTATE",rotate);
   if(rotate>0) {
     rotateCountdown=rotate;
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      rotateArguments.push_back( getPntrToArgument(i) );
-    }
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) rotateArguments.push_back( getPntrToArgument(i) );
     std::vector<Value*> a(1,rotateArguments[0]);
     requestArguments(std::vector<Value*>(1,rotateArguments[0]));
     rotateLast=0;

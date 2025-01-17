@@ -25,8 +25,7 @@ namespace PLMD {
 namespace multicolvar {
 
 void CatomPack::resize( const unsigned& size ) {
-  indices.resize(size);
-  derivs.resize(size);
+  indices.resize(size); derivs.resize(size);
 }
 
 }

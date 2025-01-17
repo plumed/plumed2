@@ -47,9 +47,7 @@ FileBase& FileBase::link(FILE*fp) {
 }
 
 FileBase& FileBase::flush() {
-  if(fp) {
-    fflush(fp);
-  }
+  if(fp) fflush(fp);
   return *this;
 }
 
@@ -80,11 +78,7 @@ bool FileBase::FileExist(const std::string& path) {
   // first try with suffix
   FILE *ff=std::fopen(const_cast<char*>(this->path.c_str()),"r");
 // call fclose when ff goes out of scope
-  auto deleter=[](FILE* f) {
-    if(f) {
-      std::fclose(f);
-    }
-  };
+  auto deleter=[](FILE* f) { if(f) std::fclose(f); };
   std::unique_ptr<FILE,decltype(deleter)> fp_deleter(ff,deleter);
 
   if(!ff) {
@@ -93,20 +87,14 @@ bool FileBase::FileExist(const std::string& path) {
     ff=std::fopen(const_cast<char*>(this->path.c_str()),"r");
     mode="r";
   }
-  if(ff) {
-    do_exist=true;
-  }
-  if(comm) {
-    comm->Barrier();
-  }
+  if(ff) do_exist=true;
+  if(comm) comm->Barrier();
   return do_exist;
 }
 
 bool FileBase::isOpen() {
   bool isopen=false;
-  if(fp) {
-    isopen=true;
-  }
+  if(fp) isopen=true;
   return isopen;
 }
 
@@ -114,13 +102,9 @@ void        FileBase::close() {
   plumed_assert(!cloned);
   eof=false;
   err=false;
-  if(fp) {
-    std::fclose(fp);
-  }
+  if(fp)   std::fclose(fp);
 #ifdef __PLUMED_HAS_ZLIB
-  if(gzfp) {
-    gzclose(gzFile(gzfp));
-  }
+  if(gzfp) gzclose(gzFile(gzfp));
 #endif
   fp=NULL;
   gzfp=NULL;
@@ -136,20 +120,16 @@ FileBase::FileBase():
   eof(false),
   err(false),
   heavyFlush(false),
-  enforcedSuffix_(false) {
+  enforcedSuffix_(false)
+{
 }
 
-FileBase::~FileBase() {
-  if(plumed) {
-    plumed->eraseFile(*this);
-  }
-  if(!cloned && fp) {
-    std::fclose(fp);
-  }
+FileBase::~FileBase()
+{
+  if(plumed) plumed->eraseFile(*this);
+  if(!cloned && fp)   std::fclose(fp);
 #ifdef __PLUMED_HAS_ZLIB
-  if(!cloned && gzfp) {
-    gzclose(gzFile(gzfp));
-  }
+  if(!cloned && gzfp) gzclose(gzFile(gzfp));
 #endif
 }
 
@@ -158,9 +138,7 @@ FileBase::operator bool()const {
 }
 
 std::string FileBase::appendSuffix(const std::string&path,const std::string&suffix) {
-  if(path=="/dev/null") {
-    return path;  // do not append a suffix to /dev/null
-  }
+  if(path=="/dev/null") return path; // do not append a suffix to /dev/null
   std::string ret=path;
   std::string ext=Tools::extension(path);
 
@@ -178,9 +156,7 @@ std::string FileBase::appendSuffix(const std::string&path,const std::string&suff
     ret.resize(l);
   }
   ret+=suffix;
-  if(ext.length()>0) {
-    ret+="."+ext;
-  }
+  if(ext.length()>0)ret+="."+ext;
   return ret;
 }
 
@@ -191,12 +167,8 @@ FileBase& FileBase::enforceSuffix(const std::string&suffix) {
 }
 
 std::string FileBase::getSuffix()const {
-  if(enforcedSuffix_) {
-    return enforcedSuffix;
-  }
-  if(plumed) {
-    return plumed->getSuffix();
-  }
+  if(enforcedSuffix_) return enforcedSuffix;
+  if(plumed) return plumed->getSuffix();
   return "";
 }
 

@@ -136,10 +136,8 @@ void MultiValue::addValue( const unsigned& ival,  const double& val) {
 
 inline
 void MultiValue::addDerivative( const unsigned& ival, const unsigned& jder, const double& der) {
-  plumed_dbg_assert( ival<=values.size() && jder<nderivatives );
-  atLeastOneSet=true;
-  hasDerivatives.activate(jder);
-  derivatives[nderivatives*ival+jder] += der;
+  plumed_dbg_assert( ival<=values.size() && jder<nderivatives ); atLeastOneSet=true;
+  hasDerivatives.activate(jder); derivatives[nderivatives*ival+jder] += der;
 }
 
 inline
@@ -149,19 +147,15 @@ void MultiValue::addTemporyValue( const double& val ) {
 
 inline
 void MultiValue::addTemporyDerivative( const unsigned& jder, const double& der ) {
-  plumed_dbg_assert( jder<nderivatives );
-  atLeastOneSet=true;
-  hasDerivatives.activate(jder);
-  tmpder[jder] += der;
+  plumed_dbg_assert( jder<nderivatives ); atLeastOneSet=true;
+  hasDerivatives.activate(jder); tmpder[jder] += der;
 }
 
 
 inline
 void MultiValue::setDerivative( const unsigned& ival, const unsigned& jder, const double& der) {
-  plumed_dbg_assert( ival<=values.size() && jder<nderivatives );
-  atLeastOneSet=true;
-  hasDerivatives.activate(jder);
-  derivatives[nderivatives*ival+jder]=der;
+  plumed_dbg_assert( ival<=values.size() && jder<nderivatives ); atLeastOneSet=true;
+  hasDerivatives.activate(jder); derivatives[nderivatives*ival+jder]=der;
 }
 
 
@@ -194,9 +188,7 @@ void MultiValue::putIndexInActiveArray( const unsigned& ind ) {
 
 inline
 void MultiValue::updateIndex( const unsigned& ind ) {
-  if( hasDerivatives.isActive(ind) ) {
-    hasDerivatives.putIndexInActiveArray( ind );
-  }
+  if( hasDerivatives.isActive(ind) ) hasDerivatives.putIndexInActiveArray( ind );
 }
 
 inline
@@ -222,9 +214,7 @@ unsigned MultiValue::getActiveIndex( const unsigned& ind ) const {
 
 inline
 void MultiValue::updateDynamicList() {
-  if( atLeastOneSet ) {
-    hasDerivatives.updateActiveMembers();
-  }
+  if( atLeastOneSet ) hasDerivatives.updateActiveMembers();
 }
 
 inline

@@ -40,9 +40,7 @@ public:
   unsigned getNumberOfDerivatives() override;
   void turnOnDerivatives() override;
 /// Unless I am mistaken an integral should never be a periodic function
-  bool isPeriodic() override {
-    return false;
-  }
+  bool isPeriodic() override { return false; }
   void apply() override;
 };
 

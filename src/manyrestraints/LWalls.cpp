@@ -81,7 +81,8 @@ void LWalls::registerKeywords( Keywords& keys ) {
 
 LWalls::LWalls(const ActionOptions& ao):
   Action(ao),
-  ManyRestraintsBase(ao) {
+  ManyRestraintsBase(ao)
+{
   parse("AT",at);
   parse("OFFSET",offset);
   parse("EPS",eps);

@@ -52,7 +52,8 @@ PRINT ARG=sort.1,sort.4
 
 
 class Sort :
-  public Function {
+  public Function
+{
 public:
   explicit Sort(const ActionOptions&);
   void calculate() override;
@@ -70,13 +71,13 @@ void Sort::registerKeywords(Keywords& keys) {
 
 Sort::Sort(const ActionOptions&ao):
   Action(ao),
-  Function(ao) {
+  Function(ao)
+{
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     std::string s;
     Tools::convert(i+1,s);
-    if(getPntrToArgument(i)->isPeriodic()) {
+    if(getPntrToArgument(i)->isPeriodic())
       error("Cannot sort periodic values (check argument "+s+")");
-    }
     addComponentWithDerivatives(s);
     getPntrToComponent(i)->setNotPeriodic();
   }

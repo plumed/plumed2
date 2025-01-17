@@ -40,7 +40,8 @@ information as to how to go about implementing a new bias.
 class Bias :
   public ActionPilot,
   public ActionWithValue,
-  public ActionWithArguments {
+  public ActionWithArguments
+{
 /// the vector of the forces
   std::vector<double> outputForces;
 /// the pointer to the bias component
