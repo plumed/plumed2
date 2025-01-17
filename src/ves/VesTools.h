@@ -72,7 +72,9 @@ void VesTools::convertDbl2Str(const double value,std::string& str) {
 inline
 unsigned int log2(unsigned value) {
   unsigned int result = 0;
-  while(value >>= 1) result++;
+  while(value >>= 1) {
+    result++;
+  }
   return result;
 }
 
@@ -112,10 +114,11 @@ std::vector<T> VesTools::getPointersFromLabels(const std::vector<std::string>& a
   if(missing.size()>0) {
     if(missing.size()==1) {
       error_msg = "label "+missing[0]+" does not exist\n";
-    }
-    else if(missing.size()>1) {
+    } else if(missing.size()>1) {
       std::string tmp="";
-      for(unsigned int j=0; j<missing.size(); j++) {tmp +=missing[j]+" ";}
+      for(unsigned int j=0; j<missing.size(); j++) {
+        tmp +=missing[j]+" ";
+      }
       error_msg = "labels "+tmp+"do not exist\n";
     }
     std::vector<T> avail_action_pntrs = actionset.select<T>();
@@ -124,8 +127,7 @@ std::vector<T> VesTools::getPointersFromLabels(const std::vector<std::string>& a
       for(unsigned int i=0; i<avail_action_pntrs.size(); i++) {
         error_msg += "             " + avail_action_pntrs[i]->getName() + " with label " + avail_action_pntrs[i]->getLabel() + "\n";
       }
-    }
-    else {
+    } else {
       error_msg += "             Hint! no actions defined in the input file that can be used here, they should be defined before this actions\n";
     }
   }

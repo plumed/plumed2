@@ -25,22 +25,25 @@ namespace PLMD {
 namespace contour {
 
 void ContourFindingBase::registerKeywords( Keywords& keys ) {
-  gridtools::ActionWithGrid::registerKeywords( keys ); keys.use("ARG");
+  gridtools::ActionWithGrid::registerKeywords( keys );
+  keys.use("ARG");
   keys.add("compulsory","CONTOUR","the value we would like to draw the contour at in the space");
-  gridtools::EvaluateGridFunction gg; gg.registerKeywords(keys);
+  gridtools::EvaluateGridFunction gg;
+  gg.registerKeywords(keys);
 }
 
 ContourFindingBase::ContourFindingBase(const ActionOptions&ao):
   Action(ao),
   ActionWithGrid(ao),
-  mymin(this)
-{
-  parse("CONTOUR",contour); function.read( this );
+  mymin(this) {
+  parse("CONTOUR",contour);
+  function.read( this );
   log.printf("  calculating dividing surface along which function equals %f \n", contour);
 }
 
 void ContourFindingBase::setupOnFirstStep( const bool incalc ) {
-  function.setup( this ); setupValuesOnFirstStep();
+  function.setup( this );
+  setupValuesOnFirstStep();
 }
 
 }

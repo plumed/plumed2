@@ -82,39 +82,58 @@ void Difference::registerKeywords(Keywords& keys) {
 }
 
 void Difference::read( ActionWithArguments* action ) {
-  if( action->getNumberOfArguments()!=2 ) action->error("should be two arguments to this action");
+  if( action->getNumberOfArguments()!=2 ) {
+    action->error("should be two arguments to this action");
+  }
   if( action->getPntrToArgument(0)->getRank()==action->getPntrToArgument(1)->getRank() ) {
     std::vector<unsigned> shape( action->getPntrToArgument(0)->getShape() );
     for(unsigned i=0; i<shape.size(); ++i) {
-      if( shape[i]!=action->getPntrToArgument(1)->getShape()[i] ) action->error("shapes of input actions do not match");
+      if( shape[i]!=action->getPntrToArgument(1)->getShape()[i] ) {
+        action->error("shapes of input actions do not match");
+      }
     }
   }
 
   periodic=false;
   if( action->getPntrToArgument(0)->isPeriodic() ) {
-    periodic=true; action->getPntrToArgument(0)->getDomain( min0, max0 );
+    periodic=true;
+    action->getPntrToArgument(0)->getDomain( min0, max0 );
     if( !action->getPntrToArgument(1)->isConstant() && !action->getPntrToArgument(1)->isPeriodic() ) {
       action->error("period for input variables " + action->getPntrToArgument(0)->getName() + " and " + action->getPntrToArgument(1)->getName() + " should be the same 0");
     }
     if( !action->getPntrToArgument(1)->isConstant() ) {
-      std::string min1, max1; action->getPntrToArgument(1)->getDomain( min1, max1 );
-      if( min0!=min0 || max0!=max1 ) action->error("domain for input variables should be the same");
-    } else action->getPntrToArgument(1)->setDomain( min0, max0 );
+      std::string min1, max1;
+      action->getPntrToArgument(1)->getDomain( min1, max1 );
+      if( min0!=min0 || max0!=max1 ) {
+        action->error("domain for input variables should be the same");
+      }
+    } else {
+      action->getPntrToArgument(1)->setDomain( min0, max0 );
+    }
   } else if( action->getPntrToArgument(1)->isPeriodic() ) {
-    periodic=true; action->getPntrToArgument(1)->getDomain( min0, max0 );
+    periodic=true;
+    action->getPntrToArgument(1)->getDomain( min0, max0 );
     if( !action->getPntrToArgument(1)->isConstant() ) {
       action->error("period for input variables " + action->getPntrToArgument(0)->getName() + " and " + action->getPntrToArgument(1)->getName() + " should be the same 1");
-    } else action->getPntrToArgument(0)->setDomain( min0, max0 );
+    } else {
+      action->getPntrToArgument(0)->setDomain( min0, max0 );
+    }
   }
 }
 
 void Difference::setPeriodicityForOutputs( ActionWithValue* action ) {
-  if( periodic ) action->setPeriodic( min0, max0 );
-  else action->setNotPeriodic();
+  if( periodic ) {
+    action->setPeriodic( min0, max0 );
+  } else {
+    action->setNotPeriodic();
+  }
 }
 
 void Difference::calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const {
-  plumed_dbg_assert( args.size()==2 ); vals[0] = action->getPntrToArgument(0)->difference( args[1], args[0] ); derivatives(0,0) = 1.0; derivatives(0,1)=-1;
+  plumed_dbg_assert( args.size()==2 );
+  vals[0] = action->getPntrToArgument(0)->difference( args[1], args[0] );
+  derivatives(0,0) = 1.0;
+  derivatives(0,1)=-1;
 }
 
 }

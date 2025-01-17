@@ -34,8 +34,7 @@ FlexibleBin::FlexibleBin(int type, ActionWithArguments *paction, double const &d
   paction(paction),
   sigma(d),
   sigmamin(smin),
-  sigmamax(smax)
-{
+  sigmamax(smax) {
   // initialize the averages and the variance matrices
   if(type==diffusion) {
     unsigned ncv=paction->getNumberOfArguments();
@@ -69,8 +68,7 @@ FlexibleBin::FlexibleBin(int type, ActionWithArguments *paction, double const &d
 /// Constructure for 1D FB for PBMETAD
 FlexibleBin::FlexibleBin(int type, ActionWithArguments *paction, unsigned iarg,
                          double const &d, std::vector<double> &smin, const std::vector<double> &smax):
-  type(type),paction(paction),sigma(d),sigmamin(smin),sigmamax(smax)
-{
+  type(type),paction(paction),sigma(d),sigmamin(smin),sigmamax(smax) {
   // initialize the averages and the variance matrices
   if(type==diffusion) {
     std::vector<double> average(1);
@@ -117,10 +115,14 @@ void FlexibleBin::update(bool nowAddAHill) {
     // THE AVERAGE VALUE
     // beware: the pbc
     delta.resize(ncv);
-    for(unsigned i=0; i<ncv; i++) cv.push_back(paction->getArgument(i));
+    for(unsigned i=0; i<ncv; i++) {
+      cv.push_back(paction->getArgument(i));
+    }
     if(average.size()==0) { // initial time: just set the initial vector
       average.resize(ncv);
-      for(unsigned i=0; i<ncv; i++) average[i]=cv[i];
+      for(unsigned i=0; i<ncv; i++) {
+        average[i]=cv[i];
+      }
     } else { // accumulate
       for(unsigned i=0; i<ncv; i++) {
         delta[i]=paction->difference(i,average[i],cv[i]);
@@ -239,7 +241,9 @@ std::vector<double> FlexibleBin::getInverseMatrix() const {
   std::vector<double> eigenvals(ncv);
 
   //eigenvecs: first is eigenvec number, second is eigenvec component
-  if(diagMat( matrix, eigenvals, eigenvecs )!=0) {plumed_merror("diagonalization in FlexibleBin failed! This matrix is weird\n");};
+  if(diagMat( matrix, eigenvals, eigenvecs )!=0) {
+    plumed_merror("diagonalization in FlexibleBin failed! This matrix is weird\n");
+  };
 
   for (i=0; i<ncv; i++) { //loop on the dimension
     if( limitmax[i] ) {
@@ -259,7 +263,8 @@ std::vector<double> FlexibleBin::getInverseMatrix() const {
       for (j=0; j<ncv; j++) { //loop on components
         double fact=std::pow(eigenvals[j]*eigenvecs[j][i],2);
         if(fact>fmax) {
-          fmax=fact; imax=j;
+          fmax=fact;
+          imax=j;
         }
       }
       if(fmax<std::pow(sigmamin[i],2) ) {
@@ -284,7 +289,8 @@ std::vector<double> FlexibleBin::getInverseMatrix() const {
       for(unsigned l=0; l<ncv; ++l) {
         scal+=eigenvecs[l][i]*newinvmatrix[l][j];
       }
-      uppervec[k]=scal; k++;
+      uppervec[k]=scal;
+      k++;
     }
   }
 #else

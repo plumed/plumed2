@@ -48,8 +48,7 @@ PRINT ARG=dist,ens.dist
 
 
 class Ensemble :
-  public Function
-{
+  public Function {
   unsigned ens_dim;
   unsigned my_repl;
   unsigned narg;
@@ -91,23 +90,37 @@ Ensemble::Ensemble(const ActionOptions&ao):
   do_powers(false),
   kbt(-1.0),
   moment(0),
-  power(0)
-{
+  power(0) {
   parseFlag("REWEIGHT", do_reweight);
   if(do_reweight) {
     kbt=getkBT();
-    if(kbt==0.0) error("Unless the MD engine passes the temperature to plumed, with REWEIGHT you must specify TEMP");
-  } else { double temp=0.0; parse("TEMP",temp); }
+    if(kbt==0.0) {
+      error("Unless the MD engine passes the temperature to plumed, with REWEIGHT you must specify TEMP");
+    }
+  } else {
+    double temp=0.0;
+    parse("TEMP",temp);
+  }
 
   parse("MOMENT",moment);
-  if(moment==1) error("MOMENT can be any number but for 0 and 1");
-  if(moment!=0) do_moments=true;
+  if(moment==1) {
+    error("MOMENT can be any number but for 0 and 1");
+  }
+  if(moment!=0) {
+    do_moments=true;
+  }
   parseFlag("CENTRAL", do_central);
-  if(!do_moments&&do_central) error("To calculate a CENTRAL moment you need to define for which MOMENT");
+  if(!do_moments&&do_central) {
+    error("To calculate a CENTRAL moment you need to define for which MOMENT");
+  }
 
   parse("POWER",power);
-  if(power==1) error("POWER can be any number but for 0 and 1");
-  if(power!=0) do_powers=true;
+  if(power==1) {
+    error("POWER can be any number but for 0 and 1");
+  }
+  if(power!=0) {
+    do_powers=true;
+  }
 
   checkRead();
 
@@ -120,11 +133,15 @@ Ensemble::Ensemble(const ActionOptions&ao):
   }
   comm.Bcast(ens_dim,0);
   comm.Bcast(my_repl,0);
-  if(ens_dim<2) log.printf("WARNING: ENSEMBLE with one replica is not doing any averaging!\n");
+  if(ens_dim<2) {
+    log.printf("WARNING: ENSEMBLE with one replica is not doing any averaging!\n");
+  }
 
   // prepare output components, the number depending on reweighing or not
   narg = getNumberOfArguments();
-  if(do_reweight) narg--;
+  if(do_reweight) {
+    narg--;
+  }
 
   // these are the averages
   for(unsigned i=0; i<narg; i++) {
@@ -142,18 +159,31 @@ Ensemble::Ensemble(const ActionOptions&ao):
   }
 
   log.printf("  averaging over %u replicas.\n", ens_dim);
-  if(do_reweight) log.printf("  doing simple REWEIGHT using the latest ARGUMENT as energy.\n");
-  if(do_moments&&!do_central)  log.printf("  calculating also the %lf standard moment\n", moment);
-  if(do_moments&&do_central)   log.printf("  calculating also the %lf central moment\n", moment);
-  if(do_powers)                log.printf("  calculating the %lf power of the mean (and moment)\n", power);
+  if(do_reweight) {
+    log.printf("  doing simple REWEIGHT using the latest ARGUMENT as energy.\n");
+  }
+  if(do_moments&&!do_central) {
+    log.printf("  calculating also the %lf standard moment\n", moment);
+  }
+  if(do_moments&&do_central) {
+    log.printf("  calculating also the %lf central moment\n", moment);
+  }
+  if(do_powers) {
+    log.printf("  calculating the %lf power of the mean (and moment)\n", power);
+  }
 }
 
 std::string Ensemble::getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const {
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    if( cname==getPntrToArgument(i)->getName() ) return "the average for argument " + cname;
-    if( cname==getPntrToArgument(i)->getName() + "_m" ) return "the moment for argument " + cname;
+    if( cname==getPntrToArgument(i)->getName() ) {
+      return "the average for argument " + cname;
+    }
+    if( cname==getPntrToArgument(i)->getName() + "_m" ) {
+      return "the moment for argument " + cname;
+    }
   }
-  plumed_error(); return "";
+  plumed_error();
+  return "";
 }
 
 
@@ -167,7 +197,9 @@ void Ensemble::calculate() {
     bias.resize(ens_dim);
     if(master) {
       bias[my_repl] = getArgument(narg);
-      if(ens_dim>1) multi_sim_comm.Sum(&bias[0], ens_dim);
+      if(ens_dim>1) {
+        multi_sim_comm.Sum(&bias[0], ens_dim);
+      }
     }
     comm.Sum(&bias[0], ens_dim);
     const double maxbias = *(std::max_element(bias.begin(), bias.end()));
@@ -188,8 +220,12 @@ void Ensemble::calculate() {
   std::vector<double> dmean(narg,fact);
   // calculate the mean
   if(master) {
-    for(unsigned i=0; i<narg; ++i) mean[i] = fact*getArgument(i);
-    if(ens_dim>1) multi_sim_comm.Sum(&mean[0], narg);
+    for(unsigned i=0; i<narg; ++i) {
+      mean[i] = fact*getArgument(i);
+    }
+    if(ens_dim>1) {
+      multi_sim_comm.Sum(&mean[0], narg);
+    }
   }
   comm.Sum(&mean[0], narg);
 
@@ -206,7 +242,9 @@ void Ensemble::calculate() {
           v_moment[i]      = tmp*getArgument(i);
           dv_moment[i]     = moment*tmp;
         }
-        if(ens_dim>1) multi_sim_comm.Sum(&v_moment[0], narg);
+        if(ens_dim>1) {
+          multi_sim_comm.Sum(&v_moment[0], narg);
+        }
       } else {
         for(unsigned i=0; i<narg; ++i) {
           const double tmp = fact*std::pow(getArgument(i),moment-1);
@@ -221,7 +259,9 @@ void Ensemble::calculate() {
           v_moment[i]      = fact*tmp*(getArgument(i)-mean[i]);
           dv_moment[i]     = moment*tmp*(fact-fact/norm);
         }
-        if(ens_dim>1) multi_sim_comm.Sum(&v_moment[0], narg);
+        if(ens_dim>1) {
+          multi_sim_comm.Sum(&v_moment[0], narg);
+        }
       } else {
         for(unsigned i=0; i<narg; ++i) {
           const double tmp = std::pow(getArgument(i)-mean[i],moment-1);

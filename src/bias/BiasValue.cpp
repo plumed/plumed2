@@ -92,20 +92,21 @@ void BiasValue::registerKeywords(Keywords& keys) {
 }
 
 BiasValue::BiasValue(const ActionOptions&ao):
-  PLUMED_BIAS_INIT(ao)
-{
+  PLUMED_BIAS_INIT(ao) {
   checkRead();
   // add one bias for each argument
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     std::string ss=getPntrToArgument(i)->getName()+"_bias";
-    addComponent(ss); componentIsNotPeriodic(ss);
+    addComponent(ss);
+    componentIsNotPeriodic(ss);
   }
 }
 
 void BiasValue::calculate() {
   double bias=0.0;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    double val; val=getArgument(i);
+    double val;
+    val=getArgument(i);
     getPntrToComponent(i+1)->set(val);
     setOutputForce(i,-1.);
     bias+=val;

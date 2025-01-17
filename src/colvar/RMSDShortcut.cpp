@@ -46,61 +46,113 @@ void RMSDShortcut::registerKeywords(Keywords& keys) {
   keys.addFlag("DISPLACEMENT",false,"Calculate the vector of displacements instead of the length of this vector");
   keys.add("compulsory","NUMBER","0","if there are multiple structures in the pdb file you can specify that you want the RMSD from a specific structure by specifying its place in the file here. If NUMBER=0 then the RMSD from all structures are computed");
   keys.setValueDescription("the RMSD distance between the instaneous structure and the reference structure/s that were input");
-  keys.addActionNameSuffix("_SCALAR"); keys.addActionNameSuffix("_VECTOR");
-  keys.needsAction("PDB2CONSTANT"); keys.needsAction("WHOLEMOLECULES");
-  keys.needsAction("POSITION"); keys.needsAction("CONCATENATE");
+  keys.addActionNameSuffix("_SCALAR");
+  keys.addActionNameSuffix("_VECTOR");
+  keys.needsAction("PDB2CONSTANT");
+  keys.needsAction("WHOLEMOLECULES");
+  keys.needsAction("POSITION");
+  keys.needsAction("CONCATENATE");
 }
 
 RMSDShortcut::RMSDShortcut(const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
-  bool disp; parseFlag("DISPLACEMENT",disp);
-  std::string reference; parse("REFERENCE",reference);
+  ActionShortcut(ao) {
+  bool disp;
+  parseFlag("DISPLACEMENT",disp);
+  std::string reference;
+  parse("REFERENCE",reference);
   // Read the reference pdb file
-  PDB pdb; if( !pdb.read(reference,plumed.usingNaturalUnits(),0.1/plumed.getUnits().getLength()) ) plumed_merror("missing file " + reference );
-  unsigned frame; parse("NUMBER",frame); unsigned nf=1;
+  PDB pdb;
+  if( !pdb.read(reference,plumed.usingNaturalUnits(),0.1/plumed.getUnits().getLength()) ) {
+    plumed_merror("missing file " + reference );
+  }
+  unsigned frame;
+  parse("NUMBER",frame);
+  unsigned nf=1;
   if( frame==0 ) {
-    FILE* fp=std::fopen(reference.c_str(),"r"); bool do_read=true; nf=0;
+    FILE* fp=std::fopen(reference.c_str(),"r");
+    bool do_read=true;
+    nf=0;
     while ( do_read ) {
-      PDB mypdb; do_read=mypdb.readFromFilepointer(fp,plumed.usingNaturalUnits(),0.1/plumed.getUnits().getLength());
-      if( !do_read && nf>0 ) break ;
+      PDB mypdb;
+      do_read=mypdb.readFromFilepointer(fp,plumed.usingNaturalUnits(),0.1/plumed.getUnits().getLength());
+      if( !do_read && nf>0 ) {
+        break ;
+      }
       nf++;
     }
   }
-  bool nopbc; parseFlag("NOPBC",nopbc);
+  bool nopbc;
+  parseFlag("NOPBC",nopbc);
   // Now create the RMSD object
   std::string rmsd_line = getShortcutLabel() + ": ";
   if( nf==1 && !disp ) {
-    rmsd_line += "RMSD_SCALAR REFERENCE=" + reference; if(nopbc) rmsd_line += " NOPBC";
+    rmsd_line += "RMSD_SCALAR REFERENCE=" + reference;
+    if(nopbc) {
+      rmsd_line += " NOPBC";
+    }
   } else {
-    std::string ffnum; Tools::convert( frame, ffnum );
+    std::string ffnum;
+    Tools::convert( frame, ffnum );
     readInputLine( getShortcutLabel() + "_ref: PDB2CONSTANT REFERENCE=" + reference + " NUMBER=" + ffnum );
     std::vector<AtomNumber> anum( pdb.getAtomNumbers() );
     if( !nopbc ) {
-      std::string num; Tools::convert( anum[0].serial(), num ); std::string wm_line = "WHOLEMOLECULES ENTITY0=" + num;
-      for(unsigned i=1; i<anum.size(); ++i) { Tools::convert( anum[i].serial(), num ); wm_line += "," + num; }
+      std::string num;
+      Tools::convert( anum[0].serial(), num );
+      std::string wm_line = "WHOLEMOLECULES ENTITY0=" + num;
+      for(unsigned i=1; i<anum.size(); ++i) {
+        Tools::convert( anum[i].serial(), num );
+        wm_line += "," + num;
+      }
       readInputLine( wm_line );
     }
-    std::string num; Tools::convert( anum[0].serial(), num ); std::string pos_line = getShortcutLabel() + "_cpos: POSITION NOPBC ATOMS=" + num;
-    for(unsigned i=1; i<anum.size(); ++i) { Tools::convert( anum[i].serial(), num ); pos_line += "," + num; }
+    std::string num;
+    Tools::convert( anum[0].serial(), num );
+    std::string pos_line = getShortcutLabel() + "_cpos: POSITION NOPBC ATOMS=" + num;
+    for(unsigned i=1; i<anum.size(); ++i) {
+      Tools::convert( anum[i].serial(), num );
+      pos_line += "," + num;
+    }
     readInputLine( pos_line );
     // Concatenate the three positions together
     readInputLine( getShortcutLabel() + "_pos: CONCATENATE ARG=" + getShortcutLabel() + "_cpos.x," + getShortcutLabel() + "_cpos.y," + getShortcutLabel() + "_cpos.z");
     rmsd_line += "RMSD_VECTOR ARG=" + getShortcutLabel() + "_pos," + getShortcutLabel() + "_ref";
-    if( disp ) rmsd_line += " DISPLACEMENT";
+    if( disp ) {
+      rmsd_line += " DISPLACEMENT";
+    }
     // Now align
-    std::vector<double> align( pdb.getOccupancy() ); Tools::convert( align[0], num ); rmsd_line += " ALIGN=" + num;
-    for(unsigned i=1; i<align.size(); ++i) { Tools::convert( align[i], num ); rmsd_line += "," + num; }
+    std::vector<double> align( pdb.getOccupancy() );
+    Tools::convert( align[0], num );
+    rmsd_line += " ALIGN=" + num;
+    for(unsigned i=1; i<align.size(); ++i) {
+      Tools::convert( align[i], num );
+      rmsd_line += "," + num;
+    }
     // And displace
-    std::vector<double> displace( pdb.getBeta() ); Tools::convert( displace[0], num ); rmsd_line += " DISPLACE=" + num;
-    for(unsigned i=1; i<displace.size(); ++i) { Tools::convert( displace[i], num ); rmsd_line += "," + num; }
+    std::vector<double> displace( pdb.getBeta() );
+    Tools::convert( displace[0], num );
+    rmsd_line += " DISPLACE=" + num;
+    for(unsigned i=1; i<displace.size(); ++i) {
+      Tools::convert( displace[i], num );
+      rmsd_line += "," + num;
+    }
   }
   // And create the RMSD object
-  bool numder; parseFlag("NUMERICAL_DERIVATIVES",numder);
-  if(numder && nf==1 && !disp ) rmsd_line += " NUMERICAL_DERIVATIVES"; else if( numder ) error("can only use NUMERICAL_DERIVATIVES flag when RMSD is calculating a single scalar value");
-  bool squared; parseFlag("SQUARED",squared); if(squared) rmsd_line += " SQUARED";
-  std::string tt; parse("TYPE",tt); readInputLine( rmsd_line + " TYPE=" + tt );
+  bool numder;
+  parseFlag("NUMERICAL_DERIVATIVES",numder);
+  if(numder && nf==1 && !disp ) {
+    rmsd_line += " NUMERICAL_DERIVATIVES";
+  } else if( numder ) {
+    error("can only use NUMERICAL_DERIVATIVES flag when RMSD is calculating a single scalar value");
+  }
+  bool squared;
+  parseFlag("SQUARED",squared);
+  if(squared) {
+    rmsd_line += " SQUARED";
+  }
+  std::string tt;
+  parse("TYPE",tt);
+  readInputLine( rmsd_line + " TYPE=" + tt );
 }
 
 }

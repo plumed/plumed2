@@ -138,20 +138,29 @@ void FindSphericalContour::registerKeywords( Keywords& keys ) {
 
 FindSphericalContour::FindSphericalContour(const ActionOptions&ao):
   Action(ao),
-  ContourFindingBase(ao)
-{
-  if( getPntrToArgument(0)->getRank()!=3 ) error("input grid must be three dimensional");
+  ContourFindingBase(ao) {
+  if( getPntrToArgument(0)->getRank()!=3 ) {
+    error("input grid must be three dimensional");
+  }
 
-  parse("NPOINTS",npoints); log.printf("  searching for %u points on dividing surface \n",npoints);
-  parse("INNER_RADIUS",min); parse("OUTER_RADIUS",max); parse("NBINS",nbins);
+  parse("NPOINTS",npoints);
+  log.printf("  searching for %u points on dividing surface \n",npoints);
+  parse("INNER_RADIUS",min);
+  parse("OUTER_RADIUS",max);
+  parse("NBINS",nbins);
   log.printf("  expecting to find dividing surface at radii between %f and %f \n",min,max);
   log.printf("  looking for contour in windows of length %f \n", (max-min)/nbins);
   // Set this here so the same set of grid points are used on every turn
-  std::vector<bool> ipbc( 3, false ); gridcoords.setup( "fibonacci", ipbc, npoints, 0.0 );
+  std::vector<bool> ipbc( 3, false );
+  gridcoords.setup( "fibonacci", ipbc, npoints, 0.0 );
   // Now create a value
-  std::vector<unsigned> shape( 3 ); shape[0]=npoints; shape[1]=shape[2]=1;
-  addValueWithDerivatives( shape ); setNotPeriodic();
-  getPntrToComponent(0)->buildDataStore(); checkRead();
+  std::vector<unsigned> shape( 3 );
+  shape[0]=npoints;
+  shape[1]=shape[2]=1;
+  addValueWithDerivatives( shape );
+  setNotPeriodic();
+  getPntrToComponent(0)->buildDataStore();
+  checkRead();
 }
 
 unsigned FindSphericalContour::getNumberOfDerivatives() {
@@ -160,7 +169,8 @@ unsigned FindSphericalContour::getNumberOfDerivatives() {
 
 std::vector<std::string> FindSphericalContour::getGridCoordinateNames() const {
   gridtools::ActionWithGrid* ag=dynamic_cast<gridtools::ActionWithGrid*>( getPntrToArgument(0)->getPntrToAction() );
-  plumed_assert( ag ); return ag->getGridCoordinateNames();
+  plumed_assert( ag );
+  return ag->getGridCoordinateNames();
 }
 
 const gridtools::GridCoordinatesObject& FindSphericalContour::getGridCoordinatesObject() const {
@@ -180,23 +190,36 @@ void FindSphericalContour::performTask( const unsigned& current, MultiValue& myv
 
   bool found=false;
   for(unsigned k=0; k<nbins; ++k) {
-    for(unsigned j=0; j<3; ++j) tmp[j] = contour_point[j] + direction[j];
+    for(unsigned j=0; j<3; ++j) {
+      tmp[j] = contour_point[j] + direction[j];
+    }
     double val1 = getDifferenceFromContour( contour_point, der );
     double val2 = getDifferenceFromContour( tmp, der );
     if( val1*val2<0 ) {
       findContour( direction, contour_point );
-      double norm=0; for(unsigned j=0; j<3; ++j) norm += contour_point[j]*contour_point[j];
-      myvals.setValue( getConstPntrToComponent(0)->getPositionInStream(), sqrt(norm) ); found=true; break;
+      double norm=0;
+      for(unsigned j=0; j<3; ++j) {
+        norm += contour_point[j]*contour_point[j];
+      }
+      myvals.setValue( getConstPntrToComponent(0)->getPositionInStream(), sqrt(norm) );
+      found=true;
+      break;
     }
-    for(unsigned j=0; j<3; ++j) contour_point[j] = tmp[j];
+    for(unsigned j=0; j<3; ++j) {
+      contour_point[j] = tmp[j];
+    }
   }
-  if( !found ) error("range does not bracket the dividing surface");
+  if( !found ) {
+    error("range does not bracket the dividing surface");
+  }
 }
 
 void FindSphericalContour::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
     const unsigned& bufstart, std::vector<double>& buffer ) const {
-  plumed_assert( valindex==0 ); unsigned istart = bufstart + (1+gridcoords.getDimension())*code;
-  unsigned valout = getConstPntrToComponent(0)->getPositionInStream(); buffer[istart] += myvals.get( valout );
+  plumed_assert( valindex==0 );
+  unsigned istart = bufstart + (1+gridcoords.getDimension())*code;
+  unsigned valout = getConstPntrToComponent(0)->getPositionInStream();
+  buffer[istart] += myvals.get( valout );
 }
 
 }

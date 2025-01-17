@@ -293,25 +293,34 @@ void LocalSteinhardt::registerKeywords( Keywords& keys ) {
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   keys.addFlag("LOWMEM",false,"this flag does nothing and is present only to ensure back-compatibility");
   multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
-  keys.needsAction("CONTACT_MATRIX"); keys.needsAction("MATRIX_PRODUCT"); keys.needsAction("GROUP");
-  keys.needsAction("ONES"); keys.needsAction("OUTER_PRODUCT"); keys.needsAction("VSTACK");
-  keys.needsAction("CONCATENATE"); keys.needsAction("CUSTOM"); keys.needsAction("TRANSPOSE");
+  keys.needsAction("CONTACT_MATRIX");
+  keys.needsAction("MATRIX_PRODUCT");
+  keys.needsAction("GROUP");
+  keys.needsAction("ONES");
+  keys.needsAction("OUTER_PRODUCT");
+  keys.needsAction("VSTACK");
+  keys.needsAction("CONCATENATE");
+  keys.needsAction("CUSTOM");
+  keys.needsAction("TRANSPOSE");
   keys.needsAction("MATRIX_VECTOR_PRODUCT");
 }
 
 std::string LocalSteinhardt::getSymbol( const int& m ) const {
   if( m<0 ) {
-    std::string num; Tools::convert( -1*m, num );
+    std::string num;
+    Tools::convert( -1*m, num );
     return "n" + num;
   } else if( m>0 ) {
-    std::string num; Tools::convert( m, num );
+    std::string num;
+    Tools::convert( m, num );
     return "p" + num;
   }
   return "0";
 }
 
 std::string LocalSteinhardt::getArgsForStack( const int& l, const std::string& sp_lab ) const {
-  std::string numstr; Tools::convert( l, numstr );
+  std::string numstr;
+  Tools::convert( l, numstr );
   std::string data_mat = " ARG=" + sp_lab + "_sp.rm-n" + numstr + "," + sp_lab + "_sp.im-n" + numstr;
   for(int i=-l+1; i<=l; ++i) {
     numstr = getSymbol( i );
@@ -322,18 +331,24 @@ std::string LocalSteinhardt::getArgsForStack( const int& l, const std::string& s
 
 LocalSteinhardt::LocalSteinhardt(const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
-  bool lowmem; parseFlag("LOWMEM",lowmem);
-  if( lowmem ) warning("LOWMEM flag is deprecated and is no longer required for this action");
+  ActionShortcut(ao) {
+  bool lowmem;
+  parseFlag("LOWMEM",lowmem);
+  if( lowmem ) {
+    warning("LOWMEM flag is deprecated and is no longer required for this action");
+  }
   // Get the Q value
-  int l; Tools::convert( getName().substr(7), l);
+  int l;
+  Tools::convert( getName().substr(7), l);
   // Create a vector filled with ones
-  std::string twolplusone; Tools::convert( 2*(2*l+1), twolplusone );
+  std::string twolplusone;
+  Tools::convert( 2*(2*l+1), twolplusone );
   readInputLine( getShortcutLabel() + "_uvec: ONES SIZE=" + twolplusone );
   // Read in species keyword
-  std::string sp_str; parse("SPECIES",sp_str);
-  std::string spa_str; parse("SPECIESA",spa_str);
+  std::string sp_str;
+  parse("SPECIES",sp_str);
+  std::string spa_str;
+  parse("SPECIESA",spa_str);
   if( sp_str.length()>0 ) {
     // Create a group with these atoms
     readInputLine( getShortcutLabel() + "_grp: GROUP ATOMS=" + sp_str );
@@ -346,12 +361,15 @@ LocalSteinhardt::LocalSteinhardt(const ActionOptions& ao):
       readInputLine( getShortcutLabel() + "_uvecs: VSTACK" + getArgsForStack( l, sp_lab[0] ) );
     } else {
       std::string len_vec = getShortcutLabel() + "_mags: CONCATENATE ARG=" + sp_lab[0] + "_norm";
-      for(unsigned i=1; i<sp_lab.size(); ++i) len_vec += "," + sp_lab[i] + "_norm";
+      for(unsigned i=1; i<sp_lab.size(); ++i) {
+        len_vec += "," + sp_lab[i] + "_norm";
+      }
       // This is the vector that contains all the magnitudes
       readInputLine( len_vec );
       std::string concat_str = getShortcutLabel() + "_uvecs: CONCATENATE";
       for(unsigned i=0; i<sp_lab.size(); ++i) {
-        std::string snum; Tools::convert( i+1, snum );
+        std::string snum;
+        Tools::convert( i+1, snum );
         concat_str += " MATRIX" + snum + "1=" + getShortcutLabel() + "_uvecs" + snum;
         readInputLine( getShortcutLabel() + "_uvecs" + snum + ": VSTACK" + getArgsForStack( l, sp_lab[i] ) );
       }
@@ -364,14 +382,19 @@ LocalSteinhardt::LocalSteinhardt(const ActionOptions& ao):
     readInputLine( getShortcutLabel() + "_vecs: CUSTOM ARG=" + getShortcutLabel() + "_uvecs," + getShortcutLabel() + "_nmat FUNC=x/y PERIODIC=NO");
     // And transpose the matrix
     readInputLine( getShortcutLabel() + "_vecsT: TRANSPOSE ARG=" + getShortcutLabel() + "_vecs" );
-    std::string sw_str; parse("SWITCH",sw_str); readInputLine( getShortcutLabel() + "_cmap: CONTACT_MATRIX GROUP=" + sp_str + " SWITCH={" + sw_str + "}");
+    std::string sw_str;
+    parse("SWITCH",sw_str);
+    readInputLine( getShortcutLabel() + "_cmap: CONTACT_MATRIX GROUP=" + sp_str + " SWITCH={" + sw_str + "}");
     // And the matrix of dot products
     readInputLine( getShortcutLabel() + "_dpmat: MATRIX_PRODUCT ARG=" + getShortcutLabel() + "_vecs," + getShortcutLabel() + "_vecsT" );
   } else if( spa_str.length()>0 ) {
     // Create a group with these atoms
     readInputLine( getShortcutLabel() + "_grp: GROUP ATOMS=" + spa_str );
-    std::string spb_str; parse("SPECIESB",spb_str);
-    if( spb_str.length()==0 ) plumed_merror("need both SPECIESA and SPECIESB in input");
+    std::string spb_str;
+    parse("SPECIESB",spb_str);
+    if( spb_str.length()==0 ) {
+      plumed_merror("need both SPECIESA and SPECIESB in input");
+    }
     std::vector<std::string> sp_laba = Tools::getWords(spa_str, "\t\n ,");
     std::vector<std::string> sp_labb = Tools::getWords(spb_str, "\t\n ,");
     if( sp_laba.size()==1 ) {
@@ -381,12 +404,15 @@ LocalSteinhardt::LocalSteinhardt(const ActionOptions& ao):
       readInputLine( getShortcutLabel() + "_uvecsA: VSTACK" + getArgsForStack( l, sp_laba[0] ) );
     } else {
       std::string len_vec = getShortcutLabel() + "_magsA: CONCATENATE ARG=" + sp_laba[0] + "_norm";
-      for(unsigned i=1; i<sp_laba.size(); ++i) len_vec += "," + sp_laba[i] + "_norm";
+      for(unsigned i=1; i<sp_laba.size(); ++i) {
+        len_vec += "," + sp_laba[i] + "_norm";
+      }
       //  This is the vector that contains all the magnitudes
       readInputLine( len_vec );
       std::string concat_str = getShortcutLabel() + "_uvecsA: CONCATENATE";
       for(unsigned i=0; i<sp_laba.size(); ++i) {
-        std::string snum; Tools::convert( i+1, snum );
+        std::string snum;
+        Tools::convert( i+1, snum );
         concat_str += " MATRIX" + snum + "1=" + getShortcutLabel() + "_uvecsA" + snum;
         readInputLine( getShortcutLabel() + "_uvecsA" + snum + ": VSTACK" + getArgsForStack( l, sp_laba[i] ) );
       }
@@ -404,12 +430,15 @@ LocalSteinhardt::LocalSteinhardt(const ActionOptions& ao):
       readInputLine( getShortcutLabel() + "_uvecsB: TRANSPOSE ARG=" + getShortcutLabel() + "_uvecsBT");
     } else {
       std::string len_vec = getShortcutLabel() + "_magsB: CONCATENATE ARG=" +  sp_labb[0] + "_norm";
-      for(unsigned i=1; i<sp_labb.size(); ++i) len_vec += "," + sp_labb[i] + "_norm";
+      for(unsigned i=1; i<sp_labb.size(); ++i) {
+        len_vec += "," + sp_labb[i] + "_norm";
+      }
       //  This is the vector that contains all the magnitudes
       readInputLine( len_vec );
       std::string concat_str = getShortcutLabel() + "_uvecsB: CONCATENATE";
       for(unsigned i=0; i<sp_labb.size(); ++i) {
-        std::string snum; Tools::convert( i+1, snum );
+        std::string snum;
+        Tools::convert( i+1, snum );
         concat_str += " MATRIX1" + snum + "=" + getShortcutLabel() + "_uvecsB" + snum;
         readInputLine( getShortcutLabel() + "_uvecsBT" + snum + ": VSTACK" + getArgsForStack( l, sp_labb[i] ) );
         readInputLine( getShortcutLabel() + "_uvecsB" + snum + ": TRANSPOSE ARG=" + getShortcutLabel() + "_uvecsBT" + snum );
@@ -421,7 +450,9 @@ LocalSteinhardt::LocalSteinhardt(const ActionOptions& ao):
     }
     // Now normalise all the vectors by doing Hadammard "product" with normalising matrix
     readInputLine( getShortcutLabel() + "_vecsB: CUSTOM ARG=" + getShortcutLabel() + "_uvecsB," + getShortcutLabel() + "_nmatB FUNC=x/y PERIODIC=NO");
-    std::string sw_str; parse("SWITCH",sw_str); readInputLine( getShortcutLabel() + "_cmap: CONTACT_MATRIX GROUPA=" + spa_str + " GROUPB=" + spb_str + " SWITCH={" + sw_str + "}");
+    std::string sw_str;
+    parse("SWITCH",sw_str);
+    readInputLine( getShortcutLabel() + "_cmap: CONTACT_MATRIX GROUPA=" + spa_str + " GROUPB=" + spb_str + " SWITCH={" + sw_str + "}");
     readInputLine( getShortcutLabel() + "_dpmat: MATRIX_PRODUCT ARG=" + getShortcutLabel() + "_vecsA," + getShortcutLabel() + "_vecsB" );
   }
 
@@ -430,7 +461,8 @@ LocalSteinhardt::LocalSteinhardt(const ActionOptions& ao):
   // Now the sum of coordination numbers times the switching functions
   ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_cmap");
   plumed_assert( av && av->getNumberOfComponents()>0 && (av->copyOutput(0))->getRank()==2 );
-  std::string size; Tools::convert( (av->copyOutput(0))->getShape()[1], size );
+  std::string size;
+  Tools::convert( (av->copyOutput(0))->getShape()[1], size );
   readInputLine( getShortcutLabel() + "_ones: ONES SIZE=" + size );
   readInputLine( getShortcutLabel() + ": MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() +"_prod," + getShortcutLabel() +"_ones");
   // And just the sum of the coordination numbers

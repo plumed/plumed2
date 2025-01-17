@@ -55,8 +55,7 @@ double GridLinearInterpolation::linearInterpolation(const double x, const double
   // https://en.wikipedia.org/wiki/Linear_interpolation
   if(x1!=x0) {
     return y0 + (x-x0) * ((y1-y0)/(x1-x0));
-  }
-  else {
+  } else {
     return y0;
   }
 }

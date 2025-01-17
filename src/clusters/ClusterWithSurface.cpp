@@ -50,19 +50,22 @@ void ClusterWithSurface::registerKeywords(Keywords& keys) {
   keys.add("compulsory","CLUSTERS","the label of the action that does the clustering");
   keys.add("compulsory","CLUSTER","1","which cluster would you like to look at 1 is the largest cluster, 2 is the second largest, 3 is the the third largest and so on.");
   keys.setValueDescription("a vector that is one for those atoms that are within the cluster or that are within a cetain cutoff of one of the atoms in the cluster and zero otherwise");
-  keys.needsAction("CLUSTER_WEIGHTS"); keys.needsAction("CONTACT_MATRIX");
-  keys.needsAction("OUTER_PRODUCT"); keys.needsAction("CUSTOM");
+  keys.needsAction("CLUSTER_WEIGHTS");
+  keys.needsAction("CONTACT_MATRIX");
+  keys.needsAction("OUTER_PRODUCT");
+  keys.needsAction("CUSTOM");
   keys.needsAction("DFSCLUSTERING");
 }
 
 ClusterWithSurface::ClusterWithSurface(const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
+  ActionShortcut(ao) {
   // Read atoms for contact matrix
-  std::string atdata; parse("ATOMS",atdata);
+  std::string atdata;
+  parse("ATOMS",atdata);
   // Read rcut input
-  std::string rcut_surf_str; parse("RCUT_SURF",rcut_surf_str);
+  std::string rcut_surf_str;
+  parse("RCUT_SURF",rcut_surf_str);
   // Create a cluster weights object
   readInputLine( getShortcutLabel() + "_wnosurf: CLUSTER_WEIGHTS " + convertInputLineToString() );
   // Now create a contact matrix

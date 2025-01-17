@@ -50,16 +50,18 @@ void LogSumExp::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
   keys.add("compulsory","ARG","the vector of logweights that you would like to normalise using the logsumexp trick");
   keys.setValueDescription("the logarithms of the input weights logweights that are computed with the log-sum weights formula");
-  keys.needsAction("HIGHEST"); keys.needsAction("CUSTOM"); keys.needsAction("SUM");
+  keys.needsAction("HIGHEST");
+  keys.needsAction("CUSTOM");
+  keys.needsAction("SUM");
 }
 
 
 LogSumExp::LogSumExp( const ActionOptions& ao ):
   Action(ao),
-  ActionShortcut(ao)
-{
+  ActionShortcut(ao) {
   // Find the argument name
-  std::string argn; parse("ARG",argn);
+  std::string argn;
+  parse("ARG",argn);
   // Find the maximum weight
   readInputLine( getShortcutLabel() + "_maxlogweight: HIGHEST ARG=" + argn );
   readInputLine( getShortcutLabel() + "_maxweight: CUSTOM ARG=" + getShortcutLabel() + "_maxlogweight FUNC=exp(x) PERIODIC=NO");

@@ -87,7 +87,9 @@ private:
 public:
   static void registerKeywords(Keywords&);
   explicit Wham(const ActionOptions&ao);
-  unsigned getNumberOfDerivatives() { return 0; }
+  unsigned getNumberOfDerivatives() {
+    return 0;
+  }
   void calculate() override ;
   void apply() override {}
 };
@@ -95,8 +97,10 @@ public:
 PLUMED_REGISTER_ACTION(Wham,"WHAM")
 
 void Wham::registerKeywords(Keywords& keys ) {
-  Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
-  ActionWithArguments::registerKeywords( keys ); keys.remove("ARG");
+  Action::registerKeywords( keys );
+  ActionWithValue::registerKeywords( keys );
+  ActionWithArguments::registerKeywords( keys );
+  keys.remove("ARG");
   keys.add("compulsory","ARG","the stored values for the bias");
   keys.add("compulsory","MAXITER","1000","maximum number of iterations for WHAM algorithm");
   keys.add("compulsory","WHAMTOL","1e-10","threshold for convergence of WHAM algorithm");
@@ -108,59 +112,90 @@ void Wham::registerKeywords(Keywords& keys ) {
 Wham::Wham(const ActionOptions&ao):
   Action(ao),
   ActionWithValue(ao),
-  ActionWithArguments(ao)
-{
+  ActionWithArguments(ao) {
   // Read in the temperature
   simtemp=getkBT();
-  if(simtemp==0) error("The MD engine does not pass the temperature to plumed so you have to specify it using TEMP");
+  if(simtemp==0) {
+    error("The MD engine does not pass the temperature to plumed so you have to specify it using TEMP");
+  }
   // Now read in parameters of WHAM
-  parse("MAXITER",maxiter); parse("WHAMTOL",thresh);
-  if(comm.Get_rank()==0) nreplicas=multi_sim_comm.Get_size();
-  comm.Bcast(nreplicas,0); addValue( getPntrToArgument(0)->getShape() ); setNotPeriodic();
+  parse("MAXITER",maxiter);
+  parse("WHAMTOL",thresh);
+  if(comm.Get_rank()==0) {
+    nreplicas=multi_sim_comm.Get_size();
+  }
+  comm.Bcast(nreplicas,0);
+  addValue( getPntrToArgument(0)->getShape() );
+  setNotPeriodic();
 }
 
 void Wham::calculate() {
   // Retrieve the values that were stored for the biase
   std::vector<double> stored_biases( getPntrToArgument(0)->getNumberOfValues() );
-  for(unsigned i=0; i<stored_biases.size(); ++i) stored_biases[i] = getPntrToArgument(0)->get(i);
+  for(unsigned i=0; i<stored_biases.size(); ++i) {
+    stored_biases[i] = getPntrToArgument(0)->get(i);
+  }
   // Get the minimum value of the bias
   double minv = *min_element(std::begin(stored_biases), std::end(stored_biases));
   // Resize final weights array
   plumed_assert( stored_biases.size()%nreplicas==0 );
   std::vector<double> final_weights( stored_biases.size() / nreplicas, 1.0 );
   if( getPntrToComponent(0)->getNumberOfValues()!=final_weights.size() ) {
-    std::vector<unsigned> shape(1); shape[0]=final_weights.size(); getPntrToComponent(0)->setShape( shape );
+    std::vector<unsigned> shape(1);
+    shape[0]=final_weights.size();
+    getPntrToComponent(0)->setShape( shape );
   }
   // Offset and exponential of the bias
   std::vector<double> expv( stored_biases.size() );
-  for(unsigned i=0; i<expv.size(); ++i) expv[i] = exp( (-stored_biases[i]+minv) / simtemp );
+  for(unsigned i=0; i<expv.size(); ++i) {
+    expv[i] = exp( (-stored_biases[i]+minv) / simtemp );
+  }
   // Initialize Z
   std::vector<double> Z( nreplicas, 1.0 ), oldZ( nreplicas );
   // Now the iterative loop to calculate the WHAM weights
   for(unsigned iter=0; iter<maxiter; ++iter) {
     // Store Z
-    for(unsigned j=0; j<Z.size(); ++j) oldZ[j]=Z[j];
+    for(unsigned j=0; j<Z.size(); ++j) {
+      oldZ[j]=Z[j];
+    }
     // Recompute weights
     double norm=0;
     for(unsigned j=0; j<final_weights.size(); ++j) {
       double ew=0;
-      for(unsigned k=0; k<Z.size(); ++k) ew += expv[j*Z.size()+k]  / Z[k];
-      final_weights[j] = 1.0 / ew; norm += final_weights[j];
+      for(unsigned k=0; k<Z.size(); ++k) {
+        ew += expv[j*Z.size()+k]  / Z[k];
+      }
+      final_weights[j] = 1.0 / ew;
+      norm += final_weights[j];
     }
     // Normalize weights
-    for(unsigned j=0; j<final_weights.size(); ++j) final_weights[j] /= norm;
-    // Recompute Z
-    for(unsigned j=0; j<Z.size(); ++j) Z[j] = 0.0;
     for(unsigned j=0; j<final_weights.size(); ++j) {
-      for(unsigned k=0; k<Z.size(); ++k) Z[k] += final_weights[j]*expv[j*Z.size()+k];
+      final_weights[j] /= norm;
+    }
+    // Recompute Z
+    for(unsigned j=0; j<Z.size(); ++j) {
+      Z[j] = 0.0;
+    }
+    for(unsigned j=0; j<final_weights.size(); ++j) {
+      for(unsigned k=0; k<Z.size(); ++k) {
+        Z[k] += final_weights[j]*expv[j*Z.size()+k];
+      }
     }
     // Normalize Z and compute change in Z
-    double change=0; norm=0; for(unsigned k=0; k<Z.size(); ++k) norm+=Z[k];
+    double change=0;
+    norm=0;
     for(unsigned k=0; k<Z.size(); ++k) {
-      Z[k] /= norm; double d = std::log( Z[k] / oldZ[k] ); change += d*d;
+      norm+=Z[k];
+    }
+    for(unsigned k=0; k<Z.size(); ++k) {
+      Z[k] /= norm;
+      double d = std::log( Z[k] / oldZ[k] );
+      change += d*d;
     }
     if( change<thresh ) {
-      for(unsigned j=0; j<final_weights.size(); ++j) getPntrToComponent(0)->set( j, final_weights[j] );
+      for(unsigned j=0; j<final_weights.size(); ++j) {
+        getPntrToComponent(0)->set( j, final_weights[j] );
+      }
       return;
     }
   }

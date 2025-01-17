@@ -78,61 +78,99 @@ void LandmarkSelection::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("logweights","ARG","the logarithms of the weights of the data points");
   keys.addOutputComponent("rectdissims","DISSIMILARITIES","a rectangular matrix containing the distances between the landmark points and the rest of the points");
   keys.addOutputComponent("sqrdissims","DISSIMILARITIES","a square matrix containing the distances between each pair of landmark points");
-  keys.needsAction("LOGSUMEXP"); keys.needsAction("TRANSPOSE"); keys.needsAction("DISSIMILARITIES");
-  keys.needsAction("ONES"); keys.needsAction("CREATE_MASK"); keys.needsAction("FARTHEST_POINT_SAMPLING");
-  keys.needsAction("SELECT_WITH_MASK"); keys.needsAction("COMBINE"); keys.needsAction("VORONOI");
-  keys.needsAction("MATRIX_PRODUCT"); keys.needsAction("CUSTOM");
+  keys.needsAction("LOGSUMEXP");
+  keys.needsAction("TRANSPOSE");
+  keys.needsAction("DISSIMILARITIES");
+  keys.needsAction("ONES");
+  keys.needsAction("CREATE_MASK");
+  keys.needsAction("FARTHEST_POINT_SAMPLING");
+  keys.needsAction("SELECT_WITH_MASK");
+  keys.needsAction("COMBINE");
+  keys.needsAction("VORONOI");
+  keys.needsAction("MATRIX_PRODUCT");
+  keys.needsAction("CUSTOM");
 }
 
 LandmarkSelection::LandmarkSelection( const ActionOptions& ao ):
   Action(ao),
-  ActionShortcut(ao)
-{
-  std::string nlandmarks; parse("NLANDMARKS",nlandmarks); bool novoronoi; parseFlag("NOVORONOI",novoronoi);
+  ActionShortcut(ao) {
+  std::string nlandmarks;
+  parse("NLANDMARKS",nlandmarks);
+  bool novoronoi;
+  parseFlag("NOVORONOI",novoronoi);
 
-  bool nodissims; parseFlag("NODISSIMILARITIES",nodissims);
-  std::string argn, dissims; parse("ARG",argn); parse("DISSIMILARITIES",dissims);
+  bool nodissims;
+  parseFlag("NODISSIMILARITIES",nodissims);
+  std::string argn, dissims;
+  parse("ARG",argn);
+  parse("DISSIMILARITIES",dissims);
   if( argn.length()>0 ) {
     ActionShortcut* as = plumed.getActionSet().getShortcutActionWithLabel( argn );
-    if( !as || as->getName()!="COLLECT_FRAMES" ) error("found no COLLECT_FRAMES action with label " + argn );
+    if( !as || as->getName()!="COLLECT_FRAMES" ) {
+      error("found no COLLECT_FRAMES action with label " + argn );
+    }
     // Get the weights
     readInputLine( getShortcutLabel() + "_allweights: LOGSUMEXP ARG=" + argn + "_logweights");
   }
   if( dissims.length()>0 ) {
     ActionWithValue* ds = plumed.getActionSet().selectWithLabel<ActionWithValue*>( dissims );
-    if( (ds->copyOutput(0))->getRank()!=2 ) error("input for dissimilarities shoudl be a matrix");
+    if( (ds->copyOutput(0))->getRank()!=2 ) {
+      error("input for dissimilarities shoudl be a matrix");
+    }
     // Calculate the dissimilarities if the user didn't specify them
   } else if( !nodissims ) {
-    readInputLine( getShortcutLabel() + "_" + argn + "_dataT: TRANSPOSE ARG=" + argn + "_data"); dissims = getShortcutLabel() + "_dissims";
+    readInputLine( getShortcutLabel() + "_" + argn + "_dataT: TRANSPOSE ARG=" + argn + "_data");
+    dissims = getShortcutLabel() + "_dissims";
     readInputLine( getShortcutLabel() + "_dissims: DISSIMILARITIES SQUARED ARG=" + argn + "_data," + getShortcutLabel() + "_" + argn + "_dataT");
   }
   // This deals with a corner case whereby users have a matrix of dissimilarities but no corresponding coordinates for these frames
   if( argn.length()==0 && dissims.size()>0 ) {
     ActionWithValue* ds = plumed.getActionSet().selectWithLabel<ActionWithValue*>( dissims );
-    if( ds->getName()!="CONSTANT" || (ds->copyOutput(0))->getRank()!=2 ) error("set ARG as well as DISSIMILARITIES");
-    std::string size; Tools::convert(  (ds->copyOutput(0))->getShape()[0], size );
+    if( ds->getName()!="CONSTANT" || (ds->copyOutput(0))->getRank()!=2 ) {
+      error("set ARG as well as DISSIMILARITIES");
+    }
+    std::string size;
+    Tools::convert(  (ds->copyOutput(0))->getShape()[0], size );
     readInputLine( getShortcutLabel() + "_allweights: ONES SIZE=" + size );
   }
 
   if( getName()=="LANDMARK_SELECT_STRIDE" ) {
     readInputLine( getShortcutLabel() + "_mask: CREATE_MASK ARG=" + getShortcutLabel() + "_allweights TYPE=stride NZEROS=" + nlandmarks );
   } else if( getName()=="LANDMARK_SELECT_RANDOM" ) {
-    if( argn.length()==0 ) error("must set COLLECT_FRAMES object for landmark selection using ARG keyword");
-    std::string seed; parse("SEED",seed); if( seed.length()>0 ) seed = " SEED=" + seed;
+    if( argn.length()==0 ) {
+      error("must set COLLECT_FRAMES object for landmark selection using ARG keyword");
+    }
+    std::string seed;
+    parse("SEED",seed);
+    if( seed.length()>0 ) {
+      seed = " SEED=" + seed;
+    }
     readInputLine( getShortcutLabel() + "_mask: CREATE_MASK ARG=" + getShortcutLabel() + "_allweights TYPE=random NZEROS=" + nlandmarks + seed );
   } else if( getName()=="LANDMARK_SELECT_FPS" ) {
-    if( dissims.length()==0 ) error("dissimiarities must be defined to use FPS sampling");
-    std::string seed; parse("SEED",seed); if( seed.length()>0 ) seed = " SEED=" + seed;
+    if( dissims.length()==0 ) {
+      error("dissimiarities must be defined to use FPS sampling");
+    }
+    std::string seed;
+    parse("SEED",seed);
+    if( seed.length()>0 ) {
+      seed = " SEED=" + seed;
+    }
     readInputLine( getShortcutLabel() + "_mask: FARTHEST_POINT_SAMPLING ARG=" + dissims + " NZEROS=" + nlandmarks + seed );
   }
 
-  if( argn.length()>0 ) readInputLine( getShortcutLabel() + "_data: SELECT_WITH_MASK ARG=" + argn + "_data ROW_MASK=" + getShortcutLabel() + "_mask");
+  if( argn.length()>0 ) {
+    readInputLine( getShortcutLabel() + "_data: SELECT_WITH_MASK ARG=" + argn + "_data ROW_MASK=" + getShortcutLabel() + "_mask");
+  }
 
-  unsigned nland; Tools::convert( nlandmarks, nland );
+  unsigned nland;
+  Tools::convert( nlandmarks, nland );
   if( dissims.length()>0 ) {
     ActionWithValue* ds = plumed.getActionSet().selectWithLabel<ActionWithValue*>( dissims );
     if( (ds->copyOutput(0))->getShape()[0]==nland ) {
-      if( !novoronoi ) { warning("cannot use voronoi procedure to give weights as not all distances between points are known"); novoronoi=true; }
+      if( !novoronoi ) {
+        warning("cannot use voronoi procedure to give weights as not all distances between points are known");
+        novoronoi=true;
+      }
       readInputLine( getShortcutLabel() + "_sqrdissims: COMBINE ARG=" + dissims + " PERIODIC=NO");
     } else {
       readInputLine( getShortcutLabel() + "_rmask: CREATE_MASK ARG=" + getShortcutLabel() + "_allweights TYPE=nomask");
@@ -148,11 +186,15 @@ LandmarkSelection::LandmarkSelection( const ActionOptions& ao ):
     readInputLine( getShortcutLabel() + "_weights: TRANSPOSE ARG=" + getShortcutLabel() + "_weightsT");
     readInputLine( getShortcutLabel() + "_logweights: CUSTOM ARG=" + getShortcutLabel() + "_weights FUNC=log(x) PERIODIC=NO");
   } else if( argn.length()>0 ) {
-    if( !novoronoi ) warning("cannot use voronoi procedure to give weights to landmark points as DISSIMILARITIES was not set");
+    if( !novoronoi ) {
+      warning("cannot use voronoi procedure to give weights to landmark points as DISSIMILARITIES was not set");
+    }
     readInputLine( getShortcutLabel() + "_logweights: SELECT_WITH_MASK ARG=" + argn + "_logweights MASK=" + getShortcutLabel() + "_mask");
   }
   // Create the vector of ones that is needed by Classical MDS
-  if( argn.length()>0 ) readInputLine( getShortcutLabel() + "_ones: SELECT_WITH_MASK ARG=" + argn + "_ones MASK=" + getShortcutLabel() + "_mask");
+  if( argn.length()>0 ) {
+    readInputLine( getShortcutLabel() + "_ones: SELECT_WITH_MASK ARG=" + argn + "_ones MASK=" + getShortcutLabel() + "_mask");
+  }
 }
 
 }

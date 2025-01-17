@@ -40,19 +40,37 @@ class Keywords {
     enum {hidden,compulsory,flag,optional,atoms,vessel} style;
     explicit KeyType( const std::string& type );
     void setStyle( const std::string& type );
-    bool isCompulsory() const { return (style==compulsory); }
-    bool isFlag() const { return (style==flag); }
-    bool isOptional() const { return (style==optional); }
-    bool isAtomList() const { return (style==atoms); }
-    bool isVessel() const { return (style==vessel); }
+    bool isCompulsory() const {
+      return (style==compulsory);
+    }
+    bool isFlag() const {
+      return (style==flag);
+    }
+    bool isOptional() const {
+      return (style==optional);
+    }
+    bool isAtomList() const {
+      return (style==atoms);
+    }
+    bool isVessel() const {
+      return (style==vessel);
+    }
     std::string toString() const {
-      if(style==compulsory) return "compulsory";
-      else if(style==optional) return "optional";
-      else if(style==atoms) return "atoms";
-      else if(style==flag) return "flag";
-      else if(style==hidden) return "hidden";
-      else if(style==vessel) return "vessel";
-      else plumed_assert(0);
+      if(style==compulsory) {
+        return "compulsory";
+      } else if(style==optional) {
+        return "optional";
+      } else if(style==atoms) {
+        return "atoms";
+      } else if(style==flag) {
+        return "flag";
+      } else if(style==hidden) {
+        return "hidden";
+      } else if(style==vessel) {
+        return "vessel";
+      } else {
+        plumed_assert(0);
+      }
       return "";
     }
   };
@@ -100,9 +118,13 @@ public:
 /// Constructor
   Keywords() : isaction(true), isatoms(true) {}
 ///
-  void isDriver() { isaction=false; }
+  void isDriver() {
+    isaction=false;
+  }
 ///
-  void isAnalysis() { isatoms=false; }
+  void isAnalysis() {
+    isatoms=false;
+  }
 /// find out whether flag key is on or off by default.
   bool getLogicalDefault(const std::string & key, bool& def ) const ;
 /// Get the value of the default for the keyword named key
@@ -186,7 +208,9 @@ public:
 /// Remove a component with a particular name from the keywords
   void removeComponent( const std::string& name );
 /// Reference to keys
-  std::vector<std::string> getKeys() const { return keys; }
+  std::vector<std::string> getKeys() const {
+    return keys;
+  }
 /// Get the description of a particular keyword
   std::string getTooltip( const std::string& name ) const ;
 /// Note that another actions is required to create this shortcut

@@ -198,7 +198,8 @@ PLUMED_REGISTER_ACTION(DumpGrid,"DUMPGRID")
 void DumpGrid::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
-  ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
+  ActionWithArguments::registerKeywords( keys );
+  keys.use("ARG");
   keys.add("optional","GRID","the grid you would like to print (can also use ARG for specifying what is being printed)");
   keys.add("compulsory","STRIDE","0","the frequency with which the grid should be output to the file.  Default of zero means dump at end of calculation");
   keys.add("compulsory","FILE","density","the file on which to write the grid.");
@@ -211,34 +212,59 @@ DumpGrid::DumpGrid(const ActionOptions&ao):
   Action(ao),
   ActionWithArguments(ao),
   ActionPilot(ao),
-  fmt("%f")
-{
+  fmt("%f") {
   if( getNumberOfArguments()==0 ) {
-    std::vector<Value*> grids; parseArgumentList("GRID",grids); requestArguments(grids);
+    std::vector<Value*> grids;
+    parseArgumentList("GRID",grids);
+    requestArguments(grids);
   }
-  if( getNumberOfArguments()!=1 ) error("should only be one argument");
-  if( getPntrToArgument(0)->getRank()==0 || !getPntrToArgument(0)->hasDerivatives() ) error("input should be a grid");
-  if( getName()=="DUMPCUBE" && getPntrToArgument(0)->getRank()!=3 ) error("input should be a three dimensional grid");
+  if( getNumberOfArguments()!=1 ) {
+    error("should only be one argument");
+  }
+  if( getPntrToArgument(0)->getRank()==0 || !getPntrToArgument(0)->hasDerivatives() ) {
+    error("input should be a grid");
+  }
+  if( getName()=="DUMPCUBE" && getPntrToArgument(0)->getRank()!=3 ) {
+    error("input should be a three dimensional grid");
+  }
   parse("FILE",filename);
-  if(filename.length()==0) error("name out output file was not specified");
+  if(filename.length()==0) {
+    error("name out output file was not specified");
+  }
   ActionWithGrid* ag = ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
-  if( !ag ) error( getPntrToArgument(0)->getName() + " is not grid");
+  if( !ag ) {
+    error( getPntrToArgument(0)->getName() + " is not grid");
+  }
 
   log.printf("  outputting grid with label %s to file named %s",getPntrToArgument(0)->getName().c_str(), filename.c_str() );
-  parse("FMT",fmt); log.printf(" with format %s \n", fmt.c_str() );
-  if( getName()=="DUMPGRID" ) fmt = " " + fmt; else if( getName()=="DUMPCUBE" ) fmt = fmt + " ";
-  parseFlag("PRINT_ONE_FILE", onefile); parseFlag("PRINT_XYZ",xyzfile);
+  parse("FMT",fmt);
+  log.printf(" with format %s \n", fmt.c_str() );
+  if( getName()=="DUMPGRID" ) {
+    fmt = " " + fmt;
+  } else if( getName()=="DUMPCUBE" ) {
+    fmt = fmt + " ";
+  }
+  parseFlag("PRINT_ONE_FILE", onefile);
+  parseFlag("PRINT_XYZ",xyzfile);
   if( xyzfile ) {
-    if( getName()=="DUMPCUBE" ) error("PRINT_XYZ flag not compatible with DUMPCUBE");
-    if( ag->getGridCoordinatesObject().getGridType()=="flat" ) error("can only use PRINT_XYZ option for fibonacci grids");
+    if( getName()=="DUMPCUBE" ) {
+      error("PRINT_XYZ flag not compatible with DUMPCUBE");
+    }
+    if( ag->getGridCoordinatesObject().getGridType()=="flat" ) {
+      error("can only use PRINT_XYZ option for fibonacci grids");
+    }
     log.printf("  outputting grid to xyzfile\n");
   }
-  if( onefile ) log.printf("  printing all grids on a single file \n");
-  else log.printf("  printing all grids on separate files \n");
+  if( onefile ) {
+    log.printf("  printing all grids on a single file \n");
+  } else {
+    log.printf("  printing all grids on separate files \n");
+  }
 }
 
 void DumpGrid::update() {
-  OFile ofile; ofile.link(*this);
+  OFile ofile;
+  ofile.link(*this);
   if( onefile ) {
     ofile.enforceRestart();
     ofile.open( filename );
@@ -248,44 +274,66 @@ void DumpGrid::update() {
   }
 
   ActionWithGrid* ag = ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
-  plumed_assert( ag ); const GridCoordinatesObject & mygrid = ag->getGridCoordinatesObject();
+  plumed_assert( ag );
+  const GridCoordinatesObject & mygrid = ag->getGridCoordinatesObject();
 
   if( getName()=="DUMPCUBE" ) {
-    double lunit=1.0; std::vector<std::string> argnames( ag->getGridCoordinateNames() );
+    double lunit=1.0;
+    std::vector<std::string> argnames( ag->getGridCoordinateNames() );
 
     ofile.printf("PLUMED CUBE FILE\n");
     ofile.printf("OUTER LOOP: X, MIDDLE LOOP: Y, INNER LOOP: Z\n");
     // Number of atoms followed by position of origin (origin set so that center of grid is in center of cell)
-    bool isdists=true; std::vector<double> extent(3); std::vector<std::string> min( mygrid.getMin() ), max( mygrid.getMax() );
+    bool isdists=true;
+    std::vector<double> extent(3);
+    std::vector<std::string> min( mygrid.getMin() ), max( mygrid.getMax() );
     for(unsigned j=0; j<3; ++j) {
       if( argnames[j].find(".")!=std::string::npos ) {
         std::size_t dot = argnames[j].find(".");
         std::string name = argnames[j].substr(dot+1);
-        if( name!="x" && name!="y" && name!="z" ) isdists=false;
-      } else isdists=false;
+        if( name!="x" && name!="y" && name!="z" ) {
+          isdists=false;
+        }
+      } else {
+        isdists=false;
+      }
 
-      double mind, maxd; Tools::convert( min[j], mind ); Tools::convert( max[j], maxd );
-      if( mygrid.isPeriodic(j) ) extent[j]=maxd-mind;
-      else { extent[j]=maxd-mind+mygrid.getGridSpacing()[j]; }
+      double mind, maxd;
+      Tools::convert( min[j], mind );
+      Tools::convert( max[j], maxd );
+      if( mygrid.isPeriodic(j) ) {
+        extent[j]=maxd-mind;
+      } else {
+        extent[j]=maxd-mind+mygrid.getGridSpacing()[j];
+      }
     }
     if( isdists ) {
-      if( plumed.usingNaturalUnits() ) lunit = 1.0/0.5292;
-      else lunit = plumed.getUnits().getLength()/.05929;
+      if( plumed.usingNaturalUnits() ) {
+        lunit = 1.0/0.5292;
+      } else {
+        lunit = plumed.getUnits().getLength()/.05929;
+      }
     }
-    std::string ostr = "%d " + fmt + fmt + fmt + "\n"; Value* gval=getPntrToArgument(0);
+    std::string ostr = "%d " + fmt + fmt + fmt + "\n";
+    Value* gval=getPntrToArgument(0);
     ofile.printf(ostr.c_str(),1,-0.5*lunit*extent[0],-0.5*lunit*extent[1],-0.5*lunit*extent[2]);
     ofile.printf(ostr.c_str(),mygrid.getNbin(true)[0],lunit*mygrid.getGridSpacing()[0],0.0,0.0);  // Number of bins in each direction followed by
     ofile.printf(ostr.c_str(),mygrid.getNbin(true)[1],0.0,lunit*mygrid.getGridSpacing()[1],0.0);  // shape of voxel
     ofile.printf(ostr.c_str(),mygrid.getNbin(true)[2],0.0,0.0,lunit*mygrid.getGridSpacing()[2]);
     ofile.printf(ostr.c_str(),1,0.0,0.0,0.0); // Fake atom otherwise VMD doesn't work
-    std::vector<unsigned> pp(3); std::vector<unsigned> nbin( mygrid.getNbin(true) );
+    std::vector<unsigned> pp(3);
+    std::vector<unsigned> nbin( mygrid.getNbin(true) );
     for(pp[0]=0; pp[0]<nbin[0]; ++pp[0]) {
       for(pp[1]=0; pp[1]<nbin[1]; ++pp[1]) {
         for(pp[2]=0; pp[2]<nbin[2]; ++pp[2]) {
           unsigned ival=pp[pp.size()-1];
-          for(unsigned i=pp.size()-1; i>0; --i) ival=ival*nbin[i-1]+pp[i-1];
+          for(unsigned i=pp.size()-1; i>0; --i) {
+            ival=ival*nbin[i-1]+pp[i-1];
+          }
           ofile.printf(fmt.c_str(), gval->get(ival) );
-          if(pp[2]%6==5) ofile.printf("\n");
+          if(pp[2]%6==5) {
+            ofile.printf("\n");
+          }
         }
         ofile.printf("\n");
       }
@@ -293,11 +341,15 @@ void DumpGrid::update() {
   } else if( xyzfile ) {
     std::vector<double> coords(3);
     Value* myarg = getPntrToArgument(0);
-    unsigned nvals = myarg->getNumberOfValues(); ofile.printf("%d\n\n", nvals);
+    unsigned nvals = myarg->getNumberOfValues();
+    ofile.printf("%d\n\n", nvals);
     for(unsigned i=0; i<nvals; ++i) {
-      double val = myarg->get(i); mygrid.getGridPointCoordinates( i, coords );
+      double val = myarg->get(i);
+      mygrid.getGridPointCoordinates( i, coords );
       ofile.printf("X");
-      for(unsigned j=0; j<3; ++j) ofile.printf((" " + fmt).c_str(), val*coords[j] );
+      for(unsigned j=0; j<3; ++j) {
+        ofile.printf((" " + fmt).c_str(), val*coords[j] );
+      }
       ofile.printf("\n");
     }
   } else {
@@ -320,7 +372,9 @@ void DumpGrid::update() {
     for(unsigned i=0; i<gval->getNumberOfValues(); ++i) {
       // Retrieve and print the grid coordinates
       mygrid.getGridPointCoordinates( i, ind, xx );
-      if(i>0 && gval->getRank()==2 && ind[gval->getRank()-2]==0) ofile.printf("\n");
+      if(i>0 && gval->getRank()==2 && ind[gval->getRank()-2]==0) {
+        ofile.printf("\n");
+      }
       ofile.fmtField(fmt);
       if( mygrid.getGridType()=="fibonacci" ) {
         ofile.printField("nbins", static_cast<int>(gval->getNumberOfValues()) );
@@ -329,16 +383,26 @@ void DumpGrid::update() {
           ofile.printField("min_" + argn[j], mygrid.getMin()[j] );
           ofile.printField("max_" + argn[j], mygrid.getMax()[j] );
           ofile.printField("nbins_" + argn[j], static_cast<int>(mygrid.getNbin(false)[j]) );
-          if( mygrid.isPeriodic(j) ) ofile.printField("periodic_" + argn[j], "true" );
-          else         ofile.printField("periodic_" + argn[j], "false" );
+          if( mygrid.isPeriodic(j) ) {
+            ofile.printField("periodic_" + argn[j], "true" );
+          } else {
+            ofile.printField("periodic_" + argn[j], "false" );
+          }
         }
       }
       // Print the grid coordinates
-      for(unsigned j=0; j<gval->getRank(); ++j) { ofile.fmtField(fmt); ofile.printField(argn[j],xx[j]); }
+      for(unsigned j=0; j<gval->getRank(); ++j) {
+        ofile.fmtField(fmt);
+        ofile.printField(argn[j],xx[j]);
+      }
       // Print value
-      ofile.fmtField(fmt); ofile.printField( gval->getName(), gval->get(i) );
+      ofile.fmtField(fmt);
+      ofile.printField( gval->getName(), gval->get(i) );
       // Print the derivatives
-      for(unsigned j=0; j<gval->getRank(); ++j) { ofile.fmtField(fmt); ofile.printField( "d" + gval->getName() + "_" + argn[j], gval->getGridDerivative(i,j) ); }
+      for(unsigned j=0; j<gval->getRank(); ++j) {
+        ofile.fmtField(fmt);
+        ofile.printField( "d" + gval->getName() + "_" + argn[j], gval->getGridDerivative(i,j) );
+      }
       ofile.printField();
     }
   }

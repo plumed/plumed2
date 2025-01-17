@@ -179,14 +179,18 @@ void MultiValue::addValue( const std::size_t& ival,  const double& val) {
 
 inline
 void MultiValue::addDerivative( const std::size_t& ival, const std::size_t& jder, const double& der) {
-  plumed_dbg_assert( ival<=values.size() && jder<nderivatives ); atLeastOneSet=true;
-  hasderiv[nderivatives*ival+jder]=true; derivatives[nderivatives*ival+jder] += der;
+  plumed_dbg_assert( ival<=values.size() && jder<nderivatives );
+  atLeastOneSet=true;
+  hasderiv[nderivatives*ival+jder]=true;
+  derivatives[nderivatives*ival+jder] += der;
 }
 
 inline
 void MultiValue::setDerivative( const std::size_t& ival, const std::size_t& jder, const double& der) {
-  plumed_dbg_assert( ival<=values.size() && jder<nderivatives ); atLeastOneSet=true;
-  hasderiv[nderivatives*ival+jder]=true; derivatives[nderivatives*ival+jder]=der;
+  plumed_dbg_assert( ival<=values.size() && jder<nderivatives );
+  atLeastOneSet=true;
+  hasderiv[nderivatives*ival+jder]=true;
+  derivatives[nderivatives*ival+jder]=der;
 }
 
 
@@ -200,7 +204,9 @@ inline
 void MultiValue::updateIndex( const std::size_t& ival, const std::size_t& jder ) {
   plumed_dbg_assert( ival<values.size() && jder<nderivatives );
 #ifdef DNDEBUG
-  for(unsigned i=0; i<nactive[ival]; ++i) plumed_dbg_assert( active_list[nderivatives*ival+nactive[ival]]!=jder );
+  for(unsigned i=0; i<nactive[ival]; ++i) {
+    plumed_dbg_assert( active_list[nderivatives*ival+nactive[ival]]!=jder );
+  }
 #endif
   if( hasderiv[nderivatives*ival+jder] ) {
     plumed_dbg_assert( nactive[ival]<nderivatives);
@@ -305,7 +311,9 @@ std::vector<Tensor>& MultiValue::getFirstAtomVirialVector() {
 inline
 void MultiValue::stashMatrixElement( const unsigned& nmat, const unsigned& rowstart, const unsigned& jcol, const double& val ) {
   plumed_dbg_assert( jcol<nmatrix_cols && rowstart + matrix_bookeeping[rowstart]<matrix_bookeeping.size() && nmatrix_cols*nmat + matrix_bookeeping[rowstart]<matrix_row_stash.size() );
-  matrix_bookeeping[rowstart]++; matrix_bookeeping[rowstart + matrix_bookeeping[rowstart]]=jcol; matrix_row_stash[ nmatrix_cols*nmat + jcol] = val;
+  matrix_bookeeping[rowstart]++;
+  matrix_bookeeping[rowstart + matrix_bookeeping[rowstart]]=jcol;
+  matrix_row_stash[ nmatrix_cols*nmat + jcol] = val;
 }
 
 inline
@@ -327,12 +335,14 @@ void MultiValue::setNumberOfMatrixRowDerivatives( const unsigned& nmat, const un
 
 inline
 unsigned MultiValue::getNumberOfMatrixRowDerivatives( const unsigned& nmat ) const {
-  plumed_dbg_assert( nmat<matrix_row_nderivatives.size() ); return matrix_row_nderivatives[nmat];
+  plumed_dbg_assert( nmat<matrix_row_nderivatives.size() );
+  return matrix_row_nderivatives[nmat];
 }
 
 inline
 std::vector<unsigned>& MultiValue::getMatrixRowDerivativeIndices( const unsigned& nmat ) {
-  plumed_dbg_assert( nmat<matrix_row_nderivatives.size() ); return matrix_row_derivative_indices[nmat];
+  plumed_dbg_assert( nmat<matrix_row_nderivatives.size() );
+  return matrix_row_derivative_indices[nmat];
 }
 
 inline
@@ -347,7 +357,9 @@ double MultiValue::getStashedMatrixForce( const unsigned& imat, const unsigned& 
 
 inline
 void MultiValue::resizeTemporyVector(const unsigned& n ) {
-  if( n>tmp_vectors.size() ) tmp_vectors.resize(n);
+  if( n>tmp_vectors.size() ) {
+    tmp_vectors.resize(n);
+  }
 }
 
 inline

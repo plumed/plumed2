@@ -260,8 +260,7 @@ OptimizerBias::OptimizerBias(const ActionOptions& ao)
   : PLUMED_BIAS_INIT(ao),
     bias_(0.0),
     force_(0.0),
-    total_distance_(0.0)
-{
+    total_distance_(0.0) {
   log.printf(
     "maze> You are using the maze module of PLUMED2,\
     please read and cite "

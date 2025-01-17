@@ -84,7 +84,8 @@ typedef MultiColvarTemplate<Plane> PlaneMulti;
 PLUMED_REGISTER_ACTION(PlaneMulti,"PLANE_VECTOR")
 
 void Plane::registerKeywords( Keywords& keys ) {
-  Colvar::registerKeywords( keys ); keys.setDisplayName("PLANE");
+  Colvar::registerKeywords( keys );
+  keys.setDisplayName("PLANE");
   keys.add("atoms","ATOMS","the three or four atoms whose plane we are computing");
   keys.addOutputComponent("x","default","the x-component of the vector that is normal to the plane containing the atoms");
   keys.addOutputComponent("y","default","the y-component of the vector that is normal to the plane containing the atoms");
@@ -101,13 +102,18 @@ void Plane::parseAtomList( const int& num, std::vector<AtomNumber>& atoms, Actio
     atoms[2]=atoms[1];
   } else if(atoms.size()==4) {
     aa->log.printf("  containing lines %d-%d and %d-%d\n",atoms[0].serial(),atoms[1].serial(),atoms[2].serial(),atoms[3].serial());
-  } else if( num<0 || atoms.size()>0 ) aa->error("Number of specified atoms should be either 3 or 4");
+  } else if( num<0 || atoms.size()>0 ) {
+    aa->error("Number of specified atoms should be either 3 or 4");
+  }
 }
 
 unsigned Plane::getModeAndSetupValues( ActionWithValue* av ) {
-  av->addComponentWithDerivatives("x"); av->componentIsNotPeriodic("x");
-  av->addComponentWithDerivatives("y"); av->componentIsNotPeriodic("y");
-  av->addComponentWithDerivatives("z"); av->componentIsNotPeriodic("z");
+  av->addComponentWithDerivatives("x");
+  av->componentIsNotPeriodic("x");
+  av->addComponentWithDerivatives("y");
+  av->componentIsNotPeriodic("y");
+  av->addComponentWithDerivatives("z");
+  av->componentIsNotPeriodic("z");
   return 0;
 }
 
@@ -116,16 +122,21 @@ Plane::Plane(const ActionOptions&ao):
   pbc(true),
   value(3),
   derivs(3),
-  virial(3)
-{
-  for(unsigned i=0; i<3; ++i) derivs[i].resize(4);
-  std::vector<AtomNumber> atoms; parseAtomList(-1,atoms,this);
+  virial(3) {
+  for(unsigned i=0; i<3; ++i) {
+    derivs[i].resize(4);
+  }
+  std::vector<AtomNumber> atoms;
+  parseAtomList(-1,atoms,this);
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
 
-  if(pbc) log.printf("  using periodic boundary conditions\n");
-  else    log.printf("  without periodic boundary conditions\n");
+  if(pbc) {
+    log.printf("  using periodic boundary conditions\n");
+  } else {
+    log.printf("  without periodic boundary conditions\n");
+  }
 
   unsigned mode = getModeAndSetupValues( this );
   requestAtoms(atoms);
@@ -134,10 +145,14 @@ Plane::Plane(const ActionOptions&ao):
 
 void Plane::calculate() {
 
-  if(pbc) makeWhole();
+  if(pbc) {
+    makeWhole();
+  }
   calculateCV( 0, masses, charges, getPositions(), value, derivs, virial, this );
   setValue( value[0] );
-  for(unsigned i=0; i<derivs[0].size(); ++i) setAtomsDerivatives( i, derivs[0][i] );
+  for(unsigned i=0; i<derivs[0].size(); ++i) {
+    setAtomsDerivatives( i, derivs[0][i] );
+  }
   setBoxDerivatives( virial[0] );
 }
 

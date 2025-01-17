@@ -101,12 +101,12 @@ void FretEfficiency::registerKeywords( Keywords& keys ) {
 
 FretEfficiency::FretEfficiency(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
-  pbc(true)
-{
+  pbc(true) {
   std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
-  if(atoms.size()!=2)
+  if(atoms.size()!=2) {
     error("Number of specified atoms should be 2");
+  }
   parse("R0",R0_);
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
@@ -116,8 +116,11 @@ FretEfficiency::FretEfficiency(const ActionOptions&ao):
   log.printf("  between atoms %d %d\n",atoms[0].serial(),atoms[1].serial());
   log.printf("  with Forster radius set to %lf\n",R0_);
 
-  if(pbc) log.printf("  using periodic boundary conditions\n");
-  else    log.printf("  without periodic boundary conditions\n");
+  if(pbc) {
+    log.printf("  using periodic boundary conditions\n");
+  } else {
+    log.printf("  without periodic boundary conditions\n");
+  }
 
   log << " Bibliography" << plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)") << "\n";
 
@@ -131,7 +134,9 @@ FretEfficiency::FretEfficiency(const ActionOptions&ao):
 // calculator
 void FretEfficiency::calculate() {
 
-  if(pbc) makeWhole();
+  if(pbc) {
+    makeWhole();
+  }
 
   Vector distance=delta(getPosition(0),getPosition(1));
   const double dist_mod=distance.modulo();

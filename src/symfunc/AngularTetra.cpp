@@ -48,25 +48,42 @@ void AngularTetra::registerKeywords( Keywords& keys ) {
   CoordinationNumbers::shortcutKeywords( keys );
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.add("compulsory","CUTOFF","-1","ignore distances that have a value larger than this cutoff");
-  keys.remove("NN"); keys.remove("MM"); keys.remove("D_0"); keys.remove("R_0"); keys.remove("SWITCH");
-  keys.needsAction("DISTANCE_MATRIX"); keys.needsAction("NEIGHBORS");
-  keys.needsAction("GSYMFUNC_THREEBODY"); keys.needsAction("CUSTOM");
+  keys.remove("NN");
+  keys.remove("MM");
+  keys.remove("D_0");
+  keys.remove("R_0");
+  keys.remove("SWITCH");
+  keys.needsAction("DISTANCE_MATRIX");
+  keys.needsAction("NEIGHBORS");
+  keys.needsAction("GSYMFUNC_THREEBODY");
+  keys.needsAction("CUSTOM");
 }
 
 AngularTetra::AngularTetra( const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
-  bool nopbc; parseFlag("NOPBC",nopbc);
-  std::string pbcstr=""; if( nopbc ) pbcstr = " NOPBC";
+  ActionShortcut(ao) {
+  bool nopbc;
+  parseFlag("NOPBC",nopbc);
+  std::string pbcstr="";
+  if( nopbc ) {
+    pbcstr = " NOPBC";
+  }
   // Read species input and create the matrix
-  std::string sp_str, rcut; parse("SPECIES",sp_str); parse("CUTOFF",rcut);
+  std::string sp_str, rcut;
+  parse("SPECIES",sp_str);
+  parse("CUTOFF",rcut);
   if( sp_str.length()>0 ) {
     readInputLine( getShortcutLabel() + "_mat: DISTANCE_MATRIX COMPONENTS GROUP=" + sp_str + " CUTOFF=" + rcut + pbcstr );
   } else {
-    std::string specA, specB; parse("SPECIESA",specA); parse("SPECIESB",specB);
-    if( specA.length()==0 ) error("missing input atoms");
-    if( specB.length()==0 ) error("missing SPECIESB keyword");
+    std::string specA, specB;
+    parse("SPECIESA",specA);
+    parse("SPECIESB",specB);
+    if( specA.length()==0 ) {
+      error("missing input atoms");
+    }
+    if( specB.length()==0 ) {
+      error("missing SPECIESB keyword");
+    }
     readInputLine( getShortcutLabel() + "_mat: DISTANCE_MATRIX COMPONENTS GROUPA=" + specA + " GROUPB=" + specB + " CUTOFF=" + rcut + pbcstr );
   }
   // Get the neighbors matrix
@@ -77,7 +94,8 @@ AngularTetra::AngularTetra( const ActionOptions& ao):
   // Now evaluate the actual per atom CV
   readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_g8.g8 FUNC=(1-(3*x/8)) PERIODIC=NO");
   // And get the things to do with the quantities we have computed
-  std::map<std::string,std::string> keymap; multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );
+  std::map<std::string,std::string> keymap;
+  multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );
   multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel(), "", keymap, this );
 }
 

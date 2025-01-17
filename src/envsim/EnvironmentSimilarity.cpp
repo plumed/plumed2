@@ -219,50 +219,77 @@ void EnvironmentSimilarity::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","LAMBDA","100","Lambda parameter.  This is only used if you have more than one reference environment");
   keys.add("compulsory","CUTOFF","3","how many multiples of sigma would you like to consider beyond the maximum distance in the environment");
   keys.add("optional","ATOM_NAMES_FILE","PDB file with atom names for all atoms in SPECIES. Atoms in reference environments will be compared only if atom names match.");
-  multicolvar::MultiColvarShortcuts::shortcutKeywords( keys ); keys.needsAction("GROUP");
-  keys.needsAction("DISTANCE_MATRIX"); keys.needsAction("ONES"); keys.needsAction("CONSTANT");
-  keys.needsAction("CUSTOM"); keys.needsAction("MATRIX_VECTOR_PRODUCT"); keys.needsAction("COMBINE");
+  multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
+  keys.needsAction("GROUP");
+  keys.needsAction("DISTANCE_MATRIX");
+  keys.needsAction("ONES");
+  keys.needsAction("CONSTANT");
+  keys.needsAction("CUSTOM");
+  keys.needsAction("MATRIX_VECTOR_PRODUCT");
+  keys.needsAction("COMBINE");
 }
 
 EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
   Action(ao),
-  ActionShortcut(ao)
-{
-  std::string atomNamesFile; parse("ATOM_NAMES_FILE",atomNamesFile); PDB atomnamepdb;
-  if( !atomNamesFile.empty() && !atomnamepdb.read(atomNamesFile,usingNaturalUnits(),0.1/getUnits().getLength()) ) error("missing input file " + atomNamesFile);
+  ActionShortcut(ao) {
+  std::string atomNamesFile;
+  parse("ATOM_NAMES_FILE",atomNamesFile);
+  PDB atomnamepdb;
+  if( !atomNamesFile.empty() && !atomnamepdb.read(atomNamesFile,usingNaturalUnits(),0.1/getUnits().getLength()) ) {
+    error("missing input file " + atomNamesFile);
+  }
 
-  double maxdist=0; std::vector<std::string> allspec(1);
-  std::string crystal_structure; parse("CRYSTAL_STRUCTURE", crystal_structure);
+  double maxdist=0;
+  std::vector<std::string> allspec(1);
+  std::string crystal_structure;
+  parse("CRYSTAL_STRUCTURE", crystal_structure);
   std::vector<std::vector<std::pair<unsigned,Vector> > > environments;
   if( crystal_structure=="CUSTOM" ) {
     if( !atomNamesFile.empty()  ) {
-      allspec[0]=atomnamepdb.getAtomName(atomnamepdb.getAtomNumbers()[0]); unsigned natoms=atomnamepdb.getPositions().size();
+      allspec[0]=atomnamepdb.getAtomName(atomnamepdb.getAtomNumbers()[0]);
+      unsigned natoms=atomnamepdb.getPositions().size();
       for(unsigned i=0; i<natoms; ++i) {
         bool found=false;
         for(unsigned j=0; j<allspec.size(); ++j) {
-          if( allspec[j]==atomnamepdb.getAtomName(atomnamepdb.getAtomNumbers()[i] ) ) { found=true; break; }
+          if( allspec[j]==atomnamepdb.getAtomName(atomnamepdb.getAtomNumbers()[i] ) ) {
+            found=true;
+            break;
+          }
         }
-        if( !found ) allspec.push_back( atomnamepdb.getAtomName(atomnamepdb.getAtomNumbers()[i]) );
+        if( !found ) {
+          allspec.push_back( atomnamepdb.getAtomName(atomnamepdb.getAtomNumbers()[i]) );
+        }
       }
     }
-    std::string reffile; parse("REFERENCE",reffile);
+    std::string reffile;
+    parse("REFERENCE",reffile);
     if( reffile.length()>0 ) {
-      PDB pdb; pdb.read(reffile,plumed.usingNaturalUnits(),0.1/plumed.getUnits().getLength());
+      PDB pdb;
+      pdb.read(reffile,plumed.usingNaturalUnits(),0.1/plumed.getUnits().getLength());
       environments.push_back( getReferenceEnvironment( pdb, allspec, maxdist ) );
       log.printf("  reading %d reference vectors from %s \n", environments[0].size(), reffile.c_str() );
     } else {
       for(unsigned int i=1;; i++) {
-        PDB pdb; if( !parseNumbered("REFERENCE_",i,reffile) ) break;
-        if( !pdb.read(reffile,usingNaturalUnits(),0.1/getUnits().getLength()) ) error("missing input file " + reffile );
+        PDB pdb;
+        if( !parseNumbered("REFERENCE_",i,reffile) ) {
+          break;
+        }
+        if( !pdb.read(reffile,usingNaturalUnits(),0.1/getUnits().getLength()) ) {
+          error("missing input file " + reffile );
+        }
         environments.push_back( getReferenceEnvironment( pdb, allspec, maxdist ) );
         log.printf("  Reference environment %d : reading %d reference vectors from %s \n", i, environments[i-1].size(), reffile.c_str() );
       }
     }
   } else {
-    std::vector<double> lattice_constants; parseVector("LATTICE_CONSTANTS", lattice_constants);
+    std::vector<double> lattice_constants;
+    parseVector("LATTICE_CONSTANTS", lattice_constants);
     if (crystal_structure == "FCC") {
-      if (lattice_constants.size() != 1) error("Number of LATTICE_CONSTANTS arguments must be one for FCC");
-      environments.resize(1); environments[0].resize(12);
+      if (lattice_constants.size() != 1) {
+        error("Number of LATTICE_CONSTANTS arguments must be one for FCC");
+      }
+      environments.resize(1);
+      environments[0].resize(12);
       environments[0][0]  = std::pair<unsigned,Vector>( 0, Vector(+0.5,+0.5,+0.0)*lattice_constants[0] );
       environments[0][1]  = std::pair<unsigned,Vector>( 0, Vector(-0.5,-0.5,+0.0)*lattice_constants[0] );
       environments[0][2]  = std::pair<unsigned,Vector>( 0, Vector(+0.5,-0.5,+0.0)*lattice_constants[0] );
@@ -277,8 +304,11 @@ EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
       environments[0][11] = std::pair<unsigned,Vector>( 0, Vector(+0.0,+0.5,-0.5)*lattice_constants[0] );
       maxdist = std::sqrt(2)*lattice_constants[0]/2.;
     } else if (crystal_structure == "SC") {
-      if (lattice_constants.size() != 1) error("Number of LATTICE_CONSTANTS arguments must be one for SC");
-      environments.resize(1); environments[0].resize(6);
+      if (lattice_constants.size() != 1) {
+        error("Number of LATTICE_CONSTANTS arguments must be one for SC");
+      }
+      environments.resize(1);
+      environments[0].resize(6);
       environments[0][0]  = std::pair<unsigned,Vector>( 0, Vector(+1.0,+0.0,+0.0)*lattice_constants[0] );
       environments[0][1]  = std::pair<unsigned,Vector>( 0, Vector(-1.0,+0.0,+0.0)*lattice_constants[0] );
       environments[0][2]  = std::pair<unsigned,Vector>( 0, Vector(+0.0,+1.0,+0.0)*lattice_constants[0] );
@@ -287,8 +317,11 @@ EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
       environments[0][5]  = std::pair<unsigned,Vector>( 0, Vector(+0.0,+0.0,-1.0)*lattice_constants[0] );
       maxdist = lattice_constants[0];
     } else if( crystal_structure == "BCC") {
-      if (lattice_constants.size() != 1) error("Number of LATTICE_CONSTANTS arguments must be one for BCC");
-      environments.resize(1); environments[0].resize(14);
+      if (lattice_constants.size() != 1) {
+        error("Number of LATTICE_CONSTANTS arguments must be one for BCC");
+      }
+      environments.resize(1);
+      environments[0].resize(14);
       environments[0][0]  = std::pair<unsigned,Vector>( 0, Vector(+0.5,+0.5,+0.5)*lattice_constants[0] );
       environments[0][1]  = std::pair<unsigned,Vector>( 0, Vector(-0.5,-0.5,-0.5)*lattice_constants[0] );
       environments[0][2]  = std::pair<unsigned,Vector>( 0, Vector(-0.5,+0.5,+0.5)*lattice_constants[0] );
@@ -305,8 +338,13 @@ EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
       environments[0][13] = std::pair<unsigned,Vector>( 0, Vector(+0.0,+0.0,-1.0)*lattice_constants[0] );
       maxdist = lattice_constants[0];
     } else if (crystal_structure == "HCP") {
-      if (lattice_constants.size() != 2) error("Number of LATTICE_CONSTANTS arguments must be two for HCP");
-      environments.resize(2); environments[0].resize(12); environments[1].resize(12); double sqrt3=std::sqrt(3);
+      if (lattice_constants.size() != 2) {
+        error("Number of LATTICE_CONSTANTS arguments must be two for HCP");
+      }
+      environments.resize(2);
+      environments[0].resize(12);
+      environments[1].resize(12);
+      double sqrt3=std::sqrt(3);
       environments[0][0]  = std::pair<unsigned,Vector>( 0, Vector(+0.5,+sqrt3/2.0,+0.0)*lattice_constants[0] );
       environments[0][1]  = std::pair<unsigned,Vector>( 0, Vector(-0.5,+sqrt3/2.0,+0.0)*lattice_constants[0] );
       environments[0][2]  = std::pair<unsigned,Vector>( 0, Vector(+0.5,-sqrt3/2.0,+0.0)*lattice_constants[0] );
@@ -333,8 +371,12 @@ EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
       environments[1][11] = std::pair<unsigned,Vector>( 0, Vector(+0.0,+sqrt3/3.0,+0.0)*lattice_constants[0] + Vector(+0.0,+0.0,-0.5)*lattice_constants[1] );
       maxdist = lattice_constants[0];
     } else if (crystal_structure == "DIAMOND") {
-      if (lattice_constants.size() != 1) error("Number of LATTICE_CONSTANTS arguments must be one for DIAMOND");
-      environments.resize(2); environments[0].resize(4); environments[1].resize(4);
+      if (lattice_constants.size() != 1) {
+        error("Number of LATTICE_CONSTANTS arguments must be one for DIAMOND");
+      }
+      environments.resize(2);
+      environments[0].resize(4);
+      environments[1].resize(4);
       environments[0][0]  = std::pair<unsigned,Vector>( 0, Vector(+1.0,+1.0,+1.0)*lattice_constants[0]/4.0 );
       environments[0][1]  = std::pair<unsigned,Vector>( 0, Vector(-1.0,-1.0,+1.0)*lattice_constants[0]/4.0 );
       environments[0][2]  = std::pair<unsigned,Vector>( 0, Vector(+1.0,-1.0,-1.0)*lattice_constants[0]/4.0 );
@@ -344,34 +386,62 @@ EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
       environments[1][2]  = std::pair<unsigned,Vector>( 0, Vector(+1.0,+1.0,-1.0)*lattice_constants[0]/4.0 );
       environments[1][3]  = std::pair<unsigned,Vector>( 0, Vector(-1.0,-1.0,-1.0)*lattice_constants[0]/4.0 );
       maxdist = std::sqrt(3)*lattice_constants[0]/4.0;
-    } else error( crystal_structure + " is not a valid input for keyword CRYSTAL_STRUCTURE");
+    } else {
+      error( crystal_structure + " is not a valid input for keyword CRYSTAL_STRUCTURE");
+    }
   }
   std::string matlab = getShortcutLabel() + "_cmat";
-  double cutoff, sig; parse("SIGMA",sig); parse("CUTOFF",cutoff); std::string lcutoff; parse("LCUTOFF",lcutoff);
-  std::string sig2; Tools::convert( sig*sig, sig2 ); std::vector<std::vector<std::string> > funcstr(environments.size());
-  std::string str_cutoff; Tools::convert( maxdist + cutoff*sig, str_cutoff );
-  std::string str_natoms, xpos, ypos, zpos; Tools::convert( environments[0].size(), str_natoms );
+  double cutoff, sig;
+  parse("SIGMA",sig);
+  parse("CUTOFF",cutoff);
+  std::string lcutoff;
+  parse("LCUTOFF",lcutoff);
+  std::string sig2;
+  Tools::convert( sig*sig, sig2 );
+  std::vector<std::vector<std::string> > funcstr(environments.size());
+  std::string str_cutoff;
+  Tools::convert( maxdist + cutoff*sig, str_cutoff );
+  std::string str_natoms, xpos, ypos, zpos;
+  Tools::convert( environments[0].size(), str_natoms );
   for(unsigned j=0; j<environments.size(); ++j) {
     funcstr[j].resize( allspec.size() );
     for(unsigned k=0; k<allspec.size(); ++k) {
       for(unsigned i=0; i<environments[j].size(); ++i) {
-        if( environments[j][i].first!=k ) continue ;
-        Tools::convert( environments[j][i].second[0], xpos ); Tools::convert( environments[j][i].second[1], ypos ); Tools::convert( environments[j][i].second[2], zpos );
-        if( i==0 ) funcstr[j][k] = "FUNC=(step(w-" + lcutoff + ")*step(" + str_cutoff + "-w)/" + str_natoms + ")*(exp(-((x-" + xpos + ")^2+(y-" + ypos + ")^2+(z-" + zpos + ")^2)/(4*" + sig2 + "))";
-        else funcstr[j][k] += "+exp(-((x-" + xpos + ")^2+(y-" + ypos + ")^2+(z-" + zpos + ")^2)/(4*" + sig2 + "))";
+        if( environments[j][i].first!=k ) {
+          continue ;
+        }
+        Tools::convert( environments[j][i].second[0], xpos );
+        Tools::convert( environments[j][i].second[1], ypos );
+        Tools::convert( environments[j][i].second[2], zpos );
+        if( i==0 ) {
+          funcstr[j][k] = "FUNC=(step(w-" + lcutoff + ")*step(" + str_cutoff + "-w)/" + str_natoms + ")*(exp(-((x-" + xpos + ")^2+(y-" + ypos + ")^2+(z-" + zpos + ")^2)/(4*" + sig2 + "))";
+        } else {
+          funcstr[j][k] += "+exp(-((x-" + xpos + ")^2+(y-" + ypos + ")^2+(z-" + zpos + ")^2)/(4*" + sig2 + "))";
+        }
       }
-      if( funcstr[j][k].length()>0 ) funcstr[j][k] += ")"; else funcstr[j][k] ="FUNC=0";
+      if( funcstr[j][k].length()>0 ) {
+        funcstr[j][k] += ")";
+      } else {
+        funcstr[j][k] ="FUNC=0";
+      }
     }
   }
 
   // Create the constact matrix
-  std::string sp_str, specA, specB; parse("SPECIES",sp_str); parse("SPECIESA",specA); parse("SPECIESB",specB);
+  std::string sp_str, specA, specB;
+  parse("SPECIES",sp_str);
+  parse("SPECIESA",specA);
+  parse("SPECIESB",specB);
   if( sp_str.length()>0 ) {
     readInputLine( matlab + ": DISTANCE_MATRIX COMPONENTS GROUP=" + sp_str + " CUTOFF=" + str_cutoff );
     readInputLine( getShortcutLabel() + "_grp: GROUP ATOMS=" + sp_str );
   } else {
-    if( specA.length()==0 ) error("no atoms were specified use SPECIES or SPECIESA+SPECIESB");
-    if( specB.length()==0 ) error("no atoms were specified for SPECIESB");
+    if( specA.length()==0 ) {
+      error("no atoms were specified use SPECIES or SPECIESA+SPECIESB");
+    }
+    if( specB.length()==0 ) {
+      error("no atoms were specified for SPECIESB");
+    }
     readInputLine( matlab + ": DISTANCE_MATRIX COMPONENTS GROUPA=" + specA + " GROUPB=" + specB + " CUTOFF=" + str_cutoff );
     readInputLine( getShortcutLabel() + "_grp: GROUP ATOMS=" + specA );
   }
@@ -379,31 +449,47 @@ EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
   // Make a vector containing all ones
   ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( matlab );
   plumed_assert( av && av->getNumberOfComponents()>0 && (av->copyOutput(0))->getRank()==2 );
-  std::string size; Tools::convert( (av->copyOutput(0))->getShape()[1], size );
+  std::string size;
+  Tools::convert( (av->copyOutput(0))->getShape()[1], size );
   if( allspec.size()==1 ) {
     readInputLine( getShortcutLabel() + "_ones: ONES SIZE=" + size );
   } else {
     unsigned natoms=atomnamepdb.getPositions().size();
-    unsigned firstneigh=0; if( sp_str.length()==0 ) firstneigh = (av->copyOutput(0))->getShape()[0];
+    unsigned firstneigh=0;
+    if( sp_str.length()==0 ) {
+      firstneigh = (av->copyOutput(0))->getShape()[0];
+    }
     for(unsigned i=0; i<allspec.size(); ++i) {
-      std::string onesstr="0"; if( atomnamepdb.getAtomName(atomnamepdb.getAtomNumbers()[firstneigh])==allspec[i] ) onesstr = "1";
+      std::string onesstr="0";
+      if( atomnamepdb.getAtomName(atomnamepdb.getAtomNumbers()[firstneigh])==allspec[i] ) {
+        onesstr = "1";
+      }
       for(unsigned j=firstneigh+1; j<natoms; ++j) {
-        if( atomnamepdb.getAtomName(atomnamepdb.getAtomNumbers()[j])==allspec[i] ) onesstr += ",1";
-        else onesstr += ",0";
+        if( atomnamepdb.getAtomName(atomnamepdb.getAtomNumbers()[j])==allspec[i] ) {
+          onesstr += ",1";
+        } else {
+          onesstr += ",0";
+        }
       }
       readInputLine( getShortcutLabel() + "_ones_" + allspec[i] + ": CONSTANT VALUES=" + onesstr );
     }
   }
 
-  std::string envargstr,varstr, maxfuncstr, lambda; if( funcstr.size()>1 ) parse("LAMBDA",lambda);
+  std::string envargstr,varstr, maxfuncstr, lambda;
+  if( funcstr.size()>1 ) {
+    parse("LAMBDA",lambda);
+  }
   // And now do the funcstr bit
   for(unsigned j=0; j<funcstr.size(); ++j) {
-    std::string jnum; Tools::convert( j+1, jnum );
+    std::string jnum;
+    Tools::convert( j+1, jnum );
     if(j==0) {
-      varstr = "v" + jnum; maxfuncstr = "(1/" + lambda + ")*log(exp(" + lambda + "*v1)";
+      varstr = "v" + jnum;
+      maxfuncstr = "(1/" + lambda + ")*log(exp(" + lambda + "*v1)";
       envargstr = getShortcutLabel() + "_env" + jnum;
     } else {
-      varstr += ",v" + jnum; maxfuncstr += "+exp(" + lambda + "*v" + jnum + ")";
+      varstr += ",v" + jnum;
+      maxfuncstr += "+exp(" + lambda + "*v" + jnum + ")";
       envargstr += "," + getShortcutLabel() + "_env" + jnum;
     }
     // And coordination numbers
@@ -412,33 +498,52 @@ EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
       for(unsigned i=0; i<allspec.size(); ++i) {
         readInputLine( getShortcutLabel() + "_" + allspec[i] + "_matenv" + jnum + ": CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z," + matlab + ".w VAR=x,y,z,w PERIODIC=NO " + funcstr[j][i] );
         readInputLine( getShortcutLabel() + "_" + allspec[i] + "_env" + jnum + ": MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_" + allspec[i] + "_matenv" + jnum + "," + getShortcutLabel() + "_ones_" + allspec[i] );
-        if( i==0 ) argnames = getShortcutLabel() + "_" + allspec[i] + "_env" + jnum; else argnames += "," + getShortcutLabel() + "_" + allspec[i] + "_env" + jnum;
+        if( i==0 ) {
+          argnames = getShortcutLabel() + "_" + allspec[i] + "_env" + jnum;
+        } else {
+          argnames += "," + getShortcutLabel() + "_" + allspec[i] + "_env" + jnum;
+        }
       }
-      if( funcstr.size()==1) readInputLine( getShortcutLabel() + ": COMBINE PERIODIC=NO ARG=" + argnames );
-      else readInputLine( getShortcutLabel() + "_env" + jnum + ": COMBINE PERIODIC=NO ARG=" + argnames );
+      if( funcstr.size()==1) {
+        readInputLine( getShortcutLabel() + ": COMBINE PERIODIC=NO ARG=" + argnames );
+      } else {
+        readInputLine( getShortcutLabel() + "_env" + jnum + ": COMBINE PERIODIC=NO ARG=" + argnames );
+      }
     } else {
       readInputLine( getShortcutLabel() + "_matenv" + jnum + ": CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z," + matlab + ".w VAR=x,y,z,w PERIODIC=NO " + funcstr[j][0] );
-      if( funcstr.size()==1) readInputLine( getShortcutLabel() + ": MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_matenv" + jnum + "," + getShortcutLabel() + "_ones");
-      else readInputLine( getShortcutLabel() + "_env" + jnum + ": MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_matenv" + jnum + "," + getShortcutLabel() + "_ones");
+      if( funcstr.size()==1) {
+        readInputLine( getShortcutLabel() + ": MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_matenv" + jnum + "," + getShortcutLabel() + "_ones");
+      } else {
+        readInputLine( getShortcutLabel() + "_env" + jnum + ": MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_matenv" + jnum + "," + getShortcutLabel() + "_ones");
+      }
     }
   }
   // And get the maximum
-  if( funcstr.size()>1 ) readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + envargstr + " PERIODIC=NO VAR=" + varstr + " FUNC=" + maxfuncstr + ")" );
+  if( funcstr.size()>1 ) {
+    readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + envargstr + " PERIODIC=NO VAR=" + varstr + " FUNC=" + maxfuncstr + ")" );
+  }
   // Read in all the shortcut stuff
-  std::map<std::string,std::string> keymap; multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );
+  std::map<std::string,std::string> keymap;
+  multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );
   multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel(), "", keymap, this );
 }
 
 std::vector<std::pair<unsigned,Vector> > EnvironmentSimilarity::getReferenceEnvironment( const PDB& pdb, const std::vector<std::string>& anames,  double& maxdist ) {
-  unsigned natoms = pdb.getPositions().size(); std::vector<std::pair<unsigned,Vector> > env( natoms );
+  unsigned natoms = pdb.getPositions().size();
+  std::vector<std::pair<unsigned,Vector> > env( natoms );
   for(unsigned i=0; i<natoms; ++i) {
     unsigned identity=0;
     for(unsigned j=1; j<anames.size(); ++j) {
-      if( pdb.getAtomName(pdb.getAtomNumbers()[i])==anames[j] ) { identity=j; break; }
+      if( pdb.getAtomName(pdb.getAtomNumbers()[i])==anames[j] ) {
+        identity=j;
+        break;
+      }
     }
     env[i] = std::pair<unsigned,Vector>( identity, pdb.getPositions()[i] );
     double dist = env[i].second.modulo();
-    if( dist>maxdist ) maxdist = dist;
+    if( dist>maxdist ) {
+      maxdist = dist;
+    }
   }
   return env;
 }

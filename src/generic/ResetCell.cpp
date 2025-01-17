@@ -93,8 +93,7 @@ END
 
 class ResetCell:
   public ActionPilot,
-  public ActionAtomistic
-{
+  public ActionAtomistic {
   std::string type;
   Tensor rotation,newbox;
   Value* boxValue;
@@ -118,16 +117,19 @@ void ResetCell::registerKeywords( Keywords& keys ) {
 ResetCell::ResetCell(const ActionOptions&ao):
   Action(ao),
   ActionPilot(ao),
-  ActionAtomistic(ao)
-{
+  ActionAtomistic(ao) {
   type.assign("TRIANGULAR");
   parse("TYPE",type);
 
   log<<"  type: "<<type<<"\n";
-  if(type!="TRIANGULAR") error("undefined type "+type);
+  if(type!="TRIANGULAR") {
+    error("undefined type "+type);
+  }
 
   pbc_action=plumed.getActionSet().selectWithLabel<PbcAction*>("Box");
-  if( !pbc_action ) error("cannot reset cell if box has not been set");
+  if( !pbc_action ) {
+    error("cannot reset cell if box has not been set");
+  }
   boxValue=pbc_action->copyOutput(0);
 }
 
@@ -153,7 +155,9 @@ void ResetCell::calculate() {
   newbox[2][1]=c*(bc-ac*ab)/std::sqrt(1-ab*ab);
   newbox[2][2]=std::sqrt(c*c-newbox[2][0]*newbox[2][0]-newbox[2][1]*newbox[2][1]);
 
-  if(determinant(newbox)*determinant(box)<0) newbox[2][2]=-newbox[2][2];
+  if(determinant(newbox)*determinant(box)<0) {
+    newbox[2][2]=-newbox[2][2];
+  }
 
 // rotation matrix from old to new coordinates
   rotation=transpose(matmul(inverse(box),newbox));
@@ -192,13 +196,20 @@ void ResetCell::apply() {
 // of the virial matrix equal to their symmetric ones.
 // GB
   Tensor virial;
-  for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) virial[i][j]=boxValue->getForce( 3*i+j );
+  for(unsigned i=0; i<3; ++i)
+    for(unsigned j=0; j<3; ++j) {
+      virial[i][j]=boxValue->getForce( 3*i+j );
+    }
   virial[0][1]=virial[1][0];
   virial[0][2]=virial[2][0];
   virial[1][2]=virial[2][1];
 // rotate back virial
-  virial=matmul(transpose(rotation),matmul(virial,rotation)); boxValue->clearInputForce();
-  for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) boxValue->addForce( 3*i+j, virial(i,j) );
+  virial=matmul(transpose(rotation),matmul(virial,rotation));
+  boxValue->clearInputForce();
+  for(unsigned i=0; i<3; ++i)
+    for(unsigned j=0; j<3; ++j) {
+      boxValue->addForce( 3*i+j, virial(i,j) );
+    }
 
 
 }
