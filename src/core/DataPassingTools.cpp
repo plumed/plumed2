@@ -26,12 +26,24 @@
 namespace PLMD {
 
 double DataPassingTools::getUnitConversion( const std::string& unit ) const {
-  if( unit=="energy" ) return MDUnits.getEnergy()/units.getEnergy();
-  if( unit=="length" ) return MDUnits.getLength()/units.getLength();
-  if( unit=="mass" ) return  MDUnits.getMass()/units.getMass();
-  if( unit=="charge" ) return MDUnits.getCharge()/units.getCharge();
-  if( unit=="time" ) return MDUnits.getTime()/units.getTime();
-  if( unit=="number" ) return 1;
+  if( unit=="energy" ) {
+    return MDUnits.getEnergy()/units.getEnergy();
+  }
+  if( unit=="length" ) {
+    return MDUnits.getLength()/units.getLength();
+  }
+  if( unit=="mass" ) {
+    return  MDUnits.getMass()/units.getMass();
+  }
+  if( unit=="charge" ) {
+    return MDUnits.getCharge()/units.getCharge();
+  }
+  if( unit=="time" ) {
+    return MDUnits.getTime()/units.getTime();
+  }
+  if( unit=="number" ) {
+    return 1;
+  }
   plumed_error();
 }
 
@@ -49,7 +61,8 @@ std::unique_ptr<DataPassingTools> DataPassingTools::create(unsigned n) {
   } else  if(n==sizeof(float)) {
     return std::make_unique<DataPassingToolsTyped<float>>();
   }
-  std::string pp; Tools::convert(n,pp);
+  std::string pp;
+  Tools::convert(n,pp);
   plumed_merror("cannot create an MD interface with sizeof(real)=="+ pp);
   return NULL;
 }

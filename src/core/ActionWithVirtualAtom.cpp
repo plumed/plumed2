@@ -39,29 +39,46 @@ void ActionWithVirtualAtom::registerKeywords(Keywords& keys) {
 ActionWithVirtualAtom::ActionWithVirtualAtom(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao),
-  ActionWithValue(ao)
-{
-  addComponentWithDerivatives("x"); componentIsNotPeriodic("x");
-  addComponentWithDerivatives("y"); componentIsNotPeriodic("y");
-  addComponentWithDerivatives("z"); componentIsNotPeriodic("z");
+  ActionWithValue(ao) {
+  addComponentWithDerivatives("x");
+  componentIsNotPeriodic("x");
+  addComponentWithDerivatives("y");
+  componentIsNotPeriodic("y");
+  addComponentWithDerivatives("z");
+  componentIsNotPeriodic("z");
   // Store the derivatives with respect to the virial only even if there are no atoms
-  for(unsigned i=0; i<3; ++i) getPntrToComponent(i)->resizeDerivatives(9);
-  addComponent("mass"); componentIsNotPeriodic("mass"); getPntrToComponent("mass")->isConstant();
-  addComponent("charge"); componentIsNotPeriodic("charge"); getPntrToComponent("charge")->isConstant();
+  for(unsigned i=0; i<3; ++i) {
+    getPntrToComponent(i)->resizeDerivatives(9);
+  }
+  addComponent("mass");
+  componentIsNotPeriodic("mass");
+  getPntrToComponent("mass")->isConstant();
+  addComponent("charge");
+  componentIsNotPeriodic("charge");
+  getPntrToComponent("charge")->isConstant();
 }
 
 void ActionWithVirtualAtom::requestAtoms(const std::vector<AtomNumber> & a) {
-  ActionAtomistic::requestAtoms(a); for(unsigned i=0; i<3; ++i) getPntrToComponent(i)->resizeDerivatives(3*a.size()+9);
+  ActionAtomistic::requestAtoms(a);
+  for(unsigned i=0; i<3; ++i) {
+    getPntrToComponent(i)->resizeDerivatives(3*a.size()+9);
+  }
 }
 
 void ActionWithVirtualAtom::apply() {
-  if( !checkForForces() ) return ;
+  if( !checkForForces() ) {
+    return ;
+  }
 
   Value* xval=getPntrToComponent(0);
   Value* yval=getPntrToComponent(1);
   Value* zval=getPntrToComponent(2);
-  if( !xval->forcesWereAdded() && !yval->forcesWereAdded() && !zval->forcesWereAdded() ) return ;
-  if( xval->isConstant() && yval->isConstant() && zval->isConstant() ) return;
+  if( !xval->forcesWereAdded() && !yval->forcesWereAdded() && !zval->forcesWereAdded() ) {
+    return ;
+  }
+  if( xval->isConstant() && yval->isConstant() && zval->isConstant() ) {
+    return;
+  }
 
   for(unsigned i=0; i<value_depends.size(); ++i) {
     xpos[value_depends[i]]->hasForce = true;
@@ -84,15 +101,22 @@ void ActionWithVirtualAtom::apply() {
     auto & yp=ypos[nn]->inputForce;
     auto & zp=zpos[nn]->inputForce;
     for(const auto & kk : a.second) {
-      xp[kk] += xf*xval->data[1+k] + yf*yval->data[1+k] + zf*zval->data[1+k]; k++;
-      yp[kk] += xf*xval->data[1+k] + yf*yval->data[1+k] + zf*zval->data[1+k]; k++;
-      zp[kk] += xf*xval->data[1+k] + yf*yval->data[1+k] + zf*zval->data[1+k]; k++;
+      xp[kk] += xf*xval->data[1+k] + yf*yval->data[1+k] + zf*zval->data[1+k];
+      k++;
+      yp[kk] += xf*xval->data[1+k] + yf*yval->data[1+k] + zf*zval->data[1+k];
+      k++;
+      zp[kk] += xf*xval->data[1+k] + yf*yval->data[1+k] + zf*zval->data[1+k];
+      k++;
     }
   }
 
   std::array<double,9> virial;
-  for(unsigned i=0; i<9; ++i) { virial[i] = xf*xval->data[1+k] + yf*yval->data[1+k] + zf*zval->data[1+k]; k++; }
-  unsigned ind = 0; setForcesOnCell( virial.data(), virial.size(), ind );
+  for(unsigned i=0; i<9; ++i) {
+    virial[i] = xf*xval->data[1+k] + yf*yval->data[1+k] + zf*zval->data[1+k];
+    k++;
+  }
+  unsigned ind = 0;
+  setForcesOnCell( virial.data(), virial.size(), ind );
   // The above can be achieved using the two functions below.  The code above that is specialised for the ActionWithVirtualAtom
   // class runs faster than the general code below.
   // if( !checkForForces() ) return ;
@@ -100,23 +124,34 @@ void ActionWithVirtualAtom::apply() {
 }
 
 void ActionWithVirtualAtom::setBoxDerivatives(const std::vector<Tensor> &d) {
-  plumed_assert(d.size()==3); unsigned nbase = 3*getNumberOfAtoms();
+  plumed_assert(d.size()==3);
+  unsigned nbase = 3*getNumberOfAtoms();
   for(unsigned i=0; i<3; ++i) {
     Value* myval = getPntrToComponent(i);
     for(unsigned j=0; j<3; ++j) {
-      for(unsigned k=0; k<3; ++k) myval->setDerivative( nbase + 3*j + k, d[i][j][k] );
+      for(unsigned k=0; k<3; ++k) {
+        myval->setDerivative( nbase + 3*j + k, d[i][j][k] );
+      }
     }
   }
 // Subtract the trivial part coming from a distorsion applied to the ghost atom first.
 // Notice that this part alone should exactly cancel the already accumulated virial
 // due to forces on this atom.
-  Vector pos; for(unsigned i=0; i<3; ++i) pos[i] = getPntrToComponent(i)->get();
-  for(unsigned i=0; i<3; i++) for(unsigned j=0; j<3; j++) getPntrToComponent(j)->addDerivative( nbase + 3*i + j, pos[i] );
+  Vector pos;
+  for(unsigned i=0; i<3; ++i) {
+    pos[i] = getPntrToComponent(i)->get();
+  }
+  for(unsigned i=0; i<3; i++)
+    for(unsigned j=0; j<3; j++) {
+      getPntrToComponent(j)->addDerivative( nbase + 3*i + j, pos[i] );
+    }
 }
 
 void ActionWithVirtualAtom::setBoxDerivativesNoPbc() {
   std::vector<Tensor> bd(3);
-  for(unsigned i=0; i<3; i++) for(unsigned j=0; j<3; j++) for(unsigned k=0; k<3; k++) {
+  for(unsigned i=0; i<3; i++)
+    for(unsigned j=0; j<3; j++)
+      for(unsigned k=0; k<3; k++) {
 // Notice that this expression is very similar to the one used in Colvar::setBoxDerivativesNoPbc().
 // Indeed, we have the negative of a sum over dependent atoms (l) of the external product between positions
 // and derivatives. Notice that this only works only when Pbc have not been used to compute

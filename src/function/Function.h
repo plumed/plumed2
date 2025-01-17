@@ -36,8 +36,7 @@ This is the abstract base class to use for implementing new CV function, within 
 
 class Function:
   public ActionWithValue,
-  public ActionWithArguments
-{
+  public ActionWithArguments {
 protected:
   void setDerivative(int,double);
   void setDerivative(Value*,int,double);
@@ -66,7 +65,9 @@ inline
 unsigned Function::getNumberOfDerivatives() {
   unsigned narg=0;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    if( getPntrToArgument(i)->getRank()==0 ) narg++;
+    if( getPntrToArgument(i)->getRank()==0 ) {
+      narg++;
+    }
   }
   return narg;
 }

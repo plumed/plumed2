@@ -44,41 +44,59 @@ public:
 PLUMED_REGISTER_ACTION(SketchMapProjection,"SKETCHMAP_PROJECTION")
 
 void SketchMapProjection::registerKeywords( Keywords& keys ) {
-  ActionShortcut::registerKeywords( keys ); mapping::Path::registerInputFileKeywords( keys );
+  ActionShortcut::registerKeywords( keys );
+  mapping::Path::registerInputFileKeywords( keys );
   keys.add("compulsory","PROPERTY","the property to be used in the index. This should be in the REMARK of the reference");
   keys.add("compulsory","WEIGHT","the weight of each individual landmark in the stress fucntion that is to be optimised");
   keys.add("compulsory","HIGH_DIM_FUNCTION","the parameters of the switching function in the high dimensional space");
   keys.add("compulsory","LOW_DIM_FUNCTION","the parameters of the switching function in the low dimensional space");
   keys.add("compulsory","CGTOL","1E-6","The tolerance for the conjugate gradient minimization that finds the out of sample projections");
   keys.setValueDescription("the out-of-sample projections of the input arguments using the input sketch-map projection");
-  keys.needsAction("RMSD"); keys.needsAction("PDB2CONSTANT"); keys.needsAction("CONSTANT"); keys.needsAction("CUSTOM");
-  keys.needsAction("EUCLIDEAN_DISTANCE"); keys.needsAction("NORMALIZED_EUCLIDEAN_DISTANCE");
-  keys.needsAction("SUM"); keys.needsAction("MORE_THAN"); keys.needsAction("PROJECT_POINTS");
+  keys.needsAction("RMSD");
+  keys.needsAction("PDB2CONSTANT");
+  keys.needsAction("CONSTANT");
+  keys.needsAction("CUSTOM");
+  keys.needsAction("EUCLIDEAN_DISTANCE");
+  keys.needsAction("NORMALIZED_EUCLIDEAN_DISTANCE");
+  keys.needsAction("SUM");
+  keys.needsAction("MORE_THAN");
+  keys.needsAction("PROJECT_POINTS");
 }
 
 SketchMapProjection::SketchMapProjection( const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
+  ActionShortcut(ao) {
   // Use path to read in the projections
   std::string refname, refactions, metric;
-  std::vector<std::string> argnames; parseVector("ARG",argnames);
-  std::string type, reference_data, reference; parse("REFERENCE",reference); parse("TYPE",type);
+  std::vector<std::string> argnames;
+  parseVector("ARG",argnames);
+  std::string type, reference_data, reference;
+  parse("REFERENCE",reference);
+  parse("TYPE",type);
   mapping::Path::readInputFrames( reference, type, argnames, false, this, reference_data );
   // And read in the data that we want on the projections
-  std::vector<std::string> pnames; parseVector("PROPERTY",pnames);
-  std::string weights; parse("WEIGHT",weights); pnames.push_back( weights );
+  std::vector<std::string> pnames;
+  parseVector("PROPERTY",pnames);
+  std::string weights;
+  parse("WEIGHT",weights);
+  pnames.push_back( weights );
   // Now create fixed vectors using some sort of reference action
   mapping::Path::readPropertyInformation( pnames, getShortcutLabel(), reference, this );
   // Normalise the vector of weights
   readInputLine( getShortcutLabel() + "_wsum: SUM PERIODIC=NO ARG=" + weights + "_ref");
   readInputLine( getShortcutLabel() + "_weights: CUSTOM ARG=" + getShortcutLabel() + "_wsum," +  weights + "_ref FUNC=y/x PERIODIC=NO");
   // Transform the high dimensional distances
-  std::string hdfunc; parse("HIGH_DIM_FUNCTION",hdfunc);
+  std::string hdfunc;
+  parse("HIGH_DIM_FUNCTION",hdfunc);
   readInputLine( getShortcutLabel() + "_targ: MORE_THAN ARG=" + getShortcutLabel() + "_data SQUARED SWITCH={" + hdfunc + "}");
   // Create the projection object
-  std::string ldfunc, cgtol; parse("LOW_DIM_FUNCTION",ldfunc); parse("CGTOL",cgtol);
-  std::string argstr="ARG=" + pnames[0] + "_ref"; for(unsigned i=1; i<pnames.size()-1; ++i) argstr += "," + pnames[i] + "_ref";
+  std::string ldfunc, cgtol;
+  parse("LOW_DIM_FUNCTION",ldfunc);
+  parse("CGTOL",cgtol);
+  std::string argstr="ARG=" + pnames[0] + "_ref";
+  for(unsigned i=1; i<pnames.size()-1; ++i) {
+    argstr += "," + pnames[i] + "_ref";
+  }
   readInputLine( getShortcutLabel() + ": PROJECT_POINTS " + argstr + " TARGET1=" + getShortcutLabel() + "_targ " +
                  "FUNC1={" + ldfunc + "} WEIGHTS1=" + getShortcutLabel() + "_weights CGTOL=" + cgtol );
 }

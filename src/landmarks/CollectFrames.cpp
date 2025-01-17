@@ -57,31 +57,50 @@ void CollectFrames::registerKeywords( Keywords& keys ) {
   keys.add("optional","LOGWEIGHTS","list of actions that calculates log weights that should be used to weight configurations when calculating averages");
   keys.addOutputComponent("data","default","the data that is being collected by this action");
   keys.addOutputComponent("logweights","default","the logarithms of the weights of the data points");
-  keys.needsAction("POSITION"); keys.needsAction("CONCATENATE"); keys.needsAction("MEAN"); keys.needsAction("CUSTOM");
-  keys.needsAction("CONCATENATE"); keys.needsAction("COLLECT"); keys.needsAction("TRANSPOSE"); keys.needsAction("RMSD_VECTOR");
-  keys.needsAction("COMBINE"); keys.needsAction("VSTACK"); keys.needsAction("CONSTANT");
+  keys.needsAction("POSITION");
+  keys.needsAction("CONCATENATE");
+  keys.needsAction("MEAN");
+  keys.needsAction("CUSTOM");
+  keys.needsAction("CONCATENATE");
+  keys.needsAction("COLLECT");
+  keys.needsAction("TRANSPOSE");
+  keys.needsAction("RMSD_VECTOR");
+  keys.needsAction("COMBINE");
+  keys.needsAction("VSTACK");
+  keys.needsAction("CONSTANT");
 }
 
 std::string CollectFrames::fixArgumentName( const std::string& argin ) {
-  std::string argout = argin; std::size_t dot=argin.find(".");
-  if( dot!=std::string::npos ) argout = argin.substr(0,dot) + "_" + argin.substr(dot+1);
+  std::string argout = argin;
+  std::size_t dot=argin.find(".");
+  if( dot!=std::string::npos ) {
+    argout = argin.substr(0,dot) + "_" + argin.substr(dot+1);
+  }
   return argout;
 }
 
 CollectFrames::CollectFrames( const ActionOptions& ao ):
   Action(ao),
-  ActionShortcut(ao)
-{
-  std::string stride, clearstride; parse("STRIDE",stride); parse("CLEAR",clearstride);
-  std::vector<std::string> argn; parseVector("ARG",argn); std::vector<Value*> theargs;
+  ActionShortcut(ao) {
+  std::string stride, clearstride;
+  parse("STRIDE",stride);
+  parse("CLEAR",clearstride);
+  std::vector<std::string> argn;
+  parseVector("ARG",argn);
+  std::vector<Value*> theargs;
   ActionWithArguments::interpretArgumentList( argn, plumed.getActionSet(), this, theargs );
-  std::string indices; parse("ATOMS",indices);
-  if( theargs.size()==0 && indices.length()==0 ) error("no arguments or atoms were specified for collection");
+  std::string indices;
+  parse("ATOMS",indices);
+  if( theargs.size()==0 && indices.length()==0 ) {
+    error("no arguments or atoms were specified for collection");
+  }
 
   // Create the values to collect the atomic positions
   if( indices.length()>0 ) {
     // Collect reference position
-    readInputLine( getShortcutLabel() + "_getposx: POSITION ATOMS=" + indices ); std::string align; parse("ALIGN",align);
+    readInputLine( getShortcutLabel() + "_getposx: POSITION ATOMS=" + indices );
+    std::string align;
+    parse("ALIGN",align);
     readInputLine( getShortcutLabel() + "_getpos: CONCATENATE ARG=" + getShortcutLabel() + "_getposx.x," + getShortcutLabel() + "_getposx.y," + getShortcutLabel() + "_getposx.z");
     // Find atomic center
     readInputLine( getShortcutLabel() + "_cposx: MEAN ARG=" + getShortcutLabel() + "_getposx.x PERIODIC=NO");
@@ -100,37 +119,62 @@ CollectFrames::CollectFrames( const ActionOptions& ao ):
     // Add the reference position to the RMSD displacement
     readInputLine( getShortcutLabel() + "_fpos: COMBINE ARG=" + getShortcutLabel() + "_refposT," + getShortcutLabel() + "_rmsd.disp PERIODIC=NO");
     // Store the reference data
-    std::string suffix = "_atomdata"; if( theargs.size()==0 ) suffix = "_data";
+    std::string suffix = "_atomdata";
+    if( theargs.size()==0 ) {
+      suffix = "_data";
+    }
     readInputLine( getShortcutLabel() + suffix + ": COLLECT TYPE=matrix ARG=" + getShortcutLabel() + "_fpos STRIDE=" + stride + " CLEAR=" + clearstride );
   }
 
   // Create all the collect actions for arguments
   for(unsigned i=0; i<theargs.size(); ++i) {
-    if( theargs[i]->getNumberOfValues()!=theargs[0]->getNumberOfValues() ) error("mismatch between number of arguments calculated by each collected argument");
+    if( theargs[i]->getNumberOfValues()!=theargs[0]->getNumberOfValues() ) {
+      error("mismatch between number of arguments calculated by each collected argument");
+    }
     readInputLine( getShortcutLabel() + "_" + fixArgumentName( theargs[i]->getName() ) + ": COLLECT ARG=" + theargs[i]->getName() + " STRIDE=" + stride + " CLEAR=" + clearstride );
   }
   // Make a list of collect actions
   if( theargs.size()>0 ) {
     std::string allcol = getShortcutLabel() + "_" + fixArgumentName( theargs[0]->getName() );
-    for(unsigned i=1; i<theargs.size(); ++i) allcol += "," + getShortcutLabel() + "_" + fixArgumentName( theargs[i]->getName() );
+    for(unsigned i=1; i<theargs.size(); ++i) {
+      allcol += "," + getShortcutLabel() + "_" + fixArgumentName( theargs[i]->getName() );
+    }
     // And transfer everything to a matrix
-    std::string suffix = "_argdata"; if( indices.length()==0 ) suffix = "_data";
+    std::string suffix = "_argdata";
+    if( indices.length()==0 ) {
+      suffix = "_data";
+    }
     readInputLine( getShortcutLabel() + suffix + ": VSTACK ARG=" + allcol );
   }
   // Merge all the collected data together into a single matrix
-  if( theargs.size()>0 && indices.length()>0 ) readInputLine( getShortcutLabel() + "_data: CONCATENATE MATRIX11=" + getShortcutLabel() + "_atomdata MATRIX12=" + getShortcutLabel() + "_argdata");
+  if( theargs.size()>0 && indices.length()>0 ) {
+    readInputLine( getShortcutLabel() + "_data: CONCATENATE MATRIX11=" + getShortcutLabel() + "_atomdata MATRIX12=" + getShortcutLabel() + "_argdata");
+  }
 
   // Now get the logweights
-  std::vector<std::string> logw; parseVector("LOGWEIGHTS",logw); std::vector<Value*> thew;
-  if( logw.size()>0 ) ActionWithArguments::interpretArgumentList( logw, plumed.getActionSet(), this, thew );
-  if( logw.size()>1 ) error("maximum of one argument should be specified for logweights");
+  std::vector<std::string> logw;
+  parseVector("LOGWEIGHTS",logw);
+  std::vector<Value*> thew;
+  if( logw.size()>0 ) {
+    ActionWithArguments::interpretArgumentList( logw, plumed.getActionSet(), this, thew );
+  }
+  if( logw.size()>1 ) {
+    error("maximum of one argument should be specified for logweights");
+  }
 
   if( logw.size()==0 ) {
-    std::string zeros="0"; if( theargs.size()>0 ) { for(unsigned i=1; i<theargs[0]->getNumberOfValues(); ++i) zeros += ",0"; }
+    std::string zeros="0";
+    if( theargs.size()>0 ) {
+      for(unsigned i=1; i<theargs[0]->getNumberOfValues(); ++i) {
+        zeros += ",0";
+      }
+    }
     readInputLine( getShortcutLabel() + "_cweight: CONSTANT VALUE=" + zeros );
     readInputLine( getShortcutLabel() + "_logweights: COLLECT ARG=" + getShortcutLabel() + "_cweight STRIDE=" + stride + " CLEAR=" + clearstride );
   } else {
-    if( theargs[0]->getNumberOfValues()!=thew[0]->getNumberOfValues() ) error("mismatch between number of weights and number of collected arguments");
+    if( theargs[0]->getNumberOfValues()!=thew[0]->getNumberOfValues() ) {
+      error("mismatch between number of weights and number of collected arguments");
+    }
     readInputLine( getShortcutLabel() + "_logweights: COLLECT ARG=" + thew[0]->getName() + " STRIDE=" + stride + " CLEAR=" + clearstride );
   }
   // And finally create a value that contains as many ones as there are data points (this is used if we want to do Classical MDS

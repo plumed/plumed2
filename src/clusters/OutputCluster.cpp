@@ -72,18 +72,23 @@ void OutputCluster::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","CLUSTER","1","which cluster would you like to look at 1 is the largest cluster, 2 is the second largest, 3 is the the third largest and so on");
   keys.add("compulsory","STRIDE","1","the frequency with which you would like to output the atoms in the cluster");
   keys.add("compulsory","FILE","the name of the file on which to output the details of the cluster");
-  keys.remove("HAS_VALUES"); keys.needsAction("PRINT_NDX");
+  keys.remove("HAS_VALUES");
+  keys.needsAction("PRINT_NDX");
 }
 
 OutputCluster::OutputCluster(const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
-  std::string id; parse("CLUSTER",id);
-  std::string stride; parse("STRIDE",stride);
-  std::string clusters; parse("CLUSTERS",clusters);
-  std::string filename; parse("FILE",filename);
-  std::string atoms; parse("ATOMS",atoms);
+  ActionShortcut(ao) {
+  std::string id;
+  parse("CLUSTER",id);
+  std::string stride;
+  parse("STRIDE",stride);
+  std::string clusters;
+  parse("CLUSTERS",clusters);
+  std::string filename;
+  parse("FILE",filename);
+  std::string atoms;
+  parse("ATOMS",atoms);
   readInputLine("PRINT_NDX ATOMS=" + atoms + " ARG=" + clusters + " FILE=" + filename + " STRIDE=" + stride + " LESS_THAN_OR_EQUAL=" + id + " GREATER_THAN_OR_EQUAL=" + id );
 }
 

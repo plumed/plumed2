@@ -93,18 +93,22 @@ void WhamHistogram::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","GRID_BIN","the number of bins to use for the grid");
   keys.add("optional","BANDWIDTH","the bandwidth for kernel density estimation");
   keys.setValueDescription("the histogram that was generated using the WHAM weights");
-  keys.needsAction("GATHER_REPLICAS"); keys.needsAction("CONCATENATE");
-  keys.needsAction("COLLECT"); keys.needsAction("WHAM"); keys.needsAction("KDE");
+  keys.needsAction("GATHER_REPLICAS");
+  keys.needsAction("CONCATENATE");
+  keys.needsAction("COLLECT");
+  keys.needsAction("WHAM");
+  keys.needsAction("KDE");
 }
 
 
 WhamHistogram::WhamHistogram( const ActionOptions& ao ) :
   Action(ao),
-  ActionShortcut(ao)
-{
+  ActionShortcut(ao) {
   // Input for collection of weights for WHAM
-  std::string bias; parse("BIAS",bias);
-  std::string stride; parse("STRIDE",stride);
+  std::string bias;
+  parse("BIAS",bias);
+  std::string stride;
+  parse("STRIDE",stride);
   // Input for GATHER_REPLICAS
   readInputLine( getShortcutLabel() + "_gather: GATHER_REPLICAS ARG=" + bias );
   // Put all the replicas in a single vector
@@ -112,22 +116,42 @@ WhamHistogram::WhamHistogram( const ActionOptions& ao ) :
   // Input for COLLECT_FRAMES
   readInputLine( getShortcutLabel() + "_collect: COLLECT TYPE=vector ARG=" + getShortcutLabel() + "_gatherv STRIDE=" + stride);
   // Input for WHAM
-  std::string temp, tempstr=""; parse("TEMP",temp); if( temp.length()>0 ) tempstr="TEMP=" + temp;
+  std::string temp, tempstr="";
+  parse("TEMP",temp);
+  if( temp.length()>0 ) {
+    tempstr="TEMP=" + temp;
+  }
   readInputLine( getShortcutLabel() + "_wham: WHAM ARG=" + getShortcutLabel() + "_collect " + tempstr );
   // Input for COLLECT_FRAMES
-  std::vector<std::string> args; parseVector("ARG",args); std::string argstr;
+  std::vector<std::string> args;
+  parseVector("ARG",args);
+  std::string argstr;
   for(unsigned i=0; i<args.size(); ++i) {
     readInputLine( getShortcutLabel() + "_data_" + args[i] + ": COLLECT ARG=" + args[i] );
-    if( i==0 ) argstr = " ARG="; else argstr += ",";
+    if( i==0 ) {
+      argstr = " ARG=";
+    } else {
+      argstr += ",";
+    }
     argstr += getShortcutLabel() + "_data_" + args[i];
   }
   // Input for HISTOGRAM
-  std::string histo_line, bw=""; parse("BANDWIDTH",bw);
-  if( bw!="" ) histo_line += " BANDWIDTH=" + bw;
-  else histo_line += " KERNEL=DISCRETE";
-  std::string min; parse("GRID_MIN",min); histo_line += " GRID_MIN=" + min;
-  std::string max; parse("GRID_MAX",max); histo_line += " GRID_MAX=" + max;
-  std::string bin; parse("GRID_BIN",bin); histo_line += " GRID_BIN=" + bin;
+  std::string histo_line, bw="";
+  parse("BANDWIDTH",bw);
+  if( bw!="" ) {
+    histo_line += " BANDWIDTH=" + bw;
+  } else {
+    histo_line += " KERNEL=DISCRETE";
+  }
+  std::string min;
+  parse("GRID_MIN",min);
+  histo_line += " GRID_MIN=" + min;
+  std::string max;
+  parse("GRID_MAX",max);
+  histo_line += " GRID_MAX=" + max;
+  std::string bin;
+  parse("GRID_BIN",bin);
+  histo_line += " GRID_BIN=" + bin;
   readInputLine( getShortcutLabel() + ": KDE " + argstr + " HEIGHTS=" + getShortcutLabel() + "_wham" + histo_line );
 }
 

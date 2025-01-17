@@ -74,8 +74,7 @@ void Loss::registerKeywords(Keywords& keys) {
 }
 
 Loss::Loss(const ActionOptions& ao)
-  : PLUMED_COLVAR_INIT(ao)
-{
+  : PLUMED_COLVAR_INIT(ao) {
   if (keywords.exists("PARAMS")) {
     parseVector("PARAMS", params_);
 

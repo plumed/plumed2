@@ -97,36 +97,53 @@ void Puckering::registerKeywords(Keywords& keys) {
 }
 
 Puckering::Puckering(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao)
-{
+  PLUMED_COLVAR_INIT(ao) {
   std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
-  if(atoms.size()!=5 && atoms.size()!=6) error("only for 5 or 6-membered rings");
+  if(atoms.size()!=5 && atoms.size()!=6) {
+    error("only for 5 or 6-membered rings");
+  }
   checkRead();
 
   if(atoms.size()==5) {
     log.printf("  between atoms %d %d %d %d %d\n",atoms[0].serial(),atoms[1].serial(),atoms[2].serial(),atoms[3].serial(),atoms[4].serial());
   } else if(atoms.size()==6) {
     log.printf("  between atoms %d %d %d %d %d %d\n",atoms[0].serial(),atoms[1].serial(),atoms[2].serial(),atoms[3].serial(),atoms[4].serial(),atoms[5].serial());
-  } else error("ATOMS should specify 5 atoms");
+  } else {
+    error("ATOMS should specify 5 atoms");
+  }
 
   if(atoms.size()==5) {
-    addComponentWithDerivatives("phs"); componentIsPeriodic("phs","-pi","pi");
-    addComponentWithDerivatives("amp"); componentIsNotPeriodic("amp");
-    addComponentWithDerivatives("Zx"); componentIsNotPeriodic("Zx");
-    addComponentWithDerivatives("Zy"); componentIsNotPeriodic("Zy");
+    addComponentWithDerivatives("phs");
+    componentIsPeriodic("phs","-pi","pi");
+    addComponentWithDerivatives("amp");
+    componentIsNotPeriodic("amp");
+    addComponentWithDerivatives("Zx");
+    componentIsNotPeriodic("Zx");
+    addComponentWithDerivatives("Zy");
+    componentIsNotPeriodic("Zy");
   } else if(atoms.size()==6) {
-    addComponentWithDerivatives("qx"); componentIsNotPeriodic("qx");
-    addComponentWithDerivatives("qy"); componentIsNotPeriodic("qy");
-    addComponentWithDerivatives("qz"); componentIsNotPeriodic("qz");
-    addComponentWithDerivatives("phi"); componentIsPeriodic("phi","0","2pi");
-    addComponentWithDerivatives("theta"); componentIsNotPeriodic("theta");
-    addComponentWithDerivatives("amplitude"); componentIsNotPeriodic("amplitude");
+    addComponentWithDerivatives("qx");
+    componentIsNotPeriodic("qx");
+    addComponentWithDerivatives("qy");
+    componentIsNotPeriodic("qy");
+    addComponentWithDerivatives("qz");
+    componentIsNotPeriodic("qz");
+    addComponentWithDerivatives("phi");
+    componentIsPeriodic("phi","0","2pi");
+    addComponentWithDerivatives("theta");
+    componentIsNotPeriodic("theta");
+    addComponentWithDerivatives("amplitude");
+    componentIsNotPeriodic("amplitude");
   }
 
   log<<"  Bibliography ";
-  if(atoms.size()==5) log<<plumed.cite("Huang, Giese, Lee, York, J. Chem. Theory Comput. 10, 1538 (2014)");
-  if(atoms.size()==6) log<<plumed.cite("Cremer and Pople, J. Am. Chem. Soc. 97, 1354 (1975)");
+  if(atoms.size()==5) {
+    log<<plumed.cite("Huang, Giese, Lee, York, J. Chem. Theory Comput. 10, 1538 (2014)");
+  }
+  if(atoms.size()==6) {
+    log<<plumed.cite("Cremer and Pople, J. Am. Chem. Soc. 97, 1354 (1975)");
+  }
   log<<"\n";
 
   requestAtoms(atoms);
@@ -135,8 +152,11 @@ Puckering::Puckering(const ActionOptions&ao):
 // calculator
 void Puckering::calculate() {
   makeWhole();
-  if(getNumberOfAtoms()==5) calculate5m();
-  else calculate6m();
+  if(getNumberOfAtoms()==5) {
+    calculate5m();
+  } else {
+    calculate6m();
+  }
 }
 
 void Puckering::calculate5m() {
@@ -177,14 +197,22 @@ void Puckering::calculate5m() {
   dZy_dR[3]=(dd2-dd3-dd1);
   dZy_dR[4]=(dd3-dd4-dd2);
 
-  for(unsigned j=0; j<5; j++) dZx_dR[j]*=(1.0/(2.0*std::cos(4.0*pi/5.0)));
-  for(unsigned j=0; j<5; j++) dZy_dR[j]*=(1.0/(2.0*std::sin(4.0*pi/5.0)));
+  for(unsigned j=0; j<5; j++) {
+    dZx_dR[j]*=(1.0/(2.0*std::cos(4.0*pi/5.0)));
+  }
+  for(unsigned j=0; j<5; j++) {
+    dZy_dR[j]*=(1.0/(2.0*std::sin(4.0*pi/5.0)));
+  }
 
   Vector dphase_dR[5];
-  for(unsigned j=0; j<5; j++) dphase_dR[j]=(1.0/(Zx*Zx+Zy*Zy))*(-Zy*dZx_dR[j] + Zx*dZy_dR[j]);
+  for(unsigned j=0; j<5; j++) {
+    dphase_dR[j]=(1.0/(Zx*Zx+Zy*Zy))*(-Zy*dZx_dR[j] + Zx*dZy_dR[j]);
+  }
 
   Vector damplitude_dR[5];
-  for(unsigned j=0; j<5; j++) damplitude_dR[j]=(1.0/amplitude)*(Zx*dZx_dR[j] + Zy*dZy_dR[j]);
+  for(unsigned j=0; j<5; j++) {
+    damplitude_dR[j]=(1.0/amplitude)*(Zx*dZx_dR[j] + Zy*dZy_dR[j]);
+  }
 
   Value* vzx=getPntrToComponent("Zx");
   vzx->set(Zx);
@@ -229,16 +257,26 @@ void Puckering::calculate5m() {
 void Puckering::calculate6m() {
 
   std::vector<Vector> r(6);
-  for(unsigned i=0; i<6; i++) r[i]=getPosition(i);
+  for(unsigned i=0; i<6; i++) {
+    r[i]=getPosition(i);
+  }
 
   std::vector<Vector> R(6);
   Vector center;
-  for(unsigned j=0; j<6; j++) center+=r[j]/6.0;
-  for(unsigned j=0; j<6; j++) R[j]=(r[j]-center);
+  for(unsigned j=0; j<6; j++) {
+    center+=r[j]/6.0;
+  }
+  for(unsigned j=0; j<6; j++) {
+    R[j]=(r[j]-center);
+  }
 
   Vector Rp,Rpp;
-  for(unsigned j=0; j<6; j++) Rp +=R[j]*std::sin(2.0/6.0*pi*j);
-  for(unsigned j=0; j<6; j++) Rpp+=R[j]*std::cos(2.0/6.0*pi*j);
+  for(unsigned j=0; j<6; j++) {
+    Rp +=R[j]*std::sin(2.0/6.0*pi*j);
+  }
+  for(unsigned j=0; j<6; j++) {
+    Rpp+=R[j]*std::cos(2.0/6.0*pi*j);
+  }
 
   Vector n=crossProduct(Rp,Rpp);
   Vector nhat=n/modulo(n);
@@ -251,50 +289,78 @@ void Puckering::calculate6m() {
   Tensor dnhat_dRpp=matmul(dnhat_dn,dn_dRpp);
 
   std::vector<double> z(6);
-  for(unsigned j=0; j<6; j++) z[j]=dotProduct(R[j],nhat);
+  for(unsigned j=0; j<6; j++) {
+    z[j]=dotProduct(R[j],nhat);
+  }
 
   std::vector<std::vector<Vector> > dz_dR(6);
-  for(unsigned j=0; j<6; j++) dz_dR[j].resize(6);
+  for(unsigned j=0; j<6; j++) {
+    dz_dR[j].resize(6);
+  }
 
-  for(unsigned i=0; i<6; i++) for(unsigned j=0; j<6; j++) {
-      if(i==j) dz_dR[i][j]+=nhat;
+  for(unsigned i=0; i<6; i++)
+    for(unsigned j=0; j<6; j++) {
+      if(i==j) {
+        dz_dR[i][j]+=nhat;
+      }
       dz_dR[i][j]+=matmul(R[i],dnhat_dRp)*std::sin(2.0/6.0*pi*j);
       dz_dR[i][j]+=matmul(R[i],dnhat_dRpp)*std::cos(2.0/6.0*pi*j);
     }
 
   double B=0.0;
-  for(unsigned j=0; j<6; j++) B+=z[j]*std::cos(4.0/6.0*pi*j);
+  for(unsigned j=0; j<6; j++) {
+    B+=z[j]*std::cos(4.0/6.0*pi*j);
+  }
 
   std::vector<Vector> dB_dR(6);
-  for(unsigned i=0; i<6; i++) for(unsigned j=0; j<6; j++) {
+  for(unsigned i=0; i<6; i++)
+    for(unsigned j=0; j<6; j++) {
       dB_dR[i]+=dz_dR[j][i]*std::cos(4.0/6.0*pi*j);
     }
   Vector Bsum;
-  for(unsigned j=0; j<6; j++) Bsum+=dB_dR[j];
-  for(unsigned j=0; j<6; j++) dB_dR[j]-=Bsum/6.0;;
+  for(unsigned j=0; j<6; j++) {
+    Bsum+=dB_dR[j];
+  }
+  for(unsigned j=0; j<6; j++) {
+    dB_dR[j]-=Bsum/6.0;
+  };
 
   double A=0.0;
-  for(unsigned j=0; j<6; j++) A+=z[j]*std::sin(4.0/6.0*pi*j);
+  for(unsigned j=0; j<6; j++) {
+    A+=z[j]*std::sin(4.0/6.0*pi*j);
+  }
 
   std::vector<Vector> dA_dR(6);
-  for(unsigned i=0; i<6; i++) for(unsigned j=0; j<6; j++) {
+  for(unsigned i=0; i<6; i++)
+    for(unsigned j=0; j<6; j++) {
       dA_dR[i]+=dz_dR[j][i]*std::sin(4.0/6.0*pi*j);
     }
   Vector Asum;
-  for(unsigned j=0; j<6; j++) Asum+=dA_dR[j];
-  for(unsigned j=0; j<6; j++) dA_dR[j]-=Asum/6.0;;
+  for(unsigned j=0; j<6; j++) {
+    Asum+=dA_dR[j];
+  }
+  for(unsigned j=0; j<6; j++) {
+    dA_dR[j]-=Asum/6.0;
+  };
 
   double C=0.0;
-  for(unsigned j=0; j<6; j++) C+=z[j]*Tools::fastpow(-1.0,(j));
+  for(unsigned j=0; j<6; j++) {
+    C+=z[j]*Tools::fastpow(-1.0,(j));
+  }
 
   std::vector<Vector> dC_dR(6);
-  for(unsigned i=0; i<6; i++) for(unsigned j=0; j<6; j++) {
+  for(unsigned i=0; i<6; i++)
+    for(unsigned j=0; j<6; j++) {
       dC_dR[i]+=dz_dR[j][i]*Tools::fastpow(-1.0,(j));
     }
 
   Vector Csum;
-  for(unsigned j=0; j<6; j++) Csum+=dC_dR[j];
-  for(unsigned j=0; j<6; j++) dC_dR[j]-=Csum/6.0;;
+  for(unsigned j=0; j<6; j++) {
+    Csum+=dC_dR[j];
+  }
+  for(unsigned j=0; j<6; j++) {
+    dC_dR[j]-=Csum/6.0;
+  };
 
 
 // qx

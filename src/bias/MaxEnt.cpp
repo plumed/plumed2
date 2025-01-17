@@ -216,10 +216,13 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
   reweight(false),
   no_broadcast(false),
   printFirstStep(true),
-  done_average(getNumberOfArguments(),false)
-{
-  if(comm.Get_rank()==0) nrep=multi_sim_comm.Get_size();
-  if(comm.Get_rank()==0) myrep=multi_sim_comm.Get_rank();
+  done_average(getNumberOfArguments(),false) {
+  if(comm.Get_rank()==0) {
+    nrep=multi_sim_comm.Get_size();
+  }
+  if(comm.Get_rank()==0) {
+    myrep=multi_sim_comm.Get_rank();
+  }
   comm.Bcast(nrep,0);
   comm.Bcast(myrep,0);
   parseFlag("NO_BROADCAST",no_broadcast);
@@ -236,7 +239,9 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
 
   parse("LEARN_REPLICA",learn_replica);
   parseVector("APPLY_WEIGHTS",apply_weights);
-  if(apply_weights.size()==0) apply_weights.resize(nrep,1.0);
+  if(apply_weights.size()==0) {
+    apply_weights.resize(nrep,1.0);
+  }
   parseVector("KAPPA",kappa);
   parseVector("AT",at);
   parseVector("TAU",tau);
@@ -246,60 +251,86 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
   parse("ALPHA",alpha);
   parse("SIGMA",sigma);
   parse("TSTART",tstart);
-  if(tstart <0 && tstart != -1.0) error("TSTART should be a positive number");
+  if(tstart <0 && tstart != -1.0) {
+    error("TSTART should be a positive number");
+  }
   parse("TEND",tend);
-  if(tend<0 && tend != -1.0) error("TSTART should be a positive number");
-  if(tend<tstart) error("TEND should be >= TSTART");
+  if(tend<0 && tend != -1.0) {
+    error("TSTART should be a positive number");
+  }
+  if(tend<tstart) {
+    error("TEND should be >= TSTART");
+  }
   lagmultfname=getLabel()+".LAGMULT";
   parse("FILE",lagmultfname);
   parse("FMT",fmt);
   parse("PACE",pace_);
-  if(pace_<=0 ) error("frequency for Lagrangian multipliers update (PACE) is nonsensical");
+  if(pace_<=0 ) {
+    error("frequency for Lagrangian multipliers update (PACE) is nonsensical");
+  }
   stride_=pace_;  //if no STRIDE is passed, then Lagrangian multipliers willbe printed at each update
   parse("PRINT_STRIDE",stride_);
-  if(stride_<=0 ) error("frequency for Lagrangian multipliers printing (STRIDE) is nonsensical");
+  if(stride_<=0 ) {
+    error("frequency for Lagrangian multipliers printing (STRIDE) is nonsensical");
+  }
   simtemp=getkBT();
   parseFlag("REWEIGHT",reweight);
-  if(simtemp<=0 && reweight) error("Set the temperature (TEMP) if you want to do reweighting.");
+  if(simtemp<=0 && reweight) {
+    error("Set the temperature (TEMP) if you want to do reweighting.");
+  }
 
   checkRead();
 
   log.printf("  at");
-  for(unsigned i=0; i<at.size(); i++) log.printf(" %f",at[i]);
+  for(unsigned i=0; i<at.size(); i++) {
+    log.printf(" %f",at[i]);
+  }
   log.printf("\n");
   log.printf("  with initial learning rate for optimization of");
-  for(unsigned i=0; i<kappa.size(); i++) log.printf(" %f",kappa[i]);
+  for(unsigned i=0; i<kappa.size(); i++) {
+    log.printf(" %f",kappa[i]);
+  }
   log.printf("\n");
   log.printf("Dumping times for the learning rates are (ps): ");
-  for(unsigned i=0; i<tau.size(); i++) log.printf(" %f",tau[i]);
+  for(unsigned i=0; i<tau.size(); i++) {
+    log.printf(" %f",tau[i]);
+  }
   log.printf("\n");
   log.printf("Lagrangian multipliers are updated every %lld steps (PACE)\n",pace_);
   log.printf("Lagrangian multipliers output file %s\n",lagmultfname.c_str());
   log.printf("Lagrangian multipliers are written every %lld steps (PRINT_STRIDE)\n",stride_);
-  if(fmt.length()>0)
+  if(fmt.length()>0) {
     log.printf("The format for real number in Lagrangian multipliers file is %s\n",fmt.c_str());
-  if(tstart >-1.0 && tend>-1.0)
+  }
+  if(tstart >-1.0 && tend>-1.0) {
     log.printf("Lagrangian multipliers are averaged from %lf ps to %lf ps\n",tstart,tend);
-  if(no_broadcast)
+  }
+  if(no_broadcast) {
     log.printf("Using NO_BROADCAST options. Lagrangian multipliers will not be comunicated to other replicas.\n");
+  }
   //for(int irep=0;irep<nrep;irep++){
   //  if(apply_weights[irep]!=0)
   //    log.printf("%d",irep);
   //  }
-  addComponent("force2"); componentIsNotPeriodic("force2");
-  addComponent("work"); componentIsNotPeriodic("work");
+  addComponent("force2");
+  componentIsNotPeriodic("force2");
+  addComponent("work");
+  componentIsNotPeriodic("work");
   valueForce2=getPntrToComponent("force2");
   valueWork=getPntrToComponent("work");
 
   std::string comp;
   for(unsigned i=0; i< getNumberOfArguments() ; i++) {
     comp=getPntrToArgument(i)->getName()+"_coupling";
-    addComponent(comp); componentIsNotPeriodic(comp);
+    addComponent(comp);
+    componentIsNotPeriodic(comp);
     comp=getPntrToArgument(i)->getName()+"_work";
-    addComponent(comp); componentIsNotPeriodic(comp);
+    addComponent(comp);
+    componentIsNotPeriodic(comp);
     work.push_back(0.); // initialize the work value
     comp=getPntrToArgument(i)->getName()+"_error";
-    addComponent(comp); componentIsNotPeriodic(comp);
+    addComponent(comp);
+    componentIsNotPeriodic(comp);
   }
   std::string fname;
   fname=lagmultfname;
@@ -316,24 +347,28 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
 
   lagmultOfile_.link(*this);
   lagmultOfile_.open(fname);
-  if(fmt.length()>0) {fmt=" "+fmt; lagmultOfile_.fmtField(fmt);}
+  if(fmt.length()>0) {
+    fmt=" "+fmt;
+    lagmultOfile_.fmtField(fmt);
+  }
 }
 ////MEMBER FUNCTIONS
-void MaxEnt::ReadLagrangians(IFile &ifile)
-{
+void MaxEnt::ReadLagrangians(IFile &ifile) {
   double dummy;
   while(ifile.scanField("time",dummy)) {
     for(unsigned j=0; j<getNumberOfArguments(); ++j) {
       ifile.scanField(getPntrToArgument(j)->getName()+"_coupling",lambda[j]);
-      if(dummy>=tstart && dummy <=tend)
+      if(dummy>=tstart && dummy <=tend) {
         avglambda[j]+=lambda[j];
+      }
       if(dummy>=tend) {
         avglambda[j]=lambda[j];
         done_average[j]=true;
       }
     }
-    if(dummy>=tstart && dummy <=tend)
+    if(dummy>=tstart && dummy <=tend) {
       avg_counter++;
+    }
     ifile.scanField();
   }
 }
@@ -341,15 +376,17 @@ void MaxEnt::WriteLagrangians(std::vector<double> &lagmult,OFile &file) {
   if(printFirstStep) {
     unsigned ncv=getNumberOfArguments();
     file.printField("time",getTimeStep()*getStep());
-    for(unsigned i=0; i<ncv; ++i)
+    for(unsigned i=0; i<ncv; ++i) {
       file.printField(getPntrToArgument(i)->getName()+"_coupling",lagmult[i]);
+    }
     file.printField();
   } else {
     if(!isFirstStep) {
       unsigned ncv=getNumberOfArguments();
       file.printField("time",getTimeStep()*getStep());
-      for(unsigned i=0; i<ncv; ++i)
+      for(unsigned i=0; i<ncv; ++i) {
         file.printField(getPntrToArgument(i)->getName()+"_coupling",lagmult[i]);
+      }
       file.printField();
     }
   }
@@ -358,9 +395,9 @@ double MaxEnt::compute_error(const std::string &err_type,double l) {
   double sigma2=std::pow(sigma,2.0);
   double l2=convert_lambda(type,l);
   double return_error=0;
-  if(err_type=="GAUSSIAN" && sigma!=0.0)
+  if(err_type=="GAUSSIAN" && sigma!=0.0) {
     return_error=-l2*sigma2;
-  else {
+  } else {
     if(err_type=="LAPLACE" && sigma!=0) {
       return_error=-l2*sigma2/(1.0-l2*l2*sigma2/(alpha+1));
     }
@@ -369,21 +406,22 @@ double MaxEnt::compute_error(const std::string &err_type,double l) {
 }
 double MaxEnt::convert_lambda(const std::string &type,double lold) {
   double return_lambda=0;
-  if(type=="EQUAL")
+  if(type=="EQUAL") {
     return_lambda=lold;
-  else {
+  } else {
     if(type=="INEQUAL>") {
-      if(lold>0.0)
+      if(lold>0.0) {
         return_lambda=0.0;
-      else
+      } else {
         return_lambda=lold;
-    }
-    else {
+      }
+    } else {
       if(type=="INEQUAL<") {
-        if(lold<0.0)
+        if(lold<0.0) {
           return_lambda=0.0;
-        else
+        } else {
           return_lambda=lold;
+        }
       }
     }
   }
@@ -410,18 +448,20 @@ void MaxEnt::update_lambda() {
   const double step=getStep();
   double KbT=simtemp;
   double learning_rate;
-  if(reweight)
+  if(reweight) {
     BetaReweightBias=plumed.getBias()/KbT;
-  else
+  } else {
     BetaReweightBias=0.0;
+  }
 
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     const double k=kappa[i];
     double cv=(getArgument(i)+compute_error(error_type,lambda[i])-at[i]);
-    if(reweight)
+    if(reweight) {
       learning_rate=1.0*k/(1+step/tau[i]);
-    else
+    } else {
       learning_rate=1.0*k/(1+time/tau[i]);
+    }
     lambda[i]+=learning_rate*cv*std::exp(-BetaReweightBias); //update Lagrangian multipliers and reweight them if REWEIGHT is set
     check_lambda_boundaries(error_type,lambda[i]);      //check that Lagrangians multipliers not exceed the allowed range
     if(time>=tstart && time <=tend && !done_average[i]) {
@@ -432,17 +472,18 @@ void MaxEnt::update_lambda() {
         avglambda[i]=avglambda[i]/avg_counter;
         done_average[i]=true;
         lambda[i]=avglambda[i];
+      } else {
+        lambda[i]=avglambda[i];  //keep Lagrangian multipliers fixed to the previously computed average.
       }
-      else
-        lambda[i]=avglambda[i]; //keep Lagrangian multipliers fixed to the previously computed average.
     }
     work[i]+=(convert_lambda(type,lambda[i])-oldlambda[i])*getArgument(i); //compute the work performed in updating lambda
     totalWork_+=work[i];
     totalWork=totalWork_;
     oldlambda[i]=convert_lambda(type,lambda[i]);
   };
-  if(time>=tstart && time <=tend)
+  if(time>=tstart && time <=tend) {
     avg_counter++;
+  }
 }
 
 void MaxEnt::calculate() {
@@ -465,13 +506,15 @@ void MaxEnt::calculate() {
 
 void MaxEnt::update() {
 
-  if(getStep()%stride_ == 0)
+  if(getStep()%stride_ == 0) {
     WriteLagrangians(lambda,lagmultOfile_);
+  }
   if(getStep()%pace_ == 0) {
     update_lambda();
     if(!no_broadcast) {
-      if(comm.Get_rank()==0) //Comunicate Lagrangian multipliers from reference replica to higher ones
+      if(comm.Get_rank()==0) { //Comunicate Lagrangian multipliers from reference replica to higher ones
         multi_sim_comm.Bcast(lambda,learn_replica);
+      }
     }
     comm.Bcast(lambda,0);
   }

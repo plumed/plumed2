@@ -62,29 +62,39 @@ void HexacticParameter::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("_vmean","VMEAN","the norm of the mean vector");
   keys.addFlag("VSUM",false,"calculate the norm of the sum of all the vectors");
   keys.addOutputComponent("_vsum","VSUM","the norm of the mean vector");
-  keys.needsAction("CYLINDRICAL_HARMONIC_MATRIX"); keys.needsAction("ONES");
-  keys.needsAction("MATRIX_VECTOR_PRODUCT"); keys.needsAction("CUSTOM");
-  keys.needsAction("MEAN"); keys.needsAction("SUM"); keys.needsAction("COMBINE");
+  keys.needsAction("CYLINDRICAL_HARMONIC_MATRIX");
+  keys.needsAction("ONES");
+  keys.needsAction("MATRIX_VECTOR_PRODUCT");
+  keys.needsAction("CUSTOM");
+  keys.needsAction("MEAN");
+  keys.needsAction("SUM");
+  keys.needsAction("COMBINE");
 }
 
 HexacticParameter::HexacticParameter( const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
-  std::string sp_str, specA, specB; parse("SPECIES",sp_str); parse("SPECIESA",specA); parse("SPECIESB",specB);
+  ActionShortcut(ao) {
+  std::string sp_str, specA, specB;
+  parse("SPECIES",sp_str);
+  parse("SPECIESA",specA);
+  parse("SPECIESB",specB);
   CoordinationNumbers::expandMatrix( true, getShortcutLabel(), sp_str, specA, specB, this );
-  std::string myplane; parse("PLANE",myplane);
+  std::string myplane;
+  parse("PLANE",myplane);
   if( myplane=="xy" ) {
     readInputLine( getShortcutLabel() + ": CYLINDRICAL_HARMONIC_MATRIX DEGREE=6 ARG=" + getShortcutLabel() + "_mat.x," + getShortcutLabel() + "_mat.y," + getShortcutLabel() + "_mat.w" );
   } else if( myplane=="xz" ) {
     readInputLine( getShortcutLabel() + ": CYLINDRICAL_HARMONIC_MATRIX DEGREE=6 ARG=" + getShortcutLabel() + "_mat.x," + getShortcutLabel() + "_mat.z," + getShortcutLabel() + "_mat.w" );
   } else if( myplane=="yz" ) {
     readInputLine( getShortcutLabel() + ": CYLINDRICAL_HARMONIC_MATRIX DEGREE=6 ARG=" + getShortcutLabel() + "_mat.y," + getShortcutLabel() + "_mat.z," + getShortcutLabel() + "_mat.w" );
-  } else error("invalid input for plane -- should be xy, xz or yz");
+  } else {
+    error("invalid input for plane -- should be xy, xz or yz");
+  }
   // And coordination number
   ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_mat");
   plumed_assert( av && av->getNumberOfComponents()>0 && (av->copyOutput(0))->getRank()==2 );
-  std::string size; Tools::convert( (av->copyOutput(0))->getShape()[1], size );
+  std::string size;
+  Tools::convert( (av->copyOutput(0))->getShape()[1], size );
   readInputLine( getShortcutLabel() + "_ones: ONES SIZE=" + size );
   readInputLine( getShortcutLabel() + "_rm: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + ".rm," + getShortcutLabel() + "_ones");
   readInputLine( getShortcutLabel() + "_im: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + ".im," + getShortcutLabel() + "_ones");
@@ -96,7 +106,8 @@ HexacticParameter::HexacticParameter( const ActionOptions& ao):
   readInputLine( getShortcutLabel() + "_imn: CUSTOM ARG=" + getShortcutLabel() + "_im," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
 
   // If we are doing VMEAN determine sum of vector components
-  bool do_vmean; parseFlag("VMEAN",do_vmean);
+  bool do_vmean;
+  parseFlag("VMEAN",do_vmean);
   if( do_vmean ) {
     // Real part
     readInputLine( getShortcutLabel() + "_rms: MEAN ARG=" + getShortcutLabel() + "_rmn PERIODIC=NO");
@@ -105,7 +116,8 @@ HexacticParameter::HexacticParameter( const ActionOptions& ao):
     // Now calculate the total length of the vector
     createVectorNormInput( getShortcutLabel(), getShortcutLabel() + "_vmean", "ms" );
   }
-  bool do_vsum; parseFlag("VSUM",do_vsum);
+  bool do_vsum;
+  parseFlag("VSUM",do_vsum);
   if( do_vsum ) {
     // Real part
     readInputLine( getShortcutLabel() + "_rmz: SUM ARG=" + getShortcutLabel() + "_rmn PERIODIC=NO");

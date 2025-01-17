@@ -49,18 +49,24 @@ void KLEntropy::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","REFERENCE","a file containing the reference density in grid format");
   keys.add("compulsory","VALUE","the name of the value that should be read from the grid");
   keys.setValueDescription("the value of the KL-Entropy");
-  keys.needsAction("REFERENCE_GRID"); keys.needsAction("CUSTOM"); keys.needsAction("INTEGRATE_GRID");
+  keys.needsAction("REFERENCE_GRID");
+  keys.needsAction("CUSTOM");
+  keys.needsAction("INTEGRATE_GRID");
 }
 
 KLEntropy::KLEntropy( const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
+  ActionShortcut(ao) {
   // Reference grid object
-  std::string ref_str, val_str, input_g; parse("VALUE",val_str); parse("REFERENCE",ref_str); parse("ARG",input_g);
+  std::string ref_str, val_str, input_g;
+  parse("VALUE",val_str);
+  parse("REFERENCE",ref_str);
+  parse("ARG",input_g);
   readInputLine( getShortcutLabel() + "_ref: REFERENCE_GRID VALUE=" + val_str + " FILE=" + ref_str );
   // Compute KL divergence
-  if( input_g=="") plumed_merror("could not find ARG keyword in input to KL_ENTROPY");
+  if( input_g=="") {
+    plumed_merror("could not find ARG keyword in input to KL_ENTROPY");
+  }
   readInputLine( getShortcutLabel()  + "_kl: CUSTOM ARG=" + input_g + "," + getShortcutLabel() + "_ref FUNC=y*log(y/(0.5*(x+y))) PERIODIC=NO");
   // Compute integral
   readInputLine( getShortcutLabel() + ": INTEGRATE_GRID ARG=" + getShortcutLabel() + "_kl PERIODIC=NO");

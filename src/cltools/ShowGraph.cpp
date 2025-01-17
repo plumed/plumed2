@@ -58,8 +58,7 @@ plumed show_graph --plumed plumed.dat
 //+ENDPLUMEDOC
 
 class ShowGraph :
-  public CLTool
-{
+  public CLTool {
 public:
   static void registerKeywords( Keywords& keys );
   explicit ShowGraph(const CLToolOptions& co );
@@ -85,8 +84,7 @@ void ShowGraph::registerKeywords( Keywords& keys ) {
 }
 
 ShowGraph::ShowGraph(const CLToolOptions& co ):
-  CLTool(co)
-{
+  CLTool(co) {
   inputdata=commandline;
 }
 
@@ -95,50 +93,68 @@ std::string ShowGraph::getLabel(const Action* a, const bool& amp) {
 }
 
 std::string ShowGraph::getLabel( const std::string& s, const bool& amp ) {
-  if( s.find("@")==std::string::npos ) return s;
+  if( s.find("@")==std::string::npos ) {
+    return s;
+  }
   std::size_t p=s.find_first_of("@");
-  if( amp ) return "#64;" + s.substr(p+1);
+  if( amp ) {
+    return "#64;" + s.substr(p+1);
+  }
   return s.substr(p+1);
 }
 
 void ShowGraph::printStyle( const unsigned& linkcount, const Value* v, OFile& ofile ) {
-  if( v->getRank()>0 && v->hasDerivatives() ) ofile.printf("linkStyle %d stroke:green,color:green;\n", linkcount);
-  else if( v->getRank()==1 ) ofile.printf("linkStyle %d stroke:blue,color:blue;\n", linkcount);
-  else if ( v->getRank()==2 ) ofile.printf("linkStyle %d stroke:red,color:red;\n", linkcount);
+  if( v->getRank()>0 && v->hasDerivatives() ) {
+    ofile.printf("linkStyle %d stroke:green,color:green;\n", linkcount);
+  } else if( v->getRank()==1 ) {
+    ofile.printf("linkStyle %d stroke:blue,color:blue;\n", linkcount);
+  } else if ( v->getRank()==2 ) {
+    ofile.printf("linkStyle %d stroke:red,color:red;\n", linkcount);
+  }
 }
 
 void ShowGraph::printArgumentConnections( const ActionWithArguments* a, unsigned& linkcount, const bool& force, OFile& ofile ) {
-  if( !a ) return;
+  if( !a ) {
+    return;
+  }
   for(const auto & v : a->getArguments() ) {
     if( force && v->forcesWereAdded() ) {
       ofile.printf("%s -- %s --> %s\n", getLabel(a).c_str(), v->getName().c_str(), getLabel(v->getPntrToAction()).c_str() );
-      printStyle( linkcount, v, ofile ); linkcount++;
+      printStyle( linkcount, v, ofile );
+      linkcount++;
     } else if( !force ) {
       ofile.printf("%s -- %s --> %s\n", getLabel(v->getPntrToAction()).c_str(),v->getName().c_str(),getLabel(a).c_str() );
-      printStyle( linkcount, v, ofile ); linkcount++;
+      printStyle( linkcount, v, ofile );
+      linkcount++;
     }
   }
 }
 
 void ShowGraph::printAtomConnections( const ActionAtomistic* a, unsigned& linkcount, const bool& force, OFile& ofile ) {
-  if( !a ) return;
+  if( !a ) {
+    return;
+  }
   for(const auto & d : a->getDependencies() ) {
     ActionToPutData* dp=dynamic_cast<ActionToPutData*>(d);
     if( dp && dp->getLabel()=="posx" ) {
       if( force && (dp->copyOutput(0))->forcesWereAdded() ) {
         ofile.printf("%s --> MD\n", getLabel(a).c_str() );
-        ofile.printf("linkStyle %d stroke:violet,color:violet;\n", linkcount); linkcount++;
+        ofile.printf("linkStyle %d stroke:violet,color:violet;\n", linkcount);
+        linkcount++;
       } else {
         ofile.printf("MD --> %s\n", getLabel(a).c_str() );
-        ofile.printf("linkStyle %d stroke:violet,color:violet;\n", linkcount); linkcount++;
+        ofile.printf("linkStyle %d stroke:violet,color:violet;\n", linkcount);
+        linkcount++;
       }
     } else if( dp && dp->getLabel()!="posy" && dp->getLabel()!="posz" && dp->getLabel()!="Masses" && dp->getLabel()!="Charges" ) {
       if( force && (dp->copyOutput(0))->forcesWereAdded() ) {
         ofile.printf("%s -- %s --> %s\n",getLabel(a).c_str(), getLabel(d).c_str(), getLabel(d).c_str() );
-        printStyle( linkcount, dp->copyOutput(0), ofile ); linkcount++;
+        printStyle( linkcount, dp->copyOutput(0), ofile );
+        linkcount++;
       } else {
         ofile.printf("%s -- %s --> %s\n", getLabel(d).c_str(),getLabel(d).c_str(),getLabel(a).c_str() );
-        printStyle( linkcount, dp->copyOutput(0), ofile ); linkcount++;
+        printStyle( linkcount, dp->copyOutput(0), ofile );
+        linkcount++;
       }
       continue;
     }
@@ -146,10 +162,12 @@ void ShowGraph::printAtomConnections( const ActionAtomistic* a, unsigned& linkco
     if( dv ) {
       if( force && (dv->copyOutput(0))->forcesWereAdded() ) {
         ofile.printf("%s -- %s --> %s\n", getLabel(a).c_str(),getLabel(d).c_str(),getLabel(d).c_str() );
-        ofile.printf("linkStyle %d stroke:violet,color:violet;\n", linkcount); linkcount++;
+        ofile.printf("linkStyle %d stroke:violet,color:violet;\n", linkcount);
+        linkcount++;
       } else {
         ofile.printf("%s -- %s --> %s\n", getLabel(d).c_str(),getLabel(d).c_str(),getLabel(a).c_str() );
-        ofile.printf("linkStyle %d stroke:violet,color:violet;\n", linkcount); linkcount++;
+        ofile.printf("linkStyle %d stroke:violet,color:violet;\n", linkcount);
+        linkcount++;
       }
     }
   }
@@ -157,46 +175,67 @@ void ShowGraph::printAtomConnections( const ActionAtomistic* a, unsigned& linkco
 
 void ShowGraph::drawActionWithVectorNode( OFile& ofile, PlumedMain& p, Action* ag, const std::vector<std::string>& mychain, std::vector<bool>& printed ) {
   ActionWithVector* agg=dynamic_cast<ActionWithVector*>(ag);
-  std::vector<std::string> matchain; agg->getAllActionLabelsInMatrixChain( matchain );
+  std::vector<std::string> matchain;
+  agg->getAllActionLabelsInMatrixChain( matchain );
   if( matchain.size()>0 ) {
     ofile.printf("subgraph sub%s_mat [%s]\n",getLabel(agg).c_str(), getLabel(agg).c_str());
     for(unsigned j=0; j<matchain.size(); ++j ) {
       Action* agm=p.getActionSet().selectWithLabel<Action*>(matchain[j]);
       for(unsigned k=0; k<mychain.size(); ++k ) {
-        if( mychain[k]==matchain[j] ) { printed[k]=true; break; }
+        if( mychain[k]==matchain[j] ) {
+          printed[k]=true;
+          break;
+        }
       }
       ofile.printf("%s([\"label=%s \n %s \n\"])\n", getLabel(matchain[j]).c_str(), getLabel(matchain[j],true).c_str(), agm->writeInGraph().c_str() );
     }
     ofile.printf("end\n");
     ofile.printf("style sub%s_mat fill:lightblue\n",getLabel(ag).c_str());
-  } else ofile.printf("%s([\"label=%s \n %s \n\"])\n", getLabel(ag->getLabel()).c_str(), getLabel(ag->getLabel(),true).c_str(), ag->writeInGraph().c_str() );
+  } else {
+    ofile.printf("%s([\"label=%s \n %s \n\"])\n", getLabel(ag->getLabel()).c_str(), getLabel(ag->getLabel(),true).c_str(), ag->writeInGraph().c_str() );
+  }
 }
 
 int ShowGraph::main(FILE* in, FILE*out,Communicator& pc) {
 
-  std::string inpt; parse("--plumed",inpt);
-  std::string outp; parse("--out",outp);
-  bool forces; parseFlag("--force",forces);
+  std::string inpt;
+  parse("--plumed",inpt);
+  std::string outp;
+  parse("--out",outp);
+  bool forces;
+  parseFlag("--force",forces);
 
   // Create a plumed main object and initilize
-  PlumedMain p; int rr=sizeof(double);
+  PlumedMain p;
+  int rr=sizeof(double);
   p.cmd("setRealPrecision",&rr);
-  double lunit=1.0; p.cmd("setMDLengthUnits",&lunit);
-  double cunit=1.0; p.cmd("setMDChargeUnits",&cunit);
-  double munit=1.0; p.cmd("setMDMassUnits",&munit);
+  double lunit=1.0;
+  p.cmd("setMDLengthUnits",&lunit);
+  double cunit=1.0;
+  p.cmd("setMDChargeUnits",&cunit);
+  double munit=1.0;
+  p.cmd("setMDMassUnits",&munit);
   p.cmd("setPlumedDat",inpt.c_str());
   p.cmd("setLog",out);
-  int natoms=1000000; p.cmd("setNatoms",&natoms);
+  int natoms=1000000;
+  p.cmd("setNatoms",&natoms);
   p.cmd("init");
 
-  unsigned linkcount=0; OFile ofile; ofile.open(outp);
+  unsigned linkcount=0;
+  OFile ofile;
+  ofile.open(outp);
   if( forces ) {
-    unsigned step=1; p.cmd("setStep",step);
+    unsigned step=1;
+    p.cmd("setStep",step);
     p.cmd("prepareCalc");
-    ofile.printf("flowchart BT \n"); std::vector<std::string> drawn_nodes; std::set<std::string> atom_force_set;
+    ofile.printf("flowchart BT \n");
+    std::vector<std::string> drawn_nodes;
+    std::set<std::string> atom_force_set;
     for(auto pp=p.getActionSet().rbegin(); pp!=p.getActionSet().rend(); ++pp) {
       const auto & a(pp->get());
-      if( a->getName()=="DOMAIN_DECOMPOSITION" || a->getLabel()=="posx" || a->getLabel()=="posy" || a->getLabel()=="posz" || a->getLabel()=="Masses" || a->getLabel()=="Charges" ) continue;
+      if( a->getName()=="DOMAIN_DECOMPOSITION" || a->getLabel()=="posx" || a->getLabel()=="posy" || a->getLabel()=="posz" || a->getLabel()=="Masses" || a->getLabel()=="Charges" ) {
+        continue;
+      }
 
       if(a->isActive()) {
         ActionToPutData* ap=dynamic_cast<ActionToPutData*>(a);
@@ -205,55 +244,88 @@ int ShowGraph::main(FILE* in, FILE*out,Communicator& pc) {
           continue;
         }
         ActionWithValue* av=dynamic_cast<ActionWithValue*>(a);
-        if( !av ) continue ;
+        if( !av ) {
+          continue ;
+        }
         // Now apply the force if there is one
         a->apply();
         bool hasforce=false;
         for(int i=0; i<av->getNumberOfComponents(); ++i) {
-          if( (av->copyOutput(i))->forcesWereAdded() ) { hasforce=true; break; }
+          if( (av->copyOutput(i))->forcesWereAdded() ) {
+            hasforce=true;
+            break;
+          }
         }
         //Check if there are forces here
         ActionWithArguments* aaa=dynamic_cast<ActionWithArguments*>(a);
         if( aaa ) {
           for(const auto & v : aaa->getArguments() ) {
-            if( v->forcesWereAdded() ) { hasforce=true; break; }
+            if( v->forcesWereAdded() ) {
+              hasforce=true;
+              break;
+            }
           }
         }
-        if( !hasforce ) continue;
+        if( !hasforce ) {
+          continue;
+        }
         ActionWithVector* avec=dynamic_cast<ActionWithVector*>(a);
         if( avec ) {
           ActionWithVector* head=avec->getFirstActionInChain();
-          std::vector<std::string> mychain; head->getAllActionLabelsInChain( mychain ); std::vector<bool> printed(mychain.size(),false);
+          std::vector<std::string> mychain;
+          head->getAllActionLabelsInChain( mychain );
+          std::vector<bool> printed(mychain.size(),false);
           ofile.printf("subgraph sub%s [%s]\n",getLabel(head).c_str(),getLabel(head).c_str());
           for(unsigned i=0; i<mychain.size(); ++i) {
             bool drawn=false;
             for(unsigned j=0; j<drawn_nodes.size(); ++j ) {
-              if( drawn_nodes[j]==mychain[i] ) { drawn=true; break; }
+              if( drawn_nodes[j]==mychain[i] ) {
+                drawn=true;
+                break;
+              }
             }
-            if( drawn ) continue;
-            ActionWithVector* ag=p.getActionSet().selectWithLabel<ActionWithVector*>(mychain[i]); plumed_assert( ag ); drawn_nodes.push_back( mychain[i] );
-            if( !printed[i] ) { drawActionWithVectorNode( ofile, p, ag, mychain, printed ); printed[i]=true; }
+            if( drawn ) {
+              continue;
+            }
+            ActionWithVector* ag=p.getActionSet().selectWithLabel<ActionWithVector*>(mychain[i]);
+            plumed_assert( ag );
+            drawn_nodes.push_back( mychain[i] );
+            if( !printed[i] ) {
+              drawActionWithVectorNode( ofile, p, ag, mychain, printed );
+              printed[i]=true;
+            }
             for(const auto & v : ag->getArguments() ) {
               bool chain_conn=false;
               for(unsigned j=0; j<mychain.size(); ++j) {
-                if( (v->getPntrToAction())->getLabel()==mychain[j] ) { chain_conn=true; break; }
+                if( (v->getPntrToAction())->getLabel()==mychain[j] ) {
+                  chain_conn=true;
+                  break;
+                }
               }
-              if( !chain_conn ) continue;
+              if( !chain_conn ) {
+                continue;
+              }
               ofile.printf("%s -. %s .-> %s\n", getLabel(v->getPntrToAction()).c_str(),v->getName().c_str(),getLabel(ag).c_str() );
-              printStyle( linkcount, v, ofile ); linkcount++;
+              printStyle( linkcount, v, ofile );
+              linkcount++;
             }
           }
           ofile.printf("end\n");
           if( avec!=head ) {
             for(unsigned i=0; i<mychain.size(); ++i) {
-              ActionWithVector* c = p.getActionSet().selectWithLabel<ActionWithVector*>( mychain[i] ); plumed_assert(c);
+              ActionWithVector* c = p.getActionSet().selectWithLabel<ActionWithVector*>( mychain[i] );
+              plumed_assert(c);
               if( c->getNumberOfAtoms()>0 || c->hasStoredArguments() ) {
                 for(unsigned j=0; j<avec->getNumberOfComponents(); ++j ) {
-                  if( avec->copyOutput(j)->getRank()>0 ) continue;
+                  if( avec->copyOutput(j)->getRank()>0 ) {
+                    continue;
+                  }
                   ofile.printf("%s == %s ==> %s\n", getLabel(avec).c_str(), avec->copyOutput(j)->getName().c_str(), getLabel(c).c_str() );
                   linkcount++;
                 }
-                if( c->getNumberOfAtoms()>0 ) atom_force_set.insert( c->getLabel() );
+                if( c->getNumberOfAtoms()>0 ) {
+                  atom_force_set.insert( c->getLabel() );
+                }
               }
             }
           }
@@ -268,34 +340,43 @@ int ShowGraph::main(FILE* in, FILE*out,Communicator& pc) {
     // Now draw connections from action atomistic to relevant actions
     std::vector<ActionAtomistic*> all_atoms = p.getActionSet().select<ActionAtomistic*>();
     for(const auto & at : all_atoms ) {
-      ActionWithValue* av=dynamic_cast<ActionWithValue*>(at); bool hasforce=false;
+      ActionWithValue* av=dynamic_cast<ActionWithValue*>(at);
+      bool hasforce=false;
       if( av ) {
         for(unsigned i=0; i<av->getNumberOfComponents(); ++i ) {
           if( av->copyOutput(i)->forcesWereAdded() ) {
             printAtomConnections( at, linkcount, true, ofile );
-            atom_force_set.erase( av->getLabel() ); break;
+            atom_force_set.erase( av->getLabel() );
+            break;
           }
         }
       }
     }
     for(const auto & l : atom_force_set ) {
       ActionAtomistic* at = p.getActionSet().selectWithLabel<ActionAtomistic*>(l);
-      plumed_assert(at); printAtomConnections( at, linkcount, true, ofile );
+      plumed_assert(at);
+      printAtomConnections( at, linkcount, true, ofile );
     }
     ofile.printf("MD(positions from MD)\n");
     return 0;
   }
 
-  ofile.printf("flowchart TB \n"); ofile.printf("MD(positions from MD)\n");
+  ofile.printf("flowchart TB \n");
+  ofile.printf("MD(positions from MD)\n");
   for(const auto & aa : p.getActionSet() ) {
     Action* a(aa.get());
-    if( a->getName()=="DOMAIN_DECOMPOSITION" || a->getLabel()=="posx" || a->getLabel()=="posy" || a->getLabel()=="posz" || a->getLabel()=="Masses" || a->getLabel()=="Charges" ) continue;
+    if( a->getName()=="DOMAIN_DECOMPOSITION" || a->getLabel()=="posx" || a->getLabel()=="posy" || a->getLabel()=="posz" || a->getLabel()=="Masses" || a->getLabel()=="Charges" ) {
+      continue;
+    }
     ActionToPutData* ap=dynamic_cast<ActionToPutData*>(a);
     if( ap ) {
       ofile.printf("%s(\"label=%s \n %s \n\")\n", getLabel(a).c_str(), getLabel(a,true).c_str(), a->writeInGraph().c_str() );
       continue;
     }
-    ActionShortcut* as=dynamic_cast<ActionShortcut*>(a); if( as ) continue ;
+    ActionShortcut* as=dynamic_cast<ActionShortcut*>(a);
+    if( as ) {
+      continue ;
+    }
     ActionWithValue* av=dynamic_cast<ActionWithValue*>(a);
     ActionWithArguments* aaa=dynamic_cast<ActionWithArguments*>(a);
     ActionAtomistic* at=dynamic_cast<ActionAtomistic*>(a);
@@ -306,10 +387,15 @@ int ShowGraph::main(FILE* in, FILE*out,Communicator& pc) {
     // Print out the nodes
     if( avec && !avec->actionInChain() ) {
       ofile.printf("subgraph sub%s [%s]\n",getLabel(a).c_str(),getLabel(a).c_str());
-      std::vector<std::string> mychain; avec->getAllActionLabelsInChain( mychain ); std::vector<bool> printed(mychain.size(),false);
+      std::vector<std::string> mychain;
+      avec->getAllActionLabelsInChain( mychain );
+      std::vector<bool> printed(mychain.size(),false);
       for(unsigned i=0; i<mychain.size(); ++i) {
         Action* ag=p.getActionSet().selectWithLabel<Action*>(mychain[i]);
-        if( !printed[i] ) { drawActionWithVectorNode( ofile, p, ag, mychain, printed ); printed[i]=true; }
+        if( !printed[i] ) {
+          drawActionWithVectorNode( ofile, p, ag, mychain, printed );
+          printed[i]=true;
+        }
       }
       ofile.printf("end\n");
     } else if( !av ) {

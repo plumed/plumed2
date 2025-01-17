@@ -89,7 +89,8 @@ PLUMED_REGISTER_ACTION(Dihcor,"DIHCOR")
 
 void Dihcor::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
-  keys.needsAction("DIHEDRAL_CORRELATION"); keys.needsAction("SUM");
+  keys.needsAction("DIHEDRAL_CORRELATION");
+  keys.needsAction("SUM");
   keys.add("atoms","ATOMS","the set of 8 atoms that are being used each of the dihedral correlation values");
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.setValueDescription("the sum of all the dihedral correlations");
@@ -97,8 +98,7 @@ void Dihcor::registerKeywords( Keywords& keys ) {
 
 Dihcor::Dihcor(const ActionOptions&ao):
   Action(ao),
-  ActionShortcut(ao)
-{
+  ActionShortcut(ao) {
   readInputLine( getShortcutLabel() +"_data: DIHEDRAL_CORRELATION " + convertInputLineToString() );
   readInputLine( getShortcutLabel() + ": SUM ARG=" + getShortcutLabel() + "_data PERIODIC=NO");
 }

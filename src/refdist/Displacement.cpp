@@ -53,23 +53,31 @@ void Displacement::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","ARG1","The point that we are calculating the distance from");
   keys.add("compulsory","ARG2","The point that we are calculating the distance to");
   keys.setValueDescription("the differences between the input arguments");
-  keys.needsAction("DIFFERENCE"); keys.needsAction("TRANSPOSE"); keys.needsAction("VSTACK");
+  keys.needsAction("DIFFERENCE");
+  keys.needsAction("TRANSPOSE");
+  keys.needsAction("VSTACK");
 }
 
 std::string Displacement::fixArgumentDot( const std::string& argin ) {
-  std::string argout = argin; std::size_t dot=argin.find(".");
-  if( dot!=std::string::npos ) argout = argin.substr(0,dot) + "_" + argin.substr(dot+1);
+  std::string argout = argin;
+  std::size_t dot=argin.find(".");
+  if( dot!=std::string::npos ) {
+    argout = argin.substr(0,dot) + "_" + argin.substr(dot+1);
+  }
   return argout;
 }
 
 Displacement::Displacement( const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
+  ActionShortcut(ao) {
   // Read in argument names
-  std::vector<std::string> arg1f, arg2f; parseVector("ARG1",arg1f); parseVector("ARG2",arg2f);
+  std::vector<std::string> arg1f, arg2f;
+  parseVector("ARG1",arg1f);
+  parseVector("ARG2",arg2f);
   // Check if one of the input arguments is a reference cluster
-  if( arg1f.size()!=arg2f.size() ) error("number of arguments specified to ARG1 should be same as number for ARG2");
+  if( arg1f.size()!=arg2f.size() ) {
+    error("number of arguments specified to ARG1 should be same as number for ARG2");
+  }
 
   Value* val1=getValueWithLabel( arg1f[0] );
   if( arg1f.size()==1 && val1->getRank()!=0 ) {
@@ -77,20 +85,34 @@ Displacement::Displacement( const ActionOptions& ao):
     if( val1->getNumberOfValues()==val2->getNumberOfValues() ) {
       readInputLine( getShortcutLabel() + "_" + fixArgumentDot(arg1f[0]) + "_diff: DIFFERENCE ARG=" + arg1f[0] + "," + arg2f[0] );
       readInputLine( getShortcutLabel() + ": TRANSPOSE ARG=" + getShortcutLabel() + "_" + fixArgumentDot(arg1f[0]) + "_diff");
-    } else readInputLine( getShortcutLabel() + ": DIFFERENCE ARG=" + arg1f[0] + "," + arg2f[0] );
+    } else {
+      readInputLine( getShortcutLabel() + ": DIFFERENCE ARG=" + arg1f[0] + "," + arg2f[0] );
+    }
   } else {
-    for(unsigned i=0; i<arg1f.size(); ++i) readInputLine( getShortcutLabel() + "_" + fixArgumentDot(arg1f[i]) + "_diff: DIFFERENCE ARG=" + arg1f[i] + "," + arg2f[i] );
-    std::string argdat = "ARG=" + getShortcutLabel() + "_" + fixArgumentDot(arg1f[0]) + "_diff"; for(unsigned i=1; i<arg1f.size(); ++i) argdat += "," +  getShortcutLabel() + "_" + fixArgumentDot(arg1f[i]) + "_diff";
+    for(unsigned i=0; i<arg1f.size(); ++i) {
+      readInputLine( getShortcutLabel() + "_" + fixArgumentDot(arg1f[i]) + "_diff: DIFFERENCE ARG=" + arg1f[i] + "," + arg2f[i] );
+    }
+    std::string argdat = "ARG=" + getShortcutLabel() + "_" + fixArgumentDot(arg1f[0]) + "_diff";
+    for(unsigned i=1; i<arg1f.size(); ++i) {
+      argdat += "," +  getShortcutLabel() + "_" + fixArgumentDot(arg1f[i]) + "_diff";
+    }
     readInputLine( getShortcutLabel() + ": VSTACK " + argdat );
   }
 }
 
 Value* Displacement::getValueWithLabel( const std::string& name ) const {
-  std::size_t dot=name.find("."); std::string sname = name.substr(0,dot);
+  std::size_t dot=name.find(".");
+  std::string sname = name.substr(0,dot);
   ActionWithValue* vv=plumed.getActionSet().selectWithLabel<ActionWithValue*>( sname );
-  if( !vv ) error("cannot find value with name " + name );
-  if( dot==std::string::npos ) return vv->copyOutput(0);
-  if( !vv->exists(name) ) error("cannot find value with name " + name );
+  if( !vv ) {
+    error("cannot find value with name " + name );
+  }
+  if( dot==std::string::npos ) {
+    return vv->copyOutput(0);
+  }
+  if( !vv->exists(name) ) {
+    error("cannot find value with name " + name );
+  }
   return vv->copyOutput( name );
 }
 

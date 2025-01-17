@@ -97,13 +97,14 @@ void BF_Powers::registerKeywords(Keywords& keys) {
 }
 
 BF_Powers::BF_Powers(const ActionOptions&ao):
-  PLUMED_VES_BASISFUNCTIONS_INIT(ao)
-{
+  PLUMED_VES_BASISFUNCTIONS_INIT(ao) {
   setNumberOfBasisFunctions(getOrder()+1);
   setIntrinsicInterval(intervalMin(),intervalMax());
   double normfactor_=1.0;
   parse("NORMALIZATION",normfactor_);
-  if(normfactor_!=1.0) {addKeywordToList("NORMALIZATION",normfactor_);}
+  if(normfactor_!=1.0) {
+    addKeywordToList("NORMALIZATION",normfactor_);
+  }
   inv_normfactor_=1.0/normfactor_;
   setNonPeriodic();
   setIntervalBounded();
@@ -129,14 +130,19 @@ void BF_Powers::getAllValues(const double arg, double& argT, bool& inside_range,
     values[i] = argT*values[i-1];
     derivs[i]=values[i-1]+argT*derivs[i-1];
   }
-  if(!inside_range) {for(unsigned int i=0; i<derivs.size(); i++) {derivs[i]=0.0;}}
+  if(!inside_range) {
+    for(unsigned int i=0; i<derivs.size(); i++) {
+      derivs[i]=0.0;
+    }
+  }
 }
 
 
 void BF_Powers::setupLabels() {
   setLabel(0,"1");
   for(unsigned int i=1; i < getOrder()+1; i++) {
-    std::string is; Tools::convert(i,is);
+    std::string is;
+    Tools::convert(i,is);
     setLabel(i,"s^"+is);
   }
 }

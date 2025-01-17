@@ -27,10 +27,11 @@ using std::begin;
 using std::end;
 
 bool DRRAxis::isInBoundary(double x) const {
-  if (x < min || x > max)
+  if (x < min || x > max) {
     return false;
-  else
+  } else {
     return true;
+  }
 }
 
 bool DRRAxis::isRealPeriodic() const {
@@ -79,13 +80,16 @@ void DRRForceGrid::fillTable(const vector<vector<double>> &in) {
   table.resize(ndims, vector<double>(sampleSize, 0));
   for (size_t i = 0; i < ndims; ++i) {
     size_t repeatAll = 1, repeatOne = 1;
-    for (size_t j = i + 1; j < ndims; ++j)
+    for (size_t j = i + 1; j < ndims; ++j) {
       repeatOne *= in[j].size();
-    for (size_t j = 0; j < i; ++j)
+    }
+    for (size_t j = 0; j < i; ++j) {
       repeatAll *= in[j].size();
+    }
     size_t in_i_sz = in[i].size();
-    for (size_t l = 0; l < in_i_sz; ++l)
+    for (size_t l = 0; l < in_i_sz; ++l) {
       std::fill_n(begin(table[i]) + l * repeatOne, repeatOne, in[i][l]);
+    }
     for (size_t k = 0; k < repeatAll - 1; ++k)
       std::copy_n(begin(table[i]), repeatOne * in_i_sz,
                   begin(table[i]) + repeatOne * in_i_sz * (k + 1));
@@ -115,14 +119,16 @@ DRRForceGrid::DRRForceGrid(const vector<DRRAxis> &p_dimensions,
     ss.precision(std::numeric_limits<double>::max_digits10);
     ss << std::fixed << "# " << dimensions[i].min << ' '
        << dimensions[i].binWidth << ' ' << dimensions[i].nbins;
-    if (dimensions[i].isPeriodic())
+    if (dimensions[i].isPeriodic()) {
       ss << " 1" << '\n';
-    else
+    } else {
       ss << " 0" << '\n';
+    }
   }
   headers = ss.str();
-  if (initializeTable)
+  if (initializeTable) {
     fillTable(mp);
+  }
   forces.resize(sampleSize * ndims, 0.0);
   samples.resize(sampleSize, 0);
   outputunit = 1.0;
@@ -141,8 +147,9 @@ DRRForceGrid::DRRForceGrid(const vector<DRRAxis> &p_dimensions,
 bool DRRForceGrid::isInBoundary(const vector<double> &pos) const {
   bool result = true;
   for (size_t i = 0; i < ndims; ++i) {
-    if (pos[i] < dimensions[i].min || pos[i] > dimensions[i].max)
+    if (pos[i] < dimensions[i].min || pos[i] > dimensions[i].max) {
       return false;
+    }
   }
   return result;
 }
@@ -158,8 +165,9 @@ size_t DRRForceGrid::sampleAddress(const vector<double> &pos) const {
 bool DRRForceGrid::store(const vector<double> &pos, const vector<double> &f,
                          unsigned long int nsamples) {
   if (isInBoundary(pos)) {
-    if (nsamples == 0)
+    if (nsamples == 0) {
       return true;
+    }
     const size_t baseaddr = sampleAddress(pos);
     samples[baseaddr] += nsamples;
     auto it_fa = begin(forces) + baseaddr * ndims;
@@ -180,8 +188,9 @@ vector<DRRAxis> DRRForceGrid::merge(const vector<DRRAxis> &dA,
 vector<double>
 DRRForceGrid::getAccumulatedForces(const vector<double> &pos) const {
   vector<double> result(ndims, 0);
-  if (!isInBoundary(pos))
+  if (!isInBoundary(pos)) {
     return result;
+  }
   const size_t force_addr = sampleAddress(pos) * ndims;
   std::copy(begin(forces) + force_addr, begin(forces) + force_addr + ndims,
             begin(result));
@@ -208,11 +217,14 @@ vector<double> DRRForceGrid::getGradient(const vector<double> &pos,
   }
   const size_t baseaddr = sampleAddress(pos);
   const unsigned long int &count = samples[baseaddr];
-  if (count == 0)
+  if (count == 0) {
     return result;
+  }
   auto it_fa = begin(forces) + baseaddr * ndims;
   std::transform(it_fa, it_fa + ndims, begin(result),
-  [&count](double fa) { return (-1.0) * fa / count; });
+  [&count](double fa) {
+    return (-1.0) * fa / count;
+  });
   return result;
 }
 
@@ -480,8 +492,9 @@ vector<double> CZAR::getGradient(const vector<double> &pos,
   const size_t baseaddr = sampleAddress(pos);
   const vector<double> log_deriv(getCountsLogDerivative(pos));
   const unsigned long int &count = samples[baseaddr];
-  if (count == 0)
+  if (count == 0) {
     return result;
+  }
   auto it_fa = begin(forces) + baseaddr * ndims;
   std::transform(it_fa, it_fa + ndims, begin(log_deriv), begin(result),
   [&count, this](double fa, double ld) {
