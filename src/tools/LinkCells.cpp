@@ -49,7 +49,7 @@ void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vecto
   // Must be able to check that pbcs are not nonsensical in some way?? -- GAT
   auto box = pbc.getBox();
   if(box(0,0)==0.0 && box(0,1)==0.0 && box(0,2)==0.0 && box(1,0)==0.0 && box(1,1)==0.0 && box(1,2)==0.0 && box(2,0)==0.0 && box(2,1)==0 && box(2,2)==0) {
-    box(0,0) = box(1,1) = box(2,2) = 1e200;
+    box(0,0) = box(1,1) = box(2,2) = link_cutoff;
   } else {
     auto determinant = box.determinant();
     plumed_assert(determinant > epsilon) <<"Cell lists cannot be built when passing a box with null volume. Volume is "<<determinant;
@@ -114,7 +114,7 @@ void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vecto
     tot+=lcell_tots[i];
     lcell_tots[i]=0;
   }
-  plumed_assert( tot==pos.size() );
+  plumed_assert( tot==pos.size() ) <<"Total number of atoms found in link cells is "<<tot<<" number of atoms is "<<pos.size();
 
   // And setup the link cells properly
   for(unsigned j=0; j<pos.size(); ++j) {
@@ -186,8 +186,12 @@ void LinkCells::retrieveAtomsInCells( const unsigned& ncells_required,
 }
 
 std::array<unsigned,3> LinkCells::findMyCell( const Vector& pos ) const {
-  Vector fpos=mypbc.realToScaled( pos );
   std::array<unsigned,3> celn;
+  if( ncells[0]*ncells[1]*ncells[2] == 1 ) {
+    celn[0]=celn[1]=celn[2]=0;
+    return celn;
+  }
+  Vector fpos=mypbc.realToScaled( pos );
   for(unsigned j=0; j<3; ++j) {
     celn[j] = std::floor( ( Tools::pbc(fpos[j]) + 0.5 ) * ncells[j] );
     plumed_assert( celn[j]>=0 && celn[j]<ncells[j] ); // Check that atom is in box
