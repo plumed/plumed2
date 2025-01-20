@@ -48,6 +48,10 @@ void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vecto
 
   // Must be able to check that pbcs are not nonsensical in some way?? -- GAT
 
+  double determinant = pbc.getBox().determinant();
+
+  plumed_assert(determinant > epsilon) <<"Cell lists cannot be built when passing a box with null volume. Volume is "<<determinant;
+
   // Setup the pbc object by copying it from action
   mypbc.setBox( pbc.getBox() );
 
