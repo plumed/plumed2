@@ -90,9 +90,16 @@ private:
   bool isatoms;
 /// The name of the action that has this set of keywords
   std::string thisactname;
-/// The names of the allowed keywords
+/// The names of the allowed keywords, in order of declaration
   std::vector<std::string> keys;
-/// The names of the reserved keywords
+  // struct key{
+  //   KeyType type;
+  //   bool allowmultiple;
+  //   std::string defaultValue;
+  //   std::string docstring;
+  //}
+
+/// The names of the reserved keywords, in order of declaration
   std::vector<std::string> reserved_keys;
   //std::less<void> make some magic and makes find and [] work with string_view
 /// Whether the keyword is compulsory, optional...
@@ -109,16 +116,32 @@ private:
   std::map<std::string,std::string> numdefs;
 /// The tags for atoms - we use this so the manual can differentiate between different ways of specifying atoms
   std::map<std::string,std::string> atomtags;
+  struct component {
+    /// The keyword that turns on a particular component
+    std::string key;
+    /// The documentation for a particular component
+    std::string docstring;
+    /// The type of a particular component
+    componentType type;
+    component& setKey(std::string k) {
+      key=k;
+      return *this;
+    }
+    component& setDocstring(std::string d) {
+      docstring=d;
+      return *this;
+    }
+    component& setType(componentType t) {
+      type=t;
+      return *this;
+    }
+  };
+  //the "exists component" is stored here
+  std::map<std::string,component> components;
 /// The string that should be printed out to describe how the components work for this particular action
   std::string cstring;
-/// The names of all the possible components for an action
+/// The names of all the possible components for an action, in order of their (first) declaration
   std::vector<std::string> cnames;
-/// The keyword that turns on a particular component
-  std::map<std::string,std::string> ckey;
-/// The documentation for a particular component
-  std::map<std::string,std::string> cdocs;
-/// The type of a particular component
-  std::map<std::string,componentType> ctypes;
 /// The list of actions that are needed by this action
   std::vector<std::string> neededActions;
 /// List of suffixes that can be used with this action
@@ -192,11 +215,6 @@ public:
   void reset_style( const std::string & k, const std::string & style );
 /// Add keywords from one keyword object to another
   void add( const Keywords& keys );
-/// Copy the keywords data
-  void copyData( std::vector<std::string>& kk, std::vector<std::string>& rk, std::map<std::string,KeyType,std::less<void>>& tt, std::map<std::string,bool>& am,
-                 std::map<std::string,std::string>& docs, std::map<std::string,bool>& bools, std::map<std::string,std::string>& nums,
-                 std::map<std::string,std::string>& atags, std::vector<std::string>& cnam, std::map<std::string,std::string>& ck,
-                 std::map<std::string,std::string>& cd ) const ;
 /// Clear everything from the keywords object.
 /// Not actually needed if your Keywords object is going out of scope.
   void destroyData();

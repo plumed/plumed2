@@ -25,6 +25,13 @@
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
+
+//few definition to avoid rewriting the too many times the same docstring
+#define NUMBERED_DOCSTRING(key) ". You can use multiple instances of this keyword i.e. " \
+        + std::string(key) +"1, " + std::string(key) + "2, " + std::string(key) + "3..."
+#define ATOM_DOCSTRING ".  For more information on how to specify lists of atoms see \\ref Group"
+
+
 namespace PLMD {
 
 std::string toString(Keywords::argType at) {
@@ -204,84 +211,70 @@ void Keywords::KeyType::setStyle( std::string_view type ) {
 }
 
 std::string Keywords::getStyle( const std::string & k ) const {
-  plumed_massert( types.count(k), "Did not find keyword " + k );
+  plumed_massert( exists(k)||reserved(k), "Did not find keyword " + k );
   return (types.find(k)->second).toString();
 }
 
 void Keywords::add( const Keywords& newkeys ) {
-  newkeys.copyData( keys, reserved_keys, types, allowmultiple, documentation, booldefs, numdefs, atomtags, cnames, ckey, cdocs  );
-}
+  for(std::string thiskey:newkeys.keys) {
+    plumed_massert( exists(thiskey), "keyword " + thiskey + " is in twice" );
+    plumed_massert( reserved(thiskey), "keyword " + thiskey + " is in twice" );
 
-void Keywords::copyData( std::vector<std::string>& kk,
-                         std::vector<std::string>& rk,
-                         std::map<std::string,KeyType,std::less<void>>& tt, std::map<std::string,bool>& am,
-                         std::map<std::string,std::string>& docs, std::map<std::string,bool>& bools, std::map<std::string,std::string>& nums,
-                         std::map<std::string,std::string>& atags, std::vector<std::string>& cnam, std::map<std::string,std::string>& ck,
-                         std::map<std::string,std::string>& cd ) const {
-  for(unsigned i=0; i<keys.size(); ++i) {
-    std::string thiskey=keys[i];
-    for(unsigned j=0; j<kk.size(); ++j) {
-      plumed_massert( thiskey!=kk[j], "keyword " + thiskey + " is in twice" );
+    plumed_massert( newkeys.types.count( thiskey )!=0, "no type data on keyword " + thiskey + " to copy" );
+    plumed_massert( newkeys.allowmultiple.count( thiskey )!=0, "no numbered data on keyword " + thiskey + " to copy" );
+    plumed_massert( newkeys.documentation.count( thiskey )!=0, "no documentation for keyword " + thiskey + " to copy" );
+
+    keys.emplace_back( thiskey );
+
+    types.insert( std::pair<std::string,KeyType>( thiskey,newkeys.types.at(thiskey)) );
+    if( (types.at(thiskey)).isAtomList() ) {
+      atomtags.insert( std::pair<std::string,std::string>( thiskey,newkeys.atomtags.at(thiskey)) );
     }
-    for(unsigned j=0; j<rk.size(); ++j) {
-      plumed_massert( thiskey!=rk[j], "keyword " + thiskey + " is in twice" );
+    allowmultiple.insert( std::pair<std::string,bool>(thiskey,newkeys.allowmultiple.at(thiskey)) );
+    documentation.insert( std::pair<std::string,std::string>(thiskey,newkeys.documentation.at(thiskey)) );
+    if( newkeys.booldefs.count( thiskey ) ) {
+      booldefs.insert( std::pair<std::string,bool>( thiskey,newkeys.booldefs.at(thiskey)) );
     }
-    kk.push_back( thiskey );
-    plumed_massert( types.count( thiskey ), "no type data on keyword " + thiskey + " to copy" );
-    tt.insert( std::pair<std::string,KeyType>( thiskey,types.find(thiskey)->second) );
-    if( (types.find(thiskey)->second).isAtomList() ) {
-      atags.insert( std::pair<std::string,std::string>( thiskey,atomtags.find(thiskey)->second) );
-    }
-    plumed_massert( allowmultiple.count( thiskey ), "no numbered data on keyword " + thiskey + " to copy" );
-    am.insert( std::pair<std::string,bool>(thiskey,allowmultiple.find(thiskey)->second) );
-    plumed_massert( documentation.count( thiskey ), "no documentation for keyword " + thiskey + " to copy" );
-    docs.insert( std::pair<std::string,std::string>(thiskey,documentation.find(thiskey)->second) );
-    if( booldefs.count( thiskey ) ) {
-      bools.insert( std::pair<std::string,bool>( thiskey,booldefs.find(thiskey)->second) );
-    }
-    if( numdefs.count( thiskey ) ) {
-      nums.insert( std::pair<std::string,std::string>( thiskey,numdefs.find(thiskey)->second) );
+    if( newkeys.numdefs.count( thiskey ) ) {
+      numdefs.insert( std::pair<std::string,std::string>( thiskey,newkeys.numdefs.at(thiskey)) );
     }
   }
-  for(unsigned i=0; i<reserved_keys.size(); ++i) {
-    std::string thiskey=reserved_keys[i];
-    for(unsigned j=0; j<kk.size(); ++j) {
-      plumed_massert( thiskey!=kk[j], "keyword " + thiskey + " is in twice" );
+  for (std::string thiskey : newkeys.reserved_keys) {
+    //in c++20 we'll use .contains
+    plumed_massert( exists(thiskey), "keyword " + thiskey + " is in twice" );
+    plumed_massert( reserved(thiskey), "keyword " + thiskey + " is in twice" );
+
+    plumed_massert( newkeys.types.count( thiskey )!=0, "no type data on keyword " + thiskey + " to copy" );
+    plumed_massert( newkeys.allowmultiple.count( thiskey )!=0, "no numbered data on keyword " + thiskey + " to copy" );
+    plumed_massert( newkeys.documentation.count( thiskey )!=0, "no documentation for keyword " + thiskey + " to copy" );
+
+    reserved_keys.emplace_back( thiskey );
+
+    types.insert( std::pair<std::string,KeyType>( thiskey,newkeys.types.at(thiskey)) );
+    if( (types.at(thiskey)).isAtomList() ) {
+      atomtags.insert( std::pair<std::string,std::string>( thiskey,newkeys.atomtags.at(thiskey)) );
     }
-    for(unsigned j=0; j<rk.size(); ++j) {
-      plumed_massert( thiskey!=rk[j], "keyword " + thiskey + " is in twice" );
+
+    allowmultiple.insert( std::pair<std::string,bool>(thiskey,newkeys.allowmultiple.at(thiskey)) );
+
+    documentation.insert( std::pair<std::string,std::string>(thiskey,newkeys.documentation.at(thiskey)) );
+    if( newkeys.booldefs.count( thiskey ) ) {
+      booldefs.insert( std::pair<std::string,bool>( thiskey,newkeys.booldefs.at(thiskey)) );
     }
-    rk.push_back( thiskey );
-    plumed_massert( types.count( thiskey ), "no type data on keyword " + thiskey + " to copy" );
-    tt.insert( std::pair<std::string,KeyType>( thiskey,types.find(thiskey)->second) );
-    if( (types.find(thiskey)->second).isAtomList() ) {
-      atags.insert( std::pair<std::string,std::string>( thiskey,atomtags.find(thiskey)->second) );
-    }
-    plumed_massert( allowmultiple.count( thiskey ), "no numbered data on keyword " + thiskey + " to copy" );
-    am.insert( std::pair<std::string,bool>(thiskey,allowmultiple.find(thiskey)->second) );
-    plumed_massert( documentation.count( thiskey ), "no documentation for keyword " + thiskey + " to copy" );
-    docs.insert( std::pair<std::string,std::string>(thiskey,documentation.find(thiskey)->second) );
-    if( booldefs.count( thiskey ) ) {
-      bools.insert( std::pair<std::string,bool>( thiskey,booldefs.find(thiskey)->second) );
-    }
-    if( numdefs.count( thiskey ) ) {
-      nums.insert( std::pair<std::string,std::string>( thiskey,numdefs.find(thiskey)->second) );
+    if( newkeys.numdefs.count( thiskey ) ) {
+      numdefs.insert( std::pair<std::string,std::string>( thiskey,newkeys.numdefs.at(thiskey)) );
     }
   }
-  for(unsigned i=0; i<cnames.size(); ++i) {
-    std::string thisnam=cnames[i];
-    for(unsigned j=0; j<cnam.size(); ++j) {
-      plumed_massert( thisnam!=cnam[j], "component " + thisnam + " is in twice" );
-    }
-    cnam.push_back( thisnam );
-    plumed_massert( ckey.count( thisnam ), "no keyword data on component " + thisnam + " to copy" );
-    ck.insert( std::pair<std::string,std::string>( thisnam, ckey.find(thisnam)->second) );
-    plumed_massert( cdocs.count( thisnam ), "no documentation on component " + thisnam + " to copy" );
-    cd.insert( std::pair<std::string,std::string>( thisnam, cdocs.find(thisnam)->second) );
+  for (std::string thisnam : newkeys.cnames) {
+    plumed_massert( components.find(thisnam)!=components.end(), "keyword for component" + thisnam + " is in twice" );
+    cnames.push_back( thisnam );
+    components[thisnam]=newkeys.components.at(thisnam);
+    //these asserts now are obsolete due the way compontents are created now
+    // plumed_massert( ckey.count( thisnam ), "no keyword data on component " + thisnam + " to copy" );
+    // plumed_massert( cdocs.count( thisnam ), "no documentation on component " + thisnam + " to copy" );
   }
 }
 
-#define NUMBERED_DOCSTRING(key) ". You can use multiple instances of this keyword i.e. " + std::string(key) +"1, " + std::string(key) + "2, " + std::string(key) + "3..."
 void Keywords::reserve( const std::string & keytype,
                         const std::string & key,
                         const std::string & docstring ) {
@@ -319,7 +312,7 @@ void Keywords::reserve( const std::string & keytype,
   } else {
     //if( type.isAtomList() && isaction ) {//<- why not this? atoms could also be "residues" or "atoms-n"
     if( keytype=="atoms" && isaction ) {
-      fd += ".  For more information on how to specify lists of atoms see \\ref Group";
+      fd += ATOM_DOCSTRING;
     }
     if( type.isAtomList() ) {
       atomtags.insert( std::pair<std::string,std::string>(key,keytype) );
@@ -348,7 +341,7 @@ void Keywords::reserveFlag(const std::string & k, const bool def, const std::str
   documentation.insert( std::pair<std::string,std::string>(k,fd) );
   allowmultiple.insert( std::pair<std::string,bool>(k,false) );
   booldefs.insert( std::pair<std::string,bool>(k,def) );
-  reserved_keys.push_back(k);
+  reserved_keys.emplace_back(k);
 }
 
 void Keywords::use(std::string_view  k ) {
@@ -401,7 +394,7 @@ void Keywords::add(std::string_view keytype,
   allowmultiple.insert( std::pair<std::string,bool>(key,isNumbered) );
   types.insert( std::pair<std::string,KeyType>(key, type) );
   if( type.isAtomList() && isaction ) {
-    fd += ".  For more information on how to specify lists of atoms see \\ref Group";
+    fd += ATOM_DOCSTRING;
   }
   documentation.insert( std::pair<std::string,std::string>(key,fd) );
   keys.emplace_back(key);
@@ -472,34 +465,19 @@ void Keywords::addFlag( const std::string & k, const bool def, const std::string
   documentation.insert( std::pair<std::string,std::string>(k,defstr + d) );
   allowmultiple.insert( std::pair<std::string,bool>(k,false) );
   booldefs.insert( std::pair<std::string,bool>(k,def) );
-  keys.push_back(k);
+  keys.emplace_back(k);
 }
 
 void Keywords::remove( const std::string & k ) {
   bool found=false;
-  unsigned j=0, n=0;
-
-  while(true) {
-    for(j=0; j<keys.size(); j++) {
-      if(keys[j]==k) {
-        break;
-      }
-    }
-    for(n=0; n<reserved_keys.size(); n++) {
-      if(reserved_keys[n]==k) {
-        break;
-      }
-    }
-    if(j<keys.size()) {
-      keys.erase(keys.begin()+j);
-      found=true;
-    } else if(n<reserved_keys.size()) {
-      reserved_keys.erase(reserved_keys.begin()+n);
-      found=true;
-    } else {
-      break;
-    }
+  if(exists(k)) {
+    keys.erase(std::remove(keys.begin(), keys.end(), k), keys.end());
+    found=true;
+  } else if(reserved(k)) {
+    reserved_keys.erase(std::remove(reserved_keys.begin(), reserved_keys.end(), k), reserved_keys.end());
+    found=true;
   }
+  plumed_massert(found,"You are trying to forbid " + k + " a keyword that isn't there");
   // Delete documentation, type and so on from the description
   types.erase(k);
   documentation.erase(k);
@@ -507,19 +485,24 @@ void Keywords::remove( const std::string & k ) {
   booldefs.erase(k);
   numdefs.erase(k);
   // Remove any output comonents that this keyword creates
-  for(const auto& dkey : ckey ) {
-    if( dkey.second==k ) {
-      removeOutputComponent( dkey.first );
+  //we need the double loop because we should not remove and iterate on the map at the same time
+  std::vector<std::string> markForRemoval{};
+  for(const auto& dkey : components ) {
+    if( dkey.second.key==k ) {
+      markForRemoval.push_back(dkey.first);
     }
   }
-  plumed_massert(found,"You are trying to forbid " + k + " a keyword that isn't there"); // You have tried to forbid a keyword that isn't there
+  for(const auto& toremove : markForRemoval ) {
+    removeOutputComponent( toremove );
+  }
 }
 
 bool Keywords::numbered( const std::string & k ) const {
   if( style( k,"atoms") ) {
     return true;
   }
-  plumed_massert( allowmultiple.count(k), "Did not find keyword " + k );
+  //should I add also the "reserved(k)" to the test?
+  plumed_massert( exists(k), "Did not find keyword " + k );
   return allowmultiple.find(k)->second;
 }
 
@@ -548,50 +531,37 @@ bool Keywords::reserved( std::string_view k ) const {
 }
 
 void Keywords::print_template(const std::string& actionname, bool include_optional) const {
-  unsigned nkeys=0;
   std::printf("%s",actionname.c_str());
-  for(unsigned i=0; i<keys.size(); ++i) {
-    if ( (types.find(keys[i])->second).isAtomList() ) {
-      nkeys++;
-    }
-  }
-  if( nkeys>0 ) {
+  {
     std::string prevtag="start";
-    for(unsigned i=0; i<keys.size(); ++i) {
-      if( (types.find(keys[i])->second).isAtomList() ) {
-        plumed_massert( atomtags.count(keys[i]), "keyword " + keys[i] + " allegedly specifies atoms but no tag has been specified. Please email Gareth Tribello");
-        if( prevtag!="start" && prevtag!=atomtags.find(keys[i])->second ) {
+    for(const auto& key : keys) {
+      if( (types.find(key)->second).isAtomList() ) {
+        plumed_massert( atomtags.count(key), "keyword " + key + " allegedly specifies atoms but no tag has been specified. Please email Gareth Tribello");
+        if( prevtag!="start" && prevtag!=atomtags.find(key)->second ) {
           break;
         }
-        if( (atomtags.find(keys[i])->second).find("residues")!=std::string::npos) {
-          std::printf(" %s=<residue selection>", keys[i].c_str() );
+        if( (atomtags.find(key)->second).find("residues")!=std::string::npos) {
+          std::printf(" %s=<residue selection>", key.c_str() );
         } else {
-          std::printf(" %s=<atom selection>", keys[i].c_str() );
+          std::printf(" %s=<atom selection>", key.c_str() );
         }
-        prevtag=atomtags.find(keys[i])->second;
+        prevtag=atomtags.find(key)->second;
       }
     }
   }
-  nkeys=0;
-  for(unsigned i=0; i<keys.size(); ++i) {
-    if ( include_optional || \
-         (types.find(keys[i])->second).isCompulsory() ) {
-      nkeys++;
-    }
-  }
-  if( nkeys>0 ) {
-    for(unsigned i=0; i<keys.size(); ++i) {
-      if ( (types.find(keys[i])->second).isCompulsory() ) {
-        std::string def;
-        if( getDefaultValue( keys[i], def) ) {
-          std::printf(" %s=%s ", keys[i].c_str(), def.c_str() );
-        } else {
-          std::printf(" %s=    ", keys[i].c_str() );
-        }
-      } else if (include_optional) {
-        // TG no defaults for optional keywords?
-        std::printf(" [%s]", keys[i].c_str() );
+
+  for(const auto& key : keys) {
+    if ( (types.find(key)->second).isCompulsory() ) {
+      std::string def;
+      if( getDefaultValue( key, def) ) {
+        std::printf(" %s=%s ", key.c_str(), def.c_str() );
+      } else {
+        std::printf(" %s=    ", key.c_str() );
       }
+    } else if (include_optional) {
+      // TG no defaults for optional keywords?
+      std::printf(" [%s]", key.c_str() );
+
     }
   }
   std::printf("\n");
@@ -599,14 +569,14 @@ void Keywords::print_template(const std::string& actionname, bool include_option
 }
 
 void Keywords::print_vim() const {
-  for(unsigned i=0; i<keys.size(); ++i) {
-    if( (types.find(keys[i])->second).isFlag() ) {
-      std::printf( ",flag:%s", keys[i].c_str() );
+  for(const auto& key : keys) {
+    if( (types.find(key)->second).isFlag() ) {
+      std::printf( ",flag:%s", key.c_str() );
     } else {
-      if( allowmultiple.find(keys[i])->second ) {
-        std::printf(",numbered:%s",keys[i].c_str() );
+      if( allowmultiple.find(key)->second ) {
+        std::printf(",numbered:%s",key.c_str() );
       } else {
-        std::printf(",option:%s",keys[i].c_str() );
+        std::printf(",option:%s",key.c_str() );
       }
     }
   }
@@ -618,8 +588,9 @@ void Keywords::print_html() const {
 // This is the part that outputs the details of the components
   if( cnames.size()>0 ) {
     unsigned ndef=0;
-    for(unsigned i=0; i<cnames.size(); ++i) {
-      if(ckey.find(cnames[i])->second=="default") {
+    //running on the order of insertion
+    for(const auto& cname : cnames) {
+      if(components.at(cname).key=="default") {
         ndef++;
       }
     }
@@ -630,15 +601,15 @@ void Keywords::print_html() const {
       std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
       std::printf("<tr> <td width=5%%> <b> Quantity </b> </td> <td> <b> Description </b> </td> </tr>\n");
       unsigned nndef=0;
-      for(unsigned i=0; i<cnames.size(); ++i) {
-        //plumed_assert( ckey.find(cnames[i])->second=="default" );
-        if( ckey.find(cnames[i])->second!="default" ) {
+      for(const auto& cname : cnames) {
+        //plumed_assert( components.at(cname).key=="default" );
+        if( components.at(cname).key!="default" ) {
           nndef++;
           continue;
         }
         std::printf("<tr>\n");
-        std::printf("<td width=15%%> <b> %s </b></td>\n",cnames[i].c_str() );
-        std::printf("<td> %s </td>\n",(cdocs.find(cnames[i])->second).c_str() );
+        std::printf("<td width=15%%> <b> %s </b></td>\n",cname.c_str() );
+        std::printf("<td> %s </td>\n",(components.at(cname).docstring).c_str() );
         std::printf("</tr>\n");
       }
       std::cout<<"</table>\n\n";
@@ -647,12 +618,12 @@ void Keywords::print_html() const {
         std::cout<<"\n\n";
         std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
         std::printf("<tr> <td width=5%%> <b> Quantity </b> </td> <td> <b> Keyword </b> </td> <td> <b> Description </b> </td> </tr>\n");
-        for(unsigned i=0; i<cnames.size(); ++i) {
-          if( ckey.find(cnames[i])->second!="default") {
+        for(const auto& cname : cnames) {
+          if( components.at(cname).key!="default") {
             std::printf("<tr>\n");
             std::printf("<td width=5%%> <b> %s </b></td> <td width=10%%> <b> %s </b> </td> \n",
-                        cnames[i].c_str(),(ckey.find(cnames[i])->second).c_str() );
-            std::printf("<td> %s </td>\n",(cdocs.find(cnames[i])->second).c_str() );
+                        cname.c_str(),(components.at(cname).key).c_str() );
+            std::printf("<td> %s </td>\n",(components.at(cname).docstring).c_str() );
             std::printf("</tr>\n");
           }
         }
@@ -660,8 +631,8 @@ void Keywords::print_html() const {
       }
     } else {
       unsigned nregs=0;
-      for(unsigned i=0; i<cnames.size(); ++i) {
-        if( exists(ckey.find(cnames[i])->second) ) {
+      for(const auto& cname : cnames) {
+        if( exists(components.at(cname).key) ) {
           nregs++;
         }
       }
@@ -670,12 +641,12 @@ void Keywords::print_html() const {
         std::cout<<cstring<<"\n\n";
         std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
         std::printf("<tr> <td width=5%%> <b> Quantity </b> </td> <td> <b> Keyword </b> </td> <td> <b> Description </b> </td> </tr>\n");
-        for(unsigned i=0; i<cnames.size(); ++i) {
-          if( exists(ckey.find(cnames[i])->second) ) {
+        for(const auto& cname : cnames) {
+          if( exists(components.at(cname).key) ) {
             std::printf("<tr>\n");
             std::printf("<td width=5%%> <b> %s </b></td> <td width=10%%> <b> %s </b> </td> \n",
-                        cnames[i].c_str(),(ckey.find(cnames[i])->second).c_str() );
-            std::printf("<td> %s </td>\n",(cdocs.find(cnames[i])->second).c_str() );
+                        cname.c_str(),(components.at(cname).key).c_str() );
+            std::printf("<td> %s </td>\n",(components.at(cname).docstring).c_str() );
             std::printf("</tr>\n");
           }
         }
@@ -685,8 +656,8 @@ void Keywords::print_html() const {
   }
 
   unsigned nkeys=0;
-  for(unsigned i=0; i<keys.size(); ++i) {
-    if ( (types.find(keys[i])->second).isAtomList() ) {
+  for(const auto& key : keys) {
+    if ( (types.find(key)->second).isAtomList() ) {
       nkeys++;
     }
   }
@@ -701,10 +672,10 @@ void Keywords::print_html() const {
     std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
     std::string prevtag="start";
     unsigned counter=0;
-    for(unsigned i=0; i<keys.size(); ++i) {
-      if ( (types.find(keys[i])->second).isAtomList() ) {
-        plumed_massert( atomtags.count(keys[i]), "keyword " + keys[i] + " allegedly specifies atoms but no tag has been specified. Please email Gareth Tribello");
-        if( prevtag!="start" && prevtag!=atomtags.find(keys[i])->second && isaction ) {
+    for(const auto& key : keys) {
+      if ( (types.find(key)->second).isAtomList() ) {
+        plumed_massert( atomtags.count(key), "keyword " + key + " allegedly specifies atoms but no tag has been specified. Please email Gareth Tribello");
+        if( prevtag!="start" && prevtag!=atomtags.find(key)->second && isaction ) {
           std::cout<<"</table>\n\n";
           if( isatoms ) {
             std::cout<<"\\par Or alternatively by using\n\n";
@@ -716,15 +687,15 @@ void Keywords::print_html() const {
           }
           std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
         }
-        print_html_item( keys[i] );
-        prevtag=atomtags.find(keys[i])->second;
+        print_html_item( key );
+        prevtag=atomtags.find(key)->second;
       }
     }
     std::cout<<"</table>\n\n";
   }
   nkeys=0;
-  for(unsigned i=0; i<keys.size(); ++i) {
-    if ( (types.find(keys[i])->second).isCompulsory() ) {
+  for(const auto& key : keys) {
+    if ( (types.find(key)->second).isCompulsory() ) {
       nkeys++;
     }
   }
@@ -735,16 +706,16 @@ void Keywords::print_html() const {
       std::cout<<"\\par The following must be present\n\n";
     }
     std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
-    for(unsigned i=0; i<keys.size(); ++i) {
-      if ( (types.find(keys[i])->second).isCompulsory() ) {
-        print_html_item( keys[i] );
+    for(const auto& key : keys) {
+      if ( (types.find(key)->second).isCompulsory() ) {
+        print_html_item( key );
       }
     }
     std::cout<<"</table>\n\n";
   }
   nkeys=0;
-  for(unsigned i=0; i<keys.size(); ++i) {
-    if ( (types.find(keys[i])->second).isFlag() || (types.find(keys[i])->second).isOptional() || (types.find(keys[i])->second).isVessel() ) {
+  for(const auto& key : keys) {
+    if ( (types.find(key)->second).isFlag() || (types.find(key)->second).isOptional() || (types.find(key)->second).isVessel() ) {
       nkeys++;
     }
   }
@@ -755,23 +726,23 @@ void Keywords::print_html() const {
       std::cout<<"\\par The following options are available\n\n";
     }
     std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
-    for(unsigned i=0; i<keys.size(); ++i) {
-      if ( (types.find(keys[i])->second).isFlag() ) {
-        print_html_item( keys[i] );
+    for(const auto& key : keys) {
+      if ( (types.find(key)->second).isFlag() ) {
+        print_html_item( key );
       }
     }
     std::cout<<"\n";
   }
   nkeys=0;
-  for(unsigned i=0; i<keys.size(); ++i) {
-    if ( (types.find(keys[i])->second).isOptional() || (types.find(keys[i])->second).isVessel() ) {
+  for(const auto& key : keys) {
+    if ( (types.find(key)->second).isOptional() || (types.find(key)->second).isVessel() ) {
       nkeys++;
     }
   }
   if( nkeys>0 ) {
-    for(unsigned i=0; i<keys.size(); ++i) {
-      if ( (types.find(keys[i])->second).isOptional() || (types.find(keys[i])->second).isVessel() ) {
-        print_html_item( keys[i] );
+    for(const auto& key : keys) {
+      if ( (types.find(key)->second).isOptional() || (types.find(key)->second).isVessel() ) {
+        print_html_item( key );
       }
     }
   }
@@ -779,11 +750,11 @@ void Keywords::print_html() const {
 }
 
 void Keywords::print_spelling() const {
-  for(unsigned i=0; i<keys.size(); ++i) {
-    std::printf("%s\n", keys[i].c_str() );
+  for(const auto& key : keys) {
+    std::printf("%s\n", key.c_str() );
   }
-  for(unsigned i=0; i<cnames.size(); ++i) {
-    std::printf("%s\n",cnames[i].c_str() );
+  for(const auto& cname : cnames) {
+    std::printf("%s\n",cname.c_str() );
   }
 }
 
@@ -813,37 +784,37 @@ std::string Keywords::getKeywordDocs( const std::string& key ) const {
 std::string Keywords::getHelpString() const {
   std::string helpstr;
   unsigned nkeys=0;
-  for(unsigned i=0; i<keys.size(); ++i) {
-    if ( (types.find(keys[i])->second).isAtomList() ) {
+  for(const auto& key : keys) {
+    if ( (types.find(key)->second).isAtomList() ) {
       nkeys++;
     }
   }
   if( nkeys>0 ) {
     helpstr += "The input trajectory can be in any of the following formats: \n\n";
-    for(unsigned i=0; i<keys.size(); ++i) {
-      if ( (types.find(keys[i])->second).isAtomList() ) {
-        helpstr += getKeywordDocs( keys[i] );
+    for(const auto& key : keys) {
+      if ( (types.find(key)->second).isAtomList() ) {
+        helpstr += getKeywordDocs( key );
       }
     }
   }
   nkeys=0;
-  for(unsigned i=0; i<keys.size(); ++i) {
-    if ( (types.find(keys[i])->second).isCompulsory() ) {
+  for(const auto& key : keys) {
+    if ( (types.find(key)->second).isCompulsory() ) {
       nkeys++;
     }
   }
   unsigned ncompulsory=nkeys;
   if( nkeys>0 ) {
     helpstr += "\nThe following arguments are compulsory: \n\n";
-    for(unsigned i=0; i<keys.size(); ++i) {
-      if ( (types.find(keys[i])->second).isCompulsory() ) {
-        helpstr += getKeywordDocs( keys[i] );
+    for(const auto& key : keys) {
+      if ( (types.find(key)->second).isCompulsory() ) {
+        helpstr += getKeywordDocs( key );
       }
     }
   }
   nkeys=0;
-  for(unsigned i=0; i<keys.size(); ++i) {
-    if ( (types.find(keys[i])->second).isFlag() ) {
+  for(const auto& key : keys) {
+    if ( (types.find(key)->second).isFlag() ) {
       nkeys++;
     }
   }
@@ -853,22 +824,22 @@ std::string Keywords::getHelpString() const {
     } else {
       helpstr += "\nThe following options are available\n\n";
     }
-    for(unsigned i=0; i<keys.size(); ++i) {
-      if ( (types.find(keys[i])->second).isFlag() ) {
-        helpstr += getKeywordDocs( keys[i] ).c_str();
+    for(const auto& key : keys) {
+      if ( (types.find(key)->second).isFlag() ) {
+        helpstr += getKeywordDocs( key ).c_str();
       }
     }
   }
   nkeys=0;
-  for(unsigned i=0; i<keys.size(); ++i) {
-    if ( (types.find(keys[i])->second).isOptional() || (types.find(keys[i])->second).isVessel() ) {
+  for(const auto& key : keys) {
+    if ( (types.find(key)->second).isOptional() || (types.find(key)->second).isVessel() ) {
       nkeys++;
     }
   }
   if( nkeys>0 ) {
-    for(unsigned i=0; i<keys.size(); ++i) {
-      if ( (types.find(keys[i])->second).isOptional() || (types.find(keys[i])->second).isVessel() ) {
-        helpstr += getKeywordDocs( keys[i] );
+    for(const auto& key : keys) {
+      if ( (types.find(key)->second).isOptional() || (types.find(key)->second).isVessel() ) {
+        helpstr += getKeywordDocs( key );
       }
     }
     helpstr += "\n";
@@ -924,11 +895,6 @@ void Keywords::print_html_item( const std::string& key ) const {
   std::printf("</tr>\n");
 }
 
-std::string Keywords::get( const unsigned k ) const {
-  plumed_assert( k<size() );
-  return keys[k];
-}
-
 bool Keywords::getLogicalDefault(const std::string & key, bool& def ) const {
   if( booldefs.find(key)!=booldefs.end() ) {
     def=booldefs.find(key)->second;
@@ -958,9 +924,9 @@ void Keywords::destroyData() {
   booldefs.clear();
   numdefs.clear();
   atomtags.clear();
-  ckey.clear();
-  cdocs.clear();
-  ckey.clear();
+  components.clear();
+  //cname was missing before, it is wanted or not?
+  cnames.clear();
 }
 
 void Keywords::setComponentsIntroduction( const std::string& instr ) {
@@ -987,38 +953,23 @@ void Keywords::addOutputComponent( const std::string& name, const std::string& k
               "be referenced elsewhere in the input by using this Action's label followed by a "
               "dot and the name of the quantity required from the list below.";
   }
-
-  ckey.insert( std::pair<std::string,std::string>(name,key) );
-  cdocs.insert( std::pair<std::string,std::string>(name,descr) );
-  ctypes.insert( std::pair<std::string,componentType>(name,stoct(type)) );
-  cnames.push_back(name);
-}
-
-void Keywords::removeOutputComponent( const std::string& name ) {
-  unsigned j=0;
-  while(true) {
-    for(j=0; j<cnames.size(); j++)
-      if(cnames[j]==name) {
-        break;
-      }
-    if(j<cnames.size()) {
-      cnames.erase(cnames.begin()+j);
-    } else {
-      break;
-    }
-  }
-  cdocs.erase(name);
+  components[name] = component()
+                     .setKey(key)
+                     .setDocstring(descr)
+                     .setType(stoct(type));
+  cnames.emplace_back(name);
 }
 
 void Keywords::setValueDescription( const std::string& type, const std::string& descr ) {
   if( !outputComponentExists(".#!value") ) {
-    ckey.insert( std::pair<std::string,std::string>(".#!value","default") );
-    cdocs.insert( std::pair<std::string,std::string>(".#!value",descr) );
-    ctypes.insert( std::pair<std::string,componentType>(".#!value",stoct (type)) );
-    cnames.push_back(".#!value");
+    components[".#!value"] =component()
+                            .setKey("default")
+                            .setDocstring(descr)
+                            .setType(stoct(type));
+    cnames.emplace_back(".#!value");
   } else {
-    cdocs[".#!value"] = descr;
-    ctypes[".#!value"] = stoct(type);
+    components[".#!value"].docstring = descr;
+    components[".#!value"].type = stoct(type);
   }
 }
 
@@ -1039,12 +990,7 @@ bool Keywords::outputComponentExists( const std::string& name ) const {
     sname=name;
   }
 
-  for(unsigned i=0; i<cnames.size(); ++i) {
-    if( sname==cnames[i] ) {
-      return true;
-    }
-  }
-  return false;
+  return components.find(sname)!=components.end();
 }
 
 bool Keywords::componentHasCorrectType( const std::string& name, const std::size_t& rank, const bool& hasderiv ) const {
@@ -1068,13 +1014,13 @@ bool Keywords::componentHasCorrectType( const std::string& name, const std::size
   }
 
   if( rank==0 ) {
-    return (valid(ctypes.find(sname)->second | componentType::scalar));
+    return (valid(components.at(sname).type | componentType::scalar));
   } else if( hasderiv ) {
-    return (valid(ctypes.find(sname)->second | componentType::grid));
+    return (valid(components.at(sname).type | componentType::grid));
   } else if( rank==1 ) {
-    return (valid(ctypes.find(sname)->second | componentType::vector));
+    return (valid(components.at(sname).type | componentType::vector));
   } else if( rank==2 ) {
-    return (valid(ctypes.find(sname)->second | componentType::matrix ));
+    return (valid(components.at(sname).type | componentType::matrix ));
   }
   return false;
 }
@@ -1106,7 +1052,7 @@ std::string Keywords::getArgumentType( const std::string& name ) const {
 }
 
 std::string Keywords::getOutputComponentFlag( const std::string& name ) const {
-  return ckey.find(name)->second;
+  return components.find(name)->second.key;
 }
 
 std::string Keywords::getOutputComponentType( const std::string& name ) const {
@@ -1120,12 +1066,8 @@ std::string Keywords::getOutputComponentDescription( const std::string& name ) c
     checkname = name.substr(0,hyp);
   }
 
-  bool found=false;
-  for(unsigned i=0; i<cnames.size(); ++i) {
-    if( checkname==cnames[i] ) {
-      found=true;
-    }
-  }
+  bool found=components.find(checkname)!=components.end();
+
   if( !found ) {
     if( name==".#!value" ) {
       return "the value calculated by this action";
@@ -1135,7 +1077,41 @@ std::string Keywords::getOutputComponentDescription( const std::string& name ) c
     }
     plumed_merror("could not find output component named " + name );
   }
-  return cdocs.find(checkname)->second;
+  return components.at(checkname).docstring;
+}
+
+///////////DUPLICATED??????????///////
+void Keywords::removeOutputComponent( const std::string& name ) {
+  if(components.find(name)!=components.end()) {
+    components.erase(name);
+    cnames.erase(std::remove(cnames.begin(), cnames.end(), name), cnames.end());
+  }
+}
+
+void Keywords::removeComponent( const std::string& name ) {
+  if(components.find(name)!=components.end()) {
+    components.erase(name);
+    cnames.erase(std::remove(cnames.begin(), cnames.end(), name), cnames.end());
+  } else {
+    plumed_massert(false,"You are trying to remove " + name + " a component that isn't there");
+  }
+}
+
+
+/*
+//ORIGINALS
+DIFFERENCES:
+removeOutputComponent does not clean the keys and don't cares if you try remove something that doesn't exist
+removeComponent does clean keys and cares if you try to remove something that doesn't exist
+
+void Keywords::removeOutputComponent( const std::string& name ) {
+  unsigned j=0;
+  while(true) {
+    for(j=0; j<cnames.size(); j++) if(cnames[j]==name)break;
+    if(j<cnames.size()) cnames.erase(cnames.begin()+j);
+    else break;
+  }
+  cdocs.erase(name);
 }
 
 void Keywords::removeComponent( const std::string& name ) {
@@ -1143,26 +1119,18 @@ void Keywords::removeComponent( const std::string& name ) {
 
   while(true) {
     unsigned j;
-    for(j=0; j<cnames.size(); j++)
-      if(cnames[j]==name) {
-        break;
-      }
+    for(j=0; j<cnames.size(); j++) if(cnames[j]==name)break;
     if(j<cnames.size()) {
       cnames.erase(cnames.begin()+j);
       found=true;
-    } else {
-      break;
-    }
+    } else break;
   }
   // Delete documentation, type and so on from the description
-  cdocs.erase(name);
-  ckey.erase(name);
+  cdocs.erase(name); ckey.erase(name);
   plumed_massert(found,"You are trying to remove " + name + " a component that isn't there");
 }
 
-std::vector<std::string> Keywords::getOutputComponents() const {
-  return cnames;
-}
+*/
 
 std::string Keywords::getKeywordDescription( const std::string& key ) const {
   plumed_assert( exists( key ) );
@@ -1210,4 +1178,4 @@ std::string Keywords::getDisplayName() const {
   return thisactname;
 }
 
-}
+}// namespace PLMD
