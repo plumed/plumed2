@@ -25,6 +25,7 @@
 #include <string>
 #include <string_view>
 #include <map>
+#include <variant>
 
 #include "Exception.h"
 #include "BitmaskEnum.h"
@@ -37,7 +38,7 @@ class Log;
 class Keywords {
 /// This class lets me pass keyword types easily
   struct KeyType {
-    enum class keyStyle {hidden,compulsory,flag,optional,atoms,vessel} style;
+    enum class keyStyle {hidden,compulsory,flag,optional,atoms,vessel,unknown} style;
     static keyStyle keyStyleFromString(std::string_view type );
     explicit KeyType( keyStyle type );
     explicit KeyType( std::string_view type );
@@ -75,8 +76,10 @@ class Keywords {
         return "hidden";
       case keyStyle::vessel:
         return "vessel";
+      default:
+        plumed_massert(false,"unknown keyword type");
       }
-      return "";
+      return "unknown";
     }
   };
 
@@ -90,30 +93,37 @@ private:
   bool isatoms;
 /// The name of the action that has this set of keywords
   std::string thisactname;
+
+  struct keyInfo {
+    KeyType type;
+    std::string docstring;
+    std::variant<std::monostate,std::string,bool> defaultValue;
+    bool allowmultiple;
+    keyInfo();
+    keyInfo& setType(KeyType t);
+    keyInfo& setDocString(std::string_view d);
+    keyInfo& setDefaultValue(std::string_view d);
+    keyInfo& setAllowMultiple(bool a);
+    keyInfo& setDefaultFlag(bool a);
+  };
+  std::map<std::string,keyInfo,std::less<void>> keywords;
 /// The names of the allowed keywords, in order of declaration
   std::vector<std::string> keys;
-  // struct key{
-  //   KeyType type;
-  //   bool allowmultiple;
-  //   std::string defaultValue;
-  //   std::string docstring;
-  //}
-
 /// The names of the reserved keywords, in order of declaration
   std::vector<std::string> reserved_keys;
   //std::less<void> make some magic and makes find and [] work with string_view
 /// Whether the keyword is compulsory, optional...
-  std::map<std::string,KeyType,std::less<void>> types;
+  // std::map<std::string,KeyType,std::less<void>> types;
 /// Do we allow stuff like key1, key2 etc
-  std::map<std::string,bool> allowmultiple;
+  // std::map<std::string,bool> allowmultiple;
 /// The documentation for the keywords
-  std::map<std::string,std::string> documentation;
+  // std::map<std::string,std::string> documentation;
 /// The type for the arguments in this action
   std::map<std::string,argType> argument_types;
 /// The default values for the flags (are they on or of)
-  std::map<std::string,bool> booldefs;
+  // std::map<std::string,bool> booldefs;
 /// The default values (if there are default values) for compulsory keywords
-  std::map<std::string,std::string> numdefs;
+  // std::map<std::string,std::string> numdefs;
 /// The tags for atoms - we use this so the manual can differentiate between different ways of specifying atoms
   std::map<std::string,std::string> atomtags;
   struct component {
@@ -123,21 +133,13 @@ private:
     std::string docstring;
     /// The type of a particular component
     componentType type;
-    component& setKey(std::string k) {
-      key=k;
-      return *this;
-    }
-    component& setDocstring(std::string d) {
-      docstring=d;
-      return *this;
-    }
-    component& setType(componentType t) {
-      type=t;
-      return *this;
-    }
+    component();
+    component& setKey(std::string k);
+    component& setDocstring(std::string d);
+    component& setType(componentType t);
   };
   //the "exists component" is stored here
-  std::map<std::string,component> components;
+  std::map<std::string,component,std::less<void>> components;
 /// The string that should be printed out to describe how the components work for this particular action
   std::string cstring;
 /// The names of all the possible components for an action, in order of their (first) declaration
@@ -194,7 +196,7 @@ public:
 /// Add a new compulsory keyword (t must equal compulsory) with name k, default value def and description d
   void add( std::string_view keytype, std::string_view key, std::string_view defaultValue, std::string_view docstring );
 /// Add a falg with name k that is by default on if def is true and off if def is false.  d should provide a description of the flag
-  void addFlag( const std::string & k, const bool def, const std::string & d );
+  void addFlag(std::string_view key, bool defaultValue, std::string_view docstring);
 /// Remove the keyword with name k
   void remove( const std::string & k );
 /// Check if there is a keyword with name k
