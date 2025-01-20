@@ -47,13 +47,15 @@ void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vecto
   plumed_assert( cutoffwasset && pos.size()==indices.size() );
 
   // Must be able to check that pbcs are not nonsensical in some way?? -- GAT
-
-  double determinant = pbc.getBox().determinant();
-
-  plumed_assert(determinant > epsilon) <<"Cell lists cannot be built when passing a box with null volume. Volume is "<<determinant;
-
+  auto box = pbc.getBox();
+  if(box(0,0)==0.0 && box(0,1)==0.0 && box(0,2)==0.0 && box(1,0)==0.0 && box(1,1)==0.0 && box(1,2)==0.0 && box(2,0)==0.0 && box(2,1)==0 && box(2,2)==0) {
+    box(0,0) = box(1,1) = box(2,2) = 1e200;
+  } else {
+    auto determinant = box.determinant();
+    plumed_assert(determinant > epsilon) <<"Cell lists cannot be built when passing a box with null volume. Volume is "<<determinant;
+  }
   // Setup the pbc object by copying it from action
-  mypbc.setBox( pbc.getBox() );
+  mypbc.setBox( box );
 
   // Setup the lists
   if( pos.size()!=allcells.size() ) {
@@ -91,9 +93,7 @@ void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vecto
     lcell_starts.resize( ncellstot );
   }
   // Clear nlcells
-  for(unsigned i=0; i<ncellstot; ++i) {
-    lcell_tots[i]=0;
-  }
+  lcell_tots.assign( lcell_tots.size(), 0 );
   // Clear allcells
   allcells.assign( allcells.size(), 0 );
 
