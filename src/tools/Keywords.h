@@ -95,50 +95,47 @@ private:
   std::string thisactname;
 
   struct keyInfo {
+    /// Whether the keyword is compulsory, optional...
     KeyType type;
+    /// The documentation for the keyword
     std::string docstring;
+    /// The default values (if there are default values) for compulsory keywords or flags
     std::variant<std::monostate,std::string,bool> defaultValue;
+    /// Do we allow stuff like key1, key2 etc
     bool allowmultiple;
     keyInfo();
+    //these functions are not neeeded (this is a struct), but are useful in constructing the key
     keyInfo& setType(KeyType t);
     keyInfo& setDocString(std::string_view d);
     keyInfo& setDefaultValue(std::string_view d);
     keyInfo& setAllowMultiple(bool a);
     keyInfo& setDefaultFlag(bool a);
   };
+  //std::less<void> make some magic and makes find and [] work with string_view
+/// Stores the keywords along with their settings
   std::map<std::string,keyInfo,std::less<void>> keywords;
 /// The names of the allowed keywords, in order of declaration
   std::vector<std::string> keys;
 /// The names of the reserved keywords, in order of declaration
   std::vector<std::string> reserved_keys;
-  //std::less<void> make some magic and makes find and [] work with string_view
-/// Whether the keyword is compulsory, optional...
-  // std::map<std::string,KeyType,std::less<void>> types;
-/// Do we allow stuff like key1, key2 etc
-  // std::map<std::string,bool> allowmultiple;
-/// The documentation for the keywords
-  // std::map<std::string,std::string> documentation;
 /// The type for the arguments in this action
-  std::map<std::string,argType> argument_types;
-/// The default values for the flags (are they on or of)
-  // std::map<std::string,bool> booldefs;
-/// The default values (if there are default values) for compulsory keywords
-  // std::map<std::string,std::string> numdefs;
+  std::map<std::string,argType,std::less<void>> argument_types;
 /// The tags for atoms - we use this so the manual can differentiate between different ways of specifying atoms
-  std::map<std::string,std::string> atomtags;
+  std::map<std::string,std::string,std::less<void>> atomtags;
   struct component {
-    /// The keyword that turns on a particular component
+    /// The keyword that turns on this component
     std::string key;
-    /// The documentation for a particular component
+    /// The documentation for the component
     std::string docstring;
-    /// The type of a particular component
+    /// The type of the component
     componentType type;
     component();
+    //these functions are not neeeded (this is a struct), but are useful in constructing the component
     component& setKey(std::string k);
     component& setDocstring(std::string d);
     component& setType(componentType t);
   };
-  //the "exists component" is stored here
+  //the "exists component" is stored in the map keys
   std::map<std::string,component,std::less<void>> components;
 /// The string that should be printed out to describe how the components work for this particular action
   std::string cstring;
@@ -148,7 +145,7 @@ private:
   std::vector<std::string> neededActions;
 /// List of suffixes that can be used with this action
   std::vector<std::string> actionNameSuffixes;
-/// Print the documentation for the jth keyword in html
+/// Print the documentation for the named keyword in html
   void print_html_item( const std::string& ) const;
 public:
 /// Constructor
@@ -291,6 +288,8 @@ public:
   void setDisplayName( const std::string& name );
 };
 
+//the follwoing templates psecializations make the bitmask enum work with the
+// bitwise operators | & and the "valid" function (valid converts to bool a result of a "mask operation")
 template<>
 struct BitmaskEnum< Keywords::componentType > {
   static constexpr bool has_valid = true;
