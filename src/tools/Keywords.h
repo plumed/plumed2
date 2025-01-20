@@ -80,9 +80,6 @@ class Keywords {
     }
   };
 
-  friend class Action;
-  friend class ActionShortcut;
-  friend class ActionRegister;
 public:
   enum class argType {scalar=1,grid=1<<2,vector=1<<3,matrix=1<<4};
   enum class componentType {scalar=1,grid=1<<2,vector=1<<3,matrix=1<<4,atoms=1<<5,atom=1<<6};
@@ -146,7 +143,11 @@ public:
 /// Return the number of defined keywords
   unsigned size() const;
 /// Check if numbered keywords are allowed for this action
-  bool numbered( const std::string & k ) const ;
+  bool numbered( const std::string & k ) const;
+  /// Reference to keys
+  const std::vector<std::string>& getKeys() const {
+    return keys;
+  }
 /// Return the ith keyword
   std::string getKeyword( const unsigned i ) const ;
 /// Get the documentation for a particular keyword
@@ -165,8 +166,6 @@ public:
   void reserveFlag( const std::string & k, const bool def, const std::string & d );
 /// Use one of the reserved keywords
   void use( std::string_view k );
-/// Get the ith keyword std::string_view
-  std::string get( const unsigned k ) const ;
 /// Add a new keyword of type t with name k and description d
   void add( std::string_view keytype, std::string_view key, std::string_view docstring );
 /// Add a new compulsory keyword (t must equal compulsory) with name k, default value def and description d
@@ -237,21 +236,33 @@ public:
 /// Get the description of this component
   std::string getOutputComponentDescription( const std::string& name ) const ;
 /// Get the full list of output components
-  std::vector<std::string> getOutputComponents() const ;
+  const std::vector<std::string>& getOutputComponents() const {
+    return cnames;
+  }
 /// Get the description of a particular keyword
   std::string getKeywordDescription( const std::string& name ) const ;
 /// Remove a component with a particular name from the keywords
   void removeComponent( const std::string& name );
-/// Reference to keys
-  std::vector<std::string> getKeys() const {
-    return keys;
-  }
 /// Get the description of a particular keyword
   std::string getTooltip( const std::string& name ) const ;
 /// Note that another actions is required to create this shortcut
   void needsAction( const std::string& name );
+/// Check if the requested action is in the list of the needed actions
+  bool isActionNeeded( std::string_view name ) const ;
 /// Add a suffix to the list of action name suffixes to test for
   void addActionNameSuffix( const std::string& suffix );
+// @todo: I need to confront someone about the readabilityof this
+/// Check that 'name' is among the possible suffixes
+  /** more or less it does this:
+   ```
+    for(unsigned j=0 ; j<actionNameSuffixes.size(); ++j) {
+        if( (basename + actionNameSuffixes[j])==name ) {
+          return true
+      }
+    }
+    ```
+   */
+  bool isActionSuffixed( std::string_view name, std::string_view basename) const ;
 /// Get the list of keywords that are needed by this action
   const std::vector<std::string>& getNeededKeywords() const ;
 /// Return the name of the action that has this set of keywords

@@ -1176,6 +1176,10 @@ void Keywords::needsAction( const std::string& name ) {
   neededActions.push_back( name );
 }
 
+bool Keywords::isActionNeeded( std::string_view name ) const {
+  return std::find(neededActions.begin(), neededActions.end(), name )!=neededActions.end();
+}
+
 const std::vector<std::string>& Keywords::getNeededKeywords() const {
   return neededActions;
 }
@@ -1185,6 +1189,17 @@ void Keywords::addActionNameSuffix( const std::string& suffix ) {
     return;
   }
   actionNameSuffixes.push_back( suffix );
+}
+
+bool Keywords::isActionSuffixed( std::string_view name, std::string_view basename) const {
+  std::string bname{basename};
+  ///@todo convert into a find, or asses that this is more readable
+  for(auto const& suffix : actionNameSuffixes ) {
+    if( (bname + suffix)==name ) {
+      return true;
+    }
+  }
+  return false;
 }
 
 void Keywords::setDisplayName( const std::string& name ) {
