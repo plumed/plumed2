@@ -291,14 +291,14 @@ public:
 //the follwoing templates psecializations make the bitmask enum work with the
 // bitwise operators | & and the "valid" function (valid converts to bool a result of a "mask operation")
 template<>
-struct BitmaskEnum< Keywords::componentType > {
+struct enum_traits::BitmaskEnum< Keywords::componentType > {
   static constexpr bool has_valid = true;
   static constexpr bool has_bit_or = true;
   static constexpr bool has_bit_and = true;
 };
 
 template<>
-struct BitmaskEnum< Keywords::argType > {
+struct enum_traits::BitmaskEnum< Keywords::argType > {
   static constexpr bool has_valid = true;
   static constexpr bool has_bit_or = true;
   static constexpr bool has_bit_and = true;
