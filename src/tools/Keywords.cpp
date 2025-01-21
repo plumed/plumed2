@@ -215,7 +215,8 @@ Keywords::keyInfo::keyInfo()
     docstring(""),
     defaultValue(std::monostate()),
     allowmultiple(false)
-{};
+{}
+
 Keywords::keyInfo& Keywords::keyInfo::setType(Keywords::KeyType t) {
   type=t;
   return *this;
@@ -941,6 +942,10 @@ void Keywords::addOutputComponent( const std::string& name, const std::string& k
 }
 
 void Keywords::addOutputComponent( const std::string& name, const std::string& key, const std::string& type, const std::string& descr ) {
+  addOutputComponent(name,key,stoct(type),descr);
+}
+
+void Keywords::addOutputComponent( const std::string& name, const std::string& key, componentType type, const std::string& descr ) {
   plumed_assert( !outputComponentExists(name) );
   plumed_massert( name!=".#!value", name + " is reserved for storing description of value" );
   plumed_massert( name.find("-")==std::string::npos,"dash is reseved character in component names" );
@@ -959,20 +964,24 @@ void Keywords::addOutputComponent( const std::string& name, const std::string& k
   components[name] = component()
                      .setKey(key)
                      .setDocstring(descr)
-                     .setType(stoct(type));
+                     .setType(type);
   cnames.emplace_back(name);
 }
 
 void Keywords::setValueDescription( const std::string& type, const std::string& descr ) {
+  setValueDescription(stoct (type),descr);
+}
+
+void Keywords::setValueDescription( componentType type, const std::string& descr ) {
   if( !outputComponentExists(".#!value") ) {
     components[".#!value"] =component()
                             .setKey("default")
                             .setDocstring(descr)
-                            .setType(stoct(type));
+                            .setType(type);
     cnames.emplace_back(".#!value");
   } else {
     components[".#!value"].docstring = descr;
-    components[".#!value"].type = stoct(type);
+    components[".#!value"].type = type;
   }
 }
 

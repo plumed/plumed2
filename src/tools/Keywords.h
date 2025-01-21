@@ -221,11 +221,15 @@ public:
   void setComponentsIntroduction( const std::string& instr );
 /// Add the description of the value
   void setValueDescription( const std::string& type, const std::string& descr );
+/// @todo prepend[[deprecated("Please specify the data type for the argument from scalar/vector/matrix/grid with the Keywords::argType enum")]]
+  void setValueDescription( componentType type, const std::string& descr );
 /// Add a potential component which can be output by this particular action
   [[deprecated("Use addOutputComponent with four argument and specify valid types for value from scalar/vector/matrix/grid")]]
   void addOutputComponent( const std::string& name, const std::string& key, const std::string& descr );
-/// Add a potential component which can be output by this particular action
+/// @todo prepend[[deprecated("Please specify the data type for the argument from scalar/vector/matrix/grid with the Keywords::argType enum")]]
   void addOutputComponent( const std::string& name, const std::string& key, const std::string& type, const std::string& descr );
+/// Add a potential component which can be output by this particular action
+  void addOutputComponent( const std::string& name, const std::string& key, componentType type, const std::string& descr );
 /// Remove a component that can be output by this particular action
   void removeOutputComponent( const std::string& name );
 /// Has a component with this name been added?
