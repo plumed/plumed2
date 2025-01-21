@@ -1094,10 +1094,8 @@ std::string Keywords::getOutputComponentDescription( const std::string& name ) c
 
 ///////////DUPLICATED??????????///////
 void Keywords::removeOutputComponent( const std::string& name ) {
-  if(components.find(name)!=components.end()) {
-    components.erase(name);
-    cnames.erase(std::remove(cnames.begin(), cnames.end(), name), cnames.end());
-  }
+  components.erase(name);
+  cnames.erase(std::remove(cnames.begin(), cnames.end(), name), cnames.end());
 }
 
 void Keywords::removeComponent( const std::string& name ) {
@@ -1108,41 +1106,6 @@ void Keywords::removeComponent( const std::string& name ) {
     plumed_massert(false,"You are trying to remove " + name + " a component that isn't there");
   }
 }
-
-
-/*
-//ORIGINALS
-DIFFERENCES:
-removeOutputComponent does not clean the keys and don't cares if you try remove something that doesn't exist
-removeComponent does clean keys and cares if you try to remove something that doesn't exist
-
-void Keywords::removeOutputComponent( const std::string& name ) {
-  unsigned j=0;
-  while(true) {
-    for(j=0; j<cnames.size(); j++) if(cnames[j]==name)break;
-    if(j<cnames.size()) cnames.erase(cnames.begin()+j);
-    else break;
-  }
-  cdocs.erase(name);
-}
-
-void Keywords::removeComponent( const std::string& name ) {
-  bool found=false;
-
-  while(true) {
-    unsigned j;
-    for(j=0; j<cnames.size(); j++) if(cnames[j]==name)break;
-    if(j<cnames.size()) {
-      cnames.erase(cnames.begin()+j);
-      found=true;
-    } else break;
-  }
-  // Delete documentation, type and so on from the description
-  cdocs.erase(name); ckey.erase(name);
-  plumed_massert(found,"You are trying to remove " + name + " a component that isn't there");
-}
-
-*/
 
 std::string Keywords::getKeywordDescription( const std::string& key ) const {
   plumed_assert( exists( key ) );
