@@ -166,7 +166,7 @@ public:
   unsigned size() const;
 /// Check if numbered keywords are allowed for this action
   bool numbered( const std::string & k ) const;
-  /// Reference to keys
+  /// Get the ordered list of active keywords (not the reserved ones)
   const std::vector<std::string>& getKeys() const {
     return keys;
   }
@@ -188,6 +188,8 @@ public:
   void reserveFlag( const std::string & k, const bool def, const std::string & d );
 /// Use one of the reserved keywords
   void use( std::string_view k );
+  /// append the data from another Keywords object (**only** keywords, reserved keywords and components)
+  void add( const Keywords& keys );
 /// Add a new keyword of type t with name k and description d
   void add( std::string_view keytype, std::string_view key, std::string_view docstring );
 /// Add a new compulsory keyword (t must equal compulsory) with name k, default value def and description d
@@ -212,8 +214,6 @@ public:
   void print_template( const std::string& actionname, bool include_optional) const ;
 /// Change the style of a keyword
   void reset_style( const std::string & k, const std::string & style );
-/// Add keywords from one keyword object to another
-  void add( const Keywords& keys );
 /// Clear everything from the keywords object.
 /// Not actually needed if your Keywords object is going out of scope.
   void destroyData();
@@ -233,12 +233,12 @@ public:
 /// Check that type for component has been documented correctly
   bool componentHasCorrectType( const std::string& name, const std::size_t& rank, const bool& hasderiv ) const ;
 /// Create the documentation for a keyword that reads arguments
-  //[[deprecated("Please specify the data type for the argument from scalar/vector/matrix/grid with the Keywords::argType enum")]]
+/// @todo prepend [[deprecated("Please specify the data type for the argument from scalar/vector/matrix/grid with the Keywords::argType enum")]]
   void addInputKeyword( const std::string & keyType, const std::string & key, const std::string & dataType, const std::string & docstring );
   /// Create the documentation for a keyword that reads arguments
   void addInputKeyword( const std::string & keyType, const std::string & key, argType dataType, const std::string & docstring );
   /// Create the documentation for a keyword that reads arguments
-  //[[deprecated("Please specify the data type for the argument from scalar/vector/matrix/grid with the Keywords::argType enum")]]
+  /// @todo prepend[[deprecated("Please specify the data type for the argument from scalar/vector/matrix/grid with the Keywords::argType enum")]]
   void addInputKeyword( const std::string & keyType, const std::string & key, const std::string & dataType, const std::string& defaultValue, const std::string & docstring );
   /// Create the documentation for a keyword that reads arguments
   void addInputKeyword( const std::string & keyType, const std::string & key, argType dataType, const std::string& defaultValue, const std::string & docstring );
@@ -246,13 +246,13 @@ public:
   bool checkArgumentType( const std::size_t& rank, const bool& hasderiv ) const ;
 /// Get the valid types that can be used as argument for this keyword
   std::string getArgumentType( const std::string& name ) const ;
-/// Get the flag that forces this component to be calculated
+/// Get the flag that forces thie named component to be calculated
   std::string getOutputComponentFlag( const std::string& name ) const ;
-/// Get the type for this output component
+/// Get the type for the named output component
   std::string getOutputComponentType( const std::string& name ) const ;
-/// Get the description of this component
+/// Get the description of the named component
   std::string getOutputComponentDescription( const std::string& name ) const ;
-/// Get the full list of output components
+/// Get the full ordered list of output components
   const std::vector<std::string>& getOutputComponents() const {
     return cnames;
   }
@@ -266,19 +266,13 @@ public:
   void needsAction( const std::string& name );
 /// Check if the requested action is in the list of the needed actions
   bool isActionNeeded( std::string_view name ) const ;
-/// Add a suffix to the list of action name suffixes to test for
+/// Add a suffix to the list of possible action name suffixes
   void addActionNameSuffix( const std::string& suffix );
-// @todo: I need to confront someone about the readabilityof this
-/// Check that 'name' is among the possible suffixes
-  /** more or less it does this:
-   ```
-    for(unsigned j=0 ; j<actionNameSuffixes.size(); ++j) {
-        if( (basename + actionNameSuffixes[j])==name ) {
-          return true
-      }
-    }
-    ```
-   */
+  /** @brief checks that name is is a composition of basename and one of the possible suffixes
+
+  Cycles on the registered suffixed and return true if the combination
+  `basename+suffix` equals to the passed name
+  */
   bool isActionSuffixed( std::string_view name, std::string_view basename) const ;
 /// Get the list of keywords that are needed by this action
   const std::vector<std::string>& getNeededKeywords() const ;
@@ -288,8 +282,8 @@ public:
   void setDisplayName( const std::string& name );
 };
 
-//the follwoing templates psecializations make the bitmask enum work with the
-// bitwise operators | & and the "valid" function (valid converts to bool a result of a "mask operation")
+//the following templates specializations make the bitmask enum work with the
+// bitwise operators `|`, `&` and the "valid" function (valid converts to bool a result of a "mask operation")
 template<>
 struct enum_traits::BitmaskEnum< Keywords::componentType > {
   static constexpr bool has_valid = true;
