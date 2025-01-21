@@ -84,7 +84,7 @@ value you should use valid(enumtype) to check it.
 @see operator|(enumtype, enumtype)
 */
 template< typename enumtype > // SFINAE makes function contingent on trait
-typename std::enable_if_t< enum_traits::BitmaskEnum< enumtype >::has_bit_and,enumtype>
+constexpr typename std::enable_if_t< enum_traits::BitmaskEnum< enumtype >::has_bit_and,enumtype>
 operator&( enumtype a, enumtype b ) {
   return static_cast<enumtype>(static_cast<std::underlying_type_t<enumtype>>(a) &
                                static_cast<std::underlying_type_t<enumtype>>(b));
@@ -106,7 +106,7 @@ The principal use is to compose named enum values into masks or combined options
 @see operator&(enumtype, enumtype)
 */
 template< typename enumtype > // SFINAE makes function contingent on trait
-typename std::enable_if_t< enum_traits::BitmaskEnum< enumtype >::has_bit_or,enumtype>
+constexpr typename std::enable_if_t< enum_traits::BitmaskEnum< enumtype >::has_bit_or,enumtype>
 operator|( enumtype a, enumtype b ) {
   return static_cast<enumtype>(static_cast<std::underlying_type_t<enumtype>>(a) |
                                static_cast<std::underlying_type_t<enumtype>>(b));
@@ -158,7 +158,7 @@ enum_traits::BitmaskEnum with the `has_valid` trait enabled.
 @see operator&(enumtype, enumtype)
 */
 template< typename enumtype > // SFINAE makes function contingent on trait
-typename std::enable_if_t< enum_traits::BitmaskEnum< enumtype >::has_valid,bool>
+constexpr typename std::enable_if_t< enum_traits::BitmaskEnum< enumtype >::has_valid,bool>
 valid( enumtype a) {
   return static_cast<std::underlying_type_t<enumtype>>(a)!=0;
 }
