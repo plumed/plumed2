@@ -1164,13 +1164,12 @@ void Keywords::addActionNameSuffix( const std::string& suffix ) {
 
 bool Keywords::isActionSuffixed( std::string_view name, std::string_view basename) const {
   std::string bname{basename};
-  ///@todo convert into a find, or asses that this is more readable
-  for(auto const& suffix : actionNameSuffixes ) {
-    if( (bname + suffix)==name ) {
-      return true;
-    }
+  return std::any_of(actionNameSuffixes.begin(),
+                     actionNameSuffixes.end(),
+  [name,&bname](const std::string& suffix)->bool{
+    return (bname + suffix)==name ;
   }
-  return false;
+                    );
 }
 
 void Keywords::setDisplayName( const std::string& name ) {
