@@ -115,6 +115,8 @@ private:
     keyInfo& setAllowMultiple(bool a);
     bool isArgument() const;
   };
+  ///Add o reserve a new keyword (internal tool)
+  void addOrReserve( std::string_view keytype, std::string_view key, std::string_view docstring, bool reserve );
   //std::less<void> make some magic and makes find and [] work with string_view
 /// Stores the keywords along with their settings
   std::map<std::string,keyInfo,std::less<void>> keywords;
@@ -187,7 +189,7 @@ public:
 /// Print a file containing the list of keywords for a particular action (used for spell checking)
   void print_spelling() const ;
 /// Reserve a keyword
-  void reserve( const std::string & keytype, const std::string & key, const std::string & docstring );
+  void reserve( std::string_view keytype, std::string_view key, std::string_view docstring );
 /// Reserve a flag
   void reserveFlag( const std::string & key, bool defaultValue, const std::string & docstring );
 /// Use one of the reserved keywords

@@ -300,10 +300,12 @@ void Keywords::add( const Keywords& newkeys ) {
   }
 }
 
-void Keywords::reserve( const std::string & keytype,
-                        const std::string & key,
-                        const std::string & docstring ) {
-  plumed_assert( !exists(key) && !reserved(key) );
+void Keywords::addOrReserve( std::string_view keytype,
+                             std::string_view key,
+                             std::string_view docstring,
+                             const bool reserve ) {
+  plumed_massert(!exists(key),  "keyword " + std::string(key) + " has already been registered");
+  plumed_massert(!reserved(key),"keyword " + std::string(key) + " has already been reserved");
   std::string t_type{keytype};
   bool isNumbered = keytype=="numbered";
   if( isNumbered ) {
@@ -311,10 +313,14 @@ void Keywords::reserve( const std::string & keytype,
   }
   //let's fail asap in case of typo
   auto type = KeyType(t_type);
+  if (!reserve) {
+    plumed_massert( !type.isFlag(),   "use addFlag() to register a flag keyword (" + std::string(key) + ")");
+    plumed_massert( !type.isVessel(), "use reserve() to register a vessel keyword (" + std::string(key) + ")");
+  }
 
   std::string fd{docstring};
   bool allowMultiple= false;
-  if( type.isVessel() ) {
+  if( type.isVessel() && reserve) {
     // Convert to lower case
     std::string lowkey{key};
     std::transform(lowkey.begin(),lowkey.end(),lowkey.begin(),[](unsigned char c) {
@@ -333,21 +339,30 @@ void Keywords::reserve( const std::string & keytype,
   } else if( isNumbered ) {
     fd += NUMBERED_DOCSTRING(key);
     allowMultiple = true;
-  } else {
-    //if( type.isAtomList() && isaction ) {//<- why not this? atoms could also be "residues" or "atoms-n"
-    if( keytype=="atoms" && isaction ) {
+  } else if( type.isAtomList() ) {
+    //keytype may be "residues" or something like "atoms-3"
+    atomtags.insert( std::pair<std::string,std::string>(key,keytype) );
+    if (isaction) {
       fd += ATOM_DOCSTRING;
-    }
-    if( type.isAtomList() ) {
-      atomtags.insert( std::pair<std::string,std::string>(key,keytype) );
     }
   }
 
-  keywords[key] = keyInfo()
-                  .setType(type)
-                  .setDocString(fd)
-                  .setAllowMultiple(allowMultiple);
-  reserved_keys.emplace_back(key);
+  keywords[std::string(key)] = keyInfo()
+                               .setType(type)
+                               .setDocString(fd)
+                               .setAllowMultiple(allowMultiple);
+  if (reserve) {
+    reserved_keys.emplace_back(key);
+  } else {
+    keys.emplace_back(key);
+  }
+}
+
+void Keywords::reserve( std::string_view keytype,
+                        std::string_view key,
+                        std::string_view docstring ) {
+  //If you modify this function, please update also the add with three arguments
+  addOrReserve(keytype,key,docstring,true);
 }
 
 void Keywords::reserveFlag(const std::string & key, const bool defaultValue, const std::string & docstring ) {
@@ -391,32 +406,8 @@ void Keywords::reset_style( const std::string & k, const std::string & style ) {
 void Keywords::add(std::string_view keytype,
                    std::string_view key,
                    std::string_view docstring ) {
-  std::string t_type{keytype};
-  bool isNumbered = keytype=="numbered";
-  if( isNumbered ) {
-    t_type="optional";
-  }
-  //let's fail asap in case of typo
-  auto type = KeyType(t_type);
-  plumed_massert( !exists(key) && (!type.isFlag()) && !reserved(key) && (!type.isVessel()),
-                  "keyword " + std::string(key) + " has already been registered");
-  std::string fd{docstring};
-  if( isNumbered ) {
-    fd += NUMBERED_DOCSTRING(key);
-  } else {
-    if( type.isAtomList() ) {
-      //keytype may be "residues" or something like "atoms-3"
-      atomtags.insert( std::pair<std::string,std::string>(key,keytype) );
-    }
-  }
-  if( type.isAtomList() && isaction ) {
-    fd += ATOM_DOCSTRING;
-  }
-  keywords[std::string(key)] = keyInfo()
-                               .setType(type)
-                               .setDocString(fd)
-                               .setAllowMultiple(isNumbered);
-  keys.emplace_back(key);
+  //the 'false' deactivates the "reserve mode"
+  addOrReserve(keytype,key,docstring,false);
 }
 
 void Keywords::addInputKeyword( const std::string & keyType,
@@ -941,7 +932,7 @@ void Keywords::destroyData() {
   keywords.clear();
   atomtags.clear();
   components.clear();
-  //cname was missing before, it is wanted or not?
+  //cname was missing before, is it wanted or not?
   cnames.clear();
 }
 
