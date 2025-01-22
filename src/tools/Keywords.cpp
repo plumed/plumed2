@@ -26,6 +26,15 @@
 #include <iomanip>
 #include <algorithm>
 
+template <typename T>
+void erase_remove(std::vector<T>& vec, const T& value) {
+  vec.erase(std::remove(vec.begin(), vec.end(), value), vec.end());
+}
+
+void erase_remove(std::string& vec, const char& value) {
+  vec.erase(std::remove(vec.begin(), vec.end(), value), vec.end());
+}
+
 //few definition to avoid rewriting the too many times the same docstring
 #define NUMBERED_DOCSTRING(key) ". You can use multiple instances of this keyword i.e. " \
         + std::string(key) +"1, " + std::string(key) + "2, " + std::string(key) + "3..."
@@ -305,7 +314,7 @@ void Keywords::reserve( const std::string & keytype,
       return std::tolower(c);
     });
     // Remove any underscore characters
-    lowkey.erase(std::remove(lowkey.begin(), lowkey.end(), '_'), lowkey.end());
+    erase_remove(lowkey, '_');
 
     fd += " The final value can be referenced using <em>label</em>." + lowkey;
     if(docstring.find("flag")==std::string::npos) {
@@ -478,10 +487,10 @@ void Keywords::addFlag(std::string_view key, bool defaultValue, std::string_view
 void Keywords::remove( const std::string & k ) {
   bool found=false;
   if(exists(k)) {
-    keys.erase(std::remove(keys.begin(), keys.end(), k), keys.end());
+    erase_remove(keys,k);
     found=true;
   } else if(reserved(k)) {
-    reserved_keys.erase(std::remove(reserved_keys.begin(), reserved_keys.end(), k), reserved_keys.end());
+    erase_remove(reserved_keys,k);
     found=true;
   }
   plumed_massert(found,"You are trying to forbid " + k + " a keyword that isn't there");
@@ -1095,13 +1104,13 @@ std::string Keywords::getOutputComponentDescription( const std::string& name ) c
 ///////////DUPLICATED??????????///////
 void Keywords::removeOutputComponent( const std::string& name ) {
   components.erase(name);
-  cnames.erase(std::remove(cnames.begin(), cnames.end(), name), cnames.end());
+  erase_remove(cnames,name);
 }
 
 void Keywords::removeComponent( const std::string& name ) {
   if(components.find(name)!=components.end()) {
     components.erase(name);
-    cnames.erase(std::remove(cnames.begin(), cnames.end(), name), cnames.end());
+    erase_remove(cnames,name);
   } else {
     plumed_massert(false,"You are trying to remove " + name + " a component that isn't there");
   }
