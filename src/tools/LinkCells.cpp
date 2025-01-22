@@ -47,9 +47,18 @@ void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vecto
   plumed_assert( cutoffwasset && pos.size()==indices.size() );
 
   // Must be able to check that pbcs are not nonsensical in some way?? -- GAT
-
+  auto box = pbc.getBox();
+  if(box(0,0)==0.0 && box(0,1)==0.0 && box(0,2)==0.0 && box(1,0)==0.0 && box(1,1)==0.0 && box(1,2)==0.0 && box(2,0)==0.0 && box(2,1)==0 && box(2,2)==0) {
+    // If the box is not set then we can't use link cells.  We thus set the link cell cutoff and box vectors equal to 23 (because it is the best number).
+    // Setting everything this way ensures that the link cells are a 1x1x1 box.  Notice that if it is a one by one by one box then we are hard coded to return
+    // 0 in findCell
+    box(0,0) = box(1,1) = box(2,2) = link_cutoff = 23;
+  } else {
+    auto determinant = box.determinant();
+    plumed_assert(determinant > epsilon) <<"Cell lists cannot be built when passing a box with null volume. Volume is "<<determinant;
+  }
   // Setup the pbc object by copying it from action
-  mypbc.setBox( pbc.getBox() );
+  mypbc.setBox( box );
 
   // Setup the lists
   if( pos.size()!=allcells.size() ) {
@@ -87,9 +96,7 @@ void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vecto
     lcell_starts.resize( ncellstot );
   }
   // Clear nlcells
-  for(unsigned i=0; i<ncellstot; ++i) {
-    lcell_tots[i]=0;
-  }
+  lcell_tots.assign( lcell_tots.size(), 0 );
   // Clear allcells
   allcells.assign( allcells.size(), 0 );
 
@@ -110,7 +117,7 @@ void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vecto
     tot+=lcell_tots[i];
     lcell_tots[i]=0;
   }
-  plumed_assert( tot==pos.size() );
+  plumed_assert( tot==pos.size() ) <<"Total number of atoms found in link cells is "<<tot<<" number of atoms is "<<pos.size();
 
   // And setup the link cells properly
   for(unsigned j=0; j<pos.size(); ++j) {
@@ -181,8 +188,12 @@ void LinkCells::retrieveAtomsInCells( const unsigned& ncells_required,
 }
 
 std::array<unsigned,3> LinkCells::findMyCell( const Vector& pos ) const {
-  Vector fpos=mypbc.realToScaled( pos );
   std::array<unsigned,3> celn;
+  if( ncells[0]*ncells[1]*ncells[2] == 1 ) {
+    celn[0]=celn[1]=celn[2]=0;
+    return celn;
+  }
+  Vector fpos=mypbc.realToScaled( pos );
   for(unsigned j=0; j<3; ++j) {
     celn[j] = std::floor( ( Tools::pbc(fpos[j]) + 0.5 ) * ncells[j] );
     plumed_assert( celn[j]>=0 && celn[j]<ncells[j] ); // Check that atom is in box
