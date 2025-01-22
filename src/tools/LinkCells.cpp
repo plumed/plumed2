@@ -49,7 +49,10 @@ void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vecto
   // Must be able to check that pbcs are not nonsensical in some way?? -- GAT
   auto box = pbc.getBox();
   if(box(0,0)==0.0 && box(0,1)==0.0 && box(0,2)==0.0 && box(1,0)==0.0 && box(1,1)==0.0 && box(1,2)==0.0 && box(2,0)==0.0 && box(2,1)==0 && box(2,2)==0) {
-    box(0,0) = box(1,1) = box(2,2) = link_cutoff;
+    // If the box is not set then we can't use link cells.  We thus set the link cell cutoff and box vectors equal to 23 (because it is the best number).
+    // Setting everything this way ensures that the link cells are a 1x1x1 box.  Notice that if it is a one by one by one box then we are hard coded to return
+    // 0 in findCell
+    box(0,0) = box(1,1) = box(2,2) = link_cutoff = 23;
   } else {
     auto determinant = box.determinant();
     plumed_assert(determinant > epsilon) <<"Cell lists cannot be built when passing a box with null volume. Volume is "<<determinant;
