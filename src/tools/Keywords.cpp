@@ -252,15 +252,15 @@ Keywords::component& Keywords::component::setType(componentType t) {
   return *this;
 }
 
-std::string Keywords::getStyle( const std::string & k ) const {
+std::string Keywords::getStyle( const std::string&  k ) const {
   plumed_massert( exists(k)||reserved(k), "Did not find keyword " + k );
-  return (keywords.find(k)->second.type).toString();
+  return (keywords.at(k).type).toString();
 }
 
 void Keywords::add( const Keywords& newkeys ) {
   //copies data from
   //loop on the declared keys
-  for(std::string thiskey:newkeys.keys) {
+  for(const auto& thiskey:newkeys.keys) {
     plumed_massert( !exists(thiskey), "keyword " + thiskey + " is in twice" );
     plumed_massert( !reserved(thiskey), "keyword " + thiskey + " is in twice" );
     keywords[thiskey] = newkeys.keywords.at(thiskey);
@@ -270,14 +270,14 @@ void Keywords::add( const Keywords& newkeys ) {
     }
   }
   //loop on the reserved keys
-  for (std::string thiskey : newkeys.reserved_keys) {
+  for (const auto&thiskey : newkeys.reserved_keys) {
     plumed_massert( !exists(thiskey), "keyword " + thiskey + " is in twice" );
     plumed_massert( !reserved(thiskey), "keyword " + thiskey + " is in twice" );
 
     keywords[thiskey] = newkeys.keywords.at(thiskey);
     reserved_keys.emplace_back( thiskey );
   }
-  for (std::string thisnam : newkeys.cnames) {
+  for (const auto& thisnam : newkeys.cnames) {
     plumed_massert( components.find(thisnam)!=components.end(), "keyword for component" + thisnam + " is in twice" );
     cnames.push_back( thisnam );
     components[thisnam]=newkeys.components.at(thisnam);
@@ -295,7 +295,6 @@ void Keywords::reserve( const std::string & keytype,
   }
   //let's fail asap in case of typo
   auto type = KeyType(t_type);
-  plumed_assert( !exists(key) && !reserved(key) );
 
   std::string fd{docstring};
   bool allowMultiple= false;
@@ -335,35 +334,27 @@ void Keywords::reserve( const std::string & keytype,
   reserved_keys.emplace_back(key);
 }
 
-void Keywords::reserveFlag(const std::string & k, const bool def, const std::string & d ) {
-  plumed_assert( !exists(k) && !reserved(k) );
+void Keywords::reserveFlag(const std::string & key, const bool defaultValue, const std::string & docstring ) {
+  plumed_assert( !exists(key) && !reserved(key) );
   std::string defstr;
-  if( def ) {
+  if( defaultValue ) {
     defstr="( default=on ) ";
   } else {
     defstr="( default=off ) ";
   }
-  std::string fd;
-  // std::string lowkey=k;
-  // std::transform(lowkey.begin(),lowkey.end(),lowkey.begin(),[](unsigned char c) { return std::tolower(c); });
-  fd=defstr + d;
-  keywords[k] = keyInfo()
-                .setType(KeyType(KeyType::keyStyle::flag))
-                .setDocString(fd)
-                .setAllowMultiple(false)
-                .setDefaultFlag(def);
-  reserved_keys.emplace_back(k);
+
+  keywords[key] = keyInfo()
+                  .setType(KeyType{KeyType::keyStyle::flag})
+                  .setDocString(defstr + docstring)
+                  .setAllowMultiple(false)
+                  .setDefaultFlag(defaultValue);
+  reserved_keys.emplace_back(key);
 }
 
 ///this "copies" a reserved key into the keylist so it can be used
 void Keywords::use(std::string_view  k ) {
   plumed_massert( reserved(k), "the " + std::string(k) + " keyword is not reserved");
   keys.emplace_back(k);
-  //reserved(k) verifies reserved_keys[i]==k, so no need to traverse again the reserved keys?
-  //since, from reserve(), the reserved keys are unique (shall we use a set?)
-  // for(unsigned i=0; i<reserved_keys.size(); ++i) {
-  //   if(reserved_keys[i]==k) keys.push_back( reserved_keys[i] );
-  // }
 }
 
 void Keywords::reset_style( const std::string & k, const std::string & style ) {
@@ -393,8 +384,7 @@ void Keywords::add(std::string_view keytype,
   auto type = KeyType(t_type);
   plumed_massert( !exists(key) && (!type.isFlag()) && !reserved(key) && (!type.isVessel()),
                   "keyword " + std::string(key) + " has already been registered");
-  std::string fd;
-  fd=docstring;
+  std::string fd{docstring};
   if( isNumbered ) {
     fd += NUMBERED_DOCSTRING(key);
   } else {
@@ -413,14 +403,14 @@ void Keywords::add(std::string_view keytype,
   keys.emplace_back(key);
 }
 
-void Keywords::addInputKeyword( const std::string & typekey,
+void Keywords::addInputKeyword( const std::string & keyType,
                                 const std::string & key,
                                 const std::string & datatype,
                                 const std::string & docstring ) {
-  addInputKeyword(typekey,key,stoat(datatype),docstring);
+  addInputKeyword(keyType,key,stoat(datatype),docstring);
 }
 
-void Keywords::addInputKeyword( const std::string & typekey,
+void Keywords::addInputKeyword( const std::string & keyType,
                                 const std::string & key,
                                 argType datatype,
                                 const std::string & docstring ) {
@@ -430,7 +420,7 @@ void Keywords::addInputKeyword( const std::string & typekey,
   //insert({k,datatype}) Inserts element(s) into the container, if the container doesn't already contain an element with an equivalent key.[cit.]
   //operator[] inserts if the key doesn't exist, or overwrites if it does
   argument_types[key] = datatype;
-  add( typekey, key, docstring );
+  add( keyType, key, docstring );
 }
 
 void Keywords::addInputKeyword( const std::string & keyType,
@@ -1027,7 +1017,9 @@ bool Keywords::componentHasCorrectType( const std::string& name, const std::size
     sname=name;
   }
 
-  if( thisactname=="CENTER" && (components.at(sname).type== componentType::atom || components.at(sname).type== componentType::atoms) ) {
+  // using valid(components.at(sname).type & (componentType::atom | componentType::atoms) will have a sligthly different flavour
+  // == means "is exactly", the valid(&) construct instead measn "can be different, but must contain the asked flag"
+  if( thisactname=="CENTER" && (components.at(sname).type == componentType::atom || components.at(sname).type == componentType::atoms)) {
     return true;
   }
 
@@ -1066,15 +1058,17 @@ std::string Keywords::getArgumentType( const std::string& name ) const {
   if( argument_types.find(name)==argument_types.end() ) {
     return "";
   }
-  return toString(argument_types.find(name)->second);
+  return toString(argument_types.at(name));
 }
 
 std::string Keywords::getOutputComponentFlag( const std::string& name ) const {
-  return components.find(name)->second.key;
+  return components.at(name).key;
 }
 
 std::string Keywords::getOutputComponentType( const std::string& name ) const {
-  return toString( components.find(name)->second.type);
+  //return toString( components.find(name)->second.type); brings to segfault in case name is ot present
+  //at at least throws
+  return toString( components.at(name).type);
 }
 
 std::string Keywords::getOutputComponentDescription( const std::string& name ) const {

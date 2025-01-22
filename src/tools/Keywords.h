@@ -185,7 +185,7 @@ public:
 /// Reserve a keyword
   void reserve( const std::string & keytype, const std::string & key, const std::string & docstring );
 /// Reserve a flag
-  void reserveFlag( const std::string & k, const bool def, const std::string & d );
+  void reserveFlag( const std::string & key, bool defaultValue, const std::string & docstring );
 /// Use one of the reserved keywords
   void use( std::string_view k );
   /// append the data from another Keywords object (**only** keywords, reserved keywords and components)
@@ -203,7 +203,7 @@ public:
 /// Check the keyword k has been reserved
   bool reserved( std::string_view k ) const ;
 /// Get the type for the keyword with string k
-  std::string getStyle( const std::string & k ) const ;
+  std::string getStyle(const std::string & k ) const ;
 /// Check if the keyword with name k has style t
   bool style( const std::string & k, const std::string & t ) const ;
 /// Print an html version of the documentation
