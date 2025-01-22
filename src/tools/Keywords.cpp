@@ -599,7 +599,6 @@ void Keywords::print_vim() const {
 }
 
 void Keywords::print_html() const {
-
 // This is the part that outputs the details of the components
   if( cnames.size()>0 ) {
     unsigned ndef=0;
@@ -725,27 +724,33 @@ void Keywords::print_html() const {
       if ( keywords.at(key).type.isCompulsory() ) {
         print_html_item( key );
       }
-      std::cout<<"</table>\n\n";
     }
-    nkeys=0;
+    std::cout<<"</table>\n\n";
+  }
+  nkeys=0;
+  for(const auto& key : keys) {
+    if ( keywords.at(key).type.isFlag() || keywords.at(key).type.isOptional() || keywords.at(key).type.isVessel() ) {
+      nkeys++;
+    }
+  }
+  if( nkeys>0 ) {
+    if(isaction) {
+      std::cout<<"\\par Options\n\n";
+    } else {
+      std::cout<<"\\par The following options are available\n\n";
+    }
+    std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
     for(const auto& key : keys) {
-      if ( keywords.at(key).type.isFlag() || keywords.at(key).type.isOptional() || keywords.at(key).type.isVessel() ) {
-        nkeys++;
+      if ( keywords.at(key).type.isFlag() ) {
+        print_html_item( key );
       }
     }
-    if( nkeys>0 ) {
-      if(isaction) {
-        std::cout<<"\\par Options\n\n";
-      } else {
-        std::cout<<"\\par The following options are available\n\n";
-      }
-      std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
-      for(const auto& key : keys) {
-      }
-      std::cout<<"\n";
-    }
-    nkeys=0;
-    for(const auto& key : keys) {
+    std::cout<<"\n";
+  }
+  nkeys=0;
+  for(const auto& key : keys) {
+    if ( keywords.at(key).type.isOptional() || keywords.at(key).type.isVessel() ) {
+      nkeys++;
     }
   }
   if( nkeys>0 ) {
@@ -760,6 +765,7 @@ void Keywords::print_html() const {
 
 void Keywords::print_spelling() const {
   for(const auto& key : keys) {
+    std::printf("%s\n", key.c_str() );
   }
   for(const auto& cname : cnames) {
     std::printf("%s\n",cname.c_str() );
