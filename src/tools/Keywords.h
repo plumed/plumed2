@@ -103,6 +103,8 @@ private:
     std::variant<std::monostate,std::string,bool> defaultValue;
     ///The type of the argument if this keywords accepts arguments
     std::variant<std::monostate,argType>argument_type;
+    /// The tags for atoms - we use this so the manual can differentiate between different ways of specifying atoms
+    std::string atomtag;//no noeed for optional, since the type will state if this is needed
     /// Do we allow stuff like key1, key2 etc
     bool allowmultiple;
     keyInfo();
@@ -124,8 +126,6 @@ private:
   std::vector<std::string> keys;
 /// The names of the reserved keywords, in order of declaration
   std::vector<std::string> reserved_keys;
-/// The tags for atoms - we use this so the manual can differentiate between different ways of specifying atoms
-  std::map<std::string,std::string,std::less<void>> atomtags;
   struct component {
     /// The keyword that turns on this component
     std::string key;

@@ -281,9 +281,6 @@ void Keywords::add( const Keywords& newkeys ) {
     plumed_massert( !reserved(thiskey), "keyword " + thiskey + " is in twice" );
     keywords[thiskey] = newkeys.keywords.at(thiskey);
     keys.emplace_back( thiskey );
-    if( keywords.at(thiskey).type.isAtomList() ) {
-      atomtags.insert( std::pair<std::string,std::string>( thiskey,newkeys.atomtags.at(thiskey)) );
-    }
   }
   //loop on the reserved keys
   for (const auto&thiskey : newkeys.reserved_keys) {
@@ -339,18 +336,19 @@ void Keywords::addOrReserve( std::string_view keytype,
   } else if( isNumbered ) {
     fd += NUMBERED_DOCSTRING(key);
     allowMultiple = true;
-  } else if( type.isAtomList() ) {
-    //keytype may be "residues" or something like "atoms-3"
-    atomtags.insert( std::pair<std::string,std::string>(key,keytype) );
-    if (isaction) {
-      fd += ATOM_DOCSTRING;
-    }
   }
 
   keywords[std::string(key)] = keyInfo()
                                .setType(type)
                                .setDocString(fd)
                                .setAllowMultiple(allowMultiple);
+   if( type.isAtomList() ) {
+    //keytype may be "residues" or something like "atoms-3"
+    keywords.find(key)->second.atomtag=keytype;
+    if (isaction) {
+      fd += ATOM_DOCSTRING;
+    }
+   }
   if (reserve) {
     reserved_keys.emplace_back(key);
   } else {
@@ -390,6 +388,9 @@ void Keywords::use(std::string_view  k ) {
 
 void Keywords::reset_style( const std::string & k, const std::string & style ) {
   plumed_massert( exists(k) || reserved(k), "no " + k + " keyword" );
+  keywords.at(k).atomtag="";
+  //Adding this feels correct, but breacks some actions where a numbered keyword is changed to compulsory
+  //keywords.at(k).allowmultiple=false;
   if( style=="numbered" ) {
     keywords.at(k).allowmultiple=true;
     return;
@@ -399,7 +400,7 @@ void Keywords::reset_style( const std::string & k, const std::string & style ) {
     keywords.at(k).allowmultiple=true;
   }
   if( (keywords.at(k).type).isAtomList() ) {
-    atomtags.insert( std::pair<std::string,std::string>(k,style) );
+    keywords.at(k).atomtag=style;
   }
 }
 
@@ -494,7 +495,6 @@ void Keywords::remove( const std::string & k ) {
   plumed_massert(found,"You are trying to forbid " + k + " a keyword that isn't there");
   // Delete documentation, type and so on from the description
   keywords.erase(k);
-  //and the atomtags?
 
   // Remove any output components that this keyword creates
   //we need the double loop because we should not remove and iterate on the map at the same time
@@ -548,16 +548,17 @@ void Keywords::print_template(const std::string& actionname, bool include_option
     std::string prevtag="start";
     for(const auto& key : keys) {
       if( keywords.at(key).type.isAtomList() ) {
-        plumed_massert( atomtags.count(key), "keyword " + key + " allegedly specifies atoms but no tag has been specified. Please email Gareth Tribello");
-        if( prevtag!="start" && prevtag!=atomtags.find(key)->second ) {
+        plumed_massert( keywords.at(key).atomtag!="", "keyword " + key + " allegedly specifies atoms but no tag has been specified. Please email Gareth Tribello");
+        const auto & currentTag=keywords.at(key).atomtag;
+        if( prevtag!="start" && prevtag!=currentTag ) {
           break;
         }
-        if( (atomtags.find(key)->second).find("residues")!=std::string::npos) {
+        if( currentTag.find("residues")!=std::string::npos) {
           std::printf(" %s=<residue selection>", key.c_str() );
         } else {
           std::printf(" %s=<atom selection>", key.c_str() );
         }
-        prevtag=atomtags.find(key)->second;
+        prevtag=currentTag;
       }
     }
   }
@@ -685,8 +686,9 @@ void Keywords::print_html() const {
     unsigned counter=0;
     for(const auto& key : keys) {
       if ( keywords.at(key).type.isAtomList() ) {
-        plumed_massert( atomtags.count(key), "keyword " + key + " allegedly specifies atoms but no tag has been specified. Please email Gareth Tribello");
-        if( prevtag!="start" && prevtag!=atomtags.find(key)->second && isaction ) {
+        const auto& currentTag = keywords.at(key).atomtag;
+        plumed_massert( currentTag!="", "keyword " + key + " allegedly specifies atoms but no tag has been specified. Please email Gareth Tribello");
+        if( prevtag!="start" && prevtag!=currentTag && isaction ) {
           std::cout<<"</table>\n\n";
           if( isatoms ) {
             std::cout<<"\\par Or alternatively by using\n\n";
@@ -699,7 +701,7 @@ void Keywords::print_html() const {
           std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
         }
         print_html_item( key );
-        prevtag=atomtags.find(key)->second;
+        prevtag=currentTag;
       }
     }
     std::cout<<"</table>\n\n";
@@ -930,7 +932,6 @@ void Keywords::destroyData() {
   keys.clear();
   reserved_keys.clear();
   keywords.clear();
-  atomtags.clear();
   components.clear();
   //cname was missing before, is it wanted or not?
   cnames.clear();
