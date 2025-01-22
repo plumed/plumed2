@@ -238,13 +238,20 @@ Keywords::keyInfo& Keywords::keyInfo::setDefaultValue(std::string_view d) {
   defaultValue=std::string(d);
   return *this;
 }
+Keywords::keyInfo& Keywords::keyInfo::setDefaultFlag(bool a) {
+  defaultValue=a;
+  return *this;
+}
+Keywords::keyInfo& Keywords::keyInfo::setArgumentType(argType a) {
+  argument_type=a;
+  return *this;
+}
 Keywords::keyInfo& Keywords::keyInfo::setAllowMultiple(bool a) {
   allowmultiple=a;
   return *this;
 }
-Keywords::keyInfo& Keywords::keyInfo::setDefaultFlag(bool a) {
-  defaultValue=a;
-  return *this;
+bool Keywords::keyInfo::isArgument() const {
+  return std::holds_alternative<argType>(argument_type);
 }
 
 Keywords::component::component()=default;
@@ -428,8 +435,8 @@ void Keywords::addInputKeyword( const std::string & keyType,
   }
   //insert({k,datatype}) Inserts element(s) into the container, if the container doesn't already contain an element with an equivalent key.[cit.]
   //operator[] inserts if the key doesn't exist, or overwrites if it does
-  argument_types[key] = datatype;
   add( keyType, key, docstring );
+  keywords.at(key).setArgumentType(datatype);
 }
 
 void Keywords::addInputKeyword( const std::string & keyType,
@@ -448,8 +455,8 @@ void Keywords::addInputKeyword( const std::string & keyType,
   if( exists(key) ) {
     remove(key);
   }
-  argument_types[key] = datatype;
   add( keyType, key, defaultV, docstring );
+  keywords[key].setArgumentType(datatype);
 }
 
 void Keywords::add( std::string_view keytype,
@@ -498,7 +505,7 @@ void Keywords::remove( const std::string & k ) {
   keywords.erase(k);
   //and the atomtags?
 
-  // Remove any output comonents that this keyword creates
+  // Remove any output components that this keyword creates
   //we need the double loop because we should not remove and iterate on the map at the same time
   std::vector<std::string> markForRemoval{};
   for(const auto& dkey : components ) {
@@ -1044,30 +1051,60 @@ bool Keywords::componentHasCorrectType( const std::string& name, const std::size
   return false;
 }
 
+std::vector<std::string> Keywords::getArgumentKeys() const {
+  std::vector<std::string> arguments;
+  std::copy_if(keys.begin(), keys.end(),std::back_inserter(arguments),
+  [this](auto const& kw) {
+    return keywords.at(kw).isArgument();
+  });
+  return arguments;
+}
+
 bool Keywords::checkArgumentType( const std::size_t& rank, const bool& hasderiv ) const {
-  for(auto const& x : argument_types ) {
-    if( rank==0  && valid(x.second | argType::scalar)) {
-      return true;
+  std::map <std::string,bool> arguments;
+  for(auto const& kw : getArgumentKeys() ) {
+    auto & at = std::get<argType>(keywords.at(kw).argument_type);
+    arguments[kw] = false;
+    if( rank==0  && valid(at | argType::scalar)) {
+      arguments[kw] = true;
     }
-    if( hasderiv && valid(x.second | argType::grid)) {
-      return true;
+    if( hasderiv && valid(at | argType::grid)) {
+      arguments[kw] = true;
     }
-    if( rank==1  && valid(x.second | argType::vector)) {
-      return true;
+    if( rank==1  && valid(at | argType::vector)) {
+      arguments[kw] = true;
     }
-    if( rank==2  && valid(x.second | argType::matrix)) {
-      return true;
+    if( rank==2  && valid(at | argType::matrix)) {
+      arguments[kw] = true;
     }
   }
-  plumed_merror("WARNING: type for input argument has not been specified");
+  if(std::all_of(arguments.begin(), arguments.end(),
+  [](auto const& arg) {
+  return arg.second;
+})) {
+    return true;
+  }
+  ///@todo this plumed_merror breaks the check that is in the only place that
+  ///calls this function (at the end of ActionWithArguments::interpretArgumentList)
+  std::string errorMessage = "WARNING: type for the following arguments has not been specified\n"
+                             "or dimensions are not compatible with rank "+std::to_string(rank)
+                             +" and the "+ ((hasderiv)?"presence":"absence") +" of the derivative \n";
+  for (auto const& arg : arguments) {
+    if (!arg.second) {
+      errorMessage += arg.first +
+                      " ("+toString(std::get<argType>(keywords.at(arg.first).argument_type))+")" +"\n";
+    }
+  }
+  plumed_merror(errorMessage);
   return false;
 }
 
 std::string Keywords::getArgumentType( const std::string& name ) const {
-  if( argument_types.find(name)==argument_types.end() ) {
+  auto argument_keys = getArgumentKeys();
+  if( find(argument_keys.begin(),argument_keys.end(),name)==argument_keys.end() ) {
     return "";
   }
-  return toString(argument_types.at(name));
+  return toString(std::get<argType>(keywords.at(name).argument_type));
 }
 
 std::string Keywords::getOutputComponentFlag( const std::string& name ) const {

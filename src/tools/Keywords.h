@@ -101,6 +101,8 @@ private:
     std::string docstring;
     /// The default values (if there are default values) for compulsory keywords or flags
     std::variant<std::monostate,std::string,bool> defaultValue;
+    ///The type of the argument if this keywords accepts arguments
+    std::variant<std::monostate,argType>argument_type;
     /// Do we allow stuff like key1, key2 etc
     bool allowmultiple;
     keyInfo();
@@ -108,8 +110,10 @@ private:
     keyInfo& setType(KeyType t);
     keyInfo& setDocString(std::string_view d);
     keyInfo& setDefaultValue(std::string_view d);
-    keyInfo& setAllowMultiple(bool a);
     keyInfo& setDefaultFlag(bool a);
+    keyInfo& setArgumentType(argType a);
+    keyInfo& setAllowMultiple(bool a);
+    bool isArgument() const;
   };
   //std::less<void> make some magic and makes find and [] work with string_view
 /// Stores the keywords along with their settings
@@ -118,8 +122,6 @@ private:
   std::vector<std::string> keys;
 /// The names of the reserved keywords, in order of declaration
   std::vector<std::string> reserved_keys;
-/// The type for the arguments in this action
-  std::map<std::string,argType,std::less<void>> argument_types;
 /// The tags for atoms - we use this so the manual can differentiate between different ways of specifying atoms
   std::map<std::string,std::string,std::less<void>> atomtags;
   struct component {
@@ -170,10 +172,12 @@ public:
   const std::vector<std::string>& getKeys() const {
     return keys;
   }
+  //Get the ordered list of arguments
+  std::vector<std::string> getArgumentKeys() const;
 /// Return the ith keyword
-  std::string getKeyword( const unsigned i ) const ;
+  std::string getKeyword( const unsigned i ) const;
 /// Get the documentation for a particular keyword
-  std::string getKeywordDocs( const std::string& key ) const ;
+  std::string getKeywordDocs( const std::string& key ) const;
 /// Print the documentation to the log file (used by PLMD::Action::error)
   void print( Log& log ) const ;
 /// Print the documentation to a file (use by PLUMED::CLTool::readCommandLineArgs)
