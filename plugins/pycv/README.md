@@ -86,6 +86,7 @@ Required dependencies `numpy` and `pybind11` are installed as part of the instal
 
 Note that an in-place installation, `pip install -e .`, won't work. 
 
+Now you can get the position of the shared object to load with `python -m pycv`, see [below](#some-examples)
 
 ## Regression tests
 
@@ -224,6 +225,14 @@ You can however act on the `.data` dict or access to all the parameters accessib
 ## Some Examples
 
 In the following paragraphs I am showing a few examples, for a short description of the python interface look [here](PythonInterface.md)
+
+>![IMPORTANT]
+> In the following examples you will see often `path/to/PythonCVInterface.so` as the path to load pycv into plumed
+> If you are using a standalone plumed you can get the path to that file simply by calling `python -m pycv`
+> If you are using plumed within python by importing the `pycv` python module
+  and loading the pycv plumed module with the convenient function  `pycv.getPythonCVInterface()`,
+  like `plmd.cmd("readInputLine", f"LOAD FILE={pycv.getPythonCVInterface()}")`
+
 
 ### Bare minimum
 The minimum invocation can be the following:
