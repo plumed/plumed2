@@ -19,10 +19,6 @@ You can see the original PyCV [here](https://giorginolab.github.io/plumed2-pycv)
 Note that the current syntax is different than the one described in the original paper.
 
 
-## Updating the readme for the new pip installation
-
-**WIP**
-
 As usual if you are not working in a virtual environment you are doing this at your own risk
 `pip install .` should be enough, with a plumed version (>=2.10) avaiable with a pkg-config or in the `PATH`s.
 
@@ -73,10 +69,11 @@ If not specified, `INIT` will default to `plumedInit` and `CALCULATE`  to
 ## Installation
 
 It should be sufficient to run, ideally in a virtual or conda environment:
-
-    cd plugins/pycv
-    pip install .
-
+```sh
+cd plugins/pycv
+pip install .
+```
+You will need to have plumed avaiable in your path or through `pkg-config`
 
 Required dependencies `numpy` and `pybind11` are installed as part of the installation process.
 
@@ -86,32 +83,42 @@ Note that an in-place installation, `pip install -e .`, won't work.
 ## Regression tests
 
 A suite of regression tests are provided in the `regtest` subdirectory. They can be run e.g. with 
-
-    make -C regtest
-
+```sh
+make -C regtest
+```
 
 ## Common runtime problems
 
 On some platforms, *embedded* Python interpreters  (such as the one used in PYCV) appear to behave 
 differently than the plain ones, raising surprising errors.  For example:
 
-* Some Python configurations (e.g. Conda under Linux) require the
-  Python shared library to be found in the LD_LIBRARY_PATH, 
-  ignoring the activated environment.  This manifests itself with an
-  error like:
+>[!NOTE]
+>Some Python configurations (e.g. Conda under Linux) require the
+ Python shared library to be found in the LD_LIBRARY_PATH, 
+ ignoring the activated environment.  This manifests itself with an
+ error like:
 
+```
       libpython3.13.so.1.0: cannot open shared object file: No such file or directory
+```
 
+>[!NOTE]
+>Similarly, some Python configurations (e.g. MacOS) ignore the current
+ environment when searching for packages (e.g. `numpy`). Hence,
+ one should set PYTHONPATH manually.  This manifests itself with an
+ error like:
 
-* Similarly, some Python configurations (e.g. MacOS) ignore the current
-  environment when searching for packages (e.g. `numpy`). Hence,
-  one should set PYTHONPATH manually.  This manifests itself with an
-  error like:
-
+```
       No module named numpy
+```
+### Developing pycv
 
+If you are developing pycv can be compiled and tested from the pycv dir with `make`
 
-
+```sh
+make
+make check
+```
 
 ## Getting started
 
