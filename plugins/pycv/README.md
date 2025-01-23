@@ -33,6 +33,13 @@ you may need to explicitly declare and export some environmental variables like 
 
 ## Documentation
 
+>[!NOTE]
+>The regtests `regtest/pycvcomm/rt-doc` and `regtest/pycvfunc/rt-doc` can be used both as
+ an example and a way to create a (very) basic code documentation for the action/function interface.
+>The example in `regtest/pycvcomm/rt-doc` will produce very basic html pages,
+ and the one in `regtest/pycvfunc/rt-doc` will dump a few simple textfiles
+
+
 The PYCV module defines the following actions:
 
  * `PYCVINTERFACE`, to implement single- and multi-component CVs in Python;

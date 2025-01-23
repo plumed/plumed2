@@ -9,15 +9,10 @@ import plumedCommunications
 import pydoc
 
 def plumedInit(_):
-    with open('PythonCVInterface.help.txt', 'w') as f:
-        h = pydoc.Helper(output=f)
-        h(plumedCommunications.PythonCVInterface)
-    with open('plumedCommunications.help.txt', 'w') as f:
-        h = pydoc.Helper(output=f)
-        h(plumedCommunications)
-    with open('plumedCommunications.defaults.help.txt', 'w') as f:
-        h = pydoc.Helper(output=f)
-        h(plumedCommunications.defaults)
+    #rather than the other doc example this creates a very ugly html manua;
+    pydoc.writedoc(plumedCommunications)
+    pydoc.writedoc(plumedCommunications.defaults)
+    pydoc.writedoc(plumedCommunications.PythonCVInterface)
     return {"Value":plumedCommunications.defaults.COMPONENT_NODEV, "ATOMS":"1"}
 
 def plumedCalculate(_):
