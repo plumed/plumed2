@@ -218,7 +218,26 @@ public:
   void print_vim() const ;
 /// Print the template version for the documentation
   void print_template( const std::string& actionname, bool include_optional) const ;
-/// Change the style of a keyword
+/// Change part of the style of a keyword
+///
+/// The standard usecase for this method is creating a compulsory or an atom(s) numbered keyword.
+/// For example:
+/// @code{.cpp}
+///  keys.add("numbered","ATOMS","the atoms involved in each of the contacts you wish to calculate. "
+///           "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one contact will be "
+///           "calculated for each ATOM keyword you specify.");
+///  keys.reset_style("ATOMS","atoms");
+///  keys.add("numbered","SWITCH","The switching functions to use for each of the contacts in your map. "
+///           "You can either specify a global switching function using SWITCH or one "
+///           "switching function for each contact. Details of the various switching "
+///           "functions you can use are provided on \\ref switchingfunction.");
+///  keys.reset_style("SWITCH","compulsory");
+/// @endcode 
+/// @note Note that some option of the selected keyword may not change. In particular:
+/// - A numbered keyword will change the style but the keyInfo::allowmultiple 
+///   will remain set to `true`
+/// - An eventual keyInfo::atomtag will not be changed unless the style is set to
+///   an atomlist
   void reset_style( const std::string & k, const std::string & style );
 /// Clear everything from the keywords object.
 /// Not actually needed if your Keywords object is going out of scope.

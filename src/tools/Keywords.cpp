@@ -388,8 +388,9 @@ void Keywords::use(std::string_view  k ) {
 
 void Keywords::reset_style( const std::string & k, const std::string & style ) {
   plumed_massert( exists(k) || reserved(k), "no " + k + " keyword" );
-  keywords.at(k).atomtag="";
-  //Adding this feels correct, but breacks some actions where a numbered keyword is changed to compulsory
+  //Adding this two feels correct, but breaks some actions where a numbered keyword is changed to compulsory
+  //So also the atomtag is removed
+  //keywords.at(k).atomtag="";
   //keywords.at(k).allowmultiple=false;
   if( style=="numbered" ) {
     keywords.at(k).allowmultiple=true;
