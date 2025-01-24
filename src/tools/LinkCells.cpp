@@ -51,7 +51,8 @@ void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vecto
   if(box(0,0)==0.0 && box(0,1)==0.0 && box(0,2)==0.0 && box(1,0)==0.0 && box(1,1)==0.0 && box(1,2)==0.0 && box(2,0)==0.0 && box(2,1)==0 && box(2,2)==0) {
     // If the box is not set then we can't use link cells.  We thus set the link cell cutoff and box vectors equal to 23 (because it is the best number).
     // Setting everything this way ensures that the link cells are a 1x1x1 box.  Notice that if it is a one by one by one box then we are hard coded to return
-    // 0 in findCell
+    // 0 in findCell. GAT
+    // Note: any non infinite - non zero number should work correctly here! Apparently Gareth likes numerology. I do as well, so let's keep this. GB
     box(0,0) = box(1,1) = box(2,2) = link_cutoff = 23;
   } else {
     auto determinant = box.determinant();
