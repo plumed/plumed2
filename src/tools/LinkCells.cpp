@@ -61,7 +61,8 @@ void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vecto
           minp[k] = pos[i][k];
         }
       }
-      box[k][k] = link_cutoff*( 1 + std::ceil( (maxp[k] - minp[k])/link_cutoff ) );
+      if( link_cutoff<std::sqrt(std::numeric_limits<double>::max()) ) box[k][k] = link_cutoff*( 1 + std::ceil( (maxp[k] - minp[k])/link_cutoff ) );
+      else box[k][k] = maxp[k] - minp[k];
       origin[k] = ( minp[k] + maxp[k] ) / 2;
     }
     nopbc=true;
