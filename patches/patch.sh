@@ -33,7 +33,7 @@ Options:
   -d FILE, --diff FILE
                     set the path to diff file (default: ROOT/patches/ENGINE.diff) (*)
   -q, --quiet
-                    do not write loggin information; useful with -i to print just
+                    do not write logging information; useful with -i to print just
                     the patching information
   -I, --include
                     use include files rather than symbolic links
@@ -225,6 +225,7 @@ test -n "$quiet" || echo "diff file: $diff"
 if [ -f "$config" ]
 then
   test -n "$quiet" || echo "sourcing config file: $config"
+  # shellcheck disable=SC1090
   source "$config"
 fi
 
@@ -257,7 +258,7 @@ case "$action" in
       exit 1
       fi
     fi
-    if [ -e Plumed.h -o -e Plumed.inc -o -e Plumed.cmake ]
+    if [ -e Plumed.h ] || [ -e Plumed.inc ] || [ -e Plumed.cmake ]
     then
       if ( type -t plumed_before_revert 1>/dev/null || type -t plumed_after_revert 1>/dev/null) && ( type -t plumed_before_patch 1>/dev/null || type -t plumed_after_patch 1>/dev/null)
       then
