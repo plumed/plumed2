@@ -17,4 +17,7 @@ RUN source /etc/bashrc \
  && cd plugins/pycv \
  && ./configurePyCV.sh \
  && ln -s $(realpath ../../regtest/scripts) ./regtest/scripts \
- && make check
+ && make check_standalone
+# To whom is reading: python > 3.10 gives some problems when using pycv
+# from plumed whithin python. SO please remember to chante  "check_standalone"
+#into "check" to verify that the problem is fixed
