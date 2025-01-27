@@ -595,8 +595,10 @@ ENDFILE{
 # DOC: macros are exempted from this rule.
        error("non_existing_cpp","file " file " is a header but there is no corresponding source");
      }
-     while((getline < cppfile)>=0){
+     noIncludes=1;
+     while((getline < cppfile)>0){
        if(match($0,"^# *include")){
+        noIncludes=0;
          sub("^# *include","");
 # DOC: :non_included_h:
 # DOC: The source file corresponding to a header file (that is: with the same name) should include it as the first included file.
@@ -605,6 +607,7 @@ ENDFILE{
          break;
        }
      }
+     if(noIncludes==1) error("non_included_h","file " file " is a header but " cppfile " does not include it");
      close(cppfile)
    }
 }
