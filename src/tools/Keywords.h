@@ -232,9 +232,9 @@ public:
 ///           "switching function for each contact. Details of the various switching "
 ///           "functions you can use are provided on \\ref switchingfunction.");
 ///  keys.reset_style("SWITCH","compulsory");
-/// @endcode 
+/// @endcode
 /// @note Note that some option of the selected keyword may not change. In particular:
-/// - A numbered keyword will change the style but the keyInfo::allowmultiple 
+/// - A numbered keyword will change the style but the keyInfo::allowmultiple
 ///   will remain set to `true`
 /// - An eventual keyInfo::atomtag will not be changed unless the style is set to
 ///   an atomlist

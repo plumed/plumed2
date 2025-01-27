@@ -85,8 +85,7 @@ std::string toString(Keywords::argType at) {
 }
 
 Keywords::argType stoat(std::string_view str) {
-  using namespace std::literals;
-  if(auto pos = str.find("/"sv); pos!=str.npos) {
+  if(auto pos = str.find("/"); pos!=str.npos) {
     //here we can express that we do not want certain combinations
     auto val=stoat(str.substr(0,pos));
     return val | stoat(str.substr(pos+1));
@@ -162,8 +161,7 @@ std::string toString(Keywords::componentType at) {
 }
 
 inline Keywords::componentType stoct(std::string_view str) {
-  using namespace std::literals;
-  if(auto pos = str.find("/"sv); pos!=str.npos) {
+  if(auto pos = str.find("/"); pos!=str.npos) {
     //here we can express that we do not want certain combinations
     auto val=stoct(str.substr(0,pos));
     return val | stoct(str.substr(pos+1));
@@ -342,13 +340,13 @@ void Keywords::addOrReserve( std::string_view keytype,
                                .setType(type)
                                .setDocString(fd)
                                .setAllowMultiple(allowMultiple);
-   if( type.isAtomList() ) {
+  if( type.isAtomList() ) {
     //keytype may be "residues" or something like "atoms-3"
     keywords.find(key)->second.atomtag=keytype;
     if (isaction) {
       fd += ATOM_DOCSTRING;
     }
-   }
+  }
   if (reserve) {
     reserved_keys.emplace_back(key);
   } else {
