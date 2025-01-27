@@ -61,8 +61,11 @@ void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vecto
           minp[k] = pos[i][k];
         }
       }
-      if( link_cutoff<std::sqrt(std::numeric_limits<double>::max()) ) box[k][k] = link_cutoff*( 1 + std::ceil( (maxp[k] - minp[k])/link_cutoff ) );
-      else box[k][k] = maxp[k] - minp[k];
+      if( link_cutoff<std::sqrt(std::numeric_limits<double>::max()) ) {
+        box[k][k] = link_cutoff*( 1 + std::ceil( (maxp[k] - minp[k])/link_cutoff ) );
+      } else {
+        box[k][k] = maxp[k] - minp[k];
+      }
       origin[k] = ( minp[k] + maxp[k] ) / 2;
     }
     nopbc=true;
@@ -214,7 +217,7 @@ std::array<unsigned,3> LinkCells::findMyCell( const Vector& pos ) const {
     } else {
       celn[j] = std::floor( ( Tools::pbc(fpos[j]) + 0.5 ) * ncells[j] );
     }
-    plumed_assert( celn[j]>=0 && celn[j]<ncells[j] ); // Check that atom is in box
+    plumed_assert( celn[j]>=0 && celn[j]<ncells[j] ) <<"in link cell "<<celn[j]<<" but should be between 0 and "<<ncells[j];
   }
   return celn;
 }
