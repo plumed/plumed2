@@ -54,12 +54,12 @@ public:
 PLUMED_REGISTER_ACTION(Volume,"VOLUME")
 
 Volume::Volume(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao)
-{
+  PLUMED_COLVAR_INIT(ao) {
   std::vector<AtomNumber> atoms;
   checkRead();
 
-  addValueWithDerivatives(); setNotPeriodic();
+  addValueWithDerivatives();
+  setNotPeriodic();
   requestAtoms(atoms);
 }
 
@@ -67,7 +67,7 @@ void Volume::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
-  keys.setValueDescription("the volume of simulation box");
+  keys.setValueDescription("scalar","the volume of simulation box");
 }
 
 

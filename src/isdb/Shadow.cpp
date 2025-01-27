@@ -115,13 +115,12 @@ void Shadow::registerKeywords( Keywords& keys ) {
   keys.add("atoms","ATOMS","atoms for which we calculate the shadow RMSD");
   keys.add("compulsory","UPDATE","stride for updating reference coordinates");
   keys.addFlag("REFERENCE",false,"this is the reference replica");
-  keys.setValueDescription("the value of the shadow RMSD");
+  keys.setValueDescription("scalar","the value of the shadow RMSD");
 }
 
 Shadow::Shadow(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
-  isreference_(false), nupdate_(1), pbc_(true), first_time_(true)
-{
+  isreference_(false), nupdate_(1), pbc_(true), first_time_(true) {
   // list of atoms
   std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
@@ -156,22 +155,26 @@ Shadow::Shadow(const ActionOptions&ao):
   checkRead();
 
   log.printf("  atoms involved : ");
-  for(unsigned i=0; i<atoms.size(); ++i) log.printf("%d ",atoms[i].serial());
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    log.printf("%d ",atoms[i].serial());
+  }
   log.printf("\n");
   log.printf("  stride for updating reference coordinates : %d\n", nupdate_);
   log.printf("  number of replicas : %d\n", nrep);
   log.printf("  replica id : %d\n", replica);
-  if(isreference_) log.printf("  this is the reference replica\n");
+  if(isreference_) {
+    log.printf("  this is the reference replica\n");
+  }
 
   // add value and set periodicity
-  addValueWithDerivatives(); setNotPeriodic();
+  addValueWithDerivatives();
+  setNotPeriodic();
 
   // request atoms
   requestAtoms(atoms);
 }
 
-void Shadow::update_reference()
-{
+void Shadow::update_reference() {
 // number of atoms
   unsigned natoms = getNumberOfAtoms();
 // initialize rmsd variables
@@ -183,12 +186,16 @@ void Shadow::update_reference()
 // if master openmp task
   if(rank_==0) {
     // if reference replica
-    if(isreference_) reference = getPositions();
+    if(isreference_) {
+      reference = getPositions();
+    }
     // share coordinates
     multi_sim_comm.Sum(&reference[0][0], 3*natoms);
   }
 // now intra replica (openmp) communication
-  if(size_>1) comm.Sum(&reference[0][0], 3*natoms);
+  if(size_>1) {
+    comm.Sum(&reference[0][0], 3*natoms);
+  }
 
 // clear the rmsd object
   rmsd_.clear();
@@ -196,10 +203,11 @@ void Shadow::update_reference()
   rmsd_.set(align,displace,reference,"OPTIMAL");
 }
 
-void Shadow::calculate()
-{
+void Shadow::calculate() {
   // make whole
-  if(pbc_) makeWhole();
+  if(pbc_) {
+    makeWhole();
+  }
 
   // if it is time, update reference coordinates
   if(first_time_ || getStep()%nupdate_==0) {
@@ -215,7 +223,9 @@ void Shadow::calculate()
   setValue(rmsd);
   // if this is not the reference replica, add derivatives
   if(!isreference_) {
-    for(unsigned i=0; i<getNumberOfAtoms(); ++i) setAtomsDerivatives(i, derivatives[i]);
+    for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
+      setAtomsDerivatives(i, derivatives[i]);
+    }
   }
   // set virial
   setBoxDerivativesNoPbc();

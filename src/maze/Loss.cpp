@@ -70,12 +70,11 @@ void Loss::registerKeywords(Keywords& keys) {
     "PARAMS",
     "Parameters for the loss function."
   );
-  keys.setValueDescription("the value of the loss function");
+  keys.setValueDescription("scalar","the value of the loss function");
 }
 
 Loss::Loss(const ActionOptions& ao)
-  : PLUMED_COLVAR_INIT(ao)
-{
+  : PLUMED_COLVAR_INIT(ao) {
   if (keywords.exists("PARAMS")) {
     parseVector("PARAMS", params_);
 

@@ -45,16 +45,17 @@ Below you find the status on [GitHub Actions](https://github.com/plumed/plumed2/
 
 | Branch   |      Status   | First stable release (year) | Still supported |
 |:--------:|:-------------:|:--------:|:------:|
-| master   | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=master)](https://github.com/plumed/plumed2/actions) | 2024 (expected) | / |
-| v2.9     | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=v2.9)](https://github.com/plumed/plumed2/actions)   | 2023 | yes |
-| v2.8     | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=v2.8)](https://github.com/plumed/plumed2/actions)   | 2022 | yes |
-| v2.7     | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=v2.7)](https://github.com/plumed/plumed2/actions)   | 2020 | no |
-| v2.6     | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=v2.6)](https://github.com/plumed/plumed2/actions)   | 2019 | no |
-| v2.5     | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=v2.5)](https://github.com/plumed/plumed2/actions)   | 2018 | no |
-| v2.4     | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=v2.4)](https://github.com/plumed/plumed2/actions)   | 2017 | no |
-| v2.3     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.3)](https://travis-ci.org/plumed/plumed2)   | 2016 | no |
-| v2.2     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.2)](https://travis-ci.org/plumed/plumed2)   | 2015 | no |
-| v2.1     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.1)](https://travis-ci.org/plumed/plumed2)   | 2014 | no |
+| master   | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=master)](https://github.com/plumed/plumed2/actions) | 2025 (expected) | / |
+| v2.10b   | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=v2.10)](https://github.com/plumed/plumed2/actions) | 2024 (expected) | yes |
+| v2.9     | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=v2.9)](https://github.com/plumed/plumed2/actions) | 2023 | yes |
+| v2.8     | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=v2.8)](https://github.com/plumed/plumed2/actions) | 2022 | no |
+| v2.7     | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=v2.7)](https://github.com/plumed/plumed2/actions) | 2020 | no |
+| v2.6     | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=v2.6)](https://github.com/plumed/plumed2/actions) | 2019 | no |
+| v2.5     | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=v2.5)](https://github.com/plumed/plumed2/actions) | 2018 | no |
+| v2.4     | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=v2.4)](https://github.com/plumed/plumed2/actions) | 2017 | no |
+| v2.3     | Not available | 2016 | no |
+| v2.2     | Not available | 2015 | no |
+| v2.1     | Not available | 2014 | no |
 | v2.0     | Not available | 2013 | no |
 
 Content

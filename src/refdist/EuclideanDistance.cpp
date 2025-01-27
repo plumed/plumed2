@@ -50,22 +50,31 @@ void EuclideanDistance::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","ARG1","The poin that we are calculating the distance from");
   keys.add("compulsory","ARG2","The point that we are calculating the distance to");
   keys.addFlag("SQUARED",false,"The squared distance should be calculated");
-  keys.setValueDescription("the euclidean distances between the input vectors");
-  keys.needsAction("DISPLACEMENT"); keys.needsAction("CUSTOM");
-  keys.needsAction("TRANSPOSE"); keys.needsAction("MATRIX_PRODUCT_DIAGONAL");
+  keys.setValueDescription("scalar/vector","the euclidean distances between the input vectors");
+  keys.needsAction("DISPLACEMENT");
+  keys.needsAction("CUSTOM");
+  keys.needsAction("TRANSPOSE");
+  keys.needsAction("MATRIX_PRODUCT_DIAGONAL");
 }
 
 EuclideanDistance::EuclideanDistance( const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
-  std::string arg1, arg2; parse("ARG1",arg1); parse("ARG2",arg2);
+  ActionShortcut(ao) {
+  std::string arg1, arg2;
+  parse("ARG1",arg1);
+  parse("ARG2",arg2);
   // Vectors are in rows here
   readInputLine( getShortcutLabel() + "_diff: DISPLACEMENT ARG1=" + arg1 + " ARG2=" + arg2 );
   // Get the action that computes the differences
-  ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_diff"); plumed_assert( av );
+  ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_diff");
+  plumed_assert( av );
   // Check if squared
-  bool squared; parseFlag("SQUARED",squared); std::string olab = getShortcutLabel(); if( !squared ) olab += "_2";
+  bool squared;
+  parseFlag("SQUARED",squared);
+  std::string olab = getShortcutLabel();
+  if( !squared ) {
+    olab += "_2";
+  }
   // Deal with an annoying corner case when displacement has a single argument
   if( av->copyOutput(0)->getRank()==0 ) {
     readInputLine( olab + ": CUSTOM ARG=" + getShortcutLabel() + "_diff FUNC=x*x PERIODIC=NO");
@@ -74,7 +83,9 @@ EuclideanDistance::EuclideanDistance( const ActionOptions& ao):
     readInputLine( getShortcutLabel() + "_diffT: TRANSPOSE ARG=" + getShortcutLabel() + "_diff");
     readInputLine( olab + ": MATRIX_PRODUCT_DIAGONAL ARG=" + getShortcutLabel() + "_diff," + getShortcutLabel() + "_diffT");
   }
-  if( !squared ) readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_2 FUNC=sqrt(x) PERIODIC=NO");
+  if( !squared ) {
+    readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_2 FUNC=sqrt(x) PERIODIC=NO");
+  }
 }
 
 }

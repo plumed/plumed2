@@ -357,7 +357,9 @@ void Memetic::sort_members() {
 }
 
 double Memetic::score_mean() {
-  auto acc = [](double s, const Member& m) { return s + m.score; };
+  auto acc = [](double s, const Member& m) {
+    return s + m.score;
+  };
 
   return std::accumulate(
            members_.begin(),
@@ -440,8 +442,7 @@ void Memetic::mutation(std::vector<Member>& m) {
 
 void Memetic::stochastic_hill_climbing(
   Member& m,
-  const std::vector<double>& params)
-{
+  const std::vector<double>& params) {
   for (std::size_t i = 0; i < n_local_iterations_; ++i) {
     Member n;
     n.translation = m.translation;
@@ -456,8 +457,7 @@ void Memetic::stochastic_hill_climbing(
 
 void Memetic::random_restart_hill_climbing(
   Member& m,
-  const std::vector<double>& params)
-{
+  const std::vector<double>& params) {
   unsigned int n_restarts = static_cast<int>(params[0]);
   std::vector<Member> s(n_restarts);
   unsigned int ndx = 0;
@@ -479,8 +479,7 @@ void Memetic::random_restart_hill_climbing(
 
 void Memetic::annealing(
   Member& m,
-  const std::vector<double>& params)
-{
+  const std::vector<double>& params) {
   double T = params[0];
   double alpha = params[1];
 
@@ -506,15 +505,13 @@ void Memetic::annealing(
 
 void Memetic::luus_jaakola(
   Member& m,
-  const std::vector<double>& params)
-{
+  const std::vector<double>& params) {
   /* TODO */
 }
 
 void Memetic::adaptive_random_search(
   Member& m,
-  const std::vector<double>& params)
-{
+  const std::vector<double>& params) {
   double rho_start = params[0];
   double rho_lower_bound = params[1];
   double ex = params[2];
@@ -533,8 +530,7 @@ void Memetic::adaptive_random_search(
   while (rho_k > rho_lower_bound && k < n_local_iterations_) {
     if (ns >= s_ex) {
       rho_k *= ex;
-    }
-    else if (nf >= f_ct) {
+    } else if (nf >= f_ct) {
       rho_k *= ct;
     }
 
@@ -558,8 +554,7 @@ void Memetic::adaptive_random_search(
         bk[i] = 0.2 * bk[i] + 0.4 * (chi[i] - xk[i]);
         xk[i] = chi[i];
       }
-    }
-    else if (score_tmp < score_xk && score_xk <= score_chi) {
+    } else if (score_tmp < score_xk && score_xk <= score_chi) {
       ns++;
       nf = 0;
 
@@ -567,8 +562,7 @@ void Memetic::adaptive_random_search(
         bk[i] = bk[i] - 0.4 * (chi[i] - xk[i]);
         xk[i] = 2.0 * xk[i] - chi[i];
       }
-    }
-    else {
+    } else {
       ns = 0;
       nf++;
 
@@ -591,12 +585,13 @@ void Memetic::local_search(std::vector<Member>& m) {
       double probability = rnd::next_double();
 
       if (probability < local_search_rate_) {
-        if (local_search_type_ == "stochastic_hill_climbing")
+        if (local_search_type_ == "stochastic_hill_climbing") {
           stochastic_hill_climbing(m[i]);
-        else if (local_search_type_ == "adaptive_random_search")
+        } else if (local_search_type_ == "adaptive_random_search") {
           adaptive_random_search(m[i]);
-        else if (local_search_type_ == "random_restart_hill_climbing")
+        } else if (local_search_type_ == "random_restart_hill_climbing") {
           random_restart_hill_climbing(m[i]);
+        }
       }
     }
   }
@@ -621,8 +616,7 @@ void Memetic::mating(std::vector<Member>& m) {
     if (i > j) {
       m.erase(m.begin() + i);
       m.erase(m.begin() + j);
-    }
-    else if (j > i) {
+    } else if (j > i) {
       m.erase(m.begin() + j);
       m.erase(m.begin() + i);
     }
@@ -672,8 +666,7 @@ double Memetic::score_member(const Vector& coding) {
 
       if (pbc_) {
         distance = pbcDistance(getPosition(i0) + dev, getPosition(i1));
-      }
-      else {
+      } else {
         distance = delta(getPosition(i0) + dev, getPosition(i1));
       }
 

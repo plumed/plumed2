@@ -44,15 +44,15 @@ PLUMED_REGISTER_ACTION(Determinant,"DETERMINANT")
 
 void Determinant::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords(keys);
-  keys.add("compulsory","ARG","The matrix that we are calculating the determinant for");
-  keys.setValueDescription("the determinant of the matrix");
+  keys.addInputKeyword("compulsory","ARG","matrix","The matrix that we are calculating the determinant for");
+  keys.setValueDescription("scalar","the determinant of the matrix");
 }
 
 Determinant::Determinant( const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
-  std::string arg; parse("ARG",arg);
+  ActionShortcut(ao) {
+  std::string arg;
+  parse("ARG",arg);
   // Compose a vector from the args
   readInputLine( getShortcutLabel() + "_diag: DIAGONALIZE ARG=" + arg + " VECTORS=all");
   // Not sure about the regexp here - check with matrix with more than 10 rows

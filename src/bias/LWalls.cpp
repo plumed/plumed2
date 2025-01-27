@@ -35,8 +35,14 @@ The restraining potential starts acting on the system when the value of the CV i
 minus an offset \f$o_i\f$ (OFFSET).
 The expression for the bias due to the wall is given by:
 
+for UPPER_WALLS:
 \f$
   \sum_i {k_i}((x_i-a_i+o_i)/s_i)^e_i
+\f$
+
+for LOWER_WALLS:
+\f$
+  \sum_i {k_i}|(x_i-a_i-o_i)/s_i|^e_i
 \f$
 
 \f$k_i\f$ (KAPPA) is an energy constant in internal unit of the code, \f$s_i\f$ (EPS) a rescaling factor and
@@ -86,14 +92,15 @@ public:
 PLUMED_REGISTER_ACTION(LWalls,"LOWER_WALLS_SCALAR")
 
 void LWalls::registerKeywords(Keywords& keys) {
-  Bias::registerKeywords(keys); keys.setDisplayName("LOWER_WALLS");
-  keys.use("ARG"); keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
+  Bias::registerKeywords(keys);
+  keys.setDisplayName("LOWER_WALLS");
+  keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
   keys.add("compulsory","AT","the positions of the wall. The a_i in the expression for a wall.");
   keys.add("compulsory","KAPPA","the force constant for the wall.  The k_i in the expression for a wall.");
   keys.add("compulsory","OFFSET","0.0","the offset for the start of the wall.  The o_i in the expression for a wall.");
   keys.add("compulsory","EXP","2.0","the powers for the walls.  The e_i in the expression for a wall.");
   keys.add("compulsory","EPS","1.0","the values for s_i in the expression for a wall");
-  keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
+  keys.addOutputComponent("force2","default","scalar","the instantaneous value of the squared force due to this bias potential");
 }
 
 LWalls::LWalls(const ActionOptions&ao):
@@ -102,8 +109,7 @@ LWalls::LWalls(const ActionOptions&ao):
   kappa(getNumberOfArguments(),0.0),
   exp(getNumberOfArguments(),2.0),
   eps(getNumberOfArguments(),1.0),
-  offset(getNumberOfArguments(),0.0)
-{
+  offset(getNumberOfArguments(),0.0) {
   // Note sizes of these vectors are automatically checked by parseVector :-)
   parseVector("OFFSET",offset);
   parseVector("EPS",eps);
@@ -113,22 +119,33 @@ LWalls::LWalls(const ActionOptions&ao):
   checkRead();
 
   log.printf("  at");
-  for(unsigned i=0; i<at.size(); i++) log.printf(" %f",at[i]);
+  for(unsigned i=0; i<at.size(); i++) {
+    log.printf(" %f",at[i]);
+  }
   log.printf("\n");
   log.printf("  with an offset");
-  for(unsigned i=0; i<offset.size(); i++) log.printf(" %f",offset[i]);
+  for(unsigned i=0; i<offset.size(); i++) {
+    log.printf(" %f",offset[i]);
+  }
   log.printf("\n");
   log.printf("  with force constant");
-  for(unsigned i=0; i<kappa.size(); i++) log.printf(" %f",kappa[i]);
+  for(unsigned i=0; i<kappa.size(); i++) {
+    log.printf(" %f",kappa[i]);
+  }
   log.printf("\n");
   log.printf("  and exponent");
-  for(unsigned i=0; i<exp.size(); i++) log.printf(" %f",exp[i]);
+  for(unsigned i=0; i<exp.size(); i++) {
+    log.printf(" %f",exp[i]);
+  }
   log.printf("\n");
   log.printf("  rescaled");
-  for(unsigned i=0; i<eps.size(); i++) log.printf(" %f",eps[i]);
+  for(unsigned i=0; i<eps.size(); i++) {
+    log.printf(" %f",eps[i]);
+  }
   log.printf("\n");
 
-  addComponent("force2"); componentIsNotPeriodic("force2");
+  addComponent("force2");
+  componentIsNotPeriodic("force2");
 }
 
 void LWalls::calculate() {
@@ -143,7 +160,7 @@ void LWalls::calculate() {
     if( lscale < 0.) {
       const double k=kappa[i];
       const double exponent=exp[i];
-      double power = std::pow( lscale, exponent );
+      double power = std::pow( -lscale, exponent );
       f = -( k / epsilon ) * exponent * power / lscale;
       ene += k * power;
       totf2 += f * f;

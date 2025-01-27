@@ -46,7 +46,9 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   CreateMask( const ActionOptions& );
-  unsigned getNumberOfDerivatives() override { return 0; }
+  unsigned getNumberOfDerivatives() override {
+    return 0;
+  }
   void prepare() override ;
   void calculate() override ;
   void apply() override {}
@@ -55,12 +57,14 @@ public:
 PLUMED_REGISTER_ACTION(CreateMask,"CREATE_MASK")
 
 void CreateMask::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
-  ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
+  Action::registerKeywords( keys );
+  ActionWithValue::registerKeywords( keys );
+  ActionWithArguments::registerKeywords( keys );
+  keys.addInputKeyword("compulsory","ARG","vector","the label of the vector that you would like to construct a mask for");
   keys.add("compulsory","TYPE","the way the zeros are supposed to be set");
   keys.add("compulsory","NZEROS","the number of zeros that you want to put in the mask");
   keys.add("optional","SEED","the seed to use for the random number generator");
-  keys.setValueDescription("a vector of zeros and ones that is used that can be used to mask some of the elements in a time series");
+  keys.setValueDescription("vector","a vector of zeros and ones that is used that can be used to mask some of the elements in a time series");
 }
 
 
@@ -68,59 +72,101 @@ CreateMask::CreateMask( const ActionOptions& ao ) :
   Action(ao),
   ActionWithValue(ao),
   ActionWithArguments(ao),
-  nzeros(0)
-{
-  if( getNumberOfArguments()!=1 ) error("should only be one argument to this action");
-  if( getPntrToArgument(0)->getRank()!=1 ) error("argument should be a vector");
-  std::string stype; parse("TYPE",stype); if( stype!="nomask" ) parse("NZEROS",nzeros);
+  nzeros(0) {
+  if( getNumberOfArguments()!=1 ) {
+    error("should only be one argument to this action");
+  }
+  if( getPntrToArgument(0)->getRank()!=1 ) {
+    error("argument should be a vector");
+  }
+  std::string stype;
+  parse("TYPE",stype);
+  if( stype!="nomask" ) {
+    parse("NZEROS",nzeros);
+  }
 
   if( stype=="nomask" ) {
-    type=nomask; log.printf("  setting all points in output mask to zero \n");
+    type=nomask;
+    log.printf("  setting all points in output mask to zero \n");
   } else if( stype=="stride" ) {
-    type=stride; log.printf("  setting every %d equally spaced points in output mask to zero \n", nzeros );
+    type=stride;
+    log.printf("  setting every %d equally spaced points in output mask to zero \n", nzeros );
   } else if( stype=="random" ) {
-    unsigned seed=230623; parse("SEED",seed); r.setSeed(-seed); getPntrToArgument(0)->buildDataStore();
-    type=random; log.printf("  choosing %d points to set to non-zero in mask in accordance with input weights \n", nzeros );
-  } else error( stype + " is not a valid way input for TYPE");
-  std::vector<unsigned> shape(1); shape[0] = getPntrToArgument(0)->getShape()[0];
-  addValue( shape ); setNotPeriodic(); getPntrToComponent(0)->buildDataStore();
-  for(unsigned i=0; i<shape[0]; ++i) getPntrToComponent(0)->set( i, 1.0 );
+    unsigned seed=230623;
+    parse("SEED",seed);
+    r.setSeed(-seed);
+    getPntrToArgument(0)->buildDataStore();
+    type=random;
+    log.printf("  choosing %d points to set to non-zero in mask in accordance with input weights \n", nzeros );
+  } else {
+    error( stype + " is not a valid way input for TYPE");
+  }
+  std::vector<unsigned> shape(1);
+  shape[0] = getPntrToArgument(0)->getShape()[0];
+  addValue( shape );
+  setNotPeriodic();
+  getPntrToComponent(0)->buildDataStore();
+  for(unsigned i=0; i<shape[0]; ++i) {
+    getPntrToComponent(0)->set( i, 1.0 );
+  }
 }
 
 void CreateMask::prepare() {
-  Value* out=getPntrToComponent(0); Value* arg=getPntrToArgument(0);
+  Value* out=getPntrToComponent(0);
+  Value* arg=getPntrToArgument(0);
   if( out->getShape()[0]!=arg->getShape()[0] ) {
-    std::vector<unsigned> shape(1); shape[0] = arg->getShape()[0]; out->setShape( shape );
+    std::vector<unsigned> shape(1);
+    shape[0] = arg->getShape()[0];
+    out->setShape( shape );
   }
   if( type!=nomask ) {
-    for(unsigned i=nzeros; i<out->getShape()[0]; ++i) out->set( i, 1 );
+    for(unsigned i=nzeros; i<out->getShape()[0]; ++i) {
+      out->set( i, 1 );
+    }
   }
 }
 
 void CreateMask::calculate() {
-  Value* out=getPntrToComponent(0); Value* arg=getPntrToArgument(0);
+  Value* out=getPntrToComponent(0);
+  Value* arg=getPntrToArgument(0);
   unsigned ns = arg->getShape()[0];
-  for(unsigned i=0; i<ns; ++i) out->set( i, 1.0 );
+  for(unsigned i=0; i<ns; ++i) {
+    out->set( i, 1.0 );
+  }
 
   if( type==stride ) {
     std::size_t ss = int( std::floor( ns / nzeros ) );
-    for(unsigned i=0; i<nzeros; ++i) out->set( i*ss, 0.0 );
+    for(unsigned i=0; i<nzeros; ++i) {
+      out->set( i*ss, 0.0 );
+    }
   } else if( type==random ) {
     for(unsigned i=0; i<nzeros; ++i ) {
       double totweights = 0;
       for(unsigned j=0; j<ns; ++j) {
-        if( out->get(j)>0 ) totweights += arg->get(j);
+        if( out->get(j)>0 ) {
+          totweights += arg->get(j);
+        }
       }
-      double rr = r.U01()*totweights; double accum=0;
+      double rr = r.U01()*totweights;
+      double accum=0;
       for(unsigned j=0; j<ns; ++j) {
-        if( out->get(j)>0 ) accum += arg->get(j);
-        if( accum<rr ) continue;
-        out->set( j, 0 ); break;
+        if( out->get(j)>0 ) {
+          accum += arg->get(j);
+        }
+        if( accum<rr ) {
+          continue;
+        }
+        out->set( j, 0 );
+        break;
       }
     }
   } else if( type==nomask ) {
-    for(unsigned i=0; i<ns; ++i) out->set( i, 0.0 );
-  } else error("invalid mask creation type");
+    for(unsigned i=0; i<ns; ++i) {
+      out->set( i, 0.0 );
+    }
+  } else {
+    error("invalid mask creation type");
+  }
 }
 
 }

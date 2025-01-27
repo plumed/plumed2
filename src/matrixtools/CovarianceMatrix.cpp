@@ -48,20 +48,31 @@ void CovarianceMatrix::registerKeywords(Keywords& keys ) {
   keys.add("compulsory","WEIGHTS","this keyword takes the label of an action that calculates a vector of values.  The elements of this vector "
            "are used as weights for the input data points.");
   keys.addFlag("UNORMALIZED",false,"do not divide by the sum of the weights");
-  keys.setValueDescription("the covariance matrix");
-  keys.needsAction("SUM"); keys.needsAction("CUSTOM"); keys.needsAction("VSTACK"); keys.needsAction("TRANSPOSE");
-  keys.needsAction("ONES"); keys.needsAction("OUTER_PRODUCT"); keys.needsAction("MATRIX_PRODUCT");
+  keys.setValueDescription("matrix","the covariance matrix");
+  keys.needsAction("SUM");
+  keys.needsAction("CUSTOM");
+  keys.needsAction("VSTACK");
+  keys.needsAction("TRANSPOSE");
+  keys.needsAction("ONES");
+  keys.needsAction("OUTER_PRODUCT");
+  keys.needsAction("MATRIX_PRODUCT");
 }
 
 CovarianceMatrix::CovarianceMatrix(const ActionOptions&ao):
   Action(ao),
-  ActionShortcut(ao)
-{
-  std::vector<std::string> args; parseVector("ARG",args);
-  unsigned nargs=args.size(); std::string argstr="ARG=" + args[0];
-  for(unsigned i=1; i<args.size(); ++i) argstr += "," + args[i];
+  ActionShortcut(ao) {
+  std::vector<std::string> args;
+  parseVector("ARG",args);
+  unsigned nargs=args.size();
+  std::string argstr="ARG=" + args[0];
+  for(unsigned i=1; i<args.size(); ++i) {
+    argstr += "," + args[i];
+  }
 
-  bool unorm; parseFlag("UNORMALIZED",unorm); std::string wstr; parse("WEIGHTS",wstr);
+  bool unorm;
+  parseFlag("UNORMALIZED",unorm);
+  std::string wstr;
+  parse("WEIGHTS",wstr);
   if( !unorm ) {
     // Normalize the weights
     readInputLine( getShortcutLabel() + "_wsum: SUM ARG=" + wstr + " PERIODIC=NO");
@@ -73,7 +84,8 @@ CovarianceMatrix::CovarianceMatrix(const ActionOptions&ao):
   // And calculate the covariance matrix by first transposing the stack
   readInputLine( getShortcutLabel() + "_stackT: TRANSPOSE ARG=" + getShortcutLabel() + "_stack");
   // Create a matrix that holds all the weights
-  std::string str_nargs; Tools::convert( nargs, str_nargs );
+  std::string str_nargs;
+  Tools::convert( nargs, str_nargs );
   readInputLine( getShortcutLabel() + "_ones: ONES SIZE=" + str_nargs );
   // Now create a matrix that holds all the weights
   readInputLine( getShortcutLabel() + "_matweights: OUTER_PRODUCT ARG=" + getShortcutLabel() + "_ones," + wstr );

@@ -251,12 +251,12 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   keys.addFlag("BFACT_READ",false,"Read Bfactor on RESTART (automatic with DBFACT>0)");
   keys.addFlag("BFACT_MINIMIZE",false,"Accept only moves that decrease energy");
   keys.addFlag("MARTINI",false,"Use Martini scattering factors");
-  keys.addOutputComponent("scoreb","default","Bayesian score");
-  keys.addOutputComponent("scale", "default","scale factor");
-  keys.addOutputComponent("offset","default","offset");
-  keys.addOutputComponent("accB",  "default", "Bfactor MC acceptance");
-  keys.addOutputComponent("kbt",   "default", "temperature in energy unit");
-  keys.addOutputComponent("corr",  "CORRELATION", "correlation coefficient");
+  keys.addOutputComponent("scoreb","default","scalar","Bayesian score");
+  keys.addOutputComponent("scale", "default","scalar","scale factor");
+  keys.addOutputComponent("offset","default","scalar","offset");
+  keys.addOutputComponent("accB",  "default","scalar", "Bfactor MC acceptance");
+  keys.addOutputComponent("kbt",   "default","scalar", "temperature in energy unit");
+  keys.addOutputComponent("corr",  "CORRELATION","scalar", "correlation coefficient");
 }
 
 EMMIVOX::EMMIVOX(const ActionOptions&ao):
@@ -268,8 +268,7 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   bfactsig_(0.1), bfactnoc_(false), bfactread_(false),
   MCBstride_(1), MCBaccept_(0.), MCBtrials_(0.), bfactemin_(false),
   martini_(false), statusstride_(0), first_status_(true),
-  eps_(0.0001), mapstride_(0), gpu_(false)
-{
+  eps_(0.0001), mapstride_(0), gpu_(false) {
   // set constants
   inv_sqrt2_ = 1.0/sqrt(2.0);
   sqrt2_pi_  = sqrt(2.0 / M_PI);
@@ -287,23 +286,37 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   parse("NL_DIST_CUTOFF",nl_dist_cutoff_);
   parse("NL_GAUSS_CUTOFF",nl_gauss_cutoff_);
   // checks
-  if(nl_dist_cutoff_<=0. && nl_gauss_cutoff_<=0.) error("You must specify either NL_DIST_CUTOFF or NL_GAUSS_CUTOFF or both");
-  if(nl_gauss_cutoff_<=0.) nl_gauss_cutoff_ = 1.0e+10;
-  if(nl_dist_cutoff_<=0.) nl_dist_cutoff_ = 1.0e+10;
+  if(nl_dist_cutoff_<=0. && nl_gauss_cutoff_<=0.) {
+    error("You must specify either NL_DIST_CUTOFF or NL_GAUSS_CUTOFF or both");
+  }
+  if(nl_gauss_cutoff_<=0.) {
+    nl_gauss_cutoff_ = 1.0e+10;
+  }
+  if(nl_dist_cutoff_<=0.) {
+    nl_dist_cutoff_ = 1.0e+10;
+  }
   // neighbor list update stride
   parse("NL_STRIDE",nl_stride_);
-  if(nl_stride_<=0) error("NL_STRIDE must be explicitly specified and positive");
+  if(nl_stride_<=0) {
+    error("NL_STRIDE must be explicitly specified and positive");
+  }
 
   // minimum value for error
   double sigma_min = 0.2;
   parse("SIGMA_MIN", sigma_min);
-  if(sigma_min<0.) error("SIGMA_MIN must be greater or equal to zero");
+  if(sigma_min<0.) {
+    error("SIGMA_MIN must be greater or equal to zero");
+  }
 
   // status file parameters
   parse("WRITE_STRIDE", statusstride_);
-  if(statusstride_<=0) error("you must specify a positive WRITE_STRIDE");
+  if(statusstride_<=0) {
+    error("you must specify a positive WRITE_STRIDE");
+  }
   parse("STATUS_FILE",  statusfilename_);
-  if(statusfilename_=="") statusfilename_ = "EMMIStatus"+getLabel();
+  if(statusfilename_=="") {
+    statusfilename_ = "EMMIStatus"+getLabel();
+  }
 
   // integral of the experimetal density
   double norm_d;
@@ -329,16 +342,26 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
     parse("BFACT_SIGMA",bfactsig_);
     parseFlag("BFACT_MINIMIZE",bfactemin_);
     // checks
-    if(MCBstride_<=0) error("you must specify a positive MCBFACT_STRIDE");
-    if(bfactmax_<=bfactmin_) error("you must specify a positive BFACT_MAX");
-    if(MCBstride_%nl_stride_!=0) error("MCBFACT_STRIDE must be multiple of NL_STRIDE");
-    if(bfactsig_<=0.) error("you must specify a positive BFACT_SIGMA");
+    if(MCBstride_<=0) {
+      error("you must specify a positive MCBFACT_STRIDE");
+    }
+    if(bfactmax_<=bfactmin_) {
+      error("you must specify a positive BFACT_MAX");
+    }
+    if(MCBstride_%nl_stride_!=0) {
+      error("MCBFACT_STRIDE must be multiple of NL_STRIDE");
+    }
+    if(bfactsig_<=0.) {
+      error("you must specify a positive BFACT_SIGMA");
+    }
   }
 
   // read map resolution
   double reso;
   parse("RESOLUTION", reso);
-  if(reso<=0.) error("RESOLUTION must be strictly positive");
+  if(reso<=0.) {
+    error("RESOLUTION must be strictly positive");
+  }
 
   // averaging or not
   parseFlag("NO_AVER",no_aver_);
@@ -349,7 +372,9 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   // write density file
   parse("WRITE_MAP_STRIDE", mapstride_);
   parse("WRITE_MAP", mapfilename_);
-  if(mapstride_>0 && mapfilename_=="") error("With WRITE_MAP_STRIDE you must specify WRITE_MAP");
+  if(mapstride_>0 && mapfilename_=="") {
+    error("With WRITE_MAP_STRIDE you must specify WRITE_MAP");
+  }
 
   // use GPU?
   parseFlag("GPU",gpu_);
@@ -369,7 +394,9 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
 
   // set parallel stuff
   unsigned mpisize=comm.Get_size();
-  if(mpisize>1) error("EMMIVOX supports only OpenMP parallelization");
+  if(mpisize>1) {
+    error("EMMIVOX supports only OpenMP parallelization");
+  }
 
   // get number of replicas
   if(no_aver_) {
@@ -379,15 +406,26 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   }
   replica_ = multi_sim_comm.Get_rank();
 
-  if(nrep_>1 && dbfact_>0) error("Bfactor sampling not supported with ensemble averaging");
+  if(nrep_>1 && dbfact_>0) {
+    error("Bfactor sampling not supported with ensemble averaging");
+  }
 
   log.printf("  number of atoms involved : %u\n", atoms.size());
   log.printf("  experimental density map : %s\n", datafile.c_str());
-  if(no_aver_) log.printf("  without ensemble averaging\n");
-  if(gpu_) {log.printf("  running on GPU \n");}
-  else {log.printf("  running on CPU \n");}
-  if(nl_dist_cutoff_ <1.0e+10) log.printf("  neighbor list distance cutoff : %lf\n", nl_dist_cutoff_);
-  if(nl_gauss_cutoff_<1.0e+10) log.printf("  neighbor list Gaussian sigma cutoff : %lf\n", nl_gauss_cutoff_);
+  if(no_aver_) {
+    log.printf("  without ensemble averaging\n");
+  }
+  if(gpu_) {
+    log.printf("  running on GPU \n");
+  } else {
+    log.printf("  running on CPU \n");
+  }
+  if(nl_dist_cutoff_ <1.0e+10) {
+    log.printf("  neighbor list distance cutoff : %lf\n", nl_dist_cutoff_);
+  }
+  if(nl_gauss_cutoff_<1.0e+10) {
+    log.printf("  neighbor list Gaussian sigma cutoff : %lf\n", nl_gauss_cutoff_);
+  }
   log.printf("  neighbor list update stride : %u\n",  nl_stride_);
   log.printf("  minimum density error : %f\n", sigma_min);
   log.printf("  scale factor : %lf\n", scale_);
@@ -399,7 +437,9 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
     log.printf("  stride MC move : %u\n", MCBstride_);
     log.printf("  using prior with sigma : %f\n", bfactsig_);
   }
-  if(bfactread_) log.printf("  reading Bfactors from file : %s\n", statusfilename_.c_str());
+  if(bfactread_) {
+    log.printf("  reading Bfactors from file : %s\n", statusfilename_.c_str());
+  }
   log.printf("  temperature of the system in energy unit : %f\n", kbt_);
   if(nrep_>1) {
     log.printf("  number of replicas for averaging: %u\n", nrep_);
@@ -409,7 +449,9 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
     log.printf("  writing model density to file : %s\n", mapfilename_.c_str());
     log.printf("  with stride : %u\n", mapstride_);
   }
-  if(martini_) log.printf("  using Martini scattering factors\n");
+  if(martini_) {
+    log.printf("  using Martini scattering factors\n");
+  }
 
   // calculate model constant parameters
   std::vector<double> Model_w = get_Model_param(atoms);
@@ -455,7 +497,9 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   initialize_Bfactor(reso);
 
   // read status file if restarting
-  if(getRestart() || bfactread_) read_status();
+  if(getRestart() || bfactread_) {
+    read_status();
+  }
 
   // prepare auxiliary vectors
   get_auxiliary_vectors();
@@ -466,12 +510,22 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   score_der_.resize(ovdd_.size());
 
   // add components
-  addComponentWithDerivatives("scoreb"); componentIsNotPeriodic("scoreb");
-  addComponent("scale");                 componentIsNotPeriodic("scale");
-  addComponent("offset");                componentIsNotPeriodic("offset");
-  addComponent("kbt");                   componentIsNotPeriodic("kbt");
-  if(dbfact_>0)   {addComponent("accB"); componentIsNotPeriodic("accB");}
-  if(do_corr_)    {addComponent("corr"); componentIsNotPeriodic("corr");}
+  addComponentWithDerivatives("scoreb");
+  componentIsNotPeriodic("scoreb");
+  addComponent("scale");
+  componentIsNotPeriodic("scale");
+  addComponent("offset");
+  componentIsNotPeriodic("offset");
+  addComponent("kbt");
+  componentIsNotPeriodic("kbt");
+  if(dbfact_>0)   {
+    addComponent("accB");
+    componentIsNotPeriodic("accB");
+  }
+  if(do_corr_)    {
+    addComponent("corr");
+    componentIsNotPeriodic("corr");
+  }
 
   // initialize random seed
   unsigned iseed = time(NULL)+replica_;
@@ -483,12 +537,13 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   // print bibliography
   log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)");
   log<<plumed.cite("Hoff, Thomasen, Lindorff-Larsen, Bonomi, bioRxiv (2023) doi: 10.1101/2023.10.18.562710");
-  if(!no_aver_ && nrep_>1)log<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");
+  if(!no_aver_ && nrep_>1) {
+    log<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");
+  }
   log<<"\n";
 }
 
-void EMMIVOX::prepare_gpu()
-{
+void EMMIVOX::prepare_gpu() {
   // number of data points
   int nd = ovdd_.size();
   // 1) put ismin_ on device_t_
@@ -507,11 +562,11 @@ void EMMIVOX::prepare_gpu()
   Map_m_gpu_ = torch::from_blob(Map_m_gpu.data(), {3,nd}, torch::kFloat64).clone().to(torch::kFloat32).to(device_t_);
 }
 
-void EMMIVOX::write_model_density(long int step)
-{
+void EMMIVOX::write_model_density(long int step) {
   OFile ovfile;
   ovfile.link(*this);
-  std::string num; Tools::convert(step,num);
+  std::string num;
+  Tools::convert(step,num);
   std::string name = mapfilename_+"-"+num;
   ovfile.open(name);
   ovfile.setHeavyFlush();
@@ -526,8 +581,7 @@ void EMMIVOX::write_model_density(long int step)
   ovfile.close();
 }
 
-double EMMIVOX::get_median(std::vector<double> v)
-{
+double EMMIVOX::get_median(std::vector<double> v) {
 // dimension of vector
   unsigned size = v.size();
 // in case of only one entry
@@ -545,8 +599,7 @@ double EMMIVOX::get_median(std::vector<double> v)
   }
 }
 
-void EMMIVOX::read_status()
-{
+void EMMIVOX::read_status() {
   double MDtime;
 // open file
   IFile *ifile = new IFile();
@@ -564,10 +617,13 @@ void EMMIVOX::read_status()
           // key: pair of residue/chain IDs
           std::pair<unsigned,std::string> key = Model_rlist_[ir];
           // convert ires to std::string
-          std::string num; Tools::convert(key.first,num);
+          std::string num;
+          Tools::convert(key.first,num);
           // read entry
           std::string ch = key.second;
-          if(ch==" ") ch="";
+          if(ch==" ") {
+            ch="";
+          }
           ifile->scanField("bf-"+num+":"+ch, Model_b_[key]);
         }
       }
@@ -581,8 +637,7 @@ void EMMIVOX::read_status()
   delete ifile;
 }
 
-void EMMIVOX::print_status(long int step)
-{
+void EMMIVOX::print_status(long int step) {
 // if first time open the file
   if(first_status_) {
     first_status_ = false;
@@ -606,7 +661,8 @@ void EMMIVOX::print_status(long int step)
       // bfactor from map
       double bf = Model_b_[key];
       // convert ires to std::string
-      std::string num; Tools::convert(key.first,num);
+      std::string num;
+      Tools::convert(key.first,num);
       // print entry
       statusfile_.printField("bf-"+num+":"+key.second, bf);
     }
@@ -614,8 +670,7 @@ void EMMIVOX::print_status(long int step)
   statusfile_.printField();
 }
 
-bool EMMIVOX::doAccept(double oldE, double newE, double kbt)
-{
+bool EMMIVOX::doAccept(double oldE, double newE, double kbt) {
   bool accept = false;
   // calculate delta energy
   double delta = ( newE - oldE ) / kbt;
@@ -625,16 +680,19 @@ bool EMMIVOX::doAccept(double oldE, double newE, double kbt)
   } else {
     // otherwise extract random number
     double s = random_.RandU01();
-    if( s < exp(-delta) ) { accept = true; }
+    if( s < exp(-delta) ) {
+      accept = true;
+    }
   }
   return accept;
 }
 
-std::vector<double> EMMIVOX::get_Model_param(std::vector<AtomNumber> &atoms)
-{
+std::vector<double> EMMIVOX::get_Model_param(std::vector<AtomNumber> &atoms) {
   // check if MOLINFO line is present
   auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
-  if(!moldat) error("MOLINFO DATA not found\n");
+  if(!moldat) {
+    error("MOLINFO DATA not found\n");
+  }
   log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
 
   // list of weights - one per atom
@@ -648,28 +706,70 @@ std::vector<double> EMMIVOX::get_Model_param(std::vector<AtomNumber> &atoms)
   // map between an atom type and an index
   std::map<std::string, unsigned> type_map;
   // atomistic types
-  type_map["C"]=0;  type_map["O"]=1;  type_map["N"]=2;
-  type_map["S"]=3;  type_map["P"]=4;  type_map["F"]=5;
-  type_map["NA"]=6; type_map["MG"]=7; type_map["CL"]=8;
-  type_map["CA"]=9; type_map["K"]=10; type_map["ZN"]=11;
+  type_map["C"]=0;
+  type_map["O"]=1;
+  type_map["N"]=2;
+  type_map["S"]=3;
+  type_map["P"]=4;
+  type_map["F"]=5;
+  type_map["NA"]=6;
+  type_map["MG"]=7;
+  type_map["CL"]=8;
+  type_map["CA"]=9;
+  type_map["K"]=10;
+  type_map["ZN"]=11;
   // Martini types
-  type_map["ALA_BB"]=12;    type_map["ALA_SC1"]=13;   type_map["CYS_BB"]=14;
-  type_map["CYS_SC1"]=15;   type_map["ASP_BB"]=16;    type_map["ASP_SC1"]=17;
-  type_map["GLU_BB"]=18;    type_map["GLU_SC1"]=19;   type_map["PHE_BB"]=20;
-  type_map["PHE_SC1"]=21;   type_map["PHE_SC2"]=22;   type_map["PHE_SC3"]=23;
-  type_map["GLY_BB"]=24;    type_map["HIS_BB"]=25;    type_map["HIS_SC1"]=26;
-  type_map["HIS_SC2"]=27;   type_map["HIS_SC3"]=28;   type_map["ILE_BB"]=29;
-  type_map["ILE_SC1"]=30;   type_map["LYS_BB"]=31;    type_map["LYS_SC1"]=32;
-  type_map["LYS_SC2"]=33;   type_map["LEU_BB"]=34;    type_map["LEU_SC1"]=35;
-  type_map["MET_BB"]=36;    type_map["MET_SC1"]=37;   type_map["ASN_BB"]=38;
-  type_map["ASN_SC1"]=39;   type_map["PRO_BB"]=40;    type_map["PRO_SC1"]=41;
-  type_map["GLN_BB"]=42;    type_map["GLN_SC1"]=43;   type_map["ARG_BB"]=44;
-  type_map["ARG_SC1"]=45;   type_map["ARG_SC2"]=46;   type_map["SER_BB"]=47;
-  type_map["SER_SC1"]=48;   type_map["THR_BB"]=49;    type_map["THR_SC1"]=50;
-  type_map["VAL_BB"]=51;    type_map["VAL_SC1"]=52;   type_map["TRP_BB"]=53;
-  type_map["TRP_SC1"]=54;   type_map["TRP_SC2"]=55;   type_map["TRP_SC3"]=56;
-  type_map["TRP_SC4"]=57;   type_map["TRP_SC5"]=58;   type_map["TYR_BB"]=59;
-  type_map["TYR_SC1"]=60;   type_map["TYR_SC2"]=61;   type_map["TYR_SC3"]=62;
+  type_map["ALA_BB"]=12;
+  type_map["ALA_SC1"]=13;
+  type_map["CYS_BB"]=14;
+  type_map["CYS_SC1"]=15;
+  type_map["ASP_BB"]=16;
+  type_map["ASP_SC1"]=17;
+  type_map["GLU_BB"]=18;
+  type_map["GLU_SC1"]=19;
+  type_map["PHE_BB"]=20;
+  type_map["PHE_SC1"]=21;
+  type_map["PHE_SC2"]=22;
+  type_map["PHE_SC3"]=23;
+  type_map["GLY_BB"]=24;
+  type_map["HIS_BB"]=25;
+  type_map["HIS_SC1"]=26;
+  type_map["HIS_SC2"]=27;
+  type_map["HIS_SC3"]=28;
+  type_map["ILE_BB"]=29;
+  type_map["ILE_SC1"]=30;
+  type_map["LYS_BB"]=31;
+  type_map["LYS_SC1"]=32;
+  type_map["LYS_SC2"]=33;
+  type_map["LEU_BB"]=34;
+  type_map["LEU_SC1"]=35;
+  type_map["MET_BB"]=36;
+  type_map["MET_SC1"]=37;
+  type_map["ASN_BB"]=38;
+  type_map["ASN_SC1"]=39;
+  type_map["PRO_BB"]=40;
+  type_map["PRO_SC1"]=41;
+  type_map["GLN_BB"]=42;
+  type_map["GLN_SC1"]=43;
+  type_map["ARG_BB"]=44;
+  type_map["ARG_SC1"]=45;
+  type_map["ARG_SC2"]=46;
+  type_map["SER_BB"]=47;
+  type_map["SER_SC1"]=48;
+  type_map["THR_BB"]=49;
+  type_map["THR_SC1"]=50;
+  type_map["VAL_BB"]=51;
+  type_map["VAL_SC1"]=52;
+  type_map["TRP_BB"]=53;
+  type_map["TRP_SC1"]=54;
+  type_map["TRP_SC2"]=55;
+  type_map["TRP_SC3"]=56;
+  type_map["TRP_SC4"]=57;
+  type_map["TRP_SC5"]=58;
+  type_map["TYR_BB"]=59;
+  type_map["TYR_SC1"]=60;
+  type_map["TYR_SC2"]=61;
+  type_map["TYR_SC3"]=62;
   type_map["TYR_SC4"]=63;
   // fill in sigma vector for atoms
   Model_s_.push_back(0.01*Vector5d(0.114,1.0825,5.4281,17.8811,51.1341));   // C
@@ -829,12 +929,24 @@ std::vector<double> EMMIVOX::get_Model_param(std::vector<AtomNumber> &atoms)
       // convert to std::string
       type_s = std::string(1,type);
       // special cases
-      if(name=="SOD" || name=="NA" || name =="Na") type_s = "NA";
-      if(name=="MG"  || name=="Mg")                type_s = "MG";
-      if(name=="CLA" || name=="CL" || name =="Cl") type_s = "CL";
-      if((resname=="CAL" || resname=="CA") && (name=="CAL" || name=="CA" || name =="C0")) type_s = "CA";
-      if(name=="POT" || name=="K")                 type_s = "K";
-      if(name=="ZN"  || name=="Zn")                type_s = "ZN";
+      if(name=="SOD" || name=="NA" || name =="Na") {
+        type_s = "NA";
+      }
+      if(name=="MG"  || name=="Mg") {
+        type_s = "MG";
+      }
+      if(name=="CLA" || name=="CL" || name =="Cl") {
+        type_s = "CL";
+      }
+      if((resname=="CAL" || resname=="CA") && (name=="CAL" || name=="CA" || name =="C0")) {
+        type_s = "CA";
+      }
+      if(name=="POT" || name=="K") {
+        type_s = "K";
+      }
+      if(name=="ZN"  || name=="Zn") {
+        type_s = "ZN";
+      }
     }
     // check if key in map
     if(type_map.find(type_s) != type_map.end()) {
@@ -847,7 +959,9 @@ std::vector<double> EMMIVOX::get_Model_param(std::vector<AtomNumber> &atoms)
       unsigned ires = moldat->getResidueNumber(atoms[i]);
       // and chain
       std::string c ("*");
-      if(!bfactnoc_) c = moldat->getChainID(atoms[i]);
+      if(!bfactnoc_) {
+        c = moldat->getChainID(atoms[i]);
+      }
       // define pair residue/chain IDs
       std::pair<unsigned,std::string> key = std::make_pair(ires,c);
       // add to map between residue/chain and list of atoms
@@ -864,16 +978,16 @@ std::vector<double> EMMIVOX::get_Model_param(std::vector<AtomNumber> &atoms)
   for(unsigned i=0; i<Model_res_.size(); ++i) {
     std::pair<unsigned,std::string> key = Model_res_[i];
     // search in Model_rlist_
-    if(find(Model_rlist_.begin(), Model_rlist_.end(), key) == Model_rlist_.end())
+    if(find(Model_rlist_.begin(), Model_rlist_.end(), key) == Model_rlist_.end()) {
       Model_rlist_.push_back(key);
+    }
   }
   // return weights
   return Model_w;
 }
 
 // read experimental data file in PLUMED format:
-void EMMIVOX::get_exp_data(const std::string &datafile)
-{
+void EMMIVOX::get_exp_data(const std::string &datafile) {
   Vector pos;
   double dens, err;
   int idcomp;
@@ -904,8 +1018,7 @@ void EMMIVOX::get_exp_data(const std::string &datafile)
   delete ifile;
 }
 
-void EMMIVOX::initialize_Bfactor(double reso)
-{
+void EMMIVOX::initialize_Bfactor(double reso) {
   double bfactini = 0.0;
   // if doing Bfactor Monte Carlo
   if(dbfact_>0) {
@@ -930,14 +1043,17 @@ void EMMIVOX::initialize_Bfactor(double reso)
 }
 
 // prepare auxiliary vectors
-void EMMIVOX::get_auxiliary_vectors()
-{
+void EMMIVOX::get_auxiliary_vectors() {
 // number of atoms
   unsigned natoms = Model_res_.size();
 // clear lists
-  pref_.clear(); invs2_.clear(); cut_.clear();
+  pref_.clear();
+  invs2_.clear();
+  cut_.clear();
 // resize
-  pref_.resize(natoms); invs2_.resize(natoms); cut_.resize(natoms);
+  pref_.resize(natoms);
+  invs2_.resize(natoms);
+  cut_.resize(natoms);
 // cycle on all atoms
   #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for(unsigned im=0; im<natoms; ++im) {
@@ -974,8 +1090,7 @@ void EMMIVOX::get_auxiliary_vectors()
   push_auxiliary_gpu();
 }
 
-void EMMIVOX::push_auxiliary_gpu()
-{
+void EMMIVOX::push_auxiliary_gpu() {
   // 1) create vector of pref_ and invs2_
   int natoms = Model_type_.size();
   std::vector<double> pref(5*natoms), invs2(5*natoms);
@@ -991,10 +1106,10 @@ void EMMIVOX::push_auxiliary_gpu()
   invs2_gpu_ = torch::from_blob(invs2.data(), {5,natoms}, torch::kFloat64).clone().to(torch::kFloat32).to(device_t_);
 }
 
-void EMMIVOX::get_close_residues()
-{
+void EMMIVOX::get_close_residues() {
   // clear neighbor list
-  nl_res_.clear(); nl_res_.resize(Model_rlist_.size());
+  nl_res_.clear();
+  nl_res_.resize(Model_rlist_.size());
 
   // loop in parallel
   #pragma omp parallel num_threads(OpenMP::getNumThreads())
@@ -1034,7 +1149,9 @@ void EMMIVOX::get_close_residues()
             }
           }
           // check if neighbor already found
-          if(neigh) break;
+          if(neigh) {
+            break;
+          }
         }
 
         // if neighbors, add to local list
@@ -1047,14 +1164,14 @@ void EMMIVOX::get_close_residues()
     // add to global list
     #pragma omp critical
     {
-      for(unsigned i=0; i<nl_res_.size(); ++i)
+      for(unsigned i=0; i<nl_res_.size(); ++i) {
         nl_res_[i].insert(nl_res_[i].end(), nl_res_l[i].begin(), nl_res_l[i].end());
+      }
     }
   }
 }
 
-void EMMIVOX::doMonteCarloBfact()
-{
+void EMMIVOX::doMonteCarloBfact() {
 // update residue neighbor list
   get_close_residues();
 
@@ -1069,8 +1186,12 @@ void EMMIVOX::doMonteCarloBfact()
     // propose move in bfactor
     double bfactnew = bfactold + dbfact_ * ( 2.0 * random_.RandU01() - 1.0 );
     // check boundaries
-    if(bfactnew > bfactmax_) {bfactnew = 2.0*bfactmax_ - bfactnew;}
-    if(bfactnew < bfactmin_) {bfactnew = 2.0*bfactmin_ - bfactnew;}
+    if(bfactnew > bfactmax_) {
+      bfactnew = 2.0*bfactmax_ - bfactnew;
+    }
+    if(bfactnew < bfactmin_) {
+      bfactnew = 2.0*bfactmin_ - bfactnew;
+    }
 
     // useful quantities
     std::map<unsigned, double> deltaov;
@@ -1109,8 +1230,9 @@ void EMMIVOX::doMonteCarloBfact()
       // add to global list
       #pragma omp critical
       {
-        for(std::map<unsigned,double>::iterator itov=deltaov_l.begin(); itov!=deltaov_l.end(); ++itov)
+        for(std::map<unsigned,double>::iterator itov=deltaov_l.begin(); itov!=deltaov_l.end(); ++itov) {
           deltaov[itov->first] += itov->second;
+        }
       }
     }
 
@@ -1172,7 +1294,9 @@ void EMMIVOX::doMonteCarloBfact()
     // accept or reject
     bool accept = false;
     if(bfactemin_) {
-      if(new_ene < old_ene) accept = true;
+      if(new_ene < old_ene) {
+        accept = true;
+      }
     } else {
       accept = doAccept(old_ene, new_ene, kbt_);
     }
@@ -1184,8 +1308,9 @@ void EMMIVOX::doMonteCarloBfact()
       // update bfactor
       Model_b_[key] = bfactnew;
       // change all the ovmd_ affected
-      for(std::map<unsigned,double>::iterator itov=deltaov.begin(); itov!=deltaov.end(); ++itov)
+      for(std::map<unsigned,double>::iterator itov=deltaov.begin(); itov!=deltaov.end(); ++itov) {
         ovmd_[itov->first] += itov->second;
+      }
     }
 
   } // end cycle on bfactors
@@ -1200,8 +1325,7 @@ void EMMIVOX::doMonteCarloBfact()
 
 // get overlap
 double EMMIVOX::get_overlap(const Vector &d_m, const Vector &m_m,
-                            const Vector5d &cfact, const Vector5d &m_s, double bfact)
-{
+                            const Vector5d &cfact, const Vector5d &m_s, double bfact) {
   // calculate vector difference
   Vector md = delta(m_m, d_m);
   // norm squared
@@ -1219,8 +1343,7 @@ double EMMIVOX::get_overlap(const Vector &d_m, const Vector &m_m,
   return ov_tot;
 }
 
-void EMMIVOX::update_neighbor_sphere()
-{
+void EMMIVOX::update_neighbor_sphere() {
   // number of atoms
   unsigned natoms = Model_type_.size();
   // clear neighbor sphere
@@ -1242,7 +1365,9 @@ void EMMIVOX::update_neighbor_sphere()
         // calculate distance
         double dist = delta(getPosition(im), d_m).modulo();
         // add to local list
-        if(dist<=2.0*cut_[im]) ns_l.push_back(std::make_pair(id,im));
+        if(dist<=2.0*cut_[im]) {
+          ns_l.push_back(std::make_pair(id,im));
+        }
       }
     }
     // add to global list
@@ -1251,8 +1376,7 @@ void EMMIVOX::update_neighbor_sphere()
   }
 }
 
-bool EMMIVOX::do_neighbor_sphere()
-{
+bool EMMIVOX::do_neighbor_sphere() {
   std::vector<double> dist(getPositions().size());
   bool update = false;
 
@@ -1264,14 +1388,15 @@ bool EMMIVOX::do_neighbor_sphere()
 
 // check if update or not
   double maxdist = *max_element(dist.begin(), dist.end());
-  if(maxdist>=1.0) update=true;
+  if(maxdist>=1.0) {
+    update=true;
+  }
 
 // return if update or not
   return update;
 }
 
-void EMMIVOX::update_neighbor_list()
-{
+void EMMIVOX::update_neighbor_list() {
   // number of atoms
   unsigned natoms = Model_type_.size();
   // clear neighbor list
@@ -1287,7 +1412,9 @@ void EMMIVOX::update_neighbor_list()
       // calculate distance
       double dist = delta(Map_m_[ns_[i].first], getPosition(ns_[i].second)).modulo();
       // add to local neighbour list
-      if(dist<=cut_[ns_[i].second]) nl_l.push_back(ns_[i]);
+      if(dist<=cut_[ns_[i].second]) {
+        nl_l.push_back(ns_[i]);
+      }
     }
     // add to global list
     #pragma omp critical
@@ -1302,7 +1429,8 @@ void EMMIVOX::update_neighbor_list()
   // in case of B-factors sampling - at the right step
   if(dbfact_>0 && getStep()%MCBstride_==0) {
     // clear vectors
-    Model_nb_.clear(); Model_nb_.resize(natoms);
+    Model_nb_.clear();
+    Model_nb_.resize(natoms);
     // cycle over the neighbor list to creat a list of voxels per atom
     #pragma omp parallel num_threads(OpenMP::getNumThreads())
     {
@@ -1315,8 +1443,9 @@ void EMMIVOX::update_neighbor_list()
       // add to global list
       #pragma omp critical
       {
-        for(unsigned i=0; i<natoms; ++i)
+        for(unsigned i=0; i<natoms; ++i) {
           Model_nb_[i].insert(Model_nb_[i].end(), Model_nb_l[i].begin(), Model_nb_l[i].end());
+        }
       }
     }
   }
@@ -1325,8 +1454,7 @@ void EMMIVOX::update_neighbor_list()
   update_gpu();
 }
 
-void EMMIVOX::update_gpu()
-{
+void EMMIVOX::update_gpu() {
   // dimension of neighbor list
   long long nl_size = nl_.size();
   // create useful vectors
@@ -1347,14 +1475,14 @@ void EMMIVOX::update_gpu()
   Map_m_nl_gpu_ = torch::index_select(Map_m_gpu_,1,nl_id_gpu_);
 }
 
-void EMMIVOX::prepare()
-{
-  if(getExchangeStep()) first_time_=true;
+void EMMIVOX::prepare() {
+  if(getExchangeStep()) {
+    first_time_=true;
+  }
 }
 
 // calculate forward model on gpu
-void EMMIVOX::calculate_fmod()
-{
+void EMMIVOX::calculate_fmod() {
   // number of atoms
   int natoms = Model_type_.size();
   // number of data points
@@ -1400,7 +1528,9 @@ void EMMIVOX::calculate_fmod()
     multi_sim_comm.Sum(&ovmd_[0], nd);
     // and divide by number of replicas
     double escale = 1.0 / static_cast<double>(nrep_);
-    for(int i=0; i<nd; ++i) ovmd_[i] *= escale;
+    for(int i=0; i<nd; ++i) {
+      ovmd_[i] *= escale;
+    }
     // put back on device
     ovmd_gpu_ = torch::from_blob(ovmd_.data(), {nd}, torch::kFloat64).to(torch::kFloat32).to(device_t_);
   }
@@ -1409,11 +1539,19 @@ void EMMIVOX::calculate_fmod()
   // this is needed only in certain situations
   long int step = getStep();
   bool do_comm = false;
-  if(mapstride_>0 && step%mapstride_==0) do_comm = true;
-  if(dbfact_>0    && step%MCBstride_==0) do_comm = true;
-  if(do_corr_) do_comm = true;
+  if(mapstride_>0 && step%mapstride_==0) {
+    do_comm = true;
+  }
+  if(dbfact_>0    && step%MCBstride_==0) {
+    do_comm = true;
+  }
+  if(do_corr_) {
+    do_comm = true;
+  }
   // in case of metainference: already communicated
-  if(!no_aver_ && nrep_>1) do_comm = false;
+  if(!no_aver_ && nrep_>1) {
+    do_comm = false;
+  }
   if(do_comm) {
     // communicate ovmd_gpu_ to CPU [1, nd]
     torch::Tensor ovmd_cpu = ovmd_gpu_.detach().to(torch::kCPU).to(torch::kFloat64);
@@ -1423,8 +1561,7 @@ void EMMIVOX::calculate_fmod()
 }
 
 // calculate score
-void EMMIVOX::calculate_score()
-{
+void EMMIVOX::calculate_score() {
   // number of atoms
   int natoms = Model_type_.size();
 
@@ -1463,7 +1600,9 @@ void EMMIVOX::calculate_score()
   torch::Tensor ene_cpu = ene.detach().to(torch::kCPU).to(torch::kFloat64);
   ene_ = *ene_cpu.data_ptr<double>();
   // with marginal, simply multiply by number of replicas!
-  if(!no_aver_ && nrep_>1) ene_ *= static_cast<double>(nrep_);
+  if(!no_aver_ && nrep_>1) {
+    ene_ *= static_cast<double>(nrep_);
+  }
   //
   // 2) communicate derivatives to CPU
   torch::Tensor atom_der_cpu = atoms_der_gpu.detach().to(torch::kCPU).to(torch::kFloat64);
@@ -1488,8 +1627,7 @@ void EMMIVOX::calculate_score()
   virial_ = virial;
 }
 
-void EMMIVOX::calculate()
-{
+void EMMIVOX::calculate() {
   // get time step
   long int step = getStep();
 
@@ -1500,10 +1638,15 @@ void EMMIVOX::calculate()
   if(first_time_ || getExchangeStep() || step%nl_stride_==0) {
     // check if time to update neighbor sphere
     bool update = false;
-    if(first_time_ || getExchangeStep()) update = true;
-    else update = do_neighbor_sphere();
+    if(first_time_ || getExchangeStep()) {
+      update = true;
+    } else {
+      update = do_neighbor_sphere();
+    }
     // update neighbor sphere
-    if(update) update_neighbor_sphere();
+    if(update) {
+      update_neighbor_sphere();
+    }
     // update neighbor list
     update_neighbor_list();
     // set flag
@@ -1517,9 +1660,13 @@ void EMMIVOX::calculate()
   if(dbfact_>0) {
     double acc = 0.0;
     // do Monte Carlo
-    if(step%MCBstride_==0 && !getExchangeStep() && step>0) doMonteCarloBfact();
+    if(step%MCBstride_==0 && !getExchangeStep() && step>0) {
+      doMonteCarloBfact();
+    }
     // calculate acceptance ratio
-    if(MCBtrials_>0) acc = MCBaccept_ / MCBtrials_;
+    if(MCBtrials_>0) {
+      acc = MCBaccept_ / MCBtrials_;
+    }
     // set value
     getPntrToComponent("accB")->set(acc);
   }
@@ -1532,21 +1679,28 @@ void EMMIVOX::calculate()
   score->set(ene_);
   setBoxDerivatives(score, virial_);
   #pragma omp parallel for
-  for(unsigned i=0; i<atom_der_.size(); ++i) setAtomsDerivatives(score, i, atom_der_[i]);
+  for(unsigned i=0; i<atom_der_.size(); ++i) {
+    setAtomsDerivatives(score, i, atom_der_[i]);
+  }
   // set scale and offset value
   getPntrToComponent("scale")->set(scale_);
   getPntrToComponent("offset")->set(offset_);
   // calculate correlation coefficient
-  if(do_corr_) calculate_corr();
+  if(do_corr_) {
+    calculate_corr();
+  }
   // PRINT other quantities to files
   // - status file
-  if(step%statusstride_==0) print_status(step);
+  if(step%statusstride_==0) {
+    print_status(step);
+  }
   // - density file
-  if(mapstride_>0 && step%mapstride_==0) write_model_density(step);
+  if(mapstride_>0 && step%mapstride_==0) {
+    write_model_density(step);
+  }
 }
 
-void EMMIVOX::calculate_corr()
-{
+void EMMIVOX::calculate_corr() {
 // number of data points
   double nd = static_cast<double>(ovdd_.size());
 // average ovmd_ and ovdd_

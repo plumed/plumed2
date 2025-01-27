@@ -48,15 +48,16 @@ PLUMED_REGISTER_ACTION(Density,"DENSITY")
 void Density::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
   keys.add("compulsory","SPECIES","the atoms in the group");
-  keys.setValueDescription("indices for the specified group of atoms");
-  keys.needsAction("ONES"); keys.needsAction("GROUP");
+  keys.setValueDescription("atoms","indices for the specified group of atoms");
+  keys.needsAction("ONES");
+  keys.needsAction("GROUP");
 }
 
 Density::Density(const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
-  std::string atoms; parse("SPECIES",atoms);
+  ActionShortcut(ao) {
+  std::string atoms;
+  parse("SPECIES",atoms);
   readInputLine( getShortcutLabel() + ": GROUP ATOMS=" + atoms);
 }
 

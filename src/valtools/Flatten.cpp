@@ -44,7 +44,9 @@ public:
 /// Constructor
   explicit Flatten(const ActionOptions&);
 /// Get the number of derivatives
-  unsigned getNumberOfDerivatives() override { return 0; }
+  unsigned getNumberOfDerivatives() override {
+    return 0;
+  }
 /// Do the calculation
   void calculate() override;
 ///
@@ -54,41 +56,60 @@ public:
 PLUMED_REGISTER_ACTION(Flatten,"FLATTEN")
 
 void Flatten::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
-  ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
-  keys.setValueDescription("a vector containing all the elements of the input matrix");
+  Action::registerKeywords( keys );
+  ActionWithValue::registerKeywords( keys );
+  ActionWithArguments::registerKeywords( keys );
+  keys.addInputKeyword("compulsory","ARG","matrix","the label for the matrix that you would like to flatten to a vector");
+  keys.setValueDescription("vector","a vector containing all the elements of the input matrix");
 }
 
 Flatten::Flatten(const ActionOptions& ao):
   Action(ao),
   ActionWithValue(ao),
-  ActionWithArguments(ao)
-{
-  if( getNumberOfArguments()!=1 ) error("should only be one argument for this action");
-  if( getPntrToArgument(0)->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) error("input to this action should be a matrix");
+  ActionWithArguments(ao) {
+  if( getNumberOfArguments()!=1 ) {
+    error("should only be one argument for this action");
+  }
+  if( getPntrToArgument(0)->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) {
+    error("input to this action should be a matrix");
+  }
   getPntrToArgument(0)->buildDataStore(true);
   std::vector<unsigned> inshape( getPntrToArgument(0)->getShape() );
-  std::vector<unsigned> shape( 1 ); shape[0]=inshape[0]*inshape[1];
-  addValue( shape ); setNotPeriodic(); getPntrToComponent(0)->buildDataStore();
+  std::vector<unsigned> shape( 1 );
+  shape[0]=inshape[0]*inshape[1];
+  addValue( shape );
+  setNotPeriodic();
+  getPntrToComponent(0)->buildDataStore();
 }
 
 void Flatten::calculate() {
-  Value* myval = getPntrToComponent(0); unsigned ss=getPntrToArgument(0)->getShape()[1];
-  std::vector<double> vals; std::vector<std::pair<unsigned,unsigned> > pairs;
+  Value* myval = getPntrToComponent(0);
+  unsigned ss=getPntrToArgument(0)->getShape()[1];
+  std::vector<double> vals;
+  std::vector<std::pair<unsigned,unsigned> > pairs;
   bool symmetric=getPntrToArgument(0)->isSymmetric();
-  unsigned nedge=0; getPntrToArgument(0)->retrieveEdgeList( nedge, pairs, vals );
+  unsigned nedge=0;
+  getPntrToArgument(0)->retrieveEdgeList( nedge, pairs, vals );
   for(unsigned l=0; l<nedge; ++l ) {
     unsigned i=pairs[l].first, j=pairs[l].second;
     myval->set( i*ss + j, vals[l] );
-    if( symmetric ) myval->set( j*ss + i, vals[l] );
+    if( symmetric ) {
+      myval->set( j*ss + i, vals[l] );
+    }
   }
 }
 
 void Flatten::apply() {
-  if( doNotCalculateDerivatives() || !getPntrToComponent(0)->forcesWereAdded() ) return;
+  if( doNotCalculateDerivatives() || !getPntrToComponent(0)->forcesWereAdded() ) {
+    return;
+  }
 
-  Value* myval=getPntrToComponent(0); Value* myarg=getPntrToArgument(0);
-  unsigned nvals=myval->getNumberOfValues(); for(unsigned j=0; j<nvals; ++j) myarg->addForce( j, myval->getForce(j) );
+  Value* myval=getPntrToComponent(0);
+  Value* myarg=getPntrToArgument(0);
+  unsigned nvals=myval->getNumberOfValues();
+  for(unsigned j=0; j<nvals; ++j) {
+    myarg->addForce( j, myval->getForce(j) );
+  }
 }
 
 }

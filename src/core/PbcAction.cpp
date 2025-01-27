@@ -42,37 +42,50 @@ PLUMED_REGISTER_ACTION(PbcAction,"PBC")
 void PbcAction::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
-  keys.setValueDescription("a matrix containing the cell vectors that were passed from the MD code");
+  keys.setValueDescription("matrix","a matrix containing the cell vectors that were passed from the MD code");
 }
 
 PbcAction::PbcAction(const ActionOptions&ao):
   Action(ao),
   ActionToPutData(ao),
-  interface(NULL)
-{
-  std::vector<unsigned> shape(2); shape[0]=shape[1]=3;
-  addValue( shape ); setNotPeriodic(); setUnit( "length", "energy" );
-  getPntrToValue()->buildDataStore(); getPntrToValue()->reshapeMatrixStore(3);
+  interface(NULL) {
+  std::vector<unsigned> shape(2);
+  shape[0]=shape[1]=3;
+  addValue( shape );
+  setNotPeriodic();
+  setUnit( "length", "energy" );
+  getPntrToValue()->buildDataStore();
+  getPntrToValue()->reshapeMatrixStore(3);
 }
 
 
 void PbcAction::setPbc() {
   if( !interface ) {
     std::vector<DomainDecomposition*> allput=plumed.getActionSet().select<DomainDecomposition*>();
-    if( allput.size()>1 ) warning("found more than one interface so don't know how to broadcast cell");
+    if( allput.size()>1 ) {
+      warning("found more than one interface so don't know how to broadcast cell");
+    }
     interface = allput[0];
   }
-  Tensor box; if( interface ) interface->broadcastToDomains( getPntrToValue() );
-  for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) box(i,j) = getPntrToValue()->get(3*i+j);
+  Tensor box;
+  if( interface ) {
+    interface->broadcastToDomains( getPntrToValue() );
+  }
+  for(unsigned i=0; i<3; ++i)
+    for(unsigned j=0; j<3; ++j) {
+      box(i,j) = getPntrToValue()->get(3*i+j);
+    }
   pbc.setBox(box);
 }
 
 void PbcAction::wait() {
-  ActionToPutData::wait(); setPbc();
+  ActionToPutData::wait();
+  setPbc();
 }
 
 void PbcAction::readBinary(std::istream&i) {
-  ActionToPutData::readBinary(i); setPbc();
+  ActionToPutData::readBinary(i);
+  setPbc();
 }
 
 }

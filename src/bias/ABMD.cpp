@@ -96,14 +96,13 @@ PLUMED_REGISTER_ACTION(ABMD,"ABMD")
 
 void ABMD::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
-  keys.use("ARG");
   keys.add("compulsory","TO","The array of target values");
   keys.add("compulsory","KAPPA","The array of force constants.");
   keys.add("optional","MIN","Array of starting values for the bias (set rho_m(t), otherwise it is set using the current value of ARG)");
   keys.add("optional","NOISE","Array of white noise intensities (add a temperature to the ABMD)");
   keys.add("optional","SEED","Array of seeds for the white noise (add a temperature to the ABMD)");
-  keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
-  keys.addOutputComponent("_min","default","one or multiple instances of this quantity can be referenced elsewhere in the input file. "
+  keys.addOutputComponent("force2","default","scalar","the instantaneous value of the squared force due to this bias potential");
+  keys.addOutputComponent("_min","default","scalar","one or multiple instances of this quantity can be referenced elsewhere in the input file. "
                           " These quantities will be named with the arguments of the bias followed by "
                           "the character string _min. These quantities tell the user the minimum value assumed by rho_m(t).");
 }
@@ -115,35 +114,50 @@ ABMD::ABMD(const ActionOptions&ao):
   kappa(getNumberOfArguments(),0.0),
   temp(getNumberOfArguments(),0.0),
   seed(getNumberOfArguments(),std::time(0)),
-  random(getNumberOfArguments())
-{
+  random(getNumberOfArguments()) {
   // Note : parseVector will check that number of arguments is correct
   parseVector("KAPPA",kappa);
   parseVector("MIN",min);
-  if(min.size()==0) min.assign(getNumberOfArguments(),-1.0);
-  if(min.size()!=getNumberOfArguments()) error("MIN array should have the same size as ARG array");
+  if(min.size()==0) {
+    min.assign(getNumberOfArguments(),-1.0);
+  }
+  if(min.size()!=getNumberOfArguments()) {
+    error("MIN array should have the same size as ARG array");
+  }
   parseVector("NOISE",temp);
   parseVector("SEED",seed);
   parseVector("TO",to);
   checkRead();
 
   log.printf("  min");
-  for(unsigned i=0; i<min.size(); i++) log.printf(" %f",min[i]);
+  for(unsigned i=0; i<min.size(); i++) {
+    log.printf(" %f",min[i]);
+  }
   log.printf("\n");
   log.printf("  to");
-  for(unsigned i=0; i<to.size(); i++) log.printf(" %f",to[i]);
+  for(unsigned i=0; i<to.size(); i++) {
+    log.printf(" %f",to[i]);
+  }
   log.printf("\n");
   log.printf("  with force constant");
-  for(unsigned i=0; i<kappa.size(); i++) log.printf(" %f",kappa[i]);
+  for(unsigned i=0; i<kappa.size(); i++) {
+    log.printf(" %f",kappa[i]);
+  }
   log.printf("\n");
 
   for(unsigned i=0; i<getNumberOfArguments(); i++) {
     std::string str_min=getPntrToArgument(i)->getName()+"_min";
-    addComponent(str_min); componentIsNotPeriodic(str_min);
-    if(min[i]!=-1.0) getPntrToComponent(str_min)->set(min[i]);
+    addComponent(str_min);
+    componentIsNotPeriodic(str_min);
+    if(min[i]!=-1.0) {
+      getPntrToComponent(str_min)->set(min[i]);
+    }
   }
-  for(unsigned i=0; i<getNumberOfArguments(); i++) {random[i].setSeed(-seed[i]);}
-  addComponent("force2"); componentIsNotPeriodic("force2");
+  for(unsigned i=0; i<getNumberOfArguments(); i++) {
+    random[i].setSeed(-seed[i]);
+  }
+  addComponent("force2");
+  componentIsNotPeriodic("force2");
 }
 
 
@@ -158,7 +172,10 @@ void ABMD::calculate() {
     double diff=temp[i];
     if(diff>0) {
       noise = 2.*random[i].Gaussian()*diff;
-      if(cv2<=diff) { diff=0.; temp[i]=0.; }
+      if(cv2<=diff) {
+        diff=0.;
+        temp[i]=0.;
+      }
     }
 
     // min < 0 means that the variable has not been used in the input file, so the current position of the CV is used

@@ -75,24 +75,29 @@ public:
 PLUMED_REGISTER_ACTION(WhamWeights,"WHAM_WEIGHTS")
 
 void WhamWeights::registerKeywords( Keywords& keys ) {
-  ActionShortcut::registerKeywords( keys ); keys.remove("LABEL");
+  ActionShortcut::registerKeywords( keys );
+  keys.remove("LABEL");
   keys.add("compulsory","BIAS","*.bias","the value of the biases to use when performing WHAM");
   keys.add("optional","TEMP","the temperature at which the simulation was run");
   keys.add("compulsory","STRIDE","1","the frequency with which the bias should be stored to perform WHAM");
   keys.add("compulsory","FILE","the file on which to output the WHAM weights");
   keys.add("optional","FMT","the format to use for the real numbers in the output file");
-  keys.setValueDescription("the weights that were calculated using WHAM");
-  keys.needsAction("GATHER_REPLICAS"); keys.needsAction("CONCATENATE");
-  keys.needsAction("COLLECT"); keys.needsAction("WHAM"); keys.needsAction("DUMPVECTOR");
+  keys.setValueDescription("vector","the weights that were calculated using WHAM");
+  keys.needsAction("GATHER_REPLICAS");
+  keys.needsAction("CONCATENATE");
+  keys.needsAction("COLLECT");
+  keys.needsAction("WHAM");
+  keys.needsAction("DUMPVECTOR");
 }
 
 WhamWeights::WhamWeights( const ActionOptions& ao ) :
   Action(ao),
-  ActionShortcut(ao)
-{
+  ActionShortcut(ao) {
   // Input for collection of weights for WHAM
-  std::string bias; parse("BIAS",bias);
-  std::string stride; parse("STRIDE",stride);
+  std::string bias;
+  parse("BIAS",bias);
+  std::string stride;
+  parse("STRIDE",stride);
   // Input for GATHER_REPLICAS
   readInputLine( getShortcutLabel() + "_gather: GATHER_REPLICAS ARG=" + bias );
   // Put all the replicas in a single vector
@@ -100,10 +105,16 @@ WhamWeights::WhamWeights( const ActionOptions& ao ) :
   // Input for COLLECT_FRAMES
   readInputLine( getShortcutLabel() + "_collect: COLLECT TYPE=vector ARG=" + getShortcutLabel() + "_gatherv STRIDE=" + stride);
   // Input for WHAM
-  std::string temp, tempstr=""; parse("TEMP",temp); if( temp.length()>0 ) tempstr="TEMP=" + temp;
+  std::string temp, tempstr="";
+  parse("TEMP",temp);
+  if( temp.length()>0 ) {
+    tempstr="TEMP=" + temp;
+  }
   readInputLine( getShortcutLabel() + ": WHAM ARG=" + getShortcutLabel() + "_collect " + tempstr );
   // Input for PRINT (will just output at end of calc
-  std::string filename, fmt; parse("FILE",filename); parse("FMT",fmt);
+  std::string filename, fmt;
+  parse("FILE",filename);
+  parse("FMT",fmt);
   readInputLine( "DUMPVECTOR STRIDE=0 ARG=" + getShortcutLabel() + " FILE=" + filename + " FMT=" + fmt );
 }
 

@@ -96,6 +96,8 @@ PLUMED_REGISTER_ACTION(HbondMatrix,"HBOND_MATRIX")
 
 void HbondMatrix::registerKeywords( Keywords& keys ) {
   AdjacencyMatrixBase::registerKeywords( keys );
+  keys.add("atoms-2","DONORS","The list of atoms which can donate a hydrogen bond");
+  keys.add("atoms-2","ACCEPTORS","The list of atoms which can accept a hydrogen bond");
   keys.add("atoms","HYDROGENS","The list of atoms that can form the bridge between the two interesting parts "
            "of the structure.");
   keys.add("numbered","SWITCH","The switchingfunction that specifies how close a pair of atoms must be together for there to be a hydrogen bond between them");
@@ -107,22 +109,36 @@ void HbondMatrix::registerKeywords( Keywords& keys ) {
 
 HbondMatrix::HbondMatrix(const ActionOptions&ao):
   Action(ao),
-  AdjacencyMatrixBase(ao)
-{
-  std::string sfinput,errors; parse("SWITCH",sfinput);
-  if( sfinput.length()==0 ) error("could not find SWITCH keyword");
+  AdjacencyMatrixBase(ao) {
+  std::string sfinput,errors;
+  parse("SWITCH",sfinput);
+  if( sfinput.length()==0 ) {
+    error("could not find SWITCH keyword");
+  }
   distanceOOSwitch.set(sfinput,errors);
-  if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
+  if( errors.length()!=0 ) {
+    error("problem reading SWITCH keyword : " + errors );
+  }
 
-  std::string hsfinput; parse("HSWITCH",hsfinput);
-  if( hsfinput.length()==0 ) error("could not find HSWITCH keyword");
+  std::string hsfinput;
+  parse("HSWITCH",hsfinput);
+  if( hsfinput.length()==0 ) {
+    error("could not find HSWITCH keyword");
+  }
   distanceOHSwitch.set(hsfinput,errors);
-  if( errors.length()!=0 ) error("problem reading HSWITCH keyword : " + errors );
+  if( errors.length()!=0 ) {
+    error("problem reading HSWITCH keyword : " + errors );
+  }
 
-  std::string asfinput; parse("ASWITCH",asfinput);
-  if( asfinput.length()==0 ) error("could not find SWITCH keyword");
+  std::string asfinput;
+  parse("ASWITCH",asfinput);
+  if( asfinput.length()==0 ) {
+    error("could not find SWITCH keyword");
+  }
   angleSwitch.set(asfinput,errors);
-  if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
+  if( errors.length()!=0 ) {
+    error("problem reading SWITCH keyword : " + errors );
+  }
 
   // Setup link cells
   setLinkCellCutoff( false, distanceOOSwitch.get_dmax() );
@@ -132,16 +148,22 @@ HbondMatrix::HbondMatrix(const ActionOptions&ao):
 }
 
 double HbondMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const {
-  Vector ood = pos2; double ood_l = ood.modulo2(); // acceptor - donor
-  if( ood_l<epsilon) return 0;
+  Vector ood = pos2;
+  double ood_l = ood.modulo2(); // acceptor - donor
+  if( ood_l<epsilon) {
+    return 0;
+  }
   double ood_df, ood_sw=distanceOOSwitch.calculateSqr( ood_l, ood_df );
 
   double value=0;
   for(unsigned i=0; i<natoms; ++i) {
-    Vector ohd=getPosition(i,myvals); double ohd_l=ohd.modulo2();
+    Vector ohd=getPosition(i,myvals);
+    double ohd_l=ohd.modulo2();
     double ohd_df, ohd_sw=distanceOHSwitch.calculateSqr( ohd_l, ohd_df );
 
-    Angle a; Vector ood_adf, ohd_adf; double angle=a.compute( ood, ohd, ood_adf, ohd_adf );
+    Angle a;
+    Vector ood_adf, ohd_adf;
+    double angle=a.compute( ood, ohd, ood_adf, ohd_adf );
     double angle_df, angle_sw=angleSwitch.calculate( angle, angle_df );
     value += ood_sw*ohd_sw*angle_sw;
 

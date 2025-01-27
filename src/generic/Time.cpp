@@ -48,7 +48,9 @@ public:
 // active methods:
   void calculate() override;
   void apply() override {}
-  unsigned getNumberOfDerivatives() override { return 0; }
+  unsigned getNumberOfDerivatives() override {
+    return 0;
+  }
 };
 
 PLUMED_REGISTER_ACTION(Time,"TIME")
@@ -56,13 +58,13 @@ PLUMED_REGISTER_ACTION(Time,"TIME")
 void Time::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
-  keys.setValueDescription("the time since the start of the trajectory");
+  keys.setValueDescription("scalar","the time since the start of the trajectory");
 }
 
 Time::Time(const ActionOptions&ao):
-  Action(ao),ActionWithValue(ao)
-{
-  addValueWithDerivatives(); setNotPeriodic();
+  Action(ao),ActionWithValue(ao) {
+  addValueWithDerivatives();
+  setNotPeriodic();
   // resize derivative by hand to a nonzero value
   getPntrToValue()->resizeDerivatives(1);
 }

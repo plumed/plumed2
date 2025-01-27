@@ -113,7 +113,7 @@ s(r) = 1 - \tanh\left( \frac{ r - d_0 }{ r_0 } \right)
 \f$s(r) =\left\{\begin{array}{ll}
    1                                                           & \mathrm{if } r \leq d_0 \\
    0.5 \left( \cos ( \frac{ r - d_0 }{ r_0 } \pi ) + 1 \right) & \mathrm{if } d_0 < r\leq d_0 + r_0 \\
-   0                                                           & \mathrm{if } r < d_0 + r_0
+   0                                                           & \mathrm{if } r > d_0 + r_0
   \end{array}\right.
 \f$
 </td> <td>
@@ -221,10 +221,18 @@ double baseSwitch::calculateSqr(double distance2,double&dfunc) const {
   double res= calculate(std::sqrt(distance2),dfunc);//RVO!
   return res;
 }
-double baseSwitch::get_d0() const {return d0;}
-double baseSwitch::get_r0() const {return 1.0/invr0;}
-double baseSwitch::get_dmax() const {return dmax;}
-double baseSwitch::get_dmax2() const {return dmax_2;}
+double baseSwitch::get_d0() const {
+  return d0;
+}
+double baseSwitch::get_r0() const {
+  return 1.0/invr0;
+}
+double baseSwitch::get_dmax() const {
+  return dmax;
+}
+double baseSwitch::get_dmax2() const {
+  return dmax_2;
+}
 std::string baseSwitch::description() const {
   std::ostringstream ostr;
   ostr<<get_r0()
@@ -234,7 +242,9 @@ std::string baseSwitch::description() const {
       << specificDescription();
   return ostr.str();
 }
-std::string baseSwitch::specificDescription() const {return "";}
+std::string baseSwitch::specificDescription() const {
+  return "";
+}
 void baseSwitch::setupStretch() {
   if(dmax!=std::numeric_limits<double>::max()) {
     stretch=1.0;
@@ -322,7 +332,13 @@ public:
   rational(double D0,double DMAX, double R0, int N, int M)
     :baseSwitch(D0,DMAX,R0,"rational"),
      nn(N),
-     mm([](int m,int n) {if (m==0) {return n*2;} else {return m;}}(M,N)),
+     mm([](int m,int n) {
+    if (m==0) {
+      return n*2;
+    } else {
+      return m;
+    }
+  }(M,N)),
   preRes(static_cast<double>(nn)/mm),
   preDfunc(0.5*nn*(nn-mm)/static_cast<double>(mm)),
   //wolfram <3:lim_(x->1) d^2/(dx^2) (1 - x^N)/(1 - x^M) = (N (M^2 - 3 M (-1 + N) + N (-3 + 2 N)))/(6 M)
@@ -581,7 +597,9 @@ protected:
     ostr<<" beta="<<beta<<" lambda="<<lambda<<" ref="<<ref;
     return ostr.str();
   }
-  inline double function(const double rdist,double&dfunc) const override {return 0.0;  }
+  inline double function(const double rdist,double&dfunc) const override {
+    return 0.0;
+  }
 public:
   nativeqSwitch(double D0, double DMAX, double R0, double BETA, double LAMBDA,double REF)
     :  baseSwitch(D0,DMAX,R0,"nativeq"),beta(BETA),lambda(LAMBDA),ref(REF) {}
@@ -758,7 +776,9 @@ protected:
     ostr<<" func=" << lepton_func;
     return ostr.str();
   }
-  inline double function(const double,double&) const override {return 0.0;}
+  inline double function(const double,double&) const override {
+    return 0.0;
+  }
 public:
   leptonSwitch(double D0, double DMAX, double R0, const std::string & func)
     :baseSwitch(D0,DMAX,R0,"lepton"),
@@ -852,8 +872,9 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   dostretch=true;
   bool dontstretch=false;
   Tools::parseFlag(data,"NOSTRETCH",dontstretch); // this is ignored now
-  if(dontstretch)
+  if(dontstretch) {
     dostretch=false;
+  }
   if(name=="CUBIC") {
     //cubic is the only switch type that only uses d0 and dmax
     function = PLMD::Tools::make_unique<switchContainers::cubicSwitch>(d0,dmax);
@@ -910,7 +931,9 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
 
   if( !data.empty() ) {
     errormsg="found the following rogue keywords in switching function input : ";
-    for(unsigned i=0; i<data.size(); ++i) errormsg = errormsg + data[i] + " ";
+    for(unsigned i=0; i<data.size(); ++i) {
+      errormsg = errormsg + data[i] + " ";
+    }
   }
 
   if(dostretch && dmax!=std::numeric_limits<double>::max()) {

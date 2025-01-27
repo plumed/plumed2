@@ -48,42 +48,70 @@ PLUMED_REGISTER_ACTION(SelectComponents,"SELECT_COMPONENTS")
 
 void SelectComponents::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
-  keys.add("compulsory","ARG","the argument we are using to build the shortcut");
+  keys.addInputKeyword("compulsory","ARG","vector/matrix","the value from which we are selecting components");
   keys.add("compulsory","COMPONENTS","the components in the input value that you woul like to build a new vector from");
-  keys.needsAction("FLATTEN"); keys.needsAction("CONSTANT"); keys.needsAction("SELECT_WITH_MASK");
-  keys.setValueDescription("a vector containing the selected components");
+  keys.needsAction("FLATTEN");
+  keys.needsAction("CONSTANT");
+  keys.needsAction("SELECT_WITH_MASK");
+  keys.setValueDescription("vector","a vector containing the selected components");
 }
 
 SelectComponents::SelectComponents(const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
-  std::vector<std::string> argn; parseVector("ARG",argn); std::vector<Value*> theargs;
+  ActionShortcut(ao) {
+  std::vector<std::string> argn;
+  parseVector("ARG",argn);
+  std::vector<Value*> theargs;
   ActionWithArguments::interpretArgumentList( argn, plumed.getActionSet(), this, theargs );
-  if( theargs.size()!=1 ) error("should only be one argument input to this action");
+  if( theargs.size()!=1 ) {
+    error("should only be one argument input to this action");
+  }
   // Create an array that will eventually hold the mask
   std::vector<double> mask( theargs[0]->getNumberOfValues(), 1 );
-  std::vector<std::string> elements; parseVector("COMPONENTS",elements);
+  std::vector<std::string> elements;
+  parseVector("COMPONENTS",elements);
   if( theargs[0]->getRank()==1 ) {
-    for(unsigned i=0; i<elements.size(); ++i) { unsigned sel; Tools::convert( elements[i], sel ); mask[sel-1]=0; }
+    for(unsigned i=0; i<elements.size(); ++i) {
+      unsigned sel;
+      Tools::convert( elements[i], sel );
+      mask[sel-1]=0;
+    }
   } else if( theargs[0]->getRank()==2 ) {
     for(unsigned i=0; i<elements.size(); ++i) {
       std::size_t dot = elements[i].find_first_of(".");
-      if( dot==std::string::npos ) error("found no dot in specification of required matrix element");
+      if( dot==std::string::npos ) {
+        error("found no dot in specification of required matrix element");
+      }
       std::string istr=elements[i].substr(0,dot), jstr=elements[i].substr(dot+1);
-      unsigned ival, jval; Tools::convert( istr, ival ); Tools::convert( jstr, jval );
+      unsigned ival, jval;
+      Tools::convert( istr, ival );
+      Tools::convert( jstr, jval );
       mask[(ival-1)*theargs[0]->getShape()[1] + jval - 1] = 0;
     }
     readInputLine( getShortcutLabel() + "_flat: FLATTEN ARG=" + theargs[0]->getName() );
-  } else error("input to this argument should be a vector/matrix");
+  } else {
+    error("input to this argument should be a vector/matrix");
+  }
   // Now create the mask action
-  std::string mask_str; Tools::convert( mask[0], mask_str ); unsigned check_mask=mask[0];
-  for(unsigned i=1; i<mask.size(); ++i) { std::string num; Tools::convert( mask[i], num ); mask_str += "," + num; check_mask +=mask[i]; }
-  if( mask.size()-check_mask!=elements.size() ) error("found repeated indexes in COMPONENTS");
+  std::string mask_str;
+  Tools::convert( mask[0], mask_str );
+  unsigned check_mask=mask[0];
+  for(unsigned i=1; i<mask.size(); ++i) {
+    std::string num;
+    Tools::convert( mask[i], num );
+    mask_str += "," + num;
+    check_mask +=mask[i];
+  }
+  if( mask.size()-check_mask!=elements.size() ) {
+    error("found repeated indexes in COMPONENTS");
+  }
   readInputLine( getShortcutLabel() + "_mask: CONSTANT VALUES=" + mask_str );
   // And finally create the selector
-  if( theargs[0]->getRank()==1 ) readInputLine( getShortcutLabel() + ": SELECT_WITH_MASK ARG=" + theargs[0]->getName() + " MASK=" + getShortcutLabel() + "_mask");
-  else if( theargs[0]->getRank()==2 ) readInputLine( getShortcutLabel() + ": SELECT_WITH_MASK ARG=" + getShortcutLabel() + "_flat MASK=" + getShortcutLabel() + "_mask");
+  if( theargs[0]->getRank()==1 ) {
+    readInputLine( getShortcutLabel() + ": SELECT_WITH_MASK ARG=" + theargs[0]->getName() + " MASK=" + getShortcutLabel() + "_mask");
+  } else if( theargs[0]->getRank()==2 ) {
+    readInputLine( getShortcutLabel() + ": SELECT_WITH_MASK ARG=" + getShortcutLabel() + "_flat MASK=" + getShortcutLabel() + "_mask");
+  }
 }
 
 }

@@ -122,21 +122,21 @@ void FUNNEL_PS::registerKeywords(Keywords& keys) {
   keys.add("atoms","ANCHOR","Closest protein atom to the ligand, picked to avoid pbc problems during the simulation");
   keys.add("compulsory","POINTS","6 values defining x, y, and z of the 2 points used to construct the line. The order should be A_x,A_y,A_z,B_x,B_y,B_z.");
   keys.addFlag("SQUARED-ROOT",false,"Used to initialize the creation of the alignment variable");
-  keys.addOutputComponent("lp","default","the position along the funnel line");
-  keys.addOutputComponent("ld","default","the distance from the funnel line");
+  keys.addOutputComponent("lp","default","scalar","the position along the funnel line");
+  keys.addOutputComponent("ld","default","scalar","the distance from the funnel line");
 }
 
 FUNNEL_PS::FUNNEL_PS(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
-  pbc(true),squared(true)
-{
+  pbc(true),squared(true) {
   string reference;
   parse("REFERENCE",reference);
   string type;
   type.assign("OPTIMAL");
   parseAtomList("LIGAND",ligand_com);
-  if(ligand_com.size()!=1)
+  if(ligand_com.size()!=1) {
     error("Number of specified atoms should be one, normally the COM of the ligand");
+  }
   parseVector("POINTS",points);
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
@@ -150,8 +150,9 @@ FUNNEL_PS::FUNNEL_PS(const ActionOptions&ao):
   checkRead();
 
   // read everything in ang and transform to nm if we are not in natural units
-  if( !pdb.read(reference,usingNaturalUnits(),0.1/getUnits().getLength()) )
+  if( !pdb.read(reference,usingNaturalUnits(),0.1/getUnits().getLength()) ) {
     error("missing input file " + reference );
+  }
 
   bool remove_com=true;
   bool normalize_weights=true;
@@ -177,8 +178,11 @@ FUNNEL_PS::FUNNEL_PS(const ActionOptions&ao):
   log.printf("  average from file %s\n",reference.c_str());
   log.printf("  method for alignment : %s \n",type.c_str() );
 
-  if(pbc) log.printf("  using periodic boundary conditions\n");
-  else    log.printf("  without periodic boundary conditions\n");
+  if(pbc) {
+    log.printf("  using periodic boundary conditions\n");
+  } else {
+    log.printf("  without periodic boundary conditions\n");
+  }
 
   addComponentWithDerivatives("lp");
   componentIsNotPeriodic("lp");
@@ -192,7 +196,9 @@ FUNNEL_PS::FUNNEL_PS(const ActionOptions&ao):
 // calculator
 void FUNNEL_PS::calculate() {
 
-  if(pbc) makeWhole();
+  if(pbc) {
+    makeWhole();
+  }
 
   Tensor Rotation;
   Matrix<std::vector<Vector> > drotdpos(3,3);

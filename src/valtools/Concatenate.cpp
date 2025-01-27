@@ -47,7 +47,9 @@ public:
 /// Constructor
   explicit Concatenate(const ActionOptions&);
 /// Get the number of derivatives
-  unsigned getNumberOfDerivatives() override { return 0; }
+  unsigned getNumberOfDerivatives() override {
+    return 0;
+  }
 /// Do the calculation
   void calculate() override;
 ///
@@ -57,76 +59,146 @@ public:
 PLUMED_REGISTER_ACTION(Concatenate,"CONCATENATE")
 
 void Concatenate::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys ); ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
-  keys.add("numbered","MATRIX","specify the matrices that you wish to join together into a single matrix"); keys.reset_style("MATRIX","compulsory");
-  keys.setValueDescription("the concatenated vector/matrix that was constructed from the input values");
+  Action::registerKeywords( keys );
+  ActionWithValue::registerKeywords( keys );
+  ActionWithArguments::registerKeywords( keys );
+  keys.addInputKeyword("optional","ARG","scalar/vector","the values that should be concatenated together to form the output vector");
+  keys.addInputKeyword("numbered","MATRIX","scalar/matrix","specify the matrices that you wish to join together into a single matrix");
+  keys.reset_style("MATRIX","compulsory");
+  keys.setValueDescription("vector/matrix","the concatenated vector/matrix that was constructed from the input values");
 }
 
 Concatenate::Concatenate(const ActionOptions& ao):
   Action(ao),
   ActionWithValue(ao),
-  ActionWithArguments(ao)
-{
+  ActionWithArguments(ao) {
   if( getNumberOfArguments()>0 ) {
-    vectors=true; std::vector<unsigned> shape(1); shape[0]=0;
+    vectors=true;
+    std::vector<unsigned> shape(1);
+    shape[0]=0;
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      if( getPntrToArgument(i)->getRank()>1 ) error("cannot concatenate matrix with vectors");
-      getPntrToArgument(i)->buildDataStore(); shape[0] += getPntrToArgument(i)->getNumberOfValues();
+      if( getPntrToArgument(i)->getRank()>1 ) {
+        error("cannot concatenate matrix with vectors");
+      }
+      getPntrToArgument(i)->buildDataStore();
+      shape[0] += getPntrToArgument(i)->getNumberOfValues();
     }
     log.printf("  creating vector with %d elements \n", shape[0] );
-    addValue( shape ); bool period=getPntrToArgument(0)->isPeriodic();
-    std::string min, max; if( period ) getPntrToArgument(0)->getDomain( min, max );
+    addValue( shape );
+    bool period=getPntrToArgument(0)->isPeriodic();
+    std::string min, max;
+    if( period ) {
+      getPntrToArgument(0)->getDomain( min, max );
+    }
     for(unsigned i=1; i<getNumberOfArguments(); ++i) {
-      if( period!=getPntrToArgument(i)->isPeriodic() ) error("periods of input arguments should match");
+      if( period!=getPntrToArgument(i)->isPeriodic() ) {
+        error("periods of input arguments should match");
+      }
       if( period ) {
-        std::string min0, max0; getPntrToArgument(i)->getDomain( min0, max0 );
-        if( min0!=min || max0!=max ) error("domains of input arguments should match");
+        std::string min0, max0;
+        getPntrToArgument(i)->getDomain( min0, max0 );
+        if( min0!=min || max0!=max ) {
+          error("domains of input arguments should match");
+        }
       }
     }
-    if( period ) setPeriodic( min, max ); else setNotPeriodic();
+    if( period ) {
+      setPeriodic( min, max );
+    } else {
+      setNotPeriodic();
+    }
     getPntrToComponent(0)->buildDataStore();
-    if( getPntrToComponent(0)->getRank()==2 ) getPntrToComponent(0)->reshapeMatrixStore( shape[1] );
+    if( getPntrToComponent(0)->getRank()==2 ) {
+      getPntrToComponent(0)->reshapeMatrixStore( shape[1] );
+    }
   } else {
-    unsigned nrows=0, ncols=0; std::vector<Value*> arglist; vectors=false;
+    unsigned nrows=0, ncols=0;
+    std::vector<Value*> arglist;
+    vectors=false;
     for(unsigned i=1;; i++) {
-      unsigned nt_cols=0; unsigned size_b4 = arglist.size();
+      unsigned nt_cols=0;
+      unsigned size_b4 = arglist.size();
       for(unsigned j=1;; j++) {
-        if( j==10 ) error("cannot combine more than 9 matrices");
-        std::vector<Value*> argn; parseArgumentList("MATRIX", i*10+j, argn);
-        if( argn.size()==0 ) break;
-        if( argn.size()>1 ) error("should only be one argument to each matrix keyword");
-        if( argn[0]->getRank()!=0 && argn[0]->getRank()!=2 ) error("input arguments for this action should be matrices");
-        argn[0]->buildDataStore(); arglist.push_back( argn[0] ); nt_cols++;
-        if( argn[0]->getRank()==0 ) log.printf("  %d %d component of composed matrix is scalar labelled %s\n", i, j, argn[0]->getName().c_str() );
-        else log.printf("  %d %d component of composed matrix is %d by %d matrix labelled %s\n", i, j, argn[0]->getShape()[0], argn[0]->getShape()[1], argn[0]->getName().c_str() );
+        if( j==10 ) {
+          error("cannot combine more than 9 matrices");
+        }
+        std::vector<Value*> argn;
+        parseArgumentList("MATRIX", i*10+j, argn);
+        if( argn.size()==0 ) {
+          break;
+        }
+        if( argn.size()>1 ) {
+          error("should only be one argument to each matrix keyword");
+        }
+        if( argn[0]->getRank()!=0 && argn[0]->getRank()!=2 ) {
+          error("input arguments for this action should be matrices");
+        }
+        argn[0]->buildDataStore();
+        arglist.push_back( argn[0] );
+        nt_cols++;
+        if( argn[0]->getRank()==0 ) {
+          log.printf("  %d %d component of composed matrix is scalar labelled %s\n", i, j, argn[0]->getName().c_str() );
+        } else {
+          log.printf("  %d %d component of composed matrix is %d by %d matrix labelled %s\n", i, j, argn[0]->getShape()[0], argn[0]->getShape()[1], argn[0]->getName().c_str() );
+        }
       }
-      if( arglist.size()==size_b4 ) break;
-      if( i==1 ) ncols=nt_cols;
-      else if( nt_cols!=ncols ) error("should be joining same number of matrices in each row");
+      if( arglist.size()==size_b4 ) {
+        break;
+      }
+      if( i==1 ) {
+        ncols=nt_cols;
+      } else if( nt_cols!=ncols ) {
+        error("should be joining same number of matrices in each row");
+      }
       nrows++;
     }
 
-    std::vector<unsigned> shape(2); shape[0]=0; unsigned k=0;
-    row_starts.resize( arglist.size() ); col_starts.resize( arglist.size() );
+    std::vector<unsigned> shape(2);
+    shape[0]=0;
+    unsigned k=0;
+    row_starts.resize( arglist.size() );
+    col_starts.resize( arglist.size() );
     for(unsigned i=0; i<nrows; ++i) {
-      unsigned cstart = 0, nr = 1; if( arglist[k]->getRank()==2 ) nr=arglist[k]->getShape()[0];
+      unsigned cstart = 0, nr = 1;
+      if( arglist[k]->getRank()==2 ) {
+        nr=arglist[k]->getShape()[0];
+      }
       for(unsigned j=0; j<ncols; ++j) {
         if( arglist[k]->getRank()==0 ) {
-          if( nr!=1 ) error("mismatched matrix sizes");
-        } else if( nrows>1 && arglist[k]->getShape()[0]!=nr ) error("mismatched matrix sizes");
-        row_starts[k] = shape[0]; col_starts[k] = cstart;
-        if( arglist[k]->getRank()==0 ) cstart += 1;
-        else cstart += arglist[k]->getShape()[1];
+          if( nr!=1 ) {
+            error("mismatched matrix sizes");
+          }
+        } else if( nrows>1 && arglist[k]->getShape()[0]!=nr ) {
+          error("mismatched matrix sizes");
+        }
+        row_starts[k] = shape[0];
+        col_starts[k] = cstart;
+        if( arglist[k]->getRank()==0 ) {
+          cstart += 1;
+        } else {
+          cstart += arglist[k]->getShape()[1];
+        }
         k++;
       }
-      if( i==0 ) shape[1]=cstart;
-      else if( cstart!=shape[1] ) error("mismatched matrix sizes");
-      if( arglist[k-1]->getRank()==0 ) shape[0] += 1;
-      else shape[0] += arglist[k-1]->getShape()[0];
+      if( i==0 ) {
+        shape[1]=cstart;
+      } else if( cstart!=shape[1] ) {
+        error("mismatched matrix sizes");
+      }
+      if( arglist[k-1]->getRank()==0 ) {
+        shape[0] += 1;
+      } else {
+        shape[0] += arglist[k-1]->getShape()[0];
+      }
     }
     // Now request the arguments to make sure we store things we need
-    requestArguments(arglist); addValue( shape ); setNotPeriodic(); getPntrToComponent(0)->buildDataStore();
-    if( getPntrToComponent(0)->getRank()==2 ) getPntrToComponent(0)->reshapeMatrixStore( shape[1] );
+    requestArguments(arglist);
+    addValue( shape );
+    setNotPeriodic();
+    getPntrToComponent(0)->buildDataStore();
+    if( getPntrToComponent(0)->getRank()==2 ) {
+      getPntrToComponent(0)->reshapeMatrixStore( shape[1] );
+    }
   }
 }
 
@@ -135,8 +207,12 @@ void Concatenate::calculate() {
   if( vectors ) {
     unsigned k=0;
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      Value* myarg=getPntrToArgument(i); unsigned nvals=myarg->getNumberOfValues();
-      for(unsigned j=0; j<nvals; ++j) { myval->set( k, myarg->get(j) ); k++; }
+      Value* myarg=getPntrToArgument(i);
+      unsigned nvals=myarg->getNumberOfValues();
+      for(unsigned j=0; j<nvals; ++j) {
+        myval->set( k, myarg->get(j) );
+        k++;
+      }
     }
   } else {
     // Retrieve the matrix from input
@@ -146,13 +222,17 @@ void Concatenate::calculate() {
       if( argn->getRank()==0 ) {
         myval->set( ncols*row_starts[k]+col_starts[k], argn->get() );
       } else {
-        std::vector<double> vals; std::vector<std::pair<unsigned,unsigned> > pairs;
+        std::vector<double> vals;
+        std::vector<std::pair<unsigned,unsigned> > pairs;
         bool symmetric=getPntrToArgument(k)->isSymmetric();
-        unsigned nedge=0; getPntrToArgument(k)->retrieveEdgeList( nedge, pairs, vals );
+        unsigned nedge=0;
+        getPntrToArgument(k)->retrieveEdgeList( nedge, pairs, vals );
         for(unsigned l=0; l<nedge; ++l ) {
           unsigned i=pairs[l].first, j=pairs[l].second;
           myval->set( ncols*(row_starts[k]+i)+col_starts[k]+j, vals[l] );
-          if( symmetric ) myval->set( ncols*(row_starts[k]+j)+col_starts[k]+i, vals[l] );
+          if( symmetric ) {
+            myval->set( ncols*(row_starts[k]+j)+col_starts[k]+i, vals[l] );
+          }
         }
       }
     }
@@ -160,26 +240,35 @@ void Concatenate::calculate() {
 }
 
 void Concatenate::apply() {
-  if( doNotCalculateDerivatives() || !getPntrToComponent(0)->forcesWereAdded() ) return;
+  if( doNotCalculateDerivatives() || !getPntrToComponent(0)->forcesWereAdded() ) {
+    return;
+  }
 
   Value* val=getPntrToComponent(0);
   if( vectors ) {
     unsigned k=0;
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      Value* myarg=getPntrToArgument(i); unsigned nvals=myarg->getNumberOfValues();
-      for(unsigned j=0; j<nvals; ++j) { myarg->addForce( j, val->getForce(k) ); k++; }
+      Value* myarg=getPntrToArgument(i);
+      unsigned nvals=myarg->getNumberOfValues();
+      for(unsigned j=0; j<nvals; ++j) {
+        myarg->addForce( j, val->getForce(k) );
+        k++;
+      }
     }
   } else {
     unsigned ncols=val->getShape()[1];
     for(unsigned k=0; k<getNumberOfArguments(); ++k) {
       Value* argn=getPntrToArgument(k);
-      if( argn->getRank()==0 ) argn->addForce( 0, val->getForce(ncols*row_starts[k]+col_starts[k]) );
-      else {
+      if( argn->getRank()==0 ) {
+        argn->addForce( 0, val->getForce(ncols*row_starts[k]+col_starts[k]) );
+      } else {
         unsigned val_ncols=val->getNumberOfColumns();
         unsigned arg_ncols=argn->getNumberOfColumns();
         for(unsigned i=0; i<argn->getShape()[0]; ++i) {
           unsigned ncol = argn->getRowLength(i);
-          for(unsigned j=0; j<ncol; ++j) argn->addForce( i*arg_ncols+j, val->getForce( val_ncols*(row_starts[k]+i)+col_starts[k]+argn->getRowIndex(i,j) ), false );
+          for(unsigned j=0; j<ncol; ++j) {
+            argn->addForce( i*arg_ncols+j, val->getForce( val_ncols*(row_starts[k]+i)+col_starts[k]+argn->getRowIndex(i,j) ), false );
+          }
         }
       }
     }

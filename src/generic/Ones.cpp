@@ -45,16 +45,22 @@ PLUMED_REGISTER_ACTION(Ones,"ONES")
 void Ones::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
   keys.add("compulsory","SIZE","the number of ones that you would like to create");
-  keys.setValueDescription("a vector of ones with the required number of elements");
+  keys.setValueDescription("scalar/vector","a vector of ones with the required number of elements");
   keys.needsAction("CONSTANT");
 }
 
 Ones::Ones(const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
-  unsigned size; parse("SIZE",size); if( size<1 ) error("size should be greater than 0");
-  std::string ones="1"; for(unsigned i=1; i<size; ++i) ones +=",1";
+  ActionShortcut(ao) {
+  unsigned size;
+  parse("SIZE",size);
+  if( size<1 ) {
+    error("size should be greater than 0");
+  }
+  std::string ones="1";
+  for(unsigned i=1; i<size; ++i) {
+    ones +=",1";
+  }
   readInputLine( getShortcutLabel() + ": CONSTANT NOLOG VALUES=" + ones );
 }
 

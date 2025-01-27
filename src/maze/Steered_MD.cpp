@@ -118,14 +118,14 @@ void Steered_MD::registerKeywords(Keywords& keys) {
   keys.addOutputComponent(
     "tdist",
     "default",
+    "scalar",
     "Total distance traveled by biased atoms."
   );
 }
 
 Steered_MD::Steered_MD(const ActionOptions& ao)
   : PLUMED_OPT_INIT(ao),
-    total_dist_(0.0)
-{
+    total_dist_(0.0) {
   log.printf("maze> Steered MD.\n");
 
   if (keywords.exists("PULLING")) {
@@ -157,8 +157,7 @@ void Steered_MD::optimize() {
 
   if (pbc_) {
     d = pbcDistance(c, com_);
-  }
-  else {
+  } else {
     d = delta(c, com_);
   }
 

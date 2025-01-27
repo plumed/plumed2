@@ -58,35 +58,51 @@ void AtomicSMAC::registerKeywords(Keywords& keys) {
   keys.add("optional","SWITCH_COORD","This keyword is used to define the coordination switching function.");
   keys.reset_style("KERNEL","optional");
   multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
-  keys.needsAction("CONTACT_MATRIX"); keys.needsAction("GSYMFUNC_THREEBODY"); keys.needsAction("ONES");
+  keys.needsAction("CONTACT_MATRIX");
+  keys.needsAction("GSYMFUNC_THREEBODY");
+  keys.needsAction("ONES");
   keys.needsAction("MATRIX_VECTOR_PRODUCT");
 }
 
 AtomicSMAC::AtomicSMAC(const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
+  ActionShortcut(ao) {
   // Create the matrices
-  std::string sw_input; parse("SWITCH",sw_input);
-  std::string sp_lab, sp_laba; parse("SPECIES",sp_lab); parse("SPECIESA",sp_laba);
+  std::string sw_input;
+  parse("SWITCH",sw_input);
+  std::string sp_lab, sp_laba;
+  parse("SPECIES",sp_lab);
+  parse("SPECIESA",sp_laba);
   std::string cmap_input = getShortcutLabel() + "_cmap: CONTACT_MATRIX";
   if( sp_lab.length()>0 ) {
     readInputLine( getShortcutLabel() + "_cmap: CONTACT_MATRIX GROUP=" + sp_lab + " COMPONENTS SWITCH={" + sw_input + "}");
   } else if( sp_laba.length()>0 ) {
-    std::string sp_labb; parse("SPECIESB",sp_labb);
+    std::string sp_labb;
+    parse("SPECIESB",sp_labb);
     readInputLine( getShortcutLabel() + "_cmap: CONTACT_MATRIX GROUPA=" + sp_laba + " GROUPB=" + sp_labb + " COMPONENTS SWITCH={" + sw_input + "}");
   }
   // Now need the Gaussians
   std::string mykernels;
   for(unsigned i=1;; ++i) {
-    std::string kstr_inpt, istr, kern_str; Tools::convert( i, istr );
-    if( !parseNumbered("KERNEL",i,kstr_inpt ) ) { break; }
+    std::string kstr_inpt, istr, kern_str;
+    Tools::convert( i, istr );
+    if( !parseNumbered("KERNEL",i,kstr_inpt ) ) {
+      break;
+    }
     std::vector<std::string> words = Tools::getWords(kstr_inpt);
-    if( words[0]=="GAUSSIAN" ) kern_str="gaussian";
-    else error("unknown kernel type");
-    std::string center, var; Tools::parse(words,"CENTER",center); Tools::parse(words,"SIGMA",var);
-    if( mykernels.length()==0 ) mykernels = "exp(-(ajik-" + center + ")^2/(2*" + var + "*" + var + "))";
-    else mykernels = mykernels + "+exp(-(ajik-" + center + ")^2/(2*" + var + "*" + var + "))";
+    if( words[0]=="GAUSSIAN" ) {
+      kern_str="gaussian";
+    } else {
+      error("unknown kernel type");
+    }
+    std::string center, var;
+    Tools::parse(words,"CENTER",center);
+    Tools::parse(words,"SIGMA",var);
+    if( mykernels.length()==0 ) {
+      mykernels = "exp(-(ajik-" + center + ")^2/(2*" + var + "*" + var + "))";
+    } else {
+      mykernels = mykernels + "+exp(-(ajik-" + center + ")^2/(2*" + var + "*" + var + "))";
+    }
   }
   // Hard coded switching function on minimum distance here -- should be improved
   readInputLine( getShortcutLabel() + "_ksum: GSYMFUNC_THREEBODY WEIGHT=" + getShortcutLabel() + "_cmap.w " +
@@ -95,11 +111,13 @@ AtomicSMAC::AtomicSMAC(const ActionOptions& ao):
   // And just the sum of the coordination numbers
   ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_cmap");
   plumed_assert( av && av->getNumberOfComponents()>0 && (av->copyOutput(0))->getRank()==2 );
-  std::string size; Tools::convert( (av->copyOutput(0))->getShape()[1], size );
+  std::string size;
+  Tools::convert( (av->copyOutput(0))->getShape()[1], size );
   readInputLine( getShortcutLabel() + "_ones: ONES SIZE=" + size );
   readInputLine( getShortcutLabel() + "_denom: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_cmap.w," + getShortcutLabel() + "_ones");
   // And the transformed switching functions
-  std::string swcoord_str; parse("SWITCH_COORD",swcoord_str);
+  std::string swcoord_str;
+  parse("SWITCH_COORD",swcoord_str);
   readInputLine( getShortcutLabel() + "_mtdenom: MORE_THAN ARG=" + getShortcutLabel() + "_denom SWITCH={" + swcoord_str +"}");
   // And matheval to get the final quantity
   readInputLine( getShortcutLabel() + "_smac: CUSTOM ARG=" + getShortcutLabel() + "_ksum.n," + getShortcutLabel() + "_mtdenom," + getShortcutLabel() + "_ksum.d FUNC=x*y/z PERIODIC=NO");

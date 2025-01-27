@@ -21,7 +21,10 @@ jobs:
       matrix:
         variant: [ "" , "+allmodules" ]
         # this is to test both intel and arm64 macs
-        os: [ macos-12 , macos-14 ]
+        # note: macos-14 has a problem in fetching the git repository of plumed, namely a
+        # "fatal: detected dubious ownership in repository" error
+        # I didn't find any solution, so for the moment I keep macos-14 off
+        os: [ macos-13 ]
         exclude:
         # many tests on contributed modules are still failing for numerical reasons on arm64, see https://github.com/plumed/plumed2/pull/950
         # once fixed we could introduce this back:
@@ -68,7 +71,7 @@ jobs:
       fail-fast: false
       matrix:
         # this is to test both intel and arm64 macs
-        os: [ macos-12 , macos-14 ]
+        os: [ macos-13 , macos-14 ]
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4

@@ -68,8 +68,7 @@ PRINT ARG=HN_pre.* FILE=PRE.dat STRIDE=1
 //+ENDPLUMEDOC
 
 class PRE :
-  public MetainferenceBase
-{
+  public MetainferenceBase {
 private:
   bool             pbc;
   bool             doratio;
@@ -103,15 +102,14 @@ void PRE::registerKeywords( Keywords& keys ) {
   keys.add("numbered","RTWO","The relaxation of the atom/atoms in the corresponding GROUPA of atoms. "
            "Keywords like RTWO1, RTWO2, RTWO3,... should be listed.");
   keys.add("numbered","PREINT","Add an experimental value for each PRE.");
-  keys.addOutputComponent("pre","default","the # PRE");
-  keys.addOutputComponent("exp","PREINT","the # PRE experimental intensity");
+  keys.addOutputComponent("pre","default","scalar","the # PRE");
+  keys.addOutputComponent("exp","PREINT","scalar","the # PRE experimental intensity");
 }
 
 PRE::PRE(const ActionOptions&ao):
   PLUMED_METAINF_INIT(ao),
   pbc(true),
-  doratio(true)
-{
+  doratio(true) {
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
@@ -122,14 +120,21 @@ PRE::PRE(const ActionOptions&ao):
 
   std::vector<AtomNumber> atom;
   parseAtomList("SPINLABEL",atom);
-  if(atom.size()!=1) error("Number of specified atom should be 1");
+  if(atom.size()!=1) {
+    error("Number of specified atom should be 1");
+  }
 
   // Read in the atoms
   std::vector<AtomNumber> t, ga_lista, gb_lista;
   for(int i=1;; ++i ) {
     parseAtomList("GROUPA", i, t );
-    if( t.empty() ) break;
-    for(unsigned j=0; j<t.size(); j++) {ga_lista.push_back(t[j]); gb_lista.push_back(atom[0]);}
+    if( t.empty() ) {
+      break;
+    }
+    for(unsigned j=0; j<t.size(); j++) {
+      ga_lista.push_back(t[j]);
+      gb_lista.push_back(atom[0]);
+    }
     nga.push_back(t.size());
     t.resize(0);
   }
@@ -139,27 +144,39 @@ PRE::PRE(const ActionOptions&ao):
   if(doratio) {
     unsigned ntarget=0;
     for(unsigned i=0; i<nga.size(); ++i) {
-      if( !parseNumbered( "RTWO", i+1, rtwo[i] ) ) break;
+      if( !parseNumbered( "RTWO", i+1, rtwo[i] ) ) {
+        break;
+      }
       ntarget++;
     }
     if( ntarget==0 ) {
       parse("RTWO",rtwo[0]);
-      for(unsigned i=1; i<nga.size(); ++i) rtwo[i]=rtwo[0];
-    } else if( ntarget!=nga.size() ) error("found wrong number of RTWO values");
+      for(unsigned i=1; i<nga.size(); ++i) {
+        rtwo[i]=rtwo[0];
+      }
+    } else if( ntarget!=nga.size() ) {
+      error("found wrong number of RTWO values");
+    }
   }
 
   double tauc=0.;
   parse("TAUC",tauc);
-  if(tauc==0.) error("TAUC must be set");
+  if(tauc==0.) {
+    error("TAUC must be set");
+  }
 
   double omega=0.;
   parse("OMEGA",omega);
-  if(omega==0.) error("OMEGA must be set");
+  if(omega==0.) {
+    error("OMEGA must be set");
+  }
 
   inept=0.;
   if(doratio) {
     parse("INEPT",inept);
-    if(inept==0.) error("INEPT must be set");
+    if(inept==0.) {
+      error("INEPT must be set");
+    }
     inept *= 0.001; // ms2s
   }
 
@@ -176,13 +193,21 @@ PRE::PRE(const ActionOptions&ao):
   exppre.resize( nga.size() );
   unsigned ntarget=0;
   for(unsigned i=0; i<nga.size(); ++i) {
-    if( !parseNumbered( "PREINT", i+1, exppre[i] ) ) break;
+    if( !parseNumbered( "PREINT", i+1, exppre[i] ) ) {
+      break;
+    }
     ntarget++;
   }
   bool addexp=false;
-  if(ntarget!=nga.size() && ntarget!=0) error("found wrong number of PREINT values");
-  if(ntarget==nga.size()) addexp=true;
-  if(getDoScore()&&!addexp) error("with DOSCORE you need to set the PREINT values");
+  if(ntarget!=nga.size() && ntarget!=0) {
+    error("found wrong number of PREINT values");
+  }
+  if(ntarget==nga.size()) {
+    addexp=true;
+  }
+  if(getDoScore()&&!addexp) {
+    error("with DOSCORE you need to set the PREINT values");
+  }
 
   // Create neighbour lists
   nl=Tools::make_unique<NeighborList>(gb_lista,ga_lista,false,true,pbc,getPbc(),comm);
@@ -201,20 +226,25 @@ PRE::PRE(const ActionOptions&ao):
   }
   tot_size = index;
 
-  if(pbc)      log.printf("  using periodic boundary conditions\n");
-  else         log.printf("  without periodic boundary conditions\n");
+  if(pbc) {
+    log.printf("  using periodic boundary conditions\n");
+  } else {
+    log.printf("  without periodic boundary conditions\n");
+  }
 
   log << " Bibliography" << plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)") << "\n";
 
   if(!getDoScore()) {
     for(unsigned i=0; i<nga.size(); i++) {
-      std::string num; Tools::convert(i,num);
+      std::string num;
+      Tools::convert(i,num);
       addComponentWithDerivatives("pre-"+num);
       componentIsNotPeriodic("pre-"+num);
     }
     if(addexp) {
       for(unsigned i=0; i<nga.size(); i++) {
-        std::string num; Tools::convert(i,num);
+        std::string num;
+        Tools::convert(i,num);
         addComponent("exp-"+num);
         componentIsNotPeriodic("exp-"+num);
         Value* comp=getPntrToComponent("exp-"+num);
@@ -223,12 +253,14 @@ PRE::PRE(const ActionOptions&ao):
     }
   } else {
     for(unsigned i=0; i<nga.size(); i++) {
-      std::string num; Tools::convert(i,num);
+      std::string num;
+      Tools::convert(i,num);
       addComponent("pre-"+num);
       componentIsNotPeriodic("pre-"+num);
     }
     for(unsigned i=0; i<nga.size(); i++) {
-      std::string num; Tools::convert(i,num);
+      std::string num;
+      Tools::convert(i,num);
       addComponent("exp-"+num);
       componentIsNotPeriodic("exp-"+num);
       Value* comp=getPntrToComponent("exp-"+num);
@@ -245,8 +277,7 @@ PRE::PRE(const ActionOptions&ao):
   checkRead();
 }
 
-void PRE::calculate()
-{
+void PRE::calculate() {
   std::vector<Vector> deriv(tot_size, Vector{0,0,0});
   std::vector<double> fact(nga.size(), 0.);
 
@@ -256,9 +287,12 @@ void PRE::calculate()
     Tensor dervir;
     double pre=0;
     unsigned index=0;
-    for(unsigned k=0; k<i; k++) index+=nga[k];
+    for(unsigned k=0; k<i; k++) {
+      index+=nga[k];
+    }
     const double c_aver=constant/static_cast<double>(nga[i]);
-    std::string num; Tools::convert(i,num);
+    std::string num;
+    Tools::convert(i,num);
     Value* val=getPntrToComponent("pre-"+num);
     // cycle over equivalent atoms
     for(unsigned j=0; j<nga[i]; j++) {
@@ -267,8 +301,11 @@ void PRE::calculate()
       const unsigned i1=nl->getClosePair(index+j).second;
 
       Vector distance;
-      if(pbc) distance=pbcDistance(getPosition(i0),getPosition(i1));
-      else    distance=delta(getPosition(i0),getPosition(i1));
+      if(pbc) {
+        distance=pbcDistance(getPosition(i0),getPosition(i1));
+      } else {
+        distance=delta(getPosition(i0),getPosition(i1));
+      }
 
       const double r2=distance.modulo2();
       const double r6=r2*r2*r2;
@@ -278,7 +315,9 @@ void PRE::calculate()
 
       pre += tmpir6;
       deriv[index+j] = -tmpir8*distance;
-      if(!getDoScore()) dervir   +=  Tensor(distance,deriv[index+j]);
+      if(!getDoScore()) {
+        dervir   +=  Tensor(distance,deriv[index+j]);
+      }
     }
     double tmpratio;
     if(!doratio) {
@@ -298,7 +337,9 @@ void PRE::calculate()
         setAtomsDerivatives(val, i0,  fact[i]*deriv[index+j]);
         setAtomsDerivatives(val, i1, -fact[i]*deriv[index+j]);
       }
-    } else setCalcData(i, ratio);
+    } else {
+      setCalcData(i, ratio);
+    }
   }
 
   if(getDoScore()) {
@@ -311,15 +352,20 @@ void PRE::calculate()
     Value* val=getPntrToComponent("score");
     for(unsigned i=0; i<nga.size(); i++) {
       unsigned index=0;
-      for(unsigned k=0; k<i; k++) index+=nga[k];
+      for(unsigned k=0; k<i; k++) {
+        index+=nga[k];
+      }
       // cycle over equivalent atoms
       for(unsigned j=0; j<nga[i]; j++) {
         const unsigned i0=nl->getClosePair(index+j).first;
         const unsigned i1=nl->getClosePair(index+j).second;
 
         Vector distance;
-        if(pbc) distance=pbcDistance(getPosition(i0),getPosition(i1));
-        else    distance=delta(getPosition(i0),getPosition(i1));
+        if(pbc) {
+          distance=pbcDistance(getPosition(i0),getPosition(i1));
+        } else {
+          distance=delta(getPosition(i0),getPosition(i1));
+        }
 
         dervir += Tensor(distance,fact[i]*deriv[index+j]*getMetaDer(i));
         setAtomsDerivatives(val, i0,  fact[i]*deriv[index+j]*getMetaDer(i));
@@ -332,7 +378,9 @@ void PRE::calculate()
 
 void PRE::update() {
   // write status file
-  if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) writeStatus();
+  if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) {
+    writeStatus();
+  }
 }
 
 }

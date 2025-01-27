@@ -124,7 +124,6 @@ PLUMED_REGISTER_ACTION(Caliber,"CALIBER")
 
 void Caliber::registerKeywords( Keywords& keys ) {
   Bias::registerKeywords(keys);
-  keys.use("ARG");
   keys.addFlag("NOENSEMBLE",false,"don't perform any replica-averaging");
   keys.add("compulsory","FILE","the name of the file containing the time-resolved values");
   keys.add("compulsory","KAPPA","a force constant, this can be use to scale a constant estimated on-the-fly using AVERAGING");
@@ -132,10 +131,10 @@ void Caliber::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","TSCALE","1.0","Apply a time scaling on the experimental time scale");
   keys.add("compulsory","SCALE","1.0","Apply a constant scaling on the data provided as arguments");
   keys.add("optional","REGRES_ZERO","stride for regression with zero offset");
-  keys.addOutputComponent("x0","default","the instantaneous value of the center of the potential");
-  keys.addOutputComponent("mean","default","the current average value of the calculated observable");
-  keys.addOutputComponent("kappa","default","the current force constant");
-  keys.addOutputComponent("scale","REGRES_ZERO","the current scaling constant");
+  keys.addOutputComponent("x0","default","scalar","the instantaneous value of the center of the potential");
+  keys.addOutputComponent("mean","default","scalar","the current average value of the calculated observable");
+  keys.addOutputComponent("kappa","default","scalar","the current force constant");
+  keys.addOutputComponent("scale","REGRES_ZERO","scalar","the current scaling constant");
 }
 
 Caliber::Caliber(const ActionOptions&ao):
@@ -144,20 +143,27 @@ Caliber::Caliber(const ActionOptions&ao):
   scale_(1),
   doregres_zero_(false),
   nregres_zero_(0),
-  optsigmamean_stride_(0)
-{
+  optsigmamean_stride_(0) {
   parse("KAPPA",mult);
   std::string filename;
   parse("FILE",filename);
-  if( filename.length()==0 ) error("No external variable file was specified");
+  if( filename.length()==0 ) {
+    error("No external variable file was specified");
+  }
   unsigned averaging=0;
   parse("AVERAGING", averaging);
-  if(averaging>0) optsigmamean_stride_ = averaging;
+  if(averaging>0) {
+    optsigmamean_stride_ = averaging;
+  }
   double tscale=1.0;
   parse("TSCALE", tscale);
-  if(tscale<=0.) error("The time scale factor must be greater than 0.");
+  if(tscale<=0.) {
+    error("The time scale factor must be greater than 0.");
+  }
   parse("SCALE", scale_);
-  if(scale_==0.) error("The time scale factor cannot be 0.");
+  if(scale_==0.) {
+    error("The time scale factor cannot be 0.");
+  }
   // regression with zero intercept
   parse("REGRES_ZERO", nregres_zero_);
   if(nregres_zero_>0) {
@@ -177,7 +183,9 @@ Caliber::Caliber(const ActionOptions&ao):
   if(master) {
     nrep_    = multi_sim_comm.Get_size();
     replica_ = multi_sim_comm.Get_rank();
-    if(noensemble) nrep_ = 1;
+    if(noensemble) {
+      nrep_ = 1;
+    }
   } else {
     nrep_    = 0;
     replica_ = 0;
@@ -188,11 +196,15 @@ Caliber::Caliber(const ActionOptions&ao):
   const unsigned narg = getNumberOfArguments();
   sigma_mean2_.resize(narg,1);
   sigma_mean2_last_.resize(narg);
-  for(unsigned j=0; j<narg; j++) sigma_mean2_last_[j].push_back(0.000001);
+  for(unsigned j=0; j<narg; j++) {
+    sigma_mean2_last_[j].push_back(0.000001);
+  }
 
   log.printf("  Time resolved data from file %s\n",filename.c_str());
   std::ifstream varfile(filename.c_str());
-  if(varfile.fail()) error("Cannot open "+filename);
+  if(varfile.fail()) {
+    error("Cannot open "+filename);
+  }
   var.resize(narg);
   dvar.resize(narg);
   while (!varfile.eof()) {
@@ -209,17 +221,28 @@ Caliber::Caliber(const ActionOptions&ao):
   const double deltat = time[1] - time[0];
   for(unsigned i=0; i<narg; i++) {
     for(unsigned j=0; j<var[i].size(); j++) {
-      if(j==0) dvar[i].push_back((var[i][j+1] - var[i][j])/(deltat));
-      else if(j==var[i].size()-1) dvar[i].push_back((var[i][j] - var[i][j-1])/(deltat));
-      else dvar[i].push_back((var[i][j+1] - var[i][j-1])/(2.*deltat));
+      if(j==0) {
+        dvar[i].push_back((var[i][j+1] - var[i][j])/(deltat));
+      } else if(j==var[i].size()-1) {
+        dvar[i].push_back((var[i][j] - var[i][j-1])/(deltat));
+      } else {
+        dvar[i].push_back((var[i][j+1] - var[i][j-1])/(2.*deltat));
+      }
     }
   }
 
   for(unsigned i=0; i<narg; i++) {
-    std::string num; Tools::convert(i,num);
-    addComponent("x0-"+num); componentIsNotPeriodic("x0-"+num); x0comp.push_back(getPntrToComponent("x0-"+num));
-    addComponent("kappa-"+num); componentIsNotPeriodic("kappa-"+num); kcomp.push_back(getPntrToComponent("kappa-"+num));
-    addComponent("mean-"+num); componentIsNotPeriodic("mean-"+num); mcomp.push_back(getPntrToComponent("mean-"+num));
+    std::string num;
+    Tools::convert(i,num);
+    addComponent("x0-"+num);
+    componentIsNotPeriodic("x0-"+num);
+    x0comp.push_back(getPntrToComponent("x0-"+num));
+    addComponent("kappa-"+num);
+    componentIsNotPeriodic("kappa-"+num);
+    kcomp.push_back(getPntrToComponent("kappa-"+num));
+    addComponent("mean-"+num);
+    componentIsNotPeriodic("mean-"+num);
+    mcomp.push_back(getPntrToComponent("mean-"+num));
   }
 
   if(doregres_zero_) {
@@ -231,19 +254,23 @@ Caliber::Caliber(const ActionOptions&ao):
   log<<"  Bibliography "<<plumed.cite("Capelli, Tiana, Camilloni, J Chem Phys, 148, 184114");
 }
 
-void Caliber::get_sigma_mean(const double fact, const std::vector<double> &mean)
-{
+void Caliber::get_sigma_mean(const double fact, const std::vector<double> &mean) {
   const unsigned narg = getNumberOfArguments();
   const double dnrep = static_cast<double>(nrep_);
 
-  if(sigma_mean2_last_[0].size()==optsigmamean_stride_) for(unsigned i=0; i<narg; ++i) sigma_mean2_last_[i].erase(sigma_mean2_last_[i].begin());
+  if(sigma_mean2_last_[0].size()==optsigmamean_stride_)
+    for(unsigned i=0; i<narg; ++i) {
+      sigma_mean2_last_[i].erase(sigma_mean2_last_[i].begin());
+    }
   std::vector<double> sigma_mean2_now(narg,0);
   if(master) {
     for(unsigned i=0; i<narg; ++i) {
       double tmp = getArgument(i)-mean[i];
       sigma_mean2_now[i] = fact*tmp*tmp;
     }
-    if(nrep_>1) multi_sim_comm.Sum(&sigma_mean2_now[0], narg);
+    if(nrep_>1) {
+      multi_sim_comm.Sum(&sigma_mean2_now[0], narg);
+    }
   }
   comm.Sum(&sigma_mean2_now[0], narg);
 
@@ -253,35 +280,44 @@ void Caliber::get_sigma_mean(const double fact, const std::vector<double> &mean)
   }
 }
 
-void Caliber::replica_averaging(const double fact, std::vector<double> &mean)
-{
+void Caliber::replica_averaging(const double fact, std::vector<double> &mean) {
   const unsigned narg = getNumberOfArguments();
   if(master) {
-    for(unsigned i=0; i<narg; ++i) mean[i] = fact*getArgument(i);
-    if(nrep_>1) multi_sim_comm.Sum(&mean[0], narg);
+    for(unsigned i=0; i<narg; ++i) {
+      mean[i] = fact*getArgument(i);
+    }
+    if(nrep_>1) {
+      multi_sim_comm.Sum(&mean[0], narg);
+    }
   }
   comm.Sum(&mean[0], narg);
 }
 
-double Caliber::getSpline(const unsigned iarg)
-{
+double Caliber::getSpline(const unsigned iarg) {
   const double deltat = time[1] - time[0];
   const int tindex = static_cast<int>(getTime()/deltat);
 
   unsigned start, end;
   start=tindex;
-  if(tindex+1<var[iarg].size()) end=tindex+2;
-  else end=var[iarg].size();
+  if(tindex+1<var[iarg].size()) {
+    end=tindex+2;
+  } else {
+    end=var[iarg].size();
+  }
 
   double value=0;
   for(unsigned ipoint=start; ipoint<end; ++ipoint) {
     double grid=var[iarg][ipoint];
     double dder=dvar[iarg][ipoint];
     double yy=0.;
-    if(std::abs(grid)>0.0000001) yy=-dder/grid;
+    if(std::abs(grid)>0.0000001) {
+      yy=-dder/grid;
+    }
 
     int x0=1;
-    if(ipoint==tindex) x0=0;
+    if(ipoint==tindex) {
+      x0=0;
+    }
 
     double X=std::abs((getTime()-time[tindex])/deltat-(double)x0);
     double X2=X*X;
@@ -293,8 +329,7 @@ double Caliber::getSpline(const unsigned iarg)
   return value;
 }
 
-void Caliber::do_regression_zero(const std::vector<double> &mean)
-{
+void Caliber::do_regression_zero(const std::vector<double> &mean) {
 // parameters[i] = scale_ * mean[i]: find scale_ with linear regression
   double num = 0.0;
   double den = 0.0;
@@ -309,8 +344,7 @@ void Caliber::do_regression_zero(const std::vector<double> &mean)
   }
 }
 
-void Caliber::calculate()
-{
+void Caliber::calculate() {
   const unsigned narg = getNumberOfArguments();
   const double dnrep = static_cast<double>(nrep_);
   const double fact = 1.0/dnrep;
@@ -318,10 +352,14 @@ void Caliber::calculate()
   std::vector<double> mean(narg,0);
   std::vector<double> dmean_x(narg,fact);
   replica_averaging(fact, mean);
-  if(optsigmamean_stride_>0) get_sigma_mean(fact, mean);
+  if(optsigmamean_stride_>0) {
+    get_sigma_mean(fact, mean);
+  }
 
   // in case of regression with zero intercept, calculate scale
-  if(doregres_zero_ && getStep()%nregres_zero_==0) do_regression_zero(mean);
+  if(doregres_zero_ && getStep()%nregres_zero_==0) {
+    do_regression_zero(mean);
+  }
 
   double ene=0;
   for(unsigned i=0; i<narg; ++i) {
@@ -336,7 +374,9 @@ void Caliber::calculate()
     mcomp[i]->set(mean[i]);
   }
 
-  if(doregres_zero_) valueScale->set(scale_);
+  if(doregres_zero_) {
+    valueScale->set(scale_);
+  }
 
   setBias(ene);
 }

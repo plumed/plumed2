@@ -237,20 +237,26 @@ public:
   }
 
   static void set_to_zero(double*ptr,unsigned n) {
-    for(unsigned i=0; i<n; i++) ptr[i]=0.0;
+    for(unsigned i=0; i<n; i++) {
+      ptr[i]=0.0;
+    }
   }
 
   template<unsigned n>
   static void set_to_zero(std::vector<VectorGeneric<n>> & vec) {
     unsigned s=vec.size();
-    if(s==0) return;
+    if(s==0) {
+      return;
+    }
     set_to_zero(&vec[0][0],s*n);
   }
 
   template<unsigned n,unsigned m>
   static void set_to_zero(std::vector<TensorGeneric<n,m>> & vec) {
     unsigned s=vec.size();
-    if(s==0) return;
+    if(s==0) {
+      return;
+    }
     set_to_zero(&vec[0](0,0),s*n*m);
   }
 
@@ -288,7 +294,9 @@ public:
 
     T& operator[]( const std::string_view & key ) {
       auto f=map.find(key);
-      if(f!=map.end()) return f->second;
+      if(f!=map.end()) {
+        return f->second;
+      }
       keys.push_back(conv(key));
       return map[keys.back().get()];
     }
@@ -342,8 +350,7 @@ public:
       Key key;
       Handler(CriticalSectionWithKey* section,const Key& key):
         section(section),
-        key(key)
-      {
+        key(key) {
         section->start(key);
       }
       friend class CriticalSectionWithKey;
@@ -357,23 +364,26 @@ public:
       /// Move constructor.
       Handler(Handler && handler) noexcept :
         section(handler.section),
-        key(std::move(handler.key))
-      {
+        key(std::move(handler.key)) {
         handler.section=nullptr;
       };
       /// Move assignment.
       Handler & operator=(Handler && handler) noexcept {
         if(this!=&handler) {
-          if(section) section->stop(key);
+          if(section) {
+            section->stop(key);
+          }
           section=handler.section;
           key=std::move(handler.key);
         }
-        handler.watch=nullptr;
+        handler.section=nullptr;
         return *this;
       }
       /// Destructor
       ~Handler() {
-        if(section) section->stop(key);
+        if(section) {
+          section->stop(key);
+        }
       }
     };
 
@@ -388,15 +398,21 @@ public:
 template <class T>
 bool Tools::parse(std::vector<std::string>&line,const std::string&key,T&val,int rep) {
   std::string s;
-  if(!getKey(line,key+"=",s,rep)) return false;
-  if(s.length()>0 && !convertNoexcept(s,val))return false;
+  if(!getKey(line,key+"=",s,rep)) {
+    return false;
+  }
+  if(s.length()>0 && !convertNoexcept(s,val)) {
+    return false;
+  }
   return true;
 }
 
 template <class T>
 bool Tools::parseVector(std::vector<std::string>&line,const std::string&key,std::vector<T>&val,int rep) {
   std::string s;
-  if(!getKey(line,key+"=",s,rep)) return false;
+  if(!getKey(line,key+"=",s,rep)) {
+    return false;
+  }
   val.clear();
   std::vector<std::string> words=getWords(s,"\t\n ,");
   for(unsigned i=0; i<words.size(); ++i) {
@@ -409,15 +425,16 @@ bool Tools::parseVector(std::vector<std::string>&line,const std::string&key,std:
       plumed_assert(rep<static_cast<int>(words.size()));
       s=words[rep];
     }
-    if(!convertNoexcept(s,v))return false;
+    if(!convertNoexcept(s,v)) {
+      return false;
+    }
     val.push_back(v);
   }
   return true;
 }
 
 template<typename T>
-void Tools::removeDuplicates(std::vector<T>& vec)
-{
+void Tools::removeDuplicates(std::vector<T>& vec) {
   std::sort(vec.begin(), vec.end());
   vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
 }
@@ -438,18 +455,27 @@ bool Tools::parseFlag(std::vector<std::string>&line,const std::string&key,bool&v
 inline
 double Tools::pbc(double x) {
 #ifdef __PLUMED_PBC_WHILE
-  while (x>0.5) x-=1.0;
-  while (x<-0.5) x+=1.0;
+  while (x>0.5) {
+    x-=1.0;
+  }
+  while (x<-0.5) {
+    x+=1.0;
+  }
   return x;
 #else
   if constexpr (std::numeric_limits<int>::round_style == std::round_toward_zero) {
     constexpr double offset=100.0;
     const double y=x+offset;
-    if(y>=0) return y-int(y+0.5);
-    else     return y-int(y-0.5);
+    if(y>=0) {
+      return y-int(y+0.5);
+    } else {
+      return y-int(y-0.5);
+    }
   } else if constexpr (std::numeric_limits<int>::round_style == std::round_to_nearest) {
     return x-int(x);
-  } else return x-floor(x+0.5);
+  } else {
+    return x-floor(x+0.5);
+  }
 #endif
 }
 
@@ -462,17 +488,16 @@ bool Tools::convertNoexcept(T i,std::string & str) {
 }
 
 inline
-double Tools::fastpow(double base, int exp)
-{
+double Tools::fastpow(double base, int exp) {
   if(exp<0) {
     exp=-exp;
     base=1.0/base;
   }
   double result = 1.0;
-  while (exp)
-  {
-    if (exp & 1)
+  while (exp) {
+    if (exp & 1) {
       result *= base;
+    }
     exp >>= 1;
     base *= base;
   }
@@ -503,18 +528,21 @@ inline T Tools::fastpow(T const base) {
 template<typename T>
 std::vector<T*> Tools::unique2raw(const std::vector<std::unique_ptr<T>> & x) {
   std::vector<T*> v(x.size());
-  for(unsigned i=0; i<x.size(); i++) v[i]=x[i].get();
+  for(unsigned i=0; i<x.size(); i++) {
+    v[i]=x[i].get();
+  }
   return v;
 }
 
 template<typename T>
 std::vector<const T*> Tools::unique2raw(const std::vector<std::unique_ptr<const T>> & x) {
   std::vector<const T*> v(x.size());
-  for(unsigned i=0; i<x.size(); i++) v[i]=x[i].get();
+  for(unsigned i=0; i<x.size(); i++) {
+    v[i]=x[i].get();
+  }
   return v;
 }
 
 }
 
 #endif
-

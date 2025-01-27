@@ -69,7 +69,9 @@ private:
   double chbevl(double x,std::vector<double>& array) const; // sub copied from scipy in C
   void fill_coefficients();
 public:
-  bool derivativesImplemented() override { return false; }
+  bool derivativesImplemented() override {
+    return false;
+  }
   void registerKeywords( Keywords& keys ) override;
   void read( ActionWithArguments* action ) override;
   void calc( const ActionWithArguments* action, const std::vector<double>& args, std::vector<double>& vals, Matrix<double>& derivatives ) const override;
@@ -84,14 +86,21 @@ PLUMED_REGISTER_ACTION(VectorBessel,"BESSEL_VECTOR")
 
 void Bessel::registerKeywords(Keywords& keys) {
   keys.add("compulsory","ORDER","0","the order of Bessel function to use.  Can only be zero at the moment.");
-  keys.setValueDescription("the value of the bessel function");
+  keys.setValueDescription("scalar/vector","the value of the bessel function");
 }
 
 void Bessel::read( ActionWithArguments* action ) {
-  if( action->getNumberOfArguments()!=1 ) action->error("should only be one argument to bessel actions");
-  if( action->getPntrToArgument(0)->isPeriodic() ) action->error("cannot use this function on periodic functions");
-  action->parse("ORDER",order); action->log.printf("  computing %dth order bessel function \n", order );
-  if( order!=0 ) action->error("only zero order bessel function is implemented");
+  if( action->getNumberOfArguments()!=1 ) {
+    action->error("should only be one argument to bessel actions");
+  }
+  if( action->getPntrToArgument(0)->isPeriodic() ) {
+    action->error("cannot use this function on periodic functions");
+  }
+  action->parse("ORDER",order);
+  action->log.printf("  computing %dth order bessel function \n", order );
+  if( order!=0 ) {
+    action->error("only zero order bessel function is implemented");
+  }
   fill_coefficients();
 }
 
@@ -122,7 +131,9 @@ void Bessel::calc( const ActionWithArguments* action, const std::vector<double>&
       return;
     }
     vals[0] = chbevl(32.0 / x - 2.0, B) / sqrt(x) ;
-  } else plumed_error();
+  } else {
+    plumed_error();
+  }
 }
 
 std::vector<double> Bessel::A;

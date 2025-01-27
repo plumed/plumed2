@@ -129,15 +129,14 @@ PLUMED_REGISTER_ACTION(ExtendedLagrangian,"EXTENDED_LAGRANGIAN")
 
 void ExtendedLagrangian::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
-  keys.use("ARG");
   keys.add("compulsory","KAPPA","specifies that the restraint is harmonic and what the values of the force constants on each of the variables are");
   keys.add("compulsory","TAU","specifies that the restraint is harmonic and what the values of the force constants on each of the variables are");
   keys.add("compulsory","FRICTION","0.0","add a friction to the variable");
   keys.add("optional","TEMP","the system temperature - needed when FRICTION is present. If not provided will be taken from MD code (if available)");
-  keys.addOutputComponent("_fict","default","one or multiple instances of this quantity can be referenced elsewhere in the input file. "
+  keys.addOutputComponent("_fict","default","scalar","one or multiple instances of this quantity can be referenced elsewhere in the input file. "
                           "These quantities will named with the arguments of the bias followed by "
                           "the character string _tilde. It is possible to add forces on these variable.");
-  keys.addOutputComponent("_vfict","default","one or multiple instances of this quantity can be referenced elsewhere in the input file. "
+  keys.addOutputComponent("_vfict","default","scalar","one or multiple instances of this quantity can be referenced elsewhere in the input file. "
                           "These quantities will named with the arguments of the bias followed by "
                           "the character string _tilde. It is NOT possible to add forces on these variable.");
 }
@@ -154,27 +153,36 @@ ExtendedLagrangian::ExtendedLagrangian(const ActionOptions&ao):
   friction(getNumberOfArguments(),0.0),
   fictValue(getNumberOfArguments(),NULL),
   vfictValue(getNumberOfArguments(),NULL),
-  kbt(0.0)
-{
+  kbt(0.0) {
   parseVector("TAU",tau);
   parseVector("FRICTION",friction);
   parseVector("KAPPA",kappa);
-  kbt=getkBT(); checkRead();
+  kbt=getkBT();
+  checkRead();
 
   log.printf("  with harmonic force constant");
-  for(unsigned i=0; i<kappa.size(); i++) log.printf(" %f",kappa[i]);
+  for(unsigned i=0; i<kappa.size(); i++) {
+    log.printf(" %f",kappa[i]);
+  }
   log.printf("\n");
 
   log.printf("  with relaxation time");
-  for(unsigned i=0; i<tau.size(); i++) log.printf(" %f",tau[i]);
+  for(unsigned i=0; i<tau.size(); i++) {
+    log.printf(" %f",tau[i]);
+  }
   log.printf("\n");
 
   bool hasFriction=false;
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) if(friction[i]>0.0) hasFriction=true;
+  for(unsigned i=0; i<getNumberOfArguments(); ++i)
+    if(friction[i]>0.0) {
+      hasFriction=true;
+    }
 
   if(hasFriction) {
     log.printf("  with friction");
-    for(unsigned i=0; i<friction.size(); i++) log.printf(" %f",friction[i]);
+    for(unsigned i=0; i<friction.size(); i++) {
+      log.printf(" %f",friction[i]);
+    }
     log.printf("\n");
   }
 
@@ -189,7 +197,9 @@ ExtendedLagrangian::ExtendedLagrangian(const ActionOptions&ao):
       std::string a,b;
       getPntrToArgument(i)->getDomain(a,b);
       componentIsPeriodic(comp,a,b);
-    } else componentIsNotPeriodic(comp);
+    } else {
+      componentIsNotPeriodic(comp);
+    }
     fictValue[i]=getPntrToComponent(comp);
     comp=getPntrToArgument(i)->getName()+"_vfict";
     addComponent(comp);

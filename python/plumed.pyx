@@ -36,6 +36,7 @@ import sys
 import warnings
 import types
 
+import cython
 from cython.operator import dereference
 
 if sys.version_info < (3,):
@@ -185,7 +186,9 @@ cdef class Plumed:
          cplumed.plumed_error_init(&error)
          nothrow.ptr=&error
          nothrow.handler=cplumed.plumed_error_set
-         cplumed.plumed_cmd_safe_nothrow(self.c_plumed,ckey,safe,nothrow)
+         # see https://github.com/plumed/plumed2/pull/1129#issuecomment-2410867829
+         with cython.nogil():
+            cplumed.plumed_cmd_safe_nothrow(self.c_plumed,ckey,safe,nothrow)
          if(error.code):
            try:
              self.raise_exception(error)
@@ -507,7 +510,7 @@ def read_as_pandas(file_or_path,enable_constants=True,enable_conversion=True,ker
         convert=_build_convert_function(kernel)
 # if necessary, set convert_all
         if enable_conversion=='all': convert_all=convert
-         
+
 # handle file
     file_or_path=_fix_file(file_or_path,'rt')
 
@@ -548,7 +551,7 @@ def read_as_pandas(file_or_path,enable_constants=True,enable_conversion=True,ker
 
 # read the rest of the file
 # notice that if chunksize was provided the result will be an iterable object
-    df=pd.read_csv(file_or_path, delim_whitespace=True, comment="#", header=None,names=columns,
+    df=pd.read_csv(file_or_path, sep='\s+', comment="#", header=None,names=columns,
                     usecols=usecols,skiprows=skiprows,nrows=nrows,chunksize=chunksize,index_col=index_col)
 
     if chunksize is None:
@@ -588,7 +591,7 @@ def write_pandas(df,file_or_path=None):
        colvar=plumed.read_as_colvar("COLVAR")
        colvar["distance"]=colvar["distance"]*2
        plumed.write_pandas(colvar)
-      
+
     """
 # importing pandas is pretty slow, so we only do it when needed
     import pandas as pd
@@ -787,7 +790,7 @@ def _readvimdict(plumedroot=None,kernel=None):
 # read dictionary
         for opt in plumedDictionary[action]:
 # skip label (it is added automatically)
-            if opt["menu"] != "(label)":                
+            if opt["menu"] != "(label)":
                 ret[action][re.sub("=$","",opt["word"])]=opt["menu"]
     return ret,doc
 
@@ -916,7 +919,7 @@ def _format_at_one_residue(builder,name,residue,chain):
         return "@" + name + "-" + chain + str(residue)
       else:
         assert False
-    
+
 def _format_at_one_chain(builder,name,residue,chain):
       res=""
       if hasattr(residue,'__iter__') and not isinstance(residue,str):
@@ -924,7 +927,7 @@ def _format_at_one_chain(builder,name,residue,chain):
               res+=builder._separator + _format_at_one_residue(builder,name,x,chain)
       else:
         res+=builder._separator + _format_at_one_residue(builder,name,residue,chain)
-              
+
       return res
 
 def _format_at(builder,name,residue,chain=""):
@@ -1074,7 +1077,7 @@ def _format_anything(builder,name,arg):
    ret=""
    if name == "verbatim":
        ret+=_format_verbatim(builder,arg)
-   elif isinstance(arg,bool) : 
+   elif isinstance(arg,bool) :
        ret+=_format_flag(builder,name,arg)
    elif isinstance(arg,_numbered):
        ret+=_format_numbered(builder,name,arg)
@@ -1236,6 +1239,3 @@ class InputBuilder:
         Accepts a list/tuple.
         """
         return _replicas(arg)
-
-
-

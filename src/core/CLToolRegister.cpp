@@ -38,18 +38,27 @@ std::unique_ptr<CLTool> CLToolRegister::create(const CLToolOptions&ao) {
   return create(images,ao);
 }
 
-std::unique_ptr<CLTool> CLToolRegister::create(const std::vector<void*> & images,const CLToolOptions&ao) {
-  if(ao.line.size()<1)return nullptr;
+std::unique_ptr<CLTool> CLToolRegister::create(const std::vector<void*> & images,const CLToolOptions&ao) try {
+  if(ao.line.size()<1) {
+    return nullptr;
+  }
   auto & content=get(images,ao.line[0]);
   CLToolOptions nao( ao,content.keys );
   return content.create(nao);
+} catch (PLMD::ExceptionRegisterError &e ) {
+  auto& toolName = e.getMissingKey();
+  throw e <<"CL tool \"" << toolName << "\" is not known.";
 }
 
 CLToolRegister::ID CLToolRegister::add(std::string key,creator_pointer cp,keywords_pointer kp) {
   // this force each action to be registered as an uppercase string
-  if ( std::any_of( std::begin( key ), std::end( key ), []( char c ) { return ( std::isupper( c ) ); } ) ) plumed_error() << "CLTool: " + key + " cannot be registered, use only LOWERCASE characters";
+  if ( std::any_of( std::begin( key ), std::end( key ), []( char c ) {
+  return ( std::isupper( c ) )
+           ;
+  } ) ) plumed_error() << "CLTool: " + key + " cannot be registered, use only LOWERCASE characters";
 
-  Keywords keys; kp(keys);
+  Keywords keys;
+  kp(keys);
   return RegisterBase::add(key,Pointers{cp,keys});
 }
 
@@ -72,7 +81,9 @@ std::vector<std::string> CLToolRegister::getKeys(const std::string& cltool)const
     auto cl=get(cltool);
     auto k=cl.keys.getKeys();
     std::cerr<<k.size()<<"\n";
-    for(unsigned i=0; i<k.size(); i++) std::cerr<<k[i]<<"\n";
+    for(unsigned i=0; i<k.size(); i++) {
+      std::cerr<<k[i]<<"\n";
+    }
     return k;
   } else {
     std::vector<std::string> empty;

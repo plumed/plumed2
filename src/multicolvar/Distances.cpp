@@ -202,77 +202,138 @@ void Distances::registerKeywords(Keywords& keys) {
   keys.addFlag("COMPONENTS",false,"calculate the x, y and z components of the distance separately and store them as label.x, label.y and label.z");
   keys.addFlag("SCALED_COMPONENTS",false,"calculate the a, b and c scaled components of the distance separately and store them as label.a, label.b and label.c");
   keys.addFlag("LOWMEM",false,"this flag does nothing and is present only to ensure back-compatibility");
-  keys.reset_style("ATOMS","atoms"); MultiColvarShortcuts::shortcutKeywords( keys );
+  keys.reset_style("ATOMS","atoms");
+  MultiColvarShortcuts::shortcutKeywords( keys );
   keys.add("atoms","ORIGIN","calculate the distance of all the atoms specified using the ATOMS keyword from this point");
   keys.add("numbered","LOCATION","the location at which the CV is assumed to be in space");
   keys.reset_style("LOCATION","atoms");
-  keys.addOutputComponent("x","COMPONENTS","the x-components of the distance vectors");
-  keys.addOutputComponent("y","COMPONENTS","the y-components of the distance vectors");
-  keys.addOutputComponent("z","COMPONENTS","the z-components of the distance vectors");
-  keys.needsAction("GROUP"); keys.needsAction("DISTANCE"); keys.needsAction("CENTER");
+  keys.setValueDescription("vector","the DISTANCES between the each pair of atoms that were specified");
+  keys.addOutputComponent("x","COMPONENTS","vector","the x-components of the distance vectors");
+  keys.addOutputComponent("y","COMPONENTS","vector","the y-components of the distance vectors");
+  keys.addOutputComponent("z","COMPONENTS","vector","the z-components of the distance vectors");
+  keys.needsAction("GROUP");
+  keys.needsAction("DISTANCE");
+  keys.needsAction("CENTER");
 }
 
 Distances::Distances(const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
+  ActionShortcut(ao) {
   // Create distances
-  bool lowmem; parseFlag("LOWMEM",lowmem);
-  if( lowmem ) warning("LOWMEM flag is deprecated and is no longer required for this action");
+  bool lowmem;
+  parseFlag("LOWMEM",lowmem);
+  if( lowmem ) {
+    warning("LOWMEM flag is deprecated and is no longer required for this action");
+  }
   std::string dline = getShortcutLabel() + ": DISTANCE";
-  bool nopbc; parseFlag("NOPBC",nopbc); if( nopbc ) dline += " NOPBC";
+  bool nopbc;
+  parseFlag("NOPBC",nopbc);
+  if( nopbc ) {
+    dline += " NOPBC";
+  }
   if( getName()=="DISTANCES" ) {
-    bool comp; parseFlag("COMPONENTS",comp); if( comp ) dline += " COMPONENTS";
-    bool scomp; parseFlag("SCALED_COMPONENTS",scomp); if( scomp ) dline += " SCALED_COMPONENTS";
-  } else dline += " COMPONENTS";
+    bool comp;
+    parseFlag("COMPONENTS",comp);
+    if( comp ) {
+      dline += " COMPONENTS";
+    }
+    bool scomp;
+    parseFlag("SCALED_COMPONENTS",scomp);
+    if( scomp ) {
+      dline += " SCALED_COMPONENTS";
+    }
+  } else {
+    dline += " COMPONENTS";
+  }
   // Parse origin
-  std::string num, ostr; parse("ORIGIN",ostr);
+  std::string num, ostr;
+  parse("ORIGIN",ostr);
   if( ostr.length()>0 ) {
     // Parse atoms
-    std::vector<std::string> afstr; MultiColvarShortcuts::parseAtomList("ATOMS",afstr,this);
-    for(unsigned i=0; i<afstr.size(); ++i) { Tools::convert( i+1, num ); dline += " ATOMS" + num + "=" + ostr + "," + afstr[i]; }
+    std::vector<std::string> afstr;
+    MultiColvarShortcuts::parseAtomList("ATOMS",afstr,this);
+    for(unsigned i=0; i<afstr.size(); ++i) {
+      Tools::convert( i+1, num );
+      dline += " ATOMS" + num + "=" + ostr + "," + afstr[i];
+    }
   } else {
-    std::vector<std::string> grp; MultiColvarShortcuts::parseAtomList("GROUP",grp,this);
-    std::vector<std::string> grpa; MultiColvarShortcuts::parseAtomList("GROUPA",grpa,this);
+    std::vector<std::string> grp;
+    MultiColvarShortcuts::parseAtomList("GROUP",grp,this);
+    std::vector<std::string> grpa;
+    MultiColvarShortcuts::parseAtomList("GROUPA",grpa,this);
     if( grp.size()>0 ) {
-      if( grpa.size()>0 ) error("should not be using GROUPA in tandem with GROUP");
+      if( grpa.size()>0 ) {
+        error("should not be using GROUPA in tandem with GROUP");
+      }
       unsigned n=0;
       for(unsigned i=1; i<grp.size(); ++i) {
         for(unsigned j=0; j<i; ++j) {
-          std::string num; Tools::convert( n+1, num ); n++;
+          std::string num;
+          Tools::convert( n+1, num );
+          n++;
           dline += " ATOMS" + num + "=" + grp[i] + "," + grp[j];
         }
       }
     } else if( grpa.size()>0 ) {
-      std::vector<std::string> grpb; MultiColvarShortcuts::parseAtomList("GROUPB",grpb,this);
-      if( grpb.size()==0 ) error("found GROUPA but no corresponding GROUPB");
-      std::string grpstr = getShortcutLabel() + "_grp: GROUP ATOMS="; bool printcomment=false;
+      std::vector<std::string> grpb;
+      MultiColvarShortcuts::parseAtomList("GROUPB",grpb,this);
+      if( grpb.size()==0 ) {
+        error("found GROUPA but no corresponding GROUPB");
+      }
+      std::string grpstr = getShortcutLabel() + "_grp: GROUP ATOMS=";
+      bool printcomment=false;
       for(unsigned i=0; i<grpa.size(); ++i) {
         for(unsigned j=0; j<grpb.size(); ++j) {
-          std::string num; Tools::convert( i*grpb.size() + j + 1, num );
+          std::string num;
+          Tools::convert( i*grpb.size() + j + 1, num );
           dline += " ATOMS" + num + "=" + grpa[i] + "," + grpb[j];
-          if( i*grpb.size() + j<6 ) readInputLine( getShortcutLabel() + "_vatom" + num + ": CENTER ATOMS=" + grpa[i] + "," + grpb[j], true );
-          else { readInputLine( getShortcutLabel() + "_vatom" + num + ": CENTER ATOMS=" + grpa[i] + "," + grpb[j], false ); printcomment=true; }
-          if( i+j==0 ) grpstr += getShortcutLabel() + "_vatom" + num; else grpstr += "," + getShortcutLabel() + "_vatom" + num;
+          if( i*grpb.size() + j<6 ) {
+            readInputLine( getShortcutLabel() + "_vatom" + num + ": CENTER ATOMS=" + grpa[i] + "," + grpb[j], true );
+          } else {
+            readInputLine( getShortcutLabel() + "_vatom" + num + ": CENTER ATOMS=" + grpa[i] + "," + grpb[j], false );
+            printcomment=true;
+          }
+          if( i+j==0 ) {
+            grpstr += getShortcutLabel() + "_vatom" + num;
+          } else {
+            grpstr += "," + getShortcutLabel() + "_vatom" + num;
+          }
         }
       }
-      std::string num; Tools::convert( grpa.size()*grpb.size(), num );
-      if( printcomment ) addCommentToShortcutOutput("# A further " + num + " CENTER like the ones above were also created but are not shown");
+      std::string num;
+      Tools::convert( grpa.size()*grpb.size(), num );
+      if( printcomment ) {
+        addCommentToShortcutOutput("# A further " + num + " CENTER like the ones above were also created but are not shown");
+      }
       readInputLine( grpstr );
     } else {
       std::string grpstr = getShortcutLabel() + "_grp: GROUP ATOMS=";
       for(unsigned i=1;; ++i) {
-        std::string atstring; parseNumbered("ATOMS",i,atstring);
-        if( atstring.length()==0 ) break;
-        std::string locstr; parseNumbered("LOCATION",i,locstr);
-        if( locstr.length()==0 ) {
-          std::string num; Tools::convert( i, num );
-          readInputLine( getShortcutLabel() + "_vatom" + num + ": CENTER ATOMS=" + atstring );
-          if( i==1 ) grpstr += getShortcutLabel() + "_vatom" + num; else grpstr += "," + getShortcutLabel() + "_vatom" + num;
-        } else {
-          if( i==1 ) grpstr += locstr; else grpstr += "," + locstr;
+        std::string atstring;
+        parseNumbered("ATOMS",i,atstring);
+        if( atstring.length()==0 ) {
+          break;
         }
-        std::string num; Tools::convert( i, num );
+        std::string locstr;
+        parseNumbered("LOCATION",i,locstr);
+        if( locstr.length()==0 ) {
+          std::string num;
+          Tools::convert( i, num );
+          readInputLine( getShortcutLabel() + "_vatom" + num + ": CENTER ATOMS=" + atstring );
+          if( i==1 ) {
+            grpstr += getShortcutLabel() + "_vatom" + num;
+          } else {
+            grpstr += "," + getShortcutLabel() + "_vatom" + num;
+          }
+        } else {
+          if( i==1 ) {
+            grpstr += locstr;
+          } else {
+            grpstr += "," + locstr;
+          }
+        }
+        std::string num;
+        Tools::convert( i, num );
         dline += " ATOMS" + num + "=" + atstring;
       }
       readInputLine( grpstr );
@@ -280,10 +341,15 @@ Distances::Distances(const ActionOptions& ao):
   }
   readInputLine( dline );
   // Add shortcuts to label
-  if( getName()=="DISTANCES" ) MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel(), "", this );
-  else if( getName()=="XDISTANCES" ) MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel() + ".x", "", this );
-  else if( getName()=="YDISTANCES" ) MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel() + ".y", "", this );
-  else if( getName()=="ZDISTANCES" ) MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel() + ".z", "", this );
+  if( getName()=="DISTANCES" ) {
+    MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel(), "", this );
+  } else if( getName()=="XDISTANCES" ) {
+    MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel() + ".x", "", this );
+  } else if( getName()=="YDISTANCES" ) {
+    MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel() + ".y", "", this );
+  } else if( getName()=="ZDISTANCES" ) {
+    MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel() + ".z", "", this );
+  }
 }
 
 }

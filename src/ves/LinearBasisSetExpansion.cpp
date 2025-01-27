@@ -73,10 +73,11 @@ LinearBasisSetExpansion::LinearBasisSetExpansion(
   step_of_last_fesgrid_update(-1000),
   log_targetdist_grid_pntr_(NULL),
   targetdist_grid_pntr_(NULL),
-  targetdist_pntr_(NULL)
-{
+  targetdist_pntr_(NULL) {
   plumed_massert(args_pntrs_.size()==basisf_pntrs_.size(),"number of arguments and basis functions do not match");
-  for(unsigned int k=0; k<nargs_; k++) {nbasisf_[k]=basisf_pntrs_[k]->getNumberOfBasisFunctions();}
+  for(unsigned int k=0; k<nargs_; k++) {
+    nbasisf_[k]=basisf_pntrs_[k]->getNumberOfBasisFunctions();
+  }
   //
   if(bias_coeffs_pntr_==NULL) {
     bias_coeffs_pntr_ = new CoeffsVector(label_+".coeffs",args_pntrs_,basisf_pntrs_,mycomm_,true);
@@ -89,8 +90,7 @@ LinearBasisSetExpansion::LinearBasisSetExpansion(
   std::string targetdist_averages_label = bias_coeffs_pntr_->getLabel();
   if(targetdist_averages_label.find("coeffs")!=std::string::npos) {
     targetdist_averages_label.replace(targetdist_averages_label.find("coeffs"), std::string("coeffs").length(), "targetdist_averages");
-  }
-  else {
+  } else {
     targetdist_averages_label += "_targetdist_averages";
   }
   targetdist_averages_pntr_->setLabels(targetdist_averages_label);
@@ -148,7 +148,9 @@ std::unique_ptr<Grid> LinearBasisSetExpansion::setupGeneralGrid(const std::strin
 
 
 void LinearBasisSetExpansion::setupBiasGrid(const bool usederiv) {
-  if(bias_grid_pntr_) {return;}
+  if(bias_grid_pntr_) {
+    return;
+  }
   bias_grid_pntr_ = setupGeneralGrid("bias",usederiv);
   if(biasCutoffActive()) {
     bias_withoutcutoff_grid_pntr_ = setupGeneralGrid("bias_withoutcutoff",usederiv);
@@ -157,7 +159,9 @@ void LinearBasisSetExpansion::setupBiasGrid(const bool usederiv) {
 
 
 void LinearBasisSetExpansion::setupFesGrid() {
-  if(fes_grid_pntr_) {return;}
+  if(fes_grid_pntr_) {
+    return;
+  }
   if(!bias_grid_pntr_) {
     setupBiasGrid(true);
   }
@@ -189,8 +193,7 @@ void LinearBasisSetExpansion::updateBiasGrid() {
     //
     if(bias_grid_pntr_->hasDerivatives()) {
       bias_grid_pntr_->setValueAndDerivatives(l,bias,forces);
-    }
-    else {
+    } else {
       bias_grid_pntr_->setValue(l,bias);
     }
     //
@@ -219,8 +222,7 @@ void LinearBasisSetExpansion::updateBiasWithoutCutoffGrid() {
     double bias=getBiasAndForces(args,all_inside,forces);
     if(bias_withoutcutoff_grid_pntr_->hasDerivatives()) {
       bias_withoutcutoff_grid_pntr_->setValueAndDerivatives(l,bias,forces);
-    }
-    else {
+    } else {
       bias_withoutcutoff_grid_pntr_->setValue(l,bias);
     }
   }
@@ -248,8 +250,7 @@ void LinearBasisSetExpansion::updateBiasWithoutCutoffGrid() {
       if(bias_withoutcutoff_grid_pntr_->hasDerivatives()) {
         std::vector<double> zeros(nargs_,0.0);
         bias_withoutcutoff_grid_pntr_->addValueAndDerivatives(l,shift,zeros);
-      }
-      else {
+      } else {
         bias_withoutcutoff_grid_pntr_->addValue(l,shift);
       }
     }
@@ -287,21 +288,27 @@ void LinearBasisSetExpansion::updateFesGrid() {
 
 void LinearBasisSetExpansion::writeBiasGridToFile(OFile& ofile, const bool append_file) const {
   plumed_massert(bias_grid_pntr_,"the bias grid is not defined");
-  if(append_file) {ofile.enforceRestart();}
+  if(append_file) {
+    ofile.enforceRestart();
+  }
   bias_grid_pntr_->writeToFile(ofile);
 }
 
 
 void LinearBasisSetExpansion::writeBiasWithoutCutoffGridToFile(OFile& ofile, const bool append_file) const {
   plumed_massert(bias_withoutcutoff_grid_pntr_,"the bias without cutoff grid is not defined");
-  if(append_file) {ofile.enforceRestart();}
+  if(append_file) {
+    ofile.enforceRestart();
+  }
   bias_withoutcutoff_grid_pntr_->writeToFile(ofile);
 }
 
 
 void LinearBasisSetExpansion::writeFesGridToFile(OFile& ofile, const bool append_file) const {
   plumed_massert(fes_grid_pntr_!=NULL,"the FES grid is not defined");
-  if(append_file) {ofile.enforceRestart();}
+  if(append_file) {
+    ofile.enforceRestart();
+  }
   fes_grid_pntr_->writeToFile(ofile);
 }
 
@@ -311,44 +318,62 @@ void LinearBasisSetExpansion::writeFesProjGridToFile(const std::vector<std::stri
   auto Fw = Tools::make_unique<FesWeight>(beta_);
   Grid proj_grid = fes_grid_pntr_->project(proj_arg,Fw.get());
   proj_grid.setMinToZero();
-  if(append_file) {ofile.enforceRestart();}
+  if(append_file) {
+    ofile.enforceRestart();
+  }
   proj_grid.writeToFile(ofile);
 }
 
 
 void LinearBasisSetExpansion::writeTargetDistGridToFile(OFile& ofile, const bool append_file) const {
-  if(targetdist_grid_pntr_==NULL) {return;}
-  if(append_file) {ofile.enforceRestart();}
+  if(targetdist_grid_pntr_==NULL) {
+    return;
+  }
+  if(append_file) {
+    ofile.enforceRestart();
+  }
   targetdist_grid_pntr_->writeToFile(ofile);
 }
 
 
 void LinearBasisSetExpansion::writeLogTargetDistGridToFile(OFile& ofile, const bool append_file) const {
-  if(log_targetdist_grid_pntr_==NULL) {return;}
-  if(append_file) {ofile.enforceRestart();}
+  if(log_targetdist_grid_pntr_==NULL) {
+    return;
+  }
+  if(append_file) {
+    ofile.enforceRestart();
+  }
   log_targetdist_grid_pntr_->writeToFile(ofile);
 }
 
 
 void LinearBasisSetExpansion::writeTargetDistProjGridToFile(const std::vector<std::string>& proj_arg, OFile& ofile, const bool append_file) const {
-  if(targetdist_grid_pntr_==NULL) {return;}
-  if(append_file) {ofile.enforceRestart();}
+  if(targetdist_grid_pntr_==NULL) {
+    return;
+  }
+  if(append_file) {
+    ofile.enforceRestart();
+  }
   Grid proj_grid = TargetDistribution::getMarginalDistributionGrid(targetdist_grid_pntr_,proj_arg);
   proj_grid.writeToFile(ofile);
 }
 
 
 void LinearBasisSetExpansion::writeTargetDistributionToFile(const std::string& filename) const {
-  OFile of1; OFile of2;
+  OFile of1;
+  OFile of2;
   if(action_pntr_!=NULL) {
-    of1.link(*action_pntr_); of2.link(*action_pntr_);
+    of1.link(*action_pntr_);
+    of2.link(*action_pntr_);
   }
-  of1.enforceBackup(); of2.enforceBackup();
+  of1.enforceBackup();
+  of2.enforceBackup();
   of1.open(filename);
   of2.open(FileBase::appendSuffix(filename,".log"));
   writeTargetDistGridToFile(of1);
   writeLogTargetDistGridToFile(of2);
-  of1.close(); of2.close();
+  of1.close();
+  of2.close();
 }
 
 
@@ -372,14 +397,15 @@ double LinearBasisSetExpansion::getBiasAndForces(const std::vector<double>& args
     bool curr_inside=true;
     basisf_pntrs_in[k]->getAllValues(args_values[k],args_values_trsfrm[k],curr_inside,bf_values[k],bf_derivs[k]);
     // inside_interval[k]=curr_inside;
-    if(!curr_inside) {all_inside=false;}
+    if(!curr_inside) {
+      all_inside=false;
+    }
     forces[k]=0.0;
   }
   //
   size_t stride=1;
   size_t rank=0;
-  if(comm_in!=NULL)
-  {
+  if(comm_in!=NULL) {
     stride=comm_in->Get_size();
     rank=comm_in->Get_rank();
   }
@@ -397,8 +423,11 @@ double LinearBasisSetExpansion::getBiasAndForces(const std::vector<double>& args
     for(unsigned int k=0; k<nargs; k++) {
       double der = 1.0;
       for(unsigned int l=0; l<nargs; l++) {
-        if(l!=k) {der*=bf_values[l][indices[l]];}
-        else {der*=bf_derivs[l][indices[l]];}
+        if(l!=k) {
+          der*=bf_values[l][indices[l]];
+        } else {
+          der*=bf_derivs[l][indices[l]];
+        }
       }
       forces[k]-=coeff*der;
       // maybe faster but dangerous
@@ -433,8 +462,7 @@ void LinearBasisSetExpansion::getBasisSetValues(const std::vector<double>& args_
   //
   size_t stride=1;
   size_t rank=0;
-  if(comm_in!=NULL)
-  {
+  if(comm_in!=NULL) {
     stride=comm_in->Get_size();
     rank=comm_in->Get_rank();
   }
@@ -531,9 +559,15 @@ void LinearBasisSetExpansion::setupTargetDistribution(TargetDistribution* target
 void LinearBasisSetExpansion::updateTargetDistribution() {
   plumed_massert(targetdist_pntr_!=NULL,"the target distribution hasn't been setup!");
   plumed_massert(targetdist_pntr_->isDynamic(),"this should only be used for dynamically updated target distributions!");
-  if(targetdist_pntr_->biasGridNeeded()) {updateBiasGrid();}
-  if(biasCutoffActive()) {updateBiasWithoutCutoffGrid();}
-  if(targetdist_pntr_->fesGridNeeded()) {updateFesGrid();}
+  if(targetdist_pntr_->biasGridNeeded()) {
+    updateBiasGrid();
+  }
+  if(biasCutoffActive()) {
+    updateBiasWithoutCutoffGrid();
+  }
+  if(targetdist_pntr_->fesGridNeeded()) {
+    updateFesGrid();
+  }
   targetdist_pntr_->updateTargetDist();
   calculateTargetDistAveragesFromGrid(targetdist_grid_pntr_);
 }
@@ -541,14 +575,18 @@ void LinearBasisSetExpansion::updateTargetDistribution() {
 
 void LinearBasisSetExpansion::readInRestartTargetDistribution(const std::string& grid_fname) {
   targetdist_pntr_->readInRestartTargetDistGrid(grid_fname);
-  if(biasCutoffActive()) {targetdist_pntr_->clearLogTargetDistGrid();}
+  if(biasCutoffActive()) {
+    targetdist_pntr_->clearLogTargetDistGrid();
+  }
 }
 
 
 void LinearBasisSetExpansion::restartTargetDistribution() {
   plumed_massert(targetdist_pntr_!=NULL,"the target distribution hasn't been setup!");
   plumed_massert(targetdist_pntr_->isDynamic(),"this should only be used for dynamically updated target distributions!");
-  if(biasCutoffActive()) {updateBiasWithoutCutoffGrid();}
+  if(biasCutoffActive()) {
+    updateBiasWithoutCutoffGrid();
+  }
   calculateTargetDistAveragesFromGrid(targetdist_grid_pntr_);
 }
 
@@ -591,8 +629,11 @@ void LinearBasisSetExpansion::setBiasMaximumToZero() {
 
 
 bool LinearBasisSetExpansion::biasCutoffActive() const {
-  if(vesbias_pntr_!=NULL) {return vesbias_pntr_->biasCutoffActive();}
-  else {return false;}
+  if(vesbias_pntr_!=NULL) {
+    return vesbias_pntr_->biasCutoffActive();
+  } else {
+    return false;
+  }
 }
 
 
@@ -605,7 +646,9 @@ double LinearBasisSetExpansion::calculateReweightFactor() const {
   for(Grid::index_t l=0; l<targetdist_grid_pntr_->getSize(); l++) {
     sum += integration_weights[l] * targetdist_grid_pntr_->getValue(l) * exp(+beta_*bias_grid_pntr_->getValue(l));
   }
-  if(sum==0.0) sum=std::numeric_limits<double>::min();
+  if(sum==0.0) {
+    sum=std::numeric_limits<double>::min();
+  }
   return (1.0/beta_)*std::log(sum);
 }
 

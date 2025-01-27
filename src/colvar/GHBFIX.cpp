@@ -92,13 +92,12 @@ void GHBFIX::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","D_MAX","the value of D_MAX in the switching function");
   keys.add("compulsory","D_0","the value of D_0 in the switching function");
   keys.add("compulsory","C","the value of C in the switching function");
-  keys.setValueDescription("the GHBFIX interaction energy between the atoms in GROUPA and GROUPB");
+  keys.setValueDescription("scalar","the GHBFIX interaction energy between the atoms in GROUPA and GROUPB");
 }
 
 GHBFIX::GHBFIX(const ActionOptions&ao):
   Action(ao),
-  CoordinationBase(ao)
-{
+  CoordinationBase(ao) {
   std::string types;
   std::string params;
   std::string energy_units ="plumed" ;
@@ -130,8 +129,7 @@ GHBFIX::GHBFIX(const ActionOptions&ao):
 
     if (MapTypesTable.empty()) {
       MapTypesTable.insert({itype, 0});
-    }
-    else if (MapTypesTable.count(itype) == 0) {
+    } else if (MapTypesTable.count(itype) == 0) {
       unsigned currentMax = 0;
       for(auto it = MapTypesTable.cbegin(); it != MapTypesTable.cend(); ++it ) {
         if (it ->second > currentMax) {
@@ -162,7 +160,9 @@ GHBFIX::GHBFIX(const ActionOptions&ao):
   if(energy_units!="plumed") {
     Units units;
     units.setEnergy(energy_units);
-    for(auto i=0; i<etas.size(); i++) etas[i]*=units.getEnergy()/getUnits().getEnergy();
+    for(auto i=0; i<etas.size(); i++) {
+      etas[i]*=units.getEnergy()/getUnits().getEnergy();
+    }
   }
 
 }

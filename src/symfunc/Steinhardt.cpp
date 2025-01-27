@@ -281,31 +281,49 @@ void Steinhardt::registerKeywords( Keywords& keys ) {
   CoordinationNumbers::shortcutKeywords( keys );
   keys.addFlag("LOWMEM",false,"this flag does nothing and is present only to ensure back-compatibility");
   keys.addFlag("VMEAN",false,"calculate the norm of the mean vector.");
-  keys.addOutputComponent("_vmean","VMEAN","the norm of the mean vector");
+  keys.addOutputComponent("_vmean","VMEAN","scalar","the norm of the mean vector");
   keys.addFlag("VSUM",false,"calculate the norm of the sum of all the vectors");
-  keys.addOutputComponent("_vsum","VSUM","the norm of the mean vector");
-  keys.needsAction("GROUP"); keys.needsAction("CONTACT_MATRIX"); keys.needsAction("SPHERICAL_HARMONIC"); keys.needsAction("ONES");
-  keys.needsAction("MATRIX_VECTOR_PRODUCT"); keys.needsAction("COMBINE"); keys.needsAction("CUSTOM"); keys.needsAction("MEAN"); keys.needsAction("SUM");
+  keys.addOutputComponent("_vsum","VSUM","scalar","the norm of the mean vector");
+  keys.needsAction("GROUP");
+  keys.needsAction("CONTACT_MATRIX");
+  keys.needsAction("SPHERICAL_HARMONIC");
+  keys.needsAction("ONES");
+  keys.needsAction("MATRIX_VECTOR_PRODUCT");
+  keys.needsAction("COMBINE");
+  keys.needsAction("CUSTOM");
+  keys.needsAction("MEAN");
+  keys.needsAction("SUM");
+  keys.setValueDescription("vector","the norms of the vectors of spherical harmonic coefficients");
 }
 
 Steinhardt::Steinhardt( const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
-  bool lowmem; parseFlag("LOWMEM",lowmem);
-  if( lowmem ) warning("LOWMEM flag is deprecated and is no longer required for this action");
-  std::string sp_str, specA, specB; parse("SPECIES",sp_str); parse("SPECIESA",specA); parse("SPECIESB",specB);
-  CoordinationNumbers::expandMatrix( true, getShortcutLabel(), sp_str, specA, specB, this ); int l;
+  ActionShortcut(ao) {
+  bool lowmem;
+  parseFlag("LOWMEM",lowmem);
+  if( lowmem ) {
+    warning("LOWMEM flag is deprecated and is no longer required for this action");
+  }
+  std::string sp_str, specA, specB;
+  parse("SPECIES",sp_str);
+  parse("SPECIESA",specA);
+  parse("SPECIESB",specB);
+  CoordinationNumbers::expandMatrix( true, getShortcutLabel(), sp_str, specA, specB, this );
+  int l;
   std::string sph_input = getShortcutLabel() + "_sh: SPHERICAL_HARMONIC ARG=" + getShortcutLabel() + "_mat.x," + getShortcutLabel() + "_mat.y," + getShortcutLabel() + "_mat.z," + getShortcutLabel() + "_mat.w";
 
   if( getName()=="Q1" ) {
-    sph_input +=" L=1"; l=1;
+    sph_input +=" L=1";
+    l=1;
   } else if( getName()=="Q3" ) {
-    sph_input += " L=3"; l=3;
+    sph_input += " L=3";
+    l=3;
   } else if( getName()=="Q4" ) {
-    sph_input += " L=4"; l=4;
+    sph_input += " L=4";
+    l=4;
   } else if( getName()=="Q6" ) {
-    sph_input += " L=6"; l=6;
+    sph_input += " L=6";
+    l=6;
   } else {
     plumed_merror("invalid input");
   }
@@ -314,15 +332,18 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
   // Input for denominator (coord)
   ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_mat");
   plumed_assert( av && av->getNumberOfComponents()>0 && (av->copyOutput(0))->getRank()==2 );
-  std::string size; Tools::convert( (av->copyOutput(0))->getShape()[1], size );
+  std::string size;
+  Tools::convert( (av->copyOutput(0))->getShape()[1], size );
   readInputLine( getShortcutLabel() + "_denom_ones: ONES SIZE=" + size );
   readInputLine( getShortcutLabel() + "_denom: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_mat.w," + getShortcutLabel() + "_denom_ones" );
   readInputLine( getShortcutLabel() + "_sp: MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_sh.*," + getShortcutLabel() + "_denom_ones");
 
   // If we are doing VMEAN determine sum of vector components
   std::string snum;
-  bool do_vmean; parseFlag("VMEAN",do_vmean);
-  bool do_vsum; parseFlag("VSUM",do_vsum);
+  bool do_vmean;
+  parseFlag("VMEAN",do_vmean);
+  bool do_vsum;
+  parseFlag("VSUM",do_vsum);
   if( do_vmean || do_vsum ) {
     // Divide all components by coordination numbers
     for(int i=-l; i<=l; ++i) {
@@ -365,7 +386,8 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
 }
 
 void Steinhardt::createVectorNormInput( const std::string& ilab, const std::string& olab, const int& l, const std::string& sep, const std::string& vlab ) {
-  std::string arg_inp, norm_input = olab + "2: COMBINE PERIODIC=NO POWERS=2,2"; std::string snum = getSymbol( -l );
+  std::string arg_inp, norm_input = olab + "2: COMBINE PERIODIC=NO POWERS=2,2";
+  std::string snum = getSymbol( -l );
   arg_inp = " ARG=" + ilab + sep + "r" + vlab + "-" + snum +"," + ilab + sep + "i" + vlab + "-" + snum;
   for(int i=-l+1; i<=l; ++i) {
     snum = getSymbol( i );
@@ -378,10 +400,12 @@ void Steinhardt::createVectorNormInput( const std::string& ilab, const std::stri
 
 std::string Steinhardt::getSymbol( const int& m ) const {
   if( m<0 ) {
-    std::string num; Tools::convert( -1*m, num );
+    std::string num;
+    Tools::convert( -1*m, num );
     return "n" + num;
   } else if( m>0 ) {
-    std::string num; Tools::convert( m, num );
+    std::string num;
+    Tools::convert( m, num );
     return "p" + num;
   }
   return "0";

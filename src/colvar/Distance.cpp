@@ -150,18 +150,19 @@ typedef MultiColvarTemplate<Distance> DistanceMulti;
 PLUMED_REGISTER_ACTION(DistanceMulti,"DISTANCE_VECTOR")
 
 void Distance::registerKeywords( Keywords& keys ) {
-  Colvar::registerKeywords( keys ); keys.setDisplayName("DISTANCE");
+  Colvar::registerKeywords( keys );
+  keys.setDisplayName("DISTANCE");
   keys.add("atoms","ATOMS","the pair of atom that we are calculating the distance between");
   keys.addFlag("COMPONENTS",false,"calculate the x, y and z components of the distance separately and store them as label.x, label.y and label.z");
   keys.addFlag("SCALED_COMPONENTS",false,"calculate the a, b and c scaled components of the distance separately and store them as label.a, label.b and label.c");
-  keys.addOutputComponent("x","COMPONENTS","the x-component of the vector connecting the two atoms");
-  keys.addOutputComponent("y","COMPONENTS","the y-component of the vector connecting the two atoms");
-  keys.addOutputComponent("z","COMPONENTS","the z-component of the vector connecting the two atoms");
-  keys.addOutputComponent("a","SCALED_COMPONENTS","the normalized projection on the first lattice vector of the vector connecting the two atoms");
-  keys.addOutputComponent("b","SCALED_COMPONENTS","the normalized projection on the second lattice vector of the vector connecting the two atoms");
-  keys.addOutputComponent("c","SCALED_COMPONENTS","the normalized projection on the third lattice vector of the vector connecting the two atoms");
+  keys.addOutputComponent("x","COMPONENTS","scalar/vector","the x-component of the vector connecting the two atoms");
+  keys.addOutputComponent("y","COMPONENTS","scalar/vector","the y-component of the vector connecting the two atoms");
+  keys.addOutputComponent("z","COMPONENTS","scalar/vector","the z-component of the vector connecting the two atoms");
+  keys.addOutputComponent("a","SCALED_COMPONENTS","scalar/vector","the normalized projection on the first lattice vector of the vector connecting the two atoms");
+  keys.addOutputComponent("b","SCALED_COMPONENTS","scalar/vector","the normalized projection on the second lattice vector of the vector connecting the two atoms");
+  keys.addOutputComponent("c","SCALED_COMPONENTS","scalar/vector","the normalized projection on the third lattice vector of the vector connecting the two atoms");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
-  keys.setValueDescription("the DISTANCE between this pair of atoms");
+  keys.setValueDescription("scalar/vector","the DISTANCE between this pair of atoms");
 }
 
 Distance::Distance(const ActionOptions&ao):
@@ -171,60 +172,86 @@ Distance::Distance(const ActionOptions&ao):
   pbc(true),
   value(1),
   derivs(1),
-  virial(1)
-{
+  virial(1) {
   derivs[0].resize(2);
   std::vector<AtomNumber> atoms;
   parseAtomList(-1,atoms,this);
-  if(atoms.size()!=2)
+  if(atoms.size()!=2) {
     error("Number of specified atoms should be 2");
+  }
 
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
 
-  if(pbc) log.printf("  using periodic boundary conditions\n");
-  else    log.printf("  without periodic boundary conditions\n");
+  if(pbc) {
+    log.printf("  using periodic boundary conditions\n");
+  } else {
+    log.printf("  without periodic boundary conditions\n");
+  }
 
   unsigned mode = getModeAndSetupValues( this );
-  if(mode==1) components=true; else if(mode==2) scaled_components=true;
+  if(mode==1) {
+    components=true;
+  } else if(mode==2) {
+    scaled_components=true;
+  }
   if( components || scaled_components ) {
-    value.resize(3); derivs.resize(3); virial.resize(3);
-    for(unsigned i=0; i<3; ++i) derivs[i].resize(2);
+    value.resize(3);
+    derivs.resize(3);
+    virial.resize(3);
+    for(unsigned i=0; i<3; ++i) {
+      derivs[i].resize(2);
+    }
   }
   requestAtoms(atoms);
 }
 
 void Distance::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
   aa->parseAtomList("ATOMS",num,t);
-  if( t.size()==2 ) aa->log.printf("  between atoms %d %d\n",t[0].serial(),t[1].serial());
+  if( t.size()==2 ) {
+    aa->log.printf("  between atoms %d %d\n",t[0].serial(),t[1].serial());
+  }
 }
 
 unsigned Distance::getModeAndSetupValues( ActionWithValue* av ) {
-  bool c; av->parseFlag("COMPONENTS",c);
-  bool sc; av->parseFlag("SCALED_COMPONENTS",sc);
-  if( c && sc ) av->error("COMPONENTS and SCALED_COMPONENTS are not compatible");
+  bool c;
+  av->parseFlag("COMPONENTS",c);
+  bool sc;
+  av->parseFlag("SCALED_COMPONENTS",sc);
+  if( c && sc ) {
+    av->error("COMPONENTS and SCALED_COMPONENTS are not compatible");
+  }
 
   if(c) {
-    av->addComponentWithDerivatives("x"); av->componentIsNotPeriodic("x");
-    av->addComponentWithDerivatives("y"); av->componentIsNotPeriodic("y");
-    av->addComponentWithDerivatives("z"); av->componentIsNotPeriodic("z");
+    av->addComponentWithDerivatives("x");
+    av->componentIsNotPeriodic("x");
+    av->addComponentWithDerivatives("y");
+    av->componentIsNotPeriodic("y");
+    av->addComponentWithDerivatives("z");
+    av->componentIsNotPeriodic("z");
     av->log<<"  WARNING: components will not have the proper periodicity - see manual\n";
     return 1;
   } else if(sc) {
-    av->addComponentWithDerivatives("a"); av->componentIsPeriodic("a","-0.5","+0.5");
-    av->addComponentWithDerivatives("b"); av->componentIsPeriodic("b","-0.5","+0.5");
-    av->addComponentWithDerivatives("c"); av->componentIsPeriodic("c","-0.5","+0.5");
+    av->addComponentWithDerivatives("a");
+    av->componentIsPeriodic("a","-0.5","+0.5");
+    av->addComponentWithDerivatives("b");
+    av->componentIsPeriodic("b","-0.5","+0.5");
+    av->addComponentWithDerivatives("c");
+    av->componentIsPeriodic("c","-0.5","+0.5");
     return 2;
   }
-  av->addValueWithDerivatives(); av->setNotPeriodic();
+  av->addValueWithDerivatives();
+  av->setNotPeriodic();
   return 0;
 }
 
 // calculator
 void Distance::calculate() {
 
-  if(pbc) makeWhole();
+  if(pbc) {
+    makeWhole();
+  }
 
   if( components ) {
     calculateCV( 1, masses, charges, getPositions(), value, derivs, virial, this );
@@ -232,15 +259,21 @@ void Distance::calculate() {
     Value* valuey=getPntrToComponent("y");
     Value* valuez=getPntrToComponent("z");
 
-    for(unsigned i=0; i<2; ++i) setAtomsDerivatives(valuex,i,derivs[0][i] );
+    for(unsigned i=0; i<2; ++i) {
+      setAtomsDerivatives(valuex,i,derivs[0][i] );
+    }
     setBoxDerivatives(valuex,virial[0]);
     valuex->set(value[0]);
 
-    for(unsigned i=0; i<2; ++i) setAtomsDerivatives(valuey,i,derivs[1][i] );
+    for(unsigned i=0; i<2; ++i) {
+      setAtomsDerivatives(valuey,i,derivs[1][i] );
+    }
     setBoxDerivatives(valuey,virial[1]);
     valuey->set(value[1]);
 
-    for(unsigned i=0; i<2; ++i) setAtomsDerivatives(valuez,i,derivs[2][i] );
+    for(unsigned i=0; i<2; ++i) {
+      setAtomsDerivatives(valuez,i,derivs[2][i] );
+    }
     setBoxDerivatives(valuez,virial[2]);
     valuez->set(value[2]);
   } else if( scaled_components ) {
@@ -249,15 +282,23 @@ void Distance::calculate() {
     Value* valuea=getPntrToComponent("a");
     Value* valueb=getPntrToComponent("b");
     Value* valuec=getPntrToComponent("c");
-    for(unsigned i=0; i<2; ++i) setAtomsDerivatives(valuea,i,derivs[0][i] );
+    for(unsigned i=0; i<2; ++i) {
+      setAtomsDerivatives(valuea,i,derivs[0][i] );
+    }
     valuea->set(value[0]);
-    for(unsigned i=0; i<2; ++i) setAtomsDerivatives(valueb,i,derivs[1][i] );
+    for(unsigned i=0; i<2; ++i) {
+      setAtomsDerivatives(valueb,i,derivs[1][i] );
+    }
     valueb->set(value[1]);
-    for(unsigned i=0; i<2; ++i) setAtomsDerivatives(valuec,i,derivs[2][i] );
+    for(unsigned i=0; i<2; ++i) {
+      setAtomsDerivatives(valuec,i,derivs[2][i] );
+    }
     valuec->set(value[2]);
   } else  {
     calculateCV( 0, masses, charges, getPositions(), value, derivs, virial, this );
-    for(unsigned i=0; i<2; ++i) setAtomsDerivatives(i,derivs[0][i] );
+    for(unsigned i=0; i<2; ++i) {
+      setAtomsDerivatives(i,derivs[0][i] );
+    }
     setBoxDerivatives(virial[0]);
     setValue           (value[0]);
   }

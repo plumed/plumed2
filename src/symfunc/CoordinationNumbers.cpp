@@ -111,12 +111,15 @@ void CoordinationNumbers::shortcutKeywords( Keywords& keys ) {
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
   keys.add("optional","SWITCH","the switching function that it used in the construction of the contact matrix");
   multicolvar::MultiColvarShortcuts::shortcutKeywords( keys );
-  keys.needsAction("CONTACT_MATRIX"); keys.needsAction("GROUP");
+  keys.needsAction("CONTACT_MATRIX");
+  keys.needsAction("GROUP");
 }
 
 void CoordinationNumbers::expandMatrix( const bool& components, const std::string& lab, const std::string& sp_str,
                                         const std::string& spa_str, const std::string& spb_str, ActionShortcut* action ) {
-  if( sp_str.length()==0 && spa_str.length()==0 ) return;
+  if( sp_str.length()==0 && spa_str.length()==0 ) {
+    return;
+  }
 
   std::string matinp = lab  + "_mat: CONTACT_MATRIX";
   if( sp_str.length()>0 ) {
@@ -127,16 +130,27 @@ void CoordinationNumbers::expandMatrix( const bool& components, const std::strin
     action->readInputLine( lab + "_grp: GROUP ATOMS=" + spa_str );
   }
 
-  std::string sw_str; action->parse("SWITCH",sw_str);
+  std::string sw_str;
+  action->parse("SWITCH",sw_str);
   if( sw_str.length()>0 ) {
     matinp += " SWITCH={" + sw_str + "}";
   } else {
-    std::string r0; action->parse("R_0",r0); std::string d0; action->parse("D_0",d0);
-    if( r0.length()==0 ) action->error("missing switching function parameters use SWITCH/R_0");
-    std::string nn; action->parse("NN",nn); std::string mm; action->parse("MM",mm);
+    std::string r0;
+    action->parse("R_0",r0);
+    std::string d0;
+    action->parse("D_0",d0);
+    if( r0.length()==0 ) {
+      action->error("missing switching function parameters use SWITCH/R_0");
+    }
+    std::string nn;
+    action->parse("NN",nn);
+    std::string mm;
+    action->parse("MM",mm);
     matinp += " R_0=" + r0 + " D_0=" + d0 + " NN=" + nn + " MM=" + mm;
   }
-  if( components ) matinp += " COMPONENTS";
+  if( components ) {
+    matinp += " COMPONENTS";
+  }
   action->readInputLine( matinp );
 }
 
@@ -145,48 +159,70 @@ void CoordinationNumbers::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","R_POWER","the power to which you want to raise the distance");
   keys.addFlag("LOWMEM",false,"this flag does nothing and is present only to ensure back-compatibility");
   keys.add("optional","MOMENTS","the list of moments that you would like to calculate");
-  keys.addOutputComponent("moment","MOMENTS","the moments of the distribution");
-  keys.needsAction("MATRIX_VECTOR_PRODUCT"); keys.needsAction("ONES"); keys.needsAction("MOMENTS");
+  keys.addOutputComponent("moment","MOMENTS","scalar","the moments of the distribution");
+  keys.needsAction("MATRIX_VECTOR_PRODUCT");
+  keys.needsAction("ONES");
+  keys.needsAction("MOMENTS");
+  keys.setValueDescription("vector","the coordination numbers of the specified atoms");
 }
 
 CoordinationNumbers::CoordinationNumbers(const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
-  bool lowmem; parseFlag("LOWMEM",lowmem);
-  if( lowmem ) warning("LOWMEM flag is deprecated and is no longer required for this action");
+  ActionShortcut(ao) {
+  bool lowmem;
+  parseFlag("LOWMEM",lowmem);
+  if( lowmem ) {
+    warning("LOWMEM flag is deprecated and is no longer required for this action");
+  }
   // Setup the contract matrix if that is what is needed
   std::string matlab, sp_str, specA, specB;
-  parse("SPECIES",sp_str); parse("SPECIESA",specA); parse("SPECIESB",specB);
+  parse("SPECIES",sp_str);
+  parse("SPECIESA",specA);
+  parse("SPECIESB",specB);
   if( sp_str.length()>0 || specA.length()>0 ) {
-    matlab = getShortcutLabel() + "_mat"; bool comp=false;
-    if( getName()=="COORDINATION_MOMENTS" ) { comp=true; matlab = getShortcutLabel() + "_mat"; }
+    matlab = getShortcutLabel() + "_mat";
+    bool comp=false;
+    if( getName()=="COORDINATION_MOMENTS" ) {
+      comp=true;
+      matlab = getShortcutLabel() + "_mat";
+    }
     expandMatrix( comp, getShortcutLabel(), sp_str, specA, specB, this );
-  } else error("missing atoms input use SPECIES or SPECIESA/SPECIESB");
+  } else {
+    error("missing atoms input use SPECIES or SPECIESA/SPECIESB");
+  }
   ActionWithValue* mb=plumed.getActionSet().selectWithLabel<ActionWithValue*>( matlab );
-  if( !mb ) error("could not find action with name " + matlab );
+  if( !mb ) {
+    error("could not find action with name " + matlab );
+  }
   Value*  arg=mb->copyOutput(0);
-  if( arg->getRank()!=2 || arg->hasDerivatives() ) error("the input to this action should be a matrix or scalar");
+  if( arg->getRank()!=2 || arg->hasDerivatives() ) {
+    error("the input to this action should be a matrix or scalar");
+  }
   // Create vector of ones to multiply input matrix by
-  std::string nones; Tools::convert( arg->getShape()[1], nones );
+  std::string nones;
+  Tools::convert( arg->getShape()[1], nones );
   readInputLine( getShortcutLabel() + "_ones: ONES SIZE=" + nones );
   if( getName()=="COORDINATION_MOMENTS" ) {
     // Calculate the lengths of the vectors
-    std::string r_power; parse("R_POWER",r_power);
+    std::string r_power;
+    parse("R_POWER",r_power);
     readInputLine( getShortcutLabel() + "_pow: CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z," + matlab + ".w VAR=x,y,z,w "
                    + "PERIODIC=NO FUNC=w*(sqrt(x*x+y*y+z*z)^" + r_power +")");
     matlab = getShortcutLabel() + "_pow";
   }
   // Calcualte coordination numbers as matrix vector times vector of ones
   readInputLine( getShortcutLabel() + ": MATRIX_VECTOR_PRODUCT  ARG=" + matlab + "," + getShortcutLabel() + "_ones");
-  std::vector<std::string> moments; parseVector("MOMENTS",moments); Tools::interpretRanges( moments );
+  std::vector<std::string> moments;
+  parseVector("MOMENTS",moments);
+  Tools::interpretRanges( moments );
   readInputLine( getShortcutLabel() + "_caverage: MEAN ARG=" + getShortcutLabel() + " PERIODIC=NO");
   for(unsigned i=0; i<moments.size(); ++i) {
     readInputLine( getShortcutLabel() + "_diffpow-" + moments[i] + ": CUSTOM ARG=" + getShortcutLabel() + "," + getShortcutLabel() + "_caverage PERIODIC=NO FUNC=(x-y)^" + moments[i] );
     readInputLine( getShortcutLabel() + "_moment-" + moments[i] + ": MEAN ARG=" + getShortcutLabel() + "_diffpow-" + moments[i] + " PERIODIC=NO");
   }
   // Read in all the shortcut stuff
-  std::map<std::string,std::string> keymap; multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );
+  std::map<std::string,std::string> keymap;
+  multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );
   multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel(), "", keymap, this );
 }
 

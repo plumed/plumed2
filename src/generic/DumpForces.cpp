@@ -52,8 +52,7 @@ DUMPFORCES ARG=distance STRIDE=1 FILE=forces
 
 class DumpForces :
   public ActionPilot,
-  public ActionWithArguments
-{
+  public ActionWithArguments {
   std::string file;
   std::string fmt;
   OFile of;
@@ -72,7 +71,7 @@ void DumpForces::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys);
   ActionPilot::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
-  keys.use("ARG");
+  keys.addInputKeyword("compulsory","ARG","scalar","the labels of the values whose forces should be output");
   keys.add("compulsory","STRIDE","1","the frequency with which the forces should be output");
   keys.add("compulsory","FILE","the name of the file on which to output the forces");
   keys.add("compulsory","FMT","%15.10f","the format with which the derivatives should be output");
@@ -85,17 +84,20 @@ DumpForces::DumpForces(const ActionOptions&ao):
   Action(ao),
   ActionPilot(ao),
   ActionWithArguments(ao),
-  fmt("%15.10f")
-{
+  fmt("%15.10f") {
   parse("FILE",file);
-  if( file.length()==0 ) error("name of file was not specified");
+  if( file.length()==0 ) {
+    error("name of file was not specified");
+  }
   parse("FMT",fmt);
   fmt=" "+fmt;
   of.link(*this);
   of.open(file);
   log.printf("  on file %s\n",file.c_str());
   log.printf("  with format %s\n",fmt.c_str());
-  if( getNumberOfArguments()==0 ) error("no arguments have been specified");
+  if( getNumberOfArguments()==0 ) {
+    error("no arguments have been specified");
+  }
   checkRead();
 }
 

@@ -45,15 +45,17 @@ PLUMED_REGISTER_ACTION(Product,"PRODUCT")
 void Product::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords(keys);
   keys.add("compulsory","ARG","The point that we are calculating the distance from");
-  keys.setValueDescription("the product of all the elements in the input vector");
-  keys.needsAction("CONCATENATE"); keys.needsAction("CUSTOM"); keys.needsAction("SUM");
+  keys.setValueDescription("scalar","the product of all the elements in the input vector");
+  keys.needsAction("CONCATENATE");
+  keys.needsAction("CUSTOM");
+  keys.needsAction("SUM");
 }
 
 Product::Product( const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
-  std::string arg; parse("ARG",arg);
+  ActionShortcut(ao) {
+  std::string arg;
+  parse("ARG",arg);
   readInputLine( getShortcutLabel() + "_vec: CONCATENATE ARG=" + arg );
   readInputLine( getShortcutLabel() + "_logs: CUSTOM ARG=" + getShortcutLabel() + "_vec FUNC=log(x) PERIODIC=NO");
   readInputLine( getShortcutLabel() + "_logsum: SUM ARG=" + getShortcutLabel() + "_logs PERIODIC=NO");

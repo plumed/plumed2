@@ -65,8 +65,7 @@ PRINT ARG=noes.* FILE=colvar
 //+ENDPLUMEDOC
 
 class NOE :
-  public MetainferenceBase
-{
+  public MetainferenceBase {
 private:
   bool             pbc;
   std::vector<unsigned> nga;
@@ -93,14 +92,13 @@ void NOE::registerKeywords( Keywords& keys ) {
   keys.reset_style("GROUPA","atoms");
   keys.reset_style("GROUPB","atoms");
   keys.add("numbered","NOEDIST","Add an experimental value for each NOE.");
-  keys.addOutputComponent("noe","default","the # NOE");
-  keys.addOutputComponent("exp","NOEDIST","the # NOE experimental distance");
+  keys.addOutputComponent("noe","default","scalar","the # NOE");
+  keys.addOutputComponent("exp","NOEDIST","scalar","the # NOE experimental distance");
 }
 
 NOE::NOE(const ActionOptions&ao):
   PLUMED_METAINF_INIT(ao),
-  pbc(true)
-{
+  pbc(true) {
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
@@ -109,21 +107,33 @@ NOE::NOE(const ActionOptions&ao):
   std::vector<AtomNumber> t, ga_lista, gb_lista;
   for(int i=1;; ++i ) {
     parseAtomList("GROUPA", i, t );
-    if( t.empty() ) break;
-    for(unsigned j=0; j<t.size(); j++) ga_lista.push_back(t[j]);
+    if( t.empty() ) {
+      break;
+    }
+    for(unsigned j=0; j<t.size(); j++) {
+      ga_lista.push_back(t[j]);
+    }
     nga.push_back(t.size());
     t.resize(0);
   }
   std::vector<unsigned> ngb;
   for(int i=1;; ++i ) {
     parseAtomList("GROUPB", i, t );
-    if( t.empty() ) break;
-    for(unsigned j=0; j<t.size(); j++) gb_lista.push_back(t[j]);
+    if( t.empty() ) {
+      break;
+    }
+    for(unsigned j=0; j<t.size(); j++) {
+      gb_lista.push_back(t[j]);
+    }
     ngb.push_back(t.size());
-    if(ngb[i-1]!=nga[i-1]) error("The same number of atoms is expected for the same GROUPA-GROUPB couple");
+    if(ngb[i-1]!=nga[i-1]) {
+      error("The same number of atoms is expected for the same GROUPA-GROUPB couple");
+    }
     t.resize(0);
   }
-  if(nga.size()!=ngb.size()) error("There should be the same number of GROUPA and GROUPB keywords");
+  if(nga.size()!=ngb.size()) {
+    error("There should be the same number of GROUPA and GROUPB keywords");
+  }
   // Create neighbour lists
   nl=Tools::make_unique<NeighborList>(ga_lista,gb_lista,false,true,pbc,getPbc(),comm);
 
@@ -132,13 +142,21 @@ NOE::NOE(const ActionOptions&ao):
   noedist.resize( nga.size() );
   unsigned ntarget=0;
   for(unsigned i=0; i<nga.size(); ++i) {
-    if( !parseNumbered( "NOEDIST", i+1, noedist[i] ) ) break;
+    if( !parseNumbered( "NOEDIST", i+1, noedist[i] ) ) {
+      break;
+    }
     ntarget++;
   }
   bool addexp=false;
-  if(ntarget!=nga.size() && ntarget!=0) error("found wrong number of NOEDIST values");
-  if(ntarget==nga.size()) addexp=true;
-  if(getDoScore()&&!addexp) error("with DOSCORE you need to set the NOEDIST values");
+  if(ntarget!=nga.size() && ntarget!=0) {
+    error("found wrong number of NOEDIST values");
+  }
+  if(ntarget==nga.size()) {
+    addexp=true;
+  }
+  if(getDoScore()&&!addexp) {
+    error("with DOSCORE you need to set the NOEDIST values");
+  }
 
   // Output details of all contacts
   unsigned index=0;
@@ -151,20 +169,25 @@ NOE::NOE(const ActionOptions&ao):
   }
   tot_size = index;
 
-  if(pbc)      log.printf("  using periodic boundary conditions\n");
-  else         log.printf("  without periodic boundary conditions\n");
+  if(pbc) {
+    log.printf("  using periodic boundary conditions\n");
+  } else {
+    log.printf("  without periodic boundary conditions\n");
+  }
 
   log << " Bibliography" << plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)") << "\n";
 
   if(!getDoScore()) {
     for(unsigned i=0; i<nga.size(); i++) {
-      std::string num; Tools::convert(i,num);
+      std::string num;
+      Tools::convert(i,num);
       addComponentWithDerivatives("noe-"+num);
       componentIsNotPeriodic("noe-"+num);
     }
     if(addexp) {
       for(unsigned i=0; i<nga.size(); i++) {
-        std::string num; Tools::convert(i,num);
+        std::string num;
+        Tools::convert(i,num);
         addComponent("exp-"+num);
         componentIsNotPeriodic("exp-"+num);
         Value* comp=getPntrToComponent("exp-"+num);
@@ -173,12 +196,14 @@ NOE::NOE(const ActionOptions&ao):
     }
   } else {
     for(unsigned i=0; i<nga.size(); i++) {
-      std::string num; Tools::convert(i,num);
+      std::string num;
+      Tools::convert(i,num);
       addComponent("noe-"+num);
       componentIsNotPeriodic("noe-"+num);
     }
     for(unsigned i=0; i<nga.size(); i++) {
-      std::string num; Tools::convert(i,num);
+      std::string num;
+      Tools::convert(i,num);
       addComponent("exp-"+num);
       componentIsNotPeriodic("exp-"+num);
       Value* comp=getPntrToComponent("exp-"+num);
@@ -195,8 +220,7 @@ NOE::NOE(const ActionOptions&ao):
   checkRead();
 }
 
-void NOE::calculate()
-{
+void NOE::calculate() {
   const unsigned ngasz=nga.size();
   std::vector<Vector> deriv(tot_size, Vector{0,0,0});
 
@@ -205,8 +229,11 @@ void NOE::calculate()
     Tensor dervir;
     double noe=0;
     unsigned index=0;
-    for(unsigned k=0; k<i; k++) index+=nga[k];
-    std::string num; Tools::convert(i,num);
+    for(unsigned k=0; k<i; k++) {
+      index+=nga[k];
+    }
+    std::string num;
+    Tools::convert(i,num);
     Value* val=getPntrToComponent("noe-"+num);
     // cycle over equivalent atoms
     for(unsigned j=0; j<nga[i]; j++) {
@@ -214,8 +241,11 @@ void NOE::calculate()
       const unsigned i1=nl->getClosePair(index+j).second;
 
       Vector distance;
-      if(pbc) distance=pbcDistance(getPosition(i0),getPosition(i1));
-      else    distance=delta(getPosition(i0),getPosition(i1));
+      if(pbc) {
+        distance=pbcDistance(getPosition(i0),getPosition(i1));
+      } else {
+        distance=delta(getPosition(i0),getPosition(i1));
+      }
 
       const double ir2=1./distance.modulo2();
       const double ir6=ir2*ir2*ir2;
@@ -232,7 +262,9 @@ void NOE::calculate()
     val->set(noe);
     if(!getDoScore()) {
       setBoxDerivatives(val, dervir);
-    } else setCalcData(i, noe);
+    } else {
+      setCalcData(i, noe);
+    }
   }
 
   if(getDoScore()) {
@@ -245,15 +277,20 @@ void NOE::calculate()
     Value* val=getPntrToComponent("score");
     for(unsigned i=0; i<ngasz; i++) {
       unsigned index=0;
-      for(unsigned k=0; k<i; k++) index+=nga[k];
+      for(unsigned k=0; k<i; k++) {
+        index+=nga[k];
+      }
       // cycle over equivalent atoms
       for(unsigned j=0; j<nga[i]; j++) {
         const unsigned i0=nl->getClosePair(index+j).first;
         const unsigned i1=nl->getClosePair(index+j).second;
 
         Vector distance;
-        if(pbc) distance=pbcDistance(getPosition(i0),getPosition(i1));
-        else    distance=delta(getPosition(i0),getPosition(i1));
+        if(pbc) {
+          distance=pbcDistance(getPosition(i0),getPosition(i1));
+        } else {
+          distance=delta(getPosition(i0),getPosition(i1));
+        }
 
         dervir += Tensor(distance,deriv[index+j]*getMetaDer(i));
         setAtomsDerivatives(val, i0,  deriv[index+j]*getMetaDer(i));
@@ -266,7 +303,9 @@ void NOE::calculate()
 
 void NOE::update() {
   // write status file
-  if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) writeStatus();
+  if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) {
+    writeStatus();
+  }
 }
 
 }

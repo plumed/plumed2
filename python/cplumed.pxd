@@ -31,7 +31,7 @@ cdef extern from "Plumed.h":
         size_t nelem
         size_t* shape
         size_t flags
-        # ignore other 
+        # ignore other
     ctypedef struct plumed_nothrow_handler:
         void* ptr
         void (*handler)(void*,int,const char*,const void*)
@@ -46,12 +46,14 @@ cdef extern from "Plumed.h":
         plumed_error_filesystem_path path1
         plumed_error_filesystem_path path2
         # ignore other members
-    void plumed_cmd_safe_nothrow(plumed p,const char*key,plumed_safeptr safe,plumed_nothrow_handler nothrow)
-    void plumed_error_set(void*ptr,int code,const char*what,const void* opt)
-    void plumed_error_init(plumed_error* error)
-    void plumed_error_finalize(plumed_error error)
-    plumed plumed_create()
-    plumed plumed_create_dlopen(const char*path)
-    plumed plumed_create_invalid()
-    void plumed_finalize(plumed p)
-    int plumed_valid(plumed p)
+    # C functions declared as nogil
+    # see https://github.com/plumed/plumed2/pull/1129#issuecomment-2410867829
+    void plumed_cmd_safe_nothrow(plumed p,const char*key,plumed_safeptr safe,plumed_nothrow_handler nothrow) nogil
+    void plumed_error_set(void*ptr,int code,const char*what,const void* opt) nogil
+    void plumed_error_init(plumed_error* error) nogil
+    void plumed_error_finalize(plumed_error error) nogil
+    plumed plumed_create() nogil
+    plumed plumed_create_dlopen(const char*path) nogil
+    plumed plumed_create_invalid() nogil
+    void plumed_finalize(plumed p) nogil
+    int plumed_valid(plumed p) nogil

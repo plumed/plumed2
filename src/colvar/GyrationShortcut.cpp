@@ -66,71 +66,129 @@ void GyrationShortcut::registerKeywords( Keywords& keys ) {
   keys.addFlag("MASS",false,"calculate the center of mass");
   keys.addFlag("MASS_WEIGHTED",false,"set the masses of all the atoms equal to one");
   keys.addFlag("UNORMALIZED",false,"do not divide by the sum of the weights");
-  keys.setValueDescription("the radius that was computed from the weights");
-  keys.addActionNameSuffix("_FAST"); keys.needsAction("CENTER"); keys.needsAction("CONSTANT");
-  keys.needsAction("ONES"); keys.needsAction("MASS"); keys.needsAction("DISTANCE");
-  keys.needsAction("COVARIANCE_MATRIX"); keys.needsAction("SELECT_COMPONENTS");
-  keys.needsAction("SUM"); keys.needsAction("CUSTOM"); keys.needsAction("DIAGONALIZE");
+  if( keys.getDisplayName()=="GYRATION" ) {
+    keys.setValueDescription("scalar","the radius that was computed from the weights");
+  } else if( keys.getDisplayName()=="GYRATION_TENSOR" ) {
+    keys.setValueDescription("matrix","the gyration tensor that was computed from the weights");
+  }
+  keys.addActionNameSuffix("_FAST");
+  keys.needsAction("CENTER");
+  keys.needsAction("CONSTANT");
+  keys.needsAction("ONES");
+  keys.needsAction("MASS");
+  keys.needsAction("DISTANCE");
+  keys.needsAction("COVARIANCE_MATRIX");
+  keys.needsAction("SELECT_COMPONENTS");
+  keys.needsAction("SUM");
+  keys.needsAction("CUSTOM");
+  keys.needsAction("DIAGONALIZE");
 }
 
 GyrationShortcut::GyrationShortcut(const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
-  bool usemass, phases; parseFlag("MASS",usemass); parseFlag("PHASES",phases);
-  std::vector<std::string> str_weights; parseVector("WEIGHTS",str_weights); std::string wflab;
+  ActionShortcut(ao) {
+  bool usemass, phases;
+  parseFlag("MASS",usemass);
+  parseFlag("PHASES",phases);
+  std::vector<std::string> str_weights;
+  parseVector("WEIGHTS",str_weights);
+  std::string wflab;
   if( !phases ) {
     if( usemass || str_weights.size()==0 || (str_weights.size()==1 && str_weights[0]=="@Masses") ) {
       std::string wt_str;
       if( str_weights.size()>0 ) {
-        wt_str="WEIGHTS=" + str_weights[0]; for(unsigned i=1; i<str_weights.size(); ++i) wt_str += "," + str_weights[i];
+        wt_str="WEIGHTS=" + str_weights[0];
+        for(unsigned i=1; i<str_weights.size(); ++i) {
+          wt_str += "," + str_weights[i];
+        }
       }
-      if( usemass || (str_weights.size()==1 && str_weights[0]=="@Masses") ) wt_str = "MASS";
+      if( usemass || (str_weights.size()==1 && str_weights[0]=="@Masses") ) {
+        wt_str = "MASS";
+      }
       readInputLine( getShortcutLabel() + ": GYRATION_FAST " + wt_str + " " + convertInputLineToString() );
       return;
     }
   }
-  if( usemass ) { str_weights.resize(1); str_weights[0]="@Masses"; }
+  if( usemass ) {
+    str_weights.resize(1);
+    str_weights[0]="@Masses";
+  }
   log<<"  Bibliography "<<plumed.cite("Jirí Vymetal and Jirí Vondrasek, J. Phys. Chem. A 115, 11455 (2011)")<<"\n";
   // Read in the atoms involved
-  std::vector<std::string> atoms; parseVector("ATOMS",atoms); Tools::interpretRanges(atoms);
-  std::string gtype, atlist=atoms[0]; for(unsigned i=1; i<atoms.size(); ++i) atlist += "," + atoms[i];
-  bool nopbc; parseFlag("NOPBC",nopbc); std::string pbcstr; if(nopbc) pbcstr = " NOPBC";
-  std::string phasestr; if(phases) phasestr = " PHASES";
+  std::vector<std::string> atoms;
+  parseVector("ATOMS",atoms);
+  Tools::interpretRanges(atoms);
+  std::string gtype, atlist=atoms[0];
+  for(unsigned i=1; i<atoms.size(); ++i) {
+    atlist += "," + atoms[i];
+  }
+  bool nopbc;
+  parseFlag("NOPBC",nopbc);
+  std::string pbcstr;
+  if(nopbc) {
+    pbcstr = " NOPBC";
+  }
+  std::string phasestr;
+  if(phases) {
+    phasestr = " PHASES";
+  }
   // Create the geometric center of the molecule
   std::string weights_str=" WEIGHTS=" + str_weights[0];
-  for(unsigned i=1; i<str_weights.size(); ++i) weights_str += "," + str_weights[i];
+  for(unsigned i=1; i<str_weights.size(); ++i) {
+    weights_str += "," + str_weights[i];
+  }
   readInputLine( getShortcutLabel() + "_cent: CENTER ATOMS=" + atlist + pbcstr + phasestr + weights_str );
   if( str_weights.size()==0 ) {
-    wflab = getShortcutLabel() + "_w"; std::string str_natoms; Tools::convert( atoms.size(), str_natoms );
+    wflab = getShortcutLabel() + "_w";
+    std::string str_natoms;
+    Tools::convert( atoms.size(), str_natoms );
     readInputLine( getShortcutLabel() + "_w: ONES SIZE=" + str_natoms );
   } else if( str_weights.size()==1 && str_weights[0]=="@Masses" ) {
     wflab = getShortcutLabel() + "_m";
     readInputLine( getShortcutLabel() + "_m: MASS ATOMS=" + atlist );
   } else if( str_weights.size()>1 ) {
-    std::string vals=str_weights[0]; for(unsigned i=1; i<str_weights.size(); ++i) vals += "," + str_weights[i];
-    readInputLine( getShortcutLabel() + "_w: CONSTANT VALUES=" + vals ); wflab=getShortcutLabel() + "_w";
+    std::string vals=str_weights[0];
+    for(unsigned i=1; i<str_weights.size(); ++i) {
+      vals += "," + str_weights[i];
+    }
+    readInputLine( getShortcutLabel() + "_w: CONSTANT VALUES=" + vals );
+    wflab=getShortcutLabel() + "_w";
   } else {
-    plumed_assert( str_weights.size()==1 ); wflab = getShortcutLabel() + "_cent_w";
+    plumed_assert( str_weights.size()==1 );
+    wflab = getShortcutLabel() + "_cent_w";
     ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( wflab );
-    if( !av ) { wflab = str_weights[0]; }
+    if( !av ) {
+      wflab = str_weights[0];
+    }
   }
   // Check for normalisation
-  bool unorm; parseFlag("UNORMALIZED",unorm);
+  bool unorm;
+  parseFlag("UNORMALIZED",unorm);
   // Find out the type
   if( getName()!="GYRATION_TENSOR" ) {
     parse("TYPE",gtype);
     if( gtype!="RADIUS" && gtype!="TRACE" && gtype!="GTPC_1" && gtype!="GTPC_2" && gtype!="GTPC_3" && gtype!="ASPHERICITY" && gtype!="ACYLINDRICITY"
-        && gtype!= "KAPPA2" && gtype!="RGYR_1" && gtype!="RGYR_2" && gtype!="RGYR_3" ) error("type " + gtype + " is invalid");
+        && gtype!= "KAPPA2" && gtype!="RGYR_1" && gtype!="RGYR_2" && gtype!="RGYR_3" ) {
+      error("type " + gtype + " is invalid");
+    }
     // Check if we need to calculate the unormlised radius
-    if( gtype=="TRACE" || gtype=="KAPPA2" ) unorm=true;
+    if( gtype=="TRACE" || gtype=="KAPPA2" ) {
+      unorm=true;
+    }
   }
   // Compute all the vectors separating all the positions from the center
   std::string distance_act = getShortcutLabel() + "_dists: DISTANCE COMPONENTS" + pbcstr;
-  for(unsigned i=0; i<atoms.size(); ++i) { std::string num; Tools::convert( i+1, num ); distance_act += " ATOMS" + num + "=" + getShortcutLabel() + "_cent," + atoms[i]; }
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    std::string num;
+    Tools::convert( i+1, num );
+    distance_act += " ATOMS" + num + "=" + getShortcutLabel() + "_cent," + atoms[i];
+  }
   readInputLine( distance_act );
   // And calculate the covariance
-  std::string norm_str; if( unorm ) norm_str = " UNORMALIZED";
+  std::string norm_str;
+  if( unorm ) {
+    norm_str = " UNORMALIZED";
+  }
   if( getName()=="GYRATION_TENSOR" ) {
     readInputLine( getShortcutLabel() + ": COVARIANCE_MATRIX ARG=" + getShortcutLabel() + "_dists.x," + getShortcutLabel() + "_dists.y," + getShortcutLabel() + "_dists.z WEIGHTS=" + wflab + norm_str );
     return;
@@ -152,13 +210,23 @@ GyrationShortcut::GyrationShortcut(const ActionOptions& ao):
     // Diagonalize the gyration tensor
     readInputLine( getShortcutLabel() + "_diag: DIAGONALIZE ARG=" + getShortcutLabel() + "_tensor VECTORS=all" );
     if( gtype.find("GTPC")!=std::string::npos ) {
-      std::size_t und=gtype.find_first_of("_"); if( und==std::string::npos ) error( gtype + " is not a valid type for gyration radius");
-      std::string num = gtype.substr(und+1); if( num!="1" && num!="2" && num!="3" ) error( gtype + " is not a valid type for gyration radius");
+      std::size_t und=gtype.find_first_of("_");
+      if( und==std::string::npos ) {
+        error( gtype + " is not a valid type for gyration radius");
+      }
+      std::string num = gtype.substr(und+1);
+      if( num!="1" && num!="2" && num!="3" ) {
+        error( gtype + " is not a valid type for gyration radius");
+      }
       // Now get the appropriate eigenvalue
       readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_diag.vals-" + num + " FUNC=sqrt(x) PERIODIC=NO");
     } else if( gtype.find("RGYR")!=std::string::npos ) {
-      std::size_t und=gtype.find_first_of("_"); if( und==std::string::npos ) error( gtype + " is not a valid type for gyration radius");
-      unsigned ind; Tools::convert( gtype.substr(und+1), ind );
+      std::size_t und=gtype.find_first_of("_");
+      if( und==std::string::npos ) {
+        error( gtype + " is not a valid type for gyration radius");
+      }
+      unsigned ind;
+      Tools::convert( gtype.substr(und+1), ind );
       // Now get the appropriate quantity
       if( ind==3 ) {
         readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_diag.vals-1," + getShortcutLabel() + "_diag.vals-2 FUNC=sqrt(x+y) PERIODIC=NO");
@@ -166,7 +234,9 @@ GyrationShortcut::GyrationShortcut(const ActionOptions& ao):
         readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_diag.vals-1," + getShortcutLabel() + "_diag.vals-3 FUNC=sqrt(x+y) PERIODIC=NO");
       } else if( ind==1 ) {
         readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_diag.vals-2," + getShortcutLabel() + "_diag.vals-3 FUNC=sqrt(x+y) PERIODIC=NO");
-      } else error( gtype + " is not a valid type for gyration radius");
+      } else {
+        error( gtype + " is not a valid type for gyration radius");
+      }
     } else if( gtype=="ASPHERICITY" ) {
       readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_diag.vals-1," + getShortcutLabel() + "_diag.vals-2," + getShortcutLabel() + "_diag.vals-3 FUNC=sqrt(x-0.5*(y+z)) PERIODIC=NO" );
     } else if( gtype=="ACYLINDRICITY" ) {
@@ -175,7 +245,9 @@ GyrationShortcut::GyrationShortcut(const ActionOptions& ao):
       readInputLine( getShortcutLabel() + "_numer: CUSTOM ARG=" + getShortcutLabel() + "_diag.vals-1," + getShortcutLabel() + "_diag.vals-2," + getShortcutLabel() + "_diag.vals-3 FUNC=x*y+x*z+y*z PERIODIC=NO" );
       readInputLine( getShortcutLabel() + "_denom: CUSTOM ARG=" + getShortcutLabel() + "_diag.vals-1," + getShortcutLabel() + "_diag.vals-2," + getShortcutLabel() + "_diag.vals-3 FUNC=x+y+z PERIODIC=NO" );
       readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_numer," + getShortcutLabel() + "_denom FUNC=1-3*(x/(y*y)) PERIODIC=NO");
-    } else error( gtype + " is not a valid type for gyration radius");
+    } else {
+      error( gtype + " is not a valid type for gyration radius");
+    }
   }
 }
 

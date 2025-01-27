@@ -59,18 +59,21 @@ PLUMED_REGISTER_ACTION(ExtraCV,"EXTRACV")
 
 ExtraCV::ExtraCV(const ActionOptions&ao):
   Action(ao),
-  ActionShortcut(ao)
-{
-  std::vector<std::string> argn(1); parse("NAME",argn[0]);
+  ActionShortcut(ao) {
+  std::vector<std::string> argn(1);
+  parse("NAME",argn[0]);
   readInputLine( argn[0] + ": PUT UNIT=number SHAPE=0 MUTABLE PERIODIC=NO");
-  if( getShortcutLabel()!=argn[0] ) readInputLine( getShortcutLabel() + ": COMBINE ARG=" + argn[0] + " PERIODIC=NO");
+  if( getShortcutLabel()!=argn[0] ) {
+    readInputLine( getShortcutLabel() + ": COMBINE ARG=" + argn[0] + " PERIODIC=NO");
+  }
 }
 
 void ExtraCV::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
   keys.add("compulsory","NAME","name of the CV as computed by the MD engine");
-  keys.setValueDescription("the value of the CV that was passed from the MD code to PLUMED");
-  keys.needsAction("PUT"); keys.needsAction("COMBINE");
+  keys.setValueDescription("scalar","the value of the CV that was passed from the MD code to PLUMED");
+  keys.needsAction("PUT");
+  keys.needsAction("COMBINE");
 }
 
 }

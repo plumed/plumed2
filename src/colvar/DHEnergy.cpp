@@ -78,7 +78,7 @@ void DHEnergy::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","I","1.0","Ionic strength (M)");
   keys.add("compulsory","TEMP","300.0","Simulation temperature (K)");
   keys.add("compulsory","EPSILON","80.0","Dielectric constant of solvent");
-  keys.setValueDescription("the value of the DHENERGY");
+  keys.setValueDescription("scalar","the value of the DHENERGY");
 }
 
 /*
@@ -108,14 +108,15 @@ DHEnergy::DHEnergy(const ActionOptions&ao):
   Action(ao),
   CoordinationBase(ao),
   k(0.0),
-  constant(0.0)
-{
+  constant(0.0) {
   double I,T;
   parse("I",I);
   parse("TEMP",T);
   parse("EPSILON",epsilon);
   checkRead();
-  if( usingNaturalUnits() ) error("DHENERGY cannot be used for calculations performed with natural units");
+  if( usingNaturalUnits() ) {
+    error("DHENERGY cannot be used for calculations performed with natural units");
+  }
   constant=138.935458111/getUnits().getEnergy()/getUnits().getLength()*getUnits().getCharge()*getUnits().getCharge();
   k=std::sqrt(I/(epsilon*T))*502.903741125*getUnits().getLength();
   checkRead();

@@ -113,21 +113,31 @@ void PCA::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","STRIDE","0","the frequency with which to perform this analysis");
   keys.add("optional","FILE","the file on which to output the low dimensional coordinates");
   keys.add("optional","FMT","the format to use when outputting the low dimensional coordinates");
-  keys.setValueDescription("the projections of the input coordinates on the PCA components that were found from the covariance matrix");
-  keys.needsAction("LOGSUMEXP"); keys.needsAction("TRANSPOSE"); keys.needsAction("MATRIX_VECTOR_PRODUCT");
-  keys.needsAction("CONSTANT"); keys.needsAction("COLLECT"); keys.needsAction("OUTER_PRODUCT"); keys.needsAction("CUSTOM");
-  keys.needsAction("MATRIX_PRODUCT"); keys.needsAction("DIAGONALIZE"); keys.needsAction("VSTACK"); keys.needsAction("DUMPPDB");
+  keys.setValueDescription("matrix","the projections of the input coordinates on the PCA components that were found from the covariance matrix");
+  keys.needsAction("LOGSUMEXP");
+  keys.needsAction("TRANSPOSE");
+  keys.needsAction("MATRIX_VECTOR_PRODUCT");
+  keys.needsAction("CONSTANT");
+  keys.needsAction("COLLECT");
+  keys.needsAction("OUTER_PRODUCT");
+  keys.needsAction("CUSTOM");
+  keys.needsAction("MATRIX_PRODUCT");
+  keys.needsAction("DIAGONALIZE");
+  keys.needsAction("VSTACK");
+  keys.needsAction("DUMPPDB");
 }
 
 
 PCA::PCA(const ActionOptions&ao):
   Action(ao),
-  ActionShortcut(ao)
-{
+  ActionShortcut(ao) {
   // Find the argument name
-  std::string argn; parse("ARG",argn);
+  std::string argn;
+  parse("ARG",argn);
   ActionShortcut* as = plumed.getActionSet().getShortcutActionWithLabel( argn );
-  if( !as || as->getName()!="COLLECT_FRAMES" ) error("found no COLLECT_FRAMES action with label " + argn );
+  if( !as || as->getName()!="COLLECT_FRAMES" ) {
+    error("found no COLLECT_FRAMES action with label " + argn );
+  }
   // Get the final weights using the logsumexp trick
   readInputLine( getShortcutLabel() + "_weights: LOGSUMEXP ARG=" + argn + "_logweights");
   // Now transpose the collected frames
@@ -138,9 +148,14 @@ PCA::PCA(const ActionOptions&ao):
   readInputLine( getShortcutLabel() + "_averages: OUTER_PRODUCT ARG=" + argn + "_ones," + getShortcutLabel() + "_mean");
   // Make a matrix of weights
   ActionWithValue* av2 = plumed.getActionSet().selectWithLabel<ActionWithValue*>( argn + "_data" );
-  if( !av2 ) error("count not find data");
+  if( !av2 ) {
+    error("count not find data");
+  }
   unsigned nones = (av2->copyOutput(0))->getShape()[1];
-  std::string ones="1"; for(unsigned i=1; i<nones; ++i) ones += ",1";
+  std::string ones="1";
+  for(unsigned i=1; i<nones; ++i) {
+    ones += ",1";
+  }
   readInputLine( getShortcutLabel() + "_wones: CONSTANT VALUES=" + ones );
   readInputLine( getShortcutLabel() + "_wmat: OUTER_PRODUCT ARG=" + getShortcutLabel() + "_weights," + getShortcutLabel() + "_wones");
   // And compute the data substract the mean
@@ -150,32 +165,68 @@ PCA::PCA(const ActionOptions&ao):
   readInputLine( getShortcutLabel() + "_wdiffT: TRANSPOSE ARG=" + getShortcutLabel() + "_wdiff");
   readInputLine( getShortcutLabel() + "_covar: MATRIX_PRODUCT ARG=" + getShortcutLabel() + "_wdiffT," + getShortcutLabel() + "_wdiff");
   // Read the dimensionality of the low dimensional space
-  unsigned ndim; parse("NLOW_DIM",ndim); std::string vecstr="1";
-  if( ndim<=0 || ndim>nones ) error("cannot generate projection in space of dimension higher than input coordinates");
-  for(unsigned i=1; i<ndim; ++i) { std::string num; Tools::convert( i+1, num ); vecstr += "," + num; }
+  unsigned ndim;
+  parse("NLOW_DIM",ndim);
+  std::string vecstr="1";
+  if( ndim<=0 || ndim>nones ) {
+    error("cannot generate projection in space of dimension higher than input coordinates");
+  }
+  for(unsigned i=1; i<ndim; ++i) {
+    std::string num;
+    Tools::convert( i+1, num );
+    vecstr += "," + num;
+  }
   readInputLine( getShortcutLabel() + "_eig: DIAGONALIZE ARG=" + getShortcutLabel() + "_covar VECTORS=" + vecstr );
   // Now create a matrix to hold the output data
   std::string outd = "ARG=" + getShortcutLabel() + "_mean";
-  for(unsigned i=0; i<ndim; ++i) { std::string num; Tools::convert( i+1, num ); outd += "," + getShortcutLabel() + "_eig.vecs-" + num; }
+  for(unsigned i=0; i<ndim; ++i) {
+    std::string num;
+    Tools::convert( i+1, num );
+    outd += "," + getShortcutLabel() + "_eig.vecs-" + num;
+  }
   readInputLine( getShortcutLabel() + "_pcaT: VSTACK " + outd );
   readInputLine( getShortcutLabel() + "_pca: TRANSPOSE ARG=" + getShortcutLabel() + "_pcaT");
   // And output it all
-  std::string filename, pstride; parse("STRIDE",pstride); parse("FILE",filename);
+  std::string filename, pstride;
+  parse("STRIDE",pstride);
+  parse("FILE",filename);
   if( filename.length()>0 && av2->getName()=="VSTACK" ) {
-    std::vector<std::string> argnames; av2->getMatrixColumnTitles( argnames );
-    std::string argname_str=argnames[0]; for(unsigned i=1; i<argnames.size(); ++i) argname_str += "," + argnames[i];
-    std::string fmt; parse("FMT",fmt); if( fmt.length()>0 ) fmt=" FMT=" + fmt;
+    std::vector<std::string> argnames;
+    av2->getMatrixColumnTitles( argnames );
+    std::string argname_str=argnames[0];
+    for(unsigned i=1; i<argnames.size(); ++i) {
+      argname_str += "," + argnames[i];
+    }
+    std::string fmt;
+    parse("FMT",fmt);
+    if( fmt.length()>0 ) {
+      fmt=" FMT=" + fmt;
+    }
     readInputLine("DUMPPDB DESCRIPTION=PCA ARG_NAMES=" + argname_str + " ARG=" + getShortcutLabel() + "_pca FILE=" + filename + " STRIDE=" + pstride + fmt );
   } else {
-    if( av2->getName()!="COLLECT" ) error("input data should be VSTACK if list of arguments of COLLECT if atom positions");
+    if( av2->getName()!="COLLECT" ) {
+      error("input data should be VSTACK if list of arguments of COLLECT if atom positions");
+    }
     ActionAtomistic* rmsdact = plumed.getActionSet().selectWithLabel<ActionAtomistic*>( argn + "_getposx" );
-    if( !rmsdact ) error("could not find action that gets positions from trajectory for RMSD");
-    std::vector<AtomNumber> atoms( rmsdact->getAbsoluteIndexes() ); std::string indices; Tools::convert( atoms[0].serial(), indices );
-    for(unsigned i=1; i<atoms.size(); ++i) { std::string jnum; Tools::convert( atoms[i].serial(), jnum ); indices += "," + jnum; }
+    if( !rmsdact ) {
+      error("could not find action that gets positions from trajectory for RMSD");
+    }
+    std::vector<AtomNumber> atoms( rmsdact->getAbsoluteIndexes() );
+    std::string indices;
+    Tools::convert( atoms[0].serial(), indices );
+    for(unsigned i=1; i<atoms.size(); ++i) {
+      std::string jnum;
+      Tools::convert( atoms[i].serial(), jnum );
+      indices += "," + jnum;
+    }
     readInputLine("DUMPPDB DESCRIPTION=PCA ATOM_INDICES=" + indices + " ATOMS=" + getShortcutLabel() + "_pca FILE=" + filename + " STRIDE=" + pstride );
   }
   outd = "ARG=" + getShortcutLabel() + "_eig.vecs-1";
-  for(unsigned i=1; i<ndim; ++i) { std::string num; Tools::convert( i+1, num ); outd += "," + getShortcutLabel() + "_eig.vecs-" + num; }
+  for(unsigned i=1; i<ndim; ++i) {
+    std::string num;
+    Tools::convert( i+1, num );
+    outd += "," + getShortcutLabel() + "_eig.vecs-" + num;
+  }
   readInputLine( getShortcutLabel() + "_eigv: VSTACK " + outd );
   readInputLine( getShortcutLabel() + ": MATRIX_PRODUCT ARG=" + getShortcutLabel() + "_diff," + getShortcutLabel() + "_eigv");
 }

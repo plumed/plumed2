@@ -67,8 +67,7 @@ only when required.
 
 class Print :
   public ActionPilot,
-  public ActionWithArguments
-{
+  public ActionWithArguments {
   std::string file;
   OFile ofile;
   std::string fmt;
@@ -99,7 +98,7 @@ void Print::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys);
   ActionPilot::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
-  keys.use("ARG");
+  keys.addInputKeyword("compulsory","ARG","scalar/vector/matrix","the labels of the values that you would like to print to the file");
   keys.add("compulsory","STRIDE","1","the frequency with which the quantities of interest should be output");
   keys.add("optional","FILE","the name of the file on which to output these quantities");
   keys.add("optional","FMT","the format that should be used to output real numbers");
@@ -114,8 +113,7 @@ Print::Print(const ActionOptions&ao):
   ActionPilot(ao),
   ActionWithArguments(ao),
   fmt("%f"),
-  rotate(0)
-{
+  rotate(0) {
   ofile.link(*this);
   parse("FILE",file);
   if(file.length()>0) {
@@ -139,7 +137,9 @@ Print::Print(const ActionOptions&ao):
   parse("_ROTATE",rotate);
   if(rotate>0) {
     rotateCountdown=rotate;
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) rotateArguments.push_back( getPntrToArgument(i) );
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      rotateArguments.push_back( getPntrToArgument(i) );
+    }
     std::vector<Value*> a(1,rotateArguments[0]);
     requestArguments(std::vector<Value*>(1,rotateArguments[0]));
     rotateLast=0;
@@ -173,7 +173,8 @@ void Print::update() {
   ofile.fmtField(" %f");
   ofile.printField("time",getTime());
   for(unsigned i=0; i<getNumberOfArguments(); i++) {
-    ofile.fmtField(fmt); getPntrToArgument(i)->print( ofile );
+    ofile.fmtField(fmt);
+    getPntrToArgument(i)->print( ofile );
   }
   ofile.printField();
 }

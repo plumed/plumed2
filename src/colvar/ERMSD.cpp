@@ -121,12 +121,11 @@ void ERMSD::registerKeywords(Keywords& keys) {
   keys.add("compulsory","CUTOFF","2.4","only pairs of atoms closer than CUTOFF are considered in the calculation.");
   keys.add("atoms","ATOMS","the list of atoms (use lcs)");
   keys.add("optional","PAIRS","List of pairs considered. All pairs are considered if this value is not specified.");
-  keys.setValueDescription("the eRMSD between the instantaneous structure and the reference structure that was input");
+  keys.setValueDescription("scalar","the eRMSD between the instantaneous structure and the reference structure that was input");
 }
 
 ERMSD::ERMSD(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao), pbc(true)
-{
+  PLUMED_COLVAR_INIT(ao), pbc(true) {
   std::string reference;
   parse("REFERENCE",reference);
   double cutoff=2.4;
@@ -144,11 +143,18 @@ ERMSD::ERMSD(const ActionOptions&ao):
   parseVector("PAIRS",pairs_);
   checkRead();
 
-  addValueWithDerivatives(); setNotPeriodic();
+  addValueWithDerivatives();
+  setNotPeriodic();
 
-  if(atoms_.size()<6) error("at least six atoms should be specified");
-  if(atoms_.size()%3!=0) error("Atoms are not multiple of 3");
-  if(pairs_.size()%2!=0) error("pairs are not multiple of 2");
+  if(atoms_.size()<6) {
+    error("at least six atoms should be specified");
+  }
+  if(atoms_.size()%3!=0) {
+    error("Atoms are not multiple of 3");
+  }
+  if(pairs_.size()%2!=0) {
+    error("pairs are not multiple of 2");
+  }
 
 
   //checkRead();
@@ -158,8 +164,9 @@ ERMSD::ERMSD(const ActionOptions&ao):
 
   // read everything in ang and transform to nm if we are not in natural units
   PDB pdb;
-  if( !pdb.read(reference,usingNaturalUnits(),0.1/getUnits().getLength()) )
+  if( !pdb.read(reference,usingNaturalUnits(),0.1/getUnits().getLength()) ) {
     error("missing input file " + reference );
+  }
   // store target_ distance
   std::vector <Vector> reference_positions;
   unsigned natoms = atoms_.size();
@@ -172,7 +179,9 @@ ERMSD::ERMSD(const ActionOptions&ao):
   }
 
 // shift to count from zero
-  for(unsigned i=0; i<pairs_.size(); ++i) pairs_[i]--;
+  for(unsigned i=0; i<pairs_.size(); ++i) {
+    pairs_[i]--;
+  }
 
   ermsd.setReference(reference_positions,pairs_,cutoff/getUnits().getLength());
 
@@ -205,7 +214,9 @@ void ERMSD::calculate() {
   const double scale=getUnits().getLength();
   setValue(ermsdist*scale);
 
-  for(unsigned i=0; i<derivs.size(); ++i) {setAtomsDerivatives(i,derivs[i]*scale);}
+  for(unsigned i=0; i<derivs.size(); ++i) {
+    setAtomsDerivatives(i,derivs[i]*scale);
+  }
 
   setBoxDerivativesNoPbc();
 }

@@ -172,8 +172,7 @@ PRINT ARG=st.corr,pcse.bias FILE=colvar
 //+ENDPLUMEDOC
 
 class RDC :
-  public MetainferenceBase
-{
+  public MetainferenceBase {
 private:
   double         Const;
   double         mu_s;
@@ -231,14 +230,14 @@ void RDC::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","SCALE","1.","Add the scaling factor to take into account concentration and other effects. ");
   keys.addFlag("SVD",false,"Set to TRUE if you want to back calculate using Single Value Decomposition (need GSL at compilation time).");
   keys.add("numbered","COUPLING","Add an experimental value for each coupling (needed by SVD and useful for STATS).");
-  keys.addOutputComponent("rdc","default","the calculated # RDC");
-  keys.addOutputComponent("exp","SVD/COUPLING","the experimental # RDC");
-  keys.addOutputComponent("Sxx","SVD","Tensor component");
-  keys.addOutputComponent("Syy","SVD","Tensor component");
-  keys.addOutputComponent("Szz","SVD","Tensor component");
-  keys.addOutputComponent("Sxy","SVD","Tensor component");
-  keys.addOutputComponent("Sxz","SVD","Tensor component");
-  keys.addOutputComponent("Syz","SVD","Tensor component");
+  keys.addOutputComponent("rdc","default","scalar","the calculated # RDC");
+  keys.addOutputComponent("exp","SVD/COUPLING","scalar","the experimental # RDC");
+  keys.addOutputComponent("Sxx","SVD","scalar","Tensor component");
+  keys.addOutputComponent("Syy","SVD","scalar","Tensor component");
+  keys.addOutputComponent("Szz","SVD","scalar","Tensor component");
+  keys.addOutputComponent("Sxy","SVD","scalar","Tensor component");
+  keys.addOutputComponent("Sxz","SVD","scalar","Tensor component");
+  keys.addOutputComponent("Syz","SVD","scalar","Tensor component");
 }
 
 RDC::RDC(const ActionOptions&ao):
@@ -246,8 +245,7 @@ RDC::RDC(const ActionOptions&ao):
   Const(1.),
   mu_s(1.),
   scale(1.),
-  pbc(true)
-{
+  pbc(true) {
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
@@ -255,16 +253,22 @@ RDC::RDC(const ActionOptions&ao):
   const double RDCConst = 0.3356806;
   const double PCSConst = 1.0;
 
-  if( getName().find("RDC")!=std::string::npos) { Const *= RDCConst; }
-  else if( getName().find("PCS")!=std::string::npos) { Const *= PCSConst; }
+  if( getName().find("RDC")!=std::string::npos) {
+    Const *= RDCConst;
+  } else if( getName().find("PCS")!=std::string::npos) {
+    Const *= PCSConst;
+  }
 
   // Read in the atoms
   std::vector<AtomNumber> t, atoms;
   for(int i=1;; ++i ) {
     parseAtomList("ATOMS", i, t );
-    if( t.empty() ) break;
+    if( t.empty() ) {
+      break;
+    }
     if( t.size()!=2 ) {
-      std::string ss; Tools::convert(i,ss);
+      std::string ss;
+      Tools::convert(i,ss);
       error("ATOMS" + ss + " keyword has the wrong number of atoms");
     }
     atoms.push_back(t[0]);
@@ -276,38 +280,58 @@ RDC::RDC(const ActionOptions&ao):
 
   // Read in GYROMAGNETIC constants
   parse("GYROM", mu_s);
-  if(mu_s==0.) error("GYROM cannot be 0");
+  if(mu_s==0.) {
+    error("GYROM cannot be 0");
+  }
 
   // Read in SCALING factors
   parse("SCALE", scale);
-  if(scale==0.) error("SCALE cannot be 0");
+  if(scale==0.) {
+    error("SCALE cannot be 0");
+  }
 
   svd=false;
   parseFlag("SVD",svd);
 #ifndef __PLUMED_HAS_GSL
-  if(svd) error("You CANNOT use SVD without GSL. Recompile PLUMED with GSL!\n");
+  if(svd) {
+    error("You CANNOT use SVD without GSL. Recompile PLUMED with GSL!\n");
+  }
 #endif
-  if(svd&&getDoScore()) error("It is not possible to use SVD and METAINFERENCE together");
+  if(svd&&getDoScore()) {
+    error("It is not possible to use SVD and METAINFERENCE together");
+  }
 
   // Optionally add an experimental value
   coupl.resize( ndata );
   unsigned ntarget=0;
   for(unsigned i=0; i<ndata; ++i) {
-    if( !parseNumbered( "COUPLING", i+1, coupl[i] ) ) break;
+    if( !parseNumbered( "COUPLING", i+1, coupl[i] ) ) {
+      break;
+    }
     ntarget++;
   }
   bool addexp=false;
-  if(ntarget!=ndata && ntarget!=0) error("found wrong number of COUPLING values");
-  if(ntarget==ndata) addexp=true;
-  if(getDoScore()&&!addexp) error("with DOSCORE you need to set the COUPLING values");
-  if(svd&&!addexp) error("with SVD you need to set the COUPLING values");
+  if(ntarget!=ndata && ntarget!=0) {
+    error("found wrong number of COUPLING values");
+  }
+  if(ntarget==ndata) {
+    addexp=true;
+  }
+  if(getDoScore()&&!addexp) {
+    error("with DOSCORE you need to set the COUPLING values");
+  }
+  if(svd&&!addexp) {
+    error("with SVD you need to set the COUPLING values");
+  }
 
 
   // Output details of all contacts
   log.printf("  Gyromagnetic moment is %f. Scaling factor is %f.",mu_s,scale);
   for(unsigned i=0; i<ndata; ++i) {
     log.printf("  The %uth Bond Dipolar Coupling is calculated from atoms : %d %d.", i+1, atoms[2*i].serial(), atoms[2*i+1].serial());
-    if(addexp) log.printf(" Experimental coupling is %f.", coupl[i]);
+    if(addexp) {
+      log.printf(" Experimental coupling is %f.", coupl[i]);
+    }
     log.printf("\n");
   }
 
@@ -319,13 +343,15 @@ RDC::RDC(const ActionOptions&ao):
 
   if(!getDoScore()&&!svd) {
     for(unsigned i=0; i<ndata; i++) {
-      std::string num; Tools::convert(i,num);
+      std::string num;
+      Tools::convert(i,num);
       addComponentWithDerivatives("rdc-"+num);
       componentIsNotPeriodic("rdc-"+num);
     }
     if(addexp) {
       for(unsigned i=0; i<ndata; i++) {
-        std::string num; Tools::convert(i,num);
+        std::string num;
+        Tools::convert(i,num);
         addComponent("exp-"+num);
         componentIsNotPeriodic("exp-"+num);
         Value* comp=getPntrToComponent("exp-"+num);
@@ -334,12 +360,14 @@ RDC::RDC(const ActionOptions&ao):
     }
   } else {
     for(unsigned i=0; i<ndata; i++) {
-      std::string num; Tools::convert(i,num);
+      std::string num;
+      Tools::convert(i,num);
       addComponentWithDerivatives("rdc-"+num);
       componentIsNotPeriodic("rdc-"+num);
     }
     for(unsigned i=0; i<ndata; i++) {
-      std::string num; Tools::convert(i,num);
+      std::string num;
+      Tools::convert(i,num);
       addComponent("exp-"+num);
       componentIsNotPeriodic("exp-"+num);
       Value* comp=getPntrToComponent("exp-"+num);
@@ -348,12 +376,18 @@ RDC::RDC(const ActionOptions&ao):
   }
 
   if(svd) {
-    addComponent("Sxx"); componentIsNotPeriodic("Sxx");
-    addComponent("Syy"); componentIsNotPeriodic("Syy");
-    addComponent("Szz"); componentIsNotPeriodic("Szz");
-    addComponent("Sxy"); componentIsNotPeriodic("Sxy");
-    addComponent("Sxz"); componentIsNotPeriodic("Sxz");
-    addComponent("Syz"); componentIsNotPeriodic("Syz");
+    addComponent("Sxx");
+    componentIsNotPeriodic("Sxx");
+    addComponent("Syy");
+    componentIsNotPeriodic("Syy");
+    addComponent("Szz");
+    componentIsNotPeriodic("Szz");
+    addComponent("Sxy");
+    componentIsNotPeriodic("Sxy");
+    addComponent("Sxz");
+    componentIsNotPeriodic("Sxz");
+    addComponent("Syz");
+    componentIsNotPeriodic("Syz");
   }
 
   requestAtoms(atoms, false);
@@ -365,8 +399,7 @@ RDC::RDC(const ActionOptions&ao):
   checkRead();
 }
 
-void RDC::do_svd()
-{
+void RDC::do_svd() {
 #ifdef __PLUMED_HAS_GSL
   gsl_vector_unique_ptr rdc_vec(gsl_vector_alloc(coupl.size())),
                         S(gsl_vector_alloc(5)),
@@ -385,8 +418,11 @@ void RDC::do_svd()
   std::vector<double> dmax(coupl.size());
   for(unsigned r=0; r<getNumberOfAtoms(); r+=2) {
     Vector  distance;
-    if(pbc) distance = pbcDistance(getPosition(r),getPosition(r+1));
-    else    distance = delta(getPosition(r),getPosition(r+1));
+    if(pbc) {
+      distance = pbcDistance(getPosition(r),getPosition(r+1));
+    } else {
+      distance = delta(getPosition(r),getPosition(r+1));
+    }
     double d    = distance.modulo();
     double d2   = d*d;
     double d3   = d2*d;
@@ -437,8 +473,7 @@ void RDC::do_svd()
 #endif
 }
 
-void RDC::calculate()
-{
+void RDC::calculate() {
   if(svd) {
     do_svd();
     return;
@@ -452,12 +487,14 @@ void RDC::calculate()
   #pragma omp parallel num_threads(OpenMP::getNumThreads())
   {
     #pragma omp for
-    for(unsigned r=0; r<N; r+=2)
-    {
+    for(unsigned r=0; r<N; r+=2) {
       const unsigned index=r/2;
       Vector  distance;
-      if(pbc) distance   = pbcDistance(getPosition(r),getPosition(r+1));
-      else    distance   = delta(getPosition(r),getPosition(r+1));
+      if(pbc) {
+        distance   = pbcDistance(getPosition(r),getPosition(r+1));
+      } else {
+        distance   = delta(getPosition(r),getPosition(r+1));
+      }
       const double d2    = distance.modulo2();
       const double ind   = 1./std::sqrt(d2);
       const double ind2  = 1./d2;
@@ -477,14 +514,17 @@ void RDC::calculate()
       dRDC[index][1] *= prod_xy;
       dRDC[index][2] *= prod_z;
 
-      std::string num; Tools::convert(index,num);
+      std::string num;
+      Tools::convert(index,num);
       Value* val=getPntrToComponent("rdc-"+num);
       val->set(rdc);
       if(!getDoScore()) {
         setBoxDerivatives(val, Tensor(distance,dRDC[index]));
         setAtomsDerivatives(val, r,  dRDC[index]);
         setAtomsDerivatives(val, r+1, -dRDC[index]);
-      } else setCalcData(index, rdc);
+      } else {
+        setCalcData(index, rdc);
+      }
     }
   }
 
@@ -496,12 +536,14 @@ void RDC::calculate()
 
     /* calculate final derivatives */
     Value* val=getPntrToComponent("score");
-    for(unsigned r=0; r<N; r+=2)
-    {
+    for(unsigned r=0; r<N; r+=2) {
       const unsigned index=r/2;
       Vector  distance;
-      if(pbc) distance   = pbcDistance(getPosition(r),getPosition(r+1));
-      else    distance   = delta(getPosition(r),getPosition(r+1));
+      if(pbc) {
+        distance   = pbcDistance(getPosition(r),getPosition(r+1));
+      } else {
+        distance   = delta(getPosition(r),getPosition(r+1));
+      }
       const Vector der = dRDC[index]*getMetaDer(index);
       dervir += Tensor(distance, der);
       setAtomsDerivatives(val, r,  der);
@@ -513,7 +555,9 @@ void RDC::calculate()
 
 void RDC::update() {
   // write status file
-  if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) writeStatus();
+  if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) {
+    writeStatus();
+  }
 }
 
 }

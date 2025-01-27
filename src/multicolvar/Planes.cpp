@@ -56,34 +56,56 @@ void PlaneShortcut::registerKeywords( Keywords& keys ) {
   keys.add("numbered","LOCATION","the location at which the CV is assumed to be in space");
   keys.reset_style("LOCATION","atoms");
   keys.addFlag("VMEAN",false,"calculate the norm of the mean vector.");
-  keys.addOutputComponent("_vmean","VMEAN","the norm of the mean vector");
+  keys.addOutputComponent("_vmean","VMEAN","scalar","the norm of the mean vector");
   keys.addFlag("VSUM",false,"calculate the norm of the sum of all the vectors");
-  keys.addOutputComponent("_vsum","VSUM","the norm of the mean vector");
-  keys.needsAction("CENTER"); keys.needsAction("GROUP"); keys.needsAction("PLANE");
-  keys.needsAction("MEAN"); keys.needsAction("SUM"); keys.needsAction("COMBINE"); keys.needsAction("CUSTOM");
+  keys.addOutputComponent("_vsum","VSUM","scalar","the norm of the mean vector");
+  keys.needsAction("CENTER");
+  keys.needsAction("GROUP");
+  keys.needsAction("PLANE");
+  keys.needsAction("MEAN");
+  keys.needsAction("SUM");
+  keys.needsAction("COMBINE");
+  keys.needsAction("CUSTOM");
 }
 
 PlaneShortcut::PlaneShortcut(const ActionOptions&ao):
   Action(ao),
-  ActionShortcut(ao)
-{
-  bool vmean, vsum; parseFlag("VMEAN",vmean); parseFlag("VSUM",vsum); std::string dline;
+  ActionShortcut(ao) {
+  bool vmean, vsum;
+  parseFlag("VMEAN",vmean);
+  parseFlag("VSUM",vsum);
+  std::string dline;
   std::string grpstr = getShortcutLabel() + "_grp: GROUP ATOMS=";
   for(unsigned i=1;; ++i) {
-    std::string atstring; parseNumbered("ATOMS",i,atstring);
-    if( atstring.length()==0 ) break;
-    std::string locstr; parseNumbered("LOCATION",i,locstr);
-    if( locstr.length()==0 ) {
-      std::string num; Tools::convert( i, num );
-      readInputLine( getShortcutLabel() + "_vatom" + num + ": CENTER ATOMS=" + atstring );
-      if( i==1 ) grpstr += getShortcutLabel() + "_vatom" + num; else grpstr += "," + getShortcutLabel() + "_vatom" + num;
-    } else {
-      if( i==1 ) grpstr += locstr; else grpstr += "," + locstr;
+    std::string atstring;
+    parseNumbered("ATOMS",i,atstring);
+    if( atstring.length()==0 ) {
+      break;
     }
-    std::string num; Tools::convert( i, num );
+    std::string locstr;
+    parseNumbered("LOCATION",i,locstr);
+    if( locstr.length()==0 ) {
+      std::string num;
+      Tools::convert( i, num );
+      readInputLine( getShortcutLabel() + "_vatom" + num + ": CENTER ATOMS=" + atstring );
+      if( i==1 ) {
+        grpstr += getShortcutLabel() + "_vatom" + num;
+      } else {
+        grpstr += "," + getShortcutLabel() + "_vatom" + num;
+      }
+    } else {
+      if( i==1 ) {
+        grpstr += locstr;
+      } else {
+        grpstr += "," + locstr;
+      }
+    }
+    std::string num;
+    Tools::convert( i, num );
     dline += " ATOMS" + num + "=" + atstring;
   }
-  readInputLine( grpstr ); readInputLine( getShortcutLabel() + ": PLANE " + dline + " " + convertInputLineToString() );
+  readInputLine( grpstr );
+  readInputLine( getShortcutLabel() + ": PLANE " + dline + " " + convertInputLineToString() );
   if( vmean ) {
     readInputLine( getShortcutLabel() + "_xs: MEAN ARG=" + getShortcutLabel() + ".x PERIODIC=NO");
     readInputLine( getShortcutLabel() + "_ys: MEAN ARG=" + getShortcutLabel() + ".y PERIODIC=NO");

@@ -167,18 +167,18 @@ END
 PLUMED_REGISTER_ACTION(RMSD,"RMSD_SCALAR")
 
 void RMSD::registerKeywords(Keywords& keys) {
-  Colvar::registerKeywords(keys); keys.setDisplayName("RMSD");
+  Colvar::registerKeywords(keys);
+  keys.setDisplayName("RMSD");
   keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
   keys.add("compulsory","TYPE","SIMPLE","the manner in which RMSD alignment is performed.  Should be OPTIMAL or SIMPLE.");
   keys.addFlag("SQUARED",false," This should be set if you want mean squared displacement instead of RMSD ");
-  keys.setValueDescription("the RMSD between the instantaneous structure and the reference structure that was input");
+  keys.setValueDescription("scalar","the RMSD between the instantaneous structure and the reference structure that was input");
 }
 
 RMSD::RMSD(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   squared(false),
-  nopbc(false)
-{
+  nopbc(false) {
   std::string reference;
   parse("REFERENCE",reference);
   std::string type;
@@ -188,39 +188,53 @@ RMSD::RMSD(const ActionOptions&ao):
   parseFlag("NOPBC",nopbc);
   checkRead();
 
-  addValueWithDerivatives(); setNotPeriodic();
+  addValueWithDerivatives();
+  setNotPeriodic();
   PDB pdb;
 
   // read everything in ang and transform to nm if we are not in natural units
-  if( !pdb.read(reference,usingNaturalUnits(),0.1/getUnits().getLength()) )
+  if( !pdb.read(reference,usingNaturalUnits(),0.1/getUnits().getLength()) ) {
     error("missing input file " + reference );
+  }
   myrmsd.set( pdb, type, true, true );
 
   std::vector<AtomNumber> atoms( pdb.getAtomNumbers() );
-  requestAtoms( atoms ); der.resize( atoms.size() );
+  requestAtoms( atoms );
+  der.resize( atoms.size() );
 
   log.printf("  reference from file %s\n",reference.c_str());
   log.printf("  which contains %d atoms\n",getNumberOfAtoms());
   log.printf("  with indices : ");
   for(unsigned i=0; i<atoms.size(); ++i) {
-    if(i%25==0) log<<"\n";
+    if(i%25==0) {
+      log<<"\n";
+    }
     log.printf("%d ",atoms[i].serial());
   }
   log.printf("\n");
   log.printf("  method for alignment : %s \n",type.c_str() );
-  if(squared)log.printf("  chosen to use SQUARED option for MSD instead of RMSD\n");
-  if(nopbc) log.printf("  without periodic boundary conditions\n");
-  else      log.printf("  using periodic boundary conditions\n");
+  if(squared) {
+    log.printf("  chosen to use SQUARED option for MSD instead of RMSD\n");
+  }
+  if(nopbc) {
+    log.printf("  without periodic boundary conditions\n");
+  } else {
+    log.printf("  using periodic boundary conditions\n");
+  }
 }
 
 
 // calculator
 void RMSD::calculate() {
-  if(!nopbc) makeWhole();
+  if(!nopbc) {
+    makeWhole();
+  }
   double r=myrmsd.calculate( getPositions(), der, squared );
 
   setValue(r);
-  for(unsigned i=0; i<getNumberOfAtoms(); i++) setAtomsDerivatives( i, der[i] );
+  for(unsigned i=0; i<getNumberOfAtoms(); i++) {
+    setAtomsDerivatives( i, der[i] );
+  }
   setBoxDerivativesNoPbc();
 }
 

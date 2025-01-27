@@ -461,7 +461,6 @@ PLUMED_REGISTER_ACTION(LogMFD,"LOGMFD")
 */
 void LogMFD::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
-  keys.use("ARG");
   keys.add("compulsory","INTERVAL",
            "Period of MD steps (N_m) to update fictitious dynamical variables." );
   keys.add("compulsory","DELTA_T",
@@ -537,12 +536,12 @@ void LogMFD::registerKeywords(Keywords& keys) {
            "temperature of the MD system, while TEMP may be (in principle) different from it. "
            "If not provided, TEMPPD is set to be the same value as TEMP." );
 
-  keys.addOutputComponent("_fict","default",
+  keys.addOutputComponent("_fict","default","scalar",
                           "For example, the fictitious collective variable for LogMFD is specified as "
                           "ARG=dist12 and LABEL=logmfd in LOGMFD section in Plumed input file, "
                           "the associated fictitious dynamical variable can be specified as "
                           "PRINT ARG=dist12,logmfd.dist12_fict FILE=COLVAR");
-  keys.addOutputComponent("_vfict","default",
+  keys.addOutputComponent("_vfict","default","scalar",
                           "For example, the fictitious collective variable for LogMFD is specified as "
                           "ARG=dist12 and LABEL=logmfd in LOGMFD section in Plumed input file, the "
                           "velocity of the associated fictitious dynamical variable can be specified as "
@@ -585,8 +584,7 @@ LogMFD::LogMFD( const ActionOptions& ao ):
   ffict(getNumberOfArguments(),0.0),
   fict_ave(getNumberOfArguments(),0.0),
   fictValue(getNumberOfArguments(),NULL),
-  vfictValue(getNumberOfArguments(),NULL)
-{
+  vfictValue(getNumberOfArguments(),NULL) {
   backup.fict.resize(getNumberOfArguments(),0.0);
   backup.vfict.resize(getNumberOfArguments(),0.0);
   backup.ffict.resize(getNumberOfArguments(),0.0);
@@ -626,15 +624,13 @@ LogMFD::LogMFD( const ActionOptions& ao ):
     parseVector("WORK",vwork);
     // initial work of this replica
     work = vwork[multi_sim_comm.Get_rank()];
-  }
-  else {
+  } else {
     work = 0.0;
   }
 
   if( kbtpd>=0.0 ) {
     kbtpd *= getKBoltzmann();
-  }
-  else {
+  } else {
     kbtpd = kbt;
   }
 
@@ -646,11 +642,9 @@ LogMFD::LogMFD( const ActionOptions& ao ):
   if(alpha == 0.0 && gamma == 0.0) {
     alpha = 4.0;
     gamma = 1 / alpha;
-  }
-  else if(alpha != 0.0 && gamma == 0.0) {
+  } else if(alpha != 0.0 && gamma == 0.0) {
     gamma = 1 / alpha;
-  }
-  else if(alpha == 0.0 && gamma != 0.0) {
+  } else if(alpha == 0.0 && gamma != 0.0) {
     alpha = 1 / gamma;
   }
 
@@ -660,23 +654,22 @@ LogMFD::LogMFD( const ActionOptions& ao ):
   if( multi_sim_comm.Get_size()>1 ) {
     if( TAMD ) {
       log.printf("TAMD-PD, replica parallel of TAMD, no logarithmic flattening.\n");
-    }
-    else {
+    } else {
       log.printf("LogPD, replica parallel of LogMFD.\n");
     }
     log.printf("number of replica : %d.\n", multi_sim_comm.Get_size() );
-  }
-  else {
+  } else {
     if( TAMD ) {
       log.printf("TAMD, no logarithmic flattening.\n");
-    }
-    else {
+    } else {
       log.printf("LogMFD, logarithmic flattening.\n");
     }
   }
 
   log.printf("  with harmonic force constant      ");
-  for(unsigned i=0; i<kappa.size(); i++) log.printf(" %f",kappa[i]);
+  for(unsigned i=0; i<kappa.size(); i++) {
+    log.printf(" %f",kappa[i]);
+  }
   log.printf("\n");
 
   log.printf("  with interval of cv(ideal) update ");
@@ -702,23 +695,33 @@ LogMFD::LogMFD( const ActionOptions& ao ):
   log.printf("\n");
 
   log.printf("  with mass of cv(ideal)");
-  for(unsigned i=0; i<mfict.size(); i++) log.printf(" %f", mfict[i]);
+  for(unsigned i=0; i<mfict.size(); i++) {
+    log.printf(" %f", mfict[i]);
+  }
   log.printf("\n");
 
   log.printf("  with initial value of cv(ideal)");
-  for(unsigned i=0; i<fict.size(); i++) log.printf(" %f", fict[i]);
+  for(unsigned i=0; i<fict.size(); i++) {
+    log.printf(" %f", fict[i]);
+  }
   log.printf("\n");
 
   log.printf("  with initial velocity of cv(ideal)");
-  for(unsigned i=0; i<vfict.size(); i++) log.printf(" %f", vfict[i]);
+  for(unsigned i=0; i<vfict.size(); i++) {
+    log.printf(" %f", vfict[i]);
+  }
   log.printf("\n");
 
   log.printf("  with maximum value of cv(ideal)    ");
-  for(unsigned i=0; i<fict_max.size(); i++) log.printf(" %f",fict_max[i]);
+  for(unsigned i=0; i<fict_max.size(); i++) {
+    log.printf(" %f",fict_max[i]);
+  }
   log.printf("\n");
 
   log.printf("  with minimum value of cv(ideal)    ");
-  for(unsigned i=0; i<fict_min.size(); i++) log.printf(" %f",fict_min[i]);
+  for(unsigned i=0; i<fict_min.size(); i++) {
+    log.printf(" %f",fict_min[i]);
+  }
   log.printf("\n");
 
   log.printf("  and kbt                           ");
@@ -734,8 +737,7 @@ LogMFD::LogMFD( const ActionOptions& ao ):
       std::string a,b;
       getPntrToArgument(i)->getDomain(a,b);
       componentIsPeriodic(comp,a,b);
-    }
-    else {
+    } else {
       componentIsNotPeriodic(comp);
     }
     fictValue[i] = getPntrToComponent(comp);
@@ -763,7 +765,9 @@ void LogMFD::calculate() {
 
     // set initial values of fictitious variables if they were not specified.
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      if( fict[i] != -999.0 ) continue; // -999 means no initial values given in plumed.dat
+      if( fict[i] != -999.0 ) {
+        continue;  // -999 means no initial values given in plumed.dat
+      }
 
       // use the collective variables as the initial of the fictitious variable.
       fict[i] = getArgument(i);
@@ -788,8 +792,7 @@ void LogMFD::calculate() {
       const double pot = TAMD ? flog : sgn(flog)*gamma * std::log1p( alpha*fabs(flog) );
       // invariant
       hlog = pot + ekin;
-    }
-    else if(thermostat == "NVT") {
+    } else if(thermostat == "NVT") {
       const double nkt = getNumberOfArguments()*kbt;
       // kinetic energy
       const double ekin = calcEkin();
@@ -799,8 +802,7 @@ void LogMFD::calculate() {
       const double pot = TAMD ? flog : sgn(flog)*gamma * std::log1p( alpha*fabs(flog) );
       // invariant
       hlog = pot + ekin + ekin_bath;
-    }
-    else if(thermostat == "VS") {
+    } else if(thermostat == "VS") {
       // kinetic energy
       const double ekin = calcEkin();
       if( ekin == 0.0 ) { // this means VFICT is not given.
@@ -808,8 +810,7 @@ void LogMFD::calculate() {
         for(unsigned i=0; i<getNumberOfArguments(); ++i) {
           vfict[i] = sqrt(kbt/mfict[i]);
         }
-      }
-      else {
+      } else {
         const double nkt = getNumberOfArguments()*kbt;
         const double svs = sqrt(nkt/ekin/2);
         for(unsigned i=0; i<getNumberOfArguments(); ++i) {
@@ -833,8 +834,7 @@ void LogMFD::calculate() {
       if( multi_sim_comm.Get_size()>1 ) {
         fprintf(outlog, "# LogPD, replica parallel of LogMFD\n");
         fprintf(outlog, "# number of replica : %d\n", multi_sim_comm.Get_size() );
-      }
-      else {
+      } else {
         fprintf(outlog, "# LogMFD\n");
       }
 
@@ -923,7 +923,9 @@ void LogMFD::calculate() {
    bounces back variables, updates free energy, and record logs.
 */
 void LogMFD::update() {
-  if( (getStep()-step_initial)%interval != interval-1 ) return;
+  if( (getStep()-step_initial)%interval != interval-1 ) {
+    return;
+  }
 
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     backup.fict[i]  =  fict[i];
@@ -975,11 +977,9 @@ void LogMFD::update() {
   // update fictitious variables
   if(thermostat == "NVE") {
     updateNVE();
-  }
-  else if(thermostat == "NVT") {
+  } else if(thermostat == "NVT") {
     updateNVT();
-  }
-  else if(thermostat == "VS") {
+  } else if(thermostat == "VS") {
     updateVS();
   }
 
@@ -1163,8 +1163,7 @@ void LogMFD::calcMeanForce() {
     // here, work is reduced by work_min to avoid all exp(-work/kbt)s disconverge
     if( kbtpd == 0.0 ) {
       weight = work==work_min ? 1.0 : 0.0;
-    }
-    else {
+    } else {
       weight = exp(-(work-work_min)/kbtpd);
     }
 
@@ -1211,15 +1210,12 @@ double LogMFD::calcFlog() {
 
   if (thermostat == "NVE") {
     pot = hlog - ekin;
-  }
-  else if (thermostat == "NVT") {
+  } else if (thermostat == "NVT") {
     const double ekin_bath = 0.5*veta*veta*meta+xeta*nkt;
     pot = hlog - ekin - ekin_bath;
-  }
-  else if (thermostat == "VS") {
+  } else if (thermostat == "VS") {
     pot = phivs;
-  }
-  else {
+  } else {
     pot = 0.0; // never occurs
   }
 

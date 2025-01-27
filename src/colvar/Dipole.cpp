@@ -106,14 +106,15 @@ typedef MultiColvarTemplate<Dipole> DipoleMulti;
 PLUMED_REGISTER_ACTION(DipoleMulti,"DIPOLE_VECTOR")
 
 void Dipole::registerKeywords(Keywords& keys) {
-  Colvar::registerKeywords(keys); keys.setDisplayName("DIPOLE");
+  Colvar::registerKeywords(keys);
+  keys.setDisplayName("DIPOLE");
   keys.add("atoms","GROUP","the group of atoms we are calculating the dipole moment for");
   keys.addFlag("COMPONENTS",false,"calculate the x, y and z components of the dipole separately and store them as label.x, label.y and label.z");
-  keys.addOutputComponent("x","COMPONENTS","the x-component of the dipole");
-  keys.addOutputComponent("y","COMPONENTS","the y-component of the dipole");
-  keys.addOutputComponent("z","COMPONENTS","the z-component of the dipole");
+  keys.addOutputComponent("x","COMPONENTS","scalar/vector","the x-component of the dipole");
+  keys.addOutputComponent("y","COMPONENTS","scalar/vector","the y-component of the dipole");
+  keys.addOutputComponent("z","COMPONENTS","scalar/vector","the z-component of the dipole");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
-  keys.setValueDescription("the DIPOLE for these atoms");
+  keys.setValueDescription("scalar/vector","the DIPOLE for these atoms");
 }
 
 Dipole::Dipole(const ActionOptions&ao):
@@ -121,22 +122,29 @@ Dipole::Dipole(const ActionOptions&ao):
   components(false),
   value(1),
   derivs(1),
-  virial(1)
-{
-  parseAtomList(-1,ga_lista,this); charges.resize(ga_lista.size());
+  virial(1) {
+  parseAtomList(-1,ga_lista,this);
+  charges.resize(ga_lista.size());
   components=(getModeAndSetupValues(this)==1);
   if( components ) {
-    value.resize(3); derivs.resize(3); virial.resize(3);
+    value.resize(3);
+    derivs.resize(3);
+    virial.resize(3);
     valuex=getPntrToComponent("x");
     valuey=getPntrToComponent("y");
     valuez=getPntrToComponent("z");
   }
-  for(unsigned i=0; i<derivs.size(); ++i) derivs[i].resize( ga_lista.size() );
+  for(unsigned i=0; i<derivs.size(); ++i) {
+    derivs[i].resize( ga_lista.size() );
+  }
   parseFlag("NOPBC",nopbc);
   checkRead();
 
-  if(nopbc) log.printf("  without periodic boundary conditions\n");
-  else      log.printf("  using periodic boundary conditions\n");
+  if(nopbc) {
+    log.printf("  without periodic boundary conditions\n");
+  } else {
+    log.printf("  using periodic boundary conditions\n");
+  }
 
   requestAtoms(ga_lista);
 }
@@ -153,26 +161,37 @@ void Dipole::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAt
 }
 
 unsigned Dipole::getModeAndSetupValues( ActionWithValue* av ) {
-  bool c; av->parseFlag("COMPONENTS",c);
+  bool c;
+  av->parseFlag("COMPONENTS",c);
   if( c ) {
-    av->addComponentWithDerivatives("x"); av->componentIsNotPeriodic("x");
-    av->addComponentWithDerivatives("y"); av->componentIsNotPeriodic("y");
-    av->addComponentWithDerivatives("z"); av->componentIsNotPeriodic("z");
+    av->addComponentWithDerivatives("x");
+    av->componentIsNotPeriodic("x");
+    av->addComponentWithDerivatives("y");
+    av->componentIsNotPeriodic("y");
+    av->addComponentWithDerivatives("z");
+    av->componentIsNotPeriodic("z");
     return 1;
   }
-  av->addValueWithDerivatives(); av->setNotPeriodic(); return 0;
+  av->addValueWithDerivatives();
+  av->setNotPeriodic();
+  return 0;
 }
 
 // calculator
-void Dipole::calculate()
-{
-  if(!nopbc) makeWhole();
+void Dipole::calculate() {
+  if(!nopbc) {
+    makeWhole();
+  }
   unsigned N=getNumberOfAtoms();
-  for(unsigned i=0; i<N; ++i) charges[i]=getCharge(i);
+  for(unsigned i=0; i<N; ++i) {
+    charges[i]=getCharge(i);
+  }
 
   if(!components) {
     calculateCV( 0, masses, charges, getPositions(), value, derivs, virial, this );
-    for(unsigned i=0; i<N; i++) setAtomsDerivatives(i,derivs[0][i]);
+    for(unsigned i=0; i<N; i++) {
+      setAtomsDerivatives(i,derivs[0][i]);
+    }
     setBoxDerivatives(virial[0]);
     setValue(value[0]);
   } else {
@@ -194,13 +213,17 @@ void Dipole::calculate()
 void Dipole::calculateCV( const unsigned& mode, const std::vector<double>& masses, std::vector<double>& charges,
                           const std::vector<Vector>& pos, std::vector<double>& vals, std::vector<std::vector<Vector> >& derivs,
                           std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
-  unsigned N=pos.size(); double ctot=0.;
-  for(unsigned i=0; i<N; ++i) ctot += charges[i];
+  unsigned N=pos.size();
+  double ctot=0.;
+  for(unsigned i=0; i<N; ++i) {
+    ctot += charges[i];
+  }
   ctot/=(double)N;
 
   Vector dipje;
   for(unsigned i=0; i<N; ++i) {
-    charges[i]-=ctot; dipje += charges[i]*pos[i];
+    charges[i]-=ctot;
+    dipje += charges[i]*pos[i];
   }
 
   if( mode==1 ) {
@@ -209,7 +232,9 @@ void Dipole::calculateCV( const unsigned& mode, const std::vector<double>& masse
       derivs[1][i]=charges[i]*Vector(0.0,1.0,0.0);
       derivs[2][i]=charges[i]*Vector(0.0,0.0,1.0);
     }
-    for(unsigned i=0; i<3; ++i ) vals[i] = dipje[i];
+    for(unsigned i=0; i<3; ++i ) {
+      vals[i] = dipje[i];
+    }
   } else {
     vals[0] = dipje.modulo();
     double idip = 1./vals[0];

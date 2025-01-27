@@ -104,8 +104,7 @@ void BF_Chebyshev::registerKeywords(Keywords& keys) {
 }
 
 BF_Chebyshev::BF_Chebyshev(const ActionOptions&ao):
-  PLUMED_VES_BASISFUNCTIONS_INIT(ao)
-{
+  PLUMED_VES_BASISFUNCTIONS_INIT(ao) {
   setNumberOfBasisFunctions(getOrder()+1);
   setIntrinsicInterval("-1.0","+1.0");
   setNonPeriodic();
@@ -136,7 +135,11 @@ void BF_Chebyshev::getAllValues(const double arg, double& argT, bool& inside_ran
     derivsT[i+1] = 2.0*values[i]+2.0*argT*derivsT[i]-derivsT[i-1];
     derivs[i+1]  = intervalDerivf()*derivsT[i+1];
   }
-  if(!inside_range) {for(unsigned int i=0; i<derivs.size(); i++) {derivs[i]=0.0;}}
+  if(!inside_range) {
+    for(unsigned int i=0; i<derivs.size(); i++) {
+      derivs[i]=0.0;
+    }
+  }
 }
 
 

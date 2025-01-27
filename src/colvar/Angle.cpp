@@ -122,10 +122,11 @@ typedef MultiColvarTemplate<Angle> AngleMulti;
 PLUMED_REGISTER_ACTION(AngleMulti,"ANGLE_VECTOR")
 
 void Angle::registerKeywords( Keywords& keys ) {
-  Colvar::registerKeywords(keys); keys.setDisplayName("ANGLE");
+  Colvar::registerKeywords(keys);
+  keys.setDisplayName("ANGLE");
   keys.add("atoms","ATOMS","the list of atoms involved in this collective variable (either 3 or 4 atoms)");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
-  keys.setValueDescription("the ANGLE involving these atoms");
+  keys.setValueDescription("scalar/vector","the ANGLE involving these atoms");
 }
 
 void Angle::parseAtomList( const int& num, std::vector<AtomNumber>& atoms, ActionAtomistic* aa ) {
@@ -137,11 +138,15 @@ void Angle::parseAtomList( const int& num, std::vector<AtomNumber>& atoms, Actio
     atoms[2]=atoms[1];
   } else if(atoms.size()==4) {
     aa->log.printf("  between lines %d-%d and %d-%d\n",atoms[0].serial(),atoms[1].serial(),atoms[2].serial(),atoms[3].serial());
-  } else if( num<0 || atoms.size()>0 ) aa->error("Number of specified atoms should be either 3 or 4");
+  } else if( num<0 || atoms.size()>0 ) {
+    aa->error("Number of specified atoms should be either 3 or 4");
+  }
 }
 
 unsigned Angle::getModeAndSetupValues( ActionWithValue* av ) {
-  av->addValueWithDerivatives(); av->setNotPeriodic(); return 0;
+  av->addValueWithDerivatives();
+  av->setNotPeriodic();
+  return 0;
 }
 
 Angle::Angle(const ActionOptions&ao):
@@ -149,18 +154,22 @@ Angle::Angle(const ActionOptions&ao):
   pbc(true),
   value(1),
   derivs(1),
-  virial(1)
-{
+  virial(1) {
   derivs[0].resize(4);
-  std::vector<AtomNumber> atoms; parseAtomList( -1, atoms, this );
+  std::vector<AtomNumber> atoms;
+  parseAtomList( -1, atoms, this );
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
 
-  if(pbc) log.printf("  using periodic boundary conditions\n");
-  else    log.printf("  without periodic boundary conditions\n");
+  if(pbc) {
+    log.printf("  using periodic boundary conditions\n");
+  } else {
+    log.printf("  without periodic boundary conditions\n");
+  }
 
-  addValueWithDerivatives(); setNotPeriodic();
+  addValueWithDerivatives();
+  setNotPeriodic();
   requestAtoms(atoms);
   checkRead();
 }
@@ -168,10 +177,14 @@ Angle::Angle(const ActionOptions&ao):
 // calculator
 void Angle::calculate() {
 
-  if(pbc) makeWhole();
+  if(pbc) {
+    makeWhole();
+  }
   calculateCV( 0, masses, charges, getPositions(), value, derivs, virial, this );
   setValue( value[0] );
-  for(unsigned i=0; i<derivs[0].size(); ++i) setAtomsDerivatives( i, derivs[0][i] );
+  for(unsigned i=0; i<derivs[0].size(); ++i) {
+    setAtomsDerivatives( i, derivs[0][i] );
+  }
   setBoxDerivatives( virial[0] );
 }
 
@@ -181,10 +194,13 @@ void Angle::calculateCV( const unsigned& mode, const std::vector<double>& masses
   Vector dij,dik;
   dij=delta(pos[2],pos[3]);
   dik=delta(pos[1],pos[0]);
-  Vector ddij,ddik; PLMD::Angle a;
+  Vector ddij,ddik;
+  PLMD::Angle a;
   vals[0]=a.compute(dij,dik,ddij,ddik);
-  derivs[0][0]=ddik; derivs[0][1]=-ddik;
-  derivs[0][2]=-ddij; derivs[0][3]=ddij;
+  derivs[0][0]=ddik;
+  derivs[0][1]=-ddik;
+  derivs[0][2]=-ddij;
+  derivs[0][3]=ddij;
   setBoxDerivativesNoPbc( pos, derivs, virial );
 }
 

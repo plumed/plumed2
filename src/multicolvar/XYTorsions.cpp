@@ -96,14 +96,16 @@ PLUMED_REGISTER_ACTION(XYTorsions,"ZYTORSIONS")
 void XYTorsions::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
   keys.add("numbered","ATOMS","the pairs of atoms that you would like to calculate the angles for");
-  keys.reset_style("ATOMS","atoms"); MultiColvarShortcuts::shortcutKeywords( keys );
-  keys.needsAction("FIXEDATOM"); keys.needsAction("TORSION");
+  keys.reset_style("ATOMS","atoms");
+  MultiColvarShortcuts::shortcutKeywords( keys );
+  keys.setValueDescription("vector","the angle between the vector connecting each pair of atoms and the the positive X/Y/Z direction around the X/Y/Z axis");
+  keys.needsAction("FIXEDATOM");
+  keys.needsAction("TORSION");
 }
 
 XYTorsions::XYTorsions(const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
+  ActionShortcut(ao) {
   std::string vdir = getShortcutLabel() + "_vec2," + getShortcutLabel() + "_origin";
   std::string adir = getShortcutLabel() + "_axis," + getShortcutLabel() + "_origin";
   // Create action for position of origin
@@ -136,9 +138,13 @@ XYTorsions::XYTorsions(const ActionOptions& ao):
   // Now create action to compute all torsions
   std::string torsions_str = getShortcutLabel() + ": TORSION";
   for(unsigned i=1;; ++i) {
-    std::string atstring; parseNumbered("ATOMS",i,atstring);
-    if( atstring.length()==0 ) break;
-    std::string num; Tools::convert( i, num );
+    std::string atstring;
+    parseNumbered("ATOMS",i,atstring);
+    if( atstring.length()==0 ) {
+      break;
+    }
+    std::string num;
+    Tools::convert( i, num );
     torsions_str += " VECTORA" + num + "=" + atstring + " VECTORB" + num + "=" + vdir + " AXIS" + num + "=" + adir;
   }
   readInputLine( torsions_str );

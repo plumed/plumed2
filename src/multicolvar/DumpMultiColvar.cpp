@@ -49,15 +49,16 @@ void DumpMultiColvar::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
   keys.add("compulsory","DATA","the vector you wish to transform");
   keys.add("compulsory","FILE","the file that you would like to output the data to");
-  keys.remove("HAS_VALUES"); keys.needsAction("DUMPATOMS");
+  keys.remove("HAS_VALUES");
+  keys.needsAction("DUMPATOMS");
 }
 
 DumpMultiColvar::DumpMultiColvar(const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
+  ActionShortcut(ao) {
   warning("This action has been depracated.  Look at the log to see how the same result is achieved with the new syntax");
-  std::string dd; parse("DATA",dd);
+  std::string dd;
+  parse("DATA",dd);
   readInputLine("DUMPATOMS ATOMS=" + dd + "_grp ARG=" + dd + " " + convertInputLineToString() );
 }
 

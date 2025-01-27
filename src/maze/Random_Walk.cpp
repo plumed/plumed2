@@ -103,8 +103,7 @@ void Random_Walk::registerKeywords(Keywords& keys) {
 }
 
 Random_Walk::Random_Walk(const ActionOptions& ao)
-  : PLUMED_OPT_INIT(ao)
-{
+  : PLUMED_OPT_INIT(ao) {
   log.printf("maze> Fake optimizer that returns a next step as random,\
     can be used to monitor loss, and for debugging and regtests purposes.\n");
 

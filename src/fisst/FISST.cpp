@@ -166,7 +166,6 @@ PLUMED_REGISTER_ACTION(FISST,"FISST")
 
 void FISST::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
-  keys.use("ARG");
   keys.add("compulsory","PERIOD","Steps corresponding to the learning rate");
   keys.add("optional","RESET_PERIOD","Reset the learning statistics every time this number of steps comes around.");
   keys.add("compulsory","NINTERPOLATE","Number of grid points on which to do interpolation.");
@@ -191,8 +190,8 @@ void FISST::registerKeywords(Keywords& keys) {
   keys.add("optional","OBSERVABLE_FREQ","How often to write out observable weights (default=period).");
   keys.addFlag("FREEZE",false,"Fix bias weights at current level (only used for restarting).");
   keys.use("RESTART");
-  keys.addOutputComponent("force2","default","squared value of force from the bias.");
-  keys.addOutputComponent("_fbar","default", "For each named CV biased, there will be a corresponding output CV_fbar storing the current linear bias prefactor.");
+  keys.addOutputComponent("force2","default","scalar", "squared value of force from the bias.");
+  keys.addOutputComponent("_fbar","default", "scalar", "For each named CV biased, there will be a corresponding output CV_fbar storing the current linear bias prefactor.");
 }
 
 FISST::FISST(const ActionOptions&ao):
@@ -220,14 +219,15 @@ FISST::FISST(const ActionOptions&ao):
   reset_period_(0),
   observable_freq_(0),
   kbt_(0.0),
-  value_force2_(NULL)
-{
-  if(ncvs_==0)
+  value_force2_(NULL) {
+  if(ncvs_==0) {
     error("Must specify at least one CV with ARG");
+  }
 
   //temporary
-  if(ncvs_>1)
+  if(ncvs_>1) {
     error("FISST only supports using one CV right now");
+  }
 
   addComponent("force2");
   componentIsNotPeriodic("force2");
@@ -258,8 +258,9 @@ FISST::FISST(const ActionOptions&ao):
   parse("IN_RESTART",in_restart_name_);
   checkRead();
 
-  if(center_.size() != ncvs_)
+  if(center_.size() != ncvs_) {
     error("Must have same number of CENTER arguments as ARG arguments");
+  }
 
   if(in_restart_name_ != "") {
     b_restart_ = true;
@@ -267,7 +268,9 @@ FISST::FISST(const ActionOptions&ao):
     readInRestart();
   } else {
 
-    if(! kbt_ > 0.0) kbt_=getkBT();
+    if(! kbt_ > 0.0) {
+      kbt_=getkBT();
+    }
 
     //in driver, this results in kbt of 0
     if(kbt_ == 0) {
@@ -285,7 +288,9 @@ FISST::FISST(const ActionOptions&ao):
     }
     log.printf("\n");
     observable_weight_.resize(n_interpolation_);
-    for(unsigned int i = 0; i<n_interpolation_; i++) observable_weight_[i] = 1.0;
+    for(unsigned int i = 0; i<n_interpolation_; i++) {
+      observable_weight_[i] = 1.0;
+    }
 
     forces_.resize(n_interpolation_);
     force_weight_.resize(n_interpolation_);
@@ -296,15 +301,18 @@ FISST::FISST(const ActionOptions&ao):
 
     log.printf("Using weight distribution %s with rate %f\n",initial_weight_dist_.c_str(),initial_weight_rate_);
     if(initial_weight_dist_ == "UNIFORM" ) {
-      for(unsigned int i = 0; i<n_interpolation_; i++) force_weight_[i] = 1.0;
-    }
-    else if (initial_weight_dist_ == "EXP" ) {
-      for(unsigned int i = 0; i<n_interpolation_; i++) force_weight_[i] = exp(-fabs(forces_[i])*initial_weight_rate_);
-    }
-    else if (initial_weight_dist_ == "GAUSS" ) {
-      for(unsigned int i = 0; i<n_interpolation_; i++) force_weight_[i] = exp(-pow(forces_[i],2)*initial_weight_rate_);
-    }
-    else {
+      for(unsigned int i = 0; i<n_interpolation_; i++) {
+        force_weight_[i] = 1.0;
+      }
+    } else if (initial_weight_dist_ == "EXP" ) {
+      for(unsigned int i = 0; i<n_interpolation_; i++) {
+        force_weight_[i] = exp(-fabs(forces_[i])*initial_weight_rate_);
+      }
+    } else if (initial_weight_dist_ == "GAUSS" ) {
+      for(unsigned int i = 0; i<n_interpolation_; i++) {
+        force_weight_[i] = exp(-pow(forces_[i],2)*initial_weight_rate_);
+      }
+    } else {
       error("  Specified weight distribution is not from the allowed list.");
 
     }
@@ -335,7 +343,9 @@ FISST::FISST(const ActionOptions&ao):
     setupOutRestart();
   }
   if(out_observable_name_.length()>0) {
-    if(observable_freq_==0) observable_freq_ = period_;
+    if(observable_freq_==0) {
+      observable_freq_ = period_;
+    }
     log.printf("  writing observable information every %i steps to file %s with format %s\n",observable_freq_,out_observable_name_.c_str(), fmt_.c_str());
     b_write_observable_ = true;
     setupOutObservable();
@@ -348,11 +358,13 @@ FISST::FISST(const ActionOptions&ao):
 void FISST::NormalizeForceWeights() {
   double denom = 0.0;
 
-  for(unsigned i=0; i<n_interpolation_; i++)
+  for(unsigned i=0; i<n_interpolation_; i++) {
     denom += gauss_weight_[i] * force_weight_[i];
+  }
 
-  for(unsigned i=0; i<n_interpolation_; i++)
+  for(unsigned i=0; i<n_interpolation_; i++) {
     force_weight_[i] /= denom;
+  }
 }
 
 void FISST::readInRestart() {
@@ -360,12 +372,16 @@ void FISST::readInRestart() {
 
   if(in_restart_.FieldExist("kbt")) {
     in_restart_.scanField("kbt",kbt_);
-  } else { error("No field 'kbt' in restart file"); }
+  } else {
+    error("No field 'kbt' in restart file");
+  }
   log.printf("  with kBT = %f\n",kbt_);
 
   if(in_restart_.FieldExist("period")) {
     in_restart_.scanField("period",period_);
-  } else { error("No field 'period' in restart file"); }
+  } else {
+    error("No field 'period' in restart file");
+  }
   log.printf("  Updating every %i steps\n",period_);
 
 //this one can be optional
@@ -376,14 +392,20 @@ void FISST::readInRestart() {
 
   if(in_restart_.FieldExist("n_interpolation")) {
     in_restart_.scanField("n_interpolation",n_interpolation_);
-  } else { error("No field 'n_interpolation' in restart file"); }
+  } else {
+    error("No field 'n_interpolation' in restart file");
+  }
 
   if(in_restart_.FieldExist("min_force")) {
     in_restart_.scanField("min_force",min_force_);
-  } else { error("No field 'min_force' in restart file"); }
+  } else {
+    error("No field 'min_force' in restart file");
+  }
   if(in_restart_.FieldExist("max_force")) {
     in_restart_.scanField("max_force",max_force_);
-  } else { error("No field 'max_force' in restart file"); }
+  } else {
+    error("No field 'max_force' in restart file");
+  }
   log.printf("  with forces from min_force=%e to max_force=%e over %i bins\n",min_force_,max_force_,n_interpolation_);
 
   unsigned int N = 0;
@@ -450,7 +472,9 @@ void FISST::setupOutRestart() {
   out_restart_.addConstantField("kbt").printField("kbt",kbt_);
   out_restart_.addConstantField("n_interpolation").printField("n_interpolation",n_interpolation_);
   out_restart_.addConstantField("period").printField("period",period_);
-  if(reset_period_>0) out_restart_.addConstantField("reset_period").printField("reset_period",reset_period_);
+  if(reset_period_>0) {
+    out_restart_.addConstantField("reset_period").printField("reset_period",reset_period_);
+  }
   out_restart_.addConstantField("min_force").printField("min_force",min_force_);
   out_restart_.addConstantField("max_force").printField("max_force",max_force_);
 }
@@ -497,16 +521,19 @@ void FISST::writeOutObservable() {
 
 void FISST::calculate() {
   if(getStep() == 0 ) {
-    if(b_write_restart_) writeOutRestart();
-    if(b_write_observable_) writeOutObservable();
+    if(b_write_restart_) {
+      writeOutRestart();
+    }
+    if(b_write_observable_) {
+      writeOutObservable();
+    }
   }
 
   if(! b_freeze_) {
     if(b_restart_ && b_first_restart_sample_) {
       //dont' update statistics if restarting and first sample
       b_first_restart_sample_ = false;
-    }
-    else {
+    } else {
       update_statistics();
     }
   }
@@ -515,7 +542,9 @@ void FISST::calculate() {
 
   //check about writing restart file
   if(getStep()>0 && getStep()%period_==0) {
-    if(b_write_restart_) writeOutRestart();
+    if(b_write_restart_) {
+      writeOutRestart();
+    }
   }
   if(getStep()>0 && getStep()%observable_freq_==0) {
     if(b_write_observable_) {
@@ -556,16 +585,14 @@ void FISST::update_statistics()  {
   int step = getStep();
   if(reset_period_>0 && step>0 && step%reset_period_==0) {
     n_samples_=1;
-  }
-  else {
+  } else {
     n_samples_++;
   }
   double d_n_samples = (double)n_samples_;
 
   for(unsigned int i = 0; i < ncvs_; ++i) {
     double Q_i = difference(i, center_[i], getArgument(i));
-    for(unsigned int j=0; j<n_interpolation_; j++)
-    {
+    for(unsigned int j=0; j<n_interpolation_; j++) {
       //if multiple cvs, these need to be updated to have 2 columns
       double f_j = forces_[j];
       double w_j = force_weight_[j];
@@ -574,8 +601,7 @@ void FISST::update_statistics()  {
       fbar_denum_integral += g_j * w_j * exp(beta_*f_j * Q_i);
     }
 
-    for(unsigned int j=0; j<n_interpolation_; j++)
-    {
+    for(unsigned int j=0; j<n_interpolation_; j++) {
       double f_j = forces_[j];
       double sample_weight = exp(beta_*f_j * Q_i) / fbar_denum_integral;
 
@@ -594,8 +620,7 @@ void FISST::update_statistics()  {
 }
 
 
-void FISST::update_bias()
-{
+void FISST::update_bias() {
   for(unsigned int i = 0; i < ncvs_; ++i) {
     double Q_i = difference(i, center_[i], getArgument(i));
     double fbar_num_integral = 0.0;

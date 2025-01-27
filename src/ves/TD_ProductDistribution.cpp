@@ -116,19 +116,26 @@ TD_ProductDistribution::TD_ProductDistribution(const ActionOptions& ao):
   PLUMED_VES_TARGETDISTRIBUTION_INIT(ao),
   distribution_pntrs_(0),
   grid_pntrs_(0),
-  ndist_(0)
-{
+  ndist_(0) {
   std::vector<std::string> targetdist_labels;
   parseVector("DISTRIBUTIONS",targetdist_labels);
 
   std::string error_msg = "";
   distribution_pntrs_ = VesTools::getPointersFromLabels<TargetDistribution*>(targetdist_labels,plumed.getActionSet(),error_msg);
-  if(error_msg.size()>0) {plumed_merror("Error in keyword DISTRIBUTIONS of "+getName()+": "+error_msg);}
+  if(error_msg.size()>0) {
+    plumed_merror("Error in keyword DISTRIBUTIONS of "+getName()+": "+error_msg);
+  }
 
   for(unsigned int i=0; i<distribution_pntrs_.size(); i++) {
-    if(distribution_pntrs_[i]->isDynamic()) {setDynamic();}
-    if(distribution_pntrs_[i]->fesGridNeeded()) {setFesGridNeeded();}
-    if(distribution_pntrs_[i]->biasGridNeeded()) {setBiasGridNeeded();}
+    if(distribution_pntrs_[i]->isDynamic()) {
+      setDynamic();
+    }
+    if(distribution_pntrs_[i]->fesGridNeeded()) {
+      setFesGridNeeded();
+    }
+    if(distribution_pntrs_[i]->biasGridNeeded()) {
+      setBiasGridNeeded();
+    }
   }
 
   ndist_ = distribution_pntrs_.size();

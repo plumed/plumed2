@@ -115,17 +115,18 @@ typedef MultiColvarTemplate<Position> PositionMulti;
 PLUMED_REGISTER_ACTION(PositionMulti,"POSITION_VECTOR")
 
 void Position::registerKeywords( Keywords& keys ) {
-  Colvar::registerKeywords( keys ); keys.setDisplayName("POSITION");
+  Colvar::registerKeywords( keys );
+  keys.setDisplayName("POSITION");
   keys.add("atoms","ATOM","the atom number");
   keys.add("atoms","ATOMS","the atom numbers that you would like to use the positions of");
   keys.addFlag("WHOLEMOLECULES",false,"if this is a vector of positions do you want to make the positions into a whole before");
   keys.addFlag("SCALED_COMPONENTS",false,"calculate the a, b and c scaled components of the position separately and store them as label.a, label.b and label.c");
-  keys.addOutputComponent("x","default","the x-component of the atom position");
-  keys.addOutputComponent("y","default","the y-component of the atom position");
-  keys.addOutputComponent("z","default","the z-component of the atom position");
-  keys.addOutputComponent("a","SCALED_COMPONENTS","the normalized projection on the first lattice vector of the atom position");
-  keys.addOutputComponent("b","SCALED_COMPONENTS","the normalized projection on the second lattice vector of the atom position");
-  keys.addOutputComponent("c","SCALED_COMPONENTS","the normalized projection on the third lattice vector of the atom position");
+  keys.addOutputComponent("x","default","scalar/vector","the x-component of the atom position");
+  keys.addOutputComponent("y","default","scalar/vector","the y-component of the atom position");
+  keys.addOutputComponent("z","default","scalar/vector","the z-component of the atom position");
+  keys.addOutputComponent("a","SCALED_COMPONENTS","scalar/vector","the normalized projection on the first lattice vector of the atom position");
+  keys.addOutputComponent("b","SCALED_COMPONENTS","scalar/vector","the normalized projection on the second lattice vector of the atom position");
+  keys.addOutputComponent("c","SCALED_COMPONENTS","scalar/vector","the normalized projection on the third lattice vector of the atom position");
   keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
 }
 
@@ -135,41 +136,58 @@ Position::Position(const ActionOptions&ao):
   pbc(true),
   value(3),
   derivs(3),
-  virial(3)
-{
-  for(unsigned i=0; i<3; ++i) derivs[i].resize(1);
-  std::vector<AtomNumber> atoms; parseAtomList(-1,atoms,this);
+  virial(3) {
+  for(unsigned i=0; i<3; ++i) {
+    derivs[i].resize(1);
+  }
+  std::vector<AtomNumber> atoms;
+  parseAtomList(-1,atoms,this);
   unsigned mode=getModeAndSetupValues(this);
-  if( mode==1 ) scaled_components=true;
+  if( mode==1 ) {
+    scaled_components=true;
+  }
 
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
   checkRead();
 
-  if(pbc) log.printf("  using periodic boundary conditions\n");
-  else    log.printf("  without periodic boundary conditions\n");
+  if(pbc) {
+    log.printf("  using periodic boundary conditions\n");
+  } else {
+    log.printf("  without periodic boundary conditions\n");
+  }
 
   requestAtoms(atoms);
 }
 
 void Position::parseAtomList( const int& num, std::vector<AtomNumber>& t, ActionAtomistic* aa ) {
   aa->parseAtomList("ATOM",num,t);
-  if( t.size()==1 ) aa->log.printf("  for atom %d\n",t[0].serial());
-  else if( num<0 || t.size()!=0 ) aa->error("Number of specified atoms should be 1");
+  if( t.size()==1 ) {
+    aa->log.printf("  for atom %d\n",t[0].serial());
+  } else if( num<0 || t.size()!=0 ) {
+    aa->error("Number of specified atoms should be 1");
+  }
 }
 
 unsigned Position::getModeAndSetupValues( ActionWithValue* av ) {
-  bool sc; av->parseFlag("SCALED_COMPONENTS",sc);
+  bool sc;
+  av->parseFlag("SCALED_COMPONENTS",sc);
   if(sc) {
-    av->addComponentWithDerivatives("a"); av->componentIsPeriodic("a","-0.5","+0.5");
-    av->addComponentWithDerivatives("b"); av->componentIsPeriodic("b","-0.5","+0.5");
-    av->addComponentWithDerivatives("c"); av->componentIsPeriodic("c","-0.5","+0.5");
+    av->addComponentWithDerivatives("a");
+    av->componentIsPeriodic("a","-0.5","+0.5");
+    av->addComponentWithDerivatives("b");
+    av->componentIsPeriodic("b","-0.5","+0.5");
+    av->addComponentWithDerivatives("c");
+    av->componentIsPeriodic("c","-0.5","+0.5");
     return 1;
   }
-  av->addComponentWithDerivatives("x"); av->componentIsNotPeriodic("x");
-  av->addComponentWithDerivatives("y"); av->componentIsNotPeriodic("y");
-  av->addComponentWithDerivatives("z"); av->componentIsNotPeriodic("z");
+  av->addComponentWithDerivatives("x");
+  av->componentIsNotPeriodic("x");
+  av->addComponentWithDerivatives("y");
+  av->componentIsNotPeriodic("y");
+  av->addComponentWithDerivatives("z");
+  av->componentIsNotPeriodic("z");
   av->log<<"  WARNING: components will not have the proper periodicity - see manual\n";
   return 0;
 }
@@ -220,14 +238,22 @@ void Position::calculateCV( const unsigned& mode, const std::vector<double>& mas
                             std::vector<Tensor>& virial, const ActionAtomistic* aa ) {
   if( mode==1 ) {
     Vector d=aa->getPbc().realToScaled(pos[0]);
-    vals[0]=Tools::pbc(d[0]); vals[1]=Tools::pbc(d[1]); vals[2]=Tools::pbc(d[2]);
+    vals[0]=Tools::pbc(d[0]);
+    vals[1]=Tools::pbc(d[1]);
+    vals[2]=Tools::pbc(d[2]);
     derivs[0][0]=matmul(aa->getPbc().getInvBox(),Vector(+1,0,0));
     derivs[1][0]=matmul(aa->getPbc().getInvBox(),Vector(0,+1,0));
     derivs[2][0]=matmul(aa->getPbc().getInvBox(),Vector(0,0,+1));
   } else {
-    for(unsigned i=0; i<3; ++i) vals[i]=pos[0][i];
-    derivs[0][0]=Vector(+1,0,0); derivs[1][0]=Vector(0,+1,0); derivs[2][0]=Vector(0,0,+1);
-    virial[0]=Tensor(pos[0],Vector(-1,0,0)); virial[1]=Tensor(pos[0],Vector(0,-1,0)); virial[2]=Tensor(pos[0],Vector(0,0,-1));
+    for(unsigned i=0; i<3; ++i) {
+      vals[i]=pos[0][i];
+    }
+    derivs[0][0]=Vector(+1,0,0);
+    derivs[1][0]=Vector(0,+1,0);
+    derivs[2][0]=Vector(0,0,+1);
+    virial[0]=Tensor(pos[0],Vector(-1,0,0));
+    virial[1]=Tensor(pos[0],Vector(0,-1,0));
+    virial[2]=Tensor(pos[0],Vector(0,0,-1));
   }
 }
 

@@ -152,23 +152,38 @@ void CoordShellVectorFunction::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","PSI","0.0","The Euler rotational angle psi");
   keys.add("compulsory","ALPHA","3.0","The alpha parameter of the angular function that is used for FCCUBIC");
   keys.addFlag("LOWMEM",false,"this flag does nothing and is present only to ensure back-compatibility");
-  keys.needsAction("CONTACT_MATRIX"); keys.needsAction("FCCUBIC_FUNC"); keys.needsAction("CUSTOM");
-  keys.needsAction("ONES"); keys.needsAction("MATRIX_VECTOR_PRODUCT");
+  keys.setValueDescription("vector","the symmetry function for each of the specified atoms");
+  keys.needsAction("CONTACT_MATRIX");
+  keys.needsAction("FCCUBIC_FUNC");
+  keys.needsAction("CUSTOM");
+  keys.needsAction("ONES");
+  keys.needsAction("MATRIX_VECTOR_PRODUCT");
 }
 
 CoordShellVectorFunction::CoordShellVectorFunction(const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
-  std::string matlab, sp_str, specA, specB; bool lowmem; parseFlag("LOWMEM",lowmem);
-  if( lowmem ) warning("LOWMEM flag is deprecated and is no longer required for this action");
-  parse("SPECIES",sp_str); parse("SPECIESA",specA); parse("SPECIESB",specB);
+  ActionShortcut(ao) {
+  std::string matlab, sp_str, specA, specB;
+  bool lowmem;
+  parseFlag("LOWMEM",lowmem);
+  if( lowmem ) {
+    warning("LOWMEM flag is deprecated and is no longer required for this action");
+  }
+  parse("SPECIES",sp_str);
+  parse("SPECIESA",specA);
+  parse("SPECIESB",specB);
   if( sp_str.length()>0 || specA.length()>0 ) {
     matlab = getShortcutLabel() + "_mat";
     CoordinationNumbers::expandMatrix( true, getShortcutLabel(),  sp_str, specA, specB, this );
-  } else error("found no input atoms use SPECIES/SPECIESA");
-  double phi, theta, psi; parse("PHI",phi); parse("THETA",theta); parse("PSI",psi);
-  std::vector<std::string> rotelements(9); std::string xvec = matlab + ".x", yvec = matlab + ".y", zvec = matlab + ".z";
+  } else {
+    error("found no input atoms use SPECIES/SPECIESA");
+  }
+  double phi, theta, psi;
+  parse("PHI",phi);
+  parse("THETA",theta);
+  parse("PSI",psi);
+  std::vector<std::string> rotelements(9);
+  std::string xvec = matlab + ".x", yvec = matlab + ".y", zvec = matlab + ".z";
   if( phi!=0 || theta!=0 || psi!=0 ) {
     Tools::convert( std::cos(psi)*std::cos(phi)-std::cos(theta)*std::sin(phi)*std::sin(psi), rotelements[0] );
     Tools::convert( std::cos(psi)*std::sin(phi)+std::cos(theta)*std::cos(phi)*std::sin(psi), rotelements[1] );
@@ -187,7 +202,8 @@ CoordShellVectorFunction::CoordShellVectorFunction(const ActionOptions& ao):
   }
   // Calculate FCC cubic function from bond vectors
   if( getName()=="FCCUBIC" ) {
-    std::string alpha; parse("ALPHA",alpha);
+    std::string alpha;
+    parse("ALPHA",alpha);
     readInputLine( getShortcutLabel() + "_vfunc: FCCUBIC_FUNC ARG=" + xvec + "," + yvec + "," + zvec+ " ALPHA=" + alpha);
   } else if( getName()=="TETRAHEDRAL" ) {
     readInputLine( getShortcutLabel() + "_r: CUSTOM ARG=" + xvec + "," + yvec + "," + zvec + " PERIODIC=NO FUNC=sqrt(x*x+y*y+z*z)");
@@ -198,18 +214,22 @@ CoordShellVectorFunction::CoordShellVectorFunction(const ActionOptions& ao):
     readInputLine( getShortcutLabel() + "_vfunc: CUSTOM ARG=" + xvec + "," + yvec + "," + zvec + "," + getShortcutLabel() + "_r"
                    + " VAR=x,y,z,r PERIODIC=NO FUNC=(x^4+y^4+z^4)/(r^4)" );
   } else {
-    std::string myfunc; parse("FUNCTION",myfunc);
+    std::string myfunc;
+    parse("FUNCTION",myfunc);
     if( myfunc.find("r")!=std::string::npos ) {
       readInputLine( getShortcutLabel() + "_r: CUSTOM ARG=" + xvec + "," + yvec + "," + zvec + " PERIODIC=NO FUNC=sqrt(x*x+y*y+z*z)");
       readInputLine( getShortcutLabel() + "_vfunc: CUSTOM ARG=" + xvec + "," + yvec + "," + zvec + "," + getShortcutLabel() + "_r VAR=x,y,z,r PERIODIC=NO FUNC=" + myfunc );
-    } else readInputLine( getShortcutLabel() + "_vfunc: CUSTOM ARG=" + xvec + "," + yvec + "," + zvec + " PERIODIC=NO FUNC=" + myfunc );
+    } else {
+      readInputLine( getShortcutLabel() + "_vfunc: CUSTOM ARG=" + xvec + "," + yvec + "," + zvec + " PERIODIC=NO FUNC=" + myfunc );
+    }
   }
   // Hadamard product of function above and weights
   readInputLine( getShortcutLabel() + "_wvfunc: CUSTOM ARG=" + getShortcutLabel() + "_vfunc," + matlab + ".w FUNC=x*y PERIODIC=NO");
   // And coordination numbers
   ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_mat");
   plumed_assert( av && av->getNumberOfComponents()>0 && (av->copyOutput(0))->getRank()==2 );
-  std::string size; Tools::convert( (av->copyOutput(0))->getShape()[1], size );
+  std::string size;
+  Tools::convert( (av->copyOutput(0))->getShape()[1], size );
   readInputLine( getShortcutLabel() + "_ones: ONES SIZE=" + size );
   readInputLine( getShortcutLabel() + ": MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_wvfunc," + getShortcutLabel() + "_ones");
   std::string olab=getShortcutLabel();
@@ -221,7 +241,8 @@ CoordShellVectorFunction::CoordShellVectorFunction(const ActionOptions& ao):
     readInputLine( getShortcutLabel() + "_n: CUSTOM ARG=" + getShortcutLabel() + "," + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
   }
   // And expand the functions
-  std::map<std::string,std::string> keymap; multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );
+  std::map<std::string,std::string> keymap;
+  multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );
   multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(), olab, "", keymap, this );
 }
 

@@ -30,8 +30,7 @@
 namespace PLMD {
 
 class ActionToPutData :
-  public ActionForInterface
-{
+  public ActionForInterface {
   friend class PlumedMain;
   friend class TimeStep;
   friend class DomainDecomposition;
@@ -67,7 +66,9 @@ public:
 /// Update the units on the input data
   void updateUnits( DataPassingTools* passtools );
 /// This is called at the start of the step
-  void resetForStepStart() override { dataCanBeSet = true; }
+  void resetForStepStart() override {
+    dataCanBeSet = true;
+  }
 /// These are the actions that set the pointers to the approrpiate values
   virtual bool setValuePointer( const std::string& name, const TypesafePtr & val ) override ;
   bool setForcePointer( const std::string& name, const TypesafePtr & val ) override ;
@@ -88,8 +89,12 @@ public:
 /// For replica exchange
   void writeBinary(std::ostream&o) override;
   virtual void readBinary(std::istream&i) override;
-  bool onStep() const override { return false; }
-  ActionToPutData* castToActionToPutData() noexcept final { return this; }
+  bool onStep() const override {
+    return false;
+  }
+  ActionToPutData* castToActionToPutData() noexcept final {
+    return this;
+  }
 };
 
 }

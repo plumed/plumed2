@@ -58,20 +58,37 @@ public:
 PLUMED_REGISTER_ACTION(Cell,"CELL")
 
 Cell::Cell(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao)
-{
+  PLUMED_COLVAR_INIT(ao) {
   std::vector<AtomNumber> atoms;
   checkRead();
 
-  addComponentWithDerivatives("ax"); componentIsNotPeriodic("ax"); components[0][0]=getPntrToComponent("ax");
-  addComponentWithDerivatives("ay"); componentIsNotPeriodic("ay"); components[0][1]=getPntrToComponent("ay");
-  addComponentWithDerivatives("az"); componentIsNotPeriodic("az"); components[0][2]=getPntrToComponent("az");
-  addComponentWithDerivatives("bx"); componentIsNotPeriodic("bx"); components[1][0]=getPntrToComponent("bx");
-  addComponentWithDerivatives("by"); componentIsNotPeriodic("by"); components[1][1]=getPntrToComponent("by");
-  addComponentWithDerivatives("bz"); componentIsNotPeriodic("bz"); components[1][2]=getPntrToComponent("bz");
-  addComponentWithDerivatives("cx"); componentIsNotPeriodic("cx"); components[2][0]=getPntrToComponent("cx");
-  addComponentWithDerivatives("cy"); componentIsNotPeriodic("cy"); components[2][1]=getPntrToComponent("cy");
-  addComponentWithDerivatives("cz"); componentIsNotPeriodic("cz"); components[2][2]=getPntrToComponent("cz");
+  addComponentWithDerivatives("ax");
+  componentIsNotPeriodic("ax");
+  components[0][0]=getPntrToComponent("ax");
+  addComponentWithDerivatives("ay");
+  componentIsNotPeriodic("ay");
+  components[0][1]=getPntrToComponent("ay");
+  addComponentWithDerivatives("az");
+  componentIsNotPeriodic("az");
+  components[0][2]=getPntrToComponent("az");
+  addComponentWithDerivatives("bx");
+  componentIsNotPeriodic("bx");
+  components[1][0]=getPntrToComponent("bx");
+  addComponentWithDerivatives("by");
+  componentIsNotPeriodic("by");
+  components[1][1]=getPntrToComponent("by");
+  addComponentWithDerivatives("bz");
+  componentIsNotPeriodic("bz");
+  components[1][2]=getPntrToComponent("bz");
+  addComponentWithDerivatives("cx");
+  componentIsNotPeriodic("cx");
+  components[2][0]=getPntrToComponent("cx");
+  addComponentWithDerivatives("cy");
+  componentIsNotPeriodic("cy");
+  components[2][1]=getPntrToComponent("cy");
+  addComponentWithDerivatives("cz");
+  componentIsNotPeriodic("cz");
+  components[2][2]=getPntrToComponent("cz");
   requestAtoms(atoms);
 }
 
@@ -79,24 +96,31 @@ void Cell::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
-  keys.addOutputComponent("ax","default","the ax component of the cell matrix");
-  keys.addOutputComponent("ay","default","the ay component of the cell matrix");
-  keys.addOutputComponent("az","default","the az component of the cell matrix");
-  keys.addOutputComponent("bx","default","the bx component of the cell matrix");
-  keys.addOutputComponent("by","default","the by component of the cell matrix");
-  keys.addOutputComponent("bz","default","the bz component of the cell matrix");
-  keys.addOutputComponent("cx","default","the cx component of the cell matrix");
-  keys.addOutputComponent("cy","default","the cy component of the cell matrix");
-  keys.addOutputComponent("cz","default","the cz component of the cell matrix");
+  keys.addOutputComponent("ax","default","scalar","the ax component of the cell matrix");
+  keys.addOutputComponent("ay","default","scalar","the ay component of the cell matrix");
+  keys.addOutputComponent("az","default","scalar","the az component of the cell matrix");
+  keys.addOutputComponent("bx","default","scalar","the bx component of the cell matrix");
+  keys.addOutputComponent("by","default","scalar","the by component of the cell matrix");
+  keys.addOutputComponent("bz","default","scalar","the bz component of the cell matrix");
+  keys.addOutputComponent("cx","default","scalar","the cx component of the cell matrix");
+  keys.addOutputComponent("cy","default","scalar","the cy component of the cell matrix");
+  keys.addOutputComponent("cz","default","scalar","the cz component of the cell matrix");
 }
 
 
 // calculator
 void Cell::calculate() {
 
-  for(int i=0; i<3; i++) for(int j=0; j<3; j++) components[i][j]->set(getBox()[i][j]);
-  for(int l=0; l<3; l++) for(int m=0; m<3; m++) {
-      Tensor der; for(int i=0; i<3; i++) der[i][m]=getBox()[l][i];
+  for(int i=0; i<3; i++)
+    for(int j=0; j<3; j++) {
+      components[i][j]->set(getBox()[i][j]);
+    }
+  for(int l=0; l<3; l++)
+    for(int m=0; m<3; m++) {
+      Tensor der;
+      for(int i=0; i<3; i++) {
+        der[i][m]=getBox()[l][i];
+      }
       setBoxDerivatives(components[l][m],-der);
     }
 }

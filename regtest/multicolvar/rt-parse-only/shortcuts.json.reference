@@ -1,5 +1,5 @@
 {
    "dallk" : {
-      "expansion" : "dallk_vatom1: CENTER ATOMS=1,2 \ndallk_vatom2: CENTER ATOMS=3,4 \ndallk_vatom3: CENTER ATOMS=5,6 \ndallk_grp: GROUP ATOMS=dallk_vatom1,dallk_vatom2,dallk_vatom3 \ndallk: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 \ndallk_lt1: LESS_THAN ARG=dallk SWITCH={RATIONAL R_0=1.0} \ndallk_lessthan-1: SUM ARG=dallk_lt1 PERIODIC=NO \ndallk_lt2: LESS_THAN ARG=dallk SWITCH={RATIONAL R_0=1.5} \ndallk_lessthan-2: SUM ARG=dallk_lt2 PERIODIC=NO \ndallk_lowest: LOWEST ARG=dallk \ndallk_mean: MEAN ARG=dallk PERIODIC=NO "
+      "expansion" : "dallk_vatom1: CENTER ATOMS=1,2\ndallk_vatom2: CENTER ATOMS=3,4\ndallk_vatom3: CENTER ATOMS=5,6\ndallk_grp: GROUP ATOMS=dallk_vatom1,dallk_vatom2,dallk_vatom3\ndallk: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6\ndallk_lt1: LESS_THAN ARG=dallk SWITCH={RATIONAL R_0=1.0}\ndallk_lessthan-1: SUM ARG=dallk_lt1 PERIODIC=NO\ndallk_lt2: LESS_THAN ARG=dallk SWITCH={RATIONAL R_0=1.5}\ndallk_lessthan-2: SUM ARG=dallk_lt2 PERIODIC=NO\ndallk_lowest: LOWEST ARG=dallk\ndallk_mean: MEAN ARG=dallk PERIODIC=NO"
    }
 }

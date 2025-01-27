@@ -45,31 +45,58 @@ public:
 PLUMED_REGISTER_ACTION(GeometricPathShortcut,"GPATH")
 
 void GeometricPathShortcut::registerKeywords( Keywords& keys ) {
-  ActionShortcut::registerKeywords( keys ); Path::registerInputFileKeywords( keys );
+  ActionShortcut::registerKeywords( keys );
+  Path::registerInputFileKeywords( keys );
   keys.add("optional","PROPERTY","read in path coordinates by finding option with this label in remark of pdb frames");
-  keys.addOutputComponent("s","default","the position on the path");
-  keys.addOutputComponent("z","default","the distance from the path");
-  keys.needsAction("DISPLACEMENT"); keys.needsAction("GEOMETRIC_PATH"); keys.needsAction("PDB2CONSTANT"); keys.needsAction("CONSTANT");
+  keys.addOutputComponent("s","default","scalar","the position on the path");
+  keys.addOutputComponent("z","default","scalar","the distance from the path");
+  keys.needsAction("DISPLACEMENT");
+  keys.needsAction("GEOMETRIC_PATH");
+  keys.needsAction("PDB2CONSTANT");
+  keys.needsAction("CONSTANT");
 }
 
 GeometricPathShortcut::GeometricPathShortcut( const ActionOptions& ao ):
   Action(ao),
-  ActionShortcut(ao)
-{
-  std::string mtype, reference_data; std::vector<std::string> argnames; parseVector("ARG",argnames); parse("TYPE", mtype);
+  ActionShortcut(ao) {
+  std::string mtype, reference_data;
+  std::vector<std::string> argnames;
+  parseVector("ARG",argnames);
+  parse("TYPE", mtype);
   // Create list of reference configurations that PLUMED will use
-  std::string reference; parse("REFERENCE",reference);
-  FILE* fp=std::fopen(reference.c_str(),"r"); PDB mypdb; if(!fp) error("could not open reference file " + reference );
-  bool do_read=mypdb.readFromFilepointer(fp,false,0.1); if( !do_read ) error("missing file " + reference );
+  std::string reference;
+  parse("REFERENCE",reference);
+  FILE* fp=std::fopen(reference.c_str(),"r");
+  PDB mypdb;
+  if(!fp) {
+    error("could not open reference file " + reference );
+  }
+  bool do_read=mypdb.readFromFilepointer(fp,false,0.1);
+  if( !do_read ) {
+    error("missing file " + reference );
+  }
   Path::readInputFrames( reference, mtype, argnames, true, this, reference_data );
   // Now get coordinates on spath
-  std::vector<std::string> pnames; parseVector("PROPERTY",pnames); Path::readPropertyInformation( pnames, getShortcutLabel(), reference, this );
+  std::vector<std::string> pnames;
+  parseVector("PROPERTY",pnames);
+  Path::readPropertyInformation( pnames, getShortcutLabel(), reference, this );
   // Create action that computes the geometric path variablesa
-  std::string propstr = getShortcutLabel() + "_ind"; if( pnames.size()>0 ) propstr = pnames[0] + "_ref";
-  if( argnames.size()>0 ) readInputLine( getShortcutLabel() + ": GEOMETRIC_PATH ARG=" + getShortcutLabel() + "_data " + " PROPERTY=" + propstr + " REFERENCE=" + reference_data + " METRIC={DIFFERENCE}");
-  else {
-    std::string num, align_str, displace_str; Tools::convert( mypdb.getOccupancy()[0], align_str ); Tools::convert( mypdb.getBeta()[0], displace_str );
-    for(unsigned j=1; j<mypdb.getAtomNumbers().size(); ++j ) { Tools::convert( mypdb.getOccupancy()[j], num ); align_str += "," + num; Tools::convert( mypdb.getBeta()[0], num ); displace_str += "," + num; }
+  std::string propstr = getShortcutLabel() + "_ind";
+  if( pnames.size()>0 ) {
+    propstr = pnames[0] + "_ref";
+  }
+  if( argnames.size()>0 ) {
+    readInputLine( getShortcutLabel() + ": GEOMETRIC_PATH ARG=" + getShortcutLabel() + "_data " + " PROPERTY=" + propstr + " REFERENCE=" + reference_data + " METRIC={DIFFERENCE}");
+  } else {
+    std::string num, align_str, displace_str;
+    Tools::convert( mypdb.getOccupancy()[0], align_str );
+    Tools::convert( mypdb.getBeta()[0], displace_str );
+    for(unsigned j=1; j<mypdb.getAtomNumbers().size(); ++j ) {
+      Tools::convert( mypdb.getOccupancy()[j], num );
+      align_str += "," + num;
+      Tools::convert( mypdb.getBeta()[0], num );
+      displace_str += "," + num;
+    }
     std::string metric = "RMSD_VECTOR DISPLACEMENT TYPE=" + mtype + " ALIGN=" + align_str + " DISPLACE=" + displace_str;
     readInputLine( getShortcutLabel() + ": GEOMETRIC_PATH ARG=" + getShortcutLabel() + "_data.disp " + " PROPERTY=" +  propstr + " REFERENCE=" + reference_data + " METRIC={" + metric + "} METRIC_COMPONENT=disp");
   }

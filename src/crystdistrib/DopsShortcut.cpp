@@ -60,39 +60,68 @@ void DopsShortcut::registerKeywords( Keywords& keys ) {
            "the documentation for that keyword");
   keys.add("compulsory","KERNELFILE","the file containing the list of kernel parameters.  We expect h, mu and sigma parameters for a 1D Gaussian kernel of the form h*exp(-(x-mu)^2/2sigma^2)");
   keys.add("compulsory","CUTOFF","6.25","to make the calculation faster we calculate a cutoff value on the distances.  The input to this keyword determines x in this expreession max(mu + sqrt(2*x)/sigma)");
-  keys.setValueDescription("the values of the DOPS order parameters");
-  keys.needsAction("DISTANCE_MATRIX"); keys.needsAction("CUSTOM"); keys.needsAction("ONES"); keys.needsAction("MATRIX_VECTOR_PRODUCT");
+  keys.setValueDescription("vector","the values of the DOPS order parameters");
+  keys.needsAction("DISTANCE_MATRIX");
+  keys.needsAction("CUSTOM");
+  keys.needsAction("ONES");
+  keys.needsAction("MATRIX_VECTOR_PRODUCT");
 }
 
 DopsShortcut::DopsShortcut(const ActionOptions&ao):
   Action(ao),
-  ActionShortcut(ao)
-{
+  ActionShortcut(ao) {
   // Open a file and read in the kernels
-  double cutoff=0, h; std::string kfunc,fname; double dp2cutoff; parse("CUTOFF",dp2cutoff);
-  parse("KERNELFILE",fname); IFile ifile; ifile.open(fname);
+  double cutoff=0, h;
+  std::string kfunc,fname;
+  double dp2cutoff;
+  parse("CUTOFF",dp2cutoff);
+  parse("KERNELFILE",fname);
+  IFile ifile;
+  ifile.open(fname);
   for(unsigned k=0;; ++k) {
-    if( !ifile.scanField("height",h) ) break;
-    std::string ktype; ifile.scanField("kerneltype",ktype); if( ktype!="gaussian" ) error("cannot process kernels of type " + ktype );
-    double mu, sigma; ifile.scanField("mu",mu); ifile.scanField("sigma",sigma); ifile.scanField();
-    std::string hstr, mustr, sigmastr; Tools::convert( h, hstr );
-    Tools::convert( 2*sigma*sigma, sigmastr ); Tools::convert( mu, mustr );
+    if( !ifile.scanField("height",h) ) {
+      break;
+    }
+    std::string ktype;
+    ifile.scanField("kerneltype",ktype);
+    if( ktype!="gaussian" ) {
+      error("cannot process kernels of type " + ktype );
+    }
+    double mu, sigma;
+    ifile.scanField("mu",mu);
+    ifile.scanField("sigma",sigma);
+    ifile.scanField();
+    std::string hstr, mustr, sigmastr;
+    Tools::convert( h, hstr );
+    Tools::convert( 2*sigma*sigma, sigmastr );
+    Tools::convert( mu, mustr );
     // Get a sensible value for the cutoff
     double support = sqrt(2.0*dp2cutoff)*(1.0/sigma);
-    if( mu+support>cutoff ) cutoff= mu + support;
+    if( mu+support>cutoff ) {
+      cutoff= mu + support;
+    }
     // And make the kernel
-    if( k==0 ) kfunc = hstr; else kfunc += "+" + hstr;
+    if( k==0 ) {
+      kfunc = hstr;
+    } else {
+      kfunc += "+" + hstr;
+    }
     kfunc += "*exp(-(x-" + mustr +")^2/" + sigmastr + ")";
   }
   std::string sp_str, specA, specB, grpinfo;
-  parse("SPECIES",sp_str); parse("SPECIESA",specA); parse("SPECIESB",specB);
+  parse("SPECIES",sp_str);
+  parse("SPECIESA",specA);
+  parse("SPECIESB",specB);
   if( sp_str.length()>0 ) {
     grpinfo="GROUP=" + sp_str;
   } else {
-    if( specA.length()==0 || specB.length()==0 ) error("no atoms were specified in input use either SPECIES or SPECIESA + SPECIESB");
+    if( specA.length()==0 || specB.length()==0 ) {
+      error("no atoms were specified in input use either SPECIES or SPECIESA + SPECIESB");
+    }
     grpinfo="GROUPA=" + specA + " GROUPB=" + specB;
   }
-  std::string cutstr; Tools::convert( cutoff, cutstr );
+  std::string cutstr;
+  Tools::convert( cutoff, cutstr );
   // Setup the contact matrix
   readInputLine( getShortcutLabel() + "_cmat: DISTANCE_MATRIX  " + grpinfo + " CUTOFF=" + cutstr);
   // And the kernels
@@ -100,7 +129,8 @@ DopsShortcut::DopsShortcut(const ActionOptions&ao):
   // Find the number of ones we need to multiply by
   ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_cmat");
   plumed_assert( av && av->getNumberOfComponents()>0 && (av->copyOutput(0))->getRank()==2 );
-  std::string size; Tools::convert( (av->copyOutput(0))->getShape()[1], size );
+  std::string size;
+  Tools::convert( (av->copyOutput(0))->getShape()[1], size );
   readInputLine( getShortcutLabel() + "_ones: ONES SIZE=" + size );
   // And the final order parameters
   readInputLine( getShortcutLabel() + ": MATRIX_VECTOR_PRODUCT ARG=" + getShortcutLabel() + "_kval," + getShortcutLabel() + "_ones");

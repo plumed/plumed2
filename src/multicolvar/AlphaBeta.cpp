@@ -59,44 +59,75 @@ void AlphaBeta::registerKeywords(Keywords& keys) {
            "same reference value is used for all torsions");
   keys.add("numbered","COEFFICIENT","the coefficient for each of the torsional angles.  If you use a single COEFFICIENT value the "
            "same reference value is used for all torsional angles");
-  keys.setValueDescription("the alpha beta CV");
-  keys.needsAction("CONSTANT"); keys.needsAction("TORSION"); keys.needsAction("COMBINE"); keys.needsAction("CUSTOM"); keys.needsAction("SUM");
+  keys.setValueDescription("scalar","the alpha beta CV");
+  keys.needsAction("CONSTANT");
+  keys.needsAction("TORSION");
+  keys.needsAction("COMBINE");
+  keys.needsAction("CUSTOM");
+  keys.needsAction("SUM");
 }
 
 AlphaBeta::AlphaBeta(const ActionOptions& ao):
   Action(ao),
-  ActionShortcut(ao)
-{
+  ActionShortcut(ao) {
   // Read in the reference value
-  std::string refstr; parse("REFERENCE",refstr); unsigned nref=0;
+  std::string refstr;
+  parse("REFERENCE",refstr);
+  unsigned nref=0;
   if( refstr.length()==0 ) {
     for(unsigned i=0;; ++i) {
       std::string refval;
-      if( !parseNumbered( "REFERENCE", i+1, refval ) ) break;
-      if( i==0 ) refstr = refval; else refstr += "," + refval;
+      if( !parseNumbered( "REFERENCE", i+1, refval ) ) {
+        break;
+      }
+      if( i==0 ) {
+        refstr = refval;
+      } else {
+        refstr += "," + refval;
+      }
       nref++;
     }
   }
-  std::string coeffstr; parse("COEFFICIENT",coeffstr); unsigned ncoeff=0;
+  std::string coeffstr;
+  parse("COEFFICIENT",coeffstr);
+  unsigned ncoeff=0;
   if( coeffstr.length()==0 ) {
     for(unsigned i=0;; ++i) {
       std::string coeff;
-      if( !parseNumbered( "COEFFICIENT", i+1, coeff) ) break;
-      if( i==0 ) coeffstr = coeff; else coeffstr += "," + coeff;
+      if( !parseNumbered( "COEFFICIENT", i+1, coeff) ) {
+        break;
+      }
+      if( i==0 ) {
+        coeffstr = coeff;
+      } else {
+        coeffstr += "," + coeff;
+      }
       ncoeff++;
     }
   }
-  if( coeffstr.length()==0 ) coeffstr="1";
+  if( coeffstr.length()==0 ) {
+    coeffstr="1";
+  }
   // Calculate angles
   readInputLine( getShortcutLabel() + "_torsions: TORSION " + convertInputLineToString() );
   ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_torsions" );
   plumed_assert( av && (av->copyOutput(0))->getRank()==1 );
   if( nref==0 ) {
-    std::string refval=refstr; for(unsigned i=1; i<(av->copyOutput(0))->getShape()[0]; ++i) refstr += "," + refval;
-  } else if( nref!=(av->copyOutput(0))->getShape()[0] ) error("mismatch between number of reference values and number of ATOMS specified");
+    std::string refval=refstr;
+    for(unsigned i=1; i<(av->copyOutput(0))->getShape()[0]; ++i) {
+      refstr += "," + refval;
+    }
+  } else if( nref!=(av->copyOutput(0))->getShape()[0] ) {
+    error("mismatch between number of reference values and number of ATOMS specified");
+  }
   if( ncoeff==0 ) {
-    std::string coeff=coeffstr; for(unsigned i=1; i<(av->copyOutput(0))->getShape()[0]; ++i) coeffstr += "," + coeff;
-  } else if( ncoeff!=(av->copyOutput(0))->getShape()[0] ) error("mismatch between number of coefficients and number of ATOMS specified");
+    std::string coeff=coeffstr;
+    for(unsigned i=1; i<(av->copyOutput(0))->getShape()[0]; ++i) {
+      coeffstr += "," + coeff;
+    }
+  } else if( ncoeff!=(av->copyOutput(0))->getShape()[0] ) {
+    error("mismatch between number of coefficients and number of ATOMS specified");
+  }
   readInputLine( getShortcutLabel() + "_ref: CONSTANT VALUES=" + refstr );
   readInputLine( getShortcutLabel() + "_coeff: CONSTANT VALUES=" + coeffstr );
   // Caculate difference from reference using combine

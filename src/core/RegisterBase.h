@@ -24,6 +24,7 @@
 
 #include "tools/Exception.h"
 #include <string>
+#include <string_view>
 #include <map>
 #include <memory>
 #include <iostream>
@@ -93,6 +94,36 @@ public:
   std::vector<std::string> getKeysWithDLHandle(void* handle) const;
 
   friend std::ostream & operator<<(std::ostream &log,const Register &reg);
+};
+
+/// Class representing an error in a register
+class ExceptionRegisterError :
+  public Exception {
+  /// The missing key
+  std::string missingKey;
+public:
+  using Exception::Exception;
+  /// Sets the missing key
+  /// \param key The missing key
+  /// \return This exception
+  ///
+  /// ExceptionRegisterError can be used as a builder pattern:
+  /// `throw ExceptionRegisterError().setMissingKey(key);`
+  ///
+  /// the key can be retrieved with ExceptionRegisterError::getMissingKey()
+  ExceptionRegisterError& setMissingKey (std::string_view key) {
+    missingKey=key;
+    return *this;
+  }
+  /// Returns the missing key
+  const std::string& getMissingKey() const {
+    return missingKey;
+  }
+  template<typename T>
+  ExceptionRegisterError& operator<<(const T & x) {
+    *static_cast<Exception*>(this) <<x;
+    return *this;
+  }
 };
 
 /// General register.
@@ -185,10 +216,14 @@ template<class Content>
 bool RegisterBase<Content>::check(const std::vector<void*> & images,const std::string & key) const {
   // lock map for reading
   std::shared_lock<std::shared_mutex> lock(mutex);
-  if(m.count(key)>0) return true;
+  if(m.count(key)>0) {
+    return true;
+  }
   for(auto image : images) {
     std::string k=imageToString(image)+":"+key;
-    if(m.count(k)>0) return true;
+    if(m.count(k)>0) {
+      return true;
+    }
   }
   return false;
 }
@@ -206,9 +241,13 @@ const Content & RegisterBase<Content>::get(const std::vector<void*> & images,con
   std::shared_lock<std::shared_mutex> lock(mutex);
   for(auto image = images.rbegin(); image != images.rend(); ++image) {
     auto qualified_key=imageToString(*image) + ":" + key;
-    if(m.count(qualified_key)>0) return m.find(qualified_key)->second->content;
+    if(m.count(qualified_key)>0) {
+      return m.find(qualified_key)->second->content;
+    }
   }
-  plumed_assert(m.count(key)>0);
+  if (m.count(key) == 0 ) {
+    throw ExceptionRegisterError().setMissingKey(key);
+  }
   return m.find(key)->second->content;
 }
 
@@ -218,9 +257,13 @@ const std::string & RegisterBase<Content>::getFullPath(const std::vector<void*> 
   std::shared_lock<std::shared_mutex> lock(mutex);
   for(auto image = images.rbegin(); image != images.rend(); ++image) {
     auto qualified_key=imageToString(*image) + ":" + key;
-    if(m.count(qualified_key)>0) return m.find(qualified_key)->second->fullPath;
+    if(m.count(qualified_key)>0) {
+      return m.find(qualified_key)->second->fullPath;
+    }
   }
-  plumed_assert(m.count(key)>0);
+  if (m.count(key) == 0 ) {
+    throw ExceptionRegisterError().setMissingKey(key);
+  }
   return m.find(key)->second->fullPath;
 }
 
@@ -228,7 +271,9 @@ template<class Content>
 const Content & RegisterBase<Content>::get(const std::string & key) const {
   // lock map for reading
   std::shared_lock<std::shared_mutex> lock(mutex);
-  plumed_assert(m.count(key)>0);
+  if (m.count(key) == 0 ) {
+    throw ExceptionRegisterError().setMissingKey(key);
+  }
   return m.find(key)->second->content;
 }
 
@@ -239,7 +284,8 @@ void RegisterBase<Content>::remove(ID id) {
   if(id.ptr) {
     for(auto p=m.begin(); p!=m.end(); ++p) {
       if(p->second.get()==id.ptr) {
-        m.erase(p); break;
+        m.erase(p);
+        break;
       }
     }
   }
@@ -250,7 +296,9 @@ std::vector<std::string> RegisterBase<Content>::getKeys() const {
   // lock map for reading
   std::shared_lock<std::shared_mutex> lock(mutex);
   std::vector<std::string> s;
-  for(const auto & it : m) s.push_back(it.first);
+  for(const auto & it : m) {
+    s.push_back(it.first);
+  }
   std::sort(s.begin(),s.end());
   return s;
 }
@@ -259,7 +307,9 @@ template<class Content>
 RegisterBase<Content>::~RegisterBase() noexcept {
   if(m.size()>0) {
     std::string names="";
-    for(const auto & p : m) names+=p.first+" ";
+    for(const auto & p : m) {
+      names+=p.first+" ";
+    }
     std::cerr<<"WARNING: Directive "+ names +" has not been properly unregistered. This might lead to memory leak!!\n";
   }
 }
@@ -288,5 +338,3 @@ void RegisterBase<Content>::clearStaged() noexcept {
 }
 
 #endif
-
-

@@ -79,7 +79,7 @@ AC_DEFUN([PLUMED_CHECK_CFLAG], [
 ])
 
 # PLUMED_CHECK_LDFLAGS(flag)
-# use it to check if a flag is available on this compiler
+# use it to check if a flag is available for linking
 AC_DEFUN([PLUMED_CHECK_LDFLAGS], [
   save_LDFLAGS="$LDFLAGS"
   LDFLAGS="$LDFLAGS $1"
@@ -935,8 +935,7 @@ fi
 #added by luigibonati
 if test $libtorch = true ; then 
   # disable as-needed in linking libraries (both static and shared)
-  PLUMED_CHECK_CXXFLAG([-Wl,--no-as-needed])
-  LDSHARED="$LDSHARED -Wl,--no-as-needed "
+  PLUMED_CHECK_LDFLAGS([-Wl,--no-as-needed])
 
   # CUDA and CPU libtorch libs have different libraries
   # first test CUDA program

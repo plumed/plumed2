@@ -202,9 +202,11 @@ public:
 PLUMED_REGISTER_ACTION(Histogram,"HISTOGRAM")
 
 void Histogram::registerKeywords( Keywords& keys ) {
-  ActionShortcut::registerKeywords( keys ); keys.use("UPDATE_FROM"); keys.use("UPDATE_UNTIL");
+  ActionShortcut::registerKeywords( keys );
+  keys.use("UPDATE_FROM");
+  keys.use("UPDATE_UNTIL");
   keys.add("compulsory","NORMALIZATION","ndata","This controls how the data is normalized it can be set equal to true, false or ndata.  See above for an explanation");
-  keys.add("optional","ARG","the quantity that is being averaged");
+  keys.addInputKeyword("optional","ARG","scalar/vector/matrix","the quantities that are being used to construct the histogram");
   keys.add("optional","DATA","an alternative to the ARG keyword");
   keys.add("compulsory","GRID_MIN","auto","the lower bounds for the grid");
   keys.add("compulsory","GRID_MAX","auto","the upper bounds for the grid");
@@ -216,28 +218,48 @@ void Histogram::registerKeywords( Keywords& keys ) {
   keys.add("optional","LOGWEIGHTS","the logarithm of the quantity to use as the weights when calculating averages");
   keys.add("compulsory","STRIDE","1","the frequency with which to store data for averaging");
   keys.add("compulsory","CLEAR","0","the frequency with whihc to clear the data that is being averaged");
-  keys.setValueDescription("the estimate of the histogram as a function of the argument that was obtained");
-  keys.needsAction("COMBINE"); keys.needsAction("CUSTOM"); keys.needsAction("ONES");
-  keys.needsAction("KDE"); keys.needsAction("ACCUMULATE");
+  keys.setValueDescription("grid","the estimate of the histogram as a function of the argument that was obtained");
+  keys.needsAction("COMBINE");
+  keys.needsAction("CUSTOM");
+  keys.needsAction("ONES");
+  keys.needsAction("KDE");
+  keys.needsAction("ACCUMULATE");
 }
 
 Histogram::Histogram( const ActionOptions& ao ):
   Action(ao),
-  ActionShortcut(ao)
-{
-  std::string normflag; parse("NORMALIZATION",normflag);
-  std::string lw; parse("LOGWEIGHTS",lw); std::string stride, clearstride; parse("STRIDE",stride); parse("CLEAR",clearstride);
+  ActionShortcut(ao) {
+  std::string normflag;
+  parse("NORMALIZATION",normflag);
+  std::string lw;
+  parse("LOGWEIGHTS",lw);
+  std::string stride, clearstride;
+  parse("STRIDE",stride);
+  parse("CLEAR",clearstride);
   if( lw.length()>0 && normflag!="ndata" ) {
     readInputLine( getShortcutLabel() + "_wsum: COMBINE ARG=" + lw + " PERIODIC=NO");
     readInputLine( getShortcutLabel() + "_weight: CUSTOM ARG=" + getShortcutLabel() + "_wsum FUNC=exp(x) PERIODIC=NO");
-  } else readInputLine( getShortcutLabel() + "_weight: ONES SIZE=1" );
+  } else {
+    readInputLine( getShortcutLabel() + "_weight: ONES SIZE=1" );
+  }
 
-  std::vector<std::string> arglist; parseVector("ARG",arglist); if( arglist.size()==0 ) parseVector("DATA",arglist);
-  if( arglist.size()==0 ) error("arguments have not been specified use ARG");
-  std::vector<Value*> theargs; ActionWithArguments::interpretArgumentList( arglist, plumed.getActionSet(), this, theargs );
-  plumed_assert( theargs.size()>0 ); std::string argstr=theargs[0]->getName();
-  for(unsigned i=1; i<theargs.size(); ++i) argstr += "," + theargs[i]->getName();
-  std::string strnum; Tools::convert( theargs[0]->getNumberOfValues(), strnum );
+  std::vector<std::string> arglist;
+  parseVector("ARG",arglist);
+  if( arglist.size()==0 ) {
+    parseVector("DATA",arglist);
+  }
+  if( arglist.size()==0 ) {
+    error("arguments have not been specified use ARG");
+  }
+  std::vector<Value*> theargs;
+  ActionWithArguments::interpretArgumentList( arglist, plumed.getActionSet(), this, theargs );
+  plumed_assert( theargs.size()>0 );
+  std::string argstr=theargs[0]->getName();
+  for(unsigned i=1; i<theargs.size(); ++i) {
+    argstr += "," + theargs[i]->getName();
+  }
+  std::string strnum;
+  Tools::convert( theargs[0]->getNumberOfValues(), strnum );
   if( theargs[0]->getNumberOfValues()==1 ) {
     // Create the KDE object
     readInputLine( getShortcutLabel() + "_kde: KDE ARG=" + argstr + " " + convertInputLineToString() );

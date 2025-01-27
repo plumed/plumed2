@@ -104,7 +104,8 @@ PLUMED_REGISTER_ACTION(PythonFunction,"PYFUNCTION")
 
 void PythonFunction::registerKeywords( Keywords& keys ) {
   Function::registerKeywords( keys );
-  keys.use("ARG"); keys.use("PERIODIC");
+  keys.use("PERIODIC");
+  keys.addInputKeyword("optional","ARG","scalar","the labels of the values from which the function is calculated");
   keys.add("compulsory","IMPORT","the python file to import, containing the function");
   keys.add("compulsory","CALCULATE",PYCV_DEFAULTCALCULATE,"the function to call");
   keys.add("compulsory","INIT",PYCV_DEFAULTINIT,"the function to call during the construction method of the function");
@@ -225,8 +226,9 @@ void PythonFunction::readReturn(const py::object &r, Value* valPtr) {
     valPtr->set(value);
     if (rl.size() > 1) {
       auto nargs = getNumberOfArguments();
-      if(!valPtr->hasDerivatives())
+      if(!valPtr->hasDerivatives()) {
         error(valPtr->getName()+" was declared without derivatives, but python returned with derivatives");
+      }
       // 2nd return value: gradient: numpy array
       py::array_t<pycvComm_t> grad(rl[1]);
       if(grad.ndim() != 1 || grad.shape(0) != nargs) {
@@ -240,8 +242,9 @@ void PythonFunction::readReturn(const py::object &r, Value* valPtr) {
       for(size_t i=0; i<nargs; i++) {
         valPtr->setDerivative(i,grad.at(i));
       }
-    } else if (valPtr->hasDerivatives())
+    } else if (valPtr->hasDerivatives()) {
       plumed_merror(valPtr->getName()+" was declared with derivatives, but python returned none");
+    }
 
   } else {
     // Only value returned. Might be an error as well.
@@ -262,10 +265,11 @@ void PythonFunction::calculateMultiComponent(py::object &r) {
       std::string key=component->getName().substr(
                         2 + getLabel().size()
                         +PYCV_COMPONENTPREFIX.size());
-      if (dataDict.contains(key.c_str()))
+      if (dataDict.contains(key.c_str())) {
         readReturn(dataDict[key.c_str()], component);
-      else
+      } else {
         error( "python did not returned " + key );
+      }
     }
   } else {
     // In principle one could handle a "list" return case.

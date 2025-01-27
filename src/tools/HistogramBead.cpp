@@ -101,8 +101,7 @@ HistogramBead::HistogramBead():
   min(0.0),
   max(0.0),
   max_minus_min(0.0),
-  inv_max_minus_min(0.0)
-{
+  inv_max_minus_min(0.0) {
 }
 
 std::string HistogramBead::description() const {
@@ -117,7 +116,9 @@ void HistogramBead::generateBins( const std::string& params, std::vector<std::st
 
   std::string name=data[0];
 
-  unsigned nbins; std::vector<double> range(2); std::string smear;
+  unsigned nbins;
+  std::vector<double> range(2);
+  std::string smear;
   bool found_nb=Tools::parse(data,"NBINS",nbins);
   plumed_massert(found_nb,"Number of bins in histogram not found");
   bool found_r=Tools::parse(data,"LOWER",range[0]);
@@ -126,9 +127,12 @@ void HistogramBead::generateBins( const std::string& params, std::vector<std::st
   plumed_massert(found_r,"Upper bound for histogram not specified");
   plumed_massert(range[0]<range[1],"Range specification is dubious");
   bool found_b=Tools::parse(data,"SMEAR",smear);
-  if(!found_b) { Tools::convert(0.5,smear); }
+  if(!found_b) {
+    Tools::convert(0.5,smear);
+  }
 
-  std::string lb,ub; double delr = ( range[1]-range[0] ) / static_cast<double>( nbins );
+  std::string lb,ub;
+  double delr = ( range[1]-range[0] ) / static_cast<double>( nbins );
   for(unsigned i=0; i<nbins; ++i) {
     Tools::convert( range[0]+i*delr, lb );
     Tools::convert( range[0]+(i+1)*delr, ub );
@@ -144,34 +148,60 @@ void HistogramBead::set( const std::string& params, std::string& errormsg ) {
     return;
   }
 
-  std::string name=data[0]; const double DP2CUTOFF=6.25;
-  if(name=="GAUSSIAN") { type=gaussian; cutoff=std::sqrt(2.0*DP2CUTOFF); }
-  else if(name=="TRIANGULAR") { type=triangular; cutoff=1.; }
-  else plumed_merror("cannot understand kernel type " + name );
+  std::string name=data[0];
+  const double DP2CUTOFF=6.25;
+  if(name=="GAUSSIAN") {
+    type=gaussian;
+    cutoff=std::sqrt(2.0*DP2CUTOFF);
+  } else if(name=="TRIANGULAR") {
+    type=triangular;
+    cutoff=1.;
+  } else {
+    plumed_merror("cannot understand kernel type " + name );
+  }
 
   double smear;
   bool found_r=Tools::parse(data,"LOWER",lowb);
-  if( !found_r ) errormsg="Lower bound has not been specified use LOWER";
+  if( !found_r ) {
+    errormsg="Lower bound has not been specified use LOWER";
+  }
   found_r=Tools::parse(data,"UPPER",highb);
-  if( !found_r ) errormsg="Upper bound has not been specified use UPPER";
-  if( lowb>=highb ) errormsg="Lower bound is higher than upper bound";
+  if( !found_r ) {
+    errormsg="Upper bound has not been specified use UPPER";
+  }
+  if( lowb>=highb ) {
+    errormsg="Lower bound is higher than upper bound";
+  }
 
-  smear=0.5; Tools::parse(data,"SMEAR",smear);
-  width=smear*(highb-lowb); init=true;
+  smear=0.5;
+  Tools::parse(data,"SMEAR",smear);
+  width=smear*(highb-lowb);
+  init=true;
 }
 
 void HistogramBead::set( double l, double h, double w) {
-  init=true; lowb=l; highb=h; width=w;
+  init=true;
+  lowb=l;
+  highb=h;
+  width=w;
   const double DP2CUTOFF=6.25;
-  if( type==gaussian ) cutoff=std::sqrt(2.0*DP2CUTOFF);
-  else if( type==triangular ) cutoff=1.;
-  else plumed_error();
+  if( type==gaussian ) {
+    cutoff=std::sqrt(2.0*DP2CUTOFF);
+  } else if( type==triangular ) {
+    cutoff=1.;
+  } else {
+    plumed_error();
+  }
 }
 
 void HistogramBead::setKernelType( const std::string& ktype ) {
-  if(ktype=="gaussian") type=gaussian;
-  else if(ktype=="triangular") type=triangular;
-  else plumed_merror("cannot understand kernel type " + ktype );
+  if(ktype=="gaussian") {
+    type=gaussian;
+  } else if(ktype=="triangular") {
+    type=triangular;
+  } else {
+    plumed_merror("cannot understand kernel type " + ktype );
+  }
 }
 
 double HistogramBead::calculate( double x, double& df ) const {
@@ -186,14 +216,26 @@ double HistogramBead::calculate( double x, double& df ) const {
     lowB = ( difference( x, lowb ) / width );
     upperB = ( difference( x, highb ) / width );
     df=0;
-    if( std::fabs(lowB)<1. ) df = (1 - std::fabs(lowB)) / width;
-    if( std::fabs(upperB)<1. ) df -= (1 - std::fabs(upperB)) / width;
+    if( std::fabs(lowB)<1. ) {
+      df = (1 - std::fabs(lowB)) / width;
+    }
+    if( std::fabs(upperB)<1. ) {
+      df -= (1 - std::fabs(upperB)) / width;
+    }
     if (upperB<=-1. || lowB >=1.) {
       f=0.;
     } else {
       double ia, ib;
-      if( lowB>-1.0 ) { ia=lowB; } else { ia=-1.0; }
-      if( upperB<1.0 ) { ib=upperB; } else { ib=1.0; }
+      if( lowB>-1.0 ) {
+        ia=lowB;
+      } else {
+        ia=-1.0;
+      }
+      if( upperB<1.0 ) {
+        ib=upperB;
+      } else {
+        ib=1.0;
+      }
       f = (ib*(2.-std::fabs(ib))-ia*(2.-std::fabs(ia)))*0.5;
     }
   } else {
@@ -206,23 +248,40 @@ double HistogramBead::calculateWithCutoff( double x, double& df ) const {
   plumed_dbg_assert(init && periodicity!=unset );
 
   double lowB, upperB, f;
-  lowB = difference( x, lowb ) / width ; upperB = difference( x, highb ) / width;
-  if( upperB<=-cutoff || lowB>=cutoff ) { df=0; return 0; }
+  lowB = difference( x, lowb ) / width ;
+  upperB = difference( x, highb ) / width;
+  if( upperB<=-cutoff || lowB>=cutoff ) {
+    df=0;
+    return 0;
+  }
 
   if( type==gaussian ) {
-    lowB /= std::sqrt(2.0); upperB /= std::sqrt(2.0);
+    lowB /= std::sqrt(2.0);
+    upperB /= std::sqrt(2.0);
     df = ( exp( -lowB*lowB ) - exp( -upperB*upperB ) ) / ( std::sqrt(2*pi)*width );
     f = 0.5*( erf( upperB ) - erf( lowB ) );
   } else if( type==triangular ) {
     df=0;
-    if( std::fabs(lowB)<1. ) df = (1 - std::fabs(lowB)) / width;
-    if( std::fabs(upperB)<1. ) df -= (1 - std::fabs(upperB)) / width;
+    if( std::fabs(lowB)<1. ) {
+      df = (1 - std::fabs(lowB)) / width;
+    }
+    if( std::fabs(upperB)<1. ) {
+      df -= (1 - std::fabs(upperB)) / width;
+    }
     if (upperB<=-1. || lowB >=1.) {
       f=0.;
     } else {
       double ia, ib;
-      if( lowB>-1.0 ) { ia=lowB; } else { ia=-1.0; }
-      if( upperB<1.0 ) { ib=upperB; } else { ib=1.0; }
+      if( lowB>-1.0 ) {
+        ia=lowB;
+      } else {
+        ia=-1.0;
+      }
+      if( upperB<1.0 ) {
+        ib=upperB;
+      } else {
+        ib=1.0;
+      }
       f = (ib*(2.-std::fabs(ib))-ia*(2.-std::fabs(ia)))*0.5;
     }
   } else {

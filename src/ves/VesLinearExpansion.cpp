@@ -328,9 +328,8 @@ void VesLinearExpansion::registerKeywords( Keywords& keys ) {
   VesBias::useGridBinKeywords(keys);
   VesBias::useProjectionArgKeywords(keys);
   //
-  keys.use("ARG");
   keys.add("compulsory","BASIS_FUNCTIONS","the label of the one dimensional basis functions that should be used.");
-  keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential.");
+  keys.addOutputComponent("force2","default","scalar","the instantaneous value of the squared force due to this bias potential.");
 }
 
 VesLinearExpansion::VesLinearExpansion(const ActionOptions&ao):
@@ -340,15 +339,16 @@ VesLinearExpansion::VesLinearExpansion(const ActionOptions&ao):
   valueForce2_(NULL),
   all_values_inside(true),
   bf_values(0),
-  bf_values_set(false)
-{
+  bf_values_set(false) {
   std::vector<std::string> basisf_labels;
   parseMultipleValues("BASIS_FUNCTIONS",basisf_labels,nargs_);
   checkRead();
 
   std::string error_msg = "";
   basisf_pntrs_ = VesTools::getPointersFromLabels<BasisFunctions*>(basisf_labels,plumed.getActionSet(),error_msg);
-  if(error_msg.size()>0) {plumed_merror("Error in keyword BASIS_FUNCTIONS of "+getName()+": "+error_msg);}
+  if(error_msg.size()>0) {
+    plumed_merror("Error in keyword BASIS_FUNCTIONS of "+getName()+": "+error_msg);
+  }
   //
 
   std::vector<Value*> args_pntrs = getArguments();
@@ -358,8 +358,7 @@ VesLinearExpansion::VesLinearExpansion(const ActionOptions&ao):
   for(unsigned int i=0; i<args_pntrs.size(); i++) {
     if(args_pntrs[i]->isPeriodic() && !(basisf_pntrs_[i]->arePeriodic()) ) {
       plumed_merror("argument "+args_pntrs[i]->getName()+" is periodic while the basis functions " + basisf_pntrs_[i]->getLabel()+ " are not. You need to use the COMBINE action to remove the periodicity of the argument if you want to use these basis functions");
-    }
-    else if(!(args_pntrs[i]->isPeriodic()) && basisf_pntrs_[i]->arePeriodic() ) {
+    } else if(!(args_pntrs[i]->isPeriodic()) && basisf_pntrs_[i]->arePeriodic() ) {
       log.printf("  warning: argument %s is not periodic while the basis functions %s used for it are periodic\n",args_pntrs[i]->getName().c_str(),basisf_pntrs_[i]->getLabel().c_str());
     }
   }
@@ -381,13 +380,13 @@ VesLinearExpansion::VesLinearExpansion(const ActionOptions&ao):
     log.printf("  using an uniform target distribution: \n");
     bias_expansion_pntr_->setupUniformTargetDistribution();
     disableStaticTargetDistFileOutput();
-  }
-  else if(getNumberOfTargetDistributionPntrs()==1) {
-    if(biasCutoffActive()) {getTargetDistributionPntrs()[0]->setupBiasCutoff();}
+  } else if(getNumberOfTargetDistributionPntrs()==1) {
+    if(biasCutoffActive()) {
+      getTargetDistributionPntrs()[0]->setupBiasCutoff();
+    }
     bias_expansion_pntr_->setupTargetDistribution(getTargetDistributionPntrs()[0]);
     log.printf("  using target distribution of type %s with label %s \n",getTargetDistributionPntrs()[0]->getName().c_str(),getTargetDistributionPntrs()[0]->getLabel().c_str());
-  }
-  else {
+  } else {
     plumed_merror("problem with the TARGET_DISTRIBUTION keyword, either give no label or just one label.");
   }
   setTargetDistAverages(bias_expansion_pntr_->TargetDistAverages());
@@ -401,7 +400,8 @@ VesLinearExpansion::VesLinearExpansion(const ActionOptions&ao):
     VesLinearExpansion::writeBiasToFile();
   }
 
-  addComponent("force2"); componentIsNotPeriodic("force2");
+  addComponent("force2");
+  componentIsNotPeriodic("force2");
   valueForce2_=getPntrToComponent("force2");
 }
 
