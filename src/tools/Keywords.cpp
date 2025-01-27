@@ -38,7 +38,6 @@ void erase_remove(std::string& vec, const char& value) {
 //few definition to avoid rewriting the too many times the same docstring
 #define NUMBERED_DOCSTRING(key) ". You can use multiple instances of this keyword i.e. " \
         + std::string(key) +"1, " + std::string(key) + "2, " + std::string(key) + "3..."
-#define ATOM_DOCSTRING ".  For more information on how to specify lists of atoms see \\ref Group"
 
 
 namespace PLMD {
@@ -49,14 +48,14 @@ std::string toString(Keywords::argType at) {
   case Keywords::argType::scalar:
     return  "scalar";
 
-  case Keywords::argType::grid:
-    return  "grid";
-
   case Keywords::argType::vector:
     return  "vector";
 
   case Keywords::argType::matrix:
     return  "matrix";
+
+  case Keywords::argType::grid:
+    return  "grid";
   }
   //the not simple cases
   {
@@ -66,16 +65,16 @@ std::string toString(Keywords::argType at) {
       ret+="scalar";
       next="/";
     }
-    if(valid(at & Keywords::argType::grid)) {
-      ret+=next+"grid";
-      next="/";
-    }
     if(valid(at & Keywords::argType::vector)) {
       ret+=next+"vector";
       next="/";
     }
     if(valid(at & Keywords::argType::matrix)) {
       ret+=next+"matrix";
+      next="/";
+    }
+    if(valid(at & Keywords::argType::grid)) {
+      ret+=next+"grid";
     }
     return ret;
   }
@@ -93,14 +92,14 @@ Keywords::argType stoat(std::string_view str) {
   if (str == "scalar") {
     return Keywords::argType::scalar;
   }
-  if (str == "grid") {
-    return Keywords::argType::grid;
-  }
   if (str == "vector") {
     return Keywords::argType::vector;
   }
   if (str == "matrix") {
     return Keywords::argType::matrix;
+  }
+  if (str == "grid") {
+    return Keywords::argType::grid;
   }
   // Handle the case where the string does not match any enum value.
   plumed_massert(false,"invalid argType specifier " + std::string(str));
@@ -111,14 +110,14 @@ std::string toString(Keywords::componentType at) {
   case Keywords::componentType::scalar:
     return  "scalar";
 
-  case Keywords::componentType::grid:
-    return  "grid";
-
   case Keywords::componentType::vector:
     return  "vector";
 
   case Keywords::componentType::matrix:
     return  "matrix";
+
+  case Keywords::componentType::grid:
+    return  "grid";
 
   case Keywords::componentType::atom:
     return  "atom";
@@ -134,10 +133,6 @@ std::string toString(Keywords::componentType at) {
       ret+="scalar";
       next="/";
     }
-    if(valid(at & Keywords::componentType::grid)) {
-      ret+=next+"grid";
-      next="/";
-    }
     if(valid(at & Keywords::componentType::vector)) {
       ret+=next+"vector";
       next="/";
@@ -146,9 +141,14 @@ std::string toString(Keywords::componentType at) {
       ret+=next+"matrix";
       next="/";
     }
+    if(valid(at & Keywords::componentType::grid)) {
+      ret+=next+"grid";
+      next="/";
+    }
     //I do not think these two are necessary
     if(valid(at & Keywords::componentType::atom)) {
       ret+=next+"atom";
+      next="/";
     }
     if(valid(at & Keywords::componentType::atoms)) {
       ret+=next+"atoms";
@@ -252,12 +252,14 @@ bool Keywords::keyInfo::isArgument() const {
   return std::holds_alternative<argType>(argument_type);
 }
 
-Keywords::component::component()=default;
-Keywords::component& Keywords::component::setKey(std::string k) {
+Keywords::component::component():
+//the 0 ensures something that always fails unles explicitly set
+  type(static_cast<componentType>(0)) {};
+Keywords::component& Keywords::component::setKey(std::string_view k) {
   key=k;
   return *this;
 }
-Keywords::component& Keywords::component::setDocstring(std::string d) {
+Keywords::component& Keywords::component::setDocstring(std::string_view d) {
   docstring=d;
   return *this;
 }
@@ -343,8 +345,8 @@ void Keywords::addOrReserve( std::string_view keytype,
   if( type.isAtomList() ) {
     //keytype may be "residues" or something like "atoms-3"
     keywords.find(key)->second.atomtag=keytype;
-    if (isaction) {
-      fd += ATOM_DOCSTRING;
+    if (isaction && keytype == "atoms") { //this narrow the doctrstring ONLY to atoms
+      keywords.find(key)->second.docstring+= ".  For more information on how to specify lists of atoms see \\ref Group";
     }
   }
   if (reserve) {
@@ -809,13 +811,13 @@ std::string Keywords::getHelpString() const {
       }
     }
   }
+  unsigned ncompulsory=0;
   for(const auto& key : keys) {
     if ( keywords.at(key).type.isCompulsory() ) {
-      nkeys++;
+      ncompulsory++;
     }
   }
-  unsigned ncompulsory=nkeys;
-  if( nkeys>0 ) {
+  if( ncompulsory>0 ) {
     helpstr += "\nThe following arguments are compulsory: \n\n";
     for(const auto& key : keys) {
       if ( keywords.at(key).type.isCompulsory() ) {
@@ -1054,7 +1056,7 @@ std::vector<std::string> Keywords::getArgumentKeys() const {
 bool Keywords::checkArgumentType( const std::size_t& rank, const bool& hasderiv ) const {
   std::map <std::string,bool> arguments;
   for(auto const& kw : getArgumentKeys() ) {
-    auto & at = std::get<argType>(keywords.at(kw).argument_type);
+    const auto & at = std::get<argType>(keywords.at(kw).argument_type);
     arguments[kw] = false;
     if( rank==0  && valid(at | argType::scalar)) {
       arguments[kw] = true;
@@ -1086,6 +1088,7 @@ bool Keywords::checkArgumentType( const std::size_t& rank, const bool& hasderiv 
                       " ("+toString(std::get<argType>(keywords.at(arg.first).argument_type))+")" +"\n";
     }
   }
+  //the merror makes the return never executed!!!
   plumed_merror(errorMessage);
   return false;
 }

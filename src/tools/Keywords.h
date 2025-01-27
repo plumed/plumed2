@@ -38,7 +38,8 @@ class Log;
 class Keywords {
 /// This class lets me pass keyword types easily
   struct KeyType {
-    enum class keyStyle {hidden,compulsory,flag,optional,atoms,vessel,unknown} style;
+    enum class keyStyle {hidden,compulsory,flag,optional,atoms,vessel,unknown};
+    keyStyle style;
     static keyStyle keyStyleFromString(std::string_view type );
     explicit KeyType( keyStyle type );
     explicit KeyType( std::string_view type );
@@ -84,19 +85,19 @@ class Keywords {
   };
 
 public:
-  enum class argType {scalar=1,grid=1<<2,vector=1<<3,matrix=1<<4};
-  enum class componentType {scalar=1,grid=1<<2,vector=1<<3,matrix=1<<4,atoms=1<<5,atom=1<<6};
+  enum class argType {scalar=1,vector=1<<2,matrix=1<<3,grid=1<<4};
+  enum class componentType {scalar=1,vector=1<<2,matrix=1<<3,grid=1<<4,atoms=1<<5,atom=1<<6};
 private:
 /// Is this an action or driver (this bool affects what style==atoms does in print)
-  bool isaction;
+  bool isaction=true;
 /// This allows us to overwrite the behavior of the atoms type in analysis actions
-  bool isatoms;
+  bool isatoms=true;
 /// The name of the action that has this set of keywords
   std::string thisactname;
 
   struct keyInfo {
     /// Whether the keyword is compulsory, optional...
-    KeyType type;
+    KeyType type{KeyType::keyStyle::unknown};
     /// The documentation for the keyword
     std::string docstring;
     /// The default values (if there are default values) for compulsory keywords or flags
@@ -135,8 +136,8 @@ private:
     componentType type;
     component();
     //these functions are not neeeded (this is a struct), but are useful in constructing the component
-    component& setKey(std::string k);
-    component& setDocstring(std::string d);
+    component& setKey(std::string_view k);
+    component& setDocstring(std::string_view d);
     component& setType(componentType t);
   };
   //the "exists component" is stored in the map keys
@@ -153,7 +154,7 @@ private:
   void print_html_item( const std::string& ) const;
 public:
 /// Constructor
-  Keywords() : isaction(true), isatoms(true) {}
+  Keywords() {}
 ///
   void isDriver() {
     isaction=false;
