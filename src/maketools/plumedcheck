@@ -599,7 +599,7 @@ ENDFILE{
 # DOC: macros are exempted from this rule.
        error("non_existing_cpp","file " file " is a header but there is no corresponding source");
      }
-     while((getline < cppfile)>=0){
+     while((getline < cppfile)>0){
        if(match($0,"^# *include")){
          sub("^# *include","");
 # DOC: :non_included_h:
