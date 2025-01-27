@@ -50,21 +50,28 @@ void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vecto
   // Create an orthorhombic box around the atomic positions that encompasses every atomic position if there are no pbc
   auto box = pbc.getBox();
   if(box(0,0)==0.0 && box(0,1)==0.0 && box(0,2)==0.0 && box(1,0)==0.0 && box(1,1)==0.0 && box(1,2)==0.0 && box(2,0)==0.0 && box(2,1)==0 && box(2,2)==0) {
-    Vector minp, maxp; minp = maxp = pos[0]; Tensor fake_box; fake_box.zero();
+    Vector minp, maxp;
+    minp = maxp = pos[0];
     for(unsigned k=0; k<3; ++k) {
       for(unsigned i=1; i<pos.size(); ++i) {
-        if( pos[i][k]>maxp[k] ) maxp[k] = pos[i][k];
-        if( pos[i][k]<minp[k] ) minp[k] = pos[i][k];
+        if( pos[i][k]>maxp[k] ) {
+          maxp[k] = pos[i][k];
+        }
+        if( pos[i][k]<minp[k] ) {
+          minp[k] = pos[i][k];
+        }
       }
       box[k][k] = link_cutoff*( 1 + std::ceil( (maxp[k] - minp[k])/link_cutoff ) );
       origin[k] = ( minp[k] + maxp[k] ) / 2;
     }
-    mypbc.setBox( fake_box ); nopbc=true;
+    nopbc=true;
     // Setup the pbc object by copying it from action if the Pbc were set
-  } else { 
-    auto determinant = box.determinant(); nopbc=false;
+  } else {
+    auto determinant = box.determinant();
+    nopbc=false;
     plumed_assert(determinant > epsilon) <<"Cell lists cannot be built when passing a box with null volume. Volume is "<<determinant;
   }
+  mypbc.setBox( box );
 
   // Setup the lists
   if( pos.size()!=allcells.size() ) {
@@ -194,12 +201,18 @@ void LinkCells::retrieveAtomsInCells( const unsigned& ncells_required,
 }
 
 std::array<unsigned,3> LinkCells::findMyCell( const Vector& pos ) const {
-  std::array<unsigned,3> celn; Vector mypos = pos; 
-  if( nopbc ) mypos = pos - origin; 
+  std::array<unsigned,3> celn;
+  Vector mypos = pos;
+  if( nopbc ) {
+    mypos = pos - origin;
+  }
   Vector fpos=mypbc.realToScaled( pos );
   for(unsigned j=0; j<3; ++j) {
-    if( nopbc ) celn[j] = std::floor( fpos[j] * ncells[j] );
-    else celn[j] = std::floor( ( Tools::pbc(fpos[j]) + 0.5 ) * ncells[j] );
+    if( nopbc ) {
+      celn[j] = std::floor( fpos[j] * ncells[j] );
+    } else {
+      celn[j] = std::floor( ( Tools::pbc(fpos[j]) + 0.5 ) * ncells[j] );
+    }
     plumed_assert( celn[j]>=0 && celn[j]<ncells[j] ); // Check that atom is in box
   }
   return celn;
