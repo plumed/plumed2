@@ -177,7 +177,7 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
   } else if ( status=="nobadge" ) {
     ofile<<"nobadge-36454F";
   } else {
-    error("unknown status");
+    error("unknown status: "+status);
   }
   ofile<<".svg\" alt=\"tested on "<<version<<"\" /></div>";
   ofile.flush();
