@@ -210,14 +210,14 @@ std::array<unsigned,3> LinkCells::findMyCell( const Vector& pos ) const {
   if( nopbc ) {
     mypos = pos - origin;
   }
-  Vector fpos=mypbc.realToScaled( pos );
+  Vector fpos=mypbc.realToScaled( mypos );
   for(unsigned j=0; j<3; ++j) {
     if( nopbc ) {
       celn[j] = std::floor( fpos[j] * ncells[j] );
     } else {
       celn[j] = std::floor( ( Tools::pbc(fpos[j]) + 0.5 ) * ncells[j] );
     }
-    plumed_assert( celn[j]>=0 && celn[j]<ncells[j] ) <<"in link cell "<<celn[j]<<" but should be between 0 and "<<ncells[j]<<" link cell cutoff is "<<link_cutoff;
+    plumed_assert( celn[j]>=0 && celn[j]<ncells[j] ) <<"in link cell "<<celn[j]<<" but should be between 0 and "<<ncells[j]<<" link cell cutoff is "<<link_cutoff<<" position is "<<mypos[0]<<" "<<mypos[1]<<" "<<mypos[2];
   }
   return celn;
 }
