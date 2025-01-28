@@ -217,7 +217,7 @@ std::array<unsigned,3> LinkCells::findMyCell( const Vector& pos ) const {
     } else {
       celn[j] = std::floor( ( Tools::pbc(fpos[j]) + 0.5 ) * ncells[j] );
     }
-    plumed_assert( celn[j]>=0 && celn[j]<ncells[j] ) <<"in link cell "<<celn[j]<<" but should be between 0 and "<<ncells[j];
+    plumed_assert( celn[j]>=0 && celn[j]<ncells[j] ) <<"in link cell "<<celn[j]<<" but should be between 0 and "<<ncells[j]<<" link cell cutoff is "<<link_cutoff;
   }
   return celn;
 }
