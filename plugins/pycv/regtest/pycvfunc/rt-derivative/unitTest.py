@@ -5,7 +5,7 @@ log = open("pydist.log", "w")
 
 print("Imported my pydist+.", file=log)
 
-initForF={"Value": PLMD.defaults.COMPONENT}
+def initForF(_: PLMD.PythonFunction): return {"Value": PLMD.defaults.COMPONENT}
 
 def function(action: PLMD.PythonFunction):
     arg = [action.argument(0),

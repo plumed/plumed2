@@ -16,10 +16,10 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "PythonCVInterface.h"
 
-#include "core/ActionRegister.h"
-#include "core/PlumedMain.h"
-#include "tools/NeighborList.h"
-#include "tools/Pbc.h"
+#include "plumed/core/ActionRegister.h"
+#include "plumed/core/PlumedMain.h"
+#include "plumed/tools/NeighborList.h"
+#include "plumed/tools/Pbc.h"
 
 #include <pybind11/embed.h> // everything needed for embedding
 #include <pybind11/numpy.h>
@@ -422,6 +422,7 @@ PythonCVInterface::PythonCVInterface(const ActionOptions&ao) ://the catch only a
   PLUMED_COLVAR_INIT(ao),
   ActionWithPython(ao) {
   try {
+    py::gil_scoped_acquire gil;
     //Loading the python module
     std::string import;
     parse("IMPORT",import);
@@ -619,6 +620,7 @@ void PythonCVInterface::prepare() {
       }
     }
     if (hasPrepare) {
+      py::gil_scoped_acquire gil;
       py::dict prepareDict = pyPrepare(this);
       if (prepareDict.contains("setAtomRequest")) {
         //should I use "interpretAtomList"?
@@ -648,6 +650,7 @@ void PythonCVInterface::prepare() {
 void PythonCVInterface::update() {
   try {
     if(hasUpdate) {
+      py::gil_scoped_acquire gil;
       py::dict updateDict=pyUpdate(this);
       //See what to do here
     }
@@ -664,6 +667,7 @@ void PythonCVInterface::calculate() {
         nl->update(getPositions());
       }
     }
+    py::gil_scoped_acquire gil;
     // Call the function
     py::object r = pyCalculate(this);
     if(getNumberOfComponents()>1) {		// MULTIPLE NAMED COMPONENTS

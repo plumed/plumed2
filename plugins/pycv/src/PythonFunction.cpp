@@ -16,8 +16,8 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "PythonFunction.h"
 
-#include "core/ActionRegister.h"
-#include "core/PlumedMain.h" // cite
+#include "plumed/core/ActionRegister.h"
+#include "plumed/core/PlumedMain.h" // cite
 
 #include <pybind11/embed.h> // everything needed for embedding
 #include <pybind11/numpy.h>
@@ -120,6 +120,7 @@ PythonFunction::PythonFunction(const ActionOptions&ao):
   Function(ao),
   ActionWithPython(ao) {
   try {
+    py::gil_scoped_acquire gil;
     //Loading the python module
     std::string import;
     parse("IMPORT",import);
@@ -205,6 +206,7 @@ PythonFunction::PythonFunction(const ActionOptions&ao):
 // calculator
 void PythonFunction::calculate() {
   try {
+    py::gil_scoped_acquire gil;
     // Call the function
     py::object r = pyCalculate(this);
     if(getNumberOfComponents()>1) {		// MULTIPLE NAMED COMPONENTS

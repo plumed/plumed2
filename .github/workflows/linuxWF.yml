@@ -212,8 +212,7 @@ jobs:
       if: contains( matrix.variant, '-pycv-' )
       working-directory: ./plugins/pycv/
       run: |
-            pip install --user -r requirements.txt
             source ../../sourceme.sh
             ln -s $(realpath ../../regtest/scripts) ./regtest/scripts
-            ./prepareMakeForDevelop.sh
             make check
+            
