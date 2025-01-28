@@ -174,6 +174,8 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
     ofile<<"with-LOAD-yellow";
   } else if(status=="incomplete") {
     ofile<<version<<"-incomplete-yellow";
+  } else if ( status=="nobadge" ) {
+    ofile<<"nobadge-36454F";
   } else {
     error("unknown status");
   }
